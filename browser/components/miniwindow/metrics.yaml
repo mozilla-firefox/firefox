@@ -18,6 +18,7 @@ mini_window:
       into it. A failed move is not recorded.
     bugs:
       - https://bugzilla.mozilla.org/show_bug.cgi?id=2066606
+      - https://bugzilla.mozilla.org/show_bug.cgi?id=2083998
     data_reviews:
       - https://bugzilla.mozilla.org/show_bug.cgi?id=2066606
     data_sensitivity:
@@ -29,13 +30,13 @@ mini_window:
       type:
         type: string
         description: >
-          "full_tab" for a whole popped-out tab, or "fragment" for one
-          framing a region of the page.
+          "full_tab" for a whole popped-out tab, "fragment" for one
+          framing a region of the page, or "url" for one opened from a link.
       entry_point:
         type: string
         description: >
           Where the user started from, one of: "tab_context_menu",
-          "content_context_menu" or "toolbar_button".
+          "content_context_menu", "toolbar_button" or "link_context_menu".
       was_last_tab:
         type: boolean
         description: >
@@ -52,6 +53,7 @@ mini_window:
       Recorded when a mini window closes, whichever way it was ended.
     bugs:
       - https://bugzilla.mozilla.org/show_bug.cgi?id=2066606
+      - https://bugzilla.mozilla.org/show_bug.cgi?id=2083998
     data_reviews:
       - https://bugzilla.mozilla.org/show_bug.cgi?id=2066606
     data_sensitivity:
@@ -63,8 +65,8 @@ mini_window:
       type:
         type: string
         description: >
-          "full_tab" for a whole popped-out tab, or "fragment" for one
-          framing a region of the page.
+          "full_tab" for a whole popped-out tab, "fragment" for one
+          framing a region of the page, or "url" for one opened from a link.
       method:
         type: string
         description: >
@@ -85,8 +87,10 @@ mini_window:
     labels:
       - full_tab
       - fragment
+      - url
     bugs:
       - https://bugzilla.mozilla.org/show_bug.cgi?id=2066606
+      - https://bugzilla.mozilla.org/show_bug.cgi?id=2083998
     data_reviews:
       - https://bugzilla.mozilla.org/show_bug.cgi?id=2066606
     data_sensitivity:

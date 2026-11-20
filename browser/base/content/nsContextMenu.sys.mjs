@@ -1684,7 +1684,7 @@ export class nsContextMenu {
     lazy.MiniWindowManager.openURL(
       this.window,
       this.linkURL,
-      "content_context_menu",
+      "link_context_menu",
       this.principal
     );
   }

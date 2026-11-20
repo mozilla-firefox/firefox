@@ -227,3 +227,39 @@ add_task(async function test_screenshots_entry_points_are_recorded() {
     removeTestTabs();
   }
 });
+
+add_task(async function test_url_mini_window_is_recorded() {
+  Services.fog.testResetFOG();
+
+  let mini = await MiniWindowManager.openURL(
+    window,
+    "https://example.com/",
+    "link_context_menu",
+    Services.scriptSecurityManager.getSystemPrincipal()
+  );
+  let miniWin = mini.miniWin;
+
+  Assert.deepEqual(
+    createdEvent(),
+    {
+      type: "url",
+      entry_point: "link_context_menu",
+      was_last_tab: "false",
+      concurrent_open: "1",
+    },
+    "a mini window opened from a link reports as url"
+  );
+
+  mini.close();
+  await BrowserTestUtils.domWindowClosed(miniWin);
+
+  let extra = Glean.miniWindow.closed.testGetValue()[0].extra;
+  Assert.equal(extra.type, "url", "closing reports the url flavour");
+  Assert.equal(
+    Glean.miniWindow.openDuration.url.testGetValue().count,
+    1,
+    "one url open_duration sample was recorded"
+  );
+
+  assertNoMiniWindowsOpen();
+});

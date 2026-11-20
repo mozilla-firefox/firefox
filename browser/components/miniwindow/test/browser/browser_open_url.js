@@ -60,6 +60,7 @@ add_task(async function test_open_url_without_principal_fails() {
 });
 
 add_task(async function test_open_link_in_mini_window_from_context_menu() {
+  Services.fog.testResetFOG();
   let tab = await BrowserTestUtils.openNewForegroundTab(
     gBrowser,
     "https://example.com/"
@@ -95,6 +96,14 @@ add_task(async function test_open_link_in_mini_window_from_context_menu() {
   await TestUtils.waitForCondition(
     () => mini.state == "active",
     "Waiting for the mini window to activate"
+  );
+  let created = Glean.miniWindow.created.testGetValue();
+  Assert.equal(created.length, 1, "One created event was recorded");
+  Assert.equal(created[0].extra.type, "url", "Reports the url flavour");
+  Assert.equal(
+    created[0].extra.entry_point,
+    "link_context_menu",
+    "Reports the link context menu entry point"
   );
   Assert.equal(
     miniWin.gBrowser.selectedBrowser.contentPrincipal.origin,
