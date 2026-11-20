@@ -93,7 +93,7 @@ class ProjectPlugin : Plugin<Project> {
         configureGleanVersionResolution(project)
         configureKtfmt(project, mozilla)
         configureDetekt(project, mozilla)
-        configureAndroidComponentsLint(project, mozilla, topsrcdir)
+        configureAndroidComponentsLint(project, mozilla)
         configureRoomImplementationCheck(project)
         configureUnitTests(project)
         configurePackagingResourcesExcludes(project)
@@ -593,22 +593,15 @@ class ProjectPlugin : Plugin<Project> {
         }
     }
 
-    @Suppress("DEPRECATION") // `sarifReport` and `sarifOutput` are deprecated
-    private fun configureAndroidComponentsLint(project: Project, mozilla: ProjectExtension, topsrcdir: String) {
+    private fun configureAndroidComponentsLint(project: Project, mozilla: ProjectExtension) {
         val action = Action<AppliedPlugin> {
             if (!mozilla.androidComponentsProject.get()) return@Action
 
-            val sarifOutputFile = File(
-                topsrcdir,
-                "mobile/android/android-components/build/reports/lint/lint-report-${project.name}.sarif.json",
-            )
             val android = project.extensions.getByType<CommonExtension>()
             with(android.lint) {
                 baseline = project.file("lint-baseline.xml")
                 warningsAsErrors = true
                 abortOnError = false
-                sarifReport = true
-                sarifOutput = sarifOutputFile
                 disable += listOf(
                     "MissingTranslation",
                     "ExtraTranslation",

@@ -26,6 +26,9 @@ EXCLUSION_FILES = [
     os.path.join("tools", "rewriting", "ThirdPartyPaths.txt"),
 ]
 
+DEFAULT_LINT_REPORTS = ("lint-results-debug.sarif", "lint-results-geckoDebug.sarif")
+DEFAULT_LINT_MODULES = ("*", "*/*", "*/*/*")
+
 
 def setup(root, **setupargs):
     if setupargs.get("substs", {}).get("MOZ_BUILD_APP") != "mobile/android":
@@ -156,6 +159,7 @@ def fenix_format(_paths, config, fix=None, **lintargs):
         os.path.join("mobile", "android", "fenix"),
         project_name="fenix",
         lint_tasks=[":fenix:lintDebug"],
+        lint_modules=("app",),
         disable_android_components_tasks=True,
         **lintargs,
     )
@@ -179,6 +183,8 @@ def focus_format(_paths, config, fix=None, **lintargs):
         os.path.join("mobile", "android", "focus-android"),
         project_name="focus-android",
         lint_tasks=[":focus-android:lint"],
+        lint_modules=("app",),
+        lint_reports=("lint-results-focusDebug.sarif",),
         disable_android_components_tasks=True,
         **lintargs,
     )
@@ -190,6 +196,8 @@ def report_gradlew(
     subdir,
     project_name,
     lint_tasks=[],
+    lint_reports=DEFAULT_LINT_REPORTS,
+    lint_modules=DEFAULT_LINT_MODULES,
     disable_android_components_tasks=False,
     **lintargs,
 ):
@@ -271,7 +279,9 @@ def report_gradlew(
             )
         )
 
-    results.extend(parse_lint_report(config, subdir, **lintargs))
+    results.extend(
+        parse_lint_report(config, subdir, lint_reports, lint_modules, **lintargs)
+    )
 
     if ret != 0 and not results:
         # One of the tasks failed without emitting anything we could parse.
@@ -473,10 +483,10 @@ def lint(_paths, config, **lintargs):
     return results
 
 
-def parse_lint_report(config, subdir, **lintargs):
+def parse_lint_report(config, subdir, lint_reports, lint_modules, **lintargs):
     topsrcdir = lintargs["root"]
 
-    reports = os.path.join(topsrcdir, subdir, "build", "reports")
+    build = os.path.join(lintargs["topobjdir"], "gradle", "build", subdir)
 
     excludes = []
     for path in EXCLUSION_FILES:
@@ -488,20 +498,22 @@ def parse_lint_report(config, subdir, **lintargs):
                     excludes.append(f.strip())
 
     try:
-        files = os.listdir(
-            os.path.join(
-                reports,
-                "lint",
+        files = [
+            report
+            for module in lint_modules
+            for reports in glob.glob(
+                os.path.join(glob.escape(build), module, "reports")
             )
-        )
+            for name in lint_reports
+            if os.path.exists(report := os.path.join(reports, name))
+        ]
+        if not files:
+            raise FileNotFoundError(build)
 
         results = []
         for file in files:
-            data = json.load(
-                open(
-                    os.path.join(reports, "lint", file),
-                )
-            ).get("runs", [{}])[0]
+            with open(file) as fh:
+                data = json.load(fh).get("runs", [{}])[0]
 
             issues = data.get("results", [])
             rules = data.get("tool", {}).get("driver", {}).get("rules", [])

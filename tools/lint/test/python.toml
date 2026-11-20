@@ -11,6 +11,8 @@ subsuite = "mozlint"
 
 ["test_android_ktfmt_focus.py"]
 
+["test_android_lint_report.py"]
+
 ["test_cargo-audit.py"]
 # testing it on linux is enough
 skip-if = [
