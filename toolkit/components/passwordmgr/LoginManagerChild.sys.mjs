@@ -398,6 +398,11 @@ export class LoginFormState {
   possiblePasswords = new Set();
 
   /**
+   * Whether a record removal flow will reopen the dropdown when it ends.
+   */
+  removalPending = false;
+
+  /**
    * Keeps track of the formLike of nodes (form or formless password field)
    * that we are watching when they are removed from DOM.
    */
@@ -733,6 +738,18 @@ export class LoginFormState {
       const actor =
         focusedField.documentGlobal.windowGlobalChild.getActor("LoginManager");
       actor.markAsAutoCompletableField(focusedField);
+    }
+
+    // The removal flow reopens the dropdown itself once it ends.
+    if (this.removalPending) {
+      return;
+    }
+
+    // showPopup() toggles, and focus must not close an open dropdown.
+    if (
+      lazy.gFormFillService.QueryInterface(Ci.nsIAutoCompleteInput).popupOpen
+    ) {
+      return;
     }
 
     lazy.log("Opening the autocomplete popup.");
@@ -1391,7 +1408,12 @@ export class LoginManagerChild extends JSWindowActorChild {
         this.#onUseGeneratedPassword(msg.data.inputElementIdentifier);
         break;
       }
+      case "PasswordManager:removalPending": {
+        this.stateForDocument(this.document).removalPending = true;
+        break;
+      }
       case "PasswordManager:repopulateAutocompletePopup": {
+        this.stateForDocument(this.document).removalPending = false;
         this.repopulateAutocompletePopup();
         break;
       }
@@ -1442,7 +1464,13 @@ export class LoginManagerChild extends JSWindowActorChild {
   repopulateAutocompletePopup() {
     // Clear the cache of previous autocomplete results to show new options.
     lazy.gFormFillService.QueryInterface(Ci.nsIAutoCompleteInput);
-    lazy.gFormFillService.controller.resetInternalState();
+    const { controller } = lazy.gFormFillService;
+    controller.resetInternalState();
+    // showPopup() toggles. Refocus may have reopened it already, so refresh.
+    if (lazy.gFormFillService.popupOpen) {
+      controller.startSearch(controller.searchString);
+      return;
+    }
     lazy.gFormFillService.showPopup();
   }
 

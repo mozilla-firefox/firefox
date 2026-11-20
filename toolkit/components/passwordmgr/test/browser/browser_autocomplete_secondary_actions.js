@@ -155,6 +155,42 @@ function waitForFooterOnly(popup) {
   );
 }
 
+// A key typed while a search is running stops it with no results, which closes
+// the dropdown; the next search then reopens it as a new dropdown. So wait for
+// the open search, and for each key's results, before typing on.
+async function waitForDropdownSettled(browser) {
+  await SpecialPowers.spawn(browser, [], async () => {
+    const controller = Cc["@mozilla.org/autocomplete/controller;1"].getService(
+      Ci.nsIAutoCompleteController
+    );
+    const actor = content.windowGlobalChild.getActor("AutoComplete");
+    await ContentTaskUtils.waitForCondition(
+      () =>
+        actor.popupOpen &&
+        controller.searchStatus ===
+          Ci.nsIAutoCompleteController.STATUS_COMPLETE_MATCH,
+      "Wait for the dropdown to settle in content"
+    );
+  });
+}
+
+async function typeAndWaitForResults(popup, browser, key) {
+  const before = popup.view.results;
+  await BrowserTestUtils.synthesizeKey(key, {}, browser);
+  await TestUtils.waitForCondition(
+    () => popup.view.results !== before,
+    `Wait for the results after typing ${key}`
+  );
+}
+
+function assertNoCloseYet() {
+  Assert.equal(
+    Glean.autocomplete.dropdownClosed.testGetValue()?.length ?? 0,
+    0,
+    "The dropdown did not close while typing"
+  );
+}
+
 function waitForPopupHidden(popup) {
   return BrowserTestUtils.waitForEvent(
     popup,
@@ -390,13 +426,15 @@ add_task(async function test_typing_past_logins_records_typed_through() {
     async function (browser) {
       const popup = document.getElementById("PopupAutoComplete");
       await openACPopup(popup, browser, "#form-basic-username");
+      await waitForDropdownSettled(browser);
 
       Services.fog.testResetFOG();
       for (const ch of ["z", "z", "z"]) {
-        await BrowserTestUtils.synthesizeKey(ch, {}, browser);
+        await typeAndWaitForResults(popup, browser, ch);
       }
       await waitForFooterOnly(popup);
       Assert.equal(popup.state, "open", "The footer keeps the dropdown open");
+      assertNoCloseYet();
 
       await closeWithEscape(popup);
       assertClosedAs(
@@ -413,17 +451,19 @@ add_task(async function test_backspace_back_to_logins_records_dismissed() {
     async function (browser) {
       const popup = document.getElementById("PopupAutoComplete");
       await openACPopup(popup, browser, "#form-basic-username");
+      await waitForDropdownSettled(browser);
 
       Services.fog.testResetFOG();
-      await BrowserTestUtils.synthesizeKey("u", {}, browser);
-      await BrowserTestUtils.synthesizeKey("z", {}, browser);
+      await typeAndWaitForResults(popup, browser, "u");
+      await typeAndWaitForResults(popup, browser, "z");
       await waitForFooterOnly(popup);
 
-      await BrowserTestUtils.synthesizeKey("KEY_Backspace", {}, browser);
+      await typeAndWaitForResults(popup, browser, "KEY_Backspace");
       await TestUtils.waitForCondition(
         () => popup.view.getStyleAt(0) === "loginWithOrigin",
         "Wait for the logins to come back"
       );
+      assertNoCloseYet();
 
       await closeWithEscape(popup);
       assertClosedAs(
