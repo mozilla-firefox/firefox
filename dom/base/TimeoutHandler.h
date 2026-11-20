@@ -89,10 +89,8 @@ class CallbackTimeoutHandler final : public TimeoutHandler {
   virtual void MarkForCC() override;
   virtual void GetDescription(nsACString& aOutString) override;
 
-  void ReleaseJSObjects();
-
  private:
-  virtual ~CallbackTimeoutHandler() { ReleaseJSObjects(); }
+  virtual ~CallbackTimeoutHandler() { mozilla::DropJSObjects(this); }
 
   nsCOMPtr<nsIGlobalObject> mGlobal;
   RefPtr<Function> mFunction;

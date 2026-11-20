@@ -108,7 +108,7 @@ NS_IMPL_CYCLE_COLLECTION_CLASS(CallbackTimeoutHandler)
 NS_IMPL_CYCLE_COLLECTION_UNLINK_BEGIN(CallbackTimeoutHandler)
   NS_IMPL_CYCLE_COLLECTION_UNLINK(mGlobal)
   NS_IMPL_CYCLE_COLLECTION_UNLINK(mFunction)
-  tmp->ReleaseJSObjects();
+  tmp->mArgs.Clear();
 NS_IMPL_CYCLE_COLLECTION_UNLINK_END
 
 NS_IMPL_CYCLE_COLLECTION_TRAVERSE_BEGIN_INTERNAL(CallbackTimeoutHandler)
@@ -155,11 +155,6 @@ NS_INTERFACE_MAP_END
 
 NS_IMPL_CYCLE_COLLECTING_ADDREF(CallbackTimeoutHandler)
 NS_IMPL_CYCLE_COLLECTING_RELEASE(CallbackTimeoutHandler)
-
-void CallbackTimeoutHandler::ReleaseJSObjects() {
-  mArgs.Clear();
-  mozilla::DropJSObjects(this);
-}
 
 bool CallbackTimeoutHandler::Call(const char* aExecutionReason) {
   IgnoredErrorResult rv;
