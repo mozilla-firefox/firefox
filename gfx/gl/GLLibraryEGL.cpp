@@ -1161,6 +1161,44 @@ std::shared_ptr<EglDisplay> GLLibraryEGL::CreateDisplayLocked(
         return nullptr;
       }
     }
+  } else if (IsANGLE()) {
+    MOZ_ASSERT(!aFlags.mForceSoftware,
+               "Software rendering not supported by EGL on this platform");
+    if (!aFlags.mForceSoftware) {
+      AutoTArray<EGLAttrib, 5> attrib_list;
+
+#ifdef MOZ_WIDGET_ANDROID
+      // On Android, ANGLE may be compiled with multiple backends, so
+      // explicitly request the GLES backend.
+      if (!IsExtensionSupported(EGLLibExtension::ANGLE_platform_angle_opengl)) {
+        *out_failureId = "FEATURE_FAILURE_ANGLE_GL_UNSUPPORTED"_ns;
+        return nullptr;
+      }
+      attrib_list.AppendElement(LOCAL_EGL_PLATFORM_ANGLE_TYPE_ANGLE);
+      attrib_list.AppendElement(LOCAL_EGL_PLATFORM_ANGLE_TYPE_OPENGLES_ANGLE);
+#endif
+
+      if (IsExtensionSupported(
+              EGLLibExtension::ANGLE_display_power_preference)) {
+        // The docs state "if this extension is advertised and this display
+        // creation attribute is not specified, the default value is
+        // EGL_LOW_POWER_ANGLE."
+        // In testing, however, it was found that EGL_LOW_POWER_ANGLE had to be
+        // specifically requested in order to obtain a low power display.
+        attrib_list.AppendElement(LOCAL_EGL_POWER_PREFERENCE_ANGLE);
+        attrib_list.AppendElement(aFlags.mPreferHighPower
+                                      ? LOCAL_EGL_HIGH_POWER_ANGLE
+                                      : LOCAL_EGL_LOW_POWER_ANGLE);
+      }
+
+      attrib_list.AppendElement(LOCAL_EGL_NONE);
+      const EGLDisplay display =
+          fGetPlatformDisplay(LOCAL_EGL_PLATFORM_ANGLE_ANGLE,
+                              EGL_DEFAULT_DISPLAY, attrib_list.Elements());
+      if (display) {
+        ret = EglDisplay::Create(*this, display, false, aProofOfLock);
+      }
+    }
   } else {
     void* nativeDisplay = EGL_DEFAULT_DISPLAY;
 #ifdef MOZ_WIDGET_GTK
@@ -1185,30 +1223,7 @@ std::shared_ptr<EglDisplay> GLLibraryEGL::CreateDisplayLocked(
       }
     }
 #  endif
-#elif defined(XP_MACOSX)
-    MOZ_ASSERT(!aFlags.mForceSoftware,
-               "Software rendering not supported by EGL on macOS");
 #endif
-
-    // Initialize a display selecting a power preference, if supported.
-    if (!ret && !aFlags.mForceSoftware &&
-        IsExtensionSupported(EGLLibExtension::ANGLE_display_power_preference)) {
-      // The docs state "if this extension is advertised and this display
-      // creation attribute is not specified, the default value is
-      // EGL_LOW_POWER_ANGLE."
-      // In testing, however, it was found that EGL_LOW_POWER_ANGLE had to be
-      // specifically requested in order to obtain a low power display.
-      const EGLAttrib attrib_list[] = {LOCAL_EGL_POWER_PREFERENCE_ANGLE,
-                                       aFlags.mPreferHighPower
-                                           ? LOCAL_EGL_HIGH_POWER_ANGLE
-                                           : LOCAL_EGL_LOW_POWER_ANGLE,
-                                       LOCAL_EGL_NONE};
-      const EGLDisplay display = fGetPlatformDisplay(
-          LOCAL_EGL_PLATFORM_ANGLE_ANGLE, EGL_DEFAULT_DISPLAY, attrib_list);
-      if (display) {
-        ret = EglDisplay::Create(*this, display, false, aProofOfLock);
-      }
-    }
 
     if (!ret && !aFlags.mForceSoftware) {
       ret = GetAndInitDisplay(*this, nativeDisplay, aProofOfLock);
