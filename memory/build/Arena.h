@@ -637,8 +637,7 @@ struct arena_t : public BaseAllocClass {
 
  private:
   arena_chunk_t* PurgeGetSpareChunk(mozilla::PurgeStats& aStats);
-  arena_chunk_t* PurgeGetDirtyChunk(PurgeCondition aCond,
-                                    mozilla::PurgeStats& aStats);
+  arena_chunk_t* PurgeGetDirtyChunk(mozilla::PurgeStats& aStats);
 
   ArenaPurgeResult PurgeDirtyPages(arena_chunk_t* aChunk, PurgeCondition aCond,
                                    mozilla::PurgeStats& aStats,
