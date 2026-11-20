@@ -9,35 +9,21 @@ covering GN macros, GoogleTest/GMock usage, and available utilities.
 
 ## Configure GN Macros
 
-### Use `rtc_cc_test` for new unit tests
+### Use `rtc_cc_test` and `rtc_test_suite` to define tests
 
-As part of the "Small Tests" infrastructure, use `rtc_cc_test` for new unit
-tests. It defines a library and a standalone binary (prefixed with the folder
-name and suffixed with `_bin`). To generate the binary, run autoninja with a
-"\_bin" suffix to the target - `autoninja -C out/Default pc:proxy_unittest_bin`
-will generate "out/Default/pc_proxy_unittest_bin" as your binary.
+Define unit tests with `rtc_cc_test`. It defines a library with the test sources
+and a standalone binary (prefixed with the folder name and suffixed with `_bin`)
+to run them locally: `autoninja -C out/Default pc:proxy_unittest_bin` will
+generate "out/Default/pc_proxy_unittest_bin" as your binary.
 
-It should normally have a single source file.
-
-Use `rtc_test_suite` to aggregate `rtc_cc_test` targets into larger
-"mega-targets" for CI/CQ (e.g., `peerconnection_unittests`). Each `rtc_cc_test`
-targets must be in exactly one `rtc_test_suite` target.
-
-Refer to \[add-new-test-binary.md\](add-new-test-binary.md) for details on how
-to add the binary for a new test suite to the infrastructure.
-
-### Legacy: Using `rtc_test` to define test binaries
-
-The `rtc_test` template is the traditional way to define test binaries in
-WebRTC. It automatically adds `//test:test_main` as a dependency, providing the
-standard `main()` function for running GoogleTest.
+It should normally have a single source file, named after the target.
 
 - **Example**:
 
   ```gn
   import("//webrtc.gni")
 
-  rtc_test("my_unittest") {
+  rtc_cc_test("my_unittest") {
     sources = [ "my_unittest.cc" ]
     deps = [
       ":my_library",
@@ -46,7 +32,24 @@ standard `main()` function for running GoogleTest.
   }
   ```
 
-  New test suites should be defined using rtc_test_suite and rtc_cc_test.
+Use `rtc_test_suite` to aggregate `rtc_cc_test` targets into larger
+"mega-targets" for CI/CQ (e.g., `peerconnection_unittests`). Each `rtc_cc_test`
+target must be in exactly one `rtc_test_suite` target.
+
+- **Example**:
+
+  ```gn
+  rtc_test_suite("my_tests") {
+    tests = [ ":my_unittest" ]
+  }
+  ```
+
+The binaries of both templates depend on `//test:test_main`, which provides the
+standard `main()` function for running GoogleTest. iOS tests written with the
+XCTest framework use `rtc_xctest` instead.
+
+Refer to [add-new-test-binary.md](add-new-test-binary.md) for details on how to
+add the binary for a new test suite to the infrastructure.
 
 ### Prefer `rtc_library` for test support
 

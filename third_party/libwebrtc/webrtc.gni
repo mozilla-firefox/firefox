@@ -405,7 +405,7 @@ rtc_add_configs = rtc_common_configs
 rtc_prod_configs = [ webrtc_root + ":rtc_prod_config" ]
 rtc_library_impl_config = [ webrtc_root + ":library_impl_config" ]
 
-set_defaults("rtc_test") {
+set_defaults("_rtc_test") {
   configs = rtc_add_configs
   public_deps = rtc_common_public_deps  # no-presubmit-check TODO(webrtc:8603)
   suppressed_configs = []
@@ -514,14 +514,12 @@ absl_define_config = "//libwebrtc/third_party/abseil-cpp:absl_define_config"
 # targets that are testonly.
 absl_flags_config = webrtc_root + ":absl_flags_configs"
 
-# WebRTC wrapper of Chromium's test() template. This template just adds some
-# WebRTC only configuration in order to avoid to duplicate it for every WebRTC
-# target.
-# iOS tests using the XCTest framework must use rtc_xctest() instead.
-template("rtc_test") {
-  assert(!defined(invoker.is_xctest),
-         "is_xctest is not supported anymore, use rtc_xctest() instead.")
-
+# WebRTC wrapper of Chromium's test() template, which adds the WebRTC specific
+# configuration. It is private to this file (GN doesn't import templates whose
+# name starts with an underscore) and only used by rtc_cc_test and
+# rtc_test_suite: test binaries must be defined with these templates, or with
+# rtc_xctest() for iOS tests using the XCTest framework.
+template("_rtc_test") {
   test(target_name) {
     forward_variables_from(invoker,
                            "*",
@@ -1489,7 +1487,7 @@ template("rtc_cc_test") {
                      target_name + "_bin"
     }
 
-    rtc_test("${target_name}_bin") {
+    _rtc_test("${target_name}_bin") {
       testonly = true
 
       # Output into the target's directory.
@@ -1511,7 +1509,6 @@ template("rtc_cc_test") {
 #
 # Arguments:
 #   tests: List of rtc_cc_test targets to include in this suite.
-#   deps: Additional dependencies (e.g. groups of tests).
 template("rtc_test_suite") {
   if (defined(invoker.testonly)) {
     testonly = invoker.testonly
@@ -1569,7 +1566,7 @@ template("rtc_test_suite") {
 
   assert(!defined(invoker.deps), "rtc_test_suite does not allow deps")
 
-  rtc_test(_suite_name) {
+  _rtc_test(_suite_name) {
     testonly = true
     deps = invoker.tests
     deps += [ ":${_suite_name}_verify_metadata" ]

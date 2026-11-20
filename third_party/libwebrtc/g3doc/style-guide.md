@@ -286,7 +286,7 @@ configuration, only use the following [GN templates][gn-templ].
 | `shared_library` | `rtc_shared_library`                                                                 |
 | `source_set`     | `rtc_library` (for header only libraries you may use `rtc_source_set`)               |
 | `static_library` | `rtc_static_library` (use `rtc_library` unless you really need `rtc_static_library`) |
-| `test`           | `rtc_test`                                                                           |
+| `test`           | `rtc_cc_test`                                                                        |
 
 ### Target visibility and the native API
 
