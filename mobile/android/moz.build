@@ -68,6 +68,64 @@ GeneratedFile(
     inputs=["!/toolkit/crashreporter/annotations/validated.yaml"],
 )
 
+if CONFIG["MOZ_WEBRTC"]:
+    # libwebrtc Java sources with a jni_zero @NativeMethods interface, relative
+    # to /third_party/libwebrtc. Each gets a generated FooJni implementation.
+    jni_zero_natives = [
+        "rtc_base/java/src/org/webrtc/Logging.java",
+        "sdk/android/api/org/webrtc/AudioTrack.java",
+        "sdk/android/api/org/webrtc/BuiltinAudioDecoderFactoryFactory.java",
+        "sdk/android/api/org/webrtc/BuiltinAudioEncoderFactoryFactory.java",
+        "sdk/android/api/org/webrtc/CallSessionFileRotatingLogSink.java",
+        "sdk/android/api/org/webrtc/DataChannel.java",
+        "sdk/android/api/org/webrtc/Dav1dDecoder.java",
+        "sdk/android/api/org/webrtc/DtmfSender.java",
+        "sdk/android/api/org/webrtc/Environment.java",
+        "sdk/android/api/org/webrtc/JavaI420Buffer.java",
+        "sdk/android/api/org/webrtc/LibaomAv1Encoder.java",
+        "sdk/android/api/org/webrtc/LibvpxVp8Decoder.java",
+        "sdk/android/api/org/webrtc/LibvpxVp8Encoder.java",
+        "sdk/android/api/org/webrtc/LibvpxVp9Decoder.java",
+        "sdk/android/api/org/webrtc/LibvpxVp9Encoder.java",
+        "sdk/android/api/org/webrtc/MediaSource.java",
+        "sdk/android/api/org/webrtc/MediaStreamTrack.java",
+        "sdk/android/api/org/webrtc/Metrics.java",
+        "sdk/android/api/org/webrtc/SoftwareVideoDecoderFactory.java",
+        "sdk/android/api/org/webrtc/SoftwareVideoEncoderFactory.java",
+        "sdk/android/api/org/webrtc/TimestampAligner.java",
+        "sdk/android/api/org/webrtc/TurnCustomizer.java",
+        "sdk/android/api/org/webrtc/VideoDecoderFallback.java",
+        "sdk/android/api/org/webrtc/VideoEncoderFallback.java",
+        "sdk/android/api/org/webrtc/VideoTrack.java",
+        "sdk/android/api/org/webrtc/YuvHelper.java",
+        "sdk/android/api/org/webrtc/audio/JavaAudioDeviceModule.java",
+        "sdk/android/src/java/org/webrtc/EglBase10Impl.java",
+        "sdk/android/src/java/org/webrtc/H264Utils.java",
+        "sdk/android/src/java/org/webrtc/NV12Buffer.java",
+        "sdk/android/src/java/org/webrtc/NV21Buffer.java",
+        "sdk/android/src/java/org/webrtc/NativeAndroidVideoTrackSource.java",
+        "sdk/android/src/java/org/webrtc/VideoDecoderWrapper.java",
+        "sdk/android/src/java/org/webrtc/VideoEncoderWrapper.java",
+        "sdk/android/src/java/org/webrtc/audio/WebRtcAudioRecord.java",
+        "sdk/android/src/java/org/webrtc/audio/WebRtcAudioTrack.java",
+    ]
+    for path in jni_zero_natives:
+        GeneratedFile(
+            "geckoview/src/main/java/%sJni.java" % path[path.index("org/") : -5],
+            script="gen_jni_zero_natives.py",
+            inputs=["/third_party/libwebrtc/" + path],
+        )
+
+    # JniCommon's natives are the only ones we implement, through WrapForJNI.
+    GeneratedFile(
+        "geckoview/src/main/java/org/webrtc/JniCommonJni.java",
+        script="gen_jni_zero_natives.py",
+        inputs=[
+            "/third_party/libwebrtc/sdk/android/src/java/org/webrtc/JniCommon.java"
+        ],
+        flags=["--wrap-for-jni"],
+    )
+
 include("/browser/extensions/webcompat/generate_files.mozbuild")
 include("/browser/extensions/webcompat/preprocessed_intervention_files.mozbuild")
 GenerateWebCompatAddonFiles(

@@ -11,8 +11,10 @@
 #include "video_capture_android.h"
 
 #include "AndroidBridge.h"
+#include "api/ref_count.h"
 #include "device_info_android.h"
 #include "modules/utility/include/helpers_android.h"
+#include "mozilla/java/JniCommonJniNatives.h"
 #include "rtc_base/logging.h"
 #include "rtc_base/ref_counted_object.h"
 #include "rtc_base/time_utils.h"
@@ -22,16 +24,25 @@ static jclass g_java_capturer_class = NULL;  // VideoCaptureAndroid.class.
 
 namespace webrtc {
 
-jobject JniCommon_allocateNativeByteBuffer(JNIEnv* env, jclass, jint size) {
-  void* new_data = ::operator new(size);
-  jobject byte_buffer = env->NewDirectByteBuffer(new_data, size);
-  return byte_buffer;
-}
+class JniCommonSupport final
+    : public mozilla::java::JniCommonJni::Natives<JniCommonSupport> {
+ public:
+  static void AddRef(int64_t aRefCountedPointer) {
+    reinterpret_cast<RefCountInterface*>(aRefCountedPointer)->AddRef();
+  }
 
-void JniCommon_freeNativeByteBuffer(JNIEnv* env, jclass, jobject byte_buffer) {
-  void* data = env->GetDirectBufferAddress(byte_buffer);
-  ::operator delete(data);
-}
+  static void ReleaseRef(int64_t aRefCountedPointer) {
+    reinterpret_cast<RefCountInterface*>(aRefCountedPointer)->Release();
+  }
+
+  static mozilla::jni::ByteBuffer::LocalRef AllocateByteBuffer(int32_t aSize) {
+    return mozilla::jni::ByteBuffer::New(::operator new(aSize), aSize);
+  }
+
+  static void FreeByteBuffer(mozilla::jni::ByteBuffer::Param aBuffer) {
+    ::operator delete(aBuffer->Address());
+  }
+};
 
 // Called by Java when the camera has a new frame to deliver.
 void JNICALL ProvideCameraFrame(JNIEnv* env, jobject, jint width, jint height,
@@ -89,18 +100,7 @@ int32_t SetCaptureAndroidVM(JavaVM* javaVM) {
         assert(false);
     }
 
-    {
-      jclass clsRef =
-          mozilla::jni::GetClassRef(ats.env(), "org/webrtc/JniCommon");
-
-      JNINativeMethod native_methods[] = {
-          {"nativeAllocateByteBuffer", "(I)Ljava/nio/ByteBuffer;",
-           reinterpret_cast<void*>(&JniCommon_allocateNativeByteBuffer)},
-          {"nativeFreeByteBuffer", "(Ljava/nio/ByteBuffer;)V",
-           reinterpret_cast<void*>(&JniCommon_freeNativeByteBuffer)}};
-      if (ats.env()->RegisterNatives(clsRef, native_methods, 2) != 0)
-        assert(false);
-    }
+    JniCommonSupport::Init();
   } else {
     if (g_jvm_capture) {
       AttachThreadScoped ats(g_jvm_capture);

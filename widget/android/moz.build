@@ -90,6 +90,9 @@ classes_with_WrapForJNI = [
     "XPCOMEventTarget",
 ]
 
+if CONFIG["MOZ_WEBRTC"]:
+    classes_with_WrapForJNI += ["JniCommonJni"]
+
 natives_from_WrapForJNI = sorted([
     "GeneratedJNI/{}Natives.h".format(c) for c in classes_with_WrapForJNI
 ])
