@@ -643,12 +643,17 @@ class AndroidArtifactJob(ArtifactJob):
         with self.get_writer(file=processed_filename, compress=False) as writer:
             zip_path = filename
 
-            for pattern, prefix in (
+            megazord = (
+                f"{self._substs['DLL_PREFIX']}megazord{self._substs['DLL_SUFFIX']}"
+            )
+            for pattern, prefix, only in (
                 (
                     "**/full-megazord-libsForTests*.jar",
                     f"host/bin/appservices/resources/{self._host_jna_arch}",
+                    None,
                 ),
-                ("**/geckoview-*.aar", "bin"),
+                ("**/geckoview-*.aar", "bin", None),
+                ("**/full-megazord-*.aar", "bin", megazord),
             ):
                 # New `JarReader` each time to avoid iteration ordering issues.
                 for aar_path, aar_file in JarFinder(zip_path, JarReader(zip_path)).find(
@@ -677,6 +682,9 @@ class AndroidArtifactJob(ArtifactJob):
                             continue
 
                         dirname, basename = os.path.split(p)
+                        if only and basename != only:
+                            continue
+
                         procname = mozpath.join(prefix, basename)
                         self.log(
                             logging.DEBUG,
