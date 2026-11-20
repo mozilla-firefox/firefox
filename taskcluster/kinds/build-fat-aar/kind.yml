@@ -25,8 +25,7 @@ task-defaults:
         product: mobile
     worker-type: b-linux-docker-amd
     use-python: default
-    # Online in order to download the per-architecture AARs.
-    use-gradle: online
+    use-gradle: offline
     worker:
         docker-image: {in-tree: android-build}
         max-run-time: 7200
@@ -250,6 +249,7 @@ tasks:
 
     android-geckoview-fat-aar/opt:
         description: "Android GeckoView multi-architecture fat AAR Opt"
+        use-gradle-cache: true
         attributes:
             maven_packages:
                 - geckoview
@@ -278,6 +278,7 @@ tasks:
 
     android-geckoview-fat-aar-appservices/opt:
         description: "Android GeckoView multi-architecture fat AAR Opt with an in-tree app-services"
+        use-gradle-cache: true
         attributes:
             maven_packages:
                 - geckoview
