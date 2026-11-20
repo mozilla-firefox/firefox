@@ -43,6 +43,15 @@ var observer = {
 
 obs.addObserver(SpecialPowers.wrapCallbackObject(observer), "net:failed-to-process-uri-content");
 
+// When the decode error is found after the load completed, the failed image
+// stays in the image cache and a later load wouldn't decode it again.
+SimpleTest.registerCleanupFunction(() => {
+  Cc["@mozilla.org/image/tools;1"]
+    .getService(Ci.imgITools)
+    .getImgCacheForDocument(document)
+    .clearCache(false);
+});
+
 document.write('<img src="damon.jpg">');
 document.write('<img src="invalid.jpg">');
 
