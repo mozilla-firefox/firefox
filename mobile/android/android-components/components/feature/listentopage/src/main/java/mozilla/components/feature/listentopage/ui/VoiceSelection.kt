@@ -28,7 +28,7 @@ import mozilla.components.compose.base.menu.MenuItem.TextItem
 import mozilla.components.compose.base.text.Text
 import mozilla.components.compose.base.theme.AcornTheme
 import mozilla.components.feature.listentopage.R
-import mozilla.components.feature.listentopage.Voice
+import mozilla.components.feature.listentopage.voices.Voice
 import mozilla.components.support.base.log.logger.Logger
 import mozilla.components.ui.icons.R as iconsR
 

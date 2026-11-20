@@ -6,10 +6,10 @@ package mozilla.components.feature.listentopage.ui
 
 import mozilla.components.feature.listentopage.ListenError
 import mozilla.components.feature.listentopage.ListenState
-import mozilla.components.feature.listentopage.PlaybackPhase
-import mozilla.components.feature.listentopage.PlaybackSpeed
 import mozilla.components.feature.listentopage.PlayerMode
 import mozilla.components.feature.listentopage.VoiceState
+import mozilla.components.feature.listentopage.playback.PlaybackPhase
+import mozilla.components.feature.listentopage.playback.PlaybackSpeed
 
 /**
  * The parts of [ListenState] that the player shows and that change only on user actions or playback phase changes. Kept

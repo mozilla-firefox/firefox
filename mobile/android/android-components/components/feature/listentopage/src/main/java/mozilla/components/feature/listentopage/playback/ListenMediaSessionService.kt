@@ -10,11 +10,9 @@ import android.content.Intent
 import android.content.res.Resources
 import android.os.Build
 import android.os.Bundle
-import androidx.annotation.DrawableRes
 import androidx.annotation.OptIn
 import androidx.annotation.PluralsRes
 import androidx.annotation.RequiresApi
-import androidx.annotation.StringRes
 import androidx.core.app.ServiceCompat
 import androidx.media3.common.PlaybackParameters
 import androidx.media3.common.Player
@@ -28,7 +26,6 @@ import androidx.media3.session.SessionCommand
 import androidx.media3.session.SessionResult
 import com.google.common.util.concurrent.Futures
 import com.google.common.util.concurrent.ListenableFuture
-import mozilla.components.feature.listentopage.PlaybackSpeed
 import mozilla.components.feature.listentopage.R
 import mozilla.components.feature.listentopage.facts.ListenToPageFacts
 import mozilla.components.feature.listentopage.facts.emitMediaControlFact
@@ -306,35 +303,6 @@ private fun speedControl(resources: Resources, speed: PlaybackSpeed): CommandBut
         .setSlots(CommandButton.SLOT_FORWARD_SECONDARY, CommandButton.SLOT_OVERFLOW)
         .setDisplayName(resources.getString(speed.contentDescription))
         .build()
-
-/** What a screen reader says for this step. */
-@get:StringRes
-internal val PlaybackSpeed.contentDescription: Int
-    get() =
-        when (this) {
-            PlaybackSpeed.X0_25 -> R.string.mozac_feature_listentopage_notification_playback_speed_0_25
-            PlaybackSpeed.X0_5 -> R.string.mozac_feature_listentopage_notification_playback_speed_0_5
-            PlaybackSpeed.X0_75 -> R.string.mozac_feature_listentopage_notification_playback_speed_0_75
-            PlaybackSpeed.X1 -> R.string.mozac_feature_listentopage_notification_playback_speed_1
-            PlaybackSpeed.X1_25 -> R.string.mozac_feature_listentopage_notification_playback_speed_1_25
-            PlaybackSpeed.X1_5 -> R.string.mozac_feature_listentopage_notification_playback_speed_1_5
-            PlaybackSpeed.X1_75 -> R.string.mozac_feature_listentopage_notification_playback_speed_1_75
-            PlaybackSpeed.X2 -> R.string.mozac_feature_listentopage_notification_playback_speed_2
-        }
-
-@get:DrawableRes
-internal val PlaybackSpeed.icon: Int
-    get() =
-        when (this) {
-            PlaybackSpeed.X0_25 -> iconsR.drawable.mozac_ic_playback_speed_0_2x_24
-            PlaybackSpeed.X0_5 -> iconsR.drawable.mozac_ic_playback_speed_0_5x_24
-            PlaybackSpeed.X0_75 -> iconsR.drawable.mozac_ic_playback_speed_0_7x_24
-            PlaybackSpeed.X1 -> iconsR.drawable.mozac_ic_playback_speed_1x_24
-            PlaybackSpeed.X1_25 -> iconsR.drawable.mozac_ic_playback_speed_1_2x_24
-            PlaybackSpeed.X1_5 -> iconsR.drawable.mozac_ic_playback_speed_1_5x_24
-            PlaybackSpeed.X1_75 -> iconsR.drawable.mozac_ic_playback_speed_1_7x_24
-            PlaybackSpeed.X2 -> iconsR.drawable.mozac_ic_playback_speed_2x_24
-        }
 
 private fun secondsLabel(resources: Resources, @PluralsRes label: Int, incrementMs: Long): String {
     val seconds = (incrementMs / MS_PER_SECOND).toInt()

@@ -6,7 +6,7 @@ package mozilla.components.feature.listentopage.ui
 
 import kotlin.test.assertEquals
 import mozilla.components.feature.listentopage.ListenError
-import mozilla.components.feature.listentopage.PlaybackPhase
+import mozilla.components.feature.listentopage.playback.PlaybackPhase
 import org.junit.Test
 
 class PlaybackUiStateTest {

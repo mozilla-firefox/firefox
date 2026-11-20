@@ -4,10 +4,10 @@
 
 package mozilla.components.feature.listentopage
 
-import java.util.Locale
-import kotlin.math.abs
-import mozilla.components.feature.listentopage.PlaybackSpeed.Companion.Default
 import mozilla.components.feature.listentopage.playback.ArticleMeasurements
+import mozilla.components.feature.listentopage.playback.PlaybackPhase
+import mozilla.components.feature.listentopage.playback.PlaybackSpeed
+import mozilla.components.feature.listentopage.voices.Voice
 import mozilla.components.lib.state.State
 
 /**
@@ -96,23 +96,6 @@ enum class VoiceLoadState {
 }
 
 /**
- * Metadata defining a narrator voice.
- *
- * @property id The engine's own name for the voice, which is what it is selected and saved by.
- * @property locale The language and region the voice reads in. The list offers one voice per region.
- */
-data class Voice(val id: String, val locale: Locale) {
-    /**
-     * The voice as the user reads it, for example "English (United Kingdom)".
-     *
-     * Written in the display language of the device rather than in the language of the voice, so that a reader who does
-     * not know the article language can still tell which region each entry belongs to.
-     */
-    val displayName: String
-        get() = locale.getDisplayName()
-}
-
-/**
  * State relating to the audio being played, as reported by the player.
  *
  * @property phase What the player is doing.
@@ -138,48 +121,6 @@ data class ChunkState(
     val index: Int = 0,
     val durationMs: Long? = null,
 )
-
-/** What the player is doing. */
-enum class PlaybackPhase {
-    Idle,
-    Buffering,
-    Playing,
-    Paused,
-    Ended,
-    Failed,
-}
-
-/**
- * How fast an article is read out, as a multiple of the speed the voice reads at.
- *
- * @property multiplier What the player is set to.
- */
-enum class PlaybackSpeed(val multiplier: Float) {
-    X0_25(0.25f),
-    X0_5(0.5f),
-    X0_75(0.75f),
-    X1(1f),
-    X1_25(1.25f),
-    X1_5(1.5f),
-    X1_75(1.75f),
-    X2(2f);
-
-    /** The step after this one, wrapping back to the slowest once past the fastest. */
-    fun next(): PlaybackSpeed = entries[(ordinal + 1) % entries.size]
-
-    companion object {
-        /** What an article opens at. */
-        val Default = X1
-
-        /**
-         * The step nearest [multiplier].
-         *
-         * A speed that isn't in our list is reported as the one it is closest to, rather than as [Default], so that
-         * [next] steps on from what the reader is hearing.
-         */
-        fun nearest(multiplier: Float): PlaybackSpeed = entries.minBy { abs(it.multiplier - multiplier) }
-    }
-}
 
 /**
  * How far through the whole article playback has got, worked out rather than reported.

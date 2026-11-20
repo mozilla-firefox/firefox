@@ -10,10 +10,8 @@ import java.text.NumberFormat
 import java.util.Locale
 import mozilla.components.compose.base.menu.MenuItem
 import mozilla.components.compose.base.text.Text
-import mozilla.components.feature.listentopage.PlaybackSpeed
 import mozilla.components.feature.listentopage.R
-import mozilla.components.feature.listentopage.playback.contentDescription
-import mozilla.components.feature.listentopage.playback.icon
+import mozilla.components.feature.listentopage.playback.PlaybackSpeed
 
 /**
  * What the playback speed control shows.

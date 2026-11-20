@@ -6,7 +6,6 @@ package mozilla.components.feature.listentopage.playback
 
 import kotlin.math.roundToLong
 import mozilla.components.feature.listentopage.ArticleProgress
-import mozilla.components.feature.listentopage.PlaybackSpeed
 
 /**
  * How many position samples in a row can be late, for example while the main thread is busy, before a jump counts as a

@@ -23,8 +23,8 @@ import kotlinx.coroutines.CoroutineDispatcher
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.suspendCancellableCoroutine
 import kotlinx.coroutines.withContext
-import mozilla.components.feature.listentopage.Voice
 import mozilla.components.feature.listentopage.playback.AudioFileCache
+import mozilla.components.feature.listentopage.voices.Voice
 
 /** Type that is used to manage the synthesis of speech from text. */
 interface SpeechSynthesizer {

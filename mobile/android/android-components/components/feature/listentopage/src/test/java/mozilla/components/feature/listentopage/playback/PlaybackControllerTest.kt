@@ -6,7 +6,6 @@ package mozilla.components.feature.listentopage.playback
 
 import androidx.media3.common.PlaybackException
 import androidx.media3.common.Player
-import mozilla.components.feature.listentopage.PlaybackPhase
 import mozilla.components.support.test.mock
 import mozilla.components.support.test.whenever
 import org.junit.Assert.assertEquals

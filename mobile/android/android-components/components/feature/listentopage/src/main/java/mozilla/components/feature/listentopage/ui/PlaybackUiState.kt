@@ -6,7 +6,7 @@ package mozilla.components.feature.listentopage.ui
 
 import androidx.compose.ui.tooling.preview.PreviewParameterProvider
 import mozilla.components.feature.listentopage.ListenError
-import mozilla.components.feature.listentopage.PlaybackPhase
+import mozilla.components.feature.listentopage.playback.PlaybackPhase
 
 internal sealed interface PlaybackUiState {
     data object Playing : PlaybackUiState

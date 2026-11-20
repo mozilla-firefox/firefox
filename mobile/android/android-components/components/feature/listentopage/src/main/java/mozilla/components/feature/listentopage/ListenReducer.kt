@@ -6,6 +6,7 @@ package mozilla.components.feature.listentopage
 
 import kotlin.math.roundToLong
 import mozilla.components.feature.listentopage.playback.ArticleMeasurements
+import mozilla.components.feature.listentopage.playback.PlaybackPhase
 
 /**
  * Reduces the given [action] and current [state] into a new [ListenState].

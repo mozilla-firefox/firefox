@@ -6,10 +6,10 @@ package org.mozilla.fenix.components.listentopage
 
 import mozilla.components.feature.listentopage.ListenAction
 import mozilla.components.feature.listentopage.ListenState
-import mozilla.components.feature.listentopage.PlaybackPhase
 import mozilla.components.feature.listentopage.PlaybackState
 import mozilla.components.feature.listentopage.content.LanguageSource
 import mozilla.components.feature.listentopage.facts.ListenToPageFacts
+import mozilla.components.feature.listentopage.playback.PlaybackPhase
 import mozilla.components.lib.state.Middleware
 import mozilla.components.lib.state.Store
 import mozilla.components.support.base.Component

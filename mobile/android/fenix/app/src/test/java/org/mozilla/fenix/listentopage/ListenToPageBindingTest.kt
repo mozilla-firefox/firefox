@@ -13,8 +13,8 @@ import mozilla.components.feature.listentopage.ListenAction
 import mozilla.components.feature.listentopage.ListenError
 import mozilla.components.feature.listentopage.ListenState
 import mozilla.components.feature.listentopage.ListenStore
-import mozilla.components.feature.listentopage.PlaybackPhase
 import mozilla.components.feature.listentopage.PlaybackState
+import mozilla.components.feature.listentopage.playback.PlaybackPhase
 import mozilla.components.lib.state.Middleware
 import mozilla.components.lib.state.Store
 import org.junit.Assert.assertEquals

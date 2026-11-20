@@ -6,8 +6,8 @@ package mozilla.components.feature.listentopage.ui
 
 import java.util.Locale
 import mozilla.components.compose.base.text.Text
-import mozilla.components.feature.listentopage.PlaybackSpeed
 import mozilla.components.feature.listentopage.R
+import mozilla.components.feature.listentopage.playback.PlaybackSpeed
 import org.junit.Assert.assertEquals
 import org.junit.Test
 

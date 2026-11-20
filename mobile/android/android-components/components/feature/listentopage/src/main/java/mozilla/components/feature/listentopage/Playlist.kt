@@ -4,6 +4,8 @@
 
 package mozilla.components.feature.listentopage
 
+import mozilla.components.feature.listentopage.playback.PlaybackPhase
+
 /** A chunk that does not exist, for a playlist with nothing queued or playing. */
 internal const val NO_CHUNK = -1
 

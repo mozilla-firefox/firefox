@@ -14,7 +14,7 @@ import mozilla.components.browser.state.store.BrowserStore
 import mozilla.components.feature.listentopage.ListenError
 import mozilla.components.feature.listentopage.ListenState
 import mozilla.components.feature.listentopage.ListenStore
-import mozilla.components.feature.listentopage.PlaybackPhase
+import mozilla.components.feature.listentopage.playback.PlaybackPhase
 import mozilla.components.lib.state.helpers.AbstractBinding
 
 /**

@@ -6,7 +6,9 @@ package mozilla.components.feature.listentopage
 
 import kotlin.time.Duration
 import mozilla.components.feature.listentopage.content.LanguageSource
+import mozilla.components.feature.listentopage.playback.PlaybackSpeed
 import mozilla.components.feature.listentopage.synthesis.SpeechRate
+import mozilla.components.feature.listentopage.voices.Voice
 import mozilla.components.lib.state.Action
 
 /** Actions for the [ListenStore]. */

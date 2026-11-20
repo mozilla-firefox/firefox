@@ -26,7 +26,6 @@ import androidx.media3.session.MediaNotification
 import androidx.media3.session.MediaSession
 import androidx.media3.session.SessionCommand
 import androidx.test.ext.junit.runners.AndroidJUnit4
-import mozilla.components.feature.listentopage.PlaybackSpeed
 import mozilla.components.support.test.mock
 import mozilla.components.support.test.robolectric.testContext
 import mozilla.components.support.test.whenever

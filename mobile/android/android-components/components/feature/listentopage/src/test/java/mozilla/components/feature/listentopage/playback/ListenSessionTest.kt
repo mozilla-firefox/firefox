@@ -7,7 +7,6 @@ package mozilla.components.feature.listentopage.playback
 import androidx.media3.common.Player
 import androidx.test.ext.junit.runners.AndroidJUnit4
 import java.io.File
-import mozilla.components.feature.listentopage.PlaybackPhase
 import mozilla.components.feature.listentopage.playback.ListenSessionHarness.Companion.chunk
 import org.junit.After
 import org.junit.Assert.assertEquals
