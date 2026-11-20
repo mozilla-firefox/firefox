@@ -128,7 +128,6 @@ void Http2WebTransportSessionImpl::
     SetAnticipatedConcurrentIncomingBidirectionalStreams(uint16_t aValue) {}
 
 void Http2WebTransportSessionImpl::SendDatagram(nsTArray<uint8_t>&& aData,
-                                                uint64_t aTrackingId,
                                                 uint64_t aSendGroupId,
                                                 int64_t aSendOrder,
                                                 TimeStamp aTimestamp) {

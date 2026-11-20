@@ -4,6 +4,7 @@
 
 #include "WebTransportParent.h"
 
+#include <algorithm>
 #include <cmath>
 
 #include "Http3WebTransportSession.h"
@@ -11,6 +12,7 @@
 #include "mozilla/StaticPrefs_network.h"
 #include "mozilla/TimeStamp.h"
 #include "mozilla/dom/ClientInfo.h"
+#include "mozilla/dom/DatagramQueueCharge.h"
 #include "mozilla/dom/InternalHeaders.h"
 #include "mozilla/dom/WebTransportBinding.h"
 #include "mozilla/dom/WebTransportLog.h"
@@ -195,17 +197,13 @@ void WebTransportParent::Create(
 
 void WebTransportParent::ActorDestroy(ActorDestroyReason aWhy) {
   LOG(("ActorDestroy WebTransportParent %d", aWhy));
-  // If the actor pair is torn down for any reason other than an explicit
-  // RecvClose()/OnSessionClosed() having already run (e.g. the parent
-  // unilaterally destroying this actor), notify the child so it settles any
-  // still-pending promises (createXStream, atomicWrite, ready/closed)
-  // instead of leaving them hanging. This mirrors
-  // FileSystemManagerParent/CacheStreamControlParent's SendCloseAll() calls
-  // during their own shutdown paths. A no-op if the session already closed
-  // cleanly: RemoteClosed() ignores this once state is closed/failed.
-  if (CanSend()) {
-    (void)SendCloseAll();
-  }
+  // Settling any still-pending promises (createXStream, atomicWrite,
+  // ready/closed) on unexpected teardown happens on the child side, in
+  // WebTransportChild::ActorDestroy() calling CloseAll() directly:
+  // IProtocol::ActorDisconnected() marks the actor destroyed before calling
+  // ActorDestroy(), so CanSend() is already false here and a SendCloseAll()
+  // call from this side would always be a no-op.
+
   // Before mWebTransport is retargeted to the socket thread, the
   // QueryNegotiatedProtocol runnable from OnSessionReady() closes it instead.
   if (mRetargeted) {
@@ -755,6 +753,7 @@ WebTransportParent::OnSessionReady(uint64_t aSessionId) {
 
   mSessionReady = true;
   mSessionId = aSessionId;
+  mDatagramPrefixBytes = DatagramPrefixBytes(aSessionId);
 
   // Retarget to socket thread. After this, WebTransportParent and
   // |mWebTransport| should be only accessed on the socket thread.
@@ -802,6 +801,9 @@ WebTransportParent::OnSessionReady(uint64_t aSessionId) {
           // This will call OnMaxDatagramSize which stores it in
           // mMaxDatagramSizeValue
           self->mWebTransport->GetMaxDatagramSize();
+          // Grant before any datagram arrives, so the first write()s can
+          // resolve immediately.
+          self->MaybeSendDatagramCapacity();
         }
 
         // Resolve ready promise AFTER sending the negotiated protocol and
@@ -1148,7 +1150,6 @@ WebTransportParent::OnIncomingBidirectionalStreamAvailable(
   return IPC_OK();
 }
 
-// The promise is now resolved via DatagramReady event from neqo
 ::mozilla::ipc::IPCResult WebTransportParent::RecvOutgoingDatagrams(
     nsTArray<OutgoingDatagram>&& aDatagrams) {
   LOG(("WebTransportParent received %zu batched outgoing datagrams",
@@ -1172,21 +1173,23 @@ WebTransportParent::OnIncomingBidirectionalStreamAvailable(
   TimeStamp now = TimeStamp::Now();
   for (auto& datagram : aDatagrams) {
     double ageMs = (now - datagram.timestamp()).ToMilliseconds();
-    LOG(("Forwarding datagram id=%" PRIu64
-         " to neqo queue (timestamp=%f ms), sendGroup=%" PRIu64
+    LOG(("Forwarding datagram to neqo queue (age=%f ms), sendGroup=%" PRIu64
          ", sendOrder=%" PRId64,
-         datagram.datagramId(), ageMs, datagram.sendGroupId(),
-         datagram.sendOrder()));
+         ageMs, datagram.sendGroupId(), datagram.sendOrder()));
 
     // neqo measures outgoingMaxAge from the write timestamp too, but a
     // datagram already past it need not be queued at all.
     if (ageMs > mDatagramMaxAge) {
-      LOG(("Dropping datagram id=%" PRIu64
-           ": age %f ms exceeds outgoingMaxAge %f ms before reaching neqo",
-           datagram.datagramId(), ageMs, mDatagramMaxAge));
-      if (CanSend()) {
-        (void)SendDatagramReady(datagram.datagramId());
-      }
+      LOG(
+          ("Dropping datagram: age %f ms exceeds outgoingMaxAge %f ms "
+           "before reaching neqo",
+           ageMs, mDatagramMaxAge));
+      mParentExpiredOutgoing++;
+      // Still retired from the queue, just via this expiry site instead of
+      // neqo's -- see mCumulativeDatagramsRetired's comment.
+      mCumulativeDatagramsRetired++;
+      mCumulativeBytesRetired +=
+          DatagramQueueCharge(datagram.data().Length(), mDatagramPrefixBytes);
       continue;
     }
 
@@ -1209,15 +1212,122 @@ WebTransportParent::OnIncomingBidirectionalStreamAvailable(
       mLastOutgoingDatagramTimestamp = timestamp;
     }
 
-    // Send to neqo's datagram queue. The datagram will be sent when the
-    // queue is processed, and OnOutgoingDatagramOutCome will be called with
-    // the result.
-    (void)mWebTransport->SendDatagramAt(
-        datagram.data(), datagram.datagramId(), datagram.sendGroupId(),
-        datagram.sendOrder(), mLastOutgoingDatagramTimestamp);
+    // Send to neqo's datagram queue, untracked. The sent/expired/dropped
+    // outcome is read back in aggregate via MaybeSendDatagramCapacity()
+    // rather than reported per datagram.
+    (void)mWebTransport->SendDatagramAt(datagram.data(), datagram.sendGroupId(),
+                                        datagram.sendOrder(),
+                                        mLastOutgoingDatagramTimestamp);
+    mCumulativeDatagramsRetired++;
+    mCumulativeBytesRetired +=
+        DatagramQueueCharge(datagram.data().Length(), mDatagramPrefixBytes);
   }
 
+  // Called even if every datagram in this batch was dropped for age above
+  // without ever reaching neqo: that still needs reporting (it advances
+  // mParentExpiredOutgoing), and content's RetireInFlight() -- which
+  // unblocks any write() promise deferred past outgoingMaxBufferedDatagrams
+  // -- has no other trigger. Cheap to call unconditionally; it only
+  // actually sends a message when there's something to report.
+  MaybeSendDatagramCapacity();
+
   return IPC_OK();
+}
+
+void WebTransportParent::MaybeSendDatagramCapacity() {
+  MOZ_ASSERT(mSocketThread->IsOnCurrentThread());
+  MOZ_ASSERT(mWebTransport);
+
+  RefPtr<net::WebTransportSessionProxy> proxy =
+      static_cast<net::WebTransportSessionProxy*>(mWebTransport.get());
+  size_t remainingBytes = 0;
+  size_t queuedDatagrams = 0;
+  size_t maxQueuedBytes = 0;
+  if (!proxy->GetDatagramQueueCapacity(&remainingBytes, &queuedDatagrams,
+                                       &maxQueuedBytes)) {
+    return;
+  }
+  uint64_t sentOutgoing = 0;
+  uint64_t expiredOutgoingFromNeqo = 0;
+  uint64_t droppedOutgoing = 0;
+  if (!proxy->GetDatagramSessionStats(&sentOutgoing, &expiredOutgoingFromNeqo,
+                                      &droppedOutgoing)) {
+    return;
+  }
+
+  // A MAX_DATA-style cumulative grant: everything handed to neqo so far,
+  // plus however much room is currently free in its queue. This only ever
+  // grows in steady state -- draining a datagram returns its full charged
+  // size to remainingBytes -- and dips only while a backlog is actually
+  // in flight, which is the desired backpressure signal.
+  // Less one maximum-sized datagram, for the same reason as the count below: a
+  // write whose promise is withheld has already sent its datagram without
+  // being charged for it.
+  uint64_t withheld =
+      DatagramQueueCharge(mMaxDatagramSizeValue, mDatagramPrefixBytes);
+  uint64_t bytesGrant =
+      mCumulativeBytesRetired +
+      (remainingBytes > withheld ? remainingBytes - withheld : 0);
+  // queuedDatagrams can't legitimately exceed everything ever handed to
+  // neqo, but clamp defensively across the FFI boundary rather than
+  // assuming it. Datagrams retired here at the parent (never reaching
+  // neqo's queue) never appear in queuedDatagrams, so they don't need
+  // subtracting out; they're already excluded by construction.
+  uint64_t retiredDatagrams =
+      mCumulativeDatagramsRetired -
+      std::min<uint64_t>(queuedDatagrams, mCumulativeDatagramsRetired);
+  // One less than the buffer size, to match WriteCallbackImpl(): a write()
+  // resolves immediately only while fewer than outgoingMaxBufferedDatagrams
+  // are queued counting itself, and a withheld one is released under that
+  // same condition once a departure makes room.
+  uint64_t datagramsGrant =
+      retiredDatagrams + (mOutgoingMaxBufferedDatagrams > 0
+                              ? mOutgoingMaxBufferedDatagrams - 1
+                              : 0);
+
+  uint64_t sentDelta = sentOutgoing - mLastObservedSentOutgoing;
+  uint64_t expiredDelta =
+      (expiredOutgoingFromNeqo - mLastObservedExpiredOutgoingFromNeqo) +
+      (mParentExpiredOutgoing - mLastObservedParentExpiredOutgoing);
+  uint64_t droppedDelta = droppedOutgoing - mLastObservedDroppedOutgoing;
+
+  // Only ever send an increasing grant (the child ignores a non-increase
+  // anyway, matching MAX_DATA); dedupe like neqo's
+  // ReceiverFlowControl::should_send_update, firing once consumption has
+  // crossed roughly half of the outstanding window since the last update,
+  // or there's a sent/expired/dropped delta waiting to be reported.
+  bool bytesAdvancedEnough =
+      bytesGrant > mLastGrantedCumulativeBytes && maxQueuedBytes > 0 &&
+      bytesGrant - mLastGrantedCumulativeBytes >= maxQueuedBytes / 2;
+  bool datagramsAdvancedEnough =
+      datagramsGrant > mLastGrantedCumulativeDatagrams &&
+      mOutgoingMaxBufferedDatagrams > 0 &&
+      datagramsGrant - mLastGrantedCumulativeDatagrams >=
+          mOutgoingMaxBufferedDatagrams / 2;
+  bool neverGranted =
+      mLastGrantedCumulativeBytes == 0 && mLastGrantedCumulativeDatagrams == 0;
+  bool hasDeltaToReport = sentDelta > 0 || expiredDelta > 0 || droppedDelta > 0;
+
+  if (!bytesAdvancedEnough && !datagramsAdvancedEnough && !neverGranted &&
+      !hasDeltaToReport) {
+    return;
+  }
+
+  if (CanSend()) {
+    mLastGrantedCumulativeBytes = bytesGrant;
+    mLastGrantedCumulativeDatagrams = datagramsGrant;
+    mLastObservedSentOutgoing = sentOutgoing;
+    mLastObservedExpiredOutgoingFromNeqo = expiredOutgoingFromNeqo;
+    mLastObservedDroppedOutgoing = droppedOutgoing;
+    mLastObservedParentExpiredOutgoing = mParentExpiredOutgoing;
+    LOG(("WebTransportParent sending DatagramCapacity datagrams=%" PRIu64
+         " bytes=%" PRIu64 " sentDelta=%" PRIu64 " expiredDelta=%" PRIu64
+         " droppedDelta=%" PRIu64,
+         datagramsGrant, bytesGrant, sentDelta, expiredDelta, droppedDelta));
+    (void)SendDatagramCapacity(datagramsGrant, bytesGrant, sentDelta,
+                               expiredDelta, droppedDelta,
+                               mDatagramPrefixBytes);
+  }
 }
 
 ::mozilla::ipc::IPCResult WebTransportParent::RecvUpdateDatagramQueueParams(
@@ -1232,6 +1342,7 @@ WebTransportParent::OnIncomingBidirectionalStreamAvailable(
   mWebTransport->SetDatagramMaxBufferedDatagrams(aOutgoingMaxBufferedDatagrams);
   mWebTransport->SetDatagramMaxAge(aOutgoingMaxAge);
   mDatagramMaxAge = aOutgoingMaxAge;
+  mOutgoingMaxBufferedDatagrams = aOutgoingMaxBufferedDatagrams;
 
   return IPC_OK();
 }
@@ -1251,27 +1362,13 @@ NS_IMETHODIMP WebTransportParent::OnDatagramReceived(
 
 NS_IMETHODIMP WebTransportParent::OnOutgoingDatagramSpaceAvailable() {
   MOZ_ASSERT(mSocketThread->IsOnCurrentThread());
-  // Nothing samples neqo's queue capacity yet.
-  return NS_OK;
-}
 
-NS_IMETHODIMP
-WebTransportParent::OnOutgoingDatagramOutCome(
-    uint64_t aId, WebTransportSessionEventListener::DatagramOutcome aOutCome) {
-  MOZ_ASSERT(mSocketThread->IsOnCurrentThread());
-
-  if (aOutCome == WebTransportSessionEventListener::DatagramOutcome::SENT) {
-    LOG(("Sent datagram id= %" PRIu64, aId));
-  } else {
-    LOG(("Dropped datagram id= %" PRIu64, aId));
-  }
-
-  // With the datagram queue, outcomes are reported asynchronously.
-  // Send DatagramReady IPC message to notify the content process.
-  if (CanSend()) {
-    (void)SendDatagramReady(aId);
-  }
-
+  // The child withholds a write() promise once it has outgoingMaxBuffered-
+  // Datagrams in flight and only learns otherwise from a DatagramCapacity.
+  // Every other sample is taken while handling a batch the child sent, which
+  // it cannot send while withheld, so this is the only path that releases a
+  // fully back-pressured writer.
+  MaybeSendDatagramCapacity();
   return NS_OK;
 }
 

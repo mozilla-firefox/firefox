@@ -362,6 +362,27 @@ bool WebTransportSessionProxy::CloseSessionAndGetStats(
          http3Session->CloseSessionAndGetStats(aStatus, aReason, aStats);
 }
 
+bool WebTransportSessionProxy::GetDatagramQueueCapacity(
+    size_t* aRemainingBytes, size_t* aQueuedDatagrams,
+    size_t* aMaxQueuedBytes) {
+  MOZ_ASSERT(OnSocketThread());
+  RefPtr<WebTransportSessionBase> session;
+  {
+    MutexAutoLock lock(mMutex);
+    if (mState != WebTransportSessionProxyState::ACTIVE ||
+        !mWebTransportSession) {
+      return false;
+    }
+    session = mWebTransportSession;
+  }
+
+  Http3WebTransportSession* http3Session =
+      session->GetHttp3WebTransportSession();
+  return http3Session &&
+         http3Session->GetDatagramQueueCapacity(
+             aRemainingBytes, aQueuedDatagrams, aMaxQueuedBytes);
+}
+
 bool WebTransportSessionProxy::GetDatagramSessionStats(uint64_t* aSent,
                                                        uint64_t* aExpired,
                                                        uint64_t* aDropped) {
@@ -863,26 +884,22 @@ WebTransportSessionProxy::CreateOutgoingBidirectionalStream(
 
 void WebTransportSessionProxy::SendDatagramInternal(
     const RefPtr<WebTransportSessionBase>& aSession, nsTArray<uint8_t>&& aData,
-    uint64_t aTrackingId, uint64_t aSendGroupId, int64_t aSendOrder,
-    TimeStamp aTimestamp) {
+    uint64_t aSendGroupId, int64_t aSendOrder, TimeStamp aTimestamp) {
   MOZ_ASSERT(OnSocketThread());
 
-  aSession->SendDatagram(std::move(aData), aTrackingId, aSendGroupId,
-                         aSendOrder, aTimestamp);
+  aSession->SendDatagram(std::move(aData), aSendGroupId, aSendOrder,
+                         aTimestamp);
 }
 
 NS_IMETHODIMP
 WebTransportSessionProxy::SendDatagram(const nsTArray<uint8_t>& aData,
-                                       uint64_t aTrackingId,
                                        uint64_t aSendGroupId,
                                        int64_t aSendOrder) {
-  return SendDatagramAt(aData, aTrackingId, aSendGroupId, aSendOrder,
-                        TimeStamp::Now());
+  return SendDatagramAt(aData, aSendGroupId, aSendOrder, TimeStamp::Now());
 }
 
 NS_IMETHODIMP
 WebTransportSessionProxy::SendDatagramAt(const nsTArray<uint8_t>& aData,
-                                         uint64_t aTrackingId,
                                          uint64_t aSendGroupId,
                                          int64_t aSendOrder,
                                          TimeStamp aTimestamp) {
@@ -902,16 +919,15 @@ WebTransportSessionProxy::SendDatagramAt(const nsTArray<uint8_t>& aData,
     return gSocketTransportService->Dispatch(NS_NewRunnableFunction(
         "WebTransportSessionProxy::SendDatagramInternal",
         [self = RefPtr{this}, session{std::move(session)},
-         data{std::move(copied)}, trackingId(aTrackingId),
-         sendGroupId(aSendGroupId), sendOrder(aSendOrder),
-         timestamp(aTimestamp)]() mutable {
-          self->SendDatagramInternal(session, std::move(data), trackingId,
-                                     sendGroupId, sendOrder, timestamp);
+         data{std::move(copied)}, sendGroupId(aSendGroupId),
+         sendOrder(aSendOrder), timestamp(aTimestamp)]() mutable {
+          self->SendDatagramInternal(session, std::move(data), sendGroupId,
+                                     sendOrder, timestamp);
         }));
   }
 
-  SendDatagramInternal(session, std::move(copied), aTrackingId, aSendGroupId,
-                       aSendOrder, aTimestamp);
+  SendDatagramInternal(session, std::move(copied), aSendGroupId, aSendOrder,
+                       aTimestamp);
   return NS_OK;
 }
 
@@ -1901,50 +1917,6 @@ NS_IMETHODIMP WebTransportSessionProxy::OnMaxDatagramSize(uint64_t aSize) {
   }
 
   OnMaxDatagramSizeInternal(aSize);
-  return NS_OK;
-}
-
-void WebTransportSessionProxy::OnOutgoingDatagramOutComeInternal(
-    uint64_t aId, WebTransportSessionEventListener::DatagramOutcome aOutCome) {
-  nsCOMPtr<WebTransportSessionEventListener> listener;
-  {
-    MutexAutoLock lock(mMutex);
-    if (!mTarget->IsOnCurrentThread()) {
-      // mTarget changed (RetargetTo) after this runnable was queued; forward to
-      // the current target so the listener is only ever invoked on one thread.
-      mTarget->Dispatch(NS_NewRunnableFunction(
-          "WebTransportSessionProxy::OnOutgoingDatagramOutComeInternal",
-          [self = RefPtr{this}, id(aId), outcome(aOutCome)] {
-            self->OnOutgoingDatagramOutComeInternal(id, outcome);
-          }));
-      return;
-    }
-    if (mState != WebTransportSessionProxyState::ACTIVE || !mListener) {
-      return;
-    }
-    listener = mListener;
-  }
-
-  listener->OnOutgoingDatagramOutCome(aId, aOutCome);
-}
-
-NS_IMETHODIMP
-WebTransportSessionProxy::OnOutgoingDatagramOutCome(
-    uint64_t aId, WebTransportSessionEventListener::DatagramOutcome aOutCome) {
-  MOZ_ASSERT(OnSocketThread());
-
-  {
-    MutexAutoLock lock(mMutex);
-    if (!mTarget->IsOnCurrentThread()) {
-      return mTarget->Dispatch(NS_NewRunnableFunction(
-          "WebTransportSessionProxy::OnOutgoingDatagramOutCome",
-          [self = RefPtr{this}, id(aId), outcome(aOutCome)] {
-            self->OnOutgoingDatagramOutComeInternal(id, outcome);
-          }));
-    }
-  }
-
-  OnOutgoingDatagramOutComeInternal(aId, aOutCome);
   return NS_OK;
 }
 

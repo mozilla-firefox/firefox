@@ -153,9 +153,8 @@ class Http3SessionBase {
       uint64_t aSessionId, uint32_t aError, const nsACString& aMessage,
       mozilla::dom::WebTransportStatsData& aStats) = 0;
   virtual void SendDatagram(Http3WebTransportSession* aSession,
-                            nsTArray<uint8_t>& aData, uint64_t aTrackingId,
-                            uint64_t aSendGroupId, int64_t aSendOrder,
-                            TimeStamp aTimestamp) = 0;
+                            nsTArray<uint8_t>& aData, uint64_t aSendGroupId,
+                            int64_t aSendOrder, TimeStamp aTimestamp) = 0;
   virtual uint64_t MaxDatagramSize(uint64_t aSessionId) = 0;
   virtual nsresult ExportWebTransportKeyingMaterial(
       uint64_t aSessionId, const nsTArray<uint8_t>& aLabel,
@@ -164,6 +163,13 @@ class Http3SessionBase {
   virtual void SetDatagramMaxBufferedDatagrams(
       uint64_t aSessionId, uint32_t aMaxBufferedDatagrams) = 0;
   virtual void SetDatagramMaxAge(uint64_t aSessionId, double aMaxAge) = 0;
+  // A snapshot of this session's outgoing-datagram queue state, for driving
+  // a content-process credit grant. aRemainingBytes/aMaxQueuedBytes bound
+  // that queue's byte budget; aQueuedDatagrams is informational only.
+  virtual bool GetDatagramQueueCapacity(uint64_t aSessionId,
+                                        size_t* aRemainingBytes,
+                                        size_t* aQueuedDatagrams,
+                                        size_t* aMaxQueuedBytes) = 0;
   // Cumulative sent/expired/dropped outgoing-datagram counts for this
   // session, for driving the aggregate DatagramCapacity feedback.
   virtual bool GetDatagramSessionStats(uint64_t aSessionId, uint64_t* aSent,
@@ -323,9 +329,8 @@ class Http3Session final : public Http3SessionBase,
                          uint64_t aErrorCode) override;
 
   void SendDatagram(Http3WebTransportSession* aSession,
-                    nsTArray<uint8_t>& aData, uint64_t aTrackingId,
-                    uint64_t aSendGroupId, int64_t aSendOrder,
-                    TimeStamp aTimestamp) override;
+                    nsTArray<uint8_t>& aData, uint64_t aSendGroupId,
+                    int64_t aSendOrder, TimeStamp aTimestamp) override;
   void SendHTTPDatagram(uint64_t aStreamId, nsTArray<uint8_t>& aData,
                         uint64_t aTrackingId) override;
 
@@ -342,6 +347,9 @@ class Http3Session final : public Http3SessionBase,
   void SetDatagramMaxBufferedDatagrams(uint64_t aSessionId,
                                        uint32_t aMaxBufferedDatagrams) override;
   void SetDatagramMaxAge(uint64_t aSessionId, double aMaxAge) override;
+  bool GetDatagramQueueCapacity(uint64_t aSessionId, size_t* aRemainingBytes,
+                                size_t* aQueuedDatagrams,
+                                size_t* aMaxQueuedBytes) override;
   bool GetDatagramSessionStats(uint64_t aSessionId, uint64_t* aSent,
                                uint64_t* aExpired, uint64_t* aDropped) override;
   nsresult GetWebTransportSessionProtocol(uint64_t aSessionId,

@@ -194,15 +194,26 @@ class NeqoHttp3Conn final {
                                                      aStreamType, aStreamId);
   }
 
+  // Sent untracked; see neqo_http3conn_webtransport_send_datagram's own
+  // comment for why there is no tracking id or per-datagram outcome here.
   nsresult WebTransportSendDatagram(uint64_t aSessionId,
                                     nsTArray<uint8_t>& aData,
-                                    uint64_t aTrackingId,
-                                    bool* aBelowHighWaterMark,
                                     uint64_t aSendGroupId, int64_t aSendOrder,
                                     uint64_t aAgeUs) {
     return neqo_http3conn_webtransport_send_datagram(
-        this, aSessionId, &aData, aTrackingId, aBelowHighWaterMark,
-        aSendGroupId, aSendOrder, aAgeUs);
+        this, aSessionId, &aData, aSendGroupId, aSendOrder, aAgeUs);
+  }
+
+  // A snapshot of this session's outgoing-datagram queue state, for driving
+  // a content-process credit grant. aRemainingBytes/aMaxQueuedBytes bound
+  // that queue's byte budget; aQueuedDatagrams is informational only (the
+  // queue has no per-datagram count limit).
+  nsresult WebTransportDatagramQueueCapacity(uint64_t aSessionId,
+                                             uintptr_t* aRemainingBytes,
+                                             uintptr_t* aQueuedDatagrams,
+                                             uintptr_t* aMaxQueuedBytes) {
+    return neqo_http3conn_webtransport_datagram_queue_capacity(
+        this, aSessionId, aRemainingBytes, aQueuedDatagrams, aMaxQueuedBytes);
   }
 
   // Cumulative sent/expired/dropped outgoing-datagram counts for this

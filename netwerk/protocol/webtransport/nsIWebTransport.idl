@@ -101,13 +101,12 @@ interface nsIWebTransport : nsISupports {
   void createOutgoingBidirectionalStream(in nsIWebTransportStreamCallback aListener);
   void createOutgoingUnidirectionalStream(in nsIWebTransportStreamCallback aListener);
 
-  void sendDatagram(in Array<uint8_t> aData, in uint64_t aTrackingId,
-                    in uint64_t aSendGroupId, in int64_t aSendOrder);
+  void sendDatagram(in Array<uint8_t> aData, in uint64_t aSendGroupId,
+                    in int64_t aSendOrder);
 
   // As sendDatagram(), for a datagram written at aTimestamp: outgoingMaxAge
   // is measured from then, not from when it reaches the queue.
   [noscript] void sendDatagramAt(in Array<uint8_t> aData,
-                                 in uint64_t aTrackingId,
                                  in uint64_t aSendGroupId,
                                  in int64_t aSendOrder,
                                  in TimeStamp aTimestamp);
@@ -186,18 +185,6 @@ interface WebTransportSessionEventListener : nsISupports {
   void onOutgoingDatagramSpaceAvailable();
 
   void onMaxDatagramSize(in uint64_t aSize);
-
-  cenum DatagramOutcome: 32 {
-    UNKNOWN               = 0,
-    DROPPED_TOO_MUCH_DATA = 1,
-    SENT                  = 2,
-    DROPPED_TOO_OLD       = 3,
-    DROPPED_QUEUE_FULL    = 4,
-  };
-
-  void onOutgoingDatagramOutCome(
-    in uint64_t aId,
-    in WebTransportSessionEventListener_DatagramOutcome aOutCome);
 
   // aStats is null if stats could not be gathered for this session.
   void onStatsAvailable(in nsIWebTransportSessionStats aStats);

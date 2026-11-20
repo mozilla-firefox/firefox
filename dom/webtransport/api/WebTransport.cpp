@@ -173,8 +173,15 @@ void WebTransport::NewDatagramReceived(nsTArray<uint8_t>&& aData,
   mDatagrams->NewDatagramReceived(std::move(aData), aTimeStamp);
 }
 
-void WebTransport::OnDatagramReady(uint64_t aDatagramId) {
-  mDatagrams->OnDatagramReady(aDatagramId);
+void WebTransport::OnDatagramCapacity(uint64_t aCumulativeDatagrams,
+                                      uint64_t aCumulativeBytes,
+                                      uint64_t aSentDelta,
+                                      uint64_t aExpiredDelta,
+                                      uint64_t aDroppedDelta,
+                                      uint64_t aDatagramPrefixBytes) {
+  mDatagrams->OnDatagramCapacity(aCumulativeDatagrams, aCumulativeBytes,
+                                 aSentDelta, aExpiredDelta, aDroppedDelta,
+                                 aDatagramPrefixBytes);
 }
 
 // WebIDL Boilerplate

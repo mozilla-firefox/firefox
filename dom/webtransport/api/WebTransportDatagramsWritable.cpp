@@ -111,12 +111,6 @@ void WebTransportDatagramsWritable::SetSendOrder(int64_t aSendOrder) {
   }
 }
 
-void WebTransportDatagramsWritable::OnDatagramReady(uint64_t aDatagramId) {
-  if (mAlgorithms) {
-    mAlgorithms->OnDatagramReady(aDatagramId);
-  }
-}
-
 bool WebTransportDatagramsWritable::IsConnected() const {
   return mAlgorithms && mAlgorithms->GetChild();
 }
@@ -138,6 +132,18 @@ void WebTransportDatagramsWritable::UpdateQueueParams(
   if (mAlgorithms) {
     mAlgorithms->UpdateQueueParams(aMaxBufferedDatagrams, aMaxAge);
   }
+}
+
+void WebTransportDatagramsWritable::RetireInFlight(uint64_t aCount) {
+  if (mAlgorithms) {
+    mAlgorithms->RetireInFlight(aCount);
+  }
+}
+
+bool WebTransportDatagramsWritable::TryResolveOldestFromCredit(
+    uint64_t aAvailableBytes, size_t* aResolvedBytes) {
+  return mAlgorithms && mAlgorithms->TryResolveOldestFromCredit(aAvailableBytes,
+                                                                aResolvedBytes);
 }
 
 }  // namespace mozilla::dom

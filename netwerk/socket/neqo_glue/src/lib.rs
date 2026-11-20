@@ -39,8 +39,8 @@ use neqo_http3::{
 };
 use neqo_transport::{
     stream_id::StreamType, streams::SendGroupId, CongestionControl, Connection,
-    ConnectionParameters, DatagramQueueOutcome, Error as TransportError, HyStartCssBaseline,
-    Output, OutputBatch, RandomConnectionIdGenerator, SlowStart, Stats as TransportStats,
+    ConnectionParameters, Error as TransportError, HyStartCssBaseline, Output, OutputBatch,
+    RandomConnectionIdGenerator, SlowStart, Stats as TransportStats,
     StreamDataLimit, StreamId, Version,
 };
 use nserror::{
@@ -2736,17 +2736,13 @@ pub extern "C" fn neqo_http3conn_webtransport_send_datagram(
     conn: &mut NeqoHttp3Conn,
     session_id: u64,
     data: &mut ThinVec<u8>,
-    tracking_id: u64,
-    below_high_water_mark: &mut bool,
     send_group_id: u64,
     send_order: i64,
     age_us: u64,
 ) -> nsresult {
-    let id = if tracking_id == 0 {
-        None
-    } else {
-        Some(tracking_id)
-    };
+    // Sent untracked: outcomes are read back in aggregate via
+    // neqo_http3conn_webtransport_datagram_session_stats rather than per
+    // datagram, so there is no tracking id to mint here.
     // Translate the child-minted send-group id to the neqo-minted one, same
     // as neqo_http3conn_webtransport_set_sendgroup does for streams; without
     // this, datagrams are scheduled under a raw, unvalidated id that may
@@ -2772,18 +2768,16 @@ pub extern "C" fn neqo_http3conn_webtransport_send_datagram(
     match conn.conn.webtransport_send_datagram(
         StreamId::from(session_id),
         data,
-        id,
+        None,
         written,
         translated_group_id,
         send_order,
     ) {
-        Ok(DatagramQueueOutcome::Rejected) => NS_BASE_STREAM_WOULD_BLOCK,
-        Ok(outcome) => {
-            // Only logged: Http3Session settles the write either way.  A queue
-            // that had to evict to make room counts as above the mark.
-            *below_high_water_mark = matches!(outcome, DatagramQueueOutcome::Ok);
-            NS_OK
-        }
+        // The queue outcome is not forwarded: any datagram it drops
+        // (evicted for room, or refused here) is counted in
+        // OutgoingDatagramStats::dropped instead, read back via
+        // neqo_http3conn_webtransport_datagram_session_stats.
+        Ok(_outcome) => NS_OK,
         Err(Http3Error::Transport(TransportError::TooMuchData)) => NS_ERROR_NOT_AVAILABLE,
         Err(_) => NS_ERROR_UNEXPECTED,
     }
@@ -2806,6 +2800,28 @@ pub extern "C" fn neqo_http3conn_webtransport_datagram_session_stats(
             *sent = session_stats.outgoing_datagrams.sent;
             *expired = session_stats.outgoing_datagrams.expired;
             *dropped = session_stats.outgoing_datagrams.dropped;
+            NS_OK
+        }
+        Err(_) => NS_ERROR_UNEXPECTED,
+    }
+}
+
+#[no_mangle]
+pub extern "C" fn neqo_http3conn_webtransport_datagram_queue_capacity(
+    conn: &mut NeqoHttp3Conn,
+    session_id: u64,
+    remaining_bytes: &mut usize,
+    queued_datagrams: &mut usize,
+    max_queued_bytes: &mut usize,
+) -> nsresult {
+    match conn
+        .conn
+        .webtransport_datagram_queue_capacity(StreamId::from(session_id))
+    {
+        Ok(capacity) => {
+            *remaining_bytes = capacity.remaining_bytes;
+            *queued_datagrams = capacity.queued_datagrams;
+            *max_queued_bytes = capacity.max_queued_bytes;
             NS_OK
         }
         Err(_) => NS_ERROR_UNEXPECTED,

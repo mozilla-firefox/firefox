@@ -92,7 +92,10 @@ class WebTransport final : public nsISupports, public nsWrapperCache {
   void NewDatagramReceived(nsTArray<uint8_t>&& aData,
                            const mozilla::TimeStamp& aTimeStamp);
 
-  void OnDatagramReady(uint64_t aDatagramId);
+  void OnDatagramCapacity(uint64_t aCumulativeDatagrams,
+                          uint64_t aCumulativeBytes, uint64_t aSentDelta,
+                          uint64_t aExpiredDelta, uint64_t aDroppedDelta,
+                          uint64_t aDatagramPrefixBytes);
 
   void RemoteClosed(bool aCleanly, const uint32_t& aCode,
                     const nsACString& aReason,
