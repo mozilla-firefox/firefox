@@ -50,6 +50,7 @@
 #include "jit/ScalarReplacement.h"
 #include "jit/ScriptFromCalleeToken.h"
 #include "jit/SimpleAllocator.h"
+#include "jit/Simulator.h"
 #include "jit/Sink.h"
 #include "jit/TypeAnalysis.h"
 #include "jit/UnrollLoops.h"
@@ -59,6 +60,7 @@
 #include "jit/WasmBCE.h"
 #include "jit/WasmRefTypeAnalysis.h"
 #include "js/friend/UsageStatistics.h"  // JSUseCounter
+#include "js/friend/StackLimits.h"
 #include "js/Printf.h"
 #include "js/UniquePtr.h"
 #include "util/Denormals.h"
@@ -2415,6 +2417,20 @@ bool jit::IonCompileScriptForBaselineOSR(JSContext* cx, BaselineFrame* frame,
   MOZ_ASSERT(cx->runtime()->geckoProfiler().enabled() ==
              ion->hasProfilingInstrumentation());
   MOZ_ASSERT(ion->osrPc() == pc);
+
+  // The new Ion frame may be bigger than the baseline frame; ensure
+  // that it doesn't exceed the stack limit.
+  uint8_t* newsp =
+      reinterpret_cast<uint8_t*>(frame->framePrefix()) - ion->frameSize();
+#ifdef JS_SIMULATOR
+  if (Simulator::Current()->overRecursed(uintptr_t(newsp))) {
+#else
+  AutoCheckRecursionLimit recursion(cx);
+  if (!recursion.checkWithStackPointerDontReport(cx, newsp)) {
+#endif
+    ReportOverRecursed(cx);
+    return false;
+  }
 
   ion->resetOsrPcMismatchCounter();
 
