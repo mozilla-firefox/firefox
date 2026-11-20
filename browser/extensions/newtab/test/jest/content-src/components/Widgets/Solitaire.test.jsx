@@ -7,6 +7,7 @@ import { INITIAL_STATE } from "common/Reducers.sys.mjs";
 import { actionTypes as at } from "common/Actions.mjs";
 import { Solitaire } from "content-src/components/Widgets/Solitaire/Solitaire";
 import { WrapWithProvider } from "test/jest/test-utils";
+import { FRAMED_WIDGET_LOAD_TIMEOUT_MS } from "content-src/components/Widgets/useFramedWidgetMessages";
 
 const mockState = {
   ...INITIAL_STATE,
@@ -43,6 +44,38 @@ const renderWidget = (dispatch = jest.fn(), props = {}, state = mockState) => {
   );
   return { container, dispatch, handleUserInteraction };
 };
+
+// jsdom ignores `source` in the MessageEvent init dict, so it is set on the
+// instance.
+const postFrameMessage = (container, data) => {
+  const frame = container.querySelector("iframe.solitaire-frame");
+  const event = new MessageEvent("message", {
+    data: { channel: "solitaire_widget", ...data },
+    origin: new URL(mockState.FramedWidgets.solitaire.url).origin,
+  });
+  Object.defineProperty(event, "source", { value: frame.contentWindow });
+  act(() => {
+    window.dispatchEvent(event);
+  });
+};
+
+const postReady = (container, variant = "no_game") =>
+  postFrameMessage(container, {
+    type: "widget_ready",
+    payload: { protocol: 1, variant },
+  });
+
+const postUserEvent = (container, payload) =>
+  postFrameMessage(container, {
+    type: "telemetry",
+    message: "user_event",
+    payload,
+  });
+
+const actionsOfType = (dispatch, type) =>
+  dispatch.mock.calls
+    .map(([action]) => action)
+    .filter(action => action?.type === type);
 
 describe("Solitaire widget", () => {
   let showModal;
@@ -242,6 +275,40 @@ describe("Solitaire widget", () => {
       });
       expect(handleUserInteraction).toHaveBeenCalledWith("solitaire");
     });
+
+    const clickLearnMore = container =>
+      fireEvent.click(
+        container.querySelector(
+          "panel-item[data-l10n-id='newtab-solitaire-menu-learn-more']"
+        )
+      );
+
+    it("leaves widget_variant off when widget_ready comes after the load timeout", () => {
+      jest.useFakeTimers();
+      try {
+        const { container, dispatch } = renderWidget();
+        act(() => jest.advanceTimersByTime(FRAMED_WIDGET_LOAD_TIMEOUT_MS));
+        postReady(container);
+        clickLearnMore(container);
+        const [event] = actionsOfType(dispatch, at.WIDGETS_USER_EVENT);
+        expect(event.data.user_action).toBe("learn_more");
+        expect(event.data).not.toHaveProperty("widget_variant");
+      } finally {
+        jest.useRealTimers();
+      }
+    });
+
+    it("keeps widget_variant after a terminal widget_error that follows widget_ready", () => {
+      const { container, dispatch } = renderWidget();
+      postReady(container, "game_in_progress");
+      postFrameMessage(container, {
+        type: "widget_error",
+        payload: { reason: "render_failed", terminal: true },
+      });
+      clickLearnMore(container);
+      const [event] = actionsOfType(dispatch, at.WIDGETS_USER_EVENT);
+      expect(event.data.widget_variant).toBe("game_in_progress");
+    });
   });
 
   describe("impression telemetry", () => {
@@ -260,7 +327,9 @@ describe("Solitaire widget", () => {
         observe(el) {
           this.observed.push(el);
         }
-        unobserve() {}
+        unobserve(el) {
+          this.observed = this.observed.filter(o => o !== el);
+        }
         disconnect() {}
       };
     });
@@ -269,41 +338,198 @@ describe("Solitaire widget", () => {
       global.IntersectionObserver = originalIntersectionObserver;
     });
 
-    it("dispatches WIDGETS_IMPRESSION once, keyed on the telemetry name", () => {
+    it("waits for widget_ready, then dispatches WIDGETS_IMPRESSION once with the variant", () => {
       const dispatch = jest.fn();
-      renderWidget(dispatch);
+      const { container } = renderWidget(dispatch);
       const [observer] = observerInstances;
+      expect(observer.observed).toEqual([]);
+
+      postReady(container, "game_in_progress");
       const [target] = observer.observed;
-
       observer.callback([{ isIntersecting: true, target }], observer);
       observer.callback([{ isIntersecting: true, target }], observer);
 
-      const impressions = dispatch.mock.calls.filter(
-        ([action]) => action?.type === at.WIDGETS_IMPRESSION
-      );
+      const impressions = actionsOfType(dispatch, at.WIDGETS_IMPRESSION);
       expect(impressions).toHaveLength(1);
-      expect(impressions[0][0].data).toMatchObject({
+      expect(impressions[0].data).toMatchObject({
         widget_name: "solitaire",
         widget_size: "medium",
+        widget_variant: "game_in_progress",
       });
+    });
+
+    it("still dispatches WIDGETS_IMPRESSION, without a variant, once the frame times out", () => {
+      jest.useFakeTimers();
+      try {
+        const dispatch = jest.fn();
+        renderWidget(dispatch);
+        const [observer] = observerInstances;
+        expect(observer.observed).toEqual([]);
+
+        act(() => jest.advanceTimersByTime(FRAMED_WIDGET_LOAD_TIMEOUT_MS));
+        const [target] = observer.observed;
+        observer.callback([{ isIntersecting: true, target }], observer);
+
+        const [impression] = actionsOfType(dispatch, at.WIDGETS_IMPRESSION);
+        expect(impression.data.widget_name).toBe("solitaire");
+        expect(impression.data).not.toHaveProperty("widget_variant");
+      } finally {
+        jest.useRealTimers();
+      }
+    });
+
+    it("waits for widget_ready again when the manifest url changes after a timeout", () => {
+      jest.useFakeTimers();
+      try {
+        const dispatch = jest.fn();
+        const handleUserInteraction = jest.fn();
+        const tree = state => (
+          <WrapWithProvider state={state}>
+            <Solitaire
+              dispatch={dispatch}
+              handleUserInteraction={handleUserInteraction}
+              widgetsMayBeMaximized={true}
+              widgetEnabledMap={{}}
+            />
+          </WrapWithProvider>
+        );
+        const { rerender } = render(tree(mockState));
+        const [observer] = observerInstances;
+        act(() => jest.advanceTimersByTime(FRAMED_WIDGET_LOAD_TIMEOUT_MS));
+        expect(observer.observed).toHaveLength(1);
+
+        rerender(
+          tree({
+            ...mockState,
+            FramedWidgets: {
+              solitaire: {
+                url: "https://prod-widgets-yahoo-solitaire.merino.prod.webservices.mozgcp.net/1.1.0/index.html",
+              },
+            },
+          })
+        );
+        expect(observer.observed).toEqual([]);
+      } finally {
+        jest.useRealTimers();
+      }
+    });
+  });
+
+  describe("frame telemetry", () => {
+    it.each([
+      [{ user_action: "game_start", action_value: "new" }],
+      [{ user_action: "game_start", action_value: "resumed" }],
+      [{ user_action: "game_undo" }],
+      [{ user_action: "game_hint" }],
+      [{ user_action: "settings_click" }],
+      [{ user_action: "cardback_change" }],
+      [{ user_action: "wallpaper_change" }],
+      [{ user_action: "game_close" }],
+      [{ user_action: "game_complete" }],
+    ])("records %o and clears the New badge", payload => {
+      const { container, dispatch, handleUserInteraction } = renderWidget();
+      postReady(container);
+      postUserEvent(container, payload);
+
+      const [event] = actionsOfType(dispatch, at.WIDGETS_USER_EVENT);
+      expect(event.data).toMatchObject({
+        widget_name: "solitaire",
+        widget_source: "iframe",
+        user_action: payload.user_action,
+      });
+      expect(event.data.action_value).toBe(payload.action_value);
+      expect(handleUserInteraction).toHaveBeenCalledWith("solitaire");
+    });
+
+    it.each([
+      ["an unlisted event", { user_action: "ad_click" }],
+      ["the Yahoo Games link click", { user_action: "yahoo_games_link" }],
+      [
+        "an unknown value",
+        { user_action: "game_start", action_value: "restart" },
+      ],
+      [
+        "a value on an event without one",
+        { user_action: "game_undo", action_value: "three" },
+      ],
+    ])("drops %s and leaves the New badge", (_label, payload) => {
+      const { container, dispatch, handleUserInteraction } = renderWidget();
+      postReady(container);
+      postUserEvent(container, payload);
+      expect(actionsOfType(dispatch, at.WIDGETS_USER_EVENT)).toHaveLength(0);
+      expect(handleUserInteraction).not.toHaveBeenCalled();
+    });
+
+    it("drops user events before widget_ready", () => {
+      const { container, dispatch, handleUserInteraction } = renderWidget();
+      postUserEvent(container, { user_action: "game_undo" });
+      expect(actionsOfType(dispatch, at.WIDGETS_USER_EVENT)).toHaveLength(0);
+      expect(handleUserInteraction).not.toHaveBeenCalled();
+    });
+
+    it("drops user events after a terminal widget_error", () => {
+      const { container, dispatch } = renderWidget();
+      postReady(container);
+      postFrameMessage(container, {
+        type: "widget_error",
+        payload: { reason: "render_failed", terminal: true },
+      });
+      postUserEvent(container, { user_action: "game_undo" });
+      expect(actionsOfType(dispatch, at.WIDGETS_USER_EVENT)).toHaveLength(0);
+    });
+
+    it("drops user events when widget_ready arrives after the load timeout", () => {
+      jest.useFakeTimers();
+      try {
+        const { container, dispatch } = renderWidget();
+        act(() => jest.advanceTimersByTime(FRAMED_WIDGET_LOAD_TIMEOUT_MS));
+        postReady(container);
+        postUserEvent(container, { user_action: "game_undo" });
+        expect(actionsOfType(dispatch, at.WIDGETS_USER_EVENT)).toHaveLength(0);
+      } finally {
+        jest.useRealTimers();
+      }
+    });
+
+    it("records render_failed and stays on the page", () => {
+      const { container, dispatch } = renderWidget();
+      postFrameMessage(container, {
+        type: "widget_error",
+        payload: { reason: "render_failed", terminal: true },
+      });
+      const [error] = actionsOfType(dispatch, at.WIDGETS_ERROR);
+      expect(error.data).toMatchObject({
+        widget_name: "solitaire",
+        error_type: "render_failed",
+      });
+      expect(
+        actionsOfType(dispatch, at.FRAMED_WIDGET_UNAVAILABLE)
+      ).toHaveLength(0);
+      expect(container.querySelector("article.solitaire")).toBeTruthy();
+    });
+
+    it("records load_timeout without widget_ready and stays on the page", () => {
+      jest.useFakeTimers();
+      try {
+        const { container, dispatch } = renderWidget();
+        act(() => jest.advanceTimersByTime(FRAMED_WIDGET_LOAD_TIMEOUT_MS));
+        const [error] = actionsOfType(dispatch, at.WIDGETS_ERROR);
+        expect(error.data.error_type).toBe("load_timeout");
+        expect(
+          actionsOfType(dispatch, at.FRAMED_WIDGET_UNAVAILABLE)
+        ).toHaveLength(0);
+        expect(container.querySelector("article.solitaire")).toBeTruthy();
+      } finally {
+        jest.useRealTimers();
+      }
     });
   });
   describe("expanded view", () => {
     function postAction(container, message) {
-      const frame = container.querySelector("iframe.solitaire-frame");
-      const event = new MessageEvent("message", {
-        data: {
-          channel: "solitaire_widget",
-          type: "action",
-          message,
-          payload: { game: "solitaire" },
-          sentAt: "",
-        },
-        origin: new URL(mockState.FramedWidgets.solitaire.url).origin,
-      });
-      Object.defineProperty(event, "source", { value: frame.contentWindow });
-      act(() => {
-        window.dispatchEvent(event);
+      postFrameMessage(container, {
+        type: "action",
+        message,
+        payload: { game: "solitaire" },
       });
     }
 
@@ -332,7 +558,7 @@ describe("Solitaire widget", () => {
     });
 
     it("returns to the card on close_game without reloading the frame", () => {
-      const { container } = renderWidget();
+      const { container, dispatch } = renderWidget();
       const frame = container.querySelector("iframe.solitaire-frame");
       postAction(container, "start_game");
       postAction(container, "close_game");
@@ -344,22 +570,37 @@ describe("Solitaire widget", () => {
         false
       );
       expect(container.querySelector("iframe.solitaire-frame")).toBe(frame);
+      // The frame records its own game_close for this one.
+      expect(actionsOfType(dispatch, at.WIDGETS_USER_EVENT)).toHaveLength(0);
     });
 
-    it("reloads the frame when the host closes the modal", () => {
-      const { container } = renderWidget();
+    const expectHostClose = dispatch => {
+      const events = actionsOfType(dispatch, at.WIDGETS_USER_EVENT);
+      expect(events).toHaveLength(1);
+      expect(events[0].data).toMatchObject({
+        widget_name: "solitaire",
+        widget_source: "widget",
+        user_action: "game_close",
+      });
+    };
+
+    it("reloads the frame and records game_close when the host closes the modal", () => {
+      const { container, dispatch } = renderWidget();
       const frame = container.querySelector("iframe.solitaire-frame");
+      postReady(container);
       postAction(container, "start_game");
       fireEvent.click(container.querySelector(".solitaire-dialog-close"));
       expect(container.querySelector(".solitaire-title-wrapper").hidden).toBe(
         false
       );
       expect(container.querySelector("iframe.solitaire-frame")).not.toBe(frame);
+      expectHostClose(dispatch);
     });
 
-    it("reloads the frame when Esc or a backdrop click closes the modal", () => {
-      const { container } = renderWidget();
+    it("reloads the frame and records game_close when Esc or a backdrop click closes the modal", () => {
+      const { container, dispatch } = renderWidget();
       const frame = container.querySelector("iframe.solitaire-frame");
+      postReady(container);
       postAction(container, "start_game");
       const dialog = container.querySelector("dialog.solitaire-dialog");
       expect(dialog).toHaveAttribute("closedby", "any");
@@ -367,6 +608,57 @@ describe("Solitaire widget", () => {
         fireEvent(dialog, new Event("close"));
       });
       expect(container.querySelector("iframe.solitaire-frame")).not.toBe(frame);
+      expectHostClose(dispatch);
+    });
+
+    it.each([
+      ["before widget_ready", () => {}],
+      [
+        "after a terminal widget_error",
+        container => {
+          postReady(container);
+          postFrameMessage(container, {
+            type: "widget_error",
+            payload: { reason: "render_failed", terminal: true },
+          });
+        },
+      ],
+    ])("reloads the frame without recording game_close %s", (_label, setup) => {
+      const { container, dispatch } = renderWidget();
+      const frame = container.querySelector("iframe.solitaire-frame");
+      setup(container);
+      postAction(container, "start_game");
+      fireEvent.click(container.querySelector(".solitaire-dialog-close"));
+      expect(container.querySelector("iframe.solitaire-frame")).not.toBe(frame);
+      expect(actionsOfType(dispatch, at.WIDGETS_USER_EVENT)).toHaveLength(0);
+    });
+
+    it("records events from the reloaded frame after a terminal widget_error", () => {
+      const { container, dispatch } = renderWidget();
+      postReady(container);
+      postAction(container, "start_game");
+      postFrameMessage(container, {
+        type: "widget_error",
+        payload: { reason: "render_failed", terminal: true },
+      });
+      fireEvent.click(container.querySelector(".solitaire-dialog-close"));
+      postReady(container, "game_in_progress");
+      postUserEvent(container, { user_action: "game_undo" });
+      const [event] = actionsOfType(dispatch, at.WIDGETS_USER_EVENT);
+      expect(event.data).toMatchObject({
+        user_action: "game_undo",
+        widget_variant: "game_in_progress",
+      });
+    });
+
+    it("drops events from the reloaded frame until it sends widget_ready", () => {
+      const { container, dispatch } = renderWidget();
+      postReady(container);
+      postAction(container, "start_game");
+      fireEvent.click(container.querySelector(".solitaire-dialog-close"));
+      dispatch.mockClear();
+      postUserEvent(container, { user_action: "game_undo" });
+      expect(actionsOfType(dispatch, at.WIDGETS_USER_EVENT)).toHaveLength(0);
     });
 
     it("ignores actions from other windows", () => {

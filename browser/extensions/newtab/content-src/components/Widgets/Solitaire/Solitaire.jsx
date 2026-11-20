@@ -9,6 +9,8 @@ import { actionCreators as ac, actionTypes as at } from "common/Actions.mjs";
 import {
   FRAMED_WIDGET_SANDBOX,
   WIDGET_REGISTRY,
+  isRecordedFrameUserEvent,
+  resolveWidgetEventSource,
   resolveWidgetFrame,
   resolveWidgetSize,
   WIDGET_USER_ACTIONS,
@@ -20,11 +22,15 @@ import { WidgetMenuPoweredBy } from "../WidgetMenuPoweredBy";
 import { SizeSubmenu } from "../SizeSubmenu";
 import { useWidgetTelemetry } from "../useWidgetTelemetry";
 import { useSrcAfterPageShown } from "../usePageVisible";
-import { useFramedWidgetMessages } from "../useFramedWidgetMessages";
+import {
+  useFramedWidgetMessages,
+  useFramedWidgetReady,
+} from "../useFramedWidgetMessages";
 
 const USER_ACTION_TYPES = {
   ...WIDGET_USER_ACTIONS,
   POWERED_BY_YAHOO: "powered_by_yahoo",
+  GAME_CLOSE: "game_close",
 };
 
 const YAHOO_URL = "https://www.yahoo.com/";
@@ -63,28 +69,69 @@ function Solitaire({
   // Show the "New" badge until the user first interacts with the widget.
   const hasInteracted = prefs["widgets.solitaire.interaction"];
 
-  const { impressionRef, recordUserAction } = useWidgetTelemetry({
+  const iframeRef = useRef(null);
+  // Bumped to remount the iframe so the widget reloads into "Resume game".
+  const [frameKey, setFrameKey] = useState(0);
+  // Set below: the telemetry hook needs the variant this hook returns.
+  const recordErrorRef = useRef(null);
+  const [failed, setFailed] = useState(false);
+  const { ready, variant } = useFramedWidgetReady({
+    widget: SOLITAIRE_ENTRY,
+    src,
+    iframeRef,
+    reloadKey: frameKey,
+    onError: (reason, terminal) => {
+      recordErrorRef.current(reason);
+      if (terminal) {
+        setFailed(true);
+      }
+    },
+  });
+  useEffect(() => setFailed(false), [src, frameKey]);
+  // Like Travel, game events wait for widget_ready and stop once the load
+  // fails.
+  const frameWorking = ready && !failed;
+  // A widget_ready that comes after a failure doesn't change the variant.
+  const reportedVariantRef = useRef(variant);
+  if (!failed) {
+    reportedVariantRef.current = variant;
+  }
+  // widget_variant says whether a game is saved, from widget_ready, so the
+  // impression waits for it. A failed frame stays on screen, so it still
+  // counts one, without a variant.
+  const { impressionRef, recordUserAction, recordError } = useWidgetTelemetry({
     dispatch,
     widget: SOLITAIRE_ENTRY,
     widgetSize,
+    widgetVariant: reportedVariantRef.current,
   });
+  recordErrorRef.current = recordError;
 
   const handleInteraction = useCallback(
     () => handleUserInteraction("solitaire"),
     [handleUserInteraction]
   );
 
-  const iframeRef = useRef(null);
   const dialogRef = useRef(null);
   const [playing, setPlaying] = useState(false);
-  // Bumped to remount the iframe so the widget reloads into "Resume game".
-  const [frameKey, setFrameKey] = useState(0);
 
   useFramedWidgetMessages({
     widget: SOLITAIRE_ENTRY,
     src,
     iframeRef,
-    onMessage(type, message) {
+    onMessage(type, message, payload) {
+      if (
+        frameWorking &&
+        type === "telemetry" &&
+        message === "user_event" &&
+        isRecordedFrameUserEvent(SOLITAIRE_ENTRY, payload)
+      ) {
+        recordUserAction(payload.user_action, {
+          source: resolveWidgetEventSource(SOLITAIRE_ENTRY),
+          value: payload.action_value,
+        });
+        handleInteraction();
+      }
       if (type !== "action") {
         return;
       }
@@ -113,10 +160,16 @@ function Solitaire({
     }
   }, [playing]);
 
+  // The frame is reloaded without being told, so it can't send game_close.
   const handleCloseModal = useCallback(() => {
     setPlaying(false);
     setFrameKey(key => key + 1);
-  }, []);
+    if (frameWorking) {
+      recordUserAction(USER_ACTION_TYPES.GAME_CLOSE, {
+        source: WIDGET_SOURCES.WIDGET,
+      });
+    }
+  }, [recordUserAction, frameWorking]);
 
   // Closes from the effect above happen after playing is already false, so
   // only a close by the user (Esc or a backdrop click) gets here while
@@ -162,7 +215,7 @@ function Solitaire({
   return (
     <article
       className={`solitaire widget col-4 ${widgetSize}-widget`}
-      ref={impressionRef}
+      ref={ready || failed ? impressionRef : undefined}
       aria-labelledby="solitaire-widget-label"
     >
       {/* Hidden rather than unmounted, since its title names the dialog. */}

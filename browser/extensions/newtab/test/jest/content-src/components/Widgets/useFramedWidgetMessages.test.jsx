@@ -180,6 +180,30 @@ describe("useFramedWidgetReady", () => {
     post(message("widget_error", { reason: "render_failed", terminal: false }));
     expect(onError).toHaveBeenCalledWith("render_failed", false);
   });
+
+  it("starts a new load when reloadKey changes", () => {
+    const onError = jest.fn();
+    const { result, rerender } = renderHook(
+      ({ reloadKey }) =>
+        useFramedWidgetReady({
+          widget: WIDGET,
+          src: SRC,
+          iframeRef,
+          onError,
+          reloadKey,
+        }),
+      { initialProps: { reloadKey: 0 } }
+    );
+    post(message("widget_ready", { protocol: 1, variant: "lagoon" }));
+    post(message("widget_error", { reason: "render_failed", terminal: true }));
+    rerender({ reloadKey: 1 });
+    expect(result.current).toMatchObject({ ready: false, variant: undefined });
+    act(() => jest.advanceTimersByTime(FRAMED_WIDGET_LOAD_TIMEOUT_MS));
+    expect(onError.mock.calls).toEqual([
+      ["render_failed", true],
+      ["load_timeout", true],
+    ]);
+  });
 });
 
 describe("useFramedWidgetSize", () => {

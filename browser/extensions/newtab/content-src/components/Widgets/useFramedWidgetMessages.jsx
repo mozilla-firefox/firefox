@@ -103,9 +103,17 @@ export function useFramedWidgetMessages({ widget, src, iframeRef, onMessage }) {
  *
  * @param {object} options - see useFramedWidgetMessages, without onMessage
  * @param {Function} options.onError - called with (reason, terminal)
+ * @param {*} [options.reloadKey] - changes when the caller remounts the iframe
+ *   with the same src, which starts a new load just like a new src
  * @returns {{ready: boolean, readyPayload: object|null, variant: string|undefined}}
  */
-export function useFramedWidgetReady({ widget, src, iframeRef, onError }) {
+export function useFramedWidgetReady({
+  widget,
+  src,
+  iframeRef,
+  onError,
+  reloadKey,
+}) {
   const [readyPayload, setReadyPayload] = useState(null);
   const ready = readyPayload !== null;
   const onErrorRef = useRef(onError);
@@ -117,7 +125,7 @@ export function useFramedWidgetReady({ widget, src, iframeRef, onError }) {
     setReadyPayload(null);
     reportedReasons.clear();
     failedRef.current = false;
-  }, [src, reportedReasons]);
+  }, [src, reloadKey, reportedReasons]);
 
   useEffect(() => {
     // Without a document there is nothing to wait for.
@@ -131,7 +139,7 @@ export function useFramedWidgetReady({ widget, src, iframeRef, onError }) {
       }
     }, FRAMED_WIDGET_LOAD_TIMEOUT_MS);
     return () => clearTimeout(timer);
-  }, [src, ready]);
+  }, [src, reloadKey, ready]);
 
   useFramedWidgetMessages({
     widget,

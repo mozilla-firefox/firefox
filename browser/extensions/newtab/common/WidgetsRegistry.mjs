@@ -513,6 +513,17 @@ export const WIDGET_REGISTRY = [
     widgetsSettingsEnabledKey: "solitaireEnabled",
     trainhopNamespace: "widgetSolitaire",
     framed: true,
+    frameVariants: ["game_in_progress", "no_game"],
+    frameUserEvents: {
+      game_start: ["new", "resumed"],
+      game_undo: [],
+      game_hint: [],
+      settings_click: [],
+      cardback_change: [],
+      wallpaper_change: [],
+      game_close: [],
+      game_complete: [],
+    },
   },
   {
     id: "wrexhamAFC",
