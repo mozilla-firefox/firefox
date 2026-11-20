@@ -7493,7 +7493,8 @@ bool nsCSSFrameConstructor::ContentRemoved(nsIContent* aChild,
   // complexity for the display: none -> other case, which right now
   // unnecessarily walks the content tree down.
   auto CouldHaveBeenDisplayContents = [aFlags](nsIContent* aContent) -> bool {
-    return aFlags == REMOVE_FOR_RECONSTRUCTION || IsDisplayContents(aContent);
+    return aFlags == REMOVE_FOR_RECONSTRUCTION ||
+           (aContent->IsElement() && aContent->AsElement()->HasServoData());
   };
 
   if (!childFrame && CouldHaveBeenDisplayContents(aChild)) {
