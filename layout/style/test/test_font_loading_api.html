@@ -11,6 +11,13 @@
 <iframe id=n style="display: none"></iframe>
 
 <script>
+// The user font cache can still hold the fonts loaded by a previous run of
+// this test in the same browser, so make each url() source unique to this load.
+var fontURLToken = Date.now();
+function fontURL(aQuery) {
+  return "url(BitPattern.woff?" + aQuery + "." + fontURLToken + ")";
+}
+
 // Map of FontFace descriptor attribute names to @font-face rule descriptor
 // names.
 var descriptorNames = {
@@ -884,7 +891,7 @@ function runTest() {
           };
         });
 
-        face = new win.FontFace("test", "url(BitPattern.woff?test30." + i + ")");
+        face = new win.FontFace("test", fontURL("test30." + i));
         face.load();
         is(face.status, "loading", "FontFace should have status \"loading\" (TEST 30) (" + what + ")");
         doc.fonts.add(face);
@@ -934,7 +941,7 @@ function runTest() {
           };
         });
 
-        face = new win.FontFace("test", "url(BitPattern.woff?test31." + i + ")");
+        face = new win.FontFace("test", fontURL("test31." + i));
         is(face.status, "unloaded", "FontFace should have status \"unloaded\" (TEST 31) (" + what + ")");
         doc.fonts.add(face);
 
@@ -1153,7 +1160,7 @@ function runTest() {
 
         is(doc.fonts.status, "loaded", "document.fonts.status should have status \"loaded\" (TEST 37) (" + what + ")");
 
-        face = new win.FontFace("test", "url(BitPattern.woff?test37." + i + "a)");
+        face = new win.FontFace("test", fontURL("test37." + i + "a"));
         face.load();
         doc.fonts.add(face);
         is(doc.fonts.status, "loading", "document.fonts.status should have status \"loading\" after first font added (TEST 37) (" + what + ")");
@@ -1163,7 +1170,7 @@ function runTest() {
             is(doc.fonts.status, "loaded", "document.fonts.status should have status \"loaded\" after first font loaded (TEST 37) (" + what + ")");
             is(face.status, "loaded", "first FontFace should have status \"loaded\" (TEST 37) (" + what + ")");
 
-            face2 = new win.FontFace("test2", "url(BitPattern.woff?test37." + i + "b)");
+            face2 = new win.FontFace("test2", fontURL("test37." + i + "b"));
             face2.load();
             doc.fonts.add(face2);
             is(doc.fonts.status, "loading", "document.fonts.status should have status \"loading\" after second font added (TEST 37) (" + what + ")");
@@ -1274,8 +1281,8 @@ function runTest() {
     return setTimeoutZero()  // wait for any previous events to be dispatched
       .then(function() {
         style = document.querySelector("style");
-        var ruleText = "@font-face { font-family: test; src: url(BitPattern.woff?test39a); } " +
-                       "@font-face { font-family: test2; src: url(BitPattern.woff?test39b); }";
+        var ruleText = "@font-face { font-family: test; src: " + fontURL("test39a") + "; } " +
+                       "@font-face { font-family: test2; src: " + fontURL("test39b") + "; }";
 
         style.textContent = ruleText;
 
@@ -1552,7 +1559,7 @@ function runTest() {
           } else if (f.status == "error") {
             fontFace = new win.FontFace(f.family, new ArrayBuffer(0), f);
           } else {
-            fontFace = new win.FontFace(f.family, "url(BitPattern.woff?test44." + [i, j, k] + ")", f);
+            fontFace = new win.FontFace(f.family, fontURL("test44." + [i, j, k]), f);
             if (f.status == "loading") {
               fontFace.load();
             }
@@ -1713,7 +1720,7 @@ function runTest() {
             } else if (f.status == "error") {
               fontFace = new win.FontFace(f.family, new ArrayBuffer(0), f);
             } else {
-              fontFace = new win.FontFace(f.family, "url(BitPattern.woff?test46." + [i, j, k] + ")", f);
+              fontFace = new win.FontFace(f.family, fontURL("test46." + [i, j, k]), f);
               if (f.status == "loading") {
                 fontFace.load();
               }
@@ -1852,7 +1859,7 @@ function runTest() {
     // document.fonts.status from being set to "loaded".
 
     // First, add a FontFace to document.fonts that will load soon.
-    var face = new FontFace("test", "url(BitPattern.woff?testlast)");
+    var face = new FontFace("test", fontURL("testlast"));
     face.load();
     document.fonts.add(face);
 
