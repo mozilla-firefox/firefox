@@ -1,0 +1,70 @@
+<!DOCTYPE html>
+<html><head>
+  <title>MSE: frame durations when a fragment splits a group of B-frames</title>
+  <script src="/tests/SimpleTest/SimpleTest.js"></script>
+  <script type="text/javascript" src="mediasource.js"></script>
+  <link rel="stylesheet" type="text/css" href="/tests/SimpleTest/test.css" />
+</head>
+<body>
+<pre id="test"><script class="testbody" type="text/javascript">
+
+// 30 fps H.264 with two B-frames and timescale 15360. Each frame is one solid
+// color: red, green and blue in turn, in display order. Each trun duration is
+// 512 ticks and each fragment has three frames in decode order, so the blue
+// frame at 1536 is in the second fragment:
+//
+//   PTS         512   1024  1536  2048  2560
+//               |-----|-----|-----|-----|
+//   fragment 1  [red] [grn]       [red]
+//   fragment 2              [blu]       [grn] ...
+//
+// The green frame at 1024 must not cover the blue frame at 1536.
+const kTimescale = 15360;
+const kFrameTicks = 512;
+const kGreen = [0, 255, 0];
+const kBlue = [0, 0, 255];
+// Lossy coding and the YUV to RGB conversion move each channel a little.
+const kFuzz = 16;
+
+SimpleTest.waitForExplicitFinish();
+
+runWithMSE(async (ms, el) => {
+  await once(ms, "sourceopen");
+  const sb = ms.addSourceBuffer('video/mp4; codecs="avc1.4D401E"');
+  await fetchAndLoad(sb, "split_gop_across_fragments", [""], ".mp4");
+  ms.endOfStream();
+  is(el.buffered.length, 1, "one buffered range");
+
+  isColor(await colorAt(el, middleOf(1024)), kGreen, "frame at 1024");
+  isColor(await colorAt(el, middleOf(1536)), kBlue, "frame at 1536");
+  SimpleTest.finish();
+});
+
+// The middle of the frame at pts, in seconds. The frame at 1536 lasts until
+// 2048, so its middle is 1792. A seek there cannot select the frame next to it
+// after rounding.
+function middleOf(pts) {
+  return (pts + kFrameTicks / 2) / kTimescale;
+}
+
+async function colorAt(video, time) {
+  video.currentTime = time;
+  await once(video, "seeked");
+  const canvas = document.createElement("canvas");
+  canvas.width = video.videoWidth;
+  canvas.height = video.videoHeight;
+  const context = canvas.getContext("2d");
+  context.drawImage(video, 0, 0);
+  return context.getImageData(canvas.width / 2, canvas.height / 2, 1, 1).data;
+}
+
+function isColor(actual, expected, name) {
+  for (let i = 0; i < 3; i++) {
+    isfuzzy(actual[i], expected[i], kFuzz, `${name}, channel ${i}`);
+  }
+}
+
+</script>
+</pre>
+</body>
+</html>

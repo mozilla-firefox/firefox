@@ -8,6 +8,7 @@ support-files = [
   "seek.webm^headers^",
   "seek_lowres.webm",
   "seek_lowres.webm^headers^",
+  "split_gop_across_fragments.mp4",
   "bipbop/bipbop_300-3s.webm",
   "bipbop/bipbop_300-3s.webm^headers^",
   "bipbop/bipbop2s.mp4",
@@ -335,6 +336,11 @@ skip-if = [
 ]
 
 ["test_SeekedEvent_mp4.html"]
+
+["test_SplitGopAcrossFragments_mp4.html"]
+skip-if = [
+  "os == 'android'", # Android has black frames issue.
+]
 
 ["test_Threshold_mp4.html"]
 
