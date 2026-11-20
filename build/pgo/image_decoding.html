@@ -103,9 +103,10 @@
           await run();
         } catch (e) {
           console.error(`Image PGO page failed: ${e}`);
-          window.pgoImageDecodingFailed = true;
         }
-        window.pgoImageDecodingDone = true;
+        if (window.opener) {
+          window.opener.postMessage({ pgoBenchmarkDone: true }, "*");
+        }
       };
     </script>
   </body>
