@@ -210,6 +210,7 @@ if CONFIG["TARGET_CPU"] == "mips32":
         "/third_party/libwebrtc/modules/video_capture/linux/camera_portal.cc",
         "/third_party/libwebrtc/modules/video_capture/linux/device_info_pipewire.cc",
         "/third_party/libwebrtc/modules/video_capture/linux/pipewire_session.cc",
+        "/third_party/libwebrtc/modules/video_capture/linux/pipewire_video_sizes.cc",
         "/third_party/libwebrtc/modules/video_capture/linux/video_capture_pipewire.cc"
     ]
 
@@ -227,6 +228,7 @@ if CONFIG["TARGET_CPU"] == "mips64":
         "/third_party/libwebrtc/modules/video_capture/linux/camera_portal.cc",
         "/third_party/libwebrtc/modules/video_capture/linux/device_info_pipewire.cc",
         "/third_party/libwebrtc/modules/video_capture/linux/pipewire_session.cc",
+        "/third_party/libwebrtc/modules/video_capture/linux/pipewire_video_sizes.cc",
         "/third_party/libwebrtc/modules/video_capture/linux/video_capture_pipewire.cc"
     ]
 
@@ -278,6 +280,7 @@ if CONFIG["OS_TARGET"] == "Linux" and CONFIG["TARGET_CPU"] == "aarch64":
         "/third_party/libwebrtc/modules/video_capture/linux/camera_portal.cc",
         "/third_party/libwebrtc/modules/video_capture/linux/device_info_pipewire.cc",
         "/third_party/libwebrtc/modules/video_capture/linux/pipewire_session.cc",
+        "/third_party/libwebrtc/modules/video_capture/linux/pipewire_video_sizes.cc",
         "/third_party/libwebrtc/modules/video_capture/linux/video_capture_pipewire.cc"
     ]
 
@@ -295,6 +298,7 @@ if CONFIG["OS_TARGET"] == "Linux" and CONFIG["TARGET_CPU"] == "arm":
         "/third_party/libwebrtc/modules/video_capture/linux/camera_portal.cc",
         "/third_party/libwebrtc/modules/video_capture/linux/device_info_pipewire.cc",
         "/third_party/libwebrtc/modules/video_capture/linux/pipewire_session.cc",
+        "/third_party/libwebrtc/modules/video_capture/linux/pipewire_video_sizes.cc",
         "/third_party/libwebrtc/modules/video_capture/linux/video_capture_pipewire.cc"
     ]
 
@@ -316,6 +320,7 @@ if CONFIG["OS_TARGET"] == "Linux" and CONFIG["TARGET_CPU"] == "x86":
         "/third_party/libwebrtc/modules/video_capture/linux/camera_portal.cc",
         "/third_party/libwebrtc/modules/video_capture/linux/device_info_pipewire.cc",
         "/third_party/libwebrtc/modules/video_capture/linux/pipewire_session.cc",
+        "/third_party/libwebrtc/modules/video_capture/linux/pipewire_video_sizes.cc",
         "/third_party/libwebrtc/modules/video_capture/linux/video_capture_pipewire.cc"
     ]
 
@@ -333,6 +338,7 @@ if CONFIG["OS_TARGET"] == "Linux" and CONFIG["TARGET_CPU"] == "x86_64":
         "/third_party/libwebrtc/modules/video_capture/linux/camera_portal.cc",
         "/third_party/libwebrtc/modules/video_capture/linux/device_info_pipewire.cc",
         "/third_party/libwebrtc/modules/video_capture/linux/pipewire_session.cc",
+        "/third_party/libwebrtc/modules/video_capture/linux/pipewire_video_sizes.cc",
         "/third_party/libwebrtc/modules/video_capture/linux/video_capture_pipewire.cc"
     ]
 

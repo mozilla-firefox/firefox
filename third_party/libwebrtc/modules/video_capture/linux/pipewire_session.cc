@@ -30,6 +30,7 @@
 #include <memory>
 #include <optional>
 #include <utility>
+#include <vector>
 
 #include "absl/strings/string_view.h"
 #include "common_video/libyuv/include/webrtc_libyuv.h"
@@ -37,6 +38,7 @@
 #include "modules/portal/portal_request_response.h"
 #include "modules/video_capture/linux/camera_portal.h"
 #include "modules/video_capture/linux/device_info_pipewire.h"
+#include "modules/video_capture/linux/pipewire_video_sizes.h"
 #include "modules/video_capture/video_capture_defines.h"
 #include "modules/video_capture/video_capture_options.h"
 #include "rtc_base/logging.h"
@@ -217,27 +219,24 @@ void PipeWireNode::OnNodeParam(void* data,
   if (!prop)
     return;
 
-  val = spa_pod_get_values(&prop->value, &n_items, &choice);
-  if (!SpaValueIsType(val, SPA_TYPE_Rectangle))
-    return;
-
-  if (choice != SPA_CHOICE_None || n_items < 1)
+  const std::vector<spa_rectangle> sizes = GetPipeWireVideoSizes(&prop->value);
+  if (sizes.empty())
     return;
 
   if (!ParseFormat(param, &cap))
     return;
 
-  spa_rectangle* rect;
-  rect = static_cast<spa_rectangle*>(SPA_POD_BODY(val));
-  cap.width = rect[0].width;
-  cap.height = rect[0].height;
+  for (const spa_rectangle& size : sizes) {
+    cap.width = size.width;
+    cap.height = size.height;
 
-  RTC_LOG(LS_VERBOSE) << "Found Format(" << that->display_name_
-                      << "): " << static_cast<int>(cap.videoType) << "("
-                      << cap.width << "x" << cap.height << "@" << cap.maxFPS
-                      << ")";
+    RTC_LOG(LS_VERBOSE) << "Found Format(" << that->display_name_
+                        << "): " << static_cast<int>(cap.videoType) << "("
+                        << cap.width << "x" << cap.height << "@" << cap.maxFPS
+                        << ")";
 
-  that->pending_capabilities_.push_back(cap);
+    that->pending_capabilities_.push_back(cap);
+  }
 }
 
 // static

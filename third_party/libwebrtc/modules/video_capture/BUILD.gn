@@ -99,6 +99,8 @@ if (!build_with_chromium || is_linux || is_chromeos) {
           "linux/device_info_pipewire.h",
           "linux/pipewire_session.cc",
           "linux/pipewire_session.h",
+          "linux/pipewire_video_sizes.cc",
+          "linux/pipewire_video_sizes.h",
           "linux/video_capture_pipewire.cc",
           "linux/video_capture_pipewire.h",
         ]
@@ -159,6 +161,10 @@ if (!build_with_chromium || is_linux || is_chromeos) {
   if (!is_android && rtc_include_tests) {
     rtc_test("video_capture_tests") {
       sources = [ "test/video_capture_unittest.cc" ]
+      if ((is_linux || is_chromeos) && rtc_use_pipewire) {
+        sources += [ "test/pipewire_video_sizes_unittest.cc" ]
+        configs += [ "../portal:pipewire_base" ]
+      }
       ldflags = []
       if (is_linux || is_chromeos || is_mac) {
         ldflags += [
