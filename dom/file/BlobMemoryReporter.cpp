@@ -65,6 +65,12 @@ BlobMemoryReporter::CollectReports(nsIHandleReportCallback* aHandleReport,
       return NS_OK;
     }
 
+    // Memory reporting is best-effort: silently skip under OOM rather than
+    // crashing in an infallible reallocation.
+    if (!alive.SetCapacity(sEntries->Count(), fallible)) {
+      return NS_OK;
+    }
+
     for (const auto& key : *sEntries) {
       if (RefPtr<BlobImpl> ref(key); ref) {
         alive.AppendElement(std::move(ref));
