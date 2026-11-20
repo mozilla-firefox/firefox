@@ -74,8 +74,17 @@ const TEST_URI = `data:text/html,${encodeURIComponent(`<meta charset=utf8>
       --attr-name: data-x;
       --var-name: --primary-color;
       --primary-color: tomato;
+      --empty-name: ident("--" var(--undef,));
       height: attr(var(--attr-name) type(<length>));
       color: var(var(--var-name));
+    }
+
+    #empty {
+      --empty:;
+      --a: var(--empty);
+      --b: var(--undef,);
+      --x: red;
+      color: var(--x,);
     }
   </style>
   <div>CSS explainers</div>
@@ -91,7 +100,8 @@ const TEST_URI = `data:text/html,${encodeURIComponent(`<meta charset=utf8>
   <section
     id="nested-substitutions"
     data-x="10rem"
-  >nested-substitutions</section>`)}`;
+  >nested-substitutions</section>
+  <section id="empty">∅</section>`)}`;
 
 add_task(async function () {
   await pushPref("devtools.inspector.css-explainers", true);
@@ -576,6 +586,59 @@ add_task(async function () {
     expected: {
       functionText: "var(--var-name)",
       tooltipText: ["var(--var-name)", "--primary-color"].join("\n"),
+    },
+  });
+  await assertCssExplainersTooltip({
+    view,
+    selector: "#nested-substitutions",
+    propertyName: "--empty-name",
+    functionIndex: 0,
+    expected: {
+      functionText: `ident("--" var(--undef,))`,
+      tooltipText: [`ident("--" var(--undef,))`, "--"].join("\n"),
+    },
+  });
+  await assertCssExplainersTooltip({
+    view,
+    selector: "#nested-substitutions",
+    propertyName: "--empty-name",
+    functionIndex: 1,
+    expected: {
+      functionText: `var(--undef,)`,
+      tooltipText: [`var(--undef,)`, `<empty>`].join("\n"),
+    },
+  });
+
+  info("Select #empty to check tooltip for empty values");
+  await selectNode("#empty", inspector);
+  await assertCssExplainersTooltip({
+    view,
+    selector: "#empty",
+    propertyName: "--a",
+    functionIndex: 0,
+    expected: {
+      functionText: `var(--empty)`,
+      tooltipText: [`var(--empty)`, `<empty>`].join("\n"),
+    },
+  });
+  await assertCssExplainersTooltip({
+    view,
+    selector: "#empty",
+    propertyName: "--b",
+    functionIndex: 0,
+    expected: {
+      functionText: `var(--undef,)`,
+      tooltipText: [`var(--undef,)`, `<empty>`].join("\n"),
+    },
+  });
+  await assertCssExplainersTooltip({
+    view,
+    selector: "#empty",
+    propertyName: "color",
+    functionIndex: 0,
+    expected: {
+      functionText: `var(--x,)`,
+      tooltipText: [`var(--x,)`, `red`].join("\n"),
     },
   });
 });

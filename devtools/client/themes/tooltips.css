@@ -346,6 +346,10 @@ strong {
     li {
       padding-inline-start: 1ch;
       color: var(--theme-highlight-red);
+
+      &.empty {
+        color: var(--theme-text-color-inactive);
+      }
     }
 
     li:not(:first-of-type)::marker {

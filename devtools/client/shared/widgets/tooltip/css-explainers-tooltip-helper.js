@@ -5,6 +5,14 @@
 "use strict";
 
 const XHTML_NS = "http://www.w3.org/1999/xhtml";
+const STYLE_INSPECTOR_PROPERTIES =
+  "devtools/shared/locales/styleinspector.properties";
+
+loader.lazyGetter(this, "L10N_EMPTY", function () {
+  const { LocalizationHelper } = require("resource://devtools/shared/l10n.js");
+  const l10n = new LocalizationHelper(STYLE_INSPECTOR_PROPERTIES);
+  return l10n.getStr("rule.variableEmpty");
+});
 
 class CssExplainersTooltipHelper {
   /**
@@ -30,7 +38,13 @@ class CssExplainersTooltipHelper {
 
       for (const step of res) {
         const li = doc.createElementNS(XHTML_NS, "li");
-        li.append(step);
+        if (step === "") {
+          li.append(`<${L10N_EMPTY}>`);
+          li.classList.add("empty");
+        } else {
+          li.append(step);
+        }
+
         ol.append(li);
       }
       tooltipContainer.append(ol);
