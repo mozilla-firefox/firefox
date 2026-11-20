@@ -142,6 +142,9 @@ class MediaController final : public DOMEventTargetHelper,
       uint64_t aBrowsingContextId, MediaAudibleState aState,
       ControlType aType = ControlType::eControllable,
       AudioSessionType aSessionType = AudioSessionType::Playback) override;
+  void EnableAction(uint64_t aBrowsingContextId,
+                    MediaSessionAction aAction) override;
+  void NotifySessionDestroyed(uint64_t aBrowsingContextId) override;
   void NotifyBrowsingContextDiscarded(uint64_t aBrowsingContextId) override;
   void SetIsInPictureInPictureMode(uint64_t aBrowsingContextId,
                                    bool aIsInPictureInPictureMode) override;

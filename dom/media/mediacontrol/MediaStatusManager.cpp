@@ -56,11 +56,17 @@ void MediaStatusManager::NotifyMediaAudibleChanged(
     AudioSessionType aSessionType) {
   const bool ownerChanged = mPlaybackStatusDelegate.UpdateMediaAudibleState(
       aBrowsingContextId, aState, aType, aSessionType);
-  if (ownerChanged) {
-    Maybe<uint64_t> newOwner =
-        mPlaybackStatusDelegate.GetActiveAudibleControllableContextId();
-    HandleActiveAudibleControllableContextChanged(newOwner);
+  // Re-derive the active session context when the controllable owner
+  // changed (as before), or when there is currently no controllable owner
+  // (so an uncontrollable source's audible transition, e.g. the Web Audio
+  // API, can still be picked up by the fallback in
+  // UpdateActiveMediaSessionContext). Skipping this otherwise avoids redoing
+  // the same derivation on every audible toggle of an unrelated source.
+  if (ownerChanged ||
+      !mPlaybackStatusDelegate.GetActiveAudibleControllableContextId()) {
+    UpdateActiveMediaSessionContext();
   }
+  UpdateGuessedPlaybackState();
 }
 
 void MediaStatusManager::NotifySessionCreated(uint64_t aBrowsingContextId) {
@@ -73,23 +79,20 @@ void MediaStatusManager::NotifySessionCreated(uint64_t aBrowsingContextId) {
         return true;
       });
 
-  if (created &&
-      mPlaybackStatusDelegate.GetActiveAudibleControllableContextId() ==
-          Some(aBrowsingContextId)) {
-    // This can't be done from within the WithEntryHandle functor, since it
-    // accesses mMediaSessionInfoMap.
-    SetActiveMediaSessionContextId(aBrowsingContextId);
+  if (created) {
+    UpdateActiveMediaSessionContext();
   }
 }
 
 void MediaStatusManager::NotifySessionDestroyed(uint64_t aBrowsingContextId) {
   if (mMediaSessionInfoMap.Remove(aBrowsingContextId)) {
     LOG("Session {} has been destroyed", aBrowsingContextId);
-
-    if (mActiveMediaSessionContextId &&
-        *mActiveMediaSessionContextId == aBrowsingContextId) {
-      ClearActiveMediaSessionContextIdIfNeeded();
-    }
+    // Another context may still have a session that qualifies, and without
+    // a controllable owner nothing else would re-derive this until the next
+    // audible change -- which for audio that simply keeps playing never
+    // comes. The last branch of the derivation clears the active session
+    // when nothing qualifies.
+    UpdateActiveMediaSessionContext();
   }
 }
 
@@ -124,24 +127,66 @@ void MediaStatusManager::UpdateMetadata(
   }
 }
 
-void MediaStatusManager::HandleActiveAudibleControllableContextChanged(
-    Maybe<uint64_t>& aBrowsingContextId) {
-  // No context currently qualifies; there is no active media session.
-  if (!aBrowsingContextId) {
-    LOG("No active audible controllable context");
+void MediaStatusManager::UpdateActiveMediaSessionContext() {
+  // A context that owns a controllable audible source (e.g. an
+  // <audio>/<video> element) always dominates. If it has a MediaSession
+  // registered, that's authoritative; if it doesn't, there is nothing to
+  // expose and we deliberately do NOT fall back to some other audible
+  // session -- a real controllable source taking over without declaring its
+  // own session still displaces whatever was previously active.
+  Maybe<uint64_t> controllableOwner =
+      mPlaybackStatusDelegate.GetActiveAudibleControllableContextId();
+  if (controllableOwner) {
+    if (mMediaSessionInfoMap.Contains(*controllableOwner)) {
+      SetActiveMediaSessionContextId(*controllableOwner);
+    } else {
+      ClearActiveMediaSessionContextIdIfNeeded();
+    }
+    return;
+  }
+
+  // Everything below exposes a session whose audio comes from a source
+  // outside the controllable media lifecycle, which is what the pref gates.
+  if (!StaticPrefs::media_mediacontrol_webaudio_activation_enabled()) {
     return ClearActiveMediaSessionContextIdIfNeeded();
   }
 
-  // The qualifying context has no MediaSession registered; the active media
-  // session cannot be derived from it.
-  if (!mMediaSessionInfoMap.Contains(*aBrowsingContextId)) {
-    LOG("The active audible controllable context has no media session");
-    return ClearActiveMediaSessionContextIdIfNeeded();
+  // No controllable source currently dominates. Prefer keeping the current
+  // active session over switching to a different one that also qualifies,
+  // so that multiple simultaneously-audible sessions without a controllable
+  // source don't flip-flop against each other.
+  if (mActiveMediaSessionContextId &&
+      mMediaSessionInfoMap.Contains(*mActiveMediaSessionContextId) &&
+      mPlaybackStatusDelegate.IsBcAudible(*mActiveMediaSessionContextId)) {
+    return;
   }
 
-  // The qualifying context has a MediaSession; promote it to the active
-  // media session.
-  SetActiveMediaSessionContextId(*aBrowsingContextId);
+  // Otherwise, fall back to any context that has a MediaSession and is
+  // audible through any means, including sources that don't participate in
+  // the controllable media lifecycle (e.g. the Web Audio API). Without this,
+  // a page could declare a correct, fully populated MediaSession yet never
+  // have it exposed simply because it doesn't play audio through an
+  // HTMLMediaElement.
+  for (const auto& entry : mMediaSessionInfoMap) {
+    if (mPlaybackStatusDelegate.IsBcAudible(entry.GetKey())) {
+      SetActiveMediaSessionContextId(entry.GetKey());
+      return;
+    }
+  }
+
+  // Nothing is audible right now. An uncontrollable source that has fallen
+  // silent is the equivalent of a paused HTMLMediaElement, which stays
+  // controllable because the element still exists, so keep the current
+  // session while the page still has one registered. Otherwise pausing from
+  // the platform's controls would tear those controls down and leave no way
+  // to resume, and a brief silence between tracks would cycle them off and
+  // on.
+  if (mActiveMediaSessionContextId &&
+      mMediaSessionInfoMap.Contains(*mActiveMediaSessionContextId)) {
+    return;
+  }
+
+  ClearActiveMediaSessionContextIdIfNeeded();
 }
 
 void MediaStatusManager::SetActiveMediaSessionContextId(
@@ -164,6 +209,10 @@ void MediaStatusManager::SetActiveMediaSessionContextId(
       obs->NotifyObservers(nullptr, "active-media-session-changed", nullptr);
     }
   }
+  // The active session's declared playback state now feeds into the actual
+  // playback state (see UpdateActualPlaybackState), so switching sessions can
+  // change it even though neither the declared nor the guessed state moved.
+  UpdateActualPlaybackState();
 }
 
 void MediaStatusManager::ClearActiveMediaSessionContextIdIfNeeded() {
@@ -181,6 +230,7 @@ void MediaStatusManager::ClearActiveMediaSessionContextIdIfNeeded() {
       obs->NotifyObservers(nullptr, "active-media-session-changed", nullptr);
     }
   }
+  UpdateActualPlaybackState();
 }
 
 void MediaStatusManager::StoreMediaSessionContextIdOnWindowContext() {
@@ -309,28 +359,62 @@ MediaSessionPlaybackState MediaStatusManager::GetCurrentDeclaredPlaybackState()
       .mDeclaredPlaybackState;
 }
 
+bool MediaStatusManager::IsActiveSessionActionSupported(
+    MediaSessionAction aAction) const {
+  if (!mActiveMediaSessionContextId) {
+    return false;
+  }
+  return mMediaSessionInfoMap.Get(*mActiveMediaSessionContextId)
+      .IsActionSupported(aAction);
+}
+
 void MediaStatusManager::NotifyMediaPlaybackChanged(uint64_t aBrowsingContextId,
                                                     MediaPlaybackState aState) {
   LOG("UpdateMediaPlaybackState {} for context {}", EnumValueToString(aState),
       aBrowsingContextId);
-  const bool oldPlaying = mPlaybackStatusDelegate.IsPlaying();
+  const Maybe<uint64_t> oldOwner =
+      mPlaybackStatusDelegate.GetActiveAudibleControllableContextId();
   mPlaybackStatusDelegate.UpdateMediaPlaybackState(aBrowsingContextId, aState);
+  // Stopping the last controllable source hands ownership back, and the
+  // context that takes over may be one whose session is only exposed through
+  // the uncontrollable fallback. Without this it would stay unexposed until
+  // that source next toggled audibility, which for audio that simply keeps
+  // playing is never.
+  if (mPlaybackStatusDelegate.GetActiveAudibleControllableContextId() !=
+      oldOwner) {
+    UpdateActiveMediaSessionContext();
+  }
+  UpdateGuessedPlaybackState();
+}
 
-  // Playback state doesn't change, we don't need to update the guessed playback
-  // state. This is used to prevent the state from changing from `none` to
-  // `paused` when receiving `MediaPlaybackState::eStarted`.
-  if (mPlaybackStatusDelegate.IsPlaying() == oldPlaying) {
-    return;
-  }
-  if (mPlaybackStatusDelegate.IsPlaying()) {
-    SetGuessedPlayState(MediaSessionPlaybackState::Playing);
-  } else {
-    SetGuessedPlayState(MediaSessionPlaybackState::Paused);
-  }
+void MediaStatusManager::UpdateGuessedPlaybackState() {
+  // https://w3c.github.io/mediasession/#guessed-playback-state
+  // Controlled media that is playing is the usual signal, but the spec asks
+  // for other sources to be considered as well, so a tab producing audio
+  // through the Web Audio API counts too. Those sources never report a
+  // playback state of their own, so audibility is all we have to go on.
+  // Only fall back to audibility when the tab has no controllable media at
+  // all. Where such media exists its own playback state is authoritative, and
+  // letting an unrelated audible source override it would mean pausing a
+  // video left the tab reporting that it is still playing just because a
+  // sound effect kept running.
+  const bool playing =
+      mPlaybackStatusDelegate.IsPlaying() ||
+      (StaticPrefs::media_mediacontrol_webaudio_activation_enabled() &&
+       !mPlaybackStatusDelegate.IsAnyMediaBeingControlled() &&
+       mPlaybackStatusDelegate.IsAudible());
+  SetGuessedPlayState(playing ? MediaSessionPlaybackState::Playing
+                              : MediaSessionPlaybackState::Paused);
 }
 
 void MediaStatusManager::SetGuessedPlayState(MediaSessionPlaybackState aState) {
   if (aState == mGuessedPlaybackState) {
+    return;
+  }
+  // Only a tab that was playing can become paused. Without this a tab that has
+  // merely loaded media would move from `none` to `paused`.
+  if (aState == MediaSessionPlaybackState::Paused &&
+      mGuessedPlaybackState != MediaSessionPlaybackState::Playing) {
     return;
   }
   LOG("SetGuessedPlayState : '{}'", ToMediaSessionPlaybackStateStr(aState));
@@ -529,17 +613,15 @@ void MediaStatusManager::NotifyBrowsingContextDiscarded(
     uint64_t aBrowsingContextId) {
   // When a child browsing context is destroyed (e.g. an iframe is removed),
   // clear its state so things associated with that state do not remain stuck,
-  // then re-evaluate the active audible context in case the discarded context
-  // was the current one.
+  // then re-evaluate the active media session context in case the discarded
+  // context was the current one.
   LOG("NotifyBrowsingContextDiscarded context %" PRIu64, aBrowsingContextId);
-  Maybe<uint64_t> oldActiveContextId =
-      mPlaybackStatusDelegate.GetActiveAudibleControllableContextId();
   mPlaybackStatusDelegate.ClearBrowsingContext(aBrowsingContextId);
-  Maybe<uint64_t> newActiveContextId =
-      mPlaybackStatusDelegate.GetActiveAudibleControllableContextId();
-  if (oldActiveContextId != newActiveContextId) {
-    HandleActiveAudibleControllableContextChanged(newActiveContextId);
-  }
+  // The context takes its media session with it. Dropping the entry matters
+  // because the active session is otherwise kept alive while the page still
+  // has one registered, which would outlive the page itself.
+  mMediaSessionInfoMap.Remove(aBrowsingContextId);
+  UpdateActiveMediaSessionContext();
 }
 
 bool MediaStatusManager::IsMediaPlaying() const {

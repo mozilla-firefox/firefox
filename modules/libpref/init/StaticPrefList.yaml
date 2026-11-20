@@ -14437,6 +14437,15 @@
   value: 3.0f
   mirror: always
 
+# If this pref is on, a page that plays audio only through the Web Audio API
+# can activate media control, which otherwise requires an HTMLMediaElement.
+# The condition under which that should happen is still being specified, see
+# https://github.com/w3c/mediasession/issues/378.
+- name: media.mediacontrol.webaudio.activation.enabled
+  type: bool
+  value: @IS_NIGHTLY_BUILD@
+  mirror: always
+
 # Encoder creation strategy for WebRTC
 # 0: prefer builtin WebRTC encoder (including OpenH264 via GMP)
 # 1: prefer PlatformEncoderModule

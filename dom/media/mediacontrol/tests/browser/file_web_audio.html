@@ -5,6 +5,7 @@
 </head>
 <body>
 <button id="start">start</button>
+<button id="startSilent">start silent</button>
 <script>
 let ac;
 let osc;
@@ -14,14 +15,24 @@ let gain;
 // user gesture so the AudioContext is allowed to start without autoplay
 // rejection).
 document.getElementById("start").addEventListener("click", () => {
+  startGraph(0.05);
+});
+
+// Same running graph, but silent, so the page is genuinely playing web audio
+// without the tab ever becoming audible.
+document.getElementById("startSilent").addEventListener("click", () => {
+  startGraph(0);
+});
+
+function startGraph(volume) {
   ac = new AudioContext();
   osc = ac.createOscillator();
   gain = ac.createGain();
-  gain.gain.value = 0.05;
+  gain.gain.value = volume;
   osc.connect(gain);
   gain.connect(ac.destination);
   osc.start();
-});
+}
 
 // Expose state to the test.
 window.getAudioContextState = () => ac && ac.state;
@@ -43,6 +54,7 @@ window.waitForAudioContextState = expected =>
     });
   });
 window.resumeAudioContext = () => ac && ac.resume();
+window.suspendAudioContext = () => ac && ac.suspend();
 </script>
 </body>
 </html>

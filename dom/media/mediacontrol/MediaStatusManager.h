@@ -221,6 +221,11 @@ class MediaStatusManager : public IMediaInfoUpdater {
   // Return the actual playback state.
   MediaSessionPlaybackState PlaybackState() const;
 
+  // Whether the active media session has a page-registered handler for the
+  // given action (i.e. the page called `setActionHandler()` for it). Returns
+  // false when there is no active media session.
+  bool IsActiveSessionActionSupported(MediaSessionAction aAction) const;
+
   // When page title changes, we might need to update it on the default
   // metadata as well.
   void NotifyPageTitleChanged();
@@ -238,8 +243,10 @@ class MediaStatusManager : public IMediaInfoUpdater {
   uint64_t mTopLevelBrowsingContextId;
 
   // Within a tab, the Id of the browsing context whose registered media
-  // session is currently active for the tab. Derived from the active
-  // audible controllable context tracked on `mPlaybackStatusDelegate`.
+  // session is currently active for the tab. Preferably the context owning
+  // the active audible controllable source tracked on
+  // `mPlaybackStatusDelegate`, otherwise any context with a session that is
+  // audible by any means. See UpdateActiveMediaSessionContext().
   Maybe<uint64_t> mActiveMediaSessionContextId;
 
   void ClearActiveMediaSessionContextIdIfNeeded();
@@ -253,8 +260,17 @@ class MediaStatusManager : public IMediaInfoUpdater {
   void FillMissingTitleAndArtworkIfNeeded(MediaMetadataBase& aMetadata) const;
 
   void SetActiveMediaSessionContextId(uint64_t aBrowsingContextId);
-  void HandleActiveAudibleControllableContextChanged(
-      Maybe<uint64_t>& aBrowsingContextId);
+
+  // Re-derives the tab's active media session context from the current
+  // audible state and re-registers it if it changed. The browsing context
+  // owning the active audible controllable source (see MediaPlaybackStatus)
+  // is preferred when it has a registered Media Session; otherwise any
+  // browsing context that has a Media Session and is audible through any
+  // means, including sources that don't participate in the controllable
+  // media lifecycle (e.g. the Web Audio API), qualifies while
+  // `media.mediacontrol.webaudio.activation.enabled` is set. This keeps a
+  // page's Media Session integration from requiring an HTMLMediaElement.
+  void UpdateActiveMediaSessionContext();
 
   void NotifySupportedKeysChangedIfNeeded(uint64_t aBrowsingContextId);
 
@@ -269,6 +285,11 @@ class MediaStatusManager : public IMediaInfoUpdater {
   // update the guessed playback state.
   void SetGuessedPlayState(MediaSessionPlaybackState aState);
 
+  // Re-derives the guessed playback state from every audible or playing
+  // source in the tab, including ones that report no playback state of their
+  // own such as the Web Audio API.
+  void UpdateGuessedPlaybackState();
+
   // Whenever the declared playback state or the guessed playback state changes,
   // we should recompute actual playback state to know if we need to update the
   // virtual control interface.
@@ -278,12 +299,11 @@ class MediaStatusManager : public IMediaInfoUpdater {
   // media session doesn't exist, return  'None' instead.
   MediaSessionPlaybackState GetCurrentDeclaredPlaybackState() const;
 
-  // This state can match to the `guessed playback state` in the spec [1], it
-  // indicates if we have any media element playing within the tab which this
-  // controller belongs to. But currently we only take media elements into
-  // account, which is different from the way the spec recommends. In addition,
-  // We don't support web audio and plugin and not consider audible state of
-  // media.
+  // This state matches the `guessed playback state` in the spec [1]. It
+  // indicates whether any media is playing within the tab which this
+  // controller belongs to: media elements, or -- when the tab has no
+  // controllable media at all -- any other audible source, such as the Web
+  // Audio API.
   // [1] https://w3c.github.io/mediasession/#guessed-playback-state
   MediaSessionPlaybackState mGuessedPlaybackState =
       MediaSessionPlaybackState::None;

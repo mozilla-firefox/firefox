@@ -357,6 +357,28 @@ void MediaController::NotifyMediaPlaybackChanged(uint64_t aBrowsingContextId,
   UpdateActivatedStateIfNeeded();
 }
 
+void MediaController::EnableAction(uint64_t aBrowsingContextId,
+                                   MediaSessionAction aAction) {
+  if (mShutdown) {
+    return;
+  }
+  MediaStatusManager::EnableAction(aBrowsingContextId, aAction);
+  // A page registering its play/pause handlers after the tab is already
+  // audible and declared playing must still activate the controller, so
+  // this can't rely solely on the audible/playback-state notifications.
+  // TODO : we will move this into `HandleSupportedMediaSessionActionsChanged`
+  // in bug 2075964.
+  UpdateActivatedStateIfNeeded();
+}
+
+void MediaController::NotifySessionDestroyed(uint64_t aBrowsingContextId) {
+  if (mShutdown) {
+    return;
+  }
+  MediaStatusManager::NotifySessionDestroyed(aBrowsingContextId);
+  UpdateActivatedStateIfNeeded();
+}
+
 void MediaController::UpdateDeactivationTimerIfNeeded() {
   if (!StaticPrefs::media_mediacontrol_stopcontrol_timer()) {
     return;
@@ -465,6 +487,10 @@ void MediaController::NotifyBrowsingContextDiscarded(
   if (IsAudible() != oldAudible) {
     DispatchAsyncEvent(u"audiblechange"_ns);
   }
+  // A discarded context takes its media session with it. For controllable
+  // media this is already covered by the stop notification that accompanies
+  // teardown, but an uncontrollable source sends no such notification.
+  UpdateActivatedStateIfNeeded();
 }
 
 bool MediaController::ShouldActivateController() const {
@@ -478,9 +504,41 @@ bool MediaController::ShouldActivateController() const {
   // keys on the platform and show the virtual control interface (if needed).
   // The controller would be activated when (1) controllable media starts in the
   // browsing context that controller belongs to (2) controllable media enters
-  // fullscreen or PIP mode.
-  return IsAnyMediaBeingControlled() &&
-         (IsPlaying() || IsBeingUsedInPIPModeOrFullscreen()) && !mIsActive;
+  // fullscreen or PIP mode (3) the tab's active media session declares itself
+  // playing while the tab is audible, even without any controllable media (e.g.
+  // audio produced purely through the Web Audio API). Unlike an
+  // HTMLMediaElement, there is no default action to fall back to for such
+  // media, so (3) also requires the page to have registered its own `play` and
+  // `pause` handlers; otherwise the platform's play/pause keys would have
+  // nothing to act on. (3) is behind
+  // `media.mediacontrol.webaudio.activation.enabled` while the condition for
+  // it is being specified.
+  if (mIsActive) {
+    return false;
+  }
+  // Deliberately not PlaybackState(), which also reflects uncontrollable
+  // sources through the guessed state. Audio from a source this branch cannot
+  // control is not a reason to start intercepting the platform's keys on
+  // behalf of a media element that has never played.
+  if (IsAnyMediaBeingControlled() &&
+      (IsPlaying() || IsBeingUsedInPIPModeOrFullscreen())) {
+    return true;
+  }
+  if (!StaticPrefs::media_mediacontrol_webaudio_activation_enabled()) {
+    return false;
+  }
+  const bool playSupported =
+      IsActiveSessionActionSupported(MediaSessionAction::Play);
+  const bool pauseSupported =
+      IsActiveSessionActionSupported(MediaSessionAction::Pause);
+  const bool shouldActivate =
+      PlaybackState() == MediaSessionPlaybackState::Playing && IsAudible() &&
+      playSupported && pauseSupported;
+  LOG("ShouldActivateController, playbackState={}, audible={}, play={}, "
+      "pause={}, result={}",
+      ToMediaSessionPlaybackStateStr(PlaybackState()), IsAudible(),
+      playSupported, pauseSupported, shouldActivate);
+  return shouldActivate;
 }
 
 bool MediaController::ShouldDeactivateController() const {
@@ -584,6 +642,11 @@ void MediaController::HandleActualPlaybackStateChanged() {
   if (RefPtr<MediaControlService> service = MediaControlService::GetService()) {
     service->NotifyControllerPlaybackStateChanged(this);
   }
+  // Media that isn't driven by a controllable source never reaches the
+  // playback notification that usually maintains this timer, so a controller
+  // kept alive by its media session alone would have no backstop at all.
+  UpdateDeactivationTimerIfNeeded();
+  UpdateActivatedStateIfNeeded();
   DispatchAsyncEvent(u"playbackstatechange"_ns);
 }
 
