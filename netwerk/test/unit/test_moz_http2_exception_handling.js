@@ -1,5 +1,9 @@
 "use strict";
 
+const { NodeLegacyHTTP2Server } = ChromeUtils.importESModule(
+  "resource://testing-common/NodeServer.sys.mjs"
+);
+
 function make_channel(url) {
   return NetUtil.newChannel({
     uri: url,
@@ -22,17 +26,23 @@ async function get_response(channel, flags = 0) {
   });
 }
 
-// Hit /exception-test which intentionally throws inside handleRequestImpl.
-// The try/catch wrapper in handleRequest should catch it and return 500.
-// Then hit another endpoint to verify the server is still alive.
+// Hit a handler that throws. The server should catch it and return 500, and
+// keep serving the requests that follow.
 add_task(async function test_exception_does_not_kill_server() {
   do_get_profile();
-  const port = Services.env.get("MOZHTTP2_PORT");
-
-  let certdb = Cc["@mozilla.org/security/x509certdb;1"].getService(
-    Ci.nsIX509CertDB
-  );
-  addCertFromFile(certdb, "http2-ca.pem", "CTu,u,u");
+  let server = new NodeLegacyHTTP2Server();
+  await server.start();
+  registerCleanupFunction(async () => {
+    await server.stop();
+  });
+  await server.registerPathHandler("/exception-test", () => {
+    throw new Error("Intentional test exception from /exception-test");
+  });
+  await server.registerPathHandler("/header", (req, res) => {
+    res.writeHead(200);
+    res.end("ok");
+  });
+  const port = server.port();
 
   const origin = `https://localhost:${port}`;
 

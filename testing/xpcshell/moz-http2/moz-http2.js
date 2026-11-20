@@ -232,12 +232,6 @@ function handleRequestImpl(req, res) {
     res.setHeader("X-Connection-Http2", "no");
   }
 
-  if (u.pathname === "/exception-test") {
-    // Intentionally throws to test that handleRequest isolates exceptions.
-    // Without the try/catch wrapper this would crash the server process.
-    throw new Error("Intentional test exception from /exception-test");
-  }
-
   if (req.method == "CONNECT") {
     if (req.headers.host == "illegalhpacksoft.example.com:80") {
       illegalheader_conn = req.stream.connection;
