@@ -144,6 +144,9 @@ pub struct NeqoHttp3Conn {
     /// child needs an id before the round-trip to neqo completes, so it mints a provisional id and
     /// we translate here. The 0 sentinel ("no group") is never stored.
     webtransport_send_groups: HashMap<u64, SendGroupId>,
+    /// The write time last handed to neqo's datagram queue, which requires
+    /// write times never to go backwards.
+    last_datagram_written: Option<Instant>,
     /// Whether the connection-close reason has already been recorded to Glean.
     /// A connection may surface a `Closing` state change followed later by a
     /// `Closed` one; this guards against counting the same close twice while
@@ -662,6 +665,7 @@ impl NeqoHttp3Conn {
             buffered_outbound_datagram: None,
             would_block_counter: WouldBlockCounter::new(),
             webtransport_send_groups: HashMap::new(),
+            last_datagram_written: None,
             #[cfg(not(target_os = "android"))]
             close_reason_recorded: false,
         }));
@@ -2747,12 +2751,19 @@ pub extern "C" fn neqo_http3conn_webtransport_send_datagram(
     let translated_group_id = conn
         .neqo_send_group_id(send_group_id)
         .unwrap_or(SendGroupId::new(0));
-    // Gecko's TimeStamp and Instant need not share a clock, so the write time
-    // comes across as an age.
+    // A Rust Instant can't be built from a C++ TimeStamp, so the write time
+    // comes across as a Duration.  The C++ and Rust "now" reads aren't
+    // simultaneous, so the result can step back: two datagrams stamped at t=5,
+    // with ages read at t=15 and t=30 and Instants at t=20 and t=32, come out at
+    // 10 and 7.  neqo needs non-decreasing write times, so clamp to the last one.
     let now = Instant::now();
-    let written = now
+    let mut written = now
         .checked_sub(Duration::from_micros(age_us))
         .unwrap_or(now);
+    if let Some(last) = conn.last_datagram_written {
+        written = written.max(last);
+    }
+    conn.last_datagram_written = Some(written);
     match conn.conn.webtransport_send_datagram(
         StreamId::from(session_id),
         data,
