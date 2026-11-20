@@ -21,22 +21,13 @@ var serverPort;
 var proxy;
 
 add_setup(async function setup() {
-  serverPort = Services.env.get("MOZHTTP2_PORT");
-  Assert.notEqual(serverPort, null);
-  dump("using port " + serverPort + "\n");
-
-  // Set to allow the cert presented by our H2 server
   do_get_profile();
+  serverPort = await start_http2_test_server();
   Services.prefs.setIntPref("network.http.speculative-parallel-limit", 0);
 
-  // The moz-http2 cert is for foo.example.com and is signed by http2-ca.pem
-  // so add that cert to the trust list as a signing cert. Some older tests in
-  // this suite use localhost with a TOFU exception, but new ones should use
-  // foo.example.com
   let certdb = Cc["@mozilla.org/security/x509certdb;1"].getService(
     Ci.nsIX509CertDB
   );
-  addCertFromFile(certdb, "http2-ca.pem", "CTu,u,u");
   addCertFromFile(certdb, "proxy-ca.pem", "CTu,u,u");
 
   Services.prefs.setBoolPref("network.http.http2.enabled", true);
