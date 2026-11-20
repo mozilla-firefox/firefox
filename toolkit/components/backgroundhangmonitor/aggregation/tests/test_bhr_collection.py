@@ -141,6 +141,19 @@ def test_query_sql_filters_build_date_in_sql():
     )
 
 
+def test_query_sql_holds_each_ping_to_its_own_builds_submission_window():
+    # Otherwise every day of a window but the last would also get the late
+    # pings submitted up to end_date + 5.
+    sql = bhr_collection.build_query_sql(
+        datetime.date(2026, 5, 1), datetime.date(2026, 5, 3), 100
+    )
+    build_date = "SAFE.PARSE_DATE('%Y%m%d', SUBSTR(client_info.app_build, 1, 8))"
+    assert f"TIMESTAMP(DATE_SUB({build_date}, INTERVAL 5 DAY))" in sql
+    assert f"TIMESTAMP(DATE_ADD({build_date}, INTERVAL 5 DAY))" in sql
+    # The window-wide range stays, since it is what prunes the scan.
+    assert "BETWEEN '2026-04-26' AND '2026-05-08'" in sql
+
+
 def test_query_sql_does_not_select_unused_ping_info():
     sql = bhr_collection.build_query_sql(
         datetime.date(2026, 5, 1), datetime.date(2026, 5, 1), 1

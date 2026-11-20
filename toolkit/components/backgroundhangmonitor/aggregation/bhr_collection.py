@@ -35,6 +35,8 @@ from symbolication import UNSYMBOLICATED, symbolicate_modules
 
 _BQ_TABLE = "mozdata.firefox_desktop.hang_report_redacted"
 _MAX_SAMPLE_SLICES = 10000
+# How far either side of its build date a build's pings are read.
+_SUBMISSION_PADDING_DAYS = 5
 
 # Project/dataset where query results are materialized before being read back.
 # Large result sets cannot be returned inline, so the query writes to a temp
@@ -218,15 +220,22 @@ def build_query_sql(date, end_date, sample_slices, client_metrics=False):
     Filtering in SQL cuts the result set (and the runtime) by roughly that
     factor.
 
+    Each ping is also held to its own build's padded range, so that every day
+    of a multi-day window gets exactly the pings a single-day run would give it
+    rather than the late ones up to the end of the window. The window-wide
+    range stays too: only a constant range prunes partitions, and so the scan.
+
     Only the handful of fields the pipeline actually reads are selected, not the
     whole client_info/metrics records (metrics in particular is large). They're
     rebuilt as STRUCTs so the rows keep the same nested shape get_prop expects
     (client_info.os, metrics.object.hangs_reports, ...).
     """
-    submission_start = date - timedelta(days=5)
-    submission_end = end_date + timedelta(days=5)
+    submission_start = date - timedelta(days=_SUBMISSION_PADDING_DAYS)
+    submission_end = end_date + timedelta(days=_SUBMISSION_PADDING_DAYS)
     date_str = date.strftime("%Y%m%d")
     end_date_str = end_date.strftime("%Y%m%d")
+    # SAFE so a malformed app_build drops its ping instead of failing the query.
+    ping_build_date = "SAFE.PARSE_DATE('%Y%m%d', SUBSTR(client_info.app_build, 1, 8))"
     client_id_field = (
         ",\n        client_info.client_id AS client_id" if client_metrics else ""
     )
@@ -253,6 +262,10 @@ def build_query_sql(date, end_date, sample_slices, client_metrics=False):
       -- Keep only pings whose build date is in the requested window. app_build
       -- starts with YYYYMMDD; compare those first 8 characters.
       AND SUBSTR(client_info.app_build, 1, 8) BETWEEN '{date_str}' AND '{end_date_str}'
+      -- And submitted within its own build date's padded range.
+      AND submission_timestamp BETWEEN
+        TIMESTAMP(DATE_SUB({ping_build_date}, INTERVAL {_SUBMISSION_PADDING_DAYS} DAY))
+        AND TIMESTAMP(DATE_ADD({ping_build_date}, INTERVAL {_SUBMISSION_PADDING_DAYS} DAY))
     """
 
 
