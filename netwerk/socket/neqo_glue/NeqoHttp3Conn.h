@@ -205,6 +205,16 @@ class NeqoHttp3Conn final {
         aSendGroupId, aSendOrder, aAgeUs);
   }
 
+  // Cumulative sent/expired/dropped outgoing-datagram counts for this
+  // session, cheap enough to poll after every forwarded batch (see
+  // neqo_http3conn_webtransport_datagram_session_stats's own comment).
+  nsresult WebTransportDatagramSessionStats(uint64_t aSessionId,
+                                            uint64_t* aSent, uint64_t* aExpired,
+                                            uint64_t* aDropped) {
+    return neqo_http3conn_webtransport_datagram_session_stats(
+        this, aSessionId, aSent, aExpired, aDropped);
+  }
+
   nsresult ConnectUdpSendDatagram(uint64_t aSessionId, nsTArray<uint8_t>& aData,
                                   uint64_t aTrackingId, uint64_t aSendGroupId,
                                   int64_t aSendOrder) {

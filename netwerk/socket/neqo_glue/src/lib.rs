@@ -2228,6 +2228,8 @@ pub enum Http3Event {
     EchFallbackAuthenticationNeeded,
     WebTransport(WebTransportEventExternal),
     ConnectUdp(ConnectUdpEventExternal),
+    /// neqo's outgoing datagram queue dropped back below its high water mark.
+    OutgoingDatagramSpaceAvailable,
     NoEvent,
 }
 
@@ -2277,7 +2279,6 @@ pub extern "C" fn neqo_http3conn_event(
             Http3ClientEvent::DataWritable { stream_id } => Http3Event::DataWritable {
                 stream_id: stream_id.as_u64(),
             },
-            Http3ClientEvent::OutgoingDatagramSpaceAvailable { .. } => Http3Event::NoEvent,
             Http3ClientEvent::StopSending { stream_id, error } => Http3Event::StopSending {
                 stream_id: stream_id.as_u64(),
                 error,
@@ -2311,6 +2312,9 @@ pub extern "C" fn neqo_http3conn_event(
                 local,
             },
             Http3ClientEvent::RequestsCreatable => Http3Event::RequestsCreatable,
+            Http3ClientEvent::OutgoingDatagramSpaceAvailable { .. } => {
+                Http3Event::OutgoingDatagramSpaceAvailable
+            }
             Http3ClientEvent::AuthenticationNeeded => Http3Event::AuthenticationNeeded,
             Http3ClientEvent::ZeroRttRejected => Http3Event::ZeroRttRejected,
             Http3ClientEvent::ResumptionToken(token) => {
@@ -2781,6 +2785,29 @@ pub extern "C" fn neqo_http3conn_webtransport_send_datagram(
             NS_OK
         }
         Err(Http3Error::Transport(TransportError::TooMuchData)) => NS_ERROR_NOT_AVAILABLE,
+        Err(_) => NS_ERROR_UNEXPECTED,
+    }
+}
+
+/// Cheap per-batch counterpart to neqo_http3conn_webtransport_session_stats:
+/// only the three datagram counters, skipping that function's connection-wide
+/// transport-stats translation (RTT/cwnd/etc), which a getStats() call needs
+/// but a poll after every forwarded batch does not.
+#[no_mangle]
+pub extern "C" fn neqo_http3conn_webtransport_datagram_session_stats(
+    conn: &NeqoHttp3Conn,
+    session_id: u64,
+    sent: &mut u64,
+    expired: &mut u64,
+    dropped: &mut u64,
+) -> nsresult {
+    match conn.conn.webtransport_session_stats(StreamId::from(session_id)) {
+        Ok(session_stats) => {
+            *sent = session_stats.outgoing_datagrams.sent;
+            *expired = session_stats.outgoing_datagrams.expired;
+            *dropped = session_stats.outgoing_datagrams.dropped;
+            NS_OK
+        }
         Err(_) => NS_ERROR_UNEXPECTED,
     }
 }

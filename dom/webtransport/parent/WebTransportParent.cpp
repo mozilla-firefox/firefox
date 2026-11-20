@@ -1249,6 +1249,12 @@ NS_IMETHODIMP WebTransportParent::OnDatagramReceived(
   return NS_OK;
 }
 
+NS_IMETHODIMP WebTransportParent::OnOutgoingDatagramSpaceAvailable() {
+  MOZ_ASSERT(mSocketThread->IsOnCurrentThread());
+  // Nothing samples neqo's queue capacity yet.
+  return NS_OK;
+}
+
 NS_IMETHODIMP
 WebTransportParent::OnOutgoingDatagramOutCome(
     uint64_t aId, WebTransportSessionEventListener::DatagramOutcome aOutCome) {

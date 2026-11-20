@@ -652,6 +652,18 @@ void Http3WebTransportSession::SetDatagramMaxAge(double aMaxAge) {
   mSession->SetDatagramMaxAge(mStreamId, aMaxAge);
 }
 
+bool Http3WebTransportSession::GetDatagramSessionStats(uint64_t* aSent,
+                                                       uint64_t* aExpired,
+                                                       uint64_t* aDropped) {
+  MOZ_ASSERT(OnSocketThread(), "not on socket thread");
+  if (mRecvState != ACTIVE) {
+    return false;
+  }
+
+  return mSession->GetDatagramSessionStats(mStreamId, aSent, aExpired,
+                                           aDropped);
+}
+
 void Http3WebTransportSession::GetStats() {
   MOZ_ASSERT(OnSocketThread(), "not on socket thread");
   RefPtr<WebTransportSessionEventListener> listener = GetListener();

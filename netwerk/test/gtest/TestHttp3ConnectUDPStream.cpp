@@ -101,6 +101,12 @@ class Http3SessionStub final : public Http3SessionBase {
                     uint64_t aSendGroupId, int64_t aSendOrder,
                     TimeStamp aTimestamp) override {}
 
+  bool GetDatagramSessionStats(uint64_t aSessionId, uint64_t* aSent,
+                               uint64_t* aExpired,
+                               uint64_t* aDropped) override {
+    return false;
+  }
+
   uint64_t MaxDatagramSize(uint64_t aSessionId) override { return 0; }
 
   nsresult ExportWebTransportKeyingMaterial(

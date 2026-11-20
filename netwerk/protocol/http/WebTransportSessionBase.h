@@ -83,6 +83,9 @@ class WebTransportSessionBase {
           aCallback) = 0;
   virtual void StartReading() {}
 
+  // Tell the listener neqo's outgoing datagram queue has room again.
+  void NotifyOutgoingDatagramSpaceAvailable();
+
   virtual Http3WebTransportSession* GetHttp3WebTransportSession() {
     return nullptr;
   }
