@@ -275,10 +275,10 @@ class NeqoHttp3Conn final {
                                                      &aSendOrder);
   }
 
-  nsresult WebTransportSetSendGroup(uint64_t aSessionId,
+  nsresult WebTransportSetSendGroup(uint64_t aSessionId, uint64_t aStreamId,
                                     uint64_t aSendGroupId) {
     return neqo_http3conn_webtransport_set_sendgroup(this, aSessionId,
-                                                     aSendGroupId);
+                                                     aStreamId, aSendGroupId);
   }
 
   nsresult RegisterWebTransportSendGroup(uint64_t aSessionId,

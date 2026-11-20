@@ -149,7 +149,8 @@ class Http3SessionStub final : public Http3SessionBase {
 
   void SetSendOrder(Http3StreamBase* aStream, int64_t aSendOrder) override {}
 
-  void SetSendGroup(Http3StreamBase* aStream, uint64_t aSendGroupId) override {}
+  void SetSendGroup(Http3WebTransportStream* aStream,
+                    uint64_t aSendGroupId) override {}
 
   void ProcessOutput() {
     for (const auto& stream : mReadyForWrite) {

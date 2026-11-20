@@ -239,6 +239,9 @@ class WebTransportSessionProxy final
       MOZ_GUARDED_BY(mMutex) = 0;
   uint16_t mAnticipatedConcurrentIncomingBidirectionalStreams
       MOZ_GUARDED_BY(mMutex) = 0;
+  // Send groups content created before the session existed, registered once
+  // it does.
+  nsTArray<uint64_t> mPendingSendGroups MOZ_GUARDED_BY(mMutex);
 
   // Cached stats for when connection is closed (spec requirement)
   bool mHasCachedStats MOZ_GUARDED_BY(mMutex) = false;

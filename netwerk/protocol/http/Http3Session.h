@@ -196,7 +196,7 @@ class Http3SessionBase {
   virtual void StreamStopSending(Http3WebTransportStream* aStream,
                                  uint64_t aErrorCode) = 0;
   virtual void SetSendOrder(Http3StreamBase* aStream, int64_t aSendOrder) = 0;
-  virtual void SetSendGroup(Http3StreamBase* aStream,
+  virtual void SetSendGroup(Http3WebTransportStream* aStream,
                             uint64_t aSendGroupId) = 0;
 };
 
@@ -366,7 +366,8 @@ class Http3Session final : public Http3SessionBase,
       uint64_t aSessionId, uint16_t aValue) override;
 
   void SetSendOrder(Http3StreamBase* aStream, int64_t aSendOrder) override;
-  void SetSendGroup(Http3StreamBase* aStream, uint64_t aSendGroupId) override;
+  void SetSendGroup(Http3WebTransportStream* aStream,
+                    uint64_t aSendGroupId) override;
 
   void CloseWebTransportConn() override;
 
