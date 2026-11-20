@@ -5,7 +5,3 @@
 XPCSHELL_TESTS_MANIFESTS += [
     "xpcshell.toml",
 ]
-
-PERFTESTS_MANIFESTS += [
-    "perftest.toml",
-]
