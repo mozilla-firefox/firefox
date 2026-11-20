@@ -24,8 +24,13 @@ xul|findbar {
   transition-timing-function: ease-in-out, linear;
   padding-block: var(--findbar-padding-block);
   border-top: var(--findbar-border-top-width) solid var(--chrome-content-separator-color);
-  background-color: var(--toolbar-background-color);
-  color: -moz-dialogtext;
+  background-color: var(--background-color-box);
+  color: var(--text-color);
+
+  @media (-moz-native-theme) {
+    background-color: var(--toolbar-background-color);
+    color: var(--toolbar-text-color);
+  }
 
   @media not -moz-pref("browser.nova.enabled") {
     border-top-color: ThreeDShadow;

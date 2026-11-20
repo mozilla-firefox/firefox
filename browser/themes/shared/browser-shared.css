@@ -941,14 +941,13 @@ menupopup::part(drop-indicator) {
 /* Find bar */
 
 .browserContainer > findbar {
-  background-color: var(--toolbar-background-color);
-  color: var(--toolbar-text-color);
   color-scheme: var(--toolbar-color-scheme);
   /* Variables defined in browser-colors.css will be updated to use design tokens, see bug 1952566. */
   /* stylelint-disable-next-line stylelint-plugin-mozilla/use-design-tokens */
   border-top-color: var(--chrome-content-separator-color);
 
   :root[lwtheme] & {
+    color: var(--toolbar-text-color);
     background-color: var(--lwt-accent-color); /* Known opaque */
     background-image: image(var(--toolbar-background-color)), var(--toolbox-background-image);
     background-repeat: no-repeat, var(--toolbox-background-repeat);
