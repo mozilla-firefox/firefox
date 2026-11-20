@@ -139,12 +139,20 @@ EXPORTS["double-conversion"] = [
     "double-conversion/double-conversion/utils.h",
 ]
 
+EXPORTS["zmij"] = [
+    "zmij/zmij.h",
+]
+
 EXPORTS.function2 += [
     "/third_party/function2/include/function2/function2.hpp",
 ]
 
 LOCAL_INCLUDES += [
     "/mfbt/double-conversion",
+]
+
+DIRS += [
+    "zmij",
 ]
 
 if CONFIG["OS_ARCH"] == "WINNT":

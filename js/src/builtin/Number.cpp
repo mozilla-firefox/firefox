@@ -57,6 +57,7 @@
 #include "vm/JSContext.h"
 #include "vm/JSObject.h"
 #include "vm/StaticStrings.h"
+#include "zmij/zmij.h"
 
 #include "vm/Compartment-inl.h"  // For js::UnwrapAndTypeCheckThis
 #include "vm/GeckoProfiler-inl.h"
@@ -757,6 +758,10 @@ static_assert(
 static_assert(DTOSTR_STANDARD_BUFFER_SIZE <= JS::MaximumNumberToStringLength,
               "MaximumNumberToStringLength is large enough to hold the longest "
               "string produced by a conversion");
+
+static_assert(zmij::ecmascript_buffer_size <= JS::MaximumNumberToStringLength,
+              "MaximumNumberToStringLength is large enough to hold the scratch "
+              "space required by Zmij");
 
 MOZ_ALWAYS_INLINE
 static JSLinearString* LookupInt32ToString(JSContext* cx, int32_t si) {
@@ -1705,17 +1710,11 @@ void JS::NumberToString(double d, char (&out)[MaximumNumberToStringLength]) {
     memmove(out, cbuf.sbuf, len);
     out[len] = '\0';
   } else {
-    const double_conversion::DoubleToStringConverter& converter =
-        double_conversion::DoubleToStringConverter::EcmaScriptConverter();
-
-    double_conversion::StringBuilder builder(out, sizeof(out));
-    MOZ_ALWAYS_TRUE(converter.ToShortest(d, &builder));
-
-#ifdef DEBUG
-    char* result =
-#endif
-        builder.Finalize();
-    MOZ_ASSERT(out == result);
+    char* end = zmij::write_ecmascript(out, MaximumNumberToStringLength, d);
+    // This is safe, because MaximumNumberToStringLength includes scratch bytes,
+    // so there's always space left over for the terminator
+    MOZ_ASSERT(size_t(end - out) < MaximumNumberToStringLength);
+    *end = '\0';
   }
 }
 
