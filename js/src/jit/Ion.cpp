@@ -59,8 +59,8 @@
 #include "jit/WarpOracle.h"
 #include "jit/WasmBCE.h"
 #include "jit/WasmRefTypeAnalysis.h"
-#include "js/friend/UsageStatistics.h"  // JSUseCounter
 #include "js/friend/StackLimits.h"
+#include "js/friend/UsageStatistics.h"  // JSUseCounter
 #include "js/Printf.h"
 #include "js/UniquePtr.h"
 #include "util/Denormals.h"
