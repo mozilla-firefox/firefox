@@ -18,16 +18,20 @@ import org.mozilla.fenix.tabstray.redux.action.TabsTrayAction.InitAction
 import org.mozilla.fenix.tabstray.redux.state.Page
 import org.mozilla.fenix.tabstray.redux.state.TabsTrayState
 import org.mozilla.fenix.tabstray.repository.uistate.TabManagerUiStateRepository
+import org.mozilla.fenix.tabstray.repository.uistate.UngroupConfirmationDelegate
 
 /**
  * [Middleware] that reacts to [TabsTrayAction] and performs UI state storage side effects.
  *
  * @param uiStateRepository [TabManagerUiStateRepository] used for performing UI state storage side effects.
  * @param scope The [CoroutineScope] used for reading from/writing to [uiStateRepository].
+ * @param ungroupConfirmationDelegate Resolves and persists the ungroup confirmation preference.
  */
 class TabManagerUiStateStorageMiddleware(
     private val uiStateRepository: TabManagerUiStateRepository,
     private val scope: CoroutineScope,
+    private val ungroupConfirmationDelegate: UngroupConfirmationDelegate =
+        UngroupConfirmationDelegate(repository = uiStateRepository, scope = scope),
 ) : Middleware<TabsTrayState, TabsTrayAction> {
 
     private val logger = Logger("TabManagerUiStateStorageMiddleware")
@@ -91,26 +95,9 @@ class TabManagerUiStateStorageMiddleware(
                 }
             }
 
-            is TabGroupAction.UngroupRequested -> {
-                if (store.state.tabGroupState.skipUngroupConfirmation) {
-                    store.dispatch(TabGroupAction.UngroupConfirmed(group = action.group, dontAskAgain = true))
-                } else {
-                    store.dispatch(TabGroupAction.UngroupConfirmationRequested(group = action.group))
-                }
-            }
+            is TabGroupAction.UngroupRequested -> ungroupConfirmationDelegate.resolve(action.group, store::dispatch)
 
-            is TabGroupAction.UngroupConfirmed -> setSkipUngroupConfirmation(action.dontAskAgain)
-        }
-    }
-
-    private fun setSkipUngroupConfirmation(dontAskAgain: Boolean) {
-        if (dontAskAgain && uiStateRepository.uiState.value?.skipUngroupConfirmation != true) {
-            scope.launch {
-                val success = uiStateRepository.setSkipUngroupConfirmation()
-                if (!success) {
-                    logger.debug("Failed to update whether the ungroup confirmation was dismissed")
-                }
-            }
+            is TabGroupAction.UngroupConfirmed -> ungroupConfirmationDelegate.setSkip(action.dontAskAgain)
         }
     }
 

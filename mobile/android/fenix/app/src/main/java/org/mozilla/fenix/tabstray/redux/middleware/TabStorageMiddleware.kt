@@ -150,6 +150,9 @@ class TabStorageMiddleware(
                 }
             }
 
+            is TabGroupAction.AddNewTabToGroupClicked ->
+                scope.launch { tabDataCoordinator.addNewTabToTabGroup(tabGroupId = action.group.id) }
+
             // Only dispatched by the tab group flow
             is TabGroupAction.ExistingGroupSelectedForMove,
             is TabGroupAction.MoveTabAndDeleteGroupConfirmed -> {}

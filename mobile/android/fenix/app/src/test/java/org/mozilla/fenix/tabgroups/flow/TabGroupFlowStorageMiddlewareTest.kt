@@ -14,9 +14,11 @@ import kotlinx.coroutines.test.StandardTestDispatcher
 import kotlinx.coroutines.test.TestScope
 import kotlinx.coroutines.test.runCurrent
 import kotlinx.coroutines.test.runTest
+import mozilla.components.browser.state.engine.EngineMiddleware
 import mozilla.components.browser.state.state.BrowserState
 import mozilla.components.browser.state.state.createTab
 import mozilla.components.browser.state.store.BrowserStore
+import mozilla.components.concept.engine.utils.ABOUT_HOME_URL
 import mozilla.components.feature.session.SessionUseCases
 import mozilla.components.feature.tabdata.coordinator.DefaultTabDataCoordinator
 import mozilla.components.feature.tabgroups.storage.data.TabGroup
@@ -33,9 +35,12 @@ import org.mozilla.fenix.components.usecases.FenixBrowserUseCases
 import org.mozilla.fenix.tabstray.data.TabGroupTheme
 import org.mozilla.fenix.tabstray.data.TabsTrayItem
 import org.mozilla.fenix.tabstray.data.createTab as createTrayTab
+import org.mozilla.fenix.tabstray.data.createTabGroup
 import org.mozilla.fenix.tabstray.data.createTabGroup as createTrayTabGroup
+import org.mozilla.fenix.tabstray.fakes.FakeTabManagerUiStateRepository
 import org.mozilla.fenix.tabstray.redux.action.TabGroupAction
 import org.mozilla.fenix.tabstray.redux.state.TabGroupFormState
+import org.mozilla.fenix.tabstray.repository.uistate.data.PersistedUIState
 
 @OptIn(ExperimentalCoroutinesApi::class)
 @RunWith(AndroidJUnit4::class)
@@ -46,6 +51,7 @@ class TabGroupFlowStorageMiddlewareTest {
     private val tab = createTab(id = TAB_ID, url = "https://www.mozilla.org")
     private val existingGroup =
         TabGroup(id = GROUP_ID, title = GROUP_TITLE, theme = TabGroupTheme.Red.name, lastModified = 0L)
+    private val tabTrayGroup = createTabGroup(id = GROUP_ID, title = GROUP_TITLE)
 
     @Test
     fun `WHEN a tab is added to an existing group THEN the tab is assigned to that group`() = runTest {
@@ -292,6 +298,154 @@ class TabGroupFlowStorageMiddlewareTest {
         captureMiddleware.assertNotDispatched(TabGroupAction.NewGroupCreated::class)
     }
 
+    @Test
+    fun `WHEN the tab group is closed THEN the stored group is marked closed`() = runTest {
+        val repository = createRepository(groups = listOf(existingGroup))
+        val store = createStore(repository = repository)
+
+        store.dispatch(TabGroupAction.CloseTabGroupClicked(group = tabTrayGroup))
+        runCurrent()
+
+        assertTrue(repository.tabGroupDataFlow.first().tabGroups.single { it.id == GROUP_ID }.closed)
+    }
+
+    @Test
+    fun `WHEN deletion is confirmed THEN the group is removed from storage`() = runTest {
+        val repository = createRepository(groups = listOf(existingGroup))
+        val store = createStore(repository = repository)
+
+        store.dispatch(TabGroupAction.DeleteConfirmed(group = tabTrayGroup))
+        runCurrent()
+
+        assertTrue(repository.tabGroupDataFlow.first().tabGroups.none { it.id == GROUP_ID })
+    }
+
+    @Test
+    fun `WHEN closing the last tab and deleting is confirmed THEN the group is removed from storage`() = runTest {
+        val repository = createRepository(groups = listOf(existingGroup))
+        val store = createStore(repository = repository)
+
+        store.dispatch(TabGroupAction.CloseTabAndDeleteGroupConfirmed(group = tabTrayGroup))
+        runCurrent()
+
+        assertTrue(repository.tabGroupDataFlow.first().tabGroups.none { it.id == GROUP_ID })
+    }
+
+    @Test
+    fun `WHEN ungroup is confirmed THEN the group and its assignments are removed`() = runTest {
+        val repository = createRepository(groups = listOf(existingGroup), assignments = mapOf(TAB_ID to GROUP_ID))
+        val store = createStore(repository = repository)
+
+        store.dispatch(TabGroupAction.UngroupConfirmed(group = tabTrayGroup, dontAskAgain = false))
+        runCurrent()
+
+        val data = repository.tabGroupDataFlow.first()
+        assertTrue(data.tabGroups.none { it.id == GROUP_ID })
+        assertTrue(data.tabGroupAssignments.isEmpty())
+    }
+
+    @Test
+    fun `GIVEN the confirmation is not skipped WHEN ungroup is requested THEN a confirmation is requested`() = runTest {
+        val uiStateRepository =
+            FakeTabManagerUiStateRepository(initialPersistedUIState = PersistedUIState(skipUngroupConfirmation = false))
+        val store =
+            createStore(
+                repository = createRepository(groups = listOf(existingGroup)),
+                uiStateRepository = uiStateRepository,
+            )
+
+        store.dispatch(TabGroupAction.UngroupRequested(group = tabTrayGroup))
+        runCurrent()
+
+        captureMiddleware.assertLastAction(TabGroupAction.UngroupConfirmationRequested::class) {
+            assertEquals(tabTrayGroup, it.group)
+        }
+    }
+
+    @Test
+    fun `GIVEN the confirmation is skipped WHEN ungroup is requested THEN ungroup is confirmed directly`() = runTest {
+        val uiStateRepository =
+            FakeTabManagerUiStateRepository(initialPersistedUIState = PersistedUIState(skipUngroupConfirmation = true))
+        val store =
+            createStore(
+                repository = createRepository(groups = listOf(existingGroup)),
+                uiStateRepository = uiStateRepository,
+            )
+
+        store.dispatch(TabGroupAction.UngroupRequested(group = tabTrayGroup))
+        runCurrent()
+
+        captureMiddleware.assertLastAction(TabGroupAction.UngroupConfirmed::class) {
+            assertEquals(tabTrayGroup, it.group)
+            assertTrue(it.dontAskAgain)
+        }
+    }
+
+    @Test
+    fun `WHEN ungroup is confirmed with dont ask again THEN the skip preference is persisted`() = runTest {
+        val uiStateRepository =
+            FakeTabManagerUiStateRepository(initialPersistedUIState = PersistedUIState(skipUngroupConfirmation = false))
+        val store =
+            createStore(
+                repository = createRepository(groups = listOf(existingGroup)),
+                uiStateRepository = uiStateRepository,
+            )
+
+        store.dispatch(TabGroupAction.UngroupConfirmed(group = tabTrayGroup, dontAskAgain = true))
+        runCurrent()
+
+        assertTrue(uiStateRepository.uiState.value!!.skipUngroupConfirmation)
+    }
+
+    @Test
+    fun `WHEN a tab in a multi-tab group is closed THEN that tab is removed`() = runTest {
+        val browserStore =
+            BrowserStore(
+                initialState =
+                    BrowserState(
+                        tabs =
+                            listOf(
+                                createTab(id = TAB_ID, url = "https://www.mozilla.org"),
+                                createTab(id = SECOND_TAB_ID, url = "https://www.firefox.com"),
+                            )
+                    )
+            )
+        val repository =
+            createRepository(
+                groups = listOf(existingGroup),
+                assignments = mapOf(TAB_ID to GROUP_ID, SECOND_TAB_ID to GROUP_ID),
+            )
+        val store = createStore(repository = repository, browserStore = browserStore)
+
+        store.dispatch(
+            TabGroupAction.TabClosed(
+                tab = createTrayTab(id = TAB_ID, url = "https://www.mozilla.org"),
+                group = tabTrayGroup,
+            )
+        )
+        runCurrent()
+
+        assertTrue(browserStore.state.tabs.none { it.id == TAB_ID })
+    }
+
+    @Test
+    fun `WHEN a new tab is added to the group THEN a homepage tab is created and assigned to that group`() = runTest {
+        val browserStore =
+            BrowserStore(
+                initialState = BrowserState(tabs = listOf(tab)),
+                middleware = EngineMiddleware.create(engine = mockk(relaxed = true), scope = backgroundScope),
+            )
+        val repository = createRepository(groups = listOf(existingGroup))
+        val store = createStore(repository = repository, browserStore = browserStore)
+
+        store.dispatch(TabGroupAction.AddNewTabToGroupClicked(group = tabTrayGroup))
+        runCurrent()
+
+        val newTab = browserStore.state.tabs.single { it.id != TAB_ID }
+        assertEquals(ABOUT_HOME_URL, newTab.content.url)
+        assertEquals(GROUP_ID, repository.tabGroupDataFlow.first().tabGroupAssignments[newTab.id])
+    }
+
     private fun createRepository(
         groups: List<TabGroup> = emptyList(),
         assignments: Map<String, String> = emptyMap(),
@@ -303,30 +457,33 @@ class TabGroupFlowStorageMiddlewareTest {
 
     private fun TestScope.createStore(
         repository: FakeTabGroupRepository,
+        browserStore: BrowserStore = BrowserStore(initialState = BrowserState(tabs = listOf(tab))),
         entryPoint: TabGroupFlowEntryPoint = TabGroupFlowEntryPoint.AddTabToGroup(tabId = TAB_ID),
         formState: TabGroupFormState? = null,
         tabPendingNewGroup: String? = null,
         groupPendingDeletion: String? = null,
         groups: List<TabsTrayItem.TabGroup> = emptyList(),
+        uiStateRepository: FakeTabManagerUiStateRepository =
+            FakeTabManagerUiStateRepository(initialPersistedUIState = PersistedUIState()),
     ): TabGroupFlowStore {
-        val browserStore = BrowserStore(initialState = BrowserState(tabs = listOf(tab)))
         val appStore = AppStore()
         val tabsUseCases = TabsUseCases(store = browserStore)
+        val fenixBrowserUseCases =
+            FenixBrowserUseCases(
+                appStore = appStore,
+                tabsUseCases = tabsUseCases,
+                loadUrlUseCase = SessionUseCases(browserStore).loadUrl,
+                searchUseCases = mockk(relaxed = true),
+                homepageTitle = "",
+                profiler = null,
+            )
         val tabDataCoordinator =
             DefaultTabDataCoordinator(
                 tabRepository =
                     DefaultTabRepository(
                         browserStore = browserStore,
                         tabsUseCases = tabsUseCases,
-                        fenixBrowserUseCases =
-                            FenixBrowserUseCases(
-                                appStore = appStore,
-                                tabsUseCases = tabsUseCases,
-                                loadUrlUseCase = SessionUseCases(browserStore).loadUrl,
-                                searchUseCases = mockk(relaxed = true),
-                                homepageTitle = "",
-                                profiler = null,
-                            ),
+                        fenixBrowserUseCases = fenixBrowserUseCases,
                     ),
                 tabGroupRepository = repository,
                 isInactiveTabsEnabled = { false },
@@ -351,6 +508,8 @@ class TabGroupFlowStorageMiddlewareTest {
                 listOf(
                     TabGroupFlowStorageMiddleware(
                         tabDataCoordinator = tabDataCoordinator,
+                        uiStateRepository = uiStateRepository,
+                        scope = backgroundScope,
                         mainScope = backgroundScope,
                     ),
                     captureMiddleware,
@@ -360,6 +519,7 @@ class TabGroupFlowStorageMiddlewareTest {
 
     private companion object {
         const val TAB_ID = "tab-1"
+        const val SECOND_TAB_ID = "tab-2"
         const val GROUP_ID = "group-1"
         const val GROUP_TITLE = "Work"
     }

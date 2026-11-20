@@ -44,16 +44,14 @@ private const val TAB_GROUP_SHARE_DOT_SIZE_PX = 128
  * @param group The group the expanded view is showing.
  * @param homepageAsNewTabEnabled Whether the homepage as a new tab (HNT) feature is enabled.
  * @param dispatch Dispatches a [TabGroupAction] to the host's store.
- * @param addNewHomepageTab Opens a new homepage tab and returns its ID.
  * @param onTabClick Invoked when a tab in the group is clicked.
  * @param onShareClick Invoked when the group is shared.
- * @param onAddNewTabCompleted Invoked after a new tab has been added to the group.
+ * @param onAddNewTabCompleted Invoked after the new tab request has been dispatched.
  */
 fun expandedTabGroupActions(
     group: TabsTrayItem.TabGroup,
     homepageAsNewTabEnabled: Boolean,
     dispatch: (TabGroupAction) -> Unit,
-    addNewHomepageTab: () -> String,
     onTabClick: (TabsTrayItem.Tab) -> Unit,
     onShareClick: () -> Unit,
     onAddNewTabCompleted: () -> Unit = {},
@@ -73,14 +71,7 @@ fun expandedTabGroupActions(
         onAddNewTabClick =
             if (homepageAsNewTabEnabled) {
                 {
-                    val newTabId = addNewHomepageTab()
-                    dispatch(
-                        TabGroupAction.TabAddedToExistingTabGroup(
-                            tabId = newTabId,
-                            groupId = group.id,
-                            groupTitle = group.title,
-                        )
-                    )
+                    dispatch(TabGroupAction.AddNewTabToGroupClicked(group = group))
                     onAddNewTabCompleted()
                 }
             } else {

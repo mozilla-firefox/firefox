@@ -20,10 +20,12 @@ import kotlinx.coroutines.test.advanceUntilIdle
 import kotlinx.coroutines.test.runCurrent
 import kotlinx.coroutines.test.runTest
 import mozilla.components.browser.state.action.TabListAction
+import mozilla.components.browser.state.engine.EngineMiddleware
 import mozilla.components.browser.state.state.BrowserState
 import mozilla.components.browser.state.state.TabSessionState
 import mozilla.components.browser.state.state.createTab
 import mozilla.components.browser.state.store.BrowserStore
+import mozilla.components.feature.session.SessionUseCases
 import mozilla.components.feature.tabdata.coordinator.DefaultTabDataCoordinator
 import mozilla.components.feature.tabgroups.storage.data.TabGroup
 import mozilla.components.feature.tabgroups.storage.data.TabGroupData
@@ -35,6 +37,7 @@ import mozilla.components.support.utils.FakeDateTimeProvider
 import org.junit.Assert.assertTrue
 import org.junit.Test
 import org.junit.runner.RunWith
+import org.mozilla.fenix.components.AppStore
 import org.mozilla.fenix.components.tabs.DefaultTabRepository
 import org.mozilla.fenix.components.usecases.FenixBrowserUseCases
 import org.mozilla.fenix.ext.maxActiveTime
@@ -885,6 +888,44 @@ class TabStorageMiddlewareTest {
 
             assertEquals(expectedState, store.state)
         }
+
+    @Test
+    fun `WHEN a new tab is added to a group THEN a homepage tab is created and assigned to that group`() = runTest {
+        val existingTab = createTab(url = "https://www.mozilla.org", id = "existing")
+        val browserStore =
+            BrowserStore(
+                initialState = BrowserState(tabs = listOf(existingTab)),
+                middleware = EngineMiddleware.create(engine = mockk(relaxed = true), scope = backgroundScope),
+            )
+        val storedGroup = fakeGroup()
+        val repository = createRepository(initialTabGroups = listOf(storedGroup))
+        val group = createTabGroup(id = storedGroup.id, title = storedGroup.title)
+        val tabsUseCases = TabsUseCases(store = browserStore)
+        val fenixBrowserUseCases =
+            FenixBrowserUseCases(
+                appStore = AppStore(),
+                tabsUseCases = tabsUseCases,
+                loadUrlUseCase = SessionUseCases(browserStore).loadUrl,
+                searchUseCases = mockk(relaxed = true),
+                homepageTitle = "",
+                profiler = null,
+            )
+        val store =
+            createStore(
+                tabGroupRepository = repository,
+                browserStore = browserStore,
+                fenixBrowserUseCases = fenixBrowserUseCases,
+                tabGroupsEnabled = true,
+            )
+
+        store.dispatch(TabGroupAction.AddNewTabToGroupClicked(group = group))
+
+        runCurrent()
+        advanceUntilIdle()
+
+        val newTab = browserStore.state.tabs.single { it.id != "existing" }
+        assertEquals(group.id, repository.tabGroupDataFlow.first().tabGroupAssignments[newTab.id])
+    }
 
     @Test
     fun `WHEN a user creates a group with multiple tabs THEN the tabs become blocked next to each other`() = runTest {
