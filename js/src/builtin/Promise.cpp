@@ -1572,23 +1572,29 @@ static PromiseReactionRecord* NewReactionRecordFromStack(
 class ThenableJobObject : public PromiseJobObject {
  protected:
   enum Slots {
-    // These slots come directoy after the PromiseJobObject slots.
-    Thenable = PromiseJobObject::Slots::SlotCount,
-    Then,
+    // These slots come directly after the PromiseJobObject slots.
+    ResolutionValue = PromiseJobObject::Slots::SlotCount,
+    ThenMethod,
     SlotCount
   };
 
  public:
   static const JSClass class_;
 
-  Value thenable() const { return getFixedSlot(Slots::Thenable); }
+  JSObject* promiseToResolve() const { return promiseForHost(); }
 
-  void initThenable(const Value& val) { initFixedSlot(Slots::Thenable, val); }
+  Value resolutionValue() const { return getFixedSlot(Slots::ResolutionValue); }
 
-  JSObject* then() const { return getFixedSlot(Slots::Then).toObjectOrNull(); }
+  void initResolutionValue(const Value& val) {
+    initFixedSlot(Slots::ResolutionValue, val);
+  }
 
-  void initThen(JSObject* obj) {
-    initFixedSlot(Slots::Then, ObjectOrNullValue(obj));
+  JSObject* thenMethod() const {
+    return getFixedSlot(Slots::ThenMethod).toObjectOrNull();
+  }
+
+  void initThenMethod(JSObject* obj) {
+    initFixedSlot(Slots::ThenMethod, ObjectOrNullValue(obj));
   }
 };
 
@@ -1605,15 +1611,17 @@ const JSClass ThenableJobObject::class_ = {
 // The routine a ThenableJobObject runs is chosen by the
 // js::MicroTaskQueueElement::Kind it is enqueued under, not by anything stored
 // on the job.
-ThenableJobObject* NewThenableJob(JSContext* cx, HandleObject promise,
-                                  HandleValue thenable, HandleObject then,
+ThenableJobObject* NewThenableJob(JSContext* cx, HandleObject promiseToResolve,
+                                  HandleValue resolutionValue,
+                                  HandleObject thenMethod,
                                   HandleObject incumbentGlobalRepresentative,
                                   HandleObject optionalHostDefinedData) {
   cx->check(optionalHostDefinedData);
   // MG:XXX: Boy isn't it silly that we have to root here, only to get the
   // allocation site...
   RootedObject stack(
-      cx, JS::MaybeGetPromiseAllocationSiteFromPossiblyWrappedPromise(promise));
+      cx, JS::MaybeGetPromiseAllocationSiteFromPossiblyWrappedPromise(
+              promiseToResolve));
   if (!cx->compartment()->wrap(cx, &stack)) {
     return nullptr;
   }
@@ -1623,9 +1631,9 @@ ThenableJobObject* NewThenableJob(JSContext* cx, HandleObject promise,
     return nullptr;
   }
 
-  job->initPromiseForHost(promise);
-  job->initThen(then);
-  job->initThenable(thenable);
+  job->initPromiseForHost(promiseToResolve);
+  job->initThenMethod(thenMethod);
+  job->initResolutionValue(resolutionValue);
   job->initIncumbentGlobalRepresentative(
       ObjectOrNullValue(incumbentGlobalRepresentative));
   job->initOptionalHostDefinedData(ObjectOrNullValue(optionalHostDefinedData));
@@ -2187,8 +2195,12 @@ static bool IsThenableJobKind(MicroTaskQueueElement::Kind kind) {
 class MOZ_RAII StackThenableJob {
   // Indices into the extra payload of an InlineThenable MicroTask.
   enum class InlineThenableSlot : size_t {
-    Thenable,
-    Then,
+    // The value the promise is resolved with. A thenable, except for
+    // DeferredResolve jobs.
+    ResolutionValue,
+    // The thenable's already looked-up `then` method. Null unless the job kind
+    // is ResolveThenable.
+    ThenMethod,
     OptionalHostDefinedData,
     IncumbentGlobalRepresentative,
     Count,
@@ -2204,22 +2216,23 @@ class MOZ_RAII StackThenableJob {
 
   MicroTaskQueueElement::Kind kind_;
   RootedTuple<JSObject*, Value, JSObject*, JSObject*, JSObject*> roots_;
-  RootedField<JSObject*, 0> promise_;
-  RootedField<Value, 1> thenable_;
-  RootedField<JSObject*, 2> then_;
+  RootedField<JSObject*, 0> promiseToResolve_;
+  RootedField<Value, 1> resolutionValue_;
+  RootedField<JSObject*, 2> thenMethod_;
   RootedField<JSObject*, 3> incumbentGlobalRepresentative_;
   RootedField<JSObject*, 4> optionalHostDefinedData_;
 
  public:
   StackThenableJob(JSContext* cx, MicroTaskQueueElement::Kind kind,
-                   JSObject* promise, const Value& thenable, JSObject* then,
+                   JSObject* promiseToResolve, const Value& resolutionValue,
+                   JSObject* thenMethod,
                    JSObject* incumbentGlobalRepresentative,
                    JSObject* optionalHostDefinedData)
       : kind_(kind),
         roots_(cx),
-        promise_(roots_, promise),
-        thenable_(roots_, thenable),
-        then_(roots_, then),
+        promiseToResolve_(roots_, promiseToResolve),
+        resolutionValue_(roots_, resolutionValue),
+        thenMethod_(roots_, thenMethod),
         incumbentGlobalRepresentative_(roots_, incumbentGlobalRepresentative),
         optionalHostDefinedData_(roots_, optionalHostDefinedData) {
     MOZ_ASSERT(IsThenableJobKind(kind));
@@ -2228,7 +2241,8 @@ class MOZ_RAII StackThenableJob {
   StackThenableJob(JSContext* cx, MicroTaskQueueElement::Kind kind,
                    ThenableJobObject* job)
       : StackThenableJob(
-            cx, kind, job->promiseForHost(), job->thenable(), job->then(),
+            cx, kind, job->promiseToResolve(), job->resolutionValue(),
+            job->thenMethod(),
             job->getIncumbentGlobalRepresentative().toObjectOrNull(),
             job->getOptionalHostDefinedData().toObjectOrNull()) {}
 
@@ -2238,8 +2252,8 @@ class MOZ_RAII StackThenableJob {
             cx,
             MicroTaskQueueElement::Kind(MicroTaskQueueElement::jsBits(task)),
             &MicroTaskQueueElement::value(task).toObject(),
-            extra(task, InlineThenableSlot::Thenable),
-            extra(task, InlineThenableSlot::Then).toObjectOrNull(),
+            extra(task, InlineThenableSlot::ResolutionValue),
+            extra(task, InlineThenableSlot::ThenMethod).toObjectOrNull(),
             extra(task, InlineThenableSlot::IncumbentGlobalRepresentative)
                 .toObjectOrNull(),
             extra(task, InlineThenableSlot::OptionalHostDefinedData)
@@ -2260,21 +2274,21 @@ class MOZ_RAII StackThenableJob {
   }
 
   MicroTaskQueueElement::Kind kind() const { return kind_; }
-  HandleObject promise() const { return promise_; }
-  HandleValue thenable() const { return thenable_; }
-  HandleObject then() const { return then_; }
+  HandleObject promiseToResolve() const { return promiseToResolve_; }
+  HandleValue resolutionValue() const { return resolutionValue_; }
+  HandleObject thenMethod() const { return thenMethod_; }
 
   // Whether this job can be represented as an InlineThenable MicroTask.
   bool canInline(JSContext* cx) const {
-    if (!promise_->is<PromiseObject>()) {
+    if (!promiseToResolve_->is<PromiseObject>()) {
       // Inline jobs require an unwrapped PromiseObject.
       return false;
     }
-    if (promise_->nonCCWRealm() != cx->realm()) {
+    if (promiseToResolve_->nonCCWRealm() != cx->realm()) {
       // Inline jobs use the promise to identify the execution realm.
       return false;
     }
-    if (promise_->as<PromiseObject>().allocationSite()) {
+    if (promiseToResolve_->as<PromiseObject>().allocationSite()) {
       // Inline jobs have no slot for an allocation stack.
       return false;
     }
@@ -2284,13 +2298,14 @@ class MOZ_RAII StackThenableJob {
   JS::MicroTask toInlineMicroTask(uint64_t flowId) const {
     return MicroTaskQueueElement::MakeMicroTask(
         MicroTaskQueueElement::Kind::InlineThenable, uint32_t(kind_),
-        ObjectValue(*promise_), thenable_, ObjectOrNullValue(then_),
+        ObjectValue(*promiseToResolve_), resolutionValue_,
+        ObjectOrNullValue(thenMethod_),
         ObjectOrNullValue(optionalHostDefinedData_),
         ObjectOrNullValue(incumbentGlobalRepresentative_), flowId);
   }
 
   ThenableJobObject* toObject(JSContext* cx) const {
-    return NewThenableJob(cx, promise_, thenable_, then_,
+    return NewThenableJob(cx, promiseToResolve_, resolutionValue_, thenMethod_,
                           incumbentGlobalRepresentative_,
                           optionalHostDefinedData_);
   }
@@ -9236,14 +9251,14 @@ static JSObject* UncheckedUnwrapToLive(JSObject* maybeWrapped) {
 // Run a thenable job, whether it was held inline in the queue or allocated as a
 // ThenableJobObject.
 static bool RunThenableJob(JSContext* cx, const StackThenableJob& job) {
-  HandleObject promise = job.promise();
-  HandleValue thenable = job.thenable();
-  HandleObject then = job.then();
+  HandleObject promise = job.promiseToResolve();
+  HandleValue resolutionValue = job.resolutionValue();
+  HandleObject thenMethod = job.thenMethod();
   switch (job.kind()) {
     case MicroTaskQueueElement::Kind::ResolveThenable:
-      return PerformPromiseResolveThenable(cx, promise, thenable, then);
+      return PerformPromiseResolveThenable(cx, promise, resolutionValue, thenMethod);
     case MicroTaskQueueElement::Kind::ResolveBuiltinThenable: {
-      RootedObject thenableObj(cx, &thenable.toObject());
+      RootedObject thenableObj(cx, &resolutionValue.toObject());
       return PromiseResolveBuiltinThenableJob(cx, promise, thenableObj);
     }
     case MicroTaskQueueElement::Kind::DeferredResolve: {
@@ -9251,7 +9266,7 @@ static bool RunThenableJob(JSContext* cx, const StackThenableJob& job) {
       if (unwrappedPromise->state() != JS::PromiseState::Pending) {
         return true;
       }
-      return PerformPromiseResolution(cx, unwrappedPromise, thenable);
+      return PerformPromiseResolution(cx, unwrappedPromise, resolutionValue);
     }
     default:
       break;
