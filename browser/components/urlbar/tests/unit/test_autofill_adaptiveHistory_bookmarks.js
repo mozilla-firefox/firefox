@@ -53,6 +53,7 @@ add_task(async function origin_visited_bookmark_autofills_when_adaptive_on() {
   let url = "https://example.com/";
   let bookmark = await PlacesUtils.bookmarks.insert({
     url,
+    title: "A bookmark",
     parentGuid: PlacesUtils.bookmarks.unfiledGuid,
   });
   await PlacesTestUtils.addVisits({
@@ -61,19 +62,25 @@ add_task(async function origin_visited_bookmark_autofills_when_adaptive_on() {
   });
   await PlacesFrecencyRecalculator.recalculateAnyOutdatedFrecencies();
 
-  let context = createContext("exam", { isPrivate: false });
-  await check_results({
-    context,
-    autofilled: "example.com/",
-    completed: url,
-    matches: [
-      makeVisitResult(context, {
-        uri: url,
-        title: "test visit for " + url,
-        heuristic: true,
-      }),
-    ],
-  });
+  for (let [search, autofilled] of [
+    ["exam", "example.com/"],
+    ["https://exam", "https://example.com/"],
+  ]) {
+    info("Searching for " + search);
+    let context = createContext(search, { isPrivate: false });
+    await check_results({
+      context,
+      autofilled,
+      completed: url,
+      matches: [
+        makeVisitResult(context, {
+          uri: url,
+          title: "A bookmark",
+          heuristic: true,
+        }),
+      ],
+    });
+  }
 
   await PlacesUtils.bookmarks.remove(bookmark);
   await PlacesUtils.history.clear();

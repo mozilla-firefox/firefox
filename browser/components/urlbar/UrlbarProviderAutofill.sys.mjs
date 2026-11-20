@@ -154,7 +154,24 @@ const SQL_AUTOFILL_FRECENCY_THRESHOLD = `total_fixed_host_frecency >= (
     SELECT value FROM autofill_frecency_threshold
   )`;
 
-function originQuery(where, { preferHttps = false } = {}) {
+/**
+ * Builds a query for autofill origin results.
+ *
+ * @param {string} where
+ *   The WHERE clause, filtering the `origins` CTE.
+ * @param {object} [options]
+ * @param {boolean} [options.preferHttps]
+ *   Whether to prefer https among the prefixes of a host over frecency.
+ * @param {boolean} [options.countBookmarks]
+ *   Whether to count bookmarks in `n_bookmarks` for all the matching origins,
+ *   as needed when `where` filters on it. Otherwise it is 0, and bookmarks are
+ *   only counted for sites tied at the top. Counting reads all their pages.
+ * @returns {string}
+ */
+function originQuery(
+  where,
+  { preferHttps = false, countBookmarks = true } = {}
+) {
   // `frecency`, `n_bookmarks` and `visited` are partitioned by the fixed host,
   // without `www.`. `host_prefix` instead is partitioned by full host, because
   // we assume a prefix may not work regardless of `www.`.
@@ -170,6 +187,17 @@ function originQuery(where, { preferHttps = false } = {}) {
     selectTitle = "iif(h.frecency <> 0, h.title, NULL)";
     joinBookmarks = "";
   }
+
+  // Bookmarks break ties between different sites, if not counted already they
+  // are only counted when such a tie happens.
+  let bookmarksTieBreak = countBookmarks
+    ? "n_bookmarks"
+    : `iif(
+        (SELECT count(DISTINCT fixed) FROM tied) > 1,
+        (SELECT total(foreign_count) FROM moz_places
+         WHERE origin_id IN (SELECT id FROM origins o2 WHERE o2.fixed = tied.fixed)),
+        0
+      )`;
 
   let hostPrefixOrder = preferHttps
     ? `prefix = "https://" DESC, ${ORIGIN_FRECENCY_FIELD} DESC, id DESC`
@@ -199,9 +227,13 @@ function originQuery(where, { preferHttps = false } = {}) {
       fixup_url(host),
       total(${ORIGIN_FRECENCY_FIELD}) OVER (PARTITION BY fixup_url(host)),
       ${ORIGIN_FRECENCY_FIELD},
-      total(
-        (SELECT total(foreign_count) FROM moz_places WHERE origin_id = o.id)
-      ) OVER (PARTITION BY fixup_url(host)),
+      ${
+        countBookmarks
+          ? `total(
+              (SELECT total(foreign_count) FROM moz_places WHERE origin_id = o.id)
+            ) OVER (PARTITION BY fixup_url(host))`
+          : "0"
+      },
       ${selectAnyRecentTyped}
       FROM moz_origins o
       WHERE prefix NOT IN ('about:', 'place:')
@@ -209,15 +241,26 @@ function originQuery(where, { preferHttps = false } = {}) {
           OR (host BETWEEN 'www.' || :searchString AND 'www.' || :searchString || X'FFFF'))
         AND (:adaptiveAutofillEnabled = 0 OR o.block_until_ms IS NULL OR o.block_until_ms <= :nowMs)
     ),
+    qualified AS (
+      SELECT * FROM origins
+      ${where}
+    ),
+    best(total_fixed_host_frecency, frecency) AS (
+      SELECT total_fixed_host_frecency, frecency
+      FROM qualified
+      ORDER BY total_fixed_host_frecency DESC, frecency DESC
+      LIMIT 1
+    ),
+    tied AS (
+      SELECT q.* FROM qualified q
+      JOIN best USING (total_fixed_host_frecency, frecency)
+    ),
     matched_origin(host_fixed, url) AS (
       SELECT iif(instr(host, :searchString) = 1, host, fixed) || '/',
              ifnull(:prefix, host_prefix) || host || '/'
-      FROM origins
-      ${where}
+      FROM tied
       ORDER BY
-        total_fixed_host_frecency DESC,
-        frecency DESC,
-        n_bookmarks DESC,
+        ${bookmarksTieBreak} DESC,
         prefix = "https://" DESC,
         id DESC
       LIMIT 1
@@ -302,28 +345,46 @@ function urlQuery(where1, where2, isBookmarkContained) {
 }
 
 // Queries
+const SQL_ORIGIN_HISTORY_BOOKMARK_WHERE = `WHERE
+  (:adaptiveAutofillEnabled = 0 AND n_bookmarks > 0)
+  OR (any_recent_typed AND ${SQL_AUTOFILL_FRECENCY_THRESHOLD})`;
+
+const SQL_ORIGIN_PREFIX_HISTORY_BOOKMARK_WHERE = `WHERE
+  prefix BETWEEN :prefix AND :prefix || X'FFFF'
+  AND ((:adaptiveAutofillEnabled = 0 AND n_bookmarks > 0)
+    OR (any_recent_typed AND ${SQL_AUTOFILL_FRECENCY_THRESHOLD}))`;
+
 const QUERY_ORIGIN_HISTORY_BOOKMARK = originQuery(
-  `WHERE (:adaptiveAutofillEnabled = 0 AND n_bookmarks > 0)
-     OR (any_recent_typed AND ${SQL_AUTOFILL_FRECENCY_THRESHOLD})`,
+  SQL_ORIGIN_HISTORY_BOOKMARK_WHERE,
   { preferHttps: true }
 );
 
 const QUERY_ORIGIN_PREFIX_HISTORY_BOOKMARK = originQuery(
-  `WHERE prefix BETWEEN :prefix AND :prefix || X'FFFF'
-     AND ((:adaptiveAutofillEnabled = 0 AND n_bookmarks > 0)
-       OR (any_recent_typed AND ${SQL_AUTOFILL_FRECENCY_THRESHOLD}))`,
+  SQL_ORIGIN_PREFIX_HISTORY_BOOKMARK_WHERE,
   { preferHttps: true }
+);
+
+// With adaptive autofill, bookmarks don't qualify an origin, so they are only
+// counted to break ties.
+const QUERY_ORIGIN_HISTORY_BOOKMARK_ADAPTIVE = originQuery(
+  SQL_ORIGIN_HISTORY_BOOKMARK_WHERE,
+  { preferHttps: true, countBookmarks: false }
+);
+
+const QUERY_ORIGIN_PREFIX_HISTORY_BOOKMARK_ADAPTIVE = originQuery(
+  SQL_ORIGIN_PREFIX_HISTORY_BOOKMARK_WHERE,
+  { preferHttps: true, countBookmarks: false }
 );
 
 const QUERY_ORIGIN_HISTORY = originQuery(
   `WHERE any_recent_typed AND ${SQL_AUTOFILL_FRECENCY_THRESHOLD}`,
-  { preferHttps: true }
+  { preferHttps: true, countBookmarks: false }
 );
 
 const QUERY_ORIGIN_PREFIX_HISTORY = originQuery(
   `WHERE prefix BETWEEN :prefix AND :prefix || X'FFFF'
      AND any_recent_typed AND ${SQL_AUTOFILL_FRECENCY_THRESHOLD}`,
-  { preferHttps: true }
+  { preferHttps: true, countBookmarks: false }
 );
 
 const QUERY_ORIGIN_BOOKMARK = originQuery(`WHERE n_bookmarks > 0`);
@@ -733,6 +794,14 @@ export class UrlbarProviderAutofill extends UrlbarProvider {
     let { historyAllowed, bookmarksAllowed } = effectiveSources(queryContext);
 
     if (historyAllowed && bookmarksAllowed) {
+      if (opts.adaptiveAutofillEnabled) {
+        return [
+          this._strippedPrefix
+            ? QUERY_ORIGIN_PREFIX_HISTORY_BOOKMARK_ADAPTIVE
+            : QUERY_ORIGIN_HISTORY_BOOKMARK_ADAPTIVE,
+          opts,
+        ];
+      }
       return [
         this._strippedPrefix
           ? QUERY_ORIGIN_PREFIX_HISTORY_BOOKMARK
