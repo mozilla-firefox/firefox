@@ -4,6 +4,7 @@
 
 #include <OpenGL/CGLRenderers.h>
 #include <OpenGL/OpenGL.h>
+#include <sys/sysctl.h>
 
 #include "GfxInfo.h"
 #include "js/PropertyAndElement.h"  // JS_SetElement, JS_SetProperty
@@ -486,6 +487,45 @@ const nsTArray<RefPtr<GfxDriverInfo>>& GfxInfo::GetGfxDriverInfo() {
   return *sDriverInfo;
 }
 
+// Mirrors the machine model minimums in angle::IsMetalRendererAvailable, below
+// which ANGLE refuses to create a Metal display.
+static bool MachineModelSupportsMetalANGLE() {
+  static const bool sSupported = []() -> bool {
+    char model[256] = {};
+    size_t length = sizeof(model) - 1;
+    if (sysctlbyname("hw.model", model, &length, nullptr, 0) != 0) {
+      return true;
+    }
+
+    const size_t numberStart = strcspn(model, "0123456789");
+    int32_t major = 0;
+    int32_t minor = 0;
+    if (model[numberStart] == '\0' ||
+        sscanf(model + numberStart, "%d,%d", &major, &minor) != 2) {
+      return true;
+    }
+    const nsDependentCSubstring name(model, numberStart);
+
+    struct MinimumModel {
+      const char* mName;
+      int32_t mMajor;
+      int32_t mMinor;
+    };
+    static constexpr MinimumModel kMinimumModels[] = {
+        {"MacBookAir", 8, 1}, {"MacBookPro", 13, 1}, {"MacBook", 9, 1},
+        {"Macmini", 8, 1},    {"iMac", 17, 1},
+    };
+    for (const MinimumModel& minimum : kMinimumModels) {
+      if (name.EqualsASCII(minimum.mName)) {
+        return major > minimum.mMajor ||
+               (major == minimum.mMajor && minor >= minimum.mMinor);
+      }
+    }
+    return true;
+  }();
+  return sSupported;
+}
+
 OperatingSystem GfxInfo::GetOperatingSystem() {
   return MacOSVersionToOperatingSystem(mMacOSVersion);
 }
@@ -540,6 +580,9 @@ nsresult GfxInfo::GetFeatureStatusImpl(
                      GfxDriverInfo::GetDeviceVendor(DeviceVendor::NVIDIA)) {
         *aStatus = nsIGfxInfo::FEATURE_BLOCKED_DEVICE;
         aFailureId = "FEATURE_FAILURE_METAL_ANGLE_NVIDIA";
+      } else if (!MachineModelSupportsMetalANGLE()) {
+        *aStatus = nsIGfxInfo::FEATURE_BLOCKED_DEVICE;
+        aFailureId = "FEATURE_FAILURE_METAL_ANGLE_MACHINE_MODEL";
       } else {
         *aStatus = nsIGfxInfo::FEATURE_STATUS_OK;
       }
