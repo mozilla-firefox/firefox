@@ -64,6 +64,9 @@ class MockWebTransportClient : public CapsuleIOHandler {
         mSession->OnStreamDataSent(StreamId(metadata->mID),
                                    metadata->mDataSize);
       }
+      if (Maybe<size_t> size = encoder->GetDatagramSize()) {
+        mSession->OnDatagramSent(*size);
+      }
       mOutCapsules.Push(std::move(encoder));
     }
   }
@@ -1151,6 +1154,52 @@ TEST(TestHttp2WebTransport, SendAndReceiveDatagram)
   server->SendDatagramCapsule(std::move(parsedCapsule.mPayload));
   ClientProcessCapsules(server, client);
   ValidateData(listener->mReceivedDatagrams, expectedData);
+
+  client->Done();
+  server->Done();
+}
+
+// WebTransportParent paces content's write() promises off these, so a
+// datagram has to stay queued until its capsule is written, then count as
+// sent.
+TEST(TestHttp2WebTransport, DatagramQueueCapacityAndSentCount)
+{
+  RefPtr<MockWebTransportClient> client =
+      new MockWebTransportClient(Http2WebTransportInitialSettings());
+  RefPtr<MockWebTransportServer> server = new MockWebTransportServer();
+
+  nsTArray<uint8_t> data;
+  CreateTestData(512, data);
+  client->Session()->SendDatagram(data.Clone(), 0, 0, TimeStamp::Now());
+  client->Session()->SendDatagram(std::move(data), 0, 0, TimeStamp::Now());
+
+  size_t remainingBytes = 0;
+  size_t queuedDatagrams = 0;
+  size_t maxQueuedBytes = 0;
+  ASSERT_TRUE(client->Session()->GetDatagramQueueCapacity(
+      &remainingBytes, &queuedDatagrams, &maxQueuedBytes));
+  EXPECT_EQ(queuedDatagrams, 2u);
+  EXPECT_EQ(remainingBytes, maxQueuedBytes - 1024);
+
+  uint64_t sent = 0;
+  uint64_t expired = 0;
+  uint64_t dropped = 0;
+  ASSERT_TRUE(
+      client->Session()->GetDatagramSessionStats(&sent, &expired, &dropped));
+  EXPECT_EQ(sent, 0u);
+
+  ServerProcessCapsules(server, client);
+  EXPECT_EQ(server->GetReceivedCapsules().Length(), 2u);
+
+  ASSERT_TRUE(client->Session()->GetDatagramQueueCapacity(
+      &remainingBytes, &queuedDatagrams, &maxQueuedBytes));
+  EXPECT_EQ(queuedDatagrams, 0u);
+  EXPECT_EQ(remainingBytes, maxQueuedBytes);
+  ASSERT_TRUE(
+      client->Session()->GetDatagramSessionStats(&sent, &expired, &dropped));
+  EXPECT_EQ(sent, 2u);
+  EXPECT_EQ(expired, 0u);
+  EXPECT_EQ(dropped, 0u);
 
   client->Done();
   server->Done();

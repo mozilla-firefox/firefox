@@ -12,6 +12,7 @@
 #include "Http2Session.h"
 #include "Http2WebTransportStream.h"
 #include "HttpLog.h"
+#include "mozilla/ScopeExit.h"
 #include "mozilla/net/NeqoHttp3Conn.h"
 #include "nsHttp.h"
 #include "nsIOService.h"
@@ -138,11 +139,21 @@ void Http2WebTransportSessionImpl::SendDatagram(nsTArray<uint8_t>&& aData,
   // yet. These parameters are accepted for API compatibility but not used.
   // Nor is aTimestamp: the datagram is sent here, so it cannot expire.
 
+  mQueuedDatagrams++;
+  mQueuedDatagramBytes += aData.Length();
+
   Capsule capsule = Capsule::WebTransportDatagram(std::move(aData));
 
   auto encoder = std::make_unique<CapsuleEncoder>();
   encoder->EncodeCapsule(capsule);
   EnqueueOutCapsule(CapsuleTransmissionPriority::Normal, std::move(encoder));
+}
+
+void Http2WebTransportSessionImpl::OnDatagramSent(size_t aSize) {
+  MOZ_ASSERT(mQueuedDatagrams > 0 && mQueuedDatagramBytes >= aSize);
+  mQueuedDatagrams--;
+  mQueuedDatagramBytes -= aSize;
+  mSentDatagrams++;
 }
 
 void Http2WebTransportSessionImpl::SetDatagramMaxBufferedDatagrams(
@@ -156,6 +167,30 @@ void Http2WebTransportSessionImpl::SetDatagramMaxBufferedDatagrams(
 void Http2WebTransportSessionImpl::SetDatagramMaxAge(double aMaxAge) {
   LOG(("Http2WebTransportSessionImpl::SetDatagramMaxAge %p age=%f", this,
        aMaxAge));
+}
+
+// Same byte budget as neqo's per-session outgoing datagram queue.  Nothing
+// here enforces it; it only sizes the byte credit WebTransportParent grants
+// content, so a backlog in the capsule queue slows the writer down.
+static constexpr size_t kMaxQueuedDatagramBytes = 256 * 1024;
+
+bool Http2WebTransportSessionImpl::GetDatagramQueueCapacity(
+    size_t* aRemainingBytes, size_t* aQueuedDatagrams,
+    size_t* aMaxQueuedBytes) {
+  *aRemainingBytes = kMaxQueuedDatagramBytes -
+                     std::min(mQueuedDatagramBytes, kMaxQueuedDatagramBytes);
+  *aQueuedDatagrams = mQueuedDatagrams;
+  *aMaxQueuedBytes = kMaxQueuedDatagramBytes;
+  return true;
+}
+
+bool Http2WebTransportSessionImpl::GetDatagramSessionStats(uint64_t* aSent,
+                                                           uint64_t* aExpired,
+                                                           uint64_t* aDropped) {
+  *aSent = mSentDatagrams;
+  *aExpired = 0;
+  *aDropped = 0;
+  return true;
 }
 
 void Http2WebTransportSessionImpl::CreateOutgoingStreamInternal(
@@ -739,6 +774,15 @@ Http2WebTransportSession::OnOutputStreamReady(nsIAsyncOutputStream* aOut) {
     mCurrentOutCapsule = mOutgoingQueue.Pop();
   }
 
+  // Content withholds write() promises until told datagrams have left the
+  // queue, so say so whenever this pass finished writing any.
+  bool datagramSent = false;
+  auto notifyDatagramSent = MakeScopeExit([&] {
+    if (datagramSent && mImpl) {
+      mImpl->NotifyOutgoingDatagramSpaceAvailable();
+    }
+  });
+
   while (mCurrentOutCapsule && mOutput) {
     auto buffer = mCurrentOutCapsule->GetBuffer();
     const char* writeBuffer =
@@ -755,7 +799,10 @@ Http2WebTransportSession::OnOutputStreamReady(nsIAsyncOutputStream* aOut) {
     if (NS_FAILED(rv)) {
       LOG(("Http2WebTransportSession::OnOutputStreamReady %p failed %u\n", this,
            static_cast<uint32_t>(rv)));
-      // TODO: close connection
+      // The pipe only fails once CloseStream() has closed it or the
+      // Http2Session is tearing the stream down, so no close is issued here.
+      // Anything still counted as queued settles in content's
+      // WebTransportDatagramDuplexStream::Cleanup() when that close arrives.
       return NS_OK;
     }
 
@@ -772,6 +819,10 @@ Http2WebTransportSession::OnOutputStreamReady(nsIAsyncOutputStream* aOut) {
     }
 
     if (toWrite == wrote) {
+      if (Maybe<size_t> size = mCurrentOutCapsule->GetDatagramSize()) {
+        mImpl->OnDatagramSent(*size);
+        datagramSent = true;
+      }
       mWriteOffset = 0;
       mCurrentOutCapsule =
           mOutgoingQueue.IsEmpty() ? nullptr : mOutgoingQueue.Pop();

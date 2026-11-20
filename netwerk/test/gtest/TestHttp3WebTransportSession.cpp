@@ -5,6 +5,7 @@
 #include "Http3TestStubs.h"
 #include "Http3WebTransportSession.h"
 #include "gtest/gtest.h"
+#include "mozilla/ScopeExit.h"
 #include "nsSocketTransportService2.h"
 #include "nsTArray.h"
 #include "nsThreadUtils.h"
@@ -125,6 +126,8 @@ TEST(TestHttp3WebTransportSession, FailedDatagramEnqueueCountsAsDropped)
   RunOnSocketThreadAndWait([trans]() {
     RefPtr<Http3SessionStub> stub = new Http3SessionStub();
     RefPtr<Http3WebTransportSession> session = CreateActiveSession(stub, trans);
+    // Releases the stub's reference to the session, even if an ASSERT fails.
+    auto releaseSession = MakeScopeExit([&] { stub->ProcessOutput(); });
     stub->mDatagramsSent = 3;
     stub->mDatagramsExpired = 1;
     stub->mDatagramsDropped = 2;
@@ -143,9 +146,6 @@ TEST(TestHttp3WebTransportSession, FailedDatagramEnqueueCountsAsDropped)
     EXPECT_EQ(expired, 1u);
     // neqo's own two, plus the two it refused to enqueue.
     EXPECT_EQ(dropped, 4u);
-
-    // Releases the stub's reference to the session.
-    stub->ProcessOutput();
   });
 }
 
@@ -157,6 +157,7 @@ TEST(TestHttp3WebTransportSession, EnqueuedDatagramIsNotCountedAsDropped)
   RunOnSocketThreadAndWait([trans]() {
     RefPtr<Http3SessionStub> stub = new Http3SessionStub();
     RefPtr<Http3WebTransportSession> session = CreateActiveSession(stub, trans);
+    auto releaseSession = MakeScopeExit([&] { stub->ProcessOutput(); });
 
     session->SendDatagram(nsTArray<uint8_t>{1, 2, 3}, 0, 0, TimeStamp::Now());
     session->SendDatagram(nsTArray<uint8_t>{4, 5, 6}, 0, 0, TimeStamp::Now());
@@ -167,7 +168,30 @@ TEST(TestHttp3WebTransportSession, EnqueuedDatagramIsNotCountedAsDropped)
     uint64_t dropped = 0;
     ASSERT_TRUE(session->GetDatagramSessionStats(&sent, &expired, &dropped));
     EXPECT_EQ(dropped, 0u);
-
-    stub->ProcessOutput();
   });
+}
+
+TEST(TestHttp3WebTransportSession, ErrorCodeMapping)
+{
+  for (uint32_t code : {0u, 1u, 29u, 30u, 31u, 255u, 256u, 0xffffffffu}) {
+    Maybe<uint32_t> decoded =
+        Http3ErrorToWebTransportError(WebTransportErrorToHttp3Error(code));
+    ASSERT_TRUE(decoded.isSome());
+    EXPECT_EQ(*decoded, code);
+  }
+
+  uint64_t first = WebTransportErrorToHttp3Error(0);
+  uint64_t last = WebTransportErrorToHttp3Error(0xffffffffu);
+  EXPECT_TRUE(Http3ErrorToWebTransportError(first - 1).isNothing());
+  EXPECT_TRUE(Http3ErrorToWebTransportError(last + 1).isNothing());
+  // H3_REQUEST_CANCELLED is no application error code.
+  EXPECT_TRUE(Http3ErrorToWebTransportError(0x10c).isNothing());
+
+  // The reserved codepoints inside the range are no application codes either.
+  uint64_t reserved = first;
+  while ((reserved - 0x21) % 0x1f != 0) {
+    reserved++;
+  }
+  EXPECT_TRUE(Http3ErrorToWebTransportError(reserved).isNothing());
+  EXPECT_TRUE(Http3ErrorToWebTransportError(reserved + 1).isSome());
 }
