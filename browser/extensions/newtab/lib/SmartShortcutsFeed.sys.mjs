@@ -6,6 +6,7 @@
 
 const lazy = {};
 ChromeUtils.defineESModuleGetters(lazy, {
+  DeferredTask: "resource://gre/modules/DeferredTask.sys.mjs",
   PlacesUtils: "resource://gre/modules/PlacesUtils.sys.mjs",
 });
 
@@ -25,6 +26,9 @@ function smartshortcutsEnabled(values) {
   return !!values[PREF_SYSTEM_SHORTCUTS_PERSONALIZATION];
 }
 
+const INTERACTION_FLUSH_DELAY_MS = 1000;
+const INTERACTION_FLUSH_MAX_IDLE_WAIT_MS = 5000;
+
 function timeMSToSeconds(timeMS) {
   return Math.round(timeMS / 1000);
 }
@@ -38,6 +42,8 @@ export class SmartShortcutsFeed {
 
   constructor() {
     this.loaded = false;
+    this.pendingInteractions = [];
+    this.flushTask = null;
   }
 
   isEnabled() {
@@ -54,21 +60,38 @@ export class SmartShortcutsFeed {
   }
 
   async reset() {
+    const task = this.flushTask;
+    this.flushTask = null;
+    await task?.finalize();
     this.loaded = false;
   }
 
-  async recordShortcutsInteraction(event_type, data) {
+  queueShortcutsInteraction(event_type, data) {
     // We don't need to worry about interactions that don't have a guid.
     if (!data.guid) {
       return;
     }
-    const insertValues = {
+    this.pendingInteractions.push({
       guid: data.guid,
       event_type,
       timestamp_s: timeMSToSeconds(this.Date().now()),
       pinned: data.isPinned ? 1 : 0,
       tile_position: data.position,
-    };
+    });
+    this.flushTask ??= new lazy.DeferredTask(
+      () => this.flushShortcutsInteractions(),
+      INTERACTION_FLUSH_DELAY_MS,
+      INTERACTION_FLUSH_MAX_IDLE_WAIT_MS
+    );
+    this.flushTask.arm();
+  }
+
+  async flushShortcutsInteractions() {
+    const rows = this.pendingInteractions;
+    this.pendingInteractions = [];
+    if (!rows.length) {
+      return;
+    }
 
     let sql = `
       INSERT INTO moz_newtab_shortcuts_interaction (
@@ -81,21 +104,21 @@ export class SmartShortcutsFeed {
     `;
 
     await lazy.PlacesUtils.withConnectionWrapper(
-      "newtab/lib/SmartShortcutsFeed.sys.mjs: recordShortcutsInteraction",
+      "newtab/lib/SmartShortcutsFeed.sys.mjs: flushShortcutsInteractions",
       async db => {
-        await db.execute(sql, insertValues);
+        await db.executeCached(sql, rows);
       }
     );
   }
 
-  async handleTopSitesOrganicImpressionStats(action) {
+  handleTopSitesOrganicImpressionStats(action) {
     switch (action.data?.type) {
       case "impression": {
-        await this.recordShortcutsInteraction(0, action.data);
+        this.queueShortcutsInteraction(0, action.data);
         break;
       }
       case "click": {
-        await this.recordShortcutsInteraction(1, action.data);
+        this.queueShortcutsInteraction(1, action.data);
         break;
       }
     }
@@ -120,7 +143,7 @@ export class SmartShortcutsFeed {
         break;
       case at.TOP_SITES_ORGANIC_IMPRESSION_STATS:
         if (this.isEnabled()) {
-          await this.handleTopSitesOrganicImpressionStats(action);
+          this.handleTopSitesOrganicImpressionStats(action);
         }
         break;
       case at.PREF_CHANGED:

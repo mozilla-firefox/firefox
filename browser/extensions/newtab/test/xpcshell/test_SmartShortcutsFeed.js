@@ -5,6 +5,8 @@
 
 ChromeUtils.defineESModuleGetters(this, {
   actionTypes: "resource://newtab/common/Actions.mjs",
+  PlacesTestUtils: "resource://testing-common/PlacesTestUtils.sys.mjs",
+  PlacesUtils: "resource://gre/modules/PlacesUtils.sys.mjs",
   SmartShortcutsFeed: "resource://newtab/lib/SmartShortcutsFeed.sys.mjs",
 });
 
@@ -136,4 +138,74 @@ add_task(async function test_force_log_keeps_feed_enabled_when_remote_false() {
     feed.isEnabled(),
     "local force_log pref also keeps logging enabled"
   );
+});
+
+function countInteractions() {
+  return PlacesTestUtils.getDatabaseValue(
+    "moz_newtab_shortcuts_interaction",
+    "COUNT(*)"
+  );
+}
+
+add_task(async function test_interactions_written_in_one_flush() {
+  await PlacesUtils.history.clear();
+  await PlacesTestUtils.addVisits("https://example.com/");
+  const guid = await PlacesTestUtils.getDatabaseValue("moz_places", "guid", {
+    url: "https://example.com/",
+  });
+
+  let feed = new SmartShortcutsFeed();
+  feed.store = makeStore({
+    [PREF_SYSTEM_SHORTCUTS_PERSONALIZATION]: true,
+  });
+
+  for (const [type, isPinned, position] of [
+    ["impression", false, 0],
+    ["impression", true, 1],
+    ["click", false, 2],
+  ]) {
+    await feed.onAction({
+      type: actionTypes.TOP_SITES_ORGANIC_IMPRESSION_STATS,
+      data: { type, guid, position, isPinned },
+    });
+  }
+
+  Assert.ok(feed.flushTask.isArmed, "Flush is scheduled, not run");
+  Assert.equal(feed.pendingInteractions.length, 3, "Interactions are queued");
+
+  const firstTask = feed.flushTask;
+  await feed.onAction({ type: actionTypes.UNINIT });
+
+  Assert.equal(await countInteractions(), 3, "UNINIT writes all interactions");
+  const db = await PlacesUtils.promiseDBConnection();
+  const stored = await db.execute(
+    `SELECT event_type, pinned, tile_position
+     FROM moz_newtab_shortcuts_interaction ORDER BY id`
+  );
+  Assert.deepEqual(
+    stored.map(row => [
+      row.getResultByName("event_type"),
+      row.getResultByName("pinned"),
+      row.getResultByName("tile_position"),
+    ]),
+    [
+      [0, 0, 0],
+      [0, 1, 1],
+      [1, 0, 2],
+    ],
+    "Each interaction is stored with its own values"
+  );
+  Assert.equal(feed.pendingInteractions.length, 0, "Queue is emptied");
+
+  await feed.onAction({
+    type: actionTypes.TOP_SITES_ORGANIC_IMPRESSION_STATS,
+    data: { type: "impression", guid, position: 0, isPinned: false },
+  });
+  Assert.notEqual(feed.flushTask, firstTask, "A new task is created");
+  Assert.ok(feed.flushTask.isArmed, "The new task is scheduled");
+
+  await feed.onAction({ type: actionTypes.UNINIT });
+  Assert.equal(await countInteractions(), 4, "The new task writes too");
+
+  await PlacesUtils.history.clear();
 });
