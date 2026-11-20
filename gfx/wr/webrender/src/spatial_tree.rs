@@ -229,6 +229,22 @@ impl SceneSpatialTree {
         self.spatial_nodes[index.0 as usize].is_root_coord_system
     }
 
+    /// Whether the node is, or is a descendant of, a preserve-3d reference frame.
+    pub fn is_in_preserve_3d_context(&self, mut index: SpatialNodeIndex) -> bool {
+        loop {
+            let node = self.get_node_info(index);
+            if let SpatialNodeType::ReferenceFrame(ref info) = node.node_type {
+                if info.transform_style == TransformStyle::Preserve3D {
+                    return true;
+                }
+            }
+            match node.parent {
+                Some(parent) => index = parent,
+                None => return false,
+            }
+        }
+    }
+
     /// Record that a picture cache slice was built for this spatial node.
     pub fn add_slice_root(&mut self, index: SpatialNodeIndex) {
         self.updates.slice_roots.push(index);
@@ -283,13 +299,15 @@ impl SceneSpatialTree {
             match node.node_type {
                 SpatialNodeType::ReferenceFrame(ref info) => {
                     match info.kind {
-                        ReferenceFrameKind::Transform { is_2d_scale_translation: true, .. } => {
+                        ReferenceFrameKind::Transform { is_2d_scale_translation: true, .. }
+                            if info.transform_style != TransformStyle::Preserve3D => {
                             // We can handle scroll nodes that pass through a 2d scale/translation node
                         }
-                        ReferenceFrameKind::Transform { is_2d_scale_translation: false, .. } |
-                        ReferenceFrameKind::Perspective { .. } => {
+                        _ => {
                             // When a reference frame is encountered, forget any scroll roots
-                            // we have encountered, as they may end up with a non-axis-aligned transform.
+                            // we have encountered, as they may end up with a non-axis-aligned transform,
+                            // or in a preserve-3d context, where they are not in the root
+                            // coordinate system.
                             real_scroll_root = self.root_reference_frame_index;
                             outermost_scroll_root = self.root_reference_frame_index;
                             current_scroll_root_is_sticky = false;
