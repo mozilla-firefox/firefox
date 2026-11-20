@@ -4,9 +4,8 @@ const { ClientEnvironmentBase } = ChromeUtils.importESModule(
   "resource://gre/modules/components-utils/ClientEnvironment.sys.mjs"
 );
 
-const { NormandyTestUtils } = ChromeUtils.importESModule(
-  "resource://testing-common/NormandyTestUtils.sys.mjs"
-);
+const UUID_REGEX =
+  /[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}/i;
 
 const HOUR_IN_MS = 60 * 60 * 1000;
 
@@ -66,7 +65,7 @@ decorate_task(
       "expected arguments were passed"
     );
 
-    ok(NormandyTestUtils.isUuid(options.flowId, "flowId should be a uuid"));
+    ok(UUID_REGEX.test(options.flowId), "flowId should be a uuid");
 
     // postAnswerUrl gains several query string parameters. Check that the prefix is right
     ok(options.postAnswerUrl.startsWith(recipe.arguments.postAnswerUrl));

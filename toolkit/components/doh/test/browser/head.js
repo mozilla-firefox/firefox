@@ -97,12 +97,12 @@ async function setup() {
   Services.prefs.setStringPref(prefs.CONFIRMATION_NS_PREF, "skip");
 
   // Enable trr selection and provider steeringfor tests. This is off
-  // by default so it can be controlled via Normandy.
+  // by default so it can be controlled via Nimbus.
   Services.prefs.setBoolPref(prefs.TRR_SELECT_ENABLED_PREF, true);
   Services.prefs.setBoolPref(prefs.PROVIDER_STEERING_PREF, true);
 
   // Enable committing the TRR selection. This pref ships false by default so
-  // it can be controlled e.g. via Normandy, but for testing let's set enable.
+  // it can be controlled e.g. via Nimbus, but for testing let's set enable.
   Services.prefs.setBoolPref(prefs.TRR_SELECT_COMMIT_PREF, true);
 
   // Clear mode on shutdown by default.

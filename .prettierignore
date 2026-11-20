@@ -1532,7 +1532,6 @@ toolkit/components/contentanalysis/content_analysis/sdk/
 toolkit/components/certviewer/content/vendor/
 toolkit/components/jsoncpp/
 toolkit/components/ml/vendor/
-toolkit/components/normandy/vendor/
 toolkit/components/passwordmgr/shared/PasswordRulesParser.sys.mjs
 toolkit/components/protobuf/
 toolkit/components/reader/readability/

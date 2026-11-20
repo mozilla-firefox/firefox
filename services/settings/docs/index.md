@@ -313,7 +313,7 @@ In order to deliver settings to subsets of the population, you can set targets o
 From the client API standpoint, this is completely transparent: the `.get()` method — as well as the event data — will always filter the entries on which the target matches.
 
 :::{note}
-The remote settings targets follow the same approach as the {ref}`Normandy recipe client <components-normandy>` (ie. JEXL filter expressions).
+Remote Settings targets use JEXL filter expressions.
 :::
 
 (services-settings-uptake-telemetry)=

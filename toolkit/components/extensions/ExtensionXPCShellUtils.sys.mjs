@@ -747,7 +747,7 @@ export var ExtensionTestUtils = {
   },
 
   // Create a wrapper for a webextension that will be installed
-  // by some external process (e.g., Normandy)
+  // by some external process
   expectExtension(id) {
     return new ExternallyInstalledWrapper(this.currentScope, id);
   },

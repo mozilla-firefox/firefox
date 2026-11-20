@@ -6,8 +6,6 @@
 // NOTE: Toggling prefs for testing features should happen in
 // unittest-features/user.js or in harness/test manifests, not here!
 /* globals user_pref */
-// Make sure Shield doesn't hit the network.
-user_pref("app.normandy.api_url", "");
 // Make sure the notification permission migration test doesn't hit the network.
 user_pref("app.support.baseURL", "http://{server}/support-dummy/");
 user_pref("app.update.staging.enabled", false);

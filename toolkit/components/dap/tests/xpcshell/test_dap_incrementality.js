@@ -152,8 +152,8 @@ async function getReferrerState(db, taskId) {
 
 add_task(
   {
-    // Requires Normandy.
-    skip_if: () => !AppConstants.MOZ_NORMANDY,
+    // Requires Nimbus.
+    skip_if: () => AppConstants.MOZ_BUILD_APP !== "browser",
   },
   async function testVisitMeasurementNimbus() {
     resetServerRequests();
@@ -268,8 +268,8 @@ add_task(
 
 add_task(
   {
-    // Requires Normandy.
-    skip_if: () => !AppConstants.MOZ_NORMANDY,
+    // Requires Nimbus.
+    skip_if: () => AppConstants.MOZ_BUILD_APP !== "browser",
   },
   async function testParsingMultiUrlVisitMeasurementNimbus() {
     resetServerRequests();
@@ -340,8 +340,8 @@ add_task(
 
 add_task(
   {
-    // Requires Normandy.
-    skip_if: () => !AppConstants.MOZ_NORMANDY,
+    // Requires Nimbus.
+    skip_if: () => AppConstants.MOZ_BUILD_APP !== "browser",
   },
   async function testReferrerMeasurementNimbus() {
     resetServerRequests();
@@ -447,8 +447,8 @@ add_task(
 
 add_task(
   {
-    // Requires Normandy.
-    skip_if: () => !AppConstants.MOZ_NORMANDY,
+    // Requires Nimbus.
+    skip_if: () => AppConstants.MOZ_BUILD_APP !== "browser",
   },
   async function testReferrerMeasurementParsingMultiTargetNimbus() {
     resetServerRequests();
@@ -517,8 +517,8 @@ add_task(
 
 add_task(
   {
-    // Requires Normandy.
-    skip_if: () => !AppConstants.MOZ_NORMANDY,
+    // Requires Nimbus.
+    skip_if: () => AppConstants.MOZ_BUILD_APP !== "browser",
   },
   async function testReferrerMeasurementUnknownBucketNotSetNimbus() {
     resetServerRequests();
@@ -595,8 +595,8 @@ add_task(
 
 add_task(
   {
-    // Requires Normandy.
-    skip_if: () => !AppConstants.MOZ_NORMANDY,
+    // Requires Nimbus.
+    skip_if: () => AppConstants.MOZ_BUILD_APP !== "browser",
   },
   async function testReferrerMeasurementUnknownBucketSet() {
     resetServerRequests();
@@ -694,8 +694,8 @@ add_task(
 
 add_task(
   {
-    // Requires Normandy.
-    skip_if: () => !AppConstants.MOZ_NORMANDY,
+    // Requires Nimbus.
+    skip_if: () => AppConstants.MOZ_BUILD_APP !== "browser",
   },
   async function testMultiReferrerMeasurementUnknownBucketNotSetNimbus() {
     resetServerRequests();

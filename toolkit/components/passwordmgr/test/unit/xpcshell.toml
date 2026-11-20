@@ -46,8 +46,7 @@ run-if = [
 
 ["test_LoginStorageMigrator_nimbus.js"]
 run-if = [
-  # The migrator only runs on desktop, and Normandy is only included where
-  # MOZ_BUILD_APP == 'browser'.
+  # The migrator only runs on desktop browser builds.
   "os != 'android' && buildapp == 'browser'",
 ]
 

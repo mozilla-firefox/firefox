@@ -124,8 +124,8 @@ async function getFreqCapCount(db) {
 
 add_task(
   {
-    // Requires Normandy.
-    skip_if: () => !AppConstants.MOZ_NORMANDY,
+    // Requires Nimbus.
+    skip_if: () => AppConstants.MOZ_BUILD_APP !== "browser",
   },
   async function testVisitCounterNimbus() {
     const { cleanup } = await NimbusTestUtils.setupTest();

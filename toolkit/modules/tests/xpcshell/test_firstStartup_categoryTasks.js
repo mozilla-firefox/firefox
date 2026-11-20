@@ -26,12 +26,12 @@ add_setup(function test_setup() {
 /**
  * Test that category tasks registered with the first-startup-new-profile
  * category are invoked during FirstStartup initialization, and that they run
- * after Normandy initialization completes. Verifies that the
+ * after Nimbus initialization completes. Verifies that the
  * categoryTasksTime Glean metric is recorded.
  */
-add_task(async function test_categoryTasks_called_after_normandy() {
-  if (!AppConstants.MOZ_NORMANDY) {
-    info("Skipping test - MOZ_NORMANDY not enabled");
+add_task(async function test_categoryTasks_called_after_nimbus() {
+  if (AppConstants.MOZ_BUILD_APP !== "browser") {
+    info("Skipping test - not a browser build");
     return;
   }
 
@@ -49,16 +49,16 @@ add_task(async function test_categoryTasks_called_after_normandy() {
   );
   await catManUpdated;
 
-  const { Normandy } = ChromeUtils.importESModule(
-    "resource://normandy/Normandy.sys.mjs"
+  const { ExperimentAPI } = ChromeUtils.importESModule(
+    "resource://nimbus/ExperimentAPI.sys.mjs"
   );
   let sandbox = sinon.createSandbox();
-  let normandyInitComplete = false;
-  let originalInit = Normandy.init.bind(Normandy);
+  let nimbusInitComplete = false;
+  let originalInit = ExperimentAPI.init.bind(ExperimentAPI);
 
-  sandbox.stub(Normandy, "init").callsFake(function (...args) {
+  sandbox.stub(ExperimentAPI, "init").callsFake(function (...args) {
     return originalInit(...args).finally(() => {
-      normandyInitComplete = true;
+      nimbusInitComplete = true;
     });
   });
 
@@ -66,12 +66,12 @@ add_task(async function test_categoryTasks_called_after_normandy() {
   let categoryTaskPromise = TestUtils.topicObserved(CATEGORY_TASK_TOPIC).then(
     ([_subj, data]) => {
       Assert.ok(
-        Normandy.init.calledOnce,
-        "Normandy.init should have been called"
+        ExperimentAPI.init.calledOnce,
+        "ExperimentAPI.init should have been called"
       );
       Assert.ok(
-        normandyInitComplete,
-        "Normandy init should be complete before category task starts"
+        nimbusInitComplete,
+        "Nimbus init should be complete before category task starts"
       );
       categoryTaskCalled = true;
       return data;
@@ -86,7 +86,7 @@ add_task(async function test_categoryTasks_called_after_normandy() {
         Glean.firstStartup.statusCode.testGetValue(),
         FirstStartup.SUCCESS
       );
-      Assert.greater(Glean.firstStartup.normandyInitTime.testGetValue(), 0);
+      Assert.greater(Glean.firstStartup.nimbusInitTime.testGetValue(), 0);
       Assert.greater(
         Glean.firstStartup.categoryTasksTime.testGetValue(),
         0,
@@ -117,8 +117,8 @@ add_task(async function test_categoryTasks_called_after_normandy() {
  * disabled, even when tasks are registered with the category.
  */
 add_task(async function test_categoryTasks_disabled_by_pref() {
-  if (!AppConstants.MOZ_NORMANDY) {
-    info("Skipping test - MOZ_NORMANDY not enabled");
+  if (AppConstants.MOZ_BUILD_APP !== "browser") {
+    info("Skipping test - not a browser build");
     return;
   }
 

@@ -108,7 +108,6 @@ def android_debuggable(value):
 set_config("MOZ_ANDROID_DEBUGGABLE", android_debuggable)
 
 
-imply_option("MOZ_NORMANDY", False)
 imply_option("MOZ_SERVICES_HEALTHREPORT", True)
 imply_option("MOZ_GECKOVIEW_HISTORY", True)
 

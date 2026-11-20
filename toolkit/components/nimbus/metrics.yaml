@@ -1420,6 +1420,276 @@ normandy:
         type: string
     telemetry_mirror: Normandy_Expose_NimbusExperiment
 
+  enroll_nimbus_experiment:
+    type: event
+    description: >
+      Sent when applying a Normandy recipe of the above types has
+      succeeded.
+      This event was generated to correspond to the Legacy Telemetry event
+      normandy.enroll#nimbus_experiment.
+    bugs:
+      - https://bugzil.la/1443560
+      - https://bugzil.la/2084356
+    data_reviews:
+      - https://bugzil.la/1443560
+    notification_emails:
+      - project-nimbus@mozilla.com
+    expires: never
+    extra_keys:
+      value:
+        description: >
+          The `value` of the event. Mirrors to the Legacy Telemetry
+          event's `value` parameter.
+        type: string
+      experimentType:
+        description: >
+          For preference_study and nimbus_experiment recipes, the type of experiment this is ("exp" or "exp-highpop").
+
+        type: string
+      branch:
+        description: >
+          The slug of the branch that was chosen for this client.
+
+        type: string
+      addonId:
+        description: >
+          For addon_study recipes, the ID of the addon that was installed.
+        type: string
+      addonVersion:
+        description: >
+          For addon_study recipes, the version of the addon that was installed.
+        type: string
+    telemetry_mirror: Normandy_Enroll_NimbusExperiment
+
+  enroll_failed_nimbus_experiment:
+    type: event
+    description: >
+      Sent when applying a Normandy recipe of the above types has failed.
+      This event was generated to correspond to the Legacy Telemetry event
+      normandy.enrollFailed#nimbus_experiment.
+    bugs:
+      - https://bugzil.la/1443560
+      - https://bugzil.la/2084356
+    data_reviews:
+      - https://bugzil.la/1443560
+    notification_emails:
+      - project-nimbus@mozilla.com
+    expires: never
+    extra_keys:
+      value:
+        description: >
+          The `value` of the event. Mirrors to the Legacy Telemetry
+          event's `value` parameter.
+        type: string
+      reason:
+        description: >
+          An error code describing the failure.
+        type: string
+      preference:
+        description: >
+          For preference_rollout when reason=conflict, the name of the preference that was going to be modified.
+
+        type: string
+      detail:
+        description: >
+          For addon_study and branched_addon study, extra text describing the failure.
+
+        type: string
+      branch:
+        description: >
+          The branch that failed to enroll.
+
+        type: string
+      addonId:
+        description: >
+          The ID of the addon for the rollout when reason=conflict.
+        type: string
+      conflictingSlug:
+        description: >
+          The slug for the conflicting rollout.
+        type: string
+      enrollmentId:
+        description: >
+          The enrollment ID of the conflicting rollout.
+        type: string
+      prefBranch:
+        description: >
+          For preference_study when reason=invalid-branch, the branch that was invalid.
+        type: string
+    telemetry_mirror: Normandy_Enrollfailed_NimbusExperiment
+
+  unenroll_nimbus_experiment:
+    type: event
+    description: >
+      Sent when a Normandy recipe of certain types "ends".  N.B. For
+      preference_rollback, this is fired when the recipe is fired (the
+      recipe that "ends" is a corresponding preference_rollout).
+      This event was generated to correspond to the Legacy Telemetry event
+      normandy.unenroll#nimbus_experiment.
+    bugs:
+      - https://bugzil.la/1443560
+      - https://bugzil.la/1843126
+      - https://bugzil.la/1896718
+      - https://bugzil.la/1907649
+      - https://bugzil.la/2084356
+    data_reviews:
+      - https://bugzil.la/1443560
+      - https://bugzil.la/1843126
+      - https://bugzil.la/1896718
+      - https://bugzil.la/1907649
+    notification_emails:
+      - project-nimbus@mozilla.com
+    expires: never
+    extra_keys:
+      value:
+        description: >
+          The `value` of the event. Mirrors to the Legacy Telemetry
+          event's `value` parameter.
+        type: string
+      reason:
+        description: >
+          A code describing the reason why the recipe ended.
+        type: string
+      didResetValue:
+        description: >
+          For preference_study, "true" or "false" according to whether we put the preference back the way it was.
+
+        type: string
+      addonId:
+        description: >
+          For addon_study, the ID of the addon that ended.
+        type: string
+      addonVersion:
+        description: >
+          For addon_study, the version of the addon for which the recipe ended.
+        type: string
+      branch:
+        description: >
+          The branch of the experiment that this client was on.
+        type: string
+      enrollmentId:
+        description: >
+          A unique ID for this enrollment that will be included in all related Telemetry.
+        type: string
+      changedPref:
+        description: >
+          For preference_study or nimbus_experiment, the preference that was detected to change that caused the unenrollment.
+
+        type: string
+      conflictingSlug:
+        description: >
+          For nimbus_experiment, if reason == "prefFlips-conflict", the conflicting experiment that caused the unenrollment.
+
+        type: string
+      prefName:
+        description: >
+          For nimbus_experiment, if reason == "prefFlips-failed", the name of the pref that failed to set.
+
+        type: string
+      prefType:
+        description: >
+          For nimbus_experiment, if reason = "prefFlips-failed", the type of the existing pref value (one of "bool", "string", "int", or "invalid").
+
+        type: string
+    telemetry_mirror: Normandy_Unenroll_NimbusExperiment
+
+  unenroll_failed_nimbus_experiment:
+    type: event
+    description: >
+      Sent when unenrolling a user fails (see the unenroll event).
+      This event was generated to correspond to the Legacy Telemetry event
+      normandy.unenrollFailed#nimbus_experiment.
+    bugs:
+      - https://bugzil.la/1443560
+      - https://bugzil.la/1693402
+      - https://bugzil.la/2084356
+    data_reviews:
+      - https://bugzil.la/1443560
+      - https://bugzil.la/1693402
+    notification_emails:
+      - project-nimbus@mozilla.com
+    expires: never
+    extra_keys:
+      value:
+        description: >
+          The `value` of the event. Mirrors to the Legacy Telemetry
+          event's `value` parameter.
+        type: string
+      reason:
+        description: >
+          A code describing the reason the unenroll failed.
+        type: string
+      enrollmentId:
+        description: >
+          A unique ID for this enrollment that will be included in all related Telemetry.
+        type: string
+      changedPref:
+        description: >
+          For preference_study, the preference that was detected to change that caused the attempted unenrollment.
+        type: string
+      caller:
+        description: >
+          The function that caused the stop to happen, included on Nightly to aid debugging.
+        type: string
+      originalReason:
+        description: >
+          The code that would had been used for the unenrollment, had it not failed.
+        type: string
+    telemetry_mirror: Normandy_Unenrollfailed_NimbusExperiment
+
+  validation_failed_nimbus_experiment:
+    type: event
+    description: >
+      This records when validation of a recipe fails.
+      This event was generated to correspond to the Legacy Telemetry event
+      normandy.validationFailed#nimbus_experiment.
+    bugs:
+      - https://bugzil.la/1762652
+      - https://bugzil.la/1960370
+      - https://bugzil.la/2084356
+    data_reviews:
+      - https://bugzil.la/1762652
+      - https://bugzil.la/1960370
+    notification_emails:
+      - beth@mozilla.com
+      - project-nimbus@mozilla.com
+    expires: never
+    extra_keys:
+      value:
+        description: >
+          The `value` of the event. Mirrors to the Legacy Telemetry
+          event's `value` parameter (i.e., the experiment slug).
+        type: string
+      reason:
+        description: >
+          Why the validation failed.
+
+          This will be one of the following reasons:
+
+          - "invalid-recipe": the recipe failed schema validation;
+          - "invalid-branch": a branch value failed schema validation;
+          - "l10n-missing-locale": the recipe is missing localizations for a
+            specific locale;
+          - "l10n-missing-entry": the recipe is missing specific localization
+            entries for a specific locale;
+        type: string
+      branch:
+        description: >
+          If reason == invalid-branch, the branch that failed validation.
+        type: string
+      locale:
+        description: >
+          If reason == missing-locale, the locale that was missing from the
+          localization table.
+          If reason == missing-l10n-entry, the locale that was missing the
+          localization entries.
+        type: string
+      l10n_ids:
+        description: >
+          If reason == missing-l10n-entry, a comma-separated list of missing localization entries.
+        type: string
+    telemetry_mirror: Normandy_Validationfailed_NimbusExperiment
+
 heartbeat:
   flow_id:
     type: uuid
@@ -1432,7 +1702,7 @@ heartbeat:
     data_sensitivity:
       - technical
     notification_emails:
-      - normandy-notifications@mozilla.com
+      - project-nimbus@mozilla.com
     expires: never
     send_in_pings:
       - heartbeat
@@ -1449,7 +1719,7 @@ heartbeat:
     data_sensitivity:
       - technical
     notification_emails:
-      - normandy-notifications@mozilla.com
+      - project-nimbus@mozilla.com
     expires: never
     send_in_pings:
       - heartbeat
@@ -1466,7 +1736,7 @@ heartbeat:
     data_sensitivity:
       - technical
     notification_emails:
-      - normandy-notifications@mozilla.com
+      - project-nimbus@mozilla.com
     expires: never
     send_in_pings:
       - heartbeat
@@ -1483,7 +1753,7 @@ heartbeat:
     data_sensitivity:
       - technical
     notification_emails:
-      - normandy-notifications@mozilla.com
+      - project-nimbus@mozilla.com
     expires: never
     send_in_pings:
       - heartbeat
@@ -1501,7 +1771,7 @@ heartbeat:
     data_sensitivity:
       - technical
     notification_emails:
-      - normandy-notifications@mozilla.com
+      - project-nimbus@mozilla.com
     expires: never
     send_in_pings:
       - heartbeat
@@ -1518,7 +1788,7 @@ heartbeat:
     data_sensitivity:
       - technical
     notification_emails:
-      - normandy-notifications@mozilla.com
+      - project-nimbus@mozilla.com
     expires: never
     send_in_pings:
       - heartbeat
@@ -1536,7 +1806,7 @@ heartbeat:
     data_sensitivity:
       - technical
     notification_emails:
-      - normandy-notifications@mozilla.com
+      - project-nimbus@mozilla.com
     expires: never
     send_in_pings:
       - heartbeat
@@ -1555,7 +1825,7 @@ heartbeat:
     data_sensitivity:
       - technical
     notification_emails:
-      - normandy-notifications@mozilla.com
+      - project-nimbus@mozilla.com
     expires: never
     send_in_pings:
       - heartbeat
@@ -1572,7 +1842,7 @@ heartbeat:
     data_sensitivity:
       - technical
     notification_emails:
-      - normandy-notifications@mozilla.com
+      - project-nimbus@mozilla.com
     expires: never
     send_in_pings:
       - heartbeat
@@ -1592,7 +1862,7 @@ heartbeat:
       - technical
       - highly_sensitive
     notification_emails:
-      - normandy-notifications@mozilla.com
+      - project-nimbus@mozilla.com
     expires: never
     send_in_pings:
       - heartbeat

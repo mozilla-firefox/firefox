@@ -135,15 +135,6 @@ async function enrollWithoutAutomaticRun() {
   }
 }
 
-add_setup(async function setup() {
-  await SpecialPowers.pushPrefEnv({
-    set: [
-      ["app.normandy.enabled", true],
-      ["app.normandy.api_url", "https://example.com/api/v1"],
-    ],
-  });
-});
-
 decorate_task(
   withStubbedHeartbeat(),
   withClearStorage(),
@@ -215,33 +206,6 @@ decorate_task(
       0,
       "Heartbeat should not be shown without an enrollment"
     );
-  }
-);
-
-decorate_task(
-  withStubbedHeartbeat(),
-  withClearStorage(),
-  async function testDisabled({ heartbeatClassStub }) {
-    const doEnrollmentCleanup = await enrollWithoutAutomaticRun();
-
-    for (const prefs of [
-      [["app.normandy.enabled", false]],
-      [["app.normandy.api_url", ""]],
-      // eslint-disable-next-line sdl/no-insecure-url
-      [["app.normandy.api_url", "http://example.com/api/v1"]],
-    ]) {
-      await SpecialPowers.pushPrefEnv({ set: prefs });
-      await LegacyHeartbeatFeature.run();
-      await SpecialPowers.popPrefEnv();
-    }
-
-    Assert.equal(
-      heartbeatClassStub.args.length,
-      0,
-      "Heartbeat should not be shown when disabled"
-    );
-
-    await doEnrollmentCleanup();
   }
 );
 

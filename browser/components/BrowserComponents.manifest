@@ -14,9 +14,7 @@ category first-startup-new-profile resource:///modules/AboutNewTabResourceMappin
 # Browser global components initializing before UI startup
 category browser-before-ui-startup moz-src:///browser/components/sessionstore/SessionStore.sys.mjs SessionStore.init
 category browser-before-ui-startup resource:///modules/BuiltInThemes.sys.mjs BuiltInThemes.maybeInstallActiveBuiltInTheme
-#ifdef MOZ_NORMANDY
-category browser-before-ui-startup resource://normandy/Normandy.sys.mjs Normandy.init
-#endif
+category browser-before-ui-startup resource://nimbus/ExperimentAPI.sys.mjs ExperimentAPI.init
 category browser-before-ui-startup moz-src:///browser/components/privatebrowsing/ResetPBMPanel.sys.mjs ResetPBMPanel.init
 #ifdef NIGHTLY_BUILD
 category browser-before-ui-startup moz-src:///browser/components/remotecontrol/RemoteControlPanel.sys.mjs RemoteControlPanel.init
@@ -246,7 +244,6 @@ category browser-quit-application-granted moz-src:///browser/components/places/I
 category browser-quit-application-granted moz-src:///browser/components/pagedata/PageDataService.sys.mjs PageDataService.uninit
 category browser-quit-application-granted resource://gre/modules/PageThumbs.sys.mjs PageThumbs.uninit
 category browser-quit-application-granted resource://gre/modules/NewTabUtils.sys.mjs NewTabUtils.uninit
-category browser-quit-application-granted resource://normandy/Normandy.sys.mjs Normandy.uninit
 category browser-quit-application-granted resource://gre/modules/RFPHelper.sys.mjs RFPHelper.uninit
 category browser-quit-application-granted resource:///modules/asrouter/ASRouterNewTabHook.sys.mjs ASRouterNewTabHook.destroy
 category browser-quit-application-granted moz-src:///browser/components/search/SERPCategorization.sys.mjs SERPCategorization.uninit

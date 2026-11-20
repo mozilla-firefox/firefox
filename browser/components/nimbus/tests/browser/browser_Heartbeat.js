@@ -282,7 +282,7 @@ add_task(async function () {
     "offeredTS",
     "windowClosedTS",
   ]);
-  // triggers sending ping to normandy
+  // Triggers sending the heartbeat ping
   await BrowserTestUtils.closeWindow(targetWindow);
   await telemetrySentPromise;
 });

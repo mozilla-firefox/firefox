@@ -150,7 +150,7 @@ if CONFIG["MOZ_WIDGET_TOOLKIT"] not in ("android", "windows"):
     DIRS += ["aboutwebauthn"]
 
 if CONFIG["MOZ_BUILD_APP"] == "browser":
-    DIRS += ["messaging-system", "normandy"]
+    DIRS += ["messaging-system"]
 
 if CONFIG["MOZ_BUILD_APP"] != "comm/mail":
     DIRS += ["ipprotection"]

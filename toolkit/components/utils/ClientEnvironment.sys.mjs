@@ -35,7 +35,7 @@ function getOsVersion() {
 /**
  * Create an object that provides general information about the client application.
  *
- * Components like Normandy RecipeRunner use this as part of the context for filter expressions,
+ * Components like Nimbus and ASRouter use this as part of the context for filter expressions,
  * so avoid adding non-getter functions as attributes, as filter expressions
  * cannot execute functions.
  *

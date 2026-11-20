@@ -87,9 +87,6 @@ var gExceptionPaths = [
   // Nimbus schemas are referenced programmatically.
   "resource://nimbus/schemas/",
 
-  // Normandy schemas are referenced programmatically.
-  "resource://normandy/schemas/",
-
   // ASRouter schemas are referenced programmatically.
   "chrome://browser/content/asrouter/schemas/",
 

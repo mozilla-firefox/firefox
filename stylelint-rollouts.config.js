@@ -219,7 +219,6 @@ module.exports = [
       "toolkit/components/certviewer/content/components/error-section.css",
       "toolkit/components/certviewer/content/components/info-group.css",
       "toolkit/components/certviewer/content/components/info-item.css",
-      "toolkit/components/normandy/skin/shared/Heartbeat.css",
       "toolkit/components/printing/content/print.css",
       "toolkit/components/printing/content/printPagination.css",
       "toolkit/components/printing/content/printPreview.css",

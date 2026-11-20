@@ -3,7 +3,7 @@
  * file, You can obtain one at http://mozilla.org/MPL/2.0/. */
 
 "use strict";
-/* global classnames PropTypes React ReactDOM */
+/* global PropTypes React ReactDOM */
 
 /**
  * Shorthand for creating elements (to avoid using a JSX preprocessor)
@@ -263,9 +263,7 @@ class MessagingSystemListItem extends React.Component {
     return r(
       "li",
       {
-        className: classnames("study nimbus", {
-          disabled: !study.active,
-        }),
+        className: `study nimbus${study.active ? "" : " disabled"}`,
         "data-study-slug": study.slug, // used to identify this row in tests
       },
       r("div", { className: "study-icon" }, userFacingName.slice(0, 1)),

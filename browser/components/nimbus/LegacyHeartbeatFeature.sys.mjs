@@ -30,8 +30,6 @@ ChromeUtils.defineLazyGetter(lazy, "log", () => {
 const TIMER_NAME = "legacy-heartbeat";
 const PREF_CHANGED_TOPIC = "nsPref:changed";
 const RUN_INTERVAL_PREF = "app.normandy.run_interval_seconds";
-const SHIELD_ENABLED_PREF = "app.normandy.enabled";
-const API_URL_PREF = "app.normandy.api_url";
 
 const TIMER_LAST_UPDATE_PREF = `app.update.lastUpdateTime.${TIMER_NAME}`;
 
@@ -96,31 +94,13 @@ export const LegacyHeartbeatFeature = new (class {
     }
   }
 
-  checkPrefs() {
-    if (!Services.prefs.getBoolPref(SHIELD_ENABLED_PREF, false)) {
-      return false;
-    }
-
-    const apiUrl = Services.prefs.getCharPref(API_URL_PREF, "");
-
-    if (!apiUrl) {
-      return false;
-    }
-
-    if (!apiUrl.startsWith("https://")) {
-      return false;
-    }
-
-    return true;
-  }
-
   setTimer() {
     const runInterval = Services.prefs.getIntPref(RUN_INTERVAL_PREF, 21600);
     lazy.timerManager.registerTimer(TIMER_NAME, () => this.run(), runInterval);
   }
 
   async run({ trigger = "timer" } = {}) {
-    if (this.#running || !this.checkPrefs()) {
+    if (this.#running) {
       return;
     }
 

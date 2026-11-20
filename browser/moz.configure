@@ -7,7 +7,6 @@ imply_option("MOZ_SERVICES_HEALTHREPORT", True)
 imply_option("MOZ_SERVICES_SYNC", True)
 imply_option("MOZ_DEDICATED_PROFILES", True)
 imply_option("MOZ_BLOCK_PROFILE_DOWNGRADE", True)
-imply_option("MOZ_NORMANDY", True)
 imply_option("MOZ_PROFILE_MIGRATOR", True)
 
 

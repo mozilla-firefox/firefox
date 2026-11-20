@@ -29,8 +29,8 @@ An outline of the schema may be found on the [Search Configuration Schema] page.
 
 ## Updating Search Engine WebExtensions
 
-Updates for application provided search engine WebExtensions are provided via
-{doc}`Normandy </toolkit/components/normandy/normandy/services>`.
+Updates for application provided search engine WebExtensions were previously
+provided via Normandy.
 
 It is likely that updates for search engine WebExtensions will be
 received separately to configuration updates which may or may not be directly

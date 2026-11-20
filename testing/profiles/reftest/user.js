@@ -1,7 +1,5 @@
 // Preference file for the reftest harness.
 /* globals user_pref */
-// Make sure Shield doesn't hit the network.
-user_pref("app.normandy.api_url", "https://localhost/selfsupport-dummy/");
 user_pref("app.update.staging.enabled", false);
 user_pref("browser.safebrowsing.blockedURIs.enabled", false);
 user_pref("browser.safebrowsing.downloads.enabled", false);

@@ -106,7 +106,7 @@ The following remote data sources are already using this unified histogram.
 - plugins blocklist
 - certificate revocation
 - certificate pinning
-- {ref}`Normandy Recipe client <components-normandy>`
+- Normandy Recipe client (legacy)
 
 Obviously, the goal is to eventually converge and avoid ad-hoc Telemetry probes for measuring uptake of remote content. Some notable potential use-cases are:
 

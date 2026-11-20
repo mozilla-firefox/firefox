@@ -42,7 +42,6 @@ const BACKUP_ENABLED_ON_PROFILES_PREF_NAME =
   "browser.backup.enabled_on.profiles";
 const PREF_UPLOAD_ENABLED = "datareporting.healthreport.uploadEnabled";
 const PREF_ADDON_RECOMMENDATIONS_ENABLED = "browser.discovery.enabled";
-const PREF_NORMANDY_ENABLED = "app.normandy.enabled";
 const PREF_OPT_OUT_STUDIES_ENABLED = "app.shield.optoutstudies.enabled";
 
 Preferences.addAll([
@@ -66,7 +65,6 @@ Preferences.addAll([
   // Data Choices tab
   { id: "browser.crashReports.unsubmittedCheck.autoSubmit2", type: "bool" },
 
-  { id: PREF_NORMANDY_ENABLED, type: "bool" },
   { id: "nimbus.rollouts.enabled", type: "bool" },
 
   // Preference instances for prefs that we need to monitor while the page is open.
@@ -394,34 +392,23 @@ Preferences.addSetting({
   },
 });
 Preferences.addSetting({
-  id: "normandyEnabled",
-  pref: PREF_NORMANDY_ENABLED,
-});
-
-Preferences.addSetting({
   id: "optOutStudiesEnabled",
-  visible: () => lazy.AppConstants.MOZ_NORMANDY,
   pref: PREF_OPT_OUT_STUDIES_ENABLED,
-  deps: ["submitHealthReportBox", "normandyEnabled"],
-  disabled: ({ submitHealthReportBox, normandyEnabled }) => {
+  deps: ["submitHealthReportBox"],
+  disabled: ({ submitHealthReportBox }) => {
     /**
-    *  The checkbox should be disabled if any of the below are true. This
-    prevents the user from changing the value in the box.
-    * 2. telemetry upload is disabled
-    * 3. Normandy is disabled
-    */
+     * Disable the checkbox if studies are blocked by enterprise policy
+     * or telemetry upload is disabled.
+     */
     const allowedByPolicy = Services.policies.isAllowed("Shield");
-    return (
-      !allowedByPolicy || !submitHealthReportBox.value || !normandyEnabled.value
-    );
+    return !allowedByPolicy || !submitHealthReportBox.value;
   },
-  get: (value, { submitHealthReportBox, normandyEnabled }) => {
+  get: (value, { submitHealthReportBox }) => {
     /**
      * The checkbox should match the value of the preference only if all the below are true:
      *
      * 1. the policy allows Shield
      * 2. telemetry upload is enabled
-     * 3. Normandy is enabled
      *
      * Otherwise, the checkbox should remain unchecked. This
      * is because in these situations, Shield studies are always disabled, and
@@ -429,11 +416,7 @@ Preferences.addSetting({
      */
     const allowedByPolicy = Services.policies.isAllowed("Shield");
 
-    if (
-      !allowedByPolicy ||
-      !submitHealthReportBox.value ||
-      !normandyEnabled.value
-    ) {
+    if (!allowedByPolicy || !submitHealthReportBox.value) {
       return false;
     }
     return value;
@@ -445,8 +428,6 @@ Preferences.addSetting({
 Preferences.addSetting({
   id: "enableNimbusRollouts",
   pref: "nimbus.rollouts.enabled",
-  visible: () =>
-    lazy.AppConstants.MOZ_DATA_REPORTING && lazy.AppConstants.MOZ_NORMANDY,
   disabled: () => !Services.policies.isAllowed("NimbusRollouts"),
   get: value => {
     if (!Services.policies.isAllowed("NimbusRollouts")) {

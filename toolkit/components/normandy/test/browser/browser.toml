@@ -1,9 +1,0 @@
-[DEFAULT]
-tags = "addons"
-head = "head.js"
-
-["browser_CleanupManager.js"]
-
-["browser_LogManager.js"]
-
-["browser_Normandy.js"]

@@ -18,11 +18,6 @@ from marionette_harness import MarionetteTestCase
 # of them before landing the test.
 known_errors = [
     {
-        # Disabling Shield because app.normandy.api_url is not set.
-        # (Marionette-only error, bug 1826314)
-        "message": "app.normandy.api_url is not set",
-    },
-    {
         # From Remote settings, because it's intercepted by our test
         # infrastructure which serves text/plain rather than JSON.
         # Even if we fixed that we'd probably see a different error,

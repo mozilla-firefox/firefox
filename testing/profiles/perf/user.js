@@ -4,7 +4,6 @@
 
 // Base preferences file used by performance harnesses
 /* globals user_pref */
-user_pref("app.normandy.api_url", "https://127.0.0.1/selfsupport-dummy/");
 // Disable Bookmark backups by default.
 user_pref("browser.bookmarks.max_backups", 0);
 user_pref("browser.cache.disk.smart_size.enabled", false);

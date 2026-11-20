@@ -443,7 +443,7 @@ export class AddonInternal {
   get isCorrectlySigned() {
     switch (this.location.name) {
       case KEY_APP_SYSTEM_PROFILE:
-        // Add-ons installed via Normandy must be signed by the system
+        // System add-ons in the profile must be signed by the system
         // key or the "Mozilla Extensions" key.
         return [
           lazy.AddonManager.SIGNEDSTATE_SYSTEM,

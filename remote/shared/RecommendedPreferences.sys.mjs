@@ -82,9 +82,6 @@ if (Services.appinfo.processType != Ci.nsIXULRuntime.PROCESS_TYPE_DEFAULT) {
 // - If a `user.js` file in `/testing/profiles` disables recommended preferences,
 //   identify affected test suites and set the new preference where needed.
 const COMMON_PREFERENCES = new Map([
-  // Make sure Shield doesn't hit the network.
-  ["app.normandy.api_url", ""],
-
   // Disable automatically upgrading Firefox
   //
   // Note: This preference should have already been set by the client when

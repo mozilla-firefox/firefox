@@ -215,8 +215,8 @@ add_task(async function test_aboutwelcome_loads_after_nimbus_error() {
   await SpecialPowers.popPrefEnv();
 });
 
-// When `ExperimentAPI.init()` is already in flight (e.g., kicked off by
-// Normandy early in startup) and about:welcome opens, the gate should
+// When `ExperimentAPI.init()` is already in flight (e.g., kicked off
+// early in startup) and about:welcome opens, the gate should
 // await the actual completion of that in-flight init
 // See Bug 2042553
 add_task(async function test_gate_awaits_in_flight_init() {
@@ -259,7 +259,7 @@ add_task(async function test_gate_awaits_in_flight_init() {
     );
   });
 
-  // First caller (normandy stand-in)
+  // First caller (BrowserGlue stand-in)
   const firstInit = ExperimentAPI.init();
 
   // Open about:welcome so its gate calls init() as the second caller.

@@ -8,7 +8,7 @@
 # documentation and how to modify this file.
 repo: mozilla-central
 created_at: '2021-10-14T12:50:40.073465'
-updated_at: '2026-11-20T15:37:37.274227+00:00'
+updated_at: '2026-11-20T18:30:34.130881+00:00'
 export:
   path: ./docs/mots/index.md
   format: md
@@ -3914,13 +3914,13 @@ modules:
           systems.
         includes:
           - browser/components/nimbus/**/*
-          - toolkit/components/normandy/**/*
           - toolkit/components/nimbus/**/*
         meta:
           owners_emeritus:
             - Michael Cooper
           peers_emeritus:
             - Daniel Thorn
+            - Gijs Kruitbosch
           components:
             - Firefox::Normandy
             - Firefox::Nimbus Desktop Client
@@ -3929,7 +3929,6 @@ modules:
         owners:
           - *beth
         peers:
-          - *Gijs
           - *emcminn
           - *charlie
           - *aminomancer
@@ -5082,5 +5081,5 @@ modules:
         - Ryan Tilder
       group: dev-platform
 hashes:
-  config: 3916ff027566cfe076f055be8eaa9bd8f2581ff1
-  export: 00df996ce5271fd63eaeaa40baf66d562d020460
+  config: ba181b5af70cb7515dab697a6934585c04359d1e
+  export: 9b96c6babf6dd5ba48f9378c997779633d6dcd1b

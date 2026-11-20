@@ -46,12 +46,10 @@ class TelemetryTestRunner(BaseMarionetteTestRunner):
             "toolkit.telemetry.log.dump": True,
             "toolkit.telemetry.send.overrideOfficialCheck": True,
             "toolkit.telemetry.testing.disableFuzzingDelay": True,
-            # Disable Normandy to avoid extra subsessions due to Experiment
-            # activation in tests (bug 1641571)
-            "app.normandy.enabled": False,
-            # Disable Normandy a little harder (bug 1608807).
-            # This should also disable Nimbus.
+            # Disable Nimbus to avoid extra subsessions due to Experiment
+            # activation in tests (bug 1641571, bug 1608807)
             "app.shield.optoutstudies.enabled": False,
+            "nimbus.rollouts.enabled": False,
             # Bug 1789727: Keep the screenshots extension disabled to avoid
             # disabling the addon resulting in extra subsessions
             "screenshots.browser.component.enabled": False,

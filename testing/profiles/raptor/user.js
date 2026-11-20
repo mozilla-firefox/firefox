@@ -4,9 +4,6 @@
 
 // Preferences file used by the raptor harness
 /* globals user_pref */
-// prevents normandy from running updates during the tests
-user_pref("app.normandy.enabled", false);
-
 // Disable the preloaded new-tab page and its background process.
 user_pref("browser.newtab.preload", false);
 

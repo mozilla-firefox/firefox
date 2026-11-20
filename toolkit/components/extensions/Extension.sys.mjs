@@ -2493,7 +2493,7 @@ export class ExtensionData {
   }
 
   // Returns true if an addon is builtin to Firefox or
-  // distributed via Normandy into a system location.
+  // distributed into a system location.
   get isAppProvided() {
     return this.addonData.builtIn || this.addonData.isSystem;
   }

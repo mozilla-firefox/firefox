@@ -9,7 +9,6 @@ const lazy = {};
 ChromeUtils.defineESModuleGetters(lazy, {
   BrowserUtils: "resource://gre/modules/BrowserUtils.sys.mjs",
   ExperimentAPI: "resource://nimbus/ExperimentAPI.sys.mjs",
-  Normandy: "resource://normandy/Normandy.sys.mjs",
   TaskScheduler: "resource://gre/modules/TaskScheduler.sys.mjs",
 });
 
@@ -66,15 +65,10 @@ export var FirstStartup = {
 
     let promises = [];
 
-    let normandyInitEndTime = null;
-    let normandyInitPromise = null;
-    if (AppConstants.MOZ_NORMANDY) {
-      normandyInitPromise = lazy.Normandy.init({ runAsync: false }).finally(
-        () => {
-          normandyInitEndTime = ChromeUtils.now();
-        }
-      );
-      promises.push(normandyInitPromise);
+    let nimbusInitPromise = null;
+    if (AppConstants.MOZ_BUILD_APP === "browser") {
+      nimbusInitPromise = lazy.ExperimentAPI.init();
+      promises.push(nimbusInitPromise);
     }
 
     let deleteTasksEndTime = null;
@@ -105,9 +99,9 @@ export var FirstStartup = {
       false
     );
     let categoryTasksEndTime = null;
-    if (CATEGORY_TASKS_ENABLED && AppConstants.MOZ_NORMANDY) {
+    if (CATEGORY_TASKS_ENABLED && nimbusInitPromise) {
       promises.push(
-        normandyInitPromise.finally(() => {
+        nimbusInitPromise.finally(() => {
           return lazy.BrowserUtils.callModulesFromCategory({
             categoryName: CATEGORY_NAME,
             profileMarker: "first-startup-new-profile-tasks",
@@ -138,11 +132,7 @@ export var FirstStartup = {
       this._state = this.UNSUPPORTED;
     }
 
-    if (AppConstants.MOZ_NORMANDY) {
-      Glean.firstStartup.normandyInitTime.set(
-        Math.ceil(normandyInitEndTime || ChromeUtils.now() - startingTime)
-      );
-
+    if (AppConstants.MOZ_BUILD_APP === "browser") {
       const nimbusTimestamps =
         lazy.ExperimentAPI.getAndClearFirstStartupTimestamps();
 

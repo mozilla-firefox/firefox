@@ -58,7 +58,6 @@ const lazy = XPCOMUtils.declareLazy({
 
 const TIMER_NAME = "rs-experiment-loader-timer";
 const TIMER_LAST_UPDATE_PREF = `app.update.lastUpdateTime.${TIMER_NAME}`;
-// Use the same update interval as normandy
 const RUN_INTERVAL_PREF = "app.normandy.run_interval_seconds";
 const NIMBUS_DEBUG_PREF = "nimbus.debug";
 const NIMBUS_VALIDATION_PREF = "nimbus.validation.enabled";

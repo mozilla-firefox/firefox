@@ -1173,12 +1173,6 @@ project_flag(
     set_as_define=True,
 )
 
-project_flag(
-    "MOZ_NORMANDY",
-    help="Enable Normandy recipe runner",
-    set_as_define=True,
-)
-
 project_flag("MOZ_SERVICES_SYNC", help="Build Sync Services if required")
 
 project_flag(
@@ -3516,10 +3510,9 @@ with only_when(compile_environment):
     "MOZ_TELEMETRY_REPORTING",
     "MOZ_SERVICES_HEALTHREPORT",
     "--enable-crashreporter",
-    "MOZ_NORMANDY",
 )
-def data_reporting(telemetry, healthreport, crashreporter, normandy):
-    return telemetry or healthreport or crashreporter or normandy
+def data_reporting(telemetry, healthreport, crashreporter):
+    return telemetry or healthreport or crashreporter
 
 
 set_config("MOZ_DATA_REPORTING", True, when=data_reporting)

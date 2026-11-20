@@ -53,7 +53,7 @@ function getInstallLocation({
         KEY_APP_SYSTEM_BUILTINS
       );
     } else {
-      // Normandy installations. Signatures will be verified.
+      // System add-ons installed in the profile. Signatures will be verified.
       location = XPIExports.XPIInternal.XPIStates.getLocation(
         KEY_APP_SYSTEM_PROFILE
       );

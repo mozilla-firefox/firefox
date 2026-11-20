@@ -30,5 +30,5 @@ heartbeat:
   data_reviews:
     - https://bugzilla.mozilla.org/show_bug.cgi?id=1963706
   notification_emails:
-    - normandy-notifications@mozilla.com
+    - project-nimbus@mozilla.com
     - kardekani@mozilla.com

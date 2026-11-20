@@ -340,7 +340,7 @@
 
 #endif
 
-#ifdef MOZ_NORMANDY
+#if MOZ_BUILD_APP == browser
       <!-- - - - - - - - - - - - - - - - - - - - - -->
 
       <h2 class="major-section" id="remote-features" data-l10n-id="support-remote-features-title"/>
@@ -630,7 +630,7 @@
         </tbody>
       </table>
 
-#ifdef MOZ_NORMANDY
+#if MOZ_BUILD_APP == browser
       <!-- - - - - - - - - - - - - - - - - - - - - -->
       <h2 class="major-section" id="remote-experiments" data-l10n-id="support-remote-experiments-title"/>
 

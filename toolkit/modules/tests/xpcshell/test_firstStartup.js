@@ -29,7 +29,10 @@ add_task(async function test_success() {
 
   await GleanPings.firstStartup.testSubmission(
     () => {
-      if (AppConstants.MOZ_NORMANDY || AppConstants.MOZ_UPDATE_AGENT) {
+      if (
+        AppConstants.MOZ_BUILD_APP === "browser" ||
+        AppConstants.MOZ_UPDATE_AGENT
+      ) {
         Assert.equal(FirstStartup.state, FirstStartup.SUCCESS);
         Assert.ok(Glean.firstStartup.newProfile.testGetValue());
         Assert.equal(
@@ -37,8 +40,7 @@ add_task(async function test_success() {
           FirstStartup.SUCCESS
         );
 
-        if (AppConstants.MOZ_NORMANDY) {
-          Assert.greater(Glean.firstStartup.normandyInitTime.testGetValue(), 0);
+        if (AppConstants.MOZ_BUILD_APP === "browser") {
           Assert.greater(
             Glean.firstStartup.nimbusStoreInitTime.testGetValue(),
             0
@@ -77,13 +79,15 @@ add_task(async function test_timeout() {
 
   await GleanPings.firstStartup.testSubmission(
     () => {
-      if (AppConstants.MOZ_NORMANDY || AppConstants.MOZ_UPDATE_AGENT) {
+      if (
+        AppConstants.MOZ_BUILD_APP === "browser" ||
+        AppConstants.MOZ_UPDATE_AGENT
+      ) {
         Assert.equal(FirstStartup.state, FirstStartup.TIMED_OUT);
         Assert.greater(Glean.firstStartup.elapsed.testGetValue(), 0);
         Assert.ok(Glean.firstStartup.newProfile.testGetValue());
 
-        if (AppConstants.MOZ_NORMANDY) {
-          Assert.greater(Glean.firstStartup.normandyInitTime.testGetValue(), 0);
+        if (AppConstants.MOZ_BUILD_APP === "browser") {
           Assert.greater(
             Glean.firstStartup.nimbusStoreInitTime.testGetValue(),
             0
