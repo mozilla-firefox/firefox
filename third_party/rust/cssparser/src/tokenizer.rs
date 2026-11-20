@@ -1300,10 +1300,8 @@ fn consume_unquoted_url<'a>(tokenizer: &mut Tokenizer<'a>) -> Result<Token<'a>, 
                 b'\n' | b'\x0C' | b'\r' => {
                     tokenizer.consume_newline();
                 }
-                b => {
-                    tokenizer.consume_known_byte(b);
-                    return consume_bad_url(tokenizer, start_pos);
-                }
+                // NOTE: No advance(), to deal correctly with escapes.
+                b => return consume_bad_url(tokenizer, start_pos),
             }
         }
         UnquotedUrl(string)

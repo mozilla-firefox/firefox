@@ -45,11 +45,7 @@ notes = "This is upstream plus a warning fix from bug 1823866."
 
 [policy.cssparser]
 audit-as-crates-io = true
-notes = "Upstream not yet published changes"
-
-[policy.cssparser-macros]
-audit-as-crates-io = true
-notes = "Upstream not yet published changes"
+notes = "This is the upstream code plus a fix for bug 2089012."
 
 [policy.firefox-on-glean]
 audit-as-crates-io = false

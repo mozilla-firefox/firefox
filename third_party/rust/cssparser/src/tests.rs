@@ -302,6 +302,19 @@ fn bad_url_slice_not_at_char_boundary() {
     assert_eq!(result, Ok(&Token::BadUrl("9\n۰".into())));
 }
 
+/// https://bugzilla.mozilla.org/show_bug.cgi?id=2089012
+#[test]
+fn bad_url_escape_after_whitespace() {
+    let mut input = ParserInput::new("url(foo \\) bar) baz");
+    let mut parser = Parser::new(&mut input);
+    let result = parser.next_including_whitespace_and_comments();
+    assert_eq!(result, Ok(&Token::BadUrl("foo \\) bar".into())));
+    let mut input = ParserInput::new("url(foo \\\\) bar");
+    let mut parser = Parser::new(&mut input);
+    let result = parser.next_including_whitespace_and_comments();
+    assert_eq!(result, Ok(&Token::BadUrl("foo \\\\".into())));
+}
+
 #[test]
 fn unquoted_url_escaping() {
     let token = Token::UnquotedUrl(

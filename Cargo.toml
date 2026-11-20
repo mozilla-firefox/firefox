@@ -357,6 +357,9 @@ rure = { path = "third_party/rust/rure" }
 # Patch zlib-rs to test a workaround for crashes on Intel Raptor Lake CPU.
 zlib-rs = { path = "third_party/rust/zlib-rs" }
 
+# Patch cssparser with a fix for bug 2089012.
+cssparser = { path = "third_party/rust/cssparser" }
+
 # To-be-published changes.
 unicode-bidi = { git = "https://github.com/servo/unicode-bidi", rev = "ca612daf1c08c53abe07327cb3e6ef6e0a760f0c" }
 
