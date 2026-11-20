@@ -247,15 +247,6 @@ ${
     return document.importNode(UrlbarInputBase.#fragment, true);
   }
 
-  /**
-   * The markup this input populates itself with on its first connect.
-   *
-   * @type {DocumentFragment}
-   */
-  get fragment() {
-    return UrlbarInputBase.fragment;
-  }
-
   static get observedAttributes() {
     return ["open"];
   }
@@ -439,7 +430,7 @@ ${
 
     this.#addStylesheet();
 
-    this.appendChild(this.fragment);
+    this.appendChild(UrlbarInputBase.fragment);
 
     // Make sure all children have been parsed before calling #populateSlots.
     if (document.readyState === "loading") {
@@ -1482,25 +1473,6 @@ ${
   }
 
   /**
-   * Whether a result is safe to pick on submit. It isn't when the user has
-   * been editing the value after selecting it, unless the result is the
-   * heuristic, a tip, or its value still matches the input.
-   *
-   * @param {UrlbarResult} [result]
-   *   The result for the selected element.
-   * @returns {boolean}
-   */
-  isSafeToPickResult(result) {
-    return !!(
-      result &&
-      (result.heuristic ||
-        !this.valueIsTyped ||
-        result.type == UrlbarShared.RESULT_TYPE.TIP ||
-        this.value == this.#getValueFromResult(result))
-    );
-  }
-
-  /**
    * Handles an event which would cause a URL or text to be opened.
    *
    * @param {object} options
@@ -1534,7 +1506,15 @@ ${
       result.payload.inPrivateWindow;
     let selectedPrivateEngineResult =
       selectedPrivateResult && result.payload.isPrivateEngine;
-    let safeToPickResult = this.isSafeToPickResult(result);
+    // Whether the user has been editing the value in the URL bar after selecting
+    // the result. However, if the result type is tip, pick as it is. The result
+    // heuristic is also kept the behavior as is for safety.
+    let safeToPickResult =
+      result &&
+      (result.heuristic ||
+        !this.valueIsTyped ||
+        result.type == UrlbarShared.RESULT_TYPE.TIP ||
+        this.value == this.#getValueFromResult(result));
 
     // In an engine search mode the selected engine is authoritative at Enter
     // (see #searchModeEngineForEnterKey); a stale heuristic must not be picked.
@@ -1659,7 +1639,7 @@ ${
       openParams.schemelessInput = this.#getSchemelessInput(
         this.untrimmedValue
       );
-      this.loadURL({
+      this.#loadURL({
         loadRequest: { urlLoad: { url, postData: null } },
         event,
         where,
@@ -1710,7 +1690,7 @@ ${
               this.untrimmedValue
             );
           }
-          this.loadURL({
+          this.#loadURL({
             loadRequest: {
               urlLoad: { url: fixup.url, postData: fixup.postData },
             },
@@ -1982,7 +1962,7 @@ ${
         searchSource: this.getSearchSource(event),
         windowMode: this.windowMode,
       });
-      this.loadURL({
+      this.#loadURL({
         loadRequest: {
           urlLoad: { url: this._untrimmedValue, postData: null },
         },
@@ -2014,7 +1994,7 @@ ${
           // would involve sharing the docshell logic with the provider, along
           // with the dns lookup.
           // For now, in this specific case, we'll override the result's url
-          // with the input value, and let it pass through to loadURL(), and
+          // with the input value, and let it pass through to #loadURL(), and
           // finally to the docshell.
           // This also means that in some cases the heuristic result will show a
           // Visit entry, but the docshell will instead execute a search. It's a
@@ -2336,7 +2316,7 @@ ${
       windowMode: this.windowMode,
     });
 
-    this.loadURL({
+    this.#loadURL({
       loadRequest,
       event,
       where,
@@ -4192,7 +4172,7 @@ ${
 
     this.view.close({ elementPicked: true });
 
-    this.loadURL({
+    this.#loadURL({
       loadRequest: { urlLoad: { url, postData: null } },
       event,
       where,
@@ -4240,7 +4220,7 @@ ${
    * @param {?UrlbarSearchData} [options.searchData]
    *   For a search, the data the parent records once the load has gone ahead.
    */
-  async loadURL({
+  async #loadURL({
     loadRequest,
     event,
     where,
