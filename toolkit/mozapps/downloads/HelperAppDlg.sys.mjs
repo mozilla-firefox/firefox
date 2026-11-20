@@ -44,9 +44,15 @@ Integration.downloads.defineESModuleGetter(
  * @return true if we can use the directory, false otherwise.
  */
 function isUsableDirectory(aDirectory) {
-  return (
-    aDirectory.exists() && aDirectory.isDirectory() && aDirectory.isWritable()
-  );
+  try {
+    return (
+      aDirectory.exists() && aDirectory.isDirectory() && aDirectory.isWritable()
+    );
+  } catch (ex) {
+    // These checks can throw instead of returning false, e.g. if the volume
+    // is read-only or disappears in the meantime.
+    return false;
+  }
 }
 
 let gDownloadSavePickerQueues = new WeakMap();
@@ -416,7 +422,7 @@ export class nsUnknownContentTypeDialog {
         }
 
         let file = picker.file;
-        if (file) {
+        if (file && isUsableDirectory(file.parent)) {
           // Do not store the last save directory as a pref inside the private browsing mode
           gDownloadLastDir.setFile(aLauncher.source, file.parent);
         }
@@ -461,7 +467,13 @@ export class nsUnknownContentTypeDialog {
       }
       // Don't pop up the downloads panel redundantly.
       aLauncher.saveDestinationAvailable(result, !!result);
-    })().catch(console.error);
+    })().catch(ex => {
+      console.error(ex);
+      // A null destination cancels the download. Without a call to
+      // saveDestinationAvailable() the transfer would keep running in the
+      // background, with no target file and no entry in the downloads panel.
+      aLauncher.saveDestinationAvailable(null);
+    });
   }
 
   getFinalLeafName(aLeafName, aFileExt, aAfterFilePicker) {
