@@ -2,7 +2,7 @@
 
 ## Introduction
 
-This document describes the way Web Console remoting works. The Web Console is split between a client with its user interface, and the server which has listeners for all the things that happen in the tab. For communication between the server and the client we use the [Remote Debugging Protocol](https://wiki.mozilla.org/Remote_Debugging_Protocol). This architecture allows you to connect a Web Console client instance to a server running on B2G, Fennec or some other Firefox instance.
+This document describes the way Web Console remoting works. The Web Console is split between a client with its user interface, and the server which has listeners for all the things that happen in the tab. For communication between the server and the client we use the {doc}`Remote Debugging Protocol </devtools/backend/protocol>`. This architecture allows you to connect a Web Console client instance to a server running on B2G, Fennec or some other Firefox instance.
 
 To better understand the architecture of the Web Console we recommend learning about the [debugger architecture](https://wiki.mozilla.org/Debugger_Architecture).
 
@@ -186,7 +186,7 @@ The `errorMessage` and `lineText` properties can be long string actor grips if t
 
 The [window.console API](https://developer.mozilla.org/en-US/docs/Web/API/console) calls send internal messages throughout Gecko which allow us to do whatever we want for each call. The Web Console actor sends these messages to the remote debugging client.
 
-We use the `ObjectActor` from [dbg-script-actors.js](https://mxr.mozilla.org/mozilla-central/source/toolkit/devtools/debugger/server/dbg-script-actors.js) without a `ThreadActor`, to avoid slowing down the page scripts - the debugger deoptimizes JavaScript execution in the target page. The [lifetime of object actors](https://wiki.mozilla.org/Remote_Debugging_Protocol#Grip_Lifetimes) in the Web Console is different than the lifetime of these objects in the debugger - which is usually per pause or per thread. The Web Console manages the lifetime of `ObjectActors` manually.
+We use the `ObjectActor` from [dbg-script-actors.js](https://mxr.mozilla.org/mozilla-central/source/toolkit/devtools/debugger/server/dbg-script-actors.js) without a `ThreadActor`, to avoid slowing down the page scripts - the debugger deoptimizes JavaScript execution in the target page. The [lifetime of object actors](/devtools/backend/protocol.md#grip-lifetimes) in the Web Console is different than the lifetime of these objects in the debugger - which is usually per pause or per thread. The Web Console manages the lifetime of `ObjectActors` manually.
 
 Console API messages come through the `nsIObserverService` - the console object implementation lives in [dom/base/ConsoleAPI.js](http://mxr.mozilla.org/mozilla-central/source/dom/base/ConsoleAPI.js).
 
@@ -487,7 +487,7 @@ The `getResponseCookies` packet:
 ```
 
 :::{note}
-For all of the header and cookie values in the above packets we use [LongStringActor grips](https://wiki.mozilla.org/Remote_Debugging_Protocol#Objects) when the value is very long. This helps us avoid using too much of the network bandwidth.
+For all of the header and cookie values in the above packets we use LongStringActor grips when the value is very long. This helps us avoid using too much of the network bandwidth.
 :::
 
 The `getRequestPostData` packet:

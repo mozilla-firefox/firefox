@@ -116,7 +116,7 @@ features:
 - [Showing how many objects different call paths allocate.][tut alloc log]
 
 [object]: Debugger.Object.md
-[protocol]: https://wiki.mozilla.org/Remote_Debugging_Protocol
+[protocol]: /devtools/backend/protocol.md
 [img-shadows]: shadows.svg
 [script]: Debugger.Script.md
 [frame]: Debugger.Frame.md
