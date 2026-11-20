@@ -1,6 +1,9 @@
 # Maven group ID used for all components
 componentsGroupId: "org.mozilla.components"
 
+# Maven group ID used for application-services
+appServicesGroupId: "org.mozilla.appservices"
+
 # Synchronized build configuration for all modules
 compileSdkMajorVersion: 37
 compileSdkMinorVersion: 2

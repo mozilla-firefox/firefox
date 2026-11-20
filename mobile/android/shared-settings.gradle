@@ -36,6 +36,7 @@ class Config {
 
     public final String componentsVersion
     public final String componentsGroupId
+    public final String appServicesGroupId
     public final Integer compileSdkMajorVersion
     public final Integer compileSdkMinorVersion
     public final Integer minSdkVersion
@@ -46,6 +47,7 @@ class Config {
     Config(
             String componentsVersion,
             String componentsGroupId,
+            String appServicesGroupId,
             Integer compileSdkMajorVersion,
             Integer compileSdkMinorVersion,
             Integer minSdkVersion,
@@ -54,6 +56,7 @@ class Config {
     ) {
         this.componentsVersion = componentsVersion
         this.componentsGroupId = componentsGroupId
+        this.appServicesGroupId = appServicesGroupId
         this.compileSdkMajorVersion = compileSdkMajorVersion
         this.compileSdkMinorVersion = compileSdkMinorVersion
         this.minSdkVersion = minSdkVersion
@@ -87,6 +90,7 @@ gradle.projectsLoaded { ->
     gradle.rootProject.ext.config = new Config(
             version,
             configData.componentsGroupId,
+            configData.appServicesGroupId,
             configData.compileSdkMajorVersion,
             configData.compileSdkMinorVersion,
             configData.minSdkVersion,
