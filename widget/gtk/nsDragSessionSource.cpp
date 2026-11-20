@@ -103,7 +103,7 @@ static constexpr nsLiteralString kDisallowedExportedSchemes[] = {
     u"chrome"_ns,         u"imap"_ns,        u"javascript"_ns,
     u"mailbox"_ns,        u"news"_ns,        u"page-icon"_ns,
     u"resource"_ns,       u"view-source"_ns, u"moz-extension"_ns,
-    u"moz-page-thumb"_ns,
+    u"moz-page-thumb"_ns, u"x-moz-ews"_ns,
 };
 
 // See https://docs.gtk.org/gtk3/enum.DragResult.html
