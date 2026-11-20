@@ -72,7 +72,7 @@ struct TestWebrtcVideoEncoderFactory : public WebrtcVideoEncoderFactory,
         WaitFor(
             WebrtcVideoEncoderFactory::SupportsCodec(EncoderConfig(
                 CodecType::H264, {640, 480}, Usage::Realtime,
-                EncoderConfig::SampleFormat(dom::ImageBitmapFormat::YUV420P),
+                EncoderConfig::SampleFormat(mozilla::ImagePixelFormat::I420),
                 30, 240, 100'000, 50'000, 1'000'000, BitrateMode::Constant,
                 HardwarePreference::None, ScalabilityMode::None,
                 EncoderConfig::CodecSpecific(H264Specific()))))

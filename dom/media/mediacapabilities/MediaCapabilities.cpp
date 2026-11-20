@@ -407,12 +407,12 @@ static EncoderConfig BuildEncoderConfig(const MediaExtendedMIMEType& aMime,
   const uint32_t bitrate = SaturatingCast<uint32_t>(aConfig.mBitrate);
   // PEMFactory::Supports() does not check bitrate, but we include it here
   // for future use.
-  return EncoderConfig(
-      codec, size, Usage::Realtime,
-      EncoderConfig::SampleFormat(dom::ImageBitmapFormat::YUV420P), fr,
-      /* kf interval*/ 0, bitrate, /* br min */ 0, /* br max */ 0,
-      mozilla::BitrateMode::Variable, HardwarePreference::None,
-      ScalabilityMode::None, specific);
+  return EncoderConfig(codec, size, Usage::Realtime,
+                       EncoderConfig::SampleFormat(ImagePixelFormat::I420), fr,
+                       /* kf interval*/ 0, bitrate, /* br min */ 0,
+                       /* br max */ 0, mozilla::BitrateMode::Variable,
+                       HardwarePreference::None, ScalabilityMode::None,
+                       specific);
 }
 
 // Caches codec support state (e.g., WebrtcCodecInfo) for reuse across
