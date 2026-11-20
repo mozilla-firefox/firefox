@@ -1305,17 +1305,8 @@ static constexpr size_t kPendingIncomingDatagramOverhead = 16;
 
 NS_IMETHODIMP WebTransportParent::OnDatagramReceived(
     const nsTArray<uint8_t>& aData) {
-  // A datagram that arrives between OnStopRequest and the RetargetTo() in
-  // OnSessionReady is delivered on the main thread (see OnDraining), but the
-  // pending batch belongs to the socket thread.
-  if (!mSocketThread->IsOnCurrentThread()) {
-    mSocketThread->Dispatch(
-        NS_NewRunnableFunction("WebTransportParent::OnDatagramReceived",
-                               [self = RefPtr{this}, data = aData.Clone()] {
-                                 self->OnDatagramReceived(data);
-                               }));
-    return NS_OK;
-  }
+  // We must be on the Socket Thread
+  MOZ_ASSERT(mSocketThread->IsOnCurrentThread());
 
   LOG(("WebTransportParent received datagram length = %zu", aData.Length()));
 
@@ -1333,14 +1324,7 @@ NS_IMETHODIMP WebTransportParent::OnDatagramReceived(
 }
 
 NS_IMETHODIMP WebTransportParent::OnDatagramsFlush() {
-  // Can arrive on the main thread like OnDatagramReceived, and must stay
-  // behind the datagrams it follows.
-  if (!mSocketThread->IsOnCurrentThread()) {
-    mSocketThread->Dispatch(NS_NewRunnableFunction(
-        "WebTransportParent::OnDatagramsFlush",
-        [self = RefPtr{this}] { self->OnDatagramsFlush(); }));
-    return NS_OK;
-  }
+  MOZ_ASSERT(mSocketThread->IsOnCurrentThread());
 
   FlushIncomingDatagrams();
   return NS_OK;
