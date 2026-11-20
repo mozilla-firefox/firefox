@@ -1,0 +1,94 @@
+<!DOCTYPE html>
+<html>
+
+<head>
+<title>WebCrypto Test Suite</title>
+<meta http-equiv="Content-Type" content="text/html;charset=utf-8" />
+<link rel="stylesheet" href="./test_WebCrypto.css"/>
+<script src="/tests/SimpleTest/SimpleTest.js"></script>
+
+<!-- General testing framework -->
+<script src="./test-array.js"></script>
+
+<script>/* <![CDATA[*/
+"use strict";
+
+// -----------------------------------------------------------------------------
+TestArray.addTest(
+  "Export Ed25519 and X25519 PKCS#8 private keys with a wrong-length private value as JWK",
+  function() {
+    // A PKCS#8 private key in the format of RFC 8410 section 7, with a
+    // CurvePrivateKey of the given length.
+    function pkcs8(oid, length) {
+      let der = [
+        0x30, 14 + length, 0x02, 0x01, 0x00, // OneAsymmetricKey, version 0
+        0x30, 0x05, 0x06, 0x03, 0x2b, 0x65, oid, // 1.3.101.112 (Ed25519) or 1.3.101.110 (X25519)
+        0x04, 2 + length, 0x04, length, // privateKey containing CurvePrivateKey
+      ];
+      for (let i = 0; i < length; i++) {
+        der.push(i + 1);
+      }
+      return new Uint8Array(der);
+    }
+
+    let checks = [];
+    for (let [alg, oid, usages] of [
+      ["Ed25519", 0x70, ["sign"]],
+      ["X25519", 0x6e, ["deriveBits"]],
+    ]) {
+      // A valid 32-byte key, so that a broken encoding can't make the
+      // wrong-length cases pass by failing to import.
+      checks.push(
+        crypto.subtle.importKey("pkcs8", pkcs8(oid, 32), alg, true, usages)
+        .then(key => crypto.subtle.exportKey("jwk", key))
+        .then(jwk => jwk.d == "AQIDBAUGBwgJCgsMDQ4PEBESExQVFhcYGRobHB0eHyA",
+              () => false));
+
+      for (let length of [31, 33]) {
+        checks.push(
+          crypto.subtle.importKey("pkcs8", pkcs8(oid, length), alg, true, usages)
+          .then(key => crypto.subtle.exportKey("jwk", key))
+          .then(() => false,
+                e => e.name == "OperationError" || e.name == "DataError"));
+      }
+    }
+
+    Promise.all(checks)
+    .then(complete(this, results => results.every(r => r)), error(this));
+  }
+);
+/* ]]>*/</script>
+</head>
+
+<body>
+
+<div id="content">
+	<div id="head">
+		<b>Web</b>Crypto<br>
+	</div>
+
+    <div id="start" onclick="start();">RUN ALL</div>
+
+    <div id="resultDiv" class="content">
+    Summary:
+    <span class="pass"><span id="passN">0</span> passed, </span>
+    <span class="fail"><span id="failN">0</span> failed, </span>
+    <span class="pending"><span id="pendingN">0</span> pending.</span>
+    <br/>
+    <br/>
+
+    <table id="results">
+        <tr>
+            <th>Test</th>
+            <th>Result</th>
+            <th>Time</th>
+        </tr>
+    </table>
+
+    </div>
+
+    <div id="foot"></div>
+</div>
+
+</body>
+</html>

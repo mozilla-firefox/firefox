@@ -973,6 +973,9 @@ nsresult CryptoKey::PrivateKeyToJwk(SECKEYPrivateKey* aPrivKey,
         // SECKEY_ConvertToPublicKey will try to derive public key
         UniqueSECKEYPublicKey pubKey =
             UniqueSECKEYPublicKey(SECKEY_ConvertToPublicKey(aPrivKey));
+        if (!pubKey) {
+          return NS_ERROR_DOM_OPERATION_ERR;
+        }
         rv = PK11_ReadRawAttribute(PK11_TypePubKey, pubKey.get(), CKA_EC_POINT,
                                    &ecPoint);
 
