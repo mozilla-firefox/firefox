@@ -821,9 +821,29 @@ void wasm::HandleExceptionWasm(JSContext* cx, JitFrameIter& iter,
   // in a continuation's entry function): it has no iterated frame, so it must
   // be freed when we cross the first stack switch.
   wasm::ContStack* wasmPreviousStack = iter.asWasm().unwoundContStack();
-#endif
 
-  for (; !iter.done() && iter.isWasm(); ++iter) {
+  // When we iterate out of a continuation stack, we need to defer freeing it
+  // for one iteration. This is because the activation's exit FP keeps pointing
+  // into it until we advance past the first frame of the new stack.
+  wasm::ContStack* wasmStackToFree = nullptr;
+  auto freeUnwoundStack = [&]() {
+    if (!wasmStackToFree) {
+      return;
+    }
+    MOZ_RELEASE_ASSERT(
+        !activation->hasWasmExitFP() ||
+        !wasmStackToFree->hasStackAddress(uintptr_t(activation->wasmExitFP())));
+    ContStack::unwind(wasmStackToFree->handlers());
+    wasmStackToFree = nullptr;
+  };
+#else
+  auto freeUnwoundStack = [&]() {};
+#endif
+  // Ensure any early returns also free an unwound stack.
+  auto ensureFreeUnwoundStack =
+      mozilla::MakeScopeExit([&]() { freeUnwoundStack(); });
+
+  for (; !iter.done() && iter.isWasm(); ++iter, freeUnwoundStack()) {
     // Wasm code can enter same-compartment realms, so reset cx->realm to
     // this frame's realm.
     WasmFrameIter& wasmFrame = iter.asWasm();
@@ -833,9 +853,8 @@ void wasm::HandleExceptionWasm(JSContext* cx, JitFrameIter& iter,
 #ifdef ENABLE_WASM_JSPI
     wasm::ContStack* wasmStack = wasmFrame.contStack();
     if (wasmFrame.currentFrameStackSwitched()) {
-      if (wasmPreviousStack) {
-        ContStack::unwind(wasmPreviousStack->handlers());
-      }
+      MOZ_RELEASE_ASSERT(!wasmStackToFree);
+      wasmStackToFree = wasmPreviousStack;
       wasmPreviousStack = wasmStack;
     } else {
       MOZ_RELEASE_ASSERT(wasmStack == wasmPreviousStack);
