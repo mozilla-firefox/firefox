@@ -268,7 +268,7 @@ export class PrivacySettingHelpers {
 
   static shouldDisableETPCategoryControls() {
     let policy = Services.policies.getActivePolicies();
-    return (
+    return !!(
       policy?.EnableTrackingProtection?.Locked ||
       policy?.EnableTrackingProtection?.Category ||
       policy?.Cookies?.Locked
@@ -3799,17 +3799,25 @@ Preferences.addSetting({
   set(value, { contentBlockingCategory }) {
     contentBlockingCategory.value = value;
   },
+  // allowControl keeps the radio group enabled so getControlConfig can decide
+  // which levels to disable.
+  controllingExtensionInfo: {
+    storeId: "websites.trackingProtectionMode",
+    l10nId: "extension-controlling-websites-content-blocking-all-trackers",
+    allowControl: true,
+  },
   getControlConfig(config, _, setting) {
-    if (!PrivacySettingHelpers.shouldDisableETPCategoryControls()) {
-      return config;
-    }
+    let lockedByPolicy =
+      PrivacySettingHelpers.shouldDisableETPCategoryControls();
+    let controlledByExtension = !!setting.controllingExtensionInfo.id;
 
-    let { options } = config;
-
-    // If ETP level is set to custom keep the radio button enabled so the "customize" button works even when the category selection itself is locked.
-    for (let option of options) {
+    // Keep the selected level enabled so its nested controls remain usable.
+    // Extensions only control tracking protection, so they leave the custom
+    // level and its customize pane available.
+    for (let option of config.options) {
       option.disabled =
-        option.id != "etpLevelCustom" || setting.value != "custom";
+        option.value != setting.value &&
+        (lockedByPolicy || (controlledByExtension && option.value != "custom"));
     }
 
     return config;
@@ -4137,6 +4145,10 @@ Preferences.addSetting({
     "trackingProtectionSocialEnabled",
     "socialBlockCookies",
   ],
+  controllingExtensionInfo: {
+    storeId: "websites.trackingProtectionMode",
+    l10nId: "extension-controlling-websites-content-blocking-all-trackers",
+  },
   disabled: ({ trackingProtectionEnabled, trackingProtectionEnabledPBM }) => {
     return (
       trackingProtectionEnabled.locked || trackingProtectionEnabledPBM.locked

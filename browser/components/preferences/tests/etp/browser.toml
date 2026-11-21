@@ -22,4 +22,6 @@ tags = "os_integration"
 
 ["browser_etp_exceptions_dialog.js"]
 
+["browser_etp_extension_controlled.js"]
+
 ["browser_etp_status.js"]

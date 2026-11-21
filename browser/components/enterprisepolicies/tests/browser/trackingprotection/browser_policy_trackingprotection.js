@@ -7,7 +7,27 @@ add_task(async function test_enabletrackingprotection_strict() {
   await BrowserTestUtils.withNewTab("about:preferences#etp", async browser => {
     let strictRadio = browser.contentDocument.getElementById("etpLevelStrict");
     is(strictRadio.checked, true, "Strict checkbox should be selected");
-    is(strictRadio.disabled, true, "Strict checkbox should be disabled");
+    is(
+      strictRadio.disabled,
+      false,
+      "Selected strict radio should stay enabled for its nested controls"
+    );
+    let doc = browser.contentDocument;
+    is(
+      doc.getElementById("etpLevelStandard").disabled,
+      true,
+      "Standard radio should be disabled"
+    );
+    is(
+      doc.getElementById("etpLevelCustom").disabled,
+      true,
+      "Custom radio should be disabled"
+    );
+    let baselineCheckbox = doc.getElementById("etpAllowListBaselineEnabled");
+    ok(
+      !baselineCheckbox.disabled && !baselineCheckbox.parentDisabled,
+      "Baseline exceptions checkbox should be enabled since its pref is not locked"
+    );
   });
 });
 
