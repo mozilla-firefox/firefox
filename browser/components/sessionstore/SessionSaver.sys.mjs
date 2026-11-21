@@ -52,6 +52,8 @@ const lazy = XPCOMUtils.declareLazy({
   SessionFile: "moz-src:///browser/components/sessionstore/SessionFile.sys.mjs",
   SessionStore:
     "moz-src:///browser/components/sessionstore/SessionStore.sys.mjs",
+  TabSplitViewState:
+    "moz-src:///browser/components/sessionstore/TabSplitViewState.sys.mjs",
   sessionStoreLogger:
     "moz-src:///browser/components/sessionstore/SessionLogger.sys.mjs",
   // Minimal interval between two save operations (in ms), while the user is
@@ -305,6 +307,8 @@ class _SessionSaver {
         state.windows.unshift(state._closedWindows.pop());
       }
     }
+
+    lazy.TabSplitViewState.normalizeSession(state);
 
     // Clear cookies and storage on clean shutdown.
     this.#maybeClearCookiesAndStorage(state);

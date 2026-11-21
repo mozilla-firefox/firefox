@@ -300,6 +300,8 @@ skip-if = [
 
 ["browser_speculative_connect.js"]
 
+["browser_splitview_incomplete_restore.js"]
+
 ["browser_splitview_integer_ids.js"]
 
 ["browser_splitview_restore_in_closed_window.js"]

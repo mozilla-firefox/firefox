@@ -484,6 +484,7 @@ export interface Modules {
   "moz-src:///browser/components/sessionstore/StartupPerformance.sys.mjs": typeof import("moz-src:///browser/components/sessionstore/StartupPerformance.sys.mjs"),
   "moz-src:///browser/components/sessionstore/TabAttributes.sys.mjs": typeof import("moz-src:///browser/components/sessionstore/TabAttributes.sys.mjs"),
   "moz-src:///browser/components/sessionstore/TabGroupState.sys.mjs": typeof import("moz-src:///browser/components/sessionstore/TabGroupState.sys.mjs"),
+  "moz-src:///browser/components/sessionstore/TabSplitViewState.sys.mjs": typeof import("moz-src:///browser/components/sessionstore/TabSplitViewState.sys.mjs"),
   "moz-src:///browser/components/sessionstore/TabState.sys.mjs": typeof import("moz-src:///browser/components/sessionstore/TabState.sys.mjs"),
   "moz-src:///browser/components/sessionstore/TabStateCache.sys.mjs": typeof import("moz-src:///browser/components/sessionstore/TabStateCache.sys.mjs"),
   "moz-src:///browser/components/sessionstore/TabStateFlusher.sys.mjs": typeof import("moz-src:///browser/components/sessionstore/TabStateFlusher.sys.mjs"),

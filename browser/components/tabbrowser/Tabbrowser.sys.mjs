@@ -68,6 +68,8 @@ const lazy = XPCOMUtils.declareLazy({
   tabLocalization: () =>
     new Localization(["browser/tabbrowser.ftl", "branding/brand.ftl"], true),
   TabMetrics: "moz-src:///browser/components/tabbrowser/TabMetrics.sys.mjs",
+  TabSplitViewState:
+    "moz-src:///browser/components/sessionstore/TabSplitViewState.sys.mjs",
   TabStateFlusher:
     "moz-src:///browser/components/sessionstore/TabStateFlusher.sys.mjs",
   TaskbarTabs: "moz-src:///browser/components/taskbartabs/TaskbarTabs.sys.mjs",
@@ -5108,6 +5110,10 @@ export class Tabbrowser {
         containingTabsFragment: this.document.createDocumentFragment(),
       });
     }
+    splitViewDataList = lazy.TabSplitViewState.normalize(
+      tabDataList,
+      splitViewDataList
+    );
     for (const splitViewData of splitViewDataList) {
       splitViewWorkingData.set(splitViewData.id, {
         numberOfTabs: splitViewData.numberOfTabs,

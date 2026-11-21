@@ -57,6 +57,8 @@ support-files = [
 
 ["test_shutdown_success_stopped_state.js"]
 
+["test_split_view_state.js"]
+
 ["test_startup_invalid_session.js"]
 skip-if = [
   "condprof", # Bug 1769154
