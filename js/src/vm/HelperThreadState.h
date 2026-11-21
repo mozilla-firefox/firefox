@@ -444,7 +444,8 @@ class GlobalHelperThreadState {
 #endif
 
   void cancelOffThreadBaselineCompile(const CompilationSelector& selector);
-  void cancelOffThreadIonCompile(const CompilationSelector& selector);
+  void cancelOffThreadIonCompile(const CompilationSelector& selector,
+                                 WaitForRunningCompiles waitForRunning);
   void cancelOffThreadWasmCompleteTier2Generator(
       AutoLockHelperThreadState& lock);
   void cancelOffThreadWasmPartialTier2Compile(AutoLockHelperThreadState& lock);

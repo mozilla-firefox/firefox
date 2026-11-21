@@ -805,7 +805,12 @@ JS_PUBLIC_API void js::gc::SetPerformanceHint(JSContext* cx,
 
 JS_PUBLIC_API void js::SetRealmIsDyingHint(JSObject* global) {
   MOZ_ASSERT(global->is<GlobalObject>());
-  global->as<GlobalObject>().realm()->setIsDyingHint();
+  Realm* realm = global->as<GlobalObject>().realm();
+  realm->setIsDyingHint();
+
+  // Cancel off-thread Ion compilations because scripts in this realm are
+  // unlikely to run again.
+  CancelOffThreadIonCompile(realm, WaitForRunningCompiles::No);
 }
 
 AutoSelectGCHeap::AutoSelectGCHeap(JSContext* cx,

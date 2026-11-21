@@ -127,6 +127,7 @@ class BaselineCompileTask final : public HelperThreadTask {
     return firstScript()->runtimeFromAnyThread();
   }
   Zone* zoneFromAnyThread() const { return firstScript()->zoneFromAnyThread(); }
+  CompileRealm* compileRealm() const { return realm_; }
   bool scriptMatches(JSScript* script) {
     for (auto* snapshot : snapshots_) {
       if (snapshot->script() == script) {

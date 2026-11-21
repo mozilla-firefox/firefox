@@ -816,6 +816,9 @@ static JSRuntime* GetSelectorRuntime(const CompilationSelector& selector) {
       return script->runtimeFromMainThread();
     }
     JSRuntime* operator()(Zone* zone) { return zone->runtimeFromMainThread(); }
+    JSRuntime* operator()(Realm* realm) {
+      return realm->runtimeFromMainThread();
+    }
     JSRuntime* operator()(ZonesInState zbs) { return zbs.runtime; }
     JSRuntime* operator()(JSRuntime* runtime) { return runtime; }
   };
@@ -831,6 +834,9 @@ static bool IonCompileTaskMatches(const CompilationSelector& selector,
     bool operator()(JSScript* script) { return script == task_->script(); }
     bool operator()(Zone* zone) {
       return zone == task_->script()->zoneFromAnyThread();
+    }
+    bool operator()(Realm* realm) {
+      return jit::CompileRealm::get(realm) == task_->mirGen().realm;
     }
     bool operator()(JSRuntime* runtime) {
       return runtime == task_->script()->runtimeFromAnyThread();
@@ -851,6 +857,7 @@ static bool ShouldForceIonFreeTask(const CompilationSelector& selector) {
   struct Matcher {
     bool operator()(JSScript* script) { return false; }
     bool operator()(Zone* zone) { return true; }
+    bool operator()(Realm* realm) { return false; }
     bool operator()(ZonesInState zbs) { return true; }
     bool operator()(JSRuntime* runtime) { return true; }
   };
@@ -859,7 +866,8 @@ static bool ShouldForceIonFreeTask(const CompilationSelector& selector) {
 }
 
 void GlobalHelperThreadState::cancelOffThreadIonCompile(
-    const CompilationSelector& selector) {
+    const CompilationSelector& selector,
+    WaitForRunningCompiles waitForRunning) {
   jit::JitRuntime* jitRuntime = GetSelectorRuntime(selector)->jitRuntime();
   MOZ_ASSERT(jitRuntime);
 
@@ -886,10 +894,9 @@ void GlobalHelperThreadState::cancelOffThreadIonCompile(
       }
     }
 
-    /* Wait for in progress entries to finish up. */
-    bool cancelled;
-    do {
-      cancelled = false;
+    /* Cancel in progress entries and wait for them to finish up. */
+    while (true) {
+      bool cancelled = false;
       for (auto* helper : helperTasks(lock)) {
         if (!helper->is<jit::IonCompileTask>()) {
           continue;
@@ -902,10 +909,11 @@ void GlobalHelperThreadState::cancelOffThreadIonCompile(
           cancelled = true;
         }
       }
-      if (cancelled) {
-        wait(lock);
+      if (!cancelled || waitForRunning == WaitForRunningCompiles::No) {
+        break;
       }
-    } while (cancelled);
+      wait(lock);
+    }
 
     /* Cancel code generation for any completed entries. */
     GlobalHelperThreadState::IonCompileTaskVector& finished =
@@ -937,6 +945,7 @@ static bool JitDataStructuresExist(const CompilationSelector& selector) {
   struct Matcher {
     bool operator()(JSScript* script) { return !!script->zone()->jitZone(); }
     bool operator()(Zone* zone) { return !!zone->jitZone(); }
+    bool operator()(Realm* realm) { return !!realm->zone()->jitZone(); }
     bool operator()(ZonesInState zbs) { return zbs.runtime->hasJitRuntime(); }
     bool operator()(JSRuntime* runtime) { return runtime->hasJitRuntime(); }
   };
@@ -956,7 +965,8 @@ static bool MayHaveOffThreadIonCompileTask(JSScript* script) {
          jitScript->baselineScript()->hasPendingIonCompileTask();
 }
 
-void js::CancelOffThreadIonCompile(const CompilationSelector& selector) {
+void js::CancelOffThreadIonCompile(const CompilationSelector& selector,
+                                   WaitForRunningCompiles waitForRunning) {
   if (!JitDataStructuresExist(selector)) {
     return;
   }
@@ -972,7 +982,7 @@ void js::CancelOffThreadIonCompile(const CompilationSelector& selector) {
     return;
   }
 
-  HelperThreadState().cancelOffThreadIonCompile(selector);
+  HelperThreadState().cancelOffThreadIonCompile(selector, waitForRunning);
 }
 
 #ifdef DEBUG
@@ -1160,6 +1170,9 @@ static bool BaselineCompileTaskMatches(const CompilationSelector& selector,
 
     bool operator()(JSScript* script) { return task_->scriptMatches(script); }
     bool operator()(Zone* zone) { return zone == task_->zoneFromAnyThread(); }
+    bool operator()(Realm* realm) {
+      return jit::CompileRealm::get(realm) == task_->compileRealm();
+    }
     bool operator()(JSRuntime* runtime) {
       return runtime == task_->runtimeFromAnyThread();
     }

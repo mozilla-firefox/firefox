@@ -211,13 +211,19 @@ struct ZonesInState {
   JS::shadow::Zone::GCState state;
 };
 
-using CompilationSelector =
-    mozilla::Variant<JSScript*, JS::Zone*, ZonesInState, JSRuntime*>;
+using CompilationSelector = mozilla::Variant<JSScript*, JS::Zone*, JS::Realm*,
+                                             ZonesInState, JSRuntime*>;
+
+enum class WaitForRunningCompiles : bool { No, Yes };
 
 /*
- * Cancel scheduled or in progress Ion compilations.
+ * Cancel scheduled or in-progress Ion compilations. With
+ * WaitForRunningCompiles::No, in-progress compilations are asked to stop but
+ * we don't wait for them, so these tasks may still finish.
  */
-void CancelOffThreadIonCompile(const CompilationSelector& selector);
+void CancelOffThreadIonCompile(
+    const CompilationSelector& selector,
+    WaitForRunningCompiles waitForRunning = WaitForRunningCompiles::Yes);
 
 inline void CancelOffThreadIonCompile(JSScript* script) {
   CancelOffThreadIonCompile(CompilationSelector(script));
@@ -225,6 +231,11 @@ inline void CancelOffThreadIonCompile(JSScript* script) {
 
 inline void CancelOffThreadIonCompile(JS::Zone* zone) {
   CancelOffThreadIonCompile(CompilationSelector(zone));
+}
+
+inline void CancelOffThreadIonCompile(JS::Realm* realm,
+                                      WaitForRunningCompiles waitForRunning) {
+  CancelOffThreadIonCompile(CompilationSelector(realm), waitForRunning);
 }
 
 inline void CancelOffThreadIonCompile(JSRuntime* runtime,
