@@ -3589,10 +3589,6 @@ nsresult nsHttpChannel::ContinueProcessResponseAfterNotModified(nsresult aRv) {
 }
 
 static void ReportHttpResponseVersion(HttpVersion version) {
-  if (Telemetry::CanRecordPrereleaseData()) {
-    glean::http::response_version.AccumulateSingleSample(
-        static_cast<uint32_t>(version));
-  }
   mozilla::glean::networking::http_response_version
       .Get(HttpVersionToTelemetryLabel(version))
       .Add(1);

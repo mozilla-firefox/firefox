@@ -2065,23 +2065,6 @@ http:
       - necko@mozilla.com
     expires: never
 
-  response_version:
-    type: custom_distribution
-    description: >
-      HTTP: Protocol Version Used on Response from nsHttp.h
-    range_min: 0
-    range_max: 48
-    bucket_count: 49
-    histogram_type: linear
-    bugs:
-      - https://bugzilla.mozilla.org/show_bug.cgi?id=1935420
-      - https://bugzilla.mozilla.org/show_bug.cgi?id=2037081
-    data_reviews:
-      - https://bugzilla.mozilla.org/show_bug.cgi?id=1935420
-    notification_emails:
-      - necko@mozilla.com
-    expires: never
-
   channel_disposition:
     type: custom_distribution
     description: >
