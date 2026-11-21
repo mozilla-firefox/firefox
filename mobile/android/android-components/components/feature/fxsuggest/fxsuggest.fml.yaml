@@ -12,6 +12,7 @@ channels:
   - release
 features:
   awesomebar-suggestion-provider:
+    no-lint: [MISSING_CONTACTS]
     description: Configuration for the Firefox Suggest awesomebar suggestion provider.
     variables:
       available-suggestion-types:
@@ -19,11 +20,10 @@ features:
           A map of suggestion types to booleans that indicate whether or not the provider should
           return suggestions of those types.
         type: Map<SuggestionType, Boolean>
-        default: {
-          "amp": false,
-          "ampMobile": false,
-          "wikipedia": true,
-        }
+        default:
+          amp: false
+          ampMobile: false
+          wikipedia: true
 enums:
   SuggestionType:
     description: The type of a Firefox Suggest search suggestion.

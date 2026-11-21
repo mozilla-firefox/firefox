@@ -19,54 +19,55 @@ import:
     features:
       pdfjs:
         - channel: developer
-          value: {
-          download-button: true,
-          open-in-app-button: true
-        }
+          value:
+            download-button: true
+            open-in-app-button: true
   - path: ../../android-components/components/feature/fxsuggest/fxsuggest.fml.yaml
     channel: release
     features:
       awesomebar-suggestion-provider:
         - value:
-            available-suggestion-types: {
-              "amp": true,
-              "ampMobile": false,
-              "wikipedia": true,
-            }
+            available-suggestion-types:
+              amp: true
+              ampMobile: false
+              wikipedia: true
 
 features:
   homescreen:
+    no-lint: [MISSING_CONTACTS]
     description: The homescreen that the user goes to when they press home or new tab.
     variables:
       sections-enabled:
-        description: "This property provides a lookup table of whether or not the given section should be enabled.
-        If the section is enabled, it should be toggleable in the settings screen, and on by default."
+        description: >
+          This property provides a lookup table of whether or not the given section should be enabled.
+          If the section is enabled, it should be toggleable in the settings screen, and on by default.
         type: Map<HomeScreenSection, Boolean>
         default:
-          {
-            "top-sites": true,
-            "jump-back-in": true,
-            "pocket": true,
-            "pocket-sponsored-stories": true,
-            "synced-tabs": true,
-            "collections": true,
-            "privacy-report": true,
-          }
+          top-sites: true
+          jump-back-in: true
+          pocket: true
+          pocket-sponsored-stories: true
+          synced-tabs: true
+          collections: true
+          privacy-report: true
+
     defaults:
       - channel: nightly
-        value: {
-          "sections-enabled": {
-            "top-sites": true,
-            "jump-back-in": true,
-            "pocket": true,
-            "synced-tabs": true,
-            "collections": true,
-            "privacy-report": true,
-          }
-        }
+        value:
+          sections-enabled:
+            top-sites: true
+            jump-back-in: true
+            pocket: true
+            synced-tabs: true
+            collections: true
+            privacy-report: true
   nimbus-validation:
-    description: "A feature that does not correspond to an application feature suitable for showing
-    that Nimbus is working. This should never be used in production."
+    no-lint: [COMMON_PREFIX]
+    contacts:
+      - project-nimbus@mozilla.com
+    description: >
+      A feature that does not correspond to an application feature suitable for showing
+      that Nimbus is working. This should never be used in production.
     variables:
       settings-title:
         description: The title of displayed in the Settings screen and app menu.
@@ -81,7 +82,10 @@ features:
         type: String
         default: mozac_ic_settings
   gecko-nimbus-validation:
+    no-lint: [COMMON_PREFIX]
     description: "Feature for validating Nimbus Gecko functionality"
+    contacts:
+      - ohall@mozilla.com
     variables:
       test-preference:
         description: "A test gecko preference"
@@ -97,8 +101,11 @@ features:
           branch: "user"
 
   onboarding:
-    description: "A feature that configures the new user onboarding page.
-    Note that onboarding is a **first run** feature, and should only be modified by first run experiments."
+    description: >
+      A feature that configures the new user onboarding page.
+      Note that onboarding is a **first run** feature, and should only be modified by first run experiments.
+    contacts:
+      - twhite@mozilla.com
     variables:
       order:
         description: Determines the order of the onboarding page panels
@@ -106,6 +113,7 @@ features:
         default: ["themes", "toolbar-placement", "sync", "tcp", "privacy-notice"]
 
   one-click-search:
+    no-lint: [MISSING_CONTACTS]
     description: Enable/disable the one click search feature.
     variables:
       enabled:
@@ -114,6 +122,7 @@ features:
         default: false
 
   glean:
+    no-lint: [MISSING_CONTACTS]
     description: "A feature that provides server-side configurations for Glean metrics (aka Server Knobs)."
     allow-coenrollment: true
     variables:
@@ -121,18 +130,22 @@ features:
         description: Configuration for Glean Server Knobs
         type: GleanServerKnobsConfiguration
         default: {}
+
       enable-event-timestamps:
         description: "Enables precise event timestamps for Glean events"
         type: Boolean
         default: true
+
       delay-ping-lifetime-io:
         description: "Glean will delay io for ping lifetime metrics"
         type: Boolean
         default: true
+
       ping-lifetime-threshold:
         description: "Write count threshold when to auto-flush"
         type: Int
         default: 1000
+
       ping-lifetime-max-time:
         description: "After what time to auto-flush"
         type: Int
@@ -140,6 +153,8 @@ features:
 
   splash-screen:
     description: "A feature that extends splash screen duration, allowing additional data fetching time for the app's initial run."
+    contacts:
+      - mavduevskiy@mozilla.com
     variables:
       enabled:
         description: "If true, the feature is active."
@@ -156,6 +171,8 @@ features:
 
   alternative-app-launcher-icon:
     description: A feature that changes the app launcher icon background color.
+    contacts:
+      - mavduevskiy@mozilla.com
     variables:
       enabled:
         description: If true, the feature is active.
@@ -169,6 +186,7 @@ features:
         default: false
 
   sent-from-firefox:
+    no-lint: [MISSING_CONTACTS]
     description: A feature that allows the user to add a download firefox footer to a shared link.
     variables:
       enabled:
@@ -195,12 +213,14 @@ features:
           download-link: "[Download Link]"
           show-snackbar: true
   listen-to-page:
+    no-lint: [MISSING_CONTACTS]
     description: A feature that allows audio listening of a page
     variables:
       enabled:
         type: Boolean
         description: If true, listen to page will be enabled
         default: false
+
     defaults:
       - channel: developer
         value:
@@ -213,6 +233,7 @@ features:
           enabled: true
 
   shake-to-summarize:
+    no-lint: [MISSING_CONTACTS]
     description: A feature that can summarize the content of a page when you shake the screen.
     variables:
       enabled:
@@ -232,6 +253,8 @@ features:
 
   weekly-privacy-notification:
     description: A feature that shows a recurring weekly notification summarizing Tracking Protection activity.
+    contacts:
+      - twhite@mozilla.com
     variables:
       enabled:
         description: If true, the weekly privacy notification will be scheduled.
@@ -239,6 +262,7 @@ features:
         default: false
 
   import-bookmarks:
+    no-lint: [MISSING_CONTACTS]
     description: A feature that lets users import bookmarks from another browser.
     variables:
       enabled:
@@ -257,6 +281,7 @@ features:
           enabled: true
 
   import-passwords:
+    no-lint: [MISSING_CONTACTS]
     description: A feature that lets users import passwords from a file exported by another browser or password manager.
     variables:
       enabled:
@@ -265,6 +290,7 @@ features:
         default: false
 
   installation:
+    no-lint: [MISSING_CONTACTS]
     description: A feature that checks for reinstalls.
     variables:
       enabled:
@@ -273,7 +299,10 @@ features:
         default: true
 
   setup-checklist:
+    no-lint: [COMMON_PREFIX]
     description: A feature on the home page that allows the user to track onboarding setup progress.
+    contacts:
+      - twhite@mozilla.com
     variables:
       enabled:
         type: Boolean
@@ -285,6 +314,7 @@ features:
         default: collection-1
 
   search-extra-params:
+    no-lint: [MISSING_CONTACTS]
     description: A feature that provides additional args for search.
     variables:
       enabled:
@@ -305,6 +335,7 @@ features:
         default: {}
 
   fx-suggest:
+    no-lint: [MISSING_CONTACTS]
     description: A feature that provides Firefox Suggest search suggestions.
     variables:
       enabled:
@@ -332,6 +363,7 @@ features:
           enabled: true
 
   nimbus-is-ready:
+    no-lint: [MISSING_CONTACTS]
     description: >
       A feature that provides the number of Nimbus is_ready events to send
       when Nimbus finishes launching.
@@ -342,6 +374,7 @@ features:
         default: 1
 
   translations:
+    no-lint: [MISSING_CONTACTS]
     description: The feature that allows on-device translations of web content.
     variables:
       main-flow-toolbar-enabled:
@@ -386,6 +419,7 @@ features:
         default: true
 
   minimal-addressbar:
+    no-lint: [MISSING_CONTACTS]
     description: Show a smaller height bottom addressbar with just the URL.
     variables:
       at-bottom-while-entering-text:
@@ -395,6 +429,7 @@ features:
         default: false
 
   default-bottom-toolbar:
+    no-lint: [MISSING_CONTACTS]
     description: Default toolbar position for new users.
     variables:
       enabled:
@@ -404,6 +439,7 @@ features:
         default: false
 
   default-expanded-toolbar:
+    no-lint: [MISSING_CONTACTS]
     description: Default expanded (bottom navigation) toolbar state for new users.
     variables:
       enabled:
@@ -415,6 +451,7 @@ features:
         default: false
 
   addressbar-focus-mode:
+    no-lint: [MISSING_CONTACTS]
     description: >
       When starting to edit the current URL show the website details in the awesomebar
       instead of the addressbar.
@@ -429,6 +466,7 @@ features:
           enabled: true
 
   remote-tab-management:
+    no-lint: [MISSING_CONTACTS]
     description: >
       Features that let users manage tabs on other devices that are
       connected to the same Mozilla account.
@@ -443,6 +481,7 @@ features:
         default: true
 
   fission:
+    no-lint: [MISSING_CONTACTS]
     description: The feature that controls whether fission is enabled or not in Gecko.
     variables:
       shouldUseNimbus:
@@ -474,6 +513,7 @@ features:
           isolationStrategy: 2
 
   suggest-shipped-domains:
+    no-lint: [MISSING_CONTACTS]
     description: Feature that suggests domains from the shipped domain list.
     variables:
       enabled:
@@ -490,6 +530,7 @@ features:
           enabled: false
 
   fingerprinting-protection:
+    no-lint: [MISSING_CONTACTS]
     description: Control Fingerprinting Protection
     variables:
       enabled:
@@ -528,6 +569,7 @@ features:
         default: false
 
   baseline-fpp:
+    no-lint: [MISSING_CONTACTS]
     description: Control Baseline Fingerprinting Protection
     variables:
       feat-enabled:
@@ -554,6 +596,7 @@ features:
         default: null
 
   third-party-cookie-blocking:
+    no-lint: [MISSING_CONTACTS]
     description: Control third-party cookie blocking.
     variables:
       enabled:
@@ -572,6 +615,7 @@ features:
         default: true
 
   safe-browsing-v5:
+    no-lint: [MISSING_CONTACTS]
     description: Control Safe Browsing V5.
     variables:
       feature-enabled:
@@ -587,6 +631,7 @@ features:
         default: false
 
   safe-browsing-real-time:
+    no-lint: [MISSING_CONTACTS]
     description: Control Safe Browsing real-time lookup and simulation.
     variables:
       feature-enabled:
@@ -633,6 +678,8 @@ features:
 
   microsurveys:
     description: Feature for microsurveys.
+    contacts:
+      - twhite@mozilla.com
     variables:
       enabled:
         description: >
@@ -642,6 +689,8 @@ features:
 
   terms-of-use-prompt:
     description: Enables the terms of use prompt for users who have not accepted ToU
+    contacts:
+      - twhite@mozilla.com
     variables:
       enabled:
         description: When the feature is enabled then the prompt can show for users.
@@ -661,6 +710,7 @@ features:
         default: true
 
   tab-strip:
+    no-lint: [MISSING_CONTACTS]
     description: Enables tab strip.
     variables:
       enabled:
@@ -676,6 +726,7 @@ features:
         default: false
 
   homepage-as-new-tab:
+    no-lint: [MISSING_CONTACTS]
     description: Enables homepage as a a new tab.
     variables:
       enabled:
@@ -692,6 +743,7 @@ features:
           enabled: true
 
   homepage-opening-screen-default:
+    no-lint: [MISSING_CONTACTS]
     description: Configure the default option for the homepage opening screen.
     variables:
       default-option:
@@ -700,6 +752,7 @@ features:
         default: homepage-four-hours
 
   user-characteristics:
+    no-lint: [MISSING_CONTACTS]
     description: A feature for control user characteristic data collection
     variables:
       currentVersion:
@@ -708,6 +761,7 @@ features:
         default: 0
 
   networkingBannedPorts:
+    no-lint: [MISSING_CONTACTS]
     description: "Networking (Necko) Banned Ports"
     variables:
       bannedPortList:
@@ -716,6 +770,7 @@ features:
         default: ""
 
   networking-happy-eyeballs:
+    no-lint: [MISSING_CONTACTS]
     description: "Networking (Necko) Happy Eyeballs V3 configuration"
     variables:
       enabled:
@@ -738,6 +793,7 @@ features:
           branch: "default"
 
   tracking-protection-experimentation:
+    no-lint: [MISSING_CONTACTS]
     description: "Experimental controls for tracking protection behavior"
     variables:
       defer-annotation-enabled:
@@ -748,6 +804,9 @@ features:
           branch: "default"
 
   webcompat-interventions:
+    no-lint:
+      - NEGATED_BOOLEAN
+      - MISSING_CONTACTS
     description: "Experimental controls for webcompat site interventions"
     variables:
       disabled-intervention-2060611:
@@ -758,6 +817,7 @@ features:
           branch: "default"
 
   pki:
+    no-lint: [MISSING_CONTACTS]
     description: Certificate verification configuration
     variables:
       certificateTransparencyMode:
@@ -772,6 +832,7 @@ features:
         default: null
 
   pqcrypto:
+    no-lint: [MISSING_CONTACTS]
     description: Control the use of post-quantum key exchange mechanisms in TLS and HTTP/3.
     variables:
       postQuantumKeyExchangeEnabled:
@@ -781,6 +842,7 @@ features:
         default: null
 
   javascript:
+    no-lint: [MISSING_CONTACTS]
     description: Enables Javascript Engine (Spidermonkey) features
     variables:
       parallelMarkingEnabled:
@@ -790,6 +852,7 @@ features:
         default: false
 
   enable-popups:
+    no-lint: [MISSING_CONTACTS]
     description: A feature that enables or disables in app popups
     variables:
       cfr-popups-enabled:
@@ -806,6 +869,7 @@ features:
         default: true
 
   remote-search-configuration:
+    no-lint: [MISSING_CONTACTS]
     description: Feature to use search configurations from remote servers.
     variables:
       enabled:
@@ -814,6 +878,7 @@ features:
         type: Boolean
         default: true
   search-config-v3:
+    no-lint: [MISSING_CONTACTS]
     description: Feature to read search configuration from the search-config-v3 collection.
     variables:
       enabled:
@@ -823,6 +888,7 @@ features:
         type: Boolean
         default: false
   same-document-navigation-overrides-load-type:
+    no-lint: [MISSING_CONTACTS]
     description: Control whether the same document navigation overrides the load type.
     variables:
       enabled:
@@ -836,6 +902,7 @@ features:
         type: String
         default: ""
   doh:
+    no-lint: [MISSING_CONTACTS]
     description: Feature controlling DNS over HTTPS (DoH).
     variables:
       show-ui:
@@ -854,6 +921,7 @@ features:
           autoselect-enabled: true
 
   private-browsing-lock:
+    no-lint: [MISSING_CONTACTS]
     description: Allows enabling and disabling the private browsing mode lock via an authentication screen.
     variables:
       enabled:
@@ -863,6 +931,7 @@ features:
         default: true
 
   automotive-sensitive-data:
+    no-lint: [MISSING_CONTACTS]
     description: >
       Enables or disables autofill, password management, and password and credit card sync on Android Automotive OS.
     variables:
@@ -875,6 +944,7 @@ features:
         default: false
 
   app-links:
+    no-lint: [MISSING_CONTACTS]
     description: Control behavior of app links handling in the browser.
     variables:
       show-new-prompt:
@@ -883,6 +953,7 @@ features:
         default: true
 
   browser-first:
+    no-lint: [MISSING_CONTACTS]
     description: Feature to enable browser-first handling for YouTube.
     variables:
       enabled:
@@ -904,6 +975,7 @@ features:
           enabled: false
 
   tab-management-enhancements:
+    no-lint: [MISSING_CONTACTS]
     description: Control the visibility of the tab management enhancements.
     variables:
       opening_animation_enabled:
@@ -924,6 +996,7 @@ features:
           opening_animation_enabled: true
 
   tab-groups:
+    no-lint: [MISSING_CONTACTS]
     description: Control the visibility of the tab groups feature.
     variables:
       enabled:
@@ -932,6 +1005,7 @@ features:
         type: Boolean
         default: true
   tab-groups-drag-and-drop:
+    no-lint: [MISSING_CONTACTS]
     description: Control the visibility of drag and drop for tab groups.
     variables:
       enabled:
@@ -950,6 +1024,7 @@ features:
         value:
           enabled: true
   tab-groups-onboarding:
+    no-lint: [MISSING_CONTACTS]
     description: Control the visibility of onboarding for tab groups.
     variables:
       enabled:
@@ -958,6 +1033,7 @@ features:
         type: Boolean
         default: true
   tab-groups-live-reorder:
+    no-lint: [MISSING_CONTACTS]
     description: Control whether reorder happens live during a drag and drop action for Tab Groups.
     variables:
       enabled:
@@ -976,6 +1052,7 @@ features:
         value:
           enabled: false
   tab-groups-ungroup:
+    no-lint: [MISSING_CONTACTS]
     description: Control whether the ungroup option is available for tab groups.
     variables:
       enabled:
@@ -984,6 +1061,7 @@ features:
         type: Boolean
         default: true
   tab-groups-strip:
+    no-lint: [MISSING_CONTACTS]
     description: Control whether the tab groups strip is shown.
     variables:
       enabled:
@@ -993,6 +1071,7 @@ features:
         default: false
 
   marketing-onboarding-card:
+    no-lint: [MISSING_CONTACTS]
     description: A temporary feature to control the marketing onboarding card shown during the onboarding flow.
     variables:
       enabled:
@@ -1001,6 +1080,7 @@ features:
         default: true
 
   suppress-sponsored-top-sites:
+    no-lint: [MISSING_CONTACTS]
     description: Suppress sponsored top sites for new users for 14 days.
     variables:
       enabled:
@@ -1009,6 +1089,7 @@ features:
         default: false
 
   lna-blocking:
+    no-lint: [MISSING_CONTACTS]
     description: Feature that allows blocking local network or device access.
     variables:
       blocking:
@@ -1036,6 +1117,7 @@ features:
           branch: "default"
 
   isolated-content-processes:
+    no-lint: [MISSING_CONTACTS]
     description: Feature that controls content process isolation.
     variables:
       enabled:
@@ -1051,6 +1133,9 @@ features:
 
   custom-review-prompt-ui:
     description: Feature that controls the custom UI for review prompt.
+    contacts:
+      - mkozinski@mozilla.com
+      - twhite@mozilla.com
     variables:
       enabled:
         description: When enabled we show the custom review prompt UI. Otherwise we try to directly show the Play Store in-app review prompt.
@@ -1059,6 +1144,9 @@ features:
 
   default-browser-prompt:
     description: Feature that controls when the default browser prompt is shown.
+    contacts:
+      - joberhauser@mozilla.com
+      - twhite@mozilla.com
     variables:
       enabled:
         description: Whether or not to enable the default browser prompt.
@@ -1078,6 +1166,7 @@ features:
         default: 4
 
   credit-card-security-code:
+    no-lint: [MISSING_CONTACTS]
     description: >
       Feature to save and autofill credit card security codes (CVV). Fenix passes the value to Gecko through the
       engine settings, so Gecko captures security codes exactly when Fenix shows them.
@@ -1091,6 +1180,8 @@ features:
 
   email-masks:
     description: Feature to enable Email Mask for users on Firefox on Android.
+    contacts:
+      - gmalekpour@mozilla.com
     variables:
       enabled:
         description: If true, Email Mask feature is enabled.
@@ -1098,6 +1189,7 @@ features:
         default: true
 
   ip-protection:
+    no-lint: [MISSING_CONTACTS]
     description: Feature to enable IP Protection (VPN) for users on Firefox on Android.
     variables:
       enabled:
@@ -1152,6 +1244,7 @@ features:
           allowed-regions: ["XX"]
 
   show-more-shortcuts:
+    no-lint: [MISSING_CONTACTS]
     description: Feature to show expand/collapse buttons for shortcuts on the homepage.
     variables:
       enabled:
@@ -1160,6 +1253,7 @@ features:
         default: true
 
   regional-default-shortcuts:
+    no-lint: [MISSING_CONTACTS]
     description: Feature to enable the regional default shortcuts on the homepage for users on Firefox on Android.
     variables:
       enabled:
@@ -1168,6 +1262,7 @@ features:
         default: true
 
   ads-client-for-stories:
+    no-lint: [MISSING_CONTACTS]
     description: Feature to enable the Mozilla Ads Client support for Sponsored Stories for users on Firefox on Android.
     variables:
       enabled:
@@ -1176,6 +1271,7 @@ features:
         default: false
 
   search-optimization-option:
+    no-lint: [MISSING_CONTACTS]
     description: Feature to enable the Search Optimization cards for users on Firefox on Android.
     variables:
       enabled:
@@ -1203,6 +1299,7 @@ features:
           show-sports-card: true
 
   downloads-custom-location:
+    no-lint: [MISSING_CONTACTS]
     description: Feature to enable the custom download location for users on Firefox on Android.
     variables:
       enabled:
@@ -1212,6 +1309,8 @@ features:
 
   google-lens-integration:
     description: A feature that enables Google Lens integration for users on Firefox on Android.
+    contacts:
+      - hoglesby@mozilla.com
     variables:
       enabled:
         description: If true, Google Lens integration is enabled.
@@ -1226,6 +1325,7 @@ features:
           enabled: true
 
   voice-search-in-display-mode:
+    no-lint: [MISSING_CONTACTS]
     description: Controls whether the voice search entry point is shown in the display-mode browser toolbar.
     variables:
       enabled:
@@ -1242,6 +1342,7 @@ features:
 
 
   homepage-weather-widget:
+    no-lint: [MISSING_CONTACTS]
     description: Feature to enable Homepage Weather Widget for users on Firefox for Android.
     variables:
       enabled:
@@ -1250,6 +1351,7 @@ features:
         default: false
 
   homepage-wrexham-widget:
+    no-lint: [MISSING_CONTACTS]
     description: Feature to enable Homepage Wrexham Widget for users on Firefox for Android.
     variables:
       enabled:
@@ -1258,6 +1360,7 @@ features:
         default: false
 
   webcompat-reporter-enhancements:
+    no-lint: [MISSING_CONTACTS]
     description: Feature to enable WebCompat Reporter enhancements for users on Firefox Android.
     variables:
       enabled:
@@ -1274,6 +1377,8 @@ features:
 
   uninstall-survey:
     description: Feature that controls the visibility and handling of the uninstall survey app shortcut.
+    contacts:
+      - twhite@mozilla.com
     variables:
       enabled:
         description: If true, the uninstall survey shortcut is enabled and visible.
@@ -1285,6 +1390,7 @@ features:
           enabled: true
 
   homepage-customization:
+    no-lint: [MISSING_CONTACTS]
     description: Feature to enable Homepage Customization for users on Firefox on Android.
     variables:
       enabled:
@@ -1293,6 +1399,7 @@ features:
         default: true
 
   homepage-trending-recent-search:
+    no-lint: [MISSING_CONTACTS]
     description: Feature to show trending and recent searches on the Homepage Search for users on Firefox on Android.
     variables:
       enabled:
@@ -1301,6 +1408,9 @@ features:
         default: true
 
   collections-to-tab-groups-migration:
+    no-lint:
+      - MISSING_CONTACTS
+      - NEGATED_BOOLEAN
     description: Feature to migrate Collections to Tab Groups for users on Firefox for Android.
     variables:
       hide-collections-ui:
@@ -1313,6 +1423,7 @@ features:
         default: true
 
   oled-theme:
+    no-lint: [MISSING_CONTACTS]
     description: Feature to provide the OLED theme option for users on Firefox for Android.
     variables:
       enabled:
@@ -1331,6 +1442,10 @@ features:
     description: >
       Controls the pairing sync card shown during initial onboarding to users who installed Firefox
       through a pairing link.
+    contacts:
+      - cbect@mozilla.com
+      - royang@mozilla.com
+      - twhite@mozilla.com
     variables:
       enabled:
         description: Whether the pairing sync card can be shown during initial onboarding.
@@ -1352,6 +1467,7 @@ features:
           enabled: true
 
   pdf-viewer:
+    no-lint: [MISSING_CONTACTS]
     description: Feature for the PDF viewer tools for users on Firefox for Android.
     variables:
       enable-pdf-signatures:
@@ -1365,6 +1481,7 @@ features:
           branch: "default"
 
   tab-reload-cover:
+    no-lint: [MISSING_CONTACTS]
     description: >
       Shows a cached thumbnail cover over the engine view while a tab reloads from session
       restore, hiding it once the page has repainted. Optionally refreshes the stored thumbnail
@@ -1382,6 +1499,7 @@ features:
         default: false
 
   account-sync-decouple-m1:
+    no-lint: [MISSING_CONTACTS]
     description: Control whether the new UI for Account Sync is shown.
     variables:
       enabled:
@@ -1394,6 +1512,7 @@ features:
           enabled: true
 
   account-sync-decouple:
+    no-lint: [MISSING_CONTACTS]
     description: Control the "sync & account decoupling" feature
     variables:
       enabled:
@@ -1402,6 +1521,7 @@ features:
         default: false
 
   wayback-machine:
+    no-lint: [MISSING_CONTACTS]
     description: >
       Feature that shows a "Check Archived Version" button on eligible error pages, linking to the
       Wayback Machine.
@@ -1412,6 +1532,7 @@ features:
         default: false
 
   picture-in-picture-window:
+    no-lint: [MISSING_CONTACTS]
     description: >
       Feature that shows a video in picture-in-picture by cloning it.
     variables:
@@ -1457,25 +1578,6 @@ types:
           description: The collections section of the homepage.
         privacy-report:
           description: The privacy report section showing trackers blocked.
-
-    QueryParameterStrippingSection:
-      description: The identifiers for the options for the Query Parameter Stripping feature.
-      variants:
-        query-parameter-stripping:
-          description: An integer either 0 or 1 indicating if query parameter stripping
-            should be enabled or disabled in normal mode. 0 for setting to be disabled,
-            and 1 for enabling the setting.
-        query-parameter-stripping-pmb:
-          description: An integer either 0 or 1 indicating if query parameter stripping
-            should be enabled or disabled in private mode. 0 for setting to be disabled,
-            and 1 for enabling the setting.
-        query-parameter-stripping-allow-list:
-          description: An string separated by commas indicating the sites where should
-            from query stripping should be exempted.
-        query-parameter-stripping-strip-list:
-          description: An string separated by commas indicating the list of query params
-            to be stripped from URIs. This list will be merged with records
-            coming from RemoteSettings.
 
     OnboardingPanel:
       description: The types of onboarding panels in the onboarding page

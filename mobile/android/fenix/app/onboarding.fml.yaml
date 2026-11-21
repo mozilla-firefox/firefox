@@ -2,7 +2,12 @@
 features:
 
   juno-onboarding:
+    no-lint:
+      - DEEP_NESTING  # Messaging is inherently complex and warrants highly structured data.
+
     description: A feature that shows the onboarding flow.
+    contacts:
+      - twhite@mozilla.com
 
     variables:
       conditions:
@@ -12,10 +17,10 @@ features:
           Each entry maps to a valid JEXL expression.
         type: Map<ConditionName, String>
         string-alias: ConditionName
-        default: {
-          ALWAYS: "true",
+        default:
+          ALWAYS: "true"
           NEVER: "false"
-        }
+
       cards:
         description: Collection of user facing onboarding cards.
         type: Map<OnboardingCardKey, OnboardingCardData>
@@ -81,6 +86,8 @@ features:
     description: >
       Feature to enable the continuous onboarding flow. This feature reduces the number of upfront
       onboarding cards and distributes the cards and other prompts progressively over a number of days.
+    contacts:
+      - twhite@mozilla.com
     variables:
       enabled:
         description: If true, the feature is enabled.
@@ -93,6 +100,8 @@ features:
       completed initial onboarding before continuous onboarding was enabled. See
       Onboarding-state-migration-and-reconciliation.md in the onboarding package for the affected
       user cohorts.
+    contacts:
+      - twhite@mozilla.com
     variables:
       enabled:
         description: If true, the feature is enabled.
@@ -110,6 +119,7 @@ features:
           enabled: true
 
   onboarding-haptics:
+    no-lint: [MISSING_CONTACTS]
     description: Feature to enable haptic feedback during onboarding.
     variables:
       enabled:
@@ -125,6 +135,7 @@ features:
           enabled: true
 
   onboarding-kit-animation:
+    no-lint: [MISSING_CONTACTS]
     description: >
       Feature to show the animated kit illustration instead of the static one on the onboarding
       terms of use page.

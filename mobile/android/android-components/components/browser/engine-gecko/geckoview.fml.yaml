@@ -11,14 +11,15 @@ channels:
   - release
 features:
   pdfjs:
-    description: "PDF.js features"
+    no-lint: [MISSING_CONTACTS]
+    description: Configuration for pdf.js in Gecko.
     variables:
       download-button:
-        description: "Download button"
+        description: Display the download button.
         type: Boolean
         default: true
 
       open-in-app-button:
-        description: "Open in app button"
+        description: Display the "open in app" button.
         type: Boolean
         default: true

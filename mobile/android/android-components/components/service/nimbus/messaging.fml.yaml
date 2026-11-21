@@ -9,6 +9,7 @@ channels:
   - debug
 features:
   nimbus-system:
+    no-lint: [MISSING_CONTACTS]
     description: |
       Configuration of the Nimbus System in Android.
     variables:
@@ -20,8 +21,13 @@ features:
         default: 60 # 1 hour
 
   messaging:
-    description: |
-      The in-app messaging system.
+    no-lint:
+      - DEEP_NESTING  # Messaging is inherently complex and warrants highly structured data.
+
+    description: The in-app messaging system.
+    contacts:
+      - twhite@mozilla.com
+      - nalexander@mozilla.com
 
     allow-coenrollment: true
 
