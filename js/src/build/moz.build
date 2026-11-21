@@ -53,6 +53,11 @@ USE_LIBS += [
     "nspr",
 ]
 
+if not CONFIG["JS_STANDALONE"] or CONFIG["MOZ_GLUE_IN_PROGRAM"]:
+    USE_LIBS += [
+        "mfbt_zmij",
+    ]
+
 if not CONFIG["USE_LIBZ_RS"]:
     USE_LIBS += [
         "zlib",

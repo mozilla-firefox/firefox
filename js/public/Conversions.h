@@ -563,14 +563,14 @@ inline uint64_t ToUint64(double d) { return ToUnsignedInteger<uint64_t>(d); }
  * |NumberToString| algorithm is specified in terms of results, not an
  * algorithm.  It is extremely unclear from the algorithm's definition what its
  * longest output can be.  |-(2**-19 - 2**-72)| requires 25 + 1 characters and
- * is believed to be at least *very close* to the upper bound, so we round that
- * *very generously* upward to a 64-bit pointer-size boundary (to be extra
- * cautious) and assume that's adequate.
+ * is believed to be at least *very close* to the upper bound.
  *
- * If you can supply better reasoning for a tighter bound, file a bug to improve
- * this!
+ * We bump that even higher to accommodate some scratch space required by the
+ * Zmij conversion library that we use. Zmij needs to write 16 scratch bytes
+ * starting at the maximum fixed exponent (20) + 2 after the sign char (1 + 20 +
+ * 2 + 16 = 39).
  */
-static constexpr size_t MaximumNumberToStringLength = 31 + 1;
+static constexpr size_t MaximumNumberToStringLength = 39;
 
 /**
  * Store in |out| the null-terminated, base-10 result of |ToString| applied to
