@@ -435,6 +435,13 @@ void CodeGeneratorShared::encodeAllocation(LSnapshot* snapshot,
     mir = mir->toBox()->getOperand(0);
   }
 
+  if (mir->isNurseryObject()) {
+    uint32_t index = mir->toNurseryObject()->nurseryObjectIndex();
+    masm.propagateOOM(snapshots_.add(RValueAllocation::NurseryObject(index)));
+    *allocIndex += 1;
+    return;
+  }
+
   MIRType type = mir->isRecoveredOnBailout() ? MIRType::None
                  : mir->isUnused()           ? MIRType::MagicOptimizedOut
                                              : mir->type();

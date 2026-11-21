@@ -155,12 +155,21 @@ using namespace js::jit;
 //         INT64_INT32_STACK  [STACK_OFFSET]: (64-bit platform)
 //           Unpacked Int64 value stored in int32_t. Payload is stored at an
 //           offset on the stack.
+//
+//         NURSERY_OBJECT [INDEX]
+//           Index into the IonScript's list of nursery objects.
 
 const RValueAllocation::Layout& RValueAllocation::layoutFromMode(Mode mode) {
   switch (mode) {
     case CONSTANT: {
       static const RValueAllocation::Layout layout = {PAYLOAD_INDEX,
                                                       PAYLOAD_NONE, "constant"};
+      return layout;
+    }
+
+    case NURSERY_OBJECT: {
+      static const RValueAllocation::Layout layout = {
+          PAYLOAD_INDEX, PAYLOAD_NONE, "nursery object"};
       return layout;
     }
 

@@ -195,17 +195,19 @@ LSnapshot* LIRGeneratorShared::buildSnapshot(MResumePoint* rp,
     // Guards should never be eliminated.
     MOZ_ASSERT_IF(ins->isUnused(), !ins->isGuard());
 
-    // Snapshot operands other than constants should never be
-    // emitted-at-uses. Try-catch support depends on there being no
+    // Snapshot operands other than constants and nursery objects should
+    // never be emitted-at-uses. Try-catch support depends on there being no
     // code between an instruction and the LOsiPoint that follows it.
-    MOZ_ASSERT_IF(!ins->isConstant(), !ins->isEmittedAtUses());
+    MOZ_ASSERT_IF(!ins->isConstant() && !ins->isNurseryObject(),
+                  !ins->isEmittedAtUses());
 
     // The register allocation will fill these fields in with actual
     // register/stack assignments. During code generation, we can restore
     // interpreter state with the given information. Note that for
-    // constants, including known types, we record a dummy placeholder,
-    // since we can recover the same information, much cleaner, from MIR.
-    if (ins->isConstant() || ins->isUnused()) {
+    // constants, nursery objects, and known types, we record a dummy
+    // placeholder, since we can recover the same information, much cleaner,
+    // from MIR.
+    if (ins->isConstant() || ins->isNurseryObject() || ins->isUnused()) {
       *type = LAllocation();
       *payload = LAllocation();
     } else if (ins->type() == MIRType::Int64) {
@@ -256,14 +258,15 @@ LSnapshot* LIRGeneratorShared::buildSnapshot(MResumePoint* rp,
     // Guards should never be eliminated.
     MOZ_ASSERT_IF(def->isUnused(), !def->isGuard());
 
-    // Snapshot operands other than constants should never be
-    // emitted-at-uses. Try-catch support depends on there being no
+    // Snapshot operands other than constants and nursery objects should
+    // never be emitted-at-uses. Try-catch support depends on there being no
     // code between an instruction and the LOsiPoint that follows it.
-    MOZ_ASSERT_IF(!def->isConstant(), !def->isEmittedAtUses());
+    MOZ_ASSERT_IF(!def->isConstant() && !def->isNurseryObject(),
+                  !def->isEmittedAtUses());
 
     LAllocation* a = snapshot->getEntry(index++);
 
-    if (def->isUnused()) {
+    if (def->isNurseryObject() || def->isUnused()) {
       *a = LAllocation();
       continue;
     }

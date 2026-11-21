@@ -194,6 +194,10 @@ class MOZ_EMPTY_BASES alignas(8) IonScript final
     return numElements<GCPtr<JSObject*>>(nurseryObjectsOffset(),
                                          osiIndexOffset());
   }
+  JSObject* getNurseryObject(size_t index) {
+    MOZ_RELEASE_ASSERT(index < numNurseryObjects());
+    return nurseryObjects()[index];
+  }
   void* addressOfNurseryObject(uint32_t index) {
     MOZ_ASSERT(index < numNurseryObjects());
     return &nurseryObjects()[index];

@@ -1899,6 +1899,7 @@ bool SnapshotIterator::allocationReadable(const RValueAllocation& alloc,
     case RValueAllocation::CST_NULL:
     case RValueAllocation::INTPTR_CST:
     case RValueAllocation::INT64_CST:
+    case RValueAllocation::NURSERY_OBJECT:
       return true;
 
     default:
@@ -1917,6 +1918,9 @@ Value SnapshotIterator::allocationValue(const RValueAllocation& alloc,
 
     case RValueAllocation::CST_NULL:
       return NullValue();
+
+    case RValueAllocation::NURSERY_OBJECT:
+      return ObjectValue(*ionScript_->getNurseryObject(alloc.index()));
 
     case RValueAllocation::DOUBLE_REG:
       return DoubleValue(fromRegister<double>(alloc.fpuReg()));
@@ -2188,8 +2192,8 @@ void SnapshotIterator::writeAllocationValuePayload(
 
   switch (alloc.mode()) {
     case RValueAllocation::CONSTANT:
-      ionScript_->getConstant(alloc.index()) = v;
-      break;
+    case RValueAllocation::NURSERY_OBJECT:
+      MOZ_CRASH("Constants and nursery objects are traced by the IonScript");
 
     case RValueAllocation::CST_UNDEFINED:
     case RValueAllocation::CST_NULL:
@@ -2270,6 +2274,12 @@ void SnapshotIterator::writeAllocationValuePayload(
 void SnapshotIterator::traceAllocation(JSTracer* trc) {
   RValueAllocation alloc = readAllocation();
   if (!allocationReadable(alloc, ReadMethod::AlwaysDefault)) {
+    return;
+  }
+
+  // Constants and nursery objects are traced by the IonScript.
+  if (alloc.mode() == RValueAllocation::CONSTANT ||
+      alloc.mode() == RValueAllocation::NURSERY_OBJECT) {
     return;
   }
 

@@ -247,6 +247,16 @@ BEGIN_TEST(testJitRValueAlloc_ConstantPool) {
 }
 END_TEST(testJitRValueAlloc_ConstantPool)
 
+BEGIN_TEST(testJitRValueAlloc_NurseryObject) {
+  RValueAllocation s;
+  for (auto i : Fibonacci{}) {
+    s = RValueAllocation::NurseryObject(i);
+    CHECK(s == Read(s));
+  }
+  return true;
+}
+END_TEST(testJitRValueAlloc_NurseryObject)
+
 BEGIN_TEST(testJitRValueAlloc_Int64Cst) {
   for (auto i : Fibonacci{}) {
     for (auto j : Fibonacci{}) {

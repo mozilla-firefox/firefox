@@ -83,6 +83,9 @@ class RValueAllocation {
     INT64_INT32_STACK = 0x33,
 #endif
 
+    // Index into the IonScript's list of nursery objects.
+    NURSERY_OBJECT = 0x35,
+
     // This mask can be used with any other valid mode. When this flag is
     // set on the mode, this inform the snapshot iterator that even if the
     // allocation is readable, the content of if might be incomplete unless
@@ -274,6 +277,10 @@ class RValueAllocation {
   // CONSTANT's index
   static RValueAllocation ConstantPool(uint32_t index) {
     return RValueAllocation(CONSTANT, payloadOfIndex(index));
+  }
+
+  static RValueAllocation NurseryObject(uint32_t index) {
+    return RValueAllocation(NURSERY_OBJECT, payloadOfIndex(index));
   }
 
   // Recover instruction's index
