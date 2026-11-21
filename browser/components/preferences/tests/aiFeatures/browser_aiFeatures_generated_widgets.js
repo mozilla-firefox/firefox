@@ -363,6 +363,16 @@ describe("settings ai features", () => {
           Assert.equal(fieldset.getAttribute("label"), "Custom widgets");
         });
       });
+
+      it("links to the custom widgets support page", async () => {
+        await enrolInLabs();
+        await withPrefsPane("ai", async doc => {
+          Assert.equal(
+            doc.getElementById("customWidgetsFieldset").supportPage,
+            "firefox-custom-widgets"
+          );
+        });
+      });
     });
 
     it("follows the per-feature control, then the global default", () => {

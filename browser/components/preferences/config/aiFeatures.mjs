@@ -1624,7 +1624,7 @@ SettingGroupManager.registerGroups({
         id: "customWidgetsFieldset",
         control: "moz-fieldset",
         l10nId: "preferences-ai-controls-custom-widgets-group",
-        supportPage: "firefox-ai-controls",
+        supportPage: "firefox-custom-widgets",
         headingLevel: 2,
         controlAttrs: {
           iconsrc: "chrome://browser/skin/topsites.svg",
