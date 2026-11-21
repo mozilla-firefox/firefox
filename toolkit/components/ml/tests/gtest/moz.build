@@ -9,7 +9,13 @@ Library("mlhwinferencetest")
 # Not unified: the files share helper names in their anonymous namespaces.
 SOURCES += [
     "TestHWInferenceProcess.cpp",
+    "TestLlamaChatTemplate.cpp",
     "TestTextGeneration.cpp",
+]
+
+LOCAL_INCLUDES += [
+    "/third_party/llama.cpp/ggml/include",
+    "/third_party/llama.cpp/include",
 ]
 
 TEST_HARNESS_FILES.gtest += [

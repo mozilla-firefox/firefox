@@ -45,6 +45,7 @@ static const std::map<std::string, llm_chat_template> & get_llm_chat_templates()
     { "zephyr",            LLM_CHAT_TEMPLATE_ZEPHYR            },
     { "monarch",           LLM_CHAT_TEMPLATE_MONARCH           },
     { "gemma",             LLM_CHAT_TEMPLATE_GEMMA             },
+    { "gemma4",            LLM_CHAT_TEMPLATE_GEMMA4            },
     { "orion",             LLM_CHAT_TEMPLATE_ORION             },
     { "openchat",          LLM_CHAT_TEMPLATE_OPENCHAT          },
     { "vicuna",            LLM_CHAT_TEMPLATE_VICUNA            },
@@ -166,6 +167,8 @@ llm_chat_template llm_chat_detect_template(const std::string & tmpl) {
         return LLM_CHAT_TEMPLATE_MONARCH;
     } else if (tmpl_contains("<start_of_turn>")) {
         return LLM_CHAT_TEMPLATE_GEMMA;
+    } else if (tmpl_contains("<|turn>")) {
+        return LLM_CHAT_TEMPLATE_GEMMA4;
     } else if (tmpl_contains("'\\n\\nAssistant: ' + eos_token")) {
         // OrionStarAI/Orion-14B-Chat
         return LLM_CHAT_TEMPLATE_ORION;
@@ -409,6 +412,16 @@ int32_t llm_chat_apply_template(
         }
         if (add_ass) {
             ss << "<start_of_turn>model\n";
+        }
+    } else if (tmpl == LLM_CHAT_TEMPLATE_GEMMA4) {
+        // google/gemma-4
+        for (auto message : chat) {
+            std::string_view role = message->role;
+            role = role == "assistant" ? "model" : role;
+            ss << "<|turn>" << role << "\n" << trim(message->content) << "<turn|>\n";
+        }
+        if (add_ass) {
+            ss << "<|turn>model\n";
         }
     } else if (tmpl == LLM_CHAT_TEMPLATE_ORION) {
         // OrionStarAI/Orion-14B-Chat
