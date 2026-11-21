@@ -1,0 +1,41 @@
+schema: 1
+
+bugzilla:
+  product: Core
+  component: JavaScript Engine
+
+origin:
+  name: zmij
+  description: A fast floating-point-to-string conversion library for C and C++
+
+  url: https://github.com/vitaut/zmij
+
+  release: f97cc4f65fc293dd9cebb1bba846f879f041687e (2026-11-17T01:26:26Z).
+  revision: f97cc4f65fc293dd9cebb1bba846f879f041687e
+
+  license: MIT
+  license-file: LICENSE
+
+vendoring:
+  url: https://github.com/vitaut/zmij
+  source-hosting: github
+  vendor-directory: mfbt/zmij
+  tracking: commit
+
+  exclude:
+    - .clang-format
+    - .cmake-format
+    - .github
+    - CMakeLists.txt
+    - README.md
+    - example.cc
+    - test
+    - zmij-c.h
+    - zmij-int.cc
+    - zmij-to-chars.h
+    - zmij.c
+
+  include:
+    - LICENSE
+    - zmij.cc
+    - zmij.h

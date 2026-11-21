@@ -54,6 +54,7 @@ algorithms:
     members:
         - dom/webauthn/winwebauthn/moz.yaml
         - mfbt/double-conversion/moz.yaml
+        - mfbt/zmij/moz.yaml
         - modules/brotli/moz.yaml
         - modules/fdlibm/moz.yaml
         - modules/xz-embedded/moz.yaml

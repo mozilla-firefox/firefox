@@ -48,6 +48,7 @@ header_skiplist:
   - memory/build/malloc_decls.h
   - memory/mozalloc/cxxalloc.h
   - memory/mozalloc/mozalloc.h
+  - mfbt/zmij/zmij.h
   - modules/libpref/init/StaticPrefListBegin.h
   - modules/libpref/init/StaticPrefListEnd.h
   - mozglue/baseprofiler/public/BaseProfilerMarkersDetail.h

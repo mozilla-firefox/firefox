@@ -10,7 +10,14 @@ topsrcdir = os.path.dirname(os.path.dirname(os.path.dirname(__file__)))
 # directory. It makes no sense to list them in ThirdPartyPaths.txt as they don't
 # exist in such paths in the topsrcdir.
 
-FORCE_LIST = ("fmt", "function2", "rlbox/rlbox_sandbox.hpp", "unicode", "mozpkix")
+FORCE_LIST = (
+    "fmt",
+    "function2",
+    "rlbox/rlbox_sandbox.hpp",
+    "unicode",
+    "mozpkix",
+    "zmij",
+)
 
 
 def generate(output, *input_paths):
