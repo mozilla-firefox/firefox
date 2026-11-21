@@ -1,0 +1,50 @@
+# This Source Code Form is subject to the terms of the Mozilla Public
+# License, v. 2.0. If a copy of the MPL was not distributed with this
+# file, You can obtain one at http://mozilla.org/MPL/2.0/.
+---
+
+android:
+    description: Nimbus FML Linting
+    treeherder:
+        kind: test
+        tier: 2
+        symbol: fml
+    always-target: true
+    attributes:
+        build_platform: android
+        build_type: opt
+        code-review: true
+    platform: lint/opt
+    worker-type: b-linux-docker-large-amd
+    worker:
+        artifacts:
+            - type: file
+              name: public/code-review/issues.json
+              path: /builds/worker/checkouts/gecko/issues.json
+
+        docker-image: {in-tree: android-build}
+        env:
+            MOZCONFIG: mobile/android/config/mozconfigs/android-arm/nightly-android-lints
+            MOZ_OBJDIR: obj-firefox
+            TINDERBOX_OUTPUT: '1'
+        max-run-time: 3600
+    fetches:
+        toolchain:
+            # Aliases aren't allowed for toolchains installed by fetch.
+            - linux64-nimbus-fml
+    run:
+        using: run-task
+        tooltool-downloads: internal  # For internal toolchains.
+        # The path to nimbus.fml.yaml should not have a leading ./ in order for
+        # code-review/issues.json to be generated correctly.
+        # TODO(bug 2094172): fix this in nimbus-fml and update this job.
+        command: >
+            cd $GECKO_PATH &&
+            $MOZ_FETCHES_DIR/nimbus-fml/nimbus-fml \
+                lint \
+                --code-review-json ./issues.json \
+                mobile/android/fenix/app/nimbus.fml.yaml
+    when:
+        files-changed:
+            - 'mobile/android/android-components/**/*.fml.yaml'
+            - 'mobile/android/fenix/**/*.fml.yaml'

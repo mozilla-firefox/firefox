@@ -32,6 +32,7 @@ tasks-from:
     - jsshell.yml
     - mozlint.yml
     - mozlint-android.yml
+    - nimbus-fml.yml
     - node.yml
     - puppeteer.yml
     - python.yml
