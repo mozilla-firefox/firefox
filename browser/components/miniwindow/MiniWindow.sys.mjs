@@ -315,6 +315,7 @@ export class MiniWindow {
     if (this.#cropped) {
       extraOptions.setPropertyAsBool("cropped-mini-window", true);
     }
+    this.#setIsMiniWindow(this.#sourceTab, true);
 
     let options = {
       extraOptions,
@@ -329,6 +330,7 @@ export class MiniWindow {
         "move: Something went horribly wrong when opening \
           the mini window - replaceTabWithWindow returned null"
       );
+      this.#setIsMiniWindow(this.#sourceTab, false);
       this._state = MiniWindowState.CLOSED;
       return null;
     }
@@ -1070,11 +1072,26 @@ export class MiniWindow {
     if (!tab || !target) {
       return { tab: null, win: null };
     }
+    this.#setIsMiniWindow(tab, false);
     let tabIndex = Math.min(this.#originTabIndex, target.gBrowser.tabs.length);
     return {
       tab: target.gBrowser.adoptTab(tab, { tabIndex, selectTab }),
       win: target,
     };
+  }
+
+  /**
+   * Flag the tab's browsing context so that web content can't move or resize
+   * the always-on-top window it is shown in.
+   *
+   * @param {MozTabbrowserTab} tab
+   * @param {boolean} value
+   */
+  #setIsMiniWindow(tab, value) {
+    let bc = tab.linkedBrowser?.browsingContext;
+    if (bc) {
+      bc.isMiniWindow = value;
+    }
   }
 
   /**

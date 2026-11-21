@@ -152,6 +152,8 @@ struct EmbedderColorSchemes {
   /* Hold the pinned/app-tab state and should be used on top level browsing    \
    * contexts only */                                                          \
   FIELD(IsAppTab, bool, {.mTopOnly = true, .mCanSet = CanSet::ParentOnly})     \
+  /* Whether this top level browsing context is shown in a Mini Window */      \
+  FIELD(IsMiniWindow, bool, {.mTopOnly = true, .mCanSet = CanSet::ParentOnly}) \
   /* Whether this is a captive portal tab. Should be used on top level         \
    * browsing contexts only */                                                 \
   FIELD(IsCaptivePortalTab, bool, {.mCanSet = CanSet::Unrestricted})           \
@@ -1228,6 +1230,7 @@ class BrowsingContext : public nsILoadContext,
   void AddDiscardListener(std::function<void(uint64_t)>&& aListener);
 
   bool IsAppTab() { return GetIsAppTab(); }
+  bool IsMiniWindow() { return GetIsMiniWindow(); }
   bool HasSiblings() { return GetHasSiblings(); }
 
   bool IsUnderHiddenEmbedderElement() const {

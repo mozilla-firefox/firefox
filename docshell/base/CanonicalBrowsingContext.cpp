@@ -306,6 +306,7 @@ void CanonicalBrowsingContext::ReplacedBy(
   Transaction txn;
   txn.SetBrowserId(GetBrowserId());
   txn.SetIsAppTab(GetIsAppTab());
+  txn.SetIsMiniWindow(GetIsMiniWindow());
   txn.SetIsCaptivePortalTab(GetIsCaptivePortalTab());
   txn.SetHasSiblings(GetHasSiblings());
   txn.SetTopLevelCreatedByWebContent(GetTopLevelCreatedByWebContent());

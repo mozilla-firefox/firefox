@@ -4666,6 +4666,10 @@ bool nsGlobalWindowOuter::CanMoveResizeWindows(CallerType aCallerType,
       return false;
     }
 
+    if (mBrowsingContext->GetIsMiniWindow()) {
+      return false;
+    }
+
     if (mBrowsingContext->GetIsDocumentPiP()) {
       // https://wicg.github.io/document-picture-in-picture/#positioning
       if (aIsMove) {
