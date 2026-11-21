@@ -1106,3 +1106,60 @@ add_task(
     }
   }
 );
+
+add_task(async function test_put_counts_stored_download_once() {
+  const size = 4 * 1024 * 1024;
+  const dbName = `modelFiles-${crypto.randomUUID()}`;
+  await TestIndexedDBCache.deleteDatabaseAndWait(dbName).catch(() => {});
+  const usage = await new Promise((resolve, reject) => {
+    Services.qms.getUsageForPrincipal(
+      Services.scriptSecurityManager.getSystemPrincipal(),
+      request => {
+        if (request.resultCode === Cr.NS_OK) {
+          resolve(request.result.usage);
+        } else {
+          reject(new Error(request.resultCode));
+        }
+      }
+    );
+  });
+  const cache = await IndexedDBCache.init({
+    dbName,
+    maxSize: (usage + 1.5 * size) / 1024 ** 3,
+  });
+  const location = { model: "org/model", revision: "v1", file: "model.gguf" };
+  const handle = await SharedOPFS.getFileHandle(
+    cache.generateFilePathInOPFS(location),
+    { create: true }
+  );
+  const writable = await handle.createWritable();
+  await writable.write(createBlob(size));
+  await writable.close();
+  const stored = await handle.getFile();
+  try {
+    await cache.put({
+      taskName: "task",
+      ...location,
+      data: stored,
+      headers: { ETag: "ETAG123", fileSize: stored.size },
+    });
+    Assert.ok(
+      await cache.fileExists(location),
+      "The download already in OPFS is admitted"
+    );
+    await Assert.rejects(
+      cache.put({
+        taskName: "task",
+        model: "org/other",
+        revision: "v1",
+        file: "model.gguf",
+        data: createBlob(size),
+        headers: { ETag: "ETAG123" },
+      }),
+      /Exceeding cache size limit/,
+      "A blob of the same size that is not stored yet does not fit"
+    );
+  } finally {
+    await deleteCache(cache);
+  }
+});
