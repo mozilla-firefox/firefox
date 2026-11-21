@@ -21,6 +21,8 @@ vendoring:
   source-hosting: github
   vendor-directory: mfbt/zmij
   tracking: commit
+  patches:
+    - patches/write_ecmascript.patch
 
   exclude:
     - .clang-format

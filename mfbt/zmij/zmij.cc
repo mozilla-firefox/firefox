@@ -307,9 +307,11 @@ struct exp_shift_table {
 
 // An optional table of precomputed exponent strings for exponential notation.
 // Each entry packs "e+dd" or "e+ddd" into a uint64_t with the length in byte 7.
+// The ecmascript variant additionally emits "e+d" one-digit exponents.
+template <bool ecmascript = false>
 struct exp_string_table {
   static constexpr bool enable =
-      ZMIJ_USE_EXP_STRING_TABLE && ZMIJ_USE_CONSTEXPR;
+      ecmascript || (ZMIJ_USE_EXP_STRING_TABLE && ZMIJ_USE_CONSTEXPR);
   using traits = float_traits<double>;
   static constexpr int min_dec_exp =
       traits::min_exponent10 - traits::max_digits10;
@@ -320,12 +322,18 @@ struct exp_string_table {
     exp_string_table t;
     for (int e = min_dec_exp; e <= traits::max_exponent10 && enable; ++e) {
       uint64_t abs_e = uint64_t(e >= 0 ? e : -e);
-      // Left-aligning a two-digit exponent pads it with the '0' byte 4 holds.
-      uint64_t ddd = abs_e < 100 ? abs_e * 10 : abs_e;
+      uint64_t ddd, len;
+      // Left-aligning the exponent digits pads them with the '0' byte 4 holds.
+      if constexpr (ecmascript) {
+        ddd = abs_e < 100 ? abs_e * (abs_e < 10 ? 100 : 10) : abs_e;
+        len = 3 + (abs_e >= 10) + (abs_e >= 100);
+      } else {
+        ddd = abs_e < 100 ? abs_e * 10 : abs_e;
+        len = 4 + (abs_e >= 100);
+      }
       uint64_t val = (ddd / 100 + '0') | ((ddd / 10 % 10 + '0') << 8) |
                      ((ddd % 10 + '0') << 16);
-      uint64_t len = 4 + (abs_e >= 100);
-      // Bytes: 'e', sign, two digits, a third digit or '0', '.', '0', length.
+      // Bytes: 'e', sign, 1-3 digits right-padded with '0', '.', '0', length.
       // The float emitters insert an entry whole and add their last digit to
       // the '0' in byte 4, so the point and the zero their shuffles need ride
       // along and the length lands in a register byte nothing reads; the
@@ -360,7 +368,7 @@ struct exp_string_table {
 // often enough that predicting the shape costs more than emitting it.
 struct float_shuffle_table {
   static constexpr bool enable =
-      (ZMIJ_USE_SSE4_1 || ZMIJ_USE_NEON) && exp_string_table::enable;
+      (ZMIJ_USE_SSE4_1 || ZMIJ_USE_NEON) && exp_string_table<>::enable;
   using traits = float_traits<float>;
   static constexpr unsigned char exp_pos = 8;
   static constexpr unsigned char last_digit_pos = 12;
@@ -543,6 +551,26 @@ struct fixed_layout_table {
   }
 };
 
+// Fixed-layout table for the ECMAScript fixed range, which is wider than
+// float_traits' so it needs its own copy of the data. Entries and compute()
+// are shared with the upstream table.
+struct ecma_fixed_layout_table {
+  static constexpr int min_fixed_dec_exp = -6;
+  static constexpr int max_fixed_dec_exp = 20;
+  static constexpr int num_entries = max_fixed_dec_exp - min_fixed_dec_exp + 1;
+  using entry = fixed_layout_table::entry;
+
+  entry data[fixed_layout_table::enable ? num_entries : 1] = {};
+
+  ZMIJ_CONSTEXPR ecma_fixed_layout_table() {
+    static_assert(fixed_layout_table::enable,
+                  "ecma_fixed_layout_table depends on fixed_layout_table");
+    for (int dec_exp = min_fixed_dec_exp; dec_exp <= max_fixed_dec_exp;
+         ++dec_exp)
+      data[dec_exp - min_fixed_dec_exp] = fixed_layout_table::compute(dec_exp);
+  }
+};
+
 inline auto count_trailing_nonzeros(uint64_t x) noexcept -> int {
   // We count the number of bytes until there are only zeros left.
   // The code is equivalent to
@@ -672,8 +700,9 @@ struct data {
   uint128 zeros = splat64(::zeros);
 #endif    // ZMIJ_USE_SSE
 
-  exp_string_table exp_strings =
-      exp_string_table::enable ? exp_string_table::make() : exp_string_table();
+  exp_string_table<> exp_strings =
+      exp_string_table<>::enable ? exp_string_table<>::make()
+                                 : exp_string_table<>();
   alignas(64) pow10_significand_table pow10_significands =
       pow10_significand_table::compress ? pow10_significand_table()
                                         : pow10_significand_table::make();
@@ -977,7 +1006,7 @@ ZMIJ_INLINE auto write_float_simd(char* buffer, const dec_digits<32>& dig,
   // (12) only has the last digit added to it. The entry's length ends up in
   // byte 15, which no shuffle reads; the output length comes from the shuffle
   // entry.
-  uint64_t exp_data = d.exp_strings.data[dec_exp + exp_string_table::offset];
+  uint64_t exp_data = d.exp_strings.data[dec_exp + exp_string_table<>::offset];
   uint64_t tail = exp_data + (uint64_t(last_digit) << 32);
   (void)tail;
   auto entry = d.float_shuffles.get_entry(dec_exp, dig.num_digits,
@@ -1287,15 +1316,24 @@ template <typename Float> auto to_decimal(Float value) noexcept -> dec_fp<> {
 }
 
 // It is slightly faster to return a pointer to the end than the size.
-template <typename Float>
+template <typename Float, bool ecmascript>
 auto write(char* buffer, Float value) noexcept -> char* {
+  static_assert(!ecmascript || ZMIJ_USE_CONSTEXPR == 1,
+                "ECMAScript mode requires constexpr");
+
   using traits = float_traits<Float>;
   auto bits = traits::to_bits(value);
   auto bin_exp = traits::get_exp(bits);  // binary exponent
   auto bin_sig = traits::get_sig(bits);  // binary significand
 
   *buffer = '-';
-  buffer += traits::is_negative(bits);
+  if constexpr (ecmascript) {
+    // NaN and 0 output without sign.
+    buffer += traits::is_negative(bits) &&
+              (bin_exp != traits::exp_mask || bin_sig == 0) && value != 0;
+  } else {
+    buffer += traits::is_negative(bits);
+  }
 
   const auto* d = &static_data;
   ZMIJ_ASM(("" : "+r"(d)));  // Load constants from memory.
@@ -1303,7 +1341,13 @@ auto write(char* buffer, Float value) noexcept -> char* {
 
   shortest_decimal dec;
   if ZMIJ_UNLIKELY (!traits::is_normal(bin_exp)) {
-    if (bin_exp != 0) return write_inf_nan(buffer, bin_sig != 0);
+    if (bin_exp != 0) {
+      if constexpr (ecmascript) {
+        return write_inf_nan_ecmascript(buffer, bin_sig != 0);
+      } else {
+        return write_inf_nan(buffer, bin_sig != 0);
+      }
+    }
     if (bin_sig == 0) {
       *buffer = '0';
       return buffer + 1;
@@ -1344,19 +1388,44 @@ auto write(char* buffer, Float value) noexcept -> char* {
   // Write significand/fixed.
   char* start = buffer;
   constexpr int bcd_size = traits::num_bits == 64 ? 16 : 8;
-  if (dec_exp >= traits::min_fixed_dec_exp &&
-      dec_exp <= traits::max_fixed_dec_exp) {
+  constexpr int min_fixed_dec_exp =
+      ecmascript ? ecmascript_min_fixed_dec_exp : traits::min_fixed_dec_exp;
+  constexpr int max_fixed_dec_exp =
+      ecmascript ? ecmascript_max_fixed_dec_exp : traits::max_fixed_dec_exp;
+  if (dec_exp >= min_fixed_dec_exp && dec_exp <= max_fixed_dec_exp) {
     memcpy(start, &zeros, 8);  // For dec_exp < 0.
+    if constexpr (ecmascript) {
+      memcpy(start + 16, &zeros, 8);  // For >=17 digits.
+    }
     char last_digit = char('0' + (-int(has_last_digit) & dec.last_digit));
     int num_digits = int(select(has_last_digit, bcd_size, dig.num_digits - 1));
 
+    // Select the layout table for our fixed range (fixed_layouts or
+    // ecma_layouts). ecma_layouts is only instantiated here. The entry type for
+    // both tables is the same.
+    const fixed_layout_table::entry* layouts;
+    if constexpr (ecmascript) {
+      static constexpr ecma_fixed_layout_table ecma_layouts;
+      layouts = ecma_layouts.data;
+    } else {
+      layouts = d->fixed_layouts.data;
+    }
     // Materialize the base early so the entry address is `base + idx*32`;
     // otherwise Clang folds the offset in and adds a cycle to the idx chain.
-    const auto* fixed_layouts = &d->fixed_layouts;
-    if (ZMIJ_AARCH64) ZMIJ_ASM(("" : "+r"(fixed_layouts)));
+    if (ZMIJ_AARCH64) ZMIJ_ASM(("" : "+r"(layouts)));
 
     fixed_layout_table::entry scratch;
-    const auto& layout = fixed_layouts->get(dec_exp, scratch);
+    // Inline the get() method of the chosen fixed layout table. Note layout_ptr
+    // is a trick to keep the patch easy to rebase.
+    assert(dec_exp >= min_fixed_dec_exp && dec_exp <= max_fixed_dec_exp);
+    const fixed_layout_table::entry* layout_ptr;
+    if constexpr (fixed_layout_table::enable) {
+      layout_ptr = &layouts[dec_exp - min_fixed_dec_exp];
+    } else {
+      scratch = fixed_layout_table::compute(dec_exp);
+      layout_ptr = &scratch;
+    }
+    const auto& layout = *layout_ptr;
     buffer += layout.start_pos;
 #if ZMIJ_USE_SSE4_1
     if (bcd_size == 16) {
@@ -1366,7 +1435,14 @@ auto write(char* buffer, Float value) noexcept -> char* {
       memcpy(buffer, &out, bcd_size);  // Store the assembled digits in one go.
       // The point can push BCD[15] outside the vector to buffer[16], so write
       // it unconditionally (otherwise it's in-vector or overwritten below).
-      buffer[bcd_size] = char(_mm_extract_epi8(digits, 15));
+      if constexpr (ecmascript) {
+        // If the point is not inside the vector, write BCD[15] at 15 to
+        // overwrite an identical digit instead, since there may be digits
+        // following.
+        buffer[layout.last_digit_pos[0]] = char(_mm_extract_epi8(digits, 15));
+      } else {
+        buffer[bcd_size] = char(_mm_extract_epi8(digits, 15));
+      }
       start[layout.point_pos] = '.';
       buffer[layout.last_digit_pos[has_extra_digit]] = last_digit;
       return buffer + layout.end_pos[num_digits + has_extra_digit - 1];
@@ -1389,8 +1465,16 @@ auto write(char* buffer, Float value) noexcept -> char* {
   buffer -= (buffer - 1 == start + 1);  // Remove trailing point.
 
   // Write exponent.
-  if (exp_string_table::enable) {
-    uint64_t exp_data = d->exp_strings.data[dec_exp + exp_string_table::offset];
+  if constexpr (ecmascript || exp_string_table<>::enable) {
+    uint64_t exp_data;
+    if constexpr (ecmascript) {
+      static constexpr exp_string_table<true> ecma_exp_strings =
+          exp_string_table<true>::make();
+      exp_data =
+          ecma_exp_strings.data[dec_exp + exp_string_table<true>::offset];
+    } else {
+      exp_data = d->exp_strings.data[dec_exp + exp_string_table<>::offset];
+    }
     int len = int(exp_data >> 56);
     if (is_big_endian) exp_data = bswap64(exp_data);
     memcpy(buffer, &exp_data, traits::max_exponent10 >= 100 ? 8 : 4);
@@ -1754,6 +1838,8 @@ template auto to_decimal(double value) noexcept -> dec_fp<>;
 
 template auto write(char* buffer, float value) noexcept -> char*;
 template auto write(char* buffer, double value) noexcept -> char*;
+template auto write<double, true>(char* buffer, double value) noexcept
+    -> char*;
 
 template auto write_big(char* out, size_t n, double value, int precision,
                         format fmt) noexcept -> size_t;
