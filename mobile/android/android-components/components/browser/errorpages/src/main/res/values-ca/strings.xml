@@ -12,6 +12,11 @@
   <!-- The button on an error page that checks whether an archived copy of the unreachable page exists. -->
   <string name="mozac_browser_errorpages_archive_check_button">Comprova si hi ha una versió arxivada</string>
   <!--
+    The text shown underneath the archive button, explaining what the button does. The %1$s will be replaced by
+    the app name and %2$s will be replaced by the name of the archive service as a link
+  -->
+  <string name="mozac_browser_errorpages_archive_description">El %1$s pot cercar una versió anterior d’aquesta pàgina a %2$s d’Internet Archive.</string>
+  <!--
     The name of the Internet Archive service, shown as a link at the end of
     mozac_browser_errorpages_archive_description.
   -->

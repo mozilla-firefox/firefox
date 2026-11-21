@@ -30,7 +30,7 @@
   <!-- Content description of the playback control notification, when the playback is set to 0.5 times (half) the normal reading speed. -->
   <string name="mozac_feature_listentopage_notification_playback_speed_0_5">A reprodución definida a media velocidade</string>
   <!-- Content description of the playback control notification, when the playback is set to 0.75 times the normal reading speed. -->
-  <string name="mozac_feature_listentopage_notification_playback_speed_0_75">Taxa de reprodución un 25\u00a0% máis lenta</string>
+  <string name="mozac_feature_listentopage_notification_playback_speed_0_75">Taxa de reprodución un 25\u00a0%% máis lenta</string>
   <!-- Content description of the playback control notification, when the playback is set to normal reading speed. -->
   <string name="mozac_feature_listentopage_notification_playback_speed_1">Velocidade de reprodución normal</string>
   <!-- Content description of the playback control notification, when the playback is set to 1.25 times the normal reading speed. -->

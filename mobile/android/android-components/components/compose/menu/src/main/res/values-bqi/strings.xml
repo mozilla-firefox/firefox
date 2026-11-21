@@ -21,4 +21,12 @@
   <string name="mozac_menu_customize_drag_to_hide">سی بؽڌار کردن بشنا ن و ایچو بکشین</string>
   <!-- Button text to reset the menu to default configuration -->
   <string name="mozac_menu_customize_reset_to_default">وورنشۊوی و سامووا پؽش فرز</string>
+  <!-- Name of the action (used by screen readers, etc.) that moves a menu section up one position in the customize menu screen. It is also shown in the list of actions displayed when the user long-presses the drag handle of a menu section. -->
+  <string name="mozac_menu_customize_move_up">جاگورو و روء</string>
+  <!-- Name of the action (used by screen readers, etc.) that moves a menu section down one position in the customize menu screen. It is also shown in the list of actions displayed when the user long-presses the drag handle of a menu section. -->
+  <string name="mozac_menu_customize_move_down">جاگورو و لم</string>
+  <!-- Name of the action (used by screen readers, etc.) that hides a section in the customize menu screen. It is also shown in the list of actions displayed when the user long-presses the drag handle of a menu section. -->
+  <string name="mozac_menu_customize_hide">بؽڌار کردن بشن</string>
+  <!-- Name of the action (used by screen readers, etc.) that shows a previously hidden menu section, placing it last among the visible sections in the customize menu screen. It is also shown in the list of actions displayed when the user long-presses the drag handle of a menu section. -->
+  <string name="mozac_menu_customize_unhide">نشووݩ داڌن بشن</string>
 </resources>

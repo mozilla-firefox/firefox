@@ -186,6 +186,8 @@
     Label for popup button that appears when long-pressing the main menu. Tapping it allows the user to customize the main menu layout.
   -->
   <string name="customize_menu">Προσαρμογή μενού</string>
+  <!-- Alert message shown in the "Customize menu" screen when the user tries to hide a menu section which cannot be hidden. -->
+  <string name="customize_menu_cannot_hide_section">Δεν είναι δυνατή η απόκρυψη αυτής της ενότητας</string>
   <!-- Primary button on the menu reset dialog. Tapping it removes all user customizations. -->
   <string name="menu_customize_reset_dialog_reset">Επαναφορά</string>
   <!-- Secondary button on the menu reset dialog. Tapping it cancels the reset process and preserves all user-made customizations. -->
@@ -3251,7 +3253,7 @@
   <!-- The label for the expiration date year of a credit card to be used by a11y services -->
   <string name="credit_cards_expiration_date_year">Έτος ημερομηνίας λήξης</string>
   <!-- The header for the name on the credit card -->
-  <string name="credit_cards_name_on_card">Όνομα στην κάρτα</string>
+  <string name="credit_cards_name_on_card">Όνομα κατόχου κάρτας</string>
   <!-- The text for the "Delete card" menu item for deleting a credit card -->
   <string name="credit_cards_menu_delete_card">Διαγραφή κάρτας</string>
   <!-- The text for the "Delete card" button for deleting a credit card -->
@@ -3925,6 +3927,8 @@
   <string name="protection_panel_permissions_title">Δικαιώματα</string>
   <!-- Certificate panel - Title of the section that contains the website's certificate information (issued to, issued by, etc.) as verified by Firefox (thus guaranteeing the HTTPS connection is secure) -->
   <string name="certificate_details_panel_secure_connection_title">Ασφαλής σύνδεση</string>
+  <!-- Certificate panel - Content description (not visible, for screen readers etc.) for the EU trust mark logo, shown when the website's certificate is a Qualified Website Authentication Certificate (QWAC) as specified in EU Regulation 2024/1183 -->
+  <string name="certificate_details_panel_eu_trust_mark_content_description">Σήμα εμπιστοσύνης της ΕΕ</string>
   <plurals name="trackers_blocked_panel_total_num_trackers_blocked_2">
     <!--
       Text for displaying the total number of trackers blocked in the trackers blocked panel.

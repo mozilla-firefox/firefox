@@ -163,7 +163,7 @@
   <!-- Title of dialog to store credit card information in the user's account -->
   <string name="mozac_feature_prompts_save_payment_method_prompt_title">Enregistrer ce moyen de paiement\u00a0?</string>
   <!-- Title of dialog to update stored credit card information in the user's account -->
-  <string name="mozac_feature_prompts_update_payment_method_prompt_title">Mettre à jour ce mode de paiement\u00a0?</string>
+  <string name="mozac_feature_prompts_update_payment_method_prompt_title">Mettre à jour ce moyen de paiement\u00a0?</string>
   <!-- Body of the dialog to confirm saving or updating credit card information when the "Save security codes" toggle is on. %s is the name of the app (for example "Firefox"). -->
   <string name="mozac_feature_prompts_save_payment_method_prompt_body_with_security_code">%s chiffre votre numéro de carte et votre code de sécurité pour vous permettre de payer plus rapidement plus tard.</string>
   <!-- Body of the dialog to confirm saving or updating credit card information when the "Save security codes" toggle is off. %s is the name of the app (for example "Firefox"). -->
@@ -183,7 +183,7 @@
   <!-- Edit credit card screen - Error message displayed for the credit card number field -->
   <string name="mozac_feature_prompts_edit_credit_card_number_error">Saisissez un numéro de carte valide</string>
   <!-- Edit credit card screen - label of the cardholder name field -->
-  <string name="mozac_feature_prompts_edit_credit_card_name">Titulaire</string>
+  <string name="mozac_feature_prompts_edit_credit_card_name">Nom figurant sur la carte</string>
   <!-- Edit credit card screen - label for the credit card expiration date field (month only) -->
   <string name="mozac_feature_prompts_edit_credit_card_expiry_month">Mois d’expiration</string>
   <!-- Edit credit card screen - format for options in the month dropdown: %1$s is the name of the month (for example "January"), and %2$s is the month number with two digits (for example "01"). The result would be "January (01)". -->

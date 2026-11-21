@@ -21,4 +21,24 @@
   <string name="mozac_menu_customize_drag_to_hide">Σύρετε εδώ τις ενότητες για απόκρυψη</string>
   <!-- Button text to reset the menu to default configuration -->
   <string name="mozac_menu_customize_reset_to_default">Επαναφορά προεπιλογής</string>
+  <!-- Accessibility description used in the menu customization screen, where sections of the menu can be moved around. The string describes the section the user has selected, and tells the user what position it currently occupies. %1$s is the name of the section (e.g. "VPN"). %2$d is its position, and %3$d is the total number of sections being shown. -->
+  <string name="mozac_menu_customize_shown_section">%1$s. Θέση %2$d από %3$d</string>
+  <!-- Content description (not visible, for screen readers etc.) of a named menu section in the customize menu screen. %1$s is the name of the section, for example "Page controls", and %2$s the names of its items, for example "Back, Forward, Share, Refresh". -->
+  <string name="mozac_menu_customize_named_section">Ενότητα «%1$s»: %2$s</string>
+  <!-- Content description (not visible, for screen readers etc.) of a menu section without a name in the customize menu screen. %1$s is the names of its items, for example "VPN". -->
+  <string name="mozac_menu_customize_unnamed_section">Ενότητα «%1$s»</string>
+  <!-- Name of the action (used by screen readers, etc.) that moves a menu section up one position in the customize menu screen. It is also shown in the list of actions displayed when the user long-presses the drag handle of a menu section. -->
+  <string name="mozac_menu_customize_move_up">Μετακίνηση προς τα πάνω</string>
+  <!-- Name of the action (used by screen readers, etc.) that moves a menu section down one position in the customize menu screen. It is also shown in the list of actions displayed when the user long-presses the drag handle of a menu section. -->
+  <string name="mozac_menu_customize_move_down">Μετακίνηση προς τα κάτω</string>
+  <!-- Name of the action (used by screen readers, etc.) that hides a section in the customize menu screen. It is also shown in the list of actions displayed when the user long-presses the drag handle of a menu section. -->
+  <string name="mozac_menu_customize_hide">Απόκρυψη ενότητας</string>
+  <!-- Name of the action (used by screen readers, etc.) that shows a previously hidden menu section, placing it last among the visible sections in the customize menu screen. It is also shown in the list of actions displayed when the user long-presses the drag handle of a menu section. -->
+  <string name="mozac_menu_customize_unhide">Εμφάνιση ενότητας</string>
+  <!-- Announcement (not visible, for screen readers etc.) once the user moved a menu section up or down in the customize menu screen. %1$s is the name of the section, or the names of its items separated by commas if it has none, for example "Page controls", "VPN" or "Back, Forward", %2$d its new position, from 1, and %3$d the number of sections shown in the menu. -->
+  <string name="mozac_menu_customize_section_moved">Η ενότητα «%1$s» μετακινήθηκε στη θέση %2$d από %3$d</string>
+  <!-- Announcement (not visible, for screen readers etc.) once the user hid a menu section in the customize menu screen. %1$s is the name of the section, or the names of its items separated by commas if it has none, for example "Page controls", "VPN" or "Back, Forward". -->
+  <string name="mozac_menu_customize_section_hidden">Η ενότητα «%1$s» αφαιρέθηκε</string>
+  <!-- Announcement (not visible, for screen readers etc.) once the user showed a hidden menu section in the menu again in the customize menu screen. %1$s is the name of the section, or the names of its items separated by commas if it has none, for example "Page controls", "VPN" or "Back, Forward". -->
+  <string name="mozac_menu_customize_section_shown">Η ενότητα «%1$s» προστέθηκε στο μενού</string>
 </resources>

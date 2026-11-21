@@ -138,7 +138,7 @@
   <!-- Search suggestion onboarding hint description text, %s is the name of the app (for example "Firefox"). -->
   <string name="search_suggestions_onboarding_text">Ang %s magbutyag sa tanan nimo gitype sulod sa address bar gamit imong default nga search engine.</string>
   <!-- Search engine suggestion title text. %s is the name of the suggested engine. -->
-  <string name="search_engine_suggestions_title">Pangitaon %1$s</string>
+  <string name="search_engine_suggestions_title">Pangitaon %s</string>
   <!-- Search engine suggestion description text -->
   <string name="search_engine_suggestions_description">Pangitaa pinaagi sa address bar</string>
   <!-- Text preview for smaller sized widgets -->

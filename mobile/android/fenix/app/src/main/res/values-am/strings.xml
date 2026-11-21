@@ -287,7 +287,7 @@
   <!-- Search suggestion onboarding hint description text, %s is the name of the app (for example "Firefox"). -->
   <string name="search_suggestions_onboarding_text">%s በአድራሻ አሞሌው ላይ የሚተይቡትን ሁሉ ከነባሪ የፍለጋ ፍርግምዎ ጋር ያጋራል።</string>
   <!-- Search engine suggestion title text. %s is the name of the suggested engine. -->
-  <string name="search_engine_suggestions_title">በ%1$s ፈልግ</string>
+  <string name="search_engine_suggestions_title">በ%s ፈልግ</string>
   <!-- Search engine suggestion description text -->
   <string name="search_engine_suggestions_description">በቀጥታ ከአድራሻ አሞሌው ይፈልጉ</string>
   <!-- Menu option in the search selector menu to open the search settings -->

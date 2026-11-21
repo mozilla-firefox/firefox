@@ -288,7 +288,7 @@
   <!-- Content description (not visible, for screen readers etc.) for main menu navigation header. -->
   <string name="browser_main_menu_content_description_navigation_header">Navigatie</string>
   <!-- Content description (not visible, for screen readers etc.) for bottom sheet handlebar custom tab menu. -->
-  <string name="browser_custom_tab_menu_handlebar_content_description">Menublad Tabblad aanpassen sluiten</string>
+  <string name="browser_custom_tab_menu_handlebar_content_description">Paneel meer opties sluiten</string>
   <!-- URL bar indicator shown on a cached version of the website, when the tab is reloading, but the content is not live yet -->
   <string name="browser_toolbar_cached_page_indicator">Gebufferd</string>
   <!-- Message shown when a cached website has finished reloading and the tab is now showing the live version of the page -->

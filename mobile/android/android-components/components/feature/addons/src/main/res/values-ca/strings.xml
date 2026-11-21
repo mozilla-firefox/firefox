@@ -309,6 +309,16 @@
   <string name="mozac_feature_addons_update_requires_new_settings">Es necessiten paràmetres nous per a actualitzar %1$s.</string>
   <!-- In extension details screen: Banner message displayed when the update for the extension requires changes to its permission settings. -->
   <string name="mozac_feature_addons_update_requires_new_settings_this_extension">Aquesta extensió demana paràmetres nous per a actualitzar-se.</string>
+  <!-- In list of installed extensions and extension details screens: Banner button displayed when the update for the extension requires changes to its permission settings. Clicking it opens an update confirmation dialog listing the required changes. -->
+  <string name="mozac_feature_addons_update_review_changes_button">Revisa els canvis</string>
+  <!-- Title of confirmation dialog for updating an extension that needs new permissions. %1$s is the name of the extension. -->
+  <string name="mozac_feature_addons_updater_permissions_dialog_title">Es necessiten paràmetres nous per a actualitzar %1$s</string>
+  <!-- Message below the title of the confirmation dialog for updating an extension that needs new permissions. The words "Cancel" and "update" should match the translations used in mozac_feature_addons_updater_permissions_dialog_cancel_button and mozac_feature_addons_updater_permissions_dialog_update_button. -->
+  <string name="mozac_feature_addons_updater_permissions_dialog_description">Cancel·leu per conservar la versió i la configuració actuals o actualitzeu per obtenir la nova versió i aprovar els canvis.</string>
+  <!-- Button in confirmation dialog for updating an extension that needs new permissions. Clicking it installs the update. -->
+  <string name="mozac_feature_addons_updater_permissions_dialog_update_button">Actualitza</string>
+  <!-- Button in confirmation dialog for updating an extension that needs new permissions. Clicking it closes the dialog without updating (the update can still be performed later). -->
+  <string name="mozac_feature_addons_updater_permissions_dialog_cancel_button">Cancel·la</string>
   <!-- Indicates how many users have rated an add-on. %1$s will be replaced with number of reviews -->
   <string name="mozac_feature_addons_user_rating_count_2">Ressenyes: %1$s</string>
   <!-- Accessibility content description for the amount of stars that add-on has, where %1$.02f will be the amount of stars. -->

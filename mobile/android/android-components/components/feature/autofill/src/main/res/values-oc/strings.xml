@@ -52,7 +52,7 @@
     last item in the list. When clicking it a new screen opens which allows the user to search for
     a specific login. %1$s will be replaced with the name of the application (e.g. "Firefox")
   -->
-  <string name="mozac_feature_autofill_search_suggestions">Cercar dins %s</string>
+  <string name="mozac_feature_autofill_search_suggestions">Cercar dins %1$s</string>
   <!--
     Autofill: Hint shown in the text field used to search specific logins. Shown when the field
     is empty and the user has not entered any text into it yet.
