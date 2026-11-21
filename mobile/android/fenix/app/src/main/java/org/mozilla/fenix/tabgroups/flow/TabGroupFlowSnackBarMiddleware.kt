@@ -63,9 +63,6 @@ class TabGroupFlowSnackBarMiddleware(private val appStore: AppStore, private val
                     )
                 )
             }
-            is TabGroupAction.AddNewTabToGroupClicked -> {
-                appStore.dispatch(AppAction.TabAddedToGroup(groupTitle = action.group.title, groupId = action.group.id))
-            }
             else -> {}
         }
     }

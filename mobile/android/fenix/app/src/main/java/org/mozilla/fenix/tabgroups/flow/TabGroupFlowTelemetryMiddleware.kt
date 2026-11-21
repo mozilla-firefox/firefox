@@ -37,15 +37,17 @@ class TabGroupFlowTelemetryMiddleware : Middleware<TabGroupFlowState, TabGroupAc
                 tabGroupTelemetry.recordSaveClicked(context = store.state)
             }
 
+            is TabGroupAction.TabAddedToExistingTabGroup -> {
+                tabGroupTelemetry.recordTabAddedToGroup(1)
+            }
+
             is TabGroupAction.ExistingGroupSelectedForMove -> {
                 if (store.state.groupEmptiedByMoving(action.tabId) == null) {
                     tabGroupTelemetry.recordTabAddedToGroup(1)
                 }
             }
 
-            is TabGroupAction.TabAddedToExistingTabGroup,
-            is TabGroupAction.TabAddedToNewTabGroup,
-            is TabGroupAction.AddNewTabToGroupClicked -> {
+            is TabGroupAction.TabAddedToNewTabGroup -> {
                 tabGroupTelemetry.recordTabAddedToGroup(1)
             }
 

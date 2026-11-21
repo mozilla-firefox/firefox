@@ -40,25 +40,4 @@ sealed interface TabGroupFlowDestination {
         val sourceGroupTitle: String,
         val destinationGroupTitle: String,
     ) : TabGroupFlowDestination
-
-    /**
-     * [TabGroupFlowDestination] representing the [DeleteTabGroupConfirmationDialog].
-     *
-     * @property group The [TabsTrayItem.TabGroup] to be deleted.
-     */
-    data class DeleteTabGroupConfirmationDialog(val group: TabsTrayItem.TabGroup) : TabGroupFlowDestination
-
-    /**
-     * [TabGroupFlowDestination] representing the [UngroupTabGroupConfirmationDialog].
-     *
-     * @property group The [TabsTrayItem.TabGroup] to be ungrouped.
-     */
-    data class UngroupTabGroupConfirmationDialog(val group: TabsTrayItem.TabGroup) : TabGroupFlowDestination
-
-    /**
-     * [TabGroupFlowDestination] for confirming closing the last tab of a group and deleting the group.
-     *
-     * @property group The [TabsTrayItem.TabGroup] to be deleted.
-     */
-    data class CloseTabAndDeleteGroupConfirmationDialog(val group: TabsTrayItem.TabGroup) : TabGroupFlowDestination
 }

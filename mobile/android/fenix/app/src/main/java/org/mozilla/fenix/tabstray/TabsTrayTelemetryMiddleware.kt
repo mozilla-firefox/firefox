@@ -228,7 +228,6 @@ class TabsTrayTelemetryMiddleware(private val nimbusEventStore: NimbusEventStore
             }
 
             is TabGroupAction.TabAddedToExistingTabGroup,
-            is TabGroupAction.AddNewTabToGroupClicked,
             is TabGroupAction.SelectedTabsAddedToGroup -> {
                 handleTabAdditionToGroupAction(store, action)
             }
@@ -298,8 +297,7 @@ class TabsTrayTelemetryMiddleware(private val nimbusEventStore: NimbusEventStore
         action: TabGroupAction,
     ) {
         when (action) {
-            is TabGroupAction.TabAddedToExistingTabGroup,
-            is TabGroupAction.AddNewTabToGroupClicked -> {
+            is TabGroupAction.TabAddedToExistingTabGroup -> {
                 tabGroupTelemetry.recordTabAddedToGroup(tabCount = 1)
             }
 

@@ -42,6 +42,7 @@ class ExpandedTabGroupActionsBuilderTest {
 
     private fun buildActions(
         homepageAsNewTabEnabled: Boolean = true,
+        addNewHomepageTab: () -> String = { "new-tab" },
         onTabClick: (TabsTrayItem.Tab) -> Unit = {},
         onShareClick: () -> Unit = {},
         onAddNewTabCompleted: () -> Unit = {},
@@ -50,6 +51,7 @@ class ExpandedTabGroupActionsBuilderTest {
             group = group,
             homepageAsNewTabEnabled = homepageAsNewTabEnabled,
             dispatch = { dispatched.add(it) },
+            addNewHomepageTab = addNewHomepageTab,
             onTabClick = onTabClick,
             onShareClick = onShareClick,
             onAddNewTabCompleted = onAddNewTabCompleted,
@@ -120,18 +122,26 @@ class ExpandedTabGroupActionsBuilderTest {
     }
 
     @Test
-    fun `GIVEN HNT is enabled WHEN add tab is clicked THEN AddNewTabToGroupClicked is dispatched`() {
+    fun `GIVEN HNT is enabled WHEN add tab is clicked THEN a new tab is opened and added to the group`() {
         var added = false
         val actions =
             buildActions(
                 homepageAsNewTabEnabled = true,
+                addNewHomepageTab = { "new-tab" },
                 onAddNewTabCompleted = { added = true },
             )
 
         assertNotNull(actions.onAddNewTabClick).invoke()
 
         assertEquals(
-            expected = listOf<TabGroupAction>(TabGroupAction.AddNewTabToGroupClicked(group = group)),
+            expected =
+                listOf<TabGroupAction>(
+                    TabGroupAction.TabAddedToExistingTabGroup(
+                        tabId = "new-tab",
+                        groupId = group.id,
+                        groupTitle = group.title,
+                    )
+                ),
             actual = dispatched,
         )
         assertTrue(added)

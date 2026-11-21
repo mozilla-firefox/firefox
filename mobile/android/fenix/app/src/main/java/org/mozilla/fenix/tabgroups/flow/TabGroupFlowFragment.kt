@@ -32,12 +32,9 @@ import org.mozilla.fenix.R
 import org.mozilla.fenix.compose.navigation.BottomSheetSceneStrategy
 import org.mozilla.fenix.ext.requireComponents
 import org.mozilla.fenix.tabgroups.AddToTabGroup
-import org.mozilla.fenix.tabgroups.CloseLastTabAndDeleteTabGroupConfirmationDialog
-import org.mozilla.fenix.tabgroups.DeleteTabGroupConfirmationDialog
 import org.mozilla.fenix.tabgroups.EditTabGroup
 import org.mozilla.fenix.tabgroups.EnrichedTabGroupBinding
 import org.mozilla.fenix.tabgroups.ExpandedTabGroup
-import org.mozilla.fenix.tabgroups.UngroupTabGroupConfirmationDialog
 import org.mozilla.fenix.tabgroups.expandedTabGroupActions
 import org.mozilla.fenix.tabgroups.shareTabGroup
 import org.mozilla.fenix.tabstray.data.TabsTrayItem
@@ -160,47 +157,7 @@ class TabGroupFlowFragment : DialogFragment() {
                 args ->
                 RenderMoveLastTabAndDeleteTabGroupConfirmationDialog(dispatcher = store::dispatch, args = args)
             }
-
-            entry<TabGroupFlowDestination.DeleteTabGroupConfirmationDialog>(metadata = DialogSceneStrategy.dialog()) {
-                RenderDeleteTabGroupConfirmationDialog(group = it.group)
-            }
-
-            entry<TabGroupFlowDestination.UngroupTabGroupConfirmationDialog>(metadata = DialogSceneStrategy.dialog()) {
-                RenderUngroupTabGroupConfirmationDialog(group = it.group)
-            }
-
-            entry<TabGroupFlowDestination.CloseTabAndDeleteGroupConfirmationDialog>(
-                metadata = DialogSceneStrategy.dialog()
-            ) {
-                RenderCloseTabAndDeleteGroupConfirmationDialog(group = it.group)
-            }
         }
-    }
-
-    @Composable
-    private fun RenderDeleteTabGroupConfirmationDialog(group: TabsTrayItem.TabGroup) {
-        DeleteTabGroupConfirmationDialog(
-            onConfirmDelete = { store.dispatch(TabGroupAction.DeleteConfirmed(group)) },
-            onCancel = { store.dispatch(TabGroupAction.NavigateBackInvoked) },
-        )
-    }
-
-    @Composable
-    private fun RenderUngroupTabGroupConfirmationDialog(group: TabsTrayItem.TabGroup) {
-        UngroupTabGroupConfirmationDialog(
-            onConfirmUngroup = { dontAskAgain ->
-                store.dispatch(TabGroupAction.UngroupConfirmed(group = group, dontAskAgain = dontAskAgain))
-            },
-            onCancel = { store.dispatch(TabGroupAction.NavigateBackInvoked) },
-        )
-    }
-
-    @Composable
-    private fun RenderCloseTabAndDeleteGroupConfirmationDialog(group: TabsTrayItem.TabGroup) {
-        CloseLastTabAndDeleteTabGroupConfirmationDialog(
-            onConfirmDelete = { store.dispatch(TabGroupAction.CloseTabAndDeleteGroupConfirmed(group)) },
-            onCancel = { store.dispatch(TabGroupAction.NavigateBackInvoked) },
-        )
     }
 
     @Composable
@@ -217,6 +174,9 @@ class TabGroupFlowFragment : DialogFragment() {
                     group = expandedGroup,
                     homepageAsNewTabEnabled = state.config.homepageAsNewTabEnabled,
                     dispatch = store::dispatch,
+                    addNewHomepageTab = {
+                        requireComponents.useCases.fenixBrowserUseCases.addNewHomepageTab(private = false)
+                    },
                     onTabClick = {
                         requireComponents.useCases.tabsUseCases.selectTab(it.id)
                         store.dispatch(TabGroupAction.NavigateBackInvoked)
@@ -249,10 +209,7 @@ class TabGroupFlowFragment : DialogFragment() {
                             appStore = requireComponents.appStore,
                             tabGroupStripEnabled = settings.shouldShowTabGroupsStrip,
                         ),
-                        TabGroupFlowStorageMiddleware(
-                            tabDataCoordinator = requireComponents.tabDataCoordinator,
-                            uiStateRepository = requireComponents.core.tabManagerUiStateRepository,
-                        ),
+                        TabGroupFlowStorageMiddleware(requireComponents.tabDataCoordinator),
                     ),
             )
         }

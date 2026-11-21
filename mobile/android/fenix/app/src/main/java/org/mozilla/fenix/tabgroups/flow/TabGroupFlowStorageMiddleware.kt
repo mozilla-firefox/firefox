@@ -14,25 +14,16 @@ import org.mozilla.fenix.tabgroups.storage.TabGroupStorage
 import org.mozilla.fenix.tabstray.redux.action.TabGroupAction
 import org.mozilla.fenix.tabstray.redux.action.TabsTrayAction
 import org.mozilla.fenix.tabstray.redux.action.TabsTrayAction.TabsStorageAction
-import org.mozilla.fenix.tabstray.repository.uistate.TabManagerUiStateRepository
-import org.mozilla.fenix.tabstray.repository.uistate.UngroupConfirmationDelegate
 
 /**
  * Helper class that handles TabGroup flow storage actions outside the TabsTray.
  *
  * @param tabDataCoordinator The [TabDataCoordinator] used to observe and update tab data.
- * @param uiStateRepository Persists UI state preferences.
- * @param scope The [CoroutineScope] for running the tab data updates off of the main thread.
- * @param mainScope The [CoroutineScope] used for returning to the main thread.
- * @param ungroupConfirmationDelegate Resolves and persists the ungroup confirmation preference.
+ * @param mainScope The [CoroutineScope] for running tab data updates on the main thread.
  */
 class TabGroupFlowStorageMiddleware(
     private val tabDataCoordinator: TabDataCoordinator,
-    private val uiStateRepository: TabManagerUiStateRepository,
-    private val scope: CoroutineScope = CoroutineScope(Dispatchers.Default),
     private val mainScope: CoroutineScope = CoroutineScope(Dispatchers.Main),
-    private val ungroupConfirmationDelegate: UngroupConfirmationDelegate =
-        UngroupConfirmationDelegate(repository = uiStateRepository, scope = scope),
 ) : Middleware<TabGroupFlowState, TabGroupAction> {
     private val tabGroupStorage = TabGroupStorage(tabDataCoordinator = tabDataCoordinator)
 
@@ -42,7 +33,6 @@ class TabGroupFlowStorageMiddleware(
         action: TabGroupAction,
     ) {
         when (action) {
-            is TabGroupAction.UngroupRequested -> ungroupConfirmationDelegate.resolve(action.group, store::dispatch)
             is TabsStorageAction ->
                 processAction(
                     action = action,
@@ -65,7 +55,7 @@ class TabGroupFlowStorageMiddleware(
                 val form = store.state.formState ?: return
                 val groupPendingDeletion = store.state.groupPendingDeletion
                 val tabIds = if (form.inEditState) emptyList() else listOf(store.state.tabPendingNewGroup ?: return)
-                scope.launch {
+                mainScope.launch {
                     val groupId =
                         tabGroupStorage.handleSaveFromMultiSelection(
                             formState = form,
@@ -75,9 +65,7 @@ class TabGroupFlowStorageMiddleware(
                         if (groupPendingDeletion != null) {
                             tabDataCoordinator.deleteTabGroupsById(listOf(groupPendingDeletion))
                         }
-                        mainScope.launch {
-                            store.dispatch(TabGroupAction.NewGroupCreated(groupId))
-                        }
+                        store.dispatch(TabGroupAction.NewGroupCreated(groupId))
                     }
                 }
             }
@@ -98,39 +86,22 @@ class TabGroupFlowStorageMiddleware(
                     )
                 }
 
-            is TabGroupAction.AddNewTabToGroupClicked ->
-                scope.launch { tabDataCoordinator.addNewTabToTabGroup(tabGroupId = action.group.id) }
-
-            is TabGroupAction.TabClosed ->
-                scope.launch {
-                    tabDataCoordinator.removeTabFromTabGroup(tabGroupId = action.group.id, tabId = action.tab.id)
-                }
-
-            is TabGroupAction.CloseTabGroupClicked ->
-                scope.launch { tabDataCoordinator.closeTabGroup(tabGroupId = action.group.id) }
-
-            is TabGroupAction.DeleteConfirmed ->
-                scope.launch { tabDataCoordinator.deleteTabGroupAndTabs(tabGroupId = action.group.id) }
-
-            is TabGroupAction.CloseTabAndDeleteGroupConfirmed ->
-                scope.launch { tabDataCoordinator.deleteTabGroupAndTabs(tabGroupId = action.group.id) }
-
-            is TabGroupAction.UngroupConfirmed -> {
-                ungroupConfirmationDelegate.setSkip(action.dontAskAgain)
-                scope.launch { tabDataCoordinator.ungroupTabGroup(tabGroupId = action.group.id) }
-            }
-
             // Actions not handled outside the tabs tray currently
+            is TabGroupAction.CloseTabAndDeleteGroupConfirmed,
+            is TabGroupAction.CloseTabGroupClicked,
+            is TabGroupAction.DeleteConfirmed,
             is TabGroupAction.DragAndDropInitiated,
             is TabGroupAction.OpenTabGroupClicked,
             is TabGroupAction.SelectedTabsAddedToGroup,
             is TabGroupAction.TabAddedToNewTabGroup,
+            is TabGroupAction.TabClosed,
+            is TabGroupAction.UngroupConfirmed,
             TabsTrayAction.InitAction,
             is TabsTrayAction.ReorderTabsTrayItem -> {}
         }
     }
 
-    private fun addTabToGroup(groupId: String, tabId: String) = scope.launch {
+    private fun addTabToGroup(groupId: String, tabId: String) = mainScope.launch {
         tabDataCoordinator.addTabsToTabGroup(tabGroupId = groupId, tabIds = listOf(tabId))
     }
 }
