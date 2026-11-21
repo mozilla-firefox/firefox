@@ -387,6 +387,18 @@ class TabsTrayTelemetryMiddlewareTest {
     }
 
     @Test
+    fun `WHEN a new tab is added to a tab group THEN the metric is reported with count 1`() {
+        assertNull(TabsTray.tabAddedToGroup.testGetValue())
+
+        store.dispatch(TabGroupAction.AddNewTabToGroupClicked(group = createTabGroup()))
+
+        assertNotNull(TabsTray.tabAddedToGroup.testGetValue())
+        val snapshot = TabsTray.tabAddedToGroup.testGetValue()!!
+        assertEquals(1, snapshot.size)
+        assertEquals("1", snapshot.single().extra?.getValue("tab_count"))
+    }
+
+    @Test
     fun `GIVEN multiselect mode WHEN multiple tabs are added to a tab group THEN the metric is reported with the correct count`() {
         assertNull(TabsTray.tabAddedToGroup.testGetValue())
 

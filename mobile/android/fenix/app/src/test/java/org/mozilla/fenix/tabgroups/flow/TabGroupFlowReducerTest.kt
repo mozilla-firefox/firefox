@@ -567,4 +567,217 @@ class TabGroupFlowReducerTest {
             actual = resultState.backStack,
         )
     }
+
+    @Test
+    fun `GIVEN the user is on the edit group destination via the expanded destination WHEN the user invokes a save THEN the expanded view is restored`() {
+        val group = createTabGroup(id = "group-1")
+        val initialState =
+            TabGroupFlowState(
+                backStack =
+                    listOf(
+                        TabGroupFlowDestination.Root,
+                        TabGroupFlowDestination.ExpandedTabGroup(group = group),
+                        TabGroupFlowDestination.EditTabGroup,
+                    ),
+                entryPoint = TabGroupFlowEntryPoint.ViewGroup(groupId = "group-1"),
+            )
+        val resultState = TabGroupFlowReducer.reduce(state = initialState, action = TabGroupAction.SaveClicked)
+        assertEquals(
+            expected =
+                listOf(
+                    TabGroupFlowDestination.Root,
+                    TabGroupFlowDestination.ExpandedTabGroup(group = group),
+                ),
+            actual = resultState.backStack,
+        )
+    }
+
+    @Test
+    fun `GIVEN the user is on the edit group destination via the move destination WHEN the user invokes a save THEN the backstack is reset to root`() {
+        val initialState =
+            TabGroupFlowState(
+                backStack =
+                    listOf(
+                        TabGroupFlowDestination.Root,
+                        TabGroupFlowDestination.MoveToTabGroup(tabId = "123"),
+                        TabGroupFlowDestination.EditTabGroup,
+                    ),
+                entryPoint = TabGroupFlowEntryPoint.MoveTabToGroup(tabId = "123"),
+            )
+        val resultState = TabGroupFlowReducer.reduce(state = initialState, action = TabGroupAction.SaveClicked)
+        assertEquals(expected = listOf(TabGroupFlowDestination.Root), actual = resultState.backStack)
+    }
+
+    @Test
+    fun `WHEN AddNewTabToGroupClicked invoked THEN the expanded sheet is popped`() {
+        val group = createTabGroup(id = "group-1")
+        val initialState =
+            TabGroupFlowState(
+                backStack =
+                    listOf(
+                        TabGroupFlowDestination.Root,
+                        TabGroupFlowDestination.ExpandedTabGroup(group = group),
+                    ),
+                entryPoint = TabGroupFlowEntryPoint.ViewGroup(groupId = "group-1"),
+            )
+        val resultState =
+            TabGroupFlowReducer.reduce(
+                state = initialState,
+                action = TabGroupAction.AddNewTabToGroupClicked(group = group),
+            )
+        assertEquals(expected = listOf(TabGroupFlowDestination.Root), actual = resultState.backStack)
+    }
+
+    @Test
+    fun `WHEN the last tab of a group is closed THEN the close and delete confirmation dialog is added to the backstack`() {
+        val group = createTabGroup(id = "group-1", tabs = listOf(createTab("mozilla.org", id = "1")))
+        val initialState =
+            TabGroupFlowState(
+                backStack =
+                    listOf(
+                        TabGroupFlowDestination.Root,
+                        TabGroupFlowDestination.ExpandedTabGroup(group = group),
+                    ),
+                entryPoint = TabGroupFlowEntryPoint.ViewGroup(groupId = "group-1"),
+            )
+        val resultState =
+            TabGroupFlowReducer.reduce(
+                state = initialState,
+                action = TabGroupAction.TabClosed(tab = group.tabs.first(), group = group),
+            )
+        assertEquals(
+            expected = TabGroupFlowDestination.CloseTabAndDeleteGroupConfirmationDialog(group = group),
+            actual = resultState.backStack.last(),
+        )
+    }
+
+    @Test
+    fun `WHEN a tab of a multi-tab group is closed THEN the backstack is unchanged`() {
+        val group =
+            createTabGroup(
+                id = "group-1",
+                tabs = listOf(createTab("mozilla.org", id = "1"), createTab("wikipedia.org", id = "2")),
+            )
+        val initialState =
+            TabGroupFlowState(
+                backStack =
+                    listOf(
+                        TabGroupFlowDestination.Root,
+                        TabGroupFlowDestination.ExpandedTabGroup(group = group),
+                    ),
+                entryPoint = TabGroupFlowEntryPoint.ViewGroup(groupId = "group-1"),
+            )
+        val resultState =
+            TabGroupFlowReducer.reduce(
+                state = initialState,
+                action = TabGroupAction.TabClosed(tab = group.tabs.first(), group = group),
+            )
+        assertEquals(expected = initialState.backStack, actual = resultState.backStack)
+    }
+
+    @Test
+    fun `WHEN closing the last tab and deleting is confirmed THEN the flow is reset to root`() {
+        val group = createTabGroup(id = "group-1", tabs = listOf(createTab("mozilla.org", id = "1")))
+        val initialState =
+            TabGroupFlowState(
+                backStack =
+                    listOf(
+                        TabGroupFlowDestination.Root,
+                        TabGroupFlowDestination.ExpandedTabGroup(group = group),
+                        TabGroupFlowDestination.CloseTabAndDeleteGroupConfirmationDialog(group = group),
+                    ),
+                entryPoint = TabGroupFlowEntryPoint.ViewGroup(groupId = "group-1"),
+            )
+        val resultState =
+            TabGroupFlowReducer.reduce(
+                state = initialState,
+                action = TabGroupAction.CloseTabAndDeleteGroupConfirmed(group = group),
+            )
+        assertEquals(expected = listOf(TabGroupFlowDestination.Root), actual = resultState.backStack)
+    }
+
+    @Test
+    fun `WHEN EditTabGroupClicked invoked THEN the form is initialized and the edit sheet is pushed`() {
+        val group = createTabGroup(id = "group-1", title = "Work")
+        val initialState =
+            TabGroupFlowState(
+                backStack =
+                    listOf(
+                        TabGroupFlowDestination.Root,
+                        TabGroupFlowDestination.ExpandedTabGroup(group = group),
+                    ),
+                entryPoint = TabGroupFlowEntryPoint.ViewGroup(groupId = "group-1"),
+            )
+        val resultState =
+            TabGroupFlowReducer.reduce(
+                state = initialState,
+                action = TabGroupAction.EditTabGroupClicked(group = group),
+            )
+        assertEquals(expected = "group-1", actual = resultState.formState?.tabGroupId)
+        assertEquals(expected = "Work", actual = resultState.formState?.name)
+        assertEquals(expected = TabGroupFlowDestination.EditTabGroup, actual = resultState.backStack.last())
+    }
+
+    @Test
+    fun `WHEN DeleteClicked invoked THEN the delete confirmation dialog is pushed`() {
+        val group = createTabGroup(id = "group-1")
+        val initialState =
+            TabGroupFlowState(
+                backStack = listOf(TabGroupFlowDestination.Root),
+                entryPoint = TabGroupFlowEntryPoint.ViewGroup(groupId = "group-1"),
+            )
+        val resultState =
+            TabGroupFlowReducer.reduce(state = initialState, action = TabGroupAction.DeleteClicked(group = group))
+        assertEquals(
+            expected = TabGroupFlowDestination.DeleteTabGroupConfirmationDialog(group = group),
+            actual = resultState.backStack.last(),
+        )
+    }
+
+    @Test
+    fun `WHEN UngroupConfirmationRequested invoked THEN the ungroup confirmation dialog is pushed`() {
+        val group = createTabGroup(id = "group-1")
+        val initialState =
+            TabGroupFlowState(
+                backStack = listOf(TabGroupFlowDestination.Root),
+                entryPoint = TabGroupFlowEntryPoint.ViewGroup(groupId = "group-1"),
+            )
+        val resultState =
+            TabGroupFlowReducer.reduce(
+                state = initialState,
+                action = TabGroupAction.UngroupConfirmationRequested(group = group),
+            )
+        assertEquals(
+            expected = TabGroupFlowDestination.UngroupTabGroupConfirmationDialog(group = group),
+            actual = resultState.backStack.last(),
+        )
+    }
+
+    @Test
+    fun `WHEN a group operation is confirmed THEN the flow is reset to root`() {
+        val group = createTabGroup(id = "group-1")
+        val initialState =
+            TabGroupFlowState(
+                backStack =
+                    listOf(
+                        TabGroupFlowDestination.Root,
+                        TabGroupFlowDestination.ExpandedTabGroup(group = group),
+                    ),
+                entryPoint = TabGroupFlowEntryPoint.ViewGroup(groupId = "group-1"),
+            )
+        val confirmations =
+            listOf(
+                TabGroupAction.CloseTabGroupClicked(group = group),
+                TabGroupAction.DeleteConfirmed(group = group),
+                TabGroupAction.UngroupConfirmed(group = group, dontAskAgain = false),
+            )
+        confirmations.forEach { action ->
+            val resultState = TabGroupFlowReducer.reduce(state = initialState, action = action)
+            assertEquals(
+                expected = listOf(TabGroupFlowDestination.Root),
+                actual = resultState.backStack,
+                message = "Expected $action to reset the backstack to root, but got ${resultState.backStack}",
+            )
+        }
+    }
 }

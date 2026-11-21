@@ -18,7 +18,6 @@ import mozilla.components.support.test.middleware.CaptureActionsMiddleware
 import org.mozilla.fenix.tabstray.data.TabStorageUpdate
 import org.mozilla.fenix.tabstray.data.createTabGroup
 import org.mozilla.fenix.tabstray.fakes.FakeTabManagerUiStateRepository
-import org.mozilla.fenix.tabstray.navigation.TabManagerNavDestination.UngroupTabGroupConfirmationDialog
 import org.mozilla.fenix.tabstray.redux.action.TabGroupAction
 import org.mozilla.fenix.tabstray.redux.action.TabsTrayAction
 import org.mozilla.fenix.tabstray.redux.action.TabsTrayAction.PersistedUiStateUpdateReceived
@@ -134,7 +133,50 @@ class TabManagerUiStateStorageMiddlewareTest {
         }
 
     @Test
+    fun `GIVEN the confirmation is not skipped WHEN an ungroup is requested THEN a confirmation is requested`() =
+        runTest {
+            repository =
+                FakeTabManagerUiStateRepository(
+                    initialPersistedUIState = PersistedUIState(skipUngroupConfirmation = false)
+                )
+            val group = createTabGroup()
+            val store = createStore()
+
+            store.dispatch(TabGroupAction.UngroupRequested(group = group))
+
+            runCurrent()
+            advanceUntilIdle()
+
+            captureActionsMiddleware.assertLastAction(TabGroupAction.UngroupConfirmationRequested::class) {
+                assertEquals(group, it.group)
+            }
+        }
+
+    @Test
+    fun `GIVEN the confirmation is skipped WHEN an ungroup is requested THEN ungroup is confirmed without the dialog`() =
+        runTest {
+            repository =
+                FakeTabManagerUiStateRepository(
+                    initialPersistedUIState = PersistedUIState(skipUngroupConfirmation = true)
+                )
+            val group = createTabGroup()
+            val store = createStore()
+
+            store.dispatch(TabGroupAction.UngroupRequested(group = group))
+
+            runCurrent()
+            advanceUntilIdle()
+
+            captureActionsMiddleware.assertLastAction(TabGroupAction.UngroupConfirmed::class) {
+                assertEquals(group, it.group)
+                assertTrue(it.dontAskAgain)
+            }
+        }
+
+    @Test
     fun `GIVEN the user checked don't ask again WHEN ungroup is confirmed THEN the repo is updated`() = runTest {
+        repository =
+            FakeTabManagerUiStateRepository(initialPersistedUIState = PersistedUIState(skipUngroupConfirmation = false))
         val store = createStore()
 
         store.dispatch(TabGroupAction.UngroupConfirmed(group = createTabGroup(), dontAskAgain = true))
@@ -142,13 +184,16 @@ class TabManagerUiStateStorageMiddlewareTest {
         runCurrent()
         advanceUntilIdle()
 
-        assertTrue { repository.uiState.value!!.skipUngroupConfirmation }
+        assertTrue(repository.uiState.value!!.skipUngroupConfirmation)
     }
 
     @Test
     fun `GIVEN the user did not check don't ask again WHEN ungroup is confirmed THEN the repo is not updated`() =
         runTest {
-            repository = FakeTabManagerUiStateRepository(initialPersistedUIState = PersistedUIState())
+            repository =
+                FakeTabManagerUiStateRepository(
+                    initialPersistedUIState = PersistedUIState(skipUngroupConfirmation = false)
+                )
             val store = createStore()
 
             store.dispatch(TabGroupAction.UngroupConfirmed(group = createTabGroup(), dontAskAgain = false))
@@ -157,47 +202,6 @@ class TabManagerUiStateStorageMiddlewareTest {
             advanceUntilIdle()
 
             assertFalse(repository.uiState.value!!.skipUngroupConfirmation)
-        }
-
-    @Test
-    fun `GIVEN the confirmation is skipped WHEN an ungroup is requested THEN the ungroup is confirmed without the dialog`() =
-        runTest {
-            val group = createTabGroup()
-            val store =
-                createStore(
-                    initialTabsTrayState =
-                        TabsTrayState(tabGroupState = TabsTrayState.TabGroupState(skipUngroupConfirmation = true))
-                )
-
-            store.dispatch(TabGroupAction.UngroupRequested(group = group))
-
-            runCurrent()
-            advanceUntilIdle()
-
-            captureActionsMiddleware.assertLastAction(clazz = TabGroupAction.UngroupConfirmed::class) { action ->
-                assertEquals(group, action.group)
-                assertTrue(action.dontAskAgain)
-            }
-            assertTrue(store.state.backStack.none { it is UngroupTabGroupConfirmationDialog })
-        }
-
-    @Test
-    fun `GIVEN the confirmation is not skipped WHEN an ungroup is requested THEN the confirmation dialog is shown`() =
-        runTest {
-            val group = createTabGroup()
-            val store =
-                createStore(
-                    initialTabsTrayState =
-                        TabsTrayState(tabGroupState = TabsTrayState.TabGroupState(skipUngroupConfirmation = false))
-                )
-
-            store.dispatch(TabGroupAction.UngroupRequested(group = group))
-
-            runCurrent()
-            advanceUntilIdle()
-
-            assertEquals(UngroupTabGroupConfirmationDialog(group = group), store.state.backStack.last())
-            captureActionsMiddleware.assertNotDispatched(clazz = TabGroupAction.UngroupConfirmed::class)
         }
 
     @Test

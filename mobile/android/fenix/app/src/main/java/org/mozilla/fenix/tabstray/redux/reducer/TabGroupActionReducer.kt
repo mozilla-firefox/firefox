@@ -83,6 +83,7 @@ object TabGroupActionReducer {
                 )
             // No-op actions within the TabsTray
             TabGroupAction.NavigateBackInvoked -> state
+            is TabGroupAction.AddNewTabToGroupClicked -> state
             is TabGroupAction.TabAddedToNewTabGroup -> state
             is TabGroupAction.TabGroupsUpdated -> state
             is TabGroupAction.ExistingGroupSelectedForMove -> state

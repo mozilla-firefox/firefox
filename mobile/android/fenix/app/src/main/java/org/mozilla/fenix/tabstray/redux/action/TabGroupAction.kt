@@ -164,6 +164,13 @@ sealed interface TabGroupAction : TabsTrayAction {
     data class CloseTabGroupClicked(val group: TabsTrayItem.TabGroup) : TabGroupAction, TabsStorageAction
 
     /**
+     * Invoked when the user clicks to add a new tab to a tab group from the expanded view.
+     *
+     * @property group The [TabsTrayItem.TabGroup] the new tab is added to.
+     */
+    data class AddNewTabToGroupClicked(val group: TabsTrayItem.TabGroup) : TabGroupAction, TabsStorageAction
+
+    /**
      * [TabGroupAction] fired when one [TabsTrayItem] is dropped onto another.
      *
      * @property sourceId The id of the source item
