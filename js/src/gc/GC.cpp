@@ -4258,6 +4258,10 @@ GCRuntime::IncrementalResult GCRuntime::resetIncrementalGC(
       abortSweepAfterCurrentGroup = true;
       isCompacting = false;
 
+      // The gray marking state may not be valid. Marking (in particular gray
+      // marking) happens during the sweep phase.
+      setGrayBitsInvalid();
+
       break;
     }
 
