@@ -1152,12 +1152,18 @@ ${
         : 0) + (this._wwwIsTrimmed ? "www.".length : 0);
     const previousSelectionStart = this.selectionStart + offset;
     const previousSelectionEnd = this.selectionEnd + offset;
+    const wasAllSelected = this.#allTextSelected;
 
     this.setValue(value, { allowTrim: true, valueIsTyped: !valid });
     this.toggleAttribute("usertyping", !valid && value);
 
     if (this.focused && value != previousUntrimmedValue) {
-      if (
+      if (wasAllSelected && !isReverting && !dueToTabSwitch) {
+        // If all text was previously selected, select the new text too. This
+        // behavior is consistent with other browsers. Notably this is the case
+        // when a custom new-tab page loads a new URL.
+        this.inputField.select();
+      } else if (
         previousSelectionStart != previousSelectionEnd &&
         value.substring(previousSelectionStart, previousSelectionEnd) ===
           previousUntrimmedValue.substring(

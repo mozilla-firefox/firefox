@@ -94,7 +94,7 @@ add_task(async function setURI() {
       secondURL: "https://example.org/test",
       initialSelectionStart: 0,
       initialSelectionEnd: "https://example.com/test".length,
-      expectedSelectionStart: "https://example.org/test".length,
+      expectedSelectionStart: 0,
       expectedSelectionEnd: "https://example.org/test".length,
     },
     {
@@ -118,7 +118,7 @@ add_task(async function setURI() {
       secondURL: "https://example.com/test",
       initialSelectionStart: 0,
       initialSelectionEnd: "https://example.com/longer".length,
-      expectedSelectionStart: "https://example.com/test".length,
+      expectedSelectionStart: 0,
       expectedSelectionEnd: "https://example.com/test".length,
     },
     {
@@ -183,7 +183,8 @@ add_task(async function setURI() {
       initialSelectionStart: 0,
       initialSelectionEnd: 0,
       expectedSelectionStart: 0,
-      expectedSelectionEnd: 0,
+      expectedSelectionEnd: UrlbarTestUtils.trimURL("https://example.com/test")
+        .length,
     },
     {
       firstURL: "about:blank",
@@ -191,7 +192,7 @@ add_task(async function setURI() {
       initialSelectionStart: 0,
       initialSelectionEnd: 0,
       expectedSelectionStart: 0,
-      expectedSelectionEnd: 0,
+      expectedSelectionEnd: LARGE_DATA_URL.length,
     },
     {
       firstURL: "about:telemetry",

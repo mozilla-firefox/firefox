@@ -676,6 +676,91 @@ add_task(async function dontTemporarilyShowAboutExtensionPath() {
   await extension.unload();
 });
 
+add_task(async function test_url_selected_after_newtab_navigates() {
+  await ExtensionSettingsStore.initialize();
+  const url = "https://example.com/";
+  let extension = ExtensionTestUtils.loadExtension({
+    manifest: {
+      chrome_url_overrides: { newtab: "newtab.html" },
+    },
+    files: {
+      "newtab.html": `<!DOCTYPE html><script src="newtab.js"></script>`,
+      "newtab.js"() {
+        browser.tabs.getCurrent().then(tab => {
+          browser.tabs.update(tab.id, {
+            url: "https://example.com/",
+            loadReplace: true,
+          });
+        });
+      },
+    },
+    useAddonManager: "temporary",
+  });
+  await extension.startup();
+
+  let panel = getNewTabDoorhanger().closest("panel");
+  let popupShown = promisePopupShown(panel);
+  let tab = await promiseNewTab(url);
+  await popupShown;
+  let popupHidden = promisePopupHidden(panel);
+  panel.hidePopup();
+  await popupHidden;
+  BrowserTestUtils.removeTab(tab);
+
+  function checkAllSelected(msg) {
+    ok(gURLBar.focused, `The URL bar is focused ${msg}`);
+    Assert.notEqual(gURLBar.value, "", `The URL bar has a value ${msg}`);
+    is(gURLBar.selectionStart, 0, `The selection starts at 0 ${msg}`);
+    is(
+      gURLBar.selectionEnd,
+      gURLBar.value.length,
+      `The selection reaches the end ${msg}`
+    );
+  }
+
+  tab = await promiseNewTab(url);
+  checkAllSelected("after the new tab navigates");
+
+  await SpecialPowers.spawn(tab.linkedBrowser, [], () => {
+    content.history.pushState({}, "", "/pushed");
+  });
+  await TestUtils.waitForCondition(() => gURLBar.value.endsWith("/pushed"));
+  checkAllSelected("after pushState");
+
+  const redirectUrl = "https://example.org/";
+  let loaded = BrowserTestUtils.browserLoaded(
+    tab.linkedBrowser,
+    false,
+    redirectUrl
+  );
+  await SpecialPowers.spawn(tab.linkedBrowser, [redirectUrl], target => {
+    content.location.replace(target);
+  });
+  await loaded;
+  checkAllSelected("after location.replace");
+
+  EventUtils.sendString("apples");
+  is(gURLBar.value, "apples", "Typing replaces the URL");
+
+  gURLBar.view.close();
+  gURLBar.handleRevert();
+  BrowserTestUtils.removeTab(tab);
+
+  tab = await promiseNewTab(url);
+  gURLBar.setSelectionRange(1, 1);
+  await SpecialPowers.spawn(tab.linkedBrowser, [], () => {
+    content.history.pushState({}, "", "/moved-caret");
+  });
+  await TestUtils.waitForCondition(() =>
+    gURLBar.value.endsWith("/moved-caret")
+  );
+  is(gURLBar.selectionStart, 1, "A moved caret isn't turned into a selection");
+  is(gURLBar.selectionEnd, 1, "A moved caret stays collapsed");
+
+  BrowserTestUtils.removeTab(tab);
+  await extension.unload();
+});
+
 add_task(async function test_overriding_newtab_incognito_not_allowed() {
   let panel = getNewTabDoorhanger().closest("panel");
 
@@ -802,6 +887,7 @@ add_task(async function test_newtab_from_extension() {
 
   let popupShown = promisePopupShown(panel);
   let tab = await promiseNewTab(extensionNewTabUrl);
+  await extension.awaitMessage("newtab-loaded");
   await popupShown;
 
   // This will show a confirmation doorhanger, make sure we don't leave it open.
@@ -819,7 +905,6 @@ add_task(async function test_newtab_from_extension() {
         newtab.id !== browser.tabs.TAB_ID_NONE,
         "New tab was created."
       );
-      await browser.tabs.remove(newtab.id);
       browser.test.sendMessage("complete");
     },
   });
@@ -835,6 +920,7 @@ add_task(async function test_newtab_from_extension() {
   await opener.startup();
   await opener.awaitMessage("complete");
   await extension.awaitMessage("newtab-loaded");
+  BrowserTestUtils.removeTab(gBrowser.selectedTab);
   await opener.unload();
   await extension.unload();
 });
