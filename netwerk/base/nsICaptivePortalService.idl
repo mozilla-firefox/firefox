@@ -75,8 +75,8 @@ interface nsICaptivePortalService : nsISupports
 
 /**
  * Similar to NS_CAPTIVE_PORTAL_CONNECTIVITY but only gets dispatched when
- * the connectivity changes from UNKNOWN to NOT_CAPTIVE or from LOCKED_PORTAL
- * to UNLOCKED_PORTAL.
+ * the connectivity changes from UNKNOWN to NOT_CAPTIVE or UNLOCKED_PORTAL,
+ * or from LOCKED_PORTAL to UNLOCKED_PORTAL.
  */
 #define NS_CAPTIVE_PORTAL_CONNECTIVITY_CHANGED "network:captive-portal-connectivity-changed"
 

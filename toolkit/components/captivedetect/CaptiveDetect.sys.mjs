@@ -33,6 +33,18 @@ XPCOMUtils.defineLazyPreferenceGetter(
   "captivedetect.canonicalContent",
   ""
 );
+XPCOMUtils.defineLazyPreferenceGetter(
+  lazy,
+  "httpsCheckEnabled",
+  "captivedetect.httpsCheck.enabled",
+  false
+);
+XPCOMUtils.defineLazyPreferenceGetter(
+  lazy,
+  "httpsCheckURL",
+  "captivedetect.httpsCheck.url",
+  ""
+);
 
 function URLFetcher(url, timeout) {
   let self = this;
@@ -159,6 +171,26 @@ function LoginObserver(captivePortalDetector) {
     }
   };
 
+  let confirmWithHttpsCheck = function confirmWithHttpsCheck(
+    notifyCheckComplete
+  ) {
+    urlFetcher = captivePortalDetector._startHttpsCheck(
+      () => {
+        urlFetcher = null;
+        captivePortalDetector.executeCallback(true, true);
+        if (notifyCheckComplete) {
+          captivePortalDetector._notifyCheckComplete(false);
+        }
+      },
+      () => {
+        if (notifyCheckComplete) {
+          captivePortalDetector._notifyCheckComplete(true);
+        }
+        pageCheckingDone();
+      }
+    );
+  };
+
   let checkPageContent = function checkPageContent() {
     debug("checking if public network is available after the login procedure");
 
@@ -172,11 +204,12 @@ function LoginObserver(captivePortalDetector) {
       if (captivePortalDetector.validateContent(status, content)) {
         urlFetcher = null;
         captivePortalDetector.executeCallback(true);
+        captivePortalDetector._notifyCheckComplete(false);
       } else {
-        pageCheckingDone();
+        confirmWithHttpsCheck(true);
       }
     };
-    urlFetcher.onredirectorerror = pageCheckingDone;
+    urlFetcher.onredirectorerror = () => confirmWithHttpsCheck(false);
   };
 
   // Public interface of LoginObserver
@@ -404,9 +437,10 @@ CaptivePortalDetector.prototype = {
       }
       if (self.validateContent(status, content)) {
         self.executeCallback(true);
+        self._notifyCheckComplete(false);
       } else {
         // Content of the canonical website has been overwrite
-        self._startLogin();
+        self._confirmPortal(true);
       }
     };
     urlFetcher.onredirectorerror = function (status) {
@@ -418,19 +452,78 @@ CaptivePortalDetector.prototype = {
       // A canonical endpoint only ever answers 200 or 204, both of which are
       // handled by onsuccess. Any other 2xx is something intercepting us.
       if (status >= 200 && status <= 299) {
-        self._startLogin();
+        self._confirmPortal(false);
       } else if (status >= 300 && status <= 399) {
         // The canonical website has been redirected to an unknown location
-        self._startLogin();
+        self._confirmPortal(false);
       } else if (status === 511) {
         // Got a RFC 6585 "Network Authentication Required" error page
-        self._startLogin();
+        self._confirmPortal(false);
       } else {
         mayRetry();
       }
     };
 
     this._runningRequest.urlFetcher = urlFetcher;
+  },
+
+  /**
+   * Called when the plain HTTP check looks intercepted. When enabled, a
+   * successful HTTPS request means the portal does not block traffic, so the
+   * network is reported as an unlocked portal instead of starting a login.
+   *
+   * @param {boolean} notifyCheckComplete Whether to send
+   *   captive-portal-check-complete once the HTTPS check result is known.
+   */
+  _confirmPortal: function _confirmPortal(notifyCheckComplete) {
+    let urlFetcher = this._startHttpsCheck(
+      () => {
+        this.executeCallback(true, true);
+        if (notifyCheckComplete) {
+          this._notifyCheckComplete(false);
+        }
+      },
+      () => {
+        if (notifyCheckComplete) {
+          this._notifyCheckComplete(true);
+        }
+        this._startLogin();
+      }
+    );
+    if (urlFetcher) {
+      this._runningRequest.urlFetcher = urlFetcher;
+    }
+  },
+
+  /**
+   * Fetches the HTTPS check URL.
+   *
+   * @param {Function} onsuccess Called if the HTTPS request gets through.
+   * @param {Function} onfailure Called if the check is disabled, the URL is
+   *   invalid, or the request fails.
+   * @returns {URLFetcher|null} The fetcher, or null if |onfailure| has already
+   *   been called.
+   */
+  _startHttpsCheck: function _startHttpsCheck(onsuccess, onfailure) {
+    if (!lazy.httpsCheckEnabled || !lazy.httpsCheckURL) {
+      onfailure();
+      return null;
+    }
+
+    debug("confirming captive portal with " + lazy.httpsCheckURL);
+    let urlFetcher;
+    try {
+      urlFetcher = new URLFetcher(lazy.httpsCheckURL, this._maxWaitingTime);
+    } catch (e) {
+      debug("invalid HTTPS check URL: " + e);
+      onfailure();
+      return null;
+    }
+    urlFetcher.ontimeout = onfailure;
+    urlFetcher.onerror = onfailure;
+    urlFetcher.onredirectorerror = onfailure;
+    urlFetcher.onsuccess = onsuccess;
+    return urlFetcher;
   },
 
   _startLogin: function _startLogin() {
@@ -462,11 +555,11 @@ CaptivePortalDetector.prototype = {
     }
   },
 
-  executeCallback: function executeCallback(success) {
+  executeCallback: function executeCallback(success, unlockedPortal = false) {
     if (this._runningRequest) {
       debug("callback executed");
       if (this._runningRequest.hasOwnProperty("callback")) {
-        this._runningRequest.callback.complete(success);
+        this._runningRequest.callback.complete(success, unlockedPortal);
       }
 
       // Only when the request has a event id and |success| is true
@@ -503,13 +596,17 @@ CaptivePortalDetector.prototype = {
    */
   validateContent: function validateContent(status, content) {
     debug("received status " + status + " content: " + content);
-    let valid =
+    return (
       (status === 200 || status === 204) &&
-      content === this._canonicalSiteExpectedContent;
-    // We need a way to indicate that a check has been performed, and if we are
-    // still in a captive portal.
-    this._sendEvent(kCaptivePortalCheckComplete, !valid);
-    return valid;
+      content === this._canonicalSiteExpectedContent
+    );
+  },
+
+  // We need a way to indicate that a check has been performed, and if we are
+  // still in a captive portal. Sent after |complete| on success, so that the
+  // captive portal state is already updated.
+  _notifyCheckComplete: function _notifyCheckComplete(captive) {
+    this._sendEvent(kCaptivePortalCheckComplete, captive);
   },
 
   _allocateRequestId: function _allocateRequestId() {
