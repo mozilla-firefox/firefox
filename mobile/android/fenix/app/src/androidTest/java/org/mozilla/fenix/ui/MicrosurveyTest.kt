@@ -7,8 +7,10 @@ import androidx.compose.ui.test.junit4.v2.AndroidComposeTestRule as AndroidCompo
 import org.junit.Ignore
 import org.junit.Rule
 import org.junit.Test
+import org.mozilla.fenix.Config
 import org.mozilla.fenix.R
 import org.mozilla.fenix.customannotations.SmokeTest
+import org.mozilla.fenix.helpers.AppAndSystemHelper.runWithCondition
 import org.mozilla.fenix.helpers.DataGenerationHelper.getStringResource
 import org.mozilla.fenix.helpers.FenixTestRule
 import org.mozilla.fenix.helpers.HomeActivityIntentTestRule
@@ -41,18 +43,21 @@ class MicrosurveyTest {
     @SmokeTest
     @Test
     fun activationOfThePrintMicrosurveyTest() {
-        val testPage = mockWebServer.getGenericAsset(1)
+        // The print microsurvey is a dev/nightly-only example message; it never renders on beta/release.
+        runWithCondition(Config.channel.isNightlyOrDebug) {
+            val testPage = mockWebServer.getGenericAsset(1)
 
-        navigationToolbar(composeTestRule) {}
-            .enterURLAndEnterToBrowser(testPage.url) {}
-            .openThreeDotMenu {}
-            .clickShareButton {}
-            .clickPrintButton(composeTestRule) {
-                mDevice.waitForIdle()
-                mDevice.pressBack()
+            navigationToolbar(composeTestRule) {}
+                .enterURLAndEnterToBrowser(testPage.url) {}
+                .openThreeDotMenu {}
+                .clickShareButton {}
+                .clickPrintButton(composeTestRule) {
+                    mDevice.waitForIdle()
+                    mDevice.pressBack()
+                }
+            surveyScreen(composeTestRule) {
+                verifyThePrintSurveyPrompt(composeTestRule = composeTestRule, exists = true)
             }
-        surveyScreen(composeTestRule) {
-            verifyThePrintSurveyPrompt(composeTestRule = composeTestRule, exists = true)
         }
     }
 
@@ -60,34 +65,37 @@ class MicrosurveyTest {
     @SmokeTest
     @Test
     fun verifyTheSurveyRemainsActivatedWhileChangingTabsTest() {
-        val testPage1 = mockWebServer.getGenericAsset(1)
-        val testPage2 = mockWebServer.getGenericAsset(2)
+        // The print microsurvey is a dev/nightly-only example message; it never renders on beta/release.
+        runWithCondition(Config.channel.isNightlyOrDebug) {
+            val testPage1 = mockWebServer.getGenericAsset(1)
+            val testPage2 = mockWebServer.getGenericAsset(2)
 
-        navigationToolbar(composeTestRule) {}
-            .enterURLAndEnterToBrowser(testPage1.url) {}
-            .openThreeDotMenu {}
-            .clickShareButton {}
-            .clickPrintButton(composeTestRule) {
-                mDevice.waitForIdle()
-                mDevice.pressBack()
-            }
-        surveyScreen(composeTestRule) {
-                clickContinueSurveyButton(composeTestRule)
-                verifyPleaseCompleteTheSurveyHeader(composeTestRule)
-                selectAnswer("Very satisfied", composeTestRule)
-            }
-            .collapseSurveyByTappingBackButton {}
-        navigationToolbar(composeTestRule) {}
-            .enterURLAndEnterToBrowser(testPage2.url) {
-                mDevice.waitForIdle()
-                surveyScreen(composeTestRule) {
-                    verifyTheSurveyTitle(
-                        getStringResource(R.string.microsurvey_prompt_printing_title),
-                        composeTestRule,
-                        true,
-                    )
+            navigationToolbar(composeTestRule) {}
+                .enterURLAndEnterToBrowser(testPage1.url) {}
+                .openThreeDotMenu {}
+                .clickShareButton {}
+                .clickPrintButton(composeTestRule) {
+                    mDevice.waitForIdle()
+                    mDevice.pressBack()
                 }
-            }
+            surveyScreen(composeTestRule) {
+                    clickContinueSurveyButton(composeTestRule)
+                    verifyPleaseCompleteTheSurveyHeader(composeTestRule)
+                    selectAnswer("Very satisfied", composeTestRule)
+                }
+                .collapseSurveyByTappingBackButton {}
+            navigationToolbar(composeTestRule) {}
+                .enterURLAndEnterToBrowser(testPage2.url) {
+                    mDevice.waitForIdle()
+                    surveyScreen(composeTestRule) {
+                        verifyTheSurveyTitle(
+                            getStringResource(R.string.microsurvey_prompt_printing_title),
+                            composeTestRule,
+                            true,
+                        )
+                    }
+                }
+        }
     }
 
     // TestRail link: https://mozilla.testrail.io/index.php?/cases/view/2809361

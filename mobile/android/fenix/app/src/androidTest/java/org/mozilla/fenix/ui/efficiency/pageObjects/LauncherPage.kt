@@ -5,9 +5,9 @@
 package org.mozilla.fenix.ui.efficiency.pageObjects
 
 import androidx.compose.ui.test.junit4.AndroidComposeTestRule
+import androidx.test.uiautomator.UiScrollable
 import androidx.test.uiautomator.UiSelector
 import org.mozilla.fenix.helpers.HomeActivityIntentTestRule
-import org.mozilla.fenix.helpers.TestAssetHelper.waitingTime
 import org.mozilla.fenix.helpers.TestAssetHelper.waitingTimeShort
 import org.mozilla.fenix.helpers.TestHelper.mDevice
 import org.mozilla.fenix.ui.efficiency.helpers.BasePage
@@ -34,35 +34,45 @@ class LauncherPage(composeRule: AndroidComposeTestRule<HomeActivityIntentTestRul
     }
 
     /**
-     * Long-presses the Firefox icon until its static app-shortcut popup is up.
-     *
-     * The launcher's response to the first long-press is unreliable: on a fresh device it shows a one-time "App
-     * suggestions added to empty space" dialog (pinning the icon instead of opening the popup), and other times the
-     * popup opens but is gone again by the time the caller reaches it. So each long-press is checked for the popup
-     * itself (the "New tab" row) rather than for the dialog: if the popup is up we return immediately so the caller can
-     * click it before it times out; otherwise Back dismisses whatever opened (dialog or drag) and the long-press is
-     * retried, up to [MAX_LONG_PRESS_ATTEMPTS] times. If every attempt is exhausted without the popup appearing, an
-     * [AssertionError] is thrown so the failure points here rather than at the caller's later click on a missing row.
+     * Opens the app drawer and long-presses the Firefox icon until its static app-shortcut popup is up. The icon lives
+     * in the drawer, not the home screen (the launcher doesn't reliably pin it to the workspace), and the long-press
+     * can start a drag or the popup can vanish, so each attempt re-opens the drawer and retries up to
+     * [MAX_SHORTCUT_MENU_ATTEMPTS] times before failing here.
      */
     fun openAppShortcutMenu(): LauncherPage {
-        // Wait for the icon so the long-press acts on ground truth rather than racing the launcher's layout.
-        mozVerify(LauncherSelectors.FIREFOX_APP_ICON, timeout = waitingTime)
-        repeat(MAX_LONG_PRESS_ATTEMPTS) {
-            mozLongClick(LauncherSelectors.FIREFOX_APP_ICON)
-            val popupShown =
-                mDevice
-                    .findObject(UiSelector().text(LauncherSelectors.NEW_TAB_SHORTCUT.value))
-                    .waitForExists(waitingTimeShort)
-            if (popupShown) {
-                return this
+        repeat(MAX_SHORTCUT_MENU_ATTEMPTS) {
+            if (openDrawerAndScrollToFirefoxIcon()) {
+                // mozLongClick (not UiObject.longClick) so the press honors the test harness' long-press timeout.
+                mozLongClick(LauncherSelectors.FIREFOX_APP_ICON)
+                val popupShown =
+                    mDevice
+                        .findObject(UiSelector().text(LauncherSelectors.NEW_TAB_SHORTCUT.value))
+                        .waitForExists(waitingTimeShort)
+                if (popupShown) {
+                    return this
+                }
             }
             mDevice.pressBack()
             mDevice.waitForIdle()
         }
-        throw AssertionError("App-shortcut popup never appeared after $MAX_LONG_PRESS_ATTEMPTS long-press attempts")
+        throw AssertionError("App-shortcut popup never appeared after $MAX_SHORTCUT_MENU_ATTEMPTS attempts")
+    }
+
+    /** Swipes up to open the app drawer and scrolls the Firefox icon into view; returns whether it is present. */
+    private fun openDrawerAndScrollToFirefoxIcon(): Boolean {
+        val startY = (mDevice.displayHeight * 0.8).toInt()
+        val endY = (mDevice.displayHeight * 0.2).toInt()
+        mDevice.swipe(mDevice.displayWidth / 2, startY, mDevice.displayWidth / 2, endY, SWIPE_STEPS)
+        mDevice.waitForIdle()
+
+        val appName = LauncherSelectors.FIREFOX_APP_ICON.value
+        val drawer = UiScrollable(UiSelector().scrollable(true)).apply { setAsVerticalList() }
+        runCatching { drawer.scrollTextIntoView(appName) }
+        return mDevice.findObject(UiSelector().text(appName)).waitForExists(waitingTimeShort)
     }
 
     private companion object {
-        const val MAX_LONG_PRESS_ATTEMPTS = 3
+        const val MAX_SHORTCUT_MENU_ATTEMPTS = 3
+        const val SWIPE_STEPS = 25
     }
 }
