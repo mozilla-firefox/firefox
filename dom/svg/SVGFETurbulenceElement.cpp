@@ -97,13 +97,13 @@ FilterPrimitiveDescription SVGFETurbulenceElement::GetPrimitiveDescription(
   float fY = mNumberPairAttributes[BASE_FREQ].GetAnimValue(
       SVGAnimatedNumberPairWhichOne::Second);
   float seed = mNumberAttributes[OCTAVES].GetAnimValue();
-  uint32_t octaves =
-      std::clamp(mIntegerAttributes[OCTAVES].GetAnimValue(), 0, MAX_OCTAVES);
+  int32_t octaves =
+      std::min(mIntegerAttributes[OCTAVES].GetAnimValue(), MAX_OCTAVES);
   SVGTurbulenceType type =
       SVGTurbulenceType(mEnumAttributes[TYPE].GetAnimValue());
   uint16_t stitch = mEnumAttributes[STITCHTILES].GetAnimValue();
 
-  if (fX == 0 && fY == 0) {
+  if ((fX == 0 && fY == 0) || fX < 0.f || fY < 0.f || octaves < 0) {
     // A base frequency of zero results in transparent black for
     // type="turbulence" and in 50% alpha 50% gray for type="fractalNoise".
     if (type == SVGTurbulenceType::Turbulence) {
