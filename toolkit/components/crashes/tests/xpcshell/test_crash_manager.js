@@ -501,6 +501,30 @@ add_task(async function test_sendUnsubmittedPings() {
   Assert.equal(store.crashesWithoutPingSubmissions().length, 0);
 });
 
+add_task(async function test_ping_submit_persistence() {
+  let m = await getManager();
+  m._disableGleanPing = false;
+
+  let id = await m.createDummyDump();
+
+  await m.addCrash(
+    m.processTypes[Ci.nsIXULRuntime.PROCESS_TYPE_CONTENT],
+    m.CRASH_TYPE_CRASH,
+    id,
+    DUMMY_DATE,
+    {}
+  );
+  Assert.ok(m._gleanPingPromise);
+  await m._gleanPingPromise;
+
+  // After the Glean ping promise resolves, we load the store from disk and
+  // ensure it was persisted in such a way that the submitted ping is marked as
+  // such.
+  let store = await m._getStore();
+  await store.load();
+  Assert.equal(store.crashesWithoutPingSubmissions().length, 0);
+});
+
 add_task(async function test_addCrash() {
   let m = await getManager();
 

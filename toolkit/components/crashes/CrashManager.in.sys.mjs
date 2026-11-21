@@ -852,18 +852,21 @@ CrashManager.prototype = Object.freeze({
       pingMeta.CrashTime ??= Math.floor(date.getTime() / 1000).toString();
       pingMeta.ProcessType ??= type;
 
-      this._gleanPingPromise = sendGleanPing(reason, pingMeta)
-        .catch(error => {
+      this._gleanPingPromise = sendGleanPing(reason, pingMeta).then(
+        submitted => {
+          if (submitted && store) {
+            store.setPingSubmitted(crashId);
+            return store.save();
+          }
+          return undefined;
+        },
+        error => {
           console.error(
             `failed to run Glean crash ping submission process: ${error}`
           );
           throw error;
-        })
-        .then(submitted => {
-          if (submitted) {
-            store?.setPingSubmitted(crashId);
-          }
-        });
+        }
+      );
     } else {
       // Consider the ping submitted: we've determined it shouldn't be sent. If
       // someone were to change their telemetry settings, we shouldn't upload
