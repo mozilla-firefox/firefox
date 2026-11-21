@@ -418,3 +418,6 @@ toolkit/themes/shared/design-system/dist/token-audit
 # Ignore Claude Code worktrees
 \.claude/worktrees/
 \.worktreeinclude
+
+# MFBT test result logs
+^mfbt/zmij/test/output

@@ -25,6 +25,13 @@ vendoring:
     - patches/write_ecmascript.patch
     - patches/mfbt_api_markers.patch
 
+  keep:
+    - test/baseline.txt
+    - test/stub-include/mozilla/Types.h
+    - test/verify-baseline.sh
+    - test/verify-ecma-format.mjs
+    - test/write-baseline.cpp
+
   exclude:
     - .clang-format
     - .cmake-format
@@ -40,5 +47,23 @@ vendoring:
 
   include:
     - LICENSE
+    - test/boundary-bits.h
     - zmij.cc
     - zmij.h
+
+  # After re-vendoring and patching, the library should produce the exact same
+  # output as its previous version did. Do not update the baseline file (i.e.
+  # don't run verify-baseline.sh --update) unless there is a good reason why the
+  # output should be different.
+  #
+  # NOTE: If the patches require a nontrivial rebase, it's probably a good idea
+  # to verify them on x86 and arm64, to test both the SSE4 and NEON configs!
+  post-patch-actions:
+    - action: run-script
+      script: '{yaml_dir}/test/verify-baseline.sh'
+      cwd: '{yaml_dir}'
+    - action: run-command
+      command: node
+      args:
+        - test/verify-ecma-format.mjs
+      cwd: '{yaml_dir}'
