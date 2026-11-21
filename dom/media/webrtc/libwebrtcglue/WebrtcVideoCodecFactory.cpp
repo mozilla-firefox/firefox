@@ -120,11 +120,11 @@ WebrtcVideoEncoderFactory::InternalFactory::Create(
     // libvpx fallbacks.
     case webrtc::VideoCodecType::kVideoCodecVP8:
       if (!encoder) {
-        encoder = webrtc::VP8Encoder::Create();
+        encoder = webrtc::CreateVp8Encoder(aEnv);
       }
       break;
     case webrtc::VideoCodecType::kVideoCodecVP9:
-      encoder = webrtc::VP9Encoder::Create();
+      encoder = webrtc::CreateVp9Encoder(aEnv);
       break;
 
     default:
