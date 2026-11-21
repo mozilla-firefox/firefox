@@ -639,9 +639,13 @@ ResultStatus LlamaBackend::Generate(
 
   promptTokens.SetLength(nPromptTokens);
 
-  auto seqLen = aOptions.mMaxGeneratedTokens;
-
   int nCtx = mLib->llama_n_ctx(mCtx.get());
+
+  // 0 generates until the context is full.
+  int32_t seqLen = aOptions.mMaxGeneratedTokens;
+  if (seqLen == 0) {
+    seqLen = std::max(nCtx - nPromptTokens, 0);
+  }
 
   int estimatedCtx = nPromptTokens + seqLen;
 
@@ -746,12 +750,9 @@ ResultStatus LlamaBackend::Generate(
         mLib->llama_memory_seq_pos_max(mLib->llama_get_memory(mCtx.get()), 0) +
         1;
     if (nCtxUsed + batch.n_tokens > nCtx) {
-      auto msg =
-          nsFmtCString("{}: context size exceeded. Size is: {} Needed: {} {}",
-                       __PRETTY_FUNCTION__, nCtx, nCtxUsed + batch.n_tokens,
-                       mModelGeneralName);
-      LOGE("{}", msg);
-      return mozilla::Err(Error{std::move(msg)});
+      LOGD("{}: Context full after {} generated tokens {}", __PRETTY_FUNCTION__,
+           numGeneratedTokens, mModelGeneralName);
+      break;
     }
 
     LOGV("{}: Decoding to generate next token probabilities {}",
@@ -831,7 +832,7 @@ ResultStatus LlamaBackend::Generate(
     LOGV("{}: Checking if desired number of tokens reached {}",
          __PRETTY_FUNCTION__, mModelGeneralName);
     numGeneratedTokens++;
-    if (numGeneratedTokens >= aOptions.mMaxGeneratedTokens) {
+    if (numGeneratedTokens >= seqLen) {
       LOGD(
           "{} Maximum number of generation tokens reached. Stopping the "
           "generation",

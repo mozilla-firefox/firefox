@@ -54,6 +54,29 @@ when starting it, when the toolbox connects to the browser.
 When running this code, Firefox will look for models in the Mozilla model hub located at <https://model-hub.mozilla.org>
 which contains a curated list of models.
 
+## On-device text generation
+
+Options with the `llama.cpp` backend create a `TextGenerationEngine`. It accepts
+the Chat Completions request of the `openai` backend, so a feature runs on device
+by passing different options to `createEngine`:
+
+```javascript
+const engine = await createEngine({
+  ...localOptions,
+  backend: "llama.cpp",
+  taskName: "text-generation",
+});
+const { finalOutput } = await engine.run(
+  { args: messages, inferenceParams: { temperature: 0 } },
+  { signal }
+);
+await engine.terminate();
+```
+
+`runWithGenerator` takes the same request. Each `createEngine` call loads its own
+model, which stays loaded until `terminate()`. Requests carrying `tools` reject,
+and `response_format` is ignored.
+
 ## Available Options
 
 Options passed to the `createEngine` function are verified and converted into a `PipelineOptions` object.

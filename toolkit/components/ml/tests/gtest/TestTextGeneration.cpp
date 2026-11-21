@@ -147,10 +147,11 @@ struct Session {
 };
 
 // One fd per generator: sending a FileDescriptor consumes its handle.
-Session CreateGenerator(const ipc::FileDescriptor& aModel) {
+Session CreateGenerator(const ipc::FileDescriptor& aModel,
+                        uint32_t aContextSize = 512) {
   Session session;
   session.mGenerator = TextGenerationParent::Create(
-      aModel, TextGenerationOptions(512, 2, 2, 512,
+      aModel, TextGenerationOptions(aContextSize, 2, 2, 512,
                                     dom::TextGenerationKVCacheDtype::F16, false,
                                     DevicePlacement()));
   if (!session.mGenerator) {
@@ -159,7 +160,9 @@ Session CreateGenerator(const ipc::FileDescriptor& aModel) {
   return session;
 }
 
-Session CreateGenerator() { return CreateGenerator(OpenModelFd(kModelFile)); }
+Session CreateGenerator(uint32_t aContextSize = 512) {
+  return CreateGenerator(OpenModelFd(kModelFile), aContextSize);
+}
 
 // Some() carries the load failure; Nothing() means the model loaded.
 Maybe<TextGenerationParent::LoadFailure> WaitForReady(Session& aSession) {
@@ -242,6 +245,24 @@ TEST_F(TextGenerationTest, GenerateFromModel) {
   EXPECT_GE(result.resources().after().cpuTimeMs(),
             result.resources().before().cpuTimeMs());
   EXPECT_GT(result.resources().after().memoryBytes(), 0u);
+
+  Teardown(session);
+}
+
+TEST_F(TextGenerationTest, ContextFullEndsWithLength) {
+  Session session = CreateGenerator(/* aContextSize */ 128);
+  ASSERT_TRUE(session.mGenerator);
+  EXPECT_TRUE(WaitForReady(session).isNothing());
+
+  GenerateRequest request = StoryRequest(/* aMaxTokens */ 4096);
+  request.stopOnEndOfGenerationTokens() = false;
+  GenerateResponse response = Generate(session, request);
+  ASSERT_EQ(response.type(), GenerateResponse::TGenerateResult);
+  const GenerateResult& result = response.get_GenerateResult();
+  EXPECT_EQ(result.reason(), dom::TextGenerationFinishReason::Length);
+  EXPECT_GT(result.usage().generatedTokens(), 0u);
+  // llama.cpp may allocate a larger context than requested.
+  EXPECT_LT(result.usage().generatedTokens(), 4096u);
 
   Teardown(session);
 }

@@ -45,10 +45,25 @@ import { XPCOMUtils } from "resource://gre/modules/XPCOMUtils.sys.mjs";
  */
 
 /**
+ * @typedef {object} ChatCompletionRequest
+ * @property {Array<{ role: string, content: unknown, tool_calls?: unknown[] }>} args
+ * @property {Record<string, any>} [inferenceParams]
+ *   Supports temperature, top_p, max_completion_tokens and max_tokens.
+ *   temperature and top_p override the supplied sampler chain.
+ *   response_format is ignored.
+ * @property {unknown[]} [tools]
+ * @property {string} [token]
+ * @property {string} [chatId]
+ * @property {object} [streamOptions]
+ * @property {string} [featureId] Overrides the engine's feature ID for run telemetry.
+ */
+
+/**
  * @typedef {object} EngineRunResult
  * @property {true} done
  * @property {string} finalOutput
  * @property {true} ok
+ * @property {TextGenerationFinishReason} finishReason
  * @property {ReturnType<typeof toEngineMetrics>} metrics
  * @property {ReturnType<typeof toEngineResources>} resourcesBefore
  * @property {ReturnType<typeof toEngineResources>} resourcesAfter
@@ -138,6 +153,90 @@ function toGenerateRequest(request) {
       request.stopOnEndOfGenerationTokens;
   }
   return generateRequest;
+}
+
+const CHAT_COMPLETION_ROLES = new Set(["system", "user", "assistant"]);
+
+/**
+ * @param {{ temperature?: number, top_p?: number, samplers?: TextGenerationSampler[] }} inferenceParams
+ * @returns {TextGenerationSampler[]}
+ */
+function toSamplers({ temperature, top_p, samplers }) {
+  // An empty sampler chain selects greedy decoding.
+  if (temperature === 0) {
+    return [];
+  }
+  if (!samplers) {
+    /** @type {TextGenerationSampler[]} */
+    const chain = [];
+    if (top_p != null && top_p < 1) {
+      chain.push({ type: "top-p", topP: top_p });
+    }
+    chain.push({ type: "temperature", temp: temperature ?? 1 });
+    chain.push({ type: "dist" });
+    return chain;
+  }
+  const chain = samplers.map(sampler => ({ ...sampler }));
+  const set = (type, fields, before) => {
+    const step = chain.find(sampler => sampler.type === type);
+    if (step) {
+      Object.assign(step, fields);
+      return;
+    }
+    const index = chain.findIndex(sampler => sampler.type === before);
+    chain.splice(index < 0 ? chain.length : index, 0, { type, ...fields });
+  };
+  if (top_p != null) {
+    set("top-p", { topP: top_p }, "temperature");
+  }
+  if (temperature != null) {
+    set("temperature", { temp: temperature }, "dist");
+  }
+  return chain;
+}
+
+/**
+ * @param {ChatCompletionRequest} request
+ * @returns {TextGenerationRequest}
+ */
+function toGenerateRequestFromChatCompletion(request) {
+  if (request.tools?.length) {
+    throw new Error("TextGenerationEngine: tools are not supported");
+  }
+  const messages = request.args.map(message => {
+    if (message.tool_calls?.length) {
+      throw new Error("TextGenerationEngine: tool calls are not supported");
+    }
+    if (!CHAT_COMPLETION_ROLES.has(message.role)) {
+      throw new Error(
+        `TextGenerationEngine: unsupported message role "${message.role}"`
+      );
+    }
+    if (typeof message.content !== "string") {
+      throw new Error("TextGenerationEngine: message content must be a string");
+    }
+    return {
+      role: /** @type {TextGenerationRole} */ (message.role),
+      content: message.content,
+    };
+  });
+  const params = request.inferenceParams ?? {};
+  /** @type {TextGenerationRequest} */
+  const generateRequest = { messages, samplers: toSamplers(params) };
+  // Use the context limit when no token limit is requested.
+  generateRequest.maxTokens =
+    params.max_completion_tokens ?? params.max_tokens ?? 0xffffffff;
+  return generateRequest;
+}
+
+/**
+ * @param {LlamaRunRequest | ChatCompletionRequest} request
+ * @returns {TextGenerationRequest}
+ */
+function toAnyGenerateRequest(request) {
+  return "args" in request
+    ? toGenerateRequestFromChatCompletion(request)
+    : toGenerateRequest(request);
 }
 
 /**
@@ -241,6 +340,10 @@ export class TextGenerationEngine {
   pipelineOptions;
   /** @type {"uninitialized" | "ready" | "closed"} */
   engineStatus = "uninitialized";
+
+  get model() {
+    return this.pipelineOptions.modelId;
+  }
   /** @type {NotificationsCallback | null} */
   notificationsCallback = null;
   /** @type {InstanceType<typeof lazy.MLTelemetry>} */
@@ -375,25 +478,24 @@ export class TextGenerationEngine {
   }
 
   /**
-   * @param {LlamaRunRequest} request
+   * @param {LlamaRunRequest | ChatCompletionRequest} request
    * @param {(text: string) => void} [onDelta]
    * @returns {Promise<EngineRunResult>}
    */
   async #execute(request, onDelta) {
     const generator = this.#runnableGenerator();
+    const generateRequest = toAnyGenerateRequest(request);
     this.#inFlight = true;
     try {
       const runStart = ChromeUtils.now();
       generator.clear();
-      const result = await generator.generate(
-        toGenerateRequest(request),
-        onDelta
-      );
+      const result = await generator.generate(generateRequest, onDelta);
       const runEnd = ChromeUtils.now();
       return {
         done: true,
         finalOutput: result.content,
         ok: true,
+        finishReason: result.reason,
         metrics: toEngineMetrics(result, [
           ...this.#initTimestamps,
           { name: "runStart", when: runStart },
@@ -428,20 +530,31 @@ export class TextGenerationEngine {
     });
   }
 
-  /** @param {LlamaRunRequest} request */
-  async run(request) {
+  /**
+   * @param {LlamaRunRequest | ChatCompletionRequest} request
+   * @param {object} [options]
+   * @param {AbortSignal} [options.signal] - Cancels the generation and rejects with its reason.
+   */
+  async run(request, { signal } = {}) {
+    signal?.throwIfAborted();
     const stats = new StreamStats();
+    const cancel = () => this.cancel();
+    signal?.addEventListener("abort", cancel, { once: true });
+    let result;
     try {
-      const result = await this.#execute(request);
+      result = await this.#execute(request);
       this.#recordRun(stats, result, request.featureId);
-      return result;
     } catch (error) {
       this.telemetry.recordRunInferenceFailure(error);
       throw error;
+    } finally {
+      signal?.removeEventListener("abort", cancel);
     }
+    signal?.throwIfAborted();
+    return result;
   }
 
-  /** @param {LlamaRunRequest} request */
+  /** @param {LlamaRunRequest | ChatCompletionRequest} request */
   async *runWithGenerator(request) {
     const stats = new StreamStats();
     stats.streaming = true;

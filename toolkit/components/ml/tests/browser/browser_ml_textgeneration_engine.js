@@ -157,3 +157,143 @@ add_task(async function test_engine_device() {
     await cleanup();
   }
 });
+
+add_task(async function test_engine_chat_completion_request() {
+  const { cleanup } = await setup({
+    prefs: [["browser.ml.llama.hwInference", true]],
+  });
+  let engine;
+  try {
+    engine = await createEngine({
+      ...TINYSTORIES_ENGINE_OPTIONS,
+      engineId: "hwi-chat-completion",
+    });
+
+    const result = await engine.run({
+      args: TINYSTORIES_STORYTELLER_PROMPT,
+      token: "unused",
+      chatId: "unused",
+      inferenceParams: { temperature: 0, max_completion_tokens: 4 },
+    });
+    Assert.greater(result.finalOutput.length, 0, "A completion run generates");
+    Assert.lessOrEqual(
+      result.metrics.outputTokens,
+      4,
+      "max_completion_tokens bounds the output"
+    );
+    Assert.equal(
+      result.finishReason,
+      "length",
+      "A run that hits its budget says so"
+    );
+
+    const text = await collectGeneratedText(
+      engine.runWithGenerator({
+        args: TINYSTORIES_STORYTELLER_PROMPT,
+        streamOptions: { enabled: true },
+        inferenceParams: {
+          temperature: 0.7,
+          top_p: 0.9,
+          max_tokens: 4,
+        },
+      })
+    );
+    Assert.greater(text.length, 0, "A streamed completion run yields text");
+
+    const greedy = await engine.run({
+      args: TINYSTORIES_STORYTELLER_PROMPT,
+      inferenceParams: { temperature: 0, max_completion_tokens: 8 },
+    });
+    const chained = await engine.run({
+      args: TINYSTORIES_STORYTELLER_PROMPT,
+      inferenceParams: {
+        samplers: TINYSTORIES_GREEDY_SAMPLERS,
+        max_completion_tokens: 8,
+      },
+    });
+    Assert.equal(
+      chained.finalOutput,
+      greedy.finalOutput,
+      "A samplers chain in the parameters drives the run"
+    );
+    const adjusted = await engine.run({
+      args: TINYSTORIES_STORYTELLER_PROMPT,
+      inferenceParams: {
+        samplers: [{ type: "temperature", temp: 1 }, { type: "dist" }],
+        temperature: 0,
+        max_completion_tokens: 8,
+      },
+    });
+    Assert.equal(
+      adjusted.finalOutput,
+      greedy.finalOutput,
+      "temperature adjusts the chain"
+    );
+
+    await Assert.rejects(
+      engine.run({
+        args: TINYSTORIES_STORYTELLER_PROMPT,
+        tools: [{ type: "function", function: { name: "search" } }],
+      }),
+      /tools are not supported/,
+      "A request with tools rejects"
+    );
+    await Assert.rejects(
+      engine.run({
+        args: [
+          { role: "assistant", content: "", tool_calls: [{ id: "call" }] },
+        ],
+      }),
+      /tool calls are not supported/,
+      "A message with tool calls rejects"
+    );
+    await Assert.rejects(
+      engine.run({ args: [{ role: "tool", content: "result" }] }),
+      /unsupported message role "tool"/,
+      "A tool role rejects"
+    );
+    await Assert.rejects(
+      engine.run({ args: [{ role: "user", content: [{ type: "text" }] }] }),
+      /content must be a string/,
+      "Non-string content rejects"
+    );
+
+    const controller = new AbortController();
+    const cancel = sinon.spy(engine, "cancel");
+    const aborted = engine.run(
+      { args: TINYSTORIES_STORYTELLER_PROMPT },
+      { signal: controller.signal }
+    );
+    controller.abort();
+    await Assert.rejects(
+      aborted,
+      error => error.name === "AbortError",
+      "An aborted run rejects with the signal's reason"
+    );
+    Assert.ok(cancel.calledOnce, "The abort stops the generation");
+    await Assert.rejects(
+      engine.run(
+        { args: TINYSTORIES_STORYTELLER_PROMPT },
+        { signal: controller.signal }
+      ),
+      error => error.name === "AbortError",
+      "An aborted signal rejects before generating"
+    );
+    Assert.ok(cancel.calledOnce, "No generation started");
+    cancel.restore();
+
+    const after = await engine.run({
+      prompt: TINYSTORIES_STORYTELLER_PROMPT,
+      nPredict: 4,
+      samplers: TINYSTORIES_GREEDY_SAMPLERS,
+    });
+    Assert.greater(
+      after.finalOutput.length,
+      0,
+      "The llama request shape still runs after rejected requests"
+    );
+  } finally {
+    await engine?.terminate();
+    await cleanup();
+  }
+});

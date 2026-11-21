@@ -255,8 +255,11 @@ class TextGenerationChild::Generation {
     mPromptCodePoints = CountCodePoints(prompt);
 
     mGenerateStart = TimeStamp::Now();
+    // Let the backend account for prompt tokens in the remaining context.
+    const uint32_t budget =
+        mMaxTokens >= mChild->mOptions.contextSize() ? 0 : mMaxTokens;
     auto status = mChild->mBackend->Generate(
-        ToLlamaChatOptions(mRequest, mMaxTokens, std::move(prompt)),
+        ToLlamaChatOptions(mRequest, budget, std::move(prompt)),
         [self = RefPtr{this}](const LlamaChatResponse& aChunk) {
           return self->HandleChunk(aChunk);
         },
@@ -345,7 +348,8 @@ class TextGenerationChild::Generation {
     if (mCancelled || mChild->mShutdown) {
       return TextGenerationFinishReason::Cancelled;
     }
-    if (mGeneratedTokens >= mMaxTokens) {
+    if (mGeneratedTokens >= mMaxTokens ||
+        mPromptTokens + mGeneratedTokens >= mChild->mOptions.contextSize()) {
       return TextGenerationFinishReason::Length;
     }
     if (mLastToken >= 0 && mRequest.stopTokens().Contains(mLastToken)) {
