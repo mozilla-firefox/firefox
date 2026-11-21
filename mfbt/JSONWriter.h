@@ -92,12 +92,12 @@
 
 #include <utility>
 
-#include "double-conversion/double-conversion.h"  // IWYU pragma: keep(used for double_conversion)
 #include "mozilla/Assertions.h"
 #include "mozilla/Span.h"
 #include "mozilla/Sprintf.h"
 #include "mozilla/UniquePtr.h"
 #include "mozilla/Vector.h"
+#include "zmij/zmij.h"
 
 namespace mozilla {
 
@@ -462,14 +462,10 @@ class JSONWriter {
 
   // Prints: "<aName>": <aDouble>
   void DoubleProperty(const Span<const char>& aName, double aDouble) {
-    static const size_t buflen = 64;
-    char buf[buflen];
-    const double_conversion::DoubleToStringConverter& converter =
-        double_conversion::DoubleToStringConverter::EcmaScriptConverter();
-    double_conversion::StringBuilder builder(buf, buflen);
-    converter.ToShortest(aDouble, &builder);
-    // TODO: The builder should know the length?!
-    Scalar(aName, MakeStringSpan(builder.Finalize()));
+    char buf[zmij::ecmascript_buffer_size];
+    char* end =
+        zmij::write_ecmascript(buf, zmij::ecmascript_buffer_size, aDouble);
+    Scalar(aName, Span{buf, end});
   }
 
   template <size_t N>
