@@ -19,7 +19,6 @@ skip-if = [
   "http2",
   "http3",
   "os == 'android' && os_version == '14' && arch == 'x86_64'", # Bug 1784963
-  "verify-standalone",
 ]
 
 ["test_beaconOriginHeader.html"]

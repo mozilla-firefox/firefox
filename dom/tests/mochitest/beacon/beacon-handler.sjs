@@ -51,7 +51,7 @@ function handleRequest(request, response) {
       mimetype,
     };
     response.write(JSON.stringify(result));
-    beacons[id] = {};
+    delete beacons[id];
     setOurState(beacons);
   }
 
