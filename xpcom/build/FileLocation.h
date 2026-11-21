@@ -10,7 +10,7 @@
 #include "nsString.h"
 #include "nsCOMPtr.h"
 #include "nsIFile.h"
-#include "FileUtils.h"
+#include "mozilla/FileUtils.h"
 
 class nsZipArchive;
 class nsZipItem;
