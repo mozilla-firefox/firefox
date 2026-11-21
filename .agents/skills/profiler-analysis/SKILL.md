@@ -20,7 +20,7 @@ You are helping a Mozilla Firefox engineer analyze a Firefox performance profile
 
 Before doing anything else, verify `profiler-cli` is installed by running `profiler-cli --version`. If the command is not found, STOP immediately: tell the user to install it by running `./mach bootstrap` (answering yes to the agentic coding tools question), and to then restart the agent from a new terminal, since the current shell's PATH won't include the directory bootstrap installs it to. Then end your turn. Do NOT attempt any workaround. In particular, do not download profiles from Taskcluster or artifact URLs, do not fetch them with WebFetch, and do not parse profile JSON by hand. `profiler-cli` is the only supported way to load and analyze a profile, and there is no acceptable fallback.
 
-A profile from a local build or from the firefox-devtools MCP is unsymbolicated. Load it with `profiler-cli load --with-samply <path>`. This needs profiler-cli 0.10.0 or newer; if it is older, tell the user to run `./mach bootstrap` (and `npm uninstall -g @firefox-devtools/profiler-cli` if they installed it with npm before, since that copy can shadow the bootstrapped one) and stop.
+A profile from a local build or from the Firefox MCP is unsymbolicated. Load it with `profiler-cli load --with-samply <path>`. This needs profiler-cli 0.10.0 or newer; if it is older, tell the user to run `./mach bootstrap` (and `npm uninstall -g @firefox-devtools/profiler-cli` if they installed it with npm before, since that copy can shadow the bootstrapped one) and stop.
 
 When invoked:
 

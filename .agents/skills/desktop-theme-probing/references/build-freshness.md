@@ -29,7 +29,7 @@ probe bug.
   Marionette from starting a session, the runner stops the browser 20 s after
   the signature appears and exits 2 with this section's hint.
 - **BiDi answers `unsupported operation` or "navigation not allowed"** to the
-  devtools MCP: the binary is older than the MCP client expects, as after an
+  Firefox MCP: the binary is older than the MCP client expects, as after an
   `artifact install` of an older build. Use the test harness (`SKILL.md` §3) or
   a newer build.
 

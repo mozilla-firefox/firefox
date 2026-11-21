@@ -2,7 +2,7 @@
 
 The sweep is one script that walks UI density, device pixel ratio and root font
 size as nested loops and prints one tab-separated row per cell. Run it through
-the devtools MCP's `evaluate_privileged_script` as `async () => { … }`, or as a
+the Firefox MCP's `evaluate_privileged_script` as `async () => { … }`, or as a
 `firefox-probe.py --realm chrome --async` snippet in the shape
 `desktop-theme-probing` §1 gives.
 
@@ -65,7 +65,7 @@ return rows.join("\n");
 Return the rows as one tab-separated string rather than a nested object; the
 loop is 75 cells and takes about 25 seconds headless. Over the MCP a loop this
 long outlives the BiDi command timeout; §4 "Command timeout" in
-`desktop-theme-probing`'s `references/devtools-mcp.md` has the detached form.
+`desktop-theme-probing`'s `references/firefox-mcp.md` has the detached form.
 
 ## 2. The columns
 

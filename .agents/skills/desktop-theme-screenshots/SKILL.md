@@ -76,7 +76,7 @@ decides what you capture, force or log:
 |---|---|
 | Chrome, rendered by a suite's fixture | a scratch browser-chrome test pasting `capture.js`; `capture-pair.sh` (§3) runs it |
 | Chrome, no fixture needed | `firefox-probe.py --realm chrome --async` running `capture.js` |
-| Content, such as a web page or an about: page | `firefox-probe.py --steps` with a `drawSnapshot` step; the devtools MCP last |
+| Content, such as a web page or an about: page | `firefox-probe.py --steps` with a `drawSnapshot` step; the Firefox MCP last |
 | Chrome ink inside the browser's rect, such as an outline or border drawn over the page's edge | a compositor grab: `drawWindow` paints chrome over the tab panel's background, never under the composited page, so ink the page covers reads visible (§1 "Chrome and content canvases" in `desktop-theme-probing`'s [`measuring-pixels.md`](../desktop-theme-probing/references/measuring-pixels.md)) |
 | An open panel or menupopup | a compositor grab (§2 "The compositor's output" in `desktop-theme-probing`'s [`measuring-pixels.md`](../desktop-theme-probing/references/measuring-pixels.md)) |
 
@@ -151,11 +151,11 @@ host's platform file in `desktop-theme-probing`, section GRABS, allows), run
 each half yourself with the by-hand revert in `desktop-theme-probing` §6
 between them.
 
-**Devtools MCP route.** Use `screenshot_page` or `screenshot_by_uid`, headless,
+**Firefox MCP route.** Use `screenshot_page` or `screenshot_by_uid`, headless,
 on this tree's binary (`desktop-theme-probing` §1's binary check). Before the
 first `restart_firefox`, read §1 "Binary and profile", §2 "Prefs" and §5
 "Screenshots" (where `saveTo` may write) in
-[`devtools-mcp.md`](../desktop-theme-probing/references/devtools-mcp.md). The
+[`firefox-mcp.md`](../desktop-theme-probing/references/firefox-mcp.md). The
 before half is the by-hand revert in `desktop-theme-probing` §6 followed by
 `restart_firefox`. The screenshots clip to the viewport, and raising
 `layout.css.devPixelsPerPx` shrinks the CSS viewport at a

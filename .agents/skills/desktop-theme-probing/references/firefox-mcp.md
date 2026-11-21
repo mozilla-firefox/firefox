@@ -1,4 +1,4 @@
-# The devtools MCP as a probe: binary, profile, prefs, keys, privileged path
+# The Firefox MCP as a probe: binary, profile, prefs, keys, privileged path
 
 The server's state outlives your calls, so each reading measures the binary,
 profile and prefs the last call left behind.

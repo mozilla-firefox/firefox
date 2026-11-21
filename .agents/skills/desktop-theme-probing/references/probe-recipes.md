@@ -106,7 +106,7 @@ does). Where it is reachable:
 - any page, a web page included, under `firefox-probe.py --sandbox system`;
 - a `SpecialPowers.spawn` task.
 
-The devtools MCP's `evaluate_script` runs in a web page's own realm and lacks
+The Firefox MCP's `evaluate_script` runs in a web page's own realm and lacks
 it; there `hover_by_uid` delivers a real pointer.
 
 ## 6. Match rules to an element

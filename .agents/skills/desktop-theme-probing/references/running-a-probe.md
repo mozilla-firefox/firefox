@@ -48,10 +48,10 @@ than per iteration. **A run they touched is unscored**; discard it.
 can supply what the measurement needs, report the reproduction as
 environment-limited and ask the user how to proceed.
 
-## 2. The devtools MCP path
+## 2. The Firefox MCP path
 
 The server's binary, profile, pref and screenshot rules are in
-[`devtools-mcp.md`](devtools-mcp.md); read it before the first
+[`firefox-mcp.md`](firefox-mcp.md); read it before the first
 `restart_firefox`.
 
 ## 3. Run the probe

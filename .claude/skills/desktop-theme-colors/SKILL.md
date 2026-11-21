@@ -281,7 +281,7 @@ subject in that setup file, so the before and after runs differ by those lines.
 
 | regime | how to reach it |
 |---|---|
-| default | both prefs at their defaults, read back (§1); also pin and read back the prefs the host's platform file (`desktop-theme-probing`), section HEADLESS, lists for the default regime; before restarting into it, read §2 "Prefs" in `desktop-theme-probing`'s `references/devtools-mcp.md` |
+| default | both prefs at their defaults, read back (§1); also pin and read back the prefs the host's platform file (`desktop-theme-probing`), section HEADLESS, lists for the default regime; before restarting into it, read §2 "Prefs" in `desktop-theme-probing`'s `references/firefox-mcp.md` |
 | prefers-contrast, no forced colors | `ui.useAccessibilityTheme=1`, `document_color_use=1`; Windows chrome is `requested` under these prefs, so take this cell for chrome on Linux or macOS |
 | forced colors (the Windows regime) | `ui.useAccessibilityTheme=1`, `document_color_use=0`; Windows chrome is `requested` under these prefs; elsewhere add §2's override and root `forced-color-adjust: none` to approximate it, which reports `active` |
 | forced colors, content only | `ui.useAccessibilityTheme=0`, `document_color_use=2`; the page still reports `prefers-contrast` |

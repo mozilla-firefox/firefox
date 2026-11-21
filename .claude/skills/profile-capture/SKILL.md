@@ -1,7 +1,7 @@
 ---
 name: profile-capture
 description: >
-  Record a Firefox performance profile with the firefox-devtools MCP. Use when
+  Record a Firefox performance profile with the Firefox MCP. Use when
   diagnosing slowness in Firefox: startup, page load, an interaction, a browser
   feature, a benchmark, a reduced test case, to obtain profiles - then analyze
   with profile-analysis.
@@ -17,7 +17,7 @@ allowed-tools:
 
 ## Recording
 
-Use the firefox-devtools MCP:
+Use the Firefox MCP:
 
 ```
 profiler_start(preset="firefox-platform")

@@ -342,7 +342,7 @@ def get_parser(prog=None):
     ap.add_argument(
         "--print-js",
         action="store_true",
-        help="print an async function for the devtools MCP and exit",
+        help="print an async function for the Firefox MCP and exit",
     )
     return ap
 

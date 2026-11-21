@@ -183,7 +183,7 @@ changed.
 Serve the page with `./mach doc <path>` rather than opening the built file: on
 a `file://` page the extension's module script does not run, so its width
 rules are missing and the diagram looks fine at the wrong size. Rendering needs
-network access, since mermaid loads from a CDN. With the firefox-devtools MCP,
+network access, since mermaid loads from a CDN. With the Firefox MCP,
 read each diagram back:
 
 ```js
