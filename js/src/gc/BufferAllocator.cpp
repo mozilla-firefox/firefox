@@ -1770,6 +1770,12 @@ void BufferAllocator::clearMarkStateAfterBarrierVerification() {
     clearChunkMarkBits(chunk);
   }
 
+  for (auto* buffers : {&largeNurseryAllocs.ref(), &largeTenuredAllocs.ref()}) {
+    for (LargeBuffer* buffer : *buffers) {
+      buffer->isMarked = false;
+    }
+  }
+
 #ifdef DEBUG
   checkGCStateNotInUse();
 #endif
@@ -2097,6 +2103,7 @@ void BufferAllocator::checkAllocListGCStateNotInUse(LargeAllocList& list,
   for (LargeBuffer* buffer : list) {
     MOZ_ASSERT(buffer->isNurseryOwned == isNurseryOwned);
     MOZ_ASSERT_IF(!isNurseryOwned, !buffer->allocatedDuringCollection);
+    MOZ_ASSERT(!buffer->isMarked);
   }
 }
 
