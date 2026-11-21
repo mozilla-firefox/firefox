@@ -33,6 +33,9 @@ struct AImageReader_ImageListener;
 struct ANativeWindow;
 
 namespace mozilla {
+
+class TaskQueue;
+
 namespace layers {
 
 class AndroidImageConsumer;
@@ -337,7 +340,9 @@ class GpuProcessAndroidImageReaderMap final {
   void UnregisterImageConsumer(GpuProcessAndroidImageReaderId aImageReaderId);
 
  private:
-  ~GpuProcessAndroidImageReaderMap() = default;
+  friend class AndroidImageReader;
+
+  ~GpuProcessAndroidImageReaderMap();
 
   struct ImageReaderHolder {
     explicit ImageReaderHolder(AndroidImageReader* aImageReader);
@@ -347,6 +352,7 @@ class GpuProcessAndroidImageReaderMap final {
     AndroidImageConsumer* mImageConsumer = nullptr;
   };
 
+  const RefPtr<TaskQueue> mRemoteFrameTimeoutQueue;
   Monitor mMonitor;
   std::unordered_map<GpuProcessAndroidImageReaderId,
                      UniquePtr<ImageReaderHolder>,

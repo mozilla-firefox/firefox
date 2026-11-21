@@ -25,6 +25,7 @@
 #include "mozilla/RemoteMediaManagerParent.h"
 #include "mozilla/ScopeExit.h"
 #include "mozilla/StaticMutex.h"
+#include "mozilla/TaskQueue.h"
 #include "mozilla/TimeStamp.h"
 #include "mozilla/gfx/2D.h"
 #include "mozilla/gfx/Logging.h"
@@ -36,6 +37,7 @@
 #include "mozilla/layers/AndroidImageConsumer.h"
 #include "mozilla/webrender/RenderThread.h"
 #include "nsProxyRelease.h"
+#include "nsThreadManager.h"
 #include "nsThreadUtils.h"
 
 namespace mozilla {
@@ -505,7 +507,8 @@ void AndroidImageReader::ScheduleRemoteFrameTimeout() {
   if (mRemoteState->mFrameTimeoutScheduled) {
     return;
   }
-  auto* target = GetMainThreadSerialEventTarget();
+  auto map = GpuProcessAndroidImageReaderMap::Get();
+  TaskQueue* target = map ? map->mRemoteFrameTimeoutQueue.get() : nullptr;
   if (!target) {
     return;
   }
@@ -1298,6 +1301,11 @@ void GpuProcessAndroidImageReaderMap::Shutdown() {
     map = sImageReaderMap.forget();
   }
 
+  // Readers are already disconnected. Queue shutdown cancels pending timers.
+  if (map && map->mRemoteFrameTimeoutQueue) {
+    map->mRemoteFrameTimeoutQueue->BeginShutdown();
+  }
+
   // Wait for any readback to release the context before destroying it here.
   StaticMutexAutoLock lock(sAImageReadbackMutex);
   sAImageReadbackShuttingDown = true;
@@ -1305,7 +1313,11 @@ void GpuProcessAndroidImageReaderMap::Shutdown() {
 }
 
 GpuProcessAndroidImageReaderMap::GpuProcessAndroidImageReaderMap()
-    : mMonitor("GpuProcessAndroidImageReaderMap.mMonitor") {}
+    : mRemoteFrameTimeoutQueue(nsThreadManager::get().CreateBackgroundTaskQueue(
+          "ImageReaderFrameTimeout")),
+      mMonitor("GpuProcessAndroidImageReaderMap.mMonitor") {}
+
+GpuProcessAndroidImageReaderMap::~GpuProcessAndroidImageReaderMap() = default;
 
 void GpuProcessAndroidImageReaderMap::Register(
     AndroidImageReader* aImageReader) {
