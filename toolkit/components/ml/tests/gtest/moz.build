@@ -9,6 +9,7 @@ Library("mlhwinferencetest")
 # Not unified: the files share helper names in their anonymous namespaces.
 SOURCES += [
     "TestHWInferenceProcess.cpp",
+    "TestLlamaBackend.cpp",
     "TestLlamaChatTemplate.cpp",
     "TestTextGeneration.cpp",
 ]

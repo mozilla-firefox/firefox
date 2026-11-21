@@ -613,26 +613,28 @@ ResultStatus LlamaBackend::Generate(
       aOptions.mTokenizationOptions.mAddBosAndEos,
       aOptions.mTokenizationOptions.mParseSpecilControlTokens);
 
-  if (nPromptTokens < 0) {
-    auto msg = nsFmtCString("{}: failed to tokenize the prompt {}",
-                            __PRETTY_FUNCTION__, mModelGeneralName);
-    LOGE("{}", msg);
-    return mozilla::Err(Error{std::move(msg)});
-  }
-
-  // If the estimate was wrong, retry with the correct number
-  if (mozilla::AssertedCast<size_t>(nPromptTokens) > estimatedNumPromptTokens) {
+  // A negative count is the size the buffer needed; INT32_MIN is an overflow.
+  if (nPromptTokens < 0 && nPromptTokens != INT32_MIN) {
     LOGD(
         "{} Wrong estimate for tokenization. Retrying with the correct "
         "value {} {}",
-        __PRETTY_FUNCTION__, nPromptTokens, mModelGeneralName);
-    promptTokens.SetLength(nPromptTokens);
+        __PRETTY_FUNCTION__, -nPromptTokens, mModelGeneralName);
+    promptTokens.SetLength(-nPromptTokens);
 
     nPromptTokens = mLib->llama_tokenize(
         vocab, aOptions.mPrompt.get(), aOptions.mPrompt.Length(),
         promptTokens.Elements(), promptTokens.Length(),
         aOptions.mTokenizationOptions.mAddBosAndEos,
         aOptions.mTokenizationOptions.mParseSpecilControlTokens);
+  }
+
+  if (nPromptTokens < 0) {
+    auto msg = nsFmtCString(
+        "{}: failed to tokenize the prompt{} {}", __PRETTY_FUNCTION__,
+        nPromptTokens == INT32_MIN ? ", the token count overflows" : "",
+        mModelGeneralName);
+    LOGE("{}", msg);
+    return mozilla::Err(Error{std::move(msg)});
   }
 
   promptTokens.SetLength(nPromptTokens);
