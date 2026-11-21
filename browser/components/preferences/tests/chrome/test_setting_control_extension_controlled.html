@@ -907,6 +907,83 @@
         await extension.unload();
         control.remove();
       });
+
+      add_task(async function testLockedPrefsExtensionControlledSetting() {
+        const SETTING_ID = "locked-prefs-setting";
+        const ADDON_ID = "ext-locked-prefs@mochi.test";
+        const ADDON_NAME = "Ext Locked Prefs";
+        const STORE_ID = "privacy.containers";
+        const LOCKED_PREF = "privacy.userContext.extension";
+        const TEST_FLUENT_ID = "test-fluent-id";
+        await SpecialPowers.pushPrefEnv({
+          set: [[PREF_ID, false]],
+        });
+        Services.prefs.lockPref(LOCKED_PREF);
+        SimpleTest.registerCleanupFunction(() =>
+          Services.prefs.unlockPref(LOCKED_PREF)
+        );
+
+        let extension = ExtensionTestUtils.loadExtension({
+          manifest: {
+            browser_specific_settings: { gecko: { id: ADDON_ID } },
+            name: ADDON_NAME,
+            permissions: ["contextualIdentities", "cookies"],
+          },
+          useAddonManager: "temporary",
+        });
+        await extension.startup();
+        await ExtensionSettingsStore.initialize();
+        await TestUtils.waitForCondition(
+          () =>
+            ExtensionSettingsStore.getSetting("prefs", STORE_ID)?.id ==
+            ADDON_ID,
+          "Wait for the extension to be recorded in the settings store"
+        );
+
+        Preferences.addSetting({
+          id: SETTING_ID,
+          pref: PREF_ID,
+          controllingExtensionInfo: {
+            storeId: STORE_ID,
+            l10nId: TEST_FLUENT_ID,
+          },
+        });
+        let setting = Preferences.getSetting(SETTING_ID);
+        let control = await renderTemplate({
+          l10nId: TEST_FLUENT_ID,
+          id: SETTING_ID,
+        });
+        await setting._checkForControllingExtension();
+        await control.updateComplete;
+
+        ok(
+          !setting.controllingExtensionInfo.id,
+          "The extension isn't reported as controlling a setting with locked prefs"
+        );
+        ok(
+          !getExtensionControlledMessageBar(control),
+          "There should be no extension controlled message bar"
+        );
+        ok(!control.controlEl.disabled, "The control should be enabled");
+
+        Services.prefs.unlockPref(LOCKED_PREF);
+        await setting._checkForControllingExtension();
+        await control.updateComplete;
+
+        is(
+          setting.controllingExtensionInfo.id,
+          ADDON_ID,
+          "The extension is reported as controlling once the prefs are unlocked"
+        );
+        ok(
+          getExtensionControlledMessageBar(control),
+          "There should be an extension controlled message bar"
+        );
+        ok(control.controlEl.disabled, "The control should be disabled");
+
+        await extension.unload();
+        control.remove();
+      });
     </script>
   </head>
 

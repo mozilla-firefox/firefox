@@ -174,6 +174,8 @@ ChromeUtils.defineESModuleGetters(lazy, {
   ExtensionSettingsStore:
     "resource://gre/modules/ExtensionSettingsStore.sys.mjs",
   AddonManager: "resource://gre/modules/AddonManager.sys.mjs",
+  ExtensionPreferencesManager:
+    "resource://gre/modules/ExtensionPreferencesManager.sys.mjs",
   Management: "resource://gre/modules/Extension.sys.mjs",
 });
 
@@ -422,7 +424,12 @@ export class Setting extends EventEmitter {
       "prefs",
       this.config.controllingExtensionInfo?.storeId
     );
-    if (info && info.id) {
+    if (
+      info?.id &&
+      !lazy.ExtensionPreferencesManager.isSettingLocked(
+        this.config.controllingExtensionInfo.storeId
+      )
+    ) {
       let addon = await lazy.AddonManager.getAddonByID(info.id);
       if (addon) {
         this.controllingExtensionInfo.name = addon.name;

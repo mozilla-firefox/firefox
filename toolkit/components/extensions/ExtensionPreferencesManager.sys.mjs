@@ -445,6 +445,22 @@ ExtensionPreferencesManager = {
   },
 
   /**
+   * Whether any of the preferences of a registered setting are locked, in
+   * which case extensions can't control it.
+   *
+   * @param {string} name
+   *        The unique id of the setting.
+   *
+   * @returns {boolean}
+   */
+  isSettingLocked(name) {
+    let setting = settingsMap.get(name);
+    return !!setting?.prefNames.some(prefName =>
+      lazy.Preferences.locked(prefName)
+    );
+  },
+
+  /**
    * Return the levelOfControl for a setting / extension combo.
    * This queries the levelOfControl from the ExtensionSettingsStore and also
    * takes into account whether any of the setting's preferences are locked.
@@ -463,16 +479,11 @@ ExtensionPreferencesManager = {
   async getLevelOfControl(id, name, storeType = STORE_TYPE) {
     // This could be called for a setting that isn't defined to the PreferencesManager,
     // in which case we simply defer to the SettingsStore.
-    if (storeType === STORE_TYPE) {
-      let setting = settingsMap.get(name);
-      if (!setting) {
-        return "not_controllable";
-      }
-      for (let prefName of setting.prefNames) {
-        if (lazy.Preferences.locked(prefName)) {
-          return "not_controllable";
-        }
-      }
+    if (
+      storeType === STORE_TYPE &&
+      (!settingsMap.has(name) || this.isSettingLocked(name))
+    ) {
+      return "not_controllable";
     }
     await lazy.ExtensionSettingsStore.initialize();
     return lazy.ExtensionSettingsStore.getLevelOfControl(id, storeType, name);
