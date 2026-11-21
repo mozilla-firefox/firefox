@@ -6516,6 +6516,8 @@ nsresult EventStateManager::PostHandleMouseUp(
       nsIContent::FromEventTargetOrNull(aMouseUpEvent->mClickTarget);
   NS_ENSURE_STATE(clickTarget);
 
+  const bool mouseUpDefaultPrevented = aMouseUpEvent->DefaultPrevented();
+
   // Fire click events if the event target is still available.
   // Note that do not include the eMouseUp event's status since we ignore it
   // for compatibility with the other browsers.
@@ -6526,6 +6528,21 @@ nsresult EventStateManager::PostHandleMouseUp(
     return rv;
   }
 
+  // If the mouse up event goes to the content process, we will do the default
+  // X1/X2 mouse button action in BrowserParent::RecvReplyMouseEvent. However,
+  // if the event stays in the parent process, we need to do it now.
+  // For compatibility with Chromium, only prevent the default action if
+  // mouseup is default-prevented.
+  if (aMouseUpEvent->mCommand && XRE_IsParentProcess() &&
+      !aMouseUpEvent->HasBeenPostedToRemoteProcess() &&
+      !mouseUpDefaultPrevented) {
+    if (!mPresContext || NS_WARN_IF(!mPresContext->GetRootWidget())) {
+      return NS_OK;
+    }
+    nsCOMPtr widget = mPresContext->GetRootWidget();
+    aMouseUpEvent->mCommand.Run(widget);
+  }
+
   // Do not do anything if preceding click events are consumed.
   // Note that Chromium dispatches "paste" event and actually pates clipboard
   // text into focused editor even if the preceding click events are consumed.
@@ -6534,20 +6551,6 @@ nsresult EventStateManager::PostHandleMouseUp(
   // we should change it later.
   if (status == nsEventStatus_eConsumeNoDefault) {
     *aStatus = nsEventStatus_eConsumeNoDefault;
-    return NS_OK;
-  }
-
-  // If the mouse up event goes to the content process, we will do the default
-  // X1/X2 mouse button action in BrowserParent::RecvReplyMouseEvent. However,
-  // if the event stays in the parent process, we need to do it now.
-  if (aMouseUpEvent->mCommand && XRE_IsParentProcess() &&
-      !aMouseUpEvent->HasBeenPostedToRemoteProcess() &&
-      !aMouseUpEvent->DefaultPrevented()) {
-    if (!mPresContext || NS_WARN_IF(!mPresContext->GetRootWidget())) {
-      return NS_OK;
-    }
-    nsCOMPtr widget = mPresContext->GetRootWidget();
-    aMouseUpEvent->mCommand.Run(widget);
     return NS_OK;
   }
 
