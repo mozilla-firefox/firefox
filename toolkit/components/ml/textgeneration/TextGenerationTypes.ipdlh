@@ -108,7 +108,6 @@ struct TextGenerationOptions {
   uint32_t numThreads;
   uint32_t numThreadsDecoding;
   uint32_t batchSize;
-  uint32_t ubatchSize;
   TextGenerationKVCacheDtype kvCacheDtype;
   bool flashAttn;
   DevicePlacement placement;

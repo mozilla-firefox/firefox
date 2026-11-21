@@ -51,7 +51,6 @@ ChromeUtils.defineLazyGetter(lazy, "console", () => {
  * @param {string} [options.modelFile] - Name of the model file to load.
  * @param {number} [options.numContext=700] - Number of context tokens to use for inference.
  * @param {number} [options.numBatch=700] - Number of tokens to process in a batch.
- * @param {number} [options.numUbatch=700] - Number of micro-batches to split inference into.
  * @param {number} [options.numThreads=0] - Number of CPU threads to use (default: auto).
  * @param {boolean} [options.flashAttn=false] - Whether to enable Flash Attention for optimization.
  * @param {boolean} [options.useMmap=false] - Whether to use memory-mapped file loading.
@@ -102,7 +101,6 @@ export class LlamaCppPipeline {
       modelFile,
       numContext = 700,
       numBatch = 700,
-      numUbatch = 700,
       numThreads = 0,
       flashAttn = false,
       useMmap = false,
@@ -156,7 +154,7 @@ export class LlamaCppPipeline {
       n_gpu_layers: 0,
       offload_kqv: false,
       n_batch: numBatch,
-      n_ubatch: numUbatch,
+      n_ubatch: numBatch,
       use_mmap: useMmap,
       use_mlock: useMlock,
       flash_attn: flashAttn,

@@ -87,7 +87,6 @@ function toCreateOptions(options) {
   const createOptions = {
     contextSize: options.numContext ?? undefined,
     batchSize: options.numBatch ?? undefined,
-    ubatchSize: options.numUbatch ?? undefined,
     flashAttn: options.flashAttn ?? undefined,
     featureId: options.featureId ?? "",
     placement: options.device ?? undefined,

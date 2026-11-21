@@ -123,7 +123,6 @@ static LlamaModelOptions ToLlamaModelOptions(
   modelOptions.mUseMlock = false;
   modelOptions.mContext.mNCtx = aOptions.contextSize();
   modelOptions.mContext.mNBatch = aOptions.batchSize();
-  modelOptions.mContext.mNUbatch = aOptions.ubatchSize();
   modelOptions.mContext.mNThreads =
       static_cast<int32_t>(aOptions.numThreadsDecoding());
   modelOptions.mContext.mNThreadsBatch =

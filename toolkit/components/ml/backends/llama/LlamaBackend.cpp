@@ -324,7 +324,7 @@ ResultStatus LlamaBackend::ReinitializeContext(
   ctxParams.n_ctx = aNumContext;
 
   ctxParams.n_batch = aOptions.mNBatch;
-  ctxParams.n_ubatch = aOptions.mNUbatch;
+  ctxParams.n_ubatch = aOptions.mNBatch;
   ctxParams.n_seq_max = aOptions.mNSeqMax;
   ctxParams.n_threads = aOptions.mNThreads;
   ctxParams.n_threads_batch = aOptions.mNThreadsBatch;
@@ -664,10 +664,40 @@ ResultStatus LlamaBackend::Generate(
     mModelOptions.mContext.mNCtx = estimatedCtx;
   }
 
+  int nCtxUsed =
+      mLib->llama_memory_seq_pos_max(mLib->llama_get_memory(mCtx.get()), 0) + 1;
+  if (nCtxUsed + nPromptTokens > nCtx) {
+    auto msg = nsFmtCString(
+        "{}: context size exceeded. Size is: {} Needed: {} {}",
+        __PRETTY_FUNCTION__, nCtx, nCtxUsed + nPromptTokens, mModelGeneralName);
+    LOGE("{}", msg);
+    return mozilla::Err(Error{std::move(msg)});
+  }
+
+  // Keep the last batch for the generation loop, which samples its logits.
+  const size_t nBatch = mLib->llama_n_batch(mCtx.get());
+  size_t fed = 0;
+  while (promptTokens.Length() - fed > nBatch) {
+    if (aCancelCallback()) {
+      LOGD("{} Generation successfully cancelled. {}", __PRETTY_FUNCTION__,
+           mModelGeneralName);
+      return mozilla::Ok();
+    }
+    llama_batch chunk =
+        mLib->llama_batch_get_one(promptTokens.Elements() + fed, nBatch);
+    if (mLib->llama_decode(mCtx.get(), chunk) != 0) {
+      auto msg = nsFmtCString("{}: failed to decode the prompt {}",
+                              __PRETTY_FUNCTION__, mModelGeneralName);
+      LOGE("{}", msg);
+      return mozilla::Err(Error{std::move(msg)});
+    }
+    fed += nBatch;
+  }
+
   LOGD("{} Creating llama.cpp batch from prompt tokens for {}",
        __PRETTY_FUNCTION__, mModelGeneralName);
-  llama_batch batch =
-      mLib->llama_batch_get_one(promptTokens.Elements(), promptTokens.Length());
+  llama_batch batch = mLib->llama_batch_get_one(promptTokens.Elements() + fed,
+                                                promptTokens.Length() - fed);
   // To keep track of the id of the currently generated token
   llama_token token;
 
@@ -712,8 +742,9 @@ ResultStatus LlamaBackend::Generate(
     }
 
     // check if we have enough space in the context to evaluate this batch
-    int nCtxUsed =
-        mLib->llama_memory_seq_pos_max(mLib->llama_get_memory(mCtx.get()), 0);
+    nCtxUsed =
+        mLib->llama_memory_seq_pos_max(mLib->llama_get_memory(mCtx.get()), 0) +
+        1;
     if (nCtxUsed + batch.n_tokens > nCtx) {
       auto msg =
           nsFmtCString("{}: context size exceeded. Size is: {} Needed: {} {}",

@@ -44,8 +44,8 @@ dictionary TextGeneratorCreateOptions {
   unsigned long numThreads = 0;
   /** Decode-phase thread count; 0 follows numThreads. */
   unsigned long numThreadsDecoding = 0;
-  unsigned long batchSize = 2048;
-  unsigned long ubatchSize = 512;
+  /** Tokens per decode call; sets llama.cpp n_batch and n_ubatch. */
+  unsigned long batchSize = 512;
   /** Quantized values require flashAttn, which llama.cpp enforces. */
   TextGenerationKVCacheDtype kvCacheDtype = "f16";
   boolean flashAttn = false;

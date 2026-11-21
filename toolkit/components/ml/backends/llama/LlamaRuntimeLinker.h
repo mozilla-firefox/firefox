@@ -96,6 +96,7 @@ namespace mozilla::llama {
      llama_token* tokens, int32_t n_tokens_max, bool add_special,           \
      bool parse_special))                                                   \
   X(uint32_t, llama_n_ctx, (const struct llama_context* ctx))               \
+  X(uint32_t, llama_n_batch, (const struct llama_context* ctx))             \
   X(struct llama_batch, llama_batch_get_one,                                \
     (llama_token * tokens, int32_t n_tokens))                               \
   X(int32_t, llama_memory_seq_pos_max,                                      \

@@ -67,15 +67,8 @@ dictionary LlamaContextOptions {
    */
   unsigned long nCtx = 2048;
 
-  /**
-   * Logical max batch size submitted to llama_decode.
-   */
-  unsigned long nBatch = 2048;
-
-  /**
-   * Physical max batch size for actual processing.
-   */
-  unsigned long nUbatch = 512;
+  /** Tokens per decode call; sets llama.cpp n_batch and n_ubatch. */
+  unsigned long nBatch = 512;
 
   /**
    * Maximum number of concurrent sequences (distinct KV states).

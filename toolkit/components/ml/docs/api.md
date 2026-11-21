@@ -80,8 +80,7 @@ Below are the options available:
 - **device**: where the model loads, an `HWInferencePlacement`: device ids or device kinds, ordered by preference. Applies only to the llama.cpp backend.
 - **kvCacheDtype**: quantization level for the llama.cpp backend. It only applies to the llama.cpp backend when flash attention is enabled. Otherwise, it is always `f32`.
 - **numContext**: Maximum context size. Applies only to the llama.cpp backend.
-- **numBatch**: Number of tokens processed in a single forward pass. Applies only to the llama.cpp backend.
-- **numUbatch**: Token batch size. Applies only to the llama.cpp backend.
+- **numBatch**: Tokens per forward pass, setting both llama.cpp batch sizes. Longer prompts are decoded in chunks of this size. Applies only to the llama.cpp backend.
 - **flashAttn**: Whether to use flash attention. Applies only to the llama.cpp backend.
 - **useMmap**: Whether to use memory mapped for the model. Applies only to the llama.cpp backend.
 - **useMlock**: Whether to lock in memory the full model. Applies only to the llama.cpp backend.

@@ -25,7 +25,6 @@ TEST(LlamaBackend, TokenizeRetriesWhenTheBufferIsTooSmall)
   modelOptions.mUseMmap = false;
   modelOptions.mContext.mNCtx = 64;
   modelOptions.mContext.mNBatch = 64;
-  modelOptions.mContext.mNUbatch = 64;
   modelOptions.mContext.mNThreads = 2;
   modelOptions.mContext.mNThreadsBatch = 2;
 

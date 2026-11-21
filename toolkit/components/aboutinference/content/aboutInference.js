@@ -293,11 +293,8 @@ async function runTextGeneration() {
   const maxTokens = parseInt(document.getElementById("tg.maxTokens").value);
   const engines = parseInt(document.getElementById("tg.engines").value);
   const runs = parseInt(document.getElementById("tg.runs").value);
-  // Characters bound the prompt tokens and the chat template adds a few; the
-  // batch must hold the whole prompt, which llama.cpp asserts.
+  // Estimate prompt tokens from its length, allowing 64 for the chat template.
   const numContext = prompt.length + maxTokens + 64;
-  const numBatch = numContext;
-  const numUbatch = Math.min(numBatch, 512);
   const options = {
     featureId: "about-inference",
     engineId: "about-inference-text-generation",
@@ -308,8 +305,6 @@ async function runTextGeneration() {
     modelRevision: document.getElementById("tg.revision").value.trim(),
     numThreads: parseInt(document.getElementById("tg.threads").value),
     numContext,
-    numBatch,
-    numUbatch,
     kvCacheDtype: document.getElementById("tg.kvCacheDtype").value,
     flashAttn: document.getElementById("tg.flashAttn").checked,
     useMmap: true,
@@ -1123,7 +1118,6 @@ async function runInference() {
       backend: "llama.cpp",
       numContext,
       numBatch,
-      numUbatch: numBatch,
       useMlock: false,
       useMmap: true,
       kvCacheDtype: "q8_0",
@@ -1558,7 +1552,6 @@ async function runBenchmark() {
         modelHubRootUrl: "https://model-hub.mozilla.org",
         numContext: 1024,
         numBatch: 1024,
-        numUbatch: 1024,
         useMlock: false,
         useMmap: true,
         kvCacheDtype: "q8_0",

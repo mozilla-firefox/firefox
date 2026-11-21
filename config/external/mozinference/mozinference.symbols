@@ -39,6 +39,7 @@ llama_model_get_vocab
 llama_vocab_n_tokens
 llama_tokenize
 llama_n_ctx
+llama_n_batch
 llama_batch_get_one
 llama_memory_seq_pos_max
 llama_decode

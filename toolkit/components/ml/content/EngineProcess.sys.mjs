@@ -616,18 +616,11 @@ export class PipelineOptions {
   numContext = 1024;
 
   /**
-   * Number of tokens processed in a single forward pass.
+   * Tokens per decode call; sets llama.cpp n_batch and n_ubatch.
    *
    * @type {?number}
    */
-  numBatch = 2048;
-
-  /**
-   * Token batch size
-   *
-   * @type {?number}
-   */
-  numUbatch = 512;
+  numBatch = 512;
 
   /**
    * Whether to use flash attention
@@ -919,7 +912,6 @@ export class PipelineOptions {
       "kvCacheDtype",
       "numContext",
       "numBatch",
-      "numUbatch",
       "flashAttn",
       "useMmap",
       "useMlock",
@@ -1016,7 +1008,7 @@ export class PipelineOptions {
         this.#validateModelFile(key, options[key]);
       }
 
-      if (["numContext", "numBatch", "numUbatch"].includes(key)) {
+      if (["numContext", "numBatch"].includes(key)) {
         this.#validateIntegerRange(key, options[key], 1, 10000000);
       }
 
@@ -1068,7 +1060,6 @@ export class PipelineOptions {
       kvCacheDtype: this.kvCacheDtype,
       numContext: this.numContext,
       numBatch: this.numBatch,
-      numUbatch: this.numUbatch,
       flashAttn: this.flashAttn,
       useMmap: this.useMmap,
       useMlock: this.useMlock,
