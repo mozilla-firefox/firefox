@@ -1,8 +1,8 @@
-# Firefox DevTools MCP for AI Agent Testing
+# Firefox MCP for AI Agent Testing
 
 ## Overview
 
-The `firefox-devtools-mcp` is a Model Context Protocol (MCP) server that
+Firefox MCP (`firefox-mcp`) is a Model Context Protocol (MCP) server that
 enables AI assistants (such as Claude Code) to automate and interact with
 Firefox through WebDriver protocols (BiDi and Classic). This tool is
 particularly useful for:
@@ -18,7 +18,7 @@ monitoring, console logs, user input simulation, and Firefox logging. It isn't
 complete yet, but can already be useful.
 
 This documentation refers to the official Mozilla MCP for
-Firefox development: <https://github.com/mozilla/firefox-devtools-mcp>
+Firefox development: <https://github.com/mozilla/firefox-mcp>
 
 ### Key Features
 
@@ -44,18 +44,18 @@ Firefox development: <https://github.com/mozilla/firefox-devtools-mcp>
 
 ## Installation and Configuration
 
-The Firefox DevTools MCP server is **automatically configured** when using
+The Firefox MCP server is **automatically configured** when using
 Claude Code in the Firefox repository, via the `.mcp.json` file at the root
 of the repository.
 
-That configuration runs `./mach firefox-devtools-mcp`, which starts the server
-on the checkout's own build. Unless you pass `--firefox-path` yourself, the
-command adds it with the path of the build, and unless you also pass
-`--profile-path`, it adds `--profile-path` with `<objdir>/tmp/profile-default`,
-the profile `./mach run` uses. Given your own `--firefox-path` and no
-`--profile-path`, the server runs on a temporary profile. Without a build
-it warns and passes neither, so the server uses the system Firefox and a
-temporary profile. `.mcp.json` also sets the `remote.prefs.recommended=false`
+That configuration runs `./mach firefox-mcp`, which starts the server on the
+checkout's own build (`./mach firefox-devtools-mcp` is an alias of it). Unless
+you pass `--firefox-path` yourself, the command adds it with the path of the
+build, and unless you also pass `--profile-path`, it adds `--profile-path` with
+`<objdir>/tmp/profile-default`, the profile `./mach run` uses. Given your own
+`--firefox-path` and no `--profile-path`, the server runs on a temporary
+profile. Without a build it warns and passes neither, so the server uses the
+system Firefox and a temporary profile. `.mcp.json` also sets the `remote.prefs.recommended=false`
 and `browser.smartwindow.enabled=true` prefs and passes
 `--enable-privileged-context` and `--enable-script`, which together enable
 every tool module (see [Available Capabilities](#available-capabilities)).
@@ -73,7 +73,7 @@ For installation in other projects or at user scope, Claude Code can configure
 the MCP server with a single command:
 
 ```bash
-claude mcp add firefox npx @mozilla/firefox-devtools-mcp-moz
+claude mcp add firefox npx @mozilla/firefox-mcp-moz
 ```
 
 This command registers the MCP server with your Claude Code configuration for
@@ -83,7 +83,7 @@ If a global installation is preferred (so that it works from multiple project
 directories), it can be installed at the user scope:
 
 ```bash
-claude mcp add firefox npx @mozilla/firefox-devtools-mcp-moz --scope user
+claude mcp add firefox npx @mozilla/firefox-mcp-moz --scope user
 ```
 
 This changes `~/.claude.json`, either in the project section, or in the global
@@ -118,14 +118,14 @@ with no options, but they exist:
      - Description
    * - ``--firefox-path <path>``
      - Path to Firefox executable. Without it, the server uses the system
-       Firefox; ``./mach firefox-devtools-mcp`` passes the checkout's build.
+       Firefox; ``./mach firefox-mcp`` passes the checkout's build.
    * - ``--headless``
      - Run Firefox without UI (useful for automated testing)
    * - ``--viewport <size>``
      - Set initial viewport size (e.g., ``1280x720``)
    * - ``--profile-path <path>``
      - Keep a persistent profile under this directory. The server runs Firefox
-       on a ``firefox_devtools_mcp_profile`` subdirectory of it, created on
+       on a ``firefox_mcp_profile`` subdirectory of it, created on
        first use with a copy of the directory's ``prefs.js``, unless the path
        is already such a subdirectory. Without it, Firefox gets a temporary
        profile.
@@ -154,7 +154,7 @@ with no options, but they exist:
      - Let tools save files anywhere (see "Saving Output to Files" below)
    * - ``--output-file <path>``
      - Path where Firefox output (stdout/stderr) will be captured. Without it,
-       output is captured under ``~/.firefox-devtools-mcp/logs/`` only when
+       output is captured under ``~/.firefox-mcp/logs/`` only when
        environment variables are set.
 ```
 
@@ -165,7 +165,7 @@ Example with multiple options:
    "type": "stdio",
    "command": "npx",
    "args": [
-    "@mozilla/firefox-devtools-mcp-moz",
+    "@mozilla/firefox-mcp-moz",
     "--firefox-path",
     "/home/developer/firefox/obj-x86_64-pc-linux-gnu/dist/bin/firefox",
     "--headless",
@@ -179,7 +179,7 @@ Example with multiple options:
 
 ## Available Capabilities
 
-The `firefox-devtools-mcp` provides tools through the MCP protocol. Tool names
+Firefox MCP provides tools through the MCP protocol. Tool names
 are generally self-describing. Simply ask your AI assistant to perform tasks - it
 will use the appropriate tools.
 
@@ -188,7 +188,7 @@ it picked, e.g. your own build, or some specific version, by telling it the
 path: it isn't necessary to configure it.
 
 Tools come in modules, which the `--tool-preset` and `--tools` options enable.
-The list below is the one in version 0.10.7, grouped by module; the server is
+The list below is the one in version 0.11.0, grouped by module; the server is
 under active development, so newer versions may have more:
 
 **Page Management** (`pages`):
@@ -223,7 +223,7 @@ under active development, so newer versions may have more:
 `restart_firefox`
 
 **Extensions** (`webextension`):
-`install_extension`, `uninstall_extension`
+`install_extension`, `uninstall_extension`, `list_extensions`
 
 **Profiler** (`profiler`, Firefox 154 or later):
 `profiler_start`, `profiler_stop`, `profiler_is_active`
@@ -240,7 +240,7 @@ under active development, so newer versions may have more:
 
 **Privileged Contexts (chrome/XUL code)** (`privileged`):
 `list_privileged_contexts`, `select_privileged_context`,
-`evaluate_privileged_script`, `list_extensions`
+`evaluate_privileged_script`
 
 **Raw WebDriver BiDi** (`bidi`):
 `send_bidi_command`
@@ -292,7 +292,7 @@ A restart keeps the profile, and with it the startup cache, which Firefox
 reuses until the profile is opened by a different build. To start with an empty
 startup cache, add `MOZ_PURGE_CACHES=1` to the `env` list. A `profilePath` is
 resolved like `--profile-path`, so Firefox runs on its
-`firefox_devtools_mcp_profile` subdirectory.
+`firefox_mcp_profile` subdirectory.
 
 ## Script Timeouts
 
@@ -305,16 +305,16 @@ result from a later call.
 
 Tools with a `saveTo` argument (e.g. the screenshot and script tools) write the
 result to a file instead of returning it. `saveTo: true` writes a generated name
-under `~/.firefox-devtools-mcp/output/`. A relative path has to stay within the
+under `~/.firefox-mcp/output/`. A relative path has to stay within the
 server's working directory, and an absolute one within
-`~/.firefox-devtools-mcp/output/`; neither may point into the profile or the
+`~/.firefox-mcp/output/`; neither may point into the profile or the
 captured output file. Starting the server with `--unrestricted-save-paths` lifts
 these limits.
 
 ## Working with MOZ_LOG
 
 Firefox's MOZ_LOG system provides detailed debug output from various modules.
-The `firefox-devtools-mcp` captures this output automatically when environment
+Firefox MCP captures this output automatically when environment
 variables are set.
 
 You can enable MOZ_LOG with something like this:
@@ -341,8 +341,8 @@ restart_firefox(env=["MOZ_REMOTE_ALLOW_SYSTEM_ACCESS=1"])
 
 Then use `list_privileged_contexts`, `select_privileged_context`, and
 `evaluate_privileged_script` to access `gBrowser`, `Components`, and other
-privileged APIs. `get_firefox_prefs`, `set_firefox_prefs` and `list_extensions`
-need the same variable. A later restart that sets other variables has to repeat
+privileged APIs. `get_firefox_prefs` and `set_firefox_prefs` need the same
+variable. A later restart that sets other variables has to repeat
 it (see [Environment variables](#environment-variables)).
 
 At the moment, the MCP relies on WebDriver Classic (Marionette) for Chrome
@@ -356,7 +356,7 @@ following [meta bug](https://bugzilla.mozilla.org/show_bug.cgi?id=1722679).
 Try to update to the latest version:
 
 ```bash
-./mach npx @mozilla/firefox-devtools-mcp-moz@latest
+./mach npx @mozilla/firefox-mcp-moz@latest
 ```
 
 then quit when seeing "Ready to accept tool requests".

@@ -8,7 +8,7 @@ profile and prefs the last call left behind.
 The server's first call launches the binary in the server's configuration,
 headless only under `--headless`, before you can pass another. Under the
 in-tree `.mcp.json`, that is this checkout's build with the profile path
-`<objdir>/tmp/profile-default` (`docs/ai-agent-tools/firefox-devtools-mcp.md`,
+`<objdir>/tmp/profile-default` (`docs/ai-agent-tools/firefox-mcp.md`,
 "Installation and Configuration"). That default profile belongs to the binary
 that created it, and another tree's binary exits at once on it, so the restart
 `SKILL.md` §1 prescribes takes a fresh `profilePath` of your own.
@@ -32,7 +32,7 @@ that created it, and another tree's binary exits at once on it, so the restart
 - `set_firefox_prefs` needs `MOZ_REMOTE_ALLOW_SYSTEM_ACCESS=1` in the launch
   environment.
 
-`docs/ai-agent-tools/firefox-devtools-mcp.md`, "Preferences", explains how a
+`docs/ai-agent-tools/firefox-mcp.md`, "Preferences", explains how a
 restart merges prefs and why they persist in the profile.
 
 ## 3. Startup cache and environment
@@ -42,7 +42,7 @@ kept profile's startup cache serves the scripts loaded at startup (`.mjs`,
 `.sys.mjs`, subscripts) and `browser.xhtml` as first cached. A nonempty `env`
 list replaces the configured environment, so restate
 `MOZ_REMOTE_ALLOW_SYSTEM_ACCESS=1` in the same list
-(`docs/ai-agent-tools/firefox-devtools-mcp.md`, "Environment variables" and
+(`docs/ai-agent-tools/firefox-mcp.md`, "Environment variables" and
 "Profile and startup cache").
 
 ## 4. Command timeout
@@ -51,13 +51,13 @@ A sweep of more than a handful of cells outlives the command timeout, so
 detach the loop: an async function that pushes rows onto `window.__sweep` and
 returns `"started"` at once, then a second call that polls
 `window.__sweep.done` and returns the rows. The limits are in
-`docs/ai-agent-tools/firefox-devtools-mcp.md`, "Script Timeouts".
+`docs/ai-agent-tools/firefox-mcp.md`, "Script Timeouts".
 
 ## 5. Screenshots
 
-Pass `saveTo` an absolute path under `~/.firefox-devtools-mcp/output` and copy
+Pass `saveTo` an absolute path under `~/.firefox-mcp/output` and copy
 the file into `artifacts/` afterwards.
-`docs/ai-agent-tools/firefox-devtools-mcp.md`, "Saving Output to Files", says
+`docs/ai-agent-tools/firefox-mcp.md`, "Saving Output to Files", says
 where else a path may point.
 
 `screenshot_page` renders no focus ring (checked 2026-09), so a screenshot
@@ -92,6 +92,6 @@ state"). Focus from content, press from chrome, read from content.
 
 ## 7. The privileged path
 
-`docs/ai-agent-tools/firefox-devtools-mcp.md` "Privileged Context Access" has
+`docs/ai-agent-tools/firefox-mcp.md` "Privileged Context Access" has
 the steps. Restate `MOZ_REMOTE_ALLOW_SYSTEM_ACCESS=1` in every later restart
 that sets another variable (§3).

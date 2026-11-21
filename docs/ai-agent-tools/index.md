@@ -6,7 +6,7 @@ with and test Firefox during development.
 ```{toctree}
 :maxdepth: 2
 
-firefox-devtools-mcp
+firefox-mcp
 code-review-context
 skills
 ```

@@ -251,7 +251,7 @@ These developer tools are also built into Firefox. Unlike the "Core Tools" above
 
 | | |
 | --- | --- |
-| [Firefox DevTools MCP](https://github.com/mozilla/firefox-devtools-mcp) | A Model Context Protocol (MCP) server that enables AI assistants to automate and interact with Firefox. |
+| [Firefox MCP](https://github.com/mozilla/firefox-mcp) | A Model Context Protocol (MCP) server that enables AI assistants to automate and interact with Firefox. |
 
 ## Connecting the Developer Tools
 
