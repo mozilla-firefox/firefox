@@ -8,3 +8,5 @@ with Files("**"):
 JAR_MANIFESTS += ["jar.mn"]
 
 BROWSER_CHROME_MANIFESTS += ["tests/browser/browser.toml"]
+
+MOZ_SRC_FILES += ["content/MemoriesWorkload.sys.mjs"]
