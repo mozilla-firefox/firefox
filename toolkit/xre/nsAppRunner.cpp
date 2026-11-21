@@ -5275,7 +5275,7 @@ Maybe<ShouldNotProcessUpdatesReason> ShouldNotProcessUpdates(
   }
 
   // Bug 2055849: Don't process updates if MOZ_DISABLE_UPDATE_PROCESSING is set.
-  // Set by default when using https://github.com/mozilla/firefox-devtools-mcp.
+  // Set by default when using https://github.com/mozilla/firefox-mcp.
   if (EnvHasValue("MOZ_DISABLE_UPDATE_PROCESSING")) {
     NS_WARNING("ShouldNotProcessUpdates(): DisabledByEnvironment");
     return Some(ShouldNotProcessUpdatesReason::DisabledByEnvironment);

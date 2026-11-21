@@ -32,7 +32,7 @@ const STATUS_TEXT_ID = `${VIEW_ID}-status-text`;
 /**
  * Nightly only toolbar button and panel which allow users to start and stop the
  * remote protocol servers at runtime. This is meant to be used to allow AI
- * assistants to drive an already running Firefox via e.g. firefox-devtools-mcp
+ * assistants to drive an already running Firefox via e.g. firefox-mcp
  * without having to launch Firefox with --remote-debugging-port & --marionette.
  */
 class RemoteControlPanelClass {
