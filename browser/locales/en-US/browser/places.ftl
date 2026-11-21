@@ -20,9 +20,9 @@ places-open-all-in-tabs =
 places-open-in-window =
   .label = Open in New Window
   .accesskey = N
-places-open-in-private-window =
+places-open-in-private-window2 =
   .label = Open in New Private Window
-  .accesskey = v
+  .accesskey = P
 
 places-empty-bookmarks-folder =
   .label = (Empty)
