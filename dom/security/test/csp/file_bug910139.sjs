@@ -23,31 +23,21 @@ function loadResponseFromFile(path) {
   return testHTML;
 }
 
-var policies = [
-  "default-src 'self'; script-src 'self'", // CSP for checkAllowed
-  "default-src 'self'; script-src *.example.com", // CSP for checkBlocked
-];
-
-function getPolicy() {
-  var index;
-  // setState only accepts strings as arguments
-  if (!getState("counter")) {
-    index = 0;
-    setState("counter", index.toString());
-  } else {
-    index = parseInt(getState("counter"));
-    ++index;
-    setState("counter", index.toString());
-  }
-  return policies[index];
-}
+var policies = {
+  allowed: "default-src 'self'; script-src 'self'", // CSP for checkAllowed
+  blocked: "default-src 'self'; script-src *.example.com", // CSP for checkBlocked
+};
 
 function handleRequest(request, response) {
   // avoid confusing cache behaviors
   response.setHeader("Cache-Control", "no-cache", false);
 
   // set the required CSP
-  response.setHeader("Content-Security-Policy", getPolicy(), false);
+  response.setHeader(
+    "Content-Security-Policy",
+    policies[request.queryString],
+    false
+  );
 
   // return the requested XML file.
   response.write(
