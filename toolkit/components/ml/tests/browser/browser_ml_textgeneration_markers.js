@@ -228,7 +228,6 @@ add_task(async function test_abandoned_stream_is_marked_cancelled() {
       ...TINYSTORIES_ENGINE_OPTIONS,
       engineId: "cancelled-engine",
       featureId: "link-preview",
-      numContext: 8192,
     });
     for await (const chunk of engine.runWithGenerator({
       prompt: [{ role: "user", content: "Once upon a time" }],

@@ -50,7 +50,6 @@ const SMOLLM2_OPTIONS = {
   modelFile: "smollm2-360m-instruct-q8_0.gguf",
   modelRevision: "main",
   modelHubUrlTemplate: "{model}/{revision}",
-  numContext: 512,
   useMmap: true,
   useMlock: false,
 };

@@ -4,11 +4,13 @@
 
 #include "LlamaBackend.h"
 
+#include <algorithm>
 #include <cstdint>
 #include <cstddef>
 #include <cstdio>
 
 #include <functional>
+#include <limits>
 #include "mozilla/HashTable.h"
 #include "nsIFileStreams.h"
 #include "nsTArray.h"
@@ -309,60 +311,27 @@ ResultStatus LlamaBackend::Reinitialize(const LlamaModelOptions& aOptions,
   LOGV("{}: Successfully Initialized {}", __PRETTY_FUNCTION__,
        mModelGeneralName);
 
-  return ReinitializeContext(aOptions.mContext, aOptions.mContext.mNCtx);
+  return CreateThreadpools();
 }
 
-ResultStatus LlamaBackend::ReinitializeContext(
-    const LlamaContextOptions& aOptions, int aNumContext) {
-  LOGV("Entered {}", __PRETTY_FUNCTION__);
+int32_t LlamaBackend::MaxGeneratedTokens() const {
+  const int32_t trained = mLib->llama_model_n_ctx_train(mModel.get());
+  return trained > 0 ? trained : std::numeric_limits<int32_t>::max();
+}
 
-  MOZ_ASSERT(mLib,
-             "No shared library pointer in ReinitializeContext, fix this");
-
-  llama_context_params ctxParams = mLib->llama_context_default_params();
-
-  ctxParams.n_ctx = aNumContext;
-
-  ctxParams.n_batch = aOptions.mNBatch;
-  ctxParams.n_ubatch = aOptions.mNBatch;
-  ctxParams.n_seq_max = aOptions.mNSeqMax;
-  ctxParams.n_threads = aOptions.mNThreads;
-  ctxParams.n_threads_batch = aOptions.mNThreadsBatch;
-
-  ctxParams.type_k = GgmlTypeFromKVCacheDtype(aOptions.mKCacheDtype);
-  ctxParams.type_v = GgmlTypeFromKVCacheDtype(aOptions.mVCacheDtype);
-  // The KV cache and host-side ops follow the model onto an accelerator.
-  const bool onAccelerator = mDeviceKind != dom::HWInferenceDeviceKind::Cpu;
-  ctxParams.offload_kqv = onAccelerator;
-  ctxParams.flash_attn_type = aOptions.mFlashAttn
-                                  ? LLAMA_FLASH_ATTN_TYPE_ENABLED
-                                  : LLAMA_FLASH_ATTN_TYPE_DISABLED;
-  ctxParams.no_perf = aOptions.mNoPerf;
-  // On the CPU, op_offload would still route big matmuls to a registered GPU.
-  ctxParams.op_offload = onAccelerator;
-  ctxParams.swa_full = aOptions.mSwaFull;
-
-  // llama_init_from_model does not take ownership of the model or context
-  // parameters. We retain ownership of all objects passed in and must keep them
-  // alive for the entire lifetime of mCtx.
-  mCtx.reset(mLib->llama_init_from_model(mModel.get(), ctxParams));
-  if (!mCtx) {
-    auto msg = nsFmtCString("{}: failed to create the llama_context {}",
-                            __PRETTY_FUNCTION__, mModelGeneralName);
-    LOGE("{}", msg);
-    return mozilla::Err(Error{std::move(msg)});
-  }
+ResultStatus LlamaBackend::CreateThreadpools() {
+  const LlamaContextOptions& options = mModelOptions.mContext;
 
   // ggml_threadpool_params_init/ggml_threadpool_new do not retain pointers
   // to the params structs. We own those stack-allocated structs, but they can
   // safely go out of scope after threadpool creation.
   ggml_threadpool_params tpp;
-  mLib->ggml_threadpool_params_init(&tpp, ctxParams.n_threads);
+  mLib->ggml_threadpool_params_init(&tpp, options.mNThreads);
   tpp.thread_create_callback = []() { PROFILER_REGISTER_THREAD("llama.cpp"); };
   tpp.thread_destroy_callback = []() { PROFILER_UNREGISTER_THREAD(); };
 
   ggml_threadpool_params tppBatch;
-  mLib->ggml_threadpool_params_init(&tppBatch, ctxParams.n_threads_batch);
+  mLib->ggml_threadpool_params_init(&tppBatch, options.mNThreadsBatch);
   tppBatch.thread_create_callback = []() {
     PROFILER_REGISTER_THREAD("llama.cpp");
   };
@@ -374,7 +343,7 @@ ResultStatus LlamaBackend::ReinitializeContext(
     if (!mThreadpoolBatch) {
       auto msg = nsFmtCString(
           "{}: Failed to create decoding threadpool: n_threads: {}  {}",
-          __PRETTY_FUNCTION__, ctxParams.n_threads_batch, mModelGeneralName);
+          __PRETTY_FUNCTION__, options.mNThreadsBatch, mModelGeneralName);
       LOGE("{}", msg);
       return mozilla::Err(Error{std::move(msg)});
     }
@@ -384,23 +353,66 @@ ResultStatus LlamaBackend::ReinitializeContext(
 
   mThreadpool.reset(mLib->ggml_threadpool_new(&tpp));
   if (!mThreadpool) {
-    auto msg = nsFmtCString("{}: Failed to create threadpool: n_threads: {} {}",
-                            __PRETTY_FUNCTION__, ctxParams.n_threads,
-                            mModelGeneralName);
+    auto msg =
+        nsFmtCString("{}: Failed to create threadpool: n_threads: {} {}",
+                     __PRETTY_FUNCTION__, options.mNThreads, mModelGeneralName);
+    LOGE("{}", msg);
+    return mozilla::Err(Error{std::move(msg)});
+  }
+  return mozilla::Ok();
+}
+
+LlamaBackend::ContextResult LlamaBackend::CreateContext(int aNumContext) {
+  LOGV("Entered {}", __PRETTY_FUNCTION__);
+
+  MOZ_ASSERT(mLib, "No shared library pointer in CreateContext, fix this");
+
+  const LlamaContextOptions& options = mModelOptions.mContext;
+
+  llama_context_params ctxParams = mLib->llama_context_default_params();
+
+  ctxParams.n_ctx = aNumContext;
+
+  ctxParams.n_batch = options.mNBatch;
+  ctxParams.n_ubatch = options.mNBatch;
+  ctxParams.n_seq_max = options.mNSeqMax;
+  ctxParams.n_threads = options.mNThreads;
+  ctxParams.n_threads_batch = options.mNThreadsBatch;
+
+  ctxParams.type_k = GgmlTypeFromKVCacheDtype(options.mKCacheDtype);
+  ctxParams.type_v = GgmlTypeFromKVCacheDtype(options.mVCacheDtype);
+  // The KV cache and host-side ops follow the model onto an accelerator.
+  const bool onAccelerator = mDeviceKind != dom::HWInferenceDeviceKind::Cpu;
+  ctxParams.offload_kqv = onAccelerator;
+  ctxParams.flash_attn_type = options.mFlashAttn
+                                  ? LLAMA_FLASH_ATTN_TYPE_ENABLED
+                                  : LLAMA_FLASH_ATTN_TYPE_DISABLED;
+  ctxParams.no_perf = options.mNoPerf;
+  // On the CPU, op_offload would still route big matmuls to a registered GPU.
+  ctxParams.op_offload = onAccelerator;
+  ctxParams.swa_full = options.mSwaFull;
+
+  // llama_init_from_model does not take ownership of the model or context
+  // parameters. We retain ownership of all objects passed in and must keep them
+  // alive for the entire lifetime of the context.
+  LlamaContextUPtr ctx(mLib->llama_init_from_model(mModel.get(), ctxParams));
+  if (!ctx) {
+    auto msg = nsFmtCString("{}: failed to create the llama_context {}",
+                            __PRETTY_FUNCTION__, mModelGeneralName);
     LOGE("{}", msg);
     return mozilla::Err(Error{std::move(msg)});
   }
 
   // llama_attach_threadpool does not take ownership of the threadpools.
   // We must keep mThreadpool and mThreadpoolBatch alive for as long as
-  // mCtx is used, since they are accessed internally by the context.
-  mLib->llama_attach_threadpool(mCtx.get(), mThreadpool.get(),
+  // the context is used, since they are accessed internally by the context.
+  mLib->llama_attach_threadpool(ctx.get(), mThreadpool.get(),
                                 mThreadpoolBatch.get());
 
   LOGV("{}: Successfully Initialized context for model {}", __PRETTY_FUNCTION__,
        mModelGeneralName);
 
-  return mozilla::Ok();
+  return ctx;
 }
 
 ChatMessageResult LlamaBackend::FormatChat(
@@ -566,16 +578,6 @@ ResultStatus LlamaBackend::Generate(
 
   MOZ_ASSERT(mLib, "No shared library pointer in Generate, fix this");
 
-  auto cleanup = mozilla::MakeScopeExit([&ctx = mCtx, lib = mLib] {
-    // clear the memory used by this generation session to make it ready for the
-    // next session
-    bool clearDataBuffers = true;
-    if (ctx) {
-      lib->llama_memory_clear(lib->llama_get_memory(ctx.get()),
-                              clearDataBuffers);
-    }
-  });
-
   if (!mModel) {
     auto msg = nsFmtCString("{}: error: Model not loaded", __PRETTY_FUNCTION__);
     LOGE("{}", msg);
@@ -601,31 +603,18 @@ ResultStatus LlamaBackend::Generate(
 
   auto sampler = samplerResult.unwrap();
 
-  const size_t estimatedNumPromptTokens = aOptions.mPrompt.Length() + 1;
-  LOGD("{} Estimated tokenization size is {} {}", __PRETTY_FUNCTION__,
-       estimatedNumPromptTokens, mModelGeneralName);
-  nsTArray<llama_token> promptTokens;
-  promptTokens.SetLength(estimatedNumPromptTokens);
-  // attempt to tokenize the prompt using the estimated number of prompts
-  int32_t nPromptTokens = mLib->llama_tokenize(
-      vocab, aOptions.mPrompt.get(), aOptions.mPrompt.Length(),
-      promptTokens.Elements(), promptTokens.Length(),
-      aOptions.mTokenizationOptions.mAddBosAndEos,
-      aOptions.mTokenizationOptions.mParseSpecilControlTokens);
-
-  // A negative count is the size the buffer needed; INT32_MIN is an overflow.
-  if (nPromptTokens < 0 && nPromptTokens != INT32_MIN) {
-    LOGD(
-        "{} Wrong estimate for tokenization. Retrying with the correct "
-        "value {} {}",
-        __PRETTY_FUNCTION__, -nPromptTokens, mModelGeneralName);
-    promptTokens.SetLength(-nPromptTokens);
-
-    nPromptTokens = mLib->llama_tokenize(
-        vocab, aOptions.mPrompt.get(), aOptions.mPrompt.Length(),
-        promptTokens.Elements(), promptTokens.Length(),
-        aOptions.mTokenizationOptions.mAddBosAndEos,
+  auto tokenize = [&](llama_token* aTokens, int32_t aMaxTokens) {
+    return mLib->llama_tokenize(
+        vocab, aOptions.mPrompt.get(), aOptions.mPrompt.Length(), aTokens,
+        aMaxTokens, aOptions.mTokenizationOptions.mAddBosAndEos,
         aOptions.mTokenizationOptions.mParseSpecilControlTokens);
+  };
+  // An empty buffer returns minus the token count; INT32_MIN is an overflow.
+  int32_t nPromptTokens = tokenize(nullptr, 0);
+  nsTArray<llama_token> promptTokens;
+  if (nPromptTokens < 0 && nPromptTokens != INT32_MIN) {
+    promptTokens.SetLength(-nPromptTokens);
+    nPromptTokens = tokenize(promptTokens.Elements(), promptTokens.Length());
   }
 
   if (nPromptTokens < 0) {
@@ -637,49 +626,18 @@ ResultStatus LlamaBackend::Generate(
     return mozilla::Err(Error{std::move(msg)});
   }
 
-  promptTokens.SetLength(nPromptTokens);
+  const int32_t seqLen =
+      std::min(aOptions.mMaxGeneratedTokens, MaxGeneratedTokens());
 
-  int nCtx = mLib->llama_n_ctx(mCtx.get());
-
-  // 0 generates until the context is full.
-  int32_t seqLen = aOptions.mMaxGeneratedTokens;
-  if (seqLen == 0) {
-    seqLen = std::max(nCtx - nPromptTokens, 0);
+  auto contextResult = CreateContext(nPromptTokens + seqLen);
+  if (contextResult.isErr()) {
+    LOGE("{}", contextResult.inspectErr().mMessage);
+    return mozilla::Err(contextResult.unwrapErr());
   }
-
-  int estimatedCtx = nPromptTokens + seqLen;
-
-  if (estimatedCtx > nCtx) {
-    LOGW(
-        "{} We estimated that {} will be needed but the model context was "
-        "initialized "
-        "with {}. Re-initializing the model context {}",
-        __PRETTY_FUNCTION__, estimatedCtx, nCtx, mModelGeneralName);
-
-    auto initContextResult =
-        ReinitializeContext(mModelOptions.mContext, estimatedCtx);
-    if (initContextResult.isErr()) {
-      LOGE("{}", initContextResult.inspectErr().mMessage);
-      return initContextResult;
-    }
-
-    nCtx = mLib->llama_n_ctx(mCtx.get());
-
-    mModelOptions.mContext.mNCtx = estimatedCtx;
-  }
-
-  int nCtxUsed =
-      mLib->llama_memory_seq_pos_max(mLib->llama_get_memory(mCtx.get()), 0) + 1;
-  if (nCtxUsed + nPromptTokens > nCtx) {
-    auto msg = nsFmtCString(
-        "{}: context size exceeded. Size is: {} Needed: {} {}",
-        __PRETTY_FUNCTION__, nCtx, nCtxUsed + nPromptTokens, mModelGeneralName);
-    LOGE("{}", msg);
-    return mozilla::Err(Error{std::move(msg)});
-  }
+  LlamaContextUPtr ctx = contextResult.unwrap();
 
   // Keep the last batch for the generation loop, which samples its logits.
-  const size_t nBatch = mLib->llama_n_batch(mCtx.get());
+  const size_t nBatch = mLib->llama_n_batch(ctx.get());
   size_t fed = 0;
   while (promptTokens.Length() - fed > nBatch) {
     if (aCancelCallback()) {
@@ -689,7 +647,7 @@ ResultStatus LlamaBackend::Generate(
     }
     llama_batch chunk =
         mLib->llama_batch_get_one(promptTokens.Elements() + fed, nBatch);
-    if (mLib->llama_decode(mCtx.get(), chunk) != 0) {
+    if (mLib->llama_decode(ctx.get(), chunk) != 0) {
       auto msg = nsFmtCString("{}: failed to decode the prompt {}",
                               __PRETTY_FUNCTION__, mModelGeneralName);
       LOGE("{}", msg);
@@ -745,20 +703,10 @@ ResultStatus LlamaBackend::Generate(
       return mozilla::Ok();
     }
 
-    // check if we have enough space in the context to evaluate this batch
-    nCtxUsed =
-        mLib->llama_memory_seq_pos_max(mLib->llama_get_memory(mCtx.get()), 0) +
-        1;
-    if (nCtxUsed + batch.n_tokens > nCtx) {
-      LOGD("{}: Context full after {} generated tokens {}", __PRETTY_FUNCTION__,
-           numGeneratedTokens, mModelGeneralName);
-      break;
-    }
-
     LOGV("{}: Decoding to generate next token probabilities {}",
          __PRETTY_FUNCTION__, mModelGeneralName);
 
-    if (mLib->llama_decode(mCtx.get(), batch) != 0) {
+    if (mLib->llama_decode(ctx.get(), batch) != 0) {
       auto msg = nsFmtCString("{}: failed to decode {}", __PRETTY_FUNCTION__,
                               mModelGeneralName);
       LOGE("{}", msg);
@@ -767,7 +715,7 @@ ResultStatus LlamaBackend::Generate(
 
     LOGV("{}: Sampling the generated probabilities to generate next token {}",
          __PRETTY_FUNCTION__, mModelGeneralName);
-    token = mLib->llama_sampler_sample(sampler.get(), mCtx.get(),
+    token = mLib->llama_sampler_sample(sampler.get(), ctx.get(),
                                        lastTokenLogitIndex);
 
     // Sending the end of prompt once we get the first token to ensure

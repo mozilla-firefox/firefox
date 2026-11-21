@@ -86,21 +86,17 @@ namespace mozilla::llama {
   X(struct llama_sampler*, llama_sampler_init_logit_bias,                   \
     (int32_t n_vocab, int32_t n_logit_bias,                                 \
      const llama_logit_bias* logit_bias))                                   \
-  X(void, llama_memory_clear, (llama_memory_t mem, bool data))              \
-  X(llama_memory_t, llama_get_memory, (const struct llama_context* ctx))    \
   X(const struct llama_vocab*, llama_model_get_vocab,                       \
     (const struct llama_model* model))                                      \
   X(int32_t, llama_vocab_n_tokens, (const struct llama_vocab* vocab))       \
+  X(int32_t, llama_model_n_ctx_train, (const struct llama_model* model))    \
   X(int32_t, llama_tokenize,                                                \
     (const struct llama_vocab* vocab, const char* text, int32_t text_len,   \
      llama_token* tokens, int32_t n_tokens_max, bool add_special,           \
      bool parse_special))                                                   \
-  X(uint32_t, llama_n_ctx, (const struct llama_context* ctx))               \
   X(uint32_t, llama_n_batch, (const struct llama_context* ctx))             \
   X(struct llama_batch, llama_batch_get_one,                                \
     (llama_token * tokens, int32_t n_tokens))                               \
-  X(int32_t, llama_memory_seq_pos_max,                                      \
-    (llama_memory_t mem, llama_seq_id seq_id))                              \
   X(int32_t, llama_decode,                                                  \
     (struct llama_context * ctx, struct llama_batch batch))                 \
   X(llama_token, llama_sampler_sample,                                      \

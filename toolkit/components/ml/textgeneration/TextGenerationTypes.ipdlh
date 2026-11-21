@@ -103,7 +103,6 @@ union GenerateResponse {
 };
 
 struct TextGenerationOptions {
-  uint32_t contextSize;
   // numThreads is the prefill/batch count, numThreadsDecoding the decode one.
   uint32_t numThreads;
   uint32_t numThreadsDecoding;

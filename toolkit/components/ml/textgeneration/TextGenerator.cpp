@@ -82,9 +82,9 @@ static TextGenerationOptions ResolveTextGenerationOptions(
   const uint32_t numThreadsDecoding = aOptions.mNumThreadsDecoding > 0
                                           ? aOptions.mNumThreadsDecoding
                                           : numThreads;
-  return TextGenerationOptions(aOptions.mContextSize, numThreads,
-                               numThreadsDecoding, aOptions.mBatchSize,
-                               aOptions.mKvCacheDtype, aOptions.mFlashAttn,
+  return TextGenerationOptions(numThreads, numThreadsDecoding,
+                               aOptions.mBatchSize, aOptions.mKvCacheDtype,
+                               aOptions.mFlashAttn,
                                ToDevicePlacement(aOptions.mPlacement));
 }
 

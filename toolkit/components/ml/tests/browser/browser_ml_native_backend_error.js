@@ -18,7 +18,6 @@ add_task(async function test_llama_backend_error_rejects_run() {
       modelFile: "TinyStories-656K.Q8_0.gguf",
       modelRevision: "main",
       backend: "llama.cpp",
-      numContext: 128,
     });
 
     await Assert.rejects(

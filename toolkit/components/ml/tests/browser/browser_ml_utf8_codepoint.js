@@ -36,7 +36,6 @@ const UTF8_MODEL = {
   modelFile: "byte-fallback.gguf",
   modelRevision: "main",
   backend: "llama.cpp",
-  numContext: 128,
 };
 
 async function runUtf8Generation({ minOutputBufferSize, nPredict }) {

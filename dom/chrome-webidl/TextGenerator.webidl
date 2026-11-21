@@ -39,7 +39,6 @@ enum TextGenerationKVCacheDtype {
 };
 
 dictionary TextGeneratorCreateOptions {
-  unsigned long contextSize = 1024;
   /** 0 resolves to the physical-core count. Values above the backend limit reject. */
   unsigned long numThreads = 0;
   /** Decode-phase thread count; 0 follows numThreads. */
@@ -75,6 +74,7 @@ dictionary TextGenerationSampler {
 
 dictionary TextGenerationRequest {
   required sequence<TextGenerationMessage> messages;
+  /** Capped at the model's trained context. Sizes the context with the prompt. */
   unsigned long maxTokens = 512;
   /** Generated tokens batched into one delta callback. */
   unsigned long bufferLength = 20;

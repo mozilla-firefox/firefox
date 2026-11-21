@@ -166,12 +166,10 @@ struct MLBackendInitMarker : public BaseMarkerType<MLBackendInitMarker> {
   static constexpr const char* Name = "MLBackendInit";
   static constexpr const char* Description =
       "Bringing the backend up in the generator process: the model "
-      "descriptor, the weights, and the context.";
+      "descriptor and the weights.";
 
   using MS = MarkerSchema;
   static constexpr MS::PayloadField PayloadFields[] = {
-      {"contextSize", MS::InputType::Uint32, "Context size",
-       MS::Format::Integer},
       {"threads", MS::InputType::Uint32, "Prompt threads", MS::Format::Integer},
       {"threadsDecoding", MS::InputType::Uint32, "Decode threads",
        MS::Format::Integer},

@@ -16,7 +16,6 @@ const LLAMA_SMOKE_OPTIONS = {
   modelId: "Mozilla/test-llama",
   modelFile: "TinyStories-656K.Q8_0.gguf",
   modelRevision: "main",
-  numContext: 256,
 };
 
 const LLAMA_SMOKE_GREEDY = [{ type: "top-k", topK: 1 }, { type: "dist" }];
@@ -387,7 +386,6 @@ add_task(async function test_ml_smoke_test_llama_sequential_runs() {
         modelFile: "TinyStories-656K.Q8_0.gguf",
         modelRevision: "main",
         backend: "llama.cpp",
-        numContext: 128,
       });
 
       const request = {
@@ -418,7 +416,6 @@ add_task(async function test_ml_smoke_test_llama_overlap_guard() {
         modelFile: "TinyStories-656K.Q8_0.gguf",
         modelRevision: "main",
         backend: "llama.cpp",
-        numContext: 128,
       });
 
       const request = {
@@ -462,7 +459,6 @@ add_task(
           modelFile: "TinyStories-656K.Q8_0.gguf",
           modelRevision: "main",
           backend: "llama.cpp",
-          numContext: 256,
         });
 
         const request = {
@@ -508,7 +504,6 @@ add_task(
           modelFile: "TinyStories-656K.Q8_0.gguf",
           modelRevision: "main",
           backend: "llama.cpp",
-          numContext: 256,
         });
 
         const request = {

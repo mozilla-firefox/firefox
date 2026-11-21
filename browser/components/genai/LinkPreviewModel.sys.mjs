@@ -8,10 +8,6 @@ import { XPCOMUtils } from "resource://gre/modules/XPCOMUtils.sys.mjs";
 // On average, each token represents about 4 characters. A factor of 3.5 is used
 // instead of 4 to account for edge cases.
 const CHARACTERS_PER_TOKEN = 3.5;
-// On average, one token corresponds to approximately 4 characters, meaning 0.25
-// times the character count would suffice under normal conditions. To ensure
-// robustness and handle edge cases, we use a more conservative factor of 0.69.
-const CONTEXT_SIZE_MULTIPLIER = 0.69;
 const DEFAULT_INPUT_SENTENCES = 6;
 const MIN_SENTENCE_LENGTH = 14;
 const MIN_WORD_COUNT = 5;
@@ -503,13 +499,6 @@ export const LinkPreviewModel = {
     const nPredict = Math.ceil(processedInput.length / CHARACTERS_PER_TOKEN);
     const systemPrompt =
       lazy.prompt ?? remoteRequestOptions?.systemPrompt ?? DEFAULT_INPUT_PROMPT;
-    // Estimate an upper bound for the required number of tokens. This estimate
-    // must be large enough to include prompt tokens, input tokens, and
-    // generated tokens.
-    const numContext =
-      Math.ceil(
-        (processedInput.length + systemPrompt.length) * CONTEXT_SIZE_MULTIPLIER
-      ) + nPredict;
 
     let engine;
     try {
@@ -522,7 +511,6 @@ export const LinkPreviewModel = {
           modelHubRootUrl: "https://model-hub.mozilla.org",
           modelId: "HuggingFaceTB/SmolLM2-360M-Instruct-GGUF",
           modelRevision: "main",
-          numContext,
           taskName: "llama-text-generation",
           useMlock: false,
           useMmap: false,

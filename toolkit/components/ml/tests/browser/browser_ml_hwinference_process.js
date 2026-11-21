@@ -32,7 +32,6 @@ add_task(async function test_hwinference_crash_and_respawn() {
     const engine = await createEngine({
       ...TINYSTORIES_ENGINE_OPTIONS,
       engineId: "hwi-crash",
-      numContext: 4096,
     });
 
     const pid = await hwInferencePid();

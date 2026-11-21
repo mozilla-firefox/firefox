@@ -1209,7 +1209,6 @@ add_task(async function test_ml_engine_get_status_by_engine_id() {
         numThreads: "NOT_COMPARED",
         executionPriority: null,
         kvCacheDtype: null,
-        numContext: 1024,
         numBatch: 512,
         flashAttn: false,
         useMmap: false,

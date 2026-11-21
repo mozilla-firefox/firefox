@@ -59,14 +59,12 @@ const nsTArray<Device>& Devices(const LlamaLibWrapper* aLib);
 // 1. Construct the class using the default constructor.
 // 2. Call `Reinitialize(...)` to load a model.
 // 3. (Optional) Use `FormatChat(...)` to build a prompt from chat messages.
-// 4. Call `Generate(...)` to start streaming token output.
-// 5. To update **context-only** settings (not the model), call
-// `ReinitializeContext(...)`.
-// 6. To update both the model and context, call `Reinitialize(...)`.
+// 4. Call `Generate(...)` to start streaming token output. Each call creates
+// a context for its prompt and maxGeneratedTokens.
+// 5. To load another model, call `Reinitialize(...)`.
 //
-// At the moment, this class is not thread-safe, as it holds a reference to the
-// context state `mCtx`, `mThreadpool`, `mThreadpoolBatch` instead of
-// re-initializing them at each generation.
+// At the moment, this class is not thread-safe, as it holds the context state
+// `mThreadpool`, `mThreadpoolBatch` as members.
 class LlamaBackend {
  public:
   NS_INLINE_DECL_THREADSAFE_REFCOUNTING(LlamaBackend)
@@ -74,8 +72,8 @@ class LlamaBackend {
   // Default constructor. Call Reinitialize before use.
   LlamaBackend() = default;
 
-  // Reinitializes the entire backend (model + context).
-  // Use this if you need to load a different model.
+  // Loads the model. The context is created by Generate, sized to its
+  // request.
   ResultStatus Reinitialize(const LlamaModelOptions& aOptions, FILE* aFp);
 
   // Converts structured chat messages into a flat prompt string.
@@ -100,11 +98,8 @@ class LlamaBackend {
   const nsCString& DeviceId() const { return mDevice; }
   dom::HWInferenceDeviceKind DeviceKind() const { return mDeviceKind; }
 
-  // Reinitializes the context only (same model).
-  // Use this to change generation parameters like context size, temperature,
-  // etc.
-  ResultStatus ReinitializeContext(const LlamaContextOptions& aOptions,
-                                   int aNumContext);
+  // Cap on a generation's budget: the context the model was trained on.
+  int32_t MaxGeneratedTokens() const;
 
   // Custom deleters for managing llama.cpp and ggml resources
   struct GgmlThreadpoolDeleter {
@@ -134,6 +129,7 @@ class LlamaBackend {
 
   // sampler result alias
   using SamplerResult = mozilla::Result<LlamaSamplerUPtr, Error>;
+  using ContextResult = mozilla::Result<LlamaContextUPtr, Error>;
 
   // Protected because RefPtr requires a non-public destructor
  protected:
@@ -149,19 +145,17 @@ class LlamaBackend {
   ResultStatus LoadOnFirstDevice(const LlamaModelOptions& aOptions, FILE* aFp,
                                  llama_model_params aParams);
 
+  ResultStatus CreateThreadpools();
+  ContextResult CreateContext(int aNumContext);
+
   // Pointer to the dynamically loaded llama library
   LlamaLibWrapper* mLib = nullptr;
 
   // Holds the model data. Initialized once & reused across generation sessions.
   LlamaModelUPtr mModel;
 
-  // Generation context. Initialized once & reused across generation sessions.
-  // However, it is automatically re-initialized if the configured
-  // context length is lower than the required number for a generation session.
-  LlamaContextUPtr mCtx;
-
   // Threadpool used for processing single tokens, usually during decoding.
-  // Initialized once & reused across generation sessions.
+  // Initialized with the model & reused across generation sessions.
   GgmlThreadpoolUPtr mThreadpool;
 
   // Used for processing multiple tokens at a time during prompt processing.

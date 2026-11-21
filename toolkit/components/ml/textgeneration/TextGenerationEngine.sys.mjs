@@ -49,6 +49,7 @@ import { XPCOMUtils } from "resource://gre/modules/XPCOMUtils.sys.mjs";
  * @property {Array<{ role: string, content: unknown, tool_calls?: unknown[] }>} args
  * @property {Record<string, any>} [inferenceParams]
  *   Supports temperature, top_p, max_completion_tokens and max_tokens.
+ *   Without a token limit, generation stops after DEFAULT_MAX_TOKENS.
  *   temperature and top_p override the supplied sampler chain.
  *   response_format is ignored.
  * @property {unknown[]} [tools]
@@ -101,7 +102,6 @@ function toKVCacheDtype(dtype) {
 function toCreateOptions(options) {
   /** @type {TextGeneratorCreateOptions} */
   const createOptions = {
-    contextSize: options.numContext ?? undefined,
     batchSize: options.numBatch ?? undefined,
     flashAttn: options.flashAttn ?? undefined,
     featureId: options.featureId ?? "",
@@ -156,6 +156,7 @@ function toGenerateRequest(request) {
 }
 
 const CHAT_COMPLETION_ROLES = new Set(["system", "user", "assistant"]);
+const DEFAULT_MAX_TOKENS = 2048;
 
 /**
  * @param {{ temperature?: number, top_p?: number, samplers?: TextGenerationSampler[] }} inferenceParams
@@ -223,9 +224,8 @@ function toGenerateRequestFromChatCompletion(request) {
   const params = request.inferenceParams ?? {};
   /** @type {TextGenerationRequest} */
   const generateRequest = { messages, samplers: toSamplers(params) };
-  // Use the context limit when no token limit is requested.
   generateRequest.maxTokens =
-    params.max_completion_tokens ?? params.max_tokens ?? 0xffffffff;
+    params.max_completion_tokens ?? params.max_tokens ?? DEFAULT_MAX_TOKENS;
   return generateRequest;
 }
 

@@ -41,12 +41,10 @@ const articles = [
   {
     data: `${rootDataUrl}/tiny.txt`,
     type: "tiny",
-    numTokens: 200,
   },
   {
     data: `${rootDataUrl}/big.txt`,
     type: "big",
-    numTokens: 1100,
   },
 ];
 
@@ -63,7 +61,6 @@ for (const model of [smollm2Model, qwen3Model]) {
       article: article.data,
       engineId,
       perfName,
-      numTokens: article.numTokens,
     };
 
     numEngines += 1;
@@ -127,7 +124,6 @@ async function run_summarizer_with_perf({
   article,
   engineId,
   perfName,
-  numTokens,
   trackPeakMemory,
   ...llamaOptions
 }) {
@@ -135,28 +131,12 @@ async function run_summarizer_with_perf({
 
   const numNewTokens = 80;
 
-  const nextPowerOf2 = n => {
-    if (n <= 1) {
-      return 1;
-    }
-    n--;
-    n |= n >> 1;
-    n |= n >> 2;
-    n |= n >> 4;
-    n |= n >> 8;
-    n |= n >> 16;
-    return n + 1;
-  };
-
-  const numContext = nextPowerOf2(numTokens + numNewTokens + 10);
-
   const options = new PipelineOptions({
     engineId,
     taskName,
     modelHubUrlTemplate: "{model}/{revision}",
     modelId,
     modelRevision: "main",
-    numContext,
     backend: "llama.cpp",
     timeoutMS: -1,
     ...llamaOptions,

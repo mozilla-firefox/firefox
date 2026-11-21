@@ -142,7 +142,7 @@ add_task(async function test_clear_during_generate_rejects() {
 });
 
 add_task(async function test_cancel_is_scoped_to_its_generation() {
-  const generator = await createTinyStoriesGenerator({ contextSize: 4096 });
+  const generator = await createTinyStoriesGenerator();
   try {
     // Cancelled as soon as it is sent: waiting for a delta lets a lagging
     // utility main thread finish a short budget before the cancel lands.

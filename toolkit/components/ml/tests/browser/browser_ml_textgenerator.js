@@ -118,8 +118,8 @@ add_task(async function test_textgenerator_max_tokens_bounds() {
     );
     Assert.lessOrEqual(
       huge.usage.generatedTokens,
-      TINYSTORIES_CONTEXT_SIZE,
-      "A budget past the context is served up to the context, not beyond"
+      TINYSTORIES_TRAINED_CONTEXT,
+      "A budget past the trained context is capped to it"
     );
   } finally {
     generator.terminate();
@@ -128,7 +128,7 @@ add_task(async function test_textgenerator_max_tokens_bounds() {
 
 add_task(async function test_textgenerator_cancel() {
   const maxTokens = 4000;
-  const generator = await createTinyStoriesGenerator({ contextSize: 4096 });
+  const generator = await createTinyStoriesGenerator();
   try {
     let streamed = "";
     let cancelRequested = false;
@@ -188,7 +188,7 @@ add_task(async function test_prompt_code_points() {
   const modelFile = await File.createFromFileName(
     getTestFilePath("data/Mozilla/test-llama/main/byte-fallback.gguf")
   );
-  const generator = await TextGenerator.create(modelFile, { contextSize: 128 });
+  const generator = await TextGenerator.create(modelFile);
   try {
     const request = {
       messages: [{ role: "user", content: "abc" }],
@@ -213,10 +213,7 @@ add_task(async function test_prompt_code_points() {
 add_task(async function test_prompt_longer_than_batch() {
   const results = [];
   for (const batchSize of [4, 512]) {
-    const generator = await createTinyStoriesGenerator({
-      batchSize,
-      contextSize: 512,
-    });
+    const generator = await createTinyStoriesGenerator({ batchSize });
     try {
       results.push(
         await generator.generate({

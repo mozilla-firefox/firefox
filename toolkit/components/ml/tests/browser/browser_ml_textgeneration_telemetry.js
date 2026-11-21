@@ -411,7 +411,6 @@ add_task(async function test_terminate_mid_generation() {
       ...TINYSTORIES_ENGINE_OPTIONS,
       engineId: "hwi-tel-terminate",
       featureId: "link-preview",
-      numContext: 4096,
     });
     await Assert.rejects(
       (async () => {

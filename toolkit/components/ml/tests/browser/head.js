@@ -1494,7 +1494,8 @@ const TINYSTORIES_STORYTELLER_PROMPT = [
   { role: "user", content: "Once upon a time there was a small mouse who" },
 ];
 
-const TINYSTORIES_CONTEXT_SIZE = 512;
+// The context TinyStories-656K was trained on.
+const TINYSTORIES_TRAINED_CONTEXT = 512;
 // Chaos mode confines the utility process to CPU 0, where every ggml barrier
 // costs a scheduler slice: 74 ms per token with two threads, 2 s with the
 // default pool. One thread there, the default pool everywhere else.
@@ -1510,7 +1511,6 @@ const TINYSTORIES_ENGINE_OPTIONS = {
   modelId: "Mozilla/test-llama",
   modelFile: "TinyStories-656K.Q8_0.gguf",
   modelRevision: "main",
-  numContext: 256,
   ...TINYSTORIES_CHAOS_THREADS,
 };
 
@@ -1519,7 +1519,6 @@ async function createTinyStoriesGenerator(options = {}) {
     getTestFilePath("data/Mozilla/test-llama/main/TinyStories-656K.Q8_0.gguf")
   );
   return TextGenerator.create(modelFile, {
-    contextSize: TINYSTORIES_CONTEXT_SIZE,
     ...TINYSTORIES_CHAOS_THREADS,
     ...options,
   });

@@ -147,22 +147,19 @@ struct Session {
 };
 
 // One fd per generator: sending a FileDescriptor consumes its handle.
-Session CreateGenerator(const ipc::FileDescriptor& aModel,
-                        uint32_t aContextSize = 512) {
+Session CreateGenerator(const ipc::FileDescriptor& aModel) {
   Session session;
   session.mGenerator = TextGenerationParent::Create(
-      aModel, TextGenerationOptions(aContextSize, 2, 2, 512,
-                                    dom::TextGenerationKVCacheDtype::F16, false,
-                                    DevicePlacement()));
+      aModel,
+      TextGenerationOptions(2, 2, 512, dom::TextGenerationKVCacheDtype::F16,
+                            false, DevicePlacement()));
   if (!session.mGenerator) {
     printf_stderr("CreateGenerator: TextGenerationParent::Create() failed\n");
   }
   return session;
 }
 
-Session CreateGenerator(uint32_t aContextSize = 512) {
-  return CreateGenerator(OpenModelFd(kModelFile), aContextSize);
-}
+Session CreateGenerator() { return CreateGenerator(OpenModelFd(kModelFile)); }
 
 // Some() carries the load failure; Nothing() means the model loaded.
 Maybe<TextGenerationParent::LoadFailure> WaitForReady(Session& aSession) {
@@ -249,8 +246,8 @@ TEST_F(TextGenerationTest, GenerateFromModel) {
   Teardown(session);
 }
 
-TEST_F(TextGenerationTest, ContextFullEndsWithLength) {
-  Session session = CreateGenerator(/* aContextSize */ 128);
+TEST_F(TextGenerationTest, BudgetCappedAtTrainedContext) {
+  Session session = CreateGenerator();
   ASSERT_TRUE(session.mGenerator);
   EXPECT_TRUE(WaitForReady(session).isNothing());
 
@@ -260,9 +257,8 @@ TEST_F(TextGenerationTest, ContextFullEndsWithLength) {
   ASSERT_EQ(response.type(), GenerateResponse::TGenerateResult);
   const GenerateResult& result = response.get_GenerateResult();
   EXPECT_EQ(result.reason(), dom::TextGenerationFinishReason::Length);
-  EXPECT_GT(result.usage().generatedTokens(), 0u);
-  // llama.cpp may allocate a larger context than requested.
-  EXPECT_LT(result.usage().generatedTokens(), 4096u);
+  // The test model is trained on 512 tokens.
+  EXPECT_EQ(result.usage().generatedTokens(), 512u);
 
   Teardown(session);
 }

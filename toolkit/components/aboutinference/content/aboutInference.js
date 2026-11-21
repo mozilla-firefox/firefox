@@ -293,8 +293,6 @@ async function runTextGeneration() {
   const maxTokens = parseInt(document.getElementById("tg.maxTokens").value);
   const engines = parseInt(document.getElementById("tg.engines").value);
   const runs = parseInt(document.getElementById("tg.runs").value);
-  // Estimate prompt tokens from its length, allowing 64 for the chat template.
-  const numContext = prompt.length + maxTokens + 64;
   const options = {
     featureId: "about-inference",
     engineId: "about-inference-text-generation",
@@ -304,7 +302,6 @@ async function runTextGeneration() {
     modelFile: fullModelId.substring(lastSlash + 1),
     modelRevision: document.getElementById("tg.revision").value.trim(),
     numThreads: parseInt(document.getElementById("tg.threads").value),
-    numContext,
     kvCacheDtype: document.getElementById("tg.kvCacheDtype").value,
     flashAttn: document.getElementById("tg.flashAttn").checked,
     useMmap: true,
@@ -1110,13 +1107,11 @@ async function runInference() {
     const modelFile = modelId.substring(lastSlashIndex + 1);
     modelId = modelId.substring(0, lastSlashIndex);
 
-    const numContext = JSON.stringify(inputData.inputArgs).length;
-    const numBatch = Math.min(numContext, 1024);
+    const numBatch = Math.min(JSON.stringify(inputData.inputArgs).length, 1024);
     additionalEngineOptions = {
       modelFile,
       modelId,
       backend: "llama.cpp",
-      numContext,
       numBatch,
       useMlock: false,
       useMmap: true,
@@ -1550,7 +1545,6 @@ async function runBenchmark() {
         modelRevision: "main",
         modelHub: "mozilla",
         modelHubRootUrl: "https://model-hub.mozilla.org",
-        numContext: 1024,
         numBatch: 1024,
         useMlock: false,
         useMmap: true,
