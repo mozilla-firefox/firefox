@@ -344,7 +344,7 @@ urlbar-result-aria-group-sports =
 
 # A label shown above temporal search suggestions.
 urlbar-group-temporal-seasonal =
-  .label = Seasonal searches
+  .label = Seasonal Searches
 
 # This string is shown in the result menu.
 urlbar-result-menu-dont-show-temporal-seasonal = Don’t show seasonal searches
