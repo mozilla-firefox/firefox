@@ -34,6 +34,8 @@
 #  define ZMIJ_MSC_VER 0
 #endif
 
+#include "mozilla/Types.h"
+
 #if defined(__has_builtin) && !defined(ZMIJ_NO_BUILTINS)
 #  define ZMIJ_HAS_BUILTIN(x) __has_builtin(x)
 #else
@@ -802,6 +804,10 @@ auto to_decimal_big(Float value) noexcept -> dec_fp<uint128_t>;
 
 template <typename Float, bool ecmascript = false>
 auto write(char* buffer, Float value) noexcept -> char*;
+
+extern template MFBT_API auto write<double, true>(char* buffer,
+                                                  double value) noexcept
+    -> char*;
 
 // Writes the shortest decimal representation of `value`, correctly rounded
 // (ties to even), into `out`, truncating after `n` chars. Returns the total

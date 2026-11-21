@@ -23,6 +23,7 @@ vendoring:
   tracking: commit
   patches:
     - patches/write_ecmascript.patch
+    - patches/mfbt_api_markers.patch
 
   exclude:
     - .clang-format
