@@ -319,12 +319,12 @@ def npx(command_context, args):
 
 
 @Command(
-    "firefox-devtools-mcp",
+    "firefox-mcp",
     category="devenv",
-    description="Run the firefox-devtools-mcp server with the local build.",
+    description="Run the Firefox MCP server with the local build.",
 )
 @CommandArgument("args", nargs=argparse.REMAINDER)
-def devtools_mcp(command_context, args):
+def firefox_mcp(command_context, args):
     import os
     from pathlib import Path
 
@@ -349,8 +349,18 @@ def devtools_mcp(command_context, args):
 
     return npx(
         command_context,
-        ["@mozilla/firefox-devtools-mcp-moz"] + extra_args + args,
+        ["@mozilla/firefox-mcp-moz"] + extra_args + args,
     )
+
+
+@Command(
+    "firefox-devtools-mcp",
+    category="devenv",
+    description="Alias for the firefox-mcp command.",
+)
+@CommandArgument("args", nargs=argparse.REMAINDER)
+def firefox_devtools_mcp(command_context, args):
+    return firefox_mcp(command_context, args)
 
 
 def logspam_create_parser(subcommand):

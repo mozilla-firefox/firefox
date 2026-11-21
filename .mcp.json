@@ -10,7 +10,7 @@
       "args": [
         "mach",
         "--quiet",
-        "firefox-devtools-mcp",
+        "firefox-mcp",
         "--pref",
         "remote.prefs.recommended=false",
         "--pref",

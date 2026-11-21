@@ -14,7 +14,7 @@ from mozunit import main
 sys.path.insert(0, os.path.join(buildconfig.topsrcdir, "tools"))
 
 
-class TestDevtoolsMcp(unittest.TestCase):
+class TestFirefoxMcp(unittest.TestCase):
     def setUp(self):
         self.remove_cats = []
         for cat in ("build", "post-build", "misc", "testing", "devenv"):
@@ -37,18 +37,18 @@ class TestDevtoolsMcp(unittest.TestCase):
     @patch("os.path.exists", return_value=True)
     @patch("mach_commands.npx")
     def test_delegates_to_npx_with_build_args(self, mock_npx, mock_exists):
-        from mach_commands import devtools_mcp
+        from mach_commands import firefox_mcp
 
         mock_context = self._mock_context()
         mock_npx.return_value = 0
 
-        devtools_mcp(mock_context, args=["--pref", "x=1"])
+        firefox_mcp(mock_context, args=["--pref", "x=1"])
 
         mock_context.get_binary_path.assert_called_once_with(validate_exists=True)
         mock_npx.assert_called_once_with(
             mock_context,
             [
-                "@mozilla/firefox-devtools-mcp-moz",
+                "@mozilla/firefox-mcp-moz",
                 "--firefox-path",
                 "/obj/dist/bin/firefox",
                 "--profile-path",
@@ -60,7 +60,7 @@ class TestDevtoolsMcp(unittest.TestCase):
 
     @patch("mach_commands.npx")
     def test_starts_without_binary_when_no_build(self, mock_npx):
-        from mach_commands import devtools_mcp
+        from mach_commands import firefox_mcp
 
         from mozbuild.base import BinaryNotFoundException
 
@@ -70,17 +70,17 @@ class TestDevtoolsMcp(unittest.TestCase):
         )
         mock_npx.return_value = 0
 
-        result = devtools_mcp(mock_context, args=[])
+        result = firefox_mcp(mock_context, args=[])
 
         self.assertEqual(result, 0)
         mock_npx.assert_called_once_with(
             mock_context,
-            ["@mozilla/firefox-devtools-mcp-moz"],
+            ["@mozilla/firefox-mcp-moz"],
         )
 
     @patch("mach_commands.npx")
     def test_starts_without_binary_when_no_build_environment(self, mock_npx):
-        from mach_commands import devtools_mcp
+        from mach_commands import firefox_mcp
 
         from mozbuild.base import BuildEnvironmentNotFoundException
 
@@ -90,28 +90,28 @@ class TestDevtoolsMcp(unittest.TestCase):
         )
         mock_npx.return_value = 0
 
-        result = devtools_mcp(mock_context, args=[])
+        result = firefox_mcp(mock_context, args=[])
 
         self.assertEqual(result, 0)
         mock_npx.assert_called_once_with(
             mock_context,
-            ["@mozilla/firefox-devtools-mcp-moz"],
+            ["@mozilla/firefox-mcp-moz"],
         )
 
     @patch("os.path.exists", return_value=True)
     @patch("mach_commands.npx")
     def test_works_with_no_extra_args(self, mock_npx, mock_exists):
-        from mach_commands import devtools_mcp
+        from mach_commands import firefox_mcp
 
         mock_context = self._mock_context()
         mock_npx.return_value = 0
 
-        devtools_mcp(mock_context, args=[])
+        firefox_mcp(mock_context, args=[])
 
         mock_npx.assert_called_once_with(
             mock_context,
             [
-                "@mozilla/firefox-devtools-mcp-moz",
+                "@mozilla/firefox-mcp-moz",
                 "--firefox-path",
                 "/obj/dist/bin/firefox",
                 "--profile-path",
@@ -122,7 +122,7 @@ class TestDevtoolsMcp(unittest.TestCase):
     @patch("os.path.exists", return_value=True)
     @patch("mach_commands.npx")
     def test_profile_path_derives_from_topobjdir(self, mock_npx, mock_exists):
-        from mach_commands import devtools_mcp
+        from mach_commands import firefox_mcp
 
         mock_context = self._mock_context(
             topobjdir="/builds/objdir",
@@ -130,7 +130,7 @@ class TestDevtoolsMcp(unittest.TestCase):
         )
         mock_npx.return_value = 0
 
-        devtools_mcp(mock_context, args=[])
+        firefox_mcp(mock_context, args=[])
 
         call_args = mock_npx.call_args[0][1]
         profile_idx = call_args.index("--profile-path")
@@ -143,18 +143,30 @@ class TestDevtoolsMcp(unittest.TestCase):
     def test_skips_binary_detection_when_firefox_path_provided(
         self, mock_npx, mock_exists
     ):
-        from mach_commands import devtools_mcp
+        from mach_commands import firefox_mcp
 
         mock_context = self._mock_context()
         mock_npx.return_value = 0
 
-        devtools_mcp(mock_context, args=["--firefox-path", "/custom/firefox"])
+        firefox_mcp(mock_context, args=["--firefox-path", "/custom/firefox"])
 
         mock_context.get_binary_path.assert_not_called()
         mock_npx.assert_called_once_with(
             mock_context,
-            ["@mozilla/firefox-devtools-mcp-moz", "--firefox-path", "/custom/firefox"],
+            ["@mozilla/firefox-mcp-moz", "--firefox-path", "/custom/firefox"],
         )
+
+    @patch("mach_commands.firefox_mcp")
+    def test_firefox_devtools_mcp_alias(self, mock_firefox_mcp):
+        from mach_commands import firefox_devtools_mcp
+
+        mock_context = self._mock_context()
+        mock_firefox_mcp.return_value = 0
+
+        result = firefox_devtools_mcp(mock_context, args=["--headless"])
+
+        self.assertEqual(result, 0)
+        mock_firefox_mcp.assert_called_once_with(mock_context, ["--headless"])
 
 
 if __name__ == "__main__":

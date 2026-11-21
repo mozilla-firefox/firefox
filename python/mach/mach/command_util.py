@@ -120,6 +120,7 @@ MACH_COMMANDS = {
         "python/mozbuild/mozbuild/frontend/mach_commands.py"
     ),
     "firefox-devtools-mcp": MachCommandReference("tools/mach_commands.py"),
+    "firefox-mcp": MachCommandReference("tools/mach_commands.py"),
     "firefox-ui-functional": MachCommandReference(
         "testing/firefox-ui/mach_commands.py"
     ),

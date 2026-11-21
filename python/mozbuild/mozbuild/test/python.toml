@@ -145,11 +145,11 @@ subsuite = "mozbuild"
 
 ["test_containers.py"]
 
-["test_devtools_mcp.py"]
-
 ["test_dotproperties.py"]
 
 ["test_expression.py"]
+
+["test_firefox_mcp.py"]
 
 ["test_generate_sbom.py"]
 
