@@ -41,6 +41,7 @@ import { XPCOMUtils } from "resource://gre/modules/XPCOMUtils.sys.mjs";
  * @property {TextGenerationSampler[]} [samplers]
  * @property {number[]} [stopTokens]
  * @property {boolean} [stopOnEndOfGenerationTokens]
+ * @property {string} [featureId] Overrides the engine's feature ID for run telemetry.
  */
 
 /**
@@ -409,10 +410,12 @@ export class TextGenerationEngine {
   /**
    * @param {StreamStats} stats
    * @param {EngineRunResult} result
+   * @param {string} [featureId]
    */
-  #recordRun(stats, result) {
+  #recordRun(stats, result, featureId) {
     this.telemetry.recordRunInferenceSuccessFlow(this.engineId, result.metrics);
     this.telemetry.recordEngineRun({
+      feature_id: featureId,
       beforeRun: stats.beforeRun,
       resourcesBefore: result.resourcesBefore,
       resourcesAfter: result.resourcesAfter,
@@ -430,7 +433,7 @@ export class TextGenerationEngine {
     const stats = new StreamStats();
     try {
       const result = await this.#execute(request);
-      this.#recordRun(stats, result);
+      this.#recordRun(stats, result, request.featureId);
       return result;
     } catch (error) {
       this.telemetry.recordRunInferenceFailure(error);
@@ -464,7 +467,7 @@ export class TextGenerationEngine {
       // Link Preview keys its final flush on an empty terminal chunk.
       yield { text: "", tokens: [], isPrompt: false };
 
-      this.#recordRun(stats, result);
+      this.#recordRun(stats, result, request.featureId);
       settled = true;
       return result;
     } catch (error) {
@@ -477,7 +480,7 @@ export class TextGenerationEngine {
         this.cancel();
         const result = await completion?.catch(() => null);
         if (result) {
-          this.#recordRun(stats, result);
+          this.#recordRun(stats, result, request.featureId);
         }
       }
     }
