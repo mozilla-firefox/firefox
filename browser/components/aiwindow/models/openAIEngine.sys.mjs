@@ -4,6 +4,10 @@
  * file, You can obtain one at http://mozilla.org/MPL/2.0/.
  */
 
+/**
+ * @import { PipelineOptions } from "chrome://global/content/ml/EngineProcess.sys.mjs"
+ */
+
 import { AuthProvider } from "moz-src:///browser/components/aiwindow/models/AuthProvider.sys.mjs";
 import { createEngine } from "chrome://global/content/ml/EngineProcess.sys.mjs";
 import { XPCOMUtils } from "resource://gre/modules/XPCOMUtils.sys.mjs";
@@ -95,6 +99,13 @@ export class openAIEngine {
   #apiKey = null;
 
   /**
+   * Whether the engine runs on device, where the token retry doesn't apply.
+   *
+   * @type {boolean}
+   */
+  #onDevice = false;
+
+  /**
    * Checks whether a custom endpoint is configured via pref.
    *
    * @returns {boolean} True if the endpoint pref has a user-set value.
@@ -154,6 +165,9 @@ export class openAIEngine {
    * @param {string} options.feature
    * @param {string} [options.baseURL] - Endpoint base URL
    * @param {string} [options.apiKey] - API key for the endpoint
+   * @param {Partial<PipelineOptions>} [options.onDeviceOptions] - Runs on device
+   *   with llama.cpp instead of the cloud endpoint. The caller terminates
+   *   `engineInstance` when finished.
    * @returns {Promise<openAIEngine>}
    */
   static async build({
@@ -165,9 +179,10 @@ export class openAIEngine {
     feature,
     baseURL = openAIEngine.endpoint,
     apiKey = "",
+    onDeviceOptions,
   }) {
     const engine = new openAIEngine();
-    const engineId = `${DEFAULT_ENGINE_ID}-${feature}-${model}`;
+    const engineId = `${DEFAULT_ENGINE_ID}-${feature}-${onDeviceOptions?.modelId ?? model}`;
     engine.#engineId = engineId;
     engine.feature = feature;
     engine.model = model;
@@ -177,16 +192,24 @@ export class openAIEngine {
     engine.#flowId = flowId;
     engine.#baseURL = baseURL;
     engine.#apiKey = apiKey;
-    engine.engineInstance = await openAIEngine.#createOpenAIEngine(
-      engineId,
-      serviceType,
-      purpose,
-      model,
-      flowId,
-      feature,
-      baseURL,
-      apiKey
-    );
+    engine.#onDevice = !!onDeviceOptions;
+    engine.engineInstance = onDeviceOptions
+      ? await openAIEngine._createEngine({
+          engineId,
+          featureId: feature,
+          flowId,
+          ...onDeviceOptions,
+        })
+      : await openAIEngine.#createOpenAIEngine(
+          engineId,
+          serviceType,
+          purpose,
+          model,
+          flowId,
+          feature,
+          baseURL,
+          apiKey
+        );
     return engine;
   }
 
@@ -317,9 +340,9 @@ export class openAIEngine {
     try {
       return await this.engineInstance.run(engineContent, { signal });
     } catch (ex) {
-      // Skip the token retry flow when using a custom endpoint,
+      // Skip the token retry flow on device or with a custom endpoint,
       // as the retry logic only applies to AuthProvider tokens.
-      if (!this._is401Error(ex) || this.isCustomEndpoint) {
+      if (!this._is401Error(ex) || this.isCustomEndpoint || this.#onDevice) {
         throw ex;
       }
 
@@ -406,9 +429,9 @@ export class openAIEngine {
         signal
       );
     } catch (ex) {
-      // Skip the token retry flow when using a custom endpoint,
+      // Skip the token retry flow on device or with a custom endpoint,
       // as the retry logic only applies to AuthProvider tokens.
-      if (!this._is401Error(ex) || this.isCustomEndpoint) {
+      if (!this._is401Error(ex) || this.isCustomEndpoint || this.#onDevice) {
         throw ex;
       }
 

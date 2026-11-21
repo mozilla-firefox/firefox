@@ -4,6 +4,10 @@
  * file, You can obtain one at http://mozilla.org/MPL/2.0/.
  */
 
+/**
+ * @import { PipelineOptions } from "chrome://global/content/ml/EngineProcess.sys.mjs"
+ */
+
 import {
   getRemoteRecords,
   selectMainConfig,
@@ -557,6 +561,8 @@ async function resolveInferenceModel(feature, config, opts = {}) {
  *
  * @param {string} feature
  * @param {object} [opts]
+ * @param {Partial<PipelineOptions>} [opts.onDeviceOptions] - Runs on device
+ *   with llama.cpp instead of the cloud endpoint.
  * @returns {Promise<{engine: openAIEngine, parameters: inferenceParams}>}
  */
 export async function buildEngineForFeature(feature, opts = {}) {
@@ -591,6 +597,7 @@ export async function buildEngineForFeature(feature, opts = {}) {
     feature,
     baseURL,
     apiKey,
+    onDeviceOptions: opts.onDeviceOptions,
   });
 
   return { engine, parameters };
