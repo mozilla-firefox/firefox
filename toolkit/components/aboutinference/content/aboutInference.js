@@ -16,6 +16,7 @@
 const lazy = {};
 
 ChromeUtils.defineESModuleGetters(lazy, {
+  AppConstants: "resource://gre/modules/AppConstants.sys.mjs",
   DownloadUtils: "resource://gre/modules/DownloadUtils.sys.mjs",
   ModelHub: "chrome://global/content/ml/ModelHub.sys.mjs",
   getInferenceProcessInfo: "chrome://global/content/ml/Utils.sys.mjs",
@@ -1424,6 +1425,25 @@ function showSubTab(name) {
   }
 }
 
+function isBrowserApp() {
+  return lazy.AppConstants.MOZ_BUILD_APP === "browser";
+}
+
+function showMemories() {
+  const show = location.hash === "#memories" && isBrowserApp();
+  const panel = document.getElementById("memories");
+  document.l10n.setAttributes(
+    document.querySelector("title"),
+    show ? "about-inference-memories-title" : "about-inference-title"
+  );
+  document.body.classList.toggle("memories", show);
+  if (!show) {
+    panel.replaceChildren();
+  } else if (!panel.firstChild) {
+    panel.append(document.createElement("memories-view"));
+  }
+}
+
 function onSubTabKeydown(event) {
   const tabs = [...event.currentTarget.querySelectorAll("[role='tab']")];
   const rtl = getComputedStyle(document.documentElement).direction === "rtl";
@@ -1634,6 +1654,9 @@ async function runBenchmark() {
  * @async
  */
 window.onload = async function () {
+  document.getElementById("memories-link").hidden = !isBrowserApp();
+  showMemories();
+  window.addEventListener("hashchange", showMemories);
   let menu = document.getElementById("categories");
   menu.addEventListener("click", function click(e) {
     if (

@@ -139,6 +139,7 @@ firefox.ai.runtime:
       - title-generation-engine
       - smart-openai-memories-generation
       - smart-openai-memories-usage
+      - about-inference-memories
 
   engine_creation_failure:
     type: event

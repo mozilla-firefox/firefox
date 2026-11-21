@@ -11,14 +11,20 @@
     <meta name="color-scheme" content="light dark" />
     <title data-l10n-id="about-inference-title"></title>
     <link rel="stylesheet" href="chrome://global/content/aboutInference.css" />
+    <link rel="localization" href="toolkit/branding/brandings.ftl" />
     <link rel="localization" href="preview/aboutInference.ftl" />
     <script
       type="module"
       src="chrome://global/content/model-files-view.mjs"
     ></script>
     <script src="chrome://global/content/aboutInference.js"></script>
+    <script
+      type="module"
+      src="chrome://global/content/memories-view.mjs"
+    ></script>
   </head>
   <body id="body">
+    <div id="memories"></div>
     <div id="categories">
       <div
         class="category category-no-icon"
@@ -42,6 +48,12 @@
           data-l10n-id="about-inference-category-benchmark"
         ></span>
       </div>
+      <a
+        id="memories-link"
+        href="#memories"
+        data-l10n-id="about-inference-memories-title"
+        hidden
+      ></a>
     </div>
 
     <div class="main-content">

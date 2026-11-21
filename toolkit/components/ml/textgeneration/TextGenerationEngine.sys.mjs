@@ -341,6 +341,14 @@ export class TextGenerationEngine {
   /** @type {"uninitialized" | "ready" | "closed"} */
   engineStatus = "uninitialized";
 
+  get device() {
+    return this.#generator?.device ?? null;
+  }
+
+  get deviceKind() {
+    return this.#deviceKind;
+  }
+
   get model() {
     return this.pipelineOptions.modelId;
   }

@@ -8,3 +8,6 @@ prefs = [
 
 ["browser_aboutinference.js"]
 https_first_disabled = true
+
+["browser_aboutinference_memories.js"]
+skip-if = ["buildapp != 'browser'"]

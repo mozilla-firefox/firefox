@@ -82,3 +82,83 @@ about-inference-text-generation-col-prefill = Prefill (ms)
 about-inference-text-generation-col-output-tokens = Output tokens
 about-inference-text-generation-col-decode = Decode (ms)
 about-inference-text-generation-col-tokens-per-second = Tokens/s
+
+## Memories on-device experiment
+
+about-inference-memories-title = { -smart-window-brand-name } Memories On-Device
+about-inference-memories-description = Run generate, merge and filter with sample data. Your browsing history and saved memories are not used.
+about-inference-memories-run-button =
+    .label = Run
+about-inference-memories-cancel-button =
+    .label = Cancel
+about-inference-memories-cleanup-button =
+    .label = Clean up
+    .title = Remove downloaded model and clear results
+about-inference-memories-idle = Ready
+about-inference-memories-downloading = Downloading model…
+about-inference-memories-loading = Loading model…
+about-inference-memories-running-generate = Generating memories…
+about-inference-memories-running-merge = Merging memories…
+about-inference-memories-running-filter = Filtering memories…
+# Variables:
+#   $minutes (Number) - Estimated minutes left in the download, rounded up.
+#   $speed (Number) - Average download speed in mebibytes per second.
+about-inference-memories-time-left =
+    { $minutes ->
+        [one] About a minute left at { NUMBER($speed, maximumFractionDigits: 0) } MiB/s
+       *[other] About { $minutes } minutes left at { NUMBER($speed, maximumFractionDigits: 0) } MiB/s
+    }
+about-inference-memories-cancelling = Cancelling…
+about-inference-memories-cleaning = Removing the downloaded model…
+about-inference-memories-done = Complete
+about-inference-memories-cancelled = Cancelled
+about-inference-memories-timed-out = Five-minute limit reached
+about-inference-memories-failed = Failed
+about-inference-memories-setup = Setup
+about-inference-memories-model = Model
+about-inference-memories-accelerator = Accelerator
+# Variables:
+#   $name (String) - Name of the device that loaded the model.
+#   $kind (String) - Kind of device, like GPU or CPU.
+about-inference-memories-accelerator-value = { $name } ({ $kind })
+about-inference-memories-processor = Processor
+# Variables:
+#   $name (String) - Processor name.
+#   $cores (Number) - Number of processor cores.
+about-inference-memories-processor-value =
+    { $cores ->
+        [0] { $name }
+        [one] { $name }, { $cores } core
+       *[other] { $name }, { $cores } cores
+    }
+about-inference-memories-system-memory = System memory
+about-inference-memories-summary = Summary
+about-inference-memories-download = Download
+# Variables:
+#   $size (String) - Size of the model file, like 2.6 GB.
+about-inference-memories-cached = { $size }, cached
+# Variables:
+#   $size (String) - Size of the model file, like 2.6 GB.
+#   $percent (Number) - Percentage downloaded so far.
+about-inference-memories-download-progress = { $size } ({ $percent }%)
+# Variables:
+#   $size (String) - Size of the model file, like 2.6 GB.
+#   $duration (String) - Download duration, like 4m 6s.
+#   $speed (Number) - Download speed in mebibytes per second.
+about-inference-memories-downloaded = { $size } in { $duration }, { NUMBER($speed, maximumFractionDigits: 0) } MiB/s
+about-inference-memories-load = Load time
+about-inference-memories-memory = Memory
+about-inference-memories-prefill-speed = Prefill speed
+about-inference-memories-decode-speed = Decode speed
+# Variables:
+#   $rate (Number) - Tokens processed or generated per second.
+about-inference-memories-token-rate = { NUMBER($rate, maximumFractionDigits: 0) } tokens/s
+about-inference-memories-results = Completions on-device
+about-inference-memories-generate = Generate
+about-inference-memories-merge = Merge
+about-inference-memories-filter = Filter
+about-inference-memories-col-task = Task
+about-inference-memories-col-time = Inference time
+# Variables:
+#   $seconds (Number) - Duration in seconds.
+about-inference-memories-duration = { NUMBER($seconds, minimumFractionDigits: 1, maximumFractionDigits: 1) } s

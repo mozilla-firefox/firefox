@@ -8,3 +8,5 @@ toolkit.jar:
   content/global/aboutInference.css                 (content/aboutInference.css)
   content/global/model-files-view.mjs               (content/model-files-view.mjs)
   content/global/model-files-view.css               (content/model-files-view.css)
+  content/global/memories-view.mjs                  (content/memories-view.mjs)
+  content/global/memories-view.css                  (content/memories-view.css)

@@ -1,0 +1,118 @@
+/* This Source Code Form is subject to the terms of the Mozilla Public
+ * License, v. 2.0. If a copy of the MPL was not distributed with this
+ * file, You can obtain one at https://mozilla.org/MPL/2.0/. */
+
+:host {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-xlarge);
+  font-variant-numeric: tabular-nums;
+}
+
+h1,
+h2,
+p,
+dl,
+dd {
+  margin: 0;
+}
+
+h1 {
+  font-size: var(--font-size-xxlarge);
+}
+
+h2 {
+  font-size: var(--font-size-large);
+  margin-block-end: var(--space-small);
+}
+
+header p,
+dt,
+thead,
+.status {
+  color: var(--text-color-deemphasized);
+}
+
+.controls {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-medium);
+}
+
+.actions {
+  display: flex;
+  gap: var(--space-medium);
+}
+
+#cleanup {
+  margin-inline-start: auto;
+}
+
+.status {
+  display: flex;
+  gap: var(--space-small);
+  white-space: nowrap;
+}
+
+.error {
+  overflow: hidden;
+  text-overflow: ellipsis;
+  color: var(--text-color-error);
+}
+
+.specs {
+  display: grid;
+  grid-template-columns: max-content repeat(3, minmax(0, 1fr));
+  gap: var(--space-xxlarge);
+}
+
+.summary {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(14rem, 1fr));
+  gap: var(--space-medium);
+}
+
+.summary > div {
+  padding: var(--space-medium) var(--space-large);
+  border-radius: var(--border-radius-medium);
+  background-color: var(--background-color-box);
+}
+
+dd {
+  margin-block-start: var(--space-xsmall);
+}
+
+.summary dd {
+  font-size: var(--font-size-large);
+  font-weight: var(--font-weight-semibold);
+  white-space: nowrap;
+}
+
+table {
+  inline-size: 100%;
+  border-collapse: collapse;
+  table-layout: fixed;
+}
+
+th,
+td {
+  padding: var(--space-medium) var(--space-small);
+  text-align: end;
+  white-space: nowrap;
+}
+
+th:first-child {
+  text-align: start;
+}
+
+thead th {
+  border-block-end: var(--border-width) solid var(--border-color-deemphasized);
+}
+
+tr[data-status="running"] th {
+  color: var(--color-accent-primary);
+}
+
+tr[data-status="failed"] th {
+  color: var(--text-color-error);
+}

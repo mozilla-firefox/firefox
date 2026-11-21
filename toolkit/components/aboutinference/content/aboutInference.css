@@ -27,6 +27,35 @@ body {
   flex: 1;
 }
 
+#categories {
+  display: flex;
+  flex-direction: column;
+}
+
+#memories-link {
+  margin-block: auto var(--space-xxlarge);
+  margin-inline-start: var(--space-xxlarge);
+  font-size: var(--font-size-small);
+  color: var(--text-color-deemphasized);
+
+  &[hidden] {
+    display: none;
+  }
+}
+
+body:not(.memories) > #memories,
+body.memories > :not(#memories) {
+  display: none;
+}
+
+#memories {
+  flex: 1;
+  min-inline-size: 0;
+  max-inline-size: 56rem;
+  margin-inline: auto;
+  padding: var(--space-xxlarge) var(--space-xlarge);
+}
+
 .tab {
   padding: 0.5em 0;
 }
