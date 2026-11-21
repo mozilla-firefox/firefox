@@ -38,7 +38,11 @@ function confirmCookieName(name) {
   }
 }
 
-function finishTest() {
+async function finishTest() {
+  // document.cookie can't remove the HttpOnly xhr2 cookie.
+  await SpecialPowers.spawnChrome([], () => {
+    Services.cookies.remove("mochi.test", "xhr2", "/", {});
+  });
   SpecialPowers.clearUserPref("network.cookie.sameSite.laxByDefault");
   SimpleTest.finish();
 }
