@@ -367,3 +367,61 @@ BEGIN_TEST(testStructuredClone_SavedFrame) {
   return true;
 }
 END_TEST(testStructuredClone_SavedFrame)
+
+BEGIN_TEST(testStructuredClone_peekUint32Pair) {
+  static const JSClass PeekTestClass = {"PeekTestObject", 0};
+
+  JSStructuredCloneCallbacks callbacks = {};
+
+  callbacks.write = [](JSContext* cx, JSStructuredCloneWriter* w,
+                       JS::HandleObject obj, bool* sameProcessScopeRequired,
+                       void* closure) {
+    return JS_WriteUint32Pair(w, JS_SCTAG_USER_MIN, 0) &&
+           JS_WriteUint32Pair(w, 1, 2) && JS_WriteUint32Pair(w, 3, 4);
+  };
+
+  // A mismatch should return nullptr making JS_ReadStructuredClone fail.
+  callbacks.read = [](JSContext* cx, JSStructuredCloneReader* r,
+                      const JS::CloneDataPolicy& policy, uint32_t tag,
+                      uint32_t data, void* closure) -> JSObject* {
+    uint32_t a, b;
+
+    if (!JS_PeekUint32Pair(r, &a, &b) || a != 1 || b != 2) {
+      return nullptr;
+    }
+
+    if (!JS_PeekUint32Pair(r, &a, &b) || a != 1 || b != 2) {
+      return nullptr;
+    }
+
+    if (!JS_ReadUint32Pair(r, &a, &b) || a != 1 || b != 2) {
+      return nullptr;
+    }
+    if (!JS_PeekUint32Pair(r, &a, &b) || a != 3 || b != 4) {
+      return nullptr;
+    }
+    if (!JS_ReadUint32Pair(r, &a, &b) || a != 3 || b != 4) {
+      return nullptr;
+    }
+
+    return JS_NewPlainObject(cx);
+  };
+
+  const auto scope = JS::StructuredCloneScope::DifferentProcess;
+
+  JS::RootedObject obj(cx, JS_NewObject(cx, &PeekTestClass));
+  CHECK(obj);
+  JS::RootedValue src(cx, JS::ObjectValue(*obj));
+
+  JSStructuredCloneData data(scope);
+  CHECK(JS_WriteStructuredClone(cx, src, &data, scope, JS::CloneDataPolicy(),
+                                &callbacks, nullptr, JS::UndefinedHandleValue));
+
+  JS::RootedValue dst(cx);
+  CHECK(JS_ReadStructuredClone(cx, data, scope, &dst, JS::CloneDataPolicy(),
+                               &callbacks, nullptr));
+  CHECK(dst.isObject());
+
+  return true;
+}
+END_TEST(testStructuredClone_peekUint32Pair)
