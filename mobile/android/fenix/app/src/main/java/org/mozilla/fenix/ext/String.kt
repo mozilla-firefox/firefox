@@ -4,7 +4,6 @@
 
 package org.mozilla.fenix.ext
 
-import android.text.Editable
 import androidx.compose.runtime.Composable
 import androidx.core.net.toUri
 import mozilla.components.compose.base.utils.inComposePreview
@@ -49,12 +48,6 @@ fun String.simplifiedUrl(): String {
     }
     return afterScheme
 }
-
-/** Returns an [Editable] for the provided string. */
-fun String.toEditable(): Editable = Editable.Factory.getInstance().newEditable(this)
-
-/** Returns a Ipv6 address with consecutive sections of zeroes replaced with a double colon. */
-fun String?.replaceConsecutiveZeros(): String? = this?.replaceFirst(":0", ":")?.replace(":0", "")
 
 /**
  * Extracts a shortened or simplified URL from a given URL string. (e.g., "example.com" instead of

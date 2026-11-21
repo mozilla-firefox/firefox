@@ -23,14 +23,6 @@ class StringTest {
     }
 
     @Test
-    fun testReplaceConsecutiveZeros() {
-        assertEquals(
-            "2001:db8::ff00:42:8329",
-            "2001:db8:0:0:0:ff00:42:8329".replaceConsecutiveZeros(),
-        )
-    }
-
-    @Test
     fun getBaseDomainUrl() = runTest {
         val testCases =
             listOf(
