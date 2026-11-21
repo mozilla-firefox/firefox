@@ -19,8 +19,6 @@
   <string name="content_description_menu">Fleire innstillingar</string>
   <!-- Content description (not visible, for screen readers etc.): "Private Browsing" menu button. -->
   <string name="content_description_private_browsing">Privat nettlesing</string>
-  <!-- Content description (not visible, for screen readers etc.): "Normal Browsing" menu button. -->
-  <string name="content_description_normal_browsing">Normal surfning</string>
   <!-- Placeholder text shown in the search bar before a user enters text for the default engine -->
   <string name="search_hint">Søk eller skriv inn ei adresse</string>
   <!-- Shorter placeholder text shown in the search bar when an additional action (voice search) is rendered alongside the hint. -->
@@ -2131,6 +2129,8 @@
   <string name="unsubmitted_crash_dialog_learn_more">Les meir</string>
   <!-- Unsubmitted crash dialog button to open a web page with more details on the feature and privacy policy -->
   <string name="unsubmitted_crash_requested_by_devs_learn_more">Les meir</string>
+  <!-- Unsubmitted crash dialog button to open a web page with more details on the feature and privacy policy, displayed in all capital letters. -->
+  <string name="unsubmitted_crash_requested_by_devs_learn_more_2" tools:ignore="UnusedResources">LES MEIR</string>
   <!--
     Bookmarks
 
@@ -3250,6 +3250,8 @@
   <string name="preferences_credit_cards_save_and_autofill_cards_2">Lagre og fyll inn betalingsmåtar</string>
   <!-- Preference summary for saving and autofilling payment method data. %s is the name of the app (for example "Firefox"). -->
   <string name="preferences_credit_cards_save_and_autofill_cards_summary_2">%s krypterer alle betalingsmåtar du lagrar</string>
+  <!-- Preference for saving the security codes of credit cards. -->
+  <string name="preferences_credit_cards_save_security_codes">Lagre sikkerheitskodar</string>
   <!-- Preference option for syncing credit cards across devices. This is displayed when the user is not signed into sync -->
   <string name="preferences_credit_cards_sync_cards_across_devices">Synkroniser kort på tvers av einingar</string>
   <!-- Preference option for syncing credit cards across devices. This is displayed when the user is signed into sync -->
@@ -3286,6 +3288,8 @@
   <string name="credit_cards_expiration_date_year">Utløpsdato, år</string>
   <!-- The header for the name on the credit card -->
   <string name="credit_cards_name_on_card">Namn på kort</string>
+  <!-- The header for the optional security code of a credit card. CVV is the abbreviation of the card security code. -->
+  <string name="credit_cards_cvv_optional">CVV (valfritt)</string>
   <!-- The text for the "Delete card" menu item for deleting a credit card -->
   <string name="credit_cards_menu_delete_card">Slett kort</string>
   <!-- The text for the "Delete card" button for deleting a credit card -->
@@ -3302,6 +3306,8 @@
   <string name="credit_cards_cancel_button">Avbryt</string>
   <!-- Title of the "Saved cards" screen -->
   <string name="credit_cards_saved_cards">Lagra bankkort</string>
+  <!-- Text in the saved cards list that indicates the security code for a credit card is being stored -->
+  <string name="credit_cards_cvv_saved">CVV lagra</string>
   <!-- Error message for card number validation -->
   <string name="credit_cards_number_validation_error_message_2">Skriv inn eit gyldig kortnummer</string>
   <!-- Error message for card name on card validation -->
@@ -3543,12 +3549,6 @@
   <string name="homepage_shortcuts_add_website_title">Skriv inn ei nettstadadresse</string>
   <!-- Title for the "Popular sites" section in the "Add to homepage" bottom sheet. -->
   <string name="homepage_shortcuts_popular_sites">Populære nettstadar</string>
-  <!-- Title text displayed in the dialog when shortcuts limit is reached. -->
-  <string name="shortcut_max_limit_title">Grensa for antal snarvegar er nådd</string>
-  <!-- Content description text displayed in the dialog when shortcut limit is reached. -->
-  <string name="shortcut_max_limit_content">For å leggje til ein ny snarveg, må du fjerne ein annan. Trykk og hald på nettstaden, og vel fjern.</string>
-  <!-- Confirmation dialog button text when top sites limit is reached. -->
-  <string name="top_sites_max_limit_confirmation_button">OK, eg forstår det</string>
   <!-- Label for the preference to show the shortcuts for the most visited top sites on the homepage -->
   <string name="top_sites_toggle_top_recent_sites_4">Snarvegar</string>
   <!-- Title text displayed in the rename top site dialog. -->
@@ -4544,6 +4544,8 @@
   <string name="wrex_widget_match_suspended">Suspendert</string>
   <!-- Label shown on the sports widget match status badge when a match has been postponed to a later date. -->
   <string name="wrex_widget_match_postponed">Utsett</string>
+  <!-- Label shown on the sports widget match status badge when a match has been canceled. -->
+  <string name="wrex_widget_match_canceled">Avbrote</string>
   <!-- Sports widget action label to refresh match data after an error. -->
   <string name="wrex_widget_error_refresh">Oppdater</string>
   <!-- Sports widget menu item to view the team's match results. -->
@@ -4669,8 +4671,6 @@
   <string name="lens_camera_loading_cancel_button">Avbryt</string>
   <!-- Snackbar message shown when an image picked from the gallery or taken with the camera could not be opened or read, so it was never sent to Google Lens. Shown after returning to the camera. -->
   <string name="lens_camera_image_load_failed_v2">Klarte ikkje å laste dette bildet.</string>
-  <!-- Snackbar message shown when an image picked from the gallery could not be opened or read, so it was never sent to Google Lens. Shown after returning to the camera. -->
-  <string name="lens_camera_image_load_failed">Klarte ikkje å laste inn dette bildet. Prøv eit anna.</string>
   <!-- Snackbar message shown when an image picked from the gallery or taken with the camera could not be searched because of a network problem or an error from Google Lens. Shown after returning to the camera, next to the lens_camera_upload_failed_retry_button action. -->
   <string name="lens_camera_upload_failed">Klarte ikkje å hente resultat frå Google Lens</string>
   <!-- Action in the snackbar shown when an image picked from the gallery or taken with the camera could not be searched with Google Lens. Tapping it searches the same image again. -->
@@ -4763,12 +4763,6 @@
     Content description for the reader view panel: a group of buttons floating over the content, which allow customizing the reader view or activating the Listen to Page feature
   -->
   <string name="reader_mode_panel_content_description_2">Innstillingar for lesevising</string>
-  <!--
-    Listen to page
-
-    Content description for the reader mode panel: a group of buttons floating over the content
-  -->
-  <string name="reader_mode_panel_content_description">Innstillingar for lesemodus</string>
   <!-- Content description for the button in the reader view panel that turns on the Listen to Page feature (playback of content begins when button is pressed) -->
   <string name="reader_mode_panel_listen_content_description">Les høgt</string>
   <!-- Content description for media player displayed in Reader view when the Listen to Page (Read Aloud) feature is selected -->

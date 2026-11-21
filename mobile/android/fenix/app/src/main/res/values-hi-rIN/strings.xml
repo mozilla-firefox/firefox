@@ -19,8 +19,6 @@
   <string name="content_description_menu">और विकल्प</string>
   <!-- Content description (not visible, for screen readers etc.): "Private Browsing" menu button. -->
   <string name="content_description_private_browsing">प्राइवेट ब्राउज़िंग</string>
-  <!-- Content description (not visible, for screen readers etc.): "Normal Browsing" menu button. -->
-  <string name="content_description_normal_browsing">नॉर्मल ब्राउज़िंग</string>
   <!-- Placeholder text shown in the search bar before a user enters text for the default engine -->
   <string name="search_hint">सर्च करें या एड्रेस डालें</string>
   <!-- Shorter placeholder text shown in the search bar when an additional action (voice search) is rendered alongside the hint. -->
@@ -3418,12 +3416,6 @@
   <string name="homepage_shortcuts_add_website_title">वेबसाइट URL डालें</string>
   <!-- Title for the "Popular sites" section in the "Add to homepage" bottom sheet. -->
   <string name="homepage_shortcuts_popular_sites">लोकप्रिय साइटें</string>
-  <!-- Title text displayed in the dialog when shortcuts limit is reached. -->
-  <string name="shortcut_max_limit_title">शॉर्टकट की सीमा पूरी हो गई</string>
-  <!-- Content description text displayed in the dialog when shortcut limit is reached. -->
-  <string name="shortcut_max_limit_content">नया शॉर्टकट जोड़ने के लिए, पहले कोई शॉर्टकट हटाएं। साइट को टच करके रखें और हटाएं को चुनें।</string>
-  <!-- Confirmation dialog button text when top sites limit is reached. -->
-  <string name="top_sites_max_limit_confirmation_button">ठीक है, समझ गए</string>
   <!-- Label for the preference to show the shortcuts for the most visited top sites on the homepage -->
   <string name="top_sites_toggle_top_recent_sites_4">शॉर्टकट</string>
   <!-- Title text displayed in the rename top site dialog. -->
@@ -4527,12 +4519,6 @@
   <string name="pdf_tools_signature_clear_button">मिटाएं</string>
   <!-- The text for the button that adds the signature the user has typed to the PDF. -->
   <string name="pdf_tools_signature_add_button">जोड़ें</string>
-  <!--
-    Listen to page
-
-    Content description for the reader mode panel: a group of buttons floating over the content
-  -->
-  <string name="reader_mode_panel_content_description">रीडर मोड के विकल्प</string>
   <!-- Content description for the button in the reader view panel that turns on the Listen to Page feature (playback of content begins when button is pressed) -->
   <string name="reader_mode_panel_listen_content_description">पढ़कर सुनाएं</string>
   <!-- Content description for media player displayed in Reader view when the Listen to Page (Read Aloud) feature is selected -->

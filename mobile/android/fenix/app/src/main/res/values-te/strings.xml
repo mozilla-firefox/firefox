@@ -1182,8 +1182,6 @@
   <string name="synced_tabs_sign_in_button">సింక్ చేయడానికి ప్రవేశించండి</string>
   <!-- The text displayed when a synced device has no tabs to show in the list of Synced Tabs. -->
   <string name="synced_tabs_no_open_tabs">తెరిచివున్న ట్యాబులు లేవు</string>
-  <!-- Confirmation dialog button text when top sites limit is reached. -->
-  <string name="top_sites_max_limit_confirmation_button">సరే, అర్థమయ్యింది</string>
   <!-- Title text displayed in the rename top site dialog. -->
   <string name="top_sites_rename_dialog_title">పేరు</string>
   <!-- Dialog button text for canceling the rename top site prompt. -->

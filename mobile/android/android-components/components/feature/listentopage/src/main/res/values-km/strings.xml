@@ -9,8 +9,6 @@
 <resources>
   <!-- Listen to Page media player: content description for the button that closes the player. -->
   <string name="mozac_feature_listentopage_close">បិទ</string>
-  <!-- Listen to Page media player: content description for the button that opens the list of available voices. -->
-  <string name="mozac_feature_listentopage_audio">អូឌីយោ</string>
   <!-- Listen to Page media player: content description for play/pause button when the player is paused - tapping restarts playback. -->
   <string name="mozac_feature_listentopage_play">ចាក់</string>
   <!-- Listen to Page media player: content description for play/pause button when the player is playing - tapping pauses playback. -->

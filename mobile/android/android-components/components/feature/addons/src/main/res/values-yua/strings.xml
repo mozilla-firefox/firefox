@@ -145,8 +145,6 @@
   <string name="mozac_feature_extensions_manager_notification_restart_button">Ka\'a káajsik le extensiones</string>
   <!-- Button in the extensions manager that opens AMO in a tab -->
   <string name="mozac_feature_addons_find_more_extensions_button_text">Kaxtik uláak\' extensiones</string>
-  <!-- Name of the "notification channel" used for displaying a notification for updating an extension. See https://developer.android.com/training/notify-user/channels -->
-  <string name="mozac_feature_addons_updater_notification_channel_2">Actualizaciones ti\' le extensión</string>
   <!-- Name of the "notification channel" used for displaying a notification for new supported add-ons. See https://developer.android.com/training/notify-user/channels -->
   <string name="mozac_feature_addons_supported_checker_notification_channel" tools:ignore="UnusedResources">Comprobador u complementos compatibles</string>
   <!-- The tile of the notification, this will be shown to the user when one newly supported add-on is available. -->

@@ -36,7 +36,7 @@
   <!-- Name of the action (used by screen readers, etc.) that shows a previously hidden menu section, placing it last among the visible sections in the customize menu screen. It is also shown in the list of actions displayed when the user long-presses the drag handle of a menu section. -->
   <string name="mozac_menu_customize_unhide">Mostra la secció</string>
   <!-- Announcement (not visible, for screen readers etc.) once the user moved a menu section up or down in the customize menu screen. %1$s is the name of the section, or the names of its items separated by commas if it has none, for example "Page controls", "VPN" or "Back, Forward", %2$d its new position, from 1, and %3$d the number of sections shown in the menu. -->
-  <string name="mozac_menu_customize_section_moved">La secció «%1$s» s\'ha mogut a la posició %2$d de %3$d</string>
+  <string name="mozac_menu_customize_section_moved">La secció «%1$s» s’ha mogut a la posició %2$d de %3$d</string>
   <!-- Announcement (not visible, for screen readers etc.) once the user hid a menu section in the customize menu screen. %1$s is the name of the section, or the names of its items separated by commas if it has none, for example "Page controls", "VPN" or "Back, Forward". -->
   <string name="mozac_menu_customize_section_hidden">S’ha eliminat la secció «%1$s»</string>
   <!-- Announcement (not visible, for screen readers etc.) once the user showed a hidden menu section in the menu again in the customize menu screen. %1$s is the name of the section, or the names of its items separated by commas if it has none, for example "Page controls", "VPN" or "Back, Forward". -->

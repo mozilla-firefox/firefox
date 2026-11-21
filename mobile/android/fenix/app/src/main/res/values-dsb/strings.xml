@@ -19,8 +19,6 @@
   <string name="content_description_menu">Dalšne nastajenja</string>
   <!-- Content description (not visible, for screen readers etc.): "Private Browsing" menu button. -->
   <string name="content_description_private_browsing">Priwatny modus</string>
-  <!-- Content description (not visible, for screen readers etc.): "Normal Browsing" menu button. -->
-  <string name="content_description_normal_browsing">Normalne pśeglědowanje</string>
   <!-- Placeholder text shown in the search bar before a user enters text for the default engine -->
   <string name="search_hint">Pytaś abo adresu zapódaś</string>
   <!-- Shorter placeholder text shown in the search bar when an additional action (voice search) is rendered alongside the hint. -->
@@ -2136,15 +2134,21 @@
   <string name="unsubmitted_crash_dialog_negative_button_2">ZACYNIŚ</string>
   <!-- Unsubmitted crash dialog negative button to never be asked for the submission -->
   <string name="unsubmitted_crash_requested_by_devs_dialog_never_button">Wěcej se njepokazaś</string>
+  <!-- Unsubmitted crash dialog negative button to never be asked for the submission, displayed in all capital letters. -->
+  <string name="unsubmitted_crash_requested_by_devs_dialog_never_button_2" tools:ignore="UnusedResources">NIGDA WĚCEJ NJEPOKAZAŚ</string>
   <!-- Unsubmitted crash dialog positive button to submit crash report -->
   <string name="unsubmitted_crash_dialog_positive_button_2">SŁAŚ</string>
   <!-- Unsubmitted crash dialog positive button to submit crash report -->
   <string name="unsubmitted_crash_dialog_positive_button">Rozpšawu wó wowalenju pósłaś</string>
+  <!-- Unsubmitted crash dialog positive button to submit crash report, displayed in all capital letters. -->
+  <string name="unsubmitted_crash_dialog_positive_button_3" tools:ignore="UnusedResources">ROZPRAWU WOWALENJA PÓSŁAŚ</string>
   <!-- Body text for crash report dialog. %s is the link text in the annotated string (ie. "Learn More") -->
   <string name="unsubmitted_crash_dialog_body">Rozpšawy wowalenjow nam pomagaju, problemy z wobglědowakom diagnosticěrowaś a rozwězaś. Rozpšawy mógu wósobinske abo sensibelne daty wopśimowaś. %s</string>
   <string name="unsubmitted_crash_dialog_learn_more">Dalšne informacije</string>
   <!-- Unsubmitted crash dialog button to open a web page with more details on the feature and privacy policy -->
   <string name="unsubmitted_crash_requested_by_devs_learn_more">Dalšne informacije</string>
+  <!-- Unsubmitted crash dialog button to open a web page with more details on the feature and privacy policy, displayed in all capital letters. -->
+  <string name="unsubmitted_crash_requested_by_devs_learn_more_2" tools:ignore="UnusedResources">DALŠNE INFORMACIJE</string>
   <!--
     Bookmarks
 
@@ -3266,6 +3270,10 @@
   <string name="preferences_credit_cards_save_and_autofill_cards_2">Płaśeńske metody składowaś a wupołniś</string>
   <!-- Preference summary for saving and autofilling payment method data. %s is the name of the app (for example "Firefox"). -->
   <string name="preferences_credit_cards_save_and_autofill_cards_summary_2">%s wšykne płaśeńske metody koděrujo, kótarež składujośo</string>
+  <!-- Preference for saving the security codes of credit cards. -->
+  <string name="preferences_credit_cards_save_security_codes">Wěstotne kody składowaś</string>
+  <!-- Preference summary for saving the security codes of credit cards. %s is the name of the app (for example "Firefox"). -->
+  <string name="preferences_credit_cards_save_security_codes_summary">%s waš kórtowy numer a wěstotny kode za malsnjejše płaśenja pózdźej koděrujo</string>
   <!-- Preference option for syncing credit cards across devices. This is displayed when the user is not signed into sync -->
   <string name="preferences_credit_cards_sync_cards_across_devices">Kórty pśez rědy synchronizěrowaś</string>
   <!-- Preference option for syncing credit cards across devices. This is displayed when the user is signed into sync -->
@@ -3302,6 +3310,8 @@
   <string name="credit_cards_expiration_date_year">Datum płaśiwosći (lěto)</string>
   <!-- The header for the name on the credit card -->
   <string name="credit_cards_name_on_card">Mě na kórśe</string>
+  <!-- The header for the optional security code of a credit card. CVV is the abbreviation of the card security code. -->
+  <string name="credit_cards_cvv_optional">CVV (na žycenje)</string>
   <!-- The text for the "Delete card" menu item for deleting a credit card -->
   <string name="credit_cards_menu_delete_card">Kórtu wulašowaś</string>
   <!-- The text for the "Delete card" button for deleting a credit card -->
@@ -3318,10 +3328,16 @@
   <string name="credit_cards_cancel_button">Pśetergnuś</string>
   <!-- Title of the "Saved cards" screen -->
   <string name="credit_cards_saved_cards">Skłaźone kórty</string>
+  <!-- Text in the saved cards list that indicates the security code for a credit card is being stored -->
+  <string name="credit_cards_cvv_saved">CVV skłaźony</string>
   <!-- Error message for card number validation -->
   <string name="credit_cards_number_validation_error_message_2">Zapódajśo płaśiwy kórtowy numer</string>
   <!-- Error message for card name on card validation -->
   <string name="credit_cards_name_on_card_validation_error_message_2">Pśidajśo mě</string>
+  <!-- Error message for a credit card security code that does not meet the 3-digit length requirement. -->
+  <string name="credit_cards_cvv_validation_error_message">Wěstotny kode musy 3-městnowy byś</string>
+  <!-- Error message for a credit card security code that does not meet the 4-digit length requirement (used for American Express cards only) -->
+  <string name="credit_cards_cvv_amex_validation_error_message">Wěstotne kody American Express su 4-městnowe</string>
   <!-- Message displayed in biometric prompt displayed for authentication before allowing users to view their saved credit cards -->
   <string name="credit_cards_biometric_prompt_message">Za zwobraznjowanje wašych skłaźonych kreditowych kórtow wótwóriś</string>
   <!-- Title of warning dialog if users have no device authentication set up -->
@@ -3559,12 +3575,6 @@
   <string name="homepage_shortcuts_add_website_title">Zapódajśo URL websedła</string>
   <!-- Title for the "Popular sites" section in the "Add to homepage" bottom sheet. -->
   <string name="homepage_shortcuts_popular_sites">Woblubowane sedła</string>
-  <!-- Title text displayed in the dialog when shortcuts limit is reached. -->
-  <string name="shortcut_max_limit_title">Zwězański limit dostany</string>
-  <!-- Content description text displayed in the dialog when shortcut limit is reached. -->
-  <string name="shortcut_max_limit_content">Aby nowe zwězanje pśidał, wótwónoźćo jadno z nich. Dotykniśo a źaržćo sedło a wubjeŕśo „Wótwónoźeś“.</string>
-  <!-- Confirmation dialog button text when top sites limit is reached. -->
-  <string name="top_sites_max_limit_confirmation_button">W pórěźe, som zrozměł</string>
   <!-- Label for the preference to show the shortcuts for the most visited top sites on the homepage -->
   <string name="top_sites_toggle_top_recent_sites_4">Zwězanja</string>
   <!-- Title text displayed in the rename top site dialog. -->
@@ -3737,6 +3747,12 @@
     %1$s is the size in kilobytes or megabytes of the language file.
   -->
   <string name="translations_download_language_file_dialog_title">Rěc w datowem žarjeńskem modusu ześěgnuś (%1$s)?</string>
+  <!--
+    Translations options dialog
+
+    Title of the translation options dialog that allows a user to set their translation preferences for the site the user is currently on.
+  -->
+  <string name="translation_option_bottom_sheet_title_heading2">Pśełožowańske nastajenja</string>
   <!--
     Translations options dialog
 
@@ -4576,6 +4592,8 @@
   <string name="wrex_widget_match_suspended">Wótgronjony</string>
   <!-- Label shown on the sports widget match status badge when a match has been postponed to a later date. -->
   <string name="wrex_widget_match_postponed">Wótstarcony</string>
+  <!-- Label shown on the sports widget match status badge when a match has been canceled. -->
+  <string name="wrex_widget_match_canceled">Pśetergnjony</string>
   <!-- Sports widget action label to refresh match data after an error. -->
   <string name="wrex_widget_error_refresh">Aktualizěrowaś</string>
   <!-- Sports widget menu item to view the team's match results. -->
@@ -4701,8 +4719,6 @@
   <string name="lens_camera_loading_cancel_button">Pśetergnuś</string>
   <!-- Snackbar message shown when an image picked from the gallery or taken with the camera could not be opened or read, so it was never sent to Google Lens. Shown after returning to the camera. -->
   <string name="lens_camera_image_load_failed_v2">Toś ten wobraz njedajo se zacytaś.</string>
-  <!-- Snackbar message shown when an image picked from the gallery could not be opened or read, so it was never sent to Google Lens. Shown after returning to the camera. -->
-  <string name="lens_camera_image_load_failed">Toś ten wobraz njedajo se zacytaś. Wopytajśo drugi.</string>
   <!-- Snackbar message shown when an image picked from the gallery or taken with the camera could not be searched because of a network problem or an error from Google Lens. Shown after returning to the camera, next to the lens_camera_upload_failed_retry_button action. -->
   <string name="lens_camera_upload_failed">Njemóžno, wuslědki z Google Lens dostaś</string>
   <!-- Action in the snackbar shown when an image picked from the gallery or taken with the camera could not be searched with Google Lens. Tapping it searches the same image again. -->
@@ -4795,12 +4811,6 @@
     Content description for the reader view panel: a group of buttons floating over the content, which allow customizing the reader view or activating the Listen to Page feature
   -->
   <string name="reader_mode_panel_content_description_2">Nastajenja cytańskego naglěda</string>
-  <!--
-    Listen to page
-
-    Content description for the reader mode panel: a group of buttons floating over the content
-  -->
-  <string name="reader_mode_panel_content_description">Nastajenja cytańskego modusa</string>
   <!-- Content description for the button in the reader view panel that turns on the Listen to Page feature (playback of content begins when button is pressed) -->
   <string name="reader_mode_panel_listen_content_description">Głosnje cytaś</string>
   <!-- Content description for media player displayed in Reader view when the Listen to Page (Read Aloud) feature is selected -->

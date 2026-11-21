@@ -49,8 +49,6 @@
   <string name="mozac_feature_listentopage_error_voice_options_not_available">Вибір голосу недоступний</string>
   <!-- Listen to Page media player: content description for the button that closes the player. -->
   <string name="mozac_feature_listentopage_close">Закрити</string>
-  <!-- Listen to Page media player: content description for the button that opens the list of available voices. -->
-  <string name="mozac_feature_listentopage_audio">Аудіо</string>
   <!-- Listen to Page media player: content description for the button that rewinds 10 seconds. -->
   <string name="mozac_feature_listentopage_back_10_sec">Назад на 10 секунд</string>
   <!-- Listen to Page media player: content description for play/pause button when the player is paused - tapping restarts playback. -->
@@ -59,8 +57,6 @@
   <string name="mozac_feature_listentopage_pause">Пауза</string>
   <!-- Listen to Page media player: content description for the button that Fast-forwards 30 seconds. -->
   <string name="mozac_feature_listentopage_forward_30_sec">Вперед на 30 секунд</string>
-  <!-- Listen to Page media player: accessibility playback control notification that announces playback is set to normal reading speed. -->
-  <string name="mozac_feature_listentopage_playback_speed_1">Нормальна швидкість відтворення</string>
   <!--
     Listen to Page media player: content description for the playback speed button. Pressing it cycles through available playback speeds.
     This string will be interpolated into a longer message, equivalent to "Double tap to [change playback speed]" in English.

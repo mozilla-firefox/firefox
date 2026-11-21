@@ -91,84 +91,6 @@
   <string name="mozac_feature_addons_permissions_user_scripts_description">ອະນຸຍາດໃຫ້ສະຄຣິບບຸກຄົນທີ່ສາມທີ່ບໍ່ໄດ້ຢືນຢັນໃນການເຂົ້າເຖິງຂໍ້ມູນຂອງທ່ານ</string>
   <!-- Description for the "devtools" WebExtensions API permission. -->
   <string name="mozac_feature_addons_permissions_devtools_description">ຂະຫຍາຍເຄື່ອງມືຂອງນັກພັດທະນາເພື່ອເຂົ້າເຖິງຂໍ້ມູນຂອງທ່ານໃນແທັບທີ່ເປີດຢູ່</string>
-  <!-- Description for the "privacy" WebExtensions API permission for the update notification. Multiple permissions may be simply appended one after the other, and separated with a space, which is why the period is important. -->
-  <string name="mozac_feature_addons_permissions_privacy_description_for_update">ອ່ານ ແລະ ແກ້ໄຂການຕັ້ງຄ່າຄວາມເປັນສ່ວນຕົວ.</string>
-  <!-- Description for the "<all_urls>" WebExtensions API permission for the update notification. Multiple permissions may be simply appended one after the other, and separated with a space, which is why the period is important. -->
-  <string name="mozac_feature_addons_permissions_all_urls_description_for_update">ເຂົ້າເຖິງຂໍ້ມູນຂອງທ່ານສໍາລັບເວັບໄຊທ໌ທັງຫມົດ.</string>
-  <!-- Description for the "tabs" WebExtensions API permission for the update notification. Multiple permissions may be simply appended one after the other, and separated with a space, which is why the period is important. -->
-  <string name="mozac_feature_addons_permissions_tabs_description_for_update">ເຂົ້າເຖິງແຖບຂອງຕົວທ່ອງເວັບ.</string>
-  <!-- Description for the "webNavigation" WebExtensions API permission for the update notification. Multiple permissions may be simply appended one after the other, and separated with a space, which is why the period is important. -->
-  <string name="mozac_feature_addons_permissions_web_navigation_description_for_update">ເຂົ້າເຖິງການເຄື່ອນໄຫວຂອງຕົວທ່ອງເວັບໃນລະຫວ່າງການນໍາທາງ.</string>
-  <!-- Description for the "bookmarks" WebExtensions API permission for the update notification. Multiple permissions may be simply appended one after the other, and separated with a space, which is why the period is important. -->
-  <string name="mozac_feature_addons_permissions_bookmarks_description_for_update">ອ່ານ ແລະ ແກ້ໄຂ bookmarks.</string>
-  <!-- Description for the "browserSettings" WebExtensions API permission for the update notification. Multiple permissions may be simply appended one after the other, and separated with a space, which is why the period is important. -->
-  <string name="mozac_feature_addons_permissions_browser_settings_description_for_update">ອ່ານ ແລະ ແກ້ໄຂການຕັ້ງຄ່າຂອງຕົວທ່ອງເວັບ.</string>
-  <!-- Description for the "browsingData" WebExtensions API permission for the update notification. Multiple permissions may be simply appended one after the other, and separated with a space, which is why the period is important. -->
-  <string name="mozac_feature_addons_permissions_browsing_data_description_for_update">ລຶບລ້າງປະຫວັດການທ່ອງເວັບ, ຄຸກກີ້ ແລະ ຂໍ້ມູນທີ່ກ່ຽວຂ້ອງ.</string>
-  <!-- Description for the "clipboardRead" WebExtensions API permission for the update notification. Multiple permissions may be simply appended one after the other, and separated with a space, which is why the period is important. -->
-  <string name="mozac_feature_addons_permissions_clipboard_read_description_for_update">ເອົາຂໍ້ມູນຈາກຄລິບບອດ.</string>
-  <!-- Description for the "clipboardWrite" WebExtensions API permission for the update notification. Multiple permissions may be simply appended one after the other, and separated with a space, which is why the period is important. -->
-  <string name="mozac_feature_addons_permissions_clipboard_write_description_for_update">ປ້ອນຂໍ້ມູນໃສ່ຄລິບບອດ.</string>
-  <!-- Description for the "declarativeNetRequest" WebExtensions API permission for the update notification. Multiple permissions may be simply appended one after the other, and separated with a space, which is why the period is important. -->
-  <string name="mozac_feature_addons_permissions_declarative_net_request_description_for_update">ຂັດຂວາງເນື້ອຫາຢູ່ໃນຫນ້າໃດໆ.</string>
-  <!-- Description for the "declarativeNetRequestFeedback" WebExtensions API permission for the update notification. Multiple permissions may be simply appended one after the other, and separated with a space, which is why the period is important. -->
-  <string name="mozac_feature_addons_permissions_declarative_net_request_feedback_description_for_update">ອ່ານປະຫວັດຜົນການຄົ້ນຫາຂອງທ່ານ.</string>
-  <!-- Description for the "downloads" WebExtensions API permission for the update notification. Multiple permissions may be simply appended one after the other, and separated with a space, which is why the period is important. -->
-  <string name="mozac_feature_addons_permissions_downloads_description_for_update">ດາວໂຫຼດໄຟລ໌ ແລະ ອ່ານ ແລະ ແກ້ໄຂປະຫວັດການດາວໂຫຼດຂອງຕົວທ່ອງເວັບ.</string>
-  <!-- Description for the "downloads.open" WebExtensions API permission for the update notification. Multiple permissions may be simply appended one after the other, and separated with a space, which is why the period is important. -->
-  <string name="mozac_feature_addons_permissions_downloads_open_description_for_update">ເປີດໄຟລ໌ທີ່ດາວໂຫຼດໃສ່ອຸປະກອນຂອງທ່ານ.</string>
-  <!-- Description for the "find" WebExtensions API permission for the update notification. Multiple permissions may be simply appended one after the other, and separated with a space, which is why the period is important. -->
-  <string name="mozac_feature_addons_permissions_find_description_for_update">ອ່ານຂໍ້ຄວາມຂອງແຖບເປີດທັງຫມົດ.</string>
-  <!-- Description for the "geolocation" WebExtensions API permission for the update notification. Multiple permissions may be simply appended one after the other, and separated with a space, which is why the period is important. -->
-  <string name="mozac_feature_addons_permissions_geolocation_description_for_update">ເຂົ້າເຖິງສະຖານທີ່ຂອງທ່ານ.</string>
-  <!-- Description for the "history" WebExtensions API permission for the update notification. Multiple permissions may be simply appended one after the other, and separated with a space, which is why the period is important. -->
-  <string name="mozac_feature_addons_permissions_history_description_for_update">ເຂົ້າເຖິງປະຫວັດການທ່ອງເວັບ.</string>
-  <!-- Description for the "management" WebExtensions API permission for the update notification. Multiple permissions may be simply appended one after the other, and separated with a space, which is why the period is important. -->
-  <string name="mozac_feature_addons_permissions_management_description_for_update">ຕິດຕາມການນຳໃຊ້ເອັກສເທັນຊັນ ແລະ ຈັດການເທມ</string>
-  <!-- Description for the "nativeMessaging" WebExtensions API permission for the update notification. Multiple permissions may be simply appended one after the other, and separated with a space, which is why the period is important. -->
-  <string name="mozac_feature_addons_permissions_native_messaging_description_for_update">ແລກປ່ຽນຂໍ້ຄວາມກັບແອັບຯອື່ນນອກຈາກອັນນີ້.</string>
-  <!-- Description for the "notifications" WebExtensions API permission for the update notification. Multiple permissions may be simply appended one after the other, and separated with a space, which is why the period is important. -->
-  <string name="mozac_feature_addons_permissions_notifications_description_for_update">ສະແດງການແຈ້ງເຕືອນໃຫ້ທ່ານ.</string>
-  <!-- Description for the "pkcs11" WebExtensions API permission for the update notification. Multiple permissions may be simply appended one after the other, and separated with a space, which is why the period is important. -->
-  <string name="mozac_feature_addons_permissions_pkcs11_description_for_update">ໃຫ້ບໍລິການກວດສອບລະຫັດລັບ.</string>
-  <!-- Description for the "proxy" WebExtensions API permission for the update notification. Multiple permissions may be simply appended one after the other, and separated with a space, which is why the period is important. -->
-  <string name="mozac_feature_addons_permissions_proxy_description_for_update">ຄວບຄຸມການຕັ້ງຄ່າພຣັອກຊີຂອງຕົວທ່ອງເວັບ.</string>
-  <!-- Description for the "sessions" WebExtensions API permission for the update notification. Multiple permissions may be simply appended one after the other, and separated with a space, which is why the period is important. -->
-  <string name="mozac_feature_addons_permissions_sessions_description_for_update">ເຂົ້າເຖິງແຖບທີ່ປິດບໍ່ດົນມານີ້.</string>
-  <!-- Description for the "tabHide" WebExtensions API permission for the update notification. Multiple permissions may be simply appended one after the other, and separated with a space, which is why the period is important. -->
-  <string name="mozac_feature_addons_permissions_tab_hide_description_for_update">ເຊື່ອງ ແລະ ສະແດງແຖບຂອງຕົວທ່ອງເວັບ.</string>
-  <!-- Description for the "topSites" WebExtensions API permission for the update notification. Multiple permissions may be simply appended one after the other, and separated with a space, which is why the period is important. -->
-  <string name="mozac_feature_addons_permissions_top_sites_description_for_update">ເຂົ້າເຖິງປະຫວັດການທ່ອງເວັບ.</string>
-  <!-- Description for the "trialML" WebExtensions API permission for the update notification. Multiple permissions may be simply appended one after the other, and separated with a space, which is why the period is important. -->
-  <string name="mozac_feature_addons_permissions_trial_ml_description_for_update">ດາວໂຫຼດ ແລະ ເປີດໃຊ້ຕົວແບບ AI ໃນອຸປະກອນຂອງທ່ານ.</string>
-  <!-- Description for the "userScripts" WebExtensions API permission for the update notification. Multiple permissions may be simply appended one after the other, and separated with a space, which is why the period is important. -->
-  <string name="mozac_feature_addons_permissions_user_scripts_description_for_update">ອະນຸຍາດໃຫ້ສະຄຣິບບຸກຄົນທີ່ສາມທີ່ບໍ່ໄດ້ຢືນຢັນໃນການເຂົ້າເຖິງຂໍ້ມູນຂອງທ່ານ</string>
-  <!-- Description for the "devtools" WebExtensions API permission for the update notification. Multiple permissions may be simply appended one after the other, and separated with a space, which is why the period is important. -->
-  <string name="mozac_feature_addons_permissions_devtools_description_for_update">ຂະຫຍາຍເຄື່ອງມືນັກພັດທະນາເພື່ອເຂົ້າເຖິງຂໍ້ມູນຂອງທ່ານໃນແຖບເປີດ.</string>
-  <!-- Description for giving an add-on access to users's data on one site. %1$s  will be replaced by the DNS host name for which a web extension is requesting access (e.g., www.mozilla.org). -->
-  <string name="mozac_feature_addons_permissions_one_site_description_for_update">ເຂົ້າເຖິງຂໍ້ມູນຂອງທ່ານສໍາລັບ %1$s.</string>
-  <!-- Description for giving an add-on access to users's data in multiple sites in the domain %1$s. %1$s will be replaced by the DNS domain for which a web extension is requesting access (e.g., mozilla.org). -->
-  <string name="mozac_feature_addons_permissions_sites_in_domain_description_for_update">ເຂົ້າເຖິງຂໍ້ມູນຂອງທ່ານສຳລັບເວັບໄຊໃນໂດເມນ %1$s.</string>
-  <!--
-    When an add-on requires access to more than 2 domains, for example the add-on requires access for 3 domains. We will show the first 2 domains in individual entries, as in mozac_feature_addons_permissions_sites_in_domain_description_for_update,
-    then we will show another collapsed entry saying "Access your data on another domain.".
-  -->
-  <string name="mozac_feature_addons_permissions_one_extra_domain_description_for_update">ເຂົ້າເຖິງຂໍ້ມູນຂອງທ່ານໃນໂດເມນອື່ນ.</string>
-  <!--
-    When an add-on requires access to more than 2 domains, for example the add-on requires access for 4 domains. We will show the first 2 domains in individual entries, as in mozac_feature_addons_permissions_sites_in_domain_description_for_update,
-    then we will show another collapsed entry saying "Access your data on other domains.".
-  -->
-  <string name="mozac_feature_addons_permissions_extra_domains_description_plural_for_update">ເຂົ້າເຖິງຂໍ້ມູນຂອງທ່ານໃນໂດເມນອື່ນໆ.</string>
-  <!--
-    When an add-on requires access to more than 2 sites, for example the add-on requires access for 3 sites. We will show the first 2 sites in individual entries, as in mozac_feature_addons_permissions_one_site_description_for_update,
-    then we will show another collapsed entry saying "Access your data on another site.".
-  -->
-  <string name="mozac_feature_addons_permissions_one_extra_site_description_for_update">ເຂົ້າເຖິງຂໍ້ມູນຂອງທ່ານຢູ່ໃນເວັບໄຊທ໌ອື່ນ.</string>
-  <!--
-    When an add-on requires access to more than 2 sites, for example the add-on requires access for 4 sites. We will show the first 2 sites in individual entries, as in mozac_feature_addons_permissions_one_site_description_for_update,
-    then we will show another collapsed entry saying "Access your data on other sites.".
-  -->
-  <string name="mozac_feature_addons_permissions_extra_sites_description_for_update">ເຂົ້າເຖິງຂໍ້ມູນຂອງທ່ານຢູ່ໃນເວັບໄຊທ໌ອື່ນໆ.</string>
   <!-- The text shown when an extension requests the userScripts permission, near the usual description of the userScripts permission -->
   <string name="mozac_feature_addons_permissions_user_scripts_extra_warning">ສະຄຣິບທີ່ບໍ່ໄດ້ຮັບການຢືນຢັນສາມາດສ້າງຄວາມສ່ຽງດ້ານຄວາມປອດໄພ ແລະ ຄວາມເປັນສ່ວນຕົວ. ແລ່ນສະຄຣິບຈາກສ່ວນຂະຫຍາຍ ຫຼື ແຫຼ່ງທີ່ທ່ານເຊື່ອຖືເທົ່ານັ້ນ.</string>
   <!-- The sentence used when the extension has data collection permissions. %1$s is a formatted list of permissions. -->
@@ -321,20 +243,6 @@
   <string name="mozac_feature_extensions_manager_notification_restart_button">ຣີສະຕາດສ່ວນຂະຫຍາຍໃໝ່</string>
   <!-- Button in the extensions manager that opens AMO in a tab -->
   <string name="mozac_feature_addons_find_more_extensions_button_text">ຊອກຫາສ່ວນຂະຫຍາຍເພີ່ມເຕີມ</string>
-  <!-- The label of the update button on the system notification shown to the user when an add-on has an update that requires the user to accept new permissions. -->
-  <string name="mozac_feature_addons_updater_notification_update_button">ອັບເດດ</string>
-  <!-- The label of the cancel button on a notification, this will be shown to the user when an add-on needs new permissions. Indicates the user denies the new permissions and prevents the add-on from be updated -->
-  <string name="mozac_feature_addons_updater_notification_cancel_button">ຍົກເລີກ</string>
-  <!-- The title of the system notification shown to the user when an add-on has a new update that requires new permissions. %1$s is the name of the add-on. -->
-  <string name="mozac_feature_addons_updater_notification_title_2">%1$s ມີການອັບເດດ</string>
-  <!-- A short explanation shown in the notification displayed when an add-on has a new update that requires new permissions. -->
-  <string name="mozac_feature_addons_updater_notification_short_intro">ຍົກເລີກເພື່ອຮັກສາເວີຊັນ ແລະ ການຕັ້ງຄ່າປັດຈຸບັນຂອງທ່ານ.</string>
-  <!-- The heading for the permissions section in the system notification shown when an add-on has an update that requires user confirmation. %1$s is a list of sentences. -->
-  <string name="mozac_feature_addons_updater_notification_heading_permissions">ການອະນຸຍາດໃໝ່ທີ່ຕ້ອງການ: %1$s</string>
-  <!-- The heading for the data collection permission section in the system notification shown when an add-on has an update that requires user confirmation. %1$s is a list of permissions. -->
-  <string name="mozac_feature_addons_updater_notification_heading_data_collection_permissions">ການເກັບກຳຂໍ້ມູນທີ່ຕ້ອງການໃໝ່: ຜູ້ພັດທະນາບອກວ່າສ່ວນຂະຫຍາຍຈະເກັບກຳ %1$s.</string>
-  <!-- Name of the "notification channel" used for displaying a notification for updating an extension. See https://developer.android.com/training/notify-user/channels -->
-  <string name="mozac_feature_addons_updater_notification_channel_2">ການປັບປຸງສ່ວນຂະຫຍາຍ</string>
   <!-- Name of the "notification channel" used for displaying a notification for new supported add-ons. See https://developer.android.com/training/notify-user/channels -->
   <string name="mozac_feature_addons_supported_checker_notification_channel" tools:ignore="UnusedResources">ຮອງຮັບໂຕກວດ Add-on</string>
   <!-- The tile of the notification, this will be shown to the user when one newly supported add-on is available. -->
