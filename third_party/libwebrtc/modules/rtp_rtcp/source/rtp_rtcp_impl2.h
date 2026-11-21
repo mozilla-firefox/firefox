@@ -144,6 +144,13 @@ class ModuleRtpRtcpImpl2 final : public RtpRtcpInterface,
                          int payload_type,
                          bool force_sender_report) override;
 
+  bool CanSendPacket(const RtpPacketToSend& packet) const override;
+
+  void AssignSequenceNumber(RtpPacketToSend& packet) override;
+
+  void SendPacket(std::unique_ptr<RtpPacketToSend> packet,
+                  const PacedPacketInfo& pacing_info) override;
+
   bool TrySendPacket(std::unique_ptr<RtpPacketToSend> packet,
                      const PacedPacketInfo& pacing_info) override;
   void OnBatchComplete() override;

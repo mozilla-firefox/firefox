@@ -378,16 +378,14 @@ SendVideoStream::SendVideoStream(CallClient* sender,
   using Codec = VideoStreamConfig::Encoder::Codec;
   switch (config.encoder.implementation) {
     case Encoder::Implementation::kFake:
-      encoder_factory_ =
-          std::make_unique<FunctionVideoEncoderFactory>([this]() {
+      encoder_factory_ = std::make_unique<FunctionVideoEncoderFactory>(
+          [this](const Environment& env, const SdpVideoFormat& format) {
             MutexLock lock(&mutex_);
             std::unique_ptr<FakeEncoder> encoder;
             if (config_.encoder.codec == Codec::kVideoCodecVP8) {
-              encoder = std::make_unique<test::FakeVp8Encoder>(
-                  &sender_->env_.clock());
+              encoder = std::make_unique<test::FakeVp8Encoder>(env);
             } else if (config_.encoder.codec == Codec::kVideoCodecGeneric) {
-              encoder =
-                  std::make_unique<test::FakeEncoder>(&sender_->env_.clock());
+              encoder = std::make_unique<test::FakeEncoder>(env);
             } else {
               RTC_DCHECK_NOTREACHED();
             }

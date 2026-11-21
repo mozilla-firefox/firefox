@@ -320,7 +320,7 @@ std::unique_ptr<VideoEncoder> VideoQualityTest::CreateVideoEncoder(
     encoder = std::make_unique<SimulcastEncoderAdapter>(
         env, encoder_factory_.get(), nullptr, format);
   } else if (format.name == "FakeCodec") {
-    encoder = webrtc::FakeVideoEncoderFactory::CreateVideoEncoder();
+    encoder = FakeVideoEncoderFactory().Create(env, format);
   } else {
     encoder = encoder_factory_->Create(env, format);
   }

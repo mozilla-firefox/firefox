@@ -358,13 +358,10 @@ ParsedRtcEventLog::ParseStatus StoreRtpPackets(
     }
     if (proto.has_audio_level()) {
       RTC_PARSE_CHECK_OR_RETURN(proto.has_voice_activity());
-      header.extension.hasAudioLevel = true;
-      header.extension.voiceActivity =
-          rtc::checked_cast<bool>(proto.voice_activity());
-      const uint8_t audio_level =
-          rtc::checked_cast<uint8_t>(proto.audio_level());
-      RTC_PARSE_CHECK_OR_RETURN_LE(audio_level, 0x7Fu);
-      header.extension.audioLevel = audio_level;
+      bool voice_activity = rtc::checked_cast<bool>(proto.voice_activity());
+      int audio_level = rtc::checked_cast<int>(proto.audio_level());
+      RTC_PARSE_CHECK_OR_RETURN_LE(audio_level, 0x7F);
+      header.extension.set_audio_level(AudioLevel(voice_activity, audio_level));
     } else {
       RTC_PARSE_CHECK_OR_RETURN(!proto.has_voice_activity());
     }
@@ -562,13 +559,11 @@ ParsedRtcEventLog::ParseStatus StoreRtpPackets(
     if (audio_level_values.size() > i && audio_level_values[i].has_value()) {
       RTC_PARSE_CHECK_OR_RETURN(voice_activity_values.size() > i &&
                                 voice_activity_values[i].has_value());
-      header.extension.hasAudioLevel = true;
-      header.extension.voiceActivity =
+      bool voice_activity =
           rtc::checked_cast<bool>(voice_activity_values[i].value());
-      const uint8_t audio_level =
-          rtc::checked_cast<uint8_t>(audio_level_values[i].value());
-      RTC_PARSE_CHECK_OR_RETURN_LE(audio_level, 0x7Fu);
-      header.extension.audioLevel = audio_level;
+      int audio_level = rtc::checked_cast<int>(audio_level_values[i].value());
+      RTC_PARSE_CHECK_OR_RETURN_LE(audio_level, 0x7F);
+      header.extension.set_audio_level(AudioLevel(voice_activity, audio_level));
     } else {
       RTC_PARSE_CHECK_OR_RETURN(voice_activity_values.size() <= i ||
                                 !voice_activity_values[i].has_value());

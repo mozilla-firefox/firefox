@@ -110,9 +110,6 @@ class RtpSenderEgress {
   };
   void CompleteSendPacket(const Packet& compound_packet, bool last_in_batch);
   bool HasCorrectSsrc(const RtpPacketToSend& packet) const;
-  void AddPacketToTransportFeedback(uint16_t packet_id,
-                                    const RtpPacketToSend& packet,
-                                    const PacedPacketInfo& pacing_info);
 
   // Sends packet on to `transport_`, leaving the RTP module.
   bool SendPacketToNetwork(const RtpPacketToSend& packet,
@@ -146,7 +143,6 @@ class RtpSenderEgress {
   absl::optional<uint16_t> last_sent_seq_ RTC_GUARDED_BY(worker_queue_);
   absl::optional<uint16_t> last_sent_rtx_seq_ RTC_GUARDED_BY(worker_queue_);
 
-  TransportFeedbackObserver* const transport_feedback_observer_;
   SendPacketObserver* const send_packet_observer_;
   StreamDataCountersCallback* const rtp_stats_callback_;
   BitrateStatisticsObserver* const bitrate_callback_;

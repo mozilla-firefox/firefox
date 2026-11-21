@@ -16,6 +16,7 @@
 
 #include <memory>
 
+#include "api/environment/environment.h"
 #include "api/fec_controller_override.h"
 #include "api/sequence_checker.h"
 #include "api/video/encoded_image.h"
@@ -33,7 +34,8 @@ namespace test {
 
 class FakeVp8Encoder : public FakeEncoder {
  public:
-  explicit FakeVp8Encoder(Clock* clock);
+  explicit FakeVp8Encoder(const Environment& env);
+  [[deprecated]] explicit FakeVp8Encoder(Clock* clock);
   virtual ~FakeVp8Encoder() = default;
 
   int32_t InitEncode(const VideoCodec* config,

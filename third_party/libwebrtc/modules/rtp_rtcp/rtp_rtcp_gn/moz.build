@@ -70,6 +70,7 @@ UNIFIED_SOURCES += [
     "/third_party/libwebrtc/modules/rtp_rtcp/source/rtp_format_vp9.cc",
     "/third_party/libwebrtc/modules/rtp_rtcp/source/rtp_header_extension_size.cc",
     "/third_party/libwebrtc/modules/rtp_rtcp/source/rtp_packet_history.cc",
+    "/third_party/libwebrtc/modules/rtp_rtcp/source/rtp_packet_send_info.cc",
     "/third_party/libwebrtc/modules/rtp_rtcp/source/rtp_packetizer_av1.cc",
     "/third_party/libwebrtc/modules/rtp_rtcp/source/rtp_sender.cc",
     "/third_party/libwebrtc/modules/rtp_rtcp/source/rtp_sender_audio.cc",

@@ -14,6 +14,7 @@
 #include "absl/base/macros.h"
 #include "absl/container/inlined_vector.h"
 #include "api/array_view.h"
+#include "api/environment/environment_factory.h"
 #include "api/field_trials_view.h"
 #include "api/video/video_frame.h"
 #include "api/video_codecs/video_codec.h"
@@ -536,8 +537,8 @@ void FuzzOneInput(const uint8_t* data, size_t size) {
   LibvpxState state;
 
   // Initialize encoder
-  LibvpxVp9Encoder encoder(cricket::CreateVideoCodec(cricket::kVp9CodecName),
-                           std::make_unique<StubLibvpx>(&state), field_trials);
+  LibvpxVp9Encoder encoder(CreateEnvironment(&field_trials), {},
+                           std::make_unique<StubLibvpx>(&state));
   VideoCodec codec = CodecSettings(helper);
   if (encoder.InitEncode(&codec, EncoderSettings()) != WEBRTC_VIDEO_CODEC_OK) {
     return;

@@ -154,8 +154,10 @@ class PortInterface {
 
   // The factory used to create the sockets of this port.
   virtual rtc::PacketSocketFactory* socket_factory() const = 0;
-  virtual const std::string& user_agent() = 0;
-  virtual const rtc::ProxyInfo& proxy() = 0;
+  [[deprecated("Unsupported function")]] virtual const std::string&
+  user_agent() = 0;
+  [[deprecated("Unsupported function")]] virtual const rtc::ProxyInfo&
+  proxy() = 0;
 
   // Identifies the generation that this port was created in.
   virtual uint32_t generation() const = 0;

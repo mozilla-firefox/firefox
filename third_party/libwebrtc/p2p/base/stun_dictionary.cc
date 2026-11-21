@@ -18,6 +18,31 @@
 
 namespace cricket {
 
+namespace {
+
+StunAttributeValueType GetStunAttributeValueType(int value_type) {
+  switch (value_type) {
+    case STUN_VALUE_ADDRESS:
+      return STUN_VALUE_ADDRESS;
+    case STUN_VALUE_XOR_ADDRESS:
+      return STUN_VALUE_XOR_ADDRESS;
+    case STUN_VALUE_UINT32:
+      return STUN_VALUE_UINT32;
+    case STUN_VALUE_UINT64:
+      return STUN_VALUE_UINT64;
+    case STUN_VALUE_BYTE_STRING:
+      return STUN_VALUE_BYTE_STRING;
+    case STUN_VALUE_ERROR_CODE:
+      return STUN_VALUE_ERROR_CODE;
+    case STUN_VALUE_UINT16_LIST:
+      return STUN_VALUE_UINT16_LIST;
+    default:
+      return STUN_VALUE_UNKNOWN;
+  }
+}
+
+}  // namespace
+
 const StunAddressAttribute* StunDictionaryView::GetAddress(int key) const {
   const StunAttribute* attr = GetOrNull(key, STUN_VALUE_ADDRESS);
   if (attr == nullptr) {
@@ -120,7 +145,7 @@ StunDictionaryView::ParseDelta(const StunByteStringAttribute& delta) {
     }
 
     StunAttributeValueType value_type_enum =
-        static_cast<StunAttributeValueType>(value_type);
+        GetStunAttributeValueType(value_type);
     std::unique_ptr<StunAttribute> attr(
         StunAttribute::Create(value_type_enum, key, length, nullptr));
     if (!attr) {

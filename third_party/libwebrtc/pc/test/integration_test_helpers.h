@@ -141,6 +141,7 @@ using ::testing::Values;
 using RTCConfiguration = PeerConnectionInterface::RTCConfiguration;
 
 static const int kDefaultTimeout = 10000;
+static const int kLongTimeout = 60000;
 static const int kMaxWaitForStatsMs = 3000;
 static const int kMaxWaitForActivationMs = 5000;
 static const int kMaxWaitForFramesMs = 10000;

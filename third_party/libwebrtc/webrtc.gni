@@ -44,6 +44,10 @@ if (is_fuchsia) {
   import("//build/config/fuchsia/config.gni")
 }
 
+if (build_with_chromium) {
+  import("//media/media_options.gni")
+}
+
 # This declare_args is separated from the next one because args declared
 # in this one, can be read from the next one (args defined in the same
 # declare_args cannot be referenced in that scope).
@@ -197,7 +201,11 @@ declare_args() {
       proprietary_codecs && !is_android && !is_ios && !(is_win && !is_clang)
 
   # Enable to use H265
-  rtc_use_h265 = proprietary_codecs
+  if (build_with_chromium) {
+    rtc_use_h265 = enable_hevc_parser_and_hw_decoder
+  } else {
+    rtc_use_h265 = proprietary_codecs
+  }
 
   # Enable this flag to make webrtc::Mutex be implemented by absl::Mutex.
   rtc_use_absl_mutex = false

@@ -939,10 +939,16 @@ class RTCStatsReportVerifier {
     VerifyRTCRtpStreamStats(remote_outbound_stream, verifier);
     VerifyRTCSentRtpStreamStats(remote_outbound_stream, verifier);
     verifier.TestAttributeIsIDReference(remote_outbound_stream.local_id,
-                                        RTCOutboundRtpStreamStats::kType);
+                                        RTCInboundRtpStreamStats::kType);
     verifier.TestAttributeIsNonNegative<double>(
         remote_outbound_stream.remote_timestamp);
     verifier.TestAttributeIsDefined(remote_outbound_stream.reports_sent);
+    // RTT-related attributes need DLRR.
+    verifier.MarkAttributeTested(remote_outbound_stream.round_trip_time, true);
+    verifier.MarkAttributeTested(
+        remote_outbound_stream.round_trip_time_measurements, true);
+    verifier.MarkAttributeTested(remote_outbound_stream.total_round_trip_time,
+                                 true);
     return verifier.ExpectAllAttributesSuccessfullyTested();
   }
 

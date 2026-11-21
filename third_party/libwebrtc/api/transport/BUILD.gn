@@ -125,6 +125,7 @@ if (rtc_include_tests) {
   rtc_source_set("test_feedback_generator_interface") {
     testonly = true
     sources = [ "test/feedback_generator_interface.h" ]
+    visibility = [ "*" ]
     deps = [
       ":network_control",
       "..:simulated_network_api",

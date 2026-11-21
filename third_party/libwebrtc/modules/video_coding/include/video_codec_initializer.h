@@ -11,28 +11,21 @@
 #ifndef MODULES_VIDEO_CODING_INCLUDE_VIDEO_CODEC_INITIALIZER_H_
 #define MODULES_VIDEO_CODING_INCLUDE_VIDEO_CODEC_INITIALIZER_H_
 
-#include <memory>
-#include <string>
 #include <vector>
 
+#include "api/field_trials_view.h"
+#include "api/video_codecs/video_codec.h"
 #include "video/config/video_encoder_config.h"
 
 namespace webrtc {
-
-class VideoCodec;
 
 class VideoCodecInitializer {
  public:
   // Takes a VideoEncoderConfig and the VideoStream configuration and
   // translates them into the old school VideoCodec type.
-  static bool SetupCodec(const VideoEncoderConfig& config,
-                         const std::vector<VideoStream>& streams,
-                         VideoCodec* codec);
-
- private:
-  static VideoCodec VideoEncoderConfigToVideoCodec(
-      const VideoEncoderConfig& config,
-      const std::vector<VideoStream>& streams);
+  static VideoCodec SetupCodec(const FieldTrialsView& field_trials,
+                               const VideoEncoderConfig& config,
+                               const std::vector<VideoStream>& streams);
 };
 
 }  // namespace webrtc

@@ -132,24 +132,20 @@ RtpVp9RefFinder::FrameDecision RtpVp9RefFinder::ManageFrameGof(
       FlattenFrameIdAndRefs(frame, codec_header.inter_layer_predicted);
       return kHandOff;
     }
-  } else if (frame->frame_type() == VideoFrameType::kVideoFrameKey) {
-    if (frame->SpatialIndex() == 0) {
+  } else {
+    if (frame->frame_type() == VideoFrameType::kVideoFrameKey) {
       RTC_LOG(LS_WARNING) << "Received keyframe without scalability structure";
       return kDrop;
     }
-    const auto gof_info_it = gof_info_.find(unwrapped_tl0);
-    if (gof_info_it == gof_info_.end())
-      return kStash;
 
-    info = &gof_info_it->second;
-
-    frame->num_references = 0;
-    FrameReceivedVp9(frame->Id(), info);
-    FlattenFrameIdAndRefs(frame, codec_header.inter_layer_predicted);
-    return kHandOff;
-  } else {
-    auto gof_info_it = gof_info_.find(
-        (codec_header.temporal_idx == 0) ? unwrapped_tl0 - 1 : unwrapped_tl0);
+    // tl0_idx is incremented on temporal_idx=0 frames of the lowest spatial
+    // layer (which spatial_idx is not necessarily zero). Upper spatial layer
+    // frames with inter-layer prediction use GOF info of their base spatial
+    // layer frames.
+    const bool use_prev_gof =
+        codec_header.temporal_idx == 0 && !codec_header.inter_layer_predicted;
+    auto gof_info_it =
+        gof_info_.find(use_prev_gof ? unwrapped_tl0 - 1 : unwrapped_tl0);
 
     // Gof info for this frame is not available yet, stash this frame.
     if (gof_info_it == gof_info_.end())
@@ -185,29 +181,29 @@ RtpVp9RefFinder::FrameDecision RtpVp9RefFinder::ManageFrameGof(
   auto up_switch_erase_to = up_switch_.lower_bound(old_picture_id);
   up_switch_.erase(up_switch_.begin(), up_switch_erase_to);
 
-  size_t diff =
-      ForwardDiff<uint16_t, kFrameIdLength>(info->gof->pid_start, frame->Id());
-  size_t gof_idx = diff % info->gof->num_frames_in_gof;
+  if (codec_header.inter_pic_predicted) {
+    size_t diff = ForwardDiff<uint16_t, kFrameIdLength>(info->gof->pid_start,
+                                                        frame->Id());
+    size_t gof_idx = diff % info->gof->num_frames_in_gof;
 
-  if (info->gof->num_ref_pics[gof_idx] > EncodedFrame::kMaxFrameReferences) {
-    return kDrop;
-  }
-  // Populate references according to the scalability structure.
-  frame->num_references = info->gof->num_ref_pics[gof_idx];
-  for (size_t i = 0; i < frame->num_references; ++i) {
-    frame->references[i] =
-        Subtract<kFrameIdLength>(frame->Id(), info->gof->pid_diff[gof_idx][i]);
-
-    // If this is a reference to a frame earlier than the last up switch point,
-    // then ignore this reference.
-    if (UpSwitchInIntervalVp9(frame->Id(), codec_header.temporal_idx,
-                              frame->references[i])) {
-      --frame->num_references;
+    if (info->gof->num_ref_pics[gof_idx] > EncodedFrame::kMaxFrameReferences) {
+      return kDrop;
     }
-  }
 
-  // Override GOF references.
-  if (!codec_header.inter_pic_predicted) {
+    // Populate references according to the scalability structure.
+    frame->num_references = info->gof->num_ref_pics[gof_idx];
+    for (size_t i = 0; i < frame->num_references; ++i) {
+      frame->references[i] = Subtract<kFrameIdLength>(
+          frame->Id(), info->gof->pid_diff[gof_idx][i]);
+
+      // If this is a reference to a frame earlier than the last up switch
+      // point, then ignore this reference.
+      if (UpSwitchInIntervalVp9(frame->Id(), codec_header.temporal_idx,
+                                frame->references[i])) {
+        --frame->num_references;
+      }
+    }
+  } else {
     frame->num_references = 0;
   }
 

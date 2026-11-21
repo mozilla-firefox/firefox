@@ -677,11 +677,21 @@ void WebrtcVideoConduit::OnControlConfigChange() {
         // dimensions-derived properties, as they're only known as a frame to
         // be sent is known).
         mEncoderConfig.simulcast_layers.clear();
-        for (size_t idx = 0; idx < streamCount; ++idx) {
-          webrtc::VideoStream video_stream;
-          auto& encoding = codecConfig->mEncodings[idx];
-          video_stream.active = encoding.active;
-          mEncoderConfig.simulcast_layers.push_back(video_stream);
+        {
+          auto videoStreamFactory = mVideoStreamFactory.Lock();
+          auto& videoStreamFactoryRef = videoStreamFactory.ref();
+          for (size_t idx = 0; idx < streamCount; ++idx) {
+            webrtc::VideoStream video_stream;
+            auto& encoding = codecConfig->mEncodings[idx];
+            video_stream.active = encoding.active;
+
+            if (videoStreamFactoryRef) {
+              videoStreamFactoryRef->SelectMaxFramerate(mLastWidth, mLastHeight,
+                                                        encoding, video_stream);
+            }
+
+            mEncoderConfig.simulcast_layers.push_back(video_stream);
+          }
         }
 
         // Expected max number of encodings

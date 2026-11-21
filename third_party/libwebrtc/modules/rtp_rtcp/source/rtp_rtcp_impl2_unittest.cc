@@ -19,12 +19,14 @@
 #include "absl/types/optional.h"
 #include "api/field_trials_registry.h"
 #include "api/units/time_delta.h"
+#include "modules/rtp_rtcp/include/rtp_header_extension_map.h"
 #include "modules/rtp_rtcp/include/rtp_rtcp_defines.h"
 #include "modules/rtp_rtcp/source/rtcp_packet.h"
 #include "modules/rtp_rtcp/source/rtcp_packet/nack.h"
 #include "modules/rtp_rtcp/source/rtp_packet_received.h"
 #include "modules/rtp_rtcp/source/rtp_rtcp_interface.h"
 #include "modules/rtp_rtcp/source/rtp_sender_video.h"
+#include "modules/rtp_rtcp/source/rtp_sequence_number_map.h"
 #include "rtc_base/logging.h"
 #include "rtc_base/rate_limiter.h"
 #include "rtc_base/strings/string_builder.h"
@@ -1147,6 +1149,60 @@ TEST_F(RtpRtcpImpl2Test, RtxRtpStateReflectsCurrentState) {
   EXPECT_EQ(rtx_state.start_timestamp, kStartTimestamp);
   EXPECT_EQ(rtx_state.ssrc_has_acked, true);
   EXPECT_EQ(rtx_state.sequence_number, rtx_packet.SequenceNumber() + 1);
+}
+
+TEST_F(RtpRtcpImpl2Test, CanSendPacketReturnTrueForMediaPacketIfSendingMedia) {
+  RtpHeaderExtensionMap extensions;
+  RtpPacketToSend packet(&extensions);
+  packet.SetSsrc(sender_.impl_->SSRC());
+  packet.set_packet_type(RtpPacketMediaType::kAudio);
+  sender_.impl_->SetSendingMediaStatus(true);
+
+  EXPECT_TRUE(sender_.impl_->CanSendPacket(packet));
+}
+
+TEST_F(RtpRtcpImpl2Test,
+       CanSendPacketReturnFalseForMediaPacketIfNotSendingMedia) {
+  RtpHeaderExtensionMap extensions;
+  RtpPacketToSend packet(&extensions);
+  packet.SetSsrc(sender_.impl_->SSRC());
+  packet.set_packet_type(RtpPacketMediaType::kAudio);
+  sender_.impl_->SetSendingMediaStatus(false);
+
+  EXPECT_FALSE(sender_.impl_->CanSendPacket(packet));
+}
+
+TEST_F(RtpRtcpImpl2Test,
+       CanSendPacketReturnFalseForPaddingPacketOnMediaSsrcBeforeMediaPacket) {
+  RtpHeaderExtensionMap extensions;
+  RtpPacketToSend packet(&extensions);
+  packet.SetSsrc(sender_.impl_->SSRC());
+  packet.set_packet_type(RtpPacketMediaType::kPadding);
+  sender_.impl_->SetSendingMediaStatus(true);
+
+  EXPECT_FALSE(sender_.impl_->CanSendPacket(packet));
+}
+
+TEST_F(RtpRtcpImpl2Test, RtpSequenceNumberSetByAssignSequenceNumber) {
+  RtpHeaderExtensionMap extensions;
+  RtpPacketToSend packet(&extensions);
+  packet.SetSsrc(sender_.impl_->SSRC());
+
+  sender_.impl_->SetSequenceNumber(1);
+  sender_.impl_->AssignSequenceNumber(packet);
+  EXPECT_EQ(packet.SequenceNumber(), 1);
+  sender_.impl_->AssignSequenceNumber(packet);
+  EXPECT_EQ(packet.SequenceNumber(), 2);
+}
+
+TEST_F(RtpRtcpImpl2Test, SendPacketSendsPacketOnTransport) {
+  RtpHeaderExtensionMap extensions;
+  auto packet = std::make_unique<RtpPacketToSend>(&extensions);
+  packet->SetSsrc(sender_.impl_->SSRC());
+  packet->set_packet_type(RtpPacketMediaType::kAudio);
+
+  sender_.impl_->SendPacket(std::move(packet), PacedPacketInfo());
+  EXPECT_EQ(sender_.RtpSent(), 1);
 }
 
 }  // namespace webrtc

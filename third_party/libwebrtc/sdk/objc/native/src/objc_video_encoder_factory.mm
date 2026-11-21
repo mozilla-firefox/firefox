@@ -21,7 +21,6 @@
 #import "sdk/objc/api/peerconnection/RTCVideoEncoderSettings+Private.h"
 #import "sdk/objc/api/video_codec/RTCNativeVideoEncoderBuilder+Native.h"
 #import "sdk/objc/api/video_codec/RTCVideoCodecConstants.h"
-#import "sdk/objc/api/video_codec/RTCWrappedNativeVideoEncoder.h"
 #import "sdk/objc/helpers/NSString+StdString.h"
 
 #include "api/environment/environment.h"
@@ -185,18 +184,6 @@ std::vector<SdpVideoFormat> ObjCVideoEncoderFactory::GetImplementations() const 
   return GetSupportedFormats();
 }
 
-std::unique_ptr<VideoEncoder> ObjCVideoEncoderFactory::CreateVideoEncoder(
-    const SdpVideoFormat &format) {
-  RTC_OBJC_TYPE(RTCVideoCodecInfo) *info =
-      [[RTC_OBJC_TYPE(RTCVideoCodecInfo) alloc] initWithNativeSdpVideoFormat:format];
-  id<RTC_OBJC_TYPE(RTCVideoEncoder)> encoder = [encoder_factory_ createEncoder:info];
-  if ([encoder isKindOfClass:[RTC_OBJC_TYPE(RTCWrappedNativeVideoEncoder) class]]) {
-    return [(RTC_OBJC_TYPE(RTCWrappedNativeVideoEncoder) *)encoder releaseWrappedEncoder];
-  } else {
-    return std::unique_ptr<ObjCVideoEncoder>(new ObjCVideoEncoder(encoder));
-  }
-}
-
 std::unique_ptr<VideoEncoder> ObjCVideoEncoderFactory::Create(const Environment &env,
                                                               const SdpVideoFormat &format) {
   RTC_OBJC_TYPE(RTCVideoCodecInfo) *info =
@@ -204,8 +191,6 @@ std::unique_ptr<VideoEncoder> ObjCVideoEncoderFactory::Create(const Environment 
   id<RTC_OBJC_TYPE(RTCVideoEncoder)> encoder = [encoder_factory_ createEncoder:info];
   if ([encoder conformsToProtocol:@protocol(RTC_OBJC_TYPE(RTCNativeVideoEncoderBuilder))]) {
     return [((id<RTC_OBJC_TYPE(RTCNativeVideoEncoderBuilder)>)encoder) build:env];
-  } else if ([encoder isKindOfClass:[RTC_OBJC_TYPE(RTCWrappedNativeVideoEncoder) class]]) {
-    return [(RTC_OBJC_TYPE(RTCWrappedNativeVideoEncoder) *)encoder releaseWrappedEncoder];
   } else {
     return std::make_unique<ObjCVideoEncoder>(encoder);
   }

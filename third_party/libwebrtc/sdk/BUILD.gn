@@ -791,7 +791,6 @@ if (is_ios || is_mac) {
       deps = [
         ":base_objc",
         ":wrapped_native_codec_objc",
-        "../media:rtc_media_base",
         "../modules/video_coding:webrtc_vp9",
       ]
     }
@@ -823,7 +822,6 @@ if (is_ios || is_mac) {
       deps = [
         ":base_objc",
         ":wrapped_native_codec_objc",
-        "../media:rtc_media_base",
         "../modules/video_coding/codecs/av1:libaom_av1_encoder",
       ]
     }
@@ -1551,8 +1549,6 @@ if (is_ios || is_mac) {
         "objc/api/video_codec/RTCNativeVideoEncoder.h",
         "objc/api/video_codec/RTCNativeVideoEncoder.mm",
         "objc/api/video_codec/RTCNativeVideoEncoderBuilder+Native.h",
-        "objc/api/video_codec/RTCWrappedNativeVideoEncoder.h",
-        "objc/api/video_codec/RTCWrappedNativeVideoEncoder.mm",
       ]
 
       configs += [ "..:common_objc" ]

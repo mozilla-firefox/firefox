@@ -1290,7 +1290,6 @@ if (!build_with_mozilla) {
     ":byte_buffer",
     ":checks",
     ":crypt_string",
-    ":http_common",
     ":logging",
     ":stringutils",
     ":zero_memory",
@@ -1412,14 +1411,8 @@ rtc_library("dscp") {
 rtc_library("proxy_info") {
 if (!build_with_mozilla) {
   visibility = [ "*" ]
-  sources = [
-    "proxy_info.cc",
-    "proxy_info.h",
-  ]
-  deps = [
-    ":crypt_string",
-    ":socket_address",
-  ]
+  sources = [ "proxy_info.h" ]
+  deps = []
 }
 }
 
@@ -1622,26 +1615,6 @@ rtc_library("crypt_string") {
     "crypt_string.cc",
     "crypt_string.h",
   ]
-}
-
-rtc_library("http_common") {
-if (!build_with_mozilla) {
-  sources = [
-    "http_common.cc",
-    "http_common.h",
-  ]
-  deps = [
-    ":crypt_string",
-    ":logging",
-    ":socket_address",
-    ":ssl",
-    ":stringutils",
-    ":zero_memory",
-    "third_party/base64",
-  ]
-
-  absl_deps = [ "//third_party/abseil-cpp/absl/strings" ]
-}
 }
 
 rtc_source_set("gtest_prod") {

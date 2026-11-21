@@ -9,6 +9,7 @@
  */
 #include "call/rtp_transport_controller_send.h"
 
+#include <cstdint>
 #include <memory>
 #include <utility>
 #include <vector>
@@ -26,7 +27,9 @@
 #include "call/rtp_video_sender.h"
 #include "logging/rtc_event_log/events/rtc_event_remote_estimate.h"
 #include "logging/rtc_event_log/events/rtc_event_route_change.h"
+#include "modules/rtp_rtcp/include/rtp_rtcp_defines.h"
 #include "modules/rtp_rtcp/source/rtcp_packet/transport_feedback.h"
+#include "modules/rtp_rtcp/source/rtp_header_extensions.h"
 #include "rtc_base/checks.h"
 #include "rtc_base/logging.h"
 #include "rtc_base/rate_limiter.h"
@@ -112,6 +115,11 @@ RtpTransportControllerSend::RtpTransportControllerSend(
     // Default burst interval overriden by config.
     pacer_.SetSendBurstInterval(*config.pacer_burst_interval);
   }
+  packet_router_.RegisterNotifyBweCallback(
+      [this](const RtpPacketToSend& packet,
+             const PacedPacketInfo& pacing_info) {
+        return NotifyBweOfPacedSentPacket(packet, pacing_info);
+      });
 }
 
 RtpTransportControllerSend::~RtpTransportControllerSend() {
@@ -221,11 +229,6 @@ PacketRouter* RtpTransportControllerSend::packet_router() {
 
 NetworkStateEstimateObserver*
 RtpTransportControllerSend::network_state_estimate_observer() {
-  return this;
-}
-
-TransportFeedbackObserver*
-RtpTransportControllerSend::transport_feedback_observer() {
   return this;
 }
 
@@ -570,9 +573,20 @@ void RtpTransportControllerSend::OnRttUpdate(Timestamp receive_time,
     PostUpdates(controller_->OnRoundTripTimeUpdate(report));
 }
 
-void RtpTransportControllerSend::OnAddPacket(
-    const RtpPacketSendInfo& packet_info) {
+void RtpTransportControllerSend::NotifyBweOfPacedSentPacket(
+    const RtpPacketToSend& packet,
+    const PacedPacketInfo& pacing_info) {
   RTC_DCHECK_RUN_ON(&sequence_checker_);
+
+  if (!packet.transport_sequence_number()) {
+    return;
+  }
+  if (!packet.packet_type()) {
+    RTC_DCHECK_NOTREACHED() << "Unknown packet type";
+    return;
+  }
+
+  RtpPacketSendInfo packet_info = RtpPacketSendInfo::From(packet, pacing_info);
   Timestamp creation_time =
       Timestamp::Millis(env_.clock().TimeInMilliseconds());
   feedback_demuxer_.AddPacket(packet_info);

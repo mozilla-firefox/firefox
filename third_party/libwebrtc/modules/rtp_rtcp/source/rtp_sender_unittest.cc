@@ -1017,7 +1017,10 @@ TEST_F(RtpSenderTest, MarksRetransmittedPackets) {
   // Build a media packet and put in the packet history.
   std::unique_ptr<RtpPacketToSend> packet =
       BuildRtpPacket(kPayload, true, 0, clock_->CurrentTime());
-  const uint16_t media_sequence_number = packet->SequenceNumber();
+  const uint32_t kMediaSsrc = 567;
+  const uint16_t kMediaSequenceNumber = 123;
+  packet->SetSsrc(kMediaSsrc);
+  packet->SetSequenceNumber(kMediaSequenceNumber);
   packet->set_allow_retransmission(true);
   packet_history_->PutRtpPacket(std::move(packet), clock_->CurrentTime());
 
@@ -1028,9 +1031,10 @@ TEST_F(RtpSenderTest, MarksRetransmittedPackets) {
       EnqueuePackets(ElementsAre(AllOf(
           Pointee(Property(&RtpPacketToSend::packet_type,
                            RtpPacketMediaType::kRetransmission)),
+          Pointee(Property(&RtpPacketToSend::original_ssrc, kMediaSsrc)),
           Pointee(Property(&RtpPacketToSend::retransmitted_sequence_number,
-                           Eq(media_sequence_number)))))));
-  EXPECT_THAT(rtp_sender_->ReSendPacket(media_sequence_number), Gt(0));
+                           Eq(kMediaSequenceNumber)))))));
+  EXPECT_THAT(rtp_sender_->ReSendPacket(kMediaSequenceNumber), Gt(0));
 }
 
 TEST_F(RtpSenderTest, GeneratedPaddingHasBweExtensions) {

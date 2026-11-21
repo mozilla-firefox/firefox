@@ -13,6 +13,7 @@
 
 #include <stddef.h>
 
+#include <cstdint>
 #include <memory>
 #include <vector>
 
@@ -193,6 +194,9 @@ enum class RtpPacketMediaType : size_t {
 };
 
 struct RtpPacketSendInfo {
+  static RtpPacketSendInfo From(const RtpPacketToSend& rtp_packet_to_send,
+                                const PacedPacketInfo& pacing_info);
+
   uint16_t transport_sequence_number = 0;
   absl::optional<uint32_t> media_ssrc;
   uint16_t rtp_sequence_number = 0;  // Only valid if `media_ssrc` is set.

@@ -299,6 +299,7 @@ int32_t RTPSender::ReSendPacket(uint16_t packet_id) {
             if (retransmit_packet) {
               retransmit_packet->set_retransmitted_sequence_number(
                   stored_packet.SequenceNumber());
+              retransmit_packet->set_original_ssrc(stored_packet.Ssrc());
             }
             return retransmit_packet;
           });

@@ -55,7 +55,10 @@ TEST_F(FecEndToEndTest, ReceivesUlpfec) {
    public:
     UlpfecRenderObserver()
         : EndToEndTest(test::VideoTestConstants::kDefaultTimeout),
-          encoder_factory_([]() { return VP8Encoder::Create(); }),
+          encoder_factory_(
+              [](const Environment& env, const SdpVideoFormat& format) {
+                return CreateVp8Encoder(env);
+              }),
           random_(0xcafef00d1),
           num_packets_sent_(0) {}
 
@@ -372,7 +375,10 @@ TEST_F(FecEndToEndTest, ReceivedUlpfecPacketsNotNacked) {
           ulpfec_sequence_number_(0),
           has_last_sequence_number_(false),
           last_sequence_number_(0),
-          encoder_factory_([]() { return VP8Encoder::Create(); }) {}
+          encoder_factory_(
+              [](const Environment& env, const SdpVideoFormat& format) {
+                return CreateVp8Encoder(env);
+              }) {}
 
    private:
     Action OnSendRtp(rtc::ArrayView<const uint8_t> packet) override {

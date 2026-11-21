@@ -14,6 +14,8 @@
 #include <memory>
 #include <vector>
 
+#include "api/environment/environment.h"
+#include "api/video_codecs/vp9_profile.h"
 #include "modules/video_coding/codecs/vp9/include/vp9.h"
 
 namespace webrtc {
@@ -23,8 +25,11 @@ struct LibvpxVp9EncoderTemplateAdapter {
   }
 
   static std::unique_ptr<VideoEncoder> CreateEncoder(
+      const Environment& env,
       const SdpVideoFormat& format) {
-    return VP9Encoder::Create(cricket::CreateVideoCodec(format));
+    return CreateVp9Encoder(env,
+                            {.profile = ParseSdpForVP9Profile(format.parameters)
+                                            .value_or(VP9Profile::kProfile0)});
   }
 
   static bool IsScalabilityModeSupported(ScalabilityMode scalability_mode) {

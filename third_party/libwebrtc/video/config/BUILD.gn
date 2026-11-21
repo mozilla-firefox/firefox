@@ -77,10 +77,9 @@ if (rtc_include_tests) {
     ]
     deps = [
       ":streams_config",
-      "../../api/transport:field_trial_based_config",
       "../../call/adaptation:resource_adaptation",
       "../../media:media_constants",
-      "../../test:field_trial",
+      "../../test:explicit_key_value_config",
       "../../test:test_support",
     ]
     absl_deps = [

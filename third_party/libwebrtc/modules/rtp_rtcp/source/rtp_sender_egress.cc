@@ -94,7 +94,6 @@ RtpSenderEgress::RtpSenderEgress(const RtpRtcpInterface::Configuration& config,
       is_audio_(config.audio),
       need_rtp_packet_infos_(config.need_rtp_packet_infos),
       fec_generator_(config.fec_generator),
-      transport_feedback_observer_(config.transport_feedback_callback),
       send_packet_observer_(config.send_packet_observer),
       rtp_stats_callback_(config.rtp_stats_callback),
       bitrate_callback_(config.send_bitrate_observer),
@@ -107,6 +106,9 @@ RtpSenderEgress::RtpSenderEgress(const RtpRtcpInterface::Configuration& config,
                                          kRtpSequenceNumberMapMaxEntries)
                                    : nullptr) {
   RTC_DCHECK(worker_queue_);
+  RTC_DCHECK(config.transport_feedback_callback == nullptr)
+      << "transport_feedback_callback is no longer used and will soon be "
+         "deleted.";
   if (bitrate_callback_) {
     update_task_ = RepeatingTaskHandle::DelayedStart(worker_queue_,
                                                      kUpdateInterval, [this]() {
@@ -209,6 +211,11 @@ void RtpSenderEgress::SendPacket(std::unique_ptr<RtpPacketToSend> packet,
   if (packet->HasExtension<AbsoluteSendTime>()) {
     packet->SetExtension<AbsoluteSendTime>(AbsoluteSendTime::To24Bits(now));
   }
+  if (packet->HasExtension<TransportSequenceNumber>() &&
+      packet->transport_sequence_number()) {
+    packet->SetExtension<TransportSequenceNumber>(
+        *packet->transport_sequence_number() & 0xFFFF);
+  }
 
   if (packet->HasExtension<VideoTimingExtension>()) {
     if (populate_network2_timestamp_) {
@@ -248,13 +255,21 @@ void RtpSenderEgress::CompleteSendPacket(const Packet& compound_packet,
   // Downstream code actually uses this flag to distinguish between media and
   // everything else.
   options.is_retransmit = !is_media;
+
+  // Set Packet id from transport sequence number header extension if it is
+  // used. The source of the header extension is
+  // RtpPacketToSend::transport_sequence_number(), but the extension is only 16
+  // bit and will wrap. We should be able to use the 64bit value as id, but in
+  // order to not change behaviour we use the 16bit extension value if it is
+  // used.
   absl::optional<uint16_t> packet_id =
       packet->GetExtension<TransportSequenceNumber>();
   if (packet_id.has_value()) {
     options.packet_id = *packet_id;
     options.included_in_feedback = true;
     options.included_in_allocation = true;
-    AddPacketToTransportFeedback(*packet_id, *packet, pacing_info);
+  } else if (packet->transport_sequence_number()) {
+    options.packet_id = *packet->transport_sequence_number();
   }
 
   if (packet->packet_type() != RtpPacketMediaType::kPadding &&
@@ -397,42 +412,6 @@ bool RtpSenderEgress::HasCorrectSsrc(const RtpPacketToSend& packet) const {
       return packet.Ssrc() == ssrc_ || packet.Ssrc() == flexfec_ssrc_;
   }
   return false;
-}
-
-void RtpSenderEgress::AddPacketToTransportFeedback(
-    uint16_t packet_id,
-    const RtpPacketToSend& packet,
-    const PacedPacketInfo& pacing_info) {
-  if (transport_feedback_observer_) {
-    RtpPacketSendInfo packet_info;
-    packet_info.transport_sequence_number = packet_id;
-    packet_info.rtp_timestamp = packet.Timestamp();
-    packet_info.length = packet.size();
-    packet_info.pacing_info = pacing_info;
-    packet_info.packet_type = packet.packet_type();
-
-    switch (*packet_info.packet_type) {
-      case RtpPacketMediaType::kAudio:
-      case RtpPacketMediaType::kVideo:
-        packet_info.media_ssrc = ssrc_;
-        packet_info.rtp_sequence_number = packet.SequenceNumber();
-        break;
-      case RtpPacketMediaType::kRetransmission:
-        // For retransmissions, we're want to remove the original media packet
-        // if the retransmit arrives - so populate that in the packet info.
-        packet_info.media_ssrc = ssrc_;
-        packet_info.rtp_sequence_number =
-            *packet.retransmitted_sequence_number();
-        break;
-      case RtpPacketMediaType::kPadding:
-      case RtpPacketMediaType::kForwardErrorCorrection:
-        // We're not interested in feedback about these packets being received
-        // or lost.
-        break;
-    }
-
-    transport_feedback_observer_->OnAddPacket(packet_info);
-  }
 }
 
 bool RtpSenderEgress::SendPacketToNetwork(const RtpPacketToSend& packet,

@@ -20,14 +20,13 @@
 #include "api/environment/environment.h"
 #include "api/video_codecs/h264_profile_level_id.h"
 #include "api/video_codecs/scalability_mode.h"
+#include "api/video_codecs/sdp_video_format.h"
+#include "api/video_codecs/video_decoder.h"
 #include "api/video_codecs/video_encoder.h"
-#include "media/base/codec.h"
-#include "modules/video_coding/include/video_codec_interface.h"
+#include "modules/video_coding/codecs/h264/include/h264_globals.h"
 #include "rtc_base/system/rtc_export.h"
 
 namespace webrtc {
-
-struct SdpVideoFormat;
 
 // Creates an H264 SdpVideoFormat entry with specified paramters.
 RTC_EXPORT SdpVideoFormat
@@ -52,18 +51,18 @@ std::vector<SdpVideoFormat> SupportedH264Codecs(
 // only connections.
 std::vector<SdpVideoFormat> SupportedH264DecoderCodecs();
 
-class RTC_EXPORT H264Encoder : public VideoEncoder {
+class RTC_EXPORT H264Encoder {
  public:
-  static std::unique_ptr<H264Encoder> Create(const cricket::VideoCodec& codec);
-  static std::unique_ptr<H264Encoder> Create();
   // If H.264 is supported (any implementation).
   static bool IsSupported();
   static bool SupportsScalabilityMode(ScalabilityMode scalability_mode);
-
-  ~H264Encoder() override {}
 };
 
 struct H264EncoderSettings {
+  // Use factory function rather than constructor to allow to create
+  // `H264EncoderSettings` with designated initializers.
+  static H264EncoderSettings Parse(const SdpVideoFormat& format);
+
   H264PacketizationMode packetization_mode =
       H264PacketizationMode::NonInterleaved;
 };

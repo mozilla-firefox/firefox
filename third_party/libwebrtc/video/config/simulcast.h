@@ -31,7 +31,9 @@ void BoostMaxSimulcastLayer(webrtc::DataRate max_bitrate,
                             std::vector<webrtc::VideoStream>* layers);
 
 // Round size to nearest simulcast-friendly size
-int NormalizeSimulcastSize(int size, size_t simulcast_layers);
+int NormalizeSimulcastSize(const webrtc::FieldTrialsView& field_trials,
+                           int size,
+                           size_t simulcast_layers);
 
 // Gets simulcast settings.
 std::vector<webrtc::VideoStream> GetSimulcastConfig(

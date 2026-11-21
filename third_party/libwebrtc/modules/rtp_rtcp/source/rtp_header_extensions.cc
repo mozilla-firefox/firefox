@@ -161,24 +161,41 @@ bool AbsoluteCaptureTimeExtension::Write(rtc::ArrayView<uint8_t> data,
 // +-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+
 // Sample Audio Level Encoding Using the Two-Byte Header Format
 bool AudioLevelExtension::Parse(rtc::ArrayView<const uint8_t> data,
-                                bool* voice_activity,
-                                uint8_t* audio_level) {
+                                AudioLevel* extension) {
   // One-byte and two-byte format share the same data definition.
   if (data.size() != 1)
     return false;
-  *voice_activity = (data[0] & 0x80) != 0;
-  *audio_level = data[0] & 0x7F;
+  bool voice_activity = (data[0] & 0x80) != 0;
+  int audio_level = data[0] & 0x7F;
+  *extension = AudioLevel(voice_activity, audio_level);
+  return true;
+}
+
+bool AudioLevelExtension::Write(rtc::ArrayView<uint8_t> data,
+                                const AudioLevel& extension) {
+  // One-byte and two-byte format share the same data definition.
+  RTC_DCHECK_EQ(data.size(), 1);
+  RTC_CHECK_GE(extension.level(), 0);
+  RTC_CHECK_LE(extension.level(), 0x7f);
+  data[0] = (extension.voice_activity() ? 0x80 : 0x00) | extension.level();
+  return true;
+}
+
+bool AudioLevelExtension::Parse(rtc::ArrayView<const uint8_t> data,
+                                bool* voice_activity,
+                                uint8_t* audio_level) {
+  AudioLevel extension;
+  Parse(data, &extension);
+  *voice_activity = extension.voice_activity();
+  *audio_level = extension.level();
   return true;
 }
 
 bool AudioLevelExtension::Write(rtc::ArrayView<uint8_t> data,
                                 bool voice_activity,
                                 uint8_t audio_level) {
-  // One-byte and two-byte format share the same data definition.
-  RTC_DCHECK_EQ(data.size(), 1);
-  RTC_CHECK_LE(audio_level, 0x7f);
-  data[0] = (voice_activity ? 0x80 : 0x00) | audio_level;
-  return true;
+  AudioLevel extension(voice_activity, audio_level);
+  return Write(data, extension);
 }
 
 #if !defined(WEBRTC_MOZILLA_BUILD)

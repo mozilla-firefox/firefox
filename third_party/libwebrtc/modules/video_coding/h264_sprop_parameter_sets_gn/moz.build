@@ -31,7 +31,7 @@ LOCAL_INCLUDES += [
 ]
 
 UNIFIED_SOURCES += [
-    "/third_party/libwebrtc/rtc_base/experiments/rtt_mult_experiment.cc"
+    "/third_party/libwebrtc/modules/video_coding/h264_sprop_parameter_sets.cc"
 ]
 
 if not CONFIG["MOZ_DEBUG"]:
@@ -228,4 +228,4 @@ if CONFIG["CPU_ARCH"] == "x86_64" and CONFIG["OS_TARGET"] == "Linux":
 
     DEFINES["_GNU_SOURCE"] = True
 
-Library("rtt_mult_experiment_gn")
+Library("h264_sprop_parameter_sets_gn")

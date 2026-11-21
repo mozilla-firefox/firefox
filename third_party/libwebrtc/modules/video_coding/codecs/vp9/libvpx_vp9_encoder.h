@@ -18,6 +18,7 @@
 #include <memory>
 #include <vector>
 
+#include "api/environment/environment.h"
 #include "api/fec_controller_override.h"
 #include "api/field_trials_view.h"
 #include "api/video_codecs/scalability_mode.h"
@@ -35,16 +36,11 @@
 
 namespace webrtc {
 
-class LibvpxVp9Encoder : public VP9Encoder {
+class LibvpxVp9Encoder : public VideoEncoder {
  public:
   LibvpxVp9Encoder(const Environment& env,
                    Vp9EncoderSettings settings,
                    std::unique_ptr<LibvpxInterface> interface);
-
-  // Deprecated, bugs.webrtc.org/15860
-  LibvpxVp9Encoder(const cricket::VideoCodec& codec,
-                   std::unique_ptr<LibvpxInterface> interface,
-                   const FieldTrialsView& trials);
 
   ~LibvpxVp9Encoder() override;
 
@@ -66,10 +62,6 @@ class LibvpxVp9Encoder : public VP9Encoder {
   EncoderInfo GetEncoderInfo() const override;
 
  private:
-  LibvpxVp9Encoder(std::unique_ptr<LibvpxInterface> interface,
-                   VP9Profile profile,
-                   const FieldTrialsView& trials);
-
   // Determine number of encoder threads to use.
   int NumberOfThreads(int width, int height, int number_of_cores);
 

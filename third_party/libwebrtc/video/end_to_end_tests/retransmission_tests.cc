@@ -372,7 +372,10 @@ void RetransmissionEndToEndTest::DecodesRetransmittedFrame(bool enable_rtx,
               enable_rtx ? test::VideoTestConstants::kSendRtxSsrcs[0]
                          : test::VideoTestConstants::kVideoSendSsrcs[0]),
           retransmission_payload_type_(GetPayloadType(enable_rtx, enable_red)),
-          encoder_factory_([]() { return VP8Encoder::Create(); }),
+          encoder_factory_(
+              [](const Environment& env, const SdpVideoFormat& format) {
+                return CreateVp8Encoder(env);
+              }),
           marker_bits_observed_(0),
           retransmitted_timestamp_(0) {}
 

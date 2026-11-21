@@ -5,41 +5,41 @@
 export MOZ_LIBWEBRTC_SRC=$STATE_DIR/moz-libwebrtc
 
 # The previous fast-forward bug number is used for some error messaging.
-export MOZ_PRIOR_FASTFORWARD_BUG="1888181"
+export MOZ_PRIOR_FASTFORWARD_BUG="1892299"
 
 # Fast-forwarding each Chromium version of libwebrtc should be done
 # under a separate bugzilla bug.  This bug number is used when crafting
 # the commit summary as each upstream commit is vendored into the
 # mercurial repository.  The bug used for the v106 fast-forward was
 # 1800920.
-export MOZ_FASTFORWARD_BUG="1892299"
+export MOZ_FASTFORWARD_BUG="1897501"
 
 # MOZ_NEXT_LIBWEBRTC_MILESTONE and MOZ_NEXT_FIREFOX_REL_TARGET are
 # not used during fast-forward processing, but facilitate generating this
 # default config.  To generate an default config for the next update, run
 # bash dom/media/webrtc/third_party_build/update_default_config_env.sh
-export MOZ_NEXT_LIBWEBRTC_MILESTONE=124
-export MOZ_NEXT_FIREFOX_REL_TARGET=128
+export MOZ_NEXT_LIBWEBRTC_MILESTONE=125
+export MOZ_NEXT_FIREFOX_REL_TARGET=129
 
 # For Chromium release branches, see:
 # https://chromiumdash.appspot.com/branches
 
-# Chromium's v123 release branch was 6312.  This is used to pre-stack
+# Chromium's v124 release branch was 6367.  This is used to pre-stack
 # the previous release branch's commits onto the appropriate base commit
 # (the first common commit between trunk and the release branch).
-export MOZ_PRIOR_UPSTREAM_BRANCH_HEAD_NUM="6312"
+export MOZ_PRIOR_UPSTREAM_BRANCH_HEAD_NUM="6367"
 
-# New target release branch for v124 is branch-heads/6367.  This is used
+# New target release branch for v125 is branch-heads/6422.  This is used
 # to calculate the next upstream commit.
-export MOZ_TARGET_UPSTREAM_BRANCH_HEAD="branch-heads/6367"
+export MOZ_TARGET_UPSTREAM_BRANCH_HEAD="branch-heads/6422"
 
 # For local development 'mozpatches' is fine for a branch name, but when
 # pushing the patch stack to github, it should be named something like
-# 'moz-mods-chr124-for-rel128'.
+# 'moz-mods-chr125-for-rel129'.
 export MOZ_LIBWEBRTC_BRANCH="mozpatches"
 
 # After elm has been merged to mozilla-central, the patch stack in
 # moz-libwebrtc should be pushed to github.  The script
 # push_official_branch.sh uses this branch name when pushing to the
 # public repo.
-export MOZ_LIBWEBRTC_OFFICIAL_BRANCH="moz-mods-chr124-for-rel128"
+export MOZ_LIBWEBRTC_OFFICIAL_BRANCH="moz-mods-chr125-for-rel129"

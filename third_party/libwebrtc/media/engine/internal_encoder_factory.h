@@ -15,6 +15,9 @@
 #include <string>
 #include <vector>
 
+#include "absl/types/optional.h"
+#include "api/environment/environment.h"
+#include "api/video_codecs/sdp_video_format.h"
 #include "api/video_codecs/video_encoder_factory.h"
 #include "rtc_base/system/rtc_export.h"
 
@@ -25,8 +28,8 @@ class RTC_EXPORT InternalEncoderFactory : public VideoEncoderFactory {
   CodecSupport QueryCodecSupport(
       const SdpVideoFormat& format,
       absl::optional<std::string> scalability_mode) const override;
-  std::unique_ptr<VideoEncoder> CreateVideoEncoder(
-      const SdpVideoFormat& format) override;
+  std::unique_ptr<VideoEncoder> Create(const Environment& env,
+                                       const SdpVideoFormat& format) override;
 };
 
 }  // namespace webrtc

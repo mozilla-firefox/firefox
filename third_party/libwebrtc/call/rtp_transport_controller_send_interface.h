@@ -114,7 +114,6 @@ class RtpTransportControllerSendInterface {
   virtual void DeRegisterSendingRtpStream(RtpRtcpInterface& rtp_module) = 0;
 
   virtual NetworkStateEstimateObserver* network_state_estimate_observer() = 0;
-  virtual TransportFeedbackObserver* transport_feedback_observer() = 0;
 
   virtual RtpPacketSender* packet_sender() = 0;
 

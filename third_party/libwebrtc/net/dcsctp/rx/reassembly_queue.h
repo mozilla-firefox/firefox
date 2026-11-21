@@ -72,7 +72,6 @@ class ReassemblyQueue {
   static constexpr float kHighWatermarkLimit = 0.9;
 
   ReassemblyQueue(absl::string_view log_prefix,
-                  TSN peer_initial_tsn,
                   size_t max_size_bytes,
                   bool use_message_interleaving = false);
 

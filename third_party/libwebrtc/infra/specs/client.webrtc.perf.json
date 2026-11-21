@@ -169,7 +169,7 @@
           "dimensions": {
             "cpu": "x86-64",
             "gce": "1",
-            "os": "Ubuntu-18.04",
+            "os": "Ubuntu-22.04",
             "pool": "WebRTC-perf"
           },
           "expiration": 10800,
@@ -205,7 +205,7 @@
           "dimensions": {
             "cpu": "x86-64",
             "gce": "1",
-            "os": "Ubuntu-18.04",
+            "os": "Ubuntu-22.04",
             "pool": "WebRTC-perf"
           },
           "expiration": 10800,

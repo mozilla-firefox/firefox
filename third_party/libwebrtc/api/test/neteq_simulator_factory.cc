@@ -36,6 +36,7 @@ NetEqTestFactory::Config convertConfig(
   config.plot_scripts_basename = simulation_config.python_plot_filename;
   config.textlog = simulation_config.text_log_filename.has_value();
   config.textlog_filename = simulation_config.text_log_filename;
+  config.ssrc_filter = simulation_config.ssrc_filter;
   return config;
 }
 }  // namespace

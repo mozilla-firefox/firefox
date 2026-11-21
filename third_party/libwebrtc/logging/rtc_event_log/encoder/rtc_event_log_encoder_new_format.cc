@@ -444,16 +444,14 @@ void RtcEventLogEncoderNewFormat::EncodeRtpPacket(const Batch& batch,
   absl::optional<uint64_t> base_audio_level;
   absl::optional<uint64_t> base_voice_activity;
   {
-    bool voice_activity;
-    uint8_t audio_level;
-    if (base_event->template GetExtension<AudioLevelExtension>(&voice_activity,
-                                                               &audio_level)) {
-      RTC_DCHECK_LE(audio_level, 0x7Fu);
-      base_audio_level = audio_level;
-      proto_batch->set_audio_level(audio_level);
+    AudioLevel audio_level;
+    if (base_event->template GetExtension<AudioLevelExtension>(&audio_level)) {
+      RTC_DCHECK_LE(audio_level.level(), 0x7Fu);
+      base_audio_level = audio_level.level();
+      proto_batch->set_audio_level(audio_level.level());
 
-      base_voice_activity = voice_activity;
-      proto_batch->set_voice_activity(voice_activity);
+      base_voice_activity = audio_level.voice_activity();
+      proto_batch->set_voice_activity(audio_level.voice_activity());
     }
   }
 
@@ -641,12 +639,10 @@ void RtcEventLogEncoderNewFormat::EncodeRtpPacket(const Batch& batch,
   // audio_level (RTP extension)
   for (size_t i = 0; i < values.size(); ++i) {
     const EventType* event = batch[i + 1];
-    bool voice_activity;
-    uint8_t audio_level;
-    if (event->template GetExtension<AudioLevelExtension>(&voice_activity,
-                                                          &audio_level)) {
-      RTC_DCHECK_LE(audio_level, 0x7Fu);
-      values[i] = audio_level;
+    AudioLevel audio_level;
+    if (event->template GetExtension<AudioLevelExtension>(&audio_level)) {
+      RTC_DCHECK_LE(audio_level.level(), 0x7F);
+      values[i] = audio_level.level();
     } else {
       values[i].reset();
     }
@@ -659,12 +655,10 @@ void RtcEventLogEncoderNewFormat::EncodeRtpPacket(const Batch& batch,
   // voice_activity (RTP extension)
   for (size_t i = 0; i < values.size(); ++i) {
     const EventType* event = batch[i + 1];
-    bool voice_activity;
-    uint8_t audio_level;
-    if (event->template GetExtension<AudioLevelExtension>(&voice_activity,
-                                                          &audio_level)) {
-      RTC_DCHECK_LE(audio_level, 0x7Fu);
-      values[i] = voice_activity;
+    AudioLevel audio_level;
+    if (event->template GetExtension<AudioLevelExtension>(&audio_level)) {
+      RTC_DCHECK_LE(audio_level.level(), 0x7F);
+      values[i] = audio_level.voice_activity();
     } else {
       values[i].reset();
     }

@@ -27,12 +27,6 @@ absl::Nonnull<std::unique_ptr<VideoEncoder>> CreateLibaomAv1Encoder(
     const Environment& env,
     LibaomAv1EncoderSettings settings = {});
 
-// Deprecated, Use CreateLibaomAv1Encoder above, bugs.webrtc.org/15860
-using LibaomAv1EncoderAuxConfig = LibaomAv1EncoderSettings;
-std::unique_ptr<VideoEncoder> CreateLibaomAv1Encoder();
-std::unique_ptr<VideoEncoder> CreateLibaomAv1Encoder(
-    const LibaomAv1EncoderAuxConfig& aux_config);
-
 }  // namespace webrtc
 
 #endif  // MODULES_VIDEO_CODING_CODECS_AV1_LIBAOM_AV1_ENCODER_H_

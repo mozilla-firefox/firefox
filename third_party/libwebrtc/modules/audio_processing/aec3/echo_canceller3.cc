@@ -378,14 +378,6 @@ EchoCanceller3Config AdjustConfig(const EchoCanceller3Config& config) {
         false;
   }
 
-  if (field_trial::IsEnabled("WebRTC-Aec3DelayEstimatorDetectPreEcho")) {
-    adjusted_cfg.delay.detect_pre_echo = true;
-  }
-
-  if (field_trial::IsDisabled("WebRTC-Aec3DelayEstimatorDetectPreEcho")) {
-    adjusted_cfg.delay.detect_pre_echo = false;
-  }
-
   if (field_trial::IsEnabled("WebRTC-Aec3SensitiveDominantNearendActivation")) {
     adjusted_cfg.suppressor.dominant_nearend_detection.enr_threshold = 0.5f;
   } else if (field_trial::IsEnabled(

@@ -61,8 +61,13 @@ class TransformableIncomingAudioFrame
   const RTPHeader& Header() const { return header_; }
 
   FrameType Type() const override {
-    return header_.extension.voiceActivity ? FrameType::kAudioFrameSpeech
-                                           : FrameType::kAudioFrameCN;
+    if (!header_.extension.audio_level()) {
+      // Audio level extension not set.
+      return FrameType::kAudioFrameCN;
+    }
+    return header_.extension.audio_level()->voice_activity()
+               ? FrameType::kAudioFrameSpeech
+               : FrameType::kAudioFrameCN;
   }
 
  private:

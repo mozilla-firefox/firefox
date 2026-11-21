@@ -244,8 +244,8 @@ bool RTPSenderAudio::SendAudio(const RtpAudioFrame& frame) {
   packet->set_capture_time(clock_->CurrentTime());
   // Set audio level extension, if included.
   packet->SetExtension<AudioLevelExtension>(
-      frame.type == AudioFrameType::kAudioFrameSpeech,
-      frame.audio_level_dbov.value_or(127));
+      AudioLevel(frame.type == AudioFrameType::kAudioFrameSpeech,
+                 frame.audio_level_dbov.value_or(127)));
 
   if (absolute_capture_time.has_value()) {
     // It also checks that extension was registered during SDP negotiation. If

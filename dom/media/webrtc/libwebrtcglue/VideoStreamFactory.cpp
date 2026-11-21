@@ -141,6 +141,60 @@ static void SelectBitrates(unsigned short width, unsigned short height, int min,
   MOZ_ASSERT(pref_cap == 0 || out_max <= pref_cap);
 }
 
+void VideoStreamFactory::SelectMaxFramerate(
+    int aWidth, int aHeight, const VideoCodecConfig::Encoding& aEncoding,
+    webrtc::VideoStream& aVideoStream) {
+  MOZ_ASSERT(aEncoding.constraints.scaleDownBy >= 1.0);
+  gfx::IntSize newSize(0, 0);
+
+  if (aWidth && aHeight) {
+    auto maxPixelCount = mLockScaling ? 0U : mWants.max_pixel_count;
+    newSize = CalculateScaledResolution(
+        aWidth, aHeight, aEncoding.constraints.scaleDownBy, maxPixelCount);
+  }
+
+  if (newSize.width == 0 || newSize.height == 0) {
+    return;
+  }
+
+  uint16_t max_width = mCodecConfig.mEncodingConstraints.maxWidth;
+  uint16_t max_height = mCodecConfig.mEncodingConstraints.maxHeight;
+  if (max_width || max_height) {
+    max_width = max_width ? max_width : UINT16_MAX;
+    max_height = max_height ? max_height : UINT16_MAX;
+    ConstrainPreservingAspectRatio(max_width, max_height, &newSize.width,
+                                   &newSize.height);
+  }
+
+  MOZ_ASSERT(newSize.width > 0);
+  MOZ_ASSERT(newSize.height > 0);
+  aVideoStream.width = newSize.width;
+  aVideoStream.height = newSize.height;
+  SelectMaxFramerateForAllStreams(newSize.width, newSize.height);
+
+  CSFLogInfo(LOGTAG, "%s Input frame %ux%u, RID %s scaling to %zux%zu",
+             __FUNCTION__, aWidth, aHeight, aEncoding.rid.c_str(),
+             aVideoStream.width, aVideoStream.height);
+
+  // mMaxFramerateForAllStreams is based on codec-wide stuff like fmtp, and
+  // hard-coded limits based on the source resolution.
+  // mCodecConfig.mEncodingConstraints.maxFps does not take the hard-coded
+  // limits into account, so we have mMaxFramerateForAllStreams which
+  // incorporates those. Per-encoding max framerate is based on parameters
+  // from JS, and maybe rid
+  unsigned int max_framerate = SelectFrameRate(
+      mMaxFramerateForAllStreams, aVideoStream.width, aVideoStream.height);
+  max_framerate = std::min(
+      WebrtcVideoConduit::ToLibwebrtcMaxFramerate(aEncoding.constraints.maxFps),
+      max_framerate);
+  if (max_framerate >= std::numeric_limits<int>::max()) {
+    // If nothing has specified any kind of limit (uncommon), pick something
+    // reasonable.
+    max_framerate = DEFAULT_VIDEO_MAX_FRAMERATE;
+  }
+  aVideoStream.max_framerate = static_cast<int>(max_framerate);
+}
+
 std::vector<webrtc::VideoStream> VideoStreamFactory::CreateEncoderStreams(
     int aWidth, int aHeight, const webrtc::VideoEncoderConfig& aConfig) {
   // We only allow one layer when screensharing
@@ -163,60 +217,17 @@ std::vector<webrtc::VideoStream> VideoStreamFactory::CreateEncoderStreams(
   for (size_t idx = 0; idx < streamCount; ++idx) {
     webrtc::VideoStream video_stream = aConfig.simulcast_layers[idx];
     auto& encoding = mCodecConfig.mEncodings[idx];
-    MOZ_ASSERT(encoding.constraints.scaleDownBy >= 1.0);
     MOZ_ASSERT(video_stream.active == encoding.active);
 
-    gfx::IntSize newSize(0, 0);
+    SelectMaxFramerate(aWidth, aHeight, encoding, video_stream);
 
-    if (aWidth && aHeight) {
-      auto maxPixelCount = mLockScaling ? 0U : mWants.max_pixel_count;
-      newSize = CalculateScaledResolution(
-          aWidth, aHeight, encoding.constraints.scaleDownBy, maxPixelCount);
-    }
-
-    if (newSize.width == 0 || newSize.height == 0) {
+    if (video_stream.width == 0 || video_stream.height == 0) {
       CSFLogInfo(LOGTAG,
                  "%s Stream with RID %s ignored because of no resolution.",
                  __FUNCTION__, encoding.rid.c_str());
       continue;
     }
 
-    uint16_t max_width = mCodecConfig.mEncodingConstraints.maxWidth;
-    uint16_t max_height = mCodecConfig.mEncodingConstraints.maxHeight;
-    if (max_width || max_height) {
-      max_width = max_width ? max_width : UINT16_MAX;
-      max_height = max_height ? max_height : UINT16_MAX;
-      ConstrainPreservingAspectRatio(max_width, max_height, &newSize.width,
-                                     &newSize.height);
-    }
-
-    MOZ_ASSERT(newSize.width > 0);
-    MOZ_ASSERT(newSize.height > 0);
-    video_stream.width = newSize.width;
-    video_stream.height = newSize.height;
-    SelectMaxFramerateForAllStreams(newSize.width, newSize.height);
-
-    CSFLogInfo(LOGTAG, "%s Input frame %ux%u, RID %s scaling to %zux%zu",
-               __FUNCTION__, aWidth, aHeight, encoding.rid.c_str(),
-               video_stream.width, video_stream.height);
-
-    // mMaxFramerateForAllStreams is based on codec-wide stuff like fmtp, and
-    // hard-coded limits based on the source resolution.
-    // mCodecConfig.mEncodingConstraints.maxFps does not take the hard-coded
-    // limits into account, so we have mMaxFramerateForAllStreams which
-    // incorporates those. Per-encoding max framerate is based on parameters
-    // from JS, and maybe rid
-    unsigned int max_framerate = SelectFrameRate(
-        mMaxFramerateForAllStreams, video_stream.width, video_stream.height);
-    max_framerate = std::min(WebrtcVideoConduit::ToLibwebrtcMaxFramerate(
-                                 encoding.constraints.maxFps),
-                             max_framerate);
-    if (max_framerate >= std::numeric_limits<int>::max()) {
-      // If nothing has specified any kind of limit (uncommon), pick something
-      // reasonable.
-      max_framerate = DEFAULT_VIDEO_MAX_FRAMERATE;
-    }
-    video_stream.max_framerate = static_cast<int>(max_framerate);
     CSFLogInfo(LOGTAG, "%s Stream with RID %s maxFps=%d (global max fps = %u)",
                __FUNCTION__, encoding.rid.c_str(), video_stream.max_framerate,
                (unsigned)mMaxFramerateForAllStreams);

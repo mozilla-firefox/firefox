@@ -34,6 +34,7 @@
 #include "modules/rtp_rtcp/source/rtp_packet_history.h"
 #include "modules/rtp_rtcp/source/rtp_packet_to_send.h"
 #include "modules/rtp_rtcp/source/rtp_sender.h"
+#include "rtc_base/checks.h"
 #include "rtc_base/gtest_prod_util.h"
 #include "rtc_base/synchronization/mutex.h"
 
@@ -134,6 +135,20 @@ class ABSL_DEPRECATED("") ModuleRtpRtcpImpl
 
   bool TrySendPacket(std::unique_ptr<RtpPacketToSend> packet,
                      const PacedPacketInfo& pacing_info) override;
+
+  bool CanSendPacket(const RtpPacketToSend& packet) const override {
+    RTC_DCHECK_NOTREACHED() << "Not implemented";
+    return false;
+  }
+
+  void AssignSequenceNumber(RtpPacketToSend& packet) override {
+    RTC_DCHECK_NOTREACHED() << "Not implemented";
+  }
+
+  void SendPacket(std::unique_ptr<RtpPacketToSend> packet,
+                  const PacedPacketInfo& pacing_info) override {
+    RTC_DCHECK_NOTREACHED() << "Not implemented";
+  }
 
   void OnBatchComplete() override {}
 

@@ -88,6 +88,7 @@ ProbeControllerConfig::ProbeControllerConfig(
       second_exponential_probe_scale("p2", 6.0),
       further_exponential_probe_scale("step_size", 2),
       further_probe_threshold("further_probe_threshold", 0.7),
+      abort_further_probe_if_max_lower_than_current("abort_further", false),
       alr_probing_interval("alr_interval", TimeDelta::Seconds(5)),
       alr_probe_scale("alr_scale", 2),
       network_state_estimate_probing_interval("network_state_interval",
@@ -112,19 +113,27 @@ ProbeControllerConfig::ProbeControllerConfig(
       skip_if_estimate_larger_than_fraction_of_max(
           "skip_if_est_larger_than_fraction_of_max",
           0.0) {
-  ParseFieldTrial(
-      {&first_exponential_probe_scale, &second_exponential_probe_scale,
-       &further_exponential_probe_scale, &further_probe_threshold,
-       &alr_probing_interval, &alr_probe_scale,
-       &probe_on_max_allocated_bitrate_change, &first_allocation_probe_scale,
-       &second_allocation_probe_scale, &allocation_probe_limit_by_current_scale,
-       &min_probe_duration, &network_state_estimate_probing_interval,
-       &probe_if_estimate_lower_than_network_state_estimate_ratio,
-       &estimate_lower_than_network_state_estimate_probing_interval,
-       &network_state_probe_scale, &network_state_probe_duration,
-       &min_probe_packets_sent, &loss_limited_probe_scale,
-       &skip_if_estimate_larger_than_fraction_of_max},
-      key_value_config->Lookup("WebRTC-Bwe-ProbingConfiguration"));
+  ParseFieldTrial({&first_exponential_probe_scale,
+                   &second_exponential_probe_scale,
+                   &further_exponential_probe_scale,
+                   &further_probe_threshold,
+                   &abort_further_probe_if_max_lower_than_current,
+                   &alr_probing_interval,
+                   &alr_probe_scale,
+                   &probe_on_max_allocated_bitrate_change,
+                   &first_allocation_probe_scale,
+                   &second_allocation_probe_scale,
+                   &allocation_probe_limit_by_current_scale,
+                   &min_probe_duration,
+                   &network_state_estimate_probing_interval,
+                   &probe_if_estimate_lower_than_network_state_estimate_ratio,
+                   &estimate_lower_than_network_state_estimate_probing_interval,
+                   &network_state_probe_scale,
+                   &network_state_probe_duration,
+                   &min_probe_packets_sent,
+                   &loss_limited_probe_scale,
+                   &skip_if_estimate_larger_than_fraction_of_max},
+                  key_value_config->Lookup("WebRTC-Bwe-ProbingConfiguration"));
 
   // Specialized keys overriding subsets of WebRTC-Bwe-ProbingConfiguration
   ParseFieldTrial(
@@ -294,7 +303,14 @@ std::vector<ProbeClusterConfig> ProbeController::SetEstimatedBitrate(
 
   if (state_ == State::kWaitingForProbingResult) {
     // Continue probing if probing results indicate channel has greater
-    // capacity.
+    // capacity unless we already reached the needed bitrate.
+    if (config_.abort_further_probe_if_max_lower_than_current &&
+        (bitrate > max_bitrate_ ||
+         (!max_total_allocated_bitrate_.IsZero() &&
+          bitrate > 2 * max_total_allocated_bitrate_))) {
+      // No need to continue probing.
+      min_bitrate_to_probe_further_ = DataRate::PlusInfinity();
+    }
     DataRate network_state_estimate_probe_further_limit =
         config_.network_state_estimate_probing_interval->IsFinite() &&
                 network_estimate_

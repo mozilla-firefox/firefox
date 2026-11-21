@@ -564,8 +564,8 @@ TEST_F(NetEqImplTest, ReorderedPacket) {
   rtp_header.sequenceNumber = 0x1234;
   rtp_header.timestamp = 0x12345678;
   rtp_header.ssrc = 0x87654321;
-  rtp_header.extension.hasAudioLevel = true;
-  rtp_header.extension.audioLevel = 42;
+  rtp_header.extension.set_audio_level(
+      AudioLevel(/*voice_activity=*/false, 42));
 
   EXPECT_CALL(mock_decoder, Reset()).WillRepeatedly(Return());
   EXPECT_CALL(mock_decoder, SampleRateHz())
@@ -606,7 +606,8 @@ TEST_F(NetEqImplTest, ReorderedPacket) {
     EXPECT_EQ(packet_info.ssrc(), rtp_header.ssrc);
     EXPECT_THAT(packet_info.csrcs(), IsEmpty());
     EXPECT_EQ(packet_info.rtp_timestamp(), rtp_header.timestamp);
-    EXPECT_EQ(packet_info.audio_level(), rtp_header.extension.audioLevel);
+    EXPECT_EQ(packet_info.audio_level(),
+              rtp_header.extension.audio_level()->level());
     EXPECT_EQ(packet_info.receive_time(), expected_receive_time);
   }
 
@@ -614,13 +615,13 @@ TEST_F(NetEqImplTest, ReorderedPacket) {
   // old, the second one is the expected next packet.
   rtp_header.sequenceNumber -= 1;
   rtp_header.timestamp -= kPayloadLengthSamples;
-  rtp_header.extension.audioLevel = 1;
+  rtp_header.extension.set_audio_level(AudioLevel(/*voice_activity=*/false, 1));
   payload[0] = 1;
   clock_.AdvanceTimeMilliseconds(1000);
   EXPECT_EQ(NetEq::kOK, neteq_->InsertPacket(rtp_header, payload));
   rtp_header.sequenceNumber += 2;
   rtp_header.timestamp += 2 * kPayloadLengthSamples;
-  rtp_header.extension.audioLevel = 2;
+  rtp_header.extension.set_audio_level(AudioLevel(/*voice_activity=*/false, 2));
   payload[0] = 2;
   clock_.AdvanceTimeMilliseconds(2000);
   expected_receive_time = clock_.CurrentTime();
@@ -655,7 +656,8 @@ TEST_F(NetEqImplTest, ReorderedPacket) {
     EXPECT_EQ(packet_info.ssrc(), rtp_header.ssrc);
     EXPECT_THAT(packet_info.csrcs(), IsEmpty());
     EXPECT_EQ(packet_info.rtp_timestamp(), rtp_header.timestamp);
-    EXPECT_EQ(packet_info.audio_level(), rtp_header.extension.audioLevel);
+    EXPECT_EQ(packet_info.audio_level(),
+              rtp_header.extension.audio_level()->level());
     EXPECT_EQ(packet_info.receive_time(), expected_receive_time);
   }
 
@@ -772,8 +774,7 @@ TEST_F(NetEqImplTest, InsertRedPayload) {
   AbsoluteCaptureTime capture_time;
   capture_time.absolute_capture_timestamp = 1234;
   header.extension.absolute_capture_time = capture_time;
-  header.extension.audioLevel = 12;
-  header.extension.hasAudioLevel = true;
+  header.extension.set_audio_level(AudioLevel(/*voice_activity=*/false, 12));
   header.numCSRCs = 1;
   header.arrOfCSRCs[0] = 123;
   neteq_->InsertPacket(header, payload);
@@ -795,7 +796,7 @@ TEST_F(NetEqImplTest, InsertRedPayload) {
   EXPECT_EQ(frame.packet_infos_.size(), 1u);
   EXPECT_EQ(frame.packet_infos_.front().absolute_capture_time(), capture_time);
   EXPECT_EQ(frame.packet_infos_.front().audio_level(),
-            header.extension.audioLevel);
+            header.extension.audio_level()->level());
   EXPECT_EQ(frame.packet_infos_.front().csrcs()[0], header.arrOfCSRCs[0]);
 }
 

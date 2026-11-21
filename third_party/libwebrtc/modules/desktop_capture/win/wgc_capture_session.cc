@@ -267,6 +267,12 @@ bool WgcCaptureSession::GetFrame(std::unique_ptr<DesktopFrame>* output_frame,
                                  bool source_should_be_capturable) {
   RTC_DCHECK_RUN_ON(&sequence_checker_);
 
+  if (item_closed_) {
+    RTC_LOG(LS_ERROR) << "The target source has been closed.";
+    RecordGetFrameResult(GetFrameResult::kItemClosed);
+    return false;
+  }
+
   // Try to process the captured frame and wait some if needed. Avoid trying
   // if we know that the source will not be capturable. This can happen e.g.
   // when captured window is minimized and if EnsureFrame() was called in this
@@ -321,12 +327,6 @@ HRESULT WgcCaptureSession::CreateMappedTexture(
 
 HRESULT WgcCaptureSession::ProcessFrame() {
   RTC_DCHECK_RUN_ON(&sequence_checker_);
-
-  if (item_closed_) {
-    RTC_LOG(LS_ERROR) << "The target source has been closed.";
-    RecordGetFrameResult(GetFrameResult::kItemClosed);
-    return E_ABORT;
-  }
 
   RTC_DCHECK(is_capture_started_);
 

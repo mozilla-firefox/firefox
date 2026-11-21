@@ -11,7 +11,8 @@
 #include "api/video/encoded_image.h"
 
 #include <stdlib.h>
-#include <string.h>
+
+#include <algorithm>
 
 namespace webrtc {
 
@@ -21,7 +22,7 @@ EncodedImageBuffer::EncodedImageBuffer(size_t size) : size_(size) {
 
 EncodedImageBuffer::EncodedImageBuffer(const uint8_t* data, size_t size)
     : EncodedImageBuffer(size) {
-  memcpy(buffer_, data, size);
+  std::copy_n(data, size, buffer_);
 }
 
 EncodedImageBuffer::~EncodedImageBuffer() {

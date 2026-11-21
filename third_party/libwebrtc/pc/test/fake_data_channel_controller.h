@@ -128,6 +128,13 @@ class FakeDataChannelController
     }
   }
 
+  size_t buffered_amount(webrtc::StreamId sid) const override { return 0; }
+  size_t buffered_amount_low_threshold(webrtc::StreamId sid) const override {
+    return 0;
+  }
+  void SetBufferedAmountLowThreshold(webrtc::StreamId sid,
+                                     size_t bytes) override {}
+
   // Set true to emulate the SCTP stream being blocked by congestion control.
   void set_send_blocked(bool blocked) {
     network_thread_->BlockingCall([&]() {

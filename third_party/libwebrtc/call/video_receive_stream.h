@@ -118,9 +118,11 @@ class VideoReceiveStreamInterface : public MediaReceiveStreamInterface {
     TimeDelta total_decode_time = TimeDelta::Zero();
     // https://w3c.github.io/webrtc-stats/#dom-rtcinboundrtpstreamstats-totalprocessingdelay
     TimeDelta total_processing_delay = TimeDelta::Zero();
-    // TODO(bugs.webrtc.org/13986): standardize
+
+    // https://w3c.github.io/webrtc-stats/#dom-rtcinboundrtpstreamstats-totalassemblytime
     TimeDelta total_assembly_time = TimeDelta::Zero();
     uint32_t frames_assembled_from_multiple_packets = 0;
+
     // Total inter frame delay in seconds.
     // https://w3c.github.io/webrtc-stats/#dom-rtcinboundrtpstreamstats-totalinterframedelay
     double total_inter_frame_delay = 0;
@@ -163,6 +165,14 @@ class VideoReceiveStreamInterface : public MediaReceiveStreamInterface {
     // Timing frame info: all important timestamps for a full lifetime of a
     // single 'timing frame'.
     absl::optional<webrtc::TimingFrameInfo> timing_frame_info;
+
+    // Remote outbound stats derived by the received RTCP sender reports.
+    // https://w3c.github.io/webrtc-stats/#remoteoutboundrtpstats-dict*
+    absl::optional<int64_t> last_sender_report_timestamp_ms;
+    absl::optional<int64_t> last_sender_report_remote_timestamp_ms;
+    uint32_t sender_reports_packets_sent = 0;
+    uint64_t sender_reports_bytes_sent = 0;
+    uint64_t sender_reports_reports_count = 0;
   };
 
   struct Config {

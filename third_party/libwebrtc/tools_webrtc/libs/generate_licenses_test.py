@@ -17,9 +17,10 @@ from generate_licenses import LicenseBuilder
 
 
 class TestLicenseBuilder(unittest.TestCase):
-  @staticmethod
-  def _FakeRunGN(buildfile_dir, target):
-    return """
+
+    @staticmethod
+    def _fake_run_gn(buildfile_dir, target):
+        return """
     {
       "target1": {
         "deps": [
@@ -32,89 +33,94 @@ class TestLicenseBuilder(unittest.TestCase):
     }
     """
 
-  def testParseLibraryName(self):
-    self.assertEqual(
-        LicenseBuilder._ParseLibraryName('//a/b/third_party/libname1:c'),
-        'libname1')
-    self.assertEqual(
-        LicenseBuilder._ParseLibraryName('//a/b/third_party/libname2:c(d)'),
-        'libname2')
-    self.assertEqual(
-        LicenseBuilder._ParseLibraryName('//a/b/third_party/libname3/c:d(e)'),
-        'libname3')
-    self.assertEqual(
-        LicenseBuilder._ParseLibraryName('//a/b/not_third_party/c'), None)
+    def test_parse_library_name(self):
+        self.assertEqual(
+            LicenseBuilder._parse_library_name('//a/b/third_party/libname1:c'),
+            'libname1')
+        self.assertEqual(
+            LicenseBuilder._parse_library_name(
+                '//a/b/third_party/libname2:c(d)'), 'libname2')
+        self.assertEqual(
+            LicenseBuilder._parse_library_name(
+                '//a/b/third_party/libname3/c:d(e)'), 'libname3')
+        self.assertEqual(
+            LicenseBuilder._parse_library_name('//a/b/not_third_party/c'),
+            None)
 
-  def testParseLibrarySimpleMatch(self):
-    builder = LicenseBuilder([], [], {}, {})
-    self.assertEqual(builder._ParseLibrary('//a/b/third_party/libname:c'),
-                     'libname')
+    def test_parse_library_simple_match(self):
+        builder = LicenseBuilder([], [], {}, {})
+        self.assertEqual(builder._parse_library('//a/b/third_party/libname:c'),
+                         'libname')
 
-  def testParseLibraryRegExNoMatchFallbacksToDefaultLibname(self):
-    lib_dict = {
-        'libname:foo.*': ['path/to/LICENSE'],
-    }
-    builder = LicenseBuilder([], [], lib_dict, {})
-    self.assertEqual(
-        builder._ParseLibrary('//a/b/third_party/libname:bar_java'), 'libname')
+    def test_parse_library_regex_no_match_fallbacks_to_default_libname(self):
+        lib_dict = {
+            'libname:foo.*': ['path/to/LICENSE'],
+        }
+        builder = LicenseBuilder([], [], lib_dict, {})
+        self.assertEqual(
+            builder._parse_library('//a/b/third_party/libname:bar_java'),
+            'libname')
 
-  def testParseLibraryRegExMatch(self):
-    lib_regex_dict = {
-        'libname:foo.*': ['path/to/LICENSE'],
-    }
-    builder = LicenseBuilder([], [], {}, lib_regex_dict)
-    self.assertEqual(
-        builder._ParseLibrary('//a/b/third_party/libname:foo_bar_java'),
-        'libname:foo.*')
+    def test_parse_library_regex_match(self):
+        lib_regex_dict = {
+            'libname:foo.*': ['path/to/LICENSE'],
+        }
+        builder = LicenseBuilder([], [], {}, lib_regex_dict)
+        self.assertEqual(
+            builder._parse_library('//a/b/third_party/libname:foo_bar_java'),
+            'libname:foo.*')
 
-  def testParseLibraryRegExMatchWithSubDirectory(self):
-    lib_regex_dict = {
-        'libname/foo:bar.*': ['path/to/LICENSE'],
-    }
-    builder = LicenseBuilder([], [], {}, lib_regex_dict)
-    self.assertEqual(
-        builder._ParseLibrary('//a/b/third_party/libname/foo:bar_java'),
-        'libname/foo:bar.*')
+    def test_parse_library_regex_match_with_sub_directory(self):
+        lib_regex_dict = {
+            'libname/foo:bar.*': ['path/to/LICENSE'],
+        }
+        builder = LicenseBuilder([], [], {}, lib_regex_dict)
+        self.assertEqual(
+            builder._parse_library('//a/b/third_party/libname/foo:bar_java'),
+            'libname/foo:bar.*')
 
-  def testParseLibraryRegExMatchWithStarInside(self):
-    lib_regex_dict = {
-        'libname/foo.*bar.*': ['path/to/LICENSE'],
-    }
-    builder = LicenseBuilder([], [], {}, lib_regex_dict)
-    self.assertEqual(
-        builder._ParseLibrary('//a/b/third_party/libname/fooHAHA:bar_java'),
-        'libname/foo.*bar.*')
+    def test_parse_library_regex_match_with_star_inside(self):
+        lib_regex_dict = {
+            'libname/foo.*bar.*': ['path/to/LICENSE'],
+        }
+        builder = LicenseBuilder([], [], {}, lib_regex_dict)
+        self.assertEqual(
+            builder._parse_library(
+                '//a/b/third_party/libname/fooHAHA:bar_java'),
+            'libname/foo.*bar.*')
 
-  @patch('generate_licenses.LicenseBuilder._RunGN', _FakeRunGN)
-  def testGetThirdPartyLibrariesWithoutRegex(self):
-    builder = LicenseBuilder([], [], {}, {})
-    self.assertEqual(builder._GetThirdPartyLibraries('out/arm', 'target1'),
-                     set(['libname1', 'libname2', 'libname3']))
+    @patch('generate_licenses.LicenseBuilder._run_gn', _fake_run_gn)
+    def test_get_third_party_libraries_without_regex(self):
+        builder = LicenseBuilder([], [], {}, {})
+        self.assertEqual(
+            builder._get_third_party_libraries('out/arm', 'target1'),
+            set(['libname1', 'libname2', 'libname3']))
 
-  @patch('generate_licenses.LicenseBuilder._RunGN', _FakeRunGN)
-  def testGetThirdPartyLibrariesWithRegex(self):
-    lib_regex_dict = {
-        'libname2:c.*': ['path/to/LICENSE'],
-    }
-    builder = LicenseBuilder([], [], {}, lib_regex_dict)
-    self.assertEqual(builder._GetThirdPartyLibraries('out/arm', 'target1'),
-                     set(['libname1', 'libname2:c.*', 'libname3']))
+    @patch('generate_licenses.LicenseBuilder._run_gn', _fake_run_gn)
+    def test_get_third_party_libraries_with_regex(self):
+        lib_regex_dict = {
+            'libname2:c.*': ['path/to/LICENSE'],
+        }
+        builder = LicenseBuilder([], [], {}, lib_regex_dict)
+        self.assertEqual(
+            builder._get_third_party_libraries('out/arm', 'target1'),
+            set(['libname1', 'libname2:c.*', 'libname3']))
 
-  @patch('generate_licenses.LicenseBuilder._RunGN', _FakeRunGN)
-  def testGenerateLicenseTextFailIfUnknownLibrary(self):
-    lib_dict = {
-        'simple_library': ['path/to/LICENSE'],
-    }
-    builder = LicenseBuilder(['dummy_dir'], ['dummy_target'], lib_dict, {})
+    @patch('generate_licenses.LicenseBuilder._run_gn', _fake_run_gn)
+    def test_generate_license_text_fail_if_unknown_library(self):
+        lib_dict = {
+            'simple_library': ['path/to/LICENSE'],
+        }
+        builder = LicenseBuilder(['dummy_dir'], ['dummy_target'], lib_dict, {})
 
-    with self.assertRaises(Exception) as context:
-      builder.GenerateLicenseText('dummy/dir')
+        with self.assertRaises(Exception) as context:
+            builder.generate_license_text('dummy/dir')
 
-    self.assertEqual(
-        context.exception.args[0],
-        'Missing licenses for following third_party targets: '
-        'libname1, libname2, libname3')
+        self.assertEqual(
+            context.exception.args[0],
+            'Missing licenses for third_party targets: '
+            'libname1, libname2, libname3')
 
 
 if __name__ == '__main__':
-  unittest.main()
+    unittest.main()

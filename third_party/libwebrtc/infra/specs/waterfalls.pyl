@@ -265,7 +265,7 @@
         'os_type':
         'linux',
         'mixins': [
-          'linux-bionic', 'x86-64', 'perf-pool-vm', 'timeout-3h',
+          'linux-jammy', 'x86-64', 'perf-pool-vm', 'timeout-3h',
           'resultdb-gtest-json-format', 'fuchsia-gtest-output', 'perf-output'
         ],
         'test_suites': {

@@ -19,6 +19,7 @@ rtc_source_set("scalability_mode_util") {
     "../../../rtc_base:checks",
   ]
   absl_deps = [
+    "//third_party/abseil-cpp/absl/algorithm:container",
     "//third_party/abseil-cpp/absl/strings",
     "//third_party/abseil-cpp/absl/types:optional",
   ]

@@ -40,7 +40,6 @@
 #include "rtc_base/experiments/field_trial_units.h"
 #include "rtc_base/logging.h"
 #include "rtc_base/trace_event.h"
-#include "system_wrappers/include/field_trial.h"
 #include "third_party/libyuv/include/libyuv/scale.h"
 #include "vpx/vp8cx.h"
 
@@ -249,12 +248,13 @@ class FrameDropConfigOverride {
   const uint32_t original_frame_drop_threshold_;
 };
 
-absl::optional<TimeDelta> ParseFrameDropInterval() {
+absl::optional<TimeDelta> ParseFrameDropInterval(
+    const FieldTrialsView& field_trials) {
   FieldTrialFlag disabled = FieldTrialFlag("Disabled");
   FieldTrialParameter<TimeDelta> interval("interval",
                                           kDefaultMaxFrameDropInterval);
   ParseFieldTrial({&disabled, &interval},
-                  field_trial::FindFullName("WebRTC-VP8-MaxFrameInterval"));
+                  field_trials.Lookup("WebRTC-VP8-MaxFrameInterval"));
   if (disabled.Get()) {
     // Kill switch set, don't use any max frame interval.
     return absl::nullopt;
@@ -268,17 +268,6 @@ std::unique_ptr<VideoEncoder> CreateVp8Encoder(const Environment& env,
                                                Vp8EncoderSettings settings) {
   return std::make_unique<LibvpxVp8Encoder>(env, std::move(settings),
                                             LibvpxInterface::Create());
-}
-
-std::unique_ptr<VideoEncoder> VP8Encoder::Create() {
-  return std::make_unique<LibvpxVp8Encoder>(LibvpxInterface::Create(),
-                                            VP8Encoder::Settings());
-}
-
-std::unique_ptr<VideoEncoder> VP8Encoder::Create(
-    VP8Encoder::Settings settings) {
-  return std::make_unique<LibvpxVp8Encoder>(LibvpxInterface::Create(),
-                                            std::move(settings));
 }
 
 vpx_enc_frame_flags_t LibvpxVp8Encoder::EncodeFlags(
@@ -310,21 +299,23 @@ vpx_enc_frame_flags_t LibvpxVp8Encoder::EncodeFlags(
   return flags;
 }
 
-LibvpxVp8Encoder::LibvpxVp8Encoder(std::unique_ptr<LibvpxInterface> interface,
-                                   VP8Encoder::Settings settings)
-    : libvpx_(std::move(interface)),
-      rate_control_settings_(RateControlSettings::ParseFromFieldTrials()),
-      frame_buffer_controller_factory_(
-          std::move(settings.frame_buffer_controller_factory)),
+LibvpxVp8Encoder::LibvpxVp8Encoder(const Environment& env,
+                                   Vp8EncoderSettings settings,
+                                   std::unique_ptr<LibvpxInterface> interface)
+    : env_(env),
+      libvpx_(std::move(interface)),
+      rate_control_settings_(
+          RateControlSettings::ParseFromKeyValueConfig(&env_.field_trials())),
       resolution_bitrate_limits_(std::move(settings.resolution_bitrate_limits)),
       key_frame_request_(kMaxSimulcastStreams, false),
       last_encoder_output_time_(kMaxSimulcastStreams,
                                 Timestamp::MinusInfinity()),
       variable_framerate_experiment_(ParseVariableFramerateConfig(
+          env_.field_trials(),
           "WebRTC-VP8VariableFramerateScreenshare")),
       framerate_controller_(variable_framerate_experiment_.framerate_limit),
-      max_frame_drop_interval_(ParseFrameDropInterval()),
-      android_specific_threading_settings_(webrtc::field_trial::IsEnabled(
+      max_frame_drop_interval_(ParseFrameDropInterval(env_.field_trials())),
+      android_specific_threading_settings_(env_.field_trials().IsEnabled(
           "WebRTC-LibvpxVp8Encoder-AndroidSpecificThreadingSettings")) {
   // TODO(eladalon/ilnik): These reservations might be wasting memory.
   // InitEncode() is resizing to the actual size, which might be smaller.
@@ -537,14 +528,9 @@ int LibvpxVp8Encoder::InitEncode(const VideoCodec* inst,
   }
 
   RTC_DCHECK(!frame_buffer_controller_);
-  if (frame_buffer_controller_factory_) {
-    frame_buffer_controller_ = frame_buffer_controller_factory_->Create(
-        *inst, settings, fec_controller_override_);
-  } else {
-    Vp8TemporalLayersFactory factory;
-    frame_buffer_controller_ =
-        factory.Create(*inst, settings, fec_controller_override_);
-  }
+  Vp8TemporalLayersFactory factory;
+  frame_buffer_controller_ =
+      factory.Create(*inst, settings, fec_controller_override_);
   RTC_DCHECK(frame_buffer_controller_);
 
   number_of_cores_ = settings.number_of_cores;
@@ -603,7 +589,7 @@ int LibvpxVp8Encoder::InitEncode(const VideoCodec* inst,
 
   // Override the error resilience mode if this is not simulcast, but we are
   // using temporal layers.
-  if (field_trial::IsEnabled(kVp8ForcePartitionResilience) &&
+  if (env_.field_trials().IsEnabled(kVp8ForcePartitionResilience) &&
       (number_of_streams == 1) &&
       (SimulcastUtility::NumberOfTemporalLayers(*inst, 0) > 1)) {
     RTC_LOG(LS_INFO) << "Overriding g_error_resilient from "
@@ -811,7 +797,7 @@ int LibvpxVp8Encoder::NumberOfThreads(int width, int height, int cpus) {
 #endif
 #elif defined(WEBRTC_IOS)
   std::string trial_string =
-      field_trial::FindFullName(kVP8IosMaxNumberOfThreadFieldTrial);
+      env_.field_trials().Lookup(kVP8IosMaxNumberOfThreadFieldTrial);
   FieldTrialParameter<int> max_thread_number(
       kVP8IosMaxNumberOfThreadFieldTrialParameter, 0);
   ParseFieldTrial({&max_thread_number}, trial_string);
@@ -1515,13 +1501,15 @@ LibvpxVp8Encoder::PrepareBuffers(rtc::scoped_refptr<VideoFrameBuffer> buffer) {
 
 // static
 LibvpxVp8Encoder::VariableFramerateExperiment
-LibvpxVp8Encoder::ParseVariableFramerateConfig(std::string group_name) {
+LibvpxVp8Encoder::ParseVariableFramerateConfig(
+    const FieldTrialsView& field_trials,
+    absl::string_view group_name) {
   FieldTrialFlag disabled = FieldTrialFlag("Disabled");
   FieldTrialParameter<double> framerate_limit("min_fps", 5.0);
   FieldTrialParameter<int> qp("min_qp", 15);
   FieldTrialParameter<int> undershoot_percentage("undershoot", 30);
   ParseFieldTrial({&disabled, &framerate_limit, &qp, &undershoot_percentage},
-                  field_trial::FindFullName(group_name));
+                  field_trials.Lookup(group_name));
   VariableFramerateExperiment config;
   config.enabled = !disabled.Get();
   config.framerate_limit = framerate_limit.Get();

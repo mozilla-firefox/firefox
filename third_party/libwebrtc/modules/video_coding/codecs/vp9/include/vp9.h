@@ -21,7 +21,6 @@
 #include "api/video_codecs/sdp_video_format.h"
 #include "api/video_codecs/video_encoder.h"
 #include "api/video_codecs/vp9_profile.h"
-#include "media/base/codec.h"
 #include "modules/video_coding/include/video_codec_interface.h"
 
 namespace webrtc {
@@ -42,15 +41,9 @@ absl::Nonnull<std::unique_ptr<VideoEncoder>> CreateVp9Encoder(
     const Environment& env,
     Vp9EncoderSettings settings = {});
 
-class VP9Encoder : public VideoEncoder {
+class VP9Encoder {
  public:
-  // Deprecated. Use CreateVp9Encoder above, bugs.webrtc.org/15860
-  static std::unique_ptr<VP9Encoder> Create();
-  static std::unique_ptr<VP9Encoder> Create(const cricket::VideoCodec& codec);
-
   static bool SupportsScalabilityMode(ScalabilityMode scalability_mode);
-
-  ~VP9Encoder() override {}
 };
 
 class VP9Decoder : public VideoDecoder {

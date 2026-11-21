@@ -41,9 +41,6 @@ constexpr char kPlcUsePrevDecodedSamplesFieldTrial[] =
 constexpr char kAvoidNoisePumpingDuringDtxFieldTrial[] =
     "WebRTC-Audio-OpusAvoidNoisePumpingDuringDtx";
 
-constexpr char kSetSignalVoiceWithDtxFieldTrial[] =
-    "WebRTC-Audio-OpusSetSignalVoiceWithDtx";
-
 static int FrameSizePerChannel(int frame_size_ms, int sample_rate_hz) {
   RTC_DCHECK_GT(frame_size_ms, 0);
   RTC_DCHECK_EQ(frame_size_ms % 10, 0);
@@ -361,12 +358,6 @@ int16_t WebRtcOpus_DisableFec(OpusEncInst* inst) {
 
 int16_t WebRtcOpus_EnableDtx(OpusEncInst* inst) {
   if (inst) {
-    if (webrtc::field_trial::IsEnabled(kSetSignalVoiceWithDtxFieldTrial)) {
-      int ret = ENCODER_CTL(inst, OPUS_SET_SIGNAL(OPUS_SIGNAL_VOICE));
-      if (ret != OPUS_OK) {
-        return ret;
-      }
-    }
     return ENCODER_CTL(inst, OPUS_SET_DTX(1));
   } else {
     return -1;
@@ -375,12 +366,6 @@ int16_t WebRtcOpus_EnableDtx(OpusEncInst* inst) {
 
 int16_t WebRtcOpus_DisableDtx(OpusEncInst* inst) {
   if (inst) {
-    if (webrtc::field_trial::IsEnabled(kSetSignalVoiceWithDtxFieldTrial)) {
-      int ret = ENCODER_CTL(inst, OPUS_SET_SIGNAL(OPUS_AUTO));
-      if (ret != OPUS_OK) {
-        return ret;
-      }
-    }
     return ENCODER_CTL(inst, OPUS_SET_DTX(0));
   } else {
     return -1;

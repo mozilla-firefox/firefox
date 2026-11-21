@@ -57,7 +57,6 @@ rtc_library("libaom_av1_encoder") {
     "../../../../api:field_trials_view",
     "../../../../api:scoped_refptr",
     "../../../../api/environment",
-    "../../../../api/transport:field_trial_based_config",
     "../../../../api/video:encoded_image",
     "../../../../api/video:video_frame",
     "../../../../api/video_codecs:scalability_mode",

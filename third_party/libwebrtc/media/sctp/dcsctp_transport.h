@@ -66,6 +66,9 @@ class DcSctpTransport : public cricket::SctpTransportInternal,
   int max_message_size() const override;
   absl::optional<int> max_outbound_streams() const override;
   absl::optional<int> max_inbound_streams() const override;
+  size_t buffered_amount(int sid) const override;
+  size_t buffered_amount_low_threshold(int sid) const override;
+  void SetBufferedAmountLowThreshold(int sid, size_t bytes) override;
   void set_debug_name_for_testing(const char* debug_name) override;
 
  private:
@@ -77,6 +80,7 @@ class DcSctpTransport : public cricket::SctpTransportInternal,
   dcsctp::TimeMs TimeMillis() override;
   uint32_t GetRandomInt(uint32_t low, uint32_t high) override;
   void OnTotalBufferedAmountLow() override;
+  void OnBufferedAmountLow(dcsctp::StreamID stream_id) override;
   void OnMessageReceived(dcsctp::DcSctpMessage message) override;
   void OnError(dcsctp::ErrorKind error, absl::string_view message) override;
   void OnAborted(dcsctp::ErrorKind error, absl::string_view message) override;

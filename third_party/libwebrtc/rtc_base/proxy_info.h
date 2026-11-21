@@ -11,28 +11,9 @@
 #ifndef RTC_BASE_PROXY_INFO_H_
 #define RTC_BASE_PROXY_INFO_H_
 
-#include <string>
-
-#include "rtc_base/crypt_string.h"
-#include "rtc_base/socket_address.h"
-
 namespace rtc {
-
-enum ProxyType { PROXY_NONE, PROXY_HTTPS, PROXY_SOCKS5, PROXY_UNKNOWN };
-const char* ProxyToString(ProxyType proxy);
-
-struct ProxyInfo {
-  ProxyType type;
-  SocketAddress address;
-  std::string autoconfig_url;
-  bool autodetect;
-  std::string bypass_list;
-  std::string username;
-  CryptString password;
-
-  ProxyInfo();
-  ~ProxyInfo();
-};
+// TODO(tommi): Remove.
+struct ProxyInfo {};
 
 }  // namespace rtc
 

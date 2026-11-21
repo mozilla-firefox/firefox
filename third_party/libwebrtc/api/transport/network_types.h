@@ -170,9 +170,7 @@ struct TransportPacketsFeedback {
   ~TransportPacketsFeedback();
 
   Timestamp feedback_time = Timestamp::PlusInfinity();
-  Timestamp first_unacked_send_time = Timestamp::PlusInfinity();
   DataSize data_in_flight = DataSize::Zero();
-  DataSize prior_in_flight = DataSize::Zero();
   std::vector<PacketResult> packet_feedbacks;
 
   // Arrival times for messages without send time information.

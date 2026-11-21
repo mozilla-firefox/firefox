@@ -199,6 +199,7 @@ class VideoReceiveStream2Test : public ::testing::TestWithParam<bool> {
         config_(&mock_transport_, &mock_h264_decoder_factory_),
         call_stats_(&env_.clock(), time_controller_.GetMainThread()),
         fake_renderer_(&time_controller_),
+        fake_call_(env_),
         fake_metronome_(TimeDelta::Millis(16)),
         decode_sync_(&env_.clock(),
                      &fake_metronome_,

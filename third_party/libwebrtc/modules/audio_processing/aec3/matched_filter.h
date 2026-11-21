@@ -106,11 +106,6 @@ class MatchedFilter {
     size_t pre_echo_lag = 0;
   };
 
-  struct PreEchoConfiguration {
-    const float threshold;
-    const int mode;
-  };
-
   MatchedFilter(ApmDataDumper* data_dumper,
                 Aec3Optimization optimization,
                 size_t sub_block_size,
@@ -153,15 +148,6 @@ class MatchedFilter {
                            size_t downsampling_factor) const;
 
  private:
-  FRIEND_TEST_ALL_PREFIXES(MatchedFilterFieldTrialTest,
-                           PreEchoConfigurationTest);
-  FRIEND_TEST_ALL_PREFIXES(MatchedFilterFieldTrialTest,
-                           WrongPreEchoConfigurationTest);
-
-  // Only for testing. Gets the pre echo detection configuration.
-  const PreEchoConfiguration& GetPreEchoConfiguration() const {
-    return pre_echo_config_;
-  }
   void Dump();
 
   ApmDataDumper* const data_dumper_;
@@ -182,7 +168,6 @@ class MatchedFilter {
   const float smoothing_slow_;
   const float matching_filter_threshold_;
   const bool detect_pre_echo_;
-  const PreEchoConfiguration pre_echo_config_;
 };
 
 }  // namespace webrtc

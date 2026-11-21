@@ -96,7 +96,8 @@ JsepTransport::JsepTransport(
                                : nullptr),
       sctp_transport_(sctp_transport
                           ? rtc::make_ref_counted<webrtc::SctpTransport>(
-                                std::move(sctp_transport))
+                                std::move(sctp_transport),
+                                rtp_dtls_transport_)
                           : nullptr),
       rtcp_mux_active_callback_(std::move(rtcp_mux_active_callback)) {
   TRACE_EVENT0("webrtc", "JsepTransport::JsepTransport");
@@ -117,10 +118,6 @@ JsepTransport::JsepTransport(
     RTC_DCHECK(dtls_srtp_transport_);
     RTC_DCHECK(!unencrypted_rtp_transport);
     RTC_DCHECK(!sdes_transport);
-  }
-
-  if (sctp_transport_) {
-    sctp_transport_->SetDtlsTransport(rtp_dtls_transport_);
   }
 }
 

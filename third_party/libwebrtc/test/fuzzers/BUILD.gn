@@ -705,6 +705,7 @@ if (rtc_build_libvpx) {
       "..:test_support",
       "../../api:array_view",
       "../../api:field_trials_view",
+      "../../api/environment:environment_factory",
       "../../api/video:video_frame",
       "../../api/video_codecs:video_codecs_api",
       "../../media:media_constants",

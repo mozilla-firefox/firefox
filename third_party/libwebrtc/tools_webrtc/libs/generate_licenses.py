@@ -78,8 +78,9 @@ LIB_TO_LICENSES_DICT = {
     'spl_sqrt_floor': ['common_audio/third_party/spl_sqrt_floor/LICENSE'],
     'kotlin_stdlib': ['third_party/kotlin_stdlib/LICENSE'],
     'jni_zero': ['third_party/jni_zero/LICENSE'],
+    'protobuf-javascript': ['third_party/protobuf-javascript/LICENSE'],
     # TODO(bugs.webrtc.org/1110): Remove this hack. This is not a lib.
-    # For some reason it is listed as so in _GetThirdPartyLibraries.
+    # For some reason it is listed as so in _get_third_party_libraries.
     'android_deps': [],
     # This is not a library but a collection of libraries.
     'androidx': [],
@@ -97,7 +98,7 @@ LIB_REGEX_TO_LICENSES_DICT = {
         'com_android_support_support_annotations/LICENSE'
     ],
 
-    # Internal dependencies, licenses are already included by other dependencies
+    # Internal dependencies, licenses are already included by other deps.
     'android_deps:com_android_support_support_annotations.*': [],
 }
 
@@ -111,7 +112,7 @@ SRC_DIR = os.path.dirname(os.path.dirname(SCRIPT_DIR))
 # tools we need are *actually* in their build folder, thus we need to move up
 # to the *true* source root, when we're embedded like this.
 if SRC_DIR.endswith(os.path.join('third_party', 'webrtc')):
-  SRC_DIR = os.path.abspath(os.path.join(SRC_DIR, os.pardir, os.pardir))
+    SRC_DIR = os.path.abspath(os.path.join(SRC_DIR, os.pardir, os.pardir))
 sys.path.append(os.path.join(SRC_DIR, 'build'))
 import find_depot_tools
 
@@ -120,28 +121,29 @@ THIRD_PARTY_LIB_REGEX_TEMPLATE = r'^.*/third_party/%s$'
 
 
 class LicenseBuilder:
-  def __init__(self,
-               buildfile_dirs,
-               targets,
-               lib_to_licenses_dict=None,
-               lib_regex_to_licenses_dict=None):
-    if lib_to_licenses_dict is None:
-      lib_to_licenses_dict = LIB_TO_LICENSES_DICT
 
-    if lib_regex_to_licenses_dict is None:
-      lib_regex_to_licenses_dict = LIB_REGEX_TO_LICENSES_DICT
+    def __init__(self,
+                 buildfile_dirs,
+                 targets,
+                 lib_to_licenses_dict=None,
+                 lib_regex_to_licenses_dict=None):
+        if lib_to_licenses_dict is None:
+            lib_to_licenses_dict = LIB_TO_LICENSES_DICT
 
-    self.buildfile_dirs = buildfile_dirs
-    self.targets = targets
-    self.lib_to_licenses_dict = lib_to_licenses_dict
-    self.lib_regex_to_licenses_dict = lib_regex_to_licenses_dict
+        if lib_regex_to_licenses_dict is None:
+            lib_regex_to_licenses_dict = LIB_REGEX_TO_LICENSES_DICT
 
-    self.common_licenses_dict = self.lib_to_licenses_dict.copy()
-    self.common_licenses_dict.update(self.lib_regex_to_licenses_dict)
+        self.buildfile_dirs = buildfile_dirs
+        self.targets = targets
+        self.lib_to_licenses_dict = lib_to_licenses_dict
+        self.lib_regex_to_licenses_dict = lib_regex_to_licenses_dict
 
-  @staticmethod
-  def _ParseLibraryName(dep):
-    """Returns library name after third_party
+        self.common_licenses_dict = self.lib_to_licenses_dict.copy()
+        self.common_licenses_dict.update(self.lib_regex_to_licenses_dict)
+
+    @staticmethod
+    def _parse_library_name(dep):
+        """Returns library name after third_party
 
     Input one of:
     //a/b/third_party/libname:c
@@ -150,11 +152,11 @@ class LicenseBuilder:
 
     Outputs libname or None if this is not a third_party dependency.
     """
-    groups = re.match(THIRD_PARTY_LIB_SIMPLE_NAME_REGEX, dep)
-    return groups.group(1) if groups else None
+        groups = re.match(THIRD_PARTY_LIB_SIMPLE_NAME_REGEX, dep)
+        return groups.group(1) if groups else None
 
-  def _ParseLibrary(self, dep):
-    """Returns library simple or regex name that matches `dep` after third_party
+    def _parse_library(self, dep):
+        """Return library simple or regex name matching `dep` after third_party
 
     This method matches `dep` dependency against simple names in
     LIB_TO_LICENSES_DICT and regular expression names in
@@ -162,104 +164,110 @@ class LicenseBuilder:
 
     Outputs matched dict key or None if this is not a third_party dependency.
     """
-    libname = LicenseBuilder._ParseLibraryName(dep)
+        libname = LicenseBuilder._parse_library_name(dep)
 
-    for lib_regex in self.lib_regex_to_licenses_dict:
-      if re.match(THIRD_PARTY_LIB_REGEX_TEMPLATE % lib_regex, dep):
-        return lib_regex
+        for lib_regex in self.lib_regex_to_licenses_dict:
+            if re.match(THIRD_PARTY_LIB_REGEX_TEMPLATE % lib_regex, dep):
+                return lib_regex
 
-    return libname
+        return libname
 
-  @staticmethod
-  def _RunGN(buildfile_dir, target):
-    cmd = [
-        sys.executable,
-        os.path.join(find_depot_tools.DEPOT_TOOLS_PATH, 'gn.py'),
-        'desc',
-        '--all',
-        '--format=json',
-        os.path.abspath(buildfile_dir),
-        target,
-    ]
-    logging.debug('Running: %r', cmd)
-    output_json = subprocess.check_output(cmd, cwd=WEBRTC_ROOT).decode('UTF-8')
-    logging.debug('Output: %s', output_json)
-    return output_json
+    @staticmethod
+    def _run_gn(buildfile_dir, target):
+        cmd = [
+            sys.executable,
+            os.path.join(find_depot_tools.DEPOT_TOOLS_PATH, 'gn.py'),
+            'desc',
+            '--all',
+            '--format=json',
+            os.path.abspath(buildfile_dir),
+            target,
+        ]
+        logging.debug('Running: %r', cmd)
+        output_json = subprocess.check_output(cmd,
+                                              cwd=WEBRTC_ROOT).decode('UTF-8')
+        logging.debug('Output: %s', output_json)
+        return output_json
 
-  def _GetThirdPartyLibraries(self, buildfile_dir, target):
-    output = json.loads(LicenseBuilder._RunGN(buildfile_dir, target))
-    libraries = set()
-    for described_target in list(output.values()):
-      third_party_libs = (self._ParseLibrary(dep)
-                          for dep in described_target['deps'])
-      libraries |= set(lib for lib in third_party_libs if lib)
-    return libraries
+    def _get_third_party_libraries(self, buildfile_dir, target):
+        output = json.loads(LicenseBuilder._run_gn(buildfile_dir, target))
+        libraries = set()
+        for described_target in list(output.values()):
+            third_party_libs = (self._parse_library(dep)
+                                for dep in described_target['deps'])
+            libraries |= set(lib for lib in third_party_libs if lib)
+        return libraries
 
-  def GenerateLicenseText(self, output_dir):
-    # Get a list of third_party libs from gn. For fat libraries we must consider
-    # all architectures, hence the multiple buildfile directories.
-    third_party_libs = set()
-    for buildfile in self.buildfile_dirs:
-      for target in self.targets:
-        third_party_libs |= self._GetThirdPartyLibraries(buildfile, target)
-    assert len(third_party_libs) > 0
+    def generate_license_text(self, output_dir):
+        # Get a list of third_party libs from gn. For fat libraries we must
+        # consider all architectures, hence the multiple buildfile directories.
+        third_party_libs = set()
+        for buildfile in self.buildfile_dirs:
+            for target in self.targets:
+                third_party_libs |= self._get_third_party_libraries(
+                    buildfile, target)
+        assert len(third_party_libs) > 0
 
-    missing_licenses = third_party_libs - set(self.common_licenses_dict.keys())
-    if missing_licenses:
-      error_msg = 'Missing licenses for following third_party targets: %s' % \
-                  ', '.join(sorted(missing_licenses))
-      logging.error(error_msg)
-      raise Exception(error_msg)
+        missing_licenses = third_party_libs - set(
+            self.common_licenses_dict.keys())
+        if missing_licenses:
+            error_msg = 'Missing licenses for third_party targets: %s' % \
+                        ', '.join(sorted(missing_licenses))
+            logging.error(error_msg)
+            raise Exception(error_msg)
 
-    # Put webrtc at the front of the list.
-    license_libs = sorted(third_party_libs)
-    license_libs.insert(0, 'webrtc')
+        # Put webrtc at the front of the list.
+        license_libs = sorted(third_party_libs)
+        license_libs.insert(0, 'webrtc')
 
-    logging.info('List of licenses: %s', ', '.join(license_libs))
+        logging.info('List of licenses: %s', ', '.join(license_libs))
 
-    # Generate markdown.
-    output_license_file = open(os.path.join(output_dir, 'LICENSE.md'), 'w+')
-    for license_lib in license_libs:
-      if len(self.common_licenses_dict[license_lib]) == 0:
-        logging.info('Skipping compile time or internal dependency: %s',
-                     license_lib)
-        continue  # Compile time dependency
+        # Generate markdown.
+        output_license_file = open(os.path.join(output_dir, 'LICENSE.md'),
+                                   'w+')
+        for license_lib in license_libs:
+            if len(self.common_licenses_dict[license_lib]) == 0:
+                logging.info(
+                    'Skipping compile time or internal dependency: %s',
+                    license_lib)
+                continue  # Compile time dependency
 
-      output_license_file.write('# %s\n' % license_lib)
-      output_license_file.write('```\n')
-      for path in self.common_licenses_dict[license_lib]:
-        license_path = os.path.join(WEBRTC_ROOT, path)
-        with open(license_path, 'r') as license_file:
-          license_text = escape(license_file.read(), quote=True)
-          output_license_file.write(license_text)
-          output_license_file.write('\n')
-      output_license_file.write('```\n\n')
+            output_license_file.write('# %s\n' % license_lib)
+            output_license_file.write('```\n')
+            for path in self.common_licenses_dict[license_lib]:
+                license_path = os.path.join(WEBRTC_ROOT, path)
+                with open(license_path, 'r') as license_file:
+                    license_text = escape(license_file.read(), quote=True)
+                    output_license_file.write(license_text)
+                    output_license_file.write('\n')
+            output_license_file.write('```\n\n')
 
-    output_license_file.close()
+        output_license_file.close()
 
 
 def main():
-  parser = argparse.ArgumentParser(description='Generate WebRTC LICENSE.md')
-  parser.add_argument('--verbose',
-                      action='store_true',
-                      default=False,
-                      help='Debug logging.')
-  parser.add_argument('--target',
-                      required=True,
-                      action='append',
-                      default=[],
-                      help='Name of the GN target to generate a license for')
-  parser.add_argument('output_dir', help='Directory to output LICENSE.md to.')
-  parser.add_argument('buildfile_dirs',
-                      nargs='+',
-                      help='Directories containing gn generated ninja files')
-  args = parser.parse_args()
+    parser = argparse.ArgumentParser(description='Generate WebRTC LICENSE.md')
+    parser.add_argument('--verbose',
+                        action='store_true',
+                        default=False,
+                        help='Debug logging.')
+    parser.add_argument('--target',
+                        required=True,
+                        action='append',
+                        default=[],
+                        help='Name of the GN target to generate a license for')
+    parser.add_argument('output_dir',
+                        help='Directory to output LICENSE.md to.')
+    parser.add_argument('buildfile_dirs',
+                        nargs='+',
+                        help='Directories containing gn generated ninja files')
+    args = parser.parse_args()
 
-  logging.basicConfig(level=logging.DEBUG if args.verbose else logging.INFO)
+    logging.basicConfig(level=logging.DEBUG if args.verbose else logging.INFO)
 
-  builder = LicenseBuilder(args.buildfile_dirs, args.target)
-  builder.GenerateLicenseText(args.output_dir)
+    builder = LicenseBuilder(args.buildfile_dirs, args.target)
+    builder.generate_license_text(args.output_dir)
 
 
 if __name__ == '__main__':
-  sys.exit(main())
+    sys.exit(main())

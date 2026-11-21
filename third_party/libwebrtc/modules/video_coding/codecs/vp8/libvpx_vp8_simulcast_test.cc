@@ -24,7 +24,9 @@ namespace {
 std::unique_ptr<SimulcastTestFixture> CreateSpecificSimulcastTestFixture() {
   std::unique_ptr<VideoEncoderFactory> encoder_factory =
       std::make_unique<FunctionVideoEncoderFactory>(
-          []() { return VP8Encoder::Create(); });
+          [](const Environment& env, const SdpVideoFormat& format) {
+            return CreateVp8Encoder(env);
+          });
   std::unique_ptr<VideoDecoderFactory> decoder_factory =
       std::make_unique<FunctionVideoDecoderFactory>(
           [](const Environment& env, const SdpVideoFormat& format) {

@@ -25,6 +25,7 @@
 #include "api/rtp_transceiver_interface.h"
 #include "api/stats/rtcstats_objects.h"
 #include "api/units/data_rate.h"
+#include "api/video_codecs/scalability_mode.h"
 #include "api/video_codecs/video_decoder_factory_template.h"
 #include "api/video_codecs/video_decoder_factory_template_dav1d_adapter.h"
 #include "api/video_codecs/video_decoder_factory_template_libvpx_vp8_adapter.h"
@@ -310,6 +311,14 @@ class PeerConnectionEncodingsIntegrationTest : public ::testing::Test {
     auto* outbound_rtp = FindOutboundRtpByRid(outbound_rtps, rid);
     if (!outbound_rtp || !outbound_rtp->scalability_mode.has_value() ||
         *outbound_rtp->scalability_mode != expected_scalability_mode) {
+      RTC_LOG(LS_INFO) << "Waiting for scalability mode ("
+                       << (outbound_rtp
+                               ? outbound_rtp->scalability_mode.value_or(
+                                     "nullopt")
+                               : "not found")
+                       << ") to be " << expected_scalability_mode;
+      // Sleep to avoid log spam when this is used in ASSERT_TRUE_WAIT().
+      rtc::Thread::Current()->SleepMs(1000);
       return false;
     }
     if (outbound_rtp->frame_height.has_value()) {
@@ -354,9 +363,8 @@ class PeerConnectionEncodingsIntegrationTest : public ::testing::Test {
         RTC_LOG(LS_ERROR) << "rid=" << resolution.rid << " is "
                           << *outbound_rtp->frame_width << "x"
                           << *outbound_rtp->frame_height
-                          << ", this is greater than the "
-                          << "expected " << resolution.width << "x"
-                          << resolution.height;
+                          << ", this is greater than the " << "expected "
+                          << resolution.width << "x" << resolution.height;
         return false;
       }
     }
@@ -830,6 +838,39 @@ TEST_F(PeerConnectionEncodingsIntegrationTest,
               Optional(std::string("L2T2_KEY")));
   EXPECT_FALSE(parameters.encodings[1].scalability_mode.has_value());
   EXPECT_FALSE(parameters.encodings[2].scalability_mode.has_value());
+}
+
+TEST_F(PeerConnectionEncodingsIntegrationTest, VP9_OneLayerActive_LegacySvc) {
+  rtc::scoped_refptr<PeerConnectionTestWrapper> local_pc_wrapper = CreatePc();
+  rtc::scoped_refptr<PeerConnectionTestWrapper> remote_pc_wrapper = CreatePc();
+  ExchangeIceCandidates(local_pc_wrapper, remote_pc_wrapper);
+
+  std::vector<cricket::SimulcastLayer> layers =
+      CreateLayers({"f", "h", "q"}, /*active=*/true);
+  rtc::scoped_refptr<RtpTransceiverInterface> transceiver =
+      AddTransceiverWithSimulcastLayers(local_pc_wrapper, remote_pc_wrapper,
+                                        layers);
+  std::vector<RtpCodecCapability> codecs =
+      GetCapabilitiesAndRestrictToCodec(remote_pc_wrapper, "VP9");
+  transceiver->SetCodecPreferences(codecs);
+
+  // Sending L1T3 with legacy SVC mode means setting 1 layer active.
+  rtc::scoped_refptr<RtpSenderInterface> sender = transceiver->sender();
+  RtpParameters parameters = sender->GetParameters();
+  ASSERT_THAT(parameters.encodings, SizeIs(3));
+  parameters.encodings[0].active = true;
+  parameters.encodings[1].active = false;
+  parameters.encodings[2].active = false;
+  sender->SetParameters(parameters);
+
+  NegotiateWithSimulcastTweaks(local_pc_wrapper, remote_pc_wrapper);
+  local_pc_wrapper->WaitForConnection();
+  remote_pc_wrapper->WaitForConnection();
+
+  // Ensure that we are getting 180P at L1T3 from the "f" rid.
+  ASSERT_TRUE_WAIT(HasOutboundRtpWithRidAndScalabilityMode(
+                       local_pc_wrapper, "f", "L1T3", 720 / 4),
+                   kLongTimeoutForRampingUp.ms());
 }
 
 TEST_F(PeerConnectionEncodingsIntegrationTest,

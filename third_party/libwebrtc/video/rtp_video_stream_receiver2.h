@@ -39,6 +39,7 @@
 #include "modules/rtp_rtcp/source/rtp_video_stream_receiver_frame_transformer_delegate.h"
 #include "modules/rtp_rtcp/source/video_rtp_depacketizer.h"
 #include "modules/video_coding/h264_sps_pps_tracker.h"
+#include "modules/video_coding/h26x_packet_buffer.h"
 #include "modules/video_coding/loss_notification_controller.h"
 #include "modules/video_coding/nack_requester.h"
 #include "modules/video_coding/packet_buffer.h"
@@ -106,7 +107,6 @@ class RtpVideoStreamReceiver2 : public LossNotificationSender,
                        VideoCodecType video_codec,
                        const webrtc::CodecParameterMap& codec_params,
                        bool raw_payload);
-  void RemoveReceiveCodec(uint8_t payload_type);
 
   // Clears state for all receive codecs added via `AddReceiveCodec`.
   void RemoveReceiveCodecs();
@@ -210,6 +210,9 @@ class RtpVideoStreamReceiver2 : public LossNotificationSender,
   absl::optional<int64_t> LastReceivedPacketMs() const;
   absl::optional<uint32_t> LastReceivedFrameRtpTimestamp() const;
   absl::optional<int64_t> LastReceivedKeyframePacketMs() const;
+
+  absl::optional<RtpRtcpInterface::SenderReportStats> GetSenderReportStats()
+      const;
 
   // Mozilla modification: VideoReceiveStream2 and friends do not surface RTCP
   // stats at all, and even on the most recent libwebrtc code there does not
@@ -370,6 +373,10 @@ class RtpVideoStreamReceiver2 : public LossNotificationSender,
   VideoStreamBufferControllerStatsObserver* const vcm_receive_statistics_;
   video_coding::PacketBuffer packet_buffer_
       RTC_GUARDED_BY(packet_sequence_checker_);
+  // h26x_packet_buffer_ is nullptr if codec list doens't contain H.264 or
+  // H.265, or field trial WebRTC-Video-H26xPacketBuffer is not enabled.
+  std::unique_ptr<H26xPacketBuffer> h26x_packet_buffer_
+      RTC_GUARDED_BY(packet_sequence_checker_);
   UniqueTimestampCounter frame_counter_
       RTC_GUARDED_BY(packet_sequence_checker_);
   SeqNumUnwrapper<uint16_t> frame_id_unwrapper_
@@ -448,6 +455,7 @@ class RtpVideoStreamReceiver2 : public LossNotificationSender,
 
   Timestamp next_keyframe_request_for_missing_video_structure_ =
       Timestamp::MinusInfinity();
+  bool sps_pps_idr_is_h264_keyframe_ = false;
 };
 
 }  // namespace webrtc

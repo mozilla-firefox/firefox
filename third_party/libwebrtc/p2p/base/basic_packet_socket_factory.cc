@@ -119,12 +119,6 @@ AsyncPacketSocket* BasicPacketSocketFactory::CreateClientTcpSocket(
                       << socket->GetError();
   }
 
-  if (proxy_info.type == PROXY_HTTPS) {
-    socket =
-        new AsyncHttpsProxySocket(socket, user_agent, proxy_info.address,
-                                  proxy_info.username, proxy_info.password);
-  }
-
   // Assert that at most one TLS option is used.
   int tlsOpts = tcp_options.opts & (PacketSocketFactory::OPT_TLS |
                                     PacketSocketFactory::OPT_TLS_FAKE |

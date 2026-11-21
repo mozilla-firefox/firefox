@@ -12,7 +12,7 @@
 
 #include <limits>
 
-#include "api/environment/environment_factory.h"
+#include "api/environment/environment.h"
 #include "api/video/encoded_image.h"
 #include "api/video/i420_buffer.h"
 #include "api/video_codecs/video_codec.h"
@@ -31,12 +31,32 @@ namespace {
 
 constexpr TimeDelta kMaxNextFrameWaitTimeout = TimeDelta::Seconds(1);
 
+std::unique_ptr<VideoDecoder> CreateDecoder(const Environment& env,
+                                            VideoCodecType codec_type) {
+  switch (codec_type) {
+    case VideoCodecType::kVideoCodecVP8:
+      return CreateVp8Decoder(env);
+    case VideoCodecType::kVideoCodecVP9:
+      return VP9Decoder::Create();
+    case VideoCodecType::kVideoCodecH264:
+      return H264Decoder::Create();
+    case VideoCodecType::kVideoCodecAV1:
+      return CreateDav1dDecoder();
+    case VideoCodecType::kVideoCodecH265:
+      // TODO: bugs.webrtc.org/13485 - implement H265 decoder
+      return nullptr;
+    default:
+      return nullptr;
+  }
+}
+
 }  // namespace
 
-IvfVideoFrameGenerator::IvfVideoFrameGenerator(const std::string& file_name)
+IvfVideoFrameGenerator::IvfVideoFrameGenerator(const Environment& env,
+                                               absl::string_view file_name)
     : callback_(this),
       file_reader_(IvfFileReader::Create(FileWrapper::OpenReadOnly(file_name))),
-      video_decoder_(CreateVideoDecoder(file_reader_->GetVideoCodecType())),
+      video_decoder_(CreateDecoder(env, file_reader_->GetVideoCodecType())),
       width_(file_reader_->GetFrameWidth()),
       height_(file_reader_->GetFrameHeight()) {
   RTC_CHECK(video_decoder_) << "No decoder found for file's video codec type";
@@ -133,28 +153,6 @@ void IvfVideoFrameGenerator::OnFrameDecoded(const VideoFrame& decoded_frame) {
   MutexLock lock(&frame_decode_lock_);
   next_frame_ = decoded_frame;
   next_frame_decoded_.Set();
-}
-
-std::unique_ptr<VideoDecoder> IvfVideoFrameGenerator::CreateVideoDecoder(
-    VideoCodecType codec_type) {
-  if (codec_type == VideoCodecType::kVideoCodecVP8) {
-    // Use a default environment for the VP8 decoder while there is no use case
-    // for a propagated environment in this test utility IvfVideoFrameGenerator.
-    return CreateVp8Decoder(CreateEnvironment());
-  }
-  if (codec_type == VideoCodecType::kVideoCodecVP9) {
-    return VP9Decoder::Create();
-  }
-  if (codec_type == VideoCodecType::kVideoCodecH264) {
-    return H264Decoder::Create();
-  }
-  if (codec_type == VideoCodecType::kVideoCodecAV1) {
-    return CreateDav1dDecoder();
-  }
-  if (codec_type == VideoCodecType::kVideoCodecH265) {
-    // TODO(bugs.webrtc.org/13485): implement H265 decoder
-  }
-  return nullptr;
 }
 
 }  // namespace test

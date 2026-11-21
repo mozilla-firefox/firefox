@@ -195,13 +195,13 @@ class WebRtcVoiceEngineTestFake : public ::testing::TestWithParam<bool> {
  public:
   WebRtcVoiceEngineTestFake()
       : use_null_apm_(GetParam()),
-        task_queue_factory_(webrtc::CreateDefaultTaskQueueFactory()),
+        env_(CreateEnvironment(&field_trials_)),
         adm_(webrtc::test::MockAudioDeviceModule::CreateStrict()),
         apm_(use_null_apm_
                  ? nullptr
                  : rtc::make_ref_counted<
                        StrictMock<webrtc::test::MockAudioProcessing>>()),
-        call_(&field_trials_) {
+        call_(env_) {
     // AudioDeviceModule.
     AdmSetupExpectations(adm_.get());
 
@@ -220,9 +220,9 @@ class WebRtcVoiceEngineTestFake : public ::testing::TestWithParam<bool> {
     // factories. Those tests should probably be moved elsewhere.
     auto encoder_factory = webrtc::CreateBuiltinAudioEncoderFactory();
     auto decoder_factory = webrtc::CreateBuiltinAudioDecoderFactory();
-    engine_.reset(new cricket::WebRtcVoiceEngine(
-        task_queue_factory_.get(), adm_.get(), encoder_factory, decoder_factory,
-        nullptr, apm_, nullptr, field_trials_));
+    engine_ = std::make_unique<cricket::WebRtcVoiceEngine>(
+        &env_.task_queue_factory(), adm_.get(), encoder_factory,
+        decoder_factory, nullptr, apm_, nullptr, env_.field_trials());
     engine_->Init();
     send_parameters_.codecs.push_back(kPcmuCodec);
     recv_parameters_.codecs.push_back(kPcmuCodec);
@@ -846,7 +846,7 @@ class WebRtcVoiceEngineTestFake : public ::testing::TestWithParam<bool> {
   rtc::AutoThread main_thread_;
   const bool use_null_apm_;
   webrtc::test::ScopedKeyValueConfig field_trials_;
-  std::unique_ptr<webrtc::TaskQueueFactory> task_queue_factory_;
+  const Environment env_;
   rtc::scoped_refptr<webrtc::test::MockAudioDeviceModule> adm_;
   rtc::scoped_refptr<StrictMock<webrtc::test::MockAudioProcessing>> apm_;
   cricket::FakeCall call_;
@@ -1561,7 +1561,7 @@ TEST_P(WebRtcVoiceEngineTestFake, OnPacketReceivedIdentifiesExtensions) {
   webrtc::RtpPacketReceived reference_packet(&extension_map);
   constexpr uint8_t kAudioLevel = 123;
   reference_packet.SetExtension<webrtc::AudioLevelExtension>(
-      /*voice_activity=*/true, kAudioLevel);
+      webrtc::AudioLevel(/*voice_activity=*/true, kAudioLevel));
   //  Create a packet without the extension map but with the same content.
   webrtc::RtpPacketReceived received_packet;
   ASSERT_TRUE(received_packet.Parse(reference_packet.Buffer()));
@@ -1569,12 +1569,10 @@ TEST_P(WebRtcVoiceEngineTestFake, OnPacketReceivedIdentifiesExtensions) {
   receive_channel_->OnPacketReceived(received_packet);
   rtc::Thread::Current()->ProcessMessages(0);
 
-  bool voice_activity;
-  uint8_t audio_level;
+  webrtc::AudioLevel audio_level;
   EXPECT_TRUE(call_.last_received_rtp_packet()
-                  .GetExtension<webrtc::AudioLevelExtension>(&voice_activity,
-                                                             &audio_level));
-  EXPECT_EQ(audio_level, kAudioLevel);
+                  .GetExtension<webrtc::AudioLevelExtension>(&audio_level));
+  EXPECT_EQ(audio_level.level(), kAudioLevel);
 }
 
 // Test that we apply codecs properly.

@@ -45,6 +45,7 @@ class MockDataChannelSink : public DataChannelSink {
   MOCK_METHOD(void, OnChannelClosed, (int));
   MOCK_METHOD(void, OnReadyToSend, ());
   MOCK_METHOD(void, OnTransportClosed, (RTCError));
+  MOCK_METHOD(void, OnBufferedAmountLow, (int channel_id), (override));
 };
 
 static_assert(!std::is_abstract_v<MockDataChannelSink>);

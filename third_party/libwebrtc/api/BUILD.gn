@@ -757,8 +757,14 @@ rtc_library("create_frame_generator") {
     "../rtc_base:checks",
     "../system_wrappers",
     "../test:frame_generator_impl",
+    "environment",
+    "environment:environment_factory",
   ]
-  absl_deps = [ "//third_party/abseil-cpp/absl/types:optional" ]
+  absl_deps = [
+    "//third_party/abseil-cpp/absl/base:nullability",
+    "//third_party/abseil-cpp/absl/strings:string_view",
+    "//third_party/abseil-cpp/absl/types:optional",
+  ]
 }
 
 if (!build_with_mozilla) {
@@ -990,6 +996,7 @@ rtc_library("neteq_simulator_api") {
     "test/neteq_simulator.cc",
     "test/neteq_simulator.h",
   ]
+  deps = [ "neteq:neteq_api" ]
 }
 
 rtc_source_set("function_view") {

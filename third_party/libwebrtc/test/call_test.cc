@@ -45,16 +45,17 @@ CallTest::CallTest()
       audio_send_config_(/*send_transport=*/nullptr),
       audio_send_stream_(nullptr),
       frame_generator_capturer_(nullptr),
-      fake_encoder_factory_([this]() {
-        std::unique_ptr<FakeEncoder> fake_encoder;
-        if (video_encoder_configs_[0].codec_type == kVideoCodecVP8) {
-          fake_encoder = std::make_unique<FakeVp8Encoder>(&env_.clock());
-        } else {
-          fake_encoder = std::make_unique<FakeEncoder>(&env_.clock());
-        }
-        fake_encoder->SetMaxBitrate(fake_encoder_max_bitrate_);
-        return fake_encoder;
-      }),
+      fake_encoder_factory_(
+          [this](const Environment& env, const SdpVideoFormat& format) {
+            std::unique_ptr<FakeEncoder> fake_encoder;
+            if (video_encoder_configs_[0].codec_type == kVideoCodecVP8) {
+              fake_encoder = std::make_unique<FakeVp8Encoder>(env);
+            } else {
+              fake_encoder = std::make_unique<FakeEncoder>(env);
+            }
+            fake_encoder->SetMaxBitrate(fake_encoder_max_bitrate_);
+            return fake_encoder;
+          }),
       fake_decoder_factory_([]() { return std::make_unique<FakeDecoder>(); }),
       bitrate_allocator_factory_(CreateBuiltinVideoBitrateAllocatorFactory()),
       num_video_streams_(1),

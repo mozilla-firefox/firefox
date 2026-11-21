@@ -34,7 +34,6 @@ UNIFIED_SOURCES += [
     "/third_party/libwebrtc/modules/video_coding/decoder_database.cc",
     "/third_party/libwebrtc/modules/video_coding/fec_controller_default.cc",
     "/third_party/libwebrtc/modules/video_coding/generic_decoder.cc",
-    "/third_party/libwebrtc/modules/video_coding/h264_sprop_parameter_sets.cc",
     "/third_party/libwebrtc/modules/video_coding/h264_sps_pps_tracker.cc",
     "/third_party/libwebrtc/modules/video_coding/loss_notification_controller.cc",
     "/third_party/libwebrtc/modules/video_coding/media_opt_util.cc",

@@ -89,17 +89,6 @@ absl::optional<ProtocolType> StringToProto(absl::string_view proto_name) {
   return absl::nullopt;
 }
 
-IceCandidateType PortTypeToIceCandidateType(const absl::string_view type) {
-  if (type == "host" || type == LOCAL_PORT_TYPE)
-    return IceCandidateType::kHost;
-  if (type == "srflx" || type == STUN_PORT_TYPE)
-    return IceCandidateType::kSrflx;
-  if (type == PRFLX_PORT_TYPE)
-    return IceCandidateType::kPrflx;
-  RTC_DCHECK_EQ(type, RELAY_PORT_TYPE);
-  return IceCandidateType::kRelay;
-}
-
 // RFC 6544, TCP candidate encoding rules.
 const int DISCARD_PORT = 9;
 const char TCPTYPE_ACTIVE_STR[] = "active";

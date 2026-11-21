@@ -180,9 +180,6 @@ int VideoRtpDepacketizerVp9::ParseRtpPayload(
   video_header->simulcastIdx = 0;
   video_header->codec = kVideoCodecVP9;
 
-  video_header->frame_type =
-      p_bit ? VideoFrameType::kVideoFrameDelta : VideoFrameType::kVideoFrameKey;
-
   auto& vp9_header =
       video_header->video_type_header.emplace<RTPVideoHeaderVP9>();
   vp9_header.InitRTPVideoHeaderVP9();
@@ -211,6 +208,9 @@ int VideoRtpDepacketizerVp9::ParseRtpPayload(
       video_header->height = vp9_header.height[0];
     }
   }
+  video_header->frame_type = p_bit || vp9_header.inter_layer_predicted
+                                 ? VideoFrameType::kVideoFrameDelta
+                                 : VideoFrameType::kVideoFrameKey;
   video_header->is_first_packet_in_frame = b_bit;
   video_header->is_last_packet_in_frame = e_bit;
 

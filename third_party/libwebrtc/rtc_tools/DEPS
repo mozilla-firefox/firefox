@@ -32,6 +32,7 @@ specific_include_rules = {
   ],
   ".*video_replay\.cc": [
     "+modules/video_coding/utility/ivf_file_writer.h",
+    "+absl/strings/str_split.h",
   ],
   ".*video_encoder\.cc": [
     "+modules/video_coding/codecs/av1/av1_svc_config.h",

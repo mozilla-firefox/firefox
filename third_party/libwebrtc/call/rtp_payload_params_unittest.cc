@@ -360,6 +360,30 @@ TEST(RtpPayloadParamsTest, Tl0PicIdxUpdatedForVp9) {
   EXPECT_EQ(kInitialTl0PicIdx1 + 1, params.state().tl0_pic_idx);
 }
 
+TEST(RtpPayloadParamsTest, GenerateFrameIdWhenExternalFrameIdsAreNotProvided) {
+  RtpPayloadState state;
+  state.frame_id = 123;
+
+  EncodedImage encoded_image;
+  encoded_image._frameType = VideoFrameType::kVideoFrameKey;
+  CodecSpecificInfo codec_info;
+  codec_info.codecType = kVideoCodecGeneric;
+
+  RtpPayloadParams params(kSsrc1, &state, FieldTrialBasedConfig());
+  RTPVideoHeader header =
+      params.GetRtpVideoHeader(encoded_image, &codec_info, absl::nullopt);
+
+  EXPECT_THAT(header.codec, Eq(kVideoCodecGeneric));
+
+  ASSERT_TRUE(header.generic);
+  EXPECT_THAT(header.generic->frame_id, Eq(123));
+
+  encoded_image._frameType = VideoFrameType::kVideoFrameDelta;
+  header = params.GetRtpVideoHeader(encoded_image, &codec_info, absl::nullopt);
+  ASSERT_TRUE(header.generic);
+  EXPECT_THAT(header.generic->frame_id, Eq(124));
+}
+
 TEST(RtpPayloadParamsTest, PictureIdForOldGenericFormat) {
   test::ScopedKeyValueConfig field_trials("WebRTC-GenericPictureId/Enabled/");
   RtpPayloadState state{};

@@ -72,11 +72,11 @@ void FuzzOneInput(const uint8_t* data, size_t size) {
         int32_t offset;
         packet.GetExtension<TransmissionOffset>(&offset);
         break;
-      case kRtpExtensionAudioLevel:
-        bool voice_activity;
-        uint8_t audio_level;
-        packet.GetExtension<AudioLevelExtension>(&voice_activity, &audio_level);
+      case kRtpExtensionAudioLevel: {
+        AudioLevel audio_level;
+        packet.GetExtension<AudioLevelExtension>(&audio_level);
         break;
+      }
 #if !defined(WEBRTC_MOZILLA_BUILD)
       case kRtpExtensionCsrcAudioLevel: {
         std::vector<uint8_t> audio_levels;

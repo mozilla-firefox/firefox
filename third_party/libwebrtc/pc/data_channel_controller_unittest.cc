@@ -41,6 +41,15 @@ class MockDataChannelTransport : public DataChannelTransportInterface {
   MOCK_METHOD(RTCError, CloseChannel, (int channel_id), (override));
   MOCK_METHOD(void, SetDataSink, (DataChannelSink * sink), (override));
   MOCK_METHOD(bool, IsReadyToSend, (), (const, override));
+  MOCK_METHOD(size_t, buffered_amount, (int channel_id), (const, override));
+  MOCK_METHOD(size_t,
+              buffered_amount_low_threshold,
+              (int channel_id),
+              (const, override));
+  MOCK_METHOD(void,
+              SetBufferedAmountLowThreshold,
+              (int channel_id, size_t bytes),
+              (override));
 };
 
 // Convenience class for tests to ensure that shutdown methods for DCC
@@ -165,6 +174,20 @@ TEST_F(DataChannelControllerTest, MaxChannels) {
       EXPECT_TRUE(ret.ok());
     }
   }
+}
+
+TEST_F(DataChannelControllerTest, BufferedAmountIncludesFromTransport) {
+  NiceMock<MockDataChannelTransport> transport;
+  EXPECT_CALL(transport, buffered_amount(0)).WillOnce(Return(4711));
+  ON_CALL(*pc_, GetSctpSslRole_n).WillByDefault([&]() {
+    return rtc::SSL_CLIENT;
+  });
+
+  DataChannelControllerForTest dcc(pc_.get(), &transport);
+  auto dc = dcc.InternalCreateDataChannelWithProxy(
+                   "label", InternalDataChannelInit(DataChannelInit()))
+                .MoveValue();
+  EXPECT_EQ(dc->buffered_amount(), 4711u);
 }
 
 // Test that while a data channel is in the `kClosing` state, its StreamId does

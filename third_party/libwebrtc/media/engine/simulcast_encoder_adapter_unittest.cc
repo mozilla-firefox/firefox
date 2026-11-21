@@ -171,8 +171,8 @@ class MockVideoEncoderFactory : public VideoEncoderFactory {
  public:
   std::vector<SdpVideoFormat> GetSupportedFormats() const override;
 
-  std::unique_ptr<VideoEncoder> CreateVideoEncoder(
-      const SdpVideoFormat& format) override;
+  std::unique_ptr<VideoEncoder> Create(const Environment& env,
+                                       const SdpVideoFormat& format) override;
 
   const std::vector<MockVideoEncoder*>& encoders() const;
   void SetEncoderNames(const std::vector<const char*>& encoder_names);
@@ -359,7 +359,8 @@ std::vector<SdpVideoFormat> MockVideoEncoderFactory::GetSupportedFormats()
   return {SdpVideoFormat::VP8()};
 }
 
-std::unique_ptr<VideoEncoder> MockVideoEncoderFactory::CreateVideoEncoder(
+std::unique_ptr<VideoEncoder> MockVideoEncoderFactory::Create(
+    const Environment& env,
     const SdpVideoFormat& format) {
   if (create_video_encoder_return_nullptr_) {
     return nullptr;

@@ -15,6 +15,7 @@
 #include <memory>
 
 #include "absl/types/optional.h"
+#include "api/environment/environment.h"
 #include "api/field_trials_view.h"
 #include "api/sequence_checker.h"
 #include "api/task_queue/task_queue_base.h"
@@ -73,7 +74,8 @@ class OveruseFrameDetectorObserverInterface {
 // check for overuse.
 class OveruseFrameDetector {
  public:
-  explicit OveruseFrameDetector(CpuOveruseMetricsObserver* metrics_observer);
+  OveruseFrameDetector(const Environment& env,
+                       CpuOveruseMetricsObserver* metrics_observer);
   virtual ~OveruseFrameDetector();
 
   OveruseFrameDetector(const OveruseFrameDetector&) = delete;
@@ -144,8 +146,10 @@ class OveruseFrameDetector {
   void ResetAll(int num_pixels);
 
   static std::unique_ptr<ProcessingUsage> CreateProcessingUsage(
+      const FieldTrialsView& field_trials,
       const CpuOveruseOptions& options);
 
+  const Environment env_;
   RTC_NO_UNIQUE_ADDRESS SequenceChecker task_checker_;
   // Owned by the task queue from where StartCheckForOveruse is called.
   RepeatingTaskHandle check_overuse_task_ RTC_GUARDED_BY(task_checker_);

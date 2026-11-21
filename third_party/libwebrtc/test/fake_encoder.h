@@ -18,9 +18,10 @@
 #include <vector>
 
 #include "absl/strings/string_view.h"
+#include "absl/types/optional.h"
+#include "api/environment/environment.h"
 #include "api/fec_controller_override.h"
 #include "api/sequence_checker.h"
-#include "api/task_queue/task_queue_factory.h"
 #include "api/video/encoded_image.h"
 #include "api/video/video_bitrate_allocation.h"
 #include "api/video/video_frame.h"
@@ -36,6 +37,9 @@ namespace test {
 
 class FakeEncoder : public VideoEncoder {
  public:
+  explicit FakeEncoder(const Environment& env_);
+  // TODO: bugs.webrtc.org/15860 - Delete constructor taking just `Clock` when
+  // users are migrated to pass full `Environment`
   explicit FakeEncoder(Clock* clock);
   virtual ~FakeEncoder() = default;
 
@@ -82,6 +86,8 @@ class FakeEncoder : public VideoEncoder {
     std::vector<SpatialLayer> layers;
   };
 
+  FakeEncoder(absl::optional<Environment> env, Clock* clock);
+
   FrameInfo NextFrame(const std::vector<VideoFrameType>* frame_types,
                       bool keyframe,
                       uint8_t num_simulcast_streams,
@@ -99,6 +105,9 @@ class FakeEncoder : public VideoEncoder {
   void SetRatesLocked(const RateControlParameters& parameters)
       RTC_EXCLUSIVE_LOCKS_REQUIRED(mutex_);
 
+  // TODO: bugs.webrtc.org/15860 - Remove constructor that takes just the clock
+  // and make env_ non-optional.
+  const absl::optional<Environment> env_;
   FrameInfo last_frame_info_ RTC_GUARDED_BY(mutex_);
   Clock* const clock_;
 
@@ -121,7 +130,8 @@ class FakeEncoder : public VideoEncoder {
 
 class FakeH264Encoder : public FakeEncoder {
  public:
-  explicit FakeH264Encoder(Clock* clock);
+  explicit FakeH264Encoder(const Environment& env);
+  [[deprecated]] explicit FakeH264Encoder(Clock* clock);
   virtual ~FakeH264Encoder() = default;
 
  private:
@@ -135,7 +145,7 @@ class FakeH264Encoder : public FakeEncoder {
 
 class DelayedEncoder : public test::FakeEncoder {
  public:
-  DelayedEncoder(Clock* clock, int delay_ms);
+  DelayedEncoder(const Environment& env, int delay_ms);
   virtual ~DelayedEncoder() = default;
 
   void SetDelay(int delay_ms);
@@ -153,8 +163,7 @@ class DelayedEncoder : public test::FakeEncoder {
 // as it is called from the task queue in VideoStreamEncoder.
 class MultithreadedFakeH264Encoder : public test::FakeH264Encoder {
  public:
-  MultithreadedFakeH264Encoder(Clock* clock,
-                               TaskQueueFactory* task_queue_factory);
+  explicit MultithreadedFakeH264Encoder(const Environment& env);
   virtual ~MultithreadedFakeH264Encoder() = default;
 
   int32_t InitEncode(const VideoCodec* config,
@@ -169,7 +178,6 @@ class MultithreadedFakeH264Encoder : public test::FakeH264Encoder {
   int32_t Release() override;
 
  protected:
-  TaskQueueFactory* const task_queue_factory_;
   int current_queue_ RTC_GUARDED_BY(sequence_checker_);
   std::unique_ptr<TaskQueueBase, TaskQueueDeleter> queue1_
       RTC_GUARDED_BY(sequence_checker_);

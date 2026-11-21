@@ -35,6 +35,7 @@ DONT_AUTOROLL_THESE = [
     # Disable the roll of 'android_ndk' as it won't appear in chromium DEPS.
     'src/third_party/android_ndk',
     'src/third_party/mockito/src',
+    'src/third_party/protobuf-javascript',
 ]
 
 # These dependencies are missing in chromium/src/DEPS, either unused or already

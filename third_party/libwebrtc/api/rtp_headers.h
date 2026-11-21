@@ -77,6 +77,29 @@ struct AbsoluteCaptureTime {
   absl::optional<int64_t> estimated_capture_clock_offset;
 };
 
+// The audio level extension is used to indicate the voice activity and the
+// audio level of the payload in the RTP stream. See:
+// https://tools.ietf.org/html/rfc6464#section-3.
+class AudioLevel {
+ public:
+  AudioLevel();
+  AudioLevel(bool voice_activity, int audio_level);
+  AudioLevel(const AudioLevel& other) = default;
+  AudioLevel& operator=(const AudioLevel& other) = default;
+
+  // Flag indicating whether the encoder believes the audio packet contains
+  // voice activity.
+  bool voice_activity() const { return voice_activity_; }
+
+  // Audio level in -dBov. Values range from 0 to 127, representing 0 to -127
+  // dBov. 127 represents digital silence.
+  int level() const { return audio_level_; }
+
+ private:
+  bool voice_activity_;
+  int audio_level_;
+};
+
 inline bool operator==(const AbsoluteCaptureTime& lhs,
                        const AbsoluteCaptureTime& rhs) {
   return (lhs.absolute_capture_timestamp == rhs.absolute_capture_timestamp) &&
@@ -127,6 +150,12 @@ struct RTPHeaderExtension {
 
   // Audio Level includes both level in dBov and voiced/unvoiced bit. See:
   // https://tools.ietf.org/html/rfc6464#section-3
+  absl::optional<AudioLevel> audio_level() const;
+
+  void set_audio_level(absl::optional<AudioLevel> audio_level);
+
+  // Direct use of the following members is discouraged and will be removed
+  // once downstream projects have been updated.
   bool hasAudioLevel;
   bool voiceActivity;
   uint8_t audioLevel;

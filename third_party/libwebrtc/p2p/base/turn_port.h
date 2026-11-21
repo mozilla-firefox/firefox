@@ -252,12 +252,7 @@ class TurnPort : public Port {
   bool CreateTurnClientSocket();
 
   void set_nonce(absl::string_view nonce) { nonce_ = std::string(nonce); }
-  void set_realm(absl::string_view realm) {
-    if (realm != realm_) {
-      realm_ = std::string(realm);
-      UpdateHash();
-    }
-  }
+  void set_realm(absl::string_view realm);
 
   void OnRefreshError();
   void HandleRefreshError();

@@ -84,6 +84,19 @@ class MockRtpRtcpInterface : public RtpRtcpInterface {
               (uint32_t, int64_t, int, bool),
               (override));
   MOCK_METHOD(bool,
+              CanSendPacket,
+              (const RtpPacketToSend& packet),
+              (const override));
+  MOCK_METHOD(void,
+              AssignSequenceNumber,
+              (RtpPacketToSend & packet),
+              (override));
+  MOCK_METHOD(void,
+              SendPacket,
+              (std::unique_ptr<RtpPacketToSend> packet,
+               const PacedPacketInfo& pacing_info),
+              (override));
+  MOCK_METHOD(bool,
               TrySendPacket,
               (std::unique_ptr<RtpPacketToSend> packet,
                const PacedPacketInfo& pacing_info),

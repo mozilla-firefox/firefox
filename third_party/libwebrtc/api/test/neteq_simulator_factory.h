@@ -11,6 +11,7 @@
 #ifndef API_TEST_NETEQ_SIMULATOR_FACTORY_H_
 #define API_TEST_NETEQ_SIMULATOR_FACTORY_H_
 
+#include <cstdint>
 #include <memory>
 #include <string>
 
@@ -50,6 +51,8 @@ class NetEqSimulatorFactory {
     absl::optional<std::string> text_log_filename;
     // A custom NetEqFactory can be used.
     NetEqFactory* neteq_factory = nullptr;
+    // The SSRC to use for the simulation.
+    absl::optional<uint32_t> ssrc_filter;
   };
   std::unique_ptr<NetEqSimulator> CreateSimulatorFromFile(
       absl::string_view event_log_filename,

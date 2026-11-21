@@ -20,6 +20,7 @@
 #include <utility>
 #include <vector>
 
+#include "absl/strings/match.h"
 #include "absl/strings/str_replace.h"
 #include "absl/strings/string_view.h"
 #include "absl/types/optional.h"
@@ -180,7 +181,12 @@ SdpVideoFormat CreateSdpVideoFormat(
   } else if (config.codec_settings.codecType == kVideoCodecVP9) {
     return SdpVideoFormat::VP9Profile0();
   } else if (config.codec_settings.codecType == kVideoCodecAV1) {
-    return SdpVideoFormat::AV1Profile0();
+    // Extra condition to not fallback to the default creation of
+    // SdpVideoFormat. This is needed for backwards compatibility in downstream
+    // projects that still use the preliminary codec name AV1X.
+    if (absl::EqualsIgnoreCase(config.codec_name, cricket::kAv1CodecName)) {
+      return SdpVideoFormat::AV1Profile0();
+    }
   }
 
   return SdpVideoFormat(config.codec_name);

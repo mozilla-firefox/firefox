@@ -19,6 +19,7 @@
 #include "absl/strings/string_view.h"
 #include "absl/types/optional.h"
 #include "api/array_view.h"
+#include "api/data_channel_interface.h"
 #include "api/environment/environment.h"
 #include "media/base/media_channel.h"
 #include "net/dcsctp/public/dcsctp_socket_factory.h"
@@ -192,6 +193,10 @@ bool DcSctpTransport::Start(int local_sctp_port,
     // Don't close the connection automatically on too many retransmissions.
     options.max_retransmissions = absl::nullopt;
     options.max_init_retransmits = absl::nullopt;
+    options.per_stream_send_queue_limit =
+        DataChannelInterface::MaxSendQueueSize();
+    // This is just set to avoid denial-of-service. Practically unlimited.
+    options.max_send_buffer_size = std::numeric_limits<size_t>::max();
 
     std::unique_ptr<dcsctp::PacketObserver> packet_observer;
     if (RTC_LOG_CHECK_LEVEL(LS_VERBOSE)) {
@@ -375,6 +380,24 @@ absl::optional<int> DcSctpTransport::max_inbound_streams() const {
   return socket_->options().announced_maximum_incoming_streams;
 }
 
+size_t DcSctpTransport::buffered_amount(int sid) const {
+  if (!socket_)
+    return 0;
+  return socket_->buffered_amount(dcsctp::StreamID(sid));
+}
+
+size_t DcSctpTransport::buffered_amount_low_threshold(int sid) const {
+  if (!socket_)
+    return 0;
+  return socket_->buffered_amount_low_threshold(dcsctp::StreamID(sid));
+}
+
+void DcSctpTransport::SetBufferedAmountLowThreshold(int sid, size_t bytes) {
+  if (!socket_)
+    return;
+  socket_->SetBufferedAmountLowThreshold(dcsctp::StreamID(sid), bytes);
+}
+
 void DcSctpTransport::set_debug_name_for_testing(const char* debug_name) {
   debug_name_ = debug_name;
 }
@@ -437,6 +460,13 @@ void DcSctpTransport::OnTotalBufferedAmountLow() {
     if (data_channel_sink_) {
       data_channel_sink_->OnReadyToSend();
     }
+  }
+}
+
+void DcSctpTransport::OnBufferedAmountLow(dcsctp::StreamID stream_id) {
+  RTC_DCHECK_RUN_ON(network_thread_);
+  if (data_channel_sink_) {
+    data_channel_sink_->OnBufferedAmountLow(*stream_id);
   }
 }
 

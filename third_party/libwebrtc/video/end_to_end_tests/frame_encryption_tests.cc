@@ -31,7 +31,10 @@ class DecryptedFrameObserver : public test::EndToEndTest,
  public:
   DecryptedFrameObserver()
       : EndToEndTest(test::VideoTestConstants::kDefaultTimeout),
-        encoder_factory_([] { return VP8Encoder::Create(); }) {}
+        encoder_factory_(
+            [](const Environment& env, const SdpVideoFormat& format) {
+              return CreateVp8Encoder(env);
+            }) {}
 
  private:
   void ModifyVideoConfigs(

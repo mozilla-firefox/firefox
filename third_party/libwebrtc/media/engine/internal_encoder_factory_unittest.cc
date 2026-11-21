@@ -10,6 +10,7 @@
 
 #include "media/engine/internal_encoder_factory.h"
 
+#include "api/environment/environment_factory.h"
 #include "api/video_codecs/sdp_video_format.h"
 #include "api/video_codecs/video_encoder.h"
 #include "api/video_codecs/vp9_profile.h"
@@ -48,7 +49,7 @@ MATCHER_P(Support, expected, "") {
 TEST(InternalEncoderFactoryTest, Vp8) {
   InternalEncoderFactory factory;
   std::unique_ptr<VideoEncoder> encoder =
-      factory.CreateVideoEncoder(SdpVideoFormat::VP8());
+      factory.Create(CreateEnvironment(), SdpVideoFormat::VP8());
   EXPECT_TRUE(encoder);
 }
 
@@ -56,7 +57,7 @@ TEST(InternalEncoderFactoryTest, Vp9Profile0) {
   InternalEncoderFactory factory;
   if (kVp9Enabled) {
     std::unique_ptr<VideoEncoder> encoder =
-        factory.CreateVideoEncoder(SdpVideoFormat::VP9Profile0());
+        factory.Create(CreateEnvironment(), SdpVideoFormat::VP9Profile0());
     EXPECT_TRUE(encoder);
   } else {
     EXPECT_THAT(
@@ -69,7 +70,7 @@ TEST(InternalEncoderFactoryTest, H264) {
   InternalEncoderFactory factory;
   if (kH264Enabled) {
     std::unique_ptr<VideoEncoder> encoder =
-        factory.CreateVideoEncoder(SdpVideoFormat::H264());
+        factory.Create(CreateEnvironment(), SdpVideoFormat::H264());
     EXPECT_TRUE(encoder);
   } else {
     EXPECT_THAT(
@@ -81,8 +82,8 @@ TEST(InternalEncoderFactoryTest, H264) {
 // At current stage H.265 is not supported by internal encoder factory.
 TEST(InternalEncoderFactoryTest, H265IsNotEnabled) {
   InternalEncoderFactory factory;
-  std::unique_ptr<VideoEncoder> encoder =
-      factory.CreateVideoEncoder(SdpVideoFormat(cricket::kH265CodecName));
+  std::unique_ptr<VideoEncoder> encoder = factory.Create(
+      CreateEnvironment(), SdpVideoFormat(cricket::kH265CodecName));
   EXPECT_EQ(static_cast<bool>(encoder), kH265Enabled);
   EXPECT_THAT(
       factory.GetSupportedFormats(),
@@ -113,7 +114,8 @@ TEST(InternalEncoderFactoryTest, Av1) {
   InternalEncoderFactory factory;
   EXPECT_THAT(factory.GetSupportedFormats(),
               Contains(Field(&SdpVideoFormat::name, cricket::kAv1CodecName)));
-  EXPECT_TRUE(factory.CreateVideoEncoder(SdpVideoFormat::AV1Profile0()));
+  EXPECT_TRUE(
+      factory.Create(CreateEnvironment(), SdpVideoFormat::AV1Profile0()));
 }
 
 TEST(InternalEncoderFactoryTest, QueryCodecSupportNoScalabilityModeAv1) {

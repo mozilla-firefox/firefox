@@ -14,8 +14,8 @@
 
 #include <string>
 
+#include "api/field_trials_view.h"
 #include "rtc_base/logging.h"
-#include "system_wrappers/include/field_trial.h"
 
 namespace webrtc {
 namespace {
@@ -24,11 +24,12 @@ constexpr int kMinSetting = 0;
 constexpr int kMaxSetting = 5;
 }  // namespace
 
-absl::optional<int> NormalizeSimulcastSizeExperiment::GetBase2Exponent() {
-  if (!webrtc::field_trial::IsEnabled(kFieldTrial))
+absl::optional<int> NormalizeSimulcastSizeExperiment::GetBase2Exponent(
+    const FieldTrialsView& field_trials) {
+  if (!field_trials.IsEnabled(kFieldTrial))
     return absl::nullopt;
 
-  const std::string group = webrtc::field_trial::FindFullName(kFieldTrial);
+  const std::string group = field_trials.Lookup(kFieldTrial);
   if (group.empty())
     return absl::nullopt;
 

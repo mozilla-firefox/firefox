@@ -81,13 +81,13 @@ class ReassemblyQueueTest : public testing::Test {
 };
 
 TEST_F(ReassemblyQueueTest, EmptyQueue) {
-  ReassemblyQueue reasm("log: ", TSN(10), kBufferSize);
+  ReassemblyQueue reasm("log: ", kBufferSize);
   EXPECT_FALSE(reasm.HasMessages());
   EXPECT_EQ(reasm.queued_bytes(), 0u);
 }
 
 TEST_F(ReassemblyQueueTest, SingleUnorderedChunkMessage) {
-  ReassemblyQueue reasm("log: ", TSN(10), kBufferSize);
+  ReassemblyQueue reasm("log: ", kBufferSize);
   reasm.Add(TSN(10), gen_.Unordered({1, 2, 3, 4}, "BE"));
   EXPECT_TRUE(reasm.HasMessages());
   EXPECT_THAT(reasm.FlushMessages(),
@@ -99,7 +99,7 @@ TEST_F(ReassemblyQueueTest, LargeUnorderedChunkAllPermutations) {
   std::vector<uint32_t> tsns = {10, 11, 12, 13};
   rtc::ArrayView<const uint8_t> payload(kLongPayload);
   do {
-    ReassemblyQueue reasm("log: ", TSN(10), kBufferSize);
+    ReassemblyQueue reasm("log: ", kBufferSize);
 
     for (size_t i = 0; i < tsns.size(); i++) {
       auto span = payload.subview((tsns[i] - 10) * 4, 4);
@@ -123,7 +123,7 @@ TEST_F(ReassemblyQueueTest, LargeUnorderedChunkAllPermutations) {
 }
 
 TEST_F(ReassemblyQueueTest, SingleOrderedChunkMessage) {
-  ReassemblyQueue reasm("log: ", TSN(10), kBufferSize);
+  ReassemblyQueue reasm("log: ", kBufferSize);
   reasm.Add(TSN(10), gen_.Ordered({1, 2, 3, 4}, "BE"));
   EXPECT_EQ(reasm.queued_bytes(), 0u);
   EXPECT_TRUE(reasm.HasMessages());
@@ -135,7 +135,7 @@ TEST_F(ReassemblyQueueTest, ManySmallOrderedMessages) {
   std::vector<uint32_t> tsns = {10, 11, 12, 13};
   rtc::ArrayView<const uint8_t> payload(kLongPayload);
   do {
-    ReassemblyQueue reasm("log: ", TSN(10), kBufferSize);
+    ReassemblyQueue reasm("log: ", kBufferSize);
     for (size_t i = 0; i < tsns.size(); i++) {
       auto span = payload.subview((tsns[i] - 10) * 4, 4);
       Data::IsBeginning is_beginning(true);
@@ -158,7 +158,7 @@ TEST_F(ReassemblyQueueTest, ManySmallOrderedMessages) {
 }
 
 TEST_F(ReassemblyQueueTest, RetransmissionInLargeOrdered) {
-  ReassemblyQueue reasm("log: ", TSN(10), kBufferSize);
+  ReassemblyQueue reasm("log: ", kBufferSize);
   reasm.Add(TSN(10), gen_.Ordered({1}, "B"));
   reasm.Add(TSN(12), gen_.Ordered({3}));
   reasm.Add(TSN(13), gen_.Ordered({4}));
@@ -183,7 +183,7 @@ TEST_F(ReassemblyQueueTest, RetransmissionInLargeOrdered) {
 }
 
 TEST_F(ReassemblyQueueTest, ForwardTSNRemoveUnordered) {
-  ReassemblyQueue reasm("log: ", TSN(10), kBufferSize);
+  ReassemblyQueue reasm("log: ", kBufferSize);
   reasm.Add(TSN(10), gen_.Unordered({1}, "B"));
   reasm.Add(TSN(12), gen_.Unordered({3}));
   reasm.Add(TSN(13), gen_.Unordered({4}, "E"));
@@ -205,7 +205,7 @@ TEST_F(ReassemblyQueueTest, ForwardTSNRemoveUnordered) {
 }
 
 TEST_F(ReassemblyQueueTest, ForwardTSNRemoveOrdered) {
-  ReassemblyQueue reasm("log: ", TSN(10), kBufferSize);
+  ReassemblyQueue reasm("log: ", kBufferSize);
   reasm.Add(TSN(10), gen_.Ordered({1}, "B"));
   reasm.Add(TSN(12), gen_.Ordered({3}));
   reasm.Add(TSN(13), gen_.Ordered({4}, "E"));
@@ -229,7 +229,7 @@ TEST_F(ReassemblyQueueTest, ForwardTSNRemoveOrdered) {
 }
 
 TEST_F(ReassemblyQueueTest, ForwardTSNRemoveALotOrdered) {
-  ReassemblyQueue reasm("log: ", TSN(10), kBufferSize);
+  ReassemblyQueue reasm("log: ", kBufferSize);
   reasm.Add(TSN(10), gen_.Ordered({1}, "B"));
   reasm.Add(TSN(12), gen_.Ordered({3}));
   reasm.Add(TSN(13), gen_.Ordered({4}, "E"));
@@ -253,7 +253,7 @@ TEST_F(ReassemblyQueueTest, ForwardTSNRemoveALotOrdered) {
 }
 
 TEST_F(ReassemblyQueueTest, NotReadyForHandoverWhenResetStreamIsDeferred) {
-  ReassemblyQueue reasm("log: ", TSN(10), kBufferSize);
+  ReassemblyQueue reasm("log: ", kBufferSize);
   reasm.Add(TSN(10), gen_.Ordered({1, 2, 3, 4}, "BE", {.mid = MID(0)}));
   reasm.Add(TSN(11), gen_.Ordered({1, 2, 3, 4}, "BE", {.mid = MID(1)}));
   EXPECT_THAT(reasm.FlushMessages(), SizeIs(2));
@@ -270,13 +270,13 @@ TEST_F(ReassemblyQueueTest, NotReadyForHandoverWhenResetStreamIsDeferred) {
 }
 
 TEST_F(ReassemblyQueueTest, HandoverInInitialState) {
-  ReassemblyQueue reasm1("log: ", TSN(10), kBufferSize);
+  ReassemblyQueue reasm1("log: ", kBufferSize);
 
   EXPECT_EQ(reasm1.GetHandoverReadiness(), HandoverReadinessStatus());
   DcSctpSocketHandoverState state;
   reasm1.AddHandoverState(state);
   g_handover_state_transformer_for_test(&state);
-  ReassemblyQueue reasm2("log: ", TSN(100), kBufferSize,
+  ReassemblyQueue reasm2("log: ", kBufferSize,
                          /*use_message_interleaving=*/false);
   reasm2.RestoreFromState(state);
 
@@ -285,7 +285,7 @@ TEST_F(ReassemblyQueueTest, HandoverInInitialState) {
 }
 
 TEST_F(ReassemblyQueueTest, HandoverAfterHavingAssembedOneMessage) {
-  ReassemblyQueue reasm1("log: ", TSN(10), kBufferSize);
+  ReassemblyQueue reasm1("log: ", kBufferSize);
   reasm1.Add(TSN(10), gen_.Ordered({1, 2, 3, 4}, "BE"));
   EXPECT_THAT(reasm1.FlushMessages(), SizeIs(1));
 
@@ -293,7 +293,7 @@ TEST_F(ReassemblyQueueTest, HandoverAfterHavingAssembedOneMessage) {
   DcSctpSocketHandoverState state;
   reasm1.AddHandoverState(state);
   g_handover_state_transformer_for_test(&state);
-  ReassemblyQueue reasm2("log: ", TSN(100), kBufferSize,
+  ReassemblyQueue reasm2("log: ", kBufferSize,
                          /*use_message_interleaving=*/false);
   reasm2.RestoreFromState(state);
 
@@ -302,7 +302,7 @@ TEST_F(ReassemblyQueueTest, HandoverAfterHavingAssembedOneMessage) {
 }
 
 TEST_F(ReassemblyQueueTest, SingleUnorderedChunkMessageInRfc8260) {
-  ReassemblyQueue reasm("log: ", TSN(10), kBufferSize,
+  ReassemblyQueue reasm("log: ", kBufferSize,
                         /*use_message_interleaving=*/true);
   reasm.Add(TSN(10), Data(StreamID(1), SSN(0), MID(0), FSN(0), kPPID,
                           {1, 2, 3, 4}, Data::IsBeginning(true),
@@ -314,7 +314,7 @@ TEST_F(ReassemblyQueueTest, SingleUnorderedChunkMessageInRfc8260) {
 }
 
 TEST_F(ReassemblyQueueTest, TwoInterleavedChunks) {
-  ReassemblyQueue reasm("log: ", TSN(10), kBufferSize,
+  ReassemblyQueue reasm("log: ", kBufferSize,
                         /*use_message_interleaving=*/true);
   reasm.Add(TSN(10), Data(StreamID(1), SSN(0), MID(0), FSN(0), kPPID,
                           {1, 2, 3, 4}, Data::IsBeginning(true),
@@ -345,7 +345,7 @@ TEST_F(ReassemblyQueueTest, UnorderedInterleavedMessagesAllPermutations) {
   FSN fsns[] = {FSN(0), FSN(0), FSN(1), FSN(2), FSN(1), FSN(2)};
   rtc::ArrayView<const uint8_t> payload(kSixBytePayload);
   do {
-    ReassemblyQueue reasm("log: ", TSN(10), kBufferSize,
+    ReassemblyQueue reasm("log: ", kBufferSize,
                           /*use_message_interleaving=*/true);
     for (int i : indexes) {
       auto span = payload.subview(*fsns[i] * 2, 2);
@@ -365,7 +365,7 @@ TEST_F(ReassemblyQueueTest, UnorderedInterleavedMessagesAllPermutations) {
 }
 
 TEST_F(ReassemblyQueueTest, IForwardTSNRemoveALotOrdered) {
-  ReassemblyQueue reasm("log: ", TSN(10), kBufferSize,
+  ReassemblyQueue reasm("log: ", kBufferSize,
                         /*use_message_interleaving=*/true);
   reasm.Add(TSN(10), gen_.Ordered({1}, "B"));
   gen_.Ordered({2}, "");

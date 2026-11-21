@@ -20,13 +20,14 @@
 #include <string>
 #include <utility>
 
+#include "api/environment/environment.h"
+#include "api/field_trials_view.h"
 #include "api/video/video_frame.h"
 #include "rtc_base/checks.h"
 #include "rtc_base/logging.h"
 #include "rtc_base/numerics/exp_filter.h"
 #include "rtc_base/time_utils.h"
 #include "rtc_base/trace_event.h"
-#include "system_wrappers/include/field_trial.h"
 
 #if defined(WEBRTC_MAC) && !defined(WEBRTC_IOS)
 #include <mach/mach.h>
@@ -431,7 +432,8 @@ class OverdoseInjector : public OveruseFrameDetector::ProcessingUsage {
 }  // namespace
 
 std::unique_ptr<OveruseFrameDetector::ProcessingUsage>
-OveruseFrameDetector::CreateProcessingUsage(const CpuOveruseOptions& options) {
+OveruseFrameDetector::CreateProcessingUsage(const FieldTrialsView& field_trials,
+                                            const CpuOveruseOptions& options) {
   std::unique_ptr<ProcessingUsage> instance;
   if (options.filter_time_ms > 0) {
     instance = std::make_unique<SendProcessingUsage2>(options);
@@ -439,7 +441,7 @@ OveruseFrameDetector::CreateProcessingUsage(const CpuOveruseOptions& options) {
     instance = std::make_unique<SendProcessingUsage1>(options);
   }
   std::string toggling_interval =
-      field_trial::FindFullName("WebRTC-ForceSimulatedOveruseIntervalMs");
+      field_trials.Lookup("WebRTC-ForceSimulatedOveruseIntervalMs");
   if (!toggling_interval.empty()) {
     int normal_period_ms = 0;
     int overuse_period_ms = 0;
@@ -466,8 +468,10 @@ OveruseFrameDetector::CreateProcessingUsage(const CpuOveruseOptions& options) {
 }
 
 OveruseFrameDetector::OveruseFrameDetector(
+    const Environment& env,
     CpuOveruseMetricsObserver* metrics_observer)
-    : metrics_observer_(metrics_observer),
+    : env_(env),
+      metrics_observer_(metrics_observer),
       num_process_times_(0),
       // TODO(bugs.webrtc.org/9078): Use absl::optional
       last_capture_time_us_(-1),
@@ -481,7 +485,7 @@ OveruseFrameDetector::OveruseFrameDetector(
       current_rampup_delay_ms_(kStandardRampUpDelayMs) {
   task_checker_.Detach();
   ParseFieldTrial({&filter_time_constant_},
-                  field_trial::FindFullName("WebRTC-CpuLoadEstimator"));
+                  env_.field_trials().Lookup("WebRTC-CpuLoadEstimator"));
 }
 
 OveruseFrameDetector::~OveruseFrameDetector() {}
@@ -644,7 +648,7 @@ void OveruseFrameDetector::SetOptions(const CpuOveruseOptions& options) {
   }
   // Force reset with next frame.
   num_pixels_ = 0;
-  usage_ = CreateProcessingUsage(options);
+  usage_ = CreateProcessingUsage(env_.field_trials(), options);
 }
 
 bool OveruseFrameDetector::IsOverusing(int usage_percent) {

@@ -23,8 +23,10 @@
 #include "test/gmock.h"
 #include "test/gtest.h"
 
+using ::testing::Gt;
 using ::testing::IsEmpty;
 using ::testing::NiceMock;
+using ::testing::SizeIs;
 
 namespace webrtc {
 namespace test {
@@ -323,6 +325,31 @@ TEST(ProbeControllerTest, TestExponentialProbing) {
       fixture.CurrentTime());
   EXPECT_EQ(probes.size(), 1u);
   EXPECT_EQ(probes[0].target_data_rate.bps(), 2 * 1800);
+}
+
+TEST(ProbeControllerTest, ExponentialProbingStopIfMaxAllocatedBitrateLow) {
+  ProbeControllerFixture fixture(
+      "WebRTC-Bwe-ProbingConfiguration/abort_further:true/");
+  std::unique_ptr<ProbeController> probe_controller =
+      fixture.CreateController();
+  ASSERT_THAT(
+      probe_controller->OnNetworkAvailability({.network_available = true}),
+      IsEmpty());
+  auto probes = probe_controller->SetBitrates(
+      kMinBitrate, kStartBitrate, kMaxBitrate, fixture.CurrentTime());
+  ASSERT_THAT(probes, SizeIs(Gt(0)));
+
+  // Repeated probe normally is sent when estimated bitrate climbs above
+  // 0.7 * 6 * kStartBitrate = 1260. But since allocated bitrate i slow, expect
+  // exponential probing to stop.
+  probes = probe_controller->OnMaxTotalAllocatedBitrate(kStartBitrate,
+                                                        fixture.CurrentTime());
+  EXPECT_THAT(probes, IsEmpty());
+
+  probes = probe_controller->SetEstimatedBitrate(
+      DataRate::BitsPerSec(1800), BandwidthLimitedCause::kDelayBasedLimited,
+      fixture.CurrentTime());
+  EXPECT_THAT(probes, IsEmpty());
 }
 
 TEST(ProbeControllerTest, TestExponentialProbingTimeout) {

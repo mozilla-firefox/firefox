@@ -12,16 +12,28 @@
 #import <Foundation/Foundation.h>
 
 #import "RTCMacros.h"
+#import "RTCNativeVideoEncoder.h"
+#import "RTCNativeVideoEncoderBuilder+Native.h"
 #import "RTCVideoEncoderVP8.h"
-#import "RTCWrappedNativeVideoEncoder.h"
 
 #include "modules/video_coding/codecs/vp8/include/vp8.h"
 
-@implementation RTC_OBJC_TYPE (RTCVideoEncoderVP8)
-
-+ (id<RTC_OBJC_TYPE(RTCVideoEncoder)>)vp8Encoder {
-  return [[RTC_OBJC_TYPE(RTCWrappedNativeVideoEncoder) alloc]
-      initWithNativeEncoder:std::unique_ptr<webrtc::VideoEncoder>(webrtc::VP8Encoder::Create())];
-}
-
+@interface RTC_OBJC_TYPE (RTCVideoEncoderVP8Builder)
+    : RTC_OBJC_TYPE(RTCNativeVideoEncoder) <RTC_OBJC_TYPE (RTCNativeVideoEncoderBuilder)>
 @end
+
+    @implementation RTC_OBJC_TYPE (RTCVideoEncoderVP8Builder)
+
+    - (std::unique_ptr<webrtc::VideoEncoder>)build:(const webrtc::Environment&)env {
+      return webrtc::CreateVp8Encoder(env);
+    }
+
+    @end
+
+    @implementation RTC_OBJC_TYPE (RTCVideoEncoderVP8)
+
+    + (id<RTC_OBJC_TYPE(RTCVideoEncoder)>)vp8Encoder {
+      return [[RTC_OBJC_TYPE(RTCVideoEncoderVP8Builder) alloc] init];
+    }
+
+    @end

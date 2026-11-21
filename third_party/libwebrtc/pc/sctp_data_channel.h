@@ -55,6 +55,9 @@ class SctpDataChannelControllerInterface {
   // Notifies the controller of state changes.
   virtual void OnChannelStateChanged(SctpDataChannel* data_channel,
                                      DataChannelInterface::DataState state) = 0;
+  virtual size_t buffered_amount(StreamId sid) const = 0;
+  virtual size_t buffered_amount_low_threshold(StreamId sid) const = 0;
+  virtual void SetBufferedAmountLowThreshold(StreamId sid, size_t bytes) = 0;
 
  protected:
   virtual ~SctpDataChannelControllerInterface() {}
@@ -207,6 +210,9 @@ class SctpDataChannel : public DataChannelInterface {
   // This method makes sure the DataChannel is disconnected and changes state
   // to kClosed.
   void OnTransportChannelClosed(RTCError error);
+  // Called when the amount of data buffered to be sent falls to or below the
+  // threshold set when calling `SetBufferedAmountLowThreshold`.
+  void OnBufferedAmountLow();
 
   DataChannelStats GetStats() const;
 
@@ -251,19 +257,16 @@ class SctpDataChannel : public DataChannelInterface {
 
   void DeliverQueuedReceivedData() RTC_RUN_ON(network_thread_);
 
-  void SendQueuedDataMessages() RTC_RUN_ON(network_thread_);
   RTCError SendDataMessage(const DataBuffer& buffer, bool queue_if_blocked)
       RTC_RUN_ON(network_thread_);
-  bool QueueSendDataMessage(const DataBuffer& buffer)
-      RTC_RUN_ON(network_thread_);
 
-  void SendQueuedControlMessages() RTC_RUN_ON(network_thread_);
   bool SendControlMessage(const rtc::CopyOnWriteBuffer& buffer)
       RTC_RUN_ON(network_thread_);
 
   bool connected_to_transport() const RTC_RUN_ON(network_thread_) {
     return network_safety_->alive();
   }
+  void MaybeSendOnBufferedAmountChanged() RTC_RUN_ON(network_thread_);
 
   rtc::Thread* const signaling_thread_;
   rtc::Thread* const network_thread_;
@@ -277,6 +280,8 @@ class SctpDataChannel : public DataChannelInterface {
   const absl::optional<Priority> priority_;
   const bool negotiated_;
   const bool ordered_;
+  // See the body of `MaybeSendOnBufferedAmountChanged`.
+  size_t expected_buffer_amount_ = 0;
 
   DataChannelObserver* observer_ RTC_GUARDED_BY(network_thread_) = nullptr;
   std::unique_ptr<ObserverAdapter> observer_adapter_;
@@ -292,11 +297,7 @@ class SctpDataChannel : public DataChannelInterface {
       kHandshakeInit;
   // Did we already start the graceful SCTP closing procedure?
   bool started_closing_procedure_ RTC_GUARDED_BY(network_thread_) = false;
-  // Control messages that always have to get sent out before any queued
-  // data.
-  PacketQueue queued_control_data_ RTC_GUARDED_BY(network_thread_);
   PacketQueue queued_received_data_ RTC_GUARDED_BY(network_thread_);
-  PacketQueue queued_send_data_ RTC_GUARDED_BY(network_thread_);
   rtc::scoped_refptr<PendingTaskSafetyFlag> network_safety_ =
       PendingTaskSafetyFlag::CreateDetachedInactive();
 };

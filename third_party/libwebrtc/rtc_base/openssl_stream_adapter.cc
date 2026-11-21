@@ -290,6 +290,10 @@ OpenSSLStreamAdapter::OpenSSLStreamAdapter(
       ssl_write_needs_read_(false),
       ssl_(nullptr),
       ssl_ctx_(nullptr),
+#ifdef OPENSSL_IS_BORINGSSL
+      permute_extension_(
+          webrtc::field_trial::IsEnabled("WebRTC-PermuteTlsClientHello")),
+#endif
       ssl_mode_(SSL_MODE_TLS),
       ssl_max_version_(SSL_PROTOCOL_TLS_12) {
   stream_->SignalEvent.connect(this, &OpenSSLStreamAdapter::OnEvent);
@@ -1069,8 +1073,7 @@ SSL_CTX* OpenSSLStreamAdapter::SetupSSLContext() {
   }
 
 #ifdef OPENSSL_IS_BORINGSSL
-  SSL_CTX_set_permute_extensions(
-      ctx, webrtc::field_trial::IsEnabled("WebRTC-PermuteTlsClientHello"));
+  SSL_CTX_set_permute_extensions(ctx, permute_extension_);
 #endif
 
   return ctx;

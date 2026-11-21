@@ -21,7 +21,6 @@
 #include "modules/video_coding/timing/inter_frame_delay_variation_calculator.h"
 #include "modules/video_coding/timing/jitter_estimator.h"
 #include "modules/video_coding/timing/timing.h"
-#include "rtc_base/experiments/rtt_mult_experiment.h"
 #include "system_wrappers/include/clock.h"
 #include "video/decode_synchronizer.h"
 #include "video/video_receive_stream_timeout_tracker.h"
@@ -106,8 +105,6 @@ class VideoStreamBufferController {
 
   RTC_NO_UNIQUE_ADDRESS SequenceChecker worker_sequence_checker_;
   const FieldTrialsView& field_trials_;
-  const absl::optional<RttMultExperiment::Settings> rtt_mult_settings_ =
-      RttMultExperiment::GetRttMultValue();
   Clock* const clock_;
   VideoStreamBufferControllerStatsObserver* const stats_proxy_;
   FrameSchedulingReceiver* const receiver_;

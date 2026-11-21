@@ -13,127 +13,129 @@
 #include "absl/types/optional.h"
 #include "api/units/data_rate.h"
 #include "api/video/video_codec_type.h"
-#include "test/field_trial.h"
+#include "test/explicit_key_value_config.h"
 #include "test/gtest.h"
 
 namespace webrtc {
 namespace {
 
+using test::ExplicitKeyValueConfig;
+
 TEST(GetExperimentalMinVideoBitrateTest,
      NulloptForAllCodecsIfFieldTrialUndefined) {
-  test::ScopedFieldTrials field_trials("");
+  ExplicitKeyValueConfig field_trials("");
 
-  EXPECT_EQ(GetExperimentalMinVideoBitrate(VideoCodecType::kVideoCodecGeneric),
+  EXPECT_EQ(GetExperimentalMinVideoBitrate(field_trials, kVideoCodecGeneric),
             absl::nullopt);
-  EXPECT_EQ(GetExperimentalMinVideoBitrate(VideoCodecType::kVideoCodecVP8),
+  EXPECT_EQ(GetExperimentalMinVideoBitrate(field_trials, kVideoCodecVP8),
             absl::nullopt);
-  EXPECT_EQ(GetExperimentalMinVideoBitrate(VideoCodecType::kVideoCodecVP9),
+  EXPECT_EQ(GetExperimentalMinVideoBitrate(field_trials, kVideoCodecVP9),
             absl::nullopt);
-  EXPECT_EQ(GetExperimentalMinVideoBitrate(VideoCodecType::kVideoCodecH264),
+  EXPECT_EQ(GetExperimentalMinVideoBitrate(field_trials, kVideoCodecH264),
             absl::nullopt);
 }
 
 TEST(GetExperimentalMinVideoBitrateTest,
      NulloptForAllCodecsIfFieldTrialDisabled) {
-  test::ScopedFieldTrials field_trials(
+  ExplicitKeyValueConfig field_trials(
       "WebRTC-Video-MinVideoBitrate/Disabled,br:123kbps/");
 
-  EXPECT_EQ(GetExperimentalMinVideoBitrate(VideoCodecType::kVideoCodecGeneric),
+  EXPECT_EQ(GetExperimentalMinVideoBitrate(field_trials, kVideoCodecGeneric),
             absl::nullopt);
-  EXPECT_EQ(GetExperimentalMinVideoBitrate(VideoCodecType::kVideoCodecVP8),
+  EXPECT_EQ(GetExperimentalMinVideoBitrate(field_trials, kVideoCodecVP8),
             absl::nullopt);
-  EXPECT_EQ(GetExperimentalMinVideoBitrate(VideoCodecType::kVideoCodecVP9),
+  EXPECT_EQ(GetExperimentalMinVideoBitrate(field_trials, kVideoCodecVP9),
             absl::nullopt);
-  EXPECT_EQ(GetExperimentalMinVideoBitrate(VideoCodecType::kVideoCodecH264),
+  EXPECT_EQ(GetExperimentalMinVideoBitrate(field_trials, kVideoCodecH264),
             absl::nullopt);
 }
 
 TEST(GetExperimentalMinVideoBitrateTest, BrForAllCodecsIfDefined) {
-  test::ScopedFieldTrials field_trials(
+  ExplicitKeyValueConfig field_trials(
       "WebRTC-Video-MinVideoBitrate/Enabled,br:123kbps/");
 
-  EXPECT_EQ(GetExperimentalMinVideoBitrate(VideoCodecType::kVideoCodecGeneric),
-            absl::make_optional(DataRate::KilobitsPerSec(123)));
-  EXPECT_EQ(GetExperimentalMinVideoBitrate(VideoCodecType::kVideoCodecVP8),
-            absl::make_optional(DataRate::KilobitsPerSec(123)));
-  EXPECT_EQ(GetExperimentalMinVideoBitrate(VideoCodecType::kVideoCodecVP9),
-            absl::make_optional(DataRate::KilobitsPerSec(123)));
-  EXPECT_EQ(GetExperimentalMinVideoBitrate(VideoCodecType::kVideoCodecH264),
-            absl::make_optional(DataRate::KilobitsPerSec(123)));
+  EXPECT_EQ(GetExperimentalMinVideoBitrate(field_trials, kVideoCodecGeneric),
+            DataRate::KilobitsPerSec(123));
+  EXPECT_EQ(GetExperimentalMinVideoBitrate(field_trials, kVideoCodecVP8),
+            DataRate::KilobitsPerSec(123));
+  EXPECT_EQ(GetExperimentalMinVideoBitrate(field_trials, kVideoCodecVP9),
+            DataRate::KilobitsPerSec(123));
+  EXPECT_EQ(GetExperimentalMinVideoBitrate(field_trials, kVideoCodecH264),
+            DataRate::KilobitsPerSec(123));
 }
 
 TEST(GetExperimentalMinVideoBitrateTest, BrTrumpsSpecificCodecConfigs) {
-  test::ScopedFieldTrials field_trials(
+  ExplicitKeyValueConfig field_trials(
       "WebRTC-Video-MinVideoBitrate/"
       "Enabled,br:123kbps,vp8_br:100kbps,vp9_br:200kbps,h264_br:300kbps/");
 
-  EXPECT_EQ(GetExperimentalMinVideoBitrate(VideoCodecType::kVideoCodecGeneric),
-            absl::make_optional(DataRate::KilobitsPerSec(123)));
-  EXPECT_EQ(GetExperimentalMinVideoBitrate(VideoCodecType::kVideoCodecVP8),
-            absl::make_optional(DataRate::KilobitsPerSec(123)));
-  EXPECT_EQ(GetExperimentalMinVideoBitrate(VideoCodecType::kVideoCodecVP9),
-            absl::make_optional(DataRate::KilobitsPerSec(123)));
-  EXPECT_EQ(GetExperimentalMinVideoBitrate(VideoCodecType::kVideoCodecH264),
-            absl::make_optional(DataRate::KilobitsPerSec(123)));
+  EXPECT_EQ(GetExperimentalMinVideoBitrate(field_trials, kVideoCodecGeneric),
+            DataRate::KilobitsPerSec(123));
+  EXPECT_EQ(GetExperimentalMinVideoBitrate(field_trials, kVideoCodecVP8),
+            DataRate::KilobitsPerSec(123));
+  EXPECT_EQ(GetExperimentalMinVideoBitrate(field_trials, kVideoCodecVP9),
+            DataRate::KilobitsPerSec(123));
+  EXPECT_EQ(GetExperimentalMinVideoBitrate(field_trials, kVideoCodecH264),
+            DataRate::KilobitsPerSec(123));
 }
 
 TEST(GetExperimentalMinVideoBitrateTest,
      SpecificCodecConfigsIgnoredIfExpDisabled) {
-  test::ScopedFieldTrials field_trials(
+  ExplicitKeyValueConfig field_trials(
       "WebRTC-Video-MinVideoBitrate/"
       "Disabled,vp8_br:100kbps,vp9_br:200kbps,h264_br:300kbps/");
 
-  EXPECT_EQ(GetExperimentalMinVideoBitrate(VideoCodecType::kVideoCodecGeneric),
+  EXPECT_EQ(GetExperimentalMinVideoBitrate(field_trials, kVideoCodecGeneric),
             absl::nullopt);
-  EXPECT_EQ(GetExperimentalMinVideoBitrate(VideoCodecType::kVideoCodecVP8),
+  EXPECT_EQ(GetExperimentalMinVideoBitrate(field_trials, kVideoCodecVP8),
             absl::nullopt);
-  EXPECT_EQ(GetExperimentalMinVideoBitrate(VideoCodecType::kVideoCodecVP9),
+  EXPECT_EQ(GetExperimentalMinVideoBitrate(field_trials, kVideoCodecVP9),
             absl::nullopt);
-  EXPECT_EQ(GetExperimentalMinVideoBitrate(VideoCodecType::kVideoCodecH264),
+  EXPECT_EQ(GetExperimentalMinVideoBitrate(field_trials, kVideoCodecH264),
             absl::nullopt);
 }
 
 TEST(GetExperimentalMinVideoBitrateTest, SpecificCodecConfigsUsedIfExpEnabled) {
-  test::ScopedFieldTrials field_trials(
+  ExplicitKeyValueConfig field_trials(
       "WebRTC-Video-MinVideoBitrate/"
       "Enabled,vp8_br:100kbps,vp9_br:200kbps,h264_br:300kbps/");
 
-  EXPECT_EQ(GetExperimentalMinVideoBitrate(VideoCodecType::kVideoCodecGeneric),
+  EXPECT_EQ(GetExperimentalMinVideoBitrate(field_trials, kVideoCodecGeneric),
             absl::nullopt);
-  EXPECT_EQ(GetExperimentalMinVideoBitrate(VideoCodecType::kVideoCodecVP8),
-            absl::make_optional(DataRate::KilobitsPerSec(100)));
-  EXPECT_EQ(GetExperimentalMinVideoBitrate(VideoCodecType::kVideoCodecVP9),
-            absl::make_optional(DataRate::KilobitsPerSec(200)));
-  EXPECT_EQ(GetExperimentalMinVideoBitrate(VideoCodecType::kVideoCodecH264),
-            absl::make_optional(DataRate::KilobitsPerSec(300)));
+  EXPECT_EQ(GetExperimentalMinVideoBitrate(field_trials, kVideoCodecVP8),
+            DataRate::KilobitsPerSec(100));
+  EXPECT_EQ(GetExperimentalMinVideoBitrate(field_trials, kVideoCodecVP9),
+            DataRate::KilobitsPerSec(200));
+  EXPECT_EQ(GetExperimentalMinVideoBitrate(field_trials, kVideoCodecH264),
+            DataRate::KilobitsPerSec(300));
 }
 
 TEST(GetExperimentalMinVideoBitrateTest,
      Vp8BitrateValueTakenFromFallbackIfAvailable) {
-  test::ScopedFieldTrials field_trials(
+  ExplicitKeyValueConfig field_trials(
       "WebRTC-Video-MinVideoBitrate/"
       "Enabled,vp8_br:100kbps,vp9_br:200kbps,h264_br:300kbps/"
       "WebRTC-VP8-Forced-Fallback-Encoder-v2/"
       "Enabled-444444,555555,666666/");
 
-  EXPECT_EQ(GetExperimentalMinVideoBitrate(VideoCodecType::kVideoCodecVP8),
-            absl::make_optional(DataRate::BitsPerSec(666666)));
+  EXPECT_EQ(GetExperimentalMinVideoBitrate(field_trials, kVideoCodecVP8),
+            DataRate::BitsPerSec(666666));
 }
 
 TEST(GetExperimentalMinVideoBitrateTest,
      NonVp8BitrateValuesTakenFromMinVideoBitrate) {
-  test::ScopedFieldTrials field_trials(
+  ExplicitKeyValueConfig field_trials(
       "WebRTC-Video-MinVideoBitrate/"
       "Enabled,vp8_br:100kbps,vp9_br:200kbps,h264_br:300kbps/"
       "WebRTC-VP8-Forced-Fallback-Encoder-v2/"
       "Enabled-444444,555555,666666/");
 
-  EXPECT_EQ(GetExperimentalMinVideoBitrate(VideoCodecType::kVideoCodecGeneric),
+  EXPECT_EQ(GetExperimentalMinVideoBitrate(field_trials, kVideoCodecGeneric),
             absl::nullopt);
-  EXPECT_EQ(GetExperimentalMinVideoBitrate(VideoCodecType::kVideoCodecVP9),
-            absl::make_optional(DataRate::KilobitsPerSec(200)));
-  EXPECT_EQ(GetExperimentalMinVideoBitrate(VideoCodecType::kVideoCodecH264),
-            absl::make_optional(DataRate::KilobitsPerSec(300)));
+  EXPECT_EQ(GetExperimentalMinVideoBitrate(field_trials, kVideoCodecVP9),
+            DataRate::KilobitsPerSec(200));
+  EXPECT_EQ(GetExperimentalMinVideoBitrate(field_trials, kVideoCodecH264),
+            DataRate::KilobitsPerSec(300));
 }
 
 }  // namespace

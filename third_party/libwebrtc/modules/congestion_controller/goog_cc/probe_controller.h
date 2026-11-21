@@ -42,6 +42,7 @@ struct ProbeControllerConfig {
   FieldTrialOptional<double> second_exponential_probe_scale;
   FieldTrialParameter<double> further_exponential_probe_scale;
   FieldTrialParameter<double> further_probe_threshold;
+  FieldTrialParameter<bool> abort_further_probe_if_max_lower_than_current;
 
   // Configures how often we send ALR probes and how big they are.
   FieldTrialParameter<TimeDelta> alr_probing_interval;

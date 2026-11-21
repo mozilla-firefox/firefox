@@ -89,6 +89,34 @@ void DataChannelController::OnChannelStateChanged(
       }));
 }
 
+size_t DataChannelController::buffered_amount(StreamId sid) const {
+  RTC_DCHECK_RUN_ON(network_thread());
+  if (!data_channel_transport_) {
+    return 0;
+  }
+  return data_channel_transport_->buffered_amount(sid.stream_id_int());
+}
+
+size_t DataChannelController::buffered_amount_low_threshold(
+    StreamId sid) const {
+  RTC_DCHECK_RUN_ON(network_thread());
+  if (!data_channel_transport_) {
+    return 0;
+  }
+  return data_channel_transport_->buffered_amount_low_threshold(
+      sid.stream_id_int());
+}
+
+void DataChannelController::SetBufferedAmountLowThreshold(StreamId sid,
+                                                          size_t bytes) {
+  RTC_DCHECK_RUN_ON(network_thread());
+  if (!data_channel_transport_) {
+    return;
+  }
+  data_channel_transport_->SetBufferedAmountLowThreshold(sid.stream_id_int(),
+                                                         bytes);
+}
+
 void DataChannelController::OnDataReceived(
     int channel_id,
     DataMessageType type,
@@ -161,6 +189,16 @@ void DataChannelController::OnTransportClosed(RTCError error) {
       sid_allocator_.ReleaseSid(*channel->sid_n());
     }
   }
+}
+
+void DataChannelController::OnBufferedAmountLow(int channel_id) {
+  RTC_DCHECK_RUN_ON(network_thread());
+  auto it = absl::c_find_if(sctp_data_channels_n_, [&](const auto& c) {
+    return c->sid_n().has_value() && c->sid_n()->stream_id_int() == channel_id;
+  });
+
+  if (it != sctp_data_channels_n_.end())
+    (*it)->OnBufferedAmountLow();
 }
 
 void DataChannelController::SetupDataChannelTransport_n(

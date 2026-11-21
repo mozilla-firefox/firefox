@@ -140,6 +140,10 @@ class SctpTransportInternal {
   virtual absl::optional<int> max_outbound_streams() const = 0;
   // Returns the current negotiated max # of inbound streams.
   virtual absl::optional<int> max_inbound_streams() const = 0;
+  // Returns the amount of buffered data in the send queue for a stream.
+  virtual size_t buffered_amount(int sid) const = 0;
+  virtual size_t buffered_amount_low_threshold(int sid) const = 0;
+  virtual void SetBufferedAmountLowThreshold(int sid, size_t bytes) = 0;
 
   // Helper for debugging.
   virtual void set_debug_name_for_testing(const char* debug_name) = 0;

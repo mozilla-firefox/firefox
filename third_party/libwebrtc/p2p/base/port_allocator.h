@@ -29,7 +29,6 @@
 #include "rtc_base/checks.h"
 #include "rtc_base/helpers.h"
 #include "rtc_base/network.h"
-#include "rtc_base/proxy_info.h"
 #include "rtc_base/socket_address.h"
 #include "rtc_base/ssl_certificate.h"
 #include "rtc_base/system/rtc_export.h"
@@ -463,25 +462,6 @@ class RTC_EXPORT PortAllocator : public sigslot::has_slots<> {
     flags_ = flags;
   }
 
-  // These three methods are deprecated. If connections need to go through a
-  // proxy, the application should create a BasicPortAllocator given a custom
-  // PacketSocketFactory that creates proxy sockets.
-  const std::string& user_agent() const {
-    CheckRunOnValidThreadIfInitialized();
-    return agent_;
-  }
-
-  const rtc::ProxyInfo& proxy() const {
-    CheckRunOnValidThreadIfInitialized();
-    return proxy_;
-  }
-
-  void set_proxy(absl::string_view agent, const rtc::ProxyInfo& proxy) {
-    CheckRunOnValidThreadIfInitialized();
-    agent_ = std::string(agent);
-    proxy_ = proxy;
-  }
-
   // Gets/Sets the port range to use when choosing client ports.
   int min_port() const {
     CheckRunOnValidThreadIfInitialized();
@@ -629,8 +609,6 @@ class RTC_EXPORT PortAllocator : public sigslot::has_slots<> {
 
   bool initialized_ = false;
   uint32_t flags_;
-  std::string agent_;
-  rtc::ProxyInfo proxy_;
   int min_port_;
   int max_port_;
   int max_ipv6_networks_;

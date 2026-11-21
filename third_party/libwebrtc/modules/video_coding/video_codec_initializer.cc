@@ -16,6 +16,8 @@
 #include <algorithm>
 
 #include "absl/types/optional.h"
+#include "api/array_view.h"
+#include "api/field_trials_view.h"
 #include "api/scoped_refptr.h"
 #include "api/units/data_rate.h"
 #include "api/video_codecs/video_encoder.h"
@@ -31,15 +33,9 @@
 
 namespace webrtc {
 
-bool VideoCodecInitializer::SetupCodec(const VideoEncoderConfig& config,
-                                       const std::vector<VideoStream>& streams,
-                                       VideoCodec* codec) {
-  *codec = VideoEncoderConfigToVideoCodec(config, streams);
-  return true;
-}
-
 // TODO(sprang): Split this up and separate the codec specific parts.
-VideoCodec VideoCodecInitializer::VideoEncoderConfigToVideoCodec(
+VideoCodec VideoCodecInitializer::SetupCodec(
+    const FieldTrialsView& field_trials,
     const VideoEncoderConfig& config,
     const std::vector<VideoStream>& streams) {
   static const int kEncoderMinBitrateKbps = 30;
@@ -335,7 +331,7 @@ VideoCodec VideoCodecInitializer::VideoEncoderConfigToVideoCodec(
   }
 
   const absl::optional<DataRate> experimental_min_bitrate =
-      GetExperimentalMinVideoBitrate(video_codec.codecType);
+      GetExperimentalMinVideoBitrate(field_trials, video_codec.codecType);
   if (experimental_min_bitrate) {
     const int experimental_min_bitrate_kbps =
         rtc::saturated_cast<int>(experimental_min_bitrate->kbps());

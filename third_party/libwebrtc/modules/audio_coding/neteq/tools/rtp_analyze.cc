@@ -110,9 +110,10 @@ int main(int argc, char* argv[]) {
             static_cast<int>(packet->virtual_packet_length_bytes()),
             packet->header().payloadType, packet->header().markerBit,
             packet->header().ssrc);
-    if (print_audio_level && packet->header().extension.hasAudioLevel) {
-      fprintf(out_file, " %5u (%1i)", packet->header().extension.audioLevel,
-              packet->header().extension.voiceActivity);
+    if (print_audio_level && packet->header().extension.audio_level()) {
+      fprintf(out_file, " %5d (%1i)",
+              packet->header().extension.audio_level()->level(),
+              packet->header().extension.audio_level()->voice_activity());
     }
     if (print_abs_send_time && packet->header().extension.hasAbsoluteSendTime) {
       if (cycles == -1) {

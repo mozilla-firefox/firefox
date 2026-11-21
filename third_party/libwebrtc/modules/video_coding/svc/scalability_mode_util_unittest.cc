@@ -17,9 +17,11 @@
 #include "absl/strings/string_view.h"
 #include "absl/types/optional.h"
 #include "api/video_codecs/scalability_mode.h"
+#include "test/gmock.h"
 #include "test/gtest.h"
 
 namespace webrtc {
+
 namespace {
 
 TEST(ScalabilityModeUtil, ConvertsL1T2) {
@@ -30,6 +32,26 @@ TEST(ScalabilityModeUtil, ConvertsL1T2) {
 TEST(ScalabilityModeUtil, RejectsUnknownString) {
   EXPECT_EQ(ScalabilityModeFromString(""), absl::nullopt);
   EXPECT_EQ(ScalabilityModeFromString("not-a-mode"), absl::nullopt);
+}
+
+TEST(ScalabilityModeUtil, MakeScalabilityModeRoundTrip) {
+  const ScalabilityMode kLastEnum = ScalabilityMode::kS3T3h;
+  for (int numerical_enum = 0; numerical_enum <= static_cast<int>(kLastEnum);
+       numerical_enum++) {
+    ScalabilityMode scalability_mode =
+        static_cast<ScalabilityMode>(numerical_enum);
+    absl::optional<ScalabilityMode> created_mode = MakeScalabilityMode(
+        ScalabilityModeToNumSpatialLayers(scalability_mode),
+        ScalabilityModeToNumTemporalLayers(scalability_mode),
+        ScalabilityModeToInterLayerPredMode(scalability_mode),
+        ScalabilityModeToResolutionRatio(scalability_mode),
+        ScalabilityModeIsShiftMode(scalability_mode));
+    EXPECT_THAT(created_mode, ::testing::Optional(scalability_mode))
+        << "Expected "
+        << (created_mode.has_value() ? ScalabilityModeToString(*created_mode)
+                                     : "(nullopt)")
+        << " to equal " << ScalabilityModeToString(scalability_mode);
+  }
 }
 
 // Check roundtrip conversion of all enum values.

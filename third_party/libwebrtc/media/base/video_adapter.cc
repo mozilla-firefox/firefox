@@ -358,12 +358,6 @@ void VideoAdapter::OnSinkWants(const rtc::VideoSinkWants& sink_wants) {
   // that are NOT using requested_resolution (aka newapi), then override
   // calls to OnOutputFormatRequest and use values from requested_resolution
   // instead (combined with qualityscaling based on pixel counts above).
-  if (webrtc::field_trial::IsDisabled(
-          "WebRTC-Video-RequestedResolutionOverrideOutputFormatRequest")) {
-    // kill-switch...
-    return;
-  }
-
   if (!sink_wants.requested_resolution) {
     if (stashed_output_format_request_) {
       // because current active_output_format_request is based on

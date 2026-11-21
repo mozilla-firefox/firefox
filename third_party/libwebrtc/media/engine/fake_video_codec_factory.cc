@@ -12,6 +12,7 @@
 
 #include <memory>
 
+#include "api/environment/environment.h"
 #include "api/video_codecs/sdp_video_format.h"
 #include "api/video_codecs/video_decoder.h"
 #include "api/video_codecs/video_encoder.h"
@@ -30,22 +31,16 @@ static const char kFakeCodecFactoryCodecName[] = "FakeCodec";
 
 namespace webrtc {
 
-FakeVideoEncoderFactory::FakeVideoEncoderFactory() = default;
-
-// static
-std::unique_ptr<VideoEncoder> FakeVideoEncoderFactory::CreateVideoEncoder() {
-  return std::make_unique<test::FakeEncoder>(Clock::GetRealTimeClock());
-}
-
 std::vector<SdpVideoFormat> FakeVideoEncoderFactory::GetSupportedFormats()
     const {
   return std::vector<SdpVideoFormat>(
       1, SdpVideoFormat(kFakeCodecFactoryCodecName));
 }
 
-std::unique_ptr<VideoEncoder> FakeVideoEncoderFactory::CreateVideoEncoder(
+std::unique_ptr<VideoEncoder> FakeVideoEncoderFactory::Create(
+    const Environment& env,
     const SdpVideoFormat& format) {
-  return std::make_unique<test::FakeEncoder>(Clock::GetRealTimeClock());
+  return std::make_unique<test::FakeEncoder>(&env.clock());
 }
 
 FakeVideoDecoderFactory::FakeVideoDecoderFactory() = default;

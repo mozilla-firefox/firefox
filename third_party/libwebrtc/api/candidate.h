@@ -31,12 +31,16 @@ RTC_EXPORT absl::string_view IceCandidateTypeToString(IceCandidateType);
 
 namespace cricket {
 
-// TODO(tommi): These are temporarily here, moved from `port.h` and will
-// eventually be removed once we use enums instead of strings for these values.
-RTC_EXPORT extern const absl::string_view LOCAL_PORT_TYPE;
-RTC_EXPORT extern const absl::string_view STUN_PORT_TYPE;
-RTC_EXPORT extern const absl::string_view PRFLX_PORT_TYPE;
-RTC_EXPORT extern const absl::string_view RELAY_PORT_TYPE;
+// TODO(tommi): Remove. No usage in WebRTC now, remove once downstream projects
+// don't have reliance.
+[[deprecated("Use IceCandidateType")]] static constexpr char LOCAL_PORT_TYPE[] =
+    "local";
+[[deprecated("Use IceCandidateType")]] static constexpr char STUN_PORT_TYPE[] =
+    "stun";
+[[deprecated("Use IceCandidateType")]] static constexpr char PRFLX_PORT_TYPE[] =
+    "prflx";
+[[deprecated("Use IceCandidateType")]] static constexpr char RELAY_PORT_TYPE[] =
+    "relay";
 
 // TURN servers are limited to 32 in accordance with
 // https://w3c.github.io/webrtc-pc/#dom-rtcconfiguration-iceservers
@@ -57,18 +61,6 @@ class RTC_EXPORT Candidate {
             absl::string_view foundation,
             uint16_t network_id = 0,
             uint16_t network_cost = 0);
-  [[deprecated("Use IceCandidateType version")]] Candidate(
-      int component,
-      absl::string_view protocol,
-      const rtc::SocketAddress& address,
-      uint32_t priority,
-      absl::string_view username,
-      absl::string_view password,
-      absl::string_view type ABSL_ATTRIBUTE_LIFETIME_BOUND,
-      uint32_t generation,
-      absl::string_view foundation,
-      uint16_t network_id = 0,
-      uint16_t network_cost = 0);
   Candidate(const Candidate&);
   ~Candidate();
 
@@ -76,11 +68,6 @@ class RTC_EXPORT Candidate {
   const std::string& id() const { return id_; }
   // Generates a new, 8 character long, id.
   void generate_id();
-  // TODO(tommi): Callers should use generate_id(). Remove.
-  [[deprecated("Use IceCandidateType version")]] void set_id(
-      absl::string_view id) {
-    Assign(id_, id);
-  }
 
   int component() const { return component_; }
   void set_component(int component) { component_ = component; }
@@ -126,9 +113,6 @@ class RTC_EXPORT Candidate {
   // string, but until we make that change the lifetime attribute helps us lock
   // things down. See also the `Port` class.
   void set_type(webrtc::IceCandidateType type) { type_ = type; }
-
-  [[deprecated("Use IceCandidateType version")]] void set_type(
-      absl::string_view type ABSL_ATTRIBUTE_LIFETIME_BOUND);
 
   // Simple checkers for checking the candidate type without dependency on the
   // IceCandidateType enum. The `is_local()` and `is_stun()` names are legacy

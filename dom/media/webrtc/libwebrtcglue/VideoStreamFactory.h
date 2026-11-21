@@ -60,6 +60,15 @@ class VideoStreamFactory
   std::vector<webrtc::VideoStream> CreateEncoderStreams(
       int aWidth, int aHeight,
       const webrtc::VideoEncoderConfig& aConfig) override;
+
+  /**
+   * Called by CreateEncoderStreams and
+   * WebrtcVideoConduit::OnControlConfigChange to set VideoStream.max_framerate.
+   */
+  void SelectMaxFramerate(int aWidth, int aHeight,
+                          const VideoCodecConfig::Encoding& aEncoding,
+                          webrtc::VideoStream& aVideoStream);
+
   /**
    * Function to select and change the encoding resolution based on incoming
    * frame size and current available bandwidth.

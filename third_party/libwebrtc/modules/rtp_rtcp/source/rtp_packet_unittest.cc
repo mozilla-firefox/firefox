@@ -249,7 +249,8 @@ TEST(RtpPacketTest, CreateWith2Extensions) {
   packet.SetTimestamp(kTimestamp);
   packet.SetSsrc(kSsrc);
   packet.SetExtension<TransmissionOffset>(kTimeOffset);
-  packet.SetExtension<AudioLevelExtension>(kVoiceActive, kAudioLevel);
+  packet.SetExtension<AudioLevelExtension>(
+      AudioLevel(kVoiceActive, kAudioLevel));
   EXPECT_THAT(kPacketWithTOAndAL,
               ElementsAreArray(packet.data(), packet.size()));
 }
@@ -269,7 +270,8 @@ TEST(RtpPacketTest, CreateWithTwoByteHeaderExtensionFirst) {
                                   TimeDelta::Millis(340));
   ASSERT_TRUE(packet.SetExtension<PlayoutDelayLimits>(playout_delay));
   packet.SetExtension<TransmissionOffset>(kTimeOffset);
-  packet.SetExtension<AudioLevelExtension>(kVoiceActive, kAudioLevel);
+  packet.SetExtension<AudioLevelExtension>(
+      AudioLevel(kVoiceActive, kAudioLevel));
   EXPECT_THAT(kPacketWithTwoByteExtensionIdFirst,
               ElementsAreArray(packet.data(), packet.size()));
 }
@@ -286,7 +288,8 @@ TEST(RtpPacketTest, CreateWithTwoByteHeaderExtensionLast) {
   packet.SetTimestamp(kTimestamp);
   packet.SetSsrc(kSsrc);
   packet.SetExtension<TransmissionOffset>(kTimeOffset);
-  packet.SetExtension<AudioLevelExtension>(kVoiceActive, kAudioLevel);
+  packet.SetExtension<AudioLevelExtension>(
+      AudioLevel(kVoiceActive, kAudioLevel));
   EXPECT_THAT(kPacketWithTOAndAL,
               ElementsAreArray(packet.data(), packet.size()));
   // Set extension that requires two-byte header.
@@ -346,8 +349,8 @@ TEST(RtpPacketTest, TryToCreateTwoByteHeaderNotSupported) {
   extensions.Register<AudioLevelExtension>(kTwoByteExtensionId);
   RtpPacketToSend packet(&extensions);
   // Set extension that requires two-byte header.
-  EXPECT_FALSE(
-      packet.SetExtension<AudioLevelExtension>(kVoiceActive, kAudioLevel));
+  EXPECT_FALSE(packet.SetExtension<AudioLevelExtension>(
+      AudioLevel(kVoiceActive, kAudioLevel)));
 }
 
 TEST(RtpPacketTest, CreateTwoByteHeaderSupportedIfExtmapAllowMixed) {
@@ -355,8 +358,8 @@ TEST(RtpPacketTest, CreateTwoByteHeaderSupportedIfExtmapAllowMixed) {
   extensions.Register<AudioLevelExtension>(kTwoByteExtensionId);
   RtpPacketToSend packet(&extensions);
   // Set extension that requires two-byte header.
-  EXPECT_TRUE(
-      packet.SetExtension<AudioLevelExtension>(kVoiceActive, kAudioLevel));
+  EXPECT_TRUE(packet.SetExtension<AudioLevelExtension>(
+      AudioLevel(kVoiceActive, kAudioLevel)));
 }
 
 TEST(RtpPacketTest, CreateWithMaxSizeHeaderExtension) {
@@ -439,8 +442,8 @@ TEST(RtpPacketTest, SetReservedExtensionsAfterPayload) {
   EXPECT_TRUE(packet.ReserveExtension<TransmissionOffset>());
   packet.SetPayloadSize(kPayloadSize);
   // Can't set extension after payload.
-  EXPECT_FALSE(
-      packet.SetExtension<AudioLevelExtension>(kVoiceActive, kAudioLevel));
+  EXPECT_FALSE(packet.SetExtension<AudioLevelExtension>(
+      AudioLevel(kVoiceActive, kAudioLevel)));
   // Unless reserved.
   EXPECT_TRUE(packet.SetExtension<TransmissionOffset>(kTimeOffset));
 }
@@ -718,12 +721,10 @@ TEST(RtpPacketTest, ParseWith2Extensions) {
   int32_t time_offset;
   EXPECT_TRUE(packet.GetExtension<TransmissionOffset>(&time_offset));
   EXPECT_EQ(kTimeOffset, time_offset);
-  bool voice_active;
-  uint8_t audio_level;
-  EXPECT_TRUE(
-      packet.GetExtension<AudioLevelExtension>(&voice_active, &audio_level));
-  EXPECT_EQ(kVoiceActive, voice_active);
-  EXPECT_EQ(kAudioLevel, audio_level);
+  AudioLevel audio_level;
+  EXPECT_TRUE(packet.GetExtension<AudioLevelExtension>(&audio_level));
+  EXPECT_EQ(kVoiceActive, audio_level.voice_activity());
+  EXPECT_EQ(kAudioLevel, audio_level.level());
 }
 
 TEST(RtpPacketTest, ParseSecondPacketWithFewerExtensions) {
@@ -751,10 +752,8 @@ TEST(RtpPacketTest, ParseWith2ExtensionsInvalidPadding) {
   int32_t time_offset;
   EXPECT_TRUE(packet.GetExtension<TransmissionOffset>(&time_offset));
   EXPECT_EQ(kTimeOffset, time_offset);
-  bool voice_active;
-  uint8_t audio_level;
-  EXPECT_FALSE(
-      packet.GetExtension<AudioLevelExtension>(&voice_active, &audio_level));
+  AudioLevel audio_level;
+  EXPECT_FALSE(packet.GetExtension<AudioLevelExtension>(&audio_level));
 }
 
 TEST(RtpPacketTest, ParseWith2ExtensionsReservedExtensionId) {
@@ -767,10 +766,8 @@ TEST(RtpPacketTest, ParseWith2ExtensionsReservedExtensionId) {
   int32_t time_offset;
   EXPECT_TRUE(packet.GetExtension<TransmissionOffset>(&time_offset));
   EXPECT_EQ(kTimeOffset, time_offset);
-  bool voice_active;
-  uint8_t audio_level;
-  EXPECT_FALSE(
-      packet.GetExtension<AudioLevelExtension>(&voice_active, &audio_level));
+  AudioLevel audio_level;
+  EXPECT_FALSE(packet.GetExtension<AudioLevelExtension>(&audio_level));
 }
 
 TEST(RtpPacketTest, ParseWithAllFeatures) {
@@ -822,12 +819,10 @@ TEST(RtpPacketTest, ParseTwoByteHeaderExtensionWithPadding) {
   int32_t time_offset;
   EXPECT_TRUE(packet.GetExtension<TransmissionOffset>(&time_offset));
   EXPECT_EQ(kTimeOffset, time_offset);
-  bool voice_active;
-  uint8_t audio_level;
-  EXPECT_TRUE(
-      packet.GetExtension<AudioLevelExtension>(&voice_active, &audio_level));
-  EXPECT_EQ(kVoiceActive, voice_active);
-  EXPECT_EQ(kAudioLevel, audio_level);
+  AudioLevel audio_level;
+  EXPECT_TRUE(packet.GetExtension<AudioLevelExtension>(&audio_level));
+  EXPECT_EQ(kVoiceActive, audio_level.voice_activity());
+  EXPECT_EQ(kAudioLevel, audio_level.level());
 }
 
 TEST(RtpPacketTest, ParseWithExtensionDelayed) {
@@ -1251,7 +1246,8 @@ TEST(RtpPacketTest, RemoveMultipleExtensions) {
   packet.SetTimestamp(kTimestamp);
   packet.SetSsrc(kSsrc);
   packet.SetExtension<TransmissionOffset>(kTimeOffset);
-  packet.SetExtension<AudioLevelExtension>(kVoiceActive, kAudioLevel);
+  packet.SetExtension<AudioLevelExtension>(
+      AudioLevel(kVoiceActive, kAudioLevel));
 
   EXPECT_THAT(kPacketWithTOAndAL,
               ElementsAreArray(packet.data(), packet.size()));
@@ -1279,7 +1275,8 @@ TEST(RtpPacketTest, RemoveExtensionPreservesOtherUnregisteredExtensions) {
   packet.SetTimestamp(kTimestamp);
   packet.SetSsrc(kSsrc);
   packet.SetExtension<TransmissionOffset>(kTimeOffset);
-  packet.SetExtension<AudioLevelExtension>(kVoiceActive, kAudioLevel);
+  packet.SetExtension<AudioLevelExtension>(
+      AudioLevel(kVoiceActive, kAudioLevel));
 
   EXPECT_THAT(kPacketWithTOAndAL,
               ElementsAreArray(packet.data(), packet.size()));

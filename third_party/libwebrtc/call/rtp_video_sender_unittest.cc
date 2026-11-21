@@ -28,6 +28,7 @@
 #include "modules/video_coding/fec_controller_default.h"
 #include "modules/video_coding/include/video_codec_interface.h"
 #include "rtc_base/rate_limiter.h"
+#include "test/explicit_key_value_config.h"
 #include "test/gmock.h"
 #include "test/gtest.h"
 #include "test/mock_transport.h"
@@ -734,6 +735,126 @@ TEST(RtpVideoSenderTest, SupportsDependencyDescriptor) {
   ASSERT_THAT(sent_packets, SizeIs(2));
   EXPECT_TRUE(
       sent_packets.back().HasExtension<RtpDependencyDescriptorExtension>());
+}
+
+TEST(RtpVideoSenderTest, SimulcastIndependentFrameIds) {
+  test::ExplicitKeyValueConfig field_trials(
+      "WebRTC-Video-SimulcastIndependentFrameIds/Enabled/"
+      "WebRTC-GenericDescriptorAuth/Disabled/");
+  const std::map<uint32_t, RtpPayloadState> kPayloadStates = {
+      {kSsrc1, {.frame_id = 100}}, {kSsrc2, {.frame_id = 200}}};
+  RtpVideoSenderTestFixture test({kSsrc1, kSsrc2}, {}, kPayloadType,
+                                 kPayloadStates, &field_trials);
+  test.SetSending(true);
+
+  RtpHeaderExtensionMap extensions;
+  extensions.Register<RtpDependencyDescriptorExtension>(
+      kDependencyDescriptorExtensionId);
+  std::vector<RtpPacket> sent_packets;
+  ON_CALL(test.transport(), SendRtp)
+      .WillByDefault([&](rtc::ArrayView<const uint8_t> packet,
+                         const PacketOptions& options) {
+        sent_packets.emplace_back(&extensions);
+        EXPECT_TRUE(sent_packets.back().Parse(packet));
+        return true;
+      });
+
+  const uint8_t kPayload[1] = {'a'};
+  EncodedImage encoded_image;
+  encoded_image.SetEncodedData(
+      EncodedImageBuffer::Create(kPayload, sizeof(kPayload)));
+
+  CodecSpecificInfo codec_specific;
+  codec_specific.codecType = VideoCodecType::kVideoCodecGeneric;
+  codec_specific.template_structure.emplace();
+  codec_specific.template_structure->num_decode_targets = 1;
+  codec_specific.template_structure->templates = {
+      FrameDependencyTemplate().T(0).Dtis("S"),
+      FrameDependencyTemplate().T(0).Dtis("S").FrameDiffs({1}),
+  };
+  codec_specific.generic_frame_info =
+      GenericFrameInfo::Builder().T(0).Dtis("S").Build();
+  encoded_image._frameType = VideoFrameType::kVideoFrameKey;
+  codec_specific.generic_frame_info->encoder_buffers = {{0, false, true}};
+
+  encoded_image.SetSimulcastIndex(0);
+  EXPECT_EQ(test.router()->OnEncodedImage(encoded_image, &codec_specific).error,
+            EncodedImageCallback::Result::OK);
+  encoded_image.SetSimulcastIndex(1);
+  EXPECT_EQ(test.router()->OnEncodedImage(encoded_image, &codec_specific).error,
+            EncodedImageCallback::Result::OK);
+
+  test.AdvanceTime(TimeDelta::Millis(33));
+  ASSERT_THAT(sent_packets, SizeIs(2));
+  DependencyDescriptorMandatory dd_s0;
+  DependencyDescriptorMandatory dd_s1;
+  ASSERT_TRUE(
+      sent_packets[0].GetExtension<RtpDependencyDescriptorExtension>(&dd_s0));
+  ASSERT_TRUE(
+      sent_packets[1].GetExtension<RtpDependencyDescriptorExtension>(&dd_s1));
+  EXPECT_EQ(dd_s0.frame_number(), 100);
+  EXPECT_EQ(dd_s1.frame_number(), 200);
+}
+
+TEST(RtpVideoSenderTest,
+     SimulcastNoIndependentFrameIdsIfGenericDescriptorAuthIsEnabled) {
+  test::ExplicitKeyValueConfig field_trials(
+      "WebRTC-Video-SimulcastIndependentFrameIds/Enabled/"
+      "WebRTC-GenericDescriptorAuth/Enabled/");
+  const std::map<uint32_t, RtpPayloadState> kPayloadStates = {
+      {kSsrc1, {.shared_frame_id = 1000, .frame_id = 100}},
+      {kSsrc2, {.shared_frame_id = 1000, .frame_id = 200}}};
+  RtpVideoSenderTestFixture test({kSsrc1, kSsrc2}, {}, kPayloadType,
+                                 kPayloadStates, &field_trials);
+  test.SetSending(true);
+
+  RtpHeaderExtensionMap extensions;
+  extensions.Register<RtpDependencyDescriptorExtension>(
+      kDependencyDescriptorExtensionId);
+  std::vector<RtpPacket> sent_packets;
+  ON_CALL(test.transport(), SendRtp)
+      .WillByDefault([&](rtc::ArrayView<const uint8_t> packet,
+                         const PacketOptions& options) {
+        sent_packets.emplace_back(&extensions);
+        EXPECT_TRUE(sent_packets.back().Parse(packet));
+        return true;
+      });
+
+  const uint8_t kPayload[1] = {'a'};
+  EncodedImage encoded_image;
+  encoded_image.SetEncodedData(
+      EncodedImageBuffer::Create(kPayload, sizeof(kPayload)));
+
+  CodecSpecificInfo codec_specific;
+  codec_specific.codecType = VideoCodecType::kVideoCodecGeneric;
+  codec_specific.template_structure.emplace();
+  codec_specific.template_structure->num_decode_targets = 1;
+  codec_specific.template_structure->templates = {
+      FrameDependencyTemplate().T(0).Dtis("S"),
+      FrameDependencyTemplate().T(0).Dtis("S").FrameDiffs({1}),
+  };
+  codec_specific.generic_frame_info =
+      GenericFrameInfo::Builder().T(0).Dtis("S").Build();
+  encoded_image._frameType = VideoFrameType::kVideoFrameKey;
+  codec_specific.generic_frame_info->encoder_buffers = {{0, false, true}};
+
+  encoded_image.SetSimulcastIndex(0);
+  EXPECT_EQ(test.router()->OnEncodedImage(encoded_image, &codec_specific).error,
+            EncodedImageCallback::Result::OK);
+  encoded_image.SetSimulcastIndex(1);
+  EXPECT_EQ(test.router()->OnEncodedImage(encoded_image, &codec_specific).error,
+            EncodedImageCallback::Result::OK);
+
+  test.AdvanceTime(TimeDelta::Millis(33));
+  ASSERT_THAT(sent_packets, SizeIs(2));
+  DependencyDescriptorMandatory dd_s0;
+  DependencyDescriptorMandatory dd_s1;
+  ASSERT_TRUE(
+      sent_packets[0].GetExtension<RtpDependencyDescriptorExtension>(&dd_s0));
+  ASSERT_TRUE(
+      sent_packets[1].GetExtension<RtpDependencyDescriptorExtension>(&dd_s1));
+  EXPECT_EQ(dd_s0.frame_number(), 1001);
+  EXPECT_EQ(dd_s1.frame_number(), 1002);
 }
 
 TEST(RtpVideoSenderTest,

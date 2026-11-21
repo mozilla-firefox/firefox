@@ -25,7 +25,6 @@ rtc_library("encoded_frame") {
     "../../modules/rtp_rtcp:rtp_video_header",
     "../../rtc_base:checks",
     "../../rtc_base/experiments:alr_experiment",
-    "../../rtc_base/experiments:rtt_mult_experiment",
     "../../rtc_base/system:rtc_export",
     "../../system_wrappers",
   ]
@@ -131,6 +130,7 @@ rtc_library("h26x_packet_buffer") {
   ]
   deps = [
     ":codec_globals_headers",
+    ":h264_sprop_parameter_sets",
     ":packet_buffer",
     "../../api:array_view",
     "../../api:rtp_packet_info",
@@ -163,6 +163,17 @@ rtc_library("frame_helpers") {
   absl_deps = [ "//third_party/abseil-cpp/absl/container:inlined_vector" ]
 }
 
+rtc_library("h264_sprop_parameter_sets") {
+  sources = [
+    "h264_sprop_parameter_sets.cc",
+    "h264_sprop_parameter_sets.h",
+  ]
+  deps = [
+    "../../rtc_base:logging",
+    "../../rtc_base/third_party/base64",
+  ]
+}
+
 rtc_library("video_coding") {
   visibility = [ "*" ]
   sources = [
@@ -173,8 +184,6 @@ rtc_library("video_coding") {
     "fec_rate_table.h",
     "generic_decoder.cc",
     "generic_decoder.h",
-    "h264_sprop_parameter_sets.cc",
-    "h264_sprop_parameter_sets.h",
     "h264_sps_pps_tracker.cc",
     "h264_sps_pps_tracker.h",
     "include/video_codec_initializer.h",
@@ -204,6 +213,7 @@ rtc_library("video_coding") {
     ":codec_globals_headers",
     ":encoded_frame",
     ":frame_helpers",
+    ":h264_sprop_parameter_sets",
     ":video_codec_interface",
     ":video_coding_utility",
     ":webrtc_vp8_scalability",
@@ -254,7 +264,6 @@ rtc_library("video_coding") {
     "../../rtc_base/experiments:field_trial_parser",
     "../../rtc_base/experiments:min_video_bitrate_experiment",
     "../../rtc_base/experiments:rate_control_settings",
-    "../../rtc_base/experiments:rtt_mult_experiment",
     "../../rtc_base/synchronization:mutex",
     "../../rtc_base/system:no_unique_address",
     "../../rtc_base/task_utils:repeating_task",
@@ -472,6 +481,7 @@ rtc_library("webrtc_h264") {
 
   defines = []
   deps = [
+    ":codec_globals_headers",
     ":video_codec_interface",
     ":video_coding_utility",
     "../../api/environment",
@@ -483,7 +493,6 @@ rtc_library("webrtc_h264") {
     "../../api/video_codecs:scalability_mode",
     "../../api/video_codecs:video_codecs_api",
     "../../common_video",
-    "../../media:codec",
     "../../media:media_constants",
     "../../media:rtc_media_base",
     "../../rtc_base:checks",
@@ -491,7 +500,6 @@ rtc_library("webrtc_h264") {
     "../../rtc_base:logging",
     "../../rtc_base:timeutils",
     "../../rtc_base/system:rtc_export",
-    "../../system_wrappers:field_trial",
     "../../system_wrappers:metrics",
     "svc:scalability_structures",
     "svc:scalable_video_controller",
@@ -579,7 +587,6 @@ rtc_library("webrtc_vp8") {
     "../../rtc_base/experiments:encoder_info_settings",
     "../../rtc_base/experiments:field_trial_parser",
     "../../rtc_base/experiments:rate_control_settings",
-    "../../system_wrappers:field_trial",
     "../../system_wrappers:metrics",
     "svc:scalability_mode_util",
     "//third_party/libyuv",
@@ -683,15 +690,12 @@ rtc_library("webrtc_vp9") {
     "../../api:refcountedbase",
     "../../api:scoped_refptr",
     "../../api/environment",
-    "../../api/transport:field_trial_based_config",
     "../../api/video:video_frame",
     "../../api/video:video_frame_i010",
     "../../api/video:video_rtp_headers",
     "../../api/video_codecs:scalability_mode",
     "../../api/video_codecs:video_codecs_api",
     "../../common_video",
-    "../../media:codec",
-    "../../media:media_constants",
     "../../rtc_base:buffer",
     "../../rtc_base:checks",
     "../../rtc_base:event_tracer",
@@ -1175,6 +1179,7 @@ if (rtc_include_tests) {
       ":encoded_frame",
       ":frame_dependencies_calculator",
       ":frame_helpers",
+      ":h264_sprop_parameter_sets",
       ":h26x_packet_buffer",
       ":nack_requester",
       ":packet_buffer",
@@ -1245,8 +1250,8 @@ if (rtc_include_tests) {
       "../../rtc_base/synchronization:mutex",
       "../../rtc_base/system:unused",
       "../../system_wrappers",
-      "../../system_wrappers:field_trial",
       "../../system_wrappers:metrics",
+      "../../test:explicit_key_value_config",
       "../../test:fake_encoded_frame",
       "../../test:fake_video_codecs",
       "../../test:field_trial",

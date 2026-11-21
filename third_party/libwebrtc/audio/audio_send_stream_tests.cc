@@ -116,11 +116,9 @@ TEST_F(AudioSendStreamCallTest, SupportsAudioLevel) {
       RtpPacket rtp_packet(&extensions_);
       EXPECT_TRUE(rtp_packet.Parse(packet));
 
-      uint8_t audio_level = 0;
-      bool voice = false;
-      EXPECT_TRUE(
-          rtp_packet.GetExtension<AudioLevelExtension>(&voice, &audio_level));
-      if (audio_level != 0) {
+      AudioLevel audio_level;
+      EXPECT_TRUE(rtp_packet.GetExtension<AudioLevelExtension>(&audio_level));
+      if (audio_level.level() != 0) {
         // Wait for at least one packet with a non-zero level.
         observation_complete_.Set();
       } else {

@@ -184,7 +184,7 @@ class FakeVideoEncoderFactory : public VideoEncoderFactory {
   std::unique_ptr<VideoEncoder> Create(const Environment& env,
                                        const SdpVideoFormat& format) override {
     RTC_CHECK_EQ(format.name, "VP8");
-    return std::make_unique<FakeVp8Encoder>(&env.clock());
+    return std::make_unique<FakeVp8Encoder>(env);
   }
 };
 

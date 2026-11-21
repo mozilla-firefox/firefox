@@ -585,32 +585,34 @@ TEST_F(CallPerfTest, ReceivesCpuOveruseAndUnderuse) {
     // TODO(sprang): Add integration test for maintain-framerate mode?
     void OnSinkWantsChanged(rtc::VideoSinkInterface<VideoFrame>* sink,
                             const rtc::VideoSinkWants& wants) override {
-      // The sink wants can change either because an adaptation happened (i.e.
-      // the pixels or frame rate changed) or for other reasons, such as encoded
-      // resolutions being communicated (happens whenever we capture a new frame
-      // size). In this test, we only care about adaptations.
+      RTC_LOG(LS_INFO) << "OnSinkWantsChanged fps:" << wants.max_framerate_fps
+                       << " max_pixel_count " << wants.max_pixel_count
+                       << " target_pixel_count"
+                       << wants.target_pixel_count.value_or(-1);
+      // The sink wants can change either because an adaptation happened
+      // (i.e. the pixels or frame rate changed) or for other reasons, such
+      // as encoded resolutions being communicated (happens whenever we
+      // capture a new frame size). In this test, we only care about
+      // adaptations.
       bool did_adapt =
           last_wants_.max_pixel_count != wants.max_pixel_count ||
           last_wants_.target_pixel_count != wants.target_pixel_count ||
           last_wants_.max_framerate_fps != wants.max_framerate_fps;
       last_wants_ = wants;
       if (!did_adapt) {
+        if (test_phase_ == TestPhase::kInit) {
+          test_phase_ = TestPhase::kStart;
+        }
         return;
       }
       // At kStart expect CPU overuse. Then expect CPU underuse when the encoder
       // delay has been decreased.
       switch (test_phase_) {
         case TestPhase::kInit:
-          // Max framerate should be set initially.
-          if (wants.max_framerate_fps != std::numeric_limits<int>::max() &&
-              wants.max_pixel_count == std::numeric_limits<int>::max()) {
-            test_phase_ = TestPhase::kStart;
-          } else {
-            ADD_FAILURE() << "Got unexpected adaptation request, max res = "
-                          << wants.max_pixel_count << ", target res = "
-                          << wants.target_pixel_count.value_or(-1)
-                          << ", max fps = " << wants.max_framerate_fps;
-          }
+          ADD_FAILURE() << "Got unexpected adaptation request, max res = "
+                        << wants.max_pixel_count << ", target res = "
+                        << wants.target_pixel_count.value_or(-1)
+                        << ", max fps = " << wants.max_framerate_fps;
           break;
         case TestPhase::kStart:
           if (wants.max_pixel_count < std::numeric_limits<int>::max()) {

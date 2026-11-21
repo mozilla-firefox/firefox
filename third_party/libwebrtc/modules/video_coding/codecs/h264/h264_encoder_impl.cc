@@ -25,6 +25,8 @@
 #include "api/video/video_codec_constants.h"
 #include "api/video_codecs/scalability_mode.h"
 #include "common_video/libyuv/include/webrtc_libyuv.h"
+#include "modules/video_coding/include/video_codec_interface.h"
+#include "modules/video_coding/include/video_error_codes.h"
 #include "modules/video_coding/svc/create_scalability_structure.h"
 #include "modules/video_coding/utility/simulcast_rate_allocator.h"
 #include "modules/video_coding/utility/simulcast_utility.h"
@@ -172,24 +174,7 @@ static void RtpFragmentize(EncodedImage* encoded_image, SFrameBSInfo* info) {
 
 H264EncoderImpl::H264EncoderImpl(const Environment& env,
                                  H264EncoderSettings settings)
-    : H264EncoderImpl(settings.packetization_mode) {}
-
-H264EncoderImpl::H264EncoderImpl(const cricket::VideoCodec& codec)
-    : H264EncoderImpl([&] {
-        std::string packetization_mode_string;
-        if (codec.GetParam(cricket::kH264FmtpPacketizationMode,
-                           &packetization_mode_string) &&
-            packetization_mode_string == "1") {
-          return H264PacketizationMode::NonInterleaved;
-        } else {
-          return H264PacketizationMode::SingleNalUnit;
-        }
-      }()) {
-  RTC_CHECK(absl::EqualsIgnoreCase(codec.name, cricket::kH264CodecName));
-}
-
-H264EncoderImpl::H264EncoderImpl(H264PacketizationMode packetization_mode)
-    : packetization_mode_(packetization_mode),
+    : packetization_mode_(settings.packetization_mode),
       max_payload_size_(0),
       number_of_cores_(0),
       encoded_image_callback_(nullptr),

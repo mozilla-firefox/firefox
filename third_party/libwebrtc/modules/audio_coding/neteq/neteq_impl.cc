@@ -151,8 +151,6 @@ NetEqImpl::NetEqImpl(const NetEq::Config& config,
       accelerate_factory_(std::move(deps.accelerate_factory)),
       preemptive_expand_factory_(std::move(deps.preemptive_expand_factory)),
       stats_(std::move(deps.stats)),
-      enable_fec_delay_adaptation_(
-          !field_trial::IsDisabled("WebRTC-Audio-NetEqFecDelayAdaptation")),
       controller_(std::move(deps.neteq_controller)),
       last_mode_(Mode::kNormal),
       decoded_buffer_length_(kMaxFrameSize),
@@ -502,7 +500,6 @@ int NetEqImpl::InsertPacketInternal(const RTPHeader& rtp_header,
   // Store these for later use, since the first packet may very well disappear
   // before we need these values.
   uint32_t main_timestamp = packet_list.front().timestamp;
-  uint8_t main_payload_type = packet_list.front().payload_type;
   uint16_t main_sequence_number = packet_list.front().sequence_number;
 
   // Reinitialize NetEq if it's needed (changed SSRC or first call).
@@ -555,7 +552,6 @@ int NetEqImpl::InsertPacketInternal(const RTPHeader& rtp_header,
   if (decoder_database_->IsRed(rtp_header.payloadType)) {
     timestamp_scaler_->ToInternal(&packet_list);
     main_timestamp = packet_list.front().timestamp;
-    main_payload_type = packet_list.front().payload_type;
     main_sequence_number = packet_list.front().sequence_number;
   }
 
@@ -664,14 +660,13 @@ int NetEqImpl::InsertPacketInternal(const RTPHeader& rtp_header,
       // An error occurred.
       return kOtherError;
     }
-    if (enable_fec_delay_adaptation_) {
-      info.buffer_flush = buffer_flush_occured;
-      const bool should_update_stats = !new_codec_ && !buffer_flush_occured;
-      auto relative_delay =
-          controller_->PacketArrived(fs_hz_, should_update_stats, info);
-      if (relative_delay) {
-        stats_->RelativePacketArrivalDelay(relative_delay.value());
-      }
+
+    info.buffer_flush = buffer_flush_occured;
+    const bool should_update_stats = !new_codec_ && !buffer_flush_occured;
+    auto relative_delay =
+        controller_->PacketArrived(fs_hz_, should_update_stats, info);
+    if (relative_delay) {
+      stats_->RelativePacketArrivalDelay(relative_delay.value());
     }
   }
 
@@ -723,27 +718,6 @@ int NetEqImpl::InsertPacketInternal(const RTPHeader& rtp_header,
     }
   }
 
-  if (!enable_fec_delay_adaptation_) {
-    const DecoderDatabase::DecoderInfo* dec_info =
-        decoder_database_->GetDecoderInfo(main_payload_type);
-    RTC_DCHECK(dec_info);  // Already checked that the payload type is known.
-
-    NetEqController::PacketArrivedInfo info;
-    info.is_cng_or_dtmf = dec_info->IsComfortNoise() || dec_info->IsDtmf();
-    info.packet_length_samples =
-        number_of_primary_packets * decoder_frame_length_;
-    info.main_timestamp = main_timestamp;
-    info.main_sequence_number = main_sequence_number;
-    info.is_dtx = is_dtx;
-    info.buffer_flush = buffer_flush_occured;
-
-    const bool should_update_stats = !new_codec_;
-    auto relative_delay =
-        controller_->PacketArrived(fs_hz_, should_update_stats, info);
-    if (relative_delay) {
-      stats_->RelativePacketArrivalDelay(relative_delay.value());
-    }
-  }
   return 0;
 }
 

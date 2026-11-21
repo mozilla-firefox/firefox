@@ -196,6 +196,7 @@ class RtpVideoSender : public RtpVideoSenderInterface,
   // rewrite the frame id), therefore `shared_frame_id` has to live in a place
   // where we are aware of all the different streams.
   int64_t shared_frame_id_ = 0;
+  const bool independent_frame_ids_;
   std::vector<RtpPayloadParams> params_ RTC_GUARDED_BY(mutex_);
 
   size_t transport_overhead_bytes_per_packet_ RTC_GUARDED_BY(mutex_);

@@ -49,6 +49,10 @@ FakeVp8Encoder::FakeVp8Encoder(Clock* clock) : FakeEncoder(clock) {
   sequence_checker_.Detach();
 }
 
+FakeVp8Encoder::FakeVp8Encoder(const Environment& env) : FakeEncoder(env) {
+  sequence_checker_.Detach();
+}
+
 int32_t FakeVp8Encoder::InitEncode(const VideoCodec* config,
                                    const Settings& settings) {
   RTC_DCHECK_RUN_ON(&sequence_checker_);

@@ -618,8 +618,8 @@ void EventGenerator::RandomizeRtpPacket(
 
   if (extension_map.IsRegistered(AudioLevelExtension::kId) &&
       (all_configured_exts || prng_.Rand<bool>())) {
-    rtp_packet->SetExtension<AudioLevelExtension>(prng_.Rand<bool>(),
-                                                  prng_.Rand(127));
+    rtp_packet->SetExtension<AudioLevelExtension>(
+        AudioLevel(prng_.Rand<bool>(), prng_.Rand(127)));
   }
 
   if (extension_map.IsRegistered(AbsoluteSendTime::kId) &&
@@ -1029,14 +1029,15 @@ void VerifyLoggedRtpHeader(const Event& original_header,
 
   // AudioLevel header extension.
   ASSERT_EQ(original_header.template HasExtension<AudioLevelExtension>(),
-            logged_header.extension.hasAudioLevel);
-  if (logged_header.extension.hasAudioLevel) {
-    bool voice_activity;
-    uint8_t audio_level;
+            logged_header.extension.audio_level().has_value());
+  if (logged_header.extension.audio_level()) {
+    AudioLevel audio_level;
     ASSERT_TRUE(original_header.template GetExtension<AudioLevelExtension>(
-        &voice_activity, &audio_level));
-    EXPECT_EQ(voice_activity, logged_header.extension.voiceActivity);
-    EXPECT_EQ(audio_level, logged_header.extension.audioLevel);
+        &audio_level));
+    EXPECT_EQ(audio_level.voice_activity(),
+              logged_header.extension.audio_level()->voice_activity());
+    EXPECT_EQ(audio_level.level(),
+              logged_header.extension.audio_level()->level());
   }
 
   // VideoOrientation header extension.

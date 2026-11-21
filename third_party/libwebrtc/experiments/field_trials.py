@@ -10,6 +10,7 @@
 
 import datetime
 from datetime import date
+import hashlib
 import sys
 from typing import FrozenSet, List, Set
 
@@ -30,32 +31,23 @@ class FieldTrial:
     bug: str
     end_date: date
 
+    def bug_url(self) -> str:
+        project, _, bug_id = self.bug.partition(':')
+        if not project or not bug_id:
+            return ''
+        return f'https://crbug.com/{project}/{bug_id}'
+
 
 # As per the policy in `g3doc/field-trials.md`, all field trials should be
 # registered in the container below.
 ACTIVE_FIELD_TRIALS: FrozenSet[FieldTrial] = frozenset([
     # keep-sorted start
-    FieldTrial('WebRTC-Aec3DelayEstimatorDetectPreEcho',
-               'webrtc:14205',
-               date(2024, 4, 1)),
-    FieldTrial('WebRTC-Aec3PenalyzeHighDelaysInitialPhase',
-               'webrtc:14919',
-               date(2024, 4, 1)),
-    FieldTrial('WebRTC-Aec3PreEchoConfiguration',
-               'webrtc:14205',
-               date(2024, 4, 1)),
     FieldTrial('WebRTC-Audio-GainController2',
                'webrtc:7494',
                date(2024, 4, 1)),
-    FieldTrial('WebRTC-Audio-NetEqFecDelayAdaptation',
-               'webrtc:13322',
-               date(2024, 4, 1)),
-    FieldTrial('WebRTC-Audio-OpusSetSignalVoiceWithDtx',
-               'webrtc:4559',
-               date(2024, 4, 1)),
     FieldTrial('WebRTC-Audio-OpusGeneratePlc',
                'webrtc:13322',
-               date(2024, 4, 1)),
+               date(2025, 4, 1)),
     FieldTrial('WebRTC-Audio-PriorityBitrate',
                'webrtc:15769',
                date(2024, 4, 1)),
@@ -65,18 +57,18 @@ ACTIVE_FIELD_TRIALS: FrozenSet[FieldTrial] = frozenset([
     FieldTrial('WebRTC-Av1-GetEncoderInfoOverride',
                'webrtc:14931',
                date(2024, 4, 1)),
-    FieldTrial('WebRTC-BurstyPacer',
-               'chromium:1354491',
-               date(2024, 4, 1)),
-    FieldTrial('WebRTC-Bwe-SubtractAdditionalBackoffTerm',
-               'webrtc:13402',
-               date(2024, 4, 1)),
+    FieldTrial('WebRTC-DataChannelMessageInterleaving',
+               'webrtc:5696',
+               date(2024, 10, 1)),
     FieldTrial('WebRTC-DisableRtxRateLimiter',
                'webrtc:15184',
                date(2024, 4, 1)),
     FieldTrial('WebRTC-EncoderDataDumpDirectory',
                'b/296242528',
                date(2024, 4, 1)),
+    FieldTrial('WebRTC-FrameCadenceAdapter-UseVideoFrameTimestamp',
+               'webrtc:15887',
+               date(2024, 10, 1)),
     FieldTrial('WebRTC-IPv6NetworkResolutionFixes',
                'webrtc:14334',
                date(2024, 4, 1)),
@@ -149,15 +141,18 @@ ACTIVE_FIELD_TRIALS: FrozenSet[FieldTrial] = frozenset([
     FieldTrial('WebRTC-Video-EncoderFallbackSettings',
                'webrtc:6634',
                date(2024, 4, 1)),
-    FieldTrial('WebRTC-Video-RequestedResolutionOverrideOutputFormatRequest',
-               'webrtc:14451',
-               date(2024, 4, 1)),
+    FieldTrial('WebRTC-Video-SimulcastIndependentFrameIds',
+               'webrtc:15875',
+               date(2024, 12, 1)),
     FieldTrial('WebRTC-VideoEncoderSettings',
                'chromium:1406331',
                date(2024, 4, 1)),
     FieldTrial('WebRTC-ZeroHertzQueueOverload',
                'webrtc:332381',
                date(2024, 7, 1)),
+    FieldTrial('WebRTC-Video-H26xPacketBuffer',
+               'webrtc:13485',
+               date(2024, 6, 1)),
     # keep-sorted end
 ])  # yapf: disable
 
@@ -165,11 +160,10 @@ INDEFINITE = date(datetime.MAXYEAR, 1, 1)
 
 # These field trials precedes the policy in `g3doc/field-trials.md` and are
 # therefore not required to follow it. Do not add any new field trials here.
+# If you remove an entry you should also update
+# POLICY_EXEMPT_FIELD_TRIALS_DIGEST.
 POLICY_EXEMPT_FIELD_TRIALS: FrozenSet[FieldTrial] = frozenset([
     # keep-sorted start
-    FieldTrial('UseTwccPlrForAna',
-               'webrtc:7058',
-               date(2024, 4, 1)),
     FieldTrial('WebRTC-AddNetworkCostToVpn',
                'webrtc:13097',
                date(2024, 4, 1)),
@@ -739,9 +733,6 @@ POLICY_EXEMPT_FIELD_TRIALS: FrozenSet[FieldTrial] = frozenset([
     FieldTrial('WebRTC-RtcpLossNotification',
                'webrtc:10336',
                date(2024, 4, 1)),
-    FieldTrial('WebRTC-RttMult',
-               'webrtc:9670',
-               INDEFINITE),
     FieldTrial('WebRTC-SendBufferSizeBytes',
                'webrtc:11905',
                date(2024, 4, 1)),
@@ -919,6 +910,9 @@ POLICY_EXEMPT_FIELD_TRIALS: FrozenSet[FieldTrial] = frozenset([
     # keep-sorted end
 ])  # yapf: disable
 
+POLICY_EXEMPT_FIELD_TRIALS_DIGEST: str = \
+    '3026f839766eb90355893fa0f1af8e9bf0d0dca1'
+
 REGISTERED_FIELD_TRIALS: FrozenSet[FieldTrial] = ACTIVE_FIELD_TRIALS.union(
     POLICY_EXEMPT_FIELD_TRIALS)
 
@@ -1019,6 +1013,17 @@ def validate_field_trials(
       A list of explanations for invalid field trials.
     """
     invalid = []
+
+    sha1 = hashlib.sha1()
+    for trial in sorted(POLICY_EXEMPT_FIELD_TRIALS, key=lambda f: f.key):
+        sha1.update(trial.key.encode('ascii'))
+    if sha1.hexdigest() != POLICY_EXEMPT_FIELD_TRIALS_DIGEST:
+        invalid.append(
+            'POLICY_EXEMPT_FIELD_TRIALS has been modified. Please note that '
+            'you must not add any new entries there. If you removed an entry '
+            'you should also update POLICY_EXEMPT_FIELD_TRIALS_DIGEST. The'
+            f'new digest is "{sha1.hexdigest()}".')
+
     for trial in field_trials:
         if not trial.key.startswith('WebRTC-'):
             invalid.append(f'{trial.key} does not start with "WebRTC-".')
@@ -1026,26 +1031,36 @@ def validate_field_trials(
             invalid.append(f'{trial.key} must have an associated bug.')
         if trial.end_date >= INDEFINITE:
             invalid.append(f'{trial.key} must have an end date.')
+
     return invalid
 
 
 def cmd_header(args: argparse.Namespace) -> None:
+    if not args.no_validation:
+        if errors := validate_field_trials():
+            print('\n'.join(sorted(errors)))
+            sys.exit(1)
+
     args.output.write(registry_header())
 
 
 def cmd_expired(args: argparse.Namespace) -> None:
     today = todays_date()
     diff = datetime.timedelta(days=args.in_days)
-    expired = expired_field_trials(today + diff)
+    expired = expired_field_trials(
+        today + diff,
+        ACTIVE_FIELD_TRIALS if args.no_exempt else REGISTERED_FIELD_TRIALS)
 
     if len(expired) <= 0:
         return
 
-    expired_by_date = sorted([(f.end_date, f.key) for f in expired])
+    expired_by_date = sorted(expired, key=lambda f: (f.end_date, f.key))
     print('\n'.join(
-        f'{key} {"expired" if date <= today else "expires"} on {date}'
-        for date, key in expired_by_date))
-    if any(date <= today for date, _ in expired_by_date):
+        f'{f.key} '
+        f'{f"<{f.bug_url()}> " if f.bug_url() else ""}'
+        f'{"expired" if f.end_date <= today else "expires"} on {f.end_date}'
+        for f in expired_by_date))
+    if any(f.end_date <= today for f in expired_by_date):
         sys.exit(1)
 
 
@@ -1072,6 +1087,12 @@ def main() -> None:
                                type=argparse.FileType('w'),
                                required=False,
                                help='output file')
+    parser_header.add_argument(
+        '--no-validation',
+        default=False,
+        action='store_true',
+        required=False,
+        help='whether to validate the field trials before writing')
     parser_header.set_defaults(cmd=cmd_header)
 
     parser_expired = subcommand.add_parser(
@@ -1081,6 +1102,12 @@ def main() -> None:
         Lists all expired field trials. Exits with a non-zero exit status if
         any field trials has expired, ignoring the --in-days argument.
         ''')
+    parser_expired.add_argument(
+        '--no-exempt',
+        default=False,
+        action='store_true',
+        required=False,
+        help='whether to include policy exempt field trials')
     parser_expired.add_argument(
         '--in-days',
         default=0,

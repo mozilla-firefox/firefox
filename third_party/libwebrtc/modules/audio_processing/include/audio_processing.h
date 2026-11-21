@@ -361,10 +361,10 @@ class RTC_EXPORT AudioProcessing : public RefCountInterface {
           return !(*this == rhs);
         }
         bool enabled = false;
-        float headroom_db = 6.0f;
-        float max_gain_db = 30.0f;
-        float initial_gain_db = 8.0f;
-        float max_gain_change_db_per_second = 3.0f;
+        float headroom_db = 5.0f;
+        float max_gain_db = 50.0f;
+        float initial_gain_db = 15.0f;
+        float max_gain_change_db_per_second = 6.0f;
         float max_output_noise_level_dbfs = -50.0f;
       } adaptive_digital;
 

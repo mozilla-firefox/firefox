@@ -112,7 +112,8 @@ TEST(PccNetworkControllerTest, UpdatesTargetSendRate) {
   ret_net->UpdateConfig(
       [](NetworkSimulationConfig* c) { c->delay = TimeDelta::Millis(200); });
   s.RunFor(TimeDelta::Seconds(35));
-  EXPECT_NEAR(client->target_rate().kbps(), 170, 50);
+  EXPECT_LE(client->target_rate().kbps(), 200);
+  EXPECT_GT(client->target_rate().kbps(), 90);
 }
 
 }  // namespace test

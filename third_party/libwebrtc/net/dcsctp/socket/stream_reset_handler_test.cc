@@ -107,9 +107,7 @@ class StreamResetHandlerTest : public testing::Test {
         data_tracker_(std::make_unique<DataTracker>("log: ",
                                                     delayed_ack_timer_.get(),
                                                     kPeerInitialTsn)),
-        reasm_(std::make_unique<ReassemblyQueue>("log: ",
-                                                 kPeerInitialTsn,
-                                                 kArwnd)),
+        reasm_(std::make_unique<ReassemblyQueue>("log: ", kArwnd)),
         retransmission_queue_(std::make_unique<RetransmissionQueue>(
             "",
             &callbacks_,
@@ -201,8 +199,7 @@ class StreamResetHandlerTest : public testing::Test {
     data_tracker_ = std::make_unique<DataTracker>(
         "log: ", delayed_ack_timer_.get(), kPeerInitialTsn);
     data_tracker_->RestoreFromState(state);
-    reasm_ =
-        std::make_unique<ReassemblyQueue>("log: ", kPeerInitialTsn, kArwnd);
+    reasm_ = std::make_unique<ReassemblyQueue>("log: ", kArwnd);
     reasm_->RestoreFromState(state);
     retransmission_queue_ = std::make_unique<RetransmissionQueue>(
         "", &callbacks_, kMyInitialTsn, kArwnd, producer_, [](TimeDelta rtt) {},

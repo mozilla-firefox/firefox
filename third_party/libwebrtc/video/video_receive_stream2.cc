@@ -570,6 +570,19 @@ VideoReceiveStreamInterface::Stats VideoReceiveStream2::GetStats() const {
     }
   }
 
+  absl::optional<RtpRtcpInterface::SenderReportStats> rtcp_sr_stats =
+      rtp_video_stream_receiver_.GetSenderReportStats();
+  if (rtcp_sr_stats) {
+    stats.last_sender_report_timestamp_ms =
+        rtcp_sr_stats->last_arrival_timestamp.ToMs() -
+        rtc::kNtpJan1970Millisecs;
+    stats.last_sender_report_remote_timestamp_ms =
+        rtcp_sr_stats->last_remote_timestamp.ToMs() - rtc::kNtpJan1970Millisecs;
+    stats.sender_reports_packets_sent = rtcp_sr_stats->packets_sent;
+    stats.sender_reports_bytes_sent = rtcp_sr_stats->bytes_sent;
+    stats.sender_reports_reports_count = rtcp_sr_stats->reports_count;
+  }
+
   // Mozilla modification: VideoReceiveStream2 and friends do not surface RTCP
   // stats at all, and even on the most recent libwebrtc code there does not
   // seem to be any support for these stats right now. So, we hack this in.

@@ -142,7 +142,13 @@ TEST_F(PeerConnectionFieldTrialTest, EnableDependencyDescriptorAdvertised) {
 
 // Tests that dependency descriptor RTP header extensions can be exchanged
 // via SDP munging, even if dependency descriptor field trial is disabled.
-TEST_F(PeerConnectionFieldTrialTest, InjectDependencyDescriptor) {
+#ifdef WEBRTC_WIN
+// TODO: crbug.com/webrtc/15876 - Test is flaky on Windows machines.
+#define MAYBE_InjectDependencyDescriptor DISABLED_InjectDependencyDescriptor
+#else
+#define MAYBE_InjectDependencyDescriptor InjectDependencyDescriptor
+#endif
+TEST_F(PeerConnectionFieldTrialTest, MAYBE_InjectDependencyDescriptor) {
   std::unique_ptr<test::ScopedKeyValueConfig> field_trials =
       std::make_unique<test::ScopedKeyValueConfig>(
           "WebRTC-DependencyDescriptorAdvertised/Disabled/");
