@@ -28,6 +28,10 @@ const PREF_CAPTIVE_MAXTIME = "network.captive-portal-service.maxInterval";
 const PREF_DNS_NATIVE_IS_LOCALHOST = "network.dns.native-is-localhost";
 const PREF_HTTPS_CHECK_ENABLED = "captivedetect.httpsCheck.enabled";
 const PREF_HTTPS_CHECK_URL = "captivedetect.httpsCheck.url";
+// The test profile points the HTTPS check at a URL that fails right away.
+// Clearing the pref would fall back to the production endpoint instead.
+const PROFILE_HTTPS_CHECK_URL =
+  Services.prefs.getCharPref(PREF_HTTPS_CHECK_URL);
 
 const cps = Cc["@mozilla.org/network/captive-portal-service;1"].getService(
   Ci.nsICaptivePortalService
@@ -42,7 +46,7 @@ registerCleanupFunction(async () => {
   Services.prefs.clearUserPref(PREF_CAPTIVE_MAXTIME);
   Services.prefs.clearUserPref(PREF_DNS_NATIVE_IS_LOCALHOST);
   Services.prefs.clearUserPref(PREF_HTTPS_CHECK_ENABLED);
-  Services.prefs.clearUserPref(PREF_HTTPS_CHECK_URL);
+  Services.prefs.setCharPref(PREF_HTTPS_CHECK_URL, PROFILE_HTTPS_CHECK_URL);
 
   await new Promise(resolve => {
     httpserver.stop(resolve);
@@ -301,7 +305,7 @@ add_task(async function test_https_check_reports_unlocked() {
     Ci.nsICaptivePortalService.UNLOCKED_PORTAL,
   ]);
   Services.prefs.clearUserPref(PREF_HTTPS_CHECK_ENABLED);
-  Services.prefs.clearUserPref(PREF_HTTPS_CHECK_URL);
+  Services.prefs.setCharPref(PREF_HTTPS_CHECK_URL, PROFILE_HTTPS_CHECK_URL);
   restoreSharedConfig();
 });
 
@@ -357,7 +361,7 @@ add_task(async function test_https_check_unlocks_after_login() {
   equal(cps.state, Ci.nsICaptivePortalService.UNLOCKED_PORTAL);
 
   Services.prefs.clearUserPref(PREF_HTTPS_CHECK_ENABLED);
-  Services.prefs.clearUserPref(PREF_HTTPS_CHECK_URL);
+  Services.prefs.setCharPref(PREF_HTTPS_CHECK_URL, PROFILE_HTTPS_CHECK_URL);
   restoreSharedConfig();
 });
 
