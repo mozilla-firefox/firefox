@@ -5,22 +5,22 @@
 package org.mozilla.fenix.onboarding
 
 import mozilla.components.support.ktx.kotlin.ifNullOrEmpty
-import org.mozilla.fenix.onboarding.view.OnboardingTermsOfServiceEventHandler
 import org.mozilla.fenix.settings.SupportUtils
 import org.mozilla.fenix.termsofuse.TOU_VERSION
 import org.mozilla.fenix.utils.Settings
 
-/** Default implementation for [OnboardingTermsOfServiceEventHandler]. */
-class DefaultOnboardingTermsOfServiceEventHandler(
+/** Handles the user interactions on the terms of service onboarding page. */
+class OnboardingTermsOfServiceEventHandler(
     private val telemetryRecorder: OnboardingTelemetryRecorder,
     private val openLink: (String) -> Unit,
     private val showManagePrivacyPreferencesDialog: () -> Unit,
     private val settings: Settings,
     private val startGlean: () -> Unit,
     private val currentTimeMillis: () -> Long = { System.currentTimeMillis() },
-) : OnboardingTermsOfServiceEventHandler {
+) {
 
-    override fun onTermsOfServiceLinkClicked(url: String) {
+    /** Invoked when the terms of service link is clicked. */
+    fun onTermsOfServiceLinkClicked(url: String) {
         telemetryRecorder.onTermsOfServiceLinkClick()
         openLink(
             url.trim().ifNullOrEmpty {
@@ -29,7 +29,8 @@ class DefaultOnboardingTermsOfServiceEventHandler(
         )
     }
 
-    override fun onPrivacyNoticeLinkClicked(url: String) {
+    /** Invoked when the privacy notice link is clicked. */
+    fun onPrivacyNoticeLinkClicked(url: String) {
         telemetryRecorder.onTermsOfServicePrivacyNoticeLinkClick()
         openLink(
             url.trim().ifNullOrEmpty {
@@ -38,12 +39,14 @@ class DefaultOnboardingTermsOfServiceEventHandler(
         )
     }
 
-    override fun onManagePrivacyPreferencesLinkClicked() {
+    /** Invoked when the manage privacy preferences link is clicked. */
+    fun onManagePrivacyPreferencesLinkClicked() {
         telemetryRecorder.onTermsOfServiceManagePrivacyPreferencesLinkClick()
         showManagePrivacyPreferencesDialog()
     }
 
-    override fun onAcceptTermsButtonClicked() {
+    /** Invoked when the accept button is clicked. */
+    fun onAcceptTermsButtonClicked() {
         telemetryRecorder.onTermsOfServiceManagerAcceptTermsButtonClick()
         settings.hasAcceptedTermsOfService = true
         settings.termsOfUseAcceptedVersion = TOU_VERSION
