@@ -4,7 +4,7 @@
       "type": "http",
       "url": "https://mcp-dev.moz.tools/mcp"
     },
-    "firefox-devtools": {
+    "firefox": {
       "type": "stdio",
       "command": "${MACH_PYTHON:-python3}",
       "args": [

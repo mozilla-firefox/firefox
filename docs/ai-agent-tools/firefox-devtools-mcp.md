@@ -73,7 +73,7 @@ For installation in other projects or at user scope, Claude Code can configure
 the MCP server with a single command:
 
 ```bash
-claude mcp add firefox-devtools npx @mozilla/firefox-devtools-mcp-moz
+claude mcp add firefox npx @mozilla/firefox-devtools-mcp-moz
 ```
 
 This command registers the MCP server with your Claude Code configuration for
@@ -83,7 +83,7 @@ If a global installation is preferred (so that it works from multiple project
 directories), it can be installed at the user scope:
 
 ```bash
-claude mcp add firefox-devtools npx @mozilla/firefox-devtools-mcp-moz --scope user
+claude mcp add firefox npx @mozilla/firefox-devtools-mcp-moz --scope user
 ```
 
 This changes `~/.claude.json`, either in the project section, or in the global

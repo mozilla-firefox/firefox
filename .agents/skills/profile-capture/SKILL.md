@@ -6,7 +6,7 @@ description: >
   feature, a benchmark, a reduced test case, to obtain profiles - then analyze
   with profile-analysis.
 allowed-tools:
-  - mcp__firefox-devtools__*
+  - mcp__firefox__*
   - Skill(profiler-analysis)
   - Read
   - Grep
