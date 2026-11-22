@@ -847,8 +847,7 @@ class Simulator {
   bool overRecursed(uintptr_t newsp = 0) const;
   bool overRecursedWithExtra(uint32_t extra) const;
 
-  // Executes MIPS instructions until the PC reaches end_sim_pc.
-  template <bool enableStopSimAt>
+  // Executes RISC-V instructions until the PC reaches end_sim_pc.
   void execute();
 
   // Sets up the simulator state and grabs the result on return.
@@ -955,8 +954,15 @@ class Simulator {
     return true;
   }
 
-  // Executes one instruction.
-  void InstructionDecode(const SimInstruction& instr);
+  // Decodes and executes one instruction.
+  void ExecuteInstruction(Instruction* instr);
+  // As ExecuteInstruction, with the icache check, tracing and the watch.
+  void ExecuteInstructionWithChecks(const SimInstruction& instr);
+  // As ExecuteInstructionWithChecks, with the stop-at count and single
+  // stepping.
+  void ExecuteSlowPath(int64_t program_counter);
+  // Sets instruction_checks_, which execute tests before each instruction.
+  void UpdateInstructionChecks();
 
   // ICache.
   // static void CheckICache(base::CustomMatcherHashMap* i_cache,
@@ -1156,6 +1162,7 @@ class Simulator {
   char* stack_;
   uintptr_t stackLimit_;
   bool pc_modified_;
+  bool instruction_checks_ = true;
   int64_t icount_;
   int64_t break_count_;
 
