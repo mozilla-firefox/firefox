@@ -525,6 +525,10 @@ function handleRequest(request, response) {
 
     setSharedState(SHARED_KEY, JSON.stringify(result));
 
+    // Each load must reach the server to record its referrer, also when the
+    // test runs again in the same browser.
+    response.setHeader("Cache-Control", "no-cache", false);
+
     if (type === "img" || type == "link_element_preload") {
       // return image
       response.setHeader("Content-Type", "image/png");
