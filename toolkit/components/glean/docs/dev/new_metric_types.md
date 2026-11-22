@@ -20,7 +20,7 @@ When adding a new metric type, the main IPC considerations are:
       operations can still be used.
 * What partial representation will this metric have in non-main processes?
 Put another way, what shape of storage will this take up in the
-[IPC Payload](https://hg.mozilla.org/mozilla-central/file/tip/toolkit/components/glean/api/src/ipc.rs)?
+{searchfox}`IPC Payload <toolkit/components/glean/api/src/ipc.rs>`?
     * For example, Counters can aggregate all partial counts together to a single
     "partial sum". So
     [its representation](https://searchfox.org/mozilla-central/rev/803b368879fa332e8e2c1840bf1ec164f7ed2c32/toolkit/components/glean/api/src/ipc.rs#45)
@@ -72,7 +72,7 @@ that contains the mirrored probe type (Event, Histogram, Scalar).
 
 If you add a GIFFT mirror, don't forget to test that the mirror works.
 You should be able to do this by adding a task to
-[`toolkit/components/glean/tests/xpcshell/test_GIFFT.js`](https://hg.mozilla.org/mozilla-central/file/tip/toolkit/components/glean/tests/xpcshell/test_GIFFT.js).
+{searchfox}`toolkit/components/glean/tests/xpcshell/test_GIFFT.js`.
 
 ### GIFFT C++ State: Typical Locking and Shutdown
 
@@ -98,7 +98,7 @@ This is because during the next phase (`XPCOMWillShutdown`) we clear the state.
 FOG uses the Rust Language Binding APIs (the `glean` crate) with a layer of IPC on top.
 
 The IPC additions and glean-core trait implementations are in the
-[`private` module of the `fog` crate](https://hg.mozilla.org/mozilla-central/file/tip/toolkit/components/glean/api/src/metrics).
+`private` module of the `fog` crate ({searchfox}`api/src/private/ <toolkit/components/glean/api/src/private>`).
 
 Each metric type gets its own file, mimicking the structure in
 [`glean_core`](https://github.com/mozilla/glean/tree/main/glean-core/src/metrics)
@@ -107,7 +107,7 @@ Unless, of course, that metric is a labeled metric type.
 Then the sub metric type gets its own file,
 and you need to add "Labeledness" to it by implementing
 `Sealed` for your new type following the pattern in
-[`api/src/private/labeled.rs`](https://hg.mozilla.org/mozilla-central/file/tip/toolkit/components/glean/api/src/private/labeled.rs).
+{searchfox}`api/src/private/labeled.rs <toolkit/components/glean/api/src/private/labeled.rs>`.
 
 Every method on the metric type is public for now,
 including test methods,
@@ -116,7 +116,7 @@ and is at least all the methods exposed via the
 
 To support IPC and the MLA FFI (see below)
 we identify metric instances by MetricId and store them in maps in
-[the `__glean_metric_maps` mod of `metrics.rs`](https://hg.mozilla.org/mozilla-central/toolkit/components/glean/api/src/metrics.rs).
+the `__glean_metric_maps` mod of {searchfox}`metrics.rs <toolkit/components/glean/api/src/metrics.rs>`.
 This work is done by the `rust.py` and `rust(_pings).jinja2` extensions to `glean_parser` found
 [in the `build_scripts/glean_parser_ext/` folder](https://searchfox.org/firefox-main/source/toolkit/components/glean/build_scripts/glean_parser_ext).
 
@@ -147,21 +147,21 @@ Each metric type has six pieces you'll need to cover:
 
 - Using our convenient macros,
   define the metric type's Multi-Language Architecture FFI layer above the Rust API in
-  [`api/src/ffi/`](https://hg.mozilla.org/mozilla-central/file/tip/toolkit/components/glean/api/src/ffi/).
+  {searchfox}`api/src/ffi/ <toolkit/components/glean/api/src/ffi/>`.
 
 ### 2. C++ Impl
 
 - Implement a type called `XMetric` (e.g. `CounterMetric`) in `mozilla::glean::impl` in
-  [`bindings/private/`](https://hg.mozilla.org/mozilla-central/file/tip/toolkit/components/glean/bindings/private/).
+  {searchfox}`bindings/private/ <toolkit/components/glean/bindings/private/>`.
     - Its methods should be named the same as the ones in the Rust API, transformed to `CamelCase`.
     - They should all be public.
     - Multiplex the FFI's `test_have` and `test_get` functions into a single
       `TestGetValue` function that returns a
       `mozilla::Maybe` wrapping the C++ type that best fits the metric type.
 - Include the new metric type in
-  [`bindings/MetricTypes.h`](https://hg.mozilla.org/mozilla-central/file/tip/toolkit/components/glean/bindings/MetricTypes.h).
+  {searchfox}`bindings/MetricTypes.h <toolkit/components/glean/bindings/MetricTypes.h>`.
 - Include the new files in
-  [`moz.build`](https://hg.mozilla.org/mozilla-central/file/tip/toolkit/components/glean/moz.build).
+  {searchfox}`moz.build <toolkit/components/glean/moz.build>`.
   The header file should be added to `EXPORTS.mozilla.glean.bindings` and the
   `.cpp` file should be added to `UNIFIED_SOURCES`.
 
@@ -203,16 +203,16 @@ Each metric type has six pieces you'll need to cover:
 Two languages means two test suites.
 
 - Add a never-expiring test-only metric of your type to
-  [`test_metrics.yaml`](https://hg.mozilla.org/mozilla-central/file/tip/toolkit/components/glean/tests/test_metrics.yaml).
+  {searchfox}`test_metrics.yaml <toolkit/components/glean/tests/test_metrics.yaml>`.
     - Feel free to be clever with the name,
       but be sure to make clear that it is test-only.
 - **C++ Tests (GTest)** - Add a small test case to
-  [`gtest/TestFog.cpp`](https://hg.mozilla.org/mozilla-central/file/tip/toolkit/components/glean/tests/gtest/TestFog.cpp).
+  {searchfox}`gtest/TestFog.cpp <toolkit/components/glean/tests/gtest/TestFog.cpp>`.
     - For more details, peruse the [testing docs](testing.md).
 - **JS Tests (xpcshell)** - Add a small test case to
-  [`xpcshell/test_Glean.js`](https://hg.mozilla.org/mozilla-central/file/tip/toolkit/components/glean/tests/xpcshell/test_Glean.js)
+  {searchfox}`xpcshell/test_Glean.js <toolkit/components/glean/tests/xpcshell/test_Glean.js>`
   and
-  [`xpcshell/test_JOG.js`](https://hg.mozilla.org/mozilla-central/file/tip/toolkit/components/glean/tests/xpcshell/test_JOG.js).
+  {searchfox}`xpcshell/test_JOG.js <toolkit/components/glean/tests/xpcshell/test_JOG.js>`.
   If your metric type has supported IPC operations, also add cases to the `IPC` variants of these test files.
     - For more details, peruse the [testing docs](testing.md).
 

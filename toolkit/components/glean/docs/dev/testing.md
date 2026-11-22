@@ -137,8 +137,8 @@ in `toolkit/components/glean/tests/gtest/`.
 You can write the actual test code in Rust.
 It needs to be accompanied by a C++ GTest that calls a C FFI-exported Rust function.
 See [Testing & Debugging Rust Code](/testing-rust-code/index.md) for more.
-See [`toolkit/components/glean/tests/gtest/TestFog.cpp`](https://searchfox.org/firefox-main/source/toolkit/components/glean/tests/gtest/TestFog.cpp)
-and [`toolkit/components/glean/tests/gtest/test.rs`](https://searchfox.org/firefox-main/source/toolkit/components/glean/tests/gtest/test.rs)
+See {searchfox}`toolkit/components/glean/tests/gtest/TestFog.cpp`
+and {searchfox}`toolkit/components/glean/tests/gtest/test.rs`
 for an example.
 
 By necessity these can only be integration tests against the compiled crate.
@@ -175,11 +175,11 @@ To test the C++ parts of FOG's implementation
 (like metric types)
 you should use `gtest`.
 FOG's `gtest` tests are in
-[`gtest/`](https://hg.mozilla.org/mozilla-central/file/tip/toolkit/components/glean/tests/gtest/).
+{searchfox}`gtest/ <toolkit/components/glean/tests/gtest/>`.
 
 You can either add a test case to an existing file or add a new file.
 If you add a new file, remember to add it to the
-[`moz.build`](https://hg.mozilla.org/mozilla-central/file/tip/toolkit/components/glean/tests/gtest/moz.build))
+{searchfox}`moz.build <toolkit/components/glean/tests/gtest/moz.build>`
 or the test runner won't be able to find it.
 
 All tests should use the `FOGFixture` fixture where possible.
@@ -192,7 +192,7 @@ To test the JS parts of FOG's implementation
 (like metric types)
 you should use `xpcshell`.
 FOG's `xpcshell` tests are in
-[`xpcshell/`](https://hg.mozilla.org/mozilla-central/file/tip/toolkit/components/glean/tests/xpcshell).
+{searchfox}`xpcshell/ <toolkit/components/glean/tests/xpcshell>`.
 
 You can either add a test case to an existing file or add a new file.
 If you add a new file, remember to add it to
@@ -208,7 +208,7 @@ To test e.g. the GPU process support you need a full Firefox browser:
 xpcshell doesn't have the flexibility.
 To test that and have access to privileged JS (i.e. `Glean` and `FOG` APIs),
 we use browser-chrome-flavoured mochitests you can find in
-[`browser/`](https://hg.mozilla.org/mozilla-central/file/tip/toolkit/components/glean/tests/browser).
+{searchfox}`browser/ <toolkit/components/glean/tests/browser>`.
 
 If you need to add a new test file, remember to add it to
 {searchfox}`toolkit/components/glean/tests/browser/browser.toml`
