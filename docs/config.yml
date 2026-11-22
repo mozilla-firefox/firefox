@@ -160,10 +160,6 @@ allowed_warnings:
     - "security/nss/build\\.md:.*: WARNING: more than one target found for 'myst' cross-reference build:"
     - "security/nss/legacy_extracts/asn1\\.md:.*: WARNING: 'myst' cross-reference target not found: '(templates|asn\\.1_tags|decoder_modifiers)'"
     - "security/nss/legacy_extracts/structure\\.md:.*: WARNING: 'myst' cross-reference target not found: 'api_structure'"
-    # Bug 2008577 - The Rust component JS bindings carry the Markdown doc
-    # comments of application-services, so these have to be fixed there.
-    - "rust-components/api/js/db_crypto\\.md:.*: WARNING: Inline (literal|interpreted text or phrase reference) start-string without end-string"
-    - "rust-components/api/js/remote_settings\\.md:.*: WARNING: Bullet list ends without a blank line"
 
 # Paths to exclude from documentation staging to avoid duplicate builds
 exclude_patterns:

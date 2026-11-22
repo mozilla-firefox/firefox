@@ -11,7 +11,9 @@ and they do not agree:
 
     A Markdown code span such as `` `forceForeground` `` renders as code,
     because `docs/jsdoc-plugins/convert-descriptions-to-rst.mjs` doubles its
-    backticks. `|name|` is a
+    backticks. The same plugin turns a code fence into a `code-block` and
+    indents the continuation lines of a list item, so both can be written as
+    Markdown. `|name|` is a
     substitution reference, and an undefined one fails the build rather than
     warning.
 -   **A `@param` description renders as one paragraph.** sphinx-js replaces every
