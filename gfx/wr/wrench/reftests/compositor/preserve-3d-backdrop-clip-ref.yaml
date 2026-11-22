@@ -1,0 +1,31 @@
+# The same rounded clip in a preserve-3d context, on a rect of the backdrop's
+# inverted color.
+root:
+  items:
+    - type: rect
+      color: white
+      bounds: [0, 0, 400, 400]
+    - type: rect
+      color: green
+      bounds: [10, 0, 300, 300]
+    - type: rect
+      color: blue
+      bounds: [260, 250, 20, 20]
+    - type: stacking-context
+      bounds: [10, 0, 0, 0]
+      transform: translate(0, 0)
+      is-2d: true
+      transform-style: preserve-3d
+      items:
+        - type: clip
+          id: 2
+          complex:
+            - rect: [50, 50, 200, 100]
+              radius: 10
+        - type: clip-chain
+          id: 3
+          clips: [2]
+        - type: rect
+          color: 255 0 255
+          bounds: [50, 50, 200, 100]
+          clip-chain: 3

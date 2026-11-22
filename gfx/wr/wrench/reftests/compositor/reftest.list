@@ -34,3 +34,4 @@ options(enable-compositor-clips) == corner-shape.yaml corner-shape-ref.yaml
 options(enable-compositor-clips) fuzzy(1,50) == scrolled-clip.yaml scrolled-clip-ref.yaml
 options(enable-compositor-clips) fuzzy(1,50) == nested-clip.yaml nested-clip-ref.yaml
 options(enable-compositor-clips) scale(1,2) fuzzy(1,400) == rounded-clip.yaml rounded-clip-ref.yaml
+options(enable-compositor-clips) == preserve-3d-backdrop-clip.yaml preserve-3d-backdrop-clip-ref.yaml

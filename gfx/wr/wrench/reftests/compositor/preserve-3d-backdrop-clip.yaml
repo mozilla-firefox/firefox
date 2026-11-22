@@ -1,0 +1,38 @@
+# A backdrop-filter in a 2d preserve-3d context, in a scroll frame, clipped by
+# a rounded rect. The preserve-3d reference frame starts a new coordinate
+# system, so neither the scroll frame nor the clip can be used by a slice as its
+# scroll root or shared compositor clip (bug 2093803).
+root:
+  items:
+    - type: rect
+      color: white
+      bounds: [0, 0, 400, 400]
+    - type: rect
+      color: green
+      bounds: [10, 0, 300, 300]
+    - type: stacking-context
+      bounds: [10, 0, 0, 0]
+      transform: translate(0, 0)
+      is-2d: true
+      transform-style: preserve-3d
+      wraps-backdrop-filter: true
+      items:
+        - type: scroll-frame
+          bounds: [0, 0, 300, 300]
+          content-size: [300, 1000]
+          items:
+            - type: rect
+              color: blue
+              bounds: [250, 250, 20, 20]
+            - type: clip
+              id: 2
+              complex:
+                - rect: [50, 50, 200, 100]
+                  radius: 10
+            - type: clip-chain
+              id: 3
+              clips: [2]
+            - type: backdrop-filter
+              bounds: [50, 50, 200, 100]
+              filters: invert(1)
+              clip-chain: 3
