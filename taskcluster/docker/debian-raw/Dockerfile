@@ -61,7 +61,25 @@ RUN if [ -n "$DIST" ]; then for s in debian_$DIST debian_$DIST-updates debian_$D
       echo 'Pin-Priority: 1001'; \
     ) > /etc/apt/preferences.d/99taskcluster
 
-RUN if [ -f /etc/apt/ubuntu.sources ]; then mv /etc/apt/ubuntu.sources /etc/apt/sources.list.d/; fi;
+RUN if [ -f /etc/apt/ubuntu.sources ]; then mv /etc/apt/ubuntu.sources /etc/apt/sources.list.d/; fi
+
+# Because upgrading the base image snapshot upgrades mesa-libgallium and this has consequences on
+# webgl tests, for the moment, we update ca-certificates manually.
+RUN case "$(grep VERSION_CODENAME= /etc/os-release)" in \
+  VERSION_CODENAME=noble) \
+    apt-get update && apt-get install -f curl openssl; \
+    curl --insecure -L -o /tmp/ca-certificates.deb https://launchpad.net/ubuntu/+archive/primary/+files/ca-certificates_20260816ubuntu0.24.04.1_all.deb; \
+    echo 8a0a754aaafed72cc8efb8c1731808133284a84fbfc76a4fcc73fce9e01b4187 /tmp/ca-certificates.deb | sha256sum -c ; \
+    ;; \
+  VERSION_CODENAME=jammy) \
+    apt-get update && apt-get install -f curl openssl; \
+    curl --insecure -L -o /tmp/ca-certificates.deb https://launchpad.net/ubuntu/+archive/primary/+files/ca-certificates_20260816ubuntu0.22.04.1_all.deb; \
+    echo 29ca037f49f7a4b41d67ad72946c2e541f3ae52d8f6ab1495d2af09aa391144b /tmp/ca-certificates.deb | sha256sum -c ; \
+    ;; \
+  *) \
+    ;; \
+  esac; \
+  if [ -f /tmp/ca-certificates.deb ]; then dpkg -i /tmp/ca-certificates.deb; apt-mark hold ca-certificates; fi
 
 RUN apt-get update && \
     if grep -q snapshot.debian.org /etc/apt/sources.list; then \
