@@ -24,15 +24,15 @@ x86_64-unknown-linux-gnu)
     # when not cross-compiling, leading to a sysroot discrepancy.
     # Using C*FLAGS_x86_64_unknown_linux_gnu makes the flags apply to both host
     # and target.
-    export CFLAGS_x86_64_unknown_linux_gnu="--sysroot=$MOZ_FETCHES_DIR/sysroot-x86_64-linux-gnu -fuse-ld=lld"
-    export CXXFLAGS_x86_64_unknown_linux_gnu="-D_GLIBCXX_USE_CXX11_ABI=0 --sysroot=$MOZ_FETCHES_DIR/sysroot-x86_64-linux-gnu -fuse-ld=lld"
+    export CFLAGS_x86_64_unknown_linux_gnu="--sysroot=$MOZ_FETCHES_DIR/sysroot-x86_64-linux-gnu -fuse-ld=lld -Wno-unused-command-line-argument"
+    export CXXFLAGS_x86_64_unknown_linux_gnu="-D_GLIBCXX_USE_CXX11_ABI=0 --sysroot=$MOZ_FETCHES_DIR/sysroot-x86_64-linux-gnu -fuse-ld=lld -Wno-unused-command-line-argument"
     ;;
 aarch64-unknown-linux-gnu)
     export RUSTFLAGS="-Clinker=$MOZ_FETCHES_DIR/clang/bin/clang++ -C link-arg=--sysroot=$MOZ_FETCHES_DIR/sysroot-aarch64-linux-gnu -C link-arg=-fuse-ld=lld -C link-arg=--target=$TARGET $rust_lto_flags"
     export CC=$MOZ_FETCHES_DIR/clang/bin/clang
     export CXX=$MOZ_FETCHES_DIR/clang/bin/clang++
-    export TARGET_CFLAGS="--sysroot=$MOZ_FETCHES_DIR/sysroot-aarch64-linux-gnu -fuse-ld=lld"
-    export TARGET_CXXFLAGS="--sysroot=$MOZ_FETCHES_DIR/sysroot-aarch64-linux-gnu -fuse-ld=lld"
+    export TARGET_CFLAGS="--sysroot=$MOZ_FETCHES_DIR/sysroot-aarch64-linux-gnu -fuse-ld=lld -Wno-unused-command-line-argument"
+    export TARGET_CXXFLAGS="--sysroot=$MOZ_FETCHES_DIR/sysroot-aarch64-linux-gnu -fuse-ld=lld -Wno-unused-command-line-argument"
     ;;
 *-apple-darwin)
     # Cross-compiling for Mac on Linux.
@@ -46,8 +46,8 @@ aarch64-unknown-linux-gnu)
     export RUSTFLAGS="-Clinker=$MOZ_FETCHES_DIR/clang/bin/clang++ -C link-arg=-isysroot -C link-arg=$MACOS_SYSROOT -C link-arg=-fuse-ld=lld -C link-arg=--target=$TARGET $rust_lto_flags"
     export CC="$MOZ_FETCHES_DIR/clang/bin/clang"
     export CXX="$MOZ_FETCHES_DIR/clang/bin/clang++"
-    export TARGET_CFLAGS="-isysroot $MACOS_SYSROOT -fuse-ld=lld"
-    export TARGET_CXXFLAGS="-isysroot $MACOS_SYSROOT -fuse-ld=lld -stdlib=libc++"
+    export TARGET_CFLAGS="-isysroot $MACOS_SYSROOT -fuse-ld=lld -Wno-unused-command-line-argument"
+    export TARGET_CXXFLAGS="-isysroot $MACOS_SYSROOT -fuse-ld=lld -Wno-unused-command-line-argument -stdlib=libc++"
     ;;
 *-pc-windows-msvc)
     # Cross-compiling for Windows on Linux.
