@@ -319,6 +319,46 @@ linux64-rust-nightly:
                 toolchains: linux64-rust
                 default: null
 
+linux64-rust-1.97:
+    treeherder:
+        symbol: TL(rust-1.97)
+    run:
+        arguments: [
+            '--channel', '1.97.0',
+            '--host', 'x86_64-unknown-linux-gnu',
+            '--target', 'x86_64-unknown-linux-gnu',
+            '--target', 'i686-unknown-linux-gnu',
+            '--target', 'aarch64-unknown-linux-gnu',
+            '--target', 'wasm32-wasip1',
+        ]
+
+linux64-rust-macos-1.97:
+    description: "rust repack with macos-cross support"
+    treeherder:
+        symbol: TL(rust-macos-1.97)
+    run:
+        arguments: [
+            '--channel', '1.97.0',
+            '--host', 'x86_64-unknown-linux-gnu',
+            '--target', 'x86_64-unknown-linux-gnu',
+            '--target', 'x86_64-apple-darwin',
+            '--target', 'aarch64-apple-darwin',
+        ]
+
+linux64-rust-windows-1.97:
+    description: "rust repack with windows-cross support"
+    treeherder:
+        symbol: TL(rust-win-1.97)
+    run:
+        arguments: [
+            '--channel', '1.97.0',
+            '--host', 'x86_64-unknown-linux-gnu',
+            '--target', 'x86_64-unknown-linux-gnu',
+            '--target', 'x86_64-pc-windows-msvc',
+            '--target', 'i686-pc-windows-msvc',
+            '--target', 'aarch64-pc-windows-msvc',
+        ]
+
 # A patched rust toolchain that allows us to use sanitizers in our vendored
 # build environment. See the rust fetch's comments for more details.
 linux64-rust-nightly-dev:

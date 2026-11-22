@@ -802,11 +802,11 @@ xmlstarlet-1.6.1:
         artifact-name: xmlstarlet.deb
 
 uv:
-    description: uv 0.7.2 source code
+    description: uv 0.13.4 source code
     fetch:
         type: git
         repo: https://github.com/astral-sh/uv
-        revision: 481d05d8dfb8627612dec72840a02c17b926b263
+        revision: 7456b60bc6bc348e13e06e3691bf08e78d3aef54
 
 dxc-src:
     description: Source code for mozilla's DXC fork

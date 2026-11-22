@@ -3,7 +3,7 @@ MAINTAINER Julien Cristau <jcristau@mozilla.com>
 
 VOLUME /builds/worker/checkouts
 
-COPY --from=docker.io/astral/uv:0.12.12 /uv /uvx /bin/
+COPY --from=docker.io/astral/uv:0.13.4 /uv /uvx /bin/
 
 ENV PATH ${PATH}:${HOME}/.local/bin
 

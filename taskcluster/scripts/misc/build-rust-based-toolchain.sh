@@ -13,6 +13,10 @@ FEATURES="$@"
 export CARGO_PROFILE_RELEASE_LTO=fat
 rust_lto_flags="-C codegen-units=1"
 
+# Set the compiler for the host, in case some build dependency compiles code.
+export CC_x86_64_unknown_linux_gnu=$MOZ_FETCHES_DIR/clang/bin/clang
+export CXX_x86_64_unknown_linux_gnu=$MOZ_FETCHES_DIR/clang/bin/clang++
+
 case "$TARGET" in
 x86_64-unknown-linux-gnu)
     # Native Linux Build
@@ -54,6 +58,12 @@ aarch64-unknown-linux-gnu)
     export CC=$MOZ_FETCHES_DIR/clang/bin/clang-cl
     export CXX=$MOZ_FETCHES_DIR/clang/bin/clang-cl
     export TARGET_AR=$MOZ_FETCHES_DIR/clang/bin/llvm-lib
+
+    if [ "$TARGET" = "x86_64-pc-windows-msvc" ]; then
+        mkdir $workspace/bin
+        ln -s $MOZ_FETCHES_DIR/clang/bin/llvm-ml64 $workspace/bin/ml64.exe
+        PATH="$workspace/bin:$PATH"
+    fi
 
     . $GECKO_PATH/taskcluster/scripts/misc/vs-setup.sh
     export CARGO_TARGET_I686_PC_WINDOWS_MSVC_LINKER=$MOZ_FETCHES_DIR/clang/bin/lld-link
