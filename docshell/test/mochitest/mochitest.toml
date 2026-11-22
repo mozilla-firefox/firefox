@@ -211,7 +211,6 @@ support-files = ["file_bug1747033.sjs"]
 skip-if = [
   "http2",
   "http3",
-  "verify-standalone",
 ]
 
 ["test_bug1773192.html"]

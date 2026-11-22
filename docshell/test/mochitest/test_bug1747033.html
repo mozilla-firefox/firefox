@@ -72,8 +72,11 @@
             is(historyLength, 3, "Correct length after going back.");
 
             if (goneBack == 1) {
-              bc.postMessage({ cmd: "back" });
+              // Going back reloaded ?replaced as a multipart response: finish it.
+              fetch("file_bug1747033.sjs?sendLastPart");
             } else if (goneBack == 2) {
+              bc.postMessage({ cmd: "back" });
+            } else if (goneBack == 3) {
               bc.removeEventListener("message", listener);
               resolve();
             }
