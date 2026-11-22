@@ -269,9 +269,14 @@ add_task(async function test_disk_structure_and_encryption() {
 
   // Find .sqlite files and verify they are encrypted by checking that the
   // first 100 bytes violate the SQLite file format's documented invariants
-  // (see comment on looksEncrypted above).
+  // (see comment on looksEncrypted above). LS creates data.sqlite empty and
+  // writes its first page only after syncing the rollback journal, so wait
+  // for the file to hold the bytes we check rather than just for it to exist.
   await TestUtils.waitForCondition(
-    () => findSQLiteFiles(storageDir).length,
+    () => {
+      let files = findSQLiteFiles(storageDir);
+      return files.length && files.every(file => file.fileSize >= 100);
+    },
     "Waiting for the LS .sqlite file to be flushed to disk",
     DISK_POLL_INTERVAL_MS,
     DISK_POLL_MAX_TRIES
