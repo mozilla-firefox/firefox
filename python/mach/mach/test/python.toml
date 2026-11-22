@@ -13,6 +13,8 @@ subsuite = "mach"
 
 ["test_definitions.py"]
 
+["test_dispatch_subcommands.py"]
+
 ["test_dispatcher.py"]
 
 ["test_entry_point.py"]
