@@ -1,0 +1,4 @@
+[DEFAULT]
+subsuite = "mozbuild"
+
+["test_pgo_coverage.py"]

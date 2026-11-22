@@ -1,0 +1,69 @@
+# This Source Code Form is subject to the terms of the Mozilla Public
+# License, v. 2.0. If a copy of the MPL was not distributed with this
+# file, You can obtain one at http://mozilla.org/MPL/2.0/.
+---
+loader: taskgraph.loader.transform:loader
+
+kind-dependencies:
+    - generate-profile
+    - instrumented-build
+    - toolchain
+
+transforms:
+    - taskgraph.transforms.from_deps
+    - android_taskgraph.transforms.treeherder
+    - gecko_taskgraph.transforms.job
+    - gecko_taskgraph.transforms.task
+
+tasks:
+    pgo-coverage:
+        description: Report the source directories the PGO training run executes code from
+        from-deps:
+            kinds: [generate-profile, instrumented-build]
+            with-attributes:
+                build_platform:
+                    - android-aarch64-shippable
+                    - android-arm-shippable
+                    - android-x86_64-shippable
+                    - linux64-shippable
+                    - macosx64-aarch64-shippable
+                    - macosx64-shippable
+                    - win32-shippable
+                    - win64-aarch64-shippable
+                    - win64-shippable
+            group-by:
+                attribute: build_platform
+            copy-attributes: false
+            fetches:
+                generate-profile:
+                    - artifact: profdata.tar.xz
+                instrumented-build:
+                    - artifact: target.crashreporter-symbols.zip
+                      dest: symbols
+        # The coverage only changes with the training corpus and the code, so
+        # mozilla-central is enough to track it.
+        run-on-projects: [mozilla-central]
+        treeherder:
+            symbol: cov
+            kind: other
+            tier: 2
+        worker-type: b-linux-medium
+        worker:
+            docker-image: {in-tree: ubuntu2404-test}
+            max-run-time: 1800
+            artifacts:
+                - type: directory
+                  name: public/build
+                  path: /builds/worker/artifacts/
+        run:
+            using: run-task
+            cwd: '{checkout}'
+            command: >
+                python3 build/pgo/pgo_coverage.py
+                --upload-dir /builds/worker/artifacts
+                $MOZ_FETCHES_DIR/clang/bin/llvm-profdata
+                $MOZ_FETCHES_DIR/merged.profdata
+                $MOZ_FETCHES_DIR/symbols
+        fetches:
+            toolchain:
+                - linux64-clang
