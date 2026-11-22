@@ -119,7 +119,6 @@ extern crate malloc_size_of_derive;
 #[cfg(any(feature = "serde"))]
 #[macro_use]
 extern crate serde;
-#[macro_use]
 extern crate derive_more;
 extern crate malloc_size_of;
 extern crate svg_fmt;

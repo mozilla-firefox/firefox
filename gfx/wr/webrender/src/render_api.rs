@@ -9,6 +9,7 @@ use std::fmt;
 use std::marker::PhantomData;
 use std::path::PathBuf;
 use std::sync::Arc;
+use derive_more::AddAssign;
 use api::{MinimapData, SnapshotImageKey};
 use crate::api::channel::{Sender, SyncSender, single_msg_channel, unbounded_channel};
 use crate::api::{BuiltDisplayList, IdNamespace, ExternalScrollId, Parameter, BoolParameter};

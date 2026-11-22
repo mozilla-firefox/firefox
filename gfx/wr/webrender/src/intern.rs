@@ -34,6 +34,7 @@
 //! cache invalidation.
 
 use crate::internal_types::FastHashMap;
+use derive_more::AddAssign;
 use malloc_size_of::MallocSizeOf;
 use std::fmt::Debug;
 use std::hash::Hash;
