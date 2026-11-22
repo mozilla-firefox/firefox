@@ -3703,15 +3703,18 @@ bool SharedContextWebgl::FilterRect(const Rect& aDestRect,
   MaybeUniformData(LOCAL_GL_FLOAT_VEC4, mFilterProgramClipBounds, clipData,
                    mFilterProgramUniformState.mClipBounds);
 
+  // The color matrix maps RGBA -> RGBA. However, the input color is in BGRA,
+  // and the output color must be in BGRA. Swap row 1 with row 3 as well as
+  // column 1 with column 3 to accomplish these format transforms.
   Array<float, 16> colorMatData = {
-      aColorMatrix._11, aColorMatrix._12, aColorMatrix._13, aColorMatrix._14,
-      aColorMatrix._21, aColorMatrix._22, aColorMatrix._23, aColorMatrix._24,
-      aColorMatrix._31, aColorMatrix._32, aColorMatrix._33, aColorMatrix._34,
-      aColorMatrix._41, aColorMatrix._42, aColorMatrix._43, aColorMatrix._44};
+      aColorMatrix._33, aColorMatrix._32, aColorMatrix._31, aColorMatrix._34,
+      aColorMatrix._23, aColorMatrix._22, aColorMatrix._21, aColorMatrix._24,
+      aColorMatrix._13, aColorMatrix._12, aColorMatrix._11, aColorMatrix._14,
+      aColorMatrix._43, aColorMatrix._42, aColorMatrix._41, aColorMatrix._44};
   MaybeUniformData(LOCAL_GL_FLOAT_MAT4, mFilterProgramColorMatrix, colorMatData,
                    mFilterProgramUniformState.mColorMatrix);
-  Array<float, 4> colorOffData = {aColorMatrix._51, aColorMatrix._52,
-                                  aColorMatrix._53, aColorMatrix._54};
+  Array<float, 4> colorOffData = {aColorMatrix._53, aColorMatrix._52,
+                                  aColorMatrix._51, aColorMatrix._54};
   MaybeUniformData(LOCAL_GL_FLOAT_MAT4, mFilterProgramColorOffset, colorOffData,
                    mFilterProgramUniformState.mColorOffset);
 
