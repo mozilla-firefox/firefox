@@ -426,6 +426,8 @@
   -->
   <string name="qualified_identity">Chứng chỉ được cấp cho %1$s</string>
   <!--
+    Text shown in Security Information Popup
+
     The European Union eIDAS Regulation specifies a type of certificate
     called a "qualified website authentication certificate" (QWAC) and
     requires that browsers identify and indicate such certificates. This

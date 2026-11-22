@@ -91,84 +91,6 @@
   <string name="mozac_feature_addons_permissions_user_scripts_description">Cho phép các tập lệnh của bên thứ ba chưa được xác minh truy cập vào dữ liệu của bạn</string>
   <!-- Description for the "devtools" WebExtensions API permission. -->
   <string name="mozac_feature_addons_permissions_devtools_description">Mở rộng công cụ dành cho nhà phát triển để truy cập dữ liệu của bạn trong các thẻ đang mở</string>
-  <!-- Description for the "privacy" WebExtensions API permission for the update notification. Multiple permissions may be simply appended one after the other, and separated with a space, which is why the period is important. -->
-  <string name="mozac_feature_addons_permissions_privacy_description_for_update">Đọc và chỉnh sửa các cài đặt riêng tư.</string>
-  <!-- Description for the "<all_urls>" WebExtensions API permission for the update notification. Multiple permissions may be simply appended one after the other, and separated with a space, which is why the period is important. -->
-  <string name="mozac_feature_addons_permissions_all_urls_description_for_update">Truy cập dữ liệu của bạn trên mọi trang web.</string>
-  <!-- Description for the "tabs" WebExtensions API permission for the update notification. Multiple permissions may be simply appended one after the other, and separated with a space, which is why the period is important. -->
-  <string name="mozac_feature_addons_permissions_tabs_description_for_update">Truy cập các thẻ trên trình duyệt.</string>
-  <!-- Description for the "webNavigation" WebExtensions API permission for the update notification. Multiple permissions may be simply appended one after the other, and separated with a space, which is why the period is important. -->
-  <string name="mozac_feature_addons_permissions_web_navigation_description_for_update">Truy cập hoạt động của trình duyệt trong khi điều hướng.</string>
-  <!-- Description for the "bookmarks" WebExtensions API permission for the update notification. Multiple permissions may be simply appended one after the other, and separated with a space, which is why the period is important. -->
-  <string name="mozac_feature_addons_permissions_bookmarks_description_for_update">Xem và chỉnh sửa dấu trang.</string>
-  <!-- Description for the "browserSettings" WebExtensions API permission for the update notification. Multiple permissions may be simply appended one after the other, and separated with a space, which is why the period is important. -->
-  <string name="mozac_feature_addons_permissions_browser_settings_description_for_update">Đọc và chỉnh sửa cài đặt trình duyệt.</string>
-  <!-- Description for the "browsingData" WebExtensions API permission for the update notification. Multiple permissions may be simply appended one after the other, and separated with a space, which is why the period is important. -->
-  <string name="mozac_feature_addons_permissions_browsing_data_description_for_update">Xóa lịch sử duyệt web gần đây, cookie, và dữ liệu liên quan.</string>
-  <!-- Description for the "clipboardRead" WebExtensions API permission for the update notification. Multiple permissions may be simply appended one after the other, and separated with a space, which is why the period is important. -->
-  <string name="mozac_feature_addons_permissions_clipboard_read_description_for_update">Lấy dữ liệu từ bộ nhớ tạm.</string>
-  <!-- Description for the "clipboardWrite" WebExtensions API permission for the update notification. Multiple permissions may be simply appended one after the other, and separated with a space, which is why the period is important. -->
-  <string name="mozac_feature_addons_permissions_clipboard_write_description_for_update">Nhập dữ liệu vào bộ nhớ tạm.</string>
-  <!-- Description for the "declarativeNetRequest" WebExtensions API permission for the update notification. Multiple permissions may be simply appended one after the other, and separated with a space, which is why the period is important. -->
-  <string name="mozac_feature_addons_permissions_declarative_net_request_description_for_update">Chặn nội dung trên bất kỳ trang nào.</string>
-  <!-- Description for the "declarativeNetRequestFeedback" WebExtensions API permission for the update notification. Multiple permissions may be simply appended one after the other, and separated with a space, which is why the period is important. -->
-  <string name="mozac_feature_addons_permissions_declarative_net_request_feedback_description_for_update">Đọc lịch sử duyệt web của bạn.</string>
-  <!-- Description for the "downloads" WebExtensions API permission for the update notification. Multiple permissions may be simply appended one after the other, and separated with a space, which is why the period is important. -->
-  <string name="mozac_feature_addons_permissions_downloads_description_for_update">Tải về các tập tin và chỉnh sửa lịch sử tải về của trình duyệt.</string>
-  <!-- Description for the "downloads.open" WebExtensions API permission for the update notification. Multiple permissions may be simply appended one after the other, and separated with a space, which is why the period is important. -->
-  <string name="mozac_feature_addons_permissions_downloads_open_description_for_update">Mở tập tin đã tải xuống thiết bị của bạn.</string>
-  <!-- Description for the "find" WebExtensions API permission for the update notification. Multiple permissions may be simply appended one after the other, and separated with a space, which is why the period is important. -->
-  <string name="mozac_feature_addons_permissions_find_description_for_update">Đọc văn bản của tất cả các thẻ đang mở.</string>
-  <!-- Description for the "geolocation" WebExtensions API permission for the update notification. Multiple permissions may be simply appended one after the other, and separated with a space, which is why the period is important. -->
-  <string name="mozac_feature_addons_permissions_geolocation_description_for_update">Truy cập vị trí của bạn.</string>
-  <!-- Description for the "history" WebExtensions API permission for the update notification. Multiple permissions may be simply appended one after the other, and separated with a space, which is why the period is important. -->
-  <string name="mozac_feature_addons_permissions_history_description_for_update">Truy cập lịch sử duyệt web.</string>
-  <!-- Description for the "management" WebExtensions API permission for the update notification. Multiple permissions may be simply appended one after the other, and separated with a space, which is why the period is important. -->
-  <string name="mozac_feature_addons_permissions_management_description_for_update">Theo dõi việc sử dụng tiện ích mở rộng và quản lý các chủ đề.</string>
-  <!-- Description for the "nativeMessaging" WebExtensions API permission for the update notification. Multiple permissions may be simply appended one after the other, and separated with a space, which is why the period is important. -->
-  <string name="mozac_feature_addons_permissions_native_messaging_description_for_update">Giao tiếp với các ứng dụng khác bên ngoài ứng dụng này.</string>
-  <!-- Description for the "notifications" WebExtensions API permission for the update notification. Multiple permissions may be simply appended one after the other, and separated with a space, which is why the period is important. -->
-  <string name="mozac_feature_addons_permissions_notifications_description_for_update">Hiển thị thông báo cho bạn.</string>
-  <!-- Description for the "pkcs11" WebExtensions API permission for the update notification. Multiple permissions may be simply appended one after the other, and separated with a space, which is why the period is important. -->
-  <string name="mozac_feature_addons_permissions_pkcs11_description_for_update">Cung cấp dịch vụ xác thực mật mã.</string>
-  <!-- Description for the "proxy" WebExtensions API permission for the update notification. Multiple permissions may be simply appended one after the other, and separated with a space, which is why the period is important. -->
-  <string name="mozac_feature_addons_permissions_proxy_description_for_update">Kiểm soát cài đặt proxy của trình duyệt.</string>
-  <!-- Description for the "sessions" WebExtensions API permission for the update notification. Multiple permissions may be simply appended one after the other, and separated with a space, which is why the period is important. -->
-  <string name="mozac_feature_addons_permissions_sessions_description_for_update">Truy cập các thẻ đã đóng gần đây.</string>
-  <!-- Description for the "tabHide" WebExtensions API permission for the update notification. Multiple permissions may be simply appended one after the other, and separated with a space, which is why the period is important. -->
-  <string name="mozac_feature_addons_permissions_tab_hide_description_for_update">Ẩn và hiển thỉ các thẻ trình duyệt.</string>
-  <!-- Description for the "topSites" WebExtensions API permission for the update notification. Multiple permissions may be simply appended one after the other, and separated with a space, which is why the period is important. -->
-  <string name="mozac_feature_addons_permissions_top_sites_description_for_update">Truy cập lịch sử duyệt web.</string>
-  <!-- Description for the "trialML" WebExtensions API permission for the update notification. Multiple permissions may be simply appended one after the other, and separated with a space, which is why the period is important. -->
-  <string name="mozac_feature_addons_permissions_trial_ml_description_for_update">Tải xuống và chạy các mô hình AI trên thiết bị của bạn.</string>
-  <!-- Description for the "userScripts" WebExtensions API permission for the update notification. Multiple permissions may be simply appended one after the other, and separated with a space, which is why the period is important. -->
-  <string name="mozac_feature_addons_permissions_user_scripts_description_for_update">Cho phép các tập lệnh của bên thứ ba chưa được xác minh truy cập vào dữ liệu của bạn.</string>
-  <!-- Description for the "devtools" WebExtensions API permission for the update notification. Multiple permissions may be simply appended one after the other, and separated with a space, which is why the period is important. -->
-  <string name="mozac_feature_addons_permissions_devtools_description_for_update">Mở rộng công cụ dành cho nhà phát triển để truy cập dữ liệu của bạn trong các thẻ đang mở.</string>
-  <!-- Description for giving an add-on access to users's data on one site. %1$s  will be replaced by the DNS host name for which a web extension is requesting access (e.g., www.mozilla.org). -->
-  <string name="mozac_feature_addons_permissions_one_site_description_for_update">Truy cập dữ liệu của bạn cho %1$s.</string>
-  <!-- Description for giving an add-on access to users's data in multiple sites in the domain %1$s. %1$s will be replaced by the DNS domain for which a web extension is requesting access (e.g., mozilla.org). -->
-  <string name="mozac_feature_addons_permissions_sites_in_domain_description_for_update">Truy cập dữ liệu của bạn cho các trang web trong tên miền %1$s.</string>
-  <!--
-    When an add-on requires access to more than 2 domains, for example the add-on requires access for 3 domains. We will show the first 2 domains in individual entries, as in mozac_feature_addons_permissions_sites_in_domain_description_for_update,
-    then we will show another collapsed entry saying "Access your data on another domain.".
-  -->
-  <string name="mozac_feature_addons_permissions_one_extra_domain_description_for_update">Truy cập dữ liệu của bạn trên tên miền khác.</string>
-  <!--
-    When an add-on requires access to more than 2 domains, for example the add-on requires access for 4 domains. We will show the first 2 domains in individual entries, as in mozac_feature_addons_permissions_sites_in_domain_description_for_update,
-    then we will show another collapsed entry saying "Access your data on other domains.".
-  -->
-  <string name="mozac_feature_addons_permissions_extra_domains_description_plural_for_update">Truy cập dữ liệu của bạn trên tên miền khác.</string>
-  <!--
-    When an add-on requires access to more than 2 sites, for example the add-on requires access for 3 sites. We will show the first 2 sites in individual entries, as in mozac_feature_addons_permissions_one_site_description_for_update,
-    then we will show another collapsed entry saying "Access your data on another site.".
-  -->
-  <string name="mozac_feature_addons_permissions_one_extra_site_description_for_update">Truy cập dữ liệu của bạn trên trang web khác.</string>
-  <!--
-    When an add-on requires access to more than 2 sites, for example the add-on requires access for 4 sites. We will show the first 2 sites in individual entries, as in mozac_feature_addons_permissions_one_site_description_for_update,
-    then we will show another collapsed entry saying "Access your data on other sites.".
-  -->
-  <string name="mozac_feature_addons_permissions_extra_sites_description_for_update">Truy cập dữ liệu của bạn trên trang web khác.</string>
   <!-- The text shown when an extension requests the userScripts permission, near the usual description of the userScripts permission -->
   <string name="mozac_feature_addons_permissions_user_scripts_extra_warning">Các tập lệnh chưa được xác minh có thể gây ra rủi ro về bảo mật và quyền riêng tư. Chỉ chạy tập lệnh từ tiện ích mở rộng hoặc nguồn mà bạn tin cậy.</string>
   <!-- The sentence used when the extension has data collection permissions. %1$s is a formatted list of permissions. -->
@@ -335,20 +257,6 @@
   <string name="mozac_feature_extensions_manager_notification_restart_button">Khởi động lại tiện ích</string>
   <!-- Button in the extensions manager that opens AMO in a tab -->
   <string name="mozac_feature_addons_find_more_extensions_button_text">Tìm thêm tiện ích</string>
-  <!-- The label of the update button on the system notification shown to the user when an add-on has an update that requires the user to accept new permissions. -->
-  <string name="mozac_feature_addons_updater_notification_update_button">Cập nhật</string>
-  <!-- The label of the cancel button on a notification, this will be shown to the user when an add-on needs new permissions. Indicates the user denies the new permissions and prevents the add-on from be updated -->
-  <string name="mozac_feature_addons_updater_notification_cancel_button">Hủy bỏ</string>
-  <!-- The title of the system notification shown to the user when an add-on has a new update that requires new permissions. %1$s is the name of the add-on. -->
-  <string name="mozac_feature_addons_updater_notification_title_2">%1$s có bản cập nhật</string>
-  <!-- A short explanation shown in the notification displayed when an add-on has a new update that requires new permissions. -->
-  <string name="mozac_feature_addons_updater_notification_short_intro">Hủy để giữ nguyên phiên bản và cài đặt hiện tại của bạn.</string>
-  <!-- The heading for the permissions section in the system notification shown when an add-on has an update that requires user confirmation. %1$s is a list of sentences. -->
-  <string name="mozac_feature_addons_updater_notification_heading_permissions">Quyền hạn bắt buộc mới: %1$s</string>
-  <!-- The heading for the data collection permission section in the system notification shown when an add-on has an update that requires user confirmation. %1$s is a list of permissions. -->
-  <string name="mozac_feature_addons_updater_notification_heading_data_collection_permissions">Yêu cầu thu thập dữ liệu mới: Nhà phát triển cho biết tiện ích mở rộng sẽ thu thập %1$s.</string>
-  <!-- Name of the "notification channel" used for displaying a notification for updating an extension. See https://developer.android.com/training/notify-user/channels -->
-  <string name="mozac_feature_addons_updater_notification_channel_2">Cập nhật tiện ích</string>
   <!-- Name of the "notification channel" used for displaying a notification for new supported add-ons. See https://developer.android.com/training/notify-user/channels -->
   <string name="mozac_feature_addons_supported_checker_notification_channel" tools:ignore="UnusedResources">Trình kiểm tra tiện ích được hỗ trợ</string>
   <!-- The tile of the notification, this will be shown to the user when one newly supported add-on is available. -->

@@ -12,4 +12,5 @@
   <!-- Text displayed when choosing which app to email with after selecting an email address -->
   <string name="mozac_support_ktx_menu_email_with">… ان ای میل کہ</string>
   <string name="mozac_support_ktx_menu_share_with">… تون بخشبو</string>
+  <string name="mozac_support_ktx_share_dialog_title">بشخبو بزریہ</string>
 </resources>

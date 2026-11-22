@@ -19,8 +19,6 @@
   <string name="content_description_menu">تېخىمۇ كۆپ تاللانما</string>
   <!-- Content description (not visible, for screen readers etc.): "Private Browsing" menu button. -->
   <string name="content_description_private_browsing">شەخسىي زىيارەت</string>
-  <!-- Content description (not visible, for screen readers etc.): "Normal Browsing" menu button. -->
-  <string name="content_description_normal_browsing">ئادەتتىكى كۆز يۈگۈرتۈش</string>
   <!-- Placeholder text shown in the search bar before a user enters text for the default engine -->
   <string name="search_hint">ئىزدەيدۇ ياكى ئادرېس كىرگۈزۈلىدۇ</string>
   <!-- Shorter placeholder text shown in the search bar when an additional action (voice search) is rendered alongside the hint. -->
@@ -3362,12 +3360,6 @@
   <string name="homepage_shortcuts_add_website_title">تور بېكەت ئۇلانمىسى كىرگۈزۈلىدۇ</string>
   <!-- Title for the "Popular sites" section in the "Add to homepage" bottom sheet. -->
   <string name="homepage_shortcuts_popular_sites">ئالقىشلىق تور بېكەت</string>
-  <!-- Title text displayed in the dialog when shortcuts limit is reached. -->
-  <string name="shortcut_max_limit_title">تېزلەتمە چېكىگە يەتتى</string>
-  <!-- Content description text displayed in the dialog when shortcut limit is reached. -->
-  <string name="shortcut_max_limit_content">يېڭى تىزلەتمە قوشۇش ئۈچۈن بىرنى چىقىرىۋېتىش كېرەك. بېكەتنى چېكىپ تۇرۇپ ئاندىن چىقىرىۋەت تاللىنىدۇ.</string>
-  <!-- Confirmation dialog button text when top sites limit is reached. -->
-  <string name="top_sites_max_limit_confirmation_button">ماقۇل، چۈشىنىشلىك</string>
   <!-- Label for the preference to show the shortcuts for the most visited top sites on the homepage -->
   <string name="top_sites_toggle_top_recent_sites_4">تېزلەتمە</string>
   <!-- Title text displayed in the rename top site dialog. -->

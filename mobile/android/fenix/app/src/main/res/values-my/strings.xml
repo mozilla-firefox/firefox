@@ -1045,8 +1045,6 @@
   <string name="synced_tabs_sign_in_button">ချိန်သားကိုက် ရန် ဝင်ရောက်ပါ</string>
   <!-- The text displayed when a synced device has no tabs to show in the list of Synced Tabs. -->
   <string name="synced_tabs_no_open_tabs">ဖွင့်ထားသည့် တပ်ဗ်များ မရှိပါ</string>
-  <!-- Confirmation dialog button text when top sites limit is reached. -->
-  <string name="top_sites_max_limit_confirmation_button">အိုကေ၊ ရပြီ</string>
   <!-- Title text displayed in the rename top site dialog. -->
   <string name="top_sites_rename_dialog_title">အမည်</string>
   <!-- Dialog button text for canceling the rename top site prompt. -->

@@ -426,6 +426,8 @@
   -->
   <string name="qualified_identity">Sertifikat skrive ut til %1$s</string>
   <!--
+    Text shown in Security Information Popup
+
     The European Union eIDAS Regulation specifies a type of certificate
     called a "qualified website authentication certificate" (QWAC) and
     requires that browsers identify and indicate such certificates. This
@@ -433,6 +435,18 @@
     indicates that the website uses a QWAC.
   -->
   <string name="qualified_text">Kvalifisert som spesifisert i forordning (EU) 2024/1183.</string>
+  <!-- Link in the header of the tracking protection panel when the site is secure. Tapping it opens a page showing the website's certificate details. -->
+  <string name="connection_details_secure_connection_link">Trygg tilkopling</string>
+  <!-- Action description (not visible, for screen readers etc.) for the “Secure connection” link in the tracking protection panel header, which opens a page showing the website's certificate details. Screen readers announce it after “Double tap to” -->
+  <string name="connection_details_view_certificate_details">vis sertifikatdetaljar</string>
+  <!-- Title of the section that contains the website's certificate information (issued to, verified by, etc.) as verified by the browser (thus guaranteeing the HTTPS connection is secure) -->
+  <string name="certificate_details_secure_connection_title">Trygg tilkopling</string>
+  <!-- Label for the organization, locality and country the website's certificate was issued to -->
+  <string name="certificate_details_issued_to_label">Sertifikat skrive ut til:</string>
+  <!-- Label for the name of the certificate authority that verified and issued the website's certificate -->
+  <string name="certificate_details_verified_by_label">Stadfesta av:</string>
+  <!-- Content description (not visible, for screen readers etc.) for the EU trust mark logo, shown when the website's certificate is a Qualified Website Authentication Certificate (QWAC) as specified in EU Regulation 2024/1183 -->
+  <string name="certificate_details_eu_trust_mark_content_description">EUs tillitsmerke</string>
   <string name="preference_autocomplete_duplicate_url_error">URL-en finst allereie</string>
   <!-- Label for the Find in page button -->
   <string name="find_in_page">Søk på sida</string>

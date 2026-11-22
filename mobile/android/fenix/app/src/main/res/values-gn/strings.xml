@@ -19,8 +19,6 @@
   <string name="content_description_menu">Jeporavorãve</string>
   <!-- Content description (not visible, for screen readers etc.): "Private Browsing" menu button. -->
   <string name="content_description_private_browsing">Ñeikundaha ñemi</string>
-  <!-- Content description (not visible, for screen readers etc.): "Normal Browsing" menu button. -->
-  <string name="content_description_normal_browsing">Ñeikundaha porã</string>
   <!-- Placeholder text shown in the search bar before a user enters text for the default engine -->
   <string name="search_hint">Eheka térã ehai kundaharape</string>
   <!-- Shorter placeholder text shown in the search bar when an additional action (voice search) is rendered alongside the hint. -->
@@ -188,8 +186,20 @@
   <string name="customize_menu">Emboava poravoha</string>
   <!-- Alert message shown in the "Customize menu" screen when the user tries to hide a menu section which cannot be hidden. -->
   <string name="customize_menu_cannot_hide_section">Nereñomikuaái ko vore</string>
+  <!-- Customize menu screen - Accessibility description - name of the menu section that groups the Back, Forward, Share and Refresh buttons. Read aloud after "Section", followed by the button names ("Section “Page controls”: Back, Forward, Share, Refresh"). -->
+  <string name="browser_menu_section_page_controls">Kuatiarogue hechajeyha</string>
+  <!-- Customize menu screen - Accessibility description - name of the menu section that groups the page tools (Bookmark page, Find in page, Desktop site, Extensions, etc.). Read aloud after "Section", followed by the tool names ("Section “Tools”: Bookmark page, Find in page…"). -->
+  <string name="browser_menu_section_tools">Tembipurueta</string>
+  <!-- Customize menu screen - Accessibility description - name of the menu section that groups the History, Bookmarks, Downloads and Passwords items. Read aloud after "Section", followed by the item names ("Section “Library”: History, Bookmarks, Downloads, Passwords"). -->
+  <string name="browser_menu_section_library">Arandukarenda</string>
+  <!-- Customize menu screen - Accessibility description - name of the menu section that groups the Sign in and Settings items. Read aloud after "Section", followed by the item names ("Section “Accounts and settings”: Sign in, Settings"). -->
+  <string name="browser_menu_section_accounts_and_settings">Mba’ete ha ñemboheko</string>
+  <!-- Customize menu screen - Accessibility description - name of the menu section that groups the New tab and New private tab actions. Read aloud after "Section", followed by the action names ("Section “New tab”: New tab, New private tab"). -->
+  <string name="browser_menu_section_new_tab">Tendayke pyahu</string>
   <!-- Title of the dialog shown when resetting the menu to its default layout (removing all user customizations) -->
   <string name="menu_customize_reset_dialog_title">¿Erujey poravorã ypyguápe?</string>
+  <!-- Message of the dialog shown when resetting the menu to its default layout (removing all user customizations) -->
+  <string name="menu_customize_reset_dialog_message">Kóva ombogue heta mba’e ha ndaikatúi eipe’a.</string>
   <!-- Primary button on the menu reset dialog. Tapping it removes all user customizations. -->
   <string name="menu_customize_reset_dialog_reset">Mbojevyjey</string>
   <!-- Secondary button on the menu reset dialog. Tapping it cancels the reset process and preserves all user-made customizations. -->
@@ -283,6 +293,8 @@
   <string name="browser_menu_passwords">Ñe’ẽñemi</string>
   <!-- Content description (not visible, for screen readers etc.) for the handle used to drag the main menu at the bottom of the screen. -->
   <string name="browser_close_main_menu_handlebar_content_description">Emboty poravorã</string>
+  <!-- Content description (not visible, used by screen readers, etc.) for the heading of the menu opened from the customize menu screen to preview pending changes. It is read before the menu items. The items are shown for preview only and do nothing when tapped. -->
+  <string name="browser_menu_preview_heading_content_description">Poravoha jehecha ypy. Ko’ápe ndaikatúi emyandy mba’eve.</string>
   <!-- Content description (not visible, for screen readers etc.) for main menu navigation header. -->
   <string name="browser_main_menu_content_description_navigation_header">Ñeikundaha</string>
   <!-- Content description (not visible, for screen readers etc.) for bottom sheet handlebar custom tab menu. -->
@@ -343,6 +355,10 @@
     Content description for the translate page toolbar button that opens the translations dialog when no translation has occurred.
   -->
   <string name="browser_toolbar_translate">Emoñe’ẽasa kuatiarogue</string>
+  <!-- Accessibility description for the toolbar button displayed when the page the user is on has a video that can be opened in a picture-in-picture window -->
+  <string name="browser_toolbar_picture_in_picture">Picture-in-picture</string>
+  <!-- Accessibility description for the toolbar button displayed while the current page's video is playing in a picture-in-picture window. Tapping the button closes that window. -->
+  <string name="browser_toolbar_picture_in_picture_close">Emboty Picture-in-Picture</string>
   <!-- CFR description for the browser toolbar describing the "Shake to summarize feature" -->
   <string name="browser_toolbar_summarize_cfr_description">Emongu’e ne mba’e’oka emombyky hag̃ua ko kuatiarogue sapy’aitépe. ⚡️</string>
   <!--
@@ -1159,6 +1175,8 @@
   <string name="preferences_category_sync">Mba’ekuaarã mbojuehepyre</string>
   <!-- Preference title for the toggle that allows user to turn sync on or off for the device they are on -->
   <string name="preferences_enable_sync_title">Embojuehe ko mba’e’oka</string>
+  <!-- Preference summary for the toggle that turns sync on or off for the device, shown when sync is off. It explains where synced data comes from. -->
+  <string name="preferences_enable_sync_summary_sync_disabled_2">Eiporu mba’etépe mba’ekuaarã ñongatupyre.</string>
   <!-- Summary for the sync preference category. -->
   <string name="preferences_sync_category_summary">Eñangareko embojuehéva ne mba’e’oka pa’ũmegua rehe</string>
   <!-- Summary for the sync preference category, when user has disabled all synchronisation items. -->
@@ -1674,6 +1692,8 @@
   <string name="add_to_new_tab_group_content_description">Embojuaju tendayke aty pyahu</string>
   <!-- Label for adding to a new tab group. -->
   <string name="add_to_new_tab_group_title">Tendayke aty pyahu</string>
+  <!-- Label to add a link in a new tab inside a tab group. -->
+  <string name="contextmenu_open_in_tab_group">Embojuruja tendayke atýpe</string>
   <plurals name="tab_group_tabs_count_subtitle">
     <!--
       Subtitle for the number of tabs in a tab group.
@@ -3507,12 +3527,6 @@
   <string name="homepage_shortcuts_add_website_title">Ehai URL ñanduti rogue rehegua</string>
   <!-- Title for the "Popular sites" section in the "Add to homepage" bottom sheet. -->
   <string name="homepage_shortcuts_popular_sites">Tenda ojekuaavéva</string>
-  <!-- Title text displayed in the dialog when shortcuts limit is reached. -->
-  <string name="shortcut_max_limit_title">Emohu’ãma mbopya’ehápe g̃uarã</string>
-  <!-- Content description text displayed in the dialog when shortcut limit is reached. -->
-  <string name="shortcut_max_limit_content">Embojuaju hag̃ua jeike pyahu, embogue peteĩ. Ejopy are tenda ha eiporavo mboguete.</string>
-  <!-- Confirmation dialog button text when top sites limit is reached. -->
-  <string name="top_sites_max_limit_confirmation_button">Oĩma, aikũmby</string>
   <!-- Label for the preference to show the shortcuts for the most visited top sites on the homepage -->
   <string name="top_sites_toggle_top_recent_sites_4">Jeike pya’eha</string>
   <!-- Title text displayed in the rename top site dialog. -->
@@ -3925,6 +3939,8 @@
   <string name="certificate_details_panel_secure_connection_title">Jeikekatu</string>
   <!-- Certificate panel - Label for the organization, locality and country the website's certificate was issued to -->
   <string name="certificate_details_panel_issued_to_label">Mboajepyre osẽmava:</string>
+  <!-- Certificate panel - Label for the name of the certificate authority that verified and issued the website's certificate -->
+  <string name="certificate_details_panel_verified_by_label">Ojehechapyréva:</string>
   <!-- Certificate panel - Content description (not visible, for screen readers etc.) for the EU trust mark logo, shown when the website's certificate is a Qualified Website Authentication Certificate (QWAC) as specified in EU Regulation 2024/1183 -->
   <string name="certificate_details_panel_eu_trust_mark_content_description">UE séllo ojeroviaha</string>
   <plurals name="trackers_blocked_panel_total_num_trackers_blocked_2">
@@ -3994,6 +4010,8 @@
   <string name="clear_site_data_dialog_negative_button_text">Heja</string>
   <!-- Text for the connection security panel when the site is secure. -->
   <string name="connection_security_panel_secure">Jeikekatu</string>
+  <!-- Action description (not visible, for screen readers etc.) for the “Secure connection” link in the protection panel header, which opens a page showing the website's certificate details. Screen readers announce it after “Double tap to” -->
+  <string name="connection_security_panel_view_certificate_details">ehecha mboajepyre mba’emimi</string>
   <!-- Text for the connection security panel when the site is not secure. -->
   <string name="connection_security_panel_not_secure">Jeikekatu’ỹ</string>
   <!-- Text for the connection security panel when accessed from local PDF. -->
@@ -4557,6 +4575,8 @@
   <string name="wrex_widget_error_connection_offline_title">Ha’ete ndaipóriva ñanduti</string>
   <!-- Sports widget error card title shown when match data fails to load. -->
   <string name="wrex_widget_error_load_failed_title">Ndaipóri marandu partído rehegua ko’ág̃a</string>
+  <!-- Sports widget error card title shown when the latest match results fail to load. -->
+  <string name="wrex_widget_error_results_load_failed_title">Ndaikatúi ehecha apopyre ko’ág̃a</string>
   <!-- Content description (for accessibility, not displayed) for teams which have not yet been determined in the match schedule. -->
   <string name="wrex_widget_team_to_be_determined">Aty oikotavahína</string>
   <!--
@@ -4623,8 +4643,6 @@
   <string name="lens_camera_loading_cancel_button">Eheja</string>
   <!-- Snackbar message shown when an image picked from the gallery or taken with the camera could not be opened or read, so it was never sent to Google Lens. Shown after returning to the camera. -->
   <string name="lens_camera_image_load_failed_v2">Ndaikatúi henyhẽvo ta’ãnga.</string>
-  <!-- Snackbar message shown when an image picked from the gallery could not be opened or read, so it was never sent to Google Lens. Shown after returning to the camera. -->
-  <string name="lens_camera_image_load_failed">Noñemyanyhẽi ko ta’ãnga. Eha’ã ambuépe.</string>
   <!-- Snackbar message shown when an image picked from the gallery or taken with the camera could not be searched because of a network problem or an error from Google Lens. Shown after returning to the camera, next to the lens_camera_upload_failed_retry_button action. -->
   <string name="lens_camera_upload_failed">Ndereguerúi mba’eve Google Lens-gui.</string>
   <!-- Action in the snackbar shown when an image picked from the gallery or taken with the camera could not be searched with Google Lens. Tapping it searches the same image again. -->
@@ -4717,12 +4735,6 @@
     Content description for the reader view panel: a group of buttons floating over the content, which allow customizing the reader view or activating the Listen to Page feature
   -->
   <string name="reader_mode_panel_content_description_2">Moñe’ẽrã reko poravorã</string>
-  <!--
-    Listen to page
-
-    Content description for the reader mode panel: a group of buttons floating over the content
-  -->
-  <string name="reader_mode_panel_content_description">Moñe’ẽrã Reko Poravorã</string>
   <!-- Content description for the button in the reader view panel that turns on the Listen to Page feature (playback of content begins when button is pressed) -->
   <string name="reader_mode_panel_listen_content_description">Emoñe’ẽ ayvúpe</string>
   <!-- Content description for media player displayed in Reader view when the Listen to Page (Read Aloud) feature is selected -->

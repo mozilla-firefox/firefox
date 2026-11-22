@@ -19,8 +19,6 @@
   <string name="content_description_menu">更多選項</string>
   <!-- Content description (not visible, for screen readers etc.): "Private Browsing" menu button. -->
   <string name="content_description_private_browsing">隱私瀏覽模式</string>
-  <!-- Content description (not visible, for screen readers etc.): "Normal Browsing" menu button. -->
-  <string name="content_description_normal_browsing">一般瀏覽模式</string>
   <!-- Placeholder text shown in the search bar before a user enters text for the default engine -->
   <string name="search_hint">搜尋或輸入網址</string>
   <!-- Shorter placeholder text shown in the search bar when an additional action (voice search) is rendered alongside the hint. -->
@@ -188,6 +186,16 @@
   <string name="customize_menu">自訂選單</string>
   <!-- Alert message shown in the "Customize menu" screen when the user tries to hide a menu section which cannot be hidden. -->
   <string name="customize_menu_cannot_hide_section">無法隱藏此段落</string>
+  <!-- Customize menu screen - Accessibility description - name of the menu section that groups the Back, Forward, Share and Refresh buttons. Read aloud after "Section", followed by the button names ("Section “Page controls”: Back, Forward, Share, Refresh"). -->
+  <string name="browser_menu_section_page_controls">頁面控制元件</string>
+  <!-- Customize menu screen - Accessibility description - name of the menu section that groups the page tools (Bookmark page, Find in page, Desktop site, Extensions, etc.). Read aloud after "Section", followed by the tool names ("Section “Tools”: Bookmark page, Find in page…"). -->
+  <string name="browser_menu_section_tools">工具</string>
+  <!-- Customize menu screen - Accessibility description - name of the menu section that groups the History, Bookmarks, Downloads and Passwords items. Read aloud after "Section", followed by the item names ("Section “Library”: History, Bookmarks, Downloads, Passwords"). -->
+  <string name="browser_menu_section_library">收藏庫</string>
+  <!-- Customize menu screen - Accessibility description - name of the menu section that groups the Sign in and Settings items. Read aloud after "Section", followed by the item names ("Section “Accounts and settings”: Sign in, Settings"). -->
+  <string name="browser_menu_section_accounts_and_settings">帳號與設定</string>
+  <!-- Customize menu screen - Accessibility description - name of the menu section that groups the New tab and New private tab actions. Read aloud after "Section", followed by the action names ("Section “New tab”: New tab, New private tab"). -->
+  <string name="browser_menu_section_new_tab">開新分頁</string>
   <!-- Title of the dialog shown when resetting the menu to its default layout (removing all user customizations) -->
   <string name="menu_customize_reset_dialog_title">要還原為預設選單嗎？</string>
   <!-- Message of the dialog shown when resetting the menu to its default layout (removing all user customizations) -->
@@ -285,6 +293,8 @@
   <string name="browser_menu_passwords">密碼</string>
   <!-- Content description (not visible, for screen readers etc.) for the handle used to drag the main menu at the bottom of the screen. -->
   <string name="browser_close_main_menu_handlebar_content_description">關閉選單</string>
+  <!-- Content description (not visible, used by screen readers, etc.) for the heading of the menu opened from the customize menu screen to preview pending changes. It is read before the menu items. The items are shown for preview only and do nothing when tapped. -->
+  <string name="browser_menu_preview_heading_content_description">選單預覽。無法在此處操作選單項目。</string>
   <!-- Content description (not visible, for screen readers etc.) for main menu navigation header. -->
   <string name="browser_main_menu_content_description_navigation_header">導覽</string>
   <!-- Content description (not visible, for screen readers etc.) for bottom sheet handlebar custom tab menu. -->
@@ -345,6 +355,10 @@
     Content description for the translate page toolbar button that opens the translations dialog when no translation has occurred.
   -->
   <string name="browser_toolbar_translate">翻譯頁面</string>
+  <!-- Accessibility description for the toolbar button displayed when the page the user is on has a video that can be opened in a picture-in-picture window -->
+  <string name="browser_toolbar_picture_in_picture">子母畫面</string>
+  <!-- Accessibility description for the toolbar button displayed while the current page's video is playing in a picture-in-picture window. Tapping the button closes that window. -->
+  <string name="browser_toolbar_picture_in_picture_close">關閉子母畫面</string>
   <!-- CFR description for the browser toolbar describing the "Shake to summarize feature" -->
   <string name="browser_toolbar_summarize_cfr_description">搖晃您的裝置，即可在幾秒內獲得頁面摘要內容。⚡️</string>
   <!--
@@ -1173,6 +1187,8 @@
   <string name="preferences_enable_sync_title">同步此裝置</string>
   <!-- Preference summary for the toggle that turns sync on or off for the device, shown when sync is on. -->
   <string name="preferences_enable_sync_summary_sync_enabled">已備份您的資料，並可在同步的裝置上使用。</string>
+  <!-- Preference summary for the toggle that turns sync on or off for the device, shown when sync is off. It explains where synced data comes from. -->
+  <string name="preferences_enable_sync_summary_sync_disabled_2">使用儲存於您帳號中的資料。</string>
   <!-- Preference summary for the toggle that turns sync on or off for the device, shown when sync is off. It explains where synced data comes from. %1$s is the Firefox brand name. -->
   <string name="preferences_enable_sync_summary_sync_disabled">使用您儲存於 %1$s 帳號中的資料。</string>
   <!-- Summary for the sync preference category. -->
@@ -1691,6 +1707,8 @@
   <string name="add_to_new_tab_group_content_description">新增至新分頁群組</string>
   <!-- Label for adding to a new tab group. -->
   <string name="add_to_new_tab_group_title">新增分頁群組</string>
+  <!-- Label to add a link in a new tab inside a tab group. -->
+  <string name="contextmenu_open_in_tab_group">用分頁群組開啟</string>
   <plurals name="tab_group_tabs_count_subtitle">
     <!--
       Subtitle for the number of tabs in a tab group.
@@ -2100,15 +2118,21 @@
   <string name="unsubmitted_crash_dialog_negative_button_2">關閉</string>
   <!-- Unsubmitted crash dialog negative button to never be asked for the submission -->
   <string name="unsubmitted_crash_requested_by_devs_dialog_never_button">別再顯示</string>
+  <!-- Unsubmitted crash dialog negative button to never be asked for the submission, displayed in all capital letters. -->
+  <string name="unsubmitted_crash_requested_by_devs_dialog_never_button_2" tools:ignore="UnusedResources">不再顯示</string>
   <!-- Unsubmitted crash dialog positive button to submit crash report -->
   <string name="unsubmitted_crash_dialog_positive_button_2">傳送</string>
   <!-- Unsubmitted crash dialog positive button to submit crash report -->
   <string name="unsubmitted_crash_dialog_positive_button">傳送錯誤報表</string>
+  <!-- Unsubmitted crash dialog positive button to submit crash report, displayed in all capital letters. -->
+  <string name="unsubmitted_crash_dialog_positive_button_3" tools:ignore="UnusedResources">傳送錯誤報告</string>
   <!-- Body text for crash report dialog. %s is the link text in the annotated string (ie. "Learn More") -->
   <string name="unsubmitted_crash_dialog_body">錯誤報告可幫助我們找出瀏覽器的問題並進行修正。報告內容可能會包含私人或敏感資料。%s</string>
   <string name="unsubmitted_crash_dialog_learn_more">更多資訊</string>
   <!-- Unsubmitted crash dialog button to open a web page with more details on the feature and privacy policy -->
   <string name="unsubmitted_crash_requested_by_devs_learn_more">更多資訊</string>
+  <!-- Unsubmitted crash dialog button to open a web page with more details on the feature and privacy policy, displayed in all capital letters. -->
+  <string name="unsubmitted_crash_requested_by_devs_learn_more_2" tools:ignore="UnusedResources">更多資訊</string>
   <!--
     Bookmarks
 
@@ -3227,6 +3251,10 @@
   <string name="preferences_credit_cards_save_and_autofill_cards_2">儲存並自動填寫付款方式</string>
   <!-- Preference summary for saving and autofilling payment method data. %s is the name of the app (for example "Firefox"). -->
   <string name="preferences_credit_cards_save_and_autofill_cards_summary_2">%s 會加密您儲存的所有付款方式資料</string>
+  <!-- Preference for saving the security codes of credit cards. -->
+  <string name="preferences_credit_cards_save_security_codes">儲存安全碼</string>
+  <!-- Preference summary for saving the security codes of credit cards. %s is the name of the app (for example "Firefox"). -->
+  <string name="preferences_credit_cards_save_security_codes_summary">%s 會加密您的卡號與安全碼，讓您日後付款更快速</string>
   <!-- Preference option for syncing credit cards across devices. This is displayed when the user is not signed into sync -->
   <string name="preferences_credit_cards_sync_cards_across_devices">在不同裝置間同步卡片資料</string>
   <!-- Preference option for syncing credit cards across devices. This is displayed when the user is signed into sync -->
@@ -3263,6 +3291,8 @@
   <string name="credit_cards_expiration_date_year">到期年份</string>
   <!-- The header for the name on the credit card -->
   <string name="credit_cards_name_on_card">持卡人姓名</string>
+  <!-- The header for the optional security code of a credit card. CVV is the abbreviation of the card security code. -->
+  <string name="credit_cards_cvv_optional">CVV（選填）</string>
   <!-- The text for the "Delete card" menu item for deleting a credit card -->
   <string name="credit_cards_menu_delete_card">刪除卡片</string>
   <!-- The text for the "Delete card" button for deleting a credit card -->
@@ -3279,10 +3309,16 @@
   <string name="credit_cards_cancel_button">取消</string>
   <!-- Title of the "Saved cards" screen -->
   <string name="credit_cards_saved_cards">已儲存的卡片</string>
+  <!-- Text in the saved cards list that indicates the security code for a credit card is being stored -->
+  <string name="credit_cards_cvv_saved">已儲存 CVV</string>
   <!-- Error message for card number validation -->
   <string name="credit_cards_number_validation_error_message_2">請輸入有效卡號</string>
   <!-- Error message for card name on card validation -->
   <string name="credit_cards_name_on_card_validation_error_message_2">請輸入持卡人姓名</string>
+  <!-- Error message for a credit card security code that does not meet the 3-digit length requirement. -->
+  <string name="credit_cards_cvv_validation_error_message">安全碼必須為 3 位數</string>
+  <!-- Error message for a credit card security code that does not meet the 4-digit length requirement (used for American Express cards only) -->
+  <string name="credit_cards_cvv_amex_validation_error_message">美國運通卡的安全碼必須為 4 位數</string>
   <!-- Message displayed in biometric prompt displayed for authentication before allowing users to view their saved credit cards -->
   <string name="credit_cards_biometric_prompt_message">解鎖後即可檢視儲存的卡片資訊</string>
   <!-- Title of warning dialog if users have no device authentication set up -->
@@ -3520,12 +3556,6 @@
   <string name="homepage_shortcuts_add_website_title">輸入網站網址</string>
   <!-- Title for the "Popular sites" section in the "Add to homepage" bottom sheet. -->
   <string name="homepage_shortcuts_popular_sites">熱門網站</string>
-  <!-- Title text displayed in the dialog when shortcuts limit is reached. -->
-  <string name="shortcut_max_limit_title">已達捷徑數量限制</string>
-  <!-- Content description text displayed in the dialog when shortcut limit is reached. -->
-  <string name="shortcut_max_limit_content">請先移除現有的捷徑才能再新增。請按住網站，然後選擇移除。</string>
-  <!-- Confirmation dialog button text when top sites limit is reached. -->
-  <string name="top_sites_max_limit_confirmation_button">好，知道了！</string>
   <!-- Label for the preference to show the shortcuts for the most visited top sites on the homepage -->
   <string name="top_sites_toggle_top_recent_sites_4">捷徑</string>
   <!-- Title text displayed in the rename top site dialog. -->
@@ -3698,6 +3728,12 @@
     %1$s is the size in kilobytes or megabytes of the language file.
   -->
   <string name="translations_download_language_file_dialog_title">裝置處於資料節省模式時，也下載翻譯語言檔（%1$s）嗎？</string>
+  <!--
+    Translations options dialog
+
+    Title of the translation options dialog that allows a user to set their translation preferences for the site the user is currently on.
+  -->
+  <string name="translation_option_bottom_sheet_title_heading2">翻譯偏好設定</string>
   <!--
     Translations options dialog
 
@@ -3937,6 +3973,8 @@
   <string name="certificate_details_panel_secure_connection_title">安全連線</string>
   <!-- Certificate panel - Label for the organization, locality and country the website's certificate was issued to -->
   <string name="certificate_details_panel_issued_to_label">憑證簽發給：</string>
+  <!-- Certificate panel - Label for the name of the certificate authority that verified and issued the website's certificate -->
+  <string name="certificate_details_panel_verified_by_label">驗證機構：</string>
   <!-- Certificate panel - Content description (not visible, for screen readers etc.) for the EU trust mark logo, shown when the website's certificate is a Qualified Website Authentication Certificate (QWAC) as specified in EU Regulation 2024/1183 -->
   <string name="certificate_details_panel_eu_trust_mark_content_description">歐盟信任標章</string>
   <plurals name="trackers_blocked_panel_total_num_trackers_blocked_2">
@@ -3999,6 +4037,8 @@
   <string name="clear_site_data_dialog_negative_button_text">取消</string>
   <!-- Text for the connection security panel when the site is secure. -->
   <string name="connection_security_panel_secure">安全連線</string>
+  <!-- Action description (not visible, for screen readers etc.) for the “Secure connection” link in the protection panel header, which opens a page showing the website's certificate details. Screen readers announce it after “Double tap to” -->
+  <string name="connection_security_panel_view_certificate_details">檢視憑證詳情</string>
   <!-- Text for the connection security panel when the site is not secure. -->
   <string name="connection_security_panel_not_secure">連線不安全</string>
   <!-- Text for the connection security panel when accessed from local PDF. -->
@@ -4509,6 +4549,8 @@
   <string name="wrex_widget_match_suspended">比賽暫停</string>
   <!-- Label shown on the sports widget match status badge when a match has been postponed to a later date. -->
   <string name="wrex_widget_match_postponed">延期</string>
+  <!-- Label shown on the sports widget match status badge when a match has been canceled. -->
+  <string name="wrex_widget_match_canceled">已取消</string>
   <!-- Sports widget action label to refresh match data after an error. -->
   <string name="wrex_widget_error_refresh">重新整理</string>
   <!-- Sports widget menu item to view the team's match results. -->
@@ -4634,8 +4676,6 @@
   <string name="lens_camera_loading_cancel_button">取消</string>
   <!-- Snackbar message shown when an image picked from the gallery or taken with the camera could not be opened or read, so it was never sent to Google Lens. Shown after returning to the camera. -->
   <string name="lens_camera_image_load_failed_v2">無法載入此圖片。</string>
-  <!-- Snackbar message shown when an image picked from the gallery could not be opened or read, so it was never sent to Google Lens. Shown after returning to the camera. -->
-  <string name="lens_camera_image_load_failed">無法載入這張圖片，請改用其他圖片。</string>
   <!-- Snackbar message shown when an image picked from the gallery or taken with the camera could not be searched because of a network problem or an error from Google Lens. Shown after returning to the camera, next to the lens_camera_upload_failed_retry_button action. -->
   <string name="lens_camera_upload_failed">無法取得 Google 智慧鏡頭的搜尋結果</string>
   <!-- Action in the snackbar shown when an image picked from the gallery or taken with the camera could not be searched with Google Lens. Tapping it searches the same image again. -->
@@ -4728,12 +4768,6 @@
     Content description for the reader view panel: a group of buttons floating over the content, which allow customizing the reader view or activating the Listen to Page feature
   -->
   <string name="reader_mode_panel_content_description_2">閱讀畫面選項</string>
-  <!--
-    Listen to page
-
-    Content description for the reader mode panel: a group of buttons floating over the content
-  -->
-  <string name="reader_mode_panel_content_description">閱讀模式選項</string>
   <!-- Content description for the button in the reader view panel that turns on the Listen to Page feature (playback of content begins when button is pressed) -->
   <string name="reader_mode_panel_listen_content_description">大聲朗讀</string>
   <!-- Content description for media player displayed in Reader view when the Listen to Page (Read Aloud) feature is selected -->

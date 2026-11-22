@@ -160,6 +160,34 @@
   <string name="mozac_feature_prompts_update_credit_card_prompt_title">Oppdatere siste bruksdato for kortet?</string>
   <!-- Subtitle text displayed under the title of the saved card dialog. %s is the name of the app (for example "Firefox"). -->
   <string name="mozac_feature_prompts_save_credit_card_prompt_body_2">%s krypterer kortnummeret ditt. Sikkerheitskoden din vert ikkje lagra.</string>
+  <!-- Title of dialog to store credit card information in the user's account -->
+  <string name="mozac_feature_prompts_save_payment_method_prompt_title">Lagre denne betalingsmåten?</string>
+  <!-- Label for the masked card security code in a save or update credit card dialog. %s is the masked security code (for example "•••"). -->
+  <string name="mozac_feature_prompts_save_payment_method_security_code">Sikkerheitskode %s</string>
+  <!-- Label of the toggle in a save or update credit card dialog that controls whether the card security code is saved. -->
+  <string name="mozac_feature_prompts_always_save_security_codes">Lagre sikkerheitskodar</string>
+  <!-- Text for the button that closes a save or update credit card dialog without saving. -->
+  <string name="mozac_feature_prompts_save_payment_method_dismiss">Ignorer</string>
+  <!-- Title of the edit credit card screen (also used as the accessibility description for the button that opens this screen). -->
+  <string name="mozac_feature_prompts_edit_credit_card_title">Rediger kort</string>
+  <!-- Edit credit card screen - label of the credit card number field -->
+  <string name="mozac_feature_prompts_edit_credit_card_number">Kortnummer</string>
+  <!-- Edit credit card screen - Error message displayed for the credit card number field -->
+  <string name="mozac_feature_prompts_edit_credit_card_number_error">Skriv inn eit gyldig kortnummer</string>
+  <!-- Edit credit card screen - label of the cardholder name field -->
+  <string name="mozac_feature_prompts_edit_credit_card_name">Namn på kort</string>
+  <!-- Edit credit card screen - label for the credit card expiration date field (month only) -->
+  <string name="mozac_feature_prompts_edit_credit_card_expiry_month">Utløpsdato, månad</string>
+  <!-- Edit credit card screen - format for options in the month dropdown: %1$s is the name of the month (for example "January"), and %2$s is the month number with two digits (for example "01"). The result would be "January (01)". -->
+  <string name="mozac_feature_prompts_edit_credit_card_expiry_month_option">%1$s (%2$s)</string>
+  <!-- Edit credit card screen - label for the credit card expiration date field (year only) -->
+  <string name="mozac_feature_prompts_edit_credit_card_expiry_year">Utløpsdato, år</string>
+  <!-- Edit credit card screen - label for the credit card security code field (CVV is the common short form in English and stands for Card Verification Value) -->
+  <string name="mozac_feature_prompts_edit_credit_card_security_code">CVV (valfritt)</string>
+  <!-- Edit credit card screen - Error message for the security code field when the entered code is too short. -->
+  <string name="mozac_feature_prompts_edit_credit_card_security_code_error">Skriv inn ein sikkerheitskode på 3 eller 4 siffer</string>
+  <!-- Edit credit card screen - Accessibility description of the button that clears the security code field -->
+  <string name="mozac_feature_prompts_edit_credit_card_security_code_clear">Fjern sikkerheitskoden</string>
   <!--
     Address Autofill
 

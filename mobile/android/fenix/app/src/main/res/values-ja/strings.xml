@@ -19,8 +19,6 @@
   <string name="content_description_menu">他のオプション</string>
   <!-- Content description (not visible, for screen readers etc.): "Private Browsing" menu button. -->
   <string name="content_description_private_browsing">プライベートブラウジング</string>
-  <!-- Content description (not visible, for screen readers etc.): "Normal Browsing" menu button. -->
-  <string name="content_description_normal_browsing">通常のブラウジング</string>
   <!-- Placeholder text shown in the search bar before a user enters text for the default engine -->
   <string name="search_hint">検索語またはアドレスを入力</string>
   <!-- Shorter placeholder text shown in the search bar when an additional action (voice search) is rendered alongside the hint. -->
@@ -186,6 +184,16 @@
     Label for popup button that appears when long-pressing the main menu. Tapping it allows the user to customize the main menu layout.
   -->
   <string name="customize_menu">メニューをカスタマイズ</string>
+  <!-- Alert message shown in the "Customize menu" screen when the user tries to hide a menu section which cannot be hidden. -->
+  <string name="customize_menu_cannot_hide_section">このセクションは非表示にできません</string>
+  <!-- Title of the dialog shown when resetting the menu to its default layout (removing all user customizations) -->
+  <string name="menu_customize_reset_dialog_title">既定のメニューに戻しますか？</string>
+  <!-- Message of the dialog shown when resetting the menu to its default layout (removing all user customizations) -->
+  <string name="menu_customize_reset_dialog_message">カスタマイズした内容がリセットされます。この操作は取り消せません。</string>
+  <!-- Primary button on the menu reset dialog. Tapping it removes all user customizations. -->
+  <string name="menu_customize_reset_dialog_reset">リセット</string>
+  <!-- Secondary button on the menu reset dialog. Tapping it cancels the reset process and preserves all user-made customizations. -->
+  <string name="menu_customize_reset_dialog_cancel">キャンセル</string>
   <!-- Content description (not visible, for screen readers etc.): Navigate backward (browsing history) -->
   <string name="browser_menu_back">戻る</string>
   <!-- Content description (not visible, for screen readers etc.): Navigate forward (browsing history) -->
@@ -303,6 +311,8 @@
   <string name="browser_menu_webcompat_reporter_2">動作しないサイトを報告</string>
   <!-- Browser menu label for adding a tab to a tab group -->
   <string name="browser_menu_add_to_tab_group">グループに追加</string>
+  <!-- Browser menu label for moving a tab to a tab group -->
+  <string name="browser_menu_move_to_tab_group">グループへ移動</string>
   <!-- Browser menu label that is displayed when the current page has been translated by the translation feature. -->
   <string name="browser_menu_translated">翻訳済み</string>
   <!-- Browser menu label for the print feature -->
@@ -387,6 +397,10 @@
   <string name="ai_controls_voice_search_title">音声検索</string>
   <!-- Description for the voice search AI feature toggle -->
   <string name="ai_controls_voice_search_description">音声は Google 音声認識サービスによってテキストに変換されます。</string>
+  <!-- Title for the listen to page AI feature toggle -->
+  <string name="ai_controls_listen_to_page_title">ページを読み上げる</string>
+  <!-- Description for the listen to page AI feature toggle -->
+  <string name="ai_controls_listen_to_page_description">端末が AI を使用して読み上げることがあります。テキストと音声はプライバシーが保護されます。</string>
   <!-- Title for the block AI enhancements confirmation dialog -->
   <string name="ai_controls_block_dialog_title">AI 支援をブロックしますか？</string>
   <!-- Body text for the block AI enhancements confirmation dialog. %1$s is the name of the app (for example "Firefox"). -->
@@ -586,6 +600,14 @@
   <string name="nova_onboarding_sync_subtitle">ブックマーク、パスワードなどをどの端末からでも簡単にアクセスできます。個人データは暗号化により安全に保護されます。</string>
   <!-- Sync onboarding button. -->
   <string name="nova_onboarding_sync_button">同期を開始</string>
+  <!-- Title of onboarding pairing card. Displayed when installing Firefox for Android by using a pairing link from Firefox for Desktop. "Scan" refers to scanning the QR code displayed on the computer. -->
+  <string name="nova_onboarding_sync_pairing_title">スキャンしてコンピューターとのペアリングを完了してください</string>
+  <!-- Body of the onboarding pairing card. Provides troubleshooting instructions when the QR code is not being displayed on the pairing computer. The "firefox.com/pair" URL should not be translated or edited. Bold tags should be preserved. -->
+  <string name="nova_onboarding_sync_pairing_body"><![CDATA[QR コードがない場合は、パソコンで <b>firefox.com/pair</b> にアクセスしてください。]]></string>
+  <!-- Primary button of the onboarding pairing card. Opens the camera to scan the pairing QR code. -->
+  <string name="nova_onboarding_sync_pairing_scan_button">ペアリングコードをスキャン</string>
+  <!-- Secondary button of the onboarding pairing card. Opens the Mozilla account sign-in page. -->
+  <string name="nova_onboarding_sync_pairing_email_button">メールアドレスでログイン</string>
   <!-- Marketing onboarding title. -->
   <string name="nova_onboarding_marketing_title">より良いインターネットの構築にご協力ください</string>
   <!--
@@ -1271,6 +1293,14 @@
   <string name="preferences_sync_sign_in_to_reconnect">ログインして再接続</string>
   <!-- Preference for removing FxA account -->
   <string name="preferences_sync_remove_account">アカウントを削除</string>
+  <!--
+    Settings sign-in promo card
+
+    Sign-in promo card: Title inviting the user to sign in
+  -->
+  <string name="sign_in_promo_title">ログイン</string>
+  <!-- Sign-in promo card: Body of the card listing what signing in allows the user to do -->
+  <string name="sign_in_promo_description">タブやブックマーク、パスワードなどを同期しましょう。</string>
   <!--
     Pairing Feature strings
 
@@ -2507,6 +2537,12 @@
   <string name="snackbar_private_tab_closed">プライベートタブを閉じました</string>
   <!-- Text shown in snackbar to undo deleting a tab, top site or collection -->
   <string name="snackbar_deleted_undo">元に戻す</string>
+  <!-- Confirmation message displayed when user adds a page to a tab group. %1$s is the tab group's name. -->
+  <string name="snackbar_tab_added_to_group">%1$s グループに追加しました</string>
+  <!-- Confirmation message displayed when user moves a page from one tab group to another. %1$s is the tab group's name. -->
+  <string name="snackbar_tab_moved_to_group">%1$s グループへ移動しました</string>
+  <!-- Button text displayed with a confirmation message when the user adds or moves a page to a tab group. Tapping it displays the tab group. -->
+  <string name="snackbar_action_view">表示</string>
   <!--
     QR code scanner prompt which appears after scanning a code, but before navigating to it
     %1$s is the name of the app (for example "Firefox"), %2$s is the URL or text scanned
@@ -3481,12 +3517,6 @@
   <string name="homepage_shortcuts_add_website_title">ウェブサイトの URL を入力してください</string>
   <!-- Title for the "Popular sites" section in the "Add to homepage" bottom sheet. -->
   <string name="homepage_shortcuts_popular_sites">人気サイト</string>
-  <!-- Title text displayed in the dialog when shortcuts limit is reached. -->
-  <string name="shortcut_max_limit_title">ショートカット数の上限に達しました</string>
-  <!-- Content description text displayed in the dialog when shortcut limit is reached. -->
-  <string name="shortcut_max_limit_content">新しいショートカットを追加するには、いずれかを削除してください。サイトを長押しして削除を選択します。</string>
-  <!-- Confirmation dialog button text when top sites limit is reached. -->
-  <string name="top_sites_max_limit_confirmation_button">OK</string>
   <!-- Label for the preference to show the shortcuts for the most visited top sites on the homepage -->
   <string name="top_sites_toggle_top_recent_sites_4">ショートカット</string>
   <!-- Title text displayed in the rename top site dialog. -->
@@ -3896,6 +3926,8 @@
   <string name="protection_panel_permissions_title">許可設定</string>
   <!-- Certificate panel - Title of the section that contains the website's certificate information (issued to, issued by, etc.) as verified by Firefox (thus guaranteeing the HTTPS connection is secure) -->
   <string name="certificate_details_panel_secure_connection_title">安全な接続</string>
+  <!-- Certificate panel - Label for the organization, locality and country the website's certificate was issued to -->
+  <string name="certificate_details_panel_issued_to_label">証明書の発行先:</string>
   <!-- Certificate panel - Content description (not visible, for screen readers etc.) for the EU trust mark logo, shown when the website's certificate is a Qualified Website Authentication Certificate (QWAC) as specified in EU Regulation 2024/1183 -->
   <string name="certificate_details_panel_eu_trust_mark_content_description">EU トラストマーク</string>
   <plurals name="trackers_blocked_panel_total_num_trackers_blocked_2">
@@ -4551,6 +4583,8 @@
   <string name="collections_migration_homepage_card_message">タブをさらに簡単に整理する方法があります</string>
   <!-- Link text shown on the collections to tab groups migration card that opens the tab groups page in the tab manager. -->
   <string name="collections_migration_homepage_card_link">タブグループを表示する</string>
+  <!-- Content description (not visible, for screen readers etc.) for the button that dismisses the collections to tab groups migration card. -->
+  <string name="collections_migration_card_close_button_content_description">閉じる</string>
   <!-- Google Lens prototype related strings -->
   <string name="preferences_debug_settings_google_lens_integration">Google レンズとの連携を有効にする</string>
   <!-- Lens image search button content description -->
@@ -4591,8 +4625,6 @@
   <string name="lens_camera_loading_cancel_button">キャンセル</string>
   <!-- Snackbar message shown when an image picked from the gallery or taken with the camera could not be opened or read, so it was never sent to Google Lens. Shown after returning to the camera. -->
   <string name="lens_camera_image_load_failed_v2">この画像を読み込めませんでした。</string>
-  <!-- Snackbar message shown when an image picked from the gallery could not be opened or read, so it was never sent to Google Lens. Shown after returning to the camera. -->
-  <string name="lens_camera_image_load_failed">この画像を読み込めませんでした。別の画像を選択してください。</string>
   <!-- Snackbar message shown when an image picked from the gallery or taken with the camera could not be searched because of a network problem or an error from Google Lens. Shown after returning to the camera, next to the lens_camera_upload_failed_retry_button action. -->
   <string name="lens_camera_upload_failed">Google Lens から結果を取得できませんでした</string>
   <!-- Action in the snackbar shown when an image picked from the gallery or taken with the camera could not be searched with Google Lens. Tapping it searches the same image again. -->
@@ -4685,12 +4717,6 @@
     Content description for the reader view panel: a group of buttons floating over the content, which allow customizing the reader view or activating the Listen to Page feature
   -->
   <string name="reader_mode_panel_content_description_2">リーダービューのオプション</string>
-  <!--
-    Listen to page
-
-    Content description for the reader mode panel: a group of buttons floating over the content
-  -->
-  <string name="reader_mode_panel_content_description">リーダーモードのオプション</string>
   <!-- Content description for the button in the reader view panel that turns on the Listen to Page feature (playback of content begins when button is pressed) -->
   <string name="reader_mode_panel_listen_content_description">読み上げ</string>
   <!-- Content description for media player displayed in Reader view when the Listen to Page (Read Aloud) feature is selected -->

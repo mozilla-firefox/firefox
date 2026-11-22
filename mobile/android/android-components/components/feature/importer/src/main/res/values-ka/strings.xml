@@ -9,6 +9,8 @@
 <resources>
   <!-- Title for the bookmarks import loading dialog. -->
   <string name="mozac_feature_importer_dialog_title">სანიშნების გადმოტანა</string>
+  <!-- Title for the passwords import loading dialog. -->
+  <string name="mozac_feature_passwords_importer_dialog_title">პაროლების გადმოტანა</string>
   <!-- Description for the bookmarks and passwords import loading dialog. -->
   <string name="mozac_feature_importer_dialog_description">დატოვეთ ეს ეკრანი გახსნილი. მხოლოდ რამდენიმე წამს გასტანს.</string>
   <!-- Label for the cancel action on the bookmarks and passwords import loading dialog. -->

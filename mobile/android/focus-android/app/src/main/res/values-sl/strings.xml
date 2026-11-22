@@ -337,7 +337,7 @@
 
     %1$s is the app name and build variant (for example "Firefox Focus", "Firefox Klar Nightly").
   -->
-  <string name="onboarding_first_screen_title">Dobrodošli v %su</string>
+  <string name="onboarding_first_screen_title">Dobrodošli v %1$su</string>
   <!-- New Onboarding flow first screen subtitle the one that appears under title -->
   <string name="onboarding_first_screen_subtitle">Hitro. Zasebno. Brez motenj.</string>
   <!--
@@ -426,6 +426,8 @@
   -->
   <string name="qualified_identity">Imetnik potrdila: %1$s</string>
   <!--
+    Text shown in Security Information Popup
+
     The European Union eIDAS Regulation specifies a type of certificate
     called a "qualified website authentication certificate" (QWAC) and
     requires that browsers identify and indicate such certificates. This

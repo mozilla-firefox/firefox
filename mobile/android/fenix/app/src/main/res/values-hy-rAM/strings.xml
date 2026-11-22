@@ -19,8 +19,6 @@
   <string name="content_description_menu">Լր. ընտրանքներ</string>
   <!-- Content description (not visible, for screen readers etc.): "Private Browsing" menu button. -->
   <string name="content_description_private_browsing">Գաղտնի դիտարկում</string>
-  <!-- Content description (not visible, for screen readers etc.): "Normal Browsing" menu button. -->
-  <string name="content_description_normal_browsing">Սովորական դիտարկում</string>
   <!-- Placeholder text shown in the search bar before a user enters text for the default engine -->
   <string name="search_hint">Որոնեք կամ մուտքագրեք հասցե</string>
   <!-- Shorter placeholder text shown in the search bar when an additional action (voice search) is rendered alongside the hint. -->
@@ -186,6 +184,16 @@
     Label for popup button that appears when long-pressing the main menu. Tapping it allows the user to customize the main menu layout.
   -->
   <string name="customize_menu">Հարմարեցնել ցանկը</string>
+  <!-- Alert message shown in the "Customize menu" screen when the user tries to hide a menu section which cannot be hidden. -->
+  <string name="customize_menu_cannot_hide_section">Այս բաժինը հնարավոր չէ թաքցնել</string>
+  <!-- Title of the dialog shown when resetting the menu to its default layout (removing all user customizations) -->
+  <string name="menu_customize_reset_dialog_title">Վերագործարկե՞լ սկզբնադիր ցանկին։</string>
+  <!-- Message of the dialog shown when resetting the menu to its default layout (removing all user customizations) -->
+  <string name="menu_customize_reset_dialog_message">Սա հեռացնում է անհատականացումները և չի կարող հետարկվել։</string>
+  <!-- Primary button on the menu reset dialog. Tapping it removes all user customizations. -->
+  <string name="menu_customize_reset_dialog_reset">Վերակայել</string>
+  <!-- Secondary button on the menu reset dialog. Tapping it cancels the reset process and preserves all user-made customizations. -->
+  <string name="menu_customize_reset_dialog_cancel">Չեղարկել</string>
   <!-- Content description (not visible, for screen readers etc.): Navigate backward (browsing history) -->
   <string name="browser_menu_back">Վերադառնալ</string>
   <!-- Content description (not visible, for screen readers etc.): Navigate forward (browsing history) -->
@@ -303,6 +311,8 @@
   <string name="browser_menu_webcompat_reporter_2">Զեկուցել կայքի խոտանումը</string>
   <!-- Browser menu label for adding a tab to a tab group -->
   <string name="browser_menu_add_to_tab_group">Ավելացնել խմբում</string>
+  <!-- Browser menu label for moving a tab to a tab group -->
+  <string name="browser_menu_move_to_tab_group">Տեղափոխել խումբ</string>
   <!-- Browser menu label that is displayed when the current page has been translated by the translation feature. -->
   <string name="browser_menu_translated">Թարգմանված</string>
   <!-- Browser menu label for the print feature -->
@@ -590,6 +600,14 @@
   <string name="nova_onboarding_sync_subtitle">Միանգամից ցանկացած սարքում պահեք էջանիշեր, գաղտնաբառեր և այլն: Ձեր անձնական տվյալները մնում են անվտանգ կոդավորման միջոցով:</string>
   <!-- Sync onboarding button. -->
   <string name="nova_onboarding_sync_button">Համաժամեցնել</string>
+  <!-- Title of onboarding pairing card. Displayed when installing Firefox for Android by using a pairing link from Firefox for Desktop. "Scan" refers to scanning the QR code displayed on the computer. -->
+  <string name="nova_onboarding_sync_pairing_title">Սկանավորեք՝ համակարգչի հետ զուգակցումն ավարտելու համար</string>
+  <!-- Body of the onboarding pairing card. Provides troubleshooting instructions when the QR code is not being displayed on the pairing computer. The "firefox.com/pair" URL should not be translated or edited. Bold tags should be preserved. -->
+  <string name="nova_onboarding_sync_pairing_body"><![CDATA[QR կոդ չունե՞ք։ Ձեր համակարգչում այցելեք <b>firefox.com/pair</b> կայքը։]]></string>
+  <!-- Primary button of the onboarding pairing card. Opens the camera to scan the pairing QR code. -->
+  <string name="nova_onboarding_sync_pairing_scan_button">Սկանավորել զուգավորման կոդը</string>
+  <!-- Secondary button of the onboarding pairing card. Opens the Mozilla account sign-in page. -->
+  <string name="nova_onboarding_sync_pairing_email_button">Մուտք գործեք էլ. փոստով</string>
   <!-- Marketing onboarding title. -->
   <string name="nova_onboarding_marketing_title">Օգնեք մեզ կառուցել ավելի լավ համացանց</string>
   <!--
@@ -2524,6 +2542,12 @@
   <string name="snackbar_private_tab_closed">Գաղտնի ներդիրը փակվեց</string>
   <!-- Text shown in snackbar to undo deleting a tab, top site or collection -->
   <string name="snackbar_deleted_undo">ՀԵՏԱՐԿԵԼ</string>
+  <!-- Confirmation message displayed when user adds a page to a tab group. %1$s is the tab group's name. -->
+  <string name="snackbar_tab_added_to_group">Ավելացված է %1$s-ին</string>
+  <!-- Confirmation message displayed when user moves a page from one tab group to another. %1$s is the tab group's name. -->
+  <string name="snackbar_tab_moved_to_group">Տեղափոխվել է %1$s</string>
+  <!-- Button text displayed with a confirmation message when the user adds or moves a page to a tab group. Tapping it displays the tab group. -->
+  <string name="snackbar_action_view">Տեսք</string>
   <!--
     QR code scanner prompt which appears after scanning a code, but before navigating to it
     %1$s is the name of the app (for example "Firefox"), %2$s is the URL or text scanned
@@ -3499,12 +3523,6 @@
   <string name="homepage_shortcuts_add_website_title">Մուտքագրեք կայքի URL-ը</string>
   <!-- Title for the "Popular sites" section in the "Add to homepage" bottom sheet. -->
   <string name="homepage_shortcuts_popular_sites">Հայտնի կայքեր</string>
-  <!-- Title text displayed in the dialog when shortcuts limit is reached. -->
-  <string name="shortcut_max_limit_title">Դյուրանցումների սահմանաչափը լրացել է</string>
-  <!-- Content description text displayed in the dialog when shortcut limit is reached. -->
-  <string name="shortcut_max_limit_content">Նոր դյուրանցում ավելացնելու համար հեռացրեք մեկը: Հպեք և պահեք կայքը ու ընտրեք հեռացնել:</string>
-  <!-- Confirmation dialog button text when top sites limit is reached. -->
-  <string name="top_sites_max_limit_confirmation_button">Հասկանալի է</string>
   <!-- Label for the preference to show the shortcuts for the most visited top sites on the homepage -->
   <string name="top_sites_toggle_top_recent_sites_4">Դյուրանցումներ</string>
   <!-- Title text displayed in the rename top site dialog. -->
@@ -4621,8 +4639,6 @@
   <string name="lens_camera_loading_cancel_button">Չեղարկել</string>
   <!-- Snackbar message shown when an image picked from the gallery or taken with the camera could not be opened or read, so it was never sent to Google Lens. Shown after returning to the camera. -->
   <string name="lens_camera_image_load_failed_v2">Չհաջողվեց բեռնել այս պատկերը։</string>
-  <!-- Snackbar message shown when an image picked from the gallery could not be opened or read, so it was never sent to Google Lens. Shown after returning to the camera. -->
-  <string name="lens_camera_image_load_failed">Չհաջողվեց բեռնել այս պատկերը։ Փորձեք մեկ այլը։</string>
   <!-- Snackbar message shown when an image picked from the gallery or taken with the camera could not be searched because of a network problem or an error from Google Lens. Shown after returning to the camera, next to the lens_camera_upload_failed_retry_button action. -->
   <string name="lens_camera_upload_failed">Google Lens-ից արդյունքներ չստացվեցին</string>
   <!-- Action in the snackbar shown when an image picked from the gallery or taken with the camera could not be searched with Google Lens. Tapping it searches the same image again. -->
@@ -4715,12 +4731,6 @@
     Content description for the reader view panel: a group of buttons floating over the content, which allow customizing the reader view or activating the Listen to Page feature
   -->
   <string name="reader_mode_panel_content_description_2">Ընթերցողի դիտման ընտրանքներ</string>
-  <!--
-    Listen to page
-
-    Content description for the reader mode panel: a group of buttons floating over the content
-  -->
-  <string name="reader_mode_panel_content_description">Ընթերցողի ռեժիմի ընտրանքներ</string>
   <!-- Content description for the button in the reader view panel that turns on the Listen to Page feature (playback of content begins when button is pressed) -->
   <string name="reader_mode_panel_listen_content_description">Բարձրաձայն կարդացեք</string>
   <!-- Content description for media player displayed in Reader view when the Listen to Page (Read Aloud) feature is selected -->

@@ -19,8 +19,6 @@
   <string name="content_description_menu">Doj sa ga\'ue nagi\'át</string>
   <!-- Content description (not visible, for screen readers etc.): "Private Browsing" menu button. -->
   <string name="content_description_private_browsing">Riña gachē nu huìt</string>
-  <!-- Content description (not visible, for screen readers etc.): "Normal Browsing" menu button. -->
-  <string name="content_description_normal_browsing">Riña aché nun nāsinùnjt</string>
   <!-- Placeholder text shown in the search bar before a user enters text for the default engine -->
   <string name="search_hint">Gachrūn nuguan\' ruhuât nanà\'uìt</string>
   <!-- Shorter placeholder text shown in the search bar when an additional action (voice search) is rendered alongside the hint. -->
@@ -2297,12 +2295,6 @@
   <string name="synced_tabs_expand_group">Nāgi’hiaj yāchìj nej yi’nïn’ rakïj ñanj huā nūguan’àan</string>
   <!-- Content description for collapsing a group of synced tabs. -->
   <string name="synced_tabs_collapse_group">Gāchrī huì nej yi’nïn’ rakïj ñanj huā nūguan’àan</string>
-  <!-- Title text displayed in the dialog when shortcuts limit is reached. -->
-  <string name="shortcut_max_limit_title">Ngà gachra riña āksêso dīrêkto</string>
-  <!-- Content description text displayed in the dialog when shortcut limit is reached. -->
-  <string name="shortcut_max_limit_content">Da’ nūtà’t a’ngô atâjo, da’huît nādurê’t ‘ngòj. Gūru’man ra’a riña sitio nī gūru’man ra’a riña tāj nādurê’t.</string>
-  <!-- Confirmation dialog button text when top sites limit is reached. -->
-  <string name="top_sites_max_limit_confirmation_button">Ga\'ue, ngà garâj da\'nga\' ruhuâj</string>
   <!-- Label for the preference to show the shortcuts for the most visited top sites on the homepage -->
   <string name="top_sites_toggle_top_recent_sites_4">Nānà\'uì\' a\'ngô hiūj u</string>
   <!-- Title text displayed in the rename top site dialog. -->

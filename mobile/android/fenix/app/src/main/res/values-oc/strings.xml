@@ -281,7 +281,7 @@
     Browser menu label for the Delete browsing data on quit feature.
     %1$s is the name of the app (for example "Firefox").
   -->
-  <string name="browser_menu_delete_browsing_data_on_quit">Quitar %s</string>
+  <string name="browser_menu_delete_browsing_data_on_quit">Quitar %1$s</string>
   <!--
     Content description for a banner within the menu which prompt the user to make this app their default browser.
     %1$s is the name of the app (for example "Firefox").
@@ -2737,12 +2737,6 @@
     to showing only the first shortcuts.
   -->
   <string name="homepage_shortcuts_show_less">Ne veire mens</string>
-  <!-- Title text displayed in the dialog when shortcuts limit is reached. -->
-  <string name="shortcut_max_limit_title">Arribat a la limita dels acorchis</string>
-  <!-- Content description text displayed in the dialog when shortcut limit is reached. -->
-  <string name="shortcut_max_limit_content">Per apondre un acorchi novèl, suprimissètz-ne un. Tocatz e demoratz quichat per ne suprimir un.</string>
-  <!-- Confirmation dialog button text when top sites limit is reached. -->
-  <string name="top_sites_max_limit_confirmation_button">Òc, plan comprés</string>
   <!-- Label for the preference to show the shortcuts for the most visited top sites on the homepage -->
   <string name="top_sites_toggle_top_recent_sites_4">Acorchis</string>
   <!-- Title text displayed in the rename top site dialog. -->

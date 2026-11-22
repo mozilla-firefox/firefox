@@ -60,7 +60,7 @@
     Browser menu text shown in custom tabs to indicate this is a Fenix tab
     %1$s is the name of the app (for example "Firefox").
   -->
-  <string name="browser_menu_powered_by2">Tecnologia de %s</string>
+  <string name="browser_menu_powered_by2">Tecnologia de %1$s</string>
   <!-- Browser menu button to put the current page in reader mode -->
   <string name="browser_menu_read">Mòddo letua</string>
   <!-- Browser menu button content description to close reader mode and return the user to the regular browser -->
@@ -790,6 +790,4 @@
   <string name="synced_tabs_sign_in_message">Amia \'na lista de tutti i feuggi da-i atri dispoxitivi.</string>
   <!-- Text displayed on a button in the synced tabs screen to link users to sign in when a user is not signed in to Firefox Sync -->
   <string name="synced_tabs_sign_in_button">Acedi a Sync</string>
-  <!-- Confirmation dialog button text when top sites limit is reached. -->
-  <string name="top_sites_max_limit_confirmation_button">Va ben, ò capio</string>
 </resources>

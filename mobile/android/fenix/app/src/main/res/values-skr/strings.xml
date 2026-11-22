@@ -19,8 +19,6 @@
   <string name="content_description_menu">ٻیاں آپشناں</string>
   <!-- Content description (not visible, for screen readers etc.): "Private Browsing" menu button. -->
   <string name="content_description_private_browsing">نجی براؤزنگ</string>
-  <!-- Content description (not visible, for screen readers etc.): "Normal Browsing" menu button. -->
-  <string name="content_description_normal_browsing">عام براؤزنگ</string>
   <!-- Placeholder text shown in the search bar before a user enters text for the default engine -->
   <string name="search_hint">ڳولو یا پتہ درج کرو</string>
   <!-- Shorter placeholder text shown in the search bar when an additional action (voice search) is rendered alongside the hint. -->
@@ -3441,12 +3439,6 @@
   <string name="homepage_shortcuts_add_website_title">ویب سائٹ دا URL لکھو</string>
   <!-- Title for the "Popular sites" section in the "Add to homepage" bottom sheet. -->
   <string name="homepage_shortcuts_popular_sites">مشہور ویب سائٹاں</string>
-  <!-- Title text displayed in the dialog when shortcuts limit is reached. -->
-  <string name="shortcut_max_limit_title">شاٹ کٹ حد پوری تھی ڳئی</string>
-  <!-- Content description text displayed in the dialog when shortcut limit is reached. -->
-  <string name="shortcut_max_limit_content">نواں شاٹ کٹ شامل کرݨ کیتے، ہک ہٹاؤ۔ ٹچ کرتے، سائٹ قاٻو کرو تے ہٹاؤ چݨو۔</string>
-  <!-- Confirmation dialog button text when top sites limit is reached. -->
-  <string name="top_sites_max_limit_confirmation_button">ٹھیک ہے، سمنجھ گھدے</string>
   <!-- Label for the preference to show the shortcuts for the most visited top sites on the homepage -->
   <string name="top_sites_toggle_top_recent_sites_4">شارٹ کٹ</string>
   <!-- Title text displayed in the rename top site dialog. -->
@@ -4480,8 +4472,6 @@
   <string name="lens_camera_loading_status">ڳولی پئی اے</string>
   <!-- Button shown under an image picked from the gallery or taken with the camera while it is being sent to Google Lens. Tapping it stops the search and returns to the camera. -->
   <string name="lens_camera_loading_cancel_button">منسوخ کرو</string>
-  <!-- Snackbar message shown when an image picked from the gallery could not be opened or read, so it was never sent to Google Lens. Shown after returning to the camera. -->
-  <string name="lens_camera_image_load_failed">ایہ تصویر لوڈ نئیں تھی سڳدی۔ کوئی بیئی کوشش کرو۔</string>
   <!-- Snackbar message shown when an image picked from the gallery or taken with the camera could not be searched because of a network problem or an error from Google Lens. Shown after returning to the camera, next to the lens_camera_upload_failed_retry_button action. -->
   <string name="lens_camera_upload_failed">Google Lens توں نتائج نئیں مل سڳے</string>
   <!-- Action in the snackbar shown when an image picked from the gallery or taken with the camera could not be searched with Google Lens. Tapping it searches the same image again. -->
@@ -4560,12 +4550,6 @@
   <string name="pdf_tools_signature_clear_button">مٹاؤ</string>
   <!-- The text for the button that adds the signature the user has typed to the PDF. -->
   <string name="pdf_tools_signature_add_button">شامل کرو</string>
-  <!--
-    Listen to page
-
-    Content description for the reader mode panel: a group of buttons floating over the content
-  -->
-  <string name="reader_mode_panel_content_description">ریڈر موڈ آپشنز</string>
   <!-- Content description for the button in the reader view panel that turns on the Listen to Page feature (playback of content begins when button is pressed) -->
   <string name="reader_mode_panel_listen_content_description">اُچی آواز نال پڑھو</string>
   <!-- Content description for media player displayed in Reader view when the Listen to Page (Read Aloud) feature is selected -->

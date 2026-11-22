@@ -160,6 +160,42 @@
   <string name="mozac_feature_prompts_update_credit_card_prompt_title">Atualizar a data de validade do cartão?</string>
   <!-- Subtitle text displayed under the title of the saved card dialog. %s is the name of the app (for example "Firefox"). -->
   <string name="mozac_feature_prompts_save_credit_card_prompt_body_2">O %s encripta o número do seu cartão. O seu código de segurança não será guardado.</string>
+  <!-- Title of dialog to store credit card information in the user's account -->
+  <string name="mozac_feature_prompts_save_payment_method_prompt_title">Guardar este método de pagamento?</string>
+  <!-- Title of dialog to update stored credit card information in the user's account -->
+  <string name="mozac_feature_prompts_update_payment_method_prompt_title">Atualizar este método de pagamento?</string>
+  <!-- Body of the dialog to confirm saving or updating credit card information when the "Save security codes" toggle is on. %s is the name of the app (for example "Firefox"). -->
+  <string name="mozac_feature_prompts_save_payment_method_prompt_body_with_security_code">%s encripta o número do seu cartão e o código de segurança para pagamentos posteriores de forma mais rápida.</string>
+  <!-- Body of the dialog to confirm saving or updating credit card information when the "Save security codes" toggle is off. %s is the name of the app (for example "Firefox"). -->
+  <string name="mozac_feature_prompts_save_payment_method_prompt_body_without_security_code">%s encripta o número do seu cartão para pagamentos posteriores mais rápidos.</string>
+  <!-- Label for the masked card security code in a save or update credit card dialog. %s is the masked security code (for example "•••"). -->
+  <string name="mozac_feature_prompts_save_payment_method_security_code">Código de segurança %s</string>
+  <!-- Content description for the masked card security code in a save or update credit card dialog. Screen readers read it instead of the masked characters. -->
+  <string name="mozac_feature_prompts_save_payment_method_security_code_description">Código de segurança oculto</string>
+  <!-- Label of the toggle in a save or update credit card dialog that controls whether the card security code is saved. -->
+  <string name="mozac_feature_prompts_always_save_security_codes">Guardar códigos de segurança</string>
+  <!-- Text for the button that closes a save or update credit card dialog without saving. -->
+  <string name="mozac_feature_prompts_save_payment_method_dismiss">Dispensar</string>
+  <!-- Title of the edit credit card screen (also used as the accessibility description for the button that opens this screen). -->
+  <string name="mozac_feature_prompts_edit_credit_card_title">Editar cartão</string>
+  <!-- Edit credit card screen - label of the credit card number field -->
+  <string name="mozac_feature_prompts_edit_credit_card_number">Número do Cartão</string>
+  <!-- Edit credit card screen - Error message displayed for the credit card number field -->
+  <string name="mozac_feature_prompts_edit_credit_card_number_error">Insira um número de cartão válido</string>
+  <!-- Edit credit card screen - label of the cardholder name field -->
+  <string name="mozac_feature_prompts_edit_credit_card_name">Nome no Cartão</string>
+  <!-- Edit credit card screen - label for the credit card expiration date field (month only) -->
+  <string name="mozac_feature_prompts_edit_credit_card_expiry_month">Mês da Data de Expiração</string>
+  <!-- Edit credit card screen - format for options in the month dropdown: %1$s is the name of the month (for example "January"), and %2$s is the month number with two digits (for example "01"). The result would be "January (01)". -->
+  <string name="mozac_feature_prompts_edit_credit_card_expiry_month_option">%1$s (%2$s)</string>
+  <!-- Edit credit card screen - label for the credit card expiration date field (year only) -->
+  <string name="mozac_feature_prompts_edit_credit_card_expiry_year">Ano da Data de Expiração</string>
+  <!-- Edit credit card screen - label for the credit card security code field (CVV is the common short form in English and stands for Card Verification Value) -->
+  <string name="mozac_feature_prompts_edit_credit_card_security_code">CVV (opcional)</string>
+  <!-- Edit credit card screen - Error message for the security code field when the entered code is too short. -->
+  <string name="mozac_feature_prompts_edit_credit_card_security_code_error">Introduza um código de segurança de 3 ou 4 dígitos</string>
+  <!-- Edit credit card screen - Accessibility description of the button that clears the security code field -->
+  <string name="mozac_feature_prompts_edit_credit_card_security_code_clear">Limpar código de segurança</string>
   <!--
     Address Autofill
 

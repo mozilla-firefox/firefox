@@ -1290,8 +1290,6 @@
   <string name="add_login_hostname_hint_text">https://www.example.com</string>
   <!-- This is an error message shown below the hostname field of the add login page when a hostname does not contain http or https. -->
   <string name="add_login_hostname_invalid_text_3">nimi nasin li wile jo e \"https://\" e \"http://\" lon open</string>
-  <!-- Confirmation dialog button text when top sites limit is reached. -->
-  <string name="top_sites_max_limit_confirmation_button">mi sona</string>
   <!-- Hint for editing URL of a shortcut. -->
   <string name="shortcut_url_hint">nimi nasin</string>
   <!-- Error message when the user entered an invalid URL -->

@@ -63,8 +63,6 @@
   <string name="mozac_feature_listentopage_playback_speed_collapsed">%1$s, strnjeno</string>
   <!-- Listen to Page media player: screen reader state of the voice and playback speed buttons while their menu is open. -->
   <string name="mozac_feature_listentopage_dropdown_expanded">Razširjeno</string>
-  <!-- Listen to Page media player: content description for the button that opens the list of available voices. -->
-  <string name="mozac_feature_listentopage_audio">Zvok</string>
   <!-- Listen to Page media player: content description for the button that rewinds 10 seconds. -->
   <string name="mozac_feature_listentopage_back_10_sec">Nazaj za 10 sekund</string>
   <!-- Listen to Page media player: content description for play/pause button when the player is paused - tapping restarts playback. -->
@@ -73,8 +71,6 @@
   <string name="mozac_feature_listentopage_pause">Premor</string>
   <!-- Listen to Page media player: content description for the button that Fast-forwards 30 seconds. -->
   <string name="mozac_feature_listentopage_forward_30_sec">Naprej za 30 sekund</string>
-  <!-- Listen to Page media player: accessibility playback control notification that announces playback is set to normal reading speed. -->
-  <string name="mozac_feature_listentopage_playback_speed_1">Običajna hitrost predvajanja</string>
   <!-- Playback speed menu item, such as "1.5×". %1$s is the multiplier already formatted with the decimal separator of the locale. -->
   <string name="mozac_feature_listentopage_playback_speed_option">%1$s×</string>
   <!-- Playback speed menu item for the normal reading speed, which is also the default speed. "1×" means one times the normal speed. -->

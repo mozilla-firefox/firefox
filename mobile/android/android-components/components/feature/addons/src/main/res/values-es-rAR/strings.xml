@@ -92,84 +92,6 @@
   <string name="mozac_feature_addons_permissions_user_scripts_description">Permitir que scripts de terceros no verificados accedan a tus datos</string>
   <!-- Description for the "devtools" WebExtensions API permission. -->
   <string name="mozac_feature_addons_permissions_devtools_description">Ampliar las herramientas para desarrolladores para acceder a tus datos en las pestañas abiertas</string>
-  <!-- Description for the "privacy" WebExtensions API permission for the update notification. Multiple permissions may be simply appended one after the other, and separated with a space, which is why the period is important. -->
-  <string name="mozac_feature_addons_permissions_privacy_description_for_update">Leer y modificar la configuración de privacidad.</string>
-  <!-- Description for the "<all_urls>" WebExtensions API permission for the update notification. Multiple permissions may be simply appended one after the other, and separated with a space, which is why the period is important. -->
-  <string name="mozac_feature_addons_permissions_all_urls_description_for_update">Acceso a los datos para todos los sitios web.</string>
-  <!-- Description for the "tabs" WebExtensions API permission for the update notification. Multiple permissions may be simply appended one after the other, and separated with a space, which is why the period is important. -->
-  <string name="mozac_feature_addons_permissions_tabs_description_for_update">Acceso a las pestañas del navegador.</string>
-  <!-- Description for the "webNavigation" WebExtensions API permission for the update notification. Multiple permissions may be simply appended one after the other, and separated with a space, which is why the period is important. -->
-  <string name="mozac_feature_addons_permissions_web_navigation_description_for_update">Acceso a la actividad del navegador durante la navegación.</string>
-  <!-- Description for the "bookmarks" WebExtensions API permission for the update notification. Multiple permissions may be simply appended one after the other, and separated with a space, which is why the period is important. -->
-  <string name="mozac_feature_addons_permissions_bookmarks_description_for_update">Leer y modificar marcadores.</string>
-  <!-- Description for the "browserSettings" WebExtensions API permission for the update notification. Multiple permissions may be simply appended one after the other, and separated with a space, which is why the period is important. -->
-  <string name="mozac_feature_addons_permissions_browser_settings_description_for_update">Leer y modificar la configuración del navegador.</string>
-  <!-- Description for the "browsingData" WebExtensions API permission for the update notification. Multiple permissions may be simply appended one after the other, and separated with a space, which is why the period is important. -->
-  <string name="mozac_feature_addons_permissions_browsing_data_description_for_update">Borrar historial de navegación reciente, cookies y datos relacionados.</string>
-  <!-- Description for the "clipboardRead" WebExtensions API permission for the update notification. Multiple permissions may be simply appended one after the other, and separated with a space, which is why the period is important. -->
-  <string name="mozac_feature_addons_permissions_clipboard_read_description_for_update">Obtener datos del portapapeles.</string>
-  <!-- Description for the "clipboardWrite" WebExtensions API permission for the update notification. Multiple permissions may be simply appended one after the other, and separated with a space, which is why the period is important. -->
-  <string name="mozac_feature_addons_permissions_clipboard_write_description_for_update">Enviar datos al portapapeles.</string>
-  <!-- Description for the "declarativeNetRequest" WebExtensions API permission for the update notification. Multiple permissions may be simply appended one after the other, and separated with a space, which is why the period is important. -->
-  <string name="mozac_feature_addons_permissions_declarative_net_request_description_for_update">Bloquear contenido en cualquier página.</string>
-  <!-- Description for the "declarativeNetRequestFeedback" WebExtensions API permission for the update notification. Multiple permissions may be simply appended one after the other, and separated with a space, which is why the period is important. -->
-  <string name="mozac_feature_addons_permissions_declarative_net_request_feedback_description_for_update">Leer el historial de navegación.</string>
-  <!-- Description for the "downloads" WebExtensions API permission for the update notification. Multiple permissions may be simply appended one after the other, and separated with a space, which is why the period is important. -->
-  <string name="mozac_feature_addons_permissions_downloads_description_for_update">Descargar archivos y leer y modificar el historial de descargas del navegador.</string>
-  <!-- Description for the "downloads.open" WebExtensions API permission for the update notification. Multiple permissions may be simply appended one after the other, and separated with a space, which is why the period is important. -->
-  <string name="mozac_feature_addons_permissions_downloads_open_description_for_update">Abrir archivos descargados en el dispositivo.</string>
-  <!-- Description for the "find" WebExtensions API permission for the update notification. Multiple permissions may be simply appended one after the other, and separated with a space, which is why the period is important. -->
-  <string name="mozac_feature_addons_permissions_find_description_for_update">Leer el texto de todas las pestañas abiertas.</string>
-  <!-- Description for the "geolocation" WebExtensions API permission for the update notification. Multiple permissions may be simply appended one after the other, and separated with a space, which is why the period is important. -->
-  <string name="mozac_feature_addons_permissions_geolocation_description_for_update">Acceso a la ubicación.</string>
-  <!-- Description for the "history" WebExtensions API permission for the update notification. Multiple permissions may be simply appended one after the other, and separated with a space, which is why the period is important. -->
-  <string name="mozac_feature_addons_permissions_history_description_for_update">Acceso al historial de navegación.</string>
-  <!-- Description for the "management" WebExtensions API permission for the update notification. Multiple permissions may be simply appended one after the other, and separated with a space, which is why the period is important. -->
-  <string name="mozac_feature_addons_permissions_management_description_for_update">Monitorear el uso de extensiones y administrar temas.</string>
-  <!-- Description for the "nativeMessaging" WebExtensions API permission for the update notification. Multiple permissions may be simply appended one after the other, and separated with a space, which is why the period is important. -->
-  <string name="mozac_feature_addons_permissions_native_messaging_description_for_update">Intercambiar mensajes con otras aplicaciones que no sean esta.</string>
-  <!-- Description for the "notifications" WebExtensions API permission for the update notification. Multiple permissions may be simply appended one after the other, and separated with a space, which is why the period is important. -->
-  <string name="mozac_feature_addons_permissions_notifications_description_for_update">Mostrar notificaciones.</string>
-  <!-- Description for the "pkcs11" WebExtensions API permission for the update notification. Multiple permissions may be simply appended one after the other, and separated with a space, which is why the period is important. -->
-  <string name="mozac_feature_addons_permissions_pkcs11_description_for_update">Proporcionar servicios de autenticación criptográfica.</string>
-  <!-- Description for the "proxy" WebExtensions API permission for the update notification. Multiple permissions may be simply appended one after the other, and separated with a space, which is why the period is important. -->
-  <string name="mozac_feature_addons_permissions_proxy_description_for_update">Controlar la configuración del proxy del navegador.</string>
-  <!-- Description for the "sessions" WebExtensions API permission for the update notification. Multiple permissions may be simply appended one after the other, and separated with a space, which is why the period is important. -->
-  <string name="mozac_feature_addons_permissions_sessions_description_for_update">Acceso a pestañas recientemente cerradas.</string>
-  <!-- Description for the "tabHide" WebExtensions API permission for the update notification. Multiple permissions may be simply appended one after the other, and separated with a space, which is why the period is important. -->
-  <string name="mozac_feature_addons_permissions_tab_hide_description_for_update">Ocultar y mostrar pestañas del navegador.</string>
-  <!-- Description for the "topSites" WebExtensions API permission for the update notification. Multiple permissions may be simply appended one after the other, and separated with a space, which is why the period is important. -->
-  <string name="mozac_feature_addons_permissions_top_sites_description_for_update">Acceso al historial de navegación.</string>
-  <!-- Description for the "trialML" WebExtensions API permission for the update notification. Multiple permissions may be simply appended one after the other, and separated with a space, which is why the period is important. -->
-  <string name="mozac_feature_addons_permissions_trial_ml_description_for_update">Descargar y ejecutar modelos de IA en el dispositivo.</string>
-  <!-- Description for the "userScripts" WebExtensions API permission for the update notification. Multiple permissions may be simply appended one after the other, and separated with a space, which is why the period is important. -->
-  <string name="mozac_feature_addons_permissions_user_scripts_description_for_update">Permitir que scripts de terceros no verificados accedan a los datos.</string>
-  <!-- Description for the "devtools" WebExtensions API permission for the update notification. Multiple permissions may be simply appended one after the other, and separated with a space, which is why the period is important. -->
-  <string name="mozac_feature_addons_permissions_devtools_description_for_update">Ampliar las herramientas de desarrollador para acceder a los datos en las pestañas abiertas.</string>
-  <!-- Description for giving an add-on access to users's data on one site. %1$s  will be replaced by the DNS host name for which a web extension is requesting access (e.g., www.mozilla.org). -->
-  <string name="mozac_feature_addons_permissions_one_site_description_for_update">Acceso a los datos de %1$s.</string>
-  <!-- Description for giving an add-on access to users's data in multiple sites in the domain %1$s. %1$s will be replaced by the DNS domain for which a web extension is requesting access (e.g., mozilla.org). -->
-  <string name="mozac_feature_addons_permissions_sites_in_domain_description_for_update">Acceso a los datos para los sitios en el dominio %1$s.</string>
-  <!--
-    When an add-on requires access to more than 2 domains, for example the add-on requires access for 3 domains. We will show the first 2 domains in individual entries, as in mozac_feature_addons_permissions_sites_in_domain_description_for_update,
-    then we will show another collapsed entry saying "Access your data on another domain.".
-  -->
-  <string name="mozac_feature_addons_permissions_one_extra_domain_description_for_update">Acceso a los datos en otro dominio.</string>
-  <!--
-    When an add-on requires access to more than 2 domains, for example the add-on requires access for 4 domains. We will show the first 2 domains in individual entries, as in mozac_feature_addons_permissions_sites_in_domain_description_for_update,
-    then we will show another collapsed entry saying "Access your data on other domains.".
-  -->
-  <string name="mozac_feature_addons_permissions_extra_domains_description_plural_for_update">Acceso a los datos en otros dominios.</string>
-  <!--
-    When an add-on requires access to more than 2 sites, for example the add-on requires access for 3 sites. We will show the first 2 sites in individual entries, as in mozac_feature_addons_permissions_one_site_description_for_update,
-    then we will show another collapsed entry saying "Access your data on another site.".
-  -->
-  <string name="mozac_feature_addons_permissions_one_extra_site_description_for_update">Acceso a los datos en otro sitio.</string>
-  <!--
-    When an add-on requires access to more than 2 sites, for example the add-on requires access for 4 sites. We will show the first 2 sites in individual entries, as in mozac_feature_addons_permissions_one_site_description_for_update,
-    then we will show another collapsed entry saying "Access your data on other sites.".
-  -->
-  <string name="mozac_feature_addons_permissions_extra_sites_description_for_update">Acceso a los datos en otros sitios.</string>
   <!-- The text shown when an extension requests the userScripts permission, near the usual description of the userScripts permission -->
   <string name="mozac_feature_addons_permissions_user_scripts_extra_warning">Los scripts no verificados pueden representar riesgos de seguridad y privacidad. Solo ejecutá scripts de extensiones o fuentes en las que confíés.</string>
   <!-- The sentence used when the extension has data collection permissions. %1$s is a formatted list of permissions. -->
@@ -336,20 +258,6 @@
   <string name="mozac_feature_extensions_manager_notification_restart_button">Reiniciar extensiones</string>
   <!-- Button in the extensions manager that opens AMO in a tab -->
   <string name="mozac_feature_addons_find_more_extensions_button_text">Buscar mas extensiones</string>
-  <!-- The label of the update button on the system notification shown to the user when an add-on has an update that requires the user to accept new permissions. -->
-  <string name="mozac_feature_addons_updater_notification_update_button">Actualizar</string>
-  <!-- The label of the cancel button on a notification, this will be shown to the user when an add-on needs new permissions. Indicates the user denies the new permissions and prevents the add-on from be updated -->
-  <string name="mozac_feature_addons_updater_notification_cancel_button">Cancelar</string>
-  <!-- The title of the system notification shown to the user when an add-on has a new update that requires new permissions. %1$s is the name of the add-on. -->
-  <string name="mozac_feature_addons_updater_notification_title_2">%1$s tiene una actualización</string>
-  <!-- A short explanation shown in the notification displayed when an add-on has a new update that requires new permissions. -->
-  <string name="mozac_feature_addons_updater_notification_short_intro">Cancelar para mantener la versión y configuración actuales.</string>
-  <!-- The heading for the permissions section in the system notification shown when an add-on has an update that requires user confirmation. %1$s is a list of sentences. -->
-  <string name="mozac_feature_addons_updater_notification_heading_permissions">Nuevos permisos requeridos: %1$s</string>
-  <!-- The heading for the data collection permission section in the system notification shown when an add-on has an update that requires user confirmation. %1$s is a list of permissions. -->
-  <string name="mozac_feature_addons_updater_notification_heading_data_collection_permissions">Nueva recolección de datos requerida: El desarrollador dice que la extensión recolectará %1$s.</string>
-  <!-- Name of the "notification channel" used for displaying a notification for updating an extension. See https://developer.android.com/training/notify-user/channels -->
-  <string name="mozac_feature_addons_updater_notification_channel_2">Actualizaciones de extensiones</string>
   <!-- Name of the "notification channel" used for displaying a notification for new supported add-ons. See https://developer.android.com/training/notify-user/channels -->
   <string name="mozac_feature_addons_supported_checker_notification_channel" tools:ignore="UnusedResources">Verificador de complementos compatibles</string>
   <!-- The tile of the notification, this will be shown to the user when one newly supported add-on is available. -->

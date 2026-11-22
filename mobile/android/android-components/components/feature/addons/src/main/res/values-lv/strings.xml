@@ -11,10 +11,12 @@
   <string name="mozac_feature_addons_permissions_browser_data_description">Notīrīt neseno pārlūkošanas vēsturi, sīkdatnes un saistītos datus</string>
   <!-- Description for the "declarativeNetRequest" WebExtensions API permission. -->
   <string name="mozac_feature_addons_permissions_declarative_net_request_description">Liegt saturu jebkurā lapā</string>
-  <!-- Description for the "browsingData" WebExtensions API permission for the update notification. Multiple permissions may be simply appended one after the other, and separated with a space, which is why the period is important. -->
-  <string name="mozac_feature_addons_permissions_browsing_data_description_for_update">Notīrīt neseno pārlūkošanas vēsturi, sīkdatnes un saistītos datus.</string>
-  <!-- Description for the "declarativeNetRequest" WebExtensions API permission for the update notification. Multiple permissions may be simply appended one after the other, and separated with a space, which is why the period is important. -->
-  <string name="mozac_feature_addons_permissions_declarative_net_request_description_for_update">Liegt saturu jebkurā lapā.</string>
+  <!-- Description for the "downloads" WebExtensions API permission. -->
+  <string name="mozac_feature_addons_permissions_downloads_description">Lejupielādēt failus, lasīt un mainīt pārlūka vēsturi</string>
+  <!-- Description for the "downloads.open" WebExtensions API permission. -->
+  <string name="mozac_feature_addons_permissions_downloads_open_description">Atvērt ierīcē lejupielādētās datnes</string>
+  <!-- Description for the "trialML" WebExtensions API permission. -->
+  <string name="mozac_feature_addons_permissions_trial_ml_description">Lejupielādējiet un palaidiet MI modeļus savā ierīcē</string>
   <!-- The developer website (Homepage) of the add-on. -->
   <string name="mozac_feature_addons_home_page">Sākumlapa</string>
   <!-- Displays a page with all the permissions of an add-on. -->
@@ -55,8 +57,6 @@
   <string name="mozac_feature_addons_addons">Papildinājumi</string>
   <!-- Label for add-ons sub menu item for add-ons manager -->
   <string name="mozac_feature_addons_addons_manager">Papildinājumu pārvaldnieks</string>
-  <!-- The heading for the permissions section in the system notification shown when an add-on has an update that requires user confirmation. %1$s is a list of sentences. -->
-  <string name="mozac_feature_addons_updater_notification_heading_permissions">Jaunas nepieciešamās atļaujas: %1$s</string>
   <!-- The content of the notification, this will be shown to the user when one newly supported add-on is available. %1$s is the add-on name and %2$s is the app name (in most cases Firefox). -->
   <string name="mozac_feature_addons_supported_checker_notification_content_one">Pievienot %1$s %2$s</string>
   <!-- The content of the notification, this will be shown to the user when two newly supported add-ons are available. %1$s is the first add-on name. %2$s is the second add-on name. %3$s is the app name (in most cases Firefox). -->

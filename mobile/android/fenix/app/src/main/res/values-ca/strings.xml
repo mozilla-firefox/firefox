@@ -19,8 +19,6 @@
   <string name="content_description_menu">Més opcions</string>
   <!-- Content description (not visible, for screen readers etc.): "Private Browsing" menu button. -->
   <string name="content_description_private_browsing">Navegació privada</string>
-  <!-- Content description (not visible, for screen readers etc.): "Normal Browsing" menu button. -->
-  <string name="content_description_normal_browsing">Navegació normal</string>
   <!-- Placeholder text shown in the search bar before a user enters text for the default engine -->
   <string name="search_hint">Escriviu una cerca o adreça</string>
   <!-- Shorter placeholder text shown in the search bar when an additional action (voice search) is rendered alongside the hint. -->
@@ -147,6 +145,12 @@
   <string name="home_screen_shortcut_passwords">Contrasenyes</string>
   <!-- Shortcut action to open uninstall survey -->
   <string name="home_screen_shortcut_uninstall_survey">Desinstal·lar, per què?</string>
+  <!--
+    Recent Tabs
+
+    Header text on the homescreen for continuing to browse the most recent browser tab
+  -->
+  <string name="recent_tabs_header_2">Continua</string>
   <!-- Button text for showing all the tabs in the tabs tray -->
   <string name="recent_tabs_show_all">Mostra-ho tot</string>
   <!-- Text for button in synced tab card that opens synced tabs tray -->
@@ -174,6 +178,32 @@
   <string name="recently_visited_menu_item_remove">Elimina</string>
   <!-- Content description for the button which navigates the user to show all of their history. -->
   <string name="past_explorations_show_all_content_description_2">Mostra totes les exploracions anteriors</string>
+  <!--
+    Browser Fragment
+
+    Label for popup button that appears when long-pressing the main menu. Tapping it allows the user to customize the main menu layout.
+  -->
+  <string name="customize_menu">Personalitza el menú</string>
+  <!-- Alert message shown in the "Customize menu" screen when the user tries to hide a menu section which cannot be hidden. -->
+  <string name="customize_menu_cannot_hide_section">Aquesta secció no es pot amagar</string>
+  <!-- Customize menu screen - Accessibility description - name of the menu section that groups the Back, Forward, Share and Refresh buttons. Read aloud after "Section", followed by the button names ("Section “Page controls”: Back, Forward, Share, Refresh"). -->
+  <string name="browser_menu_section_page_controls">Controls de la pàgina</string>
+  <!-- Customize menu screen - Accessibility description - name of the menu section that groups the page tools (Bookmark page, Find in page, Desktop site, Extensions, etc.). Read aloud after "Section", followed by the tool names ("Section “Tools”: Bookmark page, Find in page…"). -->
+  <string name="browser_menu_section_tools">Eines</string>
+  <!-- Customize menu screen - Accessibility description - name of the menu section that groups the History, Bookmarks, Downloads and Passwords items. Read aloud after "Section", followed by the item names ("Section “Library”: History, Bookmarks, Downloads, Passwords"). -->
+  <string name="browser_menu_section_library">Biblioteca</string>
+  <!-- Customize menu screen - Accessibility description - name of the menu section that groups the Sign in and Settings items. Read aloud after "Section", followed by the item names ("Section “Accounts and settings”: Sign in, Settings"). -->
+  <string name="browser_menu_section_accounts_and_settings">Comptes i paràmetres</string>
+  <!-- Customize menu screen - Accessibility description - name of the menu section that groups the New tab and New private tab actions. Read aloud after "Section", followed by the action names ("Section “New tab”: New tab, New private tab"). -->
+  <string name="browser_menu_section_new_tab">Pestanya nova</string>
+  <!-- Title of the dialog shown when resetting the menu to its default layout (removing all user customizations) -->
+  <string name="menu_customize_reset_dialog_title">Voleu restablir el menú per defecte?</string>
+  <!-- Message of the dialog shown when resetting the menu to its default layout (removing all user customizations) -->
+  <string name="menu_customize_reset_dialog_message">Això elimina les personalitzacions i no es pot desfer.</string>
+  <!-- Primary button on the menu reset dialog. Tapping it removes all user customizations. -->
+  <string name="menu_customize_reset_dialog_reset">Reinicia</string>
+  <!-- Secondary button on the menu reset dialog. Tapping it cancels the reset process and preserves all user-made customizations. -->
+  <string name="menu_customize_reset_dialog_cancel">Cancel·la</string>
   <!-- Content description (not visible, for screen readers etc.): Navigate backward (browsing history) -->
   <string name="browser_menu_back">Enrere</string>
   <!-- Content description (not visible, for screen readers etc.): Navigate forward (browsing history) -->
@@ -201,6 +231,10 @@
   <string name="browser_menu_no_extensions_installed_description">No hi ha cap extensió activada</string>
   <!-- The description of the browser menu appears when the user hasn't installed any extensions and there are recommended extensions. -->
   <string name="browser_menu_try_a_recommended_extension_description">Proveu una extensió recomanada</string>
+  <!-- In the browser menu: Message under the Extensions menu item, displayed when one or more extensions have updates that require approving changes to their permission settings. %1$s is a comma-separated list of one or more extension names. -->
+  <string name="browser_menu_extensions_review_update_description">Reviseu l’actualització de %1$s</string>
+  <!-- In the browser menu: Message under an extension name, displayed when the update requires approving changes to extension settings. -->
+  <string name="browser_menu_extension_review_update_description">Reviseu els paràmetres per a actualitzar</string>
   <!-- Browser menu button that opens account settings -->
   <string name="browser_menu_account_settings">Informació del compte</string>
   <!-- Browser menu button that opens the settings menu -->
@@ -259,10 +293,16 @@
   <string name="browser_menu_passwords">Contrasenyes</string>
   <!-- Content description (not visible, for screen readers etc.) for the handle used to drag the main menu at the bottom of the screen. -->
   <string name="browser_close_main_menu_handlebar_content_description">Tanca el menú</string>
+  <!-- Content description (not visible, used by screen readers, etc.) for the heading of the menu opened from the customize menu screen to preview pending changes. It is read before the menu items. The items are shown for preview only and do nothing when tapped. -->
+  <string name="browser_menu_preview_heading_content_description">Previsualització del menú. Des d’aquí no es poden activar elements.</string>
   <!-- Content description (not visible, for screen readers etc.) for main menu navigation header. -->
   <string name="browser_main_menu_content_description_navigation_header">Navegació</string>
   <!-- Content description (not visible, for screen readers etc.) for bottom sheet handlebar custom tab menu. -->
   <string name="browser_custom_tab_menu_handlebar_content_description">Tanca el full de menú de pestanya personalitzada</string>
+  <!-- URL bar indicator shown on a cached version of the website, when the tab is reloading, but the content is not live yet -->
+  <string name="browser_toolbar_cached_page_indicator">En memòria cau</string>
+  <!-- Message shown when a cached website has finished reloading and the tab is now showing the live version of the page -->
+  <string name="browser_toolbar_live_page_toast">Pàgina actual</string>
   <!-- Browser menu label that bookmarks the currently visited page -->
   <string name="browser_menu_bookmark_this_page_2">Afegeix la pàgina a les adreces d’interès</string>
   <!-- Browser menu label that navigates to the edit bookmark screen for the current bookmarked page -->
@@ -277,8 +317,14 @@
   <string name="browser_menu_summarize_page">Resumeix la pàgina</string>
   <!-- Browser menu badge text for summarization feature -->
   <string name="browser_menu_summarize_page_badge">Nou</string>
+  <!-- Browser menu badge text for new, highlighted feature -->
+  <string name="browser_menu_page_badge_text">Nou</string>
   <!-- Browser menu label for navigating to the Web Compat Reporter feature, which provides users the ability to send bug reports for broken sites. -->
   <string name="browser_menu_webcompat_reporter_2">Informeu sobre un lloc que no funciona</string>
+  <!-- Browser menu label for adding a tab to a tab group -->
+  <string name="browser_menu_add_to_tab_group">Afegeix a un grup</string>
+  <!-- Browser menu label for moving a tab to a tab group -->
+  <string name="browser_menu_move_to_tab_group">Mou a un grup</string>
   <!-- Browser menu label that is displayed when the current page has been translated by the translation feature. -->
   <string name="browser_menu_translated">Traduït</string>
   <!-- Browser menu label for the print feature -->
@@ -309,6 +355,10 @@
     Content description for the translate page toolbar button that opens the translations dialog when no translation has occurred.
   -->
   <string name="browser_toolbar_translate">Tradueix la pàgina</string>
+  <!-- Accessibility description for the toolbar button displayed when the page the user is on has a video that can be opened in a picture-in-picture window -->
+  <string name="browser_toolbar_picture_in_picture">Imatge sobre imatge</string>
+  <!-- Accessibility description for the toolbar button displayed while the current page's video is playing in a picture-in-picture window. Tapping the button closes that window. -->
+  <string name="browser_toolbar_picture_in_picture_close">Tanca la imatge sobre imatge</string>
   <!-- CFR description for the browser toolbar describing the "Shake to summarize feature" -->
   <string name="browser_toolbar_summarize_cfr_description">Sacsegeu el dispositiu per a resumir aquesta pàgina en segons. ⚡️</string>
   <!--
@@ -338,7 +388,7 @@
   <!-- Headline text for the AI controls banner. %s is the name of the app (for example "Firefox"). -->
   <string name="ai_controls_banner_headline">Amb el %s, sempre teniu la llibertat de decidir</string>
   <!-- Supporting text for the AI controls banner. %s is a learn more link using ai_controls_learn_more as text. -->
-  <string name="ai_controls_banner_supporting_text_2">Això inclou si s’han d\'utilitzar o no les funcions millorades amb IA. %s</string>
+  <string name="ai_controls_banner_supporting_text_2">Això inclou si s’han d’utilitzar o no les funcions millorades amb IA. %s</string>
   <!-- Link text for learning more about AI controls -->
   <string name="ai_controls_learn_more">Més informació</string>
   <!-- Title for the block AI enhancements toggle -->
@@ -363,6 +413,10 @@
   <string name="ai_controls_voice_search_title">Cerca per veu</string>
   <!-- Description for the voice search AI feature toggle -->
   <string name="ai_controls_voice_search_description">L’àudio es converteix en text mitjançant Google Speech Services.</string>
+  <!-- Title for the listen to page AI feature toggle -->
+  <string name="ai_controls_listen_to_page_title">Escolta la pàgina</string>
+  <!-- Description for the listen to page AI feature toggle -->
+  <string name="ai_controls_listen_to_page_description">El dispositiu pot utilitzar la intel·ligència artificial per llegir en veu alta. El text i l’àudio resten privats.</string>
   <!-- Title for the block AI enhancements confirmation dialog -->
   <string name="ai_controls_block_dialog_title">Voleu blocar les millores basades en IA?</string>
   <!-- Body text for the block AI enhancements confirmation dialog. %1$s is the name of the app (for example "Firefox"). -->
@@ -562,6 +616,14 @@
   <string name="nova_onboarding_sync_subtitle">Accediu a l’instant a les adreces d’interès, les contrasenyes i molt més en qualsevol dispositiu. Les vostres dades personals estan protegides amb xifratge.</string>
   <!-- Sync onboarding button. -->
   <string name="nova_onboarding_sync_button">Inicia la sincronització</string>
+  <!-- Title of onboarding pairing card. Displayed when installing Firefox for Android by using a pairing link from Firefox for Desktop. "Scan" refers to scanning the QR code displayed on the computer. -->
+  <string name="nova_onboarding_sync_pairing_title">Escanegeu per a finalitzar l’aparellament amb l’ordinador</string>
+  <!-- Body of the onboarding pairing card. Provides troubleshooting instructions when the QR code is not being displayed on the pairing computer. The "firefox.com/pair" URL should not be translated or edited. Bold tags should be preserved. -->
+  <string name="nova_onboarding_sync_pairing_body"><![CDATA[No teniu cap codi QR? Aneu a <b>firefox.com/pair</b> al vostre ordinador.]]></string>
+  <!-- Primary button of the onboarding pairing card. Opens the camera to scan the pairing QR code. -->
+  <string name="nova_onboarding_sync_pairing_scan_button">Escaneja el codi d’aparellament</string>
+  <!-- Secondary button of the onboarding pairing card. Opens the Mozilla account sign-in page. -->
+  <string name="nova_onboarding_sync_pairing_email_button">Inicia la sessió amb el correu electrònic</string>
   <!-- Marketing onboarding title. -->
   <string name="nova_onboarding_marketing_title">Ajudeu-nos a construir una Internet millor</string>
   <!--
@@ -657,6 +719,10 @@
   <string name="search_widget_text_long">Cerca al web</string>
   <!-- Content description (not visible, for screen readers etc.): Voice search -->
   <string name="search_widget_voice">Cerca per veu</string>
+  <!-- Content description (not visible, for screen readers etc.): Button in the search widget that starts a search in a private tab -->
+  <string name="search_widget_private_search">Cerca privada</string>
+  <!-- Widget description in the widget picker screen for the compact search bar widget -->
+  <string name="compact_search_bar_widget_description">Barra de cerca compacta</string>
   <!--
     Preferences
 
@@ -683,6 +749,8 @@
   <string name="preferences_search">Cerca</string>
   <!-- Preference for settings related to Search engines -->
   <string name="preferences_search_engines">Motors de cerca</string>
+  <!-- Settings item that adds the Firefox search widget to the device's home screen (tapping it opens the confirmation dialogue) -->
+  <string name="preferences_search_widget_in_home_screen">Afegeix un giny de cerca a la pantalla d’inici</string>
   <!-- Settings item to add a search widget on the device's homescreen. -->
   <string name="preferences_add_search_widget_from_settings">Giny de la pantalla d’inici</string>
   <!-- Preference for settings related to Search engines suggestions -->
@@ -752,6 +820,8 @@
   <string name="preferences_override_sync_tokenserver">Servidor del Sync personalitzat</string>
   <!-- Preference category for account information -->
   <string name="preferences_category_account">Compte</string>
+  <!-- Preference category for sync controls. Sync can be translated, it's just short for ”Synchronization” in English. -->
+  <string name="preferences_category_sync_controls">Sincronització</string>
   <!-- Preference for changing where the AddressBar is positioned -->
   <string name="preferences_toolbar_2">Ubicació de la barra d’adreces</string>
   <!-- Preference for changing toolbar layout -->
@@ -768,6 +838,10 @@
   <string name="preferences_toolbar_shortcut">Drecera de la barra d’eines</string>
   <!-- Preference for gestures based actions -->
   <string name="preferences_toolbar_select_shortcut">Trieu una drecera</string>
+  <!-- Title of a menu option allowing to change the shortcut button shown in the toolbar -->
+  <string name="toolbar_shortcut_menu_edit_option">Edita la drecera</string>
+  <!-- Preference category for menu customization -->
+  <string name="preferences_menu">Menú</string>
   <!-- Preference for gestures based actions -->
   <string name="preferences_gestures">Gestos</string>
   <!-- Preference for settings related to visual options -->
@@ -806,6 +880,8 @@
   <string name="preferences_search_synced_tabs">Cerca en les pestanyes sincronitzades</string>
   <!-- Preference for account settings -->
   <string name="preferences_account_settings">Paràmetres del compte</string>
+  <!-- Preference for account and sync settings -->
+  <string name="preferences_account_and_sync_settings">Compte i sincronització</string>
   <!-- Preference for enabling url autocomplete -->
   <string name="preferences_enable_autocomplete_urls">Emplenament automàtic dels URL</string>
   <!-- Preference title for switch preference to show sponsored Firefox Suggest search suggestions -->
@@ -842,6 +918,10 @@
   <string name="preferences_open_links_in_apps_ask">Demana-ho abans d’obrir-lo</string>
   <!-- Preference for open links in third party apps never open in apps option -->
   <string name="preferences_open_links_in_apps_never">Mai</string>
+  <!-- Preference category header for media related open links in apps settings -->
+  <string name="preferences_media_category">Multimèdia</string>
+  <!-- Preference label for choosing whether links open in the YouTube app -->
+  <string name="preferences_open_links_in_youtube">Obre els enllaços en l’aplicació YouTube</string>
   <!-- Preference category for file storage. -->
   <string name="preferences_category_file_storage">Emmagatzematge de fitxers</string>
   <!-- Preference title for downloads default location. -->
@@ -921,11 +1001,25 @@
   <!-- Toast shown after confirming the custom extension collection configuration -->
   <string name="toast_customize_extension_collection_done">S’ha modificat la col·lecció d’extensions. L’aplicació es tancarà per aplicar els canvis…</string>
   <!--
+    Add-on removal confirmation dialog
+
+    Title of confirmation dialog. Displayed when uninstalling an extension. %1$s is the name of the extension (for example: Firefox Relay).
+  -->
+  <string name="addon_remove_dialog_title">Voleu eliminar %1$s?</string>
+  <!-- Body of confirmation dialog. Displayed when uninstalling an extension. -->
+  <string name="addon_remove_dialog_body">Això elimina l’extensió i els paràmetres d’aquest dispositiu.</string>
+  <!-- Primary button on confirmation dialog. Tapping it uninstalls the selected extension. -->
+  <string name="addon_remove_dialog_confirm">Elimina</string>
+  <!-- Secondary button on confirmation dialog. Tapping cancels the process of uninstalling the extension and closes the dialog window. -->
+  <string name="addon_remove_dialog_cancel">Cancel·la</string>
+  <!--
     Customize Home
 
     Title for the customize home screen section with privacy report.
   -->
   <string name="customize_toggle_privacy_report">Informe de privadesa</string>
+  <!-- Title for a customize home screen section. Continue is a section that displays the most recent browser tab, so users can continue browsing where they left off. -->
+  <string name="customize_toggle_continue">Continua</string>
   <!-- Title for the customize home screen section with bookmarks. -->
   <string name="customize_toggle_bookmarks">Adreces d’interès</string>
   <!--
@@ -1067,6 +1161,8 @@
   <string name="extension_process_crash_dialog_retry_button_text" tools:ignore="UnusedResources">Prova de reiniciar les extensions</string>
   <!-- Button text on the extension crash dialog to prompt the user to continue with all extensions disabled. -->
   <string name="extension_process_crash_dialog_disable_extensions_button_text">Continua amb les extensions desactivades</string>
+  <!-- Text shown in the snackbar action button that lets the user retry an add-on operation that just failed. -->
+  <string name="addon_failure_retry_action">Reintenta</string>
   <!--
     Account Preferences
 
@@ -1079,6 +1175,12 @@
   <string name="preferences_sync_now">Sincronitza ara</string>
   <!-- Preference category for sync -->
   <string name="preferences_sync_category">Trieu què voleu sincronitzar</string>
+  <!-- Preference category for sync controls -->
+  <string name="preferences_category_sync">Dades sincronitzades</string>
+  <!-- Preference title for the toggle that allows user to turn sync on or off for the device they are on -->
+  <string name="preferences_enable_sync_title">Sincronitza aquest dispositiu</string>
+  <!-- Summary for the sync preference category, when user has disabled all synchronisation items. -->
+  <string name="preferences_sync_category_no_engine_selected_summary">No esteu sincronitzant res. Trieu què voleu sincronitzar en aquest dispositiu.</string>
   <!-- Preference for syncing history -->
   <string name="preferences_sync_history">Historial</string>
   <!-- Preference for syncing bookmarks -->
@@ -1091,6 +1193,10 @@
   <string name="preferences_sign_out">Tanca la sessió</string>
   <!-- Preference displays and allows changing current FxA device name -->
   <string name="preferences_sync_device_name">Nom del dispositiu</string>
+  <!-- Preference category for Device name -->
+  <string name="preferences_device_name_category">Nom del dispositiu</string>
+  <!-- Label for the Preference that displays and allows changing current device name on Mozilla Account -->
+  <string name="preferences_sync_change_device_name">Canvia el nom del dispositiu</string>
   <!-- Text shown when user enters empty device name -->
   <string name="empty_device_name_error">El nom del dispositiu no pot estar buit.</string>
   <!-- Label indicating that sync is in progress -->
@@ -1193,6 +1299,14 @@
   <!-- Preference for removing FxA account -->
   <string name="preferences_sync_remove_account">Elimina el compte</string>
   <!--
+    Settings sign-in promo card
+
+    Sign-in promo card: Title inviting the user to sign in
+  -->
+  <string name="sign_in_promo_title">Inicia la sessió</string>
+  <!-- Sign-in promo card: Body of the card listing what signing in allows the user to do -->
+  <string name="sign_in_promo_description">Comenceu a sincronitzar les pestanyes, adreces d’interès, contrasenyes i molt més.</string>
+  <!--
     Pairing Feature strings
 
     Instructions on how to access pairing
@@ -1210,6 +1324,12 @@
   <string name="preference_simple_toolbar">Senzilla</string>
   <!-- Preference for using expanded toolbar -->
   <string name="preference_expanded_toolbar">Ampliada</string>
+  <!-- Preference for changing where the search bar is positioned on the homepage, shown when the user has set the address bar to be displayed at the top of the screen -->
+  <string name="preferences_homepage_search_location">Ubicació de cerca a la pàgina d’inici</string>
+  <!-- Preference for showing the homepage search bar in the middle of the homepage -->
+  <string name="preference_homepage_search_location_middle">Centre</string>
+  <!-- Preference for showing the homepage search bar at the top of the homepage (combined with the address bar, already displayed at the top) -->
+  <string name="preference_homepage_search_location_top">Superior</string>
   <!-- New tab shortcut in toolbar customization -->
   <string name="toolbar_customize_shortcut_new_tab">Obre una pestanya nova</string>
   <!-- Share shortcut in toolbar customization -->
@@ -1238,6 +1358,11 @@
   <string name="preference_light_theme">Clar</string>
   <!-- Preference for using dark theme -->
   <string name="preference_dark_theme">Fosc</string>
+  <!--
+    Preference for using the OLED theme. For localization, this can be translated as "True Black", "Maximum Darkness",
+    or "Full dark" if needed.
+  -->
+  <string name="preference_oled_theme">Més fosc</string>
   <!-- Preference for using using dark or light theme automatically set by battery -->
   <string name="preference_auto_battery_theme">Definit per l’estalvi de bateria</string>
   <!-- Preference for using following device theme -->
@@ -1248,6 +1373,8 @@
     Preferences for showing tab strip
   -->
   <string name="preference_tab_strip_show">Mostra la barra de pestanyes</string>
+  <!-- Preference for tab bar placement (top or bottom of the screen) -->
+  <string name="preference_tab_strip_location_header">Ubicació de la barra de pestanyes</string>
   <!--
     Gestures Preferences
 
@@ -1472,7 +1599,7 @@
   <!-- Text for button to enter multiselect mode in tabs tray -->
   <string name="tabs_tray_select_tabs">Selecciona pestanyes</string>
   <!-- Text for tab manager search page when there are no results. -->
-  <string name="tab_manager_no_search_results">No s\'ha trobat cap coincidència.</string>
+  <string name="tab_manager_no_search_results">No s’ha trobat cap coincidència.</string>
   <!-- Additional text for tab manager search page when there are no results. -->
   <string name="tab_manager_no_search_results_additional_text">Proveu una altra cerca</string>
   <!-- Content description (not visible, for screen readers etc.): Close tab button. Closes the current session when pressed -->
@@ -1592,9 +1719,9 @@
   <!-- Title for the Ungroup tab group confirmation dialog. -->
   <string name="ungroup_tab_group_confirmation_dialog_title">Voleu desagrupar el grup de pestanyes?</string>
   <!-- Text shown in the body of the Ungroup tab group confirmation dialog. -->
-  <string name="ungroup_tab_group_confirmation_dialog_body">Les pestanyes romandran obertes en aquest dispositiu, però el grup s\'eliminarà.</string>
+  <string name="ungroup_tab_group_confirmation_dialog_body">Les pestanyes romandran obertes en aquest dispositiu, però el grup s’eliminarà.</string>
   <!-- Text shown on the Don't Ask Again checkbox button in the Ungroup tab group confirmation dialog. -->
-  <string name="ungroup_tab_group_confirmation_dialog_dont_ask_again">No m\'ho tornis a demanar</string>
+  <string name="ungroup_tab_group_confirmation_dialog_dont_ask_again">No m’ho tornis a demanar</string>
   <!-- Text shown on the confirm button in the Ungroup tab group confirmation dialog. -->
   <string name="ungroup_tab_group_confirmation_dialog_confirm">Desagrupa</string>
   <!-- Text shown on the cancel button in the Ungroup tab group confirmation dialog. -->
@@ -2288,6 +2415,22 @@
   <string name="sent_from_firefox_template" tools:ignore="UnusedResources">%1$s\n\nEnviat des del %2$s 🦊 Proveu el navegador mòbil: %3$s</string>
   <!-- A short message template for the shared link with a footer. %1$s is the shared link, %2$s is the app name (e.g. Firefox) and %3$s is a download link for the app. -->
   <string name="sent_from_firefox_template_short" tools:ignore="UnusedResources">%1$s\n\nEnviat des del %2$s 🦊 %3$s</string>
+  <!-- Send tab to synced devices: Authentication error button - Allows user to re-authenticate -->
+  <string name="sync_send_tab_error_auth_button">Inicia la sessió</string>
+  <!-- Send tab to synced devices: Authentication error button - Allows user to remove the currently connected account -->
+  <string name="sync_send_tab_error_auth_remove_account">Elimina el compte</string>
+  <!-- Send tab to synced devices: Empty state title - Displayed when the user has no synced devices -->
+  <string name="sync_send_tab_empty_state_title">No hi ha cap dispositiu connectat</string>
+  <!-- Send tab to synced devices: Empty state message - Displayed when the user has no synced devices -->
+  <string name="sync_send_tab_empty_state_description" tools:ignore="BrandUsage">Per enviar una pestanya, inicieu la sessió al Firefox en almenys un altre dispositiu.</string>
+  <!-- Send tab to synced devices: Empty state link - Displayed when the user has no synced devices -->
+  <string name="sync_send_tab_empty_state_link">Apreneu com connectar un dispositiu</string>
+  <!-- Send tab to synced devices: Connectivity Error title -->
+  <string name="sync_send_tab_error_connection_title">Comproveu la connexió a Internet</string>
+  <!-- Send tab to synced devices: Connectivity Error message - Suggested user action after internet connection has been established -->
+  <string name="sync_send_tab_error_connection_text">A continuació, proveu de tornar a enviar la pestanya.</string>
+  <!-- Send tab to synced devices: Connectivity Error button - When tapped, refreshes the list of connected devices. -->
+  <string name="sync_send_tab_error_connection_button">Reintenta</string>
   <!--
     Notifications
 
@@ -2309,6 +2452,12 @@
     The app name is in the text, due to limitations with localizing Nimbus experiments
   -->
   <string name="nimbus_notification_default_browser_text" tools:ignore="BrandUsage,UnusedResources">Fes que el Firefox sigui el navegador per defecte</string>
+  <!--
+    Privacy report notification
+
+    Name of the weekly privacy report notification channel. Displayed in the "App notifications" system settings for the app.
+  -->
+  <string name="notification_privacy_report_channel_name">Informe de privadesa</string>
   <!--
     Survey
 
@@ -2338,6 +2487,12 @@
   <string name="snackbar_private_tab_closed">S’ha tancat la pestanya privada</string>
   <!-- Text shown in snackbar to undo deleting a tab, top site or collection -->
   <string name="snackbar_deleted_undo">DESFÉS</string>
+  <!-- Confirmation message displayed when user adds a page to a tab group. %1$s is the tab group's name. -->
+  <string name="snackbar_tab_added_to_group">S’ha afegit a %1$s</string>
+  <!-- Confirmation message displayed when user moves a page from one tab group to another. %1$s is the tab group's name. -->
+  <string name="snackbar_tab_moved_to_group">S’ha mogut a %1$s</string>
+  <!-- Button text displayed with a confirmation message when the user adds or moves a page to a tab group. Tapping it displays the tab group. -->
+  <string name="snackbar_action_view">Mostra</string>
   <!--
     QR code scanner prompt which appears after scanning a code, but before navigating to it
     %1$s is the name of the app (for example "Firefox"), %2$s is the URL or text scanned
@@ -2456,6 +2611,12 @@
   <string name="sign_in_create_account_text" tools:ignore="BrandUsage"><![CDATA[No teniu cap compte? <u>Creeu-ne un</u> per sincronitzar el Firefox entre dispositius.]]></string>
   <!-- Text shown in confirmation dialog to sign out of account. %s is the name of the app (for example "Firefox"). -->
   <string name="sign_out_confirmation_message_2">El %s deixarà de sincronitzar-se amb el vostre compte, però les vostres dades de navegació d’aquest dispositiu no se suprimiran.</string>
+  <!-- Title of the confirmation dialog shown when the user signs out of their account -->
+  <string name="sign_out_dialog_title">Voleu tancar la sessió del compte?</string>
+  <!-- Body of the confirmation dialog shown when the user signs out of their account -->
+  <string name="sign_out_dialog_message">Les dades sincronitzades romanen desades en el vostre compte.</string>
+  <!-- Text for the primary action button of the confirmation dialog shown when the user signs out of their account -->
+  <string name="sign_out_dialog_confirm_button">Tanca la sessió</string>
   <!-- Option to continue signing out of account shown in confirmation dialog to sign out of account -->
   <string name="sign_out_disconnect">Desconnecta</string>
   <!-- Option to cancel signing out shown in confirmation dialog to sign out of account -->
@@ -2874,6 +3035,8 @@
   <string name="preferences_ip_protection_title_2">VPN integrada</string>
   <!-- Label for the BETA badge for the browser VPN entry in the settings list -->
   <string name="preferences_ip_protection_beta_badge_label">BETA</string>
+  <!-- Title for the browser VPN settings screen (displayed in the app bar) -->
+  <string name="ip_protection_settings_title">VPN integrada</string>
   <!-- Label for the browser VPN toggle on the settings screen -->
   <string name="ip_protection_toggle_label">VPN</string>
   <!-- Content description for the browser VPN settings screen top bar back button -->
@@ -2911,6 +3074,8 @@
   <string name="ip_protection_menu_paused">En pausa</string>
   <!-- Badge label shown in the menu item when the browser VPN has an error -->
   <string name="ip_protection_menu_error">Error</string>
+  <!-- Badge label shown in the VPN menu item when the user is eligible for the feature but needs to authenticate / authorize to enable it -->
+  <string name="ip_protection_menu_try_vpn_cta">Proveu-la gratis</string>
   <!-- Content description for the chevron button that opens the browser VPN settings screen -->
   <string name="ip_protection_navigate_settings">Obre els paràmetres de la VPN</string>
   <!--
@@ -2927,6 +3092,10 @@
   <string name="ip_protection_toolbar_pill_label">VPN activada</string>
   <!-- Accessibility description for the browser VPN pill in the address bar when the VPN has been activated -->
   <string name="ip_protection_toolbar_pill_description">La VPN està activa.</string>
+  <!-- Label shown next to the browser protection icon in the address bar when the browser VPN turns off -->
+  <string name="ip_protection_toolbar_pill_label_off">VPN desactivada</string>
+  <!-- Accessibility description for the browser VPN pill in the address bar when the VPN has turned off -->
+  <string name="ip_protection_toolbar_pill_description_off">La VPN està desactivada.</string>
   <!-- Label for the button that starts the browser VPN authentication or authorization flow on the settings screen -->
   <string name="ip_protection_get_started">Primers passos</string>
   <!-- Label for the "connecting" state of the button that starts the browser VPN authentication or authorization flow on the settings screen -->
@@ -2953,11 +3122,15 @@
   <string name="ip_protection_onboarding_not_now_button">Ara no</string>
   <!-- Snackbar (in-app pop-up notification) text to signal the browser VPN connection error -->
   <string name="ip_protection_connection_error_snackbar">No s’ha pogut connectar a la VPN. Torneu-ho a provar d’aquí a uns minuts.</string>
+  <!-- Snackbar (in-app pop-up notification) text to signal the VPN location has been reset due to the previously selected VPN location being no longer available. -->
+  <string name="ip_protection_location_selection_reset_snackbar">La ubicació de la VPN seleccionada no està disponible. S’ha canviat a la ubicació recomanada.</string>
   <!--
     Snackbar (in-app pop-up notification) text to signal the browser VPN has reached the monthly data limit.
     %1$d is the total monthly allowance in GB (for example "50").
   -->
   <string name="ip_protection_data_limit_reached_snackbar">S’han utilitzat %1$d GB de dades de la VPN. L’accés es restablirà el mes que ve.</string>
+  <!-- Snackbar (in-app pop-up notification) action button text that takes the user to the VPN settings screen. -->
+  <string name="ip_protection_open_settings_snackbar_action">Paràmetres</string>
   <!-- Description shown on the browser VPN settings screen prompting the user to turn the VPN on. -->
   <string name="ip_protection_settings_description" tools:ignore="UnusedResources">Activeu la VPN perquè la navegació sigui més privada i més difícil de fer-ne el seguiment.</string>
   <!-- Title shown on the browser VPN settings screen for location selection section. -->
@@ -2974,6 +3147,8 @@
   <string name="ip_protection_location_picker_title" tools:ignore="UnusedResources">Trieu la ubicació de la VPN</string>
   <!-- Description for what it means to use the Recommended setting and let the app automatically pick the best server location. -->
   <string name="ip_protection_location_fastest_description" tools:ignore="BrandUsage">El Firefox tria la ubicació més ràpida</string>
+  <!-- Description for an unavailable VPN location in the location list. -->
+  <string name="ip_protection_location_unavailable_description">No disponible</string>
   <!-- Error message shown when the selected browser VPN location is unavailable. -->
   <string name="ip_protection_location_unavailable" tools:ignore="UnusedResources">La ubicació no està disponible. Trieu-ne una altra.</string>
   <!-- Snackbar (in-app pop-up notification) text shown when the previously selected browser VPN location is unavailable and the recommended location was used instead. -->
@@ -2981,7 +3156,7 @@
   <!-- Title for the card shown to the user when we are unable to fetch server locations -->
   <string name="ip_protection_locations_unavailable_title">Les ubicacions no estan disponibles</string>
   <!-- Description for the card shown to the user when we are unable to fetch server locations -->
-  <string name="ip_protection_locations_unavailable_description">S\'ha canviat a la ubicació recomanada.</string>
+  <string name="ip_protection_locations_unavailable_description">S’ha canviat a la ubicació recomanada.</string>
   <!-- Title for the browser VPN location selection screen (displayed in the app bar) -->
   <string name="ip_protection_locations_title">Trieu la ubicació de la VPN</string>
   <!-- Content description for the browser VPN location selection screen top bar back button -->
@@ -3066,6 +3241,8 @@
   <string name="credit_cards_warning_dialog_set_up_now">Configura-ho ara</string>
   <!-- Negative button to ignore warning dialog if users have no device authentication set up -->
   <string name="credit_cards_warning_dialog_later">Més tard</string>
+  <!-- Secondary button of the dialog shown on Android Automotive OS (in cars). Tapping closes the dialogue and cancels the action that triggered the dialogue. -->
+  <string name="automotive_authentication_setup_dialog_cancel">Cancel·la</string>
   <!-- Title of PIN verification dialog to direct users to re-enter their device credentials to access their credit cards -->
   <string name="credit_cards_biometric_prompt_message_pin">Desbloqueu el dispositiu</string>
   <!-- Message displayed in biometric prompt for authentication, before allowing users to use their stored payment method information -->
@@ -3265,6 +3442,16 @@
     which navigates the user to a screen displaying all the shortcuts.
   -->
   <string name="homepage_shortcuts_show_all_content_description">Mostra totes les dreceres</string>
+  <!--
+    Label for the button in the shortcuts home screen section that expands the section to show
+    every shortcut.
+  -->
+  <string name="homepage_shortcuts_show_all">Mostra-ho tot</string>
+  <!--
+    Label for the button in the shortcuts home screen section that collapses the section back
+    to showing only the first shortcuts.
+  -->
+  <string name="homepage_shortcuts_show_less">Mostra’n menys</string>
   <!-- Label for the "Add shortcut" button displayed as a tile. -->
   <string name="homepage_shortcuts_add_shortcut">Afegeix una drecera</string>
   <!-- Title for the "Add to homepage" bottom sheet. -->
@@ -3275,12 +3462,6 @@
   <string name="homepage_shortcuts_add_website_title">Escriviu l’URL d’un lloc web</string>
   <!-- Title for the "Popular sites" section in the "Add to homepage" bottom sheet. -->
   <string name="homepage_shortcuts_popular_sites">Llocs populars</string>
-  <!-- Title text displayed in the dialog when shortcuts limit is reached. -->
-  <string name="shortcut_max_limit_title">S’ha arribat al límit de dreceres</string>
-  <!-- Content description text displayed in the dialog when shortcut limit is reached. -->
-  <string name="shortcut_max_limit_content">Per a afegir una nova drecera, primer cal que n’elimineu alguna altra. Manteniu premut el lloc i seleccioneu eliminar-lo.</string>
-  <!-- Confirmation dialog button text when top sites limit is reached. -->
-  <string name="top_sites_max_limit_confirmation_button">Entesos</string>
   <!-- Label for the preference to show the shortcuts for the most visited top sites on the homepage -->
   <string name="top_sites_toggle_top_recent_sites_4">Dreceres</string>
   <!-- Title text displayed in the rename top site dialog. -->
@@ -3689,6 +3870,14 @@
   <string name="protection_panel_privacy_and_security_settings_2">Paràmetres de privadesa</string>
   <!-- Title text for the protection panel permissions section. -->
   <string name="protection_panel_permissions_title">Permisos</string>
+  <!-- Certificate panel - Title of the section that contains the website's certificate information (issued to, issued by, etc.) as verified by Firefox (thus guaranteeing the HTTPS connection is secure) -->
+  <string name="certificate_details_panel_secure_connection_title">Connexió segura</string>
+  <!-- Certificate panel - Label for the organization, locality and country the website's certificate was issued to -->
+  <string name="certificate_details_panel_issued_to_label">Certificat emès per a:</string>
+  <!-- Certificate panel - Label for the name of the certificate authority that verified and issued the website's certificate -->
+  <string name="certificate_details_panel_verified_by_label">Verificat per:</string>
+  <!-- Certificate panel - Content description (not visible, for screen readers etc.) for the EU trust mark logo, shown when the website's certificate is a Qualified Website Authentication Certificate (QWAC) as specified in EU Regulation 2024/1183 -->
+  <string name="certificate_details_panel_eu_trust_mark_content_description">Marca de confiança de la UE</string>
   <plurals name="trackers_blocked_panel_total_num_trackers_blocked_2">
     <!--
       Text for displaying the total number of trackers blocked in the trackers blocked panel.
@@ -3773,7 +3962,7 @@
   -->
   <string name="connection_security_panel_issued_to">Emès per a %s</string>
   <!-- Text for the connection security panel when the site uses a QWAC. -->
-  <string name="connection_security_panel_qualified_certificate">Qualificat segons l\'especificació del Reglament (UE) 2024/1183.</string>
+  <string name="connection_security_panel_qualified_certificate">Qualificat segons l’especificació del Reglament (UE) 2024/1183.</string>
   <!--
     Debug drawer
 
@@ -4255,6 +4444,79 @@
   <!-- Link text for terms_of_use_prompt_body_line_two_alternative that links to a site with more information about the Terms of Use -->
   <string name="terms_of_use_prompt_body_line_two_alternative_link" tools:ignore="UnusedResources">aquí</string>
   <!--
+    Sports widget
+
+    Label shown on the sports widget scoreboard when a match is currently being played live.
+  -->
+  <string name="wrex_widget_match_live">EN DIRECTE</string>
+  <!-- Label shown on the sports widget match status badge when the start of a match has been delayed. -->
+  <string name="wrex_widget_match_delayed">Endarrerit</string>
+  <!-- Label shown on the sports widget match status badge when a match has been suspended after it started. -->
+  <string name="wrex_widget_match_suspended">Suspès</string>
+  <!-- Label shown on the sports widget match status badge when a match has been postponed to a later date. -->
+  <string name="wrex_widget_match_postponed">Ajornat</string>
+  <!-- Sports widget action label to refresh match data after an error. -->
+  <string name="wrex_widget_error_refresh">Actualitza</string>
+  <!-- Sports widget menu item to view the team's match results. -->
+  <string name="wrex_widget_results">Resultats</string>
+  <!-- Sports widget menu item to view the league standings table. -->
+  <string name="wrex_widget_standings">Classificació</string>
+  <!-- Sports widget menu item to browse the team's wallpapers. -->
+  <string name="wrex_widget_wallpapers">Fons de pantalla</string>
+  <!-- Sports widget menu item to remove the widget from the homepage. -->
+  <string name="wrex_widget_remove_widget">Elimina el giny</string>
+  <!-- Sports widget match status label shown at full-time (abbreviated) - indicates the match has ended, after regulation and extra time have been played -->
+  <string name="wrex_widget_match_full_time_short">FI</string>
+  <!-- Sports widget match status label shown during half-time of a match. -->
+  <string name="wrex_widget_match_half_time">Mitja part</string>
+  <!-- Sports widget match status label shown during extra time of a match (abbreviated) -->
+  <string name="wrex_widget_match_extra_time_short">PR</string>
+  <!-- Sports widget match status label shown during penalties of a match. -->
+  <string name="wrex_widget_match_penalties">Penals</string>
+  <!-- Content description (for accessibility, not displayed) for the overflow (more options) menu button on the sports widget card. -->
+  <string name="wrex_widget_more_options_content_description">Més opcions</string>
+  <!--
+    Content description (for accessibility, not displayed) announcing a soccer match.
+    %1$s is the home team name, %2$s is the away team name, %3$s is trailing context
+    (e.g. formatted score "1 - 2 (Full time)", upcoming match info "Jun 19 5:00 PM",
+    or a match status like "Full time").
+  -->
+  <string name="wrex_widget_match_content_description">%1$s contra %2$s, %3$s</string>
+  <!--
+    Content description (for accessibility, not displayed) used for the sports widget card header announcing a live match.
+    %s is the name of the competition the match belongs to (e.g. "FA Cup").
+  -->
+  <string name="wrex_widget_live_game_content_description">%s, partit en directe</string>
+  <!--
+    Content description (for accessibility, not displayed) announcing a live score.
+    %1$s is the home team name, %2$d is the home team score, %3$s is the away team name, %4$d is the away team score,
+    and %5$s is the match elapsed time (e.g. 72 minutes).
+  -->
+  <string name="wrex_widget_live_score_content_description">%1$s %2$d, %3$s %4$d, %5$s, en directe</string>
+  <!--
+    Content description (for accessibility, not displayed) announcing the elapsed minutes of a live match.
+    %1$s is the clock value, which may be a plain number (e.g. "72") or include extra time (e.g. "90+3").
+  -->
+  <string name="wrex_widget_match_elapsed_minutes">Temps transcorregut en minuts: %1$s</string>
+  <!--
+    Content description (for accessibility, not displayed) for a paginated item.
+    %1$s is the name of the competition the match belongs to (e.g. "FA Cup"),
+    %2$d is the current page number, and %3$d is the total number of pages.
+  -->
+  <string name="wrex_widget_page_position_content_description">%1$s, pàgina %2$d de %3$d</string>
+  <!-- Sports widget error card title shown when the user is offline. -->
+  <string name="wrex_widget_error_connection_offline_title">Sembla que esteu fora de línia</string>
+  <!-- Sports widget error card description shown when the user is offline. -->
+  <string name="wrex_widget_error_connection_offline_description">Comproveu la connexió a Internet i torneu-ho a provar.</string>
+  <!-- Sports widget error card title shown when match data fails to load. -->
+  <string name="wrex_widget_error_load_failed_title">No es pot mostrar la informació del partit ara mateix</string>
+  <!-- Sports widget error card description suggesting to refresh after match information could not be displayed. -->
+  <string name="wrex_widget_error_try_refreshing">Actualitzeu o torneu-ho a provar més tard.</string>
+  <!-- Sports widget error card title shown when the latest match results fail to load. -->
+  <string name="wrex_widget_error_results_load_failed_title">No es poden mostrar els resultats ara mateix</string>
+  <!-- Content description (for accessibility, not displayed) for teams which have not yet been determined in the match schedule. -->
+  <string name="wrex_widget_team_to_be_determined">Equip per determinar</string>
+  <!--
     Privacy notice homepage banner
 
     A message we show the user on the homepage when there is a new version of the privacy notice. 'Firefox' is intentionally hardcoded.
@@ -4266,6 +4528,18 @@
   <string name="privacy_notice_updated_homepage_message_privacy_notice" tools:ignore="UnusedResources">Avís de privadesa</string>
   <!-- The second active link used in privacy_notice_updated_homepage_message -->
   <string name="privacy_notice_updated_homepage_message_learn_more" tools:ignore="UnusedResources">Més informació</string>
+  <!--
+    Collections migration homepage card
+
+    Title shown on the collections to tab groups migration card on the homepage.
+  -->
+  <string name="collections_migration_homepage_banner_title">Les col·leccions ara són grups</string>
+  <!-- Message shown on the collections to tab groups migration card on the homepage. -->
+  <string name="collections_migration_homepage_card_message">Hi ha una manera més senzilla d’organitzar les pestanyes</string>
+  <!-- Link text shown on the collections to tab groups migration card that opens the tab groups page in the tab manager. -->
+  <string name="collections_migration_homepage_card_link">Mostra els meus grups de pestanyes</string>
+  <!-- Content description (not visible, for screen readers etc.) for the button that dismisses the collections to tab groups migration card. -->
+  <string name="collections_migration_card_close_button_content_description">Tanca</string>
   <!-- Google Lens prototype related strings -->
   <string name="preferences_debug_settings_google_lens_integration">Activa la integració amb el Google Lens</string>
   <!-- Lens image search button content description -->
@@ -4300,6 +4574,16 @@
   <string name="lens_camera_mode_qr">Escàner de QR</string>
   <!-- Toast shown when the user picks an image from the gallery in QR mode but no QR code is found in it -->
   <string name="lens_camera_qr_no_code_found">No s’ha trobat cap codi QR a la imatge</string>
+  <!-- Status shown under an image picked from the gallery or taken with the camera while it is being sent to Google Lens for a visual search -->
+  <string name="lens_camera_loading_status">S’està cercant</string>
+  <!-- Button shown under an image picked from the gallery or taken with the camera while it is being sent to Google Lens. Tapping it stops the search and returns to the camera. -->
+  <string name="lens_camera_loading_cancel_button">Cancel·la</string>
+  <!-- Snackbar message shown when an image picked from the gallery or taken with the camera could not be opened or read, so it was never sent to Google Lens. Shown after returning to the camera. -->
+  <string name="lens_camera_image_load_failed_v2">No s’ha pogut carregar aquesta imatge</string>
+  <!-- Snackbar message shown when an image picked from the gallery or taken with the camera could not be searched because of a network problem or an error from Google Lens. Shown after returning to the camera, next to the lens_camera_upload_failed_retry_button action. -->
+  <string name="lens_camera_upload_failed">No s’han pogut obtenir resultats del Google Lens</string>
+  <!-- Action in the snackbar shown when an image picked from the gallery or taken with the camera could not be searched with Google Lens. Tapping it searches the same image again. -->
+  <string name="lens_camera_upload_failed_retry_button">Torna-ho a provar</string>
   <!-- Title of the bottom sheet shown the first time the user opens the Google Lens camera screen -->
   <string name="lens_opt_out_title">Cerca-ho amb el Google Lens</string>
   <!-- Description of the bottom sheet shown the first time the user opens the Google Lens camera screen -->
@@ -4350,4 +4634,48 @@
   <string name="firefox_labs_feature_conflict">Aquesta funció no està disponible per a provar-la.</string>
   <!-- Text displayed on the Firefox Labs screen when there are no Labs experimental features present. -->
   <string name="firefox_labs_no_labs_available_description">No hi ha cap funció experimental per a provar ara mateix</string>
+  <!-- Title of the Firefox Labs Sandboxing experiment. -->
+  <string name="firefox_labs_website_isolation_title" tools:ignore="UnusedResources">Aïllament de llocs web</string>
+  <!-- Description of the Firefox Labs Sandboxing experiment. -->
+  <string name="firefox_labs_website_isolation_description" tools:ignore="UnusedResources">Una barrera addicional entre llocs web que ajuda a protegir les dades de cada pestanya. Pot afectar el rendiment, l’estabilitat, la compatibilitat dels llocs web i la manera com es desa l’historial de navegació.</string>
+  <!--
+    PDF viewer toolbar and buttons
+
+    Content description for accessibility (used by screen readers): Description for the button that triggers the start of a signature workflow on the PDF displayed on the screen.
+  -->
+  <string name="pdf_tools_sign_content_description_2">Afegeix una signatura</string>
+  <!-- Content description for accessibility (used by screen readers): Description of the button that downloads the PDF displayed on the screen to the user's device. -->
+  <string name="pdf_tools_download_content_description">Baixa el PDF</string>
+  <!-- Content description for accessibility (used by screen readers): Description for the button that opens the printing dialogue window for the PDF displayed on the screen. -->
+  <string name="pdf_tools_print_content_description">Imprimeix el PDF</string>
+  <!-- Content description for accessibility (used by screen readers): Description for the button that opens the sharing options for the PDF being displayed on the screen. -->
+  <string name="pdf_tools_share_content_description">Comparteix el PDF</string>
+  <!--
+    PDF viewer add a signature dialog
+
+    The title of the dialog for adding a signature to a PDF.
+  -->
+  <string name="pdf_tools_signature_title">Afegeix una signatura</string>
+  <!-- Content description for accessibility (used by screen readers): Description for the button that closes the dialog for adding a signature to a PDF. -->
+  <string name="pdf_tools_signature_close_content_description">Tanca la subfinestra de signatura de PDF</string>
+  <!-- The placeholder text shown in the empty text input field where users can enter the signature they wish to add to a PDF. -->
+  <string name="pdf_tools_signature_placeholder">Escriviu la signatura</string>
+  <!-- The text for the button that erases the text the user entered in the "add a signature" field. -->
+  <string name="pdf_tools_signature_clear_button">Esborra</string>
+  <!-- The text for the button that adds the signature the user has typed to the PDF. -->
+  <string name="pdf_tools_signature_add_button">Afegeix</string>
+  <!-- Content description for accessibility (used by screen readers): Description for the loading indicator when a signature is in the process of being added to a PDF. -->
+  <string name="pdf_tools_signature_adding_content_description">S’està afegint la signatura</string>
+  <!--
+    Listen to page
+
+    Content description for the reader view panel: a group of buttons floating over the content, which allow customizing the reader view or activating the Listen to Page feature
+  -->
+  <string name="reader_mode_panel_content_description_2">Opcions de la Vista de lectura</string>
+  <!-- Content description for the button in the reader view panel that turns on the Listen to Page feature (playback of content begins when button is pressed) -->
+  <string name="reader_mode_panel_listen_content_description">Llegeix en veu alta</string>
+  <!-- Content description for media player displayed in Reader view when the Listen to Page (Read Aloud) feature is selected -->
+  <string name="reader_mode_panel_media_player_content_description">Reproductor multimèdia</string>
+  <!-- Content description for the reader view button Reader view facilitates readability and has a Listen to Page feature. Button icon is a document with headphones, and is displayed next to the page URL when the feature is available. -->
+  <string name="browser_menu_read_or_listen">Vista de lectura, llegiu o escolteu la pàgina</string>
 </resources>

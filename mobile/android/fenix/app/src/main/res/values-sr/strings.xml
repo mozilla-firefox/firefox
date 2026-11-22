@@ -19,8 +19,6 @@
   <string name="content_description_menu">Више могућности</string>
   <!-- Content description (not visible, for screen readers etc.): "Private Browsing" menu button. -->
   <string name="content_description_private_browsing">Приватно прегледање</string>
-  <!-- Content description (not visible, for screen readers etc.): "Normal Browsing" menu button. -->
-  <string name="content_description_normal_browsing">Обично прегледање</string>
   <!-- Placeholder text shown in the search bar before a user enters text for the default engine -->
   <string name="search_hint">Претражи или унеси адресу</string>
   <!-- Shorter placeholder text shown in the search bar when an additional action (voice search) is rendered alongside the hint. -->
@@ -3381,12 +3379,6 @@
   <string name="homepage_shortcuts_add_website_title">Унесите адресу веб странице</string>
   <!-- Title for the "Popular sites" section in the "Add to homepage" bottom sheet. -->
   <string name="homepage_shortcuts_popular_sites">Популарне веб странице</string>
-  <!-- Title text displayed in the dialog when shortcuts limit is reached. -->
-  <string name="shortcut_max_limit_title">Ограничење пречица достигнуто</string>
-  <!-- Content description text displayed in the dialog when shortcut limit is reached. -->
-  <string name="shortcut_max_limit_content">Да бисте додали нову пречицу, уклоните једну постојећу. Додирните и држите прст над страницом па изаберите могућност за уклањање.</string>
-  <!-- Confirmation dialog button text when top sites limit is reached. -->
-  <string name="top_sites_max_limit_confirmation_button">Важи, разумем</string>
   <!-- Label for the preference to show the shortcuts for the most visited top sites on the homepage -->
   <string name="top_sites_toggle_top_recent_sites_4">Пречице</string>
   <!-- Title text displayed in the rename top site dialog. -->
@@ -4490,12 +4482,6 @@
   <string name="pdf_tools_signature_clear_button">Очисти</string>
   <!-- The text for the button that adds the signature the user has typed to the PDF. -->
   <string name="pdf_tools_signature_add_button">Додај</string>
-  <!--
-    Listen to page
-
-    Content description for the reader mode panel: a group of buttons floating over the content
-  -->
-  <string name="reader_mode_panel_content_description">Могућности режима читача</string>
   <!-- Content description for the button in the reader view panel that turns on the Listen to Page feature (playback of content begins when button is pressed) -->
   <string name="reader_mode_panel_listen_content_description">Читај наглас</string>
 </resources>

@@ -9,28 +9,63 @@
 <resources>
   <!-- The button that appears at the bottom of an error page. -->
   <string name="mozac_browser_errorpages_page_refresh">پدا واراس خلبو</string>
+  <!-- The button on an error page that checks whether an archived copy of the unreachable page exists. -->
+  <string name="mozac_browser_errorpages_archive_check_button">آرکایو انگا ورژن اے ہربو</string>
+  <!--
+    The text shown underneath the archive button, explaining what the button does. The %1$s will be replaced by
+    the app name and %2$s will be replaced by the name of the archive service as a link
+  -->
+  <string name="mozac_browser_errorpages_archive_description">دا صفحہ نا متکنو ورژن اسے کن %1$s Internet Archive نا %2$s ٹی</string>
+  <!-- The message shown when no archived copy of the unreachable page could be found. -->
+  <string name="mozac_browser_errorpages_archive_not_found">ہچو آرکایو مروکو ورژن ملےتو.</string>
   <!-- A link, shown after no archived copy was found, that searches the web for the page instead. -->
   <string name="mozac_browser_errorpages_archive_search_web">ویب اے پٹبو.</string>
+  <!-- The message shown when the archive service could not be reached to look up an archived copy. -->
+  <string name="mozac_browser_errorpages_archive_unreachable">آرکایو سروس اے رسینگ متو.</string>
   <!-- A link, shown after the archive service could not be reached, that retries the lookup. -->
   <string name="mozac_browser_errorpages_archive_retry">پدا واراس.</string>
   <!-- The document title and heading of an error page shown when a website cannot be loaded for an unknown reason. -->
   <string name="mozac_browser_errorpages_generic_title">درخواست پورہ مننگ کپک</string>
   <!-- The error message shown when a website cannot be loaded for an unknown reason. -->
   <string name="mozac_browser_errorpages_generic_message"><![CDATA[<p>دا مسئلہ یا خطا نا باروٹ داسکان پین معلومات اف۔</p>]]></string>
+  <!-- The document title and heading of the error page shown when a website sends back unusual and incorrect credentials for an SSL certificate. -->
+  <string name="mozac_browser_errorpages_security_ssl_title">محفوظ کنیکشن ناکام مس</string>
+  <!-- The document title and heading of the error page shown when a website sends has an invalid or expired SSL certificate. -->
+  <string name="mozac_browser_errorpages_security_bad_cert_title">محفوظ کنیکشن ناکام مس</string>
+  <!-- The error message shown when a website sends has an invalid or expired SSL certificate. -->
+  <string name="mozac_browser_errorpages_security_bad_cert_message"><![CDATA[<ul>\n<li> دا سرور نا کنفگریشن ٹی مسئلہ اس مننگ کیک، یا کس اس سرور مننگ نا نکل اے کرسہ مرو.</li>\n<li> اگہ دا سرور تون نم مست کامیابی ٹی کنیکٹ کننگ کرینرے، گڑا دا عارضی او ردی اس مننگ کیک، و نم دوارا پین کوشست اس کننگ کیرے.</li>\n</ul>]]></string>
   <!-- The text shown inside the advanced options button used to go back. It's only shown if the user has expanded the advanced options. -->
   <string name="mozac_browser_errorpages_security_bad_cert_back">پدی ان (Recommended)</string>
   <!-- The text shown inside the advanced options button used to bypass the invalid SSL certificate. It's only shown if the user has expanded the advanced options. -->
   <string name="mozac_browser_errorpages_security_bad_cert_accept_temporary">خطرہ ارف و مونی ان</string>
+  <!-- The document title and heading of the error page shown when a website uses HSTS. -->
+  <string name="mozac_browser_errorpages_security_bad_hsts_cert_title">دا ویبڈس محفوظ کنیکشن اس خواہک.</string>
   <!-- The text shown inside the advanced options button used to go back. It's only shown if the user has expanded the advanced options. -->
   <string name="mozac_browser_errorpages_security_bad_hsts_cert_back">پدی ان</string>
+  <!-- The document title and heading of the error page shown when the user's network connection is interrupted while connecting to a website. -->
+  <string name="mozac_browser_errorpages_net_interrupt_title">کنیکشن ٹی اڑاندی اس مس</string>
+  <!-- The document title and heading of the error page shown when a website could not be reached. -->
+  <string name="mozac_browser_errorpages_connection_failure_title">کنیکٹ مننگ کپک</string>
+  <!-- The document title and heading of the error page shown when a website cannot be loaded because the browser is in offline mode. -->
+  <string name="mozac_browser_errorpages_offline_title">افلائن موڈ</string>
   <!-- The document title and heading of an error page. -->
   <string name="mozac_browser_errorpages_unknown_host_title">ویب ڈس ملےتو</string>
   <!-- In the example, the two URLs in markup do not need to be translated. -->
   <string name="mozac_browser_errorpages_unknown_host_message"><![CDATA[<p>ویبگشٹ کروک ایتوکا ویبڈس نا ہوسٹ سرور اے پٹنگ کتو۔</p>\n<ul>\n<li>ویبڈس اے ٹائپنگ نا ردی تے کن ہربو، دنکہ <strong>www</strong>.example.com نا جاگہ غا <strong>ww</strong>.example.com۔</li>\n<li>اگہ ہچو پنہ ئس لوڈ مفک، تینا ڈیوائس نا ڈیٹا یا Wi-Fi کنیکژن اے ہربو۔</li>\n</ul>]]></string>
+  <!-- The document title and heading of an error page. -->
+  <string name="mozac_browser_errorpages_no_internet_error_code">ردی کوڈ: NS_ERROR_OFFLINE</string>
   <!-- Text that will show up on the button at the bottom of the error page -->
   <string name="mozac_browser_errorpages_no_internet_refresh_button">وا لوڈ کہ</string>
   <!-- The document title and heading of an error page. -->
+  <string name="mozac_browser_errorpages_malformed_uri_title_alternative">دا ڈس جائزوس اف</string>
+  <!-- The document title and heading of an error page. -->
+  <string name="mozac_browser_errorpages_unknown_protocol_title">ناچاہوک پروٹوکول</string>
+  <!-- The document title and heading of an error page. -->
   <string name="mozac_browser_errorpages_file_not_found_title">فائل ملےتو</string>
+  <!-- The document title and heading of an error page. -->
+  <string name="mozac_browser_errorpages_file_access_denied_title">فائل اسکان رسینگنگ ان منہ مس</string>
+  <!-- The title of the error page for websites that do not support HTTPS when HTTPS-Only is turned on -->
+  <string name="mozac_browser_errorpages_httpsonly_title">محفوظ ویبڈس موجود اف</string>
   <!-- Button on error page for websites that do not support HTTPS when HTTPS-Only is turned on. Clicking the button allows the user to nevertheless load the website using HTTP. -->
   <string name="mozac_browser_errorpages_httpsonly_button">HTTP سائٹ اے برجا کبو</string>
   <!-- Button on error page for websites that do not support HTTPS when HTTPS-Only is turned on.  Clicking the button allows the user to go back. -->

@@ -16,6 +16,8 @@
   <string name="feedback_erase2">ລຶບລ້າງປະຫວັດການທ່ອງເວັບແລ້ວ</string>
   <!-- "Snackbar" shown after the user has pressed the 'erase' button at the end of a custom tab browsing session -->
   <string name="feedback_erase_custom_tab">ແທັບຂອງປະຫວັດການທ່ອງເວັບໄດ້ຖືກລຶບອອກແລ້ວ.</string>
+  <!-- Content description for the button that opens the menu. -->
+  <string name="content_description_menu">ເມນູ</string>
   <!-- Menu item: Share the currently visible page -->
   <string name="menu_share">ແບ່ງປັນ…</string>
   <!--
@@ -424,6 +426,8 @@
   -->
   <string name="qualified_identity">ໄດ້ອອກໃບຢັ້ງຢືນໃຫ້ %1$s ແລ້ວ</string>
   <!--
+    Text shown in Security Information Popup
+
     The European Union eIDAS Regulation specifies a type of certificate
     called a "qualified website authentication certificate" (QWAC) and
     requires that browsers identify and indicate such certificates. This

@@ -63,40 +63,6 @@
   <string name="mozac_feature_addons_permissions_top_sites_description">Гизү тарихына ирешү</string>
   <!-- Description for the "devtools" WebExtensions API permission. -->
   <string name="mozac_feature_addons_permissions_devtools_description">Ачык таблардагы мәгълүматыгызга ирешү өчен җитештерүче коралларын киңәйтү</string>
-  <!-- Description for the "bookmarks" WebExtensions API permission for the update notification. Multiple permissions may be simply appended one after the other, and separated with a space, which is why the period is important. -->
-  <string name="mozac_feature_addons_permissions_bookmarks_description_for_update">Кыстыргычларны уку һәм үзгәртү.</string>
-  <!-- Description for the "browserSettings" WebExtensions API permission for the update notification. Multiple permissions may be simply appended one after the other, and separated with a space, which is why the period is important. -->
-  <string name="mozac_feature_addons_permissions_browser_settings_description_for_update">Браузер көйләүләрен уку һәм үзгәртү.</string>
-  <!-- Description for the "clipboardRead" WebExtensions API permission for the update notification. Multiple permissions may be simply appended one after the other, and separated with a space, which is why the period is important. -->
-  <string name="mozac_feature_addons_permissions_clipboard_read_description_for_update">Алмаш буферыннан мәгълүмат алу.</string>
-  <!-- Description for the "clipboardWrite" WebExtensions API permission for the update notification. Multiple permissions may be simply appended one after the other, and separated with a space, which is why the period is important. -->
-  <string name="mozac_feature_addons_permissions_clipboard_write_description_for_update">Мәгълүматны алмаш буферына кую.</string>
-  <!-- Description for the "declarativeNetRequest" WebExtensions API permission for the update notification. Multiple permissions may be simply appended one after the other, and separated with a space, which is why the period is important. -->
-  <string name="mozac_feature_addons_permissions_declarative_net_request_description_for_update">Теләсә нинди биттәге эчтәлекне блоклау.</string>
-  <!-- Description for the "downloads" WebExtensions API permission for the update notification. Multiple permissions may be simply appended one after the other, and separated with a space, which is why the period is important. -->
-  <string name="mozac_feature_addons_permissions_downloads_description_for_update">Файлларны йөкләп алу һәм браузерның йөкләү тарихын уку һәм үзгәртү.</string>
-  <!-- Description for the "management" WebExtensions API permission for the update notification. Multiple permissions may be simply appended one after the other, and separated with a space, which is why the period is important. -->
-  <string name="mozac_feature_addons_permissions_management_description_for_update">Киңәйтүләр кулланышын контрольдә тоту һәм темалар белән идарә итү.</string>
-  <!-- Description for the "nativeMessaging" WebExtensions API permission for the update notification. Multiple permissions may be simply appended one after the other, and separated with a space, which is why the period is important. -->
-  <string name="mozac_feature_addons_permissions_native_messaging_description_for_update">Бу кушымтадан тыш башка кушымталар белән хәбәрләр алмашу.</string>
-  <!-- Description for the "notifications" WebExtensions API permission for the update notification. Multiple permissions may be simply appended one after the other, and separated with a space, which is why the period is important. -->
-  <string name="mozac_feature_addons_permissions_notifications_description_for_update">Сезгә искәртүләр күрсәтү.</string>
-  <!-- Description for the "pkcs11" WebExtensions API permission for the update notification. Multiple permissions may be simply appended one after the other, and separated with a space, which is why the period is important. -->
-  <string name="mozac_feature_addons_permissions_pkcs11_description_for_update">Криптографик аутентификация хезмәтләрен тәкъдим ителсен.</string>
-  <!-- Description for the "proxy" WebExtensions API permission for the update notification. Multiple permissions may be simply appended one after the other, and separated with a space, which is why the period is important. -->
-  <string name="mozac_feature_addons_permissions_proxy_description_for_update">Браузерның прокси көйләүләре белән идарә итү.</string>
-  <!-- Description for the "sessions" WebExtensions API permission for the update notification. Multiple permissions may be simply appended one after the other, and separated with a space, which is why the period is important. -->
-  <string name="mozac_feature_addons_permissions_sessions_description_for_update">Күптән түгел ябылган табларга ирешү.</string>
-  <!-- Description for the "tabHide" WebExtensions API permission for the update notification. Multiple permissions may be simply appended one after the other, and separated with a space, which is why the period is important. -->
-  <string name="mozac_feature_addons_permissions_tab_hide_description_for_update">Браузер табларын яшерү һәм күрсәтү.</string>
-  <!-- Description for the "topSites" WebExtensions API permission for the update notification. Multiple permissions may be simply appended one after the other, and separated with a space, which is why the period is important. -->
-  <string name="mozac_feature_addons_permissions_top_sites_description_for_update">Гизү тарихына ирешү.</string>
-  <!-- Description for the "devtools" WebExtensions API permission for the update notification. Multiple permissions may be simply appended one after the other, and separated with a space, which is why the period is important. -->
-  <string name="mozac_feature_addons_permissions_devtools_description_for_update">Ачык таблардагы мәгълүматыгызга ирешү өчен җитештерүче коралларын киңәйтү.</string>
-  <!-- Description for giving an add-on access to users's data on one site. %1$s  will be replaced by the DNS host name for which a web extension is requesting access (e.g., www.mozilla.org). -->
-  <string name="mozac_feature_addons_permissions_one_site_description_for_update">%1$s сайты өчен булган мәгълүматыгызга ирешү.</string>
-  <!-- Description for giving an add-on access to users's data in multiple sites in the domain %1$s. %1$s will be replaced by the DNS domain for which a web extension is requesting access (e.g., mozilla.org). -->
-  <string name="mozac_feature_addons_permissions_sites_in_domain_description_for_update">%1$s доменындагы сайтлар өчен булган мәгълүматыгызга ирешү.</string>
   <!-- Short description for the bookmarksInfo data collection permission -->
   <string name="mozac_feature_addons_permissions_data_collection_bookmarksInfo_short_description">кыстыргычлар</string>
   <!-- Short description for the locationInfo data collection permission -->
@@ -173,12 +139,6 @@
   <string name="mozac_feature_extensions_manager_notification_restart_button">Киңәйтүләрне яңадан кабызу</string>
   <!-- Button in the extensions manager that opens AMO in a tab -->
   <string name="mozac_feature_addons_find_more_extensions_button_text">Күбрәк киңәйтү табу</string>
-  <!-- The label of the update button on the system notification shown to the user when an add-on has an update that requires the user to accept new permissions. -->
-  <string name="mozac_feature_addons_updater_notification_update_button">Яңарту</string>
-  <!-- The label of the cancel button on a notification, this will be shown to the user when an add-on needs new permissions. Indicates the user denies the new permissions and prevents the add-on from be updated -->
-  <string name="mozac_feature_addons_updater_notification_cancel_button">Баш тарту</string>
-  <!-- Name of the "notification channel" used for displaying a notification for updating an extension. See https://developer.android.com/training/notify-user/channels -->
-  <string name="mozac_feature_addons_updater_notification_channel_2">Киңәйтү яңартулары</string>
   <!-- Name of the "notification channel" used for displaying a notification for new supported add-ons. See https://developer.android.com/training/notify-user/channels -->
   <string name="mozac_feature_addons_supported_checker_notification_channel" tools:ignore="UnusedResources">Кулланырга мөмкин кушымчаларны тикшерү коралы</string>
   <!-- The tile of the notification, this will be shown to the user when one newly supported add-on is available. -->

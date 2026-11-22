@@ -19,8 +19,6 @@
   <string name="content_description_menu">Më tepër mundësi</string>
   <!-- Content description (not visible, for screen readers etc.): "Private Browsing" menu button. -->
   <string name="content_description_private_browsing">Shfletim privat</string>
-  <!-- Content description (not visible, for screen readers etc.): "Normal Browsing" menu button. -->
-  <string name="content_description_normal_browsing">Shfletim normal</string>
   <!-- Placeholder text shown in the search bar before a user enters text for the default engine -->
   <string name="search_hint">Bëni kërkim, ose jepni adresë</string>
   <!-- Shorter placeholder text shown in the search bar when an additional action (voice search) is rendered alongside the hint. -->
@@ -379,6 +377,8 @@
   <string name="ai_controls_more_page_summary_settings">Më tepër rregullime përmbledhjesh faqesh</string>
   <!-- Title for the voice search AI feature toggle -->
   <string name="ai_controls_voice_search_title">Kërkim zanor</string>
+  <!-- Title for the listen to page AI feature toggle -->
+  <string name="ai_controls_listen_to_page_title">Dëgjojeni faqen</string>
   <!-- Title for the block AI enhancements confirmation dialog -->
   <string name="ai_controls_block_dialog_title">Të bllokohen zgjerime IA?</string>
   <!-- Label shown above the list of features that will be blocked in the block AI dialog -->
@@ -1090,6 +1090,8 @@
   <string name="preferences_enable_sync_title">Njëkohësoje këtë pajisje</string>
   <!-- Preference summary for the toggle that turns sync on or off for the device, shown when sync is on. -->
   <string name="preferences_enable_sync_summary_sync_enabled">Të dhënat tuaja janë kopjeruajtur dhe të përdorshme në pajisje të njëkohësuara.</string>
+  <!-- Summary for the sync preference category. -->
+  <string name="preferences_sync_category_summary">Administroni ç’njëkohësohet në krejt pajisjet tuaja të lidhura</string>
   <!-- Preference for syncing history -->
   <string name="preferences_sync_history">Historik</string>
   <!-- Preference for syncing bookmarks -->
@@ -1269,6 +1271,10 @@
     Preferences for showing tab strip
   -->
   <string name="preference_tab_strip_show">Shfaq shtyllë skedash</string>
+  <!-- Preference for using top tab strip -->
+  <string name="preference_top_tab_strip">Sipër</string>
+  <!-- Preference for using bottom tab strip -->
+  <string name="preference_bottom_tab_strip">Poshtë</string>
   <!--
     Gestures Preferences
 
@@ -1604,12 +1610,16 @@
   <string name="tab_group_three_dot_button_content_description">Më tepër mundësi</string>
   <!-- Text shown on the edit button for a tab group on the three dot menu -->
   <string name="tab_group_three_dot_menu_edit">Përpunoni</string>
+  <!-- Text shown on the ungroup button for a tab group on the three dot menu -->
+  <string name="tab_group_three_dot_menu_ungroup">Hiqua grupin</string>
   <!-- Text shown on the delete button for a tab group on the three dot menu -->
   <string name="tab_group_three_dot_menu_delete">Fshije</string>
   <!-- Text shown on the share button for a tab group on the three dot menu -->
   <string name="tab_group_three_dot_menu_share">Ndajeni me të tjerët</string>
   <!-- Text shown on the close button for a tab group on the three dot menu -->
   <string name="tab_group_three_dot_menu_close">Mbylle</string>
+  <!-- Text shown in the body of the Ungroup tab group confirmation dialog. -->
+  <string name="ungroup_tab_group_confirmation_dialog_body">Skedat do të mbeten të hapura në këtë pajisje, por grupi do të fshihet.</string>
   <!-- Text shown on the Don't Ask Again checkbox button in the Ungroup tab group confirmation dialog. -->
   <string name="ungroup_tab_group_confirmation_dialog_dont_ask_again">Mos pyet sërish</string>
   <!-- Text shown on the confirm button in the Ungroup tab group confirmation dialog. -->
@@ -1879,6 +1889,10 @@
   <string name="webcompat_reporter_label_url">URL</string>
   <!-- The error message of the URL text field when an invalid URL has been entered. -->
   <string name="webcompat_reporter_url_error_invalid">Ju lutemi, jepni një URL të vlefshme</string>
+  <!-- The label/title of a field in the Web Compat Reporter feature for explaining a high-level reason why the site is broken. -->
+  <string name="webcompat_reporter_label_whats_broken_3">Ç’nuk funksionon?</string>
+  <!-- Content description for the icon button that clears the selected broken site reason in the WebCompat Reporter. -->
+  <string name="webcompat_reporter_clear_reason_content_description">Spastroje arsyen e përzgjedhur</string>
   <!-- The error message of the description when the user selects "Something else" as the reason, but left the description empty or too short. -->
   <string name="webcompat_reporter_description_error">Ju lutemi, jepni të paktën 10 shenja</string>
   <!-- The button text for the send button to submit the provided form data. -->
@@ -2507,6 +2521,15 @@
   <string name="preference_enhanced_tracking_protection_explanation_2">%s ju mbron nga shumë prej gjurmuesve më të rëndomtë që ndjekin ç’bëni në internet.</string>
   <!-- Text displayed that links to website about enhanced tracking protection -->
   <string name="preference_enhanced_tracking_protection_explanation_learn_more">Mësoni më tepër</string>
+  <plurals name="trackers_blocked_count_2">
+    <!--
+      Trackers blocked card on homepage
+
+      Text shown on the trackers blocked card. %d is the number of trackers blocked.
+    -->
+    <item quantity="one">U bllokua %d gjurmues</item>
+    <item quantity="other">U bllokuan %d gjurmues</item>
+  </plurals>
   <!-- Text shown on the trackers blocked card when no trackers have been blocked yet -->
   <string name="trackers_blocked_empty">Jeni i mbrojtur</string>
   <!-- Preference for enhanced tracking protection for the standard protection settings -->
@@ -2904,6 +2927,8 @@
   <string name="ip_protection_navigate_back_button_content_description">Shko mbrapsht</string>
   <!-- Headline for the browser VPN promo card. %s is the name of the app (for example "Firefox"). -->
   <string name="ip_protection_promo_headline">VPN e brendshme e %s-it</string>
+  <!-- Body text for the browser VPN settings header, shown when no promo is running. %s is a learn more link using ip_protection_learn_more as text. -->
+  <string name="ip_protection_promo_body_2">Shfletoni me mbrojtje shtesë, duke fshehur vendndodhjen tuaj, madje edhe në Wi-Fi publik. %s</string>
   <!-- Link text that opens additional information about the browser VPN -->
   <string name="ip_protection_learn_more">Mësoni më tepër</string>
   <!-- Label for the monthly data allowance section on the browser VPN settings screen -->
@@ -3263,12 +3288,6 @@
   <string name="homepage_shortcuts_add_website_title">Jepni një URL Sajti</string>
   <!-- Title for the "Popular sites" section in the "Add to homepage" bottom sheet. -->
   <string name="homepage_shortcuts_popular_sites">Sajte popullore</string>
-  <!-- Title text displayed in the dialog when shortcuts limit is reached. -->
-  <string name="shortcut_max_limit_title">U mbërrit në kufi shkurtoresh</string>
-  <!-- Content description text displayed in the dialog when shortcut limit is reached. -->
-  <string name="shortcut_max_limit_content">Që të shtoni një shkurtore të re, hiqni një të tillë. Prekeni dhe mbajeni të shtypur sajtin dhe përzgjidhni Hiqe.</string>
-  <!-- Confirmation dialog button text when top sites limit is reached. -->
-  <string name="top_sites_max_limit_confirmation_button">OK, e mora vesh</string>
   <!-- Label for the preference to show the shortcuts for the most visited top sites on the homepage -->
   <string name="top_sites_toggle_top_recent_sites_4">Shkurtore</string>
   <!-- Title text displayed in the rename top site dialog. -->
@@ -4230,8 +4249,6 @@
   <string name="lens_camera_loading_cancel_button">Anuloje</string>
   <!-- Snackbar message shown when an image picked from the gallery or taken with the camera could not be opened or read, so it was never sent to Google Lens. Shown after returning to the camera. -->
   <string name="lens_camera_image_load_failed_v2">S’u ngarkua dot kjo figurë.</string>
-  <!-- Snackbar message shown when an image picked from the gallery could not be opened or read, so it was never sent to Google Lens. Shown after returning to the camera. -->
-  <string name="lens_camera_image_load_failed">S’u ngarkua dot kjo figurë. Provoni një tjetër.</string>
   <!-- Action in the snackbar shown when an image picked from the gallery or taken with the camera could not be searched with Google Lens. Tapping it searches the same image again. -->
   <string name="lens_camera_upload_failed_retry_button">Riprovoni</string>
   <!-- Button in the first-run Google Lens bottom sheet that dismisses it and starts the camera -->

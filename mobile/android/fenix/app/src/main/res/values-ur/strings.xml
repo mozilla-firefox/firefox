@@ -535,7 +535,7 @@
     Bookmark snackbar message on deletion
     %1$s is the host part of the URL of the bookmark deleted, if any
   -->
-  <string name="bookmark_deletion_snackbar_message">حذف شدہ %s</string>
+  <string name="bookmark_deletion_snackbar_message">حذف شدہ %1$s</string>
   <!--
     Site Permissions
 
@@ -1042,8 +1042,6 @@
   <string name="synced_tabs_sign_in_button">sync کے لئے سائن ان کریں</string>
   <!-- The text displayed when a synced device has no tabs to show in the list of Synced Tabs. -->
   <string name="synced_tabs_no_open_tabs">کوئی کھلے ٹیب نہیں</string>
-  <!-- Confirmation dialog button text when top sites limit is reached. -->
-  <string name="top_sites_max_limit_confirmation_button">ٹھیک ہے سمجھ گیا</string>
   <!-- Title text displayed in the rename top site dialog. -->
   <string name="top_sites_rename_dialog_title">نام</string>
   <!-- Dialog button text for canceling the rename top site prompt. -->

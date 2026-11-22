@@ -61,14 +61,6 @@
   <string name="mozac_feature_addons_permissions_declarative_net_request_feedback_description">Seenaa daawwannaa keessanii dubbisaa</string>
   <!-- Description for the "downloads" WebExtensions API permission. -->
   <string name="mozac_feature_addons_permissions_downloads_description">Faayiloota buufachuu fi seenaa buufachuun biraawzarii dubbisaa fooyyessaa</string>
-  <!-- Description for the "<all_urls>" WebExtensions API permission for the update notification. Multiple permissions may be simply appended one after the other, and separated with a space, which is why the period is important. -->
-  <string name="mozac_feature_addons_permissions_all_urls_description_for_update">Daataa keessan marsariitii hundaaf argadhaa.</string>
-  <!-- Description for the "tabs" WebExtensions API permission for the update notification. Multiple permissions may be simply appended one after the other, and separated with a space, which is why the period is important. -->
-  <string name="mozac_feature_addons_permissions_tabs_description_for_update">Cancaloota biraawzarii argachuu.</string>
-  <!-- Description for the "webNavigation" WebExtensions API permission for the update notification. Multiple permissions may be simply appended one after the other, and separated with a space, which is why the period is important. -->
-  <string name="mozac_feature_addons_permissions_web_navigation_description_for_update">Yeroo navigeeshinii sochii biraawzarii argachuu.</string>
-  <!-- Description for the "bookmarks" WebExtensions API permission for the update notification. Multiple permissions may be simply appended one after the other, and separated with a space, which is why the period is important. -->
-  <string name="mozac_feature_addons_permissions_bookmarks_description_for_update">Mallattoolee dubbisuu fi fooyyessuu.</string>
   <!-- Short description for the bookmarksInfo data collection permission -->
   <string name="mozac_feature_addons_permissions_data_collection_bookmarksInfo_short_description">buukmaarkota</string>
   <!-- Short description for the browsingActivity data collection permission -->

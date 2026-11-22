@@ -19,8 +19,6 @@
   <string name="content_description_menu">Mear opsjes</string>
   <!-- Content description (not visible, for screen readers etc.): "Private Browsing" menu button. -->
   <string name="content_description_private_browsing">Priveenavigaasje</string>
-  <!-- Content description (not visible, for screen readers etc.): "Normal Browsing" menu button. -->
-  <string name="content_description_normal_browsing">Normaal navigearje</string>
   <!-- Placeholder text shown in the search bar before a user enters text for the default engine -->
   <string name="search_hint">Fier sykterm of adres yn</string>
   <!-- Shorter placeholder text shown in the search bar when an additional action (voice search) is rendered alongside the hint. -->
@@ -186,6 +184,16 @@
     Label for popup button that appears when long-pressing the main menu. Tapping it allows the user to customize the main menu layout.
   -->
   <string name="customize_menu">Menu oanpasse</string>
+  <!-- Alert message shown in the "Customize menu" screen when the user tries to hide a menu section which cannot be hidden. -->
+  <string name="customize_menu_cannot_hide_section">Kin dizze seksje net ferstopje</string>
+  <!-- Title of the dialog shown when resetting the menu to its default layout (removing all user customizations) -->
+  <string name="menu_customize_reset_dialog_title">Menu weromsette nei standertyndieling?</string>
+  <!-- Message of the dialog shown when resetting the menu to its default layout (removing all user customizations) -->
+  <string name="menu_customize_reset_dialog_message">Dit smyt oanpassingen fuort en kin net ûngedien makke wurde.</string>
+  <!-- Primary button on the menu reset dialog. Tapping it removes all user customizations. -->
+  <string name="menu_customize_reset_dialog_reset">Opnij inisjalisearje</string>
+  <!-- Secondary button on the menu reset dialog. Tapping it cancels the reset process and preserves all user-made customizations. -->
+  <string name="menu_customize_reset_dialog_cancel">Annulearje</string>
   <!-- Content description (not visible, for screen readers etc.): Navigate backward (browsing history) -->
   <string name="browser_menu_back">Tebek</string>
   <!-- Content description (not visible, for screen readers etc.): Navigate forward (browsing history) -->
@@ -278,7 +286,7 @@
   <!-- Content description (not visible, for screen readers etc.) for main menu navigation header. -->
   <string name="browser_main_menu_content_description_navigation_header">Navigaasje</string>
   <!-- Content description (not visible, for screen readers etc.) for bottom sheet handlebar custom tab menu. -->
-  <string name="browser_custom_tab_menu_handlebar_content_description">Menublêd Ljepblêd oanpasse slute</string>
+  <string name="browser_custom_tab_menu_handlebar_content_description">Paniel mear opsjes slute</string>
   <!-- URL bar indicator shown on a cached version of the website, when the tab is reloading, but the content is not live yet -->
   <string name="browser_toolbar_cached_page_indicator">Buffere</string>
   <!-- Message shown when a cached website has finished reloading and the tab is now showing the live version of the page -->
@@ -303,6 +311,8 @@
   <string name="browser_menu_webcompat_reporter_2">Net-wurkjende website melde</string>
   <!-- Browser menu label for adding a tab to a tab group -->
   <string name="browser_menu_add_to_tab_group">Oan groep tafoegje</string>
+  <!-- Browser menu label for moving a tab to a tab group -->
+  <string name="browser_menu_move_to_tab_group">Ferpleatse nei groep</string>
   <!-- Browser menu label that is displayed when the current page has been translated by the translation feature. -->
   <string name="browser_menu_translated">Oerset</string>
   <!-- Browser menu label for the print feature -->
@@ -424,7 +434,7 @@
   <!-- Search suggestion onboarding hint title text -->
   <string name="search_suggestions_onboarding_title">Syksuggestjes yn priveesesjes tastean?</string>
   <!-- Search suggestion onboarding hint description text, %s is the name of the app (for example "Firefox"). -->
-  <string name="search_suggestions_onboarding_text">%1$s sil alles wat jo yn de adresbalke yntype mei jo standert sykmasine diele.</string>
+  <string name="search_suggestions_onboarding_text">%s sil alles wat jo yn de adresbalke yntype mei jo standert sykmasine diele.</string>
   <!-- Search engine suggestion title text. %s is the name of the suggested engine. -->
   <string name="search_engine_suggestions_title">%s trochsykje</string>
   <!-- Search engine suggestion description text -->
@@ -590,6 +600,14 @@
   <string name="nova_onboarding_sync_subtitle">Helje blêdwizers, wachtwurden en mear op elk apparaat yn in hânomdraai. Jo persoanlike gegevens bliuwe feilich mei fersifering.</string>
   <!-- Sync onboarding button. -->
   <string name="nova_onboarding_sync_button">Begjin mei syngronisearjen</string>
+  <!-- Title of onboarding pairing card. Displayed when installing Firefox for Android by using a pairing link from Firefox for Desktop. "Scan" refers to scanning the QR code displayed on the computer. -->
+  <string name="nova_onboarding_sync_pairing_title">Scan om keppeljen mei jo kompjûter te foltôgjen</string>
+  <!-- Body of the onboarding pairing card. Provides troubleshooting instructions when the QR code is not being displayed on the pairing computer. The "firefox.com/pair" URL should not be translated or edited. Bold tags should be preserved. -->
+  <string name="nova_onboarding_sync_pairing_body"><![CDATA[Gjin QR-koade? Gean op jo kompjûter nei <b>firefox.com/pair</b>.]]></string>
+  <!-- Primary button of the onboarding pairing card. Opens the camera to scan the pairing QR code. -->
+  <string name="nova_onboarding_sync_pairing_scan_button">Keppelingskoade scanne</string>
+  <!-- Secondary button of the onboarding pairing card. Opens the Mozilla account sign-in page. -->
+  <string name="nova_onboarding_sync_pairing_email_button">Oanmelde mei e-mailadres</string>
   <!-- Marketing onboarding title. -->
   <string name="nova_onboarding_marketing_title">Help ús in better ynternet te bouwen</string>
   <!--
@@ -1282,6 +1300,8 @@
     Sign-in promo card: Title inviting the user to sign in
   -->
   <string name="sign_in_promo_title">Oanmelde</string>
+  <!-- Sign-in promo card: Body of the card listing what signing in allows the user to do -->
+  <string name="sign_in_promo_description">Begjin mei syngronisearjen fan ljepblêden, blêdwizers, wachtwurden en mear.</string>
   <!--
     Pairing Feature strings
 
@@ -2522,6 +2542,12 @@
   <string name="snackbar_private_tab_closed">Priveeljepblêd sluten</string>
   <!-- Text shown in snackbar to undo deleting a tab, top site or collection -->
   <string name="snackbar_deleted_undo">ÛNGEDIEN MEITSJE</string>
+  <!-- Confirmation message displayed when user adds a page to a tab group. %1$s is the tab group's name. -->
+  <string name="snackbar_tab_added_to_group">Tafoege oan %1$s</string>
+  <!-- Confirmation message displayed when user moves a page from one tab group to another. %1$s is the tab group's name. -->
+  <string name="snackbar_tab_moved_to_group">Ferpleatst nei %1$s</string>
+  <!-- Button text displayed with a confirmation message when the user adds or moves a page to a tab group. Tapping it displays the tab group. -->
+  <string name="snackbar_action_view">Toane</string>
   <!--
     QR code scanner prompt which appears after scanning a code, but before navigating to it
     %1$s is the name of the app (for example "Firefox"), %2$s is the URL or text scanned
@@ -3497,12 +3523,6 @@
   <string name="homepage_shortcuts_add_website_title">Fier in website-URL yn</string>
   <!-- Title for the "Popular sites" section in the "Add to homepage" bottom sheet. -->
   <string name="homepage_shortcuts_popular_sites">Populêre websites</string>
-  <!-- Title text displayed in the dialog when shortcuts limit is reached. -->
-  <string name="shortcut_max_limit_title">Fluchkeppelingslimyt berikt</string>
-  <!-- Content description text displayed in the dialog when shortcut limit is reached. -->
-  <string name="shortcut_max_limit_content">Smyt in fluchkeppeling fuort om in nije ta te foegjen. Hâld de website yndrukt en selektearje Fuortsmite.</string>
-  <!-- Confirmation dialog button text when top sites limit is reached. -->
-  <string name="top_sites_max_limit_confirmation_button">OK, begrepen</string>
   <!-- Label for the preference to show the shortcuts for the most visited top sites on the homepage -->
   <string name="top_sites_toggle_top_recent_sites_4">Fluchkeppelingen</string>
   <!-- Title text displayed in the rename top site dialog. -->
@@ -4619,8 +4639,6 @@
   <string name="lens_camera_loading_cancel_button">Annulearje</string>
   <!-- Snackbar message shown when an image picked from the gallery or taken with the camera could not be opened or read, so it was never sent to Google Lens. Shown after returning to the camera. -->
   <string name="lens_camera_image_load_failed_v2">Koe dizze ôfbylding net lade.</string>
-  <!-- Snackbar message shown when an image picked from the gallery could not be opened or read, so it was never sent to Google Lens. Shown after returning to the camera. -->
-  <string name="lens_camera_image_load_failed">Kin dizze ôfbylding net lade. Probearje in oare.</string>
   <!-- Snackbar message shown when an image picked from the gallery or taken with the camera could not be searched because of a network problem or an error from Google Lens. Shown after returning to the camera, next to the lens_camera_upload_failed_retry_button action. -->
   <string name="lens_camera_upload_failed">Kin gjin resultaten ophelje fan Google Lens</string>
   <!-- Action in the snackbar shown when an image picked from the gallery or taken with the camera could not be searched with Google Lens. Tapping it searches the same image again. -->
@@ -4713,12 +4731,6 @@
     Content description for the reader view panel: a group of buttons floating over the content, which allow customizing the reader view or activating the Listen to Page feature
   -->
   <string name="reader_mode_panel_content_description_2">Lêzerwerjefteopsjes</string>
-  <!--
-    Listen to page
-
-    Content description for the reader mode panel: a group of buttons floating over the content
-  -->
-  <string name="reader_mode_panel_content_description">Lêzermodusopsjes</string>
   <!-- Content description for the button in the reader view panel that turns on the Listen to Page feature (playback of content begins when button is pressed) -->
   <string name="reader_mode_panel_listen_content_description">Hurdop foarlêze</string>
   <!-- Content description for media player displayed in Reader view when the Listen to Page (Read Aloud) feature is selected -->

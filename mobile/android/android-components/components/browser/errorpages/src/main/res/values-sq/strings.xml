@@ -128,7 +128,7 @@
   <string name="mozac_browser_errorpages_malformed_uri_message_alternative"><![CDATA[<ul>\n<li>Adresat Web zakonisht shkruhen si <strong>http://www.example.com/</strong></li>\n<li>Sigurohuni se po përdorni pjerrake djathtas (d.m.th., <strong>/</strong>).</li>\n</ul>]]></string>
   <!-- The document title and heading of an error page. -->
   <string name="mozac_browser_errorpages_unknown_protocol_title">Protokoll i Panjohur</string>
-  <string name="mozac_browser_errorpages_unknown_protocol_message"><![CDATA[<p>Adresa tregon një protokoll (p.sh., <q>wxyz://</q>) të cilin shfletuesi s’e njeh, kështu që s’mund të lidhet si duhet me këtë sajt.</p>\n<ul>\n<li>Mos po përpiqeni të hapni shërbime multimedia apo shërbim tjetër jo tekst? Shihni te sajti për domosdoshmëri ekstra.</li>\n<li>Disa protokolle mund të lypin <em>software</em> ose shtojca prej palësh të treta, përpara se shfletuesi të mund t’i njohë.</li>\n</ul>]]></string>
+  <string name="mozac_browser_errorpages_unknown_protocol_message"><![CDATA[<p>Adresa tregon një protokoll (p.sh., <q>wxyz://</q>) të cilin shfletuesi s’e njeh, kështu që s’mund të lidhet si duhet me këtë sajt.</p>\n<ul>\n<li>Mos po përpiqeni të hapni shërbime multimedia apo shërbim tjetër jo tekst? Shihni te sajti për domosdoshmëri ekstra.</li>\n<li>Disa protokolle mund të lypin software ose shtojca prej palësh të treta, përpara se shfletuesi të mund t’i njohë.</li>\n</ul>]]></string>
   <!-- The document title and heading of an error page. -->
   <string name="mozac_browser_errorpages_file_not_found_title">S’u Gjet Kartelë</string>
   <string name="mozac_browser_errorpages_file_not_found_message"><![CDATA[<ul>\n<li>Mundet që objekti të jetë riemërtuar, hequr, ose shpërngulur gjetkë?</li>\n<li>A ka ndonjë gabim shkrimi apo gabim tjetër tipografik te adresa?</li>\n<li>A keni leje të mjafta hyrjeje për te objekti i kërkuar?</li>\n</ul>]]></string>
@@ -148,7 +148,7 @@
   <!-- The document title and heading of an error page. -->
   <string name="mozac_browser_errorpages_safe_browsing_unwanted_uri_title">Problem sajti të padëshiruar</string>
   <!-- The %1$s will be replaced by the malicious website URL -->
-  <string name="mozac_browser_errorpages_safe_browsing_unwanted_uri_message"><![CDATA[<p>Sajti te %1$s është raportuar se shërben <em>software</em> të padëshiruar dhe është bllokuar bazuar në parapëlqimet tuaja për sigurinë.</p>]]></string>
+  <string name="mozac_browser_errorpages_safe_browsing_unwanted_uri_message"><![CDATA[<p>Sajti te %1$s është raportuar se shërben software të padëshiruar dhe është bllokuar bazuar në parapëlqimet tuaja për sigurinë.</p>]]></string>
   <!-- The document title and heading of an error page. -->
   <string name="mozac_browser_errorpages_safe_harmful_uri_title">Problem sajti të dëmshëm</string>
   <!-- The %1$s will be replaced by the malicious website URL -->

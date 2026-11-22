@@ -160,6 +160,12 @@
   <string name="mozac_feature_prompts_update_credit_card_prompt_title">Oppdatere kortets utløpsdato?</string>
   <!-- Subtitle text displayed under the title of the saved card dialog. %s is the name of the app (for example "Firefox"). -->
   <string name="mozac_feature_prompts_save_credit_card_prompt_body_2">%s krypterer kortnummeret ditt. Sikkerhetskoden din blir ikke lagret.</string>
+  <!-- Edit credit card screen - label for the credit card security code field (CVV is the common short form in English and stands for Card Verification Value) -->
+  <string name="mozac_feature_prompts_edit_credit_card_security_code">CVV (valgfritt)</string>
+  <!-- Edit credit card screen - Error message for the security code field when the entered code is too short. -->
+  <string name="mozac_feature_prompts_edit_credit_card_security_code_error">Skriv inn en sikkerhetskode på 3 eller 4 sifre</string>
+  <!-- Edit credit card screen - Accessibility description of the button that clears the security code field -->
+  <string name="mozac_feature_prompts_edit_credit_card_security_code_clear">Fjern sikkerhetskoden</string>
   <!--
     Address Autofill
 

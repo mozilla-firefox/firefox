@@ -19,8 +19,6 @@
   <string name="content_description_menu">More options</string>
   <!-- Content description (not visible, for screen readers etc.): "Private Browsing" menu button. -->
   <string name="content_description_private_browsing">Private browsing</string>
-  <!-- Content description (not visible, for screen readers etc.): "Normal Browsing" menu button. -->
-  <string name="content_description_normal_browsing">Normal browsing</string>
   <!-- Placeholder text shown in the search bar before a user enters text for the default engine -->
   <string name="search_hint">Search or enter address</string>
   <!-- Shorter placeholder text shown in the search bar when an additional action (voice search) is rendered alongside the hint. -->
@@ -186,6 +184,26 @@
     Label for popup button that appears when long-pressing the main menu. Tapping it allows the user to customize the main menu layout.
   -->
   <string name="customize_menu">Customize menu</string>
+  <!-- Alert message shown in the "Customize menu" screen when the user tries to hide a menu section which cannot be hidden. -->
+  <string name="customize_menu_cannot_hide_section">Can’t hide this section</string>
+  <!-- Customize menu screen - Accessibility description - name of the menu section that groups the Back, Forward, Share and Refresh buttons. Read aloud after "Section", followed by the button names ("Section “Page controls”: Back, Forward, Share, Refresh"). -->
+  <string name="browser_menu_section_page_controls">Page controls</string>
+  <!-- Customize menu screen - Accessibility description - name of the menu section that groups the page tools (Bookmark page, Find in page, Desktop site, Extensions, etc.). Read aloud after "Section", followed by the tool names ("Section “Tools”: Bookmark page, Find in page…"). -->
+  <string name="browser_menu_section_tools">Tools</string>
+  <!-- Customize menu screen - Accessibility description - name of the menu section that groups the History, Bookmarks, Downloads and Passwords items. Read aloud after "Section", followed by the item names ("Section “Library”: History, Bookmarks, Downloads, Passwords"). -->
+  <string name="browser_menu_section_library">Library</string>
+  <!-- Customize menu screen - Accessibility description - name of the menu section that groups the Sign in and Settings items. Read aloud after "Section", followed by the item names ("Section “Accounts and settings”: Sign in, Settings"). -->
+  <string name="browser_menu_section_accounts_and_settings">Accounts and settings</string>
+  <!-- Customize menu screen - Accessibility description - name of the menu section that groups the New tab and New private tab actions. Read aloud after "Section", followed by the action names ("Section “New tab”: New tab, New private tab"). -->
+  <string name="browser_menu_section_new_tab">New tab</string>
+  <!-- Title of the dialog shown when resetting the menu to its default layout (removing all user customizations) -->
+  <string name="menu_customize_reset_dialog_title">Reset to default menu?</string>
+  <!-- Message of the dialog shown when resetting the menu to its default layout (removing all user customizations) -->
+  <string name="menu_customize_reset_dialog_message">This removes customizations and can’t be undone.</string>
+  <!-- Primary button on the menu reset dialog. Tapping it removes all user customizations. -->
+  <string name="menu_customize_reset_dialog_reset">Reset</string>
+  <!-- Secondary button on the menu reset dialog. Tapping it cancels the reset process and preserves all user-made customizations. -->
+  <string name="menu_customize_reset_dialog_cancel">Cancel</string>
   <!-- Content description (not visible, for screen readers etc.): Navigate backward (browsing history) -->
   <string name="browser_menu_back">Back</string>
   <!-- Content description (not visible, for screen readers etc.): Navigate forward (browsing history) -->
@@ -275,6 +293,8 @@
   <string name="browser_menu_passwords">Passwords</string>
   <!-- Content description (not visible, for screen readers etc.) for the handle used to drag the main menu at the bottom of the screen. -->
   <string name="browser_close_main_menu_handlebar_content_description">Close menu</string>
+  <!-- Content description (not visible, used by screen readers, etc.) for the heading of the menu opened from the customize menu screen to preview pending changes. It is read before the menu items. The items are shown for preview only and do nothing when tapped. -->
+  <string name="browser_menu_preview_heading_content_description">Menu preview. Items can’t be activated here.</string>
   <!-- Content description (not visible, for screen readers etc.) for main menu navigation header. -->
   <string name="browser_main_menu_content_description_navigation_header">Navigation</string>
   <!-- Content description (not visible, for screen readers etc.) for bottom sheet handlebar custom tab menu. -->
@@ -303,6 +323,8 @@
   <string name="browser_menu_webcompat_reporter_2">Report broken site</string>
   <!-- Browser menu label for adding a tab to a tab group -->
   <string name="browser_menu_add_to_tab_group">Add to group</string>
+  <!-- Browser menu label for moving a tab to a tab group -->
+  <string name="browser_menu_move_to_tab_group">Move to group</string>
   <!-- Browser menu label that is displayed when the current page has been translated by the translation feature. -->
   <string name="browser_menu_translated">Translated</string>
   <!-- Browser menu label for the print feature -->
@@ -333,6 +355,10 @@
     Content description for the translate page toolbar button that opens the translations dialog when no translation has occurred.
   -->
   <string name="browser_toolbar_translate">Translate page</string>
+  <!-- Accessibility description for the toolbar button displayed when the page the user is on has a video that can be opened in a picture-in-picture window -->
+  <string name="browser_toolbar_picture_in_picture">Picture-in-picture</string>
+  <!-- Accessibility description for the toolbar button displayed while the current page's video is playing in a picture-in-picture window. Tapping the button closes that window. -->
+  <string name="browser_toolbar_picture_in_picture_close">Close picture-in-picture</string>
   <!-- CFR description for the browser toolbar describing the "Shake to summarize feature" -->
   <string name="browser_toolbar_summarize_cfr_description">Shake your device to summarize this page in seconds. ⚡️</string>
   <!--
@@ -387,6 +413,10 @@
   <string name="ai_controls_voice_search_title">Voice search</string>
   <!-- Description for the voice search AI feature toggle -->
   <string name="ai_controls_voice_search_description">Audio is converted to text by Google Speech Services.</string>
+  <!-- Title for the listen to page AI feature toggle -->
+  <string name="ai_controls_listen_to_page_title">Listen to page</string>
+  <!-- Description for the listen to page AI feature toggle -->
+  <string name="ai_controls_listen_to_page_description">Your device may use AI to read aloud. The text and audio stay private.</string>
   <!-- Title for the block AI enhancements confirmation dialog -->
   <string name="ai_controls_block_dialog_title">Block features with AI?</string>
   <!-- Body text for the block AI enhancements confirmation dialog. %1$s is the name of the app (for example "Firefox"). -->
@@ -586,6 +616,14 @@
   <string name="nova_onboarding_sync_subtitle">Grab bookmarks, passwords, and more on any device in a snap. Your personal data stays safe and secure with encryption.</string>
   <!-- Sync onboarding button. -->
   <string name="nova_onboarding_sync_button">Start syncing</string>
+  <!-- Title of onboarding pairing card. Displayed when installing Firefox for Android by using a pairing link from Firefox for Desktop. "Scan" refers to scanning the QR code displayed on the computer. -->
+  <string name="nova_onboarding_sync_pairing_title">Scan to finish pairing with your computer</string>
+  <!-- Body of the onboarding pairing card. Provides troubleshooting instructions when the QR code is not being displayed on the pairing computer. The "firefox.com/pair" URL should not be translated or edited. Bold tags should be preserved. -->
+  <string name="nova_onboarding_sync_pairing_body"><![CDATA[No QR code? Go to <b>firefox.com/pair</b> on your computer.]]></string>
+  <!-- Primary button of the onboarding pairing card. Opens the camera to scan the pairing QR code. -->
+  <string name="nova_onboarding_sync_pairing_scan_button">Scan pairing code</string>
+  <!-- Secondary button of the onboarding pairing card. Opens the Mozilla account sign-in page. -->
+  <string name="nova_onboarding_sync_pairing_email_button">Sign in with email</string>
   <!-- Marketing onboarding title. -->
   <string name="nova_onboarding_marketing_title">Help us build a better internet</string>
   <!--
@@ -715,6 +753,8 @@
   <string name="preferences_search">Search</string>
   <!-- Preference for settings related to Search engines -->
   <string name="preferences_search_engines">Search engines</string>
+  <!-- Settings item that adds the Firefox search widget to the device's home screen (tapping it opens the confirmation dialogue) -->
+  <string name="preferences_search_widget_in_home_screen">Add search widget to Home screen</string>
   <!-- Settings item to add a search widget on the device's homescreen. -->
   <string name="preferences_add_search_widget_from_settings">Home screen widget</string>
   <!-- Preference for settings related to Search engines suggestions -->
@@ -967,6 +1007,18 @@
   <!-- Toast shown after confirming the custom extension collection configuration -->
   <string name="toast_customize_extension_collection_done">Extension collection modified. Quitting the application to apply changes…</string>
   <!--
+    Add-on removal confirmation dialog
+
+    Title of confirmation dialog. Displayed when uninstalling an extension. %1$s is the name of the extension (for example: Firefox Relay).
+  -->
+  <string name="addon_remove_dialog_title">Remove %1$s?</string>
+  <!-- Body of confirmation dialog. Displayed when uninstalling an extension. -->
+  <string name="addon_remove_dialog_body">This removes the extension and its settings from this device.</string>
+  <!-- Primary button on confirmation dialog. Tapping it uninstalls the selected extension. -->
+  <string name="addon_remove_dialog_confirm">Remove</string>
+  <!-- Secondary button on confirmation dialog. Tapping cancels the process of uninstalling the extension and closes the dialog window. -->
+  <string name="addon_remove_dialog_cancel">Cancel</string>
+  <!--
     Customize Home
 
     Title for the customize home screen section with privacy report.
@@ -1131,6 +1183,14 @@
   <string name="preferences_sync_category">Choose what to sync</string>
   <!-- Preference category for sync controls -->
   <string name="preferences_category_sync">Synced data</string>
+  <!-- Preference title for the toggle that allows user to turn sync on or off for the device they are on -->
+  <string name="preferences_enable_sync_title">Sync this device</string>
+  <!-- Preference summary for the toggle that turns sync on or off for the device, shown when sync is on. -->
+  <string name="preferences_enable_sync_summary_sync_enabled">Your data is backed up and available on synced devices.</string>
+  <!-- Preference summary for the toggle that turns sync on or off for the device, shown when sync is off. It explains where synced data comes from. -->
+  <string name="preferences_enable_sync_summary_sync_disabled_2">Using saved data in your account.</string>
+  <!-- Preference summary for the toggle that turns sync on or off for the device, shown when sync is off. It explains where synced data comes from. %1$s is the Firefox brand name. -->
+  <string name="preferences_enable_sync_summary_sync_disabled">Using saved data in your %1$s account.</string>
   <!-- Summary for the sync preference category. -->
   <string name="preferences_sync_category_summary">Manage what syncs on all your connected devices</string>
   <!-- Summary for the sync preference category, when user has disabled all synchronisation items. -->
@@ -1252,6 +1312,14 @@
   <string name="preferences_sync_sign_in_to_reconnect">Sign in to reconnect</string>
   <!-- Preference for removing FxA account -->
   <string name="preferences_sync_remove_account">Remove account</string>
+  <!--
+    Settings sign-in promo card
+
+    Sign-in promo card: Title inviting the user to sign in
+  -->
+  <string name="sign_in_promo_title">Sign in</string>
+  <!-- Sign-in promo card: Body of the card listing what signing in allows the user to do -->
+  <string name="sign_in_promo_description">Start syncing tabs, bookmarks, passwords, and more.</string>
   <!--
     Pairing Feature strings
 
@@ -1640,6 +1708,8 @@
   <string name="add_to_new_tab_group_content_description">Add to new tab group</string>
   <!-- Label for adding to a new tab group. -->
   <string name="add_to_new_tab_group_title">New tab group</string>
+  <!-- Label to add a link in a new tab inside a tab group. -->
+  <string name="contextmenu_open_in_tab_group">Open in tab group</string>
   <plurals name="tab_group_tabs_count_subtitle">
     <!--
       Subtitle for the number of tabs in a tab group.
@@ -2052,15 +2122,21 @@
   <string name="unsubmitted_crash_dialog_negative_button_2">CLOSE</string>
   <!-- Unsubmitted crash dialog negative button to never be asked for the submission -->
   <string name="unsubmitted_crash_requested_by_devs_dialog_never_button">Never show again</string>
+  <!-- Unsubmitted crash dialog negative button to never be asked for the submission, displayed in all capital letters. -->
+  <string name="unsubmitted_crash_requested_by_devs_dialog_never_button_2" tools:ignore="UnusedResources">NEVER SHOW AGAIN</string>
   <!-- Unsubmitted crash dialog positive button to submit crash report -->
   <string name="unsubmitted_crash_dialog_positive_button_2">SEND</string>
   <!-- Unsubmitted crash dialog positive button to submit crash report -->
   <string name="unsubmitted_crash_dialog_positive_button">Send crash report</string>
+  <!-- Unsubmitted crash dialog positive button to submit crash report, displayed in all capital letters. -->
+  <string name="unsubmitted_crash_dialog_positive_button_3" tools:ignore="UnusedResources">SEND CRASH REPORT</string>
   <!-- Body text for crash report dialog. %s is the link text in the annotated string (ie. "Learn More") -->
   <string name="unsubmitted_crash_dialog_body">Crash reports help us to diagnose and fix issues with the browser. Reports may include personal or sensitive data. %s</string>
   <string name="unsubmitted_crash_dialog_learn_more">Learn more</string>
   <!-- Unsubmitted crash dialog button to open a web page with more details on the feature and privacy policy -->
   <string name="unsubmitted_crash_requested_by_devs_learn_more">Learn More</string>
+  <!-- Unsubmitted crash dialog button to open a web page with more details on the feature and privacy policy, displayed in all capital letters. -->
+  <string name="unsubmitted_crash_requested_by_devs_learn_more_2" tools:ignore="UnusedResources">LEARN MORE</string>
   <!--
     Bookmarks
 
@@ -2492,6 +2568,12 @@
   <string name="snackbar_private_tab_closed">Private tab closed</string>
   <!-- Text shown in snackbar to undo deleting a tab, top site or collection -->
   <string name="snackbar_deleted_undo">UNDO</string>
+  <!-- Confirmation message displayed when user adds a page to a tab group. %1$s is the tab group's name. -->
+  <string name="snackbar_tab_added_to_group">Added to %1$s</string>
+  <!-- Confirmation message displayed when user moves a page from one tab group to another. %1$s is the tab group's name. -->
+  <string name="snackbar_tab_moved_to_group">Moved to %1$s</string>
+  <!-- Button text displayed with a confirmation message when the user adds or moves a page to a tab group. Tapping it displays the tab group. -->
+  <string name="snackbar_action_view">View</string>
   <!--
     QR code scanner prompt which appears after scanning a code, but before navigating to it
     %1$s is the name of the app (for example "Firefox"), %2$s is the URL or text scanned
@@ -3174,6 +3256,10 @@
   <string name="preferences_credit_cards_save_and_autofill_cards_2">Save and fill payment methods</string>
   <!-- Preference summary for saving and autofilling payment method data. %s is the name of the app (for example "Firefox"). -->
   <string name="preferences_credit_cards_save_and_autofill_cards_summary_2">%s encrypts all payment methods you save</string>
+  <!-- Preference for saving the security codes of credit cards. -->
+  <string name="preferences_credit_cards_save_security_codes">Save security codes</string>
+  <!-- Preference summary for saving the security codes of credit cards. %s is the name of the app (for example "Firefox"). -->
+  <string name="preferences_credit_cards_save_security_codes_summary">%s encrypts your card number and security code for faster payments later</string>
   <!-- Preference option for syncing credit cards across devices. This is displayed when the user is not signed into sync -->
   <string name="preferences_credit_cards_sync_cards_across_devices">Sync cards across devices</string>
   <!-- Preference option for syncing credit cards across devices. This is displayed when the user is signed into sync -->
@@ -3210,6 +3296,8 @@
   <string name="credit_cards_expiration_date_year">Expiration Date Year</string>
   <!-- The header for the name on the credit card -->
   <string name="credit_cards_name_on_card">Name on Card</string>
+  <!-- The header for the optional security code of a credit card. CVV is the abbreviation of the card security code. -->
+  <string name="credit_cards_cvv_optional">CVV (optional)</string>
   <!-- The text for the "Delete card" menu item for deleting a credit card -->
   <string name="credit_cards_menu_delete_card">Delete card</string>
   <!-- The text for the "Delete card" button for deleting a credit card -->
@@ -3226,10 +3314,16 @@
   <string name="credit_cards_cancel_button">Cancel</string>
   <!-- Title of the "Saved cards" screen -->
   <string name="credit_cards_saved_cards">Saved cards</string>
+  <!-- Text in the saved cards list that indicates the security code for a credit card is being stored -->
+  <string name="credit_cards_cvv_saved">CVV saved</string>
   <!-- Error message for card number validation -->
   <string name="credit_cards_number_validation_error_message_2">Enter a valid card number</string>
   <!-- Error message for card name on card validation -->
   <string name="credit_cards_name_on_card_validation_error_message_2">Add a name</string>
+  <!-- Error message for a credit card security code that does not meet the 3-digit length requirement. -->
+  <string name="credit_cards_cvv_validation_error_message">Security code must be 3 digits</string>
+  <!-- Error message for a credit card security code that does not meet the 4-digit length requirement (used for American Express cards only) -->
+  <string name="credit_cards_cvv_amex_validation_error_message">American Express security codes are 4 digits</string>
   <!-- Message displayed in biometric prompt displayed for authentication before allowing users to view their saved credit cards -->
   <string name="credit_cards_biometric_prompt_message">Unlock to view your saved cards</string>
   <!-- Title of warning dialog if users have no device authentication set up -->
@@ -3467,12 +3561,6 @@
   <string name="homepage_shortcuts_add_website_title">Enter a Website URL</string>
   <!-- Title for the "Popular sites" section in the "Add to homepage" bottom sheet. -->
   <string name="homepage_shortcuts_popular_sites">Popular sites</string>
-  <!-- Title text displayed in the dialog when shortcuts limit is reached. -->
-  <string name="shortcut_max_limit_title">Shortcut limit reached</string>
-  <!-- Content description text displayed in the dialog when shortcut limit is reached. -->
-  <string name="shortcut_max_limit_content">To add a new shortcut, remove one. Touch and hold the site and select remove.</string>
-  <!-- Confirmation dialog button text when top sites limit is reached. -->
-  <string name="top_sites_max_limit_confirmation_button">OK, Got It</string>
   <!-- Label for the preference to show the shortcuts for the most visited top sites on the homepage -->
   <string name="top_sites_toggle_top_recent_sites_4">Shortcuts</string>
   <!-- Title text displayed in the rename top site dialog. -->
@@ -3645,6 +3733,12 @@
     %1$s is the size in kilobytes or megabytes of the language file.
   -->
   <string name="translations_download_language_file_dialog_title">Download language in data saving mode (%1$s)?</string>
+  <!--
+    Translations options dialog
+
+    Title of the translation options dialog that allows a user to set their translation preferences for the site the user is currently on.
+  -->
+  <string name="translation_option_bottom_sheet_title_heading2">Translation preferences</string>
   <!--
     Translations options dialog
 
@@ -3881,6 +3975,14 @@
   <string name="protection_panel_privacy_and_security_settings_2">Privacy Settings</string>
   <!-- Title text for the protection panel permissions section. -->
   <string name="protection_panel_permissions_title">Permissions</string>
+  <!-- Certificate panel - Title of the section that contains the website's certificate information (issued to, issued by, etc.) as verified by Firefox (thus guaranteeing the HTTPS connection is secure) -->
+  <string name="certificate_details_panel_secure_connection_title">Secure connection</string>
+  <!-- Certificate panel - Label for the organization, locality and country the website's certificate was issued to -->
+  <string name="certificate_details_panel_issued_to_label">Certificate issued to:</string>
+  <!-- Certificate panel - Label for the name of the certificate authority that verified and issued the website's certificate -->
+  <string name="certificate_details_panel_verified_by_label">Verified by:</string>
+  <!-- Certificate panel - Content description (not visible, for screen readers etc.) for the EU trust mark logo, shown when the website's certificate is a Qualified Website Authentication Certificate (QWAC) as specified in EU Regulation 2024/1183 -->
+  <string name="certificate_details_panel_eu_trust_mark_content_description">EU trust mark</string>
   <plurals name="trackers_blocked_panel_total_num_trackers_blocked_2">
     <!--
       Text for displaying the total number of trackers blocked in the trackers blocked panel.
@@ -3948,6 +4050,8 @@
   <string name="clear_site_data_dialog_negative_button_text">Cancel</string>
   <!-- Text for the connection security panel when the site is secure. -->
   <string name="connection_security_panel_secure">Secure connection</string>
+  <!-- Action description (not visible, for screen readers etc.) for the “Secure connection” link in the protection panel header, which opens a page showing the website's certificate details. Screen readers announce it after “Double tap to” -->
+  <string name="connection_security_panel_view_certificate_details">view certificate details</string>
   <!-- Text for the connection security panel when the site is not secure. -->
   <string name="connection_security_panel_not_secure">Connection not secure</string>
   <!-- Text for the connection security panel when accessed from local PDF. -->
@@ -4458,6 +4562,10 @@
   <string name="wrex_widget_match_suspended">Suspended</string>
   <!-- Label shown on the sports widget match status badge when a match has been postponed to a later date. -->
   <string name="wrex_widget_match_postponed">Postponed</string>
+  <!-- Label shown on the sports widget match status badge when a match has been canceled. -->
+  <string name="wrex_widget_match_canceled">Cancelled</string>
+  <!-- Sports widget action label to refresh match data after an error. -->
+  <string name="wrex_widget_error_refresh">Refresh</string>
   <!-- Sports widget menu item to view the team's match results. -->
   <string name="wrex_widget_results">Results</string>
   <!-- Sports widget menu item to view the league standings table. -->
@@ -4466,19 +4574,57 @@
   <string name="wrex_widget_wallpapers">Wallpapers</string>
   <!-- Sports widget menu item to remove the widget from the homepage. -->
   <string name="wrex_widget_remove_widget">Remove Widget</string>
+  <!-- Sports widget match status label shown at full-time (abbreviated) - indicates the match has ended, after regulation and extra time have been played -->
+  <string name="wrex_widget_match_full_time_short">FT</string>
+  <!-- Sports widget match status label shown during half-time of a match. -->
+  <string name="wrex_widget_match_half_time">Half-time</string>
+  <!-- Sports widget match status label shown during extra time of a match (abbreviated) -->
+  <string name="wrex_widget_match_extra_time_short">ET</string>
+  <!-- Sports widget match status label shown during penalties of a match. -->
+  <string name="wrex_widget_match_penalties">Penalties</string>
   <!-- Content description (for accessibility, not displayed) for the overflow (more options) menu button on the sports widget card. -->
   <string name="wrex_widget_more_options_content_description">More options</string>
+  <!--
+    Content description (for accessibility, not displayed) announcing a soccer match.
+    %1$s is the home team name, %2$s is the away team name, %3$s is trailing context
+    (e.g. formatted score "1 - 2 (Full time)", upcoming match info "Jun 19 5:00 PM",
+    or a match status like "Full time").
+  -->
+  <string name="wrex_widget_match_content_description">%1$s versus %2$s, %3$s</string>
   <!--
     Content description (for accessibility, not displayed) used for the sports widget card header announcing a live match.
     %s is the name of the competition the match belongs to (e.g. "FA Cup").
   -->
   <string name="wrex_widget_live_game_content_description">%s, live game</string>
   <!--
+    Content description (for accessibility, not displayed) announcing a live score.
+    %1$s is the home team name, %2$d is the home team score, %3$s is the away team name, %4$d is the away team score,
+    and %5$s is the match elapsed time (e.g. 72 minutes).
+  -->
+  <string name="wrex_widget_live_score_content_description">%1$s %2$d, %3$s %4$d, %5$s, live</string>
+  <!--
+    Content description (for accessibility, not displayed) announcing the elapsed minutes of a live match.
+    %1$s is the clock value, which may be a plain number (e.g. "72") or include extra time (e.g. "90+3").
+  -->
+  <string name="wrex_widget_match_elapsed_minutes">Elapsed time in minutes: %1$s</string>
+  <!--
     Content description (for accessibility, not displayed) for a paginated item.
     %1$s is the name of the competition the match belongs to (e.g. "FA Cup"),
     %2$d is the current page number, and %3$d is the total number of pages.
   -->
   <string name="wrex_widget_page_position_content_description">%1$s, page %2$d of %3$d</string>
+  <!-- Sports widget error card title shown when the user is offline. -->
+  <string name="wrex_widget_error_connection_offline_title">Looks like you’re offline</string>
+  <!-- Sports widget error card description shown when the user is offline. -->
+  <string name="wrex_widget_error_connection_offline_description">Check your internet connection and try again.</string>
+  <!-- Sports widget error card title shown when match data fails to load. -->
+  <string name="wrex_widget_error_load_failed_title">Can’t show match info right now</string>
+  <!-- Sports widget error card description suggesting to refresh after match information could not be displayed. -->
+  <string name="wrex_widget_error_try_refreshing">Try refreshing or check back later.</string>
+  <!-- Sports widget error card title shown when the latest match results fail to load. -->
+  <string name="wrex_widget_error_results_load_failed_title">Can’t show results right now</string>
+  <!-- Content description (for accessibility, not displayed) for teams which have not yet been determined in the match schedule. -->
+  <string name="wrex_widget_team_to_be_determined">Team to be determined</string>
   <!--
     Privacy notice homepage banner
 
@@ -4501,6 +4647,8 @@
   <string name="collections_migration_homepage_card_message">There’s a simpler way to keep your tabs organized</string>
   <!-- Link text shown on the collections to tab groups migration card that opens the tab groups page in the tab manager. -->
   <string name="collections_migration_homepage_card_link">View my tab groups</string>
+  <!-- Content description (not visible, for screen readers etc.) for the button that dismisses the collections to tab groups migration card. -->
+  <string name="collections_migration_card_close_button_content_description">Close</string>
   <!-- Google Lens prototype related strings -->
   <string name="preferences_debug_settings_google_lens_integration">Enable Google Lens Integration</string>
   <!-- Lens image search button content description -->
@@ -4541,8 +4689,6 @@
   <string name="lens_camera_loading_cancel_button">Cancel</string>
   <!-- Snackbar message shown when an image picked from the gallery or taken with the camera could not be opened or read, so it was never sent to Google Lens. Shown after returning to the camera. -->
   <string name="lens_camera_image_load_failed_v2">Couldn’t load this image.</string>
-  <!-- Snackbar message shown when an image picked from the gallery could not be opened or read, so it was never sent to Google Lens. Shown after returning to the camera. -->
-  <string name="lens_camera_image_load_failed">Couldn’t load this image. Try a different one.</string>
   <!-- Snackbar message shown when an image picked from the gallery or taken with the camera could not be searched because of a network problem or an error from Google Lens. Shown after returning to the camera, next to the lens_camera_upload_failed_retry_button action. -->
   <string name="lens_camera_upload_failed">Couldn’t get results from Google Lens</string>
   <!-- Action in the snackbar shown when an image picked from the gallery or taken with the camera could not be searched with Google Lens. Tapping it searches the same image again. -->
@@ -4635,12 +4781,6 @@
     Content description for the reader view panel: a group of buttons floating over the content, which allow customizing the reader view or activating the Listen to Page feature
   -->
   <string name="reader_mode_panel_content_description_2">Reader View Options</string>
-  <!--
-    Listen to page
-
-    Content description for the reader mode panel: a group of buttons floating over the content
-  -->
-  <string name="reader_mode_panel_content_description">Reader Mode Options</string>
   <!-- Content description for the button in the reader view panel that turns on the Listen to Page feature (playback of content begins when button is pressed) -->
   <string name="reader_mode_panel_listen_content_description">Read Aloud</string>
   <!-- Content description for media player displayed in Reader view when the Listen to Page (Read Aloud) feature is selected -->
