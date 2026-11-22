@@ -536,20 +536,3 @@ void SetGroupOwnershipAndPermissions(const char* aAppBundle) {
     }
   }
 }
-
-bool PerformInstallationFromDMG(int argc, char** argv) {
-  MacAutoreleasePool pool;
-  if (argc < 4) {
-    return false;
-  }
-  NSString* bundlePath = [NSString stringWithUTF8String:argv[2]];
-  NSString* destPath = [NSString stringWithUTF8String:argv[3]];
-  if ([[NSFileManager defaultManager] copyItemAtPath:bundlePath
-                                              toPath:destPath
-                                               error:nil]) {
-    StripQuarantineBit(destPath);
-    RegisterAppWithLaunchServices(destPath);
-    return true;
-  }
-  return false;
-}
