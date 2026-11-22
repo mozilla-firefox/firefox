@@ -309,6 +309,33 @@ class TestMozbuildBin(unittest.TestCase):
             "CARGO_TOOLS", self.bootstrapper.cargo_tools_installed, rust.exe_suffix()
         )
 
+    def test_warn_shadowed_tools(self):
+        self.bootstrapper.CARGO_TOOLS = ("some-cli",)
+        self.bootstrapper.NPM_TOOLS = ()
+        name = "some-cli" + rust.exe_suffix()
+        other_bin = self.home / "other-bin"
+        for d in (other_bin, self.bin_dir):
+            d.mkdir()
+            (d / name).write_text("")
+            (d / name).chmod(0o755)
+
+        def warnings(path):
+            os.environ["PATH"] = os.pathsep.join(str(p) for p in path)
+            with mock.patch("builtins.print") as print_mock:
+                self.bootstrapper.warn_shadowed_tools()
+            return [c.args[0] for c in print_mock.call_args_list]
+
+        self.assertEqual(warnings([self.bin_dir, other_bin]), [])
+        self.assertEqual(warnings([other_bin]), [])
+        (warning,) = warnings([other_bin, self.bin_dir])
+        self.assertIn(str(other_bin / name).lower(), warning.lower())
+
+        # A link to the bootstrapped tool earlier in PATH isn't shadowing it.
+        if hasattr(os, "symlink") and sys.platform != "win32":
+            (other_bin / name).unlink()
+            (other_bin / name).symlink_to(self.bin_dir / name)
+            self.assertEqual(warnings([other_bin, self.bin_dir]), [])
+
     def test_cargo_tools(self):
         artifacts = self.home / "artifacts"
         exe = artifacts / "some-cli" / ("some-cli" + rust.exe_suffix())

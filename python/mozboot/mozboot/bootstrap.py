@@ -306,6 +306,7 @@ class Bootstrapper:
         self.instance.ensure_cargo_tools()
         self.instance.ensure_npm_tools()
         self.instance.ensure_mozbuild_bin_in_path()
+        self.instance.warn_shadowed_tools()
 
     def maybe_show_contributing_code(
         self, checkout_root: Path, state_dir: Path, settings

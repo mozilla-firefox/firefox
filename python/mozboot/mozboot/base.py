@@ -648,6 +648,39 @@ class BaseBootstrapper:
                 f'@chcp 65001 >nul\n@"{node}" "{script}" %*\n', encoding="utf-8"
             )
 
+    def _mozbuild_bin_in_path(self):
+        bin_dir = self.mozbuild_bin_dir()
+        for path in os.environ.get("PATH", "").split(os.pathsep):
+            try:
+                if path and bin_dir.samefile(path):
+                    return True
+            except OSError:
+                pass
+        return False
+
+    def warn_shadowed_tools(self):
+        """Warn about tools installed by bootstrap that an older copy earlier
+        in PATH hides, e.g. one installed with `cargo install`."""
+        if not self._mozbuild_bin_in_path():
+            return
+        bin_dir = self.mozbuild_bin_dir()
+        for tool in self.CARGO_TOOLS + self.NPM_TOOLS:
+            ours = to_optional_path(which(tool, path=str(bin_dir)))
+            if not ours:
+                continue
+            found = to_optional_path(which(tool))
+            try:
+                if not found or found.samefile(ours):
+                    continue
+            except OSError:
+                continue
+            print(
+                f"WARNING: {found} shadows the {tool} installed by mach "
+                f"bootstrap in {bin_dir}. Remove it, or put {bin_dir} "
+                "earlier in your PATH.",
+                file=sys.stderr,
+            )
+
     def mozbuild_bin_dir(self):
         return self.state_dir / "bin"
 
@@ -705,14 +738,10 @@ class BaseBootstrapper:
     def ensure_mozbuild_bin_in_path(self):
         """Offer to add the mozbuild bin directory to PATH in the shell
         configuration if it isn't already there."""
-        bin_dir = self.mozbuild_bin_dir()
-        for path in os.environ.get("PATH", "").split(os.pathsep):
-            try:
-                if path and bin_dir.samefile(path):
-                    return
-            except OSError:
-                pass
+        if self._mozbuild_bin_in_path():
+            return
 
+        bin_dir = self.mozbuild_bin_dir()
         shell = self._user_shell()
         configs = self._shell_configs(shell)
         configs_str = ", ".join(str(c) for c in configs)
