@@ -1,6 +1,6 @@
 Metadata-Version: 2.4
 Name: certifi
-Version: 2025.6.15
+Version: 2026.10.19
 Summary: Python package for providing Mozilla's CA Bundle.
 Home-page: https://github.com/certifi/python-certifi
 Author: Kenneth Reitz
@@ -21,6 +21,8 @@ Classifier: Programming Language :: Python :: 3.10
 Classifier: Programming Language :: Python :: 3.11
 Classifier: Programming Language :: Python :: 3.12
 Classifier: Programming Language :: Python :: 3.13
+Classifier: Programming Language :: Python :: 3.14
+Classifier: Programming Language :: Python :: 3.15
 Requires-Python: >=3.7
 License-File: LICENSE
 Dynamic: author
@@ -66,7 +68,7 @@ Or from the command line::
 
 Enjoy!
 
-.. _`Requests`: https://requests.readthedocs.io/en/master/
+.. _`Requests`: https://requests.readthedocs.io/en/latest/
 
 Addition/Removal of Certificates
 --------------------------------

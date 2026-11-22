@@ -114,7 +114,7 @@ case `uname -s` in
         ${work_dir}/python/bin/python3 -c "import lzma"
 
         # We may not have access to system certificate on OSX
-        ${work_dir}/python/bin/python3 -m pip install certifi==2024.2.2
+        ${work_dir}/python/bin/python3 -m pip install certifi==2026.10.19
         ;;
     Linux)
         cp /usr/lib/$(uname -m)-linux-gnu/libffi.so.* ${work_dir}/python/lib/

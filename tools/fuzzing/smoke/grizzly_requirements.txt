@@ -8,9 +8,9 @@ bugsy==0.12.0 \
     --hash=sha256:2d49af1cb4a2841e3d677ac535b054c51f457a5d124ad106c43a8fc3847fb26e \
     --hash=sha256:b5df82ff0e708cca73a517bfa80494a43b1b97267d5778a5cba62f7a9d04e9da
     # via grizzly-framework
-certifi==2021.10.8 \
-    --hash=sha256:78884e7c1d4b00ce3cea67b44566851c4343c120abd683433ce934a68ea58872 \
-    --hash=sha256:d62a0163eb4c2344ac042ab2bdf75399a71a2d8c7d47eac2e2ee91b9d6339569
+certifi==2026.10.19 \
+    --hash=sha256:035c1e85572b141bf1c3a3eff0e33a8eb74917522f2559075ff8d2fea780a1ae \
+    --hash=sha256:42d35340cc5b9ba78e818ddbff0c5b1c2b779de448a340fd1b989f5fa8670e1b
     # via requests
 cffi==2.0.0 \
     --hash=sha256:00bdf7acc5f795150faa6957054fbbca2439db2f775ce831222b66f192f03beb \
