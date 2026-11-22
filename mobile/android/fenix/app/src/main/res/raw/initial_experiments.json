@@ -297,11 +297,11 @@
         },
         {
           "slug": "pocket",
-          "priority": "secondary"
+          "priority": "primary"
         },
         {
           "slug": "sponsored_tiles",
-          "priority": "secondary"
+          "priority": "primary"
         }
       ],
       "branches": [

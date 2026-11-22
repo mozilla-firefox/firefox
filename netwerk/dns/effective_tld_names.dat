@@ -5,8 +5,8 @@
 // Please pull this list from, and only from https://publicsuffix.org/list/public_suffix_list.dat,
 // rather than any other VCS sites. Pulling from any other URL is not guaranteed to be supported.
 
-// VERSION: 2026-11-19_08-30-20_UTC
-// COMMIT: f7796455091118a5617cc7588523b083a8223301
+// VERSION: 2026-11-21_04-33-45_UTC
+// COMMIT: 87a2c1b8de5886a133ff4da21b2aa6fec88d8739
 
 // Instructions on pulling and using this list can be found at https://publicsuffix.org/list/.
 
@@ -6817,7 +6817,7 @@ org.zw
 
 // newGTLDs
 
-// List of new gTLDs imported from https://www.icann.org/resources/registries/gtlds/v2/gtlds.json on 2026-10-30T19:51:02Z
+// List of new gTLDs imported from https://www.icann.org/resources/registries/gtlds/v2/gtlds.json on 2026-11-20T22:06:55Z
 // This list is auto-generated, don't edit it manually.
 // aaa : American Automobile Association, Inc.
 // https://www.iana.org/domains/root/db/aaa.html
@@ -10195,7 +10195,7 @@ soy
 // https://www.iana.org/domains/root/db/spa.html
 spa
 
-// space : Radix Technologies Inc SEZC
+// space : Squarespace Registry LLC
 // https://www.iana.org/domains/root/db/space.html
 space
 
@@ -10806,10 +10806,6 @@ xbox
 // xerox : Xerox DNHC LLC
 // https://www.iana.org/domains/root/db/xerox.html
 xerox
-
-// xihuan : Beijing Qihu Keji Co., Ltd.
-// https://www.iana.org/domains/root/db/xihuan.html
-xihuan
 
 // xin : Elegant Leader Limited
 // https://www.iana.org/domains/root/db/xin.html
@@ -15539,6 +15535,14 @@ prequalifyme.today
 // Submitted by Sarah Newman <owner@prgmr.com>
 xen.prgmr.com
 
+// PrimeLink Limited: https://www.nic.uk.cc/
+// Submitted by PrimeLink Developer <support@nic.uk.cc>
+ec.cc
+eu.cc
+gu.cc
+uk.cc
+us.cc
+
 // priv.at : http://www.nic.priv.at/
 // Submitted by registry <lendl@nic.at>
 priv.at
@@ -16322,14 +16326,6 @@ tche.br
 site.tb-hosting.com
 directwp.eu
 
-// TechEdge Limited: https://www.nic.uk.cc/
-// Submitted by TechEdge Developer <support@nic.uk.cc>
-ec.cc
-eu.cc
-gu.cc
-uk.cc
-us.cc
-
 // Teckids e.V. : https://www.teckids.org
 // Submitted by Dominik George <dominik.george@teckids.org>
 edugit.io
@@ -16671,6 +16667,11 @@ affinitylottery.org.uk
 raffleentry.org.uk
 weeklylottery.org.uk
 
+// Wordsmith AI : https://wordsmith.ai
+// Submitted by Wordsmith Security <security@wordsmith.ai>
+wordsmithmcpcontent.com
+staging.wordsmithmcpcontent.com
+
 // WP Engine : https://wpengine.com/
 // Submitted by Michael Smith <michael.smith@wpengine.com>
 // Submitted by Brandon DuRette <brandon.durette@wpengine.com>
@@ -16729,6 +16730,10 @@ zap.cloud
 // Zeabur : https://zeabur.com/
 // Submitted by Zeabur Team <contact@zeabur.com>
 zeabur.app
+
+// Zerexa domains : https://nic.fj.kg
+// Submitted by Zerexa Team <admin@zerexa.net>
+fj.kg
 
 // Zerops : https://zerops.io/
 // Submitted by Zerops Team <security@zerops.io>
