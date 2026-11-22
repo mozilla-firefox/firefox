@@ -57,8 +57,6 @@
   <string name="mozac_feature_listentopage_voice_options">Vebijarkên Dengî</string>
   <!-- Listen to Page media player: content description for the button that opens the list of playback speeds. -->
   <string name="mozac_feature_listentopage_playback_speed">Leza Lêdanê</string>
-  <!-- Listen to Page media player: content description for the button that opens the list of available voices. -->
-  <string name="mozac_feature_listentopage_audio">Deng</string>
   <!-- Listen to Page media player: content description for the button that rewinds 10 seconds. -->
   <string name="mozac_feature_listentopage_back_10_sec">10 çirke paşve</string>
   <!-- Listen to Page media player: content description for play/pause button when the player is paused - tapping restarts playback. -->
@@ -67,8 +65,6 @@
   <string name="mozac_feature_listentopage_pause">Bisekinîne</string>
   <!-- Listen to Page media player: content description for the button that Fast-forwards 30 seconds. -->
   <string name="mozac_feature_listentopage_forward_30_sec">30 çirke pêşve</string>
-  <!-- Listen to Page media player: accessibility playback control notification that announces playback is set to normal reading speed. -->
-  <string name="mozac_feature_listentopage_playback_speed_1">Leza lêdanê ya normal</string>
   <!--
     Listen to Page media player: content description for the playback speed button. Pressing it cycles through available playback speeds.
     This string will be interpolated into a longer message, equivalent to "Double tap to [change playback speed]" in English.

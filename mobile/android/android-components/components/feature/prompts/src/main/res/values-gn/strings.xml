@@ -160,6 +160,14 @@
   <string name="mozac_feature_prompts_update_credit_card_prompt_title">¿Embohekopyahu kuatia’atã arange paha?</string>
   <!-- Subtitle text displayed under the title of the saved card dialog. %s is the name of the app (for example "Firefox"). -->
   <string name="mozac_feature_prompts_save_credit_card_prompt_body_2">%s ombopapapy nde kuatia’atã. Nde rekorosãrã ayvu noñeñongatumo’ãi.</string>
+  <!-- Title of dialog to store credit card information in the user's account -->
+  <string name="mozac_feature_prompts_save_payment_method_prompt_title">¿Eñongatu mba’éichapa ehepyme’ẽta?</string>
+  <!-- Title of dialog to update stored credit card information in the user's account -->
+  <string name="mozac_feature_prompts_update_payment_method_prompt_title">¿Embohekopyahu mba’éichapa ehepyme’ẽta?</string>
+  <!-- Body of the dialog to confirm saving or updating credit card information when the "Save security codes" toggle is on. %s is the name of the app (for example "Firefox"). -->
+  <string name="mozac_feature_prompts_save_payment_method_prompt_body_with_security_code">%s ombopapapy nde kuatia’atã ha ayvu rekorosãrã ehepyme’ẽ pya’eve hag̃ua.</string>
+  <!-- Body of the dialog to confirm saving or updating credit card information when the "Save security codes" toggle is off. %s is the name of the app (for example "Firefox"). -->
+  <string name="mozac_feature_prompts_save_payment_method_prompt_body_without_security_code">%s ombopapapy nde kuatia’atã ehepyme’ẽ pya’eve hag̃ua.</string>
   <!-- Label for the masked card security code in a save or update credit card dialog. %s is the masked security code (for example "•••"). -->
   <string name="mozac_feature_prompts_save_payment_method_security_code">Ayvu rekorosãrã %s</string>
   <!-- Content description for the masked card security code in a save or update credit card dialog. Screen readers read it instead of the masked characters. -->

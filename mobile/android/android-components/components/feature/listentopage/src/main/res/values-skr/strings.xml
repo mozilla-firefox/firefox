@@ -47,8 +47,6 @@
   <string name="mozac_feature_listentopage_error_voice_options_not_available">آواز دے آپشن دستیاب کائنی</string>
   <!-- Listen to Page media player: content description for the button that closes the player. -->
   <string name="mozac_feature_listentopage_close">بند کرو</string>
-  <!-- Listen to Page media player: content description for the button that opens the list of available voices. -->
-  <string name="mozac_feature_listentopage_audio">آڈیو</string>
   <!-- Listen to Page media player: content description for the button that rewinds 10 seconds. -->
   <string name="mozac_feature_listentopage_back_10_sec">10 سیکنڈ پچھوں</string>
   <!-- Listen to Page media player: content description for play/pause button when the player is paused - tapping restarts playback. -->
@@ -57,8 +55,6 @@
   <string name="mozac_feature_listentopage_pause">روکو</string>
   <!-- Listen to Page media player: content description for the button that Fast-forwards 30 seconds. -->
   <string name="mozac_feature_listentopage_forward_30_sec">30 سیکنڈ اڳوں</string>
-  <!-- Listen to Page media player: accessibility playback control notification that announces playback is set to normal reading speed. -->
-  <string name="mozac_feature_listentopage_playback_speed_1">پلے بیک رفتار عام</string>
   <!--
     Listen to Page media player: content description for the playback speed button. Pressing it cycles through available playback speeds.
     This string will be interpolated into a longer message, equivalent to "Double tap to [change playback speed]" in English.

@@ -19,8 +19,6 @@
   <string name="content_description_menu">Другие настройки</string>
   <!-- Content description (not visible, for screen readers etc.): "Private Browsing" menu button. -->
   <string name="content_description_private_browsing">Приватный просмотр</string>
-  <!-- Content description (not visible, for screen readers etc.): "Normal Browsing" menu button. -->
-  <string name="content_description_normal_browsing">Обычный просмотр</string>
   <!-- Placeholder text shown in the search bar before a user enters text for the default engine -->
   <string name="search_hint">Введите запрос или адрес</string>
   <!-- Shorter placeholder text shown in the search bar when an additional action (voice search) is rendered alongside the hint. -->
@@ -2130,15 +2128,21 @@
   <string name="unsubmitted_crash_dialog_negative_button_2">ЗАКРЫТЬ</string>
   <!-- Unsubmitted crash dialog negative button to never be asked for the submission -->
   <string name="unsubmitted_crash_requested_by_devs_dialog_never_button">Никогда не показывать снова</string>
+  <!-- Unsubmitted crash dialog negative button to never be asked for the submission, displayed in all capital letters. -->
+  <string name="unsubmitted_crash_requested_by_devs_dialog_never_button_2" tools:ignore="UnusedResources">БОЛЬШЕ НЕ ПОКАЗЫВАТЬ</string>
   <!-- Unsubmitted crash dialog positive button to submit crash report -->
   <string name="unsubmitted_crash_dialog_positive_button_2">ОТПРАВИТЬ</string>
   <!-- Unsubmitted crash dialog positive button to submit crash report -->
   <string name="unsubmitted_crash_dialog_positive_button">Отправить сообщение о падении</string>
+  <!-- Unsubmitted crash dialog positive button to submit crash report, displayed in all capital letters. -->
+  <string name="unsubmitted_crash_dialog_positive_button_3" tools:ignore="UnusedResources">ОТПРАВИТЬ ОТЧЁТ О ПАДЕНИИ</string>
   <!-- Body text for crash report dialog. %s is the link text in the annotated string (ie. "Learn More") -->
   <string name="unsubmitted_crash_dialog_body">Отчёты о падениях помогают нам диагностировать и устранять проблемы с браузером. Отчёты могут содержать личные или конфиденциальные данные. %s</string>
   <string name="unsubmitted_crash_dialog_learn_more">Подробнее</string>
   <!-- Unsubmitted crash dialog button to open a web page with more details on the feature and privacy policy -->
   <string name="unsubmitted_crash_requested_by_devs_learn_more">Подробнее</string>
+  <!-- Unsubmitted crash dialog button to open a web page with more details on the feature and privacy policy, displayed in all capital letters. -->
+  <string name="unsubmitted_crash_requested_by_devs_learn_more_2" tools:ignore="UnusedResources">ПОДРОБНЕЕ</string>
   <!--
     Bookmarks
 
@@ -3259,6 +3263,10 @@
   <string name="preferences_credit_cards_save_and_autofill_cards_2">Сохранять и заполнять способы оплаты</string>
   <!-- Preference summary for saving and autofilling payment method data. %s is the name of the app (for example "Firefox"). -->
   <string name="preferences_credit_cards_save_and_autofill_cards_summary_2">%s шифрует все сохраняемые вами способы оплаты</string>
+  <!-- Preference for saving the security codes of credit cards. -->
+  <string name="preferences_credit_cards_save_security_codes">Сохранять коды безопасности</string>
+  <!-- Preference summary for saving the security codes of credit cards. %s is the name of the app (for example "Firefox"). -->
+  <string name="preferences_credit_cards_save_security_codes_summary">%s шифрует номер вашей карты и код безопасности для более быстрых платежей в будущем</string>
   <!-- Preference option for syncing credit cards across devices. This is displayed when the user is not signed into sync -->
   <string name="preferences_credit_cards_sync_cards_across_devices">Синхронизировать карты между различными устройствами</string>
   <!-- Preference option for syncing credit cards across devices. This is displayed when the user is signed into sync -->
@@ -3295,6 +3303,8 @@
   <string name="credit_cards_expiration_date_year">Год срока действия</string>
   <!-- The header for the name on the credit card -->
   <string name="credit_cards_name_on_card">Имя держателя</string>
+  <!-- The header for the optional security code of a credit card. CVV is the abbreviation of the card security code. -->
+  <string name="credit_cards_cvv_optional">CVV (необязательно)</string>
   <!-- The text for the "Delete card" menu item for deleting a credit card -->
   <string name="credit_cards_menu_delete_card">Удалить карту</string>
   <!-- The text for the "Delete card" button for deleting a credit card -->
@@ -3311,10 +3321,16 @@
   <string name="credit_cards_cancel_button">Отмена</string>
   <!-- Title of the "Saved cards" screen -->
   <string name="credit_cards_saved_cards">Сохранённые карты</string>
+  <!-- Text in the saved cards list that indicates the security code for a credit card is being stored -->
+  <string name="credit_cards_cvv_saved">CVV сохранён</string>
   <!-- Error message for card number validation -->
   <string name="credit_cards_number_validation_error_message_2">Введите корректный номер карты</string>
   <!-- Error message for card name on card validation -->
   <string name="credit_cards_name_on_card_validation_error_message_2">Добавьте имя</string>
+  <!-- Error message for a credit card security code that does not meet the 3-digit length requirement. -->
+  <string name="credit_cards_cvv_validation_error_message">Код безопасности должен состоять из 3 цифр</string>
+  <!-- Error message for a credit card security code that does not meet the 4-digit length requirement (used for American Express cards only) -->
+  <string name="credit_cards_cvv_amex_validation_error_message">Коды безопасности American Express — 4 цифры</string>
   <!-- Message displayed in biometric prompt displayed for authentication before allowing users to view their saved credit cards -->
   <string name="credit_cards_biometric_prompt_message">Разблокируйте, чтобы просмотреть сохранённые карты</string>
   <!-- Title of warning dialog if users have no device authentication set up -->
@@ -3552,12 +3568,6 @@
   <string name="homepage_shortcuts_add_website_title">Введите URL веб-сайта</string>
   <!-- Title for the "Popular sites" section in the "Add to homepage" bottom sheet. -->
   <string name="homepage_shortcuts_popular_sites">Популярные сайты</string>
-  <!-- Title text displayed in the dialog when shortcuts limit is reached. -->
-  <string name="shortcut_max_limit_title">Достигнут предел ярлыков</string>
-  <!-- Content description text displayed in the dialog when shortcut limit is reached. -->
-  <string name="shortcut_max_limit_content">Чтобы добавить ярлык, удалите другой ярлык. Нажмите и удерживайте значок сайта, а затем нажмите «Удалить».</string>
-  <!-- Confirmation dialog button text when top sites limit is reached. -->
-  <string name="top_sites_max_limit_confirmation_button">Понятно</string>
   <!-- Label for the preference to show the shortcuts for the most visited top sites on the homepage -->
   <string name="top_sites_toggle_top_recent_sites_4">Ярлыки</string>
   <!-- Title text displayed in the rename top site dialog. -->
@@ -3730,6 +3740,12 @@
     %1$s is the size in kilobytes or megabytes of the language file.
   -->
   <string name="translations_download_language_file_dialog_title">Скачать язык в режиме экономии трафика (%1$s)?</string>
+  <!--
+    Translations options dialog
+
+    Title of the translation options dialog that allows a user to set their translation preferences for the site the user is currently on.
+  -->
+  <string name="translation_option_bottom_sheet_title_heading2">Настройки перевода</string>
   <!--
     Translations options dialog
 
@@ -4561,6 +4577,8 @@
   <string name="wrex_widget_match_suspended">Приостановлено</string>
   <!-- Label shown on the sports widget match status badge when a match has been postponed to a later date. -->
   <string name="wrex_widget_match_postponed">Отложено</string>
+  <!-- Label shown on the sports widget match status badge when a match has been canceled. -->
+  <string name="wrex_widget_match_canceled">Отменено</string>
   <!-- Sports widget action label to refresh match data after an error. -->
   <string name="wrex_widget_error_refresh">Обновить</string>
   <!-- Sports widget menu item to view the team's match results. -->
@@ -4686,8 +4704,6 @@
   <string name="lens_camera_loading_cancel_button">Отмена</string>
   <!-- Snackbar message shown when an image picked from the gallery or taken with the camera could not be opened or read, so it was never sent to Google Lens. Shown after returning to the camera. -->
   <string name="lens_camera_image_load_failed_v2">Не удалось загрузить это изображение.</string>
-  <!-- Snackbar message shown when an image picked from the gallery could not be opened or read, so it was never sent to Google Lens. Shown after returning to the camera. -->
-  <string name="lens_camera_image_load_failed">Не удалось загрузить это изображение. Попробуйте другое.</string>
   <!-- Snackbar message shown when an image picked from the gallery or taken with the camera could not be searched because of a network problem or an error from Google Lens. Shown after returning to the camera, next to the lens_camera_upload_failed_retry_button action. -->
   <string name="lens_camera_upload_failed">Не удалось получить результаты из Google Lens</string>
   <!-- Action in the snackbar shown when an image picked from the gallery or taken with the camera could not be searched with Google Lens. Tapping it searches the same image again. -->
@@ -4780,12 +4796,6 @@
     Content description for the reader view panel: a group of buttons floating over the content, which allow customizing the reader view or activating the Listen to Page feature
   -->
   <string name="reader_mode_panel_content_description_2">Настройки вида для чтения</string>
-  <!--
-    Listen to page
-
-    Content description for the reader mode panel: a group of buttons floating over the content
-  -->
-  <string name="reader_mode_panel_content_description">Параметры режима чтения</string>
   <!-- Content description for the button in the reader view panel that turns on the Listen to Page feature (playback of content begins when button is pressed) -->
   <string name="reader_mode_panel_listen_content_description">Прочитать вслух</string>
   <!-- Content description for media player displayed in Reader view when the Listen to Page (Read Aloud) feature is selected -->

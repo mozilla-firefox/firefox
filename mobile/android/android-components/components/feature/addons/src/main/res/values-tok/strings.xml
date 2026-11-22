@@ -57,10 +57,6 @@
   <string name="mozac_feature_addons_permissions_tab_hide_description">ona li ken pana e lukin e lukin ala tawa poki lipu</string>
   <!-- Description for the "topSites" WebExtensions API permission. -->
   <string name="mozac_feature_addons_permissions_top_sites_description">ona li ken lukin e lipu pi tenpo pini</string>
-  <!-- Description for the "geolocation" WebExtensions API permission for the update notification. Multiple permissions may be simply appended one after the other, and separated with a space, which is why the period is important. -->
-  <string name="mozac_feature_addons_permissions_geolocation_description_for_update">ona li ken sona e ma sina.</string>
-  <!-- Description for the "history" WebExtensions API permission for the update notification. Multiple permissions may be simply appended one after the other, and separated with a space, which is why the period is important. -->
-  <string name="mozac_feature_addons_permissions_history_description_for_update">ona li ken sona e lipu sina pi lukin pini.</string>
   <!-- Description for text button that expands the list of domain permissions -->
   <string name="mozac_feature_addons_permissions_show_all_sites">o lukin e lipu ale</string>
   <!-- Description for text button that hides the majority of the list of domain permissions -->
@@ -149,8 +145,6 @@
   <string name="mozac_feature_extensions_manager_notification_restart_button">o sin e ilo namako</string>
   <!-- Button in the extensions manager that opens AMO in a tab -->
   <string name="mozac_feature_addons_find_more_extensions_button_text">o alasa e ilo namako ante</string>
-  <!-- Name of the "notification channel" used for displaying a notification for updating an extension. See https://developer.android.com/training/notify-user/channels -->
-  <string name="mozac_feature_addons_updater_notification_channel_2">sin pi ilo namako</string>
   <!-- The tile of the notification, this will be shown to the user when more than one newly supported add-ons are available. -->
   <string name="mozac_feature_addons_supported_checker_notification_title_plural" tools:ignore="UnusedResources">ilo namako sin li lon</string>
   <!-- The content of the notification, this will be shown to the user when one newly supported add-on is available. %1$s is the add-on name and %2$s is the app name (in most cases Firefox). -->

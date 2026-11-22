@@ -165,12 +165,6 @@
   <string name="mozac_feature_extensions_manager_notification_restart_button">Adloc’hañ an askouezhioù</string>
   <!-- Button in the extensions manager that opens AMO in a tab -->
   <string name="mozac_feature_addons_find_more_extensions_button_text">Kavout askouezhioù all</string>
-  <!-- The label of the update button on the system notification shown to the user when an add-on has an update that requires the user to accept new permissions. -->
-  <string name="mozac_feature_addons_updater_notification_update_button">Hizivaat</string>
-  <!-- The label of the cancel button on a notification, this will be shown to the user when an add-on needs new permissions. Indicates the user denies the new permissions and prevents the add-on from be updated -->
-  <string name="mozac_feature_addons_updater_notification_cancel_button">Nullañ</string>
-  <!-- Name of the "notification channel" used for displaying a notification for updating an extension. See https://developer.android.com/training/notify-user/channels -->
-  <string name="mozac_feature_addons_updater_notification_channel_2">Hizivaat an askouezhioù</string>
   <!-- Name of the "notification channel" used for displaying a notification for new supported add-ons. See https://developer.android.com/training/notify-user/channels -->
   <string name="mozac_feature_addons_supported_checker_notification_channel" tools:ignore="UnusedResources">Gwiriekaer askouezhioù skoret</string>
   <!-- The tile of the notification, this will be shown to the user when one newly supported add-on is available. -->

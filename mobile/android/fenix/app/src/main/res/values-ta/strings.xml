@@ -870,6 +870,4 @@
   <string name="synced_tabs_sign_in_button">ஒத்திசைக்க புகுபதிக</string>
   <!-- The text displayed when a synced device has no tabs to show in the list of Synced Tabs. -->
   <string name="synced_tabs_no_open_tabs">திறந்த கீற்றுகள் இல்லை</string>
-  <!-- Confirmation dialog button text when top sites limit is reached. -->
-  <string name="top_sites_max_limit_confirmation_button">சரி, புரிந்தது</string>
 </resources>

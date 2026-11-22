@@ -92,72 +92,6 @@
   <string name="mozac_feature_addons_permissions_user_scripts_description">മൂന്നാം കക്ഷിയായ നിർദേശലിപികളെ താങ്ങളുടെ ദത്ത ഉപയോഗിക്കാൻ അനുമതി നല്കുക</string>
   <!-- Description for the "devtools" WebExtensions API permission. -->
   <string name="mozac_feature_addons_permissions_devtools_description">വികസനാക്താവുക്കരുകൾക്കു് തുറന്ന ടാബുകളിലെ ഡാറ്റ എടുക്കാന്‍ അനുമതി നല്‍കുക</string>
-  <!-- Description for the "privacy" WebExtensions API permission for the update notification. Multiple permissions may be simply appended one after the other, and separated with a space, which is why the period is important. -->
-  <string name="mozac_feature_addons_permissions_privacy_description_for_update">സ്വകാര്യത ക്രമീകരണങ്ങൾ വായിച്ചിട്ടു അവയെ തിരുത്തുക.</string>
-  <!-- Description for the "<all_urls>" WebExtensions API permission for the update notification. Multiple permissions may be simply appended one after the other, and separated with a space, which is why the period is important. -->
-  <string name="mozac_feature_addons_permissions_all_urls_description_for_update">താങ്ങളുടെ എല്ലാ വെബ്ബിടങ്ങളുടെ ഡാറ്റ ഉപയോഗിക്കുക.</string>
-  <!-- Description for the "tabs" WebExtensions API permission for the update notification. Multiple permissions may be simply appended one after the other, and separated with a space, which is why the period is important. -->
-  <string name="mozac_feature_addons_permissions_tabs_description_for_update">അന്വേഷിയന്ത്ര ടാബുകൾ ഉപയോഗിക്കുക.</string>
-  <!-- Description for the "webNavigation" WebExtensions API permission for the update notification. Multiple permissions may be simply appended one after the other, and separated with a space, which is why the period is important. -->
-  <string name="mozac_feature_addons_permissions_web_navigation_description_for_update">വഴിക്കാട്ടൽ വ്യവസ്ഥയുപയോഗിക്കുമ്പോഴു അന്വേഷിയന്ത്ര പ്രവൎത്തികൾ ഉപയോഗിക്കുക.</string>
-  <!-- Description for the "bookmarks" WebExtensions API permission for the update notification. Multiple permissions may be simply appended one after the other, and separated with a space, which is why the period is important. -->
-  <string name="mozac_feature_addons_permissions_bookmarks_description_for_update">അടയാളക്കുറിപ്പുകളെ വായിച്ചിട്ടു പരിഷ്കരിക്കുക.</string>
-  <!-- Description for the "browserSettings" WebExtensions API permission for the update notification. Multiple permissions may be simply appended one after the other, and separated with a space, which is why the period is important. -->
-  <string name="mozac_feature_addons_permissions_browser_settings_description_for_update">അന്വേഷിയന്ത്ര ക്രമീകരണങ്ങൾ വായിച്ചിട്ടു തിരുത്തുക.</string>
-  <!-- Description for the "browsingData" WebExtensions API permission for the update notification. Multiple permissions may be simply appended one after the other, and separated with a space, which is why the period is important. -->
-  <string name="mozac_feature_addons_permissions_browsing_data_description_for_update">സമീപകാല തിരച്ചിൽനാൾവഴിയും കുക്കികളും അതുമായി ബന്ധപ്പെട്ട ദത്ത എന്നിവ മായ്ക്കുക.</string>
-  <!-- Description for the "clipboardRead" WebExtensions API permission for the update notification. Multiple permissions may be simply appended one after the other, and separated with a space, which is why the period is important. -->
-  <string name="mozac_feature_addons_permissions_clipboard_read_description_for_update">പകൎത്തൽപെട്ടിയിൽ നിന്നു ഡാറ്റ ഉപയോഗിക്കുക.</string>
-  <!-- Description for the "clipboardWrite" WebExtensions API permission for the update notification. Multiple permissions may be simply appended one after the other, and separated with a space, which is why the period is important. -->
-  <string name="mozac_feature_addons_permissions_clipboard_write_description_for_update">പകൎത്തൽപെട്ടിലേക്കു ദത്ത നല്കുക.</string>
-  <!-- Description for the "declarativeNetRequest" WebExtensions API permission for the update notification. Multiple permissions may be simply appended one after the other, and separated with a space, which is why the period is important. -->
-  <string name="mozac_feature_addons_permissions_declarative_net_request_description_for_update">ഏതു താളിലും ഉള്ളടക്കം തടയുക.</string>
-  <!-- Description for the "declarativeNetRequestFeedback" WebExtensions API permission for the update notification. Multiple permissions may be simply appended one after the other, and separated with a space, which is why the period is important. -->
-  <string name="mozac_feature_addons_permissions_declarative_net_request_feedback_description_for_update">തിരയൽ നാൾവഴി വായിക്കുക.</string>
-  <!-- Description for the "downloads" WebExtensions API permission for the update notification. Multiple permissions may be simply appended one after the other, and separated with a space, which is why the period is important. -->
-  <string name="mozac_feature_addons_permissions_downloads_description_for_update">ഫയലുകൾ ഇറക്കിവയ്ക്കുകയും അന്വേഷിയന്ത്രത്തിന്റെ ഇറക്കിവയ്ക്കൽ നാൾവഴി വായിക്കുകയും പരിഷ്ക്കരിക്കുകയും ചെയ്യുക.</string>
-  <!-- Description for the "downloads.open" WebExtensions API permission for the update notification. Multiple permissions may be simply appended one after the other, and separated with a space, which is why the period is important. -->
-  <string name="mozac_feature_addons_permissions_downloads_open_description_for_update">താങ്ങളുടെ ഉപകരണത്തിലോട്ടു ഇറക്കിവെച്ച ഫയലുകൾ തുറക്കുക.</string>
-  <!-- Description for the "find" WebExtensions API permission for the update notification. Multiple permissions may be simply appended one after the other, and separated with a space, which is why the period is important. -->
-  <string name="mozac_feature_addons_permissions_find_description_for_update">തുറന്നിരിക്കുന്ന എല്ലാ ടാബുകളിലേയും എഴുത്തു് വായിക്കുക.</string>
-  <!-- Description for the "geolocation" WebExtensions API permission for the update notification. Multiple permissions may be simply appended one after the other, and separated with a space, which is why the period is important. -->
-  <string name="mozac_feature_addons_permissions_geolocation_description_for_update">താങ്ങളുടെ ഇടവിവരം ഉപയോഗിക്കുക.</string>
-  <!-- Description for the "history" WebExtensions API permission for the update notification. Multiple permissions may be simply appended one after the other, and separated with a space, which is why the period is important. -->
-  <string name="mozac_feature_addons_permissions_history_description_for_update">തിരയൽ നാള്‍വഴി പരിശോധിക്കുക.</string>
-  <!-- Description for the "management" WebExtensions API permission for the update notification. Multiple permissions may be simply appended one after the other, and separated with a space, which is why the period is important. -->
-  <string name="mozac_feature_addons_permissions_management_description_for_update">വിപുലീകരണ ഉപയോഗം നിരീക്ഷിക്കുകയും അലങ്കാരങ്ങൾ കൈകാര്യം ചെയ്യുകയും ചെയ്യുക.</string>
-  <!-- Description for the "nativeMessaging" WebExtensions API permission for the update notification. Multiple permissions may be simply appended one after the other, and separated with a space, which is why the period is important. -->
-  <string name="mozac_feature_addons_permissions_native_messaging_description_for_update">ഈ പ്രയോഗമൊഴികെ മറ്റു പ്രയോഗങ്ങളുമായി സന്ദേശങ്ങൾ കൈമാറുക.</string>
-  <!-- Description for the "notifications" WebExtensions API permission for the update notification. Multiple permissions may be simply appended one after the other, and separated with a space, which is why the period is important. -->
-  <string name="mozac_feature_addons_permissions_notifications_description_for_update">അറിയിപ്പുകൾ കാട്ടുക.</string>
-  <!-- Description for the "sessions" WebExtensions API permission for the update notification. Multiple permissions may be simply appended one after the other, and separated with a space, which is why the period is important. -->
-  <string name="mozac_feature_addons_permissions_sessions_description_for_update">അടുത്തിടെ അടച്ച ടാബുകൾ ഉപയോഗിക്കുക</string>
-  <!-- Description for the "tabHide" WebExtensions API permission for the update notification. Multiple permissions may be simply appended one after the other, and separated with a space, which is why the period is important. -->
-  <string name="mozac_feature_addons_permissions_tab_hide_description_for_update">അന്വേഷിയന്ത്ര ടാബുകൾ മറയ്ക്കുകയും കാണിക്കുകയും ചെയ്യുക.</string>
-  <!-- Description for the "topSites" WebExtensions API permission for the update notification. Multiple permissions may be simply appended one after the other, and separated with a space, which is why the period is important. -->
-  <string name="mozac_feature_addons_permissions_top_sites_description_for_update">തിരയൽ നാള്‍വഴി പരിശോധിക്കുക.</string>
-  <!-- Description for giving an add-on access to users's data on one site. %1$s  will be replaced by the DNS host name for which a web extension is requesting access (e.g., www.mozilla.org). -->
-  <string name="mozac_feature_addons_permissions_one_site_description_for_update">%1$s--നായുള്ള താങ്ങളുടെ ഡാറ്റ ഉപയോഗിക്കുക.</string>
-  <!--
-    When an add-on requires access to more than 2 domains, for example the add-on requires access for 3 domains. We will show the first 2 domains in individual entries, as in mozac_feature_addons_permissions_sites_in_domain_description_for_update,
-    then we will show another collapsed entry saying "Access your data on another domain.".
-  -->
-  <string name="mozac_feature_addons_permissions_one_extra_domain_description_for_update">മറ്റൊരു മേഖലയിൽ താങ്ങളുടെ ഡാറ്റ ഉപയോഗിക്കുക.</string>
-  <!--
-    When an add-on requires access to more than 2 domains, for example the add-on requires access for 4 domains. We will show the first 2 domains in individual entries, as in mozac_feature_addons_permissions_sites_in_domain_description_for_update,
-    then we will show another collapsed entry saying "Access your data on other domains.".
-  -->
-  <string name="mozac_feature_addons_permissions_extra_domains_description_plural_for_update">മറ്റെ മേഖലകളിൽ താങ്ങളുടെ ഡാറ്റ ഉപയോഗിക്കുക.</string>
-  <!--
-    When an add-on requires access to more than 2 sites, for example the add-on requires access for 3 sites. We will show the first 2 sites in individual entries, as in mozac_feature_addons_permissions_one_site_description_for_update,
-    then we will show another collapsed entry saying "Access your data on another site.".
-  -->
-  <string name="mozac_feature_addons_permissions_one_extra_site_description_for_update">മറ്റൊരു വെബ്ബിടത്തിൽ താങ്ങളുടെ ഡാറ്റ ഉപയോഗിക്കുക.</string>
-  <!--
-    When an add-on requires access to more than 2 sites, for example the add-on requires access for 4 sites. We will show the first 2 sites in individual entries, as in mozac_feature_addons_permissions_one_site_description_for_update,
-    then we will show another collapsed entry saying "Access your data on other sites.".
-  -->
-  <string name="mozac_feature_addons_permissions_extra_sites_description_for_update">മറ്റെ വെബ്ബിടങ്ങളിൽ താങ്ങളുടെ ഡാറ്റ ഉപയോഗിക്കുക.</string>
   <!-- The text shown when an extension requests the userScripts permission, near the usual description of the userScripts permission -->
   <string name="mozac_feature_addons_permissions_user_scripts_extra_warning">പരിശോധിച്ചുറപ്പിക്കാത്ത സ്ക്രിപ്റ്റുകൾ സുരക്ഷയും സ്വകാര്യതയും അപകടസാധ്യതകൾ സൃഷ്ടിക്കും. നിങ്ങൾ വിശ്വസിക്കുന്ന വിപുലീകരണങ്ങളിൽ നിന്നോ ഉറവിടങ്ങളിൽ നിന്നോ മാത്രം സ്ക്രിപ്റ്റുകൾ പ്രവർത്തിപ്പിക്കുക.</string>
   <!-- The sentence used when the extension has data collection permissions. %1$s is a formatted list of permissions. -->
@@ -308,16 +242,6 @@
   <string name="mozac_feature_extensions_manager_notification_restart_button">വിപുലീകരണങ്ങൾ വീണ്ടും തുടങ്ങുക</string>
   <!-- Button in the extensions manager that opens AMO in a tab -->
   <string name="mozac_feature_addons_find_more_extensions_button_text">ഇനിയും വിപുലീകരണങ്ങൾ കണ്ടെത്തുക</string>
-  <!-- The label of the update button on the system notification shown to the user when an add-on has an update that requires the user to accept new permissions. -->
-  <string name="mozac_feature_addons_updater_notification_update_button">പുതുക്കുക</string>
-  <!-- The label of the cancel button on a notification, this will be shown to the user when an add-on needs new permissions. Indicates the user denies the new permissions and prevents the add-on from be updated -->
-  <string name="mozac_feature_addons_updater_notification_cancel_button">റദ്ദാക്കുക</string>
-  <!-- The title of the system notification shown to the user when an add-on has a new update that requires new permissions. %1$s is the name of the add-on. -->
-  <string name="mozac_feature_addons_updater_notification_title_2">%1$s ന് ഒരു പുതുക്കൽ ലഭ്യമാണു്</string>
-  <!-- The heading for the permissions section in the system notification shown when an add-on has an update that requires user confirmation. %1$s is a list of sentences. -->
-  <string name="mozac_feature_addons_updater_notification_heading_permissions">പുതുവായി ആവിശ്യപ്പെട്ടയനുമതികൾ: %1$s</string>
-  <!-- Name of the "notification channel" used for displaying a notification for updating an extension. See https://developer.android.com/training/notify-user/channels -->
-  <string name="mozac_feature_addons_updater_notification_channel_2">വിപുലീകരണ പരിഷ്കരണങ്ങൾ</string>
   <!-- Name of the "notification channel" used for displaying a notification for new supported add-ons. See https://developer.android.com/training/notify-user/channels -->
   <string name="mozac_feature_addons_supported_checker_notification_channel" tools:ignore="UnusedResources">പിന്തുണയുള്ള ആഡ്-ഓണുകൾക്കായുള്ള പരിശോധകർ</string>
   <!-- The tile of the notification, this will be shown to the user when one newly supported add-on is available. -->

@@ -91,84 +91,6 @@
   <string name="mozac_feature_addons_permissions_user_scripts_description">Emoneĩ scripts mbohapyháva ani hag̃ua oike ne mba’ekuaarãme</string>
   <!-- Description for the "devtools" WebExtensions API permission. -->
   <string name="mozac_feature_addons_permissions_devtools_description">Embohetave mboguatahára rembiporu eike hag̃ua ne mba’ekuaarã rendayke ijurujávape</string>
-  <!-- Description for the "privacy" WebExtensions API permission for the update notification. Multiple permissions may be simply appended one after the other, and separated with a space, which is why the period is important. -->
-  <string name="mozac_feature_addons_permissions_privacy_description_for_update">Emoñe’ẽ ha emoambue tekoñemi ñemboheko.</string>
-  <!-- Description for the "<all_urls>" WebExtensions API permission for the update notification. Multiple permissions may be simply appended one after the other, and separated with a space, which is why the period is important. -->
-  <string name="mozac_feature_addons_permissions_all_urls_description_for_update">Eike mba’ekuaarãitápe opaite ñanduti rendápe g̃uarã.</string>
-  <!-- Description for the "tabs" WebExtensions API permission for the update notification. Multiple permissions may be simply appended one after the other, and separated with a space, which is why the period is important. -->
-  <string name="mozac_feature_addons_permissions_tabs_description_for_update">Eike kundaha rendaykeitápe.</string>
-  <!-- Description for the "webNavigation" WebExtensions API permission for the update notification. Multiple permissions may be simply appended one after the other, and separated with a space, which is why the period is important. -->
-  <string name="mozac_feature_addons_permissions_web_navigation_description_for_update">Emoñe’ẽ ha emoambue kundahára ñemboheko.</string>
-  <!-- Description for the "bookmarks" WebExtensions API permission for the update notification. Multiple permissions may be simply appended one after the other, and separated with a space, which is why the period is important. -->
-  <string name="mozac_feature_addons_permissions_bookmarks_description_for_update">Emoñe’ẽ ha emoambue techaukaha.</string>
-  <!-- Description for the "browserSettings" WebExtensions API permission for the update notification. Multiple permissions may be simply appended one after the other, and separated with a space, which is why the period is important. -->
-  <string name="mozac_feature_addons_permissions_browser_settings_description_for_update">Emoñe’ẽ ha emoambue kundaha ñemboheko.</string>
-  <!-- Description for the "browsingData" WebExtensions API permission for the update notification. Multiple permissions may be simply appended one after the other, and separated with a space, which is why the period is important. -->
-  <string name="mozac_feature_addons_permissions_browsing_data_description_for_update">Embogue kundaha rembiasakue, kookie ha mba’ekuaarã rehegua.</string>
-  <!-- Description for the "clipboardRead" WebExtensions API permission for the update notification. Multiple permissions may be simply appended one after the other, and separated with a space, which is why the period is important. -->
-  <string name="mozac_feature_addons_permissions_clipboard_read_description_for_update">Ereko mba’ekuaarã kuatiajokohágui.</string>
-  <!-- Description for the "clipboardWrite" WebExtensions API permission for the update notification. Multiple permissions may be simply appended one after the other, and separated with a space, which is why the period is important. -->
-  <string name="mozac_feature_addons_permissions_clipboard_write_description_for_update">Emondo mba’ekuaarã kuatiajokohápe.</string>
-  <!-- Description for the "declarativeNetRequest" WebExtensions API permission for the update notification. Multiple permissions may be simply appended one after the other, and separated with a space, which is why the period is important. -->
-  <string name="mozac_feature_addons_permissions_declarative_net_request_description_for_update">Ejoko tetepy oimeraẽva kuatiaroguépe.</string>
-  <!-- Description for the "declarativeNetRequestFeedback" WebExtensions API permission for the update notification. Multiple permissions may be simply appended one after the other, and separated with a space, which is why the period is important. -->
-  <string name="mozac_feature_addons_permissions_declarative_net_request_feedback_description_for_update">Emoñe’ẽ kundahára rembiasakue.</string>
-  <!-- Description for the "downloads" WebExtensions API permission for the update notification. Multiple permissions may be simply appended one after the other, and separated with a space, which is why the period is important. -->
-  <string name="mozac_feature_addons_permissions_downloads_description_for_update">Emboguejy marandurenda ha emoñe’ẽ ha emoambue kundahára ñemboguejy rembiasakue.</string>
-  <!-- Description for the "downloads.open" WebExtensions API permission for the update notification. Multiple permissions may be simply appended one after the other, and separated with a space, which is why the period is important. -->
-  <string name="mozac_feature_addons_permissions_downloads_open_description_for_update">Embojuruja marandurenda emboguejýva ne mba’e’okápe.</string>
-  <!-- Description for the "find" WebExtensions API permission for the update notification. Multiple permissions may be simply appended one after the other, and separated with a space, which is why the period is important. -->
-  <string name="mozac_feature_addons_permissions_find_description_for_update">Emoñe’ẽmba tendayke ijurujávape.</string>
-  <!-- Description for the "geolocation" WebExtensions API permission for the update notification. Multiple permissions may be simply appended one after the other, and separated with a space, which is why the period is important. -->
-  <string name="mozac_feature_addons_permissions_geolocation_description_for_update">Eike ne rendaitépe.</string>
-  <!-- Description for the "history" WebExtensions API permission for the update notification. Multiple permissions may be simply appended one after the other, and separated with a space, which is why the period is important. -->
-  <string name="mozac_feature_addons_permissions_history_description_for_update">Eike kundaha rembiasakuépe.</string>
-  <!-- Description for the "management" WebExtensions API permission for the update notification. Multiple permissions may be simply appended one after the other, and separated with a space, which is why the period is important. -->
-  <string name="mozac_feature_addons_permissions_management_description_for_update">Ema’ẽag̃ui jepysokue jeporu ha eñangareko témare.</string>
-  <!-- Description for the "nativeMessaging" WebExtensions API permission for the update notification. Multiple permissions may be simply appended one after the other, and separated with a space, which is why the period is important. -->
-  <string name="mozac_feature_addons_permissions_native_messaging_description_for_update">Embojopyru ñe’ẽmondo ambue tembiporu’i ndive.</string>
-  <!-- Description for the "notifications" WebExtensions API permission for the update notification. Multiple permissions may be simply appended one after the other, and separated with a space, which is why the period is important. -->
-  <string name="mozac_feature_addons_permissions_notifications_description_for_update">Ehechauka chupe ñemomarandu.</string>
-  <!-- Description for the "pkcs11" WebExtensions API permission for the update notification. Multiple permissions may be simply appended one after the other, and separated with a space, which is why the period is important. -->
-  <string name="mozac_feature_addons_permissions_pkcs11_description_for_update">Eikuave’ẽ mba’eporurã criptografía ñemoneĩgua.</string>
-  <!-- Description for the "proxy" WebExtensions API permission for the update notification. Multiple permissions may be simply appended one after the other, and separated with a space, which is why the period is important. -->
-  <string name="mozac_feature_addons_permissions_proxy_description_for_update">Eñangareko kundahára proxy ñemboheko.</string>
-  <!-- Description for the "sessions" WebExtensions API permission for the update notification. Multiple permissions may be simply appended one after the other, and separated with a space, which is why the period is important. -->
-  <string name="mozac_feature_addons_permissions_sessions_description_for_update">Eike tendayke oñemboty ramóvape.</string>
-  <!-- Description for the "tabHide" WebExtensions API permission for the update notification. Multiple permissions may be simply appended one after the other, and separated with a space, which is why the period is important. -->
-  <string name="mozac_feature_addons_permissions_tab_hide_description_for_update">Emokañy ha ehechauka kundahára rendayke.</string>
-  <!-- Description for the "topSites" WebExtensions API permission for the update notification. Multiple permissions may be simply appended one after the other, and separated with a space, which is why the period is important. -->
-  <string name="mozac_feature_addons_permissions_top_sites_description_for_update">Eike kundaha rembiasakuépe.</string>
-  <!-- Description for the "trialML" WebExtensions API permission for the update notification. Multiple permissions may be simply appended one after the other, and separated with a space, which is why the period is important. -->
-  <string name="mozac_feature_addons_permissions_trial_ml_description_for_update">Emboguejy ha emongu’e IA ne mba’e’okápe.</string>
-  <!-- Description for the "userScripts" WebExtensions API permission for the update notification. Multiple permissions may be simply appended one after the other, and separated with a space, which is why the period is important. -->
-  <string name="mozac_feature_addons_permissions_user_scripts_description_for_update">Emoneĩ scripts mbohapyháva ani hag̃ua oike ne mba’ekuaarãme</string>
-  <!-- Description for the "devtools" WebExtensions API permission for the update notification. Multiple permissions may be simply appended one after the other, and separated with a space, which is why the period is important. -->
-  <string name="mozac_feature_addons_permissions_devtools_description_for_update">Emongakuaa tembiporu mboguatahára rehegua eike hag̃ua ne mba’ekuaarã rendayke ijurujávape.</string>
-  <!-- Description for giving an add-on access to users's data on one site. %1$s  will be replaced by the DNS host name for which a web extension is requesting access (e.g., www.mozilla.org). -->
-  <string name="mozac_feature_addons_permissions_one_site_description_for_update">Eike mba’ekuaarãme %1$s jave.</string>
-  <!-- Description for giving an add-on access to users's data in multiple sites in the domain %1$s. %1$s will be replaced by the DNS domain for which a web extension is requesting access (e.g., mozilla.org). -->
-  <string name="mozac_feature_addons_permissions_sites_in_domain_description_for_update">Eike ne mba’ekuaarã umi ñanduti %1$s mba’eteépe.</string>
-  <!--
-    When an add-on requires access to more than 2 domains, for example the add-on requires access for 3 domains. We will show the first 2 domains in individual entries, as in mozac_feature_addons_permissions_sites_in_domain_description_for_update,
-    then we will show another collapsed entry saying "Access your data on another domain.".
-  -->
-  <string name="mozac_feature_addons_permissions_one_extra_domain_description_for_update">Eike mba’ekuaarãme ambue tendatee rupi.</string>
-  <!--
-    When an add-on requires access to more than 2 domains, for example the add-on requires access for 4 domains. We will show the first 2 domains in individual entries, as in mozac_feature_addons_permissions_sites_in_domain_description_for_update,
-    then we will show another collapsed entry saying "Access your data on other domains.".
-  -->
-  <string name="mozac_feature_addons_permissions_extra_domains_description_plural_for_update">Eike mba’ekuaarãitápe ambue tendatee rupi.</string>
-  <!--
-    When an add-on requires access to more than 2 sites, for example the add-on requires access for 3 sites. We will show the first 2 sites in individual entries, as in mozac_feature_addons_permissions_one_site_description_for_update,
-    then we will show another collapsed entry saying "Access your data on another site.".
-  -->
-  <string name="mozac_feature_addons_permissions_one_extra_site_description_for_update">Eike mba’ekuaarãitápe ambue tendápe.</string>
-  <!--
-    When an add-on requires access to more than 2 sites, for example the add-on requires access for 4 sites. We will show the first 2 sites in individual entries, as in mozac_feature_addons_permissions_one_site_description_for_update,
-    then we will show another collapsed entry saying "Access your data on other sites.".
-  -->
-  <string name="mozac_feature_addons_permissions_extra_sites_description_for_update">Eike mba’ekuaarãitápe ambue tendápe.</string>
   <!-- The text shown when an extension requests the userScripts permission, near the usual description of the userScripts permission -->
   <string name="mozac_feature_addons_permissions_user_scripts_extra_warning">Umi scripts ojehechajey’ỹva ikatu omboyke tekorosã ha tekoñemi. Omongu’e scripts jepysokue térã teñoiha ejeroviaha.</string>
   <!-- The sentence used when the extension has data collection permissions. %1$s is a formatted list of permissions. -->
@@ -335,20 +257,6 @@
   <string name="mozac_feature_extensions_manager_notification_restart_button">Emoñepyrũjey jepysokue</string>
   <!-- Button in the extensions manager that opens AMO in a tab -->
   <string name="mozac_feature_addons_find_more_extensions_button_text">Ejuhuvéta jepysokue</string>
-  <!-- The label of the update button on the system notification shown to the user when an add-on has an update that requires the user to accept new permissions. -->
-  <string name="mozac_feature_addons_updater_notification_update_button">Mbohekopyahu</string>
-  <!-- The label of the cancel button on a notification, this will be shown to the user when an add-on needs new permissions. Indicates the user denies the new permissions and prevents the add-on from be updated -->
-  <string name="mozac_feature_addons_updater_notification_cancel_button">Heja</string>
-  <!-- The title of the system notification shown to the user when an add-on has a new update that requires new permissions. %1$s is the name of the add-on. -->
-  <string name="mozac_feature_addons_updater_notification_title_2">%1$s hekopyahujeýma</string>
-  <!-- A short explanation shown in the notification displayed when an add-on has a new update that requires new permissions. -->
-  <string name="mozac_feature_addons_updater_notification_short_intro">Emboyke ereko hag̃ua versiõ térã ñemboheko ag̃agua.</string>
-  <!-- The heading for the permissions section in the system notification shown when an add-on has an update that requires user confirmation. %1$s is a list of sentences. -->
-  <string name="mozac_feature_addons_updater_notification_heading_permissions">Ñemoneĩ pyahu jerurepýva: %1$s</string>
-  <!-- The heading for the data collection permission section in the system notification shown when an add-on has an update that requires user confirmation. %1$s is a list of permissions. -->
-  <string name="mozac_feature_addons_updater_notification_heading_data_collection_permissions">Mba’ekuaarã pyahu ñembyaty tekotevẽva: pe mboguataháhara he’i pe jepysokue ombyatýta %1$s.</string>
-  <!-- Name of the "notification channel" used for displaying a notification for updating an extension. See https://developer.android.com/training/notify-user/channels -->
-  <string name="mozac_feature_addons_updater_notification_channel_2">Embohekopyahu jepysokue</string>
   <!-- Name of the "notification channel" used for displaying a notification for new supported add-ons. See https://developer.android.com/training/notify-user/channels -->
   <string name="mozac_feature_addons_supported_checker_notification_channel" tools:ignore="UnusedResources">Tembiporu’i ojokupytýva rechajeyha</string>
   <!-- The tile of the notification, this will be shown to the user when one newly supported add-on is available. -->

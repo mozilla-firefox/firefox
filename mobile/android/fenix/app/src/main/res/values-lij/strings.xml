@@ -790,6 +790,4 @@
   <string name="synced_tabs_sign_in_message">Amia \'na lista de tutti i feuggi da-i atri dispoxitivi.</string>
   <!-- Text displayed on a button in the synced tabs screen to link users to sign in when a user is not signed in to Firefox Sync -->
   <string name="synced_tabs_sign_in_button">Acedi a Sync</string>
-  <!-- Confirmation dialog button text when top sites limit is reached. -->
-  <string name="top_sites_max_limit_confirmation_button">Va ben, ò capio</string>
 </resources>

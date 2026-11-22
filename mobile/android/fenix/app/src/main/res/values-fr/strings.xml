@@ -19,8 +19,6 @@
   <string name="content_description_menu">Plus d’options</string>
   <!-- Content description (not visible, for screen readers etc.): "Private Browsing" menu button. -->
   <string name="content_description_private_browsing">Navigation privée</string>
-  <!-- Content description (not visible, for screen readers etc.): "Normal Browsing" menu button. -->
-  <string name="content_description_normal_browsing">Navigation classique</string>
   <!-- Placeholder text shown in the search bar before a user enters text for the default engine -->
   <string name="search_hint">Recherche ou adresse</string>
   <!-- Shorter placeholder text shown in the search bar when an additional action (voice search) is rendered alongside the hint. -->
@@ -188,6 +186,16 @@
   <string name="customize_menu">Personnaliser le menu</string>
   <!-- Alert message shown in the "Customize menu" screen when the user tries to hide a menu section which cannot be hidden. -->
   <string name="customize_menu_cannot_hide_section">Impossible de masquer cette section</string>
+  <!-- Customize menu screen - Accessibility description - name of the menu section that groups the Back, Forward, Share and Refresh buttons. Read aloud after "Section", followed by the button names ("Section “Page controls”: Back, Forward, Share, Refresh"). -->
+  <string name="browser_menu_section_page_controls">Commandes de la page</string>
+  <!-- Customize menu screen - Accessibility description - name of the menu section that groups the page tools (Bookmark page, Find in page, Desktop site, Extensions, etc.). Read aloud after "Section", followed by the tool names ("Section “Tools”: Bookmark page, Find in page…"). -->
+  <string name="browser_menu_section_tools">Outils</string>
+  <!-- Customize menu screen - Accessibility description - name of the menu section that groups the History, Bookmarks, Downloads and Passwords items. Read aloud after "Section", followed by the item names ("Section “Library”: History, Bookmarks, Downloads, Passwords"). -->
+  <string name="browser_menu_section_library">Bibliothèque</string>
+  <!-- Customize menu screen - Accessibility description - name of the menu section that groups the Sign in and Settings items. Read aloud after "Section", followed by the item names ("Section “Accounts and settings”: Sign in, Settings"). -->
+  <string name="browser_menu_section_accounts_and_settings">Comptes et paramètres</string>
+  <!-- Customize menu screen - Accessibility description - name of the menu section that groups the New tab and New private tab actions. Read aloud after "Section", followed by the action names ("Section “New tab”: New tab, New private tab"). -->
+  <string name="browser_menu_section_new_tab">Nouvel onglet</string>
   <!-- Title of the dialog shown when resetting the menu to its default layout (removing all user customizations) -->
   <string name="menu_customize_reset_dialog_title">Réinitialiser le menu par défaut\u00a0?</string>
   <!-- Message of the dialog shown when resetting the menu to its default layout (removing all user customizations) -->
@@ -285,6 +293,8 @@
   <string name="browser_menu_passwords">Mots de passe</string>
   <!-- Content description (not visible, for screen readers etc.) for the handle used to drag the main menu at the bottom of the screen. -->
   <string name="browser_close_main_menu_handlebar_content_description">Fermer le menu</string>
+  <!-- Content description (not visible, used by screen readers, etc.) for the heading of the menu opened from the customize menu screen to preview pending changes. It is read before the menu items. The items are shown for preview only and do nothing when tapped. -->
+  <string name="browser_menu_preview_heading_content_description">Aperçu du menu. Les éléments ne sont pas interactifs ici.</string>
   <!-- Content description (not visible, for screen readers etc.) for main menu navigation header. -->
   <string name="browser_main_menu_content_description_navigation_header">Navigation</string>
   <!-- Content description (not visible, for screen readers etc.) for bottom sheet handlebar custom tab menu. -->
@@ -345,6 +355,10 @@
     Content description for the translate page toolbar button that opens the translations dialog when no translation has occurred.
   -->
   <string name="browser_toolbar_translate">Traduire la page</string>
+  <!-- Accessibility description for the toolbar button displayed when the page the user is on has a video that can be opened in a picture-in-picture window -->
+  <string name="browser_toolbar_picture_in_picture">Incrustation vidéo</string>
+  <!-- Accessibility description for the toolbar button displayed while the current page's video is playing in a picture-in-picture window. Tapping the button closes that window. -->
+  <string name="browser_toolbar_picture_in_picture_close">Fermer l’incrustation vidéo</string>
   <!-- CFR description for the browser toolbar describing the "Shake to summarize feature" -->
   <string name="browser_toolbar_summarize_cfr_description">Secouez votre appareil pour résumer cette page en quelques secondes. ️⚡️</string>
   <!--
@@ -1173,6 +1187,8 @@
   <string name="preferences_enable_sync_title">Synchroniser cet appareil</string>
   <!-- Preference summary for the toggle that turns sync on or off for the device, shown when sync is on. -->
   <string name="preferences_enable_sync_summary_sync_enabled">Vos données sont sauvegardées et accessibles sur vos appareils synchronisés.</string>
+  <!-- Preference summary for the toggle that turns sync on or off for the device, shown when sync is off. It explains where synced data comes from. -->
+  <string name="preferences_enable_sync_summary_sync_disabled_2">Utilisation des données enregistrées dans votre compte.</string>
   <!-- Preference summary for the toggle that turns sync on or off for the device, shown when sync is off. It explains where synced data comes from. %1$s is the Firefox brand name. -->
   <string name="preferences_enable_sync_summary_sync_disabled">Utilisation des données enregistrées dans votre compte %1$s.</string>
   <!-- Summary for the sync preference category. -->
@@ -1692,6 +1708,8 @@
   <string name="add_to_new_tab_group_content_description">Ajouter à un nouveau groupe d’onglets</string>
   <!-- Label for adding to a new tab group. -->
   <string name="add_to_new_tab_group_title">Nouveau groupe d’onglets</string>
+  <!-- Label to add a link in a new tab inside a tab group. -->
+  <string name="contextmenu_open_in_tab_group">Ouvrir dans un groupe d’onglets</string>
   <plurals name="tab_group_tabs_count_subtitle">
     <!--
       Subtitle for the number of tabs in a tab group.
@@ -2104,15 +2122,21 @@
   <string name="unsubmitted_crash_dialog_negative_button_2">FERMER</string>
   <!-- Unsubmitted crash dialog negative button to never be asked for the submission -->
   <string name="unsubmitted_crash_requested_by_devs_dialog_never_button">Ne plus afficher ce message</string>
+  <!-- Unsubmitted crash dialog negative button to never be asked for the submission, displayed in all capital letters. -->
+  <string name="unsubmitted_crash_requested_by_devs_dialog_never_button_2" tools:ignore="UnusedResources">Ne plus afficher le message</string>
   <!-- Unsubmitted crash dialog positive button to submit crash report -->
   <string name="unsubmitted_crash_dialog_positive_button_2">ENVOYER</string>
   <!-- Unsubmitted crash dialog positive button to submit crash report -->
   <string name="unsubmitted_crash_dialog_positive_button">Envoyer le rapport de plantage</string>
+  <!-- Unsubmitted crash dialog positive button to submit crash report, displayed in all capital letters. -->
+  <string name="unsubmitted_crash_dialog_positive_button_3" tools:ignore="UnusedResources">ENVOYER LE RAPPORT DE Plantage</string>
   <!-- Body text for crash report dialog. %s is the link text in the annotated string (ie. "Learn More") -->
   <string name="unsubmitted_crash_dialog_body">Les rapports de plantage nous aident à diagnostiquer et à corriger des problèmes avec le navigateur. Les rapports peuvent contenir des données personnelles ou sensibles. %s</string>
   <string name="unsubmitted_crash_dialog_learn_more">En savoir plus</string>
   <!-- Unsubmitted crash dialog button to open a web page with more details on the feature and privacy policy -->
   <string name="unsubmitted_crash_requested_by_devs_learn_more">En savoir plus</string>
+  <!-- Unsubmitted crash dialog button to open a web page with more details on the feature and privacy policy, displayed in all capital letters. -->
+  <string name="unsubmitted_crash_requested_by_devs_learn_more_2" tools:ignore="UnusedResources">EN SAVOIR PLUS</string>
   <!--
     Bookmarks
 
@@ -3232,6 +3256,10 @@
   <string name="preferences_credit_cards_save_and_autofill_cards_2">Enregistrer et renseigner les moyens de paiement</string>
   <!-- Preference summary for saving and autofilling payment method data. %s is the name of the app (for example "Firefox"). -->
   <string name="preferences_credit_cards_save_and_autofill_cards_summary_2">%s chiffre tous les moyens de paiement que vous enregistrez</string>
+  <!-- Preference for saving the security codes of credit cards. -->
+  <string name="preferences_credit_cards_save_security_codes">Enregistrer les codes de sécurité</string>
+  <!-- Preference summary for saving the security codes of credit cards. %s is the name of the app (for example "Firefox"). -->
+  <string name="preferences_credit_cards_save_security_codes_summary">%s chiffre votre numéro de carte et votre code de sécurité pour des paiements plus rapides plus tard</string>
   <!-- Preference option for syncing credit cards across devices. This is displayed when the user is not signed into sync -->
   <string name="preferences_credit_cards_sync_cards_across_devices">Synchroniser les cartes entre vos appareils</string>
   <!-- Preference option for syncing credit cards across devices. This is displayed when the user is signed into sync -->
@@ -3268,6 +3296,8 @@
   <string name="credit_cards_expiration_date_year">Année d’expiration</string>
   <!-- The header for the name on the credit card -->
   <string name="credit_cards_name_on_card">Nom du titulaire</string>
+  <!-- The header for the optional security code of a credit card. CVV is the abbreviation of the card security code. -->
+  <string name="credit_cards_cvv_optional">Cryptogramme visuel (facultatif)</string>
   <!-- The text for the "Delete card" menu item for deleting a credit card -->
   <string name="credit_cards_menu_delete_card">Supprimer cette carte</string>
   <!-- The text for the "Delete card" button for deleting a credit card -->
@@ -3284,10 +3314,16 @@
   <string name="credit_cards_cancel_button">Annuler</string>
   <!-- Title of the "Saved cards" screen -->
   <string name="credit_cards_saved_cards">Cartes enregistrées</string>
+  <!-- Text in the saved cards list that indicates the security code for a credit card is being stored -->
+  <string name="credit_cards_cvv_saved">Cryptogramme visuel enregistré</string>
   <!-- Error message for card number validation -->
   <string name="credit_cards_number_validation_error_message_2">Saisissez un numéro de carte valide</string>
   <!-- Error message for card name on card validation -->
   <string name="credit_cards_name_on_card_validation_error_message_2">Ajouter un nom</string>
+  <!-- Error message for a credit card security code that does not meet the 3-digit length requirement. -->
+  <string name="credit_cards_cvv_validation_error_message">Le code de sécurité doit être composé de 3 chiffres</string>
+  <!-- Error message for a credit card security code that does not meet the 4-digit length requirement (used for American Express cards only) -->
+  <string name="credit_cards_cvv_amex_validation_error_message">Les codes de sécurité American Express sont à 4 chiffres</string>
   <!-- Message displayed in biometric prompt displayed for authentication before allowing users to view their saved credit cards -->
   <string name="credit_cards_biometric_prompt_message">Déverrouillez pour afficher vos cartes enregistrées</string>
   <!-- Title of warning dialog if users have no device authentication set up -->
@@ -3525,12 +3561,6 @@
   <string name="homepage_shortcuts_add_website_title">Saisir l’adresse d’un site web</string>
   <!-- Title for the "Popular sites" section in the "Add to homepage" bottom sheet. -->
   <string name="homepage_shortcuts_popular_sites">Sites populaires</string>
-  <!-- Title text displayed in the dialog when shortcuts limit is reached. -->
-  <string name="shortcut_max_limit_title">Nombre maximal de raccourcis atteint</string>
-  <!-- Content description text displayed in the dialog when shortcut limit is reached. -->
-  <string name="shortcut_max_limit_content">Pour ajouter un nouveau raccourci, supprimez-en un autre. Faites un appui long sur le site et sélectionnez supprimer.</string>
-  <!-- Confirmation dialog button text when top sites limit is reached. -->
-  <string name="top_sites_max_limit_confirmation_button">J’ai compris</string>
   <!-- Label for the preference to show the shortcuts for the most visited top sites on the homepage -->
   <string name="top_sites_toggle_top_recent_sites_4">Raccourcis</string>
   <!-- Title text displayed in the rename top site dialog. -->
@@ -3703,6 +3733,12 @@
     %1$s is the size in kilobytes or megabytes of the language file.
   -->
   <string name="translations_download_language_file_dialog_title">Télécharger la langue en mode d’économie de données (%1$s) ?</string>
+  <!--
+    Translations options dialog
+
+    Title of the translation options dialog that allows a user to set their translation preferences for the site the user is currently on.
+  -->
+  <string name="translation_option_bottom_sheet_title_heading2">Préférences de traduction</string>
   <!--
     Translations options dialog
 
@@ -3943,6 +3979,8 @@
   <string name="certificate_details_panel_secure_connection_title">Connexion sécurisée</string>
   <!-- Certificate panel - Label for the organization, locality and country the website's certificate was issued to -->
   <string name="certificate_details_panel_issued_to_label">Certificat émis pour\u00a0:</string>
+  <!-- Certificate panel - Label for the name of the certificate authority that verified and issued the website's certificate -->
+  <string name="certificate_details_panel_verified_by_label">Vérifié par\u00a0:</string>
   <!-- Certificate panel - Content description (not visible, for screen readers etc.) for the EU trust mark logo, shown when the website's certificate is a Qualified Website Authentication Certificate (QWAC) as specified in EU Regulation 2024/1183 -->
   <string name="certificate_details_panel_eu_trust_mark_content_description">Marque de confiance de l’Union européenne</string>
   <plurals name="trackers_blocked_panel_total_num_trackers_blocked_2">
@@ -4012,6 +4050,8 @@
   <string name="clear_site_data_dialog_negative_button_text">Annuler</string>
   <!-- Text for the connection security panel when the site is secure. -->
   <string name="connection_security_panel_secure">Connexion sécurisée</string>
+  <!-- Action description (not visible, for screen readers etc.) for the “Secure connection” link in the protection panel header, which opens a page showing the website's certificate details. Screen readers announce it after “Double tap to” -->
+  <string name="connection_security_panel_view_certificate_details">consulter les détails du certificat</string>
   <!-- Text for the connection security panel when the site is not secure. -->
   <string name="connection_security_panel_not_secure">Connexion non sécurisée</string>
   <!-- Text for the connection security panel when accessed from local PDF. -->
@@ -4522,6 +4562,8 @@
   <string name="wrex_widget_match_suspended">Suspendu</string>
   <!-- Label shown on the sports widget match status badge when a match has been postponed to a later date. -->
   <string name="wrex_widget_match_postponed">Reporté</string>
+  <!-- Label shown on the sports widget match status badge when a match has been canceled. -->
+  <string name="wrex_widget_match_canceled">Annulé</string>
   <!-- Sports widget action label to refresh match data after an error. -->
   <string name="wrex_widget_error_refresh">Actualiser</string>
   <!-- Sports widget menu item to view the team's match results. -->
@@ -4647,8 +4689,6 @@
   <string name="lens_camera_loading_cancel_button">Annuler</string>
   <!-- Snackbar message shown when an image picked from the gallery or taken with the camera could not be opened or read, so it was never sent to Google Lens. Shown after returning to the camera. -->
   <string name="lens_camera_image_load_failed_v2">Impossible de charger cette image.</string>
-  <!-- Snackbar message shown when an image picked from the gallery could not be opened or read, so it was never sent to Google Lens. Shown after returning to the camera. -->
-  <string name="lens_camera_image_load_failed">Impossible de charger cette image. Essayez-en une autre.</string>
   <!-- Snackbar message shown when an image picked from the gallery or taken with the camera could not be searched because of a network problem or an error from Google Lens. Shown after returning to the camera, next to the lens_camera_upload_failed_retry_button action. -->
   <string name="lens_camera_upload_failed">Impossible d’obtenir des résultats avec Google Lens</string>
   <!-- Action in the snackbar shown when an image picked from the gallery or taken with the camera could not be searched with Google Lens. Tapping it searches the same image again. -->
@@ -4741,12 +4781,6 @@
     Content description for the reader view panel: a group of buttons floating over the content, which allow customizing the reader view or activating the Listen to Page feature
   -->
   <string name="reader_mode_panel_content_description_2">Options du mode lecture</string>
-  <!--
-    Listen to page
-
-    Content description for the reader mode panel: a group of buttons floating over the content
-  -->
-  <string name="reader_mode_panel_content_description">Options du mode lecture</string>
   <!-- Content description for the button in the reader view panel that turns on the Listen to Page feature (playback of content begins when button is pressed) -->
   <string name="reader_mode_panel_listen_content_description">Lire à haute voix</string>
   <!-- Content description for media player displayed in Reader view when the Listen to Page (Read Aloud) feature is selected -->

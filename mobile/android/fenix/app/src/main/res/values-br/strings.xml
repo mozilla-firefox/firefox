@@ -2095,12 +2095,6 @@
     Title text displayed for the shortcuts home screen section.
   -->
   <string name="homepage_shortcuts_title">Berradennoù</string>
-  <!-- Title text displayed in the dialog when shortcuts limit is reached. -->
-  <string name="shortcut_max_limit_title">Bevenn berradenn tizhet</string>
-  <!-- Content description text displayed in the dialog when shortcut limit is reached. -->
-  <string name="shortcut_max_limit_content">Evit ouzhpennañ ur verradenn nevez, dilamit unan all. Stokit ha dalc’hit al lec’hienn ha dibabit dilemel.</string>
-  <!-- Confirmation dialog button text when top sites limit is reached. -->
-  <string name="top_sites_max_limit_confirmation_button">Mat, komprenet am eus</string>
   <!-- Label for the preference to show the shortcuts for the most visited top sites on the homepage -->
   <string name="top_sites_toggle_top_recent_sites_4">Berradennoù</string>
   <!-- Title text displayed in the rename top site dialog. -->

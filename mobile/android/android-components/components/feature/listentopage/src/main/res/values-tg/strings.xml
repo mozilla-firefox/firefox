@@ -39,8 +39,6 @@
   <string name="mozac_feature_listentopage_dropdown_voice_collapsed">Печондашуда</string>
   <!-- Listen to Page media player: screen reader state of the voice and playback speed buttons while their menu is open. -->
   <string name="mozac_feature_listentopage_dropdown_expanded">Баркушода</string>
-  <!-- Listen to Page media player: content description for the button that opens the list of available voices. -->
-  <string name="mozac_feature_listentopage_audio">Аудио</string>
   <!-- Listen to Page media player: content description for the button that rewinds 10 seconds. -->
   <string name="mozac_feature_listentopage_back_10_sec">Ба қафо 10 сония</string>
   <!-- Listen to Page media player: content description for play/pause button when the player is paused - tapping restarts playback. -->

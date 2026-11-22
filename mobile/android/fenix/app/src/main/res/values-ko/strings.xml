@@ -19,8 +19,6 @@
   <string name="content_description_menu">옵션 더보기</string>
   <!-- Content description (not visible, for screen readers etc.): "Private Browsing" menu button. -->
   <string name="content_description_private_browsing">사생활 보호 모드</string>
-  <!-- Content description (not visible, for screen readers etc.): "Normal Browsing" menu button. -->
-  <string name="content_description_normal_browsing">일반 탐색</string>
   <!-- Placeholder text shown in the search bar before a user enters text for the default engine -->
   <string name="search_hint">검색어 또는 주소 입력</string>
   <!-- Shorter placeholder text shown in the search bar when an additional action (voice search) is rendered alongside the hint. -->
@@ -2118,15 +2116,21 @@
   <string name="unsubmitted_crash_dialog_negative_button_2">닫기</string>
   <!-- Unsubmitted crash dialog negative button to never be asked for the submission -->
   <string name="unsubmitted_crash_requested_by_devs_dialog_never_button">다시 표시 않음</string>
+  <!-- Unsubmitted crash dialog negative button to never be asked for the submission, displayed in all capital letters. -->
+  <string name="unsubmitted_crash_requested_by_devs_dialog_never_button_2" tools:ignore="UnusedResources">다시 표시 안 함</string>
   <!-- Unsubmitted crash dialog positive button to submit crash report -->
   <string name="unsubmitted_crash_dialog_positive_button_2">보내기</string>
   <!-- Unsubmitted crash dialog positive button to submit crash report -->
   <string name="unsubmitted_crash_dialog_positive_button">충돌 보고서 보내기</string>
+  <!-- Unsubmitted crash dialog positive button to submit crash report, displayed in all capital letters. -->
+  <string name="unsubmitted_crash_dialog_positive_button_3" tools:ignore="UnusedResources">충돌 보고서 보내기</string>
   <!-- Body text for crash report dialog. %s is the link text in the annotated string (ie. "Learn More") -->
   <string name="unsubmitted_crash_dialog_body">충돌 보고서는 저희가 브라우저 문제를 진단하고 해결하는데 도움을 줍니다. 보고서에는 개인 정보나 민감한 정보가 포함되어 있을 수 있습니다. %s</string>
   <string name="unsubmitted_crash_dialog_learn_more">더 알아보기</string>
   <!-- Unsubmitted crash dialog button to open a web page with more details on the feature and privacy policy -->
   <string name="unsubmitted_crash_requested_by_devs_learn_more">더 알아보기</string>
+  <!-- Unsubmitted crash dialog button to open a web page with more details on the feature and privacy policy, displayed in all capital letters. -->
+  <string name="unsubmitted_crash_requested_by_devs_learn_more_2" tools:ignore="UnusedResources">더 알아보기</string>
   <!--
     Bookmarks
 
@@ -3245,6 +3249,10 @@
   <string name="preferences_credit_cards_save_and_autofill_cards_2">결제 수단 저장 및 채우기</string>
   <!-- Preference summary for saving and autofilling payment method data. %s is the name of the app (for example "Firefox"). -->
   <string name="preferences_credit_cards_save_and_autofill_cards_summary_2">%s는 저장한 모든 결제 수단을 암호화합니다</string>
+  <!-- Preference for saving the security codes of credit cards. -->
+  <string name="preferences_credit_cards_save_security_codes">보안 코드 저장</string>
+  <!-- Preference summary for saving the security codes of credit cards. %s is the name of the app (for example "Firefox"). -->
+  <string name="preferences_credit_cards_save_security_codes_summary">%s는 나중에 빠른 결제를 위해 카드 번호와 보안 코드를 암호화합니다</string>
   <!-- Preference option for syncing credit cards across devices. This is displayed when the user is not signed into sync -->
   <string name="preferences_credit_cards_sync_cards_across_devices">기기 간에 카드 동기화</string>
   <!-- Preference option for syncing credit cards across devices. This is displayed when the user is signed into sync -->
@@ -3281,6 +3289,8 @@
   <string name="credit_cards_expiration_date_year">유효 기간 년</string>
   <!-- The header for the name on the credit card -->
   <string name="credit_cards_name_on_card">카드상의 이름</string>
+  <!-- The header for the optional security code of a credit card. CVV is the abbreviation of the card security code. -->
+  <string name="credit_cards_cvv_optional">CVV (선택 사항)</string>
   <!-- The text for the "Delete card" menu item for deleting a credit card -->
   <string name="credit_cards_menu_delete_card">카드 삭제</string>
   <!-- The text for the "Delete card" button for deleting a credit card -->
@@ -3297,10 +3307,16 @@
   <string name="credit_cards_cancel_button">취소</string>
   <!-- Title of the "Saved cards" screen -->
   <string name="credit_cards_saved_cards">저장된 카드</string>
+  <!-- Text in the saved cards list that indicates the security code for a credit card is being stored -->
+  <string name="credit_cards_cvv_saved">CVV 저장됨</string>
   <!-- Error message for card number validation -->
   <string name="credit_cards_number_validation_error_message_2">유효한 카드 번호를 입력하세요</string>
   <!-- Error message for card name on card validation -->
   <string name="credit_cards_name_on_card_validation_error_message_2">이름 추가</string>
+  <!-- Error message for a credit card security code that does not meet the 3-digit length requirement. -->
+  <string name="credit_cards_cvv_validation_error_message">보안 코드는 3자리 숫자여야 합니다</string>
+  <!-- Error message for a credit card security code that does not meet the 4-digit length requirement (used for American Express cards only) -->
+  <string name="credit_cards_cvv_amex_validation_error_message">아메리칸 익스프레스 보안 코드는 4자리 숫자입니다</string>
   <!-- Message displayed in biometric prompt displayed for authentication before allowing users to view their saved credit cards -->
   <string name="credit_cards_biometric_prompt_message">저장된 카드를 보시려면 잠금 해제하세요</string>
   <!-- Title of warning dialog if users have no device authentication set up -->
@@ -3538,12 +3554,6 @@
   <string name="homepage_shortcuts_add_website_title">웹 사이트 URL 입력</string>
   <!-- Title for the "Popular sites" section in the "Add to homepage" bottom sheet. -->
   <string name="homepage_shortcuts_popular_sites">인기 사이트</string>
-  <!-- Title text displayed in the dialog when shortcuts limit is reached. -->
-  <string name="shortcut_max_limit_title">바로 가기 한도에 도달됨</string>
-  <!-- Content description text displayed in the dialog when shortcut limit is reached. -->
-  <string name="shortcut_max_limit_content">새 바로 가기를 추가하려면 하나를 삭제하세요. 사이트를 길게 터치하고 삭제를 선택하세요.</string>
-  <!-- Confirmation dialog button text when top sites limit is reached. -->
-  <string name="top_sites_max_limit_confirmation_button">확인</string>
   <!-- Label for the preference to show the shortcuts for the most visited top sites on the homepage -->
   <string name="top_sites_toggle_top_recent_sites_4">바로 가기</string>
   <!-- Title text displayed in the rename top site dialog. -->
@@ -3716,6 +3726,12 @@
     %1$s is the size in kilobytes or megabytes of the language file.
   -->
   <string name="translations_download_language_file_dialog_title">데이터 절약 모드에서 언어를 다운로드하시겠습니까 (%1$s)?</string>
+  <!--
+    Translations options dialog
+
+    Title of the translation options dialog that allows a user to set their translation preferences for the site the user is currently on.
+  -->
+  <string name="translation_option_bottom_sheet_title_heading2">번역 설정</string>
   <!--
     Translations options dialog
 
@@ -4531,6 +4547,8 @@
   <string name="wrex_widget_match_suspended">중단됨</string>
   <!-- Label shown on the sports widget match status badge when a match has been postponed to a later date. -->
   <string name="wrex_widget_match_postponed">연기됨</string>
+  <!-- Label shown on the sports widget match status badge when a match has been canceled. -->
+  <string name="wrex_widget_match_canceled">취소됨</string>
   <!-- Sports widget action label to refresh match data after an error. -->
   <string name="wrex_widget_error_refresh">새로 고침</string>
   <!-- Sports widget menu item to view the team's match results. -->
@@ -4656,8 +4674,6 @@
   <string name="lens_camera_loading_cancel_button">취소</string>
   <!-- Snackbar message shown when an image picked from the gallery or taken with the camera could not be opened or read, so it was never sent to Google Lens. Shown after returning to the camera. -->
   <string name="lens_camera_image_load_failed_v2">이미지를 로드할 수 없습니다.</string>
-  <!-- Snackbar message shown when an image picked from the gallery could not be opened or read, so it was never sent to Google Lens. Shown after returning to the camera. -->
-  <string name="lens_camera_image_load_failed">이미지를 로드할 수 없습니다. 다른 이미지를 시도해 보세요.</string>
   <!-- Snackbar message shown when an image picked from the gallery or taken with the camera could not be searched because of a network problem or an error from Google Lens. Shown after returning to the camera, next to the lens_camera_upload_failed_retry_button action. -->
   <string name="lens_camera_upload_failed">Google 렌즈에서 결과를 얻을 수 없음</string>
   <!-- Action in the snackbar shown when an image picked from the gallery or taken with the camera could not be searched with Google Lens. Tapping it searches the same image again. -->
@@ -4750,12 +4766,6 @@
     Content description for the reader view panel: a group of buttons floating over the content, which allow customizing the reader view or activating the Listen to Page feature
   -->
   <string name="reader_mode_panel_content_description_2">읽기 모드 옵션</string>
-  <!--
-    Listen to page
-
-    Content description for the reader mode panel: a group of buttons floating over the content
-  -->
-  <string name="reader_mode_panel_content_description">읽기 모드 옵션</string>
   <!-- Content description for the button in the reader view panel that turns on the Listen to Page feature (playback of content begins when button is pressed) -->
   <string name="reader_mode_panel_listen_content_description">소리내어 읽기</string>
   <!-- Content description for media player displayed in Reader view when the Listen to Page (Read Aloud) feature is selected -->

@@ -19,8 +19,6 @@
   <string name="content_description_menu">Més opcions</string>
   <!-- Content description (not visible, for screen readers etc.): "Private Browsing" menu button. -->
   <string name="content_description_private_browsing">Navegació privada</string>
-  <!-- Content description (not visible, for screen readers etc.): "Normal Browsing" menu button. -->
-  <string name="content_description_normal_browsing">Navegació normal</string>
   <!-- Placeholder text shown in the search bar before a user enters text for the default engine -->
   <string name="search_hint">Escriviu una cerca o adreça</string>
   <!-- Shorter placeholder text shown in the search bar when an additional action (voice search) is rendered alongside the hint. -->
@@ -390,7 +388,7 @@
   <!-- Headline text for the AI controls banner. %s is the name of the app (for example "Firefox"). -->
   <string name="ai_controls_banner_headline">Amb el %s, sempre teniu la llibertat de decidir</string>
   <!-- Supporting text for the AI controls banner. %s is a learn more link using ai_controls_learn_more as text. -->
-  <string name="ai_controls_banner_supporting_text_2">Això inclou si s’han d\'utilitzar o no les funcions millorades amb IA. %s</string>
+  <string name="ai_controls_banner_supporting_text_2">Això inclou si s’han d’utilitzar o no les funcions millorades amb IA. %s</string>
   <!-- Link text for learning more about AI controls -->
   <string name="ai_controls_learn_more">Més informació</string>
   <!-- Title for the block AI enhancements toggle -->
@@ -1601,7 +1599,7 @@
   <!-- Text for button to enter multiselect mode in tabs tray -->
   <string name="tabs_tray_select_tabs">Selecciona pestanyes</string>
   <!-- Text for tab manager search page when there are no results. -->
-  <string name="tab_manager_no_search_results">No s\'ha trobat cap coincidència.</string>
+  <string name="tab_manager_no_search_results">No s’ha trobat cap coincidència.</string>
   <!-- Additional text for tab manager search page when there are no results. -->
   <string name="tab_manager_no_search_results_additional_text">Proveu una altra cerca</string>
   <!-- Content description (not visible, for screen readers etc.): Close tab button. Closes the current session when pressed -->
@@ -1721,9 +1719,9 @@
   <!-- Title for the Ungroup tab group confirmation dialog. -->
   <string name="ungroup_tab_group_confirmation_dialog_title">Voleu desagrupar el grup de pestanyes?</string>
   <!-- Text shown in the body of the Ungroup tab group confirmation dialog. -->
-  <string name="ungroup_tab_group_confirmation_dialog_body">Les pestanyes romandran obertes en aquest dispositiu, però el grup s\'eliminarà.</string>
+  <string name="ungroup_tab_group_confirmation_dialog_body">Les pestanyes romandran obertes en aquest dispositiu, però el grup s’eliminarà.</string>
   <!-- Text shown on the Don't Ask Again checkbox button in the Ungroup tab group confirmation dialog. -->
-  <string name="ungroup_tab_group_confirmation_dialog_dont_ask_again">No m\'ho tornis a demanar</string>
+  <string name="ungroup_tab_group_confirmation_dialog_dont_ask_again">No m’ho tornis a demanar</string>
   <!-- Text shown on the confirm button in the Ungroup tab group confirmation dialog. -->
   <string name="ungroup_tab_group_confirmation_dialog_confirm">Desagrupa</string>
   <!-- Text shown on the cancel button in the Ungroup tab group confirmation dialog. -->
@@ -3158,7 +3156,7 @@
   <!-- Title for the card shown to the user when we are unable to fetch server locations -->
   <string name="ip_protection_locations_unavailable_title">Les ubicacions no estan disponibles</string>
   <!-- Description for the card shown to the user when we are unable to fetch server locations -->
-  <string name="ip_protection_locations_unavailable_description">S\'ha canviat a la ubicació recomanada.</string>
+  <string name="ip_protection_locations_unavailable_description">S’ha canviat a la ubicació recomanada.</string>
   <!-- Title for the browser VPN location selection screen (displayed in the app bar) -->
   <string name="ip_protection_locations_title">Trieu la ubicació de la VPN</string>
   <!-- Content description for the browser VPN location selection screen top bar back button -->
@@ -3453,7 +3451,7 @@
     Label for the button in the shortcuts home screen section that collapses the section back
     to showing only the first shortcuts.
   -->
-  <string name="homepage_shortcuts_show_less">Mostra\'n menys</string>
+  <string name="homepage_shortcuts_show_less">Mostra’n menys</string>
   <!-- Label for the "Add shortcut" button displayed as a tile. -->
   <string name="homepage_shortcuts_add_shortcut">Afegeix una drecera</string>
   <!-- Title for the "Add to homepage" bottom sheet. -->
@@ -3464,12 +3462,6 @@
   <string name="homepage_shortcuts_add_website_title">Escriviu l’URL d’un lloc web</string>
   <!-- Title for the "Popular sites" section in the "Add to homepage" bottom sheet. -->
   <string name="homepage_shortcuts_popular_sites">Llocs populars</string>
-  <!-- Title text displayed in the dialog when shortcuts limit is reached. -->
-  <string name="shortcut_max_limit_title">S’ha arribat al límit de dreceres</string>
-  <!-- Content description text displayed in the dialog when shortcut limit is reached. -->
-  <string name="shortcut_max_limit_content">Per a afegir una nova drecera, primer cal que n’elimineu alguna altra. Manteniu premut el lloc i seleccioneu eliminar-lo.</string>
-  <!-- Confirmation dialog button text when top sites limit is reached. -->
-  <string name="top_sites_max_limit_confirmation_button">Entesos</string>
   <!-- Label for the preference to show the shortcuts for the most visited top sites on the homepage -->
   <string name="top_sites_toggle_top_recent_sites_4">Dreceres</string>
   <!-- Title text displayed in the rename top site dialog. -->
@@ -3970,7 +3962,7 @@
   -->
   <string name="connection_security_panel_issued_to">Emès per a %s</string>
   <!-- Text for the connection security panel when the site uses a QWAC. -->
-  <string name="connection_security_panel_qualified_certificate">Qualificat segons l\'especificació del Reglament (UE) 2024/1183.</string>
+  <string name="connection_security_panel_qualified_certificate">Qualificat segons l’especificació del Reglament (UE) 2024/1183.</string>
   <!--
     Debug drawer
 
@@ -4588,8 +4580,6 @@
   <string name="lens_camera_loading_cancel_button">Cancel·la</string>
   <!-- Snackbar message shown when an image picked from the gallery or taken with the camera could not be opened or read, so it was never sent to Google Lens. Shown after returning to the camera. -->
   <string name="lens_camera_image_load_failed_v2">No s’ha pogut carregar aquesta imatge</string>
-  <!-- Snackbar message shown when an image picked from the gallery could not be opened or read, so it was never sent to Google Lens. Shown after returning to the camera. -->
-  <string name="lens_camera_image_load_failed">No s’ha pogut carregar aquesta imatge. Proveu-ne una altra.</string>
   <!-- Snackbar message shown when an image picked from the gallery or taken with the camera could not be searched because of a network problem or an error from Google Lens. Shown after returning to the camera, next to the lens_camera_upload_failed_retry_button action. -->
   <string name="lens_camera_upload_failed">No s’han pogut obtenir resultats del Google Lens</string>
   <!-- Action in the snackbar shown when an image picked from the gallery or taken with the camera could not be searched with Google Lens. Tapping it searches the same image again. -->
@@ -4682,12 +4672,6 @@
     Content description for the reader view panel: a group of buttons floating over the content, which allow customizing the reader view or activating the Listen to Page feature
   -->
   <string name="reader_mode_panel_content_description_2">Opcions de la Vista de lectura</string>
-  <!--
-    Listen to page
-
-    Content description for the reader mode panel: a group of buttons floating over the content
-  -->
-  <string name="reader_mode_panel_content_description">Opcions del Mode de lectura</string>
   <!-- Content description for the button in the reader view panel that turns on the Listen to Page feature (playback of content begins when button is pressed) -->
   <string name="reader_mode_panel_listen_content_description">Llegeix en veu alta</string>
   <!-- Content description for media player displayed in Reader view when the Listen to Page (Read Aloud) feature is selected -->

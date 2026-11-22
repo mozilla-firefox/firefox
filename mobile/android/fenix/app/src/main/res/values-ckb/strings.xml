@@ -929,8 +929,6 @@
   <string name="synced_tabs_sign_in_button">بۆ هاوکاتکردن بچۆژوورەوە</string>
   <!-- The text displayed when a synced device has no tabs to show in the list of Synced Tabs. -->
   <string name="synced_tabs_no_open_tabs">بازدەری کراوە نیە</string>
-  <!-- Confirmation dialog button text when top sites limit is reached. -->
-  <string name="top_sites_max_limit_confirmation_button">باشە، تێگەیشتم</string>
   <!-- Title text displayed in the rename top site dialog. -->
   <string name="top_sites_rename_dialog_title">ناو</string>
   <!-- Dialog button text for canceling the rename top site prompt. -->

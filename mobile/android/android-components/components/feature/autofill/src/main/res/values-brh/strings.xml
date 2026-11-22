@@ -8,13 +8,46 @@
 
 <resources>
   <!--
+    Autofill: Text shown in popup in third-party app if the browser app needs to be unlocked before
+    a username or password can be autofilled for the highlighted text field. %1$s will be replaced
+    with the name of the browser application (e.g. Firefox)
+  -->
+  <string name="mozac_feature_autofill_popup_unlock_application">بے قلف کبو %1$s اے</string>
+  <!--
+    Autofill: Text shown in popup in third-party app if we found a matching account, but no
+    username is saved (e.g. we only have a password). This text will be shown in place where otherwise
+    the username would be displayed.
+  -->
+  <string name="mozac_feature_autofill_popup_no_username">(ہچ یوزرنیم اف)</string>
+  <!--
     Autofill: Text shown in popup in third-party app to autofill the password for an account.
     %1$s will be replaced with the login/username of the account.
   -->
   <string name="mozac_feature_autofill_popup_password">%1$s کن کلیت لوز</string>
   <!--
+    Autofill: Title of a dialog asking the user to confirm before autofilling credentials into
+    a third-party app after the authenticity verification failed.
+  -->
+  <string name="mozac_feature_autofill_confirmation_title">تصدیق کننگ ناکام مس</string>
+  <!--
+    Autofill: Positive button shown in dialog asking the user to confirm before autofilling
+    credentials in a third-part app (Also see string mozac_feature_autofill_confirmation_authenticity).
+  -->
+  <string name="mozac_feature_autofill_confirmation_yes">جی آؤ</string>
+  <!--
     Autofill: Negative button shown in dialog asking the user to confirm before autofilling
     credentials in a third-part app (Also see string mozac_feature_autofill_confirmation_authenticity).
   -->
   <string name="mozac_feature_autofill_confirmation_no">آخہ</string>
+  <!--
+    Autofill: When showing a list of logins to autofill in a third-party app, then this is the
+    last item in the list. When clicking it a new screen opens which allows the user to search for
+    a specific login. %1$s will be replaced with the name of the application (e.g. "Firefox")
+  -->
+  <string name="mozac_feature_autofill_search_suggestions">%1$s اٹی پٹ و پول کر</string>
+  <!--
+    Autofill: Hint shown in the text field used to search specific logins. Shown when the field
+    is empty and the user has not entered any text into it yet.
+  -->
+  <string name="mozac_feature_autofill_search_hint">لوگ ان ٹیٹی پٹبو</string>
 </resources>

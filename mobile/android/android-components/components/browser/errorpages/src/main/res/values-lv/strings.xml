@@ -9,6 +9,8 @@
 <resources>
   <!-- The button that appears at the bottom of an error page. -->
   <string name="mozac_browser_errorpages_page_refresh">Mēģināt vēlreiz</string>
+  <!-- The button on an error page that checks whether an archived copy of the unreachable page exists. -->
+  <string name="mozac_browser_errorpages_archive_check_button">Pārbaudīt arhivēto versiju</string>
   <!--
     The text shown underneath the archive button, explaining what the button does. The %1$s will be replaced by
     the app name and %2$s will be replaced by the name of the archive service as a link
@@ -19,26 +21,56 @@
     mozac_browser_errorpages_archive_description.
   -->
   <string name="mozac_browser_errorpages_archive_wayback_machine">Wayback Machine</string>
+  <!-- The label shown on the archive button while the archived copy is being looked up. -->
+  <string name="mozac_browser_errorpages_archive_checking">Arhīva pārbaude</string>
+  <!-- The message shown when no archived copy of the unreachable page could be found. -->
+  <string name="mozac_browser_errorpages_archive_not_found">Arhivēta versija nav atrasta.</string>
   <!-- A link, shown after no archived copy was found, that searches the web for the page instead. -->
   <string name="mozac_browser_errorpages_archive_search_web">Meklēt tīmeklī.</string>
+  <!-- The message shown when the archive service could not be reached to look up an archived copy. -->
+  <string name="mozac_browser_errorpages_archive_unreachable">Nevarēja sazināties ar arhīva pakalpojumu.</string>
+  <!-- A link, shown after the archive service could not be reached, that retries the lookup. -->
+  <string name="mozac_browser_errorpages_archive_retry">Atkārtot.</string>
   <!-- The document title and heading of an error page shown when a website cannot be loaded for an unknown reason. -->
   <string name="mozac_browser_errorpages_generic_title">Nevar pabeigt pieprasījumu</string>
   <!-- The error message shown when a website cannot be loaded for an unknown reason. -->
   <string name="mozac_browser_errorpages_generic_message"><![CDATA[<p>Papildu informācija par šo sarežģījumu vai kļūdu šobrīd nav pieejama.</p>]]></string>
   <!-- The document title and heading of the error page shown when a website sends back unusual and incorrect credentials for an SSL certificate. -->
   <string name="mozac_browser_errorpages_security_ssl_title">Drošais savienojums neizdevās</string>
+  <!-- The error message shown when a website sends back unusual and incorrect credentials for an SSL certificate. -->
+  <string name="mozac_browser_errorpages_security_ssl_message"><![CDATA[<ul>\n<li>Lapu, kuru jūs šobrīd mēģināt aplūkot, nevar parādīt, jo nevar pārbaudīt tās nosūtīto datu autentiskumu.</li>\n<li>Lūdzu, sazinieties ar lapas īpašniekiem un informējiet viņus par šo problēmu.</li>\n</ul>]]></string>
+  <!-- The document title and heading of the error page shown when a website sends has an invalid or expired SSL certificate. -->
+  <string name="mozac_browser_errorpages_security_bad_cert_title">Drošais savienojums neizdevās</string>
+  <!-- The error message shown when a website sends has an invalid or expired SSL certificate. -->
+  <string name="mozac_browser_errorpages_security_bad_cert_message"><![CDATA[<ul>\n<li>Tā varētu būt problēma ar servera konfigurāciju, vai arī kāds cits mēģina izlikties par šo serveri.</li>\n<li>Ja iepriekš jums ir izdevies veiksmīgi pieslēgties šim serverim, problēma varētu būt īslaicīga. Mēģiniet vēlreiz nedaudz vēlāk.</li>\n</ul>]]></string>
   <!-- The text shown inside the advanced button used to expand the advanced options. It's only shown when a website has an invalid SSL certificate. -->
   <string name="mozac_browser_errorpages_security_bad_cert_advanced">Paplašināti…</string>
+  <!-- The advanced certificate information shown when a website sends has an invalid SSL certificate. The %1$s will be replaced by the app name and %2$s will be replaced by website URL. It's only shown when a website has an invalid SSL certificate. -->
+  <string name="mozac_browser_errorpages_security_bad_cert_techInfo"><![CDATA[<label>Iespējams, kāds mēģina uzdoties par šo vietni, un jums nevajadzētu turpināt.</label> <br><br>\n<label>Vietnes savu identitāti pierāda, izmantojot sertifikātus. %1$s neuzticas vietnei <b>%2$s</b>, jo tās sertifikāta izdevējs nav zināms, sertifikāts ir pašparakstīts vai serveris nesūta pareizos starpposma sertifikātus.</label>]]></string>
   <!-- The text shown inside the advanced options button used to go back. It's only shown if the user has expanded the advanced options. -->
   <string name="mozac_browser_errorpages_security_bad_cert_back">Doties atpakaļ (ieteicams)</string>
   <!-- The text shown inside the advanced options button used to bypass the invalid SSL certificate. It's only shown if the user has expanded the advanced options. -->
   <string name="mozac_browser_errorpages_security_bad_cert_accept_temporary">Pieņemt apdraudējumu un turpināt</string>
+  <!-- The document title and heading of the error page shown when a website uses HSTS. -->
+  <string name="mozac_browser_errorpages_security_bad_hsts_cert_title">Šai vietnei ir nepieciešams drošs savienojums.</string>
+  <!-- The error message shown when a website uses HSTS. -->
+  <string name="mozac_browser_errorpages_security_bad_hsts_cert_message"><![CDATA[<ul>\n<li>Lapu, kuru mēģināt apskatīt, nevar parādīt, jo šai vietnei ir nepieciešams drošs savienojums.</li>\n<li>Problēma, visticamāk, ir saistīta ar vietni, un jūs neko nevarat darīt, lai to atrisinātu.</li>\n<li>Varat paziņot vietnes administratoram par problēmu.</li>\n</ul>]]></string>
   <!-- The text shown inside the advanced button used to expand the advanced options. It's only shown when a website uses HSTS. -->
   <string name="mozac_browser_errorpages_security_bad_hsts_cert_advanced">Paplašināti…</string>
+  <!-- The advanced certificate information shown when a website uses HSTS. The %1$s will be replaced by the website URL and %2$s will be replaced by the app name. It's only shown when a website uses HSTS. -->
+  <string name="mozac_browser_errorpages_security_bad_hsts_cert_techInfo2"><![CDATA[<label> <b>%1$s</b> ir drošības politika ar nosaukumu HTTP Strict Transport Security (HSTS), kas nozīmē, ka <b>%2$s</b> var ar to izveidot savienojumu tikai droši. Jūs nevarat pievienot izņēmumu, lai apmeklētu šo vietni. </label>]]></string>
   <!-- The text shown inside the advanced options button used to go back. It's only shown if the user has expanded the advanced options. -->
   <string name="mozac_browser_errorpages_security_bad_hsts_cert_back">Doties atpakaļ</string>
+  <!-- The document title and heading of the error page shown when the user's network connection is interrupted while connecting to a website. -->
+  <string name="mozac_browser_errorpages_net_interrupt_title">Savienojums tika pārtraukts</string>
+  <!-- The error message shown when the user's network connection is interrupted while connecting to a website. -->
+  <string name="mozac_browser_errorpages_net_interrupt_message"><![CDATA[<p>Pārlūks veiksmīgi izveidoja savienojumu, taču savienojums tika pārtraukts informācijas pārsūtīšanas laikā. Lūdzu, mēģiniet vēlreiz.</p>\n<ul>\n<li>Vietne, iespējams, īslaicīgi nav pieejama vai ir pārāk noslogota. Pēc brīža mēģiniet vēlreiz.</li>\n<li>Ja nevarat ielādēt nevienu lapu, pārbaudiet ierīces datu vai Wi-Fi savienojumu.</li>\n</ul>]]></string>
+  <!-- The document title and heading of the error page shown when a website takes too long to load. -->
+  <string name="mozac_browser_errorpages_net_timeout_title">Savienojuma laiks ir beidzies</string>
   <!-- The error message shown when a website took long to load. -->
   <string name="mozac_browser_errorpages_net_timeout_message"><![CDATA[<p>Pieprasītā vietne neatbildēja uz savienojuma pieprasījumu, un pārlūks pārstāja gaidīt atbildi.</p>\n<ul>\n<li>Vai serverī varētu būt liels pieprasījumu skaits vai īslaicīgi darbības traucējumi? Vēlāk jāmēģina vēlreiz.</li>\n<li>Vai nav iespējams pārlūkot citas vietnes? jāpārbauda ierīces savienojums ar tīklu.</li>\n<li>Vai ierīci vai tīklu aizsargā ugunsmūris vai starpniekserveris? Nepareizi iestatījumi var traucēt tīmekļa pārlūkošanu.</li>\n<li>Joprojām ir sarežģījumi? Jāsazinās ar tīkla pārvaldītāju vai interneta pakalpojumu sniedzēju, lai iegūtu palīdzību.</li>\n</ul>]]></string>
+  <!-- The document title and heading of the error page shown when a website could not be reached. -->
+  <string name="mozac_browser_errorpages_connection_failure_title">Nevar pieslēgties</string>
   <!-- The document title and heading of the error page shown when a website cannot be loaded because the browser is in offline mode. -->
   <string name="mozac_browser_errorpages_offline_title">Bezsaistē</string>
   <!-- The error message shown when a website cannot be loaded because the browser is in offline mode. -->
