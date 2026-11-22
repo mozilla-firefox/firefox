@@ -308,6 +308,51 @@ def test_output_crash(flavor, runFailures, runtests, test_name):
     assert len(lines) == results["lines"]
 
 
+@pytest.mark.parametrize("flavor", ["browser-chrome"])
+def test_output_abnormal_exit(flavor, runtests, test_name, monkeypatch):
+    """The browser exiting with a non-zero status in the middle of a test,
+    without leaving a minidump behind, fails that test as a crash."""
+    # Run as in CI, where the harness continues with the tests that did not
+    # get to start in a new browser: the first run's status must survive that.
+    monkeypatch.setenv("MOZ_AUTOMATION", "1")
+    results = {
+        "tbpl_status": (TBPL_WARNING,),
+        "log_level": (WARNING,),
+    }
+    if mozinfo.info["debug"] or mozinfo.info["asan"]:
+        # The forced exit leaves allocations behind: the shutdown leak checks
+        # (debug) and LeakSanitizer (asan) report them as errors, which makes
+        # the run a failure rather than a warning.
+        results["tbpl_status"] = (TBPL_WARNING, TBPL_FAILURE)
+        results["log_level"] = (WARNING, ERROR)
+
+    status, lines = runtests([test_name("exit"), test_name("pass")])
+    assert status == 1
+
+    tbpl_status, log_level, _ = get_mozharness_status(lines, status)
+    assert tbpl_status in results["tbpl_status"]
+    assert log_level in results["log_level"]
+
+    assert filter_action("crash", lines) == []
+
+    exit_code = next(
+        l["exitcode"] for l in filter_action("process_exit", lines) if l["exitcode"]
+    )
+    if not mozinfo.info["asan"]:
+        # LeakSanitizer replaces the exit code when it reports the leaks.
+        assert exit_code == 3
+
+    test_ends = filter_action("test_end", lines)
+    assert len(test_ends) == 2
+    exit_end = next(l for l in test_ends if l["test"].endswith(test_name("exit")))
+    assert exit_end["status"] == "CRASH"
+    assert exit_end["expected"] == "PASS"
+    assert exit_end["message"] == f"application terminated with exit code {exit_code}"
+    pass_end = next(l for l in test_ends if l["test"].endswith(test_name("pass")))
+    assert pass_end["status"] == "PASS"
+    assert "expected" not in pass_end
+
+
 @pytest.mark.skip_mozinfo("!asan")
 @pytest.mark.parametrize("runFailures", [""])
 @pytest.mark.parametrize("flavor", ["plain"])
