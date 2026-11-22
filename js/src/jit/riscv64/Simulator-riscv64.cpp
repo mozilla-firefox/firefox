@@ -4018,7 +4018,17 @@ void Simulator::DecodeRVIType() {
       break;
     }
     case RO_FENCE: {
-      // DO nothing in sumulator
+      if (instr_.InstructionBits() == kPauseInstr) {
+        AtomicOperations::pause();
+      } else {
+        // Simulated loads and stores are host accesses, so a fence needs a
+        // host barrier to order them. The host barrier only approximates a
+        // weaker fence.
+        MOZ_ASSERT(instr_.MemoryOrder(true) == PSIORW &&
+                       instr_.MemoryOrder(false) == PSIORW,
+                   "Only fence iorw, iorw is supported");
+        AtomicOperations::fenceSeqCst();
+      }
       break;
     }
     case RO_ECALL: {                   // RO_EBREAK

@@ -3499,11 +3499,7 @@ void MacroAssembler::atomicFetchOp(Scalar::Type type, Synchronization sync,
 // ========================================================================
 // JS atomic operations.
 
-void MacroAssembler::atomicPause() {
-  // `pause` hint defined in Zihintpause extension.
-  // It is encoded as `fence w, 0`.
-  fence(0b0001, 0b0000);
-}
+void MacroAssembler::atomicPause() { pause(); }
 
 // ===============================================================
 // Branch functions

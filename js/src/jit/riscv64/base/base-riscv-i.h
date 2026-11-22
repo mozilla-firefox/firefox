@@ -82,6 +82,10 @@ class AssemblerRISCVI : public AssemblerRiscvBase {
 
   void sync() { fence(0b1111, 0b1111); }
 
+  // The Zihintpause spin-loop hint. It is encoded as a fence, so harts without
+  // the extension execute it as a no-op.
+  void pause() { fence(PSW, 0); }
+
   // This is a de facto standard (as set by GNU binutils) 32-bit unimplemented
   // instruction (i.e., it should always trap, if your implementation has
   // invalid instruction traps).

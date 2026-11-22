@@ -29,6 +29,8 @@ const Instr kIllegalInstr = 0;  // All other bits are 0s (i.e., ecall)
 const Instr rtCallRedirInstr = SYSTEM;  // All other bits are 0s (i.e., ecall)
 // An EBreak instruction, used for debugging and semi-hosting
 const Instr kBreakInstr = SYSTEM | 1 << kImm12Shift;  // ebreak
+// The Zihintpause hint, which is encoded as "fence w, 0"
+const Instr kPauseInstr = MISC_MEM | PSW << kPredOrderShift;
 
 constexpr uint8_t kInstrSize = 4;
 constexpr uint8_t kShortInstrSize = 2;

@@ -1970,10 +1970,13 @@ void Decoder::DecodeIType(Instruction* instr) {
     }
     case RO_FENCE:
       if (instr->MemoryOrder(true) == PSIORW &&
-          instr->MemoryOrder(false) == PSIORW)
+          instr->MemoryOrder(false) == PSIORW) {
         Format(instr, "fence");
-      else
+      } else if (instr->InstructionBits() == kPauseInstr) {
+        Format(instr, "pause");
+      } else {
         Format(instr, "fence 'pre, 'suc");
+      }
       break;
     case RO_ECALL: {                   // RO_EBREAK
       if (instr->Imm12Value() == 0) {  // ECALL
