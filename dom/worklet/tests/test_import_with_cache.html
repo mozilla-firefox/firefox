@@ -12,8 +12,11 @@
 // This function is called into an iframe.
 function runTestInIframe() {
   var audioContext = new AudioContext();
+  // The server answers 404 after the first request for a given URL, so make the
+  // URL unique to this run.
+  var url = "server_import_with_cache.sjs?" + crypto.randomUUID();
   function loading() {
-    audioContext.audioWorklet.addModule("server_import_with_cache.sjs")
+    audioContext.audioWorklet.addModule(url)
     .then(() => {
       ok(true, "Import should load a resource.");
     }, () => {
