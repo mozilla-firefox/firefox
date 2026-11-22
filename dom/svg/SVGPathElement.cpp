@@ -82,8 +82,8 @@ NS_IMPL_ELEMENT_CLONE_WITH_INIT(SVGPathElement)
 already_AddRefed<SVGPathSegment> SVGPathElement::GetPathSegmentAtLength(
     float aDistance) {
   FlushIfNeeded();
-  return SVGPathData::GetPathSegmentAtLength(this, mD.GetBaseValue().AsSpan(),
-                                             aDistance);
+  return SVGPathData::GetPathSegmentAtLength(
+      this, mD.GetBaseValue().AsSpan(), std::min(aDistance, GetTotalLength()));
 }
 
 static void CreatePathSegments(SVGPathElement* aPathElement,

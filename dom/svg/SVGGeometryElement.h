@@ -296,6 +296,8 @@ class SVGGeometryElement : public SVGGeometryElementBase {
 
   MOZ_CAN_RUN_SCRIPT void FlushIfNeeded();
 
+  float GetTotalLength();
+
   static NumberInfo sNumberInfo;
   SVGAnimatedNumber mPathLength;
   mutable RefPtr<Path> mCachedPath;
@@ -304,8 +306,6 @@ class SVGGeometryElement : public SVGGeometryElementBase {
   already_AddRefed<Path> GetOrBuildPathForHitTest();
 
   already_AddRefed<Path> GetTransformedPath(const Matrix& aPathTransform);
-
-  float GetTotalLength();
 };
 
 }  // namespace dom
