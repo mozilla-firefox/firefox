@@ -218,6 +218,9 @@ class AndroidProfileRun(TestingMixin, BaseScript, MozbaseMixin, AndroidMixin):
         topsrcdir = dirs["abs_src_dir"]
         adb = self.query_exe("adb")
 
+        sys.path.insert(0, os.path.join(topsrcdir, "build", "pgo"))
+        from pgo_metrics import report_perfherder, stage
+
         path_mappings = {
             k: os.path.join(topsrcdir, v) for k, v in PATH_MAPPINGS.items()
         }
@@ -295,32 +298,34 @@ class AndroidProfileRun(TestingMixin, BaseScript, MozbaseMixin, AndroidMixin):
 
         try:
             # Run Fennec a first time to initialize its profile
-            driver = Marionette(
-                app="fennec",
-                package_name=app,
-                adb_path=adb,
-                bin="geckoview-androidTest.apk",
-                prefs=prefs,
-                connect_to_running_emulator=True,
-                startup_timeout=1000,
-                env=env,
-                symbols_path=self.symbols_path,
-            )
-            driver.start_session()
+            with stage("profile initialization"):
+                driver = Marionette(
+                    app="fennec",
+                    package_name=app,
+                    adb_path=adb,
+                    bin="geckoview-androidTest.apk",
+                    prefs=prefs,
+                    connect_to_running_emulator=True,
+                    startup_timeout=1000,
+                    env=env,
+                    symbols_path=self.symbols_path,
+                )
+                driver.start_session()
 
             # Now generate the profile and wait for it to complete
-            for page in PAGES:
-                driver.navigate("http://%s:%d/%s" % (IP, PORT, page))
-                timeout = 2
-                if "Speedometer" in page:
-                    # The Speedometer[23] test actually runs many tests internally in
-                    # javascript, so it needs extra time to run through them. The
-                    # emulator doesn't get very far through the whole suite, but
-                    # this extra time at least lets some of them process.
-                    timeout = 360
-                time.sleep(timeout)
+            with stage("training run"):
+                for page in PAGES:
+                    driver.navigate(f"http://{IP}:{PORT}/{page}")
+                    timeout = 2
+                    if "Speedometer" in page:
+                        # The Speedometer[23] test actually runs many tests internally in
+                        # javascript, so it needs extra time to run through them. The
+                        # emulator doesn't get very far through the whole suite, but
+                        # this extra time at least lets some of them process.
+                        timeout = 360
+                    time.sleep(timeout)
 
-            driver.quit(in_app=True)
+                driver.quit(in_app=True)
 
             if recording_started:
                 self._stop_and_pull_recording(
@@ -331,7 +336,8 @@ class AndroidProfileRun(TestingMixin, BaseScript, MozbaseMixin, AndroidMixin):
             dirs = self.query_abs_dirs()
             workspace_dir = dirs["abs_workspace_dir"]
             os.makedirs(workspace_dir, exist_ok=True)
-            adbdevice.pull(outputdir, workspace_dir)
+            with stage("profile pull"):
+                adbdevice.pull(outputdir, workspace_dir)
         except ADBTimeoutError:
             if recording_started:
                 self._stop_and_pull_recording(
@@ -352,13 +358,17 @@ class AndroidProfileRun(TestingMixin, BaseScript, MozbaseMixin, AndroidMixin):
                 "Only found 1 profraw file. Did child processes terminate early?"
             )
         merged_profdata = os.path.join(workspace_dir, "merged.profdata")
+        llvm_profdata = os.path.join(
+            os.environ["MOZ_FETCHES_DIR"], "clang/bin/llvm-profdata"
+        )
         merge_cmd = [
-            os.path.join(os.environ["MOZ_FETCHES_DIR"], "clang/bin/llvm-profdata"),
+            llvm_profdata,
             "merge",
             "-o",
             merged_profdata,
         ] + profraw_files
-        rc = subprocess.call(merge_cmd)
+        with stage("llvm-profdata merge"):
+            rc = subprocess.call(merge_cmd)
         if rc != 0:
             self.fatal(
                 "INFRA-ERROR: Failed to merge profile data. Corrupt profile?",
@@ -378,6 +388,8 @@ class AndroidProfileRun(TestingMixin, BaseScript, MozbaseMixin, AndroidMixin):
             "en-US.log",
         ]
         subprocess.check_call(tar_cmd)
+
+        report_perfherder(llvm_profdata, profraw_files, merged_profdata, artifacts_dir)
 
         httpd.stop()
 
