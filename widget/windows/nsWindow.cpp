@@ -1304,6 +1304,16 @@ void nsWindow::Destroy() {
    */
   DestroyLayerManager();
 
+  // Destroying the window doesn't release the GDI objects the Windows App SDK
+  // allocates for a title bar extended into the client area, so undo that
+  // first. Skipped for windows still open once shutdown is confirmed: the
+  // process exit frees them, and resetting it then makes the process exit with
+  // STATUS_INVALID_PARAMETER.
+  if (mCustomNonClient &&
+      !AppShutdown::IsInOrBeyond(ShutdownPhase::AppShutdownConfirmed)) {
+    WindowsUIUtils::SetIsTitlebarCollapsed(mWnd, false);
+  }
+
   // The DestroyWindow function destroys the specified window. The function
   // sends WM_DESTROY and WM_NCDESTROY messages to the window to deactivate it
   // and remove the keyboard focus from it. The function also destroys the
