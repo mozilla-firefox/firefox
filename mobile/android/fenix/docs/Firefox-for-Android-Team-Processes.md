@@ -74,9 +74,9 @@ IF a user story has a UX component that needs review, when it is ready for revie
 * Engineer will add a gif/screenshot/apk (as applicable to the issue)
 * Engineer will @mention the designer in the user story and ping the Designer on Slack, and add the `needs:UX-feedback` label
 
-    UX designer reviews the component (consider hopping on a call to work through minor changes). Communication is key to here between designer and engineer in how they want to go through edits.
+  UX designer reviews the component (consider hopping on a call to work through minor changes). Communication is key to here between designer and engineer in how they want to go through edits.
 
-    We will also go through UX review during Sprint Demos.
+  We will also go through UX review during Sprint Demos.
 
 ## Copy Review
 

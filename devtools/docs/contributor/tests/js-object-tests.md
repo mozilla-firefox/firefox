@@ -75,11 +75,11 @@ It exposes only two methods:
     A string which should be evaled in order to instantiate the object example to cover.
 
   For example, it may receive as argument:
-    `{ type: "js", expression: "42" }`
-    `{ type: "js", expression: "[42]" }`
-    `{ type: "js", expression: "let a = new BigInt64Array(1); a[0] = BigInt(42); a;" }`
-    `{ type: "page", expression: "document.body" }`
-    `{ type: "chrome", expression: "ChromeUtils.domProcessChild" }`
+  `{ type: "js", expression: "42" }`
+  `{ type: "js", expression: "[42]" }`
+  `{ type: "js", expression: "let a = new BigInt64Array(1); a[0] = BigInt(42); a;" }`
+  `{ type: "page", expression: "document.body" }`
+  `{ type: "chrome", expression: "ChromeUtils.domProcessChild" }`
 
   This method should return the value which represents the given object example.
 

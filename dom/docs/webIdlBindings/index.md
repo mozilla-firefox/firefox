@@ -1622,33 +1622,33 @@ on. Possible values are:
 
 - `Everything`
 
-   This value can't actually be specified explicitly; this is the
-   default value you get when `[DependsOn]` is not specified. This
-   means we don't know anything about the return value's dependencies
-   and hence can't rearrange other code that might change values around
-   the method or attribute.
+  This value can't actually be specified explicitly; this is the
+  default value you get when `[DependsOn]` is not specified. This
+  means we don't know anything about the return value's dependencies
+  and hence can't rearrange other code that might change values around
+  the method or attribute.
 
 - `DOMState`
 
-   The return value depends on the state of the "DOM", by which we mean
-   all objects specified via Web IDL. The return value is guaranteed to
-   not depend on the state of the JS heap or other JS engine data
-   structures, and is guaranteed to not change unless some function with
-   [`[Affects=Everything]`](#affects) is executed.
+  The return value depends on the state of the "DOM", by which we mean
+  all objects specified via Web IDL. The return value is guaranteed to
+  not depend on the state of the JS heap or other JS engine data
+  structures, and is guaranteed to not change unless some function with
+  [`[Affects=Everything]`](#affects) is executed.
 
 - `DeviceState`
 
-   The return value depends on the state of the device we're running on
-   (e.g., the system clock). The return value is guaranteed to not be
-   affected by any code running inside Gecko itself, but we might get a
-   new value every time the method or getter is called even if no Gecko
-   code ran between the calls.
+  The return value depends on the state of the device we're running on
+  (e.g., the system clock). The return value is guaranteed to not be
+  affected by any code running inside Gecko itself, but we might get a
+  new value every time the method or getter is called even if no Gecko
+  code ran between the calls.
 
 - `Nothing`
 
-   The return value is a constant that never changes. This value cannot
-   be used on non-readonly attributes, since having a non-readonly
-   attribute whose value never changes doesn't make sense.
+  The return value is a constant that never changes. This value cannot
+  be used on non-readonly attributes, since having a non-readonly
+  attribute whose value never changes doesn't make sense.
 
 Values other than `Everything`, when used in combination with
 [`[Affects=Nothing]`](#affects), can used by the JIT to
@@ -1663,15 +1663,15 @@ now, assumed to affect everything. Possible values are:
 
 - `Everything`
 
-   This value can't actually be specified explicitly; this is the
-   default value you get when `[Affects]` is not specified. This means
-   that calling the method or getter might change any mutable state in
-   the DOM or JS heap.
+  This value can't actually be specified explicitly; this is the
+  default value you get when `[Affects]` is not specified. This means
+  that calling the method or getter might change any mutable state in
+  the DOM or JS heap.
 
 - `Nothing`
 
-   Calling the method or getter will have no side-effects on either the
-   DOM or the JS heap.
+  Calling the method or getter will have no side-effects on either the
+  DOM or the JS heap.
 
 Methods and attribute getters with `[Affects=Nothing]` are allowed to
 throw exceptions, as long as they do so deterministically. In the case

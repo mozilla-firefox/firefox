@@ -20,7 +20,6 @@ To create an emulator:
        * **Camera: None (For both Front and Back)**
        * **Graphics: Automatic**
        * **Multi-Core CPU: Unchecked**
-
     8. **Device Testing**: If you wish to run tests on device, you need to enable Developer Options in the Settings menu (this is usually achieved by tapping **About Phone** -> **Build Number** 7 times), and enable '**USB Debugging**.' Then connect the phone to PC via USB cable.
 
        Our CI currently uses the following HW/SW configuration:

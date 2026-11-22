@@ -11,8 +11,8 @@
    |--------------------|--------------------|-----------------|
    | AndroidComponents  | 73.0.20210223143117| 73.0.0          |
 
-    For reference, the AC release checklist can be found at <https://mozac.org/contributing/release-checklist>.
-    Instead of updating the AC version manually, you could also wait for automation to update the [ac version](https://github.com/mozilla-mobile/focus-android/actions/workflows/update-ac.yml).
+   For reference, the AC release checklist can be found at <https://mozac.org/contributing/release-checklist>.
+   Instead of updating the AC version manually, you could also wait for automation to update the [ac version](https://github.com/mozilla-mobile/focus-android/actions/workflows/update-ac.yml).
 3. In the GitHub UI, create a branch on the upstream with the format `releases_v[version]`.
 4. Push the `releases_v[version]` branch as a PR with the commit message "Set version to [version]" and commit into the upstream `releases_v[version]` branch.
 5. Create a new [milestone](https://github.com/mozilla-mobile/focus-android/milestones) for the next release and close the existing milestone.

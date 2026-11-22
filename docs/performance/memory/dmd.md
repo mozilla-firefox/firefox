@@ -100,12 +100,12 @@ The ways to trigger a DMD snapshot are:
                          .getService(Ci.nsIMemoryInfoDumper);
         mydumper.dumpMemoryInfoToTempDir(identifier, anonymize, minimize);
 
-    This will dump memory reports and DMD output to the temporary
-    directory. `identifier` is a string that will be used for part of
-    the filename (or a timestamp will be used if it is an empty string);
-    `anonymize` is a boolean that indicates if the memory reports should
-    be anonymized; and `minimize` is a boolean that indicates if memory
-    usage should be minimized first.
+   This will dump memory reports and DMD output to the temporary
+   directory. `identifier` is a string that will be used for part of
+   the filename (or a timestamp will be used if it is an empty string);
+   `anonymize` is a boolean that indicates if the memory reports should
+   be anonymized; and `minimize` is a boolean that indicates if memory
+   usage should be minimized first.
 
 3. On Linux, you can send signal 34 to the firefox process, e.g.
    with the following command.

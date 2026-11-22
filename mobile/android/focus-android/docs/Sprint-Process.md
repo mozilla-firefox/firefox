@@ -25,7 +25,7 @@ Other labels:
 
 * `[meta]`: larger issues that need to be broken down, into a `[breakdown]` issue and issues for its smaller parts. This should include a checklist of all the issues (including the `[breakdown]` issue).
 
-    These do NOT get a P* label, but should be in a milestone.
+  These do NOT get a P* label, but should be in a milestone.
 * `[breakdown]`: issue to track the work of breaking down a larger bug
 
 ## Triage - Weekly
