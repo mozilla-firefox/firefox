@@ -2,6 +2,207 @@
   "data": [
     {
       "attachment": {
+        "filename": "Desktop%20-%20Weaver.avif",
+        "hash": "3ec6e9beac17fe08dd348b0db6d2a05666e1b6258b0284455a69dc539b6d0a83",
+        "location": "main-workspace/newtab-wallpapers-v2/20261120174147--53f7f0fc-bcd4-4b28-9ef4-c4a63cf303cf--92cd26fc-3f1d-44b9-87c2-8210b2de0ff3.avif",
+        "mimetype": "image/avif",
+        "size": 489062
+      },
+      "background_position": "center",
+      "category": "predecessor",
+      "filter_expression": "env.distribution == \"predecessor-001\"",
+      "id": "53f7f0fc-bcd4-4b28-9ef4-c4a63cf303cf",
+      "last_modified": 1795209669996,
+      "schema": 1795196476570,
+      "theme": "dark",
+      "title": "predecessor-weaver",
+      "visibility_group": "",
+      "visible": true
+    },
+    {
+      "attachment": {
+        "filename": "Desktop%20-%20Bike.avif",
+        "hash": "563a3ad99b60457b5b7fbc522f6b691c3b1ca790abc62ddd819d4ec4ae91d3a2",
+        "location": "main-workspace/newtab-wallpapers-v2/20261119174643--c5ba3d1c-0803-4df4-b760-842e81fc1c9a--1022d281-bc10-402b-940d-205fae7e2260.avif",
+        "mimetype": "image/avif",
+        "size": 489941
+      },
+      "background_position": "center",
+      "category": "predecessor",
+      "filter_expression": "env.distribution == \"predecessor-001\"",
+      "fluent_id": "newtab-wallpaper-category-title-predecessor",
+      "id": "c5ba3d1c-0803-4df4-b760-842e81fc1c9a",
+      "last_modified": 1795209669990,
+      "schema": 1795196621330,
+      "theme": "dark",
+      "title": "predecessor-bike",
+      "visibility_group": "",
+      "visible": true
+    },
+    {
+      "attachment": {
+        "filename": "Desktop%20-%20Eden.avif",
+        "hash": "8a5f61088c0be32e3613edf8bf862d97b66e2e3e89262e11241be8e9a57af3e4",
+        "location": "main-workspace/newtab-wallpapers-v2/20261119174947--adde798e-cbc9-47dc-89dd-a5c29e9d4fca--6439911b-2dc8-4adc-a43f-bf302db80439.avif",
+        "mimetype": "image/avif",
+        "size": 419178
+      },
+      "background_position": "center",
+      "category": "predecessor",
+      "filter_expression": "env.distribution == \"predecessor-001\"",
+      "fluent_id": "newtab-wallpaper-category-title-predecessor",
+      "id": "adde798e-cbc9-47dc-89dd-a5c29e9d4fca",
+      "last_modified": 1795209669984,
+      "order": 3,
+      "schema": 1795110404196,
+      "theme": "dark",
+      "title": "predecessor-eden",
+      "visibility_group": "",
+      "visible": true
+    },
+    {
+      "attachment": {
+        "filename": "Desktop%20-%20Tidebider.avif",
+        "hash": "7c76b3c08fe9082405a9b126f9ce96ff0f0b79d4a0a4dcfc9ff4d984c1d41dc6",
+        "location": "main-workspace/newtab-wallpapers-v2/20261120174038--ae0f442d-5969-4527-83e7-b7c3bce68c27--14501f22-bfbf-4294-8d65-fbc9a8d4d9ae.avif",
+        "mimetype": "image/avif",
+        "size": 208826
+      },
+      "background_position": "center",
+      "category": "predecessor",
+      "filter_expression": "env.distribution == \"predecessor-001\"",
+      "fluent_id": "newtab-wallpaper-category-title-predecessor",
+      "id": "ae0f442d-5969-4527-83e7-b7c3bce68c27",
+      "last_modified": 1795209669979,
+      "schema": 1795200563640,
+      "theme": "dark",
+      "title": "predecessor-tidebinder",
+      "visibility_group": "",
+      "visible": true
+    },
+    {
+      "attachment": {
+        "filename": "Desktop%20-%20Skylar.avif",
+        "hash": "9ae95a8df1362d729fc643956b497cb2da06e714fda6fdb6cf5ad4df12fc5840",
+        "location": "main-workspace/newtab-wallpapers-v2/20261120173954--70410581-a9bd-4d62-b4ee-e3c19b1a4445--46d984e6-cd08-4848-b8ae-cfc723a7abc6.avif",
+        "mimetype": "image/avif",
+        "size": 658724
+      },
+      "background_position": "center",
+      "category": "predecessor",
+      "filter_expression": "env.distribution == \"predecessor-001\"",
+      "fluent_id": "newtab-wallpaper-category-title-predecessor",
+      "id": "70410581-a9bd-4d62-b4ee-e3c19b1a4445",
+      "last_modified": 1795209669974,
+      "schema": 1795200530665,
+      "theme": "dark",
+      "title": "predecessor-skylar",
+      "visibility_group": "",
+      "visible": true
+    },
+    {
+      "attachment": {
+        "filename": "Desktop%20-%20Trooper.avif",
+        "hash": "bf55b2c31e6d1d6dd551b0b2a8c1a3ab8960df3a410bf68e7ade0c0a677d000c",
+        "location": "main-workspace/newtab-wallpapers-v2/20261120174116--ef8f6881-9405-48e0-bf7e-8cb7ee676227--4a1c169b-5bcd-4e03-991d-135a21c2b0d0.avif",
+        "mimetype": "image/avif",
+        "size": 335181
+      },
+      "background_position": "center",
+      "category": "predecessor",
+      "filter_expression": "env.distribution == \"predecessor-001\"",
+      "fluent_id": "newtab-wallpaper-category-title-predecessor",
+      "id": "ef8f6881-9405-48e0-bf7e-8cb7ee676227",
+      "last_modified": 1795209669969,
+      "schema": 1795196438244,
+      "theme": "dark",
+      "title": "predecessor-trooper",
+      "visibility_group": "",
+      "visible": true
+    },
+    {
+      "attachment": {
+        "filename": "Desktop%20-%20Renna.avif",
+        "hash": "10613314fea801f9b6bd8832d8e47696ec31e9d1523c6846f5052c3116d854d0",
+        "location": "main-workspace/newtab-wallpapers-v2/20261120173853--21ccb4f0-c747-4d52-b96a-4aef18b3c8f8--6aa64f0d-9cd5-4bce-8189-0981601e1076.avif",
+        "mimetype": "image/avif",
+        "size": 287637
+      },
+      "background_position": "center",
+      "category": "predecessor",
+      "filter_expression": "env.distribution == \"predecessor-001\"",
+      "fluent_id": "newtab-wallpaper-category-title-predecessor",
+      "id": "21ccb4f0-c747-4d52-b96a-4aef18b3c8f8",
+      "last_modified": 1795209669964,
+      "schema": 1795196291420,
+      "theme": "dark",
+      "title": "predecessor-renna",
+      "visibility_group": "",
+      "visible": true
+    },
+    {
+      "attachment": {
+        "filename": "Desktop%20-%20Monk.avif",
+        "hash": "1c165b8fdd042006bddd64bc1435b0888bc693c2e569c35f83cd83954594accf",
+        "location": "main-workspace/newtab-wallpapers-v2/20261120173811--3949a931-711e-4d6c-acfd-5e168efce26f--eb6b97d4-5ebc-4f68-8606-4ab14afff5bd.avif",
+        "mimetype": "image/avif",
+        "size": 423700
+      },
+      "background_position": "center",
+      "category": "predecessor",
+      "filter_expression": "env.distribution == \"predecessor-001\"",
+      "fluent_id": "newtab-wallpaper-category-title-predecessor",
+      "id": "3949a931-711e-4d6c-acfd-5e168efce26f",
+      "last_modified": 1795209669959,
+      "schema": 1795196258217,
+      "theme": "dark",
+      "title": "predecessor-monk",
+      "visibility_group": "",
+      "visible": true
+    },
+    {
+      "attachment": {
+        "filename": "Desktop%20-%20Master.avif",
+        "hash": "88f57dcffef3a5c749739196e33b684ebfcfa93e84c7935a619a577883b75091",
+        "location": "main-workspace/newtab-wallpapers-v2/20261120173738--cb3a66d9-9945-4a7d-bf6f-e0ddfb6603b3--eb026dab-8918-4c0b-8e5d-3c434cd8da2d.avif",
+        "mimetype": "image/avif",
+        "size": 227324
+      },
+      "background_position": "center",
+      "category": "predecessor",
+      "filter_expression": "env.distribution == \"predecessor-001\"",
+      "fluent_id": "newtab-wallpaper-category-title-predecessor",
+      "id": "cb3a66d9-9945-4a7d-bf6f-e0ddfb6603b3",
+      "last_modified": 1795209669953,
+      "schema": 1795122360371,
+      "theme": "dark",
+      "title": "predecessor-master",
+      "visibility_group": "",
+      "visible": true
+    },
+    {
+      "attachment": {
+        "filename": "Desktop%20-%20FR.avif",
+        "hash": "78dea10846db772f7979abb9baa3cb5aa773d20a02e6ae94ef418a298f1d8f66",
+        "location": "main-workspace/newtab-wallpapers-v2/20261119210600--c6a36eb7-0661-4eba-9b4e-9448d28d2cfc--637b23dd-0175-49d5-9a6e-48709a41409c.avif",
+        "mimetype": "image/avif",
+        "size": 61652
+      },
+      "background_position": "center",
+      "category": "predecessor",
+      "filter_expression": "env.distribution == \"predecessor-001\"",
+      "fluent_id": "newtab-wallpaper-category-title-predecessor",
+      "id": "c6a36eb7-0661-4eba-9b4e-9448d28d2cfc",
+      "last_modified": 1795209669948,
+      "order": 3,
+      "schema": 1795110587179,
+      "theme": "dark",
+      "title": "predecessor-fr",
+      "visibility_group": "",
+      "visible": true
+    },
+    {
+      "attachment": {
         "filename": "Desktop%20-%20Keyart.avif",
         "hash": "97f9d76eee20227807c0a7f388df0c5aab2cbbe9d462fe15331e0a87eeecbed2",
         "location": "main-workspace/newtab-wallpapers-v2/20261118145948--2078dd3d-3b2c-4eb2-b691-6a380c9c4459--14f74302-0986-4752-9cb5-53dd982a8e80.avif",
@@ -13,9 +214,8 @@
       "filter_expression": "env.distribution == \"predecessor-001\"",
       "fluent_id": "newtab-wallpaper-category-title-predecessor",
       "id": "2078dd3d-3b2c-4eb2-b691-6a380c9c4459",
-      "last_modified": 1795042209426,
-      "order": 1,
-      "schema": 1795015569007,
+      "last_modified": 1795209669943,
+      "schema": 1795200522392,
       "theme": "dark",
       "title": "predecessor-default",
       "visibility_group": "",
@@ -1383,5 +1583,5 @@
       "title": "brown"
     }
   ],
-  "timestamp": 1795042209426
+  "timestamp": 1795209669996
 }
