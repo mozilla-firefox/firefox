@@ -1304,13 +1304,6 @@ void nsWindow::Destroy() {
    */
   DestroyLayerManager();
 
-  // Destroying the window doesn't release the GDI objects the Windows App SDK
-  // allocates for a title bar extended into the client area, so undo that
-  // first. Otherwise they pile up until the process runs out of GDI objects.
-  if (mCustomNonClient && ShouldAssociateWithWinAppSDK()) {
-    WindowsUIUtils::SetIsTitlebarCollapsed(mWnd, false);
-  }
-
   // The DestroyWindow function destroys the specified window. The function
   // sends WM_DESTROY and WM_NCDESTROY messages to the window to deactivate it
   // and remove the keyboard focus from it. The function also destroys the
