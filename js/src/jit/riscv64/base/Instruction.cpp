@@ -80,50 +80,7 @@ InstructionBase::Type InstructionBase::InstructionType() const {
         break;
     }
   } else {
-    // RISCV routine
-    switch (InstructionBits() & kBaseOpcodeMask) {
-      case LOAD:
-        return kIType;
-      case LOAD_FP:
-        return kIType;
-      case MISC_MEM:
-        return kIType;
-      case OP_IMM:
-        return kIType;
-      case AUIPC:
-        return kUType;
-      case OP_IMM_32:
-        return kIType;
-      case STORE:
-        return kSType;
-      case STORE_FP:
-        return kSType;
-      case AMO:
-        return kRType;
-      case OP:
-        return kRType;
-      case LUI:
-        return kUType;
-      case OP_32:
-        return kRType;
-      case MADD:
-      case MSUB:
-      case NMSUB:
-      case NMADD:
-        return kR4Type;
-      case OP_FP:
-        return kRType;
-      case BRANCH:
-        return kBType;
-      case JALR:
-        return kIType;
-      case JAL:
-        return kJType;
-      case SYSTEM:
-        return kIType;
-      case OP_V:
-        return kVType;
-    }
+    return BaseOpcodeType(InstructionBits());
   }
   return kUnsupported;
 }

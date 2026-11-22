@@ -36,6 +36,7 @@
 #include "mozilla/Casting.h"
 #include "mozilla/FloatingPoint.h"
 
+#include <array>
 #include <cmath>
 #include <limits>
 #include <type_traits>
@@ -295,14 +296,25 @@ class SimInstruction : public InstructionBase {
   Type type_ = kUnsupported;
 
  public:
+  // The encoding types of the 32-bit instructions by major opcode bits 6..2.
+  static constexpr auto kBaseOpcodeTypes = [] {
+    std::array<Type, 32> types{};
+    for (Instr i = 0; i < 32; i++) {
+      types[i] = BaseOpcodeType((i << 2) | 3);
+    }
+    return types;
+  }();
+
   SimInstruction() = default;
 
   explicit SimInstruction(Instruction* instr) { *this = instr; }
 
   SimInstruction& operator=(Instruction* instr) {
-    operand_ = *reinterpret_cast<const int32_t*>(instr);
+    operand_ = instr->InstructionBits();
     instr_ = instr;
-    type_ = InstructionBase::InstructionType();
+    type_ = IsShortInstruction()
+                ? InstructionBase::InstructionType()
+                : kBaseOpcodeTypes[(operand_ & kBaseOpcodeMask) >> 2];
     MOZ_ASSERT(reinterpret_cast<void*>(&operand_) == this);
     return *this;
   }
