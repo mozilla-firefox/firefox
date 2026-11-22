@@ -4,6 +4,10 @@ Use these checks when writing or reviewing CSS that targets high contrast mode (
 
 For background on the media queries and colour systems referenced here, see the documentation on [HCM Media Queries](HCMMediaQueries.md) and [Colors and High Contrast Mode](ColorsAndHighContrastMode.md). You should read and understand these documents before moving forward with the checks below.
 
+:::{note}
+If you work with an AI agent, the in-tree {doc}`desktop-theme </ai-agent-tools/skills/desktop-theme/SKILL>` skill applies these checks when it writes or reviews CSS for high contrast mode, and the {doc}`accessibility-frontend-review </ai-agent-tools/skills/accessibility-frontend-review/SKILL>` skill applies them when it reviews a patch for accessibility.
+:::
+
 Note: These checks are ordered intentionally, please complete them in order.
 
 ---

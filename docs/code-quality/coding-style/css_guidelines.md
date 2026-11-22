@@ -4,6 +4,10 @@ This document contains guidelines defining how CSS inside the Firefox
 codebase should be written, it is notably relevant for Firefox front-end
 engineers.
 
+:::{note}
+If you work with an AI agent, the in-tree {doc}`desktop-theme </ai-agent-tools/skills/desktop-theme/SKILL>` skill applies these guidelines when it writes, reviews or debugs CSS.
+:::
+
 ## Basics
 
 Here are some basic tips that can optimize reviews if you are changing

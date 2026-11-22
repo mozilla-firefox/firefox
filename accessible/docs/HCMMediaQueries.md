@@ -2,6 +2,10 @@
 
 Firefox supports both the `prefers-contrast` and `forced-colors` media queries. These queries detect a user's display settings (in the browser and/or in their OS), and allow authors to adjust content styling accordingly. These queries are not interchangeable, and we should be intentional about using one or the other (or both!) when designing for accessibility.
 
+:::{note}
+If you work with an AI agent, the in-tree {doc}`accessibility-frontend-review </ai-agent-tools/skills/accessibility-frontend-review/SKILL>` skill applies this guidance when it reviews a patch for accessibility.
+:::
+
 ## What activates these queries?
 
 ### Forced Colors

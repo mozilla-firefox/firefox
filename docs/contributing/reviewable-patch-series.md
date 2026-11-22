@@ -4,6 +4,10 @@
 
 In the Firefox code base, and in many other Mozilla code bases, commits are reviewed individually. There is no "review squashed series" workflow. Many individual small commits are easier to understand than one large commit. Submitting small commits for review helps catch bugs during review. And in the case that a regression does get introduced, having a fully working product after every commit makes it easy to bisect which change caused the bug or performance regression.
 
+:::{note}
+If you work with an AI agent, these in-tree skills can rework existing commits along the lines of this page: {doc}`stack-reorganize </ai-agent-tools/skills/stack-reorganize/SKILL>` restructures a whole stack, and {doc}`stack-split-commit </ai-agent-tools/skills/stack-split-commit/SKILL>` splits one large commit.
+:::
+
 ## Goals
 
 - Smoothe out the landing process by avoiding known sources of review and landing friction.
