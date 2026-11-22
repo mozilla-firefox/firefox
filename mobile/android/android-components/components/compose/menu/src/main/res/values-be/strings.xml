@@ -9,10 +9,22 @@
 <resources>
   <!-- Text shown in a menu item indicating that this is a new item in the menu. -->
   <string name="mozac_menu_item_new_indicator_label">Новае</string>
+  <!-- Text shown in a menu item indicating that this is a new item in the menu, displayed in all capital letters. -->
+  <string name="mozac_menu_item_new_indicator_label_2">НОВАЕ</string>
   <!-- Content description (not visible, for screen readers etc.) for the button that dismisses the banner shown in the menu -->
   <string name="mozac_menu_banner_dismiss_description">Адхіліць акцыю</string>
+  <!-- Instruction text telling the user they can reorder menu sections by dragging them -->
+  <string name="mozac_menu_customize_drag_to_reorder">Перацягніце раздзелы, каб змяніць парадак</string>
   <!-- Button text to preview the changes made to the menu -->
   <string name="mozac_menu_customize_preview">Перадпрагляд</string>
+  <!-- Header text for the section containing hidden menu items -->
+  <string name="mozac_menu_customize_hidden_sections">Схаваныя раздзелы</string>
+  <!-- Instruction telling the user that sections dragged to the Hidden area will no longer appear on the menu -->
+  <string name="mozac_menu_customize_drag_to_hide">Перацягніце раздзелы сюды, каб схаваць</string>
   <!-- Button text to reset the menu to default configuration -->
   <string name="mozac_menu_customize_reset_to_default">Скінуць да прадвызначаных</string>
+  <!-- Accessibility description used in the menu customization screen, where sections of the menu can be moved around. The string describes the section the user has selected, and tells the user what position it currently occupies. %1$s is the name of the section (e.g. "VPN"). %2$d is its position, and %3$d is the total number of sections being shown. -->
+  <string name="mozac_menu_customize_shown_section">%1$s. Пазіцыя %2$d з %3$d</string>
+  <!-- Content description (not visible, for screen readers etc.) of a named menu section in the customize menu screen. %1$s is the name of the section, for example "Page controls", and %2$s the names of its items, for example "Back, Forward, Share, Refresh". -->
+  <string name="mozac_menu_customize_named_section">Раздзел «%1$s»: %2$s</string>
 </resources>

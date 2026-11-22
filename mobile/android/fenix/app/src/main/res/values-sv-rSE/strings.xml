@@ -187,7 +187,7 @@
   <!-- Alert message shown in the "Customize menu" screen when the user tries to hide a menu section which cannot be hidden. -->
   <string name="customize_menu_cannot_hide_section">Det här sektionen kan inte döljas</string>
   <!-- Customize menu screen - Accessibility description - name of the menu section that groups the Back, Forward, Share and Refresh buttons. Read aloud after "Section", followed by the button names ("Section “Page controls”: Back, Forward, Share, Refresh"). -->
-  <string name="browser_menu_section_page_controls">Kontroller på sidan</string>
+  <string name="browser_menu_section_page_controls">Sidkontroller</string>
   <!-- Customize menu screen - Accessibility description - name of the menu section that groups the page tools (Bookmark page, Find in page, Desktop site, Extensions, etc.). Read aloud after "Section", followed by the tool names ("Section “Tools”: Bookmark page, Find in page…"). -->
   <string name="browser_menu_section_tools">Verktyg</string>
   <!-- Customize menu screen - Accessibility description - name of the menu section that groups the History, Bookmarks, Downloads and Passwords items. Read aloud after "Section", followed by the item names ("Section “Library”: History, Bookmarks, Downloads, Passwords"). -->
@@ -294,7 +294,7 @@
   <!-- Content description (not visible, for screen readers etc.) for the handle used to drag the main menu at the bottom of the screen. -->
   <string name="browser_close_main_menu_handlebar_content_description">Stäng meny</string>
   <!-- Content description (not visible, used by screen readers, etc.) for the heading of the menu opened from the customize menu screen to preview pending changes. It is read before the menu items. The items are shown for preview only and do nothing when tapped. -->
-  <string name="browser_menu_preview_heading_content_description">Meny förhandsgranskning. Objekt kan inte aktiveras här.</string>
+  <string name="browser_menu_preview_heading_content_description">Förhandsvisning av menyn. Alternativen kan inte aktiveras här.</string>
   <!-- Content description (not visible, for screen readers etc.) for main menu navigation header. -->
   <string name="browser_main_menu_content_description_navigation_header">Navigering</string>
   <!-- Content description (not visible, for screen readers etc.) for bottom sheet handlebar custom tab menu. -->
@@ -1188,7 +1188,7 @@
   <!-- Preference summary for the toggle that turns sync on or off for the device, shown when sync is on. -->
   <string name="preferences_enable_sync_summary_sync_enabled">Din data säkerhetskopieras och är tillgänglig på synkroniserade enheter.</string>
   <!-- Preference summary for the toggle that turns sync on or off for the device, shown when sync is off. It explains where synced data comes from. -->
-  <string name="preferences_enable_sync_summary_sync_disabled_2">Använda sparad data på ditt konto.</string>
+  <string name="preferences_enable_sync_summary_sync_disabled_2">Använder sparade uppgifter från ditt konto.</string>
   <!-- Preference summary for the toggle that turns sync on or off for the device, shown when sync is off. It explains where synced data comes from. %1$s is the Firefox brand name. -->
   <string name="preferences_enable_sync_summary_sync_disabled">Använder sparad data i ditt %1$s-konto.</string>
   <!-- Summary for the sync preference category. -->
@@ -3297,7 +3297,7 @@
   <!-- The header for the name on the credit card -->
   <string name="credit_cards_name_on_card">Namn på kort</string>
   <!-- The header for the optional security code of a credit card. CVV is the abbreviation of the card security code. -->
-  <string name="credit_cards_cvv_optional">CVV (valfritt)</string>
+  <string name="credit_cards_cvv_optional">CVV (valfri)</string>
   <!-- The text for the "Delete card" menu item for deleting a credit card -->
   <string name="credit_cards_menu_delete_card">Ta bort kort</string>
   <!-- The text for the "Delete card" button for deleting a credit card -->

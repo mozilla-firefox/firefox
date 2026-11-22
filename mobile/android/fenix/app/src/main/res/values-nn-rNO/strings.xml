@@ -2120,10 +2120,14 @@
   <string name="unsubmitted_crash_dialog_negative_button_2">LAT ATT</string>
   <!-- Unsubmitted crash dialog negative button to never be asked for the submission -->
   <string name="unsubmitted_crash_requested_by_devs_dialog_never_button">Aldri vis dette meir</string>
+  <!-- Unsubmitted crash dialog negative button to never be asked for the submission, displayed in all capital letters. -->
+  <string name="unsubmitted_crash_requested_by_devs_dialog_never_button_2" tools:ignore="UnusedResources">ALDRI VIS DETTE MEIR</string>
   <!-- Unsubmitted crash dialog positive button to submit crash report -->
   <string name="unsubmitted_crash_dialog_positive_button_2">SEND</string>
   <!-- Unsubmitted crash dialog positive button to submit crash report -->
   <string name="unsubmitted_crash_dialog_positive_button">Send krasjrapport</string>
+  <!-- Unsubmitted crash dialog positive button to submit crash report, displayed in all capital letters. -->
+  <string name="unsubmitted_crash_dialog_positive_button_3" tools:ignore="UnusedResources">SEND KRASJRAPPORT</string>
   <!-- Body text for crash report dialog. %s is the link text in the annotated string (ie. "Learn More") -->
   <string name="unsubmitted_crash_dialog_body">Krasjrapportar hjelper oss med å diagnostisere og fikse problem med nettlesaren. Rapportar kan innehalde personlege eller sensitive data. %s</string>
   <string name="unsubmitted_crash_dialog_learn_more">Les meir</string>
@@ -3312,6 +3316,10 @@
   <string name="credit_cards_number_validation_error_message_2">Skriv inn eit gyldig kortnummer</string>
   <!-- Error message for card name on card validation -->
   <string name="credit_cards_name_on_card_validation_error_message_2">Legg til eit namn</string>
+  <!-- Error message for a credit card security code that does not meet the 3-digit length requirement. -->
+  <string name="credit_cards_cvv_validation_error_message">Sikkerheitskoden må vere 3-sifra</string>
+  <!-- Error message for a credit card security code that does not meet the 4-digit length requirement (used for American Express cards only) -->
+  <string name="credit_cards_cvv_amex_validation_error_message">American Express-sikkerheitskodar har 4 siffer</string>
   <!-- Message displayed in biometric prompt displayed for authentication before allowing users to view their saved credit cards -->
   <string name="credit_cards_biometric_prompt_message">Lås opp for å sjå lagra betalingskort</string>
   <!-- Title of warning dialog if users have no device authentication set up -->
@@ -3721,6 +3729,12 @@
     %1$s is the size in kilobytes or megabytes of the language file.
   -->
   <string name="translations_download_language_file_dialog_title">Last ned språk i datasparemodus (%1$s)?</string>
+  <!--
+    Translations options dialog
+
+    Title of the translation options dialog that allows a user to set their translation preferences for the site the user is currently on.
+  -->
+  <string name="translation_option_bottom_sheet_title_heading2">Innstillingar for omsetting</string>
   <!--
     Translations options dialog
 

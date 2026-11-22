@@ -9,6 +9,8 @@
 <resources>
   <!-- Text shown in a menu item indicating that this is a new item in the menu. -->
   <string name="mozac_menu_item_new_indicator_label">پوسکن</string>
+  <!-- Text shown in a menu item indicating that this is a new item in the menu, displayed in all capital letters. -->
+  <string name="mozac_menu_item_new_indicator_label_2">پوسکن</string>
   <!-- Content description (not visible, for screen readers etc.) for the button that dismisses the banner shown in the menu -->
   <string name="mozac_menu_banner_dismiss_description">اشتہار اے ختم کبو</string>
   <!-- Instruction text telling the user they can reorder menu sections by dragging them -->
@@ -21,4 +23,12 @@
   <string name="mozac_menu_customize_drag_to_hide">بشخاتے ڈکنگ کن دانگ چکےبو</string>
   <!-- Button text to reset the menu to default configuration -->
   <string name="mozac_menu_customize_reset_to_default">اصل اے واپسی</string>
+  <!-- Content description (not visible, for screen readers etc.) of a named menu section in the customize menu screen. %1$s is the name of the section, for example "Page controls", and %2$s the names of its items, for example "Back, Forward, Share, Refresh". -->
+  <string name="mozac_menu_customize_named_section">بشخ “%1$s”: %2$s</string>
+  <!-- Content description (not visible, for screen readers etc.) of a menu section without a name in the customize menu screen. %1$s is the names of its items, for example "VPN". -->
+  <string name="mozac_menu_customize_unnamed_section">بشخ “%1$s”</string>
+  <!-- Name of the action (used by screen readers, etc.) that moves a menu section up one position in the customize menu screen. It is also shown in the list of actions displayed when the user long-presses the drag handle of a menu section. -->
+  <string name="mozac_menu_customize_move_up">برز انبو</string>
+  <!-- Name of the action (used by screen readers, etc.) that moves a menu section down one position in the customize menu screen. It is also shown in the list of actions displayed when the user long-presses the drag handle of a menu section. -->
+  <string name="mozac_menu_customize_move_down">شیف انبو</string>
 </resources>

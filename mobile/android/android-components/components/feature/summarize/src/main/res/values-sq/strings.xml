@@ -27,6 +27,8 @@
   <string name="mozac_summarize_download_consent_button_negative">Anuloje</string>
   <!-- Title for the download in progress screen -->
   <string name="mozac_summarize_download_progress_title">Ujdisje përmbledhjesh</string>
+  <!-- Message to describe that a download is in progress using an on-device, private model -->
+  <string name="mozac_summarize_download_progress_message">Shkarkim i vetëm një here për përmbledhje private.</string>
   <!-- Caption to describe the progress of the download. %1$.2f is bytes downloaded, %2$.2f is total bytes required for download to complete. -->
   <string name="mozac_summarize_download_progress_caption">%1$.2f MB / %2$.2f MB</string>
   <!-- Button text shown while a download is in progress to cancel the download -->
@@ -41,6 +43,10 @@
   <string name="mozac_summarize_download_error_negative_button">Anuloje</string>
   <!-- Title for the error screen when page is too long to summarize -->
   <string name="mozac_summarize_content_too_long_error_title">Faqe shumë e gjatë për ta përmbledhur</string>
+  <!-- Title for the error screen when the page content is behind a paywall -->
+  <string name="mozac_summarize_paywalled_content_error_title">S’mund të përmblidhet lëndë për të cilën duhet paguar</string>
+  <!-- Title for the info error screen -->
+  <string name="mozac_summarize_info_error_title">S’mund të përmblidhet hëpërhë</string>
   <!-- Generic fallback message for the info error screen -->
   <string name="mozac_summarize_info_error_message">Riprovoni më vonë.</string>
   <!-- Error code shown on long press of the error icon. %1$d is an error code. -->
@@ -53,10 +59,20 @@
   <string name="mozac_summarize_settings_title">Përmbledhje faqesh</string>
   <!-- Label for the summarize pages toggle in settings -->
   <string name="mozac_summarize_settings_summarize_pages">Përmblidh faqe</string>
+  <!-- Description for the summarize pages toggle -->
+  <string name="mozac_summarize_settings_summarize_pages_cloud">Krijoni me IA përmbledhje faqesh. Faqet dhe përmbledhjet mbeten private dhe s’depozitohen kurrë.</string>
   <!-- Link text to learn more about page summaries in settings -->
   <string name="mozac_summarize_settings_learn_more">Mësoni më tepër</string>
   <!-- Section header for gesture settings -->
   <string name="mozac_summarize_settings_gestures">Gjeste</string>
+  <!-- Label for the shake to summarize toggle in settings -->
+  <string name="mozac_summarize_settings_shake_to_summarize">Që të bëhet përmbledhje, tundeni</string>
+  <!-- Description for the shake to summarize toggle in settings -->
+  <string name="mozac_summarize_settings_shake_to_summarize_description">Që të përmblidhet një faqe, tundeni pajisjen tuaj nga një anë në tjetrën.</string>
+  <!-- Label for the shake sensitivity slider in settings -->
+  <string name="mozac_summarize_settings_shake_sensitivity">Ndjeshmëri tundjesh</string>
+  <!-- Description for the shake sensitivity slider in settings -->
+  <string name="mozac_summarize_settings_shake_sensitivity_description">Përimtoni sa fort duhet ta tundni që të shkaktohet përmbledhje.</string>
   <!-- Low option label for the shake sensitivity slider in settings -->
   <string name="mozac_summarize_settings_shake_sensitivity_low">E ulët</string>
   <!-- Medium option label for the shake sensitivity slider in settings -->

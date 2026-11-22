@@ -186,6 +186,18 @@
   <string name="customize_menu">Προσαρμογή μενού</string>
   <!-- Alert message shown in the "Customize menu" screen when the user tries to hide a menu section which cannot be hidden. -->
   <string name="customize_menu_cannot_hide_section">Δεν είναι δυνατή η απόκρυψη αυτής της ενότητας</string>
+  <!-- Customize menu screen - Accessibility description - name of the menu section that groups the Back, Forward, Share and Refresh buttons. Read aloud after "Section", followed by the button names ("Section “Page controls”: Back, Forward, Share, Refresh"). -->
+  <string name="browser_menu_section_page_controls">Στοιχεία ελέγχου σελίδας</string>
+  <!-- Customize menu screen - Accessibility description - name of the menu section that groups the page tools (Bookmark page, Find in page, Desktop site, Extensions, etc.). Read aloud after "Section", followed by the tool names ("Section “Tools”: Bookmark page, Find in page…"). -->
+  <string name="browser_menu_section_tools">Εργαλεία</string>
+  <!-- Customize menu screen - Accessibility description - name of the menu section that groups the History, Bookmarks, Downloads and Passwords items. Read aloud after "Section", followed by the item names ("Section “Library”: History, Bookmarks, Downloads, Passwords"). -->
+  <string name="browser_menu_section_library">Βιβλιοθήκη</string>
+  <!-- Customize menu screen - Accessibility description - name of the menu section that groups the Sign in and Settings items. Read aloud after "Section", followed by the item names ("Section “Accounts and settings”: Sign in, Settings"). -->
+  <string name="browser_menu_section_accounts_and_settings">Λογαριασμοί και ρυθμίσεις</string>
+  <!-- Customize menu screen - Accessibility description - name of the menu section that groups the New tab and New private tab actions. Read aloud after "Section", followed by the action names ("Section “New tab”: New tab, New private tab"). -->
+  <string name="browser_menu_section_new_tab">Νέα καρτέλα</string>
+  <!-- Title of the dialog shown when resetting the menu to its default layout (removing all user customizations) -->
+  <string name="menu_customize_reset_dialog_title">Επαναφορά στο προεπιλεγμένο μενού;</string>
   <!-- Primary button on the menu reset dialog. Tapping it removes all user customizations. -->
   <string name="menu_customize_reset_dialog_reset">Επαναφορά</string>
   <!-- Secondary button on the menu reset dialog. Tapping it cancels the reset process and preserves all user-made customizations. -->
@@ -339,6 +351,10 @@
     Content description for the translate page toolbar button that opens the translations dialog when no translation has occurred.
   -->
   <string name="browser_toolbar_translate">Μετάφραση σελίδας</string>
+  <!-- Accessibility description for the toolbar button displayed when the page the user is on has a video that can be opened in a picture-in-picture window -->
+  <string name="browser_toolbar_picture_in_picture">Εικόνα εντός εικόνας</string>
+  <!-- Accessibility description for the toolbar button displayed while the current page's video is playing in a picture-in-picture window. Tapping the button closes that window. -->
+  <string name="browser_toolbar_picture_in_picture_close">Κλείσιμο εικόνας εντός εικόνας</string>
   <!-- CFR description for the browser toolbar describing the "Shake to summarize feature" -->
   <string name="browser_toolbar_summarize_cfr_description">Ανακινήστε τη συσκευή σας για να συνοψίσετε αυτήν τη σελίδα σε δευτερόλεπτα.⚡️</string>
   <!--
@@ -596,6 +612,8 @@
   <string name="nova_onboarding_sync_subtitle">Λάβετε αστραπιαία σελιδοδείκτες, κωδικούς πρόσβασης και πολλά άλλα σε οποιαδήποτε συσκευή. Τα προσωπικά σας δεδομένα παραμένουν ασφαλή με την κρυπτογράφηση.</string>
   <!-- Sync onboarding button. -->
   <string name="nova_onboarding_sync_button">Έναρξη συγχρονισμού</string>
+  <!-- Body of the onboarding pairing card. Provides troubleshooting instructions when the QR code is not being displayed on the pairing computer. The "firefox.com/pair" URL should not be translated or edited. Bold tags should be preserved. -->
+  <string name="nova_onboarding_sync_pairing_body"><![CDATA[Δεν βλέπετε κωδικό QR; Μεταβείτε στο <b>firefox.com/pair</b> από τον υπολογιστή σας.]]></string>
   <!-- Primary button of the onboarding pairing card. Opens the camera to scan the pairing QR code. -->
   <string name="nova_onboarding_sync_pairing_scan_button">Σάρωση κωδικού σύζευξης</string>
   <!-- Secondary button of the onboarding pairing card. Opens the Mozilla account sign-in page. -->
@@ -1292,6 +1310,8 @@
     Sign-in promo card: Title inviting the user to sign in
   -->
   <string name="sign_in_promo_title">Σύνδεση</string>
+  <!-- Sign-in promo card: Body of the card listing what signing in allows the user to do -->
+  <string name="sign_in_promo_description">Συγχρονίστε καρτέλες, σελιδοδείκτες, κωδικούς πρόσβασης και πολλά άλλα.</string>
   <!--
     Pairing Feature strings
 
@@ -1680,6 +1700,8 @@
   <string name="add_to_new_tab_group_content_description">Προσθήκη σε νέα ομάδα καρτελών</string>
   <!-- Label for adding to a new tab group. -->
   <string name="add_to_new_tab_group_title">Νέα ομάδα καρτελών</string>
+  <!-- Label to add a link in a new tab inside a tab group. -->
+  <string name="contextmenu_open_in_tab_group">Άνοιγμα σε ομάδα καρτελών</string>
   <plurals name="tab_group_tabs_count_subtitle">
     <!--
       Subtitle for the number of tabs in a tab group.
@@ -2092,15 +2114,21 @@
   <string name="unsubmitted_crash_dialog_negative_button_2">ΚΛΕΙΣΙΜΟ</string>
   <!-- Unsubmitted crash dialog negative button to never be asked for the submission -->
   <string name="unsubmitted_crash_requested_by_devs_dialog_never_button">Να μην εμφανιστεί ξανά</string>
+  <!-- Unsubmitted crash dialog negative button to never be asked for the submission, displayed in all capital letters. -->
+  <string name="unsubmitted_crash_requested_by_devs_dialog_never_button_2" tools:ignore="UnusedResources">ΝΑ ΜΗΝ ΕΜΦΑΝΙΣΤΕΙ ΞΑΝΑ</string>
   <!-- Unsubmitted crash dialog positive button to submit crash report -->
   <string name="unsubmitted_crash_dialog_positive_button_2">ΑΠΟΣΤΟΛΗ</string>
   <!-- Unsubmitted crash dialog positive button to submit crash report -->
   <string name="unsubmitted_crash_dialog_positive_button">Αποστολή αναφοράς κατάρρευσης</string>
+  <!-- Unsubmitted crash dialog positive button to submit crash report, displayed in all capital letters. -->
+  <string name="unsubmitted_crash_dialog_positive_button_3" tools:ignore="UnusedResources">ΑΠΟΣΤΟΛΗ ΑΝΑΦΟΡΑΣ ΚΑΤΑΡΡΕΥΣΗΣ</string>
   <!-- Body text for crash report dialog. %s is the link text in the annotated string (ie. "Learn More") -->
   <string name="unsubmitted_crash_dialog_body">Οι αναφορές κατάρρευσης μάς βοηθούν να διαγνώσουμε και να διορθώσουμε προβλήματα του προγράμματος περιήγησης. Οι αναφορές ενδέχεται να περιλαμβάνουν προσωπικά ή ευαίσθητα δεδομένα. %s</string>
   <string name="unsubmitted_crash_dialog_learn_more">Μάθετε περισσότερα</string>
   <!-- Unsubmitted crash dialog button to open a web page with more details on the feature and privacy policy -->
   <string name="unsubmitted_crash_requested_by_devs_learn_more">Μάθετε περισσότερα</string>
+  <!-- Unsubmitted crash dialog button to open a web page with more details on the feature and privacy policy, displayed in all capital letters. -->
+  <string name="unsubmitted_crash_requested_by_devs_learn_more_2" tools:ignore="UnusedResources">ΜΑΘΕΤΕ ΠΕΡΙΣΣΟΤΕΡΑ</string>
   <!--
     Bookmarks
 
@@ -2532,6 +2560,10 @@
   <string name="snackbar_private_tab_closed">Η ιδιωτική καρτέλα έκλεισε</string>
   <!-- Text shown in snackbar to undo deleting a tab, top site or collection -->
   <string name="snackbar_deleted_undo">ΑΝΑΙΡΕΣΗ</string>
+  <!-- Confirmation message displayed when user adds a page to a tab group. %1$s is the tab group's name. -->
+  <string name="snackbar_tab_added_to_group">Προστέθηκε στο «%1$s»</string>
+  <!-- Confirmation message displayed when user moves a page from one tab group to another. %1$s is the tab group's name. -->
+  <string name="snackbar_tab_moved_to_group">Μετακινήθηκε στο «%1$s»</string>
   <!-- Button text displayed with a confirmation message when the user adds or moves a page to a tab group. Tapping it displays the tab group. -->
   <string name="snackbar_action_view">Προβολή</string>
   <!--
@@ -3216,6 +3248,10 @@
   <string name="preferences_credit_cards_save_and_autofill_cards_2">Αποθήκευση και συμπλήρωση μεθόδων πληρωμής</string>
   <!-- Preference summary for saving and autofilling payment method data. %s is the name of the app (for example "Firefox"). -->
   <string name="preferences_credit_cards_save_and_autofill_cards_summary_2">Το %s κρυπτογραφεί όλες τις μεθόδους πληρωμής που αποθηκεύετε</string>
+  <!-- Preference for saving the security codes of credit cards. -->
+  <string name="preferences_credit_cards_save_security_codes">Αποθήκευση κωδικών ασφαλείας</string>
+  <!-- Preference summary for saving the security codes of credit cards. %s is the name of the app (for example "Firefox"). -->
+  <string name="preferences_credit_cards_save_security_codes_summary">Το %s κρυπτογραφεί τον αριθμό και τον κωδικό ασφαλείας της κάρτας σας για ταχύτερες πληρωμές</string>
   <!-- Preference option for syncing credit cards across devices. This is displayed when the user is not signed into sync -->
   <string name="preferences_credit_cards_sync_cards_across_devices">Συγχρονισμός καρτών μεταξύ συσκευών</string>
   <!-- Preference option for syncing credit cards across devices. This is displayed when the user is signed into sync -->
@@ -3252,6 +3288,8 @@
   <string name="credit_cards_expiration_date_year">Έτος ημερομηνίας λήξης</string>
   <!-- The header for the name on the credit card -->
   <string name="credit_cards_name_on_card">Όνομα κατόχου κάρτας</string>
+  <!-- The header for the optional security code of a credit card. CVV is the abbreviation of the card security code. -->
+  <string name="credit_cards_cvv_optional">CVV (προαιρετικό)</string>
   <!-- The text for the "Delete card" menu item for deleting a credit card -->
   <string name="credit_cards_menu_delete_card">Διαγραφή κάρτας</string>
   <!-- The text for the "Delete card" button for deleting a credit card -->
@@ -3268,10 +3306,16 @@
   <string name="credit_cards_cancel_button">Ακύρωση</string>
   <!-- Title of the "Saved cards" screen -->
   <string name="credit_cards_saved_cards">Αποθηκευμένες κάρτες</string>
+  <!-- Text in the saved cards list that indicates the security code for a credit card is being stored -->
+  <string name="credit_cards_cvv_saved">Αποθηκευμένο CVV</string>
   <!-- Error message for card number validation -->
   <string name="credit_cards_number_validation_error_message_2">Εισαγάγετε έγκυρο αριθμό κάρτας</string>
   <!-- Error message for card name on card validation -->
   <string name="credit_cards_name_on_card_validation_error_message_2">Προσθήκη ονόματος</string>
+  <!-- Error message for a credit card security code that does not meet the 3-digit length requirement. -->
+  <string name="credit_cards_cvv_validation_error_message">Ο κωδικός ασφαλείας πρέπει να είναι τριψήφιος</string>
+  <!-- Error message for a credit card security code that does not meet the 4-digit length requirement (used for American Express cards only) -->
+  <string name="credit_cards_cvv_amex_validation_error_message">Οι κωδικοί ασφαλείας της American Express είναι τετραψήφιοι</string>
   <!-- Message displayed in biometric prompt displayed for authentication before allowing users to view their saved credit cards -->
   <string name="credit_cards_biometric_prompt_message">Ξεκλειδώστε για να δείτε τις αποθηκευμένες κάρτες σας</string>
   <!-- Title of warning dialog if users have no device authentication set up -->
@@ -3684,6 +3728,12 @@
   <!--
     Translations options dialog
 
+    Title of the translation options dialog that allows a user to set their translation preferences for the site the user is currently on.
+  -->
+  <string name="translation_option_bottom_sheet_title_heading2">Προτιμήσεις μετάφρασης</string>
+  <!--
+    Translations options dialog
+
     Title of the translation options dialog that allows a user to set their translation options for the site the user is currently on.
   -->
   <string name="translation_option_bottom_sheet_title_heading">Επιλογές μετάφρασης</string>
@@ -3919,6 +3969,10 @@
   <string name="protection_panel_permissions_title">Δικαιώματα</string>
   <!-- Certificate panel - Title of the section that contains the website's certificate information (issued to, issued by, etc.) as verified by Firefox (thus guaranteeing the HTTPS connection is secure) -->
   <string name="certificate_details_panel_secure_connection_title">Ασφαλής σύνδεση</string>
+  <!-- Certificate panel - Label for the organization, locality and country the website's certificate was issued to -->
+  <string name="certificate_details_panel_issued_to_label">Το πιστοποιητικό εκδόθηκε για:</string>
+  <!-- Certificate panel - Label for the name of the certificate authority that verified and issued the website's certificate -->
+  <string name="certificate_details_panel_verified_by_label">Επαληθεύτηκε από:</string>
   <!-- Certificate panel - Content description (not visible, for screen readers etc.) for the EU trust mark logo, shown when the website's certificate is a Qualified Website Authentication Certificate (QWAC) as specified in EU Regulation 2024/1183 -->
   <string name="certificate_details_panel_eu_trust_mark_content_description">Σήμα εμπιστοσύνης της ΕΕ</string>
   <plurals name="trackers_blocked_panel_total_num_trackers_blocked_2">
@@ -3988,6 +4042,8 @@
   <string name="clear_site_data_dialog_negative_button_text">Ακύρωση</string>
   <!-- Text for the connection security panel when the site is secure. -->
   <string name="connection_security_panel_secure">Ασφαλής σύνδεση</string>
+  <!-- Action description (not visible, for screen readers etc.) for the “Secure connection” link in the protection panel header, which opens a page showing the website's certificate details. Screen readers announce it after “Double tap to” -->
+  <string name="connection_security_panel_view_certificate_details">προβολή λεπτομερειών πιστοποιητικού</string>
   <!-- Text for the connection security panel when the site is not secure. -->
   <string name="connection_security_panel_not_secure">Μη ασφαλής σύνδεση</string>
   <!-- Text for the connection security panel when accessed from local PDF. -->
@@ -4498,6 +4554,8 @@
   <string name="wrex_widget_match_suspended">Διακόπηκε</string>
   <!-- Label shown on the sports widget match status badge when a match has been postponed to a later date. -->
   <string name="wrex_widget_match_postponed">Αναβλήθηκε</string>
+  <!-- Label shown on the sports widget match status badge when a match has been canceled. -->
+  <string name="wrex_widget_match_canceled">Ακυρώθηκε</string>
   <!-- Sports widget action label to refresh match data after an error. -->
   <string name="wrex_widget_error_refresh">Ανανέωση</string>
   <!-- Sports widget menu item to view the team's match results. -->

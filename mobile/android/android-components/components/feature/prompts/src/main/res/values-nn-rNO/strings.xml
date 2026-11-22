@@ -164,6 +164,8 @@
   <string name="mozac_feature_prompts_save_payment_method_prompt_title">Lagre denne betalingsmåten?</string>
   <!-- Label for the masked card security code in a save or update credit card dialog. %s is the masked security code (for example "•••"). -->
   <string name="mozac_feature_prompts_save_payment_method_security_code">Sikkerheitskode %s</string>
+  <!-- Content description for the masked card security code in a save or update credit card dialog. Screen readers read it instead of the masked characters. -->
+  <string name="mozac_feature_prompts_save_payment_method_security_code_description">Sikkerheitskode skjult</string>
   <!-- Label of the toggle in a save or update credit card dialog that controls whether the card security code is saved. -->
   <string name="mozac_feature_prompts_always_save_security_codes">Lagre sikkerheitskodar</string>
   <!-- Text for the button that closes a save or update credit card dialog without saving. -->
