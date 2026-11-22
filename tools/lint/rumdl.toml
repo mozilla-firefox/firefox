@@ -16,3 +16,15 @@ disable = [
     "MD059",  # descriptive-link-text: needs human-written link text per link, address in follow-up
     "MD053",  # link-image-reference-definitions: pre-existing unused references, address in follow-up
 ]
+
+# Since 0.3.5, a blank line inside one item forces blank lines between all
+# items of the list. The list already renders loose, so keep the tight
+# inter-item spacing used throughout the docs.
+[MD076]
+allow-loose-continuation = true
+
+# MD077 doesn't understand MyST definition lists nested in list items: its fix
+# moves the definition's paragraphs out of the definition.
+[per-file-ignores]
+"layout/docs/Reftest.md" = ["MD077"]
+"tools/profiler/docs/instrumenting-rust.md" = ["MD077"]

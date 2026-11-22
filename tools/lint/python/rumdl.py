@@ -13,11 +13,7 @@ from mozlint import result
 here = os.path.abspath(os.path.dirname(__file__))
 CONFIG_PATH = os.path.join(os.path.dirname(here), "rumdl.toml")
 
-# rumdl prints this plain string (not JSON) to stdout when invoked on a path
-# that contains no markdown files, even with --output-format=json.
-NO_MARKDOWN_OUTPUT = "No markdown files found to check."
-
-FIXED_RE = re.compile(r"Fixed (\d+)/\d+ issues?")
+FIXED_RE = re.compile(r"Fixed: (\d+)/\d+ issues?")
 VERSION_RE = re.compile(r"rumdl[^\d]*([0-9][0-9.]*)")
 
 
@@ -78,7 +74,7 @@ def lint(paths, config, log, **lintargs):
     log.debug(f"Running with args: {args}")
     output, _ = run_process(args, log)
     output = output.strip()
-    if not output or output == NO_MARKDOWN_OUTPUT:
+    if not output:
         return {"results": [], "fixed": fixed}
 
     try:

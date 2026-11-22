@@ -13,7 +13,7 @@ pypi:pytest-taskgraph==0.2.0
 pypi:pytest==8.4.2
 pypi:pytz==2022.7.1
 pypi:ruff==0.17.6
-pypi:rumdl==0.1.96
+pypi:rumdl==0.3.5
 pypi:snowballstemmer==2.2.0
 pypi:sphinxcontrib-applehelp==1.0.4
 pypi:sphinxcontrib-htmlhelp==2.0.1

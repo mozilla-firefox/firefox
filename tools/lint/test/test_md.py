@@ -27,9 +27,8 @@ def test_lint_rumdl_fix(lint, create_temp_file):
 
 
 def test_lint_rumdl_no_markdown(lint, tmp_path):
-    # rumdl prints a plain "No markdown files found to check." message (not
-    # JSON) when a path contains no .md files. The linter should treat that
-    # as an empty result rather than a parse error.
+    # rumdl reports a path that contains no .md files on stderr and prints an
+    # empty JSON array; the linter should return an empty result.
     (tmp_path / "not_markdown.txt").write_text("hello")
     results = lint([str(tmp_path)])
     assert results == []
