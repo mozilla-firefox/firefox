@@ -9,18 +9,13 @@ https://bugzilla.mozilla.org/show_bug.cgi?id=713980
   <script src="/tests/SimpleTest/SimpleTest.js"></script>
   <link rel="stylesheet" type="text/css" href="/tests/SimpleTest/test.css" />
 
-  <!-- Load a cross-origin webfont without CORS (common pain point) and some
-       other styles that require anonymous CORS -->
+  <!-- Load a cross-origin webfont without CORS (common pain point) -->
   <style>
     @font-face {
       font-family: "bad_cross_origin_webfont";
       src: url('http://example.org/tests/dom/security/test/csp/file_CSP.sjs?testid=font_bad&type=application/octet-stream');
     }
     div#bad_webfont { font-family: "bad_cross_origin_webfont"; }
-
-    div#bad_shape_outside { shape-outside: url('http://example.org/tests/dom/security/test/csp/file_CSP.sjs?testid=bad_shape_outside&type=image/png'); }
-
-    div#bad_mask_image { mask-image: url('http://example.org/tests/dom/security/test/csp/file_CSP.sjs?testid=bad_mask_image&type=image/svg+xml'); }
   </style>
 </head>
 <body>
@@ -113,14 +108,19 @@ badDiv = document.createElement('div');
 badDiv.setAttribute('id', 'bad_webfont');
 document.body.appendChild(badDiv);
 
+// Styles that require anonymous CORS. Their URLs are unique to this load, as
+// an image already loaded for an earlier load of this test would be reused
+// without a new request, and so without a warning.
+const unique = Date.now();
+
 // Create a div that triggers a cross-origin request for a shape-outside image
 badDiv = document.createElement('div');
-badDiv.setAttribute('id', 'bad_shape_outside');
+badDiv.style.shapeOutside = `url('http://example.org/tests/dom/security/test/csp/file_CSP.sjs?testid=bad_shape_outside&type=image/png&unique=${unique}')`;
 document.body.appendChild(badDiv);
 
 // Create a div that triggers a cross-origin request for a mask-image
 badDiv = document.createElement('div');
-badDiv.setAttribute('id', 'bad_mask_image');
+badDiv.style.maskImage = `url('http://example.org/tests/dom/security/test/csp/file_CSP.sjs?testid=bad_mask_image&type=image/svg+xml&unique=${unique}')`;
 document.body.appendChild(badDiv);
 </script>
 
