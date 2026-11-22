@@ -64,16 +64,18 @@
     is(didFinishUnload, false, "unload shouldn't have finished");
 
     let switchStarted = SpecialPowers.spawnChrome([], async () => {
+      // The page is served from the HTTP cache when the test runs again.
+      const topics = ["http-on-examine-response", "http-on-examine-cached-response"];
       await new Promise(resolve => {
-        async function observer(subject, topic) {
-          is(topic, "http-on-examine-response");
-
+        async function observer(subject) {
           let uri = subject.QueryInterface(Ci.nsIChannel).URI;
           if (!uri.filePath.endsWith("file_tell_opener.html")) {
             return;
           }
 
-          Services.obs.removeObserver(observer, "http-on-examine-response");
+          for (let topic of topics) {
+            Services.obs.removeObserver(observer, topic);
+          }
 
           // spin the event loop a few times to ensure we resolve after the process switch
           for (let i = 0; i < 10; ++i) {
@@ -83,7 +85,9 @@
           info("resolving!");
           resolve();
         }
-        Services.obs.addObserver(observer, "http-on-examine-response");
+        for (let topic of topics) {
+          Services.obs.addObserver(observer, topic);
+        }
       });
     });
 
