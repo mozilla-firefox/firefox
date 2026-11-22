@@ -20,6 +20,7 @@ static_freetype = ["glyph_rasterizer/static_freetype"]
 leak_checks = []
 gecko = ["firefox-on-glean", "glean", "glyph_rasterizer/gecko"]
 sw_compositor = ["swgl"]
+gecko_nightly = ["api/gecko_nightly"]
 debugger = ["hyper", "hyper-util", "http-body-util", "tokio", "serde_json", "url", "sha1", "base64", "libloading", "api/debugger", "capture"]
 
 [build-dependencies]

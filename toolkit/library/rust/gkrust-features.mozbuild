@@ -18,6 +18,9 @@ if CONFIG["MOZ_TSAN"]:
 if CONFIG["MOZ_WEBRENDER_DEBUGGER"]:
     gkrust_features += ["webrender_debugger"]
 
+if CONFIG["NIGHTLY_BUILD"]:
+    gkrust_features += ["gecko_nightly"]
+
 if CONFIG["MOZ_PULSEAUDIO"]:
     gkrust_features += ["cubeb_pulse_rust"]
 

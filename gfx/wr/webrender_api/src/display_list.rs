@@ -1594,6 +1594,7 @@ impl DisplayListBuilder {
         flags: di::PrimitiveFlags,
         tag: di::ItemTag,
     ) {
+        self.check_clip_chain_id(clip_chain_id);
         let item = di::DisplayItem::HitTest(di::HitTestDisplayItem {
             rect: self.normalize_rect(rect, spatial_id),
             clip_chain_id,
@@ -2761,6 +2762,9 @@ impl DisplayListBuilder {
         flags: di::StackingContextFlags,
         snapshot: Option<di::SnapshotInfo>
     ) {
+        if let Some(clip_chain_id) = clip_chain_id {
+            self.check_clip_chain_id(clip_chain_id);
+        }
         self.push_stacking_context_impl(
             spatial_id,
             prim_flags,
@@ -2950,6 +2954,25 @@ impl DisplayListBuilder {
         di::SpatialId::new(self.next_spatial_index - 1, self.pipeline_id)
     }
 
+    /// Panic when an item references a clip chain of this pipeline that has
+    /// not been defined yet (bug 2055982).
+    #[cfg(feature = "gecko_nightly")]
+    fn check_clip_chain_id(&self, id: di::ClipChainId) {
+        if id != di::ClipChainId::INVALID &&
+           id.1 == self.pipeline_id &&
+           id.0 >= self.next_clip_chain_id {
+            panic!(
+                "webrender: item references undefined clip-chain {:?} (next_clip_chain_id={})",
+                id,
+                self.next_clip_chain_id,
+            );
+        }
+    }
+
+    #[cfg(not(feature = "gecko_nightly"))]
+    #[inline(always)]
+    fn check_clip_chain_id(&self, _id: di::ClipChainId) {}
+
     fn generate_clip_chain_id(&mut self) -> di::ClipChainId {
         self.next_clip_chain_id += 1;
         di::ClipChainId(self.next_clip_chain_id - 1, self.pipeline_id)
@@ -3025,6 +3048,7 @@ impl DisplayListBuilder {
         &mut self,
         common: &di::CommonItemProperties,
     ) -> (di::CommonItemProperties, AuOffset) {
+        self.check_clip_chain_id(common.clip_chain_id);
         let offset = self.accumulated_scroll_offset(common.spatial_id);
         let mut common = *common;
         common.clip_rect = self.shift_rect(common.clip_rect, offset);
@@ -3082,6 +3106,9 @@ impl DisplayListBuilder {
         I: IntoIterator<Item = di::ClipId>,
         I::IntoIter: ExactSizeIterator + Clone,
     {
+        if let Some(parent) = parent {
+            self.check_clip_chain_id(parent);
+        }
         let id = self.generate_clip_chain_id();
         self.push_item(&di::DisplayItem::ClipChain(di::ClipChainItem { id, parent }));
         self.push_iter(clips);
@@ -3302,6 +3329,7 @@ impl DisplayListBuilder {
         pipeline_id: PipelineId,
         ignore_missing_pipeline: bool
     ) {
+        self.check_clip_chain_id(space_and_clip.clip_chain_id);
         let offset = self.accumulated_scroll_offset(space_and_clip.spatial_id);
         let clip = self.intern_rect_clip();
         let item = di::DisplayItem::Iframe(di::IframeDisplayItem {
@@ -3321,6 +3349,7 @@ impl DisplayListBuilder {
         shadow: di::Shadow,
         should_inflate: bool,
     ) {
+        self.check_clip_chain_id(space_and_clip.clip_chain_id);
         // Record the shadow as a typed descriptor. The first `push_shadow`
         // opens the scope (makes `pending_shadows` non-empty), so the shadowed
         // content that follows is captured until `pop_all_shadows`, which

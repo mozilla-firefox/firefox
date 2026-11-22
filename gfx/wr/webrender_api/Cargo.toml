@@ -12,6 +12,7 @@ nightly = ["euclid/unstable", "serde/unstable"]
 serialize = []
 deserialize = []
 display_list_stats = []
+gecko_nightly = []
 debugger = ["serialize", "deserialize"]
 
 [dependencies]

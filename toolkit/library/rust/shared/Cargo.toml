@@ -184,6 +184,7 @@ for_xul = [
     "rusqlite/in_gecko"
 ]
 webrender_debugger = ["webrender_bindings/debugger"]
+gecko_nightly = ["webrender_bindings/gecko_nightly"]
 shell_windows = ["dep:shell_windows"]
 backgroundtaskregistrar = ["dep:backgroundtaskregistrar"]
 enable_tests = ["shell_windows?/enable_tests"]

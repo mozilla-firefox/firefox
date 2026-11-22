@@ -32,6 +32,7 @@ features = ["capture", "serialize_program", "gecko", "sw_compositor"]
 
 [features]
 debugger = ["webrender/debugger"]
+gecko_nightly = ["webrender/gecko_nightly"]
 
 [target.'cfg(target_os = "windows")'.dependencies]
 dwrote = "0.11.5"
