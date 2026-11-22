@@ -242,9 +242,9 @@ tasks:
         symbol: I(deb12-raw)
         definition: debian-raw
         args:
-            BASE_IMAGE: debian:bookworm-20230612
+            BASE_IMAGE: debian:bookworm-20261020
             DIST: bookworm
-            SNAPSHOT: '20230611T210420Z'
+            SNAPSHOT: 20261022T022452Z
     debian12-packages:
         symbol: I(deb12-pkg)
         definition: debian-packages
@@ -288,9 +288,9 @@ tasks:
         symbol: I(deb13-raw)
         definition: debian-raw
         args:
-            BASE_IMAGE: debian:trixie-20251117
+            BASE_IMAGE: debian:trixie-20261020
             DIST: trixie
-            SNAPSHOT: '20251124T083047Z'
+            SNAPSHOT: 20261022T022452Z
     debian13-packages:
         symbol: I(deb13-pkg)
         definition: debian-packages
