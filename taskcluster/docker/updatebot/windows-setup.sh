@@ -68,7 +68,7 @@ cd updatebot
 git checkout "$UPDATEBOT_REVISION"
 
 # base python needs
-python3 -m pip install --no-warn-script-location --user -U pip
+python3 -m pip install --no-warn-script-location --user -U pip==26.2.2
 python3 -m pip install --no-warn-script-location --user poetry wheel requests setuptools
 
 # updatebot dependencies
