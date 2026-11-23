@@ -13,7 +13,6 @@ import android.util.Log
 import androidx.compose.ui.semantics.SemanticsProperties
 import androidx.compose.ui.semantics.getOrNull
 import androidx.compose.ui.test.ComposeTimeoutException
-import androidx.compose.ui.test.ExperimentalTestApi
 import androidx.compose.ui.test.assertIsDisplayed
 import androidx.compose.ui.test.assertIsEnabled
 import androidx.compose.ui.test.assertIsNotEnabled
@@ -104,7 +103,6 @@ import org.mozilla.fenix.webcompat.BrokenSiteReporterTestTags.BROKEN_SITE_REPORT
 class BrowserRobot(private val composeTestRule: ComposeTestRule) {
     private lateinit var sessionLoadedIdlingResource: SessionLoadedIdlingResource
 
-    @OptIn(ExperimentalTestApi::class)
     fun waitForPageToLoad(pageLoadWaitingTime: Long = waitingTime) {
         Log.i(TAG, "waitForPageToLoad: Waiting for page load to complete.")
         try {
@@ -565,7 +563,6 @@ class BrowserRobot(private val composeTestRule: ComposeTestRule) {
     fun longClickPDFImage() =
         longClickPageObject(this@BrowserRobot.composeTestRule, itemWithResId("pdfjs_internal_id_13R"))
 
-    @OptIn(ExperimentalTestApi::class)
     fun verifyPDFReaderToolbarItems() {
         // Bug 2081247 to switch to new toolbar for testing
         if (!Config.channel.isNightlyOrDebug) {
@@ -686,7 +683,6 @@ class BrowserRobot(private val composeTestRule: ComposeTestRule) {
         }
     }
 
-    @OptIn(ExperimentalTestApi::class)
     fun clickSuggestedLogin(userName: String) {
         Log.i(TAG, "clickSuggestedLogin: Waiting for the suggested user name: $userName to exist")
         this@BrowserRobot.composeTestRule.waitUntilAtLeastOneExists(hasText(userName))
@@ -848,7 +844,6 @@ class BrowserRobot(private val composeTestRule: ComposeTestRule) {
         }
     }
 
-    @OptIn(ExperimentalTestApi::class)
     fun verifySuggestedUserName(userName: String) {
         Log.i(TAG, "verifySuggestedUserName: Waiting for the suggested user name: $userName to exist")
         this@BrowserRobot.composeTestRule.waitUntilAtLeastOneExists(hasText(userName))
@@ -1592,7 +1587,6 @@ class BrowserRobot(private val composeTestRule: ComposeTestRule) {
         }
     }
 
-    @OptIn(ExperimentalTestApi::class)
     fun clickTheDismissButtonOnSummarizeCFR() {
         Log.i(TAG, "clickTheDismissButtonOnSummarizeCFR: Waiting for the summarize CFR dismiss button to exist")
         composeTestRule.waitUntilAtLeastOneExists(hasTestTag("cfr.dismiss"), waitingTime)
@@ -1669,7 +1663,6 @@ class BrowserRobot(private val composeTestRule: ComposeTestRule) {
             return ThreeDotMenuMainRobot.Transition(composeTestRule)
         }
 
-        @OptIn(ExperimentalTestApi::class)
         fun openSearch(interact: SearchRobot.() -> Unit): SearchRobot.Transition {
             Log.i(TAG, "openSearch: Waiting for $waitingTime until the URL bar exists")
             composeTestRule.waitUntilAtLeastOneExists(hasTestTag(ADDRESSBAR_URL_BOX), waitingTime)
@@ -1682,7 +1675,6 @@ class BrowserRobot(private val composeTestRule: ComposeTestRule) {
             return SearchRobot.Transition(composeTestRule)
         }
 
-        @OptIn(ExperimentalTestApi::class)
         fun openNavigationToolbar(interact: NavigationToolbarRobot.() -> Unit): NavigationToolbarRobot.Transition {
             composeTestRule.waitUntilAtLeastOneExists(hasTestTag(ADDRESSBAR_URL_BOX), waitingTime)
             Log.i(TAG, "openNavigationToolbar: Trying to click navigation toolbar")
@@ -1723,7 +1715,6 @@ class BrowserRobot(private val composeTestRule: ComposeTestRule) {
             return NotificationRobot.Transition()
         }
 
-        @OptIn(ExperimentalTestApi::class)
         fun goToHomescreen(
             isPrivateModeEnabled: Boolean = false,
             interact: HomeScreenRobot.() -> Unit,
@@ -1961,7 +1952,6 @@ class BrowserRobot(private val composeTestRule: ComposeTestRule) {
             return SettingsRobot.Transition()
         }
 
-        @OptIn(ExperimentalTestApi::class)
         fun clickDownloadPDFButton(
             confirmDownloadPrompt: Boolean = true,
             interact: DownloadRobot.() -> Unit,
@@ -1992,7 +1982,6 @@ class BrowserRobot(private val composeTestRule: ComposeTestRule) {
             return DownloadRobot.Transition(composeTestRule)
         }
 
-        @OptIn(ExperimentalTestApi::class)
         fun closeWebCompatReporter(interact: BrowserRobot.() -> Unit): BrowserRobot.Transition {
             val backDescription = "Navigate back"
             Log.i(TAG, "closeWebCompatReporter: Waiting for $waitingTime until the \"Navigate back\" button exists")

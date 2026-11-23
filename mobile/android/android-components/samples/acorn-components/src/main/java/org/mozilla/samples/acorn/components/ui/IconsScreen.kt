@@ -8,7 +8,6 @@ import androidx.annotation.DrawableRes
 import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Arrangement
-import androidx.compose.foundation.layout.ExperimentalLayoutApi
 import androidx.compose.foundation.layout.FlowRow
 import androidx.compose.foundation.layout.IntrinsicSize
 import androidx.compose.foundation.layout.Row
@@ -134,7 +133,6 @@ private fun IconSizeHeader(size: Int) {
     )
 }
 
-@OptIn(ExperimentalLayoutApi::class)
 @Composable
 private fun IconCategoryRow(
     title: String,

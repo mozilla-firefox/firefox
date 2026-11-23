@@ -7,7 +7,6 @@ package org.mozilla.fenix.search.awesomebar
 import androidx.compose.foundation.background
 import androidx.compose.foundation.gestures.detectTapGestures
 import androidx.compose.foundation.layout.Box
-import androidx.compose.foundation.layout.ExperimentalLayoutApi
 import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.WindowInsets
 import androidx.compose.foundation.layout.fillMaxSize
@@ -118,7 +117,6 @@ class AwesomeBarComposable(
      * [Composable] fully integrated with [BrowserStore] and [BrowserToolbarStore] that will show search suggestions
      * whenever the users edits the current query in the toolbar.
      */
-    @OptIn(ExperimentalLayoutApi::class) // for WindowInsets.isImeVisible
     @Suppress("LongMethod", "CyclomaticComplexMethod", "CognitiveComplexMethod")
     @Composable
     fun SearchSuggestions() {

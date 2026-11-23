@@ -6,8 +6,6 @@ package mozilla.components.compose.browser.toolbar.ui
 
 import android.view.inputmethod.EditorInfo
 import android.view.inputmethod.InputConnection
-import androidx.compose.foundation.ExperimentalFoundationApi
-import androidx.compose.ui.ExperimentalComposeUiApi
 import androidx.compose.ui.platform.InterceptPlatformTextInput
 import androidx.compose.ui.test.junit4.v2.createComposeRule
 import androidx.compose.ui.test.onNodeWithTag
@@ -22,7 +20,6 @@ import org.junit.Test
 import org.junit.runner.RunWith
 import org.robolectric.RobolectricTestRunner
 
-@OptIn(ExperimentalComposeUiApi::class, ExperimentalFoundationApi::class)
 @RunWith(RobolectricTestRunner::class)
 class OutputTransformationCrashTest {
 

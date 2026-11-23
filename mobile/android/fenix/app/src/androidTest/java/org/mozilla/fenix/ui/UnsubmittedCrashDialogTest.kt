@@ -5,7 +5,6 @@
 package org.mozilla.fenix.ui
 
 import android.text.format.DateUtils
-import androidx.compose.ui.test.ExperimentalTestApi
 import androidx.compose.ui.test.assertTextEquals
 import androidx.compose.ui.test.hasTextExactly
 import androidx.compose.ui.test.junit4.v2.AndroidComposeTestRule as AndroidComposeTestRuleV2
@@ -91,7 +90,6 @@ class UnsubmittedCrashDialogTest {
     private fun cancelForEverUnsubmittedCrashPull(): String =
         TestHelper.appContext.resources.getString(R.string.unsubmitted_crash_requested_by_devs_dialog_never_button)
 
-    @OptIn(ExperimentalTestApi::class)
     private fun clickButton(text: String) {
         composeTestRule.waitUntilAtLeastOneExists(hasTextExactly(text))
         val node = composeTestRule.onNodeWithText(text, false, ignoreCase = true)
@@ -267,7 +265,6 @@ class UnsubmittedCrashDialogTest {
         TestHelper.appContext.components.settings.crashReportDeferredUntil = dontShowBeforeValue
     }
 
-    @OptIn(ExperimentalTestApi::class)
     @Test
     fun unsubmittedCrashDialog_PullingOneCrash_DontShowBefore_NextWeek_Blocked() {
         var dontShowBeforeValue = TestHelper.appContext.components.settings.crashPullDontShowBefore

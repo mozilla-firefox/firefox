@@ -5,7 +5,6 @@
 package org.mozilla.fenix.ui.robots
 
 import android.util.Log
-import androidx.compose.ui.test.ExperimentalTestApi
 import androidx.compose.ui.test.assertIsDisplayed
 import androidx.compose.ui.test.assertIsNotDisplayed
 import androidx.compose.ui.test.hasAnyDescendant
@@ -34,7 +33,6 @@ import org.mozilla.fenix.helpers.TestAssetHelper.waitingTime
 
 class BookmarksRobot(private val composeTestRule: ComposeTestRule) {
 
-    @OptIn(ExperimentalTestApi::class)
     fun verifyEmptyBookmarksMenuView() {
         Log.i(TAG, "verifyBookmarksMenuView: Waiting for bookmarks toolbar elements to exist.")
         composeTestRule.waitUntilAtLeastOneExists(
@@ -58,7 +56,6 @@ class BookmarksRobot(private val composeTestRule: ComposeTestRule) {
         Log.i(TAG, "verifyBookmarksMenuView: Verified the empty bookmarks list is displayed.")
     }
 
-    @OptIn(ExperimentalTestApi::class)
     fun verifyBookmarkedURL(url: String) {
         Log.i(TAG, "verifyBookmarkedURL: Waiting for $waitingTime ms for bookmarked url: $url to exist")
         composeTestRule.waitUntilAtLeastOneExists(hasText(url, substring = true), waitingTime)
@@ -68,7 +65,6 @@ class BookmarksRobot(private val composeTestRule: ComposeTestRule) {
         Log.i(TAG, "verifyBookmarkedURL: Verified bookmarks url: $url is displayed")
     }
 
-    @OptIn(ExperimentalTestApi::class)
     fun verifyFolderTitle(title: String) {
         Log.i(TAG, "verifyFolderTitle: Waiting for $waitingTime for bookmark folder with title: $title to exist.")
         composeTestRule.waitUntilAtLeastOneExists(hasText(title), waitingTime)
@@ -92,7 +88,6 @@ class BookmarksRobot(private val composeTestRule: ComposeTestRule) {
         )
     }
 
-    @OptIn(ExperimentalTestApi::class)
     fun verifyBookmarkTitle(title: String) {
         Log.i(TAG, "verifyBookmarkTitle: Waiting for $waitingTime for bookmark with title: $title to exist.")
         composeTestRule.waitUntilExactlyOneExists(
@@ -168,7 +163,6 @@ class BookmarksRobot(private val composeTestRule: ComposeTestRule) {
         navigateUp()
     }
 
-    @OptIn(ExperimentalTestApi::class)
     fun clickAddFolderButton() {
         Log.i(TAG, "clickAddFolderButton: Waiting for $waitingTime for the add bookmarks folder button to exist")
         composeTestRule.waitUntilAtLeastOneExists(
@@ -188,7 +182,6 @@ class BookmarksRobot(private val composeTestRule: ComposeTestRule) {
         Log.i(TAG, "clickSelectFolderNewFolderButton: Clicked the select new folder button")
     }
 
-    @OptIn(ExperimentalTestApi::class)
     fun addNewFolderName(name: String) {
         Log.i(TAG, "addNewFolderName: Waiting for $waitingTime for the folder name text field to exist")
         composeTestRule.waitUntilAtLeastOneExists(hasTestTag(ADD_BOOKMARK_FOLDER_NAME_TEXT_FIELD), waitingTime)
@@ -200,7 +193,6 @@ class BookmarksRobot(private val composeTestRule: ComposeTestRule) {
         composeTestRule.waitForIdle()
     }
 
-    @OptIn(ExperimentalTestApi::class)
     fun saveNewFolder() {
         Log.i(TAG, "saveNewFolder: Waiting for $waitingTime for the navigate up toolbar button to exist")
         composeTestRule.waitUntilAtLeastOneExists(
@@ -245,7 +237,6 @@ class BookmarksRobot(private val composeTestRule: ComposeTestRule) {
         Log.i(TAG, "saveEditBookmark: Clicked navigate up toolbar button")
     }
 
-    @OptIn(ExperimentalTestApi::class)
     fun clickParentFolderSelector() {
         Log.i(TAG, "clickParentFolderSelector: Trying to click folder selector")
         composeTestRule.bookmarkFolderSelector().performClick()
@@ -255,7 +246,6 @@ class BookmarksRobot(private val composeTestRule: ComposeTestRule) {
         Log.i(TAG, "clickParentFolderSelector: Waited for the Bookmarks folder to exist")
     }
 
-    @OptIn(ExperimentalTestApi::class)
     fun expandSelectableFolder(title: String) {
         Log.i(TAG, "expandSelectableFolder: Waiting for $waitingTime for expand button for folder: $title to exist")
         composeTestRule.waitUntilAtLeastOneExists(
@@ -271,7 +261,6 @@ class BookmarksRobot(private val composeTestRule: ComposeTestRule) {
         composeTestRule.waitForIdle()
     }
 
-    @OptIn(ExperimentalTestApi::class)
     fun selectFolder(title: String) {
         Log.i(TAG, "selectFolder: Waiting for $waitingTime for folder with title: $title to exist")
         composeTestRule.waitUntilAtLeastOneExists(hasText(title), waitingTime)
@@ -282,7 +271,6 @@ class BookmarksRobot(private val composeTestRule: ComposeTestRule) {
         composeTestRule.waitForIdle()
     }
 
-    @OptIn(ExperimentalTestApi::class)
     fun longClickBookmarkedItem(title: String) {
         Log.i(TAG, "longClickBookmarkedItem: Waiting for $waitingTime for bookmark with title: $title to exist")
         composeTestRule.waitUntilAtLeastOneExists(hasText(title), waitingTime)
@@ -304,7 +292,6 @@ class BookmarksRobot(private val composeTestRule: ComposeTestRule) {
         Log.i(TAG, "confirmDeletion: Clicked \"Delete\" bookmarks deletion button")
     }
 
-    @OptIn(ExperimentalTestApi::class)
     fun waitForBookmarksSnackBarToBeGone(snackbarText: String) {
         Log.i(TAG, "waitForBookmarksSnackBarToBeGone: Waiting for $waitingTime for snackbar: $snackbarText to be gone")
         composeTestRule.waitUntilDoesNotExist(hasText(snackbarText), waitingTime)
@@ -312,7 +299,6 @@ class BookmarksRobot(private val composeTestRule: ComposeTestRule) {
     }
 
     class Transition(private val composeTestRule: ComposeTestRule) {
-        @OptIn(ExperimentalTestApi::class)
         fun openThreeDotMenu(
             bookmarkedItem: String,
             interact: ThreeDotMenuBookmarksRobot.() -> Unit,
@@ -346,7 +332,6 @@ class BookmarksRobot(private val composeTestRule: ComposeTestRule) {
             return BrowserRobot.Transition(composeTestRule)
         }
 
-        @OptIn(ExperimentalTestApi::class)
         fun clickSearchButton(interact: SearchRobot.() -> Unit): SearchRobot.Transition {
             Log.i(TAG, "clickSearchButton: Waiting for the search bookmarks button to exist")
             composeTestRule.waitUntilAtLeastOneExists(

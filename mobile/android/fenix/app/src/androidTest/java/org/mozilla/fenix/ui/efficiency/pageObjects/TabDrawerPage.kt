@@ -4,7 +4,6 @@
 
 package org.mozilla.fenix.ui.efficiency.pageObjects
 
-import androidx.compose.ui.test.ExperimentalTestApi
 import androidx.compose.ui.test.assert
 import androidx.compose.ui.test.hasAnyChild
 import androidx.compose.ui.test.hasTestTag
@@ -111,7 +110,6 @@ class TabDrawerPage(composeRule: AndroidComposeTestRule<HomeActivityIntentTestRu
      * page's title loads). Unlike [verifyExistingOpenTabs] this matches in both grid and list view, where a list row
      * merges its title into the row node rather than exposing it as a child.
      */
-    @OptIn(ExperimentalTestApi::class)
     fun waitForTabTitlesLoaded(vararg tabTitles: String): TabDrawerPage {
         tabTitles.forEach { composeRule.waitUntilAtLeastOneExists(hasText(it), waitingTime) }
         return this
@@ -171,7 +169,6 @@ class TabDrawerPage(composeRule: AndroidComposeTestRule<HomeActivityIntentTestRu
      * child-text precondition and TAB_ITEM_ROOT child assert do not hold; the unmerged tree is read instead, matching
      * the legacy robot's list-view branch.
      */
-    @OptIn(ExperimentalTestApi::class)
     fun verifyOpenTabsOrder(position: Int, tabTitle: String, isListViewEnabled: Boolean = false): TabDrawerPage {
         if (isListViewEnabled) {
             composeRule.waitUntilAtLeastOneExists(hasText(tabTitle), waitingTime)

@@ -7,7 +7,6 @@ package org.mozilla.fenix.ui.robots
 import android.os.SystemClock
 import android.util.Log
 import android.view.accessibility.AccessibilityWindowInfo
-import androidx.compose.ui.test.ExperimentalTestApi
 import androidx.compose.ui.test.SemanticsNodeInteraction
 import androidx.compose.ui.test.assert
 import androidx.compose.ui.test.assertIsDisplayed
@@ -192,7 +191,6 @@ class SettingsSubMenuAutofillRobot(private val composeTestRule: ComposeTestRule)
         )
     }
 
-    @OptIn(ExperimentalTestApi::class)
     fun verifyAddAddressView() {
         // The address structure arrives from Gecko asynchronously and the form holds no fields until it lands. Gating
         // on a field existing means the first-field focus - and the keyboard it raises - happens before the dismiss
@@ -236,14 +234,12 @@ class SettingsSubMenuAutofillRobot(private val composeTestRule: ComposeTestRule)
         }
     }
 
-    @OptIn(ExperimentalTestApi::class)
     fun selectCountry(country: String) {
         Log.i(TAG, "selectCountry: Trying to select $country dropdown option")
         clickCountryOption(country)
         Log.i(TAG, "selectCountry: Selected $country dropdown option")
     }
 
-    @OptIn(ExperimentalTestApi::class)
     fun verifyEditAddressView() {
         // The edit screen fetches the address structure from Gecko too, so the form holds no fields until it lands.
         Log.i(TAG, "verifyEditAddressView: Waiting for $waitingTime ms for the address form to be populated")
@@ -271,7 +267,6 @@ class SettingsSubMenuAutofillRobot(private val composeTestRule: ComposeTestRule)
         Log.i(TAG, "clickSaveAndAutofillAddressesOption: Clicked the \"Save and fill addresses\" button")
     }
 
-    @OptIn(ExperimentalTestApi::class)
     fun clickAddAddressButton() {
         Log.i(TAG, "clickAddAddressButton: Waiting for $waitingTime ms for \"Add address\" button to exist")
         addAddressButton().waitForExists(waitingTime)
@@ -300,7 +295,6 @@ class SettingsSubMenuAutofillRobot(private val composeTestRule: ComposeTestRule)
         )
     }
 
-    @OptIn(ExperimentalTestApi::class)
     fun clickDeleteAddressButton() {
         Log.i(
             TAG,
@@ -334,7 +328,6 @@ class SettingsSubMenuAutofillRobot(private val composeTestRule: ComposeTestRule)
         Log.i(TAG, "clickConfirmDeleteAddressButton: Clicked \"DELETE\" button from the delete address dialog")
     }
 
-    @OptIn(ExperimentalTestApi::class)
     fun clickSubRegionOption(subRegion: String) {
         clickDropdownOption(
             composeTestRule = composeTestRule,
@@ -345,14 +338,12 @@ class SettingsSubMenuAutofillRobot(private val composeTestRule: ComposeTestRule)
         )
     }
 
-    @OptIn(ExperimentalTestApi::class)
     fun waitForAddressFormReady() {
         Log.i(TAG, "waitForAddressFormReady: Waiting for $waitingTime ms for the address form to be ready")
         composeTestRule.waitUntilAtLeastOneExists(hasTestTag(EditAddressTestTag.COUNTRY_FIELD), waitingTime)
         Log.i(TAG, "waitForAddressFormReady: Address form is ready")
     }
 
-    @OptIn(ExperimentalTestApi::class)
     fun clickCountryOption(country: String) {
         clickDropdownOption(
             composeTestRule = composeTestRule,
@@ -365,7 +356,6 @@ class SettingsSubMenuAutofillRobot(private val composeTestRule: ComposeTestRule)
 
     fun verifyAddAddressButton() = assertUIObjectExists(addAddressButton())
 
-    @OptIn(ExperimentalTestApi::class)
     fun fillAndSaveAddress(
         composeTestRule: ComposeTestRule,
         address: AddressDetails,
@@ -459,7 +449,6 @@ class SettingsSubMenuAutofillRobot(private val composeTestRule: ComposeTestRule)
         )
     }
 
-    @OptIn(ExperimentalTestApi::class)
     fun clickDeleteCreditCardToolbarButton() {
         Log.i(
             TAG,
@@ -478,7 +467,6 @@ class SettingsSubMenuAutofillRobot(private val composeTestRule: ComposeTestRule)
         Log.i(TAG, "clickDeleteCreditCardToolbarButton: Clicked the delete credit card toolbar button")
     }
 
-    @OptIn(ExperimentalTestApi::class)
     fun clickDeleteCreditCardMenuButton() {
         Log.i(
             TAG,
@@ -515,7 +503,6 @@ class SettingsSubMenuAutofillRobot(private val composeTestRule: ComposeTestRule)
         Log.i(TAG, "clickCancelDeleteCreditCardButton: Clicked the \"Cancel\" credit card dialog button")
     }
 
-    @OptIn(ExperimentalTestApi::class)
     fun clickExpiryMonthOption(expiryMonth: String) {
         Log.i(
             TAG,
@@ -534,7 +521,6 @@ class SettingsSubMenuAutofillRobot(private val composeTestRule: ComposeTestRule)
         Log.i(TAG, "clickExpiryMonthOption: Clicked $expiryMonth expiry month option")
     }
 
-    @OptIn(ExperimentalTestApi::class)
     fun clickExpiryYearOption(expiryYear: String) {
         Log.i(TAG, "clickExpiryYearOption: Waiting for $waitingTime ms for the $expiryYear expiry year option to exist")
         composeTestRule.waitUntilAtLeastOneExists(
@@ -550,7 +536,6 @@ class SettingsSubMenuAutofillRobot(private val composeTestRule: ComposeTestRule)
 
     fun verifyAddCreditCardsButton() = assertUIObjectExists(addCreditCardButton())
 
-    @OptIn(ExperimentalTestApi::class)
     fun fillAndSaveCreditCard(cardNumber: String, cardName: String, expiryMonth: String, expiryYear: String) {
         Log.i(TAG, "fillAndSaveCreditCard: Waiting for $waitingTime ms for the credit card number text field to exist")
         composeTestRule.waitUntilAtLeastOneExists(
@@ -585,7 +570,6 @@ class SettingsSubMenuAutofillRobot(private val composeTestRule: ComposeTestRule)
         Log.i(TAG, "fillAndSaveCreditCard: Waited for $waitingTime ms for the \"Manage saved cards\" button to exist")
     }
 
-    @OptIn(ExperimentalTestApi::class)
     fun clearCreditCardNumber() =
         composeTestRule.creditCardNumberTextInput().also {
             Log.i(
@@ -606,7 +590,6 @@ class SettingsSubMenuAutofillRobot(private val composeTestRule: ComposeTestRule)
             Log.i(TAG, "clearCreditCardNumber: Cleared the credit card number text field")
         }
 
-    @OptIn(ExperimentalTestApi::class)
     fun clearNameOnCreditCard() =
         composeTestRule.nameOnCreditCardTextInput().also {
             Log.i(TAG, "clearNameOnCreditCard: Waiting for $waitingTime ms for name on card text field to exist")
@@ -912,7 +895,6 @@ private fun ComposeTestRule.expiryMonthOption(expiryMonth: String) =
 private fun ComposeTestRule.expiryYearOption(expiryYear: String) =
     onNodeWithText(expiryYear, substring = true, ignoreCase = true)
 
-@OptIn(ExperimentalTestApi::class)
 private fun clickDropdownOption(
     composeTestRule: ComposeTestRule,
     dropDownTag: String,

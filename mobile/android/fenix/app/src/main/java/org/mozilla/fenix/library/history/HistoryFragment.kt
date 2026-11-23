@@ -25,7 +25,6 @@ import androidx.compose.foundation.background
 import androidx.compose.foundation.gestures.detectTapGestures
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
-import androidx.compose.foundation.layout.ExperimentalLayoutApi
 import androidx.compose.foundation.layout.WindowInsets
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.isImeVisible
@@ -406,7 +405,6 @@ class HistoryFragment :
         }
 
     @Suppress("LongMethod", "CognitiveComplexMethod")
-    @OptIn(ExperimentalLayoutApi::class) // for WindowInsets.isImeVisible
     private fun handleShowingSearchUX() {
         if (searchLayout == null) {
             searchLayout =

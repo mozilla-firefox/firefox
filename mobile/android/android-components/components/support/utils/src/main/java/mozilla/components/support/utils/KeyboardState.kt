@@ -8,7 +8,6 @@ import android.view.View
 import android.view.ViewTreeObserver
 import androidx.activity.ComponentActivity
 import androidx.activity.compose.LocalActivity
-import androidx.compose.foundation.layout.ExperimentalLayoutApi
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.DisposableEffect
 import androidx.compose.runtime.State
@@ -17,7 +16,6 @@ import androidx.compose.runtime.remember
 import mozilla.components.support.utils.ext.isKeyboardVisible
 
 /** Detects if the keyboard is opened or closed and returns as a [KeyboardState]. */
-@OptIn(ExperimentalLayoutApi::class)
 @Composable
 fun keyboardAsState(): State<KeyboardState> {
     val keyboardState = remember { mutableStateOf(KeyboardState.Closed) }

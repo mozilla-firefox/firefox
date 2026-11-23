@@ -5,7 +5,6 @@
 package org.mozilla.fenix.ui.robots
 
 import android.util.Log
-import androidx.compose.ui.test.ExperimentalTestApi
 import androidx.compose.ui.test.assert
 import androidx.compose.ui.test.assertIsDisplayed
 import androidx.compose.ui.test.assertIsEnabled
@@ -508,7 +507,6 @@ class SettingsSubMenuLoginsAndPasswordsSavedLoginsRobot(private val composeTestR
         )
     }
 
-    @OptIn(ExperimentalTestApi::class)
     fun waitUntilCopyLoginCredentialsSnackBarIsGone() {
         Log.i(
             TAG,

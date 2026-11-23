@@ -5,7 +5,6 @@
 package org.mozilla.fenix.ui.robots
 
 import android.util.Log
-import androidx.compose.ui.test.ExperimentalTestApi
 import androidx.compose.ui.test.assertAny
 import androidx.compose.ui.test.assertIsDisplayed
 import androidx.compose.ui.test.assertIsNotDisplayed
@@ -30,7 +29,6 @@ import org.mozilla.fenix.helpers.click
 
 class CollectionRobot(private val composeTestRule: ComposeTestRule) {
 
-    @OptIn(ExperimentalTestApi::class)
     fun verifyTabSavedInCollection(title: String, visible: Boolean = true) {
         if (visible) {
             Log.i(TAG, "verifyTabSavedInCollection: Waiting for tab with title '$title' to appear")
@@ -66,7 +64,6 @@ class CollectionRobot(private val composeTestRule: ComposeTestRule) {
         }
     }
 
-    @OptIn(ExperimentalTestApi::class)
     fun verifyCollectionTabUrl(isDisplayed: Boolean, url: String) {
         if (isDisplayed) {
             Log.i(TAG, "verifyCollectionTabUrl: Waiting for $waitingTime until tab with url: $url exists")
@@ -130,7 +127,6 @@ class CollectionRobot(private val composeTestRule: ComposeTestRule) {
         Log.i(TAG, "selectOpenTabs: Clicked \"Open tabs\" menu option")
     }
 
-    @OptIn(ExperimentalTestApi::class)
     fun selectDeleteCollection() {
         Log.i(TAG, "selectDeleteCollection: Trying to verify \"Delete collection\" menu option is displayed")
         composeTestRule.onNode(hasText("Delete collection")).assertIsDisplayed()
@@ -189,7 +185,6 @@ class CollectionRobot(private val composeTestRule: ComposeTestRule) {
             return HomeScreenRobot.Transition(composeTestRule)
         }
 
-        @OptIn(ExperimentalTestApi::class)
         fun clickShareCollectionButton(interact: ShareOverlayRobot.() -> Unit): ShareOverlayRobot.Transition {
             Log.i(TAG, "clickShareCollectionButton: Waiting for $waitingTime ms for share collection button to exist")
             composeTestRule.waitUntilExactlyOneExists(hasContentDescription("Share"), waitingTime)

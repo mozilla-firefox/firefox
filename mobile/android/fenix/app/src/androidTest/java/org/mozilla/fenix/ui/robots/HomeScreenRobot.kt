@@ -8,7 +8,6 @@ package org.mozilla.fenix.ui.robots
 
 import android.graphics.drawable.ColorDrawable
 import android.util.Log
-import androidx.compose.ui.test.ExperimentalTestApi
 import androidx.compose.ui.test.assert
 import androidx.compose.ui.test.assertIsDisplayed
 import androidx.compose.ui.test.assertIsNotDisplayed
@@ -155,7 +154,6 @@ class HomeScreenRobot(private val composeTestRule: ComposeTestRule) {
         }
     }
 
-    @OptIn(ExperimentalTestApi::class)
     fun <A : androidx.activity.ComponentActivity, R : org.junit.rules.TestRule> verifyGradientWallpaperApplied(
         composeTestRule: AndroidComposeTestRule<R, A>
     ) {
@@ -180,7 +178,6 @@ class HomeScreenRobot(private val composeTestRule: ComposeTestRule) {
         Log.i(TAG, "verifyPrivateModeBackgroundApplied: Verified private mode background is applied")
     }
 
-    @OptIn(ExperimentalTestApi::class)
     fun verifyExistingTopSitesList() {
         Log.i(TAG, "verifyExistingTopSitesList: Waiting for $waitingTime ms until the top sites list exists")
         this@HomeScreenRobot.composeTestRule.waitUntilAtLeastOneExists(
@@ -225,7 +222,6 @@ class HomeScreenRobot(private val composeTestRule: ComposeTestRule) {
             exists = false,
         )
 
-    @OptIn(ExperimentalTestApi::class)
     fun verifyExistingTopSitesTabs(vararg titles: String) {
         titles.forEach { title ->
             Log.i(
@@ -374,7 +370,6 @@ class HomeScreenRobot(private val composeTestRule: ComposeTestRule) {
     }
 
     // Collections elements
-    @OptIn(ExperimentalTestApi::class)
     fun verifyCollectionIsDisplayed(title: String, collectionExists: Boolean = true) {
         if (collectionExists) {
             Log.i(
@@ -433,7 +428,6 @@ class HomeScreenRobot(private val composeTestRule: ComposeTestRule) {
         Log.i(TAG, "verifyAddressBarPosition: Verified that the navigation toolbar is set to bottom")
     }
 
-    @OptIn(ExperimentalTestApi::class)
     fun verifyNimbusMessageCard(title: String, text: String, action: String) {
         for (str in listOf(title, text, action)) {
             composeTestRule.waitUntil(waitingTime) {
@@ -478,7 +472,6 @@ class HomeScreenRobot(private val composeTestRule: ComposeTestRule) {
         )
     }
 
-    @OptIn(ExperimentalTestApi::class)
     fun verifyTheTermsOfUseOnboardingCard() {
         composeTestRule.waitUntilAtLeastOneExists(
             hasText(getStringResource(R.string.onboarding_welcome_to_firefox)),
@@ -555,7 +548,6 @@ class HomeScreenRobot(private val composeTestRule: ComposeTestRule) {
         Log.i(TAG, "clickTheOnboardingCardContinueButton: Waited for compose rule to be idle")
     }
 
-    @OptIn(ExperimentalTestApi::class)
     fun clickContinueIfMarketingCardShown() {
         val marketingCardExists =
             composeTestRule
@@ -572,7 +564,6 @@ class HomeScreenRobot(private val composeTestRule: ComposeTestRule) {
         }
     }
 
-    @OptIn(ExperimentalTestApi::class)
     fun verifyTheSetAsDefaultBrowserOnboardingCard() {
         composeTestRule.waitUntilAtLeastOneExists(
             hasText(getStringResource(R.string.nova_onboarding_set_to_default_title_2)),
@@ -684,7 +675,6 @@ class HomeScreenRobot(private val composeTestRule: ComposeTestRule) {
         )
     }
 
-    @OptIn(ExperimentalTestApi::class)
     fun verifyAddToHomepageBottomSheet() {
         composeTestRule.waitUntilAtLeastOneExists(
             hasText(getStringResource(R.string.homepage_shortcuts_add_to_homepage)),
@@ -743,7 +733,6 @@ class HomeScreenRobot(private val composeTestRule: ComposeTestRule) {
         }
     }
 
-    @OptIn(ExperimentalTestApi::class)
     fun verifyEnterAWebsiteUrlDialog() {
         composeTestRule.waitUntilAtLeastOneExists(
             hasText(getStringResource(R.string.homepage_shortcuts_add_website_title)),
@@ -861,7 +850,6 @@ class HomeScreenRobot(private val composeTestRule: ComposeTestRule) {
             return ThreeDotMenuMainRobot.Transition(composeTestRule)
         }
 
-        @OptIn(ExperimentalTestApi::class)
         fun openSearch(interact: SearchRobot.() -> Unit): SearchRobot.Transition {
             Log.i(TAG, "openSearch: Waiting for $waitingTime until the URL bar exists")
             composeTestRule.waitUntilAtLeastOneExists(hasTestTag(ADDRESSBAR_URL_BOX), waitingTime)
@@ -1011,7 +999,6 @@ class HomeScreenRobot(private val composeTestRule: ComposeTestRule) {
             return Transition(composeTestRule)
         }
 
-        @OptIn(ExperimentalTestApi::class)
         fun removeTopSite(interact: HomeScreenRobot.() -> Unit): Transition {
             Log.i(TAG, "removeTopSite: Trying to click the \"Remove\" menu button")
             composeTestRule.contextMenuItemRemove().performClick()
@@ -1116,7 +1103,6 @@ class HomeScreenRobot(private val composeTestRule: ComposeTestRule) {
             return SettingsRobot.Transition()
         }
 
-        @OptIn(ExperimentalTestApi::class)
         fun clickAddShortcutButton(interact: HomeScreenRobot.() -> Unit): Transition {
             Log.i(TAG, "clickAddShortcutButton: Trying to click the \"Add shortcut\" shortcut button")
             composeTestRule.onNodeWithTag(TopSitesTestTag.ADD_SHORTCUT_TITLE, useUnmergedTree = true).performClick()
@@ -1126,7 +1112,6 @@ class HomeScreenRobot(private val composeTestRule: ComposeTestRule) {
             return Transition(composeTestRule)
         }
 
-        @OptIn(ExperimentalTestApi::class)
         fun clickAddWebsiteButton(interact: HomeScreenRobot.() -> Unit): Transition {
             Log.i(TAG, "clickAddWebsiteButton: Trying to click the \"Add website\" button")
             composeTestRule.onNodeWithTag(TopSitesTestTag.ADD_WEBSITE, useUnmergedTree = true).performClick()

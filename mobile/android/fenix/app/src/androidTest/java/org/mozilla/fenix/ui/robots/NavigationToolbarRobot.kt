@@ -9,7 +9,6 @@ package org.mozilla.fenix.ui.robots
 import android.net.Uri
 import android.util.Log
 import android.view.KeyEvent
-import androidx.compose.ui.test.ExperimentalTestApi
 import androidx.compose.ui.test.assertAny
 import androidx.compose.ui.test.assertIsDisplayed
 import androidx.compose.ui.test.assertIsNotDisplayed
@@ -560,7 +559,6 @@ class NavigationToolbarRobot(private val composeTestRule: ComposeTestRule) {
     class Transition(private val composeTestRule: ComposeTestRule) {
         private lateinit var sessionLoadedIdlingResource: SessionLoadedIdlingResource
 
-        @OptIn(ExperimentalTestApi::class)
         fun enterURLAndEnterToBrowser(
             url: Uri,
             interact: BrowserRobot.() -> Unit,
@@ -704,7 +702,6 @@ class NavigationToolbarRobot(private val composeTestRule: ComposeTestRule) {
             return SearchRobot.Transition(composeTestRule)
         }
 
-        @OptIn(ExperimentalTestApi::class)
         fun clickURLBar(interact: SearchRobot.() -> Unit): SearchRobot.Transition {
             Log.i(TAG, "clickURLBar: Waiting for $waitingTime until the URL bar to exist")
             composeTestRule.waitUntilAtLeastOneExists(hasTestTag(ADDRESSBAR_URL_BOX), waitingTime)
@@ -727,7 +724,6 @@ class NavigationToolbarRobot(private val composeTestRule: ComposeTestRule) {
             return SearchRobot.Transition(composeTestRule)
         }
 
-        @OptIn(ExperimentalTestApi::class)
         fun clickTranslateButton(
             isPageTranslated: Boolean = false,
             originalLanguage: String = "",
@@ -755,7 +751,6 @@ class NavigationToolbarRobot(private val composeTestRule: ComposeTestRule) {
         }
 
         // New navbar design home screen search button
-        @OptIn(ExperimentalTestApi::class)
         fun clickHomeScreenSearchButton(interact: SearchRobot.() -> Unit): SearchRobot.Transition {
             Log.i(TAG, "clickHomeScreenSearchButton: Waiting for $waitingTime ms for the search button to exist.")
             composeTestRule.waitUntilAtLeastOneExists(hasContentDescription("Search or enter address"))

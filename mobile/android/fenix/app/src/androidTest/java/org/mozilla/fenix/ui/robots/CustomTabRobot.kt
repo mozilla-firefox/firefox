@@ -6,7 +6,6 @@ package org.mozilla.fenix.ui.robots
 import android.net.Uri
 import android.util.Log
 import androidx.compose.ui.semantics.SemanticsProperties
-import androidx.compose.ui.test.ExperimentalTestApi
 import androidx.compose.ui.test.SemanticsMatcher
 import androidx.compose.ui.test.assertIsDisplayed
 import androidx.compose.ui.test.assertIsNotEnabled
@@ -111,7 +110,6 @@ class CustomTabRobot(private val composeTestRule: ComposeTestRule) {
         Log.i(TAG, "verifyCustomTabCloseButton: Verified that the close custom tab button is displayed")
     }
 
-    @OptIn(ExperimentalTestApi::class)
     fun verifyCustomTabToolbarTitle(title: String) {
         Log.i(TAG, "verifyCustomTabToolbarTitle: Trying to verify that the custom tab title: $title is displayed")
         composeTestRule.waitUntil(waitingTime) {
@@ -183,7 +181,6 @@ class CustomTabRobot(private val composeTestRule: ComposeTestRule) {
         Log.i(TAG, "verifyCustomTabActionButton: Verified that the custom tab action button is displayed")
     }
 
-    @OptIn(ExperimentalTestApi::class)
     fun verifyPDFReaderToolbarItems() {
         // Bug 2081247 to switch to new toolbar for testing
         if (!Config.channel.isNightlyOrDebug) {
@@ -208,7 +205,6 @@ class CustomTabRobot(private val composeTestRule: ComposeTestRule) {
             }
     }
 
-    @OptIn(ExperimentalTestApi::class)
     fun verifyCustomTabsMainMenuItems(
         customMenuItem: String,
         exist: Boolean,

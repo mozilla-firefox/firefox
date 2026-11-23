@@ -5,7 +5,6 @@
 package org.mozilla.fenix.ui
 
 import android.content.Intent
-import androidx.compose.ui.test.ExperimentalTestApi
 import androidx.compose.ui.test.junit4.v2.AndroidComposeTestRule as AndroidComposeTestRuleV2
 import mozilla.components.service.nimbus.messaging.FxNimbusMessaging
 import mozilla.components.service.nimbus.messaging.MessageData
@@ -62,7 +61,6 @@ class NimbusMessagingHomescreenTest {
 
     @get:Rule(order = 3) val memoryLeaksRule = DetectMemoryLeaksRule(composeTestRule = { composeTestRule })
 
-    @OptIn(ExperimentalTestApi::class)
     @Before
     fun setUp() {
         // Set up nimbus message

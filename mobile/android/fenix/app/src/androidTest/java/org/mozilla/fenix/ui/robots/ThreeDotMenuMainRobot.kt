@@ -9,7 +9,6 @@ package org.mozilla.fenix.ui.robots
 import android.util.Log
 import androidx.compose.ui.semantics.SemanticsProperties
 import androidx.compose.ui.test.ComposeTimeoutException
-import androidx.compose.ui.test.ExperimentalTestApi
 import androidx.compose.ui.test.SemanticsMatcher
 import androidx.compose.ui.test.assertIsDisplayed
 import androidx.compose.ui.test.assertIsEnabled
@@ -166,7 +165,6 @@ class ThreeDotMenuMainRobot(private val composeTestRule: ComposeTestRule) {
         Log.i(TAG, "verifySwitchToDesktopSiteButton: Verified that the \"Switch to desktop site\" button is displayed.")
     }
 
-    @OptIn(ExperimentalTestApi::class)
     fun verifySwitchToDesktopSiteButtonIsEnabled(isEnabled: Boolean) {
         Log.i(TAG, "verifySuggestedUserName: Waiting for the \"Desktop site\" button to exist")
         composeTestRule.waitUntilAtLeastOneExists(hasText(getStringResource(R.string.browser_menu_desktop_site)))
@@ -503,7 +501,6 @@ class ThreeDotMenuMainRobot(private val composeTestRule: ComposeTestRule) {
         Log.i(TAG, "clickTheToolsButton: Clicked the Tools menu button from the new main menu design.")
     }
 
-    @OptIn(ExperimentalTestApi::class)
     fun verifyExtensionsButtonWithInstalledExtension(extensionTitle: String) {
         Log.i(
             TAG,
@@ -521,7 +518,6 @@ class ThreeDotMenuMainRobot(private val composeTestRule: ComposeTestRule) {
         )
     }
 
-    @OptIn(ExperimentalTestApi::class)
     fun clickExtensionActionButton(extensionTitle: String) {
         // Extension browserAction or pageAction button. On desktop they render
         // in different UI surfaces, on mobile they are in the same place.
@@ -544,7 +540,6 @@ class ThreeDotMenuMainRobot(private val composeTestRule: ComposeTestRule) {
         composeTestRule.onNode(extActionButton).performClick()
     }
 
-    @OptIn(ExperimentalTestApi::class)
     fun verifyTryRecommendedExtensionButton() {
         Log.i(
             TAG,
@@ -776,7 +771,6 @@ class ThreeDotMenuMainRobot(private val composeTestRule: ComposeTestRule) {
             return BrowserRobot.Transition(composeTestRule)
         }
 
-        @OptIn(ExperimentalTestApi::class)
         fun clickRefreshButton(interact: BrowserRobot.() -> Unit): BrowserRobot.Transition {
             for (i in 1..RETRY_COUNT) {
                 Log.i(TAG, "clickRefreshButton: Started try #$i")
@@ -910,7 +904,6 @@ class ThreeDotMenuMainRobot(private val composeTestRule: ComposeTestRule) {
             return AddToHomeScreenRobot.Transition(composeTestRule)
         }
 
-        @OptIn(ExperimentalTestApi::class)
         fun clickAddAppToHomeScreenButton(interact: AddToHomeScreenRobot.() -> Unit): AddToHomeScreenRobot.Transition {
             Log.i(
                 TAG,
@@ -972,7 +965,6 @@ class ThreeDotMenuMainRobot(private val composeTestRule: ComposeTestRule) {
             return TranslationsRobot.Transition(composeTestRule)
         }
 
-        @OptIn(ExperimentalTestApi::class)
         fun clickTranslatedButton(interact: TranslationsRobot.() -> Unit): TranslationsRobot.Transition {
             Log.i(TAG, "clickTranslateButton: Trying to click the Translate button from the new main menu design.")
             composeTestRule.waitUntilAtLeastOneExists(
@@ -1007,7 +999,6 @@ class ThreeDotMenuMainRobot(private val composeTestRule: ComposeTestRule) {
             return DownloadRobot.Transition(composeTestRule)
         }
 
-        @OptIn(ExperimentalTestApi::class)
         fun clickExtensionsChevronFromMainMenu(
             interact: SettingsSubMenuAddonsManagerRobot.() -> Unit
         ): SettingsSubMenuAddonsManagerRobot.Transition {

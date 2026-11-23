@@ -50,7 +50,6 @@ import androidx.compose.runtime.rememberUpdatedState
 import androidx.compose.runtime.setValue
 import androidx.compose.runtime.snapshotFlow
 import androidx.compose.ui.Alignment
-import androidx.compose.ui.ExperimentalComposeUiApi
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.focus.FocusRequester
 import androidx.compose.ui.focus.focusRequester
@@ -116,7 +115,6 @@ private const val MIN_CHAR_COUNT_FOR_MULTILINE = 10_000
  *   information about the previous and the new query.
  * @param onUrlCommitted A callback for when the user commits the text via an IME action like "Go".
  */
-@OptIn(ExperimentalComposeUiApi::class) // for InterceptPlatformTextInput
 @Suppress("LongMethod", "CyclomaticComplexMethod", "CognitiveComplexMethod")
 @Composable
 internal fun InlineAutocompleteTextField(
@@ -463,7 +461,6 @@ data class BrowserToolbarQuery(
 )
 
 /** Helper for removing the suggestion or delete from the user query when backspace is pressed. */
-@OptIn(ExperimentalFoundationApi::class)
 private class AutocompleteInputTransformation(
     private val suggestion: () -> AutocompleteResult?,
     private val shouldUseSuggestion: () -> Boolean,
@@ -500,7 +497,6 @@ private class AutocompleteInputTransformation(
 }
 
 /** Helper for showing the autocomplete suggestion inline with user's input. */
-@OptIn(ExperimentalFoundationApi::class)
 private class AutocompleteOutputTransformation(
     private val suggestion: () -> AutocompleteResult?,
     private val shouldUseSuggestion: () -> Boolean,

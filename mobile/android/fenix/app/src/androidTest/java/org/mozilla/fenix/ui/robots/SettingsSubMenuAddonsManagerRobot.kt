@@ -8,7 +8,6 @@ package org.mozilla.fenix.ui.robots
 
 import android.util.Log
 import android.widget.RelativeLayout
-import androidx.compose.ui.test.ExperimentalTestApi
 import androidx.compose.ui.test.assertIsDisplayed
 import androidx.compose.ui.test.assertIsNotDisplayed
 import androidx.compose.ui.test.hasContentDescription
@@ -554,7 +553,6 @@ class SettingsSubMenuAddonsManagerRobot(private val composeTestRule: ComposeTest
             return BrowserRobot.Transition(composeTestRule)
         }
 
-        @OptIn(ExperimentalTestApi::class)
         fun clickDiscoverMoreExtensionsButton(
             composeTestRule: ComposeTestRule,
             interact: BrowserRobot.() -> Unit,

@@ -5,7 +5,6 @@
 package org.mozilla.fenix.ui.robots
 
 import android.util.Log
-import androidx.compose.ui.test.ExperimentalTestApi
 import androidx.compose.ui.test.assert
 import androidx.compose.ui.test.assertIsDisplayed
 import androidx.compose.ui.test.hasContentDescription
@@ -326,7 +325,6 @@ class UnifiedTrustPanelRobot {
         composeTestRule.waitForIdle()
     }
 
-    @OptIn(ExperimentalTestApi::class)
     fun clickTheClearCookiesAndSiteDataButton(composeTestRule: ComposeTestRule) {
         Log.i(
             TAG,

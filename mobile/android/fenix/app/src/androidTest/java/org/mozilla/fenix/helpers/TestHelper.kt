@@ -162,7 +162,6 @@ object TestHelper {
 
     fun verifySnackBarText(expectedText: String) = assertUIObjectExists(itemContainingText(expectedText))
 
-    @OptIn(androidx.compose.ui.test.ExperimentalTestApi::class)
     fun verifySnackBarText(composeTestRule: ComposeTestRule, expectedText: String) {
         Log.i(TAG, "verifySnackBarText: Waiting for snackbar with text: $expectedText")
         composeTestRule.waitUntilAtLeastOneExists(hasText(expectedText), waitingTimeLong)
@@ -285,7 +284,6 @@ object TestHelper {
  * [waitUntilAtLeastOneExists][androidx.compose.ui.test.waitUntilAtLeastOneExists] is a no-op once existence has been
  * established.
  */
-@OptIn(androidx.compose.ui.test.ExperimentalTestApi::class)
 fun ComposeTestRule.waitUntilDisplayed(
     node: SemanticsNodeInteraction,
     timeoutMillis: Long = waitingTime,

@@ -7,7 +7,6 @@
 package org.mozilla.fenix.ui.robots
 
 import android.util.Log
-import androidx.compose.ui.test.ExperimentalTestApi
 import androidx.compose.ui.test.assert
 import androidx.compose.ui.test.assertCountEquals
 import androidx.compose.ui.test.assertIsDisplayed
@@ -141,7 +140,6 @@ class TabDrawerRobot(private val composeTestRule: ComposeTestRule) {
         )
     }
 
-    @OptIn(ExperimentalTestApi::class)
     fun verifyExistingOpenTabs(vararg titles: String) {
         titles.forEach { title ->
             Log.i(TAG, "verifyExistingOpenTabs: Waiting for $waitingTime ms for tab with title: $title to exist")
@@ -153,7 +151,6 @@ class TabDrawerRobot(private val composeTestRule: ComposeTestRule) {
         }
     }
 
-    @OptIn(ExperimentalTestApi::class)
     fun verifyOpenTabsOrder(title: String, position: Int, isListViewEnabled: Boolean = false) {
         composeTestRule.waitUntilAtLeastOneExists(
             hasText(title),
@@ -191,7 +188,6 @@ class TabDrawerRobot(private val composeTestRule: ComposeTestRule) {
         }
     }
 
-    @OptIn(ExperimentalTestApi::class)
     fun verifyNormalTabsList() {
         composeTestRule.waitUntilAtLeastOneExists(hasTestTag(NORMAL_TABS_LIST), waitingTime)
         Log.i(TAG, "verifyNormalTabsList: Trying to verify that the normal tabs list exists")
@@ -339,7 +335,6 @@ class TabDrawerRobot(private val composeTestRule: ComposeTestRule) {
     }
 
     /** Closes a tab when there is only one tab open. */
-    @OptIn(ExperimentalTestApi::class)
     fun closeTab() {
         Log.i(TAG, "closeTab: Waiting until the close tab button exists")
         composeTestRule.waitUntilAtLeastOneExists(hasTestTag(TabsTrayTestTag.TAB_ITEM_CLOSE))
@@ -385,7 +380,6 @@ class TabDrawerRobot(private val composeTestRule: ComposeTestRule) {
     }
 
     /** Selects a tab with [title]. */
-    @OptIn(ExperimentalTestApi::class)
     fun selectTab(title: String, numberOfSelectedTabs: Int = 0) {
         Log.i(TAG, "selectTab: Waiting for $waitingTime ms until the tab with title: $title exists")
         composeTestRule.waitUntilExactlyOneExists(hasText(title), waitingTime)
