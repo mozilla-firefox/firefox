@@ -52,6 +52,7 @@ DataViewObject* DataViewObject::create(
   MOZ_ASSERT(!arrayBuffer->isDetached());
   MOZ_ASSERT(!arrayBuffer->isImmutable());
 
+  AutoSetNewObjectMetadata metadata(cx);
   auto* obj = NewObjectWithClassProto<FixedLengthDataViewObject>(cx, proto);
   if (!obj || !obj->init(cx, arrayBuffer, byteOffset, byteLength,
                          /* bytesPerElement = */ 1)) {
@@ -70,6 +71,7 @@ ResizableDataViewObject* ResizableDataViewObject::create(
   MOZ_ASSERT(autoLength == AutoLength::No || byteLength == 0,
              "byte length is zero for 'auto' length views");
 
+  AutoSetNewObjectMetadata metadata(cx);
   auto* obj = NewObjectWithClassProto<ResizableDataViewObject>(cx, proto);
   if (!obj || !obj->initResizable(cx, arrayBuffer, byteOffset, byteLength,
                                   /* bytesPerElement = */ 1, autoLength)) {
@@ -86,6 +88,7 @@ ImmutableDataViewObject* ImmutableDataViewObject::create(
   MOZ_ASSERT(!arrayBuffer->isDetached());
   MOZ_ASSERT(arrayBuffer->isImmutable());
 
+  AutoSetNewObjectMetadata metadata(cx);
   auto* obj = NewObjectWithClassProto<ImmutableDataViewObject>(cx, proto);
   if (!obj || !obj->init(cx, arrayBuffer, byteOffset, byteLength,
                          /* bytesPerElement = */ 1)) {
@@ -1114,7 +1117,8 @@ const ClassSpec DataViewObject::classSpec_ = {
 const JSClass FixedLengthDataViewObject::class_ = {
     "DataView",
     JSCLASS_HAS_RESERVED_SLOTS(FixedLengthDataViewObject::RESERVED_SLOTS) |
-        JSCLASS_HAS_CACHED_PROTO(JSProto_DataView),
+        JSCLASS_HAS_CACHED_PROTO(JSProto_DataView) |
+        JSCLASS_DELAY_METADATA_BUILDER,
     &DataViewObjectClassOps,
     &DataViewObject::classSpec_,
 };
@@ -1122,7 +1126,8 @@ const JSClass FixedLengthDataViewObject::class_ = {
 const JSClass ResizableDataViewObject::class_ = {
     "DataView",
     JSCLASS_HAS_RESERVED_SLOTS(ResizableDataViewObject::RESERVED_SLOTS) |
-        JSCLASS_HAS_CACHED_PROTO(JSProto_DataView),
+        JSCLASS_HAS_CACHED_PROTO(JSProto_DataView) |
+        JSCLASS_DELAY_METADATA_BUILDER,
     &DataViewObjectClassOps,
     &DataViewObject::classSpec_,
 };
@@ -1130,7 +1135,8 @@ const JSClass ResizableDataViewObject::class_ = {
 const JSClass ImmutableDataViewObject::class_ = {
     "DataView",
     JSCLASS_HAS_RESERVED_SLOTS(ImmutableDataViewObject::RESERVED_SLOTS) |
-        JSCLASS_HAS_CACHED_PROTO(JSProto_DataView),
+        JSCLASS_HAS_CACHED_PROTO(JSProto_DataView) |
+        JSCLASS_DELAY_METADATA_BUILDER,
     &DataViewObjectClassOps,
     &DataViewObject::classSpec_,
 };
