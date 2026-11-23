@@ -17167,6 +17167,14 @@
   value: true
   mirror: always
 
+# Maximum consecutive PTOs before closing an HTTP/3 connection. Set to zero
+# to disable the black-hole detector.
+- name: network.http.http3.max_pto
+  type: RelaxedAtomicUint32
+  value: 0
+  mirror: always
+  rust: true
+
 # Receive buffer size of QUIC socket
 - name: network.http.http3.recvBufferSize
   type: RelaxedAtomicInt32

@@ -96,6 +96,9 @@ struct Http3TestServer {
     // simulating a stuck ZERORTT session that never transitions to CONNECTED.
     stuck_0rtt_mode: bool,
     stuck_0rtt_activated: bool,
+    // When true, server will stop processing datagrams from `blackhole_addr`.
+    is_blackhole_mode: bool,
+    blackhole_addr: Option<SocketAddr>,
 }
 
 impl ::std::fmt::Display for Http3TestServer {
@@ -122,6 +125,8 @@ impl Http3TestServer {
             datagram_floods: Vec::new(),
             stuck_0rtt_mode: false,
             stuck_0rtt_activated: false,
+            is_blackhole_mode: false,
+            blackhole_addr: None,
         }
     }
 
@@ -295,6 +300,14 @@ impl HttpServer for Http3TestServer {
             return OutputBatch::Callback(Duration::from_millis(100));
         }
 
+        let mut dgrams_peek = dgrams.into_iter().peekable();
+
+        if self.is_blackhole_mode && self.blackhole_addr.is_none() {
+            self.blackhole_addr = dgrams_peek.peek().map(|d| d.source());
+        }
+
+        let dgrams = dgrams_peek.filter(|dgram| Some(dgram.source()) != self.blackhole_addr);
+
         let output = self.server.process_multiple(dgrams, now, max_datagrams);
 
         // If we just processed datagrams with stuck mode enabled, mark it as activated
@@ -422,6 +435,26 @@ impl HttpServer for Http3TestServer {
                                         Header::new(
                                             "content-length",
                                             response_body.len().to_string(),
+                                        ),
+                                    ])
+                                    .unwrap();
+                                self.new_response(stream, response_body, now);
+                            } else if path == b"/SetBlackhole" {
+                                qinfo!("Enabling Blackhole mode for the current connection.");
+                                self.is_blackhole_mode = true;
+                                let response_body = b"Blackhole mode enabled".to_vec();
+                                stream
+                                    .send_headers(&[
+                                        Header::new(":status", "200"),
+                                        Header::new("cache-control", "no-cache"),
+                                        Header::new("content-type", "text/plain"),
+                                        Header::new(
+                                            "content-length",
+                                            response_body.len().to_string(),
+                                        ),
+                                        Header::new(
+                                            "x-http3-conn-hash",
+                                            connection_hash.to_string(),
                                         ),
                                     ])
                                     .unwrap();
