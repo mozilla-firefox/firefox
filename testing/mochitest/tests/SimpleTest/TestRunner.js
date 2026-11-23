@@ -573,7 +573,10 @@ async function _runNextTest() {
     }
     if (TestRunner._urls[TestRunner._currentTest].test.https_first_disabled) {
       await SpecialPowers.pushPrefEnv({
-        set: [["dom.security.https_first", false]],
+        set: [
+          ["dom.security.https_first", false],
+          ["dom.security.https_first_pbm", false],
+        ],
       });
     }
     // Harness navigations of the test frame count against

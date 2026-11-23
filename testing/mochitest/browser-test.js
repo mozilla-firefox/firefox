@@ -1954,7 +1954,10 @@ Tester.prototype = {
     // dom.security.https_first to false for the duration of the test.
     if (currentTest.https_first_disabled) {
       window.SpecialPowers.pushPrefEnv({
-        set: [["dom.security.https_first", false]],
+        set: [
+          ["dom.security.https_first", false],
+          ["dom.security.https_first_pbm", false],
+        ],
       });
     }
 
