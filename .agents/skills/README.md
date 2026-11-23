@@ -59,7 +59,7 @@ auto-triggers but stays invocable by name and in the `/` menu. It suits a skill
 that is only ever reached *from* another skill — a family's shared mechanics, or
 the reference half of a pair — because the referring skill's body names it and no
 trigger text is needed. Confirm a sibling actually refers to it before relying on
-this. `desktop-theme-probing` is the worked example.
+this. `desktop-probing` is the worked example.
 
 ## Adding a skill
 

@@ -5,7 +5,7 @@ description: Before/after screenshots for a bug or review; pixel-diffing a pair 
 
 # Produce before/after visual evidence for a front-end change
 
-Instruments and display rungs: load `desktop-theme-probing` before the first
+Instruments and display rungs: load `desktop-probing` before the first
 capture; it defines the host's and the target's platform file that this skill
 cites by section. To decide which states
 show the change, also load the sibling that owns its subject:
@@ -36,7 +36,7 @@ decides what you capture, force or log:
   `element.toggleAttribute("selected", true)`. An element-state pseudo-class,
   focus included (e.g. `:hover`, `:focus-visible`, `:checked`), takes
   `InspectorUtils.addPseudoClassLock` on the element the selector names, often
-  an ancestor of the one you shoot (the lock rule in `desktop-theme-probing` §2
+  an ancestor of the one you shoot (the lock rule in `desktop-probing` §2
   "Keep the probe honest"). A media-query state takes its pref
   (`desktop-theme-colors` §2). Focus that a widget's own key handling moves
   between items (e.g. in a menu or list) is the exception: a lock neither moves
@@ -44,7 +44,7 @@ decides what you capture, force or log:
   print `:focus-visible` beside each reading. In a content page, the probe
   runner's `--steps` `move` step makes `:hover` follow the pointer. `capture.js`
   finishes running transitions before each shot; elsewhere finish them yourself
-  (`desktop-theme-probing` §2 "Reach and read the state"). Restore the state if
+  (`desktop-probing` §2 "Reach and read the state"). Restore the state if
   later captures depend on it.
 - **Too small for the capture to isolate.** A color that moves a few sRGB units
   in any painted property, or a box that moves less than a device pixel, is lost
@@ -61,7 +61,7 @@ decides what you capture, force or log:
   swap between a snapped and an unsnapped length shows only at some device pixel
   ratios (`desktop-theme-layout` §2 "Device pixels"). Find the instances first
   with an inline old-against-new differential over every candidate
-  (`desktop-theme-probing` §4), and shoot those; `desktop-theme-layout` §1 owns
+  (`desktop-probing` §4), and shoot those; `desktop-theme-layout` §1 owns
   the configuration sweep. Enumerate the candidates from the changed rule:
   every element its selector matches (`querySelectorAll` with the state
   pseudo-classes stripped, in each document and shadow root that loads the
@@ -77,8 +77,8 @@ decides what you capture, force or log:
 | Chrome, rendered by a suite's fixture | a scratch browser-chrome test pasting `capture.js`; `capture-pair.sh` (§3) runs it |
 | Chrome, no fixture needed | `firefox-probe.py --realm chrome --async` running `capture.js` |
 | Content, such as a web page or an about: page | `firefox-probe.py --steps` with a `drawSnapshot` step; the Firefox MCP last |
-| Chrome ink inside the browser's rect, such as an outline or border drawn over the page's edge | a compositor grab: `drawWindow` paints chrome over the tab panel's background, never under the composited page, so ink the page covers reads visible (§1 "Chrome and content canvases" in `desktop-theme-probing`'s [`measuring-pixels.md`](../desktop-theme-probing/references/measuring-pixels.md)) |
-| An open panel or menupopup | a compositor grab (§2 "The compositor's output" in `desktop-theme-probing`'s [`measuring-pixels.md`](../desktop-theme-probing/references/measuring-pixels.md)) |
+| Chrome ink inside the browser's rect, such as an outline or border drawn over the page's edge | a compositor grab: `drawWindow` paints chrome over the tab panel's background, never under the composited page, so ink the page covers reads visible (§1 "Chrome and content canvases" in `desktop-probing`'s [`measuring-pixels.md`](../desktop-probing/references/measuring-pixels.md)) |
+| An open panel or menupopup | a compositor grab (§2 "The compositor's output" in `desktop-probing`'s [`measuring-pixels.md`](../desktop-probing/references/measuring-pixels.md)) |
 
 `drawWindow` and the chrome window's `drawSnapshot` both leave an open popup out
 and draw what lies under it. A popup here is a `<panel>` or `<menupopup>`
@@ -87,7 +87,7 @@ the rest of the chrome. On Linux a compositor grab of a popup needs `--setpref
 ui.GtkCSDTransparencyAvailable=1` in both halves: without it `popup.css` paints
 the popup square with no shadow margin, and a change to its radius or shadow
 yields an identical pair (`platform-linux.md`, section HEADLESS, in
-`desktop-theme-probing`).
+`desktop-probing`).
 
 **`capture.js`.** Paste [`scripts/capture.js`](scripts/capture.js) at the head
 of the test or probe and call `await capture(name, element)` once per shot (it
@@ -115,15 +115,15 @@ property the diff changes beside it (§5).
 
 **Test route.** Drop the file in the `browser/` test directory nearest the UI
 under test and register it (§2 "Register and run it" in
-[`scratch-probe.md`](../desktop-theme-probing/references/scratch-probe.md)).
+[`scratch-probe.md`](../desktop-probing/references/scratch-probe.md)).
 Reuse whatever renders the surface in the suite that covers it (e.g. a mock
 server, a test provider), not a hand-built node that merely matches the
 selectors.
 
 **Probe route.** Paste `capture.js` into an `--async` body, which may `await`
 and `return`s its result (§2 "The chrome sandbox and `--async`" in
-`desktop-theme-probing`'s
-[`references/probe-runner.md`](../desktop-theme-probing/references/probe-runner.md)).
+`desktop-probing`'s
+[`references/probe-runner.md`](../desktop-probing/references/probe-runner.md)).
 The suite's fixture is out of reach: a state the product's own providers cannot
 produce on that profile is forced on a real node or built by hand, with the
 caption saying so. Open a tab with `gBrowser.addTrustedTab(url)`;
@@ -144,19 +144,19 @@ promise, and without the `return` the step ends before the file is written. In a
 `document.createElement("canvas")` gives an HTML canvas. `--help` lists the
 step kinds. `capture.js` cannot see the page (§1 "Chrome and content canvases"
 in
-[`measuring-pixels.md`](../desktop-theme-probing/references/measuring-pixels.md)).
+[`measuring-pixels.md`](../desktop-probing/references/measuring-pixels.md)).
 `capture-pair.sh` drives only the test and chrome-probe routes; for a content
 page or a compositor grab (which needs `--no-headless` on the display the
-host's platform file in `desktop-theme-probing`, section GRABS, allows), run
-each half yourself with the by-hand revert in `desktop-theme-probing` §6
+host's platform file in `desktop-probing`, section GRABS, allows), run
+each half yourself with the by-hand revert in `desktop-probing` §6
 between them.
 
 **Firefox MCP route.** Use `screenshot_page` or `screenshot_by_uid`, headless,
-on this tree's binary (`desktop-theme-probing` §1's binary check). Before the
+on this tree's binary (`desktop-probing` §1's binary check). Before the
 first `restart_firefox`, read §1 "Binary and profile", §2 "Prefs" and §5
 "Screenshots" (where `saveTo` may write) in
-[`firefox-mcp.md`](../desktop-theme-probing/references/firefox-mcp.md). The
-before half is the by-hand revert in `desktop-theme-probing` §6 followed by
+[`firefox-mcp.md`](../desktop-probing/references/firefox-mcp.md). The
+before half is the by-hand revert in `desktop-probing` §6 followed by
 `restart_firefox`. The screenshots clip to the viewport, and raising
 `layout.css.devPixelsPerPx` shrinks the CSS viewport at a
 fixed window size, so call `set_viewport_size` after the ratio is in force and
@@ -164,7 +164,7 @@ check the frame size against the element's rect: a pair cropped alike looks
 consistent.
 
 **On every route the profile is empty and online.** Seed what the surface lists
-and undo the launch's other differences per `desktop-theme-probing` §2 "A probe
+and undo the launch's other differences per `desktop-probing` §2 "A probe
 launch is not a user's profile". Anything fed from the network or the clock
 (e.g. suggestions, stories, remote settings, dates) can differ between the
 halves; turn those sources off or mock them (a mock server through the
@@ -184,7 +184,7 @@ with that cell's prefs and setup file.
 - **Each `<path>` is a file the browser loads.** For a `*.tokens.json` change,
   pass the generated token CSS that `./mach buildtokens` writes into the tree.
 - **The change is committed, and each path exists at both ends.** Pair an
-  uncommitted change with the by-hand revert in `desktop-theme-probing` §6.
+  uncommitted change with the by-hand revert in `desktop-probing` §6.
 - **A test file reached through several manifests runs once per manifest**, and
   each run overwrites the last one's output, so a pair keyed only on
   `before`/`after` compares the last variant to run. Put the variant in the
@@ -198,7 +198,7 @@ seat. Shoot in the report's regime (`desktop-theme-colors` §1), and in both
 Linux native-theme branches where that section says to. A headless run paints
 the host's look and feel, not the user's: before shooting a native-theme,
 system-color or scrollbar change, read the host's platform file in
-`desktop-theme-probing`, section HEADLESS (the host is the machine the run is
+`desktop-probing`, section HEADLESS (the host is the machine the run is
 on, even when the report names another platform), for the prefs to pin or the
 reason to take a real display rung (section DISPLAYS).
 
@@ -233,7 +233,7 @@ the caption says what the marker means:
 
 Under forced colors the adjustment repaints a literal marker (a red outline
 takes the text color, a marker background turns `Canvas`): mark per
-`desktop-theme-probing` §4.
+`desktop-probing` §4.
 
 ## 5. Verify the pair actually differs
 
@@ -246,7 +246,7 @@ nothing. An identical pair means one of three things; say which:
 
 To tell them apart, log the computed value of each property the diff changes,
 and the subject's state, in each half. Values that differ mean the revert took;
-a selector that matches (`getMatchingCSSRules`, `desktop-theme-probing` §2
+a selector that matches (`getMatchingCSSRules`, `desktop-probing` §2
 "Reach and read the state") means the state was right. A control pair, a variant
 the patch does not apply to (e.g. a different theme, a pref-off manifest),
 guards the other direction: if it differs, the capture picks up run-to-run noise
@@ -258,7 +258,7 @@ box, confined by `--rect` to the element; a zero count also reports the
 differences under `--threshold`, which is §1's "too small" case. `--help`
 covers the rect's origin, `--dpr`, `--offset`, `--lines` (what a caption for a
 change one or two device pixels wide quotes) and the exit codes; the host's
-platform file in `desktop-theme-probing`, section GRABS, gives a grab's scale.
+platform file in `desktop-probing`, section GRABS, gives a grab's scale.
 It needs Pillow, which the `wpt` site carries. On Linux the site's first run can
 print a `PyGObject` build failure, an optional package, and then succeed (bug
 2090261), so ignore the warning and read the exit code. A completed comparison
@@ -309,7 +309,7 @@ build in the reporter's density and theme, and check it on a second one.
 
 ## 7. Clean up, and hand the images over
 
-Clean up per `desktop-theme-probing` §6. Name the files so the pair is obvious
+Clean up per `desktop-probing` §6. Name the files so the pair is obvious
 (`before-<variant>-<subject>.png`), tell the user the directory, and say for
 each pair what to look at and what it was taken in: the element state and
 whether it was forced or the node hand-built, the color regime and theme,

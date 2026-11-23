@@ -10,7 +10,7 @@ forced-colors pairing is judged there: in `NativeGetColor` of
 `widget/windows/nsLookAndFeel.cpp`, the `IsHighlightColor()` and
 `IsHighlightTextColor()` predicates list the IDs that collapse onto
 `COLOR_HIGHLIGHT` and `COLOR_HIGHLIGHTTEXT`, and the `switch` below them maps
-the rest; there is no ID to `COLOR_*` table to grep. `desktop-theme-probing`'s
+the rest; there is no ID to `COLOR_*` table to grep. `desktop-probing`'s
 `platform-windows.md`, section CONTRAST, lists the names that resolve to one
 color under high contrast, so compare states by resolved value, not by name.
 

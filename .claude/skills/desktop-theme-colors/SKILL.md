@@ -11,12 +11,12 @@ allowed-tools:
 Each of the four regimes in css_guidelines "High contrast mode" resolves
 differently in a chrome window than in an `about:` page, and two differ by
 platform. Name which regime each side is in before calling chrome and the page
-inconsistent. Load `desktop-theme-probing` before the first live launch (a
+inconsistent. Load `desktop-probing` before the first live launch (a
 `./mach theme resolve-token` run is not one); it defines the platform files (the probing
 machine's and the target's) that this skill cites by section.
 
 **Read the used value off the live element** with the instruments in
-`desktop-theme-probing` §1. Also apply the checks in
+`desktop-probing` §1. Also apply the checks in
 `accessible/docs/HCMCSSChecklist.md` on foreground/background pairs, matching
 interaction states, borders, visual effects and SVG colors.
 
@@ -52,7 +52,7 @@ return {
 };
 ```
 
-That is the `firefox-probe.py -e` shape; `desktop-theme-probing` §1 has the
+That is the `firefox-probe.py -e` shape; `desktop-probing` §1 has the
 others. Read every field: css_guidelines "High contrast mode" says why the two
 forced-colors queries and the contrast grades can disagree.
 
@@ -73,11 +73,11 @@ run `./mach theme resolve-token --effective` on the tokens the
 rule reads and compare the `default` and `-moz-native-theme` rows, and check the
 rule itself for a `(-moz-native-theme)` condition. For a report from another
 platform than the one you probe on, read that platform's file
-(`desktop-theme-probing`), section CONTRAST, before choosing a regime. Set the
+(`desktop-probing`), section CONTRAST, before choosing a regime. Set the
 report's regime up through §6's rows before the first reading, and print the
 theme and `(-moz-native-theme)` beside the values.
 
-**Design a chrome color probe around `desktop-theme-probing` §4's marker values
+**Design a chrome color probe around `desktop-probing` §4's marker values
 or the rule matching in its §2 "Reach and read the state" from the start.** A
 value read names the rule that paints a state only when every candidate rule
 computes to a distinct string, and `getComputedStyle` substitutes `var()`
@@ -115,7 +115,7 @@ The simulation reproduces the regime, not Windows' color set: only under
 (`layout/style/PreferenceSheet.cpp`). Pin `ui.systemUsesDarkTheme=0` when the
 measurement stands in for Windows.
 
-**Read it as a differential** (`desktop-theme-probing` §4) of the custom
+**Read it as a differential** (`desktop-probing` §4) of the custom
 properties the chrome element and the in-page element share, read with
 `getComputedStyle(el).getPropertyValue(name)`. A row where chrome reads a system
 color and the page reads a literal or a `light-dark()` of literals has named the
@@ -162,7 +162,7 @@ its `fill` or `stroke`, its own or one context paint hands it from the host**
 (`-moz-context-properties`; an SVG's `fill="context-stroke"` takes the host's
 `stroke`). Trace a `currentColor` fill through the element's `color` to
 its declaring rule (`getMatchingCSSRules` up the ancestors,
-`desktop-theme-probing` §2 "Reach and read the state"), and resolve a `-moz-*`
+`desktop-probing` §2 "Reach and read the state"), and resolve a `-moz-*`
 system color as §1 "Two names can be one pair" in
 `references/system-color-pairs.md` says.
 
@@ -206,7 +206,7 @@ Linux and macOS that setup includes the override from §2 above, and the walk
 exits 1 when an entry judged nothing. Before judging a state, read its §2 "Per
 state" and §4 "Per selector": a diff-only read misses the state the patch left
 to an existing rule and the descendants a state repaints. Enumerate the elements
-a narrowed selector drops, or a widened one adds, with `desktop-theme-probing`'s
+a narrowed selector drops, or a widened one adds, with `desktop-probing`'s
 `references/probe-recipes.md` §8 "Measure what a changed selector drops or adds".
 
 **When a patch changes a background, check that the text uses the counterpart
@@ -257,7 +257,7 @@ stderr, so treat that entry as not judged until you rerun it with `--surface`.
   is `!important`. Read a part's value with both sheets in place.
 - **Before removing a declaration as redundant with a shared rule, list the
   rules that set the property on the element** with the declaration in place
-  (`desktop-theme-probing` §2 "Reach and read the state", "prove the rule
+  (`desktop-probing` §2 "Reach and read the state", "prove the rule
   applies"): the shared rule may lose to another rule there. When it loses,
   removing the declaration changes the computed value, and a pixel diff clears
   that only for the consumers captured. In a shared sheet, read what the sheet
@@ -271,7 +271,7 @@ stderr, so treat that entry as not judged until you rerun it with `--surface`.
 
 ## 6. Judge the fix in every regime, then restore the prefs
 
-Check that each cell moves the way it should (`desktop-theme-probing` §5).
+Check that each cell moves the way it should (`desktop-probing` §5).
 Measure each cell's ratio with `./mach theme contrast` (§4), never by hand: one
 run per row, light or dark side and variant, each with its own `--setup-file`
 that sets the row's live state (e.g. §2's override, the scheme prefs). To judge
@@ -281,22 +281,22 @@ subject in that setup file, so the before and after runs differ by those lines.
 
 | regime | how to reach it |
 |---|---|
-| default | both prefs at their defaults, read back (§1); also pin and read back the prefs the host's platform file (`desktop-theme-probing`), section HEADLESS, lists for the default regime; before restarting into it, read §2 "Prefs" in `desktop-theme-probing`'s `references/firefox-mcp.md` |
+| default | both prefs at their defaults, read back (§1); also pin and read back the prefs the host's platform file (`desktop-probing`), section HEADLESS, lists for the default regime; before restarting into it, read §2 "Prefs" in `desktop-probing`'s `references/firefox-mcp.md` |
 | prefers-contrast, no forced colors | `ui.useAccessibilityTheme=1`, `document_color_use=1`; Windows chrome is `requested` under these prefs, so take this cell for chrome on Linux or macOS |
 | forced colors (the Windows regime) | `ui.useAccessibilityTheme=1`, `document_color_use=0`; Windows chrome is `requested` under these prefs; elsewhere add §2's override and root `forced-color-adjust: none` to approximate it, which reports `active` |
 | forced colors, content only | `ui.useAccessibilityTheme=0`, `document_color_use=2`; the page still reports `prefers-contrast` |
 | forced colors, chrome only | §2's override; this row separates forced colors from `prefers-contrast`. Under it, and under the full forced-colors row, chrome swaps any theme for the default theme (css_guidelines "Theme support"), so a theme cell measures the default theme |
 | prefers-contrast `custom` or `less`, content only | `document_color_use=2`, `browser.display.foreground_color` at 4.5:1 to 7:1 (`custom`) or below (`less`) on `browser.display.background_color` |
-| stand-ins, content only | `ui.use_standins_for_native_colors=true`; on a host where a headless run already paints the stand-ins, run it on a real widget backend; before picking the display, see the host's platform file (`desktop-theme-probing`), section HEADLESS |
+| stand-ins, content only | `ui.use_standins_for_native_colors=true`; on a host where a headless run already paints the stand-ins, run it on a real widget backend; before picking the display, see the host's platform file (`desktop-probing`), section HEADLESS |
 | resist fingerprinting | `privacy.resistFingerprinting=true`: the stand-ins, and no `prefers-contrast` in content |
-| light and dark | `ui.systemUsesDarkTheme=0` or `1`, pinned both ways since a headless run and a real display can default to different schemes (the host's platform file in `desktop-theme-probing`, section HEADLESS), read back with `(prefers-color-scheme: dark)`, plus the in-app row's pref where the theme should follow it; set `browser.theme.content-theme=0` and `browser.theme.toolbar-theme=0` only on a running instance, since `LightweightThemeConsumer` rewrites both at most theme updates, so a `--setpref` value is gone by the first reading; read both back after the window applies its theme (css_guidelines "Colors that resolve per realm" has which updates write them and the value each theme gets) |
+| light and dark | `ui.systemUsesDarkTheme=0` or `1`, pinned both ways since a headless run and a real display can default to different schemes (the host's platform file in `desktop-probing`, section HEADLESS), read back with `(prefers-color-scheme: dark)`, plus the in-app row's pref where the theme should follow it; set `browser.theme.content-theme=0` and `browser.theme.toolbar-theme=0` only on a running instance, since `LightweightThemeConsumer` rewrites both at most theme updates, so a `--setpref` value is gone by the first reading; read both back after the window applies its theme (css_guidelines "Colors that resolve per realm" has which updates write them and the value each theme gets) |
 | chrome and web content in different schemes | `ui.systemUsesDarkTheme` sets the chrome's scheme; `layout.css.prefers-color-scheme.content-override` (about:preferences' website appearance setting) sets the websites', with the value css_guidelines "Colors that resolve per realm" gives for the scheme you want; the second also drives `-moz-content-prefers-color-scheme` in chrome sheets; both take as `--setpref` at launch |
-| lightweight or system theme | `lwtheme` on the chrome root without `theme-in-app`, live, for the token layers; a real add-on theme for the colors its manifest writes inline on the root (`desktop-theme-tokens` §3), installed as `desktop-theme-probing`'s `references/probe-recipes.md` §3 "Install a theme in the probe profile" says |
-| built-in in-app theme | an `inApp` id from `browser/themes/BuiltInThemeConfig.sys.mjs`, enabled as `desktop-theme-probing`'s `references/probe-recipes.md` §3 "Install a theme in the probe profile" says; it takes the in-app layer on every platform (`desktop-theme-tokens`' `references/token-layers.md` §2 "Which layer each theme kind paints") |
-| system accent color | `ui.accentcolor=#rrggbb` and `ui.accentcolortext=#rrggbb`; without them the accent depends on the host and the display (the host's platform file in `desktop-theme-probing`, section HEADLESS) |
+| lightweight or system theme | `lwtheme` on the chrome root without `theme-in-app`, live, for the token layers; a real add-on theme for the colors its manifest writes inline on the root (`desktop-theme-tokens` §3), installed as `desktop-probing`'s `references/probe-recipes.md` §3 "Install a theme in the probe profile" says |
+| built-in in-app theme | an `inApp` id from `browser/themes/BuiltInThemeConfig.sys.mjs`, enabled as `desktop-probing`'s `references/probe-recipes.md` §3 "Install a theme in the probe profile" says; it takes the in-app layer on every platform (`desktop-theme-tokens`' `references/token-layers.md` §2 "Which layer each theme kind paints") |
+| system accent color | `ui.accentcolor=#rrggbb` and `ui.accentcolortext=#rrggbb`; without them the accent depends on the host and the display (the host's platform file in `desktop-probing`, section HEADLESS) |
 | in-app light/dark pair on Linux | `browser.theme.native-theme=false` |
 | native theme on Windows or macOS | `browser.theme.native-theme=true`, with the default theme: a built-in in-app theme takes the in-app layer whatever the pref says |
-| a backdrop the OS paints (e.g. Windows Mica) | `ui.windowsMica=1` makes `(-moz-windows-mica)` match on any platform, but the Windows-only sheets are absent elsewhere and nothing paints the backdrop; inject the rule as `desktop-theme-probing`'s `references/probe-recipes.md` §4 "Test another platform's rule" says, and measure over the backdrop's light and dark values with this skill's §4 `./mach theme contrast --colors` |
+| a backdrop the OS paints (e.g. Windows Mica) | `ui.windowsMica=1` makes `(-moz-windows-mica)` match on any platform, but the Windows-only sheets are absent elsewhere and nothing paints the backdrop; inject the rule as `desktop-probing`'s `references/probe-recipes.md` §4 "Test another platform's rule" says, and measure over the backdrop's light and dark values with this skill's §4 `./mach theme contrast --colors` |
 
 When the fix is in a shared sheet, run every row in both realms, the healthy one
 included; for a token change, a realm where no sheet reads a changed token is
@@ -315,4 +315,4 @@ On Linux and macOS, take chrome's forced-colors answer from the chrome-only row,
 and a Windows palette's from a Windows try run.
 
 Restore every pref, set any forced-colors override back to `"none"`, and delete
-any scratch probe (`desktop-theme-probing` §6).
+any scratch probe (`desktop-probing` §6).
