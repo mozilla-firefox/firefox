@@ -282,16 +282,14 @@ const doorHangerDisable = (
       description.textContent.includes(addon.name),
       "The extension name is in the description"
     );
-    let images = Array.from(description.querySelectorAll("image"));
+    let images = Array.from(description.querySelectorAll("img"));
     is(images.length, 2, "There are two images");
     ok(
       images.some(img => img.src.includes("addon-icon.png")),
       "There's an icon for the extension"
     );
     ok(
-      images.some(img =>
-        getComputedStyle(img).backgroundImage.includes("/search-tabs.svg")
-      ),
+      images.some(img => img.src.includes("/search-tabs.svg")),
       "There's an icon for the all tabs menu"
     );
 

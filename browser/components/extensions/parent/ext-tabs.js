@@ -5,7 +5,6 @@
 "use strict";
 
 ChromeUtils.defineESModuleGetters(this, {
-  BrowserUIUtils: "resource:///modules/BrowserUIUtils.sys.mjs",
   CustomizableUI:
     "moz-src:///browser/components/customizableui/CustomizableUI.sys.mjs",
   DownloadPaths: "resource://gre/modules/DownloadPaths.sys.mjs",
@@ -17,11 +16,11 @@ ChromeUtils.defineESModuleGetters(this, {
   Tabbrowser: "moz-src:///browser/components/tabbrowser/Tabbrowser.sys.mjs",
 });
 
-ChromeUtils.defineLazyGetter(this, "strBundle", function () {
-  return Services.strings.createBundle(
-    "chrome://global/locale/extensions.properties"
-  );
-});
+ChromeUtils.defineLazyGetter(
+  this,
+  "extensionsL10n",
+  () => new Localization(["toolkit/global/extensions.ftl"])
+);
 
 var { DefaultMap, ExtensionError } = ExtensionUtils;
 
@@ -34,16 +33,13 @@ ChromeUtils.defineLazyGetter(this, "tabHidePopup", () => {
     confirmedType: TAB_HIDE_CONFIRMED_TYPE,
     popupnotificationId: "extension-tab-hide-notification",
     descriptionId: "extension-tab-hide-notification-description",
-    descriptionMessageId: "tabHideControlled.message",
-    getLocalizedDescription: (doc, message, addonDetails) => {
-      let image = doc.createXULElement("image");
-      image.classList.add("extension-controlled-icon", "alltabs-icon");
-      return BrowserUIUtils.getLocalizedFragment(
-        doc,
-        message,
-        addonDetails,
-        image
-      );
+    descriptionMessageId: "appmenu-tab-hide-controlled-message",
+    getExtraDescriptionElements: doc => {
+      let image = doc.createElementNS("http://www.w3.org/1999/xhtml", "img");
+      image.setAttribute("src", "chrome://browser/skin/search-tabs.svg");
+      image.setAttribute("data-l10n-name", "all-tabs-icon");
+      image.classList.add("extension-controlled-icon");
+      return [image];
     },
     learnMoreLink: "extension-hiding-tabs",
   });
@@ -1408,13 +1404,13 @@ this.tabs = class extends ExtensionAPIPersistent {
           return Promise.resolve(this.print());
         },
 
-        saveAsPDF(pageSettings) {
+        async saveAsPDF(pageSettings) {
           let activeTab = getTabOrActive(null);
           let picker = Cc["@mozilla.org/filepicker;1"].createInstance(
             Ci.nsIFilePicker
           );
-          let title = strBundle.GetStringFromName(
-            "saveaspdf.saveasdialog.title"
+          let title = await extensionsL10n.formatValue(
+            "webext-save-as-pdf-dialog-title"
           );
           let filename;
           if (

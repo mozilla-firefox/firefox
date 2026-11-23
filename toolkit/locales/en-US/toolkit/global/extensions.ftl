@@ -167,3 +167,17 @@ webext-site-perms-header-unsigned-with-perms = Add { $extension }? This extensio
 webext-site-perms-midi = Access MIDI devices
 webext-site-perms-midi-sysex = Access MIDI devices with SysEx support
 webext-site-perms-serial = Access serial devices
+
+## Confirmation dialog shown when an extension requests to uninstall itself.
+## Variables:
+##   $extension (String): name of the extension which is about to be uninstalled.
+
+webext-uninstall-confirmation-title = Uninstall { $extension }
+webext-uninstall-confirmation-message = The extension “{ $extension }” is requesting to be uninstalled. What would you like to do?
+webext-uninstall-confirmation-button-uninstall = Uninstall
+webext-uninstall-confirmation-button-keep = Keep Installed
+
+##
+
+# Title of the file picker opened when an extension saves a page as PDF.
+webext-save-as-pdf-dialog-title = Save As

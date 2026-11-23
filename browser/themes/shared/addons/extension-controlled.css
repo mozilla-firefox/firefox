@@ -18,12 +18,8 @@
   height: var(--icon-size);
   width: var(--icon-size);
   vertical-align: bottom;
-
-  &.alltabs-icon {
-    background: url("chrome://browser/skin/search-tabs.svg");
-    -moz-context-properties: fill;
-    fill: currentColor;
-  }
+  -moz-context-properties: fill;
+  fill: currentColor;
 }
 
 /* prettier-ignore */

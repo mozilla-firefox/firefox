@@ -1862,6 +1862,7 @@ class SchemaAPIManager extends EventEmitter {
       IOUtils,
       L10nFileSource,
       L10nRegistry,
+      Localization,
       MatchGlob,
       MatchPattern,
       MatchPatternSet,

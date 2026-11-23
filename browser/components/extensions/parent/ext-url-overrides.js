@@ -30,7 +30,7 @@ ChromeUtils.defineLazyGetter(this, "newTabPopup", () => {
     settingType: STORE_TYPE,
     settingKey: NEW_TAB_SETTING_NAME,
     descriptionId: "extension-new-tab-notification-description",
-    descriptionMessageId: "newTabControlled.message2",
+    descriptionMessageId: "appmenu-new-tab-controlled-message",
     learnMoreLink: "extension-home",
     preferencesLocation: "home-newtabOverride",
     preferencesEntrypoint: "addon-manage-newtab-override",

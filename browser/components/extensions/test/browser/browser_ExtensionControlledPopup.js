@@ -79,7 +79,7 @@ add_task(async function testExtensionControlledPopup() {
     settingType,
     settingKey,
     descriptionId: "extension-controlled-description",
-    descriptionMessageId: "newTabControlled.message2",
+    descriptionMessageId: "appmenu-new-tab-controlled-message",
     learnMoreLink: "extension-controlled",
     onObserverAdded,
     onObserverRemoved,
@@ -242,6 +242,45 @@ add_task(async function testExtensionControlledPopup() {
   ok(beforeDisableAddon.called, "The beforeDisableAddon callback was fired");
   is(await popup.userHasConfirmed(id), false, "The user has not confirmed");
   is(addon.userDisabled, true, "The extension is now disabled");
+
+  await extension.unload();
+});
+
+add_task(async function testDescriptionEscapesAddonName() {
+  let id = "ext-controlled-markup@mochi.test";
+  let name = 'Tab<Hider> & <b>Bold</b> &amp; <img data-l10n-name="addon-icon">';
+  let extension = ExtensionTestUtils.loadExtension({
+    manifest: {
+      browser_specific_settings: { gecko: { id } },
+      name,
+    },
+    useAddonManager: "temporary",
+  });
+  await extension.startup();
+  let addon = await AddonManager.getAddonByID(id);
+
+  let popup = new ExtensionControlledPopup({
+    popupnotificationId: "extension-controlled-notification",
+    descriptionId: "extension-controlled-description",
+    descriptionMessageId: "appmenu-new-tab-controlled-message",
+  });
+  let doc = Services.wm.getMostRecentWindow("navigator:browser").document;
+  createMarkup(doc, popup);
+
+  await popup.populateDescription(doc, addon);
+
+  let description = doc.getElementById("extension-controlled-description");
+  is(
+    description.textContent,
+    `An extension,  ${name}, changed the page you see when you open a new tab.`,
+    "The extension name is shown as plain text"
+  );
+  is(description.children.length, 1, "Only the add-on icon element is added");
+  is(
+    description.firstElementChild.getAttribute("data-l10n-name"),
+    "addon-icon",
+    "The only element is the add-on icon"
+  );
 
   await extension.unload();
 });

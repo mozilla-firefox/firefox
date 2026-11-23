@@ -41,7 +41,7 @@ ChromeUtils.defineLazyGetter(this, "homepagePopup", () => {
     settingType: HOMEPAGE_SETTING_TYPE,
     settingKey: HOMEPAGE_SETTING_NAME,
     descriptionId: "extension-homepage-notification-description",
-    descriptionMessageId: "homepageControlled.message",
+    descriptionMessageId: "appmenu-homepage-controlled-message",
     learnMoreLink: "extension-home",
     preferencesLocation: "home-homeOverride",
     preferencesEntrypoint: "addon-manage-home-override",

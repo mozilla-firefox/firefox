@@ -20,7 +20,7 @@ const lazy = {};
 
 ChromeUtils.defineESModuleGetters(lazy, {
   AddonManager: "resource://gre/modules/AddonManager.sys.mjs",
-  BrowserUIUtils: "resource:///modules/BrowserUIUtils.sys.mjs",
+  BrowserUtils: "resource://gre/modules/BrowserUtils.sys.mjs",
   CustomizableUI:
     "moz-src:///browser/components/customizableui/CustomizableUI.sys.mjs",
   ExtensionSettingsStore:
@@ -29,12 +29,6 @@ ChromeUtils.defineESModuleGetters(lazy, {
 });
 
 let { makeWidgetId } = ExtensionCommon;
-
-ChromeUtils.defineLazyGetter(lazy, "strBundle", function () {
-  return Services.strings.createBundle(
-    "chrome://global/locale/extensions.properties"
-  );
-});
 
 const PREF_BRANCH_INSTALLED_ADDON = "extensions.installedDistroAddon.";
 
@@ -69,13 +63,13 @@ export class ExtensionControlledPopup {
    * @param {string} opts.descriptionId
    *                 The id of the element where the description should be displayed.
    * @param {string} opts.descriptionMessageId
-   *                 The message id to be used for the description. The translated
-   *                 string will have the add-on's name and icon injected into it.
-   * @param {string} opts.getLocalizedDescription
-   *                 A function to get the localized message string. This
-   *                 function is passed doc, message and addonDetails (the
-   *                 add-on's icon and name). If not provided, then the add-on's
-   *                 icon and name are added to the description.
+   *                 The Fluent message ID used for the description. The add-on's
+   *                 name is available as the $addonName variable, and its icon
+   *                 as an <img data-l10n-name="addon-icon"/> element.
+   * @param {Function} [opts.getExtraDescriptionElements]
+   *                 Called with the document; returns extra elements, each with
+   *                 a data-l10n-name attribute, that the description message
+   *                 can include.
    * @param {string} opts.learnMoreLink
    *                 The name of the SUMO page to link to, this is added to
    *                 app.support.baseURL.
@@ -107,7 +101,7 @@ export class ExtensionControlledPopup {
     this.settingKey = opts.settingKey;
     this.descriptionId = opts.descriptionId;
     this.descriptionMessageId = opts.descriptionMessageId;
-    this.getLocalizedDescription = opts.getLocalizedDescription;
+    this.getExtraDescriptionElements = opts.getExtraDescriptionElements;
     this.learnMoreLink = opts.learnMoreLink;
     this.preferencesLocation = opts.preferencesLocation;
     this.preferencesEntrypoint = opts.preferencesEntrypoint;
@@ -264,7 +258,7 @@ export class ExtensionControlledPopup {
       await win.document.l10n.translateFragment(panel);
     }
     let addon = await lazy.AddonManager.getAddonByID(extensionId);
-    this.populateDescription(doc, addon);
+    await this.populateDescription(doc, addon);
 
     // Setup the buttoncommand handler.
     let handleButtonCommand = async event => {
@@ -358,35 +352,28 @@ export class ExtensionControlledPopup {
     panel.openPopup(anchor);
   }
 
-  getAddonDetails(doc, addon) {
+  async populateDescription(doc, addon) {
     const defaultIcon = "chrome://mozapps/skin/extensions/extensionGeneric.svg";
 
-    let image = doc.createXULElement("image");
-    image.setAttribute("src", addon.iconURL || defaultIcon);
-    image.classList.add("extension-controlled-icon");
-
-    let addonDetails = doc.createDocumentFragment();
-    addonDetails.appendChild(image);
-    addonDetails.appendChild(doc.createTextNode(" " + addon.name));
-
-    return addonDetails;
-  }
-
-  populateDescription(doc, addon) {
     let description = doc.getElementById(this.descriptionId);
     description.textContent = "";
 
-    let addonDetails = this.getAddonDetails(doc, addon);
-    let message = lazy.strBundle.GetStringFromName(this.descriptionMessageId);
-    if (this.getLocalizedDescription) {
-      description.appendChild(
-        this.getLocalizedDescription(doc, message, addonDetails)
-      );
-    } else {
-      description.appendChild(
-        lazy.BrowserUIUtils.getLocalizedFragment(doc, message, addonDetails)
-      );
+    let image = doc.createElementNS("http://www.w3.org/1999/xhtml", "img");
+    image.setAttribute("src", addon.iconURL || defaultIcon);
+    image.setAttribute("data-l10n-name", "addon-icon");
+    image.classList.add("extension-controlled-icon");
+    description.appendChild(image);
+    if (this.getExtraDescriptionElements) {
+      description.append(...this.getExtraDescriptionElements(doc));
     }
+
+    doc.defaultView.MozXULElement.insertFTLIfNeeded(
+      "browser/appMenuNotifications.ftl"
+    );
+    doc.l10n.setAttributes(description, this.descriptionMessageId, {
+      addonName: lazy.BrowserUtils.escapeHtmlEntities(addon.name),
+    });
+    await doc.l10n.translateElements([description]);
   }
 
   async _ensureWindowReady(win) {
