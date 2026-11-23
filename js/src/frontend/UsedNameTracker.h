@@ -139,8 +139,6 @@ class UsedNameTracker {
 
     Vector<Use, 6> uses_;
 
-    void resetToScope(uint32_t scriptId, uint32_t scopeId);
-
     NameVisibility visibility_ = NameVisibility::Public;
 
     // The first place this name was used. This is important to track
@@ -148,12 +146,7 @@ class UsedNameTracker {
     // diagnostics for using a name that's not defined lexically.
     mozilla::Maybe<TokenPos> firstUsePos_;
 
-   public:
-    explicit UsedNameInfo(FrontendContext* fc, NameVisibility visibility,
-                          mozilla::Maybe<TokenPos> position)
-        : uses_(fc), visibility_(visibility), firstUsePos_(position) {}
-
-    UsedNameInfo(UsedNameInfo&& other) = default;
+    void resetToScope(uint32_t scriptId, uint32_t scopeId);
 
     bool noteUsedInScope(uint32_t scriptId, uint32_t scopeId) {
       if (uses_.empty() || uses_.back().scopeId < scopeId) {
@@ -176,6 +169,13 @@ class UsedNameTracker {
         uses_.popBack();
       }
     }
+
+   public:
+    explicit UsedNameInfo(FrontendContext* fc, NameVisibility visibility,
+                          mozilla::Maybe<TokenPos> position)
+        : uses_(fc), visibility_(visibility), firstUsePos_(position) {}
+
+    UsedNameInfo(UsedNameInfo&& other) = default;
 
     bool isUsedInScript(uint32_t scriptId) const {
       return !uses_.empty() && uses_.back().scriptId >= scriptId;
@@ -252,6 +252,13 @@ class UsedNameTracker {
 
   UsedNameMap::Ptr lookup(TaggedParserAtomIndex name) const {
     return map_.lookup(name);
+  }
+
+  void noteBindingInScope(TaggedParserAtomIndex name, uint32_t scriptId,
+                          uint32_t scopeId, bool* closedOver) {
+    if (auto p = map_.lookup(name)) {
+      p->value().noteBoundInScope(scriptId, scopeId, closedOver);
+    }
   }
 
   [[nodiscard]] bool noteUse(

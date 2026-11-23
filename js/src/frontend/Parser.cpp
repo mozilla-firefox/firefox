@@ -82,7 +82,6 @@ namespace js::frontend {
 using DeclaredNamePtr = ParseContext::Scope::DeclaredNamePtr;
 using AddDeclaredNamePtr = ParseContext::Scope::AddDeclaredNamePtr;
 using BindingIter = ParseContext::Scope::BindingIter;
-using UsedNamePtr = UsedNameTracker::UsedNameMap::Ptr;
 
 using ParserBindingNameVector = Vector<ParserBindingName, 6>;
 
@@ -968,17 +967,16 @@ bool PerHandlerParser<ParseHandler>::
   uint32_t slotCount = 0;
   for (BindingIter bi = scope.bindings(pc_); bi; bi++) {
     bool closedOver = false;
-    if (UsedNamePtr p = usedNames_.lookup(bi.name())) {
-      p->value().noteBoundInScope(scriptId, scopeId, &closedOver);
-      if (closedOver) {
-        bi.setClosedOver();
+    usedNames_.noteBindingInScope(bi.name(), scriptId, scopeId, &closedOver);
 
-        if constexpr (isSyntaxParser) {
-          if (!pc_->closedOverBindingsForLazy().append(
-                  TrivialTaggedParserAtomIndex::from(bi.name()))) {
-            ReportOutOfMemory(fc_);
-            return false;
-          }
+    if (closedOver) {
+      bi.setClosedOver();
+
+      if constexpr (isSyntaxParser) {
+        if (!pc_->closedOverBindingsForLazy().append(
+                TrivialTaggedParserAtomIndex::from(bi.name()))) {
+          ReportOutOfMemory(fc_);
+          return false;
         }
       }
     }
