@@ -35,7 +35,7 @@ const gfxFrameScript = {
   handleEvent(aEvent) {
     switch (aEvent.type) {
       case "MozAfterPaint":
-        sendAsyncMessage("gfxSanity:ContentLoaded");
+        this.sendContentLoaded();
         removeEventListener("MozAfterPaint", this);
         break;
     }
@@ -54,6 +54,15 @@ const gfxFrameScript = {
         );
         break;
     }
+  },
+
+  sendContentLoaded() {
+    ChromeUtils.addProfilerMarker(
+      "GfxSanityTest",
+      { category: "Graphics" },
+      `content loaded, video readyState ${content.document.querySelector("video").readyState}`
+    );
+    sendAsyncMessage("gfxSanity:ContentLoaded");
   },
 
   isSanityTest(aUri) {
@@ -76,7 +85,7 @@ const gfxFrameScript = {
       if (this.domUtils.isMozAfterPaintPending) {
         addEventListener("MozAfterPaint", this);
       } else {
-        sendAsyncMessage("gfxSanity:ContentLoaded");
+        this.sendContentLoaded();
       }
     }
   },

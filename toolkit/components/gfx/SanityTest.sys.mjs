@@ -30,6 +30,11 @@ function removeCrashReportAnnotation() {
 }
 
 function onSanityTestComplete(result) {
+  ChromeUtils.addProfilerMarker(
+    "GfxSanityTest",
+    { category: "Graphics" },
+    `result: ${Object.keys(SanityCheckResult).find(key => SanityCheckResult[key] == result)}`
+  );
   switch (result) {
     case SanityCheckResult.FailedVideoDecode:
     case SanityCheckResult.Crashed:

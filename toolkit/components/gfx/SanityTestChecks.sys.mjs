@@ -70,6 +70,11 @@ function testPixel(ctx, x, y, r, g, b, a, fuzz) {
   ) {
     return true;
   }
+  ChromeUtils.addProfilerMarker(
+    "GfxSanityTest",
+    { category: "Graphics" },
+    `pixel (${x}, ${y}) is ${Array.from(data.data).join(",")}, expected ${r},${g},${b},${a}`
+  );
   return false;
 }
 
