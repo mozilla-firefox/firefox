@@ -114,7 +114,8 @@ RefPtr<WindowSurface> WindowSurfaceProvider::CreateWindowSurface() {
     if (!mWidget) {
       return nullptr;
     }
-    if (mWidget->IsDragPopup()) {
+    if (mWidget->IsDragPopup() &&
+        !StaticPrefs::widget_wayland_native_dnd_popups_AtStartup()) {
       return MakeRefPtr<WindowSurfaceCairo>(mWidget);
     }
     return MakeRefPtr<WindowSurfaceWaylandMB>(mWidget, mCompositorWidget);

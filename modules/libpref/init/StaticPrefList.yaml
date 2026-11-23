@@ -21632,6 +21632,14 @@
   type: bool
   value: false
   mirror: once
+
+# Use native D&D popups with layered rendering.
+# Recently disabled due Mutter compositor bug
+# https://gitlab.gnome.org/GNOME/mutter/-/work_items/5207
+- name: widget.wayland.native-dnd-popups
+  type: bool
+  value: false
+  mirror: once
 #endif
 
 #ifdef MOZ_WIDGET_GTK
