@@ -83,7 +83,7 @@ export class InputModelSelect extends MozLitElement {
         this,
         "customModelName",
         CUSTOM_MODEL_NAME_PREF,
-        "",
+        null,
         () => this.requestUpdate()
       );
       void this.customModelName;

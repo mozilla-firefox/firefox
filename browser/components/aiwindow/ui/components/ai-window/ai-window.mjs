@@ -524,23 +524,24 @@ export class AIWindow extends MozLitElement {
       this,
       "memoriesConversationPref",
       PREF_MEMORIES_CONVERSATION,
-      true,
+      null,
       () => this.#syncMemoriesButtonUI()
     );
     XPCOMUtils.defineLazyPreferenceGetter(
       this,
       "memoriesHistoryPref",
       PREF_MEMORIES_HISTORY,
-      true,
+      null,
       () => this.#syncMemoriesButtonUI()
     );
     XPCOMUtils.defineLazyPreferenceGetter(
       this,
       "hideTopSitesPref",
       PREF_HIDE_TOP_SITES,
-      false,
+      null,
       () => this.#syncTopSites()
     );
+    // Newtab sets this pref's default at runtime, so it can still be unset.
     XPCOMUtils.defineLazyPreferenceGetter(
       this,
       "topSitesFeedPref",
@@ -551,14 +552,13 @@ export class AIWindow extends MozLitElement {
     XPCOMUtils.defineLazyPreferenceGetter(
       this,
       "agentEnabledPref",
-      PREF_AGENT_ENABLED,
-      false
+      PREF_AGENT_ENABLED
     );
     XPCOMUtils.defineLazyPreferenceGetter(
       this,
       "resumeCardsPref",
       PREF_RESUME_CARDS,
-      false,
+      null,
       () => this.requestUpdate()
     );
 

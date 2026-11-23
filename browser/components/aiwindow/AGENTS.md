@@ -10,7 +10,7 @@ This component grew quickly, and much of the existing code across this directory
 
 ## Current standard, and legacy to avoid
 - Imports: `moz-src:///` with `ChromeUtils.defineESModuleGetters`.
-- Prefs: put defaults only in `browser/app/profile/firefox.js`, and read them with `XPCOMUtils.defineLazyPreferenceGetter(lazy, name, pref)` without a default. Make tunable numbers prefs. Prefs that experiments control go through the `smartWindow*` features in `toolkit/components/nimbus/FeatureManifest.yaml`. Legacy: getters that pass a default, and direct `Services.prefs.get*` calls.
+- Prefs: put defaults only in `browser/app/profile/firefox.js`, and read them with `XPCOMUtils.defineLazyPreferenceGetter(lazy, name, pref)` without a default. Make tunable numbers prefs. Prefs that experiments control go through the `smartWindow*` features in `toolkit/components/nimbus/FeatureManifest.yaml`. Legacy: direct `Services.prefs.get*` calls.
 - Logging: `console.createInstance({ logModule, maxLogLevelPref })` with a `browser.smartwindow.<area>.logLevel` pref that has a default in firefox.js. Legacy: bare `console.*` calls.
 - Private members: `#` fields and methods. Legacy: `_name` methods.
 - JSDoc is enforced by eslint here (`require-jsdoc` and `valid-jsdoc` apply). Give every `@param` and `@property` a description unless the name makes it obvious.

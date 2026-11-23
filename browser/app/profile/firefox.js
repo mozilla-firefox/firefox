@@ -2464,6 +2464,10 @@ pref("browser.smartwindow.actionsToolbar.refreshDelayMs", 400);
 pref("browser.smartwindow.endpoint", "https://mlpa-prod-prod-mozilla.freetls.fastly.net/v1");
 pref("browser.smartwindow.auth.impl", "fxa");
 pref("browser.smartwindow.auth.guest.mode", "fetch");
+pref("browser.smartwindow.auth.guest.token", "");
+pref("browser.smartwindow.tos.consentTime", 0);
+pref("browser.smartwindow.apiKey", "");
+pref("browser.smartwindow.model", "");
 pref("browser.smartwindow.memories.generateFromHistory", true);
 pref("browser.smartwindow.memories.generateFromConversation", true);
 pref("browser.smartwindow.memories.hasSeenMemories", false);
@@ -2475,9 +2479,12 @@ pref("browser.smartwindow.resumeActivity.enabled", true);
 pref("browser.smartwindow.resumeCards.enabled", true);
 pref("browser.smartwindow.firstrun.autoAdvanceMS", 3000);
 pref("browser.smartwindow.firstrun.hasCompleted", false);
+pref("browser.smartwindow.firstrun.modelChoice", "");
 pref("browser.smartwindow.firstrun.singlePageWithAutoModel", true);
 pref("browser.smartwindow.showThemesNotice", true);
 pref("browser.smartwindow.sidebar.openByDefault", true);
+pref("browser.smartwindow.sidebar.emptyCloseCount", 0);
+pref("browser.smartwindow.hideTopSites", false);
 pref("browser.smartwindow.isDefaultWindow", false);
 pref("browser.smartwindow.firstrun.explainerURL", "https://www.firefox.com/smart-window/?v=product");
 pref("places.semanticHistory.smartwindow.featureGate", false);
@@ -2521,6 +2528,7 @@ pref("browser.smartwindow.aitab.menus", true);
 #else
 pref("browser.smartwindow.aitab.menus", false);
 #endif
+pref("browser.smartwindow.aitab.components", "");
 
 // Off until the model's use of manage_tabs' include_chat_tab is evaluated.
 pref("browser.smartwindow.manageTabs.includeChatTab", false);

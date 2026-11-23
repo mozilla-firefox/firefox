@@ -52,7 +52,7 @@ XPCOMUtils.defineLazyPreferenceGetter(
   lazy,
   "monitorSupportedRegions",
   "browser.smartwindow.agent.supportedRegions",
-  JSON.stringify(SUPPORTED_REGIONS_DEFAULT),
+  null,
   null,
   json =>
     lazy.RegionLocaleMap.fromJSON(json, {

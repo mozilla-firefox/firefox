@@ -38,8 +38,7 @@ ChromeUtils.defineLazyGetter(lazy, "console", function () {
 XPCOMUtils.defineLazyPreferenceGetter(
   lazy,
   "disallowedRegions",
-  "browser.smartwindow.smartformfill.disallowedRegions",
-  ""
+  "browser.smartwindow.smartformfill.disallowedRegions"
 );
 
 /** @typedef {import("moz-src:///browser/components/aiwindow/ui/modules/SmartFormFillController.sys.mjs").SmartFormFillController} Controller */

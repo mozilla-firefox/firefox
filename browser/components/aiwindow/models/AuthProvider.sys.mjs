@@ -13,7 +13,6 @@ const PREF_TOU_CONSENT_TIME = "browser.smartwindow.tos.consentTime";
 const lazy = XPCOMUtils.declareLazy({
   hasAIWindowToUConsent: {
     pref: PREF_TOU_CONSENT_TIME,
-    default: 0,
   },
   log: () =>
     console.createInstance({

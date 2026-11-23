@@ -27,8 +27,7 @@ ChromeUtils.defineESModuleGetters(lazy, {
 XPCOMUtils.defineLazyPreferenceGetter(
   lazy,
   "MIN_FORM_FIELDS",
-  "browser.smartwindow.smartformfill.minFormFields",
-  4
+  "browser.smartwindow.smartformfill.minFormFields"
 );
 
 const INPUTS_SELECTOR = "input, textarea";

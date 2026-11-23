@@ -24,8 +24,7 @@ ChromeUtils.defineESModuleGetters(lazy, {
 XPCOMUtils.defineLazyPreferenceGetter(
   lazy,
   "SFF_ENABLED",
-  "browser.smartwindow.smartformfill.enabled",
-  false
+  "browser.smartwindow.smartformfill.enabled"
 );
 
 const AUTOFILL_ICON = "chrome://browser/skin/smart-window-simplified.svg";

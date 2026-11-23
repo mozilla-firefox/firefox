@@ -35,7 +35,7 @@ XPCOMUtils.defineLazyPreferenceGetter(
   lazy,
   "modelChoice",
   PREF_MODEL_CHOICE,
-  "",
+  null,
   () => SmartWindowTelemetry.updateModelMetric()
 );
 
@@ -43,7 +43,7 @@ XPCOMUtils.defineLazyPreferenceGetter(
   lazy,
   "memoriesFromConversation",
   PREF_MEMORIES_FROM_CONVERSATION,
-  false,
+  null,
   () => SmartWindowTelemetry.updateMemoriesFromConversationMetric()
 );
 
@@ -51,7 +51,7 @@ XPCOMUtils.defineLazyPreferenceGetter(
   lazy,
   "memoriesFromHistory",
   PREF_MEMORIES_FROM_HISTORY,
-  false,
+  null,
   () => SmartWindowTelemetry.updateMemoriesFromHistoryMetric()
 );
 
@@ -59,7 +59,7 @@ XPCOMUtils.defineLazyPreferenceGetter(
   lazy,
   "isDefaultWindow",
   PREF_IS_DEFAULT_WINDOW,
-  false,
+  null,
   () => SmartWindowTelemetry.updateSetDefaultOptinMetric()
 );
 
@@ -67,7 +67,7 @@ XPCOMUtils.defineLazyPreferenceGetter(
   lazy,
   "smartWindowEnabled",
   PREF_SMARTWINDOW_ENABLED,
-  false,
+  null,
   () => SmartWindowTelemetry.updateEnabledMetric()
 );
 
@@ -75,7 +75,7 @@ XPCOMUtils.defineLazyPreferenceGetter(
   lazy,
   "sidebarOpenByDefault",
   PREF_SIDEBAR_OPEN_BY_DEFAULT,
-  true,
+  null,
   () => SmartWindowTelemetry.recordSidebarOpenByDefaultChange()
 );
 

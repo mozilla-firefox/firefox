@@ -13,7 +13,7 @@ var now_mSec = Date.now();
 var now_uSec = now_mSec * 1000;
 
 function enableConsent() {
-  Services.prefs.setStringPref(PREF_SMARTWINDOW_CONSENT_TIME, "12345");
+  Services.prefs.setIntPref(PREF_SMARTWINDOW_CONSENT_TIME, 12345);
 }
 
 function disableConsent() {

@@ -41,8 +41,7 @@ ChromeUtils.defineLazyGetter(lazy, "log", () =>
 XPCOMUtils.defineLazyPreferenceGetter(
   lazy,
   "suggestionsEnabled",
-  "browser.smartwindow.agent.suggestions.enabled",
-  true
+  "browser.smartwindow.agent.suggestions.enabled"
 );
 
 // The answer is only cut when it is far longer than anything the form is for

@@ -31,20 +31,17 @@ ChromeUtils.defineLazyGetter(lazy, "console", () =>
 XPCOMUtils.defineLazyPreferenceGetter(
   lazy,
   "minTabsPerGroup",
-  "browser.smartwindow.autoTabGrouping.minTabsPerGroup",
-  2
+  "browser.smartwindow.autoTabGrouping.minTabsPerGroup"
 );
 XPCOMUtils.defineLazyPreferenceGetter(
   lazy,
   "minCandidateTabs",
-  "browser.smartwindow.autoTabGrouping.minCandidateTabs",
-  2
+  "browser.smartwindow.autoTabGrouping.minCandidateTabs"
 );
 XPCOMUtils.defineLazyPreferenceGetter(
   lazy,
   "timeoutMs",
-  "browser.smartwindow.autoTabGrouping.timeoutMs",
-  8000
+  "browser.smartwindow.autoTabGrouping.timeoutMs"
 );
 const PANEL_ID = "smartwindow-group-tabs-panel";
 const FLYOUT_ID = "smartwindow-group-tabs-flyout";

@@ -76,7 +76,7 @@ XPCOMUtils.defineLazyPreferenceGetter(
   lazy,
   "overrideCatalog",
   "browser.smartwindow.aitab.components",
-  "",
+  null,
   null,
   prefValue => {
     const pref = prefValue.trim();

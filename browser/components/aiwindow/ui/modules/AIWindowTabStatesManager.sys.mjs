@@ -31,8 +31,7 @@ XPCOMUtils.defineLazyPreferenceGetter(
 XPCOMUtils.defineLazyPreferenceGetter(
   lazy,
   "sidebarEmptyCloseCount",
-  SIDEBAR_EMPTY_CLOSE_COUNT_PREF,
-  0
+  SIDEBAR_EMPTY_CLOSE_COUNT_PREF
 );
 
 /**

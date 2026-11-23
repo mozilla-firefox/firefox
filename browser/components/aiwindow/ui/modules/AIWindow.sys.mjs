@@ -88,7 +88,7 @@ XPCOMUtils.defineLazyPreferenceGetter(
   lazy,
   "hasFirstrunCompleted",
   PREF_FIRSTRUN_HAS_COMPLETED,
-  false,
+  null,
   (_pref, _previous, hasCompleted) =>
     hasCompleted && AIWindow._startSchedulers()
 );
@@ -1245,7 +1245,7 @@ XPCOMUtils.defineLazyPreferenceGetter(
   AIWindow,
   "AIWindowEnabledPref",
   PREF_SMARTWINDOW_ENABLED,
-  false,
+  null,
   AIWindow._onAIWindowEnabledPrefChange.bind(AIWindow)
 );
 
@@ -1253,7 +1253,7 @@ XPCOMUtils.defineLazyPreferenceGetter(
   AIWindow,
   "AIControlSmartWindow",
   PREF_AI_CONTROL_SMARTWINDOW,
-  "default",
+  null,
   AIWindow._onAIWindowEnabledPrefChange.bind(AIWindow)
 );
 
@@ -1261,6 +1261,6 @@ XPCOMUtils.defineLazyPreferenceGetter(
   AIWindow,
   "AIControlDefault",
   PREF_AI_CONTROL_DEFAULT,
-  "available",
+  null,
   AIWindow._onAIWindowEnabledPrefChange.bind(AIWindow)
 );

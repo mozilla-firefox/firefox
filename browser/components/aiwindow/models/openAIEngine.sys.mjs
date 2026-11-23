@@ -522,11 +522,6 @@ async function* yieldUntilAborted(generator, signal) {
   }
 }
 
-XPCOMUtils.defineLazyPreferenceGetter(
-  openAIEngine,
-  "endpoint",
-  ENDPOINT_PREF,
-  DEFAULT_ENDPOINT
-);
+XPCOMUtils.defineLazyPreferenceGetter(openAIEngine, "endpoint", ENDPOINT_PREF);
 
-XPCOMUtils.defineLazyPreferenceGetter(openAIEngine, "apiKey", APIKEY_PREF, "");
+XPCOMUtils.defineLazyPreferenceGetter(openAIEngine, "apiKey", APIKEY_PREF);

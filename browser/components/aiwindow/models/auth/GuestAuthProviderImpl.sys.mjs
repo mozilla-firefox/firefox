@@ -21,11 +21,9 @@ const lazy = XPCOMUtils.declareLazy({
     "moz-src:///browser/components/aiwindow/ui/modules/ToUSpotlight.sys.mjs",
   token: {
     pref: PREF_TOKEN,
-    default: "",
   },
   mode: {
     pref: PREF_MODE,
-    default: "fetch",
   },
 });
 
