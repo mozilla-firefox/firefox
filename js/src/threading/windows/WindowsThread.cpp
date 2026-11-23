@@ -83,9 +83,7 @@ ThreadId ThreadId::ThisThreadId() {
 void ThisThread::SetName(const char* name) {
   MOZ_RELEASE_ASSERT(name);
 
-#ifdef _MSC_VER
-  // Setting the thread name requires compiler support for structured
-  // exceptions, so this only works when compiled with MSVC.
+#ifdef HAVE_SEH_EXCEPTIONS
   static const DWORD THREAD_NAME_EXCEPTION = 0x406D1388;
   static const DWORD THREAD_NAME_INFO_TYPE = 0x1000;
 
@@ -110,7 +108,7 @@ void ThisThread::SetName(const char* name) {
   } __except (EXCEPTION_EXECUTE_HANDLER) {
     // Do nothing.
   }
-#endif  // _MSC_VER
+#endif  // HAVE_SEH_EXCEPTIONS
 }
 
 void ThisThread::GetName(char* nameBuffer, size_t len) {
