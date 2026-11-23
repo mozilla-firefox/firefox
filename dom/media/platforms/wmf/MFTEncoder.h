@@ -204,6 +204,7 @@ class MFTEncoder final {
   MFT_INPUT_STREAM_INFO mInputStreamInfo;
   MFT_OUTPUT_STREAM_INFO mOutputStreamInfo;
   bool mOutputStreamProvidesSample;
+  bool mOutputTimeIsEndTime = false;
 
   State mState = State::Uninited;
   bool mIsRealtime = false;
