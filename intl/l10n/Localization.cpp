@@ -285,22 +285,49 @@ uint32_t Localization::RemoveResourceIds(
   return ffi::localization_remove_res_ids(mRaw.get(), &ffiResourceIds);
 }
 
+static nsTArray<ffi::L10nArg> ConvertFluentArgs(
+    const nsTArray<FluentArg>& aArgs) {
+  nsTArray<ffi::L10nArg> l10nArgs(aArgs.Length());
+  for (const FluentArg& arg : aArgs) {
+    l10nArgs.AppendElement(ffi::L10nArg{
+        &arg.mName, arg.mValue.match(
+                        [](const nsCString& aValue) {
+                          return ffi::FluentArgument::String(&aValue);
+                        },
+                        [](double aValue) {
+                          return ffi::FluentArgument::Double_(aValue);
+                        })});
+  }
+  return l10nArgs;
+}
+
 already_AddRefed<Promise> Localization::FormatValue(
     const nsACString& aId, const Optional<L10nArgs>& aArgs, ErrorResult& aRv) {
   nsTArray<ffi::L10nArg> l10nArgs;
-  nsTArray<nsCString> errors;
 
   if (aArgs.WasPassed()) {
     const L10nArgs& args = aArgs.Value();
     FluentBundle::ConvertArgs(args, l10nArgs);
   }
+
+  return FormatValueInternal(aId, l10nArgs, aRv);
+}
+
+already_AddRefed<Promise> Localization::FormatValue(
+    const nsACString& aId, const nsTArray<FluentArg>& aArgs, ErrorResult& aRv) {
+  return FormatValueInternal(aId, ConvertFluentArgs(aArgs), aRv);
+}
+
+already_AddRefed<Promise> Localization::FormatValueInternal(
+    const nsACString& aId, const nsTArray<ffi::L10nArg>& aArgs,
+    ErrorResult& aRv) {
   RefPtr<Promise> promise = Promise::Create(mGlobal, aRv);
   if (aRv.Failed()) {
     return nullptr;
   }
 
   ffi::localization_format_value(
-      mRaw.get(), &aId, &l10nArgs, promise,
+      mRaw.get(), &aId, &aArgs, promise,
       [](const Promise* aPromise, const nsACString* aValue,
          const nsTArray<nsCString>* aErrors) {
         Promise* promise = const_cast<Promise*>(aPromise);
@@ -390,14 +417,27 @@ void Localization::FormatValueSync(const nsACString& aId,
                                    const Optional<L10nArgs>& aArgs,
                                    nsACString& aRetVal, ErrorResult& aRv) {
   nsTArray<ffi::L10nArg> l10nArgs;
-  nsTArray<nsCString> errors;
 
   if (aArgs.WasPassed()) {
     const L10nArgs& args = aArgs.Value();
     FluentBundle::ConvertArgs(args, l10nArgs);
   }
 
-  bool rv = ffi::localization_format_value_sync(mRaw.get(), &aId, &l10nArgs,
+  FormatValueSyncInternal(aId, l10nArgs, aRetVal, aRv);
+}
+
+void Localization::FormatValueSync(const nsACString& aId,
+                                   const nsTArray<FluentArg>& aArgs,
+                                   nsACString& aRetVal, ErrorResult& aRv) {
+  FormatValueSyncInternal(aId, ConvertFluentArgs(aArgs), aRetVal, aRv);
+}
+
+void Localization::FormatValueSyncInternal(const nsACString& aId,
+                                           const nsTArray<ffi::L10nArg>& aArgs,
+                                           nsACString& aRetVal,
+                                           ErrorResult& aRv) {
+  nsTArray<nsCString> errors;
+  bool rv = ffi::localization_format_value_sync(mRaw.get(), &aId, &aArgs,
                                                 &aRetVal, &errors);
 
   if (rv) {

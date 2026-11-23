@@ -18,6 +18,7 @@
 #include "mozilla/dom/BindingDeclarations.h"
 #include "mozilla/dom/LocalizationBinding.h"
 #include "mozilla/intl/LocalizationBindings.h"
+#include "mozilla/intl/FluentArg.h"
 #include "mozilla/intl/L10nRegistry.h"
 
 namespace mozilla {
@@ -109,6 +110,9 @@ class Localization : public nsIObserver,
       ErrorResult& aRv);
   already_AddRefed<dom::Promise> FormatValue(const nsACString& aId,
                                              ErrorResult& aRv);
+  already_AddRefed<dom::Promise> FormatValue(const nsACString& aId,
+                                             const nsTArray<FluentArg>& aArgs,
+                                             ErrorResult& aRv);
 
   already_AddRefed<dom::Promise> FormatValues(
       const dom::Sequence<dom::OwningUTF8StringOrL10nIdArgs>& aKeys,
@@ -123,6 +127,8 @@ class Localization : public nsIObserver,
                        nsACString& aRetVal, ErrorResult& aRv);
   void FormatValueSync(const nsACString& aId, nsACString& aRetVal,
                        ErrorResult& aRv);
+  void FormatValueSync(const nsACString& aId, const nsTArray<FluentArg>& aArgs,
+                       nsACString& aRetVal, ErrorResult& aRv);
   void FormatValuesSync(
       const dom::Sequence<dom::OwningUTF8StringOrL10nIdArgs>& aKeys,
       nsTArray<nsCString>& aRetVal, ErrorResult& aRv);
@@ -146,6 +152,13 @@ class Localization : public nsIObserver,
   bool IsSync();
 
  protected:
+  already_AddRefed<dom::Promise> FormatValueInternal(
+      const nsACString& aId, const nsTArray<ffi::L10nArg>& aArgs,
+      ErrorResult& aRv);
+  void FormatValueSyncInternal(const nsACString& aId,
+                               const nsTArray<ffi::L10nArg>& aArgs,
+                               nsACString& aRetVal, ErrorResult& aRv);
+
   Localization(const nsTArray<nsCString>& aResIds, bool aIsSync);
   Localization(const nsTArray<nsCString>& aResIds, bool aIsSync,
                const nsTArray<nsCString>& aLocales);

@@ -65,6 +65,58 @@ TEST(Intl_Localization, FormatValueSyncWithArgs)
   ASSERT_TRUE(result.Find("Foo"_ns) > -1);
 }
 
+TEST(Intl_Localization, FormatValueSyncWithFluentArgs)
+{
+  nsTArray<nsCString> resIds = {
+      "toolkit/global/handlerDialog.ftl"_ns,
+  };
+  RefPtr<Localization> l10n = Localization::Create(resIds, true);
+
+  IgnoredErrorResult rv;
+  nsAutoCString result;
+
+  l10n->FormatValueSync("permission-dialog-description"_ns,
+                        {{"scheme"_ns, "Foo"_ns}}, result, rv);
+  ASSERT_FALSE(rv.Failed());
+  ASSERT_TRUE(result.Find("Foo"_ns) > -1);
+
+  AutoTArray<FluentArg, 1> args = {FluentArg("scheme"_ns, u"Bar"_ns)};
+  l10n->FormatValueSync("permission-dialog-description"_ns, args, result, rv);
+  ASSERT_FALSE(rv.Failed());
+  ASSERT_TRUE(result.Find("Bar"_ns) > -1);
+}
+
+static_assert(std::is_constructible_v<FluentArg, nsLiteralCString, int>);
+static_assert(std::is_constructible_v<FluentArg, nsLiteralCString, uint8_t>);
+static_assert(std::is_constructible_v<FluentArg, nsLiteralCString, uint32_t>);
+static_assert(std::is_constructible_v<FluentArg, nsLiteralCString, double>);
+static_assert(!std::is_constructible_v<FluentArg, nsLiteralCString, bool>);
+static_assert(!std::is_constructible_v<FluentArg, nsLiteralCString, char>);
+static_assert(!std::is_constructible_v<FluentArg, nsLiteralCString, char16_t>);
+static_assert(!std::is_constructible_v<FluentArg, nsLiteralCString, char32_t>);
+
+TEST(Intl_Localization, FormatValueSyncWithNumberFluentArg)
+{
+  nsTArray<nsCString> resIds = {
+      "toolkit/global/htmlForm.ftl"_ns,
+  };
+  nsTArray<nsCString> locales = {"en-US"_ns};
+  RefPtr<Localization> l10n = Localization::Create(resIds, true, locales);
+
+  IgnoredErrorResult rv;
+  nsAutoCString result;
+
+  l10n->FormatValueSync("input-file-and-more-files"_ns, {{"fileCount"_ns, 1}},
+                        result, rv);
+  ASSERT_FALSE(rv.Failed());
+  ASSERT_TRUE(result.EqualsLiteral("and one more"));
+
+  l10n->FormatValueSync("input-file-and-more-files"_ns, {{"fileCount"_ns, 3}},
+                        result, rv);
+  ASSERT_FALSE(rv.Failed());
+  ASSERT_TRUE(result.EqualsLiteral("and 3 more"));
+}
+
 TEST(Intl_Localization, FormatValueWithoutGlobal)
 {
   nsTArray<nsCString> resIds = {

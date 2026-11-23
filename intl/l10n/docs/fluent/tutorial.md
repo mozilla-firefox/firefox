@@ -461,6 +461,55 @@ let [isDefaultMsg, isNotDefaultMsg] =
 Synchronous contexts should be always avoided as they require synchronous I/O. If you think your use case
 requires a synchronous localization context, please consult Gecko, Performance and Localization teams.
 
+The same API is available from C++, for code that can't use JavaScript:
+
+```cpp
+#include "mozilla/intl/Localization.h"
+
+namespace mozilla {
+
+nsresult GetFormStrings(nsACString& aMoreFiles, nsACString& aWarningTitle) {
+  nsTArray<nsCString> resIds = {"toolkit/global/htmlForm.ftl"_ns};
+  RefPtr<intl::Localization> l10n = intl::Localization::Create(resIds, true);
+
+  ErrorResult rv;
+  l10n->FormatValueSync("input-file-and-more-files"_ns, {{"fileCount"_ns, 3}},
+                        aMoreFiles, rv);
+  if (NS_WARN_IF(rv.Failed())) {
+    return rv.StealNSResult();
+  }
+
+  // Without arguments:
+  l10n->FormatValueSync("form-post-secure-to-insecure-warning-title"_ns,
+                        aWarningTitle, rv);
+  return rv.StealNSResult();
+}
+
+}  // namespace mozilla
+```
+
+Arguments are passed as `intl::FluentArg`, with strings or numbers as values.
+Numbers should be passed as numbers, not formatted strings, so that they can be
+used for plural selection and formatted for the locale. Like all Fluent numbers,
+they're stored as `double`, so integers above 2^53 may lose precision.
+
+When the set of arguments isn't known in advance, build an array of
+`intl::FluentArg` and pass it instead of a braced list:
+
+```cpp
+void FormatCSPError(intl::Localization* aL10n, const nsACString& aL10nId,
+                    const nsAString& aDirective, const nsACString& aKey,
+                    const nsAString& aValue, nsACString& aResult) {
+  AutoTArray<intl::FluentArg, 2> l10nArgs = {
+      intl::FluentArg("directive"_ns, aDirective)};
+  if (!aKey.IsEmpty()) {
+    l10nArgs.AppendElement(intl::FluentArg(aKey, aValue));
+  }
+
+  aL10n->FormatValueSync(aL10nId, l10nArgs, aResult, IgnoreErrors());
+}
+```
+
 ## Designing Localizable APIs
 
 When designing localizable APIs, the most important rule is to resolve localization as

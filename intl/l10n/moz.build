@@ -4,6 +4,7 @@
 
 EXPORTS.mozilla.intl += [
     "FileSource.h",
+    "FluentArg.h",
     "FluentBindings.h",
     "FluentBundle.h",
     "FluentResource.h",
