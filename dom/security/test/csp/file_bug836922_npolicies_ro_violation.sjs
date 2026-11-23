@@ -27,7 +27,7 @@ function handleRequest(request, response) {
     }
   } else if ("reset" in query) {
     //clear state
-    setState(STATE_KEY, JSON.stringify(null));
+    setState(STATE_KEY, "");
   } else {
     // ... otherwise, just respond "ok".
     response.write("null");
