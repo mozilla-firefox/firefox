@@ -22,6 +22,9 @@ linux64-android-avd-x86_64-repack:
     description: "Android AVD (Linux) repack toolchain build"
     treeherder:
         symbol: TL(avd-x86_64-linux)
+    worker-type: b-linux-kvm
+    worker:
+        kvm: true
     run:
         script: repack-android-avd-linux.sh
         arguments:

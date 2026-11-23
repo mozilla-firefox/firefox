@@ -14,7 +14,6 @@
         "-no-snapstorage",
         "-no-snapshot",
         "-no-window",
-        "-no-accel",
         "-prop", "ro.test_harness=true"
     ],
     "emulator_extra_config": {
