@@ -133,15 +133,11 @@ InternalRequest::InternalRequest(const InternalRequest& aOther,
       mUseURLCredentials(aOther.mUseURLCredentials),
       mContentPolicyTypeOverridden(aOther.mContentPolicyTypeOverridden),
       mEmbedderPolicy(aOther.mEmbedderPolicy),
+      mInterceptionTriggeringPrincipal(aOther.mInterceptionTriggeringPrincipal),
       mInterceptionContentPolicyType(aOther.mInterceptionContentPolicyType),
       mInterceptionRedirectChain(aOther.mInterceptionRedirectChain),
       mInterceptionFromThirdParty(aOther.mInterceptionFromThirdParty) {
   // NOTE: does not copy body stream... use the fallible Clone() for that
-  if (aOther.GetInterceptionTriggeringPrincipalInfo()) {
-    mInterceptionTriggeringPrincipalInfo =
-        std::make_unique<mozilla::ipc::PrincipalInfo>(
-            *(aOther.GetInterceptionTriggeringPrincipalInfo().get()));
-  }
 }
 
 InternalRequest::InternalRequest(const IPCInternalRequest& aIPCRequest)
@@ -166,6 +162,8 @@ InternalRequest::InternalRequest(const IPCInternalRequest& aIPCRequest)
       mHasStreamBody(aIPCRequest.hasStreamBody()),
       mFragment(aIPCRequest.fragment()),
       mEmbedderPolicy(aIPCRequest.embedderPolicy()),
+      mInterceptionTriggeringPrincipal(
+          aIPCRequest.interceptionTriggeringPrincipal()),
       mInterceptionContentPolicyType(
           aIPCRequest.interceptionContentPolicyType()),
       mInterceptionRedirectChain(aIPCRequest.interceptionRedirectChain()),
@@ -173,12 +171,6 @@ InternalRequest::InternalRequest(const IPCInternalRequest& aIPCRequest)
   if (aIPCRequest.principalInfo()) {
     mPrincipalInfo = std::make_unique<mozilla::ipc::PrincipalInfo>(
         aIPCRequest.principalInfo().ref());
-  }
-
-  if (aIPCRequest.interceptionTriggeringPrincipalInfo()) {
-    mInterceptionTriggeringPrincipalInfo =
-        std::make_unique<mozilla::ipc::PrincipalInfo>(
-            aIPCRequest.interceptionTriggeringPrincipalInfo().ref());
   }
 
   const Maybe<BodyStreamVariant>& body = aIPCRequest.body();
@@ -226,9 +218,9 @@ void InternalRequest::ToIPCInternalRequest(
     aIPCRequest->principalInfo() = Some(*mPrincipalInfo);
   }
 
-  if (mInterceptionTriggeringPrincipalInfo) {
-    aIPCRequest->interceptionTriggeringPrincipalInfo() =
-        Some(*mInterceptionTriggeringPrincipalInfo);
+  if (mInterceptionTriggeringPrincipal) {
+    aIPCRequest->interceptionTriggeringPrincipal() =
+        mInterceptionTriggeringPrincipal;
     aIPCRequest->interceptionContentPolicyType() =
         mInterceptionContentPolicyType;
     if (!mInterceptionRedirectChain.IsEmpty()) {
@@ -550,10 +542,5 @@ void InternalRequest::MaybeSkipCacheIfPerformingRevalidation() {
 void InternalRequest::SetPrincipalInfo(
     UniquePtr<mozilla::ipc::PrincipalInfo> aPrincipalInfo) {
   mPrincipalInfo = std::move(aPrincipalInfo);
-}
-
-void InternalRequest::SetInterceptionTriggeringPrincipalInfo(
-    UniquePtr<mozilla::ipc::PrincipalInfo> aPrincipalInfo) {
-  mInterceptionTriggeringPrincipalInfo = std::move(aPrincipalInfo);
 }
 }  // namespace mozilla::dom
