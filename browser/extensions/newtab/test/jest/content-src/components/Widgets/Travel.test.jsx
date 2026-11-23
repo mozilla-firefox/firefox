@@ -123,6 +123,32 @@ describe("Travel widget", () => {
     );
   });
 
+  it("keeps the frame's request when the size pref changes", () => {
+    const withSize = size => ({
+      ...mockState,
+      Prefs: {
+        ...mockState.Prefs,
+        values: { ...mockState.Prefs.values, "widgets.travel.size": size },
+      },
+    });
+    const renderTravel = state => (
+      <WrapWithProvider state={state}>
+        <Travel
+          dispatch={jest.fn()}
+          handleUserInteraction={jest.fn()}
+          widgetsMayBeMaximized={true}
+          widgetEnabledMap={{}}
+        />
+      </WrapWithProvider>
+    );
+    const { container, rerender } = render(renderTravel(withSize("large")));
+    postChangeSize(container, "large");
+    rerender(renderTravel(withSize("medium")));
+    expect(container.querySelector("article.travel").className).toContain(
+      "large-widget"
+    );
+  });
+
   it("reports the size the frame asked for in telemetry", () => {
     const { container, dispatch } = renderWidget();
     postChangeSize(container, "large");

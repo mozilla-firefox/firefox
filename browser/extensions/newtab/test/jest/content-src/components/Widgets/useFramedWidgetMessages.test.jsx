@@ -259,7 +259,7 @@ describe("useFramedWidgetReady", () => {
 });
 
 describe("useFramedWidgetSize", () => {
-  function renderSize(widgetSize = "medium") {
+  function renderSize() {
     const onAction = jest.fn();
     const hook = renderHook(
       props =>
@@ -270,7 +270,7 @@ describe("useFramedWidgetSize", () => {
           onAction,
           ...props,
         }),
-      { initialProps: { widgetSize } }
+      { initialProps: {} }
     );
     return { ...hook, onAction };
   }
@@ -297,11 +297,10 @@ describe("useFramedWidgetSize", () => {
     expect(result.current.requestedSize).toBeNull();
   });
 
-  it("drops the request when the widget's own size changes", () => {
-    const { result, rerender } = renderSize("medium");
+  it("drops the request when the widget's URL changes", () => {
+    const { result, rerender } = renderSize();
     post(action("change_size", { size: "large" }));
-    expect(result.current.requestedSize).toBe("large");
-    rerender({ widgetSize: "large" });
+    rerender({ src: `${ORIGIN}/1.0.1/index.html` });
     expect(result.current.requestedSize).toBeNull();
   });
 });

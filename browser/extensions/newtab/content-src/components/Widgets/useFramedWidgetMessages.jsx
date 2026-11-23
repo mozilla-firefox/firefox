@@ -179,26 +179,20 @@ export function useFramedWidgetReady({
  * Returns the size a framed widget's document last asked for with a
  * `change_size` action (or null), and a function that drops it. Only the
  * widget's validSizes are accepted. The request is never written to the
- * widget's size pref. It is dropped when the widget's URL or its own size
- * changes; call clearRequestedSize when the user picks a size, so their
- * choice wins even when it matches the size pref.
+ * widget's size pref. It is dropped when the widget's URL changes, and it
+ * survives changes to the size pref (e.g. the user sets every widget to
+ * medium), so the widget stays at the size it needs. Call clearRequestedSize
+ * when the user picks a size for this widget, so their choice wins.
  *
  * @param {object} options - see useFramedWidgetMessages, without onMessage
- * @param {string} options.widgetSize - the widget's size from its prefs
  * @param {Function} [options.onAction] - called with (message, payload) for
  *   every action, change_size included
  * @returns {{requestedSize: string|null, clearRequestedSize: Function}}
  */
-export function useFramedWidgetSize({
-  widget,
-  src,
-  iframeRef,
-  widgetSize,
-  onAction,
-}) {
+export function useFramedWidgetSize({ widget, src, iframeRef, onAction }) {
   const [requestedSize, setRequestedSize] = useState(null);
 
-  useEffect(() => setRequestedSize(null), [src, widgetSize]);
+  useEffect(() => setRequestedSize(null), [src]);
 
   useFramedWidgetMessages({
     widget,

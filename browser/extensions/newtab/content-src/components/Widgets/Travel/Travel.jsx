@@ -98,7 +98,6 @@ function Travel({
     widget: TRAVEL_ENTRY,
     src,
     iframeRef,
-    widgetSize,
     onAction(message) {
       if (message === "change_size") {
         handleInteraction();
