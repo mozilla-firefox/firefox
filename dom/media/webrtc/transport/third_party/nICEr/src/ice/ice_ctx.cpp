@@ -1106,13 +1106,22 @@ int nr_ice_add_media_stream(nr_ice_ctx *ctx,const char *label,const char *ufrag,
 
 void nr_ice_remove_media_stream(nr_ice_ctx *ctx,nr_ice_media_stream **streamp)
   {
-    nr_ice_peer_ctx *pctx;
-    nr_ice_media_stream *peer_stream;
+    nr_ice_peer_ctx *pctx = nullptr;
+    nr_ice_media_stream *peer_stream = nullptr;
 
     pctx=STAILQ_FIRST(&ctx->peers);
     while(pctx){
       if(!nr_ice_peer_ctx_find_pstream(pctx, *streamp, &peer_stream)) {
-        nr_ice_peer_ctx_remove_pstream(pctx, &peer_stream);
+        /* Update pctx->active_streams, which paces the check timers. Not
+           done through nr_ice_media_stream_set_state(), since there is no state
+           that means "gone". */
+        if(peer_stream->ice_state == NR_ICE_MEDIA_STREAM_CHECKS_ACTIVE) {
+          pctx->active_streams--;
+          r_log(LOG_ICE,LOG_DEBUG,"ICE-PEER(%s): removing stream %s while it is checking; %d active streams",pctx->label,peer_stream->label,pctx->active_streams);
+        }
+
+        STAILQ_REMOVE(&pctx->peer_streams,peer_stream,nr_ice_media_stream_,entry);
+        nr_ice_media_stream_destroy(&peer_stream);
       }
 
       pctx=STAILQ_NEXT(pctx,entry);
@@ -1120,6 +1129,15 @@ void nr_ice_remove_media_stream(nr_ice_ctx *ctx,nr_ice_media_stream **streamp)
 
     STAILQ_REMOVE(&ctx->streams,*streamp,nr_ice_media_stream_,entry);
     nr_ice_media_stream_destroy(streamp);
+
+    /* Now that the stream has been removed, see if we need to react. */
+    pctx=STAILQ_FIRST(&ctx->peers);
+    while(pctx){
+      /* The removed stream may have been the one the others were frozen
+         behind, or the last one holding up completion. */
+      nr_ice_peer_ctx_react_to_stream_change(pctx);
+      pctx=STAILQ_NEXT(pctx,entry);
+    }
   }
 
 int nr_ice_get_global_attributes(nr_ice_ctx *ctx,char ***attrsp, int *attrctp)
