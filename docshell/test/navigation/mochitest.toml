@@ -163,9 +163,6 @@ support-files = ["file_bug1583110.html"]
 run-if = [
   "fission", # tests fission-only process switching behaviour
 ]
-skip-if = [
-  "verify-standalone",
-]
 
 ["test_bug1745638.html"]
 support-files = ["file_bug1745638.html"]
