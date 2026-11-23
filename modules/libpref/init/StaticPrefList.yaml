@@ -17776,6 +17776,15 @@
   value: true
   mirror: always
 
+# Comma-separated list of HTTP auth schemes (case-insensitive; "basic",
+# "digest", "ntlm", "negotiate") that the browser must not use, even if
+# offered by the server. Challenges for disabled schemes are ignored
+# entirely, as if the server had not sent them.
+- name: network.http.auth.disabled-schemes
+  type: String
+  value: ""
+  mirror: never
+
 - name: network.http.happy_eyeballs_enabled
   type: RelaxedAtomicBool
   value: @IS_NIGHTLY_BUILD@

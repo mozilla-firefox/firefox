@@ -409,7 +409,8 @@ class nsHttpChannel final : public HttpBaseChannel,
   [[nodiscard]] nsresult AsyncProcessRedirection(uint32_t redirectType);
   [[nodiscard]] nsresult ContinueProcessRedirection(nsresult);
   [[nodiscard]] nsresult ContinueProcessRedirectionAfterFallback(nsresult);
-  [[nodiscard]] nsresult ProcessFailedProxyConnect(uint32_t httpStatus);
+  [[nodiscard]] nsresult ProcessFailedProxyConnect(uint32_t httpStatus,
+                                                   nsresult aStatus = NS_OK);
   void HandleAsyncAbort();
   [[nodiscard]] nsresult EnsureAssocReq();
   void ProcessSSLInformation();

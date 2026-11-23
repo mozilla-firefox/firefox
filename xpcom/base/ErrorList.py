@@ -364,6 +364,9 @@ with modules["NETWORK"]:
     # The user attempted basic HTTP authentication while
     # the basic_http_auth pref is disabled
     errors["NS_ERROR_BASIC_HTTP_AUTH_DISABLED"] = FAILURE(92)
+    # Every auth scheme offered by the server for this challenge is listed in
+    # network.http.auth.disabled-schemes
+    errors["NS_ERROR_HTTP_AUTH_SCHEME_DISABLED"] = FAILURE(102)
     errors["NS_ERROR_LOCAL_NETWORK_ACCESS_DENIED"] = FAILURE(93)
     # Used to indicate cases where we need to fall back from HTTP/2
     # to HTTP/1.1.

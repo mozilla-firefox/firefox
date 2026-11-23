@@ -2682,7 +2682,8 @@ NS_IMETHODIMP nsHttpChannel::GetHttpProxyResponseHeader(
   return NS_ERROR_NOT_AVAILABLE;
 }
 
-nsresult nsHttpChannel::ProcessFailedProxyConnect(uint32_t httpStatus) {
+nsresult nsHttpChannel::ProcessFailedProxyConnect(uint32_t httpStatus,
+                                                  nsresult aStatus) {
   // Failure to set up a proxy tunnel via CONNECT means one of the following:
   // 1) Proxy wants authorization, or forbids.
   // 2) DNS at proxy couldn't resolve target URL.
@@ -2696,7 +2697,8 @@ nsresult nsHttpChannel::ProcessFailedProxyConnect(uint32_t httpStatus) {
 
   MOZ_ASSERT(mConnectionInfo->UsingConnect(),
              "proxy connect failed but not using CONNECT?");
-  nsresult rv = HttpProxyResponseToErrorCode(httpStatus);
+  nsresult rv =
+      NS_FAILED(aStatus) ? aStatus : HttpProxyResponseToErrorCode(httpStatus);
   LOG(("Cancelling failed proxy CONNECT [this=%p httpStatus=%u]\n", this,
        httpStatus));
 
@@ -3498,9 +3500,12 @@ nsresult nsHttpChannel::ContinueProcessResponse3(nsresult rv) {
         LOG(("ProcessAuthentication failed [rv=%" PRIx32 "]\n",
              static_cast<uint32_t>(rv)));
         if (mTransaction && mTransaction->ProxyConnectFailed()) {
-          return ProcessFailedProxyConnect(httpStatus);
+          return ProcessFailedProxyConnect(
+              httpStatus,
+              rv == NS_ERROR_HTTP_AUTH_SCHEME_DISABLED ? rv : NS_OK);
         }
         if (rv == NS_ERROR_BASIC_HTTP_AUTH_DISABLED ||
+            rv == NS_ERROR_HTTP_AUTH_SCHEME_DISABLED ||
             rv == NS_ERROR_NET_BODY_NOT_REPLAYABLE) {
           mStatus = rv;
         }

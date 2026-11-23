@@ -140,6 +140,7 @@ XPC_MSG_DEF(NS_ERROR_ALREADY_CONNECTED              , "The connection is already
 XPC_MSG_DEF(NS_ERROR_NOT_CONNECTED                  , "The connection does not exist")
 XPC_MSG_DEF(NS_ERROR_CONNECTION_REFUSED             , "The connection was refused")
 XPC_MSG_DEF(NS_ERROR_BASIC_HTTP_AUTH_DISABLED       , "User attempted basic HTTP authentication when it is disabled")
+XPC_MSG_DEF(NS_ERROR_HTTP_AUTH_SCHEME_DISABLED      , "Every auth scheme offered by the server is administratively disabled")
 XPC_MSG_DEF(NS_ERROR_LOCAL_NETWORK_ACCESS_DENIED    , "The access to local network is denied")
 
 /* Error codes return from the proxy */

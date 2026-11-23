@@ -124,6 +124,8 @@ run-if = [
 
 ["test_auth_proxy.js"]
 
+["test_auth_scheme_disabled.js"]
+
 ["test_authentication.js"]
 
 ["test_authpromptwrapper.js"]
