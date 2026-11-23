@@ -70,9 +70,13 @@ function addPrefixToDB(list, url) {
     });
 }
 
-// manually reset DB to make sure next test won't be affected by cache.
-function reset() {
-  return classifierHelper.resetDatabase();
+// manually reset DB and the completions stored on the gethash server to make
+// sure next test won't be affected by cache.
+async function reset() {
+  await classifierHelper.resetDatabase();
+  for (let state of [MALWARE_LIST, UNWANTED_LIST, "lists"]) {
+    await resetStateOnCompletionServer(GETHASH_URL, state);
+  }
 }
 
 // This test has to come before testPositiveCache to ensure gethash server doesn't

@@ -62,9 +62,6 @@ run-if = [
 ["test_bug1254766.html"]
 
 ["test_cachemiss.html"]
-skip-if = [
-  "verify-standalone",
-]
 
 ["test_classifier.html"]
 

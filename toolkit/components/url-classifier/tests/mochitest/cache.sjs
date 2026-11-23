@@ -43,6 +43,9 @@ function handleRequest(request, response) {
   } else if ("gethashcount" == request.queryString) {
     let counter = getState("counter");
     responseBody = counter == "" ? "0" : counter;
+  } else if ("reset" in query) {
+    setState(query.reset, "");
+    responseBody = "";
   } else {
     let body = new BinaryInputStream(request.bodyInputStream);
     let avail;
