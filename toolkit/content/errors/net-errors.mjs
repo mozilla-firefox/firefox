@@ -224,6 +224,28 @@ export const NET_ERRORS = [
     hasNoUserFix: false,
   },
   {
+    id: "httpAuthSchemeDisabled",
+    errorCode: "NS_ERROR_HTTP_AUTH_SCHEME_DISABLED",
+    category: "net",
+    bodyTitleL10nId: "neterror-http-auth-scheme-disabled-title",
+    introContent: {
+      dataL10nId: "fp-neterror-http-auth-scheme-disabled-intro",
+      dataL10nArgs: { hostname: null },
+    },
+    descriptionParts: [
+      { tag: "li", dataL10nId: "neterror-http-auth-scheme-disabled" },
+    ],
+    buttons: {
+      showTryAgain: false,
+      showGoBack: true,
+    },
+    customNetError: {
+      titleL10nId: "neterror-http-auth-scheme-disabled-title",
+      whatCanYouDoItems: ["neterror-http-auth-scheme-disabled"],
+    },
+    hasNoUserFix: true,
+  },
+  {
     id: "nssBadCert",
     errorCode: "nssBadCert",
     category: "cert",

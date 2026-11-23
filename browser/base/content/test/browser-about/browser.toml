@@ -86,6 +86,11 @@ support-files = [
 
 ["browser_aboutNetError_httpAuthDisabled.js"]
 
+["browser_aboutNetError_httpAuthSchemeDisabled.js"]
+support-files = [
+  "basic_auth_route.sjs",
+]
+
 ["browser_aboutNetError_internet_connection_offline.js"]
 
 ["browser_aboutNetError_invalid_cert_noUserFix.js"]
