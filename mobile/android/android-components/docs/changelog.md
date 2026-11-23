@@ -9,6 +9,8 @@ permalink: /changelog/
   * ⚠️ **Behavior change for embedders**: Implement `DownloadDelegate.getContentFileName` so that downloaded and shared PDFs from `content://` tabs keep their local filename. [Bug 2071966](https://bugzilla.mozilla.org/show_bug.cgi?id=2071966)
 * **compose-base**
   * ⚠️ **Breaking change**: `Slider` takes a `SliderState` in place of its `value`, `start` and `end` parameters, like the Material3 `Slider`. [Bug 2094916](https://bugzilla.mozilla.org/show_bug.cgi?id=2094916)
+  * ⚠️ **Breaking change**: Removed the `SearchBar` composable, whose content slot has no equivalent in the Material3 1.5 search bar APIs. Use `TopSearchBar` instead. [Bug 2094916](https://bugzilla.mozilla.org/show_bug.cgi?id=2094916)
+  * 🆕 Added `rememberSyncedTextFieldState`, which remembers a `TextFieldState` kept in sync with a caller-owned string, for moving value-based text fields onto the state-based APIs. [Bug 2094916](https://bugzilla.mozilla.org/show_bug.cgi?id=2094916)
 * **concept-engine**
   * 🆕 Added `DownloadDelegate.getContentFileName`, which returns the filename a content provider has for a `content://` URI. [Bug 2071966](https://bugzilla.mozilla.org/show_bug.cgi?id=2071966)
 * **support-ktx**

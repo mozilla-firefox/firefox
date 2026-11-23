@@ -5,136 +5,63 @@
 package mozilla.components.compose.base.searchbar
 
 import androidx.compose.foundation.interaction.MutableInteractionSource
-import androidx.compose.foundation.layout.ColumnScope
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.WindowInsets
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
+import androidx.compose.foundation.text.input.TextFieldState
+import androidx.compose.foundation.text.input.clearText
+import androidx.compose.material3.AppBarWithSearch
 import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.Icon
 import androidx.compose.material3.LocalContentColor
 import androidx.compose.material3.LocalTextStyle
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Scaffold
-import androidx.compose.material3.SearchBar as M3SearchBar
 import androidx.compose.material3.SearchBarColors
 import androidx.compose.material3.SearchBarDefaults
 import androidx.compose.material3.SearchBarScrollBehavior
 import androidx.compose.material3.SearchBarState
+import androidx.compose.material3.SearchBarValue
 import androidx.compose.material3.Text
-import androidx.compose.material3.TopSearchBar as M3TopSearchBar
 import androidx.compose.material3.rememberSearchBarState
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.CompositionLocalProvider
+import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
+import androidx.compose.runtime.rememberUpdatedState
 import androidx.compose.runtime.setValue
+import androidx.compose.runtime.snapshotFlow
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Shape
 import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.res.stringResource
-import androidx.compose.ui.tooling.preview.PreviewLightDark
-import androidx.compose.ui.tooling.preview.PreviewParameter
-import androidx.compose.ui.tooling.preview.PreviewParameterProvider
 import androidx.compose.ui.unit.Dp
 import androidx.compose.ui.unit.dp
+import kotlinx.coroutines.flow.drop
 import mozilla.components.compose.base.R
 import mozilla.components.compose.base.annotation.FlexibleWindowLightDarkPreview
 import mozilla.components.compose.base.button.IconButton
+import mozilla.components.compose.base.textfield.rememberSyncedTextFieldState
 import mozilla.components.compose.base.theme.AcornTheme
 import mozilla.components.ui.icons.R as iconsR
 
 /**
- * A wrapper around the Material3 [SearchBar] that exposes a query-based API and uses [SearchBarInputField] to handle
- * input behavior. This version adds support for dynamic trailing-icon behavior, allowing icons to update based on the
- * current query state.
+ * A Material3 [AppBarWithSearch] that places the search bar at the top of the layout and uses [SearchBarInputField] to
+ * handle input behavior. This adds support for dynamic trailing-icon behavior and automatically updates icons based on
+ * the current query state.
  *
- * @param query the current text entered in the search field.
- * @param onQueryChange called when the query text is changed by the user.
- * @param onSearch called when the user submits the current [query] (e.g. IME action search).
- * @param expanded whether this search bar is expanded and showing search results.
- * @param onExpandedChange called when this search bar's expanded state changes.
- * @param modifier the [Modifier] to be applied to this search bar.
- * @param enabled whether the search bar is enabled.
- * @param placeholder optional placeholder composable displayed in the input field when [query] is empty.
- * @param leadingIcon optional leading icon displayed at the start of the input field.
- * @param trailingIcon trailing icon displayed at the end of the input field when there is no text or when a clear icon
- *   is not being shown.
- * @param shape the shape of this search bar when it is not expanded. When expanded, the shape will always be
- *   [SearchBarDefaults.fullScreenShape].
- * @param colors [SearchBarColors] used to resolve the colors for this search bar in different states. See
- *   [SearchBarDefaults.colors].
- * @param tonalElevation when [SearchBarColors.containerColor] is surface, a translucent primary color overlay is
- *   applied on top of the container. A higher tonal elevation value will result in a darker color in light theme and a
- *   lighter color in dark theme.
- * @param shadowElevation the elevation for the shadow below this search bar.
- * @param windowInsets the window insets that this search bar will respect.
- * @param interactionSource the [MutableInteractionSource] representing the stream of interactions for this search bar.
- *   You can use this to observe focus, press, and other interactions.
- * @param content the content of this search bar to display search results below the input field when [expanded] is
- *   true.
- */
-@OptIn(ExperimentalMaterial3Api::class)
-@Composable
-fun SearchBar(
-    query: String,
-    onQueryChange: (String) -> Unit,
-    onSearch: (String) -> Unit,
-    expanded: Boolean,
-    onExpandedChange: (Boolean) -> Unit,
-    modifier: Modifier = Modifier,
-    enabled: Boolean = true,
-    placeholder: @Composable (() -> Unit)? = null,
-    leadingIcon: @Composable (() -> Unit)? = null,
-    trailingIcon: (@Composable () -> Unit)? = null,
-    shape: Shape = SearchBarDefaults.inputFieldShape,
-    colors: SearchBarColors = SearchBarDefaults.colors(),
-    tonalElevation: Dp = SearchBarDefaults.TonalElevation,
-    shadowElevation: Dp = SearchBarDefaults.ShadowElevation,
-    windowInsets: WindowInsets = SearchBarDefaults.windowInsets,
-    interactionSource: MutableInteractionSource? = null,
-    content: @Composable ColumnScope.() -> Unit,
-) {
-    M3SearchBar(
-        inputField = {
-            SearchBarInputField(
-                query = query,
-                onQueryChange = onQueryChange,
-                onSearch = onSearch,
-                expanded = expanded,
-                onExpandedChange = onExpandedChange,
-                enabled = enabled,
-                placeholder = placeholder,
-                leadingIcon = leadingIcon,
-                trailingIcon = trailingIcon,
-                colors = colors,
-                interactionSource = interactionSource,
-            )
-        },
-        expanded = expanded,
-        onExpandedChange = onExpandedChange,
-        modifier = modifier,
-        shape = shape,
-        colors = colors,
-        tonalElevation = tonalElevation,
-        shadowElevation = shadowElevation,
-        windowInsets = windowInsets,
-        content = content,
-    )
-}
-
-/**
- * A Material3 [SearchBar] that places the search bar at the top of the layout and uses [SearchBarInputField] to handle
- * input behavior. This adds support for dynamic trailing-icon behavior and automatically updates icons based on the
- * current query state.
+ * This exposes a query- and expanded-based API for callers driving the search bar from their own state, and bridges
+ * those to the [SearchBarState] and [TextFieldState] the underlying Material3 component requires.
  *
  * @param state the state of the search bar.
  * @param modifier optional [Modifier] for customizing the layout or behavior of the search bar.
- * @param query the current query text displayed in the input field.
+ * @param query the query text to sync into the input field.
  * @param onQueryChange invoked when the query text changes.
  * @param onSearch invoked when the user submits the current query.
  * @param expanded whether the search bar is currently expanded and showing search results.
@@ -177,15 +104,16 @@ fun TopSearchBar(
     interactionSource: MutableInteractionSource? = null,
     scrollBehavior: SearchBarScrollBehavior? = null,
 ) {
-    M3TopSearchBar(
+    val textFieldState = rememberSyncedTextFieldState(query, onQueryChange)
+    ExpansionSyncEffect(expanded, onExpandedChange, state)
+
+    AppBarWithSearch(
         state = state,
         inputField = {
             SearchBarInputField(
-                query = query,
-                onQueryChange = onQueryChange,
+                textFieldState = textFieldState,
+                searchBarState = state,
                 onSearch = onSearch,
-                expanded = expanded,
-                onExpandedChange = onExpandedChange,
                 enabled = enabled,
                 placeholder = placeholder,
                 leadingIcon = leadingIcon,
@@ -196,7 +124,7 @@ fun TopSearchBar(
         },
         modifier = modifier,
         shape = shape,
-        colors = colors,
+        colors = SearchBarDefaults.appBarWithSearchColors(searchBarColors = colors),
         tonalElevation = tonalElevation,
         shadowElevation = shadowElevation,
         windowInsets = windowInsets,
@@ -204,15 +132,45 @@ fun TopSearchBar(
     )
 }
 
+/**
+ * Keeps [state] in sync with a caller-owned [expanded] flag: external changes drive the expand or collapse animation,
+ * and state-driven changes are propagated back out through [onExpandedChange].
+ */
+@Composable
+private fun ExpansionSyncEffect(
+    expanded: Boolean,
+    onExpandedChange: (Boolean) -> Unit,
+    state: SearchBarState,
+) {
+    val latestExpanded by rememberUpdatedState(expanded)
+    val latestOnExpandedChange by rememberUpdatedState(onExpandedChange)
+
+    LaunchedEffect(expanded, state) {
+        val target = if (expanded) SearchBarValue.Expanded else SearchBarValue.Collapsed
+        if (state.targetValue != target) {
+            if (expanded) state.animateToExpanded() else state.animateToCollapsed()
+        }
+    }
+    LaunchedEffect(state) {
+        // Drop the initial value so only genuine transitions are reported back to the caller.
+        snapshotFlow { state.targetValue }
+            .drop(1)
+            .collect { value ->
+                val isExpanded = value == SearchBarValue.Expanded
+                if (isExpanded != latestExpanded) {
+                    latestOnExpandedChange(isExpanded)
+                }
+            }
+    }
+}
+
 @Suppress("LongParameterList")
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
 private fun SearchBarInputField(
-    query: String,
-    onQueryChange: (String) -> Unit,
+    textFieldState: TextFieldState,
+    searchBarState: SearchBarState,
     onSearch: (String) -> Unit,
-    expanded: Boolean,
-    onExpandedChange: (Boolean) -> Unit,
     enabled: Boolean,
     placeholder: @Composable (() -> Unit)?,
     leadingIcon: @Composable (() -> Unit)?,
@@ -220,14 +178,15 @@ private fun SearchBarInputField(
     colors: SearchBarColors,
     interactionSource: MutableInteractionSource?,
 ) {
+    val expanded = searchBarState.targetValue == SearchBarValue.Expanded
+    val hasQuery = textFieldState.text.isNotEmpty()
+
     CompositionLocalProvider(LocalTextStyle provides AcornTheme.typography.body1) {
         SearchBarDefaults.InputField(
-            modifier = Modifier.fillMaxWidth(),
-            query = query,
-            onQueryChange = onQueryChange,
+            textFieldState = textFieldState,
+            searchBarState = searchBarState,
             onSearch = onSearch,
-            expanded = expanded,
-            onExpandedChange = onExpandedChange,
+            modifier = Modifier.fillMaxWidth(),
             enabled = enabled,
             placeholder = placeholder,
             leadingIcon = leadingIcon,
@@ -236,10 +195,10 @@ private fun SearchBarInputField(
                     Row(verticalAlignment = Alignment.CenterVertically) {
                         when {
                             !expanded -> trailingIcon?.invoke()
-                            expanded && query.isEmpty() -> Unit
-                            expanded && query.isNotEmpty() -> {
+                            !hasQuery -> Unit
+                            else -> {
                                 IconButton(
-                                    onClick = { onQueryChange("") },
+                                    onClick = { textFieldState.clearText() },
                                     contentDescription =
                                         stringResource(
                                             R.string.text_field_cross_trailing_icon_default_content_description
@@ -261,33 +220,6 @@ private fun SearchBarInputField(
     }
 }
 
-/**
- * A preview state for the SearchBar.
- *
- * @param showTrailing Whether or not to show trailing icon.
- * @param showSecondaryTrailing Whether or not to show secondary trailing icon.
- */
-private data class SearchBarPreviewState(
-    val showTrailing: Boolean = false,
-    val showSecondaryTrailing: Boolean = false,
-)
-
-/**
- * Provides a sequence of [SearchBarPreviewState] configurations for Compose previews to render the SearchBar in
- * multiple visual states without duplicating preview functions.
- */
-private class SearchBarIconsPreviewProvider : PreviewParameterProvider<SearchBarPreviewState> {
-    override val values =
-        sequenceOf(
-            SearchBarPreviewState(),
-            SearchBarPreviewState(showTrailing = true),
-            SearchBarPreviewState(
-                showTrailing = true,
-                showSecondaryTrailing = true,
-            ),
-        )
-}
-
 private val PreviewSearchItems =
     listOf(
         "Mozilla",
@@ -306,74 +238,6 @@ private fun rememberFilteredItems(
             items
         } else {
             items.filter { it.contains(trimmed, ignoreCase = true) }
-        }
-    }
-}
-
-@OptIn(ExperimentalMaterial3Api::class)
-@PreviewLightDark
-@Composable
-private fun SearchBarPreview(
-    @PreviewParameter(SearchBarIconsPreviewProvider::class) previewState: SearchBarPreviewState
-) {
-    var query by remember { mutableStateOf("") }
-    var expanded by remember { mutableStateOf(false) }
-    val filteredItems = rememberFilteredItems(query)
-
-    AcornTheme {
-        SearchBar(
-            query = query,
-            onQueryChange = { query = it },
-            onSearch = {},
-            expanded = expanded,
-            onExpandedChange = { expanded = it },
-            placeholder = { Text("Search...") },
-            leadingIcon = {
-                Icon(
-                    painter = painterResource(id = iconsR.drawable.mozac_ic_search_24),
-                    contentDescription = "content description",
-                )
-            },
-            trailingIcon =
-                if (previewState.showTrailing || previewState.showSecondaryTrailing) {
-                    {
-                        Row {
-                            if (previewState.showTrailing) {
-                                IconButton(
-                                    onClick = {},
-                                    contentDescription = "content description",
-                                ) {
-                                    Icon(
-                                        painter = painterResource(id = iconsR.drawable.mozac_ic_qr_code_24),
-                                        contentDescription = null,
-                                    )
-                                }
-                            }
-                            if (previewState.showSecondaryTrailing) {
-                                IconButton(
-                                    onClick = {},
-                                    contentDescription = "content description",
-                                ) {
-                                    Icon(
-                                        painter = painterResource(id = iconsR.drawable.mozac_ic_microphone_24),
-                                        contentDescription = null,
-                                    )
-                                }
-                            }
-                        }
-                    }
-                } else {
-                    null
-                },
-        ) {
-            CompositionLocalProvider(LocalContentColor provides MaterialTheme.colorScheme.onSurface) {
-                filteredItems.forEach { item ->
-                    Text(
-                        text = item,
-                        modifier = Modifier.padding(horizontal = 16.dp, vertical = 8.dp),
-                    )
-                }
-            }
         }
     }
 }
