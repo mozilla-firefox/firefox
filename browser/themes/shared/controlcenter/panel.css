@@ -1143,6 +1143,16 @@
   display: none;
 }
 
+#trustpanel-clearcookiesView-redesign {
+  .trustpanel-section {
+    gap: var(--space-large);
+  }
+
+  moz-button-group {
+    justify-content: flex-start;
+  }
+}
+
 .trustpanel-section {
   padding: var(--panel-menuitem-padding);
   margin: var(--panel-menuitem-margin);

@@ -1802,6 +1802,13 @@ trustpanel-clear-cookies-subview-button-cancel = Cancel
 
 # Variables
 #  $host (String): the hostname of the site that is being displayed.
+trustpanel-clear-cookies-header-redesign =
+    .title = Delete site data for { $host }
+
+trustpanel-clear-cookies-description-redesign = You’ll be signed out of sites. It may clear shopping carts.
+
+# Variables
+#  $host (String): the hostname of the site that is being displayed.
 trustpanel-site-information-header =
     .title = Connection protections for { $host }
 

@@ -93,6 +93,12 @@ XPCOMUtils.defineLazyPreferenceGetter(
   "extensions.webcompat.smartblockEmbeds.enabled",
   false
 );
+XPCOMUtils.defineLazyPreferenceGetter(
+  this,
+  "protectionsPanelRedesignEnabled",
+  "browser.protectionsPanelRedesign.enabled",
+  false
+);
 
 const ETP_ENABLED_ASSETS = {
   label: "trustpanel-etp-label-enabled",
@@ -523,6 +529,12 @@ class TrustPanel {
       document
         .getElementById("trustpanel-popup-security-httpsonlymode-menulist")
         .addEventListener("command", () => this.#changeHttpsOnlyPermission());
+      document
+        .getElementById("trustpanel-clear-cookie-cancel-redesign")
+        .addEventListener("click", () => this.#cancelClearSiteData());
+      document
+        .getElementById("trustpanel-clear-cookie-clear-redesign")
+        .addEventListener("click", () => this.#clearSiteData());
 
       this.#popup.addEventListener("popupshown", this);
       this.#popup.addEventListener("popuphidden", this);
@@ -1456,14 +1468,20 @@ class TrustPanel {
   }
 
   async #showClearCookiesSubview(event) {
+    let redesign = protectionsPanelRedesignEnabled;
+    let viewId = redesign
+      ? "trustpanel-clearcookiesView-redesign"
+      : "trustpanel-clearcookiesView";
     document.l10n.setAttributes(
-      document.getElementById("trustpanel-clearcookiesView"),
-      "trustpanel-clear-cookies-header",
+      document.getElementById(viewId),
+      redesign
+        ? "trustpanel-clear-cookies-header-redesign"
+        : "trustpanel-clear-cookies-header",
       { host: this.#displayHost }
     );
     document
       .getElementById("trustpanel-popup-multiView")
-      .showSubView("trustpanel-clearcookiesView", event.target);
+      .showSubView(viewId, event.target);
     Glean.trustpanel.clearCookiesOpened.record();
   }
 
