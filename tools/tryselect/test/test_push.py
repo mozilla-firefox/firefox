@@ -429,6 +429,47 @@ def test_push_to_try_routing(
             mock_vcs.push_to_try.assert_not_called()
 
 
+@pytest.mark.parametrize(
+    "url,expected",
+    [
+        pytest.param("git@github.com:mozilla-firefox/firefox-dev.git", True, id="ssh"),
+        pytest.param(
+            "https://github.com/mozilla-firefox/firefox-dev", True, id="https"
+        ),
+        pytest.param(
+            "https://github.com/Mozilla-Firefox/Firefox-Dev", True, id="mixed-case"
+        ),
+        pytest.param(
+            "https://github.com/mozilla-firefox/firefox-dev-secure",
+            False,
+            id="secure",
+        ),
+        pytest.param("https://github.com/someone/firefox-dev", False, id="fork"),
+    ],
+)
+def test_push_to_try_prints_treeherder_url(capsys, url, expected):
+    mock_vcs = MagicMock()
+    mock_vcs.get_remote_url.return_value = url
+    mock_vcs.push_to_try.return_value = "abc123"
+
+    with ExitStack() as stack:
+        stack.enter_context(patch("tryselect.push.vcs", mock_vcs))
+        stack.enter_context(patch("tryselect.push.MACH_TRY_REMOTE", "origin"))
+        stack.enter_context(patch("tryselect.push.check_working_directory"))
+        stack.enter_context(patch("tryselect.push.check_tree_status"))
+        stack.enter_context(patch("tryselect.push.write_task_config_history"))
+        push._is_hg_try.cache_clear()
+
+        push.push_to_try("fuzzy", "try: test", MagicMock(), push_to_vcs=True)
+
+    message = (
+        "\nView push in Treeherder:\n"
+        " https://treeherder.mozilla.org/jobs?repo=firefox-dev&revision=abc123\n"
+    )
+    out = capsys.readouterr().out
+    assert out.endswith(message) if expected else "Treeherder" not in out
+
+
 @pytest.fixture
 def mock_tc_secret(monkeypatch):
     monkeypatch.setattr(push, "get_client", real_get_client)

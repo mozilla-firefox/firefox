@@ -81,7 +81,15 @@ GIT_BACKING_REPO = "https://github.com/mozilla-releng/git-backing"
 GIT_BACKING_SSH = "git@github.com:mozilla-releng/git-backing.git"
 GIT_BACKING_SECRET = "project/releng/releng-github-git-backing-ssh"
 
+GITHUB_REMOTE_RE = re.compile(r"github\.com[/:]([^/]+/[^/]+?)(?:\.git)?/?$")
+TREEHERDER_REVISION_URL = (
+    "https://treeherder.mozilla.org/jobs?repo={repo_name}&revision={revision}"
+)
 TREEHERDER_LANDO_TRY_RUN_URL = "https://treeherder.mozilla.org/jobs?repo={repo_name}&landoInstance={lando_instance}&landoCommitID={job_id}"
+TREEHERDER_GITHUB_REMOTES = {
+    "mozilla/enterprise-firefox-try",
+    "mozilla-firefox/firefox-dev",
+}
 
 here = os.path.abspath(os.path.dirname(__file__))
 build = MozbuildObject.from_environment(cwd=here)
@@ -238,6 +246,14 @@ def get_sys_argv(injected_argv=None):
         formatted_argv.append(formatted_item)
 
     return " ".join(formatted_argv)
+
+
+def get_github_repo(remote):
+    """Return the ``owner/repo`` of a GitHub remote, or None if not on GitHub."""
+    if remote_url := vcs.get_remote_url(remote, push=True):
+        remote = remote_url
+    if match := GITHUB_REMOTE_RE.search(remote):
+        return match.group(1).lower()
 
 
 @cache
@@ -441,12 +457,20 @@ def push_to_try(
     print("Pushing to try...")
     try:
         if push_to_vcs:
-            vcs.push_to_try(
+            rev = vcs.push_to_try(
                 commit_message,
                 changed_files=changed_files,
                 allow_log_capture=allow_log_capture,
                 remote=remote,
             )
+            if rev and (github_repo := get_github_repo(remote)) in (
+                TREEHERDER_GITHUB_REMOTES
+            ):
+                repo_name = github_repo.rsplit("/", 1)[-1]
+                treeherder_url = TREEHERDER_REVISION_URL.format(
+                    repo_name=repo_name, revision=rev
+                )
+                print(f"\nView push in Treeherder:\n {treeherder_url}")
         else:
             try_repo = get_try_repo(vcs.path)
             push_data = push_to_lando_try(

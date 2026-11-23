@@ -67,6 +67,7 @@ def patch_vcs(monkeypatch):
         "name": "git",
         "path": push.vcs.path,
         "push.return_value": "abc123fakegitsha",
+        "push_to_try.return_value": None,
         "base_ref_as_commit.return_value": "def456fakebaserev",
     }
     mock = MagicMock()
