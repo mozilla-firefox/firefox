@@ -20,8 +20,8 @@
 #include "mozilla/TimeStamp.h"
 #include "mozilla/gfx/Logging.h"
 #include "nsCOMPtr.h"
+#include "nsContentUtils.h"
 #include "nsIObserverService.h"
-#include "nsIURI.h"
 #include "nsThreadManager.h"
 #include "nsThreadUtils.h"
 #include "nsXPCOMCIDInternal.h"
@@ -189,7 +189,7 @@ bool DecodePool::SyncRunIfPreferred(IDecodingTask* aTask, nsIURI* aURI) {
 
   AUTO_PROFILER_LABEL_DYNAMIC_NSCSTRING(
       "DecodePool::SyncRunIfPreferred", GRAPHICS,
-      aURI ? aURI->GetSpecOrDefault() : nsCString());
+      nsContentUtils::TruncatedURLForDisplay(aURI, 1024));
 
   if (aTask->ShouldPreferSyncRun()) {
     aTask->Run();
@@ -206,7 +206,7 @@ void DecodePool::SyncRunIfPossible(IDecodingTask* aTask, nsIURI* aURI) {
 
   AUTO_PROFILER_LABEL_DYNAMIC_NSCSTRING(
       "DecodePool::SyncRunIfPossible", GRAPHICS,
-      aURI ? aURI->GetSpecOrDefault() : nsCString());
+      nsContentUtils::TruncatedURLForDisplay(aURI, 1024));
 
   aTask->Run();
 }
