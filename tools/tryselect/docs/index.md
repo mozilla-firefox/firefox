@@ -165,16 +165,17 @@ job there.
 ## Adding Try jobs to a Phabricator patch
 
 For every patch submitted for review in Phabricator, a new Try run is automatically created.
-A link called `Treeherder Jobs` can be found in the `Diff Detail` section of the review in
-Phabricator.
+A `CI (Treeherder) Jobs` link for each build can be found in the `Build Status` row of the
+`Diff Detail` section of the review in Phabricator.
 
 ```{image} img/phab-treeherder-link.png
 ```
 
-This run is created for static analysis, linting and other tasks. Attaching new jobs to the run is
-easy and doesn't require more actions from the developer.
+Depending on the change, this run includes static analysis, linting, builds and
+other tasks. Attaching new jobs to the run is easy and doesn't require more actions
+from the developer. Reviewers can also use it to verify changes.
 Click on the down-arrow to access the actions menu, select the relevant jobs
-and, click on `Trigger X new jobs` (located on the top of the job).
+and click on `Trigger X new jobs` (located at the top of the jobs list).
 
 ```{image} img/add-new-jobs.png
 ```
