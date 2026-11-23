@@ -191,14 +191,15 @@ bool UnscaledFontDWrite::GetFontFileData(FontFileDataOutput aDataCallback,
   // Try to catch any device memory exceptions that may occur while attempting
   // to read the file fragment.
   void* context = nullptr;
+  bool success = false;
   hr = E_FAIL;
   MOZ_SEH_TRY {
     uint32_t fileSize = static_cast<uint32_t>(fileSize64);
     const void* fragmentStart = nullptr;
     hr = stream->ReadFileFragment(&fragmentStart, 0, fileSize, &context);
     if (SUCCEEDED(hr)) {
-      aDataCallback((uint8_t*)fragmentStart, fileSize, mFontFace->GetIndex(),
-                    aBaton);
+      success = aDataCallback((uint8_t*)fragmentStart, fileSize,
+                              mFontFace->GetIndex(), aBaton);
     }
   }
   MOZ_SEH_EXCEPT(EXCEPTION_EXECUTE_HANDLER) {
@@ -208,7 +209,7 @@ bool UnscaledFontDWrite::GetFontFileData(FontFileDataOutput aDataCallback,
     return false;
   }
   stream->ReleaseFileFragment(context);
-  return true;
+  return success;
 }
 
 static bool GetFontFileName(RefPtr<IDWriteFontFace> aFontFace,
@@ -284,9 +285,8 @@ bool UnscaledFontDWrite::GetFontDescriptor(FontDescriptorOutput aCb,
   }
 
   uint32_t index = mFontFace->GetIndex();
-  aCb(reinterpret_cast<const uint8_t*>(mFontFileName.data()),
-      mFontFileName.size() * sizeof(WCHAR), index, aBaton);
-  return true;
+  return aCb(reinterpret_cast<const uint8_t*>(mFontFileName.data()),
+             mFontFileName.size() * sizeof(WCHAR), index, aBaton);
 }
 
 ScaledFontDWrite::InstanceData::InstanceData(
@@ -395,10 +395,8 @@ bool ScaledFontDWrite::GetFontInstanceData(FontInstanceDataOutput aCb,
   std::vector<wr::FontVariation> variations;
   GetVariationsFromFontFace(mFontFace, &variations);
 
-  aCb(reinterpret_cast<uint8_t*>(&instance), sizeof(instance),
-      variations.data(), variations.size(), aBaton);
-
-  return true;
+  return aCb(reinterpret_cast<uint8_t*>(&instance), sizeof(instance),
+             variations.data(), variations.size(), aBaton);
 }
 
 bool ScaledFontDWrite::GetWRFontInstanceOptions(

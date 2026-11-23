@@ -1319,11 +1319,13 @@ class UnscaledFont : public SupportsThreadSafeWeakPtr<UnscaledFont> {
 
   static uint32_t DeletionCounter() { return sDeletionCounter; }
 
-  typedef void (*FontFileDataOutput)(const uint8_t* aData, uint32_t aLength,
+  // The output callbacks return whether they consumed the data successfully,
+  // and the getters below return false if they did not.
+  typedef bool (*FontFileDataOutput)(const uint8_t* aData, uint32_t aLength,
                                      uint32_t aIndex, void* aBaton);
-  typedef void (*FontInstanceDataOutput)(const uint8_t* aData, uint32_t aLength,
+  typedef bool (*FontInstanceDataOutput)(const uint8_t* aData, uint32_t aLength,
                                          void* aBaton);
-  typedef void (*FontDescriptorOutput)(const uint8_t* aData, uint32_t aLength,
+  typedef bool (*FontDescriptorOutput)(const uint8_t* aData, uint32_t aLength,
                                        uint32_t aIndex, void* aBaton);
 
   virtual bool GetFontFileData(FontFileDataOutput, void*) { return false; }
@@ -1389,7 +1391,7 @@ class ScaledFont : public SupportsThreadSafeWeakPtr<ScaledFont> {
                                    PathBuilder* aBuilder,
                                    const Matrix* aTransformHint = nullptr) = 0;
 
-  typedef void (*FontInstanceDataOutput)(const uint8_t* aData, uint32_t aLength,
+  typedef bool (*FontInstanceDataOutput)(const uint8_t* aData, uint32_t aLength,
                                          const wr::FontVariation* aVariations,
                                          uint32_t aNumVariations, void* aBaton);
 

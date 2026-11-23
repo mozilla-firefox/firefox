@@ -377,9 +377,8 @@ bool ScaledFontFontconfig::GetFontInstanceData(FontInstanceDataOutput aCb,
     UnscaledFontFreeType::GetVariationSettingsFromFace(&variations, mFace);
   }
 
-  aCb(reinterpret_cast<uint8_t*>(&mInstanceData), sizeof(mInstanceData),
-      variations.data(), variations.size(), aBaton);
-  return true;
+  return aCb(reinterpret_cast<uint8_t*>(&mInstanceData), sizeof(mInstanceData),
+             variations.data(), variations.size(), aBaton);
 }
 
 bool ScaledFontFontconfig::GetWRFontInstanceOptions(

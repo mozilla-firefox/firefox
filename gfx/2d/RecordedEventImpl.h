@@ -1476,10 +1476,10 @@ class RecordedExtractSubrect
 
 class RecordedFontData : public RecordedEventDerived<RecordedFontData> {
  public:
-  static void FontDataProc(const uint8_t* aData, uint32_t aSize,
+  static bool FontDataProc(const uint8_t* aData, uint32_t aSize,
                            uint32_t aIndex, void* aBaton) {
     auto recordedFontData = static_cast<RecordedFontData*>(aBaton);
-    recordedFontData->SetFontData(aData, aSize, aIndex);
+    return recordedFontData->SetFontData(aData, aSize, aIndex);
   }
 
   explicit RecordedFontData(UnscaledFont* aUnscaledFont)
@@ -1501,7 +1501,7 @@ class RecordedFontData : public RecordedEventDerived<RecordedFontData> {
 
   std::string GetName() const override { return "Font Data"; }
 
-  void SetFontData(const uint8_t* aData, uint32_t aSize, uint32_t aIndex);
+  bool SetFontData(const uint8_t* aData, uint32_t aSize, uint32_t aIndex);
 
   bool GetFontDetails(RecordedFontDetails& fontDetails);
 
@@ -1521,10 +1521,11 @@ class RecordedFontData : public RecordedEventDerived<RecordedFontData> {
 class RecordedFontDescriptor
     : public RecordedEventDerived<RecordedFontDescriptor> {
  public:
-  static void FontDescCb(const uint8_t* aData, uint32_t aSize, uint32_t aIndex,
+  static bool FontDescCb(const uint8_t* aData, uint32_t aSize, uint32_t aIndex,
                          void* aBaton) {
     auto recordedFontDesc = static_cast<RecordedFontDescriptor*>(aBaton);
     recordedFontDesc->SetFontDescriptor(aData, aSize, aIndex);
+    return true;
   }
 
   explicit RecordedFontDescriptor(UnscaledFont* aUnscaledFont)
@@ -1566,11 +1567,12 @@ class RecordedFontDescriptor
 class RecordedUnscaledFontCreation
     : public RecordedEventDerived<RecordedUnscaledFontCreation> {
  public:
-  static void FontInstanceDataProc(const uint8_t* aData, uint32_t aSize,
+  static bool FontInstanceDataProc(const uint8_t* aData, uint32_t aSize,
                                    void* aBaton) {
     auto recordedUnscaledFontCreation =
         static_cast<RecordedUnscaledFontCreation*>(aBaton);
     recordedUnscaledFontCreation->SetFontInstanceData(aData, aSize);
+    return true;
   }
 
   RecordedUnscaledFontCreation(UnscaledFont* aUnscaledFont,
@@ -1629,13 +1631,14 @@ class RecordedUnscaledFontDestruction
 class RecordedScaledFontCreation
     : public RecordedEventDerived<RecordedScaledFontCreation> {
  public:
-  static void FontInstanceDataProc(const uint8_t* aData, uint32_t aSize,
+  static bool FontInstanceDataProc(const uint8_t* aData, uint32_t aSize,
                                    const wr::FontVariation* aVariations,
                                    uint32_t aNumVariations, void* aBaton) {
     auto recordedScaledFontCreation =
         static_cast<RecordedScaledFontCreation*>(aBaton);
     recordedScaledFontCreation->SetFontInstanceData(aData, aSize, aVariations,
                                                     aNumVariations);
+    return true;
   }
 
   RecordedScaledFontCreation(ScaledFont* aScaledFont,
@@ -4281,16 +4284,18 @@ inline void RecordedFontData::OutputSimpleEventInfo(
   aStringStream << "Font Data of size " << mData.size();
 }
 
-inline void RecordedFontData::SetFontData(const uint8_t* aData, uint32_t aSize,
+inline bool RecordedFontData::SetFontData(const uint8_t* aData, uint32_t aSize,
                                           uint32_t aIndex) {
   if (!mData.TryAssign(aData, aSize)) {
     mGetFontFileDataSucceeded = false;
     gfxCriticalNote
         << "RecordedFontData failed to allocate data for recording of size "
         << aSize;
+    return false;
   }
   mFontDetails.fontDataKey = SFNTData::GetUniqueKey(aData, aSize, 0, nullptr);
   mFontDetails.index = aIndex;
+  return true;
 }
 
 inline bool RecordedFontData::GetFontDetails(RecordedFontDetails& fontDetails) {

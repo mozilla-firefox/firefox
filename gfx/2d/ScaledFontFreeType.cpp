@@ -74,9 +74,8 @@ bool ScaledFontFreeType::GetFontInstanceData(FontInstanceDataOutput aCb,
   }
 
   InstanceData instance(this);
-  aCb(reinterpret_cast<uint8_t*>(&instance), sizeof(instance),
-      variations.data(), variations.size(), aBaton);
-  return true;
+  return aCb(reinterpret_cast<uint8_t*>(&instance), sizeof(instance),
+             variations.data(), variations.size(), aBaton);
 }
 
 bool ScaledFontFreeType::GetWRFontInstanceOptions(
