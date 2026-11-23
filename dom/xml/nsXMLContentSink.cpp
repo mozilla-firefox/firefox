@@ -719,8 +719,8 @@ nsresult nsXMLContentSink::LoadXSLStyleSheet(nsIURI* aUrl) {
 nsresult nsXMLContentSink::ProcessStyleLinkFromHeader(
     const nsAString& aHref, bool aAlternate, const nsAString& aTitle,
     const nsAString& aIntegrity, const nsAString& aType,
-    const nsAString& aMedia, const nsAString& aReferrerPolicy,
-    const nsAString& aFetchPriority) {
+    const nsAString& aMedia, const nsAString& aCrossOrigin,
+    const nsAString& aReferrerPolicy, const nsAString& aFetchPriority) {
   mPrettyPrintXML = false;
 
   nsAutoCString cmd;
@@ -729,8 +729,8 @@ nsresult nsXMLContentSink::ProcessStyleLinkFromHeader(
     return NS_OK;  // Do not load stylesheets when loading as data
 
   return nsContentSink::ProcessStyleLinkFromHeader(
-      aHref, aAlternate, aTitle, aIntegrity, aType, aMedia, aReferrerPolicy,
-      aFetchPriority);
+      aHref, aAlternate, aTitle, aIntegrity, aType, aMedia, aCrossOrigin,
+      aReferrerPolicy, aFetchPriority);
 }
 
 nsresult nsXMLContentSink::MaybeProcessXSLTLink(

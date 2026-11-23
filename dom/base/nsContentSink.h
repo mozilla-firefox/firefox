@@ -95,8 +95,8 @@ class nsContentSink : public nsICSSLoaderObserver,
   MOZ_CAN_RUN_SCRIPT_BOUNDARY virtual nsresult ProcessStyleLinkFromHeader(
       const nsAString& aHref, bool aAlternate, const nsAString& aTitle,
       const nsAString& aIntegrity, const nsAString& aType,
-      const nsAString& aMedia, const nsAString& aReferrerPolicy,
-      const nsAString& aFetchPriority);
+      const nsAString& aMedia, const nsAString& aCrossOrigin,
+      const nsAString& aReferrerPolicy, const nsAString& aFetchPriority);
 
   void PrefetchHref(const nsAString& aHref, const nsAString& aAs,
                     const nsAString& aType, const nsAString& aMedia);

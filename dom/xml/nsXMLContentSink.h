@@ -137,7 +137,8 @@ class nsXMLContentSink : public nsContentSink,
   MOZ_CAN_RUN_SCRIPT_BOUNDARY virtual nsresult ProcessStyleLinkFromHeader(
       const nsAString& aHref, bool aAlternate, const nsAString& aTitle,
       const nsAString& aIntegrity, const nsAString& aType,
-      const nsAString& aMedia, const nsAString& aReferrerPolicy,
+      const nsAString& aMedia, const nsAString& aCrossOrigin,
+      const nsAString& aReferrerPolicy,
       const nsAString& aFetchPriority) override;
 
   // Try to handle an XSLT style link from an xml-stylesheet XML PI.
