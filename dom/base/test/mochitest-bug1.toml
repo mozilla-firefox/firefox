@@ -4,8 +4,6 @@ prefs = [
   "formhelper.autozoom.force-disable.test-only=true",
   "network.http.referer.sendFromRefresh=false",
   "plugins.rewrite_youtube_embeds=true",
-  # Bug 2077709
-  "dom.navigation.navigationRateLimit.count=0",
 ]
 support-files = [
   "audio.ogg",
