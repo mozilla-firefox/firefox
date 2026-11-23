@@ -1422,22 +1422,6 @@ features:
         type: Boolean
         default: true
 
-  oled-theme:
-    no-lint: [MISSING_CONTACTS]
-    description: Feature to provide the OLED theme option for users on Firefox for Android.
-    variables:
-      enabled:
-        description: If true, the OLED theme option is shown.
-        type: Boolean
-        default: false
-    defaults:
-      - channel: developer
-        value:
-          enabled: true
-      - channel: nightly
-        value:
-          enabled: true
-
   pairing-signin-prompt:
     description: >
       Controls the pairing sync card shown during initial onboarding to users who installed Firefox

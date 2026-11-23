@@ -528,7 +528,6 @@
     <string name="pref_key_enable_uninstall_survey" translatable="false">pref_key_enable_uninstall_survey</string>
     <string name="pref_key_enable_homepage_customization" translatable="false">pref_key_enable_homepage_customization</string>
     <string name="pref_key_enable_homepage_trending_recent_search" translatable="false">pref_key_enable_homepage_trending_recent_search</string>
-    <string name="pref_key_enable_oled_theme" translatable="false">pref_key_enable_oled_theme</string>
     <string name="pref_key_enable_menu_customization_screen" translatable="false">pref_key_enable_menu_customization_screen</string>
     <string name="pref_key_enable_account_settings_new_ui" translatable="false">pref_key_enable_account_settings_new_ui</string>
     <string name="pref_key_enable_sync_decoupling" translatable="false">pref_key_enable_sync_decoupling</string>

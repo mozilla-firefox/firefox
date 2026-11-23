@@ -57,6 +57,9 @@ class SettingsSubMenuCustomizeRobot {
         Log.i(TAG, "verifyThemes: Trying to verify that the \"Dark\" mode option is visible")
         darkModeToggle().check(matches(ViewMatchers.withEffectiveVisibility(ViewMatchers.Visibility.VISIBLE)))
         Log.i(TAG, "verifyThemes: Verified that the \"Dark\" mode option is visible")
+        Log.i(TAG, "verifyThemes: Trying to verify that the \"Darkest\" mode option is visible")
+        darkestModeToggle().check(matches(ViewMatchers.withEffectiveVisibility(ViewMatchers.Visibility.VISIBLE)))
+        Log.i(TAG, "verifyThemes: Verified that the \"Darkest\" mode option is visible")
         Log.i(TAG, "verifyThemes: Trying to verify that the \"Follow device theme\" option is visible")
         deviceModeToggle().check(matches(ViewMatchers.withEffectiveVisibility(ViewMatchers.Visibility.VISIBLE)))
         Log.i(TAG, "verifyThemes: Verified that the \"Follow device theme\" option is visible")
@@ -537,6 +540,8 @@ class SettingsSubMenuCustomizeRobot {
 }
 
 private fun darkModeToggle() = onView(withText("Dark"))
+
+private fun darkestModeToggle() = onView(withText(getStringResource(R.string.preference_oled_theme)))
 
 private fun lightModeToggle() = onView(withText("Light"))
 

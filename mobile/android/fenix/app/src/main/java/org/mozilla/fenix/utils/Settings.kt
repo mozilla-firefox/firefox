@@ -3523,13 +3523,6 @@ class Settings(
             default = { FxNimbus.features.uninstallSurvey.value().enabled },
         )
 
-    /** Indicates if the OLED theme is enabled. */
-    var enableOledTheme by
-        booleanPreference(
-            key = appContext.getPreferenceKey(R.string.pref_key_enable_oled_theme),
-            default = { FxNimbus.features.oledTheme.value().enabled },
-        )
-
     /** Indicates if Homepage Customization is enabled. */
     var enableHomepageCustomization by
         booleanPreference(

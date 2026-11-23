@@ -219,9 +219,6 @@
     <!-- Label for enabling uninstall survey in secret settings. -->
     <string name="preferences_debug_settings_uninstall_survey">Enable Uninstall Survey</string>
 
-    <!-- Label for showing the OLED theme option in secret settings. -->
-    <string name="preferences_debug_settings_oled_theme" translatable="false">Show OLED Theme option</string>
-
     <string name="preferences_debug_settings_use_account_settings_new_ui" translatable="false">Use new Account Settings UI</string>
 
     <string name="preferences_debug_settings_enable_sync_decoupling" translatable="false">Enable accounts - sync decoupling (requires restart)</string>

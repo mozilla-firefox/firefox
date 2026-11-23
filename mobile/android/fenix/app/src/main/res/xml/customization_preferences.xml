@@ -32,8 +32,7 @@
         <org.mozilla.fenix.settings.RadioButtonPreference
             android:defaultValue="false"
             android:key="@string/pref_key_oled_theme"
-            android:title="@string/preference_oled_theme"
-            android:visible="false" />
+            android:title="@string/preference_oled_theme" />
 
         <org.mozilla.fenix.settings.RadioButtonPreference
             android:defaultValue="false"

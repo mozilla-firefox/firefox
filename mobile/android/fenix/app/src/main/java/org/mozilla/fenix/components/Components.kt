@@ -509,10 +509,6 @@ class Components(
             add(context.getString(R.string.pref_key_homepage_search_location_top))
             add(context.getString(R.string.pref_key_enable_homepage_searchbar2))
         }
-
-        if (!settings.enableOledTheme) {
-            add(context.getString(R.string.pref_key_oled_theme))
-        }
     }
 
     val ipProtectionPromptRepository by lazy {
