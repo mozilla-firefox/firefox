@@ -3342,7 +3342,7 @@ static nsresult MaybeUpdateSelectionCacheOnRepaintSelection(Selection* aSel) {
   }
   nsCOMPtr<Document> aDoc = presShell->GetDocument();
 
-  if (aDoc && aSel && !aSel->IsCollapsed()) {
+  if (aDoc && !aSel->IsCollapsed()) {
     return nsCopySupport::EncodeDocumentWithContextAndPutToClipboard(
         aSel, aDoc, nsIClipboard::kSelectionCache, false,
 #  ifdef XP_MACOSX

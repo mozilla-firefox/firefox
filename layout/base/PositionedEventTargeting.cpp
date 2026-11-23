@@ -235,7 +235,7 @@ static bool IsClickableContent(const nsIContent* aContent,
     if (aLabelTargetId) {
       aContent->AsElement()->GetAttr(nsGkAtoms::_for, *aLabelTargetId);
     }
-    return aContent;
+    return true;
   }
 
   // See nsCSSFrameConstructor::FindXULTagData. This code is not

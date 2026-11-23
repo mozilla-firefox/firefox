@@ -63,9 +63,6 @@ void nsFrameIterator::Last() {
   }
 
   SetCurrent(parent);
-  if (!parent) {
-    SetOffEdge(1);
-  }
 }
 
 void nsFrameIterator::Next() {
