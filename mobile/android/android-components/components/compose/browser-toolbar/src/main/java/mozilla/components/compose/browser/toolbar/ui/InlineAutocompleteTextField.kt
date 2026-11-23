@@ -7,10 +7,7 @@ package mozilla.components.compose.browser.toolbar.ui
 import android.content.Context
 import android.text.Spanned
 import android.view.KeyEvent
-import android.view.View
 import android.view.inputmethod.EditorInfo
-import android.view.inputmethod.ExtractedText
-import android.view.inputmethod.ExtractedTextRequest
 import android.view.inputmethod.InputConnection
 import android.view.inputmethod.InputConnectionWrapper
 import android.view.inputmethod.InputMethodManager
@@ -233,16 +230,6 @@ internal fun InlineAutocompleteTextField(
         }
     }
 
-    // Compose's state-based BasicTextField does not push extracted text updates to the IME, so for
-    // the fullscreen text input mode track the IME's monitor request and feed it updates ourselves.
-    val activeExtractedTextConnection = remember { ExtractedTextConnectionHolder() }
-    LaunchedEffect(Unit) {
-        snapshotFlow { textFieldState.text to textFieldState.selection }
-            .collect { (text, selection) ->
-                activeExtractedTextConnection.connection?.pushExtractedTextUpdate(text, selection)
-            }
-    }
-
     val textInputInterceptor =
         remember(usePrivateModeQueries) {
             PlatformTextInputInterceptor { request, nextHandler ->
@@ -253,47 +240,39 @@ internal fun InlineAutocompleteTextField(
                         NoPersonalizedLearningHelper.addNoPersonalizedLearning(outAttributes)
                     }
 
-                    val autocompleteConnection =
-                        autocompleteInputConnection(
-                            delegate = delegate,
-                            currentText = { textFieldState.text.toString() },
-                            selection = { textFieldState.selection },
-                            suggestionText = { currentSuggestion?.text },
-                            handleCommitingSuggestion = accept@{
-                                    val suggestionText = currentSuggestion?.text ?: return@accept false
-                                    val previousText = textFieldState.text.toString()
+                    autocompleteInputConnection(
+                        delegate = delegate,
+                        currentText = { textFieldState.text.toString() },
+                        selection = { textFieldState.selection },
+                        suggestionText = { currentSuggestion?.text },
+                        handleCommitingSuggestion = accept@{
+                                val suggestionText = currentSuggestion?.text ?: return@accept false
+                                val previousText = textFieldState.text.toString()
 
-                                    val isCurrentSuggestionValid =
-                                        isCurrentSuggestionValid(
-                                            originalText = previousText,
-                                            suggestion = suggestionText,
-                                            shouldUseSuggestion = currentUseSuggestion,
-                                        )
-                                    if (!isCurrentSuggestionValid) {
-                                        return@accept false
-                                    }
-
-                                    currentOnUrlEdit(
-                                        BrowserToolbarQuery(
-                                            previous = previousText,
-                                            current = suggestionText,
-                                        )
+                                val isCurrentSuggestionValid =
+                                    isCurrentSuggestionValid(
+                                        originalText = previousText,
+                                        suggestion = suggestionText,
+                                        shouldUseSuggestion = currentUseSuggestion,
                                     )
+                                if (!isCurrentSuggestionValid) {
+                                    return@accept false
+                                }
 
-                                    textFieldState.edit {
-                                        replace(0, length, suggestionText)
-                                        selection = TextRange(suggestionText.length)
-                                    }
+                                currentOnUrlEdit(
+                                    BrowserToolbarQuery(
+                                        previous = previousText,
+                                        current = suggestionText,
+                                    )
+                                )
 
-                                    true
-                                },
-                        )
+                                textFieldState.edit {
+                                    replace(0, length, suggestionText)
+                                    selection = TextRange(suggestionText.length)
+                                }
 
-                    ExtractedTextInputConnection(
-                        target = autocompleteConnection,
-                        view = localView,
-                        inputMethodManager = inputMethodManager,
-                        activeConnection = activeExtractedTextConnection,
+                                true
+                            },
                     )
                 }
 
@@ -625,74 +604,6 @@ internal object NoPersonalizedLearningHelper {
     fun addNoPersonalizedLearning(info: EditorInfo) {
         info.imeOptions = info.imeOptions or EditorInfo.IME_FLAG_NO_PERSONALIZED_LEARNING
     }
-}
-
-/**
- * [InputConnectionWrapper] that lets the address bar keep the fullscreen ("extracted text") keyboard editor in sync.
- * This wrapper records the IME's monitor request and pushes the current extracted text whenever the field content
- * changes.
- *
- * This is a known Compose limitation (see https://github.com/android/compose-samples/issues/1490); this wrapper can be
- * removed once Compose drives extracted text updates itself.
- *
- * @param target The [InputConnection] created by Compose that this wrapper delegates to.
- * @param view The view hosting the text field, required by [InputMethodManager.updateExtractedText].
- * @param inputMethodManager Used to deliver extracted text updates to the IME.
- * @param activeConnection Holder for the connection currently serving the IME's monitor.
- */
-@VisibleForTesting
-internal class ExtractedTextInputConnection(
-    target: InputConnection,
-    private val view: View,
-    private val inputMethodManager: InputMethodManager,
-    private val activeConnection: ExtractedTextConnectionHolder,
-) : InputConnectionWrapper(target, false) {
-
-    private var monitorRequest: ExtractedTextRequest? = null
-
-    override fun getExtractedText(request: ExtractedTextRequest?, flags: Int): ExtractedText? {
-        if (request != null && flags and GET_EXTRACTED_TEXT_MONITOR != 0) {
-            monitorRequest = request
-            activeConnection.connection = this
-        }
-
-        return super.getExtractedText(request, flags)
-    }
-
-    /** Pushes the given [text] and [selection] to the IME if it is monitoring this connection. */
-    @VisibleForTesting
-    internal fun pushExtractedTextUpdate(text: CharSequence, selection: TextRange) {
-        val request = monitorRequest ?: return
-        val extractedText =
-            ExtractedText().apply {
-                this.text = text
-                startOffset = 0
-                partialStartOffset = -1
-                partialEndOffset = -1
-                selectionStart = selection.start
-                selectionEnd = selection.end
-            }
-        inputMethodManager.updateExtractedText(view, request.token, extractedText)
-    }
-
-    override fun closeConnection() {
-        if (activeConnection.connection === this) {
-            activeConnection.connection = null
-        }
-        monitorRequest = null
-        super.closeConnection()
-    }
-}
-
-/**
- * Mutable holder for the [ExtractedTextInputConnection] currently serving the IME's monitor request.
- *
- * Lets the composable hand the active connection to the [snapshotFlow] collector that pushes extracted text updates.
- * Accessed only from the main thread, so no synchronization is needed.
- */
-@VisibleForTesting
-internal class ExtractedTextConnectionHolder {
-    var connection: ExtractedTextInputConnection? = null
 }
 
 /**

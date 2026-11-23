@@ -5,11 +5,7 @@
 package mozilla.components.compose.browser.toolbar.ui
 
 import android.content.Context
-import android.view.View
 import android.view.inputmethod.EditorInfo
-import android.view.inputmethod.ExtractedText
-import android.view.inputmethod.ExtractedTextRequest
-import android.view.inputmethod.InputConnection
 import android.view.inputmethod.InputMethodManager
 import android.widget.Magnifier
 import androidx.compose.runtime.CompositionLocalProvider
@@ -43,17 +39,12 @@ import mozilla.components.support.test.eq
 import mozilla.components.support.test.mock
 import mozilla.components.support.test.robolectric.testContext
 import mozilla.components.support.test.whenever
-import org.junit.Assert.assertEquals
 import org.junit.Assert.assertFalse
-import org.junit.Assert.assertNull
 import org.junit.Assert.assertTrue
 import org.junit.Rule
 import org.junit.Test
 import org.junit.runner.RunWith
-import org.mockito.ArgumentCaptor
-import org.mockito.ArgumentMatchers.anyInt
 import org.mockito.Mockito.atLeastOnce
-import org.mockito.Mockito.doReturn
 import org.mockito.Mockito.never
 import org.mockito.Mockito.verify
 import org.robolectric.RobolectricTestRunner
@@ -334,91 +325,6 @@ class InlineAutocompleteTextFieldTest {
         NoPersonalizedLearningHelper.addNoPersonalizedLearning(editorInfo)
 
         assertTrue(editorInfo.imeOptions and EditorInfo.IME_FLAG_NO_PERSONALIZED_LEARNING != 0)
-    }
-
-    @Test
-    fun `WHEN the IME requests to monitor the extracted text THEN track the connection and return the extracted text`() {
-        val target: InputConnection = mock()
-        val activeConnection = ExtractedTextConnectionHolder()
-        val connection = ExtractedTextInputConnection(target, mock(), mock(), activeConnection)
-        val extractedText = ExtractedText()
-        doReturn(extractedText).`when`(target).getExtractedText(any(), anyInt())
-
-        val result =
-            connection.getExtractedText(
-                ExtractedTextRequest().apply { token = 7 },
-                InputConnection.GET_EXTRACTED_TEXT_MONITOR,
-            )
-
-        assertEquals(extractedText, result)
-        assertEquals(connection, activeConnection.connection)
-    }
-
-    @Test
-    fun `WHEN the IME requests the extracted text without monitoring THEN do not track the connection`() {
-        val target: InputConnection = mock()
-        val activeConnection = ExtractedTextConnectionHolder()
-        val connection = ExtractedTextInputConnection(target, mock(), mock(), activeConnection)
-        doReturn(ExtractedText()).`when`(target).getExtractedText(any(), anyInt())
-
-        connection.getExtractedText(ExtractedTextRequest(), 0)
-
-        assertNull(activeConnection.connection)
-    }
-
-    @Test
-    fun `GIVEN the IME is monitoring the extracted text WHEN an update is pushed THEN forward it to the IME`() {
-        val view: View = mock()
-        val inputMethodManager: InputMethodManager = mock()
-        val connection = ExtractedTextInputConnection(mock(), view, inputMethodManager, ExtractedTextConnectionHolder())
-        connection.getExtractedText(
-            ExtractedTextRequest().apply { token = 9 },
-            InputConnection.GET_EXTRACTED_TEXT_MONITOR,
-        )
-
-        connection.pushExtractedTextUpdate("mozilla", TextRange(3, 5))
-
-        val captor = ArgumentCaptor.forClass(ExtractedText::class.java)
-        verify(inputMethodManager).updateExtractedText(eq(view), eq(9), captor.capture())
-        assertEquals("mozilla", captor.value.text)
-        assertEquals(3, captor.value.selectionStart)
-        assertEquals(5, captor.value.selectionEnd)
-    }
-
-    @Test
-    fun `GIVEN the IME is not monitoring the extracted text WHEN an update is pushed THEN do nothing`() {
-        val inputMethodManager: InputMethodManager = mock()
-        val connection =
-            ExtractedTextInputConnection(mock(), mock(), inputMethodManager, ExtractedTextConnectionHolder())
-
-        connection.pushExtractedTextUpdate("mozilla", TextRange(0))
-
-        verify(inputMethodManager, never()).updateExtractedText(any(), anyInt(), any())
-    }
-
-    @Test
-    fun `GIVEN the IME is monitoring the extracted text WHEN the connection is closed THEN stop tracking it`() {
-        val target: InputConnection = mock()
-        val activeConnection = ExtractedTextConnectionHolder()
-        val connection = ExtractedTextInputConnection(target, mock(), mock(), activeConnection)
-        doReturn(ExtractedText()).`when`(target).getExtractedText(any(), anyInt())
-        connection.getExtractedText(ExtractedTextRequest(), InputConnection.GET_EXTRACTED_TEXT_MONITOR)
-
-        connection.closeConnection()
-
-        assertNull(activeConnection.connection)
-    }
-
-    @Test
-    fun `GIVEN a newer connection is monitoring WHEN an older connection is closed THEN keep tracking the newer connection`() {
-        val activeConnection = ExtractedTextConnectionHolder()
-        val olderConnection = ExtractedTextInputConnection(mock(), mock(), mock(), activeConnection)
-        val newerConnection = ExtractedTextInputConnection(mock(), mock(), mock(), activeConnection)
-        activeConnection.connection = newerConnection
-
-        olderConnection.closeConnection()
-
-        assertEquals(newerConnection, activeConnection.connection)
     }
 
     @Test
