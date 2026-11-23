@@ -6,13 +6,11 @@ with Files("**"):
     BUG_COMPONENT = ("Core", "DOM: Credential Management")
 
 EXPORTS.mozilla += [
-    "CredentialChosenCallback.h",
     "IdentityCredentialRequestManager.h",
     "IdentityCredentialStorageService.h",
 ]
 
 UNIFIED_SOURCES += [
-    "CredentialChosenCallback.cpp",
     "IdentityCredentialRequestManager.cpp",
     "IdentityCredentialStorageService.cpp",
 ]
@@ -21,7 +19,6 @@ FINAL_LIBRARY = "xul"
 
 XPIDL_SOURCES += [
     "nsICredentialChooserService.idl",
-    "nsICredentialChosenCallback.idl",
     "nsIIdentityCredentialPromptService.idl",
     "nsIIdentityCredentialStorageService.idl",
 ]

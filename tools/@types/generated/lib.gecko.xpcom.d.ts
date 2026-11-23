@@ -19126,14 +19126,6 @@ interface nsICredentialChooserService extends nsISupports {
   fetchDisconnect(uri: nsIURI, body: string, triggeringPrincipal: nsIPrincipal): Promise<any>;
 }
 
-// https://searchfox.org/firefox-main/source/toolkit/components/credentialmanagement/nsICredentialChosenCallback.idl
-
-/** <!-- binding_to(idl, interface_name, XPIDL_nsICredentialChosenCallback) --> */
-type nsICredentialChosenCallback = Callable<{
-  /** <!-- binding_to(idl, method, XPIDL_nsICredentialChosenCallback_notify) --> */
-  notify(aChosenID: string): void;
-}>
-
 // https://searchfox.org/firefox-main/source/toolkit/components/credentialmanagement/nsIIdentityCredentialPromptService.idl
 
 /** <!-- binding_to(idl, interface_name, XPIDL_nsIIdentityCredentialPromptService) --> */
@@ -27484,7 +27476,6 @@ interface nsIXPCComponents_Interfaces {
   nsISiteContainerService: nsJSIID<nsISiteContainerService>;
   nsICrashService: nsJSIID<nsICrashService>;
   nsICredentialChooserService: nsJSIID<nsICredentialChooserService>;
-  nsICredentialChosenCallback: nsJSIID<nsICredentialChosenCallback>;
   nsIIdentityCredentialPromptService: nsJSIID<nsIIdentityCredentialPromptService>;
   nsIIdentityCredentialStorageService: nsJSIID<nsIIdentityCredentialStorageService>;
   nsIDAPTelemetry: nsJSIID<nsIDAPTelemetry>;
