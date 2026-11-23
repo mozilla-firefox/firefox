@@ -8,7 +8,7 @@
 # documentation and how to modify this file.
 repo: mozilla-central
 created_at: '2021-10-14T12:50:40.073465'
-updated_at: '2026-11-20T18:30:34.130881+00:00'
+updated_at: '2026-11-23T03:56:56.319645+00:00'
 export:
   path: ./docs/mots/index.md
   format: md
@@ -214,8 +214,7 @@ people:
     bmo_id: 478411
     name: Byron Campen
     nick: bwc
-  - &bytesized
-    bmo_id: 563604
+  - bmo_id: 563604
     name: Robin Steuber
     nick: bytesized
   - &calixte
@@ -233,8 +232,7 @@ people:
     bmo_id: 525693
     name: Nazım Can Altınova
     nick: canova
-  - &cdupuis
-    bmo_id: 760375
+  - bmo_id: 760375
     name: Chris DuPuis
     nick: cdupuis
   - &charlie
@@ -3796,16 +3794,22 @@ modules:
         includes:
           - toolkit/mozapps/update/**/*
         owners:
-          - *cdupuis
+          - *spohl
         peers:
-          - *bytesized
+          - *yannis
         machine_name: application_update
         meta:
+          components:
+            - Toolkit::Application Update
           owners_emeritus:
-            - Robin Steuber
-          peers_emeritus:
-            - Adam Gashlin
+            - Robert Strong
             - Molly Howell
+            - Robin Steuber
+            - Chris DuPuis
+          peers_emeritus:
+            - *mossop
+            - Brian Bondy
+            - Adam Gashlin
           review_group: application-update-reviewers
 
 
@@ -4307,13 +4311,19 @@ modules:
             - Firefox::Installer
           review_group: browser-installer-reviewers
           owners_emeritus:
+            - Robert Strong
             - Molly Howell
+            - Chris DuPuis
           peers_emeritus:
+            - Benjamin Smedberg
+            - *jimm
+            - Brian Bondy
             - *agashlin
             - *nalexander
         owners:
-          - *cdupuis
-        peers: []
+          - *yannis
+        peers:
+          - *spohl
         machine_name: windows_installer
     machine_name: desktop_firefox
 
@@ -5081,5 +5091,5 @@ modules:
         - Ryan Tilder
       group: dev-platform
 hashes:
-  config: ba181b5af70cb7515dab697a6934585c04359d1e
-  export: 9b96c6babf6dd5ba48f9378c997779633d6dcd1b
+  config: 9d42ec3c8428a1b061bc10db19763aee4ca742d1
+  export: 3babfd93f376e24df32b5d7757453060d569f766
