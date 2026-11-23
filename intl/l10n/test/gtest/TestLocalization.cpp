@@ -20,7 +20,7 @@ TEST(Intl_Localization, FormatValueSyncMissing)
   IgnoredErrorResult rv;
   nsAutoCString result;
 
-  l10n->FormatValueSync(l10nId, {}, result, rv);
+  l10n->FormatValueSync(l10nId, result, rv);
   ASSERT_FALSE(rv.Failed());
   ASSERT_TRUE(result.IsEmpty());
 }
@@ -36,7 +36,7 @@ TEST(Intl_Localization, FormatValueSync)
   IgnoredErrorResult rv;
   nsAutoCString result;
 
-  l10n->FormatValueSync(l10nId, {}, result, rv);
+  l10n->FormatValueSync(l10nId, result, rv);
   ASSERT_FALSE(rv.Failed());
   ASSERT_FALSE(result.IsEmpty());
 }
@@ -63,6 +63,20 @@ TEST(Intl_Localization, FormatValueSyncWithArgs)
   l10n->FormatValueSync(l10nId, l10nArgs, result, rv);
   ASSERT_FALSE(rv.Failed());
   ASSERT_TRUE(result.Find("Foo"_ns) > -1);
+}
+
+TEST(Intl_Localization, FormatValueWithoutGlobal)
+{
+  nsTArray<nsCString> resIds = {
+      "toolkit/global/handlerDialog.ftl"_ns,
+  };
+  RefPtr<Localization> l10n = Localization::Create(resIds, false);
+
+  IgnoredErrorResult rv;
+  RefPtr<Promise> promise =
+      l10n->FormatValue("permission-dialog-unset-description"_ns, rv);
+  ASSERT_TRUE(rv.Failed());
+  ASSERT_FALSE(promise);
 }
 
 TEST(Intl_Localization, FormatMessagesSync)

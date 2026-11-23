@@ -295,6 +295,9 @@ already_AddRefed<Promise> Localization::FormatValue(
     FluentBundle::ConvertArgs(args, l10nArgs);
   }
   RefPtr<Promise> promise = Promise::Create(mGlobal, aRv);
+  if (aRv.Failed()) {
+    return nullptr;
+  }
 
   ffi::localization_format_value(
       mRaw.get(), &aId, &l10nArgs, promise,
@@ -312,6 +315,11 @@ already_AddRefed<Promise> Localization::FormatValue(
       });
 
   return MaybeWrapPromise(promise);
+}
+
+already_AddRefed<Promise> Localization::FormatValue(const nsACString& aId,
+                                                    ErrorResult& aRv) {
+  return FormatValue(aId, Optional<L10nArgs>(), aRv);
 }
 
 already_AddRefed<Promise> Localization::FormatValues(
@@ -398,6 +406,11 @@ void Localization::FormatValueSync(const nsACString& aId,
     aRv.ThrowInvalidStateError(
         "Can't use formatValueSync when state is async.");
   }
+}
+
+void Localization::FormatValueSync(const nsACString& aId, nsACString& aRetVal,
+                                   ErrorResult& aRv) {
+  FormatValueSync(aId, Optional<L10nArgs>(), aRetVal, aRv);
 }
 
 void Localization::FormatValuesSync(

@@ -107,6 +107,8 @@ class Localization : public nsIObserver,
   already_AddRefed<dom::Promise> FormatValue(
       const nsACString& aId, const dom::Optional<L10nArgs>& aArgs,
       ErrorResult& aRv);
+  already_AddRefed<dom::Promise> FormatValue(const nsACString& aId,
+                                             ErrorResult& aRv);
 
   already_AddRefed<dom::Promise> FormatValues(
       const dom::Sequence<dom::OwningUTF8StringOrL10nIdArgs>& aKeys,
@@ -119,6 +121,8 @@ class Localization : public nsIObserver,
   void FormatValueSync(const nsACString& aId,
                        const dom::Optional<L10nArgs>& aArgs,
                        nsACString& aRetVal, ErrorResult& aRv);
+  void FormatValueSync(const nsACString& aId, nsACString& aRetVal,
+                       ErrorResult& aRv);
   void FormatValuesSync(
       const dom::Sequence<dom::OwningUTF8StringOrL10nIdArgs>& aKeys,
       nsTArray<nsCString>& aRetVal, ErrorResult& aRv);
