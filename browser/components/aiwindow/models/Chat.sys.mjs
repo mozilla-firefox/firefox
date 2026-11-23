@@ -36,6 +36,21 @@ import { runLLMaJTelemetry } from "moz-src:///browser/components/aiwindow/models
 import { getSmartPageName } from "chrome://browser/content/aiwindow/modules/TrustedInternalURLs.mjs";
 
 /**
+ * Why a search was handed off to the default search engine, recorded as the
+ * `reason` extra of smart_window.search_handoff.
+ *
+ * @type {object}
+ */
+export const SEARCH_HANDOFF_REASON = Object.freeze({
+  // The search provider behind search_the_web failed.
+  SEARCH_FAILED: "search_failed",
+  // The model called search_the_web again in the same turn.
+  REPEAT_SEARCH: "repeat_search",
+  // The model asked for run_search directly.
+  MODEL_REQUEST: "model_request",
+});
+
+/**
  * Execute a specific tool and return the result
  * Exported for testing purposes
  *
@@ -45,6 +60,10 @@ import { getSmartPageName } from "chrome://browser/content/aiwindow/modules/Trus
  * @param {ChatConversation} conversation - The conversation context
  * @param {BrowsingContext} browsingContext - The browsing context (can be null for some tools)
  * @param {string} mode - The mode of operation (e.g., "fullpage", "sidebar", "urlbar")
+ * @param {AbortSignal} [signal] - Stops a search handoff before it navigates.
+ * @param {string} [handoffReason] - One of SEARCH_HANDOFF_REASON, when
+ *   search_the_web is handing off. A run_search call without one was requested
+ *   by the model directly.
  * @returns {Promise<object>} The result of the tool execution, or
  *   `{ toolResult, cardShown }` for manage_tabs
  * @private
@@ -55,7 +74,9 @@ export async function executeToolByName(
   toolCallId,
   conversation,
   browsingContext,
-  mode
+  mode,
+  signal,
+  handoffReason
 ) {
   let result;
   switch (toolName) {
@@ -75,18 +96,29 @@ export async function executeToolByName(
       break;
     }
     case RUN_SEARCH: {
+      // Looked up before the search starts so a handoff never begins without
+      // an engine, and reused for telemetry so nothing is looked up after the
+      // navigation. Stopping during the lookup cancels the handoff before the
+      // tab is touched.
+      const engine = await lazy.SearchService.getDefault();
+      signal?.throwIfAborted();
+      if (!engine) {
+        throw new Error("No default search engine to hand off to");
+      }
       result = await RunSearch.runSearch(
         toolParams,
         browsingContext,
-        conversation
+        conversation,
+        engine,
+        signal
       );
-      const engine = await lazy.SearchService.getDefault();
       Glean.smartWindow.searchHandoff.record({
         location: mode,
         chat_id: conversation.id,
         message_seq: conversation.messageCount,
         provider: engine.name ?? "unknown",
         model: conversation.engine?.model,
+        reason: handoffReason ?? SEARCH_HANDOFF_REASON.MODEL_REQUEST,
       });
       break;
     }
@@ -824,14 +856,16 @@ Object.assign(Chat, {
         // case it is delivered below and the model gets no follow-up turn.
         let directAnswerStream = null;
         const featureGatedHandler = FEATURE_GATED_HANDLERS.get(toolName);
-        const dispatchTool = name =>
+        const dispatchTool = (name, handoffReason) =>
           executeToolByName(
             name,
             toolParams,
             id,
             conversation,
             browsingContext,
-            mode
+            mode,
+            signal,
+            handoffReason
           );
 
         // Emit the tool message up front with a `pending`-marked placeholder
@@ -868,19 +902,26 @@ Object.assign(Chat, {
             }
             /**
              * On the first invocation of search_the_web, SearchProvider-powered
-             * web search is done. On the second invocation, search handoff (previously
-             * run_search tool) is called. The logic for run_search is maintained, including
-             * the instruction to use the user's original query if this is the first turn
+             * web search is done. If that search fails, or on the second invocation,
+             * search handoff (previously run_search tool) is called. The logic for
+             * run_search is maintained, including the instruction to use the user's
+             * original query if this is the first turn
              */
             if (!signal?.aborted && result.requiresSearchHandoff) {
               isSearchHandoff = true;
+              let handoffReason = SEARCH_HANDOFF_REASON.REPEAT_SEARCH;
+              // A failed search that hands off is still a failed tool call.
+              if (result.error) {
+                toolCallError = "execution_failed";
+                handoffReason = SEARCH_HANDOFF_REASON.SEARCH_FAILED;
+              }
               // Mark the turn as having handed off, so a re-entry on the same
               // turn (via openSidebarAndContinue) blocks a repeat search.
               conversation._searchExecutedTurn = currentTurn;
               if (isVerbatimQuery) {
                 delete toolParams.query;
               }
-              result = await dispatchTool(RUN_SEARCH);
+              result = await dispatchTool(RUN_SEARCH, handoffReason);
             }
           } else {
             result = await dispatchTool(toolName);
@@ -914,6 +955,11 @@ Object.assign(Chat, {
           };
           resolveToolCall(toolCall, content);
         } catch (error) {
+          if (isSearchHandoff) {
+            // The handoff did not complete, so it must not block a retry of
+            // this turn.
+            delete conversation._searchExecutedTurn;
+          }
           isSearchHandoff = false;
           console.error(error);
           toolCallError = "execution_failed";

@@ -577,13 +577,18 @@ export const AIWindow = {
    *
    * @param {string} query
    * @param {Window} window
+   * @param {?nsISearchEngine} [defaultEngine] - The default search engine, when
+   *   the caller has already looked it up. Passing it means nothing is awaited
+   *   before the navigation starts.
    */
-  async performSearch(query, window) {
-    let engine = null;
-    try {
-      engine = await lazy.SearchService.getDefault();
-    } catch (error) {
-      console.error(`Failed to get default search engine:`, error);
+  async performSearch(query, window, defaultEngine) {
+    let engine = defaultEngine;
+    if (!engine) {
+      try {
+        engine = await lazy.SearchService.getDefault();
+      } catch (error) {
+        console.error(`Failed to get default search engine:`, error);
+      }
     }
 
     const triggeringPrincipal =

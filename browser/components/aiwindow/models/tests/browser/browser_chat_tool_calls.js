@@ -12,6 +12,12 @@ const { Chat } = ChromeUtils.importESModule(
 const { ChatConversation } = ChromeUtils.importESModule(
   "moz-src:///browser/components/aiwindow/ui/modules/ChatConversation.sys.mjs"
 );
+const { ChatStore } = ChromeUtils.importESModule(
+  "moz-src:///browser/components/aiwindow/ui/modules/ChatStore.sys.mjs"
+);
+const { SearchService } = ChromeUtils.importESModule(
+  "moz-src:///toolkit/components/search/SearchService.sys.mjs"
+);
 const { MESSAGE_ROLE } = ChromeUtils.importESModule(
   "moz-src:///browser/components/aiwindow/ui/modules/AIWindowConstants.sys.mjs"
 );
@@ -693,12 +699,7 @@ add_task(async function test_answers_search_preserves_other_calls_on_failure() {
     set: [[SEARCH_THE_WEB_ANSWERS_PREF, true]],
   });
   try {
-    for (const scenario of [
-      "success",
-      "empty_query",
-      "no_answer",
-      "request_error",
-    ]) {
+    for (const scenario of ["success", "empty_query", "no_answer"]) {
       info(`Testing answers batch: ${scenario}`);
       await withToolCallFixture(
         async ({
@@ -733,13 +734,9 @@ add_task(async function test_answers_search_preserves_other_calls_on_failure() {
                 tabsSpy.notCalled && pageSpy.notCalled,
                 "Search runs before the other calls"
               );
-              if (scenario === "request_error") {
-                answers.reject(new Error("Answer request failed"));
-              } else {
-                answers.respond({
-                  finalOutput: scenario === "no_answer" ? "" : answer,
-                });
-              }
+              answers.respond({
+                finalOutput: scenario === "no_answer" ? "" : answer,
+              });
             }
 
             if (scenario === "success") {
@@ -829,6 +826,7 @@ add_task(async function test_search_handoff_skips_remaining_calls() {
         fetchWithHistory,
         captureChatRequest,
       }) => {
+        Services.fog.testResetFOG();
         const conversation = await createConversation();
         conversation._searchTheWebTurn = conversation.currentTurnIndex();
         const fetchPromise = fetchWithHistory(conversation, {
@@ -857,6 +855,11 @@ add_task(async function test_search_handoff_skips_remaining_calls() {
           conversation._searchExecutedTurn,
           conversation.currentTurnIndex(),
           "The handoff is recorded to prevent another search on this turn"
+        );
+        Assert.equal(
+          Glean.smartWindow.searchHandoff.testGetValue()?.[0]?.extra.reason,
+          "repeat_search",
+          "The handoff is recorded as caused by the repeat search"
         );
         Assert.ok(
           pageContentSpy.notCalled,
@@ -888,6 +891,951 @@ add_task(async function test_search_handoff_skips_remaining_calls() {
     );
   } finally {
     sandbox.restore();
+  }
+});
+
+add_task(async function test_search_failure_hands_off() {
+  for (const path of ["fast", "answers"]) {
+    info(`Testing a ${path} search failure`);
+    await SpecialPowers.pushPrefEnv({
+      set: [
+        [SEARCH_THE_WEB_FAST_PREF, path === "fast"],
+        [SEARCH_THE_WEB_ANSWERS_PREF, path === "answers"],
+      ],
+    });
+    const mockSearchManager = new MockSearchManager();
+    const sandbox = sinon.createSandbox();
+    const handoffStub = sandbox.stub(AIWindow, "openSidebarAndContinue");
+    const runSearchStub = sandbox
+      .stub(RunSearch, "runSearch")
+      .resolves("Search handoff results");
+    const pageContentSpy = sandbox.spy(GetPageContent, "getPageContentText");
+    try {
+      await withToolCallFixture(
+        async ({
+          mockEngineManager,
+          createConversation,
+          fetchWithHistory,
+          captureChatRequest,
+        }) => {
+          Services.fog.testResetFOG();
+          const conversation = await createConversation();
+          const fetchPromise = fetchWithHistory(conversation);
+          const firstTurn = await captureChatRequest();
+          const toolCalls = [
+            makeToolCall(
+              "call_search",
+              SEARCH_THE_WEB,
+              JSON.stringify({ query: "test query" })
+            ),
+            pageCall(),
+          ];
+          firstTurn.respond({ text: "", toolCalls });
+          if (path === "fast") {
+            (await mockSearchManager.captureRequest()).respond(
+              "upstream exploded",
+              { status: 503 }
+            );
+          } else {
+            (
+              await mockEngineManager.captureRequest({ purpose: "unknown" })
+            ).reject(new Error("Answer request failed"));
+          }
+          await fetchPromise;
+          mockEngineManager.assertAllRequestsHandled();
+
+          Assert.ok(runSearchStub.calledOnce, "The failed search hands off");
+          Assert.ok(
+            handoffStub.calledOnceWithExactly(window, conversation),
+            "The sidebar continues the conversation"
+          );
+          Assert.ok(
+            pageContentSpy.notCalled,
+            "The call after the handoff never runs"
+          );
+          const toolMessages = conversation.messages.filter(
+            m => m.role === MESSAGE_ROLE.TOOL
+          );
+          Assert.equal(
+            toolMessages[0].content.body,
+            "Search handoff results",
+            "The handoff result is recorded for the search call"
+          );
+          Assert.deepEqual(
+            toolMessages[1].content.body,
+            SKIPPED_BODY,
+            "The remaining call is marked skipped by the handoff"
+          );
+          Assert.deepEqual(
+            getToolCallEvents(),
+            [
+              [GET_PAGE_CONTENT, "skipped"],
+              [SEARCH_THE_WEB, "execution_failed"],
+            ].sort(),
+            "The search that handed off is still recorded as failed"
+          );
+          const handoffEvents = Glean.smartWindow.searchHandoff.testGetValue();
+          Assert.equal(
+            handoffEvents?.length,
+            1,
+            "The handoff is recorded once"
+          );
+          Assert.equal(
+            handoffEvents?.[0]?.extra.reason,
+            "search_failed",
+            "The handoff is recorded as caused by the failed search"
+          );
+        }
+      );
+    } finally {
+      sandbox.restore();
+      mockSearchManager.rejectAllRequests();
+      mockSearchManager.cleanupMocks();
+      await SpecialPowers.popPrefEnv();
+    }
+  }
+});
+
+add_task(async function test_search_failure_after_stop_does_not_hand_off() {
+  for (const path of ["fast", "answers"]) {
+    info(`Testing a ${path} search that fails after the response is stopped`);
+    await SpecialPowers.pushPrefEnv({
+      set: [
+        [SEARCH_THE_WEB_FAST_PREF, path === "fast"],
+        [SEARCH_THE_WEB_ANSWERS_PREF, path === "answers"],
+      ],
+    });
+    const mockSearchManager = new MockSearchManager();
+    const sandbox = sinon.createSandbox();
+    const handoffStub = sandbox.stub(AIWindow, "openSidebarAndContinue");
+    const runSearchStub = sandbox
+      .stub(RunSearch, "runSearch")
+      .resolves("Search handoff results");
+    try {
+      await withToolCallFixture(
+        async ({
+          mockEngineManager,
+          createConversation,
+          fetchWithHistory,
+          captureChatRequest,
+        }) => {
+          Services.fog.testResetFOG();
+          const controller = new AbortController();
+          const conversation = await createConversation();
+          const fetchPromise = fetchWithHistory(conversation, {
+            signal: controller.signal,
+          });
+          const firstTurn = await captureChatRequest();
+          firstTurn.respond({
+            text: "",
+            toolCalls: [
+              makeToolCall(
+                "call_search",
+                SEARCH_THE_WEB,
+                JSON.stringify({ query: "test query" })
+              ),
+            ],
+          });
+          if (path === "fast") {
+            const search = await mockSearchManager.captureRequest();
+            controller.abort();
+            search.respond("upstream exploded", { status: 503 });
+          } else {
+            const answers = await mockEngineManager.captureRequest({
+              purpose: "unknown",
+            });
+            controller.abort();
+            answers.reject(
+              Object.assign(new Error("aborted"), { name: "AbortError" })
+            );
+          }
+
+          Assert.equal(
+            await fetchPromise,
+            null,
+            "The stopped response returns without a turn result"
+          );
+          mockEngineManager.assertAllRequestsHandled();
+          Assert.ok(
+            runSearchStub.notCalled,
+            "A stopped response never runs the search handoff"
+          );
+          Assert.ok(
+            handoffStub.notCalled,
+            "A stopped response never continues in the sidebar"
+          );
+          Assert.equal(
+            Glean.smartWindow.searchHandoff.testGetValue(),
+            null,
+            "No handoff is recorded"
+          );
+        }
+      );
+    } finally {
+      sandbox.restore();
+      mockSearchManager.rejectAllRequests();
+      mockSearchManager.cleanupMocks();
+      await SpecialPowers.popPrefEnv();
+    }
+  }
+});
+
+add_task(async function test_stop_before_move_to_sidebar_cancels_search() {
+  // The search fails and the handoff starts, then the user stops the response
+  // while the default search engine is looked up: before the chat's tab is
+  // selected or a full-page chat moves to the sidebar. The real performSearch
+  // runs, so loadSearch is the navigation that must not start.
+  await SpecialPowers.pushPrefEnv({
+    set: [
+      [SEARCH_THE_WEB_FAST_PREF, true],
+      [SEARCH_THE_WEB_ANSWERS_PREF, false],
+    ],
+  });
+  const getDefaultEngine = SearchService.getDefault.bind(SearchService);
+  try {
+    for (const chatLocation of ["fullpage", "sidebar"]) {
+      info(`Stopping a ${chatLocation} handoff before the move to the sidebar`);
+      const mockSearchManager = new MockSearchManager();
+      const sandbox = sinon.createSandbox();
+      const handoffStub = sandbox.stub(AIWindow, "openSidebarAndContinue");
+      const moveStub = sandbox
+        .stub(AIWindow, "moveConversationToSidebar")
+        .resolves(null);
+      const loadSearchStub = sandbox
+        .stub(SearchUIUtils, "loadSearch")
+        .resolves();
+      try {
+        await withToolCallFixture(
+          async ({
+            url,
+            mockEngineManager,
+            createConversation,
+            fetchWithHistory,
+            captureChatRequest,
+          }) => {
+            Services.fog.testResetFOG();
+            const controller = new AbortController();
+            const lookupStub = sandbox
+              .stub(SearchService, "getDefault")
+              .callsFake(async () => {
+                controller.abort();
+                return getDefaultEngine();
+              });
+            const stopStubs = [lookupStub];
+            if (chatLocation === "fullpage") {
+              stopStubs.push(
+                sandbox
+                  .stub(AIWindow, "isAIWindowContentPage")
+                  .callsFake(uri => uri?.spec === url)
+              );
+            }
+            const conversation = await createConversation();
+            try {
+              const fetchPromise = fetchWithHistory(conversation, {
+                signal: controller.signal,
+              });
+              const firstTurn = await captureChatRequest();
+              firstTurn.respond({
+                text: "",
+                toolCalls: [
+                  makeToolCall(
+                    "call_search",
+                    SEARCH_THE_WEB,
+                    JSON.stringify({ query: "test query" })
+                  ),
+                ],
+              });
+              (await mockSearchManager.captureRequest()).respond(
+                "upstream exploded",
+                { status: 503 }
+              );
+
+              Assert.equal(
+                await fetchPromise,
+                null,
+                "The stopped response returns without a turn result"
+              );
+              Assert.ok(
+                lookupStub.calledOnce,
+                "The handoff had started when the user stopped"
+              );
+              Assert.ok(
+                moveStub.notCalled,
+                "The chat is never moved to the sidebar"
+              );
+              Assert.ok(
+                loadSearchStub.notCalled,
+                "The search page never starts loading"
+              );
+              Assert.ok(
+                handoffStub.notCalled,
+                "The conversation does not continue in the sidebar"
+              );
+              Assert.equal(
+                Glean.smartWindow.searchHandoff.testGetValue(),
+                null,
+                "No handoff is recorded"
+              );
+              Assert.deepEqual(
+                getToolCallEvents(),
+                [[SEARCH_THE_WEB, "execution_failed"]],
+                "The failed search is recorded once"
+              );
+              Assert.notEqual(
+                conversation._searchExecutedTurn,
+                conversation.currentTurnIndex(),
+                "The stopped handoff does not mark the turn as handed off"
+              );
+            } finally {
+              stopStubs.forEach(stub => stub.restore());
+            }
+
+            // A retry runs on the same turn, so it must not be blocked as a
+            // repeat of a handoff that never ran.
+            Services.fog.testResetFOG();
+            sandbox
+              .stub(RunSearch, "runSearch")
+              .resolves("Search handoff results");
+            const retryPromise = fetchWithHistory(conversation);
+            const retryTurn = await captureChatRequest();
+            retryTurn.respond({
+              text: "",
+              toolCalls: [
+                makeToolCall(
+                  "call_retry",
+                  SEARCH_THE_WEB,
+                  JSON.stringify({ query: "test query" })
+                ),
+              ],
+            });
+            const chatEngine = mockEngineManager.engines.get(PURPOSES.CHAT);
+            await TestUtils.waitForCondition(
+              () => handoffStub.called || chatEngine.runRequests.size,
+              "Waiting for the retried search to run or be blocked"
+            );
+            if (chatEngine.runRequests.size) {
+              (await captureChatRequest()).respond("The search was blocked.");
+            }
+            await retryPromise;
+            mockEngineManager.assertAllRequestsHandled();
+
+            const retryEvents = getToolCallEvents();
+            Assert.equal(
+              retryEvents.length,
+              1,
+              "The retry makes one search call"
+            );
+            Assert.notEqual(
+              retryEvents[0][1],
+              "duplicate_search",
+              "The retried search is not blocked as a duplicate"
+            );
+          }
+        );
+      } finally {
+        sandbox.restore();
+        mockSearchManager.rejectAllRequests();
+        mockSearchManager.cleanupMocks();
+      }
+    }
+  } finally {
+    await SpecialPowers.popPrefEnv();
+  }
+});
+
+add_task(async function test_stop_during_move_to_sidebar_completes_handoff() {
+  // Once a full-page chat starts moving to the sidebar, the handoff finishes
+  // even if the user stops the response, so the chat is not left open in both
+  // the full page and the sidebar.
+  await SpecialPowers.pushPrefEnv({
+    set: [
+      [SEARCH_THE_WEB_FAST_PREF, true],
+      [SEARCH_THE_WEB_ANSWERS_PREF, false],
+    ],
+  });
+  const mockSearchManager = new MockSearchManager();
+  const sandbox = sinon.createSandbox();
+  const handoffStub = sandbox.stub(AIWindow, "openSidebarAndContinue");
+  const loadSearchStub = sandbox.stub(SearchUIUtils, "loadSearch").resolves();
+  // The stubbed loadSearch loads no page, so let the wait for one time out at
+  // once rather than after the default 15 seconds.
+  const navigationTimeout = RunSearch.NAVIGATION_TIMEOUT_MS;
+  RunSearch.NAVIGATION_TIMEOUT_MS = 0;
+  try {
+    await withToolCallFixture(
+      async ({
+        url,
+        mockEngineManager,
+        createConversation,
+        fetchWithHistory,
+        captureChatRequest,
+      }) => {
+        Services.fog.testResetFOG();
+        const controller = new AbortController();
+        sandbox
+          .stub(AIWindow, "isAIWindowContentPage")
+          .callsFake(uri => uri?.spec === url);
+        const moveStub = sandbox
+          .stub(AIWindow, "moveConversationToSidebar")
+          .callsFake(async () => controller.abort());
+        const conversation = await createConversation();
+        const fetchPromise = fetchWithHistory(conversation, {
+          signal: controller.signal,
+        });
+        const firstTurn = await captureChatRequest();
+        firstTurn.respond({
+          text: "",
+          toolCalls: [
+            makeToolCall(
+              "call_search",
+              SEARCH_THE_WEB,
+              JSON.stringify({ query: "test query" })
+            ),
+          ],
+        });
+        (await mockSearchManager.captureRequest()).respond(
+          "upstream exploded",
+          { status: 503 }
+        );
+
+        Assert.equal(
+          await fetchPromise,
+          null,
+          "The handed-off response returns without a turn result"
+        );
+        mockEngineManager.assertAllRequestsHandled();
+        Assert.ok(
+          moveStub.calledOnce && controller.signal.aborted,
+          "The user stopped while the chat moved to the sidebar"
+        );
+        Assert.ok(loadSearchStub.calledOnce, "The search page starts loading");
+        Assert.ok(
+          handoffStub.calledOnce,
+          "The handoff continues in the sidebar"
+        );
+        Assert.equal(
+          conversation._searchExecutedTurn,
+          conversation.currentTurnIndex(),
+          "The completed handoff keeps the turn marked as handed off"
+        );
+        const handoffEvents = Glean.smartWindow.searchHandoff.testGetValue();
+        Assert.equal(handoffEvents?.length, 1, "The handoff is recorded once");
+        Assert.equal(
+          handoffEvents?.[0]?.extra.reason,
+          "search_failed",
+          "The handoff is recorded as caused by the failed search"
+        );
+        Assert.deepEqual(
+          getToolCallEvents(),
+          [[SEARCH_THE_WEB, "execution_failed"]],
+          "The failed search is recorded once"
+        );
+      }
+    );
+  } finally {
+    RunSearch.NAVIGATION_TIMEOUT_MS = navigationTimeout;
+    sandbox.restore();
+    mockSearchManager.rejectAllRequests();
+    mockSearchManager.cleanupMocks();
+    await SpecialPowers.popPrefEnv();
+  }
+});
+
+add_task(async function test_handoff_uses_one_engine_lookup() {
+  // The engine is looked up once, before the last stop check. The real
+  // performSearch navigates with it, and the handoff telemetry reuses it, so a
+  // lookup that would fail after the navigation cannot undo the handoff.
+  await SpecialPowers.pushPrefEnv({
+    set: [
+      [SEARCH_THE_WEB_FAST_PREF, true],
+      [SEARCH_THE_WEB_ANSWERS_PREF, false],
+    ],
+  });
+  const getDefaultEngine = SearchService.getDefault.bind(SearchService);
+  const mockSearchManager = new MockSearchManager();
+  const sandbox = sinon.createSandbox();
+  const handoffStub = sandbox.stub(AIWindow, "openSidebarAndContinue");
+  let navigated = false;
+  const getDefaultStub = sandbox
+    .stub(SearchService, "getDefault")
+    .callsFake(() =>
+      navigated
+        ? Promise.reject(new Error("Search service unavailable"))
+        : getDefaultEngine()
+    );
+  const performSearch = AIWindow.performSearch.bind(AIWindow);
+  let lookupsAtPerformSearch = null;
+  let lookupsAtNavigation = null;
+  const performSearchStub = sandbox
+    .stub(AIWindow, "performSearch")
+    .callsFake((...args) => {
+      lookupsAtPerformSearch = getDefaultStub.callCount;
+      return performSearch(...args);
+    });
+  const loadSearchStub = sandbox
+    .stub(SearchUIUtils, "loadSearch")
+    .callsFake(async () => {
+      lookupsAtNavigation = getDefaultStub.callCount;
+      navigated = true;
+    });
+  sandbox
+    .stub(ChatStore, "getMostRecentMessages")
+    .resolves([{ content: { body: "test query" } }]);
+  // The stubbed loadSearch loads no page, so let the wait for one time out at
+  // once rather than after the default 15 seconds.
+  const navigationTimeout = RunSearch.NAVIGATION_TIMEOUT_MS;
+  RunSearch.NAVIGATION_TIMEOUT_MS = 0;
+  try {
+    await withToolCallFixture(
+      async ({
+        mockEngineManager,
+        createConversation,
+        fetchWithHistory,
+        captureChatRequest,
+      }) => {
+        Services.fog.testResetFOG();
+        const conversation = await createConversation();
+        const fetchPromise = fetchWithHistory(conversation);
+        const firstTurn = await captureChatRequest();
+        firstTurn.respond({
+          text: "",
+          toolCalls: [
+            makeToolCall(
+              "call_search",
+              SEARCH_THE_WEB,
+              JSON.stringify({ query: "test query" })
+            ),
+          ],
+        });
+        (await mockSearchManager.captureRequest()).respond(
+          "upstream exploded",
+          { status: 503 }
+        );
+        const chatEngine = mockEngineManager.engines.get(PURPOSES.CHAT);
+        await TestUtils.waitForCondition(
+          () => handoffStub.called || chatEngine.runRequests.size,
+          "Waiting for the search to hand off or return to the model"
+        );
+        if (chatEngine.runRequests.size) {
+          (await captureChatRequest()).respond("The handoff was undone.");
+        }
+        await fetchPromise;
+        mockEngineManager.assertAllRequestsHandled();
+
+        Assert.ok(loadSearchStub.calledOnce, "The search page starts loading");
+        const engine = performSearchStub.firstCall.args[2];
+        Assert.ok(
+          engine,
+          "performSearch is given the engine that was already looked up"
+        );
+        Assert.equal(
+          loadSearchStub.firstCall.args[0].engine,
+          engine,
+          "The search runs on that engine"
+        );
+        Assert.equal(
+          lookupsAtNavigation,
+          lookupsAtPerformSearch,
+          "No engine lookup is awaited between the last stop check and the navigation"
+        );
+        Assert.equal(
+          getDefaultStub.callCount,
+          lookupsAtNavigation,
+          "Nothing looks the engine up again after the navigation"
+        );
+        Assert.ok(
+          handoffStub.calledOnce,
+          "The handoff continues in the sidebar"
+        );
+        Assert.equal(
+          conversation._searchExecutedTurn,
+          conversation.currentTurnIndex(),
+          "The completed handoff keeps the turn marked as handed off"
+        );
+        const handoffEvents = Glean.smartWindow.searchHandoff.testGetValue();
+        Assert.equal(handoffEvents?.length, 1, "The handoff is recorded once");
+        Assert.equal(
+          handoffEvents?.[0]?.extra.provider,
+          engine.name,
+          "The handoff is recorded with the engine it navigated with"
+        );
+        Assert.equal(
+          handoffEvents?.[0]?.extra.reason,
+          "search_failed",
+          "The handoff is recorded as caused by the failed search"
+        );
+      }
+    );
+  } finally {
+    RunSearch.NAVIGATION_TIMEOUT_MS = navigationTimeout;
+    sandbox.restore();
+    mockSearchManager.rejectAllRequests();
+    mockSearchManager.cleanupMocks();
+    await SpecialPowers.popPrefEnv();
+  }
+});
+
+add_task(async function test_handoff_needs_a_default_engine() {
+  // Without a default engine there is nothing to hand off to: the search page
+  // is never opened, nothing marks the turn, and the model answers instead. A
+  // later lookup would succeed, so a handoff that looked the engine up again
+  // after the last stop check would still navigate.
+  await SpecialPowers.pushPrefEnv({
+    set: [
+      [SEARCH_THE_WEB_FAST_PREF, true],
+      [SEARCH_THE_WEB_ANSWERS_PREF, false],
+    ],
+  });
+  const getDefaultEngine = SearchService.getDefault.bind(SearchService);
+  const navigationTimeout = RunSearch.NAVIGATION_TIMEOUT_MS;
+  RunSearch.NAVIGATION_TIMEOUT_MS = 0;
+  try {
+    for (const lookup of ["rejects", "finds_no_engine"]) {
+      info(`Testing a default engine lookup that ${lookup}`);
+      const mockSearchManager = new MockSearchManager();
+      const sandbox = sinon.createSandbox();
+      const handoffStub = sandbox.stub(AIWindow, "openSidebarAndContinue");
+      const performSearchSpy = sandbox.spy(AIWindow, "performSearch");
+      const loadSearchStub = sandbox
+        .stub(SearchUIUtils, "loadSearch")
+        .resolves();
+      let searchFailed = false;
+      let lookupFailed = false;
+      sandbox.stub(SearchService, "getDefault").callsFake(() => {
+        if (!searchFailed || lookupFailed) {
+          return getDefaultEngine();
+        }
+        lookupFailed = true;
+        return lookup === "rejects"
+          ? Promise.reject(new Error("Search service unavailable"))
+          : Promise.resolve(null);
+      });
+      sandbox
+        .stub(ChatStore, "getMostRecentMessages")
+        .resolves([{ content: { body: "test query" } }]);
+      try {
+        await withToolCallFixture(
+          async ({
+            mockEngineManager,
+            createConversation,
+            fetchWithHistory,
+            captureChatRequest,
+          }) => {
+            Services.fog.testResetFOG();
+            const conversation = await createConversation();
+            const fetchPromise = fetchWithHistory(conversation);
+            const firstTurn = await captureChatRequest();
+            const toolCalls = [
+              makeToolCall(
+                "call_search",
+                SEARCH_THE_WEB,
+                JSON.stringify({ query: "test query" })
+              ),
+            ];
+            firstTurn.respond({ text: "", toolCalls });
+            const search = await mockSearchManager.captureRequest();
+            searchFailed = true;
+            search.respond("upstream exploded", { status: 503 });
+
+            const chatEngine = mockEngineManager.engines.get(PURPOSES.CHAT);
+            await TestUtils.waitForCondition(
+              () => handoffStub.called || chatEngine.runRequests.size,
+              "Waiting for the search to hand off or return to the model"
+            );
+            Assert.ok(lookupFailed, "The handoff's engine lookup failed");
+            Assert.ok(
+              chatEngine.runRequests.size,
+              "The model gets the turn back"
+            );
+            if (chatEngine.runRequests.size) {
+              const followupTurn = await captureChatRequest();
+              const { results } = getToolResults(
+                followupTurn.request.args,
+                toolCalls
+              );
+              Assert.ok(
+                JSON.parse(results[0].content).error,
+                "The model is told the search could not be handed off"
+              );
+              followupTurn.respond("I could not search the web just now.");
+            }
+            await fetchPromise;
+            mockEngineManager.assertAllRequestsHandled();
+
+            Assert.ok(
+              performSearchSpy.notCalled && loadSearchStub.notCalled,
+              "The search page is never opened without an engine"
+            );
+            Assert.ok(
+              handoffStub.notCalled,
+              "The conversation does not continue in the sidebar"
+            );
+            Assert.equal(
+              Glean.smartWindow.searchHandoff.testGetValue(),
+              null,
+              "No handoff is recorded"
+            );
+            Assert.deepEqual(
+              getToolCallEvents(),
+              [[SEARCH_THE_WEB, "execution_failed"]],
+              "The search is recorded as failed"
+            );
+            Assert.notEqual(
+              conversation._searchExecutedTurn,
+              conversation.currentTurnIndex(),
+              "The turn is not marked as handed off"
+            );
+          }
+        );
+      } finally {
+        sandbox.restore();
+        mockSearchManager.rejectAllRequests();
+        mockSearchManager.cleanupMocks();
+      }
+    }
+  } finally {
+    RunSearch.NAVIGATION_TIMEOUT_MS = navigationTimeout;
+    await SpecialPowers.popPrefEnv();
+  }
+});
+
+add_task(async function test_stop_during_engine_lookup_leaves_tab_alone() {
+  // The user stops the response while the handoff looks up the default
+  // engine. The search must not start, so the chat's tab is never selected.
+  await SpecialPowers.pushPrefEnv({
+    set: [
+      [SEARCH_THE_WEB_FAST_PREF, true],
+      [SEARCH_THE_WEB_ANSWERS_PREF, false],
+    ],
+  });
+  const getDefaultEngine = SearchService.getDefault.bind(SearchService);
+  const mockSearchManager = new MockSearchManager();
+  const sandbox = sinon.createSandbox();
+  const handoffStub = sandbox.stub(AIWindow, "openSidebarAndContinue");
+  const runSearchSpy = sandbox.spy(RunSearch, "runSearch");
+  try {
+    await withToolCallFixture(
+      async ({
+        mockEngineManager,
+        createConversation,
+        fetchWithHistory,
+        captureChatRequest,
+      }) => {
+        Services.fog.testResetFOG();
+        const controller = new AbortController();
+        let searchFailed = false;
+        const getDefaultStub = sandbox
+          .stub(SearchService, "getDefault")
+          .callsFake(() => {
+            if (searchFailed) {
+              controller.abort();
+            }
+            return getDefaultEngine();
+          });
+        const conversation = await createConversation();
+        const otherTab = await BrowserTestUtils.openNewForegroundTab(
+          gBrowser,
+          "about:blank"
+        );
+        try {
+          const fetchPromise = fetchWithHistory(conversation, {
+            signal: controller.signal,
+          });
+          const firstTurn = await captureChatRequest();
+          firstTurn.respond({
+            text: "",
+            toolCalls: [
+              makeToolCall(
+                "call_search",
+                SEARCH_THE_WEB,
+                JSON.stringify({ query: "test query" })
+              ),
+            ],
+          });
+          const search = await mockSearchManager.captureRequest();
+          searchFailed = true;
+          search.respond("upstream exploded", { status: 503 });
+
+          Assert.equal(
+            await fetchPromise,
+            null,
+            "The stopped response returns without a turn result"
+          );
+          mockEngineManager.assertAllRequestsHandled();
+          Assert.ok(
+            getDefaultStub.called,
+            "The user stopped while the engine was looked up"
+          );
+          Assert.ok(runSearchSpy.notCalled, "The search never starts");
+          Assert.equal(
+            gBrowser.selectedTab,
+            otherTab,
+            "The chat's tab is never selected"
+          );
+          Assert.ok(
+            handoffStub.notCalled,
+            "The conversation does not continue in the sidebar"
+          );
+          Assert.equal(
+            Glean.smartWindow.searchHandoff.testGetValue(),
+            null,
+            "No handoff is recorded"
+          );
+          Assert.deepEqual(
+            getToolCallEvents(),
+            [[SEARCH_THE_WEB, "execution_failed"]],
+            "The failed search is recorded once"
+          );
+          Assert.notEqual(
+            conversation._searchExecutedTurn,
+            conversation.currentTurnIndex(),
+            "The stopped handoff does not mark the turn as handed off"
+          );
+        } finally {
+          BrowserTestUtils.removeTab(otherTab);
+        }
+      }
+    );
+  } finally {
+    sandbox.restore();
+    mockSearchManager.rejectAllRequests();
+    mockSearchManager.cleanupMocks();
+    await SpecialPowers.popPrefEnv();
+  }
+});
+
+add_task(async function test_stop_before_tab_switch_leaves_tab_alone() {
+  // A stopped response must not start the search, so the chat's tab is never
+  // selected and a full-page chat never moves to the sidebar. A conversation
+  // supplies the first-turn query itself. Without one, the query is read from
+  // the stored messages, and the user stops during that read.
+  const engine = await SearchService.getDefault();
+  for (const withConversation of [true, false]) {
+    info(
+      `Stopping a search ${withConversation ? "with" : "without"} a conversation`
+    );
+    const controller = new AbortController();
+    const sandbox = sinon.createSandbox();
+    const readStub = sandbox
+      .stub(ChatStore, "getMostRecentMessages")
+      .callsFake(async () => {
+        controller.abort();
+        return [{ content: { body: "test query" } }];
+      });
+    const performSearchSpy = sandbox.spy(AIWindow, "performSearch");
+    const chatTab = await BrowserTestUtils.openNewForegroundTab(
+      gBrowser,
+      "about:blank"
+    );
+    const otherTab = await BrowserTestUtils.openNewForegroundTab(
+      gBrowser,
+      "about:blank"
+    );
+    try {
+      let conversation;
+      if (withConversation) {
+        conversation = new ChatConversation({
+          pageUrl: new URL("https://example.com"),
+          pageMeta: {},
+        });
+        conversation.addUserMessage("test query");
+        controller.abort();
+      }
+      await Assert.rejects(
+        RunSearch.runSearch(
+          {},
+          chatTab.linkedBrowser.browsingContext,
+          conversation,
+          engine,
+          controller.signal
+        ),
+        e => e.name === "AbortError",
+        "The stopped response cancels the search"
+      );
+      Assert.equal(
+        readStub.callCount,
+        withConversation ? 0 : 1,
+        "Only a search without a conversation reads the stored messages"
+      );
+      Assert.equal(
+        gBrowser.selectedTab,
+        otherTab,
+        "The chat's tab is never selected"
+      );
+      Assert.ok(
+        performSearchSpy.notCalled,
+        "The search page never starts loading"
+      );
+    } finally {
+      sandbox.restore();
+      BrowserTestUtils.removeTab(otherTab);
+      BrowserTestUtils.removeTab(chatTab);
+    }
+  }
+});
+
+add_task(async function test_first_turn_search_uses_this_conversation() {
+  // A first-turn handoff searches for the user's own message. It comes from
+  // this conversation, not from the newest stored message, which can belong
+  // to another chat. A conversation without a user message gets an error
+  // rather than falling back to the stored messages.
+  const engine = await SearchService.getDefault();
+  const sandbox = sinon.createSandbox();
+  const readStub = sandbox
+    .stub(ChatStore, "getMostRecentMessages")
+    .resolves([{ content: { body: "A message from another chat" } }]);
+  const performSearchStub = sandbox.stub(AIWindow, "performSearch").resolves();
+  // The stubbed performSearch loads no page, so let the wait for one time out
+  // at once rather than after the default 15 seconds.
+  const navigationTimeout = RunSearch.NAVIGATION_TIMEOUT_MS;
+  RunSearch.NAVIGATION_TIMEOUT_MS = 0;
+  const chatTab = await BrowserTestUtils.openNewForegroundTab(
+    gBrowser,
+    "about:blank"
+  );
+  try {
+    const emptyConversation = new ChatConversation({
+      pageUrl: new URL("https://example.com"),
+      pageMeta: {},
+    });
+    Assert.equal(
+      await RunSearch.runSearch(
+        {},
+        chatTab.linkedBrowser.browsingContext,
+        emptyConversation,
+        engine
+      ),
+      "Error: no user messages stored to use as the search query.",
+      "A conversation without a user message gets an error"
+    );
+
+    const conversation = new ChatConversation({
+      pageUrl: new URL("https://example.com"),
+      pageMeta: {},
+    });
+    conversation.addUserMessage("An earlier question");
+    conversation.addAssistantMessage("text", "An earlier answer");
+    conversation.addUserMessage("What is the weather in Paris?");
+    await RunSearch.runSearch(
+      {},
+      chatTab.linkedBrowser.browsingContext,
+      conversation,
+      engine
+    );
+    Assert.ok(performSearchStub.calledOnce, "The search starts");
+    Assert.equal(
+      performSearchStub.firstCall.args[0],
+      "What is the weather in Paris?",
+      "The search uses this conversation's last user message"
+    );
+    Assert.ok(
+      readStub.notCalled,
+      "The stored messages of other chats are not read"
+    );
+  } finally {
+    RunSearch.NAVIGATION_TIMEOUT_MS = navigationTimeout;
+    sandbox.restore();
+    BrowserTestUtils.removeTab(chatTab);
   }
 });
 

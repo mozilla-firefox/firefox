@@ -18,7 +18,8 @@
  *   reads a page itself.
  *
  * Whichever runs, the main assistant uses the result to decide whether to
- * answer in chat or fall back to a Google handoff. The paths are deliberately
+ * answer in chat or fall back to a Google handoff. A search provider failure
+ * falls back to the handoff without the assistant. The paths are deliberately
  * kept as separate entrypoints so that whichever ones lose can be deleted
  * whole. All the logic lives here as functions — there is no separate agent
  * object because there is no state to carry between calls.
@@ -241,8 +242,9 @@ const GET_PAGE_CONTENT_TOOL = {
  * The result returned by the answers path. Unlike the other two paths this one
  * is not something the assistant answers *from*: /answers writes the reply
  * itself, so `directAnswerStream` is delivered to the user as the assistant
- * turn (see Chat.sys.mjs). It is absent on failure, which puts the model back
- * in charge so it can fall back to search handoff.
+ * turn (see Chat.sys.mjs). It is absent when no answer comes back, which puts
+ * the model back in charge. A failed request returns a SearchHandoffResult
+ * instead.
  *
  * @typedef {object} AnswersSearchWorkflowResult
  * @property {AsyncGenerator<object>} [directAnswerStream] - Reply to deliver.
@@ -252,6 +254,15 @@ const GET_PAGE_CONTENT_TOOL = {
  * @property {string[]} read_urls - URLs /answers cited (code-tracked).
  * @property {boolean} requiresSearchHandoff - Whether to route to search handoff.
  * @property {string} [error] - Present when the flow could not run.
+ */
+
+/**
+ * The result that routes the turn to search handoff. Chat.sys.mjs performs the
+ * handoff unless the response was stopped.
+ *
+ * @typedef {object} SearchHandoffResult
+ * @property {true} requiresSearchHandoff - Always true.
+ * @property {string} [error] - Present when the search provider failed.
  */
 
 /**
@@ -572,6 +583,21 @@ function answersFailure(message) {
   };
 }
 
+/**
+ * Builds the result for a search provider failure, such as a timeout or an
+ * HTTP, network or configuration error, which routes the turn to search
+ * handoff.
+ *
+ * @param {string} message
+ * @returns {SearchHandoffResult}
+ */
+function providerFailure(message) {
+  return {
+    error: message,
+    requiresSearchHandoff: true,
+  };
+}
+
 function shouldCallSearchHandoff(conversation) {
   return conversation._searchTheWebTurn === conversation.currentTurnIndex();
 }
@@ -589,7 +615,7 @@ function shouldCallSearchHandoff(conversation) {
  * @param {AbortSignal} [signal] - Cancels the in-flight answer generation.
  * @param {string} [mode] - Surface the tool ran on, for telemetry.
  * @param {boolean} [shouldHandoff] - Whether a search ran before this batch.
- * @returns {Promise<SearchWorkflowResult|FastSearchWorkflowResult|AnswersSearchWorkflowResult>}
+ * @returns {Promise<SearchWorkflowResult|FastSearchWorkflowResult|AnswersSearchWorkflowResult|SearchHandoffResult>}
  */
 export async function runSearchTheWeb(
   toolParams,
@@ -665,7 +691,9 @@ function recordAnswerCitations(citations, conversation) {
 }
 
 /**
- * Runs one /answers request and returns the answer with the URLs it cited.
+ * Runs one /answers request and returns the answer with the citations it came
+ * back with. Recording the citations is left to the caller, so that a local
+ * failure there is not mistaken for a failed request.
  *
  * Non-streaming, unlike every other LLM call in this component: MLPA only
  * populates `provider_specific_fields` on a complete response, so streaming the
@@ -676,8 +704,9 @@ function recordAnswerCitations(citations, conversation) {
  * @param {string} params.query
  * @param {ChatConversation} params.conversation
  * @param {AbortSignal} [params.signal]
- * @returns {Promise<{answer: string, readUrls: string[]}>}
- * @throws {Error} When the request fails, or comes back with no answer.
+ * @returns {Promise<?{answer: string, citations: unknown}>} The answer with the
+ *   raw `citations` field, or null when the request comes back with no answer.
+ * @throws {Error} When the request fails.
  */
 async function requestAnswer({ query, conversation, signal }) {
   // Built directly rather than through buildConversation: the model and service
@@ -703,7 +732,7 @@ async function requestAnswer({ query, conversation, signal }) {
 
   const answer = (response?.finalOutput ?? "").trim();
   if (!answer) {
-    throw new Error("no answer");
+    return null;
   }
 
   return {
@@ -711,10 +740,7 @@ async function requestAnswer({ query, conversation, signal }) {
       answer.length > MAX_ANSWER_LENGTH
         ? answer.slice(0, MAX_ANSWER_LENGTH) + "…"
         : answer,
-    readUrls: recordAnswerCitations(
-      response?.providerSpecificFields?.citations,
-      conversation
-    ),
+    citations: response?.providerSpecificFields?.citations,
   };
 }
 
@@ -755,16 +781,16 @@ async function* answerAsStream(text, signal) {
 /**
  * Answers path. Hands the query to Exa's /answers service, which runs its own
  * retrieval and writes the answer, and returns that answer as a stream for the
- * chat loop to deliver as the assistant turn. A failed request returns a result
- * carrying no stream rather than throwing, so the main assistant regains the
- * turn and can fall back to the Google handoff.
+ * chat loop to deliver as the assistant turn. A failed request routes the turn
+ * to the Google handoff. A request that comes back with no answer returns a
+ * result carrying no stream, so the main assistant regains the turn.
  *
  * @param {object} toolParams
  * @param {string} toolParams.query - Search query (may be rewritten by the assistant).
  * @param {ChatConversation} conversation - Originating conversation; owns the
  *   anonymous-fetch ledger and security state a follow-up page read depends on.
  * @param {AbortSignal} [signal] - Cancels the in-flight request.
- * @returns {Promise<AnswersSearchWorkflowResult>}
+ * @returns {Promise<AnswersSearchWorkflowResult|SearchHandoffResult>}
  */
 async function runAnswersSearch(toolParams, conversation, signal) {
   const query = toolParams?.query;
@@ -773,18 +799,22 @@ async function runAnswersSearch(toolParams, conversation, signal) {
   }
   conversation._searchTheWebTurn = conversation.currentTurnIndex();
 
-  let answer;
-  let readUrls;
+  let response;
   try {
-    ({ answer, readUrls } = await requestAnswer({
+    response = await requestAnswer({
       query: query.trim(),
       conversation,
       signal,
-    }));
+    });
   } catch (e) {
     lazy.console.error("answers request failed:", e);
-    return answersFailure(e.message);
+    return providerFailure(e.message);
   }
+  if (!response) {
+    return answersFailure("no answer");
+  }
+  const { answer } = response;
+  const readUrls = recordAnswerCitations(response.citations, conversation);
 
   lazy.console.log("[Tool] searchTheWeb (answers)", {
     query,
@@ -833,9 +863,9 @@ function recordFastSearchTelemetry({
 
 /**
  * Fast path. Runs one Exa retrieval and returns the sanitized results for the
- * main assistant to answer from. Errors are returned as a result with no
- * results rather than thrown, so the assistant can fall back to the Google
- * handoff.
+ * main assistant to answer from. Errors are returned rather than thrown: a
+ * failed retrieval routes the turn to the Google handoff, and any other error
+ * comes back as a result with no results for the assistant to handle.
  *
  * Telemetry is recorded in a `finally` so every early return in the flow is
  * covered without repeating the call at each one.
@@ -845,7 +875,7 @@ function recordFastSearchTelemetry({
  * @param {ChatConversation} conversation - Originating conversation; owns the
  *   anonymous-fetch ledger and security state a follow-up page read depends on.
  * @param {string} [mode] - Surface the tool ran on, for telemetry.
- * @returns {Promise<FastSearchWorkflowResult>}
+ * @returns {Promise<FastSearchWorkflowResult|SearchHandoffResult>}
  */
 async function runFastSearch(toolParams, conversation, mode) {
   /** @type {FastSearchStats} */
@@ -885,7 +915,7 @@ async function runFastSearch(toolParams, conversation, mode) {
  * @param {object} toolParams
  * @param {ChatConversation} conversation
  * @param {FastSearchStats} stats - Mutated in place as the flow progresses.
- * @returns {Promise<FastSearchWorkflowResult>}
+ * @returns {Promise<FastSearchWorkflowResult|SearchHandoffResult>}
  */
 async function runFastSearchFlow(toolParams, conversation, stats) {
   const query = toolParams?.query;
@@ -910,7 +940,7 @@ async function runFastSearchFlow(toolParams, conversation, stats) {
     stats.error =
       e?.searchErrorCategory ?? SEARCH_TELEMETRY_ERRORS.RETRIEVAL_FAILED;
     stats.httpStatus = e?.httpStatus ?? 0;
-    return fastFailure(e.message);
+    return providerFailure(e.message);
   } finally {
     stats.retrieval = ChromeUtils.now() - retrievalStart;
     ChromeUtils.addProfilerMarker(
@@ -986,9 +1016,9 @@ async function runFastSearchFlow(toolParams, conversation, stats) {
 /**
  * Grounded path. Runs one Exa retrieval, drives the on-demand page reads
  * (bounded by MAX_PAGES), generates and validates the grounded answer, and
- * returns the structured result. Errors are returned as a result with
- * could_answer false rather than thrown, so the main assistant can fall back to
- * the Google handoff.
+ * returns the structured result. Errors are returned rather than thrown: a
+ * failed retrieval routes the turn to the Google handoff, and any other error
+ * comes back as a result with could_answer false for the assistant to handle.
  *
  * @param {object} toolParams
  * @param {string} toolParams.query - Search query (may be rewritten by the assistant).
@@ -996,7 +1026,7 @@ async function runFastSearchFlow(toolParams, conversation, stats) {
  * @param {ChatConversation} conversation - Originating conversation; owns the
  *   anonymous-fetch ledger and security state the page reads depend on.
  * @param {AbortSignal} [signal] - Cancels the in-flight answer generation.
- * @returns {Promise<SearchWorkflowResult>}
+ * @returns {Promise<SearchWorkflowResult|SearchHandoffResult>}
  */
 async function runGroundedSearch(toolParams, conversation, signal) {
   const query = toolParams?.query;
@@ -1017,7 +1047,7 @@ async function runGroundedSearch(toolParams, conversation, signal) {
     results = response.results;
   } catch (e) {
     lazy.console.error("retrieval failed:", e);
-    return failure([], [], e.message);
+    return providerFailure(e.message);
   }
 
   results = results.filter(item => isValidHttpUrl(item?.url));

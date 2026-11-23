@@ -538,8 +538,10 @@ smart_window:
       A search toolcall is made due to assistant requiring more information to respond to a prompt
     bugs:
       - https://bugzilla.mozilla.org/show_bug.cgi?id=2024869
+      - https://bugzilla.mozilla.org/show_bug.cgi?id=2093742
     data_reviews:
       - https://phabricator.services.mozilla.com/D287975
+      - https://bugzilla.mozilla.org/show_bug.cgi?id=2093742
     data_sensitivity:
       - interaction
     notification_emails: *emails
@@ -556,6 +558,13 @@ smart_window:
         type: string
         description: >
           Model selected by the user
+      reason:
+        type: string
+        description: >
+          Why the search was handed off. "search_failed" means the search
+          provider behind search_the_web failed. "repeat_search" means the
+          model called search_the_web again in the same turn. "model_request"
+          means the model asked for run_search directly.
 
   tool_call:
     type: event
@@ -860,9 +869,11 @@ smart_window:
       attributed to the Exa retrieval or to processing the results, and so
       failed searches can be told apart from searches that returned nothing.
 
-      Only the snippets-based flow is reported. The flow is not recorded when
-      it escalates to the Google handoff, which retrieves nothing of its own
-      and is covered by smart_window.search_handoff.
+      Only the snippets-based flow is reported. A flow whose retrieval fails
+      is still recorded, with its error category, before the turn hands off
+      to the Google handoff. The flow is not recorded when a repeat call
+      escalates to the Google handoff, which retrieves nothing of its own and
+      is covered by smart_window.search_handoff.
 
       These durations cover the tool call only. The event is recorded when the
       flow returns its snippets to the assistant, before any of it has been

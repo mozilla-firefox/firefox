@@ -1132,6 +1132,11 @@ add_task(
         "",
         "A handoff is not reported as a failed search"
       );
+      Assert.equal(
+        Glean.smartWindow.searchHandoff.testGetValue()?.[0]?.extra.reason,
+        "repeat_search",
+        "The handoff is recorded as caused by the repeat search"
+      );
 
       origLazy.AIWindow.openSidebarAndContinue = origOpenSidebar;
     } finally {
@@ -1643,6 +1648,42 @@ add_task(
     }
   }
 );
+
+add_task(async function test_Chat_executeToolByName_direct_run_search_reason() {
+  // A run_search call that does not come from a search_the_web handoff was
+  // requested by the model directly, and is recorded as such.
+  const sb = sinon.createSandbox();
+  Services.fog.initializeFOG();
+  Services.fog.testResetFOG();
+  try {
+    sb.stub(RunSearch, "runSearch").resolves("search result");
+    const conversation = new ChatConversation({
+      title: "direct run_search test",
+      description: "desc",
+      pageUrl: new URL("https://www.firefox.com"),
+      pageMeta: {},
+    });
+
+    await executeToolByName(
+      "run_search",
+      { query: "test query" },
+      "tool-call-id",
+      conversation,
+      /* browsingContext */ null,
+      "fullpage"
+    );
+
+    const handoffEvents = Glean.smartWindow.searchHandoff.testGetValue();
+    Assert.equal(handoffEvents?.length, 1, "The handoff is recorded once");
+    Assert.equal(
+      handoffEvents[0].extra.reason,
+      "model_request",
+      "A direct run_search is recorded as requested by the model"
+    );
+  } finally {
+    sb.restore();
+  }
+});
 
 add_task(
   async function test_Chat_executeToolByName_throws_unknownTool_clientReason() {
