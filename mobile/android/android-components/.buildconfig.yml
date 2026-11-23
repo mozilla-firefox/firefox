@@ -1445,13 +1445,11 @@ projects:
     path: components/feature/readerview
     publish: true
     upstream_dependencies:
-    - components:browser-menu
     - components:browser-state
     - components:concept-awesomebar
     - components:concept-base
     - components:concept-engine
     - components:concept-fetch
-    - components:concept-menu
     - components:concept-storage
     - components:concept-storage-bookmarks
     - components:lib-publicsuffixlist
@@ -1463,7 +1461,6 @@ projects:
     - components:support-utils
     - components:support-webextensions
     - components:tooling-lint
-    - components:ui-colors
     - components:ui-icons
   components:feature-recentlyclosed:
     description: Feature implementation for saving and restoring recently closed tabs
