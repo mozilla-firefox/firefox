@@ -607,6 +607,8 @@ skip-if = [
 ["browser_tab_splitview_footer.js"]
 support-files = ["file_withicon.html"]
 
+["browser_tab_splitview_initial_width.js"]
+
 ["browser_tab_splitview_keyboard_focus.js"]
 
 ["browser_tab_splitview_resize.js"]

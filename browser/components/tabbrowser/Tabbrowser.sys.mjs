@@ -4158,16 +4158,36 @@ export class Tabbrowser {
    *   An optional argument that accepts a single tab, which, if passed, will
    *   cause the split view to be inserted just before this tab in the tab strip. By
    *   default, the split view will be created at the end of the tab strip.
+   * @param {number|null} [options.firstPanelInitialWidthPercent]
+   *   The initial width of the first Split View panel, expressed as a
+   *   percentage of the tabpanels width. Values are clamped to the range
+   *   from 20 to 80 and converted to pixels on first activation. The panel's
+   *   layout constraints may further limit its rendered width. Omit the option
+   *   to use the default panel sizing.
    * @param {string} [options.trigger]
    *   The trigger method for creating the split view. Used for telemetry.
    *   Valid values: "menu_add", "menu_open".
    */
   addTabSplitView(
     tabs,
-    { id = null, insertBefore = null, trigger = null } = {}
+    {
+      id = null,
+      firstPanelInitialWidthPercent,
+      insertBefore = null,
+      trigger = null,
+    } = {}
   ) {
     if (!tabs?.length) {
       throw new Error("Cannot create split view with zero tabs");
+    }
+
+    if (
+      firstPanelInitialWidthPercent != null &&
+      !Number.isFinite(firstPanelInitialWidthPercent)
+    ) {
+      throw new TypeError(
+        "firstPanelInitialWidthPercent must be a finite number"
+      );
     }
 
     // Capture group information before tabs are moved
@@ -4183,7 +4203,7 @@ export class Tabbrowser {
       splitview,
       insertBefore?.splitview ?? insertBefore
     );
-    splitview.addTabs(tabs);
+    splitview.addTabs(tabs, { firstPanelInitialWidthPercent });
 
     // Bail out if the split view is empty at this point. This can happen if all
     // provided tabs are pinned and therefore cannot be grouped.
