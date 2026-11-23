@@ -7,6 +7,7 @@
     <string name="mozac_feature_ipprotection_eligibility">Eligibility</string>
     <string name="mozac_feature_ipprotection_eligibilitystatus">eligibilityStatus</string>
     <string name="mozac_feature_ipprotection_name">IP Protection</string>
+    <string name="mozac_feature_ipprotection_currentauthprovider">currentAuthProvider</string>
     <string name="mozac_feature_ipprotection_proxystatus">proxyStatus</string>
     <string name="mozac_feature_ipprotection_servicestatus">serviceStatus</string>
     <string name="mozac_feature_ipprotection_lasterror">lastError</string>

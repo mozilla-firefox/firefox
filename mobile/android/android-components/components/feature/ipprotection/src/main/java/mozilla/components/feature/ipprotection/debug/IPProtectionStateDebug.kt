@@ -97,6 +97,10 @@ fun IPProtectionStateDebugContent(
 
             DebugSection(title = stringResource(R.string.mozac_feature_ipprotection_name)) {
                 DebugRow(
+                    stringResource(R.string.mozac_feature_ipprotection_currentauthprovider),
+                    state.currentAuthProvider.toString(),
+                )
+                DebugRow(
                     stringResource(R.string.mozac_feature_ipprotection_proxystatus),
                     state.proxyStatus.toString(),
                 )
