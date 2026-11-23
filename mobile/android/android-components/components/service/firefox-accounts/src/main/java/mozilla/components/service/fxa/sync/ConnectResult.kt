@@ -4,8 +4,6 @@
 
 package mozilla.components.service.fxa.sync
 
-import mozilla.components.concept.sync.SyncEngine
-
 /** The result of calling [SyncManager.connect] */
 sealed interface ConnectResult {
 
@@ -25,18 +23,3 @@ sealed interface ConnectResult {
         data object NeedsSyncAuthorization : Failure
     }
 }
-
-/**
- * Parameters for [SyncManager.connect].
- *
- * @property engines The engines to sync when [initiateSync] is `true`. If empty, all supported engines are synced. Has
- *   no effect when [initiateSync] is `false`. The engines specified must always be a subset of
- *   [mozilla.components.concept.sync.SyncConfig.supportedEngines]
- * @property initiateSync Whether to initiate a sync immediately after connecting.
- * @property reason The [SyncReason] reported for the sync initiated by [initiateSync].
- */
-data class ConnectParams(
-    val engines: Set<SyncEngine> = emptySet(),
-    val initiateSync: Boolean = false,
-    val reason: SyncReason = SyncReason.User,
-)

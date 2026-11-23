@@ -14,9 +14,9 @@ import androidx.work.impl.utils.taskexecutor.TaskExecutor
 import androidx.work.testing.SynchronousExecutor
 import androidx.work.testing.WorkManagerTestInitHelper
 import kotlin.test.assertEquals
-import kotlin.test.assertFailsWith
 import kotlin.test.assertFalse
 import kotlin.test.assertIs
+import kotlin.test.assertNotEquals
 import kotlin.test.assertNotNull
 import kotlin.test.assertNull
 import kotlin.test.assertTrue
@@ -28,6 +28,7 @@ import kotlinx.coroutines.test.runTest
 import mozilla.appservices.sync15.DeviceType
 import mozilla.appservices.syncmanager.DeviceSettings
 import mozilla.appservices.syncmanager.ServiceStatus
+import mozilla.appservices.syncmanager.SyncReason as RustSyncReason
 import mozilla.appservices.syncmanager.SyncResult
 import mozilla.components.concept.sync.AccessTokenInfo
 import mozilla.components.concept.sync.AccountObserver
@@ -302,7 +303,7 @@ class WorkManagerSyncManagerTest {
             syncManager.initialize()
             runCurrent()
 
-            val result = syncManager.connect(params = ConnectParams())
+            val result = syncManager.connect()
 
             assertEquals(ConnectResult.Failure.NeedsAuthentication, result)
         }
@@ -316,7 +317,7 @@ class WorkManagerSyncManagerTest {
             syncManager.initialize()
             runCurrent()
 
-            val result = syncManager.connect(ConnectParams())
+            val result = syncManager.connect()
 
             assertEquals(ConnectResult.Failure.NeedsSyncAuthorization, result)
         }
@@ -337,7 +338,7 @@ class WorkManagerSyncManagerTest {
             syncManager.initialize()
             runCurrent()
 
-            syncManager.connect(ConnectParams())
+            syncManager.connect()
 
             val syncConnectedInStorage = syncStateStorage.syncConnected
             assertNotNull(syncConnectedInStorage, "Sync connected state in storage should not be null")
@@ -354,7 +355,7 @@ class WorkManagerSyncManagerTest {
 
             val syncManager = createSyncManager(syncConfig = syncConfigWithDecoupling)
             syncManager.initialize()
-            syncManager.connect(ConnectParams())
+            syncManager.connect()
             runCurrent()
 
             assertEquals(
@@ -380,7 +381,7 @@ class WorkManagerSyncManagerTest {
                     syncConfig = syncConfigWithDecoupling,
                 )
             syncManager.initialize()
-            syncManager.connect(ConnectParams())
+            syncManager.connect()
             runCurrent()
 
             assertEquals(
@@ -391,73 +392,55 @@ class WorkManagerSyncManagerTest {
         }
 
     @Test
-    fun `GIVEN sync decoupling is on, sync is disconnected, WHEN connect is called with unsupported engines, THEN an IllegalStateException is thrown and sync remains disconnected`() =
-        runTest(testDispatcher) {
-            val account = TestAccount(initialScopes = setOf(SCOPE_SYNC))
-            whenever(accountManager.connectedAccount()).thenReturn(account)
-            val syncStateStorage = TestSyncStateStorage()
-            syncStateStorage.storeSyncConnected(connected = false)
-
-            val syncManager =
-                createSyncManager(
-                    syncConfig = syncConfigWithDecoupling,
-                    syncStateStorage = syncStateStorage,
-                    start = false,
-                )
-            syncManager.initialize()
-            runCurrent()
-
-            assertFailsWith<IllegalStateException> {
-                syncManager.connect(ConnectParams(engines = setOf(SyncEngine.Passwords), initiateSync = true))
-            }
-
-            assertEquals(
-                SyncConnectionState.Disconnected,
-                syncManager.syncConnectionState.value,
-                "Sync should not be connected",
-            )
-        }
-
-    @Test
-    fun `GIVEN connected account with sync scope, WHEN connect is called with initiateSync=true, THEN immediate sync is initiated`() =
+    fun `GIVEN connected account with sync scope, WHEN connect is called, THEN first sync is initiated`() =
         runTest(testDispatcher) {
             whenever(accountManager.connectedAccount()).thenReturn(TestAccount(initialScopes = setOf(SCOPE_SYNC)))
 
+            val testRustSyncManager = TestRustSyncManager().apply { expectSuccessfulSync() }
             val syncManager =
                 createSyncManager(
+                    testRustSyncManager = testRustSyncManager,
                     syncConfig = defaultSyncConfig,
                     start = false,
                 )
             syncManager.initialize()
             runCurrent()
 
-            syncManager.connect(ConnectParams(initiateSync = true))
+            syncManager.connect()
 
             val workManager = WorkManager.getInstance(testContext)
             val immediateWork =
                 workManager.getWorkInfos(WorkQuery.fromUniqueWorkNames(SyncWorkerName.Immediate.name)).get()
             assertEquals(1, immediateWork.size, "Unexpected count of immediate sync work")
+
+            runSyncWorkers(tags = listOf(SyncWorkerTag.Common.name))
+            testDispatcher.scheduler.advanceUntilIdle()
+
+            assertEquals(RustSyncReason.ENABLED_CHANGE, testRustSyncManager.requestedSyncParams.reason)
         }
 
     @Test
-    fun `GIVEN connected account with sync scope, WHEN connect is called with initiateSync=false, THEN no immediate sync is initiated`() =
+    fun `GIVEN pending startup sync, WHEN connect is called, THEN first sync replaces it`() =
         runTest(testDispatcher) {
             whenever(accountManager.connectedAccount()).thenReturn(TestAccount(initialScopes = setOf(SCOPE_SYNC)))
-
-            val syncManager =
-                createSyncManager(
-                    syncConfig = defaultSyncConfig.copy(periodicSyncConfig = PeriodicSyncConfig()),
-                    start = false,
-                )
+            val testRustSyncManager = TestRustSyncManager().apply { expectSuccessfulSync() }
+            val syncManager = createSyncManager(testRustSyncManager = testRustSyncManager)
             syncManager.initialize()
             runCurrent()
-
-            syncManager.connect(ConnectParams(initiateSync = false))
-
+            syncManager.now(SyncReason.Startup)
             val workManager = WorkManager.getInstance(testContext)
-            val immediateWork =
-                workManager.getWorkInfos(WorkQuery.fromUniqueWorkNames(SyncWorkerName.Immediate.name)).get()
-            assertEquals(0, immediateWork.size, "Unexpected count of immediate sync work")
+            val startupWork = workManager.getWorkInfosForUniqueWork(SyncWorkerName.Immediate.name).get().single()
+
+            syncManager.connect()
+
+            assertNull(workManager.getWorkInfoById(startupWork.id).get())
+            val firstWork = workManager.getWorkInfosForUniqueWork(SyncWorkerName.Immediate.name).get().single()
+            assertNotEquals(startupWork.id, firstWork.id)
+
+            runSyncWorkers(tags = listOf(SyncWorkerTag.Common.name))
+            testDispatcher.scheduler.advanceUntilIdle()
+
+            assertEquals(RustSyncReason.ENABLED_CHANGE, testRustSyncManager.requestedSyncParams.reason)
         }
 
     @Test
@@ -473,7 +456,7 @@ class WorkManagerSyncManagerTest {
             syncManager.initialize()
             runCurrent()
 
-            syncManager.connect(ConnectParams(initiateSync = false))
+            syncManager.connect()
 
             val periodicWork =
                 WorkManager.getInstance(testContext)
@@ -488,7 +471,7 @@ class WorkManagerSyncManagerTest {
             val testRustSyncManager = TestRustSyncManager()
             val syncManager =
                 createSyncManager(syncConfig = syncConfigWithDecoupling, testRustSyncManager = testRustSyncManager)
-            syncManager.connect(ConnectParams(initiateSync = false))
+            syncManager.connect()
 
             assertTrue(
                 testRustSyncManager.isConnected,
@@ -506,7 +489,7 @@ class WorkManagerSyncManagerTest {
             whenever(accountManager.authenticatedAccount()).thenReturn(TestAccount())
             val syncManager = createSyncManager(syncConfig = syncConfigWithDecoupling, start = true)
             syncManager.initialize()
-            syncManager.connect(ConnectParams(initiateSync = true))
+            syncManager.connect()
             runCurrent()
 
             syncManager.disconnect()
@@ -536,7 +519,7 @@ class WorkManagerSyncManagerTest {
                     start = true,
                 )
             syncManager.initialize()
-            syncManager.connect(ConnectParams(initiateSync = true))
+            syncManager.connect()
             syncManager.setEngineEnabled(engine = SyncEngine.Tabs, enabled = true)
             runCurrent()
 
@@ -567,7 +550,7 @@ class WorkManagerSyncManagerTest {
                     start = false,
                 )
 
-            syncManager.connect(ConnectParams(initiateSync = true))
+            syncManager.connect()
 
             runSyncWorkers(tags = listOf(SyncWorkerTag.Common.name))
 
@@ -608,7 +591,7 @@ class WorkManagerSyncManagerTest {
                 syncManager.syncConnectionState.collect { syncConnectionStates.add(it) }
             }
 
-            syncManager.connect(ConnectParams(initiateSync = false))
+            syncManager.connect()
             runCurrent()
 
             syncManager.disconnect()

@@ -160,9 +160,7 @@ internal class WorkManagerSyncManager(
         }
     }
 
-    override suspend fun connect(params: ConnectParams): ConnectResult {
-        if (params.initiateSync) checkSupportedEngines(params.engines)
-
+    override suspend fun connect(): ConnectResult {
         return withContext(coroutineContext) {
             logger.info("connect - setting up sync")
 
@@ -171,7 +169,7 @@ internal class WorkManagerSyncManager(
                 when {
                     account == null -> ConnectResult.Failure.NeedsAuthentication
                     !account.hasScope(SCOPE_SYNC) -> ConnectResult.Failure.NeedsSyncAuthorization
-                    else -> connectSync(params)
+                    else -> connectSync()
                 }
             logger.info("connect - result = $result")
             result
@@ -188,18 +186,16 @@ internal class WorkManagerSyncManager(
         }
     }
 
-    private suspend fun connectSync(params: ConnectParams): ConnectResult.Success {
+    private suspend fun connectSync(): ConnectResult.Success {
         syncStateStorageProvider.get().storeSyncConnected(connected = true)
 
         // Call start only if we don't already have a sync dispatcher
         if (syncDispatcher == null) start()
-        if (params.initiateSync) {
-            now(
-                reason = params.reason,
-                debounce = false,
-                customEngineSubset = params.engines.toList(),
-            )
-        }
+
+        now(
+            reason = SyncReason.FirstSync,
+            debounce = false,
+        )
 
         return ConnectResult.Success
     }
@@ -336,13 +332,12 @@ internal class WorkManagerSyncDispatcher(
         // Use the 'keep' policy to minimize overhead from multiple "sync now" operations coming in
         // at the same time. However, this policy means that if we are in a "retry" state the sync
         // doesn't happen until that retry expires - which could be 5 hours!
-        // So if the user is requesting a "sync now" then we do not want that retry state to be
-        // enforced, and we rely on the UI disabling the "sync now" button to avoid multi
-        // user-requested syncs.
+        // So a full user-requested or first sync replaces pending work instead. We rely on the UI
+        // disabling the "sync now" button to avoid multiple user-requested syncs.
         // Only a sync of every engine gets to replace a scheduled work manager sync work: a subset sync would otherwise
         // cancel a broader sync that hasn't started yet, dropping the engines it doesn't cover.
         val policy =
-            if (reason == SyncReason.User && customEngineSubset.isEmpty()) {
+            if ((reason == SyncReason.User || reason == SyncReason.FirstSync) && customEngineSubset.isEmpty()) {
                 ExistingWorkPolicy.REPLACE
             } else {
                 ExistingWorkPolicy.KEEP

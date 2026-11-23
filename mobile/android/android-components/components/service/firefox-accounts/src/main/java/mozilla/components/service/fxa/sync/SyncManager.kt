@@ -154,10 +154,9 @@ internal abstract class SyncManager(private val syncConfig: SyncConfig) {
     /**
      * Configures and initializes sync, persisting that sync is connected on this device.
      *
-     * @param params The [ConnectParams] describing how sync should be connected.
      * @return [ConnectResult.Success] once sync is connected, or [ConnectResult.Failure] if connect did not succeed
      */
-    abstract suspend fun connect(params: ConnectParams): ConnectResult
+    abstract suspend fun connect(): ConnectResult
 
     /** Disconnect sync on this device. */
     abstract suspend fun disconnect()
