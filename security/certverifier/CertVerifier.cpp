@@ -577,7 +577,7 @@ Result CertVerifier::VerifyCert(
       NSSCertDBTrustDomain trustDomain(
           trustEmail, defaultRevCheckMode, mOCSPCache, mSignatureCache.get(),
           mTrustCache.get(), pinArg, mOCSPTimeoutSoft, mOCSPTimeoutHard,
-          mCertShortLifetimeInDays, MIN_RSA_BITS_WEAK, mCRLiteMode,
+          mCertShortLifetimeInDays, MIN_RSA_BITS_WEAK, CRLiteMode::Disabled,
           originAttributes, mThirdPartyRootInputs,
           mThirdPartyIntermediateInputs, extraCertificates, sctsFromTLSInput,
           mCTVerifier, builtChain, nullptr, nullptr);
@@ -741,7 +741,7 @@ Result CertVerifier::VerifyCert(
       NSSCertDBTrustDomain trustDomain(
           trustType, defaultRevCheckMode, mOCSPCache, mSignatureCache.get(),
           mTrustCache.get(), pinArg, mOCSPTimeoutSoft, mOCSPTimeoutHard,
-          mCertShortLifetimeInDays, MIN_RSA_BITS_WEAK, mCRLiteMode,
+          mCertShortLifetimeInDays, MIN_RSA_BITS_WEAK, CRLiteMode::Disabled,
           originAttributes, mThirdPartyRootInputs,
           mThirdPartyIntermediateInputs, extraCertificates, sctsFromTLSInput,
           mCTVerifier, builtChain, nullptr, nullptr);
@@ -759,7 +759,7 @@ Result CertVerifier::VerifyCert(
       NSSCertDBTrustDomain trustDomain(
           trustEmail, defaultRevCheckMode, mOCSPCache, mSignatureCache.get(),
           mTrustCache.get(), pinArg, mOCSPTimeoutSoft, mOCSPTimeoutHard,
-          mCertShortLifetimeInDays, MIN_RSA_BITS_WEAK, mCRLiteMode,
+          mCertShortLifetimeInDays, MIN_RSA_BITS_WEAK, CRLiteMode::Disabled,
           originAttributes, mThirdPartyRootInputs,
           mThirdPartyIntermediateInputs, extraCertificates, sctsFromTLSInput,
           mCTVerifier, builtChain, nullptr, nullptr);
@@ -787,7 +787,7 @@ Result CertVerifier::VerifyCert(
       NSSCertDBTrustDomain trustDomain(
           trustEmail, defaultRevCheckMode, mOCSPCache, mSignatureCache.get(),
           mTrustCache.get(), pinArg, mOCSPTimeoutSoft, mOCSPTimeoutHard,
-          mCertShortLifetimeInDays, MIN_RSA_BITS_WEAK, mCRLiteMode,
+          mCertShortLifetimeInDays, MIN_RSA_BITS_WEAK, CRLiteMode::Disabled,
           originAttributes, mThirdPartyRootInputs,
           mThirdPartyIntermediateInputs, extraCertificates, sctsFromTLSInput,
           mCTVerifier, builtChain, nullptr, nullptr);

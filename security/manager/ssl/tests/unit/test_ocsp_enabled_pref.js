@@ -143,6 +143,24 @@ async function testCRLiteEnforced() {
   );
   await stopOCSPResponder(ocspResponder);
 
+  // CRLite does not cover client or S/MIME certificates, so OCSP requests
+  // should still be made for those that chain to a builtin root.
+  for (let usage of [
+    Ci.nsIX509CertDB.verifyUsageTLSClient,
+    Ci.nsIX509CertDB.verifyUsageEmailSigner,
+    Ci.nsIX509CertDB.verifyUsageEmailRecipient,
+  ]) {
+    clearOCSPCache();
+    ocspResponder = getOCSPResponder(["non-ev-root-path-ee"]);
+    await checkCertErrorGeneric(
+      gCertDB,
+      certFromFile("non-ev-root-path-ee"),
+      PRErrorCodeSuccess,
+      usage
+    );
+    await stopOCSPResponder(ocspResponder);
+  }
+
   // When CRLite is enforced and OCSP is not required, OCSP requests should not
   // be made for EV certs that chain to a builtin root.
   Services.prefs.setBoolPref("security.OCSP.require", false);
@@ -249,7 +267,7 @@ add_task(async function () {
 
   loadCert("evroot", "CTu,,");
   loadCert("test-oid-path-int", ",,");
-  loadCert("non-evroot-ca", "CTu,,");
+  loadCert("non-evroot-ca", "CTu,C,");
   loadCert("non-ev-root-path-int", ",,");
 
   await testOff();
