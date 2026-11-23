@@ -178,10 +178,15 @@ WasmFrameIter::WasmFrameIter(JitActivation* activation, wasm::Frame* fp,
     // for IndirectCallBadSig), the current frame is the caller's, so its
     // resume PC is the call site in the caller, not the trap's resume PC in
     // the callee.  Stackmap lookup and debugEnabled() rely on this.  The top
-    // frame will never be at a ReturnStub callsite, except in this case.
+    // frame will never be at a ReturnStub callsite, except in this case.  The
+    // caller may have made a return call as a regular call.
     if (trapData.unwoundFrame) {
       MOZ_ASSERT(trapData.trap == Trap::IndirectCallBadSig);
       resumePCinCurrentFrame_ = (uint8_t*)unwoundPC;
+      CallSite site;
+      currentFrameIsReturnCallFallback_ =
+          code_->lookupCallSite(unwoundPC, &site) &&
+          site.isReturnCallFallback();
     } else {
 #ifdef DEBUG
       CallSite site;
@@ -249,6 +254,7 @@ WasmFrameIter::WasmFrameIter(Instance* instance, Frame* fp, void* returnAddress)
     CallSite site;
     MOZ_ALWAYS_TRUE(code_->lookupCallSite(returnAddress, &site));
     MOZ_RELEASE_ASSERT(site.mightBeCrossInstance());
+    currentFrameIsReturnCallFallback_ = site.isReturnCallFallback();
 
 #ifdef ENABLE_WASM_JSPI
     currentFrameStackSwitched_ = site.isStackSwitch();
@@ -362,6 +368,7 @@ void WasmFrameIter::popFrame(bool isLeavingFrame) {
   unwoundContStack_ = nullptr;
   contBaseInstance_ = nullptr;
 #endif
+  currentFrameIsReturnCallFallback_ = false;
 
   // If we're visiting inlined frames, see if this frame was inlined.
   if (enableInlinedFrames_ && inlinedCallerOffsets_.size() > 0) {
@@ -537,6 +544,7 @@ void WasmFrameIter::popFrame(bool isLeavingFrame) {
   if (site.mightBeCrossInstance()) {
     instance_ = ExtractCallerInstanceFromFrameWithInstances(prevFP);
   }
+  currentFrameIsReturnCallFallback_ = site.isReturnCallFallback();
 
 #ifdef ENABLE_WASM_JSPI
   // A stack switch should always go through the cont base frame case above.

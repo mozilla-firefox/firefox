@@ -861,6 +861,12 @@ void wasm::HandleExceptionWasm(JSContext* cx, JitFrameIter& iter,
     }
 #endif
 
+    // This frame has semantically returned already, so it can't catch the
+    // exception and the debugger has already been notified of it being left.
+    if (wasmFrame.currentFrameIsReturnCallFallback()) {
+      continue;
+    }
+
     // Only look for an exception handler if there's a catchable exception.
     if (wasmExn) {
       const wasm::Code& code = wasmFrame.instance()->code();

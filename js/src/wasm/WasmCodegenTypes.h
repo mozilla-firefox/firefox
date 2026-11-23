@@ -1189,7 +1189,9 @@ enum class CallSiteKind : uint8_t {
   CollapseFrame,  // call to a leave frame handler during tail call
   StackSwitch,    // stack switch point
   Breakpoint,     // call to instruction breakpoint
-  RequestTierUp   // call to request tier-2 compilation of this function
+  RequestTierUp,  // call to request tier-2 compilation of this function
+  // return call made as a regular call
+  ReturnCallFallback
 };
 
 WASM_DECLARE_CACHEABLE_POD(CallSiteKind);
@@ -1264,9 +1266,12 @@ class CallSiteDesc {
   bool isFuncRefCall() const { return kind() == CallSiteKind::FuncRef; }
   bool isReturnStub() const { return kind() == CallSiteKind::ReturnStub; }
   bool isStackSwitch() const { return kind() == CallSiteKind::StackSwitch; }
+  bool isReturnCallFallback() const {
+    return kind() == CallSiteKind::ReturnCallFallback;
+  }
   bool mightBeCrossInstance() const {
     return isImportCall() || isIndirectCall() || isFuncRefCall() ||
-           isReturnStub() || isStackSwitch();
+           isReturnStub() || isStackSwitch() || isReturnCallFallback();
   }
 };
 
