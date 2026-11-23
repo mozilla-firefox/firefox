@@ -83,6 +83,22 @@ add_task(async function browserAction_popup_confirm_dialog_is_visible() {
     "Popup's dialog stack height matches the popup browser's height"
   );
 
+  // Make sure that the dialogbuttons are visible (by being inside the
+  // bounding client rect related to the panel browser element).
+  for (let [name, button] of [
+    ["accept", dialog.ui.button0],
+    ["cancel", dialog.ui.button1],
+  ]) {
+    let buttonRect = button.getBoundingClientRect();
+    ok(
+      buttonRect.left >= 0 &&
+        buttonRect.top >= 0 &&
+        buttonRect.right <= browserRect.width &&
+        buttonRect.bottom <= browserRect.height,
+      `Dialog's ${name} button is inside the visible popup panel area`
+    );
+  }
+
   info("Handle the confirm prompt");
   await PromptTestUtils.handlePrompt(dialog);
 

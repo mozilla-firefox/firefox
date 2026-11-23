@@ -3,7 +3,9 @@
  * file, You can obtain one at http://mozilla.org/MPL/2.0/. */
 
 :root {
-  min-width: 29em;
+  /* Don't force the dialog wider than the space it's actually being shown in
+   * (e.g. a WebExtension popup can be narrower than 29em). */
+  min-width: min(29em, 90vw);
 }
 
 dialog[insecureauth] {
