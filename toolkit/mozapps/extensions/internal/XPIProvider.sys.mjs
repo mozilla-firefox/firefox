@@ -93,10 +93,18 @@ const DIR_TRASH = "trash";
 
 const FILE_XPI_STATES = "addonStartup.json.lz4";
 
+// Win32 ERROR_VIRUS_INFECTED mapped by nsLocalFileWin to NS_ERROR_MODULE_WIN32,
+// which can be hit when accessing XPI files and distribution directories
+// that a Windows Antivirus may have already flagged (e.g. malware application
+// may have dropped an xpi with a known malicious signatures in a XPIProvider
+// location or in <appdir>/distribution/extensions directory).
+const NS_ERROR_WIN32_VIRUS_INFECTED = 0x807100e1;
+
 const IGNORE_ADDON_NSIFILE_ERROR_CODES = new Set([
   Cr.NS_ERROR_FILE_ACCESS_DENIED,
   Cr.NS_ERROR_FILE_NOT_FOUND,
   Cr.NS_ERROR_FILE_UNRECOGNIZED_PATH,
+  NS_ERROR_WIN32_VIRUS_INFECTED,
 ]);
 
 const KEY_PROFILEDIR = "ProfD";
@@ -3264,7 +3272,17 @@ export var XPIProvider = {
 
     let availableLocales = [];
     for (let file of iterDirectory(distroDirs[0])) {
-      if (file.isDirectory() && file.leafName.startsWith("locale-")) {
+      let isDir;
+      try {
+        isDir = file.isDirectory();
+      } catch (e) {
+        if (!IGNORE_ADDON_NSIFILE_ERROR_CODES.has(e.result)) {
+          throw e;
+        }
+        logger.warn(`Ignoring distribution entry ${file.path}`, e);
+        continue;
+      }
+      if (isDir && file.leafName.startsWith("locale-")) {
         availableLocales.push(file.leafName.replace("locale-", ""));
       }
     }
@@ -3290,8 +3308,13 @@ export var XPIProvider = {
       for (let file of iterDirectory(distroDir)) {
         if (!isXPI(file.leafName, true)) {
           // Only warn for files, not directories
-          if (!file.isDirectory()) {
-            logger.warn(`Ignoring distribution: not an XPI: ${file.path}`);
+          try {
+            if (!file.isDirectory()) {
+              logger.warn(`Ignoring distribution: not an XPI: ${file.path}`);
+            }
+          } catch (e) {
+            // Non-XPI entries are skipped anyway, any error can be ignored.
+            logger.warn(`Ignoring distribution entry ${file.path}`, e);
           }
           continue;
         }
