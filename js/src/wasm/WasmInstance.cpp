@@ -2829,7 +2829,7 @@ bool Instance::init(JSContext* cx, const JSObjectVector& funcImports,
     data.mappedSize = memory->buffer().wasmMappedSize();
 
     // Add observer if our memory base may grow
-    if (memory && memory->movingGrowable() &&
+    if (memory->movingGrowable() &&
         !memory->addMovingGrowObserver(cx, object_)) {
       return false;
     }
