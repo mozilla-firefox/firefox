@@ -9,6 +9,7 @@
   <script type="text/javascript">
 
     let testGenerator = testSteps();
+    let db;
 
     function ok(val, message) {
       val = val ? "true" : "false";
@@ -27,7 +28,10 @@
 
     function finishTest() {
       testGenerator.return();
-      window.parent.postMessage("SimpleTest.finish();", "*");
+      db?.close();
+      indexedDB.deleteDatabase(window.location.pathname).onsuccess = () => {
+        window.parent.postMessage("SimpleTest.finish();", "*");
+      };
     }
 
     const eventChain = [
@@ -80,7 +84,7 @@
       request.onupgradeneeded = grabEventAndContinueHandler;
       let event = yield undefined;
 
-      let db = event.target.result;
+      db = event.target.result;
       db.onerror = errorEventCounter;
       db.addEventListener("error", errorEventCounter, true);
 

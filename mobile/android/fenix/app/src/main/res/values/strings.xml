@@ -3345,13 +3345,8 @@
     <string name="action_bar_up_description">Navigate up</string>
 
     <!-- Pocket recommended stories -->
-    <!-- Header text for a section on the home screen. -->
-    <string name="pocket_stories_header_2">Stories</string>
     <!-- Header text for the Stories screen. -->
     <string name="stories_screen_text_news">News</string>
-    <!-- Context description text for the "Discover more" button in the stories home screen section
-        which navigates the user to a screen displaying more stories. -->
-    <string name="stories_discover_more_content_description">Discover more stories</string>
     <!-- Content description for the "Navigate back" button on the top app bar of the Stories screen. -->
     <string name="stories_back_button_content_description">Navigate back</string>
     <!-- Text indicating that the Pocket story that also displays this text is a sponsored story by other 3rd party entity. -->

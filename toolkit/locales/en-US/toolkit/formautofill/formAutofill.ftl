@@ -121,19 +121,21 @@ credit-card-security-code-name-other = Security code
 ## masked card number. Each message is used for a different combination of the
 ## available details.
 ## Variables:
-##   $name (String): The cardholder name
+##   $name (String): The cardholder name. Keep the <span data-l10n-name="name">
+##     around it, so a long name can be cut off with an ellipsis. The details
+##     can be reordered.
 ##   $month (String): Two-digit month the card expires
 ##   $year (String): Two-digit year the card expires
 ##   $securityCode (String): The name of the card's security code, from one of
 ##     the credit-card-security-code-name-* strings (for example "CVV")
 
-credit-card-doorhanger-card-details-name = { $name }
+credit-card-doorhanger-card-details-name-2 = <span data-l10n-name="name">{ $name }</span>
 credit-card-doorhanger-card-details-expiration = { $month }/{ $year }
 credit-card-doorhanger-card-details-security-code = { $securityCode }
-credit-card-doorhanger-card-details-name-expiration = { $name } | { $month }/{ $year }
-credit-card-doorhanger-card-details-name-security-code = { $name } | { $securityCode }
+credit-card-doorhanger-card-details-name-expiration-2 = <span data-l10n-name="name">{ $name }</span> | { $month }/{ $year }
+credit-card-doorhanger-card-details-name-security-code-2 = <span data-l10n-name="name">{ $name }</span> | { $securityCode }
 credit-card-doorhanger-card-details-expiration-security-code = { $month }/{ $year } | { $securityCode }
-credit-card-doorhanger-card-details-name-expiration-security-code = { $name } | { $month }/{ $year } | { $securityCode }
+credit-card-doorhanger-card-details-name-expiration-security-code-2 = <span data-l10n-name="name">{ $name }</span> | { $month }/{ $year } | { $securityCode }
 
 ## These are brand names and should only be translated when a locale-specific name for that brand is in common use
 

@@ -38,7 +38,10 @@
       // Let window.onerror have a chance to fire
       setTimeout(function() {
         setTimeout(function() {
-          window.parent.postMessage("SimpleTest.finish();", "*");
+          indexedDB.deleteDatabase(window.location.pathname).onsuccess =
+            function() {
+              window.parent.postMessage("SimpleTest.finish();", "*");
+            };
         }, 0);
       }, 0);
     }

@@ -22,11 +22,7 @@ OS_LIBS += [
     "uuid",
 ]
 
-if CONFIG["OS_TARGET"] == "WINNT" and CONFIG["CC_TYPE"] in ("gcc", "clang"):
-    # This allows us to use wmain as the entry point on mingw
-    LDFLAGS += [
-        "-municode",
-    ]
+WIN32_WIDE_ENTRY = True
 
 BROWSER_CHROME_MANIFESTS += ["browser/browser.toml"]
 XPCSHELL_TESTS_MANIFESTS += ["unit/xpcshell.toml"]

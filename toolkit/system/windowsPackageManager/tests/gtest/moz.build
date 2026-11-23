@@ -12,5 +12,5 @@ LOCAL_INCLUDES += [
 
 FINAL_LIBRARY = "xul-gtest"
 
-if CONFIG["CC_TYPE"] in ("clang", "gcc"):
+if CONFIG["CC_TYPE"] == "clang":
     COMPILE_FLAGS["WARNINGS_CXXFLAGS"] += ["-Wshadow"]

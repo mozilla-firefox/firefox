@@ -149,10 +149,9 @@ DELAYLOAD_DLLS += [
     "wsock32.dll",
 ]
 
+WIN32_WIDE_ENTRY = True
 if CONFIG["CC_TYPE"] == "clang-cl":
     WIN32_EXE_LDFLAGS += ["-ENTRY:wmainCRTStartup"]
-elif CONFIG["OS_ARCH"] == "WINNT":
-    WIN32_EXE_LDFLAGS += ["-municode"]
 
 if CONFIG["MOZ_WIDGET_TOOLKIT"] == "gtk":
     CXXFLAGS += CONFIG["MOZ_GTK3_CFLAGS"]

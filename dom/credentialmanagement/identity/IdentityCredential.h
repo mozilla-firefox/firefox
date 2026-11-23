@@ -10,7 +10,6 @@
 #include "mozilla/dom/CanonicalBrowsingContext.h"
 #include "mozilla/dom/Credential.h"
 #include "mozilla/dom/PWebIdentity.h"
-#include "nsICredentialChosenCallback.h"
 
 namespace mozilla::dom {
 

@@ -35,7 +35,6 @@ import org.mozilla.fenix.components.appstate.AppAction
 import org.mozilla.fenix.components.appstate.AppAction.ContentRecommendationsAction
 import org.mozilla.fenix.components.appstate.AppAction.MessagingAction.UpdateMessageToShow
 import org.mozilla.fenix.components.appstate.AppState
-import org.mozilla.fenix.components.appstate.filterOut
 import org.mozilla.fenix.components.appstate.recommendations.ContentRecommendationsState
 import org.mozilla.fenix.components.appstate.setup.checklist.ChecklistItem
 import org.mozilla.fenix.components.appstate.setup.checklist.SetupChecklistState
@@ -750,23 +749,6 @@ class AppStoreTest {
         assertTrue(
             appStore.state.recommendationState.pocketStoriesCategoriesSelections.containsAll(listOf(selectedCategory))
         )
-    }
-
-    @Test
-    fun `Test filtering out search groups`() {
-        val group1 = RecentHistoryGroup("title1")
-        val group2 = RecentHistoryGroup("title2")
-        val group3 = RecentHistoryGroup("title3")
-        val highLight1 = RecentHistoryHighlight("title1", "")
-        val highLight2 = RecentHistoryHighlight("title2", "")
-        val highLight3 = RecentHistoryHighlight("title3", "")
-        val recentHistory = listOf(group1, highLight1, group2, highLight2, group3, highLight3)
-
-        assertEquals(recentHistory, recentHistory.filterOut(null))
-        assertEquals(recentHistory, recentHistory.filterOut(""))
-        assertEquals(recentHistory, recentHistory.filterOut(" "))
-        assertEquals(recentHistory - group2, recentHistory.filterOut("Title2"))
-        assertEquals(recentHistory - group3, recentHistory.filterOut("title3"))
     }
 
     @Test

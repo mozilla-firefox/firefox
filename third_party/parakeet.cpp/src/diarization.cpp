@@ -30,7 +30,7 @@ std::unique_ptr<DiarizationModel> DiarizationModel::load(const std::string& path
 
     // Give the weights a backend buffer ONCE so graphs reference them
     // directly as leaves (zero per-call copy), same as Model::load.
-    ensure_weights_realized(m->loader_);
+    if (!ensure_weights_realized(m->loader_)) return nullptr;
 
     // Construct the component objects (lightweight views over the ModelLoader).
     m->mel_     = std::make_unique<MelFrontend>(m->loader_);

@@ -2829,7 +2829,7 @@ bool Instance::init(JSContext* cx, const JSObjectVector& funcImports,
     data.mappedSize = memory->buffer().wasmMappedSize();
 
     // Add observer if our memory base may grow
-    if (memory && memory->movingGrowable() &&
+    if (memory->movingGrowable() &&
         !memory->addMovingGrowObserver(cx, object_)) {
       return false;
     }
@@ -3400,19 +3400,18 @@ uintptr_t Instance::traceFrame(JSTracer* trc, const wasm::WasmFrameIter& wfi,
     // * Import-function wrappers aren't compiled by the baseline compiler, and
     //   have no stackmaps.
     //
-    // * A frame at a ReturnStub call site has no stackmap.  It is the hidden
-    //   frame that MacroAssembler::wasmCollapseFrameSlow creates for a
-    //   return call to an import or to a function in another instance, and
-    //   it stays on the stack while the callee runs, so a GC can see it.  But
-    //   it holds only a wasm::Frame, the instance fields, shadow stack space
-    //   and alignment padding; there are no GC pointers in it.
+    // * A frame at a ReturnCallFallback call site has no stackmap.  It made a
+    //   return call to an import or to a function in another instance as a
+    //   regular call, and stays on the stack while the callee runs, so a GC
+    //   can see it.  But it is dead: after the call it only restores the
+    //   instance and pops itself, so it holds no live GC pointers.
     const CodeRange* range = code().lookupFuncRange(nextPC);
     CallSite site;
-    bool atReturnStub = code().lookupCallSite(nextPC, &site) &&
-                        site.kind() == CallSiteKind::ReturnStub;
-    MOZ_ASSERT_IF(
-        range && !codeMeta().funcIsImport(range->funcIndex()) && !atReturnStub,
-        map);
+    bool atReturnCallFallback = code().lookupCallSite(nextPC, &site) &&
+                                site.kind() == CallSiteKind::ReturnCallFallback;
+    MOZ_ASSERT_IF(range && !codeMeta().funcIsImport(range->funcIndex()) &&
+                      !atReturnCallFallback,
+                  map);
   }
 #endif
   if (!map) {

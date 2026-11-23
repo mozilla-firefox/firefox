@@ -1182,14 +1182,15 @@ enum class CallSiteKind : uint8_t {
   FuncRef,        // call using direct function reference
   FuncRefFast,    // call using direct function reference within same-instance
   ReturnFunc,     // return call to a specific function
-  ReturnStub,     // return call trampoline
   Symbolic,       // call to a single symbolic callee
   EnterFrame,     // call to a enter frame handler
   LeaveFrame,     // call to a leave frame handler
   CollapseFrame,  // call to a leave frame handler during tail call
   StackSwitch,    // stack switch point
   Breakpoint,     // call to instruction breakpoint
-  RequestTierUp   // call to request tier-2 compilation of this function
+  RequestTierUp,  // call to request tier-2 compilation of this function
+  // return call made as a regular call
+  ReturnCallFallback
 };
 
 WASM_DECLARE_CACHEABLE_POD(CallSiteKind);
@@ -1262,11 +1263,13 @@ class CallSiteDesc {
   bool isImportCall() const { return kind() == CallSiteKind::Import; }
   bool isIndirectCall() const { return kind() == CallSiteKind::Indirect; }
   bool isFuncRefCall() const { return kind() == CallSiteKind::FuncRef; }
-  bool isReturnStub() const { return kind() == CallSiteKind::ReturnStub; }
   bool isStackSwitch() const { return kind() == CallSiteKind::StackSwitch; }
+  bool isReturnCallFallback() const {
+    return kind() == CallSiteKind::ReturnCallFallback;
+  }
   bool mightBeCrossInstance() const {
     return isImportCall() || isIndirectCall() || isFuncRefCall() ||
-           isReturnStub() || isStackSwitch();
+           isStackSwitch() || isReturnCallFallback();
   }
 };
 

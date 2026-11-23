@@ -23,7 +23,7 @@ remote_settings = { path = "../../components/remote_settings", features=["teleme
 suggest = { path = "../../components/suggest" }
 sync15 = { path = "../../components/sync15" }
 db-crypto = { path = "../../components/support/db-crypto" }
-error-support = { path = "../../components/support/error", features = ["glean-sym"] }
+error-support = { path = "../../components/support/error" }
 tracing-support = { path = "../../components/support/tracing" }
 sync_manager = { path = "../../components/sync_manager" }
 as-ohttp-client = { path = "../../components/as-ohttp-client" }

@@ -30,18 +30,19 @@ MBSPatch patches based on the contents of the patch file, since both kinds of
 patches start with a different magic value: `"Zucc"` or `"MBDIFF10"`. See
 `build/moz.configure/update-programs.configure` for more details.
 
-No SEH In MinGW Builds
-----------------------
+No SEH In 32-bit MinGW Builds
+-----------------------------
 
 Zucchini uses [SEH](
 https://learn.microsoft.com/en-us/cpp/cpp/try-except-statement) to catch
 `EXCEPTION_IN_PAGE_ERROR` exceptions, which Windows raises when an I/O error
-occurs while accessing a memory-mapped file. MinGW compilers don't support SEH,
-so `mozilla-config.h` replaces `__try` with `if (true)` and `__except` with
-`else` when compiling Zucchini code, just like it does for our sandbox code.
-Consequently, in MinGW builds, such an I/O error crashes `updater.exe` rather
-than making Zucchini return an error status. The updater recovers from these
-crashes thanks to its draft phase, see `toolkit/mozapps/update/updater.cpp`.
+occurs while accessing a memory-mapped file. Clang doesn't support SEH for
+32-bit MinGW, so there `mozilla-config.h` replaces `__try` with `if (true)` and
+`__except` with `else` when compiling Zucchini code, just like it does for our
+sandbox code, and `moz_zucchini.cc` leaves out its handlers. Consequently, in
+32-bit MinGW builds, such an I/O error crashes `updater.exe` rather than making
+Zucchini return an error status. The updater recovers from these crashes thanks
+to its draft phase, see `toolkit/mozapps/update/updater.cpp`.
 
 Build Artifacts
 =============

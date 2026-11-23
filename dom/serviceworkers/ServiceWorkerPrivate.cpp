@@ -401,14 +401,10 @@ Result<IPCInternalRequest, nsresult> GetIPCInternalRequest(
   }
 
   Maybe<PrincipalInfo> principalInfo;
-  Maybe<PrincipalInfo> interceptionPrincipalInfo;
   if (loadInfo->TriggeringPrincipal()) {
     principalInfo.emplace();
-    interceptionPrincipalInfo.emplace();
     MOZ_ALWAYS_SUCCEEDS(PrincipalToPrincipalInfo(
         loadInfo->TriggeringPrincipal(), principalInfo.ptr()));
-    MOZ_ALWAYS_SUCCEEDS(PrincipalToPrincipalInfo(
-        loadInfo->TriggeringPrincipal(), interceptionPrincipalInfo.ptr()));
   }
 
   nsTArray<RedirectHistoryEntryInfo> redirectChain;
@@ -439,8 +435,9 @@ Result<IPCInternalRequest, nsresult> GetIPCInternalRequest(
       referrer, referrerPolicy, environmentReferrerPolicy, requestMode,
       requestCredentials, cacheMode, requestRedirect, requestPriority,
       integrity, /* keepalive */ false, /* hasStreamBody */ false, fragment,
-      principalInfo, interceptionPrincipalInfo, contentPolicyType,
-      redirectChain, isThirdPartyChannel, embedderPolicy);
+      principalInfo,
+      /* interceptionTriggeringPrincipal */ loadInfo->TriggeringPrincipal(),
+      contentPolicyType, redirectChain, isThirdPartyChannel, embedderPolicy);
 }
 
 nsresult MaybeStoreStreamForBackgroundThread(nsIInterceptedChannel* aChannel,

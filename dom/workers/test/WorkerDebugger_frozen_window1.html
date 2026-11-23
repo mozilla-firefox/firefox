@@ -4,9 +4,13 @@
     <meta charset="utf-8">
     <script>
       var worker = new Worker("WorkerDebugger_frozen_worker1.js");
-      worker.onmessage = function () {
-        opener.postMessage("ready", "*");
-      };
+      // Navigating away from a document that hasn't finished loading replaces
+      // its session history entry, which would leave the test's
+      // history.back() nowhere to go.
+      Promise.all([
+        new Promise(resolve => (worker.onmessage = resolve)),
+        new Promise(resolve => window.addEventListener("load", resolve)),
+      ]).then(() => opener.postMessage("ready", "*"));
     </script>
   </head>
   <body>

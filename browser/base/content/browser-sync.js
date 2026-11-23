@@ -1462,11 +1462,11 @@ var gSync = {
     // due to a timing error. The fluent label attribute was being applied
     // after we had updated appMenuLabel and thus displayed an incorrect
     // label for signed in users.
-    const novaFxaLabel = PanelMultiView.getViewNode(
+    const fxaSignInButton = PanelMultiView.getViewNode(
       document,
       "appMenu-nova-fxa-label"
     );
-    const [headerDesc, headerText, novaSignIn] =
+    const [headerDesc, headerText, signInLabel] =
       this.fluentStrings.formatValuesSync([
         "appmenu-fxa-signed-in-label",
         "appmenu-fxa-sync-and-save-data2",
@@ -1474,8 +1474,8 @@ var gSync = {
       ]);
     appMenuHeaderDescription.value = headerDesc;
     appMenuHeaderText.textContent = headerText;
-    if (novaFxaLabel) {
-      novaFxaLabel.label = novaSignIn;
+    if (fxaSignInButton) {
+      fxaSignInButton.label = signInLabel;
     }
 
     // The signed-out row's copy comes from sync.ftl, which is only inserted

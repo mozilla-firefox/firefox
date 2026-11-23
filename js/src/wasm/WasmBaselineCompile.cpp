@@ -835,6 +835,8 @@ bool BaseCompiler::endFunction() {
     restoreRegisterReturnValues(resultType);
   }
 
+  masm.bind(&returnCallFallbackLabel_);
+
 #ifndef RABALDR_PIN_INSTANCE
   // To satisy instance extent invariant we need to reload InstanceReg because
   // baseline can clobber it.
@@ -2210,8 +2212,10 @@ bool BaseCompiler::callIndirect(uint32_t funcTypeIndex, uint32_t tableIndex,
   } else {
     ReturnCallAdjustmentInfo retCallInfo = BuildReturnCallAdjustmentInfo(
         this->funcType(), (*codeMeta_.types)[funcTypeIndex].funcType());
-    fcr =
-        masm.wasmReturnCallIndirect(desc, callee, nullCheckFailed, retCallInfo);
+    ReturnCallFallback retCallFallback(&returnCallFallbackLabel_,
+                                       fr.fixedAllocSize());
+    fcr = masm.wasmReturnCallIndirect(desc, callee, nullCheckFailed,
+                                      retCallInfo, retCallFallback);
   }
   if (compilerEnv_.debugEnabled() && fcr.isValid() &&
       !createStackMap(Some(Trap::IndirectCallToNull), fcr,
@@ -2360,7 +2364,10 @@ bool BaseCompiler::returnCallRef(const Stk& calleeRef, const FunctionCall& call,
   }
   BaselineStackMapRegistry stackMapRegistry(stackMaps_);
 
-  masm.wasmReturnCallRef(desc, callee, retCallInfo, debugStackMap,
+  ReturnCallFallback retCallFallback(&returnCallFallbackLabel_,
+                                     fr.fixedAllocSize());
+  masm.wasmReturnCallRef(desc, callee, retCallInfo, retCallFallback,
+                         debugStackMap,
                          debugStackMap ? &stackMapRegistry : nullptr);
   return true;
 }
@@ -5734,7 +5741,9 @@ bool BaseCompiler::emitReturnCall() {
     CallSiteDesc desc(bytecodeOffset(), CallSiteKind::Import);
     CalleeDesc callee =
         CalleeDesc::import(codeMeta_.offsetOfFuncImportInstanceData(funcIndex));
-    masm.wasmReturnCallImport(desc, callee, retCallInfo);
+    ReturnCallFallback retCallFallback(&returnCallFallbackLabel_,
+                                       fr.fixedAllocSize());
+    masm.wasmReturnCallImport(desc, callee, retCallInfo, retCallFallback);
   } else {
     CallSiteDesc desc(bytecodeOffset(), CallSiteKind::ReturnFunc);
     masm.wasmReturnCall(desc, funcIndex, retCallInfo);

@@ -50,9 +50,9 @@ bool UnscaledFontFreeType::GetFontFileData(FontFileDataOutput aDataCallback,
     if (fontData == MAP_FAILED) {
       return false;
     }
-    aDataCallback(fontData, length, mIndex, aBaton);
+    bool success = aDataCallback(fontData, length, mIndex, aBaton);
     munmap(fontData, length);
-    return true;
+    return success;
   }
 
   bool success = false;
@@ -63,8 +63,7 @@ bool UnscaledFontFreeType::GetFontFileData(FontFileDataOutput aDataCallback,
     uint8_t* fontData = new uint8_t[length];
     if (FT_Load_Sfnt_Table(mFace->GetFace(), 0, 0, fontData, &length) ==
         FT_Err_Ok) {
-      aDataCallback(fontData, length, 0, aBaton);
-      success = true;
+      success = aDataCallback(fontData, length, 0, aBaton);
     }
     delete[] fontData;
   }
@@ -77,9 +76,8 @@ bool UnscaledFontFreeType::GetFontDescriptor(FontDescriptorOutput aCb,
     return false;
   }
 
-  aCb(reinterpret_cast<const uint8_t*>(mFile.data()), mFile.size(), mIndex,
-      aBaton);
-  return true;
+  return aCb(reinterpret_cast<const uint8_t*>(mFile.data()), mFile.size(),
+             mIndex, aBaton);
 }
 
 RefPtr<SharedFTFace> UnscaledFontFreeType::InitFace() {

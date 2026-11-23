@@ -696,28 +696,20 @@ nsresult FetchDriver::HttpFetch(
   // If the fetch is created by FetchEvent.request or NavigationPreload request,
   // corresponding InterceptedHttpChannel information need to propagate to the
   // channel of the fetch.
-  if (mRequest->GetInterceptionTriggeringPrincipalInfo()) {
-    auto principalOrErr = mozilla::ipc::PrincipalInfoToPrincipal(
-        *(mRequest->GetInterceptionTriggeringPrincipalInfo().get()));
-    if (!principalOrErr.isErr()) {
-      nsCOMPtr<nsIPrincipal> principal = principalOrErr.unwrap();
-
-      nsTArray<nsCOMPtr<nsIRedirectHistoryEntry>> redirectChain;
-      if (!mRequest->InterceptionRedirectChain().IsEmpty()) {
-        for (const RedirectHistoryEntryInfo& entryInfo :
-             mRequest->InterceptionRedirectChain()) {
-          nsCOMPtr<nsIRedirectHistoryEntry> entry =
-              mozilla::ipc::RHEntryInfoToRHEntry(entryInfo);
-          redirectChain.AppendElement(entry);
-        }
-      }
-
-      nsCOMPtr<nsILoadInfo> loadInfo = chan->LoadInfo();
-      MOZ_ASSERT(loadInfo);
-      loadInfo->SetInterceptionInfo(new mozilla::net::InterceptionInfo(
-          principal, mRequest->InterceptionContentPolicyType(), redirectChain,
-          mRequest->InterceptionFromThirdParty()));
+  if (nsIPrincipal* principal =
+          mRequest->GetInterceptionTriggeringPrincipal()) {
+    nsTArray<nsCOMPtr<nsIRedirectHistoryEntry>> redirectChain;
+    for (const RedirectHistoryEntryInfo& entryInfo :
+         mRequest->InterceptionRedirectChain()) {
+      redirectChain.AppendElement(
+          mozilla::ipc::RHEntryInfoToRHEntry(entryInfo));
     }
+
+    nsCOMPtr<nsILoadInfo> loadInfo = chan->LoadInfo();
+    MOZ_ASSERT(loadInfo);
+    loadInfo->SetInterceptionInfo(new mozilla::net::InterceptionInfo(
+        principal, mRequest->InterceptionContentPolicyType(), redirectChain,
+        mRequest->InterceptionFromThirdParty()));
   }
 
   // Insert ourselves into the notification callbacks chain so we can set
@@ -732,7 +724,7 @@ nsresult FetchDriver::HttpFetch(
   chan->SetNotificationCallbacks(this);
 
   const RequestDestination destination =
-      mRequest->GetInterceptionTriggeringPrincipalInfo()
+      mRequest->GetInterceptionTriggeringPrincipal()
           ? mRequest->InterceptionDestination()
           : mRequest->Destination();
 

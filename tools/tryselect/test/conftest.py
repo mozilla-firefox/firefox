@@ -67,6 +67,7 @@ def patch_vcs(monkeypatch):
         "name": "git",
         "path": push.vcs.path,
         "push.return_value": "abc123fakegitsha",
+        "push_to_try.return_value": None,
         "base_ref_as_commit.return_value": "def456fakebaserev",
     }
     mock = MagicMock()
@@ -79,6 +80,11 @@ def mock_taskcluster_secret(monkeypatch):
     mock_client = MagicMock()
     mock_client.get.return_value = {"secret": {"ssh_privkey": "fake_ssh_key"}}
     monkeypatch.setattr(push, "get_client", MagicMock(return_value=mock_client))
+
+
+@pytest.fixture(autouse=True)
+def mock_tree_status(monkeypatch):
+    monkeypatch.setattr(push, "check_tree_status", MagicMock())
 
 
 @pytest.fixture(scope="session")

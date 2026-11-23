@@ -31,7 +31,9 @@ add_task(async function testSearchTabsShortcutWithMultipleTabs() {
     });
     await UrlbarTestUtils.promiseSearchComplete(window);
 
-    let result = await UrlbarTestUtils.getDetailsOfResultAt(window, 0);
+    let heuristic = await UrlbarTestUtils.getDetailsOfResultAt(window, 0);
+    ok(heuristic.heuristic, "The first result is the heuristic.");
+    let result = await UrlbarTestUtils.getDetailsOfResultAt(window, 1);
     is(result.url, "about:mozilla", "The matching tab is returned.");
     is(
       result.type,

@@ -73,7 +73,8 @@ pub fn touch_login(s: &LoginStore, id: &str, times: usize) -> LoginResult<Login>
 
 pub fn sync_logins(client: &mut TestClient) -> Result<()> {
     let local_encryption_keys = HashMap::new();
-    client.sync(&["passwords".to_string()], local_encryption_keys)
+    client.sync(&["passwords".to_string()], local_encryption_keys)?;
+    Ok(())
 }
 
 pub fn sync_logins_with_failure(

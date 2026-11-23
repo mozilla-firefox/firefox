@@ -21,7 +21,7 @@ macro_rules! report_error {
     ($type_name:expr, $($arg:tt)*) => {
         let message = std::format!($($arg)*);
         $crate::warn!("report {}: {}", $type_name, message);
-        $crate::report_error_to_app($type_name.to_string(), message.to_string());
+        $crate::report_error($type_name.to_string(), message.to_string());
     };
 }
 

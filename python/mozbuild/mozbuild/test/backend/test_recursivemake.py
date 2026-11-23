@@ -1468,7 +1468,9 @@ class TestRecursiveMakeBackend(BackendTester):
         )
         env = self._consume("rust-library-flags", RecursiveMakeBackend, env=env)
         edge = self._cargo_spec(env, ".cargo-tests-spec.json")["edge"]
-        self.assertEqual(edge["rustflags"], [])
+        self.assertEqual(
+            edge["rustflags"], ["-C", "link-arg=-Wl,-Xlink=-force:unresolved"]
+        )
 
     def test_rust_tests_index(self):
         env = self._consume("rust-library-flags", RecursiveMakeBackend)

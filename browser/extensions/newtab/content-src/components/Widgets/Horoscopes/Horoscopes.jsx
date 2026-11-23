@@ -3,12 +3,14 @@
  * file, You can obtain one at https://mozilla.org/MPL/2.0/. */
 
 // eslint-disable-next-line no-unused-vars
-import React, { useCallback } from "react";
+import React, { useCallback, useEffect, useRef, useState } from "react";
 import { useSelector } from "react-redux";
 import { actionCreators as ac, actionTypes as at } from "common/Actions.mjs";
 import {
   FRAMED_WIDGET_SANDBOX,
   WIDGET_REGISTRY,
+  isRecordedFrameUserEvent,
+  resolveWidgetEventSource,
   resolveWidgetFrame,
   resolveWidgetSize,
   WIDGET_USER_ACTIONS,
@@ -20,6 +22,10 @@ import { WidgetMenuPoweredBy } from "../WidgetMenuPoweredBy";
 import { SizeSubmenu } from "../SizeSubmenu";
 import { useWidgetTelemetry } from "../useWidgetTelemetry";
 import { useSrcAfterPageShown } from "../usePageVisible";
+import {
+  useFramedWidgetMessages,
+  useFramedWidgetReady,
+} from "../useFramedWidgetMessages";
 
 const USER_ACTION_TYPES = {
   ...WIDGET_USER_ACTIONS,
@@ -62,16 +68,71 @@ const Horoscopes = ({
   // Show the "New" badge until the user first interacts with the widget.
   const hasInteracted = prefs["widgets.horoscopes.interaction"];
 
-  const { impressionRef, recordUserAction } = useWidgetTelemetry({
+  const iframeRef = useRef(null);
+  // Set below: the telemetry hook needs the variant this hook returns.
+  const recordErrorRef = useRef(null);
+  const [failed, setFailed] = useState(false);
+  const { ready, variant } = useFramedWidgetReady({
+    widget: HOROSCOPES_ENTRY,
+    src,
+    iframeRef,
+    onError: (reason, terminal) => {
+      recordErrorRef.current(reason);
+      if (terminal) {
+        setFailed(true);
+      }
+    },
+  });
+  // Yahoo sends widget_ready only at load, so picking a sign doesn't update it.
+  const [signPicked, setSignPicked] = useState(false);
+  useEffect(() => {
+    setFailed(false);
+    setSignPicked(false);
+  }, [src]);
+  // Like Travel, frame events wait for widget_ready and stop once the load fails.
+  const frameWorking = ready && !failed;
+  // A widget_ready that comes after a failure doesn't change the variant.
+  const reportedVariantRef = useRef();
+  if (!failed) {
+    reportedVariantRef.current = signPicked ? "custom_sign" : variant;
+  }
+  // A failed frame stays on screen, so it still counts one, without a variant.
+  const { impressionRef, recordUserAction, recordError } = useWidgetTelemetry({
     dispatch,
     widget: HOROSCOPES_ENTRY,
     widgetSize,
+    widgetVariant: reportedVariantRef.current,
   });
+  recordErrorRef.current = recordError;
 
   const handleInteraction = useCallback(
     () => handleUserInteraction("horoscopes"),
     [handleUserInteraction]
   );
+
+  useFramedWidgetMessages({
+    widget: HOROSCOPES_ENTRY,
+    src,
+    iframeRef,
+    onMessage: (type, message, payload) => {
+      if (
+        frameWorking &&
+        type === "telemetry" &&
+        message === "user_event" &&
+        isRecordedFrameUserEvent(HOROSCOPES_ENTRY, payload)
+      ) {
+        recordUserAction(payload.user_action, {
+          source: resolveWidgetEventSource(HOROSCOPES_ENTRY),
+          value: payload.action_value,
+        });
+        if (payload.user_action === "sign_select") {
+          setSignPicked(true);
+        }
+        // Unlisted events, like hovers, leave the "New" badge alone.
+        handleInteraction();
+      }
+    },
+  });
 
   const handleChangeSize = useCallback(
     size => {
@@ -108,7 +169,7 @@ const Horoscopes = ({
   return (
     <article
       className={`horoscopes widget col-4 ${widgetSize}-widget`}
-      ref={impressionRef}
+      ref={ready || failed ? impressionRef : undefined}
       aria-labelledby="horoscopes-widget-label"
     >
       <div className="horoscopes-title-wrapper">
@@ -169,6 +230,7 @@ const Horoscopes = ({
 
       <div className="horoscopes-body">
         <iframe
+          ref={iframeRef}
           className="horoscopes-frame"
           aria-labelledby="horoscopes-widget-label"
           src={src}

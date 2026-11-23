@@ -94,14 +94,33 @@ JitFrameIter::JitFrameIter(jit::JitActivation* act, bool mustUnwindActivation,
   settle();
 }
 
-void JitFrameIter::skipNonScriptedJSFrames() {
-  if (isJSJit()) {
-    // Stop at the first scripted frame.
-    jit::JSJitFrameIter& frames = asJSJit();
-    while (!frames.isScripted() && !frames.done()) {
-      ++frames;
+void JitFrameIter::skipNonScriptedFrames() {
+  while (!done()) {
+    if (isJSJit()) {
+      // Stop at the first scripted frame.
+      jit::JSJitFrameIter& frames = asJSJit();
+      while (!frames.isScripted() && !frames.done()) {
+        ++frames;
+      }
+      // Stay on this iterator if we found a scripted frame.
+      if (!frames.done()) {
+        break;
+      }
+      // Otherwise go to the next iterator.
+      settle();
+    } else if (isWasm()) {
+      // Skip all return_call fallback frames.
+      wasm::WasmFrameIter& frames = asWasm();
+      while (!frames.done() && frames.currentFrameIsReturnCallFallback()) {
+        ++frames;
+      }
+      // Stay on this iterator if we found a normal frame.
+      if (!frames.done()) {
+        break;
+      }
+      // Otherwise go to the next iterator.
+      settle();
     }
-    settle();
   }
 }
 
@@ -317,7 +336,7 @@ void FrameIter::settleOnActivation() {
 
     if (activation->isJit()) {
       data_.jitFrames_ = JitFrameIter(activation->asJit());
-      data_.jitFrames_.skipNonScriptedJSFrames();
+      data_.jitFrames_.skipNonScriptedFrames();
       if (data_.jitFrames_.done()) {
         // It's possible to have an JitActivation with no scripted
         // frames, for instance if we hit an over-recursion during
@@ -428,7 +447,7 @@ void FrameIter::popJitFrame() {
   }
 
   ++data_.jitFrames_;
-  data_.jitFrames_.skipNonScriptedJSFrames();
+  data_.jitFrames_.skipNonScriptedFrames();
 
   if (!data_.jitFrames_.done()) {
     nextJitFrame();

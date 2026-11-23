@@ -18,28 +18,6 @@
 
 #include <windows.h>
 
-#ifdef __MINGW32__
-
-/* MingW currently does not implement a wide version of the
-   startup routines.  Workaround is to implement something like
-   it ourselves.  See bug 411826 */
-
-#  include <shellapi.h>
-
-int wmain(int argc, WCHAR** argv);
-
-int main(int argc, char** argv) {
-  LPWSTR commandLine = GetCommandLineW();
-  int argcw = 0;
-  LPWSTR* argvw = CommandLineToArgvW(commandLine, &argcw);
-  if (!argvw) return 127;
-
-  int result = wmain(argcw, argvw);
-  LocalFree(argvw);
-  return result;
-}
-#endif /* __MINGW32__ */
-
 #define main NS_internal_main
 
 #ifndef XRE_WANT_ENVIRON

@@ -319,7 +319,9 @@ add_task(async function test_open_tabs_flow_supplies_the_url() {
 
   try {
     await withAITab(async ({ conversation, mockEngine, run }) => {
-      const { body: tabs } = await callTool(mockEngine, conversation, {
+      const {
+        body: { tabs },
+      } = await callTool(mockEngine, conversation, {
         toolName: lazy.GET_OPEN_TABS,
         toolParams: {},
       });

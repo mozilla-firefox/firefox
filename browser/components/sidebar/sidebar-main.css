@@ -79,13 +79,32 @@
     margin-inline-end: calc(var(--tab-margin-inline-inner) + var(--tab-collapsed-scrollbar-extra, 0px));
   }
 
+  /* Expand on hover manages the tools height itself, so this is only a divider. */
+  @media -moz-pref("sidebar.visibility", "expand-on-hover") {
+    pointer-events: none;
+  }
+
   &:hover {
     background-color: var(--focus-outline-color);
     border-radius: var(--border-radius-medium);
   }
 
-  :host([tabs-overflow]:not([expanded])) &:not(:hover) {
-    background-image: var(--sidebar-divider-image);
+  :host([tabs-overflow]) & {
+    /* Match the space below, which includes the tool buttons' outer padding. */
+    margin-block-start: calc(var(--space-small) * 2);
+
+    &:not(:hover) {
+      background-image: var(--sidebar-divider-image);
+    }
+  }
+
+  :host([tabs-overflow][expanded]) &:not(:hover) {
+    opacity: var(--opacity-deemphasized-strong);
+  }
+
+  :host([expanded]) & {
+    background-size: var(--sidebar-divider-size-expanded);
+    background-position: var(--sidebar-divider-position-expanded);
   }
 }
 
@@ -160,20 +179,17 @@
       gap: 12.5px;
     }
 
-    @media -moz-pref("sidebar.visibility", "expand-on-hover") {
-      /* We need these rules to apply at all times when the sidebar.visibility
-      pref is set to "expand-on-hover" as opposed to when the "sidebar-expand-on-hover" attribute
-      has not been added to root. There are certain scenarios when that attribute is temporarily
-      removed from root such as when toggling the sidebar to expand with the toolbar button. */
-      margin-block-start: var(--space-small);
-    }
-
     .tools-overflow {
       width: unset;
     }
 
     &[overflowing="true"] {
       padding-inline-end: 0;
+      flex-wrap: nowrap;
+    }
+
+    /* Keep the tools to one row so the tabs don't move as the launcher expands. */
+    @media -moz-pref("sidebar.visibility", "expand-on-hover") {
       flex-wrap: nowrap;
     }
   }
@@ -200,7 +216,6 @@
     removed from root such as when toggling the sidebar to expand with the toolbar button. */
     :host(:not([expanded])) & {
       grid-template-rows: 1fr;
-      padding-block-end: var(--space-small);
     }
   }
 }

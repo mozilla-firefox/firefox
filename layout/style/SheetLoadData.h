@@ -219,6 +219,9 @@ class SheetLoadData final
   // Only relevant for non-inline sheets.
   bool mFinalURISameOrigin : 1 = false;
 
+  // Whether we were loaded on an image document.
+  bool mLoadedAsImage : 1 = false;
+
   // Whether this is a preload, and which kind of preload it is.
   //
   // TODO(emilio): This can become a bitfield once we build with a GCC version
@@ -233,6 +236,10 @@ class SheetLoadData final
 
   // The principal that identifies who started loading us.
   const nsCOMPtr<nsIPrincipal> mTriggeringPrincipal;
+
+  // Loader and partition principals.
+  const nsCOMPtr<nsIPrincipal> mLoaderPrincipal;
+  const nsCOMPtr<nsIPrincipal> mPartitionPrincipal;
 
   // Referrer info of the load.
   const nsCOMPtr<nsIReferrerInfo> mReferrerInfo;

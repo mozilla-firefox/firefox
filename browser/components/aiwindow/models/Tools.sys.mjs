@@ -54,6 +54,7 @@ ChromeUtils.defineESModuleGetters(lazy, {
   setTimeout: "resource://gre/modules/Timer.sys.mjs",
   MemoriesManager:
     "moz-src:///browser/components/aiwindow/models/memories/MemoriesManager.sys.mjs",
+  PrivateBrowsingUtils: "resource://gre/modules/PrivateBrowsingUtils.sys.mjs",
   SessionStore:
     "moz-src:///browser/components/sessionstore/SessionStore.sys.mjs",
   SmartWindowNavigationInfo:
@@ -376,7 +377,10 @@ export const toolsConfig = [
         `recently viewed. If 'topic' is specified, ` +
         "the tabs whose titles are most similar to the " +
         "topic are returned instead, ordered by similarity. " +
-        "Tabs sharing a `windowId` are in the same browser window.",
+        "Tabs sharing a `windowId` are in the same browser window. " +
+        "`tabs` leaves out some open tabs (such as new tab and internal pages) " +
+        "and is capped, so to answer how many tabs are open use `totalTabCount` " +
+        "and the per-window `tabCount` in `windows`, never the length of `tabs`.",
       parameters: {
         type: "object",
         properties: {
@@ -684,6 +688,52 @@ export function getTabList(amount = MAX_TABS) {
 }
 
 /**
+ * Counts the open tabs in every non-private browser window, including tabs
+ * getTabList never describes. Only counts leave this function, so windows whose
+ * tabs are not listed expose nothing beyond their size.
+ *
+ * @returns {Array<WindowTabCount>}
+ */
+function getWindowTabCounts() {
+  /** @type {Array<WindowTabCount>} */
+  const windows = [];
+
+  for (const win of lazy.BrowserWindowTracker.orderedWindows) {
+    if (
+      win.closed ||
+      !win.gBrowser ||
+      !win.toolbar.visible ||
+      win.document.documentElement.hasAttribute("taskbartab") ||
+      lazy.PrivateBrowsingUtils.isWindowPrivate(win)
+    ) {
+      continue;
+    }
+
+    windows.push({
+      windowId: lazy.SessionStore.getWindowId(win),
+      isSmartWindow: lazy.AIWindow.isAIWindowActive(win),
+      tabCount: win.gBrowser.nonHiddenTabs.length,
+    });
+  }
+
+  return windows;
+}
+
+/**
+ * @typedef {object} WindowTabCount
+ * @property {string|null} windowId - SessionStore ID of the browser window.
+ * @property {boolean} isSmartWindow - Whether the window is a Smart Window.
+ * @property {number} tabCount - Number of open tabs in the window.
+ */
+
+/**
+ * @typedef {object} OpenTabsResult
+ * @property {number} totalTabCount - Open tabs across all windows in `windows`.
+ * @property {Array<WindowTabCount>} windows - Tab count of each open window.
+ * @property {Array<TabInfo>} tabs - Tabs described to the model.
+ */
+
+/**
  * Metadata about a Tab used in chat conversations.
  *
  * @typedef {object} TabInfo
@@ -703,7 +753,7 @@ export function getTabList(amount = MAX_TABS) {
  * @param {string} [toolParams.topic] - Optional. If specified, tabs are ranked by
  *   similarity between the topic and each tab's title.
  * @param {ChatConversation} conversation
- * @returns {Promise<Array<TabInfo>>}
+ * @returns {Promise<OpenTabsResult>}
  */
 export async function getOpenTabs({ topic = "" } = {}, conversation) {
   // No security check needed. The security checks prevent data exfiltration,
@@ -752,6 +802,7 @@ export async function getOpenTabs({ topic = "" } = {}, conversation) {
   }
 
   const recentTabs = tabs.slice(0, MAX_TABS);
+  const windows = getWindowTabCounts();
 
   // Tab titles are truncated to 100 characters and therefore not expected to
   // contain enough untrusted data for a prompt injection attack.
@@ -766,7 +817,11 @@ export async function getOpenTabs({ topic = "" } = {}, conversation) {
     `Tool:get_open_tabs(${recentTabs.length})`
   );
 
-  return recentTabs;
+  return {
+    totalTabCount: windows.reduce((sum, w) => sum + w.tabCount, 0),
+    windows,
+    tabs: recentTabs,
+  };
 }
 
 /**

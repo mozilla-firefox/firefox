@@ -365,9 +365,7 @@ bool UnscaledFontMac::GetFontFileData(FontFileDataOutput aDataCallback,
          sizeof(fontChecksum));
 
   // we always use an index of 0
-  aDataCallback(buf.data, buf.offset, 0, aBaton);
-
-  return true;
+  return aDataCallback(buf.data, buf.offset, 0, aBaton);
 }
 
 bool UnscaledFontMac::GetFontDescriptor(FontDescriptorOutput aCb,
@@ -410,9 +408,8 @@ bool UnscaledFontMac::GetFontDescriptor(FontDescriptorOutput aCb,
     descriptor.Append(cstr);
   }
 
-  aCb(reinterpret_cast<const uint8_t*>(descriptor.get()), descriptor.Length(),
-      psNameLen, aBaton);
-  return true;
+  return aCb(reinterpret_cast<const uint8_t*>(descriptor.get()),
+             descriptor.Length(), psNameLen, aBaton);
 }
 
 static void CollectVariationsFromDictionary(const void* aKey,
@@ -458,9 +455,8 @@ bool ScaledFontMac::GetFontInstanceData(FontInstanceDataOutput aCb,
   }
 
   InstanceData instance(this);
-  aCb(reinterpret_cast<uint8_t*>(&instance), sizeof(instance),
-      variations.data(), variations.size(), aBaton);
-  return true;
+  return aCb(reinterpret_cast<uint8_t*>(&instance), sizeof(instance),
+             variations.data(), variations.size(), aBaton);
 }
 
 bool ScaledFontMac::GetWRFontInstanceOptions(

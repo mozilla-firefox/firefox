@@ -460,9 +460,6 @@ set_define("NOMINMAX", True)
 
 
 with only_when(target_is_windows & depends(c_compiler)(lambda c: c.type != "clang-cl")):
-    # strsafe.h on mingw uses macros for function deprecation that pollutes namespace
-    # causing problems with local implementations with the same name.
-    set_define("STRSAFE_NO_DEPRECATE", True)
     # abseil defaults to the pthread_setspecific thread identity mode on mingw.
     set_define("ABSL_FORCE_THREAD_IDENTITY_MODE", "ABSL_THREAD_IDENTITY_MODE_USE_CPP11")
 
@@ -471,9 +468,11 @@ with only_when(target_is_windows & depends(c_compiler)(lambda c: c.type != "clan
 
     set_config("WIN32_EXE_DEFAULT_LDFLAGS", win32_exe_default_ldflags_mingw)
 
-    # Silence problematic clang warnings
-    add_flag("-Wno-incompatible-ms-struct", compiler=cxx_compiler)
     add_linker_flag("-Wl,--no-insert-timestamp")
+
+    set_define(
+        "HAVE_SEH_EXCEPTIONS", True, when=depends(target.cpu)(lambda cpu: cpu != "x86")
+    )
 
     with only_when(depends(target.cpu)(lambda cpu: cpu == "x86")):
         add_flag("-mstackrealign")

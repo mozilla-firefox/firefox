@@ -38,25 +38,21 @@
 mozilla::LazyLogModule gTabletModeLog("TabletMode");
 extern mozilla::LazyLogModule gWindowsLog;
 
-/* mingw currently doesn't support windows.ui.viewmanagement.h, so we disable it
- * until it's fixed. */
-
-#ifndef __MINGW32__
-
-#  include <inspectable.h>
-#  include <roapi.h>
-#  include <uiviewsettingsinterop.h>
-#  include <windows.ui.viewmanagement.h>
-
-#  pragma comment(lib, "runtimeobject.lib")
+#include <inspectable.h>
+#include <roapi.h>
+#include <uiviewsettingsinterop.h>
+#include <windows.ui.viewmanagement.h>
 
 using namespace ABI::Windows::UI;
 using namespace ABI::Windows::UI::ViewManagement;
 using namespace Microsoft::WRL;
 using namespace Microsoft::WRL::Wrappers;
 using namespace ABI::Windows::Foundation;
-using namespace ABI::Windows::ApplicationModel::DataTransfer;
 
+#ifndef __MINGW32__
+#  pragma comment(lib, "runtimeobject.lib")
+
+using namespace ABI::Windows::ApplicationModel::DataTransfer;
 #endif
 
 using namespace mozilla;
@@ -233,9 +229,9 @@ WindowsUIUtils::GetIsTabletCapable(bool* aResult) {
   return NS_OK;
 }
 
+#ifndef __MINGW32__
 static IInspectable* GetUISettings() {
   MOZ_DIAGNOSTIC_ASSERT(NS_IsMainThread());
-#ifndef __MINGW32__
   // We need to keep this alive for ~ever so that change callbacks work as
   // expected, sigh.
   static StaticRefPtr<IInspectable> sUiSettingsAsInspectable;
@@ -312,10 +308,8 @@ static IInspectable* GetUISettings() {
   }
 
   return sUiSettingsAsInspectable.get();
-#else
-  return nullptr;
-#endif
 }
+#endif
 
 Maybe<nscolor> WindowsUIUtils::GetAccentColor(int aTone) {
   MOZ_ASSERT(aTone >= -3);
@@ -492,7 +486,6 @@ void WindowsUIUtils::UpdateInWin10TabletMode() {
   // thread; its operation is not known to be thread-safe, let alone lock-free.
   MOZ_DIAGNOSTIC_ASSERT(NS_IsMainThread());
 
-#ifndef __MINGW32__
   nsresult rv;
   nsCOMPtr<nsIWindowMediator> winMediator(
       do_GetService(NS_WINDOWMEDIATOR_CONTRACTID, &rv));
@@ -551,7 +544,6 @@ void WindowsUIUtils::UpdateInWin10TabletMode() {
                                          ? u"win10-tablet-mode"
                                          : u"normal-mode");
   }
-#endif
 }
 
 // The UUID of a GPIO pin which indicates whether or not a convertible device is

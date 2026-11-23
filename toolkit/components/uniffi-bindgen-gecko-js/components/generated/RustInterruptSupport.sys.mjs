@@ -38,7 +38,7 @@ export var UnitTestObjs = {
 export function shutdown() {
    
 const result = UniFFIScaffolding.callSync(
-    67, // uniffi_interrupt_support_fn_func_shutdown
+    68, // uniffi_interrupt_support_fn_func_shutdown
 )
 return handleRustResult(
     result,

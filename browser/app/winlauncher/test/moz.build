@@ -22,8 +22,4 @@ OS_LIBS += [
     "ntdll",
 ]
 
-if CONFIG["CC_TYPE"] in ("gcc", "clang"):
-    # This allows us to use wmain as the entry point on mingw
-    LDFLAGS += [
-        "-municode",
-    ]
+WIN32_WIDE_ENTRY = True

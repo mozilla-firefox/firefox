@@ -119,6 +119,11 @@ function createFakeWindow(tabs, closed = false, isAIWindow = true) {
     closed,
     gBrowser: {
       tabs,
+      nonHiddenTabs: tabs,
+    },
+    toolbar: { visible: true },
+    docShell: {
+      QueryInterface: () => ({ usePrivateBrowsing: false }),
     },
     document: {
       documentElement: {

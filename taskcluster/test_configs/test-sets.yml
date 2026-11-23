@@ -406,22 +406,6 @@ mingwclang-tests-debug:
     - telemetry-tests-client
     - reftest
 
-# The following is the same as the above block, minus reftests.
-# Reftests were disabled due to frequent hangs; see bug 1642719
-# for re-enabling.
-mingwclang-win32-tests-debug:
-    - cppunittest
-    - firefox-ui-functional
-    - mochitest-a11y
-    - mochitest-chrome-gpu
-    - mochitest-plain-gpu
-    - mochitest-webgl1-core
-    - mochitest-webgl1-ext
-    - mochitest-webgl2-core
-    - mochitest-webgl2-ext
-    # - reftest - disabled, see bug 1642719
-    - telemetry-tests-client
-
 mingwclang-tests-opt:
     - cppunittest
     - mochitest-chrome-gpu

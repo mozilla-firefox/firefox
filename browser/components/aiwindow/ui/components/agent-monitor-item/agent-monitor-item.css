@@ -145,22 +145,6 @@
   white-space: nowrap;
 }
 
-.favicon-sq {
-  width: var(--size-item-medium);
-  height: var(--size-item-medium);
-  border-radius: var(--border-radius-small);
-  flex: none;
-}
-
-.favicon-fallback {
-  display: grid;
-  place-items: center;
-  background-color: var(--color-accent-primary);
-  color: white;
-  font-weight: var(--font-weight-bold);
-  font-size: var(--font-size-small);
-}
-
 .field {
   display: flex;
   flex-direction: column;
@@ -306,12 +290,6 @@ moz-input-text::part(label),
   }
 }
 
-@keyframes pulse {
-  50% {
-    opacity: var(--opacity-deemphasized-strong);
-  }
-}
-
 .chatcard {
   cursor: pointer;
 
@@ -415,6 +393,8 @@ hr.rule {
 
 .delete-button {
   &::part(button) {
+    width: auto;
+    padding: 0 var(--space-large);
     --button-icon-fill: var(--button-background-color-destructive);
 
     &:hover {

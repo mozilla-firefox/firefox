@@ -11,7 +11,6 @@ import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.IntrinsicSize
 import androidx.compose.foundation.layout.Row
-import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxHeight
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
@@ -50,7 +49,6 @@ import org.mozilla.fenix.components.components
 import org.mozilla.fenix.compose.IMAGE_SIZE
 import org.mozilla.fenix.compose.ListItemTabSurface
 import org.mozilla.fenix.home.fake.FakeHomepagePreview
-import org.mozilla.fenix.home.pocket.PocketRecommendedStoriesCategory
 import org.mozilla.fenix.home.ui.HomepageTestTag.HOMEPAGE_SPONSORED_STORY
 import org.mozilla.fenix.home.ui.HomepageTestTag.HOMEPAGE_STORY
 import org.mozilla.fenix.home.ui.HomepageTestTag.POCKET_STORIES
@@ -271,40 +269,6 @@ fun Stories(
                         }
                     }
                 }
-            }
-        }
-    }
-}
-
-@Composable
-@PreviewLightDark
-private fun StoriesWithCategoriesPreview() {
-    FirefoxTheme {
-        Surface {
-            Column {
-                Stories(
-                    stories =
-                        listOf(
-                            FakeHomepagePreview.contentRecommendation(),
-                            FakeHomepagePreview.sponsoredContent(),
-                            FakeHomepagePreview.contentRecommendation(),
-                            FakeHomepagePreview.sponsoredContent(),
-                        ),
-                    contentPadding = 0.dp,
-                    onStoryShown = { _, _ -> },
-                    onStoryClicked = { _, _ -> },
-                )
-
-                Spacer(Modifier.height(10.dp))
-
-                StoriesCategories(
-                    categories =
-                        "Lorem ipsum dolor sit amet, consectetur adipiscing elit, sed do eiusmod tempor"
-                            .split(" ")
-                            .map { PocketRecommendedStoriesCategory(it) },
-                    selections = emptyList(),
-                    onCategoryClick = {},
-                )
             }
         }
     }

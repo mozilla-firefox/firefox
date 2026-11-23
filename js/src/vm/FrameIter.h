@@ -158,8 +158,9 @@ class JitFrameIter {
   // frame, once control returns to this frame.
   uint8_t* resumePCinCurrentFrame() const;
 
-  // Operations which have an effect only on JIT frames.
-  void skipNonScriptedJSFrames();
+  // Skip JS JIT frames that are not scripted, and hidden wasm frames, see
+  // WasmFrameIter::currentFrameIsReturnCallFallback.
+  void skipNonScriptedFrames();
 
   // Returns true iff this is a JIT frame with a self-hosted script. Note: be
   // careful, JitFrameIter does not consider functions inlined by Ion.

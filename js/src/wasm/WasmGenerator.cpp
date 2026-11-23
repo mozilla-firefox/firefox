@@ -235,7 +235,7 @@ bool ModuleGenerator::linkCallSites() {
       case CallSiteKind::CollapseFrame:
       case CallSiteKind::FuncRef:
       case CallSiteKind::FuncRefFast:
-      case CallSiteKind::ReturnStub:
+      case CallSiteKind::ReturnCallFallback:
       case CallSiteKind::StackSwitch:
       case CallSiteKind::RequestTierUp:
         break;

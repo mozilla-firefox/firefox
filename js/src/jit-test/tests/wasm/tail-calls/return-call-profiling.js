@@ -41,7 +41,7 @@ for (var i = 0; i < 10; i++) {
     ins.exports.run(100n);
 }
 
-// Also when trampoline is used.
+// Also when a cross-instance return call is made as a regular call.
 var ins0 = wasmEvalText(`(module (func (export "t")))`);
 var ins = wasmEvalText(`
 (module

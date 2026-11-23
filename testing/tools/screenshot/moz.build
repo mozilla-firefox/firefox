@@ -16,8 +16,7 @@ elif CONFIG["MOZ_WIDGET_TOOLKIT"] == "windows":
         "win32-screenshot.cpp",
     ]
     USE_STATIC_MSVCRT = True
-    if CONFIG["CC_TYPE"] in ("clang", "gcc"):
-        WIN32_EXE_LDFLAGS += ["-municode"]
+    WIN32_WIDE_ENTRY = True
     OS_LIBS += [
         "advapi32",
         "gdi32",

@@ -673,6 +673,8 @@ internal object IntegrityCheckingUniffiLib {
     }
 
     internal fun ensureInitialized() = Unit
+    external fun uniffi_error_support_checksum_func_report_error(
+    ): Int
     external fun ffi_error_support_uniffi_contract_version(
     ): Int
 
@@ -688,6 +690,8 @@ internal object UniffiLib {
     }
 
     internal fun ensureInitialized() = Unit
+    external fun uniffi_error_support_fn_func_report_error(`typeName`: RustBuffer.ByValue,`message`: RustBuffer.ByValue,uniffi_out_err: UniffiRustCallStatus, 
+    ): Unit
     external fun ffi_error_support_rustbuffer_alloc(`size`: Long,uniffi_out_err: UniffiRustCallStatus, 
     ): RustBuffer.ByValue
     external fun ffi_error_support_rustbuffer_from_bytes(`bytes`: ForeignBytes.ByValue,uniffi_out_err: UniffiRustCallStatus, 
@@ -952,5 +956,16 @@ public object FfiConverterString: FfiConverter<String, RustBuffer.ByValue> {
         buf.putInt(byteBuf.limit())
         buf.put(byteBuf)
     }
+} fun `reportError`(`typeName`: kotlin.String, `message`: kotlin.String)
+        = 
+    uniffiRustCall() { _status ->
+    UniffiLib.uniffi_error_support_fn_func_report_error(
+    
+        
+        FfiConverterString.lower(`typeName`),
+        FfiConverterString.lower(`message`),_status)
 }
+    
+    
+
 

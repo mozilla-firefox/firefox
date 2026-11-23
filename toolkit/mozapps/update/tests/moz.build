@@ -83,8 +83,7 @@ if CONFIG["OS_ARCH"] == "WINNT":
     DEFINES["UNICODE"] = True
     DEFINES["_UNICODE"] = True
     USE_STATIC_MSVCRT = True
-    if CONFIG["CC_TYPE"] in ("clang", "gcc"):
-        WIN32_EXE_LDFLAGS += ["-municode"]
+    WIN32_WIDE_ENTRY = True
 
 TEST_HARNESS_FILES.testing.mochitest.browser.toolkit.mozapps.update.tests.browser += [
     "data/simple.mar",

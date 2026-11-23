@@ -354,10 +354,12 @@ class CommonBackend(BuildBackend):
             dist_bin = mozpath.join(self.environment.topobjdir, "dist", "bin")
             rustflags = ("-C", f"link-arg=-Wl,-rpath,{dist_bin}")
         # Some crates reference Gecko or breakpad functions that their tests
-        # never call. `-FORCE:UNRESOLVED` lets every clang-cl test binary link
+        # never call. `-FORCE:UNRESOLVED` lets every Windows test binary link
         # with unresolved symbols, and a test that calls one crashes.
         elif substs.get("CC_TYPE") == "clang-cl":
             rustflags = ("-C", "link-arg=-FORCE:UNRESOLVED")
+        elif substs.get("CC_TYPE") == "clang":  # mingw-clang
+            rustflags = ("-C", "link-arg=-Wl,-Xlink=-force:unresolved")
         return CargoCommand(
             kind="test",
             manifest_path=mozpath.normsep(mozpath.join(tests.srcdir, "Cargo.toml")),

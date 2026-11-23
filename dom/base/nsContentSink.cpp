@@ -331,17 +331,17 @@ nsresult nsContentSink::ProcessLinkFromHeader(const net::LinkHeader& aHeader,
   }
 
   bool isAlternate = linkTypes & LinkStyle::eALTERNATE;
-  return ProcessStyleLinkFromHeader(aHeader.mHref, isAlternate, aHeader.mTitle,
-                                    aHeader.mIntegrity, aHeader.mType,
-                                    aHeader.mMedia, aHeader.mReferrerPolicy,
-                                    aHeader.mFetchPriority);
+  return ProcessStyleLinkFromHeader(
+      aHeader.mHref, isAlternate, aHeader.mTitle, aHeader.mIntegrity,
+      aHeader.mType, aHeader.mMedia, aHeader.mCrossOrigin,
+      aHeader.mReferrerPolicy, aHeader.mFetchPriority);
 }
 
 nsresult nsContentSink::ProcessStyleLinkFromHeader(
     const nsAString& aHref, bool aAlternate, const nsAString& aTitle,
     const nsAString& aIntegrity, const nsAString& aType,
-    const nsAString& aMedia, const nsAString& aReferrerPolicy,
-    const nsAString& aFetchPriority) {
+    const nsAString& aMedia, const nsAString& aCrossOrigin,
+    const nsAString& aReferrerPolicy, const nsAString& aFetchPriority) {
   if (aAlternate && aTitle.IsEmpty()) {
     // alternates must have title return without error, for now
     return NS_OK;
@@ -382,7 +382,7 @@ nsresult nsContentSink::ProcessStyleLinkFromHeader(
       url.forget(),
       nullptr,
       referrerInfo.forget(),
-      CORS_NONE,
+      dom::Element::StringToCORSMode(aCrossOrigin),
       aTitle,
       aMedia,
       aIntegrity,

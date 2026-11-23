@@ -4,62 +4,8 @@
 
 /* Windows only app to show a modal debug dialog - launched by nsDebug.cpp */
 #include <stdlib.h>
+#include <strsafe.h>
 #include <windows.h>
-#ifdef _MSC_VER
-#  include <strsafe.h>
-#endif
-#ifdef __MINGW32__
-/* MingW currently does not implement a wide version of the
-   startup routines.  Workaround is to implement something like
-   it ourselves.  See bug 472063 */
-#  include <shellapi.h>
-#  include <stdio.h>
-int WINAPI wWinMain(HINSTANCE, HINSTANCE, LPWSTR, int);
-
-#  undef __argc
-#  undef __wargv
-
-static int __argc;
-static wchar_t** __wargv;
-
-int WINAPI WinMain(HINSTANCE hInstance, HINSTANCE hPrevInstance,
-                   LPSTR lpszCommandLine, int nCmdShow) {
-  LPWSTR commandLine = GetCommandLineW();
-
-  /* parse for __argc and __wargv for compatibility, since mingw
-   * doesn't claim to support it :(
-   */
-  __wargv = CommandLineToArgvW(commandLine, &__argc);
-  if (!__wargv) return 127;
-
-  /* need to strip off any leading whitespace plus the first argument
-   * (the executable itself) to match what should be passed to wWinMain
-   */
-  while ((*commandLine <= L' ') && *commandLine) {
-    ++commandLine;
-  }
-  if (*commandLine == L'"') {
-    ++commandLine;
-    while ((*commandLine != L'"') && *commandLine) {
-      ++commandLine;
-    }
-    if (*commandLine) {
-      ++commandLine;
-    }
-  } else {
-    while (*commandLine > L' ') {
-      ++commandLine;
-    }
-  }
-  while ((*commandLine <= L' ') && *commandLine) {
-    ++commandLine;
-  }
-
-  int result = wWinMain(hInstance, hPrevInstance, commandLine, nCmdShow);
-  LocalFree(__wargv);
-  return result;
-}
-#endif /* __MINGW32__ */
 
 int WINAPI wWinMain(HINSTANCE hInstance, HINSTANCE hPrevInstance,
                     LPWSTR lpszCmdLine, int nCmdShow) {
@@ -94,12 +40,7 @@ int WINAPI wWinMain(HINSTANCE hInstance, HINSTANCE hPrevInstance,
   static const int size = 4096;
   static WCHAR msg[size];
 
-#ifdef _MSC_VER
-  StringCchPrintfW(msg,
-#else
-  snwprintf(msg,
-#endif
-                   size,
+  StringCchPrintfW(msg, size,
                    L"%s\n\nClick Abort to exit the Application.\n"
                    L"Click Retry to Debug the Application.\n"
                    L"Click Ignore to continue running the Application.",

@@ -21,6 +21,7 @@ gcloud:
   performance-metrics: true
 
   test-targets:
+    - notAnnotation org.mozilla.fenix.customannotations.Converted
     - notPackage org.mozilla.fenix.syncintegration
     - notPackage org.mozilla.fenix.experimentintegration
     - notPackage org.mozilla.fenix.ui.efficiency.tests

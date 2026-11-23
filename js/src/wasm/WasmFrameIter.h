@@ -88,6 +88,8 @@ class WasmFrameIter {
   bool failedUnwindSignatureMismatch_ = false;
   // Whether the current frame is on a different stack from the previous stack.
   bool currentFrameStackSwitched_ = false;
+  // Whether the current frame is paused at a ReturnCallFallback call site.
+  bool currentFrameIsReturnCallFallback_ = false;
 #ifdef ENABLE_WASM_JSPI
   ContStack* contStack_ = nullptr;
   // A continuation stack that the trap occurred on but which has no frame in
@@ -236,6 +238,14 @@ class WasmFrameIter {
   bool currentFrameStackSwitched() const {
     MOZ_ASSERT(!done());
     return currentFrameStackSwitched_;
+  }
+
+  // Whether the current frame made a return call as a regular call, see
+  // ReturnCallFallback. Semantically the frame has already returned, so it is
+  // hidden from stack traces, the debugger, and exception handling.
+  bool currentFrameIsReturnCallFallback() const {
+    MOZ_ASSERT(!done());
+    return currentFrameIsReturnCallFallback_;
   }
 
 #ifdef ENABLE_WASM_JSPI

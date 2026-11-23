@@ -463,7 +463,7 @@ bool IProtocol::SetManagerAndRegister(IRefCountedProtocol* aManager,
   }
 
   // If our manager is already dying, mark ourselves as doomed as well.
-  if (aManager && aManager->mLinkStatus != LinkStatus::Connected) {
+  if (aManager->mLinkStatus != LinkStatus::Connected) {
     mLinkStatus = LinkStatus::Doomed;
     if (aManager->mLinkStatus != LinkStatus::Doomed) {
       // Our manager is already fully dead, make sure we call

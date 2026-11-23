@@ -58,3 +58,5 @@ LegacyTest(
     f"!/{FINAL_TARGET}/TestXREMakeCommandLineWin{CONFIG['BIN_SUFFIX']}",
     description="TestXREMakeCommandLineWin tests",
 )
+
+WIN32_WIDE_ENTRY = True

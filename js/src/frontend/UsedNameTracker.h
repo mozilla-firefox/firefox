@@ -34,30 +34,45 @@ namespace frontend {
 // ScopeId is used to answer the question "is `i` used in any scopes currently
 //                                         being parsed?"
 //
+// The data structure also validates that all uses of private identifiers have a
+// corresponding binding, to emit an early error. This can be done efficiently
+// by counting unresolved uses.
+//
 // The algorithm:
 //
 // Let Used be a map of names to lists.
 // Let Declared(ScopeId) be a list of declarations for a scope numbered with
-// ScopeId
+// ScopeId.
+// Let UnboundPrivates be a non-negative integer initialized to zero.
 //
 // 1. Number all scopes in monotonic increasing order in textual order.
 // 2. Number all scripts in monotonic increasing order in textual order.
-// 3. When an identifier `i` is used in (ScriptId,ScopeId), append that use to
-//    the list Used[i] (creating the list and table entry if necessary).
+// 3. When an identifier `i` is first used in (ScriptId,ScopeId):
+//   a. Append that use to the list Used[i] (creating the list and table entry
+//      if necessary).
+//   b. If `i` is a private name, increment UnboundPrivates.
 // 4. When an identifier `i` is declared in a scope numbered ScopeId, append `i`
 //    to Declared(ScopeId).
 // 5. When we finish parsing a scope numbered with ScopeId, in script numbered
-//    ScriptId, for each declared name d in Declared(ScopeId):
+//    ScriptId, for each declared name `d` in Declared(ScopeId):
 //   a. If d is found in Used, mark d as closed over if there is a value
 //      (UsedScriptId, UsedScopeId) in Used[d] such that UsedScriptId > ScriptId
 //      and UsedScopeId > ScopeId.
 //   b. Remove all values uses in Used[d] where UsedScopeId > ScopeId.
+//   c. If `d` is a private name, decrement UnboundPrivates once for each value
+//      removed in step b.
+// 6. When we finish parsing an outermost class or whole script, if
+//    UnboundPrivates is not zero:
+//   a. Walk all lists in Used to identify the offending identifiers.
+//   b. Trigger a syntax error showing the offending identifiers.
 //
 // Steps 1 and 2 are implemented by UsedNameTracker::next{Script,Scope}Id.
-// Step 3 is implemented by UsedNameTracker::noteUsedInScope.
+// Step 3 is implemented by UsedNameTracker::noteUse.
 // Step 4 is implemented by ParseContext::Scope::addDeclaredName.
-// Step 5 is implemented by UsedNameTracker::noteBoundInScope and
+// Step 5 is implemented by UsedNameTracker::noteBindingInScope and
 // Parser::propagateFreeNamesAndMarkClosedOverBindings
+// Step 6 is implemented by UsedNameTracker::{has,get}UnboundPrivateNames and
+// their callers.
 //
 // The following is a worked example to show how the algorithm works on a
 // relatively simple piece of code. (clang-format is disabled due to the width
@@ -116,6 +131,34 @@ namespace frontend {
 //                                         //   closed over.
 //                                         // Inspecting only the last use would wrongly
 //                                         // report false.
+//
+// // A third case shows how the algorithm tracks unbound private uses:
+// // (class scripts and scopes simplified for clarity)
+//
+// class A {// Scope 10
+//    bar()
+//    { // Script 7, Scope 11
+//       this.#y++;                        // Used[#y] = [(7,11)]. UnboundPrivates = 1 (#y: 1).
+//       class B {// Scope 12
+//          #x;                            // Declared(12) = [#x].
+//          foo()
+//          { // Script 8, Scope 13
+//             return this.#x + this.#y;   // Used[#x] = [(8,13)]. UnboundPrivates = 2 (#x: 1, #y: 1).
+//                                         // Used[#y] = [(7,11),(8,13)]. UnboundPrivates = 3 (#x: 1, #y: 2).
+//          }                              // Leaving Script 8, Scope 13: No declared variables.
+//       }                                 // Leaving Scope 12: Declared(12) = [#x]. UnboundPrivates = 2 (#y: 2).
+//                                         // - Used[#x] = [].
+//                                         // - We removed one entry from Used[#x],
+//                                         //   so we decrement UnboundPrivates once.
+//    }                                    // Leaving Script 7, Scope 11: No declared variables.
+//    #y;                                  // Declared(10) = [#y].
+// }                                       // Leaving Scope 10: Declared(10) = [#y]. UnboundPrivates = 0.
+//                                         // - Used[#y] = [].
+//                                         // - We removed two entries from Used[#y],
+//                                         //   so we have to decrement UnboundPrivates twice.
+//                                         //
+//                                         // A call to getUnboundPrivateNames() returns [].
+//                                         // - UnboundPrivates = 0, so we do not have to walk Used.
 
 // clang-format on
 
@@ -139,8 +182,6 @@ class UsedNameTracker {
 
     Vector<Use, 6> uses_;
 
-    void resetToScope(uint32_t scriptId, uint32_t scopeId);
-
     NameVisibility visibility_ = NameVisibility::Public;
 
     // The first place this name was used. This is important to track
@@ -148,22 +189,45 @@ class UsedNameTracker {
     // diagnostics for using a name that's not defined lexically.
     mozilla::Maybe<TokenPos> firstUsePos_;
 
-   public:
-    explicit UsedNameInfo(FrontendContext* fc, NameVisibility visibility,
-                          mozilla::Maybe<TokenPos> position)
-        : uses_(fc), visibility_(visibility), firstUsePos_(position) {}
+    // All modifications to |uses_| must go through {push,pop}Use to ensure
+    // that |unboundPrivateCounter| is kept exactly equal to the sum of
+    // |uses_| entries across all private names.
+    bool pushUse(uint32_t scriptId, uint32_t scopeId,
+                 size_t* unboundPrivateCounter) {
+      if (!uses_.append(Use{scriptId, scopeId})) {
+        return false;
+      }
 
-    UsedNameInfo(UsedNameInfo&& other) = default;
+      if (visibility_ == NameVisibility::Private) {
+        *unboundPrivateCounter += 1;
+      }
 
-    bool noteUsedInScope(uint32_t scriptId, uint32_t scopeId) {
+      return true;
+    }
+
+    // All removals from |uses_| go through here.
+    void popUse(size_t* unboundPrivateCounter) {
+      if (visibility_ == NameVisibility::Private) {
+        MOZ_ASSERT(*unboundPrivateCounter != 0);
+        *unboundPrivateCounter -= 1;
+      }
+
+      uses_.popBack();
+    }
+
+    void resetToScope(uint32_t scriptId, uint32_t scopeId,
+                      size_t* unboundPrivateCounter);
+
+    bool noteUsedInScope(uint32_t scriptId, uint32_t scopeId,
+                         size_t* unboundPrivateCounter) {
       if (uses_.empty() || uses_.back().scopeId < scopeId) {
-        return uses_.append(Use{scriptId, scopeId});
+        return pushUse(scriptId, scopeId, unboundPrivateCounter);
       }
       return true;
     }
 
-    void noteBoundInScope(uint32_t scriptId, uint32_t scopeId,
-                          bool* closedOver) {
+    void noteBoundInScope(uint32_t scriptId, uint32_t scopeId, bool* closedOver,
+                          size_t* unboundPrivateCounter) {
       *closedOver = false;
       while (!uses_.empty()) {
         Use& innermost = uses_.back();
@@ -173,9 +237,16 @@ class UsedNameTracker {
         if (innermost.scriptId > scriptId) {
           *closedOver = true;
         }
-        uses_.popBack();
+        popUse(unboundPrivateCounter);
       }
     }
+
+   public:
+    explicit UsedNameInfo(FrontendContext* fc, NameVisibility visibility,
+                          mozilla::Maybe<TokenPos> position)
+        : uses_(fc), visibility_(visibility), firstUsePos_(position) {}
+
+    UsedNameInfo(UsedNameInfo&& other) = default;
 
     bool isUsedInScript(uint32_t scriptId) const {
       return !uses_.empty() && uses_.back().scriptId >= scriptId;
@@ -228,16 +299,17 @@ class UsedNameTracker {
   // Monotonically increasing id for all nested scopes.
   uint32_t scopeCounter_;
 
-  // Set if a private name was encountered.
-  // Used to short circuit some private field early error checks
-  bool hasPrivateNames_;
+  // Number of unresolved uses of private names.
+  // Used to determine whether there is an early error,
+  // without scanning |map_|.
+  size_t unboundPrivateCounter_;
 
  public:
   explicit UsedNameTracker(FrontendContext* fc)
       : map_(fc),
         scriptCounter_(0),
         scopeCounter_(0),
-        hasPrivateNames_(false) {}
+        unboundPrivateCounter_(0) {}
 
   uint32_t nextScriptId() {
     MOZ_ASSERT(scriptCounter_ != UINT32_MAX,
@@ -252,6 +324,14 @@ class UsedNameTracker {
 
   UsedNameMap::Ptr lookup(TaggedParserAtomIndex name) const {
     return map_.lookup(name);
+  }
+
+  void noteBindingInScope(TaggedParserAtomIndex name, uint32_t scriptId,
+                          uint32_t scopeId, bool* closedOver) {
+    if (auto p = map_.lookup(name)) {
+      p->value().noteBoundInScope(scriptId, scopeId, closedOver,
+                                  &unboundPrivateCounter_);
+    }
   }
 
   [[nodiscard]] bool noteUse(

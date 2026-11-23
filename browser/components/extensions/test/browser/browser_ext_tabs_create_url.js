@@ -8,7 +8,7 @@ async function runWithDisabledPrivateBrowsing(callback) {
 
   PoliciesPrefTracker.start();
   await EnterprisePolicyTesting.setupPolicyEngineWithJson({
-    policies: { DisablePrivateBrowsing: true },
+    policies: { PrivateBrowsingModeAvailability: 1 },
   });
 
   try {

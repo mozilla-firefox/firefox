@@ -246,14 +246,6 @@ class RasterImage final : public ImageResource,
    */
   nsresult SetSourceSizeHint(uint32_t aSizeHint);
 
-  nsCString GetURIString() {
-    nsCString spec;
-    if (GetURI()) {
-      GetURI()->GetSpec(spec);
-    }
-    return spec;
-  }
-
  private:
   nsresult Init(const char* aMimeType, uint32_t aFlags);
 

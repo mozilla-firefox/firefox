@@ -16,6 +16,8 @@ from tryselect import push
 from tryselect.util.taskcluster import TC_ROOT_URL
 from tryselect.util.taskcluster import get_client as real_get_client
 
+real_check_tree_status = push.check_tree_status
+
 
 @pytest.mark.parametrize(
     "method,labels,params,routes,expected",
@@ -427,6 +429,47 @@ def test_push_to_try_routing(
             mock_vcs.push_to_try.assert_not_called()
 
 
+@pytest.mark.parametrize(
+    "url,expected",
+    [
+        pytest.param("git@github.com:mozilla-firefox/firefox-dev.git", True, id="ssh"),
+        pytest.param(
+            "https://github.com/mozilla-firefox/firefox-dev", True, id="https"
+        ),
+        pytest.param(
+            "https://github.com/Mozilla-Firefox/Firefox-Dev", True, id="mixed-case"
+        ),
+        pytest.param(
+            "https://github.com/mozilla-firefox/firefox-dev-secure",
+            False,
+            id="secure",
+        ),
+        pytest.param("https://github.com/someone/firefox-dev", False, id="fork"),
+    ],
+)
+def test_push_to_try_prints_treeherder_url(capsys, url, expected):
+    mock_vcs = MagicMock()
+    mock_vcs.get_remote_url.return_value = url
+    mock_vcs.push_to_try.return_value = "abc123"
+
+    with ExitStack() as stack:
+        stack.enter_context(patch("tryselect.push.vcs", mock_vcs))
+        stack.enter_context(patch("tryselect.push.MACH_TRY_REMOTE", "origin"))
+        stack.enter_context(patch("tryselect.push.check_working_directory"))
+        stack.enter_context(patch("tryselect.push.check_tree_status"))
+        stack.enter_context(patch("tryselect.push.write_task_config_history"))
+        push._is_hg_try.cache_clear()
+
+        push.push_to_try("fuzzy", "try: test", MagicMock(), push_to_vcs=True)
+
+    message = (
+        "\nView push in Treeherder:\n"
+        " https://treeherder.mozilla.org/jobs?repo=firefox-dev&revision=abc123\n"
+    )
+    out = capsys.readouterr().out
+    assert out.endswith(message) if expected else "Treeherder" not in out
+
+
 @pytest.fixture
 def mock_tc_secret(monkeypatch):
     monkeypatch.setattr(push, "get_client", real_get_client)
@@ -649,6 +692,66 @@ def test_push_to_try_skips_git_backing_when_disabled():
     config = json.loads(call_kwargs["changed_files"]["try_task_config.json"])
     assert "head_git_repository" not in config.get("parameters", {})
     assert "head_git_rev" not in config.get("parameters", {})
+
+
+@pytest.mark.parametrize(
+    "status,body,closed",
+    (
+        pytest.param(200, {"result": {"status": "open"}}, False, id="open"),
+        pytest.param(200, {"result": {"status": "closed"}}, True, id="closed"),
+        pytest.param(404, {"detail": "No tree try found."}, False, id="unknown"),
+    ),
+)
+def test_check_tree_status(responses, status, body, closed):
+    responses.add(
+        responses.GET,
+        push.TREESTATUS_URL.format(domain="lando.moz.tools", tree="try"),
+        json=body,
+        status=status,
+    )
+    push.vcs.get_remote_url.return_value = None
+    if closed:
+        with pytest.raises(SystemExit):
+            real_check_tree_status("ssh://hg.mozilla.org/try")
+    else:
+        real_check_tree_status("ssh://hg.mozilla.org/try")
+
+
+@pytest.mark.parametrize(
+    "push_to_vcs,closed_tree,suffix",
+    (
+        pytest.param(True, False, False, id="open"),
+        pytest.param(True, True, True, id="hg_closed"),
+        pytest.param(False, False, False, id="lando"),
+        pytest.param(False, True, False, id="lando_closed"),
+    ),
+)
+def test_push_to_try_closed_tree(
+    mock_push_to_lando_try, push_to_vcs, closed_tree, suffix
+):
+    url = "ssh://hg.mozilla.org/try"
+    push.vcs.get_remote_url.return_value = url
+
+    with ExitStack() as stack:
+        stack.enter_context(patch("tryselect.push.MACH_TRY_REMOTE", url))
+        stack.enter_context(patch("tryselect.push.check_working_directory"))
+        lando = stack.enter_context(mock_push_to_lando_try)
+        push._is_hg_try.cache_clear()
+
+        push.push_to_try(
+            "fuzzy",
+            "try: test",
+            MagicMock(),
+            closed_tree=closed_tree,
+            push_to_vcs=push_to_vcs,
+        )
+
+    assert push.check_tree_status.called == (push_to_vcs and not closed_tree)
+    if push_to_vcs:
+        commit_message = push.vcs.push_to_try.call_args.args[0]
+    else:
+        commit_message = lando.call_args.args[1]
+    assert ("ON A CLOSED TREE" in commit_message) == suffix
 
 
 if __name__ == "__main__":

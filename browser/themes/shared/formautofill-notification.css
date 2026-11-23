@@ -185,8 +185,21 @@
   flex: 1;
   flex-direction: column;
   gap: var(--space-xsmall);
+  min-width: 0;
 
   > .line-two {
+    display: flex;
+    overflow: hidden;
     color: var(--text-color-deemphasized);
+    white-space: pre;
   }
+}
+
+.card-name {
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.payments-doorhanger-options-button {
+  flex-shrink: 0;
 }

@@ -4,7 +4,6 @@
 
 package org.mozilla.fenix.components.appstate
 
-import androidx.annotation.VisibleForTesting
 import mozilla.components.lib.crash.store.CrashAction
 import mozilla.components.lib.crash.store.crashReducer
 import org.mozilla.fenix.components.AppStore
@@ -280,17 +279,4 @@ internal object AppStoreReducer {
 
             is AppAction.UpdateTabsTrayVisibility -> state.copy(isTabsTrayVisible = action.visible)
         }
-}
-
-/**
- * Removes a [RecentHistoryGroup] identified by [groupTitle] if it exists in the current list.
- *
- * @param groupTitle [RecentHistoryGroup.title] of the item that should be removed.
- */
-@VisibleForTesting
-internal fun List<RecentlyVisitedItem>.filterOut(groupTitle: String?): List<RecentlyVisitedItem> {
-    return when (groupTitle != null) {
-        true -> filterNot { it is RecentHistoryGroup && it.title.equals(groupTitle, true) }
-        false -> this
-    }
 }

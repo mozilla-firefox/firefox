@@ -175,9 +175,9 @@ const i64_mul_constants = [
   {
     mul: "0x0123456789abcdef",
     expected: `lu12i\\.w      \\$t6, -484676
+               ori            \\$t6, \\$t6, 0xdef
                lu32i\\.d      \\$t6, 214375
                lu52i\\.d      \\$t6, \\$t6, 18
-               ori            \\$t6, \\$t6, 0xdef
                mul\\.d        \\$a0, \\$a0, \\$t6`,
   },
 ];

@@ -231,8 +231,8 @@ if (getBuildConfiguration("simulator")) {
   assertEq(ins.exports.main(40000000), 800000020000000n);
 }
 
-// GC/externref shall not cling to the trampoline frame.
-// The `return_call` caller will create a trampoline because the callee is
+// GC/externref shall not cling to the frame of a cross-instance `return_call`.
+// The `return_call` caller will make a regular call because the callee is
 // an import. The caller will create a GC object and will hold in its frame
 // and a WeakMap.
 // Test if the created object is in the WeakMap even after gc().

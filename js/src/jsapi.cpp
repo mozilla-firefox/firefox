@@ -4944,7 +4944,7 @@ static bool GetScriptedCallerActivationRealmFast(JSContext* cx,
     jit::JitActivation* act = activationIter->asJit();
     JitFrameIter iter(act);
     while (true) {
-      iter.skipNonScriptedJSFrames();
+      iter.skipNonScriptedFrames();
       if (iter.done()) {
         break;
       }

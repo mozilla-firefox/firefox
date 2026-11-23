@@ -2784,6 +2784,17 @@ static void AccumulateTelemetryCallback(JSMetric id,
             .Add(1);
       }
       break;
+    case JSMetric::GC_GRAY_BITS_VALID:
+      if (sample.as<bool>()) {
+        glean::javascript_gc::gray_bits_valid
+            .EnumGet(glean::javascript_gc::GrayBitsValidLabel::eTrue)
+            .Add(1);
+      } else {
+        glean::javascript_gc::gray_bits_valid
+            .EnumGet(glean::javascript_gc::GrayBitsValidLabel::eFalse)
+            .Add(1);
+      }
+      break;
     case JSMetric::GC_BUDGET_WAS_INCREASED:
       if (sample.as<bool>()) {
         glean::javascript_gc::budget_was_increased

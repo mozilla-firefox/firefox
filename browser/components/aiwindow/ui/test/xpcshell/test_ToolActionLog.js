@@ -258,6 +258,20 @@ add_task(function test_getActionLogChipsForTool_get_open_tabs() {
   });
 });
 
+add_task(function test_getActionLogChipsForTool_get_open_tabs_object_body() {
+  const body = {
+    totalTabCount: 5,
+    windows: [{ windowId: "w1", isSmartWindow: true, tabCount: 5 }],
+    tabs: [{ url: "https://example.com/", title: "Example", lastAccessed: 1 }],
+  };
+
+  Assert.deepEqual(
+    getActionLogChipsForTool(GET_OPEN_TABS, body),
+    [{ url: "https://example.com/", label: "Example" }],
+    "Chips come from the tabs of an object body"
+  );
+});
+
 add_task(function test_getActionLogChipsForTool_get_open_tabs_empty() {
   Assert.deepEqual(
     getActionLogChipsForTool(GET_OPEN_TABS, []),

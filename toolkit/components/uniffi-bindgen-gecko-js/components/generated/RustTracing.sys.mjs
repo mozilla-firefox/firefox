@@ -45,7 +45,7 @@ export function registerEventSink(
 FfiConverterTypeEventSinkSpecification.checkType(targets);
 FfiConverterTypeEventSink.checkType(sink);
 const result = UniFFIScaffolding.callSync(
-    72, // uniffi_tracing_support_fn_func_register_event_sink
+    73, // uniffi_tracing_support_fn_func_register_event_sink
     FfiConverterTypeEventSinkSpecification.lower(targets),
     FfiConverterTypeEventSink.lower(sink),
 )
@@ -65,7 +65,7 @@ export function unregisterEventSink(
    
 FfiConverterTypeEventSinkId.checkType(id);
 const result = UniFFIScaffolding.callSync(
-    73, // uniffi_tracing_support_fn_func_unregister_event_sink
+    74, // uniffi_tracing_support_fn_func_unregister_event_sink
     FfiConverterTypeEventSinkId.lower(id),
 )
 return handleRustResult(

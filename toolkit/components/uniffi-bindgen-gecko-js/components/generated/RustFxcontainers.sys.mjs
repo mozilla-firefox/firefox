@@ -45,7 +45,7 @@ export function colorCode(
 FfiConverterTypeContainerColor.checkType(color);
 FfiConverterBoolean.checkType(nova);
 const result = UniFFIScaffolding.callSync(
-    8, // uniffi_fxcontainers_fn_func_color_code
+    9, // uniffi_fxcontainers_fn_func_color_code
     FfiConverterTypeContainerColor.lower(color),
     FfiConverterBoolean.lower(nova),
 )
@@ -66,7 +66,7 @@ export function colorFromName(
    
 FfiConverterString.checkType(name);
 const result = UniFFIScaffolding.callSync(
-    9, // uniffi_fxcontainers_fn_func_color_from_name
+    10, // uniffi_fxcontainers_fn_func_color_from_name
     FfiConverterString.lower(name),
 )
 return handleRustResult(
@@ -86,7 +86,7 @@ export function colorGeckoL10nId(
    
 FfiConverterTypeContainerColor.checkType(color);
 const result = UniFFIScaffolding.callSync(
-    10, // uniffi_fxcontainers_fn_func_color_gecko_l10n_id
+    11, // uniffi_fxcontainers_fn_func_color_gecko_l10n_id
     FfiConverterTypeContainerColor.lower(color),
 )
 return handleRustResult(
@@ -106,7 +106,7 @@ export function colorName(
    
 FfiConverterTypeContainerColor.checkType(color);
 const result = UniFFIScaffolding.callSync(
-    11, // uniffi_fxcontainers_fn_func_color_name
+    12, // uniffi_fxcontainers_fn_func_color_name
     FfiConverterTypeContainerColor.lower(color),
 )
 return handleRustResult(
@@ -123,7 +123,7 @@ return handleRustResult(
 export function containerColorAliases() {
    
 const result = UniFFIScaffolding.callSync(
-    12, // uniffi_fxcontainers_fn_func_container_color_aliases
+    13, // uniffi_fxcontainers_fn_func_container_color_aliases
 )
 return handleRustResult(
     result,
@@ -139,7 +139,7 @@ return handleRustResult(
 export function containerColors() {
    
 const result = UniFFIScaffolding.callSync(
-    13, // uniffi_fxcontainers_fn_func_container_colors
+    14, // uniffi_fxcontainers_fn_func_container_colors
 )
 return handleRustResult(
     result,
@@ -155,7 +155,7 @@ return handleRustResult(
 export function containerIcons() {
    
 const result = UniFFIScaffolding.callSync(
-    14, // uniffi_fxcontainers_fn_func_container_icons
+    15, // uniffi_fxcontainers_fn_func_container_icons
 )
 return handleRustResult(
     result,
@@ -174,7 +174,7 @@ export function iconFromName(
    
 FfiConverterString.checkType(name);
 const result = UniFFIScaffolding.callSync(
-    15, // uniffi_fxcontainers_fn_func_icon_from_name
+    16, // uniffi_fxcontainers_fn_func_icon_from_name
     FfiConverterString.lower(name),
 )
 return handleRustResult(
@@ -194,7 +194,7 @@ export function iconGeckoL10nId(
    
 FfiConverterTypeContainerIcon.checkType(icon);
 const result = UniFFIScaffolding.callSync(
-    16, // uniffi_fxcontainers_fn_func_icon_gecko_l10n_id
+    17, // uniffi_fxcontainers_fn_func_icon_gecko_l10n_id
     FfiConverterTypeContainerIcon.lower(icon),
 )
 return handleRustResult(
@@ -214,7 +214,7 @@ export function iconName(
    
 FfiConverterTypeContainerIcon.checkType(icon);
 const result = UniFFIScaffolding.callSync(
-    17, // uniffi_fxcontainers_fn_func_icon_name
+    18, // uniffi_fxcontainers_fn_func_icon_name
     FfiConverterTypeContainerIcon.lower(icon),
 )
 return handleRustResult(
@@ -234,7 +234,7 @@ export function labelGeckoL10nId(
    
 FfiConverterTypeContainerLabel.checkType(label);
 const result = UniFFIScaffolding.callSync(
-    18, // uniffi_fxcontainers_fn_func_label_gecko_l10n_id
+    19, // uniffi_fxcontainers_fn_func_label_gecko_l10n_id
     FfiConverterTypeContainerLabel.lower(label),
 )
 return handleRustResult(
@@ -251,7 +251,7 @@ return handleRustResult(
 export function latestVersion() {
    
 const result = UniFFIScaffolding.callSync(
-    19, // uniffi_fxcontainers_fn_func_latest_version
+    20, // uniffi_fxcontainers_fn_func_latest_version
 )
 return handleRustResult(
     result,
@@ -267,7 +267,7 @@ return handleRustResult(
 export function maxUserContextId() {
    
 const result = UniFFIScaffolding.callSync(
-    20, // uniffi_fxcontainers_fn_func_max_user_context_id
+    21, // uniffi_fxcontainers_fn_func_max_user_context_id
 )
 return handleRustResult(
     result,
@@ -287,7 +287,7 @@ export function normalizeSite(
    
 FfiConverterString.checkType(site);
 const result = UniFFIScaffolding.callSync(
-    21, // uniffi_fxcontainers_fn_func_normalize_site
+    22, // uniffi_fxcontainers_fn_func_normalize_site
     FfiConverterString.lower(site),
 )
 return handleRustResult(
@@ -307,7 +307,7 @@ export function resolveColor(
    
 FfiConverterString.checkType(name);
 const result = UniFFIScaffolding.callSync(
-    22, // uniffi_fxcontainers_fn_func_resolve_color
+    23, // uniffi_fxcontainers_fn_func_resolve_color
     FfiConverterString.lower(name),
 )
 return handleRustResult(
@@ -2050,7 +2050,7 @@ export class ContainersStore extends ContainersStoreInterface {
         FfiConverterOptionalSequenceTypeDefaultIdentity.checkType(defaultIdentities);
         FfiConverterTypeContainersCallback.checkType(callback);
         const result = UniFFIScaffolding.callSync(
-            182, // uniffi_fxcontainers_fn_constructor_containersstore_new
+            183, // uniffi_fxcontainers_fn_constructor_containersstore_new
             FfiConverterOptionalBytes.lower(bytes),
             FfiConverterOptionalSequenceTypeDefaultIdentity.lower(defaultIdentities),
             FfiConverterTypeContainersCallback.lower(callback),
@@ -2078,7 +2078,7 @@ export class ContainersStore extends ContainersStoreInterface {
         FfiConverterTypeContainerIcon.checkType(icon);
         FfiConverterTypeContainerColor.checkType(color);
         const result = UniFFIScaffolding.callSync(
-            183, // uniffi_fxcontainers_fn_method_containersstore_create
+            184, // uniffi_fxcontainers_fn_method_containersstore_create
             FfiConverterTypeContainersStore.lowerReceiver(this),
             FfiConverterString.lower(name),
             FfiConverterTypeContainerIcon.lower(icon),
@@ -2101,7 +2101,7 @@ export class ContainersStore extends ContainersStoreInterface {
        
         FfiConverterString.checkType(policyId);
         const result = UniFFIScaffolding.callSync(
-            184, // uniffi_fxcontainers_fn_method_containersstore_create_for_policy
+            185, // uniffi_fxcontainers_fn_method_containersstore_create_for_policy
             FfiConverterTypeContainersStore.lowerReceiver(this),
             FfiConverterString.lower(policyId),
         )
@@ -2124,7 +2124,7 @@ export class ContainersStore extends ContainersStoreInterface {
        
         FfiConverterString.checkType(site);
         const result = UniFFIScaffolding.callSync(
-            185, // uniffi_fxcontainers_fn_method_containersstore_get_site_association
+            186, // uniffi_fxcontainers_fn_method_containersstore_get_site_association
             FfiConverterTypeContainersStore.lowerReceiver(this),
             FfiConverterString.lower(site),
         )
@@ -2145,7 +2145,7 @@ export class ContainersStore extends ContainersStoreInterface {
        
         FfiConverterOptionalUInt32.checkType(userContextId);
         const result = UniFFIScaffolding.callSync(
-            186, // uniffi_fxcontainers_fn_method_containersstore_get_site_associations
+            187, // uniffi_fxcontainers_fn_method_containersstore_get_site_associations
             FfiConverterTypeContainersStore.lowerReceiver(this),
             FfiConverterOptionalUInt32.lower(userContextId),
         )
@@ -2168,7 +2168,7 @@ export class ContainersStore extends ContainersStoreInterface {
        
         FfiConverterString.checkType(site);
         const result = UniFFIScaffolding.callSync(
-            187, // uniffi_fxcontainers_fn_method_containersstore_lookup_site_association
+            188, // uniffi_fxcontainers_fn_method_containersstore_lookup_site_association
             FfiConverterTypeContainersStore.lowerReceiver(this),
             FfiConverterString.lower(site),
         )
@@ -2193,7 +2193,7 @@ export class ContainersStore extends ContainersStoreInterface {
         FfiConverterSequenceUInt32.checkType(userContextIds);
         FfiConverterInt64.checkType(position);
         const result = UniFFIScaffolding.callSync(
-            188, // uniffi_fxcontainers_fn_method_containersstore_move_containers
+            189, // uniffi_fxcontainers_fn_method_containersstore_move_containers
             FfiConverterTypeContainersStore.lowerReceiver(this),
             FfiConverterSequenceUInt32.lower(userContextIds),
             FfiConverterInt64.lower(position),
@@ -2212,7 +2212,7 @@ export class ContainersStore extends ContainersStoreInterface {
     policyIdentities() {
        
         const result = UniFFIScaffolding.callSync(
-            189, // uniffi_fxcontainers_fn_method_containersstore_policy_identities
+            190, // uniffi_fxcontainers_fn_method_containersstore_policy_identities
             FfiConverterTypeContainersStore.lowerReceiver(this),
         )
         return handleRustResult(
@@ -2232,7 +2232,7 @@ export class ContainersStore extends ContainersStoreInterface {
        
         FfiConverterString.checkType(policyId);
         const result = UniFFIScaffolding.callSync(
-            190, // uniffi_fxcontainers_fn_method_containersstore_policy_identity
+            191, // uniffi_fxcontainers_fn_method_containersstore_policy_identity
             FfiConverterTypeContainersStore.lowerReceiver(this),
             FfiConverterString.lower(policyId),
         )
@@ -2253,7 +2253,7 @@ export class ContainersStore extends ContainersStoreInterface {
        
         FfiConverterString.checkType(name);
         const result = UniFFIScaffolding.callSync(
-            191, // uniffi_fxcontainers_fn_method_containersstore_private_identity
+            192, // uniffi_fxcontainers_fn_method_containersstore_private_identity
             FfiConverterTypeContainersStore.lowerReceiver(this),
             FfiConverterString.lower(name),
         )
@@ -2271,7 +2271,7 @@ export class ContainersStore extends ContainersStoreInterface {
     privateUserContextIds() {
        
         const result = UniFFIScaffolding.callSync(
-            192, // uniffi_fxcontainers_fn_method_containersstore_private_user_context_ids
+            193, // uniffi_fxcontainers_fn_method_containersstore_private_user_context_ids
             FfiConverterTypeContainersStore.lowerReceiver(this),
         )
         return handleRustResult(
@@ -2288,7 +2288,7 @@ export class ContainersStore extends ContainersStoreInterface {
     publicIdentities() {
        
         const result = UniFFIScaffolding.callSync(
-            193, // uniffi_fxcontainers_fn_method_containersstore_public_identities
+            194, // uniffi_fxcontainers_fn_method_containersstore_public_identities
             FfiConverterTypeContainersStore.lowerReceiver(this),
         )
         return handleRustResult(
@@ -2308,7 +2308,7 @@ export class ContainersStore extends ContainersStoreInterface {
        
         FfiConverterUInt32.checkType(userContextId);
         const result = UniFFIScaffolding.callSync(
-            194, // uniffi_fxcontainers_fn_method_containersstore_public_identity_from_id
+            195, // uniffi_fxcontainers_fn_method_containersstore_public_identity_from_id
             FfiConverterTypeContainersStore.lowerReceiver(this),
             FfiConverterUInt32.lower(userContextId),
         )
@@ -2326,7 +2326,7 @@ export class ContainersStore extends ContainersStoreInterface {
     publicUserContextIds() {
        
         const result = UniFFIScaffolding.callSync(
-            195, // uniffi_fxcontainers_fn_method_containersstore_public_user_context_ids
+            196, // uniffi_fxcontainers_fn_method_containersstore_public_user_context_ids
             FfiConverterTypeContainersStore.lowerReceiver(this),
         )
         return handleRustResult(
@@ -2347,7 +2347,7 @@ export class ContainersStore extends ContainersStoreInterface {
        
         FfiConverterUInt32.checkType(userContextId);
         const result = UniFFIScaffolding.callSync(
-            196, // uniffi_fxcontainers_fn_method_containersstore_remove
+            197, // uniffi_fxcontainers_fn_method_containersstore_remove
             FfiConverterTypeContainersStore.lowerReceiver(this),
             FfiConverterUInt32.lower(userContextId),
         )
@@ -2368,7 +2368,7 @@ export class ContainersStore extends ContainersStoreInterface {
        
         FfiConverterUInt32.checkType(userContextId);
         const result = UniFFIScaffolding.callSync(
-            197, // uniffi_fxcontainers_fn_method_containersstore_remove_policy_identity
+            198, // uniffi_fxcontainers_fn_method_containersstore_remove_policy_identity
             FfiConverterTypeContainersStore.lowerReceiver(this),
             FfiConverterUInt32.lower(userContextId),
         )
@@ -2388,7 +2388,7 @@ export class ContainersStore extends ContainersStoreInterface {
        
         FfiConverterString.checkType(site);
         const result = UniFFIScaffolding.callSync(
-            198, // uniffi_fxcontainers_fn_method_containersstore_remove_site_association
+            199, // uniffi_fxcontainers_fn_method_containersstore_remove_site_association
             FfiConverterTypeContainersStore.lowerReceiver(this),
             FfiConverterString.lower(site),
         )
@@ -2406,7 +2406,7 @@ export class ContainersStore extends ContainersStoreInterface {
     serialize() {
        
         const result = UniFFIScaffolding.callSync(
-            199, // uniffi_fxcontainers_fn_method_containersstore_serialize
+            200, // uniffi_fxcontainers_fn_method_containersstore_serialize
             FfiConverterTypeContainersStore.lowerReceiver(this),
         )
         return handleRustResult(
@@ -2437,7 +2437,7 @@ export class ContainersStore extends ContainersStoreInterface {
         FfiConverterUInt32.checkType(userContextId);
         FfiConverterOptionalBoolean.checkType(includeSubdomains);
         const result = UniFFIScaffolding.callSync(
-            200, // uniffi_fxcontainers_fn_method_containersstore_set_site_association
+            201, // uniffi_fxcontainers_fn_method_containersstore_set_site_association
             FfiConverterTypeContainersStore.lowerReceiver(this),
             FfiConverterString.lower(site),
             FfiConverterUInt32.lower(userContextId),
@@ -2460,7 +2460,7 @@ export class ContainersStore extends ContainersStoreInterface {
     unsetCallback() {
        
         const result = UniFFIScaffolding.callSync(
-            201, // uniffi_fxcontainers_fn_method_containersstore_unset_callback
+            202, // uniffi_fxcontainers_fn_method_containersstore_unset_callback
             FfiConverterTypeContainersStore.lowerReceiver(this),
         )
         return handleRustResult(
@@ -2489,7 +2489,7 @@ export class ContainersStore extends ContainersStoreInterface {
         FfiConverterTypeContainerIcon.checkType(icon);
         FfiConverterTypeContainerColor.checkType(color);
         const result = UniFFIScaffolding.callSync(
-            202, // uniffi_fxcontainers_fn_method_containersstore_update
+            203, // uniffi_fxcontainers_fn_method_containersstore_update
             FfiConverterTypeContainersStore.lowerReceiver(this),
             FfiConverterUInt32.lower(userContextId),
             FfiConverterString.lower(name),

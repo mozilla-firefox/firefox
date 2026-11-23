@@ -3047,7 +3047,7 @@ bool wasm::GenerateContBaseFrameStub(jit::MacroAssembler& masm,
   // funcref's instance (see ContStack::prepare), so call it directly. Nothing
   // below uses the instance after the call, so the call is marked slow without
   // restoring it: a cross-instance return_call from the callee then collapses
-  // its frame without a hidden return_call trampoline frame.
+  // its frame instead of making a regular call.
 #  ifdef DEBUG
   Label sameInstance;
   masm.branchPtr(

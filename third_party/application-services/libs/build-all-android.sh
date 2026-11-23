@@ -30,6 +30,6 @@ for i in "${!TARGET_ARCHS[@]}"; do
   if [[ -d "${DIST_DIR}" ]]; then
     echo "${DIST_DIR} already exists. Skipping building nss."
   else
-    ./build-nss-android.sh "${NSS_SRC_PATH}" "${DIST_DIR}" "${ANDROID_NDK_ROOT}/toolchains/llvm/prebuilt/${NDK_HOST_TAG}" "${TARGET_ARCHS_TOOLCHAINS[${i}]}" "${ANDROID_NDK_API_VERSION}" || exit 1
+    ./build-nss-android.sh "${NSS_SRC_PATH}" "${DIST_DIR}" "${TARGET_ARCHS_TOOLCHAINS[${i}]}" "${ANDROID_NDK_API_VERSION}" || exit 1
   fi
 done

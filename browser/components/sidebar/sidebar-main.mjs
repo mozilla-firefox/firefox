@@ -743,7 +743,7 @@ export default class SidebarMain extends MozLitElement {
       window.SidebarController.sidebarRevampVisibility === "expand-on-hover";
 
     if (
-      !isExpandOnHover &&
+      (!isExpandOnHover || this.expanded) &&
       window.SidebarController.sidebarVerticalTabsEnabled
     ) {
       for (const buttonEl of this.allButtons) {
@@ -755,23 +755,21 @@ export default class SidebarMain extends MozLitElement {
       return;
     }
 
-    // In expand-on-hover or horizontal tabs mode we don't track tool overflow,
-    // so restore any previously overflown/hidden tool buttons and stop
-    // observing. In horizontal tabs mode we also clear the overflow panel
-    // copies that were populated while in vertical tabs.
-    this.shouldShowOverflowButton = isExpandOnHover ? !this.expanded : false;
+    // In horizontal tabs mode, or while the expand-on-hover launcher is
+    // collapsed, we don't track tool overflow, so restore any previously
+    // overflown/hidden tool buttons, clear the overflow panel copies and stop
+    // observing.
+    this.shouldShowOverflowButton = isExpandOnHover && !this.expanded;
     for (const buttonEl of this.allButtons) {
       if (buttonEl.style.visibility === "hidden") {
         buttonEl.style.visibility = "visible";
       }
     }
-    if (!isExpandOnHover) {
-      // The copies only mirror the buttons the observer hid, and nothing is
-      // hidden here, so all of them are stale. Matching them against the
-      // remaining buttons would keep the copy of a tool that was removed while
-      // overflowing.
-      document.getElementById("tools-overflow-list").replaceChildren();
-    }
+    // The copies only mirror the buttons the observer hid, and nothing is
+    // hidden here, so all of them are stale. Matching them against the
+    // remaining buttons would keep the copy of a tool that was removed while
+    // overflowing.
+    document.getElementById("tools-overflow-list").replaceChildren();
     this._toolsIntersectionObserver.disconnect();
     this._toolsResizeObserver.disconnect();
   }
@@ -948,10 +946,10 @@ export default class SidebarMain extends MozLitElement {
       <div class="wrapper">
         <slot name="tabstrip"></slot>
         ${when(
-          ((enabledToolsAndExtensionsCount > 2 && !this.expanded) ||
-            this.expanded) &&
-            window.SidebarController.sidebarRevampVisibility !==
-              "expand-on-hover" &&
+          (enabledToolsAndExtensionsCount > 2 ||
+            this.expanded ||
+            window.SidebarController.sidebarRevampVisibility ===
+              "expand-on-hover") &&
             window.SidebarController.sidebarVerticalTabsEnabled,
           () => html`${this.toolsSplitter}`
         )}
@@ -992,7 +990,7 @@ export default class SidebarMain extends MozLitElement {
               type=${this.isOverflowMenuOpen ? "icon" : "icon ghost"}
               aria-pressed=${this.isOverflowMenuOpen}
               @click=${window.SidebarController.sidebarRevampVisibility ===
-              "expand-on-hover"
+                "expand-on-hover" && !this.expanded
                 ? nothing
                 : this.showOverflowMenu}
               title=${moreToolsTooltip}

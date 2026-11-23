@@ -1125,31 +1125,8 @@
  * printf-likes, and in particular this should not be used for
  * PR_snprintf and friends, which are "printf-like" but which assign
  * different meanings to the various formats.
- *
- * MinGW requires special handling due to different format specifiers
- * on different platforms. The macro __MINGW_PRINTF_FORMAT maps to
- * either gnu_printf or ms_printf depending on where we are compiling
- * to avoid warnings on format specifiers that are legal.
- *
- * At time of writing MinGW has no wide equivalent to __MINGW_PRINTF_FORMAT;
- * therefore __MINGW_WPRINTF_FORMAT has been implemented following the same
- * pattern seen in MinGW's source.
  */
-#ifdef __MINGW32__
-#  define MOZ_FORMAT_PRINTF(stringIndex, firstToCheck) \
-    __attribute__((format(__MINGW_PRINTF_FORMAT, stringIndex, firstToCheck)))
-#  ifndef __MINGW_WPRINTF_FORMAT
-#    if defined(__clang__)
-#      define __MINGW_WPRINTF_FORMAT wprintf
-#    elif defined(_UCRT) || __USE_MINGW_ANSI_STDIO
-#      define __MINGW_WPRINTF_FORMAT gnu_wprintf
-#    else
-#      define __MINGW_WPRINTF_FORMAT ms_wprintf
-#    endif
-#  endif
-#  define MOZ_FORMAT_WPRINTF(stringIndex, firstToCheck) \
-    __attribute__((format(__MINGW_WPRINTF_FORMAT, stringIndex, firstToCheck)))
-#elif __GNUC__ || __clang__
+#if __GNUC__ || __clang__
 #  define MOZ_FORMAT_PRINTF(stringIndex, firstToCheck) \
     __attribute__((format(printf, stringIndex, firstToCheck)))
 #  define MOZ_FORMAT_WPRINTF(stringIndex, firstToCheck) \

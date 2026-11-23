@@ -152,6 +152,7 @@ elif CONFIG["FUZZING_INTERFACES"]:
 if CONFIG["MOZ_GECKODRIVER"]:
     DEFINES["MOZ_GECKODRIVER"] = True
 
+WIN32_WIDE_ENTRY = True
 if CONFIG["CC_TYPE"] == "clang-cl":
     # Always enter a Windows program through wmain, whether or not we're
     # a console application.
@@ -249,7 +250,7 @@ if CONFIG["TARGET_OS"] in ("WINNT", "OSX"):
 # The heap will grow if need be.
 #
 # Set it to 256k.  See bug 127069.
-if CONFIG["OS_ARCH"] == "WINNT" and CONFIG["CC_TYPE"] not in ("clang", "gcc"):
+if CONFIG["CC_TYPE"] == "clang-cl":
     LDFLAGS += ["/HEAP:0x40000"]
 
 DisableStlWrapping()

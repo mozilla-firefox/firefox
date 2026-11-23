@@ -610,6 +610,10 @@ already_AddRefed<Promise> MediaDevices::GetDisplayMedia(
     p->MaybeRejectWithInvalidStateError("The document is not fully active.");
     return p.forget();
   }
+  /* Consume user activation with this's relevant global object. */
+  if (aCallerType != CallerType::System) {
+    wc->ConsumeTransientUserGestureActivation();
+  }
   // We ask for "screen" sharing.
   //
   // If this is a privileged call or permission is disabled, this gives us full
@@ -626,9 +630,16 @@ already_AddRefed<Promise> MediaDevices::GetDisplayMedia(
       ->GetUserMedia(owner, c, aCallerType)
       ->Then(
           GetCurrentSerialEventTarget(), __func__,
-          [this, self, p](RefPtr<DOMMediaStream>&& aStream) {
-            if (!GetWindowIfCurrent()) {
+          [this, self, p, aCallerType](RefPtr<DOMMediaStream>&& aStream) {
+            nsPIDOMWindowInner* window = GetWindowIfCurrent();
+            if (!window) {
               return;  // leave promise pending after navigation.
+            }
+            /* Set the last activation timestamp to the current high
+             * resolution time. */
+            if (WindowContext* wc = window->GetWindowContext();
+                wc && aCallerType != CallerType::System) {
+              wc->NotifyUserGestureActivation();
             }
             p->MaybeResolve(std::move(aStream));
           },

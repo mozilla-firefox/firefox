@@ -414,6 +414,9 @@ class JujutsuRepository(Repository):
             ref = self._resolve_to_commit(ref)
         self._git.push(remote, ref=ref, dest_branch=dest_branch, force=force, env=env)
 
+    def _try_head_to_commit(self, head):
+        return self._resolve_to_commit(head)
+
     def _resolve_try_branch(self):
         dest_branch = self.branch
         if not dest_branch:

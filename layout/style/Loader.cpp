@@ -138,15 +138,14 @@ namespace mozilla {
 
 SheetLoadDataHashKey::SheetLoadDataHashKey(const css::SheetLoadData& aLoadData)
     : mURI(aLoadData.mURI),
-      mLoaderPrincipal(aLoadData.mLoader->LoaderPrincipal()),
-      mPartitionPrincipal(aLoadData.mLoader->PartitionedPrincipal()),
+      mLoaderPrincipal(aLoadData.mLoaderPrincipal),
+      mPartitionPrincipal(aLoadData.mPartitionPrincipal),
       mEncodingGuess(aLoadData.mGuessedEncoding),
       mCORSMode(aLoadData.mSheet->GetCORSMode()),
       mOrigin(aLoadData.mSheet->GetOrigin()),
       mCompatMode(aLoadData.mCompatMode),
       mIsLinkRelPreloadOrEarlyHint(aLoadData.IsLinkRelPreloadOrEarlyHint()),
-      mLoadedAsImage(aLoadData.mLoader->GetDocument() &&
-                     aLoadData.mLoader->GetDocument()->IsBeingUsedAsImage()) {
+      mLoadedAsImage(aLoadData.mLoadedAsImage) {
   MOZ_COUNT_CTOR(SheetLoadDataHashKey);
   MOZ_ASSERT(mURI);
   MOZ_ASSERT(mLoaderPrincipal);
@@ -289,9 +288,13 @@ SheetLoadData::SheetLoadData(
       mRecordErrors(
           aLoader->GetDocument() &&
           css::ErrorReporter::ShouldReportErrors(*aLoader->GetDocument())),
+      mLoadedAsImage(aLoader->GetDocument() &&
+                     aLoader->GetDocument()->IsBeingUsedAsImage()),
       mPreloadKind(aPreloadKind),
       mObserver(aObserver),
       mTriggeringPrincipal(aTriggeringPrincipal),
+      mLoaderPrincipal(aLoader->LoaderPrincipal()),
+      mPartitionPrincipal(aLoader->PartitionedPrincipal()),
       mReferrerInfo(aReferrerInfo),
       mNonce(aNonce),
       mFetchPriority{aFetchPriority},
@@ -332,9 +335,13 @@ SheetLoadData::SheetLoadData(
       mRecordErrors(
           aLoader->GetDocument() &&
           css::ErrorReporter::ShouldReportErrors(*aLoader->GetDocument())),
+      mLoadedAsImage(aLoader->GetDocument() &&
+                     aLoader->GetDocument()->IsBeingUsedAsImage()),
       mPreloadKind(StylePreloadKind::None),
       mObserver(aObserver),
       mTriggeringPrincipal(aTriggeringPrincipal),
+      mLoaderPrincipal(aLoader->LoaderPrincipal()),
+      mPartitionPrincipal(aLoader->PartitionedPrincipal()),
       mReferrerInfo(aReferrerInfo),
       mNonce(u""_ns),
       mFetchPriority(FetchPriority::Auto),
@@ -378,9 +385,13 @@ SheetLoadData::SheetLoadData(
       mRecordErrors(
           aLoader->GetDocument() &&
           css::ErrorReporter::ShouldReportErrors(*aLoader->GetDocument())),
+      mLoadedAsImage(aLoader->GetDocument() &&
+                     aLoader->GetDocument()->IsBeingUsedAsImage()),
       mPreloadKind(aPreloadKind),
       mObserver(aObserver),
       mTriggeringPrincipal(aTriggeringPrincipal),
+      mLoaderPrincipal(aLoader->LoaderPrincipal()),
+      mPartitionPrincipal(aLoader->PartitionedPrincipal()),
       mReferrerInfo(aReferrerInfo),
       mNonce(aNonce),
       mFetchPriority(aFetchPriority),

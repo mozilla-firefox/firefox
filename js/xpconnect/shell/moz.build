@@ -28,6 +28,7 @@ LOCAL_INCLUDES += [
     "/toolkit/xre",
 ]
 
+WIN32_WIDE_ENTRY = True
 if CONFIG["CC_TYPE"] == "clang-cl":
     # Always enter a Windows program through wmain, whether or not we're
     # a console application.

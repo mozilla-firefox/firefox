@@ -513,12 +513,11 @@ already_AddRefed<Promise> FetchRequest(nsIGlobalObject* aGlobal,
   if (aInput.IsRequest()) {
     RefPtr<Request> inputReq = &aInput.GetAsRequest();
     SafeRefPtr<InternalRequest> inputInReq = inputReq->GetInternalRequest();
-    if (inputInReq->GetInterceptionTriggeringPrincipalInfo()) {
+    if (inputInReq->GetInterceptionTriggeringPrincipal()) {
       internalRequest->SetInterceptionContentPolicyType(
           inputInReq->InterceptionContentPolicyType());
-      internalRequest->SetInterceptionTriggeringPrincipalInfo(
-          std::make_unique<mozilla::ipc::PrincipalInfo>(
-              *(inputInReq->GetInterceptionTriggeringPrincipalInfo().get())));
+      internalRequest->SetInterceptionTriggeringPrincipal(
+          inputInReq->GetInterceptionTriggeringPrincipal());
       if (!inputInReq->InterceptionRedirectChain().IsEmpty()) {
         internalRequest->SetInterceptionRedirectChain(
             inputInReq->InterceptionRedirectChain());

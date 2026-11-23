@@ -356,12 +356,18 @@ class Repository(abc.ABC):
             dest_branch = f"{global_prefix}{dest_branch}"
 
         with self.try_commit(message, changed_files) as head:
+            rev = self._try_head_to_commit(head)
             self.push(
                 remote,
-                ref=head,
+                ref=rev,
                 dest_branch=dest_branch,
                 force=True,
             )
+        return rev
+
+    def _try_head_to_commit(self, head: str) -> str:
+        """Return the commit SHA for the `head` yielded by `try_commit`."""
+        return head
 
     @abc.abstractmethod
     def _push_to_hg_try(self, message, changed_files, remote, allow_log_capture):
@@ -386,11 +392,13 @@ class Repository(abc.ABC):
 
         If `allow_log_capture` is set to `True`, then the push-to-try will be run using
         Popen instead of check_call so that the logs can be captured elsewhere.
+
+        Returns the pushed commit SHA when pushing to a git remote, otherwise None.
         """
         if HG_TRY_URL in remote:
             self._push_to_hg_try(message, changed_files, remote, allow_log_capture)
-        else:
-            self._push_to_git_try(message, changed_files, remote)
+            return None
+        return self._push_to_git_try(message, changed_files, remote)
 
     @abc.abstractmethod
     def update(self, ref):

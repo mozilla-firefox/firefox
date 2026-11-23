@@ -443,7 +443,7 @@ MP4Metadata::ResultAndTrackInfo MP4Metadata::GetTrackInfo(
   e->mTimeScale = timeScale;
 
   // No duration in track, use fragment_duration.
-  if (e && !e->mDuration.IsPositive()) {
+  if (!e->mDuration.IsPositive()) {
     Mp4parseFragmentInfo fragmentInfo;
     auto rv = mp4parse_get_fragment_info(mParser.get(), &fragmentInfo);
     if (rv == MP4PARSE_STATUS_OK) {
@@ -459,7 +459,7 @@ MP4Metadata::ResultAndTrackInfo MP4Metadata::GetTrackInfo(
     }
   }
 
-  if (e && e->IsValid()) {
+  if (e->IsValid()) {
     MOZ_LOG_FMT(gMP4MetadataLog, LogLevel::Debug, "parsed a track info ({})",
                 e->ToString().get());
     return {NS_OK, std::move(e)};

@@ -196,12 +196,12 @@ add_task(async function test_chat_tool_call_get_open_tabs() {
         );
         Assert.equal(toolMessages.length, 1, "Tool result recorded");
         Assert.ok(
-          Array.isArray(toolMessages[0].content.body),
-          "Tool result should be tab list"
+          Array.isArray(toolMessages[0].content.body.tabs),
+          "Tool result should hold a tab list"
         );
         info("got tabs: " + JSON.stringify(toolMessages[0].content.body));
         Assert.equal(
-          toolMessages[0].content.body.length,
+          toolMessages[0].content.body.tabs.length,
           2,
           "Returns both tabs"
         );

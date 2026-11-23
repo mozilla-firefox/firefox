@@ -140,14 +140,10 @@ static nsReturnRef<HANDLE> CreateSelfProcess(int argc, wchar_t* argv[]) {
   DWORD myPid = ::GetCurrentProcessId();
 
   wchar_t strPid[11] = {};
-#if defined(__MINGW32__)
-  _ultow(myPid, strPid, 16);
-#else
   if (_ultow_s(myPid, strPid, 16)) {
     PrintErrorMsg("_ultow_s failed");
     return empty.out();
   }
-#endif  // defined(__MINGW32__)
 
   wchar_t* extraArgs[] = {strPid};
 

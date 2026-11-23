@@ -355,12 +355,6 @@ class SettingsSubMenuHomepageRobot {
         Log.i(TAG, "clickRecentSearchesButton: Clicked the \"Recently visited\" option")
     }
 
-    fun clickPocketButton() {
-        Log.i(TAG, "clickPocketButton: Trying to click the \"Stories\" option")
-        pocketButton().click()
-        Log.i(TAG, "clickPocketButton: Clicked the \"Stories\" option")
-    }
-
     fun clickOpeningScreenOption(openingScreenOption: String) {
         Log.i(TAG, "clickOpeningScreenOption: Trying to click \"Opening screen\" option: $openingScreenOption")
         when (openingScreenOption) {

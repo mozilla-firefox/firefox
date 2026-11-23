@@ -4,14 +4,14 @@
 #      Fri Jan 19 13:26:22 2018 -0600
 # Node ID 3ca7306d73ebc1ce47ccdc62ee8cbb69a9bfbb2c
 # Parent  6aa6c7d894609140ccde2e9e50eba8c25a9caeb5
-Bug 1431803 Disable a specific __try block on MinGW r?bobowen
+Bug 1431803 Disable a specific __try block on 32-bit MinGW r?bobowen
 
 This function is a technique to name a thread for debugging purposes,
-and it always throws an exception (and then continues). On MinGW
-we don't want it to throw an exception, so we do nothing.
+and it always throws an exception (and then continues). Clang can't
+catch it on 32-bit MinGW, so we do nothing there.
 
-This means on MinGW we won't get nice thread naming during debugging,
-but we'll limp along.
+This means on 32-bit MinGW we won't get nice thread naming during
+debugging, but we'll limp along.
 
 MozReview-Commit-ID: JRKY4wp7sdu
 
@@ -28,7 +28,7 @@ diff --git a/base/threading/platform_thread_win.cc b/base/threading/platform_thr
  // This function has try handling, so it is separated out of its caller.
  void SetNameInternal(PlatformThreadId thread_id, const char* name) {
 +  //This function is only used for debugging purposes, as you can find by its caller
-+#ifndef __MINGW32__
++#ifdef HAVE_SEH_EXCEPTIONS
    THREADNAME_INFO info;
    info.dwType = 0x1000;
    info.szName = name;

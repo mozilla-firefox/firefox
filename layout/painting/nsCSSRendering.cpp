@@ -2614,31 +2614,16 @@ ImgDrawResult nsCSSRendering::PaintStyleImageLayerWithSC(
   MOZ_ASSERT(aParams.layer != -1 ||
              aParams.compositionOp == CompositionOp::OP_OVER);
 
-  // Check to see if we have an appearance defined.  If so, we let the theme
-  // renderer draw the background and bail out.
-  // XXXzw this ignores aParams.bgClipRect.
-  StyleAppearance appearance =
-      aParams.frame->StyleDisplay()->EffectiveAppearance();
-  if (appearance != StyleAppearance::None) {
-    nsITheme* theme = aParams.presCtx.Theme();
-    if (theme->ThemeSupportsWidget(&aParams.presCtx, aParams.frame,
-                                   appearance)) {
-      nsRect drawing(aParams.borderArea);
-      theme->GetWidgetOverflow(aParams.presCtx.DeviceContext(), aParams.frame,
-                               appearance, &drawing);
-      drawing.IntersectRect(drawing, aParams.dirtyRect);
-      theme->DrawWidgetBackground(&aRenderingCtx, aParams.frame, appearance,
-                                  aParams.borderArea, drawing);
-      return ImgDrawResult::SUCCESS;
-    }
-  }
-
   // For canvas frames (in the CSS sense) we draw the background color using
   // a solid color item that gets added in nsLayoutUtils::PaintFrame, or
   // nsSubDocumentFrame::BuildDisplayList (bug 488242).  Either way we don't
   // need to paint the background color here.
   bool isCanvasFrame = aParams.frame->IsCanvasFrame();
   const bool paintMask = aParams.paintFlags & PAINTBG_MASK_IMAGE;
+  // Themed frames get their background painted by nsDisplayThemedBackground,
+  // so we should only get here for them when painting mask layers.
+  MOZ_ASSERT(paintMask || !aParams.frame->IsThemed(),
+             "Shouldn't paint background layers of themed frames");
 
   // Determine whether we are drawing background images and/or
   // background colors.

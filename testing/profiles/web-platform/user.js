@@ -80,6 +80,16 @@ user_pref("widget.gtk.theme-scrollbar-colors.enabled", false);
 // (only Android right now), might get a snapshot at different times during the
 // animation.
 user_pref("ui.scrollbarFadeDuration", 0);
+// Disable the fullscreen warning ("<host> is now full screen"). It animates in
+// and out when a page enters fullscreen, so reftests that take their screenshot
+// via drawWindow can otherwise capture it at different points in its animation.
+user_pref("full-screen-api.warning.timeout", 0);
+user_pref("full-screen-api.keyboardlock-warning.timeout", 0);
+// Keep the link-target status panel ("overlink", shown at the bottom of the
+// window on link hover) from appearing: a reftest that synthetically hovers a
+// link would otherwise have drawWindow capture it. There is no disable pref, so
+// use a one-hour delay, far longer than any test, so it never shows.
+user_pref("browser.overlink-delay", 3600000);
 user_pref("media.block-autoplay-until-in-foreground", false);
 // Force a light color scheme unless explicitly overridden by pref.
 user_pref("layout.css.prefers-color-scheme.content-override", 1);

@@ -631,6 +631,8 @@ menuseparator + #sidebar-extensions-separator {
     linear-gradient(var(--sidebar-divider-color), var(--sidebar-divider-color));
   --sidebar-divider-size: 2px 2px, 2px 2px, calc(var(--icon-size-small) - 2px) 2px;
   --sidebar-divider-position: calc(50% - 7px) center, calc(50% + 7px) center, center;
+  --sidebar-divider-size-expanded: 2px 2px, 2px 2px, calc(100% - 2px) 2px;
+  --sidebar-divider-position-expanded: left center, right center, center;
 }
 
 /* Expand on hover */

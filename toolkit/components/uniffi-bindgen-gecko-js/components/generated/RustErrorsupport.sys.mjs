@@ -32,6 +32,29 @@ import {
 export var UnitTestObjs = {
     uniffiObjectPtr,
 };
+/**
+ * reportError
+ * @param {string} typeName
+ * @param {string} message
+ */
+export function reportError(
+    typeName, 
+    message) {
+   
+FfiConverterString.checkType(typeName);
+FfiConverterString.checkType(message);
+const result = UniFFIScaffolding.callSync(
+    8, // uniffi_error_support_fn_func_report_error
+    FfiConverterString.lower(typeName),
+    FfiConverterString.lower(message),
+)
+return handleRustResult(
+    result,
+    (result) => undefined,
+    null,
+)
+}
+
 
 
 

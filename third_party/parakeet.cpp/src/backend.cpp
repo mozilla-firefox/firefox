@@ -348,14 +348,14 @@ void capture_graph_output(ggml_tensor* t, std::vector<float>* dst) {
     t_active->register_capture(t, dst);
 }
 
-void ensure_weights_realized(const ModelLoader& ml) {
-    if (ml.weights_realized()) return;
+bool ensure_weights_realized(const ModelLoader& ml) {
+    if (ml.weights_realized()) return true;
     // realize_weights mutates tensor->buffer; the ModelLoader is held by `const`
     // ref throughout the inference path (the components are read-only views), but
     // realizing the backend buffer is a one-time, semantically-const setup of the
     // weight storage. Cast away const for that single call.
     ModelLoader& mut = const_cast<ModelLoader&>(ml);
-    mut.realize_weights(global_backend().handle());
+    return mut.realize_weights(global_backend().handle());
 }
 
 ggml_tensor* clone_weight(ggml_context* /*ctx*/, const ModelLoader& ml,

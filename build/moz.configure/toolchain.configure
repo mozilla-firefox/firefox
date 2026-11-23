@@ -2226,6 +2226,12 @@ using_libcxx_19_or_newer = try_compile(
 )
 
 
+@depends(target, using_libcxx)
+def check_mingw_libcxx(target, using_libcxx):
+    if target.os == "WINNT" and target.abi == "mingw" and not using_libcxx:
+        die("Firefox requires libc++ to build with a mingw-clang toolchain.")
+
+
 @depends(
     have_64_bit,
     try_compile(
@@ -2240,13 +2246,10 @@ def check_have_64_bit(have_64_bit, compiler_have_64_bit):
         )
 
 
-@depends(cxx_compiler, target)
-def needs_libstdcxx_newness_check(cxx_compiler, target):
-    # We only have to care about this on Linux and MinGW.
-    if cxx_compiler.type == "clang-cl":
-        return
-
-    if target.kernel not in ("Linux", "WINNT"):
+@depends(target)
+def needs_libstdcxx_newness_check(target):
+    # We only have to care about this on Linux.
+    if target.kernel != "Linux":
         return
 
     if target.os == "Android":

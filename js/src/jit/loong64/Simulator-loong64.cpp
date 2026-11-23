@@ -4086,9 +4086,11 @@ void Simulator::decodeTypeOp17(SimInstruction* instr) {
     case op_ammin_db_du:
       UNIMPLEMENTED();
       break;
-    case op_dbar:
-      // TODO(loong64): dbar simulation
+    case op_dbar: {
+      MOZ_ASSERT(instr->bits(14, 0) == 0, "Only DBAR 0 is implemented");
+      AtomicOperations::fenceSeqCst();
       break;
+    }
     case op_ibar:
       UNIMPLEMENTED();
       break;

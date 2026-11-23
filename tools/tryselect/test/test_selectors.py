@@ -861,6 +861,8 @@ def test_run_mach(
     likely there is duplication of test coverage between here and the specific
     selector tests."""
     capfd.readouterr()
+    mocker.patch("tryselect.push._is_hg_try", return_value=True)
+    mocker.patch("tryselect.push.MACH_TRY_PUSH_TO_VCS", True)
     if isinstance(commands[0], str):
         commands = [commands]
 

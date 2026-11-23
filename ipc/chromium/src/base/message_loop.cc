@@ -55,12 +55,14 @@ static base::ThreadLocalPointer<MessageLoop>& get_tls_ptr() {
 
 #if defined(XP_WIN)
 
+#  ifdef HAVE_SEH_EXCEPTIONS
 // Upon a SEH exception in this thread, it restores the original unhandled
 // exception filter.
 static int SEHFilter(LPTOP_LEVEL_EXCEPTION_FILTER old_filter) {
   ::SetUnhandledExceptionFilter(old_filter);
   return EXCEPTION_CONTINUE_SEARCH;
 }
+#  endif
 
 // Retrieves a pointer to the current unhandled exception filter. There
 // is no standalone getter method.

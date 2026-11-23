@@ -226,24 +226,24 @@ struct FontFileDataSink {
   wr::IpcResourceUpdateQueue* mResources;
 };
 
-static void WriteFontFileData(const uint8_t* aData, uint32_t aLength,
+static bool WriteFontFileData(const uint8_t* aData, uint32_t aLength,
                               uint32_t aIndex, void* aBaton) {
   FontFileDataSink* sink = static_cast<FontFileDataSink*>(aBaton);
 
   *sink->mFontKey = sink->mWrBridge->GetNextFontKey();
 
-  sink->mResources->AddRawFont(
+  return sink->mResources->AddRawFont(
       *sink->mFontKey, Range<uint8_t>(const_cast<uint8_t*>(aData), aLength),
       aIndex);
 }
 
-static void WriteFontDescriptor(const uint8_t* aData, uint32_t aLength,
+static bool WriteFontDescriptor(const uint8_t* aData, uint32_t aLength,
                                 uint32_t aIndex, void* aBaton) {
   FontFileDataSink* sink = static_cast<FontFileDataSink*>(aBaton);
 
   *sink->mFontKey = sink->mWrBridge->GetNextFontKey();
 
-  sink->mResources->AddFontDescriptor(
+  return sink->mResources->AddFontDescriptor(
       *sink->mFontKey, Range<uint8_t>(const_cast<uint8_t*>(aData), aLength),
       aIndex);
 }

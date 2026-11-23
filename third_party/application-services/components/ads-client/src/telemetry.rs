@@ -188,11 +188,29 @@ pub fn record_ads_store_error(error: &crate::ads_store::builder::AdsStoreBuilder
     use crate::ads_store::builder::AdsStoreBuilderError;
 
     let label = match error {
-        AdsStoreBuilderError::Database(_) => BuildCacheErrorLabel::StoreDatabaseError,
+        AdsStoreBuilderError::Database(_) | AdsStoreBuilderError::DatabaseMemory(_) => {
+            BuildCacheErrorLabel::DatabaseError
+        }
         AdsStoreBuilderError::EmptyDbPath => BuildCacheErrorLabel::StoreEmptyDbPath,
         AdsStoreBuilderError::InvalidMaxSize { .. } => BuildCacheErrorLabel::StoreInvalidMaxSize,
     };
-    backend::build_cache_error(label.as_str(), error.to_string());
+    let value = match error {
+        AdsStoreBuilderError::Database(sql_support::open_database::Error::SqlError(
+            rusqlite::Error::SqliteFailure(
+                rusqlite::ffi::Error {
+                    code: _,
+                    extended_code,
+                },
+                Some(_),
+            ),
+        )) => format!("{error} ({extended_code})"),
+        AdsStoreBuilderError::Database(_)
+        | AdsStoreBuilderError::DatabaseMemory(_)
+        | AdsStoreBuilderError::EmptyDbPath
+        | AdsStoreBuilderError::InvalidMaxSize { .. } => error.to_string(),
+    };
+
+    backend::build_cache_error(label.as_str(), value);
 }
 
 // By design: a free function, so recording a metric is one call from anywhere.

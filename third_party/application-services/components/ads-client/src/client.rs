@@ -26,8 +26,6 @@ use uuid::Uuid;
 pub(crate) mod config;
 pub(crate) mod error;
 
-const DEFAULT_TTL_SECONDS: u64 = 300;
-const DEFAULT_MAX_CACHE_SIZE_MIB: u64 = 10;
 const DEFAULT_ROTATION_DAYS: u8 = 3;
 
 pub(crate) struct AdsClient {
@@ -162,52 +160,42 @@ impl AdsClientInner {
 
         let environment = client_config.environment;
 
-        // Configure the cache if a path is provided.
-        // Defaults for ttl and cache size are also set if unspecified.
-        let http_cache = client_config
-            .cache_config
-            .and_then(|cache_cfg| {
-                let default_cache_ttl = Duration::from_secs(
-                    cache_cfg
-                        .default_cache_ttl_seconds
-                        .unwrap_or(DEFAULT_TTL_SECONDS),
-                );
-                let max_cache_size =
-                    ByteSize::mib(cache_cfg.max_size_mib.unwrap_or(DEFAULT_MAX_CACHE_SIZE_MIB));
+        // Configure the HttpCache if a path is provided (otherwise, default to memory).
+        // Defaults for ttl and cache size set in the builder if unspecified.
+        let mut http_cache = HttpCache::builder();
+        if let Some(config) = client_config.cache_config {
+            http_cache = http_cache.db_path(config.db_path);
+            if let Some(default_cache_ttl) = config.default_cache_ttl_seconds {
+                http_cache = http_cache.default_ttl(Duration::from_secs(default_cache_ttl));
+            }
+            if let Some(max_size_mib) = config.max_size_mib {
+                http_cache = http_cache.max_size(ByteSize::mib(max_size_mib));
+            }
+        }
 
-                match HttpCache::builder(cache_cfg.db_path)
-                    .max_size(max_cache_size)
-                    .default_ttl(default_cache_ttl)
-                    .build()
-                {
-                    Ok(cache) => Some(cache),
-                    Err(e) => {
-                        telemetry::record_build_cache_error(&e);
-                        None
-                    }
-                }
-            })
-            .or_else(|| {
-                // If no `cache_config` is provided, create an in-memory db with default parameters.
-                // TODO: the `build` function should be infallible, and no error would be needed here.
-                // (true for both memory and FS, because FS would default to memory)
-                HttpCache::builder_memory()
-                    .build()
-                    .inspect_err(telemetry::record_build_cache_error)
-                    .ok()
-            });
+        let http_cache = match http_cache.build() {
+            Ok(cache) => Some(cache),
+            Err(e) => {
+                telemetry::record_build_cache_error(&e);
+                None
+            }
+        };
 
+        // Configure the AdsStore if a path is provided (otherwise, default to memory).
         #[cfg(feature = "stateful")]
-        let ads_store =
-            client_config
-                .store_config
-                .and_then(|x| match AdsStore::builder(x.db_path).build() {
-                    Ok(store) => Some(store),
-                    Err(e) => {
-                        telemetry::record_ads_store_error(&e);
-                        None
-                    }
-                });
+        let mut ads_store = AdsStore::builder();
+        #[cfg(feature = "stateful")]
+        if let Some(config) = client_config.store_config {
+            ads_store = ads_store.db_path(config.db_path);
+        }
+        #[cfg(feature = "stateful")]
+        let ads_store = match ads_store.build() {
+            Ok(store) => Some(store),
+            Err(e) => {
+                telemetry::record_ads_store_error(&e);
+                None
+            }
+        };
 
         let client = MARSClient::new(environment, http_cache, client_config.user_agent);
         telemetry::record_client_operation(ClientOperation::New);
@@ -473,7 +461,8 @@ mod tests {
         let inner = Arc::new(AdsClientInner {
             #[cfg(feature = "stateful")]
             ads_store: Arc::new(Some(
-                AdsStoreBuilder::new(crate::IN_MEMORY_DB_PATH)
+                AdsStoreBuilder::new()
+                    .db_path(crate::IN_MEMORY_DB_PATH)
                     .build()
                     .expect("Simplest AdsStoreBuilder should be constructable"),
             )),
@@ -690,7 +679,7 @@ mod tests {
     #[ignore = "Cache invalidation temporarily disabled - will be re-enabled behind Nimbus experiment"]
     fn test_record_click_invalidates_cache() {
         viaduct_dev::init_backend_dev();
-        let cache = HttpCache::builder_memory().build().unwrap();
+        let cache = HttpCache::builder().build().unwrap();
         let mars_client = MARSClient::new(Environment::Test, Some(cache), None);
         let ads_client = new_with_mars_client(mars_client);
 

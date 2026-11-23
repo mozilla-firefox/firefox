@@ -185,8 +185,8 @@
 
 .preview-header {
   margin: 0;
-  padding: var(--space-xlarge) var(--space-xlarge) 0;
-  font-size: var(--font-size-xxlarge);
+  padding: 24px 24px 0;
+  font-size: 26px;
   font-weight: var(--font-weight-bold);
   line-height: 1.3;
 }

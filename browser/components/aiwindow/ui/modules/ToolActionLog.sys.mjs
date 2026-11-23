@@ -154,7 +154,12 @@ const TOOL_ACTION_LOG_CONFIG = new Map([
  * @type {Map<string, (body: object) => Array<ActionLogChip>>}
  */
 const TOOL_RESULT_TO_CHIPS = new Map([
-  [GET_OPEN_TABS, body => urlListChips(body, tab => tab.title)],
+  [
+    GET_OPEN_TABS,
+    // Tool results saved in older conversations are a bare array of tabs.
+    body =>
+      urlListChips(Array.isArray(body) ? body : body?.tabs, tab => tab.title),
+  ],
   [
     SEARCH_BROWSING_HISTORY,
     body => urlListChips(body?.results, result => result.title),

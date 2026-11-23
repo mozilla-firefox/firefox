@@ -24,6 +24,7 @@ class JS_PUBLIC_API JSObject;
 #define FOR_EACH_JS_METRIC(_)                       \
   _(GC_REASON_2, Enumeration)                       \
   _(GC_IS_COMPARTMENTAL, Boolean)                   \
+  _(GC_GRAY_BITS_VALID, Boolean)                    \
   _(GC_ZONE_COUNT, QuantityDistribution)            \
   _(GC_ZONES_COLLECTED, QuantityDistribution)       \
   _(GC_MARK_STACK_MAX_CAPACITY, MemoryDistribution) \

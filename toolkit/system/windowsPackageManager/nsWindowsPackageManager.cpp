@@ -6,12 +6,12 @@
 #include "mozilla/dom/Promise.h"
 #include "mozilla/Logging.h"
 #include "mozilla/WinHeaderOnlyUtils.h"
+#include <wrl.h>
+#include <windows.management.deployment.h>
 #ifndef __MINGW32__
 #  include "nsProxyRelease.h"
 #  include <comutil.h>
-#  include <wrl.h>
 #  include <windows.applicationmodel.store.h>
-#  include <windows.management.deployment.h>
 #  include <windows.services.store.h>
 #endif  // __MINGW32__
 #include "nsError.h"
@@ -22,12 +22,12 @@
 #include "nsXPCOMCID.h"
 #include "json/json.h"
 
-#ifndef __MINGW32__  // WinRT headers not yet supported by MinGW
 using namespace Microsoft::WRL;
 using namespace Microsoft::WRL::Wrappers;
 using namespace ABI::Windows;
 using namespace ABI::Windows::Foundation;
 using namespace ABI::Windows::Management;
+#ifndef __MINGW32__  // MinGW lacks windows.services.store.h
 using namespace ABI::Windows::Services::Store;
 #endif
 
@@ -45,9 +45,6 @@ NS_IMPL_ISUPPORTS(nsWindowsPackageManager, nsIWindowsPackageManager)
 NS_IMETHODIMP
 nsWindowsPackageManager::FindUserInstalledPackages(
     const nsTArray<nsString>& aNamePrefixes, nsTArray<nsString>& aPackages) {
-#ifdef __MINGW32__
-  return NS_ERROR_NOT_IMPLEMENTED;
-#else
   ComPtr<IInspectable> pmInspectable;
   ComPtr<Deployment::IPackageManager> pm;
   HRESULT hr = RoActivateInstance(
@@ -102,14 +99,10 @@ nsWindowsPackageManager::FindUserInstalledPackages(
     hr = iterator->MoveNext(&hasCurrent);
   }
   return NS_OK;
-#endif  // __MINGW32__
 }
 
 NS_IMETHODIMP
 nsWindowsPackageManager::GetInstalledDate(uint64_t* ts) {
-#ifdef __MINGW32__
-  return NS_ERROR_NOT_IMPLEMENTED;
-#else
   ComPtr<ApplicationModel::IPackageStatics> pkgStatics;
   HRESULT hr = RoGetActivationFactory(
       HStringReference(RuntimeClass_Windows_ApplicationModel_Package).Get(),
@@ -138,9 +131,9 @@ nsWindowsPackageManager::GetInstalledDate(uint64_t* ts) {
 
   *ts = installedDate.UniversalTime;
   return NS_OK;
-#endif  // __MINGW32__
 }
 
+#ifndef __MINGW32__
 static HRESULT RejectOnMainThread(
     const char* aName, nsMainThreadPtrHandle<dom::Promise> promiseHolder,
     nsresult result) {
@@ -153,7 +146,6 @@ static HRESULT RejectOnMainThread(
   return S_OK;
 }
 
-#ifndef __MINGW32__
 // forward declarations
 static void GetCampaignIdFromStoreProductOnBackgroundThread(
     ComPtr<IAsyncOperation<StoreProductResult*> > asyncSpr,
@@ -163,7 +155,6 @@ static void GetCampaignIdFromLicenseOnBackgroundThread(
     ComPtr<IAsyncOperation<StoreAppLicense*> > asyncSal,
     nsMainThreadPtrHandle<dom::Promise> promiseHolder,
     nsAutoString aCampaignId);
-#endif  // __MINGW32__
 
 static std::tuple<nsMainThreadPtrHolder<dom::Promise>*, nsresult>
 InitializePromise(JSContext* aCx, dom::Promise** aPromise) {
@@ -187,6 +178,7 @@ InitializePromise(JSContext* aCx, dom::Promise** aPromise) {
 
   return std::make_tuple(promiseHolder, NS_OK);
 }
+#endif  // __MINGW32__
 
 NS_IMETHODIMP
 nsWindowsPackageManager::CampaignId(JSContext* aCx, dom::Promise** aPromise) {

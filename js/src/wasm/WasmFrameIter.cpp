@@ -177,17 +177,16 @@ WasmFrameIter::WasmFrameIter(JitActivation* activation, wasm::Frame* fp,
     // If wasm::StartUnwinding unwound the trapping frame (which only happens
     // for IndirectCallBadSig), the current frame is the caller's, so its
     // resume PC is the call site in the caller, not the trap's resume PC in
-    // the callee.  Stackmap lookup and debugEnabled() rely on this.  The top
-    // frame will never be at a ReturnStub callsite, except in this case.
+    // the callee.  Stackmap lookup relies on this.  The caller may have made a
+    // return call as a regular call.
     if (trapData.unwoundFrame) {
       MOZ_ASSERT(trapData.trap == Trap::IndirectCallBadSig);
       resumePCinCurrentFrame_ = (uint8_t*)unwoundPC;
-    } else {
-#ifdef DEBUG
       CallSite site;
-      MOZ_ASSERT(!(code_->lookupCallSite(unwoundPC, &site) &&
-                   site.kind() == CallSiteKind::ReturnStub));
-#endif
+      currentFrameIsReturnCallFallback_ =
+          code_->lookupCallSite(unwoundPC, &site) &&
+          site.isReturnCallFallback();
+    } else {
       resumePCinCurrentFrame_ = (uint8_t*)trapData.resumePC;
     }
 
@@ -249,6 +248,7 @@ WasmFrameIter::WasmFrameIter(Instance* instance, Frame* fp, void* returnAddress)
     CallSite site;
     MOZ_ALWAYS_TRUE(code_->lookupCallSite(returnAddress, &site));
     MOZ_RELEASE_ASSERT(site.mightBeCrossInstance());
+    currentFrameIsReturnCallFallback_ = site.isReturnCallFallback();
 
 #ifdef ENABLE_WASM_JSPI
     currentFrameStackSwitched_ = site.isStackSwitch();
@@ -362,6 +362,7 @@ void WasmFrameIter::popFrame(bool isLeavingFrame) {
   unwoundContStack_ = nullptr;
   contBaseInstance_ = nullptr;
 #endif
+  currentFrameIsReturnCallFallback_ = false;
 
   // If we're visiting inlined frames, see if this frame was inlined.
   if (enableInlinedFrames_ && inlinedCallerOffsets_.size() > 0) {
@@ -537,6 +538,7 @@ void WasmFrameIter::popFrame(bool isLeavingFrame) {
   if (site.mightBeCrossInstance()) {
     instance_ = ExtractCallerInstanceFromFrameWithInstances(prevFP);
   }
+  currentFrameIsReturnCallFallback_ = site.isReturnCallFallback();
 
 #ifdef ENABLE_WASM_JSPI
   // A stack switch should always go through the cont base frame case above.
@@ -632,10 +634,11 @@ bool WasmFrameIter::debugEnabled() const {
     return false;
   }
 
-  // Debug frame is not present at the return stub.
-  CallSite site;
-  return !(code_->lookupCallSite((void*)resumePCinCurrentFrame_, &site) &&
-           site.kind() == CallSiteKind::ReturnStub);
+  // A frame that made a return call as a regular call has semantically
+  // returned: the debugger was notified at the CollapseFrame breakpoint before
+  // the call. Report no debug frame for it, so that nothing uses its
+  // DebugFrame.
+  return !currentFrameIsReturnCallFallback();
 }
 
 DebugFrame* WasmFrameIter::debugFrame() const {

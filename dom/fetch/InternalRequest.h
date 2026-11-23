@@ -405,12 +405,12 @@ class InternalRequest final : public AtomicSafeRefCounted<InternalRequest> {
     return mEmbedderPolicy;
   }
 
-  void SetInterceptionTriggeringPrincipalInfo(
-      UniquePtr<mozilla::ipc::PrincipalInfo> aPrincipalInfo);
+  void SetInterceptionTriggeringPrincipal(nsIPrincipal* aPrincipal) {
+    mInterceptionTriggeringPrincipal = aPrincipal;
+  }
 
-  const UniquePtr<mozilla::ipc::PrincipalInfo>&
-  GetInterceptionTriggeringPrincipalInfo() const {
-    return mInterceptionTriggeringPrincipalInfo;
+  nsIPrincipal* GetInterceptionTriggeringPrincipal() const {
+    return mInterceptionTriggeringPrincipal;
   }
 
   nsContentPolicyType InterceptionContentPolicyType() const {
@@ -542,8 +542,8 @@ class InternalRequest final : public AtomicSafeRefCounted<InternalRequest> {
   // InternalRequest::GetRequestConstructorCopy() since these information should
   // not be propagated when copying the Request in ServiceWorker script.
 
-  // This is the trigging principalInfo of the InterceptedHttpChannel.
-  UniquePtr<mozilla::ipc::PrincipalInfo> mInterceptionTriggeringPrincipalInfo;
+  // This is the trigging principal of the InterceptedHttpChannel.
+  nsCOMPtr<nsIPrincipal> mInterceptionTriggeringPrincipal;
 
   // This is the contentPolicyType of the InterceptedHttpChannel.
   nsContentPolicyType mInterceptionContentPolicyType{

@@ -222,7 +222,7 @@ add_task(async function test_chat_tool_call_batches() {
           );
         } else {
           Assert.ok(
-            tabsResult.some(
+            tabsResult.tabs.some(
               item =>
                 item.url === URL_TOKEN && item.title.includes("Tool Call Test")
             ),
@@ -474,7 +474,7 @@ add_task(async function test_blocked_tool_inside_batch() {
         );
         const tabsResult = JSON.parse(results[0].content);
         Assert.ok(
-          tabsResult.some(
+          tabsResult.tabs.some(
             item =>
               item.url === URL_TOKEN && item.title.includes("Tool Call Test")
           ),
@@ -876,7 +876,7 @@ add_task(async function test_search_handoff_skips_remaining_calls() {
           "The search result is recorded before continuing in the sidebar"
         );
         Assert.ok(
-          Array.isArray(toolMessages[0].content.body),
+          Array.isArray(toolMessages[0].content.body.tabs),
           "The call before a search handoff runs normally"
         );
         Assert.deepEqual(

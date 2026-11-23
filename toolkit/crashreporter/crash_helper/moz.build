@@ -33,10 +33,7 @@ else:
             "ws2_32",
         ]
 
-        # We need this to be able to use wmain as the entry point on MinGW;
-        # otherwise it will try to use WinMain.
-        if CONFIG["CC_TYPE"] != "clang-cl":
-            WIN32_EXE_LDFLAGS += ["-municode"]
+        WIN32_WIDE_ENTRY = True
 
     UNIFIED_SOURCES += [
         "crashhelper.cpp",

@@ -27,7 +27,6 @@ use viaduct::{Client, Request, Response};
 pub use self::builder::HttpCacheBuilderError;
 pub use self::outcome::CacheOutcome;
 pub use self::request_hash::RequestHash;
-use std::path::Path;
 use std::time::Duration;
 
 pub type HttpCacheSendResult = Result<(Response, Vec<CacheOutcome>), viaduct::ViaductError>;
@@ -52,12 +51,8 @@ pub struct HttpCache {
 }
 
 impl HttpCache {
-    pub fn builder<P: AsRef<Path>>(db_path: P) -> HttpCacheBuilder {
-        HttpCacheBuilder::new(Some(db_path.as_ref()))
-    }
-
-    pub fn builder_memory() -> HttpCacheBuilder {
-        HttpCacheBuilder::new(None::<String>)
+    pub fn builder() -> HttpCacheBuilder {
+        HttpCacheBuilder::new()
     }
 
     pub fn is_memory(&self) -> Result<bool, open_database::Error> {
@@ -167,7 +162,7 @@ mod tests {
 
     fn make_cache() -> HttpCache {
         // Our store opens an in-memory cache for tests. So the name is irrelevant.
-        HttpCache::builder_memory()
+        HttpCache::builder()
             .default_ttl(Duration::from_secs(60))
             .max_size(ByteSize::mib(1))
             .build()
@@ -177,7 +172,7 @@ mod tests {
     fn make_cache_with_ttl(secs: u64) -> (HttpCache, MockClock) {
         let clock = MockClock::new();
         // In tests our store uses an in-memory DB; filename is irrelevant.
-        let cache = HttpCache::builder_memory()
+        let cache = HttpCache::builder()
             .default_ttl(Duration::from_secs(secs))
             .max_size(ByteSize::mib(4))
             .mock_clock(clock.clone())
@@ -198,11 +193,11 @@ mod tests {
     #[test]
     fn test_http_cache_creation() {
         // Test that HttpCache can be created successfully with test config
-        let cache: Result<HttpCache, _> = HttpCache::builder_memory().build();
+        let cache: Result<HttpCache, _> = HttpCache::builder().build();
         assert!(cache.is_ok());
 
         // Test with custom config
-        let cache_with_config: Result<HttpCache, _> = HttpCache::builder_memory()
+        let cache_with_config: Result<HttpCache, _> = HttpCache::builder()
             .max_size(ByteSize::mib(1))
             .default_ttl(Duration::from_secs(60))
             .build();
@@ -211,7 +206,7 @@ mod tests {
 
     #[test]
     fn test_clear_cache() {
-        let cache: HttpCache = HttpCache::builder_memory().build().unwrap();
+        let cache: HttpCache = HttpCache::builder().build().unwrap();
 
         // Create a test request and response
         let hash = RequestHash::new(&("Get", "https://example.com/test"));
@@ -674,7 +669,7 @@ mod tests {
 
     #[test]
     fn test_invalidate_by_hash() {
-        let cache: HttpCache = HttpCache::builder_memory().build().unwrap();
+        let cache: HttpCache = HttpCache::builder().build().unwrap();
 
         let hash1 = RequestHash::new(&("Post", "https://example.com/api1"));
         let hash2 = RequestHash::new(&("Post", "https://example.com/api2"));

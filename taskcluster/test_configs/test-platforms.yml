@@ -170,7 +170,7 @@ windows11-32-25h2/debug:
 windows11-32-25h2-mingwclang/debug:
     build-platform: win32-mingwclang/debug
     test-sets:
-        - mingwclang-win32-tests-debug
+        - mingwclang-tests-debug
 
 windows11-32-25h2-mingwclang/opt:
     build-platform: win32-mingwclang/opt

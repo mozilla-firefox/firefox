@@ -57,11 +57,12 @@ pub struct HttpCacheBuilder {
 }
 
 impl HttpCacheBuilder {
-    // `db_path`: location of sqlite file for file-based db. If `None`, the db will be created in-memory.
-    pub fn new(db_path: Option<impl Into<PathBuf>>) -> Self {
+    /// Create a new HttpCacheBuilder. Concludes with 'build': `HttpCacheBuilder::new().build()`
+    /// This defaults to an in-memory database, unless `.db_path("some_path.db")` is chained.
+    pub fn new() -> Self {
         Self {
             clock: Clock::default(),
-            db_path: db_path.map(Into::into),
+            db_path: None,
             default_ttl: None,
             max_size: None,
         }
@@ -78,6 +79,12 @@ impl HttpCacheBuilder {
             max_size: self.max_size.unwrap_or(DEFAULT_MAX_SIZE),
             store: HttpCacheStore::new(self.open_db()?),
         })
+    }
+
+    // `db_path`: location of sqlite file for file-based db. If not passed, it will be created in-memory.
+    pub fn db_path(mut self, db_path: impl Into<PathBuf>) -> Self {
+        self.db_path = Some(db_path.into());
+        self
     }
 
     /// Replaces the system clock with `clock`, for tests that move time.
@@ -161,7 +168,7 @@ mod tests {
     use super::*;
 
     fn make_test_builder(path: &str) -> HttpCacheBuilder {
-        HttpCacheBuilder::new(Some(path))
+        HttpCacheBuilder::new().db_path(path)
     }
 
     #[test]

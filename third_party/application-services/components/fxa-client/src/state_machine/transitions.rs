@@ -155,12 +155,18 @@ pub fn transition(
             let active = match account.check_authorization_status() {
                 Ok(active) => active,
                 // Missing a refresh/session token means this check failed
-                // https://bugzilla.mozilla.org/show_bug.cgi?id=2084260
+                // https://bugzilla.mozilla.org/show_bug.cgi?id=2084260.
+                // Similarly for missing scoped keys
+                // https://bugzilla.mozilla.org/show_bug.cgi?id=2093432.
+                //
                 // XXX - note however that `Error::NoSessionToken` isn't actually
                 // possible here currently - check_authorization_status never checks that!
-                Err(Error::NoRefreshToken) | Err(Error::NoSessionToken) => false,
-                // Any other error means this check was inconclusive.
-                // Keep the user in the `Connected` state.
+                Err(Error::NoRefreshToken)
+                | Err(Error::NoSessionToken)
+                | Err(Error::NoScopedKey(_)) => false,
+                // Any other error means this check was inconclusive, keep the user in the `Connected` state.
+                // In particular, we want to stay in `Connected` in the face of network errors and
+                // circuit breaker errors.
                 Err(e) => {
                     return Err(StateMachineErr::Handled {
                         cause: Box::new(e),
@@ -241,16 +247,6 @@ pub fn transition(
                 .handle_web_channel_password_change(&json_payload)
                 .to_state_machine_err(|| S::AuthIssues)?;
             Ok(S::Connected)
-        }
-        (S::AuthIssues, E::CheckAuthorizationStatus) => {
-            let active = account
-                .check_authorization_status()
-                .to_state_machine_err(|| S::AuthIssues)?;
-            if active {
-                Ok(S::Connected)
-            } else {
-                Ok(S::AuthIssues)
-            }
         }
 
         // ── Other transitions  ─────────────────────────────────
