@@ -19,6 +19,9 @@
 // *that text* is properly escaped.
 
 SpecialPowers.wrap(window).docShell.cssErrorReportingEnabled = true;
+// A sheet from the cache, e.g. from a previous run of this test, isn't parsed
+// again, so doesn't report its errors.
+SpecialPowers.ChromeUtils.clearResourceCache({ types: ["stylesheet"] });
 
 // There is one "pattern" for each code path through the error reporter
 // that might need to escape some kind of user-supplied text.

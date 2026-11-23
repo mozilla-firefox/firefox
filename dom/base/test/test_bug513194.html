@@ -18,6 +18,9 @@ https://bugzilla.mozilla.org/show_bug.cgi?id=513194
 // HTML parser to call the CSS parser once and only once when it
 // encounters a new <style> element.
 SpecialPowers.wrap(window).docShell.cssErrorReportingEnabled = true;
+// A sheet from the cache, e.g. from a previous run of this test, isn't parsed
+// again, so doesn't report its errors.
+SpecialPowers.ChromeUtils.clearResourceCache({ types: ["stylesheet"] });
 SimpleTest.runTestExpectingConsoleMessages(
   function () { document.write("<style>qux { foo : bar; }<\/style>") },
   [{ errorMessage: /Unknown property/ }]

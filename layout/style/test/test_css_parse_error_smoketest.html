@@ -10,6 +10,9 @@
 <style id="testbench"></style>
 <script>
   SpecialPowers.wrap(window).docShell.cssErrorReportingEnabled = true;
+  // A sheet from the cache, e.g. from a previous run of this test, isn't parsed
+  // again, so doesn't report its errors.
+  SpecialPowers.ChromeUtils.clearResourceCache({ types: ["stylesheet"] });
   // Tests that apply to all types of style sheets
   var tests = [
     {
