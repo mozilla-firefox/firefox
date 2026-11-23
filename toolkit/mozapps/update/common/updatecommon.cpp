@@ -7,6 +7,7 @@
 #  include <windows.h>
 #  include <winioctl.h>  // for FSCTL_GET_REPARSE_POINT
 #  include <shlobj.h>
+#  include <pathcch.h>
 #  ifndef RRF_SUBKEY_WOW6464KEY
 #    define RRF_SUBKEY_WOW6464KEY 0x00010000
 #  endif
@@ -478,14 +479,14 @@ bool IsValidFullPath(NS_tchar* origFullPath) {
 
 #ifdef XP_WIN
   NS_tchar testPath[MAXPATHLEN] = {NS_T('\0')};
-  // GetFullPathNameW will replace / with \ which PathCanonicalizeW requires.
+  // GetFullPathNameW will replace / with \ which PathCchCanonicalize requires.
   if (GetFullPathNameW(origFullPath, MAXPATHLEN, testPath, nullptr) == 0) {
     // Unable to get the full name for the path (e.g. invalid path).
     return false;
   }
 
   NS_tchar canonicalPath[MAXPATHLEN] = {NS_T('\0')};
-  if (!PathCanonicalizeW(canonicalPath, testPath)) {
+  if (FAILED(PathCchCanonicalize(canonicalPath, MAXPATHLEN, testPath))) {
     // Path could not be canonicalized (e.g. invalid path).
     return false;
   }

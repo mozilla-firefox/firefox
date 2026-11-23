@@ -58,6 +58,7 @@ if CONFIG["OS_ARCH"] == "WINNT":
     OS_LIBS += [
         "advapi32",
         "ole32",
+        "pathcch",
         "rpcrt4",
         "shell32",
     ]
