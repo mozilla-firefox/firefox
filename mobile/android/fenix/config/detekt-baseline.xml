@@ -504,8 +504,6 @@
     <ID>UndocumentedPublicClass:SearchEngineMenu.kt$SearchEngineMenu$Item</ID>
     <ID>UndocumentedPublicClass:SearchEngineMenu.kt$SearchEngineMenu.Item$Delete : Item</ID>
     <ID>UndocumentedPublicClass:SearchEngineMenu.kt$SearchEngineMenu.Item$Edit : Item</ID>
-    <ID>UndocumentedPublicClass:SearchStringValidator.kt$SearchStringValidator</ID>
-    <ID>UndocumentedPublicClass:SearchStringValidator.kt$SearchStringValidator$Result</ID>
     <ID>UndocumentedPublicClass:SearchWidgetProvider.kt$SearchWidgetProvider : AppWidgetProvider</ID>
     <ID>UndocumentedPublicClass:SearchWidgetProvider.kt$SearchWidgetProviderSize</ID>
     <ID>UndocumentedPublicClass:SessionControlController.kt$DefaultSessionControlController : SessionControlController</ID>
@@ -661,7 +659,6 @@
     <ID>UndocumentedPublicFunction:RecentlyClosedFragmentView.kt$RecentlyClosedFragmentView$fun update(state: RecentlyClosedFragmentState)</ID>
     <ID>UndocumentedPublicFunction:RecentlyClosedItemViewHolder.kt$RecentlyClosedItemViewHolder$fun bind(item: TabState)</ID>
     <ID>UndocumentedPublicFunction:RecentlyVisitedItem.kt$fun RecentHistoryGroup.lastUpdated(): Long</ID>
-    <ID>UndocumentedPublicFunction:SearchStringValidator.kt$SearchStringValidator$fun isSearchStringValid(client: Client, searchString: String): Result</ID>
     <ID>UndocumentedPublicFunction:Settings.kt$Settings$@VisibleForTesting(otherwise = PRIVATE) fun setStrictETP()</ID>
     <ID>UndocumentedPublicFunction:Settings.kt$Settings$fun amoCollectionOverrideConfigured(): Boolean</ID>
     <ID>UndocumentedPublicFunction:Settings.kt$Settings$fun getSitePermissionsCustomSettingsRules(): SitePermissionsRules</ID>
