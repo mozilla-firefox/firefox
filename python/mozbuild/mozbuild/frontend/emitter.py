@@ -1361,6 +1361,13 @@ class TreeMetadataEmitter(LoggingMixin):
         computed_as_flags = ComputedFlags(context, context["ASM_FLAGS"])
         computed_wasm_flags = ComputedFlags(context, context["WASM_FLAGS"])
 
+        if (
+            context.get("WIN32_WIDE_ENTRY")
+            and context.config.substs.get("TARGET_OS") == "WINNT"
+            and context.config.substs.get("CC_TYPE") == "clang"
+        ):
+            context["WIN32_EXE_LDFLAGS"] += ["-municode"]
+
         # Set compiler and link flags according to whether we want a console.
         if context.config.substs.get("TARGET_OS") == "WINNT":
             if context.get("WINCONSOLE", True):

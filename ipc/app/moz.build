@@ -67,6 +67,7 @@ if CONFIG["OS_ARCH"] == "WINNT":
 if CONFIG["OS_ARCH"] == "Darwin":
     LDFLAGS += ["-Wl,-rpath,@executable_path/../../../"]
 
+WIN32_WIDE_ENTRY = True
 if CONFIG["CC_TYPE"] == "clang-cl":
     # Always enter a Windows program through wmain, whether or not we're
     # a console application.

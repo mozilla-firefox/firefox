@@ -233,6 +233,33 @@ class TestEmitterBasic(unittest.TestCase):
         objs = self.read_topsrcdir(self.reader("winconsole-true", extra_substs=substs))
         self.assertEqual(objs, [])
 
+    def test_win32_wide_entry(self):
+        mingw = {
+            "CC_TYPE": "clang",
+            "TARGET_OS": "WINNT",
+            "WIN32_CONSOLE_EXE_LDFLAGS": ["-mconsole"],
+            "WIN32_GUI_EXE_LDFLAGS": ["-mwindows"],
+        }
+        for fixture, wanted in (
+            ("win32-wide-entry", ["-municode", "-mconsole"]),
+            ("win32-wide-entry-gui", ["-municode", "-mwindows"]),
+        ):
+            objs = self.read_topsrcdir(self.reader(fixture, extra_substs=mingw))
+            self.assertEqual(len(objs), 1)
+            self.assertIsInstance(objs[0], VariablePassthru)
+            self.assertEqual(objs[0].variables, {"WIN32_EXE_LDFLAGS": wanted})
+
+        reader = self.reader(
+            "win32-wide-entry", extra_substs={"CC_TYPE": "clang", "TARGET_OS": "Linux"}
+        )
+        self.assertEqual(self.read_topsrcdir(reader), [])
+
+        reader = self.reader(
+            "win32-wide-entry",
+            extra_substs={"CC_TYPE": "clang-cl", "TARGET_OS": "WINNT"},
+        )
+        self.assertEqual(self.read_topsrcdir(reader), [])
+
     def test_compile_flags(self):
         reader = self.reader(
             "compile-flags", extra_substs={"WARNINGS_AS_ERRORS": "-Werror"}

@@ -55,12 +55,9 @@ for var in (
 # <filesystem>, and possibly others).
 DisableStlWrapping()
 
-# We need this to be able to use wmain as the entry point on MinGW;
-# otherwise it will try to use WinMain.
+WIN32_WIDE_ENTRY = True
 if CONFIG["CC_TYPE"] == "clang-cl":
     WIN32_EXE_LDFLAGS += ["-ENTRY:wmainCRTStartup"]
-else:
-    WIN32_EXE_LDFLAGS += ["-municode"]
 
 # This binary should never open a console window in release builds, because
 # it's going to run in the background when the user may not expect it, and

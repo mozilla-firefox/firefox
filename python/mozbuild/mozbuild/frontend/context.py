@@ -1902,6 +1902,14 @@ VARIABLES = {
         """Whether the current binary requires a console.
         """,
     ),
+    "WIN32_WIDE_ENTRY": (
+        bool,
+        bool,
+        """Whether the programs in this directory enter through `wmain` or
+        `wWinMain`. mingw links them with `-municode` so that its startup code
+        calls the wide entry point.
+        """,
+    ),
     "MOZ_SRC_FILES": (
         ContextDerivedTypedList(SourcePath, StrictOrderingOnAppendList),
         list,

@@ -11,7 +11,6 @@ if CONFIG["ENABLE_TESTS"] and CONFIG["OS_ARCH"] == "WINNT":
         "minidumpwriter.cpp",
     ]
     USE_STATIC_MSVCRT = True
-    if CONFIG["CC_TYPE"] in ("clang", "gcc"):
-        WIN32_EXE_LDFLAGS += ["-municode"]
+    WIN32_WIDE_ENTRY = True
 
 NO_PGO = True

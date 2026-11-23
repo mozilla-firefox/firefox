@@ -152,6 +152,7 @@ elif CONFIG["FUZZING_INTERFACES"]:
 if CONFIG["MOZ_GECKODRIVER"]:
     DEFINES["MOZ_GECKODRIVER"] = True
 
+WIN32_WIDE_ENTRY = True
 if CONFIG["CC_TYPE"] == "clang-cl":
     # Always enter a Windows program through wmain, whether or not we're
     # a console application.
