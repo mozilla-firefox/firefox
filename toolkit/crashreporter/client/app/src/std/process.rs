@@ -70,6 +70,19 @@ impl Command {
         self
     }
 
+    pub fn envs<I, K, V>(&mut self, vars: I) -> &mut Command
+    where
+        I: IntoIterator<Item = (K, V)>,
+        K: AsRef<OsStr>,
+        V: AsRef<OsStr>,
+    {
+        self.env.clear();
+        for (ref key, ref val) in vars {
+            self.env.insert(key.as_ref().into(), val.as_ref().into());
+        }
+        self
+    }
+
     pub fn env_remove<K>(&mut self, key: K) -> &mut Self
     where
         K: AsRef<OsStr>,

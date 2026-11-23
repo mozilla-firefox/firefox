@@ -35,6 +35,8 @@ macro_rules! pref_patterns {
 }
 
 pref_patterns! {
+    static BROWSER_CRASHREPORTER_MEMTEST = "browser.crashReporter.memtest";
+    static BROWSER_CRASHREPORTER_MEMTESTKINDS = "browser.crashReporter.memtestKinds";
     static LOCALE_PREF = "intl.locale.requested";
     static TELEMETRY_ENABLED_PREF = "datareporting.healthreport.uploadEnabled";
     static TELEMETRY_SERVER_PREF = "toolkit.telemetry.server";
@@ -43,6 +45,8 @@ pref_patterns! {
 /// Loaded prefs values.
 #[derive(Default, Debug)]
 pub struct Prefs {
+    memtest_enabled: Option<bool>,
+    memtest_kinds: Option<String>,
     telemetry_enabled: Option<bool>,
     telemetry_server: Option<String>,
     requested_locales: Option<Vec<String>>,
@@ -119,6 +123,20 @@ impl Prefs {
 
         self.paths.push(prefs_file.to_owned());
 
+        if let Some(new_value) = BROWSER_CRASHREPORTER_MEMTEST
+            .find(&content)
+            .and_then(|v| v.into_bool())
+        {
+            self.memtest_enabled = Some(new_value.into());
+        }
+
+        if let Some(new_value) = BROWSER_CRASHREPORTER_MEMTESTKINDS
+            .find(&content)
+            .and_then(|v| v.into_str())
+        {
+            self.memtest_kinds = Some(new_value.into());
+        }
+
         if let Some(new_value) = TELEMETRY_SERVER_PREF
             .find(&content)
             .and_then(|v| v.into_str())
@@ -145,6 +163,16 @@ impl Prefs {
         }
 
         self
+    }
+
+    /// Whether we should run the memory tester.
+    pub fn memtest_enabled(&self) -> Option<bool> {
+        self.memtest_enabled
+    }
+
+    /// What tests should be run by the memory tester.
+    pub fn memtest_kinds(&self) -> Option<&str> {
+        self.memtest_kinds.as_deref()
     }
 
     /// Whether the loaded prefs indicate that telemetry is enabled.
