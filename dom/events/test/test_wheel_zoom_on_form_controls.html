@@ -43,7 +43,7 @@
 
     await zoomHasHappened;
     isnot(SpecialPowers.getFullZoom(window), initialZoom, id + ": should have zoomed");
-    SpecialPowers.setFullZoom(window.top, initialZoom);
+    SpecialPowers.setFullZoom(window, initialZoom);
   }
 
   async function test() {
