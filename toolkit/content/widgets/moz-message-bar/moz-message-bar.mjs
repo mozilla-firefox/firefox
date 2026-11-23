@@ -147,6 +147,7 @@ export class MozMessageBar extends MozLitElement {
     this.dispatchEvent(new CustomEvent("message-bar:close"));
   }
 
+  /** @internal */
   get supportLinkEls() {
     if (this.supportPage) {
       return this.supportLinkHolder.children;

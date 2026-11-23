@@ -49,6 +49,7 @@ customElements.define("moz-radio-group", MozRadioGroup);
 export class MozRadio extends SelectControlItemMixin(MozBaseInputElement) {
   static activatedProperty = "checked";
 
+  /** @internal */
   get isDisabled() {
     return (
       super.isDisabled || this.parentDisabled || this.controller.parentDisabled

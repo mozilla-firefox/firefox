@@ -84,10 +84,12 @@ export class SelectControlBaseElement extends MozLitElement {
     return this.#value;
   }
 
+  /** @internal */
   get hasValue() {
     return this.value === 0 || this.value === false || !!this.value;
   }
 
+  /** @internal */
   set focusedIndex(newIndex) {
     if (this.#focusedIndex !== newIndex) {
       this.#focusedIndex = newIndex;
@@ -95,10 +97,12 @@ export class SelectControlBaseElement extends MozLitElement {
     }
   }
 
+  /** @internal */
   get checkedIndex() {
     return this.#checkedIndex;
   }
 
+  /** @internal */
   set checkedIndex(newIndex) {
     if (this.#checkedIndex !== newIndex) {
       this.#checkedIndex = newIndex;
@@ -111,6 +115,7 @@ export class SelectControlBaseElement extends MozLitElement {
     this.#focusedIndex = undefined;
   }
 
+  /** @internal */
   get focusableIndex() {
     let activeEl = this.getRootNode().activeElement;
     let childElFocused =
@@ -139,6 +144,7 @@ export class SelectControlBaseElement extends MozLitElement {
 
   // Query for child elements the first time they are needed + ensure they
   // have been upgraded so we can access properties.
+  /** @internal */
   get childElements() {
     if (!this.#childElements) {
       this.#childElements = (
@@ -459,10 +465,12 @@ export const SelectControlItemMixin = superClass =>
       position: { type: Number, state: true },
     };
 
+    /** @internal */
     get controller() {
       return this.#controller;
     }
 
+    /** @internal */
     get isDisabled() {
       return this.disabled || this.parentDisabled;
     }

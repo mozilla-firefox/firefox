@@ -92,7 +92,9 @@ export class MozSelect extends MozBaseInputElement {
      */
     this.value = "";
 
+    /** @internal */
     this.slotRef = createRef();
+    /** @internal */
     this.optionsMutationObserver = new MutationObserver(
       this.populateOptions.bind(this)
     );
@@ -138,6 +140,7 @@ export class MozSelect extends MozBaseInputElement {
   /**
    * Gets the icon source for the currently selected option.
    *
+   * @internal
    * @returns {string} The icon source URL or empty string.
    */
   get _selectedOptionIconSrc() {

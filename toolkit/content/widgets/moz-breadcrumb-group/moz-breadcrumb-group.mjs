@@ -96,6 +96,7 @@ export class MozBreadcrumbGroup extends MozLitElement {
   }
 
   /**
+   * @internal
    * @type {Array<MozBreadcrumb>}
    */
   get breadcrumbs() {

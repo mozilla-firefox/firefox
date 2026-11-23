@@ -24,6 +24,7 @@ export class MozToggle extends MozBaseInputElement {
 
   static activatedProperty = "pressed";
 
+  /** @internal */
   get buttonEl() {
     return this.inputEl;
   }

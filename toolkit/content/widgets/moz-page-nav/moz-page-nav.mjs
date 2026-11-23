@@ -92,6 +92,7 @@ export class MozPageNav extends MozLitElement {
     this.secondaryNavButtons = [];
   }
 
+  /** @internal */
   get visiblePageNavButtons() {
     return this.pageNavButtons.filter(this.checkElementVisibility);
   }

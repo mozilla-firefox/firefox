@@ -93,10 +93,12 @@ export class MozBoxItem extends MozBoxBase {
     this.addEventListener("keydown", e => this.handleKeydown(e));
   }
 
+  /** @internal */
   get hasSupportPage() {
     return this.supportPage || this._hasSlottedSupportLink;
   }
 
+  /** @internal */
   get hasDescription() {
     return this.description || this._hasSlottedDescription;
   }
@@ -177,6 +179,7 @@ export class MozBoxItem extends MozBoxBase {
     return NAVIGATION_DIRECTIONS.LTR;
   }
 
+  /** @internal */
   get isDraggable() {
     const reorderableParent = this.closest("moz-box-group");
     return (
@@ -191,6 +194,7 @@ export class MozBoxItem extends MozBoxBase {
    * Whether the item itself can receive focus, rather than delegating
    * focus to one of its action elements.
    *
+   * @internal
    * @returns {boolean}
    */
   get isFocusable() {

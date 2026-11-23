@@ -237,6 +237,7 @@ export class MozLitElement extends LitElement {
    * Whether the app locale is RTL. Falls back to the document direction where
    * Services is unavailable.
    *
+   * @internal
    * @returns {boolean}
    */
   get isDocumentRTL() {
@@ -468,38 +469,47 @@ export class MozBaseInputElement extends MozLitElement {
     }
   }
 
+  /** @internal */
   get inputEl() {
     return this.renderRoot.getElementById("input");
   }
 
+  /** @internal */
   get labelEl() {
     return this.renderRoot.querySelector("label");
   }
 
+  /** @internal */
   get icon() {
     return this.renderRoot.querySelector(".icon");
   }
 
+  /** @internal */
   get descriptionEl() {
     return this.renderRoot.getElementById("description");
   }
 
+  /** @internal */
   get nestedEls() {
     return this.renderRoot.querySelector(".nested")?.assignedElements() ?? [];
   }
 
+  /** @internal */
   get hasDescription() {
     return this.#internals.states.has("has-description");
   }
 
+  /** @internal */
   get hasSupportLink() {
     return this.#internals.states.has("has-support-link");
   }
 
+  /** @internal */
   get hasLabel() {
     return this.#internals.states.has("has-label");
   }
 
+  /** @internal */
   get isDisabled() {
     return !!(this.disabled || this.parentDisabled);
   }
@@ -705,14 +715,17 @@ export class MozBoxBase extends MozLitElement {
     this.iconSrc = "";
   }
 
+  /** @internal */
   get labelEl() {
     return this.renderRoot.querySelector(".label");
   }
 
+  /** @internal */
   get descriptionEl() {
     return this.renderRoot.querySelector(".description");
   }
 
+  /** @internal */
   get iconEl() {
     return this.renderRoot.querySelector(".icon");
   }

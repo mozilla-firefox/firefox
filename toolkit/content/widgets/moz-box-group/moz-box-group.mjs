@@ -82,6 +82,7 @@ export class MozBoxGroup extends MozLitElement {
      */
     this.staticItems = [];
 
+    /** @internal */
     this.listMutationObserver = new MutationObserver(
       this.updateItems.bind(this)
     );
@@ -110,6 +111,7 @@ export class MozBoxGroup extends MozLitElement {
   /**
    * Whether this group renders its items as a list.
    *
+   * @internal
    * @returns {boolean}
    */
   get isListType() {

@@ -292,8 +292,6 @@ class MenuController extends PopoverController {
  * A button with multiple types and three sizes.
  *
  * @tagname moz-button
- * @property {HTMLButtonElement} buttonEl - The internal button element in the shadow DOM.
- * @property {HTMLButtonElement} slotEl - The internal slot element in the shadow DOM.
  * @cssproperty [--button-outer-padding-inline] - Used to set the outer inline padding of toolbar style buttons
  * @cssproperty [--button-outer-padding-block] - Used to set the outer block padding of toolbar style buttons.
  * @cssproperty [--button-outer-padding-inline-start] - Used to set the outer inline-start padding of toolbar style buttons
@@ -515,6 +513,7 @@ export class MozButton extends MozLitElement {
     }
   }
 
+  /** @internal */
   get isSplitButton() {
     return this.type === "split";
   }

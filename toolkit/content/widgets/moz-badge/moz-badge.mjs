@@ -58,6 +58,7 @@ export class MozBadge extends MozLitElement {
     this.type = "default";
   }
 
+  /** @internal */
   get labelL10nId() {
     if (this.type == "beta") {
       return "moz-badge-beta2";
