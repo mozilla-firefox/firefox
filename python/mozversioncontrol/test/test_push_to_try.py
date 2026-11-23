@@ -267,12 +267,13 @@ def test_push_to_git_try(repo, mocker):
 
     mock_try_commit = mocker.patch.object(vcs, "try_commit")
     mock_try_commit.return_value.__enter__.return_value = "fakehead"
+    mocker.patch.object(vcs, "_try_head_to_commit", side_effect=lambda h: f"{h}-sha")
     mock_push = mocker.patch.object(vcs, "push")
 
-    vcs.push_to_try("msg", remote=remote)
+    assert vcs.push_to_try("msg", remote=remote) == "fakehead-sha"
 
     mock_push.assert_called_once_with(
-        remote, ref="fakehead", dest_branch="user/test/master", force=True
+        remote, ref="fakehead-sha", dest_branch="user/test/master", force=True
     )
 
 
@@ -300,6 +301,7 @@ def test_push_to_git_try_creates_bookmark(repo, mocker):
     mock_run = mocker.patch.object(vcs, "_run")
     mock_try_commit = mocker.patch.object(vcs, "try_commit")
     mock_try_commit.return_value.__enter__.return_value = "fakehead"
+    mocker.patch.object(vcs, "_try_head_to_commit", side_effect=lambda h: h)
     mock_push = mocker.patch.object(vcs, "push")
 
     vcs.push_to_try("msg", remote=remote)
