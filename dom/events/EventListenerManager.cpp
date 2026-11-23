@@ -1527,13 +1527,16 @@ EventListenerManager::EventListenerMap::GetOrCreateListenersForAllEvents() {
   return listeners;
 }
 
-void EventListenerManager::HandleEventInternal(nsPresContext* aPresContext,
-                                               WidgetEvent* aEvent,
-                                               Event** aDOMEvent,
-                                               EventTarget* aCurrentTarget,
-                                               nsEventStatus* aEventStatus,
-                                               bool aItemInShadowTree) {
+void EventListenerManager::HandleEventInternal(
+    nsPresContext* aPresContext, WidgetEvent* aEvent, nsAtom* aTypeAtom,
+    Event** aDOMEvent, EventTarget* aCurrentTarget, nsEventStatus* aEventStatus,
+    bool aItemInShadowTree) {
   MOZ_ASSERT_IF(aEvent->mMessage != eUnidentifiedEvent, mIsMainThreadELM);
+
+#ifdef DEBUG
+  RefPtr<nsAtom> type = nsContentUtils::GetEventType(aEvent);
+  MOZ_ASSERT(aTypeAtom == type, "Cached type atom doesn't match the event");
+#endif
 
   // Set the value of the internal PreventDefault flag properly based on
   // aEventStatus
@@ -1548,6 +1551,13 @@ void EventListenerManager::HandleEventInternal(nsPresContext* aPresContext,
     return;
   }
 
+  if (!aTypeAtom) {
+    // Some messages don't have a corresponding type atom, e.g.
+    // eMouseEnterIntoWidget. These events can't have a listener, so we
+    // can stop here.
+    return;
+  }
+
   Maybe<AutoHandlingUserInputStatePusher> userInputStatePusher;
   Maybe<AutoPopupStatePusher> popupStatePusher;
   if (mIsMainThreadELM) {
@@ -1557,32 +1567,24 @@ void EventListenerManager::HandleEventInternal(nsPresContext* aPresContext,
         PopupBlocker::GetEventPopupControlState(aEvent, *aDOMEvent));
   }
 
-  RefPtr<nsAtom> typeAtom = nsContentUtils::GetEventType(aEvent);
-  if (!typeAtom) {
-    // Some messages don't have a corresponding type atom, e.g.
-    // eMouseEnterIntoWidget. These events can't have a listener, so we
-    // can stop here.
-    return;
-  }
-
   EventMessage eventMessage = aEvent->mMessage;
   bool hasAnyListenerForEventType = false;
 
   // First, notify any "all events" listeners.
   if (RefPtr<ListenerArray> listenersForAllEvents =
           mListenerMap.GetListenersForAllEvents()) {
-    HandleEventWithListenerArray(listenersForAllEvents, typeAtom, eventMessage,
+    HandleEventWithListenerArray(listenersForAllEvents, aTypeAtom, eventMessage,
                                  aPresContext, aEvent, aDOMEvent,
                                  aCurrentTarget, aItemInShadowTree);
     hasAnyListenerForEventType = true;
   }
 
-  // Now look for listeners for typeAtom, and call them if we have any.
+  // Now look for listeners for aTypeAtom, and call them if we have any.
   bool hasAnyListenerMatchingGroup = false;
   if (RefPtr<ListenerArray> listeners =
-          mListenerMap.GetListenersForType(typeAtom)) {
+          mListenerMap.GetListenersForType(aTypeAtom)) {
     hasAnyListenerMatchingGroup = HandleEventWithListenerArray(
-        listeners, typeAtom, eventMessage, aPresContext, aEvent, aDOMEvent,
+        listeners, aTypeAtom, eventMessage, aPresContext, aEvent, aDOMEvent,
         aCurrentTarget, aItemInShadowTree);
     hasAnyListenerForEventType = true;
   }

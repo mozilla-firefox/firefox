@@ -16,6 +16,7 @@
 // Microsoft's API Name hackery sucks
 #    undef CreateEvent
 
+class nsAtom;
 class nsIContent;
 class nsPresContext;
 
@@ -108,6 +109,9 @@ class MOZ_STACK_CLASS EventChainVisitor {
    *       use this.
    */
   nsCOMPtr<nsISupports> mItemData;
+
+  // nsContentUtils::GetEventType(mEvent).
+  RefPtr<nsAtom> mTypeAtom;
 };
 
 class MOZ_STACK_CLASS EventChainPreVisitor final : public EventChainVisitor {
@@ -319,7 +323,9 @@ class MOZ_STACK_CLASS EventChainPostVisitor final
   explicit EventChainPostVisitor(EventChainVisitor& aOther)
       : EventChainVisitor(aOther.mPresContext, aOther.mEvent,
                           MOZ_KnownLive(aOther.mDOMEvent),
-                          aOther.mEventStatus) {}
+                          aOther.mEventStatus) {
+    mTypeAtom = aOther.mTypeAtom;
+  }
 };
 
 /**

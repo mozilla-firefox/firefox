@@ -434,7 +434,8 @@ class EventListenerManager final
   // things that come from slightly complicated stack-lifetime data structures.
   MOZ_CAN_RUN_SCRIPT_BOUNDARY
   void HandleEvent(nsPresContext* aPresContext, WidgetEvent* aEvent,
-                   dom::Event** aDOMEvent, dom::EventTarget* aCurrentTarget,
+                   nsAtom* aTypeAtom, dom::Event** aDOMEvent,
+                   dom::EventTarget* aCurrentTarget,
                    nsEventStatus* aEventStatus, bool aItemInShadowTree) {
     if (!mMayHaveCapturingListeners && !aEvent->mFlags.mInBubblingPhase) {
       return;
@@ -463,8 +464,8 @@ class EventListenerManager final
       return;
     }
 
-    HandleEventInternal(aPresContext, aEvent, aDOMEvent, aCurrentTarget,
-                        aEventStatus, aItemInShadowTree);
+    HandleEventInternal(aPresContext, aEvent, aTypeAtom, aDOMEvent,
+                        aCurrentTarget, aEventStatus, aItemInShadowTree);
   }
 
   /**
@@ -585,7 +586,7 @@ class EventListenerManager final
  protected:
   MOZ_CAN_RUN_SCRIPT
   void HandleEventInternal(nsPresContext* aPresContext, WidgetEvent* aEvent,
-                           dom::Event** aDOMEvent,
+                           nsAtom* aTypeAtom, dom::Event** aDOMEvent,
                            dom::EventTarget* aCurrentTarget,
                            nsEventStatus* aEventStatus, bool aItemInShadowTree);
 
