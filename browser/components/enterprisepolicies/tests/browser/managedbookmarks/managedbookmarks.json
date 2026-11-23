@@ -1,6 +1,6 @@
 {
   "policies": {
-    "DisablePrivateBrowsing": true,
+    "PrivateBrowsingModeAvailability": 1,
     "DisplayBookmarksToolbar": true,
     "ManagedBookmarks": [
       {
