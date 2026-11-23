@@ -1392,3 +1392,75 @@ add_task(async function update_notitle_notification() {
     },
   ]);
 });
+
+add_task(async function tags_changed_multiple_bookmarks_same_url() {
+  let url = new URL("http://multiple-tags.example.com/");
+  let bms = [];
+  for (let parentGuid of [
+    PlacesUtils.bookmarks.unfiledGuid,
+    PlacesUtils.bookmarks.menuGuid,
+  ]) {
+    bms.push(await PlacesUtils.bookmarks.insert({ parentGuid, url }));
+  }
+  let tagFolders = [];
+  for (let title of ["b-tag", "a-tag"]) {
+    tagFolders.push(
+      await PlacesUtils.bookmarks.insert({
+        type: PlacesUtils.bookmarks.TYPE_FOLDER,
+        parentGuid: PlacesUtils.bookmarks.tagsGuid,
+        title,
+      })
+    );
+  }
+  await PlacesUtils.bookmarks.insert({ parentGuid: tagFolders[0].guid, url });
+
+  async function checkTagsChanged(task, expectedTags) {
+    let tagsByGuid = new Map();
+    let listener = events => {
+      for (let event of events) {
+        tagsByGuid.set(event.guid, event.tags);
+      }
+    };
+    PlacesObservers.addListener(["bookmark-tags-changed"], listener);
+    try {
+      await task();
+    } finally {
+      PlacesObservers.removeListener(["bookmark-tags-changed"], listener);
+    }
+    Assert.deepEqual(
+      [...tagsByGuid.keys()].sort(),
+      bms.map(bm => bm.guid).sort(),
+      "All the bookmarks for the URL should be notified"
+    );
+    for (let tags of tagsByGuid.values()) {
+      Assert.deepEqual(tags, expectedTags, "Check the notified tags");
+    }
+  }
+
+  info("Add a tag");
+  let tagEntry;
+  await checkTagsChanged(async () => {
+    tagEntry = await PlacesUtils.bookmarks.insert({
+      parentGuid: tagFolders[1].guid,
+      url,
+    });
+  }, ["a-tag", "b-tag"]);
+
+  info("Rename a tag");
+  await checkTagsChanged(
+    () =>
+      PlacesUtils.bookmarks.update({
+        guid: tagFolders[1].guid,
+        title: "c-tag",
+      }),
+    ["b-tag", "c-tag"]
+  );
+
+  info("Remove a tag");
+  await checkTagsChanged(
+    () => PlacesUtils.bookmarks.remove(tagEntry),
+    ["b-tag"]
+  );
+
+  await PlacesUtils.bookmarks.eraseEverything();
+});
