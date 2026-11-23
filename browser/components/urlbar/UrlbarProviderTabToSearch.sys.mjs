@@ -35,47 +35,54 @@ const VIEW_TEMPLATE = {
   },
   children: [
     {
-      name: "icon",
-      tag: "img",
-      classList: ["urlbarView-favicon"],
-    },
-    {
-      name: "text-container",
+      name: "no-wrap",
       tag: "span",
+      classList: ["urlbarView-no-wrap"],
       children: [
         {
-          name: "first-row-container",
+          name: "icon",
+          tag: "img",
+          classList: ["urlbarView-favicon"],
+        },
+        {
+          name: "text-container",
           tag: "span",
           children: [
             {
-              name: "title",
+              name: "first-row-container",
               tag: "span",
-              classList: ["urlbarView-title"],
               children: [
                 {
-                  name: "titleStrong",
-                  tag: "strong",
+                  name: "title",
+                  tag: "span",
+                  classList: ["urlbarView-title"],
+                  children: [
+                    {
+                      name: "titleStrong",
+                      tag: "strong",
+                    },
+                  ],
+                },
+                {
+                  name: "title-separator",
+                  tag: "span",
+                  classList: ["urlbarView-title-separator"],
+                },
+                {
+                  name: "action",
+                  tag: "span",
+                  classList: ["urlbarView-action"],
+                  attributes: {
+                    "slide-in": true,
+                  },
                 },
               ],
             },
             {
-              name: "title-separator",
+              name: "description",
               tag: "span",
-              classList: ["urlbarView-title-separator"],
-            },
-            {
-              name: "action",
-              tag: "span",
-              classList: ["urlbarView-action"],
-              attributes: {
-                "slide-in": true,
-              },
             },
           ],
-        },
-        {
-          name: "description",
-          tag: "span",
         },
       ],
     },
