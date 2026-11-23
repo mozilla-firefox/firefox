@@ -34,7 +34,7 @@ def check(ctx, paths):
     maybe_setup(ctx)
 
     for p in paths:
-        rv = tsc(ctx, "--project", p)
+        rv = tsc(ctx, "--noEmit", "--project", p)
         if rv:
             return rv
     return 0
