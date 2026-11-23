@@ -20,7 +20,7 @@ use crate::invalidation::element::invalidator::{
 use crate::invalidation::element::restyle_hints::RestyleHint;
 use crate::invalidation::element::state_and_attributes::{
     check_dependency, dependency_may_be_relevant, invalidated_descendants, invalidated_self,
-    invalidated_sibling, push_invalidation, should_process_descendants,
+    invalidated_sibling_subtree, push_invalidation, should_process_descendants,
 };
 use crate::stylist::{CascadeData, Stylist};
 use crate::{FxHashMap, FxHashSet};
@@ -1298,9 +1298,9 @@ where
         invalidated_self(element);
     }
 
-    fn invalidated_sibling(&mut self, element: E, of: E) {
+    fn invalidated_sibling_subtree(&mut self, element: E, of: E, invalidated_sibling: bool) {
         debug_assert_ne!(element, self.element);
-        invalidated_sibling(element, of);
+        invalidated_sibling_subtree(element, of, invalidated_sibling);
     }
 }
 
@@ -1465,7 +1465,7 @@ where
 
     // Don't do anything for normal invalidations.
     fn invalidated_self(&mut self, _element: E) {}
-    fn invalidated_sibling(&mut self, _sibling: E, _of: E) {}
+    fn invalidated_sibling_subtree(&mut self, _sibling: E, _of: E, _: bool) {}
     fn invalidated_descendants(&mut self, _element: E, _child: E) {}
 
     fn found_relative_selector_invalidation(
