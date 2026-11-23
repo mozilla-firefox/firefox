@@ -17,6 +17,8 @@ import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.layout.widthIn
 import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.text.KeyboardOptions
+import androidx.compose.foundation.text.input.InputTransformation
+import androidx.compose.foundation.text.input.byValue
 import androidx.compose.foundation.verticalScroll
 import androidx.compose.material3.Icon
 import androidx.compose.material3.Scaffold
@@ -42,7 +44,6 @@ import androidx.compose.ui.semantics.semantics
 import androidx.compose.ui.semantics.testTagsAsResourceId
 import androidx.compose.ui.text.input.ImeAction
 import androidx.compose.ui.text.input.KeyboardType
-import androidx.compose.ui.text.input.PasswordVisualTransformation
 import androidx.compose.ui.tooling.preview.PreviewParameter
 import androidx.compose.ui.unit.dp
 import mozilla.components.compose.base.Dropdown
@@ -53,7 +54,9 @@ import mozilla.components.compose.base.button.IconButton
 import mozilla.components.compose.base.button.OutlinedButton
 import mozilla.components.compose.base.menu.MenuItem
 import mozilla.components.compose.base.text.Text
+import mozilla.components.compose.base.textfield.SecureTextField
 import mozilla.components.compose.base.textfield.TextField
+import mozilla.components.compose.base.textfield.rememberSyncedTextFieldState
 import mozilla.components.compose.base.theme.ThemedValue
 import mozilla.components.compose.base.theme.ThemedValueProvider
 import mozilla.components.ui.icons.R as iconsR
@@ -341,9 +344,8 @@ private fun SecurityCodeField(
     onSecurityCodeChanged: (String) -> Unit,
     onSecurityCodeCleared: () -> Unit,
 ) {
-    TextField(
-        value = securityCode,
-        onValueChange = onSecurityCodeChanged,
+    SecureTextField(
+        state = rememberSyncedTextFieldState(value = securityCode, onValueChange = onSecurityCodeChanged),
         modifier =
             Modifier.fillMaxWidth().testTag(CreditCardEditorTestTags.SECURITY_CODE_FIELD).semantics {
                 contentDataType = ContentDataType.None
@@ -363,7 +365,10 @@ private fun SecurityCodeField(
             } else {
                 null
             },
-        visualTransformation = PasswordVisualTransformation(),
+        inputTransformation =
+            InputTransformation.byValue { _, proposed ->
+                proposed.filter { it.isDigit() }.take(AMEX_SECURITY_CODE_LENGTH)
+            },
         keyboardOptions =
             KeyboardOptions(
                 keyboardType = KeyboardType.NumberPassword,

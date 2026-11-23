@@ -4,13 +4,27 @@
 
 package mozilla.components.feature.prompts.creditcard
 
+import androidx.compose.ui.semantics.SemanticsProperties
+import androidx.compose.ui.test.SemanticsMatcher
+import androidx.compose.ui.test.junit4.v2.createComposeRule
+import androidx.compose.ui.test.onNodeWithText
+import androidx.compose.ui.test.performClick
+import androidx.compose.ui.test.performTextInput
+import androidx.test.ext.junit.runners.AndroidJUnit4
 import mozilla.components.concept.storage.CreditCardEntry
+import mozilla.components.feature.prompts.R
+import mozilla.components.support.test.robolectric.testContext
 import org.junit.Assert.assertEquals
 import org.junit.Assert.assertFalse
 import org.junit.Assert.assertTrue
+import org.junit.Rule
 import org.junit.Test
+import org.junit.runner.RunWith
 
+@RunWith(AndroidJUnit4::class)
 class CreditCardEditContentTest {
+
+    @get:Rule val composeTestRule = createComposeRule()
 
     private val creditCard =
         CreditCardEntry(
@@ -22,6 +36,22 @@ class CreditCardEditContentTest {
             cardType = "mastercard",
             cardCvv = "123",
         )
+
+    @Test
+    fun `WHEN non-digits or more than 4 digits are typed as the security code THEN the first 4 digits are saved`() {
+        var saved: CreditCardEntry? = null
+        composeTestRule.setContent {
+            CreditCardEditContent(creditCard = creditCard.copy(cardCvv = null), onSave = { saved = it }, onCancel = {})
+        }
+
+        val field = composeTestRule.onNode(SemanticsMatcher.keyIsDefined(SemanticsProperties.IsPasswordObfuscated))
+        field.performTextInput("1a2345")
+        composeTestRule
+            .onNodeWithText(testContext.getString(R.string.mozac_feature_prompt_save_confirmation))
+            .performClick()
+
+        assertEquals("1234", saved?.cardCvv)
+    }
 
     @Test
     fun `WHEN edits with a different card number are applied THEN the entry has the edited values and no guid`() {

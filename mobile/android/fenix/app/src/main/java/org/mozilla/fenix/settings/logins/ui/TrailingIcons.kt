@@ -6,6 +6,8 @@ package org.mozilla.fenix.settings.logins.ui
 
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.padding
+import androidx.compose.foundation.text.input.TextObfuscationMode
+import androidx.compose.foundation.text.input.rememberTextFieldState
 import androidx.compose.material3.Icon
 import androidx.compose.material3.Surface
 import androidx.compose.runtime.Composable
@@ -15,22 +17,20 @@ import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.res.painterResource
-import androidx.compose.ui.text.input.PasswordVisualTransformation
-import androidx.compose.ui.text.input.VisualTransformation
 import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.tooling.preview.PreviewParameter
 import androidx.compose.ui.unit.dp
 import mozilla.components.compose.base.button.IconButton
 import mozilla.components.compose.base.text.Text
 import mozilla.components.compose.base.text.value
-import mozilla.components.compose.base.textfield.TextField
+import mozilla.components.compose.base.textfield.SecureTextField
 import mozilla.components.compose.base.theme.PreviewThemeProvider
 import mozilla.components.compose.base.theme.Theme
 import mozilla.components.ui.icons.R as iconsR
 import org.mozilla.fenix.theme.FirefoxTheme
 
 /**
- * An eye trailing icon for a [TextField] that contains a password.
+ * An eye trailing icon for a [SecureTextField] that contains a password.
  *
  * @param isPasswordVisible true when the password is revealed.
  * @param contentDescription the content description.
@@ -65,10 +65,8 @@ private fun EyePasswordIconButtonPreview(@PreviewParameter(PreviewThemeProvider:
 
     FirefoxTheme(theme) {
         Surface {
-            TextField(
-                value = "password",
-                onValueChange = {},
-                isEnabled = true,
+            SecureTextField(
+                state = rememberTextFieldState("password"),
                 placeholder = "",
                 errorText = "",
                 modifier = Modifier.fillMaxWidth().padding(8.dp),
@@ -79,11 +77,11 @@ private fun EyePasswordIconButtonPreview(@PreviewParameter(PreviewThemeProvider:
                         onTrailingIconClick = { isPasswordVisible = !isPasswordVisible },
                     )
                 },
-                visualTransformation =
+                textObfuscationMode =
                     if (isPasswordVisible) {
-                        VisualTransformation.None
+                        TextObfuscationMode.Visible
                     } else {
-                        PasswordVisualTransformation()
+                        TextObfuscationMode.System
                     },
             )
         }

@@ -12,6 +12,7 @@ import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.width
+import androidx.compose.foundation.text.input.TextObfuscationMode
 import androidx.compose.material3.Icon
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Scaffold
@@ -32,15 +33,15 @@ import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.semantics.semantics
 import androidx.compose.ui.semantics.testTag
 import androidx.compose.ui.semantics.testTagsAsResourceId
-import androidx.compose.ui.text.input.PasswordVisualTransformation
-import androidx.compose.ui.text.input.VisualTransformation
 import androidx.compose.ui.tooling.preview.PreviewParameter
 import androidx.compose.ui.unit.dp
 import kotlinx.coroutines.flow.map
 import mozilla.components.compose.base.annotation.FlexibleWindowPreview
 import mozilla.components.compose.base.button.IconButton
 import mozilla.components.compose.base.text.Text
+import mozilla.components.compose.base.textfield.SecureTextField
 import mozilla.components.compose.base.textfield.TextField
+import mozilla.components.compose.base.textfield.rememberSyncedTextFieldState
 import mozilla.components.compose.base.theme.PreviewThemeProvider
 import mozilla.components.compose.base.theme.Theme
 import mozilla.components.ui.icons.R as iconsR
@@ -209,6 +210,10 @@ private fun EditLoginPassword(store: LoginsStore, pass: String) {
         .collectAsState(initial = store.state.loginsEditLoginState)
     val isPasswordVisible = editState?.isPasswordVisible ?: true
     val password = editState?.newPassword ?: pass
+    val passwordState =
+        rememberSyncedTextFieldState(value = password) { newPassword ->
+            store.dispatch(EditLoginAction.PasswordChanged(newPassword))
+        }
 
     val focusRequester = remember { FocusRequester() }
     LaunchedEffect(Unit) {
@@ -216,11 +221,8 @@ private fun EditLoginPassword(store: LoginsStore, pass: String) {
     }
 
     Row(verticalAlignment = Alignment.CenterVertically) {
-        TextField(
-            value = password,
-            onValueChange = { newPassword ->
-                store.dispatch(EditLoginAction.PasswordChanged(newPassword))
-            },
+        SecureTextField(
+            state = passwordState,
             placeholder = "",
             errorText = stringResource(R.string.saved_login_password_required_2),
             isError = password.isBlank(),
@@ -254,11 +256,11 @@ private fun EditLoginPassword(store: LoginsStore, pass: String) {
                     }
                 }
             },
-            visualTransformation =
+            textObfuscationMode =
                 if (isPasswordVisible) {
-                    VisualTransformation.None
+                    TextObfuscationMode.Visible
                 } else {
-                    PasswordVisualTransformation()
+                    TextObfuscationMode.System
                 },
         )
     }

@@ -14,6 +14,8 @@ import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.text.KeyboardOptions
+import androidx.compose.foundation.text.input.InputTransformation
+import androidx.compose.foundation.text.input.byValue
 import androidx.compose.foundation.verticalScroll
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Surface
@@ -31,7 +33,6 @@ import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.input.KeyboardCapitalization
 import androidx.compose.ui.text.input.KeyboardType
-import androidx.compose.ui.text.input.PasswordVisualTransformation
 import androidx.compose.ui.tooling.preview.PreviewLightDark
 import java.text.DateFormatSymbols
 import java.util.Calendar
@@ -40,7 +41,9 @@ import mozilla.components.compose.base.button.FilledButton
 import mozilla.components.compose.base.button.OutlinedButton
 import mozilla.components.compose.base.menu.MenuItem
 import mozilla.components.compose.base.text.Text
+import mozilla.components.compose.base.textfield.SecureTextField
 import mozilla.components.compose.base.textfield.TextField
+import mozilla.components.compose.base.textfield.rememberSyncedTextFieldState
 import mozilla.components.compose.base.theme.AcornTheme
 import mozilla.components.concept.storage.CreditCardEntry
 import mozilla.components.feature.prompts.R
@@ -236,9 +239,8 @@ private fun SecurityCodeField(
     var isFocused by remember { mutableStateOf(false) }
     var hasLostFocus by rememberSaveable { mutableStateOf(false) }
 
-    TextField(
-        value = securityCode,
-        onValueChange = { input -> onSecurityCodeChange(input.filter { it.isDigit() }.take(MAX_SECURITY_CODE_LENGTH)) },
+    SecureTextField(
+        state = rememberSyncedTextFieldState(value = securityCode, onValueChange = onSecurityCodeChange),
         placeholder = "",
         errorText = stringResource(R.string.mozac_feature_prompts_edit_credit_card_security_code_error),
         modifier =
@@ -262,7 +264,10 @@ private fun SecurityCodeField(
             } else {
                 null
             },
-        visualTransformation = PasswordVisualTransformation(),
+        inputTransformation =
+            InputTransformation.byValue { _, proposed ->
+                proposed.filter { it.isDigit() }.take(MAX_SECURITY_CODE_LENGTH)
+            },
         keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.NumberPassword),
     )
 }

@@ -12,7 +12,6 @@ import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.width
-import androidx.compose.foundation.text.KeyboardOptions
 import androidx.compose.material3.Icon
 import androidx.compose.material3.Scaffold
 import androidx.compose.material3.Text
@@ -31,15 +30,15 @@ import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.semantics.semantics
 import androidx.compose.ui.semantics.testTag
 import androidx.compose.ui.semantics.testTagsAsResourceId
-import androidx.compose.ui.text.input.KeyboardType
-import androidx.compose.ui.text.input.PasswordVisualTransformation
 import androidx.compose.ui.tooling.preview.PreviewParameter
 import androidx.compose.ui.unit.dp
 import kotlinx.coroutines.flow.map
 import mozilla.components.compose.base.annotation.FlexibleWindowPreview
 import mozilla.components.compose.base.button.IconButton
 import mozilla.components.compose.base.text.Text
+import mozilla.components.compose.base.textfield.SecureTextField
 import mozilla.components.compose.base.textfield.TextField
+import mozilla.components.compose.base.textfield.rememberSyncedTextFieldState
 import mozilla.components.compose.base.theme.PreviewThemeProvider
 import mozilla.components.compose.base.theme.Theme
 import mozilla.components.support.ktx.util.URLStringUtils.isHttpOrHttps
@@ -228,12 +227,13 @@ private fun AddLoginPassword(store: LoginsStore) {
         .collectAsState(initial = store.state.loginsAddLoginState)
     val password = state?.password ?: ""
     var isFocused by remember { mutableStateOf(false) }
-
-    TextField(
-        value = password,
-        onValueChange = { newPassword ->
+    val passwordState =
+        rememberSyncedTextFieldState(value = password) { newPassword ->
             store.dispatch(AddLoginAction.PasswordChanged(newPassword))
-        },
+        }
+
+    SecureTextField(
+        state = passwordState,
         placeholder = "",
         errorText = stringResource(R.string.saved_login_password_required_2),
         isError = isFocused && password.isBlank(),
@@ -255,8 +255,6 @@ private fun AddLoginPassword(store: LoginsStore) {
                 }
             }
         },
-        visualTransformation = PasswordVisualTransformation(),
-        keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Password),
     )
 }
 

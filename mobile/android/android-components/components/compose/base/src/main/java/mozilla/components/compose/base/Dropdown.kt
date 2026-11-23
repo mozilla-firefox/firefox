@@ -96,7 +96,7 @@ fun Dropdown(
                 },
                 enabled = true,
                 singleLine = true,
-                visualTransformation = VisualTransformation.None,
+                visualTransformation = @Suppress("DEPRECATION") VisualTransformation.None,
                 interactionSource = interactionSource,
                 label = {
                     Text(

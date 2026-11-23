@@ -9,7 +9,7 @@ import mozilla.components.support.utils.creditCardIIN
 import mozilla.components.support.utils.validateCreditCardNumber
 
 private const val SECURITY_CODE_LENGTH = 3
-private const val AMEX_SECURITY_CODE_LENGTH = 4
+internal const val AMEX_SECURITY_CODE_LENGTH = 4
 
 /**
  * Reducer for the [CreditCardEditorStore].

@@ -4,33 +4,25 @@
 
 package mozilla.components.compose.base.textfield
 
-import androidx.compose.foundation.layout.Row
-import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.padding
-import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.text.KeyboardActions
 import androidx.compose.foundation.text.KeyboardOptions
-import androidx.compose.material3.Icon
 import androidx.compose.material3.OutlinedTextField
 import androidx.compose.material3.Surface
-import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Modifier
-import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.text.input.ImeAction
 import androidx.compose.ui.text.input.KeyboardType
-import androidx.compose.ui.text.input.VisualTransformation
 import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.tooling.preview.PreviewParameter
 import androidx.compose.ui.tooling.preview.PreviewParameterProvider
 import androidx.compose.ui.unit.dp
 import mozilla.components.compose.base.theme.AcornTheme
-import mozilla.components.ui.icons.R
 
 /**
  * UI for a text field.
@@ -44,15 +36,13 @@ import mozilla.components.ui.icons.R
  * @param label Optional text displayed as a header above the input field.
  * @param isError Whether there is an error with the input value. When set to true, error styling will be applied to the
  *   text field.
- * @param isEnabled When set to false, the the text field cannot be edited.
+ * @param isEnabled When set to false, the text field cannot be edited.
  * @param singleLine When set to true, this text field becomes a single horizontally scrolling text field instead of
  *   wrapping onto multiple lines. Note that maxLines parameter will be ignored as the maxLines attribute will be
  *   automatically set to 1.
  * @param maxLines The maximum number of input lines visible to the user at once.
  * @param minLines The minimum number of input lines visible to the user at once.
  * @param trailingIcon The optional composable for adding a trailing icon at the end of the text field container.
- * @param visualTransformation The visual transformation filter for changing the visual representation of the input. By
- *   default no visual transformation is applied.
  * @param keyboardOptions Software keyboard options that contains configuration such as [KeyboardType] and [ImeAction].
  * @param keyboardActions When the input service emits an IME action, the corresponding callback is called. Note that
  *   this IME action may be different from what you specified in [KeyboardOptions.imeAction].
@@ -73,71 +63,23 @@ fun TextField(
     minLines: Int = 1,
     trailingIcon: @Composable (TrailingIconScope.() -> Unit)? = null,
     leadingIcon: @Composable (() -> Unit)? = null,
-    visualTransformation: VisualTransformation = VisualTransformation.None,
     keyboardOptions: KeyboardOptions = KeyboardOptions.Default,
     keyboardActions: KeyboardActions = KeyboardActions(),
 ) {
-    val labelComposable: @Composable (() -> Unit)? = label?.let {
-        @Composable {
-            Text(
-                text = label,
-                style = AcornTheme.typography.caption,
-            )
-        }
-    }
-    val placeholderComposable: @Composable () -> Unit = {
-        Text(
-            text = placeholder,
-            style = AcornTheme.typography.body1,
-        )
-    }
-    val supportingTextComposable: @Composable () -> Unit = {
-        if (isError) {
-            Text(
-                text = errorText,
-                style = AcornTheme.typography.caption,
-            )
-        } else {
-            supportingText?.let {
-                Text(
-                    text = it,
-                    style = AcornTheme.typography.caption,
-                )
-            }
-        }
-    }
-
-    val trailingIconCompose: @Composable () -> Unit = {
-        if (isError) {
-            Spacer(modifier = Modifier.width(12.dp))
-
-            Icon(
-                painter = painterResource(R.drawable.mozac_ic_warning_fill_24),
-                contentDescription = null,
-            )
-        } else if (trailingIcon != null) {
-            Spacer(modifier = Modifier.width(12.dp))
-
-            Row {
-                with(TrailingIconScope(this)) {
-                    trailingIcon.invoke(this)
-                }
-            }
-        }
-    }
     OutlinedTextField(
         value = value,
         onValueChange = onValueChange,
         modifier = modifier.fillMaxWidth(),
         enabled = isEnabled,
         textStyle = AcornTheme.typography.body1,
-        label = labelComposable,
-        placeholder = placeholderComposable,
+        label = label?.let { { TextFieldLabel(text = it) } },
+        placeholder = { TextFieldPlaceholder(text = placeholder) },
         leadingIcon = leadingIcon,
-        trailingIcon = trailingIconCompose,
-        supportingText = supportingTextComposable,
+        trailingIcon = { TextFieldTrailingIcon(isError = isError, trailingIcon = trailingIcon) },
+        supportingText = {
+            TextFieldSupportingText(isError = isError, errorText = errorText, supportingText = supportingText)
+        },
         isError = isError,
-        visualTransformation = visualTransformation,
         keyboardOptions = keyboardOptions,
         keyboardActions = keyboardActions,
         singleLine = singleLine,
