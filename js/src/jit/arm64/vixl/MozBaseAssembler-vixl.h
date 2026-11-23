@@ -61,6 +61,11 @@ void DisassembleInstruction(char* buffer, size_t bufsize, const Instruction* ins
 
 class MozBaseAssembler;
 
+// Keep 64-bit literals from straddling cache lines. Code starts CodeAlignment
+// aligned, so aligned buffer offsets are aligned addresses.
+static constexpr size_t kPoolDataAlignment = 8;
+static_assert(js::jit::CodeAlignment % kPoolDataAlignment == 0);
+
 using ARMBuffer = js::jit::AssemblerBufferWithConstantPools<
     Instruction, MozBaseAssembler,
     js::jit::AssemblerBufferSettings{
@@ -72,6 +77,7 @@ using ARMBuffer = js::jit::AssemblerBufferWithConstantPools<
         .alignFillInst = HINT | (NOP << ImmHint_offset),
         .nopFillInst = HINT | (NOP << ImmHint_offset),
         .numShortBranchRanges = NumShortBranchRangeTypes,
+        .poolDataAlignment = kPoolDataAlignment,
     }>;
 
 // Base class for vixl::Assembler, for isolating Moz-specific changes to VIXL.

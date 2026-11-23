@@ -467,6 +467,7 @@ struct TestAssembler {
 
   static void WritePoolHeader(void* start, js::jit::Pool* p, bool isNatural) {
     MOZ_ASSERT(!isNatural, "Natural pool guards not implemented.");
+    MOZ_ASSERT(p->getFill() == 0);
     uint32_t* hdr = reinterpret_cast<uint32_t*>(start);
     *hdr = Instr::PoolHeader(p->getPoolSize());
   }
@@ -1100,6 +1101,7 @@ struct LongVeneerTestAssembler {
 
   static void WritePoolHeader(void* start, js::jit::Pool* p, bool isNatural) {
     MOZ_ASSERT(!isNatural, "Natural pool guards not implemented.");
+    MOZ_ASSERT(p->getFill() == 0);
     Inst* hdr = reinterpret_cast<Inst*>(start);
     *hdr = Instr::PoolHeader(p->getPoolSize());
   }
@@ -1974,6 +1976,82 @@ BEGIN_TEST(testAssemblerBuffer_ARM64_BoundLabelBranchDeadline) {
   return true;
 }
 END_TEST(testAssemblerBuffer_ARM64_BoundLabelBranchDeadline)
+
+BEGIN_TEST(testAssemblerBuffer_ARM64_PoolDataAlignment) {
+  using namespace js::jit;
+  using namespace AArch64;
+
+  js::LifoAlloc lifo(4096, js::MallocArena);
+  TempAllocator alloc(&lifo);
+  JitContext jc(cx);
+  StackMacroAssembler masm(cx, alloc);
+  AutoCreatedBy acb(masm, __func__);
+
+  auto target = [&](BufferOffset load) {
+    return BufferOffset(load.getOffset() +
+                        masm.getInstructionAt(load)->ImmLLiteral() * 4);
+  };
+
+  // The first pool's data starts 8-byte aligned and the second pool's needs
+  // fill after the header. In both, the 4-byte entries leave the 8-byte
+  // entries after them to be padded.
+  for (int extraNops = 0; extraNops < 2; extraNops++) {
+    for (int i = 0; i < extraNops; i++) {
+      masm.nop();
+    }
+    const uint64_t i64 = 0x0123456789abcdef + extraNops;
+    const double f64 = 3.5 + extraNops;
+    BufferOffset f32Load = masm.fImmPool32(vixl::s0, 1.5f);
+    BufferOffset i64Load =
+        masm.immPool64(vixl::x0, i64, PoolEntryKind::Unshared);
+    masm.fImmPool32(vixl::s1, 2.5f);
+    BufferOffset f64Load = masm.fImmPool64(vixl::d2, f64);
+    BufferOffset guard(masm.currentOffset());
+    masm.flush();
+    CHECK(!masm.oom());
+
+    size_t fill = 4 * extraNops;
+    CHECK_EQUAL(size_t(guard.getOffset() + 8) % 8, fill);
+    CHECK_EQUAL(size_t(target(f32Load).getOffset()),
+                guard.getOffset() + 8 + fill);
+    CHECK_EQUAL(target(i64Load).getOffset() % 8, 0);
+    CHECK_EQUAL(target(f64Load).getOffset() % 8, 0);
+
+    // Two 4-byte entries, two 8-byte entries and two padding units, after the
+    // header and the fill.
+    CHECK_EQUAL(masm.getInstructionAt(BufferOffset(guard.getOffset() + 4))
+                    ->InstructionBits(),
+                poolheader(1 + fill / 4 + 8));
+
+    uint64_t value;
+    memcpy(&value, masm.getInstructionAt(target(i64Load)), sizeof(value));
+    CHECK_EQUAL(value, i64);
+    double d;
+    memcpy(&d, masm.getInstructionAt(target(f64Load)), sizeof(d));
+    CHECK_EQUAL(d, f64);
+  }
+
+  // A pool of only 4-byte entries gets no fill, even where an 8-byte entry
+  // would need it.
+  if (masm.currentOffset() % 8 == 0) {
+    masm.nop();
+  }
+  BufferOffset f32Load = masm.fImmPool32(vixl::s0, 1.5f);
+  BufferOffset f32Load2 = masm.fImmPool32(vixl::s1, 2.5f);
+  BufferOffset guard(masm.currentOffset());
+  masm.flush();
+  CHECK(!masm.oom());
+
+  CHECK_EQUAL(size_t(guard.getOffset() + 8) % 8, size_t(4));
+  CHECK_EQUAL(target(f32Load).getOffset(), guard.getOffset() + 8);
+  CHECK_EQUAL(target(f32Load2).getOffset(), guard.getOffset() + 12);
+  CHECK_EQUAL(masm.getInstructionAt(BufferOffset(guard.getOffset() + 4))
+                  ->InstructionBits(),
+              poolheader(1 + 2));
+
+  return true;
+}
+END_TEST(testAssemblerBuffer_ARM64_PoolDataAlignment)
 #endif /* JS_CODEGEN_ARM64 */
 
 // Test that everything is put together correctly in the RISCV64 assembler.
