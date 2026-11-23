@@ -194,6 +194,31 @@ if [[ $(uname -o) == "Msys" ]]; then
   sed -i "s/NTDDI_VERSION=NTDDI_[A-Z0-9_]*/NTDDI_VERSION=${NTDDI_MAX}/" build/config/win/BUILD.gn
   grep -q "NTDDI_VERSION=${NTDDI_MAX}" build/config/win/BUILD.gn || \
     { echo "ERROR: NTDDI_VERSION patch failed - upstream BUILD.gn may have changed"; exit 1; }
+
+  # Large ts_library() targets (e.g. settings) overflow Windows' 32K command
+  # line limit with locally executed actions, so pass --in_files via a response file.
+  python3 - <<'EOF'
+import sys
+gni = "tools/typescript/ts_library.gni"
+py = "tools/typescript/ts_library.py"
+patches = [
+    (gni, 'args += [ "--in_files" ] + in_files',
+     'response_file_contents = in_files\n      args += [ "--in_files_rsp", "{{response_file_name}}" ]'),
+    (py, "  args = parser.parse_args(argv)\n",
+     "  parser.add_argument('--in_files_rsp')\n"
+     "  args = parser.parse_args(argv)\n"
+     "  if args.in_files_rsp:\n"
+     "    with open(args.in_files_rsp) as f:\n"
+     "      args.in_files = f.read().split()\n"),
+]
+for path, old, new in patches:
+    with open(path, encoding="utf-8") as f:
+        src = f.read()
+    if src.count(old) != 1:
+        sys.exit(f"ERROR: ts_library patch failed - upstream {path} may have changed")
+    with open(path, "w", encoding="utf-8", newline="") as f:
+        f.write(src.replace(old, new))
+EOF
 fi
 
 if [[ $(uname -s) == "Linux" ]] || [[ $(uname -s) == "Darwin" ]]; then

@@ -11,6 +11,7 @@ RUN apt-get update && \
     apt-get install \
       bzip2 \
       curl \
+      libatomic1 \
       libbz2-dev \
       libglib2.0-dev \
       libtinfo5 \
