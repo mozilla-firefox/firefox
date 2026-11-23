@@ -418,13 +418,13 @@ private fun VpnToggleRow(
         Icon(
             painter = painterResource(iconsR.drawable.mozac_ic_globe_24),
             contentDescription = null,
-            tint = if (enabled) colors.leadingIconColor else colors.disabledLeadingIconColor,
+            tint = if (enabled) colors.leadingContentColor else colors.disabledLeadingContentColor,
         )
         Text(
             text = stringResource(R.string.ip_protection_toggle_label),
             modifier = Modifier.weight(1f),
             style = FirefoxTheme.typography.subtitle1,
-            color = if (enabled) colors.headlineColor else colors.disabledHeadlineColor,
+            color = if (enabled) colors.contentColor else colors.disabledContentColor,
         )
         Switch(
             checked = checked,

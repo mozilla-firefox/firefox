@@ -112,7 +112,7 @@ fun TextListItem(
     onLongClick: (() -> Unit)? = null,
     iconPainter: Painter? = null,
     iconDescription: String? = null,
-    iconTint: Color = ListItemDefaults.colors().leadingIconColor,
+    iconTint: Color = ListItemDefaults.colors().leadingContentColor,
     onIconClick: (() -> Unit)? = null,
 ) {
     ListItem(
@@ -281,12 +281,12 @@ fun IconListItem(
     minHeight: Dp = LIST_ITEM_HEIGHT,
     onClick: (() -> Unit)? = null,
     onLongClick: (() -> Unit)? = null,
-    beforeIconTint: Color = ListItemDefaults.colors().leadingIconColor,
+    beforeIconTint: Color = ListItemDefaults.colors().leadingContentColor,
     beforeIconPainter: Painter,
     beforeIconDescription: String? = null,
     isBeforeIconHighlighted: Boolean = false,
     showDivider: Boolean = false,
-    afterIconTint: Color = ListItemDefaults.colors().leadingIconColor,
+    afterIconTint: Color = ListItemDefaults.colors().leadingContentColor,
     contentPaddingListItem: PaddingValues =
         PaddingValues(
             horizontal = FirefoxTheme.layout.space.dynamic200,
@@ -315,7 +315,7 @@ fun IconListItem(
                 isHighlighted = enabled && isBeforeIconHighlighted,
                 painter = beforeIconPainter,
                 description = beforeIconDescription,
-                tint = if (enabled) beforeIconTint else colors.disabledLeadingIconColor,
+                tint = if (enabled) beforeIconTint else colors.disabledLeadingContentColor,
             )
         },
         afterListItemAction = {
@@ -323,7 +323,7 @@ fun IconListItem(
                 enabled = enabled,
                 painter = afterIconPainter,
                 description = afterIconDescription,
-                tint = if (enabled) afterIconTint else colors.disabledTrailingIconColor,
+                tint = if (enabled) afterIconTint else colors.disabledTrailingContentColor,
                 onClick = onAfterIconClick,
                 listAction = afterListAction,
                 showDivider = showDivider,
@@ -581,7 +581,7 @@ fun SelectableFaviconListItem(
                         Icon(
                             painter = iconPainter,
                             contentDescription = null,
-                            tint = ListItemDefaults.colors().trailingIconColor,
+                            tint = ListItemDefaults.colors().trailingContentColor,
                         )
                     }
                 }
@@ -635,11 +635,11 @@ fun SelectableIconListItem(
     minHeight: Dp = LIST_ITEM_HEIGHT,
     onClick: (() -> Unit)? = null,
     onLongClick: (() -> Unit)? = null,
-    beforeIconTint: Color = ListItemDefaults.colors().leadingIconColor,
+    beforeIconTint: Color = ListItemDefaults.colors().leadingContentColor,
     beforeIconPainter: Painter,
     beforeIconDescription: String? = null,
     showDivider: Boolean = false,
-    afterIconTint: Color = ListItemDefaults.colors().trailingIconColor,
+    afterIconTint: Color = ListItemDefaults.colors().trailingContentColor,
     afterIconPainter: Painter? = null,
     afterIconDescription: String? = null,
     onAfterIconClick: (() -> Unit)? = null,
@@ -663,7 +663,7 @@ fun SelectableIconListItem(
                     Icon(
                         painter = beforeIconPainter,
                         contentDescription = beforeIconDescription,
-                        tint = if (enabled) beforeIconTint else colors.disabledLeadingIconColor,
+                        tint = if (enabled) beforeIconTint else colors.disabledLeadingContentColor,
                     )
                 },
             )
@@ -673,7 +673,7 @@ fun SelectableIconListItem(
                 return@ListItem
             }
 
-            val tint = if (enabled) afterIconTint else colors.disabledTrailingIconColor
+            val tint = if (enabled) afterIconTint else colors.disabledTrailingContentColor
 
             if (showDivider) {
                 VerticalDivider()
@@ -730,8 +730,8 @@ fun SelectableListItem(
     @DrawableRes icon: Int,
     isSelected: Boolean,
     modifier: Modifier = Modifier,
-    descriptionTextColor: Color = ListItemDefaults.colors().supportingTextColor,
-    iconTint: Color = ListItemDefaults.colors().leadingIconColor,
+    descriptionTextColor: Color = ListItemDefaults.colors().supportingContentColor,
+    iconTint: Color = ListItemDefaults.colors().leadingContentColor,
     labelOverflow: TextOverflow = TextOverflow.Ellipsis,
     afterListItemAction: @Composable RowScope.() -> Unit,
     belowListItemContent: @Composable ColumnScope.() -> Unit = {},
@@ -841,7 +841,7 @@ private fun ListItem(
         if (enabled) {
             ListItemDefaults.contentColor
         } else {
-            ListItemDefaults.colors().disabledLeadingIconColor
+            ListItemDefaults.colors().disabledLeadingContentColor
         }
 
     CompositionLocalProvider(LocalContentColor provides contentColor) {
@@ -904,7 +904,7 @@ private fun ListItemContent(
         Text(
             text = label,
             modifier = labelModifier,
-            color = if (enabled) colors.headlineColor else colors.disabledHeadlineColor,
+            color = if (enabled) colors.contentColor else colors.disabledContentColor,
             overflow = labelOverflow,
             style = FirefoxTheme.typography.subtitle1.copy(hyphens = Hyphens.Auto),
             maxLines = maxLabelLines,
@@ -913,7 +913,7 @@ private fun ListItemContent(
         description?.let {
             Text(
                 text = description,
-                color = if (enabled) colors.supportingTextColor else colors.disabledHeadlineColor,
+                color = if (enabled) colors.supportingContentColor else colors.disabledContentColor,
                 overflow = TextOverflow.Ellipsis,
                 maxLines = maxDescriptionLines,
                 style = FirefoxTheme.typography.body2,

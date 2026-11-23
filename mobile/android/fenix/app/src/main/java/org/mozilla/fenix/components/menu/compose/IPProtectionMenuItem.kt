@@ -90,12 +90,13 @@ internal fun IPProtectionMenuItem(
                 },
         colors =
             ListItemDefaults.colors(
-                headlineColor = if (isEnabled) defaultColors.headlineColor else defaultColors.disabledHeadlineColor,
+                headlineColor = if (isEnabled) defaultColors.contentColor else defaultColors.disabledContentColor,
                 supportingColor = MaterialTheme.colorScheme.error,
             ),
         description = descriptionText(state),
         minHeight = MENU_ITEM_MIN_HEIGHT,
-        beforeIconTint = if (isEnabled) defaultColors.leadingIconColor else defaultColors.disabledLeadingIconColor,
+        beforeIconTint =
+            if (isEnabled) defaultColors.leadingContentColor else defaultColors.disabledLeadingContentColor,
         beforeIconPainter = painterResource(iconsR.drawable.mozac_ic_globe_24),
         contentPaddingListItem = PaddingValues(start = FirefoxTheme.layout.space.dynamic200),
     ) {
