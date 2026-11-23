@@ -1364,6 +1364,23 @@ describe("Privacy widget", () => {
       expect(event.data.widget_source).toBe("context_menu");
     });
 
+    it("opens the learn more link in a new tab", () => {
+      const dispatch = jest.fn();
+      const { container } = renderPrivacy(dispatch);
+      fireEvent.click(
+        container.querySelector(
+          '[data-l10n-id="newtab-privacy-menu-learn-more"]'
+        )
+      );
+      const openLinkCall = dispatch.mock.calls.find(
+        ([action]) => action?.type === at.OPEN_LINK
+      );
+      expect(openLinkCall?.[0].data).toEqual({
+        url: "https://support.mozilla.org/kb/firefox-new-tab-widgets",
+        where: "tab",
+      });
+    });
+
     it("records a change_size user event when a size is chosen", () => {
       const dispatch = jest.fn();
       const { container } = renderPrivacy(dispatch);

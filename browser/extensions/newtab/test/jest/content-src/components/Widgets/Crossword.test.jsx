@@ -161,7 +161,7 @@ describe("<Crossword>", () => {
   });
 
   describe("learn more action", () => {
-    it("dispatches OPEN_LINK with the shared SUMO URL", () => {
+    it("dispatches OPEN_LINK with the shared SUMO URL in a new tab", () => {
       const { container, dispatch } = renderCrossword();
       const learnMoreItem = container.querySelector("panel-item.learn-more");
       fireEvent.click(learnMoreItem);
@@ -169,9 +169,10 @@ describe("<Crossword>", () => {
       const openLinkCall = dispatch.mock.calls.find(
         ([action]) => action?.type === at.OPEN_LINK
       );
-      expect(openLinkCall?.[0].data.url).toBe(
-        "https://support.mozilla.org/kb/firefox-new-tab-widgets"
-      );
+      expect(openLinkCall?.[0].data).toEqual({
+        url: "https://support.mozilla.org/kb/firefox-new-tab-widgets",
+        where: "tab",
+      });
     });
 
     it("dispatches a learn_more WIDGETS_USER_EVENT", () => {

@@ -357,6 +357,7 @@ function Crossword({
         type: at.OPEN_LINK,
         data: {
           url: "https://support.mozilla.org/kb/firefox-new-tab-widgets",
+          where: "tab",
         },
       })
     );
