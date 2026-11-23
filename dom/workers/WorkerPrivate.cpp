@@ -5020,7 +5020,6 @@ bool WorkerPrivate::ChangePeerConnectionsInternal(bool aHasPeerConnections) {
 void WorkerPrivate::PropagateStorageAccessPermissionGrantedInternal() {
   auto data = mWorkerThreadAccessible.Access();
 
-  mLoadInfo.mUseRegularPrincipal = true;
   mLoadInfo.mUsingStorageAccess = true;
 
   WorkerGlobalScope* globalScope = GlobalScope();
