@@ -52,6 +52,18 @@ test(t => {
   assert_equals(element.customElementRegistry, customElements, "element registry");
 }, "Shadow root cloned into a document with a null registry, then adopted");
 
+test(t => {
+  const template = document.createElement("template");
+  template.setHTMLUnsafe("<div><template shadowrootmode=open shadowrootclonable><test-element></test-element></template></div>");
+  assert_equals(template.content.firstChild.shadowRoot.customElementRegistry, null, "shadow root registry in template contents");
+  const clone = document.importNode(template.content, true);
+  const host = clone.firstChild;
+  document.body.append(clone);
+  t.add_cleanup(() => host.remove());
+  assert_equals(host.shadowRoot.customElementRegistry, null, "shadow root registry");
+  assert_equals(host.shadowRoot.firstChild.customElementRegistry, null, "element registry");
+}, "Shadow root with a null registry cloned into a document with a global registry");
+
 test(() => {
   const shadow = document.implementation.createHTMLDocument().createElement("div").attachShadow({ mode: "open" });
   const registry = new CustomElementRegistry();
