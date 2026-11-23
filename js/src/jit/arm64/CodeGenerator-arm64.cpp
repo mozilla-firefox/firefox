@@ -236,11 +236,24 @@ void CodeGenerator::visitMulI(LMulI* ins) {
         masm.Adds(destreg32, lhsreg32, Operand(lhsreg32));
         break;  // Go to overflow check.
       default:
-        // Use shift if cannot overflow and constant is a power of 2
+        // Use shift if cannot overflow and constant is a power of 2, or
+        // add-with-shift if constant is (1 << C1) | (1 << C2).
         if (!mul->canOverflow() && constant > 0) {
           if (std::has_single_bit(uint32_t(constant))) {
             int32_t shift = std::countr_zero(uint32_t(constant));
             masm.Lsl(destreg32, lhsreg32, shift);
+            return;
+          }
+
+          uint32_t shift = mozilla::FloorLog2(uint32_t(constant));
+          uint32_t rest = uint32_t(constant) - (uint32_t(1) << shift);
+          if (std::has_single_bit(rest)) {
+            uint32_t restShift = std::countr_zero(rest);
+            masm.Add(destreg32, lhsreg32,
+                     Operand(lhsreg32, vixl::LSL, shift - restShift));
+            if (restShift != 0) {
+              masm.Lsl(destreg32, destreg32, restShift);
+            }
             return;
           }
         }

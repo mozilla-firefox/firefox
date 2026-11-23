@@ -156,7 +156,8 @@ codegenTestARM64_adhoc(
 assertEq(wasmEvalText(quad64).exports.f(-37000000000n), -148000000000n)
 assertEq(wasmEvalText(quad64).exports.f(42000000000n), 168000000000n)
 
-// Test that multiplication by five yields a multiply
+// Test that multiplication by five yields an add with a shifted operand for
+// i32, and a multiply for i64
 
 let quint32 =
     `(module
@@ -165,10 +166,63 @@ let quint32 =
 codegenTestARM64_adhoc(
     quint32,
     'f',
-    `mov     w16, #0x5
-     mul     w0, w0, w16`);
+    'add     w0, w0, w0, lsl #2');
 assertEq(wasmEvalText(quint32).exports.f(-37), -37*5)
 assertEq(wasmEvalText(quint32).exports.f(42), 42*5)
+
+// Test that multiplication by ten and twelve yields an add with a shifted
+// operand followed by a shift
+
+let ten32 =
+    `(module
+       (func (export "f") (param i32) (result i32)
+         (i32.mul (local.get 0) (i32.const 10))))`;
+codegenTestARM64_adhoc(
+    ten32,
+    'f',
+    `add     w0, w0, w0, lsl #2
+     lsl     w0, w0, #1`);
+assertEq(wasmEvalText(ten32).exports.f(-37), -37*10)
+assertEq(wasmEvalText(ten32).exports.f(42), 42*10)
+
+let twelve32 =
+    `(module
+       (func (export "f") (param i32) (result i32)
+         (i32.mul (local.get 0) (i32.const 12))))`;
+codegenTestARM64_adhoc(
+    twelve32,
+    'f',
+    `add     w0, w0, w0, lsl #1
+     lsl     w0, w0, #2`);
+assertEq(wasmEvalText(twelve32).exports.f(-37), -37*12)
+assertEq(wasmEvalText(twelve32).exports.f(42), 42*12)
+
+// Test that multiplication by a constant with three bits set yields a multiply
+
+let eleven32 =
+    `(module
+       (func (export "f") (param i32) (result i32)
+         (i32.mul (local.get 0) (i32.const 11))))`;
+codegenTestARM64_adhoc(
+    eleven32,
+    'f',
+    `mov     w16, #0xb
+     mul     w0, w0, w16`);
+assertEq(wasmEvalText(eleven32).exports.f(-37), -37*11)
+assertEq(wasmEvalText(eleven32).exports.f(42), 42*11)
+
+// Test that results wrap around on overflow
+
+let big32 =
+    `(module
+       (func (export "f") (param i32) (result i32)
+         (i32.mul (local.get 0) (i32.const 0x40000001))))`;
+codegenTestARM64_adhoc(
+    big32,
+    'f',
+    'add     w0, w0, w0, lsl #30');
+assertEq(wasmEvalText(big32).exports.f(-37), Math.imul(-37, 0x40000001))
+assertEq(wasmEvalText(big32).exports.f(42), Math.imul(42, 0x40000001))
 
 let quint64 = `(module
        (func (export "f") (param i64) (result i64)
