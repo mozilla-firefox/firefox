@@ -2166,6 +2166,11 @@ void nsGlobalWindowInner::GetEventTargetParent(EventChainPreVisitor& aVisitor) {
           mIsHandlingResizeEvent = true;
         }
       }
+      aVisitor.mWantsPostHandleEvent = true;
+      break;
+    case eUnload:
+    case eLoad:
+      aVisitor.mWantsPostHandleEvent = true;
       break;
     case eMouseDown:
       if (aVisitor.mEvent->IsTrusted()) {

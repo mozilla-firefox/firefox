@@ -39,6 +39,7 @@ class nsWindowRoot final : public nsPIWindowRoot {
   // FYI: PostHandleEvent would be a pure virtual method if we didn't define it
   // here.
   nsresult PostHandleEvent(mozilla::EventChainPostVisitor&) override {
+    MOZ_ASSERT_UNREACHABLE("Does not want PostHandleEvent");
     return NS_OK;
   }
 

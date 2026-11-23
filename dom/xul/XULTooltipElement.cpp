@@ -71,9 +71,20 @@ void XULTooltipElement::AfterSetAttr(int32_t aNameSpaceID, nsAtom* aName,
                                     aSubjectPrincipal, aNotify);
 }
 
+static bool WantsPostHandleEvent(EventChainVisitor& aVisitor) {
+  return aVisitor.mEvent->mMessage == eXULPopupShowing &&
+         aVisitor.mEvent->IsTrusted();
+}
+
+void XULTooltipElement::GetEventTargetParent(EventChainPreVisitor& aVisitor) {
+  aVisitor.mWantsPostHandleEvent = WantsPostHandleEvent(aVisitor);
+  XULPopupElement::GetEventTargetParent(aVisitor);
+}
+
 nsresult XULTooltipElement::PostHandleEvent(EventChainPostVisitor& aVisitor) {
-  if (aVisitor.mEvent->mMessage == eXULPopupShowing &&
-      aVisitor.mEvent->IsTrusted() && !aVisitor.mEvent->DefaultPrevented() &&
+  MOZ_ASSERT(WantsPostHandleEvent(aVisitor));
+
+  if (!aVisitor.mEvent->DefaultPrevented() &&
       AttrValueIs(kNameSpaceID_None, nsGkAtoms::page, nsGkAtoms::_true,
                   eCaseMatters) &&
       !AttrValueIs(kNameSpaceID_None, nsGkAtoms::titletip, nsGkAtoms::_true,

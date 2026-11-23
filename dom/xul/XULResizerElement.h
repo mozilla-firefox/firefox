@@ -18,15 +18,13 @@ class XULResizerElement final : public nsXULElement {
   explicit XULResizerElement(already_AddRefed<dom::NodeInfo> aNodeInfo)
       : nsXULElement(std::move(aNodeInfo)) {}
 
+  void GetEventTargetParent(EventChainPreVisitor& aVisitor) override;
   MOZ_CAN_RUN_SCRIPT
   nsresult PostHandleEvent(EventChainPostVisitor&) override;
 
  private:
   virtual ~XULResizerElement() = default;
   JSObject* WrapNode(JSContext* aCx, JS::Handle<JSObject*> aGivenProto) final;
-
-  MOZ_CAN_RUN_SCRIPT
-  void PostHandleEventInternal(EventChainPostVisitor&);
 
   struct Direction {
     int8_t mHorizontal;

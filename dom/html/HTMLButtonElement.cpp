@@ -226,6 +226,11 @@ void HTMLButtonElement::GetEventTargetParent(EventChainPreVisitor& aVisitor) {
   if (outerActivateEvent) {
     aVisitor.mItemFlags |= NS_OUTER_ACTIVATE_EVENT;
     aVisitor.mWantsActivationBehavior = true;
+    aVisitor.mWantsPostHandleEvent = true;
+  }
+
+  if (aVisitor.mEvent->HasKeyEventMessage() && aVisitor.mEvent->IsTrusted()) {
+    aVisitor.mWantsPostHandleEvent = true;
   }
 
   nsGenericHTMLElement::GetEventTargetParent(aVisitor);

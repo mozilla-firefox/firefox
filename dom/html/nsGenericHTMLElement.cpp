@@ -658,6 +658,8 @@ void nsGenericHTMLElement::GetEventTargetParentForAnchors(
   nsGenericHTMLElementBase::GetEventTargetParent(aVisitor);
 
   if (!CheckHandleEventForAnchorsPreconditions(aVisitor)) {
+    // Listeners may still connect us, let PostHandleEventForAnchors decide.
+    aVisitor.mWantsPostHandleEvent = true;
     return;
   }
 

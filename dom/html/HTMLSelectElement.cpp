@@ -1283,11 +1283,30 @@ bool HTMLSelectElement::IsDisabledForEvents(WidgetEvent* aEvent) {
   return IsElementDisabledForEvents(aEvent, GetPrimaryFrame());
 }
 
+static bool SelectWantsPostHandleEvent(EventChainVisitor& aVisitor) {
+  WidgetEvent const* event = aVisitor.mEvent;
+  if (!event->IsTrusted()) {
+    return false;
+  }
+
+  switch (event->mMessage) {
+    case eKeyDown:
+    case eKeyPress:
+    case eMouseDown:
+    case eMouseUp:
+    case eMouseMove:
+      return true;
+    default:
+      return false;
+  }
+}
+
 void HTMLSelectElement::GetEventTargetParent(EventChainPreVisitor& aVisitor) {
   aVisitor.mCanHandle = false;
   if (IsDisabledForEvents(aVisitor.mEvent)) {
     return;
   }
+  aVisitor.mWantsPostHandleEvent = SelectWantsPostHandleEvent(aVisitor);
 
   nsGenericHTMLFormControlElementWithState::GetEventTargetParent(aVisitor);
 }
@@ -2334,15 +2353,13 @@ void HTMLSelectElement::MaybeFireMenuItemActiveEvent(
 #endif
 
 nsresult HTMLSelectElement::PostHandleEvent(EventChainPostVisitor& aVisitor) {
+  MOZ_ASSERT(SelectWantsPostHandleEvent(aVisitor));
+
   if (aVisitor.mEventStatus == nsEventStatus_eConsumeNoDefault) {
     return NS_OK;
   }
 
   WidgetEvent* event = aVisitor.mEvent;
-  if (!event->IsTrusted()) {
-    return NS_OK;
-  }
-
   switch (event->mMessage) {
     case eKeyDown:
       return HandleKeyDown(aVisitor);

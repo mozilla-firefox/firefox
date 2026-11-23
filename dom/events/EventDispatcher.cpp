@@ -265,6 +265,12 @@ class EventTargetChainItem {
     mFlags.mPreHandleEventOnly = aWants;
   }
 
+  void SetWantsPostHandleEvent(bool aWants) {
+    mFlags.mWantsPostHandleEvent = aWants;
+  }
+
+  bool WantsPostHandleEvent() const { return mFlags.mWantsPostHandleEvent; }
+
   bool PreHandleEventOnly() const { return mFlags.mPreHandleEventOnly; }
 
   void SetRootOfClosedTree(bool aSet) { mFlags.mRootOfClosedTree = aSet; }
@@ -397,6 +403,7 @@ class EventTargetChainItem {
     bool mIsChromeContent : 1;
     bool mWantsPreHandleEvent : 1;
     bool mPreHandleEventOnly : 1;
+    bool mWantsPostHandleEvent : 1;
     bool mRootOfClosedTree : 1;
     bool mItemInShadowTree : 1;
     bool mIsSlotInClosedTree : 1;
@@ -439,6 +446,7 @@ void EventTargetChainItem::GetEventTargetParent(
   const bool wantsWillHandleEvent = aVisitor.mWantsWillHandleEvent;
   const bool mayHaveListenerManager = aVisitor.mMayHaveListenerManager;
   const bool wantsPreHandleEvent = aVisitor.mWantsPreHandleEvent;
+  const bool wantsPostHandleEvent = aVisitor.mWantsPostHandleEvent;
   const bool canHandle = aVisitor.mCanHandle;
   const bool rootOfClosedTree = aVisitor.mRootOfClosedTree;
   const bool itemInShadowTree = aVisitor.mItemInShadowTree;
@@ -447,6 +455,7 @@ void EventTargetChainItem::GetEventTargetParent(
   SetMayHaveListenerManager(mayHaveListenerManager);
   SetWantsPreHandleEvent(wantsPreHandleEvent);
   SetPreHandleEventOnly(wantsPreHandleEvent && !canHandle);
+  SetWantsPostHandleEvent(wantsPostHandleEvent);
   SetRootOfClosedTree(rootOfClosedTree);
   SetItemInShadowTree(itemInShadowTree);
   SetRetargetedRelatedTarget(aVisitor.mRetargetedRelatedTarget);
@@ -491,6 +500,9 @@ void EventTargetChainItem::LegacyCanceledActivationBehavior(
 }
 
 void EventTargetChainItem::PostHandleEvent(EventChainPostVisitor& aVisitor) {
+  if (!WantsPostHandleEvent()) {
+    return;
+  }
   aVisitor.mItemFlags = mItemFlags;
   mTarget->PostHandleEvent(aVisitor);
   MOZ_ASSERT(mItemFlags == aVisitor.mItemFlags);

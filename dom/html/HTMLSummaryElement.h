@@ -25,6 +25,7 @@ class HTMLSummaryElement final : public nsGenericHTMLElement {
 
   nsresult Clone(NodeInfo*, nsINode** aResult) const override;
 
+  void GetEventTargetParent(EventChainPreVisitor& aVisitor) override;
   nsresult PostHandleEvent(EventChainPostVisitor& aVisitor) override;
 
   bool IsHTMLFocusable(IsFocusableFlags, bool* aIsFocusable,

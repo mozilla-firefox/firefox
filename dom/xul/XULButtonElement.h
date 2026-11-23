@@ -27,6 +27,7 @@ class XULButtonElement : public nsXULElement {
   ~XULButtonElement() override;
 
   MOZ_CAN_RUN_SCRIPT_BOUNDARY bool OnPointerClicked(WidgetGUIEvent&);
+  void GetEventTargetParent(EventChainPreVisitor& aVisitor) override;
   MOZ_CAN_RUN_SCRIPT nsresult PostHandleEvent(EventChainPostVisitor&) override;
   MOZ_CAN_RUN_SCRIPT void PostHandleEventForMenus(EventChainPostVisitor&);
   MOZ_CAN_RUN_SCRIPT void HandleEnterKeyPress(WidgetEvent&);

@@ -2039,6 +2039,7 @@ bool nsINode::DispatchEvent(Event& aEvent, CallerType aCallerType,
 }
 
 nsresult nsINode::PostHandleEvent(EventChainPostVisitor& /*aVisitor*/) {
+  MOZ_ASSERT_UNREACHABLE("Does not want PostHandleEvent");
   return NS_OK;
 }
 

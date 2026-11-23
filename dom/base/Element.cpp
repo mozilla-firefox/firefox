@@ -4739,6 +4739,16 @@ void Element::GetEventTargetParentForLinks(EventChainPreVisitor& aVisitor) {
   // Optimisation: return early if this event doesn't interest us.
   // IMPORTANT: this switch and the switch below it must be kept in sync!
   switch (aVisitor.mEvent->mMessage) {
+    // These must match the early-return switch in PostHandleEventForLinks.
+    case eMouseDown:
+    case ePointerClick:
+    case ePointerAuxClick:
+    case eLegacyDOMActivate:
+    case eKeyPress:
+      // Don't check CheckHandleEventForLinksPrecondition here, listeners may
+      // still make us a link.
+      aVisitor.mWantsPostHandleEvent = true;
+      return;
     case eMouseOver:
     case eFocus:
     case eMouseOut:

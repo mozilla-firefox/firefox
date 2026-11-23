@@ -533,14 +533,19 @@ void XULButtonElement::PostHandleEventForMenus(
   }
 }
 
+void XULButtonElement::GetEventTargetParent(EventChainPreVisitor& aVisitor) {
+  aVisitor.mWantsPostHandleEvent = true;
+  nsXULElement::GetEventTargetParent(aVisitor);
+}
+
 nsresult XULButtonElement::PostHandleEvent(EventChainPostVisitor& aVisitor) {
   if (aVisitor.mEventStatus == nsEventStatus_eConsumeNoDefault) {
-    return nsXULElement::PostHandleEvent(aVisitor);
+    return NS_OK;
   }
 
   if (IsMenu()) {
     PostHandleEventForMenus(aVisitor);
-    return nsXULElement::PostHandleEvent(aVisitor);
+    return NS_OK;
   }
 
   auto* event = aVisitor.mEvent;
@@ -622,7 +627,7 @@ nsresult XULButtonElement::PostHandleEvent(EventChainPostVisitor& aVisitor) {
       break;
   }
 
-  return nsXULElement::PostHandleEvent(aVisitor);
+  return NS_OK;
 }
 
 void XULButtonElement::Blurred() {

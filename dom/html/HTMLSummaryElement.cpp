@@ -21,7 +21,21 @@ HTMLSummaryElement::~HTMLSummaryElement() = default;
 
 NS_IMPL_ELEMENT_CLONE(HTMLSummaryElement)
 
+static bool WantsPostHandleEvent(EventChainVisitor& aVisitor) {
+  WidgetEvent* const event = aVisitor.mEvent;
+
+  return event->mMessage == ePointerClick ||
+         (event->HasKeyEventMessage() && event->IsTrusted());
+}
+
+void HTMLSummaryElement::GetEventTargetParent(EventChainPreVisitor& aVisitor) {
+  aVisitor.mWantsPostHandleEvent = WantsPostHandleEvent(aVisitor);
+  nsGenericHTMLElement::GetEventTargetParent(aVisitor);
+}
+
 nsresult HTMLSummaryElement::PostHandleEvent(EventChainPostVisitor& aVisitor) {
+  MOZ_ASSERT(WantsPostHandleEvent(aVisitor));
+
   nsresult rv = NS_OK;
   if (!aVisitor.mPresContext) {
     return rv;

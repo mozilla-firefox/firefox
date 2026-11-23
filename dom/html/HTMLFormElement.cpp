@@ -551,7 +551,11 @@ static bool CanSubmit(WidgetEvent& aEvent) {
 }
 
 void HTMLFormElement::GetEventTargetParent(EventChainPreVisitor& aVisitor) {
-  aVisitor.mWantsWillHandleEvent = true;
+  if (aVisitor.mEvent->mMessage == eFormSubmit ||
+      aVisitor.mEvent->mMessage == eFormReset) {
+    aVisitor.mWantsWillHandleEvent = true;
+    aVisitor.mWantsPostHandleEvent = true;
+  }
   if (aVisitor.mEvent->mOriginalTarget == static_cast<nsIContent*>(this) &&
       CanSubmit(*aVisitor.mEvent)) {
     uint32_t msg = aVisitor.mEvent->mMessage;
