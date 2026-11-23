@@ -524,6 +524,10 @@ function test() {
   waitForExplicitFinish();
 
   (async function () {
+    await SpecialPowers.pushPrefEnv({
+      set: [["dom.security.https_first_pbm", false]],
+    });
+
     for (let testCase of gTests) {
       info("Running: " + testCase.desc);
       await testCase.run();

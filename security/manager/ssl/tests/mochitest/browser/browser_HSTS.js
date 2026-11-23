@@ -68,6 +68,9 @@ add_task(async function test_unrelated_domain_no_upgrade() {
 // http navigations in private contexts shouldn't use information from
 // non-private contexts, so no upgrade should occur.
 add_task(async function test_private_window_no_upgrade() {
+  await SpecialPowers.pushPrefEnv({
+    set: [["dom.security.https_first_pbm", false]],
+  });
   let privateWindow = OpenBrowserWindow({ private: true });
   await BrowserTestUtils.firstBrowserLoaded(privateWindow, false);
   let url =
@@ -244,6 +247,9 @@ add_task(async function clear_hsts_state_again() {
 // non-private contexts.
 add_task(
   async function test_no_upgrade_for_HSTS_information_from_private_window() {
+    await SpecialPowers.pushPrefEnv({
+      set: [["dom.security.https_first_pbm", false]],
+    });
     let privateWindow = OpenBrowserWindow({ private: true });
     await BrowserTestUtils.firstBrowserLoaded(privateWindow, false);
     let setHstsUrl =
