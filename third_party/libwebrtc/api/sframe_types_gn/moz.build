@@ -59,12 +59,20 @@ if CONFIG["OS_TARGET"] == "Android":
     DEFINES["__STDC_CONSTANT_MACROS"] = True
     DEFINES["__STDC_FORMAT_MACROS"] = True
 
+    OS_LIBS += [
+        "log"
+    ]
+
 if CONFIG["OS_TARGET"] == "Darwin":
 
     DEFINES["WEBRTC_MAC"] = True
     DEFINES["WEBRTC_POSIX"] = True
     DEFINES["__STDC_CONSTANT_MACROS"] = True
     DEFINES["__STDC_FORMAT_MACROS"] = True
+
+    OS_LIBS += [
+        "-framework Foundation"
+    ]
 
 if CONFIG["OS_TARGET"] == "Linux":
 
@@ -120,6 +128,13 @@ if CONFIG["OS_TARGET"] == "WINNT":
     DEFINES["_WINDOWS"] = True
     DEFINES["_WINSOCK_DEPRECATED_NO_WARNINGS"] = True
     DEFINES["__STD_C"] = True
+
+    OS_LIBS += [
+        "crypt32",
+        "iphlpapi",
+        "secur32",
+        "winmm"
+    ]
 
 if CONFIG["TARGET_CPU"] == "aarch64":
 
