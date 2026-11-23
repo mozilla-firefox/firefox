@@ -7,10 +7,11 @@
 
 #include "gfxFont.h"
 #include "gfxRect.h"
-#include "mozilla/HashTable.h"
 #include "mozilla/MemoryReporting.h"
 #include "mozilla/RWLock.h"
+#include "nsHashKeys.h"
 #include "nsTArray.h"
+#include "nsTHashtable.h"
 
 class gfxContext;
 
@@ -51,7 +52,7 @@ class gfxGlyphExtents {
 
   void NotifyGlyphsChanged() {
     mozilla::AutoWriteLock lock(mLock);
-    mTightGlyphExtents.clearAndCompact();
+    mTightGlyphExtents.Clear();
   }
 
   // returns INVALID_WIDTH => not a contained glyph
@@ -65,12 +66,12 @@ class gfxGlyphExtents {
 
   bool IsGlyphKnownLocked(uint32_t aGlyphID) const MOZ_REQUIRES_SHARED(mLock) {
     return mContainedGlyphWidths.Get(aGlyphID) != INVALID_WIDTH ||
-           IsGlyphKnownWithTightExtentsLocked(aGlyphID);
+           mTightGlyphExtents.GetEntry(aGlyphID) != nullptr;
   }
 
   bool IsGlyphKnownWithTightExtentsLocked(uint32_t aGlyphID) const
       MOZ_REQUIRES_SHARED(mLock) {
-    return bool(mTightGlyphExtents.readonlyThreadsafeLookup(aGlyphID));
+    return mTightGlyphExtents.GetEntry(aGlyphID) != nullptr;
   }
 
   // Get glyph extents; a rectangle relative to the left baseline origin
@@ -99,6 +100,22 @@ class gfxGlyphExtents {
   size_t SizeOfIncludingThis(mozilla::MallocSizeOf aMallocSizeOf) const;
 
  private:
+  class HashEntry : public nsUint32HashKey {
+   public:
+    // When constructing a new entry in the hashtable, we'll leave this
+    // blank. The caller of Put() will fill this in.
+    explicit HashEntry(KeyTypePointer aPtr)
+        : nsUint32HashKey(aPtr), x(0.0), y(0.0), width(0.0), height(0.0) {}
+    HashEntry(HashEntry&& aOther)
+        : nsUint32HashKey(std::move(aOther)),
+          x(aOther.x),
+          y(aOther.y),
+          width(aOther.width),
+          height(aOther.height) {}
+
+    float x, y, width, height;
+  };
+
   enum {
     BLOCK_SIZE_BITS = 7,
     BLOCK_SIZE = 1 << BLOCK_SIZE_BITS
@@ -142,9 +159,7 @@ class gfxGlyphExtents {
   };
 
   GlyphWidths mContainedGlyphWidths MOZ_GUARDED_BY(mLock);
-  // Readers share mLock, so lookups must use readonlyThreadsafeLookup().
-  mozilla::HashMap<uint32_t, mozilla::gfx::Rect> mTightGlyphExtents
-      MOZ_GUARDED_BY(mLock);
+  nsTHashtable<HashEntry> mTightGlyphExtents MOZ_GUARDED_BY(mLock);
   const int32_t mAppUnitsPerDevUnit;
 
  public:

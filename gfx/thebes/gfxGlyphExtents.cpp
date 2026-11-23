@@ -36,7 +36,7 @@ gfxGlyphExtents::~gfxGlyphExtents() {
 bool gfxGlyphExtents::GetTightGlyphExtentsAppUnitsLocked(
     gfxFont* aFont, DrawTarget* aDrawTarget, uint32_t aGlyphID,
     gfxRect* aExtents) {
-  auto entry = mTightGlyphExtents.readonlyThreadsafeLookup(aGlyphID);
+  HashEntry* entry = mTightGlyphExtents.GetEntry(aGlyphID);
   if (!entry) {
     // Some functions higher up in the call chain deliberately pass in a
     // nullptr DrawTarget, e.g. GetBaselinePosition() passes nullptr to
@@ -57,15 +57,14 @@ bool gfxGlyphExtents::GetTightGlyphExtentsAppUnitsLocked(
     mLock.ReadLock();
     MOZ_POP_THREAD_SAFETY
 
-    entry = mTightGlyphExtents.readonlyThreadsafeLookup(aGlyphID);
+    entry = mTightGlyphExtents.GetEntry(aGlyphID);
     if (!entry) {
       NS_WARNING("Could not get glyph extents");
       return false;
     }
   }
 
-  const gfx::Rect& extents = entry->value();
-  *aExtents = gfxRect(extents.x, extents.y, extents.width, extents.height);
+  *aExtents = gfxRect(entry->x, entry->y, entry->width, entry->height);
   return true;
 }
 
@@ -130,16 +129,20 @@ void gfxGlyphExtents::GlyphWidths::Set(uint32_t aGlyphID, uint16_t aWidth) {
 void gfxGlyphExtents::SetTightGlyphExtents(uint32_t aGlyphID,
                                            const gfxRect& aExtentsAppUnits) {
   AutoWriteLock lock(mLock);
-  // On OOM the glyph is left without tight extents, and lookups fail.
-  (void)mTightGlyphExtents.put(
-      aGlyphID, gfx::Rect(aExtentsAppUnits.X(), aExtentsAppUnits.Y(),
-                          aExtentsAppUnits.Width(), aExtentsAppUnits.Height()));
+  HashEntry* entry = mTightGlyphExtents.PutEntry(aGlyphID);
+  if (!entry) {
+    return;
+  }
+  entry->x = aExtentsAppUnits.X();
+  entry->y = aExtentsAppUnits.Y();
+  entry->width = aExtentsAppUnits.Width();
+  entry->height = aExtentsAppUnits.Height();
 }
 
 size_t gfxGlyphExtents::SizeOfExcludingThis(MallocSizeOf aMallocSizeOf) const {
   AutoReadLock lock(mLock);
   return mContainedGlyphWidths.SizeOfExcludingThis(aMallocSizeOf) +
-         mTightGlyphExtents.shallowSizeOfExcludingThis(aMallocSizeOf);
+         mTightGlyphExtents.ShallowSizeOfExcludingThis(aMallocSizeOf);
 }
 
 size_t gfxGlyphExtents::SizeOfIncludingThis(MallocSizeOf aMallocSizeOf) const {
