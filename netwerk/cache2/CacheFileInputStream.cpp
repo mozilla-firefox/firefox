@@ -18,17 +18,27 @@ NS_IMPL_ADDREF(CacheFileInputStream)
 NS_IMETHODIMP_(MozExternalRefCountType)
 CacheFileInputStream::Release() {
   MOZ_ASSERT(0 != mRefCnt, "dup release");
-  nsrefcnt count = --mRefCnt;
-  NS_LOG_RELEASE(this, count, "CacheFileInputStream");
+  // CacheFile can add a reference from its raw mInputs pointer while holding
+  // its lock, so the drop to the CacheFile-owned reference must happen under
+  // that lock.  Once RemoveInput() has run, nothing else can add a reference.
+  auto [decremented, count] = mRefCnt.DecrementWithLimit<2>();
+  if (decremented) {
+    NS_LOG_RELEASE(this, count, "CacheFileInputStream");
+    return count;
+  }
 
-  if (0 == count) {
+  if (count == 1) {
+    count = --mRefCnt;
+    NS_LOG_RELEASE(this, count, "CacheFileInputStream");
     mRefCnt = 1;
     delete (this);
     return 0;
   }
 
+  CacheFileAutoLock lock(mFile);
+  count = --mRefCnt;
+  NS_LOG_RELEASE(this, count, "CacheFileInputStream");
   if (count == 1) {
-    CacheFileAutoLock lock(mFile);
     mFile->RemoveInput(this, mStatus);
   }
 
