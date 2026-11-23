@@ -593,6 +593,22 @@ javascript.gc:
       - "false"
       - "true"
 
+  gray_bits_valid:
+    type: labeled_counter
+    description: >
+      Whether the gray marking state was valid at the start of a major GC
+    bugs:
+      - https://bugzilla.mozilla.org/show_bug.cgi?id=2096382
+    data_reviews:
+      - https://bugzilla.mozilla.org/show_bug.cgi?id=2096382
+    notification_emails:
+      - dev-telemetry-gc-alerts@mozilla.org
+      - jcoppeard@mozilla.com
+    expires: never
+    labels:
+      - "false"
+      - "true"
+
   budget_was_increased:
     type: labeled_counter
     description: >

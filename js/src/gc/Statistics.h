@@ -342,6 +342,8 @@ struct Statistics {
 
   GCAbortReason nonincrementalReason_;
 
+  bool grayBitsWereValidAtStart = false;
+
   SliceDataVector slices_;
 
   /* Most recent time when the given phase started. */
