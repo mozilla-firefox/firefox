@@ -34,6 +34,7 @@ export class ContentClassifierRemoteSettingsClient {
   #onSyncCallback = null;
   #service = null;
   #initialized = false;
+  #pendingGetPromise = null;
 
   constructor() {
     this.#rs = lazy.RemoteSettings(COLLECTION_NAME);
@@ -129,7 +130,7 @@ export class ContentClassifierRemoteSettingsClient {
 
     let records = [];
     try {
-      records = await this.#rs.get();
+      records = await this.#getRecords();
       lazy.log.debug(`importAllLists: got ${records.length} records`);
     } catch (error) {
       lazy.log.error(`Error importing lists:`, error);
@@ -141,6 +142,15 @@ export class ContentClassifierRemoteSettingsClient {
     );
   }
 
+  #getRecords() {
+    if (!this.#pendingGetPromise) {
+      this.#pendingGetPromise = this.#rs.get().finally(() => {
+        this.#pendingGetPromise = null;
+      });
+    }
+    return this.#pendingGetPromise;
+  }
+
   /**
    * Return a Uint8Array containing the bytes of the named list's
    * attachment. Throws if no record with that name exists or the
@@ -150,7 +160,7 @@ export class ContentClassifierRemoteSettingsClient {
    * @returns {Promise<Uint8Array>}
    */
   async getListBytes(name) {
-    let records = await this.#rs.get();
+    let records = await this.#getRecords();
     let record = records.find(r => r.Name === name);
     if (!record) {
       throw new Error(`No record with name "${name}"`);
