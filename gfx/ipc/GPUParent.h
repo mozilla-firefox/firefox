@@ -52,7 +52,7 @@ class GPUParent final : public PGPUParent {
                                    const DevicePrefs& devicePrefs,
                                    nsTArray<LayerTreeIdMapping>&& mappings,
                                    nsTArray<GfxInfoFeatureStatus>&& features,
-                                   uint32_t wrNamespace,
+                                   uint32_t wrNamespace, bool aDecodeVideo,
                                    InitResolver&& aInitResolver);
   mozilla::ipc::IPCResult RecvInitCompositorManager(
       Endpoint<PCompositorManagerParent>&& aEndpoint, uint32_t aNamespace);
@@ -128,6 +128,8 @@ class GPUParent final : public PGPUParent {
   ~GPUParent();
 
   const TimeStamp mLaunchTime;
+  // Whether content processes may decode or encode media in this process.
+  bool mDecodeVideo = true;
   RefPtr<VsyncBridgeParent> mVsyncBridge;
   RefPtr<ChildProfilerController> mProfilerController;
   ipc::AsyncBlockers mShutdownBlockers;

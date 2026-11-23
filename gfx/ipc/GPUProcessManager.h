@@ -109,6 +109,8 @@ class GPUProcessManager final : public GPUProcessHost::Listener {
 
   bool IsGPUReady() const;
 
+  bool IsDecodingVideoOnGpuProcess() const { return mDecodeVideoOnGpuProcess; }
+
   already_AddRefed<CompositorSession> CreateTopLevelCompositor(
       nsIWidget* aWidget, CSSToLayoutDeviceScale aScale,
       const CompositorOptions& aOptions, bool aUseExternalSurfaceSize,

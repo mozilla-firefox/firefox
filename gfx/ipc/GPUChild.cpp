@@ -70,7 +70,8 @@ RefPtr<GPUChild::InitPromiseType> GPUChild::Init() {
 
   RefPtr<InitPromiseType> promise =
       SendInit(updates, devicePrefs, mappings, features,
-               GPUProcessManager::Get()->AllocateNamespace())
+               GPUProcessManager::Get()->AllocateNamespace(),
+               GPUProcessManager::Get()->IsDecodingVideoOnGpuProcess())
           ->Then(
               GetCurrentSerialEventTarget(), __func__,
               [self = RefPtr{this}](GPUDeviceData&& aData) {
@@ -390,6 +391,7 @@ mozilla::ipc::IPCResult GPUChild::RecvUpdateMediaCodecsSupported(
     mozilla::TelemetryProbesReporter::ReportDeviceMediaCodecSupported(
         aSupported);
   }
+  MOZ_ASSERT(GPUProcessManager::Get()->IsDecodingVideoOnGpuProcess());
 #if defined(XP_WIN)
   // Do not propagate HEVC support if the pref is off
   media::MediaCodecsSupported trimedSupported = aSupported;

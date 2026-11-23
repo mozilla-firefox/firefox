@@ -295,7 +295,8 @@ mozilla::ipc::IPCResult GPUParent::RecvInit(
     nsTArray<GfxVarUpdate>&& vars, const DevicePrefs& devicePrefs,
     nsTArray<LayerTreeIdMapping>&& aMappings,
     nsTArray<GfxInfoFeatureStatus>&& aFeatures, uint32_t aWrNamespace,
-    InitResolver&& aInitResolver) {
+    bool aDecodeVideo, InitResolver&& aInitResolver) {
+  mDecodeVideo = aDecodeVideo;
   gfxVars::ApplyUpdate(vars);
 
   // Inherit device preferences.
@@ -432,18 +433,20 @@ mozilla::ipc::IPCResult GPUParent::RecvInit(
 
   // Dispatch a task to background thread to determine the media codec supported
   // result, and propagate it back to the chrome process on the main thread.
-  MOZ_ALWAYS_SUCCEEDS(NS_DispatchBackgroundTask(
-      NS_NewRunnableFunction(
-          "GPUParent::Supported",
-          []() {
-            NS_DispatchToMainThread(NS_NewRunnableFunction(
-                "GPUParent::UpdateMediaCodecsSupported",
-                [supported = media::MCSInfo::GetSupportFromFactory()]() {
-                  (void)GPUParent::GetSingleton()
-                      ->SendUpdateMediaCodecsSupported(supported);
-                }));
-          }),
-      nsIEventTarget::DISPATCH_NORMAL));
+  if (mDecodeVideo) {
+    MOZ_ALWAYS_SUCCEEDS(NS_DispatchBackgroundTask(
+        NS_NewRunnableFunction(
+            "GPUParent::Supported",
+            []() {
+              NS_DispatchToMainThread(NS_NewRunnableFunction(
+                  "GPUParent::UpdateMediaCodecsSupported",
+                  [supported = media::MCSInfo::GetSupportFromFactory()]() {
+                    (void)GPUParent::GetSingleton()
+                        ->SendUpdateMediaCodecsSupported(supported);
+                  }));
+            }),
+        nsIEventTarget::DISPATCH_NORMAL));
+  }
 
   glean::gpu_process::initialization_time.AccumulateRawDuration(
       TimeStamp::Now() - mLaunchTime);
@@ -526,6 +529,9 @@ mozilla::ipc::IPCResult GPUParent::RecvInitProfiler(
 mozilla::ipc::IPCResult GPUParent::RecvUpdateVar(
     const nsTArray<GfxVarUpdate>& aUpdate) {
   gfxVars::ApplyUpdate(aUpdate);
+  if (!mDecodeVideo) {
+    return IPC_OK();
+  }
   MOZ_ALWAYS_SUCCEEDS(NS_DispatchBackgroundTask(
       NS_NewRunnableFunction(
           "GPUParent::RecvUpdateVar",

@@ -1062,6 +1062,8 @@ void GPUProcessManager::OnProcessUnexpectedShutdown(GPUProcessHost* aHost) {
               StaticPrefs::layers_gpu_process_max_restarts_with_decoder()) &&
       mDecodeVideoOnGpuProcess) {
     mDecodeVideoOnGpuProcess = false;
+    dom::ContentParent::BroadcastMediaCodecsSupportedUpdate(
+        RemoteMediaIn::GpuProcess, media::MediaCodecsSupported{});
     mozilla::glean::gpu_process::crash_fallbacks.Get("decoding_disabled"_ns)
         .Add(1);
     HandleProcessLost();

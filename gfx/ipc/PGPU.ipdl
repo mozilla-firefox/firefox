@@ -65,7 +65,8 @@ parent:
              DevicePrefs devicePrefs,
              LayerTreeIdMapping[] mapping,
              GfxInfoFeatureStatus[] features,
-             uint32_t wrNamespace) returns (GPUDeviceData data);
+             uint32_t wrNamespace,
+             bool decodeVideo) returns (GPUDeviceData data);
 
   async InitCompositorManager(Endpoint<PCompositorManagerParent> endpoint, uint32_t aNamespace);
   async InitVsyncBridge(Endpoint<PVsyncBridgeParent> endpoint);
