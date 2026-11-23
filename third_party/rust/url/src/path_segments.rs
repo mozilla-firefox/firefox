@@ -11,7 +11,7 @@ use crate::Url;
 use alloc::string::String;
 use core::str;
 
-/// Exposes methods to manipulate the path of an URL that is not cannot-be-base.
+/// Exposes methods to manipulate the path of a URL that is not cannot-be-base.
 ///
 /// The path always starts with a `/` slash, and is made of slash-separated segments.
 /// There is always at least one segment (which may be the empty string).
@@ -213,7 +213,7 @@ impl PathSegmentsMut<'_> {
     /// # run().unwrap();
     /// ```
     ///
-    /// In order to make sure that parsing the serialization of an URL gives the same URL,
+    /// In order to make sure that parsing the serialization of a URL gives the same URL,
     /// a segment is ignored if it is `"."` or `".."`:
     ///
     /// ```rust

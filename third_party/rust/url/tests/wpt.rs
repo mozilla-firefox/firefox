@@ -64,7 +64,7 @@ macro_rules! println {
     }
 }
 
-#[derive(Debug, serde::Deserialize)]
+#[derive(Debug, serde_derive::Deserialize)]
 struct UrlTest {
     input: String,
     base: Option<String>,
@@ -72,7 +72,7 @@ struct UrlTest {
     result: UrlTestResult,
 }
 
-#[derive(Debug, serde::Deserialize)]
+#[derive(Debug, serde_derive::Deserialize)]
 #[serde(untagged)]
 #[allow(clippy::large_enum_variant)]
 enum UrlTestResult {
@@ -80,7 +80,7 @@ enum UrlTestResult {
     Fail(UrlTestFail),
 }
 
-#[derive(Debug, serde::Deserialize)]
+#[derive(Debug, serde_derive::Deserialize)]
 struct UrlTestOk {
     href: String,
     protocol: String,
@@ -92,21 +92,22 @@ struct UrlTestOk {
     pathname: String,
     search: String,
     hash: String,
+    origin: Option<String>,
 }
 
-#[derive(Debug, serde::Deserialize)]
+#[derive(Debug, serde_derive::Deserialize)]
 struct UrlTestFail {
     failure: bool,
 }
 
-#[derive(Debug, serde::Deserialize)]
+#[derive(Debug, serde_derive::Deserialize)]
 struct SetterTest {
     href: String,
     new_value: String,
     expected: SetterTestExpected,
 }
 
-#[derive(Debug, serde::Deserialize)]
+#[derive(Debug, serde_derive::Deserialize)]
 struct SetterTestExpected {
     href: Option<String>,
     protocol: Option<String>,
@@ -376,6 +377,15 @@ fn check_url_ok(res: Result<Url, String>, ok: UrlTestOk) -> Result<(), String> {
     let hash = url::quirks::hash(&url);
     if hash != ok.hash {
         return Err(format!("expected hash {:?}, but got {:?}", ok.hash, hash));
+    }
+
+    if let Some(expected_origin) = ok.origin {
+        let origin = url::quirks::origin(&url);
+        if origin != expected_origin {
+            return Err(format!(
+                "expected origin {expected_origin:?}, but got {origin:?}"
+            ));
+        }
     }
 
     Ok(())

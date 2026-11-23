@@ -2,7 +2,7 @@
 
 name = "url"
 # When updating version, also modify html_root_url in the lib.rs
-version = "2.5.7"
+version = "2.5.9"
 authors = ["The rust-url developers"]
 
 description = "URL library for Rust, based on the WHATWG URL Standard"
@@ -17,7 +17,8 @@ edition = "2018"
 rust-version = "1.63" # From libc
 
 [dev-dependencies]
-serde = { version = "1.0", features = ["derive"] }
+serde = "1.0"
+serde_derive = "1.0"
 serde_json = "1.0"
 bencher = "0.1"
 
@@ -25,19 +26,22 @@ bencher = "0.1"
 wasm-bindgen-test = "0.3"
 
 [dependencies]
-form_urlencoded = { version = "1.2.2", path = "../form_urlencoded", default-features = false, features = ["alloc"] }
+form_urlencoded = { version = "1.2.3", path = "../form_urlencoded", default-features = false, features = ["alloc"] }
 idna = { version = "1.1.0", path = "../idna", default-features = false, features = ["alloc", "compiled_data"] }
 percent-encoding = { version = "2.3.2", path = "../percent_encoding", default-features = false, features = ["alloc"] }
-serde = { version = "1.0", optional = true, features = ["derive"], default-features = false }
+serde = { version = "1.0", optional = true, default-features = false }
+serde_derive = { version = "1.0", optional = true, default-features = false }
 
 [features]
 default = ["std"]
-std = ["idna/std", "percent-encoding/std", "form_urlencoded/std", "serde/std"]
+std = ["idna/std", "percent-encoding/std", "form_urlencoded/std", "serde?/std"]
 
 # Enable to use the #[debugger_visualizer] attribute. This feature requires Rust >= 1.71.
 debugger_visualizer = []
 # Expose internal offsets of the URL.
 expose_internals = []
+# Enables serialization and deserialization via serde.
+serde = ["dep:serde", "dep:serde_derive"]
 
 [[test]]
 name = "url_wpt"

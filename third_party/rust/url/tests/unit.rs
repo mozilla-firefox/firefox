@@ -625,6 +625,14 @@ fn test_origin_blob_equality() {
     assert_eq!(origin, blob_origin);
 }
 
+/// `origin()` recursed once per `blob:` prefix and overflowed the stack.
+#[test]
+fn test_origin_nested_blob() {
+    let nested = format!("{}http://example.net/", "blob:".repeat(10_000));
+
+    assert!(!Url::parse(&nested).unwrap().origin().is_tuple());
+}
+
 #[test]
 fn test_origin_opaque() {
     assert!(!Origin::new_opaque().is_tuple());
@@ -1370,7 +1378,7 @@ fn issue_974() {
 #[cfg(feature = "serde")]
 #[test]
 fn serde_error_message() {
-    use serde::Deserialize;
+    use serde_derive::Deserialize;
     #[derive(Debug, Deserialize)]
     #[allow(dead_code)]
     struct TypeWithUrl {
@@ -1382,4 +1390,51 @@ fn serde_error_message() {
         err.to_string(),
         r#"relative URL without a base: "§invalid#+#*Ä" at line 1 column 25"#
     );
+}
+
+#[test]
+fn test_parse_url_with_single_byte_control_host() {
+    let input = "l://\x01:";
+
+    let url1 = Url::parse(input).unwrap();
+    let url2 = Url::parse(url1.as_str()).unwrap();
+    assert_eq!(url2, url1);
+}
+
+#[test]
+fn test_path_percent_encode() {
+    let url = Url::parse("http://localhost/a b").unwrap();
+    assert_eq!(url.path(), "/a%20b");
+    let url = Url::parse("http://localhost/a\"b").unwrap();
+    assert_eq!(url.path(), "/a%22b");
+    let url = Url::parse("http://localhost/a<b").unwrap();
+    assert_eq!(url.path(), "/a%3Cb");
+    let url = Url::parse("http://localhost/a>b").unwrap();
+    assert_eq!(url.path(), "/a%3Eb");
+    let url = Url::parse("http://localhost/a^b").unwrap();
+    assert_eq!(url.path(), "/a%5Eb");
+    let url = Url::parse("http://localhost/a`b").unwrap();
+    assert_eq!(url.path(), "/a%60b");
+    let url = Url::parse("http://localhost/a{b").unwrap();
+    assert_eq!(url.path(), "/a%7Bb");
+    let url = Url::parse("http://localhost/a}b").unwrap();
+    assert_eq!(url.path(), "/a%7Db");
+}
+
+/// `set_path` parses into `file://`, whose path is empty at that point.
+#[test]
+fn test_set_path_double_dot_on_file_root() {
+    let mut url = Url::parse("file:///").unwrap();
+    url.set_path("..");
+    assert_eq!(url.as_str(), "file:///");
+}
+
+#[test]
+fn issue_1155() {
+    assert_eq!(
+        Url::parse("htup://a:b@c:2\\9/"),
+        Err(url::ParseError::InvalidPort)
+    );
+    let url = Url::parse("http://a:b@c:2\\9/").unwrap();
+    assert_eq!(url.as_str(), "http://a:b@c:2/9/");
 }
