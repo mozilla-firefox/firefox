@@ -140,13 +140,6 @@
 // objects alive during the unlinking.
 //
 
-#if !defined(__MINGW32__)
-#  ifdef WIN32
-#    include <crtdbg.h>
-#    include <errno.h>
-#  endif
-#endif
-
 #include "base/process_util.h"
 #include "mozilla/AutoRestore.h"
 #include "mozilla/CycleCollectedJSContext.h"

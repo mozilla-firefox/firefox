@@ -96,10 +96,6 @@
 #else
 #include <intsafe.h>
 #include <processthreadsapi.h>
-#if defined(__MINGW32__)
-// Not defined yet in version of MinGW we use.
-#define USHORT_MAX 65535
-#endif  // defined(__MINGW32__)
 #endif  // !defined(MOZ_SANDBOX)
 
 namespace base {

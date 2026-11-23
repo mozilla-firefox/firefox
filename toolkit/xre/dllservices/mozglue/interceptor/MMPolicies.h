@@ -18,7 +18,7 @@
 #include <bit>
 #include <windows.h>
 
-#if (NTDDI_VERSION < NTDDI_WIN10_RS4) || defined(__MINGW32__)
+#if (NTDDI_VERSION < NTDDI_WIN10_RS4)
 WINBASEAPI
 PVOID WINAPI VirtualAlloc2(HANDLE Process, PVOID BaseAddress, SIZE_T Size,
                            ULONG AllocationType, ULONG PageProtection,
@@ -30,7 +30,7 @@ PVOID WINAPI MapViewOfFile3(HANDLE FileMapping, HANDLE Process,
                             ULONG AllocationType, ULONG PageProtection,
                             MEM_EXTENDED_PARAMETER* ExtendedParameters,
                             ULONG ParameterCount);
-#endif  // (NTDDI_VERSION < NTDDI_WIN10_RS4) || defined(__MINGW32__)
+#endif  // (NTDDI_VERSION < NTDDI_WIN10_RS4)
 
 // _CRT_RAND_S is not defined everywhere, but we need it.
 #if !defined(_CRT_RAND_S)

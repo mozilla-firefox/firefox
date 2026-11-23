@@ -30,12 +30,6 @@ struct StyleFontWidth;
 struct StyleFontWeight;
 }  // namespace mozilla
 
-/* Bug 341128 - w32api defines min/max which causes problems with <bitset> */
-#ifdef __MINGW32__
-#  undef min
-#  undef max
-#endif
-
 #undef ERROR /* defined by Windows.h, conflicts with some generated bindings \
                 code when this gets indirectly included via shared font list \
               */

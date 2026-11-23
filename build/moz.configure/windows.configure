@@ -460,9 +460,6 @@ set_define("NOMINMAX", True)
 
 
 with only_when(target_is_windows & depends(c_compiler)(lambda c: c.type != "clang-cl")):
-    # strsafe.h on mingw uses macros for function deprecation that pollutes namespace
-    # causing problems with local implementations with the same name.
-    set_define("STRSAFE_NO_DEPRECATE", True)
     # abseil defaults to the pthread_setspecific thread identity mode on mingw.
     set_define("ABSL_FORCE_THREAD_IDENTITY_MODE", "ABSL_THREAD_IDENTITY_MODE_USE_CPP11")
 
