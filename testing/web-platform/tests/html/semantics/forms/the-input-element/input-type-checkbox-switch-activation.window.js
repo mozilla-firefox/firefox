@@ -58,6 +58,18 @@ promise_test(async t => {
   assert_array_equals(events, []);
 }, "Dragging across a disabled switch does not toggle it");
 
+promise_test(async t => {
+  const input = createSwitch(t);
+  await test_driver.click(input);
+  assert_true(input.checked);
+
+  input.removeAttribute("switch");
+  const events = recordEvents(input);
+  await test_driver.click(input);
+  assert_false(input.checked);
+  assert_array_equals(events, ["click", "input", "change"]);
+}, "Clicking a switch whose switch attribute was removed toggles it like a checkbox");
+
 test(t => {
   const input = createSwitch(t);
   input.addEventListener("click", e => e.preventDefault());

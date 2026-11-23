@@ -114,6 +114,30 @@ promise_test(async t => {
 
 promise_test(async t => {
   const input = createSwitch(t);
+  const events = recordEvents(input);
+  input.addEventListener("pointerdown", () => {
+    input.addEventListener("pointermove", () => { input.removeAttribute("switch"); }, { once: true });
+  }, { once: true });
+
+  await drag(input, [0.15, 0.5, 0.85, 1.5]);
+  assert_false(input.checked);
+  assert_array_equals(events, []);
+}, "Removing the switch attribute during a drag stops the drag");
+
+promise_test(async t => {
+  const input = createSwitch(t);
+  const events = recordEvents(input);
+  input.addEventListener("pointerdown", () => {
+    input.addEventListener("pointermove", () => { input.type = "radio"; }, { once: true });
+  }, { once: true });
+
+  await drag(input, [0.15, 0.5, 0.85, 1.5]);
+  assert_false(input.checked);
+  assert_array_equals(events, []);
+}, "Changing the type during a drag stops the drag");
+
+promise_test(async t => {
+  const input = createSwitch(t);
   input.dir = "rtl";
   const events = recordEvents(input);
 
