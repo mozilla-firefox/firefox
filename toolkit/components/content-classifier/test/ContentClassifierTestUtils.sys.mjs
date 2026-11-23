@@ -2,6 +2,7 @@
  * License, v. 2.0. If a copy of the MPL was not distributed with this
  * file, You can obtain one at http://mozilla.org/MPL/2.0/. */
 
+import { Database } from "resource://services-settings/Database.sys.mjs";
 import { RemoteSettings } from "resource://services-settings/remote-settings.sys.mjs";
 import { clearTimeout, setTimeout } from "resource://gre/modules/Timer.sys.mjs";
 
@@ -212,11 +213,41 @@ async function unpublishTestEngineLists() {
   Services.prefs.clearUserPref(USE_TEST_ENGINES_PREF);
 }
 
+/**
+ * Run a Remote Settings database operation, retrying it once on a fresh
+ * connection if the cached one turns out to be closed.
+ *
+ * Some tests call Services.qms.reset(), which closes every IndexedDB
+ * connection, but Remote Settings keeps using the one it cached and fails with
+ * "Can't start a transaction on a closed database". On that error we drop the
+ * cached connection so the retry reopens it. Only doing so on that error
+ * avoids aborting other consumers' in-flight Remote Settings reads.
+ *
+ * @param {Function} operation - Async function performing the operation.
+ * @returns {Promise} The operation's result.
+ */
+async function withRemoteSettingsDB(operation) {
+  try {
+    return await operation();
+  } catch (e) {
+    if (e.name != "InvalidStateError") {
+      throw e;
+    }
+    let pendingWrites = Database._shutdownHandler();
+    Database._cancelShutdown();
+    await pendingWrites;
+    return operation();
+  }
+}
+
 async function unpublishLists() {
   await unpublishTestEngineLists();
   let client = RemoteSettings(COLLECTION_NAME);
-  let records = await client.db.list();
-  await client.db.importChanges({}, Date.now(), [], { clear: true });
+  let records = await withRemoteSettingsDB(async () => {
+    let existing = await client.db.list();
+    await client.db.importChanges({}, Date.now(), [], { clear: true });
+    return existing;
+  });
   if (records.length && ContentClassifierTestUtils.isActive) {
     await ContentClassifierTestUtils.syncLists([], { deleted: records });
   }
@@ -298,10 +329,12 @@ export var ContentClassifierTestUtils = {
       records.push(made.record);
       attachments.push(made);
     }
-    await client.db.importChanges({}, Date.now(), records, { clear: true });
-    for (let { record, blob } of attachments) {
-      await client.db.saveAttachment(record.id, { record, blob });
-    }
+    await withRemoteSettingsDB(async () => {
+      await client.db.importChanges({}, Date.now(), records, { clear: true });
+      for (let { record, blob } of attachments) {
+        await client.db.saveAttachment(record.id, { record, blob });
+      }
+    });
     return records;
   },
 
