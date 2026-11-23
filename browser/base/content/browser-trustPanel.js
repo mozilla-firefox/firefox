@@ -2401,7 +2401,7 @@ class TrustPanel {
    * @param {MozBrowser} browser
    */
   #recordCurrentPageLog(browser) {
-    if (!this.#trackerCountEnabled) {
+    if (!UrlbarPrefs.get("trackerCountFeatureGate")) {
       return;
     }
     const windowGlobal = browser?.browsingContext?.currentWindowGlobal;
@@ -2437,14 +2437,14 @@ class TrustPanel {
    * The content-blocking logs of every page visited on the current site in the
    * selected tab, in the order they were first visited. A page restored from
    * the back-forward cache keeps its single entry, so it isn't counted twice.
-   * When the tracker count feature is disabled, only the current page's log is
+   * When the tracker count feature gate is off, only the current page's log is
    * returned.
    *
    * @returns {object[]} Content-blocking logs for visited pages on the current site.
    */
   #getTrackerLogs() {
     const browser = gBrowser.selectedBrowser;
-    if (!this.#trackerCountEnabled) {
+    if (!UrlbarPrefs.get("trackerCountFeatureGate")) {
       const log = browser.getContentBlockingLog();
       return log ? [JSON.parse(log)] : [];
     }
