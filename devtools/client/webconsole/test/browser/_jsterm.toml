@@ -21,6 +21,7 @@ support-files = [
   "test-mangled-function.js",
   "test-mangled-function.js.map",
   "test-mangled-function.src.js",
+  "test-service-worker.js",
   "test-simple-function.html",
   "test-simple-function.js",
   "!/devtools/client/shared/test/shared-head.js",

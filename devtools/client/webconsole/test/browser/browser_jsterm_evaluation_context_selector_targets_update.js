@@ -7,6 +7,7 @@
 const FILE_FOLDER = `browser/devtools/client/webconsole/test/browser`;
 const TEST_URI = `https://example.com/${FILE_FOLDER}/test-console-evaluation-context-selector.html`;
 const IFRAME_PATH = `${FILE_FOLDER}/test-console-evaluation-context-selector-child.html`;
+const SERVICE_WORKER_URI = `https://example.com/${FILE_FOLDER}/test-service-worker.js`;
 
 // Test that when a target is destroyed, it does not appear in the list anymore (and
 // the context is set to the top one if the destroyed target was selected).
@@ -17,6 +18,11 @@ add_task(async function () {
   const hud = await openNewTabWithIframesAndConsole(TEST_URI, [
     `https://example.net/${IFRAME_PATH}?id=iframe-1`,
   ]);
+
+  info("Wait for the service worker to be registered");
+  await SpecialPowers.spawn(gBrowser.selectedBrowser, [], async () => {
+    await content.wrappedJSObject.registrationPromise;
+  });
 
   const evaluationContextSelectorButton = hud.ui.outputNode.querySelector(
     ".webconsole-evaluation-selector-button"
@@ -41,6 +47,10 @@ add_task(async function () {
     label: "iframe-1|example.net",
     tooltip: `https://example.net/${IFRAME_PATH}?id=iframe-1`,
   };
+  const expectedServiceWorkerItem = {
+    label: "test-service-worker.js",
+    tooltip: SERVICE_WORKER_URI,
+  };
 
   await checkContextSelectorMenu(hud, [
     {
@@ -50,6 +60,11 @@ add_task(async function () {
     expectedSeparatorItem,
     {
       ...expectedFirstIframeItem,
+      checked: false,
+    },
+    expectedSeparatorItem,
+    {
+      ...expectedServiceWorkerItem,
       checked: false,
     },
   ]);
@@ -65,7 +80,7 @@ add_task(async function () {
   await waitFor(() => {
     const items = getContextSelectorItems(hud);
     return (
-      items.length === 4 &&
+      items.length === 6 &&
       items.some(el =>
         el
           .querySelector(".label")
@@ -91,6 +106,11 @@ add_task(async function () {
     },
     {
       ...expectedSecondIframeItem,
+      checked: false,
+    },
+    expectedSeparatorItem,
+    {
+      ...expectedServiceWorkerItem,
       checked: false,
     },
   ]);
@@ -129,6 +149,11 @@ add_task(async function () {
       ...expectedSecondIframeItem,
       checked: false,
     },
+    expectedSeparatorItem,
+    {
+      ...expectedServiceWorkerItem,
+      checked: false,
+    },
   ]);
 
   info("Select the remaining iframe");
@@ -145,14 +170,21 @@ add_task(async function () {
     content.document.querySelector("iframe").remove();
   });
 
-  await waitFor(
-    () =>
-      !hud.ui.outputNode.querySelector(".webconsole-evaluation-selector-button")
-  );
-  ok(
-    true,
-    "The evaluation context selector is hidden after last iframe was removed"
-  );
+  await waitFor(() => {
+    const items = getContextSelectorItems(hud);
+    return items.length === 3;
+  });
+  await checkContextSelectorMenu(hud, [
+    {
+      ...expectedTopItem,
+      checked: true,
+    },
+    expectedSeparatorItem,
+    {
+      ...expectedServiceWorkerItem,
+      checked: false,
+    },
+  ]);
 
   await waitForEagerEvaluationResult(hud, `"example.com"`);
   ok(true, "Instant evaluation is done against the top frame context");
@@ -175,7 +207,7 @@ add_task(async function () {
     try {
       const items = getContextSelectorItems(hud);
       return (
-        items.length === 3 &&
+        items.length === 5 &&
         items.some(
           el =>
             el
@@ -204,6 +236,11 @@ add_task(async function () {
     {
       ...expectedPopupItem,
       checked: true,
+    },
+    expectedSeparatorItem,
+    {
+      ...expectedServiceWorkerItem,
+      checked: false,
     },
   ]);
 
