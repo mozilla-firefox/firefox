@@ -10,6 +10,8 @@ head = "head_expiration.js"
 
 ["test_debug_expiration.js"]
 
+["test_expire_favicons_pages.js"]
+
 ["test_idle_daily.js"]
 
 ["test_interactions_expiration.js"]

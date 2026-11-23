@@ -313,7 +313,20 @@ const EXPIRATION_QUERIES = {
     actions: ACTION.IDLE_DIRTY | ACTION.IDLE_DAILY | ACTION.DEBUG,
   },
 
-  // Expire orphan pages from the icons database.
+  // Expire pages removed by this expiration step from the icons database. Idle
+  // and debug steps run the full sweep below instead.
+  QUERY_EXPIRE_FAVICONS_EXPIRED_PAGES: {
+    sql: `DELETE FROM moz_pages_w_icons
+          WHERE page_url_hash IN (
+            SELECT hash(url) FROM expiration_notify WHERE p_id NOTNULL
+          ) AND page_url_hash NOT IN (
+            SELECT url_hash FROM moz_places
+          )`,
+    actions: ACTION.TIMED | ACTION.TIMED_OVERLIMIT | ACTION.SHUTDOWN_DIRTY,
+  },
+
+  // Expire orphan pages from the icons database. This scans all the pages, so
+  // it only runs on idle, to catch orphans left by other operations.
   QUERY_EXPIRE_FAVICONS_PAGES: {
     sql: `DELETE FROM moz_pages_w_icons
           WHERE page_url_hash NOT IN (
@@ -321,12 +334,7 @@ const EXPIRATION_QUERIES = {
           ) OR NOT EXISTS (
             SELECT 1 FROM moz_icons_to_pages WHERE page_id = moz_pages_w_icons.id
           )`,
-    actions:
-      ACTION.TIMED_OVERLIMIT |
-      ACTION.SHUTDOWN_DIRTY |
-      ACTION.IDLE_DIRTY |
-      ACTION.IDLE_DAILY |
-      ACTION.DEBUG,
+    actions: ACTION.IDLE_DIRTY | ACTION.IDLE_DAILY | ACTION.DEBUG,
   },
 
   // Expire orphan icons from the database.
