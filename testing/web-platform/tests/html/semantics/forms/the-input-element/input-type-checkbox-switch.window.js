@@ -21,6 +21,19 @@ test(t => {
 test(t => {
   const input = document.createElement("input");
   input.type = "checkbox";
+  assert_false(input.switch);
+
+  input.setAttribute("switch", "");
+  assert_true(input.switch);
+
+  input.switch = false;
+  assert_false(input.hasAttribute("switch"));
+  assert_false(input.switch);
+}, "switch IDL attribute, false");
+
+test(t => {
+  const input = document.createElement("input");
+  input.type = "checkbox";
   input.switch = true;
 
   const clone = input.cloneNode();

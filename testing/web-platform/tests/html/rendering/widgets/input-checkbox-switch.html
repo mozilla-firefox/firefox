@@ -3,12 +3,15 @@
 <title>Checkbox with switch attribute set renders differently than a checkbox without switch attribute</title>
 <link rel=match href="input-checkbox-switch-ref.html">
 <link rel=mismatch href="input-checkbox-switch-notref.html">
+<script src="/common/rendering-utils.js"></script>
 <input type=checkbox switch>
 <input id='input2' type=checkbox>
 <input id='input3' type=checkbox switch>
 <script>
-    input2.setAttribute('switch','');
-    input3.removeAttribute('switch');
-    document.documentElement.classList.remove("reftest-wait");
+    waitForAtLeastOneFrame().then(() => {
+        input2.setAttribute('switch','');
+        input3.removeAttribute('switch');
+        document.documentElement.classList.remove("reftest-wait");
+    });
 </script>
 </html>

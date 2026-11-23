@@ -49,7 +49,8 @@ test(t => {
   const input = document.body.appendChild(document.createElement("input"));
   t.add_cleanup(() => input.remove());
   input.type = "checkbox";
-  input.switch = true
+  input.switch = true;
+  assert_true(input.hasAttribute("switch"), "switch is supported");
   input.checked = true;
 
   assert_true(document.body.matches(":has(:checked)"));
