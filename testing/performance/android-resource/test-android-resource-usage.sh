@@ -60,7 +60,37 @@ tap_at_coords(){
     adb shell input tap $TAP_X $TAP_Y
 }
 
+GECKOVIEW_CONFIG=/data/local/tmp/$BROWSER_BINARY-geckoview-config.yaml
+
+remove_geckoview_config() {
+    adb shell rm -f $GECKOVIEW_CONFIG
+    adb shell am clear-debug-app
+}
+
+# Set various prefs so that any fresh-profile work runs early on after
+# startup. We just did a pm clear so we'll have stuff like update checks and
+# Safe Browsing update running; with the prefs they'll run sooner and won't
+# cloud the measurement. GeckoView only reads its config file for debuggable
+# apps or for the debug app.
+use_early_first_run_prefs() {
+    trap remove_geckoview_config EXIT
+    adb shell am set-debug-app --persistent $BROWSER_BINARY
+    local config=$TESTING_DIR/geckoview-config.yaml
+    cat > $config <<EOF
+prefs:
+  # Milliseconds; 10000 is the minimum.
+  app.update.timerFirstInterval: 10000
+  browser.safebrowsing.provider.google4.nextupdatetime: "1"
+  browser.safebrowsing.provider.mozilla.nextupdatetime: "1"
+EOF
+    adb push $config $GECKOVIEW_CONFIG
+    rm $config
+}
+
 adb shell pm clear $BROWSER_BINARY
+if [[ $BROWSER_BINARY != *"chrome"* ]]; then
+    use_early_first_run_prefs
+fi
 adb shell am start $LAUNCH_EXTRAS -n "$BROWSER_BINARY/$ACTIVITY"
 sleep 4
 
