@@ -11,7 +11,7 @@
   align-items: baseline;
   gap: var(--space-small);
   margin-block: 0 var(--space-medium);
-  font-size: var(--font-size-root);
+  font-size: var(--font-size-small);
   font-weight: var(--font-weight-semibold);
 }
 

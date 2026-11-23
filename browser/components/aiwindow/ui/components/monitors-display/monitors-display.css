@@ -24,7 +24,7 @@
 }
 
 .monitors-group {
-  margin-block-end: var(--space-xlarge);
+  margin-block: var(--space-xxlarge);
 }
 
 .no-monitors-wrapper {
@@ -68,8 +68,8 @@
     justify-content: center;
     -moz-context-properties: fill;
     fill: var(--icon-fill);
-    width: var(--size-item-large);
-    height: var(--size-item-large);
+    width: var(--size-image-xsmall);
+    height: var(--size-image-xsmall);
     border-radius: var(--border-radius-small);
     background-color: var(--background-color);
   }
@@ -99,17 +99,29 @@
 
 :host(monitor-status-chip) {
   display: inline-flex;
+  justify-content: center;
   align-items: center;
   gap: var(--space-xsmall);
   flex: none;
-  height: var(--icon-size-medium);
+  font-weight: var(--font-weight-bold);
   padding: var(--space-xsmall) var(--space-small);
   border-radius: var(--border-radius-circle);
   font-size: var(--font-size-small);
   line-height: 1;
   white-space: nowrap;
-  color: var(--text-color-deemphasized);
   margin-inline-end: var(--space-small);
+  background: var(--monitor-status-chip-background-color);
+  color: var(--monitor-status-chip-text-color);
+}
+
+:host(monitor-status-chip[kind="watching"]) {
+  --monitor-status-chip-background-color: light-dark(var(--color-violet-desaturated-10), var(--color-violet-desaturated-70));
+  --monitor-status-chip-text-color: var(--smartwindow-text-color-accent-primary, light-dark(var(--color-violet-60), var(--color-violet-30)));
+}
+
+:host(monitor-status-chip[kind="paused"]) {
+  --monitor-status-chip-background-color: light-dark(var(--color-gray-10), var(--color-gray-60));
+  --monitor-status-chip-text-color: light-dark(var(--color-gray-60), var(--color-gray-10));
 }
 
 /* A status the chip has nothing to say about renders nothing, so it must not
@@ -118,12 +130,10 @@
   display: none;
 }
 
-:host(monitor-status-chip[kind="watching"]) {
-  color: var(--icon-color-success);
-  background: var(--background-color-success);
-}
-
-:host(monitor-status-chip[kind="paused"]) {
-  color: var(--icon-color-warning);
-  background: var(--background-color-warning);
+@media (prefers-contrast) {
+  :host(monitor-status-chip) {
+    background: var(--background-color-canvas);
+    color: var(--text-color);
+    outline: var(--border-width) solid currentColor;
+  }
 }

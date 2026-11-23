@@ -50,7 +50,10 @@
   inset-block-start: var(--space-large);
   inset-inline-end: var(--space-large);
   z-index: 999;
-  animation: slideInRight 0.3s ease-out;
+
+  @media (prefers-reduced-motion: no-preference) {
+    animation: slideInRight 0.3s ease-out;
+  }
 }
 
 .success-message {
