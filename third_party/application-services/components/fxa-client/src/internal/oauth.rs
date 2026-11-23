@@ -121,6 +121,11 @@ impl FirefoxAccount {
     pub fn check_authorization_status(&mut self) -> Result<IntrospectInfo> {
         let resp = match self.state.refresh_token() {
             Some(refresh_token) => {
+                if refresh_token.scopes.contains(scopes::OLD_SYNC)
+                    && self.state.get_scoped_key(scopes::OLD_SYNC).is_none()
+                {
+                    return Err(Error::NoScopedKey(scopes::OLD_SYNC.into()));
+                }
                 self.auth_circuit_breaker.check()?;
                 self.client
                     .check_refresh_token_status(self.state.config(), &refresh_token.token)?

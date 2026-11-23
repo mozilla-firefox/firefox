@@ -4,7 +4,6 @@
 
 package mozilla.appservices
 
-import mozilla.appservices.errorsupport.RustComponentsErrorTelemetry
 import mozilla.appservices.init_rust_components.initialize
 import org.mozilla.appservices.init_rust_components.BuildConfig
 
@@ -13,8 +12,6 @@ object RustComponentsInitializer {
     fun init() {
         // Rust components must be initialized at the very beginning, before any other Rust call, ...
         initialize()
-
-        RustComponentsErrorTelemetry.register()
 
         // This code was originally in the `Megazord.init` that was moved here to have the initialize
         // done in this particular sequence without needing to have the embedder have to do it within

@@ -64,6 +64,9 @@ nimbus_events:
     send_in_pings:
       - background-update
       - events
+    no_lint:
+      # background-update is defined for the Firefox for Desktop Background Update Task
+      - UNKNOWN_PING_REFERENCED
   unenrollment:
     type: event
     description: >
@@ -115,6 +118,9 @@ nimbus_events:
     send_in_pings:
       - background-update
       - events
+    no_lint:
+      # background-update is defined for the Firefox for Desktop Background Update Task
+      - UNKNOWN_PING_REFERENCED
   disqualification:
     type: event
     description: >

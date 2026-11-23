@@ -11,7 +11,7 @@ use crate::{
         FieldConfigDefaults, GridPos, LogPanel, Panel, QueryVariable, QueryVariableQuery, Target,
         TextBoxVariable, TextPanel, TimeSeriesPanel, Transformation, VariableSortOrder,
     },
-    sql::Query,
+    sql::{Query, Union},
     util::UrlBuilder,
     Result,
 };
@@ -66,7 +66,7 @@ fn count_panel(config: &TeamConfig, application: Application, channel: ReleaseCh
         title: application.display_name(channel),
         grid_pos: GridPos::height(8),
         datasource: Datasource::bigquery(),
-        interval: "1h".into(),
+        interval: "1d".into(),
         targets: vec![Target::table(query.sql())],
         field_config: FieldConfig {
             defaults: FieldConfigDefaults {
@@ -118,25 +118,21 @@ pub fn extra_dashboard(config: &TeamConfig) -> Result<Dashboard> {
     builder.add_variable(filter_variable(
         "Architecture",
         "architecture",
-        "client_info.architecture",
+        "architecture",
     ));
     builder.add_variable(filter_variable(
         "Device Manufacturer",
         "device_manufacturer",
-        "client_info.device_manufacturer",
+        "device_manufacturer",
     ));
     builder.add_variable(filter_variable(
         "Device Model",
         "device_model",
-        "client_info.device_model",
+        "device_model",
     ));
-    builder.add_variable(filter_variable("Locale", "locale", "client_info.locale"));
-    builder.add_variable(filter_variable("OS", "os", "client_info.os"));
-    builder.add_variable(filter_variable(
-        "OS Version",
-        "os_version",
-        "client_info.os_version",
-    ));
+    builder.add_variable(filter_variable("Locale", "locale", "locale"));
+    builder.add_variable(filter_variable("OS", "os", "os"));
+    builder.add_variable(filter_variable("OS Version", "os_version", "os_version"));
     builder.add_variable(TextBoxVariable {
         label: "Search".into(),
         name: "search".into(),
@@ -150,15 +146,16 @@ pub fn extra_dashboard(config: &TeamConfig) -> Result<Dashboard> {
 }
 
 pub fn error_type_variable() -> QueryVariable {
-    let query = QueryVariableQuery::from_sql(
+    let subquery = error_subquery().as_subquery();
+    let query = QueryVariableQuery::from_sql(format!(
         "\
-SELECT DISTINCT metrics.string.rust_component_errors_error_type
-FROM mozdata.fenix.rust_component_errors
+SELECT DISTINCT error_type
+FROM {subquery}
 WHERE submission_timestamp > TIMESTAMP_SUB(CURRENT_TIMESTAMP(), INTERVAL 3 day)
-    AND metrics.string.rust_component_errors_error_type IS NOT NULL
-    AND metrics.string.rust_component_errors_error_type <> ''
-ORDER BY metrics.string.rust_component_errors_error_type",
-    );
+    AND error_type IS NOT NULL
+    AND error_type <> ''
+ORDER BY error_type",
+    ));
 
     QueryVariable {
         label: "Error type".into(),
@@ -170,19 +167,18 @@ ORDER BY metrics.string.rust_component_errors_error_type",
 }
 
 pub fn version_variable() -> QueryVariable {
-    let query = QueryVariableQuery::from_sql(
-        "\
+    let subquery = error_subquery().as_subquery();
+    let query = QueryVariableQuery::from_sql(format!("\
 SELECT 'All' as text, '' as value
 UNION ALL
 SELECT version as text, version as value
 FROM (
-    SELECT DISTINCT CAST(mozfun.norm.extract_version(client_info.app_display_version, 'major') AS STRING) as version
-    FROM mozdata.fenix.rust_component_errors
+    SELECT DISTINCT CAST(mozfun.norm.extract_version(app_display_version, 'major') AS STRING) as version
+    FROM {subquery}
     WHERE submission_timestamp > TIMESTAMP_SUB(CURRENT_TIMESTAMP(), INTERVAL 3 day)
-        AND mozfun.norm.extract_version(client_info.app_display_version, 'major') IS NOT NULL
+        AND mozfun.norm.extract_version(app_display_version, 'major') IS NOT NULL
     ORDER BY 1 DESC
-)",
-    );
+)"));
 
     QueryVariable {
         label: "Version".into(),
@@ -195,18 +191,19 @@ FROM (
 }
 
 pub fn build_date_variable() -> QueryVariable {
-    let query = QueryVariableQuery::from_sql(
+    let subquery = error_subquery().as_subquery();
+    let query = QueryVariableQuery::from_sql(format!(
         "\
 SELECT 'None' as text, '' as value
 UNION ALL
 SELECT build_date as text, build_date as value
 FROM (
-    SELECT DISTINCT SUBSTR(client_info.build_date, 0, 10) as build_date
-    FROM mozdata.fenix.rust_component_errors
+    SELECT DISTINCT SUBSTR(build_date, 0, 10) as build_date
+    FROM {subquery}
     WHERE submission_timestamp > TIMESTAMP_SUB(CURRENT_TIMESTAMP(), INTERVAL 3 day)
     ORDER BY 1 DESC
-)",
-    );
+)"
+    ));
 
     QueryVariable {
         label: "Group by build date".into(),
@@ -219,6 +216,7 @@ FROM (
 }
 
 fn filter_variable(label: &str, filter_name: &str, column_name: &str) -> QueryVariable {
+    let subquery = error_subquery().as_subquery();
     let query = QueryVariableQuery::from_sql(format!(
         "\
 SELECT 'All' as text, '' as value
@@ -226,7 +224,7 @@ UNION ALL
 SELECT value as text, value
 FROM (
     SELECT DISTINCT {column_name} as value
-    FROM mozdata.fenix.rust_component_errors
+    FROM {subquery}
     WHERE submission_timestamp > TIMESTAMP_SUB(CURRENT_TIMESTAMP(), INTERVAL 3 day)
     ORDER BY 1 DESC
 )"
@@ -253,6 +251,7 @@ fn error_list_count_panel() -> Panel {
         select: vec![
             "$__timeGroup(submission_timestamp, $__interval) as time".into(),
             "IF('${build_date}' = '', '', IF(build_date < '${build_date}', '< ${build_date}', '>= ${build_date}')) as build_date".into(),
+            "COUNT(DISTINCT client_id) as client_count".into(),
         ],
         where_: vec![
             "error_type='${error_type}'".into(),
@@ -273,13 +272,12 @@ fn error_list_count_panel() -> Panel {
         ..Query::default()
     };
     query.add_count_per_day_column("COUNT(*)", "error_count");
-    query.add_count_per_day_column("COUNT(DISTINCT client_id)", "client_count");
 
     TimeSeriesPanel {
         title: "".into(),
         grid_pos: GridPos::height(10),
         datasource: Datasource::bigquery(),
-        interval: "2h".into(),
+        interval: "1d".into(),
         targets: vec![Target::timeseries(query.sql())],
         field_config: FieldConfig {
             defaults: FieldConfigDefaults {
@@ -351,8 +349,8 @@ fn error_list_log_panel() -> Panel {
 //
 // This means `error_type` instead of `metrics.string.rust_component_errors_error_type`, which is
 // needed to make the filters work.
-fn error_subquery() -> Query {
-    let mut subquery = Query {
+fn error_subquery() -> Union {
+    let mut base_query = Query {
         select: vec![
             "SUBSTR(client_info.build_date, 0, 10) as build_date".into(),
             "mozfun.norm.extract_version(client_info.app_display_version, 'major') as version"
@@ -365,9 +363,30 @@ fn error_subquery() -> Query {
         ],
         ..Query::default()
     };
-    subquery.add_standard_glean_columns();
-    subquery.add_from_using_application_var("rust_component_errors");
-    subquery
+    base_query.add_standard_glean_columns();
+    Union {
+        queries: vec![
+            Query {
+                from: "mozdata.fenix.rust_component_errors".into(),
+                where_: vec!["'${application}' = 'firefox_android'".into()],
+                ..base_query.clone()
+            },
+            Query {
+                from: "mozdata.firefox_ios.rust_component_errors".into(),
+                where_: vec!["'${application}' = 'firefox_ios'".into()],
+                ..base_query.clone()
+            },
+            // TODO: Uncomment this once we have error pings on desktop
+            // Query {
+            //     from: "mozdata.firefox_desktop.rust_component_errors".into(),
+            //     where_: vec![
+            //         "WHERE '${application}' = 'firefox_desktop'".into(),
+            //     ],
+            //     ..base_query.clone()
+            // },
+        ],
+        ..Union::default()
+    }
 }
 
 /// Bigquery statements to define the `error_type_re` variable

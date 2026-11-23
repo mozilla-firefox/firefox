@@ -51,10 +51,6 @@ impl Query {
         sql
     }
 
-    pub fn as_subquery(&self) -> String {
-        format!("(\n{})", self.sql())
-    }
-
     pub fn add_count_per_day_column(
         &mut self,
         count_expr: impl Into<String>,
@@ -80,19 +76,6 @@ impl Query {
             "submission_timestamp".into(),
         ])
     }
-
-    pub fn add_from_using_application_var(&mut self, table_name: &str) {
-        // TODO: Add UNIONs once we are enable the glean pipeline for iOS and/or Desktop
-        //     let from = format!("
-        // (
-        //     SELECT * FROM mozdata.fenix.{table_name} WHERE '${{application}}' = 'firefox_android'
-        //     UNION ALL SELECT * FROM mozdata.firefox_ios.{table_name} WHERE '${{application}}' = 'firefox_ios'
-        //     UNION ALL SELECT * FROM mozdata.firefox_desktop.{table_name} WHERE '${{application}}' = 'firefox_desktop'
-        // )");
-        self.from = format!(
-            "(SELECT * FROM mozdata.fenix.{table_name} WHERE '${{application}}' = 'firefox_android')"
-        );
-    }
 }
 
 /// Union query
@@ -115,5 +98,9 @@ impl Union {
             sql.push_str(&format!("{}\n", q.sql()));
         }
         sql
+    }
+
+    pub fn as_subquery(&self) -> String {
+        format!("(\n{})", self.sql())
     }
 }

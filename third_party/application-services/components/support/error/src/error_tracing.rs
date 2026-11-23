@@ -7,11 +7,13 @@ use std::{
     time::{Duration, Instant, SystemTime},
 };
 
+use crate::glean_metrics;
 use parking_lot::Mutex;
 
 static GLOBALS: Mutex<Globals> = Mutex::new(Globals::new());
 
-pub fn report_error_to_app(type_name: String, message: String) {
+#[uniffi::export]
+pub fn report_error(type_name: String, message: String) {
     // First step: perform all actions that we need the lock for.
     let breadcrumbs = {
         let mut globals = GLOBALS.lock();
@@ -26,8 +28,6 @@ pub fn report_error_to_app(type_name: String, message: String) {
 
     // Report errors by sending a tracing event to the `app-services-error-reporter::error` target.
     //
-    // Applications should register for these events and send a glean error ping when they occur.
-    //
     // breadcrumbs will be sent in the `breadcrumbs` field as a single string, with each individual
     // breadcrumb joined by newlines.
     let breadcrumb_string = breadcrumbs.join("\n");
@@ -35,16 +35,6 @@ pub fn report_error_to_app(type_name: String, message: String) {
     tracing_support::error!(target: "app-services-error-reporter::error", message, type_name, breadcrumbs = breadcrumb_string);
 
     // Report errors via the glean ping
-    //
-    // Currently enabled on iOS, eventually this will be the way we send the Glean error ping for
-    // all applications.
-    #[cfg(feature = "glean-sym")]
-    report_error_to_app_via_glean_sym(type_name, message, breadcrumbs);
-}
-
-#[cfg(feature = "glean-sym")]
-fn report_error_to_app_via_glean_sym(type_name: String, message: String, breadcrumbs: Vec<String>) {
-    use crate::glean_metrics;
     glean_metrics::rust_component_errors::error_type.set(type_name);
     glean_metrics::rust_component_errors::details.set(message);
     glean_metrics::rust_component_errors::breadcrumbs.set(breadcrumbs);
@@ -395,7 +385,7 @@ mod test {
         let subscriber = tracing_subscriber::registry().with(tracing_support::simple_event_layer());
         tracing_support::tracing::subscriber::with_default(subscriber, || {
             report_breadcrumb("breadcrumb".into(), "foo::bar".into(), 10, 20);
-            report_error_to_app("test-component-error".to_string(), "oh no".to_string());
+            report_error("test-component-error".to_string(), "oh no".to_string());
         });
         tracing_support::unregister_event_sink(sink_id);
 

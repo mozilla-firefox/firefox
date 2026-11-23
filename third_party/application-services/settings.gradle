@@ -146,6 +146,7 @@ class Config {
     public final Integer compileSdkMinorVersion
     public final Integer minSdkVersion
     public final Integer targetSdkVersion
+    public final String buildToolsVersion
     public final String ndkVersion
 
     Config(
@@ -156,6 +157,7 @@ class Config {
             Integer compileSdkMinorVersion,
             Integer minSdkVersion,
             Integer targetSdkVersion,
+            String buildToolsVersion,
             String ndkVersion
     ) {
         this.componentsVersion = componentsVersion
@@ -165,6 +167,7 @@ class Config {
         this.compileSdkMinorVersion = compileSdkMinorVersion
         this.minSdkVersion = minSdkVersion
         this.targetSdkVersion = targetSdkVersion
+        this.buildToolsVersion = buildToolsVersion
         this.ndkVersion = ndkVersion
     }
 }
@@ -186,10 +189,11 @@ gradle.projectsLoaded { ->
             calcVersion(buildconfig), // version,
             calcGroupId(buildconfig), // componentsGroupId
             17, // jvmTargetCompatibility,
-            36, // compileSdkMajorVersion,
-            1,  // compileSdkMinorVersion,
+            37, // compileSdkMajorVersion,
+            2,  // compileSdkMinorVersion,
             26, // minSdkVersion,
-            36, // targetSdkVersion,
+            37, // targetSdkVersion,
+            "37.0.0", // buildToolsVersion - Keep it in sync in TC Dockerfile.
             "30.0.16248370", // ndkVersion - Keep it in sync in TC Dockerfile.
         )
     }

@@ -12,7 +12,7 @@ backtrace = { version = "0.3", optional = true}
 error-support-macros = { path = "macros" }
 env_logger = { version = "0.10", default-features = false }
 glean = { version = "71", optional = true }
-glean-sym = { version = "71", optional = true }
+glean-sym = { version = "71" }
 lazy_static = { version = "1.4" }
 log = { version = "0.4" }
 parking_lot = { version = ">=0.11,<=0.12" }
@@ -29,9 +29,5 @@ glean-build = { git = "https://github.com/mozilla/glean", tag = "v71.0.0" }
 [features]
 backtrace = ["dep:backtrace"]
 testing = []
-# Should we use glean-sym to report the error ping?
-# This is a temporary flag so that we can introduce the new system one application at a time.
-glean-sym = ["dep:glean-sym"]
 # Use Firefox-on-Glean to publish metrics (Desktop)
-# Note: if set, we will not use `glean-sym`
 glean-fog = ["dep:glean"]

@@ -45,35 +45,18 @@ for i in "${!TARGET_ARCHS[@]}"; do
     ./build-nss-ios.sh "${NSS_SRC_PATH}" "${DIST_DIR}" "${ARCH}" "${IOS_MIN_SDK_VERSION}" || exit 1
   fi
 done
-universal_lib "nss" "libcertdb.a" "${TARGET_ARCHS[@]}"
-universal_lib "nss" "libfreebl_static.a" "${TARGET_ARCHS[@]}"
-universal_lib "nss" "libpqcwrap_static.a" "${TARGET_ARCHS[@]}"
-universal_lib "nss" "libcrux.a" "${TARGET_ARCHS[@]}"
-universal_lib "nss" "libgcm.a" "${TARGET_ARCHS[@]}"
-universal_lib "nss" "libnssb.a" "${TARGET_ARCHS[@]}"
-universal_lib "nss" "libnssutil.a" "${TARGET_ARCHS[@]}"
-universal_lib "nss" "libpkcs7.a" "${TARGET_ARCHS[@]}"
-universal_lib "nss" "libsmime.a" "${TARGET_ARCHS[@]}"
-universal_lib "nss" "libcerthi.a" "${TARGET_ARCHS[@]}"
-universal_lib "nss" "libnspr4.a" "${TARGET_ARCHS[@]}"
-universal_lib "nss" "libnssdev.a" "${TARGET_ARCHS[@]}"
-universal_lib "nss" "libpk11wrap_static.a" "${TARGET_ARCHS[@]}"
-universal_lib "nss" "libplc4.a" "${TARGET_ARCHS[@]}"
-universal_lib "nss" "libsoftokn_static.a" "${TARGET_ARCHS[@]}"
-universal_lib "nss" "libcryptohi.a" "${TARGET_ARCHS[@]}"
-universal_lib "nss" "libnss_static.a" "${TARGET_ARCHS[@]}"
-universal_lib "nss" "libnsspki.a" "${TARGET_ARCHS[@]}"
-universal_lib "nss" "libpkcs12.a" "${TARGET_ARCHS[@]}"
-universal_lib "nss" "libplds4.a" "${TARGET_ARCHS[@]}"
-universal_lib "nss" "libssl.a" "${TARGET_ARCHS[@]}"
-universal_lib "nss" "libhw-acc-crypto-avx.a" "x86_64"
-universal_lib "nss" "libhw-acc-crypto-avx2.a" "x86_64"
-universal_lib "nss" "libghash-aes-x86_c_lib.a" "x86_64"
-universal_lib "nss" "libsha-x86_c_lib.a" "x86_64"
-universal_lib "nss" "libghash-aes-aarch64_c_lib.a" "arm64"
-universal_lib "nss" "libarmv8_c_lib.a" "arm64"
-universal_lib "nss" "libaarch64-gcm-wrap_c_lib.a" "arm64"
-universal_lib "nss" "libhw-acc-crypto-avx.a" "arm64"
+# Every library that copy-nss-libs.sh copied for a device or Intel simulator
+# build, made universal from the architectures that built it.
+for LIB_PATH in ios/x86_64/nss/lib/*.a ios/arm64/nss/lib/*.a; do
+  LIB_NAME=$(basename "${LIB_PATH}")
+  LIB_ARCHS=()
+  for ARCH in x86_64 arm64; do
+    if [[ -e "ios/${ARCH}/nss/lib/${LIB_NAME}" ]]; then
+      LIB_ARCHS+=("${ARCH}")
+    fi
+  done
+  universal_lib "nss" "${LIB_NAME}" "${LIB_ARCHS[@]}"
+done
 
 HEADER_DIST_DIR="ios/universal/nss/include/nss"
 if [[ ! -e "${HEADER_DIST_DIR}" ]]; then

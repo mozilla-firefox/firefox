@@ -12,7 +12,7 @@ use crate::{
     bytesize::ByteSize,
 };
 use sql_support::open_database;
-use std::path::Path;
+use std::{collections::HashMap, path::Path};
 
 pub struct AdsStore {
     holder: AdsStoreHolder,
@@ -24,8 +24,8 @@ pub struct AdsStore {
 }
 
 impl AdsStore {
-    pub fn builder<P: AsRef<Path>>(db_path: P) -> AdsStoreBuilder {
-        AdsStoreBuilder::new(db_path.as_ref())
+    pub fn builder() -> AdsStoreBuilder {
+        AdsStoreBuilder::new()
     }
 
     pub fn clear(&self) -> Result<(), open_database::Error> {
@@ -56,13 +56,16 @@ mod tests {
     #[test]
     fn test_ads_store_creation() {
         // Test that AdsStore can be created successfully with test config
-        let store: Result<AdsStore, _> = AdsStore::builder(IN_MEMORY_DB_PATH).build();
+        let store: Result<AdsStore, _> = AdsStore::builder().db_path(IN_MEMORY_DB_PATH).build();
         assert!(store.is_ok());
     }
 
     #[test]
     fn test_clear_store() {
-        let store: AdsStore = AdsStore::builder(IN_MEMORY_DB_PATH).build().unwrap();
+        let store: AdsStore = AdsStore::builder()
+            .db_path(IN_MEMORY_DB_PATH)
+            .build()
+            .unwrap();
 
         let (placement_id, ads) = get_example_happy_image_ads("mock_billboard_1");
         store.holder.store_ads(&placement_id, &ads).unwrap();
@@ -81,7 +84,10 @@ mod tests {
 
     #[test]
     fn test_invalidate_by_id() {
-        let store: AdsStore = AdsStore::builder(IN_MEMORY_DB_PATH).build().unwrap();
+        let store: AdsStore = AdsStore::builder()
+            .db_path(IN_MEMORY_DB_PATH)
+            .build()
+            .unwrap();
 
         let (placement_1, ads_1) = get_example_happy_image_ads("mock_billboard_1");
         let (placement_2, ads_2) = get_example_happy_image_ads("mock_billboard_2");

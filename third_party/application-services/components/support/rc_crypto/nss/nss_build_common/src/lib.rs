@@ -10,6 +10,7 @@
 use std::{
     env,
     ffi::OsString,
+    fs,
     path::{Path, PathBuf},
 };
 
@@ -34,7 +35,7 @@ pub fn link_nss() -> Result<(), NoNssDir> {
     );
     println!("cargo:include={}", include_dir.to_string_lossy());
     let kind = determine_kind();
-    link_nss_libs(kind);
+    link_nss_libs(kind, &lib_dir);
     Ok(())
 }
 
@@ -72,8 +73,8 @@ fn determine_kind() -> LinkingKind {
     }
 }
 
-fn link_nss_libs(kind: LinkingKind) {
-    let libs = get_nss_libs(kind);
+fn link_nss_libs(kind: LinkingKind, lib_dir: &Path) {
+    let libs = get_nss_libs(kind, lib_dir);
     // Emit -L flags
     let kind_str = match kind {
         LinkingKind::Dynamic { .. } => "dylib",
@@ -104,65 +105,54 @@ fn link_nss_libs(kind: LinkingKind) {
     }
 }
 
-fn get_nss_libs(kind: LinkingKind) -> Vec<&'static str> {
+fn get_nss_libs(kind: LinkingKind, lib_dir: &Path) -> Vec<String> {
     match kind {
         LinkingKind::Static => {
-            let mut static_libs = vec![
-                "certdb",
-                "certhi",
-                "cryptohi",
-                "freebl_static",
-                "pqcwrap_static",
-                "crux",
-                "gcm",
-                "mozpkix",
-                "nspr4",
-                "nss_static",
-                "nssb",
-                "nssdev",
-                "nsspki",
-                "nssutil",
-                "pk11wrap_static",
-                "plc4",
-                "plds4",
-                "softokn_static",
-            ];
-            // Hardware specific libs.
-            let target_arch = env::var("CARGO_CFG_TARGET_ARCH").unwrap();
-            let target_os = env::var("CARGO_CFG_TARGET_OS").unwrap();
-            if target_arch == "arm" || target_arch == "aarch64" {
-                static_libs.push("armv8_c_lib");
-            }
-            if target_arch == "x86_64" || target_arch == "x86" {
-                static_libs.push("ghash-aes-x86_c_lib");
-                static_libs.push("sha-x86_c_lib");
-            }
-            if target_arch == "arm" {
-                static_libs.push("ghash-aes-arm32-neon_c_lib")
-            }
-            if target_arch == "aarch64" {
-                static_libs.push("ghash-aes-aarch64_c_lib");
-                static_libs.push("aarch64-gcm-wrap_c_lib");
-                static_libs.push("hw-acc-crypto-avx");
-            }
-            if target_arch == "x86_64" {
-                static_libs.push("hw-acc-crypto-avx");
-                static_libs.push("hw-acc-crypto-avx2");
-                // intel-gcm-wrap is not built for iOS simulator targets.
-                if target_os != "ios" {
-                    static_libs.push("intel-gcm-wrap_c_lib");
-                }
-            }
+            // rc_crypto verifies content signatures with mozpkix, which no .pc names.
+            let mut static_libs = vec![String::from("mozpkix")];
+            static_libs.extend(
+                pkg_config_libs(lib_dir)
+                    .into_iter()
+                    // libsqlite3-sys supplies SQLite.
+                    .filter(|lib| lib != "sqlite"),
+            );
             static_libs
         }
         LinkingKind::Dynamic { folded_libs } => {
             let mut dylibs = vec!["freebl3", "nss3", "nssckbi", "softokn3"];
             if !folded_libs {
-                dylibs.append(&mut vec!["nspr4", "nssutil3", "plc4", "plds4"]);
+                dylibs.extend(["nspr4", "nssutil3", "plc4", "plds4"]);
             }
-            dylibs
+            dylibs.into_iter().map(String::from).collect()
         }
     }
+}
+
+/// The `-l` names on the `Libs:` lines of the `nss-static.pc` and `nspr.pc` that
+/// `libs/copy-nss-libs.sh` copies from NSS's `build.sh --static` dist.
+fn pkg_config_libs(lib_dir: &Path) -> Vec<String> {
+    let mut libs = Vec::new();
+    for pc in ["nss-static.pc", "nspr.pc"] {
+        let path = lib_dir.join("pkgconfig").join(pc);
+        println!("cargo:rerun-if-changed={}", path.display());
+        let text = fs::read_to_string(&path).unwrap_or_else(|e| {
+            // The build scripts skip a dist that exists, so an older one must be deleted.
+            panic!(
+                "could not read {}: {e}. This NSS was probably built by an older version of \
+                 libs/; delete {} and rebuild it with `cd libs && ./build-all.sh <platform>`",
+                path.display(),
+                lib_dir.parent().unwrap_or(lib_dir).display()
+            )
+        });
+        libs.extend(
+            text.lines()
+                .filter_map(|line| line.strip_prefix("Libs:"))
+                .flat_map(str::split_whitespace)
+                .filter_map(|flag| flag.strip_prefix("-l"))
+                .map(String::from),
+        );
+    }
+    libs
 }
 
 pub fn env(name: &str) -> Option<OsString> {

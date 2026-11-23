@@ -1,5 +1,5 @@
 buildscript {
-    // in mozilla-central there's no build.gradle suitable for the maven/glean config, so each component gets it.
+    // in mozilla-central there's no build.gradle suitable for the maven config, so each component gets it.
     if (gradle.hasProperty("mozconfig")) {
         repositories {
             gradle.mozconfig.substs.GRADLE_MAVEN_REPOSITORIES.each { repository ->
@@ -11,35 +11,11 @@ buildscript {
                 }
             }
         }
-
-        dependencies {
-            classpath libs.mozilla.glean.gradle.plugin
-            classpath libs.kotlin.serialization
-        }
     }
 }
-
-apply plugin: 'kotlinx-serialization'
 
 apply from: "$appServicesRootDir/build-scripts/component-common.gradle"
 apply from: "$publishDir/publish.gradle"
-
-// Needs to happen before `dependencies` in order for the variables
-// exposed by the plugin to be available for this project.
-ext {
-    gleanNamespace = "mozilla.telemetry.glean"
-    gleanYamlFiles = ["${project.projectDir}/../metrics.yaml", "${project.projectDir}/../pings.yaml"]
-    if (gradle.hasProperty("mozconfig")) {
-        gleanPythonEnvDir = gradle.mozconfig.substs.GRADLE_GLEAN_PARSER_VENV
-    }
-}
-apply plugin: "org.mozilla.telemetry.glean-gradle-plugin"
-
-dependencies {
-    implementation libs.mozilla.glean
-    implementation libs.kotlinx.serialization.json
-    implementation project(':tracing')
-}
 
 android {
     namespace = 'org.mozilla.appservices.errorsupport'

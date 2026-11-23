@@ -117,7 +117,7 @@ where
         // XXX - should we arrange for the `report_class` to have the
         // original crate calling this as a prefix, or will we still be
         // able to identify that?
-        crate::report_error_to_app(report_class, e.to_string());
+        crate::report_error(report_class, e.to_string());
     }
     handling.err
 }

@@ -12,6 +12,7 @@ use std::{collections::HashSet, process};
 
 mod auth;
 mod autofill;
+mod engine_choices;
 mod logins;
 mod sync15;
 mod tabs;
@@ -153,6 +154,7 @@ pub fn main() {
         crate::tabs::get_test_group(),
         crate::sync15::get_test_group(),
         crate::autofill::get_test_group(),
+        crate::engine_choices::get_test_group(),
     ];
     if opts.show_groups {
         println!(

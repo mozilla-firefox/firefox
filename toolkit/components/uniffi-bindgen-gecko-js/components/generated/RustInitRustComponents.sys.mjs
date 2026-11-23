@@ -48,7 +48,7 @@ export function initialize(
    
 FfiConverterString.checkType(profilePath);
 const result = UniFFIScaffolding.callSync(
-    65, // uniffi_init_rust_components_fn_func_initialize
+    66, // uniffi_init_rust_components_fn_func_initialize
     FfiConverterString.lower(profilePath),
 )
 return handleRustResult(
@@ -67,7 +67,7 @@ return handleRustResult(
 export function initializeGlean() {
    
 const result = UniFFIScaffolding.callSync(
-    66, // uniffi_init_rust_components_fn_func_initialize_glean
+    67, // uniffi_init_rust_components_fn_func_initialize_glean
 )
 return handleRustResult(
     result,

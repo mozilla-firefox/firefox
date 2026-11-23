@@ -103,6 +103,7 @@ RemoteSettings = "AsyncWrapped"
 RemoteSettingsClient = "AsyncWrapped"
 
 [error_support.async_wrappers]
+"report_error" = "Sync"
 "set_application_error_reporter" = "AsyncWrapped"
 "unset_application_error_reporter" = "AsyncWrapped"
 "ApplicationErrorReporter.report_error" = "FireAndForget"
