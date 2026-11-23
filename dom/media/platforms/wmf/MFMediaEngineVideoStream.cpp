@@ -308,7 +308,9 @@ RefPtr<MediaDataDecoder::DecodePromise> MFMediaEngineVideoStream::Drain() {
     return MediaDataDecoder::DecodePromise::CreateAndResolve(std::move(outputs),
                                                              __func__);
   }
-  if (!IsDCompImageReady()) {
+  // Without pending output (e.g. right after a flush) there is nothing to wait
+  // for, and sending the end event would end the engine's presentation.
+  if (mRawDataQueueForGeneratingOutput.GetSize() > 0 && !IsDCompImageReady()) {
     LOGV("Waiting for dcomp image for draining");
     // A workaround for a special case where we have sent all input data to the
     // media engine, and waiting for an output. Sometime media engine would
