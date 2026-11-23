@@ -9,12 +9,7 @@ const SPECULATIONS_PAGE = SPECULATIONS_ROOT + "index.html";
 
 add_setup(async function () {
   await enableApplicationPanel();
-  await SpecialPowers.pushPrefEnv({
-    set: [
-      ["devtools.application.speculativeLoads", true],
-      ["dom.speculation_rules.enabled", true],
-    ],
-  });
+  await pushPref("dom.speculation_rules.enabled", true);
 });
 
 function getRows(doc) {
@@ -145,9 +140,7 @@ add_task(async function test_existing_network_resources() {
 });
 
 add_task(async function test_feature_disabled() {
-  await SpecialPowers.pushPrefEnv({
-    set: [["devtools.application.speculativeLoads", false]],
-  });
+  await pushPref("dom.speculation_rules.enabled", false);
   const { panel, tab } = await openNewTabAndApplicationPanel(SPECULATIONS_PAGE);
   ok(
     !panel.panelWin.document.querySelector(".js-sidebar-speculative-loads"),

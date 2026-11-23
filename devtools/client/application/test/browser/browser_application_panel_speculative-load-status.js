@@ -13,7 +13,6 @@ add_setup(async function () {
   await enableApplicationPanel();
   await SpecialPowers.pushPrefEnv({
     set: [
-      ["devtools.application.speculativeLoads", true],
       ["dom.speculation_rules.enabled", true],
       ["dom.performance.deliverytype.enabled", false],
     ],

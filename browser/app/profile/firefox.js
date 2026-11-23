@@ -3428,9 +3428,6 @@ pref("devtools.anti-tracking.enabled", false);
 // Session History panel
 pref("devtools.application.sessionHistory.enabled", false);
 
-// Speculative Loads Panel
-pref("devtools.application.speculativeLoads", false);
-
 // Enable the custom formatters feature
 // This preference represents the user's choice to enable the custom formatters feature.
 // While the preference above will be removed once the feature is stable, this one is menat to stay.
