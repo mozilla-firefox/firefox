@@ -18,33 +18,40 @@ export class GeckoViewPictureInPictureSourceChild extends GeckoViewActorChild {
   receiveMessage(msg) {
     switch (msg.name) {
       case "GeckoView:PictureInPicture:FindVideo":
-        return this.findPlayingVideo();
+        return this.findVideo();
     }
     return null;
   }
 
   /**
-   * The first video this frame is playing, in document order, or null if it is
-   * playing none.
+   * The first video this frame is playing, in document order, or otherwise the
+   * first paused one that has played. Null if there is neither.
    *
-   * @returns {?{videoRef: object}}
+   * @returns {?{videoRef: object, paused: boolean}}
    */
-  findPlayingVideo() {
+  findVideo() {
     const doc = this.document;
     if (!doc) {
       return null;
     }
 
     // A video with no dimensions has no frames to clone yet.
-    const video = [...doc.querySelectorAll("video")].find(
-      v => !v.paused && v.videoWidth > 0 && v.videoHeight > 0
+    const videos = [...doc.querySelectorAll("video")].filter(
+      v => v.videoWidth > 0 && v.videoHeight > 0
     );
+    // Find a playing video, if none found then pick a video that has played before.
+    // A video that has only loaded but never played should not be picked.
+    const video =
+      videos.find(v => !v.paused) ?? videos.find(v => !!v.played.length);
     if (!video) {
       return null;
     }
 
-    debug`findPlayingVideo: bcId=${this.browsingContext.id} ${video.videoWidth}x${video.videoHeight}`;
+    debug`findVideo: bcId=${this.browsingContext.id} paused=${video.paused} played=${video.played.length} ${video.videoWidth}x${video.videoHeight}`;
 
-    return { videoRef: lazy.ContentDOMReference.get(video) };
+    return {
+      videoRef: lazy.ContentDOMReference.get(video),
+      paused: video.paused,
+    };
   }
 }

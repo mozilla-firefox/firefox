@@ -110,50 +110,75 @@ export const GeckoViewPictureInPictureController = {
     return { browsingContextGroupId: bcGroupId, remoteType };
   },
 
-  // Requests picture-in-picture for the video the focused frame is playing.
+  // Requests picture-in-picture for the video the focused frame is playing, or otherwise for a
+  // paused video that has played, preferring a playing video in any frame over a paused one.
   async requestForCurrentMedia(browser, sourceDispatcher) {
     // The session's own browsing context only reaches the top document, whose <video> elements
     // are the ones outside any frame, so a video in an iframe would be invisible to it and lives
     // in another process. Focus names the frame the user last interacted with.
     const bc = Services.focus.focusedContentBrowsingContext;
     if (bc?.top !== browser.browsingContext) {
-      await this._requestForAnyFrame(browser, sourceDispatcher);
+      await this._requestForAnyFrame(browser, sourceDispatcher, null, null);
       return;
     }
 
     const wgp = bc.currentWindowGlobal;
-    const active = await wgp
+    const found = await wgp
       .getActor("GeckoViewPictureInPictureSource")
       .sendQuery("GeckoView:PictureInPicture:FindVideo");
-    if (!active) {
-      await this._requestForAnyFrame(browser, sourceDispatcher);
+    if (found && !found.paused) {
+      await this.request(wgp, found.videoRef, sourceDispatcher);
       return;
     }
-    await this.request(wgp, active.videoRef, sourceDispatcher);
+    await this._requestForAnyFrame(
+      browser,
+      sourceDispatcher,
+      wgp,
+      found ? { wgp, videoRef: found.videoRef } : null
+    );
   },
 
   // The embedder asks from outside the page, so the user may have moved focus off the frame playing
   // the video since starting it. Falls back to the first frame of the session, in tree order, that
-  // is playing a video.
-  async _requestForAnyFrame(browser, sourceDispatcher) {
+  // is playing a video, then to pausedFallback, then to the first frame with a paused video.
+  // askedWgp is a frame that was already asked and is skipped.
+  async _requestForAnyFrame(
+    browser,
+    sourceDispatcher,
+    askedWgp,
+    pausedFallback
+  ) {
+    const pausedCandidates = pausedFallback ? [pausedFallback] : [];
     for (const bc of browser.browsingContext.getAllBrowsingContextsInSubtree()) {
       const wgp = bc.currentWindowGlobal;
-      if (!wgp) {
+      if (!wgp || wgp === askedWgp) {
         continue;
       }
-      let active;
+      let found;
       try {
-        active = await wgp
+        found = await wgp
           .getActor("GeckoViewPictureInPictureSource")
           .sendQuery("GeckoView:PictureInPicture:FindVideo");
       } catch (e) {
         // The frame navigated or went away while it was being asked.
         continue;
       }
-      if (active) {
-        await this.request(wgp, active.videoRef, sourceDispatcher);
+      if (!found) {
+        continue;
+      }
+      if (!found.paused) {
+        await this.request(wgp, found.videoRef, sourceDispatcher);
         return;
       }
+      pausedCandidates.push({ wgp, videoRef: found.videoRef });
+    }
+    // A candidate's frame may have navigated or gone away while later frames were being asked.
+    const fallback = pausedCandidates.find(
+      c =>
+        !c.wgp.isClosed && c.wgp.browsingContext?.currentWindowGlobal === c.wgp
+    );
+    if (fallback) {
+      await this.request(fallback.wgp, fallback.videoRef, sourceDispatcher);
     }
   },
 

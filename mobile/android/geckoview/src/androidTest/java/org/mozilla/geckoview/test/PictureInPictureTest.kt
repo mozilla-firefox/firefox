@@ -155,27 +155,65 @@ class PictureInPictureTest : BaseSessionTest() {
 
     @WithDisplay(width = 100, height = 100)
     @Test
-    fun requestPictureInPictureAfterPauseIsNoOp() {
+    fun requestPictureInPictureAfterPauseClonesThePausedVideo() {
+        val delegate = registerDelegate()
+
         mainSession.loadTestPath(VIDEO_WEBM_PATH)
         mainSession.waitForPageStop()
         mainSession.playVideo()
         mainSession.pauseVideo()
 
-        sessionRule.delegateUntilTestEnd(
-            object : PictureInPictureController.SessionPictureInPicture.Delegate {
-                @AssertCalled(false)
-                override fun onEnterPictureInPicture(
-                    session: GeckoSession,
-                    placementToken: String,
-                ) {
-                    fail("A video paused before the request must not enter picture-in-picture")
-                }
-            }
+        mainSession.setFocused(true)
+        val cloned = mainSession.sessionPictureInPicture.request()
+        UiThreadUtils.waitForCondition(
+            { delegate.enterCount > 0 },
+            sessionRule.env.defaultTimeoutMillis,
+        )
+        openPlayerSession(delegate)
+        sessionRule.waitForResult(cloned)
+
+        assertThat(
+            "A video paused after playing must be cloned into the player",
+            sessionRule.isVideoCloning(mainSession, "video"),
+            equalTo(true),
         )
 
+        sessionRule.waitForResult(mainSession.sessionPictureInPicture.exit())
+    }
+
+    @WithDisplay(width = 100, height = 100)
+    @Test
+    fun requestPictureInPicturePrefersAPlayingVideoInAnotherFrameOverAPausedFocusedOne() {
+        val delegate = registerDelegate()
+
+        mainSession.loadTestPath(VIDEO_IN_IFRAME_PATH)
+        mainSession.waitForPageStop()
         mainSession.setFocused(true)
-        mainSession.sessionPictureInPicture.request()
-        mainSession.waitForRoundTrip()
+        mainSession.evaluateJS(
+            """const topVideo = document.body.appendChild(document.createElement('video'));
+               topVideo.id = 'top';
+               topVideo.src = 'videos/gizmo.webm'"""
+        )
+        mainSession.playVideo()
+        mainSession.pauseVideo()
+        mainSession.playVideoInSubframe()
+        mainSession.evaluateJS("window.focus()")
+
+        val cloned = mainSession.sessionPictureInPicture.request()
+        UiThreadUtils.waitForCondition(
+            { delegate.enterCount > 0 },
+            sessionRule.env.defaultTimeoutMillis,
+        )
+        openPlayerSession(delegate)
+        sessionRule.waitForResult(cloned)
+
+        assertThat(
+            "The paused video in the focused frame must lose to the one playing in the subframe",
+            sessionRule.isVideoCloning(mainSession, "#top"),
+            equalTo(false),
+        )
+
+        sessionRule.waitForResult(mainSession.sessionPictureInPicture.exit())
     }
 
     @WithDisplay(width = 100, height = 100)
@@ -184,7 +222,6 @@ class PictureInPictureTest : BaseSessionTest() {
         mainSession.loadTestPath(VIDEO_WEBM_PATH)
         mainSession.waitForPageStop()
 
-        // The request finds a video by the element's own state, so waiting for it to play is enough.
         mainSession
             .evaluatePromiseJS(
                 """new Promise(r => {
@@ -705,7 +742,18 @@ class PictureInPictureTest : BaseSessionTest() {
                 """new Promise(r => document.querySelector('video')
                    .addEventListener('pause', r, { once: true }))"""
             )
-        this.evaluateJS("document.querySelector('video').pause()")
+        // A zero-length range is not recorded in `played`, so let playback advance first.
+        this.evaluateJS(
+            """const v = document.querySelector('video');
+               const pauseOnceAdvanced = () => {
+                 if (v.currentTime > 0) {
+                   v.pause();
+                 } else {
+                   v.addEventListener('timeupdate', pauseOnceAdvanced, { once: true });
+                 }
+               };
+               pauseOnceAdvanced()"""
+        )
         paused.value
     }
 
