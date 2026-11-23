@@ -628,6 +628,20 @@ class FullPageTranslationsPanelTelemetry {
     });
   }
 
+  /**
+   * Records activation of the full-page panel's translations companion button.
+   */
+  static onCompanionButton() {
+    FullPageTranslationsPanelTelemetry.#withRateLimits(({ flowId }) => {
+      Glean.translationsPanel.companionButton.record({
+        flow_id: flowId,
+      });
+      TranslationsTelemetry.logEventToConsole(
+        FullPageTranslationsPanelTelemetry.onCompanionButton
+      );
+    });
+  }
+
   static onChangeSourceLanguageButton() {
     FullPageTranslationsPanelTelemetry.#withRateLimits(({ flowId }) => {
       Glean.translationsPanel.changeSourceLanguageButton.record({

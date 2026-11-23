@@ -3446,6 +3446,159 @@ class FullPageTranslationsTestUtils {
   }
 
   /**
+   * Verifies companion activation telemetry and panel flow boundaries.
+   *
+   * @param {object} options
+   * @param {boolean} options.openFromAppMenu
+   *   Whether to open the panel through the application menu.
+   * @returns {Promise<void>}
+   */
+  static async assertCompanionButtonTelemetry({ openFromAppMenu }) {
+    const { cleanup, tab: sourceTab } = await loadTestPage({
+      page: SPANISH_PAGE_URL,
+      languagePairs: LANGUAGE_PAIRS,
+      prefs: [["browser.tabs.splitView.enabled", true]],
+    });
+    let aboutTranslationsTab = null;
+
+    try {
+      await TestTranslationsTelemetry.assertEvent(
+        Glean.translationsPanel.companionButton,
+        { expectedEventCount: 0 }
+      );
+
+      for (let opening = 1; opening <= 2; opening++) {
+        await this.openPanel({
+          openFromAppMenu,
+          expectedFromLanguage: "es",
+          expectedToLanguage: "en",
+          onOpenPanel: this.assertPanelViewIntro,
+        });
+        this.assertCompanionButtonVisibility({ visible: true });
+
+        await TestTranslationsTelemetry.assertEvent(
+          Glean.translationsPanel.open,
+          {
+            expectedEventCount: opening,
+            expectNewFlowId: true,
+            assertForAllEvents: {
+              auto_show: false,
+              view_name: "defaultView",
+              opened_from: openFromAppMenu ? "appMenu" : "translationsButton",
+              document_language: "es",
+              flow_id: value =>
+                typeof value === "string" && Boolean(value.length),
+            },
+          }
+        );
+
+        if (opening === 1) {
+          info("Cancelling the panel does not record companion activation");
+          await this.clickCancelButton();
+          await TestTranslationsTelemetry.assertEvent(
+            Glean.translationsPanel.companionButton,
+            { expectedEventCount: 0 }
+          );
+          await TestTranslationsTelemetry.assertEvent(
+            Glean.translationsPanel.close,
+            { expectedEventCount: 1, expectNewFlowId: false }
+          );
+        }
+      }
+
+      await TestTranslationsTelemetry.assertEvent(Glean.splitview.start, {
+        expectedEventCount: 0,
+      });
+
+      info(
+        "Opening a companion records one activation in the current panel flow"
+      );
+      const tabOpened = BrowserTestUtils.waitForNewTab(
+        gBrowser,
+        url => url.startsWith("about:translations"),
+        true
+      );
+      const splitViewCreated = BrowserTestUtils.waitForEvent(
+        gBrowser.tabContainer,
+        "SplitViewCreated"
+      );
+      await this.clickCompanionButton();
+      aboutTranslationsTab = await tabOpened;
+      await splitViewCreated;
+
+      await TestTranslationsTelemetry.assertEvent(Glean.splitview.start, {
+        expectedEventCount: 1,
+        assertForAllEvents: { trigger: "translations_companion" },
+      });
+
+      await TestTranslationsTelemetry.assertEvent(
+        Glean.translationsPanel.companionButton,
+        { expectedEventCount: 1, expectNewFlowId: false }
+      );
+      await TestTranslationsTelemetry.assertEvent(
+        Glean.translationsPanel.close,
+        {
+          expectedEventCount: 2,
+          expectNewFlowId: false,
+        }
+      );
+      await TestTranslationsTelemetry.assertEvent(
+        Glean.translationsPanel.cancelButton,
+        { expectedEventCount: 1 }
+      );
+
+      info(
+        "Reopening while split starts a new flow without another activation"
+      );
+      await BrowserTestUtils.switchTab(gBrowser, sourceTab);
+      await this.openPanel({
+        openFromAppMenu,
+        onOpenPanel: () =>
+          this.assertCompanionButtonVisibility({ visible: false }),
+      });
+      await TestTranslationsTelemetry.assertEvent(
+        Glean.translationsPanel.open,
+        {
+          expectedEventCount: 3,
+          expectNewFlowId: true,
+          assertForMostRecentEvent: {
+            opened_from: openFromAppMenu ? "appMenu" : "translationsButton",
+          },
+        }
+      );
+      await this.clickCancelButton();
+      await TestTranslationsTelemetry.assertEvent(
+        Glean.translationsPanel.close,
+        {
+          expectedEventCount: 3,
+          expectNewFlowId: false,
+        }
+      );
+      await TestTranslationsTelemetry.assertEvent(
+        Glean.translationsPanel.companionButton,
+        { expectedEventCount: 1 }
+      );
+      await TestTranslationsTelemetry.assertEvent(Glean.splitview.start, {
+        expectedEventCount: 1,
+      });
+      await TestTranslationsTelemetry.assertEvent(
+        Glean.translationsPanel.translateButton,
+        { expectedEventCount: 0 }
+      );
+      await TestTranslationsTelemetry.assertEvent(
+        Glean.translations.translationRequest,
+        { expectedEventCount: 0 }
+      );
+    } finally {
+      sourceTab.splitview?.unsplitTabs();
+      if (aboutTranslationsTab?.isConnected) {
+        await BrowserTestUtils.removeTab(aboutTranslationsTab);
+      }
+      await cleanup();
+    }
+  }
+
+  /**
    * Asserts whether the panel's companion button is visible.
    *
    * @param {object} options

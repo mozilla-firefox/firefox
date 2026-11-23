@@ -422,6 +422,23 @@ translations.panel:
       - translations-telemetry-alerts@mozilla.com
     expires: never
 
+  companion_button:
+    type: event
+    description: >
+      Triggers when the companion button is invoked in the full-page translations
+      panel to open about:translations in Split View.
+    extra_keys:
+      flow_id: *flow_id
+    bugs:
+      - https://bugzilla.mozilla.org/show_bug.cgi?id=2027036
+    data_reviews:
+      - https://bugzilla.mozilla.org/show_bug.cgi?id=2027036
+    data_sensitivity:
+      - interaction
+    notification_emails:
+      - translations-telemetry-alerts@mozilla.com
+    expires: never
+
   change_source_language_button:
     type: event
     description: >

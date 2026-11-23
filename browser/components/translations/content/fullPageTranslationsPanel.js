@@ -1110,6 +1110,7 @@ var FullPageTranslationsPanel = new (class {
   handlePanelButtonEvent(event) {
     const {
       cancelButton,
+      companionButton,
       changeSourceLanguageButton,
       dismissErrorButton,
       restoreButton,
@@ -1118,6 +1119,10 @@ var FullPageTranslationsPanel = new (class {
     switch (event.target.id) {
       case cancelButton.id: {
         TranslationsParent.telemetry().fullPagePanel().onCancelButton();
+        break;
+      }
+      case companionButton.id: {
+        TranslationsParent.telemetry().fullPagePanel().onCompanionButton();
         break;
       }
       case changeSourceLanguageButton.id: {
@@ -1701,6 +1706,7 @@ var FullPageTranslationsPanel = new (class {
       case "click": {
         switch (id) {
           case "full-page-translations-panel-companion-button":
+            this.handlePanelButtonEvent(event);
             this.onCompanionButton(event);
             break;
           case "full-page-translations-panel-intro-learn-more-link":
