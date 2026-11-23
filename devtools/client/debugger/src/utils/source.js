@@ -19,7 +19,7 @@ import { getRelativePath } from "../utils/sources-tree/utils";
 import { endTruncateStr } from "./utils";
 import { truncateMiddleText } from "../utils/text";
 import { memoizeLast } from "../utils/memoizeLast";
-import { toWasmSourceLine, getEditor } from "./editor/index";
+import { getEditor } from "./editor/index";
 export { isMinified } from "./isMinified";
 
 import { isFulfilled } from "./async-value";
@@ -332,8 +332,10 @@ export const getLineText = memoizeLast((sourceId, asyncContent, line) => {
 
   if (content.type === "wasm") {
     const editor = getEditor();
+    // The content may belong to a source which isn't displayed in the editor,
+    // so map the offset using this content's own WASM state.
     const lines = editor.renderWasmText(content);
-    return lines[toWasmSourceLine(line)] || "";
+    return lines[editor.wasmOffsetToLine(line, content) || 0] || "";
   }
 
   const lineText = getNthLine(content.value, line - 1);

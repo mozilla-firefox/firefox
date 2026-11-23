@@ -1,0 +1,30 @@
+<!DOCTYPE html>
+<html>
+  <head>
+    <meta charset="utf-8" />
+    <title>Two distinct WebAssembly modules</title>
+  </head>
+  <body>
+    <script>
+      "use strict";
+      // Builds a minimal module exporting an empty function named `name`
+      // (a single ASCII char).
+      function makeModule(char) {
+        return new WebAssembly.Module(
+          new Uint8Array([
+            0x00, 0x61, 0x73, 0x6d, 0x01, 0x00, 0x00, 0x00,
+            0x01, 0x04, 0x01, 0x60, 0x00, 0x00,
+            0x03, 0x02, 0x01, 0x00,
+            0x07, 0x05, 0x01, 0x01, char.charCodeAt(0), 0x00, 0x00,
+            0x0a, 0x04, 0x01, 0x02, 0x00, 0x0b,
+          ])
+        );
+      }
+      window.instances = [];
+      function loadModules() {
+        window.instances.push(new WebAssembly.Instance(makeModule("a")));
+        window.instances.push(new WebAssembly.Instance(makeModule("b")));
+      }
+    </script>
+  </body>
+</html>

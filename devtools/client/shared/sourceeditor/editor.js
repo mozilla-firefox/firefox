@@ -2357,8 +2357,13 @@ class Editor extends EventEmitter {
     }
     const cm = editors.get(this);
     if (this.config.cm6) {
-      if (!this.#currentDocument) {
-        // A key for caching the WASM content in the WeakMap
+      if (
+        !this.#currentDocument ||
+        this.#currentDocument.id !== this.#currentDocumentId
+      ) {
+        // A key for caching the WASM content in the WeakMap. It must be
+        // unique per document, so that the WASM state of a previously
+        // displayed source is never used for the current one.
         this.#currentDocument = { id: this.#currentDocumentId };
       }
       return this.#currentDocument;
@@ -2374,8 +2379,17 @@ class Editor extends EventEmitter {
     return wasm.getWasmLineNumberFormatter(this.getDoc());
   }
 
-  wasmOffsetToLine(offset) {
-    return wasm.wasmOffsetToLine(this.getDoc(), offset);
+  /**
+   * Converts a WASM offset to a 0-based line.
+   *
+   * @param {number} offset
+   * @param {object} content
+   *        Optional source content of a WASM source, rendered with `renderWasmText`.
+   *        Defaults to the document currently displayed in the editor.
+   * @returns {number|undefined}
+   */
+  wasmOffsetToLine(offset, content = this.getDoc()) {
+    return wasm.wasmOffsetToLine(content, offset);
   }
 
   lineToWasmOffset(number) {
@@ -2390,7 +2404,7 @@ class Editor extends EventEmitter {
   }
 
   renderWasmText(content) {
-    return wasm.renderWasmText(this.getDoc(), content);
+    return wasm.renderWasmText(content);
   }
 
   /**

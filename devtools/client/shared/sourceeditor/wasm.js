@@ -120,6 +120,9 @@ function lineToWasmOffset(subject, line, findNextOffset = false) {
  */
 function wasmOffsetToLine(subject, offset) {
   const wasmState = wasmStates.get(subject);
+  if (!wasmState) {
+    return undefined;
+  }
   return wasmState.lines[offset];
 }
 
@@ -128,7 +131,15 @@ function wasmOffsetToLine(subject, offset) {
 // as the key.
 const wasmLines = new WeakMap();
 
-function renderWasmText(subject, content) {
+/**
+ * Returns the wasm text lines for the given source content. The content may
+ * belong to a source which is not currently displayed in the editor, so the
+ * content object itself is used as the cache key.
+ *
+ * @param {object} content
+ * @returns {Array<string>}
+ */
+function renderWasmText(content) {
   if (wasmLines.has(content)) {
     return wasmLines.get(content) || [];
   }
@@ -139,7 +150,7 @@ function renderWasmText(subject, content) {
   for (let i = 0; i < data.length; i++) {
     data[i] = binary.charCodeAt(i);
   }
-  const { lines } = getWasmText(subject, data);
+  const { lines } = getWasmText(content, data);
   const MAX_LINES = 1000000;
   if (lines.length > MAX_LINES) {
     lines.splice(MAX_LINES, lines.length - MAX_LINES);

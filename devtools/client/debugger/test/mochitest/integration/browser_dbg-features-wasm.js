@@ -161,6 +161,67 @@ add_task(async function () {
   await resume(dbg);
 });
 
+/**
+ * Test that the debugger displays the right disassembly for each of several
+ * distinct WebAssembly modules, and doesn't keep treating the editor as wasm
+ * once a JS source is selected.
+ */
+
+add_task(async function () {
+  const dbg = await initDebugger("doc-wasm-multiple-modules.html");
+
+  // Compile the modules once the debugger is opened, so that they are
+  // debuggable and their sources have content.
+  invokeInTab("loadModules");
+
+  const getWasmSources = () =>
+    dbg.selectors.getSourceList().filter(source => source.isWasm);
+  await waitFor(() => getWasmSources().length == 2);
+  const wasmSources = getWasmSources();
+  isnot(
+    wasmSources[0].url,
+    wasmSources[1].url,
+    "The two wasm modules have distinct urls"
+  );
+
+  const exportedNames = [];
+  for (const source of wasmSources) {
+    await dbg.actions.selectLocation(createLocation({ source }), {
+      keepContext: false,
+    });
+    await waitForSelectedSource(dbg, source);
+    await waitFor(() => getEditorContent(dbg).includes("(export "));
+    const content = getEditorContent(dbg);
+    const match = content.match(/\(export "(\w)"/);
+    ok(match, `Found an export in the disassembly of ${source.url}`);
+    exportedNames.push(match?.[1]);
+    ok(getCMEditor(dbg).isWasm, "The editor is flagged as wasm");
+  }
+  Assert.deepEqual(
+    [...exportedNames].sort(),
+    ["a", "b"],
+    "Each wasm source displays its own disassembly"
+  );
+
+  info("Select the HTML source and check the editor is no longer wasm");
+  await selectSource(dbg, "doc-wasm-multiple-modules.html");
+  ok(
+    !getCMEditor(dbg).isWasm,
+    "The editor isn't flagged as wasm for a non-wasm source"
+  );
+
+  info("Select a wasm source again");
+  await dbg.actions.selectLocation(createLocation({ source: wasmSources[0] }), {
+    keepContext: false,
+  });
+  await waitForSelectedSource(dbg, wasmSources[0]);
+  ok(getCMEditor(dbg).isWasm, "The editor is flagged as wasm again");
+  ok(
+    getEditorContent(dbg).includes(`(export "${exportedNames[0]}"`),
+    "The first wasm source still displays its own disassembly"
+  );
+});
+
 function assertFirstFrameTitleAndLocation(dbg, title, location) {
   const frames = findAllElements(dbg, "frames");
   const firstFrameTitle = frames[0].querySelector(".title").textContent;
