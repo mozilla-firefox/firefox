@@ -28,36 +28,29 @@ const VIEW_TEMPLATE = {
   },
   children: [
     {
-      name: "content",
+      name: "icon",
+      tag: "img",
+      attributes: { class: "urlbarView-favicon" },
+    },
+    {
+      name: "tail150",
+      tag: "img",
+      attributes: {
+        class: "urlbarView-dynamic-calculator-tail150",
+        role: "button",
+        "aria-hidden": "true",
+        "keyboard-inaccessible": "true",
+        "data-command": "tail150",
+        src: "chrome://branding/content/icon48.png",
+      },
+    },
+    {
+      name: "input",
+      tag: "strong",
+    },
+    {
+      name: "action",
       tag: "span",
-      attributes: { class: "urlbarView-no-wrap" },
-      children: [
-        {
-          name: "icon",
-          tag: "img",
-          attributes: { class: "urlbarView-favicon" },
-        },
-        {
-          name: "tail150",
-          tag: "img",
-          attributes: {
-            class: "urlbarView-dynamic-calculator-tail150",
-            role: "button",
-            "aria-hidden": "true",
-            "keyboard-inaccessible": "true",
-            "data-command": "tail150",
-            src: "chrome://branding/content/icon48.png",
-          },
-        },
-        {
-          name: "input",
-          tag: "strong",
-        },
-        {
-          name: "action",
-          tag: "span",
-        },
-      ],
     },
   ],
 };

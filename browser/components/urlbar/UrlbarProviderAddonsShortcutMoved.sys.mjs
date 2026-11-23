@@ -27,23 +27,16 @@ const DYNAMIC_RESULT_TYPE = "addonsShortcutMoved";
 const VIEW_TEMPLATE = {
   children: [
     {
-      name: "no-wrap",
+      name: "text-container",
       tag: "span",
-      classList: ["urlbarView-no-wrap"],
       children: [
         {
-          name: "text-container",
+          name: "title",
+          tag: "strong",
+        },
+        {
+          name: "description",
           tag: "span",
-          children: [
-            {
-              name: "title",
-              tag: "strong",
-            },
-            {
-              name: "description",
-              tag: "span",
-            },
-          ],
         },
       ],
     },
