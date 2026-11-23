@@ -1,0 +1,41 @@
+# a sample revocations.txt for tests
+# Lines starting with '#' are ignored - as are empty lines like this:
+
+# otherwise:
+# non-empty lines are treated as base-64 encoded DER DN data (e.g. issuer or
+# subject)
+# ...unless the line starts with a ' ' (space) character, in which case it's
+# assumed to be base-64 encoded DER serial data, or
+# the line starts with a '\t' (tab) character, in which case it's assumed to
+# be a base-64 encoded SHA256 hash of a public key
+
+# First a serial with no issuer to ensure this doesn't cause parsing to fail
+# (there should be an issuer first, but we need to test this won't fail)
+ dGVzdA==
+# next, let's ensure data that isn't valid base64 doesn't cause breakage.
+ this serial isn't valid base64 (but then there's no issuer anyway)
+Neither is this issuer, though the serial is fine
+ dGVzdA==
+dGVzdA==
+ in this case, issuer is fine but not the serial
+# Next two entries; we can add valid base-64 encoded data for some basic tests:
+# issuer is the base-64 encoded subject DN for the shared Test CA
+# serial is the base-64 encoded integer 42
+MBIxEDAOBgNVBAMMB1Rlc3QgQ0E=
+ Kg==
+# issuer is the base-64 encoded subject DN for the shared Test Intermediate
+# the first serial is the base-64 encoded integer 78
+# the second serial is the base-64 encoded integer 31
+MBwxGjAYBgNVBAMMEVRlc3QgSW50ZXJtZWRpYXRl
+ Tg==
+ Hw==
+ c2VyaWFsMi4=
+# subject is base-64 encoded subject DN "CN=EE Revoked By Subject and PubKey"
+# pubKeyHash is the base-64 encoded sha256 hash of the shared RSA SPKI
+MCsxKTAnBgNVBAMMIEVFIFJldm9rZWQgQnkgU3ViamVjdCBhbmQgUHViS2V5
+	VCIlmPM9NkgFQtrs4Oa5TeFcDu6MWRTKSNdePEhOgD8=
+# and some more data to ensure that mixed items don't cause parsing failure
+a DN
+ a serial
+	a hash
+ another serial

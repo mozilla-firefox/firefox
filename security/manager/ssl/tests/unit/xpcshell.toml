@@ -132,12 +132,6 @@ tags = "addons psm blocklist"
 ["test_cert_storage_preexisting.js"]
 prefs = ["security.storage.encryption.sqlite.enabled=false"]
 
-["test_cert_storage_prune.js"]
-head = "head_psm.js head_cert_storage_db.js"
-
-["test_cert_storage_prune_marker.js"]
-head = "head_psm.js head_cert_storage_db.js"
-
 ["test_cert_trust.js"]
 
 ["test_cert_utf8.js"]

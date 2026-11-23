@@ -45,7 +45,8 @@ use sha2::{Digest, Sha256};
 use std::convert::TryInto;
 use std::ffi::{CString, OsString};
 use std::fmt::Display;
-use std::fs::{create_dir_all, remove_file};
+use std::fs::{create_dir_all, remove_file, File};
+use std::io::{BufRead, BufReader};
 use std::mem::size_of;
 use std::path::{Path, PathBuf};
 use std::str;
@@ -66,14 +67,6 @@ const PREFIX_REV_SPK: &str = "spk";
 const PREFIX_SUBJECT: &str = "subject";
 const PREFIX_CERT: &str = "cert";
 const PREFIX_DATA_TYPE: &str = "datatype";
-
-// The prefix of CRLite enrollment entries, which have not been used since bug 1750787.
-const PREFIX_LEGACY_CRLITE_ENROLLMENT: &str = "crlite";
-// The data types DATA_TYPE_CRLITE, DATA_TYPE_CRLITE_FILTER_FULL, and
-// DATA_TYPE_CRLITE_FILTER_INCREMENTAL, which have not been used since bug 2022936.
-const LEGACY_CRLITE_DATA_TYPES: [u8; 3] = [3, 4, 5];
-// Used to indicate that bug_2095295_cleanup has already been run.
-const PRUNED_MARKER_KEY: &str = "bug-2095295-cleanup";
 
 const LAST_CRLITE_UPDATE_KEY: &str = "last_crlite_update";
 
@@ -226,7 +219,8 @@ impl SecurityState {
 
         let store_path = get_store_path(&self.profile_path)?;
 
-        // Open the store in read-write mode to create it (if needed).
+        // Open the store in read-write mode to create it (if needed) and migrate data from the old
+        // store (if any).
         // If opening initially fails, try to remove and recreate the database. Consumers will
         // repopulate the database as necessary if this happens (see bug 1546361).
         let env = make_env(store_path.as_path()).or_else(|_| {
@@ -235,14 +229,12 @@ impl SecurityState {
         })?;
         let store = env.open_single("cert_storage", StoreOptions::create())?;
 
-        // Earlier versions of cert_storage left behind entries that no longer affect any lookup.
-        // Removing them is an optimization, so a failure here should not prevent opening the
-        // database.
-        if let Err(e) = SecurityState::bug_2095295_cleanup(&env, &store) {
-            warn!(
-                "failed to prune obsolete cert_storage entries: {}",
-                e.message
-            );
+        // if the profile has a revocations.txt, migrate it and remove the file
+        let mut revocations_path = self.profile_path.clone();
+        revocations_path.push("revocations.txt");
+        if revocations_path.exists() {
+            SecurityState::migrate(&revocations_path, &env, &store)?;
+            remove_file(revocations_path)?;
         }
 
         // We already returned early if env_and_store was Some, so this should take the None branch.
@@ -256,26 +248,64 @@ impl SecurityState {
         Ok(())
     }
 
-    fn bug_2095295_cleanup(env: &Rkv, store: &SingleStore) -> Result<(), SecurityStateError> {
-        let obsolete_keys = {
-            let reader = env.read()?;
-            if store.get(&reader, PRUNED_MARKER_KEY)?.is_some() {
-                return Ok(());
+    fn migrate(
+        revocations_path: &PathBuf,
+        env: &Rkv,
+        store: &SingleStore,
+    ) -> Result<(), SecurityStateError> {
+        let f = File::open(revocations_path)?;
+        let file = BufReader::new(f);
+        let value = Value::I64(nsICertStorage::STATE_ENFORCE as i64);
+        let mut writer = env.write()?;
+
+        // Add the data from revocations.txt
+        let mut dn: Option<Vec<u8>> = None;
+        for line in file.lines() {
+            let l = match line.map_err(|_| SecurityStateError::from("io error reading line data")) {
+                Ok(data) => data,
+                Err(e) => return Err(e),
+            };
+            if l.len() == 0 || l.starts_with("#") {
+                continue;
             }
-            let mut obsolete_keys = Vec::new();
-            for entry in store.iter_start(&reader)? {
-                let (key, value) = entry?;
-                if is_bug_2095295_entry(key, &value) {
-                    obsolete_keys.push(key.to_vec());
+            let leading_char = match l.chars().next() {
+                Some(c) => c,
+                None => {
+                    return Err(SecurityStateError::from(
+                        "couldn't get char from non-empty str?",
+                    ));
+                }
+            };
+            // In future, we can maybe log migration failures. For now, ignore decoding and storage
+            // errors and attempt to continue.
+            // Check if we have a new DN
+            if leading_char != '\t' && leading_char != ' ' {
+                if let Ok(decoded_dn) = BASE64_STANDARD.decode(&l) {
+                    dn = Some(decoded_dn);
+                }
+                continue;
+            }
+            let l_sans_prefix = match BASE64_STANDARD.decode(&l[1..]) {
+                Ok(decoded) => decoded,
+                Err(_) => continue,
+            };
+            if let Some(name) = &dn {
+                if leading_char == '\t' {
+                    let _ = store.put(
+                        &mut writer,
+                        &make_key!(PREFIX_REV_SPK, name, &l_sans_prefix),
+                        &value,
+                    );
+                } else {
+                    let _ = store.put(
+                        &mut writer,
+                        &make_key!(PREFIX_REV_IS, name, &l_sans_prefix),
+                        &value,
+                    );
                 }
             }
-            obsolete_keys
-        };
-        let mut writer = env.write()?;
-        for key in &obsolete_keys {
-            store.delete(&mut writer, key)?;
         }
-        store.put(&mut writer, PRUNED_MARKER_KEY, &Value::Bool(true))?;
+
         writer.commit()?;
         Ok(())
     }
@@ -362,19 +392,9 @@ impl SecurityState {
                     continue;
                 }
             };
-            if entry.state() == nsICertStorage::STATE_UNSET {
-                // A missing entry has the same effect as one with state STATE_UNSET (see
-                // get_revocation_state), so delete the entry rather than storing that state.
-                match env_and_store.store.delete(&mut writer, &key) {
-                    Ok(()) => {}
-                    Err(StoreError::KeyValuePairNotFound) => {}
-                    Err(e) => return Err(SecurityStateError::from(e)),
-                };
-            } else {
-                env_and_store
-                    .store
-                    .put(&mut writer, &key, &Value::I64(entry.state() as i64))?;
-            }
+            env_and_store
+                .store
+                .put(&mut writer, &key, &Value::I64(entry.state() as i64))?;
         }
 
         writer.commit()?;
@@ -669,11 +689,7 @@ impl SecurityState {
                         None => empty_vec,
                     };
                     let new_cert_hash_list = CertHashList::remove(&old_cert_hash_list, &hash)?;
-                    if new_cert_hash_list.is_empty() && !old_cert_hash_list.is_empty() {
-                        // find_certs_by_subject treats a missing list as empty, so delete the
-                        // list rather than storing an empty one.
-                        env_and_store.store.delete(&mut writer, &subject_key)?;
-                    } else if new_cert_hash_list.len() != old_cert_hash_list.len() {
+                    if new_cert_hash_list.len() != old_cert_hash_list.len() {
                         env_and_store.store.put(
                             &mut writer,
                             &subject_key,
@@ -1021,30 +1037,6 @@ fn get_store_path(profile_path: &PathBuf) -> Result<PathBuf, SecurityStateError>
     store_path.push("security_state");
     create_dir_all(store_path.as_path())?;
     Ok(store_path)
-}
-
-/// Returns true for entries that earlier versions of cert_storage stored, but that no longer
-/// affect any lookup.
-fn is_bug_2095295_entry(key: &[u8], value: &Value) -> bool {
-    // Revocation entries with state STATE_UNSET, which set_batch_state used to store when an
-    // entry was removed from OneCRL. They have the same effect as a missing entry.
-    if key.starts_with(PREFIX_REV_IS.as_bytes()) || key.starts_with(PREFIX_REV_SPK.as_bytes()) {
-        return *value == Value::I64(nsICertStorage::STATE_UNSET as i64);
-    }
-    // CRLite enrollment entries, and markers for CRLite data types, which are no longer read.
-    if key.starts_with(PREFIX_LEGACY_CRLITE_ENROLLMENT.as_bytes()) {
-        return true;
-    }
-    if let Some(data_type) = key.strip_prefix(PREFIX_DATA_TYPE.as_bytes()) {
-        return matches!(data_type, [t] if LEGACY_CRLITE_DATA_TYPES.contains(t));
-    }
-    // Empty lists of certificate hashes, which remove_certs_by_hashes used to store when it
-    // removed the last certificate with a given subject. They have the same effect as a missing
-    // list.
-    if key.starts_with(PREFIX_SUBJECT.as_bytes()) {
-        return *value == Value::Blob(&[]);
-    }
-    false
 }
 
 fn make_env(path: &Path) -> Result<Rkv, SecurityStateError> {

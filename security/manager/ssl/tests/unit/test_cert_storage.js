@@ -4,6 +4,7 @@
 "use strict";
 
 // This test checks a number of things:
+// * it ensures that data loaded from revocations.txt on startup is present
 // * it ensures that data served from OneCRL are persisted correctly
 // * it ensures that items in the CertBlocklist are seen as revoked by the
 //   cert verifier
@@ -30,7 +31,16 @@ updateAppInfo({
   crashReporter: true,
 });
 
-do_get_profile();
+// we need to ensure we setup revocation data before certDB, or we'll start with
+// no revocation.txt in the profile
+var gProfile = do_get_profile();
+
+var gRevocations = gProfile.clone();
+gRevocations.append("revocations.txt");
+if (!gRevocations.exists()) {
+  let existing = do_get_file("test_onecrl/sample_revocations.txt", false);
+  existing.copyTo(gProfile, "revocations.txt");
+}
 
 var certDB = Cc["@mozilla.org/security/x509certdb;1"].getService(
   Ci.nsIX509CertDB
@@ -68,16 +78,18 @@ const certBlocklist = [
     issuerName: "MBgxFjAUBgNVBAMMDU90aGVyIHRlc3QgQ0E=",
     serialNumber: "adOFCYMS/nqQ3tCvQzINT8fdE+s=",
   },
-  // These items revoke ee-revoked-by-issuer-and-serial.pem and
-  // ee-revoked-by-issuer-and-serial-2.pem, which are issued by the shared
-  // Test CA with serial numbers 42 and 31, to check that multiple serials
-  // with the same issuer are handled.
+  // These items correspond to an entry in sample_revocations.txt where:
+  // isser name is the base-64 encoded subject DN for the shared Test
+  // Intermediate and the serialNumbers are base-64 encoded 78 and 31,
+  // respectively.
+  // We need this to ensure that existing items are retained if they're
+  // also in the blocklist
   {
-    issuerName: "MBIxEDAOBgNVBAMMB1Rlc3QgQ0E=",
-    serialNumber: "Kg==",
+    issuerName: "MBwxGjAYBgNVBAMMEVRlc3QgSW50ZXJtZWRpYXRl",
+    serialNumber: "Tg==",
   },
   {
-    issuerName: "MBIxEDAOBgNVBAMMB1Rlc3QgQ0E=",
+    issuerName: "MBwxGjAYBgNVBAMMEVRlc3QgSW50ZXJtZWRpYXRl",
     serialNumber: "Hw==",
   },
   // This item revokes same-issuer-ee.pem by subject and pubKeyHash.
@@ -129,9 +141,9 @@ async function update_blocklist() {
   const { OneCRLBlocklistClient } = RemoteSecuritySettings.init();
 
   const fakeEvent = {
-    current: certBlocklist,
+    current: certBlocklist, // with old .txt revocations.
     deleted: [],
-    created: certBlocklist,
+    created: certBlocklist, // with new cert storage.
     updated: [],
   };
   await OneCRLBlocklistClient.emit("sync", { data: fakeEvent });
@@ -150,12 +162,34 @@ function run_test() {
   load_cert("other-test-ca", "CTu,CTu,CTu");
 
   add_task(async function () {
-    // The blocklist will revoke these by issuer and serial number.
-    // Check the certs validate before we load the blocklist
-    let file = "test_onecrl/ee-revoked-by-issuer-and-serial.pem";
-    await verify_cert(file, PRErrorCodeSuccess);
-    file = "test_onecrl/ee-revoked-by-issuer-and-serial-2.pem";
-    await verify_cert(file, PRErrorCodeSuccess);
+    // check some existing items in revocations.txt are blocked.
+    // This test corresponds to:
+    // issuer: MBIxEDAOBgNVBAMMB1Rlc3QgQ0E= (CN=Test CA)
+    // serial: Kg== (42)
+    let file = "test_onecrl/ee-revoked-by-revocations-txt.pem";
+    await verify_cert(file, SEC_ERROR_REVOKED_CERTIFICATE);
+
+    // This test corresponds to:
+    // issuer: MBwxGjAYBgNVBAMMEVRlc3QgSW50ZXJtZWRpYXRl (CN=Test Intermediate)
+    // serial: Tg== (78)
+    file = "test_onecrl/another-ee-revoked-by-revocations-txt.pem";
+    await verify_cert(file, SEC_ERROR_REVOKED_CERTIFICATE);
+
+    // And this test corresponds to:
+    // issuer: MBwxGjAYBgNVBAMMEVRlc3QgSW50ZXJtZWRpYXRl (CN=Test Intermediate)
+    // serial: Hw== (31)
+    // (we test this issuer twice to ensure we can read multiple serials)
+    file = "test_onecrl/another-ee-revoked-by-revocations-txt-serial-2.pem";
+    await verify_cert(file, SEC_ERROR_REVOKED_CERTIFICATE);
+
+    // Test that a certificate revoked by subject and public key hash in
+    // revocations.txt is revoked
+    // subject: MCsxKTAnBgNVBAMMIEVFIFJldm9rZWQgQnkgU3ViamVjdCBhbmQgUHViS2V5
+    // (CN=EE Revoked By Subject and PubKey)
+    // pubkeyhash: VCIlmPM9NkgFQtrs4Oa5TeFcDu6MWRTKSNdePEhOgD8= (this is the
+    // shared RSA SPKI)
+    file = "test_onecrl/ee-revoked-by-subject-and-pubkey.pem";
+    await verify_cert(file, SEC_ERROR_REVOKED_CERTIFICATE);
 
     // Soon we'll load a blocklist which revokes test-int.pem, which issued
     // test-int-ee.pem.
@@ -179,9 +213,20 @@ function run_test() {
 
   add_task(async function () {
     // The blocklist will be loaded now. Let's check the data is sane.
-    let file = "test_onecrl/ee-revoked-by-issuer-and-serial.pem";
+    // In particular, we should still have the revoked issuer / serial pair
+    // that was in revocations.txt but not the blocklist.
+    let file = "test_onecrl/ee-revoked-by-revocations-txt.pem";
     await verify_cert(file, SEC_ERROR_REVOKED_CERTIFICATE);
-    file = "test_onecrl/ee-revoked-by-issuer-and-serial-2.pem";
+
+    // We should also still have the revoked issuer / serial pairs that were in
+    // revocations.txt and are also in the blocklist.
+    file = "test_onecrl/another-ee-revoked-by-revocations-txt.pem";
+    await verify_cert(file, SEC_ERROR_REVOKED_CERTIFICATE);
+    file = "test_onecrl/another-ee-revoked-by-revocations-txt-serial-2.pem";
+    await verify_cert(file, SEC_ERROR_REVOKED_CERTIFICATE);
+
+    // The cert revoked by subject and pubkeyhash should still be revoked.
+    file = "test_onecrl/ee-revoked-by-subject-and-pubkey.pem";
     await verify_cert(file, SEC_ERROR_REVOKED_CERTIFICATE);
 
     // Check the blocklisted intermediate now causes a failure
