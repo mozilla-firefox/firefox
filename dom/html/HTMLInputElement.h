@@ -278,7 +278,7 @@ class HTMLInputElement final : public TextControlElement,
   bool GetCheckedChanged() const { return mCheckedChanged; }
   void AddToRadioGroup();
   void RemoveFromRadioGroup();
-  void DisconnectRadioGroupContainer();
+  void DisconnectRadioGroupContainer(RadioGroupContainer* aContainer);
   void UpdateRadioGroupState();
 
   /**
@@ -1556,6 +1556,9 @@ class HTMLInputElement final : public TextControlElement,
   // <input type=number>.
   // See https://bugzilla.mozilla.org/show_bug.cgi?id=2026562
   bool mIsUserInteracting : 1;
+  // Set by BeforeSetAttr when a name or type change removed this radio from
+  // its group, so that AfterSetAttr re-adds it even if not done creating.
+  bool mRemovedFromRadioGroupForAttrChange : 1 {false};
 
  private:
   Maybe<int32_t> GetNumberInputCols() const;

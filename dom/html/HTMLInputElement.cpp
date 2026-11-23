@@ -1347,10 +1347,9 @@ void HTMLInputElement::BeforeSetAttr(int32_t aNameSpaceID, nsAtom* aName,
     }
 
     // When name or type changes, radio should be removed from radio group.
-    // If we are not done creating the radio, we also should not do it.
     if (mType == FormControlType::InputRadio) {
-      if ((aName == nsGkAtoms::name || (aName == nsGkAtoms::type && !mForm)) &&
-          (mForm || mDoneCreating)) {
+      if (aName == nsGkAtoms::name || (aName == nsGkAtoms::type && !mForm)) {
+        mRemovedFromRadioGroupForAttrChange = !!GetCurrentRadioGroupContainer();
         RemoveFromRadioGroup();
       } else if (aName == nsGkAtoms::required) {
         auto* container = GetCurrentRadioGroupContainer();
@@ -1541,10 +1540,13 @@ void HTMLInputElement::AfterSetAttr(int32_t aNameSpaceID, nsAtom* aName,
     }
 
     // When name or type changes, radio should be added to radio group.
-    // If we are not done creating the radio, we also should not do it.
+    // If we are not done creating the radio, we also should not do it, unless
+    // the radio was in a group before the change.
+    const bool wasInRadioGroup = mRemovedFromRadioGroupForAttrChange;
+    mRemovedFromRadioGroupForAttrChange = false;
     if (mType == FormControlType::InputRadio) {
       if ((aName == nsGkAtoms::name || (aName == nsGkAtoms::type && !mForm)) &&
-          (mForm || mDoneCreating)) {
+          (mForm || mDoneCreating || GetParentNode() || wasInRadioGroup)) {
         AddToRadioGroup();
         UpdateValueMissingValidityStateForRadio(false);
         needValidityUpdate = true;
@@ -3150,8 +3152,14 @@ RadioGroupContainer* HTMLInputElement::FindTreeRadioGroupContainer() const {
               ->OwnedRadioGroupContainer();
 }
 
-void HTMLInputElement::DisconnectRadioGroupContainer() {
-  mRadioGroupContainer = nullptr;
+void HTMLInputElement::DisconnectRadioGroupContainer(
+    RadioGroupContainer* aContainer) {
+  MOZ_ASSERT(mRadioGroupContainer == aContainer,
+             "Requested unlink by container that does not really contain this "
+             "element.");
+  if (mRadioGroupContainer == aContainer) {
+    mRadioGroupContainer = nullptr;
+  }
 }
 
 HTMLInputElement* HTMLInputElement::GetSelectedRadioButton() const {
@@ -6660,7 +6668,7 @@ bool HTMLInputElement::IsHTMLFocusable(IsFocusableFlags aFlags,
 
 template <typename VisitCallback>
 void HTMLInputElement::VisitGroup(VisitCallback&& aCallback, bool aSkipThis) {
-  if (auto* container = GetCurrentRadioGroupContainer()) {
+  if (RefPtr container = GetCurrentRadioGroupContainer()) {
     nsAutoString name;
     GetAttr(nsGkAtoms::name, name);
     container->WalkRadioGroup(name, aCallback, aSkipThis ? this : nullptr);
