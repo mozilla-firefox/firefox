@@ -31,15 +31,8 @@
 #    define MOZ_THROW_NORETURN __attribute__((__noreturn__))
 #  endif
 
-// MinGW doesn't appropriately inline these functions in debug builds,
-// so we need to do some extra coercion for it to do so. Bug 1332747
-#  ifdef __MINGW32__
-#    define MOZ_THROW_INLINE MOZ_ALWAYS_INLINE_EVEN_DEBUG
-#    define MOZ_THROW_EXPORT
-#  else
-#    define MOZ_THROW_INLINE MOZ_ALWAYS_INLINE
-#    define MOZ_THROW_EXPORT MOZ_EXPORT
-#  endif
+#  define MOZ_THROW_INLINE MOZ_ALWAYS_INLINE
+#  define MOZ_THROW_EXPORT MOZ_EXPORT
 
 namespace std {
 

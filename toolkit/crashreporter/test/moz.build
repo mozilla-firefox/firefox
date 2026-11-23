@@ -47,7 +47,7 @@ else:
     ]
 
 if CONFIG["OS_TARGET"] == "WINNT" and CONFIG["TARGET_CPU"] == "x86_64":
-    if CONFIG["CC_TYPE"] not in ("gcc", "clang"):
+    if CONFIG["CC_TYPE"] == "clang-cl":
         SOURCES += [
             "win64UnwindInfoTests.asm",
         ]

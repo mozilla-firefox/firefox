@@ -209,7 +209,7 @@ elif CONFIG["OS_ARCH"] == "WINNT":
         "MOZ_NEUTER_SEH_FOR_MINGWCLANG",
     ):
         DEFINES[var] = True
-    if CONFIG["CC_TYPE"] not in ("gcc", "clang"):
+    if CONFIG["CC_TYPE"] == "clang-cl":
         DEFINES["SANDBOX_EXPORTS"] = True
 
     LOCAL_INCLUDES += ["/security/sandbox/chromium-shim"]

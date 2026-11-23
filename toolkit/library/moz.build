@@ -131,7 +131,7 @@ LOCAL_INCLUDES += [
     "/widget/windows",
 ]
 
-if CONFIG["OS_ARCH"] == "WINNT" and CONFIG["CC_TYPE"] not in ("clang", "gcc"):
+if CONFIG["CC_TYPE"] == "clang-cl":
     LOCAL_INCLUDES += [
         "/xpcom/base",
     ]

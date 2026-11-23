@@ -273,13 +273,7 @@ std::wstring FilePath::ToWStringHack() const { return path_; }
 #endif
 
 void FilePath::OpenInputStream(std::ifstream& stream) const {
-  stream.open(
-#ifndef __MINGW32__
-      path_.c_str(),
-#else
-      base::SysWideToNativeMB(path_).c_str(),
-#endif
-      std::ios::in | std::ios::binary);
+  stream.open(path_.c_str(), std::ios::in | std::ios::binary);
 }
 
 FilePath FilePath::StripTrailingSeparators() const {

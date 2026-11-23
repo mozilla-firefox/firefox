@@ -80,7 +80,7 @@ if CONFIG["CC_TYPE"] == "clang-cl":
 # The heap will grow if need be.
 #
 # Set it to 256k.  See bug 127069.
-if CONFIG["OS_ARCH"] == "WINNT" and CONFIG["CC_TYPE"] not in ("clang", "gcc"):
+if CONFIG["CC_TYPE"] == "clang-cl":
     LDFLAGS += ["/HEAP:0x40000"]
 
 if CONFIG["CC_TYPE"] in ("clang", "gcc"):

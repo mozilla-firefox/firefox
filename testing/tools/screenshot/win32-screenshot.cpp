@@ -75,11 +75,7 @@ static int GetEncoderClsid(const WCHAR* format, CLSID* pClsid) {
   return -1;  // Failure
 }
 
-#ifdef __MINGW32__
-extern "C"
-#endif
-    int
-    wmain(int argc, wchar_t** argv) {
+int wmain(int argc, wchar_t** argv) {
   GdiplusStartupInput gdiplusStartupInput;
   ULONG_PTR gdiplusToken;
   GdiplusStartup(&gdiplusToken, &gdiplusStartupInput, nullptr);

@@ -113,7 +113,7 @@ required to revert their changes** if a fix cannot be found.
 
 The **Tier-2 Firefox platforms** and their supported compilers are:
 
-- Windows/x86 (mingw-clang) - maintained by Tom Ritter and Jacek Caban
+- Windows/x86 (mingw-clang with libc++) - maintained by Tom Ritter and Jacek Caban
   \-
 
   - *Note that some features of this platform are disabled, as they
