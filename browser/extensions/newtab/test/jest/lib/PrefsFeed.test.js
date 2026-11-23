@@ -1190,6 +1190,124 @@ describe("PrefsFeed", () => {
       );
     });
 
+    describe("restoring train-hop defaults on unenrollment", () => {
+      const RESTORED = {
+        "widgets.lists.enabled": false,
+        "widgets.enabled": false,
+        "widgets.weather.size": "medium",
+        topSitesRows: 1,
+      };
+      let originalValues;
+      beforeEach(() => {
+        originalValues = Object.keys(RESTORED).map(
+          pref => PREFS_CONFIG.get(pref).value
+        );
+        for (const [pref, value] of Object.entries(RESTORED)) {
+          PREFS_CONFIG.get(pref).value = value;
+        }
+      });
+      afterEach(() => {
+        Object.keys(RESTORED).forEach((pref, i) => {
+          PREFS_CONFIG.get(pref).value = originalValues[i];
+        });
+      });
+
+      const enroll = payloads =>
+        nimbusFeatures.newtabTrainhop.getAllEnrollments.mockReturnValue(
+          payloads.map(([type, payload]) => ({
+            meta: { isRollout: false },
+            value: { type, payload },
+          }))
+        );
+
+      it("should put back the bool, string and int defaults it wrote", () => {
+        const branch = mockDefaultBranch();
+        enroll([
+          [
+            "widgets",
+            { enabled: true, listsEnabled: true, weatherSize: "large" },
+          ],
+          ["topSites", { topSitesRows: 3 }],
+        ]);
+        feed.onTrainhopExperimentUpdated();
+        expect(branch.setBoolPref).toHaveBeenCalledWith(
+          "widgets.lists.enabled",
+          true
+        );
+        expect(branch.setStringPref).toHaveBeenCalledWith(
+          "widgets.weather.size",
+          "large"
+        );
+        expect(branch.setIntPref).toHaveBeenCalledWith("topSitesRows", 3);
+
+        jest.clearAllMocks();
+        enroll([]);
+        feed.onTrainhopExperimentUpdated();
+        expect(branch.setBoolPref.mock.calls).toEqual([
+          ["widgets.lists.enabled", false],
+          ["widgets.enabled", false],
+        ]);
+        expect(branch.setStringPref.mock.calls).toEqual([
+          ["widgets.weather.size", "medium"],
+        ]);
+        expect(branch.setIntPref.mock.calls).toEqual([["topSitesRows", 1]]);
+
+        jest.clearAllMocks();
+        feed.onTrainhopExperimentUpdated();
+        expect(branch.setBoolPref).not.toHaveBeenCalled();
+      });
+
+      it("should not write a non-integer to an int pref", () => {
+        const branch = mockDefaultBranch();
+        enroll([["topSites", { topSitesRows: 1.5 }]]);
+        feed.onTrainhopExperimentUpdated();
+        expect(branch.setIntPref).not.toHaveBeenCalled();
+      });
+
+      it("should put back the default it found, not the PREFS_CONFIG one", () => {
+        const branch = mockDefaultBranch();
+        branch.setBoolPref("widgets.lists.enabled", true);
+        enroll([["widgets", { listsEnabled: false }]]);
+        feed.onTrainhopExperimentUpdated();
+
+        jest.clearAllMocks();
+        enroll([]);
+        feed.onTrainhopExperimentUpdated();
+        expect(branch.setBoolPref).toHaveBeenCalledWith(
+          "widgets.lists.enabled",
+          true
+        );
+      });
+
+      it("should leave a default that changed since it was written", () => {
+        const branch = mockDefaultBranch();
+        enroll([["widgets", { enabled: true }]]);
+        feed.onTrainhopExperimentUpdated();
+        branch.setBoolPref("widgets.enabled", false);
+
+        jest.clearAllMocks();
+        enroll([]);
+        feed.onTrainhopExperimentUpdated();
+        expect(branch.setBoolPref).not.toHaveBeenCalled();
+      });
+
+      it("should still write the other defaults when one write throws", () => {
+        const branch = mockDefaultBranch();
+        branch.setIntPref.mockImplementation(() => {
+          throw new Error("wrong type");
+        });
+        enroll([
+          ["topSites", { topSitesRows: 3 }],
+          ["widgets", { listsEnabled: true }],
+        ]);
+        feed.onTrainhopExperimentUpdated();
+        expect(branch.setBoolPref).toHaveBeenCalledWith(
+          "widgets.lists.enabled",
+          true
+        );
+      });
+    });
+
     it("should write the Recent Activity default for the spaces experiment", () => {
       // Scoped to the experiment, so an unrelated train-hop config leaves it be.
       FAKE_PREFS.set("pageLayouts.variant", "spaces-buttons-bottom");
