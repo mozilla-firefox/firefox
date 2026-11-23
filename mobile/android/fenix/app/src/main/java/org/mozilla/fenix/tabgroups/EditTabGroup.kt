@@ -36,7 +36,7 @@ import androidx.compose.material3.OutlinedTextFieldDefaults
 import androidx.compose.material3.SheetValue
 import androidx.compose.material3.Surface
 import androidx.compose.material3.Text
-import androidx.compose.material3.rememberStandardBottomSheetState
+import androidx.compose.material3.rememberBottomSheetState
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.collectAsState
@@ -435,8 +435,13 @@ private fun EditTabGroupBottomSheetPreview(@PreviewParameter(PreviewThemeProvide
     FirefoxTheme(theme) {
         Surface {
             ModalBottomSheet(
-                // rememberStandardBottomSheetState() allows this sheet to display properly for Previews
-                sheetState = rememberStandardBottomSheetState(initialValue = SheetValue.Expanded),
+                // Enabling only the expanded/partially-expanded values (no hidden) allows this sheet to
+                // display properly for Previews
+                sheetState =
+                    rememberBottomSheetState(
+                        initialValue = SheetValue.Expanded,
+                        enabledValues = setOf(SheetValue.PartiallyExpanded, SheetValue.Expanded),
+                    ),
                 dragHandle = {
                     BottomSheetHandle(
                         onRequestDismiss = {},

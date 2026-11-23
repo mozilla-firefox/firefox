@@ -7,12 +7,12 @@ package org.mozilla.fenix.debugsettings.info.ui
 import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.ModalBottomSheet
-import androidx.compose.material3.rememberModalBottomSheetState
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.remember
 import androidx.navigation.compose.NavHost
 import androidx.navigation.compose.composable
 import androidx.navigation.compose.rememberNavController
+import org.mozilla.fenix.compose.rememberModalSheetState
 import org.mozilla.fenix.debugsettings.info.DebugInfoSection
 import org.mozilla.fenix.debugsettings.info.toJson
 
@@ -31,7 +31,7 @@ fun DebugInfoBottomSheet(
     sections: List<DebugInfoSection>,
     onDismissRequest: () -> Unit,
 ) {
-    val sheetState = rememberModalBottomSheetState(skipPartiallyExpanded = true)
+    val sheetState = rememberModalSheetState(skipPartiallyExpanded = true)
 
     ModalBottomSheet(
         onDismissRequest = onDismissRequest,

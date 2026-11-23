@@ -24,7 +24,6 @@ import androidx.compose.material3.ModalBottomSheet
 import androidx.compose.material3.SheetState
 import androidx.compose.material3.Surface
 import androidx.compose.material3.Text
-import androidx.compose.material3.rememberModalBottomSheetState
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.collectAsState
@@ -47,6 +46,7 @@ import mozilla.components.compose.base.theme.ThemedValue
 import mozilla.components.compose.base.theme.ThemedValueProvider
 import mozilla.components.compose.base.theme.surfaceDimVariant
 import org.mozilla.fenix.R
+import org.mozilla.fenix.compose.rememberModalSheetState
 import org.mozilla.fenix.reviewprompt.CustomReviewPromptAction
 import org.mozilla.fenix.reviewprompt.CustomReviewPromptState
 import org.mozilla.fenix.reviewprompt.CustomReviewPromptState.Feedback
@@ -80,7 +80,7 @@ fun CustomReviewPrompt(
     onLeaveFeedbackButtonClick: () -> Unit,
     modifier: Modifier = Modifier,
 ) {
-    val sheetState = rememberModalBottomSheetState(skipPartiallyExpanded = true)
+    val sheetState = rememberModalSheetState(skipPartiallyExpanded = true)
 
     LaunchedEffect(Unit) {
         sheetState.show()
@@ -272,7 +272,7 @@ private fun FeedbackStep(onLeaveFeedbackButtonClick: () -> Unit, modifier: Modif
 @FlexibleWindowPreview
 @Composable
 private fun BottomSheetPreview(@PreviewParameter(PreviewThemeProvider::class) theme: Theme) {
-    val sheetState = rememberModalBottomSheetState(skipPartiallyExpanded = true)
+    val sheetState = rememberModalSheetState(skipPartiallyExpanded = true)
 
     FirefoxTheme(theme) {
         BottomSheet(
@@ -291,7 +291,7 @@ private fun BottomSheetPreview(@PreviewParameter(PreviewThemeProvider::class) th
 @Preview
 @Composable
 private fun PrePromptPreview(@PreviewParameter(PreviewThemeProvider::class) theme: Theme) {
-    val sheetState = rememberModalBottomSheetState(skipPartiallyExpanded = true)
+    val sheetState = rememberModalSheetState(skipPartiallyExpanded = true)
 
     FirefoxTheme(theme) {
         BottomSheet(
@@ -310,7 +310,7 @@ private fun PrePromptPreview(@PreviewParameter(PreviewThemeProvider::class) them
 @Preview
 @Composable
 private fun RatePromptPreview(@PreviewParameter(PreviewThemeProvider::class) theme: Theme) {
-    val sheetState = rememberModalBottomSheetState(skipPartiallyExpanded = true)
+    val sheetState = rememberModalSheetState(skipPartiallyExpanded = true)
 
     FirefoxTheme(theme) {
         BottomSheet(
@@ -329,7 +329,7 @@ private fun RatePromptPreview(@PreviewParameter(PreviewThemeProvider::class) the
 @Preview
 @Composable
 private fun FeedbackPromptPreview(@PreviewParameter(PreviewThemeProvider::class) theme: Theme) {
-    val sheetState = rememberModalBottomSheetState(skipPartiallyExpanded = true)
+    val sheetState = rememberModalSheetState(skipPartiallyExpanded = true)
 
     FirefoxTheme(theme) {
         BottomSheet(
@@ -372,7 +372,7 @@ private fun InteractiveBottomSheetPreview(@PreviewParameter(PreviewThemeProvider
     val store = CustomReviewPromptStore(PrePrompt)
     val promptState by store.stateFlow.collectAsState()
 
-    val sheetState = rememberModalBottomSheetState(skipPartiallyExpanded = true)
+    val sheetState = rememberModalSheetState(skipPartiallyExpanded = true)
 
     FirefoxTheme(theme) {
         BottomSheet(

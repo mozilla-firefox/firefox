@@ -27,7 +27,6 @@ import androidx.compose.material3.ModalBottomSheet
 import androidx.compose.material3.SheetState
 import androidx.compose.material3.Surface
 import androidx.compose.material3.Text
-import androidx.compose.material3.rememberModalBottomSheetState
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.rememberCoroutineScope
@@ -50,6 +49,7 @@ import mozilla.components.compose.base.button.TextButton
 import mozilla.components.compose.base.theme.PreviewThemeProvider
 import mozilla.components.compose.base.theme.Theme
 import org.mozilla.fenix.R
+import org.mozilla.fenix.compose.rememberModalSheetState
 import org.mozilla.fenix.ipprotection.helpers.formatPromoDate
 import org.mozilla.fenix.ipprotection.store.IPProtectionPromptState
 import org.mozilla.fenix.ipprotection.store.IPProtectionPromptState.PromptDetails
@@ -82,7 +82,7 @@ fun IPProtectionBottomSheet(
     onGetStartedClicked: () -> Unit,
     onNotNowClicked: () -> Unit,
 ) {
-    val sheetState = rememberModalBottomSheetState(skipPartiallyExpanded = true)
+    val sheetState = rememberModalSheetState(skipPartiallyExpanded = true)
 
     LaunchedEffect(Unit) {
         sheetState.show()

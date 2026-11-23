@@ -19,7 +19,6 @@ import androidx.compose.material3.ModalBottomSheet
 import androidx.compose.material3.ModalBottomSheetProperties
 import androidx.compose.material3.SheetState
 import androidx.compose.material3.Text
-import androidx.compose.material3.rememberModalBottomSheetState
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.rememberCoroutineScope
@@ -39,6 +38,7 @@ import mozilla.components.compose.base.LinkTextState
 import mozilla.components.compose.base.button.FilledButton
 import mozilla.components.compose.base.button.OutlinedButton
 import org.mozilla.fenix.R
+import org.mozilla.fenix.compose.rememberModalSheetState
 import org.mozilla.fenix.termsofuse.experimentation.TermsOfUsePromptContent
 import org.mozilla.fenix.termsofuse.experimentation.getTreatmentA
 import org.mozilla.fenix.termsofuse.experimentation.getTreatmentB
@@ -72,7 +72,7 @@ fun TermsOfUseBottomSheet(
     onTermsOfUseClicked: () -> Unit,
     onPrivacyNoticeClicked: () -> Unit,
 ) {
-    val sheetState = rememberModalBottomSheetState(skipPartiallyExpanded = true)
+    val sheetState = rememberModalSheetState(skipPartiallyExpanded = true)
 
     LaunchedEffect(Unit) {
         sheetState.show()
@@ -247,7 +247,7 @@ private fun TermsOfUseContent(
 @PreviewLightDark
 @Composable
 private fun TermsOfUseBottomSheetMobilePortraitPreviewTreatmentA() {
-    val sheetState = rememberModalBottomSheetState(skipPartiallyExpanded = true)
+    val sheetState = rememberModalSheetState(skipPartiallyExpanded = true)
 
     FirefoxTheme {
         BottomSheet(
@@ -262,7 +262,7 @@ private fun TermsOfUseBottomSheetMobilePortraitPreviewTreatmentA() {
 @PreviewLightDark
 @Composable
 private fun TermsOfUseBottomSheetMobilePortraitPreviewTreatmentB() {
-    val sheetState = rememberModalBottomSheetState(skipPartiallyExpanded = true)
+    val sheetState = rememberModalSheetState(skipPartiallyExpanded = true)
 
     FirefoxTheme {
         BottomSheet(
@@ -277,7 +277,7 @@ private fun TermsOfUseBottomSheetMobilePortraitPreviewTreatmentB() {
 @PreviewLightDark
 @Composable
 private fun TermsOfUseBottomSheetMobilePortraitPreviewTreatmentC() {
-    val sheetState = rememberModalBottomSheetState(skipPartiallyExpanded = true)
+    val sheetState = rememberModalSheetState(skipPartiallyExpanded = true)
 
     FirefoxTheme {
         BottomSheet(
@@ -292,7 +292,7 @@ private fun TermsOfUseBottomSheetMobilePortraitPreviewTreatmentC() {
 @PreviewLightDark
 @Composable
 private fun TermsOfUseBottomSheetMobilePortraitNoHandlePreview() {
-    val sheetState = rememberModalBottomSheetState(skipPartiallyExpanded = true)
+    val sheetState = rememberModalSheetState(skipPartiallyExpanded = true)
 
     FirefoxTheme {
         BottomSheet(
@@ -312,7 +312,7 @@ private fun TermsOfUseBottomSheetMobilePortraitNoHandlePreview() {
 )
 @Composable
 private fun TermsOfUseBottomSheetMobileLandscapePreview() {
-    val sheetState = rememberModalBottomSheetState(skipPartiallyExpanded = true)
+    val sheetState = rememberModalSheetState(skipPartiallyExpanded = true)
 
     FirefoxTheme {
         BottomSheet(
@@ -332,7 +332,7 @@ private fun TermsOfUseBottomSheetMobileLandscapePreview() {
 )
 @Composable
 private fun TermsOfUseBottomSheetTabletPortraitPreview() {
-    val sheetState = rememberModalBottomSheetState(skipPartiallyExpanded = true)
+    val sheetState = rememberModalSheetState(skipPartiallyExpanded = true)
 
     FirefoxTheme {
         BottomSheet(
@@ -348,7 +348,7 @@ private fun TermsOfUseBottomSheetTabletPortraitPreview() {
 @Preview(name = "Tablet - Landscape", device = TABLET, showSystemUi = true)
 @Composable
 private fun TermsOfUseBottomSheetTabletLandscapePreview() {
-    val sheetState = rememberModalBottomSheetState(skipPartiallyExpanded = true)
+    val sheetState = rememberModalSheetState(skipPartiallyExpanded = true)
 
     FirefoxTheme {
         BottomSheet(

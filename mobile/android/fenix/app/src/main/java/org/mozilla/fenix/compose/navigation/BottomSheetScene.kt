@@ -11,7 +11,6 @@ import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.ModalBottomSheet
 import androidx.compose.material3.ModalBottomSheetProperties
-import androidx.compose.material3.rememberModalBottomSheetState
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.ui.Alignment
@@ -27,6 +26,7 @@ import kotlinx.coroutines.delay
 import mozilla.components.compose.base.BottomSheetHandle
 import org.mozilla.fenix.compose.BetaLabel
 import org.mozilla.fenix.compose.navigation.BottomSheetSceneStrategy.Companion.bottomSheet
+import org.mozilla.fenix.compose.rememberModalSheetState
 import org.mozilla.fenix.theme.FirefoxTheme
 
 private val firstOpenDelay = 25.milliseconds
@@ -50,7 +50,7 @@ internal class BottomSheetScene<T : Any>(
     override val entries: List<NavEntry<T>> = listOf(entry)
 
     override val content: @Composable (() -> Unit) = {
-        val sheetState = rememberModalBottomSheetState(skipPartiallyExpanded = skipPartiallyExpanded)
+        val sheetState = rememberModalSheetState(skipPartiallyExpanded = skipPartiallyExpanded)
 
         LaunchedEffect(Unit) {
             if (fullyExpandOnFirstOpen) {

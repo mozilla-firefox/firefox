@@ -26,7 +26,6 @@ import androidx.compose.material3.Icon
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.ModalBottomSheet
 import androidx.compose.material3.Text
-import androidx.compose.material3.rememberModalBottomSheetState
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateMapOf
@@ -49,6 +48,7 @@ import mozilla.components.ui.icons.R as iconsR
 import org.mozilla.fenix.R
 import org.mozilla.fenix.components.menu.compose.ExpandableMenuItemAnimation
 import org.mozilla.fenix.components.menu.compose.MenuGroup
+import org.mozilla.fenix.compose.rememberModalSheetState
 import org.mozilla.fenix.theme.FirefoxTheme
 import org.mozilla.fenix.webcompat.store.PreviewReporterItem
 
@@ -60,7 +60,7 @@ internal fun WebCompatReporterPreviewSheet(
 ) {
     ModalBottomSheet(
         onDismissRequest = onDismissRequest,
-        sheetState = rememberModalBottomSheetState(skipPartiallyExpanded = true),
+        sheetState = rememberModalSheetState(skipPartiallyExpanded = true),
         dragHandle = {
             BottomSheetHandle(
                 onRequestDismiss = onDismissRequest,

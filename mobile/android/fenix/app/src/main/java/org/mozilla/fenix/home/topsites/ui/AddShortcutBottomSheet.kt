@@ -16,7 +16,6 @@ import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.ModalBottomSheet
 import androidx.compose.material3.Surface
 import androidx.compose.material3.Text
-import androidx.compose.material3.rememberModalBottomSheetState
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.platform.testTag
@@ -29,6 +28,7 @@ import mozilla.components.ui.icons.R as iconsR
 import org.mozilla.fenix.R
 import org.mozilla.fenix.components.menu.compose.MenuGroup
 import org.mozilla.fenix.components.menu.compose.MenuItem
+import org.mozilla.fenix.compose.rememberModalSheetState
 import org.mozilla.fenix.home.topsites.TopSitesTestTag
 import org.mozilla.fenix.home.topsites.store.PopularSite
 import org.mozilla.fenix.theme.FirefoxTheme
@@ -43,7 +43,7 @@ internal fun AddShortcutBottomSheet(
     onAddWebsiteClicked: () -> Unit,
     onAddPopularSiteClick: (PopularSite) -> Unit,
 ) {
-    val sheetState = rememberModalBottomSheetState(skipPartiallyExpanded = true)
+    val sheetState = rememberModalSheetState(skipPartiallyExpanded = true)
 
     ModalBottomSheet(
         onDismissRequest = onDismiss,
