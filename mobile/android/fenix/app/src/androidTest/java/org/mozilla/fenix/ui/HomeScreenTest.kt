@@ -53,9 +53,6 @@ class HomeScreenTest {
                 verifyExistingTopSitesTabs("Wikipedia")
                 verifyExistingTopSitesTabs("Google")
             }
-            // Bug 2072025: the stories section was removed from the homepage and replaced by the
-            // "All stories" button in the header, so this assertion no longer applies.
-            // verifyThoughtProvokingStories(true)
             verifyNavigationToolbar()
             verifyHomeMenuButton()
             verifyTabCounter("0")

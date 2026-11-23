@@ -3345,8 +3345,6 @@
     <string name="action_bar_up_description">Navigate up</string>
 
     <!-- Pocket recommended stories -->
-    <!-- Header text for a section on the home screen. -->
-    <string name="pocket_stories_header_2">Stories</string>
     <!-- Header text for the Stories screen. -->
     <string name="stories_screen_text_news">News</string>
     <!-- Content description for the "Navigate back" button on the top app bar of the Stories screen. -->
