@@ -671,10 +671,10 @@ void SharedSubResourceCache<Traits, Derived>::LoadStarted(
     const Key& aKey, LoadingValue& aValue) {
   MOZ_DIAGNOSTIC_ASSERT(!aValue.IsLoading(), "Already loading? How?");
   MOZ_DIAGNOSTIC_ASSERT(KeyFromLoadingValue(aValue).KeyEquals(aKey));
-  MOZ_DIAGNOSTIC_ASSERT(!mLoading.Contains(aKey), "Load not coalesced?");
   aValue.StartLoading();
   MOZ_ASSERT(aValue.IsLoading(), "Check that StartLoading is effectful.");
-  mLoading.InsertOrUpdate(aKey, &aValue);
+  auto& value = mLoading.LookupOrInsert(aKey, &aValue);
+  MOZ_RELEASE_ASSERT(value == &aValue, "Should've been coalesced");
 }
 
 template <typename Traits, typename Derived>
