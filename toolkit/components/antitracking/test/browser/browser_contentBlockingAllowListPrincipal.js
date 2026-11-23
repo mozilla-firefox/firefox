@@ -110,7 +110,6 @@ add_task(async () => {
       ["privacy.restrict3rdpartystorage.heuristic.redirect", false],
       ["privacy.restrict3rdpartystorage.heuristic.recently_visited", false],
       ["privacy.restrict3rdpartystorage.heuristic.window_open", false],
-      ["dom.security.https_first_pbm", false],
     ],
   });
 });

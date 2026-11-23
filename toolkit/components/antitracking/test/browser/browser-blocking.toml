@@ -8,6 +8,7 @@ prefs = [
   "privacy.restrict3rdpartystorage.heuristic.opened_window_after_interaction=true",
   # Disable https-first because of explicit http/https testing
   "dom.security.https_first=false",
+  "dom.security.https_first_pbm=false",
 ]
 
 support-files = [

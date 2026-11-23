@@ -84,10 +84,6 @@ function testTrackingPageUnblocked() {
 }
 
 add_task(async function testExceptionAddition() {
-  await SpecialPowers.pushPrefEnv({
-    set: [["dom.security.https_first_pbm", false]],
-  });
-
   await UrlClassifierTestUtils.addTestTrackers();
   let privateWin = await BrowserTestUtils.openNewBrowserWindow({
     private: true,
@@ -140,10 +136,6 @@ add_task(async function testExceptionAddition() {
 });
 
 add_task(async function testExceptionPersistence() {
-  await SpecialPowers.pushPrefEnv({
-    set: [["dom.security.https_first_pbm", false]],
-  });
-
   info("Open another private browsing window");
   let privateWin = await BrowserTestUtils.openNewBrowserWindow({
     private: true,

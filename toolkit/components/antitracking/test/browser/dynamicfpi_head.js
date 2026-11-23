@@ -51,7 +51,6 @@ this.DynamicFPIHelper = {
           ["privacy.trackingprotection.pbmode.enabled", false],
           ["privacy.trackingprotection.annotate_channels", true],
           ["privacy.dynamic_firstparty.use_site", true],
-          ["dom.security.https_first_pbm", false],
           [
             "privacy.restrict3rdpartystorage.userInteractionRequiredForHosts",
             "not-tracking.example.com",
