@@ -203,6 +203,9 @@ class BufferSurface {
   bool CanRecycle() const { return mCanRecycle && mPID; }
   void DisableRecycle() { mCanRecycle = false; }
 
+  // YUV 4:2:0 surfaces need at least 2x2 pixels to be imported by EGL and
+  // Wayland compositors, smaller ones can't be used for direct composition.
+  bool HasValidYUVSize() const;
   bool SupportsDirectComposition();
 
  protected:

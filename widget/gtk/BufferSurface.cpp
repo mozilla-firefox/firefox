@@ -121,8 +121,13 @@ void BufferSurface::ReleaseTextures() {
   mGL = nullptr;
 }
 
+bool BufferSurface::HasValidYUVSize() const {
+  return GetSurfaceType() != SURFACE_YUV ||
+         (GetWidth() >= 2 && GetHeight() >= 2);
+}
+
 bool BufferSurface::SupportsDirectComposition() {
-  return GdkIsWaylandDisplay() &&
+  return GdkIsWaylandDisplay() && HasValidYUVSize() &&
          GetGlobalDMABufFormats()->SupportsDirectComposition(GetFormat());
 }
 
