@@ -52,6 +52,30 @@ promise_test(async t => {
 }, 'Test copying I420 frame to a non-shared ArrayBufferView');
 
 promise_test(async t => {
+  const frame = makeI420_4x2();
+  const byteOffset = 4;
+  const trailing = 8;
+  const PAD = 0xAA;  // Distinct padding value so we can check for it later
+  const backing = new Uint8Array(byteOffset + I420_DATA.length + trailing);
+  backing.fill(PAD);
+  const destination = backing.subarray(byteOffset,
+                                      byteOffset + I420_DATA.length);
+  const expectedLayout = [
+      {offset: 0, stride: 4},
+      {offset: 8, stride: 2},
+      {offset: 10, stride: 2},
+  ];
+  assert_equals(frame.allocationSize(), I420_DATA.length, 'allocationSize()');
+  const layout = await frame.copyTo(destination);
+  assert_layout_equals(layout, expectedLayout);
+  assert_buffer_equals(destination, I420_DATA);
+  assert_buffer_equals(backing.subarray(0, byteOffset),
+                       new Uint8Array(byteOffset).fill(PAD));
+  assert_buffer_equals(backing.subarray(byteOffset + I420_DATA.length),
+                       new Uint8Array(trailing).fill(PAD));
+}, 'Test copying I420 frame to a view with a non-zero byteOffset');
+
+promise_test(async t => {
   const frame = makeRGBA_2x2();
   const expectedLayout = [
       {offset: 0, stride: 8},

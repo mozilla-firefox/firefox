@@ -1190,9 +1190,7 @@ InitializeFrameFromOtherFrame(nsIGlobalObject* aGlobal,
 
 static void CloneConfiguration(RootedDictionary<VideoFrameCopyToOptions>& aDest,
                                const VideoFrameCopyToOptions& aSrc) {
-  if (aSrc.mColorSpace.WasPassed()) {
-    aDest.mColorSpace.Construct(aSrc.mColorSpace.Value());
-  }
+  aDest.mColorSpace = aSrc.mColorSpace;
 
   if (aSrc.mFormat.WasPassed()) {
     aDest.mFormat.Construct(aSrc.mFormat.Value());
@@ -1961,12 +1959,7 @@ already_AddRefed<Promise> VideoFrame::CopyTo(
        aOptions.mFormat.Value() == VideoPixelFormat::RGBX ||
        aOptions.mFormat.Value() == VideoPixelFormat::BGRA ||
        aOptions.mFormat.Value() == VideoPixelFormat::BGRX)) {
-    // By [1], if color space is not set, use "srgb".
-    // [1]:
-    // https://w3c.github.io/webcodecs/#dom-videoframecopytooptions-colorspace
-    PredefinedColorSpace colorSpace = aOptions.mColorSpace.WasPassed()
-                                          ? aOptions.mColorSpace.Value()
-                                          : PredefinedColorSpace::Srgb;
+    const PredefinedColorSpace colorSpace = aOptions.mColorSpace;
 
     if (mResource->mFormat->PixelFormat() != aOptions.mFormat.Value() ||
         mColorSpace != ConvertToColorSpace(colorSpace)) {

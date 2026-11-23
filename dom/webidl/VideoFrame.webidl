@@ -104,7 +104,7 @@ dictionary VideoFrameCopyToOptions {
   DOMRectInit rect;
   sequence<PlaneLayout> layout;
   VideoPixelFormat format;
-  PredefinedColorSpace colorSpace;
+  PredefinedColorSpace colorSpace = "srgb";
 };
 
 dictionary PlaneLayout {
