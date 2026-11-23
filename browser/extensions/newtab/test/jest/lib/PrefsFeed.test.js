@@ -44,6 +44,30 @@ function calledNames(mockFn) {
   return mockFn.mock.calls.map(([name]) => name);
 }
 
+/**
+ * Mocks the default branch of the stubbed Services with a store, so a pref set
+ * on it reads back.
+ *
+ * @param {object} [setters] - setXPref mocks to also call, for assertions
+ * @returns {object} the mocked branch
+ */
+function mockDefaultBranch(setters = {}) {
+  const values = new Map();
+  const branch = {};
+  for (const type of ["Bool", "Int", "String"]) {
+    const setter = setters[`set${type}Pref`] ?? jest.fn();
+    branch[`set${type}Pref`] = jest.fn((name, value) => {
+      values.set(name, value);
+      setter(name, value);
+    });
+    branch[`get${type}Pref`] = jest.fn((name, fallback) =>
+      values.has(name) ? values.get(name) : fallback
+    );
+  }
+  globalThis.Services.prefs.getDefaultBranch.mockReturnValue(branch);
+  return branch;
+}
+
 describe("PrefsFeed", () => {
   let feed;
   let FAKE_PREFS;
@@ -802,7 +826,7 @@ describe("PrefsFeed", () => {
     });
     it("should write trainhop widgets.weatherSize to the default branch", () => {
       const setStringPref = jest.fn();
-      services.prefs.getDefaultBranch.mockReturnValue({
+      mockDefaultBranch({
         setStringPref,
         setBoolPref: jest.fn(),
       });
@@ -827,7 +851,7 @@ describe("PrefsFeed", () => {
 
     it("should write trainhop highlights.rows to the default branch", () => {
       const setIntPref = jest.fn();
-      services.prefs.getDefaultBranch.mockReturnValue({
+      mockDefaultBranch({
         setIntPref,
         setStringPref: jest.fn(),
         setBoolPref: jest.fn(),
@@ -846,7 +870,7 @@ describe("PrefsFeed", () => {
 
     it("should write widgetsSettings default-enabled values to the default branch", () => {
       const setBoolPref = jest.fn();
-      services.prefs.getDefaultBranch.mockReturnValue({
+      mockDefaultBranch({
         setBoolPref,
         setStringPref: jest.fn(),
       });
@@ -877,7 +901,7 @@ describe("PrefsFeed", () => {
       "should write the widgets.enabled container default from %s",
       (type, payload) => {
         const setBoolPref = jest.fn();
-        services.prefs.getDefaultBranch.mockReturnValue({
+        mockDefaultBranch({
           setBoolPref,
           setStringPref: jest.fn(),
         });
@@ -899,7 +923,7 @@ describe("PrefsFeed", () => {
       "should turn on the preffed-off privacy default from %s",
       (type, payload) => {
         const setBoolPref = jest.fn();
-        services.prefs.getDefaultBranch.mockReturnValue({
+        mockDefaultBranch({
           setBoolPref,
           setStringPref: jest.fn(),
         });
@@ -923,7 +947,7 @@ describe("PrefsFeed", () => {
       "should write a widget's default enabled value from %s",
       (type, payload) => {
         const setBoolPref = jest.fn();
-        services.prefs.getDefaultBranch.mockReturnValue({
+        mockDefaultBranch({
           setBoolPref,
           setStringPref: jest.fn(),
         });
@@ -947,7 +971,7 @@ describe("PrefsFeed", () => {
       "should turn on the preffed-off stocks default from %s",
       (type, payload) => {
         const setBoolPref = jest.fn();
-        services.prefs.getDefaultBranch.mockReturnValue({
+        mockDefaultBranch({
           setBoolPref,
           setStringPref: jest.fn(),
         });
@@ -972,7 +996,7 @@ describe("PrefsFeed", () => {
       "should turn on the preffed-off crossword default from %s",
       (type, payload) => {
         const setBoolPref = jest.fn();
-        services.prefs.getDefaultBranch.mockReturnValue({
+        mockDefaultBranch({
           setBoolPref,
           setStringPref: jest.fn(),
         });
@@ -997,7 +1021,7 @@ describe("PrefsFeed", () => {
       "should turn on the preffed-off recent searches default from %s",
       (type, payload) => {
         const setBoolPref = jest.fn();
-        services.prefs.getDefaultBranch.mockReturnValue({
+        mockDefaultBranch({
           setBoolPref,
           setStringPref: jest.fn(),
         });
@@ -1022,7 +1046,7 @@ describe("PrefsFeed", () => {
       "should turn on the preffed-off horoscopes default from %s",
       (type, payload) => {
         const setBoolPref = jest.fn();
-        services.prefs.getDefaultBranch.mockReturnValue({
+        mockDefaultBranch({
           setBoolPref,
           setStringPref: jest.fn(),
         });
@@ -1047,7 +1071,7 @@ describe("PrefsFeed", () => {
       "should turn on the preffed-off travel default from %s",
       (type, payload) => {
         const setBoolPref = jest.fn();
-        services.prefs.getDefaultBranch.mockReturnValue({
+        mockDefaultBranch({
           setBoolPref,
           setStringPref: jest.fn(),
         });
@@ -1072,7 +1096,7 @@ describe("PrefsFeed", () => {
       "should turn on the preffed-off solitaire default from %s",
       (type, payload) => {
         const setBoolPref = jest.fn();
-        services.prefs.getDefaultBranch.mockReturnValue({
+        mockDefaultBranch({
           setBoolPref,
           setStringPref: jest.fn(),
         });
@@ -1091,7 +1115,7 @@ describe("PrefsFeed", () => {
 
     it("should let widgetsSettings win over widgets for a widget default", () => {
       const setBoolPref = jest.fn();
-      services.prefs.getDefaultBranch.mockReturnValue({
+      mockDefaultBranch({
         setBoolPref,
         setStringPref: jest.fn(),
       });
@@ -1119,7 +1143,7 @@ describe("PrefsFeed", () => {
 
     it("should let widgetsSettings.enabled win over widgets.enabled", () => {
       const setBoolPref = jest.fn();
-      services.prefs.getDefaultBranch.mockReturnValue({
+      mockDefaultBranch({
         setBoolPref,
         setStringPref: jest.fn(),
       });
@@ -1144,7 +1168,7 @@ describe("PrefsFeed", () => {
 
     it("should not write widgets.enabled when no payload carries it", () => {
       const setBoolPref = jest.fn();
-      services.prefs.getDefaultBranch.mockReturnValue({
+      mockDefaultBranch({
         setBoolPref,
         setStringPref: jest.fn(),
       });
@@ -1170,7 +1194,7 @@ describe("PrefsFeed", () => {
       // Scoped to the experiment, so an unrelated train-hop config leaves it be.
       FAKE_PREFS.set("pageLayouts.variant", "spaces-buttons-bottom");
       const setBoolPref = jest.fn();
-      services.prefs.getDefaultBranch.mockReturnValue({
+      mockDefaultBranch({
         setBoolPref,
         setStringPref: jest.fn(),
       });
@@ -1194,7 +1218,7 @@ describe("PrefsFeed", () => {
     it("should put the Recent Activity default back on unenrollment", () => {
       FAKE_PREFS.set("pageLayouts.variant", "spaces-buttons-bottom");
       const setBoolPref = jest.fn();
-      services.prefs.getDefaultBranch.mockReturnValue({
+      mockDefaultBranch({
         setBoolPref,
         setStringPref: jest.fn(),
       });
@@ -1229,7 +1253,7 @@ describe("PrefsFeed", () => {
       const setBoolPref = jest.fn((name, value) =>
         feed.onPrefChanged(name, value)
       );
-      services.prefs.getDefaultBranch.mockReturnValue({
+      mockDefaultBranch({
         setBoolPref,
         setStringPref: jest.fn(),
       });
@@ -1265,7 +1289,7 @@ describe("PrefsFeed", () => {
 
     it("should not revert a default this profile was never given", () => {
       const setBoolPref = jest.fn();
-      services.prefs.getDefaultBranch.mockReturnValue({
+      mockDefaultBranch({
         setBoolPref,
         setStringPref: jest.fn(),
       });
@@ -1282,7 +1306,7 @@ describe("PrefsFeed", () => {
     it("should not touch the Recent Activity default for an unrelated config", () => {
       FAKE_PREFS.set("pageLayouts.variant", "spaces-buttons-bottom");
       const setBoolPref = jest.fn();
-      services.prefs.getDefaultBranch.mockReturnValue({
+      mockDefaultBranch({
         setBoolPref,
         setStringPref: jest.fn(),
       });
@@ -1302,7 +1326,7 @@ describe("PrefsFeed", () => {
 
     it("should not write a widget default when its widgetsSettings key is absent", () => {
       const setBoolPref = jest.fn();
-      services.prefs.getDefaultBranch.mockReturnValue({
+      mockDefaultBranch({
         setBoolPref,
         setStringPref: jest.fn(),
       });
@@ -1324,7 +1348,7 @@ describe("PrefsFeed", () => {
 
     it("should write widgetPictureOfTheDay.enabled to the user pref default branch, not the system pref", () => {
       const setBoolPref = jest.fn();
-      services.prefs.getDefaultBranch.mockReturnValue({
+      mockDefaultBranch({
         setBoolPref,
         setStringPref: jest.fn(),
       });
@@ -1358,7 +1382,7 @@ describe("PrefsFeed", () => {
 
     it("should not write the POTD enabled default when widgetPictureOfTheDay.enabled is absent", () => {
       const setBoolPref = jest.fn();
-      services.prefs.getDefaultBranch.mockReturnValue({
+      mockDefaultBranch({
         setBoolPref,
         setStringPref: jest.fn(),
       });
@@ -1382,7 +1406,7 @@ describe("PrefsFeed", () => {
 
     it("should write widgetCrossword.enabled to the user pref default branch, not the system pref", () => {
       const setBoolPref = jest.fn();
-      services.prefs.getDefaultBranch.mockReturnValue({
+      mockDefaultBranch({
         setBoolPref,
         setStringPref: jest.fn(),
       });
@@ -1417,7 +1441,7 @@ describe("PrefsFeed", () => {
 
     it("should write widgetPrivacy.enabled to the user pref default branch, not the system pref", () => {
       const setBoolPref = jest.fn();
-      services.prefs.getDefaultBranch.mockReturnValue({
+      mockDefaultBranch({
         setBoolPref,
         setStringPref: jest.fn(),
       });
@@ -1449,7 +1473,7 @@ describe("PrefsFeed", () => {
 
     it("should not write the privacy enabled default when widgetPrivacy.enabled is absent", () => {
       const setBoolPref = jest.fn();
-      services.prefs.getDefaultBranch.mockReturnValue({
+      mockDefaultBranch({
         setBoolPref,
         setStringPref: jest.fn(),
       });
@@ -1470,7 +1494,7 @@ describe("PrefsFeed", () => {
 
     it("should not write the crossword enabled default when widgetCrossword.enabled is absent", () => {
       const setBoolPref = jest.fn();
-      services.prefs.getDefaultBranch.mockReturnValue({
+      mockDefaultBranch({
         setBoolPref,
         setStringPref: jest.fn(),
       });
@@ -1494,7 +1518,7 @@ describe("PrefsFeed", () => {
 
     it("should not write widgets.weather.size when weatherSize is missing", () => {
       const setStringPref = jest.fn();
-      services.prefs.getDefaultBranch.mockReturnValue({
+      mockDefaultBranch({
         setStringPref,
         setBoolPref: jest.fn(),
       });
@@ -1516,7 +1540,7 @@ describe("PrefsFeed", () => {
 
     it("should not write widgets.weather.size when weatherSize is empty string", () => {
       const setStringPref = jest.fn();
-      services.prefs.getDefaultBranch.mockReturnValue({
+      mockDefaultBranch({
         setStringPref,
         setBoolPref: jest.fn(),
       });
@@ -1939,7 +1963,7 @@ describe("PrefsFeed", () => {
       defaultBranch = {
         setBoolPref: jest.fn(),
       };
-      services.prefs.getDefaultBranch.mockReturnValue(defaultBranch);
+      mockDefaultBranch(defaultBranch);
 
       // Setup store state with a fake activation window config
       feed.store.state = {
@@ -2185,7 +2209,7 @@ describe("PrefsFeed", () => {
       defaultBranch = {
         setBoolPref: jest.fn(),
       };
-      services.prefs.getDefaultBranch.mockReturnValue(defaultBranch);
+      mockDefaultBranch(defaultBranch);
       jest.spyOn(feed, "onPrefChanged");
     });
 
@@ -2646,7 +2670,7 @@ describe("PrefsFeed", () => {
         defaultBranch = {
           setBoolPref: jest.fn(),
         };
-        services.prefs.getDefaultBranch.mockReturnValue(defaultBranch);
+        mockDefaultBranch(defaultBranch);
       });
 
       it("should reset defaults to true and restore user's top sites value", () => {
