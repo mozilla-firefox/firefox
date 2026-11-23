@@ -734,6 +734,7 @@ class AboutTranslations {
    * Records activation and requests that this page's Split View tab close.
    */
   #onSplitViewCloseButton = () => {
+    AT_telemetry("onCloseCompanionButton");
     AT_closeTranslationsSplitViewTab();
   };
 

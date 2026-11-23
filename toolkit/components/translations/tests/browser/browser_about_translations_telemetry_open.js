@@ -14,6 +14,7 @@ add_task(async function test_about_translations_telemetry_open() {
     {
       expectedEventCount: 1,
       expectNewFlowId: true,
+      assertForAllEvents: { open_location: "full" },
     }
   );
 

@@ -5311,98 +5311,6 @@ class SplitViewTranslationsTestUtils {
   }
 
   /**
-   * Adds an existing tab to Split View through the partner's menu and tab chooser.
-   *
-   * @param {MozTabbrowserTab} partnerTab
-   * @param {MozTabbrowserTab} existingTab
-   * @returns {Promise<void>}
-   */
-  static async addExistingTab(partnerTab, existingTab) {
-    const win = partnerTab.documentGlobal;
-    const splitViewCreated = BrowserTestUtils.waitForEvent(
-      win.gBrowser.tabContainer,
-      "SplitViewCreated"
-    );
-    const chooserOpened = BrowserTestUtils.waitForNewTab(
-      win.gBrowser,
-      "about:opentabs",
-      true
-    );
-    await this.#clickContextMenuItem(partnerTab, "context_moveTabToSplitView");
-    const [chooserTab] = await Promise.all([chooserOpened, splitViewCreated]);
-
-    try {
-      const chooserBrowser = chooserTab.linkedBrowser;
-      const component = await BrowserTestUtils.waitForMutationCondition(
-        chooserBrowser.contentDocument,
-        { childList: true, subtree: true },
-        () =>
-          chooserBrowser.contentDocument.querySelector("splitview-opentabs"),
-        { msg: "Waiting for the Split View chooser to render" }
-      );
-      await component.updateComplete;
-      const list = component.shadowRoot.querySelector("sidebar-tab-list");
-      await list.updateComplete;
-      const row = await BrowserTestUtils.waitForMutationCondition(
-        list.shadowRoot,
-        { childList: true, subtree: true },
-        () =>
-          Array.from(list.shadowRoot.querySelectorAll("sidebar-tab-row")).find(
-            item => item.tabElement === existingTab
-          ),
-        {
-          msg: "Waiting for the existing tab to appear in the Split View chooser",
-        }
-      );
-      await row.updateComplete;
-
-      const chooserClosed = BrowserTestUtils.waitForEvent(
-        chooserTab,
-        "TabClose"
-      );
-      const chooserSessionStoreUpdated =
-        BrowserTestUtils.waitForSessionStoreUpdate(chooserTab);
-      const chooserRemoved = BrowserTestUtils.waitForMutationCondition(
-        win.gBrowser.tabContainer,
-        { childList: true, subtree: true },
-        () => !chooserTab.isConnected
-      );
-      const splitViewChanged = BrowserTestUtils.waitForEvent(
-        win.gBrowser.tabContainer,
-        "SplitViewTabChange",
-        false,
-        () =>
-          partnerTab.splitview && existingTab.splitview === partnerTab.splitview
-      );
-      // Match the existing sidebar-row tests for links with tabindex="-1".
-      AccessibilityUtils.setEnv({ focusableRule: false });
-      try {
-        EventUtils.synthesizeMouseAtCenter(
-          row.mainEl,
-          {},
-          chooserBrowser.contentWindow
-        );
-      } finally {
-        AccessibilityUtils.resetEnv();
-      }
-      await Promise.all([
-        chooserClosed,
-        chooserSessionStoreUpdated,
-        chooserRemoved,
-        splitViewChanged,
-      ]);
-      ok(
-        !chooserTab.isConnected,
-        "Choosing an existing tab closes the tab chooser"
-      );
-    } finally {
-      if (chooserTab.isConnected) {
-        await this.closeTab(chooserTab);
-      }
-    }
-  }
-
-  /**
    * Separates a Split View through its tab context menu.
    *
    * @param {MozTabbrowserTab} tab
@@ -5517,6 +5425,125 @@ class AboutTranslationsTestUtils {
       {},
       browser
     );
+  }
+
+  /**
+   * Verifies that only the page's close button records activation in its flow.
+   *
+   * @param {object} options
+   * @param {boolean} options.closeWithButton
+   *   Whether to use the page's close button or separate and close the tab normally.
+   * @returns {Promise<void>}
+   */
+  static async assertSplitViewCloseButtonTelemetry({ closeWithButton }) {
+    const { cleanup, tab: partnerTab } = await loadTestPage({
+      page: SPANISH_PAGE_URL,
+      languagePairs: LANGUAGE_PAIRS,
+      prefs: [["browser.tabs.splitView.enabled", true]],
+    });
+    let aboutTranslationsTab = null;
+
+    try {
+      aboutTranslationsTab = await BrowserTestUtils.openNewForegroundTab(
+        gBrowser,
+        "about:translations"
+      );
+      const browser = aboutTranslationsTab.linkedBrowser;
+      await this.assertSplitViewCloseButton(browser, { visible: false });
+      await TestTranslationsTelemetry.assertEvent(
+        Glean.translationsAboutTranslationsPage.open,
+        {
+          expectedEventCount: 1,
+          expectNewFlowId: true,
+          assertForAllEvents: {
+            flow_id: value =>
+              typeof value === "string" && Boolean(value.length),
+          },
+        }
+      );
+      await TestTranslationsTelemetry.assertEvent(
+        Glean.translationsAboutTranslationsPage.closeCompanionButton,
+        { expectedEventCount: 0 }
+      );
+
+      info("Joining Split View does not record close-button activation");
+      await this.assertSplitViewCloseButton(browser, { visible: true }, () =>
+        SplitViewTranslationsTestUtils.openExistingTabsInSplitView(
+          aboutTranslationsTab,
+          partnerTab
+        )
+      );
+      await TestTranslationsTelemetry.assertEvent(
+        Glean.translationsAboutTranslationsPage.closeCompanionButton,
+        { expectedEventCount: 0 }
+      );
+
+      if (!closeWithButton) {
+        info("Separating Split View does not record close-button activation");
+        await this.assertSplitViewCloseButton(browser, { visible: false }, () =>
+          SplitViewTranslationsTestUtils.separateTabs(aboutTranslationsTab)
+        );
+        await TestTranslationsTelemetry.assertEvent(
+          Glean.translationsAboutTranslationsPage.closeCompanionButton,
+          { expectedEventCount: 0 }
+        );
+        if (gBrowser.selectedTab !== aboutTranslationsTab) {
+          await BrowserTestUtils.switchTab(gBrowser, aboutTranslationsTab);
+        }
+      }
+
+      const tabClosed = BrowserTestUtils.waitForEvent(
+        aboutTranslationsTab,
+        "TabClose"
+      );
+      const tabRemoved = BrowserTestUtils.waitForMutationCondition(
+        gBrowser.tabContainer,
+        { childList: true, subtree: true },
+        () => !aboutTranslationsTab.isConnected,
+        { msg: "Waiting for the closed about:translations tab to be removed" }
+      );
+      if (closeWithButton) {
+        info(
+          "The page's close button records activation before closing its tab"
+        );
+        const splitViewRemoved = BrowserTestUtils.waitForEvent(
+          gBrowser.tabContainer,
+          "SplitViewRemoved",
+          false,
+          () => !partnerTab.splitview
+        );
+        await this.clickSplitViewCloseButton(browser);
+        await Promise.all([tabClosed, splitViewRemoved]);
+      } else {
+        info(
+          "The browser's tab close button does not record page-button activation"
+        );
+        EventUtils.synthesizeMouseAtCenter(
+          aboutTranslationsTab.querySelector(".tab-close-button"),
+          {},
+          window
+        );
+        await tabClosed;
+      }
+      await tabRemoved;
+
+      ok(!aboutTranslationsTab.isConnected, "about:translations is closed");
+      ok(partnerTab.isConnected, "The partner tab remains open");
+      ok(!partnerTab.splitview, "The partner tab has left Split View");
+      await TestTranslationsTelemetry.assertEvent(
+        Glean.translationsAboutTranslationsPage.closeCompanionButton,
+        {
+          expectedEventCount: closeWithButton ? 1 : 0,
+          expectNewFlowId: closeWithButton ? false : null,
+        }
+      );
+    } finally {
+      partnerTab.splitview?.unsplitTabs();
+      if (aboutTranslationsTab?.isConnected) {
+        await BrowserTestUtils.removeTab(aboutTranslationsTab);
+      }
+      await cleanup();
+    }
   }
 
   /**

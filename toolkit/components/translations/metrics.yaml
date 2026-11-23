@@ -945,10 +945,30 @@ translations.about_translations_page:
       Triggers when the about:translations page is opened.
     extra_keys:
       flow_id: *flow_id
+      open_location:
+        type: string
+        description: Where the page opened, either "full" for a standalone tab or "split" for Split View.
     bugs:
       - https://bugzilla.mozilla.org/show_bug.cgi?id=1814195
+      - https://bugzilla.mozilla.org/show_bug.cgi?id=2080492
     data_reviews:
       - https://bugzilla.mozilla.org/show_bug.cgi?id=1814195
+    data_sensitivity:
+      - interaction
+    notification_emails:
+      - translations-telemetry-alerts@mozilla.com
+    expires: never
+
+  close_companion_button:
+    type: event
+    description: >
+      Triggers when the Split View close button is invoked in about:translations.
+    extra_keys:
+      flow_id: *flow_id
+    bugs:
+      - https://bugzilla.mozilla.org/show_bug.cgi?id=2045085
+    data_reviews:
+      - https://bugzilla.mozilla.org/show_bug.cgi?id=2045085
     data_sensitivity:
       - interaction
     notification_emails:

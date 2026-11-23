@@ -3570,6 +3570,18 @@ class FullPageTranslationsTestUtils {
         { expectedEventCount: 1 }
       );
 
+      await AboutTranslationsTestUtils.assertSplitViewCloseButton(
+        aboutTranslationsTab.linkedBrowser,
+        { visible: true }
+      );
+      await TestTranslationsTelemetry.assertEvent(
+        Glean.translationsAboutTranslationsPage.open,
+        {
+          expectedEventCount: 1,
+          assertForAllEvents: { open_location: "split" },
+        }
+      );
+
       info(
         "Reopening while split starts a new flow without another activation"
       );

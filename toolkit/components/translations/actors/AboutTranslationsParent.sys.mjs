@@ -260,7 +260,14 @@ export class AboutTranslationsParent extends JSWindowActorParent {
           );
         }
 
-        telemetryFunction(telemetryData);
+        if (telemetryFunctionName === "onOpen") {
+          telemetryFunction({
+            ...telemetryData,
+            openLocation: this.#getTab()?.splitview ? "split" : "full",
+          });
+        } else {
+          telemetryFunction(telemetryData);
+        }
 
         return undefined;
       }
