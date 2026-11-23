@@ -467,9 +467,7 @@ int NrIceCtx::stream_checking(void* obj, nr_ice_media_stream* stream) {
   NrIceCtx* ctx = static_cast<NrIceCtx*>(obj);
   RefPtr<NrIceMediaStream> s = ctx->FindStream(stream);
 
-  MOZ_ASSERT(s);
-
-  if (!s->AnyGenerationIsConnected()) {
+  if (s && !s->AnyGenerationIsConnected()) {
     // the checking state only applies if we aren't connected
     ctx->SignalConnectionStateChange(s, ICE_CTX_CHECKING);
   }
