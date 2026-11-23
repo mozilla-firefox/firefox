@@ -864,16 +864,16 @@ var SelectTranslationsPanel = new (class {
     } = this.elements;
     switch (target.id) {
       case cancelButton.id: {
-        this.onClickCancelButton();
+        this.onCancelButton();
         break;
       }
       case copyButton.id: {
-        this.onClickCopyButton();
+        this.onCopyButton();
         break;
       }
       case doneButtonPrimary.id:
       case doneButtonSecondary.id: {
-        this.onClickDoneButton();
+        this.onDoneButton();
         break;
       }
       case settingsButton.id: {
@@ -881,15 +881,15 @@ var SelectTranslationsPanel = new (class {
         break;
       }
       case translateButton.id: {
-        this.onClickTranslateButton();
+        this.onTranslateButton();
         break;
       }
       case translateFullPageButton.id: {
-        this.onClickTranslateFullPageButton();
+        this.onTranslateFullPageButton();
         break;
       }
       case tryAgainButton.id: {
-        this.onClickTryAgainButton();
+        this.onTryAgainButton();
         break;
       }
     }
@@ -1208,7 +1208,7 @@ var SelectTranslationsPanel = new (class {
   /**
    * Handles events when the panel's cancel button is clicked.
    */
-  onClickCancelButton() {
+  onCancelButton() {
     TranslationsParent.telemetry().selectTranslationsPanel().onCancelButton();
     this.close();
   }
@@ -1216,7 +1216,7 @@ var SelectTranslationsPanel = new (class {
   /**
    * Handles events when the panel's copy button is clicked.
    */
-  onClickCopyButton() {
+  onCopyButton() {
     TranslationsParent.telemetry().selectTranslationsPanel().onCopyButton();
 
     try {
@@ -1232,7 +1232,7 @@ var SelectTranslationsPanel = new (class {
   /**
    * Handles events when the panel's done button is clicked.
    */
-  onClickDoneButton() {
+  onDoneButton() {
     TranslationsParent.telemetry().selectTranslationsPanel().onDoneButton();
     this.close();
   }
@@ -1240,7 +1240,7 @@ var SelectTranslationsPanel = new (class {
   /**
    * Handles events when the panel's translate button is clicked.
    */
-  onClickTranslateButton() {
+  onTranslateButton() {
     const { fromMenuList, tryAnotherSourceMenuList } = this.elements;
     const { detectedLanguage, targetLanguage } = this.#translationState;
 
@@ -1258,7 +1258,7 @@ var SelectTranslationsPanel = new (class {
   /**
    * Handles events when the panel's translate-full-page button is clicked.
    */
-  onClickTranslateFullPageButton() {
+  onTranslateFullPageButton() {
     TranslationsParent.telemetry()
       .selectTranslationsPanel()
       .onTranslateFullPageButton();
@@ -1294,7 +1294,7 @@ var SelectTranslationsPanel = new (class {
   /**
    * Handles events when the panel's try-again button is clicked.
    */
-  onClickTryAgainButton() {
+  onTryAgainButton() {
     TranslationsParent.telemetry().selectTranslationsPanel().onTryAgainButton();
 
     switch (this.phase()) {

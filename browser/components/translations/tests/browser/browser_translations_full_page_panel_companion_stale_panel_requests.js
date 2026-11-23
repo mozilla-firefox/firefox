@@ -89,10 +89,8 @@ add_task(async function test_companion_ignores_stale_change_source_language() {
     prefs: [["browser.tabs.splitView.enabled", true]],
   });
   const panel = FullPageTranslationsPanel;
-  const { onChangeSourceLanguage } = panel;
-  const { getLangTags } = TranslationsParent.prototype;
-  const lookupStarted = Promise.withResolvers();
-  const releaseLookup = Promise.withResolvers();
+  const { onChangeSourceLanguageButton } = panel;
+  let sourceLookup;
   let changeSourceLanguage;
   let otherTab;
   let companionTab;
@@ -110,21 +108,16 @@ add_task(async function test_companion_ignores_stale_change_source_language() {
     });
 
     info("Hold the language lookup triggered by Change Source Language");
-    TranslationsParent.prototype.getLangTags = async function () {
-      TranslationsParent.prototype.getLangTags = getLangTags;
-      lookupStarted.resolve();
-      await releaseLookup.promise;
-
-      return getLangTags.call(this);
-    };
-    panel.onChangeSourceLanguage = event => {
-      changeSourceLanguage = onChangeSourceLanguage.call(panel, event);
+    sourceLookup =
+      FullPageTranslationsTestUtils.holdNextLanguageDetectionResult(sourceTab);
+    panel.onChangeSourceLanguageButton = event => {
+      changeSourceLanguage = onChangeSourceLanguageButton.call(panel, event);
     };
     await FullPageTranslationsTestUtils.waitForPanelPopupEvent(
       "popuphidden",
       () => panel.elements.changeSourceLanguageButton.click()
     );
-    await lookupStarted.promise;
+    await sourceLookup.entered;
 
     info("Open the French page's panel while the previous lookup is pending");
     await BrowserTestUtils.switchTab(gBrowser, otherTab);
@@ -133,7 +126,7 @@ add_task(async function test_companion_ignores_stale_change_source_language() {
       expectedToLanguage: "en",
     });
 
-    releaseLookup.resolve();
+    sourceLookup.release();
     await changeSourceLanguage;
 
     info("Open the companion after the stale lookup finishes");
@@ -155,9 +148,8 @@ add_task(async function test_companion_ignores_stale_change_source_language() {
       { sourceLanguage: "fr", targetLanguage: "en" }
     );
   } finally {
-    delete panel.onChangeSourceLanguage;
-    TranslationsParent.prototype.getLangTags = getLangTags;
-    releaseLookup.resolve();
+    delete panel.onChangeSourceLanguageButton;
+    sourceLookup?.restore();
     await changeSourceLanguage?.catch(() => {});
     otherTab?.splitview?.unsplitTabs();
     if (companionTab?.isConnected) {

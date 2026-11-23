@@ -349,23 +349,12 @@ var FullPageTranslationsPanel = new (class {
   }
 
   /**
-   * Cache the last command used for error hints so that it can be later removed.
-   */
-  #lastHintCommand = null;
-
-  /**
    * @param {object} options
    * @param {string} options.message - l10n id
-   * @param {string} options.hint - l10n id
-   * @param {string} options.actionText - l10n id
-   * @param {Function} options.actionCommand - The action to perform.
+   * @param {string} [options.hint] - l10n id
+   * @param {string} [options.actionText] - l10n id for the retry button
    */
-  #showError({
-    message,
-    hint,
-    actionText: hintCommandText,
-    actionCommand: hintCommand,
-  }) {
+  #showError({ message, hint, actionText }) {
     const { error, errorMessage, errorMessageHint, errorHintAction, intro } =
       this.elements;
     error.hidden = false;
@@ -379,12 +368,9 @@ var FullPageTranslationsPanel = new (class {
       errorMessageHint.hidden = true;
     }
 
-    if (hintCommand && hintCommandText) {
-      errorHintAction.removeEventListener("click", this.#lastHintCommand);
-      this.#lastHintCommand = hintCommand;
-      errorHintAction.addEventListener("click", hintCommand);
+    if (actionText) {
       errorHintAction.hidden = false;
-      document.l10n.setAttributes(errorHintAction, hintCommandText);
+      document.l10n.setAttributes(errorHintAction, actionText);
     } else {
       errorHintAction.hidden = true;
     }
@@ -643,7 +629,6 @@ var FullPageTranslationsPanel = new (class {
         message: "translations-panel-error-load-languages",
         hint: "translations-panel-error-load-languages-hint",
         actionText: "translations-panel-error-load-languages-hint-button",
-        actionCommand: () => this.#reloadLangList(actor),
       });
 
       translateButton.disabled = true;
@@ -1068,8 +1053,15 @@ var FullPageTranslationsPanel = new (class {
    * is shown. This method switches the panel back to the language selection view.
    * Note that this bypasses the showSubView method since the main view doesn't support
    * a subview.
+   *
+   * @param {Event} event
+   * @returns {Promise<void>}
    */
-  async onChangeSourceLanguage(event) {
+  async onChangeSourceLanguageButton(event) {
+    TranslationsParent.telemetry()
+      .fullPagePanel()
+      .onChangeSourceLanguageButton();
+
     const { panel } = this.elements;
     const actor = TranslationsParent.getTranslationsActor(
       gBrowser.selectedBrowser
@@ -1091,58 +1083,30 @@ var FullPageTranslationsPanel = new (class {
   }
 
   /**
-   * @param {TranslationsActor} actor
+   * Retries loading the language lists for the document shown in the panel.
+   *
+   * @returns {Promise<void>}
    */
-  async #reloadLangList(actor) {
+  async #reloadLangList() {
+    const sourceWindowGlobal = this.#panelWindowGlobal;
     try {
       await this.#ensureLangListsBuilt();
+
+      if (
+        // The panel may have closed or reopened for another document.
+        this.#panelWindowGlobal !== sourceWindowGlobal ||
+        // The selected tab may have changed or navigated.
+        !this.#isSelectedDocument(sourceWindowGlobal)
+      ) {
+        return;
+      }
+
+      const actor = TranslationsParent.getTranslationsActor(
+        gBrowser.selectedBrowser
+      );
       await this.#showDefaultView(actor);
     } catch (error) {
-      this.elements.errorHintAction.disabled = false;
-    }
-  }
-
-  /**
-   * Handle telemetry events when buttons are invoked in the panel.
-   *
-   * @param {Event} event
-   */
-  handlePanelButtonEvent(event) {
-    const {
-      cancelButton,
-      companionButton,
-      changeSourceLanguageButton,
-      dismissErrorButton,
-      restoreButton,
-      translateButton,
-    } = this.elements;
-    switch (event.target.id) {
-      case cancelButton.id: {
-        TranslationsParent.telemetry().fullPagePanel().onCancelButton();
-        break;
-      }
-      case companionButton.id: {
-        TranslationsParent.telemetry().fullPagePanel().onCompanionButton();
-        break;
-      }
-      case changeSourceLanguageButton.id: {
-        TranslationsParent.telemetry()
-          .fullPagePanel()
-          .onChangeSourceLanguageButton();
-        break;
-      }
-      case dismissErrorButton.id: {
-        TranslationsParent.telemetry().fullPagePanel().onDismissErrorButton();
-        break;
-      }
-      case restoreButton.id: {
-        TranslationsParent.telemetry().fullPagePanel().onRestorePageButton();
-        break;
-      }
-      case translateButton.id: {
-        TranslationsParent.telemetry().fullPagePanel().onTranslateButton();
-        break;
-      }
+      this.console?.error(error);
     }
   }
 
@@ -1376,9 +1340,11 @@ var FullPageTranslationsPanel = new (class {
   }
 
   /**
-   * Handle the translation button being clicked when there are two language options.
+   * Translate using the selected source and target languages.
+   *
+   * @returns {Promise<void>}
    */
-  async onTranslate() {
+  async #translate() {
     this.#manuallySelectedToLanguage = null;
     PanelMultiView.hidePopup(this.elements.panel);
 
@@ -1420,6 +1386,7 @@ var FullPageTranslationsPanel = new (class {
     let sourceLanguage = fromMenuList.value.split(",")[0];
     let targetLanguage = toMenuList.value.split(",")[0];
 
+    TranslationsParent.telemetry().fullPagePanel().onCompanionButton();
     PanelMultiView.hidePopup(panel);
 
     try {
@@ -1453,8 +1420,39 @@ var FullPageTranslationsPanel = new (class {
   /**
    * Handle the cancel button being clicked.
    */
-  onCancel() {
-    PanelMultiView.hidePopup(this.elements.panel);
+  onCancelButton() {
+    TranslationsParent.telemetry().fullPagePanel().onCancelButton();
+    this.close();
+  }
+
+  /**
+   * Dismiss the error and record the button activation.
+   */
+  onDismissErrorButton() {
+    TranslationsParent.telemetry().fullPagePanel().onDismissErrorButton();
+    this.close();
+  }
+
+  /**
+   * Translate the page and record the button activation.
+   *
+   * @returns {Promise<void>}
+   */
+  onTranslateButton() {
+    TranslationsParent.telemetry().fullPagePanel().onTranslateButton();
+
+    return this.#translate();
+  }
+
+  /**
+   * Restore the original page and record the button activation.
+   *
+   * @returns {Promise<void>}
+   */
+  onRestoreButton() {
+    TranslationsParent.telemetry().fullPagePanel().onRestorePageButton();
+
+    return this.#restore();
   }
 
   /**
@@ -1522,11 +1520,11 @@ var FullPageTranslationsPanel = new (class {
         break;
       }
       case PageAction.RESTORE_PAGE: {
-        await this.onRestore();
+        await this.#restore();
         break;
       }
       case PageAction.TRANSLATE_PAGE: {
-        await this.onTranslate();
+        await this.#translate();
         break;
       }
       case PageAction.CLOSE_PANEL: {
@@ -1606,9 +1604,11 @@ var FullPageTranslationsPanel = new (class {
   }
 
   /**
-   * Handle the restore button being clicked.
+   * Restore the original page.
+   *
+   * @returns {Promise<void>}
    */
-  async onRestore() {
+  async #restore() {
     const { panel } = this.elements;
     PanelMultiView.hidePopup(panel);
     const { docLangTag } = await this.#getCachedDetectedLanguages();
@@ -1674,6 +1674,73 @@ var FullPageTranslationsPanel = new (class {
   }
 
   /**
+   * Handle a command from a panel language menu.
+   *
+   * @param {Event} event
+   * @param {string} id - The control identifier.
+   */
+  #handleCommandEvent(event, id) {
+    switch (id) {
+      case "full-page-translations-panel-from-menupopup": {
+        this.onChangeFromLanguage(event);
+        break;
+      }
+      case "full-page-translations-panel-to-menupopup": {
+        this.onChangeToLanguage(event);
+        break;
+      }
+    }
+  }
+
+  /**
+   * Handle a click on a panel button or link.
+   *
+   * @param {Event} event
+   * @param {string} id - The control identifier.
+   */
+  #handleClickEvent(event, id) {
+    switch (id) {
+      case "translations-panel-settings": {
+        this.openSettingsPopup(event.target);
+        break;
+      }
+      case "full-page-translations-panel-restore-button": {
+        this.onRestoreButton();
+        break;
+      }
+      case "full-page-translations-panel-cancel": {
+        this.onCancelButton();
+        break;
+      }
+      case "full-page-translations-panel-dismiss-error": {
+        this.onDismissErrorButton();
+        break;
+      }
+      case "full-page-translations-panel-translate-hint-action": {
+        this.#reloadLangList();
+        break;
+      }
+      case "full-page-translations-panel-translate": {
+        this.onTranslateButton();
+        break;
+      }
+      case "full-page-translations-panel-change-source-language": {
+        this.onChangeSourceLanguageButton(event);
+        break;
+      }
+      case "full-page-translations-panel-companion-button": {
+        this.onCompanionButton();
+        break;
+      }
+      case "full-page-translations-panel-intro-learn-more-link":
+      case "full-page-translations-panel-unsupported-learn-more-link": {
+        this.onLearnMoreLink();
+        break;
+      }
+    }
+  }
+
+  /**
    * Set the state of the translations button in the URL bar.
    *
    * @param {CustomEvent} event
@@ -1692,53 +1759,11 @@ var FullPageTranslationsPanel = new (class {
 
     switch (event.type) {
       case "command": {
-        switch (id) {
-          case "full-page-translations-panel-from-menupopup": {
-            this.onChangeFromLanguage(event);
-            break;
-          }
-          case "full-page-translations-panel-to-menupopup": {
-            this.onChangeToLanguage(event);
-            break;
-          }
-        }
+        this.#handleCommandEvent(event, id);
         break;
       }
       case "click": {
-        this.handlePanelButtonEvent(event);
-
-        switch (id) {
-          case "translations-panel-settings": {
-            this.openSettingsPopup(target);
-            break;
-          }
-          case "full-page-translations-panel-restore-button": {
-            this.onRestore(event);
-            break;
-          }
-          case "full-page-translations-panel-cancel":
-          case "full-page-translations-panel-dismiss-error": {
-            this.onCancel(event);
-            break;
-          }
-          case "full-page-translations-panel-translate": {
-            this.onTranslate(event);
-            break;
-          }
-          case "full-page-translations-panel-change-source-language": {
-            this.onChangeSourceLanguage(event);
-            break;
-          }
-          case "full-page-translations-panel-companion-button": {
-            this.onCompanionButton(event);
-            break;
-          }
-          case "full-page-translations-panel-intro-learn-more-link":
-          case "full-page-translations-panel-unsupported-learn-more-link": {
-            this.onLearnMoreLink();
-            break;
-          }
-        }
+        this.#handleClickEvent(event, id);
         break;
       }
       case "popupshown":
