@@ -418,6 +418,9 @@ support-files = [
   "add_search_engine_0.xml",
   "add_search_engine_1.xml",
 ]
+skip-if = [
+  "os == 'mac' && os_version == '15.30'", # bug 2062465
+]
 
 ["browser_slow_heuristic.js"]
 
@@ -499,7 +502,9 @@ https_first_disabled = true
 ["browser_trust_panel.js"]
 https_first_disabled = true
 support-files = ["!/browser/base/content/test/protectionsUI/trackingPage.html"]
-
+skip-if = [
+  "os == 'mac' && os_version == '15.30'", # bug 2062465
+]
 ["browser_trust_panel_cert_exception.js"]
 
 ["browser_trust_panel_focus.js"]

@@ -43,7 +43,7 @@ skip-if = [
 skip-if = [
   "os == 'mac' && os_version == '10.15' && arch == 'x86_64'", #  Bug 1804441
   "os == 'mac' && os_version == '14.70' && arch == 'x86_64' && debug", # Bug 1869912
-  "os == 'mac' && os_version == '15.30' && arch == 'aarch64' && opt", #  Bug 1804441
+  "os == 'mac' && os_version == '15.30' && arch == 'aarch64'", #  Bug 1804441
 ]
 
 ["browser_screenshots_drag_test.js"]

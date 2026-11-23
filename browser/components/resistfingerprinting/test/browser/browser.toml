@@ -101,7 +101,7 @@ disabled = "Top-level data: URI navigations are now always blocked (Bug 1895528)
 https_first_disabled = true
 skip-if = [
   "os == 'mac' && os_version == '10.15' && arch == 'x86_64'", # Bug 1775698
-  "os == 'mac' && os_version == '15.30' && arch == 'aarch64' && opt", # Bug 1775698
+  "os == 'mac' && os_version == '15.30' && arch == 'aarch64'", # Bug 1775698
 ]
 
 ["browser_efficientcanvascompare_iframes.js"]

@@ -80,7 +80,7 @@ skip-if = [
 skip-if = [
   "os == 'linux' && os_version == '24.04' && arch == 'x86_64' && display == 'x11'", # Bug 2001223, Bug 2003484
   "os == 'mac' && os_version == '10.15' && arch == 'x86_64'", # Bug 1945222
-  "os == 'mac' && os_version == '15.30' && arch == 'aarch64' && opt", # Bug 1945222
+  "os == 'mac' && os_version == '15.30' && arch == 'aarch64'", # Bug 1945222
   "os == 'win' && os_version == '11.26100' && arch == 'x86_64'", # Bug 1945222, Bug 2003484
   "os == 'win' && os_version == '11.26200' && arch == 'x86_64'", # Bug 1945222, Bug 2003484
   "os == 'win' && os_version == '11.26100' && arch == 'x86'", # Bug 2003484
