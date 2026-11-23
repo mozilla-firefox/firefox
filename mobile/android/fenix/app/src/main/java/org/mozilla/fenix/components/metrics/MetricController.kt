@@ -7,7 +7,6 @@ package org.mozilla.fenix.components.metrics
 import androidx.annotation.VisibleForTesting
 import java.util.UUID
 import mozilla.components.browser.engine.gecko.facts.GeckoEngineViewFacts
-import mozilla.components.browser.menu.facts.BrowserMenuFacts
 import mozilla.components.browser.thumbnails.facts.BrowserThumbnailsFacts
 import mozilla.components.browser.toolbar.facts.ToolbarFacts
 import mozilla.components.compose.browser.awesomebar.AwesomeBarFacts as ComposeAwesomeBarFacts
@@ -47,7 +46,6 @@ import mozilla.components.support.base.log.logger.Logger
 import mozilla.components.support.webextensions.facts.WebExtensionFacts
 import mozilla.telemetry.glean.private.NoExtras
 import org.mozilla.fenix.BuildConfig
-import org.mozilla.fenix.GleanMetrics.Addons
 import org.mozilla.fenix.GleanMetrics.Addresses
 import org.mozilla.fenix.GleanMetrics.AndroidAutofill
 import org.mozilla.fenix.GleanMetrics.Awesomebar
@@ -222,11 +220,6 @@ internal class ReleaseMetricController(
                 } ?: Unit
             }
 
-            Component.BROWSER_MENU to BrowserMenuFacts.Items.WEB_EXTENSION_MENU_ITEM -> {
-                metadata?.get("id")?.let {
-                    Addons.openAddonInToolbarMenu.record(Addons.OpenAddonInToolbarMenuExtra(it.toString()))
-                } ?: Unit
-            }
             Component.FEATURE_PROMPTS to CreditCardAutofillDialogFacts.Items.AUTOFILL_CREDIT_CARD_FORM_DETECTED ->
                 CreditCards.formDetected.record(NoExtras())
             Component.FEATURE_PROMPTS to CreditCardAutofillDialogFacts.Items.AUTOFILL_CREDIT_CARD_SUCCESS ->

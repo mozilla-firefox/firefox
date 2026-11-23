@@ -11927,34 +11927,6 @@ addons:
     metadata:
       tags:
         - WebExtensions
-  open_addon_in_toolbar_menu:
-    type: event
-    description: |
-      A user interacted with an installed add-on in the toolbar menu
-    extra_keys:
-      addon_id:
-        description: |
-          The id of the add-on that was interacted with in the toolbar menu
-        type: string
-    bugs:
-      - https://github.com/mozilla-mobile/fenix/issues/6174
-      - https://github.com/mozilla-mobile/fenix/issues/19923
-    data_reviews:
-      - https://github.com/mozilla-mobile/fenix/pull/8318
-      - https://github.com/mozilla-mobile/fenix/pull/13958#issuecomment-676857877
-      - https://github.com/mozilla-mobile/fenix/pull/18143
-      - https://github.com/mozilla-mobile/fenix/pull/19924#issuecomment-861423789
-      - https://github.com/mozilla-mobile/fenix/pull/21316#issuecomment-944615938
-      - https://github.com/mozilla-mobile/fenix/pull/25405#issuecomment-1139058237
-      - https://github.com/mozilla-mobile/firefox-android/pull/1875
-    data_sensitivity:
-      - interaction
-    notification_emails:
-      - android-probes@mozilla.com
-    expires: never
-    metadata:
-      tags:
-        - WebExtensions
   has_installed_addons:
     type: boolean
     lifetime: application
