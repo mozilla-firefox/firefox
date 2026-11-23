@@ -175,8 +175,7 @@ VideoFrame VideoFrame::Builder::build() {
   return VideoFrame(id_, video_frame_buffer_, timestamp_us_,
                     presentation_timestamp_, reference_time_, timestamp_rtp_,
                     ntp_time_ms_, rotation_, color_space_, render_parameters_,
-                    update_rect_, packet_infos_, is_repeat_frame_,
-                    content_type_);
+                    update_rect_, packet_infos_, repeat_mode_, content_type_);
 }
 
 VideoFrame::Builder& VideoFrame::Builder::set_video_frame_buffer(
@@ -260,9 +259,16 @@ VideoFrame::Builder& VideoFrame::Builder::set_packet_infos(
   return *this;
 }
 
+VideoFrame::Builder& VideoFrame::Builder::set_repeat_mode(
+    RepeatMode repeat_mode) {
+  repeat_mode_ = repeat_mode;
+  return *this;
+}
+
 VideoFrame::Builder& VideoFrame::Builder::set_is_repeat_frame(
     bool is_repeat_frame) {
-  is_repeat_frame_ = is_repeat_frame;
+  repeat_mode_ =
+      is_repeat_frame ? RepeatMode::kQualityConvergence : RepeatMode::kNone;
   return *this;
 }
 
@@ -280,7 +286,7 @@ VideoFrame::VideoFrame(const scoped_refptr<VideoFrameBuffer>& buffer,
       ntp_time_ms_(0),
       timestamp_us_(timestamp_us),
       rotation_(rotation),
-      is_repeat_frame_(false) {}
+      repeat_mode_(RepeatMode::kNone) {}
 
 VideoFrame::VideoFrame(const scoped_refptr<VideoFrameBuffer>& buffer,
                        uint32_t timestamp_rtp,
@@ -291,7 +297,7 @@ VideoFrame::VideoFrame(const scoped_refptr<VideoFrameBuffer>& buffer,
       ntp_time_ms_(0),
       timestamp_us_(render_time_ms * kNumMicrosecsPerMillisec),
       rotation_(rotation),
-      is_repeat_frame_(false) {
+      repeat_mode_(RepeatMode::kNone) {
   RTC_DCHECK(buffer);
 }
 

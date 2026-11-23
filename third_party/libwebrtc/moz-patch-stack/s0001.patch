@@ -399,10 +399,10 @@ index 6ba3292fca..5d3a731864 100644
    RTPHeader();
    RTPHeader(const RTPHeader& other);
 diff --git a/api/rtp_parameters.cc b/api/rtp_parameters.cc
-index 316e4365d9..4ff8b2d617 100644
+index 10be276737..3727b93b7d 100644
 --- a/api/rtp_parameters.cc
 +++ b/api/rtp_parameters.cc
-@@ -254,7 +254,8 @@ bool RtpExtension::IsSupportedForAudio(absl::string_view uri) {
+@@ -260,7 +260,8 @@ bool RtpExtension::IsSupportedForAudio(absl::string_view uri) {
           uri == RtpExtension::kTransportSequenceNumberUri ||
           uri == RtpExtension::kTransportSequenceNumberV2Uri ||
           uri == RtpExtension::kMidUri || uri == RtpExtension::kRidUri ||
@@ -413,7 +413,7 @@ index 316e4365d9..4ff8b2d617 100644
  
  bool RtpExtension::IsSupportedForVideo(absl::string_view uri) {
 diff --git a/call/BUILD.gn b/call/BUILD.gn
-index c5939e1ebb..0bf2a14db0 100644
+index e66f206bce..49ab9092c6 100644
 --- a/call/BUILD.gn
 +++ b/call/BUILD.gn
 @@ -25,6 +25,7 @@ rtc_library("call_interfaces") {
@@ -435,18 +435,18 @@ index c5939e1ebb..0bf2a14db0 100644
    deps = [
      ":audio_sender_interface",
 diff --git a/call/video_receive_stream.h b/call/video_receive_stream.h
-index 2a7be9fe0d..1e53b6e117 100644
+index 3b4ed43ea1..f564447c0f 100644
 --- a/call/video_receive_stream.h
 +++ b/call/video_receive_stream.h
-@@ -248,6 +248,8 @@ class VideoReceiveStreamInterface : public MediaReceiveStreamInterface {
-       // disabled.
+@@ -247,6 +247,8 @@ class VideoReceiveStreamInterface : public MediaReceiveStreamInterface {
+       // How to request keyframes from a remote sender.
        KeyFrameReqMethod keyframe_method = KeyFrameReqMethod::kPliRtcp;
  
 +      bool tmmbr = false;
 +
-       // See LntfConfig for description.
-       LntfConfig lntf;
- 
+       // Payload types for ULPFEC and RED, respectively.
+       int ulpfec_payload_type = -1;
+       int red_payload_type = -1;
 diff --git a/modules/audio_coding/neteq/dtmf_buffer.cc b/modules/audio_coding/neteq/dtmf_buffer.cc
 index 5813f6df9a..db99e227e9 100644
 --- a/modules/audio_coding/neteq/dtmf_buffer.cc
@@ -596,10 +596,10 @@ index 28509654c4..1e2ae94c85 100644
        device_names->push_back(ToUtf8(device.DeviceName));
      }
 diff --git a/modules/rtp_rtcp/source/rtcp_sender.cc b/modules/rtp_rtcp/source/rtcp_sender.cc
-index afe3d9ebf4..825399a025 100644
+index f8ece80ef1..d088ce0401 100644
 --- a/modules/rtp_rtcp/source/rtcp_sender.cc
 +++ b/modules/rtp_rtcp/source/rtcp_sender.cc
-@@ -186,7 +186,7 @@ void RTCPSender::SetRTCPStatus(RtcpMode new_method) {
+@@ -188,7 +188,7 @@ void RTCPSender::SetRTCPStatus(RtcpMode new_method) {
      next_time_to_send_rtcp_ = std::nullopt;
    } else if (method_ == RtcpMode::kOff) {
      // When switching on, reschedule the next packet
@@ -1392,10 +1392,10 @@ index 75b30782ae..1b0f102f61 100644
    const bool enable_svc_for_simulcast_;
    std::optional<SimulcastToSvcConverter> simulcast_to_svc_converter_;
 diff --git a/rtc_base/BUILD.gn b/rtc_base/BUILD.gn
-index 9d28dc9686..7eb3121714 100644
+index 7d91204574..a3aaff09dd 100644
 --- a/rtc_base/BUILD.gn
 +++ b/rtc_base/BUILD.gn
-@@ -526,6 +526,12 @@ rtc_library("logging") {
+@@ -527,6 +527,12 @@ rtc_library("logging") {
      "//third_party/abseil-cpp/absl/strings:string_view",
    ]
  
@@ -1409,18 +1409,18 @@ index 9d28dc9686..7eb3121714 100644
      # Dependency on chromium's logging (in //base).
      deps += [ "//base" ]
 diff --git a/rtc_base/logging.cc b/rtc_base/logging.cc
-index 267f54e724..e1611826b6 100644
+index fbee44b20f..34ca1f08c7 100644
 --- a/rtc_base/logging.cc
 +++ b/rtc_base/logging.cc
-@@ -28,6 +28,7 @@
+@@ -29,6 +29,7 @@
  #include "absl/strings/string_view.h"
  #include "api/task_queue/task_queue_base.h"
  #include "api/units/timestamp.h"
 +#include "modules/audio_processing/logging/apm_data_dumper.h"
  #include "rtc_base/checks.h"
  #include "rtc_base/platform_thread_types.h"
- #include "rtc_base/string_encode.h"
-@@ -56,6 +57,24 @@ static const int kMaxLogLineSize = 1024 - 60;
+ #include "rtc_base/string_utils.h"
+@@ -70,6 +71,24 @@ static const int kMaxLogLineSize = 1024 - 60;
  #endif  // WEBRTC_MAC && !defined(WEBRTC_IOS) || WEBRTC_ANDROID
  
  namespace webrtc {
@@ -1444,21 +1444,21 @@ index 267f54e724..e1611826b6 100644
 +
  namespace {
  
- // By default, release builds don't log, debug builds at info level
-@@ -199,7 +218,7 @@ std::string LogLineRef::DefaultLogLine() const {
+ // Note: `g_min_sev` and `g_dbg_sev` can be changed while running.
+@@ -295,7 +314,7 @@ const std::string& LogLineRef::DefaultLogLine() const {
  // LogMessage
  /////////////////////////////////////////////////////////////////////////////
  
 -bool LogMessage::log_to_stderr_ = true;
 +bool LogMessage::log_to_stderr_ = false;
  
- // The list of logging streams currently configured.
- // Note: we explicitly do not clean this up, because of the uncertain ordering
+ // Boolean options default to false.
+ constinit bool LogMessage::log_timestamp_ = false;
 diff --git a/rtc_base/logging.h b/rtc_base/logging.h
-index 5c39fa5100..b0a9f8cae0 100644
+index fbfa0bf3d2..e390139c66 100644
 --- a/rtc_base/logging.h
 +++ b/rtc_base/logging.h
-@@ -701,6 +701,12 @@ class LogMessage {
+@@ -708,6 +708,12 @@ class LogMessage {
    }
  #endif  // RTC_LOG_ENABLED()
  
@@ -1471,7 +1471,7 @@ index 5c39fa5100..b0a9f8cae0 100644
   private:
    friend class LogMessageForTesting;
  
-@@ -748,6 +754,9 @@ class LogMessage {
+@@ -749,6 +755,9 @@ class LogMessage {
  
    // The stringbuilder that buffers the formatted message before output
    StringBuilder print_stream_;
@@ -1510,7 +1510,7 @@ index b7933130bd..428fc9615d 100644
    vcm_ = nullptr;
  }
 diff --git a/webrtc.gni b/webrtc.gni
-index 50b527d8d3..3ef3d5f480 100644
+index d2d3d03bd5..7f3c987022 100644
 --- a/webrtc.gni
 +++ b/webrtc.gni
 @@ -110,7 +110,7 @@ declare_args() {

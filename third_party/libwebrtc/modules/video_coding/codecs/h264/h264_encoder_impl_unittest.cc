@@ -43,10 +43,7 @@ namespace {
 constexpr int kMaxPayloadSize = 1024;
 constexpr int kNumCores = 1;
 
-const VideoEncoder::Capabilities kCapabilities(false);
-const VideoEncoder::Settings kSettings(kCapabilities,
-                                       kNumCores,
-                                       kMaxPayloadSize);
+constexpr VideoEncoder::Settings kSettings(kNumCores, kMaxPayloadSize);
 
 void SetDefaultSettings(VideoCodec* codec_settings) {
   codec_settings->codecType = kVideoCodecH264;

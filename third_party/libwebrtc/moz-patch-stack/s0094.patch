@@ -57,15 +57,19 @@ Mercurial Revision: https://hg.mozilla.org/mozilla-central/rev/a342f5eca8622c8b9
  41 files changed, 102 insertions(+), 101 deletions(-)
 
 diff --git a/.gn b/.gn
-index 6a99da2a59..7f5e59fafa 100644
+index 2eddb1bff8..a0451624b3 100644
 --- a/.gn
 +++ b/.gn
-@@ -6,10 +6,10 @@
+@@ -6,14 +6,14 @@
  # in the file PATENTS.  All contributing project authors may
  # be found in the AUTHORS file in the root of the source tree.
  
 -import("//build/dotfile_settings.gni")
 +import("//chromium/build/dotfile_settings.gni")
+ 
+ # Defines check_includes_strict_exceptions, the exceptions to the strict include
+ # checks that GN enables by default (see "gn help check_includes_strict").
+ import("//build/strict_deps_failures.gni")
  
  # The location of the build configuration file.
 -buildconfig = "//build/config/BUILDCONFIG.gn"
@@ -74,7 +78,7 @@ index 6a99da2a59..7f5e59fafa 100644
  # The hermetic Python interpreter to use by default.
  script_executable = "//third_party/cpython3/host/bin/python3"
 diff --git a/BUILD.gn b/BUILD.gn
-index bfba7e2451..c7b1647bb2 100644
+index e85dc93ac8..e8d6cb61b0 100644
 --- a/BUILD.gn
 +++ b/BUILD.gn
 @@ -21,8 +21,8 @@
@@ -99,7 +103,7 @@ index bfba7e2451..c7b1647bb2 100644
    import("//third_party/jni_zero/jni_zero.gni")
  }
  
-@@ -558,7 +558,7 @@ if (!build_with_chromium) {
+@@ -557,7 +557,7 @@ if (!build_with_chromium) {
      sources = []
  
      complete_static_lib = true
@@ -127,7 +131,7 @@ index bfba7e2451..c7b1647bb2 100644
              "Generated during 'gn gen' by //BUILD.gn.",
              "",
 diff --git a/api/BUILD.gn b/api/BUILD.gn
-index a60d80cedf..f2fda528c3 100644
+index 78b3b83948..062a61a3eb 100644
 --- a/api/BUILD.gn
 +++ b/api/BUILD.gn
 @@ -8,8 +8,8 @@
@@ -262,7 +266,7 @@ index 29370db41b..6e2c31538e 100644
  
  rtc_library("video_rtp_headers") {
 diff --git a/api/video_codecs/BUILD.gn b/api/video_codecs/BUILD.gn
-index ed5849917f..e8b2fe5648 100644
+index 3468cbc9cf..bd099e224a 100644
 --- a/api/video_codecs/BUILD.gn
 +++ b/api/video_codecs/BUILD.gn
 @@ -8,8 +8,8 @@
@@ -327,7 +331,7 @@ index 589142b014..2ee80ded55 100644
      }
    }
 diff --git a/examples/BUILD.gn b/examples/BUILD.gn
-index 1231eb5575..a5d26ec3c9 100644
+index d38477547e..2412e0a5db 100644
 --- a/examples/BUILD.gn
 +++ b/examples/BUILD.gn
 @@ -9,15 +9,15 @@
@@ -351,7 +355,7 @@ index 1231eb5575..a5d26ec3c9 100644
  }
  
  group("examples") {
-@@ -625,7 +625,7 @@ if (is_ios || (is_mac && target_cpu != "x86")) {
+@@ -627,7 +627,7 @@ if (is_ios || (is_mac && target_cpu != "x86")) {
            "../sdk:mediaconstraints_objc",
            "../sdk:peerconnectionfactory_base_objc",
            "../sdk:videocapture_objc",
@@ -360,7 +364,7 @@ index 1231eb5575..a5d26ec3c9 100644
            "//third_party/ocmock",
          ]
        }
-@@ -729,7 +729,7 @@ if (is_linux || is_chromeos || is_win) {
+@@ -730,7 +730,7 @@ if (is_linux || is_chromeos || is_win) {
          "peerconnection/client/main_wnd.cc",
          "peerconnection/client/main_wnd.h",
        ]
@@ -428,7 +432,7 @@ index 08ae9382ed..0410f33553 100644
  
  group("logging") {
 diff --git a/media/BUILD.gn b/media/BUILD.gn
-index cee865dcaf..8bbe75d912 100644
+index 94b7226fdb..b8e526291e 100644
 --- a/media/BUILD.gn
 +++ b/media/BUILD.gn
 @@ -6,7 +6,7 @@
@@ -547,7 +551,7 @@ index 5fbe21ec30..7d41b6d67d 100644
    }
  
 diff --git a/modules/desktop_capture/BUILD.gn b/modules/desktop_capture/BUILD.gn
-index b500361bff..2b12b40fa7 100644
+index acc309855e..90e5c9d87a 100644
 --- a/modules/desktop_capture/BUILD.gn
 +++ b/modules/desktop_capture/BUILD.gn
 @@ -6,8 +6,8 @@
@@ -562,7 +566,7 @@ index b500361bff..2b12b40fa7 100644
  
  use_desktop_capture_differ_sse2 = target_cpu == "x86" || target_cpu == "x64"
 diff --git a/modules/portal/BUILD.gn b/modules/portal/BUILD.gn
-index d675faee9e..a533779b78 100644
+index 83e0301615..eb5f817c03 100644
 --- a/modules/portal/BUILD.gn
 +++ b/modules/portal/BUILD.gn
 @@ -6,7 +6,7 @@
@@ -575,7 +579,7 @@ index d675faee9e..a533779b78 100644
  import("../../webrtc.gni")
  
 diff --git a/modules/video_coding/BUILD.gn b/modules/video_coding/BUILD.gn
-index a70470aa6f..27507f38e8 100644
+index 4b22456c32..b0ef8f5137 100644
 --- a/modules/video_coding/BUILD.gn
 +++ b/modules/video_coding/BUILD.gn
 @@ -6,7 +6,7 @@
@@ -588,7 +592,7 @@ index a70470aa6f..27507f38e8 100644
  import("../../webrtc.gni")
  
 diff --git a/pc/BUILD.gn b/pc/BUILD.gn
-index bcc3767bf7..a9cf1b1e13 100644
+index f4291474db..3d5392645c 100644
 --- a/pc/BUILD.gn
 +++ b/pc/BUILD.gn
 @@ -29,8 +29,8 @@
@@ -603,7 +607,7 @@ index bcc3767bf7..a9cf1b1e13 100644
  
  if (rtc_build_libsrtp) {
 diff --git a/rtc_base/BUILD.gn b/rtc_base/BUILD.gn
-index 8e19cec09e..5143289875 100644
+index 6e38f9741b..6050d395ff 100644
 --- a/rtc_base/BUILD.gn
 +++ b/rtc_base/BUILD.gn
 @@ -9,8 +9,8 @@
@@ -678,7 +682,7 @@ index cfbd2ea64a..c2f5f58b78 100644
      output_extension = "so"
  
 diff --git a/sdk/BUILD.gn b/sdk/BUILD.gn
-index 6b4c5b368c..795549f790 100644
+index bdcf7ca164..d16aeb3e74 100644
 --- a/sdk/BUILD.gn
 +++ b/sdk/BUILD.gn
 @@ -9,12 +9,12 @@
@@ -732,7 +736,7 @@ index 2fcd3c144a..59959a0bb0 100644
  import("../webrtc.gni")
  
 diff --git a/test/BUILD.gn b/test/BUILD.gn
-index f19666f3c2..eb79fa5302 100644
+index d44aea8210..bfd9b64e28 100644
 --- a/test/BUILD.gn
 +++ b/test/BUILD.gn
 @@ -6,10 +6,10 @@
@@ -748,7 +752,7 @@ index f19666f3c2..eb79fa5302 100644
    import("//third_party/jni_zero/jni_zero.gni")
  }
  
-@@ -448,7 +448,7 @@ if (is_ios && !build_with_chromium) {
+@@ -464,7 +464,7 @@ if (is_ios && !build_with_chromium) {
      testonly = true
      visibility = [ "*" ]
      sources = [ "ios/google_test_runner.mm" ]
@@ -758,7 +762,7 @@ index f19666f3c2..eb79fa5302 100644
      deps = [ ":google_test_runner_delegate" ]
    }
 diff --git a/test/fuzzers/BUILD.gn b/test/fuzzers/BUILD.gn
-index 58dbfef396..1efa3f2471 100644
+index d1009b5499..aa26e54d25 100644
 --- a/test/fuzzers/BUILD.gn
 +++ b/test/fuzzers/BUILD.gn
 @@ -6,7 +6,7 @@
@@ -780,7 +784,7 @@ index 58dbfef396..1efa3f2471 100644
    }
  }
 diff --git a/webrtc.gni b/webrtc.gni
-index 55185550ba..51b44e47ae 100644
+index d4f71d74fb..a94a60cd1f 100644
 --- a/webrtc.gni
 +++ b/webrtc.gni
 @@ -5,12 +5,12 @@

@@ -481,16 +481,16 @@ PLAN_B_ONLY void RtpTransmissionManager::CreateAudioReceiverPlanB(
   // TODO(https://crbug.com/webrtc/9480): When we remove remote_streams(), use
   // the constructor taking stream IDs instead.
   auto audio_receiver = make_ref_counted<AudioRtpReceiver>(
-      worker_thread(), remote_sender_info.sender_id, streams, false,
+      network_thread(), remote_sender_info.sender_id, streams, false,
       voice_media_receive_channel(), &env_.clock());
   auto task = (remote_sender_info.sender_id == kDefaultAudioSenderId)
                   ? audio_receiver->GetSetupForUnsignaledMediaChannel()
                   : audio_receiver->GetSetupForMediaChannel(
                         remote_sender_info.first_ssrc);
-  worker_thread()->BlockingCall([&]() mutable { std::move(task)(); });
+  network_thread()->BlockingCall([&]() mutable { std::move(task)(); });
 
   auto receiver = RtpReceiverProxyWithInternal<RtpReceiverInternal>::Create(
-      signaling_thread(), worker_thread(), std::move(audio_receiver));
+      signaling_thread(), network_thread(), std::move(audio_receiver));
   GetAudioTransceiver()->internal()->AddReceiverPlanB(receiver);
   RunWithObserver(
       [&](auto observer) { observer->OnAddTrack(receiver, streams); });
@@ -507,7 +507,7 @@ PLAN_B_ONLY void RtpTransmissionManager::CreateVideoReceiverPlanB(
   // TODO(https://crbug.com/webrtc/9480): When we remove remote_streams(), use
   // the constructor taking stream IDs instead.
   auto video_receiver = make_ref_counted<VideoRtpReceiver>(
-      worker_thread(), remote_sender_info.sender_id, streams,
+      network_thread(), remote_sender_info.sender_id, streams,
       /*enable_sframe_at_owner=*/nullptr,
       /*media_channel=*/nullptr, &env_.clock());
 
@@ -516,10 +516,10 @@ PLAN_B_ONLY void RtpTransmissionManager::CreateVideoReceiverPlanB(
           ? std::nullopt
           : std::optional<uint32_t>(remote_sender_info.first_ssrc),
       video_media_receive_channel());
-  worker_thread()->BlockingCall([&]() mutable { std::move(task)(); });
+  network_thread()->BlockingCall([&]() mutable { std::move(task)(); });
 
   auto receiver = RtpReceiverProxyWithInternal<RtpReceiverInternal>::Create(
-      signaling_thread(), worker_thread(), std::move(video_receiver));
+      signaling_thread(), network_thread(), std::move(video_receiver));
   GetVideoTransceiver()->internal()->AddReceiverPlanB(receiver);
   RunWithObserver(
       [&](auto observer) { observer->OnAddTrack(receiver, streams); });

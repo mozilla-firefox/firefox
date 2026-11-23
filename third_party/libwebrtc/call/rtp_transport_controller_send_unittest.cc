@@ -105,7 +105,7 @@ TEST(RtpTransportControllerSendTest,
   test::RunLoop main_thread;
   RtpTransportControllerSend transport(
       {.env = CreateTestEnvironment(),
-       .worker_thread = main_thread.task_queue()});
+       .network_thread = main_thread.task_queue()});
   transport.SetPreferredRtcpCcAckType(RtcpFeedbackType::CCFB);
   PacketSender sender(transport);
   sender.SimulateSentPackets({.ssrc = 123,
@@ -136,7 +136,7 @@ TEST(RtpTransportControllerSendTest,
   test::RunLoop main_thread;
   RtpTransportControllerSend transport(
       {.env = CreateTestEnvironment(),
-       .worker_thread = main_thread.task_queue()});
+       .network_thread = main_thread.task_queue()});
   transport.SetPreferredRtcpCcAckType(RtcpFeedbackType::CCFB);
 
   PacketSender sender(transport);
@@ -183,7 +183,7 @@ TEST(RtpTransportControllerSendTest, CalculatesNumberOfBleachedPackets) {
   test::RunLoop main_thread;
   RtpTransportControllerSend transport(
       {.env = CreateTestEnvironment(),
-       .worker_thread = main_thread.task_queue()});
+       .network_thread = main_thread.task_queue()});
   transport.SetPreferredRtcpCcAckType(RtcpFeedbackType::CCFB);
   PacketSender sender(transport);
 
@@ -220,7 +220,7 @@ TEST(RtpTransportControllerSendTest,
   test::RunLoop main_thread;
   RtpTransportControllerSend transport(
       {.env = CreateTestEnvironment(),
-       .worker_thread = main_thread.task_queue()});
+       .network_thread = main_thread.task_queue()});
   transport.SetPreferredRtcpCcAckType(RtcpFeedbackType::CCFB);
 
   PacketSender sender(transport);
@@ -269,7 +269,7 @@ TEST(RtpTransportControllerSendTest,
   test::RunLoop main_thread;
   RtpTransportControllerSend transport(
       {.env = CreateTestEnvironment(),
-       .worker_thread = main_thread.task_queue()});
+       .network_thread = main_thread.task_queue()});
   transport.SetPreferredRtcpCcAckType(RtcpFeedbackType::CCFB);
 
   PacketSender sender(transport);

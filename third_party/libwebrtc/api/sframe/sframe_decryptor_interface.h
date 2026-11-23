@@ -16,10 +16,11 @@
 #include <optional>
 #include <span>
 
+#include "absl/base/nullability.h"
 #include "absl/functional/any_invocable.h"
 #include "api/frame_transformer_interface.h"
 #include "api/ref_count.h"
-#include "api/rtc_error.h"
+#include "api/sframe/sframe_types.h"
 
 namespace webrtc {
 
@@ -54,13 +55,20 @@ struct SframeDecryptError {
 // https://github.com/w3c/webrtc-encoded-transform/issues/307
 using SframeDecryptErrorCallback = absl::AnyInvocable<void(SframeDecryptError)>;
 
-// Key management handle for Sframe receiver decryption.
+// Key management handle for Sframe receiver decryption. Key updates are
+// applied asynchronously, in the order they were requested, and their results
+// are reported on the signaling thread. The `SframeDecryptorInterface` instance
+// must be released on the signaling thread; no result is reported after that.
 class SframeDecryptorInterface : public RefCountInterface {
  public:
-  virtual RTCError AddDecryptionKey(uint64_t key_id,
-                                    std::span<const uint8_t> key_material) = 0;
+  virtual void AddDecryptionKey(uint64_t key_id,
+                                std::span<const uint8_t> key_material,
+                                absl_nonnull SframeKeyUpdateCallback
+                                    callback) = 0;
 
-  virtual RTCError RemoveDecryptionKey(uint64_t key_id) = 0;
+  virtual void RemoveDecryptionKey(uint64_t key_id,
+                                   absl_nonnull SframeKeyUpdateCallback
+                                       callback) = 0;
 
  protected:
   ~SframeDecryptorInterface() override = default;

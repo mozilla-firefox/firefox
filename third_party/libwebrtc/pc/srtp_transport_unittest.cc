@@ -18,6 +18,7 @@
 #include <utility>
 #include <vector>
 
+#include "api/crypto/crypto_options.h"
 #include "api/environment/environment.h"
 #include "api/rtp_header_extension_id.h"
 #include "api/transport/ecn_marking.h"
@@ -291,6 +292,76 @@ TEST_F(SrtpTransportTest,
        SendAndRecvPacketWithHeaderExtension_kSrtpAeadAes128Gcm) {
   TestSendRecvEncryptedHeaderExtension(kSrtpAeadAes128Gcm, kTestKeyGcm128_1,
                                        kTestKeyGcm128_2);
+}
+
+TEST_F(SrtpTransportTest, RecvCryptexWhenNotNegotiated) {
+  std::vector<RtpHeaderExtensionId> extension_ids;
+  EXPECT_TRUE(srtp_transport1_->UseCryptex(
+      CryptoOptions::Srtp::CryptexPolicy::kNegotiate, /*negotiated=*/false));
+  EXPECT_TRUE(srtp_transport1_->SetRtpParams(
+      kSrtpAeadAes128Gcm, kTestKeyGcm128_1, extension_ids, kSrtpAeadAes128Gcm,
+      kTestKeyGcm128_2, extension_ids));
+  EXPECT_TRUE(srtp_transport2_->UseCryptex(
+      CryptoOptions::Srtp::CryptexPolicy::kNegotiate, /*negotiated=*/true));
+  EXPECT_TRUE(srtp_transport2_->SetRtpParams(
+      kSrtpAeadAes128Gcm, kTestKeyGcm128_2, extension_ids, kSrtpAeadAes128Gcm,
+      kTestKeyGcm128_1, extension_ids));
+
+  CopyOnWriteBuffer original_rtp_data(
+      kPcmuFrameWithExtensions,
+      /*capacity=*/sizeof(kPcmuFrameWithExtensions) +
+          rtp_auth_tag_len(kSrtpAeadAes128Gcm));
+  CopyOnWriteBuffer rtp_packet1to2 = original_rtp_data;
+  CopyOnWriteBuffer rtp_packet2to1 = original_rtp_data;
+
+  AsyncSocketPacketOptions options;
+  ASSERT_TRUE(srtp_transport2_->SendRtpPacket(&rtp_packet2to1, options,
+                                              PF_SRTP_BYPASS));
+  // The RFC 9335 one-byte cryptex profile replaced the 0xbede of the packet.
+  auto fake_rtp_packet_transport = static_cast<FakePacketTransport*>(
+      srtp_transport2_->rtp_packet_transport());
+  const CopyOnWriteBuffer* sent_packet =
+      fake_rtp_packet_transport->last_sent_packet();
+  EXPECT_EQ((*sent_packet)[12], 0xc0);
+  EXPECT_EQ((*sent_packet)[13], 0xde);
+  EXPECT_EQ(rtp_sink1_.last_recv_rtp_packet().Buffer(), original_rtp_data);
+
+  ASSERT_TRUE(srtp_transport1_->SendRtpPacket(&rtp_packet1to2, options,
+                                              PF_SRTP_BYPASS));
+  fake_rtp_packet_transport = static_cast<FakePacketTransport*>(
+      srtp_transport1_->rtp_packet_transport());
+  sent_packet = fake_rtp_packet_transport->last_sent_packet();
+  EXPECT_EQ((*sent_packet)[12], 0xbe);
+  EXPECT_EQ((*sent_packet)[13], 0xde);
+  EXPECT_EQ(rtp_sink2_.last_recv_rtp_packet().Buffer(), original_rtp_data);
+}
+
+TEST_F(SrtpTransportTest, DoesNotRecvCryptexWhenDisabled) {
+  std::vector<RtpHeaderExtensionId> extension_ids;
+  EXPECT_TRUE(srtp_transport1_->SetRtpParams(
+      kSrtpAeadAes128Gcm, kTestKeyGcm128_1, extension_ids, kSrtpAeadAes128Gcm,
+      kTestKeyGcm128_2, extension_ids));
+  EXPECT_TRUE(srtp_transport2_->UseCryptex(
+      CryptoOptions::Srtp::CryptexPolicy::kNegotiate, /*negotiated=*/true));
+  EXPECT_TRUE(srtp_transport2_->SetRtpParams(
+      kSrtpAeadAes128Gcm, kTestKeyGcm128_2, extension_ids, kSrtpAeadAes128Gcm,
+      kTestKeyGcm128_1, extension_ids));
+
+  CopyOnWriteBuffer rtp_packet2to1(
+      kPcmuFrameWithExtensions,
+      /*capacity=*/sizeof(kPcmuFrameWithExtensions) +
+          rtp_auth_tag_len(kSrtpAeadAes128Gcm));
+
+  AsyncSocketPacketOptions options;
+  ASSERT_TRUE(srtp_transport2_->SendRtpPacket(&rtp_packet2to1, options,
+                                              PF_SRTP_BYPASS));
+  auto fake_rtp_packet_transport = static_cast<FakePacketTransport*>(
+      srtp_transport2_->rtp_packet_transport());
+  const CopyOnWriteBuffer* sent_packet =
+      fake_rtp_packet_transport->last_sent_packet();
+  EXPECT_EQ((*sent_packet)[12], 0xc0);
+  EXPECT_EQ((*sent_packet)[13], 0xde);
+  EXPECT_EQ(rtp_sink1_.rtp_count(), 0);
 }
 
 TEST_F(SrtpTransportTest, SendAndRecvPacket_kSrtpAeadAes256Gcm) {

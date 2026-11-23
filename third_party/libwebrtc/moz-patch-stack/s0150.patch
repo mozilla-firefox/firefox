@@ -1,0 +1,162 @@
+From: Jan Grulich <jgrulich@redhat.com>
+Date: Fri, 20 Nov 2026 07:16:00 +0000
+Subject: Bug 2084749 - WebRTC backport: [Wayland] Fix race between
+ StopAndCleanupStream() and OnStreamProcess() r=pehrsons
+
+OnStreamProcess() runs on PipeWire's data loop thread, not on
+main_loop, so stopping main_loop does not stop it. Since 46ce2a180c,
+StopAndCleanupStream() calls pw_.reset(), which nulls pw_ before
+~PipeWireThreadLoop() disconnects the stream. An in-flight
+OnStreamProcess() then dereferences a null pw_ and crashes. It also
+clears queue_ and latest_available_frame_ while ProcessBuffer() can
+still repopulate them, which can leave latest_available_frame_
+dangling.
+
+Add PipeWireThreadLoop::DestroyStream(), which disconnects and
+destroys the stream; pw_stream_disconnect() waits for the data loop
+to finish. Call it from StopAndCleanupStream() before resetting the
+frame state, and from ~PipeWireThreadLoop() before destroying the
+renegotiate event.
+
+Add a regression test that stops the stream while a buffer is being
+processed.
+
+This is a simple backport of an WebRTC upstream change.
+
+Upstream commit: 1d3a072191f6c26c5c4f3a59187c0065d7855d06
+
+Differential Revision: https://phabricator.services.mozilla.com/D343929
+Mercurial Revision: https://hg.mozilla.org/mozilla-central/rev/6ce9c54228fae94fa8be1f091b1a584ab3b39afd
+---
+ .../linux/wayland/shared_screencast_stream.cc | 36 +++++++++++----
+ .../shared_screencast_stream_unittest.cc      | 44 +++++++++++++++++++
+ 2 files changed, 71 insertions(+), 9 deletions(-)
+
+diff --git a/modules/desktop_capture/linux/wayland/shared_screencast_stream.cc b/modules/desktop_capture/linux/wayland/shared_screencast_stream.cc
+index c0bdac87be..efc7d43ac4 100644
+--- a/modules/desktop_capture/linux/wayland/shared_screencast_stream.cc
++++ b/modules/desktop_capture/linux/wayland/shared_screencast_stream.cc
+@@ -209,16 +209,16 @@ class SharedScreenCastStreamPrivate {
+     ~PipeWireThreadLoop() {
+       pw_thread_loop_stop(main_loop);
+ 
++      // The stream must be destroyed before `renegotiate`, since an in-flight
++      // OnStreamProcess() may still signal `renegotiate` until the stream is
++      // disconnected from PipeWire's data loop.
++      DestroyStream();
++
+       if (renegotiate) {
+         pw_loop_destroy_source(pw_thread_loop_get_loop(main_loop), renegotiate);
+         renegotiate = nullptr;
+       }
+ 
+-      if (stream) {
+-        pw_stream_disconnect(stream);
+-        pw_stream_destroy(stream);
+-      }
+-
+       if (core) {
+         pw_core_disconnect(core);
+       }
+@@ -227,6 +227,20 @@ class SharedScreenCastStreamPrivate {
+       pw_thread_loop_destroy(main_loop);
+     }
+ 
++    // Disconnects and destroys `stream`, if any. OnStreamProcess() runs on
++    // PipeWire's data loop thread rather than on `main_loop`, so stopping
++    // `main_loop` does not stop it. pw_stream_disconnect() removes the stream
++    // from the data loop and blocks until any in-flight OnStreamProcess() call
++    // has returned.
++    void DestroyStream() {
++      if (!stream) {
++        return;
++      }
++      pw_stream_disconnect(stream);
++      pw_stream_destroy(stream);
++      stream = nullptr;
++    }
++
+     struct pw_thread_loop* const main_loop;
+     struct pw_context* const context;
+     struct pw_core* core = nullptr;
+@@ -745,10 +759,12 @@ void SharedScreenCastStreamPrivate::ClearRenegotiateEventForTest() {
+ }
+ 
+ void SharedScreenCastStreamPrivate::StopAndCleanupStream() {
+-  // We get buffers on the PipeWire thread, but this is called from the capturer
+-  // thread, so we need to wait on and stop the pipewire thread before we
+-  // disconnect the stream so that we can guarantee we aren't in the middle of
+-  // processing a new frame.
++  // We get buffers on PipeWire's data loop thread, but this is called from the
++  // capturer thread. Stopping `pw_->main_loop` does not stop the data loop, so
++  // we must disconnect the stream (which blocks until any in-flight
++  // OnStreamProcess() has returned) before resetting the members it uses. In
++  // particular, `pw_` must stay valid until then, since OnStreamProcess()
++  // dereferences it.
+ 
+   // Even if we *do* somehow have the other objects without a pipewire thread,
+   // destroying them without a thread causes a crash.
+@@ -760,6 +776,8 @@ void SharedScreenCastStreamPrivate::StopAndCleanupStream() {
+   pw_thread_loop_stop(pw_->main_loop);
+ 
+   if (pw_->stream) {
++    pw_->DestroyStream();
++
+     {
+       MutexLock latest_frame_lock(&latest_frame_lock_);
+       latest_available_frame_ = nullptr;
+diff --git a/modules/desktop_capture/linux/wayland/shared_screencast_stream_unittest.cc b/modules/desktop_capture/linux/wayland/shared_screencast_stream_unittest.cc
+index 0fb57dfcf8..80ceb1b172 100644
+--- a/modules/desktop_capture/linux/wayland/shared_screencast_stream_unittest.cc
++++ b/modules/desktop_capture/linux/wayland/shared_screencast_stream_unittest.cc
+@@ -497,6 +497,50 @@ TEST_F(MAYBE_PipeWireStreamTest, TestModifierFallbackNullRenegotiateEvent) {
+   shared_screencast_stream_->StopScreenCastStream();
+ }
+ 
++// Verifies that stopping the stream while a buffer is being processed on
++// PipeWire's data loop thread waits for the processing to finish, instead of
++// tearing down state that the in-flight OnStreamProcess() still uses.
++TEST_F(MAYBE_PipeWireStreamTest, TestStopWhileProcessingBuffer) {
++  Event waitConnectEvent;
++  Event waitStartStreamingEvent;
++
++  EXPECT_CALL(*this, OnStreamReady(_))
++      .WillOnce([this](uint32_t stream_node_id) {
++        StartScreenCastStream(stream_node_id);
++      });
++  EXPECT_CALL(*this, OnStreamConfigured).WillOnce([&waitConnectEvent] {
++    waitConnectEvent.Set();
++  });
++  EXPECT_CALL(*this, OnBufferAdded).Times(AtLeast(1));
++  EXPECT_CALL(*this, OnStartStreaming).WillOnce([&waitStartStreamingEvent] {
++    waitStartStreamingEvent.Set();
++  });
++  EXPECT_CALL(*this, OnFormatChanged(SPA_VIDEO_FORMAT_BGRA, 800, 640, 60,
++                                     DRM_FORMAT_MOD_LINEAR))
++      .Times(AtLeast(1));
++
++  waitConnectEvent.Wait(kLongWait);
++  waitStartStreamingEvent.Wait(kShortWait);
++
++  // Block inside OnStreamProcess() on the PipeWire data loop thread, so that
++  // StopScreenCastStream() runs while the buffer is still being processed.
++  Event processingBufferEvent;
++  EXPECT_CALL(*this, OnFrameRecorded);
++  EXPECT_CALL(*this, OnBufferCorruptedData).WillOnce([&processingBufferEvent] {
++    processingBufferEvent.Set();
++    Event().Wait(TimeDelta::Millis(500));
++  });
++
++  RgbaColor red_color(0, 0, 255);
++  test_screencast_stream_provider_->RecordFrame(
++      red_color, TestScreenCastStreamProvider::CorruptedData);
++  ASSERT_TRUE(processingBufferEvent.Wait(kShortWait));
++
++  EXPECT_CALL(*this, OnStopStreaming);
++  shared_screencast_stream_->StopScreenCastStream();
++  EXPECT_EQ(shared_screencast_stream_->CaptureFrame(), nullptr);
++}
++
+ // The ability to create multiple Pipewire capture streams in the same
+ // process is needed by projects such as Chrome Remote Desktop.
+ TEST_F(MAYBE_PipeWireStreamTest, TestMultipleInstancesAllowed) {

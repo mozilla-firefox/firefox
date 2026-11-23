@@ -465,6 +465,21 @@ TEST(ThreadTest, DisallowBlockingCallDeathTest) {
 }
 #endif
 
+#if GTEST_HAS_DEATH_TEST && !defined(WEBRTC_ANDROID)
+TEST(ThreadTest, JoinOnCurrentThreadDeathTest) {
+  GTEST_FLAG_SET(death_test_style, "threadsafe");
+  RTC_EXPECT_DEATH(
+      {
+        std::unique_ptr<Thread> thread = Thread::Create();
+        thread->Start();
+        Thread* thread_ptr = thread.release();
+        thread_ptr->PostTask([thread_ptr] { delete thread_ptr; });
+        Thread::SleepMs(10000);
+      },
+      "IsCurrent");
+}
+#endif
+
 // Verifies that if thread A invokes a call on thread B and thread C is trying
 // to invoke A at the same time, thread A does not handle C's invoke while
 // invoking B.

@@ -45,8 +45,9 @@ class SrtpSession {
   SrtpSession(const SrtpSession&) = delete;
   SrtpSession& operator=(const SrtpSession&) = delete;
 
-  // Enable or disable cryptex. May update existing session.
-  bool UseCryptex(bool enabled, bool require, bool sending_session);
+  // Enables use of cryptex, may update existing session. Calling this on a
+  // receiving session enables receiving cryptex unconditionally.
+  bool UseCryptex(bool negotiated, bool required, bool sending_session);
 
   // Configures the session for sending data using the specified
   // crypto suite and key. Receiving must be done by a separate session.
@@ -134,6 +135,5 @@ class SrtpSession {
 };
 
 }  //  namespace webrtc
-
 
 #endif  // PC_SRTP_SESSION_H_

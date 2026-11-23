@@ -77,7 +77,6 @@ class RTC_EXPORT SimulcastEncoderAdapter : public VideoEncoder {
       ComplexityControlMode complexity_control_mode) override;
   void OnPacketLossRateUpdate(float packet_loss_rate) override;
   void OnRttUpdate(int64_t rtt_ms) override;
-  void OnLossNotification(const LossNotification& loss_notification) override;
 
   EncoderInfo GetEncoderInfo() const override;
 

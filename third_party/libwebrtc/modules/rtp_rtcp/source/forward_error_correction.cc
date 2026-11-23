@@ -495,7 +495,6 @@ void ForwardErrorCorrection::AssignRecoveredPackets(
     const RecoveredPacketList& recovered_packets,
     ReceivedFecPacket* fec_packet) {
   ProtectedPacketList* protected_packets = &fec_packet->protected_packets;
-  std::vector<RecoveredPacket*> recovered_protected_packets;
 
   // Find intersection between the (sorted) containers `protected_packets`
   // and `recovered_packets`, i.e. all protected packets that have already

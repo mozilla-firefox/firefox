@@ -178,8 +178,7 @@ bool WebRtcEncoderDecoderPicturePairProvider::ConfigureEncoderSettings(
 }
 
 bool WebRtcEncoderDecoderPicturePairProvider::InitializeEncoder() {
-  const VideoEncoder::Settings encoder_settings(
-      VideoEncoder::Capabilities(/*loss_notification = */ false),
+  constexpr VideoEncoder::Settings encoder_settings(
       /*number_of_cores = */ 1, /*max_payload_size = */ kMaxPayloadSize);
 
   if (encoder_->InitEncode(&codec_config_, encoder_settings) ==

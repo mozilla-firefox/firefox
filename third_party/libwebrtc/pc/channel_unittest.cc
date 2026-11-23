@@ -31,7 +31,6 @@
 #include "api/rtp_parameters.h"
 #include "api/rtp_transceiver_direction.h"
 #include "api/scoped_refptr.h"
-#include "api/sequence_checker.h"
 #include "api/task_queue/pending_task_safety_flag.h"
 #include "media/base/codec.h"
 #include "media/base/fake_media_engine.h"
@@ -85,8 +84,6 @@ constexpr int kAudioPts[] = {0, 8};
 constexpr int kVideoPts[] = {97, 99};
 constexpr char kAudioMid[] = "0";
 constexpr char kVideoMid[] = "1";
-enum class NetworkIsWorker { Yes, No };
-
 template <class ChannelT,
           class MediaSendChannelT,
           class MediaReceiveChannelT,
@@ -138,43 +135,40 @@ class ChannelTest : public ::testing::Test {
     RAW_PACKET_TRANSPORT = 0x20,
   };
 
+  // The signaling thread and the network thread are both the main thread, so
+  // the channel methods that must run on the network thread are called
+  // directly. Tasks posted to the network thread, e.g. by BaseChannel::Enable()
+  // and SendRtp(), run when a test processes the main thread's queue with
+  // FlushCurrentThread() or WaitForThreads(). SetLocalContent() and
+  // SetRemoteContent() run synchronously.
   ChannelTest(bool verify_playout,
               std::span<const uint8_t> rtp_data,
-              std::span<const uint8_t> rtcp_data,
-              NetworkIsWorker network_is_worker)
+              std::span<const uint8_t> rtcp_data)
       : verify_playout_(verify_playout),
+        network_thread_(Thread::Current()),
         rtp_packet_(rtp_data.data(), rtp_data.size()),
         rtcp_packet_(rtcp_data.data(), rtcp_data.size()) {
-    if (network_is_worker == NetworkIsWorker::Yes) {
-      network_thread_ = Thread::Current();
-    } else {
-      network_thread_keeper_ = Thread::Create();
-      network_thread_keeper_->SetName("Network", nullptr);
-      network_thread_ = network_thread_keeper_.get();
-    }
     RTC_DCHECK(network_thread_);
   }
 
   ~ChannelTest() override {
-    if (network_thread_) {
-      SendTask(network_thread_, [this]() {
-        network_thread_safety_->SetNotAlive();
-        DeinitChannels();
+    network_thread_safety_->SetNotAlive();
+    DeinitChannels();
+    channel1_ = nullptr;
+    channel2_ = nullptr;
 
-        // Transports must be created and destroyed on the network thread.
-        fake_rtp_dtls_transport1_ = nullptr;
-        fake_rtcp_dtls_transport1_ = nullptr;
-        fake_rtp_dtls_transport2_ = nullptr;
-        fake_rtcp_dtls_transport2_ = nullptr;
-        fake_rtp_packet_transport1_ = nullptr;
-        fake_rtcp_packet_transport1_ = nullptr;
-        fake_rtp_packet_transport2_ = nullptr;
-        fake_rtcp_packet_transport2_ = nullptr;
-        rtp_transport1_ = nullptr;
-        rtp_transport2_ = nullptr;
-        new_rtp_transport_ = nullptr;
-      });
-    }
+    // Transports must be created and destroyed on the network thread.
+    fake_rtp_dtls_transport1_ = nullptr;
+    fake_rtcp_dtls_transport1_ = nullptr;
+    fake_rtp_dtls_transport2_ = nullptr;
+    fake_rtcp_dtls_transport2_ = nullptr;
+    fake_rtp_packet_transport1_ = nullptr;
+    fake_rtcp_packet_transport1_ = nullptr;
+    fake_rtp_packet_transport2_ = nullptr;
+    fake_rtcp_packet_transport2_ = nullptr;
+    rtp_transport1_ = nullptr;
+    rtp_transport2_ = nullptr;
+    new_rtp_transport_ = nullptr;
   }
 
   void CreateChannels(int flags1, int flags2) {
@@ -198,84 +192,74 @@ class ChannelTest : public ::testing::Test {
     RTC_DCHECK(!channel1_);
     RTC_DCHECK(!channel2_);
 
-    // Network thread is started in CreateChannels, to allow the test to
-    // configure a fake clock before any threads are spawned and attempt to
-    // access the time.
-    if (network_thread_keeper_) {
-      network_thread_keeper_->Start();
-    }
-
     // Make sure if using raw packet transports, they're used for both
     // channels.
     RTC_DCHECK_EQ(flags1 & RAW_PACKET_TRANSPORT, flags2 & RAW_PACKET_TRANSPORT);
-    Thread* worker_thread = Thread::Current();
 
-    network_thread_->BlockingCall([&] {
-      // Based on flags, create fake DTLS or raw packet transports.
+    // Based on flags, create fake DTLS or raw packet transports.
 
-      if (flags1 & RAW_PACKET_TRANSPORT) {
-        fake_rtp_packet_transport1_ =
-            std::make_unique<FakePacketTransport>(env_, "channel1_rtp");
-        if (!(flags1 & RTCP_MUX)) {
-          fake_rtcp_packet_transport1_ =
-              std::make_unique<FakePacketTransport>(env_, "channel1_rtcp");
-        }
-      } else {
-        // Confirmed to work with KT_RSA and KT_ECDSA.
-        fake_rtp_dtls_transport1_ = std::make_unique<FakeDtlsTransport>(
-            env_, "channel1", ICE_CANDIDATE_COMPONENT_RTP, network_thread_);
-        if (!(flags1 & RTCP_MUX)) {
-          fake_rtcp_dtls_transport1_ = std::make_unique<FakeDtlsTransport>(
-              env_, "channel1", ICE_CANDIDATE_COMPONENT_RTCP, network_thread_);
-        }
-        if (flags1 & DTLS) {
-          auto cert1 = RTCCertificate::Create(
-              SSLIdentity::Create("session1", KT_DEFAULT));
-          fake_rtp_dtls_transport1_->SetLocalCertificate(cert1);
-          if (fake_rtcp_dtls_transport1_) {
-            fake_rtcp_dtls_transport1_->SetLocalCertificate(cert1);
-          }
+    if (flags1 & RAW_PACKET_TRANSPORT) {
+      fake_rtp_packet_transport1_ =
+          std::make_unique<FakePacketTransport>(env_, "channel1_rtp");
+      if (!(flags1 & RTCP_MUX)) {
+        fake_rtcp_packet_transport1_ =
+            std::make_unique<FakePacketTransport>(env_, "channel1_rtcp");
+      }
+    } else {
+      // Confirmed to work with KT_RSA and KT_ECDSA.
+      fake_rtp_dtls_transport1_ = std::make_unique<FakeDtlsTransport>(
+          env_, "channel1", ICE_CANDIDATE_COMPONENT_RTP, network_thread_);
+      if (!(flags1 & RTCP_MUX)) {
+        fake_rtcp_dtls_transport1_ = std::make_unique<FakeDtlsTransport>(
+            env_, "channel1", ICE_CANDIDATE_COMPONENT_RTCP, network_thread_);
+      }
+      if (flags1 & DTLS) {
+        auto cert1 =
+            RTCCertificate::Create(SSLIdentity::Create("session1", KT_DEFAULT));
+        fake_rtp_dtls_transport1_->SetLocalCertificate(cert1);
+        if (fake_rtcp_dtls_transport1_) {
+          fake_rtcp_dtls_transport1_->SetLocalCertificate(cert1);
         }
       }
-      // Based on flags, create fake DTLS or raw packet transports.
-      if (flags2 & RAW_PACKET_TRANSPORT) {
-        fake_rtp_packet_transport2_ =
-            std::make_unique<FakePacketTransport>(env_, "channel2_rtp");
-        if (!(flags2 & RTCP_MUX)) {
-          fake_rtcp_packet_transport2_ =
-              std::make_unique<FakePacketTransport>(env_, "channel2_rtcp");
-        }
-      } else {
-        // Confirmed to work with KT_RSA and KT_ECDSA.
-        fake_rtp_dtls_transport2_ = std::make_unique<FakeDtlsTransport>(
-            env_, "channel2", ICE_CANDIDATE_COMPONENT_RTP, network_thread_);
-        if (!(flags2 & RTCP_MUX)) {
-          fake_rtcp_dtls_transport2_ = std::make_unique<FakeDtlsTransport>(
-              env_, "channel2", ICE_CANDIDATE_COMPONENT_RTCP, network_thread_);
-        }
-        if (flags2 & DTLS) {
-          auto cert2 = RTCCertificate::Create(
-              SSLIdentity::Create("session2", KT_DEFAULT));
-          fake_rtp_dtls_transport2_->SetLocalCertificate(cert2);
-          if (fake_rtcp_dtls_transport2_) {
-            fake_rtcp_dtls_transport2_->SetLocalCertificate(cert2);
-          }
+    }
+    // Based on flags, create fake DTLS or raw packet transports.
+    if (flags2 & RAW_PACKET_TRANSPORT) {
+      fake_rtp_packet_transport2_ =
+          std::make_unique<FakePacketTransport>(env_, "channel2_rtp");
+      if (!(flags2 & RTCP_MUX)) {
+        fake_rtcp_packet_transport2_ =
+            std::make_unique<FakePacketTransport>(env_, "channel2_rtcp");
+      }
+    } else {
+      // Confirmed to work with KT_RSA and KT_ECDSA.
+      fake_rtp_dtls_transport2_ = std::make_unique<FakeDtlsTransport>(
+          env_, "channel2", ICE_CANDIDATE_COMPONENT_RTP, network_thread_);
+      if (!(flags2 & RTCP_MUX)) {
+        fake_rtcp_dtls_transport2_ = std::make_unique<FakeDtlsTransport>(
+            env_, "channel2", ICE_CANDIDATE_COMPONENT_RTCP, network_thread_);
+      }
+      if (flags2 & DTLS) {
+        auto cert2 =
+            RTCCertificate::Create(SSLIdentity::Create("session2", KT_DEFAULT));
+        fake_rtp_dtls_transport2_->SetLocalCertificate(cert2);
+        if (fake_rtcp_dtls_transport2_) {
+          fake_rtcp_dtls_transport2_->SetLocalCertificate(cert2);
         }
       }
-      rtp_transport1_ = CreateRtpTransportBasedOnFlags(
-          fake_rtp_packet_transport1_.get(), fake_rtcp_packet_transport1_.get(),
-          fake_rtp_dtls_transport1_.get(), fake_rtcp_dtls_transport1_.get(),
-          flags1);
-      rtp_transport2_ = CreateRtpTransportBasedOnFlags(
-          fake_rtp_packet_transport2_.get(), fake_rtcp_packet_transport2_.get(),
-          fake_rtp_dtls_transport2_.get(), fake_rtcp_dtls_transport2_.get(),
-          flags2);
-    });
+    }
+    rtp_transport1_ = CreateRtpTransportBasedOnFlags(
+        fake_rtp_packet_transport1_.get(), fake_rtcp_packet_transport1_.get(),
+        fake_rtp_dtls_transport1_.get(), fake_rtcp_dtls_transport1_.get(),
+        flags1);
+    rtp_transport2_ = CreateRtpTransportBasedOnFlags(
+        fake_rtp_packet_transport2_.get(), fake_rtcp_packet_transport2_.get(),
+        fake_rtp_dtls_transport2_.get(), fake_rtcp_dtls_transport2_.get(),
+        flags2);
 
-    channel1_ = CreateChannel(worker_thread, network_thread_, std::move(ch1s),
-                              std::move(ch1r), rtp_transport1_.get(), flags1);
-    channel2_ = CreateChannel(worker_thread, network_thread_, std::move(ch2s),
-                              std::move(ch2r), rtp_transport2_.get(), flags2);
+    channel1_ = CreateChannel(network_thread_, std::move(ch1s), std::move(ch1r),
+                              rtp_transport1_.get(), flags1);
+    channel2_ = CreateChannel(network_thread_, std::move(ch2s), std::move(ch2r),
+                              rtp_transport2_.get(), flags2);
     CreateContent(flags1, kPcmuCodec, kH264Codec, &local_media_content1_);
     CreateContent(flags2, kPcmuCodec, kH264Codec, &local_media_content2_);
     CopyContent(local_media_content1_, &remote_media_content1_);
@@ -297,7 +281,6 @@ class ChannelTest : public ::testing::Test {
   }
 
   std::unique_ptr<typename T::Channel> CreateChannel(
-      Thread* worker_thread,
       Thread* network_thread,
       std::unique_ptr<typename T::MediaSendChannel> ch_send,
       std::unique_ptr<typename T::MediaReceiveChannel> ch_receive,
@@ -330,18 +313,12 @@ class ChannelTest : public ::testing::Test {
 
   // Unininitializes the channels on the network thread.
   void DeinitChannels() {
-    if (!channel1_ && !channel2_)
-      return;
-    SendTask(network_thread_, [this]() {
-      if (channel1_) {
-        RTC_DCHECK_RUN_ON(channel1_->network_thread());
-        channel1_->SetRtpTransport(nullptr);
-      }
-      if (channel2_) {
-        RTC_DCHECK_RUN_ON(channel2_->network_thread());
-        channel2_->SetRtpTransport(nullptr);
-      }
-    });
+    if (channel1_) {
+      channel1_->SetRtpTransport(nullptr);
+    }
+    if (channel2_) {
+      channel2_->SetRtpTransport(nullptr);
+    }
   }
 
   std::unique_ptr<RtpTransport> CreateUnencryptedTransport(
@@ -350,13 +327,10 @@ class ChannelTest : public ::testing::Test {
     auto rtp_transport = std::make_unique<RtpTransport>(
         rtcp_packet_transport == nullptr, env_.field_trials());
 
-    SendTask(network_thread_,
-             [&rtp_transport, rtp_packet_transport, rtcp_packet_transport] {
-               rtp_transport->SetRtpPacketTransport(rtp_packet_transport);
-               if (rtcp_packet_transport) {
-                 rtp_transport->SetRtcpPacketTransport(rtcp_packet_transport);
-               }
-             });
+    rtp_transport->SetRtpPacketTransport(rtp_packet_transport);
+    if (rtcp_packet_transport) {
+      rtp_transport->SetRtcpPacketTransport(rtcp_packet_transport);
+    }
     return rtp_transport;
   }
 
@@ -366,38 +340,33 @@ class ChannelTest : public ::testing::Test {
     auto dtls_srtp_transport = std::make_unique<DtlsSrtpTransport>(
         rtcp_dtls_transport == nullptr, env_.field_trials());
 
-    SendTask(network_thread_,
-             [&dtls_srtp_transport, rtp_dtls_transport, rtcp_dtls_transport] {
-               dtls_srtp_transport->SetDtlsTransports(rtp_dtls_transport,
-                                                      rtcp_dtls_transport);
-             });
+    dtls_srtp_transport->SetDtlsTransports(rtp_dtls_transport,
+                                           rtcp_dtls_transport);
     return dtls_srtp_transport;
   }
 
   void ConnectFakeTransports() {
-    SendTask(network_thread_, [this] {
-      bool asymmetric = false;
-      // Depending on test flags, could be using DTLS or raw packet transport.
-      if (fake_rtp_dtls_transport1_ && fake_rtp_dtls_transport2_) {
-        fake_rtp_dtls_transport1_->SetDestination(
-            fake_rtp_dtls_transport2_.get(), asymmetric);
-      }
-      if (fake_rtcp_dtls_transport1_ && fake_rtcp_dtls_transport2_) {
-        fake_rtcp_dtls_transport1_->SetDestination(
-            fake_rtcp_dtls_transport2_.get(), asymmetric);
-      }
-      if (fake_rtp_packet_transport1_ && fake_rtp_packet_transport2_) {
-        fake_rtp_packet_transport1_->SetDestination(
-            fake_rtp_packet_transport2_.get(), asymmetric);
-      }
-      if (fake_rtcp_packet_transport1_ && fake_rtcp_packet_transport2_) {
-        fake_rtcp_packet_transport1_->SetDestination(
-            fake_rtcp_packet_transport2_.get(), asymmetric);
-      }
-    });
-    // The transport becoming writable will asynchronously update the send state
-    // on the worker thread; since this test uses the main thread as the worker
-    // thread, we must process the message queue for this to occur.
+    bool asymmetric = false;
+    // Depending on test flags, could be using DTLS or raw packet transport.
+    if (fake_rtp_dtls_transport1_ && fake_rtp_dtls_transport2_) {
+      fake_rtp_dtls_transport1_->SetDestination(fake_rtp_dtls_transport2_.get(),
+                                                asymmetric);
+    }
+    if (fake_rtcp_dtls_transport1_ && fake_rtcp_dtls_transport2_) {
+      fake_rtcp_dtls_transport1_->SetDestination(
+          fake_rtcp_dtls_transport2_.get(), asymmetric);
+    }
+    if (fake_rtp_packet_transport1_ && fake_rtp_packet_transport2_) {
+      fake_rtp_packet_transport1_->SetDestination(
+          fake_rtp_packet_transport2_.get(), asymmetric);
+    }
+    if (fake_rtcp_packet_transport1_ && fake_rtcp_packet_transport2_) {
+      fake_rtcp_packet_transport1_->SetDestination(
+          fake_rtcp_packet_transport2_.get(), asymmetric);
+    }
+    // The transport becoming writable may post tasks that update the send
+    // state on the network thread; since this test uses the main thread as the
+    // network thread, we must process the message queue for this to occur.
     WaitForThreads();
   }
 
@@ -562,26 +531,17 @@ class ChannelTest : public ::testing::Test {
     // Base implementation.
   }
 
-  // Utility method that calls BaseChannel::srtp_active() on the network thread
-  // and returns the result. The `srtp_active()` state is maintained on the
-  // network thread, which callers need to factor in.
   bool IsSrtpActive(std::unique_ptr<typename T::Channel>& channel) {
     RTC_DCHECK(channel.get());
-    bool result;
-    SendTask(network_thread_, [&] { result = channel->srtp_active(); });
-    return result;
+    return channel->srtp_active();
   }
 
   // Returns true iff the transport is set for a channel and rtcp_mux_enabled()
   // returns true.
   bool IsRtcpMuxEnabled(std::unique_ptr<typename T::Channel>& channel) {
     RTC_DCHECK(channel.get());
-    bool result;
-    SendTask(network_thread_, [&] {
-      result = channel->rtp_transport() &&
-               channel->rtp_transport()->rtcp_mux_enabled();
-    });
-    return result;
+    return channel->rtp_transport() &&
+           channel->rtp_transport()->rtcp_mux_enabled();
   }
 
   // Tests that can be used by derived classes.
@@ -1296,16 +1256,14 @@ class ChannelTest : public ::testing::Test {
     EXPECT_TRUE(CheckRtp2());
 
     // Lose writability, which should fail.
-    SendTask(network_thread_,
-             [this] { fake_rtp_dtls_transport1_->SetWritable(false); });
+    fake_rtp_dtls_transport1_->SetWritable(false);
     SendRtp1();
     SendRtp2();
     WaitForThreads();
     EXPECT_TRUE(CheckRtp1());
 
     // Regain writability
-    SendTask(network_thread_,
-             [this] { fake_rtp_dtls_transport1_->SetWritable(true); });
+    fake_rtp_dtls_transport1_->SetWritable(true);
     EXPECT_TRUE(media_send_channel1_impl()->sending());
     SendRtp1();
     SendRtp2();
@@ -1314,10 +1272,8 @@ class ChannelTest : public ::testing::Test {
     EXPECT_TRUE(CheckRtp2());
 
     // Lose writability completely
-    SendTask(network_thread_, [this] {
-      bool asymmetric = true;
-      fake_rtp_dtls_transport1_->SetDestination(nullptr, asymmetric);
-    });
+    bool asymmetric = true;
+    fake_rtp_dtls_transport1_->SetDestination(nullptr, asymmetric);
     EXPECT_TRUE(media_send_channel1_impl()->sending());
 
     // Should fail also.
@@ -1327,11 +1283,8 @@ class ChannelTest : public ::testing::Test {
     EXPECT_TRUE(CheckRtp1());
 
     // Gain writability back
-    SendTask(network_thread_, [this] {
-      bool asymmetric = true;
-      fake_rtp_dtls_transport1_->SetDestination(fake_rtp_dtls_transport2_.get(),
-                                                asymmetric);
-    });
+    fake_rtp_dtls_transport1_->SetDestination(fake_rtp_dtls_transport2_.get(),
+                                              asymmetric);
     EXPECT_TRUE(media_send_channel1_impl()->sending());
     SendRtp1();
     SendRtp2();
@@ -1545,19 +1498,17 @@ class ChannelTest : public ::testing::Test {
 
     bool rcv_success, send_success;
     int rcv_buf, send_buf;
-    SendTask(network_thread_, [&] {
-      new_rtp_transport_ = CreateDtlsSrtpTransport(
-          fake_rtp_dtls_transport2_.get(), fake_rtcp_dtls_transport2_.get());
-      channel1_->SetOption(BaseChannel::ST_RTP, Socket::Option::OPT_SNDBUF,
-                           kSndBufSize);
-      channel2_->SetOption(BaseChannel::ST_RTP, Socket::Option::OPT_RCVBUF,
-                           kRcvBufSize);
-      channel1_->SetRtpTransport(new_rtp_transport_.get());
-      send_success = fake_rtp_dtls_transport2_->GetOption(
-          Socket::Option::OPT_SNDBUF, &send_buf);
-      rcv_success = fake_rtp_dtls_transport2_->GetOption(
-          Socket::Option::OPT_RCVBUF, &rcv_buf);
-    });
+    new_rtp_transport_ = CreateDtlsSrtpTransport(
+        fake_rtp_dtls_transport2_.get(), fake_rtcp_dtls_transport2_.get());
+    channel1_->SetOption(BaseChannel::ST_RTP, Socket::Option::OPT_SNDBUF,
+                         kSndBufSize);
+    channel2_->SetOption(BaseChannel::ST_RTP, Socket::Option::OPT_RCVBUF,
+                         kRcvBufSize);
+    channel1_->SetRtpTransport(new_rtp_transport_.get());
+    send_success = fake_rtp_dtls_transport2_->GetOption(
+        Socket::Option::OPT_SNDBUF, &send_buf);
+    rcv_success = fake_rtp_dtls_transport2_->GetOption(
+        Socket::Option::OPT_RCVBUF, &rcv_buf);
 
     ASSERT_TRUE(send_success);
     EXPECT_EQ(kSndBufSize, send_buf);
@@ -1625,17 +1576,11 @@ class ChannelTest : public ::testing::Test {
   }
   void FlushCurrentThread() { main_thread_.Flush(); }
   void WaitForThreads(std::span<Thread*> threads) {
-    // `threads` and current thread post packets to network thread.
+    // `threads` and the current thread post packets to the network thread,
+    // which is the current thread.
     for (Thread* thread : threads) {
       SendTask(thread, [thread] { ProcessThreadQueue(thread); });
     }
-    ProcessThreadQueue(Thread::Current());
-    // Network thread move them around and post back to worker = current thread.
-    if (!network_thread_->IsCurrent()) {
-      SendTask(network_thread_,
-               [this] { ProcessThreadQueue(network_thread_); });
-    }
-    // Worker thread = current Thread process received messages.
     ProcessThreadQueue(Thread::Current());
   }
 
@@ -1672,8 +1617,7 @@ class ChannelTest : public ::testing::Test {
 
   void TestSetRtpTransportNullClearsReceiveSinks() {
     CreateChannels(0, 0);
-    SendTask(channel1_->network_thread(),
-             [this]() { channel1_->SetRtpTransport(nullptr); });
+    channel1_->SetRtpTransport(nullptr);
     EXPECT_TRUE(absl::c_linear_search(
         media_receive_channel1_impl()->clear_receive_sinks_calls(),
         std::nullopt));
@@ -1753,8 +1697,7 @@ class ChannelTest : public ::testing::Test {
   const bool verify_playout_;
   scoped_refptr<PendingTaskSafetyFlag> network_thread_safety_ =
       PendingTaskSafetyFlag::CreateDetached();
-  std::unique_ptr<Thread> network_thread_keeper_;
-  Thread* network_thread_;
+  Thread* const network_thread_;
   std::unique_ptr<FakeDtlsTransport> fake_rtp_dtls_transport1_;
   std::unique_ptr<FakeDtlsTransport> fake_rtcp_dtls_transport1_;
   std::unique_ptr<FakeDtlsTransport> fake_rtp_dtls_transport2_;
@@ -1782,7 +1725,6 @@ class ChannelTest : public ::testing::Test {
 
 template <>
 std::unique_ptr<BaseChannel> ChannelTest<VoiceTraits>::CreateChannel(
-    Thread* worker_thread,
     Thread* network_thread,
     std::unique_ptr<FakeVoiceMediaSendChannel> send_ch,
     std::unique_ptr<FakeVoiceMediaReceiveChannel> receive_ch,
@@ -1790,13 +1732,10 @@ std::unique_ptr<BaseChannel> ChannelTest<VoiceTraits>::CreateChannel(
     int flags) {
   Thread* signaling_thread = Thread::Current();
   auto channel = std::make_unique<BaseChannel>(
-      worker_thread, network_thread, signaling_thread, std::move(send_ch),
+      network_thread, signaling_thread, std::move(send_ch),
       std::move(receive_ch), kAudioMid, MediaType::AUDIO, (flags & DTLS) != 0,
       CryptoOptions(), &ssrc_generator_);
-  SendTask(network_thread, [&]() {
-    RTC_DCHECK_RUN_ON(channel->network_thread());
-    channel->SetRtpTransport(rtp_transport);
-  });
+  channel->SetRtpTransport(rtp_transport);
   return channel;
 }
 
@@ -1824,46 +1763,15 @@ void ChannelTest<VoiceTraits>::AddLegacyStreamInContent(
   audio->AddLegacyStream(ssrc);
 }
 
-class VoiceChannelSingleThreadTest : public ChannelTest<VoiceTraits> {
+class VoiceChannelTest : public ChannelTest<VoiceTraits> {
  public:
   using Base = ChannelTest<VoiceTraits>;
-  VoiceChannelSingleThreadTest()
-      : Base(true, kPcmuFrame, kFakeRtcpReport, NetworkIsWorker::Yes) {}
-};
-
-class VoiceChannelDoubleThreadTest : public ChannelTest<VoiceTraits> {
- public:
-  using Base = ChannelTest<VoiceTraits>;
-  VoiceChannelDoubleThreadTest()
-      : Base(true, kPcmuFrame, kFakeRtcpReport, NetworkIsWorker::No) {}
-};
-
-class VoiceChannelWithEncryptedRtpHeaderExtensionsSingleThreadTest
-    : public ChannelTest<VoiceTraits> {
- public:
-  using Base = ChannelTest<VoiceTraits>;
-  VoiceChannelWithEncryptedRtpHeaderExtensionsSingleThreadTest()
-      : Base(true,
-             kPcmuFrameWithExtensions,
-             kFakeRtcpReport,
-             NetworkIsWorker::Yes) {}
-};
-
-class VoiceChannelWithEncryptedRtpHeaderExtensionsDoubleThreadTest
-    : public ChannelTest<VoiceTraits> {
- public:
-  using Base = ChannelTest<VoiceTraits>;
-  VoiceChannelWithEncryptedRtpHeaderExtensionsDoubleThreadTest()
-      : Base(true,
-             kPcmuFrameWithExtensions,
-             kFakeRtcpReport,
-             NetworkIsWorker::No) {}
+  VoiceChannelTest() : Base(true, kPcmuFrame, kFakeRtcpReport) {}
 };
 
 // override to add NULL parameter
 template <>
 std::unique_ptr<BaseChannel> ChannelTest<VideoTraits>::CreateChannel(
-    Thread* worker_thread,
     Thread* network_thread,
     std::unique_ptr<FakeVideoMediaSendChannel> send_ch,
     std::unique_ptr<FakeVideoMediaReceiveChannel> receive_ch,
@@ -1871,13 +1779,10 @@ std::unique_ptr<BaseChannel> ChannelTest<VideoTraits>::CreateChannel(
     int flags) {
   Thread* signaling_thread = Thread::Current();
   auto channel = std::make_unique<BaseChannel>(
-      worker_thread, network_thread, signaling_thread, std::move(send_ch),
+      network_thread, signaling_thread, std::move(send_ch),
       std::move(receive_ch), kVideoMid, MediaType::VIDEO, (flags & DTLS) != 0,
       CryptoOptions(), &ssrc_generator_);
-  SendTask(network_thread, [&]() {
-    RTC_DCHECK_RUN_ON(channel->network_thread());
-    channel->SetRtpTransport(rtp_transport);
-  });
+  channel->SetRtpTransport(rtp_transport);
   return channel;
 }
 
@@ -1905,171 +1810,160 @@ void ChannelTest<VideoTraits>::AddLegacyStreamInContent(
   video->AddLegacyStream(ssrc);
 }
 
-class VideoChannelSingleThreadTest : public ChannelTest<VideoTraits> {
+class VideoChannelTest : public ChannelTest<VideoTraits> {
  public:
   using Base = ChannelTest<VideoTraits>;
-  VideoChannelSingleThreadTest()
-      : Base(false, kH264Packet, kFakeRtcpReport, NetworkIsWorker::Yes) {}
+  VideoChannelTest() : Base(false, kH264Packet, kFakeRtcpReport) {}
 };
 
-class VideoChannelDoubleThreadTest : public ChannelTest<VideoTraits> {
- public:
-  using Base = ChannelTest<VideoTraits>;
-  VideoChannelDoubleThreadTest()
-      : Base(false, kH264Packet, kFakeRtcpReport, NetworkIsWorker::No) {}
-};
-
-TEST_F(VoiceChannelSingleThreadTest, TestInit) {
+TEST_F(VoiceChannelTest, TestInit) {
   Base::TestInit();
   EXPECT_FALSE(media_send_channel1_impl()->IsStreamMuted(0));
   EXPECT_TRUE(media_send_channel1_impl()->dtmf_info_queue().empty());
 }
 
-TEST_F(VoiceChannelSingleThreadTest, TestDeinit) {
+TEST_F(VoiceChannelTest, TestDeinit) {
   Base::TestDeinit();
 }
 
-TEST_F(VoiceChannelSingleThreadTest, TestSetContents) {
+TEST_F(VoiceChannelTest, TestSetContents) {
   Base::TestSetContents();
 }
 
-TEST_F(VoiceChannelSingleThreadTest, TestSetContentsExtmapAllowMixedAsCaller) {
+TEST_F(VoiceChannelTest, TestSetContentsExtmapAllowMixedAsCaller) {
   Base::TestSetContentsExtmapAllowMixedCaller(/*offer=*/true, /*answer=*/true);
 }
 
-TEST_F(VoiceChannelSingleThreadTest,
-       TestSetContentsExtmapAllowMixedNotSupportedAsCaller) {
+TEST_F(VoiceChannelTest, TestSetContentsExtmapAllowMixedNotSupportedAsCaller) {
   Base::TestSetContentsExtmapAllowMixedCaller(/*offer=*/true, /*answer=*/false);
 }
 
-TEST_F(VoiceChannelSingleThreadTest, TestSetContentsExtmapAllowMixedAsCallee) {
+TEST_F(VoiceChannelTest, TestSetContentsExtmapAllowMixedAsCallee) {
   Base::TestSetContentsExtmapAllowMixedCallee(/*offer=*/true, /*answer=*/true);
 }
 
-TEST_F(VoiceChannelSingleThreadTest,
-       TestSetContentsExtmapAllowMixedNotSupportedAsCallee) {
+TEST_F(VoiceChannelTest, TestSetContentsExtmapAllowMixedNotSupportedAsCallee) {
   Base::TestSetContentsExtmapAllowMixedCallee(/*offer=*/true, /*answer=*/false);
 }
 
-TEST_F(VoiceChannelSingleThreadTest, TestSetContentsNullOffer) {
+TEST_F(VoiceChannelTest, TestSetContentsNullOffer) {
   Base::TestSetContentsNullOffer();
 }
 
-TEST_F(VoiceChannelSingleThreadTest, TestSetContentsRtcpMux) {
+TEST_F(VoiceChannelTest, TestSetContentsRtcpMux) {
   Base::TestSetContentsRtcpMux();
 }
 
-TEST_F(VoiceChannelSingleThreadTest, TestSetContentsRtcpMuxWithPrAnswer) {
+TEST_F(VoiceChannelTest, TestSetContentsRtcpMuxWithPrAnswer) {
   Base::TestSetContentsRtcpMux();
 }
 
-TEST_F(VoiceChannelSingleThreadTest, TestSetContentsRtcpReducedSize) {
+TEST_F(VoiceChannelTest, TestSetContentsRtcpReducedSize) {
   Base::TestSetContentsRtcpReducedSize();
 }
 
-TEST_F(VoiceChannelSingleThreadTest, TestChangeStreamParamsInContent) {
+TEST_F(VoiceChannelTest, TestChangeStreamParamsInContent) {
   Base::TestChangeStreamParamsInContent();
 }
 
-TEST_F(VoiceChannelSingleThreadTest, TestPlayoutAndSendingStates) {
+TEST_F(VoiceChannelTest, TestPlayoutAndSendingStates) {
   Base::TestPlayoutAndSendingStates();
 }
 
-TEST_F(VoiceChannelSingleThreadTest, TestMediaContentDirection) {
+TEST_F(VoiceChannelTest, TestMediaContentDirection) {
   Base::TestMediaContentDirection();
 }
 
-TEST_F(VoiceChannelSingleThreadTest, TestCallSetup) {
+TEST_F(VoiceChannelTest, TestCallSetup) {
   Base::TestCallSetup();
 }
 
-TEST_F(VoiceChannelSingleThreadTest, SendRtpToRtp) {
+TEST_F(VoiceChannelTest, SendRtpToRtp) {
   Base::SendRtpToRtp();
 }
 
-TEST_F(VoiceChannelSingleThreadTest, SendDtlsSrtpToDtlsSrtp) {
+TEST_F(VoiceChannelTest, SendDtlsSrtpToDtlsSrtp) {
   Base::SendDtlsSrtpToDtlsSrtp(0, 0);
 }
 
-TEST_F(VoiceChannelSingleThreadTest, SendDtlsSrtpToDtlsSrtpRtcpMux) {
+TEST_F(VoiceChannelTest, SendDtlsSrtpToDtlsSrtpRtcpMux) {
   Base::SendDtlsSrtpToDtlsSrtp(RTCP_MUX, RTCP_MUX);
 }
 
-TEST_F(VoiceChannelSingleThreadTest, SendEarlyMediaUsingRtcpMuxSrtp) {
+TEST_F(VoiceChannelTest, SendEarlyMediaUsingRtcpMuxSrtp) {
   Base::SendEarlyMediaUsingRtcpMuxSrtp();
 }
 
-TEST_F(VoiceChannelSingleThreadTest, SendRtpToRtpOnThread) {
+TEST_F(VoiceChannelTest, SendRtpToRtpOnThread) {
   Base::SendRtpToRtpOnThread();
 }
 
-TEST_F(VoiceChannelSingleThreadTest, SendWithWritabilityLoss) {
+TEST_F(VoiceChannelTest, SendWithWritabilityLoss) {
   Base::SendWithWritabilityLoss();
 }
 
-TEST_F(VoiceChannelSingleThreadTest, TestSetContentFailure) {
+TEST_F(VoiceChannelTest, TestSetContentFailure) {
   Base::TestSetContentFailure();
 }
 
-TEST_F(VoiceChannelSingleThreadTest, TestSendTwoOffers) {
+TEST_F(VoiceChannelTest, TestSendTwoOffers) {
   Base::TestSendTwoOffers();
 }
 
-TEST_F(VoiceChannelSingleThreadTest, TestReceiveTwoOffers) {
+TEST_F(VoiceChannelTest, TestReceiveTwoOffers) {
   Base::TestReceiveTwoOffers();
 }
 
-TEST_F(VoiceChannelSingleThreadTest, TestSendPrAnswer) {
+TEST_F(VoiceChannelTest, TestSendPrAnswer) {
   Base::TestSendPrAnswer();
 }
 
-TEST_F(VoiceChannelSingleThreadTest, TestReceivePrAnswer) {
+TEST_F(VoiceChannelTest, TestReceivePrAnswer) {
   Base::TestReceivePrAnswer();
 }
 
-TEST_F(VoiceChannelSingleThreadTest, TestOnTransportReadyToSend) {
+TEST_F(VoiceChannelTest, TestOnTransportReadyToSend) {
   Base::TestOnTransportReadyToSend();
 }
 
-TEST_F(VoiceChannelSingleThreadTest, SendBundleToBundle) {
+TEST_F(VoiceChannelTest, SendBundleToBundle) {
   Base::SendBundleToBundle(kAudioPts, false, false);
 }
 
-TEST_F(VoiceChannelSingleThreadTest, SendBundleToBundleSecure) {
+TEST_F(VoiceChannelTest, SendBundleToBundleSecure) {
   Base::SendBundleToBundle(kAudioPts, false, true);
 }
 
-TEST_F(VoiceChannelSingleThreadTest, SendBundleToBundleWithRtcpMux) {
+TEST_F(VoiceChannelTest, SendBundleToBundleWithRtcpMux) {
   Base::SendBundleToBundle(kAudioPts, true, false);
 }
 
-TEST_F(VoiceChannelSingleThreadTest, SendBundleToBundleWithRtcpMuxSecure) {
+TEST_F(VoiceChannelTest, SendBundleToBundleWithRtcpMuxSecure) {
   Base::SendBundleToBundle(kAudioPts, true, true);
 }
 
-TEST_F(VoiceChannelSingleThreadTest, DefaultMaxBitrateIsUnlimited) {
+TEST_F(VoiceChannelTest, DefaultMaxBitrateIsUnlimited) {
   Base::DefaultMaxBitrateIsUnlimited();
 }
 
-TEST_F(VoiceChannelSingleThreadTest, SocketOptionsMergedOnSetTransport) {
+TEST_F(VoiceChannelTest, SocketOptionsMergedOnSetTransport) {
   Base::SocketOptionsMergedOnSetTransport();
 }
 
-TEST_F(VoiceChannelSingleThreadTest, RemovesExtensionNotPresentInRemoteAnswer) {
+TEST_F(VoiceChannelTest, RemovesExtensionNotPresentInRemoteAnswer) {
   Base::TestRemovesExtensionNotPresentInRemoteAnswer();
 }
 
-TEST_F(VoiceChannelSingleThreadTest, RemovesExtensionNotPresentInLocalAnswer) {
+TEST_F(VoiceChannelTest, RemovesExtensionNotPresentInLocalAnswer) {
   Base::TestRemovesExtensionNotPresentInLocalAnswer();
 }
 
-TEST_F(VoiceChannelSingleThreadTest, DuplicateRtpHeaderExtensionIds) {
+TEST_F(VoiceChannelTest, DuplicateRtpHeaderExtensionIds) {
   Base::TestDuplicateRtpHeaderExtensionIds();
 }
 
 #if GTEST_HAS_DEATH_TEST && !defined(WEBRTC_ANDROID)
-TEST_F(VoiceChannelSingleThreadTest,
-       RtpHeaderExtensionIdOutOfRangeHighDeathTest) {
+TEST_F(VoiceChannelTest, RtpHeaderExtensionIdOutOfRangeHighDeathTest) {
 #if RTC_DCHECK_IS_ON
   // Note - EXPECT_DEBUG_DEATH does not work as expected here.
   EXPECT_DEATH(Base::TestRtpHeaderExtensionIdOutOfRangeHigh(), "Check failed:");
@@ -2078,8 +1972,7 @@ TEST_F(VoiceChannelSingleThreadTest,
 #endif
 }
 
-TEST_F(VoiceChannelSingleThreadTest,
-       RtpHeaderExtensionIdOutOfRangeLowDeathTest) {
+TEST_F(VoiceChannelTest, RtpHeaderExtensionIdOutOfRangeLowDeathTest) {
 #if RTC_DCHECK_IS_ON
   // Note - EXPECT_DEBUG_DEATH does not work as expected here.
   EXPECT_DEATH(Base::TestRtpHeaderExtensionIdOutOfRangeLow(), "Check failed:");
@@ -2089,39 +1982,34 @@ TEST_F(VoiceChannelSingleThreadTest,
 }
 #endif
 
-TEST_F(VoiceChannelSingleThreadTest, RtpHeaderExtensionIdReassignment) {
+TEST_F(VoiceChannelTest, RtpHeaderExtensionIdReassignment) {
   Base::TestRtpHeaderExtensionIdReassignment();
 }
 
-TEST_F(VoiceChannelSingleThreadTest,
-       TestRtpHeaderExtensionIdHistoryReassignment) {
+TEST_F(VoiceChannelTest, TestRtpHeaderExtensionIdHistoryReassignment) {
   Base::TestRtpHeaderExtensionIdHistoryReassignment();
 }
 
-TEST_F(VoiceChannelSingleThreadTest,
-       TestSetRtpTransportNullClearsReceiveSinks) {
+TEST_F(VoiceChannelTest, TestSetRtpTransportNullClearsReceiveSinks) {
   Base::TestSetRtpTransportNullClearsReceiveSinks();
 }
 
-TEST_F(VoiceChannelSingleThreadTest,
-       TestRegisterRtpDemuxerSinkPropagatesReceiveSsrcs) {
+TEST_F(VoiceChannelTest, TestRegisterRtpDemuxerSinkPropagatesReceiveSsrcs) {
   Base::TestRegisterRtpDemuxerSinkPropagatesReceiveSsrcs();
 }
 
-TEST_F(VoiceChannelSingleThreadTest,
-       TestUpdateRemoteStreamsClearsRemovedSinks) {
+TEST_F(VoiceChannelTest, TestUpdateRemoteStreamsClearsRemovedSinks) {
   Base::TestUpdateRemoteStreamsClearsRemovedSinks();
 }
 
-TEST_F(VoiceChannelSingleThreadTest,
-       TestUpdateRemoteStreamsClearsUnsignaledSinks) {
+TEST_F(VoiceChannelTest, TestUpdateRemoteStreamsClearsUnsignaledSinks) {
   Base::TestUpdateRemoteStreamsClearsUnsignaledSinks();
 }
 
 // The send streams are added with the local offer, but the send parameters are
 // only applied with the remote answer. Test that the MID is set with the offer,
 // so that the send streams are created with it.
-TEST_F(VoiceChannelSingleThreadTest, SetsMidOnSendChannelWithLocalOffer) {
+TEST_F(VoiceChannelTest, SetsMidOnSendChannelWithLocalOffer) {
   CreateChannels(0, 0);
   EXPECT_TRUE(
       channel1_->SetLocalContent(&local_media_content1_, SdpType::kOffer).ok());
@@ -2129,297 +2017,153 @@ TEST_F(VoiceChannelSingleThreadTest, SetsMidOnSendChannelWithLocalOffer) {
   EXPECT_EQ(media_send_channel1_impl()->mid(), kAudioMid);
 }
 
-// VoiceChannelDoubleThreadTest
-TEST_F(VoiceChannelDoubleThreadTest, TestInit) {
-  Base::TestInit();
-  EXPECT_FALSE(media_send_channel1_impl()->IsStreamMuted(0));
-  EXPECT_TRUE(media_send_channel1_impl()->dtmf_info_queue().empty());
-}
-
-TEST_F(VoiceChannelDoubleThreadTest, TestDeinit) {
-  Base::TestDeinit();
-}
-
-TEST_F(VoiceChannelDoubleThreadTest, TestSetContents) {
-  Base::TestSetContents();
-}
-
-TEST_F(VoiceChannelDoubleThreadTest, TestSetContentsExtmapAllowMixedAsCaller) {
-  Base::TestSetContentsExtmapAllowMixedCaller(/*offer=*/true, /*answer=*/true);
-}
-
-TEST_F(VoiceChannelDoubleThreadTest,
-       TestSetContentsExtmapAllowMixedNotSupportedAsCaller) {
-  Base::TestSetContentsExtmapAllowMixedCaller(/*offer=*/true, /*answer=*/false);
-}
-
-TEST_F(VoiceChannelDoubleThreadTest, TestSetContentsExtmapAllowMixedAsCallee) {
-  Base::TestSetContentsExtmapAllowMixedCallee(/*offer=*/true, /*answer=*/true);
-}
-
-TEST_F(VoiceChannelDoubleThreadTest,
-       TestSetContentsExtmapAllowMixedNotSupportedAsCallee) {
-  Base::TestSetContentsExtmapAllowMixedCallee(/*offer=*/true, /*answer=*/false);
-}
-
-TEST_F(VoiceChannelDoubleThreadTest, TestSetContentsNullOffer) {
-  Base::TestSetContentsNullOffer();
-}
-
-TEST_F(VoiceChannelDoubleThreadTest, TestSetContentsRtcpMux) {
-  Base::TestSetContentsRtcpMux();
-}
-
-TEST_F(VoiceChannelDoubleThreadTest, TestSetContentsRtcpMuxWithPrAnswer) {
-  Base::TestSetContentsRtcpMux();
-}
-
-TEST_F(VoiceChannelDoubleThreadTest, TestSetContentsRtcpReducedSize) {
-  Base::TestSetContentsRtcpReducedSize();
-}
-
-TEST_F(VoiceChannelDoubleThreadTest, TestChangeStreamParamsInContent) {
-  Base::TestChangeStreamParamsInContent();
-}
-
-TEST_F(VoiceChannelDoubleThreadTest, TestUpdateRemoteStreamsRaceWithRtpPacket) {
-  Base::TestUpdateRemoteStreamsRaceWithRtpPacket();
-}
-
-TEST_F(VoiceChannelDoubleThreadTest, TestPlayoutAndSendingStates) {
-  Base::TestPlayoutAndSendingStates();
-}
-
-TEST_F(VoiceChannelDoubleThreadTest, TestMediaContentDirection) {
-  Base::TestMediaContentDirection();
-}
-
-TEST_F(VoiceChannelDoubleThreadTest, TestCallSetup) {
-  Base::TestCallSetup();
-}
-
-TEST_F(VoiceChannelDoubleThreadTest, SendRtpToRtp) {
-  Base::SendRtpToRtp();
-}
-
-TEST_F(VoiceChannelDoubleThreadTest, SendDtlsSrtpToDtlsSrtp) {
-  Base::SendDtlsSrtpToDtlsSrtp(0, 0);
-}
-
-TEST_F(VoiceChannelDoubleThreadTest, SendDtlsSrtpToDtlsSrtpRtcpMux) {
-  Base::SendDtlsSrtpToDtlsSrtp(RTCP_MUX, RTCP_MUX);
-}
-
-TEST_F(VoiceChannelDoubleThreadTest, SendEarlyMediaUsingRtcpMuxSrtp) {
-  Base::SendEarlyMediaUsingRtcpMuxSrtp();
-}
-
-TEST_F(VoiceChannelDoubleThreadTest, SendRtpToRtpOnThread) {
-  Base::SendRtpToRtpOnThread();
-}
-
-TEST_F(VoiceChannelDoubleThreadTest, SendWithWritabilityLoss) {
-  Base::SendWithWritabilityLoss();
-}
-
-TEST_F(VoiceChannelDoubleThreadTest, TestSetContentFailure) {
-  Base::TestSetContentFailure();
-}
-
-TEST_F(VoiceChannelDoubleThreadTest, TestSendTwoOffers) {
-  Base::TestSendTwoOffers();
-}
-
-TEST_F(VoiceChannelDoubleThreadTest, TestReceiveTwoOffers) {
-  Base::TestReceiveTwoOffers();
-}
-
-TEST_F(VoiceChannelDoubleThreadTest, TestSendPrAnswer) {
-  Base::TestSendPrAnswer();
-}
-
-TEST_F(VoiceChannelDoubleThreadTest, TestReceivePrAnswer) {
-  Base::TestReceivePrAnswer();
-}
-
-TEST_F(VoiceChannelDoubleThreadTest, TestOnTransportReadyToSend) {
-  Base::TestOnTransportReadyToSend();
-}
-
-TEST_F(VoiceChannelDoubleThreadTest, SendBundleToBundle) {
-  Base::SendBundleToBundle(kAudioPts, false, false);
-}
-
-TEST_F(VoiceChannelDoubleThreadTest, SendBundleToBundleSecure) {
-  Base::SendBundleToBundle(kAudioPts, false, true);
-}
-
-TEST_F(VoiceChannelDoubleThreadTest, SendBundleToBundleWithRtcpMux) {
-  Base::SendBundleToBundle(kAudioPts, true, false);
-}
-
-TEST_F(VoiceChannelDoubleThreadTest, SendBundleToBundleWithRtcpMuxSecure) {
-  Base::SendBundleToBundle(kAudioPts, true, true);
-}
-
-TEST_F(VoiceChannelDoubleThreadTest, DefaultMaxBitrateIsUnlimited) {
-  Base::DefaultMaxBitrateIsUnlimited();
-}
-
-TEST_F(VoiceChannelDoubleThreadTest, SocketOptionsMergedOnSetTransport) {
-  Base::SocketOptionsMergedOnSetTransport();
-}
-
-// VideoChannelSingleThreadTest
-TEST_F(VideoChannelSingleThreadTest, TestInit) {
+// VideoChannelTest
+TEST_F(VideoChannelTest, TestInit) {
   Base::TestInit();
 }
 
-TEST_F(VideoChannelSingleThreadTest, TestDeinit) {
+TEST_F(VideoChannelTest, TestDeinit) {
   Base::TestDeinit();
 }
 
-TEST_F(VideoChannelSingleThreadTest, TestSetContents) {
+TEST_F(VideoChannelTest, TestSetContents) {
   Base::TestSetContents();
 }
 
-TEST_F(VideoChannelSingleThreadTest, TestSetContentsExtmapAllowMixedAsCaller) {
+TEST_F(VideoChannelTest, TestSetContentsExtmapAllowMixedAsCaller) {
   Base::TestSetContentsExtmapAllowMixedCaller(/*offer=*/true, /*answer=*/true);
 }
 
-TEST_F(VideoChannelSingleThreadTest,
-       TestSetContentsExtmapAllowMixedNotSupportedAsCaller) {
+TEST_F(VideoChannelTest, TestSetContentsExtmapAllowMixedNotSupportedAsCaller) {
   Base::TestSetContentsExtmapAllowMixedCaller(/*offer=*/true, /*answer=*/false);
 }
 
-TEST_F(VideoChannelSingleThreadTest, TestSetContentsExtmapAllowMixedAsCallee) {
+TEST_F(VideoChannelTest, TestSetContentsExtmapAllowMixedAsCallee) {
   Base::TestSetContentsExtmapAllowMixedCallee(/*offer=*/true, /*answer=*/true);
 }
 
-TEST_F(VideoChannelSingleThreadTest,
-       TestSetContentsExtmapAllowMixedNotSupportedAsCallee) {
+TEST_F(VideoChannelTest, TestSetContentsExtmapAllowMixedNotSupportedAsCallee) {
   Base::TestSetContentsExtmapAllowMixedCallee(/*offer=*/true, /*answer=*/false);
 }
 
-TEST_F(VideoChannelSingleThreadTest, TestSetContentsNullOffer) {
+TEST_F(VideoChannelTest, TestSetContentsNullOffer) {
   Base::TestSetContentsNullOffer();
 }
 
-TEST_F(VideoChannelSingleThreadTest, TestSetContentsRtcpMux) {
+TEST_F(VideoChannelTest, TestSetContentsRtcpMux) {
   Base::TestSetContentsRtcpMux();
 }
 
-TEST_F(VideoChannelSingleThreadTest, TestSetContentsRtcpMuxWithPrAnswer) {
+TEST_F(VideoChannelTest, TestSetContentsRtcpMuxWithPrAnswer) {
   Base::TestSetContentsRtcpMux();
 }
 
-TEST_F(VideoChannelSingleThreadTest, TestChangeStreamParamsInContent) {
+TEST_F(VideoChannelTest, TestChangeStreamParamsInContent) {
   Base::TestChangeStreamParamsInContent();
 }
 
-TEST_F(VideoChannelSingleThreadTest, TestPlayoutAndSendingStates) {
+TEST_F(VideoChannelTest, TestPlayoutAndSendingStates) {
   Base::TestPlayoutAndSendingStates();
 }
 
-TEST_F(VideoChannelSingleThreadTest, TestMediaContentDirection) {
+TEST_F(VideoChannelTest, TestMediaContentDirection) {
   Base::TestMediaContentDirection();
 }
 
-TEST_F(VideoChannelSingleThreadTest, TestCallSetup) {
+TEST_F(VideoChannelTest, TestCallSetup) {
   Base::TestCallSetup();
 }
 
-TEST_F(VideoChannelSingleThreadTest, SendRtpToRtp) {
+TEST_F(VideoChannelTest, SendRtpToRtp) {
   Base::SendRtpToRtp();
 }
 
-TEST_F(VideoChannelSingleThreadTest, SendDtlsSrtpToDtlsSrtp) {
+TEST_F(VideoChannelTest, SendDtlsSrtpToDtlsSrtp) {
   Base::SendDtlsSrtpToDtlsSrtp(0, 0);
 }
 
-TEST_F(VideoChannelSingleThreadTest, SendDtlsSrtpToDtlsSrtpRtcpMux) {
+TEST_F(VideoChannelTest, SendDtlsSrtpToDtlsSrtpRtcpMux) {
   Base::SendDtlsSrtpToDtlsSrtp(RTCP_MUX, RTCP_MUX);
 }
 
-TEST_F(VideoChannelSingleThreadTest, SendEarlyMediaUsingRtcpMuxSrtp) {
+TEST_F(VideoChannelTest, SendEarlyMediaUsingRtcpMuxSrtp) {
   Base::SendEarlyMediaUsingRtcpMuxSrtp();
 }
 
-TEST_F(VideoChannelSingleThreadTest, SendRtpToRtpOnThread) {
+TEST_F(VideoChannelTest, SendRtpToRtpOnThread) {
   Base::SendRtpToRtpOnThread();
 }
 
-TEST_F(VideoChannelSingleThreadTest, SendWithWritabilityLoss) {
+TEST_F(VideoChannelTest, SendWithWritabilityLoss) {
   Base::SendWithWritabilityLoss();
 }
 
-TEST_F(VideoChannelSingleThreadTest, TestSetContentFailure) {
+TEST_F(VideoChannelTest, TestSetContentFailure) {
   Base::TestSetContentFailure();
 }
 
-TEST_F(VideoChannelSingleThreadTest, TestSendTwoOffers) {
+TEST_F(VideoChannelTest, TestSendTwoOffers) {
   Base::TestSendTwoOffers();
 }
 
-TEST_F(VideoChannelSingleThreadTest, TestReceiveTwoOffers) {
+TEST_F(VideoChannelTest, TestReceiveTwoOffers) {
   Base::TestReceiveTwoOffers();
 }
 
-TEST_F(VideoChannelSingleThreadTest, TestSendPrAnswer) {
+TEST_F(VideoChannelTest, TestSendPrAnswer) {
   Base::TestSendPrAnswer();
 }
 
-TEST_F(VideoChannelSingleThreadTest, TestReceivePrAnswer) {
+TEST_F(VideoChannelTest, TestReceivePrAnswer) {
   Base::TestReceivePrAnswer();
 }
 
-TEST_F(VideoChannelSingleThreadTest, SendBundleToBundle) {
+TEST_F(VideoChannelTest, SendBundleToBundle) {
   Base::SendBundleToBundle(kVideoPts, false, false);
 }
 
-TEST_F(VideoChannelSingleThreadTest, SendBundleToBundleSecure) {
+TEST_F(VideoChannelTest, SendBundleToBundleSecure) {
   Base::SendBundleToBundle(kVideoPts, false, true);
 }
 
-TEST_F(VideoChannelSingleThreadTest, SendBundleToBundleWithRtcpMux) {
+TEST_F(VideoChannelTest, SendBundleToBundleWithRtcpMux) {
   Base::SendBundleToBundle(kVideoPts, true, false);
 }
 
-TEST_F(VideoChannelSingleThreadTest, SendBundleToBundleWithRtcpMuxSecure) {
+TEST_F(VideoChannelTest, SendBundleToBundleWithRtcpMuxSecure) {
   Base::SendBundleToBundle(kVideoPts, true, true);
 }
 
-TEST_F(VideoChannelSingleThreadTest, TestOnTransportReadyToSend) {
+TEST_F(VideoChannelTest, TestOnTransportReadyToSend) {
   Base::TestOnTransportReadyToSend();
 }
 
-TEST_F(VideoChannelSingleThreadTest, DefaultMaxBitrateIsUnlimited) {
+TEST_F(VideoChannelTest, DefaultMaxBitrateIsUnlimited) {
   Base::DefaultMaxBitrateIsUnlimited();
 }
 
-TEST_F(VideoChannelSingleThreadTest, SocketOptionsMergedOnSetTransport) {
+TEST_F(VideoChannelTest, SocketOptionsMergedOnSetTransport) {
   Base::SocketOptionsMergedOnSetTransport();
 }
 
-TEST_F(VideoChannelSingleThreadTest, UpdateLocalStreamsWithSimulcast) {
+TEST_F(VideoChannelTest, UpdateLocalStreamsWithSimulcast) {
   Base::TestUpdateLocalStreamsWithSimulcast();
 }
 
-TEST_F(VideoChannelSingleThreadTest, RemovesExtensionNotPresentInRemoteAnswer) {
+TEST_F(VideoChannelTest, RemovesExtensionNotPresentInRemoteAnswer) {
   Base::TestRemovesExtensionNotPresentInRemoteAnswer();
 }
 
-TEST_F(VideoChannelSingleThreadTest, RemovesExtensionNotPresentInLocalAnswer) {
+TEST_F(VideoChannelTest, RemovesExtensionNotPresentInLocalAnswer) {
   Base::TestRemovesExtensionNotPresentInLocalAnswer();
 }
 
-TEST_F(VideoChannelSingleThreadTest, DuplicateRtpHeaderExtensionIds) {
+TEST_F(VideoChannelTest, DuplicateRtpHeaderExtensionIds) {
   Base::TestDuplicateRtpHeaderExtensionIds();
 }
 
 #if GTEST_HAS_DEATH_TEST && !defined(WEBRTC_ANDROID)
-TEST_F(VideoChannelSingleThreadTest,
-       RtpHeaderExtensionIdOutOfRangeHighDeathTest) {
+TEST_F(VideoChannelTest, RtpHeaderExtensionIdOutOfRangeHighDeathTest) {
 #if RTC_DCHECK_IS_ON
   // Note - EXPECT_DEBUG_DEATH does not work as expected here.
   EXPECT_DEATH(Base::TestRtpHeaderExtensionIdOutOfRangeHigh(), "Check failed:");
@@ -2428,8 +2172,7 @@ TEST_F(VideoChannelSingleThreadTest,
 #endif
 }
 
-TEST_F(VideoChannelSingleThreadTest,
-       RtpHeaderExtensionIdOutOfRangeLowDeathTest) {
+TEST_F(VideoChannelTest, RtpHeaderExtensionIdOutOfRangeLowDeathTest) {
 #if RTC_DCHECK_IS_ON
   // Note - EXPECT_DEBUG_DEATH does not work as expected here.
   EXPECT_DEATH(Base::TestRtpHeaderExtensionIdOutOfRangeLow(), "Check failed:");
@@ -2439,16 +2182,15 @@ TEST_F(VideoChannelSingleThreadTest,
 }
 #endif
 
-TEST_F(VideoChannelSingleThreadTest, RtpHeaderExtensionIdReassignment) {
+TEST_F(VideoChannelTest, RtpHeaderExtensionIdReassignment) {
   Base::TestRtpHeaderExtensionIdReassignment();
 }
 
-TEST_F(VideoChannelSingleThreadTest,
-       TestRtpHeaderExtensionIdHistoryReassignment) {
+TEST_F(VideoChannelTest, TestRtpHeaderExtensionIdHistoryReassignment) {
   Base::TestRtpHeaderExtensionIdHistoryReassignment();
 }
 
-TEST_F(VideoChannelSingleThreadTest, TestSetLocalOfferWithPacketization) {
+TEST_F(VideoChannelTest, TestSetLocalOfferWithPacketization) {
   const Codec kVp8Codec = CreateVideoCodec(97, "VP8");
   Codec vp9_codec = CreateVideoCodec(98, "VP9");
   vp9_codec.packetization = kPacketizationParamRaw;
@@ -2470,7 +2212,7 @@ TEST_F(VideoChannelSingleThreadTest, TestSetLocalOfferWithPacketization) {
             kPacketizationParamRaw);
 }
 
-TEST_F(VideoChannelSingleThreadTest, TestSetRemoteOfferWithPacketization) {
+TEST_F(VideoChannelTest, TestSetRemoteOfferWithPacketization) {
   const Codec kVp8Codec = CreateVideoCodec(97, "VP8");
   Codec vp9_codec = CreateVideoCodec(98, "VP9");
   vp9_codec.packetization = kPacketizationParamRaw;
@@ -2490,7 +2232,7 @@ TEST_F(VideoChannelSingleThreadTest, TestSetRemoteOfferWithPacketization) {
             kPacketizationParamRaw);
 }
 
-TEST_F(VideoChannelSingleThreadTest, TestSetAnswerWithPacketization) {
+TEST_F(VideoChannelTest, TestSetAnswerWithPacketization) {
   const Codec kVp8Codec = CreateVideoCodec(97, "VP8");
   Codec vp9_codec = CreateVideoCodec(98, "VP9");
   vp9_codec.packetization = kPacketizationParamRaw;
@@ -2519,7 +2261,7 @@ TEST_F(VideoChannelSingleThreadTest, TestSetAnswerWithPacketization) {
             kPacketizationParamRaw);
 }
 
-TEST_F(VideoChannelSingleThreadTest, TestSetLocalAnswerWithoutPacketization) {
+TEST_F(VideoChannelTest, TestSetLocalAnswerWithoutPacketization) {
   const Codec kLocalCodec = CreateVideoCodec(98, "VP8");
   Codec remote_codec = CreateVideoCodec(99, "VP8");
   remote_codec.packetization = kPacketizationParamRaw;
@@ -2540,7 +2282,7 @@ TEST_F(VideoChannelSingleThreadTest, TestSetLocalAnswerWithoutPacketization) {
             std::nullopt);
 }
 
-TEST_F(VideoChannelSingleThreadTest, TestSetRemoteAnswerWithoutPacketization) {
+TEST_F(VideoChannelTest, TestSetRemoteAnswerWithoutPacketization) {
   Codec local_codec = CreateVideoCodec(98, "VP8");
   local_codec.packetization = kPacketizationParamRaw;
   const Codec kRemoteCodec = CreateVideoCodec(99, "VP8");
@@ -2562,8 +2304,7 @@ TEST_F(VideoChannelSingleThreadTest, TestSetRemoteAnswerWithoutPacketization) {
             std::nullopt);
 }
 
-TEST_F(VideoChannelSingleThreadTest,
-       TestSetRemoteAnswerWithInvalidPacketization) {
+TEST_F(VideoChannelTest, TestSetRemoteAnswerWithInvalidPacketization) {
   Codec local_codec = CreateVideoCodec(98, "VP8");
   local_codec.packetization = kPacketizationParamRaw;
   Codec remote_codec = CreateVideoCodec(99, "VP8");
@@ -2584,8 +2325,7 @@ TEST_F(VideoChannelSingleThreadTest,
   EXPECT_THAT(media_send_channel1_impl()->send_codecs(), testing::IsEmpty());
 }
 
-TEST_F(VideoChannelSingleThreadTest,
-       TestSetLocalAnswerWithInvalidPacketization) {
+TEST_F(VideoChannelTest, TestSetLocalAnswerWithInvalidPacketization) {
   Codec local_codec = CreateVideoCodec(98, "VP8");
   local_codec.packetization = kPacketizationParamRaw;
   const Codec kRemoteCodec = CreateVideoCodec(99, "VP8");
@@ -2604,7 +2344,7 @@ TEST_F(VideoChannelSingleThreadTest,
             std::nullopt);
 }
 
-TEST_F(VideoChannelSingleThreadTest,
+TEST_F(VideoChannelTest,
        StopsPacketizationVerificationWhenMatchIsFoundInRemoteAnswer) {
   Codec vp8_foo = CreateVideoCodec(96, "VP8");
   vp8_foo.packetization = "foo";
@@ -2636,7 +2376,7 @@ TEST_F(VideoChannelSingleThreadTest,
                                 Field(&Codec::packetization, std::nullopt))));
 }
 
-TEST_F(VideoChannelSingleThreadTest,
+TEST_F(VideoChannelTest,
        StopsPacketizationVerificationWhenMatchIsFoundInLocalAnswer) {
   Codec vp8_foo = CreateVideoCodec(96, "VP8");
   vp8_foo.packetization = "foo";
@@ -2672,7 +2412,7 @@ TEST_F(VideoChannelSingleThreadTest,
                 Field("packetization", &Codec::packetization, std::nullopt))));
 }
 
-TEST_F(VideoChannelSingleThreadTest,
+TEST_F(VideoChannelTest,
        ConsidersAllCodecsWithDiffrentPacketizationsInRemoteAnswer) {
   Codec vp8 = CreateVideoCodec(96, "VP8");
   Codec vp8_raw = CreateVideoCodec(97, "VP8");
@@ -2700,7 +2440,7 @@ TEST_F(VideoChannelSingleThreadTest,
                         Field(&Codec::packetization, std::nullopt))));
 }
 
-TEST_F(VideoChannelSingleThreadTest,
+TEST_F(VideoChannelTest,
        ConsidersAllCodecsWithDiffrentPacketizationsInLocalAnswer) {
   Codec vp8 = CreateVideoCodec(96, "VP8");
   Codec vp8_raw = CreateVideoCodec(97, "VP8");
@@ -2728,159 +2468,20 @@ TEST_F(VideoChannelSingleThreadTest,
                         Field(&Codec::packetization, kPacketizationParamRaw))));
 }
 
-TEST_F(VideoChannelSingleThreadTest,
-       TestSetRtpTransportNullClearsReceiveSinks) {
+TEST_F(VideoChannelTest, TestSetRtpTransportNullClearsReceiveSinks) {
   Base::TestSetRtpTransportNullClearsReceiveSinks();
 }
 
-TEST_F(VideoChannelSingleThreadTest,
-       TestRegisterRtpDemuxerSinkPropagatesReceiveSsrcs) {
+TEST_F(VideoChannelTest, TestRegisterRtpDemuxerSinkPropagatesReceiveSsrcs) {
   Base::TestRegisterRtpDemuxerSinkPropagatesReceiveSsrcs();
 }
 
-TEST_F(VideoChannelSingleThreadTest,
-       TestUpdateRemoteStreamsClearsRemovedSinks) {
+TEST_F(VideoChannelTest, TestUpdateRemoteStreamsClearsRemovedSinks) {
   Base::TestUpdateRemoteStreamsClearsRemovedSinks();
 }
 
-TEST_F(VideoChannelSingleThreadTest,
-       TestUpdateRemoteStreamsClearsUnsignaledSinks) {
+TEST_F(VideoChannelTest, TestUpdateRemoteStreamsClearsUnsignaledSinks) {
   Base::TestUpdateRemoteStreamsClearsUnsignaledSinks();
-}
-
-// VideoChannelDoubleThreadTest
-TEST_F(VideoChannelDoubleThreadTest, TestInit) {
-  Base::TestInit();
-}
-
-TEST_F(VideoChannelDoubleThreadTest, TestDeinit) {
-  Base::TestDeinit();
-}
-
-TEST_F(VideoChannelDoubleThreadTest, TestSetContents) {
-  Base::TestSetContents();
-}
-
-TEST_F(VideoChannelDoubleThreadTest, TestSetContentsExtmapAllowMixedAsCaller) {
-  Base::TestSetContentsExtmapAllowMixedCaller(/*offer=*/true, /*answer=*/true);
-}
-
-TEST_F(VideoChannelDoubleThreadTest,
-       TestSetContentsExtmapAllowMixedNotSupportedAsCaller) {
-  Base::TestSetContentsExtmapAllowMixedCaller(/*offer=*/true, /*answer=*/false);
-}
-
-TEST_F(VideoChannelDoubleThreadTest, TestSetContentsExtmapAllowMixedAsCallee) {
-  Base::TestSetContentsExtmapAllowMixedCallee(/*offer=*/true, /*answer=*/true);
-}
-
-TEST_F(VideoChannelDoubleThreadTest,
-       TestSetContentsExtmapAllowMixedNotSupportedAsCallee) {
-  Base::TestSetContentsExtmapAllowMixedCallee(/*offer=*/true, /*answer=*/false);
-}
-
-TEST_F(VideoChannelDoubleThreadTest, TestSetContentsNullOffer) {
-  Base::TestSetContentsNullOffer();
-}
-
-TEST_F(VideoChannelDoubleThreadTest, TestSetContentsRtcpMux) {
-  Base::TestSetContentsRtcpMux();
-}
-
-TEST_F(VideoChannelDoubleThreadTest, TestSetContentsRtcpMuxWithPrAnswer) {
-  Base::TestSetContentsRtcpMux();
-}
-
-TEST_F(VideoChannelDoubleThreadTest, TestChangeStreamParamsInContent) {
-  Base::TestChangeStreamParamsInContent();
-}
-
-TEST_F(VideoChannelDoubleThreadTest, TestPlayoutAndSendingStates) {
-  Base::TestPlayoutAndSendingStates();
-}
-
-TEST_F(VideoChannelDoubleThreadTest, TestMediaContentDirection) {
-  Base::TestMediaContentDirection();
-}
-
-TEST_F(VideoChannelDoubleThreadTest, TestCallSetup) {
-  Base::TestCallSetup();
-}
-
-TEST_F(VideoChannelDoubleThreadTest, SendRtpToRtp) {
-  Base::SendRtpToRtp();
-}
-
-TEST_F(VideoChannelDoubleThreadTest, SendDtlsSrtpToDtlsSrtp) {
-  Base::SendDtlsSrtpToDtlsSrtp(0, 0);
-}
-
-TEST_F(VideoChannelDoubleThreadTest, SendDtlsSrtpToDtlsSrtpRtcpMux) {
-  Base::SendDtlsSrtpToDtlsSrtp(RTCP_MUX, RTCP_MUX);
-}
-
-TEST_F(VideoChannelDoubleThreadTest, SendEarlyMediaUsingRtcpMuxSrtp) {
-  Base::SendEarlyMediaUsingRtcpMuxSrtp();
-}
-
-TEST_F(VideoChannelDoubleThreadTest, SendRtpToRtpOnThread) {
-  Base::SendRtpToRtpOnThread();
-}
-
-TEST_F(VideoChannelDoubleThreadTest, SendWithWritabilityLoss) {
-  Base::SendWithWritabilityLoss();
-}
-
-TEST_F(VideoChannelDoubleThreadTest, TestSetContentFailure) {
-  Base::TestSetContentFailure();
-}
-
-TEST_F(VideoChannelDoubleThreadTest, TestSendTwoOffers) {
-  Base::TestSendTwoOffers();
-}
-
-TEST_F(VideoChannelDoubleThreadTest, TestUpdateRemoteStreamsRaceWithRtpPacket) {
-  Base::TestUpdateRemoteStreamsRaceWithRtpPacket();
-}
-
-TEST_F(VideoChannelDoubleThreadTest, TestReceiveTwoOffers) {
-  Base::TestReceiveTwoOffers();
-}
-
-TEST_F(VideoChannelDoubleThreadTest, TestSendPrAnswer) {
-  Base::TestSendPrAnswer();
-}
-
-TEST_F(VideoChannelDoubleThreadTest, TestReceivePrAnswer) {
-  Base::TestReceivePrAnswer();
-}
-
-TEST_F(VideoChannelDoubleThreadTest, SendBundleToBundle) {
-  Base::SendBundleToBundle(kVideoPts, false, false);
-}
-
-TEST_F(VideoChannelDoubleThreadTest, SendBundleToBundleSecure) {
-  Base::SendBundleToBundle(kVideoPts, false, true);
-}
-
-TEST_F(VideoChannelDoubleThreadTest, SendBundleToBundleWithRtcpMux) {
-  Base::SendBundleToBundle(kVideoPts, true, false);
-}
-
-TEST_F(VideoChannelDoubleThreadTest, SendBundleToBundleWithRtcpMuxSecure) {
-  Base::SendBundleToBundle(kVideoPts, true, true);
-}
-
-TEST_F(VideoChannelDoubleThreadTest, TestOnTransportReadyToSend) {
-  Base::TestOnTransportReadyToSend();
-}
-
-TEST_F(VideoChannelDoubleThreadTest, DefaultMaxBitrateIsUnlimited) {
-  Base::DefaultMaxBitrateIsUnlimited();
-}
-
-TEST_F(VideoChannelDoubleThreadTest, SocketOptionsMergedOnSetTransport) {
-  Base::SocketOptionsMergedOnSetTransport();
 }
 
 }  // namespace

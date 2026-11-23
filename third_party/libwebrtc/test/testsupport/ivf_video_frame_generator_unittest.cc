@@ -58,7 +58,6 @@ constexpr int kHeight = 240;
 constexpr int kVideoFramesCount = 30;
 constexpr int kMaxFramerate = 30;
 constexpr TimeDelta kMaxFrameEncodeWaitTimeout = TimeDelta::Seconds(2);
-const VideoEncoder::Capabilities kCapabilities(false);
 
 #if defined(WEBRTC_ANDROID) || defined(WEBRTC_IOS) || defined(WEBRTC_ARCH_ARM64)
 constexpr double kExpectedMinPsnr = 35;
@@ -147,11 +146,11 @@ class IvfVideoFrameGeneratorTest : public ::testing::Test {
     video_encoder->RegisterEncodeCompleteCallback(&ivf_writer_callback);
     video_encoder->SetRates(VideoEncoder::RateControlParameters(
         bitrate_allocation, static_cast<double>(codec_settings.maxFramerate)));
-    ASSERT_EQ(WEBRTC_VIDEO_CODEC_OK,
-              video_encoder->InitEncode(
-                  &codec_settings,
-                  VideoEncoder::Settings(kCapabilities, /*number_of_cores=*/1,
-                                         /*max_payload_size=*/0)));
+    ASSERT_EQ(
+        WEBRTC_VIDEO_CODEC_OK,
+        video_encoder->InitEncode(
+            &codec_settings, VideoEncoder::Settings(/*number_of_cores=*/1,
+                                                    /*max_payload_size=*/0)));
 
     uint32_t last_frame_timestamp = 0;
 

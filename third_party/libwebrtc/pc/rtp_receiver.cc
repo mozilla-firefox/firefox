@@ -19,6 +19,7 @@
 #include <utility>
 #include <vector>
 
+#include "absl/base/nullability.h"
 #include "absl/functional/any_invocable.h"
 #include "api/crypto/frame_decryptor_interface.h"
 #include "api/frame_transformer_interface.h"
@@ -30,10 +31,17 @@
 #include "api/sequence_checker.h"
 #include "api/sframe/sframe_decryptor_interface.h"
 #include "api/sframe/sframe_types.h"
+#include "api/task_queue/pending_task_safety_flag.h"
+#include "api/task_queue/task_queue_base.h"
 #include "api/transport/rtp/rtp_source.h"
 #include "api/units/timestamp.h"
 #include "media/base/media_channel.h"
 #include "modules/rtp_rtcp/source/source_tracker.h"
+#include "modules/sframe/sframe_decrypt_error_reporter.h"
+#include "modules/sframe/sframe_decryption_config.h"
+#include "modules/sframe/sframe_decryptor.h"
+#include "modules/sframe/sframe_decryptor_handle.h"
+#include "modules/sframe/sframe_media_decryptor_interface.h"
 #include "pc/media_stream.h"
 #include "pc/media_stream_proxy.h"
 #include "rtc_base/checks.h"
@@ -64,15 +72,41 @@ RtpReceiverInternal::CreateStreamsFromIds(
 }
 
 RtpReceiverBase::RtpReceiverBase(
-    Thread* worker_thread,
+    Thread* network_thread,
     absl::AnyInvocable<RTCError()> enable_sframe_at_owner,
+    MediaReceiveChannelInterface* media_channel,
     Clock* clock)
-    : worker_thread_(worker_thread),
+    : network_thread_(network_thread),
       source_tracker_(clock),
+      network_thread_safety_(PendingTaskSafetyFlag::CreateAttachedToTaskQueue(
+          /*alive=*/media_channel != nullptr,
+          network_thread_)),
+      media_channel_(media_channel),
       enable_sframe_at_owner_(std::move(enable_sframe_at_owner)) {}
 
+RtpReceiverBase::~RtpReceiverBase() {
+  RTC_DCHECK(!media_channel_);
+}
+
+MediaReceiveChannelInterface* RtpReceiverBase::media_channel() const {
+  RTC_DCHECK_RUN_ON(network_thread_);
+  return media_channel_;
+}
+
+void RtpReceiverBase::Stop() {
+  RTC_DCHECK_RUN_ON(&signaling_thread_checker_);
+  stopped_ = true;
+}
+
+void RtpReceiverBase::set_media_channel(
+    MediaReceiveChannelInterface* media_channel) {
+  media_channel_ = media_channel;
+  media_channel_ != nullptr ? network_thread_safety_->SetAlive()
+                            : network_thread_safety_->SetNotAlive();
+}
+
 std::optional<uint32_t> RtpReceiverBase::ssrc() const {
-  RTC_DCHECK_RUN_ON(worker_thread_);
+  RTC_DCHECK_RUN_ON(network_thread_);
   if (!signaled_ssrc_.has_value() && media_channel()) {
     return media_channel()->GetUnsignaledSsrc();
   }
@@ -100,7 +134,7 @@ void RtpReceiverBase::SetUnsignaledSsrc_s(uint32_t ssrc) {
 
 void RtpReceiverBase::SetFrameDecryptor(
     scoped_refptr<FrameDecryptorInterface> frame_decryptor) {
-  RTC_DCHECK_RUN_ON(worker_thread_);
+  RTC_DCHECK_RUN_ON(network_thread_);
   frame_decryptor_ = std::move(frame_decryptor);
   // Special Case: Set the frame decryptor to any value on any existing channel.
   if (media_channel() && signaled_ssrc_) {
@@ -110,13 +144,13 @@ void RtpReceiverBase::SetFrameDecryptor(
 
 scoped_refptr<FrameDecryptorInterface> RtpReceiverBase::GetFrameDecryptor()
     const {
-  RTC_DCHECK_RUN_ON(worker_thread_);
+  RTC_DCHECK_RUN_ON(network_thread_);
   return frame_decryptor_;
 }
 
 void RtpReceiverBase::SetFrameTransformer(
     scoped_refptr<FrameTransformerInterface> frame_transformer) {
-  RTC_DCHECK_RUN_ON(worker_thread_);
+  RTC_DCHECK_RUN_ON(network_thread_);
   frame_transformer_ = std::move(frame_transformer);
   if (media_channel()) {
     media_channel()->SetDepacketizerToDecoderFrameTransformer(
@@ -187,8 +221,14 @@ void RtpReceiverBase::OnFrameDelivered(const RtpPacketInfos& infos,
 RTCErrorOr<scoped_refptr<SframeDecryptorInterface>>
 RtpReceiverBase::CreateSframeDecryptorOrError(
     SframeCipherSuite cipher_suite,
-    SframeDecryptErrorCallback error_callback) {
+    absl_nonnull SframeDecryptErrorCallback error_callback) {
   RTC_DCHECK_RUN_ON(&signaling_thread_checker_);
+  RTC_DCHECK(error_callback);
+
+  if (stopped_) {
+    return RTCError::InvalidState()
+           << "Cannot create an Sframe decryptor on a stopped receiver.";
+  }
 
   if (!enable_sframe_at_owner_) {
     return RTCError(RTCErrorType::INTERNAL_ERROR,
@@ -200,10 +240,25 @@ RtpReceiverBase::CreateSframeDecryptorOrError(
     return error;
   }
 
-  // TODO(bugs.webrtc.org/479862368): Create the internal Sframe decryption
-  // pipeline and return a key management handle.
-  return RTCError(RTCErrorType::UNSUPPORTED_OPERATION,
-                  "Sframe decrypter not yet implemented");
+  scoped_refptr<SframeMediaDecryptorInterface> decryptor =
+      SframeDecryptor::Create(cipher_suite);
+  scoped_refptr<SframeDecryptErrorReporter> error_reporter =
+      SframeDecryptErrorReporter::Create(std::move(error_callback));
+  SframeDecryptionConfig config{.decryptor = decryptor,
+                                .error_reporter = std::move(error_reporter)};
+
+  network_thread_->PostTask(SafeTask(
+      network_thread_safety_, [this, config = std::move(config)]() mutable {
+        RTC_DCHECK_RUN_ON(network_thread_);
+        sframe_decryption_config_ = std::move(config);
+        // TODO(bugs.webrtc.org/479862368): Pass the config to the media
+        // channel.
+      }));
+
+  // This runs on the signaling thread, where the key update results are
+  // reported.
+  return scoped_refptr<SframeDecryptorInterface>(SframeDecryptorHandle::Create(
+      *TaskQueueBase::Current(), *network_thread_, std::move(decryptor)));
 }
 
 }  // namespace webrtc

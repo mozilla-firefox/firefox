@@ -37,6 +37,7 @@ namespace {
 
 using ::testing::_;
 using ::testing::ElementsAre;
+using ::testing::InSequence;
 using ::testing::NiceMock;
 using ::testing::Return;
 using ::testing::SaveArg;
@@ -196,6 +197,37 @@ TEST(ChannelReceiveFrameTransformerDelegateTest,
   EXPECT_CALL(mock_channel, ReceiveFrame);
   delegate->Transform(packet, header, /*ssrc=*/1111, /*mimeType=*/"audio/opus",
                       kFakeReceiveTimestamp);
+}
+
+TEST(ChannelReceiveFrameTransformerDelegateTest,
+     StopShortCircuitingResumesTransform) {
+  test::RunLoop main_thread;
+  scoped_refptr<MockFrameTransformer> mock_frame_transformer =
+      make_ref_counted<NiceMock<MockFrameTransformer>>();
+  MockChannelReceive mock_channel;
+  scoped_refptr<ChannelReceiveFrameTransformerDelegate> delegate =
+      make_ref_counted<ChannelReceiveFrameTransformerDelegate>(
+          mock_channel.callback(), mock_frame_transformer,
+          main_thread.task_queue());
+  const uint8_t data[] = {1, 2, 3, 4};
+  std::span<const uint8_t> packet(data, sizeof(data));
+  RTPHeader header;
+
+  InSequence s;
+  // While short circuiting, the frame is passed straight to the channel.
+  EXPECT_CALL(mock_channel, ReceiveFrame);
+  // Once short circuiting stops, the frame is passed to the transformer again.
+  EXPECT_CALL(*mock_frame_transformer, Transform);
+
+  delegate->StartShortCircuiting();
+  main_thread.Flush();
+  delegate->Transform(packet, header, /*ssrc=*/1111,
+                      /*codec_mime_type=*/"audio/opus", kFakeReceiveTimestamp);
+
+  delegate->StopShortCircuiting();
+  main_thread.Flush();
+  delegate->Transform(packet, header, /*ssrc=*/1111,
+                      /*codec_mime_type=*/"audio/opus", kFakeReceiveTimestamp);
 }
 
 TEST(ChannelReceiveFrameTransformerDelegateTest,

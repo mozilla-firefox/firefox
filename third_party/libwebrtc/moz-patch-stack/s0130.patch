@@ -9,10 +9,10 @@ Mercurial Revision: https://hg.mozilla.org/mozilla-central/rev/cab51cf0d4e9e67e9
  1 file changed, 9 insertions(+)
 
 diff --git a/modules/portal/pipewire_utils.cc b/modules/portal/pipewire_utils.cc
-index b17b4d1065..bdea4318e7 100644
+index e3a87ae6e5..49b7b7ad09 100644
 --- a/modules/portal/pipewire_utils.cc
 +++ b/modules/portal/pipewire_utils.cc
-@@ -33,9 +33,18 @@
+@@ -34,9 +34,18 @@
  
  namespace webrtc {
  

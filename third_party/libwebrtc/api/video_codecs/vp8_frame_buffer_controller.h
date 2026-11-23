@@ -169,10 +169,6 @@ class Vp8FrameBufferController {
 
   // Called by the encoder when the round trip time changes.
   virtual void OnRttUpdate(int64_t rtt_ms) = 0;
-
-  // Called when a loss notification is received.
-  virtual void OnLossNotification(
-      const VideoEncoder::LossNotification& loss_notification) = 0;
 };
 
 // Interface for a factory of Vp8FrameBufferController instances.

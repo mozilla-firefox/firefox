@@ -35,7 +35,7 @@ public interface VideoEncoder {
     public Settings(int numberOfCores, int width, int height, int startBitrate, int maxFramerate,
         int numberOfSimulcastStreams, boolean automaticResizeOn) {
       this(numberOfCores, width, height, startBitrate, maxFramerate, numberOfSimulcastStreams,
-          automaticResizeOn, new VideoEncoder.Capabilities(false /* lossNotification */));
+          automaticResizeOn, new VideoEncoder.Capabilities());
     }
 
     @CalledByNative
@@ -52,15 +52,19 @@ public interface VideoEncoder {
     }
   }
 
-  /** Capabilities (loss notification, etc.) passed to the encoder by WebRTC. */
+  /** Capabilities passed to the encoder by WebRTC. */
   public class Capabilities {
     /**
-     * The remote side has support for the loss notification RTCP feedback message format, and will
-     * be sending these feedback messages if necessary.
+     * @deprecated Loss notification RTCP feedback has been removed.
      */
-    public final boolean lossNotification;
+    @Deprecated public final boolean lossNotification;
 
     @CalledByNative
+    public Capabilities() {
+      this.lossNotification = false;
+    }
+
+    @Deprecated
     public Capabilities(boolean lossNotification) {
       this.lossNotification = lossNotification;
     }

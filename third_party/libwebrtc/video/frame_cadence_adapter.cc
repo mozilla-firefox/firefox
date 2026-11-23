@@ -688,9 +688,12 @@ void ZeroHertzAdapterMode::ProcessRepeatedFrameOnDelayedCadence(int frame_id) {
                           total_delay.ms());
   }
 
+  const bool is_idle_repeat = scheduled_repeat_->idle;
   // Schedule another repeat before sending the frame off which could take time.
   ScheduleRepeat(frame_id, HasQualityConverged());
-  frame.set_is_repeat_frame(true);
+  frame.set_repeat_mode(is_idle_repeat
+                            ? VideoFrame::RepeatMode::kKeepAlive
+                            : VideoFrame::RepeatMode::kQualityConvergence);
   SendFrameNow(std::nullopt, frame);
 }
 

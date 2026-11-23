@@ -225,10 +225,6 @@ bool StreamParams::GetSecondarySsrc(absl::string_view semantics,
   return false;
 }
 
-std::vector<std::string> StreamParams::stream_ids() const {
-  return stream_ids_;
-}
-
 void StreamParams::set_stream_ids(const std::vector<std::string>& stream_ids) {
   stream_ids_ = stream_ids;
 }

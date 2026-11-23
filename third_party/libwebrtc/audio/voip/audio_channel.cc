@@ -25,6 +25,7 @@
 #include "audio/voip/audio_ingress.h"
 #include "modules/audio_coding/include/audio_coding_module_typedefs.h"
 #include "modules/rtp_rtcp/include/receive_statistics.h"
+#include "modules/rtp_rtcp/include/report_block_data.h"
 #include "modules/rtp_rtcp/include/rtp_rtcp_defines.h"
 #include "modules/rtp_rtcp/source/rtp_rtcp_impl2.h"
 #include "modules/rtp_rtcp/source/rtp_rtcp_interface.h"
@@ -51,6 +52,7 @@ AudioChannel::AudioChannel(const Environment& env,
   RtpRtcpInterface::Configuration rtp_config;
   rtp_config.audio = true;
   rtp_config.receive_statistics = receive_statistics_.get();
+  rtp_config.report_block_data_observer = this;
   rtp_config.rtcp_report_interval_ms = kRtcpReportIntervalMs;
   rtp_config.outgoing_transport = transport;
   rtp_config.local_media_ssrc = local_ssrc;
@@ -174,6 +176,12 @@ ChannelStatistics AudioChannel::GetChannelStatistics() {
       rtp_stats.transmitted.packets + rtx_stats.transmitted.packets;
 
   return channel_stat;
+}
+
+void AudioChannel::OnReportBlockDataUpdated(ReportBlockData report_block) {
+  if (egress_) {
+    egress_->OnReceivedUplinkPacketLossFraction(report_block.fraction_lost());
+  }
 }
 
 }  // namespace webrtc

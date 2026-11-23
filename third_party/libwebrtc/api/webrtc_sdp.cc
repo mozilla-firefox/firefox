@@ -16,10 +16,8 @@
 #include <climits>
 #include <cstddef>
 #include <cstdint>
-#include <map>
 #include <memory>
 #include <optional>
-#include <set>
 #include <span>
 #include <string>
 #include <utility>
@@ -27,9 +25,9 @@
 
 #include "absl/algorithm/container.h"
 #include "absl/base/nullability.h"
+#include "absl/container/inlined_vector.h"
 #include "absl/strings/ascii.h"
 #include "absl/strings/match.h"
-#include "absl/strings/str_cat.h"
 #include "absl/strings/string_view.h"
 #include "api/audio/audio_view.h"
 #include "api/candidate.h"
@@ -42,6 +40,7 @@
 #include "api/rtp_transceiver_direction.h"
 #include "api/sctp_transport_interface.h"
 #include "api/uma_metrics.h"
+#include "api/webrtc_sdp_planb.h"
 #include "media/base/codec.h"
 #include "media/base/media_constants.h"
 #include "media/base/rid_description.h"
@@ -95,48 +94,42 @@ const char kLineTypeConnection = 'c';
 const char kLineTypeAttributes = 'a';
 
 // Attributes
-const char kAttributeGroup[] = "group";
-const char kAttributeMid[] = "mid";
-const char kAttributeMsid[] = "msid";
-const char kAttributeBundleOnly[] = "bundle-only";
-const char kAttributeRtcpMux[] = "rtcp-mux";
-const char kAttributeRtcpReducedSize[] = "rtcp-rsize";
-const char kAttributeRtcpXr[] = "rtcp-xr";
-const char kRtcpXrFormatRcvrRtt[] = "rcvr-rtt";
-const char kRtcpXrFormatRcvrRttPrefix[] = "rcvr-rtt=";
-const char kAttributeSsrc[] = "ssrc";
-const char kSsrcAttributeCname[] = "cname";
-const char kAttributeExtmapAllowMixed[] = "extmap-allow-mixed";
-const char kAttributeExtmap[] = "extmap";
-// draft-alvestrand-mmusic-msid-01
-// a=msid-semantic: WMS
-// This is a legacy field supported only for Plan B semantics.
-const char kAttributeMsidSemantics[] = "msid-semantic";
-const char kMediaStreamSemantic[] = "WMS";
-const char kSsrcAttributeMsid[] = "msid";
-const char kDefaultMsid[] = "default";
-const char kNoStreamMsid[] = "-";
-const char kAttributeSsrcGroup[] = "ssrc-group";
-const char kAttributeCandidate[] = "candidate";
-const char kAttributeFingerprint[] = "fingerprint";
-const char kAttributeSetup[] = "setup";
-const char kAttributeFmtp[] = "fmtp";
-const char kAttributeRtpmap[] = "rtpmap";
-const char kAttributeSctpmap[] = "sctpmap";
-const char kAttributeRtcp[] = "rtcp";
-const char kAttributeIceUfrag[] = "ice-ufrag";
-const char kAttributeIcePwd[] = "ice-pwd";
-const char kAttributeIceLite[] = "ice-lite";
-const char kAttributeIceOption[] = "ice-options";
-const char kAttributeSendOnly[] = "sendonly";
-const char kAttributeRecvOnly[] = "recvonly";
-const char kAttributeRtcpFb[] = "rtcp-fb";
-const char kAttributeSendRecv[] = "sendrecv";
-const char kAttributeInactive[] = "inactive";
+constexpr absl::string_view kAttributeGroup = "group";
+constexpr absl::string_view kAttributeMid = "mid";
+constexpr absl::string_view kAttributeMsid = "msid";
+constexpr absl::string_view kAttributeBundleOnly = "bundle-only";
+constexpr absl::string_view kAttributeRtcpMux = "rtcp-mux";
+constexpr absl::string_view kAttributeRtcpReducedSize = "rtcp-rsize";
+constexpr absl::string_view kAttributeRtcpXr = "rtcp-xr";
+constexpr absl::string_view kRtcpXrFormatRcvrRtt = "rcvr-rtt";
+constexpr absl::string_view kRtcpXrFormatRcvrRttPrefix = "rcvr-rtt=";
+constexpr absl::string_view kAttributeSsrc = "ssrc";
+constexpr absl::string_view kSsrcAttributeCname = "cname";
+constexpr absl::string_view kAttributeExtmapAllowMixed = "extmap-allow-mixed";
+constexpr absl::string_view kAttributeExtmap = "extmap";
+constexpr absl::string_view kSsrcAttributeMsid = "msid";
+constexpr absl::string_view kNoStreamMsid = "-";
+constexpr absl::string_view kAttributeSsrcGroup = "ssrc-group";
+constexpr absl::string_view kAttributeCandidate = "candidate";
+constexpr absl::string_view kAttributeFingerprint = "fingerprint";
+constexpr absl::string_view kAttributeSetup = "setup";
+constexpr absl::string_view kAttributeFmtp = "fmtp";
+constexpr absl::string_view kAttributeRtpmap = "rtpmap";
+constexpr absl::string_view kAttributeSctpmap = "sctpmap";
+constexpr absl::string_view kAttributeRtcp = "rtcp";
+constexpr absl::string_view kAttributeIceUfrag = "ice-ufrag";
+constexpr absl::string_view kAttributeIcePwd = "ice-pwd";
+constexpr absl::string_view kAttributeIceLite = "ice-lite";
+constexpr absl::string_view kAttributeIceOption = "ice-options";
+constexpr absl::string_view kAttributeSendOnly = "sendonly";
+constexpr absl::string_view kAttributeRecvOnly = "recvonly";
+constexpr absl::string_view kAttributeRtcpFb = "rtcp-fb";
+constexpr absl::string_view kAttributeSendRecv = "sendrecv";
+constexpr absl::string_view kAttributeInactive = "inactive";
 // draft-ietf-mmusic-sctp-sdp-26
 // a=sctp-port, a=max-message-size
-const char kAttributeSctpPort[] = "sctp-port";
-const char kAttributeMaxMessageSize[] = "max-message-size";
+constexpr absl::string_view kAttributeSctpPort = "sctp-port";
+constexpr absl::string_view kAttributeMaxMessageSize = "max-message-size";
 const int kDefaultSctpMaxMessageSize = 65536;
 // 32 is a safe upper bound. Standard groups (FID, FEC-FR, SIM) use <= 3 SSRCs.
 // This allows a buffer for custom semantics while preventing resource
@@ -144,7 +137,7 @@ const int kDefaultSctpMaxMessageSize = 65536;
 constexpr size_t kMaxSsrcsPerGroup = 32;
 
 // draft-hancke-tsvwg-snap
-const char kAttributeSctpSnap[] = "sctp-init";
+constexpr absl::string_view kAttributeSctpSnap = "sctp-init";
 
 // draft-ietf-mmusic-sdp-simulcast-13
 // a=simulcast
@@ -152,17 +145,18 @@ constexpr absl::string_view kAttributeSimulcast = "simulcast";
 // draft-ietf-mmusic-rid-15
 // a=rid
 constexpr absl::string_view kAttributeRid = "rid";
-const char kAttributePacketization[] = "packetization";
+constexpr absl::string_view kAttributePacketization = "packetization";
 
 // https://www.rfc-editor.org/rfc/rfc9335.html
-const char kAttributeCryptex[] = "cryptex";
+constexpr absl::string_view kAttributeCryptex = "cryptex";
 
 // Experimental flags
-const char kAttributeXGoogleFlag[] = "x-google-flag";
-const char kValueConference[] = "conference";
+constexpr absl::string_view kAttributeXGoogleFlag = "x-google-flag";
+constexpr absl::string_view kValueConference = "conference";
 
-const char kAttributeRtcpRemoteEstimate[] = "remote-net-estimate";
-const char kAttributeSframe[] = "sframe";
+constexpr absl::string_view kAttributeRtcpRemoteEstimate =
+    "remote-net-estimate";
+constexpr absl::string_view kAttributeSframe = "sframe";
 
 // StringBuilder doesn't have a << overload for chars, while
 // split and tokenize_first both take a char delimiter. To
@@ -227,14 +221,12 @@ void ReportSdpBandwidth(SdpBandwidthCategory category) {
                             kSdpBandwidthMax);
 }
 
-struct SsrcInfo {
-  uint32_t ssrc_id;
-  std::string cname;
-  std::string stream_id;
-  std::string track_id;
-};
 using SsrcInfoVec = std::vector<SsrcInfo>;
 using SsrcGroupVec = std::vector<SsrcGroup>;
+
+// The fields of a split SDP line or value, as views into it. Lines rarely have
+// more than a few fields, so these are stored without a heap allocation.
+using SdpFields = absl::InlinedVector<absl::string_view, 4>;
 
 // Below ParseFailed*** functions output the line that caused the parsing
 // failure and the detailed reason (`description`) of the failure to `error`.
@@ -384,22 +376,23 @@ std::optional<absl::string_view> GetLine(absl::string_view message,
 // Init `os` to "`type`=`value`".
 void InitLine(const char type, absl::string_view value, StringBuilder* os) {
   os->Clear();
-  *os << std::string(1, type) << kSdpDelimiterEqual << value;
+  *os << type << kSdpDelimiterEqual << value;
 }
 
 // Init `os` to "a=`attribute`".
 void InitAttrLine(absl::string_view attribute, StringBuilder* os) {
-  InitLine(kLineTypeAttributes, attribute, os);
+  os->Clear();
+  *os << "a=" << attribute;
 }
 
 // Writes a SDP attribute line based on `attribute` and `value` to `message`.
 void AddAttributeLine(absl::string_view attribute,
                       int value,
+                      StringBuilder* os,
                       std::string* message) {
-  StringBuilder os;
-  InitAttrLine(attribute, &os);
-  os << kSdpDelimiterColon << value;
-  AddLine(os.str(), message);
+  InitAttrLine(attribute, os);
+  *os << kSdpDelimiterColon << value;
+  AddLine(os->str(), message);
 }
 
 bool IsLineType(absl::string_view message, const char type, size_t line_start) {
@@ -423,51 +416,57 @@ std::optional<absl::string_view> GetLineWithType(absl::string_view message,
   return std::nullopt;
 }
 
-bool HasAttribute(absl::string_view line, absl::string_view attribute) {
-  if (line.compare(kLinePrefixLength, attribute.size(), attribute) == 0) {
-    // Make sure that the match is not only a partial match. If length of
-    // strings doesn't match, the next character of the line must be ':' or ' '.
-    // This function is also used for media descriptions (e.g., "m=audio 9..."),
-    // hence the need to also allow space in the end.
-    RTC_CHECK_LE(kLinePrefixLength + attribute.size(), line.size());
-    if ((kLinePrefixLength + attribute.size()) == line.size() ||
-        line[kLinePrefixLength + attribute.size()] == kSdpDelimiterColonChar ||
-        line[kLinePrefixLength + attribute.size()] == kSdpDelimiterSpaceChar) {
-      return true;
+absl::string_view ExtractAttributeName(absl::string_view line) {
+  absl::string_view rest = line.substr(kLinePrefixLength);
+  for (size_t i = 0; i < rest.size(); ++i) {
+    if (rest[i] == kSdpDelimiterColonChar ||
+        rest[i] == kSdpDelimiterSpaceChar) {
+      return rest.substr(0, i);
     }
   }
-  return false;
+  return rest;
 }
 
 bool AddSsrcLine(uint32_t ssrc_id,
                  absl::string_view attribute,
                  absl::string_view value,
+                 StringBuilder* os,
                  std::string* message) {
   // RFC 5576
   // a=ssrc:<ssrc-id> <attribute>:<value>
-  StringBuilder os;
-  InitAttrLine(kAttributeSsrc, &os);
-  os << kSdpDelimiterColon << ssrc_id << kSdpDelimiterSpace << attribute
-     << kSdpDelimiterColon << value;
-  return AddLine(os.str(), message);
+  InitAttrLine(kAttributeSsrc, os);
+  *os << kSdpDelimiterColon << ssrc_id << kSdpDelimiterSpace << attribute
+      << kSdpDelimiterColon << value;
+  return AddLine(os->str(), message);
 }
 
 // Get value only from <attribute>:<value>.
 bool GetValue(absl::string_view message,
               absl::string_view attribute,
-              std::string* value,
+              absl::string_view* value,
               SdpParseError* error) {
-  std::string leftpart;
+  absl::string_view leftpart;
   if (!tokenize_first(message, kSdpDelimiterColonChar, &leftpart, value)) {
     return ParseFailedGetValue(message, attribute, error);
   }
   // The left part should end with the expected attribute.
   if (leftpart.length() < attribute.length() ||
-      absl::string_view(leftpart).compare(
-          leftpart.length() - attribute.length(), attribute.length(),
-          attribute) != 0) {
+      leftpart.compare(leftpart.length() - attribute.length(),
+                       attribute.length(), attribute) != 0) {
     return ParseFailedGetValue(message, attribute, error);
   }
+  return true;
+}
+
+bool GetValue(absl::string_view message,
+              absl::string_view attribute,
+              std::string* value,
+              SdpParseError* error) {
+  absl::string_view value_view;
+  if (!GetValue(message, attribute, &value_view, error)) {
+    return false;
+  }
+  *value = value_view;
   return true;
 }
 
@@ -476,14 +475,16 @@ bool GetSingleTokenValue(absl::string_view message,
                          absl::string_view attribute,
                          std::string* value,
                          SdpParseError* error) {
-  if (!GetValue(message, attribute, value, error)) {
+  absl::string_view value_view;
+  if (!GetValue(message, attribute, &value_view, error)) {
     return false;
   }
-  if (!absl::c_all_of(absl::string_view(*value), IsTokenChar)) {
+  if (!absl::c_all_of(value_view, IsTokenChar)) {
     StringBuilder description;
     description << "Illegal character found in the value of " << attribute;
     return ParseFailed(message, description.Release(), error);
   }
+  *value = value_view;
   return true;
 }
 
@@ -537,79 +538,45 @@ void CreateTracksFromSsrcInfos(const SsrcInfoVec& ssrc_infos,
                                absl::string_view msid_track_id,
                                StreamParamsVec* tracks,
                                int msid_signaling) {
-  RTC_DCHECK(tracks);
-  for (const SsrcInfo& ssrc_info : ssrc_infos) {
-    // According to https://tools.ietf.org/html/rfc5576#section-6.1, the CNAME
-    // attribute is mandatory, but we relax that restriction.
-    if (ssrc_info.cname.empty()) {
-      RTC_LOG(LS_WARNING) << "CNAME attribute missing for SSRC "
-                          << ssrc_info.ssrc_id;
+  RTC_DCHECK(tracks != nullptr);
+  if (msid_signaling & kMsidSignalingMediaSection) {
+    // Unified Plan SDP msid signaling: all SSRCs in an m= section belong to a
+    // single StreamParams track.
+    RTC_DCHECK(!ssrc_infos.empty());
+    RTC_DCHECK(tracks->empty());
+    StreamParams track;
+    for (const SsrcInfo& ssrc_info : ssrc_infos) {
+      if (ssrc_info.cname.empty()) {
+        RTC_LOG(LS_WARNING)
+            << "CNAME attribute missing for SSRC " << ssrc_info.ssrc_id;
+      }
+      track.add_ssrc(ssrc_info.ssrc_id);
+      track.cname = ssrc_info.cname;
     }
-    std::vector<std::string> stream_ids;
-    std::string track_id;
-    if (msid_signaling & kMsidSignalingMediaSection) {
-      // This is the case with Unified Plan SDP msid signaling.
-      stream_ids = msid_stream_ids;
-      track_id = std::string(msid_track_id);
-    } else if (msid_signaling & kMsidSignalingSsrcAttribute) {
-      // This is the case with Plan B SDP msid signaling.
-      stream_ids.push_back(ssrc_info.stream_id);
-      track_id = ssrc_info.track_id;
-    } else if (msid_signaling == kMsidSignalingNotUsed) {
-      // Since no media streams isn't supported with older SDP signaling, we
-      // use a default stream id.
-      stream_ids.push_back(kDefaultMsid);
-    }
+    track.set_stream_ids(msid_stream_ids);
+    track.id = msid_track_id.empty() ? CreateRandomString(8)
+                                     : std::string(msid_track_id);
+    tracks->push_back(std::move(track));
+    return;
+  }
 
-    auto track_it = absl::c_find_if(
-        *tracks,
-        [track_id](const StreamParams& track) { return track.id == track_id; });
-    if (track_it == tracks->end()) {
-      // If we don't find an existing track, create a new one.
-      tracks->push_back(StreamParams());
-      track_it = tracks->end() - 1;
-    }
-    StreamParams& track = *track_it;
-    track.add_ssrc(ssrc_info.ssrc_id);
-    track.cname = ssrc_info.cname;
-    track.set_stream_ids(stream_ids);
-    track.id = track_id;
-  }
-  for (StreamParams& stream : *tracks) {
-    // If a track ID wasn't populated from the SSRC attributes OR the
-    // msid attribute, use default/random values. This happens after
-    // deduplication.
-    if (stream.id.empty()) {
-      stream.id = CreateRandomString(8);
-    }
-  }
+  CreatePlanBTracksFromSsrcInfos(ssrc_infos, msid_signaling, tracks);
 }
 
-void GetMediaStreamIds(const ContentInfo* content,
-                       std::set<std::string>* labels) {
-  for (const StreamParams& stream_params :
-       content->media_description()->streams()) {
-    for (const std::string& stream_id : stream_params.stream_ids()) {
-      labels->insert(stream_id);
-    }
-  }
-}
-
-// Get ip and port of the default destination from the `candidates` with the
-// given value of `component_id`. The default candidate should be the one most
-// likely to work, typically IPv4 relay.
+// Get the default destination from the `candidates` with the given value of
+// `component_id`. The default candidate should be the one most likely to work,
+// typically IPv4 relay. Returns nullptr if there is no such candidate.
+// `addr_type` is set to the address type to use with the returned candidate.
 // RFC 5245
 // The value of `component_id` currently supported are 1 (RTP) and 2 (RTCP).
 // TODO(deadbeef): Decide the default destination in webrtcsession and
 // pass it down via SessionDescription.
-void GetDefaultDestination(const IceCandidateCollection& candidates,
-                           int component_id,
-                           std::string* port,
-                           std::string* ip,
-                           std::string* addr_type) {
+const Candidate* absl_nullable GetDefaultDestination(
+    const IceCandidateCollection& candidates,
+    int component_id,
+    absl::string_view* addr_type) {
   *addr_type = kConnectionIpv4Addrtype;
-  *port = kDummyPort;
-  *ip = kDummyAddress;
+  const Candidate* default_candidate = nullptr;
   int current_preference = 0;  // Start with lowest preference
   int current_family = AF_UNSPEC;
   for (const std::unique_ptr<IceCandidate>& jsep_candidate :
@@ -633,35 +600,42 @@ void GetDefaultDestination(const IceCandidateCollection& candidates,
       continue;
     }
     if (family == AF_INET) {
-      addr_type->assign(kConnectionIpv4Addrtype);
+      *addr_type = kConnectionIpv4Addrtype;
     } else if (family == AF_INET6) {
-      addr_type->assign(kConnectionIpv6Addrtype);
+      *addr_type = kConnectionIpv6Addrtype;
     }
     current_preference = preference;
     current_family = family;
-    *port = candidate.address().PortAsString();
-    *ip = candidate.address().ipaddr().ToString();
+    default_candidate = &candidate;
   }
+  return default_candidate;
 }
 
-// Gets "a=rtcp" line if found default RTCP candidate from `candidates`.
-std::string GetRtcpLine(const IceCandidateCollection& candidates) {
-  std::string rtcp_port, rtcp_ip, addr_type;
-  GetDefaultDestination(candidates, ICE_CANDIDATE_COMPONENT_RTCP, &rtcp_port,
-                        &rtcp_ip, &addr_type);
-  // Found default RTCP candidate.
+// Writes "a=rtcp" line from default RTCP candidate in `candidates` to
+// `message`.
+void AddRtcpLine(const IceCandidateCollection& candidates,
+                 StringBuilder* os,
+                 std::string* message) {
+  absl::string_view addr_type;
+  const Candidate* default_candidate = GetDefaultDestination(
+      candidates, ICE_CANDIDATE_COMPONENT_RTCP, &addr_type);
   // RFC 5245
   // If the agent is utilizing RTCP, it MUST encode the RTCP candidate
   // using the a=rtcp attribute as defined in RFC 3605.
-
+  //
   // RFC 3605
   // rtcp-attribute =  "a=rtcp:" port  [nettype space addrtype space
   // connection-address] CRLF
-  StringBuilder os;
-  InitAttrLine(kAttributeRtcp, &os);
-  os << kSdpDelimiterColon << rtcp_port << " " << kConnectionNettype << " "
-     << addr_type << " " << rtcp_ip;
-  return os.Release();
+  InitAttrLine(kAttributeRtcp, os);
+  if (default_candidate != nullptr) {
+    *os << kSdpDelimiterColon << default_candidate->address().port() << " "
+        << kConnectionNettype << " " << addr_type << " "
+        << default_candidate->address().ipaddr().ToString();
+  } else {
+    *os << kSdpDelimiterColon << kDummyPort << " " << kConnectionNettype << " "
+        << kConnectionIpv4Addrtype << " " << kDummyAddress;
+  }
+  AddLine(os->str(), message);
 }
 
 bool IsValidPort(int port) {
@@ -671,7 +645,7 @@ bool IsValidPort(int port) {
 bool ParseIceOptions(absl::string_view line,
                      std::vector<std::string>* transport_options,
                      SdpParseError* error) {
-  std::string ice_options;
+  absl::string_view ice_options;
   if (!GetValue(line, kAttributeIceOption, &ice_options, error)) {
     return false;
   }
@@ -731,7 +705,7 @@ bool ParseSctpInit(absl::string_view line,
                    SdpParseError* error) {
   // draft-hancke-tsvwg-snap
   // a=sctp-init:<base64("CookieMonster")>
-  std::string base64_cookie;
+  absl::string_view base64_cookie;
   if (!GetValue(line, kAttributeSctpSnap, &base64_cookie, error)) {
     return false;
   }
@@ -779,20 +753,20 @@ bool ParseExtmap(absl::string_view line,
                  SdpParseError* error) {
   // RFC 5285
   // a=extmap:<value>["/"<direction>] <URI> <extensionattributes>
-  std::vector<absl::string_view> fields =
-      split(line.substr(kLinePrefixLength), kSdpDelimiterSpaceChar);
+  const auto fields =
+      split<SdpFields>(line.substr(kLinePrefixLength), kSdpDelimiterSpaceChar);
   const size_t expected_min_fields = 2;
   if (fields.size() < expected_min_fields) {
     return ParseFailedExpectMinFieldNum(line, expected_min_fields, error);
   }
   absl::string_view uri = fields[1];
 
-  std::string value_direction;
+  absl::string_view value_direction;
   if (!GetValue(fields[0], kAttributeExtmap, &value_direction, error)) {
     return false;
   }
-  std::vector<absl::string_view> sub_fields =
-      split(value_direction, kSdpDelimiterSlashChar);
+  const auto sub_fields =
+      split<SdpFields>(value_direction, kSdpDelimiterSlashChar);
   int value = 0;
   if (!GetValueFromString(line, sub_fields[0], &value, error)) {
     return false;
@@ -829,6 +803,7 @@ bool ParseExtmap(absl::string_view line,
 }
 
 void BuildSctpContentAttributes(const MediaContentDescription* media_desc,
+                                StringBuilder* os,
                                 std::string* message) {
   const SctpDataContentDescription* data_desc = media_desc->as_sctp();
   if (!data_desc) {
@@ -836,61 +811,60 @@ void BuildSctpContentAttributes(const MediaContentDescription* media_desc,
     return;
   }
 
-  StringBuilder os;
   if (data_desc->use_sctpmap()) {
     // draft-ietf-mmusic-sctp-sdp-04 (legacy)
     // a=sctpmap:sctpmap-number  protocol  [streams]
-    InitAttrLine(kAttributeSctpmap, &os);
-    os << kSdpDelimiterColon << data_desc->port() << kSdpDelimiterSpace
-       << kDefaultSctpmapProtocol << kSdpDelimiterSpace << kMaxSctpStreams;
-    AddLine(os.str(), message);
+    InitAttrLine(kAttributeSctpmap, os);
+    *os << kSdpDelimiterColon << data_desc->port() << kSdpDelimiterSpace
+        << kDefaultSctpmapProtocol << kSdpDelimiterSpace << kMaxSctpStreams;
+    AddLine(os->str(), message);
   } else {
     // draft-ietf-mmusic-sctp-sdp-23
     // a=sctp-port:<port>
-    InitAttrLine(kAttributeSctpPort, &os);
-    os << kSdpDelimiterColon << data_desc->port();
-    AddLine(os.str(), message);
+    InitAttrLine(kAttributeSctpPort, os);
+    *os << kSdpDelimiterColon << data_desc->port();
+    AddLine(os->str(), message);
     if (data_desc->max_message_size() != kDefaultSctpMaxMessageSize) {
-      InitAttrLine(kAttributeMaxMessageSize, &os);
-      os << kSdpDelimiterColon << data_desc->max_message_size();
-      AddLine(os.str(), message);
+      InitAttrLine(kAttributeMaxMessageSize, os);
+      *os << kSdpDelimiterColon << data_desc->max_message_size();
+      AddLine(os->str(), message);
     }
     // draft-hancke-tsvwg-snap
     auto sctp_init = data_desc->sctp_init();
     if (sctp_init.has_value()) {
-      WriteSctpInit(*sctp_init, &os);
-      AddLine(os.str(), message);
+      WriteSctpInit(*sctp_init, os);
+      AddLine(os->str(), message);
     }
   }
 }
 
 void BuildIceUfragPwd(const TransportInfo* transport_info,
+                      StringBuilder* os,
                       std::string* message) {
   RTC_DCHECK(transport_info);
 
-  StringBuilder os;
   // RFC 5245
   // ice-pwd-att           = "ice-pwd" ":" password
   // ice-ufrag-att         = "ice-ufrag" ":" ufrag
   // ice-ufrag
   if (!transport_info->description.ice_ufrag.empty()) {
-    InitAttrLine(kAttributeIceUfrag, &os);
-    os << kSdpDelimiterColon << transport_info->description.ice_ufrag;
-    AddLine(os.str(), message);
+    InitAttrLine(kAttributeIceUfrag, os);
+    *os << kSdpDelimiterColon << transport_info->description.ice_ufrag;
+    AddLine(os->str(), message);
   }
   // ice-pwd
   if (!transport_info->description.ice_pwd.empty()) {
-    InitAttrLine(kAttributeIcePwd, &os);
-    os << kSdpDelimiterColon << transport_info->description.ice_pwd;
-    AddLine(os.str(), message);
+    InitAttrLine(kAttributeIcePwd, os);
+    *os << kSdpDelimiterColon << transport_info->description.ice_pwd;
+    AddLine(os->str(), message);
   }
 }
 
 void BuildDtlsFingerprintSetup(const TransportInfo* transport_info,
+                               StringBuilder* os,
                                std::string* message) {
   RTC_DCHECK(transport_info);
 
-  StringBuilder os;
   // RFC 4572
   // fingerprint-attribute  =
   //   "fingerprint" ":" hash-func SP fingerprint
@@ -900,10 +874,10 @@ void BuildDtlsFingerprintSetup(const TransportInfo* transport_info,
   if (!fingerprint) {
     return;
   }
-  InitAttrLine(kAttributeFingerprint, &os);
-  os << kSdpDelimiterColon << fingerprint->algorithm << kSdpDelimiterSpace
-     << fingerprint->GetRfc4572Fingerprint();
-  AddLine(os.str(), message);
+  InitAttrLine(kAttributeFingerprint, os);
+  *os << kSdpDelimiterColon << fingerprint->algorithm << kSdpDelimiterSpace
+      << fingerprint->GetRfc4572Fingerprint();
+  AddLine(os->str(), message);
 
   // Inserting setup attribute.
   if (transport_info->description.connection_role != CONNECTIONROLE_NONE) {
@@ -912,55 +886,33 @@ void BuildDtlsFingerprintSetup(const TransportInfo* transport_info,
     std::string dtls_role_str;
     const bool success = ConnectionRoleToString(role, &dtls_role_str);
     RTC_DCHECK(success);
-    InitAttrLine(kAttributeSetup, &os);
-    os << kSdpDelimiterColon << dtls_role_str;
-    AddLine(os.str(), message);
+    InitAttrLine(kAttributeSetup, os);
+    *os << kSdpDelimiterColon << dtls_role_str;
+    AddLine(os->str(), message);
   }
 }
 
 void BuildMediaLine(const MediaType media_type,
                     const ContentInfo* content_info,
                     const MediaContentDescription* media_desc,
+                    StringBuilder* os,
                     std::string* message) {
-  StringBuilder os;
-
   // RFC 4566
   // m=<media> <port> <proto> <fmt>
   // fmt is a list of payload type numbers that MAY be used in the session.
-  std::string type;
-  std::string fmt;
-  if (media_type == MediaType::AUDIO || media_type == MediaType::VIDEO) {
-    type = media_type == MediaType::AUDIO ? kSdpMediaTypeAudio
-                                          : kSdpMediaTypeVideo;
-    for (const Codec& codec : media_desc->codecs()) {
-      fmt.append(" ");
-      fmt.append(absl::StrCat(codec.id));
-    }
+  absl::string_view type;
+  if (media_type == MediaType::AUDIO) {
+    type = kSdpMediaTypeAudio;
+  } else if (media_type == MediaType::VIDEO) {
+    type = kSdpMediaTypeVideo;
   } else if (media_type == MediaType::DATA) {
     type = kSdpMediaTypeData;
-    const SctpDataContentDescription* sctp_data_desc = media_desc->as_sctp();
-    if (sctp_data_desc) {
-      fmt.append(" ");
-
-      if (sctp_data_desc->use_sctpmap()) {
-        fmt.append(absl::StrCat(sctp_data_desc->port()));
-      } else {
-        fmt.append(kDefaultSctpmapProtocol);
-      }
-    } else {
-      RTC_DCHECK_NOTREACHED() << "Data description without SCTP";
-    }
   } else if (media_type == MediaType::UNSUPPORTED) {
     const UnsupportedContentDescription* unsupported_desc =
         media_desc->as_unsupported();
     type = unsupported_desc->media_type();
   } else {
     RTC_DCHECK_NOTREACHED();
-  }
-  // The fmt must never be empty. If no codecs are found, set the fmt attribute
-  // to 0.
-  if (fmt.empty()) {
-    fmt = " 0";
   }
 
   // The port number in the m line will be updated later when associated with
@@ -973,23 +925,50 @@ void BuildMediaLine(const MediaType media_type,
   //
   // However, the BUNDLE draft adds a new meaning to port zero, when used along
   // with a=bundle-only.
-  std::string port = kDummyPort;
+  InitLine(kLineTypeMedia, type, os);
+  *os << " ";
   if (content_info->rejected || content_info->bundle_only) {
-    port = kMediaPortRejected;
+    *os << kMediaPortRejected;
   } else if (!media_desc->connection_address().IsNil()) {
-    port = absl::StrCat(media_desc->connection_address().port());
+    *os << media_desc->connection_address().port();
+  } else {
+    *os << kDummyPort;
+  }
+  *os << " " << media_desc->protocol();
+
+  // The fmt must never be empty. If no codecs are found, set the fmt attribute
+  // to 0.
+  if (media_type == MediaType::AUDIO || media_type == MediaType::VIDEO) {
+    if (media_desc->codecs().empty()) {
+      *os << " 0";
+    } else {
+      for (const Codec& codec : media_desc->codecs()) {
+        *os << " " << codec.id;
+      }
+    }
+  } else if (media_type == MediaType::DATA) {
+    const SctpDataContentDescription* sctp_data_desc = media_desc->as_sctp();
+    if (sctp_data_desc != nullptr) {
+      if (sctp_data_desc->use_sctpmap()) {
+        *os << " " << sctp_data_desc->port();
+      } else {
+        *os << " " << kDefaultSctpmapProtocol;
+      }
+    } else {
+      RTC_DCHECK_NOTREACHED() << "Data description without SCTP";
+      *os << " 0";
+    }
+  } else {
+    *os << " 0";
   }
 
-  // Add the m and c lines.
-  InitLine(kLineTypeMedia, type, &os);
-  os << " " << port << " " << media_desc->protocol() << fmt;
-  AddLine(os.str(), message);
+  AddLine(os->str(), message);
 }
 
 void BuildCandidate(const IceCandidateCollection& candidates,
                     bool include_ufrag,
+                    StringBuilder* os,
                     std::string* message) {
-  StringBuilder os;
   for (const std::unique_ptr<IceCandidate>& jsep_candidate :
        candidates.candidates()) {
     // RFC 5245
@@ -999,40 +978,39 @@ void BuildCandidate(const IceCandidateCollection& candidates,
     // *(SP extension-att-name SP extension-att-value)
     InitLine(kLineTypeAttributes,
              jsep_candidate->candidate().ToCandidateAttribute(include_ufrag),
-             &os);
-    AddLine(os.str(), message);
+             os);
+    AddLine(os->str(), message);
   }
 }
 
 void BuildIceOptions(const std::vector<std::string>& transport_options,
+                     StringBuilder* os,
                      std::string* message) {
   if (!transport_options.empty()) {
-    StringBuilder os;
-    InitAttrLine(kAttributeIceOption, &os);
-    os << kSdpDelimiterColon << transport_options[0];
+    InitAttrLine(kAttributeIceOption, os);
+    *os << kSdpDelimiterColon << transport_options[0];
     for (size_t i = 1; i < transport_options.size(); ++i) {
-      os << kSdpDelimiterSpace << transport_options[i];
+      *os << kSdpDelimiterSpace << transport_options[i];
     }
-    AddLine(os.str(), message);
+    AddLine(os->str(), message);
   }
 }
 
 void BuildRtpHeaderExtensions(const RtpHeaderExtensions& extensions,
+                              StringBuilder* os,
                               std::string* message) {
-  StringBuilder os;
-
   // RFC 8285
   // a=extmap:<value>["/"<direction>] <URI> <extensionattributes>
   // The definitions MUST be either all session level or all media level. This
   // implementation uses all media level.
   for (const RtpExtension& extension : extensions) {
-    InitAttrLine(kAttributeExtmap, &os);
-    os << kSdpDelimiterColon << extension.id;
+    InitAttrLine(kAttributeExtmap, os);
+    *os << kSdpDelimiterColon << extension.id;
     if (extension.encrypt) {
-      os << kSdpDelimiterSpace << RtpExtension::kEncryptHeaderExtensionsUri;
+      *os << kSdpDelimiterSpace << RtpExtension::kEncryptHeaderExtensionsUri;
     }
-    os << kSdpDelimiterSpace << extension.uri;
-    AddLine(os.str(), message);
+    *os << kSdpDelimiterSpace << extension.uri;
+    AddLine(os->str(), message);
   }
 }
 
@@ -1048,7 +1026,10 @@ bool GetMinValue(const std::vector<int>& values, int* value) {
 bool GetParameter(absl::string_view name,
                   const CodecParameterMap& params,
                   int* value) {
-  CodecParameterMap::const_iterator found = params.find(std::string(name));
+  if (params.empty()) {
+    return false;
+  }
+  CodecParameterMap::const_iterator found = params.find(name);
   if (found == params.end()) {
     return false;
   }
@@ -1088,49 +1069,43 @@ void WriteRtcpFbHeader(PayloadType payload_type, StringBuilder* os) {
   }
 }
 
-void AddFmtpLine(const Codec& codec, std::string* message) {
-  StringBuilder os;
-  WriteFmtpHeader(codec.id, &os);
-  os << kSdpDelimiterSpace;
-  // Create FMTP line and check that it's nonempty.
-  if (WriteFmtpParameters(codec.params, os)) {
-    AddLine(os.str(), message);
+void AddFmtpLine(const Codec& codec, StringBuilder* os, std::string* message) {
+  if (codec.params.empty()) {
+    return;
   }
-  return;
+  WriteFmtpHeader(codec.id, os);
+  *os << kSdpDelimiterSpace;
+  // Create FMTP line and check that it's nonempty.
+  if (WriteFmtpParameters(codec.params, *os)) {
+    AddLine(os->str(), message);
+  }
 }
 
-void AddPacketizationLine(const Codec& codec, std::string* message) {
+void AddPacketizationLine(const Codec& codec,
+                          StringBuilder* os,
+                          std::string* message) {
   if (!codec.packetization) {
     return;
   }
-  StringBuilder os;
-  WritePacketizationHeader(codec.id, &os);
-  os << " " << *codec.packetization;
-  AddLine(os.str(), message);
+  WritePacketizationHeader(codec.id, os);
+  *os << " " << *codec.packetization;
+  AddLine(os->str(), message);
 }
 
 void AddRtcpFbLines(const Codec& codec,
                     const FeedbackParams& skip_params,
+                    StringBuilder* os,
                     std::string* message) {
   for (const FeedbackParam& param : codec.feedback_params.params()) {
     if (skip_params.Has(param)) {
       continue;
     }
-    StringBuilder os;
-    WriteRtcpFbHeader(codec.id, &os);
-    os << " " << param.id();
+    WriteRtcpFbHeader(codec.id, os);
+    *os << " " << param.id();
     if (!param.param().empty()) {
-      os << " " << param.param();
+      *os << " " << param.param();
     }
-    AddLine(os.str(), message);
-  }
-}
-
-void AddParameters(const CodecParameterMap& parameters, Codec* codec) {
-  for (const auto& entry : parameters) {
-    const std::string& key = entry.first;
-    const std::string& value = entry.second;
-    codec->SetParam(key, value);
+    AddLine(os->str(), message);
   }
 }
 
@@ -1148,6 +1123,7 @@ void AddFeedbackParameters(const FeedbackParams& feedback_params,
 void BuildRtpmap(const MediaContentDescription* media_desc,
                  const MediaType media_type,
                  bool use_wildcard,
+                 StringBuilder* os,
                  std::string* message) {
   RTC_DCHECK(message != nullptr);
   RTC_DCHECK(media_desc != nullptr);
@@ -1169,30 +1145,29 @@ void BuildRtpmap(const MediaContentDescription* media_desc,
     }
   }
 
-  StringBuilder os;
   if (media_type == MediaType::VIDEO) {
     for (const Codec& codec : media_desc->codecs()) {
       // RFC 4566
       // a=rtpmap:<payload type> <encoding name>/<clock rate>
       // [/<encodingparameters>]
       if (codec.id != kWildcardPayloadType) {
-        InitAttrLine(kAttributeRtpmap, &os);
-        os << kSdpDelimiterColon << codec.id << " " << codec.name << "/"
-           << kVideoCodecClockrate;
-        AddLine(os.str(), message);
+        InitAttrLine(kAttributeRtpmap, os);
+        *os << kSdpDelimiterColon << codec.id << " " << codec.name << "/"
+            << kVideoCodecClockrate;
+        AddLine(os->str(), message);
       }
-      AddPacketizationLine(codec, message);
+      AddPacketizationLine(codec, os, message);
       // Include transport-wide codec parameters.
       // TODO: issues.webrtc.org/489794442 - Remove when wildcards are
       // OK to send.
       if (!use_wildcard && media_desc->rtcp_fb_ack_ccfb()) {
         Codec codec_with_ccfb = codec;
         codec_with_ccfb.feedback_params.Add({"ack", "ccfb"});
-        AddRtcpFbLines(codec_with_ccfb, common_fb_params, message);
+        AddRtcpFbLines(codec_with_ccfb, common_fb_params, os, message);
       } else {
-        AddRtcpFbLines(codec, common_fb_params, message);
+        AddRtcpFbLines(codec, common_fb_params, os, message);
       }
-      AddFmtpLine(codec, message);
+      AddFmtpLine(codec, os, message);
     }
   } else if (media_type == MediaType::AUDIO) {
     std::vector<int> ptimes;
@@ -1203,24 +1178,24 @@ void BuildRtpmap(const MediaContentDescription* media_desc,
       // RFC 4566
       // a=rtpmap:<payload type> <encoding name>/<clock rate>
       // [/<encodingparameters>]
-      InitAttrLine(kAttributeRtpmap, &os);
-      os << kSdpDelimiterColon << codec.id << " ";
-      os << codec.name << "/" << codec.clockrate;
+      InitAttrLine(kAttributeRtpmap, os);
+      *os << kSdpDelimiterColon << codec.id << " ";
+      *os << codec.name << "/" << codec.clockrate;
       if (codec.channels != 1) {
-        os << "/" << codec.channels;
+        *os << "/" << codec.channels;
       }
-      AddLine(os.str(), message);
+      AddLine(os->str(), message);
       // Include transport-wide codec parameters.
       // TODO: issues.webrtc.org/489794442 - Remove when wildcards are
       // OK to send.
       if (!use_wildcard && media_desc->rtcp_fb_ack_ccfb()) {
         Codec codec_with_ccfb = codec;
         codec_with_ccfb.feedback_params.Add({"ack", "ccfb"});
-        AddRtcpFbLines(codec_with_ccfb, common_fb_params, message);
+        AddRtcpFbLines(codec_with_ccfb, common_fb_params, os, message);
       } else {
-        AddRtcpFbLines(codec, common_fb_params, message);
+        AddRtcpFbLines(codec, common_fb_params, os, message);
       }
-      AddFmtpLine(codec, message);
+      AddFmtpLine(codec, os, message);
       int minptime = 0;
       if (GetParameter(kCodecParamMinPTime, codec.params, &minptime)) {
         max_minptime = std::max(minptime, max_minptime);
@@ -1238,7 +1213,7 @@ void BuildRtpmap(const MediaContentDescription* media_desc,
     // under the same m-line.
     int min_maxptime = INT_MAX;
     if (GetMinValue(maxptimes, &min_maxptime)) {
-      AddAttributeLine(kCodecParamMaxPTime, min_maxptime, message);
+      AddAttributeLine(kCodecParamMaxPTime, min_maxptime, os, message);
     }
     RTC_DCHECK_GE(min_maxptime, max_minptime);
     // Populate the ptime attribute with the smallest ptime or the largest
@@ -1247,18 +1222,17 @@ void BuildRtpmap(const MediaContentDescription* media_desc,
     if (GetMinValue(ptimes, &ptime)) {
       ptime = std::min(ptime, min_maxptime);
       ptime = std::max(ptime, max_minptime);
-      AddAttributeLine(kCodecParamPTime, ptime, message);
+      AddAttributeLine(kCodecParamPTime, ptime, os, message);
     }
   }
   if (use_wildcard) {
     for (const FeedbackParam& param : common_fb_params.params()) {
-      StringBuilder os_fb;
-      WriteRtcpFbHeader(kWildcardPayloadType, &os_fb);
-      os_fb << " " << param.id();
+      WriteRtcpFbHeader(kWildcardPayloadType, os);
+      *os << " " << param.id();
       if (!param.param().empty()) {
-        os_fb << " " << param.param();
+        *os << " " << param.param();
       }
-      AddLine(os_fb.str(), message);
+      AddLine(os->str(), message);
     }
   }
 }
@@ -1267,9 +1241,9 @@ void BuildRtpContentAttributes(const MediaContentDescription* media_desc,
                                const MediaType media_type,
                                int msid_signaling,
                                bool use_wildcard,
+                               StringBuilder* os,
                                std::string* message) {
   SimulcastSdpSerializer serializer;
-  StringBuilder os;
   // RFC 8285
   // a=extmap-allow-mixed
   // The attribute MUST be either on session level or media level. We support
@@ -1277,15 +1251,15 @@ void BuildRtpContentAttributes(const MediaContentDescription* media_desc,
   // set on session level.
   if (media_desc->extmap_allow_mixed_level() ==
       MediaContentDescription::AttributeLevel::kMedia) {
-    InitAttrLine(kAttributeExtmapAllowMixed, &os);
-    AddLine(os.str(), message);
+    InitAttrLine(kAttributeExtmapAllowMixed, os);
+    AddLine(os->str(), message);
   }
   if (media_desc->cryptex_level() ==
       MediaContentDescription::AttributeLevel::kMedia) {
-    InitAttrLine(kAttributeCryptex, &os);
-    AddLine(os.str(), message);
+    InitAttrLine(kAttributeCryptex, os);
+    AddLine(os->str(), message);
   }
-  BuildRtpHeaderExtensions(media_desc->rtp_header_extensions(), message);
+  BuildRtpHeaderExtensions(media_desc->rtp_header_extensions(), os, message);
 
   // RFC 3264
   // a=sendrecv || a=sendonly || a=sendrecv || a=inactive
@@ -1293,23 +1267,23 @@ void BuildRtpContentAttributes(const MediaContentDescription* media_desc,
     // Special case that for sdp purposes should be treated same as inactive.
     case RtpTransceiverDirection::kStopped:
     case RtpTransceiverDirection::kInactive:
-      InitAttrLine(kAttributeInactive, &os);
+      InitAttrLine(kAttributeInactive, os);
       break;
     case RtpTransceiverDirection::kSendOnly:
-      InitAttrLine(kAttributeSendOnly, &os);
+      InitAttrLine(kAttributeSendOnly, os);
       break;
     case RtpTransceiverDirection::kRecvOnly:
-      InitAttrLine(kAttributeRecvOnly, &os);
+      InitAttrLine(kAttributeRecvOnly, os);
       break;
     case RtpTransceiverDirection::kSendRecv:
-      InitAttrLine(kAttributeSendRecv, &os);
+      InitAttrLine(kAttributeSendRecv, os);
       break;
     default:
       RTC_DCHECK_NOTREACHED();
-      InitAttrLine(kAttributeSendRecv, &os);
+      InitAttrLine(kAttributeSendRecv, os);
       break;
   }
-  AddLine(os.str(), message);
+  AddLine(os->str(), message);
 
   // Specified in https://datatracker.ietf.org/doc/draft-ietf-mmusic-msid/16/
   // a=msid:<msid-id> <msid-appdata>
@@ -1322,14 +1296,19 @@ void BuildRtpContentAttributes(const MediaContentDescription* media_desc,
     const StreamParamsVec& streams = media_desc->streams();
     if (streams.size() == 1u) {
       const StreamParams& track = streams[0];
-      std::vector<std::string> stream_ids = track.stream_ids();
+      const std::vector<std::string>& stream_ids = track.stream_ids();
       if (stream_ids.empty()) {
-        stream_ids.push_back(kNoStreamMsid);
-      }
-      for (const std::string& stream_id : stream_ids) {
-        InitAttrLine(kAttributeMsid, &os);
-        os << kSdpDelimiterColon << stream_id << kSdpDelimiterSpace << track.id;
-        AddLine(os.str(), message);
+        InitAttrLine(kAttributeMsid, os);
+        *os << kSdpDelimiterColon << kNoStreamMsid << kSdpDelimiterSpace
+            << track.id;
+        AddLine(os->str(), message);
+      } else {
+        for (const std::string& stream_id : stream_ids) {
+          InitAttrLine(kAttributeMsid, os);
+          *os << kSdpDelimiterColon << stream_id << kSdpDelimiterSpace
+              << track.id;
+          AddLine(os->str(), message);
+        }
       }
     } else if (streams.size() > 1u) {
       RTC_LOG(LS_WARNING)
@@ -1341,47 +1320,47 @@ void BuildRtpContentAttributes(const MediaContentDescription* media_desc,
   // RFC 5761
   // a=rtcp-mux
   if (media_desc->rtcp_mux()) {
-    InitAttrLine(kAttributeRtcpMux, &os);
-    AddLine(os.str(), message);
+    InitAttrLine(kAttributeRtcpMux, os);
+    AddLine(os->str(), message);
   }
 
   // RFC 5506
   // a=rtcp-rsize
   if (media_desc->rtcp_reduced_size()) {
-    InitAttrLine(kAttributeRtcpReducedSize, &os);
-    AddLine(os.str(), message);
+    InitAttrLine(kAttributeRtcpReducedSize, os);
+    AddLine(os->str(), message);
   }
 
   // RFC 3611
   // a=rtcp-xr:rcvr-rtt=all
   if (media_desc->receive_non_sender_rtt()) {
-    InitAttrLine(kAttributeRtcpXr, &os);
-    os << kSdpDelimiterColon << kRtcpXrFormatRcvrRtt << "=all";
-    AddLine(os.str(), message);
+    InitAttrLine(kAttributeRtcpXr, os);
+    *os << kSdpDelimiterColon << kRtcpXrFormatRcvrRtt << "=all";
+    AddLine(os->str(), message);
   }
 
   if (media_desc->conference_mode()) {
-    InitAttrLine(kAttributeXGoogleFlag, &os);
-    os << kSdpDelimiterColon << kValueConference;
-    AddLine(os.str(), message);
+    InitAttrLine(kAttributeXGoogleFlag, os);
+    *os << kSdpDelimiterColon << kValueConference;
+    AddLine(os->str(), message);
   }
 
   if (media_desc->remote_estimate()) {
-    InitAttrLine(kAttributeRtcpRemoteEstimate, &os);
-    AddLine(os.str(), message);
+    InitAttrLine(kAttributeRtcpRemoteEstimate, os);
+    AddLine(os->str(), message);
   }
 
   // draft-ietf-avtcore-rtp-sframe-02 §6
   // a=sframe
   if (media_desc->sframe_enabled()) {
-    InitAttrLine(kAttributeSframe, &os);
-    AddLine(os.str(), message);
+    InitAttrLine(kAttributeSframe, os);
+    AddLine(os->str(), message);
   }
 
   // RFC 4566
   // a=rtpmap:<payload type> <encoding name>/<clock rate>
   // [/<encodingparameters>]
-  BuildRtpmap(media_desc, media_type, use_wildcard, message);
+  BuildRtpmap(media_desc, media_type, use_wildcard, os, message);
 
   for (const StreamParams& track : media_desc->streams()) {
     // Build the ssrc-group lines.
@@ -1391,65 +1370,48 @@ void BuildRtpContentAttributes(const MediaContentDescription* media_desc,
       if (ssrc_group.ssrcs.empty()) {
         continue;
       }
-      InitAttrLine(kAttributeSsrcGroup, &os);
-      os << kSdpDelimiterColon << ssrc_group.semantics;
+      InitAttrLine(kAttributeSsrcGroup, os);
+      *os << kSdpDelimiterColon << ssrc_group.semantics;
       for (uint32_t ssrc : ssrc_group.ssrcs) {
-        os << kSdpDelimiterSpace << absl::StrCat(ssrc);
+        *os << kSdpDelimiterSpace << ssrc;
       }
-      AddLine(os.str(), message);
+      AddLine(os->str(), message);
     }
     // Build the ssrc lines for each ssrc.
     for (uint32_t ssrc : track.ssrcs) {
       // RFC 5576
       // a=ssrc:<ssrc-id> cname:<value>
-      AddSsrcLine(ssrc, kSsrcAttributeCname, track.cname, message);
+      AddSsrcLine(ssrc, kSsrcAttributeCname, track.cname, os, message);
 
       if (msid_signaling & kMsidSignalingSsrcAttribute) {
-        // draft-alvestrand-mmusic-msid-00
-        // a=ssrc:<ssrc-id> msid:identifier [appdata]
-        // The appdata consists of the "id" attribute of a MediaStreamTrack,
-        // which corresponds to the "id" attribute of StreamParams.
-        // Since a=ssrc msid signaling is used in Plan B SDP semantics, and
-        // multiple stream ids are not supported for Plan B, we are only adding
-        // a line for the first media stream id here.
-        // We use a special msid-id value of "-" to represent no streams,
-        // for Unified Plan compatibility. Plan B will always have a
-        // track_stream_id.
-        absl::string_view stream_id = track.first_stream_id().empty()
-                                          ? absl::string_view(kNoStreamMsid)
-                                          : track.first_stream_id();
-        InitAttrLine(kAttributeSsrc, &os);
-        os << kSdpDelimiterColon << ssrc << kSdpDelimiterSpace
-           << kSsrcAttributeMsid << kSdpDelimiterColon << stream_id
-           << kSdpDelimiterSpace << track.id;
-        AddLine(os.str(), message);
+        AddPlanBSsrcMsidLine(ssrc, track, os, message);
       }
     }
 
     // Build the rid lines for each layer of the track
     for (const RidDescription& rid_description : track.rids()) {
-      InitAttrLine(kAttributeRid, &os);
-      os << kSdpDelimiterColon
-         << serializer.SerializeRidDescription(*media_desc, rid_description);
-      AddLine(os.str(), message);
+      InitAttrLine(kAttributeRid, os);
+      *os << kSdpDelimiterColon
+          << serializer.SerializeRidDescription(*media_desc, rid_description);
+      AddLine(os->str(), message);
     }
   }
 
   for (const RidDescription& rid_description : media_desc->receive_rids()) {
-    InitAttrLine(kAttributeRid, &os);
-    os << kSdpDelimiterColon
-       << serializer.SerializeRidDescription(*media_desc, rid_description);
-    AddLine(os.str(), message);
+    InitAttrLine(kAttributeRid, os);
+    *os << kSdpDelimiterColon
+        << serializer.SerializeRidDescription(*media_desc, rid_description);
+    AddLine(os->str(), message);
   }
 
   // Simulcast (a=simulcast)
   // https://tools.ietf.org/html/draft-ietf-mmusic-sdp-simulcast-13#section-5.1
   if (media_desc->HasSimulcast()) {
     const auto& simulcast = media_desc->simulcast_description();
-    InitAttrLine(kAttributeSimulcast, &os);
-    os << kSdpDelimiterColon
-       << serializer.SerializeSimulcastDescription(simulcast);
-    AddLine(os.str(), message);
+    InitAttrLine(kAttributeSimulcast, os);
+    *os << kSdpDelimiterColon
+        << serializer.SerializeSimulcastDescription(simulcast);
+    AddLine(os->str(), message);
   }
 }
 
@@ -1459,31 +1421,31 @@ void BuildMediaDescription(const ContentInfo* content_info,
                            const IceCandidateCollection& candidates,
                            int msid_signaling,
                            bool use_wildcard,
+                           StringBuilder* os,
                            std::string* message) {
   RTC_DCHECK(message);
   if (!content_info) {
     return;
   }
-  StringBuilder os;
   const MediaContentDescription* media_desc = content_info->media_description();
   RTC_DCHECK(media_desc);
 
   // Add the m line.
-  BuildMediaLine(media_type, content_info, media_desc, message);
+  BuildMediaLine(media_type, content_info, media_desc, os, message);
   // Add the c line.
-  InitLine(kLineTypeConnection, kConnectionNettype, &os);
+  InitLine(kLineTypeConnection, kConnectionNettype, os);
   if (media_desc->connection_address().IsNil()) {
-    os << " " << kConnectionIpv4Addrtype << " " << kDummyAddress;
+    *os << " " << kConnectionIpv4Addrtype << " " << kDummyAddress;
   } else if (media_desc->connection_address().family() == AF_INET) {
-    os << " " << kConnectionIpv4Addrtype << " "
-       << media_desc->connection_address().ipaddr().ToString();
+    *os << " " << kConnectionIpv4Addrtype << " "
+        << media_desc->connection_address().ipaddr().ToString();
   } else if (media_desc->connection_address().family() == AF_INET6) {
-    os << " " << kConnectionIpv6Addrtype << " "
-       << media_desc->connection_address().ipaddr().ToString();
+    *os << " " << kConnectionIpv6Addrtype << " "
+        << media_desc->connection_address().ipaddr().ToString();
   } else {
-    os << " " << kConnectionIpv4Addrtype << " " << kDummyAddress;
+    *os << " " << kConnectionIpv4Addrtype << " " << kDummyAddress;
   }
-  AddLine(os.str(), message);
+  AddLine(os->str(), message);
 
   // RFC 4566
   // b=AS:<bandwidth> or
@@ -1491,59 +1453,56 @@ void BuildMediaDescription(const ContentInfo* content_info,
   int bandwidth = media_desc->bandwidth();
   absl::string_view bandwidth_type = media_desc->bandwidth_type();
   if (bandwidth_type == kApplicationSpecificBandwidth && bandwidth >= 1000) {
-    InitLine(kLineTypeSessionBandwidth, bandwidth_type, &os);
+    InitLine(kLineTypeSessionBandwidth, bandwidth_type, os);
     bandwidth /= 1000;
-    os << kSdpDelimiterColon << bandwidth;
-    AddLine(os.str(), message);
+    *os << kSdpDelimiterColon << bandwidth;
+    AddLine(os->str(), message);
   } else if (bandwidth_type == kTransportSpecificBandwidth && bandwidth > 0) {
-    InitLine(kLineTypeSessionBandwidth, bandwidth_type, &os);
-    os << kSdpDelimiterColon << bandwidth;
-    AddLine(os.str(), message);
+    InitLine(kLineTypeSessionBandwidth, bandwidth_type, os);
+    *os << kSdpDelimiterColon << bandwidth;
+    AddLine(os->str(), message);
   }
 
   // Add the a=bundle-only line.
   if (content_info->bundle_only) {
-    InitAttrLine(kAttributeBundleOnly, &os);
-    AddLine(os.str(), message);
+    InitAttrLine(kAttributeBundleOnly, os);
+    AddLine(os->str(), message);
   }
 
   // Add the a=rtcp line.
   if (IsRtpProtocol(media_desc->protocol())) {
-    std::string rtcp_line = GetRtcpLine(candidates);
-    if (!rtcp_line.empty()) {
-      AddLine(rtcp_line, message);
-    }
+    AddRtcpLine(candidates, os, message);
   }
 
   // Build the a=candidate lines. We don't include ufrag and pwd in the
   // candidates in the SDP to avoid redundancy.
-  BuildCandidate(candidates, false, message);
+  BuildCandidate(candidates, false, os, message);
 
   // Use the transport_info to build the media level ice-ufrag, ice-pwd
   // and DTLS fingerprint and setup attributes.
   if (transport_info) {
-    BuildIceUfragPwd(transport_info, message);
+    BuildIceUfragPwd(transport_info, os, message);
 
     // draft-petithuguenin-mmusic-ice-attributes-level-03
-    BuildIceOptions(transport_info->description.transport_options, message);
+    BuildIceOptions(transport_info->description.transport_options, os, message);
 
     // Also include the DTLS fingerprint and setup attribute if available.
-    BuildDtlsFingerprintSetup(transport_info, message);
+    BuildDtlsFingerprintSetup(transport_info, os, message);
   }
 
   // RFC 3388
   // mid-attribute      = "a=mid:" identification-tag
   // identification-tag = token
   // Use the content name as the mid identification-tag.
-  InitAttrLine(kAttributeMid, &os);
-  os << kSdpDelimiterColon << content_info->mid();
-  AddLine(os.str(), message);
+  InitAttrLine(kAttributeMid, os);
+  *os << kSdpDelimiterColon << content_info->mid();
+  AddLine(os->str(), message);
 
   if (IsDtlsSctp(media_desc->protocol())) {
-    BuildSctpContentAttributes(media_desc, message);
+    BuildSctpContentAttributes(media_desc, os, message);
   } else if (IsRtpProtocol(media_desc->protocol())) {
     BuildRtpContentAttributes(media_desc, media_type, msid_signaling,
-                              use_wildcard, message);
+                              use_wildcard, os, message);
   }
 }
 
@@ -1551,8 +1510,8 @@ bool ParseConnectionData(absl::string_view line,
                          SocketAddress* addr,
                          SdpParseError* error) {
   // Parse the line from left to right.
-  std::string token;
-  std::string rightpart;
+  absl::string_view token;
+  absl::string_view rightpart;
   // RFC 4566
   // c=<nettype> <addrtype> <connection-address>
   // Skip the "c="
@@ -1576,7 +1535,7 @@ bool ParseConnectionData(absl::string_view line,
 
   // The rightpart part should be the IP address without the slash which is used
   // for multicast.
-  if (rightpart.find('/') != std::string::npos) {
+  if (rightpart.find('/') != absl::string_view::npos) {
     return ParseFailed(line,
                        "Failed to parse the connection data. Multicast is not "
                        "currently supported.",
@@ -1605,7 +1564,7 @@ bool ParseGroupAttribute(absl::string_view line,
   // a=group:BUNDLE video voice
   std::vector<absl::string_view> fields =
       split(line.substr(kLinePrefixLength), kSdpDelimiterSpaceChar);
-  std::string semantics;
+  absl::string_view semantics;
   if (!GetValue(fields[0], kAttributeGroup, &semantics, error)) {
     return ParseFailed(line, "Failed to parse group attribute.", error);
   }
@@ -1614,7 +1573,7 @@ bool ParseGroupAttribute(absl::string_view line,
       return ParseFailed(line, "Failed to parse group tag.", error);
     }
   }
-  ContentGroup group(semantics);
+  ContentGroup group{std::string(semantics)};
   for (size_t i = 1; i < fields.size(); ++i) {
     group.AddContentName(fields[i]);
   }
@@ -1657,8 +1616,8 @@ bool ParseDtlsSetup(absl::string_view line,
                     SdpParseError* error) {
   // setup-attr           =  "a=setup:" role
   // role                 =  "active" / "passive" / "actpass" / "holdconn"
-  std::vector<absl::string_view> fields =
-      split(line.substr(kLinePrefixLength), kSdpDelimiterColonChar);
+  const auto fields =
+      split<SdpFields>(line.substr(kLinePrefixLength), kSdpDelimiterColonChar);
   const size_t expected_fields = 2;
   if (fields.size() != expected_fields) {
     return ParseFailedExpectFieldNum(line, expected_fields, error);
@@ -1786,26 +1745,27 @@ bool ParseSessionDescription(absl::string_view message,
   // a=* (zero or more session attribute lines)
   while (std::optional<absl::string_view> aline =
              GetLineWithType(message, pos, kLineTypeAttributes)) {
-    if (HasAttribute(*aline, kAttributeGroup)) {
+    absl::string_view attr = ExtractAttributeName(*aline);
+    if (attr == kAttributeGroup) {
       if (!ParseGroupAttribute(*aline, desc, error)) {
         return false;
       }
-    } else if (HasAttribute(*aline, kAttributeIceUfrag)) {
+    } else if (attr == kAttributeIceUfrag) {
       if (!GetValue(*aline, kAttributeIceUfrag, &(session_td->ice_ufrag),
                     error)) {
         return false;
       }
-    } else if (HasAttribute(*aline, kAttributeIcePwd)) {
+    } else if (attr == kAttributeIcePwd) {
       if (!GetValue(*aline, kAttributeIcePwd, &(session_td->ice_pwd), error)) {
         return false;
       }
-    } else if (HasAttribute(*aline, kAttributeIceLite)) {
+    } else if (attr == kAttributeIceLite) {
       session_td->ice_mode = ICEMODE_LITE;
-    } else if (HasAttribute(*aline, kAttributeIceOption)) {
+    } else if (attr == kAttributeIceOption) {
       if (!ParseIceOptions(*aline, &(session_td->transport_options), error)) {
         return false;
       }
-    } else if (HasAttribute(*aline, kAttributeFingerprint)) {
+    } else if (attr == kAttributeFingerprint) {
       if (session_td->identity_fingerprint) {
         return ParseFailed(
             *aline,
@@ -1817,27 +1777,25 @@ bool ParseSessionDescription(absl::string_view message,
         return false;
       }
       session_td->identity_fingerprint = std::move(fingerprint);
-    } else if (HasAttribute(*aline, kAttributeSetup)) {
+    } else if (attr == kAttributeSetup) {
       if (!ParseDtlsSetup(*aline, &(session_td->connection_role), error)) {
         return false;
       }
-    } else if (HasAttribute(*aline, kAttributeMsidSemantics)) {
-      std::string semantics;
+    } else if (attr == kAttributeMsidSemantics) {
+      absl::string_view semantics;
       if (!GetValue(*aline, kAttributeMsidSemantics, &semantics, error)) {
         return false;
       }
-      if (absl::StrContainsIgnoreCase(semantics, kMediaStreamSemantic)) {
-        desc->set_msid_signaling(kMsidSignalingSemantic);
-      }
-    } else if (HasAttribute(*aline, kAttributeExtmapAllowMixed)) {
+      ParsePlanBMsidSemantics(semantics, desc);
+    } else if (attr == kAttributeExtmapAllowMixed) {
       desc->set_extmap_allow_mixed(true);
-    } else if (HasAttribute(*aline, kAttributeExtmap)) {
+    } else if (attr == kAttributeExtmap) {
       RtpExtension extmap;
       if (!ParseExtmap(*aline, &extmap, error)) {
         return false;
       }
       session_extmaps->push_back(extmap);
-    } else if (HasAttribute(*aline, kAttributeCryptex)) {
+    } else if (attr == kAttributeCryptex) {
       desc->set_cryptex(true);
     }
   }
@@ -1857,7 +1815,7 @@ bool ParseMsidAttribute(absl::string_view line,
   // a=msid:<stream id> <track id>
   // is supported for backward compability reasons only.
   // RFC 8830 section 2 states that duplicate a=msid:stream track is illegal.
-  std::vector<std::string> fields;
+  std::vector<absl::string_view> fields;
   size_t num_fields =
       tokenize(line.substr(kLinePrefixLength), kSdpDelimiterSpaceChar, &fields);
   if (num_fields < 1 || num_fields > 2) {
@@ -1868,26 +1826,21 @@ bool ParseMsidAttribute(absl::string_view line,
     if (line.back() == kSdpDelimiterSpaceChar) {
       return ParseFailed(line, "Missing track ID in msid attribute.", error);
     }
-    if (!track_id->empty()) {
-      fields.push_back(*track_id);
-    } else {
-      // Ending with an empty string track will cause a random track id
-      // to be generated later in the process.
-      fields.push_back("");
+    // Keep any previously parsed `track_id`. Ending with an empty string track
+    // will cause a random track id to be generated later in the process.
+  } else {
+    // All track ids should be the same within an m section in a Unified Plan
+    // SDP.
+    if (!track_id->empty() && *track_id != fields[1]) {
+      return ParseFailed(
+          line, "Two different track IDs in msid attribute in one m= section",
+          error);
     }
+    *track_id = fields[1];
   }
-  RTC_DCHECK_EQ(fields.size(), 2);
-
-  // All track ids should be the same within an m section in a Unified Plan SDP.
-  if (!track_id->empty() && track_id->compare(fields[1]) != 0) {
-    return ParseFailed(
-        line, "Two different track IDs in msid attribute in one m= section",
-        error);
-  }
-  *track_id = fields[1];
 
   // msid:<msid-id>
-  std::string new_stream_id;
+  absl::string_view new_stream_id;
   if (!GetValue(fields[0], kAttributeMsid, &new_stream_id, error)) {
     return false;
   }
@@ -1895,12 +1848,12 @@ bool ParseMsidAttribute(absl::string_view line,
     return ParseFailed(line, "Missing stream ID in msid attribute.", error);
   }
   // The special value "-" indicates "no MediaStream".
-  if (new_stream_id.compare(kNoStreamMsid) != 0 &&
+  if (new_stream_id != kNoStreamMsid &&
       !absl::c_any_of(*stream_ids,
                       [&new_stream_id](const std::string& existing_stream_id) {
                         return new_stream_id == existing_stream_id;
                       })) {
-    stream_ids->push_back(new_stream_id);
+    stream_ids->emplace_back(new_stream_id);
   }
   return true;
 }
@@ -1908,13 +1861,15 @@ bool ParseMsidAttribute(absl::string_view line,
 void RemoveDuplicateRidDescriptions(const std::vector<int>& payload_types,
                                     std::vector<RidDescription>* rids) {
   RTC_DCHECK(rids);
-  std::set<std::string> to_remove;
-  std::set<std::string> unique_rids;
+  if (rids->size() <= 1) {
+    return;
+  }
+  flat_set<std::string> to_remove;
+  flat_set<absl::string_view> unique_rids;
   // Find duplicate RIDs to remove.
-  for (RidDescription& rid : *rids) {
+  for (const RidDescription& rid : *rids) {
     if (!unique_rids.insert(rid.rid).second) {
       to_remove.insert(rid.rid);
-      continue;
     }
   }
   // Remove every rid description that appears in the to_remove list.
@@ -2128,16 +2083,6 @@ Codec& GetOrAddCodecWithPayloadType(MediaContentDescription* content_desc,
 }
 
 // Adds or updates existing codec corresponding to `payload_type` according
-// to `parameters`.
-void UpdateCodec(MediaContentDescription* content_desc,
-                 PayloadType payload_type,
-                 const CodecParameterMap& parameters) {
-  // Codec might already have been populated (from rtpmap).
-  Codec& codec = GetOrAddCodecWithPayloadType(content_desc, payload_type);
-  AddParameters(parameters, &codec);
-}
-
-// Adds or updates existing codec corresponding to `payload_type` according
 // to `feedback_param`.
 void UpdateCodec(MediaContentDescription* content_desc,
                  PayloadType payload_type,
@@ -2155,8 +2100,8 @@ bool ParseFmtpAttributes(absl::string_view line,
     return true;
   }
 
-  std::string line_payload;
-  std::string line_params;
+  absl::string_view line_payload;
+  absl::string_view line_params;
 
   // https://tools.ietf.org/html/rfc4566#section-6
   // a=fmtp:<format> <format specific parameters>
@@ -2169,7 +2114,7 @@ bool ParseFmtpAttributes(absl::string_view line,
   }
 
   // Parse out the payload information.
-  std::string payload_type_str;
+  absl::string_view payload_type_str;
   if (!GetValue(line_payload, kAttributeFmtp, &payload_type_str, error)) {
     return false;
   }
@@ -2181,15 +2126,13 @@ bool ParseFmtpAttributes(absl::string_view line,
   }
   PayloadType payload_type = PayloadType(pt_int);
 
-  // Parse out format specific parameters.
-  CodecParameterMap codec_params;
-  if (!ParseFmtpParameterSet(line_params, codec_params).ok()) {
+  // Parse out format specific parameters directly into the codec's parameter
+  // map.
+  Codec& codec = GetOrAddCodecWithPayloadType(media_desc, payload_type);
+  if (!ParseFmtpParameterSet(line_params, codec.params).ok()) {
     return false;
   }
 
-  if (media_type == MediaType::AUDIO || media_type == MediaType::VIDEO) {
-    UpdateCodec(media_desc, payload_type, codec_params);
-  }
   return true;
 }
 
@@ -2209,11 +2152,12 @@ bool ParseSsrcGroupAttribute(absl::string_view line,
   if (fields.size() - 1 > kMaxSsrcsPerGroup) {
     return ParseFailed(line, "Too many SSRCs in ssrc-group", error);
   }
-  std::string semantics;
+  absl::string_view semantics;
   if (!GetValue(fields[0], kAttributeSsrcGroup, &semantics, error)) {
     return false;
   }
   std::vector<uint32_t> ssrcs;
+  ssrcs.reserve(fields.size() - 1);
   for (size_t i = 1; i < fields.size(); ++i) {
     uint32_t ssrc = 0;
     if (!GetValueFromString(line, fields[i], &ssrc, error)) {
@@ -2238,7 +2182,7 @@ bool ParseSsrcAttribute(absl::string_view line,
   // RFC 5576
   // a=ssrc:<ssrc-id> <attribute>
   // a=ssrc:<ssrc-id> <attribute>:<value>
-  std::string field1, field2;
+  absl::string_view field1, field2;
   if (!tokenize_first(line.substr(kLinePrefixLength), kSdpDelimiterSpaceChar,
                       &field1, &field2)) {
     const size_t expected_fields = 2;
@@ -2246,7 +2190,7 @@ bool ParseSsrcAttribute(absl::string_view line,
   }
 
   // ssrc:<ssrc-id>
-  std::string ssrc_id_s;
+  absl::string_view ssrc_id_s;
   if (!GetValue(field1, kAttributeSsrc, &ssrc_id_s, error)) {
     return false;
   }
@@ -2255,8 +2199,8 @@ bool ParseSsrcAttribute(absl::string_view line,
     return false;
   }
 
-  std::string attribute;
-  std::string value;
+  absl::string_view attribute;
+  absl::string_view value;
   if (!tokenize_first(field2, kSdpDelimiterColonChar, &attribute, &value)) {
     StringBuilder description;
     description << "Failed to get the ssrc attribute value from " << field2
@@ -2286,15 +2230,14 @@ bool ParseSsrcAttribute(absl::string_view line,
   } else if (attribute == kSsrcAttributeMsid) {
     // draft-alvestrand-mmusic-msid-00
     // msid:identifier [appdata]
-    std::vector<absl::string_view> fields =
-        split(value, kSdpDelimiterSpaceChar);
+    const auto fields = split<SdpFields>(value, kSdpDelimiterSpaceChar);
     if (fields.empty() || fields.size() > 2) {
       return ParseFailed(
           line, "Expected format \"msid:<identifier>[ <appdata>]\".", error);
     }
-    ssrc_info.stream_id = std::string(fields[0]);
+    ssrc_info.stream_id = fields[0];
     if (fields.size() == 2) {
-      ssrc_info.track_id = std::string(fields[1]);
+      ssrc_info.track_id = fields[1];
     }
     *msid_signaling |= kMsidSignalingSsrcAttribute;
   } else {
@@ -2337,15 +2280,15 @@ bool ParseRtpmapAttribute(absl::string_view line,
                           MediaContentDescription* media_desc,
                           SdpParseError* error) {
   static const int kFirstDynamicPayloadTypeLowerRange = 35;
-  std::vector<absl::string_view> fields =
-      split(line.substr(kLinePrefixLength), kSdpDelimiterSpaceChar);
   // RFC 4566
   // a=rtpmap:<payload type> <encoding name>/<clock rate>[/<encodingparameters>]
+  const auto fields =
+      split<SdpFields>(line.substr(kLinePrefixLength), kSdpDelimiterSpaceChar);
   const size_t expected_min_fields = 2;
   if (fields.size() < expected_min_fields) {
     return ParseFailedExpectMinFieldNum(line, expected_min_fields, error);
   }
-  std::string payload_type_value;
+  absl::string_view payload_type_value;
   if (!GetValue(fields[0], kAttributeRtpmap, &payload_type_value, error)) {
     return false;
   }
@@ -2361,7 +2304,7 @@ bool ParseRtpmapAttribute(absl::string_view line,
                         << line;
     return true;
   }
-  std::vector<absl::string_view> codec_params = split(fields[1], '/');
+  const auto codec_params = split<SdpFields>(fields[1], '/');
   // <encoding name>/<clock rate>[/<encodingparameters>]
   // 2 mandatory fields
   if (codec_params.size() < 2 || codec_params.size() > 3) {
@@ -2454,12 +2397,12 @@ bool ParsePacketizationAttribute(absl::string_view line,
   if (media_type != MediaType::VIDEO) {
     return true;
   }
-  std::vector<absl::string_view> packetization_fields =
-      split(line, kSdpDelimiterSpaceChar);
+  const auto packetization_fields =
+      split<SdpFields>(line, kSdpDelimiterSpaceChar);
   if (packetization_fields.size() < 2) {
     return ParseFailedGetValue(line, kAttributePacketization, error);
   }
-  std::string payload_type_string;
+  absl::string_view payload_type_string;
   if (!GetValue(packetization_fields[0], kAttributePacketization,
                 &payload_type_string, error)) {
     return false;
@@ -2481,12 +2424,11 @@ bool ParseRtcpFbAttribute(absl::string_view line,
   if (media_type != MediaType::AUDIO && media_type != MediaType::VIDEO) {
     return true;
   }
-  std::vector<absl::string_view> rtcp_fb_fields =
-      split(line, kSdpDelimiterSpaceChar);
+  const auto rtcp_fb_fields = split<SdpFields>(line, kSdpDelimiterSpaceChar);
   if (rtcp_fb_fields.size() < 2) {
     return ParseFailedGetValue(line, kAttributeRtcpFb, error);
   }
-  std::string payload_type_string;
+  absl::string_view payload_type_string;
   if (!GetValue(rtcp_fb_fields[0], kAttributeRtcpFb, &payload_type_string,
                 error)) {
     return false;
@@ -2500,16 +2442,12 @@ bool ParseRtcpFbAttribute(absl::string_view line,
     payload_type = PayloadType(pt_int);
   }
   absl::string_view id = rtcp_fb_fields[1];
-  std::string param = "";
-  for (auto iter = rtcp_fb_fields.begin() + 2; iter != rtcp_fb_fields.end();
-       ++iter) {
-    param.append(iter->data(), iter->length());
+  // The parameter is the concatenation of the remaining fields.
+  std::string param;
+  for (size_t i = 2; i < rtcp_fb_fields.size(); ++i) {
+    param.append(rtcp_fb_fields[i]);
   }
-  const FeedbackParam feedback_param(id, param);
-
-  if (media_type == MediaType::AUDIO || media_type == MediaType::VIDEO) {
-    UpdateCodec(media_desc, payload_type, feedback_param);
-  }
+  UpdateCodec(media_desc, payload_type, FeedbackParam(id, param));
   return true;
 }
 
@@ -2597,8 +2535,8 @@ bool ParseContent(absl::string_view message,
   StreamParamsVec tracks;
   SsrcInfoVec ssrc_infos;
   SsrcGroupVec ssrc_groups;
-  std::string maxptime_as_string;
-  std::string ptime_as_string;
+  absl::string_view maxptime_as_string;
+  absl::string_view ptime_as_string;
   std::vector<std::string> stream_ids;
   std::string track_id;
   SimulcastSdpSerializer deserializer;
@@ -2619,8 +2557,8 @@ bool ParseContent(absl::string_view message,
     // RFC 4566
     // b=* (zero or more bandwidth information lines)
     if (IsLineType(*line, kLineTypeSessionBandwidth)) {
-      std::string bandwidth;
-      std::string bandwidth_type;
+      absl::string_view bandwidth;
+      absl::string_view bandwidth_type;
       if (!tokenize_first(line->substr(kLinePrefixLength),
                           kSdpDelimiterColonChar, &bandwidth_type,
                           &bandwidth)) {
@@ -2650,7 +2588,9 @@ bool ParseContent(absl::string_view message,
       }
       if (b < 0) {
         return ParseFailed(
-            *line, "b=" + bandwidth_type + " value can't be negative.", error);
+            *line,
+            "b=" + std::string(bandwidth_type) + " value can't be negative.",
+            error);
       }
       // Convert values. Prevent integer overflow.
       if (bandwidth_type == kApplicationSpecificBandwidth) {
@@ -2659,7 +2599,7 @@ bool ParseContent(absl::string_view message,
         b = std::min(b, INT_MAX);
       }
       media_desc->set_bandwidth(b);
-      media_desc->set_bandwidth_type(bandwidth_type);
+      media_desc->set_bandwidth_type(std::string(bandwidth_type));
       continue;
     }
 
@@ -2679,8 +2619,10 @@ bool ParseContent(absl::string_view message,
       continue;
     }
 
+    absl::string_view attr = ExtractAttributeName(*line);
+
     // Handle attributes common to SCTP and RTP.
-    if (HasAttribute(*line, kAttributeMid)) {
+    if (attr == kAttributeMid) {
       // RFC 3388
       // mid-attribute      = "a=mid:" identification-tag
       // identification-tag = token
@@ -2689,9 +2631,9 @@ bool ParseContent(absl::string_view message,
         return false;
       }
       *content_name = mline_id;
-    } else if (HasAttribute(*line, kAttributeBundleOnly)) {
+    } else if (attr == kAttributeBundleOnly) {
       *bundle_only = true;
-    } else if (HasAttribute(*line, kAttributeCandidate)) {
+    } else if (attr == kAttributeCandidate) {
       RTCErrorOr<Candidate> candidate = Candidate::ParseCandidateString(*line);
       if (!candidate.ok()) {
         return ParseFailed(*line, candidate.error().message(), error);
@@ -2703,29 +2645,29 @@ bool ParseContent(absl::string_view message,
       candidate.value().set_username("");
       candidate.value().set_password("");
       candidates_orig.push_back(candidate.MoveValue());
-    } else if (HasAttribute(*line, kAttributeIceUfrag)) {
+    } else if (attr == kAttributeIceUfrag) {
       if (!GetValue(*line, kAttributeIceUfrag, &transport->ice_ufrag, error)) {
         return false;
       }
-    } else if (HasAttribute(*line, kAttributeIcePwd)) {
+    } else if (attr == kAttributeIcePwd) {
       if (!GetValue(*line, kAttributeIcePwd, &transport->ice_pwd, error)) {
         return false;
       }
-    } else if (HasAttribute(*line, kAttributeIceOption)) {
+    } else if (attr == kAttributeIceOption) {
       if (!ParseIceOptions(*line, &transport->transport_options, error)) {
         return false;
       }
-    } else if (HasAttribute(*line, kAttributeFmtp)) {
+    } else if (attr == kAttributeFmtp) {
       if (!ParseFmtpAttributes(*line, media_type, media_desc, error)) {
         return false;
       }
-    } else if (HasAttribute(*line, kAttributeFingerprint)) {
+    } else if (attr == kAttributeFingerprint) {
       std::unique_ptr<SSLFingerprint> fingerprint;
       if (!ParseFingerprintAttribute(*line, &fingerprint, error)) {
         return false;
       }
       transport->identity_fingerprint = std::move(fingerprint);
-    } else if (HasAttribute(*line, kAttributeSetup)) {
+    } else if (attr == kAttributeSetup) {
       if (!ParseDtlsSetup(*line, &(transport->connection_role), error)) {
         return false;
       }
@@ -2733,7 +2675,7 @@ bool ParseContent(absl::string_view message,
       //
       // SCTP specific attributes
       //
-      if (HasAttribute(*line, kAttributeSctpPort)) {
+      if (attr == kAttributeSctpPort) {
         if (media_desc->as_sctp()->use_sctpmap()) {
           return ParseFailed(
               *line, "sctp-port attribute can't be used with sctpmap.", error);
@@ -2743,20 +2685,20 @@ bool ParseContent(absl::string_view message,
           return false;
         }
         media_desc->as_sctp()->set_port(sctp_port);
-      } else if (HasAttribute(*line, kAttributeMaxMessageSize)) {
+      } else if (attr == kAttributeMaxMessageSize) {
         int max_message_size;
         if (!ParseSctpMaxMessageSize(*line, &max_message_size, error)) {
           return false;
         }
         media_desc->as_sctp()->set_max_message_size(max_message_size);
-      } else if (HasAttribute(*line, kAttributeSctpSnap)) {
+      } else if (attr == kAttributeSctpSnap) {
         // draft-hancke-tsvwg-snap
         std::vector<uint8_t> sctp_init;
         if (!ParseSctpInit(*line, &sctp_init, error)) {
           return false;
         }
         media_desc->as_sctp()->set_sctp_init(sctp_init);
-      } else if (HasAttribute(*line, kAttributeSctpmap)) {
+      } else if (attr == kAttributeSctpmap) {
         // Ignore a=sctpmap: from early versions of draft-ietf-mmusic-sctp-sdp
         continue;
       }
@@ -2764,16 +2706,16 @@ bool ParseContent(absl::string_view message,
       //
       // RTP specific attributes
       //
-      if (HasAttribute(*line, kAttributeRtcpMux)) {
+      if (attr == kAttributeRtcpMux) {
         media_desc->set_rtcp_mux(true);
-      } else if (HasAttribute(*line, kAttributeRtcpReducedSize)) {
+      } else if (attr == kAttributeRtcpReducedSize) {
         media_desc->set_rtcp_reduced_size(true);
-      } else if (HasAttribute(*line, kAttributeRtcpXr)) {
+      } else if (attr == kAttributeRtcpXr) {
         // RFC 3611: a=rtcp-xr:<format>[ <format>]... Consume the rcvr-rtt
         // format (receiver reference time report); accept rcvr-rtt=all and
         // rcvr-rtt=sender. Match whole space-separated tokens, not a
         // substring, and require the '=' so partial matches are rejected.
-        std::string xr_value;
+        absl::string_view xr_value;
         if (GetValue(*line, kAttributeRtcpXr, &xr_value, error)) {
           for (absl::string_view format :
                split(xr_value, kSdpDelimiterSpaceChar)) {
@@ -2783,73 +2725,73 @@ bool ParseContent(absl::string_view message,
             }
           }
         }
-      } else if (HasAttribute(*line, kAttributeRtcpRemoteEstimate)) {
+      } else if (attr == kAttributeRtcpRemoteEstimate) {
         media_desc->set_remote_estimate(true);
-      } else if (HasAttribute(*line, kAttributeSframe)) {
+      } else if (attr == kAttributeSframe) {
         media_desc->set_sframe_enabled(true);
-      } else if (HasAttribute(*line, kAttributeSsrcGroup)) {
+      } else if (attr == kAttributeSsrcGroup) {
         if (!ParseSsrcGroupAttribute(*line, &ssrc_groups, error)) {
           return false;
         }
-      } else if (HasAttribute(*line, kAttributeSsrc)) {
+      } else if (attr == kAttributeSsrc) {
         if (!ParseSsrcAttribute(*line, &ssrc_infos, msid_signaling, error)) {
           return false;
         }
-      } else if (HasAttribute(*line, kAttributeRtpmap)) {
+      } else if (attr == kAttributeRtpmap) {
         if (!ParseRtpmapAttribute(*line, media_type, payload_types, media_desc,
                                   error)) {
           return false;
         }
-      } else if (HasAttribute(*line, kCodecParamMaxPTime)) {
+      } else if (attr == kCodecParamMaxPTime) {
         if (!GetValue(*line, kCodecParamMaxPTime, &maxptime_as_string, error)) {
           return false;
         }
-      } else if (HasAttribute(*line, kAttributePacketization)) {
+      } else if (attr == kAttributePacketization) {
         if (!ParsePacketizationAttribute(*line, media_type, media_desc,
                                          error)) {
           return false;
         }
-      } else if (HasAttribute(*line, kAttributeRtcpFb)) {
+      } else if (attr == kAttributeRtcpFb) {
         if (!ParseRtcpFbAttribute(*line, media_type, media_desc, error)) {
           return false;
         }
-      } else if (HasAttribute(*line, kCodecParamPTime)) {
+      } else if (attr == kCodecParamPTime) {
         if (!GetValue(*line, kCodecParamPTime, &ptime_as_string, error)) {
           return false;
         }
-      } else if (HasAttribute(*line, kAttributeSendOnly)) {
+      } else if (attr == kAttributeSendOnly) {
         media_desc->set_direction(RtpTransceiverDirection::kSendOnly);
-      } else if (HasAttribute(*line, kAttributeRecvOnly)) {
+      } else if (attr == kAttributeRecvOnly) {
         media_desc->set_direction(RtpTransceiverDirection::kRecvOnly);
-      } else if (HasAttribute(*line, kAttributeInactive)) {
+      } else if (attr == kAttributeInactive) {
         media_desc->set_direction(RtpTransceiverDirection::kInactive);
-      } else if (HasAttribute(*line, kAttributeSendRecv)) {
+      } else if (attr == kAttributeSendRecv) {
         media_desc->set_direction(RtpTransceiverDirection::kSendRecv);
-      } else if (HasAttribute(*line, kAttributeExtmapAllowMixed)) {
+      } else if (attr == kAttributeExtmapAllowMixed) {
         media_desc->set_extmap_allow_mixed_level(
             MediaContentDescription::AttributeLevel::kMedia);
-      } else if (HasAttribute(*line, kAttributeExtmap)) {
+      } else if (attr == kAttributeExtmap) {
         RtpExtension extmap;
         if (!ParseExtmap(*line, &extmap, error)) {
           return false;
         }
         media_desc->AddRtpHeaderExtension(extmap);
-      } else if (HasAttribute(*line, kAttributeXGoogleFlag)) {
+      } else if (attr == kAttributeXGoogleFlag) {
         // Experimental attribute.  Conference mode activates more aggressive
         // AEC and NS settings.
         // TODO(deadbeef): expose API to set these directly.
-        std::string flag_value;
+        absl::string_view flag_value;
         if (!GetValue(*line, kAttributeXGoogleFlag, &flag_value, error)) {
           return false;
         }
-        if (flag_value.compare(kValueConference) == 0)
+        if (flag_value == kValueConference)
           media_desc->set_conference_mode(true);
-      } else if (HasAttribute(*line, kAttributeMsid)) {
+      } else if (attr == kAttributeMsid) {
         if (!ParseMsidAttribute(*line, &stream_ids, &track_id, error)) {
           return false;
         }
         *msid_signaling |= kMsidSignalingMediaSection;
-      } else if (HasAttribute(*line, kAttributeRid)) {
+      } else if (attr == kAttributeRid) {
         constexpr size_t kRidPrefixLength = kLinePrefixLength +
                                             kAttributeRid.size() +
                                             kSdpDelimiterColon.size();
@@ -2870,7 +2812,7 @@ bool ParseContent(absl::string_view message,
         }
 
         rids.push_back(error_or_rid_description.MoveValue());
-      } else if (HasAttribute(*line, kAttributeSimulcast)) {
+      } else if (attr == kAttributeSimulcast) {
         constexpr size_t kSimulcastPrefixLength = kLinePrefixLength +
                                                   kAttributeSimulcast.size() +
                                                   kSdpDelimiterColon.size();
@@ -2894,11 +2836,11 @@ bool ParseContent(absl::string_view message,
         }
 
         simulcast = error_or_simulcast.value();
-      } else if (HasAttribute(*line, kAttributeRtcp)) {
+      } else if (attr == kAttributeRtcp) {
         // Ignore and do not log a=rtcp line.
         // JSEP  section 5.8.2 (media section parsing) says to ignore it.
         continue;
-      } else if (HasAttribute(*line, kAttributeCryptex)) {
+      } else if (attr == kAttributeCryptex) {
         media_desc->set_cryptex_level(
             MediaContentDescription::AttributeLevel::kMedia);
       } else {
@@ -2925,21 +2867,22 @@ bool ParseContent(absl::string_view message,
     RemoveInvalidRidsFromSimulcast(rids, &simulcast);
 
     // Use simulcast description to figure out Send / Receive RIDs.
-    std::map<std::string, RidDescription> rid_map;
-    for (const RidDescription& rid : rids) {
-      rid_map[rid.rid] = rid;
-    }
+    auto find_rid = [&](absl::string_view rid_name) {
+      return absl::c_find_if(rids, [rid_name](const RidDescription& rid) {
+        return rid.rid == rid_name;
+      });
+    };
 
     for (const auto& layer : simulcast.send_layers().GetAllLayers()) {
-      auto iter = rid_map.find(layer.rid);
-      RTC_DCHECK(iter != rid_map.end());
-      send_rids.push_back(iter->second);
+      auto iter = find_rid(layer.rid);
+      RTC_DCHECK(iter != rids.end());
+      send_rids.push_back(*iter);
     }
 
     for (const auto& layer : simulcast.receive_layers().GetAllLayers()) {
-      auto iter = rid_map.find(layer.rid);
-      RTC_DCHECK(iter != rid_map.end());
-      receive_rids.push_back(iter->second);
+      auto iter = find_rid(layer.rid);
+      RTC_DCHECK(iter != rids.end());
+      receive_rids.push_back(*iter);
     }
 
     media_desc->set_simulcast_description(simulcast);
@@ -3003,6 +2946,26 @@ bool ParseContent(absl::string_view message,
   if (media_type == MediaType::AUDIO) {
     AddAudioAttribute(kCodecParamMaxPTime, maxptime_as_string, media_desc);
     AddAudioAttribute(kCodecParamPTime, ptime_as_string, media_desc);
+    int max_minptime = 0;
+    std::optional<int> min_maxptime;
+    for (const Codec& codec : media_desc->codecs()) {
+      int minptime = 0;
+      if (GetParameter(kCodecParamMinPTime, codec.params, &minptime)) {
+        max_minptime = std::max(minptime, max_minptime);
+      }
+      int maxptime = 0;
+      if (GetParameter(kCodecParamMaxPTime, codec.params, &maxptime)) {
+        min_maxptime = min_maxptime.has_value()
+                           ? std::min(*min_maxptime, maxptime)
+                           : maxptime;
+      }
+    }
+    if (min_maxptime.has_value() && *min_maxptime < max_minptime) {
+      StringBuilder description;
+      description << "maxptime (" << *min_maxptime
+                  << ") cannot be less than minptime (" << max_minptime << ").";
+      return ParseFailed(description.Release(), error);
+    }
   }
 
   // RFC 5245
@@ -3079,15 +3042,12 @@ std::unique_ptr<MediaContentDescription> ParseContentDescription(
 }
 
 bool HasDuplicateMsidLines(SessionDescription* desc) {
-  std::set<std::pair<absl::string_view, absl::string_view>> seen_msids;
+  flat_set<std::pair<absl::string_view, absl::string_view>> seen_msids;
   for (const ContentInfo& content : desc->contents()) {
     for (const StreamParams& stream : content.media_description()->streams()) {
-      auto msid = std::pair<absl::string_view, absl::string_view>(
-          stream.first_stream_id(), stream.id);
-      if (seen_msids.find(msid) != seen_msids.end()) {
+      if (!seen_msids.insert({stream.first_stream_id(), stream.id}).second) {
         return true;
       }
-      seen_msids.insert(std::move(msid));
     }
   }
   return false;
@@ -3293,28 +3253,6 @@ bool ParseMediaDescription(
   return true;
 }
 
-bool IsMediaType(const MediaContentDescription* description, MediaType type) {
-  return description && description->type() == type;
-}
-
-const ContentInfo* GetFirstMediaContent(const ContentInfos& contents,
-                                        MediaType type) {
-  for (const ContentInfo& content : contents) {
-    if (IsMediaType(content.media_description(), type)) {
-      return &content;
-    }
-  }
-  return nullptr;
-}
-
-const ContentInfo* LegacyGetFirstAudioContent(const SessionDescription& sdesc) {
-  return GetFirstMediaContent(sdesc.contents(), MediaType::AUDIO);
-}
-
-const ContentInfo* LegacyGetFirstVideoContent(const SessionDescription& sdesc) {
-  return GetFirstMediaContent(sdesc.contents(), MediaType::VIDEO);
-}
-
 }  // namespace
 
 std::string SdpSerialize(const SessionDescriptionInterface& jdesc) {
@@ -3323,7 +3261,12 @@ std::string SdpSerialize(const SessionDescriptionInterface& jdesc) {
     return "";
   }
 
+  // Rough size estimates, used to avoid repeated reallocations of `message`.
+  constexpr size_t kEstimatedSessionLevelSize = 256;
+  constexpr size_t kEstimatedMediaSectionSize = 1024;
   std::string message;
+  message.reserve(desc->contents().size() * kEstimatedMediaSectionSize +
+                  kEstimatedSessionLevelSize);
 
   // Session Description.
   AddLine(kSessionVersion, &message);
@@ -3370,31 +3313,8 @@ std::string SdpSerialize(const SessionDescriptionInterface& jdesc) {
     AddLine(os.str(), &message);
   }
 
-  // MediaStream semantics.
-  // TODO(bugs.webrtc.org/10421): Change to & kMsidSignalingSemantic
-  // when we think it's safe to do so, so that we gradually fade out this old
-  // line that was removed from the specification.
-  if (desc->msid_signaling() != kMsidSignalingNotUsed) {
-    InitAttrLine(kAttributeMsidSemantics, &os);
-    os << kSdpDelimiterColon << " " << kMediaStreamSemantic;
-
-    // TODO(bugs.webrtc.org/10421): this code only looks at the first
-    // audio/video content. Fixing that might result in much larger SDP and the
-    // msid-semantic line should eventually go away so this is not worth fixing.
-    std::set<std::string> media_stream_ids;
-    const ContentInfo* audio_content = LegacyGetFirstAudioContent(*desc);
-    if (audio_content)
-      GetMediaStreamIds(audio_content, &media_stream_ids);
-
-    const ContentInfo* video_content = LegacyGetFirstVideoContent(*desc);
-    if (video_content)
-      GetMediaStreamIds(video_content, &media_stream_ids);
-
-    for (const std::string& id : media_stream_ids) {
-      os << " " << id;
-    }
-    AddLine(os.str(), &message);
-  }
+  // MediaStream semantics (legacy Plan B a=msid-semantic: WMS ...).
+  SerializePlanBMsidSemantics(*desc, &os, &message);
 
   // a=ice-lite
   //
@@ -3433,7 +3353,7 @@ std::string SdpSerialize(const SessionDescriptionInterface& jdesc) {
     BuildMediaDescription(
         &content, transport_info, content.media_description()->type(),
         *jdesc.candidates(mline_index), desc->msid_signaling(),
-        jdesc.encoding_options().use_wildcard, &message);
+        jdesc.encoding_options().use_wildcard, &os, &message);
     ++mline_index;
   }
   return message;

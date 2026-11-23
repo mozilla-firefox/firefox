@@ -167,10 +167,10 @@ index dab8c76181..f609ee21fe 100644
  }
  
 diff --git a/video/rtp_video_stream_receiver2.cc b/video/rtp_video_stream_receiver2.cc
-index 6c6b5aa832..5537232c2f 100644
+index efb465db19..070f8cf381 100644
 --- a/video/rtp_video_stream_receiver2.cc
 +++ b/video/rtp_video_stream_receiver2.cc
-@@ -91,6 +91,7 @@
+@@ -90,6 +90,7 @@
  #include "rtc_base/logging.h"
  #include "rtc_base/numerics/sequence_number_util.h"
  #include "rtc_base/strings/string_builder.h"
@@ -178,7 +178,7 @@ index 6c6b5aa832..5537232c2f 100644
  #include "system_wrappers/include/ntp_time.h"
  #include "video/buffered_frame_decryptor.h"
  
-@@ -1640,6 +1641,9 @@ void RtpVideoStreamReceiver2::FrameDecoded(int64_t picture_id) {
+@@ -1526,6 +1527,9 @@ void RtpVideoStreamReceiver2::FrameDecoded(int64_t picture_id) {
    }
    uint32_t num_packets_cleared = packet_buffer_.ClearTo(unwrapped_seq_num);
    if (num_packets_cleared > 0) {

@@ -42,16 +42,20 @@ namespace {
 
 // Protocol names that we tolerate, but do not generate.
 // We always generate offers with "UDP/TLS/RTP/SAVPF" when using DTLS-SRTP,
-// but we tolerate "RTP/SAVPF" and "RTP/SAVP" and the "UDP/TLS" and "TCP/TLS"
+// but we tolerate "RTP/SAVPF" and "RTP/SAVP" and the "UDP/TLS" and "TCP/DTLS"
 // prefixes in offers we receive, for compatibility.
 // RFC4585
 const char kMediaProtocolSavp[] = "RTP/SAVP";
 const char kMediaProtocolAvp[] = "RTP/AVP";
 
-const char kMediaProtocolTcpTlsSavpf[] = "TCP/TLS/RTP/SAVPF";
-const char kMediaProtocolUdpTlsSavpf[] = "UDP/TLS/RTP/SAVPF";
-const char kMediaProtocolTcpTlsSavp[] = "TCP/TLS/RTP/SAVP";
+// RFC5764
 const char kMediaProtocolUdpTlsSavp[] = "UDP/TLS/RTP/SAVP";
+// RFC7850
+const char kMediaProtocolTcpDtlsSavpf[] = "TCP/DTLS/RTP/SAVPF";
+const char kMediaProtocolTcpDtlsSavp[] = "TCP/DTLS/RTP/SAVP";
+// TODO: https://issues.webrtc.org/582417469 - Remove, not defined by any RFC.
+const char kMediaProtocolTcpTlsSavpf[] = "TCP/TLS/RTP/SAVPF";
+const char kMediaProtocolTcpTlsSavp[] = "TCP/TLS/RTP/SAVP";
 
 }  // namespace
 
@@ -91,9 +95,10 @@ bool IsRtpProtocol(absl::string_view protocol) {
 bool IsDtlsRtp(absl::string_view protocol) {
   // Most-likely values first.
   return protocol == kMediaProtocolDtlsSavpf ||
-         protocol == kMediaProtocolTcpTlsSavpf ||
-         protocol == kMediaProtocolUdpTlsSavpf ||
+         protocol == kMediaProtocolTcpDtlsSavpf ||
          protocol == kMediaProtocolUdpTlsSavp ||
+         protocol == kMediaProtocolTcpDtlsSavp ||
+         protocol == kMediaProtocolTcpTlsSavpf ||
          protocol == kMediaProtocolTcpTlsSavp;
 }
 

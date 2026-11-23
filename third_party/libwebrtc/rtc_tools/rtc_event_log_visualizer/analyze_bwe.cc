@@ -696,6 +696,8 @@ void CreateScreamSimulationDelayGraph(const ParsedRtcEventLog& parsed_log,
                                         LineStyle::kStep);
   TimeSeries latency_difference_avg_series("Latency difference avg",
                                            LineStyle::kStep);
+  TimeSeries qdelay_short_avg_series("Queue delay short avg", LineStyle::kStep);
+  TimeSeries qdelay_long_avg_series("Queue delay long avg", LineStyle::kStep);
 
   LogScreamSimulation simulation({.rate_window = config.window_duration_},
                                  config.env_);
@@ -718,11 +720,21 @@ void CreateScreamSimulationDelayGraph(const ParsedRtcEventLog& parsed_log,
       latency_difference_avg_series.points.emplace_back(
           config.GetCallTimeSec(state.time), state.latency_difference_avg.ms());
     }
+    if (state.qdelay_short_avg.IsFinite()) {
+      qdelay_short_avg_series.points.emplace_back(
+          config.GetCallTimeSec(state.time), state.qdelay_short_avg.ms());
+    }
+    if (state.qdelay_long_avg.IsFinite()) {
+      qdelay_long_avg_series.points.emplace_back(
+          config.GetCallTimeSec(state.time), state.qdelay_long_avg.ms());
+    }
   }
   plot->AppendTimeSeries(std::move(smoothed_rtt_series));
   plot->AppendTimeSeries(std::move(queue_delay_series));
-  plot->AppendTimeSeries(std::move(queue_delay_min_avg_series));
-  plot->AppendTimeSeries(std::move(latency_difference_avg_series));
+  plot->AppendTimeSeriesIfNotEmpty(std::move(queue_delay_min_avg_series));
+  plot->AppendTimeSeriesIfNotEmpty(std::move(latency_difference_avg_series));
+  plot->AppendTimeSeriesIfNotEmpty(std::move(qdelay_short_avg_series));
+  plot->AppendTimeSeriesIfNotEmpty(std::move(qdelay_long_avg_series));
 
   plot->SetXAxis(config.CallBeginTimeSec(), config.CallEndTimeSec(), "Time (s)",
                  kLeftMargin, kRightMargin);
@@ -818,8 +830,10 @@ void CreateScreamSimulationRefWindowGraph(const ParsedRtcEventLog& parsed_log,
   for (const LogScreamSimulation::State& state : simulation.updates()) {
     ref_window_series.points.emplace_back(config.GetCallTimeSec(state.time),
                                           state.ref_window.bytes());
-    ref_window_i_series.points.emplace_back(config.GetCallTimeSec(state.time),
-                                            state.ref_window_i.bytes());
+    if (state.ref_window_i.has_value()) {
+      ref_window_i_series.points.emplace_back(config.GetCallTimeSec(state.time),
+                                              state.ref_window_i->bytes());
+    }
     max_data_in_flight.points.emplace_back(config.GetCallTimeSec(state.time),
                                            state.max_data_in_flight.bytes());
     max_allowed_ref_window_series.points.emplace_back(
@@ -849,7 +863,7 @@ void CreateScreamSimulationRefWindowGraph(const ParsedRtcEventLog& parsed_log,
   last_series->intervals.emplace_back(send_window_state_switch,
                                       config.CallEndTimeSec());
   plot->AppendTimeSeries(std::move(ref_window_series));
-  plot->AppendTimeSeries(std::move(ref_window_i_series));
+  plot->AppendTimeSeriesIfNotEmpty(std::move(ref_window_i_series));
   plot->AppendTimeSeries(std::move(max_data_in_flight));
   plot->AppendTimeSeries(std::move(max_allowed_ref_window_series));
   plot->AppendTimeSeries(std::move(data_in_flight));
@@ -890,9 +904,11 @@ void CreateScreamSimulationRatiosGraph(const ParsedRtcEventLog& parsed_log,
                                            state.l4s_alpha_v);
     loss_congestion_level_series.points.emplace_back(
         config.GetCallTimeSec(state.time), state.loss_congestion_level);
-    ref_window_scale_factor_due_to_min_delay_variation.points.emplace_back(
-        config.GetCallTimeSec(state.time),
-        state.ref_window_scale_factor_due_to_avg_min_delay);
+    if (state.ref_window_scale_factor_due_to_avg_min_delay.has_value()) {
+      ref_window_scale_factor_due_to_min_delay_variation.points.emplace_back(
+          config.GetCallTimeSec(state.time),
+          *state.ref_window_scale_factor_due_to_avg_min_delay);
+    }
     ref_window_scale_factor_due_to_latency_difference.points.emplace_back(
         config.GetCallTimeSec(state.time),
         state.ref_window_scale_factor_due_to_latency_difference);
@@ -906,7 +922,7 @@ void CreateScreamSimulationRatiosGraph(const ParsedRtcEventLog& parsed_log,
   plot->AppendTimeSeries(std::move(l4s_alpha_series));
   plot->AppendTimeSeries(std::move(l4s_alpha_v_series));
   plot->AppendTimeSeries(std::move(loss_congestion_level_series));
-  plot->AppendTimeSeries(
+  plot->AppendTimeSeriesIfNotEmpty(
       std::move(ref_window_scale_factor_due_to_min_delay_variation));
   plot->AppendTimeSeries(
       std::move(ref_window_scale_factor_due_to_latency_difference));

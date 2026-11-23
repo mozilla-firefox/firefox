@@ -21,6 +21,7 @@
 #include "api/field_trials_view.h"
 #include "api/make_ref_counted.h"
 #include "api/video/resolution.h"
+#include "api/video/video_codec_constants.h"
 #include "api/video/video_codec_type.h"
 #include "api/video_codecs/scalability_mode.h"
 #include "api/video_codecs/video_codec.h"
@@ -813,6 +814,34 @@ TEST(EncoderStreamFactory, H265TemporalLayerCountTransferToStreamSettings) {
   EXPECT_EQ(streams[0].num_temporal_layers, 3);
 }
 #endif
+
+TEST(EncoderStreamFactory, EncodingComplexityTransferredToStreamSettings) {
+  VideoEncoderConfig encoder_config;
+  encoder_config.codec_type = VideoCodecType::kVideoCodecVP8;
+  encoder_config.number_of_streams = 1;
+  encoder_config.simulcast_layers.resize(1);
+  encoder_config.simulcast_layers[0].encoding_complexity =
+      VideoCodecComplexity::kComplexityHigh;
+  auto single_stream = CreateEncoderStreams(
+      CreateTestFieldTrials(), {.width = 1280, .height = 720}, encoder_config);
+  ASSERT_THAT(single_stream, SizeIs(1));
+  EXPECT_EQ(single_stream[0].encoding_complexity,
+            VideoCodecComplexity::kComplexityHigh);
+
+  encoder_config.number_of_streams = 2;
+  encoder_config.simulcast_layers.resize(2);
+  encoder_config.simulcast_layers[0].encoding_complexity =
+      VideoCodecComplexity::kComplexityLow;
+  encoder_config.simulcast_layers[1].encoding_complexity =
+      VideoCodecComplexity::kComplexityMax;
+  auto streams = CreateEncoderStreams(
+      CreateTestFieldTrials(), {.width = 1280, .height = 720}, encoder_config);
+  ASSERT_THAT(streams, SizeIs(2));
+  EXPECT_EQ(streams[0].encoding_complexity,
+            VideoCodecComplexity::kComplexityLow);
+  EXPECT_EQ(streams[1].encoding_complexity,
+            VideoCodecComplexity::kComplexityMax);
+}
 
 TEST(EncoderStreamFactory, VP9SetsMaxBitrateToConfiguredEncodingValue) {
   VideoEncoderConfig encoder_config;

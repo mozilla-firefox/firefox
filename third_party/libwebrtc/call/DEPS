@@ -75,5 +75,8 @@ specific_include_rules = {
   "fake_payload_type_suggester\\.h": [
     "+media/base/codec.h",
     "+media/base/codec_comparators.h",
-  ]
+  ],
+  "bitrate_estimator_tests\\.cc": [
+    "+modules/remote_bitrate_estimator/include/bwe_defines.h",
+  ],
 }

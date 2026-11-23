@@ -57,7 +57,6 @@
         'mixins': ['shards-4'],
       },
       'video_timing_tests': {},
-      'videocodec_test_mediacodec': {},
       'voip_unittests': {},
       'webrtc_nonparallel_tests': {},
       # keep-sorted end
@@ -83,6 +82,7 @@
       'dcsctp_unittests': {},
       'desktop_capture_modules_tests': {},
       'desktop_capture_unittests': {},
+      'examples_unittests': {},
       'modules_unittests': {
         'mixins': ['shards-6'],
       },

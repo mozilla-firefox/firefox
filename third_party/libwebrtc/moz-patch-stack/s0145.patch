@@ -1,83 +1,72 @@
-From: Dan Baker <dbaker@mozilla.com>
-Date: Thu, 10 Sep 2026 15:49:00 -0600
-Subject: Bug 2069067 - (fix-44d3a8877e) support
- AudioReceiveStreamInterface::Config.Copy() with move-only on_first_packet
+From: Michael Froman <mfroman@mozilla.com>
+Date: Tue, 15 Sep 2026 16:49:00 +0000
+Subject: Bug 1996020 - Cleanup remaining usages of
+ VideoFrameBuffer::CropAndScale that should check for nullptr. r=bwc
 
-Config::Copy() relied on a defaulted copy constructor, which upstream's
-addition of the move-only on_first_packet AnyInvocable member (in
-44d3a8877e) implicitly deletes. Rewrite Copy() to construct a fresh
-Config and copy each field explicitly, skipping on_first_packet, the
-same approach already used by VideoReceiveStreamInterface::Config::Copy()
-for the same member.
-Mercurial Revision: https://hg.mozilla.org/mozilla-central/rev/52a4da6f2223f0283ef67f2d6e5835b136c4db33
+Note that while RTCNativeI420Buffer.mm's cropAndScaleWith: uses
+CropAndScale, cropAndScaleWith: is only used in upstream unittests
+and objc_frame_buffer.mm which Mozilla doesn't build.  Since all of
+the crashes we see in Bug 1996020 are Windows related, the point is
+probably moot for objective-c.
+
+Differential Revision: https://phabricator.services.mozilla.com/D326238
+Mercurial Revision: https://hg.mozilla.org/mozilla-central/rev/7fc0f681f70e21f6f4ccbb4460141b1f226cc0b7
 ---
- call/audio_receive_stream.cc | 22 +++++++++++++++++++++-
- call/audio_receive_stream.h  |  9 +++------
- 2 files changed, 24 insertions(+), 7 deletions(-)
+ modules/video_coding/codecs/av1/libaom_av1_encoder.cc | 6 ++++++
+ modules/video_coding/codecs/vp8/libvpx_vp8_encoder.cc | 7 +++++++
+ modules/video_coding/codecs/vp9/libvpx_vp9_encoder.cc | 7 +++++++
+ 3 files changed, 20 insertions(+)
 
-diff --git a/call/audio_receive_stream.cc b/call/audio_receive_stream.cc
-index c8e818a1d0..fb0533d976 100644
---- a/call/audio_receive_stream.cc
-+++ b/call/audio_receive_stream.cc
-@@ -16,12 +16,32 @@ AudioReceiveStreamInterface::Stats::Stats() = default;
- AudioReceiveStreamInterface::Stats::~Stats() = default;
+diff --git a/modules/video_coding/codecs/av1/libaom_av1_encoder.cc b/modules/video_coding/codecs/av1/libaom_av1_encoder.cc
+index 8a2a9306ba..c1c8449453 100644
+--- a/modules/video_coding/codecs/av1/libaom_av1_encoder.cc
++++ b/modules/video_coding/codecs/av1/libaom_av1_encoder.cc
+@@ -823,6 +823,12 @@ int32_t LibaomAv1Encoder::Encode(
+     scaled_image = buffer->Scale(
+         encoder_settings_.spatialLayers[last_active_layer_].width,
+         encoder_settings_.spatialLayers[last_active_layer_].height);
++    if (!scaled_image) {
++      RTC_LOG(LS_ERROR) << "Failed to scale "
++                        << VideoFrameBufferTypeToString(buffer->type())
++                        << " image. Can't encode frame.";
++      return WEBRTC_VIDEO_CODEC_ENCODER_FAILURE;
++    }
+   }
  
- AudioReceiveStreamInterface::Config::Config() = default;
--AudioReceiveStreamInterface::Config::Config(const Config&) = default;
- AudioReceiveStreamInterface::Config::Config(Config&&) = default;
- AudioReceiveStreamInterface::Config&
- AudioReceiveStreamInterface::Config::operator=(Config&&) = default;
- AudioReceiveStreamInterface::Config::~Config() = default;
+   scoped_refptr<VideoFrameBuffer> mapped_buffer;
+diff --git a/modules/video_coding/codecs/vp8/libvpx_vp8_encoder.cc b/modules/video_coding/codecs/vp8/libvpx_vp8_encoder.cc
+index d0c4658d60..77b7e129d2 100644
+--- a/modules/video_coding/codecs/vp8/libvpx_vp8_encoder.cc
++++ b/modules/video_coding/codecs/vp8/libvpx_vp8_encoder.cc
+@@ -1570,6 +1570,13 @@ std::vector<scoped_refptr<VideoFrameBuffer>> LibvpxVp8Encoder::PrepareBuffers(
  
-+AudioReceiveStreamInterface::Config AudioReceiveStreamInterface::Config::Copy()
-+    const {
-+  AudioReceiveStreamInterface::Config config_copy;
-+  config_copy.rtp = rtp;
-+  config_copy.enable_non_sender_rtt = enable_non_sender_rtt;
-+  config_copy.rtcp_send_transport = rtcp_send_transport;
-+  config_copy.jitter_buffer_max_packets = jitter_buffer_max_packets;
-+  config_copy.jitter_buffer_fast_accelerate = jitter_buffer_fast_accelerate;
-+  config_copy.jitter_buffer_min_delay_ms = jitter_buffer_min_delay_ms;
-+  config_copy.sync_group = sync_group;
-+  config_copy.decoder_map = decoder_map;
-+  config_copy.decoder_factory = decoder_factory;
-+  config_copy.codec_pair_id = codec_pair_id;
-+  config_copy.crypto_options = crypto_options;
-+  config_copy.frame_decryptor = frame_decryptor;
-+  config_copy.frame_transformer = frame_transformer;
-+  // Note: `on_first_packet` is a one-shot move-only callback.
-+  // It is moved out during construction and should not be copied.
-+  return config_copy;
-+}
-+
- AudioReceiveStreamInterface::Config::Rtp::Rtp() = default;
- AudioReceiveStreamInterface::Config::Rtp::~Rtp() = default;
+     auto scaled_buffer =
+         buffer_to_scale->Scale(raw_images_[i].d_w, raw_images_[i].d_h);
++    if (!scaled_buffer) {
++      RTC_LOG(LS_ERROR) << "Failed to scale "
++                        << VideoFrameBufferTypeToString(
++                               buffer_to_scale->type())
++                        << " image. Can't encode frame.";
++      return {};
++    }
+     if (scaled_buffer->type() == VideoFrameBuffer::Type::kNative) {
+       auto mapped_scaled_buffer =
+           scaled_buffer->GetMappedFrameBuffer(mapped_type);
+diff --git a/modules/video_coding/codecs/vp9/libvpx_vp9_encoder.cc b/modules/video_coding/codecs/vp9/libvpx_vp9_encoder.cc
+index f4af3eb9b0..1f170e5b89 100644
+--- a/modules/video_coding/codecs/vp9/libvpx_vp9_encoder.cc
++++ b/modules/video_coding/codecs/vp9/libvpx_vp9_encoder.cc
+@@ -1234,6 +1234,13 @@ int LibvpxVp9Encoder::Encode(const VideoFrame& input_image,
+     scaled_image = input_image.video_frame_buffer()->Scale(
+         codec_.spatialLayers[num_active_spatial_layers_ - 1].width,
+         codec_.spatialLayers[num_active_spatial_layers_ - 1].height);
++    if (!scaled_image) {
++      RTC_LOG(LS_ERROR) << "Failed to scale "
++                        << VideoFrameBufferTypeToString(
++                               input_image.video_frame_buffer()->type())
++                        << " image. Can't encode frame.";
++      return WEBRTC_VIDEO_CODEC_ERROR;
++    }
+   }
  
-diff --git a/call/audio_receive_stream.h b/call/audio_receive_stream.h
-index 757ea3be88..812b1444ef 100644
---- a/call/audio_receive_stream.h
-+++ b/call/audio_receive_stream.h
-@@ -121,20 +121,17 @@ class AudioReceiveStreamInterface : public MediaReceiveStreamInterface {
-     int round_trip_time_measurements = 0;
-   };
-   struct Config {
--   private:
--    // Access to the copy constructor is private to force use of the Copy()
--    // method for those exceptional cases where we do use it.
--    Config(const Config&);
--
-    public:
-     Config();
-+    Config(const Config&) = delete;
-     Config& operator=(const Config&) = delete;
-     Config(Config&&);
-     Config& operator=(Config&&);
-     ~Config();
- 
-     // Mostly used by tests.  Avoid creating copies if you can.
--    Config Copy() const { return Config(*this); }
-+    // Note that this method will not copy move-only fields.
-+    Config Copy() const;
- 
-     std::string ToString() const;
- 
+   RTC_DCHECK_EQ(scaled_image->width(), config_->g_w);

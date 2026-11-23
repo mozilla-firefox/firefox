@@ -56,6 +56,9 @@ std::string VideoStream::ToString() const {
   if (scalability_mode.has_value()) {
     ss << ", scalability_mode: " << ScalabilityModeToString(*scalability_mode);
   }
+  if (encoding_complexity.has_value()) {
+    ss << ", encoding_complexity: " << static_cast<int>(*encoding_complexity);
+  }
   ss << '}';
   return ss.Release();
 }

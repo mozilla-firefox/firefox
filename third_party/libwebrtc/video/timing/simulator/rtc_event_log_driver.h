@@ -60,11 +60,6 @@ class RtcEventLogDriver {
  public:
   // Configuration for the `RtcEventLogDriver` itself.
   struct Config {
-    // If true, existing streams are reused, even if a new
-    // `LoggedVideoRecvConfig` was logged for the same stream. (This might
-    // happen around `SetRemoteDescription`s.)
-    bool reuse_streams = false;
-
     // If non-empty, will only simulate video streams whose main SSRCs is
     // contained in the set.
     std::set<uint32_t> ssrc_filter = {};

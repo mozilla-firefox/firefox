@@ -14,6 +14,9 @@
 #include <cstdint>
 #include <optional>
 
+#include "absl/base/nullability.h"
+#include "api/ref_counted_base.h"
+#include "api/scoped_refptr.h"
 #include "api/sequence_checker.h"
 #include "api/sframe/sframe_decryptor_interface.h"
 #include "rtc_base/system/no_unique_address.h"
@@ -24,10 +27,14 @@ namespace webrtc {
 // Owns `SframeDecryptError` reporting for a single receive stream.
 // Deduplicates consecutive failures of the same type — a sustained failure
 // (e.g. missing key) fires the callback once rather than once per frame.
-class SframeDecryptErrorReporter {
+class SframeDecryptErrorReporter final
+    : public RefCountedNonVirtual<SframeDecryptErrorReporter> {
  public:
+  static absl_nonnull scoped_refptr<SframeDecryptErrorReporter> Create(
+      absl_nonnull SframeDecryptErrorCallback error_callback);
+
   explicit SframeDecryptErrorReporter(
-      SframeDecryptErrorCallback error_callback);
+      absl_nonnull SframeDecryptErrorCallback error_callback);
 
   // Reports a decryption failure. Consecutive identical failures are reported
   // only once until `ReportSuccess()` is called.

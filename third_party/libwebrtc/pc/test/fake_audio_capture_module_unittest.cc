@@ -13,6 +13,7 @@
 #include <algorithm>
 #include <cstdint>
 #include <cstring>
+#include <optional>
 
 #include "api/audio/audio_device_defines.h"
 #include "api/scoped_refptr.h"
@@ -50,16 +51,18 @@ class FakeAdmTest : public ::testing::Test, public AudioTransport {
 
   // Callbacks inherited from AudioTransport.
   // ADM is pushing data.
-  int32_t RecordedDataIsAvailable(const void* audioSamples,
-                                  const size_t nSamples,
-                                  const size_t nBytesPerSample,
-                                  const size_t nChannels,
-                                  const uint32_t samplesPerSec,
-                                  const uint32_t totalDelayMS,
-                                  const int32_t clockDrift,
-                                  const uint32_t currentMicLevel,
-                                  const bool keyPressed,
-                                  uint32_t& newMicLevel) override {
+  int32_t RecordedDataIsAvailable(
+      const void* audioSamples,
+      const size_t nSamples,
+      const size_t nBytesPerSample,
+      const size_t nChannels,
+      const uint32_t samplesPerSec,
+      const uint32_t totalDelayMS,
+      const int32_t clockDrift,
+      const uint32_t currentMicLevel,
+      const bool keyPressed,
+      uint32_t& newMicLevel,
+      std::optional<int64_t> /* estimated_capture_time_ns */) override {
     MutexLock lock(&mutex_);
     rec_buffer_bytes_ = nSamples * nBytesPerSample;
     if ((rec_buffer_bytes_ == 0) ||

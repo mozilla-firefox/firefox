@@ -91,13 +91,6 @@ TEST(SframeDecryptErrorReporterTest, ReportSuccessWithNoErrorIsNoop) {
   reporter.ReportError(MakeError(SframeDecryptErrorType::kAuthentication));
 }
 
-TEST(SframeDecryptErrorReporterTest, NullCallbackDoesNotCrash) {
-  SframeDecryptErrorReporter reporter(nullptr);
-  reporter.ReportError(MakeError(SframeDecryptErrorType::kAuthentication));
-  reporter.ReportSuccess();
-  reporter.ReportError(MakeError(SframeDecryptErrorType::kAuthentication));
-}
-
 TEST(SframeDecryptErrorReporterTest, CallbackReceivesCorrectErrorType) {
   std::optional<SframeDecryptErrorType> received_type;
   SframeDecryptErrorReporter reporter(

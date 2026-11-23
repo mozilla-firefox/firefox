@@ -157,9 +157,6 @@ class TransceiverList {
   std::map<RtpTransceiverProxyRefPtr, TransceiverStableState>
       transceiver_stable_states_by_transceivers_
           RTC_GUARDED_BY(sequence_checker_);
-  // Holds remote stream ids for transceivers from stable state.
-  std::map<RtpTransceiverProxyRefPtr, std::vector<std::string>>
-      remote_stream_ids_by_transceivers_ RTC_GUARDED_BY(sequence_checker_);
 };
 
 }  // namespace webrtc

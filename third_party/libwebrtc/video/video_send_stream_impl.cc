@@ -64,6 +64,7 @@
 #include "rtc_base/experiments/field_trial_parser.h"
 #include "rtc_base/experiments/min_video_bitrate_experiment.h"
 #include "rtc_base/experiments/rate_control_settings.h"
+#include "rtc_base/experiments/rfc8888_congestion_control_feedback_experiment.h"
 #include "rtc_base/logging.h"
 #include "rtc_base/numerics/safe_conversions.h"
 #include "rtc_base/task_utils/repeating_task.h"
@@ -336,7 +337,6 @@ RtpSenderObservers CreateObservers(RtcpRttStats* call_stats,
   RtpSenderObservers observers;
   observers.rtcp_rtt_stats = call_stats;
   observers.intra_frame_callback = encoder_feedback;
-  observers.rtcp_loss_notification_observer = encoder_feedback;
   observers.report_block_data_observer = stats_proxy;
   observers.rtp_stats = stats_proxy;
   observers.bitrate_observer = stats_proxy;
@@ -442,10 +442,7 @@ VideoSendStreamImpl::VideoSendStreamImpl(
               encoder_config.video_format.parameters) ||
               env_.field_trials().IsEnabled("WebRTC-Video-PerSsrcKeyframes"),
           config_.rtp.ssrcs,
-          video_stream_encoder_.get(),
-          [this](uint32_t ssrc, const std::vector<uint16_t>& seq_nums) {
-            return rtp_video_sender_->GetSentRtpPacketInfos(ssrc, seq_nums);
-          }),
+          video_stream_encoder_.get()),
       rtp_video_sender_(transport->CreateRtpVideoSender(
           suspended_ssrcs,
           suspended_payload_states,
@@ -463,7 +460,7 @@ VideoSendStreamImpl::VideoSendStreamImpl(
           config_.periodic_alr_bandwidth_probing ||
           GetAlrSettings(env_.field_trials(), encoder_config.content_type)),
       pacing_config_(PacingConfig(env_.field_trials())),
-      worker_queue_(TaskQueueBase::Current()),
+      network_queue_(TaskQueueBase::Current()),
       timed_out_(false),
       bitrate_allocator_(bitrate_allocator),
       has_active_encodings_(HasActiveEncodings(encoder_config)),
@@ -487,7 +484,7 @@ VideoSendStreamImpl::VideoSendStreamImpl(
   std::optional<bool> enable_alr_bw_probing;
 
   bool rfc8888_experiment_enabled =
-      env_.field_trials().IsEnabled("WebRTC-RFC8888CongestionControlFeedback");
+      IsRfc8888CongestionControlFeedbackEnabled(env_.field_trials());
 
   // If send-side BWE, or RFC8888 congestion control feedback experiment is
   // enabled, check if we should apply updated probing and pacing settings.
@@ -687,7 +684,7 @@ void VideoSendStreamImpl::StartupVideoSendStream() {
     activity_ = false;
     timed_out_ = false;
     check_encoder_activity_task_ = RepeatingTaskHandle::DelayedStart(
-        worker_queue_, kEncoderTimeOut, [this] {
+        network_queue_, kEncoderTimeOut, [this] {
           RTC_DCHECK_RUN_ON(&thread_checker_);
           if (!activity_) {
             if (!timed_out_) {
@@ -778,7 +775,7 @@ void VideoSendStreamImpl::OnEncoderConfigurationChanged(
     VideoEncoderConfig::ContentType content_type,
     int min_transmit_bitrate_bps) {
   // Currently called on the encoder TQ
-  RTC_DCHECK(!worker_queue_->IsCurrent());
+  RTC_DCHECK(!network_queue_->IsCurrent());
   auto closure = [this, streams = std::move(streams), is_svc, content_type,
                   min_transmit_bitrate_bps]() mutable {
     RTC_DCHECK_GE(config_.rtp.ssrcs.size(), streams.size());
@@ -849,8 +846,8 @@ void VideoSendStreamImpl::OnEncoderConfigurationChanged(
     }
   };
 
-  worker_queue_->PostTask(
-      SafeTask(worker_queue_safety_.flag(), std::move(closure)));
+  network_queue_->PostTask(
+      SafeTask(network_queue_safety_.flag(), std::move(closure)));
 }
 
 EncodedImageCallback::Result VideoSendStreamImpl::OnEncodedImage(
@@ -862,9 +859,9 @@ EncodedImageCallback::Result VideoSendStreamImpl::OnEncodedImage(
 
   // Indicate that there still is activity going on.
   activity_ = true;
-  RTC_DCHECK(!worker_queue_->IsCurrent());
+  RTC_DCHECK(!network_queue_->IsCurrent());
 
-  auto task_to_run_on_worker = [this]() {
+  auto task_to_run_on_network = [this]() {
     RTC_DCHECK_RUN_ON(&thread_checker_);
     if (disable_padding_) {
       disable_padding_ = false;
@@ -872,8 +869,8 @@ EncodedImageCallback::Result VideoSendStreamImpl::OnEncodedImage(
       SignalEncoderActive();
     }
   };
-  worker_queue_->PostTask(
-      SafeTask(worker_queue_safety_.flag(), std::move(task_to_run_on_worker)));
+  network_queue_->PostTask(SafeTask(network_queue_safety_.flag(),
+                                    std::move(task_to_run_on_network)));
 
   return rtp_video_sender_->OnEncodedImage(encoded_image, codec_specific_info);
 }

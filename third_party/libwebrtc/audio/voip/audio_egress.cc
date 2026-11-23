@@ -199,4 +199,18 @@ void AudioEgress::SetMute(bool mute) {
   });
 }
 
+void AudioEgress::OnReceivedUplinkPacketLossFraction(
+    float packet_loss_fraction) {
+  RTC_DCHECK_GE(packet_loss_fraction, 0.0f);
+  RTC_DCHECK_LE(packet_loss_fraction, 1.0f);
+  encoder_queue_->PostTask([this, packet_loss_fraction] {
+    RTC_DCHECK_RUN_ON(&encoder_queue_checker_);
+    audio_coding_->ModifyEncoder([&](std::unique_ptr<AudioEncoder>* encoder) {
+      if (*encoder) {
+        (*encoder)->OnReceivedUplinkPacketLossFraction(packet_loss_fraction);
+      }
+    });
+  });
+}
+
 }  // namespace webrtc

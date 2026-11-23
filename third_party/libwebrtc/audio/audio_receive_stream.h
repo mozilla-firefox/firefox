@@ -83,18 +83,14 @@ class AudioReceiveStreamImpl final : public webrtc::AudioReceiveStreamInterface,
   AudioReceiveStreamImpl(const AudioReceiveStreamImpl&) = delete;
   AudioReceiveStreamImpl& operator=(const AudioReceiveStreamImpl&) = delete;
 
-  // Destruction happens on the worker thread. Prior to destruction the caller
+  // Destruction happens on the network thread. Prior to destruction the caller
   // must ensure that a registration with the transport has been cleared. See
   // `RegisterWithTransport` for details.
-  // TODO(tommi): As a further improvement to this, performing the full
-  // destruction on the network thread could be made the default.
   ~AudioReceiveStreamImpl() override;
 
-  // TODO(bugs.webrtc.org/11993): Expect to be called on the network thread.
   // Binds the stream to the transport.
   void RegisterWithTransport(
       RtpStreamReceiverControllerInterface* receiver_controller);
-  // TODO(bugs.webrtc.org/11993): Expect to be called on the network thread.
   // Unbinds the stream from the transport. Must be called prior to destruction
   // if RegisterWithTransport was called.
   void UnregisterFromTransport();
@@ -143,7 +139,7 @@ class AudioReceiveStreamImpl final : public webrtc::AudioReceiveStreamInterface,
   uint32_t remote_ssrc() const override;
 
   // Returns a reference to the currently set sync group of the stream.
-  // Must be called on the worker thread.
+  // Must be called on the network thread.
   const std::string& sync_group() const;
 
  private:
@@ -152,15 +148,15 @@ class AudioReceiveStreamImpl final : public webrtc::AudioReceiveStreamInterface,
   internal::AudioState* audio_state() const;
 
   const Environment env_;
-  RTC_NO_UNIQUE_ADDRESS SequenceChecker worker_thread_checker_;
+  RTC_NO_UNIQUE_ADDRESS SequenceChecker network_thread_checker_;
   webrtc::AudioReceiveStreamInterface::Config config_;
   const scoped_refptr<webrtc::AudioState> audio_state_;
   const std::unique_ptr<voe::ChannelReceiveInterface> channel_receive_;
 
-  bool playing_ RTC_GUARDED_BY(worker_thread_checker_) = false;
+  bool playing_ RTC_GUARDED_BY(network_thread_checker_) = false;
 
   std::unique_ptr<RtpStreamReceiverInterface> rtp_stream_receiver_
-      RTC_GUARDED_BY(worker_thread_checker_);
+      RTC_GUARDED_BY(network_thread_checker_);
 };
 }  // namespace webrtc
 

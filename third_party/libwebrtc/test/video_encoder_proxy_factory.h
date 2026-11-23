@@ -33,10 +33,6 @@
 namespace webrtc {
 namespace test {
 
-namespace {
-const VideoEncoder::Capabilities kCapabilities(false);
-}  // namespace
-
 // An encoder factory with a single underlying VideoEncoder object,
 // intended for test purposes. Each call to CreateVideoEncoder returns
 // a proxy for the same encoder, typically an instance of FakeEncoder.

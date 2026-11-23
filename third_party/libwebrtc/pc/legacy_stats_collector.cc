@@ -701,7 +701,6 @@ void LegacyStatsCollector::GetStats(MediaStreamTrackInterface* track,
 
   reports->push_back(report);
 
-  std::string track_id;
   for (const auto* r : reports_) {
     if (r->type() != StatsReport::kStatsReportTypeSsrc)
       continue;

@@ -5,32 +5,23 @@ Subject: Bug 1748458 - Add TRACE_EVENT for keyframe requests. r=bwc
 Differential Revision: https://phabricator.services.mozilla.com/D135113
 Mercurial Revision: https://hg.mozilla.org/mozilla-central/rev/5b2a7894ef1cf096d0e8977754507c0820e757fc
 ---
- video/rtp_video_stream_receiver2.cc | 8 +++++++-
- 1 file changed, 7 insertions(+), 1 deletion(-)
+ video/rtp_video_stream_receiver2.cc | 6 ++++++
+ 1 file changed, 6 insertions(+)
 
 diff --git a/video/rtp_video_stream_receiver2.cc b/video/rtp_video_stream_receiver2.cc
-index 5537232c2f..a99de25ff9 100644
+index 070f8cf381..912b0d61ef 100644
 --- a/video/rtp_video_stream_receiver2.cc
 +++ b/video/rtp_video_stream_receiver2.cc
-@@ -1004,6 +1004,12 @@ void RtpVideoStreamReceiver2::OnRtpPacket(const RtpPacketReceived& packet) {
+@@ -930,6 +930,12 @@ void RtpVideoStreamReceiver2::OnRtpPacket(const RtpPacketReceived& packet) {
  
  void RtpVideoStreamReceiver2::RequestKeyFrame() {
-   RTC_DCHECK_RUN_ON(worker_queue_);
+   RTC_DCHECK_RUN_ON(network_queue_);
 +  TRACE_EVENT2("webrtc", "RtpVideoStreamReceiver2::RequestKeyFrame",
 +               "remote_ssrc", config_.rtp.remote_ssrc, "method",
 +               keyframe_request_method_ == KeyFrameReqMethod::kPliRtcp   ? "PLI"
 +               : keyframe_request_method_ == KeyFrameReqMethod::kFirRtcp ? "FIR"
 +               : keyframe_request_method_ == KeyFrameReqMethod::kNone ? "None"
 +                                                                      : "Other");
-   // TODO(bugs.webrtc.org/10336): Allow the sender to ignore key frame requests
-   // issued by anything other than the LossNotificationController if it (the
-   // sender) is relying on LNTF alone.
-@@ -1363,7 +1369,7 @@ std::optional<int64_t> RtpVideoStreamReceiver2::LastReceivedKeyframePacketMs()
- void RtpVideoStreamReceiver2::RemoteRTCPSenderInfo(
-     uint32_t* packet_count, uint32_t* octet_count,
-     int64_t* ntp_timestamp_ms, int64_t* remote_ntp_timestamp_ms) const {
--  RTC_DCHECK_RUN_ON(&worker_task_checker_);
-+  RTC_DCHECK_RUN_ON(worker_queue_);
-   rtp_rtcp_->RemoteRTCPSenderInfo(packet_count, octet_count, ntp_timestamp_ms,
-                                   remote_ntp_timestamp_ms);
- }
+   if (keyframe_request_method_ == KeyFrameReqMethod::kPliRtcp) {
+     rtp_rtcp_->SendPictureLossIndication();
+   } else if (keyframe_request_method_ == KeyFrameReqMethod::kFirRtcp) {

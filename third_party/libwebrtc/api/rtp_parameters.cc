@@ -16,6 +16,7 @@
 #include <tuple>
 #include <vector>
 
+#include "absl/container/inlined_vector.h"
 #include "absl/strings/ascii.h"
 #include "absl/strings/escaping.h"
 #include "absl/strings/string_view.h"
@@ -36,13 +37,17 @@ constexpr char kSdpDelimiterEqualChar = '=';
 constexpr char kSdpDelimiterEqual[] = "=";
 constexpr char kSdpDelimiterSemicolonChar = ';';
 
+// The parameters of an fmtp line, as views into it. Lines rarely have more
+// than a few, so these are stored without a heap allocation.
+using FmtpParams = absl::InlinedVector<absl::string_view, 4>;
+
 void ParseFmtpParam(absl::string_view line,
-                    std::string* parameter,
-                    std::string* value) {
+                    absl::string_view* parameter,
+                    absl::string_view* value) {
   if (!tokenize_first(line, kSdpDelimiterEqualChar, parameter, value)) {
     // Support for non-key-value lines like RFC 2198 or RFC 4733.
     *parameter = "";
-    *value = std::string(line);
+    *value = line;
   }
   // a=fmtp:<payload_type> <param1>=<value1>; <param2>=<value2>; ...
 }
@@ -110,15 +115,16 @@ RTCError ParseFmtpParameterSet(absl::string_view line_params,
                                CodecParameterMap& codec_params) {
   // Parse out format specific parameters.
   for (absl::string_view param :
-       split(line_params, kSdpDelimiterSemicolonChar)) {
-    std::string name;
-    std::string value;
+       split<FmtpParams>(line_params, kSdpDelimiterSemicolonChar)) {
+    absl::string_view name;
+    absl::string_view value;
     ParseFmtpParam(absl::StripAsciiWhitespace(param), &name, &value);
-    if (codec_params.find(name) != codec_params.end()) {
+    auto [it, inserted] = codec_params.try_emplace(std::string(name), value);
+    if (!inserted) {
       RTC_LOG(LS_INFO) << "Overwriting duplicate fmtp parameter with key \""
                        << name << "\".";
+      it->second = value;
     }
-    codec_params[name] = value;
   }
   return RTCError::OK();
 }

@@ -43,7 +43,9 @@
   - [PeerConnection](/pc/g3doc/peer_connection.md)
   - Desktop capture
   - [Stats](/stats/g3doc/stats.md)
-  - [Logging](/logging/g3doc/rtc_event_log.md)
+  - Logging
+    - [Initialization](/g3doc/logging/initialization.md)
+    - [RTC event log](/logging/g3doc/rtc_event_log.md)
 - Testing
   - [Testing guidelines](/g3doc/testing.md)
   - Media Quality and performance

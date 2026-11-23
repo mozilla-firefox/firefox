@@ -90,10 +90,7 @@ constexpr int kWidth = 172;
 constexpr int kHeight = 144;
 constexpr float kFramerateFps = 30;
 
-const VideoEncoder::Capabilities kCapabilities(false);
-const VideoEncoder::Settings kSettings(kCapabilities,
-                                       kNumCores,
-                                       kMaxPayloadSize);
+constexpr VideoEncoder::Settings kSettings(kNumCores, kMaxPayloadSize);
 }  // namespace
 
 class TestVp8Impl : public VideoCodecUnitTest {
@@ -200,9 +197,9 @@ TEST_F(TestVp8Impl, SetRates) {
   codec_settings_.SetFrameDropEnabled(true);
   auto* const vpx = new NiceMock<MockLibvpxInterface>();
   LibvpxVp8Encoder encoder(CreateTestEnvironment(), {}, absl::WrapUnique(vpx));
-  EXPECT_EQ(WEBRTC_VIDEO_CODEC_OK,
-            encoder.InitEncode(&codec_settings_,
-                               VideoEncoder::Settings(kCapabilities, 1, 1000)));
+  EXPECT_EQ(
+      WEBRTC_VIDEO_CODEC_OK,
+      encoder.InitEncode(&codec_settings_, VideoEncoder::Settings(1, 1000)));
 
   const uint32_t kBitrateBps = 300000;
   VideoBitrateAllocation bitrate_allocation;
@@ -790,9 +787,9 @@ TEST_F(TestVp8Impl, KeepsTimestampOnReencode) {
         img->img_data = img_data;
         return img;
       });
-  EXPECT_EQ(WEBRTC_VIDEO_CODEC_OK,
-            encoder.InitEncode(&codec_settings_,
-                               VideoEncoder::Settings(kCapabilities, 1, 1000)));
+  EXPECT_EQ(
+      WEBRTC_VIDEO_CODEC_OK,
+      encoder.InitEncode(&codec_settings_, VideoEncoder::Settings(1, 1000)));
   MockEncodedImageCallback callback;
   encoder.RegisterEncodeCompleteCallback(&callback);
 

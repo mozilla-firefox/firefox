@@ -10,6 +10,7 @@
 
 #include "pc/ice_server_parsing.h"
 
+#include <cstddef>
 #include <string>
 #include <vector>
 
@@ -17,12 +18,17 @@
 #include "api/rtc_error.h"
 #include "p2p/base/port.h"
 #include "p2p/base/port_allocator.h"
-#include "p2p/base/port_interface.h"
 #include "rtc_base/ip_address.h"
+#include "rtc_base/net_helper.h"
 #include "rtc_base/socket_address.h"
+#include "test/gmock.h"
 #include "test/gtest.h"
 
 namespace webrtc {
+
+using ::testing::Contains;
+using ::testing::Not;
+using ::testing::SizeIs;
 
 class IceServerParsingTest : public ::testing::Test {
  public:
@@ -267,6 +273,51 @@ TEST_F(IceServerParsingTest, TooLongUsername) {
   auto error = ParseIceServersOrError(servers, &stun_servers_, &turn_servers_);
   EXPECT_FALSE(error.ok());
   EXPECT_EQ(error.type(), RTCErrorType::INVALID_PARAMETER);
+}
+
+TEST_F(IceServerParsingTest, CapsStunServersInConfiguration) {
+  PeerConnectionInterface::RTCConfiguration config;
+  PeerConnectionInterface::IceServer server;
+  // Duplicate of the first server should not consume an extra slot.
+  server.urls.push_back("stun:z-first.example:3478");
+  server.urls.push_back("stun:z-first.example:3478");
+  for (size_t i = 1; i < kMaxStunServers; ++i) {
+    server.urls.push_back("stun:host" + std::to_string(i) + ".example:3478");
+  }
+  // Extra servers beyond kMaxStunServers (including lexicographically smaller
+  // hostname) should be ignored while keeping the first kMaxStunServers.
+  server.urls.push_back("stun:a-ignored1.example:3478");
+  server.urls.push_back("stun:a-ignored2.example:3478");
+  config.servers.push_back(server);
+
+  stun_servers_.clear();
+  turn_servers_.clear();
+  RTCError error = ParseAndValidateIceServersFromConfiguration(
+      config, stun_servers_, turn_servers_);
+  EXPECT_TRUE(error.ok());
+  EXPECT_THAT(stun_servers_, SizeIs(kMaxStunServers));
+  EXPECT_THAT(stun_servers_, Contains(SocketAddress("z-first.example", 3478)));
+  EXPECT_THAT(stun_servers_,
+              Not(Contains(SocketAddress("a-ignored1.example", 3478))));
+  EXPECT_THAT(stun_servers_,
+              Not(Contains(SocketAddress("a-ignored2.example", 3478))));
+}
+
+TEST_F(IceServerParsingTest, ValidatesSyntaxOfStunServersBeyondCap) {
+  PeerConnectionInterface::RTCConfiguration config;
+  PeerConnectionInterface::IceServer server;
+  for (size_t i = 0; i < kMaxStunServers; ++i) {
+    server.urls.push_back("stun:host" + std::to_string(i) + ".example:3478");
+  }
+  server.urls.push_back("stun:/invalid-hostname");
+  config.servers.push_back(server);
+
+  stun_servers_.clear();
+  turn_servers_.clear();
+  RTCError error = ParseAndValidateIceServersFromConfiguration(
+      config, stun_servers_, turn_servers_);
+  EXPECT_FALSE(error.ok());
+  EXPECT_EQ(error.type(), RTCErrorType::SYNTAX_ERROR);
 }
 
 }  // namespace webrtc

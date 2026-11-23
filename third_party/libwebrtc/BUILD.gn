@@ -55,16 +55,12 @@ if (!build_with_chromium && !build_with_mozilla) {
       deps += [
         ":rust_tests",
         ":test_suites",
-        "examples:examples_unittests",
         "modules/audio_coding:audio_coding_tests",
         "modules/audio_processing:audio_processing_tests",
         "modules/remote_bitrate_estimator:rtp_to_text",
         "modules/rtp_rtcp:test_packet_masks_metrics",
         "modules/video_capture:video_capture_internal_impl",
-        "modules/video_coding:video_codec_perf_tests",
         "p2p:dtls_ice_integration_bench",
-        "pc:slow_peer_connection_unittests",
-        "pc:svc_tests",
         "rtc_tools:video_encoder",
         "rtc_tools:video_replay",
         "test",
@@ -95,7 +91,6 @@ if (!build_with_chromium && !build_with_mozilla) {
       if (is_android) {
         deps += [
           "examples:android_examples_junit_tests",
-          "modules/video_coding:videocodec_test_mediacodec",
           "sdk/android:android_instrumentation_test_apk",
           "sdk/android:android_sdk_junit_tests",
         ]
@@ -107,9 +102,6 @@ if (!build_with_chromium && !build_with_mozilla) {
           "logging:rtc_event_log_rtp_dump",
           "tools_webrtc/perf:webrtc_dashboard_upload",
         ]
-      }
-      if ((is_linux || is_chromeos) && rtc_use_pipewire) {
-        deps += [ "modules/desktop_capture:shared_screencast_stream_test" ]
       }
     }
     if (target_os == "android") {
@@ -131,16 +123,20 @@ if (rtc_include_tests) {
       "//call/adaptation:resource_adaptation_tests",
       "//common_audio:common_audio_unittests",
       "//common_video:common_video_unittests",
+      "//examples:examples_unittests",
       "//media:rtc_media_unittests",
       "//modules:modules_unittests",
       "//modules/audio_coding:audio_coding_unittests",
       "//modules/audio_processing:audio_processing_unittests",
       "//modules/rtp_rtcp:rtp_rtcp_unittests",
+      "//modules/video_coding:video_codec_perf_tests",
       "//modules/video_coding:video_coding_unittests",
       "//net/dcsctp:dcsctp_unittests",
       "//p2p:rtc_p2p_unittests",
       "//pc:peerconnection_unittests",
       "//pc:rtc_pc_unittests",
+      "//pc:slow_peer_connection_unittests",
+      "//pc:svc_tests",
       "//rtc_tools:tools_unittests",
       "//stats:rtc_stats_unittests",
       "//system_wrappers:system_wrappers_unittests",
@@ -160,6 +156,9 @@ if (rtc_include_tests) {
       }
       if (is_win) {
         deps += [ "//modules/desktop_capture:desktop_capture_win_unittests" ]
+      }
+      if ((is_linux || is_chromeos) && rtc_use_pipewire) {
+        deps += [ "//modules/desktop_capture:shared_screencast_stream_test" ]
       }
     }
   }
@@ -888,6 +887,7 @@ if (rtc_include_tests && !build_with_chromium) {
       "rtc_base/experiments:quality_scaling_experiment_unittest",
       "rtc_base/experiments:rate_control_settings_unittest",
       "rtc_base/experiments:retransmit_flushed_packets_settings_unittest",
+      "rtc_base/experiments:rfc8888_congestion_control_feedback_experiment_unittest",
       "rtc_base/experiments:struct_parameters_parser_unittest",
       "rtc_base/memory:aligned_malloc_unittest",
       "rtc_base/memory:always_valid_pointer_unittest",

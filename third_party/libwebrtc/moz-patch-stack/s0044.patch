@@ -18,10 +18,10 @@ Mercurial Revision: https://hg.mozilla.org/mozilla-central/rev/0300b32b7de70fb89
  5 files changed, 10 insertions(+), 3 deletions(-)
 
 diff --git a/BUILD.gn b/BUILD.gn
-index 8a966e1a23..07eea067bd 100644
+index 649e24464d..b7687e2fd1 100644
 --- a/BUILD.gn
 +++ b/BUILD.gn
-@@ -275,6 +275,9 @@ config("common_inherited_config") {
+@@ -274,6 +274,9 @@ config("common_inherited_config") {
    if (is_linux || is_chromeos) {
      defines += [ "WEBRTC_LINUX" ]
    }
@@ -32,7 +32,7 @@ index 8a966e1a23..07eea067bd 100644
      defines += [ "WEBRTC_MAC" ]
    }
 diff --git a/modules/video_capture/BUILD.gn b/modules/video_capture/BUILD.gn
-index 66e3ad0721..5c81c975df 100644
+index 76fdeb6011..020fdd713a 100644
 --- a/modules/video_capture/BUILD.gn
 +++ b/modules/video_capture/BUILD.gn
 @@ -80,7 +80,7 @@ if (!build_with_chromium || is_linux || is_chromeos) {
@@ -74,7 +74,7 @@ index 20bf4afc44..697bedadb9 100644
  #endif  // defined(WEBRTC_POSIX)
  }
 diff --git a/webrtc.gni b/webrtc.gni
-index 3cc99d87bd..81a1d8dd71 100644
+index a7f3ec8023..ff84ac5f81 100644
 --- a/webrtc.gni
 +++ b/webrtc.gni
 @@ -352,7 +352,7 @@ rtc_opus_dir = "//third_party/opus"

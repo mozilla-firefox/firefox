@@ -1159,6 +1159,9 @@ void PeerConnectionIntegrationWrapper::OnDataChannel(
   data_channels_.push_back(data_channel);
   data_observers_.push_back(std::make_unique<MockDataChannelObserver>(
       network_thread_, data_channel.get()));
+  if (data_channel_handler_) {
+    data_channel_handler_(data_channel.get());
+  }
 }
 
 bool PeerConnectionIntegrationWrapper::IdExists(

@@ -19,6 +19,7 @@
 #include <string>
 #include <vector>
 
+#include "api/crypto/crypto_options.h"
 #include "api/field_trials_view.h"
 #include "api/rtp_header_extension_id.h"
 #include "call/rtp_demuxer.h"
@@ -56,8 +57,8 @@ class SrtpTransport : public RtpTransport {
 
   bool IsWritable(bool rtcp) const override;
 
-  // Enable or disable cryptex.
-  bool UseCryptex(bool enable, bool require);
+  // Configures cryptex from the local policy and the negotiation result.
+  bool UseCryptex(CryptoOptions::Srtp::CryptexPolicy policy, bool negotiated);
 
   // Create new send/recv sessions and set the negotiated crypto keys for RTP
   // packet encryption. The keys can either come from SDES negotiation or DTLS
@@ -137,8 +138,9 @@ class SrtpTransport : public RtpTransport {
   int decryption_failure_count_ = 0;
   int rtcp_decryption_failure_count_ = 0;
 
-  bool enable_cryptex_ = false;
-  bool require_cryptex_ = false;
+  CryptoOptions::Srtp::CryptexPolicy cryptex_policy_ =
+      CryptoOptions::Srtp::CryptexPolicy::kDisabled;
+  bool use_cryptex_ = false;
 
   const FieldTrialsView& field_trials_;
 };

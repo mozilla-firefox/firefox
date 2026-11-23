@@ -111,7 +111,7 @@ StringBuilder& operator<<(StringBuilder& builder,
 // sc-id-paused = "~"
 // sc-id        = [sc-id-paused] rid-id
 // rid-id       = 1*(alpha-numeric / "-" / "_") ; see: I-D.ietf-mmusic-rid
-RTCErrorOr<SimulcastLayerList> ParseSimulcastLayerList(const std::string& str) {
+RTCErrorOr<SimulcastLayerList> ParseSimulcastLayerList(absl::string_view str) {
   std::vector<absl::string_view> tokens = split(str, kDelimiterSemicolonChar);
   if (tokens.empty()) {
     return ParseError("Layer list cannot be empty.");
@@ -153,7 +153,7 @@ RTCErrorOr<SimulcastLayerList> ParseSimulcastLayerList(const std::string& str) {
   return std::move(result);
 }
 
-RTCError ParseRidPayloadList(const std::string& payload_list,
+RTCError ParseRidPayloadList(absl::string_view payload_list,
                              RidDescription* rid_description,
                              std::vector<int>* rid_payload_types) {
   RTC_DCHECK(rid_description);
@@ -173,21 +173,22 @@ RTCError ParseRidPayloadList(const std::string& payload_list,
   }
 
   // Tokenize the ',' delimited list
-  std::vector<std::string> string_payloads;
+  std::vector<absl::string_view> string_payloads;
   tokenize(payload_list, kDelimiterCommaChar, &string_payloads);
   if (string_payloads.empty()) {
     return ParseError("Payload list must have at least one value.");
   }
 
-  for (const std::string& payload_type : string_payloads) {
+  for (absl::string_view payload_type : string_payloads) {
     std::optional<int> value = StringToNumber<int>(payload_type);
     if (!value.has_value()) {
-      return ParseError("Invalid payload type: " + payload_type);
+      return ParseError("Invalid payload type: " + std::string(payload_type));
     }
 
     // Check if the value already appears in the payload list.
     if (absl::c_linear_search(*rid_payload_types, value.value())) {
-      return ParseError("Duplicate payload type in list: " + payload_type);
+      return ParseError("Duplicate payload type in list: " +
+                        std::string(payload_type));
     }
     rid_payload_types->push_back(value.value());
   }
@@ -229,8 +230,8 @@ std::string SimulcastSdpSerializer::SerializeSimulcastDescription(
 RTCErrorOr<SimulcastDescription>
 SimulcastSdpSerializer::DeserializeSimulcastDescription(
     absl::string_view string) const {
-  std::vector<std::string> tokens;
-  tokenize(std::string(string), kDelimiterSpaceChar, &tokens);
+  std::vector<absl::string_view> tokens;
+  tokenize(string, kDelimiterSpaceChar, &tokens);
 
   if (tokens.size() != 2 && tokens.size() != 4) {
     return ParseError("Must have one or two <direction, streams> pairs.");
@@ -362,8 +363,8 @@ std::string SimulcastSdpSerializer::SerializeRidDescription(
 RTCErrorOr<RidDescription> SimulcastSdpSerializer::DeserializeRidDescription(
     const MediaContentDescription& media_desc,
     absl::string_view string) const {
-  std::vector<std::string> tokens;
-  tokenize(std::string(string), kDelimiterSpaceChar, &tokens);
+  std::vector<absl::string_view> tokens;
+  tokenize(string, kDelimiterSpaceChar, &tokens);
 
   if (tokens.size() < 2) {
     return ParseError("RID Description must contain <RID> <direction>.");
@@ -374,7 +375,7 @@ RTCErrorOr<RidDescription> SimulcastSdpSerializer::DeserializeRidDescription(
   }
 
   if (!IsLegalRsidName(tokens[0])) {
-    return ParseError("Invalid RID value: " + tokens[0] + ".");
+    return ParseError("Invalid RID value: " + std::string(tokens[0]) + ".");
   }
 
   if (tokens[1] != kSendDirection && tokens[1] != kReceiveDirection) {
@@ -389,20 +390,22 @@ RTCErrorOr<RidDescription> SimulcastSdpSerializer::DeserializeRidDescription(
 
   // If there is a third argument it is a payload list and/or restriction list.
   if (tokens.size() == 3) {
-    std::vector<std::string> restrictions;
+    std::vector<absl::string_view> restrictions;
     tokenize(tokens[2], kDelimiterSemicolonChar, &restrictions);
 
     // Check for malformed restriction list, such as ';' or ';;;' etc.
     if (restrictions.empty()) {
-      return ParseError("Invalid RID restriction list: " + tokens[2]);
+      return ParseError("Invalid RID restriction list: " +
+                        std::string(tokens[2]));
     }
 
     // Parse the restrictions. The payload indicator (pt) can only appear first.
-    for (const std::string& restriction : restrictions) {
-      std::vector<std::string> parts;
+    for (absl::string_view restriction : restrictions) {
+      std::vector<absl::string_view> parts;
       tokenize(restriction, kDelimiterEqualChar, &parts);
       if (parts.empty() || parts.size() > 2) {
-        return ParseError("Invalid format for restriction: " + restriction);
+        return ParseError("Invalid format for restriction: " +
+                          std::string(restriction));
       }
 
       // `parts` contains at least one value and it does not contain a space.
@@ -410,9 +413,9 @@ RTCErrorOr<RidDescription> SimulcastSdpSerializer::DeserializeRidDescription(
       // unprintable characters, etc. which will not generate errors here but
       // will (most-likely) be ignored by components down stream.
       if (parts[0] == kPayloadType) {
-        RTCError error =
-            ParseRidPayloadList(parts.size() > 1 ? parts[1] : std::string(),
-                                &rid_description, &rid_payload_types);
+        RTCError error = ParseRidPayloadList(
+            parts.size() > 1 ? parts[1] : absl::string_view(), &rid_description,
+            &rid_payload_types);
         if (!error.ok()) {
           return std::move(error);
         }
@@ -421,13 +424,15 @@ RTCErrorOr<RidDescription> SimulcastSdpSerializer::DeserializeRidDescription(
       }
 
       // Parse `parts` as a key=value pair which allows unspecified values.
-      if (rid_description.restrictions.find(parts[0]) !=
+      std::string key(parts[0]);
+      if (rid_description.restrictions.find(key) !=
           rid_description.restrictions.end()) {
-        return ParseError("Duplicate restriction specified: " + parts[0]);
+        return ParseError("Duplicate restriction specified: " + key);
       }
 
-      rid_description.restrictions[parts[0]] =
-          parts.size() > 1 ? parts[1] : std::string();
+      rid_description.restrictions.emplace(
+          std::move(key),
+          parts.size() > 1 ? std::string(parts[1]) : std::string());
     }
   }
 

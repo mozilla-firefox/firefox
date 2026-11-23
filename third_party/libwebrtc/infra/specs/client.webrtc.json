@@ -609,28 +609,6 @@
         "merge": {
           "script": "//testing/merge_scripts/standard_gtest_merge.py"
         },
-        "module_name": "//modules/video_coding:videocodec_test_mediacodec",
-        "name": "videocodec_test_mediacodec",
-        "resultdb": {
-          "enable": true,
-          "has_native_resultdb_integration": true
-        },
-        "swarming": {
-          "dimensions": {
-            "android_devices": "1",
-            "device_os": "AP2A.240705.004",
-            "device_type": "panther",
-            "os": "Android"
-          },
-          "service_account": "chromium-tester@chops-service-accounts.iam.gserviceaccount.com"
-        },
-        "test": "videocodec_test_mediacodec",
-        "test_id_prefix": "ninja://modules/video_coding:videocodec_test_mediacodec/"
-      },
-      {
-        "merge": {
-          "script": "//testing/merge_scripts/standard_gtest_merge.py"
-        },
         "module_name": "//:voip_unittests",
         "name": "voip_unittests",
         "resultdb": {
@@ -1322,28 +1300,6 @@
         },
         "test": "video_timing_tests",
         "test_id_prefix": "ninja://video/timing:video_timing_tests/"
-      },
-      {
-        "merge": {
-          "script": "//testing/merge_scripts/standard_gtest_merge.py"
-        },
-        "module_name": "//modules/video_coding:videocodec_test_mediacodec",
-        "name": "videocodec_test_mediacodec",
-        "resultdb": {
-          "enable": true,
-          "has_native_resultdb_integration": true
-        },
-        "swarming": {
-          "dimensions": {
-            "android_devices": "1",
-            "device_os": "AP2A.240705.004",
-            "device_type": "panther",
-            "os": "Android"
-          },
-          "service_account": "chromium-tester@chops-service-accounts.iam.gserviceaccount.com"
-        },
-        "test": "videocodec_test_mediacodec",
-        "test_id_prefix": "ninja://modules/video_coding:videocodec_test_mediacodec/"
       },
       {
         "merge": {
@@ -2042,6 +1998,24 @@
         "merge": {
           "script": "//testing/merge_scripts/standard_isolated_script_merge.py"
         },
+        "module_name": "//examples:examples_unittests",
+        "name": "examples_unittests",
+        "resultdb": {
+          "result_format": "json"
+        },
+        "swarming": {
+          "dimensions": {
+            "cpu": "x86-64",
+            "os": "Ubuntu-22.04"
+          }
+        },
+        "test": "examples_unittests",
+        "test_id_prefix": "ninja://examples:examples_unittests/"
+      },
+      {
+        "merge": {
+          "script": "//testing/merge_scripts/standard_isolated_script_merge.py"
+        },
         "module_name": "//modules:modules_unittests",
         "name": "modules_unittests",
         "resultdb": {
@@ -2622,6 +2596,24 @@
         },
         "test": "desktop_capture_unittests",
         "test_id_prefix": "ninja://modules/desktop_capture:desktop_capture_unittests/"
+      },
+      {
+        "merge": {
+          "script": "//testing/merge_scripts/standard_isolated_script_merge.py"
+        },
+        "module_name": "//examples:examples_unittests",
+        "name": "examples_unittests",
+        "resultdb": {
+          "result_format": "json"
+        },
+        "swarming": {
+          "dimensions": {
+            "cpu": "x86-64",
+            "os": "Ubuntu-22.04"
+          }
+        },
+        "test": "examples_unittests",
+        "test_id_prefix": "ninja://examples:examples_unittests/"
       },
       {
         "merge": {
@@ -3212,6 +3204,24 @@
         "merge": {
           "script": "//testing/merge_scripts/standard_isolated_script_merge.py"
         },
+        "module_name": "//examples:examples_unittests",
+        "name": "examples_unittests",
+        "resultdb": {
+          "result_format": "json"
+        },
+        "swarming": {
+          "dimensions": {
+            "cpu": "x86-64",
+            "os": "Ubuntu-22.04"
+          }
+        },
+        "test": "examples_unittests",
+        "test_id_prefix": "ninja://examples:examples_unittests/"
+      },
+      {
+        "merge": {
+          "script": "//testing/merge_scripts/standard_isolated_script_merge.py"
+        },
         "module_name": "//modules:modules_unittests",
         "name": "modules_unittests",
         "resultdb": {
@@ -3792,6 +3802,24 @@
         },
         "test": "desktop_capture_unittests",
         "test_id_prefix": "ninja://modules/desktop_capture:desktop_capture_unittests/"
+      },
+      {
+        "merge": {
+          "script": "//testing/merge_scripts/standard_isolated_script_merge.py"
+        },
+        "module_name": "//examples:examples_unittests",
+        "name": "examples_unittests",
+        "resultdb": {
+          "result_format": "json"
+        },
+        "swarming": {
+          "dimensions": {
+            "cpu": "x86-64",
+            "os": "Ubuntu-22.04"
+          }
+        },
+        "test": "examples_unittests",
+        "test_id_prefix": "ninja://examples:examples_unittests/"
       },
       {
         "merge": {
@@ -4382,6 +4410,24 @@
         "merge": {
           "script": "//testing/merge_scripts/standard_isolated_script_merge.py"
         },
+        "module_name": "//examples:examples_unittests",
+        "name": "examples_unittests",
+        "resultdb": {
+          "result_format": "json"
+        },
+        "swarming": {
+          "dimensions": {
+            "cpu": "x86-64",
+            "os": "Ubuntu-22.04"
+          }
+        },
+        "test": "examples_unittests",
+        "test_id_prefix": "ninja://examples:examples_unittests/"
+      },
+      {
+        "merge": {
+          "script": "//testing/merge_scripts/standard_isolated_script_merge.py"
+        },
         "module_name": "//modules:modules_unittests",
         "name": "modules_unittests",
         "resultdb": {
@@ -4967,6 +5013,24 @@
         "merge": {
           "script": "//testing/merge_scripts/standard_isolated_script_merge.py"
         },
+        "module_name": "//examples:examples_unittests",
+        "name": "examples_unittests",
+        "resultdb": {
+          "result_format": "json"
+        },
+        "swarming": {
+          "dimensions": {
+            "cpu": "x86-64",
+            "os": "Ubuntu-22.04"
+          }
+        },
+        "test": "examples_unittests",
+        "test_id_prefix": "ninja://examples:examples_unittests/"
+      },
+      {
+        "merge": {
+          "script": "//testing/merge_scripts/standard_isolated_script_merge.py"
+        },
         "module_name": "//modules:modules_unittests",
         "name": "modules_unittests",
         "resultdb": {
@@ -5530,6 +5594,24 @@
         },
         "test": "desktop_capture_unittests",
         "test_id_prefix": "ninja://modules/desktop_capture:desktop_capture_unittests/"
+      },
+      {
+        "merge": {
+          "script": "//testing/merge_scripts/standard_isolated_script_merge.py"
+        },
+        "module_name": "//examples:examples_unittests",
+        "name": "examples_unittests",
+        "resultdb": {
+          "result_format": "json"
+        },
+        "swarming": {
+          "dimensions": {
+            "cpu": "x86-64",
+            "os": "Ubuntu-22.04"
+          }
+        },
+        "test": "examples_unittests",
+        "test_id_prefix": "ninja://examples:examples_unittests/"
       },
       {
         "merge": {
@@ -6099,6 +6181,24 @@
         },
         "test": "desktop_capture_unittests",
         "test_id_prefix": "ninja://modules/desktop_capture:desktop_capture_unittests/"
+      },
+      {
+        "merge": {
+          "script": "//testing/merge_scripts/standard_isolated_script_merge.py"
+        },
+        "module_name": "//examples:examples_unittests",
+        "name": "examples_unittests",
+        "resultdb": {
+          "result_format": "json"
+        },
+        "swarming": {
+          "dimensions": {
+            "cpu": "x86-64",
+            "os": "Ubuntu-22.04"
+          }
+        },
+        "test": "examples_unittests",
+        "test_id_prefix": "ninja://examples:examples_unittests/"
       },
       {
         "merge": {
@@ -6685,6 +6785,24 @@
         },
         "test": "desktop_capture_unittests",
         "test_id_prefix": "ninja://modules/desktop_capture:desktop_capture_unittests/"
+      },
+      {
+        "merge": {
+          "script": "//testing/merge_scripts/standard_isolated_script_merge.py"
+        },
+        "module_name": "//examples:examples_unittests",
+        "name": "examples_unittests",
+        "resultdb": {
+          "result_format": "json"
+        },
+        "swarming": {
+          "dimensions": {
+            "cpu": "x86-64",
+            "os": "Ubuntu-22.04"
+          }
+        },
+        "test": "examples_unittests",
+        "test_id_prefix": "ninja://examples:examples_unittests/"
       },
       {
         "merge": {
@@ -7295,6 +7413,24 @@
         "merge": {
           "script": "//testing/merge_scripts/standard_isolated_script_merge.py"
         },
+        "module_name": "//examples:examples_unittests",
+        "name": "examples_unittests",
+        "resultdb": {
+          "result_format": "json"
+        },
+        "swarming": {
+          "dimensions": {
+            "cpu": "arm64",
+            "os": "Mac-26"
+          }
+        },
+        "test": "examples_unittests",
+        "test_id_prefix": "ninja://examples:examples_unittests/"
+      },
+      {
+        "merge": {
+          "script": "//testing/merge_scripts/standard_isolated_script_merge.py"
+        },
         "module_name": "//modules:modules_unittests",
         "name": "modules_unittests",
         "resultdb": {
@@ -7875,6 +8011,24 @@
         },
         "test": "desktop_capture_unittests",
         "test_id_prefix": "ninja://modules/desktop_capture:desktop_capture_unittests/"
+      },
+      {
+        "merge": {
+          "script": "//testing/merge_scripts/standard_isolated_script_merge.py"
+        },
+        "module_name": "//examples:examples_unittests",
+        "name": "examples_unittests",
+        "resultdb": {
+          "result_format": "json"
+        },
+        "swarming": {
+          "dimensions": {
+            "cpu": "arm64",
+            "os": "Mac-26"
+          }
+        },
+        "test": "examples_unittests",
+        "test_id_prefix": "ninja://examples:examples_unittests/"
       },
       {
         "merge": {
@@ -8465,6 +8619,24 @@
         "merge": {
           "script": "//testing/merge_scripts/standard_isolated_script_merge.py"
         },
+        "module_name": "//examples:examples_unittests",
+        "name": "examples_unittests",
+        "resultdb": {
+          "result_format": "json"
+        },
+        "swarming": {
+          "dimensions": {
+            "cpu": "arm64",
+            "os": "Mac-26"
+          }
+        },
+        "test": "examples_unittests",
+        "test_id_prefix": "ninja://examples:examples_unittests/"
+      },
+      {
+        "merge": {
+          "script": "//testing/merge_scripts/standard_isolated_script_merge.py"
+        },
         "module_name": "//modules:modules_unittests",
         "name": "modules_unittests",
         "resultdb": {
@@ -9045,6 +9217,24 @@
         },
         "test": "desktop_capture_unittests",
         "test_id_prefix": "ninja://modules/desktop_capture:desktop_capture_unittests/"
+      },
+      {
+        "merge": {
+          "script": "//testing/merge_scripts/standard_isolated_script_merge.py"
+        },
+        "module_name": "//examples:examples_unittests",
+        "name": "examples_unittests",
+        "resultdb": {
+          "result_format": "json"
+        },
+        "swarming": {
+          "dimensions": {
+            "cpu": "arm64-64-Apple_M1",
+            "os": "Mac-26"
+          }
+        },
+        "test": "examples_unittests",
+        "test_id_prefix": "ninja://examples:examples_unittests/"
       },
       {
         "merge": {
@@ -9661,6 +9851,24 @@
         "merge": {
           "script": "//testing/merge_scripts/standard_isolated_script_merge.py"
         },
+        "module_name": "//examples:examples_unittests",
+        "name": "examples_unittests",
+        "resultdb": {
+          "result_format": "json"
+        },
+        "swarming": {
+          "dimensions": {
+            "cpu": "x86-64",
+            "os": "Windows-10-19045"
+          }
+        },
+        "test": "examples_unittests",
+        "test_id_prefix": "ninja://examples:examples_unittests/"
+      },
+      {
+        "merge": {
+          "script": "//testing/merge_scripts/standard_isolated_script_merge.py"
+        },
         "module_name": "//modules:modules_unittests",
         "name": "modules_unittests",
         "resultdb": {
@@ -10241,6 +10449,24 @@
         },
         "test": "desktop_capture_win_unittests",
         "test_id_prefix": "ninja://modules/desktop_capture:desktop_capture_win_unittests/"
+      },
+      {
+        "merge": {
+          "script": "//testing/merge_scripts/standard_isolated_script_merge.py"
+        },
+        "module_name": "//examples:examples_unittests",
+        "name": "examples_unittests",
+        "resultdb": {
+          "result_format": "json"
+        },
+        "swarming": {
+          "dimensions": {
+            "cpu": "x86-64",
+            "os": "Windows-10-19045"
+          }
+        },
+        "test": "examples_unittests",
+        "test_id_prefix": "ninja://examples:examples_unittests/"
       },
       {
         "merge": {
@@ -10831,6 +11057,24 @@
         "merge": {
           "script": "//testing/merge_scripts/standard_isolated_script_merge.py"
         },
+        "module_name": "//examples:examples_unittests",
+        "name": "examples_unittests",
+        "resultdb": {
+          "result_format": "json"
+        },
+        "swarming": {
+          "dimensions": {
+            "cpu": "x86-64",
+            "os": "Windows-10-19045"
+          }
+        },
+        "test": "examples_unittests",
+        "test_id_prefix": "ninja://examples:examples_unittests/"
+      },
+      {
+        "merge": {
+          "script": "//testing/merge_scripts/standard_isolated_script_merge.py"
+        },
         "module_name": "//modules:modules_unittests",
         "name": "modules_unittests",
         "resultdb": {
@@ -11411,6 +11655,24 @@
         },
         "test": "desktop_capture_win_unittests",
         "test_id_prefix": "ninja://modules/desktop_capture:desktop_capture_win_unittests/"
+      },
+      {
+        "merge": {
+          "script": "//testing/merge_scripts/standard_isolated_script_merge.py"
+        },
+        "module_name": "//examples:examples_unittests",
+        "name": "examples_unittests",
+        "resultdb": {
+          "result_format": "json"
+        },
+        "swarming": {
+          "dimensions": {
+            "cpu": "x86-64",
+            "os": "Windows-10-19045"
+          }
+        },
+        "test": "examples_unittests",
+        "test_id_prefix": "ninja://examples:examples_unittests/"
       },
       {
         "merge": {

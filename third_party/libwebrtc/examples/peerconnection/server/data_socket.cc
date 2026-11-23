@@ -279,7 +279,7 @@ bool ListeningSocket::Listen(unsigned short port) {
   }
   struct sockaddr_in addr = {};
   addr.sin_family = AF_INET;
-  addr.sin_addr.s_addr = htonl(INADDR_ANY);
+  addr.sin_addr.s_addr = htonl(INADDR_LOOPBACK);
   addr.sin_port = htons(port);
   if (bind(socket_, reinterpret_cast<const sockaddr*>(&addr), sizeof(addr)) ==
       SOCKET_ERROR) {
@@ -297,6 +297,11 @@ DataSocket* ListeningSocket::Accept() const {
       accept(socket_, reinterpret_cast<sockaddr*>(&addr), &size);
   if (client == INVALID_SOCKET)
     return nullptr;
+  if (!webrtc::IPIsLoopback(webrtc::IPAddress(addr.sin_addr))) {
+    printf("Refusing non-loopback connection\n");
+    closesocket(client);
+    return nullptr;
+  }
 
   return new DataSocket(client);
 }

@@ -15,10 +15,10 @@ Mercurial Revision: https://hg.mozilla.org/mozilla-central/rev/edac9d01a9ac7594f
  3 files changed, 24 insertions(+)
 
 diff --git a/video/rtp_video_stream_receiver2.cc b/video/rtp_video_stream_receiver2.cc
-index 9883bc5208..bef01d3bf8 100644
+index 8a76be159a..2d8d237d6b 100644
 --- a/video/rtp_video_stream_receiver2.cc
 +++ b/video/rtp_video_stream_receiver2.cc
-@@ -1354,6 +1354,16 @@ std::optional<int64_t> RtpVideoStreamReceiver2::LastReceivedKeyframePacketMs()
+@@ -1245,6 +1245,16 @@ std::optional<int64_t> RtpVideoStreamReceiver2::LastReceivedKeyframePacketMs()
    return std::nullopt;
  }
  
@@ -28,18 +28,18 @@ index 9883bc5208..bef01d3bf8 100644
 +void RtpVideoStreamReceiver2::RemoteRTCPSenderInfo(
 +    uint32_t* packet_count, uint32_t* octet_count,
 +    int64_t* ntp_timestamp_ms) const {
-+  RTC_DCHECK_RUN_ON(&worker_task_checker_);
++  RTC_DCHECK_RUN_ON(network_queue_);
 +  rtp_rtcp_->RemoteRTCPSenderInfo(packet_count, octet_count, ntp_timestamp_ms);
 +}
 +
  std::optional<RtpRtcpInterface::SenderReportStats>
  RtpVideoStreamReceiver2::GetSenderReportStats() const {
-   RTC_DCHECK_RUN_ON(worker_queue_);
+   RTC_DCHECK_RUN_ON(network_queue_);
 diff --git a/video/rtp_video_stream_receiver2.h b/video/rtp_video_stream_receiver2.h
-index b77ee59c2a..dbcb904f6f 100644
+index 260e703970..bf72c1456e 100644
 --- a/video/rtp_video_stream_receiver2.h
 +++ b/video/rtp_video_stream_receiver2.h
-@@ -259,6 +259,12 @@ class RtpVideoStreamReceiver2 : public LossNotificationSender,
+@@ -246,6 +246,12 @@ class RtpVideoStreamReceiver2 : public RecoveredPacketReceiver,
                                         const RtpPacketReceived& rtp_packet,
                                         const RTPVideoHeader& video);
  
@@ -53,10 +53,10 @@ index b77ee59c2a..dbcb904f6f 100644
    // Implements RtpVideoFrameReceiver.
    void ManageFrame(std::unique_ptr<RtpFrameObject> frame) override;
 diff --git a/video/video_receive_stream2.cc b/video/video_receive_stream2.cc
-index b1e984a8a1..ef917125d2 100644
+index f0ad596f1c..f7d264ea0e 100644
 --- a/video/video_receive_stream2.cc
 +++ b/video/video_receive_stream2.cc
-@@ -747,6 +747,14 @@ VideoReceiveStreamInterface::Stats VideoReceiveStream2::GetStats() const {
+@@ -741,6 +741,14 @@ VideoReceiveStreamInterface::Stats VideoReceiveStream2::GetStats() const {
          non_sender_rtt_stats->round_trip_time_measurements;
      stats.total_round_trip_time = non_sender_rtt_stats->total_round_trip_time;
    }

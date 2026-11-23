@@ -31,19 +31,24 @@
 #include "api/scoped_refptr.h"
 #include "api/voip/voip_statistics.h"
 #include "audio/voip/test/mock_task_queue.h"
+#include "call/audio_sender.h"
 #include "modules/audio_mixer/audio_mixer_impl.h"
 #include "modules/audio_mixer/sine_wave_generator.h"
 #include "modules/rtp_rtcp/include/rtp_rtcp_defines.h"
+#include "modules/rtp_rtcp/source/rtcp_packet/receiver_report.h"
+#include "modules/rtp_rtcp/source/rtcp_packet/report_block.h"
 #include "modules/rtp_rtcp/source/rtp_packet_received.h"
 #include "system_wrappers/include/clock.h"
 #include "test/create_test_field_trials.h"
 #include "test/gmock.h"
 #include "test/gtest.h"
+#include "test/mock_audio_encoder.h"
 #include "test/mock_transport.h"
 
 namespace webrtc {
 namespace {
 
+using ::testing::FloatEq;
 using ::testing::NiceMock;
 using ::testing::Return;
 using ::testing::Unused;
@@ -367,6 +372,95 @@ TEST_F(AudioChannelTest, RttIsAvailableAfterChangeOfRemoteSsrc) {
   EXPECT_EQ(channel_stats->remote_ssrc, kAc3Ssrc);
   ASSERT_TRUE(channel_stats->remote_rtcp);
   EXPECT_GT(channel_stats->remote_rtcp->round_trip_time, 0.0);
+}
+
+TEST_F(AudioChannelTest, RtcpReportBlockUpdatesEncoderPacketLossFraction) {
+  auto mock_encoder = std::make_unique<NiceMock<MockAudioEncoder>>();
+  ON_CALL(*mock_encoder, SampleRateHz()).WillByDefault(Return(8000));
+  ON_CALL(*mock_encoder, NumChannels()).WillByDefault(Return(1));
+  ON_CALL(*mock_encoder, RtpTimestampRateHz()).WillByDefault(Return(8000));
+
+  constexpr uint8_t kFractionLostRaw = 51;
+  EXPECT_CALL(*mock_encoder,
+              OnReceivedUplinkPacketLossFraction(
+                  FloatEq(static_cast<float>(kFractionLostRaw) / 256.0f)))
+      .Times(1);
+
+  audio_channel_->SetEncoder(kPcmuPayload, kPcmuFormat,
+                             std::move(mock_encoder));
+
+  // Report block for an unrelated SSRC should be ignored.
+  rtcp::ReportBlock unrelated_block;
+  unrelated_block.SetMediaSsrc(kLocalSsrc + 1);
+  unrelated_block.SetFractionLost(128);
+  rtcp::ReceiverReport unrelated_rr;
+  unrelated_rr.SetSenderSsrc(0xdeadbeef);
+  unrelated_rr.AddReportBlock(unrelated_block);
+  audio_channel_->ReceivedRTCPPacket(unrelated_rr.Build());
+
+  // Report block matching local SSRC should update encoder packet loss.
+  rtcp::ReportBlock local_block;
+  local_block.SetMediaSsrc(kLocalSsrc);
+  local_block.SetFractionLost(kFractionLostRaw);
+  rtcp::ReceiverReport local_rr;
+  local_rr.SetSenderSsrc(0xdeadbeef);
+  local_rr.AddReportBlock(local_block);
+  audio_channel_->ReceivedRTCPPacket(local_rr.Build());
+}
+
+TEST_F(AudioChannelTest, OpusInbandFecEnabledUponRtcpPacketLossReport) {
+  constexpr int kOpusPayload = 111;
+  const SdpAudioFormat kOpusFormat = {
+      "opus", 48000, 2, {{"minptime", "10"}, {"useinbandfec", "1"}}};
+
+  audio_channel_->SetEncoder(
+      kOpusPayload, kOpusFormat,
+      encoder_factory_->Create(env_, kOpusFormat,
+                               {.payload_type = kOpusPayload}));
+  audio_channel_->SetReceiveCodecs({{kOpusPayload, kOpusFormat}});
+
+  EXPECT_CALL(transport_, SendRtp)
+      .WillRepeatedly([&](std::span<const uint8_t> packet, Unused) {
+        audio_channel_->ReceivedRTPPacket(packet);
+        return true;
+      });
+
+  int frame_order = 0;
+  auto make_48khz_frame = [&]() {
+    auto frame = std::make_unique<AudioFrame>();
+    frame->sample_rate_hz_ = 48000;
+    frame->samples_per_channel_ = 480;
+    frame->num_channels_ = 1;
+    frame->timestamp_ = frame->samples_per_channel_ * frame_order++;
+    wave_generator_.GenerateNextFrame(frame.get());
+    return frame;
+  };
+
+  AudioSender* audio_sender = audio_channel_->GetAudioSender();
+  for (int i = 0; i < 10; ++i) {
+    audio_sender->SendAudioData(make_48khz_frame());
+    fake_clock_.AdvanceTimeMilliseconds(10);
+  }
+  EXPECT_EQ(
+      audio_channel_->GetIngressStatistics().neteq_stats.fec_packets_received,
+      0ULL);
+
+  // Report ~20% packet loss (51 / 256) via RTCP Receiver Report.
+  rtcp::ReportBlock report_block;
+  report_block.SetMediaSsrc(kLocalSsrc);
+  report_block.SetFractionLost(51);
+  rtcp::ReceiverReport rr;
+  rr.SetSenderSsrc(0xdeadbeef);
+  rr.AddReportBlock(report_block);
+  audio_channel_->ReceivedRTCPPacket(rr.Build());
+
+  for (int i = 0; i < 10; ++i) {
+    audio_sender->SendAudioData(make_48khz_frame());
+    fake_clock_.AdvanceTimeMilliseconds(10);
+  }
+  EXPECT_GT(
+      audio_channel_->GetIngressStatistics().neteq_stats.fec_packets_received,
+      0ULL);
 }
 
 }  // namespace

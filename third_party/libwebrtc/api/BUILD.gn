@@ -274,6 +274,10 @@ rtc_library("dtmf_sender_interface") {
 rtc_library("sframe_types") {
   visibility = [ "*" ]
   sources = [ "sframe/sframe_types.h" ]
+  deps = [
+    ":rtc_error",
+    "//third_party/abseil-cpp/absl/functional:any_invocable",
+  ]
 }
 
 rtc_library("sframe_encryptor_interface") {
@@ -292,8 +296,8 @@ rtc_library("sframe_decryptor_interface") {
   deps = [
     ":frame_transformer_interface",
     ":ref_count",
-    ":rtc_error",
     ":sframe_types",
+    "//third_party/abseil-cpp/absl/base:nullability",
     "//third_party/abseil-cpp/absl/functional:any_invocable",
   ]
 }
@@ -382,6 +386,7 @@ rtc_library("jsep") {
     ":sctp_transport_interface",
     ":sequence_checker",
     ":uma_metrics",
+    ":webrtc_sdp_planb",
     "../media:codec",
     "../media:media_constants",
     "../media:rid_description",
@@ -412,10 +417,33 @@ rtc_library("jsep") {
     "audio:audio_frame_api",
     "//third_party/abseil-cpp/absl/algorithm:container",
     "//third_party/abseil-cpp/absl/base:nullability",
+    "//third_party/abseil-cpp/absl/container:inlined_vector",
     "//third_party/abseil-cpp/absl/functional:any_invocable",
     "//third_party/abseil-cpp/absl/memory",
     "//third_party/abseil-cpp/absl/strings",
     "//third_party/abseil-cpp/absl/strings:str_format",
+    "//third_party/abseil-cpp/absl/strings:string_view",
+  ]
+}
+
+# Legacy Plan B and msid-semantic SDP helpers. Internal to the SDP
+# implementation in :jsep; not part of the public API.
+rtc_library("webrtc_sdp_planb") {
+  visibility = [ ":jsep" ]
+  sources = [
+    "webrtc_sdp_planb.cc",
+    "webrtc_sdp_planb.h",
+  ]
+  deps = [
+    ":rtp_parameters",
+    "../media:stream_params",
+    "../pc:session_description",
+    "../rtc_base:crypto_random",
+    "../rtc_base:logging",
+    "../rtc_base:stringutils",
+    "../rtc_base/containers:flat_set",
+    "//third_party/abseil-cpp/absl/algorithm:container",
+    "//third_party/abseil-cpp/absl/strings",
     "//third_party/abseil-cpp/absl/strings:string_view",
   ]
 }
@@ -554,6 +582,7 @@ rtc_library("rtp_receiver_interface") {
     "../rtc_base/system:rtc_export",
     "crypto:frame_decryptor_interface",
     "transport/rtp:rtp_source",
+    "//third_party/abseil-cpp/absl/base:nullability",
   ]
 }
 
@@ -788,9 +817,10 @@ rtc_library("rtp_parameters") {
     "../rtc_base:checks",
     "../rtc_base:logging",
     "../rtc_base:stringutils",
-    "../rtc_base:strong_alias",
+    "../rtc_base/containers:flat_map",
     "../rtc_base/system:rtc_export",
     "video:resolution",
+    "video:video_codec_constants",
     "video_codecs:scalability_mode",
     "//third_party/abseil-cpp/absl/container:inlined_vector",
     "//third_party/abseil-cpp/absl/strings",
@@ -1844,6 +1874,7 @@ if (rtc_include_tests) {
       ":rtc_error",
       "../rtc_base:checks",
       "../rtc_base:logging",
+      "../test:scoped_logging_config",
       "../test:test_support",
       "//third_party/abseil-cpp/absl/strings",
       "//third_party/abseil-cpp/absl/strings:string_view",
@@ -1899,6 +1930,7 @@ if (rtc_include_tests) {
       ":rtp_parameters",
       "../rtc_base:checks",
       "../test:test_support",
+      "video:video_codec_constants",
       "//third_party/abseil-cpp/absl/strings",
       "//third_party/abseil-cpp/absl/strings:string_view",
     ]

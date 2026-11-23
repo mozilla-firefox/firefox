@@ -172,13 +172,6 @@ class MockRtpRtcpInterface : public RtpRtcpInterface {
               SendCombinedRtcpPacket,
               (std::vector<std::unique_ptr<rtcp::RtcpPacket>> rtcp_packets),
               (override));
-  MOCK_METHOD(int32_t,
-              SendLossNotification,
-              (uint16_t last_decoded_seq_num,
-               uint16_t last_received_seq_num,
-               bool decodability_flag,
-               bool buffering_allowed),
-              (override));
   MOCK_METHOD(RTPSender*, RtpSender, (), (override));
   MOCK_METHOD(const RTPSender*, RtpSender, (), (const, override));
 };

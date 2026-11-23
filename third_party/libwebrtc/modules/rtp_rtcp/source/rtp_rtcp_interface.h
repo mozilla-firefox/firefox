@@ -64,9 +64,6 @@ class RtpRtcpInterface : public RtcpFeedbackSenderInterface {
     // Called when the receiver requests an intra frame.
     RtcpIntraFrameObserver* intra_frame_callback = nullptr;
 
-    // Called when the receiver sends a loss notification.
-    RtcpLossNotificationObserver* rtcp_loss_notification_observer = nullptr;
-
     // Called when receive an RTCP message related to the link in general, e.g.
     // bandwidth estimation related message.
     NetworkLinkRtcpObserver* network_link_rtcp_observer = nullptr;
@@ -453,13 +450,6 @@ class RtpRtcpInterface : public RtcpFeedbackSenderInterface {
   void SendPictureLossIndication() { SendRTCP(kRtcpPli); }
   // using FIR, https://tools.ietf.org/html/rfc5104#section-4.3.1.2
   void SendFullIntraRequest() { SendRTCP(kRtcpFir); }
-
-  // Sends a LossNotification RTCP message.
-  // Returns -1 on failure else 0.
-  virtual int32_t SendLossNotification(uint16_t last_decoded_seq_num,
-                                       uint16_t last_received_seq_num,
-                                       bool decodability_flag,
-                                       bool buffering_allowed) = 0;
 };
 
 }  // namespace webrtc

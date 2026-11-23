@@ -335,40 +335,59 @@ TEST(FrameCadenceAdapterTest, RepeatsFramesDelayed) {
   time_controller.AdvanceTime(TimeDelta::Seconds(1));
 }
 
-TEST(FrameCadenceAdapterTest, SetsIsRepeatFrameFlag) {
+TEST(FrameCadenceAdapterTest, SetsRepeatMode) {
   MockCallback callback;
   GlobalSimulatedTimeController time_controller(Timestamp::Millis(47892223));
   FieldTrials no_field_trials = CreateTestFieldTrials();
   auto adapter = CreateAdapter(no_field_trials, time_controller.GetClock());
   adapter->Initialize(&callback);
   adapter->SetZeroHertzModeEnabled(
-      FrameCadenceAdapterInterface::ZeroHertzModeParams{});
+      FrameCadenceAdapterInterface::ZeroHertzModeParams{.num_simulcast_layers =
+                                                            1});
+  adapter->UpdateLayerStatus(0, /*enabled=*/true);
   adapter->OnConstraintsChanged(
       VideoTrackSourceConstraints{.min_fps = 0, .max_fps = 1});
 
-  // Send one frame, expect is_repeat_frame to be false.
+  // Send one frame, expect repeat_mode to be kNone.
   auto frame = CreateFrameWithTimestamps(&time_controller);
   adapter->OnFrame(frame);
   EXPECT_CALL(callback, OnFrame)
       .WillOnce([&](Timestamp, bool, const VideoFrame& frame) {
+        EXPECT_EQ(frame.repeat_mode(), VideoFrame::RepeatMode::kNone);
         EXPECT_FALSE(frame.is_repeat_frame());
       });
   time_controller.AdvanceTime(TimeDelta::Seconds(1));
   Mock::VerifyAndClearExpectations(&callback);
 
-  // Expect the repeated frame to have is_repeat_frame set to true.
+  // Expect the unconverged repeated frame to have kQualityConvergence.
   EXPECT_CALL(callback, OnFrame)
       .WillOnce([&](Timestamp, bool, const VideoFrame& frame) {
+        EXPECT_EQ(frame.repeat_mode(),
+                  VideoFrame::RepeatMode::kQualityConvergence);
+        EXPECT_TRUE(frame.is_repeat_frame());
+      });
+  // The already scheduled repeat fires as a quality-convergence repeat.
+  // Marking quality as converged before it fires makes it schedule the
+  // following repeat as an idle keep-alive.
+  adapter->UpdateLayerQualityConvergence(0, /*converged=*/true);
+  time_controller.AdvanceTime(TimeDelta::Seconds(1));
+  Mock::VerifyAndClearExpectations(&callback);
+
+  // Expect the converged idle repeated frame to have kKeepAlive.
+  EXPECT_CALL(callback, OnFrame)
+      .WillOnce([&](Timestamp, bool, const VideoFrame& frame) {
+        EXPECT_EQ(frame.repeat_mode(), VideoFrame::RepeatMode::kKeepAlive);
         EXPECT_TRUE(frame.is_repeat_frame());
       });
   time_controller.AdvanceTime(TimeDelta::Seconds(1));
   Mock::VerifyAndClearExpectations(&callback);
 
-  // Send a new frame, expect is_repeat_frame to be false again.
+  // Send a new frame, expect repeat_mode to be kNone again.
   auto new_frame = CreateFrameWithTimestamps(&time_controller);
   adapter->OnFrame(new_frame);
   EXPECT_CALL(callback, OnFrame)
       .WillOnce([&](Timestamp, bool, const VideoFrame& frame) {
+        EXPECT_EQ(frame.repeat_mode(), VideoFrame::RepeatMode::kNone);
         EXPECT_FALSE(frame.is_repeat_frame());
       });
   time_controller.AdvanceTime(TimeDelta::Seconds(1));

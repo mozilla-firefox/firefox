@@ -192,6 +192,17 @@ rtc_library("retransmit_flushed_packets_settings") {
   ]
 }
 
+rtc_library("rfc8888_congestion_control_feedback_experiment") {
+  sources = [
+    "rfc8888_congestion_control_feedback_experiment.cc",
+    "rfc8888_congestion_control_feedback_experiment.h",
+  ]
+  deps = [
+    "../../api:field_trials_view",
+    "//third_party/abseil-cpp/absl/strings:string_view",
+  ]
+}
+
 if (rtc_include_tests) {
   rtc_cc_test("balanced_degradation_settings_unittest") {
     sources = [ "balanced_degradation_settings_unittest.cc" ]
@@ -338,6 +349,16 @@ if (rtc_include_tests) {
     sources = [ "retransmit_flushed_packets_settings_unittest.cc" ]
     deps = [
       ":retransmit_flushed_packets_settings",
+      "../../api:field_trials",
+      "../../test:create_test_field_trials",
+      "../../test:test_support",
+    ]
+  }
+
+  rtc_cc_test("rfc8888_congestion_control_feedback_experiment_unittest") {
+    sources = [ "rfc8888_congestion_control_feedback_experiment_unittest.cc" ]
+    deps = [
+      ":rfc8888_congestion_control_feedback_experiment",
       "../../api:field_trials",
       "../../test:create_test_field_trials",
       "../../test:test_support",

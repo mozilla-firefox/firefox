@@ -69,18 +69,9 @@ class VerifyingMediaStream : public RtpPacketSinkInterface {
   std::list<uint16_t> sequence_numbers_;
 };
 
-class DummySinkValidator : public RtpSinkValidator {
- public:
-  void OnSinkAdded(RtpPacketSinkInterface* sink) override {}
-  void OnSinkRemoved(RtpPacketSinkInterface* sink) override {}
-  bool IsValidSink(RtpPacketSinkInterface* sink) const override { return true; }
-};
-
 class RtxLoopBackTransport : public Transport {
  public:
-  RtxLoopBackTransport(TaskQueueBase* network_thread,
-                       TaskQueueBase* worker_thread,
-                       uint32_t rtx_ssrc)
+  RtxLoopBackTransport(TaskQueueBase* network_thread, uint32_t rtx_ssrc)
       : count_(0),
         packet_loss_(0),
         consecutive_drop_start_(0),
@@ -88,9 +79,7 @@ class RtxLoopBackTransport : public Transport {
         rtx_ssrc_(rtx_ssrc),
         count_rtx_ssrc_(0),
         module_(nullptr),
-        stream_receiver_controller_(network_thread,
-                                    worker_thread,
-                                    &dummy_validator_) {}
+        stream_receiver_controller_(network_thread) {}
 
   void SetSendModule(RtpRtcpInterface* rtpRtcpModule) {
     module_ = rtpRtcpModule;
@@ -141,7 +130,6 @@ class RtxLoopBackTransport : public Transport {
   uint32_t rtx_ssrc_;
   int count_rtx_ssrc_;
   RtpRtcpInterface* module_;
-  DummySinkValidator dummy_validator_;
   RtpStreamReceiverController stream_receiver_controller_;
   std::set<uint16_t> expected_sequence_numbers_;
 };
@@ -151,9 +139,7 @@ class RtpRtcpRtxNackTest : public ::testing::Test {
   RtpRtcpRtxNackTest()
       : fake_clock_(123456),
         env_(CreateTestEnvironment({.time = &fake_clock_})),
-        transport_(main_thread_.task_queue(),
-                   main_thread_.task_queue(),
-                   kTestRtxSsrc),
+        transport_(main_thread_.task_queue(), kTestRtxSsrc),
         rtx_stream_(env_,
                     &media_stream_,
                     rtx_associated_payload_types_,

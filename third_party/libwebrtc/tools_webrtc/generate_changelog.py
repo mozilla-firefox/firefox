@@ -15,6 +15,7 @@ to produce a user-friendly changelog.
 
 import argparse
 import collections
+import html
 import re
 import subprocess
 import sys
@@ -123,9 +124,9 @@ def format_single_bug(bug_str):
     for pattern, url in patterns:
         if re.search(pattern, bug_str, re.IGNORECASE):
             url_part = re.sub(pattern, url, bug_str, flags=re.IGNORECASE)
-            return (f'<a href="{url_part}">'
-                    f'{bug_str}</a>')
-    return bug_str
+            return (f'<a href="{html.escape(url_part)}">'
+                    f'{html.escape(bug_str)}</a>')
+    return html.escape(bug_str)
 
 
 def format_bugs(bug_list):
@@ -208,6 +209,21 @@ def parse_log(log_text):
     return filtered_commits
 
 
+def format_summary(summary_text):
+    """Formats a plain-text summary as an HTML list.
+
+    Each non-empty line becomes a list item, without any leading "-" or "*"
+    bullet marker. The text is HTML-escaped, so that a summary derived from
+    commit messages cannot inject markup into the report.
+    """
+    items = []
+    for line in summary_text.splitlines():
+        item = re.sub(r'^\s*[-*]\s+', '', line).strip()
+        if item:
+            items.append(f'<li>{html.escape(item)}</li>')
+    return f'<ul>{"".join(items)}</ul>' if items else ''
+
+
 def generate_html(commits,
                   from_branch,
                   to_branch,
@@ -222,12 +238,13 @@ def generate_html(commits,
     for commit in commits:
         cat_counts[commit['category']] += 1
 
-    ai_summary_html = (f'<div id="ai-summary">{summary_text}</div>'
-                       if summary_text else
+    summary_html = format_summary(summary_text) if summary_text else ''
+    ai_summary_html = (f'<div id="ai-summary">{summary_html}</div>'
+                       if summary_html else
                        '<div id="ai-summary">AI_SUMMARY_PLACEHOLDER</div>')
 
     formatted_milestone = f'{milestone} ' if milestone else ''
-    html = [
+    html_parts = [
         f"""<!DOCTYPE html>
 <html>
 <head>
@@ -258,8 +275,8 @@ def generate_html(commits,
 """
     ]
     for cat, count in sorted(cat_counts.items()):
-        html.append(f'<tr><td>{cat}</td><td>{count}</td></tr>')
-    html.append("""</tbody></table></div></div>
+        html_parts.append(f'<tr><td>{cat}</td><td>{count}</td></tr>')
+    html_parts.append("""</tbody></table></div></div>
 <h2>Detailed List of Changes (newest first)</h2>
 <table>
     <thead>
@@ -275,32 +292,60 @@ def generate_html(commits,
     for commit in commits:
         commit_link = (f'<a href="https://webrtc.googlesource.com/src/+/'
                        f'{commit["hash"]}">📝</a>')
-        review_link = (f'<a href="{commit["review_url"]}">🔍</a>'
+        review_link = (f'<a href="{html.escape(commit["review_url"])}">🔍</a>'
                        if commit['review_url'] else '')
-        html.append(
-            f'<tr><td>{commit["subject"]}</td><td>{commit["category"]}</td>'
+        html_parts.append(
+            f'<tr><td>{html.escape(commit["subject"])}</td>'
+            f'<td>{commit["category"]}</td>'
             f'<td style="white-space:nowrap;">{commit_link} {review_link}</td>'
             f'<td>{format_bugs(commit["bug"])}</td></tr>')
-    html.append('</tbody></table></body></html>')
-    return ''.join(html)
+    html_parts.append('</tbody></table></body></html>')
+    return ''.join(html_parts)
+
+
+def branch_number(value):
+    """Validates a branch number such as 7727, which must be digits only."""
+    if not re.fullmatch(r'[0-9]+', value):
+        raise argparse.ArgumentTypeError(
+            f'invalid branch number {value!r}, expected digits only')
+    return value
+
+
+def milestone_name(value):
+    """Validates a milestone such as M148. Also accepts 148."""
+    match = re.fullmatch(r'M?([0-9]+)', value)
+    if not match:
+        raise argparse.ArgumentTypeError(
+            f'invalid milestone {value!r}, expected e.g. M148')
+    return f'M{match.group(1)}'
 
 
 def main():
     parser = argparse.ArgumentParser(
         description='Generate WebRTC changelog with optional AI summary.')
     parser.add_argument('branch1',
+                        type=branch_number,
                         help='First branch for comparison (e.g., 7727).')
     parser.add_argument('branch2',
+                        type=branch_number,
                         help='Second branch for comparison (e.g., 7778).')
     parser.add_argument('output_file', help='Path to the output HTML file.')
-    parser.add_argument('--summary_text',
-                        help='Optional AI-generated summary text to inject.',
+    parser.add_argument('--summary_file',
+                        help='Optional path to a text file with the '
+                        'AI-generated summary, one bullet point per line. '
+                        'The text is HTML-escaped.',
                         default=None)
     parser.add_argument('--milestone',
+                        type=milestone_name,
                         help='Optional milestone name (e.g. M148).',
                         default=None)
 
     args = parser.parse_args()
+
+    summary_text = None
+    if args.summary_file:
+        with open(args.summary_file, encoding='utf-8') as summary_fp:
+            summary_text = summary_fp.read()
 
     try:
         log_content = subprocess.check_output([
@@ -321,14 +366,14 @@ def main():
     if args.milestone:
         branch_info = f'{args.milestone} {branch_info}'
 
-    html = generate_html(commits,
-                         from_branch=args.branch1,
-                         to_branch=args.branch2,
-                         milestone=args.milestone,
-                         summary_text=args.summary_text)
+    changelog_html = generate_html(commits,
+                                   from_branch=args.branch1,
+                                   to_branch=args.branch2,
+                                   milestone=args.milestone,
+                                   summary_text=summary_text)
 
     with open(args.output_file, 'w') as file_handle:
-        file_handle.write(html)
+        file_handle.write(changelog_html)
 
     print(f'Changelog written to {args.output_file}')
 

@@ -96,7 +96,7 @@ class PeerConnectionFactory : public PeerConnectionFactoryInterface {
     return context_->signaling_thread();
   }
 
-  Thread* worker_thread() const { return context_->worker_thread(); }
+  Thread* worker_thread() const { return context_->network_thread(); }
 
   const Options& options() const {
     RTC_DCHECK_RUN_ON(signaling_thread());

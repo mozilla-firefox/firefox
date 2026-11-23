@@ -61,6 +61,7 @@
 #include "rtc_base/async_packet_socket.h"
 #include "rtc_base/checks.h"
 #include "rtc_base/dscp.h"
+#include "rtc_base/experiments/rfc8888_congestion_control_feedback_experiment.h"
 #include "rtc_base/experiments/struct_parameters_parser.h"
 #include "rtc_base/ip_address.h"
 #include "rtc_base/logging.h"
@@ -785,16 +786,6 @@ void P2PTransportChannel::ParseFieldTrials(
         << *ice_field_trials_.initial_select_dampening_ping_received;
   }
 
-  // DSCP override, allow user to specify (any) int value
-  // that will be used for tagging all packets.
-  StructParametersParser::Create("override_dscp",
-                                 &ice_field_trials_.override_dscp)
-      ->Parse(field_trials.Lookup("WebRTC-DscpFieldTrial"));
-
-  if (ice_field_trials_.override_dscp) {
-    SetOption(Socket::OPT_DSCP, *ice_field_trials_.override_dscp);
-  }
-
   std::string field_trial_string =
       field_trials.Lookup("WebRTC-SetSocketReceiveBuffer");
   int receive_buffer_size_kb = 0;
@@ -815,7 +806,7 @@ void P2PTransportChannel::ParseFieldTrials(
     stun_dict_writer_.Disable();
   }
 
-  if (field_trials.IsEnabled("WebRTC-RFC8888CongestionControlFeedback")) {
+  if (IsRfc8888CongestionControlFeedbackEnabled(field_trials)) {
     int desired_recv_esn = 1;
     RTC_LOG(LS_INFO) << "Set WebRTC-RFC8888CongestionControlFeedback: Enable "
                         "and set ECN recving mode";
@@ -962,8 +953,15 @@ void P2PTransportChannel::OnCandidateError(
 }
 
 void P2PTransportChannel::OnCandidatesAllocationDone(
-    PortAllocatorSession* /* session */) {
+    PortAllocatorSession* session) {
   RTC_DCHECK_RUN_ON(&network_thread_);
+  if (session != allocator_session()) {
+    // A session stopped by an ICE restart must not end the new generation.
+    RTC_LOG(LS_INFO) << "P2PTransportChannel: " << transport_name()
+                     << ", component " << component()
+                     << " ignoring gathering complete of an old generation.";
+    return;
+  }
   if (config_.gather_continually()) {
     RTC_LOG(LS_INFO) << "P2PTransportChannel: " << transport_name()
                      << ", component " << component()
@@ -1592,9 +1590,6 @@ void P2PTransportChannel::RememberRemoteCandidate(
 // port objects.
 int P2PTransportChannel::SetOption(Socket::Option opt, int value) {
   RTC_DCHECK_RUN_ON(&network_thread_);
-  if (ice_field_trials_.override_dscp && opt == Socket::OPT_DSCP) {
-    value = *ice_field_trials_.override_dscp;
-  }
 
   OptionMap::iterator it = options_.find(opt);
   if (it == options_.end()) {

@@ -149,26 +149,26 @@ void AudioReceiveStreamImpl::Initialize() {
 }
 
 AudioReceiveStreamImpl::~AudioReceiveStreamImpl() {
-  RTC_DCHECK_RUN_ON(&worker_thread_checker_);
+  RTC_DCHECK_RUN_ON(&network_thread_checker_);
   RTC_LOG(LS_INFO) << "~AudioReceiveStreamImpl: " << remote_ssrc();
   Stop();
 }
 
 void AudioReceiveStreamImpl::RegisterWithTransport(
     RtpStreamReceiverControllerInterface* receiver_controller) {
-  RTC_DCHECK_RUN_ON(&worker_thread_checker_);
+  RTC_DCHECK_RUN_ON(&network_thread_checker_);
   RTC_DCHECK(!rtp_stream_receiver_);
   rtp_stream_receiver_ = receiver_controller->CreateReceiver(
       remote_ssrc(), channel_receive_.get());
 }
 
 void AudioReceiveStreamImpl::UnregisterFromTransport() {
-  RTC_DCHECK_RUN_ON(&worker_thread_checker_);
+  RTC_DCHECK_RUN_ON(&network_thread_checker_);
   rtp_stream_receiver_.reset();
 }
 
 void AudioReceiveStreamImpl::Start() {
-  RTC_DCHECK_RUN_ON(&worker_thread_checker_);
+  RTC_DCHECK_RUN_ON(&network_thread_checker_);
   if (playing_) {
     return;
   }
@@ -179,7 +179,7 @@ void AudioReceiveStreamImpl::Start() {
 }
 
 void AudioReceiveStreamImpl::Stop() {
-  RTC_DCHECK_RUN_ON(&worker_thread_checker_);
+  RTC_DCHECK_RUN_ON(&network_thread_checker_);
   if (!playing_) {
     return;
   }
@@ -190,26 +190,26 @@ void AudioReceiveStreamImpl::Stop() {
 }
 
 bool AudioReceiveStreamImpl::IsRunning() const {
-  RTC_DCHECK_RUN_ON(&worker_thread_checker_);
+  RTC_DCHECK_RUN_ON(&network_thread_checker_);
   return playing_;
 }
 
 void AudioReceiveStreamImpl::SetDepacketizerToDecoderFrameTransformer(
     scoped_refptr<FrameTransformerInterface> frame_transformer) {
-  RTC_DCHECK_RUN_ON(&worker_thread_checker_);
+  RTC_DCHECK_RUN_ON(&network_thread_checker_);
   channel_receive_->SetDepacketizerToDecoderFrameTransformer(
       std::move(frame_transformer));
 }
 
 void AudioReceiveStreamImpl::SetDecoderMap(
     std::map<int, SdpAudioFormat> decoder_map) {
-  RTC_DCHECK_RUN_ON(&worker_thread_checker_);
+  RTC_DCHECK_RUN_ON(&network_thread_checker_);
   config_.decoder_map = std::move(decoder_map);
   channel_receive_->SetReceiveCodecs(config_.decoder_map);
 }
 
 void AudioReceiveStreamImpl::SetNackHistory(int history_ms) {
-  RTC_DCHECK_RUN_ON(&worker_thread_checker_);
+  RTC_DCHECK_RUN_ON(&network_thread_checker_);
   RTC_DCHECK_GE(history_ms, 0);
 
   if (config_.rtp.nack.rtp_history_ms == history_ms)
@@ -222,7 +222,7 @@ void AudioReceiveStreamImpl::SetNackHistory(int history_ms) {
 }
 
 void AudioReceiveStreamImpl::SetRtcpMode(RtcpMode mode) {
-  RTC_DCHECK_RUN_ON(&worker_thread_checker_);
+  RTC_DCHECK_RUN_ON(&network_thread_checker_);
 
   if (config_.rtp.rtcp_mode == mode)
     return;
@@ -232,22 +232,20 @@ void AudioReceiveStreamImpl::SetRtcpMode(RtcpMode mode) {
 }
 
 void AudioReceiveStreamImpl::SetNonSenderRttMeasurement(bool enabled) {
-  RTC_DCHECK_RUN_ON(&worker_thread_checker_);
+  RTC_DCHECK_RUN_ON(&network_thread_checker_);
   config_.enable_non_sender_rtt = enabled;
   channel_receive_->SetNonSenderRttMeasurement(enabled);
 }
 
 void AudioReceiveStreamImpl::SetFrameDecryptor(
     scoped_refptr<FrameDecryptorInterface> frame_decryptor) {
-  // TODO(bugs.webrtc.org/11993): This is called via WebRtcAudioReceiveStream,
-  // expect to be called on the network thread.
-  RTC_DCHECK_RUN_ON(&worker_thread_checker_);
+  RTC_DCHECK_RUN_ON(&network_thread_checker_);
   channel_receive_->SetFrameDecryptor(std::move(frame_decryptor));
 }
 
 AudioReceiveStreamInterface::Stats AudioReceiveStreamImpl::GetStats(
     bool get_and_clear_legacy_stats) const {
-  RTC_DCHECK_RUN_ON(&worker_thread_checker_);
+  RTC_DCHECK_RUN_ON(&network_thread_checker_);
   AudioReceiveStreamInterface::Stats stats;
   stats.remote_ssrc = remote_ssrc();
 
@@ -347,33 +345,33 @@ AudioReceiveStreamInterface::Stats AudioReceiveStreamImpl::GetStats(
 }
 
 void AudioReceiveStreamImpl::SetSink(AudioSinkInterface* sink) {
-  RTC_DCHECK_RUN_ON(&worker_thread_checker_);
+  RTC_DCHECK_RUN_ON(&network_thread_checker_);
   channel_receive_->SetSink(sink);
 }
 
 void AudioReceiveStreamImpl::SetGain(float gain) {
-  RTC_DCHECK_RUN_ON(&worker_thread_checker_);
+  RTC_DCHECK_RUN_ON(&network_thread_checker_);
   channel_receive_->SetChannelOutputVolumeScaling(gain);
 }
 
 void AudioReceiveStreamImpl::SetJitterBufferMaxPackets(size_t max_packets) {
-  RTC_DCHECK_RUN_ON(&worker_thread_checker_);
+  RTC_DCHECK_RUN_ON(&network_thread_checker_);
   channel_receive_->SetMaximumBufferPackets(max_packets);
 }
 
 void AudioReceiveStreamImpl::SetJitterBufferFastAccelerate(
     bool fast_accelerate) {
-  RTC_DCHECK_RUN_ON(&worker_thread_checker_);
+  RTC_DCHECK_RUN_ON(&network_thread_checker_);
   channel_receive_->SetFastAccelerate(fast_accelerate);
 }
 
 bool AudioReceiveStreamImpl::SetBaseMinimumPlayoutDelayMs(int delay_ms) {
-  RTC_DCHECK_RUN_ON(&worker_thread_checker_);
+  RTC_DCHECK_RUN_ON(&network_thread_checker_);
   return channel_receive_->SetBaseMinimumPlayoutDelayMs(delay_ms);
 }
 
 int AudioReceiveStreamImpl::GetBaseMinimumPlayoutDelayMs() const {
-  RTC_DCHECK_RUN_ON(&worker_thread_checker_);
+  RTC_DCHECK_RUN_ON(&network_thread_checker_);
   return channel_receive_->GetBaseMinimumPlayoutDelayMs();
 }
 
@@ -392,48 +390,44 @@ int AudioReceiveStreamImpl::PreferredSampleRate() const {
 }
 
 uint32_t AudioReceiveStreamImpl::id() const {
-  RTC_DCHECK_RUN_ON(&worker_thread_checker_);
+  RTC_DCHECK_RUN_ON(&network_thread_checker_);
   return remote_ssrc();
 }
 
 std::optional<Syncable::Info> AudioReceiveStreamImpl::GetInfo() const {
-  // TODO(bugs.webrtc.org/11993): This is called via RtpStreamsSynchronizer,
-  // expect to be called on the network thread.
-  RTC_DCHECK_RUN_ON(&worker_thread_checker_);
+  RTC_DCHECK_RUN_ON(&network_thread_checker_);
   return channel_receive_->GetSyncInfo();
 }
 
 std::optional<Syncable::PlayoutInfo>
 AudioReceiveStreamImpl::GetPlayoutRtpTimestamp() const {
-  // Called on video capture thread.
+  RTC_DCHECK_RUN_ON(&network_thread_checker_);
   return channel_receive_->GetPlayoutRtpTimestamp();
 }
 
 void AudioReceiveStreamImpl::SetEstimatedPlayoutNtpTimestamp(NtpTime ntp_time,
                                                              Timestamp time) {
-  // Called on video capture thread.
+  RTC_DCHECK_RUN_ON(&network_thread_checker_);
   channel_receive_->SetEstimatedPlayoutNtpTimestamp(ntp_time, time);
 }
 
 bool AudioReceiveStreamImpl::SetMinimumPlayoutDelay(TimeDelta delay) {
-  // TODO(bugs.webrtc.org/11993): This is called via RtpStreamsSynchronizer,
-  // expect to be called on the network thread.
-  RTC_DCHECK_RUN_ON(&worker_thread_checker_);
+  RTC_DCHECK_RUN_ON(&network_thread_checker_);
   return channel_receive_->SetMinimumPlayoutDelay(delay);
 }
 
 void AudioReceiveStreamImpl::DeliverRtcp(std::span<const uint8_t> packet) {
-  RTC_DCHECK_RUN_ON(&worker_thread_checker_);
+  RTC_DCHECK_RUN_ON(&network_thread_checker_);
   channel_receive_->ReceivedRTCPPacket(packet.data(), packet.size());
 }
 
 void AudioReceiveStreamImpl::SetSyncGroup(absl::string_view sync_group) {
-  RTC_DCHECK_RUN_ON(&worker_thread_checker_);
+  RTC_DCHECK_RUN_ON(&network_thread_checker_);
   config_.sync_group = std::string(sync_group);
 }
 
 const std::string& AudioReceiveStreamImpl::sync_group() const {
-  RTC_DCHECK_RUN_ON(&worker_thread_checker_);
+  RTC_DCHECK_RUN_ON(&network_thread_checker_);
   return config_.sync_group;
 }
 

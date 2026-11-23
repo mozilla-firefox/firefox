@@ -22,6 +22,7 @@
 
 #include "absl/algorithm/container.h"
 #include "absl/cleanup/cleanup.h"
+#include "absl/container/inlined_vector.h"
 #include "api/adaptation/resource.h"
 #include "api/environment/environment.h"
 #include "api/fec_controller_override.h"
@@ -149,7 +150,9 @@ bool RequiresEncoderReset(const VideoCodec& prev_send_codec,
           prev_send_codec.numberOfSimulcastStreams ||
       new_send_codec.mode != prev_send_codec.mode ||
       new_send_codec.GetFrameDropEnabled() !=
-          prev_send_codec.GetFrameDropEnabled()) {
+          prev_send_codec.GetFrameDropEnabled() ||
+      new_send_codec.GetVideoEncoderComplexity() !=
+          prev_send_codec.GetVideoEncoderComplexity()) {
     return true;
   }
 
@@ -1329,17 +1332,39 @@ void VideoStreamEncoder::ReconfigureEncoder() {
   rate_allocator_->SetLegacyConferenceMode(
       encoder_config_.legacy_conference_mode);
 
+  // GetComplexity() will return kComplexityNormal if nothing configured via
+  // field trials.
+  const VideoCodecComplexity default_complexity =
+      speed_experiment_.GetComplexity(
+          codec.codecType, codec.mode == VideoCodecMode::kScreensharing);
+  codec.SetVideoEncoderComplexity(default_complexity);
+
+  std::optional<absl::InlinedVector<VideoCodecComplexity, kMaxSimulcastStreams>>
+      new_complexity;
+  if (absl::c_any_of(streams, [](const VideoStream& stream) {
+        return stream.encoding_complexity.has_value();
+      })) {
+    new_complexity.emplace();
+    new_complexity->reserve(streams.size());
+    for (const VideoStream& stream : streams) {
+      new_complexity->push_back(
+          stream.encoding_complexity.value_or(default_complexity));
+    }
+  }
+  const bool complexity_changed = (new_complexity != encoder_complexity_);
+  if (!new_complexity.has_value() && encoder_complexity_.has_value()) {
+    // Encoding complexity was cleared; reset the encoder to restore default
+    // complexity heuristics.
+    encoder_reset_required = true;
+  }
+  encoder_complexity_ = std::move(new_complexity);
+
   // Reset (release existing encoder) if one exists and anything except
   // start bitrate or max framerate has changed.
   if (!encoder_reset_required) {
     encoder_reset_required = RequiresEncoderReset(
         send_codec_, codec, was_encode_called_since_last_initialization_);
   }
-
-  // GetComplexity() will return kComplexityNormal if nothing configured via
-  // field trials.
-  codec.SetVideoEncoderComplexity(speed_experiment_.GetComplexity(
-      codec.codecType, codec.mode == VideoCodecMode::kScreensharing));
 
   send_codec_ = codec;
 
@@ -1383,6 +1408,12 @@ void VideoStreamEncoder::ReconfigureEncoder() {
     last_encode_info_ms_ = std::nullopt;
     was_encode_called_since_last_initialization_ = false;
     encoder_fallback_requested_ = false;
+  }
+
+  if (encoder_initialized_ && encoder_complexity_.has_value() &&
+      (encoder_reset_required || complexity_changed)) {
+    encoder_->SetComplexity(*encoder_complexity_,
+                            VideoEncoder::ComplexityControlMode::kVariable);
   }
 
   // Inform dependents of updated encoder settings.
@@ -2238,20 +2269,6 @@ void VideoStreamEncoder::SendKeyFrame(
   } else {
     std::fill(next_frame_types_.begin(), next_frame_types_.end(),
               VideoFrameType::kVideoFrameKey);
-  }
-}
-
-void VideoStreamEncoder::OnLossNotification(
-    const VideoEncoder::LossNotification& loss_notification) {
-  if (!encoder_queue_->IsCurrent()) {
-    encoder_queue_->PostTask(
-        [this, loss_notification] { OnLossNotification(loss_notification); });
-    return;
-  }
-
-  RTC_DCHECK_RUN_ON(encoder_queue_.get());
-  if (encoder_) {
-    encoder_->OnLossNotification(loss_notification);
   }
 }
 

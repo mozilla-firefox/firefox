@@ -503,9 +503,8 @@ class TestVideoEncoderFactoryWrapper final {
     RTC_CHECK(video_encoder);
 
     // Initialize video encoder.
-    const VideoEncoder::Settings kSettings(VideoEncoder::Capabilities(false),
-                                           /*number_of_cores=*/1,
-                                           /*max_payload_size=*/0);
+    constexpr VideoEncoder::Settings kSettings(/*number_of_cores=*/1,
+                                               /*max_payload_size=*/0);
 
     int ret = video_encoder->InitEncode(&video_codec_setting, kSettings);
     RTC_CHECK_EQ(ret, WEBRTC_VIDEO_CODEC_OK);

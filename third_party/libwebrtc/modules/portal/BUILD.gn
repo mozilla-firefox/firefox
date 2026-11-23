@@ -32,14 +32,17 @@ if (!build_with_mozilla) {
   pkg_config("gbm") {
     packages = [ "gbm" ]
   }
+
   pkg_config("gl") {
     packages = [ "gl" ]
     ignore_libs = true
   }
+
   pkg_config("egl") {
     packages = [ "egl" ]
     ignore_libs = true
   }
+
   pkg_config("libdrm") {
     packages = [ "libdrm" ]
   }
@@ -150,6 +153,17 @@ if (!build_with_mozilla) {
         "../../third_party/libepoxy"
       ]
       defines += [ "WEBRTC_USE_PIPEWIRE" ]
+    }
+  }
+
+  if (rtc_include_tests && !build_with_chromium) {
+    rtc_cc_test("pipewire_buffer_checks_unittest") {
+      sources = [ "pipewire_buffer_checks_unittest.cc" ]
+      configs += [ ":pipewire_base" ]
+      deps = [
+        ":portal",
+        "../../test:test_support",
+      ]
     }
   }
 }

@@ -167,7 +167,9 @@ std::tuple<bool, absl::string_view, int> ParseHostnameAndPortFromString(
 RTCError ParseIceServerUrl(const PeerConnectionInterface::IceServer& server,
                            absl::string_view url,
                            ServerAddresses* stun_servers,
-                           std::vector<RelayServerConfig>* turn_servers) {
+                           std::vector<RelayServerConfig>* turn_servers,
+                           std::optional<size_t> max_stun_servers,
+                           ServerAddresses& ignored_stun_servers) {
   // RFC 7064
   // stunURI       = scheme ":" host [ ":" port ]
   // scheme        = "stun" / "stuns"
@@ -273,9 +275,16 @@ RTCError ParseIceServerUrl(const PeerConnectionInterface::IceServer& server,
 
   switch (service_type) {
     case ServiceType::STUN:
-    case ServiceType::STUNS:
-      stun_servers->insert(SocketAddress(address, port));
+    case ServiceType::STUNS: {
+      SocketAddress stun_address(address, port);
+      if (!max_stun_servers.has_value() ||
+          stun_servers->size() < *max_stun_servers) {
+        stun_servers->insert(stun_address);
+      } else if (!stun_servers->contains(stun_address)) {
+        ignored_stun_servers.insert(stun_address);
+      }
       break;
+    }
     case ServiceType::TURN:
     case ServiceType::TURNS: {
       if (server.username.empty() || server.password.empty()) {
@@ -334,12 +343,12 @@ RTCError ParseIceServerUrl(const PeerConnectionInterface::IceServer& server,
   return RTCError::OK();
 }
 
-}  // namespace
-
-RTCError ParseIceServersOrError(
+RTCError ParseIceServersInternal(
     const PeerConnectionInterface::IceServers& servers,
     ServerAddresses* stun_servers,
-    std::vector<RelayServerConfig>* turn_servers) {
+    std::vector<RelayServerConfig>* turn_servers,
+    std::optional<size_t> max_stun_servers,
+    ServerAddresses& ignored_stun_servers) {
   for (const PeerConnectionInterface::IceServer& server : servers) {
     if (!server.urls.empty()) {
       for (const std::string& url : server.urls) {
@@ -348,7 +357,8 @@ RTCError ParseIceServersOrError(
                                << "ICE server parsing failed: Empty uri.");
         }
         RTCError err =
-            ParseIceServerUrl(server, url, stun_servers, turn_servers);
+            ParseIceServerUrl(server, url, stun_servers, turn_servers,
+                              max_stun_servers, ignored_stun_servers);
         if (!err.ok()) {
           return err;
         }
@@ -356,7 +366,8 @@ RTCError ParseIceServersOrError(
     } else if (!server.uri.empty()) {
       // Fallback to old .uri if new .urls isn't present.
       RTCError err =
-          ParseIceServerUrl(server, server.uri, stun_servers, turn_servers);
+          ParseIceServerUrl(server, server.uri, stun_servers, turn_servers,
+                            max_stun_servers, ignored_stun_servers);
 
       if (!err.ok()) {
         return err;
@@ -369,16 +380,38 @@ RTCError ParseIceServersOrError(
   return RTCError::OK();
 }
 
+}  // namespace
+
+RTCError ParseIceServersOrError(
+    const PeerConnectionInterface::IceServers& servers,
+    ServerAddresses* stun_servers,
+    std::vector<RelayServerConfig>* turn_servers) {
+  // Stays empty: without a maximum, no STUN servers are ignored.
+  ServerAddresses ignored_stun_servers;
+  return ParseIceServersInternal(servers, stun_servers, turn_servers,
+                                 /*max_stun_servers=*/std::nullopt,
+                                 ignored_stun_servers);
+}
+
 RTCError ParseAndValidateIceServersFromConfiguration(
     const PeerConnectionInterface::RTCConfiguration& configuration,
     ServerAddresses& stun_servers,
     std::vector<RelayServerConfig>& turn_servers) {
   RTC_DCHECK(stun_servers.empty());
   RTC_DCHECK(turn_servers.empty());
-  RTCError err = ParseIceServersOrError(configuration.servers, &stun_servers,
-                                        &turn_servers);
+  ServerAddresses ignored_stun_servers;
+  RTCError err = ParseIceServersInternal(configuration.servers, &stun_servers,
+                                         &turn_servers, kMaxStunServers,
+                                         ignored_stun_servers);
   if (!err.ok()) {
     return err;
+  }
+
+  if (!ignored_stun_servers.empty()) {
+    RTC_LOG(LS_WARNING) << "Number of configured STUN servers is "
+                        << (stun_servers.size() + ignored_stun_servers.size())
+                        << " which exceeds the maximum allowed number of "
+                        << kMaxStunServers;
   }
 
   // Restrict number of TURN servers.

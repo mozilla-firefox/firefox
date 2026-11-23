@@ -495,6 +495,7 @@ rtc_library("p2p_transport_channel") {
     "../rtc_base:socket_address",
     "../rtc_base:stringutils",
     "../rtc_base/experiments:field_trial_parser",
+    "../rtc_base/experiments:rfc8888_congestion_control_feedback_experiment",
     "../rtc_base/network:received_packet",
     "../rtc_base/network:sent_packet",
     "../rtc_base/system:no_unique_address",
@@ -1820,7 +1821,7 @@ if (rtc_include_tests) {
     ]
   }
 
-  rtc_test("dtls_ice_integration_bench") {
+  rtc_executable("dtls_ice_integration_bench") {
     testonly = true
 
     sources = [
@@ -1870,6 +1871,7 @@ if (rtc_include_tests) {
       "../rtc_base:threading",
       "../test:create_test_field_trials",
       "../test:run_loop",
+      "../test:test_main",
       "../test:test_support",
       "../test:wait_until",
       "../test/time_controller",

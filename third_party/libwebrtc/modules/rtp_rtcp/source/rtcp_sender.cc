@@ -37,7 +37,6 @@
 #include "modules/rtp_rtcp/source/rtcp_packet/dlrr.h"
 #include "modules/rtp_rtcp/source/rtcp_packet/extended_reports.h"
 #include "modules/rtp_rtcp/source/rtcp_packet/fir.h"
-#include "modules/rtp_rtcp/source/rtcp_packet/loss_notification.h"
 #include "modules/rtp_rtcp/source/rtcp_packet/nack.h"
 #include "modules/rtp_rtcp/source/rtcp_packet/pli.h"
 #include "modules/rtp_rtcp/source/rtcp_packet/receiver_report.h"
@@ -78,7 +77,11 @@ class RTCPSender::PacketSender {
   // Appends a packet to pending compound packet.
   // Sends rtcp packet if buffer is full and resets the buffer.
   void AppendPacket(const rtcp::RtcpPacket& packet) {
-    packet.Create(buffer_, &index_, max_packet_size_, callback_);
+    if (!packet.Create(buffer_, &index_, max_packet_size_, callback_)) {
+      RTC_LOG(LS_WARNING) << "Dropped RTCP packet of " << packet.BlockLength()
+                          << " bytes, max packet size is " << max_packet_size_
+                          << " bytes.";
+    }
   }
 
   // Sends pending rtcp packet.
@@ -161,7 +164,6 @@ RTCPSender::RTCPSender(const Environment& env, Configuration config)
   builders_[kRtcpFir] = &RTCPSender::BuildFIR;
   builders_[kRtcpRemb] = &RTCPSender::BuildREMB;
   builders_[kRtcpBye] = &RTCPSender::BuildBYE;
-  builders_[kRtcpLossNotification] = &RTCPSender::BuildLossNotification;
   builders_[kRtcpTmmbr] = &RTCPSender::BuildTMMBR;
   builders_[kRtcpTmmbn] = &RTCPSender::BuildTMMBN;
   builders_[kRtcpNack] = &RTCPSender::BuildNACK;
@@ -222,46 +224,6 @@ void RTCPSender::SetSendingStatus(const FeedbackState& feedback_state,
 void RTCPSender::SetNonSenderRttMeasurement(bool enabled) {
   MutexLock lock(&mutex_rtcp_sender_);
   xr_send_receiver_reference_time_enabled_ = enabled;
-}
-
-int32_t RTCPSender::SendLossNotification(const FeedbackState& feedback_state,
-                                         uint16_t last_decoded_seq_num,
-                                         uint16_t last_received_seq_num,
-                                         bool decodability_flag,
-                                         bool buffering_allowed) {
-  int32_t error_code = -1;
-  auto callback = [&](std::span<const uint8_t> packet) {
-    transport_->SendRtcp(packet, /*packet_options=*/{});
-    error_code = 0;
-    env_.event_log().Log(std::make_unique<RtcEventRtcpPacketOutgoing>(packet));
-  };
-  std::optional<PacketSender> sender;
-  {
-    MutexLock lock(&mutex_rtcp_sender_);
-
-    if (!loss_notification_.Set(last_decoded_seq_num, last_received_seq_num,
-                                decodability_flag)) {
-      return -1;
-    }
-
-    SetFlag(kRtcpLossNotification, /*is_volatile=*/true);
-
-    if (buffering_allowed) {
-      // The loss notification will be batched with additional feedback
-      // messages.
-      return 0;
-    }
-
-    sender.emplace(callback, max_packet_size_);
-    auto result = ComputeCompoundRTCPPacket(
-        feedback_state, RTCPPacketType::kRtcpLossNotification, {}, *sender);
-    if (result) {
-      return *result;
-    }
-  }
-  sender->Send();
-
-  return error_code;
 }
 
 void RTCPSender::SetRemb(int64_t bitrate_bps, std::vector<uint32_t> ssrcs) {
@@ -511,13 +473,6 @@ void RTCPSender::BuildAPP(const RtcpContext& /* ctx */, PacketSender& sender) {
   rtcp::App app;
   app.SetSenderSsrc(ComputeSsrc());
   sender.AppendPacket(app);
-}
-
-void RTCPSender::BuildLossNotification(const RtcpContext& /* ctx */,
-                                       PacketSender& sender) {
-  loss_notification_.SetSenderSsrc(ComputeSsrc());
-  loss_notification_.SetMediaSsrc(remote_ssrc_);
-  sender.AppendPacket(loss_notification_);
 }
 
 void RTCPSender::BuildNACK(const RtcpContext& ctx, PacketSender& sender) {

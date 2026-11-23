@@ -11,10 +11,10 @@ Mercurial Revision: https://hg.mozilla.org/mozilla-central/rev/8ff886a4d366b4be3
  3 files changed, 8 insertions(+), 3 deletions(-)
 
 diff --git a/modules/video_capture/BUILD.gn b/modules/video_capture/BUILD.gn
-index 5c81c975df..83dc72ba53 100644
+index 020fdd713a..0262372568 100644
 --- a/modules/video_capture/BUILD.gn
 +++ b/modules/video_capture/BUILD.gn
-@@ -112,6 +112,10 @@ if (!build_with_chromium || is_linux || is_chromeos) {
+@@ -114,6 +114,10 @@ if (!build_with_chromium || is_linux || is_chromeos) {
            "../../common_video",
            "../portal",
          ]

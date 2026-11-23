@@ -383,6 +383,7 @@ rtc_library("media_session") {
     "../rtc_base:threading",
     "../rtc_base:unique_id_generator",
     "../rtc_base/experiments:field_trial_parser",
+    "../rtc_base/experiments:rfc8888_congestion_control_feedback_experiment",
     "../rtc_base/memory:always_valid_pointer",
     "//third_party/abseil-cpp/absl/algorithm:container",
     "//third_party/abseil-cpp/absl/base:nullability",
@@ -763,6 +764,7 @@ rtc_library("srtp_transport") {
     "../api:field_trials_view",
     "../api:rtp_header_extension_id",
     "../api:rtp_parameters",
+    "../api/crypto:options",
     "../api/units:timestamp",
     "../call:rtp_receiver",
     "../media:rtp_utils",
@@ -1243,6 +1245,7 @@ rtc_library("sdp_offer_answer") {
     "../rtc_base:weak_ptr",
     "../rtc_base/containers:flat_map",
     "../rtc_base/containers:flat_set",
+    "../rtc_base/experiments:rfc8888_congestion_control_feedback_experiment",
     "../rtc_base/system:plan_b_only",
     "../rtc_base/system:unused",
     "../system_wrappers:metrics",
@@ -1894,17 +1897,24 @@ rtc_library("rtp_receiver") {
     "../api:sframe_decryptor_interface",
     "../api:sframe_types",
     "../api/crypto:frame_decryptor_interface",
+    "../api/task_queue",
     "../api/task_queue:pending_task_safety_flag",
     "../api/transport/rtp:rtp_source",
     "../api/units:timestamp",
     "../media:media_channel",
     "../modules/rtp_rtcp",
+    "../modules/sframe:sframe_decrypt_error_reporter",
+    "../modules/sframe:sframe_decryption_config",
+    "../modules/sframe:sframe_decryptor",
+    "../modules/sframe:sframe_decryptor_handle",
+    "../modules/sframe:sframe_media_decryptor_interface",
     "../rtc_base:checks",
     "../rtc_base:logging",
     "../rtc_base:macromagic",
     "../rtc_base:threading",
     "../rtc_base/system:no_unique_address",
     "../system_wrappers",
+    "//third_party/abseil-cpp/absl/base:nullability",
     "//third_party/abseil-cpp/absl/functional:any_invocable",
   ]
 }
@@ -2236,6 +2246,10 @@ rtc_source_set("legacy_stats_collector_interface") {
 
 rtc_library("datagram_connection_internal") {
   sources = [
+    "congestion_control_feedback_block.cc",
+    "congestion_control_feedback_block.h",
+    "congestion_control_feedback_report.cc",
+    "congestion_control_feedback_report.h",
     "datagram_connection_internal.cc",
     "datagram_connection_internal.h",
     "dtls_packet_processor.cc",
@@ -2257,6 +2271,7 @@ rtc_library("datagram_connection_internal") {
     "../api/environment",
     "../api/transport:ecn_marking",
     "../api/transport:enums",
+    "../api/units:time_delta",
     "../api/units:timestamp",
     "../call:rtp_interfaces",
     "../call:rtp_receiver",
@@ -2273,6 +2288,7 @@ rtc_library("datagram_connection_internal") {
     "../rtc_base:checks",
     "../rtc_base:copy_on_write_buffer",
     "../rtc_base:crypto_random",
+    "../rtc_base:divide_round",
     "../rtc_base:logging",
     "../rtc_base:macromagic",
     "../rtc_base:ssl",
@@ -2456,6 +2472,26 @@ if (rtc_include_tests && !build_with_chromium) {
       "../test:test_support",
       "//third_party/abseil-cpp/absl/strings",
       "//third_party/abseil-cpp/absl/strings:string_view",
+    ]
+  }
+
+  rtc_cc_test("congestion_control_feedback_block_unittest") {
+    sources = [ "congestion_control_feedback_block_unittest.cc" ]
+    deps = [
+      ":datagram_connection_internal",
+      "../api/transport:ecn_marking",
+      "../api/units:time_delta",
+      "../test:test_support",
+    ]
+  }
+
+  rtc_cc_test("congestion_control_feedback_report_unittest") {
+    sources = [ "congestion_control_feedback_report_unittest.cc" ]
+    deps = [
+      ":datagram_connection_internal",
+      "../api/transport:ecn_marking",
+      "../api/units:time_delta",
+      "../test:test_support",
     ]
   }
 
@@ -2862,6 +2898,7 @@ if (rtc_include_tests && !build_with_chromium) {
       ":srtp_test_util",
       ":srtp_transport",
       "../api:rtp_header_extension_id",
+      "../api/crypto:options",
       "../api/environment",
       "../api/transport:ecn_marking",
       "../api/units:timestamp",
@@ -2926,6 +2963,8 @@ if (rtc_include_tests && !build_with_chromium) {
       ":channel_unittest",
       ":codec_vendor_redesign_unittest",
       ":codec_vendor_unittest",
+      ":congestion_control_feedback_block_unittest",
+      ":congestion_control_feedback_report_unittest",
       ":datagram_connection_unittest",
       ":dtls_packet_processor_unittest",
       ":dtls_srtp_transport_integrationtest",
@@ -3057,8 +3096,7 @@ if (rtc_include_tests && !build_with_chromium) {
     ]
   }
 
-  rtc_test("slow_peer_connection_unittests") {
-    testonly = true
+  rtc_cc_test("slow_peer_connection_integration_test") {
     sources = [ "slow_peer_connection_integration_test.cc" ]
     deps = [
       ":integration_test_helpers",
@@ -3086,6 +3124,10 @@ if (rtc_include_tests && !build_with_chromium) {
     ]
   }
 
+  rtc_test_suite("slow_peer_connection_unittests") {
+    tests = [ ":slow_peer_connection_integration_test" ]
+  }
+
   rtc_cc_test("dtmf_sender_unittest") {
     sources = [ "dtmf_sender_unittest.cc" ]
     deps = [
@@ -3110,8 +3152,8 @@ if (rtc_include_tests && !build_with_chromium) {
       "../api:rtc_error",
       "../p2p:port",
       "../p2p:port_allocator",
-      "../p2p:port_interface",
       "../rtc_base:ip_address",
+      "../rtc_base:net_helper",
       "../rtc_base:socket_address",
       "../test:test_support",
     ]
@@ -3192,6 +3234,7 @@ if (rtc_include_tests && !build_with_chromium) {
       "../api:legacy_stats_types",
       "../api:media_stream_interface",
       "../api:peer_connection_interface",
+      "../api:rtp_parameters",
       "../api:rtp_sender_interface",
       "../api:scoped_refptr",
       "../call:call_interfaces",
@@ -3206,7 +3249,6 @@ if (rtc_include_tests && !build_with_chromium) {
       "../rtc_base:socket_address",
       "../rtc_base:ssl",
       "../rtc_base:threading",
-      "../rtc_base/system:plan_b_only",
       "../test:test_support",
       "//third_party/abseil-cpp/absl/strings",
       "//third_party/abseil-cpp/absl/strings:string_view",
@@ -3860,6 +3902,7 @@ if (rtc_include_tests && !build_with_chromium) {
       "../test:run_loop",
       "../test:test_support",
       "../test:wait_until",
+      "//third_party/abseil-cpp/absl/functional:any_invocable",
       "//third_party/abseil-cpp/absl/strings:string_view",
     ]
   }
@@ -3877,6 +3920,7 @@ if (rtc_include_tests && !build_with_chromium) {
       "../api:jsep",
       "../api:make_ref_counted",
       "../api:peer_connection_interface",
+      "../api:ref_count",
       "../api:rtc_error",
       "../api:rtc_error_matchers",
       "../api:rtp_parameters",
@@ -4020,7 +4064,6 @@ if (rtc_include_tests && !build_with_chromium) {
       "../rtc_base:threading",
       "../rtc_base:timeutils",
       "../rtc_base/synchronization:mutex",
-      "../rtc_base/system:plan_b_only",
       "../system_wrappers",
       "../test:create_test_environment",
       "../test:run_loop",
@@ -4326,6 +4369,9 @@ if (rtc_include_tests && !build_with_chromium) {
       "../api:rtp_transceiver_direction",
       "../api:rtp_transceiver_interface",
       "../api:scoped_refptr",
+      "../api:sframe_decryptor_interface",
+      "../api:sframe_encryptor_interface",
+      "../api:sframe_types",
       "../api/audio_codecs:builtin_audio_decoder_factory",
       "../api/audio_codecs:builtin_audio_encoder_factory",
       "../api/crypto:options",
@@ -4502,6 +4548,7 @@ if (rtc_include_tests && !build_with_chromium) {
       "../rtc_base:ssl_adapter",
       "../rtc_base:stringutils",
       "../rtc_base:task_queue_for_test",
+      "../rtc_base:threading",
       "../test:run_loop",
       "../test:test_support",
       "../test:wait_until",
@@ -4593,6 +4640,7 @@ if (rtc_include_tests && !build_with_chromium) {
       ":session_description",
       "../api:candidate",
       "../api:data_channel_interface",
+      "../api:dtls_transport_interface",
       "../api:dtmf_sender_interface",
       "../api:jsep",
       "../api:make_ref_counted",
@@ -4609,6 +4657,7 @@ if (rtc_include_tests && !build_with_chromium) {
       "../api:rtp_transceiver_direction",
       "../api:rtp_transceiver_interface",
       "../api:scoped_refptr",
+      "../api:sctp_transport_interface",
       "../api:uma_metrics",
       "../api/crypto:options",
       "../api/rtc_event_log",
@@ -4998,7 +5047,6 @@ if (rtc_include_tests && !build_with_chromium) {
       "../rtc_base:rtc_base_tests_utils",
       "../rtc_base:ssl",
       "../rtc_base:ssl_adapter",
-      "../rtc_base/system:plan_b_only",
       "../system_wrappers",
       "../test:create_test_environment",
       "../test:run_loop",
@@ -5188,24 +5236,17 @@ if (rtc_include_tests && !build_with_chromium) {
     ]
   }
 
-  svc_tests_resources = [
-    "../resources/difficult_photo_1850_1110.yuv",
-    "../resources/photo_1850_1110.yuv",
-    "../resources/presentation_1850_1110.yuv",
-    "../resources/web_screenshot_1850_1110.yuv",
-  ]
-
-  if (is_ios) {
-    bundle_data("svc_tests_bundle_data") {
-      testonly = true
-      sources = svc_tests_resources
-      outputs = [ "{{bundle_resources_dir}}/{{source_file_part}}" ]
-    }
-  }
-
-  rtc_test("svc_tests") {
+  rtc_cc_test("svc_e2e_tests") {
     sources = [ "test/svc_e2e_tests.cc" ]
-    data = svc_tests_resources
+    if (!is_ios && !is_android) {
+      # iOS and Android use synthetic 1152x648 frames in svc_e2e_tests.cc.
+      data = [
+        "../resources/difficult_photo_1850_1110.yuv",
+        "../resources/photo_1850_1110.yuv",
+        "../resources/presentation_1850_1110.yuv",
+        "../resources/web_screenshot_1850_1110.yuv",
+      ]
+    }
     deps = [
       "../api:create_network_emulation_manager",
       "../api:create_peer_connection_quality_test_frame_generator",
@@ -5241,9 +5282,9 @@ if (rtc_include_tests && !build_with_chromium) {
       "../test/pc/e2e/analyzer/video:default_video_quality_analyzer_shared",
       "//third_party/abseil-cpp/absl/strings:string_view",
     ]
+  }
 
-    if (is_ios) {
-      deps += [ ":svc_tests_bundle_data" ]
-    }
+  rtc_test_suite("svc_tests") {
+    tests = [ ":svc_e2e_tests" ]
   }
 }

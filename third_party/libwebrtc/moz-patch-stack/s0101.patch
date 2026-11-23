@@ -14,10 +14,10 @@ Mercurial Revision: https://hg.mozilla.org/mozilla-central/rev/8b5653392e88ccd0c
  2 files changed, 5 insertions(+)
 
 diff --git a/video/config/video_encoder_config.h b/video/config/video_encoder_config.h
-index e7ae07d5da..5348e8c0a4 100644
+index 1996624394..fa0b5639bf 100644
 --- a/video/config/video_encoder_config.h
 +++ b/video/config/video_encoder_config.h
-@@ -26,6 +26,7 @@
+@@ -27,6 +27,7 @@
  #include "api/video_codecs/sdp_video_format.h"
  #include "api/video_codecs/spatial_layer.h"
  #include "api/video_codecs/video_codec.h"
@@ -25,7 +25,7 @@ index e7ae07d5da..5348e8c0a4 100644
  
  namespace webrtc {
  
-@@ -158,6 +159,9 @@ class VideoEncoderConfig {
+@@ -161,6 +162,9 @@ class VideoEncoderConfig {
          int frame_height,
          const VideoEncoderConfig& encoder_config) = 0;
  
@@ -36,10 +36,10 @@ index e7ae07d5da..5348e8c0a4 100644
      ~VideoStreamFactoryInterface() override {}
    };
 diff --git a/video/video_stream_encoder.cc b/video/video_stream_encoder.cc
-index 88f6434c7c..d628d681fc 100644
+index 7d8db8d6d2..5c25f2520e 100644
 --- a/video/video_stream_encoder.cc
 +++ b/video/video_stream_encoder.cc
-@@ -1068,6 +1068,7 @@ void VideoStreamEncoder::ReconfigureEncoder() {
+@@ -1071,6 +1071,7 @@ void VideoStreamEncoder::ReconfigureEncoder() {
    std::vector<VideoStream> streams;
    if (encoder_config_.video_stream_factory) {
      // Note: only tests set their own EncoderStreamFactory...

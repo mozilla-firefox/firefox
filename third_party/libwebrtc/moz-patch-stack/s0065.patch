@@ -9,10 +9,10 @@ Mercurial Revision: https://hg.mozilla.org/mozilla-central/rev/154c9cdb386d0f50c
  1 file changed, 4 insertions(+), 4 deletions(-)
 
 diff --git a/modules/rtp_rtcp/source/rtcp_receiver.cc b/modules/rtp_rtcp/source/rtcp_receiver.cc
-index 134ad80552..9b3b2c9066 100644
+index d190357293..d748029357 100644
 --- a/modules/rtp_rtcp/source/rtcp_receiver.cc
 +++ b/modules/rtp_rtcp/source/rtcp_receiver.cc
-@@ -323,10 +323,10 @@ void RTCPReceiver::RemoteRTCPSenderInfo(uint32_t* packet_count,
+@@ -320,10 +320,10 @@ void RTCPReceiver::RemoteRTCPSenderInfo(uint32_t* packet_count,
                                          int64_t* ntp_timestamp_ms,
                                          int64_t* remote_ntp_timestamp_ms) const {
    MutexLock lock(&rtcp_receiver_lock_);

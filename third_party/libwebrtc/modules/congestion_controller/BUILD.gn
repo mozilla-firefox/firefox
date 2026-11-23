@@ -30,6 +30,7 @@ rtc_library("congestion_controller") {
     "../../rtc_base:macromagic",
     "../../rtc_base/containers:flat_map",
     "../../rtc_base/experiments:field_trial_parser",
+    "../../rtc_base/experiments:rfc8888_congestion_control_feedback_experiment",
     "../../rtc_base/synchronization:mutex",
     "../../system_wrappers",
     "../remote_bitrate_estimator",
@@ -71,10 +72,12 @@ if (rtc_include_tests) {
       "../../api/units:timestamp",
       "../../rtc_base:buffer",
       "../../system_wrappers",
+      "../../system_wrappers:metrics",
       "../../test:create_test_environment",
       "../../test:create_test_field_trials",
       "../../test:test_support",
       "../../test/scenario",
+      "../remote_bitrate_estimator",
       "../rtp_rtcp:rtp_rtcp_format",
     ]
   }

@@ -11,13 +11,16 @@
 #include "api/rtp_parameters.h"
 
 #include <cstddef>
+#include <map>
 #include <optional>
 #include <string>
+#include <utility>
 #include <vector>
 
 #include "absl/strings/str_cat.h"
 #include "absl/strings/string_view.h"
 #include "api/rtp_header_extension_id.h"
+#include "api/video/video_codec_constants.h"
 #include "rtc_base/checks.h"
 #include "test/gmock.h"
 #include "test/gtest.h"
@@ -26,6 +29,8 @@ namespace webrtc {
 
 namespace {
 
+using ::testing::ElementsAre;
+using ::testing::HasSubstr;
 using ::testing::Pair;
 using ::testing::UnorderedElementsAre;
 RtpParameters CreateRtpParametersWithCodecs(
@@ -359,6 +364,35 @@ TEST(CodecParameterMap, ParsesNonKeyValueFmtpParameterSet) {
   EXPECT_EQ(codec_params[""], "not-in-key-value-format");
 }
 
+TEST(CodecParameterMap, ParsesFmtpParameterSetEdgeCases) {
+  CodecParameterMap codec_params;
+  // For duplicate keys, the last value wins.
+  ASSERT_TRUE(ParseFmtpParameterSet("a=1;a=2", codec_params).ok());
+  EXPECT_THAT(codec_params, UnorderedElementsAre(Pair("a", "2")));
+
+  // Whitespace around parameters is trimmed and empty values are kept.
+  codec_params.clear();
+  ASSERT_TRUE(ParseFmtpParameterSet("a=1; b=", codec_params).ok());
+  EXPECT_THAT(codec_params,
+              UnorderedElementsAre(Pair("a", "1"), Pair("b", "")));
+
+  // A trailing delimiter adds an empty key with an empty value.
+  codec_params.clear();
+  ASSERT_TRUE(ParseFmtpParameterSet("a=1;", codec_params).ok());
+  EXPECT_THAT(codec_params, UnorderedElementsAre(Pair("", ""), Pair("a", "1")));
+
+  // Repeated '=' after the key are skipped.
+  codec_params.clear();
+  ASSERT_TRUE(ParseFmtpParameterSet("a==1", codec_params).ok());
+  EXPECT_THAT(codec_params, UnorderedElementsAre(Pair("a", "1")));
+
+  // An empty parameter adds an empty key with an empty value, which replaces
+  // the value that the non-key-value parameter "a" stored under the empty key.
+  codec_params.clear();
+  ASSERT_TRUE(ParseFmtpParameterSet("a;;b=1", codec_params).ok());
+  EXPECT_THAT(codec_params, UnorderedElementsAre(Pair("", ""), Pair("b", "1")));
+}
+
 TEST(RtpParametersTest, IsMixedCodec) {
   RtpParameters parameters;
   RtpCodec codec1, codec2;
@@ -423,6 +457,46 @@ TEST(CodecParameterMapTest, InitializerListWithAbslStringView) {
   map2 = {{key1, val2}, {key2, val1}};
   EXPECT_THAT(map2,
               UnorderedElementsAre(Pair("key1", "val2"), Pair("key2", "val1")));
+}
+
+TEST(CodecParameterMapTest, ConvertsFromAndToStdMap) {
+  const std::map<std::string, std::string> std_map = {{"b", "2"}, {"a", "1"}};
+  CodecParameterMap from_const_ref = std_map;
+  EXPECT_THAT(from_const_ref, ElementsAre(Pair("a", "1"), Pair("b", "2")));
+
+  std::map<std::string, std::string> movable = std_map;
+  CodecParameterMap from_rvalue = std::move(movable);
+  EXPECT_THAT(from_rvalue, ElementsAre(Pair("a", "1"), Pair("b", "2")));
+
+  std::map<std::string, std::string> converted_back = from_const_ref;
+  EXPECT_EQ(converted_back, std_map);
+}
+
+TEST(CodecParameterMapTest, SupportsStringViewLookup) {
+  CodecParameterMap params = {{"key1", "value1"}, {"key2", "value2"}};
+  const absl::string_view key1 = "key1";
+  ASSERT_NE(params.find(key1), params.end());
+  EXPECT_EQ(params.find(key1)->second, "value1");
+  EXPECT_EQ(params.count(absl::string_view("key2")), 1u);
+  EXPECT_EQ(params.erase(key1), 1u);
+  EXPECT_THAT(params, ElementsAre(Pair("key2", "value2")));
+}
+
+TEST(RtpParametersTest, EncodingComplexityEqualityAndStringify) {
+  RtpEncodingParameters encoding1;
+  RtpEncodingParameters encoding2;
+  EXPECT_EQ(encoding1, encoding2);
+
+  encoding1.encoding_complexity = VideoCodecComplexity::kComplexityHigh;
+  EXPECT_NE(encoding1, encoding2);
+  EXPECT_THAT(absl::StrCat(encoding1), HasSubstr("encoding_complexity: 1"));
+
+  encoding2.encoding_complexity = VideoCodecComplexity::kComplexityHigh;
+  EXPECT_EQ(encoding1, encoding2);
+
+  encoding2.encoding_complexity = VideoCodecComplexity::kComplexityLow;
+  EXPECT_NE(encoding1, encoding2);
+  EXPECT_THAT(absl::StrCat(encoding2), HasSubstr("encoding_complexity: -1"));
 }
 
 }  // namespace

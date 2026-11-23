@@ -34,6 +34,9 @@
 #include "api/rtp_transceiver_direction.h"
 #include "api/rtp_transceiver_interface.h"
 #include "api/scoped_refptr.h"
+#include "api/sframe/sframe_decryptor_interface.h"
+#include "api/sframe/sframe_encryptor_interface.h"
+#include "api/sframe/sframe_types.h"
 #include "api/video_codecs/sdp_video_format.h"
 #include "api/video_codecs/video_decoder_factory_template.h"
 #include "api/video_codecs/video_decoder_factory_template_dav1d_adapter.h"
@@ -3130,6 +3133,31 @@ TEST_F(SdpOfferAnswerTest,
                   ->contents()[0]
                   .media_description()
                   ->sframe_enabled());
+}
+
+// Rolling back the initial offer removes the media channel, so new Sframe
+// handles can't be created until the next negotiation creates a new one.
+TEST_F(SdpOfferAnswerTest,
+       CreatingSframeHandlesFailsAfterRollbackOfFirstOffer) {
+  constexpr SframeEncryptorInit kEncryptorInit = {
+      .mode = SframeMode::kPerFrame,
+      .cipher_suite = SframeCipherSuite::kAes128GcmSha256_128};
+  auto caller = CreatePeerConnection();
+
+  auto transceiver = caller->AddTransceiver(MediaType::AUDIO);
+  ASSERT_TRUE(
+      transceiver->sender()->CreateSframeEncryptorOrError(kEncryptorInit).ok());
+  caller->CreateOfferAndSetAsLocal();
+  ASSERT_TRUE(caller->SetLocalDescription(caller->CreateRollback()));
+
+  RTCErrorOr<scoped_refptr<SframeEncryptorInterface>> encryptor =
+      transceiver->sender()->CreateSframeEncryptorOrError(kEncryptorInit);
+  EXPECT_EQ(encryptor.error().type(), RTCErrorType::INVALID_STATE);
+
+  RTCErrorOr<scoped_refptr<SframeDecryptorInterface>> decryptor =
+      transceiver->receiver()->CreateSframeDecryptorOrError(
+          SframeCipherSuite::kAes128GcmSha256_128, [](SframeDecryptError) {});
+  EXPECT_EQ(decryptor.error().type(), RTCErrorType::INVALID_STATE);
 }
 
 // Verify that after a full negotiation with SFrame enabled, the state

@@ -62,9 +62,9 @@ class ConnectionContext final : public RefCountedNonVirtual<ConnectionContext> {
       }
     }
 
-    // Ideally, access to the media engine should be constrained to the worker
+    // Ideally, access to the media engine should be constrained to the network
     // thread. This accessor is provided to help ensure that a reference is held
-    // and that the call is being issued on the worker thread.
+    // and that the call is being issued on the network thread.
     MediaEngineInterface* media_engine() const;
 
    private:
@@ -92,8 +92,6 @@ class ConnectionContext final : public RefCountedNonVirtual<ConnectionContext> {
 
   Thread* signaling_thread() { return signaling_thread_; }
   const Thread* signaling_thread() const { return signaling_thread_; }
-  Thread* worker_thread() { return worker_thread_; }
-  const Thread* worker_thread() const { return worker_thread_; }
   Thread* network_thread() { return network_thread_; }
   const Thread* network_thread() const { return network_thread_; }
 
@@ -112,22 +110,22 @@ class ConnectionContext final : public RefCountedNonVirtual<ConnectionContext> {
   }
   UniqueRandomIdGenerator* ssrc_generator() { return &ssrc_generator_; }
 
-  // Apply global audio options. Must be called on the worker thread.
+  // Apply global audio options. Must be called on the network thread.
   void ApplyGlobalAudioOptions(const AudioOptions& options);
 
  protected:
   friend class MediaEngineReference;
   // Registers a media engine usage. Calls Init() to initialize the media engine
-  // on the first reference. Must be called on the worker thread.
+  // on the first reference. Must be called on the network thread.
   void AddRefMediaEngine();
 
   // Unregisters a media engine usage. Calls Terminate() to uninitialize the
-  // media engine on the last reference. Must be called on the worker thread.
+  // media engine on the last reference. Must be called on the network thread.
   void ReleaseMediaEngine();
 
   // Non-const access requires using MediaEngineReference and calling methods
-  // on the worker thread.
-  MediaEngineInterface* media_engine_w();
+  // on the network thread.
+  MediaEngineInterface* media_engine_n();
 
   ConnectionContext(
       const Environment& env,
@@ -146,18 +144,17 @@ class ConnectionContext final : public RefCountedNonVirtual<ConnectionContext> {
       RTC_GUARDED_BY(signaling_thread_);
   bool blocking_media_engine_destruction_;
   Thread* const network_thread_;
-  Thread* const worker_thread_;
   Thread* const signaling_thread_;
 
   // This object is const over the lifetime of the ConnectionContext, and is
   // only altered in the destructor.
   std::unique_ptr<MediaEngineInterface> media_engine_;
-  int media_engine_reference_count_ RTC_GUARDED_BY(worker_thread()) = 0;
+  int media_engine_reference_count_ RTC_GUARDED_BY(network_thread()) = 0;
 
   // This object should be used to generate any SSRC that is not explicitly
   // specified by the user (or by the remote party).
   // TODO(bugs.webrtc.org/12666): This variable is used from both the signaling
-  // and worker threads. See if we can't restrict usage to a single thread.
+  // and network threads. See if we can't restrict usage to a single thread.
   UniqueRandomIdGenerator ssrc_generator_;
   std::unique_ptr<NetworkMonitorFactory> const network_monitor_factory_
       RTC_GUARDED_BY(signaling_thread_);
@@ -172,7 +169,7 @@ class ConnectionContext final : public RefCountedNonVirtual<ConnectionContext> {
 
   // Stored global audio options applied to the media engine upon
   // initialization.
-  AudioOptions global_audio_options_ RTC_GUARDED_BY(worker_thread());
+  AudioOptions global_audio_options_ RTC_GUARDED_BY(network_thread());
 };
 
 }  // namespace webrtc

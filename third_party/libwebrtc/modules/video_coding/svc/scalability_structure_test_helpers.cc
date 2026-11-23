@@ -43,25 +43,32 @@ void ScalabilityStructureWrapper::GenerateFrames(
     int num_temporal_units,
     std::vector<GenericFrameInfo>& frames) {
   for (int i = 0; i < num_temporal_units; ++i) {
-    for (auto& layer_frame :
-         structure_controller_.NextFrameConfig(/*restart=*/false)) {
-      int64_t frame_id = ++frame_id_;
-      bool is_keyframe = layer_frame.IsKeyframe();
+    EncodeTemporalUnit(structure_controller_.NextFrameConfig(/*restart=*/false),
+                       frames);
+  }
+}
 
-      GenericFrameInfo frame_info =
-          structure_controller_.OnEncodeDone(layer_frame);
-      if (is_keyframe) {
-        chain_diff_calculator_.Reset(frame_info.part_of_chain);
-      }
-      frame_info.chain_diffs =
-          chain_diff_calculator_.From(frame_id, frame_info.part_of_chain);
-      for (int64_t base_frame_id : frame_deps_calculator_.FromBuffersUsage(
-               frame_id, frame_info.encoder_buffers)) {
-        frame_info.frame_diffs.push_back(frame_id - base_frame_id);
-      }
+void ScalabilityStructureWrapper::EncodeTemporalUnit(
+    std::span<const ScalableVideoController::LayerFrameConfig> layer_frames,
+    std::vector<GenericFrameInfo>& frames) {
+  for (const ScalableVideoController::LayerFrameConfig& layer_frame :
+       layer_frames) {
+    int64_t frame_id = ++frame_id_;
+    bool is_keyframe = layer_frame.IsKeyframe();
 
-      frames.push_back(std::move(frame_info));
+    GenericFrameInfo frame_info =
+        structure_controller_.OnEncodeDone(layer_frame);
+    if (is_keyframe) {
+      chain_diff_calculator_.Reset(frame_info.part_of_chain);
     }
+    frame_info.chain_diffs =
+        chain_diff_calculator_.From(frame_id, frame_info.part_of_chain);
+    for (int64_t base_frame_id : frame_deps_calculator_.FromBuffersUsage(
+             frame_id, frame_info.encoder_buffers)) {
+      frame_info.frame_diffs.push_back(frame_id - base_frame_id);
+    }
+
+    frames.push_back(std::move(frame_info));
   }
 }
 

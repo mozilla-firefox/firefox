@@ -85,9 +85,6 @@ class FrameDumpingEncoder : public VideoEncoder, public EncodedImageCallback {
     wrapped_->OnPacketLossRateUpdate(packet_loss_rate);
   }
   void OnRttUpdate(int64_t rtt_ms) override { wrapped_->OnRttUpdate(rtt_ms); }
-  void OnLossNotification(const LossNotification& loss_notification) override {
-    wrapped_->OnLossNotification(loss_notification);
-  }
   EncoderInfo GetEncoderInfo() const override {
     return wrapped_->GetEncoderInfo();
   }

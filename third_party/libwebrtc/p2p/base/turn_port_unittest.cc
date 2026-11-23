@@ -1516,6 +1516,51 @@ TEST_F(TurnPortTest, TestStopProcessingPacketsAfterClosed) {
   EXPECT_FALSE(turn_unknown_address_);
 }
 
+// Test that a binding request with an unknown comprehension-required attribute
+// relayed from a port for which there is no TurnEntry (but whose IP address
+// has a TURN permission) does not crash when the TurnPort attempts to send a
+// 420 Unknown Attributes error response.
+// This is a regression test for b/510384538.
+TEST_F(TurnPortTest, UnknownAttributesFromUnpairedPortDoesNotCrash) {
+  CreateTurnPort(kTurnUsername, kTurnPassword, kTurnUdpProtoAddr);
+  PrepareTurnAndUdpPorts(PROTO_UDP);
+  Connection* conn = turn_port_->CreateConnection(udp_port_->Candidates()[0],
+                                                  Port::ORIGIN_MESSAGE);
+  ASSERT_TRUE(conn != nullptr);
+  time_controller_.AdvanceTime(kSimulatedRtt);
+  ASSERT_TRUE(HasPermission(udp_port_->Candidates()[0].address().ipaddr()));
+
+  // Create a socket on the same IP address as `udp_port_`, but on a different
+  // port. The TURN server will relay packets from it since permissions are
+  // IP-granular, but the TurnPort has no TurnEntry for its address.
+  std::unique_ptr<AsyncPacketSocket> unpaired_socket =
+      socket_factory()->CreateUdpSocket(
+          env_, SocketAddress(kLocalAddr2.ipaddr(), 0), 0, 0);
+  ASSERT_TRUE(unpaired_socket != nullptr);
+  ASSERT_NE(unpaired_socket->GetLocalAddress(),
+            udp_port_->Candidates()[0].address());
+
+  IceMessage request(STUN_BINDING_REQUEST);
+  request.AddAttribute(std::make_unique<StunByteStringAttribute>(
+      STUN_ATTR_USERNAME,
+      std::string(turn_port_->username_fragment()) + ":" + kIceUfrag2));
+  // Unknown attribute in the comprehension-required range.
+  request.AddAttribute(std::make_unique<StunByteStringAttribute>(0x4000, "x"));
+  request.AddMessageIntegrity(turn_port_->password());
+  request.AddFingerprint();
+  ByteBufferWriter buf;
+  request.Write(&buf);
+
+  unpaired_socket->SendTo(buf.Data(), buf.Length(),
+                          turn_port_->Candidates()[0].address(),
+                          AsyncSocketPacketOptions());
+  time_controller_.AdvanceTime(kSimulatedRtt);
+
+  // The request should have been rejected without signaling an unknown
+  // address (and without crashing).
+  EXPECT_FALSE(turn_unknown_address_);
+}
+
 // Test that CreateConnection will return null if port becomes disconnected.
 TEST_F(TurnPortTest, TestCreateConnectionWhenSocketClosed) {
   turn_server_.AddInternalSocket(kTurnTcpIntAddr, PROTO_TCP);

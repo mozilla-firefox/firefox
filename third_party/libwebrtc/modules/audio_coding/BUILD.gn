@@ -815,14 +815,12 @@ if (rtc_include_tests) {
       "test/TestVADDTX.cc",
       "test/TestVADDTX.h",
       "test/Tester.cc",
-      "test/target_delay_unittest.cc",
     ]
     deps = [
       ":audio_coding",
       ":audio_coding_module_typedefs",
       ":audio_coding_modules_tests_shared",
       ":audio_encoder_cng",
-      ":pcm16b_c",
       ":red",
       "../../api:rtp_headers",
       "../../api:scoped_refptr",
@@ -860,6 +858,23 @@ if (rtc_include_tests) {
       deps += [ "../../resources:audio_coding_unittests_bundle_data" ]
     }
     defines = audio_coding_defines
+  }
+
+  rtc_cc_test("target_delay_unittest") {
+    sources = [ "test/target_delay_unittest.cc" ]
+    deps = [
+      ":audio_coding",
+      ":pcm16b_c",
+      "../../api:rtp_headers",
+      "../../api/audio:audio_frame_api",
+      "../../api/audio_codecs:audio_codecs_api",
+      "../../api/audio_codecs:builtin_audio_decoder_factory",
+      "../../api/neteq:default_neteq_factory",
+      "../../api/neteq:neteq_api",
+      "../../api/units:timestamp",
+      "../../test:create_test_environment",
+      "../../test:test_support",
+    ]
   }
 
   rtc_library("acm_receive_test") {
@@ -998,15 +1013,7 @@ if (rtc_include_tests) {
     "//resources/audio_coding/speech_mono_32_48kHz.pcm",
   ]
 
-  if (is_ios) {
-    bundle_data("audio_codec_speed_tests_data") {
-      testonly = true
-      sources = audio_codec_speed_tests_resources
-      outputs = [ "{{bundle_resources_dir}}/{{source_file_part}}" ]
-    }
-  }
-
-  rtc_test("audio_codec_speed_tests") {
+  rtc_executable("audio_codec_speed_tests") {
     testonly = true
     defines = []
     deps = [
@@ -1021,17 +1028,10 @@ if (rtc_include_tests) {
 
     data = audio_codec_speed_tests_resources
 
-    if (is_android) {
-      deps += [ "//build/android/gtest_apk:native_test_instrumentation_test_runner_java" ]
-    }
-
-    if (is_ios) {
-      deps += [ ":audio_codec_speed_tests_data" ]
-    }
-
     deps += [
       ":webrtc_opus",
       "../../rtc_base:checks",
+      "../../test:test_main",
       "../../test:test_support",
       "../audio_processing",
       "//testing/gtest",
@@ -1173,7 +1173,7 @@ if (rtc_include_tests) {
     ]
   }
 
-  rtc_test("neteq_opus_quality_test") {
+  rtc_executable("neteq_opus_quality_test") {
     testonly = true
 
     sources = [ "neteq/test/neteq_opus_quality_test.cc" ]
@@ -1187,6 +1187,7 @@ if (rtc_include_tests) {
       "../../api/audio_codecs:audio_codecs_api",
       "../../rtc_base:buffer",
       "../../rtc_base:checks",
+      "../../test:test_main",
       "../../test:test_support",
       "//testing/gtest",
       "//third_party/abseil-cpp/absl/flags:flag",
@@ -1207,7 +1208,7 @@ if (rtc_include_tests) {
     ]
   }
 
-  rtc_test("neteq_pcmu_quality_test") {
+  rtc_executable("neteq_pcmu_quality_test") {
     testonly = true
 
     sources = [ "neteq/test/neteq_pcmu_quality_test.cc" ]
@@ -1219,13 +1220,14 @@ if (rtc_include_tests) {
       "../../rtc_base:buffer",
       "../../rtc_base:checks",
       "../../rtc_base:safe_conversions",
+      "../../test:test_main",
       "../../test:test_support",
       "//testing/gtest",
       "//third_party/abseil-cpp/absl/flags:flag",
     ]
   }
 
-  rtc_test("neteq_pcm16b_quality_test") {
+  rtc_executable("neteq_pcm16b_quality_test") {
     testonly = true
 
     sources = [ "neteq/test/neteq_pcm16b_quality_test.cc" ]
@@ -1237,6 +1239,7 @@ if (rtc_include_tests) {
       "../../rtc_base:buffer",
       "../../rtc_base:checks",
       "../../rtc_base:safe_conversions",
+      "../../test:test_main",
       "../../test:test_support",
       "//testing/gtest",
       "//third_party/abseil-cpp/absl/flags:flag",
@@ -1363,6 +1366,7 @@ if (rtc_include_tests) {
       ":reorder_optimizer_unittest",
       ":statistics_calculator_unittest",
       ":sync_buffer_unittest",
+      ":target_delay_unittest",
       ":threshold_curve_unittest",
       ":time_stretch_unittest",
       ":timestamp_scaler_unittest",

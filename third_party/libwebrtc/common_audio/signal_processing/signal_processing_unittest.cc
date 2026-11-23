@@ -396,6 +396,46 @@ TEST(SplTest, MinMaxOperationsTest) {
   EXPECT_EQ(WEBRTC_SPL_WORD16_MAX, max_value);
 }
 
+TEST(SplTest, AddAffineVectorToVectorSaturates) {
+  const int16_t input[] = {20000, -20000, 20000, -20000, 1, -1};
+  int16_t output[] = {20000, -20000, -10000, 10000, 1, -1};
+  const int16_t expected[] = {32767, -32768, 30000, -30000, 3, -3};
+  // Saturate after addition, allowing out-of-range terms to cancel.
+  WebRtcSpl_AddAffineVectorToVector(output, input, 2, 0, 0, std::size(input));
+  for (size_t i = 0; i < std::size(input); ++i) {
+    EXPECT_EQ(expected[i], output[i]) << "Sample " << i;
+  }
+}
+
+TEST(SplTest, AffineTransformVectorSaturates) {
+  int16_t samples[] = {-32768, -16384, -1, 0, 1, 16384, 32767};
+  const int16_t expected[] = {32767, 32767, 2, 0, -2, -32768, -32768};
+  // Exercise saturation in place, including a negative gain.
+  WebRtcSpl_AffineTransformVector(samples, samples, -2, 0, 0,
+                                  std::size(samples));
+  for (size_t i = 0; i < std::size(samples); ++i) {
+    EXPECT_EQ(expected[i], samples[i]) << "Sample " << i;
+  }
+
+  int16_t value = 32767;
+  WebRtcSpl_AffineTransformVector(&value, &value, 1, 1, 0, 1);
+  EXPECT_EQ(32767, value);
+  value = -32768;
+  WebRtcSpl_AffineTransformVector(&value, &value, 1, -1, 0, 1);
+  EXPECT_EQ(-32768, value);
+}
+
+TEST(SplTest, AffineTransformVectorRoundsAndShifts) {
+  const int16_t input[] = {-32768, -3, -2, -1, 0, 1, 2, 3, 32767};
+  const int16_t expected[] = {-24576, -2, -1, -1, 0, 1, 2, 2, 24575};
+  int16_t output[std::size(input)];
+  // The product can exceed int16_t before shifting without requiring clipping.
+  WebRtcSpl_AffineTransformVector(output, input, 3, 2, 2, std::size(input));
+  for (size_t i = 0; i < std::size(input); ++i) {
+    EXPECT_EQ(expected[i], output[i]) << "Sample " << i;
+  }
+}
+
 TEST(SplTest, VectorOperationsTest) {
   const size_t kVectorSize = 4;
   int B[] = {4, 12, 133, 1100};

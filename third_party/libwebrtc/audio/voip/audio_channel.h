@@ -31,6 +31,7 @@
 #include "audio/voip/audio_ingress.h"
 #include "call/audio_sender.h"
 #include "modules/rtp_rtcp/include/receive_statistics.h"
+#include "modules/rtp_rtcp/include/report_block_data.h"
 #include "modules/rtp_rtcp/include/rtp_rtcp_defines.h"
 #include "modules/rtp_rtcp/source/rtp_rtcp_impl2.h"
 #include "rtc_base/checks.h"
@@ -40,7 +41,7 @@ namespace webrtc {
 // AudioChannel represents a single media session and provides APIs over
 // AudioIngress and AudioEgress. Note that a single RTP stack is shared with
 // these two classes as it has both sending and receiving capabilities.
-class AudioChannel : public RefCountInterface {
+class AudioChannel : public RefCountInterface, public ReportBlockDataObserver {
  public:
   AudioChannel(const Environment& env,
                Transport* transport,
@@ -115,6 +116,9 @@ class AudioChannel : public RefCountInterface {
   double GetOutputTotalDuration() const {
     return ingress_->GetOutputTotalDuration();
   }
+
+  // Implementation of ReportBlockDataObserver.
+  void OnReportBlockDataUpdated(ReportBlockData report_block) override;
 
   // Internal API for testing purpose.
   void SendRTCPReportForTesting(RTCPPacketType type) {

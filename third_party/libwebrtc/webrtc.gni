@@ -405,9 +405,14 @@ rtc_add_configs = rtc_common_configs
 rtc_prod_configs = [ webrtc_root + ":rtc_prod_config" ]
 rtc_library_impl_config = [ webrtc_root + ":library_impl_config" ]
 
-set_defaults("rtc_test") {
+set_defaults("_rtc_test") {
   configs = rtc_add_configs
   public_deps = rtc_common_public_deps  # no-presubmit-check TODO(webrtc:8603)
+  suppressed_configs = []
+}
+
+set_defaults("rtc_xctest") {
+  configs = rtc_add_configs
   suppressed_configs = []
 }
 
@@ -509,20 +514,17 @@ absl_define_config = "//libwebrtc/third_party/abseil-cpp:absl_define_config"
 # targets that are testonly.
 absl_flags_config = webrtc_root + ":absl_flags_configs"
 
-# WebRTC wrapper of Chromium's test() template. This template just adds some
-# WebRTC only configuration in order to avoid to duplicate it for every WebRTC
-# target.
-# The parameter `is_xctest` is different from the one in the Chromium's test()
-# template (and it is not forwarded to it). In rtc_test(), the argument
-# `is_xctest` is used to avoid to take dependencies that are not needed
-# in case the test is a real XCTest (using the XCTest framework).
-template("rtc_test") {
+# WebRTC wrapper of Chromium's test() template, which adds the WebRTC specific
+# configuration. It is private to this file (GN doesn't import templates whose
+# name starts with an underscore) and only used by rtc_cc_test and
+# rtc_test_suite: test binaries must be defined with these templates, or with
+# rtc_xctest() for iOS tests using the XCTest framework.
+template("_rtc_test") {
   test(target_name) {
     forward_variables_from(invoker,
                            "*",
                            [
                              "configs",
-                             "is_xctest",
                              "public_configs",
                              "suppressed_configs",
                              "visibility",
@@ -567,19 +569,11 @@ template("rtc_test") {
       ]
     }
 
-    if (defined(invoker.is_xctest) && invoker.is_xctest) {
-      # XCTest bundles are launched by the XCTest harness and provide their own
-      # UIApplicationMain entry point.
-      deps += [ webrtc_root + "test:test_main_xctest" ]
-    } else {
-      deps += [ webrtc_root + "test:test_main" ]
-    }
+    deps += [ webrtc_root + "test:test_main" ]
 
-    # Build //test:google_test_runner_objc when the test is not a real XCTest.
+    # On iOS, GoogleTest tests are run by //test:google_test_runner_objc.
     if (is_ios && rtc_include_tests) {
-      if (!defined(invoker.is_xctest) || !invoker.is_xctest) {
-        xctest_module_target = "//test:google_test_runner_objc"
-      }
+      xctest_module_target = "//test:google_test_runner_objc"
     }
 
     assert(
@@ -599,16 +593,37 @@ template("rtc_test") {
         deps += [ "//third_party/abseil-cpp:absl" ]
       }
     }
+  }
+}
 
-    # TODO(crbug.com/webrtc/13556): Adding the .app folder in the runtime_deps
-    # shoulnd't be necessary. this code should be removed and the same solution
-    # as Chromium should be used.
-    if (is_ios) {
-      if (!defined(invoker.data)) {
-        data = []
-      }
-      data += [ "${root_out_dir}/${target_name}.app" ]
+# WebRTC wrapper of Chromium's test() template for iOS tests written with the
+# XCTest framework (XCTestCase) instead of GoogleTest. They are launched by the
+# XCTest harness, so they depend on //test:test_main_xctest, which provides the
+# UIApplicationMain entry point, instead of //test:test_main.
+template("rtc_xctest") {
+  assert(is_ios, "rtc_xctest() is only supported on iOS.")
+
+  test(target_name) {
+    forward_variables_from(invoker,
+                           "*",
+                           [
+                             "configs",
+                             "public_configs",
+                             "suppressed_configs",
+                           ])
+    configs += invoker.configs
+    configs -= rtc_remove_configs
+    configs -= invoker.suppressed_configs
+    public_configs = [
+      rtc_common_inherited_config,
+      absl_include_config,
+      absl_define_config,
+      absl_flags_config,
+    ]
+    if (defined(invoker.public_configs)) {
+      public_configs += invoker.public_configs
     }
+    deps += [ webrtc_root + "test:test_main_xctest" ]
   }
 }
 
@@ -1472,7 +1487,7 @@ template("rtc_cc_test") {
                      target_name + "_bin"
     }
 
-    rtc_test("${target_name}_bin") {
+    _rtc_test("${target_name}_bin") {
       testonly = true
 
       # Output into the target's directory.
@@ -1494,7 +1509,6 @@ template("rtc_cc_test") {
 #
 # Arguments:
 #   tests: List of rtc_cc_test targets to include in this suite.
-#   deps: Additional dependencies (e.g. groups of tests).
 template("rtc_test_suite") {
   if (defined(invoker.testonly)) {
     testonly = invoker.testonly
@@ -1552,7 +1566,7 @@ template("rtc_test_suite") {
 
   assert(!defined(invoker.deps), "rtc_test_suite does not allow deps")
 
-  rtc_test(_suite_name) {
+  _rtc_test(_suite_name) {
     testonly = true
     deps = invoker.tests
     deps += [ ":${_suite_name}_verify_metadata" ]

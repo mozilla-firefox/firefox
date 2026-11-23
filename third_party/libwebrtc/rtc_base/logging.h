@@ -119,6 +119,8 @@ class LogMessage;
 // the most flexible way.
 class LogLineRef {
  public:
+  ~LogLineRef();
+
   absl::string_view message() const { return message_; }
   absl::string_view filename() const { return filename_; }
   int line() const { return line_; }
@@ -128,16 +130,20 @@ class LogLineRef {
   LoggingSeverity severity() const { return severity_; }
   absl::string_view queue_name() const { return queue_name_; }
 
-#if RTC_LOG_ENABLED()
-  std::string DefaultLogLine() const;
-#else
-  std::string DefaultLogLine() const { return ""; }
-#endif
+  // Returns the log line in the default format: the log prefix, timestamp,
+  // thread and file information, followed by the message. It is formatted on
+  // first use and then cached, so that all consumers of a log message share
+  // it. Since the cache isn't synchronized, a LogLineRef must not be used on
+  // several threads at the same time.
+  const std::string& DefaultLogLine() const;
 
  private:
   friend class LogMessage;
   LogLineRef();
-  void set_message(std::string message) { message_ = std::move(message); }
+  void set_message(std::string message) {
+    message_ = std::move(message);
+    default_log_line_.reset();
+  }
   void set_filename(absl::string_view filename) { filename_ = filename; }
   void set_line(int line) { line_ = line; }
   void set_thread_id(std::optional<PlatformThreadId> thread_id) {
@@ -165,6 +171,8 @@ class LogLineRef {
   absl::string_view tag_ = "libjingle";
   // The severity level of this message
   LoggingSeverity severity_;
+  // The result of DefaultLogLine(), formatted on first use.
+  mutable std::optional<std::string> default_log_line_;
 };
 
 // Virtual sink interface that can receive log messages.
@@ -172,28 +180,31 @@ class LogSink {
  public:
   LogSink() {}
   virtual ~LogSink() {}
+  [[deprecated("Override OnLogMessage(const LogLineRef&) instead.")]]
   virtual void OnLogMessage(const std::string& msg,
                             LoggingSeverity severity,
                             const char* tag);
+  [[deprecated("Override OnLogMessage(const LogLineRef&) instead.")]]
   virtual void OnLogMessage(const std::string& message,
                             LoggingSeverity severity);
-  virtual void OnLogMessage(const std::string& message) = 0;
+  [[deprecated("Override OnLogMessage(const LogLineRef&) instead.")]]
+  virtual void OnLogMessage(const std::string& message);
 
+  [[deprecated("Override OnLogMessage(const LogLineRef&) instead.")]]
   virtual void OnLogMessage(absl::string_view msg,
                             LoggingSeverity severity,
                             const char* tag);
+  [[deprecated("Override OnLogMessage(const LogLineRef&) instead.")]]
   virtual void OnLogMessage(absl::string_view message,
                             LoggingSeverity severity);
+  [[deprecated("Override OnLogMessage(const LogLineRef&) instead.")]]
   virtual void OnLogMessage(absl::string_view message);
-  virtual void OnLogMessage(const LogLineRef& line);
 
- private:
-  friend class LogMessage;
-#if RTC_LOG_ENABLED()
-  // Members for LogMessage class to keep linked list of the registered sinks.
-  LogSink* next_ = nullptr;
-  LoggingSeverity min_severity_ = LS_INFO;
-#endif
+  // Called for each log message that is at least as severe as the minimum
+  // severity of the sink. The default implementation formats the message with
+  // LogLineRef::DefaultLogLine() and passes it on to the deprecated overloads
+  // above.
+  virtual void OnLogMessage(const LogLineRef& line);
 };
 
 class LoggingConfig {
@@ -264,6 +275,8 @@ const LoggingConfig& GetLoggingConfig();
 //   InitializeLogging() call will succeed.
 // - When `restore_config` is provided (e.g. in TearDown), moves it back in as
 //   the active initialized configuration.
+// Must not be called while other threads log, since it replaces the
+// configuration that log messages read.
 LoggingConfig ResetLoggingForTesting(
     std::optional<LoggingConfig> restore_config = std::nullopt);
 
@@ -609,47 +622,41 @@ class LogMessage {
   [[deprecated("Use InitializeLogging instead.")]]
   static bool LogThreads(bool enabled = true);
 
-  // Enables or disables logging the name of the active task queue when
-  // available. This feature is by default disabled. Returns the previously set
-  // value. NOTE: Must be called prior to starting threads and/or starting
-  // logging.
-  static bool SetLogQueueNames(bool enabled);
+  // TODO: bugs.webrtc.org/42234107 - Remove the deprecated methods below once
+  // downstream projects have migrated.
 
   //  LogTimestamps: Display the elapsed time of the program
+  [[deprecated("Use LoggingConfig::set_log_timestamp() instead.")]]
   static void LogTimestamps(bool on = true);
   // These are the available logging channels
   //  Debug: Debug console on Windows, otherwise stderr
   static void LogToDebug(LoggingSeverity min_sev);
-  static LoggingSeverity GetLogToDebug();
   // Sets whether logs will be directed to stderr in debug mode.
+  [[deprecated("Use LoggingConfig::set_log_to_stderr() instead.")]]
   static void SetLogToStderr(bool log_to_stderr);
   // Stream: Any non-blocking stream interface.
   // Installs the `stream` to collect logs with severtiy `min_sev` or higher.
+  // If `stream` has already been added, its severity is updated.
   // `stream` must live until deinstalled by RemoveLogToStream.
   // If `stream` is the first stream added to the system, we might miss some
   // early concurrent log statement happening from another thread happening near
   // this instant.
+  [[deprecated(
+      "Use LoggingConfig::AddSink() and InitializeLogging() instead.")]]
   static void AddLogToStream(LogSink* stream, LoggingSeverity min_sev);
   // Removes the specified stream, without destroying it. When the method
   // has completed, it's guaranteed that `stream` will receive no more logging
   // calls.
+  [[deprecated(
+      "Removing sinks is not supported. Tests can use "
+      "ResetLoggingForTesting().")]]
   static void RemoveLogToStream(LogSink* stream);
-  // Returns the severity for the specified stream, of if none is specified,
-  // the minimum stream severity.
-  static int GetLogToStream(LogSink* stream = nullptr);
   // Testing against MinLogSeverity allows code to avoid potentially expensive
   // logging operations by pre-checking the logging level.
   static int GetMinLogSeverity();
-  // Updates min_sev_ appropriately when debug sinks change.
-  static void UpdateMinLogSeverity();
-  // Parses the provided parameter stream to configure the options above.
-  // Useful for configuring logging from the command line.
-  [[deprecated("Use InitializeLogging instead.")]]
-  static void ConfigureLogging(absl::string_view params);
-  // Checks the current global debug severity and if the `streams_` collection
-  // is empty. If `severity` is smaller than the global severity and if the
-  // `streams_` collection is empty, the LogMessage will be considered a noop
-  // LogMessage.
+  // Returns true if `severity` is lower than the minimum severity of the debug
+  // output and of all sinks, i.e. if a message with `severity` wouldn't be
+  // written anywhere.
   static bool IsNoop(LoggingSeverity severity);
   // Version of IsNoop that uses fewer instructions at the call site, since the
   // caller doesn't have to pass an argument.
@@ -680,20 +687,20 @@ class LogMessage {
   inline static bool LogThreads(bool enabled = true) {
     return false;
   }
-  inline static bool SetLogQueueNames(bool enable) { return false; }
 
+  [[deprecated("Use LoggingConfig::set_log_timestamp() instead.")]]
   inline static void LogTimestamps(bool on = true) {}
   inline static void LogToDebug(LoggingSeverity min_sev) {}
-  inline static LoggingSeverity GetLogToDebug() {
-    return LoggingSeverity::LS_INFO;
-  }
+  [[deprecated("Use LoggingConfig::set_log_to_stderr() instead.")]]
   inline static void SetLogToStderr(bool log_to_stderr) {}
+  [[deprecated(
+      "Use LoggingConfig::AddSink() and InitializeLogging() instead.")]]
   inline static void AddLogToStream(LogSink* stream, LoggingSeverity min_sev) {}
+  [[deprecated(
+      "Removing sinks is not supported. Tests can use "
+      "ResetLoggingForTesting().")]]
   inline static void RemoveLogToStream(LogSink* stream) {}
-  inline static int GetLogToStream(LogSink* stream = nullptr) { return 0; }
   inline static int GetMinLogSeverity() { return 0; }
-  [[deprecated("Use InitializeLogging instead.")]]
-  inline static void ConfigureLogging(absl::string_view params) {}
   static constexpr bool IsNoop(LoggingSeverity severity) { return true; }
   template <LoggingSeverity S>
   static constexpr bool IsNoop() {
@@ -724,19 +731,13 @@ class LogMessage {
   // the message before output.
   std::string extra_;
 
-  // The output streams and their associated severities
-  static LogSink* streams_;
-
   // Flags for formatting options and their potential values.
-  static bool log_thread_;
   static bool log_timestamp_;
-  static bool log_queue_name_;
 
   // Determines if logs will be directed to stderr in debug mode.
   static bool log_to_stderr_;
 #else  // RTC_LOG_ENABLED()
   // Next methods do nothing; no one will call these functions.
-  inline static void UpdateMinLogSeverity() {}
 #if defined(WEBRTC_ANDROID)
   inline static void OutputToDebug(absl::string_view filename,
                                    int line,

@@ -113,23 +113,6 @@ AudioTransportImpl::AudioTransportImpl(
 
 AudioTransportImpl::~AudioTransportImpl() {}
 
-int32_t AudioTransportImpl::RecordedDataIsAvailable(
-    const void* audio_data,
-    size_t number_of_frames,
-    size_t bytes_per_sample,
-    size_t number_of_channels,
-    uint32_t sample_rate,
-    uint32_t audio_delay_milliseconds,
-    int32_t clock_drift,
-    uint32_t volume,
-    bool key_pressed,
-    uint32_t& new_mic_volume) {  // NOLINT: to avoid changing APIs
-  return RecordedDataIsAvailable(
-      audio_data, number_of_frames, bytes_per_sample, number_of_channels,
-      sample_rate, audio_delay_milliseconds, clock_drift, volume, key_pressed,
-      new_mic_volume, /*estimated_capture_time_ns=*/std::nullopt);
-}
-
 // Not used in Chromium. Process captured audio and distribute to all sending
 // streams, and try to do this at the lowest possible sample rate.
 int32_t AudioTransportImpl::RecordedDataIsAvailable(

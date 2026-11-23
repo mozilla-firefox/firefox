@@ -11,11 +11,11 @@ Mercurial Revision: https://hg.mozilla.org/mozilla-central/rev/7330681cf4de6d8dd
  2 files changed, 4 insertions(+), 1 deletion(-)
 
 diff --git a/call/video_receive_stream.h b/call/video_receive_stream.h
-index 1a69c2d5ef..19f147238d 100644
+index 3d5c202c7b..7cd36dcbc7 100644
 --- a/call/video_receive_stream.h
 +++ b/call/video_receive_stream.h
-@@ -252,6 +252,9 @@ class VideoReceiveStreamInterface : public MediaReceiveStreamInterface {
-       // disabled.
+@@ -251,6 +251,9 @@ class VideoReceiveStreamInterface : public MediaReceiveStreamInterface {
+       // How to request keyframes from a remote sender.
        KeyFrameReqMethod keyframe_method = KeyFrameReqMethod::kPliRtcp;
  
 +      // See draft-alvestrand-rmcat-remb for information.
@@ -23,12 +23,12 @@ index 1a69c2d5ef..19f147238d 100644
 +
        bool tmmbr = false;
  
-       // See LntfConfig for description.
+       // Payload types for ULPFEC and RED, respectively.
 diff --git a/video/rtp_video_stream_receiver2.cc b/video/rtp_video_stream_receiver2.cc
-index a3f72f6138..1d3bb151e4 100644
+index 37e87da2f0..814165d8df 100644
 --- a/video/rtp_video_stream_receiver2.cc
 +++ b/video/rtp_video_stream_receiver2.cc
-@@ -1651,7 +1651,7 @@ void RtpVideoStreamReceiver2::StartReceive() {
+@@ -1537,7 +1537,7 @@ void RtpVideoStreamReceiver2::StartReceive() {
      // Change REMB candidate egibility.
      packet_router_->RemoveReceiveRtpModule(rtp_rtcp_.get());
      packet_router_->AddReceiveRtpModule(rtp_rtcp_.get(),

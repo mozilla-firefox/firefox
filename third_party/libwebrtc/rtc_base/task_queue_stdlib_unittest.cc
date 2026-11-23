@@ -11,17 +11,20 @@
 #include "rtc_base/task_queue_stdlib.h"
 
 #include <memory>
-#include <string>
 
-#include "absl/strings/string_view.h"
 #include "api/field_trials_view.h"
 #include "api/task_queue/task_queue_factory.h"
 #include "api/task_queue/task_queue_test.h"
+#include "test/gtest.h"
+
+#if defined(WEBRTC_ANDROID) && !defined(WEBRTC_CHROMIUM_BUILD)
+#include <utility>
+
 #include "api/units/time_delta.h"
 #include "rtc_base/event.h"
 #include "rtc_base/logging.h"
-#include "rtc_base/thread.h"
-#include "test/gtest.h"
+#include "test/scoped_logging_config.h"
+#endif
 
 namespace webrtc {
 namespace {
@@ -35,32 +38,30 @@ INSTANTIATE_TEST_SUITE_P(TaskQueueStdlib,
                          TaskQueueTest,
                          ::testing::Values(CreateTaskQueueFactory));
 
-class StringPtrLogSink : public LogSink {
+#if defined(WEBRTC_ANDROID) && !defined(WEBRTC_CHROMIUM_BUILD)
+class EventLogSink final : public LogSink {
  public:
-  explicit StringPtrLogSink(std::string* log_data) : log_data_(log_data) {}
+  explicit EventLogSink(Event* logged) : logged_(logged) {}
 
  private:
-  void OnLogMessage(const std::string& message) override {
-    OnLogMessage(absl::string_view(message));
-  }
-  void OnLogMessage(absl::string_view message) override {
-    log_data_->append(message.begin(), message.end());
-  }
-  std::string* const log_data_;
+  void OnLogMessage(const LogLineRef& line) override { logged_->Set(); }
+  Event* const logged_;
 };
 
 TEST(TaskQueueStdlib, AvoidsSpammingLogOnInactivity) {
-  std::string log_output;
-  StringPtrLogSink stream(&log_output);
-  LogMessage::AddLogToStream(&stream, LS_VERBOSE);
+  Event logged;
+  LoggingConfig config;
+  config.set_min_severity(LS_VERBOSE);
+  config.AddSink(std::make_unique<EventLogSink>(&logged));
+  ScopedLoggingConfig scoped_logging(std::move(config));
+
   auto task_queue = CreateTaskQueueStdlibFactory()->CreateTaskQueue(
       "test", TaskQueueFactory::Priority::kNormal);
-  auto wait_duration = Event::kDefaultWarnDuration + TimeDelta::Seconds(1);
-  Thread::SleepMs(wait_duration.ms());
-  EXPECT_EQ(log_output.length(), 0u);
+  EXPECT_FALSE(
+      logged.Wait(Event::kDefaultWarnDuration + TimeDelta::Seconds(1)));
   task_queue = nullptr;
-  LogMessage::RemoveLogToStream(&stream);
 }
+#endif  // defined(WEBRTC_ANDROID) && !defined(WEBRTC_CHROMIUM_BUILD)
 
 }  // namespace
 }  // namespace webrtc

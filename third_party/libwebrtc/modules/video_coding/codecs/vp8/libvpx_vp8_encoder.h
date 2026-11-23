@@ -75,8 +75,6 @@ class LibvpxVp8Encoder : public VideoEncoder {
 
   void OnRttUpdate(int64_t rtt_ms) override;
 
-  void OnLossNotification(const LossNotification& loss_notification) override;
-
   EncoderInfo GetEncoderInfo() const override;
 
   static vpx_enc_frame_flags_t EncodeFlags(const Vp8FrameConfig& references);

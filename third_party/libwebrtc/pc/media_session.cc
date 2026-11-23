@@ -50,6 +50,7 @@
 #include "pc/simulcast_description.h"
 #include "rtc_base/checks.h"
 #include "rtc_base/experiments/field_trial_parser.h"
+#include "rtc_base/experiments/rfc8888_congestion_control_feedback_experiment.h"
 #include "rtc_base/logging.h"
 #include "rtc_base/thread.h"
 #include "rtc_base/unique_id_generator.h"
@@ -711,18 +712,18 @@ const TransportDescription* GetTransportDescription(
 }
 
 bool OfferRfc8888(const FieldTrialsView& field_trials) {
-  if (field_trials.IsEnabled("WebRTC-RFC8888CongestionControlFeedback")) {
-    FieldTrialParameter<bool> offer_rfc_8888("offer", false);
-    ParseFieldTrial(
-        {&offer_rfc_8888},
-        field_trials.Lookup("WebRTC-RFC8888CongestionControlFeedback"));
-    return offer_rfc_8888;
+  if (!IsRfc8888CongestionControlFeedbackEnabled(field_trials)) {
+    return false;
   }
-  return false;
+  FieldTrialParameter<bool> offer_rfc_8888("offer", false);
+  ParseFieldTrial(
+      {&offer_rfc_8888},
+      field_trials.Lookup(kRfc8888CongestionControlFeedbackFieldTrial));
+  return offer_rfc_8888;
 }
 
 bool AcceptOfferWithRfc8888(const FieldTrialsView& field_trials) {
-  return field_trials.IsEnabled("WebRTC-RFC8888CongestionControlFeedback");
+  return IsRfc8888CongestionControlFeedbackEnabled(field_trials);
 }
 
 }  // namespace
@@ -1250,7 +1251,6 @@ RTCError MediaSessionDescriptionFactory::AddRtpContentForOffer(
              media_description_options.type == MediaType::VIDEO);
 
   std::vector<Codec> codecs_to_include;
-  std::string mid = media_description_options.mid;
   RTCErrorOr<std::vector<Codec>> error_or_filtered_codecs =
       codec_lookup_helper_->GetCodecVendor()->GetNegotiatedCodecsForOffer(
           media_description_options, session_options, current_content,
@@ -1310,7 +1310,6 @@ RTCError MediaSessionDescriptionFactory::AddDataContentForOffer(
 
   bool secure_transport = true;
 
-  std::vector<std::string> crypto_suites;
   // Unlike SetMediaProtocol below, we need to set the protocol
   // before we call CreateMediaContentOffer. Otherwise,
   // CreateMediaContentOffer won't know this is SCTP and will

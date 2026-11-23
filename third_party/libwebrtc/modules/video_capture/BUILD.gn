@@ -159,12 +159,10 @@ if (!build_with_chromium || is_linux || is_chromeos) {
   }
 
   if (!is_android && rtc_include_tests) {
-    rtc_test("video_capture_tests") {
+    # Tests that need a physical camera. They are not run on CI.
+    rtc_executable("video_capture_tests") {
+      testonly = true
       sources = [ "test/video_capture_unittest.cc" ]
-      if ((is_linux || is_chromeos) && rtc_use_pipewire) {
-        sources += [ "test/pipewire_video_sizes_unittest.cc" ]
-        configs += [ "../portal:pipewire_base" ]
-      }
       ldflags = []
       if (is_linux || is_chromeos || is_mac) {
         ldflags += [
@@ -190,18 +188,42 @@ if (!build_with_chromium || is_linux || is_chromeos) {
         "../../api/video:video_rtp_headers",
         "../../common_video",
         "../../rtc_base:checks",
-        "../../rtc_base:macromagic",
         "../../rtc_base:stringutils",
         "../../rtc_base:timeutils",
         "../../rtc_base/synchronization:mutex",
         "../../system_wrappers",
         "../../test:frame_utils",
+        "../../test:test_main",
         "../../test:test_support",
         "../../test:video_test_common",
         "../../test:wait_until",
         "//testing/gtest",
         "//third_party/abseil-cpp/absl/memory",
       ]
+    }
+  }
+
+  if (rtc_include_tests && !build_with_chromium) {
+    rtc_cc_test("device_info_impl_unittest") {
+      sources = [ "device_info_impl_unittest.cc" ]
+      deps = [
+        ":video_capture_internal_impl",
+        ":video_capture_module",
+        "../../common_video",
+        "../../rtc_base:macromagic",
+        "../../test:test_support",
+      ]
+    }
+
+    if ((is_linux || is_chromeos) && rtc_use_pipewire) {
+      rtc_cc_test("pipewire_video_sizes_unittest") {
+        sources = [ "test/pipewire_video_sizes_unittest.cc" ]
+        configs += [ "../portal:pipewire_base" ]
+        deps = [
+          ":video_capture_internal_impl",
+          "../../test:test_support",
+        ]
+      }
     }
   }
 }

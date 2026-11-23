@@ -183,16 +183,20 @@ void RtpVideoStreamReceiverFrameTransformerDelegate::OnTransformedFrame(
 }
 
 void RtpVideoStreamReceiverFrameTransformerDelegate::StartShortCircuiting() {
-  scoped_refptr<RtpVideoStreamReceiverFrameTransformerDelegate> delegate(this);
-  network_thread_->PostTask([delegate = std::move(delegate)]() mutable {
-    delegate->StartShortCircuitingOnNetworkSequence();
-  });
+  SetShortCircuiting(/*short_circuit=*/true);
 }
 
-void RtpVideoStreamReceiverFrameTransformerDelegate::
-    StartShortCircuitingOnNetworkSequence() {
-  RTC_DCHECK_RUN_ON(&network_sequence_checker_);
-  short_circuit_ = true;
+void RtpVideoStreamReceiverFrameTransformerDelegate::StopShortCircuiting() {
+  SetShortCircuiting(/*short_circuit=*/false);
+}
+
+void RtpVideoStreamReceiverFrameTransformerDelegate::SetShortCircuiting(
+    bool short_circuit) {
+  scoped_refptr<RtpVideoStreamReceiverFrameTransformerDelegate> delegate(this);
+  network_thread_->PostTask([delegate = std::move(delegate), short_circuit]() {
+    RTC_DCHECK_RUN_ON(&delegate->network_sequence_checker_);
+    delegate->short_circuit_ = short_circuit;
+  });
 }
 
 void RtpVideoStreamReceiverFrameTransformerDelegate::ManageFrame(

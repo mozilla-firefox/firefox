@@ -138,14 +138,14 @@ void ConvertRtpPacket(
   RTC_DCHECK_EQ(reconstructed_packet.size(), incoming.rtp.header_length);
   RTC_DCHECK_EQ(reconstructed_packet.headers_size(),
                 incoming.rtp.header_length);
-  memcpy(packet->data, reconstructed_packet.data(),
-         reconstructed_packet.headers_size());
-  packet->length = reconstructed_packet.headers_size();
+  packet->buffer = reconstructed_packet.Buffer().Slice(
+      0, reconstructed_packet.headers_size());
   packet->original_length = incoming.rtp.total_length;
   packet->time_ms = incoming.log_time_ms();
   // Set padding bit.
-  if (incoming.rtp.header.paddingLength > 0)
-    packet->data[0] = packet->data[0] | 0x20;
+  if (incoming.rtp.header.paddingLength > 0) {
+    packet->buffer.AsMutableSpan()[0] |= 0x20;
+  }
 }
 
 }  // namespace
@@ -207,9 +207,7 @@ int main(int argc, char* argv[]) {
   auto handle_rtcp = [&rtp_writer, &rtcp_counter](
                          const webrtc::LoggedRtcpPacketIncoming& incoming) {
     webrtc::test::RtpPacket packet;
-    memcpy(packet.data, incoming.rtcp.raw_data.data(),
-           incoming.rtcp.raw_data.size());
-    packet.length = incoming.rtcp.raw_data.size();
+    packet.buffer.Set(incoming.rtcp.raw_data);
     // For RTCP packets the original_length should be set to 0 in the
     // RTPdump format.
     packet.original_length = 0;

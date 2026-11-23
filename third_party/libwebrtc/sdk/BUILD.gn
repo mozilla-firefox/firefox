@@ -1313,8 +1313,7 @@ if (is_ios || is_mac) {
         }
 
         # These tests use static linking.
-        rtc_test("sdk_unittests") {
-          is_xctest = true
+        rtc_xctest("sdk_unittests") {
           info_plist = "//test/ios/Info.plist"
 
           extra_substitutions = [ "GTEST_BUNDLE_ID_SUFFIX=generic-unit-test" ]
@@ -1327,8 +1326,7 @@ if (is_ios || is_mac) {
         }
 
         # These tests link to the framework.
-        rtc_test("sdk_framework_unittests") {
-          is_xctest = true
+        rtc_xctest("sdk_framework_unittests") {
           info_plist = "//test/ios/Info.plist"
           sources = [
             "objc/unittests/RTCDoNotPutCPlusPlusInFrameworkHeaders_xctest.m",

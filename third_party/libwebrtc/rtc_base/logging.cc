@@ -25,18 +25,32 @@
 #include <vector>
 
 #include "absl/base/no_destructor.h"
+#include "absl/base/nullability.h"
 #include "absl/strings/string_view.h"
 #include "api/task_queue/task_queue_base.h"
 #include "api/units/timestamp.h"
 #include "modules/audio_processing/logging/apm_data_dumper.h"
 #include "rtc_base/checks.h"
 #include "rtc_base/platform_thread_types.h"
-#include "rtc_base/string_encode.h"
 #include "rtc_base/string_utils.h"
 #include "rtc_base/strings/string_builder.h"
 #include "rtc_base/synchronization/mutex.h"
+#include "rtc_base/system/ignore_warnings.h"
 #include "rtc_base/thread_annotations.h"
 #include "rtc_base/time_utils.h"
+
+namespace webrtc {
+namespace {
+
+// By default, release builds don't log, debug builds at info level.
+#if RTC_DLOG_IS_ON
+constexpr LoggingSeverity kDefaultLoggingSeverity = LS_INFO;
+#else
+constexpr LoggingSeverity kDefaultLoggingSeverity = LS_NONE;
+#endif
+
+}  // namespace
+}  // namespace webrtc
 
 #if RTC_LOG_ENABLED()
 
@@ -77,13 +91,6 @@ void LogMessage::set_aec_debug_filename(const char* filename) {
 
 namespace {
 
-// By default, release builds don't log, debug builds at info level
-#if !defined(NDEBUG)
-constexpr LoggingSeverity kDefaultLoggingSeverity = LS_INFO;
-#else
-constexpr LoggingSeverity kDefaultLoggingSeverity = LS_NONE;
-#endif
-
 // Note: `g_min_sev` and `g_dbg_sev` can be changed while running.
 constinit std::atomic<LoggingSeverity> g_min_sev = kDefaultLoggingSeverity;
 constinit std::atomic<LoggingSeverity> g_dbg_sev = kDefaultLoggingSeverity;
@@ -98,16 +105,9 @@ const char* FilenameFromPath(const char* file) {
     return (end1 > end2) ? end1 + 1 : end2 + 1;
 }
 
-// Global lock for log subsystem, only needed to serialize access to streams_.
-Mutex& GetLoggingLock() {
-  static Mutex& mutex = *new Mutex();
-  return mutex;
-}
-
 // Set by ResetLoggingForTesting() to let the next InitializeLogging() call
 // replace the active configuration. Never set in production.
-constinit bool g_reinitialize_for_testing RTC_GUARDED_BY(GetLoggingLock()) =
-    false;
+constinit std::atomic<bool> g_reinitialize_for_testing = false;
 
 // Internal helper to manage config state.
 // NOTE: The return value is non-const only while transitioning away from and
@@ -128,27 +128,119 @@ LoggingConfig& GetOrInitConfig(LoggingConfig* init_config = nullptr,
   return *config;
 }
 
-void ApplyConfigToLogMessageLocked(const LoggingConfig& config)
-    RTC_EXCLUSIVE_LOCKS_REQUIRED(GetLoggingLock()) {
-  LogMessage::SetLogQueueNames(config.log_queue_name());
+// The log sinks that are added at runtime, with LogMessage::AddLogToStream().
+// Unlike the LoggingConfig sinks, they are guarded by a lock, which is also
+// held while they are called. That way, calls to these sinks are serialized,
+// and a sink isn't called anymore once it has been removed.
+// The lock also serializes all updates of `g_dbg_sev` and `g_min_sev`, so that
+// concurrent updates don't overwrite each other.
+class DynamicLogSinks {
+ public:
+  // Returns the instance, which is created on first use and never destroyed.
+  static DynamicLogSinks& Get() {
+    static absl::NoDestructor<DynamicLogSinks> instance;
+    return *instance;
+  }
+
+  // Adds `sink`, or updates its severity if it has already been added.
+  void Add(LogSink* absl_nonnull sink, LoggingSeverity min_severity) {
+    MutexLock lock(&mutex_);
+    auto it = std::ranges::find_if(
+        sinks_, [&](const Entry& entry) { return entry.sink == sink; });
+    if (it != sinks_.end()) {
+      it->min_severity = min_severity;
+    } else {
+      // The most recently added sink is called first.
+      sinks_.insert(sinks_.begin(), {sink, min_severity});
+    }
+    active_instance_.store(this, std::memory_order_release);
+    UpdateMinLogSeverityLocked();
+  }
+
+  void Remove(LogSink* absl_nonnull sink) {
+    MutexLock lock(&mutex_);
+    std::erase_if(sinks_,
+                  [sink](const Entry& entry) { return entry.sink == sink; });
+    if (sinks_.empty()) {
+      active_instance_.store(nullptr, std::memory_order_relaxed);
+    }
+    UpdateMinLogSeverityLocked();
+  }
+
+  void SetDebugSeverity(LoggingSeverity severity) {
+    MutexLock lock(&mutex_);
+    g_dbg_sev.store(severity, std::memory_order_relaxed);
+    UpdateMinLogSeverityLocked();
+  }
+
+  static void OnLogMessage(const LogLineRef& line) {
+    // `active_instance_` may become nullptr after the load if the last sink is
+    // concurrently removed, which is safe because the `Get()` singleton is
+    // never destroyed.
+    if (DynamicLogSinks* instance =
+            active_instance_.load(std::memory_order_acquire);
+        instance != nullptr) {
+      MutexLock lock(&instance->mutex_);
+      for (const Entry& entry : instance->sinks_) {
+        if (line.severity() >= entry.min_severity) {
+          entry.sink->OnLogMessage(line);
+        }
+      }
+    }
+  }
+
+ private:
+  // A sink and the minimum severity of the messages that it receives.
+  struct Entry {
+    LogSink* absl_nonnull sink;
+    LoggingSeverity min_severity;
+  };
+
+  void UpdateMinLogSeverityLocked() RTC_EXCLUSIVE_LOCKS_REQUIRED(mutex_) {
+    LoggingSeverity min_sev = g_dbg_sev.load(std::memory_order_relaxed);
+    const LoggingConfig& config = GetLoggingConfig();
+    if (!config.sinks().empty()) {
+      min_sev = std::min(min_sev, config.min_severity());
+    }
+    for (const Entry& entry : sinks_) {
+      min_sev = std::min(min_sev, entry.min_severity);
+    }
+    g_min_sev.store(min_sev, std::memory_order_relaxed);
+  }
+
+  // Points to the `Get()` instance while it has sinks, and is nullptr
+  // otherwise. Every log message reads it, so that sinks that can be added at
+  // runtime only cost an atomic load while none are added.
+  constinit static inline std::atomic<DynamicLogSinks*> active_instance_ =
+      nullptr;
+
+  Mutex mutex_;
+  std::vector<Entry> sinks_ RTC_GUARDED_BY(mutex_);
+};
+
+void ApplyConfigToLogMessage(const LoggingConfig& config) {
+  // TODO: bugs.webrtc.org/42234107 - Store the options without the deprecated
+  // setters once they are removed.
+  RTC_PUSH_IGNORING_WDEPRECATED_DECLARATIONS()
   LogMessage::LogTimestamps(config.log_timestamp());
   LogMessage::SetLogToStderr(config.log_to_stderr());
-  g_dbg_sev.store(config.debug_severity(), std::memory_order_relaxed);
-  LogMessage::UpdateMinLogSeverity();
+  RTC_POP_IGNORING_WDEPRECATED_DECLARATIONS()
+  DynamicLogSinks::Get().SetDebugSeverity(config.debug_severity());
 }
 
 }  // namespace
 
 bool InitializeLogging(LoggingConfig config) {
+  // Only the call that initializes the configuration, or the first call after
+  // ResetLoggingForTesting(), applies it.
   bool config_applied = false;
   LoggingConfig& active = GetOrInitConfig(&config, &config_applied);
-  MutexLock lock(&GetLoggingLock());
-  if (!config_applied && std::exchange(g_reinitialize_for_testing, false)) {
+  if (!config_applied && g_reinitialize_for_testing.exchange(false)) {
     active = std::move(config);
     config_applied = true;
   }
   if (config_applied) {
-    ApplyConfigToLogMessageLocked(active);
+    ApplyConfigToLogMessage(active);
   }
   return config_applied;
 }
@@ -160,19 +252,22 @@ const LoggingConfig& GetLoggingConfig() {
 LoggingConfig ResetLoggingForTesting(
     std::optional<LoggingConfig> restore_config) {
   LoggingConfig& active = GetOrInitConfig();
-  MutexLock lock(&GetLoggingLock());
   // Unless a configuration is restored, let the next InitializeLogging() call
   // replace the default configuration.
-  g_reinitialize_for_testing = !restore_config.has_value();
+  g_reinitialize_for_testing.store(!restore_config.has_value());
   LoggingConfig previous = std::exchange(
       active, std::move(restore_config).value_or(LoggingConfig()));
-  ApplyConfigToLogMessageLocked(active);
+  ApplyConfigToLogMessage(active);
   return previous;
 }
 
 LogLineRef::LogLineRef() = default;
+LogLineRef::~LogLineRef() = default;
 
-std::string LogLineRef::DefaultLogLine() const {
+const std::string& LogLineRef::DefaultLogLine() const {
+  if (default_log_line_.has_value()) {
+    return *default_log_line_;
+  }
   absl::string_view prefix = GetLoggingConfig().log_prefix();
   StringBuilder log_output;
   // 48 characters is an estimate for the timestamp ("[000:000]"), the thread
@@ -211,7 +306,8 @@ std::string LogLineRef::DefaultLogLine() const {
 #endif
   }
   log_output << message_;
-  return log_output.Release();
+  default_log_line_ = log_output.Release();
+  return *default_log_line_;
 }
 
 /////////////////////////////////////////////////////////////////////////////
@@ -220,16 +316,8 @@ std::string LogLineRef::DefaultLogLine() const {
 
 bool LogMessage::log_to_stderr_ = false;
 
-// The list of logging streams currently configured.
-// Note: we explicitly do not clean this up, because of the uncertain ordering
-// of destructors at program exit.  Let the person who sets the stream trigger
-// cleanup by setting to null, or let it leak (safe at program exit).
-constinit LogSink* LogMessage::streams_ RTC_GUARDED_BY(GetLoggingLock()) =
-    nullptr;
-
 // Boolean options default to false.
 constinit bool LogMessage::log_timestamp_ = false;
-constinit bool LogMessage::log_queue_name_ = false;
 
 LogMessage::LogMessage(const char* file, int line, LoggingSeverity sev)
     : LogMessage(file, line, sev, ERRCTX_NONE, 0) {}
@@ -256,7 +344,7 @@ LogMessage::LogMessage(const char* file,
     log_line_.set_thread_id(CurrentThreadId());
   }
 
-  if (log_queue_name_) {
+  if (config.log_queue_name()) {
     if (TaskQueueBase* tq = TaskQueueBase::Current(); tq != nullptr) {
       log_line_.set_queue_name(tq->queue_name());
     }
@@ -319,7 +407,9 @@ LogMessage::~LogMessage() {
 
   const LoggingConfig& config = GetLoggingConfig();
 
-  if (log_line_.severity() >= config.debug_severity()) {
+  // Not `config.debug_severity()`, since LogToDebug() can change the debug
+  // severity after initialization.
+  if (log_line_.severity() >= g_dbg_sev.load(std::memory_order_relaxed)) {
     OutputToDebug(log_line_);
   }
 
@@ -329,12 +419,7 @@ LogMessage::~LogMessage() {
     }
   }
 
-  MutexLock lock(&GetLoggingLock());
-  for (LogSink* entry = streams_; entry != nullptr; entry = entry->next_) {
-    if (log_line_.severity() >= entry->min_severity_) {
-      entry->OnLogMessage(log_line_);
-    }
-  }
+  DynamicLogSinks::OnLogMessage(log_line_);
 }
 
 void LogMessage::AddTag([[maybe_unused]] const char* tag) {
@@ -357,9 +442,6 @@ int LogMessage::GetMinLogSeverity() {
   return g_min_sev.load(std::memory_order_relaxed);
 }
 
-LoggingSeverity LogMessage::GetLogToDebug() {
-  return g_dbg_sev.load(std::memory_order_relaxed);
-}
 int64_t LogMessage::LogStartTime() {
   static const int64_t g_start = SystemTimeMillis();
   return g_start;
@@ -377,117 +459,28 @@ bool LogMessage::LogThreads(bool enabled) {
   return prev;
 }
 
-bool LogMessage::SetLogQueueNames(bool enabled) {
-  return std::exchange(log_queue_name_, enabled);
-}
-
 void LogMessage::LogTimestamps(bool on) {
   log_timestamp_ = on;
 }
 
 void LogMessage::LogToDebug(LoggingSeverity min_sev) {
-  g_dbg_sev.store(min_sev, std::memory_order_relaxed);
-  MutexLock lock(&GetLoggingLock());
-  UpdateMinLogSeverity();
+  DynamicLogSinks::Get().SetDebugSeverity(min_sev);
 }
 
 void LogMessage::SetLogToStderr(bool log_to_stderr) {
   log_to_stderr_ = log_to_stderr;
 }
 
-int LogMessage::GetLogToStream(LogSink* stream) {
-  MutexLock lock(&GetLoggingLock());
-  LoggingSeverity sev = LS_NONE;
-  for (LogSink* entry = streams_; entry != nullptr; entry = entry->next_) {
-    if (stream == nullptr || stream == entry) {
-      sev = std::min(sev, entry->min_severity_);
-    }
-  }
-  return sev;
-}
-
 void LogMessage::AddLogToStream(LogSink* stream, LoggingSeverity min_sev) {
-  MutexLock lock(&GetLoggingLock());
-  stream->min_severity_ = min_sev;
-  stream->next_ = streams_;
-  streams_ = stream;
-  UpdateMinLogSeverity();
+  DynamicLogSinks::Get().Add(stream, min_sev);
 }
 
 void LogMessage::RemoveLogToStream(LogSink* stream) {
-  MutexLock lock(&GetLoggingLock());
-  for (LogSink** entry = &streams_; *entry != nullptr;
-       entry = &(*entry)->next_) {
-    if (*entry == stream) {
-      *entry = (*entry)->next_;
-      break;
-    }
-  }
-  UpdateMinLogSeverity();
-}
-
-void LogMessage::ConfigureLogging(absl::string_view params) {
-  LoggingSeverity current_level = LS_VERBOSE;
-  LoggingSeverity debug_level = GetLogToDebug();
-
-  std::vector<std::string> tokens;
-  tokenize(params, ' ', &tokens);
-
-  for (const std::string& token : tokens) {
-    if (token.empty())
-      continue;
-
-    // Logging features
-    if (token == "tstamp") {
-      LogTimestamps();
-    } else if (token == "thread") {
-      GetOrInitConfig().set_log_thread(true);
-
-      // Logging levels
-    } else if (token == "verbose") {
-      current_level = LS_VERBOSE;
-    } else if (token == "info") {
-      current_level = LS_INFO;
-    } else if (token == "warning") {
-      current_level = LS_WARNING;
-    } else if (token == "error") {
-      current_level = LS_ERROR;
-    } else if (token == "none") {
-      current_level = LS_NONE;
-
-      // Logging targets
-    } else if (token == "debug") {
-      debug_level = current_level;
-    }
-  }
-
-#if defined(WEBRTC_WIN) && !defined(WINUWP)
-  if ((LS_NONE != debug_level) && !::IsDebuggerPresent()) {
-    // First, attempt to attach to our parent's console... so if you invoke
-    // from the command line, we'll see the output there.  Otherwise, create
-    // our own console window.
-    // Note: These methods fail if a console already exists, which is fine.
-    if (!AttachConsole(ATTACH_PARENT_PROCESS))
-      ::AllocConsole();
-  }
-#endif  // defined(WEBRTC_WIN) && !defined(WINUWP)
-
-  LogToDebug(debug_level);
-}
-
-void LogMessage::UpdateMinLogSeverity()
-    RTC_EXCLUSIVE_LOCKS_REQUIRED(GetLoggingLock()) {
-  LoggingSeverity min_sev = g_dbg_sev.load(std::memory_order_relaxed);
-  const LoggingConfig& config = GetLoggingConfig();
-  min_sev = std::min(min_sev, config.min_severity());
-  for (LogSink* entry = streams_; entry != nullptr; entry = entry->next_) {
-    min_sev = std::min(min_sev, entry->min_severity_);
-  }
-  g_min_sev.store(min_sev, std::memory_order_relaxed);
+  DynamicLogSinks::Get().Remove(stream);
 }
 
 void LogMessage::OutputToDebug(const LogLineRef& log_line) {
-  std::string msg_str = log_line.DefaultLogLine();
+  const std::string& msg_str = log_line.DefaultLogLine();
   bool log_to_stderr = log_to_stderr_;
 #if defined(WEBRTC_MAC) && !defined(WEBRTC_IOS) && defined(NDEBUG)
   // On the Mac, all stderr output goes to the Console log and causes clutter.
@@ -787,23 +780,34 @@ LoggingConfig ResetLoggingForTesting(
     std::optional<LoggingConfig> /* restore_config */) {
   return LoggingConfig();
 }
+
+const std::string& LogLineRef::DefaultLogLine() const {
+  if (!default_log_line_.has_value()) {
+    default_log_line_.emplace();
+  }
+  return *default_log_line_;
+}
 }  // namespace webrtc
 #endif  // RTC_LOG_ENABLED()
 
 namespace webrtc {
-LoggingConfig::LoggingConfig() = default;
+LoggingConfig::LoggingConfig() : debug_severity_(kDefaultLoggingSeverity) {}
 LoggingConfig::LoggingConfig(LoggingConfig&&) = default;
 LoggingConfig& LoggingConfig::operator=(LoggingConfig&&) = default;
 LoggingConfig::~LoggingConfig() = default;
 
 // Default implementation, override is recomended.
 void LogSink::OnLogMessage(const LogLineRef& log_line) {
+  // The default implementation still uses the deprecated string overloads, for
+  // sinks that override those.
+  RTC_PUSH_IGNORING_WDEPRECATED_DECLARATIONS()
 #if defined(WEBRTC_ANDROID)
   OnLogMessage(log_line.DefaultLogLine(), log_line.severity(),
                log_line.tag().data());
 #else
   OnLogMessage(log_line.DefaultLogLine(), log_line.severity());
 #endif
+  RTC_POP_IGNORING_WDEPRECATED_DECLARATIONS()
 }
 
 // Inefficient default implementation, override is recommended.
@@ -816,6 +820,10 @@ void LogSink::OnLogMessage(const std::string& msg,
 void LogSink::OnLogMessage(const std::string& msg,
                            LoggingSeverity /* severity */) {
   OnLogMessage(msg);
+}
+
+void LogSink::OnLogMessage(const std::string& msg) {
+  OnLogMessage(absl::string_view(msg));
 }
 
 // Inefficient default implementation, override is recommended.

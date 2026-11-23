@@ -103,19 +103,6 @@ class TestAudioTransport : public AudioTransport {
     return 0;
   }
 
-  int32_t RecordedDataIsAvailable(const void* /* audio_samples */,
-                                  size_t /* samples_per_channel */,
-                                  size_t /* bytes_per_sample */,
-                                  size_t /* number_of_channels */,
-                                  uint32_t /* samples_per_second */,
-                                  uint32_t /* total_delay_ms */,
-                                  int32_t /* clockDrift */,
-                                  uint32_t /* current_mic_level */,
-                                  bool /* key_pressed */,
-                                  uint32_t& /* new_mic_level */) override {
-    RTC_CHECK(false) << "This methods should be never executed";
-  }
-
   void PullRenderData(int /* bits_per_sample */,
                       int /* sample_rate */,
                       size_t /* number_of_channels */,

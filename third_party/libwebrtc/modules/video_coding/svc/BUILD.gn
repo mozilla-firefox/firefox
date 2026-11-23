@@ -169,6 +169,7 @@ if (rtc_include_tests) {
     deps = [
       ":scalability_structure_test_helpers",
       ":scalability_structures",
+      ":scalable_video_controller",
       "../../../common_video/generic_frame_descriptor",
       "../../../test:test_support",
     ]
@@ -179,6 +180,7 @@ if (rtc_include_tests) {
     deps = [
       ":scalability_structure_test_helpers",
       ":scalability_structures",
+      ":scalable_video_controller",
       "../../../common_video/generic_frame_descriptor",
       "../../../test:test_support",
     ]
@@ -189,6 +191,7 @@ if (rtc_include_tests) {
     deps = [
       ":scalability_structure_test_helpers",
       ":scalability_structures",
+      ":scalable_video_controller",
       "../../../common_video/generic_frame_descriptor",
       "../../../test:test_support",
     ]
@@ -207,6 +210,18 @@ if (rtc_include_tests) {
       "../../../common_video/generic_frame_descriptor",
       "../../../rtc_base:checks",
       "../../../rtc_base:stringutils",
+      "../../../test:test_support",
+    ]
+  }
+
+  rtc_cc_test("scalable_video_controller_no_layering_unittest") {
+    sources = [ "scalable_video_controller_no_layering_unittest.cc" ]
+    deps = [
+      ":scalability_structure_test_helpers",
+      ":scalable_video_controller",
+      "../../../api/transport/rtp:dependency_descriptor",
+      "../../../api/video:video_bitrate_allocation",
+      "../../../common_video/generic_frame_descriptor",
       "../../../test:test_support",
     ]
   }

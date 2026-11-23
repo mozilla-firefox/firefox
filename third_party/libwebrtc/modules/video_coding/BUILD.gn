@@ -183,8 +183,6 @@ rtc_library("video_coding") {
     "h264_sps_pps_tracker.h",
     "include/video_codec_initializer.h",
     "internal_defines.h",
-    "loss_notification_controller.cc",
-    "loss_notification_controller.h",
     "media_opt_util.cc",
     "media_opt_util.h",
     "rtp_frame_id_only_ref_finder.cc",
@@ -722,7 +720,7 @@ if (rtc_include_tests) {
       ]
     }
 
-    rtc_test("videocodec_test_mediacodec") {
+    rtc_cc_test("videocodec_test_mediacodec") {
       sources = [ "codecs/test/videocodec_test_mediacodec.cc" ]
       deps = [
         ":android_codec_factory_helper",
@@ -733,7 +731,6 @@ if (rtc_include_tests) {
         "../../api/video_codecs:video_codecs_api",
         "../../media:media_constants",
         "../../rtc_base:stringutils",
-        "../../sdk/android:hwcodecs_java",
         "../../test:fileutils",
         "../../test:test_support",
       ]
@@ -972,9 +969,7 @@ if (rtc_include_tests) {
     ]
   }
 
-  rtc_test("video_codec_perf_tests") {
-    testonly = true
-
+  rtc_cc_test("video_codec_test") {
     sources = [ "codecs/test/video_codec_test.cc" ]
 
     deps = [
@@ -1003,13 +998,14 @@ if (rtc_include_tests) {
     ]
 
     if (is_android) {
-      deps += [
-        ":android_codec_factory_helper",
-        "../../sdk/android:hwcodecs_java",
-      ]
+      deps += [ ":android_codec_factory_helper" ]
     }
 
     data = [ "../../resources/FourPeople_1280x720_30.yuv" ]
+  }
+
+  rtc_test_suite("video_codec_perf_tests") {
+    tests = [ ":video_codec_test" ]
   }
 
   rtc_test_suite("video_coding_unittests") {
@@ -1024,6 +1020,7 @@ if (rtc_include_tests) {
       ":frame_dependencies_calculator_unittest",
       ":frame_dropper_unittest",
       ":frame_helpers_unittest",
+      ":frame_sampler_unittest",
       ":framerate_controller_deprecated_unittest",
       ":generic_decoder_unittest",
       ":h264_impl_unittest",
@@ -1033,7 +1030,6 @@ if (rtc_include_tests) {
       ":ivf_file_reader_unittest",
       ":ivf_file_writer_unittest",
       ":libvpx_vp8_simulcast_test",
-      ":loss_notification_controller_unittest",
       ":nack_requester_unittest",
       ":qp_parser_unittest",
       ":quality_scaler_unittest",
@@ -1066,6 +1062,7 @@ if (rtc_include_tests) {
       "svc:scalability_structure_key_svc_unittest",
       "svc:scalability_structure_l2t2_key_shift_unittest",
       "svc:scalability_structure_unittest",
+      "svc:scalable_video_controller_no_layering_unittest",
       "svc:simulcast_to_svc_converter_unittest",
       "svc:svc_rate_allocator_unittest",
       "timing:decode_time_percentile_filter_unittest",
@@ -1091,6 +1088,9 @@ if (rtc_include_tests) {
         ":vp9_frame_buffer_pool_unittest",
         ":vp9_impl_unittest",
       ]
+    }
+    if (is_android) {
+      tests += [ ":videocodec_test_mediacodec" ]
     }
     if (is_ios || is_mac) {
       tests += [ ":videocodec_test_videotoolbox" ]
@@ -1365,16 +1365,6 @@ if (rtc_include_tests) {
     ]
   }
 
-  rtc_cc_test("loss_notification_controller_unittest") {
-    sources = [ "loss_notification_controller_unittest.cc" ]
-    deps = [
-      ":video_coding",
-      "..:module_api",
-      "../../rtc_base:checks",
-      "../../test:test_support",
-    ]
-  }
-
   rtc_cc_test("nack_requester_unittest") {
     sources = [ "nack_requester_unittest.cc" ]
     deps = [
@@ -1520,6 +1510,17 @@ if (rtc_include_tests) {
     sources = [ "utility/frame_dropper_unittest.cc" ]
     deps = [
       ":video_coding_utility",
+      "../../test:test_support",
+    ]
+  }
+
+  rtc_cc_test("frame_sampler_unittest") {
+    sources = [ "utility/frame_sampler_unittest.cc" ]
+    deps = [
+      ":frame_sampler",
+      "../../api:make_ref_counted",
+      "../../api/units:time_delta",
+      "../../api/video:video_frame",
       "../../test:test_support",
     ]
   }

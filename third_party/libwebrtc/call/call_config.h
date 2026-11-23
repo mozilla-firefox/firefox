@@ -33,24 +33,18 @@ namespace webrtc {
 class AudioProcessing;
 
 struct CallConfig {
-  [[deprecated(
-      "Use CreateSingleThreaded or the multi-argument constructor instead.")]]
   explicit CallConfig(const Environment& env,
                       TaskQueueBase* network_task_queue = nullptr);
-
-  CallConfig(const Environment& env,
-             TaskQueueBase* absl_nonnull worker_task_queue,
-             TaskQueueBase* absl_nonnull network_task_queue);
 
   static CallConfig CreateWithJoinedWorkerAndNetworkQueue(
       const Environment& env,
       TaskQueueBase* absl_nonnull worker_and_network_queue);
 
-  // Creates a configuration for a single-threaded Call setup where signaling,
-  // worker, and network threads are all the same current thread.
+  // Creates a configuration for a single-threaded Call setup where Call runs
+  // on the current thread, which is also the signaling thread.
   // Note: This does not represent typical production configurations, where
-  // worker and network threads are usually separate background threads, but it
-  // is still a supported configuration (e.g. for testing or utility programs).
+  // the network thread is usually a separate background thread, but it is
+  // still a supported configuration (e.g. for testing or utility programs).
   static CallConfig CreateSingleThreaded(const Environment& env);
 
   // Move-only.
@@ -94,7 +88,6 @@ struct CallConfig {
   VideoJitterTimingFactory* video_jitter_timing_factory = nullptr;
 
   TaskQueueBase* network_task_queue_ = nullptr;
-  TaskQueueBase* worker_task_queue = nullptr;
 
   Metronome* decode_metronome = nullptr;
   Metronome* encode_metronome = nullptr;

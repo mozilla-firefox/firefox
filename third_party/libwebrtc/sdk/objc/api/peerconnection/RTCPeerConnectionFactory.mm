@@ -58,6 +58,24 @@
 #import "sdk/objc/native/api/audio_device_module.h"
 #endif
 
+namespace {
+
+// Serial queue that stops and joins the threads of factories that were
+// released on one of their own threads.
+dispatch_queue_t ThreadTeardownQueue() {
+  static dispatch_queue_t queue = dispatch_queue_create(
+      "org.webrtc.RTCPeerConnectionFactory.teardown", DISPATCH_QUEUE_SERIAL);
+  return queue;
+}
+
+// Tracks the teardowns that are pending on ThreadTeardownQueue().
+dispatch_group_t ThreadTeardownGroup() {
+  static dispatch_group_t group = dispatch_group_create();
+  return group;
+}
+
+}  // namespace
+
 @implementation RTC_OBJC_TYPE (RTCPeerConnectionFactory) {
   std::optional<webrtc::Environment> _env;
   std::unique_ptr<webrtc::Thread> _networkThread;
@@ -244,6 +262,46 @@
   }
   webrtc::EnableMedia(dependencies);
   return [self initWithNativeDependencies:dependencies];
+}
+
+- (void)dealloc {
+  if (_signalingThread == nullptr || _networkThread == nullptr ||
+      (!_signalingThread->IsCurrent() && !_networkThread->IsCurrent())) {
+    // .cxx_destruct releases the native factory, which its proxy destroys on
+    // the signaling thread, and then stops and joins the threads.
+    return;
+  }
+
+  // Released on a thread owned by this factory, e.g. from a completion
+  // handler. A thread can't stop and join itself. Release the native factory
+  // from a separate task on the signaling thread, then stop and join the
+  // threads from a serial dispatch queue. Only this class makes the signaling
+  // thread quit, so the task isn't dropped. The threads are passed as raw
+  // pointers since blocks can't capture move-only types.
+  dispatch_group_t group = ThreadTeardownGroup();
+  dispatch_group_enter(group);
+  webrtc::Thread *signalingThread = _signalingThread.release();
+  webrtc::Thread *networkThread = _networkThread.release();
+  signalingThread->PostTask([nativeFactory = std::move(_nativeFactory),
+                             signalingThread,
+                             networkThread,
+                             group]() mutable {
+    // Destroy the native factory while both threads are still running.
+    nativeFactory = nullptr;
+    dispatch_async(ThreadTeardownQueue(), ^{
+      // Stop the signaling thread first, since its remaining tasks may use
+      // the network thread.
+      delete signalingThread;
+      delete networkThread;
+      dispatch_group_leave(group);
+    });
+  });
+}
+
++ (BOOL)waitForThreadTeardownForTesting:(NSTimeInterval)timeout {
+  dispatch_time_t deadline = dispatch_time(
+      DISPATCH_TIME_NOW, static_cast<int64_t>(timeout * NSEC_PER_SEC));
+  return dispatch_group_wait(ThreadTeardownGroup(), deadline) == 0;
 }
 
 - (RTC_OBJC_TYPE(RTCRtpCapabilities) *)rtpSenderCapabilitiesForKind:

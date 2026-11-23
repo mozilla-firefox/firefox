@@ -40,6 +40,7 @@ void DelayBasedCongestionControl::Update(const ScreamFeedback& feedback,
   UpdateSmoothedRtt(delay.rtt_sample, alr);
 
   TimeDelta min_queue_delay = delay.min_one_way_delay - min_base_delay();
+  TimeDelta max_queue_delay = delay.max_one_way_delay - min_base_delay();
   if (min_queue_delay > params_.queue_delay_drain_threshold.Get()) {
     if (min_queue_delay_above_threshold_start_.IsInfinite()) {
       min_queue_delay_above_threshold_start_ = feedback.feedback_time;
@@ -49,9 +50,13 @@ void DelayBasedCongestionControl::Update(const ScreamFeedback& feedback,
   }
   UpdateQueueDelayAverage(std::min(min_queue_delay, last_queue_delay_sample_));
   last_queue_delay_sample_ = min_queue_delay;
-  UpdateQueueDelayMinAverage(min_queue_delay);
-  UpdateLatencyDifferenceAverage(delay.max_one_way_delay -
-                                 delay.min_one_way_delay);
+  if (params_.reduce_jitter.Get()) {
+    CalculateQueueDelayTrend(max_queue_delay);
+  } else {
+    UpdateQueueDelayMinAverage(min_queue_delay);
+    UpdateLatencyDifferenceAverage(delay.max_one_way_delay -
+                                   delay.min_one_way_delay);
+  }
 
   if (feedback.feedback_time - last_base_delay_update_ >=
       params_.base_delay_history_update_interval.Get()) {
@@ -95,6 +100,40 @@ void DelayBasedCongestionControl::UpdateLatencyDifferenceAverage(
                    2 * params_.latency_diff_threshold.Get());
 }
 
+void DelayBasedCongestionControl::CalculateQueueDelayTrend(
+    TimeDelta max_queue_delay) {
+  // 4.2.1.4. Detecting Increased Queue Delay (`calculate_latency_diff_avg`).
+  // Unlike the draft, `queue_delay_trend_` (`latency_diff_avg` in the draft) is
+  // updated even before the first congestion event so that rising queue delay
+  // during initial ramp-up is tracked and moderates reference window growth and
+  // in-flight headroom before the first congestion event occurs.
+  RTC_DCHECK(max_queue_delay >= TimeDelta::Zero());
+  qdelay_short_avg_ =
+      qdelay_short_avg_ * (1.0 - params_.queue_delay_short_avg_g.Get()) +
+      max_queue_delay * params_.queue_delay_short_avg_g.Get();
+  qdelay_long_avg_ =
+      qdelay_long_avg_ * (1.0 - params_.queue_delay_long_avg_g.Get()) +
+      max_queue_delay * params_.queue_delay_long_avg_g.Get();
+
+  TimeDelta diff = std::clamp(qdelay_short_avg_ - qdelay_long_avg_ -
+                                  params_.latency_diff_margin_1.Get(),
+                              -params_.latency_diff_margin_1.Get(),
+                              params_.latency_diff_margin_1.Get());
+  if (diff > TimeDelta::Zero()) {
+    // Attenuate the increase when `queue_delay_avg_` is below
+    // `latency_diff_margin_2` to avoid over-sensitivity to small delay
+    // variations when overall queue delay is low.
+    double low_qdelay_scale =
+        std::min(1.0, queue_delay_avg_ / params_.latency_diff_margin_2.Get());
+    queue_delay_trend_ += params_.latency_diff_up_gain.Get() *
+                          diff.seconds<double>() * low_qdelay_scale;
+  } else {
+    queue_delay_trend_ +=
+        params_.latency_diff_down_gain.Get() * diff.seconds<double>();
+  }
+  queue_delay_trend_ = std::clamp(queue_delay_trend_, 0.0, 1.0);
+}
+
 void DelayBasedCongestionControl::UpdateSmoothedRtt(TimeDelta rtt_sample,
                                                     bool alr) {
   RTC_DCHECK(rtt_sample >= TimeDelta::Zero());
@@ -115,10 +154,12 @@ void DelayBasedCongestionControl::ResetQueueDelay() {
   base_delay_history_.Insert(TimeDelta::PlusInfinity());
 
   min_queue_delay_above_threshold_start_ = Timestamp::MinusInfinity();
-  last_update_qdelay_avg_time_ = Timestamp::MinusInfinity();
   queue_delay_avg_ = TimeDelta::PlusInfinity();
   queue_delay_min_avg_ = TimeDelta::Zero();
   latency_difference_avg_ = TimeDelta::Zero();
+  qdelay_short_avg_ = TimeDelta::Zero();
+  qdelay_long_avg_ = TimeDelta::Zero();
+  queue_delay_trend_ = 0.0;
 }
 
 double
@@ -133,6 +174,9 @@ DelayBasedCongestionControl::ref_window_scale_factor_due_to_avg_min_delay(
 double
 DelayBasedCongestionControl::ref_window_scale_factor_due_to_latency_difference()
     const {
+  if (params_.reduce_jitter.Get()) {
+    return 1.0 - queue_delay_trend_;
+  }
   TimeDelta norm = params_.latency_diff_threshold.Get();
   // Reaches 0.1 at norm, and 1.0 at norm / 4
   return std::clamp(0.1 + 1.2 * (norm - latency_difference_avg_) / norm, 0.1,

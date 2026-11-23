@@ -260,7 +260,6 @@ bool operator!=(
              aOther.rtcp_xr.receiver_reference_time_report ||
          aThis.remb != aOther.remb || aThis.tmmbr != aOther.tmmbr ||
          aThis.keyframe_method != aOther.keyframe_method ||
-         aThis.lntf.enabled != aOther.lntf.enabled ||
          aThis.nack.rtp_history_ms != aOther.nack.rtp_history_ms ||
          aThis.ulpfec_payload_type != aOther.ulpfec_payload_type ||
          aThis.red_payload_type != aOther.red_payload_type ||
@@ -291,7 +290,6 @@ bool operator!=(const webrtc::RtpConfig& aThis,
          aThis.payload_name != aOther.payload_name ||
          aThis.payload_type != aOther.payload_type ||
          aThis.raw_payload != aOther.raw_payload ||
-         aThis.lntf.enabled != aOther.lntf.enabled ||
          aThis.nack.rtp_history_ms != aOther.nack.rtp_history_ms ||
          !(aThis.ulpfec == aOther.ulpfec) ||
          aThis.flexfec.payload_type != aOther.flexfec.payload_type ||

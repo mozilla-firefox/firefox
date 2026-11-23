@@ -10,6 +10,7 @@
 
 #include "api/rtc_error.h"
 
+#include <memory>
 #include <string>
 #include <utility>
 
@@ -19,6 +20,7 @@
 #include "rtc_base/logging.h"
 #include "test/gmock.h"
 #include "test/gtest.h"
+#include "test/scoped_logging_config.h"
 
 namespace webrtc {
 namespace {
@@ -263,22 +265,28 @@ TEST(RTCErrorOrTest, BuildString) {
 TEST(RTCErrorOrTest, BuildStringLog) {
   class LogSinkImpl : public LogSink {
    public:
-    void OnLogMessage(const std::string& message) override {
-      log_.append(message);
+    explicit LogSinkImpl(std::string* log) : log_(log) {}
+    void OnLogMessage(const LogLineRef& line) override {
+      log_->append(line.filename()).append(": ").append(line.message());
     }
-    std::string log_;
-  } log_monitor;
 
-  auto foo = [&]() {
-    return RTC_LOG_ERROR(RTCError::InvalidParameter("BuildStringLog"));
+   private:
+    std::string* const log_;
   };
 
-  LogMessage::AddLogToStream(&log_monitor, LS_ERROR);
-  auto ret = foo();
-  LogMessage::RemoveLogToStream(&log_monitor);
-  EXPECT_THAT(log_monitor.log_, HasSubstr("BuildStringLog"));
+  std::string log;
+  LoggingConfig config;
+  config.set_min_severity(LS_ERROR);
+  config.AddSink(std::make_unique<LogSinkImpl>(&log));
+
+  RTCError ret;
+  {
+    ScopedLoggingConfig scoped_logging(std::move(config));
+    ret = RTC_LOG_ERROR(RTCError::InvalidParameter("BuildStringLog"));
+  }
+  EXPECT_THAT(log, HasSubstr("BuildStringLog"));
 #if defined(__FILE_NAME__)  // Works with clang.
-  EXPECT_THAT(log_monitor.log_, HasSubstr(__FILE_NAME__));
+  EXPECT_THAT(log, HasSubstr(__FILE_NAME__));
 #endif
   EXPECT_FALSE(ret.ok());
   EXPECT_EQ(ret.type(), RTCErrorType::INVALID_PARAMETER);

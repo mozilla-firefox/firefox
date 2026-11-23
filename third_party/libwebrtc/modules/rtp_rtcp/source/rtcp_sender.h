@@ -35,7 +35,6 @@
 #include "modules/rtp_rtcp/source/rtcp_nack_stats.h"
 #include "modules/rtp_rtcp/source/rtcp_packet.h"
 #include "modules/rtp_rtcp/source/rtcp_packet/dlrr.h"
-#include "modules/rtp_rtcp/source/rtcp_packet/loss_notification.h"
 #include "modules/rtp_rtcp/source/rtcp_packet/report_block.h"
 #include "modules/rtp_rtcp/source/rtcp_packet/tmmb_item.h"
 #include "modules/rtp_rtcp/source/rtcp_receiver.h"
@@ -146,13 +145,6 @@ class RTCPSender final {
                    std::span<const uint16_t> nacks = {})
       RTC_LOCKS_EXCLUDED(mutex_rtcp_sender_);
 
-  int32_t SendLossNotification(const FeedbackState& feedback_state,
-                               uint16_t last_decoded_seq_num,
-                               uint16_t last_received_seq_num,
-                               bool decodability_flag,
-                               bool buffering_allowed)
-      RTC_LOCKS_EXCLUDED(mutex_rtcp_sender_);
-
   void SetRemb(int64_t bitrate_bps, std::vector<uint32_t> ssrcs)
       RTC_LOCKS_EXCLUDED(mutex_rtcp_sender_);
 
@@ -214,8 +206,6 @@ class RTCPSender final {
       RTC_EXCLUSIVE_LOCKS_REQUIRED(mutex_rtcp_sender_);
   void BuildAPP(const RtcpContext& context, PacketSender& sender)
       RTC_EXCLUSIVE_LOCKS_REQUIRED(mutex_rtcp_sender_);
-  void BuildLossNotification(const RtcpContext& context, PacketSender& sender)
-      RTC_EXCLUSIVE_LOCKS_REQUIRED(mutex_rtcp_sender_);
   void BuildExtendedReports(const RtcpContext& context, PacketSender& sender)
       RTC_EXCLUSIVE_LOCKS_REQUIRED(mutex_rtcp_sender_);
   void BuildBYE(const RtcpContext& context, PacketSender& sender)
@@ -269,8 +259,6 @@ class RTCPSender final {
 
   // Full intra request
   uint8_t sequence_number_fir_ RTC_GUARDED_BY(mutex_rtcp_sender_);
-
-  rtcp::LossNotification loss_notification_ RTC_GUARDED_BY(mutex_rtcp_sender_);
 
   // REMB
   int64_t remb_bitrate_ RTC_GUARDED_BY(mutex_rtcp_sender_);

@@ -144,6 +144,15 @@ void PeerConnectionClient::OnResolveResult(
 }
 
 void PeerConnectionClient::DoConnect() {
+  if (!server_address_.IsLoopbackIP()) {
+    RTC_LOG(LS_ERROR) << "Refusing to connect to non-loopback server "
+                      << server_address_.ToString()
+                      << " over unencrypted HTTP.";
+    resolver_.reset();
+    state_ = NOT_CONNECTED;
+    callback_->OnServerConnectionFailure();
+    return;
+  }
   control_socket_.reset(CreateClientSocket(server_address_.ipaddr().family()));
   hanging_get_.reset(CreateClientSocket(server_address_.ipaddr().family()));
   InitSocketSignals();

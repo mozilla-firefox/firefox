@@ -70,71 +70,125 @@ FrameDependencyStructure ScalabilityStructureL2T2KeyShift::DependencyStructure()
   return structure;
 }
 
+ScalabilityStructureL2T2KeyShift::FramePattern
+ScalabilityStructureL2T2KeyShift::NextPattern() const {
+  if (last_pattern_ == kNone) {
+    return kKey;
+  }
+
+  const bool s0_active = DecodeTargetIsActive(/*sid=*/0, /*tid=*/0);
+  const bool s1_active = DecodeTargetIsActive(/*sid=*/1, /*tid=*/0);
+  const bool s0_has_t0_ref = can_reference_t0_frame_for_spatial_id_[0];
+  const bool s1_has_t0_ref = can_reference_t0_frame_for_spatial_id_[1];
+
+  const bool any_active_layer_has_t0_ref =
+      (s0_active && s0_has_t0_ref) || (s1_active && s1_has_t0_ref);
+  if (!any_active_layer_has_t0_ref) {
+    return kKey;
+  }
+
+  FramePattern next_pattern =
+      (last_pattern_ == kKey || last_pattern_ == kDelta1) ? kDelta0 : kDelta1;
+
+  // Each delta pattern updates T0 for one spatial layer (S0 in kDelta0, S1 in
+  // kDelta1). If that layer is active but lacks a T0 reference, emit a keyframe
+  // to initialize it.
+  if (next_pattern == kDelta0 && s0_active && !s0_has_t0_ref) {
+    return kKey;
+  }
+  if (next_pattern == kDelta1 && s1_active && !s1_has_t0_ref) {
+    return kKey;
+  }
+
+  return next_pattern;
+}
+
 std::vector<ScalableVideoController::LayerFrameConfig>
 ScalabilityStructureL2T2KeyShift::NextFrameConfig(bool restart) {
   std::vector<LayerFrameConfig> configs;
+  if (active_decode_targets_.none()) {
+    last_pattern_ = kNone;
+    return configs;
+  }
   configs.reserve(2);
   if (restart) {
-    next_pattern_ = kKey;
+    last_pattern_ = kNone;
   }
 
+  FramePattern current_pattern = NextPattern();
   // Buffer0 keeps latest S0T0 frame,
   // Buffer1 keeps latest S1T0 frame.
-  switch (next_pattern_) {
+  switch (current_pattern) {
     case kKey:
+      can_reference_t0_frame_for_spatial_id_.reset();
       if (DecodeTargetIsActive(/*sid=*/0, /*tid=*/0)) {
         configs.emplace_back();
-        configs.back().S(0).T(0).Update(0).Keyframe();
+        configs.back().Id(kKey).S(0).T(0).Update(0).Keyframe();
       }
       if (DecodeTargetIsActive(/*sid=*/1, /*tid=*/0)) {
         configs.emplace_back();
-        configs.back().S(1).T(0).Update(1);
+        configs.back().Id(kKey).S(1).T(0).Update(1);
         if (DecodeTargetIsActive(/*sid=*/0, /*tid=*/0)) {
           configs.back().Reference(0);
         } else {
           configs.back().Keyframe();
         }
       }
-      next_pattern_ = kDelta0;
       break;
     case kDelta0:
       if (DecodeTargetIsActive(/*sid=*/0, /*tid=*/0)) {
+        RTC_DCHECK(can_reference_t0_frame_for_spatial_id_[0]);
         configs.emplace_back();
-        configs.back().S(0).T(0).ReferenceAndUpdate(0);
+        configs.back().Id(kDelta0).S(0).T(0).ReferenceAndUpdate(0);
       }
-      if (DecodeTargetIsActive(/*sid=*/1, /*tid=*/1)) {
+      if (DecodeTargetIsActive(/*sid=*/1, /*tid=*/1) &&
+          can_reference_t0_frame_for_spatial_id_[1]) {
         configs.emplace_back();
-        configs.back().S(1).T(1).Reference(1);
+        configs.back().Id(kDelta0).S(1).T(1).Reference(1);
       }
       if (configs.empty() && DecodeTargetIsActive(/*sid=*/1, /*tid=*/0)) {
+        RTC_DCHECK(can_reference_t0_frame_for_spatial_id_[1]);
         configs.emplace_back();
-        configs.back().S(1).T(0).ReferenceAndUpdate(1);
+        configs.back().Id(kDelta0).S(1).T(0).ReferenceAndUpdate(1);
       }
-      next_pattern_ = kDelta1;
       break;
     case kDelta1:
-      if (DecodeTargetIsActive(/*sid=*/0, /*tid=*/1)) {
+      if (DecodeTargetIsActive(/*sid=*/0, /*tid=*/1) &&
+          can_reference_t0_frame_for_spatial_id_[0]) {
         configs.emplace_back();
-        configs.back().S(0).T(1).Reference(0);
+        configs.back().Id(kDelta1).S(0).T(1).Reference(0);
       }
       if (DecodeTargetIsActive(/*sid=*/1, /*tid=*/0)) {
+        RTC_DCHECK(can_reference_t0_frame_for_spatial_id_[1]);
         configs.emplace_back();
-        configs.back().S(1).T(0).ReferenceAndUpdate(1);
+        configs.back().Id(kDelta1).S(1).T(0).ReferenceAndUpdate(1);
       }
       if (configs.empty() && DecodeTargetIsActive(/*sid=*/0, /*tid=*/0)) {
+        RTC_DCHECK(can_reference_t0_frame_for_spatial_id_[0]);
         configs.emplace_back();
-        configs.back().S(0).T(0).ReferenceAndUpdate(0);
+        configs.back().Id(kDelta1).S(0).T(0).ReferenceAndUpdate(0);
       }
-      next_pattern_ = kDelta0;
+      break;
+    case kNone:
+      RTC_DCHECK_NOTREACHED();
       break;
   }
 
-  RTC_DCHECK(!configs.empty() || active_decode_targets_.none());
+  RTC_DCHECK(!configs.empty());
   return configs;
+}
+
+void ScalabilityStructureL2T2KeyShift::OnFrameDropped(
+    const LayerFrameConfig& config) {
+  last_pattern_ = static_cast<FramePattern>(config.Id());
 }
 
 GenericFrameInfo ScalabilityStructureL2T2KeyShift::OnEncodeDone(
     const LayerFrameConfig& config) {
+  last_pattern_ = static_cast<FramePattern>(config.Id());
+  if (config.TemporalId() == 0) {
+    can_reference_t0_frame_for_spatial_id_.set(config.SpatialId());
+  }
   GenericFrameInfo frame_info;
   frame_info.spatial_id = config.SpatialId();
   frame_info.temporal_id = config.TemporalId();
@@ -160,9 +214,11 @@ void ScalabilityStructureL2T2KeyShift::OnRatesUpdated(
   for (int sid = 0; sid < kNumSpatialLayers; ++sid) {
     // Enable/disable spatial layers independetely.
     bool active = bitrates.GetBitrate(sid, /*tid=*/0) > 0;
-    if (!DecodeTargetIsActive(sid, /*tid=*/0) && active) {
+    if (!active) {
+      can_reference_t0_frame_for_spatial_id_.reset(sid);
+    } else if (!DecodeTargetIsActive(sid, /*tid=*/0)) {
       // Key frame is required to reenable any spatial layer.
-      next_pattern_ = kKey;
+      last_pattern_ = kNone;
     }
 
     SetDecodeTargetIsActive(sid, /*tid=*/0, active);

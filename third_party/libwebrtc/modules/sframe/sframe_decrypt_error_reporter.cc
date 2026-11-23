@@ -13,22 +13,30 @@
 #include <optional>
 #include <utility>
 
+#include "absl/base/nullability.h"
+#include "api/make_ref_counted.h"
+#include "api/scoped_refptr.h"
 #include "api/sequence_checker.h"
 #include "api/sframe/sframe_decryptor_interface.h"
+#include "rtc_base/checks.h"
 
 namespace webrtc {
 
+scoped_refptr<SframeDecryptErrorReporter> SframeDecryptErrorReporter::Create(
+    absl_nonnull SframeDecryptErrorCallback error_callback) {
+  return make_ref_counted<SframeDecryptErrorReporter>(
+      std::move(error_callback));
+}
+
 SframeDecryptErrorReporter::SframeDecryptErrorReporter(
-    SframeDecryptErrorCallback error_callback)
+    absl_nonnull SframeDecryptErrorCallback error_callback)
     : sequence_checker_(SequenceChecker::kDetached),
-      error_callback_(std::move(error_callback)) {}
+      error_callback_(std::move(error_callback)) {
+  RTC_DCHECK(error_callback_);
+}
 
 void SframeDecryptErrorReporter::ReportError(SframeDecryptError error) {
   RTC_DCHECK_RUN_ON(&sequence_checker_);
-
-  if (!error_callback_) {
-    return;
-  }
 
   // Skip repeated identical failures — a sustained failure would otherwise
   // fire the callback once per frame/packet, causing too many error events.

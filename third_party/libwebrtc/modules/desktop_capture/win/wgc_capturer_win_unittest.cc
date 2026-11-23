@@ -17,6 +17,7 @@
 #include <cstddef>
 #include <cstdint>
 #include <memory>
+#include <string>
 #include <utility>
 #include <vector>
 
@@ -71,13 +72,13 @@ constexpr int detector_result_failure_slide_show_not_chosen = 3;
 constexpr char kCaptureFullscreenDetectorHistogram[] =
     "WebRTC.Screenshare.DesktopCapturerFullscreenDetector";
 
-constexpr char kWgcWindowFallbackSelectSourceHistogram[] =
-    "WebRTC.DesktopCapture.Win.WgcWindowFallbackSelectSource";
-using SelectSourceResult = FallbackDesktopCapturerWrapper::SelectSourceResult;
+constexpr char kWgcWindowFallbackStartOutcomeHistogram[] =
+    "WebRTC.DesktopCapture.Win.WgcWindowFallbackStartOutcome";
+using StartOutcome = FallbackDesktopCapturerWrapper::StartOutcome;
 
-int NumSelectSourceEvents(SelectSourceResult result) {
-  return metrics::NumEvents(kWgcWindowFallbackSelectSourceHistogram,
-                            static_cast<int>(result));
+int NumStartOutcomeEvents(StartOutcome outcome) {
+  return metrics::NumEvents(kWgcWindowFallbackStartOutcomeHistogram,
+                            static_cast<int>(outcome));
 }
 
 // The capturer keeps `kNumBuffers` in its frame pool, so we need to request
@@ -112,22 +113,6 @@ constexpr UINT kQuitRunning = WM_APP + 1;
 constexpr int kMaxTries = 50;
 
 }  // namespace
-
-class LogMessageMatcher : public LogSink {
- public:
-  explicit LogMessageMatcher(const std::string& substring)
-      : substring_(substring) {}
-  bool matched() const { return matched_; }
-
- private:
-  void OnLogMessage(const std::string& message) override {
-    if (message.find(substring_) != std::string::npos) {
-      matched_ = true;
-    }
-  }
-  std::string substring_;
-  bool matched_ = false;
-};
 
 class WgcCapturerWinTest : public ::testing::TestWithParam<CaptureType>,
                            public DesktopCapturer::Callback {
@@ -428,6 +413,17 @@ class WgcCapturerMonitorTest : public WgcCapturerWinTest {
       GTEST_SKIP();
     }
   }
+
+  void GetDeviceAdapterDesc(DXGI_ADAPTER_DESC* device_desc) {
+    auto* wgc_capturer = static_cast<WgcCapturerWin*>(capturer_.get());
+    ::ID3D11Device* device = wgc_capturer->GetD3D11DeviceForTesting();
+    ASSERT_NE(device, nullptr);
+    Microsoft::WRL::ComPtr<IDXGIDevice> dxgi_device;
+    ASSERT_TRUE(SUCCEEDED(device->QueryInterface(IID_PPV_ARGS(&dxgi_device))));
+    Microsoft::WRL::ComPtr<IDXGIAdapter> device_adapter;
+    ASSERT_TRUE(SUCCEEDED(dxgi_device->GetAdapter(&device_adapter)));
+    ASSERT_TRUE(SUCCEEDED(device_adapter->GetDesc(device_desc)));
+  }
 };
 
 TEST_F(WgcCapturerMonitorTest, FocusOnMonitor) {
@@ -457,9 +453,6 @@ TEST_F(WgcCapturerMonitorTest, CaptureWithValidAdapterLuid) {
   DXGI_ADAPTER_DESC desc;
   ASSERT_TRUE(SUCCEEDED(adapter->GetDesc(&desc)));
 
-  LogMessageMatcher fallback_matcher("Failed to get adapter by LUID");
-  LogMessage::AddLogToStream(&fallback_matcher, LS_WARNING);
-
   DesktopCaptureOptions options = DesktopCaptureOptions::CreateDefault();
   options.set_d3d_device_luid(desc.AdapterLuid);
   SetUpForScreenCapture(options);
@@ -467,8 +460,10 @@ TEST_F(WgcCapturerMonitorTest, CaptureWithValidAdapterLuid) {
 
   capturer_->Start(this);
 
-  LogMessage::RemoveLogToStream(&fallback_matcher);
-  EXPECT_FALSE(fallback_matcher.matched());
+  DXGI_ADAPTER_DESC device_desc = {};
+  GetDeviceAdapterDesc(&device_desc);
+  EXPECT_EQ(device_desc.AdapterLuid.LowPart, desc.AdapterLuid.LowPart);
+  EXPECT_EQ(device_desc.AdapterLuid.HighPart, desc.AdapterLuid.HighPart);
 
   DoCapture();
   EXPECT_GT(frame_->size().width(), 0);
@@ -480,9 +475,6 @@ TEST_F(WgcCapturerMonitorTest, CaptureWithInvalidAdapterLuid) {
   // default adapter and still capture successfully.
   LUID invalid_luid = {0xFFFF, 0x7FFF};
 
-  LogMessageMatcher fallback_matcher("falling back to default adapter");
-  LogMessage::AddLogToStream(&fallback_matcher, LS_WARNING);
-
   DesktopCaptureOptions options = DesktopCaptureOptions::CreateDefault();
   options.set_d3d_device_luid(invalid_luid);
   SetUpForScreenCapture(options);
@@ -490,8 +482,10 @@ TEST_F(WgcCapturerMonitorTest, CaptureWithInvalidAdapterLuid) {
 
   capturer_->Start(this);
 
-  LogMessage::RemoveLogToStream(&fallback_matcher);
-  EXPECT_TRUE(fallback_matcher.matched());
+  DXGI_ADAPTER_DESC device_desc = {};
+  GetDeviceAdapterDesc(&device_desc);
+  EXPECT_TRUE(device_desc.AdapterLuid.LowPart != invalid_luid.LowPart ||
+              device_desc.AdapterLuid.HighPart != invalid_luid.HighPart);
 
   DoCapture();
   EXPECT_GT(frame_->size().width(), 0);
@@ -526,15 +520,25 @@ class WgcCapturerWindowTest : public WgcCapturerWinTest {
   }
 
   // Creates window capturers with `options`, which must allow the WGC window
-  // capturer and its fallback, and checks SelectSource() and the recorded
-  // results for:
+  // capturer and its fallback, and checks SelectSource(), the first frame and
+  // the recorded start outcomes for:
+  // - A visible window: both succeed, and WGC captures it.
   // - A child window: WGC fails, and the fallback capturer succeeds and
   //   captures it into `frame_`.
   // - A minimized window: both fail.
-  // - A visible window: both succeed.
   void TestSelectSourceFallback(const DesktopCaptureOptions& options) {
     metrics::Reset();
     SetUpForWindowCapture();
+
+    capturer_ = DesktopCapturer::CreateWindowCapturer(options);
+    ASSERT_TRUE(capturer_);
+    EXPECT_TRUE(capturer_->SelectSource(source_id_));
+    capturer_->Start(this);
+    capturer_->CaptureFrame();
+    EXPECT_EQ(result_, DesktopCapturer::Result::SUCCESS);
+    ASSERT_TRUE(frame_);
+    EXPECT_EQ(frame_->capturer_id(), DesktopCapturerId::kWgcCapturerWin);
+    EXPECT_EQ(NumStartOutcomeEvents(StartOutcome::kMainWorked), 1);
 
     capturer_ = DesktopCapturer::CreateWindowCapturer(options);
     ASSERT_TRUE(capturer_);
@@ -542,32 +546,26 @@ class WgcCapturerWindowTest : public WgcCapturerWinTest {
     ASSERT_NE(child_hwnd, nullptr);
     EXPECT_TRUE(capturer_->SelectSource(
         reinterpret_cast<DesktopCapturer::SourceId>(child_hwnd)));
-    EXPECT_EQ(NumSelectSourceEvents(
-                  SelectSourceResult::kMainFailedSecondarySucceeded),
-              1);
-
     capturer_->Start(this);
+    // Clear the result of the first capturer's capture.
+    result_ = DesktopCapturer::Result::ERROR_TEMPORARY;
+    frame_.reset();
     capturer_->CaptureFrame();
     EXPECT_EQ(result_, DesktopCapturer::Result::SUCCESS);
     ASSERT_TRUE(frame_);
     EXPECT_NE(frame_->capturer_id(), DesktopCapturerId::kWgcCapturerWin);
+    EXPECT_EQ(NumStartOutcomeEvents(StartOutcome::kMainRejectedSecondaryWorked),
+              1);
 
     capturer_ = DesktopCapturer::CreateWindowCapturer(options);
     ASSERT_TRUE(capturer_);
     MinimizeTestWindow(window_info_.hwnd);
     EXPECT_FALSE(capturer_->SelectSource(source_id_));
     EXPECT_EQ(
-        NumSelectSourceEvents(SelectSourceResult::kMainFailedSecondaryFailed),
-        1);
-
+        NumStartOutcomeEvents(StartOutcome::kMainRejectedSecondaryRejected), 1);
     UnminimizeTestWindow(window_info_.hwnd);
-    capturer_ = DesktopCapturer::CreateWindowCapturer(options);
-    ASSERT_TRUE(capturer_);
-    EXPECT_TRUE(capturer_->SelectSource(source_id_));
-    EXPECT_EQ(NumSelectSourceEvents(
-                  SelectSourceResult::kMainSucceededSecondarySucceeded),
-              1);
-    EXPECT_EQ(metrics::NumSamples(kWgcWindowFallbackSelectSourceHistogram), 3);
+
+    EXPECT_EQ(metrics::NumSamples(kWgcWindowFallbackStartOutcomeHistogram), 3);
   }
 };
 
@@ -938,7 +936,7 @@ TEST_F(WgcCapturerWindowTest, CreateWindowCapturerWithoutFallback) {
 
   EXPECT_FALSE(capturer_->SelectSource(
       reinterpret_cast<DesktopCapturer::SourceId>(child_hwnd)));
-  EXPECT_EQ(metrics::NumSamples(kWgcWindowFallbackSelectSourceHistogram), 0);
+  EXPECT_EQ(metrics::NumSamples(kWgcWindowFallbackStartOutcomeHistogram), 0);
 }
 
 // Tests for the WGC texture mode (allow_wgc_using_texture).

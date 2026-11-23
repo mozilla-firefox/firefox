@@ -260,8 +260,7 @@ void VideoAnalyzer::DeliverRtpPacket(
     PacketReceiver::OnUndemuxablePacketHandler undemuxable_packet_handler) {
   if (rtp_file_writer_) {
     test::RtpPacket p;
-    memcpy(p.data, packet.Buffer().data(), packet.size());
-    p.length = packet.size();
+    p.buffer = packet.Buffer();
     p.original_length = packet.size();
     p.time_ms = clock_->TimeInMilliseconds() - start_ms_;
     rtp_file_writer_->WritePacket(&p);

@@ -151,7 +151,6 @@ RtpSenderObservers CreateObservers(
   RtpSenderObservers observers;
   observers.rtcp_rtt_stats = nullptr;
   observers.intra_frame_callback = intra_frame_callback;
-  observers.rtcp_loss_notification_observer = nullptr;
   observers.report_block_data_observer = report_block_data_observer;
   observers.rtp_stats = rtp_stats;
   observers.bitrate_observer = bitrate_observer;
@@ -231,7 +230,7 @@ class RtpVideoSenderTestFixture {
         transport_controller_(RtpTransportConfig{
             .env = env_,
             .bitrate_config = bitrate_config_,
-            .worker_thread = time_controller_.GetMainThread()}),
+            .network_thread = time_controller_.GetMainThread()}),
         stats_proxy_(env_,
                      config_,
                      VideoEncoderConfig::ContentType::kRealtimeVideo) {
@@ -1817,7 +1816,7 @@ TEST(RtpVideoSenderTest, PostTaskRaceDoesNotLeadToDanglingPointer) {
   RtpTransportConfig transport_config{
       .env = env,
       .bitrate_config = bitrate_config,
-      .worker_thread = time_controller.GetMainThread()};
+      .network_thread = time_controller.GetMainThread()};
   RtpTransportControllerSend transport_controller(transport_config);
   transport_controller.EnsureStarted();
 

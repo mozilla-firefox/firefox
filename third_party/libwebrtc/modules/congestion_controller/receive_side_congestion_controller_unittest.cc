@@ -24,6 +24,7 @@
 #include "api/units/data_size.h"
 #include "api/units/time_delta.h"
 #include "api/units/timestamp.h"
+#include "modules/remote_bitrate_estimator/include/bwe_defines.h"
 #include "modules/rtp_rtcp/include/rtp_header_extension_map.h"
 #include "modules/rtp_rtcp/source/rtcp_packet.h"
 #include "modules/rtp_rtcp/source/rtcp_packet/common_header.h"
@@ -33,6 +34,7 @@
 #include "modules/rtp_rtcp/source/rtp_packet_received.h"
 #include "rtc_base/buffer.h"
 #include "system_wrappers/include/clock.h"
+#include "system_wrappers/include/metrics.h"
 #include "test/create_test_environment.h"
 #include "test/create_test_field_trials.h"
 #include "test/gmock.h"
@@ -286,6 +288,92 @@ TEST(ReceiveSideCongestionControllerTest, OnBitrateChangedDeprecatedAndNew) {
 #pragma clang diagnostic ignored "-Wdeprecated-declarations"
   controller.OnBitrateChanged(500'000);
 #pragma clang diagnostic pop
+}
+
+void SendVideoPacket(ReceiveSideCongestionController& controller,
+                     SimulatedClock& clock,
+                     const RtpHeaderExtensionMap& extensions,
+                     uint32_t ssrc,
+                     bool with_abs_send_time) {
+  static constexpr DataSize kPayloadSize = DataSize::Bytes(1000);
+  clock.AdvanceTime(kPayloadSize / kInitialBitrate);
+  Timestamp now = clock.CurrentTime();
+  RtpPacketReceived packet(&extensions);
+  packet.SetSsrc(ssrc);
+  packet.SetTimestamp(static_cast<uint32_t>(now.ms() * 90));
+  packet.SetExtension<TransmissionOffset>(0);
+  if (with_abs_send_time) {
+    packet.SetExtension<AbsoluteSendTime>(AbsoluteSendTime::To24Bits(now));
+  }
+  packet.SetPayloadSize(kPayloadSize.bytes());
+  packet.set_arrival_time(now);
+  controller.OnReceivedPacket(packet, MediaType::VIDEO);
+}
+
+TEST(ReceiveSideCongestionControllerTest,
+     SwitchesBetweenTofAndAbsSendTimeEstimators) {
+  metrics::Reset();
+  MockFunction<void(std::vector<std::unique_ptr<rtcp::RtcpPacket>>)>
+      feedback_sender;
+  MockFunction<void(uint64_t, std::vector<uint32_t>)> remb_sender;
+  SimulatedClock clock(123456);
+  ReceiveSideCongestionController controller(
+      CreateTestEnvironment({.time = &clock}), feedback_sender.AsStdFunction(),
+      remb_sender.AsStdFunction());
+
+  RtpHeaderExtensionMap extensions;
+  extensions.Register<TransmissionOffset>(RtpHeaderExtensionId(1));
+  extensions.Register<AbsoluteSendTime>(RtpHeaderExtensionId(2));
+
+  // The SSRC values are arbitrary, but each phase uses its own SSRC so that
+  // the SSRC list of a REMB identifies the estimator that sent it. A switch
+  // replaces the estimator with a new instance, which only reports the SSRCs
+  // it has received packets for. Hence ElementsAre() rather than Contains().
+  constexpr uint32_t kInitialTofSsrc = 0x1111;
+  constexpr uint32_t kAbsSendTimeSsrc = 0x2222;
+  constexpr uint32_t kSecondTofSsrc = 0x3333;
+
+  // Default estimator is transmission time offset (SingleStream).
+  EXPECT_CALL(remb_sender, Call(_, ElementsAre(kInitialTofSsrc)))
+      .Times(AtLeast(1));
+  for (int i = 0; i < 55; ++i) {
+    SendVideoPacket(controller, clock, extensions, kInitialTofSsrc,
+                    /*with_abs_send_time=*/false);
+    controller.MaybeProcess();
+  }
+  EXPECT_EQ(metrics::NumEvents(kBweTypeHistogram, BweNames::kReceiverTOffset),
+            1);
+  EXPECT_EQ(
+      metrics::NumEvents(kBweTypeHistogram, BweNames::kReceiverAbsSendTime), 0);
+
+  // First packet with AbsoluteSendTime immediately switches to AST RBE.
+  EXPECT_CALL(remb_sender, Call(_, ElementsAre(kAbsSendTimeSsrc)))
+      .Times(AtLeast(1));
+  for (int i = 0; i < 10; ++i) {
+    SendVideoPacket(controller, clock, extensions, kAbsSendTimeSsrc,
+                    /*with_abs_send_time=*/true);
+  }
+  EXPECT_EQ(
+      metrics::NumEvents(kBweTypeHistogram, BweNames::kReceiverAbsSendTime), 1);
+
+  // Below kTimeOffsetSwitchThreshold (30) non-AST packets, stays on AST RBE.
+  for (int i = 0; i < 29; ++i) {
+    SendVideoPacket(controller, clock, extensions, kSecondTofSsrc,
+                    /*with_abs_send_time=*/false);
+  }
+  EXPECT_EQ(metrics::NumEvents(kBweTypeHistogram, BweNames::kReceiverTOffset),
+            1);
+
+  // The 30th packet without AST switches back to a new TOF estimator.
+  EXPECT_CALL(remb_sender, Call(_, ElementsAre(kSecondTofSsrc)))
+      .Times(AtLeast(1));
+  for (int i = 0; i < 55; ++i) {
+    SendVideoPacket(controller, clock, extensions, kSecondTofSsrc,
+                    /*with_abs_send_time=*/false);
+    controller.MaybeProcess();
+  }
+  EXPECT_EQ(metrics::NumEvents(kBweTypeHistogram, BweNames::kReceiverTOffset),
+            2);
 }
 }  // namespace
 }  // namespace test

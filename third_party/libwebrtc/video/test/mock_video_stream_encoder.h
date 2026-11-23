@@ -23,7 +23,6 @@
 #include "api/video/video_frame.h"
 #include "api/video/video_frame_type.h"
 #include "api/video/video_source_interface.h"
-#include "api/video_codecs/video_encoder.h"
 #include "test/gmock.h"
 #include "video/config/video_encoder_config.h"
 #include "video/video_stream_encoder_interface.h"
@@ -45,10 +44,6 @@ class MockVideoStreamEncoder : public VideoStreamEncoderInterface {
   MOCK_METHOD(void,
               SendKeyFrame,
               (const std::vector<VideoFrameType>&),
-              (override));
-  MOCK_METHOD(void,
-              OnLossNotification,
-              (const VideoEncoder::LossNotification&),
               (override));
   MOCK_METHOD(void,
               OnBitrateUpdated,

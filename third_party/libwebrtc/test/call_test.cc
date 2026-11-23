@@ -22,6 +22,7 @@
 #include <vector>
 
 #include "absl/base/nullability.h"
+#include "absl/functional/any_invocable.h"
 #include "api/audio/audio_device.h"
 #include "api/audio/builtin_audio_processing_builder.h"
 #include "api/audio_codecs/audio_decoder_factory.h"
@@ -35,8 +36,8 @@
 #include "api/rtp_headers.h"
 #include "api/rtp_parameters.h"
 #include "api/scoped_refptr.h"
+#include "api/task_queue/pending_task_safety_flag.h"
 #include "api/task_queue/task_queue_base.h"
-#include "api/task_queue/task_queue_factory.h"
 #include "api/test/create_frame_generator.h"
 #include "api/test/simulated_network.h"
 #include "api/test/time_controller.h"
@@ -88,7 +89,11 @@ class TransportToNetworkPacketBridge : public PacketReceiver {
  public:
   TransportToNetworkPacketBridge(TaskQueueBase* network_thread,
                                  PacketReceiver* receiver)
-      : network_thread_(network_thread), receiver_(receiver) {}
+      : network_thread_(network_thread),
+        receiver_(receiver),
+        safety_(PendingTaskSafetyFlag::CreateAttachedToTaskQueue(
+            /*alive=*/true,
+            network_thread)) {}
   ~TransportToNetworkPacketBridge() override = default;
 
   void DeliverRtcpPacket(CopyOnWriteBuffer packet) override {
@@ -97,7 +102,7 @@ class TransportToNetworkPacketBridge : public PacketReceiver {
     if (network_thread_->IsCurrent()) {
       receiver_->DeliverRtcpPacket(std::move(packet));
     } else {
-      network_thread_->PostTask(
+      PostToNetworkThread(
           [receiver = receiver_, packet = std::move(packet)]() mutable {
             receiver->DeliverRtcpPacket(std::move(packet));
           });
@@ -114,7 +119,7 @@ class TransportToNetworkPacketBridge : public PacketReceiver {
       receiver_->DeliverRtpPacket(media_type, std::move(packet),
                                   std::move(undemuxable_packet_handler));
     } else {
-      network_thread_->PostTask(
+      PostToNetworkThread(
           [receiver = receiver_, media_type, packet = std::move(packet),
            handler = std::move(undemuxable_packet_handler)]() mutable {
             receiver->DeliverRtpPacket(media_type, std::move(packet),
@@ -124,10 +129,15 @@ class TransportToNetworkPacketBridge : public PacketReceiver {
   }
 
  protected:
-  TaskQueueBase* const network_thread_;
+  // Runs `task` on the network thread unless the bridge is destroyed first.
+  void PostToNetworkThread(absl::AnyInvocable<void() &&> task) {
+    network_thread_->PostTask(SafeTask(safety_.flag(), std::move(task)));
+  }
 
  private:
+  TaskQueueBase* const network_thread_;
   PacketReceiver* const receiver_;
+  ScopedTaskSafety safety_;
 };
 
 // Transport and packet receiver bridge for sender streams. Invoked on Call's
@@ -148,7 +158,7 @@ class SendingTransportToNetworkPacketBridge
         send_transport_(send_transport),
         env_(env) {
     if (send_call_) {
-      network_thread_->PostTask([send_call = send_call_]() {
+      PostToNetworkThread([send_call = send_call_]() {
         send_call->SignalChannelNetworkState(MediaType::AUDIO, kNetworkUp);
         send_call->SignalChannelNetworkState(MediaType::VIDEO, kNetworkUp);
       });
@@ -166,7 +176,7 @@ class SendingTransportToNetworkPacketBridge
       packet_info.packet_type = PacketType::kData;
       SentPacketInfo sent_packet(
           options.packet_id, env_.clock().TimeInMilliseconds(), packet_info);
-      network_thread_->PostTask([send_call = send_call_, sent_packet]() {
+      PostToNetworkThread([send_call = send_call_, sent_packet]() {
         send_call->OnSentPacket(sent_packet);
       });
     }
@@ -236,10 +246,7 @@ CallTest::CallTest(TimeController* time_controller, FieldTrials field_trials)
                           : Thread::CreateWithSocketServer()),
       transport_thread_(time_controller_ != nullptr
                             ? time_controller_->CreateThread("CallTransport")
-                            : Thread::Create()),
-      task_queue_(env_.task_queue_factory().CreateTaskQueue(
-          "CallTestTaskQueue",
-          TaskQueueFactory::Priority::kNormal)) {
+                            : Thread::Create()) {
   if (time_controller_ == nullptr) {
     network_thread_->Start();
     transport_thread_->Start();
@@ -407,27 +414,29 @@ void CallTest::RunBaseTest(BaseTest* test) {
   });
 }
 
-CallConfig CallTest::SendCallConfig(TaskQueueBase* worker_task_queue) const {
-  if (worker_task_queue == nullptr) {
-    worker_task_queue = task_queue_.get();
+CallConfig CallTest::SendCallConfig(TaskQueueBase* network_task_queue) const {
+  if (network_task_queue == nullptr) {
+    network_task_queue = network_thread_.get();
   }
-  CallConfig sender_config(send_env_, worker_task_queue, network_thread_.get());
+  CallConfig sender_config = CallConfig::CreateWithJoinedWorkerAndNetworkQueue(
+      send_env_, network_task_queue);
   sender_config.network_state_predictor_factory =
       network_state_predictor_factory_.get();
   sender_config.network_controller_factory = network_controller_factory_.get();
   return sender_config;
 }
 
-CallConfig CallTest::RecvCallConfig(TaskQueueBase* worker_task_queue) const {
-  if (worker_task_queue == nullptr) {
-    worker_task_queue = task_queue_.get();
+CallConfig CallTest::RecvCallConfig(TaskQueueBase* network_task_queue) const {
+  if (network_task_queue == nullptr) {
+    network_task_queue = network_thread_.get();
   }
-  return CallConfig(recv_env_, worker_task_queue, network_thread_.get());
+  return CallConfig::CreateWithJoinedWorkerAndNetworkQueue(recv_env_,
+                                                           network_task_queue);
 }
 
-void CallTest::CreateCalls(TaskQueueBase* worker_task_queue) {
-  CreateCalls(SendCallConfig(worker_task_queue),
-              RecvCallConfig(worker_task_queue));
+void CallTest::CreateCalls(TaskQueueBase* network_task_queue) {
+  CreateCalls(SendCallConfig(network_task_queue),
+              RecvCallConfig(network_task_queue));
 }
 
 void CallTest::CreateCalls(CallConfig sender_config,
@@ -436,31 +445,31 @@ void CallTest::CreateCalls(CallConfig sender_config,
   CreateReceiverCall(std::move(receiver_config));
 }
 
-void CallTest::CreateSenderCall(TaskQueueBase* worker_task_queue) {
-  CreateSenderCall(SendCallConfig(worker_task_queue));
+void CallTest::CreateSenderCall(TaskQueueBase* network_task_queue) {
+  CreateSenderCall(SendCallConfig(network_task_queue));
 }
 
 void CallTest::CreateSenderCall(CallConfig config) {
-  TaskQueueBase* worker = config.worker_task_queue;
-  if (worker->IsCurrent()) {
+  TaskQueueBase* network_queue = config.network_task_queue_;
+  if (network_queue->IsCurrent()) {
     sender_call_ = Call::Create(std::move(config));
   } else {
-    SendTask(worker, [this, config = std::move(config)]() mutable {
+    SendTask(network_queue, [this, config = std::move(config)]() mutable {
       sender_call_ = Call::Create(std::move(config));
     });
   }
 }
 
-void CallTest::CreateReceiverCall(TaskQueueBase* worker_task_queue) {
-  CreateReceiverCall(RecvCallConfig(worker_task_queue));
+void CallTest::CreateReceiverCall(TaskQueueBase* network_task_queue) {
+  CreateReceiverCall(RecvCallConfig(network_task_queue));
 }
 
 void CallTest::CreateReceiverCall(CallConfig config) {
-  TaskQueueBase* worker = config.worker_task_queue;
-  if (worker->IsCurrent()) {
+  TaskQueueBase* network_queue = config.network_task_queue_;
+  if (network_queue->IsCurrent()) {
     receiver_call_ = Call::Create(std::move(config));
   } else {
-    SendTask(worker, [this, config = std::move(config)]() mutable {
+    SendTask(network_queue, [this, config = std::move(config)]() mutable {
       receiver_call_ = Call::Create(std::move(config));
     });
   }
@@ -469,27 +478,25 @@ void CallTest::CreateReceiverCall(CallConfig config) {
 void CallTest::DestroyCalls() {
   send_transport_.reset();
   receive_transport_.reset();
+  // Destroying the bridges drops packet deliveries and OnSentPacket
+  // notifications that are still queued on the network thread.
   send_transport_bridge_.reset();
   receive_transport_bridge_.reset();
 
-  // Flush any pending packet delivery or OnSentPacket tasks on the network
-  // thread before destroying the Call instances.
-  network_thread()->BlockingCall([]() {});
-
   if (sender_call_) {
-    TaskQueueBase* worker = sender_call_->worker_thread();
-    if (worker->IsCurrent()) {
+    TaskQueueBase* network_queue = sender_call_->network_thread();
+    if (network_queue->IsCurrent()) {
       sender_call_.reset();
     } else {
-      SendTask(worker, [this]() { sender_call_.reset(); });
+      SendTask(network_queue, [this]() { sender_call_.reset(); });
     }
   }
   if (receiver_call_) {
-    TaskQueueBase* worker = receiver_call_->worker_thread();
-    if (worker->IsCurrent()) {
+    TaskQueueBase* network_queue = receiver_call_->network_thread();
+    if (network_queue->IsCurrent()) {
       receiver_call_.reset();
     } else {
-      SendTask(worker, [this]() { receiver_call_.reset(); });
+      SendTask(network_queue, [this]() { receiver_call_.reset(); });
     }
   }
 }

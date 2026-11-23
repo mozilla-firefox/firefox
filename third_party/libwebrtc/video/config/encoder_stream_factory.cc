@@ -207,6 +207,7 @@ void OverrideStreamSettings(
     layer.scalability_mode = overrides.scalability_mode;
     layer.scale_resolution_down_to = overrides.scale_resolution_down_to;
     layer.scale_resolution_down_by = overrides.scale_resolution_down_by;
+    layer.encoding_complexity = overrides.encoding_complexity;
     // Update with configured num temporal layers if supported by codec.
     if (overrides.num_temporal_layers > 0 && temporal_layers_supported) {
       layer.num_temporal_layers = *overrides.num_temporal_layers;
@@ -506,6 +507,8 @@ std::vector<VideoStream> EncoderStreamFactory::CreateDefaultVideoStreams(
     }
   }
   layer.scalability_mode = encoder_config.simulcast_layers[0].scalability_mode;
+  layer.encoding_complexity =
+      encoder_config.simulcast_layers[0].encoding_complexity;
   return {layer};
 }
 

@@ -19,6 +19,7 @@
 #include <utility>
 #include <vector>
 
+#include "absl/base/nullability.h"
 #include "api/crypto/frame_decryptor_interface.h"
 #include "api/dtls_transport_interface.h"
 #include "api/frame_transformer_interface.h"
@@ -149,7 +150,8 @@ class RTC_EXPORT RtpReceiverInterface : public RefCountInterface,
   // implementations are updated
   virtual RTCErrorOr<scoped_refptr<SframeDecryptorInterface>>
   CreateSframeDecryptorOrError(SframeCipherSuite cipher_suite,
-                               SframeDecryptErrorCallback error_callback) {
+                               absl_nonnull SframeDecryptErrorCallback
+                                   error_callback) {
     RTC_DCHECK_NOTREACHED();
     return RTCError();
   }

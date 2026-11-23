@@ -31,13 +31,6 @@ struct RtpPayloadState {
   int64_t frame_id = 0;
 };
 
-// Settings for LNTF (LossNotification). Still highly experimental.
-struct LntfConfig {
-  std::string ToString() const;
-
-  bool enabled{false};
-};
-
 // Settings for NACK, see RFC 4585 for details.
 struct NackConfig {
   NackConfig() : rtp_history_ms(0) {}
@@ -144,9 +137,6 @@ struct RtpConfig {
 
   // Configurations for each RTP stream
   std::vector<RtpStreamConfig> stream_configs;
-
-  // See LntfConfig for description.
-  LntfConfig lntf;
 
   // See NackConfig for description.
   NackConfig nack;

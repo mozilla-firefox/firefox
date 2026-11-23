@@ -104,6 +104,7 @@
 #include "rtc_base/containers/flat_map.h"
 #include "rtc_base/containers/flat_set.h"
 #include "rtc_base/crypto_random.h"
+#include "rtc_base/experiments/rfc8888_congestion_control_feedback_experiment.h"
 #include "rtc_base/logging.h"
 #include "rtc_base/operations_chain.h"
 #include "rtc_base/rtc_certificate.h"
@@ -1306,7 +1307,9 @@ class SdpOfferAnswerHandler::RemoteDescriptionOperation {
         unified_plan_(handler_->IsUnifiedPlan()) {}
 
   ~RemoteDescriptionOperation() {
-    RTC_DCHECK_RUN_ON(handler_->signaling_thread());
+    // If the observer has already been notified, it may have released the last
+    // reference to the PeerConnection, which deletes `handler_`. In that case
+    // SignalCompletion() returns early and `handler_` is not used.
     SignalCompletion();
     operations_chain_callback_();
   }
@@ -2383,7 +2386,7 @@ RTCError SdpOfferAnswerHandler::ApplyLocalDescription(
 
   // Validate SSRCs, we do not allow duplicates.
   if (ConfiguredForMedia()) {
-    std::set<uint32_t> used_ssrcs;
+    flat_set<uint32_t> used_ssrcs;
     for (const auto& content : local_description()->description()->contents()) {
       for (const auto& stream : content.media_description()->streams()) {
         for (uint32_t ssrc : stream.ssrcs) {
@@ -2456,7 +2459,7 @@ void SdpOfferAnswerHandler::UpdateSenderSsrcsFromLocalDescription() {
   if (!ConfiguredForMedia()) {
     return;
   }
-  ScopedOperationsBatcher worker_tasks(context_->worker_thread());
+  ScopedOperationsBatcher worker_tasks(context_->network_thread());
   // We must use List and not ListInternal here because
   // transceivers()->StableState() is indexed by the non-internal refptr.
   for (const auto& transceiver_ext : transceivers()->List()) {
@@ -2691,11 +2694,15 @@ void SdpOfferAnswerHandler::ApplyRemoteDescription(
   }
 
   // Consider the operation complete at this point.
+  // The observer may release the last reference to the PeerConnection, which
+  // deletes `this`.
+  WeakPtr<SdpOfferAnswerHandler> this_weak_ptr = weak_ptr_factory_.GetWeakPtr();
   operation->SignalCompletion();
 
-  // The observer may have closed the PeerConnection. If so, the transport
-  // controller and the port allocator are gone and there is nothing left to do.
-  if (pc_->IsClosed()) {
+  // The observer may have closed or released the PeerConnection. If so, the
+  // transport controller and the port allocator are gone and there is nothing
+  // left to do.
+  if (!this_weak_ptr || pc_->IsClosed()) {
     return;
   }
 
@@ -2715,7 +2722,7 @@ void SdpOfferAnswerHandler::ApplyRemoteDescriptionUpdateTransceiverState(
   std::vector<scoped_refptr<MediaStreamInterface>> added_streams;
   std::vector<scoped_refptr<MediaStreamInterface>> removed_streams;
   ScopedOperationsBatcher network_tasks(context_->network_thread());
-  ScopedOperationsBatcher worker_tasks(context_->worker_thread());
+  ScopedOperationsBatcher worker_tasks(context_->network_thread());
   flat_map<std::string, DtlsTransportAndName> dtls_transports_by_mid =
       GetDtlsTransports(*transceivers(), transport_controller_s());
 
@@ -3083,15 +3090,17 @@ void SdpOfferAnswerHandler::DoSetLocalDescription(
                               static_cast<int>(outcome),
                               static_cast<int>(SdpMungingOutcome::kMaxValue));
     if (reject_with_error) {
-      error = RTCError::InvalidModification(
-          "SDP is modified in a non-acceptable way");
-      TraceSetLocalDescriptionComplete(error);
-      observer->OnSetLocalDescriptionComplete(std::move(error));
+      // Update the state and report metrics before informing the observer,
+      // which may release the last reference to the PeerConnection.
       last_sdp_munging_type_ = sdp_munging_type;
       ReportInitialSdpMunging(had_local_description, desc->GetType());
       RTC_HISTOGRAM_ENUMERATION_SPARSE(
           "WebRTC.PeerConnection.SdpMunging.SdpOutcome.Rejected",
           sdp_munging_type, SdpMungingType::kMaxValue);
+      error = RTCError::InvalidModification(
+          "SDP is modified in a non-acceptable way");
+      TraceSetLocalDescriptionComplete(error);
+      observer->OnSetLocalDescriptionComplete(std::move(error));
       return;
     }
     if (sdp_munging_type != kNoModification) {
@@ -3183,10 +3192,13 @@ void SdpOfferAnswerHandler::DoSetLocalDescription(
                           local_description()->GetType());
 
   TraceSetLocalDescriptionComplete(RTCError::OK());
+  // The observer may release the last reference to the PeerConnection, which
+  // deletes `this`.
+  WeakPtr<SdpOfferAnswerHandler> this_weak_ptr = weak_ptr_factory_.GetWeakPtr();
   observer->OnSetLocalDescriptionComplete(RTCError::OK());
-  // The observer may have closed the PeerConnection. If so, the transport
-  // controller is gone and there is nothing left to do.
-  if (pc_->IsClosed()) {
+  // The observer may have closed or released the PeerConnection. If so, the
+  // transport controller is gone and there is nothing left to do.
+  if (!this_weak_ptr || pc_->IsClosed()) {
     return;
   }
   pc_->NoteUsageEvent(UsageEvent::SET_LOCAL_DESCRIPTION_SUCCEEDED);
@@ -3736,19 +3748,20 @@ RTCError SdpOfferAnswerHandler::UpdateSessionState(
     EnableSending();
   }
 
-  // Update the signaling state according to the specified state machine (see
-  // https://w3c.github.io/webrtc-pc/#rtcsignalingstate-enum).
+  // Determine the new signaling state according to the specified state machine
+  // (see https://w3c.github.io/webrtc-pc/#rtcsignalingstate-enum).
+  PeerConnectionInterface::SignalingState new_signaling_state;
   if (type == SdpType::kOffer) {
-    ChangeSignalingState(source == CS_LOCAL
-                             ? PeerConnectionInterface::kHaveLocalOffer
-                             : PeerConnectionInterface::kHaveRemoteOffer);
+    new_signaling_state = source == CS_LOCAL
+                              ? PeerConnectionInterface::kHaveLocalOffer
+                              : PeerConnectionInterface::kHaveRemoteOffer;
   } else if (type == SdpType::kPrAnswer) {
-    ChangeSignalingState(source == CS_LOCAL
-                             ? PeerConnectionInterface::kHaveLocalPrAnswer
-                             : PeerConnectionInterface::kHaveRemotePrAnswer);
+    new_signaling_state = source == CS_LOCAL
+                              ? PeerConnectionInterface::kHaveLocalPrAnswer
+                              : PeerConnectionInterface::kHaveRemotePrAnswer;
   } else {
     RTC_DCHECK(type == SdpType::kAnswer);
-    ChangeSignalingState(PeerConnectionInterface::kStable);
+    new_signaling_state = PeerConnectionInterface::kStable;
     if (ConfiguredForMedia()) {
       transceivers()->DiscardStableStates();
     }
@@ -3756,7 +3769,18 @@ RTCError SdpOfferAnswerHandler::UpdateSessionState(
 
   // Update internal objects according to the session description's media
   // descriptions.
-  return PushdownMediaDescription(type, source, bundle_groups_by_mid);
+  RTCError error = PushdownMediaDescription(type, source, bundle_groups_by_mid);
+
+  // Only update the signaling state (and notify the observer) once the media
+  // descriptions have been applied, so that an observer that inspects e.g.
+  // RtpSender::GetParameters() from within OnSignalingChange() sees the
+  // negotiated state, for audio and video alike. This matches
+  // https://w3c.github.io/webrtc-pc/#set-the-rtcsessiondescription, where
+  // "signalingstatechange" is fired after the description has been applied.
+  // Note that the state is changed even if applying the media descriptions
+  // failed, in which case the operation results in a session error.
+  ChangeSignalingState(new_signaling_state);
+  return error;
 }
 
 bool SdpOfferAnswerHandler::ShouldFireNegotiationNeededEvent(
@@ -3958,7 +3982,11 @@ RTCError SdpOfferAnswerHandler::Rollback(SdpType desc_type) {
       transceivers()->Remove(transceiver);
     }
   };
-  ScopedOperationsBatcher worker_tasks(context_->worker_thread());
+  // TODO(bugs.webrtc.org/558821261): Consider combining batchers targeting
+  // the network thread. Note: Combining them is currently not safe because
+  // worker tasks (such as channel deletion) depend on network tasks (clearing
+  // transport state on the network thread) having fully completed first.
+  ScopedOperationsBatcher worker_tasks(context_->network_thread());
   ScopedOperationsBatcher network_tasks(context_->network_thread());
 
   for (auto&& transceivers_stable_state_pair : transceivers()->StableStates()) {
@@ -4673,8 +4701,12 @@ RTCError SdpOfferAnswerHandler::UpdateTransceiversAndDataChannels(
   // - Destruction: Network tasks before Worker tasks.
   //   (Worker cleanup may depend on Network teardown).
   // The batchers below are declared and executed to enforce these orders.
+  // TODO(bugs.webrtc.org/558821261): Consider combining batchers targeting
+  // the network thread. Note: Combining them is currently not safe due to
+  // ordering dependencies between network teardown, worker setup/cleanup, and
+  // network initialization.
   ScopedOperationsBatcher network_teardown_tasks(context_->network_thread());
-  ScopedOperationsBatcher worker_tasks(context_->worker_thread());
+  ScopedOperationsBatcher worker_tasks(context_->network_thread());
   ScopedOperationsBatcher network_init_tasks(context_->network_thread());
   const ContentInfos& new_contents = new_session.description()->contents();
   struct TransceiverUpdate {
@@ -5817,8 +5849,8 @@ RTCError SdpOfferAnswerHandler::PushdownMediaDescription(
   RTC_DCHECK(sdesc);
 
   if (ConfiguredForMedia()) {
-    // Batch up operations for the worker thread.
-    ScopedOperationsBatcher batcher(context_->worker_thread());
+    // Batch up operations for the network thread.
+    ScopedOperationsBatcher batcher(context_->network_thread());
 
     // Note: This may perform a BlockingCall over to the network thread, which
     // we'll also do in a loop below.
@@ -5884,7 +5916,7 @@ RTCError SdpOfferAnswerHandler::PushdownMediaDescription(
 
     // If local and remote are both set, we assume that it's safe to trigger
     // CCFB.
-    if (pc_->trials().IsEnabled("WebRTC-RFC8888CongestionControlFeedback")) {
+    if (IsRfc8888CongestionControlFeedbackEnabled(pc_->trials())) {
       if ((type == SdpType::kAnswer || type == SdpType::kPrAnswer) &&
           local_description() && remote_description()) {
         std::optional<RtcpFeedbackType> remote_preferred_rtcp_cc_ack_type;
@@ -5927,8 +5959,9 @@ RTCError SdpOfferAnswerHandler::PushdownMediaDescription(
 
         if (preferred_rtcp_cc_ack_type.has_value()) {
           if (preferred_rtcp_cc_ack_type == remote_preferred_rtcp_cc_ack_type) {
-            // The call and the congestion controller live on the worker thread.
-            context_->worker_thread()->PostTask(
+            // The call and the congestion controller live on the network
+            // thread.
+            context_->network_thread()->PostTask(
                 [call = pc_->call_ptr(),
                  preferred_rtcp_cc_ack_type = *preferred_rtcp_cc_ack_type] {
                   call->SetPreferredRtcpCcAckType(preferred_rtcp_cc_ack_type);
@@ -6017,7 +6050,11 @@ void SdpOfferAnswerHandler::RemoveStoppedTransceivers() {
   // Batched channel teardown for removed transceivers. The tasks run at the
   // end of this function while `transceiver_list` still holds references.
   ScopedOperationsBatcher network_teardown_tasks(context_->network_thread());
-  ScopedOperationsBatcher worker_tasks(context_->worker_thread());
+  // TODO(bugs.webrtc.org/558821261): Consider combining batchers targeting
+  // the network thread. Note: Combining them is currently not safe because
+  // worker tasks (such as channel deletion) depend on network tasks (clearing
+  // transport state on the network thread) having fully completed first.
+  ScopedOperationsBatcher worker_tasks(context_->network_thread());
   for (const auto& transceiver : transceiver_list) {
     // 3.2.10.1.1: If transceiver is stopped, associated with an m= section
     //             and the associated m= section is rejected in
@@ -6269,7 +6306,12 @@ RTCError SdpOfferAnswerHandler::CreateChannels(const SessionDescription& desc) {
   // at this point.
   RTC_DCHECK_RUN_ON(signaling_thread());
 
-  ScopedOperationsBatcher worker_tasks(context_->worker_thread());
+  // TODO(bugs.webrtc.org/558821261): Consider combining batchers targeting
+  // the network thread. Note: Combining them is currently not safe because
+  // worker_tasks creates the channel via a finalizer on the signaling thread
+  // that must complete before network_tasks (which expects channel_ to exist)
+  // runs.
+  ScopedOperationsBatcher worker_tasks(context_->network_thread());
   ScopedOperationsBatcher network_tasks(network_thread());
 
   const ContentInfo* voice = GetFirstAudioContent(&desc);

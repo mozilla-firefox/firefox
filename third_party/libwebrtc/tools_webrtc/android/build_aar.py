@@ -187,10 +187,7 @@ def Build(build_dir,
         'use_siso': True,
     }
     if use_remoteexec:
-        gn_args.update({
-            'use_remoteexec': True,
-            'use_reclient': False,
-        })
+        gn_args['use_remoteexec'] = True
     arm_version = _GetArmVersion(arch)
     if arm_version:
         gn_args['arm_version'] = arm_version

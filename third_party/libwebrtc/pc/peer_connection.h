@@ -280,7 +280,7 @@ class PeerConnection : public PeerConnectionInternal,
   }
 
   Thread* network_thread() const final { return context_->network_thread(); }
-  Thread* worker_thread() const final { return context_->worker_thread(); }
+  Thread* worker_thread() const final { return context_->network_thread(); }
 
   std::string session_id() const override { return session_id_; }
 

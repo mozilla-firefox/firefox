@@ -66,6 +66,7 @@ class ChannelReceiveFrameTransformerDelegate : public TransformedFrameCallback {
       std::unique_ptr<TransformableFrameInterface> frame) override;
 
   void StartShortCircuiting() override;
+  void StopShortCircuiting() override;
 
   // Delegates the call to ChannelReceive::OnReceivedPayloadData on the
   // `channel_receive_thread_`, by calling `receive_frame_callback_`.
@@ -77,6 +78,9 @@ class ChannelReceiveFrameTransformerDelegate : public TransformedFrameCallback {
   ~ChannelReceiveFrameTransformerDelegate() override = default;
 
  private:
+  // Posts a task to update `short_circuit_` on the `channel_receive_thread_`.
+  void SetShortCircuiting(bool short_circuit);
+
   RTC_NO_UNIQUE_ADDRESS SequenceChecker sequence_checker_;
   ReceiveFrameCallback receive_frame_callback_
       RTC_GUARDED_BY(sequence_checker_);

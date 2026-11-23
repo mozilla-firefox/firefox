@@ -72,6 +72,9 @@ class AudioEgress : public AudioSender, public AudioPacketizationCallback {
   // Enable or disable Mute state.
   void SetMute(bool mute);
 
+  // Updates uplink packet loss fraction (`[0.0, 1.0]`) on the encoder.
+  void OnReceivedUplinkPacketLossFraction(float packet_loss_fraction);
+
   // Retrieve current encoder format info. This returns encoder format set
   // by SetEncoder() and if encoder is not set, this will return nullopt.
   std::optional<SdpAudioFormat> GetEncoderFormat() const {

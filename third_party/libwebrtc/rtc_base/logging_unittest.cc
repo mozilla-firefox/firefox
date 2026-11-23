@@ -23,6 +23,7 @@
 #include <string_view>
 #include <type_traits>
 #include <utility>
+#include <vector>
 
 #include "absl/functional/any_invocable.h"
 #include "absl/strings/string_view.h"
@@ -32,6 +33,7 @@
 #include "api/units/timestamp.h"
 #include "rtc_base/checks.h"
 #include "rtc_base/platform_thread.h"
+#include "rtc_base/system/ignore_warnings.h"
 #include "rtc_base/thread.h"
 #include "system_wrappers/include/clock.h"
 #include "test/gmock.h"
@@ -80,11 +82,21 @@ class TestLogSink : public LogSink {
   void Reserve(size_t size) { log_data_.reserve(size); }
 
  private:
-  void OnLogMessage(const std::string& message) override {
-    OnLogMessage(absl::string_view(message));
+  void OnLogMessage(const LogLineRef& line) override {
+    log_data_.append(line.DefaultLogLine());
   }
-  void OnLogMessage(absl::string_view message) override {
-    log_data_.append(message.begin(), message.end());
+  std::string log_data_;
+};
+
+// Overrides only the deprecated OnLogMessage(const std::string&), to test the
+// default implementation of OnLogMessage(const LogLineRef&).
+class DeprecatedTestLogSink : public LogSink {
+ public:
+  absl::string_view data() const { return log_data_; }
+
+ private:
+  void OnLogMessage(const std::string& message) override {
+    log_data_.append(message);
   }
   std::string log_data_;
 };
@@ -123,10 +135,12 @@ class LogTest : public ::testing::Test {
   void SetUp() override { saved_config_ = ResetLoggingForTesting(); }
   void TearDown() override { ResetLoggingForTesting(std::move(saved_config_)); }
 
-  // Initializes logging with `config` plus a TestLogSink and returns the sink.
-  TestLogSink& InitializeLoggingWithSink(LoggingConfig config = {}) {
-    auto sink = std::make_unique<TestLogSink>();
-    TestLogSink& sink_ref = *sink;
+  // Initializes logging with `config` plus a sink of type `SinkType` and
+  // returns the sink.
+  template <typename SinkType = TestLogSink>
+  SinkType& InitializeLoggingWithSink(LoggingConfig config = {}) {
+    auto sink = std::make_unique<SinkType>();
+    SinkType& sink_ref = *sink;
     config.AddSink(std::move(sink));
     RTC_CHECK(InitializeLogging(std::move(config)));
     return sink_ref;
@@ -185,6 +199,25 @@ TEST_F(LogTest, SingleStream) {
 
   // null char*
   EXPECT_THAT(sink.data(), HasSubstr("|(null)|"));
+}
+
+// Tests that every LoggingConfig sink receives the messages that are at least
+// as severe as the minimum severity.
+TEST_F(LogTest, MultipleConfigSinks) {
+  auto first_sink = std::make_unique<TestLogSink>();
+  const TestLogSink& first = *first_sink;
+  LoggingConfig config;
+  config.set_min_severity(LS_INFO);
+  config.AddSink(std::move(first_sink));
+  const TestLogSink& second = InitializeLoggingWithSink(std::move(config));
+
+  RTC_LOG(LS_INFO) << "INFO";
+  RTC_LOG(LS_VERBOSE) << "VERBOSE";
+
+  EXPECT_THAT(first.data(), HasSubstr("INFO"));
+  EXPECT_THAT(first.data(), Not(HasSubstr("VERBOSE")));
+  EXPECT_THAT(second.data(), HasSubstr("INFO"));
+  EXPECT_THAT(second.data(), Not(HasSubstr("VERBOSE")));
 }
 
 TEST_F(LogTest, LogStdStringView) {
@@ -285,17 +318,20 @@ TEST_F(LogTest, LogIfFDontLogIfConditionIsFalse) {
   EXPECT_THAT(sink.data(), Not(HasSubstr("Not")));
 }
 
+// The tests below until RTC_POP_IGNORING_WDEPRECATED_DECLARATIONS() test the
+// deprecated LogMessage::AddLogToStream() and RemoveLogToStream() methods.
+// TODO: bugs.webrtc.org/42234107 - Remove them together with the methods.
+RTC_PUSH_IGNORING_WDEPRECATED_DECLARATIONS()
+
 // Test using multiple log streams. The INFO stream should get the INFO message,
 // the VERBOSE stream should get the INFO and the VERBOSE.
 // We should restore the correct global state at the end.
 TEST_F(LogTest, MultipleStreams) {
-  int sev = LogMessage::GetLogToStream(nullptr);
+  int sev = LogMessage::GetMinLogSeverity();
 
   TestLogSink stream1, stream2;
   LogMessage::AddLogToStream(&stream1, LS_INFO);
   LogMessage::AddLogToStream(&stream2, LS_VERBOSE);
-  EXPECT_EQ(LS_INFO, LogMessage::GetLogToStream(&stream1));
-  EXPECT_EQ(LS_VERBOSE, LogMessage::GetLogToStream(&stream2));
 
   RTC_LOG(LS_INFO) << "INFO";
   RTC_LOG(LS_VERBOSE) << "VERBOSE";
@@ -307,10 +343,11 @@ TEST_F(LogTest, MultipleStreams) {
 
   LogMessage::RemoveLogToStream(&stream2);
   LogMessage::RemoveLogToStream(&stream1);
-  EXPECT_EQ(LS_NONE, LogMessage::GetLogToStream(&stream2));
-  EXPECT_EQ(LS_NONE, LogMessage::GetLogToStream(&stream1));
+  RTC_LOG(LS_INFO) << "Removed";
+  EXPECT_THAT(stream1.data(), Not(HasSubstr("Removed")));
+  EXPECT_THAT(stream2.data(), Not(HasSubstr("Removed")));
 
-  EXPECT_EQ(sev, LogMessage::GetLogToStream(nullptr));
+  EXPECT_EQ(sev, LogMessage::GetMinLogSeverity());
 }
 
 class LogThread {
@@ -327,7 +364,7 @@ class LogThread {
 // Ensure we don't crash when adding/removing streams while threads are going.
 // We should restore the correct global state at the end.
 TEST_F(LogTest, MultipleThreads) {
-  int sev = LogMessage::GetLogToStream(nullptr);
+  int sev = LogMessage::GetMinLogSeverity();
 
   LogThread thread1, thread2, thread3;
   thread1.Start();
@@ -344,8 +381,54 @@ TEST_F(LogTest, MultipleThreads) {
     LogMessage::RemoveLogToStream(&stream3);
   }
 
-  EXPECT_EQ(sev, LogMessage::GetLogToStream(nullptr));
+  EXPECT_EQ(sev, LogMessage::GetMinLogSeverity());
 }
+
+TEST_F(LogTest, ConfigAndDynamicSinksReceiveMessages) {
+  TestLogSink& config_sink = InitializeLoggingWithSink();
+  TestLogSink dynamic_sink;
+  LogMessage::AddLogToStream(&dynamic_sink, LS_INFO);
+
+  RTC_LOG(LS_INFO) << "To both sinks";
+
+  LogMessage::RemoveLogToStream(&dynamic_sink);
+  EXPECT_THAT(config_sink.data(), HasSubstr("To both sinks"));
+  EXPECT_THAT(dynamic_sink.data(), HasSubstr("To both sinks"));
+}
+
+TEST_F(LogTest, AddingSinkAgainUpdatesItsSeverity) {
+  TestLogSink sink;
+  LogMessage::AddLogToStream(&sink, LS_WARNING);
+  RTC_LOG(LS_VERBOSE) << "Before update";
+  LogMessage::AddLogToStream(&sink, LS_VERBOSE);
+
+  RTC_LOG(LS_VERBOSE) << "Logged once";
+
+  LogMessage::RemoveLogToStream(&sink);
+  RTC_LOG(LS_VERBOSE) << "After remove";
+  const std::string data(sink.data());
+  EXPECT_THAT(data, Not(HasSubstr("Before update")));
+  EXPECT_THAT(data, Not(HasSubstr("After remove")));
+  const size_t first = data.find("Logged once");
+  ASSERT_NE(first, std::string::npos);
+  EXPECT_EQ(data.find("Logged once", first + 1), std::string::npos);
+}
+
+TEST_F(LogTest, RemovingLastDynamicSinkRestoresMinSeverity) {
+  LoggingConfig config;
+  config.set_debug_severity(LS_WARNING);
+  ASSERT_TRUE(InitializeLogging(std::move(config)));
+  EXPECT_TRUE(LogMessage::IsNoop(LS_VERBOSE));
+
+  TestLogSink sink;
+  LogMessage::AddLogToStream(&sink, LS_VERBOSE);
+  EXPECT_FALSE(LogMessage::IsNoop(LS_VERBOSE));
+
+  LogMessage::RemoveLogToStream(&sink);
+  EXPECT_TRUE(LogMessage::IsNoop(LS_VERBOSE));
+}
+
+RTC_POP_IGNORING_WDEPRECATED_DECLARATIONS()
 
 TEST_F(LogTest, WallClockStartTime) {
   uint32_t time = LogMessage::WallClockStartTime();
@@ -406,9 +489,60 @@ TEST_F(LogTest, CheckFilePathParsed) {
 #endif
 }
 
+// Tests that the default implementation of OnLogMessage(const LogLineRef&)
+// passes the default log line on to the deprecated string overloads.
+TEST_F(LogTest, DefaultOnLogMessageForwardsDefaultLogLine) {
+  DeprecatedTestLogSink& sink =
+      InitializeLoggingWithSink<DeprecatedTestLogSink>();
+  {
+    LogMessageForTesting log_msg(kFakeFilePath, 100, LS_INFO);
+    log_msg.stream() << "Hello";
+  }
+
+#if defined(WEBRTC_ANDROID)
+  // Prefixed with the tag, which is the file name by default.
+  EXPECT_THAT(sink.data(), HasSubstr("myfile.cc: "));
+  EXPECT_THAT(sink.data(), HasSubstr("(line 100): Hello"));
+#else
+  EXPECT_THAT(sink.data(), HasSubstr("(myfile.cc:100): Hello"));
+#endif
+}
+
+// The debug output and all sinks get the same LogLineRef, so they share the
+// line that DefaultLogLine() formats on first use.
+TEST_F(LogTest, DefaultLogLineIsFormattedOnce) {
+  class CachingCheckSink : public LogSink {
+   public:
+    void OnLogMessage(const LogLineRef& line) override {
+      const std::string& first = line.DefaultLogLine();
+      reused = &first == &line.DefaultLogLine();
+    }
+    bool reused = false;
+  };
+  CachingCheckSink& sink = InitializeLoggingWithSink<CachingCheckSink>();
+  RTC_LOG(LS_INFO) << "Hello";
+  EXPECT_TRUE(sink.reused);
+}
+
+// Some sinks store copies of LogLineRef, to inspect the log lines later.
+TEST_F(LogTest, CopiedLogLineRefKeepsDefaultLogLine) {
+  class CopyingSink : public LogSink {
+   public:
+    void OnLogMessage(const LogLineRef& line) override {
+      lines.push_back(line);
+    }
+    std::vector<LogLineRef> lines;
+  };
+  CopyingSink& sink = InitializeLoggingWithSink<CopyingSink>();
+  RTC_LOG(LS_INFO) << "Hello";
+  ASSERT_THAT(sink.lines, SizeIs(1));
+  EXPECT_THAT(sink.lines[0].DefaultLogLine(), HasSubstr("Hello"));
+}
+
 #if defined(WEBRTC_ANDROID)
 TEST_F(LogTest, CheckTagAddedToStringInDefaultOnLogMessageAndroid) {
-  TestLogSink& sink = InitializeLoggingWithSink();
+  DeprecatedTestLogSink& sink =
+      InitializeLoggingWithSink<DeprecatedTestLogSink>();
 
   RTC_LOG_TAG(LS_INFO, "my_tag") << "INFO";
   EXPECT_THAT(sink.data(), HasSubstr("INFO"));
@@ -521,12 +655,7 @@ TEST_F(LogTest, ExplicitInitialization) {
   EXPECT_EQ(GetLoggingConfig().min_severity(), LS_WARNING);
 
   RTC_LOG(LS_WARNING) << "Test message";
-#if defined(WEBRTC_ANDROID)
-  EXPECT_THAT(sink_ptr->data(),
-              StartsWith("logging_unittest.cc: TEST_PREFIX: "));
-#else
   EXPECT_THAT(sink_ptr->data(), StartsWith("TEST_PREFIX: "));
-#endif
   EXPECT_THAT(sink_ptr->data(), HasSubstr("Test message"));
 }
 
@@ -534,6 +663,62 @@ TEST_F(LogTest, DoubleExplicitInitialization) {
   EXPECT_TRUE(InitializeLogging(LoggingConfig()));
   EXPECT_FALSE(InitializeLogging(LoggingConfig()));
 }
+
+TEST_F(LogTest, DefaultDebugSeverityMatchesBuildConfiguration) {
+#if RTC_DLOG_IS_ON
+  constexpr LoggingSeverity kExpected = LS_INFO;
+#else
+  constexpr LoggingSeverity kExpected = LS_NONE;
+#endif
+  EXPECT_EQ(LoggingConfig().debug_severity(), kExpected);
+  EXPECT_EQ(GetLoggingConfig().debug_severity(), kExpected);
+}
+
+TEST_F(LogTest, MinSeverityWithoutSinksDoesNotEnableLogging) {
+  LoggingConfig config;
+  config.set_min_severity(LS_VERBOSE);
+  config.set_debug_severity(LS_WARNING);
+  ASSERT_TRUE(InitializeLogging(std::move(config)));
+
+  EXPECT_TRUE(LogMessage::IsNoop(LS_INFO));
+  EXPECT_FALSE(LogMessage::IsNoop(LS_WARNING));
+}
+
+TEST_F(LogTest, LogToDebugChangesDebugSeverityAfterInitialization) {
+  LoggingConfig config;
+  config.set_debug_severity(LS_WARNING);
+  ASSERT_TRUE(InitializeLogging(std::move(config)));
+  EXPECT_TRUE(LogMessage::IsNoop(LS_INFO));
+  EXPECT_FALSE(LogMessage::IsNoop(LS_WARNING));
+
+  LogMessage::LogToDebug(LS_INFO);
+  EXPECT_FALSE(LogMessage::IsNoop(LS_INFO));
+
+  LogMessage::LogToDebug(LS_NONE);
+  EXPECT_TRUE(LogMessage::IsNoop(LS_ERROR));
+}
+
+// Limited to Linux, where the debug output is only written to stderr.
+#if defined(WEBRTC_LINUX) && !defined(WEBRTC_ANDROID)
+TEST_F(LogTest, LogToDebugControlsDebugOutputAfterInitialization) {
+  LoggingConfig config;
+  config.set_debug_severity(LS_WARNING);
+  config.set_log_to_stderr(true);
+  ASSERT_TRUE(InitializeLogging(std::move(config)));
+
+  ::testing::internal::CaptureStderr();
+  RTC_LOG(LS_INFO) << "debug-output-1";
+  LogMessage::LogToDebug(LS_INFO);
+  RTC_LOG(LS_INFO) << "debug-output-2";
+  LogMessage::LogToDebug(LS_NONE);
+  RTC_LOG(LS_ERROR) << "debug-output-3";
+  const std::string output = ::testing::internal::GetCapturedStderr();
+
+  EXPECT_THAT(output, Not(HasSubstr("debug-output-1")));
+  EXPECT_THAT(output, HasSubstr("debug-output-2"));
+  EXPECT_THAT(output, Not(HasSubstr("debug-output-3")));
+}
+#endif
 
 TEST_F(LogTest, LogQueueNameFromThread) {
   LoggingConfig config;

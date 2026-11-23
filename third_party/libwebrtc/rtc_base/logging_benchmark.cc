@@ -9,13 +9,17 @@
  */
 
 #include <cstdint>
+#include <memory>
+#include <optional>
 #include <string>
+#include <utility>
 
 #include "absl/strings/str_cat.h"
 #include "absl/strings/string_view.h"
 #include "benchmark/registration.h"
 #include "benchmark/state.h"
 #include "benchmark/utils.h"
+#include "rtc_base/checks.h"
 #include "rtc_base/logging.h"
 
 namespace webrtc {
@@ -82,30 +86,46 @@ std::string MakeSdp(int64_t num_media_sections) {
   return sdp;
 }
 
-// Receives log lines formatted by the default implementation of
-// LogSink::OnLogMessage(const LogLineRef&), i.e. by
-// LogLineRef::DefaultLogLine(), and discards them.
+// Formats each log line with LogLineRef::DefaultLogLine(), like the in-tree
+// sinks do, and discards it.
 class DiscardingLogSink : public LogSink {
  public:
-  void OnLogMessage(const std::string& message) override {
-    benchmark::DoNotOptimize(message.data());
+  void OnLogMessage(const LogLineRef& line) override {
+    benchmark::DoNotOptimize(line.DefaultLogLine().data());
   }
 };
 
-// Registers a DiscardingLogSink for verbose logs during its lifetime. Verbose
-// logs are not written to the debug output (stderr) by default.
-class ScopedDiscardingLogSink {
+// Reinitializes logging with `num_sinks` DiscardingLogSinks as LoggingConfig
+// sinks for verbose logs, and restores the previous configuration when
+// destroyed. Must not be used while other threads are logging.
+class ScopedConfigDiscardingLogSink {
  public:
-  ScopedDiscardingLogSink() { LogMessage::AddLogToStream(&sink_, LS_VERBOSE); }
-  ~ScopedDiscardingLogSink() { LogMessage::RemoveLogToStream(&sink_); }
+  explicit ScopedConfigDiscardingLogSink(int num_sinks = 1)
+      : saved_config_(ResetLoggingForTesting()) {
+    LoggingConfig config;
+    config.set_min_severity(LS_VERBOSE);
+    for (int i = 0; i < num_sinks; ++i) {
+      config.AddSink(std::make_unique<DiscardingLogSink>());
+    }
+    RTC_CHECK(InitializeLogging(std::move(config)));
+  }
+  ~ScopedConfigDiscardingLogSink() {
+    ResetLoggingForTesting(std::move(saved_config_));
+  }
 
  private:
-  DiscardingLogSink sink_;
+  LoggingConfig saved_config_;
 };
 
+void LogRtpPacket(int64_t i) {
+  RTC_LOG(LS_VERBOSE) << "Received RTP packet seq=" << i
+                      << " timestamp=" << (i * 3000) << " ssrc=" << 0x12345678u
+                      << " payload_size=" << 1200;
+}
+
 void BM_RtcLogLiteralsAndNumbers(benchmark::State& state) {
-  ScopedDiscardingLogSink sink;
-  uint32_t i = 0;
+  ScopedConfigDiscardingLogSink sink;
+  int64_t i = 0;
   for (auto s : state) {
     RTC_LOG(LS_VERBOSE) << "Received RTP packet seq=" << i
                         << " timestamp=" << (i * 3000)
@@ -114,14 +134,41 @@ void BM_RtcLogLiteralsAndNumbers(benchmark::State& state) {
   }
 }
 
+// Same message as BM_RtcLogLiteralsAndNumbers, sent to two sinks that both use
+// the default log line, e.g. a file sink and a sink that forwards to the app.
+void BM_RtcLogToTwoSinks(benchmark::State& state) {
+  ScopedConfigDiscardingLogSink sinks(2);
+  int64_t i = 0;
+  for (auto _ : state) {
+    RTC_LOG(LS_VERBOSE) << "Received RTP packet seq=" << i
+                        << " timestamp=" << (i * 3000)
+                        << " ssrc=" << 0x12345678u << " payload_size=" << 1200;
+    ++i;
+  }
+}
+
+// Logs to a sink configured with LoggingConfig::AddSink(), from one or more
+// threads. The first thread initializes logging before, and restores it after,
+// the timed loop, which all threads enter and leave together.
+void BM_RtcLogToConfigSink(benchmark::State& state) {
+  std::optional<ScopedConfigDiscardingLogSink> sink;
+  if (state.thread_index() == 0) {
+    sink.emplace();
+  }
+  int64_t i = 0;
+  for (auto s : state) {
+    LogRtpPacket(i++);
+  }
+}
+
 void BM_RtcLogMixedStrings(benchmark::State& state) {
-  ScopedDiscardingLogSink sink;
+  ScopedConfigDiscardingLogSink sink;
   const std::string ufrag = "4ZcD";
   const std::string candidate =
       "Cand[:1052210311:1:udp:2122260223:192.168.1.100:61922:host::0:4ZcD:"
       "Ozxk6tlZr5dqE1ZeYvWbSVMd:1:1:0]";
   const absl::string_view candidate_str = candidate;
-  uint32_t i = 0;
+  int64_t i = 0;
   for (auto s : state) {
     RTC_LOG(LS_VERBOSE) << " ice_ufrag=" << ufrag
                         << " candidate=" << candidate_str << " component=" << i
@@ -133,7 +180,7 @@ void BM_RtcLogMixedStrings(benchmark::State& state) {
 // Logs a complete SDP, like PeerConnectionTestWrapper::SetLocalDescription()
 // does.
 void BM_RtcLogSdp(benchmark::State& state) {
-  ScopedDiscardingLogSink sink;
+  ScopedConfigDiscardingLogSink sink;
   const std::string name = "caller";
   const absl::string_view type = "offer";
   const std::string sdp = MakeSdp(state.range(0));
@@ -145,6 +192,8 @@ void BM_RtcLogSdp(benchmark::State& state) {
 }
 
 BENCHMARK(BM_RtcLogLiteralsAndNumbers);
+BENCHMARK(BM_RtcLogToTwoSinks);
+BENCHMARK(BM_RtcLogToConfigSink)->ThreadRange(1, 8);
 BENCHMARK(BM_RtcLogMixedStrings);
 // The argument is the number of m-sections in the SDP.
 BENCHMARK(BM_RtcLogSdp)->Arg(1)->Arg(4)->Arg(16);

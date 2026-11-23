@@ -12,107 +12,62 @@
 
 #include <cstdint>
 #include <memory>
-#include <set>
 
 #include "call/rtp_packet_sink_interface.h"
+#include "call/rtp_stream_receiver_controller_interface.h"
 #include "modules/rtp_rtcp/source/rtp_packet_received.h"
-#include "rtc_base/thread.h"
 #include "test/gtest.h"
+#include "test/run_loop.h"
 
 namespace webrtc {
 namespace {
 
+constexpr uint32_t kSsrc = 111;
+
 class FakeRtpPacketSink : public RtpPacketSinkInterface {
  public:
-  void OnRtpPacket(const RtpPacketReceived& packet) override {}
-};
+  void OnRtpPacket(const RtpPacketReceived& packet) override { ++packets_; }
 
-class TestRtpSinkValidator : public RtpSinkValidator {
- public:
-  void OnSinkAdded(RtpPacketSinkInterface* sink) override {
-    registered_sinks_.insert(sink);
-  }
-  void OnSinkRemoved(RtpPacketSinkInterface* sink) override {
-    registered_sinks_.erase(sink);
-  }
-  bool IsValidSink(RtpPacketSinkInterface* sink) const override {
-    return registered_sinks_.count(sink) > 0;
-  }
+  int packets() const { return packets_; }
 
  private:
-  std::set<RtpPacketSinkInterface*> registered_sinks_;
+  int packets_ = 0;
 };
 
-TEST(RtpStreamReceiverControllerTest, PreventsStalePointerReuse) {
-  auto network_thread = Thread::Create();
-  network_thread->Start();
-  auto worker_thread = Thread::Create();
-  worker_thread->Start();
+TEST(RtpStreamReceiverControllerTest, DeliversPacketsToRegisteredSink) {
+  test::RunLoop loop;
+  RtpStreamReceiverController controller(loop.task_queue());
 
-  TestRtpSinkValidator validator;
-  std::unique_ptr<RtpStreamReceiverController> controller;
-  worker_thread->BlockingCall([&] {
-    controller = std::make_unique<RtpStreamReceiverController>(
-        network_thread.get(), worker_thread.get(), &validator);
-  });
+  FakeRtpPacketSink sink;
+  std::unique_ptr<RtpStreamReceiverInterface> receiver =
+      controller.CreateReceiver(kSsrc, &sink);
 
-  // Allocate a sink.
-  FakeRtpPacketSink sink1;
-  uint32_t ssrc1 = 111;
-  RtpPacketReceived packet1;
-  packet1.SetSsrc(ssrc1);
+  RtpPacketReceived packet;
+  packet.SetSsrc(kSsrc);
+  EXPECT_EQ(controller.ResolveSink(packet), &sink);
+  EXPECT_TRUE(controller.OnRtpPacket(packet));
+  EXPECT_EQ(sink.packets(), 1);
+}
 
-  RtpPacketSinkInterface* resolved_sink1 = nullptr;
+TEST(RtpStreamReceiverControllerTest, StopsDeliveringWhenReceiverIsDestroyed) {
+  test::RunLoop loop;
+  RtpStreamReceiverController controller(loop.task_queue());
 
-  worker_thread->BlockingCall([&] {
-    // 1. Create the first receiver.
-    auto receiver1 = controller->CreateReceiver(ssrc1, &sink1);
+  FakeRtpPacketSink sink;
+  std::unique_ptr<RtpStreamReceiverInterface> receiver =
+      controller.CreateReceiver(kSsrc, &sink);
+  EXPECT_FALSE(controller.IsEmpty());
 
-    // 2. On the network thread, a packet arrives and resolves to a sink.
-    network_thread->BlockingCall(
-        [&] { resolved_sink1 = controller->ResolveSink(packet1); });
+  // Destroying the receiver unregisters the sink synchronously, so a packet
+  // that arrives afterwards can no longer resolve to it.
+  receiver.reset();
+  EXPECT_TRUE(controller.IsEmpty());
 
-    EXPECT_NE(resolved_sink1, nullptr);
-    // On the worker thread, it is currently valid.
-    EXPECT_TRUE(validator.IsValidSink(resolved_sink1));
-
-    // 3. Destroy the receiver. The proxy sink is removed from the validator,
-    // but its destruction is deferred to the network thread and then bounced
-    // back to the worker thread queue.
-    receiver1.reset();
-
-    // After destruction, it should immediately be invalid on the worker thread.
-    EXPECT_FALSE(validator.IsValidSink(resolved_sink1));
-
-    // 4. Create a new receiver immediately, reusing the same raw sink address,
-    // which simulates the reallocation scenario during rapid teardown.
-    uint32_t ssrc2 = 222;
-    RtpPacketReceived packet2;
-    packet2.SetSsrc(ssrc2);
-
-    RtpPacketSinkInterface* resolved_sink2 = nullptr;
-    auto receiver2 = controller->CreateReceiver(ssrc2, &sink1);
-
-    network_thread->BlockingCall(
-        [&] { resolved_sink2 = controller->ResolveSink(packet2); });
-
-    EXPECT_NE(resolved_sink2, nullptr);
-    EXPECT_TRUE(validator.IsValidSink(resolved_sink2));
-
-    // The newly resolved sink pointer must not be equal to the old resolved
-    // sink pointer, even though they wrap the same raw sink address. Because
-    // the old proxy sink is kept alive in the task queues, the allocator
-    // cannot reuse its address for the new proxy sink.
-    EXPECT_NE(resolved_sink1, resolved_sink2);
-
-    // resolved_sink1 is still invalid, while resolved_sink2 is valid.
-    EXPECT_FALSE(validator.IsValidSink(resolved_sink1));
-    EXPECT_TRUE(validator.IsValidSink(resolved_sink2));
-  });
-
-  network_thread->BlockingCall(
-      [&] { controller->DisconnectFromNetworkThread(); });
-  worker_thread->BlockingCall([&] { controller.reset(); });
+  RtpPacketReceived packet;
+  packet.SetSsrc(kSsrc);
+  EXPECT_EQ(controller.ResolveSink(packet), nullptr);
+  EXPECT_FALSE(controller.OnRtpPacket(packet));
+  EXPECT_EQ(sink.packets(), 0);
 }
 
 }  // namespace

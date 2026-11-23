@@ -11,7 +11,6 @@
 #define VIDEO_ENCODER_RTCP_FEEDBACK_H_
 
 #include <cstdint>
-#include <functional>
 #include <vector>
 
 #include "api/environment/environment.h"
@@ -19,7 +18,6 @@
 #include "api/units/time_delta.h"
 #include "api/units/timestamp.h"
 #include "modules/rtp_rtcp/include/rtp_rtcp_defines.h"
-#include "modules/rtp_rtcp/source/rtp_sequence_number_map.h"
 #include "rtc_base/system/no_unique_address.h"
 #include "rtc_base/thread_annotations.h"
 #include "video/video_stream_encoder_interface.h"
@@ -28,37 +26,22 @@ namespace webrtc {
 
 class VideoStreamEncoderInterface;
 
-// This class passes feedback (such as key frame requests or loss notifications)
-// from the RtpRtcp module.
-class EncoderRtcpFeedback : public RtcpIntraFrameObserver,
-                            public RtcpLossNotificationObserver {
+// This class passes feedback (such as key frame requests) from the RtpRtcp
+// module.
+class EncoderRtcpFeedback : public RtcpIntraFrameObserver {
  public:
-  EncoderRtcpFeedback(
-      const Environment& env,
-      bool per_layer_keyframes,
-      const std::vector<uint32_t>& ssrcs,
-      VideoStreamEncoderInterface* encoder,
-      std::function<std::vector<RtpSequenceNumberMap::Info>(
-          uint32_t ssrc,
-          const std::vector<uint16_t>& seq_nums)> get_packet_infos);
+  EncoderRtcpFeedback(const Environment& env,
+                      bool per_layer_keyframes,
+                      const std::vector<uint32_t>& ssrcs,
+                      VideoStreamEncoderInterface* encoder);
   ~EncoderRtcpFeedback() override = default;
 
   void OnReceivedIntraFrameRequest(uint32_t ssrc) override;
-
-  // Implements RtcpLossNotificationObserver.
-  void OnReceivedLossNotification(uint32_t ssrc,
-                                  uint16_t seq_num_of_last_decodable,
-                                  uint16_t seq_num_of_last_received,
-                                  bool decodability_flag) override;
 
  private:
   const Environment env_;
   const std::vector<uint32_t> ssrcs_;
   const bool per_layer_keyframes_;
-  const std::function<std::vector<RtpSequenceNumberMap::Info>(
-      uint32_t ssrc,
-      const std::vector<uint16_t>& seq_nums)>
-      get_packet_infos_;
   VideoStreamEncoderInterface* const video_stream_encoder_;
 
   RTC_NO_UNIQUE_ADDRESS SequenceChecker packet_delivery_queue_;

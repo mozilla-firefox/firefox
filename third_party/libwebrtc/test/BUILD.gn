@@ -188,6 +188,22 @@ rtc_library("create_test_field_trials") {
   }
 }
 
+# Chromium builds rtc_base:logging from webrtc_overrides, which doesn't
+# provide LoggingConfig or ResetLoggingForTesting().
+if (!build_with_chromium) {
+  rtc_library("scoped_logging_config") {
+    testonly = true
+    sources = [
+      "scoped_logging_config.cc",
+      "scoped_logging_config.h",
+    ]
+    deps = [
+      "../rtc_base:checks",
+      "../rtc_base:logging",
+    ]
+  }
+}
+
 rtc_library("frame_generator_capturer") {
   visibility = [ "*" ]
   testonly = true
@@ -356,6 +372,7 @@ rtc_library("rtp_test_utils") {
     "../modules/rtp_rtcp",
     "../modules/rtp_rtcp:rtp_rtcp_format",
     "../rtc_base:checks",
+    "../rtc_base:copy_on_write_buffer",
     "../rtc_base:criticalsection",
     "../rtc_base:logging",
     "../rtc_base:macromagic",
@@ -422,9 +439,8 @@ if (is_ios && !build_with_chromium) {
     configs += [ ":test_support_objc_config" ]
   }
 
-  # Entry point for iOS XCTest bundles. rtc_test() adds this to is_xctest
-  # targets instead of test:test_main, whose gtest main() would collide with
-  # this one.
+  # Entry point for iOS XCTest bundles. rtc_xctest() adds this instead of
+  # test:test_main, whose gtest main() would collide with this one.
   rtc_library("test_main_xctest") {
     testonly = true
     visibility = [ "*" ]
@@ -1373,6 +1389,7 @@ if (rtc_include_tests) {
         "pc/e2e/analyzer/video:video_frame_tracking_id_injector_unittest",
         "pc/e2e/analyzer/video/dvqa:frames_storage_test",
         "pc/e2e/analyzer/video/dvqa:pausable_state_test",
+        "peer_scenario/bwe_integration_tests:goog_cc_test",
         "peer_scenario/tests:peer_scenario_quality_test",
         "peer_scenario/tests:remote_estimate_test",
         "peer_scenario/tests:unsignaled_stream_test",
@@ -1891,6 +1908,7 @@ if (!build_with_chromium) {
       "../api/environment:environment_factory",
       "../api/rtc_event_log",
       "../api/task_queue",
+      "../api/task_queue:pending_task_safety_flag",
       "../api/test/video:function_video_factory",
       "../api/transport:bitrate_settings",
       "../api/transport:network_control",
@@ -1927,6 +1945,7 @@ if (!build_with_chromium) {
       "../video/config:encoder_config",
       "//third_party/abseil-cpp/absl/base:nullability",
       "//third_party/abseil-cpp/absl/flags:flag",
+      "//third_party/abseil-cpp/absl/functional:any_invocable",
       "//third_party/abseil-cpp/absl/strings:string_view",
     ]
     if (!is_android && !build_with_chromium) {

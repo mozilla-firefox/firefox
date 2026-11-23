@@ -344,14 +344,17 @@ bool DataChannelController::HandleOpenMessage_n(
   config.open_handshake_role = InternalDataChannelInit::kAcker;
   auto channel_or_error = CreateDataChannel(label, config);
   if (channel_or_error.ok()) {
-    signaling_thread()->PostTask(
-        SafeTask(signaling_safety_.flag(),
-                 [this, channel = channel_or_error.MoveValue(), channel_id,
-                  ready_to_send = data_channel_transport_->IsReadyToSend()] {
-                   RTC_DCHECK_RUN_ON(signaling_thread());
-                   OnDataChannelOpenMessage(std::move(channel), ready_to_send,
-                                            channel_id);
-                 }));
+    bool ready_to_send = data_channel_transport_->IsReadyToSend();
+    if (ready_to_send) {
+      channel_or_error.value()->SetTransportReadyPending_n();
+    }
+    signaling_thread()->PostTask(SafeTask(
+        signaling_safety_.flag(), [this, channel = channel_or_error.MoveValue(),
+                                   channel_id, ready_to_send] {
+          RTC_DCHECK_RUN_ON(signaling_thread());
+          OnDataChannelOpenMessage(std::move(channel), ready_to_send,
+                                   channel_id);
+        }));
   } else {
     RTC_LOG(LS_ERROR) << "Failed to create DataChannel from the OPEN message. "
                       << channel_or_error;
@@ -464,9 +467,9 @@ DataChannelController::CreateDataChannel(absl::string_view label,
   }
 
   scoped_refptr<SctpDataChannel> channel = SctpDataChannel::Create(
-      weak_factory_.GetWeakPtr(), label, data_channel_transport_ != nullptr,
-      config, max_message_size_, signaling_safety_.flag(), signaling_thread(),
-      network_thread());
+      weak_factory_.GetWeakPtr(), next_internal_id_++, label,
+      data_channel_transport_ != nullptr, config, max_message_size_,
+      signaling_safety_.flag(), signaling_thread(), network_thread());
 
   sctp_data_channels_n_.push_back(channel);
   return channel;

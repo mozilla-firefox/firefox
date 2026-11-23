@@ -34,6 +34,7 @@
 #include "modules/rtp_rtcp/source/rtp_packet_received.h"
 #include "rtc_base/containers/flat_map.h"
 #include "rtc_base/experiments/field_trial_parser.h"
+#include "rtc_base/experiments/rfc8888_congestion_control_feedback_experiment.h"
 #include "rtc_base/logging.h"
 #include "rtc_base/synchronization/mutex.h"
 
@@ -103,7 +104,7 @@ ReceiveSideCongestionController::ReceiveSideCongestionController(
   FieldTrialParameter<bool> force_send_rfc8888_feedback("force_send", false);
   ParseFieldTrial(
       {&force_send_rfc8888_feedback},
-      env.field_trials().Lookup("WebRTC-RFC8888CongestionControlFeedback"));
+      Rfc8888CongestionControlFeedbackFieldTrialString(env.field_trials()));
   if (force_send_rfc8888_feedback) {
     SetPreferredRtcpCcAckType(RtcpFeedbackType::CCFB);
   }

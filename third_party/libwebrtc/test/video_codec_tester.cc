@@ -711,7 +711,6 @@ class VideoCodecAnalyzer : public VideoCodecTester::VideoCodecStats {
                   std::map<std::string, std::string> metadata) const override {
     RTC_LOG(LS_INFO) << "Write metrics to " << csv_path;
     FILE* csv_file = fopen(csv_path.data(), "w");
-    const std::string delimiter = ";";
     StringBuilder header;
     header
         << "timestamp_rtp;spatial_idx;temporal_idx;width;height;frame_size_"
@@ -1278,10 +1277,8 @@ class Encoder : public EncodedImageCallback {
       }
     }
 
-    VideoEncoder::Settings ves(
-        VideoEncoder::Capabilities(/*loss_notification=*/false),
-        /*number_of_cores=*/encoder_settings_.num_cores,
-        /*max_payload_size=*/1440);
+    VideoEncoder::Settings ves(/*number_of_cores=*/encoder_settings_.num_cores,
+                               /*max_payload_size=*/1440);
 
     int result = encoder_->InitEncode(&vc, ves);
     RTC_CHECK(result == WEBRTC_VIDEO_CODEC_OK);

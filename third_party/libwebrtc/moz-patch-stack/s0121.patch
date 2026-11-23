@@ -9,10 +9,10 @@ Mercurial Revision: https://hg.mozilla.org/mozilla-central/rev/fb61f91d422c3d775
  1 file changed, 1 insertion(+), 2 deletions(-)
 
 diff --git a/api/rtp_parameters.h b/api/rtp_parameters.h
-index 08cbb43597..1d044d341e 100644
+index b7dcbbc237..4073b1b459 100644
 --- a/api/rtp_parameters.h
 +++ b/api/rtp_parameters.h
-@@ -35,7 +35,6 @@
+@@ -36,7 +36,6 @@
  #include "absl/strings/string_view.h"
  #include "api/media_types.h"
  #include "api/priority.h"
@@ -20,7 +20,7 @@ index 08cbb43597..1d044d341e 100644
  #include "api/rtp_header_extension_id.h"
  #include "api/rtp_transceiver_direction.h"
  #include "api/video/resolution.h"
-@@ -45,7 +44,7 @@
+@@ -47,7 +46,7 @@
  #include "rtc_base/system/rtc_export.h"
  
  namespace webrtc {
@@ -28,4 +28,4 @@ index 08cbb43597..1d044d341e 100644
 +class RTCError;
  class StringBuilder;
  
- struct RTC_EXPORT CodecParameterMap
+ // Codec parameters, e.g. fmtp parameters, keyed and sorted by name.

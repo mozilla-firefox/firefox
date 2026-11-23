@@ -183,10 +183,7 @@ constexpr size_t kNumSimulcastStreams = 3;
 constexpr char kUnsupportedExtensionName[] =
     "urn:ietf:params:rtp-hdrext:unsupported";
 
-void VerifyCodecHasDefaultFeedbackParams(const Codec& codec,
-                                         bool lntf_expected) {
-  EXPECT_EQ(lntf_expected, codec.HasFeedbackParam(FeedbackParam(
-                               kRtcpFbParamLntf, kParamValueEmpty)));
+void VerifyCodecHasDefaultFeedbackParams(const Codec& codec) {
   EXPECT_TRUE(codec.HasFeedbackParam(
       FeedbackParam(kRtcpFbParamNack, kParamValueEmpty)));
   EXPECT_TRUE(codec.HasFeedbackParam(
@@ -849,9 +846,9 @@ TEST_F(WebRtcVideoEngineTest, EncoderSwitchRequestCallback) {
   auto callback =
       [&callback_called, call = call_.get(), main_thread = Thread::Current()](
           VideoMediaSendChannelInterface::EncoderSwitchRequestAction action) {
-        call->worker_thread()->PostTask([action = std::move(action),
-                                         main_thread,
-                                         &callback_called]() mutable {
+        call->network_thread()->PostTask([action = std::move(action),
+                                          main_thread,
+                                          &callback_called]() mutable {
           std::move(action)();
           main_thread->PostTask([&callback_called] { callback_called = true; });
         });
@@ -1528,8 +1525,7 @@ TEST(WebRtcVideoEngineNewVideoCodecFactoryTest, Vp8) {
                                            &associated_payload_type));
   EXPECT_EQ(engine_codecs.at(0).id, associated_payload_type);
   // Verify default parameters has been added to the VP8 codec.
-  VerifyCodecHasDefaultFeedbackParams(engine_codecs.at(0),
-                                      /*lntf_expected=*/false);
+  VerifyCodecHasDefaultFeedbackParams(engine_codecs.at(0));
 
   // Mock encoder creation. `engine` take ownership of the encoder.
   const SdpVideoFormat format("VP8");
@@ -3633,7 +3629,7 @@ TEST_F(WebRtcVideoChannelTest, RtcpIsCompoundByDefault) {
 
 TEST_F(WebRtcVideoChannelTest, NackIsEnabledByDefault) {
   AssignDefaultCodec();
-  VerifyCodecHasDefaultFeedbackParams(*default_codec_, false);
+  VerifyCodecHasDefaultFeedbackParams(*default_codec_);
 
   VideoSenderParameters parameters;
   parameters.codecs = engine_->LegacySendCodecs();
@@ -8671,6 +8667,66 @@ TEST_F(WebRtcVideoChannelTest,
   EXPECT_EQ(kDefaultVideoMaxFramerate,
             stream->GetVideoStreams()[1].max_framerate);
   EXPECT_EQ(20, stream->GetVideoStreams()[2].max_framerate);
+
+  EXPECT_TRUE(send_channel_->SetVideoSend(last_ssrc_, nullptr, nullptr));
+}
+
+TEST_F(WebRtcVideoChannelTest, EncodingComplexityPropagatedToEncoder) {
+  FakeVideoSendStream* stream = SetUpSimulcast(true, /*with_rtx=*/false);
+
+  // Send a full size frame so all simulcast layers are used when reconfiguring.
+  FrameForwarder frame_forwarder;
+  VideoOptions options;
+  EXPECT_TRUE(
+      send_channel_->SetVideoSend(last_ssrc_, &options, &frame_forwarder));
+  send_channel_->SetSend(true);
+  frame_forwarder.IncomingCapturedFrame(frame_source_.GetFrame());
+
+  // Set encoding complexity.
+  RtpParameters parameters = send_channel_->GetRtpSendParameters(last_ssrc_);
+  ASSERT_EQ(parameters.encodings.size(), kNumSimulcastStreams);
+  parameters.encodings[0].encoding_complexity =
+      VideoCodecComplexity::kComplexityLow;
+  parameters.encodings[1].encoding_complexity = std::nullopt;
+  parameters.encodings[2].encoding_complexity =
+      VideoCodecComplexity::kComplexityMax;
+  EXPECT_TRUE(send_channel_->SetRtpSendParameters(last_ssrc_, parameters).ok());
+
+  // Verify that the new value is propagated down to the encoder.
+  EXPECT_EQ(stream->num_encoder_reconfigurations(), 2);
+  VideoEncoderConfig encoder_config = stream->GetEncoderConfig().Copy();
+  EXPECT_EQ(encoder_config.number_of_streams, kNumSimulcastStreams);
+  EXPECT_THAT(
+      encoder_config.simulcast_layers,
+      ElementsAre(Field(&VideoStream::encoding_complexity,
+                        VideoCodecComplexity::kComplexityLow),
+                  Field(&VideoStream::encoding_complexity, std::nullopt),
+                  Field(&VideoStream::encoding_complexity,
+                        VideoCodecComplexity::kComplexityMax)));
+
+  // FakeVideoSendStream calls CreateEncoderStreams, test that the vector of
+  // VideoStreams are created appropriately for the simulcast case.
+  EXPECT_THAT(
+      stream->GetVideoStreams(),
+      ElementsAre(Field(&VideoStream::encoding_complexity,
+                        VideoCodecComplexity::kComplexityLow),
+                  Field(&VideoStream::encoding_complexity, std::nullopt),
+                  Field(&VideoStream::encoding_complexity,
+                        VideoCodecComplexity::kComplexityMax)));
+
+  // GetParameters.
+  parameters = send_channel_->GetRtpSendParameters(last_ssrc_);
+  EXPECT_THAT(parameters.encodings,
+              ElementsAre(Field(&RtpEncodingParameters::encoding_complexity,
+                                VideoCodecComplexity::kComplexityLow),
+                          Field(&RtpEncodingParameters::encoding_complexity,
+                                std::nullopt),
+                          Field(&RtpEncodingParameters::encoding_complexity,
+                                VideoCodecComplexity::kComplexityMax)));
+
+  // No parameters changed, encoder should not be reconfigured.
+  EXPECT_TRUE(send_channel_->SetRtpSendParameters(last_ssrc_, parameters).ok());
+  EXPECT_EQ(stream->num_encoder_reconfigurations(), 2);
 
   EXPECT_TRUE(send_channel_->SetVideoSend(last_ssrc_, nullptr, nullptr));
 }

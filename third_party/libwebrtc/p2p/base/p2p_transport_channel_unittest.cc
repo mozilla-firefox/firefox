@@ -104,6 +104,7 @@ namespace {
 using ::testing::_;
 using ::testing::Assign;
 using ::testing::Contains;
+using ::testing::ElementsAre;
 using ::testing::Eq;
 using ::testing::Gt;
 using ::testing::MockFunction;
@@ -5009,6 +5010,29 @@ TEST_F(P2PTransportChannelPingTest, TestStopPortAllocatorSessions) {
   ASSERT_TRUE(conn2 != nullptr);
   conn2->ReceivedPingResponse(kLowRtt, "id");  // Becomes writable and receiving
   EXPECT_TRUE(!ch.allocator_session()->IsGettingPorts());
+}
+
+TEST_F(P2PTransportChannelPingTest,
+       GatheringDoneOfOldGenerationIgnoredAfterIceRestart) {
+  FakePortAllocator pa(env_, ss());
+  P2PTransportChannel ch(env_, "test channel", ICE_CANDIDATE_COMPONENT_DEFAULT,
+                         &pa);
+  PrepareChannel(&ch);
+  std::vector<IceGatheringState> states;
+  ch.AddGatheringStateCallback(this, [&](IceTransportInternal* transport) {
+    states.push_back(transport->gathering_state());
+  });
+  ch.MaybeStartGathering();
+  PortAllocatorSession* old_session = ch.allocator_session();
+
+  ch.SetIceParameters(kIceParams[1]);
+  ch.MaybeStartGathering();
+  old_session->NotifyCandidatesAllocationDone(old_session);
+
+  EXPECT_THAT(states,
+              ElementsAre(kIceGatheringGathering, kIceGatheringComplete,
+                          kIceGatheringGathering, kIceGatheringComplete));
+  ch.RemoveGatheringStateCallback(this);
 }
 
 // Test that the ICE role is updated even on ports that has been removed.

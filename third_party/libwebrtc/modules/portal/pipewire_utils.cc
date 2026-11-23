@@ -11,6 +11,7 @@
 #include "modules/portal/pipewire_utils.h"
 
 #include <pipewire/pipewire.h>
+#include <spa/buffer/buffer.h>
 #include <sys/mman.h>
 #include <sys/stat.h>
 
@@ -123,6 +124,17 @@ PipeWireInitializer::~PipeWireInitializer() {
   if (pw_client_version >= kReentrantDeinitMinVersion) {
     pw_deinit();
   }
+}
+
+bool PipeWireBufferHasUncorruptedChunk(const spa_buffer& buffer) {
+  return buffer.n_datas != 0 && buffer.datas != nullptr &&
+         buffer.datas[0].chunk != nullptr &&
+         (buffer.datas[0].chunk->flags & SPA_CHUNK_FLAG_CORRUPTED) == 0;
+}
+
+bool PipeWireBufferHasFrameData(const spa_buffer& buffer) {
+  return PipeWireBufferHasUncorruptedChunk(buffer) &&
+         buffer.datas[0].chunk->size != 0;
 }
 
 void ScopedBuf::initialize(int fd,

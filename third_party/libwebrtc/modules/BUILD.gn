@@ -97,8 +97,10 @@ if (rtc_include_tests && !build_with_chromium) {
       "remote_bitrate_estimator:remote_bitrate_estimator_single_stream_unittest",
       "remote_bitrate_estimator:transport_sequence_number_feedback_generator_unittest",
       "sframe:sframe_decrypt_error_reporter_unittest",
+      "sframe:sframe_decryptor_handle_unittest",
       "sframe:sframe_encryptor_decryptor_unittest",
       "sframe:synchronized_sframe_encryptor_unittest",
+      "video_capture:device_info_impl_unittest",
     ]
 
     if (is_linux || is_chromeos || is_mac || is_win) {
@@ -109,6 +111,12 @@ if (rtc_include_tests && !build_with_chromium) {
     }
     if (is_win) {
       tests += [ "audio_device:core_audio_utility_win_unittest" ]
+    }
+    if ((is_linux || is_chromeos) && rtc_use_pipewire) {
+      tests += [
+        "portal:pipewire_buffer_checks_unittest",
+        "video_capture:pipewire_video_sizes_unittest",
+      ]
     }
   }
 

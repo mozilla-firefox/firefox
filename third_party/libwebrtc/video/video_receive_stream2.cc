@@ -195,9 +195,9 @@ std::unique_ptr<VideoStreamBufferController> CreateBuffer(
   std::unique_ptr<FrameDecodeScheduler> scheduler =
       decode_sync ? decode_sync->CreateSynchronizedFrameScheduler()
                   : std::make_unique<TaskQueueFrameDecodeScheduler>(
-                        &env.clock(), call->worker_thread());
+                        &env.clock(), call->network_thread());
   return std::make_unique<VideoStreamBufferController>(
-      &env.clock(), call->worker_thread(), timing, stats_proxy, receiver,
+      &env.clock(), call->network_thread(), timing, stats_proxy, receiver,
       max_wait_for_keyframe, max_wait_for_frame, std::move(scheduler),
       env.field_trials());
 }
@@ -251,7 +251,7 @@ VideoReceiveStream2::VideoReceiveStream2(
       num_cpu_cores_(num_cpu_cores),
       call_(call),
       call_stats_(call_stats),
-      stats_proxy_(remote_ssrc(), &env_.clock(), call->worker_thread()),
+      stats_proxy_(remote_ssrc(), &env_.clock(), call->network_thread()),
       rtp_receive_statistics_(ReceiveStatistics::Create(&env_.clock())),
       timing_(std::move(timing)),
       video_receiver_(&env_.clock(), timing_.get(), env_.field_trials(), this),
@@ -262,7 +262,7 @@ VideoReceiveStream2::VideoReceiveStream2(
           TimeDelta::Millis(config_.rtp.nack.rtp_history_ms),
           false)),
       rtp_video_stream_receiver_(env_,
-                                 call->worker_thread(),
+                                 call->network_thread(),
                                  &transport_adapter_,
                                  call_stats->AsRtcpRttStats(),
                                  packet_router,
@@ -277,7 +277,7 @@ VideoReceiveStream2::VideoReceiveStream2(
                                  std::move(config_.frame_decryptor),
                                  std::move(config_.frame_transformer),
                                  std::move(config_.on_first_packet)),
-      rtp_stream_sync_(env_, call->worker_thread(), this),
+      rtp_stream_sync_(env_, call->network_thread(), this),
       decode_sync_(decode_sync),
       buffer_(CreateBuffer(env_,
                            call_,
@@ -302,7 +302,7 @@ VideoReceiveStream2::VideoReceiveStream2(
               : TaskQueueFactory::Priority::kHigh)) {
   RTC_LOG(LS_INFO) << "VideoReceiveStream2: " << config_.ToString();
 
-  RTC_DCHECK(call_->worker_thread());
+  RTC_DCHECK(call_->network_thread());
   RTC_DCHECK(renderer_);
   RTC_DCHECK(call_stats_);
 
@@ -329,7 +329,7 @@ VideoReceiveStream2::~VideoReceiveStream2() {
 
 void VideoReceiveStream2::RegisterWithTransport(
     RtpStreamReceiverControllerInterface* receiver_controller) {
-  RTC_DCHECK_RUN_ON(&worker_sequence_checker_);
+  RTC_DCHECK_RUN_ON(&network_sequence_checker_);
   RTC_DCHECK(!media_receiver_);
   RTC_DCHECK(!rtx_receiver_);
   receiver_controller_ = receiver_controller;
@@ -344,34 +344,34 @@ void VideoReceiveStream2::RegisterWithTransport(
 }
 
 void VideoReceiveStream2::UnregisterFromTransport() {
-  RTC_DCHECK_RUN_ON(&worker_sequence_checker_);
+  RTC_DCHECK_RUN_ON(&network_sequence_checker_);
   media_receiver_.reset();
   rtx_receiver_.reset();
   receiver_controller_ = nullptr;
 }
 
 const std::string& VideoReceiveStream2::sync_group() const {
-  RTC_DCHECK_RUN_ON(&worker_sequence_checker_);
+  RTC_DCHECK_RUN_ON(&network_sequence_checker_);
   return config_.sync_group;
 }
 
 void VideoReceiveStream2::SignalNetworkState(NetworkState state) {
-  RTC_DCHECK_RUN_ON(&worker_sequence_checker_);
+  RTC_DCHECK_RUN_ON(&network_sequence_checker_);
   rtp_video_stream_receiver_.SignalNetworkState(state);
 }
 
 bool VideoReceiveStream2::DeliverRtcp(std::span<const uint8_t> packet) {
-  RTC_DCHECK_RUN_ON(&worker_sequence_checker_);
+  RTC_DCHECK_RUN_ON(&network_sequence_checker_);
   return rtp_video_stream_receiver_.DeliverRtcp(packet);
 }
 
 void VideoReceiveStream2::SetSync(Syncable* audio_syncable) {
-  RTC_DCHECK_RUN_ON(&worker_sequence_checker_);
+  RTC_DCHECK_RUN_ON(&network_sequence_checker_);
   rtp_stream_sync_.ConfigureSync(audio_syncable);
 }
 
 void VideoReceiveStream2::Start() {
-  RTC_DCHECK_RUN_ON(&worker_sequence_checker_);
+  RTC_DCHECK_RUN_ON(&network_sequence_checker_);
 
   if (decoder_running_) {
     return;
@@ -431,7 +431,7 @@ void VideoReceiveStream2::Start() {
 }
 
 void VideoReceiveStream2::Stop() {
-  RTC_DCHECK_RUN_ON(&worker_sequence_checker_);
+  RTC_DCHECK_RUN_ON(&network_sequence_checker_);
 
   rtp_video_stream_receiver_.StopReceive();
 
@@ -474,33 +474,27 @@ void VideoReceiveStream2::Stop() {
   transport_adapter_.Disable();
 
   // Reset task_safety_ after video_stream_decoder_ and incoming_video_stream_
-  // have been destroyed to safely invalidate any pending worker queue tasks
+  // have been destroyed to safely invalidate any pending network queue tasks
   // from the stopped stream run without data races.
   task_safety_.reset();
 }
 
 void VideoReceiveStream2::SetRtcpMode(RtcpMode mode) {
-  RTC_DCHECK_RUN_ON(&worker_sequence_checker_);
+  RTC_DCHECK_RUN_ON(&network_sequence_checker_);
   config_.rtp.rtcp_mode = mode;
   rtp_video_stream_receiver_.SetRtcpMode(mode);
 }
 
 void VideoReceiveStream2::SetFlexFecProtection(
     RtpPacketSinkInterface* flexfec_sink) {
-  RTC_DCHECK_RUN_ON(&worker_sequence_checker_);
+  RTC_DCHECK_RUN_ON(&network_sequence_checker_);
   rtp_video_stream_receiver_.SetPacketSink(flexfec_sink);
   config_.rtp.packet_sink_ = flexfec_sink;
   config_.rtp.protected_by_flexfec = (flexfec_sink != nullptr);
 }
 
-void VideoReceiveStream2::SetLossNotificationEnabled(bool enabled) {
-  RTC_DCHECK_RUN_ON(&worker_sequence_checker_);
-  config_.rtp.lntf.enabled = enabled;
-  rtp_video_stream_receiver_.SetLossNotificationEnabled(enabled);
-}
-
 void VideoReceiveStream2::SetNackHistory(TimeDelta history) {
-  RTC_DCHECK_RUN_ON(&worker_sequence_checker_);
+  RTC_DCHECK_RUN_ON(&network_sequence_checker_);
   RTC_DCHECK_GE(history.ms(), 0);
 
   if (config_.rtp.nack.rtp_history_ms == history.ms())
@@ -529,20 +523,20 @@ void VideoReceiveStream2::SetNackHistory(TimeDelta history) {
 
 void VideoReceiveStream2::SetProtectionPayloadTypes(int red_payload_type,
                                                     int ulpfec_payload_type) {
-  RTC_DCHECK_RUN_ON(&worker_sequence_checker_);
+  RTC_DCHECK_RUN_ON(&network_sequence_checker_);
   rtp_video_stream_receiver_.SetProtectionPayloadTypes(red_payload_type,
                                                        ulpfec_payload_type);
 }
 
 void VideoReceiveStream2::SetRtcpXr(Config::Rtp::RtcpXr rtcp_xr) {
-  RTC_DCHECK_RUN_ON(&worker_sequence_checker_);
+  RTC_DCHECK_RUN_ON(&network_sequence_checker_);
   rtp_video_stream_receiver_.SetReferenceTimeReport(
       rtcp_xr.receiver_reference_time_report);
 }
 
 void VideoReceiveStream2::SetAssociatedPayloadTypes(
     std::map<int, int> associated_payload_types) {
-  RTC_DCHECK_RUN_ON(&worker_sequence_checker_);
+  RTC_DCHECK_RUN_ON(&network_sequence_checker_);
   if (!rtx_receive_stream_)
     return;
 
@@ -552,7 +546,7 @@ void VideoReceiveStream2::SetAssociatedPayloadTypes(
 
 std::vector<RtpVideoStreamReceiver2::ReceiveCodec>
 VideoReceiveStream2::GetReceiveCodecConfig() const {
-  RTC_DCHECK_RUN_ON(&worker_sequence_checker_);
+  RTC_DCHECK_RUN_ON(&network_sequence_checker_);
   std::vector<RtpVideoStreamReceiver2::ReceiveCodec> receive_codecs;
   receive_codecs.reserve(config_.decoders.size());
   for (const Decoder& decoder : config_.decoders) {
@@ -615,13 +609,13 @@ bool VideoReceiveStream2::RegisterCodecsOnReceiver(
 }
 
 void VideoReceiveStream2::ConfigureCodecs() {
-  RTC_DCHECK_RUN_ON(&worker_sequence_checker_);
+  RTC_DCHECK_RUN_ON(&network_sequence_checker_);
   RegisterCodecsOnReceiver(/*old_decoders=*/{}, config_.decoders);
   rtp_video_stream_receiver_.SetReceiveCodecs(GetReceiveCodecConfig());
 }
 
 void VideoReceiveStream2::SetDecoders(std::vector<Decoder> decoders) {
-  RTC_DCHECK_RUN_ON(&worker_sequence_checker_);
+  RTC_DCHECK_RUN_ON(&network_sequence_checker_);
   if (config_.decoders == decoders) {
     return;
   }
@@ -653,9 +647,9 @@ void VideoReceiveStream2::SetDecoders(std::vector<Decoder> decoders) {
     // The decoder that was in use has been removed or replaced. Request a
     // keyframe right away since delta frames currently in the jitter buffer or
     // arriving before the keyframe will fail to decode due to missing state.
-    call_->worker_thread()->PostTask(
+    call_->network_thread()->PostTask(
         SafeTask(std::move(task_safety_flag), [this] {
-          RTC_DCHECK_RUN_ON(&worker_sequence_checker_);
+          RTC_DCHECK_RUN_ON(&network_sequence_checker_);
           RequestKeyFrame(env_.clock().CurrentTime());
         }));
   });
@@ -664,7 +658,7 @@ void VideoReceiveStream2::SetDecoders(std::vector<Decoder> decoders) {
 }
 
 void VideoReceiveStream2::SetRawPayloadTypes(std::set<int> raw_payload_types) {
-  RTC_DCHECK_RUN_ON(&worker_sequence_checker_);
+  RTC_DCHECK_RUN_ON(&network_sequence_checker_);
   if (config_.rtp.raw_payload_types == raw_payload_types) {
     return;
   }
@@ -707,7 +701,7 @@ void VideoReceiveStream2::CreateAndRegisterExternalDecoder(
 }
 
 VideoReceiveStreamInterface::Stats VideoReceiveStream2::GetStats() const {
-  RTC_DCHECK_RUN_ON(&worker_sequence_checker_);
+  RTC_DCHECK_RUN_ON(&network_sequence_checker_);
   VideoReceiveStream2::Stats stats = stats_proxy_.GetStats();
   stats.total_bitrate_bps = 0;
   StreamStatistician* statistician =
@@ -761,7 +755,7 @@ VideoReceiveStreamInterface::Stats VideoReceiveStream2::GetStats() const {
 }
 
 void VideoReceiveStream2::UpdateHistograms() {
-  RTC_DCHECK_RUN_ON(&worker_sequence_checker_);
+  RTC_DCHECK_RUN_ON(&network_sequence_checker_);
   std::optional<int> fraction_lost;
   StreamDataCounters rtp_stats;
   StreamStatistician* statistician =
@@ -825,7 +819,7 @@ void VideoReceiveStream2::CalculateCorruptionScore(
 }
 
 bool VideoReceiveStream2::SetBaseMinimumPlayoutDelayMs(int delay_ms) {
-  RTC_DCHECK_RUN_ON(&worker_sequence_checker_);
+  RTC_DCHECK_RUN_ON(&network_sequence_checker_);
   TimeDelta delay = TimeDelta::Millis(delay_ms);
   if (delay < kMinBaseMinimumDelay || delay > kMaxBaseMinimumDelay) {
     return false;
@@ -837,7 +831,7 @@ bool VideoReceiveStream2::SetBaseMinimumPlayoutDelayMs(int delay_ms) {
 }
 
 int VideoReceiveStream2::GetBaseMinimumPlayoutDelayMs() const {
-  RTC_DCHECK_RUN_ON(&worker_sequence_checker_);
+  RTC_DCHECK_RUN_ON(&network_sequence_checker_);
   constexpr TimeDelta kDefaultBaseMinPlayoutDelay = TimeDelta::Millis(-1);
   // Unset must be -1.
   static_assert(-1 == kDefaultBaseMinPlayoutDelay.ms(), "");
@@ -869,9 +863,9 @@ void VideoReceiveStream2::OnFrame(const VideoFrame& video_frame) {
   // results in inaccuracy but is still the best we can do in the absence of
   // "frame rendered" callback from the renderer.
   VideoFrameMetaData frame_meta(video_frame, now);
-  call_->worker_thread()->PostTask(
+  call_->network_thread()->PostTask(
       SafeTask(task_safety_.flag(), [frame_meta, this]() {
-        RTC_DCHECK_RUN_ON(&worker_sequence_checker_);
+        RTC_DCHECK_RUN_ON(&network_sequence_checker_);
         int64_t video_playout_ntp_ms;
         int64_t sync_offset_ms;
         double estimated_freq_khz;
@@ -914,7 +908,7 @@ void VideoReceiveStream2::SetDepacketizerToDecoderFrameTransformer(
 }
 
 void VideoReceiveStream2::RequestKeyFrame(Timestamp now) {
-  RTC_DCHECK_RUN_ON(&worker_sequence_checker_);
+  RTC_DCHECK_RUN_ON(&network_sequence_checker_);
   // Called from RtpVideoStreamReceiver (rtp_video_stream_receiver_ is
   // ultimately responsible).
   rtp_video_stream_receiver_.RequestKeyFrame();
@@ -922,7 +916,7 @@ void VideoReceiveStream2::RequestKeyFrame(Timestamp now) {
 }
 
 void VideoReceiveStream2::OnCompleteFrame(std::unique_ptr<EncodedFrame> frame) {
-  RTC_DCHECK_RUN_ON(&worker_sequence_checker_);
+  RTC_DCHECK_RUN_ON(&network_sequence_checker_);
 
   std::optional<VideoPlayoutDelay> playout_delay =
       frame->EncodedImage().PlayoutDelay();
@@ -940,7 +934,7 @@ void VideoReceiveStream2::OnCompleteFrame(std::unique_ptr<EncodedFrame> frame) {
 }
 
 void VideoReceiveStream2::OnRttUpdate(int64_t avg_rtt_ms, int64_t max_rtt_ms) {
-  RTC_DCHECK_RUN_ON(&worker_sequence_checker_);
+  RTC_DCHECK_RUN_ON(&network_sequence_checker_);
   // TODO(bugs.webrtc.org/13757): Replace with TimeDelta.
   buffer_->UpdateRtt(max_rtt_ms);
   rtp_video_stream_receiver_.UpdateRtt(max_rtt_ms);
@@ -948,12 +942,12 @@ void VideoReceiveStream2::OnRttUpdate(int64_t avg_rtt_ms, int64_t max_rtt_ms) {
 }
 
 uint32_t VideoReceiveStream2::id() const {
-  RTC_DCHECK_RUN_ON(&worker_sequence_checker_);
+  RTC_DCHECK_RUN_ON(&network_sequence_checker_);
   return remote_ssrc();
 }
 
 std::optional<Syncable::Info> VideoReceiveStream2::GetInfo() const {
-  RTC_DCHECK_RUN_ON(&worker_sequence_checker_);
+  RTC_DCHECK_RUN_ON(&network_sequence_checker_);
   std::optional<Syncable::Info> info = rtp_video_stream_receiver_.GetSyncInfo();
 
   if (!info)
@@ -975,14 +969,14 @@ void VideoReceiveStream2::SetEstimatedPlayoutNtpTimestamp(NtpTime ntp_time,
 }
 
 bool VideoReceiveStream2::SetMinimumPlayoutDelay(TimeDelta delay) {
-  RTC_DCHECK_RUN_ON(&worker_sequence_checker_);
+  RTC_DCHECK_RUN_ON(&network_sequence_checker_);
   syncable_minimum_playout_delay_ = delay;
   UpdatePlayoutDelays();
   return true;
 }
 
 void VideoReceiveStream2::OnEncodedFrame(std::unique_ptr<EncodedFrame> frame) {
-  RTC_DCHECK_RUN_ON(&worker_sequence_checker_);
+  RTC_DCHECK_RUN_ON(&network_sequence_checker_);
   Timestamp now = env_.clock().CurrentTime();
   const bool keyframe_request_is_due =
       !last_keyframe_request_ ||
@@ -1010,11 +1004,11 @@ void VideoReceiveStream2::OnEncodedFrame(std::unique_ptr<EncodedFrame> frame) {
     DecodeFrameResult result = HandleEncodedFrameOnDecodeQueue(
         std::move(frame), keyframe_request_is_due, keyframe_required);
 
-    call_->worker_thread()->PostTask(
+    call_->network_thread()->PostTask(
         SafeTask(std::move(task_safety_flag),
                  [this, now, rtp_timestamp, result = std::move(result),
                   received_frame_is_keyframe, keyframe_request_is_due]() {
-                   RTC_DCHECK_RUN_ON(&worker_sequence_checker_);
+                   RTC_DCHECK_RUN_ON(&network_sequence_checker_);
                    keyframe_required_ = result.keyframe_required;
 
                    if (result.decoded_frame_picture_id) {
@@ -1032,7 +1026,7 @@ void VideoReceiveStream2::OnEncodedFrame(std::unique_ptr<EncodedFrame> frame) {
 }
 
 void VideoReceiveStream2::OnDecodableFrameTimeout(TimeDelta wait) {
-  RTC_DCHECK_RUN_ON(&worker_sequence_checker_);
+  RTC_DCHECK_RUN_ON(&network_sequence_checker_);
   Timestamp now = env_.clock().CurrentTime();
 
   std::optional<int64_t> last_packet_ms =
@@ -1199,7 +1193,7 @@ void VideoReceiveStream2::HandleKeyFrameGeneration(
     Timestamp now,
     bool always_request_key_frame,
     bool keyframe_request_is_due) {
-  RTC_DCHECK_RUN_ON(&worker_sequence_checker_);
+  RTC_DCHECK_RUN_ON(&network_sequence_checker_);
   bool request_key_frame = always_request_key_frame;
 
   // Repeat sending keyframe requests if we've requested a keyframe.
@@ -1224,7 +1218,7 @@ void VideoReceiveStream2::HandleKeyFrameGeneration(
 }
 
 bool VideoReceiveStream2::IsReceivingKeyFrame(Timestamp now) const {
-  RTC_DCHECK_RUN_ON(&worker_sequence_checker_);
+  RTC_DCHECK_RUN_ON(&network_sequence_checker_);
   std::optional<int64_t> last_keyframe_packet_ms =
       rtp_video_stream_receiver_.LastReceivedKeyframePacketMs();
 
@@ -1237,7 +1231,7 @@ bool VideoReceiveStream2::IsReceivingKeyFrame(Timestamp now) const {
 }
 
 void VideoReceiveStream2::UpdatePlayoutDelays() const {
-  RTC_DCHECK_RUN_ON(&worker_sequence_checker_);
+  RTC_DCHECK_RUN_ON(&network_sequence_checker_);
   const std::initializer_list<std::optional<TimeDelta>> min_delays = {
       frame_minimum_playout_delay_, base_minimum_playout_delay_,
       syncable_minimum_playout_delay_};
@@ -1307,7 +1301,7 @@ void VideoReceiveStream2::UpdatePlayoutDelays() const {
 VideoReceiveStream2::RecordingState
 VideoReceiveStream2::SetAndGetRecordingState(RecordingState state,
                                              bool generate_key_frame) {
-  RTC_DCHECK_RUN_ON(&worker_sequence_checker_);
+  RTC_DCHECK_RUN_ON(&network_sequence_checker_);
   Event event;
 
   // Save old state, set the new state.
@@ -1342,13 +1336,13 @@ VideoReceiveStream2::SetAndGetRecordingState(RecordingState state,
 }
 
 void VideoReceiveStream2::GenerateKeyFrame() {
-  RTC_DCHECK_RUN_ON(&worker_sequence_checker_);
+  RTC_DCHECK_RUN_ON(&network_sequence_checker_);
   RequestKeyFrame(env_.clock().CurrentTime());
   keyframe_generation_requested_ = true;
 }
 
 void VideoReceiveStream2::UpdateRtxSsrc(uint32_t ssrc) {
-  RTC_DCHECK_RUN_ON(&worker_sequence_checker_);
+  RTC_DCHECK_RUN_ON(&network_sequence_checker_);
   RTC_DCHECK(rtx_receive_stream_);
 
   rtx_receiver_.reset();

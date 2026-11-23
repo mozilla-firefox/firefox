@@ -133,19 +133,17 @@ class InterleavedRtpFileReader : public RtpFileReaderImpl {
 
   bool NextPacket(RtpPacket* packet) override {
     RTC_DCHECK(file_);
-    packet->length = RtpPacket::kMaxPacketBufferSize;
     uint32_t len = 0;
     TRY(ReadUint32(&len, file_));
-    if (packet->length < len) {
+    if (len > RtpPacket::kMaxPacketBufferSize) {
       RTC_FATAL() << "Packet is too large to fit: " << len << " bytes vs "
-                  << packet->length
-                  << " bytes allocated. Consider increasing the buffer "
-                  << "size";
+                  << packet->length()
+                  << ". Consider increasing the buffer size";
     }
-    if (fread(packet->data, 1, len, file_) != len)
+    packet->buffer.SetSize(len);
+    if (fread(packet->buffer.AsMutableSpan().data(), 1, len, file_) != len)
       return false;
 
-    packet->length = len;
     packet->original_length = len;
     packet->time_ms = time_ms_;
     time_ms_ += 5;
@@ -211,9 +209,6 @@ class RtpDumpReader : public RtpFileReaderImpl {
   }
 
   bool NextPacket(RtpPacket* packet) override {
-    uint8_t* rtp_data = packet->data;
-    packet->length = RtpPacket::kMaxPacketBufferSize;
-
     uint16_t len;
     uint16_t plen;
     uint32_t offset;
@@ -223,18 +218,17 @@ class RtpDumpReader : public RtpFileReaderImpl {
 
     // Use 'len' here because a 'plen' of 0 specifies rtcp.
     len -= kRtpDumpPacketHeaderSize;
-    if (packet->length < len) {
+    if (len > RtpPacket::kMaxPacketBufferSize) {
       RTC_LOG(LS_ERROR) << "Packet is too large to fit: " << len << " bytes vs "
-                        << packet->length
-                        << " bytes allocated. Consider increasing the buffer "
-                           "size";
+                        << RtpPacket::kMaxPacketBufferSize
+                        << ". Consider increasing the buffer size";
       return false;
     }
-    if (fread(rtp_data, 1, len, file_) != len) {
+    packet->buffer.SetSize(len);
+    if (fread(packet->buffer.AsMutableSpan().data(), 1, len, file_) != len) {
       return false;
     }
 
-    packet->length = len;
     packet->original_length = plen;
     packet->time_ms = offset;
     return true;
@@ -379,32 +373,24 @@ class PcapReader : public RtpFileReaderImpl {
   }
 
   bool NextPacket(RtpPacket* packet) override {
-    uint32_t length = RtpPacket::kMaxPacketBufferSize;
-    if (NextPcap(packet->data, &length, &packet->time_ms) != kResultSuccess)
-      return false;
-    packet->length = static_cast<size_t>(length);
-    packet->original_length = packet->length;
-    return true;
-  }
-
-  virtual int NextPcap(uint8_t* data, uint32_t* length, uint32_t* time_ms) {
-    RTC_DCHECK(data);
-    RTC_DCHECK(length);
-    RTC_DCHECK(time_ms);
-
     if (next_packet_it_ == packets_.end()) {
-      return -1;
+      return false;
     }
-    if (*length < next_packet_it_->payload_length) {
-      return -1;
+    if (next_packet_it_->payload_length > RtpPacket::kMaxPacketBufferSize) {
+      return false;
     }
-    TRY_PCAP(fseek(file_, next_packet_it_->pos_in_file, SEEK_SET));
-    TRY_PCAP(Read(data, next_packet_it_->payload_length));
-    *length = next_packet_it_->payload_length;
-    *time_ms = next_packet_it_->time_offset_ms;
+    if (fseek(file_, next_packet_it_->pos_in_file, SEEK_SET) != 0) {
+      return false;
+    }
+    packet->buffer.SetSize(next_packet_it_->payload_length);
+    if (Read(packet->buffer.AsMutableSpan().data(), packet->buffer.size()) ==
+        kResultFail) {
+      return false;
+    }
+    packet->time_ms = next_packet_it_->time_offset_ms;
+    packet->original_length = packet->length();
     next_packet_it_++;
-
-    return 0;
+    return true;
   }
 
  private:

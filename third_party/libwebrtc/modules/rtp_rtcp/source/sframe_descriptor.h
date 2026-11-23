@@ -11,7 +11,9 @@
 #ifndef MODULES_RTP_RTCP_SOURCE_SFRAME_DESCRIPTOR_H_
 #define MODULES_RTP_RTCP_SOURCE_SFRAME_DESCRIPTOR_H_
 
+#include <bitset>
 #include <cstddef>
+#include <cstdint>
 
 namespace webrtc {
 
@@ -52,6 +54,19 @@ struct SframeDescriptor {
   SframeEncryptionLevel encryption_level =
       SframeEncryptionLevel::kFrame;  // T bit
 };
+
+// Returns the Sframe payload descriptor byte.
+inline uint8_t BuildSframeDescriptorByte(
+    bool start,
+    bool end,
+    SframeEncryptionLevel encryption_level) {
+  std::bitset<SframeDescriptor::kNumBits> bits;
+  bits.set(SframeDescriptor::kSBit, start);
+  bits.set(SframeDescriptor::kEBit, end);
+  bits.set(SframeDescriptor::kTBit,
+           encryption_level == SframeEncryptionLevel::kPacket);
+  return static_cast<uint8_t>(bits.to_ulong());
+}
 
 }  // namespace webrtc
 

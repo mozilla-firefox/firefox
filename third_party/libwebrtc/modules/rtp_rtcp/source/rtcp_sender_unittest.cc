@@ -381,53 +381,6 @@ TEST_F(RtcpSenderTest, SendNack) {
   EXPECT_THAT(parser()->nack()->packet_ids(), ElementsAre(0, 1, 16));
 }
 
-TEST_F(RtcpSenderTest, SendLossNotificationBufferingNotAllowed) {
-  auto rtcp_sender = CreateRtcpSender(GetDefaultConfig());
-  rtcp_sender->SetRTCPStatus(RtcpMode::kReducedSize);
-  constexpr uint16_t kLastDecoded = 0x1234;
-  constexpr uint16_t kLastReceived = 0x4321;
-  constexpr bool kDecodabilityFlag = true;
-  constexpr bool kBufferingAllowed = false;
-  EXPECT_EQ(rtcp_sender->SendLossNotification(feedback_state(), kLastDecoded,
-                                              kLastReceived, kDecodabilityFlag,
-                                              kBufferingAllowed),
-            0);
-  EXPECT_EQ(parser()->processed_rtcp_packets(), 1u);
-  EXPECT_EQ(parser()->loss_notification()->num_packets(), 1);
-  EXPECT_EQ(kSenderSsrc, parser()->loss_notification()->sender_ssrc());
-  EXPECT_EQ(kRemoteSsrc, parser()->loss_notification()->media_ssrc());
-}
-
-TEST_F(RtcpSenderTest, SendLossNotificationBufferingAllowed) {
-  auto rtcp_sender = CreateRtcpSender(GetDefaultConfig());
-  rtcp_sender->SetRTCPStatus(RtcpMode::kReducedSize);
-  constexpr uint16_t kLastDecoded = 0x1234;
-  constexpr uint16_t kLastReceived = 0x4321;
-  constexpr bool kDecodabilityFlag = true;
-  constexpr bool kBufferingAllowed = true;
-  EXPECT_EQ(rtcp_sender->SendLossNotification(feedback_state(), kLastDecoded,
-                                              kLastReceived, kDecodabilityFlag,
-                                              kBufferingAllowed),
-            0);
-
-  // No RTCP messages sent yet.
-  ASSERT_EQ(parser()->processed_rtcp_packets(), 0u);
-
-  // Sending another messages triggers sending the LNTF messages as well.
-  const uint16_t kList[] = {0, 1, 16};
-  EXPECT_EQ(rtcp_sender->SendRTCP(feedback_state(), kRtcpNack, kList), 0);
-
-  // Exactly one packet was produced, and it contained both the buffered LNTF
-  // as well as the message that had triggered the packet.
-  EXPECT_EQ(parser()->processed_rtcp_packets(), 1u);
-  EXPECT_EQ(parser()->loss_notification()->num_packets(), 1);
-  EXPECT_EQ(parser()->loss_notification()->sender_ssrc(), kSenderSsrc);
-  EXPECT_EQ(parser()->loss_notification()->media_ssrc(), kRemoteSsrc);
-  EXPECT_EQ(parser()->nack()->num_packets(), 1);
-  EXPECT_EQ(parser()->nack()->sender_ssrc(), kSenderSsrc);
-  EXPECT_EQ(parser()->nack()->media_ssrc(), kRemoteSsrc);
-}
-
 TEST_F(RtcpSenderTest, RembNotIncludedBeforeSet) {
   auto rtcp_sender = CreateRtcpSender(GetDefaultConfig());
   rtcp_sender->SetRTCPStatus(RtcpMode::kCompound);
@@ -727,6 +680,28 @@ TEST_F(RtcpSenderTest, SendsCombinedRtcpPacket) {
   EXPECT_EQ(parser()->transport_feedback()->sender_ssrc(), kSenderSsrc);
   EXPECT_EQ(parser()->app()->num_packets(), 1);
   EXPECT_EQ(parser()->app()->sender_ssrc(), kSenderSsrc);
+}
+
+TEST_F(RtcpSenderTest, DropsPacketLargerThanMaxPacketSizeFromCombinedPacket) {
+  constexpr size_t kMaxPacketSize = 1200;
+  auto rtcp_sender = CreateRtcpSender(GetDefaultConfig());
+  rtcp_sender->SetRTCPStatus(RtcpMode::kReducedSize);
+  rtcp_sender->SetMaxRtpPacketSize(kMaxPacketSize);
+
+  auto transport_feedback = std::make_unique<rtcp::TransportFeedback>();
+  transport_feedback->SetBase(0, Timestamp::Millis(10));
+  for (uint16_t seq = 0; transport_feedback->BlockLength() <= kMaxPacketSize;
+       ++seq) {
+    ASSERT_TRUE(transport_feedback->AddReceivedPacket(
+        seq, Timestamp::Millis(10 + seq)));
+  }
+  std::vector<std::unique_ptr<rtcp::RtcpPacket>> packets;
+  packets.push_back(std::move(transport_feedback));
+  packets.push_back(std::make_unique<rtcp::RemoteEstimate>());
+  rtcp_sender->SendCombinedRtcpPacket(std::move(packets));
+
+  EXPECT_EQ(parser()->transport_feedback()->num_packets(), 0);
+  EXPECT_EQ(parser()->app()->num_packets(), 1);
 }
 
 }  // namespace

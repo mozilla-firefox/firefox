@@ -14,7 +14,6 @@
 #include <algorithm>
 #include <cstdint>
 #include <functional>
-#include <map>
 #include <memory>
 #include <optional>
 #include <set>
@@ -37,6 +36,7 @@
 #include "api/make_ref_counted.h"
 #include "api/media_types.h"
 #include "api/peer_connection_interface.h"
+#include "api/ref_count.h"
 #include "api/rtc_error.h"
 #include "api/rtp_receiver_interface.h"
 #include "api/rtp_sender_interface.h"
@@ -62,6 +62,7 @@
 #include "pc/session_description.h"
 #include "pc/test/fake_audio_capture_module.h"
 #include "pc/test/fake_rtc_certificate_generator.h"
+#include "pc/test/fake_video_track_source.h"
 #include "pc/test/mock_peer_connection_observers.h"
 #include "rtc_base/checks.h"
 #include "rtc_base/string_encode.h"
@@ -80,6 +81,8 @@ using RTCConfiguration = PeerConnectionInterface::RTCConfiguration;
 using RTCOfferAnswerOptions = PeerConnectionInterface::RTCOfferAnswerOptions;
 using ::testing::Bool;
 using ::testing::Combine;
+using ::testing::IsEmpty;
+using ::testing::Not;
 using ::testing::StartsWith;
 using ::testing::Values;
 
@@ -196,6 +199,50 @@ class CloseOnSetDescriptionCompleteObserver
   bool called_ = false;
 };
 
+// Holds the only reference to a PeerConnection and releases it when a
+// SetLocalDescription() or SetRemoteDescription() operation completes. If
+// `close_first` is true, the PeerConnection is closed before it is released.
+class ReleaseOnSetDescriptionCompleteObserver
+    : public SetLocalDescriptionObserverInterface,
+      public SetRemoteDescriptionObserverInterface {
+ public:
+  ReleaseOnSetDescriptionCompleteObserver(
+      scoped_refptr<PeerConnectionInterface> pc,
+      bool close_first)
+      : pc_(std::move(pc)), close_first_(close_first) {}
+
+  bool called() const { return error_.has_value(); }
+  const RTCError& error() const {
+    RTC_DCHECK(error_.has_value());
+    return *error_;
+  }
+
+  // SetLocalDescriptionObserverInterface implementation.
+  void OnSetLocalDescriptionComplete(RTCError error) override {
+    OnSetDescriptionComplete(std::move(error));
+  }
+
+  // SetRemoteDescriptionObserverInterface implementation.
+  void OnSetRemoteDescriptionComplete(RTCError error) override {
+    OnSetDescriptionComplete(std::move(error));
+  }
+
+ private:
+  void OnSetDescriptionComplete(RTCError error) {
+    ASSERT_NE(pc_, nullptr) << "Called more than once.";
+    error_ = std::move(error);
+    if (close_first_) {
+      pc_->Close();
+    }
+    // Drop the last reference, which deletes the PeerConnection.
+    EXPECT_EQ(pc_.release()->Release(), RefCountReleaseStatus::kDroppedLastRef);
+  }
+
+  scoped_refptr<PeerConnectionInterface> pc_;
+  const bool close_first_;
+  std::optional<RTCError> error_;
+};
+
 class PeerConnectionSignalingBaseTest : public ::testing::Test {
  protected:
   typedef std::unique_ptr<PeerConnectionWrapperForSignalingTest> WrapperPtr;
@@ -261,6 +308,62 @@ class PeerConnectionSignalingBaseTest : public ::testing::Test {
     wrapper->AddAudioTrack("a");
     wrapper->AddVideoTrack("v");
     return wrapper;
+  }
+
+  // Creates a PeerConnection with audio and video tracks that, unlike the
+  // helpers above, isn't owned by a PeerConnectionWrapper. This allows a test
+  // to hold the only reference to it. `observer` must outlive the
+  // PeerConnection.
+  absl_nonnull scoped_refptr<PeerConnectionInterface>
+  CreateUnwrappedPeerConnectionWithAudioVideo(
+      PeerConnectionObserver* absl_nonnull observer) {
+    RTCConfiguration config;
+    config.sdp_semantics = sdp_semantics_;
+    auto result = pc_factory_->CreatePeerConnectionOrError(
+        config, PeerConnectionDependencies(observer));
+    RTC_CHECK(result.ok());
+    scoped_refptr<PeerConnectionInterface> pc = result.MoveValue();
+    EXPECT_TRUE(
+        pc->AddTrack(pc_factory_->CreateAudioTrack("a", nullptr), {}).ok());
+    EXPECT_TRUE(pc->AddTrack(pc_factory_->CreateVideoTrack(
+                                 FakeVideoTrackSource::Create(), "v"),
+                             {})
+                    .ok());
+    return pc;
+  }
+
+  // Creates an offer or an answer on `pc` and waits for the result.
+  std::unique_ptr<SessionDescriptionInterface> CreateOfferOrAnswer(
+      PeerConnectionInterface* absl_nonnull pc,
+      SdpType type) {
+    auto observer = make_ref_counted<MockCreateSessionDescriptionObserver>();
+    if (type == SdpType::kOffer) {
+      pc->CreateOffer(observer.get(), RTCOfferAnswerOptions());
+    } else {
+      pc->CreateAnswer(observer.get(), RTCOfferAnswerOptions());
+    }
+    EXPECT_TRUE(WaitUntil([&] { return observer->called(); },
+                          {.timeout = TimeDelta::Millis(kWaitTimeout)}));
+    return observer->MoveDescription();
+  }
+
+  // Same as PeerConnectionWrapper::CreateOfferAndSetAsLocal(), for a
+  // PeerConnection that isn't owned by a wrapper.
+  std::unique_ptr<SessionDescriptionInterface> CreateOfferAndSetAsLocal(
+      PeerConnectionInterface* absl_nonnull pc) {
+    std::unique_ptr<SessionDescriptionInterface> offer =
+        CreateOfferOrAnswer(pc, SdpType::kOffer);
+    if (offer == nullptr) {
+      return nullptr;
+    }
+    auto observer = make_ref_counted<FakeSetLocalDescriptionObserver>();
+    pc->SetLocalDescription(offer->Clone(), observer);
+    // The operation completes synchronously since no other operation is
+    // pending.
+    if (!observer->called() || !observer->error().ok()) {
+      return nullptr;
+    }
+    return offer;
   }
 
   int NumberOfDtlsTransports(const WrapperPtr& pc_wrapper) {
@@ -872,6 +975,170 @@ TEST_P(PeerConnectionSignalingTest, CloseInSetRemoteAnswerCompleteCallback) {
                                      observer);
   EXPECT_TRUE(observer->called());
   EXPECT_EQ(caller->signaling_state(), PeerConnectionInterface::kClosed);
+}
+
+// The observer of a SetLocalDescription() or SetRemoteDescription() operation
+// may also release the last reference to the PeerConnection from its
+// completion callback, which deletes the PeerConnection while the operation is
+// still running.
+TEST_P(PeerConnectionSignalingTest, ReleaseInSetLocalOfferCompleteCallback) {
+  NullPeerConnectionObserver pc_observer;
+  scoped_refptr<PeerConnectionInterface> caller =
+      CreateUnwrappedPeerConnectionWithAudioVideo(&pc_observer);
+  std::unique_ptr<SessionDescriptionInterface> offer =
+      CreateOfferOrAnswer(caller.get(), SdpType::kOffer);
+  ASSERT_NE(offer, nullptr);
+  PeerConnectionInterface* caller_ptr = caller.get();
+  auto observer = make_ref_counted<ReleaseOnSetDescriptionCompleteObserver>(
+      std::move(caller), /*close_first=*/false);
+  caller_ptr->SetLocalDescription(std::move(offer), observer);
+  ASSERT_TRUE(observer->called());
+  EXPECT_TRUE(observer->error().ok());
+}
+
+TEST_P(PeerConnectionSignalingTest, ReleaseInSetLocalAnswerCompleteCallback) {
+  NullPeerConnectionObserver pc_observer;
+  auto caller = CreatePeerConnectionWithAudioVideo();
+  scoped_refptr<PeerConnectionInterface> callee =
+      CreateUnwrappedPeerConnectionWithAudioVideo(&pc_observer);
+  auto srd_observer = make_ref_counted<FakeSetRemoteDescriptionObserver>();
+  callee->SetRemoteDescription(caller->CreateOfferAndSetAsLocal(),
+                               srd_observer);
+  ASSERT_TRUE(srd_observer->called());
+  ASSERT_TRUE(srd_observer->error().ok());
+  std::unique_ptr<SessionDescriptionInterface> answer =
+      CreateOfferOrAnswer(callee.get(), SdpType::kAnswer);
+  ASSERT_NE(answer, nullptr);
+  PeerConnectionInterface* callee_ptr = callee.get();
+  auto observer = make_ref_counted<ReleaseOnSetDescriptionCompleteObserver>(
+      std::move(callee), /*close_first=*/false);
+  callee_ptr->SetLocalDescription(std::move(answer), observer);
+  ASSERT_TRUE(observer->called());
+  EXPECT_TRUE(observer->error().ok());
+}
+
+// SetLocalDescription() without a description first creates an offer
+// asynchronously, then applies it and notifies the observer.
+TEST_P(PeerConnectionSignalingTest,
+       ReleaseInImplicitSetLocalOfferCompleteCallback) {
+  NullPeerConnectionObserver pc_observer;
+  scoped_refptr<PeerConnectionInterface> caller =
+      CreateUnwrappedPeerConnectionWithAudioVideo(&pc_observer);
+  PeerConnectionInterface* caller_ptr = caller.get();
+  auto observer = make_ref_counted<ReleaseOnSetDescriptionCompleteObserver>(
+      std::move(caller), /*close_first=*/false);
+  caller_ptr->SetLocalDescription(observer);
+  ASSERT_TRUE(WaitUntil([&] { return observer->called(); },
+                        {.timeout = TimeDelta::Millis(kWaitTimeout)}));
+  EXPECT_TRUE(observer->error().ok());
+}
+
+TEST_P(PeerConnectionSignalingTest,
+       ReleaseInRejectedMungedSetLocalDescriptionCallback) {
+  NullPeerConnectionObserver pc_observer;
+  scoped_refptr<PeerConnectionInterface> caller =
+      CreateUnwrappedPeerConnectionWithAudioVideo(&pc_observer);
+  std::unique_ptr<SessionDescriptionInterface> offer =
+      CreateOfferOrAnswer(caller.get(), SdpType::kOffer);
+  ASSERT_NE(offer, nullptr);
+  // Modify the offer in a way that is always rejected.
+  ContentInfos& contents = offer->description()->contents();
+  ASSERT_THAT(contents, Not(IsEmpty()));
+  MediaContentDescription* media_description = contents[0].media_description();
+  ASSERT_NE(media_description, nullptr);
+  media_description->set_sframe_enabled(!media_description->sframe_enabled());
+  PeerConnectionInterface* caller_ptr = caller.get();
+  auto observer = make_ref_counted<ReleaseOnSetDescriptionCompleteObserver>(
+      std::move(caller), /*close_first=*/false);
+  caller_ptr->SetLocalDescription(std::move(offer), observer);
+  ASSERT_TRUE(observer->called());
+  EXPECT_EQ(observer->error().type(), RTCErrorType::INVALID_MODIFICATION);
+}
+
+TEST_P(PeerConnectionSignalingTest, ReleaseInSetRemoteAnswerCompleteCallback) {
+  NullPeerConnectionObserver pc_observer;
+  scoped_refptr<PeerConnectionInterface> caller =
+      CreateUnwrappedPeerConnectionWithAudioVideo(&pc_observer);
+  auto callee = CreatePeerConnectionWithAudioVideo();
+  ASSERT_TRUE(
+      callee->SetRemoteDescription(CreateOfferAndSetAsLocal(caller.get())));
+  std::unique_ptr<SessionDescriptionInterface> answer =
+      callee->CreateAnswerAndSetAsLocal();
+  ASSERT_NE(answer, nullptr);
+  PeerConnectionInterface* caller_ptr = caller.get();
+  auto observer = make_ref_counted<ReleaseOnSetDescriptionCompleteObserver>(
+      std::move(caller), /*close_first=*/false);
+  caller_ptr->SetRemoteDescription(std::move(answer), observer);
+  ASSERT_TRUE(observer->called());
+  EXPECT_TRUE(observer->error().ok());
+}
+
+TEST_P(PeerConnectionSignalingTest,
+       CloseAndReleaseInSetRemoteAnswerCompleteCallback) {
+  NullPeerConnectionObserver pc_observer;
+  scoped_refptr<PeerConnectionInterface> caller =
+      CreateUnwrappedPeerConnectionWithAudioVideo(&pc_observer);
+  auto callee = CreatePeerConnectionWithAudioVideo();
+  ASSERT_TRUE(
+      callee->SetRemoteDescription(CreateOfferAndSetAsLocal(caller.get())));
+  std::unique_ptr<SessionDescriptionInterface> answer =
+      callee->CreateAnswerAndSetAsLocal();
+  ASSERT_NE(answer, nullptr);
+  PeerConnectionInterface* caller_ptr = caller.get();
+  auto observer = make_ref_counted<ReleaseOnSetDescriptionCompleteObserver>(
+      std::move(caller), /*close_first=*/true);
+  caller_ptr->SetRemoteDescription(std::move(answer), observer);
+  ASSERT_TRUE(observer->called());
+  EXPECT_TRUE(observer->error().ok());
+}
+
+// When SetRemoteDescription() fails, the observer is notified from
+// ~RemoteDescriptionOperation(), which then completes the operation.
+TEST_P(PeerConnectionSignalingTest,
+       ReleaseInFailedSetRemoteAnswerCompleteCallback) {
+  NullPeerConnectionObserver pc_observer;
+  scoped_refptr<PeerConnectionInterface> caller =
+      CreateUnwrappedPeerConnectionWithAudioVideo(&pc_observer);
+  std::unique_ptr<SessionDescriptionInterface> offer =
+      CreateOfferOrAnswer(caller.get(), SdpType::kOffer);
+  ASSERT_NE(offer, nullptr);
+  // An answer isn't expected in the stable state.
+  std::unique_ptr<SessionDescriptionInterface> answer =
+      CloneSessionDescriptionAsType(offer.get(), SdpType::kAnswer);
+  PeerConnectionInterface* caller_ptr = caller.get();
+  auto observer = make_ref_counted<ReleaseOnSetDescriptionCompleteObserver>(
+      std::move(caller), /*close_first=*/false);
+  caller_ptr->SetRemoteDescription(std::move(answer), observer);
+  ASSERT_TRUE(observer->called());
+  EXPECT_EQ(observer->error().type(), RTCErrorType::INVALID_STATE);
+}
+
+// When SetRemoteDescription() is called from another thread, the operation is
+// posted to the signaling thread and the caller doesn't keep the
+// PeerConnection alive while the operation runs.
+TEST_P(PeerConnectionSignalingTest,
+       ReleaseInSetRemoteAnswerCompleteCallbackFromOtherThread) {
+  NullPeerConnectionObserver pc_observer;
+  scoped_refptr<PeerConnectionInterface> caller =
+      CreateUnwrappedPeerConnectionWithAudioVideo(&pc_observer);
+  auto callee = CreatePeerConnectionWithAudioVideo();
+  ASSERT_TRUE(
+      callee->SetRemoteDescription(CreateOfferAndSetAsLocal(caller.get())));
+  std::unique_ptr<SessionDescriptionInterface> answer =
+      callee->CreateAnswerAndSetAsLocal();
+  ASSERT_NE(answer, nullptr);
+  PeerConnectionInterface* caller_ptr = caller.get();
+  auto observer = make_ref_counted<ReleaseOnSetDescriptionCompleteObserver>(
+      std::move(caller), /*close_first=*/false);
+  std::unique_ptr<Thread> thread = Thread::Create();
+  thread->Start();
+  thread->PostTask(
+      [caller_ptr, answer = std::move(answer), observer]() mutable {
+        caller_ptr->SetRemoteDescription(std::move(answer), observer);
+      });
+  ASSERT_TRUE(WaitUntil([&] { return observer->called(); },
+                        {.timeout = TimeDelta::Millis(kWaitTimeout)}));
+  EXPECT_TRUE(observer->error().ok());
 }
 
 TEST_P(PeerConnectionSignalingTest, CreateOfferBlocksSetRemoteDescription) {

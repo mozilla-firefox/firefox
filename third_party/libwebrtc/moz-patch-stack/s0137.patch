@@ -17,7 +17,7 @@ Mercurial Revision: https://hg.mozilla.org/mozilla-central/rev/bc8a96604aaa6f1fb
  6 files changed, 22 insertions(+), 19 deletions(-)
 
 diff --git a/audio/audio_receive_stream.cc b/audio/audio_receive_stream.cc
-index f8d5e58730..405a3d485c 100644
+index 423816fc1b..52242bf967 100644
 --- a/audio/audio_receive_stream.cc
 +++ b/audio/audio_receive_stream.cc
 @@ -95,7 +95,8 @@ std::unique_ptr<voe::ChannelReceiveInterface> CreateChannelReceive(
@@ -31,10 +31,10 @@ index f8d5e58730..405a3d485c 100644
  }  // namespace
  
 diff --git a/audio/channel_receive.cc b/audio/channel_receive.cc
-index aa2d9d269c..d446539434 100644
+index 0bf8fb111e..d450e6508d 100644
 --- a/audio/channel_receive.cc
 +++ b/audio/channel_receive.cc
-@@ -120,7 +120,7 @@ std::unique_ptr<ModuleRtpRtcpImpl2> CreateRtpRtcpModule(
+@@ -119,7 +119,7 @@ std::unique_ptr<ModuleRtpRtcpImpl2> CreateRtpRtcpModule(
      bool enable_non_sender_rtt,
      uint32_t remote_ssrc,
      RtcpEventObserver* rtcp_event_observer,
@@ -43,7 +43,7 @@ index aa2d9d269c..d446539434 100644
    RtpRtcpInterface::Configuration configuration = {
        .audio = true,
        .receiver_only = true,
-@@ -135,10 +135,7 @@ std::unique_ptr<ModuleRtpRtcpImpl2> CreateRtpRtcpModule(
+@@ -134,10 +134,7 @@ std::unique_ptr<ModuleRtpRtcpImpl2> CreateRtpRtcpModule(
  
    std::unique_ptr<ModuleRtpRtcpImpl2> rtp_rtcp =
        ModuleRtpRtcpImpl2::CreateReceiveModule(
@@ -55,7 +55,7 @@ index aa2d9d269c..d446539434 100644
    return rtp_rtcp;
  }
  
-@@ -161,6 +158,7 @@ class ChannelReceive : public ChannelReceiveInterface,
+@@ -160,6 +157,7 @@ class ChannelReceive : public ChannelReceiveInterface,
                   absl::AnyInvocable<void(uint32_t ssrc) &&> on_first_packet,
                   RtcpEventObserver* rtcp_event_observer,
                   PacketRouter* absl_nonnull packet_router,
@@ -63,7 +63,7 @@ index aa2d9d269c..d446539434 100644
                   absl::AnyInvocable<void(const RtpPacketInfos&, Timestamp)
                                          const> on_frame_delivered_callback);
    ~ChannelReceive() override;
-@@ -605,6 +603,7 @@ ChannelReceive::ChannelReceive(
+@@ -599,6 +597,7 @@ ChannelReceive::ChannelReceive(
      absl::AnyInvocable<void(uint32_t ssrc) &&> on_first_packet,
      RtcpEventObserver* rtcp_event_observer,
      PacketRouter* absl_nonnull packet_router,
@@ -71,7 +71,7 @@ index aa2d9d269c..d446539434 100644
      absl::AnyInvocable<void(const RtpPacketInfos&, Timestamp) const>
          on_frame_delivered_callback)
      : env_(env),
-@@ -617,7 +616,7 @@ ChannelReceive::ChannelReceive(
+@@ -611,7 +610,7 @@ ChannelReceive::ChannelReceive(
                                      enable_non_sender_rtt,
                                      remote_ssrc,
                                      rtcp_event_observer,
@@ -80,7 +80,7 @@ index aa2d9d269c..d446539434 100644
        remote_ssrc_(remote_ssrc),
        on_frame_delivered_callback_(std::move(on_frame_delivered_callback)),
        neteq_(CreateNetEq(neteq_factory,
-@@ -1241,6 +1240,7 @@ std::unique_ptr<ChannelReceiveInterface> CreateChannelReceive(
+@@ -1236,6 +1235,7 @@ std::unique_ptr<ChannelReceiveInterface> CreateChannelReceive(
      absl::AnyInvocable<void(uint32_t ssrc) &&> on_first_packet,
      RtcpEventObserver* rtcp_event_observer,
      PacketRouter* absl_nonnull packet_router,
@@ -88,7 +88,7 @@ index aa2d9d269c..d446539434 100644
      absl::AnyInvocable<void(const RtpPacketInfos&, Timestamp) const>
          on_frame_delivered_callback) {
    return std::make_unique<ChannelReceive>(
-@@ -1249,7 +1249,7 @@ std::unique_ptr<ChannelReceiveInterface> CreateChannelReceive(
+@@ -1244,7 +1244,7 @@ std::unique_ptr<ChannelReceiveInterface> CreateChannelReceive(
        jitter_buffer_min_delay_ms, enable_non_sender_rtt,
        std::move(decoder_factory), std::move(frame_decryptor), crypto_options,
        std::move(frame_transformer), std::move(on_first_packet),
@@ -140,10 +140,10 @@ index 411f0d35f3..8ce199eef2 100644
  
   protected:
 diff --git a/video/rtp_video_stream_receiver2.cc b/video/rtp_video_stream_receiver2.cc
-index a99de25ff9..2e653c12ff 100644
+index 912b0d61ef..19e61c2b1e 100644
 --- a/video/rtp_video_stream_receiver2.cc
 +++ b/video/rtp_video_stream_receiver2.cc
-@@ -133,7 +133,8 @@ std::unique_ptr<ModuleRtpRtcpImpl2> CreateRtpRtcpModule(
+@@ -132,7 +132,8 @@ std::unique_ptr<ModuleRtpRtcpImpl2> CreateRtpRtcpModule(
      PacketRouter* packet_router,
      bool non_sender_rtt_measurement,
      RtcpEventObserver* rtcp_event_observer,
@@ -153,7 +153,7 @@ index a99de25ff9..2e653c12ff 100644
    RtpRtcpInterface::Configuration configuration;
    configuration.audio = false;
    configuration.receiver_only = true;
-@@ -149,14 +150,7 @@ std::unique_ptr<ModuleRtpRtcpImpl2> CreateRtpRtcpModule(
+@@ -148,14 +149,7 @@ std::unique_ptr<ModuleRtpRtcpImpl2> CreateRtpRtcpModule(
    configuration.remote_ssrc = remote_ssrc;
  
    auto rtp_rtcp = ModuleRtpRtcpImpl2::CreateReceiveModule(
@@ -169,7 +169,7 @@ index a99de25ff9..2e653c12ff 100644
  
    return rtp_rtcp;
  }
-@@ -332,7 +326,8 @@ RtpVideoStreamReceiver2::RtpVideoStreamReceiver2(
+@@ -294,7 +288,8 @@ RtpVideoStreamReceiver2::RtpVideoStreamReceiver2(
            packet_router,
            config_.rtp.rtcp_xr.receiver_reference_time_report,
            config_.rtp.rtcp_event_observer,

@@ -36,22 +36,6 @@ class ADMWrapper : public AudioDeviceModule, public AudioTransport {
 
   ~ADMWrapper() override = default;
 
-  int32_t RecordedDataIsAvailable(const void* audioSamples,
-                                  size_t nSamples,
-                                  size_t nBytesPerSample,
-                                  size_t nChannels,
-                                  uint32_t samples_per_sec,
-                                  uint32_t total_delay_ms,
-                                  int32_t clockDrift,
-                                  uint32_t currentMicLevel,
-                                  bool keyPressed,
-                                  uint32_t& newMicLevel) override {
-    return RecordedDataIsAvailable(
-        audioSamples, nSamples, nBytesPerSample, nChannels, samples_per_sec,
-        total_delay_ms, clockDrift, currentMicLevel, keyPressed, newMicLevel,
-        /*capture_timestamp_ns=*/std::nullopt);
-  }
-
   // AudioTransport methods overrides.
   int32_t RecordedDataIsAvailable(
       const void* audioSamples,

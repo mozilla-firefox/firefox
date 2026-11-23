@@ -1403,9 +1403,7 @@ TEST_F(RtpSenderReceiverTest, InjectVideoFrameOnDifferentThread) {
         env_, SdpVideoFormat("VP8"));
     VideoCodec codec_settings;
     codec_settings.codecType = kVideoCodecVP8;
-    encoder->InitEncode(
-        &codec_settings,
-        VideoEncoder::Settings(VideoEncoder::Capabilities(false), 1, 1000));
+    encoder->InitEncode(&codec_settings, VideoEncoder::Settings(1, 1000));
     encoder->RegisterEncodeCompleteCallback(&image_callback);
   });
 
@@ -2401,6 +2399,51 @@ TEST_F(RtpSenderReceiverTest, VideoSenderDetectInvalidMaxFramerate) {
   DestroyVideoRtpSender();
 }
 
+TEST_F(RtpSenderReceiverTest, VideoSenderCanSetEncodingComplexity) {
+  CreateVideoRtpSender();
+
+  RtpParameters params = video_rtp_sender_->GetParameters();
+  ASSERT_EQ(params.encodings.size(), 1u);
+  EXPECT_EQ(params.encodings[0].encoding_complexity, std::nullopt);
+  params.encodings[0].encoding_complexity =
+      VideoCodecComplexity::kComplexityHigh;
+
+  EXPECT_THAT(video_rtp_sender_->SetParameters(params), IsRtcOk());
+  params = video_rtp_sender_->GetParameters();
+  ASSERT_EQ(params.encodings.size(), 1u);
+  EXPECT_EQ(params.encodings[0].encoding_complexity,
+            VideoCodecComplexity::kComplexityHigh);
+
+  params = video_media_send_channel()->GetRtpSendParameters(kVideoSsrc);
+  ASSERT_EQ(params.encodings.size(), 1u);
+  EXPECT_EQ(params.encodings[0].encoding_complexity,
+            VideoCodecComplexity::kComplexityHigh);
+
+  DestroyVideoRtpSender();
+}
+
+TEST_F(RtpSenderReceiverTest, VideoSenderCanSetEncodingComplexitySimulcast) {
+  CreateVideoRtpSenderWithSimulcast();
+
+  RtpParameters params = video_rtp_sender_->GetParameters();
+  ASSERT_EQ(params.encodings.size(), kVideoSimulcastLayerCount);
+  params.encodings[0].encoding_complexity =
+      VideoCodecComplexity::kComplexityLow;
+  params.encodings[1].encoding_complexity =
+      VideoCodecComplexity::kComplexityMax;
+
+  EXPECT_THAT(video_rtp_sender_->SetParameters(params), IsRtcOk());
+  params =
+      video_media_send_channel()->GetRtpSendParameters(kVideoSsrcSimulcast);
+  ASSERT_EQ(params.encodings.size(), kVideoSimulcastLayerCount);
+  EXPECT_EQ(params.encodings[0].encoding_complexity,
+            VideoCodecComplexity::kComplexityLow);
+  EXPECT_EQ(params.encodings[1].encoding_complexity,
+            VideoCodecComplexity::kComplexityMax);
+
+  DestroyVideoRtpSender();
+}
+
 // A video sender can have multiple simulcast layers, in which case it will
 // contain multiple RtpEncodingParameters. This tests that if this is the case
 // (simulcast), then we can't set the bitrate_priority, or max_bitrate_bps
@@ -3154,8 +3197,7 @@ TEST_F(RtpSenderReceiverTest,
           });
 
   EXPECT_TRUE(owner_callback_called);
-  ASSERT_FALSE(result.ok());
-  EXPECT_EQ(result.error().type(), RTCErrorType::UNSUPPORTED_OPERATION);
+  EXPECT_TRUE(result.ok());
 }
 
 TEST_F(RtpSenderReceiverTest,
@@ -3186,6 +3228,100 @@ TEST_F(RtpSenderReceiverTest,
           SframeCipherSuite::kAes128GcmSha256_128, [](SframeDecryptError) {});
   EXPECT_FALSE(result.ok());
   EXPECT_EQ(result.error().type(), RTCErrorType::INTERNAL_ERROR);
+}
+
+TEST_F(RtpSenderReceiverTest,
+       AudioReceiverCreateSframeDecryptorFailsWhenStopped) {
+  bool owner_callback_called = false;
+  scoped_refptr<AudioRtpReceiver> receiver = make_ref_counted<AudioRtpReceiver>(
+      worker_thread_.get(), kAudioTrackId, std::vector<std::string>(),
+      /*enable_sframe_at_owner=*/[&owner_callback_called]() -> RTCError {
+        owner_callback_called = true;
+        return RTCError::OK();
+      });
+  receiver->Stop();
+
+  RTCErrorOr<scoped_refptr<SframeDecryptorInterface>> result =
+      receiver->CreateSframeDecryptorOrError(
+          SframeCipherSuite::kAes128GcmSha256_128, [](SframeDecryptError) {});
+
+  ASSERT_FALSE(result.ok());
+  EXPECT_EQ(result.error().type(), RTCErrorType::INVALID_STATE);
+  EXPECT_FALSE(owner_callback_called);
+}
+
+TEST_F(RtpSenderReceiverTest,
+       VideoReceiverCreateSframeDecryptorFailsWhenStopped) {
+  bool owner_callback_called = false;
+  scoped_refptr<VideoRtpReceiver> receiver = make_ref_counted<VideoRtpReceiver>(
+      worker_thread_.get(), kVideoTrackId, std::vector<std::string>(),
+      /*enable_sframe_at_owner=*/[&owner_callback_called]() -> RTCError {
+        owner_callback_called = true;
+        return RTCError::OK();
+      });
+  receiver->Stop();
+
+  RTCErrorOr<scoped_refptr<SframeDecryptorInterface>> result =
+      receiver->CreateSframeDecryptorOrError(
+          SframeCipherSuite::kAes128GcmSha256_128, [](SframeDecryptError) {});
+
+  ASSERT_FALSE(result.ok());
+  EXPECT_EQ(result.error().type(), RTCErrorType::INVALID_STATE);
+  EXPECT_FALSE(owner_callback_called);
+}
+
+TEST_F(RtpSenderReceiverTest, ReceiverSframeDecryptorHandleManagesKeys) {
+  scoped_refptr<VideoRtpReceiver> receiver = make_ref_counted<VideoRtpReceiver>(
+      worker_thread_.get(), kVideoTrackId, std::vector<std::string>(),
+      /*enable_sframe_at_owner=*/[] { return RTCError::OK(); });
+  RTCErrorOr<scoped_refptr<SframeDecryptorInterface>> result =
+      receiver->CreateSframeDecryptorOrError(
+          SframeCipherSuite::kAes128GcmSha256_128, [](SframeDecryptError) {});
+  ASSERT_TRUE(result.ok());
+  const std::vector<uint8_t> key_material(16, 0xab);
+
+  RTCError add_result = RTCError::InternalError("Not called");
+  result.value()->AddDecryptionKey(
+      /*key_id=*/1, key_material,
+      [&add_result](RTCError error) { add_result = std::move(error); });
+  RTCError remove_result = RTCError::InternalError("Not called");
+  result.value()->RemoveDecryptionKey(
+      /*key_id=*/1, [this, &remove_result](RTCError error) {
+        remove_result = std::move(error);
+        run_loop_.Quit();
+      });
+  run_loop_.Run();
+
+  EXPECT_TRUE(add_result.ok());
+  EXPECT_TRUE(remove_result.ok());
+}
+
+TEST_F(RtpSenderReceiverTest, ReceiverSframeDecryptorCanBeCreatedAgain) {
+  scoped_refptr<VideoRtpReceiver> receiver = make_ref_counted<VideoRtpReceiver>(
+      worker_thread_.get(), kVideoTrackId, std::vector<std::string>(),
+      /*enable_sframe_at_owner=*/[] { return RTCError::OK(); });
+  ASSERT_TRUE(receiver
+                  ->CreateSframeDecryptorOrError(
+                      SframeCipherSuite::kAes128GcmSha256_128,
+                      /*error_callback=*/[](SframeDecryptError) {})
+                  .ok());
+
+  RTCErrorOr<scoped_refptr<SframeDecryptorInterface>> result =
+      receiver->CreateSframeDecryptorOrError(
+          SframeCipherSuite::kAes256GcmSha512_128,
+          /*error_callback=*/[](SframeDecryptError) {});
+  ASSERT_TRUE(result.ok());
+
+  RTCError add_result = RTCError::InternalError("Not called");
+  result.value()->AddDecryptionKey(
+      /*key_id=*/1, std::vector<uint8_t>(32, 0xab),
+      [this, &add_result](RTCError error) {
+        add_result = std::move(error);
+        run_loop_.Quit();
+      });
+  run_loop_.Run();
+
+  EXPECT_TRUE(add_result.ok());
 }
 
 }  // namespace webrtc

@@ -12,6 +12,7 @@
 #define MODULES_CONGESTION_CONTROLLER_SCREAM_SCREAM_V2_H_
 
 #include <algorithm>
+#include <optional>
 
 #include "api/environment/environment.h"
 #include "api/transport/network_types.h"
@@ -66,7 +67,7 @@ class ScreamV2 {
   DataSize ref_window() const { return ref_window_; }
 
   // Last inflection point where ref_window started to decrease.
-  DataSize ref_window_i() const { return ref_window_i_; }
+  std::optional<DataSize> ref_window_i() const { return ref_window_i_; }
 
   // Returns the maximum allowed reference window based on data in flight during
   // the last RTT.
@@ -110,13 +111,29 @@ class ScreamV2 {
   // when close to the last known inflection point.
   // (4.2.2.1)
   double ref_window_scale_factor_close_to_ref_window_i() const {
+    if (!ref_window_i_.has_value()) {
+      return 1.0;
+    }
     const double scale_factor =
         params_.backoff_scale_factor_close_to_ref_window_i.Get();
     double scl =
-        ref_window_ > ref_window_i_
-            ? scale_factor * (ref_window_ - ref_window_i_) / ref_window_i_
-            : scale_factor * (ref_window_i_ - ref_window_) / ref_window_i_;
-    return std::clamp(scl * scl, 0.1, 1.0);
+        ref_window_ > *ref_window_i_
+            ? scale_factor * (ref_window_ - *ref_window_i_) / *ref_window_i_
+            : scale_factor * (*ref_window_i_ - ref_window_) / *ref_window_i_;
+    if (params_.reduce_jitter.Get()) {
+      scl = std::clamp(scl * scl, 0.2, 1.0);
+      // Restrict `ref_window_` increase when `ref_window_` has grown past the
+      // last inflection point `ref_window_i_` (but is still close to it, i.e.
+      // `scl < 1.0`) and queue delay is increasing.
+      if (ref_window_ > *ref_window_i_ && scl < 1.0) {
+        scl = std::max(
+            0.2,
+            scl * delay_based_congestion_control_
+                      .ref_window_scale_factor_due_to_latency_difference());
+      }
+      return scl;
+    }
+    return std::clamp(scl * scl, 0.25, 1.0);
   }
 
   // Scale factor for reference window increase. (4.2.2.2)
@@ -155,10 +172,10 @@ class ScreamV2 {
   // Reference window inflection point. I.e, `ref_window_` when congestion was
   // noticed. Increase and decrease of `ref_window_` is scaled down around
   // `ref_window_i_`.
-  DataSize ref_window_i_ = DataSize::Bytes(1);
+  std::optional<DataSize> ref_window_i_;
   // Lowest `ref_window_` observed on a reference window decrease
   // (`ref_wnd_lowest` in 4.2.2.1). `ref_window_i_` is only updated when
-  // `ref_window_` before decrease has increased by >5% above
+  // `ref_window_` before decrease has increased by >5% or >1 MSS above
   // `ref_window_lowest_` or `ref_window_i_update_max_hold_rtts` has elapsed
   // since `last_ref_window_i_update_time_`.
   DataSize ref_window_lowest_ = DataSize::Zero();

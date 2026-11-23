@@ -17,10 +17,10 @@ Mercurial Revision: https://hg.mozilla.org/mozilla-central/rev/506d4efaf2dc29472
  3 files changed, 6 insertions(+), 4 deletions(-)
 
 diff --git a/modules/desktop_capture/BUILD.gn b/modules/desktop_capture/BUILD.gn
-index 2b12b40fa7..d4fd8d02e7 100644
+index 90e5c9d87a..01dc19062f 100644
 --- a/modules/desktop_capture/BUILD.gn
 +++ b/modules/desktop_capture/BUILD.gn
-@@ -887,6 +887,10 @@ rtc_library("desktop_capture") {
+@@ -890,6 +890,10 @@ rtc_library("desktop_capture") {
        "../../rtc_base:sanitizer",
        "../portal",
      ]
@@ -32,10 +32,10 @@ index 2b12b40fa7..d4fd8d02e7 100644
  
    if (rtc_enable_win_wgc) {
 diff --git a/modules/portal/BUILD.gn b/modules/portal/BUILD.gn
-index a533779b78..ccc358b2b8 100644
+index eb5f817c03..eadaf3fb2c 100644
 --- a/modules/portal/BUILD.gn
 +++ b/modules/portal/BUILD.gn
-@@ -147,11 +147,9 @@ if (!build_with_mozilla) {
+@@ -150,11 +150,9 @@ if (!build_with_mozilla) {
        deps -= [ ":pipewire_stubs" ]
        defines -= [ "WEBRTC_DLOPEN_PIPEWIRE" ]
        public_deps = [
@@ -47,12 +47,12 @@ index a533779b78..ccc358b2b8 100644
 +      defines += [ "WEBRTC_USE_PIPEWIRE" ]
      }
    }
- }
+ 
 diff --git a/modules/video_capture/BUILD.gn b/modules/video_capture/BUILD.gn
-index dbcc162510..5d581b823a 100644
+index f5d34a55f1..4d4a85a9f7 100644
 --- a/modules/video_capture/BUILD.gn
 +++ b/modules/video_capture/BUILD.gn
-@@ -114,7 +114,7 @@ if (!build_with_chromium || is_linux || is_chromeos) {
+@@ -116,7 +116,7 @@ if (!build_with_chromium || is_linux || is_chromeos) {
          ]
          if (build_with_mozilla) {
            configs -= [ "../portal:pipewire_base" ]

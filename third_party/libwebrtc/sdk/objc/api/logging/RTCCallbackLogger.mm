@@ -14,7 +14,6 @@
 
 #include <memory>
 
-#include "absl/strings/string_view.h"
 #include "rtc_base/checks.h"
 #include "rtc_base/log_sinks.h"
 #include "rtc_base/logging.h"
@@ -26,13 +25,10 @@ class CallbackLogSink final : public webrtc::LogSink {
   CallbackLogSink(RTCCallbackLoggerMessageHandler callbackHandler)
       : callback_handler_(callbackHandler) {}
 
-  void OnLogMessage(const std::string& message) override {
-    OnLogMessage(absl::string_view(message));
-  }
-
-  void OnLogMessage(absl::string_view message) override {
+  void OnLogMessage(const webrtc::LogLineRef& line) override {
     if (callback_handler_) {
-      callback_handler_([NSString stringForAbslStringView:message]);
+      callback_handler_(
+          [NSString stringForAbslStringView:line.DefaultLogLine()]);
     }
   }
 
@@ -46,22 +42,13 @@ class CallbackWithSeverityLogSink final : public webrtc::LogSink {
       RTCCallbackLoggerMessageAndSeverityHandler callbackHandler)
       : callback_handler_(callbackHandler) {}
 
-  void OnLogMessage(const std::string& message) override {
-    RTC_DCHECK_NOTREACHED();
-  }
-
-  void OnLogMessage(const std::string& message,
-                    webrtc::LoggingSeverity severity) override {
-    OnLogMessage(absl::string_view(message), severity);
-  }
-
-  void OnLogMessage(absl::string_view message,
-                    webrtc::LoggingSeverity severity) override {
+  void OnLogMessage(const webrtc::LogLineRef& line) override {
     if (callback_handler_) {
       RTCLoggingSeverity loggingSeverity =
-          NativeSeverityToObjcSeverity(severity);
-      callback_handler_([NSString stringForAbslStringView:message],
-                        loggingSeverity);
+          NativeSeverityToObjcSeverity(line.severity());
+      callback_handler_(
+          [NSString stringForAbslStringView:line.DefaultLogLine()],
+          loggingSeverity);
     }
   }
 
@@ -113,7 +100,10 @@ class CallbackWithSeverityLogSink final : public webrtc::LogSink {
 
   _logSink.reset(new CallbackLogSink(handler));
 
+#pragma clang diagnostic push
+#pragma clang diagnostic ignored "-Wdeprecated-declarations"
   webrtc::LogMessage::AddLogToStream(_logSink.get(), [self rtcSeverity]);
+#pragma clang diagnostic pop
   _hasStarted = YES;
 }
 
@@ -125,7 +115,10 @@ class CallbackWithSeverityLogSink final : public webrtc::LogSink {
 
   _logSink.reset(new CallbackWithSeverityLogSink(handler));
 
+#pragma clang diagnostic push
+#pragma clang diagnostic ignored "-Wdeprecated-declarations"
   webrtc::LogMessage::AddLogToStream(_logSink.get(), [self rtcSeverity]);
+#pragma clang diagnostic pop
   _hasStarted = YES;
 }
 
@@ -134,7 +127,10 @@ class CallbackWithSeverityLogSink final : public webrtc::LogSink {
     return;
   }
   RTC_DCHECK(_logSink);
+#pragma clang diagnostic push
+#pragma clang diagnostic ignored "-Wdeprecated-declarations"
   webrtc::LogMessage::RemoveLogToStream(_logSink.get());
+#pragma clang diagnostic pop
   _hasStarted = NO;
   _logSink.reset();
 }

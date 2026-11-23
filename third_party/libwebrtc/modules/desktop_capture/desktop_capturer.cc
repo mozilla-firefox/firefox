@@ -111,7 +111,7 @@ std::unique_ptr<DesktopCapturer> DesktopCapturer::CreateWindowCapturer(
     }
     return std::make_unique<FallbackDesktopCapturerWrapper>(
         std::move(wgc_capturer), std::move(fallback_capturer),
-        "WebRTC.DesktopCapture.Win.WgcWindowFallbackSelectSource");
+        "WebRTC.DesktopCapture.Win.WgcWindowFallbackStartOutcome");
   }
 #endif  // defined(RTC_ENABLE_WIN_WGC)
 

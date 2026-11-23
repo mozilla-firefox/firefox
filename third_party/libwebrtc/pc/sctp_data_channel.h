@@ -148,6 +148,7 @@ class SctpDataChannel : public DataChannelInterface {
   // event notifications.
   static absl_nonnull scoped_refptr<SctpDataChannel> Create(
       WeakPtr<SctpDataChannelControllerInterface> controller,
+      int internal_id,
       absl::string_view label,
       bool connected_to_transport,
       const InternalDataChannelInit& config,
@@ -202,6 +203,8 @@ class SctpDataChannel : public DataChannelInterface {
   // dropped if, by the time the task runs, the channel isn't connected to the
   // transport or has been closed. Can be called on any thread.
   void PostOnTransportReady();
+  // Lets a send run the posted `OnTransportReady()` early.
+  void SetTransportReadyPending_n();
 
   void OnDataReceived(DataMessageType type, const CopyOnWriteBuffer& payload);
 
@@ -231,9 +234,9 @@ class SctpDataChannel : public DataChannelInterface {
 
   DataChannelStats GetStats() const;
 
-  // Returns a unique identifier that's guaranteed to always be available,
-  // doesn't change throughout SctpDataChannel's lifetime and is used for
-  // stats purposes (see also `GetStats()`).
+  // Returns an identifier, unique per controller, that's guaranteed to always
+  // be available, doesn't change throughout SctpDataChannel's lifetime and is
+  // used for stats purposes (see also `GetStats()`).
   int internal_id() const { return internal_id_; }
 
   std::optional<StreamId> sid_n() const {
@@ -241,13 +244,10 @@ class SctpDataChannel : public DataChannelInterface {
     return id_n_;
   }
 
-  // Reset the allocator for internal ID values for testing, so that
-  // the internal IDs generated are predictable. Test only.
-  static void ResetInternalIdAllocatorForTesting(int new_value);
-
  protected:
   SctpDataChannel(const InternalDataChannelInit& config,
                   WeakPtr<SctpDataChannelControllerInterface> controller,
+                  int internal_id,
                   absl::string_view label,
                   bool connected_to_transport,
                   std::optional<int> max_message_size,
@@ -331,6 +331,7 @@ class SctpDataChannel : public DataChannelInterface {
       kHandshakeInit;
   // Did we already start the graceful SCTP closing procedure?
   bool started_closing_procedure_ RTC_GUARDED_BY(network_thread_) = false;
+  bool transport_ready_pending_ RTC_GUARDED_BY(network_thread_) = false;
   PacketQueue queued_received_data_ RTC_GUARDED_BY(network_thread_);
   const scoped_refptr<PendingTaskSafetyFlag> network_safety_ =
       PendingTaskSafetyFlag::CreateDetachedInactive();

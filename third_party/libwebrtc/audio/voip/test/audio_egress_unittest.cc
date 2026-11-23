@@ -15,6 +15,7 @@
 #include <memory>
 #include <optional>
 #include <span>
+#include <utility>
 
 #include "api/audio/audio_frame.h"
 #include "api/audio_codecs/audio_encoder_factory.h"
@@ -34,13 +35,16 @@
 #include "test/create_test_environment.h"
 #include "test/gmock.h"
 #include "test/gtest.h"
+#include "test/mock_audio_encoder.h"
 #include "test/mock_transport.h"
 #include "test/time_controller/simulated_time_controller.h"
 
 namespace webrtc {
 namespace {
 
+using ::testing::FloatEq;
 using ::testing::NiceMock;
+using ::testing::Return;
 using ::testing::Unused;
 
 std::unique_ptr<ModuleRtpRtcpImpl2> CreateRtpStack(const Environment& env,
@@ -327,6 +331,26 @@ TEST_F(AudioEgressTest, TestAudioInputLevelAndEnergyDuration) {
   EXPECT_EQ(egress_->GetInputAudioLevel(), kAudioLevel);
   EXPECT_DOUBLE_EQ(egress_->GetInputTotalEnergy(), kExpectedEnergy);
   EXPECT_DOUBLE_EQ(egress_->GetInputTotalDuration(), kExpectedDuration);
+}
+
+TEST_F(AudioEgressTest, ForwardsUplinkPacketLossFractionToEncoder) {
+  auto mock_encoder = std::make_unique<NiceMock<MockAudioEncoder>>();
+  ON_CALL(*mock_encoder, SampleRateHz()).WillByDefault(Return(8000));
+  ON_CALL(*mock_encoder, NumChannels()).WillByDefault(Return(1));
+  ON_CALL(*mock_encoder, RtpTimestampRateHz()).WillByDefault(Return(8000));
+  EXPECT_CALL(*mock_encoder, OnReceivedUplinkPacketLossFraction(FloatEq(0.25f)))
+      .Times(1);
+
+  constexpr int kPcmuPayload = 0;
+  egress_->SetEncoder(kPcmuPayload, kPcmuFormat, std::move(mock_encoder));
+  egress_->OnReceivedUplinkPacketLossFraction(0.25f);
+  time_controller_.AdvanceTime(TimeDelta::Zero());
+}
+
+TEST_F(AudioEgressTest, UplinkPacketLossFractionWithoutEncoderIsNoOp) {
+  AudioEgress unconfigured_egress(env_, rtp_rtcp_.get());
+  unconfigured_egress.OnReceivedUplinkPacketLossFraction(0.25f);
+  time_controller_.AdvanceTime(TimeDelta::Zero());
 }
 
 }  // namespace

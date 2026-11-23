@@ -13,6 +13,7 @@
 
 #include "common_video/generic_frame_descriptor/generic_frame_info.h"
 #include "modules/video_coding/svc/scalability_structure_test_helpers.h"
+#include "modules/video_coding/svc/scalable_video_controller.h"
 #include "test/gmock.h"
 #include "test/gtest.h"
 
@@ -21,6 +22,7 @@ namespace {
 
 using ::testing::IsEmpty;
 using ::testing::SizeIs;
+using LayerFrameConfig = ScalableVideoController::LayerFrameConfig;
 
 TEST(ScalabilityStructureL3T3Test, SkipT0FrameByEncoderKeepsReferencesValid) {
   std::vector<GenericFrameInfo> frames;
@@ -118,6 +120,85 @@ TEST(ScalabilityStructureL3T3Test, SwitchSpatialLayerBeforeT1Frame) {
   ASSERT_THAT(frames, SizeIs(1));
   EXPECT_THAT(frames[0].frame_diffs, IsEmpty());
   EXPECT_EQ(frames[0].temporal_id, 0);
+}
+
+TEST(ScalabilityStructureL3T3Test,
+     OnFrameDroppedAdvancesPatternAndKeepsReferencesValid) {
+  std::vector<GenericFrameInfo> frames;
+  ScalabilityStructureL3T3 structure;
+  ScalabilityStructureWrapper wrapper(structure);
+
+  // 1st 2 temporal units (T0 and T2a).
+  wrapper.GenerateFrames(/*num_temporal_units=*/2, frames);
+  ASSERT_THAT(frames, SizeIs(6));
+  EXPECT_EQ(frames[0].temporal_id, 0);
+  EXPECT_EQ(frames[3].temporal_id, 2);
+
+  // Drop T1 frame via OnFrameDropped.
+  for (const LayerFrameConfig& layer_frame :
+       structure.NextFrameConfig(/*restart=*/false)) {
+    EXPECT_EQ(layer_frame.TemporalId(), 1);
+    structure.OnFrameDropped(layer_frame);
+  }
+
+  // Next temporal unit should advance to T2b and fall back to referencing T0.
+  wrapper.GenerateFrames(/*num_temporal_units=*/2, frames);
+  ASSERT_THAT(frames, SizeIs(12));
+  EXPECT_EQ(frames[6].temporal_id, 2);
+  EXPECT_EQ(frames[9].temporal_id, 0);
+  EXPECT_TRUE(wrapper.FrameReferencesAreValid(frames));
+}
+
+TEST(ScalabilityStructureL3T3Test,
+     OnFrameDroppedForT0AdvancesPatternAndReferencesPreviousT0) {
+  std::vector<GenericFrameInfo> frames;
+  ScalabilityStructureL3T3 structure;
+  ScalabilityStructureWrapper wrapper(structure);
+
+  // Encode full 4-TU cycle: T0, T2a, T1, T2b (12 frames across 3 spatial
+  // layers).
+  wrapper.GenerateFrames(/*num_temporal_units=*/4, frames);
+  ASSERT_THAT(frames, SizeIs(12));
+
+  // Drop the next T0 temporal unit via OnFrameDropped.
+  for (const LayerFrameConfig& layer_frame :
+       structure.NextFrameConfig(/*restart=*/false)) {
+    EXPECT_EQ(layer_frame.TemporalId(), 0);
+    structure.OnFrameDropped(layer_frame);
+  }
+
+  // Next temporal unit should progress to T2a (not repeat T0) and reference the
+  // previous T0 frames.
+  wrapper.GenerateFrames(/*num_temporal_units=*/4, frames);
+  ASSERT_THAT(frames, SizeIs(24));
+  EXPECT_EQ(frames[12].temporal_id, 2);
+  EXPECT_EQ(frames[15].temporal_id, 1);
+  EXPECT_EQ(frames[18].temporal_id, 2);
+  EXPECT_EQ(frames[21].temporal_id, 0);
+  EXPECT_TRUE(wrapper.FrameReferencesAreValid(frames));
+}
+
+TEST(ScalabilityStructureFullSvcTest,
+     OnFrameDroppedForInitialKeyframeProducesKeyframeNext) {
+  ScalabilityStructureL2T1 structure;
+  ScalabilityStructureWrapper wrapper(structure);
+  std::vector<GenericFrameInfo> frames;
+
+  std::vector<LayerFrameConfig> initial =
+      structure.NextFrameConfig(/*restart=*/false);
+  ASSERT_THAT(initial, SizeIs(2));
+  EXPECT_TRUE(initial[0].IsKeyframe());
+  for (const LayerFrameConfig& layer_frame : initial) {
+    structure.OnFrameDropped(layer_frame);
+  }
+
+  std::vector<LayerFrameConfig> retry =
+      structure.NextFrameConfig(/*restart=*/false);
+  ASSERT_THAT(retry, SizeIs(2));
+  EXPECT_TRUE(retry[0].IsKeyframe());
+  wrapper.EncodeTemporalUnit(retry, frames);
+  wrapper.GenerateFrames(/*num_temporal_units=*/2, frames);
+  EXPECT_TRUE(wrapper.FrameReferencesAreValid(frames));
 }
 
 }  // namespace

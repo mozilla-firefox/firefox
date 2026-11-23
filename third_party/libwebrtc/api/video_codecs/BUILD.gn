@@ -474,6 +474,7 @@ rtc_library("rtc_software_fallback_wrappers") {
     "../../system_wrappers:metrics",
     "../environment",
     "../video:encoded_image",
+    "../video:video_codec_constants",
     "../video:video_frame",
     "../video:video_frame_type",
     "//third_party/abseil-cpp/absl/strings",

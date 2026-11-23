@@ -39,6 +39,10 @@ class ScalabilityStructureWrapper {
   }
   void GenerateFrames(int num_temporal_units,
                       std::vector<GenericFrameInfo>& frames);
+  // Simulates encoding of a temporal unit with the given layer configuration.
+  void EncodeTemporalUnit(
+      std::span<const ScalableVideoController::LayerFrameConfig> layer_frames,
+      std::vector<GenericFrameInfo>& frames);
 
   // Returns false and ADD_FAILUREs for frames with invalid references.
   // In particular validates no frame frame reference to frame before frames[0].

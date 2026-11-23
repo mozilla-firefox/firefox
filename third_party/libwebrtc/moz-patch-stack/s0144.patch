@@ -1,119 +1,57 @@
 From: Michael Froman <mfroman@mozilla.com>
-Date: Thu, 20 Aug 2026 15:17:00 +0000
-Subject: Bug 1996020 - Add I420Buffer::CreateOrNull and use it in
- VideoCaptureImpl::IncomingFrame. r=bwc
+Date: Tue, 15 Sep 2026 16:49:00 +0000
+Subject: Bug 1996020 - add 2-arg version of I420Buffer::CreateOrNull, use in
+ VideoFrameBuffer::CropAndScale. r=bwc
 
-Differential Revision: https://phabricator.services.mozilla.com/D318847
-Mercurial Revision: https://hg.mozilla.org/mozilla-central/rev/f0c6e846e0d33294378079b83208d1a91c5bf293
+Differential Revision: https://phabricator.services.mozilla.com/D326237
+Mercurial Revision: https://hg.mozilla.org/mozilla-central/rev/b19588c8c0fc39e71f452321310965ab187e1f9b
 ---
- api/video/i420_buffer.cc                    | 27 ++++++++++++++++++---
- api/video/i420_buffer.h                     | 15 +++++++++++-
- modules/video_capture/video_capture_impl.cc | 11 ++++++++-
- 3 files changed, 47 insertions(+), 6 deletions(-)
+ api/video/i420_buffer.cc        | 5 +++++
+ api/video/i420_buffer.h         | 1 +
+ api/video/video_frame_buffer.cc | 5 ++++-
+ 3 files changed, 10 insertions(+), 1 deletion(-)
 
 diff --git a/api/video/i420_buffer.cc b/api/video/i420_buffer.cc
-index bea6e07cde..2acb160b6e 100644
+index 2acb160b6e..6257cb6e6c 100644
 --- a/api/video/i420_buffer.cc
 +++ b/api/video/i420_buffer.cc
-@@ -54,15 +54,18 @@ I420Buffer::I420Buffer(int width,
-                        int height,
-                        int stride_y,
-                        int stride_u,
--                       int stride_v)
-+                       int stride_v,
-+                       uint8_t* data)
-     : width_(width),
-       height_(height),
-       stride_y_(stride_y),
-       stride_u_(stride_u),
-       stride_v_(stride_v),
--      data_(static_cast<uint8_t*>(AlignedMalloc(
--          I420DataSize(width, height, stride_y, stride_u, stride_v),
--          kBufferAlignment))) {
-+      data_(data ? data
-+                 : static_cast<uint8_t*>(AlignedMalloc(
-+                       I420DataSize(width, height, stride_y, stride_u,
-+                                    stride_v),
-+                       kBufferAlignment))) {
-   RTC_DCHECK_GE(stride_u, (width + 1) / 2);
-   RTC_DCHECK_GE(stride_v, (width + 1) / 2);
- }
-@@ -84,6 +87,22 @@ scoped_refptr<I420Buffer> I420Buffer::Create(int width,
-                                       stride_v);
+@@ -77,6 +77,11 @@ scoped_refptr<I420Buffer> I420Buffer::Create(int width, int height) {
+   return make_ref_counted<I420Buffer>(width, height);
  }
  
 +// static
-+scoped_refptr<I420Buffer> I420Buffer::CreateOrNull(int width,
-+                                                   int height,
-+                                                   int stride_y,
-+                                                   int stride_u,
-+                                                   int stride_v) {
-+  uint8_t* data = AlignedMallocOrNull<uint8_t>(
-+      I420DataSize(width, height, stride_y, stride_u, stride_v),
-+      kBufferAlignment);
-+  if (!data) {
-+    return nullptr;
-+  }
-+  return make_ref_counted<I420Buffer>(width, height, stride_y, stride_u,
-+                                      stride_v, data);
++scoped_refptr<I420Buffer> I420Buffer::CreateOrNull(int width, int height) {
++  return I420Buffer::CreateOrNull(width, height, width, (width + 1) / 2, (width + 1) / 2);
 +}
 +
  // static
- scoped_refptr<I420Buffer> I420Buffer::Copy(const I420BufferInterface& source) {
-   return Copy(source.width(), source.height(), source.DataY(), source.StrideY(),
+ scoped_refptr<I420Buffer> I420Buffer::Create(int width,
+                                              int height,
 diff --git a/api/video/i420_buffer.h b/api/video/i420_buffer.h
-index a7a0fb014d..e4935b430c 100644
+index e4935b430c..d802a8f766 100644
 --- a/api/video/i420_buffer.h
 +++ b/api/video/i420_buffer.h
-@@ -32,6 +32,11 @@ class RTC_EXPORT I420Buffer : public I420BufferInterface {
+@@ -27,6 +27,7 @@ namespace webrtc {
+ class RTC_EXPORT I420Buffer : public I420BufferInterface {
+  public:
+   static scoped_refptr<I420Buffer> Create(int width, int height);
++  static scoped_refptr<I420Buffer> CreateOrNull(int width, int height);
+   static scoped_refptr<I420Buffer> Create(int width,
+                                           int height,
                                            int stride_y,
-                                           int stride_u,
-                                           int stride_v);
-+  static scoped_refptr<I420Buffer> CreateOrNull(int width,
-+                                                int height,
-+                                                int stride_y,
-+                                                int stride_u,
-+                                                int stride_v);
- 
-   // Create a new buffer and copy the pixel data.
-   static scoped_refptr<I420Buffer> Copy(const I420BufferInterface& buffer);
-@@ -100,7 +105,15 @@ class RTC_EXPORT I420Buffer : public I420BufferInterface {
- 
-  protected:
-   I420Buffer(int width, int height);
--  I420Buffer(int width, int height, int stride_y, int stride_u, int stride_v);
-+  // If `data` is non-null, it must have been allocated with AlignedMalloc and
-+  // be large enough to hold the planes described by the strides; the buffer
-+  // takes ownership of it. Otherwise the data is allocated by the constructor.
-+  I420Buffer(int width,
-+             int height,
-+             int stride_y,
-+             int stride_u,
-+             int stride_v,
-+             uint8_t* data = nullptr);
- 
-   ~I420Buffer() override;
- 
-diff --git a/modules/video_capture/video_capture_impl.cc b/modules/video_capture/video_capture_impl.cc
-index ed83ab6e57..7bf88028ef 100644
---- a/modules/video_capture/video_capture_impl.cc
-+++ b/modules/video_capture/video_capture_impl.cc
-@@ -200,8 +200,17 @@ int32_t VideoCaptureImpl::IncomingFrame(uint8_t* videoFrame,
-   // Setting absolute height (in case it was negative).
-   // In Windows, the image starts bottom left, instead of top left.
-   // Setting a negative source height, inverts the image (within LibYuv).
--  scoped_refptr<I420Buffer> buffer = I420Buffer::Create(
-+  scoped_refptr<I420Buffer> buffer = I420Buffer::CreateOrNull(
-       target_width, target_height, stride_y, stride_uv, stride_uv);
-+  if (!buffer) {
-+    RTC_LOG(LS_ERROR) << "Unable to allocate I420Buffer"
-+                      << " (w: " << target_width
-+                      << ", h: " << target_height
-+                      << ", stride_y: " << stride_y
-+                      << ", stride_u: " << stride_uv
-+                      << ", stride_v: " << stride_uv << ")";
-+    return -1;
+diff --git a/api/video/video_frame_buffer.cc b/api/video/video_frame_buffer.cc
+index 929ff38e23..6192b11e16 100644
+--- a/api/video/video_frame_buffer.cc
++++ b/api/video/video_frame_buffer.cc
+@@ -35,7 +35,10 @@ scoped_refptr<VideoFrameBuffer> VideoFrameBuffer::CropAndScale(
+     return nullptr;
+   }
+   scoped_refptr<I420Buffer> result =
+-      I420Buffer::Create(scaled_width, scaled_height);
++      I420Buffer::CreateOrNull(scaled_width, scaled_height);
++  if (!result) {
++    return nullptr;
 +  }
- 
-   libyuv::RotationMode rotation_mode = libyuv::kRotate0;
-   if (apply_rotation_) {
+   result->CropAndScaleFrom(*i420_buffer, offset_x, offset_y, crop_width,
+                            crop_height);
+   return result;

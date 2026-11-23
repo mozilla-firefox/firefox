@@ -62,7 +62,6 @@ using ::testing::ValuesIn;
 using webrtc_pc_e2e::EmulatedSFUConfig;
 using webrtc_pc_e2e::PeerConfigurer;
 using webrtc_pc_e2e::RunParams;
-using webrtc_pc_e2e::ScreenShareConfig;
 using webrtc_pc_e2e::VideoCodecConfig;
 using webrtc_pc_e2e::VideoConfig;
 
@@ -313,6 +312,20 @@ MATCHER_P2(HasSpatialAndTemporalLayersSMode,
 }
 
 TEST_P(SvcTest, ScalabilityModeSupported) {
+#if defined(WEBRTC_IOS) || defined(WEBRTC_ANDROID)
+  // Encoding 1850x1110 for 10s exceeds xcodebuild's 180s per-test timeout on
+  // iOS simulator Debug bots and triggers lmkd OOM kills on Android devices.
+  // 1152x648 stays above VP9/AV1's 960x540 minimum for 3 spatial layers with
+  // even dimensions at both 2:1 and 1.5:1 scaling, and 3s (90 frames) is enough
+  // for BWE ramp-up to exercise all spatial and temporal layers.
+  constexpr int kWidth = 1152;
+  constexpr int kHeight = 648;
+  constexpr TimeDelta kRunDuration = TimeDelta::Seconds(3);
+#else
+  constexpr int kWidth = 1850;
+  constexpr int kHeight = 1110;
+  constexpr TimeDelta kRunDuration = TimeDelta::Seconds(10);
+#endif
   FieldTrials trials = CreateTestFieldTrials("");
   if (UseDependencyDescriptor()) {
     trials.Set("WebRTC-DependencyDescriptorAdvertised", "Enabled");
@@ -328,8 +341,8 @@ TEST_P(SvcTest, ScalabilityModeSupported) {
       network_emulation_manager->CreateEndpointPairWithTwoWayRoutes(
           BuiltInNetworkBehaviorConfig()),
       [&](PeerConfigurer* alice) {
-        VideoConfig video(/*stream_label=*/"alice-video", /*width=*/1850,
-                          /*height=*/1110, /*fps=*/30);
+        VideoConfig video(/*stream_label=*/"alice-video", kWidth, kHeight,
+                          /*fps=*/30);
         if (IsSMode()) {
           video.emulated_sfu_config = EmulatedSFUConfig(
               SvcTestParameters().expected_spatial_layers - 1,
@@ -338,15 +351,21 @@ TEST_P(SvcTest, ScalabilityModeSupported) {
         RtpEncodingParameters parameters;
         parameters.scalability_mode = SvcTestParameters().scalability_mode;
         video.encoding_params.push_back(parameters);
-        auto generator = CreateScreenShareFrameGenerator(
-            video, ScreenShareConfig(TimeDelta::Seconds(5)));
+#if defined(WEBRTC_IOS) || defined(WEBRTC_ANDROID)
+        // ScreenShareConfig requires 1850x1110 and loads four ~3 MB YUV slides.
+        auto generator = webrtc_pc_e2e::CreateSquareFrameGenerator(
+            video, /*type=*/std::nullopt);
+#else
+        auto generator = webrtc_pc_e2e::CreateScreenShareFrameGenerator(
+            video, webrtc_pc_e2e::ScreenShareConfig(TimeDelta::Seconds(5)));
+#endif
         alice->AddVideoConfig(std::move(video), std::move(generator));
         alice->SetVideoCodecs({video_codec_config});
         alice->AddFieldTrials(trials);
       },
       [&](PeerConfigurer* bob) { bob->AddFieldTrials(trials); },
       std::move(analyzer));
-  fixture->Run(RunParams(TimeDelta::Seconds(10)));
+  fixture->Run(RunParams(kRunDuration));
   EXPECT_THAT(analyzer_ptr->encoder_layers_seen(),
               HasSpatialAndTemporalLayers(
                   SvcTestParameters().expected_spatial_layers,

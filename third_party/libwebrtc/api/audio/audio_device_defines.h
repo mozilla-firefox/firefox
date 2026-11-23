@@ -17,6 +17,7 @@
 #include <optional>
 #include <string>
 
+#include "absl/base/macros.h"
 #include "rtc_base/strings/string_builder.h"
 
 namespace webrtc {
@@ -35,6 +36,7 @@ static const int kAdmMaxPlayoutBufferSizeMs = 250;
 class AudioTransport {
  public:
   // TODO(bugs.webrtc.org/13620) Deprecate this function
+  ABSL_DEPRECATE_AND_INLINE()
   virtual int32_t RecordedDataIsAvailable(const void* audioSamples,
                                           size_t nSamples,
                                           size_t nBytesPerSample,
@@ -44,7 +46,12 @@ class AudioTransport {
                                           int32_t clockDrift,
                                           uint32_t currentMicLevel,
                                           bool keyPressed,
-                                          uint32_t& newMicLevel) = 0;  // NOLINT
+                                          uint32_t& newMicLevel) {  // NOLINT
+    return RecordedDataIsAvailable(audioSamples, nSamples, nBytesPerSample,
+                                   nChannels, samplesPerSec, totalDelayMS,
+                                   clockDrift, currentMicLevel, keyPressed,
+                                   newMicLevel, std::nullopt);
+  }
 
   virtual int32_t RecordedDataIsAvailable(
       const void* audioSamples,

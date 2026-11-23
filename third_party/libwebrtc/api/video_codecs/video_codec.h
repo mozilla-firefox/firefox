@@ -30,15 +30,6 @@ namespace webrtc {
 // The VideoCodec class represents an old defacto-apis, which we're migrating
 // away from slowly.
 
-// Video codec
-enum class VideoCodecComplexity {
-  kComplexityLow = -1,
-  kComplexityNormal = 0,
-  kComplexityHigh = 1,
-  kComplexityHigher = 2,
-  kComplexityMax = 3
-};
-
 // VP8 specific
 struct VideoCodecVP8 {
   bool operator==(const VideoCodecVP8& other) const;

@@ -16,7 +16,7 @@ Mercurial Revision: https://hg.mozilla.org/mozilla-central/rev/bbec1b95ddb5e0096
  5 files changed, 26 insertions(+), 6 deletions(-)
 
 diff --git a/modules/audio_coding/BUILD.gn b/modules/audio_coding/BUILD.gn
-index 5b03ad3042..b59370e06a 100644
+index b9ef9b4a71..9c657287f0 100644
 --- a/modules/audio_coding/BUILD.gn
 +++ b/modules/audio_coding/BUILD.gn
 @@ -340,7 +340,7 @@ rtc_library("webrtc_opus_wrapper") {
@@ -29,10 +29,10 @@ index 5b03ad3042..b59370e06a 100644
  }
  
 diff --git a/modules/portal/BUILD.gn b/modules/portal/BUILD.gn
-index 19b3b3e209..d675faee9e 100644
+index a91c89d297..83e0301615 100644
 --- a/modules/portal/BUILD.gn
 +++ b/modules/portal/BUILD.gn
-@@ -147,10 +147,10 @@ if (!build_with_mozilla) {
+@@ -150,10 +150,10 @@ if (!build_with_mozilla) {
        deps -= [ ":pipewire_stubs" ]
        defines -= [ "WEBRTC_DLOPEN_PIPEWIRE" ]
        public_deps = [
@@ -48,10 +48,10 @@ index 19b3b3e209..d675faee9e 100644
      }
    }
 diff --git a/modules/video_capture/BUILD.gn b/modules/video_capture/BUILD.gn
-index 83dc72ba53..dbcc162510 100644
+index 0262372568..f5d34a55f1 100644
 --- a/modules/video_capture/BUILD.gn
 +++ b/modules/video_capture/BUILD.gn
-@@ -114,7 +114,7 @@ if (!build_with_chromium || is_linux || is_chromeos) {
+@@ -116,7 +116,7 @@ if (!build_with_chromium || is_linux || is_chromeos) {
          ]
          if (build_with_mozilla) {
            configs -= [ "../portal:pipewire_base" ]
@@ -61,7 +61,7 @@ index 83dc72ba53..dbcc162510 100644
        }
      }
 diff --git a/sdk/BUILD.gn b/sdk/BUILD.gn
-index b61062967d..6b4c5b368c 100644
+index 4383af6de4..bdcf7ca164 100644
 --- a/sdk/BUILD.gn
 +++ b/sdk/BUILD.gn
 @@ -624,6 +624,20 @@ if (is_ios || is_mac) {
@@ -86,10 +86,10 @@ index b61062967d..6b4c5b368c 100644
  
      if (!build_with_mozilla) {
 diff --git a/test/BUILD.gn b/test/BUILD.gn
-index 9ef2c4e1d9..f19666f3c2 100644
+index 792104e3ff..d44aea8210 100644
 --- a/test/BUILD.gn
 +++ b/test/BUILD.gn
-@@ -499,6 +499,12 @@ rtc_source_set("test_support") {
+@@ -515,6 +515,12 @@ rtc_source_set("test_support") {
      "//testing/gmock",
      "//testing/gtest",
    ]

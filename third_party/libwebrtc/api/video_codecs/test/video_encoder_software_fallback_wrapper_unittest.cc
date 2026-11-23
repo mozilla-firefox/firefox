@@ -26,6 +26,7 @@
 #include "api/video/encoded_image.h"
 #include "api/video/i420_buffer.h"
 #include "api/video/video_bitrate_allocator.h"
+#include "api/video/video_codec_constants.h"
 #include "api/video/video_codec_type.h"
 #include "api/video/video_frame.h"
 #include "api/video/video_frame_buffer.h"
@@ -62,10 +63,7 @@ constexpr int kBitrateKbps = 200;
 constexpr int kMinPixelsPerFrame = 1;
 constexpr char kFieldTrial[] = "WebRTC-VP8-Forced-Fallback-Encoder-v2";
 
-const VideoEncoder::Capabilities kCapabilities(false);
-const VideoEncoder::Settings kSettings(kCapabilities,
-                                       kNumCores,
-                                       kMaxPayloadSize);
+constexpr VideoEncoder::Settings kSettings(kNumCores, kMaxPayloadSize);
 
 VideoEncoder::EncoderInfo GetEncoderInfoWithTrustedRateController(
     bool trusted_rate_controller) {
@@ -1004,9 +1002,6 @@ TEST_F(PreferTemporalLayersFallbackTest, PrimesEncoderOnSwitch) {
   EXPECT_CALL(*hw_, OnRttUpdate).Times(0);
   EXPECT_CALL(*sw_, OnRttUpdate).Times(0);
 
-  EXPECT_CALL(*hw_, OnLossNotification).Times(0);
-  EXPECT_CALL(*sw_, OnLossNotification).Times(0);
-
   EXPECT_CALL(*hw_, SetComplexity).Times(0);
   EXPECT_CALL(*sw_, SetComplexity).Times(0);
 
@@ -1023,7 +1018,6 @@ TEST_F(PreferTemporalLayersFallbackTest, PrimesEncoderOnSwitch) {
   VideoEncoder::RateControlParameters rate_params1;
   float packet_loss1 = 0.1;
   int64_t rtt1 = 1;
-  VideoEncoder::LossNotification lntf1;
   const VideoCodecComplexity complexity1[] = {
       VideoCodecComplexity::kComplexityLow,
       VideoCodecComplexity::kComplexityHigh};
@@ -1048,10 +1042,6 @@ TEST_F(PreferTemporalLayersFallbackTest, PrimesEncoderOnSwitch) {
   EXPECT_CALL(*sw_, OnRttUpdate).Times(0);
   wrapper_->OnRttUpdate(rtt1);
 
-  EXPECT_CALL(*hw_, OnLossNotification).Times(1);
-  EXPECT_CALL(*sw_, OnLossNotification).Times(0);
-  wrapper_->OnLossNotification(lntf1);
-
   EXPECT_CALL(*hw_,
               SetComplexity(ElementsAre(VideoCodecComplexity::kComplexityLow,
                                         VideoCodecComplexity::kComplexityHigh),
@@ -1069,7 +1059,7 @@ TEST_F(PreferTemporalLayersFallbackTest, PrimesEncoderOnSwitch) {
   EXPECT_CALL(*sw_, SetFecControllerOverride).Times(0);
   EXPECT_CALL(*hw_, SetFecControllerOverride).Times(0);
 
-  // Rate control parameters are cleared on InitEncode.
+  // Rate control and complexity parameters are cleared on InitEncode.
   EXPECT_CALL(*sw_, SetRates).Times(0);
   EXPECT_CALL(*hw_, SetRates).Times(0);
 
@@ -1079,13 +1069,7 @@ TEST_F(PreferTemporalLayersFallbackTest, PrimesEncoderOnSwitch) {
   EXPECT_CALL(*sw_, OnRttUpdate(rtt1));
   EXPECT_CALL(*hw_, OnRttUpdate).Times(0);
 
-  EXPECT_CALL(*sw_, OnLossNotification).Times(1);
-  EXPECT_CALL(*hw_, OnLossNotification).Times(0);
-
-  EXPECT_CALL(*sw_,
-              SetComplexity(ElementsAre(VideoCodecComplexity::kComplexityLow,
-                                        VideoCodecComplexity::kComplexityHigh),
-                            VideoEncoder::ComplexityControlMode::kVariable));
+  EXPECT_CALL(*sw_, SetComplexity).Times(0);
   EXPECT_CALL(*hw_, SetComplexity).Times(0);
 
   SetSupportsLayers(&hw_info_, false);
@@ -1099,7 +1083,6 @@ TEST_F(PreferTemporalLayersFallbackTest, PrimesEncoderOnSwitch) {
   VideoEncoder::RateControlParameters rate_params2;
   float packet_loss2 = 0.2;
   int64_t rtt2 = 2;
-  VideoEncoder::LossNotification lntf2;
   const VideoCodecComplexity complexity2[] = {
       VideoCodecComplexity::kComplexityMax};
 
@@ -1123,10 +1106,6 @@ TEST_F(PreferTemporalLayersFallbackTest, PrimesEncoderOnSwitch) {
   EXPECT_CALL(*hw_, OnRttUpdate).Times(0);
   wrapper_->OnRttUpdate(rtt2);
 
-  EXPECT_CALL(*sw_, OnLossNotification).Times(1);
-  EXPECT_CALL(*hw_, OnLossNotification).Times(0);
-  wrapper_->OnLossNotification(lntf2);
-
   EXPECT_CALL(*sw_,
               SetComplexity(ElementsAre(VideoCodecComplexity::kComplexityMax),
                             VideoEncoder::ComplexityControlMode::kConstant));
@@ -1143,7 +1122,7 @@ TEST_F(PreferTemporalLayersFallbackTest, PrimesEncoderOnSwitch) {
   EXPECT_CALL(*hw_, SetFecControllerOverride).Times(0);
   EXPECT_CALL(*sw_, SetFecControllerOverride).Times(0);
 
-  // Rate control parameters are cleared on InitEncode.
+  // Rate control and complexity parameters are cleared on InitEncode.
   EXPECT_CALL(*sw_, SetRates).Times(0);
   EXPECT_CALL(*hw_, SetRates).Times(0);
 
@@ -1153,18 +1132,82 @@ TEST_F(PreferTemporalLayersFallbackTest, PrimesEncoderOnSwitch) {
   EXPECT_CALL(*hw_, OnRttUpdate(rtt2));
   EXPECT_CALL(*sw_, OnRttUpdate).Times(0);
 
-  EXPECT_CALL(*hw_, OnLossNotification).Times(1);
-  EXPECT_CALL(*sw_, OnLossNotification).Times(0);
-
-  EXPECT_CALL(*hw_,
-              SetComplexity(ElementsAre(VideoCodecComplexity::kComplexityMax),
-                            VideoEncoder::ComplexityControlMode::kConstant));
+  EXPECT_CALL(*hw_, SetComplexity).Times(0);
   EXPECT_CALL(*sw_, SetComplexity).Times(0);
 
   SetSupportsLayers(&hw_info_, true);
   EXPECT_EQ(WEBRTC_VIDEO_CODEC_OK,
             wrapper_->InitEncode(&codec_settings, kSettings));
   EXPECT_EQ(wrapper_->GetEncoderInfo().implementation_name, "hw");
+}
+
+TEST(SoftwareFallbackEncoderTest,
+     PrimesRatesAndComplexityOnEncodeFallbackAndClearsOnReinit) {
+  auto* sw_encoder = new ::testing::NiceMock<MockVideoEncoder>();
+  auto* hw_encoder = new ::testing::NiceMock<MockVideoEncoder>();
+
+  std::unique_ptr<VideoEncoder> wrapper =
+      CreateVideoEncoderSoftwareFallbackWrapper(
+          CreateTestEnvironment(), std::unique_ptr<VideoEncoder>(sw_encoder),
+          std::unique_ptr<VideoEncoder>(hw_encoder),
+          /*prefer_temporal_support=*/false);
+
+  VideoCodec codec = {};
+  codec.width = 100;
+  codec.height = 100;
+  EXPECT_CALL(*hw_encoder, InitEncode(_, _))
+      .WillOnce(Return(WEBRTC_VIDEO_CODEC_OK));
+  ASSERT_EQ(wrapper->InitEncode(&codec, kSettings), WEBRTC_VIDEO_CODEC_OK);
+
+  VideoEncoder::RateControlParameters rate_params;
+  rate_params.framerate_fps = 30.0;
+  const VideoCodecComplexity complexity[] = {
+      VideoCodecComplexity::kComplexityLow,
+      VideoCodecComplexity::kComplexityHigh};
+
+  EXPECT_CALL(*hw_encoder, SetRates(rate_params));
+  EXPECT_CALL(*sw_encoder, SetRates).Times(0);
+  wrapper->SetRates(rate_params);
+
+  EXPECT_CALL(*hw_encoder,
+              SetComplexity(ElementsAre(VideoCodecComplexity::kComplexityLow,
+                                        VideoCodecComplexity::kComplexityHigh),
+                            VideoEncoder::ComplexityControlMode::kVariable));
+  EXPECT_CALL(*sw_encoder, SetComplexity).Times(0);
+  wrapper->SetComplexity(complexity,
+                         VideoEncoder::ComplexityControlMode::kVariable);
+
+  // Dynamic fallback during Encode() should prime the software encoder with
+  // both rate control and complexity settings before encoding the frame.
+  EXPECT_CALL(*hw_encoder, Encode)
+      .WillOnce(Return(WEBRTC_VIDEO_CODEC_FALLBACK_SOFTWARE));
+  {
+    ::testing::InSequence seq;
+    EXPECT_CALL(*sw_encoder, InitEncode(_, _))
+        .WillOnce(Return(WEBRTC_VIDEO_CODEC_OK));
+    EXPECT_CALL(*sw_encoder, SetRates(rate_params));
+    EXPECT_CALL(
+        *sw_encoder,
+        SetComplexity(ElementsAre(VideoCodecComplexity::kComplexityLow,
+                                  VideoCodecComplexity::kComplexityHigh),
+                      VideoEncoder::ComplexityControlMode::kVariable));
+    EXPECT_CALL(*sw_encoder, Encode).WillOnce(Return(WEBRTC_VIDEO_CODEC_OK));
+  }
+  VideoFrame frame = VideoFrame::Builder()
+                         .set_video_frame_buffer(I420Buffer::Create(100, 100))
+                         .build();
+  EXPECT_EQ(wrapper->Encode(frame, nullptr), WEBRTC_VIDEO_CODEC_OK);
+
+  // Re-initializing via Release() + InitEncode() must clear stored rate control
+  // and complexity settings rather than replaying stale values.
+  EXPECT_EQ(wrapper->Release(), WEBRTC_VIDEO_CODEC_OK);
+  EXPECT_CALL(*hw_encoder, InitEncode(_, _))
+      .WillOnce(Return(WEBRTC_VIDEO_CODEC_OK));
+  EXPECT_CALL(*hw_encoder, SetRates).Times(0);
+  EXPECT_CALL(*sw_encoder, SetRates).Times(0);
+  EXPECT_CALL(*hw_encoder, SetComplexity).Times(0);
+  EXPECT_CALL(*sw_encoder, SetComplexity).Times(0);
+  EXPECT_EQ(wrapper->InitEncode(&codec, kSettings), WEBRTC_VIDEO_CODEC_OK);
 }
 
 struct ResolutionBasedFallbackTestParams {

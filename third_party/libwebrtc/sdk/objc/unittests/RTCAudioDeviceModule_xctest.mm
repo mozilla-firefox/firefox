@@ -16,6 +16,8 @@
 #import "sdk/objc/native/api/audio_device_module.h"
 #endif
 
+#include <optional>
+
 #include "api/environment/environment_factory.h"
 #include "api/scoped_refptr.h"
 
@@ -28,16 +30,18 @@ typedef int32_t (^NeedMorePlayDataBlock)(const size_t nSamples,
                                          int64_t *elapsed_time_ms,
                                          int64_t *ntp_time_ms);
 
-typedef int32_t (^RecordedDataIsAvailableBlock)(const void *audioSamples,
-                                                const size_t nSamples,
-                                                const size_t nBytesPerSample,
-                                                const size_t nChannels,
-                                                const uint32_t samplesPerSec,
-                                                const uint32_t totalDelayMS,
-                                                const int32_t clockDrift,
-                                                const uint32_t currentMicLevel,
-                                                const bool keyPressed,
-                                                uint32_t &newMicLevel);
+typedef int32_t (^RecordedDataIsAvailableBlock)(
+    const void *audioSamples,
+    const size_t nSamples,
+    const size_t nBytesPerSample,
+    const size_t nChannels,
+    const uint32_t samplesPerSec,
+    const uint32_t totalDelayMS,
+    const int32_t clockDrift,
+    const uint32_t currentMicLevel,
+    const bool keyPressed,
+    uint32_t &newMicLevel,
+    std::optional<int64_t> estimatedCaptureTimeNS);
 
 // This class implements the AudioTransport API and forwards all methods to the
 // appropriate blocks.
@@ -72,16 +76,18 @@ class MockAudioTransport : public webrtc::AudioTransport {
                                  ntp_time_ms);
   }
 
-  int32_t RecordedDataIsAvailable(const void *audioSamples,
-                                  const size_t nSamples,
-                                  const size_t nBytesPerSample,
-                                  const size_t nChannels,
-                                  const uint32_t samplesPerSec,
-                                  const uint32_t totalDelayMS,
-                                  const int32_t clockDrift,
-                                  const uint32_t currentMicLevel,
-                                  const bool keyPressed,
-                                  uint32_t &newMicLevel) override {
+  int32_t RecordedDataIsAvailable(
+      const void *audioSamples,
+      const size_t nSamples,
+      const size_t nBytesPerSample,
+      const size_t nChannels,
+      const uint32_t samplesPerSec,
+      const uint32_t totalDelayMS,
+      const int32_t clockDrift,
+      const uint32_t currentMicLevel,
+      const bool keyPressed,
+      uint32_t &newMicLevel,
+      std::optional<int64_t> estimatedCaptureTimeNS) override {
     return recordedDataIsAvailableBlock(audioSamples,
                                         nSamples,
                                         nBytesPerSample,
@@ -91,7 +97,8 @@ class MockAudioTransport : public webrtc::AudioTransport {
                                         clockDrift,
                                         currentMicLevel,
                                         keyPressed,
-                                        newMicLevel);
+                                        newMicLevel,
+                                        estimatedCaptureTimeNS);
   }
 
   void PullRenderData(int bits_per_sample,
@@ -386,16 +393,18 @@ static const NSUInteger kNumIgnoreFirstCallbacks = 50;
       [self expectationWithDescription:@"RecordedDataIsAvailable"];
   __block int num_callbacks = 0;
 
-  mock.expectRecordedDataIsAvailable(^(const void *audioSamples,
-                                       const size_t nSamples,
-                                       const size_t nBytesPerSample,
-                                       const size_t nChannels,
-                                       const uint32_t samplesPerSec,
-                                       const uint32_t totalDelayMS,
-                                       const int32_t clockDrift,
-                                       const uint32_t currentMicLevel,
-                                       const bool keyPressed,
-                                       uint32_t &newMicLevel) {
+  mock.expectRecordedDataIsAvailable(^(
+      const void *audioSamples,
+      const size_t nSamples,
+      const size_t nBytesPerSample,
+      const size_t nChannels,
+      const uint32_t samplesPerSec,
+      const uint32_t totalDelayMS,
+      const int32_t clockDrift,
+      const uint32_t currentMicLevel,
+      const bool keyPressed,
+      uint32_t &newMicLevel,
+      std::optional<int64_t> /* estimatedCaptureTimeNS */) {
     XCTAssertNotEqual((void *)NULL, audioSamples);
     XCTAssertEqual(nSamples, self.recordParameters.frames_per_10ms_buffer());
     XCTAssertEqual(nBytesPerSample, kBytesPerSample);
@@ -450,16 +459,18 @@ static const NSUInteger kNumIgnoreFirstCallbacks = 50;
     return 0;
   });
 
-  mock.expectRecordedDataIsAvailable(^(const void *audioSamples,
-                                       const size_t nSamples,
-                                       const size_t nBytesPerSample,
-                                       const size_t nChannels,
-                                       const uint32_t samplesPerSec,
-                                       const uint32_t totalDelayMS,
-                                       const int32_t clockDrift,
-                                       const uint32_t currentMicLevel,
-                                       const bool keyPressed,
-                                       uint32_t &newMicLevel) {
+  mock.expectRecordedDataIsAvailable(^(
+      const void *audioSamples,
+      const size_t nSamples,
+      const size_t nBytesPerSample,
+      const size_t nChannels,
+      const uint32_t samplesPerSec,
+      const uint32_t totalDelayMS,
+      const int32_t clockDrift,
+      const uint32_t currentMicLevel,
+      const bool keyPressed,
+      uint32_t &newMicLevel,
+      std::optional<int64_t> /* estimatedCaptureTimeNS */) {
     XCTAssertNotEqual((void *)NULL, audioSamples);
     XCTAssertEqual(nSamples, self.recordParameters.frames_per_10ms_buffer());
     XCTAssertEqual(nBytesPerSample, kBytesPerSample);
@@ -560,16 +571,18 @@ static const NSUInteger kNumIgnoreFirstCallbacks = 50;
   __block NSUInteger fifoTotalWrittenElements = 0;
   __block NSUInteger fifoWriteCount = 0;
 
-  mock.expectRecordedDataIsAvailable(^(const void *audioSamples,
-                                       const size_t nSamples,
-                                       const size_t nBytesPerSample,
-                                       const size_t nChannels,
-                                       const uint32_t samplesPerSec,
-                                       const uint32_t totalDelayMS,
-                                       const int32_t clockDrift,
-                                       const uint32_t currentMicLevel,
-                                       const bool keyPressed,
-                                       uint32_t &newMicLevel) {
+  mock.expectRecordedDataIsAvailable(^(
+      const void *audioSamples,
+      const size_t nSamples,
+      const size_t nBytesPerSample,
+      const size_t nChannels,
+      const uint32_t samplesPerSec,
+      const uint32_t totalDelayMS,
+      const int32_t clockDrift,
+      const uint32_t currentMicLevel,
+      const bool keyPressed,
+      uint32_t &newMicLevel,
+      std::optional<int64_t> /* estimatedCaptureTimeNS */) {
     if (fifoWriteCount++ < kNumIgnoreFirstCallbacks) {
       return 0;
     }

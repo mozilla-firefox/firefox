@@ -46,14 +46,14 @@ class RtpDumpWriter : public RtpFileWriter {
     if (!first_packet_time_) {
       first_packet_time_ = packet->time_ms;
     }
-    uint16_t len = static_cast<uint16_t>(packet->length + kPacketHeaderSize);
+    uint16_t len = static_cast<uint16_t>(packet->length() + kPacketHeaderSize);
     uint16_t plen = static_cast<uint16_t>(packet->original_length);
     uint32_t offset = packet->time_ms - *first_packet_time_;
     RTC_CHECK(WriteUint16(len));
     RTC_CHECK(WriteUint16(plen));
     RTC_CHECK(WriteUint32(offset));
-    return fwrite(packet->data, sizeof(uint8_t), packet->length, file_) ==
-           packet->length;
+    return fwrite(packet->buffer.data(), sizeof(uint8_t), packet->length(),
+                  file_) == packet->length();
   }
 
  private:

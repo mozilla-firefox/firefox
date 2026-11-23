@@ -35,6 +35,7 @@ namespace {
 
 using ::testing::_;
 using ::testing::ElementsAreArray;
+using ::testing::InSequence;
 using ::testing::NiceMock;
 using ::testing::Optional;
 using ::testing::Return;
@@ -295,6 +296,37 @@ TEST(ChannelSendFrameTransformerDelegateTest, ShortCircuitingSkipsTransform) {
                       /*ssrc=*/0, /*mimeType=*/"audio/opus",
                       /*audio_level_dbov=*/std::nullopt);
   channel_queue.WaitForPreviouslyPostedTasks();
+}
+
+TEST(ChannelSendFrameTransformerDelegateTest,
+     StopShortCircuitingResumesTransform) {
+  TaskQueueForTest channel_queue("channel_queue");
+  scoped_refptr<MockFrameTransformer> mock_frame_transformer =
+      make_ref_counted<NiceMock<MockFrameTransformer>>();
+  MockChannelSend mock_channel;
+  scoped_refptr<ChannelSendFrameTransformerDelegate> delegate =
+      make_ref_counted<ChannelSendFrameTransformerDelegate>(
+          mock_channel.callback(), mock_frame_transformer, channel_queue.Get());
+
+  InSequence s;
+  // While short circuiting, the frame is passed straight to the channel.
+  EXPECT_CALL(mock_channel, SendFrame);
+  // Once short circuiting stops, the frame is passed to the transformer again.
+  EXPECT_CALL(*mock_frame_transformer, Transform);
+
+  delegate->StartShortCircuiting();
+  delegate->Transform(AudioFrameType::kEmptyFrame, 0, 0, mock_data,
+                      sizeof(mock_data), 0, /*ssrc=*/0,
+                      /*mimeType=*/"audio/opus",
+                      /*audio_level_dbov=*/std::nullopt);
+  // The short circuited frame is sent on the channel queue.
+  channel_queue.WaitForPreviouslyPostedTasks();
+
+  delegate->StopShortCircuiting();
+  delegate->Transform(AudioFrameType::kEmptyFrame, 0, 0, mock_data,
+                      sizeof(mock_data), 0, /*ssrc=*/0,
+                      /*mimeType=*/"audio/opus",
+                      /*audio_level_dbov=*/std::nullopt);
 }
 
 TEST(ChannelSendFrameTransformerDelegateTest,

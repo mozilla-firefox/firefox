@@ -176,26 +176,26 @@ AudioSendStream::AudioSendStream(
 
   RTC_DCHECK(rtp_rtcp_module_);
 
-  RTC_DCHECK_RUN_ON(&worker_thread_checker_);
+  RTC_DCHECK_RUN_ON(&network_thread_checker_);
   ConfigureStream(config, true, nullptr);
 }
 
 AudioSendStream::~AudioSendStream() {
-  RTC_DCHECK_RUN_ON(&worker_thread_checker_);
+  RTC_DCHECK_RUN_ON(&network_thread_checker_);
   RTC_LOG(LS_INFO) << "~AudioSendStream: " << config_.rtp.ssrc;
   RTC_DCHECK(!sending_);
   channel_send_->ResetSenderCongestionControlObjects();
 }
 
 const webrtc::AudioSendStream::Config& AudioSendStream::GetConfig() const {
-  RTC_DCHECK_RUN_ON(&worker_thread_checker_);
+  RTC_DCHECK_RUN_ON(&network_thread_checker_);
   return config_;
 }
 
 void AudioSendStream::Reconfigure(
     const webrtc::AudioSendStream::Config& new_config,
     SetParametersCallback callback) {
-  RTC_DCHECK_RUN_ON(&worker_thread_checker_);
+  RTC_DCHECK_RUN_ON(&network_thread_checker_);
   ConfigureStream(new_config, false, std::move(callback));
 }
 
@@ -340,7 +340,7 @@ void AudioSendStream::ConfigureStream(
   UpdateOverheadPerPacket();
 
   channel_send_->CallEncoder([this](AudioEncoder* encoder) {
-    RTC_DCHECK_RUN_ON(&worker_thread_checker_);
+    RTC_DCHECK_RUN_ON(&network_thread_checker_);
     if (!encoder) {
       return;
     }
@@ -358,7 +358,7 @@ void AudioSendStream::ConfigureStream(
 }
 
 void AudioSendStream::Start() {
-  RTC_DCHECK_RUN_ON(&worker_thread_checker_);
+  RTC_DCHECK_RUN_ON(&network_thread_checker_);
   if (sending_) {
     return;
   }
@@ -381,7 +381,7 @@ void AudioSendStream::Start() {
 }
 
 void AudioSendStream::Stop() {
-  RTC_DCHECK_RUN_ON(&worker_thread_checker_);
+  RTC_DCHECK_RUN_ON(&network_thread_checker_);
   if (!sending_) {
     return;
   }
@@ -417,14 +417,14 @@ bool AudioSendStream::SendTelephoneEvent(int payload_type,
                                          int payload_frequency,
                                          int event,
                                          int duration_ms) {
-  RTC_DCHECK_RUN_ON(&worker_thread_checker_);
+  RTC_DCHECK_RUN_ON(&network_thread_checker_);
   channel_send_->SetSendTelephoneEventPayloadType(payload_type,
                                                   payload_frequency);
   return channel_send_->SendTelephoneEventOutband(event, duration_ms);
 }
 
 void AudioSendStream::SetMuted(bool muted) {
-  RTC_DCHECK_RUN_ON(&worker_thread_checker_);
+  RTC_DCHECK_RUN_ON(&network_thread_checker_);
   channel_send_->SetInputMute(muted);
 }
 
@@ -434,7 +434,7 @@ webrtc::AudioSendStream::Stats AudioSendStream::GetStats() const {
 
 webrtc::AudioSendStream::Stats AudioSendStream::GetStats(
     bool has_remote_tracks) const {
-  RTC_DCHECK_RUN_ON(&worker_thread_checker_);
+  RTC_DCHECK_RUN_ON(&network_thread_checker_);
   webrtc::AudioSendStream::Stats stats;
   stats.local_ssrc = config_.rtp.ssrc;
   stats.target_bitrate_bps = channel_send_->GetTargetBitrate();
@@ -497,7 +497,7 @@ webrtc::AudioSendStream::Stats AudioSendStream::GetStats(
 }
 
 void AudioSendStream::DeliverRtcp(std::span<const uint8_t> packet) {
-  RTC_DCHECK_RUN_ON(&worker_thread_checker_);
+  RTC_DCHECK_RUN_ON(&network_thread_checker_);
   channel_send_->ReceivedRTCPPacket(packet.data(), packet.size());
   // Poll if overhead has changed, which it can do if ack triggers us to stop
   // sending mid/rid.
@@ -505,7 +505,7 @@ void AudioSendStream::DeliverRtcp(std::span<const uint8_t> packet) {
 }
 
 uint32_t AudioSendStream::OnBitrateUpdated(BitrateAllocationUpdate update) {
-  RTC_DCHECK_RUN_ON(&worker_thread_checker_);
+  RTC_DCHECK_RUN_ON(&network_thread_checker_);
   if (transport_overhead_per_packet_bytes_ !=
       update.packet_overhead.bytes<size_t>()) {
     transport_overhead_per_packet_bytes_ =
@@ -532,7 +532,7 @@ std::optional<DataRate> AudioSendStream::GetUsedRate() const {
 }
 
 void AudioSendStream::UpdateOverheadPerPacket() {
-  RTC_DCHECK_RUN_ON(&worker_thread_checker_);
+  RTC_DCHECK_RUN_ON(&network_thread_checker_);
   size_t overhead_per_packet_bytes =
       transport_overhead_per_packet_bytes_ +
       rtp_rtcp_module_->ExpectedPerPacketOverhead();
@@ -550,7 +550,7 @@ void AudioSendStream::UpdateOverheadPerPacket() {
 }
 
 size_t AudioSendStream::TestOnlyGetPerPacketOverheadBytes() const {
-  RTC_DCHECK_RUN_ON(&worker_thread_checker_);
+  RTC_DCHECK_RUN_ON(&network_thread_checker_);
   return overhead_per_packet_;
 }
 
@@ -710,7 +710,7 @@ void AudioSendStream::ReconfigureANA(const Config& new_config) {
   }
   if (new_config.audio_network_adaptor_config) {
     channel_send_->CallEncoder([&](AudioEncoder* encoder) {
-      RTC_DCHECK_RUN_ON(&worker_thread_checker_);
+      RTC_DCHECK_RUN_ON(&network_thread_checker_);
       if (encoder->EnableAudioNetworkAdaptor(
               *new_config.audio_network_adaptor_config)) {
         RTC_LOG(LS_INFO) << "Audio network adaptor enabled on SSRC "
@@ -807,7 +807,7 @@ void AudioSendStream::ReconfigureBitrateObserver(
 }
 
 void AudioSendStream::ConfigureBitrateObserver() {
-  RTC_DCHECK_RUN_ON(&worker_thread_checker_);
+  RTC_DCHECK_RUN_ON(&network_thread_checker_);
   // This either updates the current observer or adds a new observer.
   // TODO(srte): Add overhead compensation here.
   auto constraints = GetMinMaxBitrateConstraints();

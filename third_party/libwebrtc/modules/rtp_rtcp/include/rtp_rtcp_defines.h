@@ -100,7 +100,6 @@ enum RTCPPacketType : uint32_t {
   kRtcpTmmbr = 0x0100,
   kRtcpTmmbn = 0x0200,
   kRtcpSrReq = 0x0400,
-  kRtcpLossNotification = 0x2000,
   kRtcpRemb = 0x10000,
   kRtcpTransmissionTimeOffset = 0x20000,
   kRtcpXrReceiverReferenceTime = 0x40000,
@@ -143,18 +142,6 @@ class RtcpIntraFrameObserver {
   virtual ~RtcpIntraFrameObserver() {}
 
   virtual void OnReceivedIntraFrameRequest(uint32_t ssrc) = 0;
-};
-
-// Observer for incoming LossNotification RTCP messages.
-// See the documentation of LossNotification for details.
-class RtcpLossNotificationObserver {
- public:
-  virtual ~RtcpLossNotificationObserver() = default;
-
-  virtual void OnReceivedLossNotification(uint32_t ssrc,
-                                          uint16_t seq_num_of_last_decodable,
-                                          uint16_t seq_num_of_last_received,
-                                          bool decodability_flag) = 0;
 };
 
 // Interface to watch incoming rtcp packets related to the link in general.

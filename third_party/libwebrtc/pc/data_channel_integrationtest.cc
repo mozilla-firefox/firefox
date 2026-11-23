@@ -49,6 +49,7 @@
 #include "rtc_base/ssl_stream_adapter.h"
 #include "rtc_base/strings/string_builder.h"
 #include "rtc_base/task_queue_for_test.h"
+#include "rtc_base/thread.h"
 #include "rtc_base/virtual_socket_server.h"
 #include "test/gmock.h"
 #include "test/gtest.h"
@@ -342,6 +343,30 @@ TEST_P(DataChannelIntegrationTest,
   EXPECT_FALSE(last_error.ok());
   EXPECT_FALSE(std::string(last_error.message()).empty());
   EXPECT_EQ(RTCErrorType::NETWORK_ERROR, last_error.type());
+}
+
+TEST_P(DataChannelIntegrationTest, SendFromOnDataChannelSucceeds) {
+  ASSERT_TRUE(CreatePeerConnectionWrappers());
+  ConnectFakeSignaling();
+  Thread* test_thread = Thread::Current();
+  std::optional<RTCError> send_result;
+  callee()->SetDataChannelHandler([&](DataChannelInterface* channel) {
+    channel->SendAsync(DataBuffer("hello"), [&](RTCError err) {
+      test_thread->PostTask(
+          [&, err = std::move(err)] { send_result = std::move(err); });
+    });
+  });
+  caller()->CreateDataChannel();
+  caller()->CreateAndSetAndSignalOffer();
+  ASSERT_TRUE(WaitUntil([&] { return SignalingStateStable(); }));
+  ASSERT_TRUE(WaitUntil([&] { return send_result.has_value(); }));
+  EXPECT_TRUE(send_result->ok()) << *send_result;
+  EXPECT_THAT(
+      WaitUntil(
+          [&] { return caller()->data_observer()->received_message_count(); },
+          Eq(1u)),
+      IsRtcOk());
+  EXPECT_EQ("hello", caller()->data_observer()->last_message());
 }
 
 // This test sets up a call between two parties with an SCTP

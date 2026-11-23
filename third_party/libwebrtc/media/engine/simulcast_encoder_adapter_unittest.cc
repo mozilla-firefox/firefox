@@ -91,8 +91,7 @@ namespace {
 constexpr int kDefaultWidth = 1280;
 constexpr int kDefaultHeight = 720;
 
-const VideoEncoder::Capabilities kCapabilities(false);
-const VideoEncoder::Settings kSettings(kCapabilities, 1, 1200);
+constexpr VideoEncoder::Settings kSettings(1, 1200);
 
 std::unique_ptr<SimulcastTestFixture> CreateSpecificSimulcastTestFixture(
     VideoEncoderFactory* internal_encoder_factory) {
@@ -3328,6 +3327,50 @@ TEST_F(TestSimulcastEncoderAdapterFake,
                             VideoEncoder::ComplexityControlMode::kConstant));
   adapter_->SetComplexity(complexities,
                           VideoEncoder::ComplexityControlMode::kConstant);
+}
+
+TEST_F(TestSimulcastEncoderAdapterFake,
+       ReinitWithFallbackFactoryClearsComplexity) {
+  use_fallback_factory_ = true;
+  SetUp();
+
+  SimulcastTestFixtureImpl::DefaultSettings(
+      &codec_, static_cast<const int*>(kTestTemporalLayerProfile),
+      kVideoCodecVP8);
+  codec_.numberOfSimulcastStreams = 2;
+  codec_.startBitrate = 3000;
+  EXPECT_EQ(0, adapter_->InitEncode(&codec_, kSettings));
+
+  const std::vector<MockVideoEncoder*>& primary_encoders =
+      helper_->factory()->encoders();
+  const std::vector<MockVideoEncoder*>& fallback_encoders =
+      helper_->fallback_factory()->encoders();
+  ASSERT_EQ(2u, primary_encoders.size());
+  ASSERT_EQ(2u, fallback_encoders.size());
+
+  const VideoCodecComplexity complexities[] = {
+      VideoCodecComplexity::kComplexityLow,
+      VideoCodecComplexity::kComplexityHigh,
+  };
+  EXPECT_CALL(*primary_encoders[0],
+              SetComplexity(ElementsAre(VideoCodecComplexity::kComplexityLow),
+                            VideoEncoder::ComplexityControlMode::kVariable));
+  EXPECT_CALL(*primary_encoders[1],
+              SetComplexity(ElementsAre(VideoCodecComplexity::kComplexityHigh),
+                            VideoEncoder::ComplexityControlMode::kVariable));
+  adapter_->SetComplexity(complexities,
+                          VideoEncoder::ComplexityControlMode::kVariable);
+
+  // Release caches the wrapped encoders; re-initializing must not replay stale
+  // complexity onto either primary or fallback encoders.
+  EXPECT_EQ(0, adapter_->Release());
+  for (MockVideoEncoder* encoder : primary_encoders) {
+    EXPECT_CALL(*encoder, SetComplexity).Times(0);
+  }
+  for (MockVideoEncoder* encoder : fallback_encoders) {
+    EXPECT_CALL(*encoder, SetComplexity).Times(0);
+  }
+  EXPECT_EQ(0, adapter_->InitEncode(&codec_, kSettings));
 }
 
 }  // namespace test

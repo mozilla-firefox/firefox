@@ -526,6 +526,7 @@ rtc_library("logging") {
     "../api/units:timestamp",
     "synchronization:mutex",
     "//third_party/abseil-cpp/absl/base:no_destructor",
+    "//third_party/abseil-cpp/absl/base:nullability",
     "//third_party/abseil-cpp/absl/strings",
     "//third_party/abseil-cpp/absl/strings:string_view",
   ]
@@ -555,7 +556,10 @@ rtc_library("logging") {
       "logging.cc",
       "logging.h",
     ]
-    deps += [ "system:inline" ]
+    deps += [
+      "system:ignore_warnings",
+      "system:inline",
+    ]
 
     if (is_mac) {
       frameworks = [ "Foundation.framework" ]
@@ -809,13 +813,12 @@ if (rtc_include_tests) {
       ":logging",
       ":rtc_event",
       ":rtc_task_queue_stdlib",
-      ":threading",
       "../api:field_trials_view",
       "../api/task_queue",
       "../api/task_queue:task_queue_test",
       "../api/units:time_delta",
+      "../test:scoped_logging_config",
       "../test:test_support",
-      "//third_party/abseil-cpp/absl/strings:string_view",
     ]
   }
 }
@@ -2049,6 +2052,7 @@ if (rtc_include_tests) {
         testonly = true
         sources = [ "logging_benchmark.cc" ]
         deps = [
+          ":checks",
           ":logging",
           "//third_party/abseil-cpp/absl/strings",
           "//third_party/abseil-cpp/absl/strings:string_view",
@@ -2366,6 +2370,7 @@ if (rtc_include_tests) {
         "../api/units:timestamp",
         "../system_wrappers",
         "../test:test_support",
+        "system:ignore_warnings",
         "//third_party/abseil-cpp/absl/functional:any_invocable",
         "//third_party/abseil-cpp/absl/strings:string_view",
       ]
@@ -2519,6 +2524,7 @@ if (rtc_include_tests) {
       deps = [
         ":stringutils",
         "../test:test_support",
+        "//third_party/abseil-cpp/absl/container:inlined_vector",
         "//third_party/abseil-cpp/absl/strings:string_view",
       ]
     }

@@ -52,8 +52,6 @@ void VerifyEmptyFlexfecConfig(const RtpConfig::Flexfec& config) {
 
 TEST_F(ConfigEndToEndTest, VerifyDefaultSendConfigParameters) {
   VideoSendStream::Config default_send_config(nullptr);
-  EXPECT_FALSE(default_send_config.rtp.lntf.enabled)
-      << "Enabling LNTF require rtcp-fb: goog-lntf negotiation.";
   EXPECT_EQ(0, default_send_config.rtp.nack.rtp_history_ms)
       << "Enabling NACK require rtcp-fb: nack negotiation.";
   EXPECT_TRUE(default_send_config.rtp.rtx.ssrcs.empty())
@@ -76,8 +74,6 @@ TEST_F(ConfigEndToEndTest, VerifyDefaultVideoReceiveConfigParameters) {
   VideoReceiveStreamInterface::Config default_receive_config(nullptr);
   EXPECT_EQ(RtcpMode::kCompound, default_receive_config.rtp.rtcp_mode)
       << "Reduced-size RTCP require rtcp-rsize to be negotiated.";
-  EXPECT_FALSE(default_receive_config.rtp.lntf.enabled)
-      << "Enabling LNTF require rtcp-fb: goog-lntf negotiation.";
   EXPECT_FALSE(
       default_receive_config.rtp.rtcp_xr.receiver_reference_time_report)
       << "RTCP XR settings require rtcp-xr to be negotiated.";

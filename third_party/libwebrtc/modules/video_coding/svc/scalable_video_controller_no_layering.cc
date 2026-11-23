@@ -54,22 +54,30 @@ ScalableVideoControllerNoLayering::DependencyStructure() const {
 
 std::vector<ScalableVideoController::LayerFrameConfig>
 ScalableVideoControllerNoLayering::NextFrameConfig(bool restart) {
+  if (restart) {
+    start_ = true;
+  }
   if (!enabled_) {
     return {};
   }
   std::vector<LayerFrameConfig> result(1);
-  if (restart || start_) {
+  if (start_) {
     result[0].Id(0).Keyframe().Update(0);
   } else {
     result[0].Id(0).ReferenceAndUpdate(0);
   }
-  start_ = false;
   return result;
+}
+
+void ScalableVideoControllerNoLayering::OnFrameDropped(
+    const LayerFrameConfig& config) {
+  RTC_DCHECK_EQ(config.Id(), 0);
 }
 
 GenericFrameInfo ScalableVideoControllerNoLayering::OnEncodeDone(
     const LayerFrameConfig& config) {
   RTC_DCHECK_EQ(config.Id(), 0);
+  start_ = false;
   GenericFrameInfo frame_info;
   frame_info.encoder_buffers = config.Buffers();
   if (config.IsKeyframe()) {
