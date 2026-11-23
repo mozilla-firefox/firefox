@@ -632,6 +632,12 @@
     --panel-separator-padding: var(--panel-separator-padding-block) var(--panel-separator-padding-inline);
     --panel-separator-padding-block: 4px;
     --panel-separator-padding-inline: 8px;
+    --panel-subview-motion-duration-enter: 185ms;
+    --panel-subview-motion-duration-exit: 130ms;
+    --panel-subview-motion-duration-fade-reduced: 120ms;
+    --panel-subview-motion-duration-parent-exit: 150ms;
+    --panel-subview-motion-easing: var(--motion-easing-emphasized);
+    --panel-subview-motion-easing-fade: var(--motion-easing-standard);
     --panel-text-color: var(--text-color);
     --panel-width: initial;
 

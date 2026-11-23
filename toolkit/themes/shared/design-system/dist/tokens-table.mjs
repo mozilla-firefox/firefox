@@ -1996,6 +1996,18 @@ export const tokensTable = {
     { value: "var(--motion-easing-emphasized)", name: "--panel-motion-easing" },
     { value: "0.96", name: "--panel-motion-scale" },
     { value: "-4px", name: "--panel-motion-translate-y" },
+    { value: "185ms", name: "--panel-subview-motion-duration-enter" },
+    { value: "130ms", name: "--panel-subview-motion-duration-exit" },
+    { value: "120ms", name: "--panel-subview-motion-duration-fade-reduced" },
+    { value: "150ms", name: "--panel-subview-motion-duration-parent-exit" },
+    {
+      value: "var(--motion-easing-emphasized)",
+      name: "--panel-subview-motion-easing",
+    },
+    {
+      value: "var(--motion-easing-standard)",
+      name: "--panel-subview-motion-easing-fade",
+    },
     { value: "200ms", name: "--sidebar-motion-duration-enter" },
     { value: "160ms", name: "--sidebar-motion-duration-exit" },
     {
@@ -4721,6 +4733,12 @@ export const variableLookupTable = {
     "var(--panel-separator-padding-block) var(--panel-separator-padding-inline)",
   "panel-separator-padding-block": "4px",
   "panel-separator-padding-inline": "8px",
+  "panel-subview-motion-duration-enter": "185ms",
+  "panel-subview-motion-duration-exit": "130ms",
+  "panel-subview-motion-duration-fade-reduced": "120ms",
+  "panel-subview-motion-duration-parent-exit": "150ms",
+  "panel-subview-motion-easing": "var(--motion-easing-emphasized)",
+  "panel-subview-motion-easing-fade": "var(--motion-easing-standard)",
   "panel-text-color": {
     light: "var(--color-black)",
     dark: "rgb(251, 251, 254)",

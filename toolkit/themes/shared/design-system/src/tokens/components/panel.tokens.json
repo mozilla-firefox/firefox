@@ -98,6 +98,36 @@
       }
     }
   },
+  "subview": {
+    "motion": {
+      "duration": {
+        "enter": {
+          "value": "185ms"
+        },
+        "exit": {
+          "value": "130ms"
+        },
+        "fade": {
+          "reduced": {
+            "value": "120ms"
+          }
+        },
+        "parent": {
+          "exit": {
+            "value": "150ms"
+          }
+        }
+      },
+      "easing": {
+        "@base": {
+          "value": "{motion.easing.emphasized}"
+        },
+        "fade": {
+          "value": "{motion.easing.standard}"
+        }
+      }
+    }
+  },
   "text": {
     "color": {
       "@base": {

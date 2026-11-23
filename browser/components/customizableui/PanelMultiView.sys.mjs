@@ -2,6 +2,8 @@
  * License, v. 2.0. If a copy of the MPL was not distributed with this
  * file, You can obtain one at http://mozilla.org/MPL/2.0/. */
 
+import { AppConstants } from "resource://gre/modules/AppConstants.sys.mjs";
+
 const lazy = {};
 ChromeUtils.defineESModuleGetters(lazy, {
   CustomizableUI:
@@ -1075,9 +1077,10 @@ export var PanelMultiView = class extends AssociatedToNode {
     // Clean up all the attributes and styles related to transitions. We do this
     // here rather than when the view is closed because we are likely to make
     // other DOM modifications soon, which isn't the case when closing.
+    panelView.node.removeAttribute("drill-role");
     let { style } = panelView.node;
-    style.removeProperty("outline");
     style.removeProperty("width");
+    style.removeProperty("height");
 
     return true;
   }
@@ -1129,11 +1132,14 @@ export var PanelMultiView = class extends AssociatedToNode {
   }
 
   /**
-   * Apply a transition to 'slide' from the currently active view to the next
+   * Apply a transition to 'drill' from the currently active view to the next
    * one.
-   * Sliding the next subview in means that the previous panelview stays where
-   * it is and the active panelview slides in from the left in LTR mode, right
-   * in RTL mode.
+   * Drilling into a subview means that the subview is stacked on top of the
+   * view it was opened from, fading in while moving into place from the end
+   * side, while the view underneath recedes towards the start side. Going back
+   * plays the same motion in reverse. With prefers-reduced-motion the views
+   * only cross-fade, without moving, and on Windows and GTK they don't
+   * animate at all.
    *
    * @param {DOMNode} previousViewNode
    *   The panelview node that is currently displayed, but is about to be
@@ -1219,29 +1225,41 @@ export var PanelMultiView = class extends AssociatedToNode {
     this.#transitioning = true;
     details.phase = TRANSITION_PHASES.PREPARE;
 
-    // The 'magic' part: build up the amount of pixels to move right or left.
-    let moveToLeft =
-      (this.window.RTL_UI && !reverse) || (!this.window.RTL_UI && reverse);
-    let deltaX = prevPanelView.knownWidth;
+    // On Windows / GTK, prefers-reduced-motion is derived from a more general
+    // "enable animations" setting, so the panel drops its own fade there
+    // rather than just its movement, see popup.css. The drill follows it, and
+    // with nothing left to run there is nothing to wait for either.
+    let reduceMotion = window.matchMedia(
+      "(prefers-reduced-motion: reduce)"
+    ).matches;
+    let animate = !reduceMotion || AppConstants.platform == "macosx";
+    let drilling = animate && !viewNode.getAttribute("no-panelview-transition");
+    // The deeper of the two views is stacked on top of the shallower one, so
+    // that both can drill in place instead of sliding side by side.
     let deepestNode = reverse ? previousViewNode : viewNode;
+    details.styledNodes = [previousViewNode, viewNode];
 
-    // With a transition when navigating backwards - user hits the 'back'
-    // button - we need to make sure that the views are positioned in a way
-    // that a translateX() unveils the previous view from the right direction.
-    if (reverse) {
-      this._viewStack.style.marginInlineStart = "-" + deltaX + "px";
+    // We're setting the width property to prevent flickering during the
+    // animation with smaller views.
+    viewNode.style.width = viewRect.width + "px";
+
+    if (drilling) {
+      previousViewNode.setAttribute("drill-role", reverse ? "sub" : "root");
+      viewNode.setAttribute("drill-role", reverse ? "root" : "sub");
+      // Both views keep their measured size while they animate: the stacked
+      // one is out of flow, and the one still in flow must not be reflowed by
+      // the view container resizing around it.
+      previousViewNode.style.width = prevPanelView.knownWidth + "px";
+      deepestNode.style.height =
+        (reverse ? prevPanelView.knownHeight : viewRect.height) + "px";
+      this.node.setAttribute("drilling", reverse ? "back" : "forward");
+    } else if (reverse) {
+      // Without the drill the views stay laid out next to each other, so the
+      // stack has to be offset for the one being navigated back to to be the
+      // one on screen.
+      this._viewStack.style.marginInlineStart =
+        "-" + prevPanelView.knownWidth + "px";
     }
-
-    // Set the transition style and listen for its end to clean up and make sure
-    // the box sizing becomes dynamic again.
-    // Somehow, putting these properties in PanelUI.css doesn't work for newly
-    // shown nodes in a XUL parent node.
-    this._viewStack.style.transition =
-      "transform var(--animation-easing-function)" +
-      " var(--panelui-subview-transition-duration)";
-    this._viewStack.style.willChange = "transform";
-    // Use an outline instead of a border so that the size is not affected.
-    deepestNode.style.outline = "1px solid var(--panel-separator-color)";
 
     // Now that all the elements are in place for the start of the transition,
     // give the layout code a chance to set the initial values.
@@ -1257,9 +1275,6 @@ export var PanelMultiView = class extends AssociatedToNode {
     this._viewContainer.style.width = viewRect.width + "px";
     this.#panel.style.removeProperty("width");
     this.#panel.style.removeProperty("height");
-    // We're setting the width property to prevent flickering during the
-    // sliding animation with smaller views.
-    viewNode.style.width = viewRect.width + "px";
 
     // Kick off the transition!
     details.phase = TRANSITION_PHASES.TRANSITION;
@@ -1274,26 +1289,24 @@ export var PanelMultiView = class extends AssociatedToNode {
       this.#panel.removeAttribute("mainviewshowing");
     }
 
-    // Avoid transforming element if the user has prefers-reduced-motion set
-    if (
-      this.window.matchMedia("(prefers-reduced-motion: no-preference)")
-        .matches &&
-      !viewNode.getAttribute("no-panelview-transition")
-    ) {
-      this._viewStack.style.transform =
-        "translateX(" + (moveToLeft ? "" : "-") + deltaX + "px)";
+    if (drilling) {
+      this.node.setAttribute("drill-active", "true");
+      // It's quite common that `height` on the view container doesn't need to
+      // transition, so we make sure to do all the work on a transition that is
+      // guaranteed to run. The transform of the view being drilled to is the
+      // longest running one in either direction, except with reduced motion,
+      // where only the cross-fade is left.
+      let transitionNode = viewNode;
+      let transitionProperty = reduceMotion ? "opacity" : "transform";
 
       await new Promise(resolve => {
         details.resolve = resolve;
         this._viewContainer.addEventListener(
           "transitionend",
           (details.listener = ev => {
-            // It's quite common that `height` on the view container doesn't need
-            // to transition, so we make sure to do all the work on the transform
-            // transition-end, because that is guaranteed to happen.
             if (
-              ev.target != this._viewStack ||
-              ev.propertyName != "transform"
+              ev.target != transitionNode ||
+              ev.propertyName != transitionProperty
             ) {
               return;
             }
@@ -1308,7 +1321,7 @@ export var PanelMultiView = class extends AssociatedToNode {
         this._viewContainer.addEventListener(
           "transitioncancel",
           (details.cancelListener = ev => {
-            if (ev.target != this._viewStack) {
+            if (ev.target != transitionNode) {
               return;
             }
             this._viewContainer.removeEventListener(
@@ -1329,8 +1342,6 @@ export var PanelMultiView = class extends AssociatedToNode {
     prevPanelView.visible = false;
 
     // This will complete the operation by removing any transition properties.
-    nextPanelView.node.style.removeProperty("width");
-    deepestNode.style.removeProperty("outline");
     this.#cleanupTransitionPhase();
     // Ensure the newly-visible view has been through a layout flush before we
     // attempt to focus anything in it.
@@ -1350,7 +1361,8 @@ export var PanelMultiView = class extends AssociatedToNode {
       return;
     }
 
-    let { phase, resolve, listener, cancelListener } = this._transitionDetails;
+    let { phase, resolve, listener, cancelListener, styledNodes } =
+      this._transitionDetails;
     this._transitionDetails = null;
 
     if (phase >= TRANSITION_PHASES.START) {
@@ -1362,10 +1374,15 @@ export var PanelMultiView = class extends AssociatedToNode {
     if (phase >= TRANSITION_PHASES.PREPARE) {
       this.#transitioning = false;
       this._viewStack.style.removeProperty("margin-inline-start");
-      this._viewStack.style.removeProperty("transition");
+      this.node.removeAttribute("drilling");
+      for (let node of styledNodes ?? []) {
+        node.removeAttribute("drill-role");
+        node.style.removeProperty("width");
+        node.style.removeProperty("height");
+      }
     }
     if (phase >= TRANSITION_PHASES.TRANSITION) {
-      this._viewStack.style.removeProperty("transform");
+      this.node.removeAttribute("drill-active");
       if (listener) {
         this._viewContainer.removeEventListener("transitionend", listener);
       }

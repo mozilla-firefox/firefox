@@ -8,6 +8,36 @@
 :root {
   --panelui-subview-transition-duration: 150ms;
 
+  /* How far the subview travels in from the end side, and how far the view
+   * being drilled out of recedes towards the start side: nothing on the way
+   * in, where it holds still, and a short distance on the way back out.
+   * Transforms have no logical form, so these are flipped by hand; the chrome
+   * has one direction throughout, which is why doing it here is enough. The
+   * durations and easings of the drill come from the design system:
+   * --panel-subview-motion-duration-*, --panel-subview-motion-easing for the
+   * transforms and --panel-subview-motion-easing-fade for the opacities. */
+  --panel-subview-drill-parent-translate-x: 0px;
+  --panel-subview-drill-parent-exit-translate-x: -8px;
+  --panel-subview-drill-translate-x: 12px;
+
+  &:dir(rtl) {
+    --panel-subview-drill-parent-exit-translate-x: 8px;
+    --panel-subview-drill-translate-x: -12px;
+  }
+
+  /* Nothing travels without motion, which leaves the cross-fade as the whole
+   * of the drill. Zeroing the distances rather than dropping the transforms
+   * is what lets the rules below be written once for both motion modes, and
+   * it costs no transition either: a view whose start and end are both the
+   * rest position never gets one. */
+  @media (prefers-reduced-motion) {
+    &,
+    &:dir(rtl) {
+      --panel-subview-drill-parent-exit-translate-x: 0px;
+      --panel-subview-drill-translate-x: 0px;
+    }
+  }
+
   --panel-banner-item-color: var(--button-text-color);
   --panel-banner-item-background-color: var(--button-background-color);
   --panel-banner-item-hover-bgcolor: var(--button-background-color-hover);
@@ -216,6 +246,107 @@ panelview {
 .panel-viewstack {
   overflow: visible;
   transition: height var(--panelui-subview-transition-duration);
+  /* The subview stacked on top during the drill below positions itself
+   * against this. Set unconditionally so that the containing block is the
+   * same whether a drill is running or not: toggling it would move any
+   * absolutely positioned descendant as the drill starts and ends. */
+  position: relative;
+}
+
+/* Drill-down animation between a view and its subview. */
+panelmultiview[drilling] > .panel-viewcontainer > .panel-viewstack {
+  /* The views' opacities sum to 1 at every frame and `plus-lighter` adds
+   * them, so together they cover exactly what one view does. Isolating the
+   * stack keeps that addition off what the panel paints behind them. */
+  isolation: isolate;
+}
+
+panelmultiview[drilling] > .panel-viewcontainer[panelopen] {
+  transition-timing-function: var(--panel-subview-motion-easing);
+}
+
+panelview[drill-role] {
+  mix-blend-mode: plus-lighter;
+  will-change: transform, opacity;
+  transform: translateX(0);
+}
+
+panelview[drill-role="sub"] {
+  position: absolute;
+  inset-block-start: 0;
+  inset-inline-start: 0;
+}
+
+/* Each direction below sets its durations in transform then opacity order;
+ * the opacities share an easing and a duration so they keep summing to 1. */
+panelmultiview[drill-active] panelview[drill-role] {
+  transition-property: transform, opacity;
+  transition-timing-function: var(--panel-subview-motion-easing), var(--panel-subview-motion-easing-fade);
+}
+
+panelmultiview[drilling="forward"] {
+  > .panel-viewcontainer[panelopen] {
+    transition-duration: var(--panel-subview-motion-duration-enter);
+  }
+
+  panelview[drill-role="sub"] {
+    opacity: 0;
+    transform: translateX(var(--panel-subview-drill-translate-x));
+  }
+
+  &[drill-active] {
+    panelview[drill-role] {
+      /* Drilling in hands the panel over in a single frame rather than fading. */
+      transition-duration: var(--panel-subview-motion-duration-enter), 0ms;
+    }
+
+    panelview[drill-role="root"] {
+      opacity: 0;
+      transform: translateX(var(--panel-subview-drill-parent-translate-x));
+    }
+
+    panelview[drill-role="sub"] {
+      opacity: 1;
+      transform: translateX(0);
+    }
+  }
+}
+
+panelmultiview[drilling="back"] {
+  > .panel-viewcontainer[panelopen] {
+    transition-duration: var(--panel-subview-motion-duration-parent-exit);
+  }
+
+  panelview[drill-role="root"] {
+    opacity: 0;
+    transform: translateX(var(--panel-subview-drill-parent-exit-translate-x));
+  }
+
+  &[drill-active] {
+    /* The view coming back takes longer to travel than the one leaving does,
+     * but both of them fade over the shorter of the two. */
+    panelview[drill-role="root"] {
+      transition-duration: var(--panel-subview-motion-duration-parent-exit), var(--panel-subview-motion-duration-exit);
+      opacity: 1;
+      transform: translateX(0);
+    }
+
+    panelview[drill-role="sub"] {
+      transition-duration: var(--panel-subview-motion-duration-exit);
+      opacity: 0;
+      transform: translateX(var(--panel-subview-drill-translate-x));
+    }
+  }
+}
+
+/* The cross-fade left without motion runs shorter. macOS only: elsewhere
+ * prefers-reduced-motion drops the panel's own fade too (see popup.css), so
+ * the drill doesn't run at all, which PanelMultiView also knows about. */
+@media (prefers-reduced-motion) and (-moz-platform: macos) {
+  /* Nothing travels, so this duration only ever applies to the fade. */
+  panelmultiview[drilling][drill-active] panelview[drill-role] {
+    transition-duration: var(--panel-subview-motion-duration-fade-reduced);
+  }
 }
 
 .panel-subview-body {
