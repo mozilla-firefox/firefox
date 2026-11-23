@@ -122,7 +122,7 @@ add_task(async function test_save_doorhanger_when_capture_is_off() {
     );
     is(
       cardDetailsL10nId(content),
-      "credit-card-doorhanger-card-details-name-expiration",
+      "credit-card-doorhanger-card-details-name-expiration-2",
       "The card details leave out the uncaptured security code"
     );
 
@@ -225,7 +225,7 @@ add_task(async function test_save_doorhanger_content() {
     );
     is(
       cardDetailsL10nId(content),
-      "credit-card-doorhanger-card-details-name-expiration-security-code",
+      "credit-card-doorhanger-card-details-name-expiration-security-code-2",
       "The card details note the security code"
     );
     ok(
@@ -282,7 +282,7 @@ add_task(async function test_save_doorhanger_toggle_follows_pref() {
     );
     is(
       cardDetailsL10nId(content),
-      "credit-card-doorhanger-card-details-name-expiration",
+      "credit-card-doorhanger-card-details-name-expiration-2",
       "The card details no longer note the security code"
     );
 
@@ -303,7 +303,7 @@ add_task(async function test_save_doorhanger_toggle_follows_pref() {
     );
     is(
       cardDetailsL10nId(content),
-      "credit-card-doorhanger-card-details-name-expiration-security-code",
+      "credit-card-doorhanger-card-details-name-expiration-security-code-2",
       "The card details note the security code again"
     );
 
@@ -331,12 +331,60 @@ add_task(async function test_save_doorhanger_without_security_code() {
     );
     is(
       cardDetailsL10nId(content),
-      "credit-card-doorhanger-card-details-name-expiration",
+      "credit-card-doorhanger-card-details-name-expiration-2",
       "The card details leave out the missing security code"
     );
     ok(
       content.querySelector("moz-toggle"),
       "The security codes toggle is still offered"
+    );
+    await clickDoorhangerButton(SECONDARY_BUTTON);
+  });
+
+  await SpecialPowers.popPrefEnv();
+});
+
+add_task(async function test_save_doorhanger_long_cardholder_name() {
+  await SpecialPowers.pushPrefEnv({
+    set: [
+      [SUPPORTED_PREF, "on"],
+      [ENABLED_PREF, true],
+    ],
+  });
+
+  const name = "Cardholder".repeat(20);
+  const values = { ...CC_VALUES, "#cc-name": name };
+  await withDoorhanger(values, async content => {
+    const lineTwo = content.querySelector(".line-two");
+    await TestUtils.waitForCondition(
+      () => lineTwo.textContent.includes(name),
+      "Wait for the cardholder name to be localized"
+    );
+    const box = content.querySelector(".desc-message-box");
+    const button = content.querySelector(".payments-doorhanger-options-button");
+    const nameItem = lineTwo.querySelector(".card-name");
+    const boxRect = box.getBoundingClientRect();
+    const buttonRect = button.getBoundingClientRect();
+    Assert.greater(buttonRect.width, 0, "The edit button has a width");
+    Assert.lessOrEqual(
+      Math.round(buttonRect.right),
+      Math.round(boxRect.right),
+      "The edit button stays inside the card preview"
+    );
+    Assert.lessOrEqual(
+      Math.round(lineTwo.getBoundingClientRect().right),
+      Math.round(buttonRect.left),
+      "The card details do not overlap the edit button"
+    );
+    Assert.greater(
+      nameItem.scrollWidth,
+      nameItem.clientWidth,
+      "The cardholder name is truncated"
+    );
+    Assert.lessOrEqual(
+      lineTwo.scrollWidth,
+      lineTwo.clientWidth,
+      "The expiration and security code stay visible"
     );
     await clickDoorhangerButton(SECONDARY_BUTTON);
   });
@@ -400,7 +448,7 @@ add_task(async function test_save_with_toggle_off_stores_no_security_code() {
     );
     is(
       cardDetailsL10nId(content),
-      "credit-card-doorhanger-card-details-name-expiration",
+      "credit-card-doorhanger-card-details-name-expiration-2",
       "The card details no longer note the security code"
     );
 
@@ -593,7 +641,7 @@ add_task(async function test_card_details_name_the_security_code() {
     );
     is(
       id,
-      "credit-card-doorhanger-card-details-name-expiration-security-code",
+      "credit-card-doorhanger-card-details-name-expiration-security-code-2",
       "The card details note the security code"
     );
     is(
@@ -701,8 +749,8 @@ async function checkPlainUpdateContent(content, { withSecurityCode }) {
   is(
     cardDetailsL10nId(content),
     withSecurityCode
-      ? "credit-card-doorhanger-card-details-name-expiration-security-code"
-      : "credit-card-doorhanger-card-details-name-expiration",
+      ? "credit-card-doorhanger-card-details-name-expiration-security-code-2"
+      : "credit-card-doorhanger-card-details-name-expiration-2",
     withSecurityCode
       ? "The card details note the stored security code"
       : "The card details have no security code"
@@ -836,7 +884,7 @@ async function checkSecurityCodeUpdateContent(content) {
   );
   is(
     cardDetailsL10nId(content),
-    "credit-card-doorhanger-card-details-name-expiration-security-code",
+    "credit-card-doorhanger-card-details-name-expiration-security-code-2",
     "The card details note the security code"
   );
   ok(
@@ -944,7 +992,7 @@ add_task(async function test_security_code_toggle_switches_to_plain_update() {
     is(descriptionL10nId(content), null, "No description is shown");
     is(
       cardDetailsL10nId(content),
-      "credit-card-doorhanger-card-details-name-expiration",
+      "credit-card-doorhanger-card-details-name-expiration-2",
       "The card details no longer note the security code"
     );
     is(
