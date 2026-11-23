@@ -135,7 +135,10 @@ class NavigationToolbarExpandedTest {
         // Disable the back gesture from the edge of the screen on the device.
         enableOrDisableBackGestureNavigationOnDevice(backGestureNavigationEnabled = false)
 
-        navigationToolbar(composeTestRule) {}.enterURLAndEnterToBrowser(website.url) {}
+        navigationToolbar(composeTestRule) {}
+            .enterURLAndEnterToBrowser(website.url) {
+                verifyPageContent(website.content)
+            }
         navigationToolbar(composeTestRule) {}
             .clickTheNavigationBarShareButton {
                 verifyShareTabLayout()
