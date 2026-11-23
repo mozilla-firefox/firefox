@@ -22,6 +22,10 @@ promise_test(() => {
 }, "Mutation observer watching a createHTMLDocument() document");
 
 promise_test(() => {
+  return assertObserverNotifiedBeforeNextMicrotask(document.implementation.createHTMLDocument("title").body);
+}, "Mutation observer watching a createHTMLDocument() document with a title");
+
+promise_test(() => {
   return assertObserverNotifiedBeforeNextMicrotask(new DOMParser().parseFromString("<body>", "text/html").body);
 }, "Mutation observer watching a DOMParser document");
 
