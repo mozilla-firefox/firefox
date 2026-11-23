@@ -6,6 +6,7 @@ package org.mozilla.fenix.components
 
 import android.app.Application
 import android.content.Context
+import android.text.format.DateFormat
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.ReadOnlyComposable
 import androidx.compose.ui.platform.LocalContext
@@ -386,6 +387,8 @@ class Components(
                         AppVisualCompletenessMiddleware(performance.visualCompletenessQueue),
                         SportsWidgetRefreshMiddleware(
                             merinoSportsUpdater = lazy { sports.merinoSportsUpdater },
+                            merinoMatchesStorage = lazy { sports.merinoMatchesStorage },
+                            is24HourFormat = { DateFormat.is24HourFormat(context) },
                             visualCompletenessQueue = performance.visualCompletenessQueue,
                         ),
                     ),
