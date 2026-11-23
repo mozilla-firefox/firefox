@@ -1953,7 +1953,7 @@ notes = "All changes authored or reviewed by me."
 [[audits.cssparser]]
 who = "Emilio Cobos Álvarez <emilio@crisal.io>"
 criteria = "safe-to-deploy"
-delta = "0.38.0 -> 0.38.0@git:2436e4330d8fa0c5208c12c6d2306f5e2a43c71f"
+delta = "0.38.0 -> 0.38.0@git:f918ac231a8da7ff8c8e7d98a1b9488fa2bdac20"
 importable = false
 notes = "All changes authored or reviewed by me."
 
@@ -1998,7 +1998,7 @@ notes = "Authored or reviewed all changes."
 [[audits.cssparser-macros]]
 who = "Emilio Cobos Álvarez <emilio@crisal.io>"
 criteria = "safe-to-deploy"
-delta = "0.7.1 -> 0.7.1@git:2436e4330d8fa0c5208c12c6d2306f5e2a43c71f"
+delta = "0.7.1 -> 0.7.1@git:f918ac231a8da7ff8c8e7d98a1b9488fa2bdac20"
 importable = false
 notes = "No code changes at all on this crate."
 

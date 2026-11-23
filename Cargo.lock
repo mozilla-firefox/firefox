@@ -1539,7 +1539,7 @@ dependencies = [
 [[package]]
 name = "cssparser"
 version = "0.38.0"
-source = "git+https://github.com/servo/rust-cssparser?rev=2436e4330d8fa0c5208c12c6d2306f5e2a43c71f#2436e4330d8fa0c5208c12c6d2306f5e2a43c71f"
+source = "git+https://github.com/servo/rust-cssparser?rev=f918ac231a8da7ff8c8e7d98a1b9488fa2bdac20#f918ac231a8da7ff8c8e7d98a1b9488fa2bdac20"
 dependencies = [
  "cssparser-macros",
  "dtoa-short",
@@ -1551,7 +1551,7 @@ dependencies = [
 [[package]]
 name = "cssparser-macros"
 version = "0.7.1"
-source = "git+https://github.com/servo/rust-cssparser?rev=2436e4330d8fa0c5208c12c6d2306f5e2a43c71f#2436e4330d8fa0c5208c12c6d2306f5e2a43c71f"
+source = "git+https://github.com/servo/rust-cssparser?rev=f918ac231a8da7ff8c8e7d98a1b9488fa2bdac20#f918ac231a8da7ff8c8e7d98a1b9488fa2bdac20"
 dependencies = [
  "quote",
  "syn",

@@ -332,7 +332,7 @@ impl BlockType {
 /// ```
 #[derive(Copy, Clone, PartialEq, Eq, Debug)]
 pub struct Delimiters {
-    bits: u8,
+    bits: u16,
 }
 
 /// `Delimiters` constants.
@@ -350,15 +350,17 @@ pub mod Delimiter {
     pub const Bang: Delimiters = Delimiters { bits: 1 << 3 };
     /// The delimiter set with only the `,` comma
     pub const Comma: Delimiters = Delimiters { bits: 1 << 4 };
+    /// The delimiter set with only the `:` colon
+    pub const Colon: Delimiters = Delimiters { bits: 1 << 5 };
 }
 
 #[allow(non_upper_case_globals, non_snake_case)]
 mod ClosingDelimiter {
     use super::Delimiters;
 
-    pub const CloseCurlyBracket: Delimiters = Delimiters { bits: 1 << 5 };
-    pub const CloseSquareBracket: Delimiters = Delimiters { bits: 1 << 6 };
-    pub const CloseParenthesis: Delimiters = Delimiters { bits: 1 << 7 };
+    pub const CloseCurlyBracket: Delimiters = Delimiters { bits: 1 << 6 };
+    pub const CloseSquareBracket: Delimiters = Delimiters { bits: 1 << 7 };
+    pub const CloseParenthesis: Delimiters = Delimiters { bits: 1 << 8 };
 }
 
 impl BitOr<Delimiters> for Delimiters {
@@ -385,6 +387,7 @@ impl Delimiters {
             table[b';' as usize] = Delimiter::Semicolon;
             table[b'!' as usize] = Delimiter::Bang;
             table[b',' as usize] = Delimiter::Comma;
+            table[b':' as usize] = Delimiter::Colon;
             table[b'{' as usize] = Delimiter::CurlyBracketBlock;
             table[b'}' as usize] = ClosingDelimiter::CloseCurlyBracket;
             table[b']' as usize] = ClosingDelimiter::CloseSquareBracket;
