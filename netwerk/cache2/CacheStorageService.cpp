@@ -839,6 +839,9 @@ NS_IMETHODIMP CacheStorageService::ClearBaseDomain(
           return rv;
         }
 
+        if (entry->DeferOrBypassRemovalOnPinStatus(false)) {
+          continue;
+        }
         RemoveExactEntry(table, entryKey, entry, false /* don't overwrite */);
       }
     }
@@ -903,6 +906,9 @@ nsresult CacheStorageService::ClearOriginInternal(
           return rv;
         }
         MOZ_ASSERT_IF(info->IsPrivate(), !entry->IsUsingDisk());
+        if (entry->DeferOrBypassRemovalOnPinStatus(false)) {
+          continue;
+        }
         RemoveExactEntry(table, entryKey, entry, false /* don't overwrite */);
       }
     }
