@@ -1,4 +1,4 @@
-// |jit-test| --enable-arraybuffer-immutable; skip-if: !Array.prototype.transferToImmutable
+// |jit-test| --enable-arraybuffer-immutable; skip-if: !ArrayBuffer.prototype.transferToImmutable
 
 load(libdir + "dataview.js");
 
@@ -21,7 +21,7 @@ function test(TA) {
   const byteLength = length * TA.BYTES_PER_ELEMENT;
 
   let ab = new ArrayBuffer(byteLength);
-  let actual = new TA(rab);
+  let actual = new TA(ab);
   let expected = new TA(length);
   let type = expected[0].constructor;
 

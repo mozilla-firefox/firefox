@@ -1,4 +1,4 @@
-// |jit-test| --enable-arraybuffer-immutable; skip-if: !Array.prototype.transferToImmutable
+// |jit-test| --enable-arraybuffer-immutable; skip-if: !ArrayBuffer.prototype.transferToImmutable
 
 function testImmutableArrayBuffer() {
   for (let i = 0; i < 4; ++i) {
