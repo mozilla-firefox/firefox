@@ -253,8 +253,6 @@ support-files = [
 ]
 prefs = [
   "security.mixed_content.upgrade_display_content=false",
-  # Bug 2077709
-  "dom.navigation.navigationRateLimit.count=0",
 ]
 
 ["include:mochitest-xslt.toml"]

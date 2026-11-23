@@ -16,7 +16,17 @@ SimpleTest.requestLongerTimeout(2);
 var cloneiframe;
 
 function run() {
-  SpecialPowers.pushPrefEnv({ set: [["layout.css.xul-tree-pseudos.content.enabled", true]] }, runTests);
+  SpecialPowers.pushPrefEnv(
+    {
+      set: [
+        ["layout.css.xul-tree-pseudos.content.enabled", true],
+        // The cloning tests navigate cloneiframe many more times than
+        // dom.navigation.navigationRateLimit.count allows in its time span.
+        ["dom.navigation.navigationRateLimit.count", 0],
+      ],
+    },
+    runTests
+  );
 }
 function runTests() {
     var iframe = document.getElementById("iframe");

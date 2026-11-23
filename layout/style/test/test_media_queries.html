@@ -32,6 +32,15 @@ function getScreenPixelsPerCSSPixel() {
 }
 
 function run() {
+  // The cloning tests navigate the iframe many more times than
+  // dom.navigation.navigationRateLimit.count allows in its time span.
+  SpecialPowers.pushPrefEnv(
+    { set: [["dom.navigation.navigationRateLimit.count", 0]] },
+    runTests
+  );
+}
+
+function runTests() {
   iframe = document.getElementById("subdoc");
   var subdoc = iframe.contentDocument;
   var subwin = iframe.contentWindow;

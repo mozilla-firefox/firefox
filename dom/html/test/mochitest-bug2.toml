@@ -2,8 +2,6 @@
 prefs = [
   "apz.zoom-to-focused-input.enabled=false",
   "gfx.font_loader.delay=0",
-  # Bug 2077709
-  "dom.navigation.navigationRateLimit.count=0",
 ]
 support-files = [
   "347174transform.xsl",
