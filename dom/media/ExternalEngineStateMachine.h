@@ -369,6 +369,9 @@ class ExternalEngineStateMachine final
   // It would be zero for audio-only playback.
   gfx::IntSize mVideoDisplay;
 
+  // The display size of the last video frame sent to the video container.
+  gfx::IntSize mLastFrameDisplay;
+
   // It would be set if playback is encrypted.
   nsCString mKeySystem;
 

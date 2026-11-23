@@ -256,9 +256,6 @@ support-files = [
 ["test_EndOfStream_mp4.html"]
 
 ["test_FrameSelection.html"]
-skip-if = [
-  "os == 'win' && wmfme", # bug 1341519 - WMFME intermittently stalls seeks with multi-resolution MSE content
-]
 
 ["test_HaveMetadataUnbufferedSeek.html"]
 

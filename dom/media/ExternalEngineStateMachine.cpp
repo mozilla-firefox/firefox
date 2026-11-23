@@ -1071,6 +1071,13 @@ void ExternalEngineStateMachine::OnRequestVideo() {
                   mVideoDisplay, aVideo->mImage, TimeStamp::Now(),
                   media::TimeUnit::Invalid(), aVideo->mTime);
             }
+            // The seek and first frame invalidations can run before the frame
+            // of a new size is set here, and the element only applies the
+            // size, and fires `resize`, on an invalidation.
+            if (mVideoDisplay != mLastFrameDisplay) {
+              mLastFrameDisplay = mVideoDisplay;
+              mOnPlaybackEvent.Notify(MediaPlaybackEvent::Invalidate);
+            }
           },
           [this, self](const MediaResult& aError) {
             mVideoDataRequest.Complete();
