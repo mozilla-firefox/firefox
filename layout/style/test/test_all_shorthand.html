@@ -31,8 +31,10 @@ function runTest() {
   var excludedSubproperties = [
     "direction",
     "unicode-bidi",
-    "-webkit-line-clamp",
   ];
+  if (!IsCSSPropertyPrefEnabled("layout.css.line-clamp.enabled")) {
+    excludedSubproperties.push("-webkit-line-clamp")
+  }
   var excludedSubpropertiesSet = new Set(excludedSubproperties);
 
   // Longhand properties that are considered to be subproperties of the 'all'
