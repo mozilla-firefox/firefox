@@ -34,11 +34,9 @@
 #include <algorithm>
 #include <memory>
 
-#include "mozilla/Components.h"
 #include "mozilla/ToString.h"
 #include "mozilla/gfx/gfxVars.h"
 #include "mozilla/layers/KnowsCompositor.h"
-#include "nsIGfxInfo.h"
 #include "nsPrintfCString.h"
 #if LIBAVCODEC_VERSION_MAJOR >= 57
 #  include "mozilla/layers/TextureClient.h"
@@ -3003,25 +3001,6 @@ MediaResult FFmpegVideoDecoder<LIBAV_VER>::InitD3D11VADecoder() {
   if (mInfo.mColorDepth > gfx::ColorDepth::COLOR_10) {
     return MediaResult(NS_ERROR_DOM_MEDIA_FATAL_ERR,
                        RESULT_DETAIL("not supported color depth"));
-  }
-
-  // NVIDIA's D3D11VA decoder fails to create VP9 and AV1 decoders for frames
-  // smaller than kMinD3D11VAFrameDimension in either dimension. Decode those in
-  // software instead.
-  static constexpr int kMinD3D11VAFrameDimension = 128;
-  if ((mCodecID == AV_CODEC_ID_VP9 || mCodecID == AV_CODEC_ID_AV1) &&
-      !mInfo.mImage.IsEmpty() &&
-      (mInfo.mImage.width < kMinD3D11VAFrameDimension ||
-       mInfo.mImage.height < kMinD3D11VAFrameDimension)) {
-    nsCOMPtr<nsIGfxInfo> gfxInfo = components::GfxInfo::Service();
-    nsString vendorID;
-    gfxInfo->GetAdapterVendorID(vendorID);
-    if (vendorID.EqualsLiteral("0x10de")) {
-      FFMPEG_LOG("  frame size {}x{} is too small for d3d11va",
-                 mInfo.mImage.width, mInfo.mImage.height);
-      return MediaResult(NS_ERROR_DOM_MEDIA_FATAL_ERR,
-                         RESULT_DETAIL("frame size too small"));
-    }
   }
 
   AVCodec* codec = FindVideoHardwareAVCodec(mLib, mCodecID);

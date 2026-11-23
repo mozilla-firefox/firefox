@@ -582,45 +582,6 @@ MFTEncoder::Destroy() {
   return hr;
 }
 
-MFTEncoder::AsyncMFTResult MFTEncoder::NegotiateMediaTypes(
-    IMFMediaType* aInputType, IMFMediaType* aOutputType) {
-  AsyncMFTResult asyncMFT = AttemptEnableAsync();
-  if (asyncMFT.isErr()) {
-    MFT_ENC_LOGE("AttemptEnableAsync error: {}",
-                 ErrorMessage(asyncMFT.inspectErr()).get());
-    return asyncMFT;
-  }
-  MFT_ENC_LOGD("{} encoder {} is {}",
-               MFTEncoder::Factory::EnumValueToString(mFactory->mProvider),
-               mFactory->mName.get(),
-               asyncMFT.inspect() ? "asynchronous" : "synchronous");
-
-  MFT_RETURN_ERROR_IF_FAILED(GetStreamIDs());
-
-  // Always set encoder output type before input.
-  MFT_RETURN_ERROR_IF_FAILED(
-      mEncoder->SetOutputType(mOutputStreamID, aOutputType, 0));
-
-  if (MatchInputSubtype(aInputType) == GUID_NULL) {
-    MFT_ENC_LOGE("Input type does not match encoder input subtype");
-    return Err(MF_E_INVALIDMEDIATYPE);
-  }
-
-  MFT_RETURN_ERROR_IF_FAILED(
-      mEncoder->SetInputType(mInputStreamID, aInputType, 0));
-  return asyncMFT;
-}
-
-HRESULT MFTEncoder::CheckMediaTypes(IMFMediaType* aInputType,
-                                    IMFMediaType* aOutputType) {
-  MOZ_ASSERT(mscom::IsCurrentThreadMTA());
-  MOZ_ASSERT(aInputType && aOutputType);
-  MOZ_ASSERT(mState == State::Initializing);
-
-  AsyncMFTResult asyncMFT = NegotiateMediaTypes(aInputType, aOutputType);
-  return asyncMFT.isErr() ? asyncMFT.unwrapErr() : S_OK;
-}
-
 HRESULT
 MFTEncoder::SetMediaTypes(IMFMediaType* aInputType, IMFMediaType* aOutputType) {
   MOZ_ASSERT(mscom::IsCurrentThreadMTA());
@@ -633,11 +594,29 @@ MFTEncoder::SetMediaTypes(IMFMediaType* aInputType, IMFMediaType* aOutputType) {
 
   auto exitWithError = MakeScopeExit([&] { SetState(State::Error); });
 
-  AsyncMFTResult asyncMFT = NegotiateMediaTypes(aInputType, aOutputType);
+  AsyncMFTResult asyncMFT = AttemptEnableAsync();
   if (asyncMFT.isErr()) {
-    return asyncMFT.unwrapErr();
+    HRESULT hr = asyncMFT.inspectErr();
+    MFT_ENC_LOGE("AttemptEnableAsync error: {}", ErrorMessage(hr).get());
+    return hr;
   }
   bool isAsync = asyncMFT.unwrap();
+  MFT_ENC_LOGD("{} encoder {} is {}",
+               MFTEncoder::Factory::EnumValueToString(mFactory->mProvider),
+               mFactory->mName.get(), isAsync ? "asynchronous" : "synchronous");
+
+  MFT_RETURN_IF_FAILED(GetStreamIDs());
+
+  // Always set encoder output type before input.
+  MFT_RETURN_IF_FAILED(
+      mEncoder->SetOutputType(mOutputStreamID, aOutputType, 0));
+
+  if (MatchInputSubtype(aInputType) == GUID_NULL) {
+    MFT_ENC_LOGE("Input type does not match encoder input subtype");
+    return MF_E_INVALIDMEDIATYPE;
+  }
+
+  MFT_RETURN_IF_FAILED(mEncoder->SetInputType(mInputStreamID, aInputType, 0));
 
   mOutputTimeIsEndTime = false;
   GUID classId = GUID_NULL;

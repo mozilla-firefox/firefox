@@ -251,13 +251,10 @@ tasks:
         description: "Web platform webcodecs test run"
         suite: web-platform-tests
         treeherder-symbol: W(codecs)
-        virtualization:
-            by-test-platform:
-                windows.*64.*/.*: virtual-with-gpu
-                default: virtual
+        virtualization: virtual
         worker-type:
             by-test-platform:
-                .*windows.*: win11-64-25h2-gpu
+                .*windows.*: win11-64-25h2
                 default: default
         tier: default
         chunks: dynamic

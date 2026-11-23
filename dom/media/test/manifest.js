@@ -739,10 +739,6 @@ var gResolutionChangeTests = [
   { name: "resolution-change.webm", type: "video/webm", duration: 6.533 },
 ];
 
-var gVP9ResolutionChangeTests = [
-  { name: "resolution-change-vp9-small.webm", type: "video/webm", duration: 3 },
-];
-
 // Files we must reject as invalid.
 var gInvalidTests = [
   { name: "invalid-m0c0.opus", type: "audio/ogg; codecs=opus" },
