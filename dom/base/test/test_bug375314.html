@@ -103,9 +103,8 @@ function runNextTest() {
       // Component must be unregistered delayed, otherwise other content
       // policy will not be removed from the category correctly
       componentManager.unregisterFactory(policyID, policy);
+      SimpleTest.finish();
     }, 0);
-
-    SimpleTest.finish();
   }
 }
 
