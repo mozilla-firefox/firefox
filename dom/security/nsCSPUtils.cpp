@@ -1380,6 +1380,7 @@ bool nsCSPDirective::permits(CSPDirective aDirective, nsILoadInfo* aLoadInfo,
       nsTArray<nsCSPHashSrc*> integrityExpressions;
       bool hasUrlHash = false;
       bool hasStrictDynamicKeyword = false;
+      bool hasStrictDynamicUrlKeyword = false;
       for (nsCSPBaseSrc* src : mSrcs) {
         if (src->isHash()) {
           integrityExpressions.AppendElement(static_cast<nsCSPHashSrc*>(src));
@@ -1387,6 +1388,8 @@ bool nsCSPDirective::permits(CSPDirective aDirective, nsILoadInfo* aLoadInfo,
           hasUrlHash = true;
         } else if (src->isKeyword(CSP_STRICT_DYNAMIC)) {
           hasStrictDynamicKeyword = true;
+        } else if (src->isKeyword(CSP_STRICT_DYNAMIC_URL)) {
+          hasStrictDynamicUrlKeyword = true;
         }
       }
 
@@ -1436,6 +1439,25 @@ bool nsCSPDirective::permits(CSPDirective aDirective, nsILoadInfo* aLoadInfo,
 
         CSPUTILSLOG(
             ("  Allowed by 'strict-dynamic' because not-parser-inserted"));
+        return true;
+      }
+
+      // 'strict-dynamic-url' allows script requests triggered by
+      // non-parser-inserted <script> elements. Unlike 'strict-dynamic', it
+      // doesn't block parser-inserted scripts, nor does it make host-source,
+      // scheme-source and 'self' expressions be ignored, so those requests
+      // continue to the checks below.
+      //
+      // The pre-request check in the PR doesn't have a step for this yet, so
+      // this follows §8.2 Usage of "'strict-dynamic'" in the PR and Chromium.
+      if (hasStrictDynamicUrlKeyword &&
+          aDirective == CSPDirective::SCRIPT_SRC_ELEM_DIRECTIVE &&
+          // GetParserCreatedScript() isn't set for XSLT.
+          aLoadInfo->InternalContentPolicyType() !=
+              nsIContentPolicy::TYPE_XSLT &&
+          !aLoadInfo->GetParserCreatedScript()) {
+        CSPUTILSLOG(
+            ("  Allowed by 'strict-dynamic-url' because not-parser-inserted"));
         return true;
       }
 
@@ -1541,11 +1563,14 @@ bool nsCSPDirective::allowsAllInlineBehavior(CSPDirective aDir) const {
     }
 
     // Step 2.2. If type is "script", "script attribute" or "navigation" and
-    // expression matches the keyword-source "'strict-dynamic'", return "Does
-    // Not Allow".
+    // expression matches the keyword-source "'strict-dynamic'" or
+    // "'strict-dynamic-url'", return "Does Not Allow".
+    // 'strict-dynamic-url' is added by
+    // https://github.com/w3c/webappsec-csp/pull/784
     if ((aDir == nsIContentSecurityPolicy::SCRIPT_SRC_ELEM_DIRECTIVE ||
          aDir == nsIContentSecurityPolicy::SCRIPT_SRC_ATTR_DIRECTIVE) &&
-        src->isKeyword(CSP_STRICT_DYNAMIC)) {
+        (src->isKeyword(CSP_STRICT_DYNAMIC) ||
+         src->isKeyword(CSP_STRICT_DYNAMIC_URL))) {
       return false;
     }
 

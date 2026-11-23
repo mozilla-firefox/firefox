@@ -108,16 +108,17 @@ inline const char* CSP_CSPDirectiveToString(CSPDirective aDir) {
 
 CSPDirective CSP_StringToCSPDirective(const nsAString& aDir);
 
-#define FOR_EACH_CSP_KEYWORD(MACRO)                 \
-  MACRO(CSP_SELF, "'self'")                         \
-  MACRO(CSP_UNSAFE_INLINE, "'unsafe-inline'")       \
-  MACRO(CSP_UNSAFE_EVAL, "'unsafe-eval'")           \
-  MACRO(CSP_UNSAFE_HASHES, "'unsafe-hashes'")       \
-  MACRO(CSP_NONE, "'none'")                         \
-  MACRO(CSP_REPORT_SAMPLE, "'report-sample'")       \
-  MACRO(CSP_STRICT_DYNAMIC, "'strict-dynamic'")     \
-  MACRO(CSP_WASM_UNSAFE_EVAL, "'wasm-unsafe-eval'") \
-  MACRO(CSP_ALLOW_DUPLICATES, "'allow-duplicates'") \
+#define FOR_EACH_CSP_KEYWORD(MACRO)                     \
+  MACRO(CSP_SELF, "'self'")                             \
+  MACRO(CSP_UNSAFE_INLINE, "'unsafe-inline'")           \
+  MACRO(CSP_UNSAFE_EVAL, "'unsafe-eval'")               \
+  MACRO(CSP_UNSAFE_HASHES, "'unsafe-hashes'")           \
+  MACRO(CSP_NONE, "'none'")                             \
+  MACRO(CSP_REPORT_SAMPLE, "'report-sample'")           \
+  MACRO(CSP_STRICT_DYNAMIC, "'strict-dynamic'")         \
+  MACRO(CSP_STRICT_DYNAMIC_URL, "'strict-dynamic-url'") \
+  MACRO(CSP_WASM_UNSAFE_EVAL, "'wasm-unsafe-eval'")     \
+  MACRO(CSP_ALLOW_DUPLICATES, "'allow-duplicates'")     \
   MACRO(CSP_TRUSTED_TYPES_EVAL, "'trusted-types-eval'")
 
 enum CSPKeyword {
