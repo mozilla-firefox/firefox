@@ -29,6 +29,19 @@ export class SportsSuggestions extends RealtimeSuggestProvider {
     return "sports";
   }
 
+  get notInterestedCommandL10n() {
+    return {
+      id: "urlbar-result-menu-dont-show-sports",
+    };
+  }
+
+  get ariaGroupL10n() {
+    return {
+      id: "urlbar-result-aria-group-sports",
+      attribute: "aria-label",
+    };
+  }
+
   getViewTemplateForImageContainer(item, index) {
     // Create two image containers, one for the home team and one for the away
     // team. Each container has an `img` and date chiclet components. Depending

@@ -621,35 +621,6 @@ add_task(async function dismiss() {
   });
 });
 
-// Tests the "Not interested" command: all Yelp suggestions should be disabled
-// and not added anymore.
-add_task(async function notInterested() {
-  await doDismissAllTest({
-    result: QuickSuggestTestUtils.yelpResult(TOKYO_RESULT),
-    command: "not_interested",
-    feature: QuickSuggest.getFeature("YelpSuggestions"),
-    pref: "suggest.yelp",
-    queries: [
-      {
-        query: "the shop in tokyo",
-      },
-      {
-        query: "alongerkeyword in tokyo",
-        expectedResults: [
-          QuickSuggestTestUtils.yelpResult({
-            url: "https://www.yelp.com/search?find_desc=alongerkeyword&find_loc=Tokyo%2C+Tokyo-to",
-            title: "alongerkeyword in Tokyo, Tokyo-to",
-          }),
-        ],
-      },
-    ],
-    providers: [
-      UrlbarProviderQuickSuggest.name,
-      UrlbarProviderSearchSuggestions.name,
-    ],
-  });
-});
-
 // Tests the "show less frequently" behavior.
 add_task(async function showLessFrequently() {
   UrlbarPrefs.clear("yelp.showLessFrequentlyCount");

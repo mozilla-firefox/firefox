@@ -37,6 +37,24 @@ export class RealtimeSuggestProvider extends SuggestProvider {
     throw new Error("Trying to access the base class, must be overridden");
   }
 
+  /**
+   * The l10n object for the `not_interested` command.
+   *
+   * @type {object}
+   */
+  get notInterestedCommandL10n() {
+    throw new Error("notInterestedCommandL10n must be overridden");
+  }
+
+  /**
+   * The l10n object for the ARIA group created in the view.
+   *
+   * @type {object}
+   */
+  get ariaGroupL10n() {
+    throw new Error("ariaGroupL10n must be overridden");
+  }
+
   getViewTemplateForDescriptionTop(_item, _index) {
     throw new Error("Trying to access the base class, must be overridden");
   }
@@ -74,10 +92,6 @@ export class RealtimeSuggestProvider extends SuggestProvider {
     return this.realtimeType;
   }
 
-  get realtimeTypeForFtl() {
-    return this.realtimeType.replace(/([A-Z])/g, "-$1").toLowerCase();
-  }
-
   get featureGatePref() {
     return this.realtimeType + "FeatureGate";
   }
@@ -92,42 +106,6 @@ export class RealtimeSuggestProvider extends SuggestProvider {
 
   get showLessFrequentlyCountPref() {
     return this.realtimeType + ".showLessFrequentlyCount";
-  }
-
-  get optInIcon() {
-    return `chrome://browser/skin/illustrations/${this.realtimeType}-opt-in.svg`;
-  }
-
-  get optInTitleL10n() {
-    return {
-      id: `urlbar-result-${this.realtimeTypeForFtl}-opt-in-title`,
-    };
-  }
-
-  get optInDescriptionL10n() {
-    return {
-      id: `urlbar-result-${this.realtimeTypeForFtl}-opt-in-description`,
-      parseMarkup: true,
-    };
-  }
-
-  get notInterestedCommandL10n() {
-    return {
-      id: `urlbar-result-menu-dont-show-${this.realtimeTypeForFtl}3`,
-    };
-  }
-
-  get acknowledgeDismissalL10n() {
-    return {
-      id: "urlbar-result-dismissal-acknowledgment-" + this.realtimeTypeForFtl,
-    };
-  }
-
-  get ariaGroupL10n() {
-    return {
-      id: "urlbar-result-aria-group-" + this.realtimeTypeForFtl,
-      attribute: "aria-label",
-    };
   }
 
   get isSponsored() {
@@ -229,6 +207,18 @@ export class RealtimeSuggestProvider extends SuggestProvider {
 
     let timeSecs = notNowReshowAfterPeriodDays * 24 * 60 * 60;
     return Date.now() / 1000 - notNowTimeSeconds > timeSecs;
+  }
+
+  get optInIcon() {
+    return "";
+  }
+
+  get optInTitleL10n() {
+    return null;
+  }
+
+  get optInDescriptionL10n() {
+    return null;
   }
 
   isSuggestionSponsored(suggestion) {
@@ -378,6 +368,13 @@ export class RealtimeSuggestProvider extends SuggestProvider {
   }
 
   makeOptInResult(queryContext, _suggestion) {
+    let titleL10n = this.optInTitleL10n;
+    if (!titleL10n) {
+      // The opt-in treatment has never been used and most realtime suggestions
+      // don't have one. We should remove it in the future.
+      return null;
+    }
+
     let notNowTypes = lazy.UrlbarPrefs.get(
       "quicksuggest.realtimeOptIn.notNowTypes"
     );
@@ -400,10 +397,10 @@ export class RealtimeSuggestProvider extends SuggestProvider {
       source: lazy.UrlbarShared.RESULT_SOURCE.OTHER_LOCAL,
       isBestMatch: true,
       payload: {
+        titleL10n,
         // This `type` is the tip type, required for `TIP` results.
         type: "realtime_opt_in",
         icon: this.optInIcon,
-        titleL10n: this.optInTitleL10n,
         descriptionL10n: this.optInDescriptionL10n,
         descriptionLearnMoreTopic: lazy.QuickSuggest.HELP_TOPIC,
         buttons: [
@@ -615,7 +612,7 @@ export class RealtimeSuggestProvider extends SuggestProvider {
       case "not_interested": {
         lazy.UrlbarPrefs.set(this.suggestPref, false);
         controller.removeResult(result, {
-          acknowledgeDismissalL10n: this.acknowledgeDismissalL10n,
+          acknowledgeDismissal: true,
         });
         break;
       }
@@ -653,17 +650,13 @@ export class RealtimeSuggestProvider extends SuggestProvider {
           "quicksuggest.realtimeOptIn.dismissTypes",
           this.realtimeType
         );
-        controller.removeResult(details.result, {
-          acknowledgeDismissalL10n: this.acknowledgeDismissalL10n,
-        });
+        controller.removeResult(details.result);
         break;
       }
       case "not_interested": {
         lazy.UrlbarPrefs.set("suggest.realtimeOptIn", false);
         controller.removeResult(details.result, {
-          acknowledgeDismissalL10n: {
-            id: "urlbar-result-dismissal-acknowledgment-all",
-          },
+          acknowledgeDismissal: true,
         });
         break;
       }

@@ -28,7 +28,6 @@ const RESULT_MENU_COMMAND = {
   HELP: "help",
   INACCURATE_LOCATION: "inaccurate_location",
   MANAGE: "manage",
-  NOT_INTERESTED: "not_interested",
   SHOW_LESS_FREQUENTLY: "show_less_frequently",
 };
 
@@ -310,19 +309,7 @@ export class YelpSuggestions extends SuggestProvider {
       // selType == "dismiss" when the user presses the dismiss key shortcut.
       case RESULT_MENU_COMMAND.DISMISS:
         lazy.QuickSuggest.dismissResult(result);
-        controller.removeResult(result, {
-          acknowledgeDismissalL10n: {
-            id: "firefox-suggest-dismissal-acknowledgment-one-yelp",
-          },
-        });
-        break;
-      case RESULT_MENU_COMMAND.NOT_INTERESTED:
-        lazy.UrlbarPrefs.set("suggest.yelp", false);
-        controller.removeResult(result, {
-          acknowledgeDismissalL10n: {
-            id: "firefox-suggest-dismissal-acknowledgment-all-yelp",
-          },
-        });
+        controller.removeResult(result);
         break;
       case RESULT_MENU_COMMAND.SHOW_LESS_FREQUENTLY:
         this.handleShowLessFrequently(controller, result);

@@ -1313,13 +1313,11 @@ export class UrlbarParentController {
    *   The result to remove.
    * @param {object} [options]
    *   Options object.
-   * @param {object} [options.acknowledgeDismissalL10n]
-   *   When the result is being dismissed, the l10n for the acknowledgment tip
-   *   that should replace its row. Passed through to the view rather than set on
-   *   the result so the result stays identical on both sides of the actor
-   *   boundary.
+   * @param {boolean} [options.acknowledgeDismissal]
+   *   Whether the result should be replaced with a dismissal-acknowledgment
+   *   tip.
    */
-  removeResult(result, { acknowledgeDismissalL10n } = {}) {
+  removeResult(result, { acknowledgeDismissal = false } = {}) {
     if (!result || result.heuristic) {
       return;
     }
@@ -1340,7 +1338,9 @@ export class UrlbarParentController {
     this.notify(
       lazy.UrlbarShared.NOTIFICATIONS.QUERY_RESULT_REMOVED,
       result.id,
-      acknowledgeDismissalL10n
+      {
+        acknowledgeDismissal,
+      }
     );
   }
 

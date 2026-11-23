@@ -225,9 +225,7 @@ export class TemporalSuggestions extends SuggestProvider {
         }
       }
       controller.removeResult(details.result, {
-        acknowledgeDismissalL10n: {
-          id: "urlbar-temporal-seasonal-dismissal-acknowledgment",
-        },
+        acknowledgeDismissal: true,
       });
     }
   }

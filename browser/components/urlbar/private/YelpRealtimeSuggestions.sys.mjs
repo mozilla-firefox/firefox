@@ -30,6 +30,36 @@ export class YelpRealtimeSuggestions extends RealtimeSuggestProvider {
     return "yelp";
   }
 
+  get optInIcon() {
+    return "chrome://browser/skin/illustrations/yelpRealtime-opt-in.svg";
+  }
+
+  get optInTitleL10n() {
+    return {
+      id: "urlbar-result-yelp-realtime-opt-in-title",
+    };
+  }
+
+  get optInDescriptionL10n() {
+    return {
+      id: "urlbar-result-yelp-realtime-opt-in-description",
+      parseMarkup: true,
+    };
+  }
+
+  get notInterestedCommandL10n() {
+    return {
+      id: "urlbar-result-menu-dont-show-yelp-realtime",
+    };
+  }
+
+  get ariaGroupL10n() {
+    return {
+      id: "urlbar-result-aria-group-yelp-realtime",
+      attribute: "aria-label",
+    };
+  }
+
   getViewTemplateForDescriptionTop(_item, index) {
     return [
       {

@@ -249,11 +249,7 @@ export class ImportantDatesSuggestions extends SuggestProvider {
       case "dismiss": {
         let { result } = details;
         lazy.QuickSuggest.dismissResult(result);
-        controller.removeResult(result, {
-          acknowledgeDismissalL10n: {
-            id: "firefox-suggest-dismissal-acknowledgment-one",
-          },
-        });
+        controller.removeResult(result);
         break;
       }
     }

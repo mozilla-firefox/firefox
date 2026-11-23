@@ -925,7 +925,7 @@ add_task(async function resultMenu() {
     [...menuitems].map(m => document.l10n.getAttributes(m).id),
     [
       "urlbar-result-menu-show-less-frequently3",
-      "urlbar-result-menu-dont-show-flight-status3",
+      "urlbar-result-menu-dont-show-flight-status",
       "urlbar-result-menu-manage-firefox-suggest2",
       "urlbar-result-menu-learn-more2",
       "urlbar-view-context-menu-skip-menu-with-tab",

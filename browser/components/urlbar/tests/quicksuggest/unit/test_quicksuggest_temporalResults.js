@@ -437,9 +437,7 @@ add_task(async function notInterested() {
   Assert.deepEqual(
     lastCall.args[1],
     {
-      acknowledgeDismissalL10n: {
-        id: "urlbar-temporal-seasonal-dismissal-acknowledgment",
-      },
+      acknowledgeDismissal: true,
     },
     "Acknowledgment is shown for the engaged result"
   );

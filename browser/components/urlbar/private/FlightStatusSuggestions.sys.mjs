@@ -32,6 +32,19 @@ export class FlightStatusSuggestions extends RealtimeSuggestProvider {
     return "flights";
   }
 
+  get notInterestedCommandL10n() {
+    return {
+      id: "urlbar-result-menu-dont-show-flight-status",
+    };
+  }
+
+  get ariaGroupL10n() {
+    return {
+      id: "urlbar-result-aria-group-flight-status",
+      attribute: "aria-label",
+    };
+  }
+
   getViewTemplateForDescriptionTop(_item, index) {
     return [
       {

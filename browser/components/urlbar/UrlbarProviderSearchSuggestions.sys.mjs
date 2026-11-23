@@ -681,16 +681,9 @@ export class UrlbarProviderSearchSuggestions extends UrlbarProvider {
     // Remove results in reverse order so the acknowledgment tip isn't removed.
     resultsToRemove.reverse();
     resultsToRemove.forEach(result =>
-      controller.removeResult(
-        result,
-        result == acknowledgedResult
-          ? {
-              acknowledgeDismissalL10n: {
-                id: "urlbar-trending-dismissal-acknowledgment",
-              },
-            }
-          : undefined
-      )
+      controller.removeResult(result, {
+        acknowledgeDismissal: result == acknowledgedResult,
+      })
     );
   }
 }

@@ -361,60 +361,60 @@ async function doDismissTest(command, allDismissed) {
     "suggest.addons should be true iff all suggestions weren't dismissed"
   );
 
-  // The row should be a tip now.
-  Assert.ok(gURLBar.view.isOpen, "The view should remain open after dismissal");
-  Assert.equal(
-    UrlbarTestUtils.getResultCount(window),
-    resultCount,
-    "The result count should not haved changed after dismissal"
-  );
-  details = await UrlbarTestUtils.getDetailsOfResultAt(
-    window,
-    EXPECTED_RESULT_INDEX
-  );
-  Assert.equal(
-    details.type,
-    UrlbarShared.RESULT_TYPE.TIP,
-    "Row should be a tip after dismissal"
-  );
-  Assert.equal(
-    details.result.payload.type,
-    "dismissalAcknowledgment",
-    "Tip type should be dismissalAcknowledgment"
-  );
-  Assert.ok(
-    !details.element.row.hasAttribute("feedback-acknowledgment"),
-    "Row should not have feedback acknowledgment after dismissal"
-  );
-
-  // Check tip title.
-  let title = details.element.row.querySelector(".urlbarView-title");
-  let titleL10nId = title.dataset.l10nId;
   if (allDismissed) {
-    Assert.equal(titleL10nId, "urlbar-result-dismissal-acknowledgment-all");
-  } else {
-    Assert.equal(titleL10nId, "firefox-suggest-dismissal-acknowledgment-one");
+    // The row should be a tip now.
+    Assert.ok(
+      gURLBar.view.isOpen,
+      "The view should remain open after dismissal"
+    );
+    Assert.equal(
+      UrlbarTestUtils.getResultCount(window),
+      resultCount,
+      "The result count should not haved changed after dismissal"
+    );
+    details = await UrlbarTestUtils.getDetailsOfResultAt(
+      window,
+      EXPECTED_RESULT_INDEX
+    );
+    Assert.equal(
+      details.type,
+      UrlbarShared.RESULT_TYPE.TIP,
+      "Row should be a tip after dismissal"
+    );
+    Assert.equal(
+      details.result.payload.type,
+      "dismissalAcknowledgment",
+      "Tip type should be dismissalAcknowledgment"
+    );
+    Assert.ok(
+      !details.element.row.hasAttribute("feedback-acknowledgment"),
+      "Row should not have feedback acknowledgment after dismissal"
+    );
+
+    // Check tip title.
+    let title = details.element.row.querySelector(".urlbarView-title");
+    Assert.equal(title.dataset.l10nId, "urlbar-feedback-acknowledgment");
+
+    // Get the dismissal acknowledgment's "Got it" button and click it.
+    let gotItButton = UrlbarTestUtils.getButtonForResultIndex(
+      window,
+      0,
+      EXPECTED_RESULT_INDEX
+    );
+    Assert.ok(gotItButton, "Row should have a 'Got it' button");
+
+    EventUtils.synthesizeMouseAtCenter(gotItButton, {}, window);
   }
 
-  // Get the dismissal acknowledgment's "Got it" button and click it.
-  let gotItButton = UrlbarTestUtils.getButtonForResultIndex(
-    window,
-    0,
-    EXPECTED_RESULT_INDEX
-  );
-  Assert.ok(gotItButton, "Row should have a 'Got it' button");
-
-  EventUtils.synthesizeMouseAtCenter(gotItButton, {}, window);
-
-  // The view should remain open and the tip row should be gone.
+  // The view should remain open and the result row and tip row should be gone.
   Assert.ok(
     gURLBar.view.isOpen,
-    "The view should remain open clicking the 'Got it' button"
+    "The view should remain open after dismissal and acknowledgment"
   );
   Assert.equal(
     UrlbarTestUtils.getResultCount(window),
     resultCount - 1,
-    "The result count should be one less after clicking 'Got it' button"
+    "The result count should be one less after dismissal and acknowledgment"
   );
   for (let i = 0; i < UrlbarTestUtils.getResultCount(window); i++) {
     details = await UrlbarTestUtils.getDetailsOfResultAt(window, i);

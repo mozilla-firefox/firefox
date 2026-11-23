@@ -425,9 +425,7 @@ export class WeatherSuggestions extends SuggestProvider {
         this.logger.info("Dismissing weather result");
         lazy.UrlbarPrefs.set("suggest.weather", false);
         controller.removeResult(result, {
-          acknowledgeDismissalL10n: {
-            id: "urlbar-dismissal-acknowledgment-weather",
-          },
+          acknowledgeDismissal: true,
         });
         break;
       case RESULT_MENU_COMMAND.INACCURATE_LOCATION:

@@ -28,6 +28,36 @@ export class MarketSuggestions extends RealtimeSuggestProvider {
     return "polygon";
   }
 
+  get optInIcon() {
+    return "chrome://browser/skin/illustrations/market-opt-in.svg";
+  }
+
+  get optInTitleL10n() {
+    return {
+      id: "urlbar-result-market-opt-in-title",
+    };
+  }
+
+  get optInDescriptionL10n() {
+    return {
+      id: "urlbar-result-market-opt-in-description",
+      parseMarkup: true,
+    };
+  }
+
+  get notInterestedCommandL10n() {
+    return {
+      id: "urlbar-result-menu-dont-show-market3",
+    };
+  }
+
+  get ariaGroupL10n() {
+    return {
+      id: "urlbar-result-aria-group-market",
+      attribute: "aria-label",
+    };
+  }
+
   getViewTemplateForDescriptionTop(_item, index) {
     return [
       {

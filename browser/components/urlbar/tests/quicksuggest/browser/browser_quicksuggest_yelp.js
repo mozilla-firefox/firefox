@@ -322,6 +322,7 @@ async function doShowLessFrequently({
 add_task(async function resultMenu_dismiss() {
   await doDismiss({
     menu: "dismiss",
+    expectDismissalAcknowledgment: false,
     assert: result => {
       Assert.ok(
         QuickSuggest.isResultDismissed(result),
@@ -333,7 +334,7 @@ add_task(async function resultMenu_dismiss() {
   await QuickSuggest.clearDismissedSuggestions();
 });
 
-async function doDismiss({ menu, assert }) {
+async function doDismiss({ menu, assert, expectDismissalAcknowledgment }) {
   await UrlbarTestUtils.promiseAutocompleteResultPopup({
     window,
     value: "ramen",
@@ -356,47 +357,50 @@ async function doDismiss({ menu, assert }) {
   info("Awaiting dismissal promise");
   await dismissalPromise;
 
-  // The row should be a tip now.
   Assert.ok(gURLBar.view.isOpen, "The view should remain open after dismissal");
-  Assert.equal(
-    UrlbarTestUtils.getResultCount(window),
-    resultCount,
-    "The result count should not haved changed after dismissal"
-  );
-  details = await UrlbarTestUtils.getDetailsOfResultAt(window, resultIndex);
-  Assert.equal(
-    details.type,
-    UrlbarShared.RESULT_TYPE.TIP,
-    "Row should be a tip after dismissal"
-  );
-  Assert.equal(
-    details.result.payload.type,
-    "dismissalAcknowledgment",
-    "Tip type should be dismissalAcknowledgment"
-  );
-  Assert.ok(
-    !details.element.row.hasAttribute("feedback-acknowledgment"),
-    "Row should not have feedback acknowledgment after dismissal"
-  );
 
-  // Get the dismissal acknowledgment's "Got it" button and click it.
-  let gotItButton = UrlbarTestUtils.getButtonForResultIndex(
-    window,
-    "0",
-    resultIndex
-  );
-  Assert.ok(gotItButton, "Row should have a 'Got it' button");
-  EventUtils.synthesizeMouseAtCenter(gotItButton, {}, window);
+  if (expectDismissalAcknowledgment) {
+    // The row should be a tip now.
+    Assert.equal(
+      UrlbarTestUtils.getResultCount(window),
+      resultCount,
+      "The result count should not haved changed after dismissal"
+    );
+    details = await UrlbarTestUtils.getDetailsOfResultAt(window, resultIndex);
+    Assert.equal(
+      details.type,
+      UrlbarShared.RESULT_TYPE.TIP,
+      "Row should be a tip after dismissal"
+    );
+    Assert.equal(
+      details.result.payload.type,
+      "dismissalAcknowledgment",
+      "Tip type should be dismissalAcknowledgment"
+    );
+    Assert.ok(
+      !details.element.row.hasAttribute("feedback-acknowledgment"),
+      "Row should not have feedback acknowledgment after dismissal"
+    );
+
+    // Get the dismissal acknowledgment's "Got it" button and click it.
+    let gotItButton = UrlbarTestUtils.getButtonForResultIndex(
+      window,
+      "0",
+      resultIndex
+    );
+    Assert.ok(gotItButton, "Row should have a 'Got it' button");
+    EventUtils.synthesizeMouseAtCenter(gotItButton, {}, window);
+  }
 
   // The view should remain open and the tip row should be gone.
   Assert.ok(
     gURLBar.view.isOpen,
-    "The view should remain open clicking the 'Got it' button"
+    "The view should remain open after dismissal and acknowledgment"
   );
   Assert.equal(
     UrlbarTestUtils.getResultCount(window),
     resultCount - 1,
-    "The result count should be one less after clicking 'Got it' button"
+    "The result count should be one less after dismissal and acknowledgment"
   );
 
   for (let i = 0; i < UrlbarTestUtils.getResultCount(window); i++) {

@@ -28,7 +28,7 @@ add_task(async function ui() {
       type: "test",
       icon: "chrome://global/skin/icons/search-glass.svg",
       titleL10n: { id: "urlbar-search-tips-confirm" },
-      descriptionL10n: { id: "urlbar-dismissal-acknowledgment-weather" },
+      descriptionL10n: { id: "urlbar-feedback-acknowledgment" },
       buttons: [
         {
           url: "https://example.com/tab",
@@ -75,10 +75,7 @@ add_task(async function ui() {
 
   info("Check the description");
   let description = row.querySelector(".urlbarView-row-body-description");
-  Assert.equal(
-    description.dataset.l10nId,
-    "urlbar-dismissal-acknowledgment-weather"
-  );
+  Assert.equal(description.dataset.l10nId, "urlbar-feedback-acknowledgment");
   Assert.ok(BrowserTestUtils.isVisible(description));
 
   info("Check the first button");

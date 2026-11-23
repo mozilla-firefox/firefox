@@ -1168,14 +1168,12 @@ export class UrlbarView {
    * and attempts to select the new result on the same row.
    *
    * @param {number} id The id of the UrlbarResult that has been removed.
-   * @param {object} [acknowledgeDismissalL10n]
-   *   The dismissal-acknowledgment l10n the dismissing provider set on the
-   *   result, supplied by the caller. It isn't read from this row's result
-   *   because the provider sets it after the results were serialized to this
-   *   process, so this row's result -- a query-time snapshot -- never received
-   *   it. Undefined when the row is removed without acknowledgment.
+   * @param {object} [options]
+   * @param {boolean} [options.acknowledgeDismissal]
+   *   Whether the result should be replaced with a dismissal-acknowledgment
+   *   tip.
    */
-  onQueryResultRemoved(id, acknowledgeDismissalL10n) {
+  onQueryResultRemoved(id, { acknowledgeDismissal = false } = {}) {
     let removedIndex = -1;
     let rowToRemove = null;
     for (let i = 0; i < this.#rows.children.length; i++) {
@@ -1192,9 +1190,10 @@ export class UrlbarView {
     }
 
     let { result } = rowToRemove;
-    if (acknowledgeDismissalL10n) {
-      // Replace the result's row with a dismissal acknowledgment tip.
-      this.#acknowledgeDismissal(result, acknowledgeDismissalL10n);
+    if (acknowledgeDismissal) {
+      this.#acknowledgeDismissal(result, {
+        id: "urlbar-feedback-acknowledgment",
+      });
       return;
     }
 
@@ -3315,10 +3314,6 @@ export class UrlbarView {
         : { id: "urlbar-group-firefox-suggest" };
     }
 
-    if (row.result.isBestMatch) {
-      return { id: "urlbar-group-best-match" };
-    }
-
     // Show "Shortcuts" if there's another result before that group.
     if (
       row.result.providerName == "UrlbarProviderTopSites" &&
@@ -4238,7 +4233,6 @@ export class UrlbarView {
 
     if (UrlbarPrefs.get("groupLabels.enabled")) {
       idArgs.push({ id: "urlbar-group-firefox-suggest" });
-      idArgs.push({ id: "urlbar-group-best-match" });
     }
 
     let suggestSponsoredEnabled =
