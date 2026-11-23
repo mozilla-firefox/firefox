@@ -3251,11 +3251,13 @@ void HTMLInputElement::SetCheckedInternal(bool aChecked, bool aNotify,
     SetStates(ElementState::CHECKED, aChecked, aNotify);
   }
 
-  // No need to update element state, since we're about to call
-  // UpdateState anyway.
-  UpdateAllValidityStatesButNotElementState();
+  // Checkedness only affects the valueMissing validity state.
+  const bool validBefore = IsValid();
+  UpdateValueMissingValidityState();
   UpdateIndeterminateState(aNotify);
-  UpdateValidityElementStates(aNotify);
+  if (validBefore != IsValid()) {
+    UpdateValidityElementStates(aNotify);
+  }
 
   // Notify all radios in the group that value has changed, this is to let
   // radios to have the chance to update its states, e.g., :indeterminate.
