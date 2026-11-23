@@ -115,6 +115,9 @@ static uint16_t GetAngleUnitTypeForString(const nsAString& aUnit) {
 
 static void GetAngleValueString(nsAString& aValueAsString, float aValue,
                                 uint16_t aUnitType) {
+  aValue = std::clamp(aValue, std::numeric_limits<float>::lowest(),
+                      std::numeric_limits<float>::max());
+
   nsTextFormatter::ssprintf(aValueAsString, u"%g", (double)aValue);
 
   nsAutoString unitString;

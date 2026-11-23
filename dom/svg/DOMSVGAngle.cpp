@@ -5,6 +5,7 @@
 #include "DOMSVGAngle.h"
 
 #include "SVGAnimatedOrient.h"
+#include "mozilla/SVGContentUtils.h"
 #include "mozilla/dom/SVGAngleBinding.h"
 #include "mozilla/dom/SVGSVGElement.h"
 
@@ -50,15 +51,16 @@ void DOMSVGAngle::SetValue(float aValue, ErrorResult& aRv) {
     return;
   }
   bool isBaseVal = mType == AngleType::BaseValue;
+  SVGContentUtils::NormalizeFloat(aValue);
   mVal->SetBaseValue(aValue, mVal->mBaseValUnit,
                      isBaseVal ? mSVGElement.get() : nullptr, isBaseVal);
 }
 
 float DOMSVGAngle::ValueInSpecifiedUnits() const {
-  if (mType == AngleType::AnimValue) {
-    return mVal->mAnimVal;
-  }
-  return mVal->mBaseVal;
+  float value =
+      (mType == AngleType::AnimValue) ? mVal->mAnimVal : mVal->mBaseVal;
+  return std::clamp(value, std::numeric_limits<float>::lowest(),
+                    std::numeric_limits<float>::max());
 }
 
 void DOMSVGAngle::SetValueInSpecifiedUnits(float aValue, ErrorResult& aRv) {
@@ -66,6 +68,7 @@ void DOMSVGAngle::SetValueInSpecifiedUnits(float aValue, ErrorResult& aRv) {
     aRv.ThrowNoModificationAllowedError("Animated values cannot be set");
     return;
   }
+  SVGContentUtils::NormalizeFloat(aValue);
   if (mType == AngleType::BaseValue) {
     mVal->SetBaseValueInSpecifiedUnits(aValue, mSVGElement);
   } else {
@@ -84,6 +87,7 @@ void DOMSVGAngle::NewValueSpecifiedUnits(uint16_t aUnitType,
     aRv.ThrowNotSupportedError("Unknown unit type");
     return;
   }
+  SVGContentUtils::NormalizeFloat(aValueInSpecifiedUnits);
   mVal->NewValueSpecifiedUnits(
       aUnitType, aValueInSpecifiedUnits,
       mType == AngleType::BaseValue ? mSVGElement.get() : nullptr);

@@ -51,10 +51,14 @@ class SVGAnimatedOrient {
   void GetAnimAngleValueString(nsAString& aValue) const;
 
   float GetBaseValue() const {
-    return mBaseVal * GetDegreesPerUnit(mBaseValUnit);
+    return std::clamp(mBaseVal * GetDegreesPerUnit(mBaseValUnit),
+                      std::numeric_limits<float>::lowest(),
+                      std::numeric_limits<float>::max());
   }
   float GetAnimValue() const {
-    return mAnimVal * GetDegreesPerUnit(mAnimValUnit);
+    return std::clamp(mAnimVal * GetDegreesPerUnit(mAnimValUnit),
+                      std::numeric_limits<float>::lowest(),
+                      std::numeric_limits<float>::max());
   }
   SVGEnumValue GetAnimType() const { return mAnimType; }
 

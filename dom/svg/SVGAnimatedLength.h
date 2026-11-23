@@ -148,11 +148,15 @@ class SVGAnimatedLength {
   void GetAnimValueString(nsAString& aValue) const;
 
   float GetBaseValue(const SVGElement* aSVGElement) const {
-    return mBaseVal * GetPixelsPerUnit(aSVGElement, mBaseUnitType);
+    return std::clamp(mBaseVal * GetPixelsPerUnit(aSVGElement, mBaseUnitType),
+                      std::numeric_limits<float>::lowest(),
+                      std::numeric_limits<float>::max());
   }
 
   float GetAnimValue(const SVGElement* aSVGElement) const {
-    return mAnimVal * GetPixelsPerUnit(aSVGElement, mAnimUnitType);
+    return std::clamp(mAnimVal * GetPixelsPerUnit(aSVGElement, mAnimUnitType),
+                      std::numeric_limits<float>::lowest(),
+                      std::numeric_limits<float>::max());
   }
   float GetAnimValueWithZoom(const SVGElement* aSVGElement) const {
     return mAnimVal * GetPixelsPerUnitWithZoom(aSVGElement, mAnimUnitType);

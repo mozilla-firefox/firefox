@@ -222,6 +222,15 @@ class SVGContentUtils {
       const SVGPreserveAspectRatio& aPreserveAspectRatio);
 
   /**
+   * Convert -0.0 to 0.0, otherwise leave the number unchanged.
+   */
+  static void NormalizeFloat(float& aValue) {
+    if (IsNegativeZero(aValue)) {
+      aValue = 0.0f;
+    }
+  }
+
+  /**
    * Parses the sign (+ or -) of a number and moves aIter to the next
    * character if a sign is found.
    * @param aSignMultiplier [outparam] -1 if the sign is negative otherwise 1
