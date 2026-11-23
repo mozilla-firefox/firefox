@@ -66,7 +66,7 @@
   <!-- Text for the menu button to remove a recently saved bookmark from the user's home screen -->
   <string name="home_bookmarks_menu_item_remove">مٹائفبو</string>
   <!-- About content. %1$s is the name of the app (for example "Firefox"). -->
-  <string name="about_content" tools:ignore="BrandUsage">%1$s اے Mozilla جوڈ کرینے۔</string>
+  <string name="about_content" tools:ignore="BrandUsage">دا %1$s اے Mozilla جوڈ کرینے۔</string>
   <!--
     Private Browsing
 
@@ -147,6 +147,8 @@
     in the Recently visited section
   -->
   <string name="recently_visited_menu_item_remove">مٹائفبو</string>
+  <!-- Customize menu screen - Accessibility description - name of the menu section that groups the History, Bookmarks, Downloads and Passwords items. Read aloud after "Section", followed by the item names ("Section “Library”: History, Bookmarks, Downloads, Passwords"). -->
+  <string name="browser_menu_section_library">لائبریری</string>
   <!-- Customize menu screen - Accessibility description - name of the menu section that groups the Sign in and Settings items. Read aloud after "Section", followed by the item names ("Section “Accounts and settings”: Sign in, Settings"). -->
   <string name="browser_menu_section_accounts_and_settings">اکاونٹاک و سیٹنگاک</string>
   <!-- Secondary button on the menu reset dialog. Tapping it cancels the reset process and preserves all user-made customizations. -->
@@ -485,7 +487,7 @@
     Preference linking to about page for Fenix
     %1$s is the name of the app (for example "Firefox").
   -->
-  <string name="preferences_about">%1$s ئنا باروٹ</string>
+  <string name="preferences_about">باروٹ %1$s ئنا</string>
   <!-- Preference for settings related to changing the default browser -->
   <string name="preferences_set_as_default_browser">اصل ویبگشت کروک سیٹ کبو</string>
   <!-- Preference for advanced site settings -->
@@ -504,6 +506,8 @@
   <string name="preferences_theme">تیم</string>
   <!-- Preference for customizing the home screen -->
   <string name="preferences_home_2">مون پنہ</string>
+  <!-- Preference shown instead of account display name while account profile information isn't available yet. -->
+  <string name="preferences_account_default_name_2" tools:ignore="BrandUsage">Mozilla اکاونٹ</string>
   <!-- Preference for language -->
   <string name="preferences_language">زبان</string>
   <!-- Preference for translations -->
@@ -526,6 +530,8 @@
   <string name="preferences_open_links_in_apps_never">ہچ</string>
   <!-- Preference label for choosing whether links open in the YouTube app -->
   <string name="preferences_open_links_in_youtube">لنک اتے YouTube ایپ ٹی ملبو</string>
+  <!-- Preference title for downloads default location. -->
+  <string name="preferences_downloads_default_location_title">اصل ڈاونلوڈاتا ڈس</string>
   <!-- Preference for extensions -->
   <string name="preferences_extensions">ودنگاک</string>
   <!-- Preference for notifications -->
@@ -534,6 +540,10 @@
   <string name="notifications_allowed_summary">اجازت ارے</string>
   <!-- Summary for notification preference indicating notifications are not allowed -->
   <string name="notifications_not_allowed_summary">اجازت اف</string>
+  <!-- Summary for local network access preference indicating access is allowed -->
+  <string name="local_network_access_allowed_summary">اجازت ارے</string>
+  <!-- Summary for local network access preference indicating access is not allowed -->
+  <string name="local_network_access_not_allowed_summary">اجازت اف</string>
   <!--
     Add-on Permissions
 
@@ -555,6 +565,10 @@
     a section where users see a list of tabs that they have visited in the past few days
   -->
   <string name="customize_toggle_recently_visited">زوتیاٹ ہروک</string>
+  <!-- Title for the opening wallpaper settings screen -->
+  <string name="customize_wallpapers">وال پیپراک</string>
+  <!-- Snackbar message for when wallpaper couldn't be downloaded -->
+  <string name="wallpaper_download_error_snackbar_message">وال پیپر ڈاونلوڈ کننگ متو</string>
   <!-- Text displayed that links to website containing documentation about the "Limited Edition" wallpapers. -->
   <string name="wallpaper_learn_more">پین ہیل کبو</string>
   <!-- Title for the "Light" alternative app icon variant in the icon picker screen. -->
@@ -585,6 +599,8 @@
   <string name="restart_warning_dialog_button_positive_2">نشان اے بدل کبو</string>
   <!-- Dialog button text for cancelling app icon change -->
   <string name="restart_warning_dialog_button_negative">کینسل</string>
+  <!-- Preference for triggering sync -->
+  <string name="preferences_sync_now">داسہ ہمگام</string>
   <!-- Preference for syncing history -->
   <string name="preferences_sync_history">تاریخچہ</string>
   <!-- Preference for syncing bookmarks -->
@@ -769,6 +785,14 @@
   <string name="tab_manager_empty_tab_groups_page_description">مچی اس جوڑ کننگ کن ٹیب گچین کبو. داڑے خوندی مریرہ، ہراوخت ہم کہ خوارے.</string>
   <!-- Title for adding more tabs to a tab group. -->
   <string name="add_to_tab_group_title">شاغبو</string>
+  <plurals name="tab_group_tabs_count_subtitle">
+    <!--
+      Subtitle for the number of tabs in a tab group.
+      %1$d is the number of tabs in a tab group.
+    -->
+    <item quantity="one">%1$d ٹیب اس</item>
+    <item quantity="other">%1$d ٹیب</item>
+  </plurals>
   <!-- Text shown on the cancel button in the Delete tab group confirmation dialog. -->
   <string name="delete_tab_group_confirmation_dialog_cancel">کینسل</string>
   <!-- Text shown on the cancel button in the Close last tab and delete tab group confirmation dialog. -->
@@ -818,6 +842,11 @@
     This button will dismiss the dialog.
   -->
   <string name="download_file_has_not_enough_storage_dialog_cancel_button_text">کینسل</string>
+  <plurals name="downloads_delete_dialog_title">
+    <!-- Title for the download deletion confirmation dialog. The message changes depending on how many files are selected. %d is the number of files to be deleted. -->
+    <item quantity="one">فائل مٹائفنگے؟</item>
+    <item quantity="other">%d فائلاک مٹائفنگر؟</item>
+  </plurals>
   <!-- Text for the button to delete a single downloaded file item -->
   <string name="download_delete_item">مٹائف</string>
   <!-- Content description for the toolbar "Navigate back" button -->
@@ -1006,6 +1035,15 @@
   <string name="preference_enhanced_tracking_protection">جواننگا ٹریکنگ سوگوئی</string>
   <!-- Text displayed that links to website about enhanced tracking protection -->
   <string name="preference_enhanced_tracking_protection_explanation_learn_more">پین ہیل کبو</string>
+  <plurals name="trackers_blocked_count_2">
+    <!--
+      Trackers blocked card on homepage
+
+      Text shown on the trackers blocked card. %d is the number of trackers blocked.
+    -->
+    <item quantity="one">%d ٹریکر اس توننگا</item>
+    <item quantity="other">%d ٹریکر توننگار</item>
+  </plurals>
   <!-- Text shown on the trackers blocked card when no trackers have been blocked yet -->
   <string name="trackers_blocked_empty">نم حفاظت ٹی ارے</string>
   <!-- Preference for enhanced tracking protection for the strict protection settings -->
@@ -1060,8 +1098,16 @@
   <string name="preferences_email_masks_manage_title">ای میل ماسکاتے نظم کبو</string>
   <!-- Link text that opens additional information about the browser VPN -->
   <string name="ip_protection_learn_more">پین ہیل کبو</string>
+  <!-- Header for the browser VPN `location` section -->
+  <string name="ip_protection_location_section">ڈس</string>
   <!-- Used as text for a link in ip_protection_onboarding_body. Make sure to adapt capitalization if the link is in the middle of the sentence. -->
   <string name="ip_protection_onboarding_body_link_promo">پین ہیل کبو</string>
+  <!-- Label for the dismiss button on the onboarding bottom sheet. -->
+  <string name="ip_protection_onboarding_not_now_button">داسہ نہ</string>
+  <!-- Title shown on the browser VPN settings screen for location selection section. -->
+  <string name="ip_protection_location_title" tools:ignore="UnusedResources">ڈس</string>
+  <!-- Title for the card shown to the user when we are unable to fetch server locations -->
+  <string name="ip_protection_locations_unavailable_title">ناموجود ڈس اک</string>
   <!-- The text for the "Cancel" button for cancelling adding, updating or deleting a credit card -->
   <string name="credit_cards_cancel_button">کینسل</string>
   <!-- Message displayed in biometric prompt displayed for authentication before allowing users to view their saved credit cards -->
@@ -1134,6 +1180,8 @@
   <string name="translations_bottom_sheet_translate_from">دووی ان مٹ</string>
   <!-- Label for the dropdown to select which language to translate to on the translations dialog. Usually the translate to language selected will be the user's preferred language. -->
   <string name="translations_bottom_sheet_translate_to">دووی ٹی مٹ</string>
+  <!-- Button text on the translations dialog to dismiss the dialog and return to the browser. -->
+  <string name="translations_bottom_sheet_negative_button">داسہ نہ</string>
   <!-- Accessibility announcement (not visible, for screen readers etc.) for the translations dialog after restore button was pressed that indicates the original untranslated page was loaded. -->
   <string name="translations_bottom_sheet_restore_accessibility_announcement">اصل بے مٹ آ صفحہ لوڈ مس</string>
   <!-- Button text on the translations dialog to begin a translation of the website. -->
@@ -1216,6 +1264,8 @@
     Title for a prompt asking the user about their experience using the app. %1$s is the name of the app (for example "Firefox").
   -->
   <string name="review_prompt_pre_prompt_header">%1$s نا باروٹ انت پارے؟</string>
+  <!-- Label for a button proceeding to rate the app on Google Play Store. %1$s is the name of the app (for example "Firefox"). -->
+  <string name="review_prompt_rate_button">دا %1$s اے Play Store ٹی استار ایتبو</string>
   <!--
     Settings Search Strings
 
@@ -1237,6 +1287,13 @@
   <string name="terms_of_use_prompt_body_line_two_alternative" tools:ignore="UnusedResources">نم %1$s پین ہیل کننگ کیررے.</string>
   <!-- Link text for terms_of_use_prompt_body_line_two_alternative that links to a site with more information about the Terms of Use -->
   <string name="terms_of_use_prompt_body_line_two_alternative_link" tools:ignore="UnusedResources">داڑے</string>
+  <!--
+    Content description (for accessibility, not displayed) used for the sports widget card header announcing a live match.
+    %s is the name of the competition the match belongs to (e.g. "FA Cup").
+  -->
+  <string name="wrex_widget_live_game_content_description">%s، لایو گوازی</string>
+  <!-- Sports widget error card title shown when match data fails to load. -->
+  <string name="wrex_widget_error_load_failed_title">دا وخت میچ نا معلوماک نشان اتنگ مفسہ</string>
   <!-- The second active link used in privacy_notice_updated_homepage_message -->
   <string name="privacy_notice_updated_homepage_message_learn_more" tools:ignore="UnusedResources">پین ہیل کبو</string>
   <!-- Image context menu entry that sends the long-pressed image to Google Lens -->
@@ -1247,6 +1304,8 @@
   <string name="lens_camera_loading_cancel_button">کینسل</string>
   <!-- Title of the bottom sheet shown the first time the user opens the Google Lens camera screen -->
   <string name="lens_opt_out_title">پٹبو Google Lens تون</string>
+  <!-- Button in the first-run Google Lens bottom sheet that leaves Google Lens without using it -->
+  <string name="lens_opt_out_not_now_button">داسہ نہ</string>
   <!-- The text on the dialog on the Firefox Labs screen for the negative button when toggling "on" and "off" experimental features. This is used to cancel the action and return to the previous screen. -->
   <string name="firefox_labs_dialog_cancel_button">کینسل</string>
   <!-- The text for the button that adds the signature the user has typed to the PDF. -->

@@ -192,6 +192,8 @@
   <string name="mozac_feature_prompts_edit_credit_card_security_code">CVV (προαιρετικό)</string>
   <!-- Edit credit card screen - Error message for the security code field when the entered code is too short. -->
   <string name="mozac_feature_prompts_edit_credit_card_security_code_error">Εισαγάγετε έναν κωδικό ασφαλείας 3 ή 4 ψηφίων</string>
+  <!-- Edit credit card screen - Accessibility description of the button that clears the security code field -->
+  <string name="mozac_feature_prompts_edit_credit_card_security_code_clear">Απαλοιφή κωδικού ασφαλείας</string>
   <!--
     Address Autofill
 

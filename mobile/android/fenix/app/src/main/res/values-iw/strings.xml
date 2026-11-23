@@ -2128,15 +2128,21 @@
   <string name="unsubmitted_crash_dialog_negative_button_2">סגירה</string>
   <!-- Unsubmitted crash dialog negative button to never be asked for the submission -->
   <string name="unsubmitted_crash_requested_by_devs_dialog_never_button">לעולם לא להציג שוב</string>
+  <!-- Unsubmitted crash dialog negative button to never be asked for the submission, displayed in all capital letters. -->
+  <string name="unsubmitted_crash_requested_by_devs_dialog_never_button_2" tools:ignore="UnusedResources">לעולם לא להציג שוב</string>
   <!-- Unsubmitted crash dialog positive button to submit crash report -->
   <string name="unsubmitted_crash_dialog_positive_button_2">שליחה</string>
   <!-- Unsubmitted crash dialog positive button to submit crash report -->
   <string name="unsubmitted_crash_dialog_positive_button">שליחת דיווח קריסה</string>
+  <!-- Unsubmitted crash dialog positive button to submit crash report, displayed in all capital letters. -->
+  <string name="unsubmitted_crash_dialog_positive_button_3" tools:ignore="UnusedResources">שליחת דיווח קריסה</string>
   <!-- Body text for crash report dialog. %s is the link text in the annotated string (ie. "Learn More") -->
   <string name="unsubmitted_crash_dialog_body">דיווחי קריסה מסייעים לנו לאבחן ולתקן בעיות בדפדפן. דיווחים עשויים לכלול נתונים אישיים או רגישים. %s</string>
   <string name="unsubmitted_crash_dialog_learn_more">מידע נוסף</string>
   <!-- Unsubmitted crash dialog button to open a web page with more details on the feature and privacy policy -->
   <string name="unsubmitted_crash_requested_by_devs_learn_more">מידע נוסף</string>
+  <!-- Unsubmitted crash dialog button to open a web page with more details on the feature and privacy policy, displayed in all capital letters. -->
+  <string name="unsubmitted_crash_requested_by_devs_learn_more_2" tools:ignore="UnusedResources">מידע נוסף</string>
   <!--
     Bookmarks
 
@@ -3257,6 +3263,10 @@
   <string name="preferences_credit_cards_save_and_autofill_cards_2">שמירה ומילוי אמצעי תשלום</string>
   <!-- Preference summary for saving and autofilling payment method data. %s is the name of the app (for example "Firefox"). -->
   <string name="preferences_credit_cards_save_and_autofill_cards_summary_2">‏%s מצפין את כל אמצעי התשלום השמורים</string>
+  <!-- Preference for saving the security codes of credit cards. -->
+  <string name="preferences_credit_cards_save_security_codes">שמירת קודי אבטחה</string>
+  <!-- Preference summary for saving the security codes of credit cards. %s is the name of the app (for example "Firefox"). -->
+  <string name="preferences_credit_cards_save_security_codes_summary">‏%s מצפין את מספר הכרטיס וקוד האבטחה שלך לתשלומים מהירים יותר בהמשך</string>
   <!-- Preference option for syncing credit cards across devices. This is displayed when the user is not signed into sync -->
   <string name="preferences_credit_cards_sync_cards_across_devices">סנכרון כרטיסים בין מכשירים</string>
   <!-- Preference option for syncing credit cards across devices. This is displayed when the user is signed into sync -->
@@ -3293,6 +3303,8 @@
   <string name="credit_cards_expiration_date_year">השנה של תאריך התפוגה</string>
   <!-- The header for the name on the credit card -->
   <string name="credit_cards_name_on_card">שם שעל הכרטיס</string>
+  <!-- The header for the optional security code of a credit card. CVV is the abbreviation of the card security code. -->
+  <string name="credit_cards_cvv_optional">CVV (אופציונלי)</string>
   <!-- The text for the "Delete card" menu item for deleting a credit card -->
   <string name="credit_cards_menu_delete_card">מחיקת כרטיס</string>
   <!-- The text for the "Delete card" button for deleting a credit card -->
@@ -3309,10 +3321,16 @@
   <string name="credit_cards_cancel_button">ביטול</string>
   <!-- Title of the "Saved cards" screen -->
   <string name="credit_cards_saved_cards">כרטיסים שמורים</string>
+  <!-- Text in the saved cards list that indicates the security code for a credit card is being stored -->
+  <string name="credit_cards_cvv_saved">ה־CVV נשמר</string>
   <!-- Error message for card number validation -->
   <string name="credit_cards_number_validation_error_message_2">נא להכניס מספר כרטיס תקני</string>
   <!-- Error message for card name on card validation -->
   <string name="credit_cards_name_on_card_validation_error_message_2">הוספת שם</string>
+  <!-- Error message for a credit card security code that does not meet the 3-digit length requirement. -->
+  <string name="credit_cards_cvv_validation_error_message">קוד האבטחה חייב להיות בן 3 ספרות</string>
+  <!-- Error message for a credit card security code that does not meet the 4-digit length requirement (used for American Express cards only) -->
+  <string name="credit_cards_cvv_amex_validation_error_message">קודי אבטחה של אמריקן אקספרס הם בעלי 4 ספרות</string>
   <!-- Message displayed in biometric prompt displayed for authentication before allowing users to view their saved credit cards -->
   <string name="credit_cards_biometric_prompt_message">יש לבטל את הנעילה כדי להציג את הכרטיסים השמורים שלך</string>
   <!-- Title of warning dialog if users have no device authentication set up -->
@@ -3720,6 +3738,12 @@
     %1$s is the size in kilobytes or megabytes of the language file.
   -->
   <string name="translations_download_language_file_dialog_title">להוריד את השפה במצב חיסכון בנתונים (%1$s)?</string>
+  <!--
+    Translations options dialog
+
+    Title of the translation options dialog that allows a user to set their translation preferences for the site the user is currently on.
+  -->
+  <string name="translation_option_bottom_sheet_title_heading2">העדפות תרגום</string>
   <!--
     Translations options dialog
 
@@ -4549,6 +4573,8 @@
   <string name="wrex_widget_match_suspended">מושהה</string>
   <!-- Label shown on the sports widget match status badge when a match has been postponed to a later date. -->
   <string name="wrex_widget_match_postponed">נדחה</string>
+  <!-- Label shown on the sports widget match status badge when a match has been canceled. -->
+  <string name="wrex_widget_match_canceled">בוטל</string>
   <!-- Sports widget action label to refresh match data after an error. -->
   <string name="wrex_widget_error_refresh">ריענון</string>
   <!-- Sports widget menu item to view the team's match results. -->

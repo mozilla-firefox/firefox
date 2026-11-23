@@ -11,10 +11,30 @@
   <string name="mozac_feature_applinks_open_in">… ٹی ملبو</string>
   <!-- The title of the prompt that warns users their normal browsing session is trying to open another app -->
   <string name="mozac_feature_applinks_normal_confirm_dialog_title">پین ایپ سے ٹی مل</string>
+  <!-- The title of the prompt that warns users their normal browsing session is trying to open another app -->
+  <string name="mozac_feature_applinks_normal_confirm_dialog_title_2">دا لنک پین ایپ ٹی ملنگے؟</string>
+  <!--
+    The title of the prompt with app suffix.
+    %s is a placeholder that will be replaced by an app name
+  -->
+  <string name="mozac_feature_applinks_normal_confirm_dialog_title_with_app_name_2">دا لنک %s ایپ ٹی ملنگے؟</string>
+  <!--
+    The message of the prompt to confirm with users that they want to open the link in another app
+    %s is a placeholder that will be replaced by the app name
+  -->
+  <string name="mozac_feature_applinks_normal_confirm_dialog_message">نم دا گڑا اے ہننگ کن %s اے النگ خوارے؟</string>
   <!-- Opens the selected time -->
   <string name="mozac_feature_applinks_confirm_dialog_confirm">ملبو</string>
   <!-- Opens the selected app link -->
   <string name="mozac_feature_applinks_confirm_dialog_confirm_2">ایپ ٹی ملبو</string>
   <!-- Cancels the prompt -->
   <string name="mozac_feature_applinks_confirm_dialog_deny">کینسل</string>
+  <!-- The label of the checkbox that, depending of user's choice, can change the Open links in apps setting -->
+  <string name="mozac_feature_applinks_confirm_dialog_checkbox_label">لنکاک ہمیشہ ایپ اتیٹی ملنگر</string>
+  <!-- The label for the expandable section that shows additional details -->
+  <string name="mozac_feature_applinks_view_details">تفصیل اتے ہربو</string>
+  <!-- The label for the expandable section when details are shown -->
+  <string name="mozac_feature_applinks_hide_details">تفصیل اتے ڈکبو</string>
+  <!-- The label for the destination URL in the details section -->
+  <string name="mozac_feature_applinks_destination_url">مزل لنک</string>
 </resources>

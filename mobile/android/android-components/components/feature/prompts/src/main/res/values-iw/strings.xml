@@ -173,7 +173,7 @@
   <!-- Content description for the masked card security code in a save or update credit card dialog. Screen readers read it instead of the masked characters. -->
   <string name="mozac_feature_prompts_save_payment_method_security_code_description">קוד האבטחה מוסתר</string>
   <!-- Label of the toggle in a save or update credit card dialog that controls whether the card security code is saved. -->
-  <string name="mozac_feature_prompts_always_save_security_codes">שימוש בקודי האבטחה</string>
+  <string name="mozac_feature_prompts_always_save_security_codes">שמירת קודי אבטחה</string>
   <!-- Text for the button that closes a save or update credit card dialog without saving. -->
   <string name="mozac_feature_prompts_save_payment_method_dismiss">סגירה</string>
   <!-- Title of the edit credit card screen (also used as the accessibility description for the button that opens this screen). -->

@@ -9,6 +9,8 @@
 <resources>
   <!-- Text shown in a menu item indicating that this is a new item in the menu. -->
   <string name="mozac_menu_item_new_indicator_label">YENİ</string>
+  <!-- Text shown in a menu item indicating that this is a new item in the menu, displayed in all capital letters. -->
+  <string name="mozac_menu_item_new_indicator_label_2">YENİ</string>
   <!-- Content description (not visible, for screen readers etc.) for the button that dismisses the banner shown in the menu -->
   <string name="mozac_menu_banner_dismiss_description">Tanıtımı kapat</string>
   <!-- Instruction text telling the user they can reorder menu sections by dragging them -->
@@ -21,4 +23,18 @@
   <string name="mozac_menu_customize_drag_to_hide">Bölümleri gizlemek için buraya sürükleyin</string>
   <!-- Button text to reset the menu to default configuration -->
   <string name="mozac_menu_customize_reset_to_default">Varsayılana sıfırla</string>
+  <!-- Content description (not visible, for screen readers etc.) of a menu section without a name in the customize menu screen. %1$s is the names of its items, for example "VPN". -->
+  <string name="mozac_menu_customize_unnamed_section">“%1$s” bölümü</string>
+  <!-- Name of the action (used by screen readers, etc.) that moves a menu section up one position in the customize menu screen. It is also shown in the list of actions displayed when the user long-presses the drag handle of a menu section. -->
+  <string name="mozac_menu_customize_move_up">Yukarı taşı</string>
+  <!-- Name of the action (used by screen readers, etc.) that moves a menu section down one position in the customize menu screen. It is also shown in the list of actions displayed when the user long-presses the drag handle of a menu section. -->
+  <string name="mozac_menu_customize_move_down">Aşağı taşı</string>
+  <!-- Name of the action (used by screen readers, etc.) that hides a section in the customize menu screen. It is also shown in the list of actions displayed when the user long-presses the drag handle of a menu section. -->
+  <string name="mozac_menu_customize_hide">Bölümü gizle</string>
+  <!-- Name of the action (used by screen readers, etc.) that shows a previously hidden menu section, placing it last among the visible sections in the customize menu screen. It is also shown in the list of actions displayed when the user long-presses the drag handle of a menu section. -->
+  <string name="mozac_menu_customize_unhide">Bölümü göster</string>
+  <!-- Announcement (not visible, for screen readers etc.) once the user hid a menu section in the customize menu screen. %1$s is the name of the section, or the names of its items separated by commas if it has none, for example "Page controls", "VPN" or "Back, Forward". -->
+  <string name="mozac_menu_customize_section_hidden">“%1$s” bölümü kaldırıldı</string>
+  <!-- Announcement (not visible, for screen readers etc.) once the user showed a hidden menu section in the menu again in the customize menu screen. %1$s is the name of the section, or the names of its items separated by commas if it has none, for example "Page controls", "VPN" or "Back, Forward". -->
+  <string name="mozac_menu_customize_section_shown">“%1$s” bölümü menüye eklendi</string>
 </resources>
