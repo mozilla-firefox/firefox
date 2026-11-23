@@ -463,6 +463,7 @@ macosx1500-aarch64-tests:
     - crashtest
     - mochitest-a11y
     - mochitest-browser-a11y
+    - mochitest-browser-chrome
     - mochitest-browser-media
     - mochitest-browser-translations
     - mochitest-chrome
@@ -525,7 +526,6 @@ macosx1015-64-qr-tests:
     - cppunittest
     - crashtest
     - jittest
-    - mochitest-browser-chrome
     - mochitest-media
     - mochitest-webgl1-core
     - mochitest-webgl1-ext
