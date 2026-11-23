@@ -108,6 +108,7 @@ add_task(async function () {
   await pushPref("layout.css.tree-counting-functions.enabled", true);
   await pushPref("layout.css.random.enabled", true);
   await pushPref("layout.css.random-item.enabled", true);
+  await pushPref("layout.css.ident-function.enabled", true);
 
   await addTab(TEST_URI);
   const { inspector, view } = await openRuleView();
