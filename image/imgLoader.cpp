@@ -2603,6 +2603,19 @@ nsresult imgLoader::LoadImage(
   // If we didn't get a proxy when validating the cache entry, we need to
   // create one.
   if (!*_retval) {
+    // A document reusing an image another document loaded gets the resource
+    // timing entry it would have had for its own fetch.
+    const auto* perfData = request->GetPerfData();
+    if (perfData && aLoadingDocument &&
+        !request->CanReuseWithoutValidation(aLoadingDocument)) {
+      nsAutoCString spec;
+      aURI->GetSpec(spec);
+      TimeStamp now = TimeStamp::Now();
+      SharedSubResourceCacheUtils::AddPerformanceEntryForCache(
+          NS_ConvertUTF8toUTF16(spec), nsString(initiatorType), *perfData, now,
+          now, aLoadingDocument);
+    }
+
     // ValidateEntry() has three return values: "Is valid," "might be valid --
     // validating over network", and "not valid." If we don't have a _retval,
     // we know ValidateEntry is not validating over the network, so it's safe
@@ -2613,6 +2626,8 @@ nsresult imgLoader::LoadImage(
     // different tab (see bug 528003), because its load id will get re-set, and
     // that'll cause us to validate over the network.
     request->SetLoadId(aLoadingDocument);
+    request->SetInnerWindowID(
+        aLoadingDocument ? aLoadingDocument->InnerWindowID() : 0);
 
     LOG_MSG(gImgLog, "imgLoader::LoadImage", "creating proxy request.");
     rv = CreateNewProxyForRequest(request, aURI, aLoadGroup, aLoadingDocument,

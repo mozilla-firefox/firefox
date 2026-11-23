@@ -1475,7 +1475,7 @@ void ScriptLoader::EmulateNetworkEvents(ScriptLoadRequest* aRequest) {
 
   NotifyObserversForCachedScript(aRequest);
 
-  {
+  if (const auto* perfData = aRequest->mNetworkMetadata->GetPerfData()) {
     nsAutoCString name;
     nsString entryName;
     aRequest->URI()->GetSpec(name);
@@ -1484,8 +1484,7 @@ void ScriptLoader::EmulateNetworkEvents(ScriptLoadRequest* aRequest) {
     auto now = TimeStamp::Now();
 
     SharedSubResourceCacheUtils::AddPerformanceEntryForCache(
-        entryName, GetInitiatorType(aRequest), aRequest->mNetworkMetadata, now,
-        now, mDocument);
+        entryName, GetInitiatorType(aRequest), *perfData, now, now, mDocument);
   }
 }
 

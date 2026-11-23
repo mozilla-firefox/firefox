@@ -8,6 +8,7 @@
 
 #include "ImageCacheKey.h"
 #include "mozilla/Mutex.h"
+#include "mozilla/UniquePtr.h"
 #include "nsCOMPtr.h"
 #include "nsError.h"
 #include "nsIAsyncVerifyRedirectCallback.h"
@@ -31,6 +32,9 @@ class nsIReferrerInfo;
 
 namespace mozilla {
 enum CORSMode : uint8_t;
+namespace dom {
+class CacheablePerformanceTimingData;
+}  // namespace dom
 namespace image {
 class Image;
 class ProgressTracker;
@@ -164,6 +168,12 @@ class imgRequest final : public nsIThreadRetargetableStreamListener,
 
   nsITimedChannel* GetTimedChannel() const { return mTimedChannel; }
 
+  /// The timing data of the completed load, used to report resource timing
+  /// entries for documents that reuse this request from the cache.
+  const mozilla::dom::CacheablePerformanceTimingData* GetPerfData() const {
+    return mPerfData.get();
+  }
+
   /// Returns true if any redirect in the chain that loaded this image was
   /// cross-origin.
   bool HadCrossOriginRedirects() const;
@@ -250,6 +260,8 @@ class imgRequest final : public nsIThreadRetargetableStreamListener,
   nsCOMPtr<nsIInterfaceRequestor> mPrevChannelSink;
 
   nsCOMPtr<nsITimedChannel> mTimedChannel;
+
+  mozilla::UniquePtr<mozilla::dom::CacheablePerformanceTimingData> mPerfData;
 
   nsCString mContentType;
   int64_t mContentLength = 0;

@@ -1556,7 +1556,8 @@ Loader::Completed Loader::ParseSheet(
 
 void Loader::AddPerformanceEntryForCachedSheet(SheetLoadData& aLoadData) {
   MOZ_ASSERT(aLoadData.mURI);
-  if (!mDocument || !aLoadData.mNetworkMetadata) {
+  if (!mDocument || !aLoadData.mNetworkMetadata ||
+      !aLoadData.mNetworkMetadata->GetPerfData()) {
     return;
   }
   if (aLoadData.mParentData &&
@@ -1574,8 +1575,8 @@ void Loader::AddPerformanceEntryForCachedSheet(SheetLoadData& aLoadData) {
   }
 
   SharedSubResourceCacheUtils::AddPerformanceEntryForCache(
-      entryName, aLoadData.InitiatorTypeString(), aLoadData.mNetworkMetadata,
-      start, end, mDocument);
+      entryName, aLoadData.InitiatorTypeString(),
+      *aLoadData.mNetworkMetadata->GetPerfData(), start, end, mDocument);
 }
 
 void Loader::NotifyObservers(SheetLoadData& aData, nsresult aStatus,

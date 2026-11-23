@@ -130,8 +130,8 @@ namespace SharedSubResourceCacheUtils {
 
 void AddPerformanceEntryForCache(
     const nsString& aEntryName, const nsString& aInitiatorType,
-    const SubResourceNetworkMetadataHolder* aNetworkMetadata,
-    TimeStamp aStartTime, TimeStamp aEndTime, dom::Document* aDocument);
+    const dom::CacheablePerformanceTimingData& aPerfData, TimeStamp aStartTime,
+    TimeStamp aEndTime, dom::Document* aDocument);
 
 bool ShouldClearEntry(nsIURI* aEntryURI, nsIPrincipal* aEntryPartitionPrincipal,
                       const Maybe<bool>& aChrome,

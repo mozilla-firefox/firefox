@@ -56,13 +56,9 @@ void RemoveMemoryPressureAndSafeBrowsingObserver(nsIObserver* aObserver) {
 
 void AddPerformanceEntryForCache(
     const nsString& aEntryName, const nsString& aInitiatorType,
-    const SubResourceNetworkMetadataHolder* aNetworkMetadata,
-    TimeStamp aStartTime, TimeStamp aEndTime, dom::Document* aDocument) {
+    const dom::CacheablePerformanceTimingData& aPerfData, TimeStamp aStartTime,
+    TimeStamp aEndTime, dom::Document* aDocument) {
   MOZ_ASSERT(aDocument);
-
-  if (!aNetworkMetadata || !aNetworkMetadata->GetPerfData()) {
-    return;
-  }
 
   nsPIDOMWindowInner* win = aDocument->GetInnerWindow();
   if (!win) {
@@ -76,9 +72,8 @@ void AddPerformanceEntryForCache(
   // TODO: Bug 1751383.
   auto renderBlocking = dom::RenderBlockingStatusType::Non_blocking;
 
-  UniquePtr<dom::PerformanceTimingData> data(
-      dom::PerformanceTimingData::Create(*aNetworkMetadata->GetPerfData(), 0,
-                                         aStartTime, aEndTime, renderBlocking));
+  UniquePtr<dom::PerformanceTimingData> data(dom::PerformanceTimingData::Create(
+      aPerfData, 0, aStartTime, aEndTime, renderBlocking));
   if (!data) {
     return;
   }
