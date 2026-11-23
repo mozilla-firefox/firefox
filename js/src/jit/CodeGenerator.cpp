@@ -4172,7 +4172,6 @@ void CodeGenerator::visitOsrEntry(LOsrEntry* lir) {
   Register temp = ToRegister(lir->temp());
 
   // Remember the OSR entry offset into the code buffer.
-  masm.flushBuffer();
   setOsrEntryOffset(masm.indirectTarget(TargetKind::Jump).offset());
 
   // Allocate the full frame for this function
