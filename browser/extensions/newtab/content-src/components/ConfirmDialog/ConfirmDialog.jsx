@@ -93,6 +93,7 @@ export class _ConfirmDialog extends React.PureComponent {
       <dialog
         ref={this.dialogRef}
         className="confirmation-dialog"
+        aria-modal="true"
         aria-labelledby="confirmation-dialog-title"
         aria-describedby={
           this.props.data.body_string_id?.length > 1
