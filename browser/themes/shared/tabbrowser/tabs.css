@@ -2962,6 +2962,9 @@ tab-group {
   background-position: var(--sidebar-divider-position);
   background-repeat: no-repeat;
   margin-inline: var(--tab-margin-inline-inner);
+  /* Center between the last pinned tab and the first tab, which has extra
+   * padding above it for its close button. */
+  translate: 0 calc((var(--tab-first-padding-block-start) - var(--tab-padding-block-end)) / 2);
   min-height: 2px;
   @media -moz-pref("browser.nova.enabled") {
     min-height: 4px;
@@ -2983,12 +2986,14 @@ tab-group {
 
   #tabbrowser-tabs[expanded] > & {
     background-image: none;
+  }
 
-    /* Expand on hover keeps the full width line, with the hover state on top. */
-    @media -moz-pref("sidebar.visibility", "expand-on-hover") {
-      &:not(:hover) {
-        border-top: var(--tabstrip-inner-border);
-      }
+  @media -moz-pref("sidebar.visibility", "expand-on-hover") {
+    #tabbrowser-tabs[expanded] > &:not(:hover) {
+      background-image: var(--sidebar-divider-image);
+      background-size: var(--sidebar-divider-size-expanded);
+      background-position: var(--sidebar-divider-position-expanded);
+      opacity: var(--opacity-deemphasized-strong);
     }
   }
 }
@@ -3016,36 +3021,13 @@ tab-group {
   }
 
   --tab-height-with-margin-padding: calc(var(--tab-padding-block-start) + var(--tab-padding-block-end) + var(--tab-min-height) + 2 * var(--tab-margin-block));
+  --tab-first-padding-block-start: max(var(--space-xsmall), var(--tab-close-button-overhang));
 
   min-height: 0;
   display: flex;
   flex-direction: column;
   align-content: flex-start;
   grid-gap: var(--space-small);
-
-  &::after {
-    content: "";
-    border-bottom: var(--tabstrip-inner-border);
-    margin-inline: var(--tab-margin-inline-inner);
-  }
-
-  &:not([expanded])::after {
-    margin-inline-end: calc(var(--tab-margin-inline-inner) + var(--tab-collapsed-scrollbar-extra));
-  }
-
-  &:not([overflow])::after {
-    border-color: transparent;
-  }
-
-  @media not -moz-pref("sidebar.visibility", "expand-on-hover") {
-    /* We need these rules to apply at all times when the sidebar.visibility
-    pref is not set to "expand-on-hover" as opposed to when the "sidebar-expand-on-hover" attribute
-    has not been added to root. There are certain scenarios when that attribute is temporarily
-    removed from root such as when toggling the sidebar to expand with the toolbar button. */
-    &:not([expanded])::after {
-      border-color: transparent;
-    }
-  }
 
   .tabbrowser-tab {
     flex: none;
@@ -3064,7 +3046,7 @@ tab-group {
 
     /* prevent the shadow of the close button from being cutoff by the toolbar on the first tab */
     &:nth-child(1 of :not([hidden], [pinned])) {
-      --tab-padding-block-start: max(var(--space-xsmall), var(--tab-close-button-overhang));
+      --tab-padding-block-start: var(--tab-first-padding-block-start);
     }
 
     &:not(tab-split-view-wrapper > .tabbrowser-tab)[height-animating] {
