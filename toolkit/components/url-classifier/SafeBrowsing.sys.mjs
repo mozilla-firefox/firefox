@@ -473,6 +473,10 @@ export var SafeBrowsing = {
       return;
     }
 
+    if (aData.startsWith("privacy.trackingprotection.content.")) {
+      return;
+    }
+
     if (aData == PREF_DEBUG_ENABLED) {
       loggingEnabled = Services.prefs.getBoolPref(PREF_DEBUG_ENABLED);
       return;

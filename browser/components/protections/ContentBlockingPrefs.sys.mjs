@@ -487,6 +487,10 @@ export let ContentBlockingPrefs = {
       return;
     }
 
+    if (data.startsWith("privacy.trackingprotection.content.")) {
+      return;
+    }
+
     // We need this early return to avoid updating the CB category prematurely. Specifically when
     // user changes the CB category, the observer for hasUserInteractedWithETPSettings is triggered
     // before the category is actually changed. If we do not return here, the category may be updated
