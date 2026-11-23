@@ -1144,6 +1144,38 @@ class DirectoryLocation extends XPIStateLocation {
   }
 
   /**
+   * Resolves the path read from a pointer file, either as an absolute path
+   * or as a path relative to the pointer file's parent directory.
+   *
+   * @param {string} aPath
+   *        The path read from the pointer file
+   * @param {nsIFile} aPointerFile
+   *        The pointer file
+   * @returns {nsIFile?}
+   *        An nsIFile object for the resolved path, or null if the path
+   *        is invalid.
+   */
+  _resolveLinkPath(aPath, aPointerFile) {
+    let file = Cc["@mozilla.org/file/local;1"].createInstance(Ci.nsIFile);
+    try {
+      file.initWithPath(aPath);
+      return file;
+    } catch (e) {
+      // Not an absolute path, fall back to a path relative to the pointer file.
+    }
+    try {
+      file.setRelativeDescriptor(aPointerFile.parent, aPath);
+      return file;
+    } catch (e) {
+      logger.warn(
+        `File pointer ${aPointerFile.path} contains an invalid path ${aPath}`,
+        e
+      );
+      return null;
+    }
+  }
+
+  /**
    * Reads a single-line file containing the path to a directory, and
    * returns an nsIFile pointing to that directory, if successful.
    *
@@ -1167,19 +1199,22 @@ class DirectoryLocation extends XPIStateLocation {
         return null;
       }
     } else {
-      let fis = new FileInputStream(aFile, -1, -1, false);
+      let fis;
       let line = {};
-      fis.QueryInterface(Ci.nsILineInputStream).readLine(line);
-      fis.close();
+      try {
+        fis = new FileInputStream(aFile, -1, -1, false);
+        fis.QueryInterface(Ci.nsILineInputStream).readLine(line);
+      } catch (e) {
+        logger.warn(`Failed to read file pointer ${aFile.path}`, e);
+        return null;
+      } finally {
+        fis?.close();
+      }
 
       if (line.value) {
-        linkedDirectory = Cc["@mozilla.org/file/local;1"].createInstance(
-          Ci.nsIFile
-        );
-        try {
-          linkedDirectory.initWithPath(line.value);
-        } catch (e) {
-          linkedDirectory.setRelativeDescriptor(aFile.parent, line.value);
+        linkedDirectory = this._resolveLinkPath(line.value, aFile);
+        if (!linkedDirectory) {
+          return null;
         }
       }
     }

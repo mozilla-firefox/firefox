@@ -325,3 +325,100 @@ add_task(async function test_new_relative_pointer() {
   // Check that upgrade is disabled for addons installed by file-pointers.
   equal(addon.permissions & AddonManager.PERM_CAN_UPGRADE, 0);
 });
+
+// An unreadable pointer file should be handled as a stale pointer file.
+add_task(
+  // This test is using IOUtils.setPermissions to recreate the scenario of
+  // an unreadable pointer file, but IOUtils.setPermissions would only be
+  // triggering the expected NS_ERROR_FILE_ACCESS_DENIED on Linux and macOS.
+  { skip_if: () => AppConstants.platform == "win" },
+  async function test_unreadable_pointer() {
+    let target = PathUtils.join(sourceDir.path, ID1);
+    await promiseWriteWebExtension(target, {
+      manifest: {
+        version: "1.0",
+        browser_specific_settings: { gecko: { id: ID1 } },
+      },
+    });
+    await promiseWritePointer(ID1);
+    await promiseRestartManager();
+
+    let addon = await AddonManager.getAddonByID(ID1);
+    notEqual(addon, null);
+    equal(addon.version, "1.0");
+
+    let pointerPath = PathUtils.join(profileDir.path, ID1);
+    await IOUtils.setPermissions(pointerPath, 0);
+
+    const { messages } = await AddonTestUtils.promiseConsoleOutput(() =>
+      promiseRestartManager()
+    );
+    AddonTestUtils.checkMessages(
+      messages,
+      {
+        expected: [
+          {
+            message: new RegExp(
+              `Failed to read file pointer ${RegExp.escape(pointerPath)}.*NS_ERROR_FILE_ACCESS_DENIED`
+            ),
+          },
+        ],
+      },
+      "Got the expected warning for the unreadable pointer file"
+    );
+
+    addon = await AddonManager.getAddonByID(ID1);
+    equal(addon, null, "Add-on is uninstalled");
+    ok(!(await IOUtils.exists(pointerPath)), "Stale pointer file was removed");
+  }
+);
+
+// A pointer file containing an invalid path should be handled as a stale
+// pointer file
+add_task(async function test_invalid_pointer_path() {
+  let target = PathUtils.join(sourceDir.path, ID1);
+  await promiseWriteWebExtension(target, {
+    manifest: {
+      version: "1.0",
+      browser_specific_settings: { gecko: { id: ID1 } },
+    },
+  });
+  await promiseWritePointer(ID1);
+  await promiseRestartManager();
+
+  let addon = await AddonManager.getAddonByID(ID1);
+  notEqual(addon, null);
+  equal(addon.version, "1.0");
+
+  // A relative path climbing above the filesystem root makes
+  // setRelativeDescriptor throw NS_ERROR_FILE_UNRECOGNIZED_PATH, so
+  // climb to the filesystem root and then one level further.
+  let pointerPath = PathUtils.join(profileDir.path, ID1);
+  let rootDir = profileDir.clone();
+  while (rootDir.parent) {
+    rootDir = rootDir.parent;
+  }
+  let invalidPath = `${rootDir.getRelativeDescriptor(profileDir)}../${ID1}`;
+  await IOUtils.writeUTF8(pointerPath, invalidPath);
+
+  const { messages } = await AddonTestUtils.promiseConsoleOutput(() =>
+    promiseRestartManager()
+  );
+  AddonTestUtils.checkMessages(
+    messages,
+    {
+      expected: [
+        {
+          message: new RegExp(
+            `File pointer ${RegExp.escape(pointerPath)} contains an invalid path ${RegExp.escape(invalidPath)}.*NS_ERROR_FILE_UNRECOGNIZED_PATH`
+          ),
+        },
+      ],
+    },
+    "Got the expected warning for the invalid pointer path"
+  );
+
+  addon = await AddonManager.getAddonByID(ID1);
+  equal(addon, null, "Add-on is uninstalled");
+  ok(!(await IOUtils.exists(pointerPath)), "Stale pointer file was removed");
+});
