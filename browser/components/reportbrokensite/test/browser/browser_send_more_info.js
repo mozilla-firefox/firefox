@@ -41,6 +41,16 @@ add_task(async function testSendMoreInfoPref() {
       rbs.sendMoreInfoButton,
       "send more info is visible if preffed on"
     );
+    await BrowserTestUtils.waitForMutationCondition(
+      rbs.sendMoreInfoButton,
+      { attributes: true, attributeFilter: ["label"] },
+      () => rbs.sendMoreInfoButton.label
+    );
+    is(
+      rbs.sendMoreInfoButton.label.replace(/[⁨⁩]/g, ""),
+      "Send info via webcompat.com",
+      "send more info names webcompat.com"
+    );
     await rbs.close();
   });
 });

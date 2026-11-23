@@ -98,3 +98,25 @@ add_task(async function test_invalid_user_inputs() {
     }
   });
 });
+
+add_task(async function test_description_instructions() {
+  ensureReportBrokenSitePreffedOn();
+
+  await withNewTab(REPORTABLE_PAGE_URL, async () => {
+    const menu = AppMenu();
+    for (const [reason, l10nId] of [
+      ["load", "report-broken-site-panel-instructions-optional"],
+      ["other", "report-broken-site-panel-instructions-other"],
+    ]) {
+      const rbs = await menu.openReportBrokenSiteToDetailsPanel({ reason });
+      is(
+        rbs.detailsView
+          .querySelector("#report-broken-site-details-instructions")
+          .getAttribute("data-l10n-id"),
+        l10nId,
+        `The ${reason} reason shows the matching instructions`
+      );
+      await rbs.clickCancel();
+    }
+  });
+});

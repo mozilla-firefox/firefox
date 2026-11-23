@@ -2882,7 +2882,7 @@ radiogroup:focus-visible > .subviewradio[focused="true"] {
       text-wrap: balance;
     }
 
-    &:dir(rtl) {
+    &:dir(rtl):not(.external-link-button) {
       --button-icon-content: url("chrome://global/skin/icons/arrow-left.svg");
     }
   }

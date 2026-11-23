@@ -835,7 +835,9 @@ export var ReportBrokenSite = new (class ReportBrokenSite {
 
     state.detailsViewInstructions.setAttribute(
       "data-l10n-id",
-      `report-broken-site-panel-instructions-other${state.descriptionIsOptional ? "-optional" : ""}`
+      state.descriptionIsOptional
+        ? "report-broken-site-panel-instructions-optional"
+        : "report-broken-site-panel-instructions-other"
     );
 
     const multiview = target.closest("panelmultiview");

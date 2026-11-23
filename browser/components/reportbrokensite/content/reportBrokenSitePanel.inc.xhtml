@@ -21,7 +21,7 @@
   <vbox id="report-broken-site-panel-container"
         class="panel-subview-body">
     <html:p class="report-broken-site-url-label"
-            data-l10n-id="report-broken-site-panel-url-label"
+            data-l10n-id="report-broken-site-panel-site-address-label"
             data-l10n-attrs="label"/>
     <html:url-input></html:url-input>
     <html:p id="report-broken-site-reason-selector-intro"
@@ -61,7 +61,7 @@
     <vbox flex="1"/>
     <div xmlns="http://www.w3.org/1999/xhtml">
       <p id="report-broken-site-popup-intro" class="text-deemphasized">
-        <span data-l10n-id="report-broken-site-panel-intro-text"/>
+        <span data-l10n-id="report-broken-site-panel-intro-text2"/>
         <a id="report-broken-site-popup-learn-more-link"
                 data-l10n-id="report-broken-site-panel-learn-more-link"
                 is="moz-support-link"
@@ -79,7 +79,7 @@
   <toolbarseparator/>
   <vbox class="panel-subview-body">
     <html:p class="report-broken-site-url-label"
-            data-l10n-id="report-broken-site-panel-url-label"
+            data-l10n-id="report-broken-site-panel-site-address-label"
             data-l10n-attrs="label"/>
     <html:url-input></html:url-input>
     <html:p id="report-broken-site-details-instructions"/>
@@ -102,22 +102,23 @@
       <html:img slot="nested" decoding="sync" id="report-broken-site-popup-screenshot"/>
     </html:moz-toggle>
     <html:moz-button
-      id="report-broken-site-popup-send-more-info-button"
-      class="arrow-button progression"
-      type="ghost"
-      closemenu="none"
-      iconsrc="chrome://global/skin/icons/arrow-right.svg"
-      iconposition="end"
-      data-l10n-id="report-broken-site-panel-send-more-info-button"
-    ></html:moz-button>
-    <html:moz-button
       id="report-broken-site-popup-preview-button"
       class="arrow-button progression"
       type="ghost"
       closemenu="none"
       iconsrc="chrome://global/skin/icons/arrow-right.svg"
       iconposition="end"
-      data-l10n-id="report-broken-site-panel-preview-button"
+      data-l10n-id="report-broken-site-panel-view-diagnostic-data-button"
+    ></html:moz-button>
+    <html:moz-button
+      id="report-broken-site-popup-send-more-info-button"
+      class="arrow-button external-link-button progression"
+      type="ghost"
+      closemenu="none"
+      iconsrc="chrome://global/skin/icons/open-in-new.svg"
+      iconposition="end"
+      data-l10n-id="report-broken-site-panel-send-info-website-button"
+      data-l10n-args='{"website": "webcompat.com"}'
     ></html:moz-button>
   </vbox>
   <toolbarseparator/>
