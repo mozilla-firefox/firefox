@@ -22,10 +22,8 @@ import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Slider
 import androidx.compose.material3.Surface
 import androidx.compose.material3.Text
+import androidx.compose.material3.rememberSliderState
 import androidx.compose.runtime.Composable
-import androidx.compose.runtime.derivedStateOf
-import androidx.compose.runtime.getValue
-import androidx.compose.runtime.remember
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.alpha
@@ -139,9 +137,6 @@ private fun SampleText(fontSize: Float) {
 @Composable
 private fun FontSizeSlider(
     isEnabled: Boolean,
-    start: Int = START_VALUE,
-    end: Int = END_VALUE,
-    step: Int = INCREASE_STEP,
     value: Float,
     onValueChange: (Float) -> Unit,
     onValueChangeFinished: () -> Unit,
@@ -150,34 +145,28 @@ private fun FontSizeSlider(
         modifier = Modifier.fillMaxWidth(),
         verticalAlignment = Alignment.CenterVertically,
     ) {
-        Slider(
-            value = value,
-            onValueChange = { newInput ->
-                // The slider input is continuous, but we want the value to change by 5.
-                val newSliderValue = newInput.snapToStep(start, step)
+        // The slider input is continuous, so discrete steps keep the value changing by [INCREASE_STEP].
+        val sliderState =
+            rememberSliderState(
+                value = value,
+                steps = ((END_VALUE - START_VALUE) / INCREASE_STEP) - 1,
+                trackRange = START_VALUE.toFloat()..END_VALUE.toFloat(),
+            )
 
-                onValueChange(newSliderValue.toFloat())
-            },
-            valueRange = start.toFloat()..end.toFloat(),
+        sliderState.value = value
+
+        Slider(
+            state = sliderState,
             modifier =
                 Modifier.weight(1f).semantics {
                     testTagsAsResourceId = true
                     testTag = "fontSizeSlider"
                 },
             enabled = isEnabled,
+            onValueChange = { onValueChange(it.roundToInt().toFloat()) },
             onValueChangeFinished = onValueChangeFinished,
             thumb = { Thumb(isEnabled) },
-            track = { _ ->
-                // Calculate fraction of the slider that is active
-                val fraction by
-                    remember(value) {
-                        derivedStateOf {
-                            (value - start) / (end - start)
-                        }
-                    }
-
-                Track(fraction, isEnabled)
-            },
+            track = { Track(it.coercedValueAsFraction, isEnabled) },
         )
 
         Text(
@@ -190,9 +179,6 @@ private fun FontSizeSlider(
         )
     }
 }
-
-/** Rounds the value to the nearest step. */
-fun Float.snapToStep(start: Int, step: Int) = ((this - start) / step).roundToInt() * step + start
 
 /** Thumb is the draggable handle of the slider that user moves to change the value. */
 @Composable

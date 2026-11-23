@@ -4,8 +4,7 @@
 
 package mozilla.components.feature.summarize.settings
 
-import androidx.compose.animation.core.animateFloatAsState
-import androidx.compose.animation.core.snap
+import androidx.compose.animation.core.animate
 import androidx.compose.animation.core.tween
 import androidx.compose.foundation.background
 import androidx.compose.foundation.border
@@ -22,13 +21,14 @@ import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Slider
+import androidx.compose.material3.SliderState
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
-import androidx.compose.runtime.derivedStateOf
+import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
-import androidx.compose.runtime.mutableFloatStateOf
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
+import androidx.compose.runtime.rememberCoroutineScope
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
@@ -39,6 +39,8 @@ import androidx.compose.ui.semantics.semantics
 import androidx.compose.ui.semantics.stateDescription
 import androidx.compose.ui.unit.dp
 import kotlin.math.roundToInt
+import kotlinx.coroutines.Job
+import kotlinx.coroutines.launch
 import mozilla.components.compose.base.theme.AcornTheme
 import mozilla.components.feature.summarize.R
 import mozilla.components.lib.shake.ShakeSensitivity
@@ -103,34 +105,43 @@ private fun ShakeSensitivitySlider(
 ) {
     val sliderContentDescription = stringResource(id = R.string.mozac_summarize_settings_shake_sensitivity)
     val sliderStateDescription = stringResource(id = value.labelResId())
-    var rawPosition by
-        remember(value) {
-            mutableFloatStateOf(value.toSliderPosition())
-        }
-    var isDragging by remember {
-        mutableStateOf(false)
-    }
-    val displayedPosition by
-        animateFloatAsState(
-            targetValue = if (isDragging) rawPosition else rawPosition.roundToInt().toFloat(),
-            animationSpec = if (isDragging) snap() else tween(),
-            label = "shakeSensitivityThumb",
+    val scope = rememberCoroutineScope()
+    // The slider tracks the thumb continuously while dragging, then animates to the nearest sensitivity on release.
+    val sliderState = remember {
+        SliderState(
+            value = value.toSliderPosition(),
+            steps = SLIDER_STEPS_BETWEEN,
+            trackRange = SLIDER_MIN..SLIDER_MAX,
         )
+    }
+
+    var settleJob by remember { mutableStateOf<Job?>(null) }
+
+    fun settleTo(target: Float) {
+        settleJob?.cancel()
+        settleJob = scope.launch {
+            animate(sliderState.value, target, animationSpec = tween()) { animated, _ -> sliderState.value = animated }
+        }
+    }
+
+    LaunchedEffect(value) {
+        val position = value.toSliderPosition()
+        if (sliderState.value.roundToInt().toFloat() != position) {
+            settleTo(position)
+        }
+    }
 
     Slider(
-        value = displayedPosition,
-        onValueChange = { newInput ->
-            isDragging = true
-            rawPosition = newInput
+        state = sliderState,
+        onValueChange = {
+            settleJob?.cancel()
+            sliderState.value = it
         },
         onValueChangeFinished = {
-            isDragging = false
-            val snapped = rawPosition.roundToInt()
-            rawPosition = snapped.toFloat()
+            val snapped = sliderState.value.roundToInt()
+            settleTo(snapped.toFloat())
             onValueChange(snapped.toShakeSensitivity())
         },
-        valueRange = SLIDER_MIN..SLIDER_MAX,
-        steps = SLIDER_STEPS_BETWEEN,
         modifier =
             Modifier.fillMaxWidth().semantics {
                 contentDescription = sliderContentDescription
@@ -138,15 +149,7 @@ private fun ShakeSensitivitySlider(
             },
         enabled = isEnabled,
         thumb = { Thumb(isEnabled) },
-        track = { _ ->
-            val fraction by
-                remember(displayedPosition) {
-                    derivedStateOf {
-                        (displayedPosition - SLIDER_MIN) / (SLIDER_MAX - SLIDER_MIN)
-                    }
-                }
-            Track(fraction, isEnabled)
-        },
+        track = { Track(it.coercedValueAsFraction, isEnabled) },
     )
 }
 

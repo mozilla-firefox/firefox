@@ -19,12 +19,12 @@ import androidx.compose.foundation.layout.width
 import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Slider
+import androidx.compose.material3.SliderState
+import androidx.compose.material3.rememberSliderState
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
-import androidx.compose.runtime.mutableFloatStateOf
 import androidx.compose.runtime.remember
-import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.alpha
@@ -32,9 +32,6 @@ import androidx.compose.ui.tooling.preview.PreviewLightDark
 import androidx.compose.ui.unit.dp
 import mozilla.components.compose.base.theme.AcornShapes
 import mozilla.components.compose.base.theme.AcornTheme
-
-private const val START_VALUE = 0f
-private const val END_VALUE = 1f
 
 /** Opacity of a slider that is present but not interactive. */
 private const val DISABLED_ALPHA = 0.38f
@@ -46,41 +43,26 @@ private const val DISABLED_ALPHA = 0.38f
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
 fun Slider(
-    value: Float,
+    state: SliderState,
     onValueChange: (Float) -> Unit,
     modifier: Modifier = Modifier,
-    start: Float = START_VALUE,
-    end: Float = END_VALUE,
     isEnabled: Boolean = true,
     onValueChangeFinished: () -> Unit = {},
     interactionSource: MutableInteractionSource = remember { MutableInteractionSource() },
 ) {
     val isDragInProgress by interactionSource.collectIsDraggedAsState()
+
     Slider(
-        value = value,
-        onValueChange = { newInput ->
-            onValueChange(newInput)
-        },
-        valueRange = start..end,
+        state = state,
+        onValueChange = onValueChange,
         modifier = modifier.alpha(if (isEnabled) 1f else DISABLED_ALPHA),
         enabled = isEnabled,
-        onValueChangeFinished = {
-            onValueChangeFinished()
-        },
+        onValueChangeFinished = onValueChangeFinished,
         interactionSource = interactionSource,
         thumb = { Thumb(isDragInProgress = isDragInProgress) },
-        track = { _ ->
-            // Calculate fraction of the slider that is active
-            // remembering this doesn't save anything since it has to be recalculated on any value update
-            val fraction = activeTrackFraction(value = value, start = start, end = end)
-            Track(fraction = fraction, isDragInProgress = isDragInProgress)
-        },
+        track = { Track(fraction = it.coercedValueAsFraction, isDragInProgress = isDragInProgress) },
     )
 }
-
-/** How much of the track between [start] and [end] is filled at [value], kept within 0 to 1. */
-internal fun activeTrackFraction(value: Float, start: Float, end: Float): Float =
-    if (end > start) ((value - start) / (end - start)).coerceIn(0f, 1f) else 0f
 
 /** Thumb is the draggable handle of the slider that user moves to change the value. */
 @Composable
@@ -153,14 +135,13 @@ private fun FilledTrack(fraction: Float, isDragInProgress: Boolean) {
 @PreviewLightDark
 @Composable
 private fun SliderPreview() {
-    var value by remember { mutableFloatStateOf(.5f) }
+    val state = rememberSliderState(value = .5f)
     AcornTheme {
         Box(modifier = Modifier.width(300.dp).background(MaterialTheme.colorScheme.surface)) {
             Slider(
                 isEnabled = true,
-                value = value,
-                onValueChange = { value = it },
-                onValueChangeFinished = {},
+                state = state,
+                onValueChange = { state.value = it },
             )
         }
     }
@@ -173,9 +154,8 @@ private fun SliderDisabledPreview() {
         Box(modifier = Modifier.width(300.dp).background(MaterialTheme.colorScheme.surface)) {
             Slider(
                 isEnabled = false,
-                value = .4f,
+                state = rememberSliderState(value = .4f),
                 onValueChange = {},
-                onValueChangeFinished = {},
             )
         }
     }
@@ -189,9 +169,8 @@ private fun SliderDraggingInProgressPreview() {
         Box(modifier = Modifier.width(300.dp).background(MaterialTheme.colorScheme.surface)) {
             Slider(
                 isEnabled = true,
-                value = .5f,
+                state = rememberSliderState(value = .5f),
                 onValueChange = {},
-                onValueChangeFinished = {},
                 interactionSource = interactionSource,
             )
         }

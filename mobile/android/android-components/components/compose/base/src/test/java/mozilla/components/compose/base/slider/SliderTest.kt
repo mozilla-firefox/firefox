@@ -4,6 +4,7 @@
 
 package mozilla.components.compose.base.slider
 
+import androidx.compose.material3.rememberSliderState
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.platform.testTag
 import androidx.compose.ui.semantics.SemanticsProperties
@@ -32,11 +33,9 @@ class SliderTest {
         composeTestRule.setContent {
             AcornTheme {
                 Slider(
-                    value = value,
+                    state = rememberSliderState(value = value, trackRange = start..end),
                     onValueChange = { changes.add(it) },
                     modifier = Modifier.testTag(SLIDER_TAG),
-                    start = start,
-                    end = end,
                     isEnabled = isEnabled,
                     onValueChangeFinished = { finishedCount++ },
                 )
@@ -51,32 +50,6 @@ class SliderTest {
             moveTo(centerRight)
             up()
         }
-    }
-
-    @Test
-    fun `WHEN the range starts at zero THEN the filled track is the value's share of the range`() {
-        assertEquals(0.25f, activeTrackFraction(value = 0.25f, start = 0f, end = 1f), 0f)
-    }
-
-    @Test
-    fun `WHEN the range does not start at zero THEN the filled track is measured from the start`() {
-        assertEquals(0.2f, activeTrackFraction(value = 12f, start = 10f, end = 20f), 0.0001f)
-    }
-
-    @Test
-    fun `WHEN the range is narrower than one tenth THEN the filled track does not overflow`() {
-        assertEquals(0.5f, activeTrackFraction(value = 0.025f, start = 0f, end = 0.05f), 0.0001f)
-    }
-
-    @Test
-    fun `WHEN the value is outside the range THEN the filled track stops at the nearest end`() {
-        assertEquals(0f, activeTrackFraction(value = 5f, start = 10f, end = 20f), 0f)
-        assertEquals(1f, activeTrackFraction(value = 25f, start = 10f, end = 20f), 0f)
-    }
-
-    @Test
-    fun `WHEN the range is empty THEN the filled track is empty`() {
-        assertEquals(0f, activeTrackFraction(value = 10f, start = 10f, end = 10f), 0f)
     }
 
     @Test

@@ -11,6 +11,7 @@ import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
 import androidx.compose.material3.MaterialTheme
+import androidx.compose.material3.rememberSliderState
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.alpha
@@ -97,8 +98,11 @@ private fun FullBar(
     isEnabled: Boolean,
     modifier: Modifier = Modifier,
 ) {
+    val sliderState = rememberSliderState()
+    sliderState.value = scrubFraction() ?: playedFraction()
+
     Slider(
-        value = scrubFraction() ?: playedFraction(),
+        state = sliderState,
         onValueChange = onSliderDrag,
         isEnabled = isEnabled && isSeekable,
         onValueChangeFinished = { scrubFraction()?.let(onSeek) },

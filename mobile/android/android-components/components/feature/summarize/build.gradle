@@ -41,9 +41,12 @@ dependencies {
     implementation libs.androidx.datastore.preferences
     debugImplementation libs.androidx.compose.ui.tooling
 
+    testImplementation libs.androidx.compose.ui.test
+    testImplementation libs.androidx.compose.ui.test.manifest
     testImplementation libs.androidx.test.junit
     testImplementation libs.kotlin.test
     testImplementation libs.kotlinx.coroutines.test
+    testImplementation libs.robolectric
 
     testImplementation project(':components:support-test-fakes')
 }
