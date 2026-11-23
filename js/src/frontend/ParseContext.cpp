@@ -78,7 +78,8 @@ bool UsedNameTracker::noteUse(FrontendContext* fc, TaggedParserAtomIndex name,
   if (UsedNameMap::AddPtr p = map_.lookupForAdd(name)) {
     p->value().maybeUpdatePos(tokenPosition);
 
-    if (!p->value().noteUsedInScope(scriptId, scopeId)) {
+    if (!p->value().noteUsedInScope(scriptId, scopeId,
+                                    &unboundPrivateCounter_)) {
       return false;
     }
   } else {
@@ -86,14 +87,9 @@ bool UsedNameTracker::noteUse(FrontendContext* fc, TaggedParserAtomIndex name,
     MOZ_ASSERT(tokenPosition.isSome() ==
                (visibility == NameVisibility::Private));
 
-    if (visibility == NameVisibility::Private) {
-      // We have seen at least one private name
-      hasPrivateNames_ = true;
-    }
-
     UsedNameInfo info(fc, visibility, tokenPosition);
 
-    if (!info.noteUsedInScope(scriptId, scopeId)) {
+    if (!info.noteUsedInScope(scriptId, scopeId, &unboundPrivateCounter_)) {
       return false;
     }
     if (!map_.add(p, name, std::move(info))) {
@@ -106,8 +102,8 @@ bool UsedNameTracker::noteUse(FrontendContext* fc, TaggedParserAtomIndex name,
 
 bool UsedNameTracker::getUnboundPrivateNames(
     Vector<UnboundPrivateName, 8>& unboundPrivateNames) {
-  // We never saw any private names, so can just return early
-  if (!hasPrivateNames_) {
+  // Avoid a linear scan over identifiers when there are no unbound names.
+  if (unboundPrivateCounter_ == 0) {
     return true;
   }
 
@@ -140,8 +136,8 @@ bool UsedNameTracker::getUnboundPrivateNames(
 
 bool UsedNameTracker::hasUnboundPrivateNames(
     FrontendContext* fc, mozilla::Maybe<UnboundPrivateName>& maybeUnboundName) {
-  // We never saw any private names, so can just return early
-  if (!hasPrivateNames_) {
+  // Avoid a linear scan over identifiers when there are no unbound names.
+  if (unboundPrivateCounter_ == 0) {
     return true;
   }
 
@@ -150,24 +146,22 @@ bool UsedNameTracker::hasUnboundPrivateNames(
     return false;
   }
 
-  if (unboundPrivateNames.empty()) {
-    return true;
-  }
+  MOZ_ASSERT(!unboundPrivateNames.empty());
 
   // GetUnboundPrivateNames returns the list sorted.
   maybeUnboundName.emplace(unboundPrivateNames[0]);
   return true;
 }
 
-void UsedNameTracker::UsedNameInfo::resetToScope(uint32_t scriptId,
-                                                 uint32_t scopeId) {
+void UsedNameTracker::UsedNameInfo::resetToScope(
+    uint32_t scriptId, uint32_t scopeId, size_t* unboundPrivateCounter) {
   while (!uses_.empty()) {
     Use& innermost = uses_.back();
     if (innermost.scopeId < scopeId) {
       break;
     }
     MOZ_ASSERT(innermost.scriptId >= scriptId);
-    uses_.popBack();
+    popUse(unboundPrivateCounter);
   }
 }
 
@@ -176,7 +170,8 @@ void UsedNameTracker::rewind(RewindToken token) {
   scopeCounter_ = token.scopeId;
 
   for (auto iter = map_.iter(); !iter.done(); iter.next()) {
-    iter.get().value().resetToScope(token.scriptId, token.scopeId);
+    iter.get().value().resetToScope(token.scriptId, token.scopeId,
+                                    &unboundPrivateCounter_);
   }
 }
 
