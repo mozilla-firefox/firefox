@@ -290,6 +290,20 @@ struct ReturnCallAdjustmentInfo {
         oldSlotsAndStackArgBytes(oldSlotsAndStackArgBytes) {}
 };
 
+// A cross-instance return call whose caller cannot restore its own instance
+// state is made as a regular call instead. Once that call returns, the instance
+// state is restored and control jumps to `epilogue`, with the stack freed to
+// `epilogueFramePushed`. The call has no stack map: nothing in the frame making
+// it is live during the call, stack arguments belong to the callee's frame, and
+// the results area belongs to the caller of the frame making it.
+struct ReturnCallFallback {
+  Label* epilogue;
+  uint32_t epilogueFramePushed;
+
+  ReturnCallFallback(Label* epilogue, uint32_t epilogueFramePushed)
+      : epilogue(epilogue), epilogueFramePushed(epilogueFramePushed) {}
+};
+
 struct BranchWasmRefIsSubtypeRegisters {
   bool needSuperSTV;
   bool needScratch1;
@@ -4183,16 +4197,23 @@ class MacroAssembler : public MacroAssemblerSpecific {
   CodeOffset wasmCallImport(const wasm::CallSiteDesc& desc,
                             const wasm::CalleeDesc& callee);
 
-  CodeOffset wasmReturnCallImport(const wasm::CallSiteDesc& desc,
-                                  const wasm::CalleeDesc& callee,
-                                  const ReturnCallAdjustmentInfo& retCallInfo);
+  // Cross-instance return calls take a `retCallFallback` for when the caller
+  // cannot restore its own instance state; see ReturnCallFallback.
+  void wasmReturnCallImport(const wasm::CallSiteDesc& desc,
+                            const wasm::CalleeDesc& callee,
+                            const ReturnCallAdjustmentInfo& retCallInfo,
+                            const ReturnCallFallback& retCallFallback);
 
   CodeOffset wasmReturnCall(const wasm::CallSiteDesc& desc,
                             uint32_t funcDefIndex,
                             const ReturnCallAdjustmentInfo& retCallInfo);
 
-  void wasmCollapseFrameSlow(const ReturnCallAdjustmentInfo& retCallInfo,
-                             wasm::CallSiteDesc desc);
+  // Makes a return call to `callee`, whose instance state has already been
+  // switched to.
+  void wasmCrossInstanceReturnCall(const wasm::CallSiteDesc& desc,
+                                   Register callee,
+                                   const ReturnCallAdjustmentInfo& retCallInfo,
+                                   const ReturnCallFallback& retCallFallback);
 
   void wasmCollapseFrameFast(const ReturnCallAdjustmentInfo& retCallInfo);
 
@@ -4240,7 +4261,8 @@ class MacroAssembler : public MacroAssemblerSpecific {
   [[nodiscard]]
   FaultingCodeRange wasmReturnCallIndirect(
       const wasm::CallSiteDesc& desc, const wasm::CalleeDesc& callee,
-      Label* nullCheckFailedLabel, const ReturnCallAdjustmentInfo& retCallInfo);
+      Label* nullCheckFailedLabel, const ReturnCallAdjustmentInfo& retCallInfo,
+      const ReturnCallFallback& retCallFallback);
 
   // This function takes care of loading the callee's instance and address from
   // pinned reg.
@@ -4252,6 +4274,7 @@ class MacroAssembler : public MacroAssemblerSpecific {
   void wasmReturnCallRef(const wasm::CallSiteDesc& desc,
                          const wasm::CalleeDesc& callee,
                          const ReturnCallAdjustmentInfo& retCallInfo,
+                         const ReturnCallFallback& retCallFallback,
                          wasm::StackMap* stackMapForTraps,
                          wasm::StackMapRegistry* stackMapRegistry);
 

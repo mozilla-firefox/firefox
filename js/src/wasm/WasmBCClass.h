@@ -252,6 +252,12 @@ struct BaseCompiler final {
   // Where to go to to return, bound as compilation ends.
   NonAssertingLabel returnLabel_;
 
+  // Where a ReturnCallFallback goes to return, after the return values have
+  // been placed and the debugger has been notified of the frame being left.
+  // Fallback calls have no stackmap, as nothing in the frame is live during
+  // them.
+  NonAssertingLabel returnCallFallbackLabel_;
+
   // Prologue and epilogue offsets, initialized during prologue and epilogue
   // generation and only used by the caller.
   FuncOffsets offsets_;

@@ -6426,82 +6426,6 @@ static void MoveDataBlock(MacroAssembler& masm, Register base, int32_t from,
 #endif
 }
 
-struct ReturnCallTrampolineData {
-#ifdef JS_CODEGEN_ARM
-  uint32_t trampolineOffset;
-#else
-  CodeLabel trampoline;
-#endif
-};
-
-static ReturnCallTrampolineData MakeReturnCallTrampoline(MacroAssembler& masm) {
-  uint32_t savedPushed = masm.framePushed();
-
-  ReturnCallTrampolineData data;
-
-  {
-#if defined(JS_CODEGEN_ARM) || defined(JS_CODEGEN_ARM64) || \
-    defined(JS_CODEGEN_RISCV64)
-    AutoForbidPoolsAndNops afp(&masm, 1);
-#endif
-
-    // Build simple trampoline code: load the instance slot from the frame,
-    // restore FP, and return to prevous caller.
-#ifdef JS_CODEGEN_ARM
-    data.trampolineOffset = masm.currentOffset();
-#else
-    masm.bind(&data.trampoline);
-#endif
-
-    masm.setFramePushed(AlignBytes(
-        wasm::FrameWithInstances::sizeOfInstanceFieldsAndShadowStack(),
-        WasmStackAlignment));
-
-    masm.wasmMarkCallAsSlow();
-  }
-
-  masm.loadPtr(
-      Address(masm.getStackPointer(), WasmCallerInstanceOffsetBeforeCall),
-      InstanceReg);
-  masm.loadWasmPinnedRegsFromInstance();
-  masm.switchToWasmInstanceRealm(ABINonArgReturnReg0, ABINonArgReturnReg1);
-  masm.moveToStackPtr(FramePointer);
-#ifdef JS_CODEGEN_ARM64
-  masm.pop(FramePointer, lr);
-  masm.append(wasm::CodeRangeUnwindInfo::UseFpLr, masm.currentOffset());
-  masm.Mov(PseudoStackPointer64, vixl::sp);
-  masm.abiret();
-#elif defined(JS_CODEGEN_MIPS64) || defined(JS_CODEGEN_LOONG64)
-  masm.loadPtr(Address(FramePointer, wasm::Frame::returnAddressOffset()), ra);
-  masm.loadPtr(Address(FramePointer, wasm::Frame::callerFPOffset()),
-               FramePointer);
-  masm.append(wasm::CodeRangeUnwindInfo::UseFpLr, masm.currentOffset());
-  masm.addToStackPtr(Imm32(sizeof(wasm::Frame)));
-  masm.abiret();
-#elif defined(JS_CODEGEN_RISCV64)
-  {
-    // This should be 4 instructions, but make room for 5 (25% slack) to be
-    // safe.
-    AutoForbidPoolsAndNops afp(&masm, 5);
-
-    masm.loadPtr(Address(FramePointer, wasm::Frame::returnAddressOffset()), ra);
-    masm.loadPtr(Address(FramePointer, wasm::Frame::callerFPOffset()),
-                 FramePointer);
-    masm.append(wasm::CodeRangeUnwindInfo::UseFpLr, masm.currentOffset());
-    masm.addToStackPtr(Imm32(sizeof(wasm::Frame)));
-    masm.abiret();
-  }
-#else
-  masm.pop(FramePointer);
-  masm.append(wasm::CodeRangeUnwindInfo::UseFp, masm.currentOffset());
-  masm.ret();
-#endif
-
-  masm.append(wasm::CodeRangeUnwindInfo::Normal, masm.currentOffset());
-  masm.setFramePushed(savedPushed);
-  return data;
-}
-
 // CollapseWasmFrame methods merge frames fields: callee parameters, instance
 // slots, and caller RA. See the diagram below. The C0 is the previous caller,
 // the C1 is the caller of the return call, and the C2 is the callee.
@@ -6517,16 +6441,16 @@ static ReturnCallTrampolineData MakeReturnCallTrampoline(MacroAssembler& masm) {
 //    +-------------------+          +--------------------+
 //    |C1 results area    |          |C1/C2 results area  |
 //    +-------------------+          +--------------------+
-//    |C1 parameters      |          |? trampoline frame  |
+//    |C1 parameters      |          |C2 parameters       |
 //    +-------------------+          +--------------------+
-//    |C1 instance slots  |          |C2 parameters       |
-//    +-------------------+ -+       +--------------------+
-//    |C0 RA              |  |       |C2 instance slots’  |
-//    +-------------------+  | C1    +--------------------+ -+
-//    |C0 FP              |  v       |C0 RA’              |  |
-//    +-------------------+          +--------------------+  | C2
-//    |C1 private frame   |          |C0 FP’              |  v
+//    |C1 instance slots  |          |C2 instance slots’  |
+//    +-------------------+ -+       +--------------------+ -+
+//    |C0 RA              |  |       |C0 RA’              |  |
+//    +-------------------+  | C1    +--------------------+  | C2
+//    |C0 FP              |  v       |C0 FP’              |  v
 //    +-------------------+          +--------------------+ <= start of C2
+//    |C1 private frame   |
+//    +-------------------+
 //    |C2 parameters      |
 //    +-------------------+
 //    |C2 instance slots  |
@@ -6536,8 +6460,8 @@ static ReturnCallTrampolineData MakeReturnCallTrampoline(MacroAssembler& masm) {
 // C1 frame data is removed. The instance slots, return address, and
 // frame pointer to the C0 callsite are saved or adjusted.
 //
-// For cross-instance calls, the trampoline frame will be introduced
-// if the C0 callsite has no ability to restore instance registers and realm.
+// Cross-instance calls only collapse the frame if the C0 callsite restores
+// instance registers and realm. See wasmCrossInstanceReturnCall.
 
 static void CollapseWasmFrameFast(MacroAssembler& masm,
                                   const ReturnCallAdjustmentInfo& retCallInfo) {
@@ -6622,183 +6546,43 @@ static void CollapseWasmFrameFast(MacroAssembler& masm,
   masm.setFramePushed(framePushedAtStart);
 }
 
-static void CollapseWasmFrameSlow(MacroAssembler& masm,
-                                  const ReturnCallAdjustmentInfo& retCallInfo,
-                                  wasm::CallSiteDesc desc,
-                                  ReturnCallTrampolineData data) {
-  uint32_t framePushedAtStart = masm.framePushed();
-  static constexpr Register tempForCaller = WasmTailCallInstanceScratchReg;
-  static constexpr Register tempForFP = WasmTailCallFPScratchReg;
-  static constexpr Register tempForRA = WasmTailCallRAScratchReg;
-
-  static_assert(sizeof(wasm::Frame) == 2 * sizeof(void*));
-
-  // The hidden frame will "break" after wasm::Frame data fields.
-  // Calculate sum of wasm stack alignment before and after the break as
-  // the size to reserve.
-  const uint32_t HiddenFrameAfterSize =
-      AlignBytes(wasm::FrameWithInstances::sizeOfInstanceFieldsAndShadowStack(),
-                 WasmStackAlignment);
-  const uint32_t HiddenFrameSize =
-      AlignBytes(sizeof(wasm::Frame), WasmStackAlignment) +
-      HiddenFrameAfterSize;
-
-  // If it is not slow, prepare two frame: one is regular wasm frame, and
-  // another one is hidden. The hidden frame contains one instance slots
-  // for unwind and recovering pinned registers.
-  // The instance slots + stack arguments are expected to be padded and
-  // aligned to the WasmStackAlignment boundary. There is no data expected
-  // in the padded region, such as results stack area or locals, to avoid
-  // unwanted stack growth.
-  // The Hidden frame will be inserted with this constraint too.
-  uint32_t newSlotsAndStackArgBytes =
-      AlignBytes(retCallInfo.newSlotsAndStackArgBytes, WasmStackAlignment);
-  uint32_t oldSlotsAndStackArgBytes =
-      AlignBytes(retCallInfo.oldSlotsAndStackArgBytes, WasmStackAlignment);
-
-  // Make all offsets relative to the FramePointer.
-  int32_t newArgSrc = -framePushedAtStart;
-  int32_t newArgDest = sizeof(wasm::Frame) + oldSlotsAndStackArgBytes -
-                       HiddenFrameSize - newSlotsAndStackArgBytes;
-  int32_t hiddenFrameArgsDest =
-      sizeof(wasm::Frame) + oldSlotsAndStackArgBytes - HiddenFrameAfterSize;
-
-  // It will be possible to overwrite data (on the top of the stack) due to
-  // the added hidden frame, reserve needed space.
-  uint32_t reserved = newArgDest - int32_t(sizeof(void*)) < newArgSrc
-                          ? newArgSrc - newArgDest + sizeof(void*)
-                          : 0;
-  masm.reserveStack(reserved);
-
-#ifndef JS_USE_LINK_REGISTER
-  masm.push(tempForRA);
-#endif
-
-  // Load FP, RA and instance slots to preserve them from being overwritten.
-  masm.loadPtr(Address(FramePointer, wasm::Frame::callerFPOffset()), tempForFP);
-  masm.loadPtr(Address(FramePointer, wasm::Frame::returnAddressOffset()),
-               tempForRA);
-  masm.append(wasm::CodeRangeUnwindInfo::RestoreFpRa, masm.currentOffset());
-  masm.loadPtr(
-      Address(FramePointer, newArgSrc + WasmCallerInstanceOffsetBeforeCall),
-      tempForCaller);
-
-  // Copy parameters data, ignoring shadow data and instance slots.
-  const uint32_t SlotsSize =
-      wasm::FrameWithInstances::sizeOfInstanceFieldsAndShadowStack();
-  MoveDataBlock(masm, FramePointer, newArgSrc + SlotsSize,
-                newArgDest + SlotsSize,
-                retCallInfo.newSlotsAndStackArgBytes - SlotsSize);
-
-  // Form hidden frame for trampoline.
-  int32_t newFPOffset = hiddenFrameArgsDest - sizeof(wasm::Frame);
-  masm.storePtr(
-      tempForRA,
-      Address(FramePointer, newFPOffset + wasm::Frame::returnAddressOffset()));
-
-  // Copy original FP.
-  masm.storePtr(
-      tempForFP,
-      Address(FramePointer, newFPOffset + wasm::Frame::callerFPOffset()));
-
-  // Set up instance slots.
-  masm.storePtr(
-      tempForCaller,
-      Address(FramePointer,
-              newFPOffset + wasm::FrameWithInstances::calleeInstanceOffset()));
-  masm.storePtr(
-      tempForCaller,
-      Address(FramePointer, newArgDest + WasmCallerInstanceOffsetBeforeCall));
-  masm.storePtr(
-      InstanceReg,
-      Address(FramePointer, newArgDest + WasmCalleeInstanceOffsetBeforeCall));
-
-#ifdef JS_CODEGEN_ARM
-  // ARM has no CodeLabel -- calculate PC directly.
-  masm.mov(pc, tempForRA);
-  masm.computeEffectiveAddress(
-      Address(tempForRA,
-              int32_t(data.trampolineOffset - masm.currentOffset() - 4)),
-      tempForRA);
-  masm.append(desc, CodeOffset(data.trampolineOffset));
-#else
-
-#  if defined(JS_CODEGEN_MIPS64)
-  // intermediate values in ra can break the unwinder.
-  masm.mov(&data.trampoline, ScratchRegister);
-  // thus, modify ra in only one instruction.
-  masm.mov(ScratchRegister, tempForRA);
-#  elif defined(JS_CODEGEN_LOONG64) || defined(JS_CODEGEN_RISCV64)
-  // intermediate values in ra can break the unwinder.
-  masm.mov(&data.trampoline, SavedScratchRegister);
-  // thus, modify ra in only one instruction.
-  masm.mov(SavedScratchRegister, tempForRA);
-#  else
-  masm.mov(&data.trampoline, tempForRA);
-#  endif
-
-  masm.addCodeLabel(data.trampoline);
-  // Add slow trampoline callsite description, to be annotated in
-  // stack/frame iterators.
-  masm.append(desc, *data.trampoline.target());
-#endif
-
-#ifdef JS_USE_LINK_REGISTER
-  masm.freeStack(reserved);
-  // RA is already in its place, just move stack.
-  masm.addToStackPtr(Imm32(framePushedAtStart + newArgDest));
-#else
-  // Push RA to new frame: store RA, restore temp, and move stack.
-  int32_t newFrameOffset = newArgDest - sizeof(wasm::Frame);
-  masm.storePtr(tempForRA,
-                Address(FramePointer,
-                        newFrameOffset + wasm::Frame::returnAddressOffset()));
-  // Restore tempForRA, but keep RA on top of the stack.
-  // There is no non-locking exchange instruction between register and memory.
-  // Using tempForCaller as scratch register.
-  masm.loadPtr(Address(masm.getStackPointer(), 0), tempForCaller);
-  masm.storePtr(tempForRA, Address(masm.getStackPointer(), 0));
-  masm.mov(tempForCaller, tempForRA);
-  masm.append(wasm::CodeRangeUnwindInfo::RestoreFp, masm.currentOffset());
-  masm.addToStackPtr(Imm32(framePushedAtStart + newFrameOffset +
-                           wasm::Frame::returnAddressOffset() + reserved +
-                           sizeof(void*)));
-#endif
-
-  // Point FramePointer to hidden frame.
-  masm.computeEffectiveAddress(Address(FramePointer, newFPOffset),
-                               FramePointer);
-  // Setting framePushed to pre-collapse state, to properly set that in the
-  // following code.
-  masm.setFramePushed(framePushedAtStart);
-}
-
 void MacroAssembler::wasmCollapseFrameFast(
     const ReturnCallAdjustmentInfo& retCallInfo) {
   CollapseWasmFrameFast(*this, retCallInfo);
 }
 
-void MacroAssembler::wasmCollapseFrameSlow(
-    const ReturnCallAdjustmentInfo& retCallInfo, wasm::CallSiteDesc desc) {
+void MacroAssembler::wasmCrossInstanceReturnCall(
+    const wasm::CallSiteDesc& desc, Register callee,
+    const ReturnCallAdjustmentInfo& retCallInfo,
+    const ReturnCallFallback& retCallFallback) {
   static constexpr Register temp1 = ABINonArgReg1;
   static constexpr Register temp2 = ABINonArgReg3;
+  MOZ_ASSERT(callee != temp1 && callee != temp2);
 
-  // Check if RA has slow marker. If there is no marker, generate a trampoline
-  // frame to restore register state when this tail call returns.
-
-  Label slow, done;
+  // If our caller restores its own instance state after the call, we can
+  // collapse our frame and tail call.
+  Label callerNotSlow;
   loadPtr(Address(FramePointer, wasm::Frame::returnAddressOffset()), temp1);
-  wasmCheckSlowCallsite(temp1, &slow, temp1, temp2);
+  wasmCheckSlowCallsite(temp1, &callerNotSlow, temp1, temp2);
   CollapseWasmFrameFast(*this, retCallInfo);
-  jump(&done);
+  tailJump(callee);
   append(wasm::CodeRangeUnwindInfo::Normal, currentOffset());
 
-  ReturnCallTrampolineData data = MakeReturnCallTrampoline(*this);
-
-  bind(&slow);
-  CollapseWasmFrameSlow(*this, retCallInfo, desc, data);
-
-  bind(&done);
+  // Otherwise, make a regular call and restore our caller's instance state
+  // before returning to it. This call site is marked slow, so any return calls
+  // made by the callee will collapse their frames, keeping the stack bounded.
+  bind(&callerNotSlow);
+  uint32_t framePushedAtCall = framePushed();
+  wasmMarkedSlowCall(wasm::CallSiteDesc(desc.bytecodeOffset(),
+                                        wasm::CallSiteKind::ReturnCallFallback),
+                     callee);
+  loadPtr(Address(getStackPointer(), WasmCallerInstanceOffsetBeforeCall),
+          InstanceReg);
+  loadWasmPinnedRegsFromInstance();
+  switchToWasmInstanceRealm(ABINonArgReturnReg0, ABINonArgReturnReg1);
+  freeStackTo(retCallFallback.epilogueFramePushed);
+  jump(retCallFallback.epilogue);
+  setFramePushed(framePushedAtCall);
 }
 
 CodeOffset MacroAssembler::wasmCallImport(const wasm::CallSiteDesc& desc,
@@ -6841,9 +6625,10 @@ CodeOffset MacroAssembler::wasmCallImport(const wasm::CallSiteDesc& desc,
   return wasmMarkedSlowCall(desc, ABINonArgReg0);
 }
 
-CodeOffset MacroAssembler::wasmReturnCallImport(
+void MacroAssembler::wasmReturnCallImport(
     const wasm::CallSiteDesc& desc, const wasm::CalleeDesc& callee,
-    const ReturnCallAdjustmentInfo& retCallInfo) {
+    const ReturnCallAdjustmentInfo& retCallInfo,
+    const ReturnCallFallback& retCallFallback) {
   storePtr(InstanceReg,
            Address(getStackPointer(), WasmCallerInstanceOffsetBeforeCall));
 
@@ -6879,12 +6664,8 @@ CodeOffset MacroAssembler::wasmReturnCallImport(
            Address(getStackPointer(), WasmCalleeInstanceOffsetBeforeCall));
   loadWasmPinnedRegsFromInstance();
 
-  wasm::CallSiteDesc stubDesc(desc.bytecodeOffset(),
-                              wasm::CallSiteKind::ReturnStub);
-  wasmCollapseFrameSlow(retCallInfo, stubDesc);
-  tailJump(ABINonArgReg0);
-  append(wasm::CodeRangeUnwindInfo::Normal, currentOffset());
-  return CodeOffset(currentOffset());
+  wasmCrossInstanceReturnCall(desc, ABINonArgReg0, retCallInfo,
+                              retCallFallback);
 }
 
 CodeOffset MacroAssembler::wasmReturnCall(
@@ -7106,7 +6887,8 @@ FaultingCodeRange MacroAssembler::wasmCallIndirect(
 [[nodiscard]]
 FaultingCodeRange MacroAssembler::wasmReturnCallIndirect(
     const wasm::CallSiteDesc& desc, const wasm::CalleeDesc& callee,
-    Label* nullCheckFailedLabel, const ReturnCallAdjustmentInfo& retCallInfo) {
+    Label* nullCheckFailedLabel, const ReturnCallAdjustmentInfo& retCallInfo,
+    const ReturnCallFallback& retCallFallback) {
   static_assert(sizeof(wasm::FunctionTableElem) == 2 * sizeof(void*),
                 "Exactly two pointers or index scaling won't work correctly");
   MOZ_ASSERT(callee.which() == wasm::CalleeDesc::WasmTable);
@@ -7157,6 +6939,8 @@ FaultingCodeRange MacroAssembler::wasmReturnCallIndirect(
   storePtr(InstanceReg,
            Address(getStackPointer(), WasmCallerInstanceOffsetBeforeCall));
   movePtr(newInstanceTemp, InstanceReg);
+  storePtr(InstanceReg,
+           Address(getStackPointer(), WasmCalleeInstanceOffsetBeforeCall));
 
   FaultingCodeRange fcr;
 #ifdef WASM_HAS_HEAPREG
@@ -7176,11 +6960,8 @@ FaultingCodeRange MacroAssembler::wasmReturnCallIndirect(
   loadPtr(Address(calleeScratch, offsetof(wasm::FunctionTableElem, code)),
           calleeScratch);
 
-  wasm::CallSiteDesc stubDesc(desc.bytecodeOffset(),
-                              wasm::CallSiteKind::ReturnStub);
-  wasmCollapseFrameSlow(retCallInfo, stubDesc);
-  tailJump(calleeScratch);
-  append(wasm::CodeRangeUnwindInfo::Normal, currentOffset());
+  wasmCrossInstanceReturnCall(desc, calleeScratch, retCallInfo,
+                              retCallFallback);
 
   // Fast path: just load the code pointer and go.
 
@@ -7273,7 +7054,7 @@ void MacroAssembler::wasmCallRef(const wasm::CallSiteDesc& desc,
 void MacroAssembler::wasmReturnCallRef(
     const wasm::CallSiteDesc& desc, const wasm::CalleeDesc& callee,
     const ReturnCallAdjustmentInfo& retCallInfo,
-    wasm::StackMap* stackMapForTraps,
+    const ReturnCallFallback& retCallFallback, wasm::StackMap* stackMapForTraps,
     wasm::StackMapRegistry* stackMapRegistry) {
   MOZ_ASSERT_IF(stackMapForTraps, stackMapRegistry);
   MOZ_ASSERT(callee.which() == wasm::CalleeDesc::FuncRef);
@@ -7317,11 +7098,8 @@ void MacroAssembler::wasmReturnCallRef(
       FunctionExtended::WASM_FUNC_UNCHECKED_ENTRY_SLOT);
   loadPtr(Address(calleeFnObj, uncheckedEntrySlotOffset), calleeScratch);
 
-  wasm::CallSiteDesc stubDesc(desc.bytecodeOffset(),
-                              wasm::CallSiteKind::ReturnStub);
-  wasmCollapseFrameSlow(retCallInfo, stubDesc);
-  tailJump(calleeScratch);
-  append(wasm::CodeRangeUnwindInfo::Normal, currentOffset());
+  wasmCrossInstanceReturnCall(desc, calleeScratch, retCallInfo,
+                              retCallFallback);
 
   // Fast path: just load WASM_FUNC_UNCHECKED_ENTRY_SLOT value and go.
   // The instance and pinned registers are the same as in the caller.
