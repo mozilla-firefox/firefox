@@ -465,6 +465,13 @@ export const WIDGET_REGISTRY = [
     widgetsSettingsEnabledKey: "horoscopesEnabled",
     trainhopNamespace: "widgetHoroscopes",
     framed: true,
+    frameVariants: ["custom_sign", "default_sign"],
+    // action_value never carries the sign itself.
+    frameUserEvents: {
+      sign_select: [],
+      range_change: ["day", "week", "month"],
+      read_more_click: [],
+    },
   },
   {
     id: "travel",

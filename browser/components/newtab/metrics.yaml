@@ -1493,11 +1493,13 @@ newtab:
       - https://bugzilla.mozilla.org/show_bug.cgi?id=2085959
       - https://bugzilla.mozilla.org/show_bug.cgi?id=2079330
       - https://bugzilla.mozilla.org/show_bug.cgi?id=2083870
+      - https://bugzilla.mozilla.org/show_bug.cgi?id=2083872
     data_reviews:
       - https://bugzilla.mozilla.org/show_bug.cgi?id=2010597
       - https://bugzilla.mozilla.org/show_bug.cgi?id=2085959
       - https://bugzilla.mozilla.org/show_bug.cgi?id=2079330
       - https://bugzilla.mozilla.org/show_bug.cgi?id=2083870
+      - https://bugzilla.mozilla.org/show_bug.cgi?id=2083872
     data_sensitivity:
       - interaction
     notification_emails:
@@ -1528,6 +1530,7 @@ newtab:
           newtab-privacy-blank for the state with no message, or the ID of the
           message shown.
           Travel sends the background image shown.
+          Horoscopes sends custom_sign or default_sign.
         type: string
     send_in_pings:
       - newtab
@@ -1544,11 +1547,13 @@ newtab:
       - https://bugzilla.mozilla.org/show_bug.cgi?id=2085959
       - https://bugzilla.mozilla.org/show_bug.cgi?id=2079330
       - https://bugzilla.mozilla.org/show_bug.cgi?id=2083870
+      - https://bugzilla.mozilla.org/show_bug.cgi?id=2083872
     data_reviews:
       - https://bugzilla.mozilla.org/show_bug.cgi?id=2010597
       - https://bugzilla.mozilla.org/show_bug.cgi?id=2085959
       - https://bugzilla.mozilla.org/show_bug.cgi?id=2079330
       - https://bugzilla.mozilla.org/show_bug.cgi?id=2083870
+      - https://bugzilla.mozilla.org/show_bug.cgi?id=2083872
     data_sensitivity:
       - interaction
     notification_emails:
