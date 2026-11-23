@@ -183,17 +183,16 @@
     <color name="fx_mobile_oled_on_success_container">@color/novaGray20</color>
     <color name="fx_mobile_oled_warning_container">@color/novaYellow80</color>
     <color name="fx_mobile_oled_on_warning_container">@color/novaGray20</color>
-    <color name="fx_mobile_oled_outline">@color/novaGray50</color>
     <color name="fx_mobile_oled_outline_variant">@color/novaGray65</color>
     <color name="fx_mobile_oled_sheet_outline">@color/novaGray65</color>
-    <color name="fx_mobile_oled_surface_bright">@color/novaGray80</color>
+    <color name="fx_mobile_oled_surface_bright">@color/novaGray75</color>
     <color name="fx_mobile_oled_surface_dim">@color/novaBlack</color>
     <color name="fx_mobile_oled_surface_container">@color/novaBlack</color>
     <color name="fx_mobile_oled_surface_container_high">@color/novaGray90</color>
-    <color name="fx_mobile_oled_surface_container_highest">@color/novaGray80</color>
+    <color name="fx_mobile_oled_surface_container_highest">@color/novaGray75</color>
     <color name="fx_mobile_oled_surface_container_low">@color/novaGray90</color>
     <color name="fx_mobile_oled_surface_container_lowest">@color/novaBlack</color>
-    <color name="fx_mobile_oled_surface_container_selected">@color/novaGray65</color>
+    <color name="fx_mobile_oled_surface_container_selected">@color/novaGray60</color>
     <color name="fx_mobile_oled_autofill_text">@color/novaVioletDesaturated60</color>
     <color name="fx_mobile_oled_selected_text">@color/novaGray60</color>
 

@@ -214,7 +214,6 @@
         <item name="colorOnSuccessContainer">@color/fx_mobile_oled_on_success_container</item>
         <item name="colorWarningContainer">@color/fx_mobile_oled_warning_container</item>
         <item name="colorOnWarningContainer">@color/fx_mobile_oled_on_warning_container</item>
-        <item name="colorOutline">@color/fx_mobile_oled_outline</item>
         <item name="colorOutlineVariant">@color/fx_mobile_oled_outline_variant</item>
         <item name="colorSurfaceBright">@color/fx_mobile_oled_surface_bright</item>
         <item name="colorSurfaceDim">@color/fx_mobile_oled_surface_dim</item>
