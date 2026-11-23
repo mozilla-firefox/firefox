@@ -241,7 +241,11 @@ already_AddRefed<WebTaskSchedulerMainThread>
 WebTaskScheduler::CreateForMainThread(nsGlobalWindowInner* aWindow) {
   RefPtr<WebTaskSchedulerMainThread> scheduler =
       new WebTaskSchedulerMainThread(aWindow->AsGlobal());
-  gWebTaskSchedulersMainThread.insertBack(scheduler);
+  // A dying window has already disconnected its scheduler and will not do so
+  // again, so a scheduler created late must stay out of the list.
+  if (!aWindow->IsDying()) {
+    gWebTaskSchedulersMainThread.insertBack(scheduler);
+  }
   return scheduler.forget();
 }
 
