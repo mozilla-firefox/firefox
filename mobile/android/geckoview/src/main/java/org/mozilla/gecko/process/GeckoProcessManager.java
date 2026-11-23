@@ -383,23 +383,8 @@ public final class GeckoProcessManager {
   private static final class GpuProcessConnection extends NonContentConnection {
     private CompositorSurfaceManager mCompositorSurfaceManager;
 
-    // Unique ID used to identify each GPU process instance. Will always be non-zero,
-    // and unlike the process' pid cannot be the same value for successive instances.
-    private final int mUniqueGpuProcessId;
-    // Static counter used to initialize each instance's mUniqueGpuProcessId
-    private static int sUniqueGpuProcessIdCounter = 0;
-
     public GpuProcessConnection(@NonNull final ServiceAllocator allocator, final int childId) {
       super(allocator, GeckoProcessType.GPU, childId);
-
-      // Initialize the unique ID ensuring we skip 0 (as that is reserved for parent process
-      // allocators).
-      //
-      // TODO(m_kato): Use ChildConnection.childId instead.
-      if (sUniqueGpuProcessIdCounter == 0) {
-        sUniqueGpuProcessIdCounter++;
-      }
-      mUniqueGpuProcessId = sUniqueGpuProcessIdCounter++;
     }
 
     public CompositorSurfaceManager getCompositorSurfaceManager() {
@@ -416,7 +401,7 @@ public final class GeckoProcessManager {
     public ISurfaceAllocator getSurfaceAllocator(final IBinder client) {
       if (getChild() != null) {
         try {
-          return getChild().getSurfaceAllocator(mUniqueGpuProcessId, client);
+          return getChild().getSurfaceAllocator(getChildId(), client);
         } catch (final RemoteException ignored) {
         }
       }
