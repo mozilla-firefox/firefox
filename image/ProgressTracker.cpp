@@ -426,7 +426,8 @@ void ProgressTracker::AddObserver(IProgressObserver* aObserver) {
   });
 }
 
-bool ProgressTracker::RemoveObserver(IProgressObserver* aObserver) {
+bool ProgressTracker::RemoveObserver(IProgressObserver* aObserver,
+                                     bool aEmulateRequestFinished) {
   MOZ_ASSERT(NS_IsMainThread());
   RefPtr<IProgressObserver> observer = aObserver;
 
@@ -436,7 +437,8 @@ bool ProgressTracker::RemoveObserver(IProgressObserver* aObserver) {
 
   // Observers can get confused if they don't get all the proper teardown
   // notifications. Part ways on good terms.
-  if (removed && !aObserver->NotificationsDeferred()) {
+  if (removed && aEmulateRequestFinished &&
+      !aObserver->NotificationsDeferred()) {
     EmulateRequestFinished(aObserver);
   }
 
