@@ -51,9 +51,9 @@ const STATES = [
                   {
                     url: "http://example.com",
                     triggeringPrincipal_base64,
-                    index: 1,
                   },
                 ],
+                index: 1,
               },
             },
           ],
