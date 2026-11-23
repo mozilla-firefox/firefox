@@ -5,9 +5,11 @@
 package org.mozilla.fenix.settings.trustpanel.ui
 
 import android.content.Context
+import androidx.compose.ui.input.InputMode
 import androidx.compose.ui.semantics.Role
 import androidx.compose.ui.semantics.SemanticsActions
 import androidx.compose.ui.semantics.SemanticsProperties
+import androidx.compose.ui.test.ComposeUiTestConfig
 import androidx.compose.ui.test.assertHasClickAction
 import androidx.compose.ui.test.assertIsDisplayed
 import androidx.compose.ui.test.assertIsFocused
@@ -34,7 +36,7 @@ import org.mozilla.fenix.theme.FirefoxTheme
 
 @RunWith(AndroidJUnit4::class)
 class ProtectionPanelTest {
-    @get:Rule val composeTestRule = createComposeRule()
+    @get:Rule val composeTestRule = createComposeRule(ComposeUiTestConfig(inputMode = InputMode.Keyboard))
 
     private val resources
         get() = ApplicationProvider.getApplicationContext<Context>().resources
