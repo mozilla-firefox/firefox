@@ -17,6 +17,9 @@ support-files = [
 ["browser_checkNonEmptyFields.js"]
 
 ["browser_checkNonRepeatedCertTabs.js"]
+skip-if = [
+  "os == 'mac' && os_version == '15.30' && arch == 'aarch64' && opt", # Bug 2062455
+]
 
 ["browser_checkNonUndefinedStrings.js"]
 
@@ -38,5 +41,8 @@ skip-if = [
 
 ["browser_openTabAndSendCertInfo.js"]
 support-files = ["dummy_page.html"]
+skip-if = [
+  "os == 'mac' && os_version == '15.30' && arch == 'aarch64' && opt", # Bug 2062455
+]
 
 ["browser_renderCertToUI.js"]

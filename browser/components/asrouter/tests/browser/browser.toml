@@ -82,7 +82,7 @@ skip-if = [
 ["browser_feature_callout_in_chrome.js"]
 skip-if = [
   "os == 'linux' && os_version == '24.04' && arch == 'x86_64' && display == 'x11' && debug", # Bug 1968576
-  "os == 'mac' && os_version == '10.15' && arch == 'x86_64' && debug", # Bug 1804349
+  "os == 'mac' && os_version == '15.30' && arch == 'aarch64' && debug", # Bug 1804349
   "os == 'mac' && os_version == '14.70' && arch == 'x86_64' && debug", # Bug 1932912
 ]
 

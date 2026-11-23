@@ -27,6 +27,9 @@ support-files = [
 ]
 
 ["browser_fullscreen_context_menu.js"]
+skip-if = [
+  "os == 'mac' && os_version == '15.30' && arch == 'aarch64' && debug", # Bug 2034023, see also bug 1853186
+]
 
 ["browser_fullscreen_cross_origin.js"]
 support-files = [

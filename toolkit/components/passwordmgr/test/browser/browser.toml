@@ -225,6 +225,7 @@ support-files = [
 ["browser_formless_submit_chrome.js"]
 skip-if = [
   "tsan", # Bug 1683730
+  "os == 'mac' && os_version == '15.30' && arch == 'aarch64'", # Bug 2062458
 ]
 
 ["browser_glean_pwmgr_form_autofill_result.js"]

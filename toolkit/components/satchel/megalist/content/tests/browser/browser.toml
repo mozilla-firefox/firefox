@@ -44,7 +44,9 @@ skip-if = [
 ["browser_passwords_remove_all_notification.js"]
 
 ["browser_passwords_sidebar.js"]
-
+skip-if = [
+  "os == 'mac' && os_version == '15.30' && arch == 'aarch64' && debug", # Bug 2062461
+]
 ["browser_passwords_sidebar_import_from_csv.js"]
 
 ["browser_passwords_update_login.js"]
