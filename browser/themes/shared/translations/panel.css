@@ -22,11 +22,6 @@
   margin-block-end: var(--panel-padding);
 }
 
-.translations-panel-settings-gear-icon > image {
-  /* Override the panel-info-button with a gear icon. */
-  list-style-image: url(chrome://global/skin/icons/settings.svg);
-}
-
 .translations-panel-content {
   padding: var(--panel-padding);
   padding-block-end: 8px;
@@ -46,30 +41,6 @@
 
   > .translations-panel-button-group {
     margin-inline-start: auto;
-  }
-}
-
-#full-page-translations-panel-translate-hint-action {
-  appearance: none;
-  background-color: var(--button-background-color);
-  border-radius: var(--border-radius-small);
-  color: var(--button-text-color);
-  padding: 8px 16px;
-  font-size: 0.9em;
-
-  &:hover {
-    background-color: var(--button-background-color-hover);
-    color: var(--button-text-color-hover);
-  }
-
-  &:hover:active {
-    background-color: var(--button-background-color-active);
-    color: var(--button-text-color-active);
-  }
-
-  &:focus-visible {
-    outline: var(--focus-outline);
-    outline-offset: var(--focus-outline-offset);
   }
 }
 

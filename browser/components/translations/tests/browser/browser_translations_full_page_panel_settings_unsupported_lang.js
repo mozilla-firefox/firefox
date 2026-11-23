@@ -66,6 +66,15 @@ add_task(async function test_unsupported_language_settings_menu_checkboxes() {
     onOpenPanel:
       FullPageTranslationsTestUtils.assertPanelViewUnsupportedLanguage,
   });
+  const settingsButton = document.querySelector(
+    "#full-page-translations-panel-view-unsupported-language .translations-panel-settings-button"
+  );
+  const settingsPopup = document.getElementById(
+    "full-page-translations-panel-settings-menupopup"
+  );
+  const popupShown = BrowserTestUtils.waitForEvent(settingsPopup, "popupshown");
+  click(settingsButton, "Open settings from the unsupported-language view");
+  await popupShown;
   await FullPageTranslationsTestUtils.assertIsAlwaysTranslateLanguage("fr", {
     checked: false,
     disabled: true,

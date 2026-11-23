@@ -523,17 +523,11 @@ var SelectTranslationsPanel = new (class {
     const { panel, fromMenuList, toMenuList, tryAnotherSourceMenuList } =
       this.elements;
 
-    // XUL buttons on macOS do not handle the Enter key by default for
-    // the focused element, so we must listen for the Enter key manually:
-    // https://searchfox.org/mozilla-central/rev/4c8627a76e2e0a9b49c2b673424da478e08715ad/dom/xul/XULButtonElement.cpp#563-579
-    if (AppConstants.platform === "macosx") {
-      panel.addEventListener("keypress", this);
-    }
+    panel.addEventListener("click", this);
     panel.addEventListener("popupshown", this);
     panel.addEventListener("popuphidden", this);
 
     panel.addEventListener("command", this);
-    panel.addEventListener("click", this);
     fromMenuList.addEventListener("command", this);
     toMenuList.addEventListener("command", this);
     tryAnotherSourceMenuList.addEventListener("command", this);
@@ -827,20 +821,16 @@ var SelectTranslationsPanel = new (class {
     const {
       fromMenuList,
       fromMenuPopup,
-      settingsButton,
       toMenuList,
       toMenuPopup,
       tryAnotherSourceMenuList,
       tryAnotherSourceMenuPopup,
     } = this.elements;
+
     switch (target.id) {
       case fromMenuList.id:
       case fromMenuPopup.id: {
         this.onChangeFromLanguage();
-        break;
-      }
-      case settingsButton.id: {
-        this.#openSettingsPopup();
         break;
       }
       case toMenuList.id:
@@ -857,7 +847,7 @@ var SelectTranslationsPanel = new (class {
   }
 
   /**
-   * Handles events when a click event is triggered within the panel.
+   * Handles button clicks within the panel.
    *
    * @param {Element} target - The event target
    */
@@ -867,6 +857,7 @@ var SelectTranslationsPanel = new (class {
       copyButton,
       doneButtonPrimary,
       doneButtonSecondary,
+      settingsButton,
       translateButton,
       translateFullPageButton,
       tryAgainButton,
@@ -885,6 +876,10 @@ var SelectTranslationsPanel = new (class {
         this.onClickDoneButton();
         break;
       }
+      case settingsButton.id: {
+        this.#openSettingsPopup();
+        break;
+      }
       case translateButton.id: {
         this.onClickTranslateButton();
         break;
@@ -895,22 +890,6 @@ var SelectTranslationsPanel = new (class {
       }
       case tryAgainButton.id: {
         this.onClickTryAgainButton();
-        break;
-      }
-    }
-  }
-
-  /**
-   * Handles events when the Enter key is pressed within the panel.
-   *
-   * @param {Element} target - The event target
-   */
-  #handleEnterKeyPressed(target) {
-    const { settingsButton } = this.elements;
-
-    switch (target.id) {
-      case settingsButton.id: {
-        this.#openSettingsPopup();
         break;
       }
     }
@@ -1188,12 +1167,6 @@ var SelectTranslationsPanel = new (class {
       }
       case "click": {
         this.#handleClickEvent(target);
-        break;
-      }
-      case "keypress": {
-        if (event.key === "Enter") {
-          this.#handleEnterKeyPressed(target);
-        }
         break;
       }
       case "popupshown": {
@@ -1815,7 +1788,7 @@ var SelectTranslationsPanel = new (class {
       // Do not offer to translate the full page if it is restricted on this page.
       this.#isFullPageTranslationsRestrictedForPage ||
       // Do not offer to translate the full page if Full-Page Translations is already active.
-      !!this.#activeFullPageTranslationsTargetLanguage
+      Boolean(this.#activeFullPageTranslationsTargetLanguage)
     );
   }
 
@@ -2054,10 +2027,7 @@ var SelectTranslationsPanel = new (class {
       ],
       makeVisible: [initFailureContent, cancelButton, tryAgainButton],
     });
-    tryAgainButton.updateComplete.then(() => {
-      tryAgainButton.buttonEl.ariaDescribedByElements = [initFailureMessageBar];
-    });
-    tryAgainButton.focus({ focusVisible: false });
+    this.#focusTryAgainButton(initFailureMessageBar, "init-failure");
   }
 
   /**
@@ -2104,12 +2074,27 @@ var SelectTranslationsPanel = new (class {
         tryAgainButton,
       ],
     });
-    tryAgainButton.updateComplete.then(() => {
-      tryAgainButton.buttonEl.ariaDescribedByElements = [
-        translationFailureMessageBar,
-      ];
-    });
-    tryAgainButton.focus({ focusVisible: false });
+    this.#focusTryAgainButton(
+      translationFailureMessageBar,
+      "translation-failure"
+    );
+  }
+
+  /**
+   * Focuses Try Again and associates it with the error description while the
+   * panel still shows that error.
+   *
+   * @param {HTMLElement} messageBar - The error message to describe the button.
+   * @param {"init-failure" | "translation-failure"} phase - The error phase.
+   * @returns {Promise<void>}
+   */
+  async #focusTryAgainButton(messageBar, phase) {
+    const { panel, tryAgainButton } = this.elements;
+    await tryAgainButton.updateComplete;
+    if (panel.state === "open" && this.phase() === phase) {
+      tryAgainButton.buttonEl.ariaDescribedByElements = [messageBar];
+      tryAgainButton.focus({ focusVisible: false });
+    }
   }
 
   /**

@@ -271,7 +271,7 @@ var FullPageTranslationsPanel = new (class {
       const settingsButton = document.getElementById(
         "translations-panel-settings"
       );
-      // Clone the settings toolbarbutton across all the views.
+      // Clone the settings button across all the views.
       for (const header of panel.querySelectorAll(".panel-header")) {
         if (header.contains(settingsButton)) {
           continue;
@@ -380,9 +380,9 @@ var FullPageTranslationsPanel = new (class {
     }
 
     if (hintCommand && hintCommandText) {
-      errorHintAction.removeEventListener("command", this.#lastHintCommand);
+      errorHintAction.removeEventListener("click", this.#lastHintCommand);
       this.#lastHintCommand = hintCommand;
-      errorHintAction.addEventListener("command", hintCommand);
+      errorHintAction.addEventListener("click", hintCommand);
       errorHintAction.hidden = false;
       document.l10n.setAttributes(errorHintAction, hintCommandText);
     } else {
@@ -1684,54 +1684,60 @@ var FullPageTranslationsPanel = new (class {
 
     // If a menuitem within a menulist is the target, it will not have an id,
     // so we want to grab the closest relevant id.
-    if (!id) {
+    if (target.classList.contains("translations-panel-settings-button")) {
+      id = "translations-panel-settings";
+    } else if (!id) {
       id = target.closest("[id]")?.id;
     }
 
     switch (event.type) {
       case "command": {
         switch (id) {
-          case "translations-panel-settings":
-            this.openSettingsPopup(target);
-            break;
-          case "full-page-translations-panel-from-menupopup":
+          case "full-page-translations-panel-from-menupopup": {
             this.onChangeFromLanguage(event);
             break;
-          case "full-page-translations-panel-to-menupopup":
+          }
+          case "full-page-translations-panel-to-menupopup": {
             this.onChangeToLanguage(event);
             break;
+          }
         }
         break;
       }
       case "click": {
+        this.handlePanelButtonEvent(event);
+
         switch (id) {
-          case "full-page-translations-panel-companion-button":
-            this.handlePanelButtonEvent(event);
-            this.onCompanionButton(event);
+          case "translations-panel-settings": {
+            this.openSettingsPopup(target);
             break;
-          case "full-page-translations-panel-intro-learn-more-link":
-          case "full-page-translations-panel-unsupported-learn-more-link":
-            this.onLearnMoreLink();
-            break;
-          case "full-page-translations-panel-restore-button":
-            this.handlePanelButtonEvent(event);
+          }
+          case "full-page-translations-panel-restore-button": {
             this.onRestore(event);
             break;
+          }
           case "full-page-translations-panel-cancel":
-          case "full-page-translations-panel-dismiss-error":
-            this.handlePanelButtonEvent(event);
+          case "full-page-translations-panel-dismiss-error": {
             this.onCancel(event);
             break;
-          case "full-page-translations-panel-translate":
-            this.handlePanelButtonEvent(event);
+          }
+          case "full-page-translations-panel-translate": {
             this.onTranslate(event);
             break;
-          case "full-page-translations-panel-change-source-language":
-            this.handlePanelButtonEvent(event);
+          }
+          case "full-page-translations-panel-change-source-language": {
             this.onChangeSourceLanguage(event);
             break;
-          default:
-            this.handlePanelButtonEvent(event);
+          }
+          case "full-page-translations-panel-companion-button": {
+            this.onCompanionButton(event);
+            break;
+          }
+          case "full-page-translations-panel-intro-learn-more-link":
+          case "full-page-translations-panel-unsupported-learn-more-link": {
+            this.onLearnMoreLink();
+            break;
+          }
         }
         break;
       }

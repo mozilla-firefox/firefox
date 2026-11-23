@@ -21,10 +21,12 @@
         <html:h1 class="translations-panel-header-wrapper">
           <html:span id="full-page-translations-panel-header"></html:span>
         </html:h1>
-        <toolbarbutton id="translations-panel-settings"
-                       class="panel-info-button translations-panel-settings-gear-icon"
-                       data-l10n-id="translations-panel-settings-button"
-                       closemenu="none"/>
+        <html:moz-button id="translations-panel-settings"
+                         class="translations-panel-settings-button"
+                         type="icon ghost"
+                         iconsrc="chrome://global/skin/icons/settings.svg"
+                         data-l10n-id="translations-panel-settings-button">
+        </html:moz-button>
       </hbox>
 
       <vbox class="translations-panel-content">
@@ -70,7 +72,7 @@
           </hbox>
           <hbox id="full-page-translations-panel-error-message-hint"></hbox>
           <hbox pack="end">
-            <button id="full-page-translations-panel-translate-hint-action" />
+            <html:moz-button id="full-page-translations-panel-translate-hint-action"></html:moz-button>
           </hbox>
         </vbox>
       </vbox>
