@@ -62,6 +62,13 @@ scheme = "https"
 ["test_track_getNativeSizes.html"]
 scheme = "https"
 
+["test_videoEncoder_h264_timestamps_gpu.html"]
+scheme = "https"
+tags = "webcodecs media-gpu"
+run-if = [
+  "os != 'android' && mda_gpu",
+]
+
 ["test_videoEncoder_oddWidth.html"]
 scheme = "https"
 skip-if = [

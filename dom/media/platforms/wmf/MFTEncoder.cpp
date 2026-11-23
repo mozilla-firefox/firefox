@@ -563,6 +563,7 @@ MFTEncoder::Destroy() {
   mAsyncEventSource = nullptr;
   mEncoder = nullptr;
   mConfig = nullptr;
+  mInputDurations.Clear();
   HRESULT hr = mFactory ? mFactory->Shutdown() : S_OK;
   mFactory.reset();
   // TODO: If Factory::Shutdown() fails and the encoder is not reusable, set the
@@ -1656,6 +1657,7 @@ MFTEncoder::ProcessDrainComplete() {
       SendMFTMessage(MFT_MESSAGE_NOTIFY_START_OF_STREAM, 0));
   MFT_ENC_LOGV("Drain complete, resetting inputs needed({}) to 0",
                mNumNeedInput);
+  mInputDurations.Clear();
   mNumNeedInput = 0;
   return ProcessedResult::DrainComplete;
 }
@@ -1780,6 +1782,13 @@ HRESULT MFTEncoder::ProcessOutput(RefPtr<IMFSample>& aSample,
     MFT_RETURN_IF_FAILED(aSample->SetSampleTime(pts.value()));
   }
 
+  LONGLONG time = 0;
+  if (SUCCEEDED(aSample->GetSampleTime(&time))) {
+    if (Maybe<LONGLONG> duration = mInputDurations.Extract(time)) {
+      MFT_RETURN_IF_FAILED(aSample->SetSampleDuration(*duration));
+    }
+  }
+
   return hr;
 }
 
@@ -1793,6 +1802,12 @@ HRESULT MFTEncoder::ProcessInput(InputSample&& aInput) {
   }
   MFT_RETURN_IF_FAILED(
       mEncoder->ProcessInput(mInputStreamID, aInput.mSample, 0));
+  LONGLONG time = 0;
+  LONGLONG duration = 0;
+  if (SUCCEEDED(aInput.mSample->GetSampleTime(&time)) &&
+      SUCCEEDED(aInput.mSample->GetSampleDuration(&duration))) {
+    mInputDurations.InsertOrUpdate(time, duration);
+  }
   return S_OK;
 }
 
