@@ -298,10 +298,6 @@ skip-if = [
 ]
 
 ["test_FrameSelection_mp4.html"]
-skip-if = [
-  "os == 'android' && arch == 'aarch64' && debug", # Bug 1776960 - android aarch64 debug
-  "os == 'mac' && os_version == '10.15' && arch == 'x86_64'", # mac due to bug 1487973
-]
 
 ["test_H264_SPS_InvalidDimensions.html"]
 
@@ -326,9 +322,6 @@ scheme = "https" # AudioWorklet needs a secure context.
 ["test_MP3_TypeSupport.html"]
 
 ["test_NoAudioLoopBackData.html"]
-skip-if = [
-  "os == 'mac' && os_version == '10.15' && arch == 'x86_64' && opt",
-]
 
 ["test_NoAudioLoopBackData_Muted.html"]
 
@@ -347,9 +340,6 @@ skip-if = [
 ["test_SeekToLastFrame_mp4.html"]
 
 ["test_SeekToNonIDR_mp4.html"]
-skip-if = [
-  "os == 'win' && wmfme",
-]
 
 ["test_SeekedEvent_mp4.html"]
 

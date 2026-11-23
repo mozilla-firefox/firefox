@@ -257,7 +257,6 @@ support-files = [
 
 ["test_FrameSelection.html"]
 skip-if = [
-  "os == 'android'", # bug 1341519, bug 1401090
   "os == 'win' && wmfme", # bug 1341519 - WMFME intermittently stalls seeks with multi-resolution MSE content
 ]
 
@@ -292,9 +291,6 @@ run-if = [
 run-if = [
   "mda_gpu",
 ]
-skip-if = [
-  "os == 'mac' && os_version == '10.15'", # HEVC decode unsupported, Bug 1942396
-]
 
 ["test_MediaSource_memory_reporting.html"]
 
@@ -313,9 +309,6 @@ skip-if = [
 ["test_RemoveSourceBuffer.html"]
 
 ["test_Seamless_looping_shorter_audio_than_video_MSE.html"]
-skip-if = [
-  "os == 'android' && verify", # Crash
-]
 
 ["test_SeekNoData_mp4.html"]
 
