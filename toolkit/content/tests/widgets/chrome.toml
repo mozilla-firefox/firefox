@@ -144,9 +144,6 @@ support-files = [
 ["test_panel_list_shadow_node_anchor.html"]
 
 ["test_panel_list_contextmenu.html"]
-skip-if = [
-  "os == 'win' && repeat", # Bug 2095817
-]
 
 ["test_panel_list_in_xul_panel.html"]
 
