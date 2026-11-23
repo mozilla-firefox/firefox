@@ -1954,6 +1954,17 @@ already_AddRefed<Promise> VideoFrame::CopyTo(
   }
   CombinedBufferLayout layout = r.unwrap();
 
+  // If destination.byteLength is less than combinedLayout's allocationSize,
+  // return a promise rejected with a TypeError.
+  const size_t destinationSize = ProcessTypedArrays(
+      aDestination, [](const Span<uint8_t>& aData, JS::AutoCheckCannotGC&&) {
+        return aData.size_bytes();
+      });
+  if (destinationSize < layout.mAllocationSize) {
+    p->MaybeRejectWithTypeError("Destination buffer is too small");
+    return p.forget();
+  }
+
   if (aOptions.mFormat.WasPassed() &&
       (aOptions.mFormat.Value() == VideoPixelFormat::RGBA ||
        aOptions.mFormat.Value() == VideoPixelFormat::RGBX ||
