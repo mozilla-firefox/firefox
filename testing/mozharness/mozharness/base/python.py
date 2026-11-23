@@ -658,14 +658,12 @@ class VirtualenvMixin:
 
                 self._ensure_python_exe(venv_python_bin.parent)
 
-                wheel_args = [
-                    "--only-binary",
-                    ":all:",
-                    "--disable-pip-version-check",
-                    str(wheels["pip"]),
-                    str(wheels["setuptools"]),
-                    str(wheels["wheel"]),
-                ]
+                wheel_args = ["--only-binary", ":all:", "--disable-pip-version-check"]
+                # Under uv nothing in the virtualenv runs pip, and the vendored
+                # pip wheel needs Python 3.10, which some CI workers lack.
+                if not uv_executable:
+                    wheel_args.append(str(wheels["pip"]))
+                wheel_args += [str(wheels["setuptools"]), str(wheels["wheel"])]
                 pip_install_command = pip_command(
                     python_executable=str(venv_python_bin),
                     subcommand="install",

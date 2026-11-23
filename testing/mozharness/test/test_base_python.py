@@ -70,6 +70,35 @@ def test_install_module_package_sources(tmp_path, uv, offline):
     assert command[-1] == "six==1.16.0"
 
 
+@pytest.mark.parametrize("uv", [None, "/tools/uv"])
+def test_create_virtualenv_seed_wheels(tmp_path, uv):
+    wheels = tmp_path / "src" / "third_party" / "python" / "_venv" / "wheels"
+    wheels.mkdir(parents=True)
+    for name in ("pip-26.3", "setuptools-82.0.1", "wheel-0.45.1"):
+        (wheels / f"{name}-py3-none-any.whl").touch()
+    harness = Mock(config={"virtualenv_path": "venv"}, _virtualenv_modules=[])
+    harness.query_abs_dirs.return_value = {
+        "abs_work_dir": str(tmp_path),
+        "abs_src_dir": str(tmp_path / "src"),
+    }
+    harness.query_virtualenv_path.return_value = str(tmp_path / "venv")
+    harness.query_python_path.return_value = str(tmp_path / "venv/bin/python")
+    harness._is_windows.return_value = False
+    harness._is_darwin.return_value = False
+    with patch.object(python, "get_uv_executable", return_value=uv):
+        python.VirtualenvMixin.create_virtualenv(harness)
+    seed = [
+        call.args[0]
+        for call in harness.run_command.call_args_list
+        if "--only-binary" in call.args[0]
+    ][0]
+    seeded = [os.path.basename(arg) for arg in seed if arg.endswith(".whl")]
+    expected = ["setuptools-82.0.1-py3-none-any.whl", "wheel-0.45.1-py3-none-any.whl"]
+    if not uv:
+        expected.insert(0, "pip-26.3-py3-none-any.whl")
+    assert seeded == expected
+
+
 @pytest.mark.parametrize(
     "filename", ["requirements-mozbase.txt", "requirements-marionette.txt"]
 )
