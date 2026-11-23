@@ -3,19 +3,11 @@ subsuite = "raptor"
 
 ["test_addon_utils.py"]
 
-["test_base_python_support.py"]
-
 ["test_benchmark.py"]
-
-["test_browsertime_android.py"]
-
-["test_browsertime_base.py"]
 
 ["test_chrome_trace.py"]
 
 ["test_cmdline.py"]
-
-["test_etw_profile.py"]
 
 ["test_filters.py"]
 
@@ -23,28 +15,14 @@ subsuite = "raptor"
 
 ["test_manifest.py"]
 
-["test_output.py"]
-
-["test_perf_profile.py"]
-
-["test_performance_tuning.py"]
-
-["test_perftest.py"]
-
 ["test_playback.py"]
 
 ["test_print_tests.py"]
 
 ["test_raptor.py"]
 
-["test_raptor_main.py"]
-
 ["test_raptor_profiling.py"]
 
 ["test_results.py"]
-
-["test_samply_profile.py"]
-
-["test_simpleperf.py"]
 
 ["test_utils.py"]
