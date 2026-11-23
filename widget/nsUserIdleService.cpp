@@ -421,10 +421,13 @@ NS_IMPL_ISUPPORTS(nsUserIdleService, nsIUserIdleService,
 
 void nsUserIdleService::SetDisabledForShutdown() {
   SetDisabled(true);
+  mShutdown = true;
   if (mTimer) {
     mTimer->Cancel();
     mTimer = nullptr;
   }
+  mArrayListeners.Clear();
+  mIdleObserverCount = 0;
 }
 
 NS_IMETHODIMP
@@ -445,6 +448,10 @@ nsUserIdleService::AddIdleObserver(nsIObserver* aObserver,
   if (XRE_IsContentProcess()) {
     dom::ContentChild* cpc = dom::ContentChild::GetSingleton();
     cpc->AddIdleObserver(aObserver, aIdleTimeInS);
+    return NS_OK;
+  }
+
+  if (mShutdown) {
     return NS_OK;
   }
 
@@ -511,6 +518,10 @@ nsUserIdleService::RemoveIdleObserver(nsIObserver* aObserver,
     return NS_OK;
   }
 
+  if (mShutdown) {
+    return NS_OK;
+  }
+
   IdleListener listener(aObserver, aTimeInS);
 
   // Find the entry and remove it, if it was the last entry, we just let the
@@ -550,6 +561,10 @@ nsUserIdleService::ResetIdleTimeOut(uint32_t idleDeltaInMS) {
   MOZ_LOG(sLog, LogLevel::Debug,
           ("idleService: Reset idle timeout (last interaction %u msec)",
            idleDeltaInMS));
+
+  if (mShutdown) {
+    return NS_OK;
+  }
 
   // Store the time
   mLastUserInteraction =

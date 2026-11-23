@@ -189,6 +189,12 @@ class nsUserIdleService : public nsIUserIdleServiceInternal {
   bool mDisabled = false;
 
   /**
+   * Set at AppShutdownConfirmed: observers have been dropped, and adding or
+   * removing one does nothing anymore.
+   */
+  bool mShutdown = false;
+
+  /**
    * Absolute value for when the last user interaction took place.
    */
   mozilla::TimeStamp mLastUserInteraction;
