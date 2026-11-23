@@ -15,6 +15,8 @@ subsuite = "raptor"
 
 ["test_cmdline.py"]
 
+["test_etw_profile.py"]
+
 ["test_filters.py"]
 
 ["test_gecko_profile.py"]
@@ -22,6 +24,8 @@ subsuite = "raptor"
 ["test_manifest.py"]
 
 ["test_output.py"]
+
+["test_perf_profile.py"]
 
 ["test_perftest.py"]
 
@@ -36,5 +40,9 @@ subsuite = "raptor"
 ["test_raptor_profiling.py"]
 
 ["test_results.py"]
+
+["test_samply_profile.py"]
+
+["test_simpleperf.py"]
 
 ["test_utils.py"]
