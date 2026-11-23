@@ -603,7 +603,6 @@
     <!-- Crash reporting -->
     <string name="pref_key_crash_reporting_cutoff_date" translatable="false">pref_key_crash_reporting_cutoff_date_2026_08_18</string>
     <string name="pref_key_crash_reporting_deferred_until" translatable="false">pref_key_crash_reporting_deferred_until</string>
-    <string name="pref_key_use_new_crash_reporter" translatable="false">pref_key_use_new_crash_reporter</string>
 
     <!-- Bookmarks -->
     <string name="pref_last_folder_saved_in" translatable="false">pref_last_folder_saved_in</string>
