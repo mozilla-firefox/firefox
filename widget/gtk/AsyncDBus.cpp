@@ -119,14 +119,29 @@ void MakePortalRequestToken(const nsCString& aType, nsACString& aToken) {
 //   provided with the handle_token key in the options vardict.
 //
 // https://flatpak.github.io/xdg-desktop-portal/docs/doc-org.freedesktop.portal.Request.html#org-freedesktop-portal-request
-void GetPortalRequestPath(GDBusProxy* aProxy, const nsCString& aRequestToken,
-                          nsACString& aOutPath) {
+//
+// The session paths have the same form, with "session" in place of "request",
+// and TOKEN from the session_handle_token key:
+//
+// https://flatpak.github.io/xdg-desktop-portal/docs/doc-org.freedesktop.portal.Session.html
+static void GetPortalPath(GDBusProxy* aProxy, const char* aKind,
+                          const nsCString& aToken, nsACString& aOutPath) {
   aOutPath.Truncate();
   GDBusConnection* connection = g_dbus_proxy_get_connection(aProxy);
   nsAutoCString senderName(g_dbus_connection_get_unique_name(connection));
   senderName.ReplaceChar('.', '_');
-  aOutPath.AppendPrintf("/org/freedesktop/portal/desktop/request/%s/%s",
-                        senderName.get() + 1, aRequestToken.get());
+  aOutPath.AppendPrintf("/org/freedesktop/portal/desktop/%s/%s/%s", aKind,
+                        senderName.get() + 1, aToken.get());
+}
+
+void GetPortalRequestPath(GDBusProxy* aProxy, const nsCString& aRequestToken,
+                          nsACString& aOutPath) {
+  GetPortalPath(aProxy, "request", aRequestToken, aOutPath);
+}
+
+void GetPortalSessionPath(GDBusProxy* aProxy, const nsCString& aSessionToken,
+                          nsACString& aOutPath) {
+  GetPortalPath(aProxy, "session", aSessionToken, aOutPath);
 }
 
 struct PortalResponseData {

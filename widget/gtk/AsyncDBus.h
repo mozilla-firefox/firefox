@@ -43,6 +43,9 @@ RefPtr<DBusCallFDListPromise> DBusProxyCallWithUnixFDList(
 void MakePortalRequestToken(const nsCString& aType, nsACString& aOutToken);
 void GetPortalRequestPath(GDBusProxy*, const nsCString& aRequestToken,
                           nsACString& aOutPath);
+// https://flatpak.github.io/xdg-desktop-portal/docs/doc-org.freedesktop.portal.Session.html
+void GetPortalSessionPath(GDBusProxy*, const nsCString& aSessionToken,
+                          nsACString& aOutPath);
 using PortalResponseListener = std::function<void(GVariant*)>;
 guint OnDBusPortalResponse(GDBusProxy* aProxy, const nsCString& aRequestToken,
                            PortalResponseListener);
