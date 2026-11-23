@@ -20,8 +20,8 @@
  */
 
 /**
- * pdfjsVersion = 7.0.189
- * pdfjsBuild = 81b2255fe
+ * pdfjsVersion = 7.0.213
+ * pdfjsBuild = 541d197e6
  */
 
 ;// ./src/shared/util.js
@@ -2013,7 +2013,7 @@ class FloatingToolbar {
 }
 
 ;// ./src/shared/internal_evt.js
-const INTERNAL_EVT = "178c1c76-e7b0-4fe6-ba40-4e51eb7f6b60";
+const INTERNAL_EVT = "f58e652c-b731-4e19-8bec-d694d99a1933";
 const internalOpt = Object.freeze({
   internal: INTERNAL_EVT
 });
@@ -5384,8 +5384,9 @@ class AnnotationEditor {
       const {
         x,
         y
-      } = this.div.getBoundingClientRect();
-      if (this.parent.findNewParent(this, x, y)) {
+      } = div.getBoundingClientRect();
+      const [dx, dy] = this.pageTranslationToScreen(tx, ty);
+      if (this.parent.findNewParent(this, x + dx, y + dy)) {
         this.x -= Math.floor(this.x);
         this.y -= Math.floor(this.y);
       }
@@ -5434,12 +5435,7 @@ class AnnotationEditor {
     return true;
   }
   fixAndSetPosition(rotation = this.rotation) {
-    const {
-      div: {
-        style
-      },
-      pageDimensions: [pageWidth, pageHeight]
-    } = this;
+    const [pageWidth, pageHeight] = this.pageDimensions;
     let {
       x,
       y,
@@ -5493,13 +5489,17 @@ class AnnotationEditor {
           break;
       }
     }
-    this.x = x = (x - tx) / pageWidth;
-    this.y = y = (y - ty) / pageHeight;
+    this.x = (x - tx) / pageWidth;
+    this.y = (y - ty) / pageHeight;
+    this.setPosition();
+  }
+  setPosition() {
+    const {
+      style
+    } = this.div;
     const [bx, by] = this.getBaseTranslation();
-    x += bx;
-    y += by;
-    style.left = `${(100 * x).toFixed(2)}%`;
-    style.top = `${(100 * y).toFixed(2)}%`;
+    style.left = `${(100 * (this.x + bx)).toFixed(2)}%`;
+    style.top = `${(100 * (this.y + by)).toFixed(2)}%`;
     this.moveInDOM();
   }
   static #rotatePoint(x, y, angle) {
@@ -14691,7 +14691,7 @@ class RendererWorker {
         terminateEarly("TypedArray transfer test failed.");
         return;
       }
-      const apiVersion = "7.0.189";
+      const apiVersion = "7.0.213";
       if (apiVersion !== data.workerVersion) {
         terminateEarly(`The API version "${apiVersion}" does not match the Worker version "${data.workerVersion}".`);
         return;
@@ -15398,7 +15398,7 @@ function getDocument(src = {}) {
   }
   const docParams = {
     docId,
-    apiVersion: "7.0.189",
+    apiVersion: "7.0.213",
     data,
     password,
     disableAutoFetch,
@@ -17118,8 +17118,8 @@ class InternalRenderTask {
     }
   }
 }
-const version = "7.0.189";
-const build = "81b2255fe";
+const version = "7.0.213";
+const build = "541d197e6";
 
 ;// ./src/display/editor/color_picker.js
 
@@ -22203,10 +22203,12 @@ class DrawingEditor extends AnnotationEditor {
       return;
     }
     this.#addToDrawLayer();
-    this.#updateBbox(this._drawOutlines.box);
     if (!this.isAttachedToDOM) {
       this.parent.add(this);
     }
+    const bbox = this._drawOutlines.updateParentDimensions(this.parentDimensions, this.parent.scale);
+    this.#updateBbox(bbox ?? this._drawOutlines.box, false);
+    this.rotate();
   }
   setParent(parent) {
     let mustBeSelected = false;
@@ -22295,10 +22297,14 @@ class DrawingEditor extends AnnotationEditor {
         return [x, y, width, height];
     }
   }
-  #updateBbox(bbox) {
+  #updateBbox(bbox, fixPosition = true) {
     [this.x, this.y, this.width, this.height] = this.#convertToParentSpace(bbox);
     if (this.div) {
-      this.fixAndSetPosition();
+      if (fixPosition) {
+        this.fixAndSetPosition();
+      } else {
+        this.setPosition();
+      }
       this.setDims();
     }
     this._onResized();
@@ -22394,7 +22400,7 @@ class DrawingEditor extends AnnotationEditor {
     }
     const bbox = this._drawOutlines.updateParentDimensions(this.parentDimensions, this.parent.scale);
     if (bbox) {
-      this.#updateBbox(bbox);
+      this.#updateBbox(bbox, false);
     }
   }
   static onScaleChangingWhenDrawing() {}

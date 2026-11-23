@@ -63,6 +63,8 @@ var gExceptionPaths = [
   "resource://pdf.js/web/wasm/openjpeg_nowasm_fallback.js",
   "resource://pdf.js/web/wasm/jbig2_nowasm_fallback.js",
   "resource://pdf.js/web/wasm/hellbox_nowasm_fallback.js",
+  // Worker chunks loaded on demand using a dynamic import in pdf.worker.mjs.
+  "resource://pdf.js/build/pdf.worker.",
 
   // Exclude the form autofill path that has been moved out of the extensions to
   // toolkit, see bug 1691821.
