@@ -1,8 +1,12 @@
 /**
- * Test for LoginHelper.isUsernameFieldType
+ * Test for LoginHelperDOM.isUsernameFieldType
  */
 
 "use strict";
+
+const { LoginHelperDOM } = ChromeUtils.importESModule(
+  "moz-src:///toolkit/components/passwordmgr/shared/LoginHelperDOM.sys.mjs"
+);
 
 const autocompleteTypes = {
   "": true,
@@ -152,7 +156,7 @@ TESTCASES.forEach(testcase => {
     );
     let input = document.querySelector("input");
     Assert.equal(
-      LoginHelper.isUsernameFieldType(input),
+      LoginHelperDOM.isUsernameFieldType(input),
       testcase.expected,
       testcase.description
     );

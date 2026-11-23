@@ -5,7 +5,6 @@
 const lazy = {};
 
 ChromeUtils.defineESModuleGetters(lazy, {
-  Logic: "resource://gre/modules/LoginManager.shared.sys.mjs",
   LoginHelper: "resource://gre/modules/LoginHelper.sys.mjs",
   PasswordGenerator: "resource://gre/modules/shared/PasswordGenerator.sys.mjs",
   PasswordRulesParser:
@@ -71,7 +70,8 @@ export class PasswordRulesManagerParent extends JSWindowActorParent {
       let currentRules = lazy.PasswordRulesParser.parsePasswordRules(
         currentRecord["password-rules"]
       );
-      let mapOfRules = lazy.Logic.transformRulesToMap(currentRules);
+      let mapOfRules =
+        lazy.PasswordRulesParser.transformRulesToMap(currentRules);
       Glean.pwmgr.numImprovedGeneratedPasswords[
         isCustomRule ? "true" : "false"
       ].add();

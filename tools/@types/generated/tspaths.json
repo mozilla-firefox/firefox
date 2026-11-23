@@ -6223,9 +6223,6 @@
       "resource://gre/modules/LoginHelper.sys.mjs": [
         "../../../toolkit/components/passwordmgr/LoginHelper.sys.mjs"
       ],
-      "resource://gre/modules/LoginManager.shared.sys.mjs": [
-        "../../../toolkit/components/passwordmgr/LoginManager.shared.sys.mjs"
-      ],
       "resource://gre/modules/LoginManager.sys.mjs": [
         "../../../toolkit/components/passwordmgr/LoginManager.sys.mjs"
       ],

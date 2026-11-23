@@ -12,7 +12,10 @@ const lazy = {};
 ChromeUtils.defineESModuleGetters(lazy, {
   FormLikeFactory: "resource://gre/modules/FormLikeFactory.sys.mjs",
   LoginHelper: "resource://gre/modules/LoginHelper.sys.mjs",
-  Logic: "resource://gre/modules/LoginManager.shared.sys.mjs",
+  LoginOriginUtils:
+    "moz-src:///toolkit/components/passwordmgr/shared/LoginOriginUtils.sys.mjs",
+  LoginHelperDOM:
+    "moz-src:///toolkit/components/passwordmgr/shared/LoginHelperDOM.sys.mjs",
 });
 
 ChromeUtils.defineLazyGetter(lazy, "log", () => {
@@ -48,7 +51,7 @@ export const LoginFormFactory = {
    */
   createFromForm(aForm) {
     let formLike = lazy.FormLikeFactory.createFromForm(aForm);
-    formLike.action = lazy.Logic.getFormActionOrigin(aForm);
+    formLike.action = lazy.LoginHelperDOM.getFormActionOrigin(aForm);
 
     this._addLoginFormToRootElementsSet(formLike);
 
@@ -68,7 +71,9 @@ export const LoginFormFactory = {
    */
   createFromDocumentRoot(aDocumentRoot) {
     const formLike = lazy.FormLikeFactory.createFromDocumentRoot(aDocumentRoot);
-    formLike.action = lazy.Logic.getLoginOrigin(aDocumentRoot.baseURI);
+    formLike.action = lazy.LoginOriginUtils.getLoginOrigin(
+      aDocumentRoot.baseURI
+    );
 
     lazy.log.debug(
       "Created non-form LoginForm for rootElement:",
@@ -100,7 +105,7 @@ export const LoginFormFactory = {
     if (
       !HTMLInputElement.isInstance(aField) ||
       (!aField.hasBeenTypePassword &&
-        !lazy.Logic.isUsernameFieldType(aField)) ||
+        !lazy.LoginHelperDOM.isUsernameFieldType(aField)) ||
       !aField.ownerDocument
     ) {
       throw new Error(
@@ -121,7 +126,9 @@ export const LoginFormFactory = {
     }
 
     let formLike = lazy.FormLikeFactory.createFromField(aField);
-    formLike.action = lazy.Logic.getLoginOrigin(aField.ownerDocument.baseURI);
+    formLike.action = lazy.LoginOriginUtils.getLoginOrigin(
+      aField.ownerDocument.baseURI
+    );
     lazy.log.debug(
       "Created non-form LoginForm for rootElement:",
       aField.ownerDocument.documentElement

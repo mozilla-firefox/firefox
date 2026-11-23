@@ -3,13 +3,15 @@
  * file, You can obtain one at http://mozilla.org/MPL/2.0/. */
 
 /**
- * Code that we can share across Firefox Desktop, Firefox Android and Firefox iOS.
+ * Utilities for working with DOM elements in password/login fields.
+ * Used by content process code (LoginManagerChild, LoginFormFactory, etc.)
  */
 
+import { LoginOriginUtils } from "moz-src:///toolkit/components/passwordmgr/shared/LoginOriginUtils.sys.mjs";
 import { XPCOMUtils } from "resource://gre/modules/XPCOMUtils.sys.mjs";
 import { NewPasswordModel } from "resource://gre/modules/shared/NewPasswordModel.sys.mjs";
 
-class Logic {
+class LoginHelperDOM {
   static inputTypeIsCompatibleWithUsername(input) {
     const fieldType = input.getAttribute("type")?.toLowerCase() || input.type;
     return (
@@ -48,34 +50,6 @@ class Logic {
     return regex.test(element.textContent);
   }
 
-  /**
-   * Get the parts of the URL we want for identification.
-   * Strip out things like the userPass portion and handle javascript:.
-   */
-  static getLoginOrigin(uriString, allowJS = false) {
-    try {
-      const mozProxyRegex = /^moz-proxy:\/\//i;
-      if (mozProxyRegex.test(uriString)) {
-        // Special handling for moz-proxy URIs
-        const uri = new URL(uriString.replace(mozProxyRegex, "https://"));
-        return `moz-proxy://${uri.host}`;
-      }
-
-      const uri = new URL(uriString);
-      if (uri.protocol === "javascript:") {
-        return allowJS ? "javascript:" : null;
-      }
-
-      // Ensure the URL has a host
-      // Execption: file URIs See Bug 1651186
-      return uri.host || uri.protocol === "file:"
-        ? `${uri.protocol}//${uri.host}`
-        : null;
-    } catch {
-      return null;
-    }
-  }
-
   static getFormActionOrigin(form) {
     let uriString = form.action;
 
@@ -85,7 +59,7 @@ class Logic {
       uriString = form.baseURI;
     }
 
-    return this.getLoginOrigin(uriString, true);
+    return LoginOriginUtils.getLoginOrigin(uriString, true);
   }
 
   /**
@@ -115,7 +89,7 @@ class Logic {
       return false;
     }
 
-    if (!Logic.inputTypeIsCompatibleWithUsername(element)) {
+    if (!LoginHelperDOM.inputTypeIsCompatibleWithUsername(element)) {
       return false;
     }
 
@@ -184,21 +158,21 @@ class Logic {
       return true;
     }
 
-    if (Logic.newPasswordFieldFathomThreshold == -1) {
+    if (LoginHelperDOM.newPasswordFieldFathomThreshold == -1) {
       // Fathom is disabled
       return false;
     }
 
     let score = this.#cachedNewPasswordScore.get(inputElement);
     if (score) {
-      return score >= Logic.newPasswordFieldFathomThreshold;
+      return score >= LoginHelperDOM.newPasswordFieldFathomThreshold;
     }
 
     const { rules, type } = NewPasswordModel;
     const results = rules.against(inputElement);
     score = results.get(inputElement).scoreFor(type);
     this.#cachedNewPasswordScore.set(inputElement, score);
-    return score >= Logic.newPasswordFieldFathomThreshold;
+    return score >= LoginHelperDOM.newPasswordFieldFathomThreshold;
   }
 
   static findConfirmationField(passwordField, formFactory) {
@@ -225,7 +199,7 @@ class Logic {
     if (acFieldName === "new-password") {
       const matchIndex = afterFields.findIndex(
         elem =>
-          Logic.isPasswordFieldType(elem) &&
+          LoginHelperDOM.isPasswordFieldType(elem) &&
           elem.getAutocompleteInfo().fieldName === acFieldName &&
           !elem.disabled &&
           !elem.readOnly
@@ -242,7 +216,7 @@ class Logic {
         idx++
       ) {
         if (
-          Logic.isPasswordFieldType(afterFields[idx]) &&
+          LoginHelperDOM.isPasswordFieldType(afterFields[idx]) &&
           !afterFields[idx].disabled &&
           !afterFields[idx].readOnly
         ) {
@@ -256,48 +230,124 @@ class Logic {
   }
 
   /**
-   * Transforms the parsed rules returned from PasswordRulesParser into a Map for easier access.
-   * The returned Map could have the following keys: "allowed", "required", "maxlength", "minlength", and "max-consecutive"
+   * Infer whether a form is a sign-in form by searching keywords
+   * in its attributes
    *
-   * @example
-   * // Returns a Map with a key-value pair of "allowed": "ascii-printable"
-   * transformRulesToMap([{ _name: "allowed", value: [{ _name: "ascii-printable" }] }])
-   * @param {object[]} rules rules from PasswordRulesParser.parsePasswordRules
-   * @return {Map} mapped rules
+   * @param {Element} formElement
+   *                  the form we want to check.
+   *
+   * @returns {boolean} True if any of the rules matches
    */
-  static transformRulesToMap(rules) {
-    let map = new Map();
-    for (let rule of rules) {
-      let { _name, value } = rule;
-      if (
-        _name === "minlength" ||
-        _name === "maxlength" ||
-        _name === "max-consecutive"
-      ) {
-        map.set(_name, value);
-      } else {
-        let _value = [];
-        if (map.get(_name)) {
-          _value = map.get(_name);
-        }
-        for (let _class of value) {
-          let { _name: _className } = _class;
-          if (_className) {
-            _value.push(_className);
-          } else {
-            let { _characters } = _class;
-            _value.push(_characters);
-          }
-        }
-        map.set(_name, _value);
-      }
+  static isInferredLoginForm(formElement) {
+    if (
+      LoginHelperDOM.elementAttrsMatchRegex(
+        formElement,
+        NewPasswordModel.LoginRegex
+      )
+    ) {
+      return true;
     }
-    return map;
+
+    const buttons = Array.from(
+      formElement.querySelectorAll("button[type=submit]")
+    );
+    // Limit to forms with only one submit button to avoid false positives.
+    if (
+      buttons.length == 1 &&
+      LoginHelperDOM.hasTextContentMatchingRegex(
+        buttons[0],
+        NewPasswordModel.LoginFormAttrRegex
+      )
+    ) {
+      return true;
+    }
+
+    return false;
+  }
+
+  /**
+   * Infer whether an input field is a username field by searching
+   * 'username' keyword in its attributes
+   *
+   * @param {Element} element
+   *                  the field we want to check.
+   *
+   * @returns {boolean} True if any of the rules matches
+   */
+  static isInferredUsernameField(element) {
+    const expr = /username/i;
+
+    let ac = element.getAutocompleteInfo()?.fieldName;
+    if (ac && (ac == "username" || ac == "webauthn")) {
+      return true;
+    }
+
+    if (
+      LoginHelperDOM.elementAttrsMatchRegex(element, expr) ||
+      LoginHelperDOM.hasLabelMatchingRegex(element, expr)
+    ) {
+      return true;
+    }
+
+    return false;
+  }
+
+  /**
+   * Search for keywords that indicates the input field is not likely a
+   * field of a username login form.
+   *
+   * @param {Element} element
+   *                  the input field we want to check.
+   *
+   * @returns {boolean} True if any of the rules matches
+   */
+  static isInferredNonUsernameField(element) {
+    const expr = /\b(search|code|add)\b/i;
+
+    if (
+      LoginHelperDOM.elementAttrsMatchRegex(element, expr) ||
+      LoginHelperDOM.hasLabelMatchingRegex(element, expr)
+    ) {
+      return true;
+    }
+
+    return false;
+  }
+
+  /**
+   * Infer whether an input field is an email field by searching
+   * 'email' keyword in its attributes.
+   *
+   * @param {Element} element
+   *                  the field we want to check.
+   *
+   * @returns {boolean} True if any of the rules matches
+   */
+  static isInferredEmailField(element) {
+    const expr = /email|邮箱/i;
+
+    if (element.type == "email") {
+      return true;
+    }
+
+    let ac = element.getAutocompleteInfo()?.fieldName;
+    if (ac && ac == "email") {
+      return true;
+    }
+
+    if (
+      LoginHelperDOM.elementAttrsMatchRegex(element, expr) ||
+      LoginHelperDOM.hasLabelMatchingRegex(element, expr)
+    ) {
+      return true;
+    }
+
+    return false;
   }
 }
 
 XPCOMUtils.defineLazyPreferenceGetter(
-  Logic,
+  LoginHelperDOM,
   "newPasswordFieldFathomThreshold",
   "signon.generation.confidenceThreshold",
   null,
@@ -305,4 +355,4 @@ XPCOMUtils.defineLazyPreferenceGetter(
   pref => parseFloat(pref)
 );
 
-export { Logic };
+export { LoginHelperDOM };

@@ -41,7 +41,7 @@ import { XPCOMUtils } from "resource://gre/modules/XPCOMUtils.sys.mjs";
 import { AppConstants } from "resource://gre/modules/AppConstants.sys.mjs";
 import { PrivateBrowsingUtils } from "resource://gre/modules/PrivateBrowsingUtils.sys.mjs";
 import { CreditCard } from "resource://gre/modules/CreditCard.sys.mjs";
-import { Logic } from "resource://gre/modules/LoginManager.shared.sys.mjs";
+import { LoginHelperDOM } from "moz-src:///toolkit/components/passwordmgr/shared/LoginHelperDOM.sys.mjs";
 
 const lazy = {};
 
@@ -211,7 +211,7 @@ const observer = {
   },
 
   handleInput(aEvent, docState, field, loginManagerChild, ownerDocument) {
-    let isPasswordType = lazy.LoginHelper.isPasswordFieldType(field);
+    let isPasswordType = LoginHelperDOM.isPasswordFieldType(field);
     // React to input into fields filled with generated passwords.
     if (
       docState.generatedPasswordFields.has(field) &&
@@ -222,7 +222,7 @@ const observer = {
       docState._stopTreatingAsGeneratedPasswordField(field);
     }
 
-    if (!isPasswordType && !lazy.LoginHelper.isUsernameFieldType(field)) {
+    if (!isPasswordType && !LoginHelperDOM.isUsernameFieldType(field)) {
       return;
     }
 
@@ -447,9 +447,9 @@ export class LoginFormState {
 
   storeUserInput(field) {
     if (field.value && lazy.LoginHelper.captureInputChanges) {
-      if (lazy.LoginHelper.isPasswordFieldType(field)) {
+      if (LoginHelperDOM.isPasswordFieldType(field)) {
         this.possiblePasswords.add(field.value);
-      } else if (lazy.LoginHelper.isUsernameFieldType(field)) {
+      } else if (LoginHelperDOM.isUsernameFieldType(field)) {
         this.possibleUsernames.add(field.value);
       }
     }
@@ -457,7 +457,7 @@ export class LoginFormState {
 
   /**
    * Returns true if the input field is considered an email field by
-   * 'LoginHelper.isInferredEmailField'.
+   * 'LoginHelperDOM.isInferredEmailField'.
    *
    * @param {Element} element the field to check.
    * @returns {boolean} True if the element is likely an email field
@@ -469,7 +469,7 @@ export class LoginFormState {
 
     let result = this.#cachedIsInferredEmailField.get(inputElement);
     if (result === undefined) {
-      result = lazy.LoginHelper.isInferredEmailField(inputElement);
+      result = LoginHelperDOM.isInferredEmailField(inputElement);
       this.#cachedIsInferredEmailField.set(inputElement, result);
     }
 
@@ -478,7 +478,7 @@ export class LoginFormState {
 
   /**
    * Returns true if the input field is considered a username field by
-   * 'LoginHelper.isInferredUsernameField'. The main purpose of this method
+   * 'LoginHelperDOM.isInferredUsernameField'. The main purpose of this method
    * is to cache the result because _getFormFields has many call sites and we
    * want to avoid applying the heuristic every time.
    *
@@ -488,7 +488,7 @@ export class LoginFormState {
   isProbablyAUsernameField(inputElement) {
     let result = this.#cachedIsInferredUsernameField.get(inputElement);
     if (result === undefined) {
-      result = lazy.LoginHelper.isInferredUsernameField(inputElement);
+      result = LoginHelperDOM.isInferredUsernameField(inputElement);
       this.#cachedIsInferredUsernameField.set(inputElement, result);
     }
 
@@ -520,11 +520,11 @@ export class LoginFormState {
       // form looks like a sign-in or sign-up form.
       if (
         this.isProbablyAUsernameField(inputElement) ||
-        lazy.LoginHelper.isInferredLoginForm(formElement)
+        LoginHelperDOM.isInferredLoginForm(formElement)
       ) {
         // This is where we collect hints that indicate this is not a username
         // login form.
-        if (!lazy.LoginHelper.isInferredNonUsernameField(inputElement)) {
+        if (!LoginHelperDOM.isInferredNonUsernameField(inputElement)) {
           result = true;
         }
       }
@@ -812,7 +812,7 @@ export class LoginFormState {
       }
 
       // Ignore input fields whose type are not username compatiable, ex, hidden.
-      if (!lazy.LoginHelper.isUsernameFieldType(element)) {
+      if (!LoginHelperDOM.isUsernameFieldType(element)) {
         continue;
       }
 
@@ -981,7 +981,7 @@ export class LoginFormState {
       return;
     }
 
-    const confirmPasswordInput = Logic.findConfirmationField(
+    const confirmPasswordInput = LoginHelperDOM.findConfirmationField(
       passwordField,
       lazy.LoginFormFactory
     );
@@ -1109,7 +1109,7 @@ export class LoginFormState {
 
       for (let i = pwFields[0].index - 1; i >= 0; i--) {
         let element = form.elements[i];
-        if (!lazy.LoginHelper.isUsernameFieldType(element, { ignoreConnect })) {
+        if (!LoginHelperDOM.isUsernameFieldType(element, { ignoreConnect })) {
           continue;
         }
 
@@ -1264,7 +1264,7 @@ export class LoginFormState {
     // If the element is not a login form field, return all null.
     if (
       !aField.hasBeenTypePassword &&
-      !lazy.LoginHelper.isUsernameFieldType(aField)
+      !LoginHelperDOM.isUsernameFieldType(aField)
     ) {
       return noResult;
     }
@@ -1298,7 +1298,7 @@ export class LoginFormState {
     if (
       !HTMLInputElement.isInstance(aField) ||
       (!aField.hasBeenTypePassword &&
-        !lazy.LoginHelper.isUsernameFieldType(aField)) ||
+        !LoginHelperDOM.isUsernameFieldType(aField)) ||
       aField.nodePrincipal.isNullPrincipal ||
       aField.nodePrincipal.schemeIs("about") ||
       !aField.ownerDocument
@@ -1545,7 +1545,7 @@ export class LoginManagerChild extends JSWindowActorChild {
    * @param {boolean} options.showPrimaryPassword - whether to show a primary password prompt
    */
   _getLoginDataFromParent(form, options) {
-    let actionOrigin = lazy.LoginHelper.getFormActionOrigin(form);
+    let actionOrigin = LoginHelperDOM.getFormActionOrigin(form);
     let messageData = { actionOrigin, options };
     let resultPromise = this.sendQuery(
       "PasswordManager:findLogins",
@@ -2158,7 +2158,7 @@ export class LoginManagerChild extends JSWindowActorChild {
       return;
     }
 
-    if (lazy.LoginHelper.isUsernameFieldType(acInputField)) {
+    if (LoginHelperDOM.isUsernameFieldType(acInputField)) {
       this.onUsernameAutocompleted(acInputField, [login]);
     } else if (acInputField.hasBeenTypePassword) {
       // Ensure the field gets re-masked and edits don't overwrite the generated
@@ -2552,7 +2552,7 @@ export class LoginManagerChild extends JSWindowActorChild {
       let { login: autoFilledLogin } =
         docState.fillsByRootElement.get(form.rootElement) || {};
       let browsingContextId = win.windowGlobalChild.browsingContext.id;
-      let formActionOrigin = lazy.LoginHelper.getFormActionOrigin(form);
+      let formActionOrigin = LoginHelperDOM.getFormActionOrigin(form);
 
       detail = {
         browsingContextId,
@@ -2695,7 +2695,7 @@ export class LoginManagerChild extends JSWindowActorChild {
     let loginOrigin = lazy.LoginHelper.getLoginOrigin(
       form.ownerDocument.documentURI
     );
-    let formActionOrigin = lazy.LoginHelper.getFormActionOrigin(form);
+    let formActionOrigin = LoginHelperDOM.getFormActionOrigin(form);
     logins = logins.filter(l => {
       let formActionMatches = lazy.LoginHelper.isOriginMatching(
         l.formActionOrigin,
@@ -2831,7 +2831,7 @@ export class LoginManagerChild extends JSWindowActorChild {
           if (!clobberUsername) {
             usernameField = null;
           }
-        } else if (lazy.LoginHelper.isUsernameFieldType(inputElement)) {
+        } else if (LoginHelperDOM.isUsernameFieldType(inputElement)) {
           usernameField = inputElement;
         } else {
           throw new Error("Unexpected input element type.");
@@ -3181,7 +3181,7 @@ export class LoginManagerChild extends JSWindowActorChild {
     const formOrigin = lazy.LoginHelper.getLoginOrigin(
       input.ownerDocument.documentURI
     );
-    const actionOrigin = lazy.LoginHelper.getFormActionOrigin(form);
+    const actionOrigin = LoginHelperDOM.getFormActionOrigin(form);
     const autocompleteInfo = input.getAutocompleteInfo();
     const hasBeenTypePassword = input.hasBeenTypePassword;
 
@@ -3191,7 +3191,8 @@ export class LoginManagerChild extends JSWindowActorChild {
       forcePasswordGeneration = this.isPasswordGenerationForcedOn(input);
       // Run the Fathom model only if the password field does not have the
       // autocomplete="new-password" attribute.
-      isProbablyANewPasswordField = Logic.isProbablyANewPasswordField(input);
+      isProbablyANewPasswordField =
+        LoginHelperDOM.isProbablyANewPasswordField(input);
     }
 
     const scenarioName = lazy.FormScenarios.detect({ input }).signUpForm

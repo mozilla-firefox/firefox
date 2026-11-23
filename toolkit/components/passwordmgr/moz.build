@@ -27,6 +27,8 @@ XPIDL_MODULE = "loginmgr"
 
 MOZ_SRC_FILES += [
     "BreachAlertsData.sys.mjs",
+    "shared/LoginHelperDOM.sys.mjs",
+    "shared/LoginOriginUtils.sys.mjs",
 ]
 
 EXTRA_JS_MODULES += [
@@ -36,7 +38,6 @@ EXTRA_JS_MODULES += [
     "LoginAutoComplete.sys.mjs",
     "LoginHelper.sys.mjs",
     "LoginInfo.sys.mjs",
-    "LoginManager.shared.sys.mjs",
     "LoginManager.sys.mjs",
     "LoginManagerAuthPrompter.sys.mjs",
     "LoginManagerChild.sys.mjs",

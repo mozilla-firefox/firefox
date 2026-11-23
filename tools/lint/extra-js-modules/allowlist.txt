@@ -354,7 +354,6 @@ toolkit/components/passwordmgr/LoginCSVImport.sys.mjs
 toolkit/components/passwordmgr/LoginExport.sys.mjs
 toolkit/components/passwordmgr/LoginHelper.sys.mjs
 toolkit/components/passwordmgr/LoginInfo.sys.mjs
-toolkit/components/passwordmgr/LoginManager.shared.sys.mjs
 toolkit/components/passwordmgr/LoginManager.sys.mjs
 toolkit/components/passwordmgr/LoginManagerAuthPrompter.sys.mjs
 toolkit/components/passwordmgr/LoginManagerChild.sys.mjs

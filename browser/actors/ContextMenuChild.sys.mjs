@@ -9,7 +9,8 @@ ChromeUtils.defineESModuleGetters(lazy, {
   E10SUtils: "resource://gre/modules/E10SUtils.sys.mjs",
   InlineSpellCheckerContent:
     "resource://gre/modules/InlineSpellCheckerContent.sys.mjs",
-  LoginHelper: "resource://gre/modules/LoginHelper.sys.mjs",
+  LoginHelperDOM:
+    "moz-src:///toolkit/components/passwordmgr/shared/LoginHelperDOM.sys.mjs",
   LoginManagerChild: "resource://gre/modules/LoginManagerChild.sys.mjs",
   SelectionUtils: "resource://gre/modules/SelectionUtils.sys.mjs",
   SpellCheckHelper: "resource://gre/modules/InlineSpellChecker.sys.mjs",
@@ -1117,8 +1118,8 @@ export class ContextMenuChild extends JSWindowActorChild {
         HTMLInputElement.isInstance(context.target) &&
         !context.target.disabled &&
         !context.target.readOnly &&
-        (lazy.LoginHelper.isInferredEmailField(context.target) ||
-          lazy.LoginHelper.isInferredUsernameField(context.target));
+        (lazy.LoginHelperDOM.isInferredEmailField(context.target) ||
+          lazy.LoginHelperDOM.isInferredUsernameField(context.target));
       context.isDesignMode =
         (editFlags & lazy.SpellCheckHelper.CONTENTEDITABLE) !== 0;
       context.passwordRevealed =
