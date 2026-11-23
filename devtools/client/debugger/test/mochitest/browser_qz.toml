@@ -54,6 +54,10 @@ skip-if = [
 
 ["browser_dbg-search-file.js"]
 
+["browser_dbg-service-workers-reload.js"]
+
+["browser_dbg-service-workers.js"]
+
 ["browser_dbg-settings-disable-javascript.js"]
 
 ["browser_dbg-source-pragma.js"]
@@ -96,10 +100,6 @@ fail-if = [
 ["browser_dbg-unselected-pause.js"]
 
 ["browser_dbg-watchpoints.js"]
-
-["browser_dbg-windowless-service-workers-reload.js"]
-
-["browser_dbg-windowless-service-workers.js"]
 
 ["browser_dbg-windowless-workers-early-breakpoint.js"]
 

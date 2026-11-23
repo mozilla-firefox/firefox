@@ -55,10 +55,6 @@ const compatibilityReport = {
 exports.compatibilityReport = PropTypes.shape(compatibilityReport);
 
 const runtimeDetails = {
-  // True if this runtime supports debugging service workers.
-  // This might be undefined when connecting to runtimes older than Fx 66
-  canDebugServiceWorkers: PropTypes.bool,
-
   // ClientWrapper built using a DevToolsClient for the runtime
   clientWrapper: PropTypes.instanceOf(ClientWrapper).isRequired,
 

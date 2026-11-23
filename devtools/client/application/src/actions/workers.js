@@ -7,7 +7,6 @@
 const {
   START_WORKER,
   UNREGISTER_WORKER,
-  UPDATE_CAN_DEBUG_WORKERS,
   UPDATE_WORKERS,
 } = require("resource://devtools/client/application/src/constants.js");
 
@@ -36,16 +35,8 @@ function updateWorkers(workers) {
   };
 }
 
-function updateCanDebugWorkers(canDebugWorkers) {
-  return {
-    type: UPDATE_CAN_DEBUG_WORKERS,
-    canDebugWorkers,
-  };
-}
-
 module.exports = {
   startWorker,
   unregisterWorker,
-  updateCanDebugWorkers,
   updateWorkers,
 };

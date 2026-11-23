@@ -15,7 +15,7 @@ add_task(async function () {
   await pushPref("dom.serviceWorkers.testing.enabled", true);
 
   // Use an URL with a specific port to check that Bug 1876533 is fixed
-  // We're using URL without port in other tests, like browser_dbg-windowless-service-workers-reload.js
+  // We're using URL without port in other tests, like browser_dbg-service-workers-reload.js
   const dbg = await initDebuggerWithAbsoluteURL(
     EXAMPLE_URL_WITH_PORT + "doc-service-workers.html"
   );

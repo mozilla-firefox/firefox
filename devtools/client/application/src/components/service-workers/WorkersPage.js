@@ -28,14 +28,13 @@ class WorkersPage extends PureComponent {
   static get propTypes() {
     return {
       // mapped from state
-      canDebugWorkers: PropTypes.bool.isRequired,
       domain: PropTypes.string.isRequired,
       registrations: Types.registrationArray.isRequired,
     };
   }
 
   render() {
-    const { canDebugWorkers, domain, registrations } = this.props;
+    const { domain, registrations } = this.props;
 
     // Filter out workers from other domains
     const domainWorkers = registrations.filter(
@@ -52,7 +51,6 @@ class WorkersPage extends PureComponent {
       isListEmpty
         ? RegistrationListEmpty({})
         : RegistrationList({
-            canDebugWorkers,
             registrations: domainWorkers,
           })
     );
@@ -61,7 +59,6 @@ class WorkersPage extends PureComponent {
 
 function mapStateToProps(state) {
   return {
-    canDebugWorkers: state.workers.canDebugWorkers,
     domain: state.page.domain,
     registrations: state.workers.list,
   };

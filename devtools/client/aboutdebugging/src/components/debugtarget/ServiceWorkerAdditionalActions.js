@@ -112,7 +112,6 @@ class ServiceWorkerAdditionalActions extends PureComponent {
   _renderPushButton() {
     return this._renderButton({
       className: "small-button qa-push-button",
-      disabled: !this.props.runtimeDetails.canDebugServiceWorkers,
       key: "service-worker-push-button",
       labelId: "about-debugging-worker-action-push2",
       onClick: this.push.bind(this),
@@ -122,7 +121,6 @@ class ServiceWorkerAdditionalActions extends PureComponent {
   _renderStartButton() {
     return this._renderButton({
       className: "small-button qa-start-button",
-      disabled: !this.props.runtimeDetails.canDebugServiceWorkers,
       key: "service-worker-start-button",
       labelId: "about-debugging-worker-action-start2",
       onClick: this.start.bind(this),
