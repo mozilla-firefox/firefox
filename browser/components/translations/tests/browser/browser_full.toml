@@ -105,6 +105,10 @@ skip-if = [
 
 ["browser_translations_full_page_panel_init_failure.js"]
 
+["browser_translations_full_page_panel_loading_selected_target.js"]
+
+["browser_translations_full_page_panel_loading_selected_target_app_menu.js"]
+
 ["browser_translations_full_page_panel_modify_available_language_models.js"]
 
 ["browser_translations_full_page_panel_never_translate_language.js"]

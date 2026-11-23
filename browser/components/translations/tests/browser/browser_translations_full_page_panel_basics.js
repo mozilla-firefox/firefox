@@ -4,7 +4,8 @@
 "use strict";
 
 /**
- * Tests a basic panel open, translation, and restoration to the original language.
+ * This test case ensures that a pending translation shows the panel's loading
+ * view and that restoring the page returns its text to the original language.
  */
 add_task(async function test_translations_panel_basics() {
   const { cleanup, resolveDownloads, runInPage } = await loadTestPage({

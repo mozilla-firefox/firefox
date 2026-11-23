@@ -12,6 +12,21 @@ const { LanguageDetector: PageLanguageDetector } = ChromeUtils.importESModule(
   "moz-src:///toolkit/components/translations/LanguageDetector.sys.mjs"
 );
 
+add_setup(async function () {
+  // When these browser tests run in chaos mode, such as for a --verify test run, I have found that
+  // the browser spends an inordinate amount of time handling continuous animations, such as for the
+  // loading spinner on the Translations URL-bar button. This can cause tests to time out in the worst
+  // case, and certainly makes them all run longer than they otherwise should in the best case.
+  //
+  // Reduced motion limits that cost in chaos-mode runs while leaving animations fully enabled on normal
+  // runs, including the non-chaos --verify passes.
+  if (parseInt(Services.env.get("MOZ_CHAOSMODE"), 16)) {
+    await SpecialPowers.pushPrefEnv({
+      set: [["ui.prefersReducedMotion", 1]],
+    });
+  }
+});
+
 /**
  * Converts milliseconds to seconds.
  *

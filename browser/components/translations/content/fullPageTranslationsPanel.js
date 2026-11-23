@@ -857,16 +857,24 @@ var FullPageTranslationsPanel = new (class {
   }
 
   /**
-   * Configures the panel for the user to reset the page after it has been translated.
+   * Shows the requested translation while loading, or offers retranslation once ready.
    *
    * @param {LanguagePair} languagePair
+   * @returns {Promise<void>}
    */
-  async #showRevisitView({ sourceLanguage, targetLanguage, sourceVariant }) {
+  async #showRevisitView({
+    sourceLanguage,
+    targetLanguage,
+    sourceVariant,
+    targetVariant,
+  }) {
     const { fromMenuList, toMenuList, intro } = this.elements;
+    const actor = TranslationsParent.getTranslationsActor(
+      gBrowser.selectedBrowser
+    );
+
     if (!this.#isShowingDefaultView()) {
-      await this.#showDefaultView(
-        TranslationsParent.getTranslationsActor(gBrowser.selectedBrowser)
-      );
+      await this.#showDefaultView(actor);
     }
     intro.hidden = true;
     if (sourceVariant) {
@@ -874,14 +882,23 @@ var FullPageTranslationsPanel = new (class {
     } else {
       fromMenuList.value = sourceLanguage;
     }
-    toMenuList.value = await TranslationsParent.getTopPreferredSupportedToLang({
-      excludeLangTags: [
-        // Avoid offering to translate into the original source language.
-        sourceLanguage,
-        // Avoid offering to translate into current active target language.
-        targetLanguage,
-      ],
-    });
+
+    if (actor.languageState.isEngineReady) {
+      toMenuList.value =
+        await TranslationsParent.getTopPreferredSupportedToLang({
+          excludeLangTags: [
+            // Avoid offering to translate into the original source language.
+            sourceLanguage,
+            // Avoid offering to translate into current active target language.
+            targetLanguage,
+          ],
+        });
+    } else {
+      toMenuList.value = targetVariant
+        ? `${targetLanguage},${targetVariant}`
+        : targetLanguage;
+    }
+
     this.onChangeLanguages();
   }
 

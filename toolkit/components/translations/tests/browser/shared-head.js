@@ -2650,6 +2650,7 @@ async function closeAllOpenPanelsAndMenus(win) {
   await closeSelectPanelSettingsMenuIfOpen(win);
   await closeSelectTranslationsPanelIfOpen(win);
   await closeContextMenuIfOpen(win);
+  await closePopupIfOpen("appMenu-popup", win);
 }
 
 /**
