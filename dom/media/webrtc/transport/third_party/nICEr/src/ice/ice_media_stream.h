@@ -112,7 +112,7 @@ struct nr_ice_media_stream_ {
 typedef STAILQ_HEAD(nr_ice_media_stream_head_,nr_ice_media_stream_) nr_ice_media_stream_head;
 
 int nr_ice_media_stream_create(struct nr_ice_ctx_ *ctx,const char *label,const char *ufrag,const char *pwd,int components, nr_ice_media_stream **streamp);
-int nr_ice_media_stream_destroy(nr_ice_media_stream **streamp);
+void nr_ice_media_stream_destroy(nr_ice_media_stream **streamp);
 int nr_ice_media_stream_initialize(struct nr_ice_ctx_ *ctx, nr_ice_media_stream *stream);
 void nr_ice_media_stream_defer_gathering_events(nr_ice_media_stream *stream);
 int nr_ice_media_stream_flush_gathering_events(nr_ice_media_stream *stream);

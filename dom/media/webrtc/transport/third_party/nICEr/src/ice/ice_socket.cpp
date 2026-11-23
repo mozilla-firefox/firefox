@@ -252,13 +252,13 @@ int nr_ice_socket_create(nr_ice_ctx *ctx,nr_ice_component *comp, nr_socket *nsoc
   }
 
 
-int nr_ice_socket_destroy(nr_ice_socket **isockp)
+void nr_ice_socket_destroy(nr_ice_socket **isockp)
   {
     nr_ice_stun_ctx *s1,*s2;
     nr_ice_socket *isock;
 
     if(!isockp || !*isockp)
-      return(0);
+      return;
 
     isock=*isockp;
     *isockp=0;
@@ -276,8 +276,6 @@ int nr_ice_socket_destroy(nr_ice_socket **isockp)
     }
 
     free(isock);
-
-    return(0);
   }
 
 int nr_ice_socket_close(nr_ice_socket *isock)

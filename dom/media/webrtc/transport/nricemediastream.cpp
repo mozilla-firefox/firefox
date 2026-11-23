@@ -803,11 +803,7 @@ void NrIceMediaStream::Close() {
 
 void NrIceMediaStream::CloseStream(nr_ice_media_stream** stream) {
   if (*stream) {
-    int r = nr_ice_remove_media_stream(ctx_->ctx(), stream);
-    if (r) {
-      MOZ_ASSERT(false, "Failed to remove stream");
-      MOZ_MTLOG(ML_ERROR, "Failed to remove stream, error=" << r);
-    }
+    nr_ice_remove_media_stream(ctx_->ctx(), stream);
     *stream = nullptr;
   }
 }

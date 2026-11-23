@@ -123,7 +123,7 @@ int nr_ice_candidate_create(struct nr_ice_ctx_ *ctx,nr_ice_component *component,
 int nr_ice_candidate_initialize(nr_ice_candidate *cand, NR_async_cb ready_cb, void *cb_arg);
 void nr_ice_candidate_compute_codeword(nr_ice_candidate *cand);
 int nr_ice_candidate_process_stun(nr_ice_candidate *cand, UCHAR *msg, int len, nr_transport_addr *faddr);
-int nr_ice_candidate_destroy(nr_ice_candidate **candp);
+void nr_ice_candidate_destroy(nr_ice_candidate **candp);
 void nr_ice_candidate_stop_gathering(nr_ice_candidate *cand);
 int nr_ice_format_candidate_attribute(nr_ice_candidate *cand, char *attr, int maxlen, int obfuscate_raddr);
 int nr_ice_peer_candidate_from_attribute(nr_ice_ctx *ctx,const char *attr,nr_ice_media_stream *stream,const char* resolved_address,nr_ice_candidate **candp);

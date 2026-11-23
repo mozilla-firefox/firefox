@@ -79,7 +79,7 @@ typedef struct nr_ice_socket_ {
 typedef STAILQ_HEAD(nr_ice_socket_head_,nr_ice_socket_) nr_ice_socket_head;
 
 int nr_ice_socket_create(struct nr_ice_ctx_ *ctx, struct nr_ice_component_ *comp, nr_socket *nsock, int type, nr_ice_socket **sockp);
-int nr_ice_socket_destroy(nr_ice_socket **isock);
+void nr_ice_socket_destroy(nr_ice_socket **isock);
 int nr_ice_socket_close(nr_ice_socket *isock);
 int nr_ice_socket_register_stun_client(nr_ice_socket *sock, nr_stun_client_ctx *srv,void **handle);
 int nr_ice_socket_register_stun_server(nr_ice_socket *sock, nr_stun_server_ctx *srv,void **handle);

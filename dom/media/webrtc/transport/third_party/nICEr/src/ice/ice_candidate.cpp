@@ -309,12 +309,12 @@ static void nr_ice_candidate_mark_done(nr_ice_candidate *cand, int state)
     }
   }
 
-int nr_ice_candidate_destroy(nr_ice_candidate **candp)
+void nr_ice_candidate_destroy(nr_ice_candidate **candp)
   {
     nr_ice_candidate *cand=0;
 
     if(!candp || !*candp)
-      return(0);
+      return;
 
     cand=*candp;
 
@@ -361,8 +361,6 @@ int nr_ice_candidate_destroy(nr_ice_candidate **candp)
     free(cand->raw_raddr);
     free(cand->label);
     free(cand);
-
-    return(0);
   }
 
 void nr_ice_candidate_stop_gathering(nr_ice_candidate *cand)

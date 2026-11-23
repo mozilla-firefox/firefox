@@ -132,7 +132,7 @@ int nr_ice_component_create(nr_ice_media_stream *stream, int component_id, nr_ic
     return(_status);
   }
 
-int nr_ice_component_destroy(nr_ice_component **componentp)
+void nr_ice_component_destroy(nr_ice_component **componentp)
   {
     nr_ice_component *component;
     nr_ice_socket *s1,*s2;
@@ -140,7 +140,7 @@ int nr_ice_component_destroy(nr_ice_component **componentp)
     nr_ice_pre_answer_request *r1,*r2;
 
     if(!componentp || !*componentp)
-      return(0);
+      return;
 
     component=*componentp;
     *componentp=0;
@@ -174,7 +174,6 @@ int nr_ice_component_destroy(nr_ice_component **componentp)
     }
 
     free(component);
-    return(0);
   }
 
 static int nr_ice_component_create_stun_server_ctx(nr_ice_component *component, nr_ice_socket *isock, nr_transport_addr *addr, char *lufrag, Data *pwd)
