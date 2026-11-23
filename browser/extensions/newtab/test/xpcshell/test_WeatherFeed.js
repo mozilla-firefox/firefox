@@ -1105,3 +1105,29 @@ add_task(async function test_onPrefChanged_widgets_weather_enabled() {
 
   sandbox.restore();
 });
+
+add_task(async function test_optin_regions_in_default_region_weather_config() {
+  const { WEATHER_OPTIN_REGIONS } = ChromeUtils.importESModule(
+    "resource://newtab/lib/ActivityStream.sys.mjs"
+  );
+  const defaultRegions = Services.prefs
+    .getDefaultBranch(null)
+    .getStringPref(
+      "browser.newtabpage.activity-stream.discoverystream.region-weather-config"
+    )
+    .split(",")
+    .map(region => region.trim());
+
+  // Opt-in regions where Weather is not yet enabled by default.
+  const NOT_ENABLED_BY_DEFAULT = ["LU"];
+
+  for (const region of WEATHER_OPTIN_REGIONS) {
+    if (NOT_ENABLED_BY_DEFAULT.includes(region)) {
+      continue;
+    }
+    Assert.ok(
+      defaultRegions.includes(region),
+      `Opt-in region ${region} is in the default region-weather-config pref`
+    );
+  }
+});
