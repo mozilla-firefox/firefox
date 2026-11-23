@@ -568,6 +568,9 @@ class nsWindow : public nsIWidget {
 
   virtual bool IsFullscreenSupported() { return true; };
 
+  virtual void StartWindowDrag(int aX, int aY, int aTime);
+  virtual void ResizeWindowDrag(GdkWindowEdge aEdge, GdkEventButton* aEvent);
+
   // event handling code
   void DispatchActivateEvent(void);
   void DispatchDeactivateEvent(void);

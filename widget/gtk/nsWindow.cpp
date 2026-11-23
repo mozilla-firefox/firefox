@@ -2683,6 +2683,15 @@ void nsWindow::EmulateResizeDrag(GdkEventMotion* aEvent) {
   gtk_window_resize(GTK_WINDOW(mShell), size.width, size.height);
 }
 
+void nsWindow::StartWindowDrag(int aX, int aY, int aTime) {
+  gdk_window_begin_move_drag(GetToplevelGdkWindow(), 1, aX, aY, aTime);
+}
+
+void nsWindow::ResizeWindowDrag(GdkWindowEdge aEdge, GdkEventButton* aEvent) {
+  gdk_window_begin_resize_drag(GetToplevelGdkWindow(), aEdge, aEvent->button,
+                               aEvent->x_root, aEvent->y_root, aEvent->time);
+}
+
 void nsWindow::OnMotionNotifyEvent(GdkEventMotion* aEvent) {
   mLastMouseCoordinates.Set(aEvent);
 
@@ -2719,17 +2728,7 @@ void nsWindow::OnMotionNotifyEvent(GdkEventMotion* aEvent) {
 #endif
 
     if (dragWindow) {
-#ifdef MOZ_WAYLAND
-      if (AsWaylandToplevel() && AsWaylandToplevel()->PIPMove()) {
-        // The ungrab is needed because the compositor won't send a button
-        // release event. GDK may get stuck thinking that the implicit grab is
-        // still active.
-        GdkSeatUngrab(GdkDeviceGetSeat(GdkGetPointer()));
-        return;
-      }
-#endif
-      gdk_window_begin_move_drag(dragWindow, 1, aEvent->x_root, aEvent->y_root,
-                                 aEvent->time);
+      StartWindowDrag(aEvent->x_root, aEvent->y_root, aEvent->time);
       return;
     }
   }
@@ -3022,17 +3021,7 @@ void nsWindow::OnButtonPressEvent(GdkEventButton* aEvent) {
     if (mAspectResizer) {
       return;
     }
-#ifdef MOZ_WAYLAND
-    if (AsWaylandToplevel() && AsWaylandToplevel()->PIPResize(*edge)) {
-      // The ungrab is needed because the compositor won't send a button release
-      // event. GDK may get stuck thinking that the implicit grab is still
-      // active.
-      GdkSeatUngrab(GdkDeviceGetSeat(GdkGetPointer()));
-      return;
-    }
-#endif
-    gdk_window_begin_resize_drag(GetToplevelGdkWindow(), *edge, aEvent->button,
-                                 aEvent->x_root, aEvent->y_root, aEvent->time);
+    ResizeWindowDrag(*edge, aEvent);
     return;
   }
 
@@ -4094,23 +4083,11 @@ gboolean nsWindow::OnTouchEvent(GdkEventTouch* aEvent) {
       if (mWindowShouldStartDragging &&
           is_drag_threshold_exceeded((GdkEvent*)aEvent)) {
         mWindowShouldStartDragging = false;
-        if (auto* topLevel = GetToplevelGdkWindow()) {
-          LOG("  start window dragging window\n");
-
-          bool moved = false;
-#ifdef MOZ_WAYLAND
-          if (AsWaylandToplevel()) {
-            moved = AsWaylandToplevel()->PIPMove();
-          }
-#endif
-          if (!moved) {
-            gdk_window_begin_move_drag(topLevel, 1, aEvent->x_root,
-                                       aEvent->y_root, aEvent->time);
-          }
-          // Cancel the event sequence. gdk will steal all subsequent events
-          // (including TOUCH_END).
-          msg = eTouchCancel;
-        }
+        LOG("  start window dragging window\n");
+        StartWindowDrag(aEvent->x_root, aEvent->y_root, aEvent->time);
+        // Cancel the event sequence. gdk will steal all subsequent events
+        // (including TOUCH_END).
+        msg = eTouchCancel;
       }
       break;
     case GDK_TOUCH_END:

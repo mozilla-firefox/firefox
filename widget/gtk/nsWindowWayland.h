@@ -107,9 +107,6 @@ class nsWindowWaylandToplevel : public nsWindowWayland {
   RefPtr<mozilla::VsyncDispatcher> GetVsyncDispatcher() override;
 
   bool IsNativePipWindow() const;
-  virtual bool PIPMove() = 0;
-  virtual bool PIPResize(GdkWindowEdge aEdge) = 0;
-  virtual void ClearPipResources() = 0;
 
   // The popup chain is rooted at the toplevel window itself, so the first
   // popup attached to us is simply our next link.

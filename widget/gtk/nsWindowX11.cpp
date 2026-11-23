@@ -409,4 +409,3 @@ bool nsWindowX11::IsFullscreenSupported() {
   GdkAtom atom = gdk_atom_intern("_NET_WM_STATE_FULLSCREEN", FALSE);
   return gdk_x11_screen_supports_net_wm_hint(screen, atom);
 }
-

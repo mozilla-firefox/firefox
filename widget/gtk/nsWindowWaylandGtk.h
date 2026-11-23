@@ -24,12 +24,6 @@ class nsWindowWaylandToplevelGtk final : public nsWindowWaylandToplevel {
   void CreateNative() override;
   void DestroyNative() override;
 
-  bool PIPMove() override;
-  bool PIPResize(GdkWindowEdge aEdge) override;
-
-  void MaybeCreatePipResources();
-  void ClearPipResources() override;
-
   bool ApplyEnterLeaveMutterWorkaround() override;
 
  protected:
@@ -43,6 +37,14 @@ class nsWindowWaylandToplevelGtk final : public nsWindowWaylandToplevel {
   void HideAndRemoveAppPopups();
 
   bool IsFullscreenSupported() override;
+
+  void StartWindowDrag(int aX, int aY, int aTime) override;
+  void ResizeWindowDrag(GdkWindowEdge aEdge, GdkEventButton* aEvent) override;
+
+  void MaybeCreatePipResources();
+  void ClearPipResources();
+  bool MovePIP();
+  bool ResizePIP(GdkWindowEdge aEdge);
 
   bool CreateRestoreSession(bool aRestoreWindow) override;
 
