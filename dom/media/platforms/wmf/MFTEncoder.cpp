@@ -118,6 +118,10 @@ DEFINE_CODECAPI_GUID(AVEncAdaptiveMode, "4419b185-da1f-4f53-bc76-097d0c1efb1e",
 namespace mozilla {
 extern LazyLogModule sPEMLog;
 
+// Some hardware MFTs hang when they are activated or shut down concurrently on
+// several threads.
+static StaticMutex sActivationMutex;
+
 static const char* ErrorStr(HRESULT hr) {
   switch (hr) {
     case S_OK:
@@ -283,6 +287,7 @@ HRESULT MFTEncoder::Factory::Shutdown() {
                  MFTEncoder::Factory::EnumValueToString(mProvider),
                  mName.get());
     // Release MFT resources via activation object.
+    StaticMutexAutoLock lock(sActivationMutex);
     hr = mActivate->ShutdownObject();
     if (FAILED(hr)) {
       MFT_ENC_LOGE("Failed to shutdown MFT: {}", ErrorStr(hr));
@@ -520,9 +525,13 @@ HRESULT MFTEncoder::Create(const GUID& aSubtype, const gfx::IntSize& aFrameSize,
     }
 
     RefPtr<IMFTransform> encoder;
-    // Create the MFT activation object.
-    HRESULT hr = f.mActivate->ActivateObject(
-        IID_PPV_ARGS(static_cast<IMFTransform**>(getter_AddRefs(encoder))));
+    HRESULT hr;
+    {
+      // Create the MFT activation object.
+      StaticMutexAutoLock lock(sActivationMutex);
+      hr = f.mActivate->ActivateObject(
+          IID_PPV_ARGS(static_cast<IMFTransform**>(getter_AddRefs(encoder))));
+    }
     if (SUCCEEDED(hr) && encoder) {
       MFT_ENC_LOGD("{} for {} is activated", f.mName.get(), CodecStr(aSubtype));
       mFactory.emplace(std::move(f));
