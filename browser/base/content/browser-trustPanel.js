@@ -298,11 +298,26 @@ class TrustPanel {
     return UrlbarPrefs.get("trustPanel.featureGate");
   }
 
+  /**
+   * Whether the tracker count feature is on for this window, regardless of
+   * whether the current site has ETP turned off. Visit bookkeeping
+   * (#continuesSiteVisit and friends) uses this so that visits keep being
+   * tracked while on allow-listed sites; showing the count uses
+   * #trackerCountActive.
+   */
   get #trackerCountEnabled() {
     return (
       UrlbarPrefs.get("trackerCountFeatureGate") &&
       UrlbarPrefs.get("trackerCount.enabled")
     );
+  }
+
+  /**
+   * Whether the tracker count should be shown for the current page, i.e. the
+   * feature is on and the site doesn't have ETP turned off.
+   */
+  get #trackerCountActive() {
+    return this.#trackerCountEnabled && this.#trackingProtectionEnabled;
   }
 
   handleProtectionsButtonEvent(event) {
@@ -732,7 +747,7 @@ class TrustPanel {
       targetClasses.add("entry-page");
     }
     // Added after "entry-page" so the tracker-count pill animation stays in sync.
-    if (this.#trackerCountEnabled && this.#getCumulativeTrackerCount() > 0) {
+    if (this.#trackerCountActive && this.#getCumulativeTrackerCount() > 0) {
       targetClasses.add("has-blocked-trackers");
     }
 
@@ -744,7 +759,7 @@ class TrustPanel {
       targetClasses.has("secure") &&
       !targetClasses.has("breached") &&
       !targetClasses.has("warning") &&
-      this.#trackerCountEnabled
+      this.#trackerCountActive
     ) {
       targetClasses = new Set(["scanning"]);
     }
@@ -949,7 +964,9 @@ class TrustPanel {
   }
 
   #updateToolbarTrackerCount() {
-    if (!this.#trackerCountEnabled) {
+    if (!this.#trackerCountActive) {
+      this.#resetTrackerCount();
+      this.#updateUrlbarIcon();
       return;
     }
     let count = this.#getCumulativeTrackerCount();
@@ -1399,6 +1416,9 @@ class TrustPanel {
     this.#closingReason = CLOSING_REASONS.ETP_TOGGLED;
     PanelMultiView.hidePopup(this.#popup);
     window.BrowserCommands.reload();
+    // Disabling ETP also disables the tracker count,
+    // so we should treat that as a toggle event:
+    this.#onTrackerCountToggle();
   }
 
   #toggleTrackerCount() {
@@ -1422,14 +1442,30 @@ class TrustPanel {
   }
 
   #onTrackerCountToggle() {
-    if (this.#trackerCountEnabled) {
-      this.#updateToolbarTrackerCount();
+    this.#updateToolbarTrackerCount();
+  }
+
+  #resetTrackerCount() {
+    const icon = document.getElementById("trust-icon-container");
+    const trackerCountShortform = document.getElementById(
+      "trust-icon-tracker-count-shortform"
+    );
+    if (
+      !icon.classList.contains("has-blocked-trackers") &&
+      Number(trackerCountShortform?.textContent ?? 0) === 0
+    ) {
       return;
     }
-    document.l10n.setArgs(document.getElementById("trust-icon-container"), {
-      count: 0,
-    });
-    this.#updateUrlbarIcon();
+    document.l10n.setArgs(icon, { count: 0 });
+    const trackerCountLongform = document.getElementById(
+      "trust-icon-tracker-count-longform"
+    );
+    if (trackerCountLongform) {
+      document.l10n.setArgs(trackerCountLongform, { count: 0 });
+    }
+    if (trackerCountShortform) {
+      trackerCountShortform.textContent = 0;
+    }
   }
 
   #isHttpsOnlyModeActive(isWindowPrivate) {
