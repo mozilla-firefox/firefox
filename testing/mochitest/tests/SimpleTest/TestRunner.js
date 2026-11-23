@@ -576,6 +576,11 @@ async function _runNextTest() {
         set: [["dom.security.https_first", false]],
       });
     }
+    // Harness navigations of the test frame count against
+    // dom.navigation.navigationRateLimit; give each test the full budget.
+    SpecialPowers.wrap(
+      $("testframe")
+    ).browsingContext.resetNavigationRateLimit();
     TestRunner._makeIframe(url, 0);
   } else {
     $("current-test").innerHTML = "<b>Finished</b>";
