@@ -42,9 +42,9 @@ const SMART_FORM_FILL_REMOTE_SETTINGS_RECORDS = [
     parameters: {},
     modules: Object.keys(SMART_FORM_FILL_PROMPT_MODULES).map(name => ({
       name,
-      version: "v1.0",
+      version: "v2.0",
     })),
-    version: "v1.0",
+    version: "v2.0",
     is_default: true,
   },
   ...Object.entries(SMART_FORM_FILL_PROMPT_MODULES).map(
@@ -54,7 +54,7 @@ const SMART_FORM_FILL_REMOTE_SETTINGS_RECORDS = [
       module,
       model: "test-model",
       prompts,
-      version: "v1.0",
+      version: "v2.0",
     })
   ),
 ];

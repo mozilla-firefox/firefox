@@ -438,6 +438,7 @@ async function generateFormValuesBatch(
   const userPrompt = renderPrompt(userPromptTemplate, {
     url,
     title: request.page.title.substring(0, TITLE_CHAR_LIMIT),
+    locale: Services.locale.appLocaleAsBCP47,
     pageText: request.context.pageText ?? "",
     memories: JSON.stringify(request.context.memories ?? []),
     pageContext: JSON.stringify(relevantTabs ?? []),
@@ -595,6 +596,7 @@ export const SmartFormFillModel = {
     const userPrompt = renderPrompt(userPromptTemplate, {
       url,
       title: request.page.title.substring(0, TITLE_CHAR_LIMIT),
+      locale: Services.locale.appLocaleAsBCP47,
       fields: JSON.stringify(request.fields),
       tabs: JSON.stringify(tabs),
       max_selected_tabs: request.maxSelectedTabs,

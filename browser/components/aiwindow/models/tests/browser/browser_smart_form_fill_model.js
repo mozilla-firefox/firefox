@@ -23,28 +23,29 @@ const PURPOSE = "smart-form-fill";
 const VALUE_GENERATION_MODULES = [
   {
     feature: MODEL_FEATURES.SMART_FORM_FILL,
-    id: "smart-form-fill--value-generation-system-instructions--generic--v1",
+    id: "smart-form-fill--value-generation-system-instructions--generic--v2",
     kind: "module",
     model: "generic",
     module: "value-generation-system-instructions",
     prompts: "You help a user fill out web form fields.",
-    version: "1.0",
+    version: "2.0",
   },
   {
     feature: MODEL_FEATURES.SMART_FORM_FILL,
-    id: "smart-form-fill--value-generation-user-data--generic--v1",
+    id: "smart-form-fill--value-generation-user-data--generic--v2",
     kind: "module",
     model: "generic",
     module: "value-generation-user-data",
     prompts:
       "Current page title:\n{title}\n\n" +
       "Current page url:\n{url}\n\n" +
+      "User's browser locale:\n{locale}\n\n" +
       "Current page text:\n{pageText}\n\n" +
       "Relevant memories about the user:\n{memories}\n\n" +
       "Relevant open tabs:\n{pageContext}\n\n" +
       "Available candidate tokens:\n{candidateTokens}\n\n" +
       "Fields to fill:\n{fields}",
-    version: "1.0",
+    version: "2.0",
   },
 ];
 
@@ -272,6 +273,7 @@ describe("SmartFormFillModel", () => {
           "THE USER'S OTHER OPEN TABS (title and URL only)\n" +
           `${JSON.stringify(shapedTabs)}\n\n` +
           "maxSelectedTabs: 3\n\n" +
+          `userLocale: ${Services.locale.appLocaleAsBCP47}\n\n` +
           "Which of these tabs could help fill this form? " +
           "Include every tab that plausibly could.",
       });
@@ -366,6 +368,7 @@ describe("SmartFormFillModel", () => {
         content:
           `Current page title:\n${pageTitle.substring(0, 100)}\n\n` +
           "Current page url:\n§url_token: EXAMPLE_COM_JOBS_GENERATE_1§\n\n" +
+          `User's browser locale:\n${Services.locale.appLocaleAsBCP47}\n\n` +
           "Current page text:\nApply for the example role.\n\n" +
           "Relevant memories about the user:\n[]\n\n" +
           `Relevant open tabs:\n${JSON.stringify(shapedRelevantTabs)}\n\n` +
