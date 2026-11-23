@@ -93,6 +93,12 @@ const DIR_TRASH = "trash";
 
 const FILE_XPI_STATES = "addonStartup.json.lz4";
 
+const IGNORE_ADDON_NSIFILE_ERROR_CODES = new Set([
+  Cr.NS_ERROR_FILE_ACCESS_DENIED,
+  Cr.NS_ERROR_FILE_NOT_FOUND,
+  Cr.NS_ERROR_FILE_UNRECOGNIZED_PATH,
+]);
+
 const KEY_PROFILEDIR = "ProfD";
 const KEY_ADDON_APP_DIR = "XREAddonAppDir";
 const KEY_APP_DISTRIBUTION = "XREAppDist";
@@ -1439,17 +1445,34 @@ class WinRegLocation extends XPIStateLocation {
       return addons;
     }
 
+    function readAddon(id) {
+      let value;
+      try {
+        value = key.readStringValue(id);
+        let file = new nsIFile(value);
+        if (!file.exists()) {
+          logger.warn(`Ignoring missing add-on in ${file.path}`);
+          return;
+        }
+        addons.set(id, file);
+      } catch (e) {
+        // initWithPath throws NS_ERROR_FILE_UNRECOGNIZED_PATH for relative paths
+        // or unexpanded %VAR%, and NS_ERROR_FILE_ACCESS_DENIED for blocked UNC paths.
+        if (!IGNORE_ADDON_NSIFILE_ERROR_CODES.has(e.result)) {
+          throw e;
+        }
+        logger.warn(
+          `Ignoring WinReg-registered add-on entry ${id} with path "${value}"`,
+          e
+        );
+      }
+    }
+
     try {
       let count = key.valueCount;
       for (let i = 0; i < count; ++i) {
         let id = key.getValueName(i);
-        let file = new nsIFile(key.readStringValue(id));
-        if (!file.exists()) {
-          logger.warn(`Ignoring missing add-on in ${file.path}`);
-          continue;
-        }
-
-        addons.set(id, file);
+        readAddon(id);
       }
     } finally {
       key.close();

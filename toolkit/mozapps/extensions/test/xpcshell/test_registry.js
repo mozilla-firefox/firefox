@@ -158,3 +158,76 @@ add_task(async function test_4() {
   equal(a1, null);
   notEqual(a2, null);
 });
+
+// Tests that registry entries with unrecognized paths are ignored
+add_task(async function test_unrecognized_paths() {
+  const ID3 = "addon3@tests.mozilla.org";
+  let xpi3 = await createTempWebExtensionFile({
+    manifest: { browser_specific_settings: { gecko: { id: ID3 } } },
+  });
+
+  const KEY = "SOFTWARE\\Mozilla\\XPCShell\\Extensions";
+  const { ROOT_KEY_CURRENT_USER, ROOT_KEY_LOCAL_MACHINE } = Ci.nsIWindowsRegKey;
+  const entries = [
+    [
+      ROOT_KEY_LOCAL_MACHINE,
+      "relative-path@tests.mozilla.org",
+      "extensions\\relative.xpi",
+    ],
+    [
+      ROOT_KEY_CURRENT_USER,
+      "unexpanded-var@tests.mozilla.org",
+      "%APPDATA%\\unexpanded.xpi",
+    ],
+    [ROOT_KEY_LOCAL_MACHINE, ID3, xpi3.path],
+  ];
+  const removeEntries = () => {
+    for (let [root, id] of entries) {
+      registry.setValue(root, KEY, id, null);
+    }
+  };
+  registerCleanupFunction(removeEntries);
+
+  for (let [root, id, path] of entries) {
+    registry.setValue(root, KEY, id, path);
+  }
+
+  const { messages } = await AddonTestUtils.promiseConsoleOutput(() =>
+    promiseRestartManager()
+  );
+
+  const expectedWarning = (id, path) => ({
+    message: new RegExp(
+      `Ignoring WinReg-registered add-on entry ${RegExp.escape(id)} with path "${RegExp.escape(path)}".*NS_ERROR_FILE_UNRECOGNIZED_PATH`
+    ),
+  });
+  AddonTestUtils.checkMessages(
+    messages,
+    {
+      expected: [
+        expectedWarning(
+          "unexpanded-var@tests.mozilla.org",
+          "%APPDATA%\\unexpanded.xpi"
+        ),
+        expectedWarning(
+          "relative-path@tests.mozilla.org",
+          "extensions\\relative.xpi"
+        ),
+      ],
+    },
+    "Got the expected warnings for the ignored registry entries"
+  );
+
+  let [relativeAddon, unexpandedAddon, addon] =
+    await AddonManager.getAddonsByIDs(entries.map(([, id]) => id));
+  equal(relativeAddon, null, "Relative path registry entry is ignored");
+  equal(unexpandedAddon, null, "Unexpanded %VAR% registry entry is ignored");
+  notEqual(addon, null);
+  ok(addon.isActive, "Valid registry add-on is still installed");
+
+  removeEntries();
+  await promiseRestartManager();
+
+  addon = await AddonManager.getAddonByID(ID3);
+  equal(addon, null, "Registry add-on is uninstalled once removed");
+});
