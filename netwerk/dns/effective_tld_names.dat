@@ -5,8 +5,8 @@
 // Please pull this list from, and only from https://publicsuffix.org/list/public_suffix_list.dat,
 // rather than any other VCS sites. Pulling from any other URL is not guaranteed to be supported.
 
-// VERSION: 2026-11-15_20-28-43_UTC
-// COMMIT: fd22c6c8b3fd7e854c1eff2194cfd4ebc9854b88
+// VERSION: 2026-11-21_04-33-45_UTC
+// COMMIT: 87a2c1b8de5886a133ff4da21b2aa6fec88d8739
 
 // Instructions on pulling and using this list can be found at https://publicsuffix.org/list/.
 
@@ -6817,7 +6817,7 @@ org.zw
 
 // newGTLDs
 
-// List of new gTLDs imported from https://www.icann.org/resources/registries/gtlds/v2/gtlds.json on 2026-10-30T19:51:02Z
+// List of new gTLDs imported from https://www.icann.org/resources/registries/gtlds/v2/gtlds.json on 2026-11-20T22:06:55Z
 // This list is auto-generated, don't edit it manually.
 // aaa : American Automobile Association, Inc.
 // https://www.iana.org/domains/root/db/aaa.html
@@ -10195,7 +10195,7 @@ soy
 // https://www.iana.org/domains/root/db/spa.html
 spa
 
-// space : Radix Technologies Inc SEZC
+// space : Squarespace Registry LLC
 // https://www.iana.org/domains/root/db/space.html
 space
 
@@ -10806,10 +10806,6 @@ xbox
 // xerox : Xerox DNHC LLC
 // https://www.iana.org/domains/root/db/xerox.html
 xerox
-
-// xihuan : Beijing Qihu Keji Co., Ltd.
-// https://www.iana.org/domains/root/db/xihuan.html
-xihuan
 
 // xin : Elegant Leader Limited
 // https://www.iana.org/domains/root/db/xin.html
@@ -12881,6 +12877,10 @@ site.hosting-cluster.nl
 // Submitted by Contentful Developer Experience Team <prd-ecosystem-dx@contentful.com>
 ctfcloud.net
 
+// Converge AI Pte. Ltd. : https://converge.ai
+// Submitted by Tyler <support@enter.pro>
+prod.enter.pro
+
 // Convex : https://convex.dev/
 // Submitted by James Cowling <security@convex.dev>
 convex.app
@@ -13810,6 +13810,12 @@ freeboxos.fr
 // Submitted by Daniel Stone <daniel@fooishbar.org>
 freedesktop.org
 
+// FreeDns : https://freedns.my
+// Submitted by FreeDns Team <support@freedns.my>
+pvf.cc
+kz.ci
+xyz.ci
+
 // freemyip.com : https://freemyip.com
 // Submitted by Cadence <contact@freemyip.com>
 freemyip.com
@@ -13859,6 +13865,11 @@ futuremailing.at
 // Submitted by Harry Brundage <security@gadget.dev>
 gadget.app
 gadget.host
+
+// Gcore : https://gcore.com/
+// Submitted by Maryia Miskevich <fastedge@gcore.com>
+fastedge.app
+gcorecdn.com
 
 // GDS : https://www.gov.uk/service-manual/technology/managing-domain-names
 // Submitted by Stephen Ford <hostmaster@digital.cabinet-office.gov.uk>
@@ -14542,6 +14553,10 @@ kiloapps.io
 kinghost.net
 uni5.net
 
+// Kliv : https://kliv.dev
+// Submitted by Anders Olsson <security@kliv.dev>
+kliv.site
+
 // KoobinEvent, SL : https://www.koobin.com
 // Submitted by Iván Oliva <ivan.oliva@koobin.com>
 koobin.events
@@ -14746,6 +14761,11 @@ magicpatternsapp.com
 // Mail.Ru Group : https://hb.cldmail.ru
 // Submitted by Ilya Zaretskiy <zaretskiy@corp.mail.ru>
 hb.cldmail.ru
+
+// MailerLite : https://www.mailerlite.com
+// Submitted by Bob Gordon <public-suffix-list@mailerlite.com>
+mailerpage.io
+subscribepage.io
 
 // MathWorks : https://www.mathworks.com/
 // Submitted by Emily Reed <psl-maintainers@groups.mathworks.com>
@@ -15110,6 +15130,10 @@ nimsite.uk
 // Ninjaneer Media : https://ninjaneer.au
 // Submitted by the Ninjaneer Media team <admin@ninjaneer.au>
 ninjaneer-sites.com
+
+// Nippy : https://nippy.host/
+// Submitted by Nippy Support <support@nippy.host>
+nippy.site
 
 // No-IP.com : https://noip.com/
 // Submitted by Deven Reza <publicsuffixlist@noip.com>
@@ -15499,6 +15523,10 @@ pstmn.io
 mock.pstmn.io
 httpbin.org
 
+// PrairieLearn, Inc. : https://www.prairielearn.com
+// Submitted by PrairieLearn, Inc. <security@prairielearn.com>
+*.prairielearn-user-content.com
+
 // prequalifyme.today : https://prequalifyme.today
 // Submitted by DeepakTiwari deepak@ivylead.io
 prequalifyme.today
@@ -15506,6 +15534,14 @@ prequalifyme.today
 // prgmr.com : https://prgmr.com/
 // Submitted by Sarah Newman <owner@prgmr.com>
 xen.prgmr.com
+
+// PrimeLink Limited: https://www.nic.uk.cc/
+// Submitted by PrimeLink Developer <support@nic.uk.cc>
+ec.cc
+eu.cc
+gu.cc
+uk.cc
+us.cc
 
 // priv.at : http://www.nic.priv.at/
 // Submitted by registry <lendl@nic.at>
@@ -16061,6 +16097,10 @@ mafelo.net
 // Submitted by Solana Name Service <contact@sns.id>
 sol.site
 
+// Solid Labs : https://www.solidres.com/
+// Submitted by Solid Labs <contact@solidres.com>
+solidres.page
+
 // Sony Interactive Entertainment LLC : https://sie.com/
 // Submitted by David Coles <david.coles@sony.com>
 playstation-cloud.com
@@ -16286,14 +16326,6 @@ tche.br
 site.tb-hosting.com
 directwp.eu
 
-// TechEdge Limited: https://www.nic.uk.cc/
-// Submitted by TechEdge Developer <support@nic.uk.cc>
-ec.cc
-eu.cc
-gu.cc
-uk.cc
-us.cc
-
 // Teckids e.V. : https://www.teckids.org
 // Submitted by Dominik George <dominik.george@teckids.org>
 edugit.io
@@ -16384,6 +16416,10 @@ site.transip.me
 // Submitted by Triton Data Center staff <tickets@tritondatacenter.com>
 *.triton.zone
 
+// Tuna : https://tuna.am/
+// Submitted by Tuna Support <support@tuna.am>
+*.2na.am
+
 // Tunnelmole: https://tunnelmole.com
 // Submitted by Robbie Cahill <support@tunnelmole.com>
 tunnelmole.net
@@ -16418,6 +16454,10 @@ it.com
 // Umso Software Inc. : https://www.umso.com
 // Submitted by Alexis Taylor <security@umso.com>
 umso.co
+
+// Uncloud : https://uncloud.run
+// Submitted by Pasha Sviderski <support@uncloud.run>
+uncld.dev
 
 // Unison Computing, PBC : https://unison.cloud
 // Submitted by Simon Højberg <security@unison.cloud>
@@ -16627,6 +16667,11 @@ affinitylottery.org.uk
 raffleentry.org.uk
 weeklylottery.org.uk
 
+// Wordsmith AI : https://wordsmith.ai
+// Submitted by Wordsmith Security <security@wordsmith.ai>
+wordsmithmcpcontent.com
+staging.wordsmithmcpcontent.com
+
 // WP Engine : https://wpengine.com/
 // Submitted by Michael Smith <michael.smith@wpengine.com>
 // Submitted by Brandon DuRette <brandon.durette@wpengine.com>
@@ -16685,6 +16730,10 @@ zap.cloud
 // Zeabur : https://zeabur.com/
 // Submitted by Zeabur Team <contact@zeabur.com>
 zeabur.app
+
+// Zerexa domains : https://nic.fj.kg
+// Submitted by Zerexa Team <admin@zerexa.net>
+fj.kg
 
 // Zerops : https://zerops.io/
 // Submitted by Zerops Team <security@zerops.io>
