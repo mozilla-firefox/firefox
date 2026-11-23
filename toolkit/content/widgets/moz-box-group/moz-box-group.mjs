@@ -18,10 +18,6 @@ export const GROUP_TYPES = {
  * moz-box-button elements and provide the expected styles.
  *
  * @tagname moz-box-group
- * @property {string} type
- *   The type of the group, either "list", "reorderable-list", or undefined.
- *   Note that "reorderable-list" only works with moz-box-item elements for now.
- * @property {string} ariaLabel - Accessible name for the reorderable listbox.
  * @slot default - Slot for rendering various moz-box-* elements.
  * @slot static - Slot for rendering non-reorderable moz-box-item elements.
  * @slot <index> - Slots used to assign moz-box-* elements to <li> elements when
@@ -56,10 +52,36 @@ export class MozBoxGroup extends MozLitElement {
 
   constructor() {
     super();
-    /** @type {Element[]} */
+
+    /**
+     * The type of the group. Note that "reorderable-list" only works with
+     * moz-box-item elements for now.
+     *
+     * @type {"list" | "reorderable-list" | undefined}
+     */
+    this.type = undefined;
+
+    /**
+     * Accessible name for the reorderable listbox.
+     *
+     * @type {string | undefined}
+     */
+    this.ariaLabel = undefined;
+
+    /**
+     * Visible children assigned to the default slot.
+     *
+     * @type {Element[]}
+     */
     this.listItems = [];
-    /** @type {Element[]} */
+
+    /**
+     * Visible children assigned to the static slots.
+     *
+     * @type {Element[]}
+     */
     this.staticItems = [];
+
     this.listMutationObserver = new MutationObserver(
       this.updateItems.bind(this)
     );

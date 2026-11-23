@@ -36,7 +36,6 @@ const config = {
   exclude: [
     "../../../toolkit/content/widgets/**/*.stories.mjs",
     "../../../toolkit/content/widgets/vendor/**",
-    "../../../toolkit/content/widgets/lit-utils.mjs",
   ],
   outdir: ".",
   litelement: true,

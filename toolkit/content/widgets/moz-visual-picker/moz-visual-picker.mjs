@@ -22,17 +22,6 @@ import { ifDefined } from "../vendor/lit.all.mjs";
  * determined by the consumer.
  *
  * @tagname moz-visual-picker
- * @property {string} label - Label for the group of elements.
- * @property {string} description - Description for the group of elements.
- * @property {string} name
- *  Name used to associate items in the group. Propagates to
- *  moz-visual-picker's children.
- * @property {string} value
- *  Selected value for the group. Changing the value updates the checked
- *  state of moz-visual-picker-item children and vice versa.
- * @property {string} orientation
- *  Layout orientation of the picker, "horizontal" (default) or "vertical".
- *  Propagates to moz-visual-picker-item children.
  * @slot default - The picker's content, intended for moz-visual-picker-items.
  */
 export class MozVisualPicker extends SelectControlBaseElement {
@@ -45,22 +34,6 @@ customElements.define("moz-visual-picker", MozVisualPicker);
  * Visual appearance is determined by the slotted content.
  *
  * @tagname moz-visual-picker-item
- * @property {boolean} checked - Whether or not the item is selected.
- * @property {boolean} disabled - Whether or not the item is disabled.
- * @property {number} itemTabIndex
- *  Tabindex of the input element. Only one item is focusable at a time.
- * @property {string} name
- *  Name of the item, set by the associated moz-visual-picker parent element.
- * @property {string} value - Value of the item.
- * @property {string} label - Visible label for the picker item.
- * @property {string} description - Additional text shown beneath the label.
- * @property {string} ariaLabel - Value for the aria-label attribute.
- * @property {string} title - Native title tooltip. Mapped onto the inner shadow DOM item and removed from moz-visual-picker-item itself.
- * @property {string} imageSrc - Path to an image to display in the picker item.
- * @property {string} labelPosition
- *  Position of the label: "inside" (default, label rendered inside the picker
- *  item button) or "outside" (label rendered outside as a clickable label
- *  element that activates the picker item).
  * @slot default - The item's content, used for what gets displayed.
  */
 export class MozVisualPickerItem extends SelectControlItemMixin(MozLitElement) {
@@ -81,7 +54,56 @@ export class MozVisualPickerItem extends SelectControlItemMixin(MozLitElement) {
 
   constructor() {
     super();
+
+    /**
+     * Visible label for the picker item.
+     *
+     * @type {string | undefined}
+     */
+    this.label = undefined;
+
+    /**
+     * Additional text shown beneath the label.
+     *
+     * @type {string | undefined}
+     */
+    this.description = undefined;
+
+    /**
+     * Value for the aria-label attribute of the picker item.
+     *
+     * @type {string | undefined}
+     */
+    this.ariaLabel = undefined;
+
+    /**
+     * Native title tooltip, mapped onto the inner shadow DOM item.
+     *
+     * @type {string | undefined}
+     */
+    this.title = undefined;
+
+    /**
+     * Path to an image to display in the picker item.
+     *
+     * @type {string | undefined}
+     */
+    this.imageSrc = undefined;
+
+    /**
+     * Position of the label, inside the picker item button or outside it as a
+     * clickable label element.
+     *
+     * @type {"inside" | "outside"}
+     */
     this.labelPosition = "inside";
+
+    /**
+     * Whether the item is disabled.
+     *
+     * @type {boolean | undefined}
+     */
+    this.disabled = undefined;
   }
 
   click() {

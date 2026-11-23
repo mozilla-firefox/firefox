@@ -9,9 +9,6 @@ import { MozLitElement } from "../lit-utils.mjs";
 
 /**
  * @tagname moz-input-color
- * @property {string} [value] - A CSS hex value of the initial color shown in the swatch area.
- * @property {string} [name] - Any name that will be associated with the component's nested `input` element. Useful when used in `form`s.
- * @property {string} label - The text of the label.
  */
 export class MozInputColor extends MozLitElement {
   static properties = {
@@ -32,9 +29,26 @@ export class MozInputColor extends MozLitElement {
   constructor() {
     super();
 
-    this.name = "";
-    this.label = "";
+    /**
+     * A CSS hex value of the color shown in the swatch area.
+     *
+     * @type {string}
+     */
     this.value = "";
+
+    /**
+     * The name associated with the component's nested input element.
+     *
+     * @type {string}
+     */
+    this.name = "";
+
+    /**
+     * The text of the label.
+     *
+     * @type {string}
+     */
+    this.label = "";
   }
 
   /**

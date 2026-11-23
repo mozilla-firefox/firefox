@@ -290,17 +290,47 @@ It may be worth reaching out to design to make sure the implemented component an
 
 #### An example of a disrepancy between the Lit and Figma components
 
-The following are properties of the `moz-message-bar` component as noted in `toolkit/content/widgets/moz-message-bar.mjs`.
+The following are some of the properties of the `moz-message-bar` component as declared in the constructor in `toolkit/content/widgets/moz-message-bar.mjs`.
 
 ```javascript
-/**
- * @property {string} type - The type of the displayed message.
- * @property {string} heading - The heading of the message.
- * @property {string} message - The message text.
- * @property {boolean} dismissable - Whether or not the element is dismissable.
- * @property {string} messageL10nId - l10n ID for the message.
- * @property {string} messageL10nArgs - Any args needed for the message l10n ID.
- */
+constructor() {
+  super();
+
+  /**
+   * The type of the displayed message.
+   *
+   * @type {MozMessageBarType}
+   */
+  this.type = "info";
+
+  /**
+   * Whether or not the element is dismissable.
+   *
+   * @type {boolean}
+   */
+  this.dismissable = false;
+
+  /**
+   * The message text.
+   *
+   * @type {string | undefined}
+   */
+  this.message = undefined;
+
+  /**
+   * l10n ID for the message.
+   *
+   * @type {string | undefined}
+   */
+  this.messageL10nId = undefined;
+
+  /**
+   * The heading of the message.
+   *
+   * @type {string | undefined}
+   */
+  this.heading = undefined;
+}
 ```
 
 In Storybook, we are able to change the message, heading, and action button label through the Fluent tab.

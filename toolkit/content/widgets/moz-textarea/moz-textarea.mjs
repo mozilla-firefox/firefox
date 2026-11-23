@@ -11,21 +11,6 @@ import { MozInputText } from "chrome://global/content/elements/moz-input-text.mj
  * A textarea custom element.
  *
  * @tagname moz-textarea
- * @property {string} label - The text of the label element.
- * @property {string} name - The name of the textarea control.
- * @property {string} value - The value of the textarea control.
- * @property {boolean} disabled - The disabled state of the textarea control.
- * @property {boolean} readonly - The readonly state of the textarea control.
- * @property {boolean} required - The required state of the textarea control
- * @property {string} description - The text for the description element that helps describe the textarea control.
- * @property {string} supportPage - Name of the SUMO support page to link to.
- * @property {string} placeholder - Text to display when the textarea has no value.
- * @property {number} maxLength - The maximum number of characters the textarea accepts.
- * @property {string} iconSrc - The src for an optional icon.
- * @property {string} ariaLabel - The aria-label text when there is no visible label.
- * @property {string} ariaDescription - The aria-description text when there is no visible description.
- * @property {string} title - The title attribute, mapped onto the inner textarea.
- * @property {number} rows - The number of visible text rows.
  */
 export class MozTextarea extends MozInputText {
   static properties = {
@@ -35,6 +20,12 @@ export class MozTextarea extends MozInputText {
 
   constructor() {
     super();
+
+    /**
+     * The number of visible text rows.
+     *
+     * @type {number}
+     */
     this.rows = 2;
   }
 

@@ -292,30 +292,6 @@ class MenuController extends PopoverController {
  * A button with multiple types and three sizes.
  *
  * @tagname moz-button
- * @property {string} label - The button's label, will be overridden by slotted content.
- * @property {string} type - The button type.
- *   Options: default, primary, destructive, icon, icon ghost, ghost.
- * @property {string} size - The button size.
- *   Options: default, small, large.
- * @property {boolean} disabled - The disabled state.
- * @property {string} title - The button's title attribute, used in shadow DOM and therefore not as an attribute on moz-button.
- * @property {string} titleAttribute - Internal, map title attribute to the title JS property.
- * @property {string} tooltipText - Set the title property, the title attribute will be used first.
- * @property {string} ariaLabel - The button's aria-label attribute, used in shadow DOM and therefore not as an attribute on moz-button.
- * @property {string} ariaHasPopup - The button's aria-haspopup attribute, that indicates that a popup element can be triggered by the button.
- * @property {string} ariaExpanded - The button's aria-expanded attribute, that indicates whether or not the controlled elements are displayed or hidden.
- * @property {string} ariaPressed - The button's aria-pressed attribute, used in shadow DOM and therefore not as an attribute on moz-button.
- * @property {string} ariaChecked - The button's aria-checked attribute, used in shadow DOM and therefore not as an attribute on moz-button.
- * @property {string} ariaSelected - The button's aria-selected attribute, used in shadow DOM and therefore not as an attribute on moz-button.
- * @property {string} buttonRole - The button's role attribute in shadow DOM.
- * @property {string} iconSrc - Path to the icon that should be displayed in the button.
- * @property {string} hasVisibleLabel - Internal, tracks whether or not the button has a visible label.
- * @property {boolean} attention - Show a dot notification on the button if true.
- * @property {boolean} parentDisabled - When the parent of this component is disabled.
- * @property {string} iconPosition - The icon's position relative to the button label.
- *   Options: start, end.
- * @property {string} menuId - The ID of the menu element controlled by the button.
- * @property {string} popoverTarget - The ID of the popover element controlled by the button. Either a menuId or popoverTarget may be specified but not both.
  * @property {HTMLButtonElement} buttonEl - The internal button element in the shadow DOM.
  * @property {HTMLButtonElement} slotEl - The internal slot element in the shadow DOM.
  * @cssproperty [--button-outer-padding-inline] - Used to set the outer inline padding of toolbar style buttons
@@ -366,16 +342,155 @@ export class MozButton extends MozLitElement {
 
   constructor() {
     super();
+
+    /**
+     * The button's label, overridden by slotted content.
+     *
+     * @type {string | undefined}
+     */
+    this.label = undefined;
+
+    /**
+     * The button type.
+     *
+     * @type {"default" | "primary" | "destructive" | "muted" | "toolbar" |
+     *   "menuitem" | "ghost" | "icon" | "icon ghost" | "ghost icon" | "split"}
+     */
     this.type = "default";
+
+    /**
+     * The button size.
+     *
+     * @type {"default" | "small" | "large"}
+     */
     this.size = "default";
+
+    /**
+     * The disabled state.
+     *
+     * @type {boolean}
+     */
     this.disabled = false;
-    this.hasVisibleLabel = !!this.label;
-    this.attention = false;
-    this.iconPosition = "start";
-    /** @type {string | undefined} */
+
+    /**
+     * The title attribute, mapped onto the inner button.
+     *
+     * @type {string | undefined}
+     */
+    this.title = undefined;
+
+    /**
+     * Title text used when the title property isn't set.
+     *
+     * @type {string | undefined}
+     */
+    this.tooltipText = undefined;
+
+    /**
+     * The aria-label attribute, mapped onto the inner button.
+     *
+     * @type {string | undefined}
+     */
+    this.ariaLabel = undefined;
+
+    /**
+     * The aria-haspopup attribute, mapped onto the inner button.
+     *
+     * @type {string | undefined}
+     */
+    this.ariaHasPopup = undefined;
+
+    /**
+     * The aria-expanded attribute, mapped onto the inner button.
+     *
+     * @type {string | undefined}
+     */
+    this.ariaExpanded = undefined;
+
+    /**
+     * The aria-pressed attribute, mapped onto the inner button.
+     *
+     * @type {string | undefined}
+     */
+    this.ariaPressed = undefined;
+
+    /**
+     * The aria-checked attribute, mapped onto the inner button.
+     *
+     * @type {string | undefined}
+     */
+    this.ariaChecked = undefined;
+
+    /**
+     * The aria-selected attribute, mapped onto the inner button.
+     *
+     * @type {string | undefined}
+     */
+    this.ariaSelected = undefined;
+
+    /**
+     * The role attribute of the inner button.
+     *
+     * @type {string | undefined}
+     */
+    this.buttonRole = undefined;
+
+    /**
+     * Path to the icon displayed in the button.
+     *
+     * @type {string | undefined}
+     */
     this.iconSrc = undefined;
+
+    /**
+     * Internal, tracks whether or not the button has a visible label.
+     *
+     * @type {boolean}
+     */
+    this.hasVisibleLabel = !!this.label;
+
+    /**
+     * The access key, mapped onto the inner button.
+     *
+     * @type {string | undefined}
+     */
+    this.accessKey = undefined;
+
+    /**
+     * Whether to show a dot notification on the button.
+     *
+     * @type {boolean}
+     */
+    this.attention = false;
+
+    /**
+     * The icon's position relative to the button label.
+     *
+     * @type {"start" | "end"}
+     */
+    this.iconPosition = "start";
+
+    /**
+     * A CSS selector string that identifies the menu element controlled by
+     * the button.
+     *
+     * @type {string}
+     */
     this.menuId = "";
+
+    /**
+     * Whether the parent of this component is disabled.
+     *
+     * @type {boolean | undefined}
+     */
     this.parentDisabled = undefined;
+
+    /**
+     * The ID of the popover element controlled by the button. Either a menuId
+     * or popoverTarget may be specified but not both.
+     *
+     * @type {string}
+     */
     this.popoverTarget = "";
   }
 

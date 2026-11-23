@@ -24,7 +24,6 @@ import {{ MozLitElement }} from "../lit-utils.mjs";
  * Component description goes here.
  *
  * @tagname {element_name}
- * @property {{string}} variant - Property description goes here
  */
 export class {class_name} extends MozLitElement {{
   static properties = {{
@@ -33,6 +32,12 @@ export class {class_name} extends MozLitElement {{
 
   constructor() {{
     super();
+
+    /**
+     * Property description goes here.
+     *
+     * @type {{string}}
+     */
     this.variant = "default";
   }}
 

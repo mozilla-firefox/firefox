@@ -26,8 +26,6 @@ window.MozXULElement?.insertFTLIfNeeded("toolkit/global/mozFiveStar.ftl");
  * rounded to the nearest half.
  *
  * @tagname moz-five-star
- * @property {number} rating - The rating out of 5.
- * @property {string} title - The title text.
  */
 export class MozFiveStar extends MozLitElement {
   static properties = {
@@ -46,6 +44,13 @@ export class MozFiveStar extends MozLitElement {
      * @type {number}
      */
     this.rating = 0;
+
+    /**
+     * The title text.
+     *
+     * @type {string | undefined}
+     */
+    this.title = undefined;
 
     /**
      * Whether the stars in the component are selectable.

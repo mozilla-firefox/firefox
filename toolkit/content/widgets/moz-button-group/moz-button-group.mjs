@@ -17,7 +17,6 @@ export const PLATFORM_WINDOWS = "win";
  * on a primary button that does not have primary styling to set its position.
  *
  * @tagname moz-button-group
- * @property {string} platform - The detected platform, set automatically.
  */
 export class MozButtonGroup extends MozLitElement {
   static queries = {
@@ -31,19 +30,26 @@ export class MozButtonGroup extends MozLitElement {
 
   constructor() {
     super();
-    this.#detectPlatform();
+
+    /**
+     * The detected platform, set automatically.
+     *
+     * @type {string}
+     */
+    this.platform = this.#detectPlatform();
   }
 
   #detectPlatform() {
     if (typeof AppConstants !== "undefined") {
-      this.platform = AppConstants.platform;
-    } else if (navigator.platform.includes("Linux")) {
-      this.platform = PLATFORM_LINUX;
-    } else if (navigator.platform.includes("Mac")) {
-      this.platform = PLATFORM_MACOS;
-    } else {
-      this.platform = PLATFORM_WINDOWS;
+      return AppConstants.platform;
     }
+    if (navigator.platform.includes("Linux")) {
+      return PLATFORM_LINUX;
+    }
+    if (navigator.platform.includes("Mac")) {
+      return PLATFORM_MACOS;
+    }
+    return PLATFORM_WINDOWS;
   }
 
   onSlotchange() {

@@ -13,13 +13,6 @@ import "chrome://global/content/elements/moz-label.mjs";
  * A simple toggle element that can be used to switch between two states.
  *
  * @tagname moz-toggle
- * @property {boolean} pressed - Whether or not the element is pressed.
- * @property {boolean} disabled - Whether or not the element is disabled.
- * @property {string} label - The label text.
- * @property {string} description - The description text.
- * @property {string} ariaLabel - The aria-label text when there is no visible label.
- * @property {string} ariaDescription - The aria-description text when there is no visible description.
- * @property {string} title - The title attribute, mapped onto the inner button.
  * @slot support-link - Used to append a moz-support-link to the description.
  * @fires toggle
  *  Custom event indicating that the toggle's pressed state has changed.
@@ -37,6 +30,12 @@ export class MozToggle extends MozBaseInputElement {
 
   constructor() {
     super();
+
+    /**
+     * Whether or not the element is pressed.
+     *
+     * @type {boolean}
+     */
     this.pressed = false;
   }
 

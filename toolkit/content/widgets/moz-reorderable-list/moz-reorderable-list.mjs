@@ -43,11 +43,6 @@ const REORDER_PROP = "__mozReorderableIndex";
  *   sufficient.
  *
  * @tagname moz-reorderable-list
- * @property {string} itemSelector
- *   Selector for elements that should be reorderable.
- * @property {string} dragSelector
- *   Selector used when only part of the reorderable element should be draggable,
- *   e.g. we use a button or an icon as a "handle" to drag the element.
  * @fires reorder - Fired when an item is dropped in a new position.
  * @fires dragstarted - Fired when an item is dragged.
  * @fires dragended - Fired when an item is dropped.
@@ -81,7 +76,22 @@ export class MozReorderableList extends MozLitElement {
 
   constructor() {
     super();
+
+    /**
+     * Selector for elements that are reorderable.
+     *
+     * @type {string}
+     */
     this.itemSelector = "li";
+
+    /**
+     * Selector for the part of a reorderable element that acts as the drag
+     * handle, such as a button or an icon.
+     *
+     * @type {string | undefined}
+     */
+    this.dragSelector = undefined;
+
     this.addEventListener("dragstart", this.onDragStart);
     this.addEventListener("dragover", this.onDragOver);
     this.addEventListener("dragleave", this.onDragLeave);

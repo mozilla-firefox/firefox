@@ -25,13 +25,6 @@ const HEADING_LEVEL_TEMPLATES = {
  * Fieldset wrapper to lay out form inputs consistently.
  *
  * @tagname moz-fieldset
- * @property {string} label - The label for the fieldset's legend.
- * @property {string} description - The description for the fieldset.
- * @property {string} supportPage - Name of the SUMO support page to link to.
- * @property {number} headingLevel - Render the legend in a heading of this level.
- * @property {boolean} disabled - Whether the fieldset and its children are disabled.
- * @property {string} iconSrc - The src for an optional icon.
- * @property {"beta" | "new" | undefined} badge - Include a badge of this type with matching text.
  */
 export class MozFieldset extends MozLitElement {
   static properties = {
@@ -51,26 +44,40 @@ export class MozFieldset extends MozLitElement {
   constructor() {
     super();
 
-    /** @type {number} */
-    this.headingLevel = -1;
-
-    /** @type {boolean} */
-    this.disabled = false;
-
-    /** @type {string} */
-    this.iconSrc = "";
-
-    /**@type {string | undefined} */
+    /**
+     * The label for the fieldset's legend.
+     *
+     * @type {string | undefined}
+     */
     this.label = undefined;
 
-    /**@type {string | undefined} */
+    /**
+     * The description for the fieldset.
+     *
+     * @type {string | undefined}
+     */
     this.description = undefined;
 
-    /**@type {string | undefined} */
+    /**
+     * Name of the SUMO support page to link to.
+     *
+     * @type {string | undefined}
+     */
     this.supportPage = undefined;
 
-    /**@type {"beta" | "new" | undefined} */
-    this.badge = undefined;
+    /**
+     * Accessible name for the fieldset when there is no visible label.
+     *
+     * @type {string | undefined}
+     */
+    this.ariaLabel = undefined;
+
+    /**
+     * Orientation of the fieldset's inputs, exposed through aria-orientation.
+     *
+     * @type {string | undefined}
+     */
+    this.ariaOrientation = undefined;
 
     /**
      * Role of the inner fieldset element.
@@ -87,6 +94,34 @@ export class MozFieldset extends MozLitElement {
      * @type {string | undefined}
      */
     this.inputsRole = undefined;
+
+    /**
+     * Renders the legend in a heading of this level.
+     *
+     * @type {number}
+     */
+    this.headingLevel = -1;
+
+    /**
+     * Whether the fieldset and its children are disabled.
+     *
+     * @type {boolean}
+     */
+    this.disabled = false;
+
+    /**
+     * The src for an optional icon.
+     *
+     * @type {string}
+     */
+    this.iconSrc = "";
+
+    /**
+     * Includes a badge of this type with matching text.
+     *
+     * @type {"beta" | "new" | undefined}
+     */
+    this.badge = undefined;
   }
 
   updated(changedProperties) {

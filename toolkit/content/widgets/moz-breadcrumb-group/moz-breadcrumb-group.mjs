@@ -13,8 +13,6 @@ window.MozXULElement?.insertFTLIfNeeded(
 
 /**
  * @tagname moz-breadcrumb
- * @property {string} href
- * @property {string} label
  */
 
 export class MozBreadcrumb extends MozLitElement {
@@ -27,9 +25,34 @@ export class MozBreadcrumb extends MozLitElement {
 
   constructor() {
     super();
-    this.label = "";
-    this.heading = "";
+
+    /**
+     * The href of the breadcrumb link.
+     *
+     * @type {string}
+     */
     this.href = "";
+
+    /**
+     * The label text.
+     *
+     * @type {string}
+     */
+    this.label = "";
+
+    /**
+     * Heading text used as the label when no label is set.
+     *
+     * @type {string}
+     */
+    this.heading = "";
+
+    /**
+     * The aria-current value for the breadcrumb of the current page.
+     *
+     * @type {string | undefined}
+     */
+    this.ariaCurrent = undefined;
   }
 
   render() {

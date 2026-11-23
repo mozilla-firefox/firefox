@@ -16,16 +16,6 @@ window.MozXULElement?.insertFTLIfNeeded("toolkit/global/mozPromo.ftl");
  * A promotional callout element.
  *
  * @tagname moz-promo
- * @property {string} type - The type of promo, can be either
- *  "default" or "vibrant". Determines the colors of the promotional
- *  element
- * @property {string} heading - The heading of the promo element.
- * @property {string} message - The message of the promo element.
- * @property {string} imageSrc - The main image of the promo element.
- * @property {string} imageAlignment - How the image should be aligned. Can be "start", "end", "center".
- * @property {string} imageWidth - How big the image is sized. Can be "default", "small" or "large".
- * @property {string} imageDisplay - Whether the image touches the edge of the promo or has a little bit of padding around it. Can be "cover" or "padded".
- * @property {boolean} dismissable - Whether the promo can be dismissed.
  * @slot image - Content rendered in place of the image when imageSrc is not set.
  * @fires promo:user-dismissed
  *  Custom event indicating that the promo was dismissed by the user.
@@ -52,10 +42,62 @@ export class MozPromo extends MozLitElement {
 
   constructor() {
     super();
+
+    /**
+     * The type of promo. Determines the colors of the promotional element.
+     *
+     * @type {"default" | "vibrant"}
+     */
     this.type = "default";
-    this.imageAlignment = "start";
+
+    /**
+     * The heading of the promo element.
+     *
+     * @type {string | undefined}
+     */
+    this.heading = undefined;
+
+    /**
+     * The message of the promo element.
+     *
+     * @type {string | undefined}
+     */
+    this.message = undefined;
+
+    /**
+     * The main image of the promo element.
+     *
+     * @type {string | undefined}
+     */
+    this.imageSrc = undefined;
+
+    /**
+     * How big the image is sized.
+     *
+     * @type {"default" | "small" | "large"}
+     */
     this.imageWidth = "small";
+
+    /**
+     * How the image is aligned.
+     *
+     * @type {"start" | "end" | "center"}
+     */
+    this.imageAlignment = "start";
+
+    /**
+     * Whether the image touches the edge of the promo or has padding around
+     * it.
+     *
+     * @type {"padded" | "cover"}
+     */
     this.imageDisplay = "padded";
+
+    /**
+     * Whether the promo can be dismissed.
+     *
+     * @type {boolean}
+     */
     this.dismissable = false;
   }
 

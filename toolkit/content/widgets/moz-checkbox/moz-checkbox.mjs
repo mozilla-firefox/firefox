@@ -16,19 +16,6 @@ import "chrome://global/content/elements/moz-support-link.mjs";
  * A checkbox input with a label.
  *
  * @tagname moz-checkbox
- * @property {string} label - The text of the label element
- * @property {string} name - The name of the checkbox input control
- * @property {string} value - The value of the checkbox input control
- * @property {boolean} checked - The state of the checkbox element,
- *  also controls whether the checkbox is initially rendered as
- *  being checked.
- * @property {boolean} disabled - The disabled state of the checkbox input
- * @property {string} iconSrc - The src for an optional icon
- * @property {string} description - The text for the description element that helps describe the checkbox
- * @property {string} supportPage - Name of the SUMO support page to link to.
- * @property {string} ariaLabel - The aria-label text when there is no visible label.
- * @property {string} ariaDescription - The aria-description text when there is no visible description.
- * @property {string} title - The title attribute, mapped onto the inner input.
  */
 export class MozCheckbox extends MozBaseInputElement {
   static properties = {
@@ -39,6 +26,13 @@ export class MozCheckbox extends MozBaseInputElement {
 
   constructor() {
     super();
+
+    /**
+     * The checked state of the checkbox, which also controls whether it is
+     * initially rendered as checked.
+     *
+     * @type {boolean}
+     */
     this.checked = false;
   }
 

@@ -23,29 +23,13 @@ import { MozBaseInputElement, MozLitElement } from "../lit-utils.mjs";
  * @property {string} [iconSrc] - The icon source URL for the option.
  * @property {boolean} [disabled] - Whether the option is disabled.
  * @property {boolean} [hidden] - Whether the option is hidden.
+ * @property {boolean} [separator] - Whether the entry is a separator instead of an option.
  */
 
 /**
  * A select dropdown with options provided via custom `moz-option` elements.
  *
  * @tagname moz-select
- * @property {string} label - The text of the label element
- * @property {string} size - The select size.
- *   Options: default, small.
- * @property {string} name - The name of the input control
- * @property {string} value - The value of the selected option
- * @property {boolean} disabled - The disabled state of the input control
- * @property {string} iconSrc - The src for an optional icon
- * @property {string} description - The text for the description element that helps describe the input control
- * @property {string} supportPage - Name of the SUMO support page to link to.
- * @property {string} ariaLabel - The aria-label text when there is no visible label.
- * @property {string} ariaDescription - The aria-description text when there is no visible description.
- * @property {string} title - The title attribute, mapped onto the inner control.
- * @property {SelectOption[]} options - The array of options, populated by <moz-option> children in the
- *     default slot. Do not set directly, these will be overridden by <moz-option> children.
- * @property {SelectOption} selectedOption - The currently selected option object.
- * @property {number} selectedIndex - The index of the currently selected option.
- * @property {boolean} usePanelList - Whether or not to render a panel. Depends on options using icons.
  */
 export class MozSelect extends MozBaseInputElement {
   static properties = {
@@ -64,12 +48,50 @@ export class MozSelect extends MozBaseInputElement {
 
   constructor() {
     super();
+
+    /**
+     * The select size.
+     *
+     * @type {"default" | "small"}
+     */
     this.size = "default";
-    this.value = "";
+
+    /**
+     * The array of options, populated from the moz-option children in the
+     * default slot.
+     *
+     * @type {SelectOption[]}
+     */
     this.options = [];
-    this.usePanelList = false;
+
+    /**
+     * The currently selected option object.
+     *
+     * @type {SelectOption | null}
+     */
     this.selectedOption = null;
+
+    /**
+     * The index of the currently selected option.
+     *
+     * @type {number}
+     */
     this.selectedIndex = 0;
+
+    /**
+     * Whether or not to render a panel. Depends on options using icons.
+     *
+     * @type {boolean}
+     */
+    this.usePanelList = false;
+
+    /**
+     * The value of the selected option.
+     *
+     * @type {string}
+     */
+    this.value = "";
+
     this.slotRef = createRef();
     this.optionsMutationObserver = new MutationObserver(
       this.populateOptions.bind(this)
@@ -470,11 +492,6 @@ customElements.define("moz-select", MozSelect);
  * A custom option element for use in moz-select.
  *
  * @tagname moz-option
- * @property {string} value - The value of the option
- * @property {string} label - The label of the option
- * @property {string} iconSrc - The path to the icon of the the option
- * @property {boolean} disabled - Whether the option is disabled
- * @property {boolean} hidden - Whether the option is hidden
  */
 export class MozOption extends MozLitElement {
   static properties = {
@@ -489,10 +506,40 @@ export class MozOption extends MozLitElement {
 
   constructor() {
     super();
+
+    /**
+     * The value of the option.
+     *
+     * @type {string}
+     */
     this.value = "";
+
+    /**
+     * The label of the option.
+     *
+     * @type {string}
+     */
     this.label = "";
+
+    /**
+     * The path to the icon of the option.
+     *
+     * @type {string}
+     */
     this.iconSrc = "";
+
+    /**
+     * Whether the option is disabled.
+     *
+     * @type {boolean}
+     */
     this.disabled = false;
+
+    /**
+     * Whether the option is hidden.
+     *
+     * @type {boolean}
+     */
     this.hidden = false;
   }
 

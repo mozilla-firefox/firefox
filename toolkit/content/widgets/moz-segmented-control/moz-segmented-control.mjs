@@ -16,10 +16,6 @@ import { MozButton } from "chrome://global/content/elements/moz-button.mjs";
  * radio button group.
  *
  * @tagname moz-segmented-control
- * @property {string} deck - Optional ID of a named-deck to control for tab switching.
- * @property {string} value - Currently selected value.
- * @property {string} name - Form control name.
- * @property {boolean} disabled - Whether the control is disabled.
  */
 export class MozSegmentedControl extends SelectControlBaseElement {
   #deckElement;
@@ -32,6 +28,14 @@ export class MozSegmentedControl extends SelectControlBaseElement {
 
   constructor() {
     super();
+
+    /**
+     * ID of a named-deck to control for tab switching.
+     *
+     * @type {string | undefined}
+     */
+    this.deck = undefined;
+
     this.type = "radio";
   }
 
@@ -108,15 +112,6 @@ customElements.define("moz-segmented-control", MozSegmentedControl);
  * An item in a segmented control. Renders as a button that can be selected.
  *
  * @tagname moz-segmented-control-item
- * @property {string} label - Label text for the button.
- * @property {string} value - Value for this option.
- * @property {string} iconSrc - Optional icon to display.
- * @property {boolean} checked - Whether this item is selected.
- * @property {boolean} disabled - Whether this item is disabled.
- * @property {boolean} parentDisabled - When the parent of this component is disabled.
- * @property {string} size - Button size (default or small).
- * @property {string} accessKey - Access key for keyboard shortcut.
- * @property {string} ariaLabel - Accessible label when no visible label.
  */
 export class MozSegmentedControlItem extends SelectControlItemMixin(MozButton) {
   constructor() {

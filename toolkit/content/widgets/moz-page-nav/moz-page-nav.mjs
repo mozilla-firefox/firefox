@@ -18,7 +18,6 @@ import "chrome://global/content/elements/moz-support-link.mjs";
 
 /**
  * @typedef {("mobile"|"default")} PageNavType
- * @property {PageNavType} [type] - The type of the component
  */
 
 /**
@@ -27,16 +26,6 @@ import "chrome://global/content/elements/moz-support-link.mjs";
  * to external resources.
  *
  * @tagname moz-page-nav
- * @property {string} currentView - The currently selected view.
- * @property {string} heading - A heading to be displayed at the top of the navigation.
- * @property {PageNavType} [type] - The type of the component
- * @property {boolean} [allowNoSelection=false] - When false (default), the
- *   component auto-selects the first visible button whenever currentView does
- *   not match any button. When true, a non-matching currentView is allowed to
- *   persist without forcing a selection — used by about:preferences to support
- *   sub-pages and search-results states where no category should be highlighted.
- * @property {Array} pageNavButtons - The array of all page nav buttons
- * @property {Array} secondaryNavButtons - The array of all secondary nav buttons
  * @slot [default] - Used to append moz-page-nav-button elements to the navigation.
  * @slot [subheading] - Used to append page specific search input or notification to the nav.
  */
@@ -58,14 +47,48 @@ export class MozPageNav extends MozLitElement {
 
   constructor() {
     super();
+
     /**
+     * The currently selected view.
+     *
+     * @type {string | undefined}
+     */
+    this.currentView = undefined;
+
+    /**
+     * A heading displayed at the top of the navigation.
+     *
+     * @type {string | undefined}
+     */
+    this.heading = undefined;
+
+    /**
+     * The type of the component.
+     *
      * @type {PageNavType}
      */
     this.type = "default";
+
+    /**
+     * Allows a currentView that matches no button to persist instead of
+     * selecting the first visible button.
+     *
+     * @type {boolean}
+     */
     this.allowNoSelection = false;
-    /** @type {MozPageNavButton[]} */
+
+    /**
+     * The array of all page nav buttons.
+     *
+     * @type {MozPageNavButton[]}
+     */
     this.pageNavButtons = [];
-    /** @type {MozPageNavButton[]} */
+
+    /**
+     * The array of all secondary nav buttons.
+     *
+     * @type {MozPageNavButton[]}
+     */
     this.secondaryNavButtons = [];
   }
 
@@ -223,13 +246,6 @@ customElements.define("moz-page-nav", MozPageNav);
  * A navigation button intended to change the selected view within a page.
  *
  * @tagname moz-page-nav-button
- * @property {string} href - (optional) The url for an external link if not a support page URL
- * @property {string} iconSrc - The chrome:// url for the icon used for the button.
- * @property {boolean} selected - Whether or not the button is currently selected.
- * @property {string} supportPage - (optional) The short name for the support page a secondary link should launch to
- * @property {string} title - The title used for the button or link, it should always be set to make sure the components
- *   will be detected as labeled also when the moz-page-nav is in collapsed mode and the moz-page-nav-button child elements
- *   and text nodes are hidden. Used in shadow DOM and therefore not as an attribute on moz-page-nav-button.
  * @slot [default] - Used to append the l10n string to the button.
  */
 export class MozPageNavButton extends MozLitElement {
@@ -243,7 +259,41 @@ export class MozPageNavButton extends MozLitElement {
 
   constructor() {
     super();
+
+    /**
+     * The chrome:// url for the icon used for the button.
+     *
+     * @type {string | undefined}
+     */
+    this.iconSrc = undefined;
+
+    /**
+     * The url for an external link if not a support page URL.
+     *
+     * @type {string | undefined}
+     */
+    this.href = undefined;
+
+    /**
+     * Whether or not the button is currently selected.
+     *
+     * @type {boolean}
+     */
     this.selected = false;
+
+    /**
+     * The short name for the support page a secondary link launches.
+     *
+     * @type {string | undefined}
+     */
+    this.supportPage = undefined;
+
+    /**
+     * The title used for the button or link, mapped onto the inner element.
+     *
+     * @type {string | undefined}
+     */
+    this.title = undefined;
   }
 
   connectedCallback() {

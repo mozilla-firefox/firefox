@@ -13,13 +13,6 @@ window.MozXULElement?.insertFTLIfNeeded("toolkit/global/mozPageHeader.ftl");
  * A header component for providing context about a specific page.
  *
  * @tagname moz-page-header
- * @property {string} heading - The page title text.
- * @property {string} description - Secondary text shown under the heading.
- * @property {string} iconSrc - The src for an optional icon.
- * @property {string} supportPage - Optional URL for a related support article.
- * @property {boolean} backButton - Whether or not the header should include a back button.
- * @property {"beta" | "new" | undefined} badge - Include a badge of this type with matching text.
- * @property {number} headingLevel - Heading level to render (1-6). Defaults to 2.
  * @slot breadcrumbs - Container for a <moz-breadcrumb-group, shown above the heading.
  * @fires navigate-back
  *  Event indicating the backwards navigation should occur.
@@ -42,13 +35,54 @@ export class MozPageHeader extends MozLitElement {
 
   constructor() {
     super();
+
+    /**
+     * The page title text.
+     *
+     * @type {string}
+     */
     this.heading = "";
+
+    /**
+     * Secondary text shown under the heading.
+     *
+     * @type {string}
+     */
     this.description = "";
+
+    /**
+     * The src for an optional icon.
+     *
+     * @type {string}
+     */
     this.iconSrc = "";
+
+    /**
+     * Name of the SUMO support page to link to.
+     *
+     * @type {string}
+     */
     this.supportPage = "";
+
+    /**
+     * Whether or not the header includes a back button.
+     *
+     * @type {boolean}
+     */
     this.backButton = false;
-    /** @type {"beta" | "new" | undefined} */
+
+    /**
+     * Includes a badge of this type with matching text.
+     *
+     * @type {"beta" | "new" | undefined}
+     */
     this.badge = undefined;
+
+    /**
+     * Heading level to render (1-6).
+     *
+     * @type {number}
+     */
     this.headingLevel = 2;
   }
 

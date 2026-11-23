@@ -12,12 +12,6 @@ import { MozBoxBase } from "../lit-utils.mjs";
  * dialogs.
  *
  * @tagname moz-box-button
- * @property {string} label - Label for the button.
- * @property {string} description - Descriptive text for the button.
- * @property {string} iconSrc - The src for an optional icon shown next to the label.
- * @property {boolean} disabled - Whether or not the button is disabled.
- * @property {string} accesskey - Key used for keyboard access.
- * @property {boolean} parentDisabled - Disabled by the parent's state, see MozBaseInputElement.
  */
 export class MozBoxButton extends MozBoxBase {
   static shadowRootOptions = {
@@ -38,7 +32,28 @@ export class MozBoxButton extends MozBoxBase {
 
   constructor() {
     super();
+
+    /**
+     * Whether or not the button is disabled.
+     *
+     * @type {boolean}
+     */
     this.disabled = false;
+
+    /**
+     * Key used for keyboard access.
+     *
+     * @type {string | undefined}
+     */
+    this.accessKey = undefined;
+
+    /**
+     * Whether the parent's state disables the button, see
+     * MozBaseInputElement.
+     *
+     * @type {boolean | undefined}
+     */
+    this.parentDisabled = undefined;
   }
 
   click() {

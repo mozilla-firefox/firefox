@@ -13,19 +13,6 @@ window.MozXULElement?.insertFTLIfNeeded("toolkit/global/mozInputFolder.ftl");
  * An input folder custom element.
  *
  * @tagname moz-input-folder
- *
- * @property {string} label - The text of the label element
- * @property {string} name - The name of the input control
- * @property {string} value - The path to the selected folder
- * @property {boolean} disabled - The disabled state of the component
- * @property {string} iconSrc - The src for an optional icon in the label
- * @property {string} description - The text for the description element that helps describe the input control
- * @property {string} supportPage - Name of the SUMO support page to link to.
- * @property {string} placeholder - Text to display when the input has no value.
- * @property {string} displayValue - The value of the input control if it's different from the component value.
- * @property {string} dialogTitle - Text to display as a file picker dialog title.
- * @property {object} folder - The file object that represents the selected folder.
- * @property {string} title - The title attribute, mapped onto the inner input.
  */
 
 export class MozInputFolder extends MozInputText {
@@ -43,10 +30,30 @@ export class MozInputFolder extends MozInputText {
 
   constructor() {
     super();
-    this.readonly = true;
+
+    /**
+     * The value shown in the input when it differs from the component's
+     * value.
+     *
+     * @type {string}
+     */
     this.displayValue = "";
+
+    /**
+     * Text to display as a file picker dialog title.
+     *
+     * @type {string}
+     */
     this.dialogTitle = "";
+
+    /**
+     * The src for the icon shown in the input for the selected folder.
+     *
+     * @type {string}
+     */
     this._inputIconSrc = "";
+
+    this.readonly = true;
     this.#folder = null;
   }
 
@@ -74,6 +81,9 @@ export class MozInputFolder extends MozInputText {
     }
   }
 
+  /**
+   * The file object that represents the selected folder.
+   */
   get folder() {
     return this.#folder;
   }

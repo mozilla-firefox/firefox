@@ -13,11 +13,6 @@ window.MozXULElement?.insertFTLIfNeeded("toolkit/global/mozBoxBase.ftl");
  * A link with a box-like shape that allows for custom title and description.
  *
  * @tagname moz-box-link
- * @property {string} label - Label for the button.
- * @property {string} description - Descriptive text for the button.
- * @property {string} iconSrc - The src for an optional icon.
- * @property {string} href - The href of the link.
- * @property {string} supportPage - Whether or not the link is to a support page.
  */
 export class MozBoxLink extends MozBoxBase {
   static shadowRootOptions = {
@@ -32,7 +27,19 @@ export class MozBoxLink extends MozBoxBase {
 
   constructor() {
     super();
+
+    /**
+     * The href of the link.
+     *
+     * @type {string}
+     */
     this.href = "";
+
+    /**
+     * Name of the SUMO support page to link to.
+     *
+     * @type {string}
+     */
     this.supportPage = "";
   }
 
