@@ -7,6 +7,7 @@
 #include "TextureView.h"
 #include "Utility.h"
 #include "ipc/WebGPUChild.h"
+#include "mozilla/ErrorResult.h"
 #include "mozilla/dom/WebGPUBinding.h"
 #include "mozilla/webgpu/CanvasContext.h"
 #include "mozilla/webgpu/WebGPUTypes.h"
@@ -46,8 +47,12 @@ Texture::Texture(Device* const aParent, RawId aId,
 
 Texture::~Texture() = default;
 
+// Create a texture view.
+//
+// C++ callers pass `IgnoreErrors()` with the assumption that this fails only
+// for invalid `swizzle`.
 already_AddRefed<TextureView> Texture::CreateView(
-    const dom::GPUTextureViewDescriptor& aDesc) {
+    const dom::GPUTextureViewDescriptor& aDesc, ErrorResult& aRv) {
   ffi::WGPUFfiTextureViewDescriptor desc = {};
 
   webgpu::StringHelper label(aDesc.mLabel);
@@ -78,6 +83,28 @@ already_AddRefed<TextureView> Texture::CreateView(
   desc.array_layer_count =
       aDesc.mArrayLayerCount.WasPassed() ? &layerCount : nullptr;
   desc.usage = aDesc.mUsage;
+
+  if (aDesc.mSwizzle.Length() != 4) {
+    aRv.ThrowTypeError("swizzle must be exactly four characters");
+    return nullptr;
+  }
+  for (uint32_t i = 0; i < 4; ++i) {
+    char16_t c = aDesc.mSwizzle[i];
+    switch (c) {
+      case u'r':
+      case u'g':
+      case u'b':
+      case u'a':
+      case u'0':
+      case u'1':
+        desc.swizzle[i] = static_cast<uint8_t>(c);
+        break;
+      default:
+        aRv.ThrowTypeError(
+            "swizzle must contain only 'r', 'g', 'b', 'a', '0', or '1'");
+        return nullptr;
+    }
+  }
 
   RawId id = ffi::wgpu_client_create_texture_view(GetClient(), GetId(), &desc);
 

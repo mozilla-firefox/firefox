@@ -14,6 +14,7 @@
 #include "nsWrapperCache.h"
 
 namespace mozilla {
+class ErrorResult;
 namespace dom {
 struct GPUTextureDescriptor;
 struct GPUTextureViewDescriptor;
@@ -54,7 +55,7 @@ class Texture final : public nsWrapperCache,
 
  public:
   already_AddRefed<TextureView> CreateView(
-      const dom::GPUTextureViewDescriptor& aDesc);
+      const dom::GPUTextureViewDescriptor& aDesc, ErrorResult& aRv);
   void Destroy();
 
   uint32_t Width() const { return mSize.width; }

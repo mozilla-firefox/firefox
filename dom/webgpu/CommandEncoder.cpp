@@ -12,6 +12,7 @@
 #include "RenderPassEncoder.h"
 #include "TextureView.h"
 #include "Utility.h"
+#include "mozilla/ErrorResult.h"
 #include "mozilla/dom/WebGPUBinding.h"
 #include "mozilla/webgpu/CanvasContext.h"
 #include "mozilla/webgpu/ffi/wgpu.h"
@@ -202,7 +203,8 @@ already_AddRefed<RenderPassEncoder> CommandEncoder::BeginRenderPass(
       case dom::OwningGPUTextureOrGPUTextureView::Type::eGPUTexture: {
         dom::GPUTextureViewDescriptor defaultDesc{};
         RefPtr<Texture> tex = texOrView.GetAsGPUTexture();
-        texOrView.SetAsGPUTextureView() = tex->CreateView(defaultDesc);
+        texOrView.SetAsGPUTextureView() =
+            tex->CreateView(defaultDesc, IgnoreErrors());
         break;
       }
 

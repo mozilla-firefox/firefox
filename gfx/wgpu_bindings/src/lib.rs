@@ -159,6 +159,9 @@ pub struct FfiTextureViewDescriptor<'a> {
     base_array_layer: u32,
     array_layer_count: Option<&'a u32>,
     usage: wgt::TextureUsages,
+
+    // Each must be one of `rgba01`, defaults to `rgba`.
+    swizzle: [u8; 4],
 }
 
 // Declare an ID type for referring to external texture sources, and allow

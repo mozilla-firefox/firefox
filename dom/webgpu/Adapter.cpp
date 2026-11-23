@@ -244,6 +244,9 @@ struct FeatureImplementationStatus {
         return unimplemented(
             "https://bugzilla.mozilla.org/show_bug.cgi?id=1989116");
 
+      case dom::GPUFeatureName::Texture_component_swizzle:
+        return implemented(WGPUWEBGPU_FEATURE_TEXTURE_COMPONENT_SWIZZLE);
+
       case dom::GPUFeatureName::Core_features_and_limits:
         // NOTE: `0` means that no bits are set in calling code, but this is on
         // purpose. We currently _always_ return this feature elsewhere. If this

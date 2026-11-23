@@ -524,7 +524,8 @@ already_AddRefed<BindGroup> Device::CreateBindGroup(
     } else if (entry.mResource.IsGPUTexture()) {
       auto texture = entry.mResource.GetAsGPUTexture();
       const dom::GPUTextureViewDescriptor defaultDesc{};
-      RefPtr<TextureView> texture_view = texture->CreateView(defaultDesc);
+      RefPtr<TextureView> texture_view =
+          texture->CreateView(defaultDesc, IgnoreErrors());
       setTextureViewBinding(*texture_view);
     } else if (entry.mResource.IsGPUTextureView()) {
       auto texture_view = entry.mResource.GetAsGPUTextureView();
