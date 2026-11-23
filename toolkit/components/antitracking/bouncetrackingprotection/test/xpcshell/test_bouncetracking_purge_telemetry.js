@@ -53,8 +53,8 @@ add_setup(async function () {
   );
 
   await UrlClassifierTestUtils.addTestTrackers();
-  registerCleanupFunction(() => {
-    UrlClassifierTestUtils.cleanupTestTrackers();
+  registerCleanupFunction(async () => {
+    await UrlClassifierTestUtils.cleanupTestTrackers();
   });
 });
 

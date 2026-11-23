@@ -367,9 +367,11 @@ var tests = [
   },
 
   function cleanUp() {
+    do_test_pending();
     httpServer.stop(do_test_finished);
     if (runtime.processType == runtime.PROCESS_TYPE_DEFAULT) {
-      UrlClassifierTestUtils.cleanupTestTrackers();
+      do_test_pending();
+      UrlClassifierTestUtils.cleanupTestTrackers().finally(do_test_finished);
     }
     runTests();
   },

@@ -17,8 +17,7 @@ function run_test() {
     run_test_in_child(
       "../unit/test_trackingProtection_annotateChannels.js",
       () => {
-        UrlClassifierTestUtils.cleanupTestTrackers();
-        do_test_finished();
+        UrlClassifierTestUtils.cleanupTestTrackers().finally(do_test_finished);
       }
     );
     do_test_finished();

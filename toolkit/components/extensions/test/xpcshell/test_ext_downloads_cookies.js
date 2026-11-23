@@ -97,8 +97,8 @@ add_task(async function setup() {
   await loadAndClose("http://itisatracker.org/setcookies");
 
   await UrlClassifierTestUtils.addTestTrackers();
-  registerCleanupFunction(() => {
-    UrlClassifierTestUtils.cleanupTestTrackers();
+  registerCleanupFunction(async () => {
+    await UrlClassifierTestUtils.cleanupTestTrackers();
     Services.cookies.removeAll();
 
     Services.prefs.clearUserPref("browser.download.folderList");

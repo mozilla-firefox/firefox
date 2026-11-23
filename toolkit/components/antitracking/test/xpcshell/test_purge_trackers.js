@@ -88,7 +88,7 @@ add_task(async function testNotPurging() {
   await PurgeTrackerService.purgeTrackingCookieJars();
   ok(!SiteDataTestUtils.hasCookies(TRACKING_PAGE), "cookie cleared.");
 
-  UrlClassifierTestUtils.cleanupTestTrackers();
+  await UrlClassifierTestUtils.cleanupTestTrackers();
 });
 
 /**
@@ -177,7 +177,7 @@ async function testIndexedDBAndLocalStorage() {
     Assert.equal(usage, 0, "quota storage was deleted");
   });
 
-  UrlClassifierTestUtils.cleanupTestTrackers();
+  await UrlClassifierTestUtils.cleanupTestTrackers();
 }
 
 /**
@@ -229,7 +229,7 @@ async function testBaseDomain() {
     await SiteDataTestUtils.clear();
   }
 
-  UrlClassifierTestUtils.cleanupTestTrackers();
+  await UrlClassifierTestUtils.cleanupTestTrackers();
 }
 
 /**
@@ -294,7 +294,7 @@ async function testUserInteraction(ownerPage) {
   await SiteDataTestUtils.clear();
 
   Services.prefs.clearUserPref("privacy.purge_trackers.consider_entity_list");
-  UrlClassifierTestUtils.cleanupTestTrackers();
+  await UrlClassifierTestUtils.cleanupTestTrackers();
 }
 
 /**
@@ -407,7 +407,7 @@ async function testQuotaStorage() {
     await SiteDataTestUtils.clear();
   }
 
-  UrlClassifierTestUtils.cleanupTestTrackers();
+  await UrlClassifierTestUtils.cleanupTestTrackers();
 }
 
 /**
@@ -501,7 +501,7 @@ async function testExpiredInteractionPermission() {
     );
   }
 
-  UrlClassifierTestUtils.cleanupTestTrackers();
+  await UrlClassifierTestUtils.cleanupTestTrackers();
 }
 
 /*
@@ -550,7 +550,7 @@ async function testNotPurgingFromAllowedWebsites() {
 
   PermissionTestUtils.remove(TRACKING_PAGE2, "cookie");
 
-  UrlClassifierTestUtils.cleanupTestTrackers();
+  await UrlClassifierTestUtils.cleanupTestTrackers();
 }
 
 /*
@@ -599,7 +599,7 @@ async function testNotPurgingLocalStorage() {
 
   PermissionTestUtils.remove(TRACKING_PAGE2, "cookie");
 
-  UrlClassifierTestUtils.cleanupTestTrackers();
+  await UrlClassifierTestUtils.cleanupTestTrackers();
 }
 
 /*
@@ -650,7 +650,7 @@ async function testNotPurgingFromHTTP() {
 
   PermissionTestUtils.remove(HTTP_TRACKING_PAGE2, "cookie");
 
-  UrlClassifierTestUtils.cleanupTestTrackers();
+  await UrlClassifierTestUtils.cleanupTestTrackers();
 }
 
 /*
@@ -699,7 +699,7 @@ async function testNotPurgingFromDifferentScheme() {
 
   PermissionTestUtils.remove(HTTP_TRACKING_PAGE, "cookie");
 
-  UrlClassifierTestUtils.cleanupTestTrackers();
+  await UrlClassifierTestUtils.cleanupTestTrackers();
 }
 
 add_task(async function () {
@@ -770,6 +770,6 @@ add_task(async function testNotPurgingBounceTrackingProtectionState() {
 
   btp.clearAll();
   await SiteDataTestUtils.clear();
-  UrlClassifierTestUtils.cleanupTestTrackers();
+  await UrlClassifierTestUtils.cleanupTestTrackers();
   Services.prefs.clearUserPref("privacy.bounceTrackingProtection.mode");
 });

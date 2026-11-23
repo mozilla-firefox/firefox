@@ -180,7 +180,7 @@ add_task(async function () {
   Assert.equal(notPurgedHistogram.sum, 0, "no origins with user interaction");
   assertHistogram(intervalHistogram, nsPerHour, 1, true);
 
-  UrlClassifierTestUtils.cleanupTestTrackers();
+  await UrlClassifierTestUtils.cleanupTestTrackers();
 });
 
 /**
@@ -211,5 +211,5 @@ add_task(async function () {
   assertHistogram(purgedHistogram, 1, 1);
 
   Services.prefs.clearUserPref("privacy.purge_trackers.max_purge_count");
-  UrlClassifierTestUtils.cleanupTestTrackers();
+  await UrlClassifierTestUtils.cleanupTestTrackers();
 });

@@ -118,7 +118,7 @@ add_task(async function test_block_channel() {
   await openPromise;
 
   // clean up
-  UrlClassifierTestUtils.cleanupTestTrackers();
+  await UrlClassifierTestUtils.cleanupTestTrackers();
   Services.prefs.clearUserPref(FEATURE_STP_PREF);
   httpserver.stop();
 });
@@ -169,7 +169,7 @@ add_task(async function test_unblock_channel() {
   await openPromise;
 
   // clean up
-  UrlClassifierTestUtils.cleanupTestTrackers();
+  await UrlClassifierTestUtils.cleanupTestTrackers();
   Services.prefs.clearUserPref(FEATURE_STP_PREF);
   httpserver.stop();
 });
@@ -220,7 +220,7 @@ add_task(async function test_allow_channel() {
   await openPromise;
 
   // clean up
-  UrlClassifierTestUtils.cleanupTestTrackers();
+  await UrlClassifierTestUtils.cleanupTestTrackers();
   Services.prefs.clearUserPref(FEATURE_STP_PREF);
   httpserver.stop();
 });

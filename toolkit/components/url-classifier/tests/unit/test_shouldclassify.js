@@ -161,7 +161,7 @@ add_task(async function testShouldClassify() {
     });
   }
 
-  UrlClassifierTestUtils.cleanupTestTrackers();
+  await UrlClassifierTestUtils.cleanupTestTrackers();
 
   httpServer.stop(do_test_finished);
 });
