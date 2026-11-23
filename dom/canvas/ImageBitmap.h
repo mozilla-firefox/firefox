@@ -50,7 +50,6 @@ class HTMLCanvasElement;
 class HTMLImageElement;
 class HTMLVideoElement;
 class ImageData;
-class ImageUtils;
 class Promise;
 class PostMessageEvent;  // For StructuredClone between windows.
 class SVGImageElement;
