@@ -1067,7 +1067,7 @@ struct JS_PUBLIC_API JSContext : public JS::RootingContext,
   // that's fine.
   void requestInterrupt(js::InterruptReason reason);
   bool handleInterrupt();
-  bool handleInterruptNoCallbacks();
+  void handleOOMStackTraceInterrupt();
 
   MOZ_ALWAYS_INLINE bool hasAnyPendingInterrupt() const {
     static_assert(sizeof(interruptBits_) == sizeof(uint32_t),
