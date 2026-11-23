@@ -281,7 +281,6 @@ private fun CFRContentLayout(
 // region Caret
 
 /** Modifier that computes the indicator transformation matrix based on anchor position. */
-@OptIn(ExperimentalMaterial3Api::class)
 private fun Modifier.layoutIndicator(
     transformationMatrix: MutableState<Matrix>,
     density: Density,
@@ -457,7 +456,6 @@ sealed interface CFRPositionProvider : PopupPositionProvider {
     val cfrAnchorSpacing: Int
 }
 
-@OptIn(ExperimentalMaterial3Api::class)
 private class CFRPositionProviderImpl(
     override val indicatorDirection: IndicatorDirection,
     override val cfrAnchorSpacing: Int,
@@ -606,7 +604,6 @@ object CFRDefaults {
 
 // region Previews
 
-@OptIn(ExperimentalMaterial3Api::class)
 @Composable
 @PreviewLightDark
 private fun CFRWithTitlePreview() {

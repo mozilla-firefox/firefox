@@ -18,7 +18,6 @@ import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.itemsIndexed
 import androidx.compose.foundation.lazy.rememberLazyListState
 import androidx.compose.foundation.shape.RoundedCornerShape
-import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.HorizontalDivider
 import androidx.compose.material3.Icon
 import androidx.compose.material3.MaterialTheme
@@ -78,7 +77,6 @@ private val SearchResultsPadding = 16.dp
  * @param state The current snapshot of [TabSearchState].
  * @param onAction Invoked to pass upwards a [TabsTrayAction] in response to a UI event.
  */
-@OptIn(ExperimentalMaterial3Api::class)
 @Composable
 fun TabSearchScreen(
     state: TabSearchState,

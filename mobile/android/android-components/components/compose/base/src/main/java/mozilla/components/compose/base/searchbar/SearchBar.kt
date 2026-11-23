@@ -165,7 +165,6 @@ private fun ExpansionSyncEffect(
 }
 
 @Suppress("LongParameterList")
-@OptIn(ExperimentalMaterial3Api::class)
 @Composable
 private fun SearchBarInputField(
     textFieldState: TextFieldState,
@@ -242,7 +241,6 @@ private fun rememberFilteredItems(
     }
 }
 
-@OptIn(ExperimentalMaterial3Api::class)
 @FlexibleWindowLightDarkPreview
 @Composable
 private fun TopSearchBarPreview() {

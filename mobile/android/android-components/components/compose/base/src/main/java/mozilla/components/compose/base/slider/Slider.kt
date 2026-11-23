@@ -16,7 +16,6 @@ import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.requiredSize
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.width
-import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Slider
 import androidx.compose.material3.SliderState
@@ -40,7 +39,6 @@ private const val DISABLED_ALPHA = 0.38f
  * Acorn component for M3 slider. Implements an oblong thumb button with an expanding animation for the button and track
  * during a scrub action, and a track that shows the filled and unfilled area with Acorn theming.
  */
-@OptIn(ExperimentalMaterial3Api::class)
 @Composable
 fun Slider(
     state: SliderState,

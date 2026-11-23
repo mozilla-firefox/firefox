@@ -16,7 +16,6 @@ import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.foundation.verticalScroll
-import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.HorizontalDivider
 import androidx.compose.material3.Icon
 import androidx.compose.material3.Scaffold
@@ -100,7 +99,6 @@ private fun ColorGroupSection(group: ColorGroup) {
 }
 
 /** Displays the Nova color palette organized by color group. */
-@OptIn(ExperimentalMaterial3Api::class)
 @Composable
 fun ColorsScreen(onNavigateUp: () -> Unit = {}) {
     Scaffold(

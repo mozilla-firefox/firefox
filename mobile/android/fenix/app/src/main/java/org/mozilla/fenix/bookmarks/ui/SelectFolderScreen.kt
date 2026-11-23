@@ -18,7 +18,6 @@ import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
 import androidx.compose.foundation.selection.toggleable
 import androidx.compose.material3.CircularProgressIndicator
-import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.Icon
 import androidx.compose.material3.ListItemDefaults
 import androidx.compose.material3.MaterialTheme
@@ -154,7 +153,6 @@ internal fun SelectFolderScreen(
     }
 }
 
-@OptIn(ExperimentalMaterial3Api::class) // TopAppBar
 @Composable
 private fun SelectFolderSearchTopBar(store: BookmarksStore) {
     val focusRequester = remember { FocusRequester() }
@@ -292,7 +290,6 @@ private fun NewFolderListItem(onClick: () -> Unit) {
     )
 }
 
-@OptIn(ExperimentalMaterial3Api::class) // TopAppBar
 @Composable
 private fun SelectFolderTopBar(store: BookmarksStore) {
     val onNewFolderClick =

@@ -11,7 +11,6 @@ import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.verticalScroll
-import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.Scaffold
 import androidx.compose.material3.Surface
 import androidx.compose.material3.Text
@@ -33,7 +32,6 @@ private val componentCategories =
     )
 
 /** Displays a list of available Acorn Design System components. */
-@OptIn(ExperimentalMaterial3Api::class)
 @Composable
 fun ComponentListScreen(onNavigate: (String) -> Unit) {
     Scaffold(

@@ -7,7 +7,6 @@ package org.mozilla.fenix.settings.settingssearch
 import androidx.compose.foundation.layout.WindowInsets
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.wrapContentHeight
-import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.Icon
 import androidx.compose.material3.Text
 import androidx.compose.material3.TextField
@@ -45,7 +44,6 @@ import org.mozilla.fenix.theme.FirefoxTheme
  * @param isSearchFocused Whether the search bar is currently focused.
  * @param onSearchFocusChange Invoked when the search bar's focus state changes.
  */
-@OptIn(ExperimentalMaterial3Api::class)
 @Composable
 fun SettingsSearchBar(
     store: SettingsSearchStore,

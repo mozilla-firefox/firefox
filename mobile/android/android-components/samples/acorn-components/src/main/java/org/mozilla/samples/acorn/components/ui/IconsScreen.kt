@@ -18,7 +18,6 @@ import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.lazy.LazyColumn
-import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.HorizontalDivider
 import androidx.compose.material3.Icon
 import androidx.compose.material3.MaterialTheme
@@ -49,7 +48,6 @@ import mozilla.components.ui.icons.R as iconsR
 private const val CATEGORY_LABEL_WIDTH = 140
 
 /** Displays a catalog of the available Acorn icons grouped by size and category. */
-@OptIn(ExperimentalMaterial3Api::class)
 @Composable
 fun IconsScreen(onNavigateUp: () -> Unit = {}) {
     val snackbarHostState = remember { SnackbarHostState() }

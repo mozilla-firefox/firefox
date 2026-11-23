@@ -4,7 +4,6 @@
 
 package org.mozilla.fenix.tabgroups
 
-import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.Surface
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.getValue
@@ -239,7 +238,6 @@ class EditTabGroupTest {
         }
     }
 
-    @OptIn(ExperimentalMaterial3Api::class)
     @Composable
     private fun ComposableUnderTest(
         initialState: TabGroupFormState = fakeFormState(),

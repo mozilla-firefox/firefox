@@ -12,7 +12,6 @@ import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.layout.wrapContentHeight
-import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.Icon
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Surface
@@ -59,7 +58,6 @@ import org.mozilla.fenix.theme.FirefoxTheme
  * @param displayTabsInGrid Whether the group's tabs are displayed in a grid (vs a list).
  * @param itemInteractionHandler Handler for tab interactions.
  */
-@OptIn(ExperimentalMaterial3Api::class)
 @Composable
 fun ExpandedTabGroup(
     group: TabsTrayItem.TabGroup,

@@ -214,7 +214,6 @@ class TabManagementFragment : Fragment() {
             )
     }
 
-    @OptIn(ExperimentalMaterial3Api::class)
     @Suppress("LongMethod", "CognitiveComplexMethod")
     override fun onCreateView(
         inflater: LayoutInflater,

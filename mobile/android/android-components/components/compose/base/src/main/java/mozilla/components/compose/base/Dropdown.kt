@@ -11,7 +11,6 @@ import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
-import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.ExposedDropdownMenuAnchorType
 import androidx.compose.material3.ExposedDropdownMenuBox
 import androidx.compose.material3.Icon
@@ -48,7 +47,6 @@ import mozilla.components.ui.icons.R as iconsR
  * @param dropdownItems The [MenuItem.CheckableItem]s that should be shown when the dropdown is expanded.
  * @param modifier Modifier to be applied to the dropdown layout.
  */
-@OptIn(ExperimentalMaterial3Api::class)
 @Composable
 fun Dropdown(
     label: String,

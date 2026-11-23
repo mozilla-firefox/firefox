@@ -62,7 +62,6 @@ private val NEW_TAB_GROUP_COMPONENT_WIDTH = 78.dp
  * @param onAddToNewTabGroup Invoked when user clicks to add to a new tab group.
  * @param onAddToExistingTabGroup Invoked when user clicks to add to an existing tab group.
  */
-@OptIn(ExperimentalMaterial3Api::class)
 @Composable
 fun AddToTabGroup(
     tabGroups: List<TabsTrayItem.TabGroup>,
