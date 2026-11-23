@@ -573,6 +573,12 @@ export class GenAIChild extends JSWindowActorChild {
       case "DropdownState":
         this.dropdownOpen = data;
         return null;
+      case "CopySelection":
+        if (this.docShell?.isCommandEnabled("cmd_copy")) {
+          this.docShell.doCommand("cmd_copy");
+          return true;
+        }
+        return false;
       case "ShowSelectionMenu": {
         const selectionInfo = this.getSelectionInfo();
         if (selectionInfo.selection) {

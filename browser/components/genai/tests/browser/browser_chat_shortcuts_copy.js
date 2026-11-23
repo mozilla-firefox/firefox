@@ -251,6 +251,120 @@ add_task(async function test_copy_action() {
 });
 
 /**
+ * Check that Copy behaves like the context menu's Copy: the page sees a copy
+ * event and the clipboard keeps the selection's formatting.
+ */
+add_task(async function test_copy_action_is_a_real_copy() {
+  await SpecialPowers.pushPrefEnv({
+    set: [
+      ["browser.highlightToSearch.featureGate", true],
+      ["browser.highlightToSearch.enabled", true],
+      ["browser.highlightToSearch.search.enabled", false],
+      ["browser.highlightToSearch.copy.enabled", true],
+      ["browser.ml.chat.enabled", false],
+    ],
+  });
+
+  const url =
+    "data:text/html," +
+    encodeURIComponent(
+      "<body onload=\"document.addEventListener('copy', () => (document.title = 'copied'))\"><p>Hello <b>bold</b> world</p></body>"
+    );
+  await BrowserTestUtils.withNewTab(url, async browser => {
+    const panel = await showSelectionMenu(browser);
+    const copyActionButton = document.getElementById("copy-action-button");
+
+    const panelHidden = BrowserTestUtils.waitForEvent(panel, "popuphidden");
+    await new Promise((resolve, reject) => {
+      SimpleTest.waitForClipboard(
+        html => html.includes("<b>bold</b>"),
+        () => EventUtils.synthesizeMouseAtCenter(copyActionButton, {}, window),
+        resolve,
+        () => reject(new Error("Clipboard did not receive the formatting")),
+        "text/html"
+      );
+    });
+    await panelHidden;
+
+    Assert.equal(
+      await SpecialPowers.spawn(browser, [], () => content.document.title),
+      "copied",
+      "The page saw the copy event"
+    );
+  });
+
+  await SpecialPowers.popPrefEnv();
+});
+
+/**
+ * Check that Copy copies just the selected part of an input, through a real
+ * copy.
+ */
+add_task(async function test_copy_action_from_input() {
+  await SpecialPowers.pushPrefEnv({
+    set: [
+      ["browser.highlightToSearch.featureGate", true],
+      ["browser.highlightToSearch.enabled", true],
+      ["browser.highlightToSearch.search.enabled", false],
+      ["browser.highlightToSearch.copy.enabled", true],
+      ["browser.ml.chat.enabled", false],
+      [
+        "browser.ml.chat.shortcuts.ignoreFields",
+        "contenteditable,textarea,moz-multiline-editor",
+      ],
+    ],
+  });
+
+  await BrowserTestUtils.withNewTab(
+    `data:text/html,<input value="input"/>`,
+    async browser => {
+      await SpecialPowers.spawn(browser, [], () => {
+        content.document.addEventListener("copy", () => {
+          content.document.title = "copied";
+        });
+        const input = content.document.querySelector("input");
+        input.focus();
+        input.selectionEnd = 3;
+      });
+
+      const panel = document.getElementById("selection-shortcut-action-panel");
+      await BrowserTestUtils.synthesizeMouse(
+        browser,
+        60,
+        10,
+        { type: "mouseup" },
+        browser
+      );
+      await TestUtils.waitForCondition(
+        () => panel.getAttribute("panelopen") === "true",
+        "Selection menu opened"
+      );
+
+      const copyActionButton = document.getElementById("copy-action-button");
+      const panelHidden = BrowserTestUtils.waitForEvent(panel, "popuphidden");
+      await new Promise((resolve, reject) => {
+        SimpleTest.waitForClipboard(
+          "inp",
+          () =>
+            EventUtils.synthesizeMouseAtCenter(copyActionButton, {}, window),
+          resolve,
+          () => reject(new Error("Clipboard did not receive the selection"))
+        );
+      });
+      await panelHidden;
+
+      Assert.equal(
+        await SpecialPowers.spawn(browser, [], () => content.document.title),
+        "copied",
+        "The page saw the copy event"
+      );
+    }
+  );
+
+  await SpecialPowers.popPrefEnv();
+});
+
+/**
  * Check that the bar grows to fit the translated Copied pill, rather than
  * being sized for the pill before its text has been translated.
  */
