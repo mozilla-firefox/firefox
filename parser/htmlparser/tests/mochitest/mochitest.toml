@@ -1,4 +1,6 @@
 [DEFAULT]
+# Bug 2077709
+prefs = ["dom.navigation.navigationRateLimit.count=0"]
 support-files = [
   "bug_502091_iframe.html",
   "file_bug102699.sjs",

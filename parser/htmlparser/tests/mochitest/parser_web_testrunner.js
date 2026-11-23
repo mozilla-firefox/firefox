@@ -143,12 +143,5 @@ function loadNextTestFile() {
   }
 }
 
-addLoadEvent(async function () {
-  // The test cases navigate the test frame many more times than
-  // dom.navigation.navigationRateLimit.count allows in its time span.
-  await SpecialPowers.pushPrefEnv({
-    set: [["dom.navigation.navigationRateLimit.count", 0]],
-  });
-  loadNextTestFile();
-});
+addLoadEvent(loadNextTestFile);
 SimpleTest.waitForExplicitFinish();

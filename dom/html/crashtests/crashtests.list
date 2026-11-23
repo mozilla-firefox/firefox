@@ -1,3 +1,6 @@
+# Bug 2077709
+defaults pref(dom.navigation.navigationRateLimit.count,0)
+
 load 68912-1.html
 load 257818-1.html
 load 285166-1.html

@@ -23,6 +23,8 @@ prefs = [
   "media.seamless-looping-video=false",
   # Bug 2021606
   "privacy.baselineFingerprintingProtection=false",
+  # Bug 2077709
+  "dom.navigation.navigationRateLimit.count=0",
 ]
 
 ["generated/test_..__always-fail.html"]
