@@ -32,6 +32,7 @@ let issue_list_url = Url::parse(
     "https://github.com/rust-lang/rust/issues?labels=E-easy&state=open"
 )?;
 
+
 assert!(issue_list_url.scheme() == "https");
 assert!(issue_list_url.username() == "");
 assert!(issue_list_url.password() == None);
@@ -142,7 +143,7 @@ url = { version = "2", features = ["debugger_visualizer"] }
 */
 
 #![no_std]
-#![doc(html_root_url = "https://docs.rs/url/2.5.9")]
+#![doc(html_root_url = "https://docs.rs/url/2.5.7")]
 #![cfg_attr(
     feature = "debugger_visualizer",
     debugger_visualizer(natvis_file = "../../debug_metadata/url.natvis")
@@ -2353,9 +2354,9 @@ impl Url {
     ///
     /// * If the new scheme is not in `[a-zA-Z][a-zA-Z0-9+.-]+`
     /// * If this URL is cannot-be-a-base and the new scheme is one of
-    ///   `http`, `https`, `ws`, `wss`, `ftp` or `file`
-    /// * If either the old or new scheme is a special scheme
-    ///   (`http`, `https`, `ws`, `wss`, `ftp` or `file`) and the other is not
+    ///   `http`, `https`, `ws`, `wss` or `ftp`
+    /// * If either the old or new scheme is `http`, `https`, `ws`,
+    ///   `wss` or `ftp` and the other is not one of these
     /// * If the new scheme is `file` and this URL includes credentials
     ///   or has a non-null port
     /// * If this URL's scheme is `file` and its host is empty or null
@@ -2745,7 +2746,7 @@ impl Url {
                     str_len.saturating_sub(scheme_diff + 2)
                 }
             } else if cfg!(windows) {
-                // remove scheme: - has possible \\ for hostname
+                // remove scheme: - has posssible \\ for hostname
                 str_len.saturating_sub(self.scheme().len() + 1)
             } else {
                 // remove scheme://

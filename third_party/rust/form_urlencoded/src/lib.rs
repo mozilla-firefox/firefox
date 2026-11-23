@@ -219,9 +219,14 @@ impl<'a, T: Target> Serializer<'a, T> {
     ///
     /// If that suffix is non-empty,
     /// its content is assumed to already be in `application/x-www-form-urlencoded` syntax.
-    /// If `start_position` exceeds the target's length, it is set to the target's length.
     pub fn for_suffix(mut target: T, start_position: usize) -> Self {
-        let start_position = start_position.min(target.as_mut_string().len());
+        if target.as_mut_string().len() < start_position {
+            panic!(
+                "invalid length {} for target of length {}",
+                start_position,
+                target.as_mut_string().len()
+            );
+        }
 
         Serializer {
             target: Some(target),

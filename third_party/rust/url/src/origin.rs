@@ -20,10 +20,8 @@ pub fn url_origin(url: &Url) -> Origin {
         "blob" => {
             let result = Url::parse(url.path());
             match result {
-                // https://url.spec.whatwg.org/#concept-url-origin
-                // The URL Standard takes the origin of the inner URL only for these schemes.
-                Ok(ref url) if matches!(url.scheme(), "http" | "https" | "file") => url_origin(url),
-                _ => Origin::new_opaque(),
+                Ok(ref url) => url_origin(url),
+                Err(_) => Origin::new_opaque(),
             }
         }
         "ftp" | "http" | "https" | "ws" | "wss" => Origin::Tuple(
@@ -45,9 +43,9 @@ pub fn url_origin(url: &Url) -> Origin {
 ///
 /// The origin is determined based on the scheme as follows:
 ///
-/// - If the scheme is "blob" and the path component contains a URL
-///   with the scheme "http", "https", or "file", the origin is the
-///   origin of that URL. Otherwise it is an opaque origin.
+/// - If the scheme is "blob" the origin is the origin of the
+///   URL contained in the path component. If parsing fails,
+///   it is an opaque origin.
 /// - If the scheme is "ftp", "http", "https", "ws", or "wss",
 ///   then the origin is a tuple of the scheme, host, and port.
 /// - If the scheme is anything else, the origin is opaque, meaning
