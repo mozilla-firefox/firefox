@@ -963,6 +963,8 @@
   <string name="tracking_protection_off">بند</string>
   <!-- Summary of tracking protection preference if tracking protection is set to strict -->
   <string name="tracking_protection_strict">سخت</string>
+  <!-- Summary of studies data on quit preference if it is set to off -->
+  <string name="studies_off">بند</string>
   <!-- Toggle if desktop site is turned off -->
   <string name="browser_feature_desktop_site_off">بند</string>
   <!-- Preference for altering the default browsing mode. When enabled, the desktop site will always be requested. -->
@@ -1054,6 +1056,8 @@
   <string name="preference_enhanced_tracking_protection_custom_global_privacy_control">ویبڈس اتے پاننگے کہ ہچو ڈیٹا بشخپس و بحا کپس</string>
   <!-- Used as text for the link in `preference_doh_title`, points to documentation about "DNS over HTTPS" -->
   <string name="preference_doh_learn_more">پین ہیل کبو</string>
+  <!-- Title displayed for "Off" option under "DNS over HTTPS" -->
+  <string name="preference_doh_off">بند</string>
   <!-- Cancel button text for provider textfield under "DNS over HTTPS" -->
   <string name="preference_doh_provider_custom_dialog_cancel">کینسل</string>
   <!-- Add button text for provider textfield under "DNS over HTTPS" -->
@@ -1100,6 +1104,10 @@
   <string name="ip_protection_learn_more">پین ہیل کبو</string>
   <!-- Header for the browser VPN `location` section -->
   <string name="ip_protection_location_section">ڈس</string>
+  <!-- Badge label shown in the menu item when the browser VPN is active -->
+  <string name="preferences_ip_protection_on">ملوک</string>
+  <!-- Badge label shown in the menu item when the browser VPN is off -->
+  <string name="preferences_ip_protection_off">بند</string>
   <!-- Used as text for a link in ip_protection_onboarding_body. Make sure to adapt capitalization if the link is in the middle of the sentence. -->
   <string name="ip_protection_onboarding_body_link_promo">پین ہیل کبو</string>
   <!-- Label for the dismiss button on the onboarding bottom sheet. -->
@@ -1214,6 +1222,12 @@
   <string name="delete_language_file_dialog_negative_button_text">کینسل</string>
   <!-- Button text on the data saving mode warning dialog used by the translations feature to allow users to cancel the action and not perform a download of the language file. -->
   <string name="download_language_file_dialog_negative_button_text">کینسل</string>
+  <!--
+    Unified Trust Panel
+
+    Title text for the protection panel banner when the site is not secure.
+  -->
+  <string name="protection_panel_banner_not_secure_title">دا ویبڈس اے محتاط مریرے</string>
   <!-- Description text for the protection panel banner when the site is not secure. -->
   <string name="protection_panel_banner_not_secure_description">نما کنیکشن محفوظ اف.</string>
   <!--
@@ -1228,6 +1242,10 @@
   <string name="protection_panel_banner_protected_no_blocked_trackers_description">نم حفاظت ٹی ارے.</string>
   <!-- Label text for the Enhanced Tracking Protection toggle. -->
   <string name="protection_panel_etp_toggle_label">جواننگا ٹریکنگ سوگوئی</string>
+  <!-- Toggle if Enhanced Tracking Protection is turned on -->
+  <string name="protection_panel_etp_toggle_on">ملوک</string>
+  <!-- Toggle if Enhanced Tracking Protection is turned off -->
+  <string name="protection_panel_etp_toggle_off">بند</string>
   <!-- Description text for the Enhanced Tracking Protection toggle when tracking protection is enabled. -->
   <string name="protection_panel_etp_toggle_enabled_description_2">اگہ ویبڈس ٹی گڑاسپنوک لگک، دادے بند کبو و ہربو.</string>
   <!-- Certificate panel - Title of the section that contains the website's certificate information (issued to, issued by, etc.) as verified by Firefox (thus guaranteeing the HTTPS connection is secure) -->

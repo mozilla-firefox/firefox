@@ -2122,15 +2122,21 @@
   <string name="unsubmitted_crash_dialog_negative_button_2">ᲓᲐᲮᲣᲠᲕᲐ</string>
   <!-- Unsubmitted crash dialog negative button to never be asked for the submission -->
   <string name="unsubmitted_crash_requested_by_devs_dialog_never_button">აღარ გამოჩნდეს</string>
+  <!-- Unsubmitted crash dialog negative button to never be asked for the submission, displayed in all capital letters. -->
+  <string name="unsubmitted_crash_requested_by_devs_dialog_never_button_2" tools:ignore="UnusedResources">ᲐᲦᲐᲠ ᲒᲐᲛᲝᲩᲜᲓᲔᲡ</string>
   <!-- Unsubmitted crash dialog positive button to submit crash report -->
   <string name="unsubmitted_crash_dialog_positive_button_2">ᲒᲐᲒᲖᲐᲕᲜᲐ</string>
   <!-- Unsubmitted crash dialog positive button to submit crash report -->
   <string name="unsubmitted_crash_dialog_positive_button">უეცარი გათიშვის მოხსენება</string>
+  <!-- Unsubmitted crash dialog positive button to submit crash report, displayed in all capital letters. -->
+  <string name="unsubmitted_crash_dialog_positive_button_3" tools:ignore="UnusedResources">ᲣᲔᲪᲐᲠᲘ ᲒᲐᲗᲘᲨᲕᲘᲡ ᲛᲝᲮᲡᲔᲜᲔᲑᲐ</string>
   <!-- Body text for crash report dialog. %s is the link text in the annotated string (ie. "Learn More") -->
   <string name="unsubmitted_crash_dialog_body">უეცარი გათიშვის მოხსენებები გვეხმარება, გამოვავლინოთ და მოვაგვაროთ ბრაუზერის ხარვეზები. მოხსენებები შეიძლება შეიცავდეს პირად ან საფრთხილო მონაცემებს. %s</string>
   <string name="unsubmitted_crash_dialog_learn_more">ვრცლად</string>
   <!-- Unsubmitted crash dialog button to open a web page with more details on the feature and privacy policy -->
   <string name="unsubmitted_crash_requested_by_devs_learn_more">ვრცლად</string>
+  <!-- Unsubmitted crash dialog button to open a web page with more details on the feature and privacy policy, displayed in all capital letters. -->
+  <string name="unsubmitted_crash_requested_by_devs_learn_more_2" tools:ignore="UnusedResources">ᲕᲠᲪᲚᲐᲓ</string>
   <!--
     Bookmarks
 
@@ -3250,6 +3256,10 @@
   <string name="preferences_credit_cards_save_and_autofill_cards_2">შეინახეთ და შეავსეთ გადახდის საშუალებები</string>
   <!-- Preference summary for saving and autofilling payment method data. %s is the name of the app (for example "Firefox"). -->
   <string name="preferences_credit_cards_save_and_autofill_cards_summary_2">%s შიფრავს თქვენ მიერ შენახულ გადახდის ყველა საშუალებას</string>
+  <!-- Preference for saving the security codes of credit cards. -->
+  <string name="preferences_credit_cards_save_security_codes">უსაფრთხოების კოდების შენახვა</string>
+  <!-- Preference summary for saving the security codes of credit cards. %s is the name of the app (for example "Firefox"). -->
+  <string name="preferences_credit_cards_save_security_codes_summary">%s შიფრავს თქვენი ბარათის ნომერსა და უსაფრთხოების კოდს სწრაფი გადახდებისთვის</string>
   <!-- Preference option for syncing credit cards across devices. This is displayed when the user is not signed into sync -->
   <string name="preferences_credit_cards_sync_cards_across_devices">დაასინქრონეთ ბარათები სხვადასხვა მოწყობილობაზე</string>
   <!-- Preference option for syncing credit cards across devices. This is displayed when the user is signed into sync -->
@@ -3286,6 +3296,8 @@
   <string name="credit_cards_expiration_date_year">ვადის გასვლის წელი</string>
   <!-- The header for the name on the credit card -->
   <string name="credit_cards_name_on_card">მფლობელის სახელი</string>
+  <!-- The header for the optional security code of a credit card. CVV is the abbreviation of the card security code. -->
+  <string name="credit_cards_cvv_optional">CVV (არასავალდებულო)</string>
   <!-- The text for the "Delete card" menu item for deleting a credit card -->
   <string name="credit_cards_menu_delete_card">ბარათის წაშლა</string>
   <!-- The text for the "Delete card" button for deleting a credit card -->
@@ -3302,10 +3314,16 @@
   <string name="credit_cards_cancel_button">გაუქმება</string>
   <!-- Title of the "Saved cards" screen -->
   <string name="credit_cards_saved_cards">შენახული ბარათები</string>
+  <!-- Text in the saved cards list that indicates the security code for a credit card is being stored -->
+  <string name="credit_cards_cvv_saved">CVV შენახულია</string>
   <!-- Error message for card number validation -->
   <string name="credit_cards_number_validation_error_message_2">მიუთითეთ ბარათის მართებული ნომერი</string>
   <!-- Error message for card name on card validation -->
   <string name="credit_cards_name_on_card_validation_error_message_2">სახელის დამატება</string>
+  <!-- Error message for a credit card security code that does not meet the 3-digit length requirement. -->
+  <string name="credit_cards_cvv_validation_error_message">უსაფრთხოების კოდი უნდა იყოს 3 ციფრით</string>
+  <!-- Error message for a credit card security code that does not meet the 4-digit length requirement (used for American Express cards only) -->
+  <string name="credit_cards_cvv_amex_validation_error_message">American Express უსაფრთხოების კოდი 4 ციფრითაა</string>
   <!-- Message displayed in biometric prompt displayed for authentication before allowing users to view their saved credit cards -->
   <string name="credit_cards_biometric_prompt_message">გახსენით შენახული ბარათების სანახავად</string>
   <!-- Title of warning dialog if users have no device authentication set up -->
@@ -3715,6 +3733,12 @@
     %1$s is the size in kilobytes or megabytes of the language file.
   -->
   <string name="translations_download_language_file_dialog_title">ჩამოიტვირთოს ენა მონაცემთა დაზოგვისას (%1$s)?</string>
+  <!--
+    Translations options dialog
+
+    Title of the translation options dialog that allows a user to set their translation preferences for the site the user is currently on.
+  -->
+  <string name="translation_option_bottom_sheet_title_heading2">თარგმნის პარამეტრები</string>
   <!--
     Translations options dialog
 
@@ -4538,6 +4562,8 @@
   <string name="wrex_widget_match_suspended">შეჩერდა</string>
   <!-- Label shown on the sports widget match status badge when a match has been postponed to a later date. -->
   <string name="wrex_widget_match_postponed">გადაიდო</string>
+  <!-- Label shown on the sports widget match status badge when a match has been canceled. -->
+  <string name="wrex_widget_match_canceled">გაუქმდა</string>
   <!-- Sports widget action label to refresh match data after an error. -->
   <string name="wrex_widget_error_refresh">გაახლება</string>
   <!-- Sports widget menu item to view the team's match results. -->
