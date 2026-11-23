@@ -65,7 +65,6 @@ const uint64_t HTTP3_APP_ERROR_VERSION_FALLBACK = 0x110;
 const uint32_t MAX_PTO_COUNTS = 16;
 
 const uint32_t TRANSPORT_ERROR_STATELESS_RESET = 20;
-const uint32_t TRANSPORT_ERROR_TOO_MANY_PTOS = 31;
 
 NS_IMPL_ADDREF_INHERITED(Http3Session, nsAHttpConnection)
 NS_IMPL_RELEASE_INHERITED(Http3Session, nsAHttpConnection)
@@ -426,7 +425,7 @@ void Http3Session::Shutdown() {
         }
       }
     } else if (!stream->HasStreamId()) {
-      if (NS_SUCCEEDED(mError) || mBlackholeError) {
+      if (NS_SUCCEEDED(mError)) {
         // Connection has not been started yet. We can restart it.
         stream->Transaction()->DoNotRemoveAltSvc();
       }
@@ -442,9 +441,6 @@ void Http3Session::Shutdown() {
       stream->Close(NS_ERROR_NET_PARTIAL_TRANSFER);
     } else if (mError == NS_ERROR_NET_HTTP3_PROTOCOL_ERROR) {
       stream->Close(NS_ERROR_NET_HTTP3_PROTOCOL_ERROR);
-    } else if (mBlackholeError) {
-      stream->Transaction()->DoNotRemoveAltSvc();
-      stream->Close(NS_ERROR_NET_RESET);
     } else if (mError == NS_ERROR_NET_RESET) {
       stream->Close(NS_ERROR_NET_RESET);
     } else {
@@ -902,23 +898,15 @@ nsresult Http3Session::ProcessEvents() {
         }
         return mError;
         break;
-      case Http3Event::Tag::ConnectionClosed: {
+      case Http3Event::Tag::ConnectionClosed:
         LOG(("Http3Session::ProcessEvents - ConnectionClosed"));
-        CloseError& closeError = event.connection_closed.error;
-        if (closeError.tag == CloseError::Tag::TransportInternalErrorOther &&
-            closeError.transport_internal_error_other._0 ==
-                TRANSPORT_ERROR_TOO_MANY_PTOS) {
-          mBlackholeError = true;
-          mUdpConn->SetCloseReason(ConnectionCloseReason::NET_TIMEOUT);
-          mError = NS_ERROR_NET_TIMEOUT;
-          CloseConnectionTelemetry(event.connection_closed.error, false);
-        } else if (NS_SUCCEEDED(mError)) {
+        if (NS_SUCCEEDED(mError)) {
           mError = NS_ERROR_NET_TIMEOUT;
           mUdpConn->SetCloseReason(ConnectionCloseReason::IDLE_TIMEOUT);
           CloseConnectionTelemetry(event.connection_closed.error, false);
         }
         mIsClosedByNeqo = true;
-        if (closeError.tag == CloseError::Tag::EchRetry) {
+        if (event.connection_closed.error.tag == CloseError::Tag::EchRetry) {
           mSocketControl->SetRetryEchConfig(Substring(
               reinterpret_cast<const char*>(data.Elements()), data.Length()));
           mError = psm::GetXPCOMFromNSSError(SSL_ERROR_ECH_RETRY_WITH_ECH);
@@ -927,7 +915,7 @@ nsresult Http3Session::ProcessEvents() {
              static_cast<uint32_t>(mError)));
         // We need to return here and let HttpConnectionUDP close the session.
         return mError;
-      } break;
+        break;
       case Http3Event::Tag::EchFallbackAuthenticationNeeded: {
         nsCString echPublicName(reinterpret_cast<const char*>(data.Elements()),
                                 data.Length());
