@@ -44,3 +44,4 @@ vendoring:
     - parakeet-chunk-samples.patch # expose the encoder chunk length, to feed one at a time
     - parakeet-end-utterance.patch # let the host close an utterance (models with no <EOU>)
     - parakeet-eou-reset-encoder.patch # drop the encoder cache at an <EOU>, as NeMo does
+    - parakeet-backend-init-lock.patch # lock the lazy creation of the global backend

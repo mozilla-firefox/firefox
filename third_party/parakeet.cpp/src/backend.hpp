@@ -142,7 +142,10 @@ ggml_tensor* clone_weight_opt(ggml_context* ctx, const ModelLoader& ml,
 // Ensure the loader's weights have a backend buffer (zero-copy) on the
 // process-global Backend. Idempotent; called automatically by clone_weight, but
 // exposed so the model/test load path can realize weights up front.
-void ensure_weights_realized(const ModelLoader& ml);
+// Returns false if the weights could not be realized; loaders must then fail:
+// run_graph (holds g_backend_mutex) -> build lambda -> clone_weight ->
+// ensure_weights_realized -> global_backend() would re-lock and deadlock.
+bool ensure_weights_realized(const ModelLoader& ml);
 
 // Copy a weight tensor's f32 contents into `out` on the host, regardless of
 // whether the weight lives in CPU or device (e.g. CUDA) memory. Ensures weights
