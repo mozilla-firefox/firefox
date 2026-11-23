@@ -50,3 +50,5 @@ support-files = [
   "import_useless1.css",
   "import_useless2.css",
 ]
+
+["test_stylesheet_service_null_uri.html"]

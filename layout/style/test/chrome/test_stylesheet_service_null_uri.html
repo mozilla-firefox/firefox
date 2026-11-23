@@ -1,0 +1,28 @@
+<!DOCTYPE HTML>
+<html>
+<head>
+  <title>nsIStyleSheetService.loadAndRegisterSheet rejects a null URI</title>
+  <script src="chrome://mochikit/content/tests/SimpleTest/SimpleTest.js"></script>
+  <link rel="stylesheet" type="text/css" href="chrome://mochikit/content/tests/SimpleTest/test.css"/>
+</head>
+<body>
+<script>
+const sss = Cc["@mozilla.org/content/style-sheet-service;1"].getService(
+  Ci.nsIStyleSheetService
+);
+
+for (const type of ["AGENT_SHEET", "USER_SHEET", "AUTHOR_SHEET"]) {
+  try {
+    sss.loadAndRegisterSheet(null, sss[type]);
+    ok(false, `loadAndRegisterSheet(null, ${type}) should throw`);
+  } catch (e) {
+    is(
+      e.result,
+      Cr.NS_ERROR_INVALID_POINTER,
+      `loadAndRegisterSheet(null, ${type}) throws NS_ERROR_INVALID_POINTER`
+    );
+  }
+}
+</script>
+</body>
+</html>

@@ -90,10 +90,11 @@ nsStyleSheetService::LoadAndRegisterSheet(nsIURI* aSheetURI,
   // sheet is a data URI, someone might've created this #ref by accident (and
   // truncated their data-URI stylesheet) by using an unescaped # character in
   // a #RRGGBB color or #foo() ID-selector in their data-URI representation.
+  NS_ENSURE_ARG_POINTER(aSheetURI);
   bool hasRef;
   nsresult rv = aSheetURI->GetHasRef(&hasRef);
   NS_ENSURE_SUCCESS(rv, rv);
-  if (aSheetURI && hasRef) {
+  if (hasRef) {
     nsCOMPtr<nsIConsoleService> consoleService =
         do_GetService(NS_CONSOLESERVICE_CONTRACTID);
     NS_WARNING_ASSERTION(consoleService, "Failed to get console service!");
