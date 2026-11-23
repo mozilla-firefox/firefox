@@ -27,11 +27,7 @@ add_task(async function test_selectByMouse() {
 
   info("Check if the result is copied to clipboard when selecting by mouse");
   let engaged = UrlbarTestUtils.promiseProviderEngagement(win);
-  EventUtils.synthesizeMouseAtCenter(
-    row.querySelector(".urlbarView-no-wrap"),
-    {},
-    win
-  );
+  EventUtils.synthesizeMouseAtCenter(row, {}, win);
   await engaged;
   assertClipboard();
 

@@ -36,30 +36,23 @@ const VIEW_TEMPLATE = {
   },
   children: [
     {
-      name: "content",
+      name: "icon",
+      tag: "img",
+      classList: ["urlbarView-favicon"],
+      attributes: {
+        src: "chrome://global/skin/icons/edit-copy.svg",
+      },
+    },
+    {
+      name: "output",
+      tag: "strong",
+      attributes: {
+        dir: "ltr",
+      },
+    },
+    {
+      name: "action",
       tag: "span",
-      classList: ["urlbarView-no-wrap"],
-      children: [
-        {
-          name: "icon",
-          tag: "img",
-          classList: ["urlbarView-favicon"],
-          attributes: {
-            src: "chrome://global/skin/icons/edit-copy.svg",
-          },
-        },
-        {
-          name: "output",
-          tag: "strong",
-          attributes: {
-            dir: "ltr",
-          },
-        },
-        {
-          name: "action",
-          tag: "span",
-        },
-      ],
     },
   ],
 };
