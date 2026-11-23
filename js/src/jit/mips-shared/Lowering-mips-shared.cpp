@@ -4,6 +4,8 @@
 
 #include "jit/mips-shared/Lowering-mips-shared.h"
 
+#include "mozilla/MathAlgorithms.h"
+
 #include <bit>
 
 #include "jit/Lowering.h"
@@ -185,8 +187,8 @@ void LIRGeneratorMIPSShared::lowerMulI(MMul* mul, MDefinition* lhs,
 void LIRGeneratorMIPSShared::lowerModI(MMod* mod) {
   if (mod->rhs()->isConstant()) {
     int32_t rhs = mod->rhs()->toConstant()->toInt32();
+    int32_t shift = mozilla::FloorLog2(uint32_t(rhs));
     if (rhs > 0 && std::has_single_bit(uint32_t(rhs))) {
-      int32_t shift = std::countr_zero(uint32_t(rhs));
       LModPowTwoI* lir =
           new (alloc()) LModPowTwoI(useRegister(mod->lhs()), shift);
       if (mod->fallible()) {
