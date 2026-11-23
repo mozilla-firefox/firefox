@@ -13,10 +13,10 @@ let source = `
 
     class C {
         // START----v
-                    'field_str';
-                    'field_str_with_init' = 1;
                     [A];
                     [B] = 2;
+                    'field_str';
+                    'field_str_with_init' = 1;
              static x;
              static y = 3;
              static [A + "static"];

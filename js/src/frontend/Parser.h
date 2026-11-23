@@ -1281,8 +1281,9 @@ class MOZ_STACK_CLASS GeneralParser : public PerHandlerParser<ParseHandler> {
     // The number of instance class private accessors.
     size_t privateAccessors = 0;
 
-    // Checks if every instance field is a simple constant.
-    bool hasOnlyInlinableFields = true;
+    // True until the first instance field that can't be inlined. Only the
+    // inlinable fields before it are inlined, and the rest use .initializers.
+    bool inlinedPrefixOpen = true;
     Vector<InlinedField, MemberInitializers::MaxInlinedFields,
            SystemAllocPolicy>
         inlinableFields;

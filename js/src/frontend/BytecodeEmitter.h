@@ -666,12 +666,12 @@ struct MOZ_STACK_CLASS BytecodeEmitter {
       ListNode* classMembers, FieldPlacement placement) const;
   [[nodiscard]] bool emitCreateFieldKeys(ListNode* obj,
                                          FieldPlacement placement);
-  [[nodiscard]] bool emitCreateMemberInitializers(ClassEmitter& ce,
-                                                  ListNode* obj,
-                                                  FieldPlacement placement
+  [[nodiscard]] bool emitCreateMemberInitializers(
+      ClassEmitter& ce, ListNode* obj, FieldPlacement placement,
+      mozilla::Span<const InlinedField> alreadyInlinedFields
 #ifdef ENABLE_DECORATORS
-                                                  ,
-                                                  bool hasHeritage
+      ,
+      bool hasHeritage
 #endif
   );
   const MemberInitializers& findMemberInitializersForCall() const;

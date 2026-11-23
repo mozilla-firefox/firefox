@@ -8050,10 +8050,9 @@ bool GeneralParser<ParseHandler, Unit>::finishClassConstructor(
     mozilla::Span<const InlinedField> inlinedFields;
     if (!hasPrivateBrand && !hasInstanceDecorators &&
         hasHeritage == HasHeritage::No && ctorbox->emitBytecode &&
-        classInitializedMembers.hasOnlyInlinableFields &&
         !classInitializedMembers.inlinableFields.empty()) {
       const auto& fields = classInitializedMembers.inlinableFields;
-      MOZ_ASSERT(fields.length() == classInitializedMembers.instanceFields);
+      MOZ_ASSERT(fields.length() <= classInitializedMembers.instanceFields);
       InlinedField* copy =
           this->alloc_.template newArrayUninitialized<InlinedField>(
               fields.length());
@@ -8779,7 +8778,7 @@ GeneralParser<ParseHandler, Unit>::fieldInitializerOpt(
   }
 
   if constexpr (!std::is_same_v<ParseHandler, SyntaxParseHandler>) {
-    if (!isStatic && classInitializedMembers.hasOnlyInlinableFields &&
+    if (!isStatic && classInitializedMembers.inlinedPrefixOpen &&
         JS::Prefs::experimental_inline_simple_field_initializers()) {
       // Computed names (`[expr] = 0;`) leave propAtom null. Index-like names
       // need different bytecode than a plain InitProp.
@@ -8802,8 +8801,9 @@ GeneralParser<ParseHandler, Unit>::fieldInitializerOpt(
           return errorResult();
         }
       } else {
-        classInitializedMembers.hasOnlyInlinableFields = false;
-        classInitializedMembers.inlinableFields.clearAndFree();
+        // Every field is parsed into its own initializer function, so this
+        // field and the ones after it can run through .initializers.
+        classInitializedMembers.inlinedPrefixOpen = false;
       }
     }
   }

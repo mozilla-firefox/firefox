@@ -10422,12 +10422,12 @@ static bool IsPrivateInstanceAccessor(const ClassMethod* classMethod) {
          classMethod->accessorType() != AccessorType::None;
 }
 
-bool BytecodeEmitter::emitCreateMemberInitializers(ClassEmitter& ce,
-                                                   ListNode* obj,
-                                                   FieldPlacement placement
+bool BytecodeEmitter::emitCreateMemberInitializers(
+    ClassEmitter& ce, ListNode* obj, FieldPlacement placement,
+    mozilla::Span<const InlinedField> alreadyInlinedFields
 #ifdef ENABLE_DECORATORS
-                                                   ,
-                                                   bool hasHeritage
+    ,
+    bool hasHeritage
 #endif
 ) {
   // FieldPlacement::Instance, hasHeritage == false
@@ -10449,6 +10449,8 @@ bool BytecodeEmitter::emitCreateMemberInitializers(ClassEmitter& ce,
   }
 
   size_t numInitializers = memberInitializers->numMemberInitializers;
+  MOZ_ASSERT(alreadyInlinedFields.size() <= numInitializers);
+  numInitializers -= alreadyInlinedFields.size();
   if (numInitializers == 0) {
     return true;
   }
@@ -10472,8 +10474,17 @@ bool BytecodeEmitter::emitCreateMemberInitializers(ClassEmitter& ce,
     }
   }
 
+  // The leading instance fields were inlined into the constructor.
+  size_t numSkipped = 0;
   for (ParseNode* propdef : obj->contents()) {
     if (!HasInitializer(propdef, isStatic)) {
+      continue;
+    }
+    if (numSkipped < alreadyInlinedFields.size()) {
+      MOZ_ASSERT(propdef->as<ClassField>().name().is<NameNode>());
+      MOZ_ASSERT(propdef->as<ClassField>().name().as<NameNode>().atom() ==
+                 alreadyInlinedFields[numSkipped].name);
+      numSkipped++;
       continue;
     }
 
@@ -11125,8 +11136,10 @@ bool BytecodeEmitter::emitInitializeInstanceMembers(
     }
   }
 
+  size_t numInlinedFields = 0;
   if (memberInitializers.hasInlinedFields) {
     MOZ_ASSERT(!isDerivedClassConstructor);
+    numInlinedFields = sc->asFunctionBox()->inlinedFields().size();
     for (const InlinedField& field : sc->asFunctionBox()->inlinedFields()) {
       if (!emitGetName(TaggedParserAtomIndex::WellKnown::dot_this_())) {
         //              [stack] THIS
@@ -11171,10 +11184,11 @@ bool BytecodeEmitter::emitInitializeInstanceMembers(
         return false;
       }
     }
-    return true;
   }
 
-  size_t numInitializers = memberInitializers.numMemberInitializers;
+  // The remaining fields run through .initializers, after the inlined ones.
+  size_t numInitializers =
+      memberInitializers.numMemberInitializers - numInlinedFields;
   if (numInitializers > 0) {
     if (!emitGetName(TaggedParserAtomIndex::WellKnown::dot_initializers_())) {
       //              [stack] ARRAY
@@ -12529,11 +12543,11 @@ bool BytecodeEmitter::emitClass(
       }
 #endif
       // Any class with field initializers will have a constructor
-      if (!ctor->funbox()->memberInitializers().hasInlinedFields &&
-          !emitCreateMemberInitializers(ce, classMembers,
-                                        FieldPlacement::Instance
+      if (!emitCreateMemberInitializers(ce, classMembers,
+                                        FieldPlacement::Instance,
+                                        ctor->funbox()->inlinedFields()
 #ifdef ENABLE_DECORATORS
-                                        ,
+                                            ,
                                         isDerived
 #endif
                                         )) {
@@ -12583,7 +12597,7 @@ bool BytecodeEmitter::emitClass(
   }
 #endif
 
-  if (!emitCreateMemberInitializers(ce, classMembers, FieldPlacement::Static
+  if (!emitCreateMemberInitializers(ce, classMembers, FieldPlacement::Static, {}
 #ifdef ENABLE_DECORATORS
                                     ,
                                     false
