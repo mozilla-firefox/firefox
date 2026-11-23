@@ -13,12 +13,6 @@
 namespace mozilla {
 namespace freestanding {
 
-// We cannot fall back to the Tls* APIs because kernel32 might not have been
-// loaded yet.
-#if defined(__MINGW32__) && !defined(HAVE_THREAD_TLS_KEYWORD)
-#  error "This code requires the compiler to have native TLS support"
-#endif  // defined(__MINGW32__) && !defined(HAVE_THREAD_TLS_KEYWORD)
-
 /**
  * This class holds data as a thread-local variable, or as a global variable
  * if the thread local storage is not initialized yet.  It should be safe
