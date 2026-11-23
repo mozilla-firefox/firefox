@@ -419,6 +419,7 @@ function generateDocumentation() {
   // a new Fluent ID so that l10n retranslates. When a description
   // is rewritten, add the new ID here (usually <PolicyName>N).
   let string_mapping = {
+    Authentication: "Authentication2",
     BackgroundAppUpdate: "BackgroundAppUpdate2",
     BlockAboutConfig: "BlockAboutConfig2",
     BlockAboutProfiles: "BlockAboutProfiles2",

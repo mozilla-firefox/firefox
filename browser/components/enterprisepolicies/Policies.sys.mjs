@@ -425,6 +425,13 @@ export var Policies = {
           locked
         );
       }
+      if ("DisabledSchemes" in param) {
+        lazy.PoliciesUtils.setDefaultPref(
+          "network.http.auth.disabled-schemes",
+          param.DisabledSchemes.join(","),
+          locked
+        );
+      }
     },
   },
 

@@ -360,7 +360,7 @@
         "firefox_enterprise": { "version_added": "149" }
       },
       "x-restart-required": true,
-      "description": "Configure sites that support integrated authentication.",
+      "description": "Configure sites that support integrated authentication, and which HTTP authentication schemes are disabled.",
       "examples": [
         {
           "SPNEGO": ["mydomain.com", "https://myotherdomain.com"],
@@ -375,7 +375,8 @@
             "NTLM": true
           },
           "Locked": true,
-          "PrivateBrowsing": true
+          "PrivateBrowsing": true,
+          "DisabledSchemes": ["basic"]
         }
       ],
       "properties": {
@@ -445,6 +446,18 @@
             "firefox": { "version_added": "77" },
             "firefox_esr": { "version_added": "68.9.0" },
             "firefox_enterprise": { "version_added": "149" }
+          }
+        },
+        "DisabledSchemes": {
+          "type": "array",
+          "x-compatibility": {
+            "firefox": { "version_added": "162" },
+            "firefox_esr": { "version_added": false },
+            "firefox_enterprise": { "version_added": "162" }
+          },
+          "items": {
+            "type": "string",
+            "enum": ["basic", "digest", "ntlm", "negotiate"]
           }
         }
       }
