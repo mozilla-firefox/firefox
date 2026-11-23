@@ -10,14 +10,12 @@ import android.content.pm.PackageManager
 import android.net.Uri
 import android.os.Bundle
 import android.os.StrictMode
-import android.view.ContextThemeWrapper
 import androidx.annotation.VisibleForTesting
 import mozilla.appservices.fxaclient.contentUrl
 import mozilla.components.feature.intent.ext.sanitize
 import mozilla.components.feature.intent.processing.IntentProcessor
 import mozilla.components.feature.intent.processing.TabIntentProcessor.Companion.EXTRA_APP_LINK_LAUNCH_TYPE
 import mozilla.components.support.base.log.logger.Logger
-import mozilla.components.support.ktx.kotlin.isSameOriginAs
 import mozilla.components.support.utils.EXTRA_ACTIVITY_REFERRER_CATEGORY
 import mozilla.components.support.utils.EXTRA_ACTIVITY_REFERRER_PACKAGE
 import mozilla.components.support.utils.INTENT_TYPE_PDF
@@ -28,12 +26,13 @@ import org.mozilla.fenix.GleanMetrics.SyncAuth
 import org.mozilla.fenix.HomeActivity.Companion.PRIVATE_BROWSING_MODE
 import org.mozilla.fenix.components.FxaServer
 import org.mozilla.fenix.components.IntentProcessorType
+import org.mozilla.fenix.components.accounts.createPairingAuthCustomTabIntent
+import org.mozilla.fenix.components.accounts.isFxaPairingLink
 import org.mozilla.fenix.components.getType
 import org.mozilla.fenix.ext.components
 import org.mozilla.fenix.ext.isIntentInternal
 import org.mozilla.fenix.perf.MarkersActivityLifecycleCallbacks
 import org.mozilla.fenix.perf.StartupTimeline
-import org.mozilla.fenix.settings.SupportUtils
 import org.mozilla.fenix.settings.account.AuthCustomTabActivity
 import org.mozilla.fenix.shortcut.NewTabShortcutIntentProcessor
 import org.mozilla.fenix.shortcut.UninstallShortcutIntentProcessor
@@ -170,19 +169,11 @@ class IntentReceiverActivity : Activity() {
         startActivityAndFinish(intent)
     }
 
-    /**
-     * Opens a scanned Firefox Accounts pairing link in [AuthCustomTabActivity] with `embed=customtab` appended so the
-     * page can adapt its wording.
-     */
+    /** Opens a scanned Firefox Accounts pairing link in [AuthCustomTabActivity]. */
     @VisibleForTesting
     internal fun launchAuthCustomTab(pairingUrl: Uri) {
-        // Neither the receiver's transparent theme nor the application context defines colorSurface, which the custom
-        // tab intent reads, so resolve it against the app theme explicitly.
-        val themedContext = ContextThemeWrapper(this, R.style.NormalTheme)
-        val pairingCustomTabUrl =
-            pairingUrl.buildUpon().appendQueryParameter(FXA_EMBED_PARAM, FXA_EMBED_CUSTOM_TAB).build()
         val intent =
-            SupportUtils.createAuthCustomTabIntent(themedContext, pairingCustomTabUrl.toString())
+            createPairingAuthCustomTabIntent(this, pairingUrl)
                 .putExtra(AuthCustomTabActivity.EXTRA_OPEN_HOME_ON_AUTHENTICATED, true)
         startActivityAndFinish(intent)
     }
@@ -255,15 +246,3 @@ private fun Intent.stripUnwantedFlags() {
     // do not want to propagate this flag from the intent receiver activity to the browser.
     flags = flags and Intent.FLAG_ACTIVITY_EXCLUDE_FROM_RECENTS.inv()
 }
-
-private const val FXA_PAIRING_PATH = "/pair"
-private const val FXA_EMBED_PARAM = "embed"
-private const val FXA_EMBED_CUSTOM_TAB = "customtab"
-
-/**
- * Returns whether [uri] has the same origin as [fxaServerUrl] and the Firefox Accounts pairing path. [fxaServerUrl] is
- * the origin of the configured account server, as returned by `FxaServer.contentUrl()`.
- */
-@VisibleForTesting
-internal fun isFxaPairingLink(uri: Uri, fxaServerUrl: String): Boolean =
-    uri.toString().lowercase().isSameOriginAs(fxaServerUrl) && uri.path == FXA_PAIRING_PATH
