@@ -43,7 +43,19 @@
 
     await zoomHasHappened;
     isnot(SpecialPowers.getFullZoom(window), initialZoom, id + ": should have zoomed");
-    SpecialPowers.setFullZoom(window, initialZoom);
+    // In a cross-origin iframe the top zoom reaches us asynchronously, and
+    // resizes our viewport when it does. Check the zoom on each resize, as
+    // resize events from the wheel zoom may still be pending.
+    const zoomWasReset = new Promise(resolve => {
+      window.addEventListener("resize", function onResize() {
+        if (SpecialPowers.getFullZoom(window) == initialZoom) {
+          window.removeEventListener("resize", onResize);
+          resolve();
+        }
+      });
+    });
+    SpecialPowers.setFullZoom(window.top, initialZoom);
+    await zoomWasReset;
   }
 
   async function test() {
