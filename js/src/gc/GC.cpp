@@ -246,6 +246,7 @@
 #include "jit/ExecutableAllocator.h"
 #include "jit/JitCode.h"
 #include "jit/JitRuntime.h"
+#include "jit/JSJitFrameIter.h"
 #include "jit/ProcessExecutableMemory.h"
 #include "js/HeapAPI.h"  // JS::GCCellPtr
 #include "js/Printer.h"
@@ -2556,9 +2557,13 @@ void GCRuntime::queueBuffersForFreeAfterMinorGC(
 
 void Realm::destroy(JS::GCContext* gcx) {
   GCRuntime* gc = gcx->gcRuntime();
+  JSContext* cx = gc->rt->mainContextFromOwnThread();
+
+  MOZ_RELEASE_ASSERT(cx->realm() != this);
+
   gc->callDestroyRealmCallback(gcx, this);
   if (principals()) {
-    JS_DropPrincipals(gc->rt->mainContextFromOwnThread(), principals());
+    JS_DropPrincipals(cx, principals());
   }
   // Bug 1560019: Malloc memory associated with a zone but not with a specific
   // GC thing is not currently tracked.
@@ -5353,6 +5358,8 @@ void GCRuntime::collect(bool nonincrementalByAPI, const SliceBudget& budget,
     return;
   }
 
+  jit::AssertCurrentRealmIsOnStack(rt->mainContextFromOwnThread());
+
   JS_LOG(gc, Info, "begin slice for reason %s in state %s",
          ExplainGCReason(reason), StateName(incrementalState));
 
@@ -5589,6 +5596,8 @@ void GCRuntime::minorGC(JS::GCReason reason, gcstats::PhaseKind phase) {
   if (rt->mainContextFromOwnThread()->suppressGC) {
     return;
   }
+
+  jit::AssertCurrentRealmIsOnStack(rt->mainContextFromOwnThread());
 
   incGcNumber();
 

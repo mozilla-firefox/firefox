@@ -24,6 +24,8 @@
 #include "jit/VMFunctions.h"
 #include "js/Exception.h"
 #include "js/friend/DumpFunctions.h"  // js::DumpObject, js::DumpValue
+#include "vm/Activation.h"
+#include "vm/FrameIter.h"
 #include "vm/Interpreter.h"
 #include "vm/JSContext.h"
 #include "vm/JSFunction.h"
@@ -38,6 +40,7 @@
 #include "debugger/DebugAPI-inl.h"
 #include "jit/JitFrames-inl.h"
 #include "jit/JSJitFrameIter-inl.h"
+#include "jit/VMFunctionList-inl.h"
 #include "vm/GeckoProfiler-inl.h"
 #include "vm/JSScript-inl.h"
 #include "vm/Probes-inl.h"
@@ -2904,6 +2907,112 @@ void InvalidationBailoutStack::checkInvariants() const {
   MOZ_ASSERT(rawBase <= osiPoint && osiPoint <= rawLimit);
 #endif
 }
+
+#ifdef DEBUG
+// Baseline call ICs switch to the callee's realm before calling
+// CreateThisFromIC{WithAllocSite}. The callee is the first argument and is
+// traced by TraceJitExitFrame.
+static Realm* MaybeCreateThisCalleeRealm(ExitFrameLayout* exitFrame) {
+  static_assert(
+      std::is_same_v<decltype(&CreateThisFromIC),
+                     bool (*)(JSContext*, HandleObject, HandleObject, Value*,
+                              uint32_t, MutableHandleValue)>);
+  static_assert(std::is_same_v<decltype(&CreateThisFromICWithAllocSite),
+                               bool (*)(JSContext*, HandleObject, HandleObject,
+                                        gc::AllocSite*, Value*, uint32_t,
+                                        MutableHandleValue)>);
+
+  VMFunctionId id = exitFrame->footer()->functionId();
+  if (id != VMFunctionId::CreateThisFromIC &&
+      id != VMFunctionId::CreateThisFromICWithAllocSite) {
+    return nullptr;
+  }
+
+  const VMFunctionData& f = GetVMFunction(id);
+  MOZ_ASSERT(f.explicitArgs >= 1);
+  MOZ_ASSERT(f.argRootType(0) == VMFunctionData::RootObject);
+
+  JSObject* callee = *reinterpret_cast<JSObject**>(exitFrame->argBase());
+  MOZ_ASSERT(callee->is<JSFunction>());
+  MOZ_ASSERT(callee->as<JSFunction>().isConstructor());
+  return callee->as<JSFunction>().realm();
+}
+
+static bool JitActivationHasFrameInRealm(JitActivation* activation,
+                                         Realm* realm) {
+  for (JitFrameIter iter(activation); !iter.done(); ++iter) {
+    Realm* frameRealm = nullptr;
+    if (iter.isWasm()) {
+      // The exit stub's frame is skipped by the iterator, so check the
+      // instance owning it too, see TraceJitFrames.
+      if (wasm::Instance* instance = iter.asWasm().exitInstance()) {
+        if (instance->realm() == realm) {
+          return true;
+        }
+      }
+#  ifdef ENABLE_WASM_JSPI
+      // A return_call_indirect signature mismatch in a continuation's entry
+      // function can tear down its frame. The base frame's instance is then
+      // traced instead, see TraceJitFrames.
+      if (wasm::Instance* instance = iter.asWasm().contBaseInstance()) {
+        if (instance->realm() == realm) {
+          return true;
+        }
+      }
+#  endif
+      frameRealm = iter.realm();
+    } else {
+      const JSJitFrameIter& frame = iter.asJSJit();
+      if (frame.isScripted() || frame.isTrampolineNative()) {
+        frameRealm = iter.realm();
+      } else if (frame.isExitFrameLayout<NativeExitFrameLayout>()) {
+        auto* layout = frame.exitFrame()->as<NativeExitFrameLayout>();
+        frameRealm = (*layout->savedCallee())->nonCCWRealm();
+      } else if (frame.isExitFrameLayout<IonOOLNativeExitFrameLayout>()) {
+        auto* layout = frame.exitFrame()->as<IonOOLNativeExitFrameLayout>();
+        frameRealm = (*layout->savedCallee())->nonCCWRealm();
+      } else if (frame.isExitFrameLayout<CalledFromJitExitFrameLayout>()) {
+        auto* layout = frame.exitFrame()->as<CalledFromJitExitFrameLayout>();
+        CalleeToken token = layout->jsFrame()->calleeToken();
+        frameRealm = CalleeTokenIsFunction(token)
+                         ? CalleeTokenToFunction(token)->realm()
+                         : CalleeTokenToScript(token)->realm();
+      } else if (frame.isExitFrame() && frame.exitFrame()->isWrapperExit()) {
+        frameRealm = MaybeCreateThisCalleeRealm(frame.exitFrame());
+      }
+    }
+    if (frameRealm == realm) {
+      return true;
+    }
+  }
+  return false;
+}
+
+void AssertCurrentRealmIsOnStack(JSContext* cx) {
+  // When JIT code calls a function in a different realm within the same
+  // compartment, we set cx->realm_ to the callee's realm without marking this
+  // realm as entered. This is safe because we assume the realm will be kept
+  // alive by the callee frame's script or Wasm instance.
+  // See Realm::enterRealmDepthIgnoringJit_.
+  //
+  // This function checks that assumption at the start of GC: if the context's
+  // current realm wasn't entered, there must be a frame on the stack in that
+  // realm to ensure the realm is kept alive.
+
+  Realm* realm = cx->realm();
+  if (!realm || realm->hasBeenEnteredIgnoringJit()) {
+    return;
+  }
+
+  for (JitActivationIterator iter(cx); !iter.done(); ++iter) {
+    if (JitActivationHasFrameInRealm(iter->asJit(), realm)) {
+      return;
+    }
+  }
+
+  MOZ_CRASH("Realm set by JIT code without a frame in that realm");
+}
+#endif
 
 void AssertJitStackInvariants(JSContext* cx) {
   for (JitActivationIterator activations(cx); !activations.done();

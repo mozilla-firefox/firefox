@@ -93,6 +93,12 @@ class OsiIndex;
 
 void AssertJitStackInvariants(JSContext* cx);
 
+#ifdef DEBUG
+void AssertCurrentRealmIsOnStack(JSContext* cx);
+#else
+inline void AssertCurrentRealmIsOnStack(JSContext* cx) {}
+#endif
+
 // A JSJitFrameIter can iterate over a linear frame group of JS jit frames
 // only. It will stop at the first frame that is not of the same kind, or at
 // the end of an activation.
