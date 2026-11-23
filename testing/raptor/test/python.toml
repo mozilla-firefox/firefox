@@ -7,6 +7,10 @@ subsuite = "raptor"
 
 ["test_benchmark.py"]
 
+["test_browsertime_android.py"]
+
+["test_browsertime_base.py"]
+
 ["test_chrome_trace.py"]
 
 ["test_cmdline.py"]
@@ -19,11 +23,15 @@ subsuite = "raptor"
 
 ["test_output.py"]
 
+["test_perftest.py"]
+
 ["test_playback.py"]
 
 ["test_print_tests.py"]
 
 ["test_raptor.py"]
+
+["test_raptor_main.py"]
 
 ["test_raptor_profiling.py"]
 
