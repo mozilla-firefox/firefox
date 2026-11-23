@@ -39,15 +39,7 @@ if CONFIG["TARGET_OS"] in ("WINNT", "OSX"):
     RUST_TESTS += ["nmhproxy"]
 if CONFIG["TARGET_OS"] == "WINNT":
     RUST_TESTS += ["win32_process_mitigations"]
-# clang-cl test binaries link with `-FORCE:UNRESOLVED`, which
-# `_rust_tests_command` in `python/mozbuild/mozbuild/backend/common.py` adds.
-# Keep both checks in sync. On Windows, the `links_unused_ffi` exclusions below
-# only apply to mingw.
-links_unused_ffi = CONFIG["OS_TARGET"] != "WINNT" or CONFIG["CC_TYPE"] == "clang-cl"
-if links_unused_ffi:
-    # Without `-FORCE:UNRESOLVED`, the Windows linker pulls in FFI symbols
-    # despite them not being relevant for the tests.
-    RUST_TESTS += ["crash_helper_server"]
+RUST_TESTS += ["crash_helper_server"]
 
 if CONFIG["TARGET_OS"] == "WINNT":
     RUST_TESTS += ["pushnotificationhelper"]
@@ -61,19 +53,17 @@ RUST_TEST_FEATURES.append("firefox-on-glean/gecko_tests")
 #
 # Bug 1768874 tracks improving the setup to potentially remove these
 # altogether.
+#
+# Rust tests can't reference `libxul`, but code coverage builds don't eliminate
+# the dead references to `libxul` from `kvstore` in `lockstore` tests.
 if not CONFIG["MOZ_CODE_COVERAGE"]:
-    RUST_TESTS += ["stylo_tests"]
-    # Same happens for the style tests, except the windows linker is not great
-    # at eliminating dead code, so without `-FORCE:UNRESOLVED` we end up with
-    # some missing symbols too.
-    if links_unused_ffi:
-        RUST_TESTS += ["style"]
-        # dom_fragmentdirectives depends on nsstring which has Gecko FFI symbols.
-        # The tests don't use these symbols, but without `-FORCE:UNRESOLVED` the
-        # Windows linker pulls them in anyway.
-        RUST_TESTS += ["dom_fragmentdirectives"]
-        # Likewise for dom_speculationrules.
-        RUST_TESTS += ["dom_speculationrules"]
+    RUST_TESTS += [
+        "dom_fragmentdirectives",
+        "dom_speculationrules",
+        "lockstore_rs",
+        "style",
+        "stylo_tests",
+    ]
 
 # Code coverage builds time out when executing the crashping tests on windows
 # (see bug 2010162), and it's more consistent to simply disable for all
@@ -88,12 +78,6 @@ if CONFIG["TARGET_CPU"] != "x86":
 
 if CONFIG["MOZ_BITS_DOWNLOAD"]:
     RUST_TESTS += ["bits_client"]
-
-# Rust tests can't reference `libxul`, but code coverage builds and Windows
-# linkers without `-FORCE:UNRESOLVED` don't eliminate the dead references to
-# `libxul` from `kvstore` in `lockstore` tests.
-if not CONFIG["MOZ_CODE_COVERAGE"] and links_unused_ffi:
-    RUST_TESTS += ["lockstore_rs"]
 
 # The `lockstore` tests link NSS and the Glean tests link SQLite, and the
 # `tools/rusttests` project has no `compile` tier that would otherwise build
