@@ -94,6 +94,24 @@ features:
         type: Boolean
         default: true
 
+  onboarding-notification-prompt:
+    description: >
+      Feature to show the system notification permission prompt when a user finishes onboarding.
+    contacts:
+      - twhite@mozilla.com
+    variables:
+      enabled:
+        description: If true, the notification permission is requested when onboarding is finished.
+        type: Boolean
+        default: false
+    defaults:
+      - channel: developer
+        value:
+          enabled: true
+      - channel: nightly
+        value:
+          enabled: true
+
   migrate-onboarding-state:
     description: >
       Feature to enable the one-time reconciliation of onboarding completion state for users who

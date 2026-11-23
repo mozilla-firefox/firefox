@@ -8,6 +8,7 @@ import android.annotation.SuppressLint
 import android.content.Context
 import android.content.pm.ActivityInfo
 import android.content.res.Configuration
+import android.os.Build
 import android.os.Bundle
 import android.os.StrictMode
 import android.view.LayoutInflater
@@ -419,7 +420,8 @@ class OnboardingFragment : Fragment() {
         settings.onboardingCurrentPageIndex = 0
 
         val downloadUrl = settings.rtamoAddonDownloadUrl
-        if (downloadUrl.isNotBlank()) {
+        val hasPendingAddonInstall = downloadUrl.isNotBlank()
+        if (hasPendingAddonInstall) {
             requireComponents.core.store.dispatch(
                 WebExtensionAction.UpdatePromptRequestWebExtensionAction(
                     WebExtensionPromptRequest.InstallationRequested(
@@ -436,6 +438,24 @@ class OnboardingFragment : Fragment() {
         settings.rtamoAddonImageUrl = ""
 
         maybeAddMenuNotification()
+
+        // Skip when an add-on install prompt is about to show so the two prompts don't compete.
+        if (!hasPendingAddonInstall) {
+            maybeRequestNotificationPermission()
+        }
+    }
+
+    private fun maybeRequestNotificationPermission() {
+        if (Build.VERSION.SDK_INT < Build.VERSION_CODES.TIRAMISU) return
+
+        val notificationsDelegate = requireComponents.notificationsDelegate
+        if (notificationsDelegate.hasPostNotificationsPermission()) return
+
+        val notificationPrompt = FxNimbus.features.onboardingNotificationPrompt
+        notificationPrompt.recordExposure()
+        if (notificationPrompt.value().enabled) {
+            notificationsDelegate.requestNotificationPermission()
+        }
     }
 
     private fun isNotDefaultBrowser(context: Context) = !Browsers.isDefaultBrowser(context)
