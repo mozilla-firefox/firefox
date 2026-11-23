@@ -314,11 +314,9 @@ void HTMLElement::UpdateFormOwner() {
 }
 
 bool HTMLElement::IsDisabledForEvents(WidgetEvent* aEvent) {
-  if (IsFormAssociatedElement()) {
-    return IsElementDisabledForEvents(aEvent, GetPrimaryFrame());
-  }
-
-  return false;
+  // IsFormAssociatedElement is the more expensive check.
+  return IsElementDisabledForEvents(aEvent, GetPrimaryFrame()) &&
+         IsFormAssociatedElement();
 }
 
 void HTMLElement::AfterSetAttr(int32_t aNameSpaceID, nsAtom* aName,
