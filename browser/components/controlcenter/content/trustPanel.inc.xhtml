@@ -155,6 +155,35 @@
       </vbox>
     </panelview>
 
+    <panelview id="trustpanel-siteIssueView"
+               class="PanelUI-subView"
+               role="document"
+               data-l10n-id="trustpanel-site-issue-header"
+               data-l10n-attrs="title"
+               shrink-to-fit="true">
+      <toolbarseparator></toolbarseparator>
+      <hbox class="trustpanel-section" id="trustpanel-site-issue-steps">
+        <image class="trustpanel-site-issue-icon" src="chrome://browser/skin/controlcenter/wrench.svg"></image>
+        <vbox>
+          <label data-l10n-id="trustpanel-site-issue-steps-intro"></label>
+          <html:ul id="trustpanel-site-issue-steps-list">
+            <html:li data-l10n-id="trustpanel-site-issue-step-extensions"></html:li>
+            <html:li id="trustpanel-site-issue-step-vpn" data-l10n-id="trustpanel-site-issue-step-vpn"></html:li>
+            <html:li data-l10n-id="trustpanel-site-issue-step-etp"></html:li>
+          </html:ul>
+          <html:a is="moz-support-link" id="trustpanel-site-issue-learn-more" support-page="websites-look-wrong-or-appear-differently"></html:a>
+        </vbox>
+      </hbox>
+      <toolbarseparator observes="cmd_reportBrokenSite"></toolbarseparator>
+      <toolbarbutton id="trustpanel-report-broken-site-button" class="subviewbutton subviewbutton-iconic subviewbutton-nav" closemenu="none">
+        <image class="toolbarbutton-icon" src="chrome://global/skin/icons/comment-24.svg"></image>
+        <vbox class="toolbarbutton-text" flex="1">
+          <label data-l10n-id="trustpanel-report-broken-site-button"></label>
+          <label class="trustpanel-report-broken-site-description" data-l10n-id="trustpanel-report-broken-site-description"></label>
+        </vbox>
+      </toolbarbutton>
+    </panelview>
+
     <panelview id="trustpanel-securityInformationView"
                class="PanelUI-subView"
                role="document">

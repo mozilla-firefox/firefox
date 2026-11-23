@@ -49,6 +49,9 @@ support-files = [
 
 ["browser_tab_switch_handling.js"]
 
+["browser_trust_panel.js"]
+support-files = [ "send_more_info.js" ]
+
 ["browser_url_widgets.js"]
 
 ["browser_webcompat.com_fallback.js"]

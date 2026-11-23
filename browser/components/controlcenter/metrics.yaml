@@ -267,6 +267,20 @@ trustpanel:
     data_sensitivity:
       - interaction
     expires: never
+  site_issue_opened:
+    type: event
+    description: |
+      Event to record when a user opens the redesigned Trust Panel's
+      "Site not working?" subview through the "Fix site issue" button of the
+      main view.
+    bugs:
+      - https://bugzil.la/2094742
+    data_reviews:
+      - https://bugzil.la/2094742
+    notification_emails: *trustpanel_emails
+    data_sensitivity:
+      - interaction
+    expires: never
   closed:
     type: event
     description: |
@@ -276,8 +290,10 @@ trustpanel:
       with trustpanel.opened
     bugs:
       - https://bugzil.la/2069506
+      - https://bugzil.la/2094742
     data_reviews:
       - https://bugzil.la/2069506
+      - https://bugzil.la/2094742
     data_sensitivity:
       - interaction
     notification_emails: *trustpanel_emails
@@ -295,8 +311,9 @@ trustpanel:
           acting on it, "navigated" when the page navigated away, or the action
           taken, one of "etpToggled", "siteDataCleared",
           "clearSiteDataCancelled", "pageInfoOpened", "certExceptionRemoved",
-          "httpsOnlyChanged", "privacySettingsOpened", "smartblockToggled" and
-          "monitorOpened".
+          "httpsOnlyChanged", "privacySettingsOpened", "smartblockToggled",
+          "monitorOpened" and "reportSent" (a Report Broken Site report was
+          sent from the panel).
         type: string
       duration_ms:
         description: >

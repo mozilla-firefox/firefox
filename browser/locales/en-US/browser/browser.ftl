@@ -1843,6 +1843,28 @@ trustpanel-tracking-description = Without trackers, some buttons, forms, and log
 trustpanel-insecure-section-header = Your connection isn’t secure
 trustpanel-insecure-description = The data you’re sending to this site isn’t encrypted. It could be viewed, stolen, or altered.
 
+# Title of the subview opened by trustpanel-fix-site-issue-button.
+trustpanel-site-issue-header =
+    .title = Site not working? Try these steps.
+# Shown when the user reports that the current site isn’t working. It
+# introduces a bulleted list of features (trustpanel-site-issue-step-*) that
+# can break sites: turning them off one at a time helps the user find out
+# whether one of them causes the problem.
+trustpanel-site-issue-steps-intro = Turn these off to see if it fixes the issue:
+trustpanel-report-broken-site-button = Report broken site
+trustpanel-report-broken-site-description = Your report helps us improve { -brand-short-name } for everyone.
+
+## Items of the bulleted list introduced by trustpanel-site-issue-steps-intro.
+## Each one names a feature the user can turn off to check whether it causes
+## the site issue.
+
+trustpanel-site-issue-step-extensions = Extensions
+trustpanel-site-issue-step-vpn = Built-in VPN
+trustpanel-site-issue-step-etp = Enhanced Tracking Protection
+
+## Variables
+##  $count (String): the number of trackers blocked.
+
 trustpanel-list-label-tracking-cookies = { $count ->
   [one] { $count } Cross-site tracking cookie
   *[other] { $count } Cross-site tracking cookies

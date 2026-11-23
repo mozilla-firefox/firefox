@@ -1531,3 +1531,33 @@
     background-position-x: left var(--space-large);
   }
 }
+
+#trustpanel-site-issue-steps {
+  align-items: flex-start;
+  gap: var(--space-medium);
+}
+
+.trustpanel-site-issue-icon,
+#trustpanel-report-broken-site-button .toolbarbutton-icon {
+  width: var(--icon-size);
+  height: var(--icon-size);
+  -moz-context-properties: fill;
+  fill: currentColor;
+}
+
+#trustpanel-site-issue-steps-list {
+  margin-block: var(--space-xsmall);
+  padding-inline-start: var(--space-xlarge);
+}
+
+#trustpanel-report-broken-site-button {
+  align-items: flex-start;
+
+  > .toolbarbutton-text {
+    padding-inline-start: var(--space-medium);
+  }
+}
+
+.trustpanel-report-broken-site-description {
+  color: var(--text-color-deemphasized);
+}

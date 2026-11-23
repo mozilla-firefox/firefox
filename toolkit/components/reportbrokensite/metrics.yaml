@@ -814,8 +814,10 @@ webcompatreporting:
       Records the method for opening the webcompat reporting window.
     bugs:
       - https://bugzilla.mozilla.org/show_bug.cgi?id=1852340
+      - https://bugzilla.mozilla.org/show_bug.cgi?id=2094742
     data_reviews:
       - https://bugzilla.mozilla.org/show_bug.cgi?id=1852340#c16
+      - https://bugzilla.mozilla.org/show_bug.cgi?id=2094742
     data_sensitivity:
       - interaction
     notification_emails:
@@ -830,6 +832,7 @@ webcompatreporting:
           * `helpMenu`
           * `hamburgerMenu`
           * `ETPShieldIconMenu`
+          * `trustPanel`
         type: string
   previewed:
     type: event

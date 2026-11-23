@@ -153,6 +153,7 @@ const CLOSING_REASONS = {
   PRIVACY_SETTINGS_OPENED: "privacySettingsOpened",
   SMARTBLOCK_TOGGLED: "smartblockToggled",
   MONITOR_OPENED: "monitorOpened",
+  REPORT_SENT: "reportSent",
 };
 
 // Indexed by the HTTPS-Only menulist values, see #getHttpsOnlyPermission.
@@ -525,6 +526,23 @@ class TrustPanel {
 
       this.#popup.addEventListener("popupshown", this);
       this.#popup.addEventListener("popuphidden", this);
+      document
+        .getElementById("trustpanel-fix-site-issue-button")
+        .addEventListener("command", event =>
+          this.#showSiteIssueSubview(event)
+        );
+      document
+        .getElementById("trustpanel-report-broken-site-button")
+        .addEventListener("command", event =>
+          ReportBrokenSite.handleParentMenuButtonCommand(event.target)
+        );
+      document
+        .getElementById("trustpanel-popup-multiView")
+        .addEventListener("ViewShowing", event => {
+          if (event.target.id == "report-broken-site-popup-reportSentView") {
+            this.#closingReason = CLOSING_REASONS.REPORT_SENT;
+          }
+        });
     }
   }
 
@@ -2457,7 +2475,7 @@ class TrustPanel {
     }
   }
 
-  onPopupShown() {
+  onPopupShown(event) {
     this.#shownAt = performance.now();
     window.addEventListener("focus", this, true);
     PopupNotifications.suppressWhileOpen(this.#popup);
@@ -2481,6 +2499,17 @@ class TrustPanel {
         once: true,
       });
     }
+
+    ReportBrokenSite.updateParentMenu(event);
+  }
+
+  #showSiteIssueSubview(event) {
+    document.getElementById("trustpanel-site-issue-step-vpn").hidden =
+      !Services.prefs.getBoolPref("browser.ipProtection.enabled", false);
+    document
+      .getElementById("trustpanel-popup-multiView")
+      .showSubView("trustpanel-siteIssueView", event.target);
+    Glean.trustpanel.siteIssueOpened.record();
   }
 
   onPopupHidden() {

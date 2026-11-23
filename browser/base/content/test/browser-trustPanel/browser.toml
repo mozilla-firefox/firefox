@@ -35,6 +35,8 @@ https_first_disabled = true
 https_first_disabled = true
 support-files = ["!/browser/base/content/test/browser-protectionsUI/trackingPage.html"]
 
+["browser_trust_panel_redesign_site_issue.js"]
+
 ["browser_trust_panel_security_view.js"]
 https_first_disabled = true
 
