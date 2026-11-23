@@ -247,6 +247,21 @@ interface mozIStorageConnection : mozIStorageAsyncConnection {
   [noscript] void enableModule(in ACString aModuleName);
 
   /**
+   * Disable the automatic WAL checkpoint that SQLite performs when a connection
+   * is closed (SQLITE_DBCONFIG_NO_CKPT_ON_CLOSE). After calling this, the
+   * caller is responsible for running an explicit checkpoint before closing, or
+   * accepting that the -wal file persists until the next connection opens.
+   * A persisted -wal causes the next opener to pay a recovery cost that grows
+   * with the journal size.
+   *
+   * This is a per-connection setting: the last connection closing decides
+   * whether a checkpoint runs. If any connection to the same database does not
+   * have this set, it will still checkpoint at close. clone() and asyncClone()
+   * propagate this setting to the new connection.
+   */
+  [noscript] void disableCheckpointOnClose();
+
+  /**
    * Get quota objects.
    *
    * @param[out] aDatabaseQuotaObject

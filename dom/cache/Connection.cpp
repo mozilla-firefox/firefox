@@ -267,6 +267,11 @@ Connection::EnableModule(const nsACString& aModule) {
 }
 
 NS_IMETHODIMP
+Connection::DisableCheckpointOnClose() {
+  return mBase->DisableCheckpointOnClose();
+}
+
+NS_IMETHODIMP
 Connection::GetQuotaObjects(QuotaObject** aDatabaseQuotaObject,
                             QuotaObject** aJournalQuotaObject) {
   return mBase->GetQuotaObjects(aDatabaseQuotaObject, aJournalQuotaObject);

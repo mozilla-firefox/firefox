@@ -2280,6 +2280,16 @@ nsresult Connection::initializeClone(Connection* aClone, bool aReadOnly) {
     }
   }
 
+  {
+    int noCheckpoint = 0;
+    int srv = ::sqlite3_db_config(mDBConn, SQLITE_DBCONFIG_NO_CKPT_ON_CLOSE, -1,
+                                  &noCheckpoint);
+    if (srv == SQLITE_OK && noCheckpoint) {
+      rv = aClone->DisableCheckpointOnClose();
+      NS_ENSURE_SUCCESS(rv, rv);
+    }
+  }
+
   // Copy over temporary tables, triggers, and views from the original
   // connections. Entities in `sqlite_temp_master` are only visible to the
   // connection that created them.
@@ -3294,6 +3304,21 @@ uint32_t Connection::IncreaseTransactionNestingLevel(
 uint32_t Connection::DecreaseTransactionNestingLevel(
     const mozilla::storage::SQLiteMutexAutoLock& /*aProofOfLock*/) {
   return --mTransactionNestingLevel;
+}
+
+NS_IMETHODIMP
+Connection::DisableCheckpointOnClose() {
+  if (!connectionReady()) {
+    return NS_ERROR_NOT_INITIALIZED;
+  }
+  nsresult rv = ensureOperationSupported(SYNCHRONOUS);
+  if (NS_FAILED(rv)) {
+    return rv;
+  }
+
+  int srv = ::sqlite3_db_config(mDBConn, SQLITE_DBCONFIG_NO_CKPT_ON_CLOSE, 1,
+                                nullptr);
+  return convertResultCode(srv);
 }
 
 NS_IMETHODIMP
