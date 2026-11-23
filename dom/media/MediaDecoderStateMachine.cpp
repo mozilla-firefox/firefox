@@ -2734,6 +2734,16 @@ class MediaDecoderStateMachine::CompletedState
   explicit CompletedState(Master* aPtr) : StateObject(aPtr) {}
 
   void Enter() {
+    bool hasNextFrame = (!mMaster->HasAudio() || !mMaster->mAudioCompleted) &&
+                        (!mMaster->HasVideo() || !mMaster->mVideoCompleted);
+
+    // Notify before dispatching to the reader, so that this reaches the main
+    // thread in the same task as the resolution of a seek ending here (see
+    // ConsistentOrdering in AbstractThread.h).
+    mMaster->mOnNextFrameStatus.Notify(
+        hasNextFrame ? MediaDecoderOwner::NEXT_FRAME_AVAILABLE
+                     : MediaDecoderOwner::NEXT_FRAME_UNAVAILABLE);
+
     // On Android, the life cycle of graphic buffer is equal to Android's codec,
     // we couldn't release it if we still need to render the frame.
 #ifndef MOZ_WIDGET_ANDROID
@@ -2743,12 +2753,6 @@ class MediaDecoderStateMachine::CompletedState
       Reader()->ReleaseResources();
     }
 #endif
-    bool hasNextFrame = (!mMaster->HasAudio() || !mMaster->mAudioCompleted) &&
-                        (!mMaster->HasVideo() || !mMaster->mVideoCompleted);
-
-    mMaster->mOnNextFrameStatus.Notify(
-        hasNextFrame ? MediaDecoderOwner::NEXT_FRAME_AVAILABLE
-                     : MediaDecoderOwner::NEXT_FRAME_UNAVAILABLE);
 
     Step();
   }
