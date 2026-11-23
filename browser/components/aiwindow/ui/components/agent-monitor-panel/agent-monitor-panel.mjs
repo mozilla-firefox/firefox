@@ -9,8 +9,10 @@ import "chrome://browser/content/aiwindow/components/agent-monitor-item.mjs";
 // eslint-disable-next-line import-x/no-unassigned-import
 import "chrome://browser/content/aiwindow/components/monitor-status-chip.mjs";
 
-const lazy = {};
-ChromeUtils.defineESModuleGetters(lazy, {
+const { XPCOMUtils } = ChromeUtils.importESModule(
+  "resource://gre/modules/XPCOMUtils.sys.mjs"
+);
+const lazy = XPCOMUtils.declareLazy({
   MonitorUIUtils:
     "moz-src:///browser/components/aiwindow/ui/modules/MonitorUIUtils.sys.mjs",
 });

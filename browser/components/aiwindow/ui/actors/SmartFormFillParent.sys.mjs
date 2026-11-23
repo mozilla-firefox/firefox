@@ -4,9 +4,7 @@
 
 import { XPCOMUtils } from "resource://gre/modules/XPCOMUtils.sys.mjs";
 
-const lazy = {};
-
-ChromeUtils.defineESModuleGetters(lazy, {
+const lazy = XPCOMUtils.declareLazy({
   AIWindow:
     "moz-src:///browser/components/aiwindow/ui/modules/AIWindow.sys.mjs",
   BrowserWindowTracker: "resource:///modules/BrowserWindowTracker.sys.mjs",
@@ -26,20 +24,16 @@ ChromeUtils.defineESModuleGetters(lazy, {
     "moz-src:///browser/components/aiwindow/ui/modules/SmartFormFillTelemetry.sys.mjs",
   getSourceTexts:
     "moz-src:///browser/components/aiwindow/ui/modules/SmartFormFillSources.sys.mjs",
+  console() {
+    return console.createInstance({
+      logModule: "SmartFormFillParent",
+      maxLogLevelPref: "browser.smartwindow.smartformfill.logLevel",
+    });
+  },
+  disallowedRegions: {
+    pref: "browser.smartwindow.smartformfill.disallowedRegions",
+  },
 });
-
-ChromeUtils.defineLazyGetter(lazy, "console", function () {
-  return console.createInstance({
-    logModule: "SmartFormFillParent",
-    maxLogLevelPref: "browser.smartwindow.smartformfill.logLevel",
-  });
-});
-
-XPCOMUtils.defineLazyPreferenceGetter(
-  lazy,
-  "disallowedRegions",
-  "browser.smartwindow.smartformfill.disallowedRegions"
-);
 
 /** @typedef {import("moz-src:///browser/components/aiwindow/ui/modules/SmartFormFillController.sys.mjs").SmartFormFillController} Controller */
 /** @typedef {import("moz-src:///browser/components/aiwindow/ui/modules/SmartFormFillController.sys.mjs").FillFormResult} FillFormResult */

@@ -7,6 +7,7 @@
  */
 
 import { JSONFile } from "resource://gre/modules/JSONFile.sys.mjs";
+import { XPCOMUtils } from "resource://gre/modules/XPCOMUtils.sys.mjs";
 import {
   MEMORY_FILTER_COMPARATOR,
   MEMORY_FILTER_PREDICATES,
@@ -132,22 +133,21 @@ function isComponentSummaries(v) {
 
 // Whether we've finished initial load
 let gInitialized = false;
-let lazy = {};
 let gInitPromise = null;
 let gJSONFile = null;
 
-// Where we store the file (choose something similar to sessionstore)
-ChromeUtils.defineLazyGetter(lazy, "gStorePath", () => {
-  const profD = Services.dirsvc.get("ProfD", Ci.nsIFile).path;
-  return PathUtils.join(profD, MEMORY_STORE_FILE);
+const lazy = XPCOMUtils.declareLazy({
+  // Where we store the file (choose something similar to sessionstore)
+  gStorePath() {
+    const profD = Services.dirsvc.get("ProfD", Ci.nsIFile).path;
+    return PathUtils.join(profD, MEMORY_STORE_FILE);
+  },
+  console: () =>
+    console.createInstance({
+      logModule: "MemoryStore",
+      maxLogLevelPref: "browser.smartwindow.conversation.logLevel",
+    }),
 });
-
-ChromeUtils.defineLazyGetter(lazy, "console", () =>
-  console.createInstance({
-    logModule: "MemoryStore",
-    maxLogLevelPref: "browser.smartwindow.conversation.logLevel",
-  })
-);
 
 /**
  * Migrates memories saved using the memory store v1 schema to v2

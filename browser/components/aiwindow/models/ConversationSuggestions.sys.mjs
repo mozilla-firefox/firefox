@@ -10,23 +10,21 @@ import { AuthProvider } from "moz-src:///browser/components/aiwindow/models/Auth
 import { MESSAGE_ROLE } from "moz-src:///browser/components/aiwindow/ui/modules/ChatStore.sys.mjs";
 import { MemoriesManager } from "moz-src:///browser/components/aiwindow/models/memories/MemoriesManager.sys.mjs";
 import { sanitizeUntrustedContent } from "moz-src:///browser/components/aiwindow/models/ChatUtils.sys.mjs";
+import { XPCOMUtils } from "resource://gre/modules/XPCOMUtils.sys.mjs";
 
-const lazy = {};
-ChromeUtils.defineESModuleGetters(lazy, {
+const lazy = XPCOMUtils.declareLazy({
   renderPrompt: "moz-src:///browser/components/aiwindow/models/Utils.sys.mjs",
   MODEL_FEATURES: "moz-src:///browser/components/aiwindow/models/Utils.sys.mjs",
   buildConversation:
     "moz-src:///browser/components/aiwindow/models/PromptLoader.sys.mjs",
   loadPrompt:
     "moz-src:///browser/components/aiwindow/models/PromptLoader.sys.mjs",
+  console: () =>
+    console.createInstance({
+      logModule: "ConversationSuggestions",
+      maxLogLevelPref: "browser.smartwindow.conversation.logLevel",
+    }),
 });
-
-ChromeUtils.defineLazyGetter(lazy, "console", () =>
-  console.createInstance({
-    logModule: "ConversationSuggestions",
-    maxLogLevelPref: "browser.smartwindow.conversation.logLevel",
-  })
-);
 
 // Max number of memories to include in prompts
 const MAX_NUM_MEMORIES = 8;

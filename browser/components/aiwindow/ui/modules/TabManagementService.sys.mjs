@@ -9,19 +9,19 @@ import {
   sanitizeUntrustedContent,
 } from "moz-src:///browser/components/aiwindow/models/ChatUtils.sys.mjs";
 import { isAllowedURLProtocol } from "moz-src:///browser/components/aiwindow/models/SecurityProperties.sys.mjs";
+import { XPCOMUtils } from "resource://gre/modules/XPCOMUtils.sys.mjs";
 
 /**
  * @import { TabGroupColor } from "chrome://browser/content/tabbrowser/tabgroup.mjs"
  */
 
-const lazy = {};
-
-ChromeUtils.defineLazyGetter(lazy, "console", () =>
-  console.createInstance({
-    logModule: "TabManagementService",
-    maxLogLevelPref: "browser.smartwindow.tabManagement.logLevel",
-  })
-);
+const lazy = XPCOMUtils.declareLazy({
+  console: () =>
+    console.createInstance({
+      logModule: "TabManagementService",
+      maxLogLevelPref: "browser.smartwindow.tabManagement.logLevel",
+    }),
+});
 
 /**
  * Service for managing browser tabs from AI Window UI components.

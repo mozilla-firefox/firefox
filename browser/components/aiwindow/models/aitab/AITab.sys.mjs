@@ -25,9 +25,7 @@ import {
   isSmartPageURL,
 } from "chrome://browser/content/aiwindow/modules/TrustedInternalURLs.mjs";
 
-const lazy = {};
-
-ChromeUtils.defineESModuleGetters(lazy, {
+const lazy = XPCOMUtils.declareLazy({
   A2UI: "moz-src:///browser/components/aiwindow/ui/modules/A2UI.sys.mjs",
   AIWindow:
     "moz-src:///browser/components/aiwindow/ui/modules/AIWindow.sys.mjs",
@@ -54,44 +52,32 @@ ChromeUtils.defineESModuleGetters(lazy, {
   parseVersion: "moz-src:///browser/components/aiwindow/models/Utils.sys.mjs",
   renderPrompt: "moz-src:///browser/components/aiwindow/models/Utils.sys.mjs",
   PlacesUtils: "resource://gre/modules/PlacesUtils.sys.mjs",
+  console: () =>
+    console.createInstance({
+      logModule: "AITab",
+      maxLogLevelPref: "browser.smartwindow.conversation.logLevel",
+    }),
+  l10n: () => new Localization(["preview/aiWindow.ftl"], true),
+  // Dev override: when the pref holds a non-empty string, it is parsed as an
+  // A2UICatalog instead of the packaged component_schema.json, so the catalog
+  // can be iterated on without rebuilding.
+  overrideCatalog: {
+    pref: "browser.smartwindow.aitab.components",
+    transform: prefValue => {
+      const pref = prefValue.trim();
+      if (!pref) {
+        return null;
+      }
+      try {
+        return JSON.parse(pref);
+      } catch (e) {
+        throw new Error(
+          `failed to parse browser.smartwindow.aitab.components: ${e.message}`
+        );
+      }
+    },
+  },
 });
-
-ChromeUtils.defineLazyGetter(lazy, "console", () =>
-  console.createInstance({
-    logModule: "AITab",
-    maxLogLevelPref: "browser.smartwindow.conversation.logLevel",
-  })
-);
-
-ChromeUtils.defineLazyGetter(
-  lazy,
-  "l10n",
-  () => new Localization(["preview/aiWindow.ftl"], true)
-);
-
-// Dev override: when the pref holds a non-empty string, it is parsed as an
-// A2UICatalog instead of the packaged component_schema.json, so the catalog
-// can be iterated on without rebuilding.
-XPCOMUtils.defineLazyPreferenceGetter(
-  lazy,
-  "overrideCatalog",
-  "browser.smartwindow.aitab.components",
-  null,
-  null,
-  prefValue => {
-    const pref = prefValue.trim();
-    if (!pref) {
-      return null;
-    }
-    try {
-      return JSON.parse(pref);
-    } catch (e) {
-      throw new Error(
-        `failed to parse browser.smartwindow.aitab.components: ${e.message}`
-      );
-    }
-  }
-);
 
 // Packaged A2UI component catalog (see models/aitab/jar.mn). The service
 // produces a validated surface only.

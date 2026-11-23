@@ -45,15 +45,14 @@ import {
   SEARCH_THE_WEB_PATH,
   selectSearchTheWebPath,
 } from "moz-src:///browser/components/aiwindow/models/Tools.sys.mjs";
+import { XPCOMUtils } from "resource://gre/modules/XPCOMUtils.sys.mjs";
 
-const lazy = {};
-ChromeUtils.defineLazyGetter(lazy, "console", () =>
-  console.createInstance({
-    logModule: "WebSearchFlow",
-    maxLogLevelPref: "browser.smartwindow.conversation.logLevel",
-  })
-);
-ChromeUtils.defineESModuleGetters(lazy, {
+const lazy = XPCOMUtils.declareLazy({
+  console: () =>
+    console.createInstance({
+      logModule: "WebSearchFlow",
+      maxLogLevelPref: "browser.smartwindow.conversation.logLevel",
+    }),
   buildConversation:
     "moz-src:///browser/components/aiwindow/models/PromptLoader.sys.mjs",
   loadPrompt:

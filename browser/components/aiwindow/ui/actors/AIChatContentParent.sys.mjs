@@ -7,9 +7,9 @@ import {
   isSmartPageURL,
   isTasksURL,
 } from "chrome://browser/content/aiwindow/modules/TrustedInternalURLs.mjs";
+import { XPCOMUtils } from "resource://gre/modules/XPCOMUtils.sys.mjs";
 
-const lazy = {};
-ChromeUtils.defineESModuleGetters(lazy, {
+const lazy = XPCOMUtils.declareLazy({
   AIWindow:
     "moz-src:///browser/components/aiwindow/ui/modules/AIWindow.sys.mjs",
   captureThumbnail:

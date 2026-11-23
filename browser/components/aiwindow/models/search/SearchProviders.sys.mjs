@@ -13,9 +13,9 @@ import {
   SEARCH_QUERY_APIKEY_PREF,
   SEARCH_QUERY_ENDPOINT_PREF,
 } from "moz-src:///browser/components/aiwindow/models/Tools.sys.mjs";
+import { XPCOMUtils } from "resource://gre/modules/XPCOMUtils.sys.mjs";
 
-const lazy = {};
-ChromeUtils.defineESModuleGetters(lazy, {
+const lazy = XPCOMUtils.declareLazy({
   clearTimeout: "resource://gre/modules/Timer.sys.mjs",
   setTimeout: "resource://gre/modules/Timer.sys.mjs",
 });

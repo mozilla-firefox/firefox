@@ -25,8 +25,9 @@ export const MAX_MESSAGES_PER_CONVERSATION_FOR_JOURNEY_PROMPT = 3;
 let _savedLoadPromptDescriptor = null;
 let _savedGetConversationsByIdDescriptor = null;
 
-const lazy = {};
-ChromeUtils.defineESModuleGetters(lazy, {
+import { XPCOMUtils } from "resource://gre/modules/XPCOMUtils.sys.mjs";
+
+const lazy = XPCOMUtils.declareLazy({
   AuthProvider:
     "moz-src:///browser/components/aiwindow/models/AuthProvider.sys.mjs",
   setTimeout: "resource://gre/modules/Timer.sys.mjs",
@@ -74,14 +75,12 @@ ChromeUtils.defineESModuleGetters(lazy, {
     "moz-src:///browser/components/aiwindow/ui/modules/ChatEnums.sys.mjs",
   JourneyStore:
     "moz-src:///browser/components/aiwindow/models/memories/journeys/JourneyStore.sys.mjs",
+  console: () =>
+    console.createInstance({
+      logModule: "JourneyManager",
+      maxLogLevelPref: "browser.smartwindow.memories.logLevel",
+    }),
 });
-
-ChromeUtils.defineLazyGetter(lazy, "console", () =>
-  console.createInstance({
-    logModule: "JourneyManager",
-    maxLogLevelPref: "browser.smartwindow.memories.logLevel",
-  })
-);
 
 /** Provides suggestions and conversations for resuming journeys. */
 export const JourneyManager = {

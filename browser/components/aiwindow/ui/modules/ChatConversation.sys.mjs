@@ -36,6 +36,7 @@ import {
   stripUnresolvedUrlTokens,
   UrlTokenizer,
 } from "moz-src:///browser/components/aiwindow/ui/modules/UrlTokenizer.sys.mjs";
+import { XPCOMUtils } from "resource://gre/modules/XPCOMUtils.sys.mjs";
 
 /** @typedef {import("moz-src:///browser/components/aiwindow/models/SearchBrowsingHistory.sys.mjs").HistoryRow} HistoryRow */
 
@@ -57,8 +58,7 @@ import {
  * @property {boolean} [hasFavicon] - Whether Places has a stored favicon
  */
 
-const lazy = {};
-ChromeUtils.defineESModuleGetters(lazy, {
+const lazy = XPCOMUtils.declareLazy({
   convertTimestamp: "chrome://browser/content/firefoxview/helpers.mjs",
   ChatStore:
     "moz-src:///browser/components/aiwindow/ui/modules/ChatStore.sys.mjs",
@@ -72,17 +72,15 @@ ChromeUtils.defineESModuleGetters(lazy, {
   CONFIRMATION_UI_TYPES:
     "moz-src:///browser/components/aiwindow/ui/modules/ToolUI.sys.mjs",
   isTabGroupMember: "chrome://browser/content/urlbar/SmartbarMentionUtils.mjs",
-});
-
-ChromeUtils.defineLazyGetter(lazy, "fluentStrings", () => {
-  return new Localization(["browser/firefoxView.ftl"], true);
-});
-
-ChromeUtils.defineLazyGetter(lazy, "console", function () {
-  return console.createInstance({
-    logModule: "ChatConversation",
-    maxLogLevelPref: "browser.smartwindow.chatConversation.logLevel",
-  });
+  fluentStrings: () => {
+    return new Localization(["browser/firefoxView.ftl"], true);
+  },
+  console() {
+    return console.createInstance({
+      logModule: "ChatConversation",
+      maxLogLevelPref: "browser.smartwindow.chatConversation.logLevel",
+    });
+  },
 });
 
 const CHAT_ROLES = [MESSAGE_ROLE.USER, MESSAGE_ROLE.ASSISTANT];

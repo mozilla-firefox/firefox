@@ -35,23 +35,14 @@ import { XPCOMUtils } from "resource://gre/modules/XPCOMUtils.sys.mjs";
  * @typedef {import("moz-src:///browser/components/aiwindow/models/Utils.sys.mjs").InferenceParams} InferenceParams
  */
 
-const lazy = {};
-ChromeUtils.defineESModuleGetters(lazy, {
+const lazy = XPCOMUtils.declareLazy({
   getSmartPageName:
     "chrome://browser/content/aiwindow/modules/TrustedInternalURLs.mjs",
   MonitorUIUtils:
     "moz-src:///browser/components/aiwindow/ui/modules/MonitorUIUtils.sys.mjs",
+  aitabEnabled: { pref: "browser.smartwindow.aitab.enabled" },
+  agentEnabled: { pref: "browser.smartwindow.agent.enabled" },
 });
-XPCOMUtils.defineLazyPreferenceGetter(
-  lazy,
-  "aitabEnabled",
-  "browser.smartwindow.aitab.enabled"
-);
-XPCOMUtils.defineLazyPreferenceGetter(
-  lazy,
-  "agentEnabled",
-  "browser.smartwindow.agent.enabled"
-);
 
 const CUSTOM_PROMPTS_PREF = "browser.smartwindow.customPrompts";
 const MODEL_CHOICE_PREF = "browser.smartwindow.firstrun.modelChoice";

@@ -2,18 +2,17 @@
  * License, v. 2.0. If a copy of the MPL was not distributed with this
  * file, You can obtain one at http://mozilla.org/MPL/2.0/. */
 
-const lazy = {};
-ChromeUtils.defineESModuleGetters(lazy, {
+import { XPCOMUtils } from "resource://gre/modules/XPCOMUtils.sys.mjs";
+
+const lazy = XPCOMUtils.declareLazy({
   BackgroundPageThumbs: "resource://gre/modules/BackgroundPageThumbs.sys.mjs",
   PageThumbs: "resource://gre/modules/PageThumbs.sys.mjs",
+  console: () =>
+    console.createInstance({
+      logModule: "HistoryThumbnails",
+      maxLogLevelPref: "browser.smartwindow.conversation.logLevel",
+    }),
 });
-
-ChromeUtils.defineLazyGetter(lazy, "console", () =>
-  console.createInstance({
-    logModule: "HistoryThumbnails",
-    maxLogLevelPref: "browser.smartwindow.conversation.logLevel",
-  })
-);
 
 /**
  * Captures (or reuses a disk-cached) page thumbnail for an og:image URL and

@@ -3,17 +3,18 @@
  * file, You can obtain one at https://mozilla.org/MPL/2.0/. */
 
 import { JSONFile } from "resource://gre/modules/JSONFile.sys.mjs";
+import { XPCOMUtils } from "resource://gre/modules/XPCOMUtils.sys.mjs";
 
 const JOURNEY_STORE_FILE = "journeys.json.lz4";
 const JOURNEY_STORE_VERSION = 1;
 
-const lazy = {};
-ChromeUtils.defineLazyGetter(lazy, "console", () =>
-  console.createInstance({
-    logModule: "JourneyStore",
-    maxLogLevelPref: "browser.smartwindow.memories.logLevel",
-  })
-);
+const lazy = XPCOMUtils.declareLazy({
+  console: () =>
+    console.createInstance({
+      logModule: "JourneyStore",
+      maxLogLevelPref: "browser.smartwindow.memories.logLevel",
+    }),
+});
 
 /**
  * @typedef {object} JourneyMetadata

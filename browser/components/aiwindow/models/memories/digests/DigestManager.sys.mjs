@@ -5,8 +5,9 @@
 /** @typedef {import("./DigestStore.sys.mjs").Digest} Digest */
 /** @typedef {import("./DigestStore.sys.mjs").DigestSchedule} DigestSchedule */
 
-const lazy = {};
-ChromeUtils.defineESModuleGetters(lazy, {
+import { XPCOMUtils } from "resource://gre/modules/XPCOMUtils.sys.mjs";
+
+const lazy = XPCOMUtils.declareLazy({
   DIGEST_SCHEDULE_TYPE:
     "moz-src:///browser/components/aiwindow/models/memories/digests/DigestConstants.sys.mjs",
   DIGEST_STATUS:

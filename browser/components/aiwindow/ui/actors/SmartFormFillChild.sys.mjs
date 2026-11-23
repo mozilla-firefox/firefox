@@ -2,22 +2,20 @@
  * License, v. 2.0. If a copy of the MPL was not distributed with this
  * file, You can obtain one at https://mozilla.org/MPL/2.0/. */
 
-const lazy = {};
+import { XPCOMUtils } from "resource://gre/modules/XPCOMUtils.sys.mjs";
 
-ChromeUtils.defineLazyGetter(lazy, "console", function () {
-  return console.createInstance({
-    logModule: "SmartFormFillChild",
-    maxLogLevelPref: "browser.smartwindow.smartformfill.logLevel",
-  });
-});
-
-ChromeUtils.defineLazyGetter(lazy, "formFillController", function () {
-  return Cc["@mozilla.org/satchel/form-fill-controller;1"].getService(
-    Ci.nsIFormFillController
-  );
-});
-
-ChromeUtils.defineESModuleGetters(lazy, {
+const lazy = XPCOMUtils.declareLazy({
+  console() {
+    return console.createInstance({
+      logModule: "SmartFormFillChild",
+      maxLogLevelPref: "browser.smartwindow.smartformfill.logLevel",
+    });
+  },
+  formFillController() {
+    return Cc["@mozilla.org/satchel/form-fill-controller;1"].getService(
+      Ci.nsIFormFillController
+    );
+  },
   FormHistoryAutoCompleteResult:
     "resource://gre/modules/FormHistoryAutoComplete.sys.mjs",
   SmartFormFillDocument:

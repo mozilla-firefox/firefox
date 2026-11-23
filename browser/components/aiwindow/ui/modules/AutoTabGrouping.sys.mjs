@@ -4,9 +4,7 @@
 
 import { XPCOMUtils } from "resource://gre/modules/XPCOMUtils.sys.mjs";
 
-const lazy = {};
-
-ChromeUtils.defineESModuleGetters(lazy, {
+const lazy = XPCOMUtils.declareLazy({
   AIWindowToolbarButtons:
     "moz-src:///browser/components/aiwindow/ui/modules/AIWindowToolbarButtons.sys.mjs",
   AutoTabGroupingSuggestions:
@@ -19,30 +17,20 @@ ChromeUtils.defineESModuleGetters(lazy, {
   TabMetrics: "moz-src:///browser/components/tabbrowser/TabMetrics.sys.mjs",
   setTimeout: "resource://gre/modules/Timer.sys.mjs",
   clearTimeout: "resource://gre/modules/Timer.sys.mjs",
+  console: () =>
+    console.createInstance({
+      logModule: "AutoTabGrouping",
+      maxLogLevelPref: "browser.smartwindow.autoTabGrouping.logLevel",
+    }),
+  minTabsPerGroup: {
+    pref: "browser.smartwindow.autoTabGrouping.minTabsPerGroup",
+  },
+  minCandidateTabs: {
+    pref: "browser.smartwindow.autoTabGrouping.minCandidateTabs",
+  },
+  timeoutMs: { pref: "browser.smartwindow.autoTabGrouping.timeoutMs" },
 });
 
-ChromeUtils.defineLazyGetter(lazy, "console", () =>
-  console.createInstance({
-    logModule: "AutoTabGrouping",
-    maxLogLevelPref: "browser.smartwindow.autoTabGrouping.logLevel",
-  })
-);
-
-XPCOMUtils.defineLazyPreferenceGetter(
-  lazy,
-  "minTabsPerGroup",
-  "browser.smartwindow.autoTabGrouping.minTabsPerGroup"
-);
-XPCOMUtils.defineLazyPreferenceGetter(
-  lazy,
-  "minCandidateTabs",
-  "browser.smartwindow.autoTabGrouping.minCandidateTabs"
-);
-XPCOMUtils.defineLazyPreferenceGetter(
-  lazy,
-  "timeoutMs",
-  "browser.smartwindow.autoTabGrouping.timeoutMs"
-);
 const PANEL_ID = "smartwindow-group-tabs-panel";
 const FLYOUT_ID = "smartwindow-group-tabs-flyout";
 const CARD_TAG = "smartwindow-group-tabs-card";

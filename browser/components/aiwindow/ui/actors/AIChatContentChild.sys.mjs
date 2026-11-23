@@ -5,15 +5,12 @@
 import { XPCOMUtils } from "resource://gre/modules/XPCOMUtils.sys.mjs";
 import { serializeClientErrorDetail } from "chrome://browser/content/aiwindow/modules/ClientErrorTelemetry.mjs";
 
-const lazy = {};
-ChromeUtils.defineESModuleGetters(lazy, {});
-
-XPCOMUtils.defineLazyServiceGetter(
-  lazy,
-  "ClipboardHelper",
-  "@mozilla.org/widget/clipboardhelper;1",
-  Ci.nsIClipboardHelper
-);
+const lazy = XPCOMUtils.declareLazy({
+  ClipboardHelper: {
+    service: "@mozilla.org/widget/clipboardhelper;1",
+    iid: Ci.nsIClipboardHelper,
+  },
+});
 
 /**
  * Represents a child actor for getting page data from the browser.

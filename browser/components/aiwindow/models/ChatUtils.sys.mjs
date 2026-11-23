@@ -8,6 +8,7 @@ import {
   expandUrlTokens,
   URL_TOKEN_REGEX,
 } from "moz-src:///browser/components/aiwindow/ui/modules/UrlTokenizer.sys.mjs";
+import { XPCOMUtils } from "resource://gre/modules/XPCOMUtils.sys.mjs";
 
 // Important! Changing or removing this value requires a security review.
 //
@@ -16,8 +17,7 @@ import {
 // in the places database for a single places database used as an example.
 const MAX_METADATA_LENGTH = 100;
 
-const lazy = {};
-ChromeUtils.defineESModuleGetters(lazy, {
+const lazy = XPCOMUtils.declareLazy({
   getSmartPageName:
     "chrome://browser/content/aiwindow/modules/TrustedInternalURLs.mjs",
   MemoriesManager:
@@ -26,13 +26,12 @@ ChromeUtils.defineESModuleGetters(lazy, {
   MODEL_FEATURES: "moz-src:///browser/components/aiwindow/models/Utils.sys.mjs",
   loadPrompt:
     "moz-src:///browser/components/aiwindow/models/PromptLoader.sys.mjs",
-});
-
-ChromeUtils.defineLazyGetter(lazy, "md", () => {
-  const { MarkdownIt } = ChromeUtils.importESModule(
-    "chrome://browser/content/multilineeditor/prosemirror.bundle.mjs"
-  );
-  return new MarkdownIt({ html: false, linkify: true });
+  md: () => {
+    const { MarkdownIt } = ChromeUtils.importESModule(
+      "chrome://browser/content/multilineeditor/prosemirror.bundle.mjs"
+    );
+    return new MarkdownIt({ html: false, linkify: true });
+  },
 });
 
 let _savedLoadPromptDescriptor = null;

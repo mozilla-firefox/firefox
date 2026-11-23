@@ -3,8 +3,9 @@
  * file, You can obtain one at https://mozilla.org/MPL/2.0/.
  */
 
-const lazy = {};
-ChromeUtils.defineESModuleGetters(lazy, {
+import { XPCOMUtils } from "resource://gre/modules/XPCOMUtils.sys.mjs";
+
+const lazy = XPCOMUtils.declareLazy({
   setInterval: "resource://gre/modules/Timer.sys.mjs",
   clearInterval: "resource://gre/modules/Timer.sys.mjs",
   PlacesUtils: "resource://gre/modules/PlacesUtils.sys.mjs",
@@ -33,13 +34,12 @@ ChromeUtils.defineESModuleGetters(lazy, {
     "moz-src:///browser/components/aiwindow/models/memories/journeys/JourneyManager.sys.mjs",
   JourneyStore:
     "moz-src:///browser/components/aiwindow/models/memories/journeys/JourneyStore.sys.mjs",
-});
-
-ChromeUtils.defineLazyGetter(lazy, "console", function () {
-  return console.createInstance({
-    logModule: "MemoriesSchedulers",
-    maxLogLevelPref: "browser.smartwindow.memories.logLevel",
-  });
+  console() {
+    return console.createInstance({
+      logModule: "MemoriesSchedulers",
+      maxLogLevelPref: "browser.smartwindow.memories.logLevel",
+    });
+  },
 });
 
 // Scheduler tick every 2 mins.

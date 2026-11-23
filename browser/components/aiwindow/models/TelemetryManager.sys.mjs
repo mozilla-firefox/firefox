@@ -3,8 +3,9 @@
  * file, You can obtain one at http://mozilla.org/MPL/2.0/.
  */
 
-const lazy = {};
-ChromeUtils.defineESModuleGetters(lazy, {
+import { XPCOMUtils } from "resource://gre/modules/XPCOMUtils.sys.mjs";
+
+const lazy = XPCOMUtils.declareLazy({
   ChatStore:
     "moz-src:///browser/components/aiwindow/ui/modules/ChatStore.sys.mjs",
   TelemetryEngine:
@@ -15,13 +16,12 @@ ChromeUtils.defineESModuleGetters(lazy, {
     "moz-src:///browser/components/aiwindow/models/openAIEngine.sys.mjs",
   setInterval: "resource://gre/modules/Timer.sys.mjs",
   clearInterval: "resource://gre/modules/Timer.sys.mjs",
-});
-
-ChromeUtils.defineLazyGetter(lazy, "console", function () {
-  return console.createInstance({
-    logModule: "LLMTelemetry",
-    maxLogLevelPref: "browser.smartwindow.telemetry.logLevel",
-  });
+  console() {
+    return console.createInstance({
+      logModule: "LLMTelemetry",
+      maxLogLevelPref: "browser.smartwindow.telemetry.logLevel",
+    });
+  },
 });
 
 const LAST_RUN_PREF = "browser.smartwindow.lastLLMTelemetryRunTime";

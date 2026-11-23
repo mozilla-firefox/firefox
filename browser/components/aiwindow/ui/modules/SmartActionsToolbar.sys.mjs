@@ -28,9 +28,7 @@ const TOOLBAR_ID = "smart-actions-toolbar";
  *   disabled until it settles.
  */
 
-const lazy = {};
-
-ChromeUtils.defineESModuleGetters(lazy, {
+const lazy = XPCOMUtils.declareLazy({
   AIWindow:
     "moz-src:///browser/components/aiwindow/ui/modules/AIWindow.sys.mjs",
   AIWindowUI:
@@ -49,39 +47,24 @@ ChromeUtils.defineESModuleGetters(lazy, {
   renderPrompt: "moz-src:///browser/components/aiwindow/models/Utils.sys.mjs",
   sanitizeUntrustedContent:
     "moz-src:///browser/components/aiwindow/models/ChatUtils.sys.mjs",
+  actionCount: { pref: "browser.smartwindow.actionsToolbar.actionCount" },
+  enabled: {
+    pref: "browser.smartwindow.actionsToolbar.enabled",
+    onUpdate: () => SmartActionsToolbar.updateAll(),
+  },
+  // Template for the selected chat model, which answers with JSON actions that
+  // each have a type, a label and an optional detail. Empty uses the sidebar
+  // conversation starters instead.
+  // TODO: Bug 2093449 - review the page content the default prompt includes
+  prompt: {
+    pref: "browser.smartwindow.actionsToolbar.prompt",
+    onUpdate: () => {
+      loadedKeys = new WeakMap();
+      SmartActionsToolbar.updateAll();
+    },
+  },
+  refreshDelayMs: { pref: "browser.smartwindow.actionsToolbar.refreshDelayMs" },
 });
-
-XPCOMUtils.defineLazyPreferenceGetter(
-  lazy,
-  "actionCount",
-  "browser.smartwindow.actionsToolbar.actionCount"
-);
-XPCOMUtils.defineLazyPreferenceGetter(
-  lazy,
-  "enabled",
-  "browser.smartwindow.actionsToolbar.enabled",
-  undefined,
-  () => SmartActionsToolbar.updateAll()
-);
-// Template for the selected chat model, which answers with JSON actions that
-// each have a type, a label and an optional detail. Empty uses the sidebar
-// conversation starters instead.
-// TODO: Bug 2093449 - review the page content the default prompt includes
-XPCOMUtils.defineLazyPreferenceGetter(
-  lazy,
-  "prompt",
-  "browser.smartwindow.actionsToolbar.prompt",
-  undefined,
-  () => {
-    loadedKeys = new WeakMap();
-    SmartActionsToolbar.updateAll();
-  }
-);
-XPCOMUtils.defineLazyPreferenceGetter(
-  lazy,
-  "refreshDelayMs",
-  "browser.smartwindow.actionsToolbar.refreshDelayMs"
-);
 
 /** @type {WeakMap<ChromeWindow, object>} */
 const windowStates = new WeakMap();

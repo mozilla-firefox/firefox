@@ -22,8 +22,7 @@ const { XPCOMUtils } = ChromeUtils.importESModule(
   "resource://gre/modules/XPCOMUtils.sys.mjs"
 );
 
-const lazy = {};
-ChromeUtils.defineESModuleGetters(lazy, {
+const lazy = XPCOMUtils.declareLazy({
   AuthProvider:
     "moz-src:///browser/components/aiwindow/models/AuthProvider.sys.mjs",
   Chat: "moz-src:///browser/components/aiwindow/models/Chat.sys.mjs",
@@ -107,13 +106,12 @@ ChromeUtils.defineESModuleGetters(lazy, {
   isTabGroupMember: "chrome://browser/content/urlbar/SmartbarMentionUtils.mjs",
   tabManagementService:
     "moz-src:///browser/components/aiwindow/ui/modules/TabManagementService.sys.mjs",
-});
-
-ChromeUtils.defineLazyGetter(lazy, "log", function () {
-  return console.createInstance({
-    logModule: "AIWindow",
-    maxLogLevelPref: "browser.smartwindow.aiWindow.logLevel",
-  });
+  log() {
+    return console.createInstance({
+      logModule: "AIWindow",
+      maxLogLevelPref: "browser.smartwindow.aiWindow.logLevel",
+    });
+  },
 });
 
 /**

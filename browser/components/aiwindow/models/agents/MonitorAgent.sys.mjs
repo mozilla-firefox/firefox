@@ -22,6 +22,7 @@ import {
   Schedule,
   SCHEDULE_TYPES,
 } from "moz-src:///browser/components/aiwindow/models/agents/Schedule.sys.mjs";
+import { XPCOMUtils } from "resource://gre/modules/XPCOMUtils.sys.mjs";
 
 export {
   Monitor,
@@ -44,31 +45,23 @@ const EXPIRY_BODY_IDS = Object.freeze({
     "ai-tasks-monitor-expired-notification-body-max-age",
 });
 
-const lazy = {};
-ChromeUtils.defineESModuleGetters(lazy, {
+const lazy = XPCOMUtils.declareLazy({
   AIWindow:
     "moz-src:///browser/components/aiwindow/ui/modules/AIWindow.sys.mjs",
   BrowserWindowTracker: "resource:///modules/BrowserWindowTracker.sys.mjs",
   MonitorStore:
     "moz-src:///browser/components/aiwindow/models/agents/MonitorStore.sys.mjs",
-});
-
-ChromeUtils.defineLazyGetter(lazy, "log", () =>
-  console.createInstance({
-    logModule: "MonitorAgent",
-    maxLogLevelPref: "browser.smartwindow.monitorAgent.logLevel",
-  })
-);
-
-ChromeUtils.defineLazyGetter(
-  lazy,
-  "l10n",
-  () =>
+  log: () =>
+    console.createInstance({
+      logModule: "MonitorAgent",
+      maxLogLevelPref: "browser.smartwindow.monitorAgent.logLevel",
+    }),
+  l10n: () =>
     new Localization(
       ["preview/aiWindow.ftl", "toolkit/branding/brandings.ftl"],
       true
-    )
-);
+    ),
+});
 
 const AlertNotification = Components.Constructor(
   "@mozilla.org/alert-notification;1",

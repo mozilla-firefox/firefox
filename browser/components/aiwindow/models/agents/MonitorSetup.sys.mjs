@@ -16,8 +16,7 @@ import {
 } from "moz-src:///browser/components/aiwindow/models/agents/Monitor.sys.mjs";
 import { XPCOMUtils } from "resource://gre/modules/XPCOMUtils.sys.mjs";
 
-const lazy = {};
-ChromeUtils.defineESModuleGetters(lazy, {
+const lazy = XPCOMUtils.declareLazy({
   buildConversation:
     "moz-src:///browser/components/aiwindow/models/PromptLoader.sys.mjs",
   clearTimeout: "resource://gre/modules/Timer.sys.mjs",
@@ -29,20 +28,13 @@ ChromeUtils.defineESModuleGetters(lazy, {
   MonitorAgent:
     "moz-src:///browser/components/aiwindow/models/agents/MonitorAgent.sys.mjs",
   setTimeout: "resource://gre/modules/Timer.sys.mjs",
+  log: () =>
+    console.createInstance({
+      logModule: "MonitorSetup",
+      maxLogLevelPref: "browser.smartwindow.monitorAgent.logLevel",
+    }),
+  suggestionsEnabled: { pref: "browser.smartwindow.agent.suggestions.enabled" },
 });
-
-ChromeUtils.defineLazyGetter(lazy, "log", () =>
-  console.createInstance({
-    logModule: "MonitorSetup",
-    maxLogLevelPref: "browser.smartwindow.monitorAgent.logLevel",
-  })
-);
-
-XPCOMUtils.defineLazyPreferenceGetter(
-  lazy,
-  "suggestionsEnabled",
-  "browser.smartwindow.agent.suggestions.enabled"
-);
 
 // The answer is only cut when it is far longer than anything the form is for
 export const MAX_TITLE_LENGTH = 200;

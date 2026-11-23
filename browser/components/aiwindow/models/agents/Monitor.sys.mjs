@@ -12,8 +12,7 @@ import { AuthProvider } from "moz-src:///browser/components/aiwindow/models/Auth
 import { Schedule } from "moz-src:///browser/components/aiwindow/models/agents/Schedule.sys.mjs";
 import { XPCOMUtils } from "resource://gre/modules/XPCOMUtils.sys.mjs";
 
-const lazy = {};
-ChromeUtils.defineESModuleGetters(lazy, {
+const lazy = XPCOMUtils.declareLazy({
   buildConversation:
     "moz-src:///browser/components/aiwindow/models/PromptLoader.sys.mjs",
   loadPrompt:
@@ -24,25 +23,14 @@ ChromeUtils.defineESModuleGetters(lazy, {
     "moz-src:///browser/components/aiwindow/models/agents/MonitorAgent.sys.mjs",
   ScheduledTask: "resource://gre/modules/ScheduledTask.sys.mjs",
   setTimeout: "resource://gre/modules/Timer.sys.mjs",
+  log: () =>
+    console.createInstance({
+      logModule: "MonitorAgent",
+      maxLogLevelPref: "browser.smartwindow.monitorAgent.logLevel",
+    }),
+  expiryNoMatchDays: { pref: "browser.smartwindow.agent.expiry.noMatchDays" },
+  expiryMaxAgeDays: { pref: "browser.smartwindow.agent.expiry.maxAgeDays" },
 });
-
-ChromeUtils.defineLazyGetter(lazy, "log", () =>
-  console.createInstance({
-    logModule: "MonitorAgent",
-    maxLogLevelPref: "browser.smartwindow.monitorAgent.logLevel",
-  })
-);
-
-XPCOMUtils.defineLazyPreferenceGetter(
-  lazy,
-  "expiryNoMatchDays",
-  "browser.smartwindow.agent.expiry.noMatchDays"
-);
-XPCOMUtils.defineLazyPreferenceGetter(
-  lazy,
-  "expiryMaxAgeDays",
-  "browser.smartwindow.agent.expiry.maxAgeDays"
-);
 
 // Milliseconds in a day, to turn the expiry prefs (in days) into elapsed time.
 const DAY_MS = 24 * 60 * 60 * 1000;

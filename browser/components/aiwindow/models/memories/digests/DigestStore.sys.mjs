@@ -7,17 +7,16 @@ import {
   DIGEST_STATUS,
 } from "moz-src:///browser/components/aiwindow/models/memories/digests/DigestConstants.sys.mjs";
 import { DIGEST_FILTERS } from "moz-src:///browser/components/aiwindow/models/memories/digests/DigestStoreConstants.sys.mjs";
+import { XPCOMUtils } from "resource://gre/modules/XPCOMUtils.sys.mjs";
 
-const lazy = {};
-ChromeUtils.defineESModuleGetters(lazy, {
+const lazy = XPCOMUtils.declareLazy({
   JSONFile: "resource://gre/modules/JSONFile.sys.mjs",
+  console: () =>
+    console.createInstance({
+      logModule: "DigestStore",
+      maxLogLevelPref: "browser.smartwindow.memories.logLevel",
+    }),
 });
-ChromeUtils.defineLazyGetter(lazy, "console", () =>
-  console.createInstance({
-    logModule: "DigestStore",
-    maxLogLevelPref: "browser.smartwindow.memories.logLevel",
-  })
-);
 
 const DIGEST_STORE_FILE = "digests.json.lz4";
 const DIGEST_STORE_VERSION = 1;

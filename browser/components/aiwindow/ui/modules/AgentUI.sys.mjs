@@ -29,10 +29,9 @@ import {
   AGENT_COMMANDS,
   parseAgentCommand,
 } from "chrome://browser/content/aiwindow/modules/AgentCommands.mjs";
+import { XPCOMUtils } from "resource://gre/modules/XPCOMUtils.sys.mjs";
 
-const lazy = {};
-
-ChromeUtils.defineESModuleGetters(lazy, {
+const lazy = XPCOMUtils.declareLazy({
   MonitorAgent:
     "moz-src:///browser/components/aiwindow/models/agents/MonitorAgent.sys.mjs",
   MonitorUIUtils:
@@ -49,20 +48,13 @@ ChromeUtils.defineESModuleGetters(lazy, {
     "moz-src:///browser/components/aiwindow/models/agents/Monitor.sys.mjs",
   isAllowedWatchUrl:
     "moz-src:///browser/components/aiwindow/models/agents/Monitor.sys.mjs",
+  console: () =>
+    console.createInstance({
+      logModule: "AgentUI",
+      maxLogLevelPref: "browser.smartwindow.agentUI.logLevel",
+    }),
+  l10n: () => new Localization(["preview/aiWindow.ftl"], true),
 });
-
-ChromeUtils.defineLazyGetter(lazy, "console", () =>
-  console.createInstance({
-    logModule: "AgentUI",
-    maxLogLevelPref: "browser.smartwindow.agentUI.logLevel",
-  })
-);
-
-ChromeUtils.defineLazyGetter(
-  lazy,
-  "l10n",
-  () => new Localization(["preview/aiWindow.ftl"], true)
-);
 
 /**
  * uiType values rendered as agent cards in chat

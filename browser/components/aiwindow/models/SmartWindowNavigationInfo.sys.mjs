@@ -11,8 +11,9 @@
  * Run that script and commit the result whenever preferences.js or FTL files change.
  */
 
-const lazy = {};
-ChromeUtils.defineESModuleGetters(lazy, {
+import { XPCOMUtils } from "resource://gre/modules/XPCOMUtils.sys.mjs";
+
+const lazy = XPCOMUtils.declareLazy({
   cosSim: "chrome://global/content/ml/NLPUtils.sys.mjs",
   embeddingsGeneratorFactory:
     "chrome://global/content/ml/EmbeddingsGenerator.sys.mjs",

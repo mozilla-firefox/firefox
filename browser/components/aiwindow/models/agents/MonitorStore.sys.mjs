@@ -8,19 +8,17 @@ import {
   MONITOR_EXPIRY_REASONS,
   trimAndFilterWatchUrls,
 } from "moz-src:///browser/components/aiwindow/models/agents/Monitor.sys.mjs";
+import { XPCOMUtils } from "resource://gre/modules/XPCOMUtils.sys.mjs";
 
-const lazy = {};
-ChromeUtils.defineESModuleGetters(lazy, {
+const lazy = XPCOMUtils.declareLazy({
   AsyncShutdown: "resource://gre/modules/AsyncShutdown.sys.mjs",
   IndexedDB: "resource://gre/modules/IndexedDB.sys.mjs",
+  log: () =>
+    console.createInstance({
+      logModule: "MonitorStore",
+      maxLogLevelPref: "browser.smartwindow.monitorStore.logLevel",
+    }),
 });
-
-ChromeUtils.defineLazyGetter(lazy, "log", () =>
-  console.createInstance({
-    logModule: "MonitorStore",
-    maxLogLevelPref: "browser.smartwindow.monitorStore.logLevel",
-  })
-);
 
 const CURRENT_SCHEMA_VERSION = 1;
 const DB_NAME = "monitor-store";

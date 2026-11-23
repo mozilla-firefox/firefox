@@ -2,8 +2,24 @@
  * License, v. 2.0. If a copy of the MPL was not distributed with this
  * file, You can obtain one at http://mozilla.org/MPL/2.0/. */
 
-const lazy = {};
-ChromeUtils.defineESModuleGetters(lazy, {
+const localization = new Localization(
+  [
+    "preview/aiWindow.ftl",
+    "branding/brand.ftl",
+    "toolkit/branding/brandings.ftl",
+  ],
+  true
+);
+
+import { XPCOMUtils } from "resource://gre/modules/XPCOMUtils.sys.mjs";
+
+const SUPPORTED_REGIONS_DEFAULT = [
+  ["US", ["*"]],
+  ["CA", ["en-*"]],
+  ["GB", ["en-*"]],
+];
+
+const lazy = XPCOMUtils.declareLazy({
   AGENT_UI_TYPES:
     "moz-src:///browser/components/aiwindow/ui/modules/AgentUI.sys.mjs",
   BrowserWindowTracker: "resource:///modules/BrowserWindowTracker.sys.mjs",
@@ -29,38 +45,16 @@ ChromeUtils.defineESModuleGetters(lazy, {
   SCHEDULE_TYPES:
     "moz-src:///browser/components/aiwindow/models/agents/Schedule.sys.mjs",
   URILoadingHelper: "resource:///modules/URILoadingHelper.sys.mjs",
+  monitorSupportedRegions: {
+    pref: "browser.smartwindow.agent.supportedRegions",
+    transform: json =>
+      lazy.RegionLocaleMap.fromJSON(json, {
+        fallback: SUPPORTED_REGIONS_DEFAULT,
+        onInvalid: value =>
+          console.warn("Invalid JSON in supportedRegions pref:", value),
+      }),
+  },
 });
-
-const localization = new Localization(
-  [
-    "preview/aiWindow.ftl",
-    "branding/brand.ftl",
-    "toolkit/branding/brandings.ftl",
-  ],
-  true
-);
-
-import { XPCOMUtils } from "resource://gre/modules/XPCOMUtils.sys.mjs";
-
-const SUPPORTED_REGIONS_DEFAULT = [
-  ["US", ["*"]],
-  ["CA", ["en-*"]],
-  ["GB", ["en-*"]],
-];
-
-XPCOMUtils.defineLazyPreferenceGetter(
-  lazy,
-  "monitorSupportedRegions",
-  "browser.smartwindow.agent.supportedRegions",
-  null,
-  null,
-  json =>
-    lazy.RegionLocaleMap.fromJSON(json, {
-      fallback: SUPPORTED_REGIONS_DEFAULT,
-      onInvalid: value =>
-        console.warn("Invalid JSON in supportedRegions pref:", value),
-    })
-);
 
 /**
  * Titles of the pages open in non-private windows.

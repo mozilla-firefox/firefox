@@ -10,11 +10,11 @@ import { PlacesUtils } from "resource://gre/modules/PlacesUtils.sys.mjs";
 import { BlockListManager } from "chrome://global/content/ml/Utils.sys.mjs";
 import { SensitiveInfoDetector } from "moz-src:///browser/components/aiwindow/models/memories/SensitiveInfoDetector.sys.mjs";
 import { sanitizeUntrustedContent } from "moz-src:///browser/components/aiwindow/models/ChatUtils.sys.mjs";
+import { XPCOMUtils } from "resource://gre/modules/XPCOMUtils.sys.mjs";
 
 /** @typedef {import("./MemoriesConstants.sys.mjs").MemoriesGenerationRunStats} MemoriesGenerationRunStats */
 
-const lazy = {};
-ChromeUtils.defineESModuleGetters(lazy, {
+const lazy = XPCOMUtils.declareLazy({
   extractVectorFromTensor:
     "moz-src:///browser/components/aiwindow/models/SearchBrowsingHistory.sys.mjs",
   getPlacesSemanticHistoryManager:

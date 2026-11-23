@@ -29,8 +29,7 @@ const PREF_SEMANTIC_HISTORY_SMARTWINDOW_FEATURE_GATE =
   "places.semanticHistory.smartwindow.featureGate";
 const PREF_FIRSTRUN_HAS_COMPLETED = "browser.smartwindow.firstrun.hasCompleted";
 
-const lazy = {};
-ChromeUtils.defineESModuleGetters(lazy, {
+const lazy = XPCOMUtils.declareLazy({
   AITab: "moz-src:///browser/components/aiwindow/models/aitab/AITab.sys.mjs",
   getAllModelsData:
     "moz-src:///browser/components/aiwindow/models/Utils.sys.mjs",
@@ -76,22 +75,13 @@ ChromeUtils.defineESModuleGetters(lazy, {
   TelemetryScheduler:
     "moz-src:///browser/components/aiwindow/models/TelemetryManager.sys.mjs",
   URILoadingHelper: "resource:///modules/URILoadingHelper.sys.mjs",
+  l10n: () => new Localization(["preview/aiWindow.ftl"], true),
+  hasFirstrunCompleted: {
+    pref: PREF_FIRSTRUN_HAS_COMPLETED,
+    onUpdate: (_pref, _previous, hasCompleted) =>
+      hasCompleted && AIWindow._startSchedulers(),
+  },
 });
-
-ChromeUtils.defineLazyGetter(
-  lazy,
-  "l10n",
-  () => new Localization(["preview/aiWindow.ftl"], true)
-);
-
-XPCOMUtils.defineLazyPreferenceGetter(
-  lazy,
-  "hasFirstrunCompleted",
-  PREF_FIRSTRUN_HAS_COMPLETED,
-  null,
-  (_pref, _previous, hasCompleted) =>
-    hasCompleted && AIWindow._startSchedulers()
-);
 
 /**
  * AI Window Service

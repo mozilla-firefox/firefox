@@ -4,9 +4,15 @@
 
 import { XPCOMUtils } from "resource://gre/modules/XPCOMUtils.sys.mjs";
 
-const lazy = {};
+// Dedicated topic-model slot so the SW naming model can be updated independently
+// of the shared Smart Tab Grouping model. The model + revision resolve from the
+// smart-window-tab-topic Remote Settings inference-options record.
+const SW_TOPIC_FEATURE_ID = "smart-window-tab-topic";
+const SW_TOPIC_ENGINE_ID = "smart-window-tab-topic-engine";
 
-ChromeUtils.defineESModuleGetters(lazy, {
+const ONE_GIB = 1024 ** 3;
+
+const lazy = XPCOMUtils.declareLazy({
   AuthProvider:
     "moz-src:///browser/components/aiwindow/models/AuthProvider.sys.mjs",
   BrowserUtils: "resource://gre/modules/BrowserUtils.sys.mjs",
@@ -22,105 +28,50 @@ ChromeUtils.defineESModuleGetters(lazy, {
   renderPrompt: "moz-src:///browser/components/aiwindow/models/Utils.sys.mjs",
   sanitizeUntrustedContent:
     "moz-src:///browser/components/aiwindow/models/ChatUtils.sys.mjs",
+  mlUtils: { service: "@mozilla.org/ml-utils;1", iid: Ci.nsIMLUtils },
+  console: () =>
+    console.createInstance({
+      logModule: "AutoTabGrouping",
+      maxLogLevelPref: "browser.smartwindow.autoTabGrouping.logLevel",
+    }),
+  maxGroups: { pref: "browser.smartwindow.autoTabGrouping.maxGroups" },
+  minTabsPerGroup: {
+    pref: "browser.smartwindow.autoTabGrouping.minTabsPerGroup",
+  },
+  maxCandidateTabs: {
+    pref: "browser.smartwindow.autoTabGrouping.maxCandidateTabs",
+  },
+  preloadEnabled: { pref: "browser.smartwindow.autoTabGrouping.preloadModels" },
+  checkForMemory: { pref: "browser.ml.checkForMemory" },
+  minimumPhysicalMemoryGiB: { pref: "browser.ml.minimumPhysicalMemory" },
+  // Drop clusters whose cohesion (average pairwise cosine similarity of the tabs'
+  // embeddings, 0..1, set by SmartTabGrouping) is below this, so weakly-related
+  // tabs are not offered as a group. See SmartTabGroupingResult.getCohesion.
+  minCohesion: {
+    pref: "browser.smartwindow.autoTabGrouping.minCohesion",
+    transform: value => parseFloat(value),
+  },
+  supportedLocales: {
+    pref: "browser.smartwindow.autoTabGrouping.supportedLocales",
+    transform: value =>
+      value
+        .split(",")
+        .map(locale => locale.trim().toLowerCase())
+        .filter(Boolean),
+  },
+  // Clustering cutoff, in thousandths (650 => 0.65). Nimbus can change these after
+  // the manager is built, so they are re-applied whenever they change.
+  thresholdInt: {
+    pref: "browser.tabs.groups.smart.agglomerativeThresholdInt",
+    onUpdate: () => AutoTabGroupingSuggestions._applyClusteringThreshold(),
+  },
+  // Clustering cutoff for non-English locales, in thousandths (550 => 0.55).
+  // 0 keeps the shared browser.tabs.groups.smart.agglomerativeThresholdInt.
+  nonEnglishThresholdInt: {
+    pref: "browser.smartwindow.autoTabGrouping.nonEnglishThresholdInt",
+    onUpdate: () => AutoTabGroupingSuggestions._applyClusteringThreshold(),
+  },
 });
-
-// Dedicated topic-model slot so the SW naming model can be updated independently
-// of the shared Smart Tab Grouping model. The model + revision resolve from the
-// smart-window-tab-topic Remote Settings inference-options record.
-const SW_TOPIC_FEATURE_ID = "smart-window-tab-topic";
-const SW_TOPIC_ENGINE_ID = "smart-window-tab-topic-engine";
-
-XPCOMUtils.defineLazyServiceGetter(
-  lazy,
-  "mlUtils",
-  "@mozilla.org/ml-utils;1",
-  Ci.nsIMLUtils
-);
-
-ChromeUtils.defineLazyGetter(lazy, "console", () =>
-  console.createInstance({
-    logModule: "AutoTabGrouping",
-    maxLogLevelPref: "browser.smartwindow.autoTabGrouping.logLevel",
-  })
-);
-
-XPCOMUtils.defineLazyPreferenceGetter(
-  lazy,
-  "maxGroups",
-  "browser.smartwindow.autoTabGrouping.maxGroups"
-);
-XPCOMUtils.defineLazyPreferenceGetter(
-  lazy,
-  "minTabsPerGroup",
-  "browser.smartwindow.autoTabGrouping.minTabsPerGroup"
-);
-XPCOMUtils.defineLazyPreferenceGetter(
-  lazy,
-  "maxCandidateTabs",
-  "browser.smartwindow.autoTabGrouping.maxCandidateTabs"
-);
-XPCOMUtils.defineLazyPreferenceGetter(
-  lazy,
-  "preloadEnabled",
-  "browser.smartwindow.autoTabGrouping.preloadModels"
-);
-XPCOMUtils.defineLazyPreferenceGetter(
-  lazy,
-  "checkForMemory",
-  "browser.ml.checkForMemory"
-);
-XPCOMUtils.defineLazyPreferenceGetter(
-  lazy,
-  "minimumPhysicalMemoryGiB",
-  "browser.ml.minimumPhysicalMemory"
-);
-
-const ONE_GIB = 1024 ** 3;
-
-// Drop clusters whose cohesion (average pairwise cosine similarity of the tabs'
-// embeddings, 0..1, set by SmartTabGrouping) is below this, so weakly-related
-// tabs are not offered as a group. See SmartTabGroupingResult.getCohesion.
-XPCOMUtils.defineLazyPreferenceGetter(
-  lazy,
-  "minCohesion",
-  "browser.smartwindow.autoTabGrouping.minCohesion",
-  null,
-  null,
-  value => parseFloat(value)
-);
-
-XPCOMUtils.defineLazyPreferenceGetter(
-  lazy,
-  "supportedLocales",
-  "browser.smartwindow.autoTabGrouping.supportedLocales",
-  null,
-  null,
-  value =>
-    value
-      .split(",")
-      .map(locale => locale.trim().toLowerCase())
-      .filter(Boolean)
-);
-
-// Clustering cutoff, in thousandths (650 => 0.65). Nimbus can change these after
-// the manager is built, so they are re-applied whenever they change.
-XPCOMUtils.defineLazyPreferenceGetter(
-  lazy,
-  "thresholdInt",
-  "browser.tabs.groups.smart.agglomerativeThresholdInt",
-  null,
-  () => AutoTabGroupingSuggestions._applyClusteringThreshold()
-);
-
-// Clustering cutoff for non-English locales, in thousandths (550 => 0.55).
-// 0 keeps the shared browser.tabs.groups.smart.agglomerativeThresholdInt.
-XPCOMUtils.defineLazyPreferenceGetter(
-  lazy,
-  "nonEnglishThresholdInt",
-  "browser.smartwindow.autoTabGrouping.nonEnglishThresholdInt",
-  null,
-  () => AutoTabGroupingSuggestions._applyClusteringThreshold()
-);
 
 // Tab-group color names, mirroring MozTabbrowserTabGroupMenu.COLORS. Each name
 // resolves to the themed --tab-group-<name> custom property (defined on :root),

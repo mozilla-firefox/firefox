@@ -12,9 +12,9 @@ import {
   createParserState,
   flushTokenRemainder,
 } from "moz-src:///browser/components/aiwindow/models/TokenStreamParser.sys.mjs";
+import { XPCOMUtils } from "resource://gre/modules/XPCOMUtils.sys.mjs";
 
-const lazy = {};
-ChromeUtils.defineESModuleGetters(lazy, {
+const lazy = XPCOMUtils.declareLazy({
   ConversationStore:
     "moz-src:///browser/components/aiwindow/ui/modules/ConversationStore.sys.mjs",
 });

@@ -3,15 +3,14 @@
  * License, v. 2.0. If a copy of the MPL was not distributed with this
  * file, You can obtain one at https://mozilla.org/MPL/2.0/. */
 
-const lazy = {};
-
-ChromeUtils.defineESModuleGetters(lazy, {
+const lazy = XPCOMUtils.declareLazy({
   CryptoUtils: "moz-src:///services/crypto/modules/utils.sys.mjs",
 });
 
 import { MESSAGE_ROLE, TOOL_RESULT_TYPE } from "./AIWindowConstants.sys.mjs";
 import { ChatConversation } from "./ChatConversation.sys.mjs";
 import { ChatMessage, ChatHistoryResult } from "./ChatMessage.sys.mjs";
+import { XPCOMUtils } from "resource://gre/modules/XPCOMUtils.sys.mjs";
 
 /** @typedef {import("./ChatConversation.sys.mjs").PooledHistoryResult} PooledHistoryResult */
 /** @typedef {import("./ChatConversation.sys.mjs").Citation} Citation */

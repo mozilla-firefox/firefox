@@ -2,8 +2,9 @@
  * License, v. 2.0. If a copy of the MPL was not distributed with this
  * file, You can obtain one at http://mozilla.org/MPL/2.0/. */
 
-const lazy = {};
-ChromeUtils.defineESModuleGetters(lazy, {
+import { XPCOMUtils } from "resource://gre/modules/XPCOMUtils.sys.mjs";
+
+const lazy = XPCOMUtils.declareLazy({
   AIWindowToolbarButtons:
     "moz-src:///browser/components/aiwindow/ui/modules/AIWindowToolbarButtons.sys.mjs",
   MONITOR_WIDGET_ID:
@@ -19,12 +20,11 @@ ChromeUtils.defineESModuleGetters(lazy, {
   TabMetrics: "moz-src:///browser/components/tabbrowser/TabMetrics.sys.mjs",
   isAllowedWatchUrl:
     "moz-src:///browser/components/aiwindow/models/agents/Monitor.sys.mjs",
-});
-
-ChromeUtils.defineLazyGetter(lazy, "gBundle", function () {
-  return Services.strings.createBundle(
-    "chrome://browser/locale/browser.properties"
-  );
+  gBundle() {
+    return Services.strings.createBundle(
+      "chrome://browser/locale/browser.properties"
+    );
+  },
 });
 
 const PANEL_ID = "smartwindow-monitor-panel";

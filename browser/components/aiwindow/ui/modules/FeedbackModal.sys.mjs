@@ -2,8 +2,9 @@
  * License, v. 2.0. If a copy of the MPL was not distributed with this
  * file, You can obtain one at http://mozilla.org/MPL/2.0/. */
 
-const lazy = {};
-ChromeUtils.defineESModuleGetters(lazy, {
+import { XPCOMUtils } from "resource://gre/modules/XPCOMUtils.sys.mjs";
+
+const lazy = XPCOMUtils.declareLazy({
   ASRouter: "resource:///modules/asrouter/ASRouter.sys.mjs",
   Spotlight: "resource:///modules/asrouter/Spotlight.sys.mjs",
   normalizeChatLog:

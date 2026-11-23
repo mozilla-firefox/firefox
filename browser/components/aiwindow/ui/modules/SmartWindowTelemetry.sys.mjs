@@ -29,57 +29,32 @@ const PREF_IS_DEFAULT_WINDOW = "browser.smartwindow.isDefaultWindow";
 const PREF_SMARTWINDOW_ENABLED = "browser.smartwindow.enabled";
 const PREF_SIDEBAR_OPEN_BY_DEFAULT =
   "browser.smartwindow.sidebar.openByDefault";
-const lazy = {};
 
-XPCOMUtils.defineLazyPreferenceGetter(
-  lazy,
-  "modelChoice",
-  PREF_MODEL_CHOICE,
-  null,
-  () => SmartWindowTelemetry.updateModelMetric()
-);
-
-XPCOMUtils.defineLazyPreferenceGetter(
-  lazy,
-  "memoriesFromConversation",
-  PREF_MEMORIES_FROM_CONVERSATION,
-  null,
-  () => SmartWindowTelemetry.updateMemoriesFromConversationMetric()
-);
-
-XPCOMUtils.defineLazyPreferenceGetter(
-  lazy,
-  "memoriesFromHistory",
-  PREF_MEMORIES_FROM_HISTORY,
-  null,
-  () => SmartWindowTelemetry.updateMemoriesFromHistoryMetric()
-);
-
-XPCOMUtils.defineLazyPreferenceGetter(
-  lazy,
-  "isDefaultWindow",
-  PREF_IS_DEFAULT_WINDOW,
-  null,
-  () => SmartWindowTelemetry.updateSetDefaultOptinMetric()
-);
-
-XPCOMUtils.defineLazyPreferenceGetter(
-  lazy,
-  "smartWindowEnabled",
-  PREF_SMARTWINDOW_ENABLED,
-  null,
-  () => SmartWindowTelemetry.updateEnabledMetric()
-);
-
-XPCOMUtils.defineLazyPreferenceGetter(
-  lazy,
-  "sidebarOpenByDefault",
-  PREF_SIDEBAR_OPEN_BY_DEFAULT,
-  null,
-  () => SmartWindowTelemetry.recordSidebarOpenByDefaultChange()
-);
-
-ChromeUtils.defineESModuleGetters(lazy, {
+const lazy = XPCOMUtils.declareLazy({
+  modelChoice: {
+    pref: PREF_MODEL_CHOICE,
+    onUpdate: () => SmartWindowTelemetry.updateModelMetric(),
+  },
+  memoriesFromConversation: {
+    pref: PREF_MEMORIES_FROM_CONVERSATION,
+    onUpdate: () => SmartWindowTelemetry.updateMemoriesFromConversationMetric(),
+  },
+  memoriesFromHistory: {
+    pref: PREF_MEMORIES_FROM_HISTORY,
+    onUpdate: () => SmartWindowTelemetry.updateMemoriesFromHistoryMetric(),
+  },
+  isDefaultWindow: {
+    pref: PREF_IS_DEFAULT_WINDOW,
+    onUpdate: () => SmartWindowTelemetry.updateSetDefaultOptinMetric(),
+  },
+  smartWindowEnabled: {
+    pref: PREF_SMARTWINDOW_ENABLED,
+    onUpdate: () => SmartWindowTelemetry.updateEnabledMetric(),
+  },
+  sidebarOpenByDefault: {
+    pref: PREF_SIDEBAR_OPEN_BY_DEFAULT,
+    onUpdate: () => SmartWindowTelemetry.recordSidebarOpenByDefaultChange(),
+  },
   AuthProvider:
     "moz-src:///browser/components/aiwindow/models/AuthProvider.sys.mjs",
   getModelForChoice:

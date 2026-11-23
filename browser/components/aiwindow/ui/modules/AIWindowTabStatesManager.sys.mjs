@@ -5,8 +5,10 @@
 import { XPCOMUtils } from "resource://gre/modules/XPCOMUtils.sys.mjs";
 import { getKeepSidebarOpenState } from "moz-src:///browser/components/aiwindow/ui/modules/ChatUtils.sys.mjs";
 
-const lazy = {};
-ChromeUtils.defineESModuleGetters(lazy, {
+const SIDEBAR_EMPTY_CLOSE_COUNT_PREF =
+  "browser.smartwindow.sidebar.emptyCloseCount";
+
+const lazy = XPCOMUtils.declareLazy({
   AIWINDOW_URL:
     "moz-src:///browser/components/aiwindow/ui/modules/AIWindow.sys.mjs",
   AIWindowUI:
@@ -17,22 +19,9 @@ ChromeUtils.defineESModuleGetters(lazy, {
     "moz-src:///browser/components/aiwindow/ui/modules/SmartWindowTelemetry.sys.mjs",
   SessionStore:
     "moz-src:///browser/components/sessionstore/SessionStore.sys.mjs",
+  sidebarOpenByDefault: { pref: "browser.smartwindow.sidebar.openByDefault" },
+  sidebarEmptyCloseCount: { pref: SIDEBAR_EMPTY_CLOSE_COUNT_PREF },
 });
-
-const SIDEBAR_EMPTY_CLOSE_COUNT_PREF =
-  "browser.smartwindow.sidebar.emptyCloseCount";
-
-XPCOMUtils.defineLazyPreferenceGetter(
-  lazy,
-  "sidebarOpenByDefault",
-  "browser.smartwindow.sidebar.openByDefault"
-);
-
-XPCOMUtils.defineLazyPreferenceGetter(
-  lazy,
-  "sidebarEmptyCloseCount",
-  SIDEBAR_EMPTY_CLOSE_COUNT_PREF
-);
 
 /**
  * At which count the empty close prompt should be shown.

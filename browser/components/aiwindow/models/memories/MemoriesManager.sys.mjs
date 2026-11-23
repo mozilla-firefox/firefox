@@ -66,16 +66,18 @@ import {
 } from "moz-src:///browser/components/aiwindow/models/memories/Memories.sys.mjs";
 import { AIWindow } from "moz-src:///browser/components/aiwindow/ui/modules/AIWindow.sys.mjs";
 import { EveryWindow } from "resource:///modules/EveryWindow.sys.mjs";
+import { XPCOMUtils } from "resource://gre/modules/XPCOMUtils.sys.mjs";
 
 /** @typedef {import("./MemoriesConstants.sys.mjs").MemoriesGenerationRunStats} MemoriesGenerationRunStats */
 /** @typedef {import("./MemoriesConstants.sys.mjs").MemoriesMaintenanceRunStats} MemoriesMaintenanceRunStats */
 
-const lazy = {};
-ChromeUtils.defineLazyGetter(lazy, "console", function () {
-  return console.createInstance({
-    logModule: "MemoriesManager",
-    maxLogLevelPref: "browser.smartwindow.memories.logLevel",
-  });
+const lazy = XPCOMUtils.declareLazy({
+  console() {
+    return console.createInstance({
+      logModule: "MemoriesManager",
+      maxLogLevelPref: "browser.smartwindow.memories.logLevel",
+    });
+  },
 });
 
 const DEFAULT_HISTORY_FULL_LOOKUP_DAYS = 7;

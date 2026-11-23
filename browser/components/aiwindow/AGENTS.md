@@ -9,8 +9,7 @@ This component grew quickly, and much of the existing code across this directory
 - Bugzilla: Core :: Machine Learning: Frontend for `ui/`, and Machine Learning: General for most of `models/`. Check a specific file with `./mach file-info bugzilla-component <file>`.
 
 ## Current standard, and legacy to avoid
-- Imports: `moz-src:///` with `ChromeUtils.defineESModuleGetters`.
-- Prefs: put defaults only in `browser/app/profile/firefox.js`, and read them with `XPCOMUtils.defineLazyPreferenceGetter(lazy, name, pref)` without a default. Make tunable numbers prefs. Prefs that experiments control go through the `smartWindow*` features in `toolkit/components/nimbus/FeatureManifest.yaml`. Legacy: direct `Services.prefs.get*` calls.
+- Imports and prefs: `moz-src:///` with `XPCOMUtils.declareLazy`, and pref entries without a default, which goes only in `browser/app/profile/firefox.js`. Make tunable numbers prefs. Prefs that experiments control go through the `smartWindow*` features in `toolkit/components/nimbus/FeatureManifest.yaml`. Legacy: direct `Services.prefs.get*` calls.
 - Logging: `console.createInstance({ logModule, maxLogLevelPref })` with a `browser.smartwindow.<area>.logLevel` pref that has a default in firefox.js. Legacy: bare `console.*` calls.
 - Private members: `#` fields and methods. Legacy: `_name` methods.
 - JSDoc is enforced by eslint here (`require-jsdoc` and `valid-jsdoc` apply). Give every `@param` and `@property` a description unless the name makes it obvious.

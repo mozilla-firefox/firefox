@@ -6,29 +6,21 @@ import { SUPPORTED_INPUT_TYPES } from "chrome://browser/content/aiwindow/modules
 
 import { XPCOMUtils } from "resource://gre/modules/XPCOMUtils.sys.mjs";
 
-const lazy = {};
-
-ChromeUtils.defineLazyGetter(lazy, "console", function () {
-  return console.createInstance({
-    logModule: "SmartFormFillDocument",
-    maxLogLevelPref: "browser.smartwindow.smartformfill.logLevel",
-  });
-});
-
-ChromeUtils.defineESModuleGetters(lazy, {
+const lazy = XPCOMUtils.declareLazy({
+  console() {
+    return console.createInstance({
+      logModule: "SmartFormFillDocument",
+      maxLogLevelPref: "browser.smartwindow.smartformfill.logLevel",
+    });
+  },
   FormLikeFactory: "resource://gre/modules/FormLikeFactory.sys.mjs",
   FormAutofillHeuristics:
     "resource://gre/modules/shared/FormAutofillHeuristics.sys.mjs",
   FormAutofillUtils: "resource://gre/modules/shared/FormAutofillUtils.sys.mjs",
   SmartFormFillUtils:
     "moz-src:///browser/components/aiwindow/ui/modules/SmartFormFillUtils.sys.mjs",
+  MIN_FORM_FIELDS: { pref: "browser.smartwindow.smartformfill.minFormFields" },
 });
-
-XPCOMUtils.defineLazyPreferenceGetter(
-  lazy,
-  "MIN_FORM_FIELDS",
-  "browser.smartwindow.smartformfill.minFormFields"
-);
 
 const INPUTS_SELECTOR = "input, textarea";
 

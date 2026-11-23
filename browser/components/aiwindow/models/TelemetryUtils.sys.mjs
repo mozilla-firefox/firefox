@@ -19,13 +19,11 @@ const lazy = XPCOMUtils.declareLazy({
   openAIEngine:
     "moz-src:///browser/components/aiwindow/models/openAIEngine.sys.mjs",
   setTimeout: "resource://gre/modules/Timer.sys.mjs",
-});
-
-ChromeUtils.defineLazyGetter(lazy, "console", function () {
-  return console.createInstance({
-    logModule: "LLMTelemetry",
-    maxLogLevelPref: "browser.smartwindow.telemetry.logLevel",
-  });
+  console: () =>
+    console.createInstance({
+      logModule: "LLMTelemetry",
+      maxLogLevelPref: "browser.smartwindow.telemetry.logLevel",
+    }),
 });
 
 export const TELEMETRY_MAJOR_VERSIONS = Object.freeze({

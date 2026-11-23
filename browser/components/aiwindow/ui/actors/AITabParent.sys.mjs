@@ -7,6 +7,7 @@ import { isAITabPageEditable } from "moz-src:///browser/components/aiwindow/ui/m
 import { getHeadingFont } from "moz-src:///browser/components/aiwindow/ui/modules/AITabHeadingFont.sys.mjs";
 import { ConversationStore } from "moz-src:///browser/components/aiwindow/ui/modules/ConversationStore.sys.mjs";
 import { getSmartPageName } from "chrome://browser/content/aiwindow/modules/TrustedInternalURLs.mjs";
+import { XPCOMUtils } from "resource://gre/modules/XPCOMUtils.sys.mjs";
 
 /**
  * A stored AI Tab record.
@@ -49,19 +50,16 @@ import { getSmartPageName } from "chrome://browser/content/aiwindow/modules/Trus
 const SMART_PAGE_ICON_URL =
   "chrome://browser/content/aiwindow/assets/smart-page-16.svg";
 
-const lazy = {};
-
-ChromeUtils.defineESModuleGetters(lazy, {
+const lazy = XPCOMUtils.declareLazy({
   A2UI: "moz-src:///browser/components/aiwindow/ui/modules/A2UI.sys.mjs",
   AIWINDOW_URL:
     "moz-src:///browser/components/aiwindow/ui/modules/AIWindow.sys.mjs",
   AITab: "moz-src:///browser/components/aiwindow/models/aitab/AITab.sys.mjs",
   PlacesUtils: "resource://gre/modules/PlacesUtils.sys.mjs",
   URILoadingHelper: "resource:///modules/URILoadingHelper.sys.mjs",
-});
-
-ChromeUtils.defineLazyGetter(lazy, "fluentStrings", () => {
-  return new Localization(["preview/aiWindow.ftl"], true);
+  fluentStrings: () => {
+    return new Localization(["preview/aiWindow.ftl"], true);
+  },
 });
 
 let smartPageIconDataURI = null;
