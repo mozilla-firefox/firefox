@@ -9,7 +9,8 @@
 /* global AT_getAppLocaleAsBCP47, AT_getSupportedLanguages, AT_log, AT_getScriptDirection,
    AT_getDisplayName, AT_logError, AT_createTranslationsPort, AT_isHtmlTranslation,
    AT_isTranslationEngineSupported, AT_isInAutomation, AT_identifyLanguage, AT_clearSourceText,
-   AT_telemetry, AT_isEnabledStateManagedByPolicy, AT_enableTranslationsFeature */
+   AT_telemetry, AT_isEnabledStateManagedByPolicy, AT_enableTranslationsFeature,
+   AT_getIsTranslationsPageInSplitView, AT_closeTranslationsSplitViewTab */
 
 import { Translator } from "chrome://global/content/translations/Translator.mjs";
 
@@ -287,7 +288,13 @@ class AboutTranslations {
       maintainFlow: false,
     });
 
+    this.elements.splitViewCloseButton.addEventListener(
+      "click",
+      this.#onSplitViewCloseButton
+    );
+
     if (!isTranslationsEngineSupported) {
+      void this.#updateSplitViewCloseButtonVisibility();
       this.#readyPromiseWithResolvers.reject();
       this.#showUnsupportedInfoMessage();
       return;
@@ -385,6 +392,7 @@ class AboutTranslations {
    *   sourceSection: HTMLElement,
    *   sourceSectionClearButton: HTMLElement,
    *   sourceSectionTextArea: HTMLTextAreaElement,
+   *   splitViewCloseButton: HTMLElement,
    *   swapLanguagesButton: HTMLElement,
    *   targetLanguageSelector: HTMLElement,
    *   targetSection: HTMLElement,
@@ -465,6 +473,9 @@ class AboutTranslations {
       sourceSectionTextArea: /** @type {HTMLTextAreaElement} */ (
         document.getElementById("about-translations-source-textarea")
       ),
+      splitViewCloseButton: /** @type {HTMLElement} */ (
+        document.getElementById("about-translations-split-view-close-button")
+      ),
       swapLanguagesButton: /** @type {HTMLElement} */ (
         document.getElementById("about-translations-swap-languages-button")
       ),
@@ -525,6 +536,7 @@ class AboutTranslations {
   async #setup() {
     this.#initializeEventListeners();
     this.#updatePageOrientation();
+    await this.#updateSplitViewCloseButtonVisibility();
 
     this.#translatingPlaceholderText = await document.l10n.formatValue(
       "about-translations-translating-message"
@@ -580,6 +592,32 @@ class AboutTranslations {
     targetLanguageSelector.value = "";
     this.#setElementEnabled(sourceLanguageSelector, true);
     this.#setElementEnabled(targetLanguageSelector, true);
+  }
+
+  /**
+   * Updates the close button to reflect this page's current Split View state.
+   *
+   * @returns {Promise<void>}
+   */
+  async #updateSplitViewCloseButtonVisibility() {
+    try {
+      this.applySplitViewState({
+        isInSplitView: await AT_getIsTranslationsPageInSplitView(),
+      });
+    } catch (error) {
+      AT_logError(error);
+      this.applySplitViewState({ isInSplitView: false });
+    }
+  }
+
+  /**
+   * Updates UI that is only available when the page is in Split View.
+   *
+   * @param {object} splitViewState
+   * @param {boolean} splitViewState.isInSplitView
+   */
+  applySplitViewState({ isInSplitView }) {
+    this.elements.splitViewCloseButton.hidden = !isInSplitView;
   }
 
   /**
@@ -690,6 +728,13 @@ class AboutTranslations {
     this.#clearSourceText();
 
     AT_telemetry("onClearSourceTextButton");
+  };
+
+  /**
+   * Records activation and requests that this page's Split View tab close.
+   */
+  #onSplitViewCloseButton = () => {
+    AT_closeTranslationsSplitViewTab();
   };
 
   /**
@@ -2797,6 +2842,12 @@ window.addEventListener("AboutTranslationsChromeToContent", ({ detail }) => {
     }
     case "rebuild-translator": {
       window.aboutTranslations?.rebuildTranslator();
+      break;
+    }
+    case "split-view-state-changed": {
+      void ensureAboutTranslationsInitialized().then(() => {
+        window.aboutTranslations?.applySplitViewState(detail);
+      });
       break;
     }
     default: {

@@ -62,6 +62,8 @@ support-files = [
 
 ["browser_about_translations_source_clear_button_visibility.js"]
 
+["browser_about_translations_split_view_close_button.js"]
+
 ["browser_about_translations_swap_languages_button_detected.js"]
 
 ["browser_about_translations_swap_languages_button_explicit.js"]

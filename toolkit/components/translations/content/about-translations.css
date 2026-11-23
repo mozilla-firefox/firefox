@@ -60,6 +60,7 @@ body {
   align-items: center;
   justify-content: start;
   column-gap: var(--space-small);
+  width: 100%;
 }
 
 #about-translations-logo {
@@ -69,6 +70,11 @@ body {
 
 #about-translations-h1 {
   margin: 0;
+}
+
+#about-translations-split-view-close-button {
+  margin-inline-start: auto;
+  margin-inline-end: var(--space-small);
 }
 
 #about-translations-main-user-interface {
@@ -98,9 +104,13 @@ body {
   }
 }
 
-#about-translations-clear-button[type~="icon"]::part(button) {
+#about-translations-clear-button[type~="icon"]::part(button),
+#about-translations-split-view-close-button[type~="icon"]::part(button) {
   width: var(--AT-square-button-small);
   height: var(--AT-square-button-small);
+}
+
+#about-translations-clear-button[type~="icon"]::part(button) {
   background-image: url("chrome://global/skin/icons/close.svg");
   background-size: var(--size-item-small);
 }

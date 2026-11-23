@@ -3383,6 +3383,11 @@ class FullPageTranslationsTestUtils {
         );
       }
 
+      await AboutTranslationsTestUtils.assertSplitViewCloseButton(
+        aboutTranslationsTab.linkedBrowser,
+        { visible: true }
+      );
+
       info(
         "The companion button is hidden while paired with about:translations"
       );
@@ -3394,8 +3399,26 @@ class FullPageTranslationsTestUtils {
       });
       await this.clickCancelButton();
 
-      info("Separate the translations companion and keep the source page open");
-      await SplitViewTranslationsTestUtils.separateTabs(sourceTab);
+      info("Close the translations companion and keep the source page open");
+      const tabClosed = BrowserTestUtils.waitForEvent(
+        aboutTranslationsTab,
+        "TabClose"
+      );
+      const splitViewRemoved = BrowserTestUtils.waitForEvent(
+        gBrowser.tabContainer,
+        "SplitViewRemoved",
+        false,
+        () => !sourceTab.splitview
+      );
+      await AboutTranslationsTestUtils.clickSplitViewCloseButton(
+        aboutTranslationsTab.linkedBrowser
+      );
+      await Promise.all([tabClosed, splitViewRemoved]);
+
+      ok(
+        !aboutTranslationsTab.isConnected,
+        "The translations companion tab is closed"
+      );
       ok(sourceTab.isConnected, "The source page remains open");
       ok(!sourceTab.splitview, "The source page has left Split View");
 

@@ -9,6 +9,10 @@ about-translations-title = { -brand-short-name } translations
 about-translations-description = Instant translations that respect your privacy.
 about-translations-learn-more-link = Learn more
 
+# This button closes the about:translations page's split-view tab, and leaves the adjacent tab open as a full tab.
+about-translations-split-view-close-button =
+  .title = Close { -brand-short-name } translations
+
 # An info message displayed if the device's hardware is not compatible with the Translations feature requirements.
 about-translations-unsupported-info-message-2 =
   .heading = Translation isn’t available on this device

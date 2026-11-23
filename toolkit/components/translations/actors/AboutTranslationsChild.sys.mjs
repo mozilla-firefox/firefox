@@ -81,6 +81,13 @@ export class AboutTranslationsChild extends JSWindowActorChild {
         this.#sendEventToContent({ type: "rebuild-translator" });
         break;
       }
+      case "AboutTranslations:SplitViewStateChanged": {
+        this.#sendEventToContent({
+          type: "split-view-state-changed",
+          ...data,
+        });
+        break;
+      }
       default:
         throw new Error("Unknown AboutTranslations message: " + name);
     }
@@ -154,6 +161,8 @@ export class AboutTranslationsChild extends JSWindowActorChild {
       "AT_isTranslationEngineSupported",
       "AT_isHtmlTranslation",
       "AT_isInAutomation",
+      "AT_getIsTranslationsPageInSplitView",
+      "AT_closeTranslationsSplitViewTab",
       "AT_createTranslationsPort",
       "AT_identifyLanguage",
       "AT_getDisplayName",
@@ -182,6 +191,24 @@ export class AboutTranslationsChild extends JSWindowActorChild {
    */
   AT_logError(...args) {
     lazy.console.error(...args);
+  }
+
+  /**
+   * Checks whether the tab displaying this page is in Split View.
+   *
+   * @returns {Promise<boolean>}
+   */
+  AT_getIsTranslationsPageInSplitView() {
+    return this.#convertToContentPromise(
+      this.sendQuery("AboutTranslations:GetIsTranslationsPageInSplitView")
+    );
+  }
+
+  /**
+   * Requests that the tab displaying this page close if it is in Split View.
+   */
+  AT_closeTranslationsSplitViewTab() {
+    this.sendAsyncMessage("AboutTranslations:CloseTranslationsSplitViewTab");
   }
 
   /**

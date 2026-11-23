@@ -10,8 +10,7 @@ ChromeUtils.defineESModuleGetters(lazy, {
 });
 
 /**
- * This parent is blank because the Translations actor handles most of the features
- * needed in AboutTranslations.
+ * Handles privileged requests and browser state for about:translations.
  */
 export class AboutTranslationsParent extends JSWindowActorParent {
   #isDestroyed = false;
@@ -34,7 +33,92 @@ export class AboutTranslationsParent extends JSWindowActorParent {
    */
   #languageDisplayNames = null;
 
+  /**
+   * The tab container whose Split View events this actor observes.
+   *
+   * @type {Element | null}
+   */
+  #splitViewEventTarget = null;
+
+  /**
+   * The browser whose Split View membership this actor observes.
+   *
+   * @type {Browser | null}
+   */
+  #splitViewBrowser = null;
+
+  /**
+   * Reports the page's current Split View membership to the child actor.
+   */
+  #sendSplitViewState() {
+    this.sendAsyncMessage("AboutTranslations:SplitViewStateChanged", {
+      isInSplitView: Boolean(this.#getTab()?.splitview),
+    });
+  }
+
+  /**
+   * Gets the browser tab displaying this page.
+   *
+   * @returns {MozTabbrowserTab | null}
+   */
+  #getTab() {
+    const browser = this.browsingContext.top.embedderElement;
+    const gBrowser = this.browsingContext.topChromeWindow?.gBrowser;
+
+    return browser ? (gBrowser?.getTabForBrowser(browser) ?? null) : null;
+  }
+
+  /**
+   * Observes Split View membership for the supplied browser, or stops observing.
+   *
+   * @param {Browser | null} browser
+   */
+  #setSplitViewBrowser(browser) {
+    const browserEvents = ["SwapDocShells", "EndSwapDocShells"];
+    const tabContainerEvents = ["SplitViewTabChange", "SplitViewRemoved"];
+
+    for (const eventName of browserEvents) {
+      this.#splitViewBrowser?.removeEventListener(eventName, this);
+    }
+    for (const eventName of tabContainerEvents) {
+      this.#splitViewEventTarget?.removeEventListener(eventName, this);
+    }
+
+    this.#splitViewBrowser = browser;
+    this.#splitViewEventTarget =
+      browser?.documentGlobal.gBrowser?.tabContainer ?? null;
+
+    for (const eventName of browserEvents) {
+      this.#splitViewBrowser?.addEventListener(eventName, this);
+    }
+    for (const eventName of tabContainerEvents) {
+      this.#splitViewEventTarget?.addEventListener(eventName, this);
+    }
+  }
+
+  /**
+   * Reports membership changes and follows the page when its browser changes.
+   *
+   * @param {CustomEvent} event
+   */
+  handleEvent(event) {
+    switch (event.type) {
+      case "SwapDocShells":
+        if (event.target === this.browsingContext.top.embedderElement) {
+          // The destination browser is available before the docshell moves.
+          this.#setSplitViewBrowser(event.detail);
+        }
+        break;
+      case "EndSwapDocShells":
+      case "SplitViewTabChange":
+      case "SplitViewRemoved":
+        this.#sendSplitViewState();
+        break;
+    }
+  }
+
   actorCreated() {
+    this.#setSplitViewBrowser(this.browsingContext.top.embedderElement);
     lazy.TranslationsParent.ensurePrefObservers();
     this.#boundObserve = this.#observe.bind(this);
     Services.obs.addObserver(
@@ -48,6 +132,7 @@ export class AboutTranslationsParent extends JSWindowActorParent {
   }
 
   didDestroy() {
+    this.#setSplitViewBrowser(null);
     if (this.#boundObserve) {
       Services.obs.removeObserver(
         this.#boundObserve,
@@ -149,6 +234,17 @@ export class AboutTranslationsParent extends JSWindowActorParent {
       }
       case "AboutTranslations:EnableTranslationsFeature": {
         await lazy.TranslationsFeature.enable();
+        return undefined;
+      }
+      case "AboutTranslations:GetIsTranslationsPageInSplitView": {
+        return Boolean(this.#getTab()?.splitview);
+      }
+      case "AboutTranslations:CloseTranslationsSplitViewTab": {
+        const tab = this.#getTab();
+        if (tab?.splitview) {
+          this.browsingContext.topChromeWindow.gBrowser.removeTab(tab);
+        }
+
         return undefined;
       }
       case "AboutTranslations:Telemetry": {

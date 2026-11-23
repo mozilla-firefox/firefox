@@ -5207,6 +5207,39 @@ class SplitViewTranslationsTestUtils {
   }
 
   /**
+   * Closes a browser window and waits for its window and document actors to shut down.
+   *
+   * @param {Window} win
+   * @returns {Promise<void>}
+   */
+  static async closeWindow(win) {
+    await win.gBrowserInit.idleTasksFinished.promise;
+
+    const windowId = win.windowGlobalChild.innerWindowId;
+    const windowDestroyed = TestUtils.topicObserved(
+      "window-global-destroyed",
+      windowGlobal => windowGlobal.innerWindowId === windowId
+    );
+    const documentsDestroyed = win.gBrowser.browsers.map(browser => {
+      const innerWindowId =
+        browser.browsingContext.currentWindowGlobal?.innerWindowId;
+      if (!innerWindowId) {
+        return Promise.resolve();
+      }
+
+      return TestUtils.topicObserved(
+        "window-global-destroyed",
+        windowGlobal => windowGlobal.innerWindowId === innerWindowId
+      );
+    });
+    await Promise.all([
+      BrowserTestUtils.closeWindow(win),
+      windowDestroyed,
+      ...documentsDestroyed,
+    ]);
+  }
+
+  /**
    * Right-clicks a tab and activates an enabled context-menu command.
    *
    * @param {MozTabbrowserTab} tab
@@ -5431,6 +5464,204 @@ class AboutTranslationsTestUtils {
         );
       }
     );
+  }
+
+  /**
+   * Asserts the close button's visibility after the page and Split View UI settle.
+   *
+   * @param {Browser} browser
+   * @param {object} options
+   * @param {boolean} options.visible
+   * @param {() => Promise<void>} [action]
+   *   A transition that should produce the expected button visibility.
+   * @returns {Promise<void>}
+   */
+  static async assertSplitViewCloseButton(browser, { visible }, action) {
+    await SpecialPowers.spawn(browser, [], () =>
+      ContentTaskUtils.waitForMutationCondition(
+        content.document.body,
+        { attributes: true, attributeFilter: ["ready-for-testing"] },
+        () => content.document.body.hasAttribute("ready-for-testing")
+      )
+    );
+    await action?.();
+    await SpecialPowers.spawn(browser, [visible], async expectedVisible => {
+      const button = content.document.getElementById(
+        "about-translations-split-view-close-button"
+      );
+      Assert.ok(button, "The Split View close button exists");
+
+      await ContentTaskUtils.waitForMutationCondition(
+        button,
+        { attributes: true, attributeFilter: ["hidden"] },
+        () => button.hidden === !expectedVisible
+      );
+      Assert.equal(
+        !button.hidden,
+        expectedVisible,
+        "The Split View close button has the expected visibility"
+      );
+    });
+  }
+
+  /**
+   * Clicks the visible Split View close button with the mouse.
+   *
+   * @param {Browser} browser
+   * @returns {Promise<void>}
+   */
+  static async clickSplitViewCloseButton(browser) {
+    await this.assertSplitViewCloseButton(browser, { visible: true });
+    await BrowserTestUtils.synthesizeMouseAtCenter(
+      "#about-translations-split-view-close-button",
+      {},
+      browser
+    );
+  }
+
+  /**
+   * Verifies close-button visibility when an existing page joins or leaves Split View,
+   * optionally after the page moves to another window without reloading.
+   *
+   * @param {object} options
+   * @param {boolean} options.separate
+   *   Whether to separate an existing Split View rather than create one.
+   * @param {boolean} options.moveToNewWindow
+   *   Whether to move the tab or Split View before the tested transition.
+   * @returns {Promise<void>}
+   */
+  static async assertSplitViewCloseButtonAfterTabChange({
+    separate,
+    moveToNewWindow,
+  }) {
+    const testPage = await loadTestPage({
+      page: SPANISH_PAGE_URL,
+      languagePairs: LANGUAGE_PAIRS,
+      prefs: [["browser.tabs.splitView.enabled", true]],
+    });
+    let partnerTab = testPage.tab;
+    let aboutTranslationsTab = null;
+    let newWindow = null;
+
+    try {
+      info("Open about:translations as a standalone tab");
+      aboutTranslationsTab = await BrowserTestUtils.openNewForegroundTab(
+        gBrowser,
+        "about:translations"
+      );
+      await this.assertSplitViewCloseButton(
+        aboutTranslationsTab.linkedBrowser,
+        {
+          visible: false,
+        }
+      );
+
+      if (separate) {
+        info("Add the existing about:translations page to Split View");
+        await this.assertSplitViewCloseButton(
+          aboutTranslationsTab.linkedBrowser,
+          { visible: true },
+          () =>
+            SplitViewTranslationsTestUtils.openExistingTabsInSplitView(
+              aboutTranslationsTab,
+              partnerTab
+            )
+        );
+        is(
+          aboutTranslationsTab.splitview,
+          partnerTab.splitview,
+          "Both tabs share the Split View"
+        );
+      }
+
+      if (moveToNewWindow) {
+        info("Move the existing page to another window without reloading it");
+        const innerWindowId = aboutTranslationsTab.linkedBrowser.innerWindowID;
+        newWindow = await BrowserTestUtils.openNewBrowserWindow();
+        const originalTab = aboutTranslationsTab;
+        const tabAdopted = BrowserTestUtils.waitForEvent(
+          newWindow.gBrowser.tabContainer,
+          "TabOpen",
+          false,
+          event => event.detail.adoptedTab === originalTab
+        );
+
+        if (separate) {
+          const adoptedSplitView = newWindow.gBrowser.adoptSplitView(
+            aboutTranslationsTab.splitview,
+            { selectTab: true }
+          );
+          aboutTranslationsTab = (await tabAdopted).target;
+          partnerTab = adoptedSplitView.tabs.find(
+            tab => tab !== aboutTranslationsTab
+          );
+        } else {
+          partnerTab = newWindow.gBrowser.selectedTab;
+          aboutTranslationsTab = newWindow.gBrowser.adoptTab(
+            aboutTranslationsTab,
+            { selectTab: true }
+          );
+          await tabAdopted;
+        }
+
+        is(
+          aboutTranslationsTab.documentGlobal,
+          newWindow,
+          "The about:translations tab belongs to the destination window"
+        );
+        is(
+          aboutTranslationsTab.linkedBrowser.innerWindowID,
+          innerWindowId,
+          "Moving the tab preserves the existing about:translations document"
+        );
+        await this.assertSplitViewCloseButton(
+          aboutTranslationsTab.linkedBrowser,
+          {
+            visible: separate,
+          }
+        );
+      }
+
+      await this.assertSplitViewCloseButton(
+        aboutTranslationsTab.linkedBrowser,
+        { visible: !separate },
+        async () => {
+          if (separate) {
+            info(
+              "Separate the tabs and check that the close button disappears"
+            );
+            await SplitViewTranslationsTestUtils.separateTabs(
+              aboutTranslationsTab
+            );
+            ok(!partnerTab.splitview, "The partner tab has left Split View");
+            ok(
+              !aboutTranslationsTab.splitview,
+              "about:translations has left Split View"
+            );
+          } else {
+            info(
+              "Add the existing page to Split View and check that the close button appears"
+            );
+            await SplitViewTranslationsTestUtils.openExistingTabsInSplitView(
+              aboutTranslationsTab,
+              partnerTab
+            );
+          }
+        }
+      );
+    } finally {
+      try {
+        aboutTranslationsTab?.splitview?.unsplitTabs();
+        if (aboutTranslationsTab?.isConnected) {
+          await SplitViewTranslationsTestUtils.closeTab(aboutTranslationsTab);
+        }
+        await testPage.cleanup({ browser: partnerTab.linkedBrowser });
+      } finally {
+        if (newWindow) {
+          await SplitViewTranslationsTestUtils.closeWindow(newWindow);
+        }
+      }
+    }
   }
 
   /**
