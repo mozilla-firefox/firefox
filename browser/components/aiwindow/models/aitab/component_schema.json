@@ -2,7 +2,7 @@
   "$schema": "https://json-schema.org/draft/2020-12/schema",
   "$id": "https://aitab.mozilla.org/catalogs/aitab/catalog.json",
   "catalogId": "https://aitab.mozilla.org/catalogs/aitab/catalog.json",
-  "version": "1.1",
+  "version": "2.0",
   "title": "AITab Catalog",
   "description": "A2UI-compatible custom component catalog for Firefox AITab pages. Adopts the A2UI 1.0 *component/UI model* — a surface is a FLAT list of components (an adjacency list) where each component is `{ \"id\", \"component\": <TypeName>, ...props }`, exactly one has id `root`, parent/child links are id references (never inlined), and all displayed data lives in a separate JSON `dataModel` addressed by JSON-Pointer bindings.  Bindable properties accept a literal value OR a `{ \"path\": \"/...\" }` binding. Repeating regions or non boilerplate information should in bound data in the dataModel section. `components` maps each AITab component name to its property schema. Anything clickable simply carries an `href` (a URL or in-app route).",
   "$defs": {
@@ -142,7 +142,8 @@
         "date_label": { "type": "string", "description": "Date or time." },
         "date_eyebrow": { "type": "string" },
         "title": { "type": "string" },
-        "description": { "type": "string" }
+        "description": { "type": "string" },
+        "image": { "$ref": "#/$defs/Image" }
       }
     },
     "HighlightItem": {
@@ -154,8 +155,26 @@
         "eyebrow": { "type": "string" },
         "title": { "type": "string" },
         "body": { "type": "string" },
-        "sources": { "$ref": "#/$defs/SourceLinks" }
+        "sources": { "$ref": "#/$defs/SourceLinks" },
+        "image": { "$ref": "#/$defs/Image" }
       }
+    },
+    "Image": {
+      "type": "object",
+      "description": "Image data for rendering in a block",
+      "additionalProperties": false,
+      "properties": {
+        "src": {
+          "type": "string",
+          "format": "uri-reference",
+          "description": "The URL to the image"
+        },
+        "alt_text": {
+          "type": "string",
+          "description": "Alt text for accessibility text"
+        }
+      },
+      "required": ["src"]
     }
   },
 
@@ -206,6 +225,13 @@
       "additionalProperties": false,
       "anyOf": [{ "required": ["lead"] }, { "required": ["paragraphs"] }],
       "properties": {
+        "image": {
+          "description": "A relevant image for the TextBlock",
+          "oneOf": [
+            { "$ref": "#/$defs/Image" },
+            { "$ref": "#/$defs/DataBinding" }
+          ]
+        },
         "lead": {
           "$ref": "#/$defs/DynamicString",
           "description": "Larger lead sentence."
@@ -238,8 +264,20 @@
           "description": "Column definitions (presentation config)."
         },
         "rows": {
-          "$ref": "#/$defs/DynamicArray",
-          "description": "Row data. Item shape: an object keyed by the column `key`s, plus an optional `href`: the URL of the page the item came from, shown as a source chip. Bind to an array in the data model."
+          "oneOf": [
+            {
+              "type": "array",
+              "items": {
+                "type": "object",
+                "properties": {
+                  "image": { "$ref": "#/$defs/Image" }
+                },
+                "additionalProperties": true
+              }
+            },
+            { "$ref": "#/$defs/DataBinding" }
+          ],
+          "description": "Row data. Item shape: an object keyed by the column `key`s, plus an optional `href`: the URL of the page the item came from, shown as a source chip. Bind to an array in the data model. Each row may also include an optional image property: an object conforming to #/$defs/Image, with src and alt_text string properties."
         }
       }
     },

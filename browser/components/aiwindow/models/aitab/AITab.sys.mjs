@@ -106,7 +106,7 @@ export const MAX_AITAB_CONTEXT_TABS = 10;
 
 // Surface properties the browser navigates to or loads. The model may only
 // fill them with URL tokens it was given (see expandSurfaceUrlTokens).
-const LINK_FIELDS = new Set(["href", "image"]);
+const LINK_FIELDS = new Set(["href", "src"]);
 
 /**
  * @param {string} url
@@ -491,10 +491,8 @@ export class AITab {
       AITab.#checkBindings(AITab.#propsOf(comp), dataModel, comp.id, errors);
     }
 
-    // Bound-array item validation: when an array prop is a { path } binding, its
-    // items live in the data model — which the per-component (literal) schema
-    // can't reach — so resolve the array and validate each item against the
-    // array's item schema from the catalog.
+    // Bound values live in the data model, which the per-component schema
+    // can't reach. Validate bound objects and array items against the catalog.
     const itemCache = new Map();
     for (const comp of components) {
       const compSchema = comp && env.catalog.components[comp.component];
@@ -510,6 +508,34 @@ export class AITab {
         errors,
         itemCache
       );
+    }
+
+    const repeater = roots[0]?.children;
+    if (
+      repeater &&
+      !Array.isArray(repeater) &&
+      typeof repeater.path == "string" &&
+      repeater.path.startsWith("/")
+    ) {
+      const template = components.find(
+        comp => comp?.id === repeater.componentId
+      );
+      const schema = template && env.catalog.components[template.component];
+      const scopes = AITab.#resolvePath(dataModel, repeater.path);
+      if (schema && Array.isArray(scopes)) {
+        for (const [index, scope] of scopes.entries()) {
+          AITab.#checkBoundArrays(
+            schema,
+            AITab.#propsOf(template),
+            env.catalog,
+            dataModel,
+            `${template.id}[${index}]`,
+            errors,
+            itemCache,
+            scope
+          );
+        }
+      }
     }
 
     if (errors.length) {
@@ -707,7 +733,8 @@ export class AITab {
   }
 
   /**
-   * Compile + cache a validator for an array item schema (with catalog `$defs` in scope).
+   * Compile + cache a validator for a bound object or array item schema
+   * (with catalog `$defs` in scope).
    *
    * @param {A2UISchema} itemSchema - Schema each array element must satisfy.
    * @param {A2UICatalog} catalog - The catalog whose `$defs` the item schema may $ref.
@@ -736,6 +763,8 @@ export class AITab {
    * against the array's item schema. Recurses into object properties so nested
    * arrays (e.g. Header.references.items) are covered. Literal arrays are
    * already validated by the per-component validator, so they are skipped here.
+   * Bound objects are validated against the literal object branch.
+   * Relative bindings are validated when a repeater scope is provided.
    *
    * @param {A2UISchema} schema
    * @param {*} value
@@ -744,6 +773,7 @@ export class AITab {
    * @param {string} where
    * @param {ValidationError[]} errors
    * @param {Map<string, SchemaValidator>} cache
+   * @param {*} [scope] - Data for the current repeater item.
    */
   static #checkBoundArrays(
     schema,
@@ -752,21 +782,56 @@ export class AITab {
     dataModel,
     where,
     errors,
-    cache
+    cache,
+    scope = undefined
   ) {
     schema = AITab.#resolveDef(schema, catalog);
     if (!schema || value == null) {
       return;
     }
     if (Array.isArray(schema.oneOf)) {
+      const isBinding = AITab.#isBinding(value);
+      const isAbsolute = isBinding && value.path.startsWith("/");
+      if (scope !== undefined && isAbsolute) {
+        return;
+      }
+      const canResolveBinding =
+        isBinding && (isAbsolute || scope !== undefined);
+      const boundValue = canResolveBinding
+        ? AITab.#resolvePath(
+            isAbsolute ? dataModel : scope,
+            isAbsolute ? value.path : `/${value.path}`
+          )
+        : undefined;
+      if (canResolveBinding && !isAbsolute && boundValue === undefined) {
+        errors.push({
+          message: `${where}: binding path "${value.path}" not found in repeater item`,
+        });
+        return;
+      }
+      const objectBranch = schema.oneOf.find(
+        s =>
+          s?.$ref !== "#/$defs/DataBinding" &&
+          AITab.#resolveDef(s, catalog)?.type === "object"
+      );
+      if (objectBranch && canResolveBinding) {
+        if (boundValue !== undefined) {
+          const validator = AITab.#itemValidator(objectBranch, catalog, cache);
+          const { valid, errors: objectErrors } =
+            validator.validate(boundValue);
+          if (!valid) {
+            for (const error of objectErrors) {
+              errors.push({ ...error, dataPath: value.path });
+            }
+          }
+        }
+        return;
+      }
       const arrayBranch = schema.oneOf.find(
         s => s && s.type === "array" && s.items
       );
-      if (arrayBranch && AITab.#isBinding(value)) {
-        if (!value.path.startsWith("/")) {
-          return; // relative paths aren't resolvable from the root here
-        }
-        const arr = AITab.#resolvePath(dataModel, value.path);
+      if (arrayBranch && canResolveBinding) {
+        const arr = boundValue;
         if (arr === undefined) {
           return; // missing path already reported by #checkBindings
         }
@@ -799,7 +864,8 @@ export class AITab {
             dataModel,
             `${where}/${k}`,
             errors,
-            cache
+            cache,
+            scope
           );
         }
       }
@@ -1662,8 +1728,8 @@ export class AITab {
   /**
    * Expand the URL tokens in a parsed model surface back into full URLs.
    * Tokens inside free text are expanded, or removed when hallucinated. Link
-   * fields (see LINK_FIELDS) must hold exactly one known token; an item whose
-   * `href` does not is dropped, and any other invalid link field is removed,
+   * fields (see LINK_FIELDS) must hold exactly one known token; an object whose
+   * `href` or `src` does not is dropped,
    * so a URL the model was never given can't become a link or image.
    *
    * When `allowedLinks` is given, an `href` must also be one of them.
@@ -1675,6 +1741,8 @@ export class AITab {
    *   dropped. Null allows any URL the prompt contained.
    * @param {number} [recursionDepth] - Nesting level of `value`; callers
    *   leave it unset.
+   * @param {WeakMap<object, object>} [expandedObjects] - Original objects
+   *   mapped to their filtered copies; callers leave it unset.
    * @returns {any} A detokenized copy, or undefined when `value` is dropped or
    *   nested deeper than MAX_EXPAND_RECURSION_DEPTH.
    */
@@ -1682,7 +1750,8 @@ export class AITab {
     value,
     urlTokenizer,
     allowedLinks = null,
-    recursionDepth = 0
+    recursionDepth = 0,
+    expandedObjects = new WeakMap()
   ) {
     if (typeof value == "string") {
       return stripUnresolvedUrlTokens(
@@ -1693,16 +1762,19 @@ export class AITab {
       return undefined;
     }
     if (Array.isArray(value)) {
-      return value
+      const result = value
         .map(item =>
           AITab.expandSurfaceUrlTokens(
             item,
             urlTokenizer,
             allowedLinks,
-            recursionDepth + 1
+            recursionDepth + 1,
+            expandedObjects
           )
         )
         .filter(item => item !== undefined);
+      expandedObjects.set(value, result);
+      return result;
     }
     if (!value || typeof value != "object") {
       return value;
@@ -1722,7 +1794,7 @@ export class AITab {
         }
         if (url) {
           result[key] = url;
-        } else if (key == "href") {
+        } else {
           lazy.console.warn("dropping item with unknown link", sub);
           return undefined;
         }
@@ -1732,12 +1804,20 @@ export class AITab {
         sub,
         urlTokenizer,
         allowedLinks,
-        recursionDepth + 1
+        recursionDepth + 1,
+        expandedObjects
       );
       if (expanded !== undefined) {
         result[key] = expanded;
       }
     }
+
+    expandedObjects.set(value, result);
+
+    if (recursionDepth === 0 && Array.isArray(result.components)) {
+      AITab.#removeFilteredBindings(value, result, expandedObjects);
+    }
+
     return result;
   }
 
@@ -1794,6 +1874,198 @@ export class AITab {
       }
     }
     return surface;
+  }
+
+  /**
+   * Remove bindings whose targets existed before filtering and disappeared
+   * because they, or an ancestor object, contained an unresolved URL token
+   * or a link outside the allowed set.
+   *
+   * @param {A2UISurface} original
+   * @param {A2UISurface} surface - Filtered surface, updated in place.
+   * @param {WeakMap<object, object>} expandedObjects
+   */
+  static #removeFilteredBindings(original, surface, expandedObjects) {
+    surface.components = surface.components.map(
+      component =>
+        AITab.#cleanFilteredBindings(
+          component,
+          original.dataModel,
+          surface.dataModel
+        ).value
+    );
+
+    const root = surface.components.find(
+      component => component?.id === ROOT_ID
+    );
+    const repeater = root?.children;
+    const hasAbsoluteRepeaterPath =
+      repeater &&
+      !Array.isArray(repeater) &&
+      typeof repeater.path == "string" &&
+      repeater.path.startsWith("/");
+
+    if (!hasAbsoluteRepeaterPath) {
+      return;
+    }
+
+    const template = surface.components.find(
+      component => component?.id === repeater.componentId
+    );
+    const originalScopes = AITab.#resolvePath(
+      original.dataModel,
+      repeater.path
+    );
+    const filteredScopes = AITab.#resolvePath(surface.dataModel, repeater.path);
+    const canCompareRepeaterScopes =
+      template !== undefined &&
+      Array.isArray(originalScopes) &&
+      Array.isArray(filteredScopes);
+
+    if (!canCompareRepeaterScopes) {
+      return;
+    }
+
+    // Filtering can remove whole repeater items, so pair scopes by identity.
+    const originalByFiltered = new Map(
+      originalScopes.map(scope => [expandedObjects.get(scope) ?? scope, scope])
+    );
+
+    const cleanedInstances = filteredScopes.map((scope, index) =>
+      AITab.#cleanFilteredBindings(
+        template,
+        original.dataModel,
+        surface.dataModel,
+        {
+          original: originalByFiltered.get(scope),
+          filtered: scope,
+          path: `${repeater.path}/${index}`,
+        }
+      )
+    );
+    const hasFilteredRelativeBindings = cleanedInstances.some(
+      instance => instance.removedBinding
+    );
+
+    if (!hasFilteredRelativeBindings) {
+      return;
+    }
+
+    AITab.#replaceRepeaterWithInstances(
+      surface,
+      root,
+      template,
+      cleanedInstances.map(instance => instance.value)
+    );
+  }
+
+  /**
+   * Copy component properties, removing bindings whose targets were filtered.
+   * Scoped relative bindings become absolute so each copy can stand alone.
+   *
+   * @param {*} value
+   * @param {A2UIDataModel} originalDataModel
+   * @param {A2UIDataModel} filteredDataModel
+   * @param {{ original: *, filtered: *, path: string } | null} [scope]
+   * @returns {{ value: *, removedBinding: boolean }}
+   */
+  static #cleanFilteredBindings(
+    value,
+    originalDataModel,
+    filteredDataModel,
+    scope = null
+  ) {
+    if (AITab.#isBinding(value)) {
+      const absolute = value.path.startsWith("/");
+      const canResolveBinding = absolute || scope !== null;
+
+      if (!canResolveBinding) {
+        return { value, removedBinding: false };
+      }
+
+      const path = absolute ? value.path : `/${value.path}`;
+      const before = AITab.#resolvePath(
+        absolute ? originalDataModel : scope.original,
+        path
+      );
+      const after = AITab.#resolvePath(
+        absolute ? filteredDataModel : scope.filtered,
+        path
+      );
+      const targetWasFiltered = before !== undefined && after === undefined;
+
+      if (targetWasFiltered) {
+        return { value: undefined, removedBinding: true };
+      }
+
+      return {
+        value: absolute ? value : { path: `${scope.path}/${value.path}` },
+        removedBinding: false,
+      };
+    }
+
+    const hasNestedProperties = value !== null && typeof value == "object";
+
+    if (!hasNestedProperties) {
+      return { value, removedBinding: false };
+    }
+
+    const entries = [];
+    let removedBinding = false;
+
+    for (const [key, sub] of Object.entries(value)) {
+      const cleaned = AITab.#cleanFilteredBindings(
+        sub,
+        originalDataModel,
+        filteredDataModel,
+        scope
+      );
+
+      removedBinding ||= cleaned.removedBinding;
+
+      if (cleaned.value !== undefined) {
+        entries.push([key, cleaned.value]);
+      }
+    }
+
+    return {
+      value: Array.isArray(value)
+        ? entries.map(([, item]) => item)
+        : Object.fromEntries(entries),
+      removedBinding,
+    };
+  }
+
+  /**
+   * Replace a shared repeater template with independently bound components.
+   *
+   * @param {A2UISurface} surface
+   * @param {A2UIComponent} root
+   * @param {A2UIComponent} template
+   * @param {A2UIComponent[]} instances
+   */
+  static #replaceRepeaterWithInstances(surface, root, template, instances) {
+    const ids = new Set(surface.components.map(component => component?.id));
+
+    for (const [index, instance] of instances.entries()) {
+      if (index === 0) {
+        continue;
+      }
+
+      let id = `${template.id}-${index}`;
+
+      while (ids.has(id)) {
+        id += "-";
+      }
+
+      ids.add(id);
+      instance.id = id;
+    }
+
+    root.children = instances.map(instance => instance.id);
+    surface.components = surface.components.flatMap(component =>
+      component === template ? instances : [component]
+    );
   }
 
   /**

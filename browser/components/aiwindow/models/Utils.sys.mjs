@@ -294,7 +294,7 @@ export const FEATURE_MAJOR_VERSIONS = Object.freeze({
   // aitab structured-page generation. Paired with the `version` major in
   // models/aitab/component_schema.json (AITab.loadAssets rejects a mismatch).
   // Bump both, plus the aitab records in the packaged dump, in one patch.
-  [MODEL_FEATURES.AITAB]: 1,
+  [MODEL_FEATURES.AITAB]: 2,
 });
 
 /**
