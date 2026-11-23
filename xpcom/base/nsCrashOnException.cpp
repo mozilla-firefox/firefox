@@ -10,6 +10,7 @@
 
 namespace mozilla {
 
+#ifdef HAVE_SEH_EXCEPTIONS
 static int ReportException(EXCEPTION_POINTERS* aExceptionInfo) {
   nsCOMPtr<nsICrashReporter> cr =
       do_GetService("@mozilla.org/toolkit/crash-reporter;1");
@@ -19,6 +20,7 @@ static int ReportException(EXCEPTION_POINTERS* aExceptionInfo) {
 
   return EXCEPTION_EXECUTE_HANDLER;
 }
+#endif
 
 XPCOM_API(LRESULT)
 CallWindowProcCrashProtected(WNDPROC aWndProc, HWND aHWnd, UINT aMsg,

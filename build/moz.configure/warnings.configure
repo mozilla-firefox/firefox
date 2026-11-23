@@ -288,26 +288,6 @@ with only_when(target_is_windows):
         # is annoying, and rather noisy.
         check_and_add_warning("-Wno-used-but-marked-unused", cxx_compiler)
 
-    with only_when(depends(c_compiler)(lambda c: c.type != "clang-cl")):
-        # When compiling for Windows with gcc, gcc throws false positives and true
-        # positives where the callsite is ifdef-ed out
-        check_and_add_warning("-Wno-unused-function")
-
-        # When compiling for Windows with gcc, gcc cannot produce this warning
-        # correctly: it mistakes DWORD_PTR and ULONG_PTR as types you cannot
-        # give NULL to. (You can in fact do that.)
-        check_and_add_warning("-Wno-conversion-null")
-
-        # Throughout the codebase we regularly have switch statements off of enums
-        # without covering every value in the enum. We don't care about these warnings.
-        check_and_add_warning("-Wno-switch")
-
-        # Another code pattern we have is using start and end constants in enums of
-        # different types. We do this for safety, but then when comparing it throws
-        # an error, which we would like to ignore. This seems to only affect the MinGW
-        # build, but we're not sure why.
-        check_and_add_warning("-Wno-enum-compare")
-
 # Make it an error to be missing function declarations for C code.
 check_and_add_warning(
     "-Werror=implicit-function-declaration", c_compiler, min_clang_version="4.0.0"
