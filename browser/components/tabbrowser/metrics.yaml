@@ -911,7 +911,11 @@ splitview:
         description: The layout of the tab strip (horizontal or vertical)
         type: string
       trigger:
-        description: The method used to start the split view (menu_add for 1 tab selected, menu_open for 2 tabs selected, alt_click for Alt/Option+clicking another tab, keyboard_shortcut for a custom shortcut)
+        description: >-
+          The method used to start the split view (menu_add for 1 tab selected,
+          menu_open for 2 tabs selected, alt_click for Alt/Option+clicking another
+          tab, keyboard_shortcut for a custom shortcut, translations_companion
+          for the translations panel companion button)
         type: string
       tabgroup:
         description: The tab group state (none for neither tab in a group, main for primary tab in a group, other for secondary tab in a group, both_same for both tabs in same group, both_different for both tabs in different groups)

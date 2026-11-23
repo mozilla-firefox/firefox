@@ -84,6 +84,34 @@ prefs = [
 
 ["browser_translations_full_page_panel_close_panel_never_translate_site.js"]
 
+["browser_translations_full_page_panel_companion_eligibility.js"]
+
+["browser_translations_full_page_panel_companion_independent.js"]
+
+["browser_translations_full_page_panel_companion_languages.js"]
+
+["browser_translations_full_page_panel_companion_placement.js"]
+
+["browser_translations_full_page_panel_companion_source_language.js"]
+
+["browser_translations_full_page_panel_companion_split_failure.js"]
+
+["browser_translations_full_page_panel_companion_stale_panel_requests.js"]
+
+["browser_translations_full_page_panel_companion_target_language.js"]
+
+["browser_translations_full_page_panel_companion_translated_languages.js"]
+
+["browser_translations_full_page_panel_companion_translated_languages_fallback.js"]
+
+["browser_translations_full_page_panel_companion_translation_failure.js"]
+
+["browser_translations_full_page_panel_companion_translation_states.js"]
+
+["browser_translations_full_page_panel_companion_translation_states_app_menu.js"]
+
+["browser_translations_full_page_panel_companion_visibility.js"]
+
 ["browser_translations_full_page_panel_engine_destroy.js"]
 
 ["browser_translations_full_page_panel_engine_destroy_pending.js"]

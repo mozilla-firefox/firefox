@@ -4165,8 +4165,7 @@ export class Tabbrowser {
    *   layout constraints may further limit its rendered width. Omit the option
    *   to use the default panel sizing.
    * @param {string} [options.trigger]
-   *   The trigger method for creating the split view. Used for telemetry.
-   *   Valid values: "menu_add", "menu_open".
+   *   The trigger recorded by the `splitview.start` metric in metrics.yaml.
    */
   addTabSplitView(
     tabs,

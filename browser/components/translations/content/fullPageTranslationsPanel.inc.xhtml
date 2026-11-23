@@ -75,21 +75,27 @@
         </vbox>
       </vbox>
 
-      <html:moz-button-group class="panel-footer translations-panel-footer translations-panel-button-group">
-        <html:moz-button
-          id="full-page-translations-panel-restore-button"
-          data-l10n-id="translations-panel-restore-button"
-        ></html:moz-button>
-        <html:moz-button
-          id="full-page-translations-panel-cancel"
-          data-l10n-id="translations-panel-translate-cancel"
-        ></html:moz-button>
-        <html:moz-button
-          id="full-page-translations-panel-translate"
-          type="primary"
-          data-l10n-id="translations-panel-translate-button"
-        ></html:moz-button>
-      </html:moz-button-group>
+      <html:div class="panel-footer translations-panel-footer translations-panel-footer-row">
+        <html:moz-button id="full-page-translations-panel-companion-button"
+                         data-l10n-id="translations-panel-companion-button"
+                         iconsrc="chrome://browser/skin/translations-companion.svg">
+        </html:moz-button>
+        <html:moz-button-group class="translations-panel-button-group">
+          <html:moz-button
+            id="full-page-translations-panel-restore-button"
+            data-l10n-id="translations-panel-restore-button"
+          ></html:moz-button>
+          <html:moz-button
+            id="full-page-translations-panel-cancel"
+            data-l10n-id="translations-panel-translate-cancel"
+          ></html:moz-button>
+          <html:moz-button
+            id="full-page-translations-panel-translate"
+            type="primary"
+            data-l10n-id="translations-panel-translate-button"
+          ></html:moz-button>
+        </html:moz-button-group>
+      </html:div>
     </panelview>
 
     <panelview id="full-page-translations-panel-view-unsupported-language"

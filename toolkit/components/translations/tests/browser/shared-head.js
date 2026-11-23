@@ -18,6 +18,9 @@ const { TranslationsFeature } = ChromeUtils.importESModule(
 const { TranslationsUtils } = ChromeUtils.importESModule(
   "chrome://global/content/translations/TranslationsUtils.mjs"
 );
+const { sinon: translationsSinon } = ChromeUtils.importESModule(
+  "resource://testing-common/Sinon.sys.mjs"
+);
 
 // This is a bit silly, but ml/tests/browser/head.js relies on this function:
 // https://searchfox.org/mozilla-central/rev/14f68f084d6a3bc438a3f973ed81d3a4dbab9629/toolkit/components/ml/tests/browser/head.js#23-25
@@ -2640,6 +2643,66 @@ function waitForTranslationChildActorInBrowsingContext(
 }
 
 /**
+ * @typedef {object} HeldAsyncCall
+ * @property {Promise<void>} entered
+ *   Resolves when the matching call starts.
+ * @property {function(): (Promise<unknown> | undefined)} release
+ *   Allows the caller to receive the result and returns the caller's promise once
+ *   the matching call has started.
+ * @property {function(): void} restore
+ *   Disarms an unused intercept or releases a held result. Safe to call more
+ *   than once.
+ */
+
+/**
+ * Holds the result of the next matching async method call until released.
+ * Subsequent calls proceed normally, including while that result is held.
+ *
+ * @param {object} owner - The object that defines the method.
+ * @param {string} method - The method to intercept.
+ * @param {function(object, unknown[]): boolean} [matches]
+ *   Selects a call by its receiver and arguments.
+ *   Omit to hold the next call unconditionally.
+ * @returns {HeldAsyncCall}
+ */
+function holdNextAsyncResult(owner, method, matches = () => true) {
+  const original = owner[method];
+  const entered = Promise.withResolvers();
+  const resume = Promise.withResolvers();
+  let completion;
+
+  const stub = translationsSinon.stub(owner, method).callsFake(function (
+    ...args
+  ) {
+    if (!matches(this, args)) {
+      return original.apply(this, args);
+    }
+
+    stub.restore();
+    const result = original.apply(this, args);
+    completion = result.finally(() => resume.promise);
+    entered.resolve();
+
+    return completion;
+  });
+
+  return {
+    entered: entered.promise,
+    release() {
+      resume.resolve();
+
+      return completion;
+    },
+    restore() {
+      if (owner[method] === stub) {
+        stub.restore();
+      }
+      resume.resolve();
+    },
+  };
+}
+
+/**
  * Closes all open panels and menu popups related to Translations.
  *
  * @param {ChromeWindow} [win]
@@ -5117,7 +5180,259 @@ class TranslationsEngineTestUtils {
   }
 }
 
+/**
+ * Shared browser interactions for creating and separating Split View tabs.
+ */
+class SplitViewTranslationsTestUtils {
+  /**
+   * Closes a loaded tab and waits for its document actors and SessionStore to shut down.
+   *
+   * @param {MozTabbrowserTab} tab
+   * @returns {Promise<void>}
+   */
+  static async closeTab(tab) {
+    const innerWindowId = tab.linkedBrowser.innerWindowID;
+    const documentDestroyed = TestUtils.topicObserved(
+      "window-global-destroyed",
+      windowGlobal => windowGlobal.innerWindowId === innerWindowId
+    );
+    const sessionStoreUpdated = BrowserTestUtils.waitForSessionStoreUpdate(tab);
+    const tabRemoved = BrowserTestUtils.waitForMutationCondition(
+      tab.documentGlobal.gBrowser.tabContainer,
+      { childList: true, subtree: true },
+      () => !tab.isConnected
+    );
+    BrowserTestUtils.removeTab(tab);
+    await Promise.all([documentDestroyed, sessionStoreUpdated, tabRemoved]);
+  }
+
+  /**
+   * Right-clicks a tab and activates an enabled context-menu command.
+   *
+   * @param {MozTabbrowserTab} tab
+   * @param {string} menuItemId
+   * @returns {Promise<void>}
+   */
+  static async #clickContextMenuItem(tab, menuItemId) {
+    const win = tab.documentGlobal;
+    info(`Right-click the tab and choose ${menuItemId}`);
+    await SimpleTest.promiseFocus(win);
+
+    const menu = win.document.getElementById("tabContextMenu");
+    const shown = BrowserTestUtils.waitForPopupEvent(menu, "shown");
+    EventUtils.synthesizeMouseAtCenter(
+      tab,
+      { type: "contextmenu", button: 2 },
+      win
+    );
+    await shown;
+
+    try {
+      const menuItem = win.document.getElementById(menuItemId);
+      await BrowserTestUtils.waitForMutationCondition(
+        menuItem,
+        { attributes: true, attributeFilter: ["hidden", "disabled"] },
+        () => !menuItem.hidden && !menuItem.disabled,
+        { msg: `Waiting for ${menuItemId} to be available` }
+      );
+
+      const hidden = BrowserTestUtils.waitForPopupEvent(menu, "hidden");
+      info(`Activate ${menuItemId} in the tab context menu`);
+      menu.activateItem(menuItem);
+      await hidden;
+    } finally {
+      if (menu.state !== "closed") {
+        const hidden = BrowserTestUtils.waitForPopupEvent(menu, "hidden");
+        menu.hidePopup();
+        await hidden;
+      }
+    }
+  }
+
+  /**
+   * Opens two existing tabs in Split View using the tab context menu.
+   *
+   * @param {MozTabbrowserTab} selectedTab
+   *   The currently selected tab.
+   * @param {MozTabbrowserTab} otherTab
+   *   The tab to select alongside it.
+   * @returns {Promise<void>}
+   */
+  static async openExistingTabsInSplitView(selectedTab, otherTab) {
+    const win = selectedTab.documentGlobal;
+    await SimpleTest.promiseFocus(win);
+    const splitViewCreated = BrowserTestUtils.waitForEvent(
+      win.gBrowser.tabContainer,
+      "SplitViewCreated"
+    );
+
+    EventUtils.synthesizeMouseAtCenter(otherTab, { accelKey: true }, win);
+    await this.#clickContextMenuItem(selectedTab, "context_moveTabToSplitView");
+    await splitViewCreated;
+
+    const splitView = selectedTab.splitview;
+    Assert.ok(
+      splitView && otherTab.splitview === splitView,
+      "Both existing tabs share the new Split View"
+    );
+  }
+
+  /**
+   * Adds an existing tab to Split View through the partner's menu and tab chooser.
+   *
+   * @param {MozTabbrowserTab} partnerTab
+   * @param {MozTabbrowserTab} existingTab
+   * @returns {Promise<void>}
+   */
+  static async addExistingTab(partnerTab, existingTab) {
+    const win = partnerTab.documentGlobal;
+    const splitViewCreated = BrowserTestUtils.waitForEvent(
+      win.gBrowser.tabContainer,
+      "SplitViewCreated"
+    );
+    const chooserOpened = BrowserTestUtils.waitForNewTab(
+      win.gBrowser,
+      "about:opentabs",
+      true
+    );
+    await this.#clickContextMenuItem(partnerTab, "context_moveTabToSplitView");
+    const [chooserTab] = await Promise.all([chooserOpened, splitViewCreated]);
+
+    try {
+      const chooserBrowser = chooserTab.linkedBrowser;
+      const component = await BrowserTestUtils.waitForMutationCondition(
+        chooserBrowser.contentDocument,
+        { childList: true, subtree: true },
+        () =>
+          chooserBrowser.contentDocument.querySelector("splitview-opentabs"),
+        { msg: "Waiting for the Split View chooser to render" }
+      );
+      await component.updateComplete;
+      const list = component.shadowRoot.querySelector("sidebar-tab-list");
+      await list.updateComplete;
+      const row = await BrowserTestUtils.waitForMutationCondition(
+        list.shadowRoot,
+        { childList: true, subtree: true },
+        () =>
+          Array.from(list.shadowRoot.querySelectorAll("sidebar-tab-row")).find(
+            item => item.tabElement === existingTab
+          ),
+        {
+          msg: "Waiting for the existing tab to appear in the Split View chooser",
+        }
+      );
+      await row.updateComplete;
+
+      const chooserClosed = BrowserTestUtils.waitForEvent(
+        chooserTab,
+        "TabClose"
+      );
+      const chooserSessionStoreUpdated =
+        BrowserTestUtils.waitForSessionStoreUpdate(chooserTab);
+      const chooserRemoved = BrowserTestUtils.waitForMutationCondition(
+        win.gBrowser.tabContainer,
+        { childList: true, subtree: true },
+        () => !chooserTab.isConnected
+      );
+      const splitViewChanged = BrowserTestUtils.waitForEvent(
+        win.gBrowser.tabContainer,
+        "SplitViewTabChange",
+        false,
+        () =>
+          partnerTab.splitview && existingTab.splitview === partnerTab.splitview
+      );
+      // Match the existing sidebar-row tests for links with tabindex="-1".
+      AccessibilityUtils.setEnv({ focusableRule: false });
+      try {
+        EventUtils.synthesizeMouseAtCenter(
+          row.mainEl,
+          {},
+          chooserBrowser.contentWindow
+        );
+      } finally {
+        AccessibilityUtils.resetEnv();
+      }
+      await Promise.all([
+        chooserClosed,
+        chooserSessionStoreUpdated,
+        chooserRemoved,
+        splitViewChanged,
+      ]);
+      ok(
+        !chooserTab.isConnected,
+        "Choosing an existing tab closes the tab chooser"
+      );
+    } finally {
+      if (chooserTab.isConnected) {
+        await this.closeTab(chooserTab);
+      }
+    }
+  }
+
+  /**
+   * Separates a Split View through its tab context menu.
+   *
+   * @param {MozTabbrowserTab} tab
+   * @returns {Promise<void>}
+   */
+  static async separateTabs(tab) {
+    const splitViewRemoved = BrowserTestUtils.waitForEvent(
+      tab.documentGlobal.gBrowser.tabContainer,
+      "SplitViewRemoved",
+      false,
+      () => !tab.splitview
+    );
+    await this.#clickContextMenuItem(tab, "context_separateSplitView");
+    await splitViewRemoved;
+  }
+}
+
 class AboutTranslationsTestUtils {
+  /**
+   * Asserts the selected source and target languages after page initialization.
+   *
+   * @param {Browser} browser
+   * @param {object} options
+   * @param {string} options.sourceLanguage
+   *   The expected source language, or "detect" for automatic detection.
+   * @param {string} options.targetLanguage
+   *   The expected target language.
+   * @returns {Promise<void>}
+   */
+  static async assertSelectedLanguages(
+    browser,
+    { sourceLanguage, targetLanguage }
+  ) {
+    await SpecialPowers.spawn(
+      browser,
+      [sourceLanguage, targetLanguage],
+      async (expectedSource, expectedTarget) => {
+        await ContentTaskUtils.waitForMutationCondition(
+          content.document.body,
+          { attributes: true, attributeFilter: ["ready-for-testing"] },
+          () => content.document.body.hasAttribute("ready-for-testing")
+        );
+
+        const sourceSelector = Cu.waiveXrays(
+          content.document.getElementById("about-translations-source-select")
+        );
+        const targetSelector = Cu.waiveXrays(
+          content.document.getElementById("about-translations-target-select")
+        );
+        Assert.equal(
+          sourceSelector.value,
+          expectedSource,
+          "The companion's source-language selector has the expected value"
+        );
+        Assert.equal(
+          targetSelector.value,
+          expectedTarget,
+          "The companion's target-language selector has the expected value"
+        );
+      }
+    );
+  }
+
   /**
    * A collection of custom events that the about:translations document may dispatch.
    */

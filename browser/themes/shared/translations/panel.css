@@ -36,6 +36,19 @@
   margin-block: var(--panel-padding) 6px;
 }
 
+.translations-panel-footer {
+  margin-inline: var(--panel-padding);
+}
+
+.translations-panel-footer-row {
+  display: flex;
+  align-items: center;
+
+  > .translations-panel-button-group {
+    margin-inline-start: auto;
+  }
+}
+
 #full-page-translations-panel-translate-hint-action {
   appearance: none;
   background-color: var(--button-background-color);

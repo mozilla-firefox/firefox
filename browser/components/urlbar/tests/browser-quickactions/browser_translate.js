@@ -12,11 +12,18 @@ Services.scriptloader.loadSubScript(
   this
 );
 
-const assertAction = async name => {
-  await TestUtils.waitForCondition(() =>
-    window.document.querySelector(`.urlbarView-action-btn[data-action=${name}]`)
+/**
+ * Whether the named QuickAction is visible in the results.
+ *
+ * @param {string} name
+ * @returns {boolean}
+ */
+const isActionVisible = name => {
+  const action = window.document.querySelector(
+    `.urlbarView-action-btn[data-action=${name}]`
   );
-  Assert.ok(true, `We found action "${name}"`);
+
+  return action !== null && BrowserTestUtils.isVisible(action);
 };
 
 add_setup(async function setup() {
@@ -54,12 +61,10 @@ add_task(async function test_translate_disabled() {
     value: "translate",
   });
 
-  let hasTranslateAction = Boolean(
-    window.document.querySelector(
-      `.urlbarView-action-btn[data-action=translate]`
-    )
+  Assert.ok(
+    !isActionVisible("translate"),
+    "Translate action is not shown when disabled"
   );
-  Assert.ok(!hasTranslateAction, "Translate action is not shown when disabled");
 
   await UrlbarTestUtils.promisePopupClose(window, () => {
     EventUtils.synthesizeKey("KEY_Escape");
@@ -86,13 +91,8 @@ add_task(async function test_translate_ai_feature_toggle_from_disabled() {
     value: "translate",
   });
 
-  let hasTranslateAction = Boolean(
-    window.document.querySelector(
-      `.urlbarView-action-btn[data-action=translate]`
-    )
-  );
   Assert.ok(
-    !hasTranslateAction,
+    !isActionVisible("translate"),
     "Translate action is not shown when the AI feature is disabled"
   );
 
@@ -108,7 +108,7 @@ add_task(async function test_translate_ai_feature_toggle_from_disabled() {
     value: "translate",
   });
 
-  await assertAction("translate");
+  Assert.ok(isActionVisible("translate"), 'We found action "translate"');
 
   await UrlbarTestUtils.promisePopupClose(window, () => {
     EventUtils.synthesizeKey("KEY_Escape");
@@ -122,13 +122,8 @@ add_task(async function test_translate_ai_feature_toggle_from_disabled() {
     value: "translate",
   });
 
-  hasTranslateAction = Boolean(
-    window.document.querySelector(
-      `.urlbarView-action-btn[data-action=translate]`
-    )
-  );
   Assert.ok(
-    !hasTranslateAction,
+    !isActionVisible("translate"),
     "Translate action is not shown when the AI feature is disabled"
   );
 
@@ -157,7 +152,7 @@ add_task(async function test_translate_ai_feature_toggle_from_enabled() {
     value: "translate",
   });
 
-  await assertAction("translate");
+  Assert.ok(isActionVisible("translate"), 'We found action "translate"');
 
   await UrlbarTestUtils.promisePopupClose(window, () => {
     EventUtils.synthesizeKey("KEY_Escape");
@@ -171,13 +166,8 @@ add_task(async function test_translate_ai_feature_toggle_from_enabled() {
     value: "translate",
   });
 
-  let hasTranslateAction = Boolean(
-    window.document.querySelector(
-      `.urlbarView-action-btn[data-action=translate]`
-    )
-  );
   Assert.ok(
-    !hasTranslateAction,
+    !isActionVisible("translate"),
     "Translate action is not shown when the AI feature is disabled"
   );
 
@@ -193,7 +183,7 @@ add_task(async function test_translate_ai_feature_toggle_from_enabled() {
     value: "translate",
   });
 
-  await assertAction("translate");
+  Assert.ok(isActionVisible("translate"), 'We found action "translate"');
 
   await UrlbarTestUtils.promisePopupClose(window, () => {
     EventUtils.synthesizeKey("KEY_Escape");
@@ -209,7 +199,7 @@ add_task(async function test_translate_keyword() {
     value: "translate",
   });
 
-  await assertAction("translate");
+  Assert.ok(isActionVisible("translate"), 'We found action "translate"');
 
   await UrlbarTestUtils.promisePopupClose(window, () => {
     EventUtils.synthesizeKey("KEY_Escape");
@@ -223,7 +213,7 @@ add_task(async function test_partial_match() {
     value: "transl",
   });
 
-  await assertAction("translate");
+  Assert.ok(isActionVisible("translate"), 'We found action "translate"');
 
   await UrlbarTestUtils.promisePopupClose(window, () => {
     EventUtils.synthesizeKey("KEY_Escape");
@@ -243,15 +233,18 @@ add_task(async function test_translate_opens_about_translations() {
     value: "translate",
   });
 
-  await assertAction("translate");
+  Assert.ok(isActionVisible("translate"), 'We found action "translate"');
 
+  info("Wait for about:translations to load and verify");
+  const translationsLoaded = BrowserTestUtils.browserLoaded(
+    translateTab.linkedBrowser,
+    false,
+    url => url.startsWith("about:translations")
+  );
   EventUtils.synthesizeKey("KEY_Tab", {}, window);
   EventUtils.synthesizeKey("KEY_Enter", {}, window);
 
-  info("Wait for about:translations to load and verify");
-  await BrowserTestUtils.browserLoaded(translateTab.linkedBrowser, false, url =>
-    url.startsWith("about:translations")
-  );
+  await translationsLoaded;
 
   Assert.ok(
     translateTab.linkedBrowser.currentURI.spec.startsWith("about:translations"),
@@ -279,15 +272,18 @@ add_task(async function test_translate_includes_target_language() {
     value: "translate",
   });
 
-  await assertAction("translate");
+  Assert.ok(isActionVisible("translate"), 'We found action "translate"');
 
+  info("Wait for about:translations to load and check hash parameters");
+  const translationsLoaded = BrowserTestUtils.browserLoaded(
+    translateTab.linkedBrowser,
+    false,
+    url => url.startsWith("about:translations")
+  );
   EventUtils.synthesizeKey("KEY_Tab", {}, window);
   EventUtils.synthesizeKey("KEY_Enter", {}, window);
 
-  info("Wait for about:translations to load and check hash parameters");
-  await BrowserTestUtils.browserLoaded(translateTab.linkedBrowser, false, url =>
-    url.startsWith("about:translations")
-  );
+  await translationsLoaded;
 
   const url = new URL(translateTab.linkedBrowser.currentURI.spec);
   const hashParameters = new URLSearchParams(url.hash.substring(1));
@@ -332,19 +328,19 @@ add_task(
       value: "translate",
     });
 
-    await assertAction("translate");
-
-    EventUtils.synthesizeKey("KEY_Tab", {}, window);
-    EventUtils.synthesizeKey("KEY_Enter", {}, window);
+    Assert.ok(isActionVisible("translate"), 'We found action "translate"');
 
     info(
       "Wait for about:translations and confirm no target language is appended"
     );
-    await BrowserTestUtils.browserLoaded(
+    const translationsLoaded = BrowserTestUtils.browserLoaded(
       translateTab.linkedBrowser,
       false,
       url => url.startsWith("about:translations")
     );
+    EventUtils.synthesizeKey("KEY_Tab", {}, window);
+    EventUtils.synthesizeKey("KEY_Enter", {}, window);
+    await translationsLoaded;
 
     const url = new URL(translateTab.linkedBrowser.currentURI.spec);
     const hashParameters = new URLSearchParams(url.hash.substring(1));
@@ -400,16 +396,13 @@ add_task(async function test_translate_switches_to_existing_tab() {
     value: "translate",
   });
 
-  await assertAction("translate");
+  Assert.ok(isActionVisible("translate"), 'We found action "translate"');
 
+  const tabSelected = BrowserTestUtils.waitForEvent(translateTab, "TabSelect");
   EventUtils.synthesizeKey("KEY_Tab", {}, window);
   EventUtils.synthesizeKey("KEY_Enter", {}, window);
 
-  info("Wait for the existing tab to be selected");
-  await TestUtils.waitForCondition(
-    () => gBrowser.selectedTab === translateTab,
-    "Should switch to existing about:translations tab"
-  );
+  await tabSelected;
 
   Assert.equal(
     gBrowser.selectedTab,
@@ -426,6 +419,147 @@ add_task(async function test_translate_switches_to_existing_tab() {
   BrowserTestUtils.removeTab(translateTab);
 });
 
+/**
+ * This test case ensures that the translate Quick Action opens and reuses a
+ * standalone page while preserving an empty split pane and its companion.
+ */
+add_task(async function test_translate_ignores_split_view_tabs() {
+  await SpecialPowers.pushPrefEnv({
+    set: [["browser.tabs.splitView.enabled", true]],
+  });
+
+  const tabs = [];
+  let splitView = null;
+
+  try {
+    const splitTranslationsTab = await BrowserTestUtils.openNewForegroundTab(
+      gBrowser,
+      "about:translations"
+    );
+    tabs.push(splitTranslationsTab);
+
+    const blankTab = await BrowserTestUtils.openNewForegroundTab(
+      gBrowser,
+      "about:blank"
+    );
+    tabs.push(blankTab);
+    await SplitViewTranslationsTestUtils.openExistingTabsInSplitView(
+      blankTab,
+      splitTranslationsTab
+    );
+    splitView = blankTab.splitview;
+    Assert.equal(
+      gBrowser.selectedTab,
+      blankTab,
+      "The blank tab remains selected after opening Split View"
+    );
+    Assert.ok(blankTab.isEmpty, "The selected split pane is empty");
+
+    info(
+      "Invoke the translate Quick Action with the empty split pane selected"
+    );
+    await UrlbarTestUtils.promiseAutocompleteResultPopup({
+      window,
+      value: "translate",
+    });
+    Assert.ok(isActionVisible("translate"), 'We found action "translate"');
+    const translationsOpened = BrowserTestUtils.waitForNewTab(
+      gBrowser,
+      url => url.startsWith("about:translations"),
+      true
+    );
+    EventUtils.synthesizeMouseAtCenter(
+      window.document.querySelector(
+        ".urlbarView-action-btn[data-action=translate]"
+      ),
+      {},
+      window
+    );
+    const fullPageTranslationsTab = await translationsOpened;
+    tabs.push(fullPageTranslationsTab);
+
+    Assert.equal(
+      gBrowser.selectedTab,
+      fullPageTranslationsTab,
+      "The QuickAction opened about:translations in the standalone tab"
+    );
+    Assert.ok(
+      !fullPageTranslationsTab.splitview,
+      "The new translations page is not in Split View"
+    );
+    Assert.equal(
+      splitTranslationsTab.splitview,
+      splitView,
+      "Opening the standalone page preserves the existing companion"
+    );
+    Assert.equal(
+      blankTab.splitview,
+      splitView,
+      "The empty pane stays paired with the companion"
+    );
+    Assert.equal(
+      blankTab.linkedBrowser.currentURI.spec,
+      "about:blank",
+      "The Quick Action leaves the empty pane blank"
+    );
+
+    info("The QuickAction reuses the standalone page instead of the companion");
+    const otherTab = await BrowserTestUtils.openNewForegroundTab(
+      gBrowser,
+      "https://example.org"
+    );
+    tabs.push(otherTab);
+
+    await UrlbarTestUtils.promiseAutocompleteResultPopup({
+      window,
+      value: "translate",
+    });
+    Assert.ok(isActionVisible("translate"), 'We found action "translate"');
+    const tabSelected = BrowserTestUtils.waitForEvent(
+      fullPageTranslationsTab,
+      "TabSelect"
+    );
+    const tabCount = gBrowser.tabs.length;
+    EventUtils.synthesizeMouseAtCenter(
+      window.document.querySelector(
+        ".urlbarView-action-btn[data-action=translate]"
+      ),
+      {},
+      window
+    );
+
+    await tabSelected;
+    Assert.equal(
+      gBrowser.selectedTab,
+      fullPageTranslationsTab,
+      "The QuickAction selected the full-page about:translations tab"
+    );
+    Assert.equal(
+      splitTranslationsTab.splitview,
+      splitView,
+      "The about:translations tab in Split View was ignored"
+    );
+    Assert.equal(
+      gBrowser.tabs.length,
+      tabCount,
+      "Reusing the standalone translations page does not create another tab"
+    );
+  } finally {
+    if (UrlbarTestUtils.isPopupOpen(window)) {
+      await UrlbarTestUtils.promisePopupClose(window, () => {
+        EventUtils.synthesizeKey("KEY_Escape");
+      });
+    }
+    splitView?.unsplitTabs();
+    for (const tab of tabs) {
+      if (tab.isConnected) {
+        await BrowserTestUtils.removeTab(tab);
+      }
+    }
+    await SpecialPowers.popPrefEnv();
+  }
+});
+
 add_task(async function test_translate_reenabled() {
   info("Disable the translate quick action and ensure it is hidden");
   await SpecialPowers.pushPrefEnv({
@@ -439,9 +573,7 @@ add_task(async function test_translate_reenabled() {
   });
 
   Assert.ok(
-    !window.document.querySelector(
-      `.urlbarView-action-btn[data-action=translate]`
-    ),
+    !isActionVisible("translate"),
     "Translate action is not shown when disabled"
   );
 
@@ -457,12 +589,7 @@ add_task(async function test_translate_reenabled() {
     value: "tran",
   });
 
-  Assert.ok(
-    window.document.querySelector(
-      ".urlbarView-action-btn[data-action=translate]"
-    ),
-    "Translate action is now shown"
-  );
+  Assert.ok(isActionVisible("translate"), "Translate action is now shown");
 
   await UrlbarTestUtils.promisePopupClose(window, () => {
     EventUtils.synthesizeKey("KEY_Escape");
