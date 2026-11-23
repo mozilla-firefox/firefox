@@ -3407,9 +3407,8 @@ uintptr_t Instance::traceFrame(JSTracer* trc, const wasm::WasmFrameIter& wfi,
     //   instance and pops itself, so it holds no live GC pointers.
     const CodeRange* range = code().lookupFuncRange(nextPC);
     CallSite site;
-    bool atReturnCallFallback =
-        code().lookupCallSite(nextPC, &site) &&
-        site.kind() == CallSiteKind::ReturnCallFallback;
+    bool atReturnCallFallback = code().lookupCallSite(nextPC, &site) &&
+                                site.kind() == CallSiteKind::ReturnCallFallback;
     MOZ_ASSERT_IF(range && !codeMeta().funcIsImport(range->funcIndex()) &&
                       !atReturnCallFallback,
                   map);
