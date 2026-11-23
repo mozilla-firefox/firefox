@@ -2,15 +2,6 @@
 # License, v. 2.0. If a copy of the MPL was not distributed with this
 # file, You can obtain one at http://mozilla.org/MPL/2.0/.
 
-# ** Note: The comment below along with the CPP_UNIT_TESTS and LIBS variables
-# ** were commented out in the original Makefile.in, and should be restored
-# ** some day, perhaps as a gtest.
-#
-# ParseCSS.cpp used to be built as a test program, but it was not
-# being used for anything, and recent changes to the CSS loader have
-# made it fail to link.  Further changes are planned which should make
-# it buildable again.
-
 DIRS += ["gtest"]
 
 MOCHITEST_MANIFESTS += [
