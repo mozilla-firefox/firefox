@@ -4,10 +4,10 @@
 
 package mozilla.components.compose.base.utils
 
-import androidx.compose.ui.text.intl.Locale
 import java.text.NumberFormat
+import java.util.Locale
 import java.util.Locale.Builder
 
 /** Returns a localized string representation of the value. */
 fun Int.toLocaleString(): String =
-    NumberFormat.getNumberInstance(Builder().setLanguage(Locale.current.language).build()).format(this)
+    NumberFormat.getNumberInstance(Builder().setLanguage(Locale.getDefault().language).build()).format(this)

@@ -8,12 +8,12 @@ import android.icu.text.ListFormatter
 import android.os.Build
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.platform.LocalLocale
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.semantics.CustomAccessibilityAction
 import androidx.compose.ui.semantics.clearAndSetSemantics
 import androidx.compose.ui.semantics.contentDescription
 import androidx.compose.ui.semantics.customActions
-import androidx.compose.ui.text.intl.Locale
 import mozilla.components.compose.base.text.value
 import mozilla.components.compose.menu.R
 import mozilla.components.compose.menu.data.MenuItemsGroup
@@ -71,7 +71,10 @@ internal fun MenuItemsGroup.itemNames(): String {
             is MenuItemsGroup.Grid -> items.displayedInGrid()
             is MenuItemsGroup.Row -> items
         }
-    return formatList(namedItems.map { (it.contentDescription ?: it.title.text).value }, Locale.current.platformLocale)
+    return formatList(
+        namedItems.map { (it.contentDescription ?: it.title.text).value },
+        LocalLocale.current.platformLocale,
+    )
 }
 
 /** The [names] as a list in the [locale], in its narrow style (without "and" in English) from API 33 on. */
