@@ -20,9 +20,6 @@ support-files = ["setFetchCookie.sjs"]
 
 ["browser_cookieStore_bfcache_leak.js"]
 
-["browser_cookieStore_http_process_secure.js"]
-skip-if = ["!fission"] # Requires HTTP and HTTPS in different processes
-
 ["browser_cookieStore_ip_domain.js"]
 
 ["browser_cookieStore_serviceWorker.js"]

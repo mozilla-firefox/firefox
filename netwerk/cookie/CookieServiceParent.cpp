@@ -107,27 +107,16 @@ bool CookieServiceParent::ContentProcessHasCookie(const Cookie& cookie) {
   return ContentProcessHasCookie(cookie.Host(), cookie.OriginAttributesRef());
 }
 
-ContentProcessCookieAccess CookieServiceParent::GetContentProcessCookieAccess(
-    const nsACString& aHost, const OriginAttributes& aOriginAttributes) {
+bool CookieServiceParent::ContentProcessHasCookie(
+    const nsACString& aBaseDomain, const OriginAttributes& aOriginAttributes) {
   nsCString baseDomain;
   if (NS_WARN_IF(NS_FAILED(CookieCommons::GetBaseDomainFromHost(
-          mTLDService, aHost, baseDomain)))) {
-    return ContentProcessCookieAccess::eNone;
+          mTLDService, aBaseDomain, baseDomain)))) {
+    return false;
   }
 
   CookieKey cookieKey(baseDomain, aOriginAttributes);
-  Maybe<bool> allowSecure = mCookieKeysInContent.MaybeGet(cookieKey);
-  if (!allowSecure) {
-    return ContentProcessCookieAccess::eNone;
-  }
-  return *allowSecure ? ContentProcessCookieAccess::eAll
-                      : ContentProcessCookieAccess::eNonSecureOnly;
-}
-
-bool CookieServiceParent::ContentProcessHasCookie(
-    const nsACString& aBaseDomain, const OriginAttributes& aOriginAttributes) {
-  return GetContentProcessCookieAccess(aBaseDomain, aOriginAttributes) !=
-         ContentProcessCookieAccess::eNone;
+  return mCookieKeysInContent.MaybeGet(cookieKey).isSome();
 }
 
 bool CookieServiceParent::InsecureCookieOrSecureOrigin(const Cookie& cookie) {
