@@ -39,6 +39,7 @@ function handleRequest(request, response) {
       return;
     }
     setState("originHeader", "");
+    setObjectState("xhr-response", null);
     xhrResponse.write(header);
     xhrResponse.finish();
   });
