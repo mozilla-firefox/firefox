@@ -9,7 +9,7 @@
 #
 # <test>      the scratch browser-chrome test that pastes capture.js
 # --probe <script>  instead of a test, a chrome-context script for
-#             desktop-probing's firefox-probe.py --realm chrome --async
+#             desktop-theme-probing's firefox-probe.py --realm chrome --async
 #             that pastes capture.js and resolves with globalThis.__shots; runs
 #             against the objdir's dist/bin/firefox, dist/*.app/Contents/MacOS/firefox
 #             on macOS or dist/bin/firefox.exe on Windows (FIREFOX overrides), no
@@ -223,7 +223,7 @@ run() {
   echo "capturing $label from $test_file"
   if [ "$probe" = 1 ]; then
     local runner binary
-    runner=$(dirname "$0")/../../desktop-probing/scripts/firefox-probe.py
+    runner=$(dirname "$0")/../../desktop-theme-probing/scripts/firefox-probe.py
     binary=${FIREFOX:-}
     if [ -z "$binary" ]; then
       for b in "$objdir"/dist/bin/firefox.exe "$objdir"/dist/*.app/Contents/MacOS/firefox "$objdir"/dist/bin/firefox; do

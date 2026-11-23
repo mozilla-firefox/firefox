@@ -49,7 +49,7 @@ false, put `nonnative` on the popup, or run headless, which turns both off.
 The binary is `<objdir>/dist/<App>.app/Contents/MacOS/firefox`; `dist/bin` is a
 staging copy that fails at startup. The system temp directory is `$TMPDIR`,
 where `firefox-probe.py` keeps a failed run's browser log
-(`desktop-probing` §6 "Leave the tree clean"). A plain jar.mn entry is a
+(`desktop-theme-probing` §6 "Leave the tree clean"). A plain jar.mn entry is a
 symlink into the source tree, as on Linux
 (§2 "What is live at the next launch" in
 [`build-freshness.md`](build-freshness.md)).

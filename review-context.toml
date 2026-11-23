@@ -30,7 +30,7 @@ when = { any_file = { include = [
   ".svg",
 ] } }
 load = [
-  { type = "file", path = ".claude/skills/desktop-frontend/SKILL.md" },
+  { type = "file", path = ".claude/skills/firefox-desktop-frontend/SKILL.md" },
 ]
 
 [[rules]]

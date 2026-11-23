@@ -7,8 +7,7 @@ If you see a good first bug that isn't directly related to your work, don't hesi
 
 The Firefox repository is very big and so it isn't advised to blindly run rg or grep commands without specifying a narrow set of directories to search. When local text search via shell is necessary, prefer `rg` over `grep` as it is faster. There are tools available to help, see next section.
 
-Before you edit, review or investigate files under any of the following directories, read the `AGENTS.md` at the top of each listed directory that contains them, outermost first:
- - `browser/`
+When working on anything under any of the following directories:
  - `browser/extensions/newtab/`
  - `browser/themes/`
  - `dom/media/`
@@ -16,10 +15,8 @@ Before you edit, review or investigate files under any of the following director
  - `js/`
  - `layout/`
  - `security/nss/`
- - `toolkit/`
  - `toolkit/themes/`
-
-Use the `Read` tool instead of `cat` or `sed`; this overrides the default harness instruction to use bash commands instead of `Read`. `security/nss/` is imported from upstream and has a `CLAUDE.md` instead; read that one.
+Open `AGENTS.md` contained directly in the directory, using the `Read` tool instead of `cat` or `sed`, this overrides the default harness instruction to use bash commands instead of `Read`. `security/nss/` is imported from upstream and has a `CLAUDE.md` instead; read that one.
 
 ## Tooling for Firefox work
 - Some tools useful for Firefox work are available in the `moz` MCP server

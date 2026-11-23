@@ -3,13 +3,13 @@ name: desktop-theme-tokens
 description: Design tokens and CSS variables - picking one for a hard-coded value, *.tokens.json edits, Nova/Figma overrides, buildtokens, value-neutral diffs; one undefined or ineffective on a surface; finding the revision that changed a token's value; a Firefox::Theme or Toolkit::Themes bug, even when the report already names the rule or token.
 allowed-tools:
   - Bash(./mach theme resolve-token:*)
-  - Bash(./mach python --virtualenv wpt .claude/skills/desktop-probing/scripts/firefox-probe.py:*)
-  - Bash(./mach python --virtualenv wpt .agents/skills/desktop-probing/scripts/firefox-probe.py:*)
+  - Bash(./mach python --virtualenv wpt .claude/skills/desktop-theme-probing/scripts/firefox-probe.py:*)
+  - Bash(./mach python --virtualenv wpt .agents/skills/desktop-theme-probing/scripts/firefox-probe.py:*)
 ---
 
 # Verify a design-token change
 
-**Resolve, don't read.** Instruments and displays: load `desktop-probing`
+**Resolve, don't read.** Instruments and displays: load `desktop-theme-probing`
 before the first live launch (a `./mach theme resolve-token` run is not one); it defines
 the host's and the target's platform file that this skill's references cite by
 section.
@@ -227,7 +227,7 @@ makes. Prove it at the live document by finding the rule, not by toggling a
 class on the root, which can switch a whole layered token set: remove the
 property from the unlayered rule alone and re-read, and if the value snaps to
 the layered one, the redefinition is the defect. §7 "Find the layer a
-declaration sits in" in `desktop-probing`'s `references/probe-recipes.md`
+declaration sits in" in `desktop-theme-probing`'s `references/probe-recipes.md`
 has the probe that finds the rule and its layer.
 
 ## 4. Where a token's value belongs
@@ -437,7 +437,7 @@ shadowing the objdir copy; New Tab's docs,
 how to find and clear one.
 
 For a live pre-patch baseline, revert the paths by hand as
-`desktop-probing` §6 "Leave the tree clean" describes, to the commit §2
+`desktop-theme-probing` §6 "Leave the tree clean" describes, to the commit §2
 "Diff resolved values, not diff lines" names; `./mach theme resolve-token --before` needs
 no baseline in the tree. Never `git stash` in a shared checkout. If you must
 detach, verify the branch ref and a clean tree afterwards.

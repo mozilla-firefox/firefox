@@ -1,5 +1,5 @@
 ---
-name: desktop-frontend
+name: firefox-desktop-frontend
 description: You MUST use this skill when working with HTML, JS, CSS and other front-end code.
 ---
 
@@ -10,8 +10,7 @@ description: You MUST use this skill when working with HTML, JS, CSS and other f
 - For frontend-only work in an unconfigured fresh worktree, use `./mach bootstrap --application-choice browser_artifact_mode`. Preserve an existing build configuration, and do not use artifact mode when the work requires C++, Rust, or other native-code changes.
 - For a Firefox::Theme or Toolkit::Themes bug, or a change to a chrome color, token or layout, load the matching `desktop-theme-colors`, `desktop-theme-layout` or `desktop-theme-tokens` skill before reading the CSS, even when the report already names the rule or the token.
 - CSS should use reusable tokens from the design system (in `toolkit/themes/shared/design-system`) wherever possible, to ensure consistent UI and to make it easy to change styles across the board. Every `*.tokens.css` file is generated from the `*.tokens.json` beside it, so edit the JSON and run `./mach buildtokens`. Use the `desktop-theme-tokens` skill to find what a token actually computes to on a given surface, which is not always what the diff suggests.
-- Verify a theming change by measuring the running browser rather than reading the cascade, and do it across the configurations that feed it: forced colors and high contrast, the color scheme, system font size, device pixel ratio and UI density. A chrome document and an `about:` page resolve the same stylesheet differently, so a change that is right in the toolbar can be wrong in the page. The `desktop-theme-colors`, `desktop-theme-layout` and `desktop-theme-screenshots` skills own those measurements, and `desktop-probing` owns the probing mechanics they share.
-- To measure anything off a running Firefox outside a theme task (e.g. geometry, a computed style, focus, window state, a pref, a timing), load the `desktop-probing` skill.
+- Verify a theming change by measuring the running browser rather than reading the cascade, and do it across the configurations that feed it: forced colors and high contrast, the color scheme, system font size, device pixel ratio and UI density. A chrome document and an `about:` page resolve the same stylesheet differently, so a change that is right in the toolbar can be wrong in the page. The `desktop-theme-colors`, `desktop-theme-layout` and `desktop-theme-screenshots` skills own those measurements, and `desktop-theme-probing` owns the probing mechanics they share.
 - Use reusable components for common UI patterns. These components live in `toolkit/content/widgets/`. A storybook instance for these components can be accessed on https://firefoxux.github.io/firefox-desktop-components/. It is fine to use in-development components.
 - Use CSS logical properties (e.g. `margin-inline-start` instead of `margin-left`) for better localization support.
 - Avoid setting styles in JavaScript. Set a class instead and specify styles in CSS.
