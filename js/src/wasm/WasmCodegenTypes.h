@@ -1182,7 +1182,6 @@ enum class CallSiteKind : uint8_t {
   FuncRef,        // call using direct function reference
   FuncRefFast,    // call using direct function reference within same-instance
   ReturnFunc,     // return call to a specific function
-  ReturnStub,     // return call trampoline
   Symbolic,       // call to a single symbolic callee
   EnterFrame,     // call to a enter frame handler
   LeaveFrame,     // call to a leave frame handler
@@ -1264,14 +1263,13 @@ class CallSiteDesc {
   bool isImportCall() const { return kind() == CallSiteKind::Import; }
   bool isIndirectCall() const { return kind() == CallSiteKind::Indirect; }
   bool isFuncRefCall() const { return kind() == CallSiteKind::FuncRef; }
-  bool isReturnStub() const { return kind() == CallSiteKind::ReturnStub; }
   bool isStackSwitch() const { return kind() == CallSiteKind::StackSwitch; }
   bool isReturnCallFallback() const {
     return kind() == CallSiteKind::ReturnCallFallback;
   }
   bool mightBeCrossInstance() const {
     return isImportCall() || isIndirectCall() || isFuncRefCall() ||
-           isReturnStub() || isStackSwitch() || isReturnCallFallback();
+           isStackSwitch() || isReturnCallFallback();
   }
 };
 

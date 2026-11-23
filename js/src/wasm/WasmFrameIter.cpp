@@ -177,9 +177,8 @@ WasmFrameIter::WasmFrameIter(JitActivation* activation, wasm::Frame* fp,
     // If wasm::StartUnwinding unwound the trapping frame (which only happens
     // for IndirectCallBadSig), the current frame is the caller's, so its
     // resume PC is the call site in the caller, not the trap's resume PC in
-    // the callee.  Stackmap lookup and debugEnabled() rely on this.  The top
-    // frame will never be at a ReturnStub callsite, except in this case.  The
-    // caller may have made a return call as a regular call.
+    // the callee.  Stackmap lookup relies on this.  The caller may have made a
+    // return call as a regular call.
     if (trapData.unwoundFrame) {
       MOZ_ASSERT(trapData.trap == Trap::IndirectCallBadSig);
       resumePCinCurrentFrame_ = (uint8_t*)unwoundPC;
@@ -188,11 +187,6 @@ WasmFrameIter::WasmFrameIter(JitActivation* activation, wasm::Frame* fp,
           code_->lookupCallSite(unwoundPC, &site) &&
           site.isReturnCallFallback();
     } else {
-#ifdef DEBUG
-      CallSite site;
-      MOZ_ASSERT(!(code_->lookupCallSite(unwoundPC, &site) &&
-                   site.kind() == CallSiteKind::ReturnStub));
-#endif
       resumePCinCurrentFrame_ = (uint8_t*)trapData.resumePC;
     }
 
@@ -640,10 +634,11 @@ bool WasmFrameIter::debugEnabled() const {
     return false;
   }
 
-  // Debug frame is not present at the return stub.
-  CallSite site;
-  return !(code_->lookupCallSite((void*)resumePCinCurrentFrame_, &site) &&
-           site.kind() == CallSiteKind::ReturnStub);
+  // A frame that made a return call as a regular call has semantically
+  // returned: the debugger was notified at the CollapseFrame breakpoint before
+  // the call. Report no debug frame for it, so that nothing uses its
+  // DebugFrame.
+  return !currentFrameIsReturnCallFallback();
 }
 
 DebugFrame* WasmFrameIter::debugFrame() const {

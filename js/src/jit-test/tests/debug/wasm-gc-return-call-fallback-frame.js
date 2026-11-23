@@ -1,7 +1,7 @@
 // |jit-test| skip-if: !wasmDebuggingEnabled()
 
 // A GC while a return_call to an import is in progress, in a debug-enabled
-// module.  The frame being traced is then at a ReturnStub call site.
+// module.  The frame being traced is then at a ReturnCallFallback call site.
 
 var g = newGlobal({newCompartment: true});
 var dbg = new Debugger(g);
