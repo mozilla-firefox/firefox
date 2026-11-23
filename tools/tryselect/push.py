@@ -2,8 +2,10 @@
 # License, v. 2.0. If a copy of the MPL was not distributed with this
 # file, You can obtain one at http://mozilla.org/MPL/2.0/.
 
+import configparser
 import json
 import os
+import re
 import shlex
 import stat
 import subprocess
@@ -12,11 +14,12 @@ import tempfile
 from functools import cache
 from typing import Optional
 
+import requests
 from mach.util import get_state_dir
 from mozbuild.base import MozbuildObject
 from mozversioncontrol import MissingVCSExtension, get_repository_object
 
-from .lando import push_to_lando_try
+from .lando import get_lando_api_domain, push_to_lando_try
 from .util.project import get_project_topsrcdir, is_thunderbird_try
 from .util.taskcluster import get_client
 
@@ -49,6 +52,14 @@ error: no version control remote configured
 UNCOMMITTED_CHANGES = """
 error: commit changes before continuing
 """.strip()
+
+TREE_CLOSED = """
+error: the '{tree}' tree is {status}{reason}.
+
+Wait for it to re-open, or pass `--closed-tree` to push anyway.
+""".strip()
+
+TREESTATUS_URL = "https://{domain}/api/treestatus/trees/{tree}"
 
 LARGE_PUSH_THRESHOLD = 1000
 LARGE_PUSH_WARNING = f"""
@@ -243,6 +254,30 @@ def _is_git_try(remote):
     return not _is_hg_try(remote)
 
 
+def check_tree_status(remote):
+    if remote_url := vcs.get_remote_url(remote, push=True):
+        remote = remote_url
+    tree = re.split(r"[/:]", remote.rstrip("/"))[-1].removesuffix(".git")
+
+    try:
+        url = TREESTATUS_URL.format(domain=get_lando_api_domain(vcs), tree=tree)
+        response = requests.get(url, timeout=10)
+        if response.status_code == 404:
+            return
+        response.raise_for_status()
+        result = response.json().get("result")
+    except (requests.RequestException, configparser.Error, ValueError) as e:
+        print(f"warning: could not query treestatus for '{tree}': {e}")
+        return
+
+    if not result or result.get("status", "open") == "open":
+        return
+
+    reason = f" ({result['reason']})" if result.get("reason") else ""
+    print(TREE_CLOSED.format(tree=tree, status=result["status"], reason=reason))
+    sys.exit(1)
+
+
 def push_to_git_backing(prefix: str) -> str:
     """Push the current head to the git-backing repo and return the git SHA."""
     print("Pushing to git-backing...")
@@ -319,8 +354,20 @@ def push_to_try(
     push_to_vcs |= MACH_TRY_PUSH_TO_VCS or not _is_hg_try(remote)
     check_working_directory(push)
 
+    if (
+        push
+        and push_to_vcs
+        and not closed_tree
+        and not (write_task_config and try_task_config)
+    ):
+        check_tree_status(remote)
+
     # Format the commit message
-    closed_tree_string = " ON A CLOSED TREE" if closed_tree else ""
+    closed_tree_string = (
+        " ON A CLOSED TREE"
+        if closed_tree and push_to_vcs and _is_hg_try(remote)
+        else ""
+    )
     the_cmdline = get_sys_argv()
     full_commandline_entry = f"mach try command: `{the_cmdline}`"
     commit_message = f"{msg}{closed_tree_string}\n\n{full_commandline_entry}\n\nPushed via `mach try {method}`"

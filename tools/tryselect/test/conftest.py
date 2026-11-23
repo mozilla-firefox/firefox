@@ -81,6 +81,11 @@ def mock_taskcluster_secret(monkeypatch):
     monkeypatch.setattr(push, "get_client", MagicMock(return_value=mock_client))
 
 
+@pytest.fixture(autouse=True)
+def mock_tree_status(monkeypatch):
+    monkeypatch.setattr(push, "check_tree_status", MagicMock())
+
+
 @pytest.fixture(scope="session")
 def run_mach():
     mach = mach_initialize.initialize(tasks.build.topsrcdir, ["try"])

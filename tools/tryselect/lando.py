@@ -575,15 +575,29 @@ def get_lando_api_config(
     vcs: SupportedVcsRepository, section_name: str | None = None
 ) -> LandoAPI:
     """Initialise a LandoAPI object from the .lando.ini for the given section_name"""
+    section_name = section_name or get_lando_config_section_name(vcs)
+    return LandoAPI.from_lando_config_file(get_lando_ini_path(vcs), section_name)
+
+
+def get_lando_ini_path(vcs: SupportedVcsRepository) -> Path:
     lando_ini_path = Path(vcs.path) / ".lando.ini"
     if not lando_ini_path.exists():
         # In comm-central, `tools/` is under the `mozilla/`
         # subdirectory, while the VCS root is under `comm/`
         lando_ini_path = Path(vcs.path) / ".." / ".lando.ini"
+    return lando_ini_path
 
-    section_name = section_name or get_lando_config_section_name(vcs)
 
-    return LandoAPI.from_lando_config_file(lando_ini_path, section_name)
+def get_lando_api_domain(vcs: SupportedVcsRepository) -> str:
+    """Return the API domain of the configured Lando instance, without authenticating."""
+    try:
+        section_name = get_lando_config_section_name(vcs)
+    except LandoAPIException:
+        section_name = "lando-prod"
+
+    parser = configparser.ConfigParser(delimiters="=")
+    parser.read(get_lando_ini_path(vcs))
+    return parser.get(section_name, "api_domain")
 
 
 def get_lando_config_section_name(vcs: SupportedVcsRepository) -> str:
