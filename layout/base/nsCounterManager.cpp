@@ -56,7 +56,9 @@ void nsCounterUseNode::Calc(nsCounterList* aList, bool aNotify) {
   if (mText) {
     nsAutoString contentString;
     GetText(contentString);
-    mText->SetText(contentString, aNotify);
+    if (!mText->DataBuffer().Equals(contentString)) {
+      mText->SetText(contentString, aNotify);
+    }
   }
 }
 
