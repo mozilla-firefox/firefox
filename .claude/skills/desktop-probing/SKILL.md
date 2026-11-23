@@ -12,16 +12,11 @@ allowed-tools:
   - Bash(./mach python --virtualenv wpt -- .agents/skills/desktop-probing/scripts/marker-probe.py:*)
 ---
 
-# How the desktop-theme family measures
+# Measuring a running Firefox
 
-This skill owns getting a trustworthy number out of a running Firefox. The
-siblings own subjects: `desktop-theme-layout` geometry, `desktop-theme-colors`
-what a declaration paints in each color regime (forced colors, prefers-contrast,
-the color scheme), `desktop-theme-tokens` what a token resolves to,
-`desktop-theme-screenshots` the before/after image pair. A review or a theme bug
-needs the subject sibling's rules, which this skill does not hold: if you loaded
-this skill first, load the subject sibling before going further, or
-`desktop-theme` to pick one.
+This skill owns getting a trustworthy number out of a running Firefox. For a
+CSS task or a Firefox::Theme or Toolkit::Themes bug, load `desktop-theme` before
+going further.
 
 **Measure before you theorise, and after you fix.**
 
@@ -33,7 +28,7 @@ as well as after.
 
 When measuring says the mechanism is platform behavior rather than this
 component's, report the measurement and stop there: reducing it to a standalone
-testcase is outside this family.
+testcase is outside this skill.
 
 **The host's and the target's platform file.** The host's platform file is
 `references/platform-linux.md`, `references/platform-macos.md` or
