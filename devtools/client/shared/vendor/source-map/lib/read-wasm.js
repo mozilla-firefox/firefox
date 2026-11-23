@@ -6,38 +6,72 @@ const isNode =
   process.versions.node != null;
 
 let mappingsWasm = null;
+let cachedGlue = null;
 
 if (isNode) {
-  const fs = require("fs");
-  const path = require("path");
-
   module.exports = function readWasm() {
-    return new Promise((resolve, reject) => {
-      const wasmPath = path.join(__dirname, "mappings.wasm");
-      fs.readFile(wasmPath, null, (error, data) => {
-        if (error) {
-          reject(error);
-          return;
-        }
-
-        resolve(data.buffer);
-      });
-    });
+    // The generated Node glue reads `mappings.wasm` off disk and instantiates it
+    // itself, so requiring it lazily here is all the loading we need to do.
+    return Promise.resolve(require("./mappings-glue.js"));
   };
 } else {
   module.exports = function readWasm() {
-    if (typeof mappingsWasm === "string") {
-      return fetch(mappingsWasm)
-        .then(response => response.arrayBuffer());
-    }
-    if (mappingsWasm instanceof ArrayBuffer) {
-      return Promise.resolve(mappingsWasm);
+    if (
+      typeof mappingsWasm !== "string" &&
+      !(mappingsWasm instanceof ArrayBuffer)
+    ) {
+      throw new Error(
+        "You must provide the string URL or ArrayBuffer contents " +
+        "of lib/mappings.wasm by calling " +
+        "SourceMapConsumer.initialize({ 'lib/mappings.wasm': ... }) " +
+        "before using SourceMapConsumer"
+      );
     }
 
-    throw new Error("You must provide the string URL or ArrayBuffer contents " +
-                    "of lib/mappings.wasm by calling " +
-                    "SourceMapConsumer.initialize({ 'lib/mappings.wasm': ... }) " +
-                    "before using SourceMapConsumer");
+    if (cachedGlue) {
+      return cachedGlue;
+    }
+
+    // The browser glue is an ES module; `import()` keeps this file loadable as
+    // CommonJS. `default` is wasm-bindgen's async init, which accepts either a
+    // URL to fetch or the module bytes directly.
+    // The specifier has to be absolute: this module is also loaded from the
+    // source map ChromeWorker, where a relative specifier would resolve against
+    // resource://gre/modules/workers/ instead of this directory.
+    // On the main thread, the DevTools loader evaluates this file with
+    // loadSubScript, which has no module loader and so rejects `import()`.
+    const glueURL =
+      "resource://devtools/client/shared/vendor/source-map/lib/mappings-glue-browser.mjs";
+    const isMainThread =
+      typeof WorkerGlobalScope === "undefined" &&
+      typeof ChromeUtils !== "undefined";
+    const gluePromise = isMainThread
+      ? Promise.resolve().then(() =>
+          ChromeUtils.importESModule(glueURL, { global: "contextual" })
+        )
+      : import(glueURL);
+    // Fetch the bytes here rather than letting the glue fetch the URL: the
+    // glue's `instanceof Response` check fails when it lives in another global,
+    // and resource:// serves wasm with a charset that breaks instantiateStreaming.
+    const bytesPromise =
+      typeof mappingsWasm === "string"
+        ? fetch(mappingsWasm).then(response => response.arrayBuffer())
+        : Promise.resolve(mappingsWasm);
+    cachedGlue = Promise.all([gluePromise, bytesPromise])
+      .then(([glue, bytes]) =>
+        // On the main thread the glue lives in another global, where an object
+        // literal from here fails its `Object.prototype` check for the options
+        // bag, so pass the bytes directly.
+        glue
+          .default(isMainThread ? bytes : { module_or_path: bytes })
+          .then(() => glue)
+      )
+      .catch(e => {
+        cachedGlue = null;
+        throw e;
+      });
+
+    return cachedGlue;
   };
 }
 

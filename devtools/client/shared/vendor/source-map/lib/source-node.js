@@ -35,7 +35,7 @@ const isSourceNode = "$$$isSourceNode$$$";
 class SourceNode {
   constructor(aLine, aColumn, aSource, aChunks, aName) {
     this.children = [];
-    this.sourceContents = {};
+    this.sourceContents = Object.create(null);
     this.line = aLine == null ? null : aLine;
     this.column = aColumn == null ? null : aColumn;
     this.source = aSource == null ? null : aSource;
