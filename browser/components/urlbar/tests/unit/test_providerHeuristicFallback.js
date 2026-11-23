@@ -937,13 +937,23 @@ add_task(async function url_in_search_mode() {
   info("A URL is visited in an engine search mode with navigation enabled");
   await checkVisit("urlbar");
 
-  info("A URL is not visited in a local search mode");
+  info("A URL is visited in a local search mode");
   context = createContext(query, {
     isPrivate: false,
     searchMode: { source: UrlbarShared.RESULT_SOURCE.BOOKMARKS },
     sources: [UrlbarShared.RESULT_SOURCE.BOOKMARKS],
   });
-  await check_results({ context, matches: [] });
+  await check_results({
+    context,
+    matches: [
+      makeVisitResult(context, {
+        source: UrlbarShared.RESULT_SOURCE.OTHER_LOCAL,
+        uri: `http://${query}/`,
+        title: `${query}/`,
+        heuristic: true,
+      }),
+    ],
+  });
 
   info("A URL is searched for in the search bar's engine search mode");
   context = createContext(query, {

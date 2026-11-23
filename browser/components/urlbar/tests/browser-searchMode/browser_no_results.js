@@ -173,16 +173,16 @@ add_task(async function backspaceRemainOpen() {
       source: UrlbarShared.RESULT_SOURCE.BOOKMARKS,
     });
 
-    // The heursitic should not be shown since we don't show it in local search
-    // modes.
     Assert.equal(
       UrlbarTestUtils.getResultCount(win),
-      0,
-      "No results should be present"
+      1,
+      "Only the heuristic result should be present"
     );
+    let result = await UrlbarTestUtils.getDetailsOfResultAt(win, 0);
+    Assert.ok(result.heuristic, "The result should be the heuristic");
     Assert.ok(
-      win.gURLBar.hasAttribute("noresults"),
-      "Panel has no results, therefore should have noresults attribute"
+      !win.gURLBar.hasAttribute("noresults"),
+      "Panel has results, therefore should not have noresults attribute"
     );
 
     // Backspace.  The search string will now be empty.

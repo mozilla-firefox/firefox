@@ -14,6 +14,7 @@ import UrlbarPrefs from "chrome://browser/content/urlbar/UrlbarContentPrefs.mjs"
 
 /**
  * @import { URILoadingHelper } from "resource:///modules/URILoadingHelper.sys.mjs"
+ * @import { SearchMode } from "moz-src:///browser/components/urlbar/content/UrlbarInputBase.mjs"
  */
 
 /**
@@ -738,21 +739,30 @@ export const UrlbarShared = {
   },
 
   /**
-   * Whether a string that is a URL may be navigated to in an engine search
-   * mode, as it would be outside of search mode, rather than searched for. This
-   * holds where the unified search button is always available.
+   * Whether a string that is a URL may be navigated to in a search mode, as it
+   * would be outside of search mode, rather than searched for or ignored. In
+   * an engine search mode this holds where the unified search button is always
+   * available. In a local search mode it holds except in actions search mode,
+   * and the default engine is used to search for other strings.
    *
    * @param {UrlbarSapName} sapName
    *   The SAP name to check.
+   * @param {SearchMode} searchMode
+   *   The search mode to check.
    * @returns {boolean}
-   *   Whether navigation is enabled in an engine search mode.
+   *   Whether navigation is enabled in the search mode.
    */
-  navigationInSearchModeEnabled(sapName) {
-    return (
-      this.navigationEnabled(sapName) &&
-      (this.isSearchbarSAP(sapName) ||
-        UrlbarPrefs.get("unifiedSearchButton.always"))
-    );
+  navigationInSearchModeEnabled(sapName, searchMode) {
+    if (!this.navigationEnabled(sapName)) {
+      return false;
+    }
+    if (searchMode.engineName) {
+      return (
+        this.isSearchbarSAP(sapName) ||
+        UrlbarPrefs.get("unifiedSearchButton.always")
+      );
+    }
+    return searchMode.source != this.RESULT_SOURCE.ACTIONS;
   },
 
   /**
