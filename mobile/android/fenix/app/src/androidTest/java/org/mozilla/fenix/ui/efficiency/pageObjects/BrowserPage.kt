@@ -702,6 +702,10 @@ class BrowserPage(composeRule: AndroidComposeTestRule<HomeActivityIntentTestRule
 
     // Matches addressForm.html's specific field ids; a differently-shaped address form would need its own fill method.
     fun fillAddressForm(address: AddressDetails): BrowserPage {
+        // navigateToPage returns once the engineView widget exists, which is before GeckoView populates the web
+        // content into the accessibility tree, so wait for the first field to appear before typing into it
+        // (mirrors setLoginFormCredentials' wait on USERNAME_WEB_FIELD).
+        mozVerify(BrowserPageSelectors.ADDRESS_STREET_WEB_FIELD, timeout = waitingTimeLong)
         mozClearAndEnterText(address.streetAddress, BrowserPageSelectors.ADDRESS_STREET_WEB_FIELD)
         dismissKnownOverlaysIfPresent()
         mozClearAndEnterText(address.city, BrowserPageSelectors.ADDRESS_CITY_WEB_FIELD)
@@ -710,6 +714,16 @@ class BrowserPage(composeRule: AndroidComposeTestRule<HomeActivityIntentTestRule
         mozClearAndEnterText(address.country, BrowserPageSelectors.ADDRESS_COUNTRY_WEB_FIELD)
         mozClearAndEnterText(address.phoneNumber, BrowserPageSelectors.ADDRESS_TELEPHONE_WEB_FIELD)
         mozClearAndEnterText(address.emailAddress, BrowserPageSelectors.ADDRESS_EMAIL_WEB_FIELD)
+        return this
+    }
+
+    /**
+     * Focus the first interactive field of a freshly-loaded web form. navigateToPage returns once the engineView widget
+     * exists, which is before GeckoView populates the page's content into the accessibility tree, so this polls for the
+     * field itself before clicking it (mirrors setLoginFormCredentials' wait on USERNAME_WEB_FIELD).
+     */
+    fun focusWebField(selector: Selector): BrowserPage {
+        mozClick(selector, WaitPolicy.Poll(timeout = waitingTimeLong))
         return this
     }
 
@@ -722,7 +736,7 @@ class BrowserPage(composeRule: AndroidComposeTestRule<HomeActivityIntentTestRule
         try {
             mDevice.executeShellCommand("settings put secure stylus_handwriting_enabled 0")
         } catch (_: Throwable) {}
-        mozClick(BrowserPageSelectors.ADDRESS_STREET_WEB_FIELD)
+        focusWebField(BrowserPageSelectors.ADDRESS_STREET_WEB_FIELD)
         dismissKnownOverlaysIfPresent()
         return this
     }
@@ -775,7 +789,7 @@ class BrowserPage(composeRule: AndroidComposeTestRule<HomeActivityIntentTestRule
         try {
             mDevice.executeShellCommand("settings put secure stylus_handwriting_enabled 0")
         } catch (_: Throwable) {}
-        mozClick(BrowserPageSelectors.CREDIT_CARD_NUMBER_WEB_FIELD)
+        focusWebField(BrowserPageSelectors.CREDIT_CARD_NUMBER_WEB_FIELD)
         dismissKnownOverlaysIfPresent()
         return this
     }
