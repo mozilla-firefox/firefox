@@ -1,0 +1,57 @@
+<!DOCTYPE HTML>
+<html>
+<head>
+  <title>Test playback of VP9 files whose frame size drops below the D3D11VA minimum</title>
+  <script src="/tests/SimpleTest/SimpleTest.js"></script>
+  <link rel="stylesheet" type="text/css" href="/tests/SimpleTest/test.css" />
+  <script type="text/javascript" src="manifest.js"></script>
+</head>
+<body>
+<pre id="test">
+<script class="testbody" type="text/javascript">
+// NVIDIA's D3D11VA decoder can't create VP9 decoders for frames smaller than
+// this in either dimension.
+const kD3D11VAMinDimension = 128;
+
+var manager = new MediaTestManager;
+function loadedData(e) {
+  var v = e.target;
+  v.addEventListener("resize", resize);
+  v.play();
+}
+function resize(e) {
+  var v = e.target;
+  v.sizesSeen.push(`${v.videoWidth}x${v.videoHeight}`);
+}
+function ended(e) {
+  var v = e.target;
+  ok(v.sizesSeen.some(size => size.split("x").some(d => d < kD3D11VAMinDimension)),
+     v.token + ": playback should reach a frame size below " + kD3D11VAMinDimension +
+     ", saw " + v.sizesSeen.join(", "));
+  ok(v.sizesSeen.length > 1, v.token + ": a resolution change should have occurred");
+  removeNodeAndSource(v);
+  manager.finished(v.token);
+}
+function errored(e) {
+  var v = e.target;
+  ok(false, v.token + ": playback error " + v.error.code + " " + v.error.message);
+  removeNodeAndSource(v);
+  manager.finished(v.token);
+}
+function startTest(test, token) {
+  var v = document.createElement('video');
+  v.preload = "metadata";
+  v.token = token;
+  v.src = test.name;
+  v.sizesSeen = [];
+  v.addEventListener("loadeddata", loadedData);
+  v.addEventListener("ended", ended);
+  v.addEventListener("error", errored);
+  manager.started(token);
+  document.body.appendChild(v);
+}
+manager.runTests(gVP9ResolutionChangeTests, startTest);
+</script>
+</pre>
+</body>
+</html>

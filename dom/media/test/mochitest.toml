@@ -599,6 +599,7 @@ support-files = [
   "referer.sjs",
   "resolution-change.webm",
   "resolution-change.webm^headers^",
+  "resolution-change-vp9-small.webm",
   "rms-utils.js",
   "sample.3gp",
   "sample.3g2",
@@ -944,6 +945,8 @@ skip-if = [
 
 ["test_resolution_change.html"]
 tags = "capturestream"
+
+["test_resolution_change_vp9_small.html"]
 
 ["test_resume.html"]
 skip-if = [
