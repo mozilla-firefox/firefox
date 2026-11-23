@@ -506,14 +506,10 @@ struct DumpHeapTracer final : public JS::CallbackTracer, public WeakMapTracer {
         mallocSizeOf(mallocSizeOf) {}
 
  private:
-  void trace(JSObject* map, JS::GCCellPtr key, JS::GCCellPtr value) override {
-    JSObject* kdelegate = nullptr;
-    if (key.is<JSObject>()) {
-      kdelegate = UncheckedUnwrapWithoutExpose(&key.as<JSObject>());
-    }
-
+  void trace(JSObject* map, JS::GCCellPtr key, JS::GCCellPtr delegate,
+             JS::GCCellPtr value) override {
     fprintf(output, "WeakMapEntry map=%p key=%p keyDelegate=%p value=%p\n", map,
-            key.asCell(), kdelegate, value.asCell());
+            key.asCell(), delegate.asCell(), value.asCell());
   }
 
   bool onChild(JS::GCCellPtr thing, const char* name) override;

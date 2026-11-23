@@ -706,15 +706,23 @@ bool WeakMap<K, V, AP>::sweepAfterMinorGC() {
 template <class K, class V, class AP>
 void WeakMap<K, V, AP>::traceMappings(WeakMapTracer* tracer) {
   for (auto iter = this->iter(); !iter.done(); iter.next()) {
-    MOZ_ASSERT(gc::ToMarkable(iter.get().key()));
-    JS::GCCellPtr key(iter.get().key().get());
+    K key = iter.get().key();
+    V value = iter.get().value();
 
-    JS::GCCellPtr value;
-    if (gc::ToMarkable(iter.get().value())) {
-      value = JS::GCCellPtr(iter.get().value().get());
+    MOZ_ASSERT(gc::ToMarkable(key));
+    JS::GCCellPtr keyPtr(key);
+
+    JS::GCCellPtr delegatePtr;
+    if (gc::Cell* delegate = gc::detail::GetDelegate(key)) {
+      delegatePtr = JS::GCCellPtr(delegate, keyPtr.kind());
     }
 
-    tracer->trace(memberOf, key, value);
+    JS::GCCellPtr valuePtr;
+    if (gc::ToMarkable(value)) {
+      valuePtr = JS::GCCellPtr(value);
+    }
+
+    tracer->trace(memberOf, keyPtr, delegatePtr, valuePtr);
   }
 }
 

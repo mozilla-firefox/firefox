@@ -91,12 +91,14 @@ struct WeakMapTracer {
   // Weak map tracer callback, called once for every binding of every
   // weak map that was live at the time of the last garbage collection.
   //
-  // |m| will be nullptr if the weak map is not contained in a JS Object.
+  // |map| will be nullptr if the weak map is not contained in a JS Object.
+  // |delegate| will be nullptr if the key has no delegate.
   // |value| will be nullptr if the binding's value is not a GC thing.
   //
   // The callback should not GC (and will assert in a debug build if it does
-  // so.)
-  virtual void trace(JSObject* m, JS::GCCellPtr key, JS::GCCellPtr value) = 0;
+  // so).
+  virtual void trace(JSObject* map, JS::GCCellPtr key, JS::GCCellPtr delegate,
+                     JS::GCCellPtr value) = 0;
 };
 
 extern JS_PUBLIC_API void TraceWeakMaps(WeakMapTracer* trc);

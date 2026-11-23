@@ -28,7 +28,7 @@ class nsCycleCollectionNoteRootCallback {
   NoteNativeRoot(void* aRoot, nsCycleCollectionParticipant* aParticipant) = 0;
 
   NS_IMETHOD_(void)
-  NoteWeakMapping(JSObject* aMap, JS::GCCellPtr aKey, JSObject* aKeyDelegate,
+  NoteWeakMapping(JSObject* aMap, JS::GCCellPtr aKey, JS::GCCellPtr aDelegate,
                   JS::GCCellPtr aVal) = 0;
 
   bool WantAllTraces() const { return mWantAllTraces; }

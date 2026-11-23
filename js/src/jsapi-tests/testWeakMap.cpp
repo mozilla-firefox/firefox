@@ -12,6 +12,7 @@
 #include "js/WeakMap.h"
 #include "jsapi-tests/tests.h"
 #include "vm/Realm.h"
+#include "vm/SymbolType.h"
 
 using namespace js;
 
@@ -422,11 +423,11 @@ struct MappingTracer : public js::WeakMapTracer {
         keyToMatch(key),
         valueToMatch(value) {}
 
-  void trace(JSObject* aMap, JS::GCCellPtr aKey,
-             JS::GCCellPtr aValue) override {
-    if (aMap == mapToMatch) {
+  void trace(JSObject* map, JS::GCCellPtr key, JS::GCCellPtr delegate,
+             JS::GCCellPtr value) override {
+    if (map == mapToMatch) {
       entryCount++;
-      if (aKey == keyToMatch && aValue == valueToMatch) {
+      if (key == keyToMatch && value == valueToMatch) {
         matchCount++;
       }
     }
@@ -454,3 +455,67 @@ bool checkHasMapping(JS::HandleObject map, JS::HandleValue key,
   return true;
 }
 END_TEST(testWeakMap_traceMappings)
+
+struct DelegateTracer : public js::WeakMapTracer {
+  JSObject* mapToMatch;
+  size_t entryCount = 0;
+  JS::GCCellPtr lastDelegate;
+
+  DelegateTracer(JSRuntime* rt, JSObject* map)
+      : js::WeakMapTracer(rt), mapToMatch(map) {}
+
+  void trace(JSObject* map, JS::GCCellPtr key, JS::GCCellPtr delegate,
+             JS::GCCellPtr value) override {
+    if (map == mapToMatch) {
+      entryCount++;
+      lastDelegate = delegate;
+    }
+  }
+};
+
+BEGIN_TEST(testWeakMap_traceMappingsDelegate) {
+  // Test that js::TraceWeakMaps passes the correct delegate to the tracer.
+
+  // A plain object has no delegate.
+  JS::RootedValue key(cx, ObjectValue(*JS_NewPlainObject(cx)));
+  Rooted<JS::GCCellPtr> expectedDelegate(cx);
+  CHECK(checkDelegate(key, expectedDelegate));
+
+  // The delegate of a CCW is its target.
+  JS::RealmOptions options;
+  JS::RootedObject global(cx,
+                          JS_NewGlobalObject(cx, getGlobalClass(), nullptr,
+                                             JS::FireOnNewGlobalHook, options));
+  CHECK(global);
+  key = ObjectValue(*global);
+  CHECK(JS_WrapValue(cx, &key));
+  CHECK(&key.toObject() != global);
+  expectedDelegate = JS::GCCellPtr(global.get());
+  CHECK(checkDelegate(key, expectedDelegate));
+
+  // The delegate of a unique symbol is its shared symbol.
+  JS::Symbol* symbol = JS::NewSymbol(cx, nullptr);
+  CHECK(symbol);
+  CHECK(symbol->isUnique());
+  key = SymbolValue(symbol);
+  expectedDelegate = JS::GCCellPtr(symbol->sharedSymbol());
+  CHECK(checkDelegate(key, expectedDelegate));
+
+  return true;
+}
+
+bool checkDelegate(JS::HandleValue key,
+                   Handle<JS::GCCellPtr> expectedDelegate) {
+  JS::RootedObject map(cx, JS::NewWeakMapObject(cx));
+  CHECK(map);
+
+  JS::RootedValue value(cx, JS::Int32Value(1));
+  CHECK(JS::SetWeakMapEntry(cx, map, key, value));
+
+  DelegateTracer tracer(cx->runtime(), map);
+  js::TraceWeakMaps(&tracer);
+  CHECK(tracer.entryCount == 1);
+  CHECK(tracer.lastDelegate == expectedDelegate);
+  return true;
+}
+END_TEST(testWeakMap_traceMappingsDelegate)
