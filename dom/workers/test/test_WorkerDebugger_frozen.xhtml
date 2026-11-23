@@ -57,6 +57,10 @@
            "debugger for worker on page 1 should not be closed");
         is(dbg2.isClosed, true,
            "debugger for worker on page 2 should be closed");
+
+        promise = waitForDebuggerClose(dbg1);
+        testWin.close();
+        await promise;
       }
     );
 
