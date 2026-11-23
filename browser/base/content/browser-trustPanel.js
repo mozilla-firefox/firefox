@@ -165,6 +165,26 @@ const CLOSING_REASONS = {
 // Indexed by the HTTPS-Only menulist values, see #getHttpsOnlyPermission.
 const HTTPS_ONLY_SETTINGS = ["on", "off", "off-temporarily"];
 
+// [selector, l10n ID, redesigned l10n ID] for the strings of
+// securityInformation.inc.xhtml that the redesigned panel replaces.
+const SECURITY_VIEW_REDESIGN_STRINGS = [
+  [
+    ".identity-popup-connection-secure.security-view",
+    "identity-connection-verified",
+    "trustpanel-connection-secure",
+  ],
+  [
+    ".identity-popup-connection-not-secure.security-view",
+    "identity-connection-not-secure-security-view",
+    "trustpanel-connection-not-secure",
+  ],
+  [
+    ".identity-popup-description-insecure > label",
+    "identity-description-insecure",
+    "trustpanel-connection-not-secure-description",
+  ],
+];
+
 const SMARTBLOCK_EMBED_INFO = [
   {
     matchPatterns: ["https://itisatracker.org/*"],
@@ -1359,10 +1379,32 @@ class TrustPanel {
   }
 
   #updateSecurityInformationSubview() {
+    let view = document.getElementById("trustpanel-securityInformationView");
+    let redesign = protectionsPanelRedesignEnabled;
+    view.toggleAttribute("redesign", redesign);
+    view.toggleAttribute("shrink-to-fit", redesign);
     document.l10n.setAttributes(
-      document.getElementById("trustpanel-securityInformationView"),
-      "trustpanel-site-information-header",
+      view,
+      redesign
+        ? "trustpanel-connection-info-header"
+        : "trustpanel-site-information-header",
       { host: this.#displayHost }
+    );
+    for (let [
+      selector,
+      l10nId,
+      redesignL10nId,
+    ] of SECURITY_VIEW_REDESIGN_STRINGS) {
+      document.l10n.setAttributes(
+        view.querySelector(selector),
+        redesign ? redesignL10nId : l10nId
+      );
+    }
+    this.#updateAttribute(
+      document.getElementById("trustpanel-siteinformation-morelink"),
+      "shortcut",
+      redesign &&
+        ShortcutUtils.prettifyShortcut(document.getElementById("key_viewInfo"))
     );
 
     let connection = this.#connectionState();

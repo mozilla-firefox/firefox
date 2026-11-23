@@ -1812,6 +1812,15 @@ trustpanel-clear-cookies-description-redesign = You’ll be signed out of sites.
 trustpanel-site-information-header =
     .title = Connection protections for { $host }
 
+# Variables
+#  $host (String): the hostname of the site that is being displayed.
+trustpanel-connection-info-header =
+    .title = Connection info for { $host }
+
+trustpanel-connection-secure = This site’s connection is secure.
+trustpanel-connection-not-secure = This site’s connection isn’t secure.
+trustpanel-connection-not-secure-description = Avoid entering info like passwords or credit cards to help protect them from being stolen.
+
 trustpanel-siteinformation-morelink = More site information
 
 trustpanel-blocker-see-all = See All

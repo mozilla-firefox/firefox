@@ -65,8 +65,11 @@
                   class="panel-button"/>
 
           <!-- Connection is Not Secure -->
-          <description when-connection="not-secure cert-error-page net-error-page https-only-error-page"
-                       data-l10n-id="identity-description-insecure"></description>
+          <description class="identity-popup-description-insecure"
+                       when-connection="not-secure cert-error-page net-error-page https-only-error-page">
+            <label data-l10n-id="identity-description-insecure"/>
+            <html:a is="moz-support-link" class="trustpanel-connection-learn-more" support-page="connection-not-secure"/>
+          </description>
 
           <!-- Weak Cipher -->
           <description when-ciphers="weak" data-l10n-id="identity-description-weak-cipher-intro"></description>

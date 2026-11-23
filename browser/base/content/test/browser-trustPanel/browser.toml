@@ -37,6 +37,9 @@ support-files = ["!/browser/base/content/test/browser-protectionsUI/trackingPage
 
 ["browser_trust_panel_redesign_clear_site_data.js"]
 
+["browser_trust_panel_redesign_connection.js"]
+https_first_disabled = true
+
 ["browser_trust_panel_redesign_site_issue.js"]
 
 ["browser_trust_panel_security_view.js"]

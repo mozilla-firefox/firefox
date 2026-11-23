@@ -1256,6 +1256,41 @@
   margin-block-start: var(--space-large);
 }
 
+#trustpanel-securityInformationView[redesign] {
+  #identity-popup-content-verifier-label {
+    font-weight: var(--font-weight-heading);
+  }
+
+  #identity-popup-content-verifier {
+    font-weight: var(--font-weight);
+  }
+
+  #trustpanel-popup[connection="not-secure"] & .identity-popup-security-connection {
+    list-style-image: url(chrome://global/skin/icons/security-warning.svg);
+    -moz-context-properties: fill, fill-opacity;
+  }
+
+  #identity-popup-content-cert-info {
+    border-block-end: none;
+  }
+
+  .identity-popup-description-insecure {
+    margin-block-end: var(--space-large);
+
+    > label {
+      display: inline;
+    }
+  }
+
+  #trustpanel-siteinformation-morelink[shortcut]::after {
+    margin-inline-start: auto;
+  }
+}
+
+.trustpanel-connection-learn-more:not(#trustpanel-securityInformationView[redesign] *) {
+  display: none;
+}
+
 #trustpanel-securityInformationView > .panel-header + toolbarseparator {
   padding-bottom: 0;
 }
