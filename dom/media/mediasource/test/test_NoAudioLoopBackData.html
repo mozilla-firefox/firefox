@@ -21,6 +21,11 @@ SimpleTest.waitForExplicitFinish();
 runWithMSE(async (ms, el) => {
   await once(ms, "sourceopen");
   ok(true, "Receive a sourceopen event");
+  // A dead platform decoder fails playback until bug 2096481.
+  el.addEventListener("error", () => {
+    ok(false, `should not fire error event: ${el.error.code} ${el.error.message}`);
+    SimpleTest.finish();
+  });
   const videosb = ms.addSourceBuffer("video/mp4");
   const audiosb = ms.addSourceBuffer("audio/mp4");
 
