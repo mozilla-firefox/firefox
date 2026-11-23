@@ -45,8 +45,7 @@ use sha2::{Digest, Sha256};
 use std::convert::TryInto;
 use std::ffi::{CString, OsString};
 use std::fmt::Display;
-use std::fs::{create_dir_all, remove_file, File};
-use std::io::{BufRead, BufReader};
+use std::fs::{create_dir_all, remove_file};
 use std::mem::size_of;
 use std::path::{Path, PathBuf};
 use std::str;
@@ -227,8 +226,7 @@ impl SecurityState {
 
         let store_path = get_store_path(&self.profile_path)?;
 
-        // Open the store in read-write mode to create it (if needed) and migrate data from the old
-        // store (if any).
+        // Open the store in read-write mode to create it (if needed).
         // If opening initially fails, try to remove and recreate the database. Consumers will
         // repopulate the database as necessary if this happens (see bug 1546361).
         let env = make_env(store_path.as_path()).or_else(|_| {
@@ -236,14 +234,6 @@ impl SecurityState {
             make_env(store_path.as_path())
         })?;
         let store = env.open_single("cert_storage", StoreOptions::create())?;
-
-        // if the profile has a revocations.txt, migrate it and remove the file
-        let mut revocations_path = self.profile_path.clone();
-        revocations_path.push("revocations.txt");
-        if revocations_path.exists() {
-            SecurityState::migrate(&revocations_path, &env, &store)?;
-            remove_file(revocations_path)?;
-        }
 
         // Earlier versions of cert_storage left behind entries that no longer affect any lookup.
         // Removing them is an optimization, so a failure here should not prevent opening the
@@ -263,68 +253,6 @@ impl SecurityState {
             None => Ok(()),
         }?;
         self.load_crlite_filter()?;
-        Ok(())
-    }
-
-    fn migrate(
-        revocations_path: &PathBuf,
-        env: &Rkv,
-        store: &SingleStore,
-    ) -> Result<(), SecurityStateError> {
-        let f = File::open(revocations_path)?;
-        let file = BufReader::new(f);
-        let value = Value::I64(nsICertStorage::STATE_ENFORCE as i64);
-        let mut writer = env.write()?;
-
-        // Add the data from revocations.txt
-        let mut dn: Option<Vec<u8>> = None;
-        for line in file.lines() {
-            let l = match line.map_err(|_| SecurityStateError::from("io error reading line data")) {
-                Ok(data) => data,
-                Err(e) => return Err(e),
-            };
-            if l.len() == 0 || l.starts_with("#") {
-                continue;
-            }
-            let leading_char = match l.chars().next() {
-                Some(c) => c,
-                None => {
-                    return Err(SecurityStateError::from(
-                        "couldn't get char from non-empty str?",
-                    ));
-                }
-            };
-            // In future, we can maybe log migration failures. For now, ignore decoding and storage
-            // errors and attempt to continue.
-            // Check if we have a new DN
-            if leading_char != '\t' && leading_char != ' ' {
-                if let Ok(decoded_dn) = BASE64_STANDARD.decode(&l) {
-                    dn = Some(decoded_dn);
-                }
-                continue;
-            }
-            let l_sans_prefix = match BASE64_STANDARD.decode(&l[1..]) {
-                Ok(decoded) => decoded,
-                Err(_) => continue,
-            };
-            if let Some(name) = &dn {
-                if leading_char == '\t' {
-                    let _ = store.put(
-                        &mut writer,
-                        &make_key!(PREFIX_REV_SPK, name, &l_sans_prefix),
-                        &value,
-                    );
-                } else {
-                    let _ = store.put(
-                        &mut writer,
-                        &make_key!(PREFIX_REV_IS, name, &l_sans_prefix),
-                        &value,
-                    );
-                }
-            }
-        }
-
-        writer.commit()?;
         Ok(())
     }
 
