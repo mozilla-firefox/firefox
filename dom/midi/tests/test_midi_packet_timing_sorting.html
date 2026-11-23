@@ -14,7 +14,7 @@
        await MIDITestUtils.permissionSetup(true);
        await SpecialPowers.pushPrefEnv({"set": [["privacy.resistFingerprinting.reduceTimerPrecision.jitter", false]]});
        var checkCount = 0;
-       var lastTime = 0;
+       var lastTime = -Infinity;
        var input;
        var output;
        function checkReturn(event) {
