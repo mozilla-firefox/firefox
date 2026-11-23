@@ -711,6 +711,9 @@ skip script test262/built-ins/Error/prototype/stack/getter-receiver-is-proxy.js
 skip script test262/built-ins/Error/prototype/stack/getter-error-prototype.js
 skip script test262/built-ins/Error/prototype/stack/getter-cross-realm.js
 
+# Bug 2096666 (The shell parses the deferred JSON module as JavaScript)
+fails script test262/language/import/import-defer/deferred-namespace-object/json-module.js
+
 ###########################################################
 # Tests disabled due to issues in test262 importer script #
 ###########################################################

@@ -1,4 +1,4 @@
-// |reftest| skip module async -- import-defer is not supported
+// |reftest| shell-option(--enable-defer-import-eval) skip-if(release_or_beta||!xulRuntime.shell) module async -- import-defer is not released yet, requires shell-options
 // Copyright (C) 2026 Igalia, S.L. All rights reserved.
 // This code is governed by the BSD license found in the LICENSE file.
 

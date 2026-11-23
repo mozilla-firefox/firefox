@@ -1,4 +1,4 @@
-// |reftest| skip error:SyntaxError -- import-defer is not supported
+// |reftest| shell-option(--enable-defer-import-eval) skip-if(release_or_beta||!xulRuntime.shell) error:SyntaxError -- import-defer is not released yet, requires shell-options
 // This file was procedurally generated from the following sources:
 // - src/dynamic-import/import-defer-no-new-call-expression-prop-access.case
 // - src/dynamic-import/syntax/invalid/nested-while.template

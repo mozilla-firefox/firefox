@@ -1,4 +1,4 @@
-// |reftest| skip module -- import-defer is not supported
+// |reftest| shell-option(--enable-defer-import-eval) skip-if(release_or_beta||!xulRuntime.shell) module -- import-defer is not released yet, requires shell-options
 // This file was procedurally generated from the following sources:
 // - src/import-defer/super-property-set-exported.case
 // - src/import-defer/trigger-on-possible-export/then-not-exported.template

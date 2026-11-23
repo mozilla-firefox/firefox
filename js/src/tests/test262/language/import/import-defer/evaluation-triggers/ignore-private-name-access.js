@@ -1,4 +1,4 @@
-// |reftest| skip module -- import-defer,nonextensible-applies-to-private is not supported
+// |reftest| skip module -- nonextensible-applies-to-private is not supported
 // This file was procedurally generated from the following sources:
 // - src/import-defer/private-name-access.case
 // - src/import-defer/ignore/ignore.template
