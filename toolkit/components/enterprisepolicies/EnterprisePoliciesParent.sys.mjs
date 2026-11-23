@@ -498,15 +498,8 @@ EnterprisePoliciesManager.prototype = {
 
     for (let policies of SitePolicies) {
       if (
-        policies.exceptions.matches(normalized) ||
-        policies.exceptions.matchesAllWebUrls
-      ) {
-        continue;
-      }
-
-      if (
-        !policies.match.matches(normalized) &&
-        !policies.match.matchesAllWebUrls
+        lazy.SitePolicyUtils.matchesURI(policies.exceptions, normalized) ||
+        !lazy.SitePolicyUtils.matchesURI(policies.match, normalized)
       ) {
         continue;
       }

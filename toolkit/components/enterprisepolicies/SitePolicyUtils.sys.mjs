@@ -27,25 +27,26 @@ export const SitePolicyUtils = {
     }
   },
 
+  // A catch-all set matches web URIs and moz-nullprincipal URIs (e.g. the
+  // site of a data: document), but not about:, chrome:, file: and others.
+  matchesURI(matchPatternSet, uri) {
+    return (
+      matchPatternSet.matches(uri) ||
+      (matchPatternSet.matchesAllWebUrls && uri.scheme == "moz-nullprincipal")
+    );
+  },
+
   isAllowedForURI(manager, sitePolicies, feature, uri) {
     let normalized = this.normalizeURI(uri);
 
     // The first site policy that matches the domain and includes a setting
     // for the feature wins.
     for (let policies of sitePolicies) {
-      if (
-        policies.exceptions.matches(normalized) ||
-        // This is necessary to correctly match moz-nullprincipal URIs.
-        policies.exceptions.matchesAllWebUrls
-      ) {
+      if (this.matchesURI(policies.exceptions, normalized)) {
         continue;
       }
 
-      if (
-        !policies.match.matches(normalized) &&
-        // This is necessary to correctly match moz-nullprincipal URIs.
-        !policies.match.matchesAllWebUrls
-      ) {
+      if (!this.matchesURI(policies.match, normalized)) {
         continue;
       }
 

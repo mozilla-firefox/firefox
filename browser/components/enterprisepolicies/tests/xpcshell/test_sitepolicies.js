@@ -559,3 +559,29 @@ add_task(async function test_trailing_dot_hostname_exceptions() {
     "Trailing-dot hostname not in Exceptions should be restricted"
   );
 });
+
+add_task(async function test_catch_all_skips_non_web_uris() {
+  for (let policy of [{ Match: ["*"] }, { Exceptions: ["*.example.com"] }]) {
+    await setupPolicyEngineWithJson({
+      policies: {
+        SitePolicies: [{ ...policy, Policies: { HttpsOnly: true } }],
+      },
+    });
+
+    for (let url of [
+      "about:blank",
+      "about:robots",
+      "chrome://browser/content/browser.xhtml",
+      "file:///tmp/test.html",
+      "moz-extension://12345678-1234-1234-1234-123456789abc/page.html",
+    ]) {
+      Assert.ok(
+        Services.policies.isAllowedForURI("http", Services.io.newURI(url)),
+        `Catch-all ${JSON.stringify(policy)} should not apply to ${url}`
+      );
+    }
+
+    assertHttpState("http://example.net/", false);
+    assertHttpState("data:text/html,example", false);
+  }
+});
