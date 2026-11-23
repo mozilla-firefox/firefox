@@ -43,10 +43,11 @@
  * MOZ_NEUTER_SEH_FOR_MINGWCLANG is defined in security/sandbox/moz.build,
  * third_party/zucchini/moz.build and third_party/zucchini/executable/moz.build.
  */
-#if defined(MOZ_NEUTER_SEH_FOR_MINGWCLANG) && defined(XP_WIN) && defined(__MINGW32__)
+#if defined(MOZ_NEUTER_SEH_FOR_MINGWCLANG) && defined(XP_WIN) && !defined(HAVE_SEH_EXCEPTIONS)
 /*
- * MinGW doesn't support __try / __except. There are a few mechanisms available
- * to hack around it and pseudo-support it, but these are untested in Firefox.
+ * Clang doesn't support __try / __except for 32-bit MinGW. There are a few
+ * mechanisms available to hack around it and pseudo-support it, but these are
+ * untested in Firefox.
  * What is tested (and works) is replacing them with if(true) and else.
  * We need to include excpt.h first, so that we can then override it.
  */
@@ -58,6 +59,6 @@
 #define GetExceptionCode() 0
 #pragma clang diagnostic pop
 
-#endif /* MOZ_NEUTER_SEH_FOR_MINGWCLANG && XP_WIN && __MINGW32__ */
+#endif /* MOZ_NEUTER_SEH_FOR_MINGWCLANG && XP_WIN && !HAVE_SEH_EXCEPTIONS */
 
 #endif /* MOZILLA_CONFIG_H */

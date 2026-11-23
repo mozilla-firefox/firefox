@@ -62,7 +62,7 @@ typedef HRESULT(WINAPI* SetThreadDescription)(HANDLE hThread,
 // This function has try handling, so it is separated out of its caller.
 void SetNameInternal(PlatformThreadId thread_id, const char* name) {
   //This function is only used for debugging purposes, as you can find by its caller
-#ifndef __MINGW32__
+#ifdef HAVE_SEH_EXCEPTIONS
   THREADNAME_INFO info;
   info.dwType = 0x1000;
   info.szName = name;

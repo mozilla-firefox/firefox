@@ -472,6 +472,10 @@ with only_when(target_is_windows & depends(c_compiler)(lambda c: c.type != "clan
     add_flag("-Wno-incompatible-ms-struct", compiler=cxx_compiler)
     add_linker_flag("-Wl,--no-insert-timestamp")
 
+    set_define(
+        "HAVE_SEH_EXCEPTIONS", True, when=depends(target.cpu)(lambda cpu: cpu != "x86")
+    )
+
     with only_when(depends(target.cpu)(lambda cpu: cpu == "x86")):
         add_flag("-mstackrealign")
         add_linker_flag("-Wl,--large-address-aware")
