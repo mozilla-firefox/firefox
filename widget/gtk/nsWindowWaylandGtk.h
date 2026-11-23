@@ -42,6 +42,8 @@ class nsWindowWaylandToplevelGtk final : public nsWindowWaylandToplevel {
   void NativeShow(bool aAction) override;
   void HideAndRemoveAppPopups();
 
+  bool IsFullscreenSupported() override;
+
   bool CreateRestoreSession(bool aRestoreWindow) override;
 
   gulong mXdgToplevelRealizedID = 0;

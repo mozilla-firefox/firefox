@@ -38,6 +38,8 @@ class nsWindowX11 final : public nsWindow {
 
   void OnMapNative() override;
 
+  bool IsFullscreenSupported() override;
+
   typedef enum {
     GTK_WIDGET_COMPOSITED_DEFAULT = 0,
     GTK_WIDGET_COMPOSITED_DISABLED = 1,

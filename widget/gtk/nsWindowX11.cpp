@@ -403,3 +403,10 @@ void nsWindowX11::OnMapNative() {
 
   XFlush(DefaultXDisplay());
 }
+
+bool nsWindowX11::IsFullscreenSupported() {
+  GdkScreen* screen = gtk_widget_get_screen(mShell);
+  GdkAtom atom = gdk_atom_intern("_NET_WM_STATE_FULLSCREEN", FALSE);
+  return gdk_x11_screen_supports_net_wm_hint(screen, atom);
+}
+

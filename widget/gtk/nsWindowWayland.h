@@ -106,7 +106,7 @@ class nsWindowWaylandToplevel : public nsWindowWayland {
   void CreateCompositorVsyncDispatcher() override;
   RefPtr<mozilla::VsyncDispatcher> GetVsyncDispatcher() override;
 
-  bool IsPipWindow() const;
+  bool IsNativePipWindow() const;
   virtual bool PIPMove() = 0;
   virtual bool PIPResize(GdkWindowEdge aEdge) = 0;
   virtual void ClearPipResources() = 0;

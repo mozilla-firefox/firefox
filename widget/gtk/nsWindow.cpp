@@ -5378,22 +5378,6 @@ void nsWindow::KioskLockOnMonitor() {
   sGdkWindowFullscreenOnMonitor(GetToplevelGdkWindow(), monitor);
 }
 
-bool nsWindow::IsFullscreenSupported() {
-#if defined(MOZ_X11)
-  if (GdkIsX11Display()) {
-    GdkScreen* screen = gtk_widget_get_screen(mShell);
-    GdkAtom atom = gdk_atom_intern("_NET_WM_STATE_FULLSCREEN", FALSE);
-    return gdk_x11_screen_supports_net_wm_hint(screen, atom);
-  }
-#endif
-#if defined(MOZ_WAYLAND)
-  if (auto* window = AsWaylandToplevel()) {
-    return !window->IsPipWindow();
-  }
-#endif
-  return true;
-}
-
 nsresult nsWindow::MakeFullScreen(bool aFullScreen) {
   if (!IsFullscreenSupported()) {
     return NS_ERROR_NOT_AVAILABLE;

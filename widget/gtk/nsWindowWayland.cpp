@@ -539,10 +539,12 @@ void nsWindowWaylandToplevel::WatchHiddenVSyncSource() {
   }
 }
 
-bool nsWindowWaylandToplevel::IsPipWindow() const {
-  return mPiPType == PiPType::MediaPiP &&
-         StaticPrefs::widget_wayland_experimental_pip_enabled_AtStartup() &&
-         GdkIsWaylandDisplay() && WaylandDisplayGet()->GetPipShell();
+bool nsWindowWaylandToplevel::IsNativePipWindow() const {
+  static bool sIsNativePIPSupported = [&]() {
+    return StaticPrefs::widget_wayland_experimental_pip_enabled_AtStartup() &&
+           GdkIsWaylandDisplay() && WaylandDisplayGet()->GetPipShell();
+  }();
+  return mPiPType == PiPType::MediaPiP && sIsNativePIPSupported;
 }
 
 // ----------------------------------------------------------------------

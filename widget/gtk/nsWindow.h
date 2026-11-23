@@ -566,6 +566,8 @@ class nsWindow : public nsIWidget {
   virtual void DisableVSyncSource() {}
   virtual void WatchHiddenVSyncSource() {}
 
+  virtual bool IsFullscreenSupported() { return true; };
+
   // event handling code
   void DispatchActivateEvent(void);
   void DispatchDeactivateEvent(void);
@@ -626,8 +628,6 @@ class nsWindow : public nsIWidget {
 
   void CreateAndPutGdkScrollEvent(mozilla::LayoutDeviceIntPoint aPoint,
                                   double aDeltaX, double aDeltaY);
-
-  bool IsFullscreenSupported();
 
   nsCString mGtkWindowAppClass;
   nsCString mGtkWindowAppName;

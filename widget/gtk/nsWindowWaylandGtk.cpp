@@ -132,7 +132,7 @@ void nsWindowWaylandToplevelGtk::FocusWaylandWindow(const char* aTokenID) {
 
 void nsWindowWaylandToplevelGtk::MaybeCreatePipResources() {
   LOG("MaybeCreatePipResources()");
-  if (!IsPipWindow()) {
+  if (!IsNativePipWindow()) {
     return;
   }
 
@@ -241,7 +241,7 @@ void nsWindowWaylandToplevelGtk::CreateNative() {
 
   mSurfaceProvider.Initialize(this);
 
-  if (IsPipWindow()) {
+  if (IsNativePipWindow()) {
     // This avoids GTK from managing our top level surface role.
     // We'll handle it manually in OnMap().
     gdk_wayland_window_set_use_custom_surface(GetToplevelGdkWindow());
@@ -387,6 +387,10 @@ void nsWindowWaylandToplevelGtk::HideAndRemoveAppPopups() {
                            /* aRemoveFromPopupList */ true);
     popup = prev;
   }
+}
+
+bool nsWindowWaylandToplevelGtk::IsFullscreenSupported() {
+  return !IsNativePipWindow();
 }
 
 // ----------------------------------------------------------------------
