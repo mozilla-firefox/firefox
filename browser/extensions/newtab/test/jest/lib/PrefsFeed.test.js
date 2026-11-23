@@ -1308,6 +1308,52 @@ describe("PrefsFeed", () => {
       });
     });
 
+    describe("train-hop defaults during the activation window", () => {
+      let branch;
+      let originalValue;
+      beforeEach(() => {
+        originalValue = PREFS_CONFIG.get("widgets.enabled").value;
+        PREFS_CONFIG.get("widgets.enabled").value = true;
+        feed.inActivationWindowState = "a";
+        jest.spyOn(feed, "trackActivationWindowPrefChange");
+        // The branch observer fires synchronously on a default-branch write.
+        branch = mockDefaultBranch({
+          setBoolPref: (name, value) => feed.onPrefChanged(name, value),
+        });
+      });
+      afterEach(() => {
+        PREFS_CONFIG.get("widgets.enabled").value = originalValue;
+      });
+
+      it("should not track writing or restoring widgets.enabled as a user change", () => {
+        nimbusFeatures.newtabTrainhop.getAllEnrollments.mockReturnValue([
+          {
+            meta: { isRollout: true },
+            value: { type: "widgets", payload: { enabled: false } },
+          },
+        ]);
+        feed.onTrainhopExperimentUpdated();
+        nimbusFeatures.newtabTrainhop.getAllEnrollments.mockReturnValue([]);
+        feed.onTrainhopExperimentUpdated();
+
+        expect(branch.setBoolPref.mock.calls).toEqual([
+          ["widgets.enabled", false],
+          ["widgets.enabled", true],
+        ]);
+        expect(feed.trackActivationWindowPrefChange).not.toHaveBeenCalled();
+      });
+
+      it("should still track a user change after the writes", () => {
+        feed.onTrainhopExperimentUpdated();
+        feed.onPrefChanged("widgets.enabled", false);
+
+        expect(feed.trackActivationWindowPrefChange).toHaveBeenCalledWith(
+          "widgets.enabled",
+          false
+        );
+      });
+    });
+
     it("should write the Recent Activity default for the spaces experiment", () => {
       // Scoped to the experiment, so an unrelated train-hop config leaves it be.
       FAKE_PREFS.set("pageLayouts.variant", "spaces-buttons-bottom");

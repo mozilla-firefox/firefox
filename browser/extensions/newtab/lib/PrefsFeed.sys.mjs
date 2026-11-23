@@ -145,6 +145,14 @@ export class PrefsFeed {
    */
   _trainhopDefaults = new Map();
 
+  /**
+   * True while train-hop defaults are being written, so the branch observer
+   * they fire is not tracked as a user change in the activation window.
+   *
+   * @type {boolean}
+   */
+  _writingTrainhopDefaults = false;
+
   constructor(prefMap) {
     this._prefMap = prefMap;
     this._prefs = new Prefs();
@@ -214,7 +222,11 @@ export class PrefsFeed {
       }
     }
 
-    if (isUserChange && this.inActivationWindowState) {
+    if (
+      isUserChange &&
+      !this._writingTrainhopDefaults &&
+      this.inActivationWindowState
+    ) {
       this.trackActivationWindowPrefChange(name, value);
     }
   }
@@ -487,6 +499,7 @@ export class PrefsFeed {
       defaultBranch[`set${PREF_TYPES[typeof value]}Pref`](pref, value);
     for (const [pref, value] of values) {
       try {
+        this._writingTrainhopDefaults = true;
         const written = this._trainhopDefaults.get(pref);
         if ((typeof value) in PREF_TYPES) {
           const original = written ? written.original : get(pref, typeof value);
@@ -503,6 +516,8 @@ export class PrefsFeed {
           `Failed to apply the train-hop default for ${pref}`,
           e
         );
+      } finally {
+        this._writingTrainhopDefaults = false;
       }
     }
   }
