@@ -1086,7 +1086,7 @@ void txMozillaXSLTProcessor::reportError(nsresult aResult,
       nsAutoCString errorText;
       auto statusId = StatusCodeToL10nId(aResult);
       if (statusId) {
-        l10n->FormatValueSync(*statusId, {}, errorText, IgnoreErrors());
+        l10n->FormatValueSync(*statusId, errorText, IgnoreErrors());
       } else {
         dom::Optional<intl::L10nArgs> l10nArgs;
         l10nArgs.Construct();

@@ -139,8 +139,7 @@ nsNSSDialogs::GetPKCS12FilePassword(nsIInterfaceRequestor* ctx,
       mozilla::intl::Localization::Create(resIds, true);
   nsAutoCString msg;
   mozilla::ErrorResult error;
-  l10n->FormatValueSync("pippki-get-pkcs12-password-message"_ns, {}, msg,
-                        error);
+  l10n->FormatValueSync("pippki-get-pkcs12-password-message"_ns, msg, error);
   if (error.Failed()) {
     return error.StealNSResult();
   }

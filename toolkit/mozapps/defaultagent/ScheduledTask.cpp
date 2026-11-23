@@ -53,8 +53,8 @@ bool GetTaskDescription(mozilla::UniquePtr<wchar_t[]>& description) {
   RefPtr<Localization> l10n = Localization::Create(resIds, true);
   nsAutoCString daTaskDesc;
   mozilla::ErrorResult rv;
-  l10n->FormatValueSync("default-browser-agent-task-description"_ns, {},
-                        daTaskDesc, rv);
+  l10n->FormatValueSync("default-browser-agent-task-description"_ns, daTaskDesc,
+                        rv);
   if (rv.Failed()) {
     LOG_ERROR_MESSAGE(L"Failed to read task description");
     return false;

@@ -151,7 +151,7 @@ void nsPrinterListBase::EnsureCommonPaperInfo(JSContext* aCx) {
     nsAutoCString key{"printui-paper-"};
     key.Append(size.mLocalizableNameKey);
     nsAutoCString name;
-    l10n->FormatValueSync(key, {}, name, rv);
+    l10n->FormatValueSync(key, name, rv);
 
     // Fill out the info with our PWG size and the localized name.
     info.mId = size.mPWGName;

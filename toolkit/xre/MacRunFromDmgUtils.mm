@@ -69,22 +69,21 @@ static bool AskUserIfWeShouldLaunchExistingInstall() {
 
   ErrorResult rv;
   nsAutoCString mozTitle, mozMessage, mozLaunchExisting, mozLaunchFromDMG;
-  l10n->FormatValueSync("prompt-to-launch-existing-app-title"_ns, {}, mozTitle,
+  l10n->FormatValueSync("prompt-to-launch-existing-app-title"_ns, mozTitle, rv);
+  if (rv.Failed()) {
+    return false;
+  }
+  l10n->FormatValueSync("prompt-to-launch-existing-app-message"_ns, mozMessage,
                         rv);
   if (rv.Failed()) {
     return false;
   }
-  l10n->FormatValueSync("prompt-to-launch-existing-app-message"_ns, {},
-                        mozMessage, rv);
-  if (rv.Failed()) {
-    return false;
-  }
-  l10n->FormatValueSync("prompt-to-launch-existing-app-yes-button"_ns, {},
+  l10n->FormatValueSync("prompt-to-launch-existing-app-yes-button"_ns,
                         mozLaunchExisting, rv);
   if (rv.Failed()) {
     return false;
   }
-  l10n->FormatValueSync("prompt-to-launch-existing-app-no-button"_ns, {},
+  l10n->FormatValueSync("prompt-to-launch-existing-app-no-button"_ns,
                         mozLaunchFromDMG, rv);
   if (rv.Failed()) {
     return false;
@@ -149,20 +148,19 @@ static bool AskUserIfWeShouldInstall() {
 
   ErrorResult rv;
   nsAutoCString mozTitle, mozMessage, mozInstall, mozDontInstall;
-  l10n->FormatValueSync("prompt-to-install-title"_ns, {}, mozTitle, rv);
+  l10n->FormatValueSync("prompt-to-install-title"_ns, mozTitle, rv);
   if (rv.Failed()) {
     return false;
   }
-  l10n->FormatValueSync("prompt-to-install-message"_ns, {}, mozMessage, rv);
+  l10n->FormatValueSync("prompt-to-install-message"_ns, mozMessage, rv);
   if (rv.Failed()) {
     return false;
   }
-  l10n->FormatValueSync("prompt-to-install-yes-button"_ns, {}, mozInstall, rv);
+  l10n->FormatValueSync("prompt-to-install-yes-button"_ns, mozInstall, rv);
   if (rv.Failed()) {
     return false;
   }
-  l10n->FormatValueSync("prompt-to-install-no-button"_ns, {}, mozDontInstall,
-                        rv);
+  l10n->FormatValueSync("prompt-to-install-no-button"_ns, mozDontInstall, rv);
   if (rv.Failed()) {
     return false;
   }
@@ -244,11 +242,11 @@ static void ShowInstallFailedDialog() {
 
   ErrorResult rv;
   nsAutoCString mozTitle, mozMessage;
-  l10n->FormatValueSync("install-failed-title"_ns, {}, mozTitle, rv);
+  l10n->FormatValueSync("install-failed-title"_ns, mozTitle, rv);
   if (rv.Failed()) {
     return;
   }
-  l10n->FormatValueSync("install-failed-message"_ns, {}, mozMessage, rv);
+  l10n->FormatValueSync("install-failed-message"_ns, mozMessage, rv);
   if (rv.Failed()) {
     return;
   }

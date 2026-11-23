@@ -322,7 +322,7 @@ RefPtr<MediaDeviceSetRefCnt> MediaDevices::FilterExposedDevices(
             RefPtr l10n = Localization::Create(resourceIds, /*sync*/ true);
             nsAutoCString translation;
             IgnoredErrorResult rv;
-            l10n->FormatValueSync("default-audio-output-device-label"_ns, {},
+            l10n->FormatValueSync("default-audio-output-device-label"_ns,
                                   translation, rv);
             if (!rv.Failed()) {
               AppendUTF8toUTF16(translation, mDefaultOutputLabel);

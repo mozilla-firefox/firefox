@@ -1006,13 +1006,13 @@ nsresult HTMLFormElement::DoSecureToInsecureSubmitCheck(nsIURI* aActionURL,
   nsAutoCString message;
   nsAutoCString cont;
   ErrorResult error;
-  l10n->FormatValueSync("form-post-secure-to-insecure-warning-title"_ns, {},
-                        title, error);
+  l10n->FormatValueSync("form-post-secure-to-insecure-warning-title"_ns, title,
+                        error);
   NS_ENSURE_TRUE(!error.Failed(), error.StealNSResult());
-  l10n->FormatValueSync("form-post-secure-to-insecure-warning-message"_ns, {},
+  l10n->FormatValueSync("form-post-secure-to-insecure-warning-message"_ns,
                         message, error);
   NS_ENSURE_TRUE(!error.Failed(), error.StealNSResult());
-  l10n->FormatValueSync("form-post-secure-to-insecure-warning-continue"_ns, {},
+  l10n->FormatValueSync("form-post-secure-to-insecure-warning-continue"_ns,
                         cont, error);
   NS_ENSURE_TRUE(!error.Failed(), error.StealNSResult());
   int32_t buttonPressed;

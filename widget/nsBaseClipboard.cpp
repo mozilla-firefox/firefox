@@ -439,8 +439,7 @@ void nsBaseClipboard::WriteCopyBlockedPlaceholder(
     RefPtr<mozilla::intl::Localization> l10n =
         mozilla::intl::Localization::Create(resIds, /* aSync */ true);
     l10n->FormatValueSync(
-        "contentanalysis-clipboard-copy-blocked-replacement"_ns, {}, message,
-        rv);
+        "contentanalysis-clipboard-copy-blocked-replacement"_ns, message, rv);
   }
   if (message.IsEmpty()) {
     MOZ_CLIPBOARD_LOG("%s: could not load the placeholder string.",

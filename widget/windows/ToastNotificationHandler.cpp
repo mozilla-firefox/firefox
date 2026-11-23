@@ -661,8 +661,7 @@ ComPtr<IXmlDocument> ToastNotificationHandler::CreateToastXmlDocument() {
     RefPtr<intl::Localization> l10n = intl::Localization::Create(resIds, true);
     IgnoredErrorResult rv;
     nsAutoCString closeTitle;
-    l10n->FormatValueSync("notification-default-dismiss"_ns, {}, closeTitle,
-                          rv);
+    l10n->FormatValueSync("notification-default-dismiss"_ns, closeTitle, rv);
     NS_ENSURE_TRUE(!rv.Failed(), nullptr);
 
     NS_ENSURE_TRUE(
