@@ -59,6 +59,9 @@ class MFTEncoder final {
                  const EncoderConfig::CodecSpecific& aCodecSpecific);
   HRESULT Destroy();
   HRESULT SetMediaTypes(IMFMediaType* aInputType, IMFMediaType* aOutputType);
+  // Checks that the encoder accepts the media types without preparing it to
+  // encode, so it can be called from any MTA thread.
+  HRESULT CheckMediaTypes(IMFMediaType* aInputType, IMFMediaType* aOutputType);
   HRESULT SetModes(const EncoderConfig& aConfig);
   HRESULT SetBitrate(UINT32 aBitsPerSec);
   bool IsHardwareAccelerated() const;
@@ -182,6 +185,10 @@ class MFTEncoder final {
   // async processing model, and error otherwise.
   using AsyncMFTResult = Result<bool, HRESULT>;
   AsyncMFTResult AttemptEnableAsync();
+  // Unlocks the MFT if it is asynchronous and sets its media types. Returns
+  // whether the MFT is asynchronous.
+  AsyncMFTResult NegotiateMediaTypes(IMFMediaType* aInputType,
+                                     IMFMediaType* aOutputType);
   HRESULT GetStreamIDs();
   GUID MatchInputSubtype(IMFMediaType* aInputType);
   HRESULT SendMFTMessage(MFT_MESSAGE_TYPE aMsg, ULONG_PTR aData);

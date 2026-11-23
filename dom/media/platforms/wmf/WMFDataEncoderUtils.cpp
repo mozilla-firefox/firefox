@@ -89,14 +89,25 @@ EncodeSupportSet CanCreateWMFEncoder(const EncoderConfig& aConfig) {
     if (!wmf::MediaFoundationInitializer::HasInitialized()) {
       return;
     }
+    // Some encoders can be created for a configuration but reject its media
+    // types, e.g. the NVIDIA H.264 encoder for small frame sizes.
+    auto canEncode = [&](MFTEncoder::HWPreference aPreference) {
+      EncoderConfig config = aConfig;
+      RefPtr<IMFMediaType> inputType = CreateInputType(config);
+      RefPtr<IMFMediaType> outputType = CreateOutputType(config);
+      auto encoder = MakeRefPtr<MFTEncoder>(aPreference);
+      return inputType && outputType &&
+             SUCCEEDED(encoder->Create(CodecToSubtype(aConfig.mCodec),
+                                       aConfig.mSize,
+                                       aConfig.mCodecSpecific)) &&
+             SUCCEEDED(encoder->SetModes(config)) &&
+             SUCCEEDED(encoder->CheckMediaTypes(inputType, outputType));
+    };
     // Try HW encoder if allowed by graphics and not disallowed by
     // the caller.
     if (aConfig.mHardwarePreference != HardwarePreference::RequireSoftware) {
       if (CanUseWMFHwEncoder(aConfig)) {
-        auto hwEnc =
-            MakeRefPtr<MFTEncoder>(MFTEncoder::HWPreference::HardwareOnly);
-        if (SUCCEEDED(hwEnc->Create(CodecToSubtype(aConfig.mCodec),
-                                    aConfig.mSize, aConfig.mCodecSpecific))) {
+        if (canEncode(MFTEncoder::HWPreference::HardwareOnly)) {
           supports += EncodeSupport::HardwareEncode;
         }
       } else {
@@ -109,10 +120,7 @@ EncodeSupportSet CanCreateWMFEncoder(const EncoderConfig& aConfig) {
     // encoding in the GPU process.
     if (aConfig.mHardwarePreference != HardwarePreference::RequireHardware &&
         aConfig.mCodec == CodecType::H264 && !XRE_IsGPUProcess()) {
-      auto swEnc =
-          MakeRefPtr<MFTEncoder>(MFTEncoder::HWPreference::SoftwareOnly);
-      if (SUCCEEDED(swEnc->Create(CodecToSubtype(aConfig.mCodec), aConfig.mSize,
-                                  aConfig.mCodecSpecific))) {
+      if (canEncode(MFTEncoder::HWPreference::SoftwareOnly)) {
         supports += EncodeSupport::SoftwareEncode;
       }
     }
