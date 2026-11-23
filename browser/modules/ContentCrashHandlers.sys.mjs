@@ -217,7 +217,9 @@ export var TabCrashHandler = {
     let sentBrowser = false;
     for (let weakBrowser of browserQueue) {
       let browser = weakBrowser.get();
-      if (browser) {
+      // A browser whose window closed after the crash, as when Firefox quits,
+      // has no frame loader to change the remoteness of.
+      if (browser?.frameLoader) {
         if (
           this.restartRequiredBrowsers.has(browser) ||
           this.testBuildIDMismatch
