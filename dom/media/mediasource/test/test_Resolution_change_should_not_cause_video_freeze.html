@@ -15,8 +15,10 @@ runWithMSE(async (ms, v) => {
   await once(ms, "sourceopen");
   const sb = ms.addSourceBuffer('video/mp4');
   sb.appendBuffer(new Uint8Array(await fetchWithXHR("bug1718709_low_res.mp4")));
+  await once(sb, "updateend");
   ok(true, "appended low resolution video");
   sb.appendBuffer(new Uint8Array(await fetchWithXHR("bug1718709_high_res.mp4")));
+  await once(sb, "updateend");
   ok(true, "appended high resolution video");
 
   info(`start from the position which is near to the place where resolution changes`);
