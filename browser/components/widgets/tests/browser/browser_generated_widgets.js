@@ -100,7 +100,15 @@ async function sentSystemPrompt() {
   });
   respond("Done.");
   await generating.catch(() => {});
-  return request.args.find(message => message.role == "system").content;
+  return withoutDate(
+    request.args.find(message => message.role == "system").content
+  );
+}
+
+function withoutDate(prompt) {
+  let match = prompt.match(/^([\s\S]*)\n\nToday is \d{4}-\d{2}-\d{2}\.$/);
+  Assert.ok(match, "Prompt ends with the date");
+  return match?.[1];
 }
 
 async function localPrompt() {
@@ -715,7 +723,7 @@ add_task(async function test_only_this_major_version_is_read() {
   await answer("Done.");
   cleanup(await generating);
   Assert.equal(
-    request.args.find(message => message.role == "system").content,
+    withoutDate(request.args.find(message => message.role == "system").content),
     "Newer",
     "Selected highest minor generator record"
   );

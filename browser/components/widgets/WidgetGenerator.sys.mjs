@@ -18,6 +18,8 @@ ChromeUtils.defineESModuleGetters(lazy, {
   FileUtils: "resource://gre/modules/FileUtils.sys.mjs",
   GeneratedWidgetsFeature:
     "moz-src:///browser/components/widgets/GeneratedWidgetsFeature.sys.mjs",
+  getLocalIsoTime:
+    "moz-src:///browser/components/aiwindow/models/ChatUtils.sys.mjs",
   MODEL_FEATURES: "moz-src:///browser/components/aiwindow/models/Utils.sys.mjs",
   RemoteSettings: "resource://services-settings/remote-settings.sys.mjs",
   SERVICE_TYPES: "moz-src:///browser/components/aiwindow/models/Utils.sys.mjs",
@@ -173,7 +175,8 @@ class _WidgetGenerator {
   /**
    * Reads the latest generator record for PROMPT_MAJOR_VERSION. Without one,
    * the local prompt is used and the server picks the model and parameters.
-   * LOCAL_PROMPT_PREF uses the local prompt with any record.
+   * LOCAL_PROMPT_PREF uses the local prompt with any record. The prompt ends
+   * with the local date.
    *
    * @returns {Promise<{systemPrompt: string, model: ?string, parameters: ?object}>}
    */
@@ -183,6 +186,10 @@ class _WidgetGenerator {
       record && !Services.prefs.getBoolPref(LOCAL_PROMPT_PREF, false)
         ? record.prompt
         : await this.#loadLocalPrompt();
+    let today = lazy.getLocalIsoTime()?.split("T")[0];
+    if (today) {
+      systemPrompt += `\n\nToday is ${today}.`;
+    }
     return {
       systemPrompt,
       model: record?.model,
