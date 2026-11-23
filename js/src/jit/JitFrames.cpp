@@ -2913,10 +2913,9 @@ void InvalidationBailoutStack::checkInvariants() const {
 // CreateThisFromIC{WithAllocSite}. The callee is the first argument and is
 // traced by TraceJitExitFrame.
 static Realm* MaybeCreateThisCalleeRealm(ExitFrameLayout* exitFrame) {
-  static_assert(
-      std::is_same_v<decltype(&CreateThisFromIC),
-                     bool (*)(JSContext*, HandleObject, HandleObject, Value*,
-                              uint32_t, MutableHandleValue)>);
+  static_assert(std::is_same_v<decltype(&CreateThisFromIC),
+                               bool (*)(JSContext*, HandleObject, HandleObject,
+                                        Value*, uint32_t, MutableHandleValue)>);
   static_assert(std::is_same_v<decltype(&CreateThisFromICWithAllocSite),
                                bool (*)(JSContext*, HandleObject, HandleObject,
                                         gc::AllocSite*, Value*, uint32_t,
