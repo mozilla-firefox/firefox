@@ -1264,7 +1264,10 @@ class MarionetteRefTestExecutor(RefTestExecutor):
     def _screenshot(self, protocol, url, timeout):
         protocol.testdriver.run(url, self.wait_script)
 
-        screenshot = protocol.marionette.screenshot(full=False)
+        # Capture via drawWindow (compositor readback) rather than drawSnapshot
+        # so the screenshot reflects what is actually composited on screen,
+        # e.g. an in-progress view transition (bug 2008054).
+        screenshot = protocol.marionette.screenshot(full=False, readback=True)
         # strip off the data:img/png, part of the url
         if screenshot.startswith("data:image/png;base64,"):
             screenshot = screenshot.split(",", 1)[1]
