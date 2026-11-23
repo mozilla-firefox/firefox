@@ -4,8 +4,8 @@
 
 /* Windows only app to show a modal debug dialog - launched by nsDebug.cpp */
 #include <stdlib.h>
-#include <windows.h>
 #include <strsafe.h>
+#include <windows.h>
 
 int WINAPI wWinMain(HINSTANCE hInstance, HINSTANCE hPrevInstance,
                     LPWSTR lpszCmdLine, int nCmdShow) {
