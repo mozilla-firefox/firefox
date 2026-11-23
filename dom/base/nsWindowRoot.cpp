@@ -24,6 +24,7 @@
 #include "nsFrameLoader.h"
 #include "nsFrameLoaderOwner.h"
 #include "nsFrameSelection.h"
+#include "nsGlobalWindowInner.h"
 #include "nsGlobalWindowOuter.h"
 #include "nsIContent.h"
 #include "nsIController.h"
@@ -188,10 +189,7 @@ nsGlobalWindowInner* nsWindowRoot::GetInnerWindow() {
 }
 
 nsIGlobalObject* nsWindowRoot::GetRelevantGlobal() const {
-  nsCOMPtr<nsIGlobalObject> global =
-      do_QueryInterface(mWindow->GetCurrentInnerWindow());
-  // We're still holding a ref to it, so returning the raw pointer is ok...
-  return global;
+  return nsGlobalWindowInner::Cast(mWindow->GetCurrentInnerWindow());
 }
 
 nsPIDOMWindowOuter* nsWindowRoot::GetWindow() { return mWindow; }
