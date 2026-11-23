@@ -247,9 +247,9 @@ const i64_div_s = [
     expected: `or            \\$a2, \\$a0, \\$zero
                or            \\$a1, \\$a2, \\$zero
                lu12i\\.w     \\$t6, 349525
+               ori           \\$t6, \\$t6, 0x556
                lu32i\\.d     \\$t6, 349525
                lu52i\\.d     \\$t6, \\$t6, 1365
-               ori           \\$t6, \\$t6, 0x556
                mulh\\.d      \\$a0, \\$a1, \\$t6
                srai\\.d      \\$t6, \\$a1, 0x3f
                sub\\.d       \\$a0, \\$a0, \\$t6`,
@@ -259,9 +259,9 @@ const i64_div_s = [
     expected: `or            \\$a2, \\$a0, \\$zero
                or            \\$a1, \\$a2, \\$zero
                lu12i\\.w     \\$t6, 419430
+               ori           \\$t6, \\$t6, 0x667
                lu32i\\.d     \\$t6, 419430
                lu52i\\.d     \\$t6, \\$t6, 1638
-               ori           \\$t6, \\$t6, 0x667
                mulh\\.d      \\$a0, \\$a1, \\$t6
                srai\\.d      \\$a0, \\$a0, 0x1
                srai\\.d      \\$t6, \\$a1, 0x3f
@@ -272,9 +272,9 @@ const i64_div_s = [
     expected: `or            \\$a2, \\$a0, \\$zero
                or            \\$a1, \\$a2, \\$zero
                lu12i\\.w     \\$t6, 149796
+               ori           \\$t6, \\$t6, 0x925
                lu32i\\.d     \\$t6, 299593
                lu52i\\.d     \\$t6, \\$t6, 1170
-               ori           \\$t6, \\$t6, 0x925
                mulh\\.d      \\$a0, \\$a1, \\$t6
                srai\\.d      \\$a0, \\$a0, 0x1
                srai\\.d      \\$t6, \\$a1, 0x3f
@@ -285,9 +285,9 @@ const i64_div_s = [
     expected: `or            \\$a2, \\$a0, \\$zero
                or            \\$a1, \\$a2, \\$zero
                lu12i\\.w     \\$t6, 466033
+               ori           \\$t6, \\$t6, 0xc72
                lu32i\\.d     \\$t6, 116508
                lu52i\\.d     \\$t6, \\$t6, 455
-               ori           \\$t6, \\$t6, 0xc72
                mulh\\.d      \\$a0, \\$a1, \\$t6
                srai\\.d      \\$t6, \\$a1, 0x3f
                sub\\.d       \\$a0, \\$a0, \\$t6`,
@@ -297,9 +297,9 @@ const i64_div_s = [
     expected: `or            \\$a2, \\$a0, \\$zero
                or            \\$a1, \\$a2, \\$zero
                lu12i\\.w     \\$t6, -349526
+               ori           \\$t6, \\$t6, 0xaab
                lu32i\\.d     \\$t6, -349526
                lu52i\\.d     \\$t6, \\$t6, 682
-               ori           \\$t6, \\$t6, 0xaab
                mulh\\.d      \\$a0, \\$a1, \\$t6
                srai\\.d      \\$a0, \\$a0, 0x1f
                srai\\.d      \\$t6, \\$a1, 0x3f
@@ -361,9 +361,9 @@ const i64_div_u = [
     expected: `or            \\$a2, \\$a0, \\$zero
                or            \\$a1, \\$a2, \\$zero
                lu12i\\.w     \\$t6, -349526
+               ori           \\$t6, \\$t6, 0xaab
                lu32i\\.d     \\$t6, -349526
                lu52i\\.d     \\$t6, \\$t6, -1366
-               ori           \\$t6, \\$t6, 0xaab
                mulh\\.du     \\$a0, \\$a1, \\$t6
                srli\\.d      \\$a0, \\$a0, 0x1`,
   },
@@ -372,9 +372,9 @@ const i64_div_u = [
     expected: `or            \\$a2, \\$a0, \\$zero
                or            \\$a1, \\$a2, \\$zero
                lu12i\\.w     \\$t6, -209716
+               ori           \\$t6, \\$t6, 0xccd
                lu32i\\.d     \\$t6, -209716
                lu52i\\.d     \\$t6, \\$t6, -820
-               ori           \\$t6, \\$t6, 0xccd
                mulh\\.du     \\$a0, \\$a1, \\$t6
                srli\\.d      \\$a0, \\$a0, 0x2`,
   },
@@ -383,9 +383,9 @@ const i64_div_u = [
     expected: `or            \\$a2, \\$a0, \\$zero
                or            \\$a1, \\$a2, \\$zero
                lu12i\\.w     \\$t6, -449390
+               ori           \\$t6, \\$t6, 0x493
                lu32i\\.d     \\$t6, 149796
                lu52i\\.d     \\$t6, \\$t6, 585
-               ori           \\$t6, \\$t6, 0x493
                mulh\\.du     \\$a0, \\$a1, \\$t6
                sub\\.d       \\$t6, \\$a1, \\$a0
                srli\\.d      \\$t6, \\$t6, 0x1
@@ -397,9 +397,9 @@ const i64_div_u = [
     expected: `or            \\$a2, \\$a0, \\$zero
                or            \\$a1, \\$a2, \\$zero
                lu12i\\.w     \\$t6, -466034
+               ori           \\$t6, \\$t6, 0x38f
                lu32i\\.d     \\$t6, -116509
                lu52i\\.d     \\$t6, \\$t6, -456
-               ori           \\$t6, \\$t6, 0x38f
                mulh\\.du     \\$a0, \\$a1, \\$t6
                srli\\.d      \\$a0, \\$a0, 0x3`,
   },
@@ -408,9 +408,9 @@ const i64_div_u = [
     expected: `or            \\$a2, \\$a0, \\$zero
                or            \\$a1, \\$a2, \\$zero
                lu12i\\.w     \\$t6, -349526
+               ori           \\$t6, \\$t6, 0xaab
                lu32i\\.d     \\$t6, -349526
                lu52i\\.d     \\$t6, \\$t6, -1366
-               ori           \\$t6, \\$t6, 0xaab
                mulh\\.du     \\$a0, \\$a1, \\$t6
                srli\\.d      \\$a0, \\$a0, 0x21`,
   },
@@ -421,8 +421,8 @@ const i64_div_u = [
     expected: `or            \\$a2, \\$a0, \\$zero
                or            \\$a1, \\$a2, \\$zero
                lu12i\\.w     \\$t6, -58931
-               lu32i\\.d     \\$t6, 15664
                ori           \\$t6, \\$t6, 0x101
+               lu32i\\.d     \\$t6, 15664
                mulh\\.du     \\$a0, \\$a1, \\$t6`,
   },
 ];
@@ -609,9 +609,9 @@ const i64_rem_s = [
     expected: `or            \\$a2, \\$a0, \\$zero
                or            \\$a1, \\$a2, \\$zero
                lu12i\\.w     \\$t6, -349526
+               ori           \\$t6, \\$t6, 0xaab
                lu32i\\.d     \\$t6, -349526
                lu52i\\.d     \\$t6, \\$t6, 682
-               ori           \\$t6, \\$t6, 0xaab
                mulh\\.d      \\$a0, \\$a1, \\$t6
                srai\\.d      \\$a0, \\$a0, 0x1f
                srai\\.d      \\$t6, \\$a1, 0x3f
@@ -623,16 +623,16 @@ const i64_rem_s = [
     negative: `or            \\$a2, \\$a0, \\$zero
                or            \\$a1, \\$a2, \\$zero
                lu12i\\.w     \\$t6, -349526
+               ori           \\$t6, \\$t6, 0xaab
                lu32i\\.d     \\$t6, -349526
                lu52i\\.d     \\$t6, \\$t6, 682
-               ori           \\$t6, \\$t6, 0xaab
                mulh\\.d      \\$a0, \\$a1, \\$t6
                srai\\.d      \\$a0, \\$a0, 0x1f
                srai\\.d      \\$t6, \\$a1, 0x3f
                sub\\.d       \\$a0, \\$a0, \\$t6
                sub\\.d       \\$a0, \\$zero, \\$a0
-               lu12i\\.w     \\$t6, 0
-               lu32i\\.d     \\$t6, -3
+               lu12i\\.w     \\$t6, -3
+               slli\\.d      \\$t6, \\$t6, 0x14
                mul\\.d       \\$a0, \\$a0, \\$t6
                sub\\.d       \\$a0, \\$a1, \\$a0`,
   },
@@ -702,9 +702,9 @@ const i64_rem_u = [
     expected: `or            \\$a2, \\$a0, \\$zero
                or            \\$a1, \\$a2, \\$zero
                lu12i\\.w     \\$t6, -349526
+               ori           \\$t6, \\$t6, 0xaab
                lu32i\\.d     \\$t6, -349526
                lu52i\\.d     \\$t6, \\$t6, -1366
-               ori           \\$t6, \\$t6, 0xaab
                mulh\\.du     \\$a0, \\$a1, \\$t6
                srli\\.d      \\$a0, \\$a0, 0x21
                slli\\.d      \\$t6, \\$a0, 0x1

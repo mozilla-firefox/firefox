@@ -222,6 +222,7 @@ void MacroAssemblerLOONG64::ma_li(Register dest, CodeLabel* label) {
 
 void MacroAssemblerLOONG64::ma_li(Register dest, ImmWord imm) {
   const int64_t value = imm.value;
+  const uint64_t uvalue = static_cast<uint64_t>(value);
 
   if (is_intN(value, 12)) {
     as_addi_w(dest, zero, value);
@@ -233,10 +234,12 @@ void MacroAssemblerLOONG64::ma_li(Register dest, ImmWord imm) {
     return;
   }
 
-  const uint32_t bits_11_0 = value & 0xfff;
-  const uint32_t bits_31_12 = (value >> 12) & 0xfffff;
-  const uint32_t bits_51_32 = (value >> 32) & 0xfffff;
-  const uint32_t bits_63_52 = (value >> 52) & 0xfff;
+  const uint32_t bits_11_0 = uvalue & 0xfff;
+  const uint32_t bits_31_12 = (uvalue >> 12) & 0xfffff;
+  const uint32_t bits_31_0 = uvalue & 0xffffffff;
+  const uint32_t bits_51_32 = (uvalue >> 32) & 0xfffff;
+  const uint32_t bits_63_52 = (uvalue >> 52) & 0xfff;
+  const uint32_t bits_63_32 = (uvalue >> 32) & 0xffffffff;
 
   // The mnemonics of these imm-generating instructions may be a bit misleading.
   // From
@@ -251,31 +254,37 @@ void MacroAssemblerLOONG64::ma_li(Register dest, ImmWord imm) {
   //
   // These matter when building large numbers.
 
-  if (is_intN(value, 32)) {
-    as_lu12i_w(dest, bits_31_12);
-  } else if (is_uintN(value, 32)) {
-    as_lu12i_w(dest, bits_31_12);
-    as_bstrins_d(dest, zero, 63, 32);
-  } else if (is_intN(value, 52)) {
-    as_lu12i_w(dest, bits_31_12);
-    as_lu32i_d(dest, bits_51_32);
-  } else if (is_uintN(value, 52)) {
-    as_lu12i_w(dest, bits_31_12);
-    as_lu32i_d(dest, bits_51_32);
-    as_bstrins_d(dest, zero, 63, 52);
-  } else if (bits_31_12 == 0 && bits_51_32 == 0) {
+  if (bits_31_12 == 0 && bits_51_32 == 0) {
     as_lu52i_d(dest, zero, bits_63_52);
-  } else if (bits_31_12 != 0 && (((bits_31_12 >> 19) & 1) == 0) &&
-             bits_51_32 == 0) {
-    as_lu12i_w(dest, bits_31_12);
-    as_lu52i_d(dest, dest, bits_63_52);
-  } else {
-    as_lu12i_w(dest, bits_31_12);
-    as_lu32i_d(dest, bits_51_32);
-    as_lu52i_d(dest, dest, bits_63_52);
+    if (bits_11_0 != 0) {
+      as_ori(dest, dest, bits_11_0);
+    }
+    return;
   }
-  if (bits_11_0 != 0) {
-    as_ori(dest, dest, bits_11_0);
+
+  if (bits_31_0 == 0) {
+    const int tzc = std::countr_zero(bits_63_32);
+    // If |tzc >= 20|, then |bits_51_32 == 0|, and we should have returned
+    // already!
+    MOZ_ASSERT(tzc < 20);
+    if (is_intN(static_cast<int32_t>(bits_63_32) >> tzc, 20)) {
+      as_lu12i_w(dest, static_cast<int32_t>(bits_63_32) >> tzc);
+      as_slli_d(dest, dest, tzc + 20);
+      return;
+    }
+  }
+
+  const uint32_t signFill_51_32 =
+      (bits_31_12 & (UINT32_C(1) << 19)) ? 0xfffff : 0;
+  const uint32_t signFill_63_52 =
+      (bits_51_32 & (UINT32_C(1) << 19)) ? 0xfff : 0;
+
+  ma_li(dest, Imm32(static_cast<int32_t>(bits_31_0)));
+  if (bits_51_32 != signFill_51_32) {
+    as_lu32i_d(dest, bits_51_32);
+  }
+  if (bits_63_52 != signFill_63_52) {
+    as_lu52i_d(dest, dest, bits_63_52);
   }
 }
 

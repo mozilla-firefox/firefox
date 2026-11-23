@@ -196,9 +196,8 @@ codegenTestLOONG64_adhoc(
        (func (export "f") (result i32)
          (i32.load offset=0x7fff_ffff (i32.const 0x7fff_ffff))))`,
     "f",
-    `lu12i\\.w      \\$t6, -1
-     bstrins\\.d    \\$t6, \\$zero, 0x3f, 0x20
-     ori            \\$t6, \\$t6, 0xffe
+    `addi\\.w       \\$t6, \\$zero, -2
+     lu32i\\.d      \\$t6, 0
      ldx\\.w        \\$a0, \\$t6, \\$s7`,
     {no_prefix: true});
 
@@ -209,8 +208,8 @@ codegenTestLOONG64_adhoc(
        (func (export "f") (result i32)
          (i32.load offset=1 (i32.const -1))))`,
     "f",
-    `lu12i\\.w      \\$t6, 0
-     lu32i\\.d      \\$t6, 1
+    `lu12i\\.w      \\$t6, 1
+     slli\\.d       \\$t6, \\$t6, 0x14
      ldx\\.w        \\$a0, \\$t6, \\$s7`,
     {no_prefix: true});
 
@@ -221,9 +220,8 @@ codegenTestLOONG64_adhoc(
        (func (export "f") (result i32)
          (i32.load (i32.const -1))))`,
     "f",
-    `lu12i\\.w      \\$t6, -1
-     bstrins\\.d    \\$t6, \\$zero, 0x3f, 0x20
-     ori            \\$t6, \\$t6, 0xfff
+    `addi\\.w       \\$t6, \\$zero, -1
+     lu32i\\.d      \\$t6, 0
      ldx\\.w        \\$a0, \\$t6, \\$s7`,
     {no_prefix: true});
 
@@ -235,7 +233,7 @@ codegenTestLOONG64_adhoc(
          (i32.load (i32.const 0x8000_0000))))`,
     "f",
     `lu12i\\.w      \\$t6, -524288
-     bstrins\\.d    \\$t6, \\$zero, 0x3f, 0x20
+     lu32i\\.d      \\$t6, 0
      ldx\\.w        \\$a0, \\$t6, \\$s7`,
     {no_prefix: true});
 
