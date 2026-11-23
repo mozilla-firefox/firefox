@@ -1357,13 +1357,6 @@ nsresult nsDocLoader::FormatStatusMessage(
 
   nsAutoCString RetVal;
   ErrorResult rv;
-  auto l10nArgs = dom::Optional<intl::L10nArgs>();
-  l10nArgs.Construct();
-
-  auto dirArg = l10nArgs.Value().Entries().AppendElement();
-  dirArg->mKey = "host";
-  dirArg->mValue.SetValue().SetAsUTF8String().Assign(
-      NS_ConvertUTF16toUTF8(aHost));
 
   // Handle aL10n (necko.ftl) on demand
   if (!aL10n) {
@@ -1377,7 +1370,7 @@ nsresult nsDocLoader::FormatStatusMessage(
           ("DocLoader: FormatStatusMessage, [aL10n=%d]\n", !!aL10n));
   MOZ_RELEASE_ASSERT(aL10n);
 
-  aL10n->FormatValueSync(*l10nId, l10nArgs, RetVal, rv);
+  aL10n->FormatValueSync(*l10nId, {{"host"_ns, aHost}}, RetVal, rv);
   aRetVal = NS_ConvertUTF8toUTF16(RetVal);
   if (rv.Failed()) {
     return rv.StealNSResult();

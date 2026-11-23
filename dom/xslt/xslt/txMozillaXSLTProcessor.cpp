@@ -1088,26 +1088,18 @@ void txMozillaXSLTProcessor::reportError(nsresult aResult,
       if (statusId) {
         l10n->FormatValueSync(*statusId, errorText, IgnoreErrors());
       } else {
-        dom::Optional<intl::L10nArgs> l10nArgs;
-        l10nArgs.Construct();
-        auto errorArg = l10nArgs.Value().Entries().AppendElement();
-        errorArg->mKey = "errorCode";
-        errorArg->mValue.SetValue().SetAsUTF8String().AppendInt(
-            static_cast<uint32_t>(aResult), 16);
-        l10n->FormatValueSync("xslt-unknown-error"_ns, l10nArgs, errorText,
+        nsAutoCString errorCode;
+        errorCode.AppendInt(static_cast<uint32_t>(aResult), 16);
+        l10n->FormatValueSync("xslt-unknown-error"_ns,
+                              {{"errorCode"_ns, errorCode}}, errorText,
                               IgnoreErrors());
       }
-
-      dom::Optional<intl::L10nArgs> l10nArgs;
-      l10nArgs.Construct();
-      auto errorArg = l10nArgs.Value().Entries().AppendElement();
-      errorArg->mKey = "error";
-      errorArg->mValue.SetValue().SetAsUTF8String().Assign(errorText);
 
       nsLiteralCString messageId =
           mStylesheet ? "xslt-transform-error"_ns : "xslt-loading-error"_ns;
       nsAutoCString errorMessage;
-      l10n->FormatValueSync(messageId, l10nArgs, errorMessage, IgnoreErrors());
+      l10n->FormatValueSync(messageId, {{"error"_ns, errorText}}, errorMessage,
+                            IgnoreErrors());
       mErrorText = NS_ConvertUTF8toUTF16(errorMessage);
     }
   }

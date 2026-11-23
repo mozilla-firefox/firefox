@@ -875,23 +875,16 @@ nsresult BounceTrackingProtection::LogBounceTrackersClassifiedToWebConsole(
       intl::Localization::Create(resourceIDs, true);
 
   for (const nsACString& siteHost : aSiteHosts) {
-    auto l10nArgs = dom::Optional<intl::L10nArgs>();
-    l10nArgs.Construct();
-
-    auto siteHostArg = l10nArgs.Value().Entries().AppendElement();
-    siteHostArg->mKey = "siteHost";
-    siteHostArg->mValue.SetValue().SetAsUTF8String().Assign(siteHost);
-
-    auto gracePeriodArg = l10nArgs.Value().Entries().AppendElement();
-    gracePeriodArg->mKey = "gracePeriodSeconds";
-    gracePeriodArg->mValue.SetValue().SetAsDouble() = StaticPrefs::
-        privacy_bounceTrackingProtection_bounceTrackingGracePeriodSec();
-
     // Construct the localized string.
     nsAutoCString message;
     ErrorResult errorResult;
-    l10n->FormatValueSync("btp-warning-tracker-classified"_ns, l10nArgs,
-                          message, errorResult);
+    l10n->FormatValueSync(
+        "btp-warning-tracker-classified"_ns,
+        {{"siteHost"_ns, siteHost},
+         {"gracePeriodSeconds"_ns,
+          StaticPrefs::
+              privacy_bounceTrackingProtection_bounceTrackingGracePeriodSec()}},
+        message, errorResult);
     if (NS_WARN_IF(errorResult.Failed())) {
       return errorResult.StealNSResult();
     }
@@ -1331,17 +1324,11 @@ void BounceTrackingProtection::MaybeLogPurgedWarningForSite(
   RefPtr<intl::Localization> l10n =
       intl::Localization::Create(resourceIDs, true);
 
-  auto l10nArgs = dom::Optional<intl::L10nArgs>();
-  l10nArgs.Construct();
-
-  auto siteHostArg = l10nArgs.Value().Entries().AppendElement();
-  siteHostArg->mKey = "siteHost";
-  siteHostArg->mValue.SetValue().SetAsUTF8String().Assign(aSite.SiteHost());
-
   // Construct the localized string.
   nsAutoCString message;
   ErrorResult errorResult;
-  l10n->FormatValueSync("btp-warning-tracker-purged"_ns, l10nArgs, message,
+  l10n->FormatValueSync("btp-warning-tracker-purged"_ns,
+                        {{"siteHost"_ns, aSite.SiteHost()}}, message,
                         errorResult);
   if (NS_WARN_IF(errorResult.Failed())) {
     return;

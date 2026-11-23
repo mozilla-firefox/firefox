@@ -203,19 +203,10 @@ class CSPValidator final : public nsCSPSrcVisitor {
     nsTArray<nsCString> resIds = {"toolkit/global/cspErrors.ftl"_ns};
     RefPtr<intl::Localization> l10n = intl::Localization::Create(resIds, true);
 
-    auto l10nArgs = dom::Optional<intl::L10nArgs>();
-    l10nArgs.Construct();
-
-    auto dirArg = l10nArgs.Value().Entries().AppendElement();
-    dirArg->mKey = "directive";
-    dirArg->mValue.SetValue().SetAsUTF8String().Assign(
-        NS_ConvertUTF16toUTF8(mDirective));
-
+    AutoTArray<intl::FluentArg, 2> l10nArgs = {
+        intl::FluentArg("directive"_ns, mDirective)};
     if (!aKey.IsEmpty()) {
-      auto optArg = l10nArgs.Value().Entries().AppendElement();
-      optArg->mKey = aKey;
-      optArg->mValue.SetValue().SetAsUTF8String().Assign(
-          NS_ConvertUTF16toUTF8(aValue));
+      l10nArgs.AppendElement(intl::FluentArg(aKey, aValue));
     }
 
     nsAutoCString translation;
