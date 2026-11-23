@@ -789,33 +789,22 @@ class MacroAssemblerLOONG64Compat : public MacroAssemblerLOONG64 {
   }
 
   void unboxWasmAnyRefGCThingForGCBarrier(const Address& src, Register dest) {
-    UseScratchRegisterScope temps(*this);
-    Register scratch = temps.Acquire();
-    MOZ_ASSERT(scratch != dest);
-    movePtr(ImmWord(wasm::AnyRef::GCThingMask), scratch);
     loadPtr(src, dest);
-    as_and(dest, dest, scratch);
+    ma_and(dest, dest, ImmWord(wasm::AnyRef::GCThingMask));
   }
 
   // Like unboxGCThingForGCBarrier, but loads the GC thing's chunk base.
   void getGCThingValueChunk(const Address& src, Register dest) {
-    UseScratchRegisterScope temps(*this);
-    Register scratch = temps.Acquire();
-    MOZ_ASSERT(scratch != dest);
     loadPtr(src, dest);
-    movePtr(ImmWord(JS::detail::ValueGCThingPayloadChunkMask), scratch);
-    as_and(dest, dest, scratch);
+    ma_and(dest, dest, ImmWord(JS::detail::ValueGCThingPayloadChunkMask));
   }
   void getGCThingValueChunk(const ValueOperand& src, Register dest) {
-    MOZ_ASSERT(src.valueReg() != dest);
-    movePtr(ImmWord(JS::detail::ValueGCThingPayloadChunkMask), dest);
-    as_and(dest, dest, src.valueReg());
+    ma_and(dest, src.valueReg(),
+           ImmWord(JS::detail::ValueGCThingPayloadChunkMask));
   }
 
   void getWasmAnyRefGCThingChunk(Register src, Register dest) {
-    MOZ_ASSERT(src != dest);
-    movePtr(ImmWord(wasm::AnyRef::GCThingChunkMask), dest);
-    as_and(dest, dest, src);
+    ma_and(dest, src, ImmWord(wasm::AnyRef::GCThingChunkMask));
   }
 
   void unboxInt32(const ValueOperand& operand, Register dest);
