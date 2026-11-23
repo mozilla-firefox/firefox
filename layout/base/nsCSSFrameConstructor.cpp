@@ -3083,6 +3083,10 @@ nsIFrame* nsCSSFrameConstructor::ConstructFieldSetFrame(
   nsFrameConstructorSaveState absoluteSaveState;
   nsFrameList childList;
 
+  // The inner frame is the containing block for the fieldset's content, and the
+  // fieldset itself is the containing block for the rendered legend's
+  // descendants.
+  fieldsetFrame->AddStateBits(NS_FRAME_CAN_HAVE_ABSPOS_CHILDREN);
   contentFrameTop->AddStateBits(NS_FRAME_CAN_HAVE_ABSPOS_CHILDREN);
   if (fieldsetFrame->IsAbsPosContainingBlock()) {
     aState.PushAbsoluteContainingBlock(contentFrameTop, fieldsetFrame,
@@ -5326,7 +5330,9 @@ nsContainerFrame* nsCSSFrameConstructor::GetAbsoluteContainingBlock(
     nsIFrame* aFrame, ContainingBlockType aType) {
   // Starting with aFrame, look for a frame that is absolutely positioned or
   // relatively positioned (and transformed, if aType is FIXED)
-  for (nsIFrame* frame = aFrame; frame; frame = frame->GetParent()) {
+  nsIFrame* child = nullptr;
+  for (nsIFrame* frame = aFrame; frame;
+       child = frame, frame = frame->GetParent()) {
     if (frame->IsMathMLFrame()) {
       // If it's mathml, bail out -- no absolute positioning out from inside
       // mathml frames.  Note that we don't make this part of the loop
@@ -5356,10 +5362,14 @@ nsContainerFrame* nsCSSFrameConstructor::GetAbsoluteContainingBlock(
     }
     nsIFrame* absPosCBCandidate = frame;
     if (absPosCBCandidate->IsFieldSetFrame()) {
-      absPosCBCandidate =
-          static_cast<nsFieldSetFrame*>(absPosCBCandidate)->GetInner();
-      if (!absPosCBCandidate) {
-        continue;
+      auto* fieldset = static_cast<nsFieldSetFrame*>(absPosCBCandidate);
+      // The fieldset contains the rendered legend's descendants, and its inner
+      // frame contains everything else.
+      if (!child || child != fieldset->GetLegend()) {
+        absPosCBCandidate = fieldset->GetInner();
+        if (!absPosCBCandidate) {
+          continue;
+        }
       }
     }
     if (absPosCBCandidate->IsScrollContainerOrSubclass()) {
@@ -8902,7 +8912,16 @@ inline void nsCSSFrameConstructor::ConstructFramesFromItemList(
         // list which makes keyboard traversal follow the visual order.
         nsFieldSetFrame* fieldSetFrame = GetFieldSetFrameFor(aParentFrame);
         nsFrameList renderedLegend;
-        ConstructFramesFromItem(aState, iter, fieldSetFrame, renderedLegend);
+        {
+          // The legend is not inside the inner frame, so its abspos
+          // descendants are contained by the fieldset itself.
+          nsFrameConstructorSaveState absoluteSaveState;
+          if (fieldSetFrame->IsAbsPosContainingBlock()) {
+            aState.PushAbsoluteContainingBlock(fieldSetFrame, fieldSetFrame,
+                                               absoluteSaveState);
+          }
+          ConstructFramesFromItem(aState, iter, fieldSetFrame, renderedLegend);
+        }
         MOZ_ASSERT(renderedLegend.OnlyChild(),
                    "a rendered legend should have exactly one frame");
         fieldSetFrame->InsertFrames(FrameChildListID::Principal, nullptr,
