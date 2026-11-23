@@ -8,6 +8,7 @@ import android.content.Context
 import mozilla.components.concept.base.crash.CrashReporting
 import mozilla.components.service.merino.sports.MerinoMatchesStorage
 import mozilla.components.service.merino.sports.MerinoSportsProvider
+import mozilla.components.service.merino.sports.MerinoSportsUpdater
 import mozilla.components.service.merino.sports.dataStore
 
 /**
@@ -24,4 +25,6 @@ class Sports(
     val merinoSportsProvider by lazy { MerinoSportsProvider(crashReporter = crashReporter) }
 
     val merinoMatchesStorage by lazy { MerinoMatchesStorage.dataStore(context) }
+
+    val merinoSportsUpdater by lazy { MerinoSportsUpdater(context = context) }
 }

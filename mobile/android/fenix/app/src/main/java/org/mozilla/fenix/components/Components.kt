@@ -95,6 +95,7 @@ import org.mozilla.fenix.home.middleware.HomeTelemetryMiddleware
 import org.mozilla.fenix.home.setup.store.DefaultSetupChecklistRepository
 import org.mozilla.fenix.home.setup.store.SetupChecklistPreferencesMiddleware
 import org.mozilla.fenix.home.setup.store.SetupChecklistTelemetryMiddleware
+import org.mozilla.fenix.home.sports.SportsWidgetRefreshMiddleware
 import org.mozilla.fenix.ipprotection.store.DefaultIPProtectionPromptRepository
 import org.mozilla.fenix.listentopage.ListenToPageAIControlFeature
 import org.mozilla.fenix.messaging.state.MessagingMiddleware
@@ -383,6 +384,10 @@ class Components(
                                 settings.migrateLastReviewPromptTimePrefIfNeeded(nimbus.events)
                             },
                         AppVisualCompletenessMiddleware(performance.visualCompletenessQueue),
+                        SportsWidgetRefreshMiddleware(
+                            merinoSportsUpdater = lazy { sports.merinoSportsUpdater },
+                            visualCompletenessQueue = performance.visualCompletenessQueue,
+                        ),
                     ),
             )
             .also {
