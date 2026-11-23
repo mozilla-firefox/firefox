@@ -1,0 +1,86 @@
+<!DOCTYPE html>
+<html class="reftest-wait">
+<head>
+<script>
+function makeStream(color) {
+  const canvas = document.createElement("canvas");
+  canvas.width = canvas.height = 16;
+  const ctx = canvas.getContext("2d");
+  return {
+    stream: canvas.captureStream(),
+    draw() {
+      ctx.fillStyle = color;
+      ctx.fillRect(0, 0, 16, 16);
+    },
+  };
+}
+
+function nextFrame() {
+  return new Promise(r => requestAnimationFrame(() => r()));
+}
+
+function stopAfterReload(source, wrappedSource) {
+  return new Promise(resolve => {
+    source.srcObject = makeStream("blue").stream;
+    // Stop cloning after the reload re-begins cloning, but before the old
+    // output's first-frame notification runs.
+    window.addEventListener(
+      "message",
+      () => {
+        wrappedSource.stopCloningElementVisually();
+        resolve();
+      },
+      { once: true }
+    );
+    window.postMessage("stop", "*");
+  });
+}
+
+function stopBeforeReload(source, wrappedSource) {
+  source.srcObject = null;
+  wrappedSource.stopCloningElementVisually();
+}
+
+async function runCase(source, wrappedSource, target, stopCloning) {
+  for (let i = 0; i < 3; i++) {
+    // The stream must not have a frame yet, so that the secondary first-frame
+    // output is still waiting for one when cloning is torn down.
+    const a = makeStream("red");
+    source.srcObject = a.stream;
+    source.play().catch(() => {});
+    await nextFrame();
+    await nextFrame();
+    wrappedSource.cloneElementVisually(target);
+    await nextFrame();
+    await nextFrame();
+    await new Promise(resolve => {
+      requestAnimationFrame(async () => {
+        // The frame drawn here is captured in this refresh tick, before the
+        // graph removes the old first-frame output from the track.
+        a.draw();
+        await stopCloning(source, wrappedSource);
+        resolve();
+      });
+    });
+    await nextFrame();
+    await nextFrame();
+  }
+}
+
+async function run() {
+  const source = document.getElementById("source");
+  const wrappedSource = SpecialPowers.wrap(source);
+  const target = SpecialPowers.wrap(document.getElementById("target"));
+  await runCase(source, wrappedSource, target, stopAfterReload);
+  await runCase(source, wrappedSource, target, stopBeforeReload);
+  document.documentElement.removeAttribute("class");
+}
+
+document.addEventListener("DOMContentLoaded", run);
+</script>
+</head>
+<body>
+<video id="source" muted></video>
+<video id="target"></video>
+</body>
+</html>

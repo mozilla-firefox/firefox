@@ -150,7 +150,7 @@ NS_IMPL_CYCLE_COLLECTION_UNLINK_BEGIN(HTMLVideoElement)
   NS_IMPL_CYCLE_COLLECTION_UNLINK(mVisualCloneTargetPromise)
   NS_IMPL_CYCLE_COLLECTION_UNLINK(mVisualCloneSource)
   NS_IMPL_CYCLE_COLLECTION_UNLINK(mPictureInPictureWindow)
-  tmp->mSecondaryVideoOutput = nullptr;
+  tmp->ClearSecondaryVideoOutput();
 NS_IMPL_CYCLE_COLLECTION_UNLINK_END_INHERITED(HTMLMediaElement)
 
 NS_IMPL_CYCLE_COLLECTION_TRAVERSE_BEGIN_INHERITED(HTMLVideoElement,
@@ -687,6 +687,8 @@ void HTMLVideoElement::MaybeBeginCloningVisually() {
     return;
   }
 
+  ClearSecondaryVideoOutput();
+
   if (mDecoder) {
     mDecoder->SetSecondaryVideoContainer(
         mVisualCloneTarget->GetVideoFrameContainer());
@@ -707,19 +709,25 @@ void HTMLVideoElement::MaybeBeginCloningVisually() {
   }
 }
 
+void HTMLVideoElement::ClearSecondaryVideoOutput() {
+  if (!mSecondaryVideoOutput) {
+    return;
+  }
+  mVideoWatchManager.Unwatch(
+      mSecondaryVideoOutput->mFirstFrameRendered,
+      &HTMLVideoElement::OnSecondaryVideoOutputFirstFrameRendered);
+  mSecondaryVideoOutput = nullptr;
+}
+
 void HTMLVideoElement::EndCloningVisually() {
   MOZ_ASSERT(mVisualCloneTarget);
+
+  ClearSecondaryVideoOutput();
 
   if (mDecoder) {
     mDecoder->SetSecondaryVideoContainer(nullptr);
     NotifyDecoderActivityChanges();
   } else if (mSrcStream) {
-    if (mSecondaryVideoOutput) {
-      mVideoWatchManager.Unwatch(
-          mSecondaryVideoOutput->mFirstFrameRendered,
-          &HTMLVideoElement::OnSecondaryVideoOutputFirstFrameRendered);
-      mSecondaryVideoOutput = nullptr;
-    }
     SetSecondaryMediaStreamRenderer(nullptr);
   }
 

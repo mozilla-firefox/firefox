@@ -225,3 +225,4 @@ pref(media.autoplay.default,0) load bug2032944.html
 pref(media.autoplay.default,0) pref(media.autoplay.blocking_policy,0) pref(media.forcestereo.enabled,false) pref(accessibility.monoaudio.enable,false) load 2045765.html
 load 1617315.html
 pref(media.autoplay.default,0) pref(media.forcestereo.enabled,true) load bug2021955.html
+pref(media.cloneElementVisually.testing,true) pref(media.autoplay.default,0) load 2095935.html

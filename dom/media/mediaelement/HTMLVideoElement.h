@@ -261,6 +261,7 @@ class HTMLVideoElement final : public HTMLMediaElement {
 
   virtual void MaybeBeginCloningVisually() override;
   MOZ_CAN_RUN_SCRIPT void EndCloningVisually();
+  void ClearSecondaryVideoOutput();
 };
 
 }  // namespace dom
