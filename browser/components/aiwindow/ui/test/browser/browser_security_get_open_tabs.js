@@ -145,8 +145,8 @@ add_task(async function test_get_open_tabs_returns_sanitized_data() {
     conversation,
     callId: "call_get_open_tabs_1",
   });
-  const tabs = toolMessage.content.body;
-  Assert.ok(Array.isArray(tabs), "Tool result body is an array of tabs.");
+  const { tabs } = toolMessage.content.body;
+  Assert.ok(Array.isArray(tabs), "Tool result body holds an array of tabs.");
 
   // Only the three http tabs survive isAllowedURL; about: tabs are filtered out.
   Assert.equal(
@@ -251,7 +251,7 @@ add_task(async function test_get_open_tabs_empty_when_no_http_tabs() {
   });
 
   Assert.deepEqual(
-    toolMessage.content.body,
+    toolMessage.content.body.tabs,
     [],
     "Returns an empty array when no http tabs are open."
   );
@@ -300,7 +300,7 @@ add_task(async function test_get_open_tabs_caps_and_sorts() {
     callId: "call_get_open_tabs_cap_1",
   });
 
-  const tabs = toolMessage.content.body;
+  const { tabs } = toolMessage.content.body;
   Assert.equal(
     tabs.length,
     MAX_TABS,
@@ -455,7 +455,7 @@ add_task(async function test_get_open_tabs_aggregates_across_ai_windows() {
     callId: "call_get_open_tabs_aggregate_1",
   });
 
-  const tabs = toolMessage.content.body;
+  const { tabs } = toolMessage.content.body;
   Assert.equal(
     tabs.length,
     3,
@@ -499,6 +499,7 @@ add_task(async function test_get_open_tabs_aggregates_across_ai_windows() {
     tabB.windowId,
     "Tabs in different windows are distinguishable by window ID."
   );
+
   Assert.equal(
     conversation.securityProperties.privateData,
     true,
@@ -516,4 +517,99 @@ add_task(async function test_get_open_tabs_aggregates_across_ai_windows() {
   await server.cleanup();
   await BrowserTestUtils.closeWindow(winA);
   await BrowserTestUtils.closeWindow(winB);
+});
+
+/**
+ * End-to-end: get_open_tabs counts every tab the user sees in each open window,
+ * including tabs it does not list, and leaves private and popup windows out.
+ */
+add_task(async function test_get_open_tabs_counts_tabs_in_every_window() {
+  const mockEngineManager = new MockEngineManager();
+  const { win, sidebarBrowser } = await openAIWindowWithSidebar();
+  const server = await MLTestUtils.serveSharedHTMLInTab({
+    browser: win.gBrowser,
+  });
+
+  const { url: listedUrl } = await server.openTab({ title: "Listed" });
+  const { tab: groupedTab } = await server.openTab({ title: "Grouped" });
+  const { tab: hiddenTab } = await server.openTab({ title: "Hidden" });
+  await BrowserTestUtils.openNewForegroundTab(win.gBrowser, "about:robots");
+  win.gBrowser.selectedTab = win.gBrowser.tabs[0];
+  win.gBrowser.addTabGroup([groupedTab]).collapsed = true;
+  win.gBrowser.hideTab(hiddenTab);
+
+  const classicTab = await BrowserTestUtils.openNewForegroundTab(
+    gBrowser,
+    "about:robots"
+  );
+  const privateWin = await BrowserTestUtils.openNewBrowserWindow({
+    private: true,
+  });
+  const popupWinPromise = BrowserTestUtils.waitForNewWindow();
+  await SpecialPowers.spawn(gBrowser.selectedBrowser, [], () => {
+    content.window.open("about:blank", "_blank", "popup");
+  });
+  const popupWin = await popupWinPromise;
+
+  await SimpleTest.promiseFocus(win);
+  const conversation = await startFreshTurn({
+    win,
+    sidebarBrowser,
+    mockEngineManager,
+    userMessage: "How many tabs do I have open?",
+  });
+  const toolMessage = await triggerGetOpenTabsToolCall({
+    mockEngineManager,
+    conversation,
+    callId: "call_get_open_tabs_counts_1",
+  });
+  const { tabs, windows, totalTabCount } = toolMessage.content.body;
+
+  Assert.ok(
+    tabs.some(tab => tab.url === listedUrl),
+    "The http tab is still listed."
+  );
+  Assert.ok(
+    !tabs.some(tab => tab.url.startsWith("about:")),
+    "about: tabs are still not listed."
+  );
+  Assert.deepEqual(
+    windows.find(entry => entry.windowId === SessionStore.getWindowId(win)),
+    {
+      windowId: SessionStore.getWindowId(win),
+      isSmartWindow: true,
+      tabCount: win.gBrowser.tabs.length - 1,
+    },
+    "The Smart Window counts unlisted and collapsed-group tabs, not hidden ones."
+  );
+  Assert.deepEqual(
+    windows.find(entry => entry.windowId === SessionStore.getWindowId(window)),
+    {
+      windowId: SessionStore.getWindowId(window),
+      isSmartWindow: false,
+      tabCount: gBrowser.tabs.length,
+    },
+    "The classic window is counted, even though none of its tabs are listed."
+  );
+  for (const excluded of [privateWin, popupWin]) {
+    Assert.ok(
+      !windows.some(
+        entry => entry.windowId === SessionStore.getWindowId(excluded)
+      ),
+      "Private and popup windows are not reported."
+    );
+  }
+  Assert.equal(
+    totalTabCount,
+    windows.reduce((sum, entry) => sum + entry.tabCount, 0),
+    "totalTabCount sums the per-window counts."
+  );
+
+  BrowserTestUtils.removeTab(classicTab);
+  await BrowserTestUtils.closeWindow(popupWin);
+  await BrowserTestUtils.closeWindow(privateWin);
+  await mockEngineManager.rejectAllRequests();
+  mockEngineManager.cleanupMocks();
+  await server.cleanup();
+  await BrowserTestUtils.closeWindow(win);
 });

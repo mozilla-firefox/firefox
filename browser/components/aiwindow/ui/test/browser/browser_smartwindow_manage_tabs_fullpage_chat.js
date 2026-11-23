@@ -555,7 +555,7 @@ add_task(async function test_closing_the_fullpage_chat_tab_gets_a_reply() {
       callId: "call_get_open_tabs",
     });
     Assert.deepEqual(
-      openTabsResult.content.body,
+      openTabsResult.content.body.tabs,
       [],
       "get_open_tabs leaves the chat tab out"
     );

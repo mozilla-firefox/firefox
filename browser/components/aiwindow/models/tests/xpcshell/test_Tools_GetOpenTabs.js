@@ -56,7 +56,7 @@ add_task(async function test_getOpenTabs_basic() {
       "https://mozilla.org": "Mozilla organization site",
     });
 
-    const tabs = await getOpenTabs({}, makeConversation());
+    const { tabs } = await getOpenTabs({}, makeConversation());
 
     Assert.equal(tabs.length, 3, "Should return all 3 tabs");
     Assert.equal(tabs[0].url, "https://firefox.com", "Most recent tab first");
@@ -106,9 +106,9 @@ add_task(async function test_getOpenTabs_allowed_when_flags_set() {
     privateData: true,
     untrustedInput: true,
   });
-  const tabs = await getOpenTabs({}, conversation);
+  const { tabs } = await getOpenTabs({}, conversation);
 
-  Assert.ok(Array.isArray(tabs), "returns array, not refusal");
+  Assert.ok(Array.isArray(tabs), "returns tabs, not refusal");
 });
 
 add_task(async function test_getOpenTabs_return_structure() {
@@ -128,7 +128,7 @@ add_task(async function test_getOpenTabs_return_structure() {
       "https://test.com": "A test page description",
     });
 
-    const tabs = await getOpenTabs({}, makeConversation());
+    const { tabs } = await getOpenTabs({}, makeConversation());
 
     Assert.equal(tabs.length, 1, "Should return one tab");
 
@@ -183,7 +183,7 @@ add_task(async function test_getOpenTabs_no_topic_skips_embedding() {
     ]);
 
     setupPageDataServiceMock(sb);
-    const returnedTabs = await getOpenTabs({}, makeConversation());
+    const { tabs: returnedTabs } = await getOpenTabs({}, makeConversation());
     Assert.ok(embedStub.notCalled, "embedTexts not called when topic missing");
     Assert.equal(returnedTabs[0].url, "https://example19.com"); // recency order
   } finally {
@@ -215,7 +215,7 @@ add_task(async function test_getOpenTabs_topic_triggers_embedding() {
       createFakeWindow(tabs),
     ]);
 
-    const returnedTabs = await getOpenTabs(
+    const { tabs: returnedTabs } = await getOpenTabs(
       { topic: "bears" },
       makeConversation()
     );
