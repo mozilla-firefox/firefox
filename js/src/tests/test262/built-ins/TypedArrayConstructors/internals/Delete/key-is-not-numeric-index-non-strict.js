@@ -41,6 +41,6 @@ testWithTypedArrayConstructors(function(TA, makeCtorArg) {
 
   assert.sameValue(delete sample.bar, false, 'The value of `delete sample.bar` is false');
   assert.sameValue(delete sample.baz, true, 'The value of `delete sample.baz` is true');
-}, null, ["passthrough"]);
+});
 
 reportCompare(0, 0);

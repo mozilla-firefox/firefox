@@ -711,6 +711,18 @@ skip script test262/built-ins/Error/prototype/stack/getter-receiver-is-proxy.js
 skip script test262/built-ins/Error/prototype/stack/getter-error-prototype.js
 skip script test262/built-ins/Error/prototype/stack/getter-cross-realm.js
 
+# Bug 2088768 (DataView getters for detached or out-of-bounds views)
+skip script test262/built-ins/DataView/prototype/byteLength/detached-buffer.js
+skip script test262/built-ins/DataView/prototype/byteLength/resizable-array-buffer-auto.js
+skip script test262/built-ins/DataView/prototype/byteLength/resizable-array-buffer-fixed.js
+skip script test262/built-ins/DataView/prototype/byteOffset/detached-buffer.js
+skip script test262/built-ins/DataView/prototype/byteOffset/resizable-array-buffer-auto.js
+skip script test262/built-ins/DataView/prototype/byteOffset/resizable-array-buffer-fixed.js
+
+# Bug 2088767 (arguments labels in class static blocks and field initializers)
+skip script test262/language/statements/class/elements/arrow-body-arguments-label.js
+skip script test262/language/statements/class/static-init-arguments-label.js
+
 # Bug 2096666 (The shell parses the deferred JSON module as JavaScript)
 fails script test262/language/import/import-defer/deferred-namespace-object/json-module.js
 

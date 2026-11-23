@@ -28,6 +28,6 @@ testWithTypedArrayConstructors(function(TA, makeCtorArg) {
     "baz",
     "return value from a Symbol key"
   );
-}, null, ["passthrough"]);
+});
 
 reportCompare(0, 0);

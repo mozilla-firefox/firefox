@@ -35,6 +35,6 @@ testWithBigIntTypedArrayConstructors(function(TA, makeCtorArg) {
   assert.sameValue(desc.configurable, true, 'The value of desc.configurable is true');
   assert.sameValue(desc.enumerable, true, 'The value of desc.enumerable is true');
   assert.sameValue(desc.writable, true, 'The value of desc.writable is true');
-}, null, ["passthrough"]);
+}, null, null, ["immutable"]);
 
 reportCompare(0, 0);

@@ -41,6 +41,6 @@ testWithTypedArrayConstructors(function(TA, makeCtorArg) {
   );
 
   assert.sameValue(Object.getOwnPropertyDescriptor(sample, "bar"), undefined);
-}, null, ["passthrough"]);
+}, null, null, ["resizable"]);
 
 reportCompare(0, 0);

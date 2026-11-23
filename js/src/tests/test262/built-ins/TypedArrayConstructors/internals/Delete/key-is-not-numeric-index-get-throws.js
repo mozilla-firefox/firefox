@@ -35,6 +35,6 @@ testWithTypedArrayConstructors(function(TA, makeCtorArg) {
   assert.throws(Test262Error, () => {
     sample.foo;
   });
-}, null, ["passthrough"]);
+});
 
 reportCompare(0, 0);

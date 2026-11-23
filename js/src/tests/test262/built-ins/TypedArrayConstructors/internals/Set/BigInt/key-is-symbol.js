@@ -48,6 +48,6 @@ testWithBigIntTypedArrayConstructors(function(TA, makeCtorArg) {
   );
 
   assert.sameValue(sample[s2], undefined, 'The value of sample[s2] is expected to equal `undefined`');
-}, null, ["passthrough"]);
+});
 
 reportCompare(0, 0);

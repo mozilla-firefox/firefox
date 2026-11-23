@@ -54,6 +54,6 @@ testWithBigIntTypedArrayConstructors(function(TA, makeCtorArg) {
   assert.sameValue(desc.set, fnset, "accessor's set");
   verifyNotEnumerable(sample, "bar");
   verifyNotConfigurable(sample, "bar");
-}, null, ["passthrough"]);
+}, null, null, ["resizable"]);
 
 reportCompare(0, 0);

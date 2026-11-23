@@ -14,6 +14,6 @@ testWithBigIntTypedArrayConstructors((TA, makeCtorArg) => {
   assert.sameValue(Atomics.store(view, 0, 1n), 1n, 'Atomics.store(view, 0, 1n) returns 1n');
   assert.sameValue(Atomics.sub(view, 0, 1n), 1n, 'Atomics.sub(view, 0, 1n) returns 1n');
   assert.sameValue(Atomics.load(view, 0), 0n, 'Atomics.load(view, 0) returns 0n');
-}, null, ["arraybuffer"], ["immutable"]);
+}, null, null, ["immutable"]);
 
 reportCompare(0, 0);

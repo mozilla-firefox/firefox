@@ -42,6 +42,6 @@ testWithTypedArrayConstructors(function(TA, makeCtorArg) {
   assert.sameValue(descriptor0.configurable, true);
   assert.sameValue(descriptor0.enumerable, true);
   assert.sameValue(descriptor0.writable, true);
-}, null, ["passthrough"]);
+}, null, null, ["immutable"]);
 
 reportCompare(0, 0);

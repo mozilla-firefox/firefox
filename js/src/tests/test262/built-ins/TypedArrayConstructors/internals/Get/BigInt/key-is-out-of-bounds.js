@@ -40,6 +40,6 @@ testWithBigIntTypedArrayConstructors(function(TA, makeCtorArg) {
   assert.sameValue(sample["-1"], undefined);
   assert.sameValue(sample["2"], undefined);
   assert.sameValue(sample["3"], undefined);
-}, null, ["passthrough"]);
+});
 
 reportCompare(0, 0);

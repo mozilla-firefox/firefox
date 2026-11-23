@@ -52,6 +52,6 @@ testWithBigIntTypedArrayConstructors(function(TA, makeCtorArg) {
 
   assert.sameValue(sample[0], 1n, "sample[0]");
   assert.sameValue(sample[1], 2n, "sample[1]");
-}, null, ["passthrough"]);
+}, null, null, ["immutable"]);
 
 reportCompare(0, 0);

@@ -46,6 +46,6 @@ testWithBigIntTypedArrayConstructors(function(TA, makeCtorArg) {
     assert.sameValue(Reflect.set(sample, key, 42), false, 'Reflect.set("new TA(makeCtorArg([42n]))", key, 42) must return false');
     assert.sameValue(sample[key], undefined, 'The value of sample[key] is expected to equal `undefined`');
   });
-}, null, ["passthrough"]);
+});
 
 reportCompare(0, 0);

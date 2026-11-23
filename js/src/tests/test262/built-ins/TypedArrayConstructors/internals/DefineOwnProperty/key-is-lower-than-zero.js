@@ -31,6 +31,6 @@ testWithTypedArrayConstructors(function(TA, makeCtorArg) {
     false,
     "-1"
   );
-}, null, ["passthrough"]);
+});
 
 reportCompare(0, 0);

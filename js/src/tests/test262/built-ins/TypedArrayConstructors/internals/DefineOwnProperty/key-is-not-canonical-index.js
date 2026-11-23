@@ -40,9 +40,9 @@ var acDesc = {
   configurable: false
 };
 
-testWithTypedArrayConstructors(function(TA) {
+testWithTypedArrayConstructors(function(TA, makeCtorArg) {
   keys.forEach(function(key) {
-    var sample1 = new TA();
+    var sample1 = new TA(makeCtorArg(0));
 
     assert.sameValue(
       Reflect.defineProperty(sample1, key, dataDesc),
@@ -58,7 +58,7 @@ testWithTypedArrayConstructors(function(TA) {
     assert.sameValue(sample1[0], undefined, "no value is set on sample1[0]");
     assert.sameValue(sample1.length, 0, "length is still 0");
 
-    var sample2 = new TA();
+    var sample2 = new TA(makeCtorArg(0));
 
     assert.sameValue(
       Reflect.defineProperty(sample2, key, acDesc),
@@ -75,7 +75,7 @@ testWithTypedArrayConstructors(function(TA) {
     assert.sameValue(sample2[0], undefined,"no value is set on sample2[0]");
     assert.sameValue(sample2.length, 0, "length is still 0");
 
-    var sample3 = new TA();
+    var sample3 = new TA(makeCtorArg(0));
     Object.preventExtensions(sample3);
 
     assert.sameValue(
@@ -85,7 +85,7 @@ testWithTypedArrayConstructors(function(TA) {
     );
     assert.sameValue(Object.getOwnPropertyDescriptor(sample3, key), undefined);
 
-    var sample4 = new TA();
+    var sample4 = new TA(makeCtorArg(0));
     Object.preventExtensions(sample4);
 
     assert.sameValue(
@@ -95,6 +95,6 @@ testWithTypedArrayConstructors(function(TA) {
     );
     assert.sameValue(Object.getOwnPropertyDescriptor(sample4, key), undefined);
   });
-}, null, ["passthrough"]);
+}, null, null, ["resizable"]);
 
 reportCompare(0, 0);

@@ -376,7 +376,7 @@ function ctorArgFactoryMatchesSome(argFactory, features) {
         if (argFactory === makeImmutableArrayBuffer) return true;
         break;
       default:
-        throw Test262Error("unknown feature: " + features[i]);
+        throw new Test262Error("unknown feature: " + features[i]);
     }
   }
   return false;
@@ -427,7 +427,7 @@ function testWithAllTypedArrayConstructors(f, constructors, includeArgFactories,
     }
   }
   if (ctorArgFactories.length === 0) {
-    throw Test262Error("no arg factories match include " + includeArgFactories + " and exclude " + excludeArgFactories);
+    throw new Test262Error("no arg factories match include " + includeArgFactories + " and exclude " + excludeArgFactories);
   }
   for (var k = 0; k < ctorArgFactories.length; ++k) {
     var argFactory = ctorArgFactories[k];

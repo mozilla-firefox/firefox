@@ -25,6 +25,11 @@ var invalidEpochNanoseconds = [
   -(2n ** 128n),
 ];
 
+var validEpochNanoseconds = [
+  nsMaxInstant,
+  nsMinInstant,
+];
+
 var timeZones = [
   "UTC",
   "+00",
@@ -37,6 +42,14 @@ for (var timeZone of timeZones) {
     assert.throws(
       RangeError,
       () => new Temporal.ZonedDateTime(epochNs, timeZone),
+      `epochNs = ${epochNs}, timeZone = ${timeZone}`
+    );
+  }
+
+  for (var epochNs of validEpochNanoseconds) {
+    assert.sameValue(
+      new Temporal.ZonedDateTime(epochNs, timeZone).epochNanoseconds,
+      epochNs,
       `epochNs = ${epochNs}, timeZone = ${timeZone}`
     );
   }

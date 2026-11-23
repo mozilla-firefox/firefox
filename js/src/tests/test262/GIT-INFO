@@ -1,13 +1,7 @@
-commit 3655e7464de3d52643ecddd4b5f9f4f3e7f62398
-Author: Philip Chimento <pchimento@igalia.com>
-Date:   Mon Aug 3 14:35:30 2026 -0700
+commit ebf6ae620a0f292b4845cd4099cb9096735e64ae
+Author: Richard Gibson <richard.gibson@gmail.com>
+Date:   Mon Nov 23 03:57:46 2026 -0500
 
-    CI: Run tests of tools only when the tools are changed
+    harness: Capture primordial String for verifyProperty et al. (#5192)
     
-    This was what I intended from the start, but I used a wrong JSON
-    key ("files" instead of "paths"). But this would never have worked as
-    intended anyway, because jobs that are skipped apparently cannot be
-    required for PRs to pass, and we would like the tools tests to be
-    required.
-    
-    LLM disclosure: The diff was drafted using a bot.
+    Fixes #5191

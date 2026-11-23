@@ -121,6 +121,6 @@ testWithBigIntTypedArrayConstructors(function(TA, makeCtorArg) {
     "'-Infinity' - does not define a value for ['-Infinity']"
   );
 
-}, null, ["passthrough"]);
+});
 
 reportCompare(0, 0);

@@ -28,6 +28,6 @@ testWithBigIntTypedArrayConstructors(function(TA, makeCtorArg) {
   var s = Symbol("1");
   assert.sameValue(Reflect.defineProperty(sample, s, {value:42}), false);
   assert.sameValue(Reflect.getOwnPropertyDescriptor(sample, s), undefined);
-}, null, ["passthrough"]);
+}, null, null, ["resizable"]);
 
 reportCompare(0, 0);

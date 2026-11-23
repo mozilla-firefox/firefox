@@ -45,6 +45,6 @@ testWithTypedArrayConstructors(function(TA, makeCtorArg) {
     'Reflect.set(sample, "Symbol(\\"2\\")", 42) must return false'
   );
   assert.sameValue(sample[s2], undefined, 'The value of sample[s2] is expected to equal `undefined`');
-}, null, ["passthrough"]);
+});
 
 reportCompare(0, 0);

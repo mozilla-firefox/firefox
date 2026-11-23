@@ -44,6 +44,6 @@ testWithTypedArrayConstructors(function(TA, makeCtorArg) {
     'Reflect.set(sample, "foo", 42) must return false'
   );
   assert.sameValue(sample.foo, undefined, 'The value of sample.foo is expected to equal `undefined`');
-}, null, ["passthrough"]);
+});
 
 reportCompare(0, 0);

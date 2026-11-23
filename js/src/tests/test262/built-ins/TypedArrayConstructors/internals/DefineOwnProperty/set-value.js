@@ -52,6 +52,6 @@ testWithTypedArrayConstructors(function(TA, makeCtorArg) {
 
   assert.sameValue(sample[0], 1, "sample[0]");
   assert.sameValue(sample[1], 2, "sample[1]");
-}, null, ["passthrough"]);
+}, null, null, ["immutable"]);
 
 reportCompare(0, 0);

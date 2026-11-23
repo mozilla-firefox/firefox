@@ -33,11 +33,11 @@ var index = {
   }
 };
 
-for (var badArrayType of nonAtomicsFriendlyTypedArrayConstructors) {
-  var typedArray = new badArrayType(new SharedArrayBuffer(8));
+testWithNonAtomicsFriendlyTypedArrayConstructors(function(TA) {
+  var typedArray = new TA(new SharedArrayBuffer(8));
   assert.throws(TypeError, function() {
     Atomics.load(typedArray, index);
   });
-}
+}, ["passthrough"]);
 
 reportCompare(0, 0);

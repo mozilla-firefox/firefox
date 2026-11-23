@@ -44,6 +44,6 @@ testWithTypedArrayConstructors(function(TA, makeCtorArg) {
   assert.throws(TypeError, () => {
     delete sample[-0];
   });
-}, null, ["passthrough"]);
+});
 
 reportCompare(0, 0);

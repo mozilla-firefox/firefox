@@ -55,6 +55,6 @@ testWithTypedArrayConstructors(function(TA, makeCtorArg) {
       sample[key], undefined, 'The value of sample[key] is expected to equal `undefined`'
     );
   });
-}, null, ["passthrough"]);
+});
 
 reportCompare(0, 0);

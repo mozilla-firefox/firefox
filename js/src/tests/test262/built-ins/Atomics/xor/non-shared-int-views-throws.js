@@ -16,6 +16,6 @@ testWithNonAtomicsFriendlyTypedArrayConstructors((TA, makeCtorArg) => {
   assert.throws(TypeError, function() {
     Atomics.xor(view, 0, 1);
   }, `Atomics.xor(new ${TA.name}(buffer), 0, 1) throws TypeError`);
-}, ["arraybuffer"]);
+});
 
 reportCompare(0, 0);

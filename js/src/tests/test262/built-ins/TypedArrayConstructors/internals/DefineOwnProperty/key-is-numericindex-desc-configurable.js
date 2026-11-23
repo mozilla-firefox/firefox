@@ -33,6 +33,6 @@ testWithTypedArrayConstructors(function(TA, makeCtorArg) {
     "defineProperty's result"
   );
   assert.sameValue(sample[0], 42, "side effect check");
-}, null, ["passthrough"]);
+}, null, null, ["immutable"]);
 
 reportCompare(0, 0);

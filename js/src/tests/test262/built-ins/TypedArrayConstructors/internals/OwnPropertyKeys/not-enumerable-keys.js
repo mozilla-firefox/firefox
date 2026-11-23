@@ -32,6 +32,6 @@ testWithTypedArrayConstructors(function(TA) {
   });
   var result = Reflect.ownKeys(sample);
   assert(compareArray(result, ["test262", s]));
-}, null, ["passthrough"]);
+});
 
 reportCompare(0, 0);

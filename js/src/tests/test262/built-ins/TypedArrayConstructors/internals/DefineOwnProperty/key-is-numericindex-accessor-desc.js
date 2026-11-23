@@ -55,6 +55,6 @@ testWithTypedArrayConstructors(function(TA, makeCtorArg) {
     "get and set accessors"
   );
   assert.sameValue(sample[0], 0, "get and set accessors - side effect check");
-}, null, ["passthrough"]);
+});
 
 reportCompare(0, 0);

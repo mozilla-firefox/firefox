@@ -50,6 +50,6 @@ testWithBigIntTypedArrayConstructors(function(TA, makeCtorArg) {
       "returns true with own key [" + key + "]"
     );
   });
-}, null, ["passthrough"]);
+});
 
 reportCompare(0, 0);

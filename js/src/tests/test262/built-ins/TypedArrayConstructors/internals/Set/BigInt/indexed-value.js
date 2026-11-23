@@ -35,6 +35,6 @@ testWithBigIntTypedArrayConstructors(function(TA, makeCtorArg) {
   assert.sameValue(sample[0], 1n, 'The value of sample[0] is 1n');
   assert.sameValue(Reflect.set(sample, '1', 42n), true, 'Reflect.set(sample, "1", 42n) must return true');
   assert.sameValue(sample[1], 42n, 'The value of sample[1] is 42n');
-}, null, ["passthrough"]);
+}, null, null, ["immutable"]);
 
 reportCompare(0, 0);

@@ -15,6 +15,6 @@ testWithAtomicsFriendlyTypedArrayConstructors((TA, makeCtorArg) => {
   assert.sameValue(Atomics.store(view, 0, 1), 1, 'Atomics.store(view, 0, 1) returns 1');
   assert.sameValue(Atomics.sub(view, 0, 1), 1, 'Atomics.sub(view, 0, 1) returns 1');
   assert.sameValue(Atomics.load(view, 0), 0, 'Atomics.load(view, 0) returns 0');
-}, ["arraybuffer"], ["immutable"]);
+}, null, ["immutable"]);
 
 reportCompare(0, 0);

@@ -41,6 +41,6 @@ testWithBigIntTypedArrayConstructors(function(TA, makeCtorArg) {
 
   assert.sameValue(delete sample["-0"], true, 'The value of `delete sample["-0"]` is true');
   assert.sameValue(delete sample[-0], false, 'The value of `delete sample[-0]` is false');
-}, null, ["passthrough"]);
+});
 
 reportCompare(0, 0);

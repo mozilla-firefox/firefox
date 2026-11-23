@@ -13,6 +13,6 @@ testWithAtomicsFriendlyTypedArrayConstructors((TA, makeCtorArg) => {
   const view = new TA(makeCtorArg(4));
 
   assert.sameValue(Atomics.load(view, 0), 0, 'Atomics.load(view, 0) returns 0');
-}, null, ["arraybuffer"]);
+});
 
 reportCompare(0, 0);

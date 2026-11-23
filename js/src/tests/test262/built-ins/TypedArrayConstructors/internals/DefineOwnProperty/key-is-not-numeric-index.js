@@ -49,6 +49,6 @@ testWithTypedArrayConstructors(function(TA, makeCtorArg) {
   assert.sameValue(desc.set, fnset, "accessor's set");
   verifyNotEnumerable(sample, "bar");
   verifyConfigurable(sample, "bar");
-}, null, ["passthrough"]);
+});
 
 reportCompare(0, 0);
