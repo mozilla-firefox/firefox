@@ -2183,6 +2183,8 @@ static void ComposeAndStoreGroupName(JSContext* aCx,
                                      nsTArray<nsString>* aGroupStack) {
   StringJoinAppend(
       aName, u" "_ns, aData, [aCx](nsAString& dest, const JS::Value& valueRef) {
+        // A failed conversion must not leave an exception for the next one.
+        ConsoleCommon::ClearException ce(aCx);
         JS::Rooted<JS::Value> value(aCx, valueRef);
         JS::Rooted<JSString*> jsString(aCx, JS::ToString(aCx, value));
         if (!jsString) {
@@ -2910,6 +2912,8 @@ nsString Console::GetDumpMessage(JSContext* aCx, MethodName aMethodName,
                      u": "_ns + prefix + (prefix.IsEmpty() ? u""_ns : u": "_ns);
 
   for (uint32_t i = 0; i < aData.Length(); ++i) {
+    // Clear ignored conversion failures before more script can run.
+    ConsoleCommon::ClearException ce(aCx);
     JS::Rooted<JS::Value> v(aCx, aData[i]);
     if (v.isObject()) {
       Element* element = nullptr;
