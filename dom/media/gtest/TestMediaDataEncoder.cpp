@@ -30,7 +30,9 @@
 #include "mozilla/media/MediaUtils.h"  // For media::Await
 
 #ifdef XP_MACOSX
+#  include "MacIOSurfaceImage.h"
 #  include "apple/AppleVTEncoder.h"
+#  include "mozilla/gfx/MacIOSurface.h"
 #endif
 
 #ifdef MOZ_WIDGET_ANDROID
@@ -1142,6 +1144,52 @@ TEST(AppleVTEncoderTest, CopiesPackedInputBeforeUnmap)
   ASSERT_TRUE(sourceSurface->DidMutate());
   ASSERT_TRUE(pixelBuffer);
   AssertPixelBufferMatches(pixelBuffer, *expected);
+}
+
+// A P010 IOSurface has no ImagePixelFormat, so it is read back as RGB.
+TEST(AppleVTEncoderTest, ReadsBackIOSurfaceWithoutPixelFormat)
+{
+  const gfx::IntSize size(64, 48);
+  RefPtr<MacIOSurface> surface = MacIOSurface::CreateBiPlanarSurface(
+      size, gfx::IntSize(size.width / 2, size.height / 2),
+      gfx::ChromaSubsampling::HALF_WIDTH_AND_HEIGHT, gfx::YUVColorSpace::BT709,
+      gfx::TransferFunction::BT709, gfx::ColorRange::LIMITED,
+      gfx::ColorDepth::COLOR_10, MacIOSurface::AllowAlpha::No);
+  ASSERT_TRUE(surface);
+  ASSERT_EQ(surface->GetFormat(), gfx::SurfaceFormat::P010);
+  RefPtr<layers::Image> image = new layers::MacIOSurfaceImage(surface);
+  ASSERT_TRUE(ImageToPixelFormat(image).isNothing());
+
+  const EncoderConfig config(
+      CodecType::H264, size, Usage::Record,
+      EncoderConfig::SampleFormat(ImagePixelFormat::BGRA), FRAME_RATE,
+      KEYFRAME_INTERVAL, BIT_RATE, 0, 0, BIT_RATE_MODE,
+      HardwarePreference::None, ScalabilityMode::None,
+      AsVariant(kH264SpecificAVCC));
+  RefPtr<TaskQueue> taskQueue = TaskQueue::Create(
+      GetMediaThreadPool(MediaThreadType::PLATFORM_ENCODER), __func__);
+  ASSERT_TRUE(taskQueue);
+  RefPtr<AppleVTEncoder> encoder = new AppleVTEncoder(config, taskQueue);
+  CVPixelBufferRef pixelBuffer = nullptr;
+  auto cleanup = MakeScopeExit([&] {
+    if (pixelBuffer) {
+      CVPixelBufferRelease(pixelBuffer);
+    }
+    encoder = nullptr;
+    taskQueue->BeginShutdown();
+    taskQueue->AwaitShutdownAndIdle();
+  });
+
+  (void)WaitFor(InvokeAsync(taskQueue, __func__, [&] {
+    pixelBuffer = encoder->CreateCVPixelBuffer(image);
+    return GenericPromise::CreateAndResolve(true, __func__);
+  }));
+
+  ASSERT_TRUE(pixelBuffer);
+  // TODO(bug 2063701): Expect the IOSurface itself, with its own pixel format,
+  // if the encoder can wrap it.
+  EXPECT_EQ(CVPixelBufferGetPixelFormatType(pixelBuffer),
+            kCVPixelFormatType_32BGRA);
 }
 
 }  // namespace mozilla

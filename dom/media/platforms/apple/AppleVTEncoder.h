@@ -60,6 +60,7 @@ class AppleVTEncoder final : public MediaDataEncoder {
 
  private:
   FRIEND_TEST(AppleVTEncoderTest, CopiesPackedInputBeforeUnmap);
+  FRIEND_TEST(AppleVTEncoderTest, ReadsBackIOSurfaceWithoutPixelFormat);
 
   enum class EncodeResult { Success, EncodeError, FrameDropped, EmptyBuffer };
 
