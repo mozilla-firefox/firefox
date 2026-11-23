@@ -437,6 +437,7 @@ DIRS += [
     "/third_party/libwebrtc/rtc_base/experiments/quality_scaling_experiment_gn",
     "/third_party/libwebrtc/rtc_base/experiments/rate_control_settings_gn",
     "/third_party/libwebrtc/rtc_base/experiments/retransmit_flushed_packets_settings_gn",
+    "/third_party/libwebrtc/rtc_base/experiments/rfc8888_congestion_control_feedback_experiment_gn",
     "/third_party/libwebrtc/rtc_base/frequency_tracker_gn",
     "/third_party/libwebrtc/rtc_base/gtest_prod_gn",
     "/third_party/libwebrtc/rtc_base/histogram_percentile_counter_gn",
