@@ -8,8 +8,6 @@
 #include "MP4Decoder.h"
 #include "VPXDecoder.h"
 #include "mozilla/ToString.h"
-#include "mozilla/dom/BindingUtils.h"
-#include "mozilla/dom/ImageUtils.h"
 
 namespace mozilla {
 
@@ -77,7 +75,7 @@ nsCString EncoderConfig::VideoColorSpace::ToString() const {
 
 nsCString EncoderConfig::SampleFormat::ToString() const {
   return nsPrintfCString("SampleFormat - [PixelFormat: %s, %s]",
-                         dom::GetEnumString(mPixelFormat).get(),
+                         EnumValueToString(mPixelFormat),
                          mColorSpace.ToString().get());
 }
 
@@ -87,8 +85,7 @@ EncoderConfig::SampleFormat::FromImage(layers::Image* aImage) {
     return Err(MediaResult(NS_ERROR_DOM_MEDIA_FATAL_ERR, "No image"));
   }
 
-  const dom::ImageUtils imageUtils(aImage);
-  Maybe<dom::ImageBitmapFormat> format = imageUtils.GetFormat();
+  Maybe<ImagePixelFormat> format = ImageToPixelFormat(aImage);
   if (format.isNothing()) {
     return Err(
         MediaResult(NS_ERROR_NOT_IMPLEMENTED,

@@ -13,8 +13,6 @@
 #include "VideoUtils.h"
 #include "WebMWriter.h"
 #include "mozilla/ProfilerLabels.h"
-#include "mozilla/dom/ImageBitmapBinding.h"
-#include "mozilla/dom/ImageUtils.h"
 #include "mozilla/gfx/2D.h"
 #include "mozilla/media/MediaUtils.h"
 #include "prsystem.h"
