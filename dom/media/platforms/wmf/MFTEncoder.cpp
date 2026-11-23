@@ -9,7 +9,6 @@
 #include "WMFDataEncoderUtils.h"
 #include "WMFUtils.h"
 #include "mozilla/AppShutdown.h"
-#include "mozilla/CheckedInt.h"
 #include "mozilla/ClearOnShutdown.h"
 #include "mozilla/Logging.h"
 #include "mozilla/StaticPrefs_media.h"
@@ -117,10 +116,6 @@ DEFINE_CODECAPI_GUID(AVEncAdaptiveMode, "4419b185-da1f-4f53-bc76-097d0c1efb1e",
 
 namespace mozilla {
 extern LazyLogModule sPEMLog;
-
-// Some hardware MFTs hang when they are activated or shut down concurrently on
-// several threads.
-static StaticMutex sActivationMutex;
 
 static const char* ErrorStr(HRESULT hr) {
   switch (hr) {
@@ -287,7 +282,6 @@ HRESULT MFTEncoder::Factory::Shutdown() {
                  MFTEncoder::Factory::EnumValueToString(mProvider),
                  mName.get());
     // Release MFT resources via activation object.
-    StaticMutexAutoLock lock(sActivationMutex);
     hr = mActivate->ShutdownObject();
     if (FAILED(hr)) {
       MFT_ENC_LOGE("Failed to shutdown MFT: {}", ErrorStr(hr));
@@ -525,13 +519,9 @@ HRESULT MFTEncoder::Create(const GUID& aSubtype, const gfx::IntSize& aFrameSize,
     }
 
     RefPtr<IMFTransform> encoder;
-    HRESULT hr;
-    {
-      // Create the MFT activation object.
-      StaticMutexAutoLock lock(sActivationMutex);
-      hr = f.mActivate->ActivateObject(
-          IID_PPV_ARGS(static_cast<IMFTransform**>(getter_AddRefs(encoder))));
-    }
+    // Create the MFT activation object.
+    HRESULT hr = f.mActivate->ActivateObject(
+        IID_PPV_ARGS(static_cast<IMFTransform**>(getter_AddRefs(encoder))));
     if (SUCCEEDED(hr) && encoder) {
       MFT_ENC_LOGD("{} for {} is activated", f.mName.get(), CodecStr(aSubtype));
       mFactory.emplace(std::move(f));
@@ -572,7 +562,6 @@ MFTEncoder::Destroy() {
   mAsyncEventSource = nullptr;
   mEncoder = nullptr;
   mConfig = nullptr;
-  mInputDurations.Clear();
   HRESULT hr = mFactory ? mFactory->Shutdown() : S_OK;
   mFactory.reset();
   // TODO: If Factory::Shutdown() fails and the encoder is not reusable, set the
@@ -617,34 +606,6 @@ MFTEncoder::SetMediaTypes(IMFMediaType* aInputType, IMFMediaType* aOutputType) {
   }
 
   MFT_RETURN_IF_FAILED(mEncoder->SetInputType(mInputStreamID, aInputType, 0));
-
-  mOutputTimeIsEndTime = false;
-  GUID classId = GUID_NULL;
-  const UINT32 profile =
-      MFGetAttributeUINT32(aOutputType, MF_MT_MPEG2_PROFILE, 0);
-  if (mFactory->mProvider == Factory::Provider::SW &&
-      SUCCEEDED(mFactory->mActivate->GetGUID(MFT_TRANSFORM_CLSID_Attribute,
-                                             &classId)) &&
-      IsEqualGUID(classId, CLSID_CMSH264EncoderMFT) &&
-      (profile == eAVEncH264VProfile_Main ||
-       profile == eAVEncH264VProfile_High)) {
-    VARIANT value;
-    VariantInit(&value);
-    HRESULT hr =
-        mConfig->GetValue(&CODECAPI_AVEncMPVDefaultBPictureCount, &value);
-    const bool usesBFrames =
-        SUCCEEDED(hr) && value.vt == VT_UI4 && value.ulVal > 0;
-    VariantClear(&value);
-    VariantInit(&value);
-    hr = mConfig->GetValue(&CODECAPI_AVLowLatencyMode, &value);
-    // This encoder reports frame end times in its quality B-frame mode.
-    mOutputTimeIsEndTime = usesBFrames && SUCCEEDED(hr) &&
-                           value.vt == VT_BOOL &&
-                           value.boolVal == VARIANT_FALSE;
-    VariantClear(&value);
-  }
-  MFT_ENC_LOGD("Output timestamps are frame end times: {}",
-               mOutputTimeIsEndTime);
 
   MFT_RETURN_IF_FAILED(
       mEncoder->GetInputStreamInfo(mInputStreamID, &mInputStreamInfo));
@@ -1666,7 +1627,6 @@ MFTEncoder::ProcessDrainComplete() {
       SendMFTMessage(MFT_MESSAGE_NOTIFY_START_OF_STREAM, 0));
   MFT_ENC_LOGV("Drain complete, resetting inputs needed({}) to 0",
                mNumNeedInput);
-  mInputDurations.Clear();
   mNumNeedInput = 0;
   return ProcessedResult::DrainComplete;
 }
@@ -1774,30 +1734,6 @@ HRESULT MFTEncoder::ProcessOutput(RefPtr<IMFSample>& aSample,
     output.pSample = nullptr;
   }
 
-  if (mOutputTimeIsEndTime) {
-    LONGLONG time = 0;
-    LONGLONG duration = 0;
-    MFT_RETURN_IF_FAILED(aSample->GetSampleTime(&time));
-    MFT_RETURN_IF_FAILED(aSample->GetSampleDuration(&duration));
-    CheckedInt64 pts(time);
-    pts -= duration;
-    if (!pts.isValid()) {
-      MFT_ENC_LOGE("Invalid start time from end time {} and duration {}", time,
-                   duration);
-      return E_INVALIDARG;
-    }
-    MFT_ENC_LOGD("Output sample time {} is an end time, start time {}", time,
-                 pts.value());
-    MFT_RETURN_IF_FAILED(aSample->SetSampleTime(pts.value()));
-  }
-
-  LONGLONG time = 0;
-  if (SUCCEEDED(aSample->GetSampleTime(&time))) {
-    if (Maybe<LONGLONG> duration = mInputDurations.Extract(time)) {
-      MFT_RETURN_IF_FAILED(aSample->SetSampleDuration(*duration));
-    }
-  }
-
   return hr;
 }
 
@@ -1811,12 +1747,6 @@ HRESULT MFTEncoder::ProcessInput(InputSample&& aInput) {
   }
   MFT_RETURN_IF_FAILED(
       mEncoder->ProcessInput(mInputStreamID, aInput.mSample, 0));
-  LONGLONG time = 0;
-  LONGLONG duration = 0;
-  if (SUCCEEDED(aInput.mSample->GetSampleTime(&time)) &&
-      SUCCEEDED(aInput.mSample->GetSampleDuration(&duration))) {
-    mInputDurations.InsertOrUpdate(time, duration);
-  }
   return S_OK;
 }
 
