@@ -66,9 +66,19 @@ const kCases = [
   },
 ];
 
+// Posting every render quantum floods the IPC channel to the parent.
 const kRecorder = `registerProcessor("recorder", class extends AudioWorkletProcessor {
+  constructor() {
+    super();
+    this.chunks = [];
+    this.quantaLeft = 0;
+    this.port.onmessage = () => (this.quantaLeft = 50);
+  }
   process(inputs) {
-    this.port.postMessage(inputs[0].length ? inputs[0][0].slice() : new Float32Array(128));
+    this.chunks.push(inputs[0].length ? inputs[0][0].slice() : new Float32Array(128));
+    if (this.quantaLeft && --this.quantaLeft == 0) {
+      this.port.postMessage(this.chunks);
+    }
     return true;
   }
 });`;
@@ -89,22 +99,17 @@ async function record(el) {
     URL.createObjectURL(new Blob([kRecorder], { type: "text/javascript" }))
   );
   const recorder = new AudioWorkletNode(ctx, "recorder");
-  const chunks = [];
-  let chunksAfterEnded = -1;
-  const recorded = new Promise(resolve => {
-    recorder.port.onmessage = e => {
-      chunks.push(e.data);
-      if (chunksAfterEnded >= 0 && ++chunksAfterEnded == 50) {
-        resolve();
-      }
-    };
-  });
   ctx.createMediaElementSource(el).connect(recorder);
   recorder.connect(ctx.destination);
+  // What the element plays before the context runs isn't recorded.
+  while (ctx.state != "running") {
+    await once(ctx, "statechange");
+  }
   el.play();
   await once(el, "ended");
-  chunksAfterEnded = 0;
-  await recorded;
+  const recorded = new Promise(r => (recorder.port.onmessage = e => r(e.data)));
+  recorder.port.postMessage(null);
+  const chunks = await recorded;
   await ctx.close();
 
   const data = new Float32Array(chunks.reduce((n, c) => n + c.length, 0));
