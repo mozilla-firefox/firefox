@@ -991,13 +991,13 @@ void nsSubDocumentFrame::Destroy(DestroyContext& aContext) {
     mPostedReflowCallback = false;
   }
 
-  // Detach the subdocument's views and stash them in the frame loader.
-  // We can then reattach them if we're being reframed (for example if
-  // the frame has been made position:fixed).
-  if (RefPtr<nsFrameLoader> frameloader = FrameLoader()) {
-    ClearDisplayItems();
+  ClearDisplayItems();
+  PrepareInProcessPresShellsForDetach();
 
-    PrepareInProcessPresShellsForDetach();
+  // Stash the detached subdocuments in the frame loader. We can then reattach
+  // them if we're being reframed (for example if the frame has been made
+  // position:fixed).
+  if (RefPtr<nsFrameLoader> frameloader = FrameLoader()) {
     frameloader->SetDetachedSubdocs(std::move(mInProcessPresShells));
 
     // We call nsFrameLoader::HideViewer() in a script runner so that we can
