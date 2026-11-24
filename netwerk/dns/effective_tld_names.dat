@@ -5,8 +5,8 @@
 // Please pull this list from, and only from https://publicsuffix.org/list/public_suffix_list.dat,
 // rather than any other VCS sites. Pulling from any other URL is not guaranteed to be supported.
 
-// VERSION: 2026-11-21_04-33-45_UTC
-// COMMIT: 87a2c1b8de5886a133ff4da21b2aa6fec88d8739
+// VERSION: 2026-11-23_15-54-01_UTC
+// COMMIT: faf981a207f390881e6c3bcc7b9a1d57b8db066f
 
 // Instructions on pulling and using this list can be found at https://publicsuffix.org/list/.
 
@@ -12475,6 +12475,10 @@ d.gv.vc
 // Submitted by Hector Martin <marcan@euskalencounter.org>
 user.party.eus
 
+// Aspire Themes : https://aspirethemes.com
+// Submitted by Ahmad <psl@aspirethemes.com>
+sites.aspirethemes.com
+
 // Association potager.org : https://potager.org/
 // Submitted by Lunar <jardiniers@potager.org>
 pimienta.org
@@ -14050,6 +14054,8 @@ vibehost.space
 
 // GoDaddy Registry : https://registry.godaddy
 // Submitted by Rohan Durrant <tldns@registry.godaddy>
+*.airoapp.ai
+*.host.cloud
 graphic.design
 
 // GoIP DNS Services : http://www.goip.de
