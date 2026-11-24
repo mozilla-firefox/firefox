@@ -267,15 +267,13 @@ MOZ_ALWAYS_INLINE bool CallNativeImpl(JSContext* cx, NativeImpl impl,
   return ok;
 }
 
-// OOM interrupts don't call the interrupt callbacks, so we don't need
-// to worry about if there is an exception pending. We do want to handle
-// the interrupt sooner than for other interrupts so we capture a precise
-// stack trace.
-MOZ_ALWAYS_INLINE bool CheckForOOMStackTraceInterrupt(JSContext* cx) {
+// Capture the OOM stack trace if requested, without handling any other
+// interrupts. This is called while handling exceptions so that we capture a
+// precise stack trace.
+MOZ_ALWAYS_INLINE void MaybeCaptureOOMStackTrace(JSContext* cx) {
   if (MOZ_UNLIKELY(cx->hasPendingInterrupt(InterruptReason::OOMStackTrace))) {
-    return cx->handleInterruptNoCallbacks();
+    cx->handleOOMStackTraceInterrupt();
   }
-  return true;
 }
 
 MOZ_ALWAYS_INLINE bool CheckForInterrupt(JSContext* cx) {

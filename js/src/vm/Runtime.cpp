@@ -512,17 +512,15 @@ bool JSContext::handleInterrupt() {
   return true;
 }
 
-bool JSContext::handleInterruptNoCallbacks() {
+void JSContext::handleOOMStackTraceInterrupt() {
   MOZ_ASSERT(CurrentThreadCanAccessRuntime(runtime()));
-  if (hasAnyPendingInterrupt() || jitStackLimit == JS::NativeStackLimitMin) {
-    bool oomStackTrace = hasPendingInterrupt(InterruptReason::OOMStackTrace);
-    clearPendingInterrupt(js::InterruptReason::OOMStackTrace);
-    if (!hasAnyPendingInterrupt()) {
-      resetJitStackLimit();
-    }
-    return HandleInterrupt(this, false, oomStackTrace);
+  JS::AutoCheckCannotGC nogc(this);
+  MOZ_ASSERT(hasPendingInterrupt(InterruptReason::OOMStackTrace));
+  clearPendingInterrupt(InterruptReason::OOMStackTrace);
+  if (!hasAnyPendingInterrupt()) {
+    resetJitStackLimit();
   }
-  return true;
+  captureOOMStackTrace();
 }
 
 void JSContext::clearPendingInterrupt(js::InterruptReason reason) {
