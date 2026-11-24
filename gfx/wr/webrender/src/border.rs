@@ -1245,7 +1245,17 @@ fn add_edge_segment(
         return;
     }
 
-    let is_solid = if side.style == BorderStyle::Solid {
+    let edge_length = match segment {
+        BorderSegment::Left | BorderSegment::Right => image_rect.height(),
+        _ => image_rect.width(),
+    };
+    // A dashed edge starts and ends with a half dash that continues the dash
+    // of the adjacent corner, so an edge too short to fit four minimum-length
+    // half dashes (each half the border width) would only add a gap in the
+    // middle of that dash. Gecko draws such an edge solid, and so do we.
+    let too_short_for_dashes = side.style == BorderStyle::Dashed && edge_length < 2.0 * width;
+
+    let is_solid = if side.style == BorderStyle::Solid || too_short_for_dashes {
         Some(side.color)
     } else {
         None

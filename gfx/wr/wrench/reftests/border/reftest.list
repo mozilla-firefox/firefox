@@ -59,3 +59,7 @@ fuzzy(1,40) == border-overlap-split.yaml border-overlap-split.png
 # A rounded border under a static downscale that isn't a power of two is
 # rasterized at its exact scale, so it matches the same border drawn at scale 1.
 == border-radius-static-downscale.yaml border-radius-static-downscale-ref.yaml
+
+# A dashed edge too short for its own dash pattern continues the dash of the
+# adjacent corners instead of opening a gap (bug 2090598).
+platform(linux,mac) == dashed-zero-length-edge.yaml dashed-zero-length-edge.png

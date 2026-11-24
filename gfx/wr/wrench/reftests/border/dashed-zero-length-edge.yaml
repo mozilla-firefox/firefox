@@ -1,0 +1,18 @@
+# A dashed border whose corner radii take up the whole of each edge. Snapping the
+# radii to device pixels leaves a sub-pixel edge between the corners, which must
+# continue the corners' half dashes rather than open a gap (bug 2090598).
+---
+root:
+  items:
+    - type: stacking-context
+      bounds: [0, 0, 300, 300]
+      transform: scale(2)
+      transform-origin: [0, 0]
+      items:
+        - type: border
+          bounds: [ 20.4, 15.4, 258.8, 258.8 ]
+          width: 12.3
+          border-type: normal
+          style: dashed
+          color: black
+          radius: 129.4
