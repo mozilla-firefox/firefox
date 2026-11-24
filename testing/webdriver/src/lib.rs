@@ -5,7 +5,6 @@
 #![forbid(unsafe_code)]
 
 extern crate base64;
-extern crate cookie;
 extern crate icu_segmenter;
 #[macro_use]
 extern crate log;
