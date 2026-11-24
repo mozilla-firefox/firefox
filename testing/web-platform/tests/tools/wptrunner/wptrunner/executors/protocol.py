@@ -198,6 +198,11 @@ class BaseProtocolPart(ProtocolPart):
         :param url: The url to load"""
         pass
 
+    @abstractmethod
+    def refresh(self):
+        """Reload the document of the current top-level browsing context"""
+        pass
+
 
 class TestharnessProtocolPart(ProtocolPart):
     """Protocol part required to run testharness tests."""

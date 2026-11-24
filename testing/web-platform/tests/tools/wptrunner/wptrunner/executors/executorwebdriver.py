@@ -109,6 +109,9 @@ class WebDriverBaseProtocolPart(BaseProtocolPart):
     def load(self, url):
         self.webdriver.url = url
 
+    def refresh(self):
+        self.webdriver.refresh()
+
     def wait(self):
         while True:
             try:

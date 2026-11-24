@@ -123,6 +123,9 @@ class MarionetteBaseProtocolPart(BaseProtocolPart):
     def load(self, url):
         self.marionette.navigate(url)
 
+    def refresh(self):
+        self.marionette.refresh()
+
     def wait(self):
         try:
             socket_timeout = self.marionette.client.socket_timeout

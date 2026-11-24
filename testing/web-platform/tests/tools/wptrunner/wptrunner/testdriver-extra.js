@@ -602,6 +602,10 @@
         return create_context_action("navigate", context, {url});
     };
 
+    window.test_driver_internal.refresh = function(context=null) {
+        return create_context_action("refresh", context, {});
+    };
+
     window.test_driver_internal.minimize_window = function(context=null) {
         return create_context_action("minimize_window", context, {});
     };

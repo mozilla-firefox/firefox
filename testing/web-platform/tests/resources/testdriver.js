@@ -1691,6 +1691,32 @@
         },
 
         /**
+         * Reloads the document of the top-level browsing context.
+         *
+         * Matches the behaviour of the `Refresh
+         * <https://www.w3.org/TR/webdriver/#refresh>`_
+         * WebDriver command.
+         *
+         * Refreshing the browsing context in which the
+         * test is running will unload the test.
+         *
+         * @param {(String|WindowProxy)} context - Browsing context in which
+         *                                         to run the call: a
+         *                                         ``WindowProxy``, a WebDriver
+         *                                         window handle as returned by
+         *                                         :js:func:`create_window`, or
+         *                                         null to use the current
+         *                                         browsing context.
+         *
+         * @returns {Promise} fulfilled when the WebDriver command returns, which
+         *                    depends on the session's page load strategy, or
+         *                    rejected if the WebDriver command errors.
+         */
+        refresh: function(context=null) {
+            return window.test_driver_internal.refresh(context);
+        },
+
+        /**
          * Send a sequence of actions
          *
          * This function sends a sequence of actions to perform.
@@ -2877,6 +2903,10 @@
 
         async navigate(url, context=null) {
             throw new Error("navigate() is not implemented by testdriver-vendor.js");
+        },
+
+        async refresh(context=null) {
+            throw new Error("refresh() is not implemented by testdriver-vendor.js");
         },
 
         async minimize_window(context=null) {
