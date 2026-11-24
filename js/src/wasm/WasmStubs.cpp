@@ -1223,7 +1223,7 @@ static bool GenerateJitEntry(MacroAssembler& masm, size_t funcExportIndex,
         masm.convertValueToWasmAnyRef(src, target, scratchF, &fail);
         masm.jump(&join);
         masm.bind(&fail);
-        masm.breakpoint();
+        masm.crash();
         masm.bind(&join);
         GenPrintPtr(DebugChannel::Function, masm, target);
         if (isStackArg) {
@@ -2127,7 +2127,7 @@ static bool GenerateImportInterpExit(MacroAssembler& masm, const FuncImport& fi,
       case ValType::V128:
         // Note, CallImport_Rtt/V128 currently always throws, so we should never
         // reach this point.
-        masm.breakpoint();
+        masm.crash();
         break;
       case ValType::F32:
         masm.loadFloat32(argv, ReturnFloat32Reg);
@@ -2350,7 +2350,7 @@ static bool GenerateImportJitExit(MacroAssembler& masm,
         break;
       case ValType::V128:
         // Unreachable as callImport should not call the stub.
-        masm.breakpoint();
+        masm.crash();
         break;
       case ValType::F32:
         masm.convertValueToFloat32(JSReturnOperand, ReturnFloat32Reg,
@@ -3173,7 +3173,7 @@ bool wasm::GenerateContBaseFrameStub(jit::MacroAssembler& masm,
   wasm::EmitSwitchStack(masm, scratch1, scratch2, scratch3, scratch4);
 
   // We should never reach here.
-  masm.breakpoint();
+  masm.crash();
 
   return FinishOffsets(masm, offsets);
 }

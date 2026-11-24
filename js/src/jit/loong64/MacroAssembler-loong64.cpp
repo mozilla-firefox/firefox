@@ -6715,6 +6715,8 @@ void MacroAssemblerLOONG64Compat::breakpoint(uint32_t value) {
   as_break(value);
 }
 
+void MacroAssemblerLOONG64Compat::crash() { as_break(0); }
+
 void MacroAssemblerLOONG64Compat::handleFailureWithHandlerTail(
     Label* profilerExitTail, Label* bailoutTail,
     uint32_t* returnValueCheckOffset) {
@@ -6763,7 +6765,7 @@ void MacroAssemblerLOONG64Compat::handleFailureWithHandlerTail(
   asMasm().branch32(Assembler::Equal, a0, Imm32(ExceptionResumeKind::WasmCatch),
                     &wasmCatch);
 
-  breakpoint();  // Invalid kind.
+  crash();  // Invalid kind.
 
   // No exception handler. Load the error value, restore state and return from
   // the entry frame.

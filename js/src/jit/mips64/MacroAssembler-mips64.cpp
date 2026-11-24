@@ -2303,6 +2303,8 @@ void MacroAssemblerMIPS64Compat::popValue(ValueOperand val) {
 
 void MacroAssemblerMIPS64Compat::breakpoint() { as_break(0); }
 
+void MacroAssemblerMIPS64Compat::crash() { as_break(0); }
+
 void MacroAssemblerMIPS64Compat::checkStackAlignment() {
 #ifdef DEBUG
   UseScratchRegisterScope temps(*this);
@@ -2363,7 +2365,7 @@ void MacroAssemblerMIPS64Compat::handleFailureWithHandlerTail(
   asMasm().branch32(Assembler::Equal, a0, Imm32(ExceptionResumeKind::WasmCatch),
                     &wasmCatch);
 
-  breakpoint();  // Invalid kind.
+  crash();  // Invalid kind.
 
   // No exception handler. Load the error value, restore state and return from
   // the entry frame.

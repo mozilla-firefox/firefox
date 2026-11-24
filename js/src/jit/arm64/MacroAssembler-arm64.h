@@ -2306,6 +2306,7 @@ class MacroAssemblerCompat : public vixl::MacroAssembler {
   }
 
   void breakpoint();
+  void crash();
 
   // Emits a simulator directive to save the current sp on an internal stack.
   void simulatorMarkSP() {
