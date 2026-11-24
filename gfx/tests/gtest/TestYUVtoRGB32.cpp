@@ -2,6 +2,7 @@
 #include <cmath>
 #include <tuple>
 #include <unordered_map>
+#include <vector>
 
 #include "ImageContainer.h"
 #include "YCbCrTestHelpers.h"
@@ -379,6 +380,219 @@ TEST(YCbCrUtils, ConvertYCbCrToRGB32WithAlpha)
       Color expectation = expectedColors[static_cast<size_t>(colorSpace)];
       IsColorMatched(expectation, RGBA.get(), bufferSize, alpha);
     }
+  }
+}
+
+// Converts I420A frames whose alpha samples are all distinct, with the picture
+// rect at several origins and right edges and with tight and padded output
+// rows, and checks that each output pixel's alpha comes from the picture
+// position. aDepth > 8 bits uses 16-bit samples holding the 8-bit value shifted
+// up, so the expected 8-bit alpha is exact.
+template <typename Sample>
+static void RunAlphaPicOffsetTest(gfx::ColorDepth aDepth) {
+  // High-bit-depth planes are narrowed to 8 bits with strides rounded up to a
+  // multiple of 32. The planes are wider than 32 samples, so a picture that
+  // ends within the first 32 columns gets a narrowed luma stride smaller than
+  // the whole alpha plane's.
+  constexpr int32_t kNarrowedRowAlignment = 32;
+  constexpr int32_t kWidth = kNarrowedRowAlignment + 8;
+  constexpr int32_t kHeight = 4;
+  // Rows extend past kWidth, so that the planes are read by stride. The alpha
+  // plane has no stride of its own and uses the luma stride.
+  constexpr int32_t kYStride = kWidth + 8;
+  constexpr int32_t kCbCrStride = kYStride / 2;
+  constexpr int32_t kCbCrHeight = kHeight / 2;
+  // Mid-range luma and neutral chroma, so that only alpha varies.
+  constexpr int32_t kMidSample = 128;
+  // The alpha at (col, row) is kMinAlpha + row * kWidth + col: it counts up
+  // in raster order, so it is distinct for every pixel, and it is never 0, the
+  // value of an unwritten output.
+  constexpr int32_t kMinAlpha = 1;
+  static_assert(kMinAlpha + kWidth * kHeight - 1 <= UINT8_MAX);
+  // Alpha is the last byte of an R8G8B8A8 or B8G8R8A8 pixel.
+  constexpr int32_t kAlphaByte = 3;
+  const int32_t shift = gfx::BitDepthForColorDepth(aDepth) -
+                        gfx::BitDepthForColorDepth(gfx::ColorDepth::COLOR_8);
+
+  std::array<Sample, kYStride * kHeight> y;
+  y.fill(static_cast<Sample>(kMidSample << shift));
+  std::array<Sample, kCbCrStride * kCbCrHeight> cb;
+  cb.fill(static_cast<Sample>(kMidSample << shift));
+  std::array<Sample, kCbCrStride * kCbCrHeight> cr;
+  cr.fill(static_cast<Sample>(kMidSample << shift));
+  std::array<uint8_t, kYStride * kHeight> expectedAlpha{};
+  std::array<Sample, kYStride * kHeight> alpha{};
+  for (int32_t row = 0; row < kHeight; ++row) {
+    for (int32_t col = 0; col < kWidth; ++col) {
+      const int32_t i = row * kYStride + col;
+      expectedAlpha[i] = kMinAlpha + row * kWidth + col;
+      alpha[i] = static_cast<Sample>(expectedAlpha[i] << shift);
+    }
+  }
+
+  layers::PlanarYCbCrData data;
+  data.mYChannel = reinterpret_cast<uint8_t*>(y.data());
+  data.mYStride = kYStride * sizeof(Sample);
+  data.mCbChannel = reinterpret_cast<uint8_t*>(cb.data());
+  data.mCrChannel = reinterpret_cast<uint8_t*>(cr.data());
+  data.mCbCrStride = kCbCrStride * sizeof(Sample);
+  data.mChromaSubsampling = gfx::ChromaSubsampling::HALF_WIDTH_AND_HEIGHT;
+  data.mColorDepth = aDepth;
+  data.mAlpha.emplace();
+  data.mAlpha->mChannel = reinterpret_cast<uint8_t*>(alpha.data());
+  data.mAlpha->mSize = gfx::IntSize(kWidth, kHeight);
+  data.mAlpha->mDepth = aDepth;
+
+  // The whole planes, pictures from an odd origin to their right or bottom
+  // edge, and pictures that end before the right edge: one just past the first
+  // kNarrowedRowAlignment columns and two within them.
+  constexpr int32_t kEndPastAlignment = kNarrowedRowAlignment + 1;
+  constexpr int32_t kEndWithinAlignment = kNarrowedRowAlignment - 1;
+  const gfx::IntRect pictureRects[] = {
+      {0, 0, kWidth, kHeight},
+      {1, 0, kWidth - 1, kHeight},
+      {0, 1, kWidth, kHeight - 1},
+      {3, 1, kEndPastAlignment - 3, kHeight - 1},
+      {2, 2, 4, kHeight - 2},
+      {1, 1, kEndWithinAlignment - 1, kHeight - 2}};
+  const gfx::SurfaceFormat formats[] = {gfx::SurfaceFormat::R8G8B8A8,
+                                        gfx::SurfaceFormat::B8G8R8A8};
+  const int32_t rowPaddings[] = {0, 8};
+  for (const gfx::IntRect& rect : pictureRects) {
+    ASSERT_TRUE(gfx::IntRect(0, 0, kWidth, kHeight).Contains(rect))
+    << rect;
+    data.mPictureRect = rect;
+    for (const int32_t padding : rowPaddings) {
+      for (const gfx::SurfaceFormat& format : formats) {
+        const int32_t bpp = gfx::BytesPerPixel(format);
+        const int32_t stride = rect.Width() * bpp + padding;
+        auto output = std::make_unique<uint8_t[]>(stride * rect.Height());
+        ASSERT_EQ(gfx::ConvertYCbCrToRGB32(data, format, output.get(), stride,
+                                           nullptr),
+                  NS_OK);
+        for (int32_t row = 0; row < rect.Height(); ++row) {
+          for (int32_t col = 0; col < rect.Width(); ++col) {
+            EXPECT_EQ(output[row * stride + col * bpp + kAlphaByte],
+                      expectedAlpha[(rect.y + row) * kYStride + rect.x + col])
+                << static_cast<int>(gfx::BitDepthForColorDepth(aDepth))
+                << "-bit, picture " << rect << ", stride " << stride
+                << ", pixel (" << col << ", " << row << ")";
+          }
+        }
+      }
+    }
+  }
+}
+
+TEST(YCbCrUtils, ConvertYCbCrToRGB32WithAlphaPicOffset)
+{
+  RunAlphaPicOffsetTest<uint8_t>(gfx::ColorDepth::COLOR_8);
+  RunAlphaPicOffsetTest<uint16_t>(gfx::ColorDepth::COLOR_10);
+  RunAlphaPicOffsetTest<uint16_t>(gfx::ColorDepth::COLOR_12);
+  RunAlphaPicOffsetTest<uint16_t>(gfx::ColorDepth::COLOR_16);
+}
+
+TEST(YCbCrUtils, ConvertYCbCrToRGBWithPictureOutsideAlpha)
+{
+  constexpr gfx::IntSize kYSize(8, 4);
+  constexpr gfx::IntSize kCbCrSize(kYSize.width / 2, kYSize.height / 2);
+  // Smaller than the luma plane on both axes, so that a picture can lie within
+  // the luma plane but not within the alpha plane.
+  constexpr gfx::IntSize kAlphaSize(4, 2);
+  static_assert(kAlphaSize.width < kYSize.width &&
+                kAlphaSize.height < kYSize.height);
+  constexpr uint8_t kMidSample = 128;
+  constexpr uint8_t kOpaque = 255;
+
+  std::array<uint8_t, kYSize.width * kYSize.height> y;
+  y.fill(kMidSample);
+  std::array<uint8_t, kCbCrSize.width * kCbCrSize.height> cb;
+  cb.fill(kMidSample);
+  std::array<uint8_t, kCbCrSize.width * kCbCrSize.height> cr;
+  cr.fill(kMidSample);
+  // The alpha plane has no stride of its own and uses the luma stride.
+  std::array<uint8_t, kYSize.width * kAlphaSize.height> alpha;
+  alpha.fill(kOpaque);
+
+  layers::PlanarYCbCrData data;
+  data.mYChannel = y.data();
+  data.mYStride = kYSize.width;
+  data.mCbChannel = cb.data();
+  data.mCrChannel = cr.data();
+  data.mCbCrStride = kCbCrSize.width;
+  data.mChromaSubsampling = gfx::ChromaSubsampling::HALF_WIDTH_AND_HEIGHT;
+  data.mAlpha.emplace();
+  data.mAlpha->mChannel = alpha.data();
+  data.mAlpha->mSize = kAlphaSize;
+
+  // Every format here has 4 bytes per pixel. The output holds any picture
+  // within the luma plane, in rows of the picture's width.
+  const int32_t bpp = gfx::BytesPerPixel(gfx::SurfaceFormat::R8G8B8A8);
+  constexpr uint8_t kUnwritten = 0xA5;
+  std::vector<uint8_t> output(kYSize.width * kYSize.height * bpp, kUnwritten);
+  const auto unchanged = output;
+
+  data.mPictureRect = gfx::IntRect(gfx::IntPoint(), kAlphaSize);
+  ASSERT_EQ(
+      gfx::ConvertYCbCrToRGB32(data, gfx::SurfaceFormat::R8G8B8A8,
+                               output.data(), kAlphaSize.width * bpp, nullptr),
+      NS_OK);
+  const uint8_t grey = output[0];
+  ASSERT_NE(grey, kUnwritten);
+
+  // The planes are uniform, so a conversion gives each pixel of the picture
+  // the same grey, and with alpha the alpha plane's value, and writes nothing
+  // past the picture.
+  const auto expectConverted = [&](const gfx::IntSize& aSize,
+                                   Maybe<uint8_t> aAlpha) {
+    const int32_t end = aSize.width * aSize.height * bpp;
+    for (int32_t i = 0; i < end; i += bpp) {
+      EXPECT_EQ(output[i], grey) << "byte " << i;
+      EXPECT_EQ(output[i + 1], grey) << "byte " << i + 1;
+      EXPECT_EQ(output[i + 2], grey) << "byte " << i + 2;
+      if (aAlpha) {
+        EXPECT_EQ(output[i + 3], *aAlpha) << "byte " << i + 3;
+      }
+    }
+    EXPECT_TRUE(std::equal(output.begin() + end, output.end(),
+                           unchanged.begin() + end));
+  };
+  expectConverted(kAlphaSize, Some(kOpaque));
+
+  // Pictures within the luma plane that extend past the alpha plane: wider and
+  // taller, one row taller, one column to the right, and below it.
+  const gfx::IntRect pictureRects[] = {
+      {0, 0, kAlphaSize.width + 2, kAlphaSize.height + 2},
+      {0, 0, kAlphaSize.width, kAlphaSize.height + 1},
+      {1, 0, kAlphaSize.width, kAlphaSize.height},
+      {2, kAlphaSize.height, 2, kYSize.height - kAlphaSize.height}};
+  for (const gfx::IntRect& rect : pictureRects) {
+    ASSERT_TRUE(gfx::IntRect(gfx::IntPoint(), kYSize).Contains(rect))
+    << rect;
+    ASSERT_FALSE(gfx::IntRect(gfx::IntPoint(), kAlphaSize).Contains(rect))
+    << rect;
+    data.mPictureRect = rect;
+    const int32_t stride = rect.Width() * bpp;
+
+    output = unchanged;
+    EXPECT_EQ(gfx::ConvertYCbCrToRGB32(data, gfx::SurfaceFormat::R8G8B8A8,
+                                       output.data(), stride, nullptr),
+              NS_ERROR_INVALID_ARG)
+        << "picture " << rect;
+    EXPECT_EQ(output, unchanged) << "picture " << rect;
+
+    EXPECT_EQ(gfx::ConvertYCbCrToRGB32(data, gfx::SurfaceFormat::R8G8B8X8,
+                                       output.data(), stride, nullptr),
+              NS_OK)
+        << "picture " << rect;
+    expectConverted(rect.Size(), Nothing());
+
+    output = unchanged;
+    EXPECT_EQ(gfx::ConvertYCbCrToRGB(data, gfx::SurfaceFormat::B8G8R8X8,
+                                     rect.Size(), output.data(), stride),
+              NS_OK)
+        << "picture " << rect;
+    expectConverted(rect.Size(), Nothing());
   }
 }
 
