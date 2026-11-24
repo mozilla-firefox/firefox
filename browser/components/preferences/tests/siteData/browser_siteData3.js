@@ -148,27 +148,30 @@ add_task(async function test_grouping() {
 
 // Test sorting
 add_task(async function test_sorting() {
+  // These sizes are large because the reported usage includes SQLite files
+  // that shrink by up to ~16KB when IndexedDB cleans up an idle database,
+  // which made smaller differences sort intermittently (bug 2096671).
   let testData = [
     {
-      usage: 1024,
+      usage: 1024 * 100,
       origin: "https://account.xyz.com",
       cookies: 6,
       persisted: true,
     },
     {
-      usage: 1024 * 2,
+      usage: 1024 * 200,
       origin: "https://books.foo.com",
       cookies: 0,
       persisted: false,
     },
     {
-      usage: 1024 * 3,
+      usage: 1024 * 300,
       origin: "http://cinema.bar.com",
       cookies: 3,
       persisted: true,
     },
     {
-      usage: 1024 * 3,
+      usage: 1024 * 300,
       origin: "http://vod.bar.com",
       cookies: 2,
       persisted: false,
