@@ -15,7 +15,6 @@
 #include "mozilla/Vector.h"            // for Vector, Vector<>::ConstRange
 
 #include <algorithm>    // for std::find, std::max
-#include <functional>   // for function
 #include <stddef.h>     // for size_t
 #include <stdint.h>     // for uint32_t, uint64_t, int32_t
 #include <string.h>     // for strlen, strcmp
@@ -796,8 +795,8 @@ bool Debugger::getFrame(JSContext* cx, Handle<AbstractGeneratorObject*> genObj,
   return true;
 }
 
-static bool DebuggerExists(
-    GlobalObject* global, const std::function<bool(Debugger* dbg)>& predicate) {
+template <typename Predicate>
+static bool DebuggerExists(GlobalObject* global, Predicate predicate) {
   // The GC analysis can't determine that the predicate can't GC, so let it know
   // explicitly.
   JS::AutoSuppressGCAnalysis nogc;

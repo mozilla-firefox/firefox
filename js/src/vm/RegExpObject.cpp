@@ -7,6 +7,7 @@
 #include "mozilla/MemoryReporting.h"
 #include "mozilla/PodOperations.h"
 
+#include <string.h>
 #include <type_traits>
 
 #include "builtin/RegExp.h"
@@ -333,8 +334,8 @@ void ForEachRegExpFlag(JS::RegExpFlags flags, KnownF known, UnknownF unknown) {
 
 std::ostream& JS::operator<<(std::ostream& os, RegExpFlags flags) {
   ForEachRegExpFlag(
-      flags, [&](const char* name, const char* c) { os << c; },
-      [&](uint8_t value) { os << '?'; });
+      flags, [&](const char* name, const char* c) { os.write(c, strlen(c)); },
+      [&](uint8_t value) { os.put('?'); });
   return os;
 }
 
