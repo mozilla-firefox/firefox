@@ -54,9 +54,9 @@ blessed==1.19.1 ; python_version >= "3.7" and python_version < "4.0" \
 cbor2==4.0.1 ; python_version >= "3.7" and python_version < "4.0" \
     --hash=sha256:b0eb916c9ea226aa81e9091607737475d5b0e5c314fe8d5a87179fba449cd190 \
     --hash=sha256:cee0d01e520563b5a73c72eace5c428bb68aefb1b3f7aee5d692d3af6a1e5172
-certifi==2022.12.7 ; python_version >= "3.7" and python_version < "4.0" \
-    --hash=sha256:35824b4c3a97115964b408844d64aa14db1cc518f6562e8d7261699d1350a9e3 \
-    --hash=sha256:4ad3232f5e926d6718ec31cfc1fcadfde020920e278684144551c91769c7bc18
+certifi==2026.10.19 ; python_version >= "3.7" and python_version < "4.0" \
+    --hash=sha256:035c1e85572b141bf1c3a3eff0e33a8eb74917522f2559075ff8d2fea780a1ae \
+    --hash=sha256:42d35340cc5b9ba78e818ddbff0c5b1c2b779de448a340fd1b989f5fa8670e1b
 chardet==4.0.0 ; python_version >= "3.7" and python_version < "4.0" \
     --hash=sha256:0d6f53a15db4120f2b08c94f11e7d93d2c911ee118b6b30a04ec3ee8310179fa \
     --hash=sha256:f864054d66fd9118f2e67044ac8981a54775ec5b67aed0441892edb553d21da5

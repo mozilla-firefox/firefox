@@ -5,6 +5,10 @@ certifi.py
 This module returns the installation location of cacert.pem or its contents.
 """
 import sys
+import atexit
+
+def exit_cacert_ctx() -> None:
+    _CACERT_CTX.__exit__(None, None, None)  # type: ignore[union-attr]
 
 
 if sys.version_info >= (3, 11):
@@ -35,13 +39,14 @@ if sys.version_info >= (3, 11):
             # we will also store that at the global level as well.
             _CACERT_CTX = as_file(files("certifi").joinpath("cacert.pem"))
             _CACERT_PATH = str(_CACERT_CTX.__enter__())
+            atexit.register(exit_cacert_ctx)
 
         return _CACERT_PATH
 
     def contents() -> str:
         return files("certifi").joinpath("cacert.pem").read_text(encoding="ascii")
 
-elif sys.version_info >= (3, 7):
+else:
 
     from importlib.resources import path as get_path, read_text
 
@@ -70,39 +75,9 @@ elif sys.version_info >= (3, 7):
             # we will also store that at the global level as well.
             _CACERT_CTX = get_path("certifi", "cacert.pem")
             _CACERT_PATH = str(_CACERT_CTX.__enter__())
+            atexit.register(exit_cacert_ctx)
 
         return _CACERT_PATH
-
-    def contents() -> str:
-        return read_text("certifi", "cacert.pem", encoding="ascii")
-
-else:
-    import os
-    import types
-    from typing import Union
-
-    Package = Union[types.ModuleType, str]
-    Resource = Union[str, "os.PathLike"]
-
-    # This fallback will work for Python versions prior to 3.7 that lack the
-    # importlib.resources module but relies on the existing `where` function
-    # so won't address issues with environments like PyOxidizer that don't set
-    # __file__ on modules.
-    def read_text(
-        package: Package,
-        resource: Resource,
-        encoding: str = 'utf-8',
-        errors: str = 'strict'
-    ) -> str:
-        with open(where(), encoding=encoding) as data:
-            return data.read()
-
-    # If we don't have importlib.resources, then we will just do the old logic
-    # of assuming we're on the filesystem and munge the path directly.
-    def where() -> str:
-        f = os.path.dirname(__file__)
-
-        return os.path.join(f, "cacert.pem")
 
     def contents() -> str:
         return read_text("certifi", "cacert.pem", encoding="ascii")
