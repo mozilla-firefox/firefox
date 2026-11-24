@@ -1,0 +1,35 @@
+# Rotated primitives partially clipped by an axis-aligned rect clip in
+# the root coordinate system.
+---
+root:
+  items:
+    - type: clip
+      id: 2
+      bounds: [100, 100, 300, 200]
+    - type: clip-chain
+      id: 3
+      clips: [2]
+    - type: stacking-context
+      transform: rotate(30)
+      transform-origin: 250 200
+      items:
+        - type: gradient
+          bounds: [100, 50, 300, 300]
+          start: 0 0
+          end: 300 0
+          stops: [0.0, [0, 0, 255, 1], 0.5, [255, 128, 0, 1], 1.0, [255, 255, 0, 1]]
+          clip-chain: 3
+    - type: stacking-context
+      transform: rotate(-20)
+      transform-origin: 250 200
+      items:
+        - type: rect
+          bounds: [180, 20, 140, 360]
+          color: [0, 128, 0, 1]
+          clip-chain: 3
+        - type: radial-gradient
+          bounds: [60, 150, 380, 100]
+          center: 190 50
+          radius: 190 50
+          stops: [0.0, [255, 0, 0, 1], 1.0, [0, 0, 255, 1]]
+          clip-chain: 3

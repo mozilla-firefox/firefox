@@ -39,6 +39,10 @@
 /// Its two blocks sit between the quad primitive and the segments. A shader with a
 /// SWGL span function must call rounded_clip_is_enabled() and fall back to the
 /// fragment shader when it returns true.
+///
+/// A zero radius makes the clip an axis-aligned rectangle in device space, which
+/// is how rectangle clips in another coordinate system than the primitive are
+/// applied.
 
 // Default to a sampler2D source if the shader was compiled without an
 // explicit texture-kind feature.
@@ -470,7 +474,10 @@ float rounded_clip_fragment() {
     // The position is in device pixels, so the AA range is one.
     float radius = v_rounded_clip_radius.x;
     vec2 q = abs(gl_FragCoord.xy - v_rounded_clip.xy) - v_rounded_clip.zw;
-    float dist = min(max(q.x, q.y), 0.0) + length(max(q, 0.0)) - radius;
+    // Uniform per primitive. With a zero radius the clip is a rectangle.
+    float dist = radius == 0.0
+        ? max(q.x, q.y)
+        : min(max(q.x, q.y), 0.0) + length(max(q, 0.0)) - radius;
 
     return distance_aa(1.0, dist);
 }

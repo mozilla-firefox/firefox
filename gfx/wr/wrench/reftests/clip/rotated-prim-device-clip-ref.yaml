@@ -1,0 +1,36 @@
+---
+root:
+  items:
+    - type: stacking-context
+      transform: rotate(30)
+      transform-origin: 250 200
+      items:
+        - type: gradient
+          bounds: [100, 50, 300, 300]
+          start: 0 0
+          end: 300 0
+          stops: [0.0, [0, 0, 255, 1], 0.5, [255, 128, 0, 1], 1.0, [255, 255, 0, 1]]
+    - type: stacking-context
+      transform: rotate(-20)
+      transform-origin: 250 200
+      items:
+        - type: rect
+          bounds: [180, 20, 140, 360]
+          color: [0, 128, 0, 1]
+        - type: radial-gradient
+          bounds: [60, 150, 380, 100]
+          center: 190 50
+          radius: 190 50
+          stops: [0.0, [255, 0, 0, 1], 1.0, [0, 0, 255, 1]]
+    - type: rect
+      bounds: [0, 0, 1000, 100]
+      color: white
+    - type: rect
+      bounds: [0, 300, 1000, 700]
+      color: white
+    - type: rect
+      bounds: [0, 100, 100, 200]
+      color: white
+    - type: rect
+      bounds: [400, 100, 600, 200]
+      color: white

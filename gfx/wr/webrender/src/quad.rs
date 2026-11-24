@@ -149,6 +149,15 @@ impl QuadTransformState {
         self.is_2d_axis_aligned
     }
 
+    /// Whether the local to raster transform is a 2D affine transform (no
+    /// perspective, no 3D component).
+    pub fn is_2d(&self) -> bool {
+        match self.map_prim_to_raster {
+            CoordinateSpaceMapping::Local | CoordinateSpaceMapping::ScaleOffset(..) => true,
+            CoordinateSpaceMapping::Transform(ref transform) => transform.is_2d(),
+        }
+    }
+
     // The local to device transform as a scale+offset transform if it
     // can be represented as such.
     pub fn as_2d_scale_offset(&self) -> Option<&ScaleOffset> {
@@ -294,7 +303,7 @@ pub fn prepare_quad(
             transform,
             spatial_tree,
             frame_state.path_rendering_enabled,
-        ).unwrap_or_else(|| get_prim_render_strategy(pattern.kind, clips, transform, spatial_tree, rounded_clip_enabled)),
+        ).unwrap_or_else(|| get_prim_render_strategy(pattern.kind, pattern.is_opaque, clips, transform, spatial_tree, rounded_clip_enabled)),
     };
 
     prepare_quad_impl(
@@ -343,7 +352,7 @@ pub fn prepare_repeatable_quad(
     let rounded_clip_enabled = frame_state.quad_rounded_clip_enabled;
     let strategy = match cache_key {
         Some(_) => QuadRenderStrategy::Indirect,
-        None => get_prim_render_strategy(pattern.kind, clips, transform, spatial_tree, rounded_clip_enabled),
+        None => get_prim_render_strategy(pattern.kind, pattern.is_opaque, clips, transform, spatial_tree, rounded_clip_enabled),
     };
 
     let needs_repetition = stretch_size.width < desc.pattern_rect.width()
@@ -561,6 +570,7 @@ pub fn prepare_border_nine_patch(
     // Each segment is drawn with a texture pattern.
     let strategy = get_prim_render_strategy(
         PatternKind::ColorOrTexture,
+        pattern.is_opaque,
         clips,
         transform,
         spatial_tree,
@@ -725,6 +735,8 @@ fn prepare_quad_impl(
             _ => None,
         };
 
+        // The clip is anti-aliased in the fragment shader, so the quad is drawn
+        // in the alpha pass.
         if pattern.is_opaque && rounded_clip.is_none() {
             quad_flags |= QuadFlags::IS_OPAQUE;
         }
@@ -768,7 +780,7 @@ fn prepare_quad_impl(
                 .intersection_unchecked(&device_clip_rect),
             // Not axis-aligned in device space, so there is no tight rect to
             // derive: bound the primitive's whole coverage rect.
-            None => clips.coverage_rect(),
+            None => clips.coverage_rect().intersection_unchecked(&device_clip_rect),
         };
 
         if rounded_clip.is_some() && device_bounds.is_empty() {
@@ -1578,6 +1590,7 @@ fn prepare_tiles(
 
 fn get_prim_render_strategy(
     pattern_kind: PatternKind,
+    pattern_is_opaque: bool,
     clips: &QuadClipStack,
     transform: &QuadTransformState,
     spatial_tree: &SpatialTree,
@@ -1698,38 +1711,62 @@ fn get_prim_render_strategy(
         }
     }
 
+    // A quad with a clip applied by the shader is drawn in the alpha pass. For an
+    // opaque axis-aligned primitive, the tiled strategy keeps the tiles that don't
+    // need a mask opaque. Otherwise, all tiles would need a mask.
     if let Some(clip) = rounded_clip {
-        return QuadRenderStrategy::DirectRoundedClip(clip);
+        if !pattern_is_opaque || !prim_is_scale_offset {
+            return QuadRenderStrategy::DirectRoundedClip(clip);
+        }
     }
 
     QuadRenderStrategy::Tiled
 }
 
-/// Returns the clip that ps_quad can apply directly, if the only clip that needs
-/// a mask is a rounded rectangle with the same circular radius in all corners.
+/// Returns the clip that ps_quad can apply directly, if the clips that need a
+/// mask are equivalent to a single rounded rectangle with the same circular
+/// radius in all corners, axis-aligned in the device space of the target.
 ///
-/// The primitive and the clip must both map to the device space of the target
-/// with a 2D scale and offset, and the clip's scale must be the same on both axes
-/// so that its corners stay circular in device space.
+/// Rectangle clips in another coordinate system than the primitive count as
+/// rounded rectangles with a zero radius. The primitive can have any 2D
+/// transform: the clip is applied in device space.
 fn get_direct_rounded_clip(
     pattern_kind: PatternKind,
     clips: &QuadClipStack,
     transform: &QuadTransformState,
     spatial_tree: &SpatialTree,
 ) -> Option<QuadRoundedClip> {
-    if !pattern_kind.supports_rounded_clip() || !transform.is_2d_scale_offset() {
+    if !pattern_kind.supports_rounded_clip() || !transform.is_2d() {
         return None;
     }
 
     let prim_spatial_node = transform.prim_spatial_node_index();
     let raster_spatial_node = transform.raster_spatial_node_index();
+    let device_pixel_scale = transform.device_pixel_scale().get();
 
+    let clip_to_device = |clip: &QuadClip| -> Option<ScaleOffset> {
+        if !spatial_tree.can_get_relative_transform(clip.spatial_node, raster_spatial_node) {
+            return None;
+        }
+        let clip_to_raster = spatial_tree.get_relative_transform(clip.spatial_node, raster_spatial_node);
+        if !clip_to_raster.is_2d_scale_translation() {
+            return None;
+        }
+        Some(ScaleOffset::from_transform(&clip_to_raster.into_transform())?.then_scale(device_pixel_scale))
+    };
+
+    // The intersection of the rectangle clips, in device space.
+    let mut device_rect = DeviceRect::max_rect();
     let mut rounded_clip = None;
     for clip in clips.clips() {
         match clip.shape {
             // Handled by the local clip rect in the vertex shader.
             QuadClipShape::Rectangle { mode: ClipMode::Clip }
                 if spatial_tree.is_matching_coord_system(prim_spatial_node, clip.spatial_node) => {}
+            QuadClipShape::Rectangle { mode: ClipMode::Clip } => {
+                let rect = clip_to_device(clip)?.map_rect(&clip.rect);
+                device_rect = device_rect.intersection_unchecked(&rect);
+            }
             QuadClipShape::RoundedRectangle { ref radius, mode: ClipMode::Clip, .. }
                 if rounded_clip.is_none() => {
                 rounded_clip = Some((clip, radius));
@@ -1740,7 +1777,12 @@ fn get_direct_rounded_clip(
         }
     }
 
-    let (clip, radius) = rounded_clip?;
+    let Some((clip, radius)) = rounded_clip else {
+        if device_rect.is_empty() {
+            return None;
+        }
+        return Some(QuadRoundedClip { rect: device_rect, radius: 0.0 });
+    };
 
     let radius = clamped_radius(radius, clip.rect.size());
 
@@ -1748,15 +1790,7 @@ fn get_direct_rounded_clip(
         return None;
     }
 
-    if !spatial_tree.can_get_relative_transform(clip.spatial_node, raster_spatial_node) {
-        return None;
-    }
-    let clip_to_raster = spatial_tree.get_relative_transform(clip.spatial_node, raster_spatial_node);
-    if !clip_to_raster.is_2d_scale_translation() {
-        return None;
-    }
-    let clip_to_device = ScaleOffset::from_transform(&clip_to_raster.into_transform())?
-        .then_scale(transform.device_pixel_scale().get());
+    let clip_to_device = clip_to_device(clip)?;
 
     let sx = clip_to_device.scale.x.abs();
     let sy = clip_to_device.scale.y.abs();
@@ -1764,12 +1798,24 @@ fn get_direct_rounded_clip(
         return None;
     }
 
-    let r = radius.top_left.width;
+    let rounded_rect = clip_to_device.map_rect(&clip.rect);
+    let r = radius.top_left.width * sx;
 
-    Some(QuadRoundedClip {
-        rect: clip_to_device.map_rect(&clip.rect),
-        radius: r * sx,
-    })
+    // The intersection of a rectangle and a rounded rectangle is a rounded
+    // rectangle only if the rectangle contains it, or if the radius is zero.
+    let rect = if r == 0.0 {
+        rounded_rect.intersection_unchecked(&device_rect)
+    } else if device_rect.contains_box(&rounded_rect) {
+        rounded_rect
+    } else {
+        return None;
+    };
+
+    if rect.is_empty() {
+        return None;
+    }
+
+    Some(QuadRoundedClip { rect, radius: r })
 }
 
 /// Selects `QuadRenderStrategy::Path` if the primitive can be drawn by filling
