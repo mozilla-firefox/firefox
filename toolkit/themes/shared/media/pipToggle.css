@@ -38,7 +38,7 @@
   --pip-toggle-distanceFromVideoEdge: 18px;
   --pip-toggle-focus-outline-offset: 1px;
   --pip-toggle-margin: 8px;
-  --pip-border-radius-toggle: 4px;
+  --pip-border-radius-toggle: 12px;
   --pip-box-shadow-default: 0 0 4px rgba(255, 255, 255, 0.9);
   --pip-box-shadow-hover: 0 0 10px rgba(255, 255, 255, 0.7);
   --pip-expanded-height: 40px;
@@ -266,7 +266,7 @@
   box-shadow: 0 4px 4px rgba(12, 12, 13, 0.25);
   width: var(--pip-expanded-max-width);
   min-width: var(--pip-expanded-min-width);
-  border-radius: 8px;
+  border-radius: var(--pip-border-radius-toggle);
 }
 
 .pip-wrapper:not(.experiment).hovering > .pip-expanded {
@@ -292,8 +292,8 @@
     translate 190ms;
   transition-timing-function: cubic-bezier(0.07, 0.95, 0, 1);
   background: rgba(12, 12, 13, 0.65);
-  border-end-end-radius: 8px;
-  border-end-start-radius: 8px;
+  border-end-end-radius: var(--pip-border-radius-toggle);
+  border-end-start-radius: var(--pip-border-radius-toggle);
   border: var(--pip-highlight-width) var(--pip-highlight-style);
   border-top: 0;
   box-shadow: 0 4px 4px rgba(12, 12, 13, 0.25);
