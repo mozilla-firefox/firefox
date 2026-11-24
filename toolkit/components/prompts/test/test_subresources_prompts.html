@@ -100,6 +100,16 @@ add_task(async function runTestAuth() {
   // Let prompt_common know what kind of modal type is enabled for auth prompts.
   modalType = Ci.nsIPrompt.MODAL_TYPE_TAB;
 
+  // Forget the credentials entered below, or a later load of these URLs
+  // authenticates from the cache without prompting.
+  SimpleTest.registerCleanupFunction(() =>
+    SpecialPowers.spawnChrome([], () => {
+      Cc["@mozilla.org/network/http-auth-manager;1"]
+        .getService(Ci.nsIHttpAuthManager)
+        .clearAll();
+    })
+  );
+
   let state, action;
 
   state = {
