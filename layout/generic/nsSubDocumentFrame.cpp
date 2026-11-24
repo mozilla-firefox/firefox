@@ -950,13 +950,13 @@ void nsSubDocumentFrame::Destroy(DestroyContext& aContext) {
     mPostedReflowCallback = false;
   }
 
+  ClearDisplayItems();
+
   // Detach the subdocument's views and stash them in the frame loader.
   // We can then reattach them if we're being reframed (for example if
   // the frame has been made position:fixed).
   RefPtr<nsFrameLoader> frameloader = FrameLoader();
   if (frameloader) {
-    ClearDisplayItems();
-
     nsView* detachedViews =
         ::BeginSwapDocShellsForViews(mInnerView->GetFirstChild());
 
