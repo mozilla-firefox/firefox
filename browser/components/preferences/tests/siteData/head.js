@@ -253,16 +253,16 @@ function promiseCookiesCleared() {
 
 async function loadServiceWorkerTestPage(url) {
   let tab = await BrowserTestUtils.openNewForegroundTab(gBrowser, url);
-  await TestUtils.waitForCondition(() => {
-    return SpecialPowers.spawn(
-      tab.linkedBrowser,
-      [],
-      () =>
-        content.document.body.getAttribute(
-          "data-test-service-worker-registered"
-        ) === "true"
+  // register() resolves only once the script is stored in the DOM Cache,
+  // which can be slow.
+  await SpecialPowers.spawn(tab.linkedBrowser, [], () => {
+    let body = content.document.body;
+    return ContentTaskUtils.waitForMutationCondition(
+      body,
+      { attributeFilter: ["data-test-service-worker-registered"] },
+      () => body.getAttribute("data-test-service-worker-registered") === "true"
     );
-  }, `Fail to load service worker test ${url}`);
+  });
   BrowserTestUtils.removeTab(tab);
 }
 
