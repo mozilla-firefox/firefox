@@ -187,7 +187,9 @@ class GeckoEngineSession(
     ) {
         notifyObservers { onLoadUrl() }
 
-        val scheme = url.toUri().normalizeScheme().scheme
+        // Filter the URL the way Gecko's net_FilterURIString does, so that the checked scheme is the scheme Gecko
+        // loads: remove control characters and spaces at the ends, and tabs, line feeds and carriage returns anywhere.
+        val scheme = url.trim { it.code <= 0x20 }.filterNot { it in "\t\n\r" }.toUri().normalizeScheme().scheme
         if (BLOCKED_SCHEMES.contains(scheme) && !shouldLoadJSSchemes(scheme, flags)) {
             logger.error("URL scheme not allowed. Aborting load.")
             return

@@ -5,6 +5,7 @@
 package mozilla.components.feature.readerview
 
 import androidx.annotation.VisibleForTesting
+import androidx.core.net.toUri
 import mozilla.components.browser.state.action.BrowserAction
 import mozilla.components.browser.state.action.ContentAction
 import mozilla.components.browser.state.action.EngineAction
@@ -67,6 +68,7 @@ class ReaderViewMiddleware : Middleware<BrowserState, BrowserAction> {
                 }
                 true
             }
+            is ReaderAction.UpdateReaderActiveUrlAction -> isAllowedArticleUrl(action.activeUrl)
             is ContentAction.UpdateUrlAction -> {
                 // Activate reader view when navigating to a reader page and deactivate it
                 // when navigating away. In addition, we want to mask moz-extension://
@@ -83,10 +85,13 @@ class ReaderViewMiddleware : Middleware<BrowserState, BrowserAction> {
                 val tab = store.state.findTab(action.sessionId)
                 if (isReaderUrl(tab, action.url)) {
                     val urlReplaced =
-                        tab?.readerState?.activeUrl?.let { activeUrl ->
-                            store.dispatch(ContentAction.UpdateUrlAction(action.sessionId, activeUrl))
-                            true
-                        } ?: false
+                        tab?.readerState
+                            ?.activeUrl
+                            ?.takeIf { isAllowedArticleUrl(it) }
+                            ?.let { activeUrl ->
+                                store.dispatch(ContentAction.UpdateUrlAction(action.sessionId, activeUrl))
+                                true
+                            } ?: false
                     store.dispatch(ReaderAction.UpdateReaderActiveAction(action.sessionId, true))
                     !urlReplaced
                 } else {
@@ -133,5 +138,10 @@ class ReaderViewMiddleware : Middleware<BrowserState, BrowserAction> {
     private fun isReaderUrl(tab: TabSessionState?, url: String): Boolean {
         val readerViewBaseUrl = tab?.readerState?.baseUrl
         return readerViewBaseUrl != null && url.startsWith(readerViewBaseUrl)
+    }
+
+    private fun isAllowedArticleUrl(url: String): Boolean {
+        val scheme = url.toUri().normalizeScheme().scheme
+        return scheme == "http" || scheme == "https"
     }
 }

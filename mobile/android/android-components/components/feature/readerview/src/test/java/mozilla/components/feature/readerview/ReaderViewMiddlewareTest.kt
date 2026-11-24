@@ -199,6 +199,58 @@ class ReaderViewMiddlewareTest {
     }
 
     @Test
+    fun `GIVEN a reader page WHEN it reports a non-http active URL THEN the active URL and tab URL are not changed`() {
+        val readerUrl = "moz-extension://123/readerview.html?url=javascript%3Aalert(1)"
+        val tab =
+            createTab(
+                readerUrl,
+                id = "test-tab1",
+                readerState =
+                    ReaderState(
+                        active = true,
+                        baseUrl = "moz-extension://123",
+                    ),
+            )
+        val store =
+            BrowserStore(
+                initialState = BrowserState(tabs = listOf(tab)),
+                middleware = listOf(ReaderViewMiddleware()),
+            )
+
+        listOf("javascript:alert(1)", "jav\tascript:alert(1)", "file:///sdcard/a.html", "data:text/html,a").forEach {
+            store.dispatch(ReaderAction.UpdateReaderActiveUrlAction(tab.id, activeUrl = it))
+        }
+
+        assertNull(store.state.findTab(tab.id)!!.readerState.activeUrl)
+        assertEquals(readerUrl, store.state.findTab(tab.id)!!.content.url)
+    }
+
+    @Test
+    fun `GIVEN a restored non-http active URL WHEN navigating to the reader page THEN the tab URL is not masked with it`() {
+        val readerUrl = "moz-extension://123/readerview.html?url=javascript%3Aalert(1)"
+        val tab =
+            createTab(
+                "https://www.mozilla.org",
+                id = "test-tab1",
+                readerState =
+                    ReaderState(
+                        active = true,
+                        baseUrl = "moz-extension://123",
+                        activeUrl = "javascript:alert(1)",
+                    ),
+            )
+        val store =
+            BrowserStore(
+                initialState = BrowserState(tabs = listOf(tab)),
+                middleware = listOf(ReaderViewMiddleware()),
+            )
+
+        store.dispatch(ContentAction.UpdateUrlAction(tab.id, readerUrl))
+
+        assertEquals(readerUrl, store.state.findTab(tab.id)!!.content.url)
+    }
+
+    @Test
     fun `GIVEN navigating to a new URL WHEN that is not a reader mode URL THEN clear reader mode status for the tab`() {
         val tab =
             createTab(
