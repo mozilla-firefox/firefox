@@ -293,7 +293,7 @@ pub fn prepare_quad(
         },
     );
 
-    let rounded_clip_enabled = frame_state.quad_rounded_clip_enabled;
+    let rounded_clip_zero_radius_only = frame_state.quad_rounded_clip_zero_radius_only;
     let strategy = match cache_key {
         Some(_) => QuadRenderStrategy::Indirect,
         None => get_path_render_strategy(
@@ -303,7 +303,7 @@ pub fn prepare_quad(
             transform,
             spatial_tree,
             frame_state.path_rendering_enabled,
-        ).unwrap_or_else(|| get_prim_render_strategy(pattern.kind, pattern.is_opaque, clips, transform, spatial_tree, rounded_clip_enabled)),
+        ).unwrap_or_else(|| get_prim_render_strategy(pattern.kind, pattern.is_opaque, clips, transform, spatial_tree, rounded_clip_zero_radius_only)),
     };
 
     prepare_quad_impl(
@@ -349,10 +349,10 @@ pub fn prepare_repeatable_quad(
     // coverage rect into account rather than the whole primitive's, but
     // for now it does the latter so we might as well not do the work
     // multiple times.
-    let rounded_clip_enabled = frame_state.quad_rounded_clip_enabled;
+    let rounded_clip_zero_radius_only = frame_state.quad_rounded_clip_zero_radius_only;
     let strategy = match cache_key {
         Some(_) => QuadRenderStrategy::Indirect,
-        None => get_prim_render_strategy(pattern.kind, pattern.is_opaque, clips, transform, spatial_tree, rounded_clip_enabled),
+        None => get_prim_render_strategy(pattern.kind, pattern.is_opaque, clips, transform, spatial_tree, rounded_clip_zero_radius_only),
     };
 
     let needs_repetition = stretch_size.width < desc.pattern_rect.width()
@@ -574,7 +574,7 @@ pub fn prepare_border_nine_patch(
         clips,
         transform,
         spatial_tree,
-        frame_state.quad_rounded_clip_enabled,
+        frame_state.quad_rounded_clip_zero_radius_only,
     );
 
     // The indirect transform drives the resolution at which each segment is going
@@ -1594,7 +1594,7 @@ fn get_prim_render_strategy(
     clips: &QuadClipStack,
     transform: &QuadTransformState,
     spatial_tree: &SpatialTree,
-    rounded_clip_enabled: bool,
+    rounded_clip_zero_radius_only: bool,
 ) -> QuadRenderStrategy {
     let prim_spatial_node_index = transform.prim_spatial_node_index();
     let prim_is_scale_offset = transform.is_2d_scale_offset();
@@ -1630,11 +1630,8 @@ fn get_prim_render_strategy(
         size.width > MAX_INDIRECT_TASK_SIZE || size.height > MAX_INDIRECT_TASK_SIZE
     };
 
-    let rounded_clip = if rounded_clip_enabled {
-        get_direct_rounded_clip(pattern_kind, clips, transform, spatial_tree)
-    } else {
-        None
-    };
+    let rounded_clip = get_direct_rounded_clip(pattern_kind, clips, transform, spatial_tree)
+        .filter(|clip| !rounded_clip_zero_radius_only || clip.radius == 0.0);
 
     if !try_split_prim {
         return match rounded_clip {

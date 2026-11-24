@@ -376,11 +376,10 @@ vec4 pattern_fragment(vec4 color) {
 
 #if defined(SWGL_DRAW_SPAN)
 void swgl_drawSpanRGBA8() {
-    // The span functions can't apply the rounded clip. Fall back to the
-    // fragment shader.
-    if (rounded_clip_is_enabled()) {
+    if (!rounded_clip_span_is_supported()) {
         return;
     }
+    vec4 clip_rect = rounded_clip_span_rect();
 
     int kind = v_gradient_header.x;
     if (kind != GRADIENT_KIND_LINEAR && kind != GRADIENT_KIND_RADIAL) {
@@ -397,7 +396,7 @@ void swgl_drawSpanRGBA8() {
         // to be laid out for a tree traversal but we laid them out linearly because
         // that's the fastest way for the span shader.
         // Replace the gradient with a pink solid color.
-        swgl_commitSolidRGBA8(vec4(1.0, 0.0, 1.0, 1.0));
+        swgl_commitSolidRGBA8(vec4(1.0, 0.0, 1.0, 1.0), clip_rect);
         return;
     }
 
@@ -412,20 +411,20 @@ void swgl_drawSpanRGBA8() {
 
 #ifdef WR_FEATURE_DITHERING
         swgl_commitDitheredLinearGradientFromStopsRGBA8(sGpuBufferF, offsets_addr, colors_addr,
-            stop_count, repeat, pos, scale_dir, start_offset, gl_FragCoord, premultiply);
+            stop_count, repeat, pos, scale_dir, start_offset, gl_FragCoord, premultiply, clip_rect);
 #else
         swgl_commitLinearGradientFromStopsRGBA8(sGpuBufferF, offsets_addr, colors_addr,
-            stop_count, repeat, pos, scale_dir, start_offset, premultiply);
+            stop_count, repeat, pos, scale_dir, start_offset, premultiply, clip_rect);
 #endif
     } else if (kind == GRADIENT_KIND_RADIAL) {
       float start_radius = v_flat_data.x;
 
 #ifdef WR_FEATURE_DITHERING
       swgl_commitDitheredRadialGradientFromStopsRGBA8(sGpuBufferF, offsets_addr, colors_addr,
-          stop_count, repeat, pos, start_radius, premultiply);
+          stop_count, repeat, pos, start_radius, premultiply, clip_rect);
 #else
       swgl_commitRadialGradientFromStopsRGBA8(sGpuBufferF, offsets_addr, colors_addr,
-          stop_count, repeat, pos, start_radius, premultiply);
+          stop_count, repeat, pos, start_radius, premultiply, clip_rect);
 #endif
     }
 }

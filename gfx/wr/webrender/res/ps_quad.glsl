@@ -37,8 +37,9 @@
 /// a rounded rectangle clip with a uniform circular radius (QF_ROUNDED_RECT_CLIP).
 /// The clip is in the same space as the quad's bounds, which must be device space.
 /// Its two blocks sit between the quad primitive and the segments. A shader with a
-/// SWGL span function must call rounded_clip_is_enabled() and fall back to the
-/// fragment shader when it returns true.
+/// SWGL span function must fall back to the fragment shader when
+/// rounded_clip_span_is_supported() returns false, and otherwise pass
+/// rounded_clip_span_rect() to the span commits.
 ///
 /// A zero radius makes the clip an axis-aligned rectangle in device space, which
 /// is how rectangle clips in another coordinate system than the primitive are
@@ -481,6 +482,22 @@ float rounded_clip_fragment() {
 
     return distance_aa(1.0, dist);
 }
+
+#ifdef SWGL_DRAW_SPAN
+// The span commits can only apply the clip if it is a rectangle.
+bool rounded_clip_span_is_supported() {
+    return !rounded_clip_is_enabled() || v_rounded_clip_radius.x == 0.0;
+}
+
+// The clip rect to pass to the span commits.
+vec4 rounded_clip_span_rect() {
+    if (!rounded_clip_is_enabled()) {
+        return SWGL_NO_CLIP_RECT;
+    }
+    return vec4(v_rounded_clip.xy - v_rounded_clip.zw,
+                v_rounded_clip.xy + v_rounded_clip.zw);
+}
+#endif
 #endif
 
 float antialiasing_fragment() {

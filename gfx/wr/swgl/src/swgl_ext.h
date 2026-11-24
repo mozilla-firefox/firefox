@@ -46,6 +46,52 @@ static ALWAYS_INLINE void commit_aa_solid_span(P* buf, R r, int len) {
   }
 }
 
+// Restricts a span to the pixels whose centers are inside of the clip rect
+// (x0, y0, x1, y1), which is in the same space as gl_FragCoord. Returns the
+// number of pixels skipped at the start of the span and updates span to the
+// number of pixels to draw after them.
+static ALWAYS_INLINE int clipSpanToRect(const vec4_scalar& clipRect,
+                                        const vec4& fragCoord, int& span) {
+  float x = fragCoord.x.x;
+  float y = fragCoord.y.x;
+  if (y < clipRect.y || y >= clipRect.w) {
+    span = 0;
+    return 0;
+  }
+  int start = clamp(int(ceil(clipRect.x - x)), 0, span);
+  span = clamp(int(ceil(clipRect.z - x)), start, span) - start;
+  return start;
+}
+
+// A clip rect for the span commits that doesn't clip anything.
+static const vec4_scalar swgl_NoClipRect = vec4_scalar(-1.0e9f, -1.0e9f,
+                                                       1.0e9f, 1.0e9f);
+
+// Used by the span commits that take a clip rect. Skips the pixels before the
+// clip rect, and restricts len to the pixels inside of it. If the clip rect
+// shortens the span, len is rounded down to whole chunks, leaving the last
+// partial chunk to the fragment shader.
+#define SWGL_CLIP_SPAN_BEGIN(format, clip_rect, len)              \
+  int clip_total = len;                                           \
+  int clip_start = clipSpanToRect(clip_rect, gl_FragCoord, len);  \
+  int clip_len = len;                                             \
+  if (clip_len != clip_total) len &= ~3;                          \
+  swgl_Out##format += clip_start;                                 \
+  swgl_SpanLength -= clip_start
+
+// A varying at the first pixel inside of the clip rect.
+#define SWGL_CLIP_SPAN_VARYING(p) \
+  (clip_start ? (p) + dFdx(p) * float(clip_start) : (p))
+
+// Consumes the drawn pixels, and the pixels after the clip rect if all of the
+// pixels inside of it were drawn.
+#define SWGL_CLIP_SPAN_END(format, drawn)                    \
+  do {                                                       \
+    int consumed = drawn == clip_len ? clip_total - clip_start : drawn; \
+    swgl_Out##format += consumed;                            \
+    swgl_SpanLength -= consumed;                             \
+  } while (0)
+
 // Forces a value with vector run-class to have scalar run-class.
 template <typename T>
 static ALWAYS_INLINE auto swgl_forceScalar(T v) -> decltype(force_scalar(v)) {
@@ -60,9 +106,10 @@ static ALWAYS_INLINE auto swgl_forceScalar(T v) -> decltype(force_scalar(v)) {
 
 // Commit an entire span of a solid color. This dispatches to clip-masked and
 // anti-aliased fast-paths as appropriate.
-#define swgl_commitSolid(format, v, n)                                   \
+#define swgl_commitSolid(format, v, n, clip_rect)                        \
   do {                                                                   \
     int len = (n);                                                       \
+    SWGL_CLIP_SPAN_BEGIN(format, clip_rect, len);                        \
     if (blend_key) {                                                     \
       if (swgl_ClipFlags & SWGL_CLIP_FLAG_MASK) {                        \
         commit_masked_solid_span(swgl_Out##format,                       \
@@ -78,15 +125,16 @@ static ALWAYS_INLINE auto swgl_forceScalar(T v) -> decltype(force_scalar(v)) {
       commit_solid_span<false>(swgl_Out##format,                         \
                                pack_span(swgl_Out##format, (v)), len);   \
     }                                                                    \
-    swgl_Out##format += len;                                             \
-    swgl_SpanLength -= len;                                              \
+    SWGL_CLIP_SPAN_END(format, len);                                     \
   } while (0)
-#define swgl_commitSolidRGBA8(v) swgl_commitSolid(RGBA8, v, swgl_SpanLength)
-#define swgl_commitSolidR8(v) swgl_commitSolid(R8, v, swgl_SpanLength)
+#define swgl_commitSolidRGBA8(v, clip_rect) \
+  swgl_commitSolid(RGBA8, v, swgl_SpanLength, clip_rect)
+#define swgl_commitSolidR8(v) \
+  swgl_commitSolid(R8, v, swgl_SpanLength, swgl_NoClipRect)
 #define swgl_commitPartialSolidRGBA8(len, v) \
-  swgl_commitSolid(RGBA8, v, min(int(len), swgl_SpanLength))
+  swgl_commitSolid(RGBA8, v, min(int(len), swgl_SpanLength), swgl_NoClipRect)
 #define swgl_commitPartialSolidR8(len, v) \
-  swgl_commitSolid(R8, v, min(int(len), swgl_SpanLength))
+  swgl_commitSolid(R8, v, min(int(len), swgl_SpanLength), swgl_NoClipRect)
 
 #define swgl_commitChunk(format, chunk)                 \
   do {                                                  \
@@ -606,47 +654,55 @@ static inline LinearFilter needsTextureLinear(S sampler, T P, int span) {
 }
 
 // Commit an entire span with linear filtering
-#define swgl_commitTextureLinear(format, s, p, uv_rect, color, n)              \
-  do {                                                                         \
-    auto packed_color = packColor(swgl_Out##format, color);                    \
-    int len = (n);                                                             \
-    int drawn = 0;                                                             \
-    if (LinearFilter filter = needsTextureLinear(s, p, len)) {                 \
-      if (blend_key) {                                                         \
-        drawn = blendTextureLinear<true>(s, p, len, uv_rect, packed_color,     \
-                                         swgl_Out##format, filter);            \
-      } else {                                                                 \
-        drawn = blendTextureLinear<false>(s, p, len, uv_rect, packed_color,    \
-                                          swgl_Out##format, filter);           \
-      }                                                                        \
-    } else if (blend_key) {                                                    \
-      drawn = blendTextureNearestFast<true>(s, p, len, uv_rect, packed_color,  \
-                                            swgl_Out##format);                 \
-    } else {                                                                   \
-      drawn = blendTextureNearestFast<false>(s, p, len, uv_rect, packed_color, \
-                                             swgl_Out##format);                \
-    }                                                                          \
-    swgl_Out##format += drawn;                                                 \
-    swgl_SpanLength -= drawn;                                                  \
+#define swgl_commitTextureLinear(format, s, p, uv_rect, color, n,         \
+                                 clip_rect)                                \
+  do {                                                                     \
+    auto packed_color = packColor(swgl_Out##format, color);                \
+    int len = (n);                                                         \
+    SWGL_CLIP_SPAN_BEGIN(format, clip_rect, len);                          \
+    auto clip_p = SWGL_CLIP_SPAN_VARYING(p);                               \
+    int drawn = 0;                                                         \
+    if (LinearFilter filter = needsTextureLinear(s, clip_p, len)) {        \
+      if (blend_key) {                                                     \
+        drawn = blendTextureLinear<true>(s, clip_p, len, uv_rect,          \
+                                         packed_color, swgl_Out##format,   \
+                                         filter);                          \
+      } else {                                                             \
+        drawn = blendTextureLinear<false>(s, clip_p, len, uv_rect,         \
+                                          packed_color, swgl_Out##format,  \
+                                          filter);                         \
+      }                                                                    \
+    } else if (blend_key) {                                                \
+      drawn = blendTextureNearestFast<true>(s, clip_p, len, uv_rect,       \
+                                            packed_color, swgl_Out##format); \
+    } else {                                                               \
+      drawn = blendTextureNearestFast<false>(s, clip_p, len, uv_rect,      \
+                                             packed_color, swgl_Out##format); \
+    }                                                                      \
+    SWGL_CLIP_SPAN_END(format, drawn);                                     \
   } while (0)
-#define swgl_commitTextureLinearRGBA8(s, p, uv_rect) \
-  swgl_commitTextureLinear(RGBA8, s, p, uv_rect, NoColor(), swgl_SpanLength)
-#define swgl_commitTextureLinearR8(s, p, uv_rect) \
-  swgl_commitTextureLinear(R8, s, p, uv_rect, NoColor(), swgl_SpanLength)
+#define swgl_commitTextureLinearRGBA8(s, p, uv_rect, clip_rect)          \
+  swgl_commitTextureLinear(RGBA8, s, p, uv_rect, NoColor(), swgl_SpanLength, \
+                           clip_rect)
+#define swgl_commitTextureLinearR8(s, p, uv_rect)                      \
+  swgl_commitTextureLinear(R8, s, p, uv_rect, NoColor(), swgl_SpanLength, \
+                           swgl_NoClipRect)
 
 // Commit a partial span with linear filtering, optionally inverting the color
 #define swgl_commitPartialTextureLinearR8(len, s, p, uv_rect) \
   swgl_commitTextureLinear(R8, s, p, uv_rect, NoColor(),      \
-                           min(int(len), swgl_SpanLength))
+                           min(int(len), swgl_SpanLength), swgl_NoClipRect)
 #define swgl_commitPartialTextureLinearInvertR8(len, s, p, uv_rect) \
   swgl_commitTextureLinear(R8, s, p, uv_rect, InvertColor(),        \
-                           min(int(len), swgl_SpanLength))
+                           min(int(len), swgl_SpanLength), swgl_NoClipRect)
 
 // Commit an entire span with linear filtering that is scaled by a color
-#define swgl_commitTextureLinearColorRGBA8(s, p, uv_rect, color) \
-  swgl_commitTextureLinear(RGBA8, s, p, uv_rect, color, swgl_SpanLength)
-#define swgl_commitTextureLinearColorR8(s, p, uv_rect, color) \
-  swgl_commitTextureLinear(R8, s, p, uv_rect, color, swgl_SpanLength)
+#define swgl_commitTextureLinearColorRGBA8(s, p, uv_rect, color, clip_rect) \
+  swgl_commitTextureLinear(RGBA8, s, p, uv_rect, color, swgl_SpanLength,    \
+                           clip_rect)
+#define swgl_commitTextureLinearColorR8(s, p, uv_rect, color)            \
+  swgl_commitTextureLinear(R8, s, p, uv_rect, color, swgl_SpanLength,    \
+                           swgl_NoClipRect)
 
 // Helper function that samples from an R8 texture while expanding it to support
 // a differing framebuffer format.
@@ -669,22 +725,25 @@ static inline int blendTextureLinearR8(S sampler, vec2 uv, int span,
 }
 
 // Commit an entire span with linear filtering while expanding from R8 to RGBA8
-#define swgl_commitTextureLinearColorR8ToRGBA8(s, p, uv_rect, color)      \
+#define swgl_commitTextureLinearColorR8ToRGBA8(s, p, uv_rect, color,      \
+                                               clip_rect)                 \
   do {                                                                    \
     auto packed_color = packColor(swgl_OutRGBA8, color);                  \
+    int len = swgl_SpanLength;                                            \
+    SWGL_CLIP_SPAN_BEGIN(RGBA8, clip_rect, len);                          \
+    auto clip_p = SWGL_CLIP_SPAN_VARYING(p);                              \
     int drawn = 0;                                                        \
     if (blend_key) {                                                      \
-      drawn = blendTextureLinearR8<true>(s, p, swgl_SpanLength, uv_rect,  \
+      drawn = blendTextureLinearR8<true>(s, clip_p, len, uv_rect,         \
                                          packed_color, swgl_OutRGBA8);    \
     } else {                                                              \
-      drawn = blendTextureLinearR8<false>(s, p, swgl_SpanLength, uv_rect, \
+      drawn = blendTextureLinearR8<false>(s, clip_p, len, uv_rect,        \
                                           packed_color, swgl_OutRGBA8);   \
     }                                                                     \
-    swgl_OutRGBA8 += drawn;                                               \
-    swgl_SpanLength -= drawn;                                             \
+    SWGL_CLIP_SPAN_END(RGBA8, drawn);                                     \
   } while (0)
-#define swgl_commitTextureLinearR8ToRGBA8(s, p, uv_rect) \
-  swgl_commitTextureLinearColorR8ToRGBA8(s, p, uv_rect, NoColor())
+#define swgl_commitTextureLinearR8ToRGBA8(s, p, uv_rect, clip_rect) \
+  swgl_commitTextureLinearColorR8ToRGBA8(s, p, uv_rect, NoColor(), clip_rect)
 
 // Compute repeating UVs, possibly constrained by tile repeat limits
 static inline vec2 tileRepeatUV(vec2 uv, const vec2_scalar& tile_repeat) {
@@ -772,30 +831,32 @@ static int blendTextureLinearRepeat(S sampler, vec2 uv, int span,
 
 // Commit an entire span with linear filtering and repeating UVs
 #define swgl_commitTextureLinearRepeat(format, s, p, tile_repeat, uv_repeat,   \
-                                       uv_rect, color)                         \
+                                       uv_rect, color, clip_rect)              \
   do {                                                                         \
     auto packed_color = packColor(swgl_Out##format, color);                    \
+    int len = swgl_SpanLength;                                                 \
+    SWGL_CLIP_SPAN_BEGIN(format, clip_rect, len);                              \
+    auto clip_p = SWGL_CLIP_SPAN_VARYING(p);                                   \
     int drawn = 0;                                                             \
     if (blend_key) {                                                           \
-      drawn = blendTextureLinearRepeat<true>(s, p, swgl_SpanLength,            \
+      drawn = blendTextureLinearRepeat<true>(s, clip_p, len,                   \
                                              tile_repeat, uv_repeat, uv_rect,  \
                                              packed_color, swgl_Out##format);  \
     } else {                                                                   \
-      drawn = blendTextureLinearRepeat<false>(s, p, swgl_SpanLength,           \
+      drawn = blendTextureLinearRepeat<false>(s, clip_p, len,                  \
                                               tile_repeat, uv_repeat, uv_rect, \
                                               packed_color, swgl_Out##format); \
     }                                                                          \
-    swgl_Out##format += drawn;                                                 \
-    swgl_SpanLength -= drawn;                                                  \
+    SWGL_CLIP_SPAN_END(format, drawn);                                         \
   } while (0)
 #define swgl_commitTextureLinearRepeatRGBA8(s, p, tile_repeat, uv_repeat,      \
-                                            uv_rect)                           \
+                                            uv_rect, clip_rect)                \
   swgl_commitTextureLinearRepeat(RGBA8, s, p, tile_repeat, uv_repeat, uv_rect, \
-                                 NoColor())
+                                 NoColor(), clip_rect)
 #define swgl_commitTextureLinearRepeatColorRGBA8(s, p, tile_repeat, uv_repeat, \
-                                                 uv_rect, color)               \
+                                                 uv_rect, color, clip_rect)    \
   swgl_commitTextureLinearRepeat(RGBA8, s, p, tile_repeat, uv_repeat, uv_rect, \
-                                 color)
+                                 color, clip_rect)
 
 template <typename S>
 static ALWAYS_INLINE PackedRGBA8 textureNearestPacked(UNUSED uint32_t* buf,
@@ -892,59 +953,62 @@ static ALWAYS_INLINE bool needsNearestFallback(S sampler, T P, int span) {
 
 // Commit an entire span with nearest filtering and either clamped or repeating
 // UVs
-#define swgl_commitTextureNearest(format, s, p, uv_rect, color)               \
+#define swgl_commitTextureNearest(format, s, p, uv_rect, color, clip_rect)    \
   do {                                                                        \
     auto packed_color = packColor(swgl_Out##format, color);                   \
+    int len = swgl_SpanLength;                                                \
+    SWGL_CLIP_SPAN_BEGIN(format, clip_rect, len);                             \
+    auto clip_p = SWGL_CLIP_SPAN_VARYING(p);                                  \
     int drawn = 0;                                                            \
-    if (needsNearestFallback(s, p, swgl_SpanLength)) {                        \
+    if (needsNearestFallback(s, clip_p, len)) {                               \
       if (blend_key) {                                                        \
         drawn = blendTextureNearestRepeat<true, false>(                       \
-            s, p, swgl_SpanLength, 0.0f, uv_rect, packed_color,               \
-            swgl_Out##format);                                                \
+            s, clip_p, len, 0.0f, uv_rect, packed_color, swgl_Out##format);   \
       } else {                                                                \
         drawn = blendTextureNearestRepeat<false, false>(                      \
-            s, p, swgl_SpanLength, 0.0f, uv_rect, packed_color,               \
-            swgl_Out##format);                                                \
+            s, clip_p, len, 0.0f, uv_rect, packed_color, swgl_Out##format);   \
       }                                                                       \
     } else if (blend_key) {                                                   \
-      drawn = blendTextureNearestFast<true>(s, p, swgl_SpanLength, uv_rect,   \
+      drawn = blendTextureNearestFast<true>(s, clip_p, len, uv_rect,          \
                                             packed_color, swgl_Out##format);  \
     } else {                                                                  \
-      drawn = blendTextureNearestFast<false>(s, p, swgl_SpanLength, uv_rect,  \
+      drawn = blendTextureNearestFast<false>(s, clip_p, len, uv_rect,         \
                                              packed_color, swgl_Out##format); \
     }                                                                         \
-    swgl_Out##format += drawn;                                                \
-    swgl_SpanLength -= drawn;                                                 \
+    SWGL_CLIP_SPAN_END(format, drawn);                                        \
   } while (0)
-#define swgl_commitTextureNearestRGBA8(s, p, uv_rect) \
-  swgl_commitTextureNearest(RGBA8, s, p, uv_rect, NoColor())
-#define swgl_commitTextureNearestColorRGBA8(s, p, uv_rect, color) \
-  swgl_commitTextureNearest(RGBA8, s, p, uv_rect, color)
+#define swgl_commitTextureNearestRGBA8(s, p, uv_rect, clip_rect) \
+  swgl_commitTextureNearest(RGBA8, s, p, uv_rect, NoColor(), clip_rect)
+#define swgl_commitTextureNearestColorRGBA8(s, p, uv_rect, color, clip_rect) \
+  swgl_commitTextureNearest(RGBA8, s, p, uv_rect, color, clip_rect)
 
 #define swgl_commitTextureNearestRepeat(format, s, p, tile_repeat, uv_rect, \
-                                        color)                              \
+                                        color, clip_rect)                   \
   do {                                                                      \
     auto packed_color = packColor(swgl_Out##format, color);                 \
+    int len = swgl_SpanLength;                                              \
+    SWGL_CLIP_SPAN_BEGIN(format, clip_rect, len);                           \
+    auto clip_p = SWGL_CLIP_SPAN_VARYING(p);                                \
     int drawn = 0;                                                          \
     if (blend_key) {                                                        \
       drawn = blendTextureNearestRepeat<true, true>(                        \
-          s, p, swgl_SpanLength, tile_repeat, uv_rect, packed_color,        \
+          s, clip_p, len, tile_repeat, uv_rect, packed_color,               \
           swgl_Out##format);                                                \
     } else {                                                                \
       drawn = blendTextureNearestRepeat<false, true>(                       \
-          s, p, swgl_SpanLength, tile_repeat, uv_rect, packed_color,        \
+          s, clip_p, len, tile_repeat, uv_rect, packed_color,               \
           swgl_Out##format);                                                \
     }                                                                       \
-    swgl_Out##format += drawn;                                              \
-    swgl_SpanLength -= drawn;                                               \
+    SWGL_CLIP_SPAN_END(format, drawn);                                      \
   } while (0)
 #define swgl_commitTextureNearestRepeatRGBA8(s, p, tile_repeat, uv_repeat, \
-                                             uv_rect)                      \
+                                             uv_rect, clip_rect)           \
   swgl_commitTextureNearestRepeat(RGBA8, s, p, tile_repeat, uv_repeat,     \
-                                  NoColor())
-#define swgl_commitTextureNearestRepeatColorRGBA8(s, p, tile_repeat,         \
-                                                  uv_repeat, uv_rect, color) \
-  swgl_commitTextureNearestRepeat(RGBA8, s, p, tile_repeat, uv_repeat, color)
+                                  NoColor(), clip_rect)
+#define swgl_commitTextureNearestRepeatColorRGBA8(                         \
+    s, p, tile_repeat, uv_repeat, uv_rect, color, clip_rect)               \
+  swgl_commitTextureNearestRepeat(RGBA8, s, p, tile_repeat, uv_repeat,     \
+                                  color, clip_rect)
 
 // Commit an entire span of texture with filtering determined by sampler state.
 #define swgl_commitTexture(format, s, ...)               \
@@ -1807,14 +1871,16 @@ static ALWAYS_INLINE WideRGBA8 premultiplyGradientPixels(WideRGBA8 pixels) {
   return set_alphas(muldiv255(pixels, alphas(pixels)), pixels);
 }
 
-// Samples an entire span of a linear gradient.
+// Samples the pixels of a span of a linear gradient that are inside of
+// clipRect.
 template <bool BLEND, bool DITHER, bool PREMULTIPLY>
 static bool commitLinearGradientFromStops(sampler2D sampler, int offsetsAddress,
                                           int colorsAddress, float stopCount,
                                           bool gradientRepeat, vec2 pos,
                                           const vec2_scalar& scaleDir,
                                           float startOffset, uint32_t* buf,
-                                          int span, vec4 fragCoord = vec4()) {
+                                          int span, vec4 fragCoord,
+                                          const vec4_scalar& clipRect) {
   assert(sampler->format == TextureFormat::RGBA32F);
   // Stop offsets are expected to be stored just after the colors.
   assert(colorsAddress >= 0 && colorsAddress < offsetsAddress);
@@ -1826,12 +1892,6 @@ static bool commitLinearGradientFromStops(sampler2D sampler, int offsetsAddress,
   // Number of pixels per chunks.
   const float CHUNK_SIZE = 4.0f;
 
-  // Only incremented in the case of dithering
-  // Only incremented in the case of dithering
-  int32_t currentFragCoordX = int32_t(fragCoord.x.x);
-  const auto* ditherNoiseYIndexed =
-      DITHER ? getDitherNoise(int32_t(fragCoord.y.x)) : nullptr;
-
   // Get the pixel delta from the difference in offset steps. This represents
   // how far within the gradient offset range we advance for every step in
   // output.
@@ -1840,6 +1900,15 @@ static bool commitLinearGradientFromStops(sampler2D sampler, int offsetsAddress,
   if (!isfinite(delta)) {
     return false;
   }
+
+  int clipStart = clipSpanToRect(clipRect, fragCoord, span);
+  buf += clipStart;
+  pos += posStep * float(clipStart);
+
+  // Only incremented in the case of dithering
+  int32_t currentFragCoordX = int32_t(fragCoord.x.x) + clipStart;
+  const auto* ditherNoiseYIndexed =
+      DITHER ? getDitherNoise(int32_t(fragCoord.y.x)) : nullptr;
 
   for (; span > 0;) {
     // The number of pixels that are affected by the current gradient stop pair.
@@ -1985,7 +2054,7 @@ static bool commitLinearGradientFromStops(sampler2D sampler, int offsetsAddress,
 
 #define swgl_commitLinearGradientFromStopsRGBA8(                              \
     sampler, offsetsAddress, colorsAddress, size, gradientRepeat, pos,        \
-    scaleDir, startOffset, premultiply)                                       \
+    scaleDir, startOffset, premultiply, clipRect)                             \
   do {                                                                        \
     bool drawn = false;                                                       \
     if (blend_key) {                                                          \
@@ -1993,21 +2062,21 @@ static bool commitLinearGradientFromStops(sampler2D sampler, int offsetsAddress,
                   ? commitLinearGradientFromStops<true, false, true>(         \
                         sampler, offsetsAddress, colorsAddress, size,         \
                         gradientRepeat, pos, scaleDir, startOffset,           \
-                        swgl_OutRGBA8, swgl_SpanLength)                       \
+                        swgl_OutRGBA8, swgl_SpanLength, gl_FragCoord, clipRect)\
                   : commitLinearGradientFromStops<true, false, false>(        \
                         sampler, offsetsAddress, colorsAddress, size,         \
                         gradientRepeat, pos, scaleDir, startOffset,           \
-                        swgl_OutRGBA8, swgl_SpanLength);                      \
+                        swgl_OutRGBA8, swgl_SpanLength, gl_FragCoord, clipRect);\
     } else {                                                                  \
       drawn = premultiply                                                     \
                   ? commitLinearGradientFromStops<false, false, true>(        \
                         sampler, offsetsAddress, colorsAddress, size,         \
                         gradientRepeat, pos, scaleDir, startOffset,           \
-                        swgl_OutRGBA8, swgl_SpanLength)                       \
+                        swgl_OutRGBA8, swgl_SpanLength, gl_FragCoord, clipRect)\
                   : commitLinearGradientFromStops<false, false, false>(       \
                         sampler, offsetsAddress, colorsAddress, size,         \
                         gradientRepeat, pos, scaleDir, startOffset,           \
-                        swgl_OutRGBA8, swgl_SpanLength);                      \
+                        swgl_OutRGBA8, swgl_SpanLength, gl_FragCoord, clipRect);\
     }                                                                         \
     if (drawn) {                                                             \
       swgl_OutRGBA8 += swgl_SpanLength;                                      \
@@ -2016,8 +2085,8 @@ static bool commitLinearGradientFromStops(sampler2D sampler, int offsetsAddress,
   } while (0)
 
 #define swgl_commitDitheredLinearGradientFromStopsRGBA8(                      \
-    sampler, offsetsAddress, colorsAddress, size, tileRepeat, gradientRepeat, \
-    pos, scaleDir, startOffset, premultiply)                                  \
+    sampler, offsetsAddress, colorsAddress, size, gradientRepeat, pos,        \
+    scaleDir, startOffset, fragCoord, premultiply, clipRect)                  \
   do {                                                                        \
     bool drawn = false;                                                       \
     if (blend_key) {                                                          \
@@ -2025,21 +2094,21 @@ static bool commitLinearGradientFromStops(sampler2D sampler, int offsetsAddress,
                   ? commitLinearGradientFromStops<true, true, true>(          \
                         sampler, offsetsAddress, colorsAddress, size,         \
                         gradientRepeat, pos, scaleDir, startOffset,           \
-                        swgl_OutRGBA8, swgl_SpanLength, fragCoord)            \
+                        swgl_OutRGBA8, swgl_SpanLength, fragCoord, clipRect)  \
                   : commitLinearGradientFromStops<true, true, false>(         \
                         sampler, offsetsAddress, colorsAddress, size,         \
                         gradientRepeat, pos, scaleDir, startOffset,           \
-                        swgl_OutRGBA8, swgl_SpanLength, fragCoord);           \
+                        swgl_OutRGBA8, swgl_SpanLength, fragCoord, clipRect); \
     } else {                                                                  \
       drawn = premultiply                                                     \
                   ? commitLinearGradientFromStops<false, true, true>(         \
                         sampler, offsetsAddress, colorsAddress, size,         \
                         gradientRepeat, pos, scaleDir, startOffset,           \
-                        swgl_OutRGBA8, swgl_SpanLength, fragCoord)            \
+                        swgl_OutRGBA8, swgl_SpanLength, fragCoord, clipRect)  \
                   : commitLinearGradientFromStops<false, true, false>(        \
                         sampler, offsetsAddress, colorsAddress, size,         \
                         gradientRepeat, pos, scaleDir, startOffset,           \
-                        swgl_OutRGBA8, swgl_SpanLength, fragCoord);           \
+                        swgl_OutRGBA8, swgl_SpanLength, fragCoord, clipRect); \
     }                                                                         \
     if (drawn) {                                                              \
       swgl_OutRGBA8 += swgl_SpanLength;                                       \
@@ -2061,13 +2130,15 @@ static ALWAYS_INLINE V fastSqrt(V v) {
 #endif
 }
 
-// Samples an entire span of a radial gradient.
+// Samples the pixels of a span of a radial gradient that are inside of
+// clipRect.
 template <bool BLEND, bool DITHER, bool PREMULTIPLY>
 static bool commitRadialGradientFromStops(sampler2D sampler, int offsetsAddress,
                                           int colorsAddress, float stopCount,
                                           bool repeat, vec2 pos,
                                           float startRadius, uint32_t* buf,
-                                          int span, vec4 fragCoord = vec4()) {
+                                          int span, vec4 fragCoord,
+                                          const vec4_scalar& clipRect) {
   assert(sampler->format == TextureFormat::RGBA32F);
   // Stop offsets are expected to be stored just after the colors.
   assert(colorsAddress >= 0 && colorsAddress < offsetsAddress);
@@ -2095,6 +2166,10 @@ static bool commitRadialGradientFromStops(sampler2D sampler, int offsetsAddress,
   // before it, we walk down the gradient ramp, and after it, we walk up the
   // ramp.
   // clang-format on
+  int clipStart = clipSpanToRect(clipRect, fragCoord, span);
+  buf += clipStart;
+  pos += dFdx(pos) * float(clipStart);
+
   vec2_scalar pos0 = {pos.x.x, pos.y.x};
   vec2_scalar delta = {pos.x.y - pos.x.x, pos.y.y - pos.y.x};
   float deltaDelta = dot(delta, delta);
@@ -2103,7 +2178,7 @@ static bool commitRadialGradientFromStops(sampler2D sampler, int offsetsAddress,
   }
 
   // Only incremented in the case of dithering
-  int32_t currentFragCoordX = int32_t(fragCoord.x.x);
+  int32_t currentFragCoordX = int32_t(fragCoord.x.x) + clipStart;
   const auto* ditherNoiseYIndexed =
       DITHER ? getDitherNoise(int32_t(fragCoord.y.x)) : nullptr;
 
@@ -2332,25 +2407,29 @@ static bool commitRadialGradientFromStops(sampler2D sampler, int offsetsAddress,
 // maps to the start of the gradient.
 #define swgl_commitRadialGradientFromStopsRGBA8(                              \
     sampler, offsetsAddress, colorsAddress, size, repeat, pos, startRadius,   \
-    premultiply)                                                              \
+    premultiply, clipRect)                                                    \
   do {                                                                        \
     bool drawn = false;                                                       \
     if (blend_key) {                                                          \
       drawn = premultiply                                                     \
                   ? commitRadialGradientFromStops<true, false, true>(         \
                         sampler, offsetsAddress, colorsAddress, size, repeat, \
-                        pos, startRadius, swgl_OutRGBA8, swgl_SpanLength)     \
+                        pos, startRadius, swgl_OutRGBA8, swgl_SpanLength,     \
+                        gl_FragCoord, clipRect)                               \
                   : commitRadialGradientFromStops<true, false, false>(        \
                         sampler, offsetsAddress, colorsAddress, size, repeat, \
-                        pos, startRadius, swgl_OutRGBA8, swgl_SpanLength);    \
+                        pos, startRadius, swgl_OutRGBA8, swgl_SpanLength,     \
+                        gl_FragCoord, clipRect);                              \
     } else {                                                                  \
       drawn = premultiply                                                     \
                   ? commitRadialGradientFromStops<false, false, true>(        \
                         sampler, offsetsAddress, colorsAddress, size, repeat, \
-                        pos, startRadius, swgl_OutRGBA8, swgl_SpanLength)     \
+                        pos, startRadius, swgl_OutRGBA8, swgl_SpanLength,     \
+                        gl_FragCoord, clipRect)                               \
                   : commitRadialGradientFromStops<false, false, false>(       \
                         sampler, offsetsAddress, colorsAddress, size, repeat, \
-                        pos, startRadius, swgl_OutRGBA8, swgl_SpanLength);    \
+                        pos, startRadius, swgl_OutRGBA8, swgl_SpanLength,     \
+                        gl_FragCoord, clipRect);                              \
     }                                                                         \
     if (drawn) {                                                              \
       swgl_OutRGBA8 += swgl_SpanLength;                                       \
@@ -2360,25 +2439,25 @@ static bool commitRadialGradientFromStops(sampler2D sampler, int offsetsAddress,
 
 #define swgl_commitDitheredRadialGradientFromStopsRGBA8(                      \
     sampler, offsetsAddress, colorsAddress, size, repeat, pos, startRadius,   \
-    premultiply)                                                              \
+    premultiply, clipRect)                                                    \
   do {                                                                        \
     bool drawn = false;                                                       \
     if (blend_key) {                                                          \
       drawn = premultiply                                                     \
                   ? commitRadialGradientFromStops<true, true, true>(          \
                         sampler, offsetsAddress, colorsAddress, size, repeat, \
-                        pos, startRadius, swgl_OutRGBA8, swgl_SpanLength, gl_FragCoord)\
+                        pos, startRadius, swgl_OutRGBA8, swgl_SpanLength, gl_FragCoord, clipRect)\
                   : commitRadialGradientFromStops<true, true, false>(         \
                         sampler, offsetsAddress, colorsAddress, size, repeat, \
-                        pos, startRadius, swgl_OutRGBA8, swgl_SpanLength, gl_FragCoord);\
+                        pos, startRadius, swgl_OutRGBA8, swgl_SpanLength, gl_FragCoord, clipRect);\
     } else {                                                                  \
       drawn = premultiply                                                     \
                   ? commitRadialGradientFromStops<false, true, true>(         \
                         sampler, offsetsAddress, colorsAddress, size, repeat, \
-                        pos, startRadius, swgl_OutRGBA8, swgl_SpanLength, gl_FragCoord)\
+                        pos, startRadius, swgl_OutRGBA8, swgl_SpanLength, gl_FragCoord, clipRect)\
                   : commitRadialGradientFromStops<false, true, false>(        \
                         sampler, offsetsAddress, colorsAddress, size, repeat, \
-                        pos, startRadius, swgl_OutRGBA8, swgl_SpanLength, gl_FragCoord);\
+                        pos, startRadius, swgl_OutRGBA8, swgl_SpanLength, gl_FragCoord, clipRect);\
     }                                                                         \
     if (drawn) {                                                              \
       swgl_OutRGBA8 += swgl_SpanLength;                                       \

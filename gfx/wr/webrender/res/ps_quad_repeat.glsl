@@ -115,11 +115,10 @@ vec4 pattern_fragment(vec4 color) {
 
 #if defined(SWGL_DRAW_SPAN)
 void swgl_drawSpanRGBA8() {
-    // The span functions can't apply the rounded clip. Fall back to the
-    // fragment shader.
-    if (rounded_clip_is_enabled()) {
+    if (!rounded_clip_span_is_supported()) {
         return;
     }
+    vec4 clip_rect = rounded_clip_span_rect();
 
     if (!swgl_isTextureRGBA8(sColor0)) {
         return;
@@ -131,9 +130,9 @@ void swgl_drawSpanRGBA8() {
     }
 
     if (v_color != vec4(1.0)) {
-        swgl_commitTextureRepeatColorRGBA8(sColor0, v_uv, v_repetitions, v_uv_bounds, v_uv_sample_bounds, v_color);
+        swgl_commitTextureRepeatColorRGBA8(sColor0, v_uv, v_repetitions, v_uv_bounds, v_uv_sample_bounds, v_color, clip_rect);
     } else {
-        swgl_commitTextureRepeatRGBA8(sColor0, v_uv, v_repetitions, v_uv_bounds, v_uv_sample_bounds);
+        swgl_commitTextureRepeatRGBA8(sColor0, v_uv, v_repetitions, v_uv_bounds, v_uv_sample_bounds, clip_rect);
     }
 }
 #endif

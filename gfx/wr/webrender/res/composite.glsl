@@ -290,9 +290,9 @@ void swgl_drawSpanRGBA8() {
 #endif
 
     if (color != vec4(1.0)) {
-        swgl_commitTextureColorRGBA8(sColor0, vUv, uvBounds, color);
+        swgl_commitTextureColorRGBA8(sColor0, vUv, uvBounds, color, SWGL_NO_CLIP_RECT);
     } else {
-        swgl_commitTextureRGBA8(sColor0, vUv, uvBounds);
+        swgl_commitTextureRGBA8(sColor0, vUv, uvBounds, SWGL_NO_CLIP_RECT);
     }
 #endif
 }

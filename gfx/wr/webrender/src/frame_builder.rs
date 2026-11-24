@@ -169,10 +169,10 @@ pub struct FrameBuildingState<'a> {
     pub frame_gpu_data: &'a mut GpuBufferBuilder,
     /// Whether primitives can use `QuadRenderStrategy::Path`.
     pub path_rendering_enabled: bool,
-    /// Whether quad primitives can apply a rounded rectangle clip in the shader
-    /// instead of using a clip mask. Disabled with SWGL, where the clip makes
-    /// the quad shaders skip their span functions.
-    pub quad_rounded_clip_enabled: bool,
+    /// Whether quad primitives can only apply rounded rectangle clips with a
+    /// zero radius in the shader instead of using a clip mask. Set with SWGL,
+    /// where the span functions only support the clip with a zero radius.
+    pub quad_rounded_clip_zero_radius_only: bool,
     /// When using a render task to produce pixels that are associated with
     /// an image key (for example snapshotted pictures), inserting the image
     /// key / task id association in this hashmap allows the image item to
@@ -624,7 +624,7 @@ impl FrameBuilder {
             image_dependencies: FastHashMap::default(),
             picture_scratch_handles: &mut picture_scratch_handles,
             path_rendering_enabled: !debug_flags.contains(DebugFlags::DISABLE_DIRECT_PATH_FILL),
-            quad_rounded_clip_enabled: !scene.config.is_software,
+            quad_rounded_clip_zero_radius_only: scene.config.is_software,
         };
 
 

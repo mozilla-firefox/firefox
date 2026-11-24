@@ -327,12 +327,12 @@ void swgl_drawSpanRGBA8() {
     }
 
     #ifdef WR_FEATURE_DUAL_SOURCE_BLENDING
-        swgl_commitTextureLinearRGBA8(sColor0, v_uv, v_uv_bounds);
+        swgl_commitTextureLinearRGBA8(sColor0, v_uv, v_uv_bounds, SWGL_NO_CLIP_RECT);
     #else
         if (swgl_isTextureR8(sColor0)) {
-            swgl_commitTextureLinearColorR8ToRGBA8(sColor0, v_uv, v_uv_bounds, v_color);
+            swgl_commitTextureLinearColorR8ToRGBA8(sColor0, v_uv, v_uv_bounds, v_color, SWGL_NO_CLIP_RECT);
         } else {
-            swgl_commitTextureLinearColorRGBA8(sColor0, v_uv, v_uv_bounds, v_color);
+            swgl_commitTextureLinearColorRGBA8(sColor0, v_uv, v_uv_bounds, v_color, SWGL_NO_CLIP_RECT);
         }
     #endif
 }

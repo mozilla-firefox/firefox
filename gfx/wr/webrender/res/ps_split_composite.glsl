@@ -124,7 +124,7 @@ void swgl_drawSpanRGBA8() {
     float perspective_divisor = mix(swgl_forceScalar(gl_FragCoord.w), 1.0, vPerspective.x);
     vec2 uv = vUv * perspective_divisor;
 
-    swgl_commitTextureRGBA8(sColor0, uv, vUvSampleBounds);
+    swgl_commitTextureRGBA8(sColor0, uv, vUvSampleBounds, SWGL_NO_CLIP_RECT);
 }
 #endif
 

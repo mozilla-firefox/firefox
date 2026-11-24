@@ -40,6 +40,8 @@
     #define SWGL_ANTIALIAS
     #define SWGL_BLEND
     #define SWGL_CLIP_DIST
+    // A clip rect for the SWGL span commits that doesn't clip anything.
+    #define SWGL_NO_CLIP_RECT vec4(-1.0e9, -1.0e9, 1.0e9, 1.0e9)
 #endif
 
 #ifdef WR_VERTEX_SHADER
