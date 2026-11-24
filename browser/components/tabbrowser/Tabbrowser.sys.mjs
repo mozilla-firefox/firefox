@@ -5776,6 +5776,9 @@ export class Tabbrowser {
    * @returns {nsIURI|null}
    */
   static #uriForDuplicateCheck(tab) {
+    if (tab.closing) {
+      return null;
+    }
     let uri = tab.linkedBrowser?.currentURI;
     if (!uri) {
       return null;
