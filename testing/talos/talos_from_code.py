@@ -101,8 +101,8 @@ def get_filename_from_url(url):
         return parsed.path.rsplit("/", 1)[-1]
     else:
         print(
-            "ERROR: We were trying to download a file from %s "
-            + "but the URL seems to be incorrect."
+            f"ERROR: We were trying to download a file from {url} "
+            "but the URL seems to be incorrect."
         )
         sys.exit(1)
 

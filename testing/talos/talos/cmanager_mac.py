@@ -22,7 +22,7 @@ def GetProcessData(pid):
         handle.wait()
         data = handle.stdout.readlines()
     except Exception:
-        print("Unexpected error executing '%s': %s", (command, sys.exc_info()))
+        print(f"Unexpected error executing '{command}': {sys.exc_info()}")
         raise
 
     # First line is header output should look like:
