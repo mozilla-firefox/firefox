@@ -1734,8 +1734,7 @@ void nsCSSFrameConstructor::CreateGeneratedContentItem(
   if (aPseudoElement != PseudoStyleType::Backdrop &&
       aPseudoElement != PseudoStyleType::PickerIcon &&
       HasUAWidget(aOriginatingElement) &&
-      !aOriginatingElement.IsAnyOfHTMLElements(nsGkAtoms::details,
-                                               nsGkAtoms::optgroup) &&
+      !aOriginatingElement.IsHTMLElement(nsGkAtoms::details) &&
       !IsBaseAppearanceSelect(aOriginatingElement)) {
     // ::before / ::after / ::marker shouldn't work on <video> / <input>.
     return;

@@ -10,7 +10,6 @@
 
 namespace mozilla::dom {
 
-enum class AltText : bool;
 class HTMLOptGroupElement;
 class HTMLSelectElement;
 
@@ -76,8 +75,11 @@ class HTMLOptionElement final : public nsGenericHTMLElement {
   Element* GetFormForBindings();
   HTMLFormElement* GetFormInternal();
 
-  void GetRenderedLabel(nsAString& aLabel, AltText aAltText);
-  void GetRenderedLabelForBindings(nsAString& aLabel);
+  void GetRenderedLabel(nsAString& aLabel) {
+    if (!GetAttr(nsGkAtoms::label, aLabel) || aLabel.IsEmpty()) {
+      GetText(aLabel);
+    }
+  }
 
   void GetLabel(nsAString& aLabel) {
     if (!GetAttr(nsGkAtoms::label, aLabel)) {
