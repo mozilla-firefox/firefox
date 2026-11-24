@@ -1247,6 +1247,10 @@ fail-if = [
 fail-if = [
   "os == 'linux' && os_version == '22.04' && arch == 'x86_64' && display == 'wayland'",
 ]
+# GPU hang in readPixels on multisampled contexts after a stencil clear. Bug 2097155
+skip-if = [
+  "os == 'mac' && os_version == '10.15' && arch == 'x86_64'",
+]
 
 ["generated/test_2_conformance__extensions__webgl-compressed-texture-astc.html"]
 skip-if = [
