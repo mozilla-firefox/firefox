@@ -1797,6 +1797,10 @@ void nsAccessibilityService::Shutdown() {
     observerService->RemoveObserver(this, NS_XPCOM_SHUTDOWN_OBSERVER_ID);
   }
 
+  nsCOMPtr<nsIEventListenerService> eventListenerService =
+      do_GetService("@mozilla.org/eventlistenerservice;1");
+  eventListenerService->RemoveListenerChangeListener(this);
+
   // Stop accessible document loader.
   DocManager::Shutdown();
 
