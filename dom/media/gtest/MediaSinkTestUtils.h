@@ -26,7 +26,7 @@
   do {                                                                     \
     if (auto* t = AbstractThread::GetCurrent();                            \
         t && !t->IsTailDispatcherAvailable()) {                            \
-      ASSERT_EQ(__func__, #f)                                              \
+      ASSERT_STREQ(__func__, #f)                                           \
           << "Must only use ENSURE_TAIL_DISPATCH on the current function"; \
       MOZ_ALWAYS_SUCCEEDS(                                                 \
           t->Dispatch(NS_NewRunnableFunction(__func__, [&] { f(); })));    \
