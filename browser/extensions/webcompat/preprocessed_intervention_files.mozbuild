@@ -174,4 +174,6 @@ preprocessed_intervention_files = [
     "bug2053077-jobs.abbott-restore_otp_inputs.css",
     "bug2057149-patreon.com.js",
     "bug2058162-the-image-editor.com-allow_body_scrollbar.css",
+    "bug2096414-motogp.com-1.js",
+    "bug2096414-motogp.com.js",
 ]

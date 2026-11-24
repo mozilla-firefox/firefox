@@ -1,0 +1,30 @@
+{
+  "label": "motogp.com",
+  "bugs": {
+    "2096414": {
+      "issue": "firefox-blocked-completely",
+      "matches": ["*://*.motogp.com/*"],
+      "exclude_matches": ["*://store.motogp.com/*"]
+    }
+  },
+  "interventions": [
+    {
+      "platforms": ["all"],
+      "content_scripts": {
+        "js": [
+          "define_userAgentData.js",
+          "define_window_chrome.js",
+          "use_chrome_vendor.js",
+          "undefine_firefox_properties.js"
+        ]
+      },
+      "ua_string": ["Chrome"]
+    },
+    {
+      "platforms": ["linux"],
+      "content_scripts": {
+        "js": ["use_win64_platform.js"]
+      }
+    }
+  ]
+}
