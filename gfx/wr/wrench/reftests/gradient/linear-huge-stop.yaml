@@ -1,0 +1,16 @@
+# A stop placed at the largest finite length (CSS clamps an infinite stop
+# position to it) must not push the gradient line to infinity and drop the
+# gradient (bug 2095189).
+---
+root:
+  items:
+    - type: gradient
+      bounds: 10 10 100 100
+      start: 0 50
+      end: 100 50
+      stops: [1.0, green, 3.4028236e36, red]
+    - type: gradient
+      bounds: 120 10 100 100
+      start: 50 0
+      end: 50 100
+      stops: [1.0, green, 3.4028236e36, red]

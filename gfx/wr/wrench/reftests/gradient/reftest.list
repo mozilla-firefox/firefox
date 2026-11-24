@@ -17,6 +17,8 @@ scale(*) == linear-reverse-3.yaml linear-reverse-3-ref.yaml
 platform(linux,mac) fuzzy(1,35000) == linear-stops.yaml linear-stops-ref.png
 
 scale(*) == linear-clamp-1a.yaml linear-clamp-1-ref.yaml
+# A stop at the largest finite length must not drop the gradient (bug 2095189).
+== linear-huge-stop.yaml linear-huge-stop-ref.yaml
 scale(*) == linear-clamp-1b.yaml linear-clamp-1-ref.yaml
 scale(*) == linear-clamp-2.yaml linear-clamp-2-ref.yaml
 
