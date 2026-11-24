@@ -19,6 +19,10 @@ in the local repository. The comparison is only meaningful if that base matches 
 If the culprit push contained several patches and only one is the user's, this setup is
 what isolates it. That is the point: the alert blames a push, this push blames a patch.
 
+Choose `--no-artifact` for a patch that changes compiled code, or `--artifact` when no
+compilation is needed. See the configuration section below. The commands here use
+`--no-artifact` as the compiled-code example; change the flag for a non-compiled patch.
+
 Verify the task selection without submitting anything:
 
 ```
@@ -56,41 +60,36 @@ second round it forces costs far more than the retriggers you skipped.
 
 Alerts are almost always detected on shippable/pgo builds (`linux2404-64-shippable` in the
 alert table). A regression can appear or vanish across the pgo boundary, so a confirmation
-run on a different optimization configuration does not answer the question. Two separate
-things will move you off that configuration, and only one of them is obvious.
+run on a different optimization configuration does not answer the question. `--non-pgo`
+moves you off that configuration, and artifact mode can push you off the patch itself.
 
 **`--non-pgo`.** Builds faster, but it is explicitly the opt/non-pgo configuration. It
 belongs in the iteration loop, not here.
 
-**Artifact mode, which you never asked for.** `mach try perf` inherits the shared
-`--artifact` / `--no-artifact` try config. When your local mozconfig is an artifact build —
-the common case for anyone who mostly works on front-end code — that config turns artifact
-mode on for the push *and sets `disable-pgo: true` with it*. So the push silently lands on
-a non-pgo build without `--non-pgo` appearing anywhere in your command, and the advice
-above is defeated by a setting in your mozconfig.
+**Artifact mode.** `mach try perf` inherits the shared `--artifact` / `--no-artifact` try
+config, and may enable artifact mode automatically from your mozconfig. An artifact build
+compiles nothing. It downloads `libxul` and other compiled parts from an existing build.
+For shippable jobs, `mozbuild/artifacts.py` looks in the `.shippable` index first, so the
+downloaded binary still has PGO. The `disable-pgo` setting skips profile generation for
+the try build; it does not remove PGO from the downloaded binary. That binary cannot
+contain compiled changes from your patch.
 
-Pass **`--no-artifact`** on the confirmation push to hold the configuration:
+Choose by what the patch changes:
+
+- **Compiled code (C++, Rust, anything built into a binary).** Pass `--no-artifact`.
+  Otherwise the push measures the trunk binary, not the patch, and a real regression
+  "fails to reproduce".
+- **Only files that need no compilation (JS, CSS, test files, harness scripts, task
+  configuration).** Pass `--artifact` to use the patch's non-compiled changes with the
+  existing PGO binary and skip the compile.
 
 ```
 ./mach try perf --alert <ALERT_ID> --rebuild 10 --no-artifact
 ```
 
-It is harmless when your build is not an artifact build, so pass it unconditionally rather
-than working out whether you need it. `mach` does print `Artifact builds enabled, pass
---no-artifact to disable` when the default kicks in, but it scrolls past among the task
-selection output and is easy to miss.
-
-Artifact mode and pgo are mutually exclusive, so `--no-artifact` means waiting on real
-builds — that is the cost of confirming against the right binary.
-
-**Android does not get you out of this.** Selecting android tasks turns artifact mode back
-off, printing `Disabling artifact mode due to android task selection`, but it leaves the
-`disable-pgo: true` that came with it in place. The push then builds from source *and*
-without pgo, the worst of both. The `WARNING: PGO builds are disabled as artifact mode is
-enabled by default from your mozconfig` that follows is literally true: it is the only
-sign that the confirmation is running on the wrong configuration. `--no-artifact` stops
-`disable-pgo` from being set in the first place, so it matters on android as much as on
-desktop.
+`mach` prints `Artifact builds enabled, pass --no-artifact to disable` when the mozconfig
+default kicks in, but it scrolls past among the task selection output and is easy to miss.
+Pass one of the two flags every time so the push does not depend on your mozconfig.
 
 ### Narrowing
 

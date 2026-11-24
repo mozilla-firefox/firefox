@@ -21,14 +21,21 @@ most expensive failure mode here.
 
 Deliberately not the confirmation command. Narrow hard:
 
+For a fix that changes compiled code, a directional iteration can use a faster non-PGO
+source build:
+
 ```
 ./mach try perf --alert <ALERT_ID> \
   --tests <target-test> \
   --platforms linux \
   --non-pgo \
+  --no-artifact \
   --rebuild 6 \
   -m "bug <BUG> perf fix attempt N: <one-line hypothesis>"
 ```
+
+If the fix needs no compilation, use `--artifact` and omit `--non-pgo`. That keeps the
+shippable PGO binary and avoids a source build.
 
 What each narrowing buys, and what it costs:
 
@@ -36,10 +43,10 @@ What each narrowing buys, and what it costs:
   movement in the other regressed subtests.
 - `--platforms linux` — one platform instead of all. Cost: platform-specific behaviour is
   invisible. Use the platform the alert fired on.
-- `--non-pgo` — noticeably faster builds. Cost: different optimization configuration, so
-  treat the result as **directional only**. A fix that works here still has to be proven on
-  shippable. This is also the one place artifact mode is welcome rather than a trap: you
-  are already off pgo on purpose, so leave `--no-artifact` off and take the faster build.
+- `--non-pgo` — noticeably faster source builds for compiled changes. Cost: different
+  optimization configuration, so treat the result as **directional only**. A fix that
+  works here still has to be proven on shippable. Use `--no-artifact` so the build includes
+  the compiled fix.
 - `--rebuild 5` or `6` — deliberately thinner than the confirmation run's 10. Enough to see
   whether a change moved the number at all, which is the only question a round needs to
   answer. Cost: a marginal result here is not trustworthy on its own, so do not treat a
@@ -75,9 +82,10 @@ run the confirmation command again, unnarrowed, with the fix applied:
   -m "bug <BUG> perf fix verification"
 ```
 
-`--no-artifact` is not optional here. Verification has to run on the same shippable/pgo
-configuration the alert fired on, and an artifact-build mozconfig will otherwise turn pgo
-off for you — see the configuration section in `confirm.md`.
+Verification has to run the fix on the same shippable/PGO configuration the alert fired
+on. Keep `--no-artifact` when the fix touches compiled code: an artifact build would leave
+the fix out. For a fix needing no compilation, use `--artifact` in the command above.
+See the configuration section in `confirm.md`.
 
 This must show the full alert set back at or near the base numbers. Check specifically that
 no other subtest in the set got worse — a fix that trades one speedometer subtest for
