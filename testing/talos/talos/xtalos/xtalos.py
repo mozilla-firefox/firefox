@@ -160,7 +160,7 @@ class XtalosOptions(argparse.ArgumentParser):
         # ensure xperf path exists
         options.xperf_path = os.path.abspath(options.xperf_path)
         if not os.path.exists(options.xperf_path):
-            print("ERROR: xperf_path '%s' does not exist" % options.xperf_path)
+            print(f"ERROR: xperf_path '{options.xperf_path}' does not exist")
             return None
 
         return options

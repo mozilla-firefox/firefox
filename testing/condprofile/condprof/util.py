@@ -116,11 +116,11 @@ def fresh_profile(profile, customization_data):
     new_profile = create_profile(app="firefox")
     prefs = customization_data["prefs"]
     prefs.update(DEFAULT_PREFS)
-    logger.info("Setting prefs %s" % str(prefs.items()))
+    logger.info(f"Setting prefs {str(prefs.items())}")
     new_profile.set_preferences(prefs)
     extensions = []
     for name, url in customization_data["addons"].items():
-        logger.info("Downloading addon %s" % name)
+        logger.info(f"Downloading addon {name}")
         # When running on the CI, we expect the xpi files to have been
         # fetched by the firefox-addons fetch task dependency (see
         # taskcluster/kinds/fetch/browsertime.yml) and the condprof-addons
@@ -146,7 +146,7 @@ def get_firefox_download_link():
         extension = ".dmg"
     elif platform.system() == "Linux":
         arch = platform.machine()
-        extension = ".linux-%s.tar.xz" % arch
+        extension = f".linux-{arch}.tar.xz"
     else:
         raise NotImplementedError(platform.system())
 
@@ -164,7 +164,7 @@ def check_exists(archive, server=None, all_types=False):
     if server is not None:
         archive = server + "/" + archive
     try:
-        logger.info("Getting headers at %s" % archive)
+        logger.info(f"Getting headers at {archive}")
         resp = requests.head(archive, timeout=DOWNLOAD_TIMEOUT)
     except ConnectionError:
         return False, {}
@@ -182,21 +182,21 @@ def check_exists(archive, server=None, all_types=False):
         logger.info("Got an html page back")
         exists = False
     else:
-        logger.info("Response code is %d" % resp.status_code)
+        logger.info(f"Response code is {resp.status_code}")
         exists = resp.status_code
 
     return exists, resp.headers
 
 
 def check_mozfetches_dir(target, mozfetches_subdir):
-    logger.info("Checking for existence of: %s in MOZ_FETCHES_DIR" % target)
+    logger.info(f"Checking for existence of: {target} in MOZ_FETCHES_DIR")
     fetches = os.environ.get("MOZ_FETCHES_DIR")
     if fetches is None:
         return None
     fetches_target = os.path.join(fetches, mozfetches_subdir, target)
     if not os.path.exists(fetches_target):
         return None
-    logger.info("Already fetched and available in MOZ_FETCHES_DIR: %s" % fetches_target)
+    logger.info(f"Already fetched and available in MOZ_FETCHES_DIR: {fetches_target}")
     return fetches_target
 
 
@@ -213,12 +213,12 @@ def download_file(url, target=None, mozfetches_subdir=None):
 
     present, headers = check_exists(url)
     if not present:
-        logger.info("Cannot find %r" % url)
+        logger.info(f"Cannot find {url!r}")
         raise ArchiveNotFound(url)
 
     etag = headers.get("ETag")
 
-    logger.info("Checking for existence of: %s" % target)
+    logger.info(f"Checking for existence of: {target}")
     if os.path.exists(target):
         # XXX for now, reusing downloads without checking them
         # when we don't have an .etag file
@@ -239,18 +239,17 @@ def download_file(url, target=None, mozfetches_subdir=None):
         try:
             archivedir = os.path.dirname(target)
             logger.info(
-                "Content in cache directory %s: %s"
-                % (archivedir, os.listdir(archivedir))
+                f"Content in cache directory {archivedir}: {os.listdir(archivedir)}"
             )
         except Exception:
             logger.info("Failed to list cache directory contents")
 
-    logger.info("Downloading %s" % url)
+    logger.info(f"Downloading {url}")
     req = requests.get(url, stream=True, timeout=DOWNLOAD_TIMEOUT)
     total_length = int(req.headers.get("content-length"))
     target_dir = os.path.dirname(target)
     if target_dir != "" and not os.path.exists(target_dir):
-        logger.info("Creating dir %s" % target_dir)
+        logger.info(f"Creating dir {target_dir}")
         os.makedirs(target_dir)
 
     with open(target, "wb") as f:
@@ -292,7 +291,7 @@ def extract_from_dmg(dmg, target):
         os.system("hdiutil detach " + mount)
         shutil.rmtree(mount)
     if not found:
-        raise OSError("No app file found in %s" % dmg)
+        raise OSError(f"No app file found in {dmg}")
 
 
 @contextlib.contextmanager
@@ -300,7 +299,7 @@ def latest_nightly(binary=None):
     if binary is None:
         # we want to use the latest nightly
         nightly_archive = get_firefox_download_link()
-        logger.info("Downloading %s" % nightly_archive)
+        logger.info(f"Downloading {nightly_archive}")
         target = download_file(nightly_archive)
         # on macOs we just mount the DMG
         # XXX replace with extract_from_dmg
@@ -311,7 +310,7 @@ def latest_nightly(binary=None):
         # on linux we unpack it
         elif platform.system() == "Linux":
             # Tar should automatically recognize the compression algo (xz/bzip2)
-            cmd = "tar -xvf %s" % target
+            cmd = f"tar -xvf {target}"
             os.system(cmd)
             binary = "firefox/firefox"
 
@@ -333,7 +332,7 @@ def latest_nightly(binary=None):
 
 
 def write_yml_file(yml_file, yml_data):
-    logger.info("writing %s to %s" % (yml_data, yml_file))
+    logger.info(f"writing {yml_data} to {yml_file}")
     try:
         with open(yml_file, "w") as outfile:
             yaml.dump(yml_data, outfile, default_flow_style=False)

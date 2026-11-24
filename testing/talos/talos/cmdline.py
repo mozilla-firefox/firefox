@@ -50,9 +50,9 @@ class _ListSuite(_StopAction):
         print("Available suites:")
         conf = suites_conf()
         max_suite_name = max([len(s) for s in conf])
-        pattern = " %%-%ds (%%s)" % max_suite_name
         for name in conf:
-            print(pattern % (name, ":".join(conf[name]["tests"])))
+            tests = ":".join(conf[name]["tests"])
+            print(f" {name:<{max_suite_name}} ({tests})")
         print()
         parser.exit()
 

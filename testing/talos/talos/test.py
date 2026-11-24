@@ -85,9 +85,9 @@ class Test:
         items = self.items()
 
         key, value = items.pop(0)
-        lines = ["- %s: %s" % (key, value)]
+        lines = [f"- {key}: {value}"]
         for key, value in items:
-            lines.append("  %s: %s" % (key, value))
+            lines.append(f"  {key}: {value}")
         return "\n".join(lines)
 
 

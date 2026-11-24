@@ -198,11 +198,10 @@ class Output:
         elif results_scheme == "file":
             with open(results_path, "w") as f:
                 for result in results:
-                    f.write("%s\n" % result)
+                    f.write(f"{result}\n")
         else:
             raise NotImplementedError(
-                "%s: %s - only http://, https://, and file:// supported"
-                % (self.__class__.__name__, results_url)
+                f"{self.__class__.__name__}: {results_url} - only http://, https://, and file:// supported"
             )
 
         # This is the output that treeherder expects to find when parsing the
@@ -215,7 +214,7 @@ class Output:
                 for subtest in suite["subtests"]:
                     subtest["shouldAlert"] = False
 
-        LOG.info("PERFHERDER_DATA: %s" % json.dumps(results, ignore_nan=True))
+        LOG.info(f"PERFHERDER_DATA: {json.dumps(results, ignore_nan=True)}")
 
         if results_scheme in ("file"):
             json.dump(

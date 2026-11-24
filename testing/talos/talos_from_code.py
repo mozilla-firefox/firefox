@@ -43,31 +43,30 @@ def main():
         jsonFilename = download_file(options.talos_json_url)
     except Exception as e:
         print("ERROR: We tried to download the talos.json file but something failed.")
-        print("ERROR: %s" % str(e))
+        print(f"ERROR: {str(e)}")
         sys.exit(1)
 
     # 3) download the necessary files
-    print("INFO: talos.json URL: %s" % options.talos_json_url)
+    print(f"INFO: talos.json URL: {options.talos_json_url}")
     try:
         key = "talos.zip"
         entity = get_value(jsonFilename, key)
         if passesRestrictions(options.talos_json_url, entity["url"]):
             # the key is at the same time the filename e.g. talos.zip
             print(
-                "INFO: Downloading %s as %s"
-                % (entity["url"], os.path.join(entity["path"], key))
+                f"INFO: Downloading {entity['url']} as {os.path.join(entity['path'], key)}"
             )
             download_file(entity["url"], entity["path"], key)
         else:
             print(
                 "ERROR: You have tried to download a file "
-                + "from: %s " % entity["url"]
+                + f"from: {entity['url']} "
                 + "which is a location different than http://talos-bundles.pvt.build.mozilla.org/"
             )
             print("ERROR: This is only allowed for the certain branches.")
             sys.exit(1)
     except Exception as e:
-        print("ERROR: %s" % str(e))
+        print(f"ERROR: {str(e)}")
         sys.exit(1)
 
 
@@ -117,9 +116,9 @@ def download_file(url, path="", saveAs=None):
     if path != "" and not os.path.isdir(path):
         try:
             os.makedirs(path)
-            print("INFO: directory %s created" % path)
+            print(f"INFO: directory {path} created")
         except Exception as e:
-            print("ERROR: %s" % str(e))
+            print(f"ERROR: {str(e)}")
             sys.exit(1)
     filename = saveAs if saveAs else get_filename_from_url(url)
     local_file = open(os.path.join(path, filename), "wb")

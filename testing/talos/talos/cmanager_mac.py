@@ -77,8 +77,8 @@ class MacCounterManager(CounterManager):
         """Returns the last value of the counter 'counterName'"""
         if counterName not in self.registeredCounters:
             print(
-                "Warning: attempting to collect counter %s and it is not"
-                " registered" % counterName
+                f"Warning: attempting to collect counter {counterName} and it is not"
+                " registered"
             )
             return
 
@@ -86,6 +86,5 @@ class MacCounterManager(CounterManager):
             return self.registeredCounters[counterName][0](self.pid)
         except Exception as e:
             print(
-                "Error in collecting counter: %s, pid: %s, exception: %s"
-                % (counterName, self.pid, e)
+                f"Error in collecting counter: {counterName}, pid: {self.pid}, exception: {e}"
             )

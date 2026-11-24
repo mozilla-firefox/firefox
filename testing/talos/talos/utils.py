@@ -77,33 +77,20 @@ def tokenize(string, start, end):
     tokenize a string by start + end tokens,
     returns parts and position of last token
     """
-    assert end not in start, "End token '%s' is contained in start token '%s'" % (
-        end,
-        start,
-    )
-    assert start not in end, "Start token '%s' is contained in end token '%s'" % (
-        start,
-        end,
-    )
+    assert end not in start, f"End token '{end}' is contained in start token '{start}'"
+    assert start not in end, f"Start token '{start}' is contained in end token '{end}'"
     _start = findall(string, start)
     _end = findall(string, end)
     if not _start and not _end:
         return [], -1
-    assert len(_start), "Could not find start token: '%s'" % start
-    assert len(_end), "Could not find end token: '%s'" % end
+    assert len(_start), f"Could not find start token: '{start}'"
+    assert len(_end), f"Could not find end token: '{end}'"
     assert len(_start) == len(_end), (
-        "Unmatched number of tokens found: '%s' (%d) vs '%s' (%d)"
-        % (
-            start,
-            len(_start),
-            end,
-            len(_end),
-        )
+        f"Unmatched number of tokens found: '{start}' ({len(_start)}) vs '{end}' ({len(_end)})"
     )
     for i in range(len(_start)):
-        assert _end[i] > _start[i], "End token '%s' occurs before start token '%s'" % (
-            end,
-            start,
+        assert _end[i] > _start[i], (
+            f"End token '{end}' occurs before start token '{start}'"
         )
     parts = []
     for i in range(len(_start)):
@@ -115,7 +102,7 @@ def urlsplit(url, default_scheme="file"):
     """front-end to urlparse.urlsplit"""
 
     if "://" not in url:
-        url = "%s://%s" % (default_scheme, url)
+        url = f"{default_scheme}://{url}"
 
     if url.startswith("file://"):
         # file:// URLs do not play nice with windows

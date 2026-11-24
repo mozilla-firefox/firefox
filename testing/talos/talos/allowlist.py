@@ -44,7 +44,7 @@ class Allowlist:
                 self.listmap[allowlist_name.lower()] = temp[allowlist_name]
 
         except OSError as e:
-            print("%s: %s" % (e.filename, e.strerror))
+            print(f"{e.filename}: {e.strerror}")
             return False
         return True
 
@@ -64,7 +64,7 @@ class Allowlist:
                     if not fname.endswith("~1"):
                         # parse the longname into longna~1
                         dirs = fname.split("\\")
-                        dirs[-1] = "%s~1" % (dirs[-1][:6])
+                        dirs[-1] = f"{dirs[-1][:6]}~1"
                         # now we want to ensure that every parent dir is
                         # added since we seem to be accessing them sometimes
                         diter = 2
@@ -73,7 +73,7 @@ class Allowlist:
                             diter = diter + 1
                         self.PRE_PROFILE = fname
 
-                filename = "%s%s" % (subst, path.join(parts[1:]))
+                filename = f"{subst}{path.join(parts[1:])}"
 
         for old_name, new_name in self.name_substitutions.items():
             if isinstance(old_name, re.Pattern):
@@ -81,7 +81,7 @@ class Allowlist:
             else:
                 parts = filename.split(old_name)
                 if len(parts) >= 2:
-                    filename = "%s%s" % (parts[0], new_name)
+                    filename = f"{parts[0]}{new_name}"
 
         return filename.strip("/\\\\ \t")
 
@@ -154,29 +154,28 @@ class Allowlist:
         for filename, data in errors.items():
             for datum in data:
                 error_strs.append(
-                    "File '%s' was accessed and we were not"
-                    " expecting it: %r" % (filename, datum)
+                    f"File '{filename}' was accessed and we were not"
+                    f" expecting it: {datum!r}"
                 )
         return error_strs
 
     def print_errors(self, error_strs):
         for error_msg in error_strs:
-            print("TEST-UNEXPECTED-FAIL | %s | %s" % (self.test_name, error_msg))
+            print(f"TEST-UNEXPECTED-FAIL | {self.test_name} | {error_msg}")
 
     # Note that we don't store dependent libs in listmap. This makes
     # save_baseline cleaner. Since a baseline allowlist should not include
     # the dependent_libs, we would need to filter them out if everything was
     # stored in the same dict.
     def load_dependent_libs(self):
-        filename = "%s%sdependentlibs.list" % (self.paths[KEY_XRE], os.path.sep)
+        filename = f"{self.paths[KEY_XRE]}{os.path.sep}dependentlibs.list"
         try:
             with open(filename) as f:
                 libs = f.readlines()
             self.dependent_libs = {
-                "%s%s%s" % (KEY_XRE, os.path.sep, lib.strip()): {"ignore": True}
-                for lib in libs
+                f"{KEY_XRE}{os.path.sep}{lib.strip()}": {"ignore": True} for lib in libs
             }
             return True
         except OSError as e:
-            print("%s: %s" % (e.filename, e.strerror))
+            print(f"{e.filename}: {e.strerror}")
             return False

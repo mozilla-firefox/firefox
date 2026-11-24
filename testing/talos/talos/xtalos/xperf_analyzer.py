@@ -476,7 +476,7 @@ class Nth(EventExpression):
         if evt != self.event:
             raise Exception(
                 "Nth expression for event "
-                + '"%s" fired for event "%s" instead' % (self.event, evt)
+                + f'"{self.event}" fired for event "{evt}" instead'
             )
         self.match_count += 1
         if self.match_count == self.N:
@@ -528,7 +528,7 @@ class EventSequence(EventExpression):
         super().__init__(list(events))
         if len(events) < 2:
             raise Exception(
-                "EventSequence requires at least two events, %d provided" % len(events)
+                f"EventSequence requires at least two events, {len(events)} provided"
             )
         self.events = deque(events)
         self.seen_events = []
@@ -542,7 +542,7 @@ class EventSequence(EventExpression):
             and evt != self.seen_events[-1]
         ):
             raise Exception(
-                'Unexpected event "%s" is not a member of this event sequence' % (evt)
+                f'Unexpected event "{evt}" is not a member of this event sequence'
             )
 
         # Move the event from events queue to seen_events
@@ -596,7 +596,7 @@ class BindThread(EventExpression):
         if evt != self.event:
             raise Exception(
                 "BindThread expression for event "
-                + '"%s" fired for event "%s" instead' % (self.event, evt)
+                + f'"{self.event}" fired for event "{evt}" instead'
             )
         self.attr.on_event_matched(self)
 
@@ -967,7 +967,7 @@ class XPerfFile:
 
         xperf_cmd = [self.get_xperf_path(), "-merge", user, kernel, merged]
         if self.debug:
-            print("Executing '%s'" % subprocess.list2cmdline(xperf_cmd))
+            print(f"Executing '{subprocess.list2cmdline(xperf_cmd)}'")
         subprocess.call(xperf_cmd)
         return merged
 
@@ -981,7 +981,7 @@ class XPerfFile:
 
         xperf_cmd = [self.get_xperf_path(), "-i", self.etlfile, "-o", abs_csv_name]
         if self.debug:
-            print("Executing '%s'" % subprocess.list2cmdline(xperf_cmd))
+            print(f"Executing '{subprocess.list2cmdline(xperf_cmd)}'")
         subprocess.call(xperf_cmd)
         return abs_csv_name
 

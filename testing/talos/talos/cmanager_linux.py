@@ -42,8 +42,7 @@ def xrestop(binary="xrestop"):
     stdout, stderr = process.communicate()
     if process.returncode:
         raise Exception(
-            "Unexpected error executing '%s':\n%s"
-            % (subprocess.list2cmdline(command), stdout)
+            f"Unexpected error executing '{subprocess.list2cmdline(command)}':\n{stdout}"
         )
 
     # process output
@@ -80,7 +79,7 @@ def GetPrivateBytes(pids):
     """
     privateBytes = 0
     for pid in pids:
-        mapfile = "/proc/%s/maps" % pid
+        mapfile = f"/proc/{pid}/maps"
         with open(mapfile) as maps:
             private = 0
 
@@ -109,7 +108,7 @@ def GetResidentSize(pids):
 
     RSS = 0
     for pid in pids:
-        file = "/proc/%s/status" % pid
+        file = f"/proc/{pid}/status"
 
         with open(file) as status:
             for line in status:

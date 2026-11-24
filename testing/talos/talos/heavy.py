@@ -100,18 +100,18 @@ def download_profile(name, profiles_dir=None):
     if not os.path.exists(cache_dir):
         os.makedirs(cache_dir)
 
-    archive_file = os.path.join(cache_dir, "today-%s.tgz" % name)
+    archive_file = os.path.join(cache_dir, f"today-{name}.tgz")
 
     url, last_modified = follow_redirects(url)
     if os.path.exists(target):
         age = profile_age(target, last_modified)
         if age < 7:
             # profile is not older than a week, we're good
-            LOG.info("Local copy of %r is fresh enough" % name)
-            LOG.info("%d days old" % age)
+            LOG.info(f"Local copy of {name!r} is fresh enough")
+            LOG.info(f"{age} days old")
             return target
 
-    LOG.info("Downloading from %r" % url)
+    LOG.info(f"Downloading from {url!r}")
     session = requests.Session()
     session.mount("https://", HTTPAdapter(max_retries=5))
     req = session.get(url, stream=True, timeout=20)
@@ -131,7 +131,7 @@ def download_profile(name, profiles_dir=None):
                     f.write(chunk)
                 bar.incr()
 
-    LOG.info("Extracting profile in %r" % target)
+    LOG.info(f"Extracting profile in {target!r}")
     template = "Extraction progress %d%%"
 
     with tarfile.open(archive_file, "r:gz") as tar:

@@ -101,7 +101,7 @@ class FFSetup:
             self.test_config["profile_path"] = path
 
         profile_path = os.path.normpath(self.test_config["profile_path"])
-        LOG.info("Cloning profile located at %s" % profile_path)
+        LOG.info(f"Cloning profile located at {profile_path}")
 
         def _feedback(directory, content):
             # Called by shutil.copytree on each visited directory.
@@ -112,7 +112,7 @@ class FFSetup:
             # an empty list.
             sub = directory.split(profile_path)[-1].lstrip("/")
             if sub:
-                LOG.info("=> %s" % sub)
+                LOG.info(f"=> {sub}")
             return []
 
         profile = Profile.clone(
@@ -201,7 +201,7 @@ class FFSetup:
         runner.start(outputTimeout=30)
         proc = runner.process_handler
         LOG.process_start(
-            proc.pid, "%s %s" % (self.browser_config["browser_path"], " ".join(args))
+            proc.pid, f"{self.browser_config['browser_path']} {' '.join(args)}"
         )
 
         try:
@@ -224,7 +224,7 @@ class FFSetup:
         try:
             mozfile.remove(self._tmp_dir)
         except Exception as e:
-            LOG.info("Exception while removing profile directory: %s" % self._tmp_dir)
+            LOG.info(f"Exception while removing profile directory: {self._tmp_dir}")
             LOG.info(e)
 
         if self.gecko_profile:
@@ -251,7 +251,7 @@ class FFSetup:
                     _ccov_path = os.path.abspath(_ccov_env)
                     if os.path.exists(_ccov_path):
                         # now walk through and look for gcda files
-                        LOG.info("Recursive search for gcda files in: %s" % _ccov_path)
+                        LOG.info(f"Recursive search for gcda files in: {_ccov_path}")
                         for root, dirs, files in os.walk(_ccov_path):
                             for next_file in files:
                                 if next_file.endswith(".gcda"):
@@ -262,21 +262,20 @@ class FFSetup:
                                         )
                     else:
                         LOG.info(
-                            "The ccov env var path doesn't exist: %s" % str(_ccov_path)
+                            f"The ccov env var path doesn't exist: {str(_ccov_path)}"
                         )
 
             # now  clean or collect gcda files accordingly
             if clean:
                 # remove ccov data
                 LOG.info(
-                    "Found %d gcda files to clean. Deleting..."
-                    % (len(_gcda_files_found))
+                    f"Found {len(_gcda_files_found)} gcda files to clean. Deleting..."
                 )
                 for _gcda in _gcda_files_found:
                     try:
                         mozfile.remove(_gcda)
                     except Exception as e:
-                        LOG.info("Exception while removing file: %s" % _gcda)
+                        LOG.info(f"Exception while removing file: {_gcda}")
                         LOG.info(e)
                 LOG.info("Finished cleaning ccov gcda files")
             else:
@@ -285,15 +284,14 @@ class FFSetup:
                     gcov_prefix, gcda_archive_folder_name, self.test_config["name"]
                 )
                 LOG.info(
-                    "Found %d gcda files to collect. Moving to gcda archive %s"
-                    % (len(_gcda_files_found), str(gcda_archive_top))
+                    f"Found {len(_gcda_files_found)} gcda files to collect. Moving to gcda archive {gcda_archive_top}"
                 )
                 if not os.path.exists(gcda_archive_top):
                     try:
                         os.makedirs(gcda_archive_top)
                     except OSError:
                         LOG.critical(
-                            "Unable to make gcda archive folder %s" % gcda_archive_top
+                            f"Unable to make gcda archive folder {gcda_archive_top}"
                         )
                 for _gcda in _gcda_files_found:
                     # want to copy the existing directory strucutre but put it under archive-dir
@@ -312,24 +310,22 @@ class FFSetup:
                             os.makedirs(gcda_archive_dest)
                         except OSError:
                             LOG.critical(
-                                "Unable to make archive folder %s" % gcda_archive_dest
+                                f"Unable to make archive folder {gcda_archive_dest}"
                             )
                     # now copy the file there
                     try:
                         shutil.copy(_gcda, gcda_archive_dest)
                     except Exception as e:
                         LOG.info(
-                            "Error copying %s to %s"
-                            % (str(_gcda), str(gcda_archive_dest))
+                            f"Error copying {str(_gcda)} to {str(gcda_archive_dest)}"
                         )
                         LOG.info(e)
                 LOG.info(
-                    "Finished collecting ccov gcda files. Copied to: %s"
-                    % gcda_archive_top
+                    f"Finished collecting ccov gcda files. Copied to: {gcda_archive_top}"
                 )
 
     def __enter__(self):
-        LOG.info("Initialising browser for %s test..." % self.test_config["name"])
+        LOG.info(f"Initialising browser for {self.test_config['name']} test...")
         self._init_env()
         self._init_profile()
         try:
@@ -340,7 +336,7 @@ class FFSetup:
             raise
         self._init_gecko_profile()
         LOG.info("Browser initialized.")
-        LOG.info("Fission enabled: %s" % self.browser_config.get("fission", True))
+        LOG.info(f"Fission enabled: {self.browser_config.get('fission', True)}")
         # remove ccov files before actual tests start
         if self.browser_config.get("code_coverage", False):
             # if the Firefox build was instrumented for ccov, initializing the browser

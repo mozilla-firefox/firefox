@@ -19,8 +19,8 @@ config = {
     "exes": {
         "python": PYTHON,
         "mozinstall": [
-            "%s/scripts/python" % VENV_PATH,
-            "%s/scripts/mozinstall-script.py" % VENV_PATH,
+            f"{VENV_PATH}/scripts/python",
+            f"{VENV_PATH}/scripts/mozinstall-script.py",
         ],
         "hg": os.path.join(os.environ["PROGRAMFILES"], "Mercurial", "hg"),
     },

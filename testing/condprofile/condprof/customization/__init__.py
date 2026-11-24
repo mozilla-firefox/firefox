@@ -30,6 +30,6 @@ def find_customization(path_or_name):
 def get_customization(path_or_name):
     path = find_customization(path_or_name)
     if path is None:
-        raise OSError("Can't find the customization file %r" % path_or_name)
+        raise OSError(f"Can't find the customization file {path_or_name!r}")
     with open(path) as f:
         return json.loads(f.read())

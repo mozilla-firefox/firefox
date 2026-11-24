@@ -44,7 +44,7 @@ def set_tp_preferences(test, browser_config):
     if test["tpcycles"] not in range(1, 1000):
         raise TalosError("pageloader cycles must be int 1 to 1,000")
     if "tpmanifest" not in test:
-        raise TalosError("tpmanifest not found in test: %s" % test)
+        raise TalosError(f"tpmanifest not found in test: {test}")
 
     # if profiling is on, override tppagecycles to prevent test hanging
     if test["gecko_profile"]:
@@ -70,7 +70,7 @@ def set_tp_preferences(test, browser_config):
     ]
     CLI_options = ["tpcycles", "tppagecycles", "tptimeout", "tpmanifest"]
     for key in CLI_bool_options:
-        _pref_name = "talos.%s" % key
+        _pref_name = f"talos.{key}"
         if key in test:
             test["preferences"][_pref_name] = test.get(key)
         # current test doesn't use this setting, remove it from our prefs
@@ -79,7 +79,7 @@ def set_tp_preferences(test, browser_config):
 
     for key in CLI_options:
         value = test.get(key)
-        _pref_name = "talos.%s" % key
+        _pref_name = f"talos.{key}"
         if value:
             test["preferences"][_pref_name] = value
         # current test doesn't use this setting, remove it from our prefs
@@ -89,7 +89,7 @@ def set_tp_preferences(test, browser_config):
 
 def setup_webserver(webserver):
     """Set up a new web server with wptserve."""
-    LOG.info("starting webserver on %r" % webserver)
+    LOG.info(f"starting webserver on {webserver!r}")
 
     host, port = webserver.split(":")
     httpd = server.WebTestHttpd(host=host, port=int(port), doc_root=here)
@@ -132,7 +132,7 @@ def run_tests(config, browser_config):
                     test[path] = utils.interpolate(test[path])
         if test.get("tpmanifest"):
             test["tpmanifest"] = os.path.normpath(
-                "file:/%s" % (urllib.parse.quote(test["tpmanifest"], "/\\t:\\"))
+                "file:/" + urllib.parse.quote(test["tpmanifest"], "/\\t:\\")
             )
             test["preferences"]["talos.tpmanifest"] = test["tpmanifest"]
 
@@ -164,12 +164,12 @@ def run_tests(config, browser_config):
 
     browser_config["preferences"]["network.proxy.type"] = 2
     browser_config["preferences"]["network.proxy.autoconfig_url"] = """data:text/plain,
-function FindProxyForURL(url, host) {
-  if (url.startsWith('http')) {
-   return 'PROXY %s';
-  }
+function FindProxyForURL(url, host) {{
+  if (url.startsWith('http')) {{
+   return 'PROXY {}';
+  }}
   return 'DIRECT';
-}""" % browser_config["webserver"]
+}}""".format(browser_config["webserver"])
 
     # If --code-coverage files are expected, set flag in browser config so ffsetup knows
     # that it needs to delete any ccov files resulting from browser initialization
@@ -214,7 +214,7 @@ function FindProxyForURL(url, host) {
         browser_config["sourcestamp"] = version_info["application_changeset"]
     except KeyError:
         if not browser_config["develop"]:
-            print("Abort: unable to find changeset or repository: %s" % version_info)
+            print(f"Abort: unable to find changeset or repository: {version_info}")
             sys.exit(1)
         else:
             browser_config["repository"] = "develop"
@@ -225,8 +225,8 @@ function FindProxyForURL(url, host) {
         date = int(time.mktime(time.strptime(testdate, "%a, %d %b %Y %H:%M:%S GMT")))
     else:
         date = int(time.time())
-    LOG.debug("using testdate: %d" % date)
-    LOG.debug("actual date: %d" % int(time.time()))
+    LOG.debug(f"using testdate: {date}")
+    LOG.debug(f"actual date: {int(time.time())}")
 
     # results container
     talos_results = TalosResults()
@@ -276,11 +276,11 @@ function FindProxyForURL(url, host) {
             # Skip test if necessary
             skip_reason = skip_test(test, config)
             if skip_reason is not None and skip_reason != "":
-                LOG.info("Skipping %s, reason: %s" % (testname, skip_reason))
+                LOG.info(f"Skipping {testname}, reason: {skip_reason}")
                 LOG.test_end(
                     testname,
                     status="SKIP",
-                    message="Test skipped: %s" % skip_reason,
+                    message=f"Test skipped: {skip_reason}",
                 )
                 continue
 
@@ -309,14 +309,14 @@ function FindProxyForURL(url, host) {
                 test_event_map = test.get("testeventmap", None)
                 if test_event_map is None:
                     raise TalosError(
-                        "Need 'testeventmap' in test.py for %s" % test.get("name")
+                        f"Need 'testeventmap' in test.py for {test.get('name')}"
                     )
 
                 # run the test
                 multi_value_result = mytest.runTest(browser_config, test)
                 if multi_value_result is None:
                     raise TalosError(
-                        "Abort: no results returned for %s" % test.get("name")
+                        f"Abort: no results returned for {test.get('name')}"
                     )
 
                 # parse out the multi-value results, and 'fake it' to appear like separate tests
@@ -346,7 +346,7 @@ function FindProxyForURL(url, host) {
             LOG.test_end(testname, status="OK")
 
     except TalosRegression as exc:
-        LOG.error("Detected a regression for %s" % testname)
+        LOG.error(f"Detected a regression for {testname}")
         # by returning 1, we report an orange to buildbot
         # http://docs.buildbot.net/latest/developer/results.html
         LOG.test_end(
@@ -366,7 +366,7 @@ function FindProxyForURL(url, host) {
         LOG.suite_end()
         httpd.stop()
 
-    LOG.info("Completed test suite (%s)" % timer.elapsed())
+    LOG.info(f"Completed test suite ({timer.elapsed()})")
 
     if talos_results.has_results():
         # output results
@@ -374,8 +374,7 @@ function FindProxyForURL(url, host) {
             talos_results.output(results_urls)
             if browser_config["develop"] or config["gecko_profile"]:
                 print(
-                    "Thanks for running Talos locally. Results are in %s"
-                    % (results_urls["output_urls"])
+                    f"Thanks for running Talos locally. Results are in {results_urls['output_urls']}"
                 )
 
         # when running talos locally with gecko profiling on, use the view-gecko-profile
@@ -404,7 +403,7 @@ def view_gecko_profile_from_talos():
         )
         return
 
-    LOG.info("Profile saved locally to: %s" % profile_zip_path)
+    LOG.info(f"Profile saved locally to: {profile_zip_path}")
     view_gecko_profile(profile_zip_path)
 
 
@@ -518,7 +517,7 @@ def main(args=sys.argv[1:]):
     try:
         config, browser_config = get_configs()
     except ConfigurationError as exc:
-        sys.exit("ERROR: %s" % exc)
+        sys.exit(f"ERROR: {exc}")
     sys.exit(run_tests(config, browser_config))
 
 

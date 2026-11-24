@@ -50,7 +50,7 @@ class ProcessContext:
             parentProc = kids[0]
 
         if parentProc and parentProc.is_running():
-            LOG.debug("Terminating %s" % parentProc)
+            LOG.debug(f"Terminating {parentProc}")
             try:
                 parentProc.terminate()
             except psutil.NoSuchProcess:
@@ -63,7 +63,7 @@ class ProcessContext:
             try:
                 return parentProc.wait(3)
             except psutil.TimeoutExpired:
-                LOG.debug("Killing %s" % parentProc)
+                LOG.debug(f"Killing {parentProc}")
                 parentProc.kill()
                 # will raise TimeoutExpired if unable to kill
                 return parentProc.wait(3)
@@ -148,7 +148,7 @@ def run_browser(
     wait_for_quit_timeout = 20
     reader = Reader()
 
-    LOG.info("Using env: %s" % pprint.pformat(kwargs["env"]))
+    LOG.info(f"Using env: {pprint.pformat(kwargs['env'])}")
 
     timed_out = False
 
@@ -196,7 +196,7 @@ def run_browser(
                 )
         elif reader.got_timeout:
             dump_screen_on_failure(utility_path)
-            raise TalosError("TIMEOUT: %s" % reader.timeout_message)
+            raise TalosError(f"TIMEOUT: {reader.timeout_message}")
         elif reader.got_error:
             dump_screen_on_failure(utility_path)
             raise TalosError("unexpected error")
@@ -215,17 +215,16 @@ def run_browser(
             LOG.info(traceback.format_exc())
 
     reader.output.append(
-        "__startBeforeLaunchTimestamp%d__endBeforeLaunchTimestamp" % first_time
+        f"__startBeforeLaunchTimestamp{first_time}__endBeforeLaunchTimestamp"
     )
     reader.output.append(
-        "__startAfterTerminationTimestamp%d__endAfterTerminationTimestamp"
-        % (int(time.time()) * 1000)
+        f"__startAfterTerminationTimestamp{int(time.time()) * 1000}__endAfterTerminationTimestamp"
     )
 
     if return_code is not None:
         LOG.process_exit(proc.pid, return_code)
     else:
-        LOG.debug("Unable to detect exit code of the process %s." % proc.pid)
+        LOG.debug(f"Unable to detect exit code of the process {proc.pid}.")
     context.output = reader.output
     return context
 
@@ -245,7 +244,7 @@ def run_in_debug_mode(command_under_dbg, on_started=None, env=None):
     if return_code is not None:
         LOG.process_exit(ttest_process.pid, return_code)
     else:
-        LOG.debug("Unable to detect exit code of the process %s." % ttest_process.pid)
+        LOG.debug(f"Unable to detect exit code of the process {ttest_process.pid}.")
 
     return context
 
@@ -260,7 +259,7 @@ def kill_and_get_minidump(context, minidump_dir):
                 f" process {kids[0]} instead."
             )
             proc = kids[0]
-    LOG.debug("Killing %s and writing a minidump file" % proc)
+    LOG.debug(f"Killing {proc} and writing a minidump file")
     mozcrash.kill_and_get_minidump(proc.pid, minidump_dir)
 
 

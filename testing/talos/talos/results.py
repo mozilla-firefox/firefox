@@ -50,11 +50,12 @@ class TalosResults:
                 _output = output.GraphserverOutput(self)
                 results = _output()
                 _output.output(
-                    "file://%s" % os.path.join(os.getcwd(), "results.out"), results
+                    "file://" + os.path.join(os.getcwd(), "results.out"), results
                 )
             except Exception:
                 pass
-            print("\nFAIL: %s" % str(e).replace("\n", "\nRETURN:"))
+            fail_msg = str(e).replace("\n", "\nRETURN:")
+            print(f"\nFAIL: {fail_msg}")
             raise e
 
 
@@ -364,9 +365,7 @@ class BrowserLogResults:
             previous_tokens = tokens
             break
         else:
-            self.error(
-                "Could not find report in browser output: %s" % self.report_tokens
-            )
+            self.error(f"Could not find report in browser output: {self.report_tokens}")
 
         # parse the timestamps
         for attr, tokens in self.time_tokens:
@@ -376,17 +375,16 @@ class BrowserLogResults:
             # check for errors
             if not value:
                 self.error(
-                    "Could not find %s in browser output: (tokens: %s)" % (attr, tokens)
+                    f"Could not find {attr} in browser output: (tokens: {tokens})"
                 )
             try:
                 value = int(float(value))
             except ValueError:
-                self.error("Could not cast %s to an integer: %s" % (attr, value))
+                self.error(f"Could not cast {attr} to an integer: {value}")
             if _last_token < position:
                 self.error(
-                    "%s [character position: %s] found before %s"
-                    " [character position: %s]"
-                    % (tokens, _last_token, previous_tokens, position)
+                    f"{tokens} [character position: {_last_token}] found before {previous_tokens}"
+                    f" [character position: {position}]"
                 )
 
             # process
@@ -403,7 +401,7 @@ class BrowserLogResults:
         if not parts:
             return None, -1  # no match
         if len(parts) != 1:
-            self.error("Multiple matches for %s,%s" % (start_token, end_token))
+            self.error(f"Multiple matches for {start_token},{end_token}")
         return parts[0], last_token
 
     def results(self):
@@ -411,7 +409,7 @@ class BrowserLogResults:
 
         if self.format not in self.classes:
             raise utils.TalosError(
-                "Unable to find a results class for format: %s" % repr(self.format)
+                f"Unable to find a results class for format: {repr(self.format)}"
             )
 
         return self.classes[self.format](
@@ -461,8 +459,8 @@ class BrowserLogResults:
         filename = "etl_output_thread_stats.csv"
         if not os.path.exists(filename):
             raise utils.TalosError(
-                "Error: we are looking for xperf results file %s,"
-                " and didn't find it" % filename
+                f"Error: we are looking for xperf results file {filename},"
+                " and didn't find it"
             )
 
         contents = open(filename).read()
@@ -482,7 +480,7 @@ class BrowserLogResults:
             # Format for talos
             thread = values["thread"]
             counter = values["counter"].rsplit("_io_bytes", 1)[0]
-            counter_name = "%s_%s_%sio" % (thread, values["stage"], counter)
+            counter_name = f"{thread}_{values['stage']}_{counter}io"
             value = float(values["value"])
 
             # Accrue counter
@@ -495,7 +493,7 @@ class BrowserLogResults:
             if not os.path.exists(filename):
                 raise utils.TalosError(
                     "Error: we are looking for xperf results file"
-                    " %s, and didn't find it" % filename
+                    f" {filename}, and didn't find it"
                 )
 
             contents = open(filename).read()

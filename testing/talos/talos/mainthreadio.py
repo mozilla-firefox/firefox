@@ -101,7 +101,7 @@ def parse(logfilename, data):
                     stage = stage + 1
             return True
     except OSError as e:
-        print("%s: %s" % (e.filename, e.strerror))
+        print(f"{e.filename}: {e.strerror}")
         return False
 
 
@@ -111,14 +111,9 @@ def write_output(outfilename, data):
         with open(outfilename, "w") as outfile:
             outfile.write("[\n")
             for idx, (key, value) in enumerate(data.items()):
-                output = '    ["%s", "%s", "%s", "%s", %d, %d, %f]' % (
-                    key[0],
-                    key[1],
-                    key[2],
-                    key[3],
-                    value[KEY_COUNT],
-                    value[KEY_RUN_COUNT],
-                    value[KEY_DURATION],
+                output = (
+                    f'    ["{key[0]}", "{key[1]}", "{key[2]}", "{key[3]}", '
+                    f"{value[KEY_COUNT]}, {value[KEY_RUN_COUNT]}, {value[KEY_DURATION]:f}]"
                 )
                 outfile.write(output)
                 if idx >= 0:
@@ -128,16 +123,16 @@ def write_output(outfilename, data):
             outfile.write("]\n")
             return True
     except OSError as e:
-        print("%s: %s" % (e.filename, e.strerror))
+        print(f"{e.filename}: {e.strerror}")
         return False
 
 
 def main(argv):
     if len(argv) < 4:
-        print("Usage: %s <main_thread_io_log_file> <output_file> <xre_path>" % argv[0])
+        print(f"Usage: {argv[0]} <main_thread_io_log_file> <output_file> <xre_path>")
         return 1
     if not os.path.exists(argv[3]):
-        print('XRE Path "%s" does not exist' % argv[3])
+        print(f'XRE Path "{argv[3]}" does not exist')
         return 1
     data = {}
     if not parse(argv[1], data):

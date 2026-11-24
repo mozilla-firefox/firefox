@@ -6,7 +6,7 @@ import os
 import sys
 
 PYTHON = sys.executable
-VENV_PATH = "%s/build/venv" % os.getcwd()
+VENV_PATH = f"{os.getcwd()}/build/venv"
 
 exes = {
     "python": PYTHON,

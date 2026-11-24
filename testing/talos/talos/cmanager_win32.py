@@ -152,8 +152,7 @@ class WinCounterManager(CounterManager):
             != _PDH_MORE_DATA
         ):
             raise TalosError(
-                "Could not create counter path for counter %s for %s"
-                % (counterName, processName)
+                f"Could not create counter path for counter {counterName} for {processName}"
             )
 
         szFullPathBuffer = LPCSTR(b"\0" * pcchbufferSize.value)
@@ -168,8 +167,7 @@ class WinCounterManager(CounterManager):
             != 0
         ):
             raise TalosError(
-                "Could not create counter path for counter %s for %s"
-                % (counterName, processName)
+                f"Could not create counter path for counter {counterName} for {processName}"
             )
 
         path = szFullPathBuffer.value
@@ -180,7 +178,7 @@ class WinCounterManager(CounterManager):
 
         hc = HANDLE()
         if pdh.PdhAddCounterA(hq, path, 0, byref(hc)) != 0:
-            raise TalosError("Could not add win32 counter %s" % path)
+            raise TalosError(f"Could not add win32 counter {path}")
 
         self.registeredCounters[counterName] = [hq, [(hc, path)]]
 
@@ -227,7 +225,7 @@ class WinCounterManager(CounterManager):
                     newhc = HANDLE()
                     if pdh.PdhAddCounterA(hq, expandedPath, 0, byref(newhc)) != 0:
                         raise TalosError(
-                            "Could not add expanded win32 counter %s" % expandedPath
+                            f"Could not add expanded win32 counter {expandedPath}"
                         )
                     self.registeredCounters[counter][1].append((newhc, expandedPath))
                 except Exception:

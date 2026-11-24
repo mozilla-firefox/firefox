@@ -159,7 +159,7 @@ class AndroidProfileRun(TestingMixin, BaseScript, MozbaseMixin, AndroidMixin):
             "Either add installer_path to the config or use --installer-path."
         )
         self.install_android_app(self.installer_path)
-        self.info("Finished installing apps for %s" % self.device_serial)
+        self.info(f"Finished installing apps for {self.device_serial}")
 
     def _wait_for_process(self, adbdevice, process_name, running, timeout=10):
         deadline = time.monotonic() + timeout
@@ -244,7 +244,10 @@ class AndroidProfileRun(TestingMixin, BaseScript, MozbaseMixin, AndroidMixin):
         for path in prefpaths:
             prefs.update(Preferences.read_prefs(path))
 
-        interpolation = {"server": "%s:%d" % httpd.httpd.server_address, "OOP": "false"}
+        interpolation = {
+            "server": f"{httpd.httpd.server_address[0]}:{httpd.httpd.server_address[1]}",
+            "OOP": "false",
+        }
         for k, v in prefs.items():
             if isinstance(v, str):
                 v = v.format(**interpolation)

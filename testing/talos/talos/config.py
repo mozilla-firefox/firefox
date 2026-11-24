@@ -109,7 +109,7 @@ def convert_url(config, url):
         return url
 
     if ".html" in url:
-        url = "http://%s/%s" % (webserver, url)
+        url = f"http://{webserver}/{url}"
 
     return url
 
@@ -138,7 +138,7 @@ def set_webserver(config):
     port = sock.getsockname()[1]
     sock.close()
 
-    config["webserver"] = "127.0.0.1:%d" % port
+    config["webserver"] = f"127.0.0.1:{port}"
 
 
 @validator
@@ -182,7 +182,7 @@ def get_active_tests(config):
     availableTests = test.test_dict()
     if not set(activeTests).issubset(availableTests):
         missing = [i for i in activeTests if i not in availableTests]
-        raise ConfigurationError("No definition found for test(s): %s" % missing)
+        raise ConfigurationError(f"No definition found for test(s): {missing}")
 
     return activeTests
 
@@ -424,7 +424,7 @@ def get_config(argv=None):
         try:
             suite_conf = suites_conf()[cli_opts.suite]
         except KeyError:
-            raise ConfigurationError("No such suite: %r" % cli_opts.suite)
+            raise ConfigurationError(f"No such suite: {cli_opts.suite!r}")
         argv += ["-a", ":".join(suite_conf["tests"])]
         # talos_options in the suite config should not override command line
         # options, so we prepend argv with talos_options so that, when parsed,

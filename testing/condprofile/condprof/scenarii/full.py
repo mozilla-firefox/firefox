@@ -33,8 +33,8 @@ class Builder:
         if self.mobile:
             self.max_urls = min(self.max_urls, 20)
 
-        logger.info("platform: %s" % self.platform)
-        logger.info("max_urls: %s" % self.max_urls)
+        logger.info(f"platform: {self.platform}")
+        logger.info(f"max_urls: {self.max_urls}")
         self.bookmark_frequency = options.get("bookmark_frequency", BOOKMARK_FREQUENCY)
 
         # Syncing is disabled for all platforms
@@ -47,7 +47,7 @@ class Builder:
             self.username, self.password = None, None
 
     def _load_script(self, name):
-        return "\n".join(self._read_lines("%s.js" % name))
+        return "\n".join(self._read_lines(f"{name}.js"))
 
     def _read_lines(self, filename):
         path = os.path.join(os.path.dirname(__file__), filename)
@@ -69,7 +69,7 @@ class Builder:
         return url_list
 
     async def add_bookmark(self, session, url, title):
-        logger.info("Adding bookmark to %s" % url)
+        logger.info(f"Adding bookmark to {url}")
         return await execute_async_script(
             session, self.bookmark_js, url, title, self.max_bookmarks
         )
@@ -79,7 +79,7 @@ class Builder:
             return
         # now that we've visited all pages, we want to upload to FXSync
         logger.info("Syncing profile to FxSync")
-        logger.info("Username is %s, password is %s" % (self.username, self.password))
+        logger.info(f"Username is {self.username}, password is {self.password}")
         script_res = await execute_async_script(
             session,
             self.sync_js,
@@ -107,7 +107,7 @@ class Builder:
         visited = 0
 
         for current, (url, word) in enumerate(self.urls):
-            logger.info("%d/%d %s" % (current + 1, self.max_urls, url))
+            logger.info(f"{current + 1}/{self.max_urls} {url}")
             retries = 0
             while retries < 3:
                 try:

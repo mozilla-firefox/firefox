@@ -73,7 +73,7 @@ class TTest:
 
     def _runTest(self, browser_config, test_config, setup, utility_path=None):
         minidump_dir = os.path.join(setup.profile_dir, "minidumps")
-        counters = test_config.get("%s_counters" % self._get_counter_prefix(), [])
+        counters = test_config.get(f"{self._get_counter_prefix()}_counters", [])
         resolution = test_config["resolution"]
 
         # add the mainthread_io to the environment variable, as defined
@@ -109,8 +109,7 @@ class TTest:
         for i in range(test_config["cycles"]):
             time.sleep(0.25)
             LOG.info(
-                "Running cycle %d/%d for %s test..."
-                % (i + 1, test_config["cycles"], test_config["name"])
+                f"Running cycle {i + 1}/{test_config['cycles']} for {test_config['name']} test..."
             )
 
             # remove the browser  error file
@@ -131,7 +130,7 @@ class TTest:
                 for keep in test_config["reinstall"]:
                     origin = os.path.join(test_config["profile_path"], keep)
                     dest = os.path.join(setup.profile_dir, keep)
-                    LOG.debug("Reinstalling %s on top of %s" % (origin, dest))
+                    LOG.debug(f"Reinstalling {origin} on top of {dest}")
                     shutil.copy(origin, dest)
 
             # Run the test
@@ -261,7 +260,7 @@ class TTest:
         ])
         for c in test_results.all_counter_results:
             for key, value in c.items():
-                LOG.debug("COUNTER %r: %s" % (key, value))
+                LOG.debug(f"COUNTER {key!r}: {value}")
 
         # if running against a code-coverage instrumented build, move the
         # produced gcda files to a folder where they will be collected later

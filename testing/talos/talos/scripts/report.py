@@ -78,7 +78,7 @@ def generate_report(tuple_list, filepath, mode="variance"):
                     average = numpy.average(sorted(days[day])[tenth : tenth * 9 + 1])
                 elif mode == "count":
                     average = numpy.average(days[day])
-                line.append("%.3f" % average)
+                line.append(f"{average:.3f}")
                 week_avgs.append(average)
 
             outliers = is_normal(week_avgs)
@@ -132,13 +132,13 @@ def main():
     f = "report"
     if args.platform:
         tuple_list = [x for x in tuple_list if x[4] == args.platform]
-        f += "-%s" % args.platform
+        f += f"-{args.platform}"
 
     if args.test:
         tuple_list = [x for x in tuple_list if x[3] == args.test]
-        f += "-%s" % args.test
+        f += f"-{args.test}"
 
-    f += "-%s" % args.mode
+    f += f"-{args.mode}"
     generate_report(tuple_list, filepath=f + ".csv", mode=args.mode)
 
 

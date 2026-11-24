@@ -18,7 +18,7 @@ class Metadata(MutableMapping):
 
     def __init__(self, profile_dir):
         self.metadata_file = os.path.join(profile_dir, METADATA_NAME)
-        logger.info("Reading existing metadata at %s" % self.metadata_file)
+        logger.info(f"Reading existing metadata at {self.metadata_file}")
         if not os.path.exists(self.metadata_file):
             logger.info("Could not find the metadata file in that profile")
             self._data = {}
@@ -78,6 +78,6 @@ class Metadata(MutableMapping):
         # adding info about the firefox version
         # XXX build ID ??
         # XXX android ??
-        logger.info("Saving metadata file in %s" % self.metadata_file)
+        logger.info(f"Saving metadata file in {self.metadata_file}")
         with open(self.metadata_file, "w") as f:
             f.write(json.dumps(self._data))

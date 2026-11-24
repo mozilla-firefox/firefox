@@ -64,7 +64,7 @@ def fetch(
         repo,
         version,
     )
-    print("Downloaded conditioned profile can be found at: %s" % target_dir)
+    print(f"Downloaded conditioned profile can be found at: {target_dir}")
 
 
 @Command("run-condprofile", category="testing")

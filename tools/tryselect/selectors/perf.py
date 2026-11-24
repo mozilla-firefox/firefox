@@ -337,7 +337,7 @@ class PerfParser(CompareParser):
         for category, category_info in perf_categories.items():
             if category not in selected_categories:
                 continue
-            print("Gathering tasks for %s category" % category)
+            print(f"Gathering tasks for {category} category")
 
             category_tasks = set()
             for suite in PerfParser.suites:
@@ -347,9 +347,7 @@ class PerfParser(CompareParser):
 
                 category_suite_tasks = set()
                 if suite_queries:
-                    print(
-                        "Executing %s queries: %s" % (suite, ", ".join(suite_queries))
-                    )
+                    print(f"Executing {suite} queries: {', '.join(suite_queries)}")
 
                     for perf_query in suite_queries:
                         if not category_suite_tasks:
@@ -364,7 +362,7 @@ class PerfParser(CompareParser):
                             )
 
                         if len(category_suite_tasks) == 0:
-                            print("Failed to find any tasks for query: %s" % perf_query)
+                            print(f"Failed to find any tasks for query: {perf_query}")
                             break
 
                     if category_suite_tasks:
@@ -374,12 +372,12 @@ class PerfParser(CompareParser):
                 category_tasks = set(category_info["tasks"]) & all_tg_tasks
                 if category_tasks != set(category_info["tasks"]):
                     print(
-                        "Some expected tasks could not be found: %s"
-                        % ", ".join(category_info["tasks"] - category_tasks)
+                        "Some expected tasks could not be found: "
+                        + ", ".join(category_info["tasks"] - category_tasks)
                     )
 
             if not category_tasks:
-                print("Could not find any tasks for category %s" % category)
+                print(f"Could not find any tasks for category {category}")
             else:
                 # Add the new tasks to the currently selected ones
                 selected_tasks |= category_tasks

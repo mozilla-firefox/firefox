@@ -4,7 +4,7 @@
 
 import os
 
-VENV_PATH = "%s/build/venv" % os.getcwd()
+VENV_PATH = f"{os.getcwd()}/build/venv"
 
 config = {
     "log_name": "raptor",

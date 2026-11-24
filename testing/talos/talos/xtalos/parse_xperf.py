@@ -22,11 +22,10 @@ def run_session_restore_analysis(debug=False, **kwargs):
     required = ("csv_filename", "outputFile")
     for r in required:
         if r not in kwargs:
-            raise xtalos.XTalosError("%s required" % r)
+            raise xtalos.XTalosError(f"{r} required")
 
-    final_output_file = "%s_session_restore_stats%s" % os.path.splitext(
-        kwargs["outputFile"]
-    )
+    base, ext = os.path.splitext(kwargs["outputFile"])
+    final_output_file = f"{base}_session_restore_stats{ext}"
 
     output = "time_to_session_store_window_restored_ms\n"
 
@@ -41,7 +40,7 @@ def run_session_restore_analysis(debug=False, **kwargs):
 
         results = interval.get_results()
         if results != {}:
-            output += "%.3f\n" % (results[XPerfAttribute.RESULT])
+            output += f"{results[XPerfAttribute.RESULT]:.3f}\n"
 
     with open(final_output_file, "w") as out:
         out.write(output)
@@ -53,7 +52,7 @@ def run_session_restore_analysis(debug=False, **kwargs):
 def stop(xperf_path, debug=False):
     xperf_cmd = [xperf_path, "-stop", "-stop", "talos_ses"]
     if debug:
-        print("executing '%s'" % subprocess.list2cmdline(xperf_cmd))
+        print(f"executing '{subprocess.list2cmdline(xperf_cmd)}'")
     subprocess.call(xperf_cmd)
 
 
@@ -81,7 +80,7 @@ def stop_from_config(config_file=None, debug=False, **kwargs):
     # ensure path to xperf actually exists
     if not os.path.exists(kwargs["xperf_path"]):
         raise xtalos.XTalosError(
-            "ERROR: xperf_path '%s' does not exist" % kwargs["xperf_path"]
+            f"ERROR: xperf_path '{kwargs['xperf_path']}' does not exist"
         )
 
     # make calling arguments
@@ -99,7 +98,7 @@ def stop_from_config(config_file=None, debug=False, **kwargs):
         processID=kwargs["processID"],
     )
 
-    csv_base = "%s.csv" % kwargs["etl_filename"]
+    csv_base = f"{kwargs['etl_filename']}.csv"
     run_session_restore_analysis(csv_filename=csv_base, debug=debug, **kwargs)
 
     if not debug:

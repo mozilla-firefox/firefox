@@ -57,9 +57,9 @@ gBrowserPID = None
 def uploadFile(filename):
     mud = os.environ.get("MOZ_UPLOAD_DIR", None)
     if mud:
-        print("uploading raw file %s via blobber" % filename)
+        print(f"uploading raw file {filename} via blobber")
         mud_filename = os.path.join(mud, filename)
-        shutil.copyfile(filename, "%s.log" % mud_filename)
+        shutil.copyfile(filename, f"{mud_filename}.log")
 
 
 def filterOutHeader(data):
@@ -150,12 +150,12 @@ def fileSummary(row, stage, retVal):
         thread_extra = " (main)"
     key_tuple = (
         row[fname_index],
-        "%s%s" % (row[THREAD_ID_INDEX], thread_extra),
+        f"{row[THREAD_ID_INDEX]}{thread_extra}",
         stages[stage],
     )
     total_tuple = (
         row[fname_index],
-        "%s%s" % (row[THREAD_ID_INDEX], thread_extra),
+        f"{row[THREAD_ID_INDEX]}{thread_extra}",
         "all",
     )
 
@@ -194,18 +194,18 @@ def etl2csv(xperf_path, etl_filename, debug=False):
     xperf_cmd = [
         xperf_path,
         "-merge",
-        "%s.user" % etl_filename,
-        "%s.kernel" % etl_filename,
+        f"{etl_filename}.user",
+        f"{etl_filename}.kernel",
         etl_filename,
     ]
     if debug:
-        print("executing '%s'" % subprocess.list2cmdline(xperf_cmd))
+        print(f"executing '{subprocess.list2cmdline(xperf_cmd)}'")
     subprocess.call(xperf_cmd)
 
-    csv_filename = "%s.csv" % etl_filename
+    csv_filename = f"{etl_filename}.csv"
     xperf_cmd = [xperf_path, "-i", etl_filename, "-o", csv_filename]
     if debug:
-        print("executing '%s'" % subprocess.list2cmdline(xperf_cmd))
+        print(f"executing '{subprocess.list2cmdline(xperf_cmd)}'")
     subprocess.call(xperf_cmd)
     return csv_filename
 
@@ -249,11 +249,9 @@ def trackThreadFileIO(row, io, stage):
     th, stg = gThreads[tid], stages[stage]
     sizeIdx = getIndex(event, DISKBYTES_COL)
     bytes = int(row[sizeIdx], 16)
-    io[(th, stg, "file_%s_ops" % opType)] = (
-        io.get((th, stg, "file_%s_ops" % opType), 0) + 1
-    )
-    io[(th, stg, "file_%s_bytes" % opType)] = (
-        io.get((th, stg, "file_%s_bytes" % opType), 0) + bytes
+    io[(th, stg, f"file_{opType}_ops")] = io.get((th, stg, f"file_{opType}_ops"), 0) + 1
+    io[(th, stg, f"file_{opType}_bytes")] = (
+        io.get((th, stg, f"file_{opType}_bytes"), 0) + bytes
     )
     io[(th, stg, "file_io_bytes")] = io.get((th, stg, "file_io_bytes"), 0) + bytes
 
@@ -280,8 +278,8 @@ def trackThreadNetIO(row, io, stage):
             # using BYTESSENT_COL, so we try both
             lenIdx = getIndex(event, NUMBYTES_COL, BYTESSENT_COL)
             bytes = int(row[lenIdx])
-            io[(th, stg, "net_%s_bytes" % opType)] = (
-                io.get((th, stg, "net_%s_bytes" % opType), 0) + bytes
+            io[(th, stg, f"net_{opType}_bytes")] = (
+                io.get((th, stg, f"net_{opType}_bytes"), 0) + bytes
             )
             io[(th, stg, "net_io_bytes")] = io.get((th, stg, "net_io_bytes"), 0) + bytes
 
@@ -299,7 +297,7 @@ def loadAllowlist(filename):
     if not filename:
         return
     if not os.path.exists(filename):
-        print("Warning: xperf allowlist %s was not found" % filename)
+        print(f"Warning: xperf allowlist {filename} was not found")
         return
     lines = open(filename).readlines()
     # Expand paths
@@ -380,9 +378,10 @@ def etlparser(
 
     output = "thread, stage, counter, value\n"
     for cntr in sorted(io.keys()):
-        output += "%s, %s\n" % (", ".join(cntr), str(io[cntr]))
+        output += f"{', '.join(cntr)}, {io[cntr]}\n"
     if outputFile:
-        fname = "%s_thread_stats%s" % os.path.splitext(outputFile)
+        base, ext = os.path.splitext(outputFile)
+        fname = f"{base}_thread_stats{ext}"
         with open(fname, "w") as f:
             f.write(output)
 
@@ -423,14 +422,11 @@ def etlparser(
 
     # output data
     for row in outputData:
-        output = "%s, %s, %s, %s, %s, %s, %s\n" % (
-            row[0],
-            row[1],
-            row[2],
-            files[row]["DiskReadCount"],
-            files[row]["DiskReadBytes"],
-            files[row]["DiskWriteCount"],
-            files[row]["DiskWriteBytes"],
+        stats = files[row]
+        output = (
+            f"{row[0]}, {row[1]}, {row[2]}, {stats['DiskReadCount']}, "
+            f"{stats['DiskReadBytes']}, {stats['DiskWriteCount']}, "
+            f"{stats['DiskWriteBytes']}\n"
         )
         outFile.write(output)
 
@@ -461,12 +457,12 @@ def etlparser(
     # We depend on it for dependentlibs.list to ignore files required for
     # normal startup.
     if approot:
-        if os.path.exists("%s\\dependentlibs.list" % approot):
-            with open("%s\\dependentlibs.list" % approot) as fhandle:
+        if os.path.exists(f"{approot}\\dependentlibs.list"):
+            with open(f"{approot}\\dependentlibs.list") as fhandle:
                 libs = fhandle.readlines()
 
             for lib in libs:
-                wl_temp["{firefox}\\%s" % lib.strip()] = {"ignore": True}
+                wl_temp[f"{{firefox}}\\{lib.strip()}"] = {"ignore": True}
 
     # Windows isn't case sensitive, this protects us against mismatched
     # systems.
@@ -483,20 +479,20 @@ def etlparser(
 
         paths = ["profile", "firefox", "desktop", "talos"]
         for path in paths:
-            pathname = "%s\\" % path
+            pathname = f"{path}\\"
             parts = filename.split(pathname)
             if len(parts) >= 2:
-                filename = "{%s}\\%s" % (path, pathname.join(parts[1:]))
+                filename = f"{{{path}}}\\{pathname.join(parts[1:])}"
 
         parts = filename.split("\\installtime")
         if len(parts) >= 2:
-            filename = "%s\\{time}" % parts[0]
+            filename = f"{parts[0]}\\{{time}}"
 
         # NOTE: this is Prefetch or prefetch, not case sensitive operating
         # system
         parts = filename.split("refetch")
         if len(parts) >= 2:
-            filename = "%srefetch\\{prefetch}.pf" % parts[0]
+            filename = f"{parts[0]}refetch\\{{prefetch}}.pf"
 
         for pattern, substitution in NAME_SUBSTITUTIONS:
             filename = re.sub(pattern, substitution, filename)
@@ -540,17 +536,9 @@ def etlparser(
         #                                 wl[filename]['maxcount']))
         else:
             errors.append(
-                "File '%s' (normalized from '%s') was accessed and we were not expecting"
-                " it.  DiskReadCount: %s, DiskWriteCount: %s,"
-                " DiskReadBytes: %s, DiskWriteBytes: %s"
-                % (
-                    filename,
-                    original_filename,
-                    files[row]["DiskReadCount"],
-                    files[row]["DiskWriteCount"],
-                    files[row]["DiskReadBytes"],
-                    files[row]["DiskWriteBytes"],
-                )
+                f"File '{filename}' (normalized from '{original_filename}') was accessed and we were not expecting"
+                f" it.  DiskReadCount: {files[row]['DiskReadCount']}, DiskWriteCount: {files[row]['DiskWriteCount']},"
+                f" DiskReadBytes: {files[row]['DiskReadBytes']}, DiskWriteBytes: {files[row]['DiskWriteBytes']}"
             )
 
     if errors:
@@ -558,7 +546,7 @@ def etlparser(
         for error in errors:
             # NOTE: the ' :' is intentional, without the space before the :,
             # some parser will translate this
-            print("TEST-UNEXPECTED-FAIL : xperf: %s" % error)
+            print(f"TEST-UNEXPECTED-FAIL : xperf: {error}")
 
         # We detect if browser_failures.txt exists to exit and turn the job
         # orange
@@ -597,7 +585,7 @@ def etlparser_from_config(config_file, **kwargs):
     # ensure path to xperf given
     if not os.path.exists(args["xperf_path"]):
         raise xtalos.XTalosError(
-            "ERROR: xperf_path '%s' does not exist" % args["xperf_path"]
+            f"ERROR: xperf_path '{args['xperf_path']}' does not exist"
         )
 
     # update args with config file

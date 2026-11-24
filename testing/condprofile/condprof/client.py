@@ -76,7 +76,7 @@ def _check_profile(profile_dir):
         for item in to_remove:
             if not name.startswith(item):
                 continue
-            logger.info("Removing pref %s: %s" % (name, value))
+            logger.info(f"Removing pref {name}: {value}")
             return False
         return True
 
@@ -119,7 +119,7 @@ def _retries(callable, onerror=None, retries=RETRIES):
     if _retry_count >= RETRIES:
         logger.error("All attempt failed")
     else:
-        logger.info("Retried %s attempts and failed" % _retry_count)
+        logger.info(f"Retried {_retry_count} attempts and failed")
     raise RetriesError()
 
 
@@ -143,7 +143,7 @@ def get_profile(
 
     # XXX assert values
     if version:
-        version = "-v%s" % version
+        version = f"-v{version}"
     else:
         version = ""
 
@@ -159,7 +159,7 @@ def get_profile(
         "version": version,
         "date": str(oldday.date()).replace("-", "."),
     }
-    logger.info("Getting conditioned profile with arguments: %s" % params)
+    logger.info(f"Getting conditioned profile with arguments: {params}")
     filename = ARTIFACT_NAME % params
     if task_id is None:
         url = TC_LINK % params + filename
@@ -178,17 +178,17 @@ def get_profile(
             os.makedirs(download_dir)
 
     downloaded_archive = os.path.join(download_dir, filename)
-    logger.info("Downloaded archive path: %s" % downloaded_archive)
+    logger.info(f"Downloaded archive path: {downloaded_archive}")
 
     def _get_profile():
-        logger.info("Getting %s" % url)
+        logger.info(f"Getting {url}")
         try:
             archive = download_file(url, target=downloaded_archive)
         except ArchiveNotFound:
             raise ProfileNotFoundError(url)
         try:
             with tarfile.open(archive, "r:gz") as tar:
-                logger.info("Extracting the tarball content in %s" % target_dir)
+                logger.info(f"Extracting the tarball content in {target_dir}")
                 size = len(list(tar))
                 with progress.Bar(expected_size=size) as bar:
 
@@ -237,7 +237,7 @@ def get_profile(
 def read_changelog(platform, repo="mozilla-central", scenario="settled"):
     params = {"platform": platform, "repo": repo, "scenario": scenario}
     changelog_url = CHANGELOG_LINK % params
-    logger.info("Getting %s" % changelog_url)
+    logger.info(f"Getting {changelog_url}")
     download_dir = tempfile.mkdtemp()
     downloaded_changelog = os.path.join(download_dir, "changelog.json")
 

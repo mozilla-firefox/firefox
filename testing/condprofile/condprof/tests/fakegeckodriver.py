@@ -13,7 +13,7 @@ class Window:
         self.title = title
 
     def visit_url(self, url):
-        print("Visiting %s" % url)
+        print(f"Visiting {url}")
         # XXX todo, load the URL for real
         self.url = url
 

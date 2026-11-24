@@ -29,7 +29,7 @@ def start(
         "-BufferSize",
         "1024",
         "-f",
-        "%s.kernel" % etl_filename,
+        f"{etl_filename}.kernel",
         "-start",
         "talos_ses",
         "-on",
@@ -39,10 +39,10 @@ def start(
         "-BufferSize",
         "1024",
         "-f",
-        "%s.user" % etl_filename,
+        f"{etl_filename}.user",
     ]
     if debug:
-        print("executing '%s'" % subprocess.list2cmdline(xperf_cmd))
+        print(f"executing '{subprocess.list2cmdline(xperf_cmd)}'")
     subprocess.call(xperf_cmd)
 
 
@@ -73,7 +73,7 @@ def start_from_config(config_file=None, debug=False, **kwargs):
     # ensure path to xperf actually exists
     if not os.path.exists(kwargs["xperf_path"]):
         raise xtalos.XTalosError(
-            "ERROR: xperf_path '%s' does not exist" % kwargs["xperf_path"]
+            f"ERROR: xperf_path '{kwargs['xperf_path']}' does not exist"
         )
 
     # make calling arguments
