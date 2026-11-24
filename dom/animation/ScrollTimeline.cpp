@@ -21,6 +21,7 @@
 #include "mozilla/dom/ElementInlines.h"
 #include "mozilla/dom/ScrollTimelineBinding.h"
 #include "mozilla/dom/TimelineName.h"
+#include "nsDOMMutationObserver.h"
 #include "nsIFrame.h"
 #include "nsLayoutUtils.h"
 #include "nsRefreshDriver.h"
@@ -267,9 +268,7 @@ void ScrollTimeline::WillRefresh() {
     return;
   }
 
-  // FIXME: Bug 1737927: Need to check the animation mutation observers for
-  // animations with scroll timelines.
-  // nsAutoAnimationMutationBatch mb(mDocument);
+  nsAutoAnimationMutationBatch mb(mDocument);
 
   TickState dummyState;
   Tick(dummyState);
@@ -394,7 +393,6 @@ void ScrollTimeline::ReplacePropertiesWith(
     MOZ_ASSERT(anim->GetTimeline() == this);
     MOZ_ASSERT(anim->GetTimelineName() == aName);
     // Set this so we just PostUpdate() for this animation.
-    // FIXME(dshin, bug 1737927): Mutation observer may need to be notified.
     anim->SetTimeline(this, aName, Animation::FromJS::No);
   }
 }

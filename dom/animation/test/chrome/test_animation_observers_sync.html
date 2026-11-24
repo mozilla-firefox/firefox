@@ -24,6 +24,19 @@ Test chrome-only MutationObserver animation notifications (sync tests)
 @keyframes anotherAnim {
   to { transform: translate(0px); }
 }
+.scroller {
+  width: 100px;
+  height: 100px;
+  overflow: scroll;
+}
+.content {
+  width: 100%;
+  height: 200px;
+}
+.subject {
+  width: 50px;
+  height: 50px;
+}
 </style>
 <script>
 
@@ -1193,6 +1206,120 @@ function runTest() {
       }, `single_animation_change_${aChangeTest.name}`);
     });
 
+    test(t => {
+      // Start a long animation.
+      var div = addDiv(
+        t,
+        { style: "animation: anim 100s; animation-timeline: scroll()" }
+      );
+      var observer =
+        setupSynchronousObserver(t,
+                                 aOptions.subtree ? div.parentNode : div,
+                                 aOptions.subtree);
+
+      // The animation should cause the creation of a single Animation.
+      var animations = div.getAnimations();
+      assert_equals(animations.length, 1,
+        "getAnimations().length after animation start");
+
+      assert_equals_records(observer.takeRecords(),
+        [{ added: animations, changed: [], removed: [] }],
+        "records after animation start");
+
+      // Change animation timeline to a view timeline.
+      div.style.animationTimeline = "view()";
+      getComputedStyle(div).animationName;
+
+      assert_equals_records(observer.takeRecords(),
+        [{ added: [], changed: animations, removed: [] }],
+        "records after animation change");
+
+      // Change animation timeline to the document timeline.
+      div.style.animationTimeline = "auto";
+      getComputedStyle(div).animationName;
+
+      assert_equals_records(observer.takeRecords(),
+        [{ added: [], changed: animations, removed: [] }],
+        "records after animation change");
+
+      // Change animation timeline to another scroll timeline.
+      div.style.animationTimeline = "scroll()";
+      getComputedStyle(div).animationName;
+
+      assert_equals_records(observer.takeRecords(),
+        [{ added: [], changed: animations, removed: [] }],
+        "records after animation change");
+
+      // Change animation timeline to none.
+      div.style.animationTimeline = "none";
+      getComputedStyle(div).animationName;
+
+      assert_equals_records(observer.takeRecords(),
+        [{ added: [], changed: animations, removed: [] }],
+        "records after animation change");
+
+      // Cancel the animation.
+      div.style.animationName = "none";
+      getComputedStyle(div).animationName;
+
+      assert_equals_records(observer.takeRecords(),
+        [{ added: [], changed: [], removed: animations }],
+        "records after animation end");
+    }, `single_animation_change_timeline`);
+
+    test(t => {
+      // Start a long animation.
+      var div = addDiv(
+        t,
+        { style: "animation: anim 100s; animation-timeline: none" }
+      );
+      var observer =
+        setupSynchronousObserver(t,
+                                 aOptions.subtree ? div.parentNode : div,
+                                 aOptions.subtree);
+
+      // The animation should cause the creation of a single Animation.
+      var animations = div.getAnimations();
+      assert_equals(animations.length, 1,
+        "getAnimations().length after animation start");
+
+      assert_equals_records(observer.takeRecords(),
+        [{ added: animations, changed: [], removed: [] }],
+        "records after animation start");
+
+      // Change animation timeline from none to the document timeline.
+      div.style.animationTimeline = "auto";
+      getComputedStyle(div).animationName;
+
+      assert_equals_records(observer.takeRecords(),
+        [{ added: [], changed: animations, removed: [] }],
+        "records after animation change");
+
+      // Change animation timeline to none.
+      div.style.animationTimeline = "none";
+      getComputedStyle(div).animationName;
+
+      assert_equals_records(observer.takeRecords(),
+        [{ added: [], changed: animations, removed: [] }],
+        "records after animation change");
+
+      // Change animation timeline to a scroll timeline.
+      div.style.animationTimeline = "scroll()";
+      getComputedStyle(div).animationName;
+
+      assert_equals_records(observer.takeRecords(),
+        [{ added: [], changed: animations, removed: [] }],
+        "records after animation change");
+
+      // Cancel the animation.
+      div.style.animationName = "none";
+      getComputedStyle(div).animationName;
+
+      assert_equals_records(observer.takeRecords(),
+        [{ added: [], changed: [], removed: animations }],
+        "records after animation end");
+    }, `single_animation_change_timeline_from_none`);
+
     // Test that calling finish() on a pause-pending (but otherwise finished)
     // animation dispatches a changed notification.
     test(t => {
@@ -1570,6 +1697,123 @@ function runTest() {
       [{ added: [], changed: [], removed: [anim] }],
       "records after animation is finished");
   }, "exclude_animations_targeting_pseudo_elements");
+
+  test(t => {
+    // Create the overflow like this:
+    // <div class="scroller">
+    //   <div class="content"></div>
+    //   <div class="subject"></div>
+    // </div>
+    let scroller = document.createElement("div");
+    scroller.classList.add("scroller");
+    let content = document.createElement("div");
+    content.classList.add("content");
+    let subject = document.createElement("div");
+    subject.classList.add("subject");
+    scroller.appendChild(content);
+    scroller.appendChild(subject);
+    document.body.appendChild(scroller);
+
+    let div = addDiv(t);
+    let observer = setupSynchronousObserver(t, div, false);
+
+    const timeline = new ViewTimeline({ subject });
+    const anim = div.animate(
+      { marginLeft: [ "100px", "100px" ] },
+      { duration: 1000, timeline }
+    );
+
+    assert_equals_records(observer.takeRecords(),
+      [{ added: [anim], changed: [], removed: [] }],
+      "records after animation is added");
+
+    // Change to the document timeline.
+    anim.timeline = document.timeline;
+
+    assert_equals_records(observer.takeRecords(),
+      [{ added: [], changed: [anim], removed: [] }],
+      "records after animation timeline is changed to the document timeline");
+
+    // Change to the finite timeline.
+    anim.timeline = new ScrollTimeline({ source: scroller });
+
+    assert_equals_records(observer.takeRecords(),
+      [{ added: [], changed: [anim], removed: [] }],
+      "records after animation timeline is changed to a scroll timeline");
+
+    // Change to the null timeline.
+    anim.timeline = null;
+
+    assert_equals_records(observer.takeRecords(),
+      [{ added: [], changed: [anim], removed: [] }],
+      "records after animation timeline is changed to null");
+
+    anim.finish();
+
+    assert_equals_records(observer.takeRecords(),
+      [{ added: [], changed: [], removed: [anim] }],
+      "records after animation is finished");
+
+    scroller.remove();
+  }, 'set_animation_timeline');
+
+  test(t => {
+    // Create the overflow like this:
+    // <div class="scroller">
+    //   <div class="content"></div>
+    //   <div class="subject"></div>
+    // </div>
+    let scroller = document.createElement("div");
+    scroller.classList.add("scroller");
+    let content = document.createElement("div");
+    content.classList.add("content");
+    let subject = document.createElement("div");
+    subject.classList.add("subject");
+    scroller.appendChild(content);
+    scroller.appendChild(subject);
+    document.body.appendChild(scroller);
+
+    let div = addDiv(t);
+    let observer = setupSynchronousObserver(t, div, false);
+
+    const anim = div.animate(
+      { marginLeft: [ "100px", "100px" ] },
+      { duration: 1000, timeline: null }
+    );
+
+    assert_equals_records(observer.takeRecords(),
+      [{ added: [anim], changed: [], removed: [] }],
+      "records after animation is added");
+
+    // Change from null to the finite timeline.
+    anim.timeline = new ViewTimeline({ subject });
+
+    assert_equals_records(observer.takeRecords(),
+      [{ added: [], changed: [anim], removed: [] }],
+      "records after animation timeline is changed to a view timeline");
+
+    // Change to the null timeline.
+    anim.timeline = null;
+
+    assert_equals_records(observer.takeRecords(),
+      [{ added: [], changed: [anim], removed: [] }],
+      "records after animation timeline is changed to null");
+
+    // Change from null to the document timeline.
+    anim.timeline = document.timeline;
+
+    assert_equals_records(observer.takeRecords(),
+      [{ added: [], changed: [anim], removed: [] }],
+      "records after animation timeline is changed to the document timeline");
+
+    anim.finish();
+
+    assert_equals_records(observer.takeRecords(),
+      [{ added: [], changed: [], removed: [anim] }],
+      "records after animation is finished");
+
+    scroller.remove();
+  }, 'set_animation_timeline_from_null');
 }
 
 W3CTest.runner.expectAssertions(0, 12); // bug 1189015

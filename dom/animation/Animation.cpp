@@ -319,6 +319,8 @@ bool Animation::SetTimelineNoUpdate(AnimationTimeline* aTimeline,
     return false;
   }
 
+  AutoMutationBatchForAnimation mb(*this);
+
   // 3. Let previous play state be animation’s play state.
   const AnimationPlayState previousPlayState = PlayState();
   // 4. Let previous current time be the animation’s current time.
@@ -460,9 +462,10 @@ bool Animation::SetTimelineNoUpdate(AnimationTimeline* aTimeline,
   // with the did seek flag set to false, and the synchronously notify flag set
   // to false.
   UpdateTiming(SeekFlag::NoSeek, SyncNotifyFlag::Async);
+  if (IsRelevant()) {
+    MutationObservers::NotifyAnimationChanged(this);
+  }
 
-  // FIXME: Bug 1799071: Check if we need to add
-  // MutationObservers::NotifyAnimationChanged(this) here.
   return true;
 }
 
