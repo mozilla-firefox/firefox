@@ -137,22 +137,25 @@ private fun CustomizeMenuGroup(group: MenuItemsGroup, isHidden: Boolean, isHighl
 }
 
 /**
- * Override the color which the items inside [content] use as their container, by replacing the theme token value they
- * read.
+ * Override the colors which the items inside [content] use, by replacing the theme token values they read: the color of
+ * their container, and [androidx.compose.material3.ColorScheme.onSurface], replaced by the muted color of their icons.
+ * Everything inside reading it is muted, like the titles, badge labels and disabled content of the items, so controls
+ * meant to stand out should be placed outside.
  *
- * @param containerColor The color to use, or `null` to keep the one from the current theme.
+ * @param containerColor The container color to use, or `null` to keep the one from the current theme.
  * @param content The content to show.
  */
 @Composable
 private fun CustomizedGroupTheme(containerColor: Color?, content: @Composable () -> Unit) {
-    if (containerColor == null) {
-        content()
-        return
-    }
-
     val colorScheme = MaterialTheme.colorScheme
     MaterialTheme(
-        colorScheme = remember(colorScheme, containerColor) { colorScheme.copy(surfaceBright = containerColor) },
+        colorScheme =
+            remember(colorScheme, containerColor) {
+                colorScheme.copy(
+                    surfaceBright = containerColor ?: colorScheme.surfaceBright,
+                    onSurface = colorScheme.onSurfaceVariant,
+                )
+            },
         content = content,
     )
 }
