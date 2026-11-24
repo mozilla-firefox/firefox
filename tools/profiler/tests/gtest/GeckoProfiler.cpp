@@ -1554,7 +1554,7 @@ static SamplingState WaitForSamplingState() {
   while (samplingState == -1) {
   }
 
-  return static_cast<SamplingState>(static_cast<int>(samplingState));
+  return static_cast<SamplingState>(samplingState.load());
 }
 
 typedef Vector<const char*> StrVec;

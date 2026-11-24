@@ -4880,7 +4880,7 @@ void SamplerThread::Run() {
 
       TimeStamp expiredMarkersCleaned = TimeStamp::Now();
 
-      if (int(gSkipSampling) <= 0 && !ActivePS::IsSamplingPaused(lock)) {
+      if (gSkipSampling.load() <= 0 && !ActivePS::IsSamplingPaused(lock)) {
         double sampleStartDeltaMs =
             (sampleStart - CorePS::ProcessStartTime()).ToMilliseconds();
         ProfileBuffer& buffer = ActivePS::Buffer(lock);
