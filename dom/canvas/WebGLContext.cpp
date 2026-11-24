@@ -157,6 +157,7 @@ WebGLContext::WebGLContext(HostWebGLContext& host,
       mAllowFBInvalidation(StaticPrefs::webgl_allow_fb_invalidation()),
       mMsaaSamples((uint8_t)StaticPrefs::webgl_msaa_samples()),
       mRequestedSize(desc.size) {
+  mColorWriteMasks.fill(0xf);
   host.mContext = this;
   const FuncScope funcScope(*this, "<Create>");
 }
@@ -805,7 +806,7 @@ ScopedPrepForResourceClear::ScopedPrepForResourceClear(
 
   // "The clear operation always uses the front stencil write mask
   //  when clearing the stencil buffer."
-  webgl.DoColorMask(Some(0), 0b1111);
+  webgl.DoColorMask(Nothing(), 0b1111);
   gl->fDepthMask(true);
   gl->fStencilMaskSeparate(LOCAL_GL_FRONT, 0xffffffff);
 
@@ -824,7 +825,13 @@ ScopedPrepForResourceClear::~ScopedPrepForResourceClear() {
     gl->fEnable(LOCAL_GL_RASTERIZER_DISCARD);
   }
 
-  webgl.DoColorMask(Some(0), webgl.mColorWriteMask0);
+  if (webgl.IsExtensionEnabled(WebGLExtensionID::OES_draw_buffers_indexed)) {
+    for (const auto i : IntegerRange(webgl.MaxValidDrawBuffers())) {
+      webgl.DoColorMask(Some(i), webgl.mColorWriteMasks[i]);
+    }
+  } else {
+    webgl.DoColorMask(Nothing(), webgl.mColorWriteMasks[0]);
+  }
   gl->fDepthMask(webgl.mDepthWriteMask);
   gl->fStencilMaskSeparate(LOCAL_GL_FRONT, webgl.mStencilWriteMaskFront);
 
@@ -1635,7 +1642,7 @@ void WebGLContext::DoColorMask(Maybe<GLuint> i, const uint8_t bitmask) const {
 
 ScopedDrawCallWrapper::ScopedDrawCallWrapper(WebGLContext& webgl)
     : mWebGL(webgl) {
-  uint8_t driverColorMask0 = mWebGL.mColorWriteMask0;
+  uint8_t driverColorMask0 = mWebGL.mColorWriteMasks[0];
   bool driverDepthTest = mWebGL.mDepthTestEnabled;
   bool driverStencilTest = mWebGL.mStencilTestEnabled;
   const auto& fb = mWebGL.mBoundDrawFramebuffer;
