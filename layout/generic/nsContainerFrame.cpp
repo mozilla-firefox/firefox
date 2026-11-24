@@ -2693,22 +2693,44 @@ nsresult nsOverflowContinuationTracker::Insert(nsIFrame* aOverflowCont,
       reparented = true;
     }
 
-    // If aOverflowCont has a prev/next-in-flow that might be in
+    // If any other continuation of aOverflowCont's frame is already in
     // mOverflowContList we need to find it and insert after/before it to
-    // maintain the order amongst next-in-flows in this list.
-    nsIFrame* pif = aOverflowCont->GetPrevInFlow();
-    nsIFrame* nif = aOverflowCont->GetNextInFlow();
-    if ((pif && pif->GetParent() == mParent && pif != mPrevOverflowCont) ||
-        (nif && nif->GetParent() == mParent && mPrevOverflowCont)) {
-      for (nsIFrame* f : *mOverflowContList) {
-        if (f == pif) {
-          mPrevOverflowCont = pif;
-          break;
+    // maintain the order amongst the continuations in this list.
+
+    // Return whether aFrame is found in aOverflowCont's prev-in-flow chain.
+    auto IsEarlierContinuation = [aOverflowCont](nsIFrame* aFrame) {
+      for (nsIFrame* f = aOverflowCont->GetPrevInFlow(); f;
+           f = f->GetPrevInFlow()) {
+        if (f == aFrame) {
+          return true;
         }
-        if (f == nif) {
-          mPrevOverflowCont = f->GetPrevSibling();
-          break;
+      }
+      return false;
+    };
+
+    // Return true if aFrame is found in aOverflowCont's next-in-flow chain.
+    auto IsLaterContinuation = [aOverflowCont](nsIFrame* aFrame) {
+      for (nsIFrame* f = aOverflowCont->GetNextInFlow(); f;
+           f = f->GetNextInFlow()) {
+        if (f == aFrame) {
+          return true;
         }
+      }
+      return false;
+    };
+
+    // Scan mOverflowContList, setting mPrevOverflowCont to the /last/ earlier
+    // continuation of aOverflowCont, or to the prev-sibling of the /first/
+    // later continuation.
+    for (nsIFrame* f : *mOverflowContList) {
+      if (IsEarlierContinuation(f)) {
+        mPrevOverflowCont = f;
+        // No `break`: keep looking for another continuation that is still in
+        // the prev-in-flow chain.
+      } else if (IsLaterContinuation(f)) {
+        mPrevOverflowCont = f->GetPrevSibling();
+        // Stop as soon as we find a later continuation.
+        break;
       }
     }
 
