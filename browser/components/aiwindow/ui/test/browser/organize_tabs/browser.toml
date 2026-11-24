@@ -1,0 +1,23 @@
+[DEFAULT]
+# Panel animations take about a fifth of these files' runtime.
+prefs = ["ui.prefersReducedMotion=1"]
+support-files = [
+  "head.js",
+  "!/browser/components/aiwindow/ui/test/browser/head.js",
+]
+
+["browser_organize_tabs_duplicates.js"]
+
+["browser_organize_tabs_groups_list.js"]
+
+["browser_organize_tabs_groups_list_changes.js"]
+
+["browser_organize_tabs_interaction.js"]
+
+["browser_organize_tabs_just_created.js"]
+
+["browser_organize_tabs_model.js"]
+
+["browser_organize_tabs_suggestions.js"]
+
+["browser_organize_tabs_visibility.js"]

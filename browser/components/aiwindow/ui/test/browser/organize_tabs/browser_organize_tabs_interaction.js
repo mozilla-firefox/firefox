@@ -1,25 +1,26 @@
 /* Any copyright is dedicated to the Public Domain.
  * http://creativecommons.org/publicdomain/zero/1.0/ */
 
-/* import-globals-from head_aiwindow_group_tabs_button.js */
-
 "use strict";
 
-Services.scriptloader.loadSubScript(
-  getRootDirectory(gTestPath) + "head_aiwindow_group_tabs_button.js",
-  this
-);
+let win;
+
+add_setup(async function () {
+  win = await openSharedGroupingWindow();
+});
 
 describe("Auto Tab Grouping toolbar button", () => {
-  let win, mockEngineManager;
+  let mockEngineManager;
 
-  beforeEach(() => {
+  beforeEach(async () => {
+    await resetGroupingWindow(win);
     mockEngineManager = setupAutoTabGroupingTest();
   });
 
   afterEach(async () => {
-    await cleanupAutoTabGroupingTest(win, mockEngineManager);
-    win = null;
+    await closePanelIfOpen(win);
+    await mockEngineManager.rejectAllRequests();
+    mockEngineManager.cleanupMocks();
   });
 
   describe("when the button is in the overflow menu", () => {
@@ -38,7 +39,6 @@ describe("Auto Tab Grouping toolbar button", () => {
     });
 
     it("opens the panel anchored to the overflow button", async () => {
-      win = await openGroupingWindowWithTabs();
       placement = CustomizableUI.getPlacementOfWidget(
         "smartwindow-group-tabs-button"
       );
@@ -106,7 +106,6 @@ describe("Auto Tab Grouping toolbar button", () => {
     }
 
     it("is a dismissable popup beside a panel that is not", async () => {
-      win = await openGroupingWindowWithTabs();
       const panel = await openPanelWithSuggestions(win);
       const { row } = await openFlyout(panel);
       const flyout = panel._flyoutPanel;
@@ -155,7 +154,6 @@ describe("Auto Tab Grouping toolbar button", () => {
     });
 
     it("stays closed when rolling up hands focus back to its row", async () => {
-      win = await openGroupingWindowWithTabs();
       const panel = await openPanelWithSuggestions(win);
       const { row, tabRows } = await openFlyout(panel);
       const flyout = panel._flyoutPanel;
@@ -199,7 +197,6 @@ describe("Auto Tab Grouping toolbar button", () => {
     });
 
     it("hides the flyout once the pointer leaves it", async () => {
-      win = await openGroupingWindowWithTabs();
       const panel = await openPanelWithSuggestions(win);
       const { row } = await openFlyout(panel);
 
@@ -224,7 +221,6 @@ describe("Auto Tab Grouping toolbar button", () => {
     });
 
     it("hides the flyout when another panel row is hovered", async () => {
-      win = await openGroupingWindowWithTabs();
       const panel = await openPanelWithSuggestions(win);
       const { row } = await openFlyout(panel);
 
@@ -258,7 +254,6 @@ describe("Auto Tab Grouping toolbar button", () => {
     });
 
     it("keeps the flyout the keyboard opened when the pointer drifts away", async () => {
-      win = await openGroupingWindowWithTabs();
       const panel = await openPanelWithSuggestions(win);
       const { row, tabRows } = await openFlyout(panel);
       const suggestion = AutoTabGrouping._getState(win).suggestions[0];
@@ -284,7 +279,6 @@ describe("Auto Tab Grouping toolbar button", () => {
     });
 
     it("hands the flyout over to a row the pointer lands on", async () => {
-      win = await openGroupingWindowWithTabs();
       const panel = await openPanelWithSuggestions(win);
       const { tabRows } = await openFlyout(panel);
       const rows = [...panel.querySelectorAll(".swgt-suggestion")];
@@ -310,7 +304,6 @@ describe("Auto Tab Grouping toolbar button", () => {
     });
 
     it("lists the group's tabs and switches to the one clicked", async () => {
-      win = await openGroupingWindowWithTabs();
       const panel = await openPanelWithSuggestions(win);
       const { tabRows } = await openFlyout(panel);
 
@@ -345,7 +338,6 @@ describe("Auto Tab Grouping toolbar button", () => {
     });
 
     it("moves focus into the flyout and back out again", async () => {
-      win = await openGroupingWindowWithTabs();
       const panel = await openPanelWithSuggestions(win);
       const { row, tabRows } = await openFlyout(panel);
 
@@ -421,7 +413,6 @@ describe("Auto Tab Grouping toolbar button", () => {
     });
 
     it("closes only the flyout when Escape is pressed while pointing at it", async () => {
-      win = await openGroupingWindowWithTabs();
       const panel = await openPanelWithSuggestions(win);
       await openFlyout(panel);
 
@@ -444,7 +435,6 @@ describe("Auto Tab Grouping toolbar button", () => {
     });
 
     it("drops a focus request when the flyout hides before it opens", async () => {
-      win = await openGroupingWindowWithTabs();
       const panel = await openPanelWithSuggestions(win);
       const rows = [...panel.querySelectorAll(".swgt-suggestion")];
       const suggestions = AutoTabGrouping._getState(win).suggestions;
@@ -477,7 +467,6 @@ describe("Auto Tab Grouping toolbar button", () => {
     });
 
     it("wraps around with the arrow keys and jumps with Home and End", async () => {
-      win = await openGroupingWindowWithTabs();
       const panel = await openPanelWithSuggestions(win);
       const card = panel.querySelector(".swgt-card");
       const rows = [...panel.querySelectorAll(".swgt-row")];
@@ -546,14 +535,6 @@ describe("Auto Tab Grouping toolbar button", () => {
 
   describe("panel localization and keyboard access", () => {
     it("localizes strings and supports keyboard operation", async () => {
-      await SpecialPowers.pushPrefEnv({
-        set: [["browser.smartwindow.autoTabGrouping.enabled", true]],
-      });
-
-      win = await openAIWindow();
-      await navigateToContent(win);
-      await addWebTabs(win);
-
       const button = win.document.getElementById(
         "smartwindow-group-tabs-button"
       );

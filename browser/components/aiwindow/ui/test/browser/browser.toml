@@ -12,7 +12,6 @@ support-files = [
   "head.js",
   "head_agent_monitor_item.js",
   "head_aitab.js",
-  "head_aiwindow_group_tabs_button.js",
   "head_smartformfill_autocomplete.js",
   "head_history_thumbnails.js",
   "head_monitor_suggest.js",
@@ -134,26 +133,6 @@ skip-if = [
 ["browser_aiwindow_chat_tool_ui.js"]
 
 ["browser_aiwindow_followup_tokens.js"]
-
-["browser_aiwindow_group_tabs_button_interaction.js"]
-skip-if = [
-  "verify", # Bug 2060705
-]
-
-["browser_aiwindow_group_tabs_button_model.js"]
-skip-if = [
-  "verify", # Bug 2060705
-]
-
-["browser_aiwindow_group_tabs_button_suggestions.js"]
-skip-if = [
-  "verify", # Bug 2060705
-]
-
-["browser_aiwindow_group_tabs_button_tab_management.js"]
-skip-if = [
-  "verify", # Bug 2060705
-]
 
 ["browser_aiwindow_grouped_chips.js"]
 

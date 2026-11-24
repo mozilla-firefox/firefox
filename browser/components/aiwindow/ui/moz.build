@@ -12,6 +12,7 @@ BROWSER_CHROME_MANIFESTS += [
     "test/browser/chat/browser.toml",
     "test/browser/firstrun/browser.toml",
     "test/browser/get_page_content/browser.toml",
+    "test/browser/organize_tabs/browser.toml",
     "test/browser/resume/browser.toml",
     "test/browser/smart_actions/browser.toml",
     "test/browser/smartbar/browser.toml",
