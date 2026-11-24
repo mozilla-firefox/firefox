@@ -1,0 +1,17 @@
+[DEFAULT]
+prefs = [
+  # A preloaded new tab can take the page openOnlyAIWindowTab opens.
+  "browser.newtab.preload=false",
+  # Animations take about a sixth of these files' runtime.
+  "ui.prefersReducedMotion=1",
+]
+support-files = [
+  "head.js",
+  "!/browser/components/aiwindow/ui/test/browser/head.js",
+  "!/browser/components/aiwindow/ui/test/browser/test_context_url_page.html",
+  "!/browser/components/aiwindow/ui/test/browser/test_context_url_page2.html",
+]
+
+["browser_smartbar_context_chips_added_tab.js"]
+
+["browser_smartbar_context_chips_current_tab.js"]

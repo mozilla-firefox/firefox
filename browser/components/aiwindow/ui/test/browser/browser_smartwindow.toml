@@ -128,8 +128,6 @@ skip-if = [
 
 ["browser_smartwindow_content.js"]
 
-["browser_smartwindow_context_url.js"]
-
 ["browser_smartwindow_conversation_state.js"]
 
 ["browser_smartwindow_default_cmd_n.js"]
