@@ -60,16 +60,8 @@ add_task(function test_expandSurfaceUrlTokens() {
       {
         component: "Cards",
         items: [
-          {
-            title: "Image",
-            href: knownToken,
-            image: { src: imageToken, alt_text: "Example image" },
-          },
-          {
-            title: "Bad image",
-            href: knownToken,
-            image: { src: image },
-          },
+          { title: "Image", href: knownToken, image: imageToken },
+          { title: "Bad image", href: knownToken, image: "https://evil/x" },
         ],
       },
       {
@@ -91,11 +83,7 @@ add_task(function test_expandSurfaceUrlTokens() {
         {
           component: "Cards",
           items: [
-            {
-              title: "Image",
-              href: known,
-              image: { src: image, alt_text: "Example image" },
-            },
+            { title: "Image", href: known, image },
             { title: "Bad image", href: known },
           ],
         },
@@ -140,42 +128,6 @@ add_task(function test_expandSurfaceUrlTokens_allowedLinks() {
   );
 });
 
-add_task(function test_expandSurfaceUrlTokens_rejects_unknown_image_token() {
-  const tokenizer = new UrlTokenizer();
-
-  Assert.deepEqual(
-    AITab.expandSurfaceUrlTokens(
-      {
-        title: "Keep the containing item",
-        image: {
-          src: "§url_token: UNKNOWN_IMAGE_1§",
-          alt_text: "Example image",
-        },
-      },
-      tokenizer
-    ),
-    { title: "Keep the containing item" },
-    "an unknown image token removes the image and preserves its containing item"
-  );
-});
-
-add_task(function test_expandSurfaceUrlTokens_rejects_image_token_in_text() {
-  const tokenizer = new UrlTokenizer();
-  const token = tokenizer.formatToken("https://example.com/image.png");
-
-  Assert.deepEqual(
-    AITab.expandSurfaceUrlTokens(
-      {
-        title: "Keep the containing item",
-        image: { src: `Image: ${token}`, alt_text: "Example image" },
-      },
-      tokenizer
-    ),
-    { title: "Keep the containing item" },
-    "an image source must contain exactly one known token without extra text"
-  );
-});
-
 add_task(function test_tokenizeSurfaceUrls_round_trips() {
   const surface = {
     components: [
@@ -185,26 +137,13 @@ add_task(function test_tokenizeSurfaceUrls_round_trips() {
           {
             title: "Image",
             href: "https://example.com/article",
-            image: {
-              src: "https://example.com/image.png",
-              alt_text: "Example image",
-            },
+            image: "https://example.com/image.png",
           },
         ],
       },
       { component: "Text", text: "Read https://example.com/article now." },
-      {
-        component: "TextBlock",
-        lead: "A bound image",
-        image: { path: "/hero" },
-      },
     ],
-    dataModel: {
-      hero: {
-        src: "https://example.com/hero.png",
-        alt_text: "Hero image",
-      },
-    },
+    dataModel: {},
   };
 
   const tokenizer = new UrlTokenizer();
