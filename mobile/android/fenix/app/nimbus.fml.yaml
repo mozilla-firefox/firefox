@@ -1069,6 +1069,29 @@ features:
           Whether or not to enable the tab groups strip.
         type: Boolean
         default: false
+  tab-groups-menu:
+    description: Control whether Tab Group options are shown in the browser menu.
+    contacts:
+      - jdelorenzo@mozilla.com
+    variables:
+      enabled:
+        description: >
+          Whether or not to show Tab Group options in the browser menu.
+        type: Boolean
+        default: false
+    defaults:
+      - channel: release
+        value:
+          enabled: false
+      - channel: beta
+        value:
+          enabled: false
+      - channel: nightly
+        value:
+          enabled: true
+      - channel: developer
+        value:
+          enabled: true
 
   marketing-onboarding-card:
     no-lint: [MISSING_CONTACTS]

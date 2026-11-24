@@ -414,7 +414,8 @@ class ThreeDotMenuMainRobot(private val composeTestRule: ComposeTestRule) {
         Log.i(TAG, "verifyMoreMainMenuItems: Trying to verify that the \"Save as PDF\" button exists.")
         composeTestRule.saveAsPDFButton().assertIsDisplayed()
         Log.i(TAG, "verifyMoreMainMenuItems: Verified that the \"Save as PDF\" button exists.")
-        Log.i(TAG, "verifyMoreMainMenuItems: Trying to verify that the \"Print\" button exists.")
+        Log.i(TAG, "verifyMoreMainMenuItems: Trying to scroll to and verify that the \"Print\" button exists.")
+        composeTestRule.scrollMainMenuTo(getStringResource(R.string.browser_menu_print_2))
         composeTestRule.printContentButton().assertIsDisplayed()
         Log.i(TAG, "verifyMoreMainMenuItems: Verified that the \"Print\" button exists.")
         Log.i(TAG, "verifyMoreMainMenuItems: Verified the more main menu items on the web page.")
@@ -490,6 +491,7 @@ class ThreeDotMenuMainRobot(private val composeTestRule: ComposeTestRule) {
 
     fun clickPrintContentButton() {
         Log.i(TAG, "clickPrintContentButton: Trying to click the \"Print…\" button.")
+        composeTestRule.scrollMainMenuTo(getStringResource(R.string.browser_menu_print_2))
         composeTestRule.printContentButton().performClick()
         Log.i(TAG, "clickPrintContentButton: Clicked the \"Print…\" button.")
     }

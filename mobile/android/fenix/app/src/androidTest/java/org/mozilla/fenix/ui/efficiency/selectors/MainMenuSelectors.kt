@@ -368,6 +368,7 @@ object MainMenuSelectors : SelectorContainer {
             value = getStringResource(R.string.browser_menu_print_2),
             description = "Print page button",
             groups = setOf(Group.MORE_MENU_ITEMS, Group.MORE_MAIN_MENU_SUB_LIST),
+            scrollDirection = SwipeDirection.UP,
         )
 
     val REMOVE_FROM_SHORTCUTS_BUTTON =
