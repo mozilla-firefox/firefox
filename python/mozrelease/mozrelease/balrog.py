@@ -19,9 +19,16 @@ def _generate_product_details(context, entry):
     }
 
 
+def _generate_force_background_update(context, entry):
+    return {
+        "forceBackgroundUpdate": True,
+    }
+
+
 _FIELD_TYPES = {
     "show-url": _generate_show_url,
     "product-details": _generate_product_details,
+    "force-background-update": _generate_force_background_update,
 }
 
 

@@ -1,0 +1,10 @@
+# Any copyright is dedicated to the Public Domain.
+# http://creativecommons.org/publicdomain/zero/1.0/
+
+---
+- type: product-details
+  url: "https://www.firefox.com/%LOCALE%/{product}/{version}/releasenotes/"
+- type: force-background-update
+  conditions:
+      release-types: [beta]
+      update-channel: beta

@@ -1,0 +1,21 @@
+[
+    {
+        "fields": {
+            "detailsURL": "https://www.firefox.com/%LOCALE%/firefox/150.0/releasenotes/",
+            "type": "minor"
+        },
+        "for": {}
+    },
+    {
+        "fields": {
+            "forceBackgroundUpdate": true
+        },
+        "for": {
+            "channels": [
+                "beta",
+                "beta-localtest",
+                "beta-cdntest"
+            ]
+        }
+    }
+]

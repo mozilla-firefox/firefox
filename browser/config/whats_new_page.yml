@@ -6,6 +6,12 @@
 - type: product-details
   # %LOCALE% is automatically replaced by Balrog.
   url: "https://www.firefox.com/%LOCALE%/{product}/{version}/releasenotes/"
+# https://bugzilla.mozilla.org/show_bug.cgi?id=2087163
+# enable forceBackgroundUpdate in Balrog responses
+- type: force-background-update
+  conditions:
+      release-types: [beta]
+      update-channel: beta
 - type: show-url
   # yamllint disable-line rule:line-length
   url: "https://www.firefox.com/%LOCALE%/whatsnew/{version.major_number}/?oldversion=%OLD_VERSION%&utm_medium=firefox-desktop&utm_source=update&utm_campaign={version.major_number}"
