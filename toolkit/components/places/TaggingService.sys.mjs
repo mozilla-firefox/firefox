@@ -416,6 +416,13 @@ TaggingService.prototype = {
             break;
           }
 
+          // The tag folder is already being removed with its entries. Removing
+          // it here could happen before that removal completes, and would
+          // cause a duplicate bookmark-removed notification.
+          if (event.isTagging && event.isDescendantRemoval) {
+            break;
+          }
+
           if (!event.url || !this._tagFolders.size) {
             break;
           }
