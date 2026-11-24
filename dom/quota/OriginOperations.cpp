@@ -752,8 +752,7 @@ class ClearRequestBase
                  //
                  kStringifyStartInstance +
                  //
-                 "Iterations:"_ns +
-                 IntToCString(static_cast<uint64_t>(mIterations)) +
+                 "Iterations:"_ns + IntToCString(mIterations.load()) +
                  //
                  kStringifyEndInstance);
   }
