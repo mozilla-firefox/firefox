@@ -189,7 +189,8 @@ load 1903669.html
 load 1905234.html
 load 1905231.webm
 load 1917627.mp4
-skip-if(Android) load audioworkletprocessor-recursion.html
+skip-if(Android) load audioworkletprocessor-recursion.html # bug 1919300
+skip-if(Android) load audioworkletprocessor-recursion-offline.html # bug 1919300
 load 1987790.webm
 load 1999307.html
 load 2014845.html
