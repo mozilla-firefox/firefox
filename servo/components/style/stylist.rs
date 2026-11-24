@@ -3102,7 +3102,6 @@ pub fn scope_root_candidates<E>(
     scope_conditions: &[ScopeConditionReference],
     id: ScopeConditionId,
     element: &E,
-    override_matches_shadow_host_for_part: bool,
     scope_subject_map: &ScopeSubjectMap,
     context: &mut MatchingContext<SelectorImpl>,
 ) -> ScopeRootCandidates
@@ -3125,7 +3124,6 @@ where
         scope_conditions,
         condition_ref.parent,
         element,
-        override_matches_shadow_host_for_part,
         scope_subject_map,
         context,
     );
@@ -3175,10 +3173,14 @@ where
             },
         }
     };
-    // For `::part`, we need to be able to reach the outer tree. Parts without the corresponding
-    // `exportparts` attribute will be rejected at the selector matching time.
-    let matches_shadow_host = override_matches_shadow_host_for_part || matches_shadow_host;
-
+    // For `::part` or element-backed pseudos, we need to be able to reach the outer tree. Parts
+    // without the corresponding `exportparts` attribute will be rejected at the selector matching
+    // time.
+    let matches_shadow_host = matches_shadow_host
+        || element.has_part_attr()
+        || element
+            .implemented_pseudo_element()
+            .is_some_and(|p| p.is_element_backed());
     let potential_scope_roots = if is_outermost_scope {
         collect_scope_roots(
             *element,
@@ -3850,14 +3852,10 @@ impl CascadeData {
             .cascade_input_flags
             .insert(ComputedValueFlags::CONSIDERED_NONTRIVIAL_SCOPED_STYLE);
 
-        // Whether the scope root matches a shadow host mostly olny depends on scope-intrinsic
-        // parameters (i.e. bounds/implicit scope) - except for the use of `::parts`, where
-        // matching crosses the shadow boundary.
         let result = scope_root_candidates(
             &self.scope_conditions,
             rule.scope_condition_id,
             &element,
-            rule.selector.is_part(),
             &self.scope_subject_map,
             context,
         );
@@ -4824,22 +4822,20 @@ impl CascadeData {
         // results do not.
         for condition_id in 1..self.scope_conditions.len() {
             let condition = &self.scope_conditions[condition_id];
-            let matches = if condition.is_trivial {
+            if condition.is_trivial {
                 // Just ignore this condition - for style sharing candidates, guaranteed
                 // the same match result.
                 continue;
-            } else {
-                let result = scope_root_candidates(
-                    &self.scope_conditions,
-                    ScopeConditionId(condition_id as u16),
-                    element,
-                    // This should be ok since we aren't sharing styles across shadow boundaries.
-                    false,
-                    &self.scope_subject_map,
-                    matching_context,
-                );
-                !result.candidates.is_empty()
-            };
+            }
+            let matches = !scope_root_candidates(
+                &self.scope_conditions,
+                ScopeConditionId(condition_id as u16),
+                element,
+                &self.scope_subject_map,
+                matching_context,
+            )
+            .candidates
+            .is_empty();
             result.scopes_matched.push(matches);
         }
     }

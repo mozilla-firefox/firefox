@@ -2975,7 +2975,6 @@ where
                 &s.conditions,
                 id,
                 &element,
-                selector.is_part(),
                 &s.subject_map,
                 ctx,
             );
@@ -3184,9 +3183,8 @@ pub unsafe extern "C" fn Servo_SelectorList_QueryAllWithScope(
     let quirks_mode = root.owner_doc().quirks_mode();
     let (selectors, scopes) = desugared_selector_list_with_scope(quirks_mode, rules, scope_rules);
     // This replicates the slow path of `querySelectorAll`.
-    // TODO(dshin): A tigher integration could be nicer - but it'd be for
-    // a very specific (DevTools-only) use case, since normal `querySelectorAll`
-    // JS calls can't use @scope.
+    // TODO(dshin): A tighter integration could be nicer - but it'd be for a very specific
+    // (DevTools-only) use case, since normal `querySelectorAll` JS calls can't use @scope.
     let mut selector_caches = SelectorCaches::default();
     let mut ctx = MatchingContext::new(
         MatchingMode::Normal,
@@ -3202,7 +3200,6 @@ pub unsafe extern "C" fn Servo_SelectorList_QueryAllWithScope(
         None => root.as_shadow_root().map(|root| root.host().opaque()),
     };
     let mut result: SmallVec<[GeckoElement; 128]> = Default::default();
-    let may_match_shadow_host_for_part = selectors.slice().iter().any(|s| s.is_part());
     for node in root.dom_descendants() {
         let Some(element) = node.as_element() else {
             continue;
@@ -3215,7 +3212,6 @@ pub unsafe extern "C" fn Servo_SelectorList_QueryAllWithScope(
                     &s.conditions,
                     id,
                     &element,
-                    may_match_shadow_host_for_part,
                     &s.subject_map,
                     &mut ctx,
                 );
