@@ -1,0 +1,20 @@
+{
+  "label": "knixteen.ca",
+  "bugs": {
+    "2052761": {
+      "issue": "broken-images",
+      "matches": ["*://www.knixteen.ca/*"]
+    }
+  },
+  "css": {
+    "fix_flashing_images_and_scrollbars": ".product__media-carousel .swiper-wrapper { min-height: 0; }"
+  },
+  "interventions": [
+    {
+      "platforms": ["desktop"],
+      "css": {
+        "which": ["fix_flashing_images_and_scrollbars"]
+      }
+    }
+  ]
+}

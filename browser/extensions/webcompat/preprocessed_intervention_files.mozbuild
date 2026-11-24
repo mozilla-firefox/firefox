@@ -171,6 +171,7 @@ preprocessed_intervention_files = [
     "bug2045674-quickconnect.to.js",
     "bug2046741-mylabmastering.pearson.com-hide_unsupported_modal.css",
     "bug2051291-customers.extend-hide_preloader.css",
+    "bug2052761-knixteen.ca-fix_flashing_images_and_scrollbars.css",
     "bug2053077-jobs.abbott-restore_otp_inputs.css",
     "bug2057149-patreon.com.js",
     "bug2058162-the-image-editor.com-allow_body_scrollbar.css",
