@@ -70,7 +70,15 @@ RUN case "$(grep VERSION_CODENAME= /etc/os-release)" in \
   *) \
     ;; \
   esac; \
-  if [ -f /tmp/ca-certificates.deb ]; then dpkg -i /tmp/ca-certificates.deb; apt-mark hold ca-certificates; fi
+  if [ -f /tmp/ca-certificates.deb ]; then \
+    dpkg -i /tmp/ca-certificates.deb && \
+    version=$(dpkg-query -W -f='${Version}' ca-certificates) && \
+    ( echo 'Package: ca-certificates'; \
+      echo "Pin: version $version"; \
+      echo 'Pin-Priority: 1002'; \
+    ) > /etc/apt/preferences.d/99ca-certificates && \
+    rm -f /tmp/ca-certificates.deb; \
+  fi
 
 RUN apt-get update && \
     apt-get dist-upgrade && \
