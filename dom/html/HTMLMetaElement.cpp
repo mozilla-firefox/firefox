@@ -13,6 +13,7 @@
 #include "mozilla/dom/nsCSPService.h"
 #include "mozilla/dom/nsCSPUtils.h"
 #include "nsContentUtils.h"
+#include "nsIScriptError.h"
 #include "nsIXMLContentSink.h"
 #include "nsSandboxFlags.h"
 #include "nsStyleConsts.h"
@@ -45,6 +46,11 @@ void HTMLMetaElement::AfterSetAttr(int32_t aNameSpaceID, nsAtom* aName,
           MetaAddedOrChanged(*document, *name, ChangeKind::ContentChange);
         }
         CreateAndDispatchEvent(*document, u"DOMMetaChanged"_ns);
+        // Handle content being added after http-equiv.
+        if (aValue) {
+          ReportCSPReportOnlyMeta(*document);
+        }
+
       } else if (aName == nsGkAtoms::name) {
         if (aOldValue) {
           MetaRemoved(*document, *aOldValue, ChangeKind::NameChange);
@@ -53,12 +59,40 @@ void HTMLMetaElement::AfterSetAttr(int32_t aNameSpaceID, nsAtom* aName,
           MetaAddedOrChanged(*document, *aValue, ChangeKind::NameChange);
         }
         CreateAndDispatchEvent(*document, u"DOMMetaChanged"_ns);
+      } else if (aName == nsGkAtoms::httpEquiv && aValue) {
+        ReportCSPReportOnlyMeta(*document);
       }
     }
   }
 
   return nsGenericHTMLElement::AfterSetAttr(
       aNameSpaceID, aName, aValue, aOldValue, aSubjectPrincipal, aNotify);
+}
+
+void HTMLMetaElement::ReportCSPReportOnlyMeta(Document& aDoc) {
+  Element* head = aDoc.GetHeadElement();
+  if (!head || !IsInclusiveDescendantOf(head)) {
+    return;
+  }
+
+  nsAutoString httpEquiv;
+  if (!GetAttr(nsGkAtoms::httpEquiv, httpEquiv) ||
+      !httpEquiv.LowerCaseEqualsLiteral(
+          "content-security-policy-report-only")) {
+    return;
+  }
+
+  nsAutoString content;
+  if (!GetAttr(nsGkAtoms::content, content)) {
+    return;
+  }
+
+  AutoTArray<nsString, 1> params;
+  params.AppendElement(content);
+
+  CSP_LogLocalizedStr("CSPReportOnlyMetaIgnored", params, ""_ns, u""_ns, 0, 0,
+                      nsIScriptError::warningFlag, "ReportOnlyMetaIgnored"_ns,
+                      aDoc.InnerWindowID(), aDoc.IsInPrivateBrowsing());
 }
 
 nsresult HTMLMetaElement::BindToTree(BindContext& aContext, nsINode& aParent) {
@@ -109,6 +143,9 @@ nsresult HTMLMetaElement::BindToTree(BindContext& aContext, nsINode& aParent) {
       }
       CSP_ApplyMetaCSPToDoc(doc, content);
     }
+  } else {
+    // CSP Report-Only is not supported in meta elements
+    ReportCSPReportOnlyMeta(doc);
   }
 
   if (const nsAttrValue* name = GetParsedAttr(nsGkAtoms::name)) {
