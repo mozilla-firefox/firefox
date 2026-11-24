@@ -565,12 +565,6 @@ pref("browser.urlbar.resultTargetMenu.featureGate", false);
 // settings.
 pref("browser.urlbar.weather.minKeywordLength", 0);
 
-// The UI treatment to use for weather suggestions. Possible values:
-// 0: (default) Simplest UI with current temperature and location
-// 1: Simpler UI, adds current conditions, high/low, and URL
-// 2: Full UI, adds forecast
-pref("browser.urlbar.weather.uiTreatment", 0);
-
 // If `browser.urlbar.weather.featureGate` is true, this controls whether
 // weather suggestions are turned on.
 pref("browser.urlbar.suggest.weather", true);

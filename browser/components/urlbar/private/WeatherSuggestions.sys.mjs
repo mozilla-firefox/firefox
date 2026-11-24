@@ -38,104 +38,8 @@ const WEATHER_PROVIDER_DISPLAY_NAME = "AccuWeather®";
 
 const NORTH_AMERICA_COUNTRY_CODES = new Set(["CA", "US"]);
 
-const WEATHER_DYNAMIC_TYPE = "weather";
-const WEATHER_VIEW_TEMPLATE = {
-  attributes: {
-    selectable: true,
-  },
-  children: [
-    {
-      name: "currentConditions",
-      tag: "span",
-      children: [
-        {
-          name: "currently",
-          tag: "div",
-        },
-        {
-          name: "currentTemperature",
-          tag: "div",
-          children: [
-            {
-              name: "temperature",
-              tag: "span",
-            },
-            {
-              name: "weatherIcon",
-              tag: "img",
-            },
-          ],
-        },
-      ],
-    },
-    {
-      name: "summary",
-      tag: "span",
-      overflowable: true,
-      children: [
-        {
-          name: "top",
-          tag: "div",
-          children: [
-            {
-              name: "topNoWrap",
-              tag: "span",
-              children: [
-                { name: "title", tag: "span", classList: ["urlbarView-title"] },
-                {
-                  name: "titleSeparator",
-                  tag: "span",
-                  classList: ["urlbarView-title-separator"],
-                },
-              ],
-            },
-            {
-              name: "url",
-              tag: "span",
-              classList: ["urlbarView-url"],
-            },
-          ],
-        },
-        {
-          name: "middle",
-          tag: "div",
-          children: [
-            {
-              name: "middleNoWrap",
-              tag: "span",
-              overflowable: true,
-              children: [
-                {
-                  name: "summaryText",
-                  tag: "span",
-                },
-                {
-                  name: "summaryTextSeparator",
-                  tag: "span",
-                },
-                {
-                  name: "highLow",
-                  tag: "span",
-                },
-              ],
-            },
-            {
-              name: "highLowWrap",
-              tag: "span",
-            },
-          ],
-        },
-        {
-          name: "bottom",
-          tag: "div",
-        },
-      ],
-    },
-  ],
-};
-
 /**
- * A feature that periodically fetches weather suggestions from Merino.
+ * A feature that manages weather suggestions from Merino.
  */
 export class WeatherSuggestions extends SuggestProvider {
   constructor() {
@@ -219,12 +123,6 @@ export class WeatherSuggestions extends SuggestProvider {
     }
 
     let unit = Services.locale.regionalPrefsLocales[0] == "en-US" ? "f" : "c";
-
-    let treatment = lazy.UrlbarPrefs.get("weatherUiTreatment");
-    if (treatment == 1 || treatment == 2) {
-      return this.#makeDynamicResult(merinoSuggestion, unit);
-    }
-
     let titleL10n = await this.#getTitleL10n(suggestion.city, merinoSuggestion);
 
     return new lazy.UrlbarResult({
@@ -254,104 +152,6 @@ export class WeatherSuggestions extends SuggestProvider {
         helpUrl: lazy.QuickSuggest.HELP_URL,
       },
     });
-  }
-
-  #makeDynamicResult(suggestion, unit) {
-    return new lazy.UrlbarResult({
-      type: lazy.UrlbarShared.RESULT_TYPE.DYNAMIC,
-      source: lazy.UrlbarShared.RESULT_SOURCE.SEARCH,
-      showFeedbackMenu: true,
-      suggestedIndex: 1,
-      payload: {
-        url: suggestion.url,
-        input: suggestion.url,
-        iconId: suggestion.current_conditions.icon_id,
-        dynamicType: WEATHER_DYNAMIC_TYPE,
-        city: suggestion.city_name,
-        region: suggestion.region_code,
-        temperatureUnit: unit,
-        temperature: suggestion.current_conditions.temperature[unit],
-        currentConditions: suggestion.current_conditions.summary,
-        forecast: suggestion.forecast.summary,
-        high: suggestion.forecast.high[unit],
-        low: suggestion.forecast.low[unit],
-        helpUrl: lazy.QuickSuggest.HELP_URL,
-      },
-    });
-  }
-
-  getViewTemplate(_result) {
-    return WEATHER_VIEW_TEMPLATE;
-  }
-
-  getViewUpdate(result) {
-    let useSimplerUi = lazy.UrlbarPrefs.get("weatherUiTreatment") == 1;
-    let uppercaseUnit = result.payload.temperatureUnit.toUpperCase();
-    return {
-      currently: {
-        l10n: {
-          id: "firefox-suggest-weather-currently",
-        },
-      },
-      temperature: {
-        l10n: {
-          id: "firefox-suggest-weather-temperature",
-          args: {
-            value: result.payload.temperature,
-            unit: uppercaseUnit,
-          },
-        },
-      },
-      weatherIcon: {
-        attributes: { "icon-variation": result.payload.iconId },
-      },
-      title: {
-        l10n: {
-          id: "firefox-suggest-weather-title",
-          args: { city: result.payload.city, region: result.payload.region },
-        },
-      },
-      url: {
-        textContent: result.payload.url,
-      },
-      summaryText: useSimplerUi
-        ? { textContent: result.payload.currentConditions }
-        : {
-            l10n: {
-              id: "firefox-suggest-weather-summary-text",
-              args: {
-                currentConditions: result.payload.currentConditions,
-                forecast: result.payload.forecast,
-              },
-            },
-          },
-      highLow: {
-        l10n: {
-          id: "firefox-suggest-weather-high-low",
-          args: {
-            high: result.payload.high,
-            low: result.payload.low,
-            unit: uppercaseUnit,
-          },
-        },
-      },
-      highLowWrap: {
-        l10n: {
-          id: "firefox-suggest-weather-high-low",
-          args: {
-            high: result.payload.high,
-            low: result.payload.low,
-            unit: uppercaseUnit,
-          },
-        },
-      },
-      bottom: {
-        l10n: {
-          id: "urlbar-result-weather-provider-sponsored",
-          args: { provider: WEATHER_PROVIDER_DISPLAY_NAME },
-        },
-      },
-    };
   }
 
   /**

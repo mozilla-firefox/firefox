@@ -15,38 +15,6 @@
 
 -mdn-brand-short-name = MDN
 
-## These strings are used for urlbar weather suggestions in the "simpler" and
-## "full" weather UIs.
-
-# This string is displayed above the current temperature
-firefox-suggest-weather-currently = Currently
-
-# This string displays the current temperature value and unit
-# Variables:
-#   $value (number) - The temperature value
-#   $unit (String) - The unit for the temperature
-firefox-suggest-weather-temperature = { $value }°{ $unit }
-
-# This string is the title of the weather summary used for the "full" and
-# "simpler" UI treatments.
-# Variables:
-#   $city (String) - The name of the city the weather data is for
-#   $region (String) - The name of the region (e.g., U.S. state)
-firefox-suggest-weather-title = Weather for { $city }, { $region }
-
-# This string displays the weather summary
-# Variables:
-#   $currentConditions (String) - The current weather conditions summary
-#   $forecast (String) - The forecast weather conditions summary
-firefox-suggest-weather-summary-text = { $currentConditions }; { $forecast }
-
-# This string displays the high and low temperatures
-# Variables:
-#   $high (number) - The number for the high temperature
-#   $unit (String) - The unit for the temperature
-#   $low (number) - The number for the low temperature
-firefox-suggest-weather-high-low = High: { $high }°{ $unit } · Low: { $low }°{ $unit }
-
 ## These strings are used as labels of menu items in the result menu.
 
 firefox-suggest-command-dont-show-mdn2 = Don’t show { -mdn-brand-short-name } suggestions

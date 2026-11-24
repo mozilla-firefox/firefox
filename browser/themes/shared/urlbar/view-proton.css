@@ -1113,7 +1113,6 @@
   padding: calc((var(--urlbarview-top-pick-large-icon-box-size) - 32px) / 2);
 }
 
-.urlbarView-row[dynamicType="weather"],
 .urlbarView-row[type="weather"] {
   /* Use the colors in the icon SVG files except in HCM and when the row is
      selected. Note that the SVG uses light or dark colors as appropriate. */
@@ -1124,11 +1123,7 @@
   }
 
   /* Map AccuWeather icon IDs to our icons. These IDs come straight from the
-     AccuWeather API response via Merino. These rules apply to both the older
-     weather UI treatments ("simpler" and "full", which use a dynamic result)
-     and the new treatment ("simplest", which is a standard rich suggestion). */
-  /* prettier-ignore */
-  > .urlbarView-row-inner > .urlbarView-dynamic-weather-currentConditions > .urlbarView-dynamic-weather-currentTemperature > .urlbarView-dynamic-weather-weatherIcon,
+     AccuWeather API response via Merino. */
   > .urlbarView-row-inner > .urlbarView-favicon {
     /* icon-variation="1" is "Sunny", which we'll use as the default to ensure an
        image is always visible. We don't expect AccuWeather to ever include an
