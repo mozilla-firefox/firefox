@@ -34,10 +34,7 @@ run-if = ["updater"]
 
 ["browser_browserIcon.js"]
 run-if = [
-  "os == 'win'",
-]
-skip-if = [
-  "msix", # The custom browser icon feature is currently unsupported on packaged (MSIX) builds.
+  "os == 'win' && !msix", # The custom browser icon feature is currently unsupported on packaged (MSIX) builds.
 ]
 
 ["browser_bug1018066_resetScrollPosition.js"]
