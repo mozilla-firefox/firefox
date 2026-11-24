@@ -1139,7 +1139,7 @@ add_task(async function test_get_distinguishes_missing_from_unreadable() {
   // creating a card, and saving writes a second record on top of the one that
   // could not be read.
   const unreadable = new RustAutofillCreditCardsAdapter({
-    listCreditCardCandidates: () =>
+    getCreditCardCandidate: () =>
       Promise.reject(new Error("database is locked")),
   });
   await Assert.rejects(
@@ -1664,14 +1664,14 @@ add_task(async function test_store_error_on_read() {
 
   Services.fog.testResetFOG();
   broken = failStore(store, new CryptoError("decryption failed"));
-  store.listCreditCardCandidates = async () => {
+  store.getCreditCardCandidate = async () => {
     throw new Error("cannot list");
   };
   try {
     await attempt(adapter.decryptField(recordWithCode, "cc-number"));
   } finally {
     broken.restore();
-    delete store.listCreditCardCandidates;
+    delete store.getCreditCardCandidate;
   }
   Assert.deepEqual(
     storeErrors(),

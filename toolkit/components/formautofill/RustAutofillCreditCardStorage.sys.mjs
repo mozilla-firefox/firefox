@@ -333,17 +333,9 @@ export class RustAutofillCreditCardsAdapter extends RustAutofillAdapterBase {
   }
 
   // Every record is built from a CreditCardCandidate, which holds no encrypted
-  // field and never needs the key. The store lists candidates but has no read
-  // for a single one.
-  // TODO: Bug 2091679 - read the one candidate once the store can.
-  async _get(store, guid) {
-    const candidate = (await this._getAll(store)).find(
-      card => card.guid == guid
-    );
-    if (!candidate) {
-      throw new lazy.NoSuchRecord(guid);
-    }
-    return candidate;
+  // field and never needs the key.
+  _get(store, guid) {
+    return this.#read(store, () => store.getCreditCardCandidate(guid), guid);
   }
 
   _getAll(store) {
@@ -608,10 +600,12 @@ export class RustAutofillCreditCardsAdapter extends RustAutofillAdapterBase {
    */
   async #candidates(store, guid) {
     try {
-      const cards = await store.listCreditCardCandidates();
-      return cards.filter(card => !guid || card.guid === guid);
-    } catch {
-      return null;
+      if (guid) {
+        return [await store.getCreditCardCandidate(guid)];
+      }
+      return await store.listCreditCardCandidates();
+    } catch (e) {
+      return e instanceof lazy.NoSuchRecord ? [] : null;
     }
   }
 
