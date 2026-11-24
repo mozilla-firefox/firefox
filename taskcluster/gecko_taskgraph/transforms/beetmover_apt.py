@@ -15,6 +15,15 @@ transforms = TransformSequence()
 
 
 @transforms.add
+def skip_project_branch_nightlies(config, tasks):
+    """Project branches such as pine have their own nightly release types and
+    don't publish to the APT repos."""
+    if config.params["release_type"].startswith("nightly-"):
+        return
+    yield from tasks
+
+
+@transforms.add
 def filter_out_extra_langpacks(config, tasks):
     """Langpacks are architecture-independent so we only upload them from the x86_64 tasks"""
     for task in tasks:
