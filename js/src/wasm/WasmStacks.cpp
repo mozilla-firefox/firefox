@@ -669,6 +669,7 @@ void ContStack::reset() {
   initialResumeCode_ = nullptr;
   handlers_ = nullptr;
   resumeTarget_ = nullptr;
+  baseFrame()->setCalleeInstance(nullptr);
 }
 
 void ContStack::poison() {
@@ -746,6 +747,13 @@ void ContStack::traceFields(JSTracer* trc) {
   TraceEdge(trc, &initialResumeCallee_, "base frame callee");
   initialResumeTarget_.trace(trc);
 
+  // The base-frame stub stores the initial function's instance here once the
+  // stack starts running. A return_call may have removed every frame that
+  // otherwise refers to it.
+  if (Instance* instance = baseFrame()->calleeInstance()) {
+    TraceInstanceEdge(trc, instance, "cont base frame instance");
+  }
+
   // This will trace our parent continuation/stack, which will trace their
   // internal fields.
   if (handlers_) {
@@ -818,11 +826,6 @@ void ContStack::traceSuspended(JSTracer* trc, JSObject* src) {
     }
     ++iter;
   }
-
-  // Keep the initial function's instance alive, as TraceJitFrames does when
-  // crossing the base frame of a running stack.
-  TraceInstanceEdge(trc, baseFrame()->calleeInstance(),
-                    "cont base frame instance");
 }
 
 void ContStack::updateSuspendedForMovingGC(Nursery& nursery) {

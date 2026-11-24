@@ -1551,13 +1551,9 @@ void TraceJitFrames(JSTracer* trc, JitActivation* activation) {
           // the stack will be traced below.
           wasmFrameIter.contStack()->traceFields(trc);
         }
-        // Trace the initial function's instance, which the base-frame stub
-        // stashed in the crossed base frame; no stack map covers it, and a
-        // return_call may have collapsed the frame that otherwise held it.
-        if (wasm::Instance* contBaseInstance =
-                wasmFrameIter.contBaseInstance()) {
-          wasm::TraceInstanceEdge(trc, contBaseInstance,
-                                  "cont base frame instance");
+        // A stack whose only frame was torn down has no frame to visit.
+        if (wasm::ContStack* unwound = wasmFrameIter.unwoundContStack()) {
+          unwound->traceFields(trc);
         }
       }
 #endif
@@ -2953,10 +2949,14 @@ static bool JitActivationHasFrameInRealm(JitActivation* activation,
       // A return_call_indirect signature mismatch in a continuation's entry
       // function can tear down its frame. The base frame's instance is then
       // traced instead, see TraceJitFrames.
-      if (wasm::Instance* instance = iter.asWasm().contBaseInstance()) {
-        if (instance->realm() == realm) {
-          return true;
-        }
+      auto baseInRealm = [realm](wasm::ContStack* stack) {
+        return stack && stack->baseInstance() &&
+               stack->baseInstance()->realm() == realm;
+      };
+      if ((iter.asWasm().currentFrameStackSwitched() &&
+           baseInRealm(iter.asWasm().contStack())) ||
+          baseInRealm(iter.asWasm().unwoundContStack())) {
+        return true;
       }
 #  endif
       frameRealm = iter.realm();

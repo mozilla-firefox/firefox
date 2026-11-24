@@ -297,6 +297,7 @@ class ContStack {
 
   // Trace the fields on this stack, but no the frames.
   void traceFields(JSTracer* trc);
+  Instance* baseInstance() { return baseFrame()->calleeInstance(); }
   // Trace the fields and all frames for a suspended stack. This must be the
   // resume base. When marking, |src| (the owning ContObject) also traces the
   // inferred ContObject to Debugger.Frame edges via
