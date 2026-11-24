@@ -98,7 +98,6 @@ const lazy = XPCOMUtils.declareLazy({
   KeywordUtils: "resource://gre/modules/KeywordUtils.sys.mjs",
   ObjectUtils: "resource://gre/modules/ObjectUtils.sys.mjs",
   PlacesUtils: "resource://gre/modules/PlacesUtils.sys.mjs",
-  Sqlite: "resource://gre/modules/Sqlite.sys.mjs",
   UrlbarPrefs: "moz-src:///browser/components/urlbar/UrlbarPrefs.sys.mjs",
   UrlbarShared: "chrome://browser/content/urlbar/UrlbarShared.mjs",
   UrlbarProviderOpenTabs:
@@ -674,7 +673,11 @@ class Search {
     this.#interrupt = () => {
       // Interrupt any ongoing statement to run the search sooner.
       if (!lazy.ProvidersManager.interruptLevel) {
-        conn.interrupt();
+        try {
+          conn.interrupt();
+        } catch {
+          // The connection may already be closed.
+        }
       }
     };
 
@@ -1459,14 +1462,6 @@ class Search {
 }
 
 /**
- * Promise resolved when the database initialization has completed, or null
- * if it has never been requested. This is shared between all instances.
- *
- * @type {?Promise<OpenedConnection>}
- */
-let _promiseDatabase = null;
-
-/**
  * Class used to create the provider.
  */
 export class UrlbarProviderPlaces extends UrlbarProvider {
@@ -1480,35 +1475,6 @@ export class UrlbarProviderPlaces extends UrlbarProvider {
    */
   get type() {
     return lazy.UrlbarShared.PROVIDER_TYPE.PROFILE;
-  }
-
-  /**
-   * Gets a Sqlite database handle.
-   *
-   * @returns {Promise<OpenedConnection>}
-   *   A connection to the Sqlite database handle (according to {@link Sqlite.sys.mjs}).
-   * @throws A javascript exception
-   */
-  getDatabaseHandle() {
-    if (!_promiseDatabase) {
-      _promiseDatabase = (async () => {
-        let conn = await lazy.PlacesUtils.promiseLargeCacheDBConnection();
-
-        // We don't catch exceptions here as it is too late to block shutdown.
-        lazy.Sqlite.shutdown.addBlocker("UrlbarProviderPlaces closing", () => {
-          // Break a possible cycle through the
-          // previous result, the controller and
-          // ourselves.
-          this.#currentSearch = null;
-        });
-
-        return conn;
-      })().catch(ex => {
-        dump("Couldn't get database handle: " + ex + "\n");
-        this.logger.error(ex);
-      });
-    }
-    return _promiseDatabase;
   }
 
   /**
@@ -1646,15 +1612,16 @@ export class UrlbarProviderPlaces extends UrlbarProvider {
       listener,
       this
     ));
-    this.getDatabaseHandle()
-      .then(conn => search.execute(conn))
+    lazy.PlacesUtils.promiseLargeCacheDBConnection()
+      .then(conn => conn && search.execute(conn))
       .catch(ex => {
         dump(`Query failed: ${ex}\n`);
         this.logger.error(ex);
       })
-      .then(() => {
+      .finally(() => {
         if (search == this.#currentSearch) {
           this.finishSearch(true);
+          this.#currentSearch = null;
         }
       });
   }

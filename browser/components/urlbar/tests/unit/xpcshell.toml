@@ -201,6 +201,8 @@ requesttimeoutfactor = 2  # Slow on Linux and Windows
 
 ["test_providerPlaces_duplicate_entries.js"]
 
+["test_providerPlaces_noConnection.js"]
+
 ["test_providerPlaces_nonEnglish.js"]
 
 ["test_providerRecentSearches.js"]
