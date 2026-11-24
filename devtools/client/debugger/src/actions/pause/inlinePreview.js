@@ -107,7 +107,8 @@ async function getPreviews(selectedFrame, scope, thunkArgs) {
         selectedLocation.line,
         name,
         client,
-        selectedFrame.thread
+        selectedFrame,
+        getState
       );
       seenBindings[name] = valueActorID;
       allPreviews.push(...previews);
@@ -123,7 +124,8 @@ async function getPreviews(selectedFrame, scope, thunkArgs) {
  * @param {number} pausedOnLine - The current line we are paused on
  * @param {string} name - Name of binding from the platfom scopes
  * @param {object} client - Client object for loading properties
- * @param {object} thread - Thread used to get the expressions values
+ * @param {object} selectedFrame - Frame used to get the expressions values
+ * @param {Function} getState - Redux getState, used to check that the frame is still selected
  * @returns
  */
 async function generatePreviewsForBinding(
@@ -131,7 +133,8 @@ async function generatePreviewsForBinding(
   pausedOnLine,
   name,
   client,
-  thread
+  selectedFrame,
+  getState
 ) {
   if (!bindingData) {
     return [];
@@ -157,12 +160,13 @@ async function generatePreviewsForBinding(
       continue;
     }
 
+    validateSelectedFrame(getState(), selectedFrame);
     const { displayName, displayValue } = await getExpressionNameAndValue(
       name,
       bindingData.value,
       ref,
       client,
-      thread
+      selectedFrame.thread
     );
 
     // Variable with same name exists, display value of current or
