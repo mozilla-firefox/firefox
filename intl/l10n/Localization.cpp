@@ -584,7 +584,6 @@ PromiseResolver::~PromiseResolver() { mPromise = nullptr; }
  */
 already_AddRefed<Promise> Localization::MaybeWrapPromise(
     Promise* aInnerPromise) {
-  MOZ_ASSERT(aInnerPromise->State() == Promise::PromiseState::Pending);
   // For system principal we don't need to wrap the
   // result promise at all.
   nsIPrincipal* principal = mGlobal->PrincipalOrNull();

@@ -70,6 +70,8 @@ support-files = ["dom_localization/file_translateElements_held.sjs"]
 
 ["l10n_mutations/test_pause_observing.html"]
 
+["l10n_mutations/test_refresh_tick_flush.html"]
+
 ["l10n_mutations/test_remove_element.html"]
 
 ["l10n_mutations/test_remove_fragment.html"]

@@ -16,7 +16,7 @@ async function testCommonSettingControlPropertiesSet(renderTemplateFunction) {
   const l10nArgs = { foo: "bar" };
   const iconSrc = "anicon.png";
   const supportPage = "https://support.page";
-  const label = "foo-bar";
+  const testAttr = "foo-bar";
   const slot = "foo";
 
   const element = await renderTemplateFunction({
@@ -26,7 +26,7 @@ async function testCommonSettingControlPropertiesSet(renderTemplateFunction) {
     supportPage,
     slot,
     controlAttrs: {
-      label,
+      "data-test-attr": testAttr,
     },
   });
 
@@ -42,7 +42,11 @@ async function testCommonSettingControlPropertiesSet(renderTemplateFunction) {
     "converts data-l10n-args to stringified JSON object"
   );
 
-  is(element.getAttribute("label"), label, "sets controlAttrs.label");
+  is(
+    element.getAttribute("data-test-attr"),
+    testAttr,
+    "sets controlAttrs attribute"
+  );
 
   is(element.iconSrc, iconSrc, "sets iconSrc");
 
@@ -63,7 +67,7 @@ async function testCommonSettingControlPropertiesUnset(renderTemplateFunction) {
   ok(!element.hasAttribute("data-l10n-id"), "no data-l10n-id attribute");
   ok(!element.hasAttribute("data-l10n-args"), "no data-l10n-args");
   ok(!element.dataset.subcategory, "no subcategory");
-  ok(!element.hasAttribute("label"), "no controlAttrs.label");
+  ok(!element.hasAttribute("data-test-attr"), "no controlAttrs attribute");
   ok(!element.iconSrc, "no iconSrc");
   ok(!element.supportPage, "no supportPage");
   ok(!element.slot, "no slot");

@@ -11,6 +11,7 @@ use fluent_fallback::{
     Localization,
 };
 use fluent_ffi::{convert_args, FluentArgs, FluentArgument, L10nArg};
+use futures::FutureExt;
 use l10nregistry_ffi::{
     coverage::l10nregistry_clear_coverage_cache,
     env::GeckoEnvironment,
@@ -387,7 +388,7 @@ impl LocalizationRc {
 
         let strong_promise = RefPtr::new(promise);
 
-        moz_task::TaskBuilder::new("LocalizationRc::format_messages", async move {
+        let mut future = Box::pin(async move {
             let mut errors = vec![];
             let ret_val = bundles
                 .format_messages(&keys, &mut errors)
@@ -419,10 +420,19 @@ impl LocalizationRc {
                 .collect();
 
             callback(&strong_promise, &ret_val, &errors);
-        })
-        .priority(nsIRunnablePriority::PRIORITY_RENDER_BLOCKING as u32)
-        .spawn_local()
-        .detach();
+        });
+
+        // When everything needed is already loaded the future completes on
+        // its first poll. Resolve right away in that case, rather than from a
+        // task that can only run after the current refresh tick has painted.
+        if future.as_mut().now_or_never().is_some() {
+            return;
+        }
+
+        moz_task::TaskBuilder::new("LocalizationRc::format_messages", future)
+            .priority(nsIRunnablePriority::PRIORITY_RENDER_BLOCKING as u32)
+            .spawn_local()
+            .detach();
     }
 }
 

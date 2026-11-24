@@ -1,0 +1,167 @@
+<!DOCTYPE HTML>
+<html>
+<head>
+  <meta charset="utf-8">
+  <title>L10n mutations flushed by the refresh driver</title>
+  <script src="chrome://mochikit/content/tests/SimpleTest/SimpleTest.js"></script>
+  <link rel="stylesheet" type="text/css" href="chrome://mochikit/content/tests/SimpleTest/test.css">
+  <script type="application/javascript">
+  "use strict";
+
+  const RESOURCE = "crashreporter/aboutcrashes.ftl";
+
+  // A new registry has its own resource cache, so nothing is loaded until
+  // something is formatted with it.
+  function createLocalization(root) {
+    const l10nReg = new L10nRegistry();
+    l10nReg.registerSources([
+      new L10nFileSource(
+        "test",
+        "app",
+        ["en-US"],
+        "resource://gre/localization/{locale}/"
+      ),
+    ]);
+    const domLoc = new DOMLocalization([RESOURCE], false, l10nReg, ["en-US"]);
+    domLoc.connectRoot(root);
+    return domLoc;
+  }
+
+  function nextTask() {
+    return new Promise(resolve => setTimeout(resolve, 0));
+  }
+
+  // Resize observers are notified at the end of the frame. A new observer is
+  // always notified once, even if nothing changed size.
+  function readAtEndOfNextFrame(elem) {
+    return new Promise(resolve => {
+      const observer = new ResizeObserver(() => {
+        observer.disconnect();
+        resolve(elem.textContent);
+      });
+      observer.observe(elem.parentNode);
+    });
+  }
+
+  // Start from a fresh task, rather than from within a frame, since another
+  // refresh driver that collects this document can tick in the same vsync.
+  async function setAttributesAndReadAtEndOfNextFrame(domLoc, elem, id) {
+    await nextTask();
+    domLoc.setAttributes(elem, id);
+    return readAtEndOfNextFrame(elem);
+  }
+
+  let expected;
+
+  add_setup(async function () {
+    const [idHeading, dateCrashed] = await new Localization([
+      RESOURCE,
+    ]).formatValues(["id-heading", "date-crashed-heading"]);
+    expected = { "id-heading": idHeading, "date-crashed-heading": dateCrashed };
+  });
+
+  add_task(async function test_ready_translations_apply_in_next_frame() {
+    const root = document.getElementById("ready");
+    const span = root.querySelector("span");
+    const domLoc = createLocalization(root);
+    await domLoc.formatValue("id-heading");
+
+    for (const id of ["id-heading", "date-crashed-heading", "id-heading"]) {
+      is(
+        await setAttributesAndReadAtEndOfNextFrame(domLoc, span, id),
+        expected[id],
+        `${id} is applied by the end of the next frame`
+      );
+    }
+    domLoc.disconnectRoot(root);
+  });
+
+  add_task(async function test_pending_translations_apply_later() {
+    const root = document.getElementById("pending");
+    const span = root.querySelector("span");
+    const domLoc = createLocalization(root);
+
+    const finished = new Promise(resolve => {
+      document.addEventListener("L10nMutationsFinished", function listener() {
+        if (span.textContent == expected["id-heading"]) {
+          document.removeEventListener("L10nMutationsFinished", listener);
+          resolve();
+        }
+      });
+    });
+    is(
+      await setAttributesAndReadAtEndOfNextFrame(domLoc, span, "id-heading"),
+      "",
+      "A translation that has to load resources isn't applied in the same tick"
+    );
+    await finished;
+    ok(true, "The translation is applied once the resources have loaded");
+    domLoc.disconnectRoot(root);
+  });
+
+  async function openAndReadFirstLayout(domLoc, panel, label, id) {
+    let firstLayoutText = null;
+    const observer = new ResizeObserver(() => {
+      if (firstLayoutText === null && label.getBoundingClientRect().width > 0) {
+        firstLayoutText = label.textContent;
+      }
+    });
+    panel.addEventListener(
+      "popupshowing",
+      () => {
+        domLoc.setAttributes(label, id);
+        observer.observe(label);
+      },
+      { once: true }
+    );
+
+    const shown = new Promise(r =>
+      panel.addEventListener("popupshown", r, { once: true })
+    );
+    // Open outside of a refresh driver tick, like a user click would.
+    await nextTask();
+    panel.openPopupAtScreen(window.mozInnerScreenX, window.mozInnerScreenY);
+    await shown;
+    await new Promise(r =>
+      requestAnimationFrame(() => requestAnimationFrame(r))
+    );
+    observer.disconnect();
+
+    const hidden = new Promise(r =>
+      panel.addEventListener("popuphidden", r, { once: true })
+    );
+    panel.hidePopup();
+    await hidden;
+    return firstLayoutText;
+  }
+
+  add_task(async function test_popupshowing_translations() {
+    const panel = document.createXULElement("panel");
+    panel.setAttribute("noautofocus", "true");
+    const label = document.createElement("span");
+    panel.append(label);
+    document.body.append(panel);
+    const domLoc = createLocalization(panel);
+    await domLoc.formatValue("id-heading");
+
+    for (const id of [
+      "date-crashed-heading",
+      "id-heading",
+      "date-crashed-heading",
+    ]) {
+      is(
+        await openAndReadFirstLayout(domLoc, panel, label, id),
+        expected[id],
+        `First layout of the popup shows the ${id} string`
+      );
+    }
+    domLoc.disconnectRoot(panel);
+    panel.remove();
+  });
+  </script>
+</head>
+<body>
+  <div id="ready"><span></span></div>
+  <div id="pending"><span></span></div>
+</body>
+</html>
