@@ -244,7 +244,7 @@ class DownloadTest {
             }
     }
 
-    // TestRail link: https://mozilla.testrail.io/index.php?/cases/view/2301537
+    // TestRail link: https://mozilla.testrail.io/index.php?/cases/view/4567808
     @Test
     fun fileDeletedFromStorageIsDeletedEverywhereTest() {
         downloadRobot(composeTestRule) {
