@@ -116,6 +116,14 @@ add_setup(async function prepare_test_environment() {
   const extra = await IOUtils.readJSON(gTempCrashReport.extra.path);
   extra.ServerURL = "https://foo";
   extra.ProfileDirectory = do_get_profile().path;
+
+  if (AppConstants.MOZ_ENTERPRISE) {
+    Services.env.set("MOZ_ENTERPRISE_CONSOLE_URL", "https://foo");
+    registerCleanupFunction(() => {
+      Services.env.set("MOZ_ENTERPRISE_CONSOLE_URL", null);
+    });
+  }
+
   await IOUtils.writeJSON(gTempCrashReport.extra.path, extra);
 });
 
