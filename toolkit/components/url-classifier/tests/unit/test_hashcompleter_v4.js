@@ -105,6 +105,7 @@ add_test(function test_getHashRequestV4() {
     "0123",
     TEST_TABLE_DATA_V4.gethashUrl,
     TEST_TABLE_DATA_V4.tableName,
+    false,
     {
       completionV4(hash, table, duration, fullhashes) {
         equal(hash, "0123");
@@ -135,6 +136,7 @@ add_test(function test_getHashRequestV4() {
     "1234567",
     TEST_TABLE_DATA_V4.gethashUrl,
     TEST_TABLE_DATA_V4.tableName,
+    false,
     {
       completionV4(hash, table, duration, fullhashes) {
         equal(hash, "1234567");
@@ -165,6 +167,7 @@ add_test(function test_getHashRequestV4() {
     "1111",
     TEST_TABLE_DATA_V4.gethashUrl,
     TEST_TABLE_DATA_V4.tableName,
+    false,
     {
       completionV4(hash, table, duration, fullhashes) {
         equal(hash, "1111");
@@ -190,6 +193,7 @@ add_test(function test_minWaitDuration() {
       "0123",
       TEST_TABLE_DATA_V4.gethashUrl,
       TEST_TABLE_DATA_V4.tableName,
+      false,
       {
         completionFinished(status) {
           equal(status, Cr.NS_ERROR_ABORT);
@@ -203,6 +207,7 @@ add_test(function test_minWaitDuration() {
       "1234567",
       TEST_TABLE_DATA_V4.gethashUrl,
       TEST_TABLE_DATA_V4.tableName,
+      false,
       {
         completionV4(hash, table, duration, fullhashes) {
           equal(hash, "1234567");

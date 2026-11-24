@@ -11,7 +11,7 @@ function DummyCompleter() {
 DummyCompleter.prototype = {
   QueryInterface: ChromeUtils.generateQI(["nsIUrlClassifierHashCompleter"]),
 
-  complete(partialHash, gethashUrl, tableName, cb) {
+  complete(partialHash, gethashUrl, tableName, useOHTTP, cb) {
     this.queries.push(partialHash);
     var fragments = this.fragments;
     var self = this;

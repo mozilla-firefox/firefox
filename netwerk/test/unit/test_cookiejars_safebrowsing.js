@@ -155,6 +155,7 @@ add_test(function test_safebrowsing_gethash() {
     "aaaa",
     URL + safebrowsingGethashPath,
     "test-phish-simple",
+    false,
     {
       completionV2() {},
 

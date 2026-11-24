@@ -93,11 +93,19 @@ interface nsIUrlClassifierHashCompleter : nsISupports
    *        The gethash url to use.
    * @param tableName
    *        The table where we matched the partial hash.
+   * @param useOHTTP
+   *        Whether the request must go through the Oblivious HTTP relay set
+   *        in browser.safebrowsing.realTime.ohttpRelayURL, encrypted with the
+   *        key config from nsIUrlClassifierRealTimeKeyService. The request is
+   *        never sent directly instead. If the table isn't a V5 table, or the
+   *        relay URL or the key config is unavailable, completionFinished()
+   *        is called with NS_ERROR_NOT_AVAILABLE.
    * @param callback
    *        An nsIUrlClassifierCompleterCallback instance.
    */
   void complete(in ACString partialHash,
                 in ACString gethashUrl,
                 in ACString tableName,
+                in boolean useOHTTP,
                 in nsIUrlClassifierHashCompleterCallback callback);
 };

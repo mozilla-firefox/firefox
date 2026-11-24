@@ -40,6 +40,10 @@ tags = "remote-settings"
 
 ["test_hashcompleter_v4.js"]
 
+["test_hashcompleter_v5_ohttp.js"]
+prefs = ["security.storage.encryption.sqlite.enabled=false"]
+tags = "remote-settings"
+
 ["test_listmanager.js"]
 run-sequentially = ["true"] # fails 85% of the time in parallel
 

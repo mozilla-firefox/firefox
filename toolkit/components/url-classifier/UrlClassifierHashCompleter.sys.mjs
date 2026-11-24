@@ -11,12 +11,21 @@ const PARTIAL_LENGTH = 4;
 // Upper limit on the server response minimumWaitDuration
 const MIN_WAIT_DURATION_MAX_VALUE = 24 * 60 * 60 * 1000;
 const PREF_DEBUG_ENABLED = "browser.safebrowsing.debug";
+const PREF_OHTTP_RELAY_URL = "browser.safebrowsing.realTime.ohttpRelayURL";
+const PREF_GETHASH_TIMEOUT = "urlclassifier.gethash.timeout_ms";
+const KEY_CHANGED_TOPIC = "safebrowsing-realtime-key-changed";
+const OHTTP_KEY_PREFIX = "ohttp ";
 
 import { XPCOMUtils } from "resource://gre/modules/XPCOMUtils.sys.mjs";
 
 import { NetUtil } from "resource://gre/modules/NetUtil.sys.mjs";
 
 const lazy = {};
+
+ChromeUtils.defineESModuleGetters(lazy, {
+  clearTimeout: "resource://gre/modules/Timer.sys.mjs",
+  setTimeout: "resource://gre/modules/Timer.sys.mjs",
+});
 
 XPCOMUtils.defineLazyServiceGetter(
   lazy,
@@ -32,7 +41,57 @@ XPCOMUtils.defineLazyServiceGetter(
   Ci.nsIUrlClassifierUtils
 );
 
+XPCOMUtils.defineLazyServiceGetter(
+  lazy,
+  "gObliviousHttpService",
+  "@mozilla.org/network/oblivious-http-service;1",
+  Ci.nsIObliviousHttpService
+);
+
+XPCOMUtils.defineLazyPreferenceGetter(
+  lazy,
+  "ohttpRelayURL",
+  PREF_OHTTP_RELAY_URL,
+  ""
+);
+
+XPCOMUtils.defineLazyServiceGetter(
+  lazy,
+  "gRealTimeKeyService",
+  "@mozilla.org/url-classifier/realtime-key-service;1",
+  Ci.nsIUrlClassifierRealTimeKeyService
+);
+
 let loggingEnabled = false;
+
+function requestKey(aGethashUrl, aUseOHTTP) {
+  return (aUseOHTTP ? OHTTP_KEY_PREFIX : "direct ") + aGethashUrl;
+}
+
+// Returns the HashCompleterRequest class that handles the table, and whether
+// the table is a test table.
+function requestTypeFor(aTableName) {
+  switch (lazy.gUrlUtil.getProvider(aTableName)) {
+    case "google4":
+      return { RequestClass: HashCompleterRequestV4, isTesting: false };
+    case "google5":
+      return { RequestClass: HashCompleterRequestV5, isTesting: false };
+    case "test":
+      // If the table name ends with "-proto", use the V4 or V5 request.
+      // Otherwise, we use the V2 request.
+      if (!aTableName.endsWith("-proto")) {
+        return { RequestClass: HashCompleterRequestV2, isTesting: true };
+      }
+      return {
+        RequestClass: aTableName.includes("google5")
+          ? HashCompleterRequestV5
+          : HashCompleterRequestV4,
+        isTesting: true,
+      };
+  }
+  // We use the V2 request for the mozilla provider and as the fallback.
+  return { RequestClass: HashCompleterRequestV2, isTesting: false };
+}
 
 // Log only if browser.safebrowsing.debug is true
 function log(...stuff) {
@@ -173,17 +232,18 @@ export class HashCompleter {
   // An Array of ongoing gethash requests which is used to find requests for
   // the same hash prefix.
   #ongoingRequests = [];
-  // A map of gethashUrls to HashCompleterRequests that haven't yet begun.
+  // A map of request keys to HashCompleterRequests that haven't yet begun.
   #pendingRequests = new Map();
-  // A map of gethash URLs to RequestBackoff objects.
+  // A map of request keys to RequestBackoff objects.
   #backoffs = new Map();
   // Whether we have been informed of a shutdown by the shutdown event.
   #shuttingDown = false;
-  // A map of gethash URLs to next gethash time in miliseconds
+  // A map of request keys to next gethash time in miliseconds
   #nextGethashTimeMs = new Map();
 
   constructor() {
     Services.obs.addObserver(this, "quit-application");
+    Services.obs.addObserver(this, KEY_CHANGED_TOPIC);
     Services.prefs.addObserver(PREF_DEBUG_ENABLED, this);
 
     loggingEnabled = Services.prefs.getBoolPref(PREF_DEBUG_ENABLED);
@@ -200,14 +260,27 @@ export class HashCompleter {
   // This is mainly how the HashCompleter interacts with other components.
   // Even though it only takes one partial hash and callback, subsequent
   // calls are made into the same HTTP request by using a thread dispatch.
-  complete(aPartialHash, aGethashUrl, aTableName, aCallback) {
+  complete(aPartialHash, aGethashUrl, aTableName, aUseOHTTP, aCallback) {
     if (!aGethashUrl) {
       throw Components.Exception("", Cr.NS_ERROR_NOT_INITIALIZED);
     }
 
+    if (
+      aUseOHTTP &&
+      requestTypeFor(aTableName).RequestClass != HashCompleterRequestV5
+    ) {
+      log("OHTTP is not supported for " + aTableName + "\n");
+      Services.tm.dispatchToMainThread(() =>
+        aCallback.completionFinished(Cr.NS_ERROR_NOT_AVAILABLE)
+      );
+      return;
+    }
+
+    let key = requestKey(aGethashUrl, aUseOHTTP);
+
     // Check ongoing requests before creating a new HashCompleteRequest
     for (const r of this.#ongoingRequests) {
-      if (r.find(aPartialHash, aGethashUrl, aTableName)) {
+      if (r.find(aPartialHash, key, aTableName)) {
         log(
           "Merge gethash request in " +
             aTableName +
@@ -222,24 +295,23 @@ export class HashCompleter {
     if (!this.#currentRequest) {
       this.#currentRequest = this.makeHashCompleterRequest(
         aTableName,
-        aGethashUrl
+        aGethashUrl,
+        aUseOHTTP
       );
     }
-    if (this.#currentRequest.gethashUrl == aGethashUrl) {
+    if (this.#currentRequest.key == key) {
       this.#currentRequest.add(aPartialHash, aCallback, aTableName);
     } else {
-      if (!this.#pendingRequests.has(aGethashUrl)) {
+      if (!this.#pendingRequests.has(key)) {
         this.#pendingRequests.set(
-          aGethashUrl,
-          this.makeHashCompleterRequest(aTableName, aGethashUrl)
+          key,
+          this.makeHashCompleterRequest(aTableName, aGethashUrl, aUseOHTTP)
         );
       }
-      this.#pendingRequests
-        .get(aGethashUrl)
-        .add(aPartialHash, aCallback, aTableName);
+      this.#pendingRequests.get(key).add(aPartialHash, aCallback, aTableName);
     }
 
-    if (!this.#backoffs.has(aGethashUrl)) {
+    if (!this.#backoffs.has(key)) {
       // Initialize request backoffs separately, since requests are deleted
       // after they are dispatched.
       var jslib =
@@ -247,7 +319,7 @@ export class HashCompleter {
 
       // Using the V4 backoff algorithm for both V2 and V4. See bug 1273398.
       this.#backoffs.set(
-        aGethashUrl,
+        key,
         new jslib.RequestBackoffV4(
           10 /* keep track of max requests */,
           0 /* don't throttle on successful requests per time period */,
@@ -256,8 +328,8 @@ export class HashCompleter {
       );
     }
 
-    if (!this.#nextGethashTimeMs.has(aGethashUrl)) {
-      this.#nextGethashTimeMs.set(aGethashUrl, 0);
+    if (!this.#nextGethashTimeMs.has(key)) {
+      this.#nextGethashTimeMs.set(key, 0);
     }
 
     // Start off this request. Without dispatching to a thread, every call to
@@ -266,28 +338,13 @@ export class HashCompleter {
   }
 
   // A helper function to create a HashCompleterRequest based on the table name.
-  makeHashCompleterRequest(aTableName, aGethashUrl) {
-    let provider = lazy.gUrlUtil.getProvider(aTableName);
-    if (provider == "google4") {
-      return new HashCompleterRequestV4(this, aGethashUrl);
-    } else if (provider == "google5") {
-      return new HashCompleterRequestV5(this, aGethashUrl);
-    } else if (provider == "mozilla") {
-      return new HashCompleterRequestV2(this, aGethashUrl);
-    } else if (provider == "test") {
-      // If the table name ends with "-proto", use the V4 request. Otherwise.
-      // We use the v2 request.
-      if (aTableName.endsWith("-proto")) {
-        if (aTableName.includes("google5")) {
-          return new HashCompleterRequestV5(this, aGethashUrl, true);
-        }
-        return new HashCompleterRequestV4(this, aGethashUrl, true);
-      }
-      return new HashCompleterRequestV2(this, aGethashUrl, true);
-    }
+  makeHashCompleterRequest(aTableName, aGethashUrl, aUseOHTTP) {
+    let { RequestClass, isTesting } = requestTypeFor(aTableName);
+    return new RequestClass(this, aGethashUrl, isTesting, aUseOHTTP);
+  }
 
-    // We use the V2 request as the fallback.
-    return new HashCompleterRequestV2(this, aGethashUrl);
+  get shuttingDown() {
+    return this.#shuttingDown;
   }
 
   // This is called after several calls to |complete|, or after the
@@ -304,11 +361,11 @@ export class HashCompleter {
     }
 
     // If we don't have an in-flight request, make one
-    let pendingUrls = Array.from(this.#pendingRequests.keys());
-    if (!this.#currentRequest && pendingUrls.length) {
-      let nextUrl = pendingUrls[0];
-      this.#currentRequest = this.#pendingRequests.get(nextUrl);
-      this.#pendingRequests.delete(nextUrl);
+    let pendingKeys = Array.from(this.#pendingRequests.keys());
+    if (!this.#currentRequest && pendingKeys.length) {
+      let nextKey = pendingKeys[0];
+      this.#currentRequest = this.#pendingRequests.get(nextKey);
+      this.#pendingRequests.delete(nextKey);
     }
 
     if (this.#currentRequest) {
@@ -324,27 +381,27 @@ export class HashCompleter {
   }
 
   // Pass the server response status to the RequestBackoff for the given
-  // gethashUrl and fetch the next pending request, if there is one.
+  // request key and fetch the next pending request, if there is one.
   finishRequest(aRequest, aStatus) {
     this.#ongoingRequests = this.#ongoingRequests.filter(v => v != aRequest);
 
-    this.#backoffs.get(aRequest.gethashUrl).noteServerResponse(aStatus);
+    this.#backoffs.get(aRequest.key).noteServerResponse(aStatus);
     Services.tm.dispatchToMainThread(this);
   }
 
-  // Returns true if we can make a request from the given url, false otherwise.
-  canMakeRequest(aGethashUrl) {
+  // Returns true if we can make a request for the given key, false otherwise.
+  canMakeRequest(aKey) {
     return (
-      this.#backoffs.get(aGethashUrl).canMakeRequest() &&
-      Date.now() >= this.#nextGethashTimeMs.get(aGethashUrl)
+      this.#backoffs.get(aKey).canMakeRequest() &&
+      Date.now() >= this.#nextGethashTimeMs.get(aKey)
     );
   }
 
   // Notifies the RequestBackoff of a new request so we can throttle based on
   // max requests/time period. This must be called before a channel is opened,
   // and finishRequest must be called once the response is received.
-  noteRequest(aGethashUrl) {
-    return this.#backoffs.get(aGethashUrl).noteRequest();
+  noteRequest(aKey) {
+    return this.#backoffs.get(aKey).noteRequest();
   }
 
   // Remove a request from ongoing requests
@@ -352,9 +409,9 @@ export class HashCompleter {
     this.#ongoingRequests = this.#ongoingRequests.filter(v => v != request);
   }
 
-  // Set the next gethash time for a URL
-  setNextGethashTime(gethashUrl, time) {
-    this.#nextGethashTimeMs.set(gethashUrl, time);
+  // Set the next gethash time for a request key
+  setNextGethashTime(aKey, time) {
+    this.#nextGethashTimeMs.set(aKey, time);
   }
 
   observe(aSubject, aTopic, aData) {
@@ -362,6 +419,16 @@ export class HashCompleter {
       case "quit-application":
         this.#shuttingDown = true;
         Services.obs.removeObserver(this, "quit-application");
+        break;
+      case KEY_CHANGED_TOPIC:
+        // OHTTP requests encrypted with a stale key fail and back off for at
+        // least 15 minutes. Reset those backoffs when a new key arrives so the
+        // requests can resume right away.
+        for (let [key, backoff] of this.#backoffs) {
+          if (key.startsWith(OHTTP_KEY_PREFIX)) {
+            backoff.reset();
+          }
+        }
         break;
       case "nsPref:changed":
         if (aData == PREF_DEBUG_ENABLED) {
@@ -384,9 +451,11 @@ class HashCompleterRequestBase {
   // Whether we have been informed of a shutdown by the quit-application event.
   #shuttingDown = false;
 
-  constructor(aCompleter, aGethashUrl) {
+  constructor(aCompleter, aGethashUrl, aUseOHTTP = false) {
     this.completer = aCompleter;
     this.gethashUrl = aGethashUrl;
+    this.useOHTTP = aUseOHTTP;
+    this.key = requestKey(aGethashUrl, aUseOHTTP);
 
     // Multiple partial hashes can be associated with the same tables
     // so we use a map here.
@@ -437,8 +506,8 @@ class HashCompleterRequestBase {
 
   // This is called by the HashCompleter to find if a partial hash is already
   // added to the request.
-  find(aPartialHash, aGetHashUrl, aTableName) {
-    if (this.gethashUrl != aGetHashUrl || !this.tableNames.has(aTableName)) {
+  find(aPartialHash, aKey, aTableName) {
+    if (this.key != aKey || !this.tableNames.has(aTableName)) {
       return false;
     }
 
@@ -451,13 +520,11 @@ class HashCompleterRequestBase {
   // will notify all callbacks as necessary. We notify the backoff object on
   // begin.
   begin() {
-    if (!this.completer.canMakeRequest(this.gethashUrl)) {
+    if (!this.completer.canMakeRequest(this.key)) {
       log("Can't make request to " + this.gethashUrl + "\n");
       this.notifyFailure(Cr.NS_ERROR_ABORT);
       return false;
     }
-
-    Services.obs.addObserver(this, "quit-application");
 
     this.beginBuildChannel();
 
@@ -483,10 +550,12 @@ class HashCompleterRequestBase {
     }
   }
 
-  // Creates an nsIChannel for the request and fills the body.
+  // Creates an nsIChannel for the request and fills the body. If aOHTTP is
+  // given, the request is sent to aOHTTP.relayURI encrypted with
+  // aOHTTP.keyConfig.
   // Enforce bypassing URL Classifier check because if the request is
   // blocked, it means SafeBrowsing is malfunction.
-  openChannel() {
+  openChannel(aOHTTP = null) {
     let loadFlags =
       Ci.nsIChannel.INHIBIT_CACHING |
       Ci.nsIChannel.LOAD_BYPASS_CACHE |
@@ -499,11 +568,19 @@ class HashCompleterRequestBase {
 
     log("actualGethashUrl: " + this.request.url);
 
-    let channel = NetUtil.newChannel({
-      uri: this.request.url,
-      loadUsingSystemPrincipal: true,
-    });
-    channel.loadFlags = loadFlags;
+    let channel = aOHTTP
+      ? lazy.gObliviousHttpService.newChannel(
+          aOHTTP.relayURI,
+          Services.io.newURI(this.request.url),
+          aOHTTP.keyConfig
+        )
+      : NetUtil.newChannel({
+          uri: this.request.url,
+          loadUsingSystemPrincipal: true,
+        });
+    channel.loadFlags = aOHTTP
+      ? loadFlags | Ci.nsIRequest.LOAD_ANONYMOUS
+      : loadFlags;
     channel.loadInfo.originAttributes = {
       // The firstPartyDomain value should sync with NECKO_SAFEBROWSING_FIRST_PARTY_DOMAIN
       // defined in nsNetUtil.h.
@@ -512,8 +589,10 @@ class HashCompleterRequestBase {
     };
 
     // Disable keepalive.
-    let httpChannel = channel.QueryInterface(Ci.nsIHttpChannel);
-    httpChannel.setRequestHeader("Connection", "close", false);
+    if (!aOHTTP) {
+      let httpChannel = channel.QueryInterface(Ci.nsIHttpChannel);
+      httpChannel.setRequestHeader("Connection", "close", false);
+    }
 
     this.channel = channel;
 
@@ -523,9 +602,10 @@ class HashCompleterRequestBase {
     // don't get a gethash response.
     this.timer_ = Cc["@mozilla.org/timer;1"].createInstance(Ci.nsITimer);
     // Ask the timer to use nsITimerCallback (.notify()) when ready
-    let timeout = Services.prefs.getIntPref("urlclassifier.gethash.timeout_ms");
+    let timeout = Services.prefs.getIntPref(PREF_GETHASH_TIMEOUT);
     this.timer_.initWithCallback(this, timeout, this.timer_.TYPE_ONE_SHOT);
     channel.asyncOpen(this);
+    Services.obs.addObserver(this, "quit-application");
     this.telemetryClockStart = Date.now();
   }
 
@@ -599,7 +679,7 @@ class HashCompleterRequestBase {
   onStartRequest() {
     // At this point no data is available for us and we have no reason to
     // terminate the connection, so we do nothing until |onStopRequest|.
-    this.completer.setNextGethashTime(this.gethashUrl, 0);
+    this.completer.setNextGethashTime(this.key, 0);
 
     if (this.telemetryClockStart > 0) {
       let msecs = Date.now() - this.telemetryClockStart;
@@ -628,10 +708,23 @@ class HashCompleterRequestBase {
     let httpStatus = 503;
     if (Components.isSuccessCode(aStatusCode)) {
       let channel = aRequest.QueryInterface(Ci.nsIHttpChannel);
-      let success = channel.requestSucceeded;
-      httpStatus = channel.responseStatus;
-      if (!success) {
+      let relayStatus = this.useOHTTP
+        ? channel.QueryInterface(Ci.nsIObliviousHttpChannel).relayChannel
+            .responseStatus
+        : 200;
+      if (relayStatus != 200) {
+        httpStatus = relayStatus;
         aStatusCode = Cr.NS_ERROR_ABORT;
+      } else {
+        try {
+          let success = channel.requestSucceeded;
+          httpStatus = channel.responseStatus;
+          if (!success) {
+            aStatusCode = Cr.NS_ERROR_ABORT;
+          }
+        } catch (e) {
+          aStatusCode = Cr.NS_ERROR_ABORT;
+        }
       }
     }
     let success = Components.isSuccessCode(aStatusCode);
@@ -710,7 +803,7 @@ class HashCompleterRequestV2 extends HashCompleterRequestBase {
       this.openChannel();
       // Notify the RequestBackoff if opening the channel succeeded. At this
       // point, finishRequest must be called.
-      this.completer.noteRequest(this.gethashUrl);
+      this.completer.noteRequest(this.key);
     } catch (err) {
       this.completer.removeFromOngoingRequests(this);
       this.notifyFailure(err);
@@ -846,7 +939,7 @@ class HashCompleterRequestV2 extends HashCompleterRequestBase {
 
 class HashCompleterRequestV4 extends HashCompleterRequestBase {
   constructor(aCompleter, aGethashUrl, aIsTesting = false) {
-    super(aCompleter, aGethashUrl, aIsTesting);
+    super(aCompleter, aGethashUrl);
 
     this.provider = aIsTesting ? "test" : "google4";
   }
@@ -881,7 +974,7 @@ class HashCompleterRequestV4 extends HashCompleterRequestBase {
         this.openChannel();
         // Notify the RequestBackoff if opening the channel succeeded. At this
         // point, finishRequest must be called.
-        this.completer.noteRequest(this.gethashUrl);
+        this.completer.noteRequest(this.key);
       } catch (err) {
         this.completer.removeFromOngoingRequests(this);
         this.notifyFailure(err);
@@ -1002,7 +1095,7 @@ class HashCompleterRequestV4 extends HashCompleterRequestBase {
         }
 
         this.completer.setNextGethashTime(
-          this.gethashUrl,
+          this.key,
           Date.now() + minWaitDuration
         );
 
@@ -1046,21 +1139,73 @@ class HashCompleterRequestV4 extends HashCompleterRequestBase {
 }
 
 class HashCompleterRequestV5 extends HashCompleterRequestBase {
-  constructor(aCompleter, aGethashUrl, aIsTesting = false) {
-    super(aCompleter, aGethashUrl);
+  constructor(aCompleter, aGethashUrl, aIsTesting = false, aUseOHTTP = false) {
+    super(aCompleter, aGethashUrl, aUseOHTTP);
 
     this.provider = aIsTesting ? "test" : "google5";
   }
 
   beginBuildChannel() {
+    if (!this.useOHTTP) {
+      this.#openChannelAndNoteRequest(null);
+      return;
+    }
+
+    this.#getOHTTPConfig().then(
+      ohttp => {
+        try {
+          this.#openChannelAndNoteRequest(ohttp);
+        } catch (err) {
+          log("Can't open the OHTTP channel: " + err + "\n");
+        }
+      },
+      err => {
+        log("Can't send the request through OHTTP: " + err + "\n");
+        this.completer.removeFromOngoingRequests(this);
+        this.notifyFailure(Cr.NS_ERROR_NOT_AVAILABLE);
+      }
+    );
+  }
+
+  async #getOHTTPConfig() {
+    let relayURL = lazy.ohttpRelayURL;
+    if (!relayURL) {
+      throw new Error("No OHTTP relay URL");
+    }
+    let timer;
+    let timeout = new Promise((_, reject) => {
+      timer = lazy.setTimeout(
+        () => reject(new Error("Timed out waiting for the OHTTP key config")),
+        Services.prefs.getIntPref(PREF_GETHASH_TIMEOUT)
+      );
+    });
+    let keyConfig;
     try {
-      this.openChannel();
+      keyConfig = await Promise.race([
+        lazy.gRealTimeKeyService.getKeyConfig(),
+        timeout,
+      ]);
+    } finally {
+      lazy.clearTimeout(timer);
+    }
+    if (this.completer.shuttingDown) {
+      throw new Error("Shutting down");
+    }
+    if (!keyConfig) {
+      throw new Error("No OHTTP key config");
+    }
+    return { relayURI: Services.io.newURI(relayURL), keyConfig };
+  }
+
+  #openChannelAndNoteRequest(aOHTTP) {
+    try {
+      this.openChannel(aOHTTP);
       // Notify the RequestBackoff if opening the channel succeeded. At this
       // point, finishRequest must be called.
-      this.completer.noteRequest(this.gethashUrl);
+      this.completer.noteRequest(this.key);
     } catch (err) {
       this.completer.removeFromOngoingRequests(this);
-      this.notifyFailure(err);
+      this.notifyFailure(err.result ?? Cr.NS_ERROR_FAILURE);
       throw err;
     }
   }
@@ -1155,7 +1300,7 @@ class HashCompleterRequestV5 extends HashCompleterRequestBase {
         }
 
         this.completer.setNextGethashTime(
-          this.gethashUrl,
+          this.key,
           Date.now() + minWaitDuration
         );
 

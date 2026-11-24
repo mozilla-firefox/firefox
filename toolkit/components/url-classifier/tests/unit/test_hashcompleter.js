@@ -317,6 +317,7 @@ function runNextCompletion() {
       completion.hash.substring(0, 4),
       gethashUrl,
       "test-phish-shavar", // Could be arbitrary v2 table name.
+      false,
       new callback(completion)
     );
   }

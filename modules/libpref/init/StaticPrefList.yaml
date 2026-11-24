@@ -2007,6 +2007,12 @@
   value: @IS_NIGHTLY_BUILD@
   mirror: always
 
+# The Oblivious HTTP relay used to send SafeBrowsing V5 real-time requests.
+- name: browser.safebrowsing.realTime.ohttpRelayURL
+  type: String
+  value: ""
+  mirror: never
+
 # SafeBrowsing Real-Time Request Simulation
 - name: browser.safebrowsing.realTime.simulation.enabled
   type: bool

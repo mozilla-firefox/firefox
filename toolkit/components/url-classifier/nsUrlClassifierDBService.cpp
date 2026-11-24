@@ -1299,7 +1299,7 @@ nsresult nsUrlClassifierHashCompleterBase::RequestHashCompletions(
         // Bug 1323953 - Send the first 4 bytes for completion no matter how
         // long we matched the prefix.
         rv = completer->Complete(result->PartialHash(), gethashUrl,
-                                 result->mTableName, this);
+                                 result->mTableName, false, this);
         if (NS_SUCCEEDED(rv)) {
           mPendingCompletions++;
         }
