@@ -87,6 +87,94 @@ add_task(async function test_close_button_closes_panel() {
   );
 });
 
+async function openMenuByKeyboard(panel) {
+  let shown = BrowserTestUtils.waitForEvent(panel.menu, "shown");
+  panel.menuButton.focus();
+  EventUtils.synthesizeKey("KEY_Enter", {}, panel.ownerGlobal);
+  await shown;
+}
+
+async function closeMenu(panel) {
+  let hidden = BrowserTestUtils.waitForEvent(panel.menu, "hidden");
+  EventUtils.synthesizeKey("KEY_Escape", {}, panel.ownerGlobal);
+  await hidden;
+}
+
+add_task(async function test_menu_button_position_and_name() {
+  let panel = await openWidgetsSidebar();
+  await panel.updateComplete;
+  await panel.menuButton.updateComplete;
+  ok(
+    panel.menuButton.compareDocumentPosition(panel.closeButton) &
+      Node.DOCUMENT_POSITION_FOLLOWING,
+    "Menu button precedes the close button"
+  );
+  await panel.ownerDocument.l10n.translateFragment(panel.menuButton);
+  await panel.menuButton.updateComplete;
+  ok(panel.menuButton.buttonEl.title, "Menu button has a localized name");
+  is(
+    panel.menuButton.buttonEl.getAttribute("aria-haspopup"),
+    "menu",
+    "Menu button exposes its menu"
+  );
+  SidebarController.hide();
+});
+
+add_task(async function test_menu_items_open_links() {
+  for (let signedIn of [false, true]) {
+    setSignedIn(signedIn);
+    let panel = await openWidgetsSidebar();
+    await panel.updateComplete;
+    await panel.menuButton.updateComplete;
+    let openLink = sinon.stub(panel.topWindow, "openTrustedLinkIn");
+    try {
+      await openMenuByKeyboard(panel);
+      let items = panel.menu.querySelectorAll("panel-item");
+      is(items.length, 2, "Menu has two items");
+
+      let hidden = BrowserTestUtils.waitForEvent(panel.menu, "hidden");
+      items[0].click();
+      await hidden;
+      ok(
+        openLink.calledOnceWithExactly("https://connect.mozilla.org/", "tab"),
+        "Share Feedback opens Mozilla Connect in a tab"
+      );
+      openLink.resetHistory();
+
+      await openMenuByKeyboard(panel);
+      hidden = BrowserTestUtils.waitForEvent(panel.menu, "hidden");
+      items[1].focus();
+      EventUtils.synthesizeKey("KEY_Enter", {}, panel.ownerGlobal);
+      await hidden;
+      ok(
+        openLink.calledOnceWithExactly(
+          Services.urlFormatter.formatURLPref("app.support.baseURL") +
+            "firefox-custom-widgets",
+          "tab"
+        ),
+        "About Custom Widgets opens the support page in a tab"
+      );
+    } finally {
+      openLink.restore();
+      SidebarController.hide();
+    }
+  }
+});
+
+add_task(async function test_menu_escape_restores_focus() {
+  let panel = await openWidgetsSidebar();
+  await panel.updateComplete;
+  await panel.menuButton.updateComplete;
+  await openMenuByKeyboard(panel);
+  await closeMenu(panel);
+  is(
+    panel.shadowRoot.activeElement,
+    panel.menuButton,
+    "Escape restores focus to the menu button"
+  );
+  SidebarController.hide();
+});
+
 add_task(async function test_composer_needs_authentication() {
   setSignedIn(false);
   let panel = await openWidgetsSidebar();

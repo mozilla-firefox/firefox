@@ -11,6 +11,7 @@
 }
 
 #close-button,
+#menu-button,
 #compose-button {
   --button-border-radius: var(--border-radius-circle);
 
@@ -25,12 +26,16 @@
   }
 }
 
-#close-button {
+#header-buttons {
   position: absolute;
   inset-block-start: var(--space-large);
   inset-inline-end: var(--space-large);
   z-index: 1;
+  display: flex;
+  gap: var(--space-small);
+}
 
+#close-button {
   /* The shared panel header provides the close button in this mode. */
   @media -moz-pref("sidebar.visibility", "hide-launcher") {
     display: none;

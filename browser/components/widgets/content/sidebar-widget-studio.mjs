@@ -5,6 +5,10 @@
 import { html, nothing } from "chrome://global/content/vendor/lit.all.mjs";
 import { SidebarPage } from "chrome://browser/content/sidebar/sidebar-page.mjs";
 import { SUBMIT_ICON } from "chrome://browser/content/widgets/widget-composer.mjs";
+// eslint-disable-next-line import-x/no-unassigned-import
+import "chrome://global/content/elements/panel-list.mjs";
+
+const CUSTOM_WIDGETS_SUPPORT_PAGE = "firefox-custom-widgets";
 
 const lazy = {};
 ChromeUtils.defineESModuleGetters(lazy, {
@@ -50,6 +54,8 @@ export class SidebarWidgetStudio extends SidebarPage {
   static queries = {
     composeButton: "#compose-button",
     closeButton: "#close-button",
+    menuButton: "#menu-button",
+    menu: "#widget-studio-menu",
     composer: "widget-composer",
   };
 
@@ -95,7 +101,18 @@ export class SidebarWidgetStudio extends SidebarPage {
 
   #openLearnMore(e) {
     e.preventDefault();
-    this.topWindow.openTrustedLinkIn(e.currentTarget.href, "tab");
+    this.#openUrl(e.currentTarget.href);
+  }
+
+  #openUrl(url) {
+    this.topWindow.openTrustedLinkIn(url, "tab");
+  }
+
+  #openSupportPage() {
+    this.#openUrl(
+      Services.urlFormatter.formatURLPref("app.support.baseURL") +
+        CUSTOM_WIDGETS_SUPPORT_PAGE
+    );
   }
 
   signInTemplate() {
@@ -115,7 +132,7 @@ export class SidebarWidgetStudio extends SidebarPage {
         <a
           id="sign-in-learn-more"
           is="moz-support-link"
-          support-page="firefox-custom-widgets"
+          support-page=${CUSTOM_WIDGETS_SUPPORT_PAGE}
           @click=${this.#openLearnMore}
         ></a>
         <moz-button
@@ -191,13 +208,34 @@ export class SidebarWidgetStudio extends SidebarPage {
         rel="stylesheet"
         href="chrome://browser/content/widgets/sidebar-widget-studio.css"
       />
-      <moz-button
-        id="close-button"
-        type="ghost icon"
-        iconsrc="chrome://global/skin/icons/close.svg"
-        data-l10n-id="sidebar-panel-header-close-button"
-        @click=${this.#closePanel}
-      ></moz-button>
+      <div id="header-buttons">
+        <moz-button
+          id="menu-button"
+          type="ghost icon"
+          iconsrc="chrome://global/skin/icons/more.svg"
+          menuid="widget-studio-menu"
+          data-l10n-id="sidebar-options-menu-button"
+        ></moz-button>
+        <moz-button
+          id="close-button"
+          type="ghost icon"
+          iconsrc="chrome://global/skin/icons/close.svg"
+          data-l10n-id="sidebar-panel-header-close-button"
+          @click=${this.#closePanel}
+        ></moz-button>
+      </div>
+      <panel-list id="widget-studio-menu">
+        <panel-item
+          no-icon
+          data-l10n-id="widget-studio-menu-share-feedback"
+          @click=${() => this.#openUrl("https://connect.mozilla.org/")}
+        ></panel-item>
+        <panel-item
+          no-icon
+          data-l10n-id="widget-studio-menu-about"
+          @click=${this.#openSupportPage}
+        ></panel-item>
+      </panel-list>
       ${this.signInTemplate()}
       <slot></slot>
       ${this.composerTemplate()}`;
