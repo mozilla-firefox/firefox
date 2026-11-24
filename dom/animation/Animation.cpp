@@ -480,12 +480,8 @@ void Animation::SetTimelineRangeNoUpdate(AnimationRange&& aRange,
     return;
   }
 
-  // TODO: Bug 2006262. We may have to rewrite this when adding the attribute:
-  // https://drafts.csswg.org/web-animations-2/#dom-animation-rangestart
-  // https://drafts.csswg.org/web-animations-2/#dom-animation-rangeend
-  //
-  // For now, this is not exposed and is set during initialization of the CSS
-  // Animations.
+  AutoMutationBatchForAnimation mb(*this);
+
   const auto overridden = PropertiesOverridenByJS();
   const auto startOverridden =
       aFromJS == FromJS::No &&
@@ -507,6 +503,10 @@ void Animation::SetTimelineRangeNoUpdate(AnimationRange&& aRange,
   if (mEffect) {
     mEffect->UpdateNormalizedTiming();
     MaybeUpdateKeyframeComputedOffsets();
+  }
+
+  if (IsRelevant()) {
+    MutationObservers::NotifyAnimationChanged(this);
   }
 }
 

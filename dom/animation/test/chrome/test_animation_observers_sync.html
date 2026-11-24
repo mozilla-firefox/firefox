@@ -1170,6 +1170,7 @@ function runTest() {
       { name: "state",     prop: "animationPlayState",      val: "paused"  },
       { name: "delay",     prop: "animationDelay",          val: "-1s"     },
       { name: "fill",      prop: "animationFillMode",       val: "both"    },
+      { name: "range",     prop: "animationRange",          val: "20% 80%" },
     ].forEach(aChangeTest => {
       test(t => {
         // Start a long animation.
@@ -1814,6 +1815,56 @@ function runTest() {
 
     scroller.remove();
   }, 'set_animation_timeline_from_null');
+
+  test(t => {
+    // Create the overflow like this:
+    // <div class="scroller">
+    //   <div class="content"></div>
+    //   <div class="subject"></div>
+    // </div>
+    let scroller = document.createElement("div");
+    scroller.classList.add("scroller");
+    let content = document.createElement("div");
+    content.classList.add("content");
+    let subject = document.createElement("div");
+    subject.classList.add("subject");
+    scroller.appendChild(content);
+    scroller.appendChild(subject);
+    document.body.appendChild(scroller);
+
+    let div = addDiv(t);
+    let observer = setupSynchronousObserver(t, div, false);
+
+    const timeline = new ViewTimeline({ subject });
+    const anim = div.animate(
+      { marginLeft: [ "100px", "100px" ] },
+      { duration: 1000, timeline }
+    );
+
+    assert_equals_records(observer.takeRecords(),
+      [{ added: [anim], changed: [], removed: [] }],
+      "records after animation is added");
+
+    anim.rangeStart = "20%";
+
+    assert_equals_records(observer.takeRecords(),
+      [{ added: [], changed: [anim], removed: [] }],
+      "records after animation is changed");
+
+    anim.rangeEnd = "80%";
+
+    assert_equals_records(observer.takeRecords(),
+      [{ added: [], changed: [anim], removed: [] }],
+      "records after animation is changed");
+
+    anim.finish();
+
+    assert_equals_records(observer.takeRecords(),
+      [{ added: [], changed: [anim], removed: [] }],
+      "records after animation is removed");
+
+    scroller.remove();
+  }, 'set_animation_range');
 }
 
 W3CTest.runner.expectAssertions(0, 12); // bug 1189015
