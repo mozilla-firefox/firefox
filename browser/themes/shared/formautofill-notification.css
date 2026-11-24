@@ -48,7 +48,7 @@
 
   > h1 {
     font-size: 1em;
-    padding-block: 8px 4px;
+    padding-block: var(--space-small) var(--space-xsmall);
     margin-block: 0;
   }
 }
@@ -72,11 +72,13 @@
 .address-save-update-row-container {
   display: grid;
   grid-template-columns: auto 1fr;
-  gap: 8px;
+  gap: var(--space-small);
 
   > image {
-    width: var(--icon-size-small);
-    height: var(--icon-size-small);
+    width: var(--icon-size);
+    height: var(--icon-size);
+    /* Center icon against text */
+    /* stylelint-disable-next-line stylelint-plugin-mozilla/use-design-tokens */
     margin-top: 2px;
   }
 
@@ -89,13 +91,15 @@
   /* Cancel the preceding section's margin-bottom so the link sits flush. */
   margin-top: calc(-1 * var(--space-large));
   /* Align with second column of .address-save-update-row-container (icon + gap). */
-  padding-inline-start: calc(var(--icon-size-small) + var(--space-small));
+  padding-inline-start: calc(var(--icon-size) + var(--space-small));
 }
 
 .address-update-text-diff-added,
 .address-update-text-diff-removed {
   font-weight: var(--font-weight-semibold);
+  /* stylelint-disable-next-line stylelint-plugin-mozilla/use-design-tokens */
   color: light-dark(rgba(2, 80, 187, 1), rgba(128, 235, 255, 1));
+  /* stylelint-disable-next-line stylelint-plugin-mozilla/use-design-tokens */
   background: light-dark(rgba(0, 96, 223, 0.08), rgba(0, 221, 255, 0.14));
 }
 
@@ -120,7 +124,7 @@
 .address-edit-row-container {
   display: flex;
   flex-direction: row;
-  gap: 10px;
+  gap: var(--space-medium);
 }
 
 .address-edit-notification-content :is(moz-input-text, moz-textarea, moz-select) {
@@ -165,7 +169,7 @@
 
 /* Align the content with the header icon rather than the header text. */
 .credit-card-capture-notification popupnotificationcontent {
-  margin-inline-start: calc(-1 * (var(--icon-size) + var(--space-small)));
+  margin-inline-start: calc(-1 * var(--icon-size) - var(--space-small));
 }
 
 .desc-message-box {
@@ -177,7 +181,7 @@
 }
 
 .cc-icon {
-  height: var(--icon-size-small);
+  height: var(--icon-size);
 }
 
 .payments-doorhanger-description {

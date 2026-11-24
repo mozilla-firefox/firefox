@@ -5,19 +5,23 @@
 @namespace html url("http://www.w3.org/1999/xhtml");
 
 #notification-popup-box {
+  /* stylelint-disable-next-line stylelint-plugin-mozilla/use-design-tokens */
   height: var(--urlbar-basic-component-size);
   -moz-context-properties: fill, fill-opacity;
   fill: currentColor;
   fill-opacity: var(--urlbar-icon-fill-opacity);
   color: inherit;
+  /* stylelint-disable-next-line stylelint-plugin-mozilla/use-design-tokens */
   border-radius: var(--urlbar-inner-border-radius);
 
   &:hover {
+    /* stylelint-disable-next-line stylelint-plugin-mozilla/use-design-tokens */
     background-color: hsla(0, 0%, 70%, 0.2);
   }
 
   &:hover:active,
   &[open] {
+    /* stylelint-disable-next-line stylelint-plugin-mozilla/use-design-tokens */
     background-color: hsla(0, 0%, 70%, 0.3);
   }
 }
@@ -40,11 +44,13 @@
    for its list-style-image to be overridden. */
 .notification-anchor-icon {
   list-style-image: url(chrome://global/skin/icons/info-filled.svg);
+  /* stylelint-disable-next-line stylelint-plugin-mozilla/use-design-tokens */
   padding: var(--urlbar-icon-padding);
 
   &:focus-visible {
     outline: var(--focus-outline);
     outline-offset: var(--focus-outline-inset);
+    /* stylelint-disable-next-line stylelint-plugin-mozilla/use-design-tokens */
     border-radius: var(--urlbar-inner-border-radius);
   }
 
@@ -224,11 +230,9 @@
 
 #webRTC-all-windows-shared,
 #webRTC-previewWarning {
+  /* stylelint-disable-next-line stylelint-plugin-mozilla/use-design-tokens */
   font-size: 0.8em;
-
-  @media not (prefers-contrast) {
-    opacity: 0.6;
-  }
+  opacity: var(--opacity-deemphasized-strong);
 }
 
 #webRTC-previewWarning {
@@ -242,6 +246,7 @@
  */
 #webRTC-previewWarning-learnMore {
   margin-top: 0 !important;
+  /* stylelint-disable-next-line stylelint-plugin-mozilla/use-design-tokens */
   font-size: 0.75em;
 }
 
@@ -304,7 +309,7 @@
 .popup-notification-icon[popupid="update-restart"] {
   background: url(chrome://browser/skin/update-badge.svg) no-repeat center;
   -moz-context-properties: fill;
-  fill: var(--panel-banner-item-update-supported-bgcolor);
+  fill: var(--color-accent-attention);
 }
 
 .popup-notification-icon[popupid="update-unsupported"] {
