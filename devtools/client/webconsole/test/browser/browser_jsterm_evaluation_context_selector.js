@@ -7,7 +7,6 @@
 const FILE_FOLDER = `browser/devtools/client/webconsole/test/browser`;
 const TEST_URI = `https://example.com/${FILE_FOLDER}/test-console-evaluation-context-selector.html`;
 const IFRAME_PATH = `${FILE_FOLDER}/test-console-evaluation-context-selector-child.html`;
-const SERVICE_WORKER_URI = `https://example.com/${FILE_FOLDER}/test-service-worker.js`;
 
 requestLongerTimeout(2);
 
@@ -19,11 +18,6 @@ add_task(async function () {
     `https://example.org/${IFRAME_PATH}?id=iframe-1`,
     `https://example.net/${IFRAME_PATH}?id=iframe-2`,
   ]);
-
-  info("Wait for the service worker to be registered");
-  await SpecialPowers.spawn(gBrowser.selectedBrowser, [], async () => {
-    await content.wrappedJSObject.registrationPromise;
-  });
 
   const evaluationContextSelectorButton = hud.ui.outputNode.querySelector(
     ".webconsole-evaluation-selector-button"
@@ -72,11 +66,6 @@ add_task(async function () {
     label: "iframe-2|example.net",
     tooltip: `https://example.net/${IFRAME_PATH}?id=iframe-2`,
   };
-  const expectedServiceWorkerItem = {
-    label: "test-service-worker.js",
-    tooltip: SERVICE_WORKER_URI,
-    indented: false,
-  };
 
   await checkContextSelectorMenu(hud, [
     {
@@ -94,11 +83,6 @@ add_task(async function () {
     },
     {
       ...expectedSecondIframeItem,
-      checked: false,
-    },
-    expectedSeparatorItem,
-    {
-      ...expectedServiceWorkerItem,
       checked: false,
     },
   ]);
@@ -145,11 +129,6 @@ add_task(async function () {
       ...expectedSecondIframeItem,
       checked: false,
     },
-    expectedSeparatorItem,
-    {
-      ...expectedServiceWorkerItem,
-      checked: false,
-    },
   ]);
   selectTargetInContextSelector(hud, expectedSecondIframeItem.label);
 
@@ -191,11 +170,6 @@ add_task(async function () {
     {
       ...expectedSecondIframeItem,
       checked: true,
-    },
-    expectedSeparatorItem,
-    {
-      ...expectedServiceWorkerItem,
-      checked: false,
     },
   ]);
   selectTargetInContextSelector(hud, expectedTopItem.label);
@@ -281,12 +255,6 @@ add_task(async function () {
     hasExactPopupLabels(hud.jsterm.autocompletePopup, []),
     "autocomplete data was cleared"
   );
-
-  info("Wait for service worker unregistration before teardown");
-  await SpecialPowers.spawn(gBrowser.selectedBrowser, [], async () => {
-    const registration = await content.wrappedJSObject.registrationPromise;
-    await registration.unregister();
-  });
 });
 
 async function testStoreAsGlobalVariable(

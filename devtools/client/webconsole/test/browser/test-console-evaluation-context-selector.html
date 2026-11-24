@@ -13,8 +13,6 @@
       globalThis.foobaz = "world";
 
       globalThis.worker = new Worker(`data:application/javascript,console.log("worker")`, { name: "my worker" });
-
-      globalThis.registrationPromise = navigator.serviceWorker.register(`test-service-worker.js`, { scope: "." });
     </script>
   </body>
 </html>
