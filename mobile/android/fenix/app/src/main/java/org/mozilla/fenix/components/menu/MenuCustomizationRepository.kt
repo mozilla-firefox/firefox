@@ -7,11 +7,11 @@ package org.mozilla.fenix.components.menu
 import androidx.datastore.core.DataStore
 import java.io.IOException
 import kotlinx.coroutines.CoroutineScope
-import kotlinx.coroutines.flow.SharingStarted
+import kotlinx.coroutines.Job
+import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.catch
-import kotlinx.coroutines.flow.map
-import kotlinx.coroutines.flow.stateIn
+import kotlinx.coroutines.flow.first
 import kotlinx.coroutines.launch
 import mozilla.components.support.base.log.logger.Logger
 import org.mozilla.fenix.datastore.CustomizedMenuRecord
@@ -34,45 +34,62 @@ class MenuCustomizationRepository(
     private val requiredSectionIds: Set<String>,
     private val scope: CoroutineScope,
 ) {
+    private val lock = Any()
+
+    // Both are guarded by lock. The record is null until the stored customization was read, until then the changes
+    // are kept as pending and applied on top of it.
+    private var record: CustomizedMenuRecord? = null
+    private val pending = mutableListOf<(CustomizedMenuRecord) -> CustomizedMenuRecord>()
+
+    // Each write waits for the one before it, so that they reach the data store in the order of the saves whatever
+    // the dispatcher of scope.
+    private var lastWrite: Job? = null
+
+    private val mutableMenuInfo = MutableStateFlow<CustomizedMenuInfo?>(null)
+    private val mutableSectionsInfo = MutableStateFlow<Map<String, CustomizedSectionInfo>?>(null)
+
     /** The current structure of the menu, as customized by the user or the default one, or `null` until it was read. */
-    val customizedMenuInfo: StateFlow<CustomizedMenuInfo?> =
-        dataStore.data
-            .map { it.toCustomizedMenuInfo() }
-            .catch { exception ->
-                logger.error("Could not read the browser menu customization", exception)
-                emit(defaultMenuInfo())
-            }
-            .stateIn(scope, SharingStarted.Eagerly, null)
+    val customizedMenuInfo: StateFlow<CustomizedMenuInfo?> = mutableMenuInfo
 
     /**
      * The items of each section as customized by the user, keyed by section id, or `null` until they were read.
      * Sections whose items were not customized are not included.
      */
-    val customizedSectionsInfo: StateFlow<Map<String, CustomizedSectionInfo>?> =
-        dataStore.data
-            .map { it.toCustomizedSectionsInfo() }
-            .catch { exception ->
-                logger.error("Could not read the browser menu sections customization", exception)
-                emit(emptyMap())
+    val customizedSectionsInfo: StateFlow<Map<String, CustomizedSectionInfo>?> = mutableSectionsInfo
+
+    init {
+        scope.launch {
+            val stored =
+                dataStore.data
+                    .catch { exception ->
+                        logger.error("Could not read the browser menu customization", exception)
+                        emit(CustomizedMenuRecord.getDefaultInstance())
+                    }
+                    .first()
+            synchronized(lock) {
+                record = pending.fold(stored) { current, transform -> transform(current) }
+                pending.clear()
+                publish()
             }
-            .stateIn(scope, SharingStarted.Eagerly, null)
+        }
+    }
 
     /** Persist a new customization of the menu sections, keeping the one of their items. */
     fun save(menuInfo: CustomizedMenuInfo) {
-        scope.launch { update { it.toCurrentBuilder().withMenuInfo(menuInfo.reconciled()).build() } }
+        val reconciled = menuInfo.reconciled()
+        persist { it.toCurrentBuilder().withMenuInfo(reconciled).build() }
     }
 
     /** Persist a new customization of the items of a section, keeping the one of the menu sections. */
     fun save(sectionInfo: CustomizedSectionInfo) {
         val default = defaultSectionsInfo[sectionInfo.sectionId] ?: return
-        scope.launch {
-            update { it.toCurrentBuilder().withSectionInfo(sectionInfo.reconciledWith(default)).build() }
-        }
+        val reconciled = sectionInfo.reconciledWith(default)
+        persist { it.toCurrentBuilder().withSectionInfo(reconciled).build() }
     }
 
     /** Reset the customization of both the menu sections and their items back to default. */
     fun reset() {
-        scope.launch { update { CustomizedMenuRecord.getDefaultInstance() } }
+        persist { CustomizedMenuRecord.getDefaultInstance() }
     }
 
     /**
@@ -80,6 +97,32 @@ class MenuCustomizationRepository(
      * created, so this only ensures that it is.
      */
     fun warmUp() = Unit
+
+    /** Report the change right away, then write it. */
+    private fun persist(transform: (CustomizedMenuRecord) -> CustomizedMenuRecord) {
+        synchronized(lock) {
+            val previousWrite = lastWrite
+            lastWrite = scope.launch {
+                previousWrite?.join()
+                update(transform)
+            }
+            val current = record
+            if (current == null) {
+                pending.add(transform)
+            } else {
+                record = transform(current)
+                publish()
+            }
+        }
+    }
+
+    // Reads the record for each flow, so that a change made by a collector of the first flow ends up in both.
+    // Collectors may run, and call back into the repository, inside lock, so they must not wait for work that needs
+    // it on another thread.
+    private fun publish() {
+        mutableMenuInfo.value = record?.toCustomizedMenuInfo()
+        mutableSectionsInfo.value = record?.toCustomizedSectionsInfo()
+    }
 
     /** Reconcile the user customized menu structure with the sections currently available in the app. */
     private fun CustomizedMenuInfo.reconciled() = reconciledWith(defaultMenuInfo(), requiredSectionIds)

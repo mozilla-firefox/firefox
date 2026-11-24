@@ -54,10 +54,6 @@ class CustomizeMenuMiddleware(
     private val appStore: AppStore,
     private val cannotHideSectionMessage: String,
 ) : Middleware<CustomizableMenuState, CustomizableMenuAction> {
-    // The repository takes a moment to report what was just saved.
-    private var isNavigationSectionMoved: Boolean? = null
-    private var sectionsCustomization: Map<String, CustomizedSectionInfo>? = null
-
     override fun invoke(
         store: Store<CustomizableMenuState, CustomizableMenuAction>,
         next: (CustomizableMenuAction) -> Unit,
@@ -88,10 +84,8 @@ class CustomizeMenuMiddleware(
         val visibleSectionIds = visibleSections.map { it.id }
         // Once moved, the navigation section stays independent of the toolbar, wherever it is shown, until the menu is
         // restored to its default structure.
-        val wasNavigationSectionMoved =
-            isNavigationSectionMoved ?: (repository.customizedMenuInfo.value?.isNavigationSectionMoved == true)
-        isNavigationSectionMoved =
-            wasNavigationSectionMoved ||
+        val isNavigationSectionMoved =
+            repository.customizedMenuInfo.value?.isNavigationSectionMoved == true ||
                 BrowserMenuConfiguration.isNavigationSectionMoved(
                     visibleSectionIds,
                     isToolbarAtBottom,
@@ -101,12 +95,11 @@ class CustomizeMenuMiddleware(
             CustomizedMenuInfo(
                 visibleSectionIds = visibleSectionIds,
                 hiddenSectionIds = hiddenSections.map { it.id },
-                isNavigationSectionMoved = isNavigationSectionMoved == true,
+                isNavigationSectionMoved = isNavigationSectionMoved,
             )
         repository.save(newMenuInfo)
 
-        val isCustomized =
-            isCustomized(newMenuInfo, sectionsCustomization ?: repository.customizedSectionsInfo.value.orEmpty())
+        val isCustomized = isCustomized(newMenuInfo, repository.customizedSectionsInfo.value.orEmpty())
         if (isCustomized != store.state.isCustomized) {
             store.dispatch(CustomizationStatusChanged(isCustomized))
         }
@@ -165,8 +158,6 @@ class CustomizeMenuMiddleware(
     }
 
     private fun resetToDefault(store: Store<CustomizableMenuState, CustomizableMenuAction>) = scope.launch {
-        isNavigationSectionMoved = false
-        sectionsCustomization = emptyMap()
         repository.reset()
 
         val defaultInfo = BrowserMenuConfiguration.defaultMenuInfo(isToolbarAtBottom, isExpandedToolbarEnabled)

@@ -12,7 +12,6 @@ import kotlin.test.assertFalse
 import kotlin.test.assertTrue
 import kotlinx.coroutines.ExperimentalCoroutinesApi
 import kotlinx.coroutines.flow.MutableStateFlow
-import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.flowOf
 import kotlinx.coroutines.test.TestScope
 import kotlinx.coroutines.test.runCurrent
@@ -295,7 +294,7 @@ class CustomizeMenuMiddlewareTest {
         }
 
     @Test
-    fun `GIVEN the user moved the navigation section WHEN they move it back before the move is reported THEN keep it independent of the toolbar`() =
+    fun `GIVEN the user moved the navigation section WHEN they move it back THEN keep it independent of the toolbar`() =
         runTest {
             val store = createStore()
 
@@ -530,7 +529,7 @@ class CustomizeMenuMiddlewareTest {
         }
 
     @Test
-    fun `GIVEN the user changed the tools items and reset to default WHEN the user restores the default structure before the reset is reported THEN show the menu as not customized`() =
+    fun `GIVEN the user changed the tools items and reset to default WHEN the user restores the default structure THEN show the menu as not customized`() =
         runTest {
             val store =
                 createStore(
@@ -552,17 +551,45 @@ class CustomizeMenuMiddlewareTest {
             assertFalse(store.state.isCustomized)
         }
 
+    @Test
+    fun `GIVEN the user moved the navigation section WHEN the user resets to default and changes the menu THEN keep the navigation section following the toolbar`() =
+        runTest {
+            val store =
+                createStore(
+                    customization = MutableStateFlow(defaultMenuInfo.copy(isNavigationSectionMoved = true)),
+                    initialState = CustomizableMenuState(menuGroups = defaultGroups(), isCustomized = true),
+                )
+            store.dispatch(ResetToDefaultConfirmed)
+            runCurrent()
+
+            store.dispatch(
+                MenuStructureChanged(
+                    items = groups(*BrowserMenuConfiguration.allSections().map { it.id }.toTypedArray()),
+                    hiddenGroupIds = defaultMenuInfo.hiddenSectionIds.toSet(),
+                    movedGroupId = TABS_CONTROLS_GROUP_ID,
+                )
+            )
+
+            verify { repository.save(match<CustomizedMenuInfo> { !it.isNavigationSectionMoved }) }
+        }
+
     // The customization is read on a scope that runTest cancels at the end of each test.
     private fun TestScope.createStore(
         initialState: CustomizableMenuState = CustomizableMenuState(menuGroups = emptyList()),
-        customization: StateFlow<CustomizedMenuInfo?> = MutableStateFlow(null),
-        sectionsCustomization: StateFlow<Map<String, CustomizedSectionInfo>?> = MutableStateFlow(emptyMap()),
+        customization: MutableStateFlow<CustomizedMenuInfo?> = MutableStateFlow(null),
+        sectionsCustomization: MutableStateFlow<Map<String, CustomizedSectionInfo>?> = MutableStateFlow(emptyMap()),
         menuGroups: List<MenuItemsGroup> = groups(*BrowserMenuConfiguration.allSections().map { it.id }.toTypedArray()),
         isToolbarAtBottom: Boolean = false,
         isToolsMenuCustomizationEnabled: Boolean = false,
     ): CustomizableMenuStore {
         every { repository.customizedMenuInfo } returns customization
         every { repository.customizedSectionsInfo } returns sectionsCustomization
+        every { repository.save(any<CustomizedMenuInfo>()) } answers { customization.value = firstArg() }
+        every { repository.reset() } answers
+            {
+                customization.value = defaultMenuInfo
+                sectionsCustomization.value = emptyMap()
+            }
         every { menuBuilder.menuStructure } returns flowOf(menuGroups)
 
         return CustomizableMenuStore(

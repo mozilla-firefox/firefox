@@ -6,12 +6,22 @@ package org.mozilla.fenix.components.menu
 
 import androidx.datastore.core.DataStore
 import java.io.IOException
+import kotlin.coroutines.CoroutineContext
 import kotlin.test.assertEquals
+import kotlin.test.assertNull
+import kotlinx.coroutines.CompletableDeferred
+import kotlinx.coroutines.CoroutineDispatcher
+import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.ExperimentalCoroutinesApi
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.MutableStateFlow
+import kotlinx.coroutines.flow.emitAll
 import kotlinx.coroutines.flow.flow
+import kotlinx.coroutines.flow.launchIn
+import kotlinx.coroutines.flow.onEach
+import kotlinx.coroutines.plus
 import kotlinx.coroutines.test.TestScope
+import kotlinx.coroutines.test.UnconfinedTestDispatcher
 import kotlinx.coroutines.test.runCurrent
 import kotlinx.coroutines.test.runTest
 import org.junit.Test
@@ -278,18 +288,248 @@ class MenuCustomizationRepositoryTest {
             assertEquals(emptyMap(), repository.customizedSectionsInfo.value)
         }
 
+    @Test
+    fun `GIVEN the customization was read WHEN saving THEN report it right away and persist it once written`() =
+        runTest {
+            val dataStore = GatedDataStore(CustomizedMenuRecord.getDefaultInstance())
+            val repository = repository(dataStore)
+            dataStore.releaseRead()
+            runCurrent()
+
+            repository.save(menuInfo(shown = listOf("b", "a"), hidden = listOf("c")))
+            repository.save(toolsInfo())
+            runCurrent()
+
+            assertEquals(
+                menuInfo(shown = listOf("b", "a"), hidden = listOf("c", "d")),
+                repository.customizedMenuInfo.value,
+            )
+            assertEquals(mapOf("tools" to toolsInfo()), repository.customizedSectionsInfo.value)
+            assertEquals(CustomizedMenuRecord.getDefaultInstance(), dataStore.record)
+
+            dataStore.releaseWrites()
+            runCurrent()
+
+            assertEquals(
+                record(shown = listOf("b", "a"), hidden = listOf("c", "d"), customizedSections = listOf(toolsInfo())),
+                dataStore.record,
+            )
+        }
+
+    @Test
+    fun `GIVEN the customization was read WHEN resetting THEN report the defaults right away`() = runTest {
+        val dataStore =
+            GatedDataStore(
+                record(
+                    shown = listOf("c", "b", "a"),
+                    hidden = listOf("d"),
+                    customizedSections = listOf(toolsInfo()),
+                )
+            )
+        val repository = repository(dataStore)
+        dataStore.releaseRead()
+        runCurrent()
+
+        repository.reset()
+
+        assertEquals(defaultMenuInfo, repository.customizedMenuInfo.value)
+        assertEquals(emptyMap(), repository.customizedSectionsInfo.value)
+    }
+
+    @Test
+    fun `GIVEN the customization is being read WHEN saving and resetting THEN report them in order once it was read`() =
+        runTest {
+            val dataStore = GatedDataStore(record(shown = listOf("c", "b", "a"), hidden = listOf("d")))
+            val repository = repository(dataStore)
+            runCurrent()
+
+            repository.save(menuInfo(shown = listOf("a", "b"), hidden = listOf("c")))
+            repository.reset()
+            repository.save(toolsInfo())
+
+            assertNull(repository.customizedMenuInfo.value)
+            assertNull(repository.customizedSectionsInfo.value)
+
+            dataStore.releaseRead()
+            dataStore.releaseWrites()
+            runCurrent()
+
+            assertEquals(defaultMenuInfo, repository.customizedMenuInfo.value)
+            assertEquals(mapOf("tools" to toolsInfo()), repository.customizedSectionsInfo.value)
+            assertEquals(
+                CustomizedMenuRecord.newBuilder()
+                    .setSchemaVersion(1)
+                    .addAllCustomizedSections(listOf(toolsInfo().toRecord()))
+                    .build(),
+                dataStore.record,
+            )
+        }
+
+    @Test
+    fun `GIVEN a save was made while reading WHEN saving right after it was read THEN keep the earlier save`() =
+        runTest {
+            val dataStore = GatedDataStore(CustomizedMenuRecord.getDefaultInstance())
+            val repository = repository(dataStore)
+            runCurrent()
+            repository.save(menuInfo(shown = listOf("b", "a"), hidden = listOf("c")))
+
+            dataStore.releaseRead()
+            runCurrent()
+            repository.save(toolsInfo())
+
+            assertEquals(
+                menuInfo(shown = listOf("b", "a"), hidden = listOf("c", "d")),
+                repository.customizedMenuInfo.value,
+            )
+            assertEquals(mapOf("tools" to toolsInfo()), repository.customizedSectionsInfo.value)
+        }
+
+    @Test
+    fun `GIVEN the customization cannot be read for an unexpected reason WHEN reading it THEN return the defaults`() =
+        runTest {
+            val repository = repository(UnexpectedlyUnreadableDataStore)
+            runCurrent()
+
+            assertEquals(defaultMenuInfo, repository.customizedMenuInfo.value)
+            assertEquals(emptyMap(), repository.customizedSectionsInfo.value)
+        }
+
+    @Test
+    fun `GIVEN the customization cannot be read WHEN saving the items of a section THEN keep the saved menu sections on disk`() =
+        runTest {
+            val dataStore = FakeDataStore(record(shown = listOf("c", "b", "a"), hidden = listOf("d")))
+            dataStore.failReads = true
+            val repository = repository(dataStore)
+            runCurrent()
+
+            repository.save(toolsInfo())
+            runCurrent()
+
+            assertEquals(
+                record(shown = listOf("c", "b", "a"), hidden = listOf("d"), customizedSections = listOf(toolsInfo())),
+                dataStore.record,
+            )
+        }
+
+    @Test
+    fun `GIVEN the customization cannot be read WHEN saving the menu sections THEN keep the saved items of the sections on disk`() =
+        runTest {
+            val dataStore =
+                FakeDataStore(
+                    record(shown = emptyList(), hidden = emptyList(), customizedSections = listOf(toolsInfo()))
+                )
+            dataStore.failReads = true
+            val repository = repository(dataStore)
+            runCurrent()
+
+            repository.save(menuInfo(shown = listOf("b", "a"), hidden = listOf("c")))
+            runCurrent()
+
+            assertEquals(
+                record(shown = listOf("b", "a"), hidden = listOf("c", "d"), customizedSections = listOf(toolsInfo())),
+                dataStore.record,
+            )
+        }
+
+    @Test
+    fun `GIVEN writing fails WHEN saving THEN keep the change in memory and persist the next save`() = runTest {
+        val dataStore = FakeDataStore(CustomizedMenuRecord.getDefaultInstance())
+        val repository = repository(dataStore)
+        runCurrent()
+
+        dataStore.failWrites = true
+        repository.save(menuInfo(shown = listOf("b", "a"), hidden = listOf("c")))
+        runCurrent()
+
+        assertEquals(
+            menuInfo(shown = listOf("b", "a"), hidden = listOf("c", "d")),
+            repository.customizedMenuInfo.value,
+        )
+        assertEquals(CustomizedMenuRecord.getDefaultInstance(), dataStore.record)
+
+        dataStore.failWrites = false
+        repository.save(toolsInfo())
+        runCurrent()
+
+        assertEquals(
+            CustomizedMenuRecord.newBuilder()
+                .setSchemaVersion(1)
+                .addAllCustomizedSections(listOf(toolsInfo().toRecord()))
+                .build(),
+            dataStore.record,
+        )
+        assertEquals(
+            menuInfo(shown = listOf("b", "a"), hidden = listOf("c", "d")),
+            repository.customizedMenuInfo.value,
+        )
+    }
+
+    @Test
+    fun `GIVEN something saves the items when the menu sections change WHEN saving the sections THEN both end on the newest customization`() =
+        runTest {
+            val repository = repository(FakeDataStore(CustomizedMenuRecord.getDefaultInstance()))
+            runCurrent()
+            repository.customizedMenuInfo
+                .onEach { if (it?.visibleSectionIds == listOf("b", "a", "c")) repository.save(toolsInfo()) }
+                .launchIn(backgroundScope + UnconfinedTestDispatcher(testScheduler))
+
+            repository.save(menuInfo(shown = listOf("b", "a", "c"), hidden = listOf("d")))
+
+            assertEquals(mapOf("tools" to toolsInfo()), repository.customizedSectionsInfo.value)
+            assertEquals(
+                menuInfo(shown = listOf("b", "a", "c"), hidden = listOf("d")),
+                repository.customizedMenuInfo.value,
+            )
+        }
+
+    @Test
+    fun `GIVEN something resets the customization when the menu sections change WHEN saving the sections THEN both end on the defaults`() =
+        runTest {
+            val dataStore = FakeDataStore(CustomizedMenuRecord.getDefaultInstance())
+            val repository = repository(dataStore)
+            runCurrent()
+            repository.customizedMenuInfo
+                .onEach { if (it?.visibleSectionIds == listOf("b", "a", "c")) repository.reset() }
+                .launchIn(backgroundScope + UnconfinedTestDispatcher(testScheduler))
+
+            repository.save(menuInfo(shown = listOf("b", "a", "c"), hidden = listOf("d")))
+            runCurrent()
+
+            assertEquals(CustomizedMenuRecord.getDefaultInstance(), dataStore.record)
+            assertEquals(defaultMenuInfo, repository.customizedMenuInfo.value)
+            assertEquals(emptyMap(), repository.customizedSectionsInfo.value)
+        }
+
+    @Test
+    fun `GIVEN a scope that runs coroutines in reverse order WHEN saving then resetting THEN the data store ends on the defaults`() =
+        runTest {
+            val dispatcher = ReversingDispatcher()
+            val dataStore = FakeDataStore(CustomizedMenuRecord.getDefaultInstance())
+            val repository = repository(dataStore, scope = CoroutineScope(dispatcher))
+            dispatcher.runAll()
+
+            repository.save(menuInfo(shown = listOf("b", "a"), hidden = listOf("c")))
+            repository.reset()
+            dispatcher.runAll()
+
+            assertEquals(CustomizedMenuRecord.getDefaultInstance(), dataStore.record)
+        }
+
     // The customization is read on a scope that runTest cancels at the end of each test.
     private fun TestScope.repository(
         dataStore: DataStore<CustomizedMenuRecord>,
         requiredSectionIds: Set<String> = emptySet(),
+        scope: CoroutineScope = backgroundScope,
     ) =
         MenuCustomizationRepository(
             dataStore = dataStore,
             defaultMenuInfo = { defaultMenuInfo },
             defaultSectionsInfo = mapOf("tools" to defaultToolsInfo),
             requiredSectionIds = requiredSectionIds,
-            scope = backgroundScope,
+            scope = scope,
         )
+
+    private fun toolsInfo() = sectionInfo("tools", shown = listOf(item("y"), item("x"), item("more", "z", "w")))
 
     private fun menuInfo(shown: List<String>, hidden: List<String>, isNavigationSectionMoved: Boolean = false) =
         CustomizedMenuInfo(
@@ -336,15 +576,57 @@ class MenuCustomizationRepositoryTest {
 
     private class FakeDataStore(initial: CustomizedMenuRecord) : DataStore<CustomizedMenuRecord> {
         private val records = MutableStateFlow(initial)
+        var failReads = false
+        var failWrites = false
 
         val record: CustomizedMenuRecord
             get() = records.value
 
-        override val data: Flow<CustomizedMenuRecord> = records
+        override val data: Flow<CustomizedMenuRecord> = flow {
+            if (failReads) throw IOException("Cannot read")
+            emitAll(records)
+        }
 
         override suspend fun updateData(
             transform: suspend (t: CustomizedMenuRecord) -> CustomizedMenuRecord
-        ): CustomizedMenuRecord = transform(records.value).also { records.value = it }
+        ): CustomizedMenuRecord {
+            if (failWrites) throw IOException("Cannot write")
+            return transform(records.value).also { records.value = it }
+        }
+    }
+
+    /** A data store whose read and writes wait until they are released. */
+    private class GatedDataStore(initial: CustomizedMenuRecord) : DataStore<CustomizedMenuRecord> {
+        private val records = MutableStateFlow(initial)
+        private val readGate = CompletableDeferred<Unit>()
+        private val writeGate = CompletableDeferred<Unit>()
+
+        val record: CustomizedMenuRecord
+            get() = records.value
+
+        override val data: Flow<CustomizedMenuRecord> = flow {
+            readGate.await()
+            emitAll(records)
+        }
+
+        fun releaseRead() = readGate.complete(Unit)
+
+        fun releaseWrites() = writeGate.complete(Unit)
+
+        override suspend fun updateData(
+            transform: suspend (t: CustomizedMenuRecord) -> CustomizedMenuRecord
+        ): CustomizedMenuRecord {
+            writeGate.await()
+            return transform(records.value).also { records.value = it }
+        }
+    }
+
+    private object UnexpectedlyUnreadableDataStore : DataStore<CustomizedMenuRecord> {
+        override val data: Flow<CustomizedMenuRecord> = flow { throw IllegalStateException("Cannot read") }
+
+        override suspend fun updateData(
+            transform: suspend (t: CustomizedMenuRecord) -> CustomizedMenuRecord
+        ): CustomizedMenuRecord = throw IOException("Cannot write")
     }
 
     private object UnreadableDataStore : DataStore<CustomizedMenuRecord> {
@@ -353,5 +635,19 @@ class MenuCustomizationRepositoryTest {
         override suspend fun updateData(
             transform: suspend (t: CustomizedMenuRecord) -> CustomizedMenuRecord
         ): CustomizedMenuRecord = throw IOException("Cannot write")
+    }
+
+    private class ReversingDispatcher : CoroutineDispatcher() {
+        private val tasks = ArrayDeque<Runnable>()
+
+        override fun dispatch(context: CoroutineContext, block: Runnable) {
+            tasks.addFirst(block)
+        }
+
+        fun runAll() {
+            while (tasks.isNotEmpty()) {
+                tasks.removeFirst().run()
+            }
+        }
     }
 }
