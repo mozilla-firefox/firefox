@@ -2335,6 +2335,9 @@ export const PREFS_CONFIG = new Map([
       title:
         "Which framed widgets endpoint framed widgets load from (prod or stage)",
       value: "prod",
+      // Set by the DS admin toggle. FramedWidgetsFeed only uses stage where it
+      // is allowed, so content can't point framed widgets at another host.
+      allowSetFromContent: { oneOf: ["prod", "stage"] },
     },
   ],
   [

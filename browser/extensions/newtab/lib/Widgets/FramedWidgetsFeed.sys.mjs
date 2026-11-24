@@ -4,6 +4,8 @@
 
 /** @import {Store} from "resource://newtab/lib/Store.sys.mjs" */
 
+import { AppConstants } from "resource://gre/modules/AppConstants.sys.mjs";
+
 const lazy = {};
 ChromeUtils.defineESModuleGetters(lazy, {
   NewTabMerinoWrapper: "resource://newtab/lib/NewTabMerinoWrapper.sys.mjs",
@@ -28,6 +30,7 @@ const PREF_ENVIRONMENT = "widgets.framed.environment";
 // Suffixed with the environment: widgets.framed.endpoint.prod / .stage
 const PREF_ENDPOINT_PREFIX = "widgets.framed.endpoint.";
 const PREF_ENDPOINTS_ALLOWLIST = "discoverystream.endpoints";
+const STAGE_MERINO_ORIGIN = "https://merino.services.allizom.org/";
 
 // How long a cached manifest is served before it is refetched.
 const CACHE_EXPIRY_MS = 30 * 60 * 1000;
@@ -58,24 +61,44 @@ export class FramedWidgetsFeed {
     );
   }
 
-  // Guard the endpoint against the shared allowlist so a mis-set pref can't
-  // point the fetch at an arbitrary host.
-  getEnvironment() {
+  isAllowlisted(endpoint) {
     const { values } = this.store.getState().Prefs;
-    return values[PREF_ENVIRONMENT] === "stage" ? "stage" : "prod";
+    return (values[PREF_ENDPOINTS_ALLOWLIST] ?? "")
+      .split(",")
+      .map(item => item.trim())
+      .filter(item => item)
+      .some(prefix => endpoint.startsWith(prefix));
   }
 
+  // Stage is used on Nightly when it points at stage Merino, or anywhere once
+  // its endpoint is in the shared allowlist; otherwise prod is. Stage is
+  // checked here rather than added to the discoverystream.endpoints default:
+  // that allowlist is shared with other feeds, and a user value (set by Nimbus
+  // or the staging ads toggle) would hide a new default. Falling back to prod
+  // keeps a stage setting carried to Beta or Release from hiding every framed
+  // widget.
+  getEnvironment() {
+    const { values } = this.store.getState().Prefs;
+    const stageEndpoint = values[`${PREF_ENDPOINT_PREFIX}stage`];
+    return values[PREF_ENVIRONMENT] === "stage" &&
+      stageEndpoint &&
+      (this.isAllowlisted(stageEndpoint) ||
+        (this.isNightlyBuild() &&
+          stageEndpoint.startsWith(STAGE_MERINO_ORIGIN)))
+      ? "stage"
+      : "prod";
+  }
+
+  // Guard the prod endpoint against the shared allowlist so a mis-set pref
+  // can't point the fetch at an arbitrary host.
   getEndpoint() {
     const { values } = this.store.getState().Prefs;
-    const endpoint = values[PREF_ENDPOINT_PREFIX + this.getEnvironment()];
+    const environment = this.getEnvironment();
+    const endpoint = values[PREF_ENDPOINT_PREFIX + environment];
     if (!endpoint) {
       return null;
     }
-    const allowed = (values[PREF_ENDPOINTS_ALLOWLIST] ?? "")
-      .split(",")
-      .map(item => item.trim())
-      .filter(item => item);
-    if (!allowed.some(prefix => endpoint.startsWith(prefix))) {
+    if (environment === "prod" && !this.isAllowlisted(endpoint)) {
       console.error(`Framed widgets endpoint not in allowlist: ${endpoint}`);
       return null;
     }
@@ -195,4 +218,8 @@ FramedWidgetsFeed.prototype.PersistentCache = (...args) => {
 };
 FramedWidgetsFeed.prototype.Date = () => {
   return Date;
+};
+// Wrapped so tests can cover both Nightly and other builds.
+FramedWidgetsFeed.prototype.isNightlyBuild = () => {
+  return AppConstants.NIGHTLY_BUILD;
 };

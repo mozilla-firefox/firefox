@@ -13,9 +13,9 @@ ChromeUtils.defineESModuleGetters(this, {
 MerinoTestUtils.init(this);
 
 const PROD_ENDPOINT =
-  "https://merino.services.mozilla.com/api/v1/widgets/frames";
+  "https://merino.services.mozilla.com/api/v1/widgets/framed";
 const STAGE_ENDPOINT =
-  "https://merino.services.mozilla.com/stage/api/v1/widgets/frames";
+  "https://merino.services.allizom.org/api/v1/widgets/framed";
 const CROSSWORD_URL =
   "https://prod-games-particle.merino.prod.webservices.mozgcp.net/index.html";
 const MANIFEST = {
@@ -49,7 +49,10 @@ function stubMerino(sandbox, feed, result) {
   return feed.merino.fetchFramedWidgets;
 }
 
-function makeFeed(sandbox, { prefs = ENABLED_PREFS, cache = {} } = {}) {
+function makeFeed(
+  sandbox,
+  { prefs = ENABLED_PREFS, cache = {}, nightly = true } = {}
+) {
   const proto = FramedWidgetsFeed.prototype;
   if (!proto.PersistentCache.isSinonProxy) {
     sandbox.stub(proto, "PersistentCache");
@@ -62,6 +65,7 @@ function makeFeed(sandbox, { prefs = ENABLED_PREFS, cache = {} } = {}) {
     getState: () => ({ Prefs: { values: prefs } }),
   };
   feed.cacheSet = set;
+  feed.isNightlyBuild = () => nightly;
   stubMerino(sandbox, feed, { data: MANIFEST, error: null });
   return feed;
 }
@@ -268,6 +272,31 @@ add_task(async function test_endpoint_follows_environment() {
 
   prefs["widgets.framed.environment"] = "bogus";
   Assert.equal(feed.getEndpoint(), PROD_ENDPOINT, "prod for unknown values");
+  sandbox.restore();
+});
+
+add_task(async function test_stage_outside_nightly_needs_allowlist() {
+  const sandbox = sinon.createSandbox();
+  const prefs = { ...ENABLED_PREFS, "widgets.framed.environment": "stage" };
+  const feed = makeFeed(sandbox, { prefs, nightly: false });
+  Assert.equal(feed.getEnvironment(), "prod", "Falls back to prod");
+  Assert.equal(feed.getEndpoint(), PROD_ENDPOINT, "Fetches prod");
+
+  prefs["discoverystream.endpoints"] += ",https://merino.services.allizom.org/";
+  Assert.equal(feed.getEndpoint(), STAGE_ENDPOINT, "Stage once allowlisted");
+  sandbox.restore();
+});
+
+add_task(async function test_nightly_stage_must_be_stage_merino() {
+  const sandbox = sinon.createSandbox();
+  const feed = makeFeed(sandbox, {
+    prefs: {
+      ...ENABLED_PREFS,
+      "widgets.framed.environment": "stage",
+      "widgets.framed.endpoint.stage": "https://evil.example.com/framed",
+    },
+  });
+  Assert.equal(feed.getEndpoint(), PROD_ENDPOINT, "Falls back to prod");
   sandbox.restore();
 });
 
