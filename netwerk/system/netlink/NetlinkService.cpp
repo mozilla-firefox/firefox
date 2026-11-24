@@ -1900,7 +1900,7 @@ void NetlinkService::CalculateNetworkID() {
 
   if (idChanged) {
     sHasNonLocalIPv6 = found6;
-    LOG(("has IPv6: %d", bool(sHasNonLocalIPv6)));
+    LOG(("has IPv6: %d", sHasNonLocalIPv6.load()));
   }
 
   // The first calculation only replaces the initial empty ID with the correct

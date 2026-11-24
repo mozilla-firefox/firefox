@@ -264,7 +264,7 @@ void TRRServiceBase::AsyncCreateTRRConnectionInfo(const nsACString& aURI) {
   LOG(
       ("TRRServiceBase::AsyncCreateTRRConnectionInfo "
        "mTRRConnectionInfoInited=%d",
-       bool(mTRRConnectionInfoInited)));
+       mTRRConnectionInfoInited.load()));
   if (!mTRRConnectionInfoInited) {
     return;
   }

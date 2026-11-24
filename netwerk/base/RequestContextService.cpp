@@ -102,7 +102,7 @@ RequestContext::~RequestContext() {
   MOZ_ASSERT(mTailQueue.Length() == 0);
 
   LOG(("RequestContext::~RequestContext this=%p blockers=%u", this,
-       static_cast<uint32_t>(mBlockingTransactionCount)));
+       mBlockingTransactionCount.load()));
 }
 
 NS_IMETHODIMP
@@ -162,7 +162,7 @@ NS_IMETHODIMP
 RequestContext::AddBlockingTransaction() {
   mBlockingTransactionCount++;
   LOG(("RequestContext::AddBlockingTransaction this=%p blockers=%u", this,
-       static_cast<uint32_t>(mBlockingTransactionCount)));
+       mBlockingTransactionCount.load()));
   return NS_OK;
 }
 
@@ -171,7 +171,7 @@ RequestContext::RemoveBlockingTransaction(uint32_t* outval) {
   NS_ENSURE_ARG_POINTER(outval);
   mBlockingTransactionCount--;
   LOG(("RequestContext::RemoveBlockingTransaction this=%p blockers=%u", this,
-       static_cast<uint32_t>(mBlockingTransactionCount)));
+       mBlockingTransactionCount.load()));
   *outval = mBlockingTransactionCount;
   return NS_OK;
 }

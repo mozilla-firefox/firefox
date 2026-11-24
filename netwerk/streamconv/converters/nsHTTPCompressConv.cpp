@@ -290,7 +290,7 @@ nsHTTPCompressConv::AsyncConvertData(const char* aFromType, const char* aToType,
     mMode = HTTP_COMPRESS_ZSTD_DICTIONARY;
   }
   LOG(("nsHttpCompresssConv %p AsyncConvertData %s %s mode %d\n", this,
-       aFromType, aToType, (CompressMode)mMode));
+       aFromType, aToType, mMode.load()));
 
   MutexAutoLock lock(mMutex);
   // hook ourself up with the receiving listener.
@@ -433,7 +433,7 @@ nsresult nsHTTPCompressConv::DoOnStopRequest(nsIRequest* request,
   // Bug 1886237 : TRRServiceChannel calls OnStopRequest OMT
   // MOZ_ASSERT(NS_IsMainThread());
   LOG(("nsHttpCompresssConv %p onstop %" PRIx32 " mDispatchToMainThread %d\n",
-       this, static_cast<uint32_t>(aStatus), bool(mDispatchToMainThread)));
+       this, static_cast<uint32_t>(aStatus), mDispatchToMainThread.load()));
 
   // Framing integrity is enforced for content-encoding: gzip, but not for
   // content-encoding: deflate. Note that gzip vs deflate is NOT determined
@@ -1019,7 +1019,7 @@ nsresult nsHTTPCompressConv::do_OnDataAvailable(nsIRequest* request,
   LOG(
       ("nsHttpCompressConv %p do_OnDataAvailable mDispatchToMainThread %d "
        "count %u",
-       this, bool(mDispatchToMainThread), count));
+       this, mDispatchToMainThread.load(), count));
   if (count == 0) {
     // Never send 0-byte OnDataAvailables; imglib at least barfs on them and
     // they're not useful

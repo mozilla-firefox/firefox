@@ -776,7 +776,7 @@ void nsPACMan::OnLoadFailure() {
   mScheduledReload = TimeStamp::Now() + TimeDuration::FromSeconds(interval);
 
   LOG(("OnLoadFailure: retry in %d seconds (%d fails)\n", interval,
-       (uint32_t)mLoadFailureCount));
+       mLoadFailureCount.load()));
 
   // while we wait for the retry queued members should try direct
   // even if that means fast failure.

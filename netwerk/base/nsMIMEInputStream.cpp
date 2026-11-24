@@ -490,7 +490,7 @@ nsMIMEInputStream::Clone(nsIInputStream** aResult) {
   }
 
   static_cast<nsMIMEInputStream*>(mimeStream.get())->mStartedReading =
-      static_cast<bool>(mStartedReading);
+      mStartedReading.load();
 
   mimeStream.forget(aResult);
   return NS_OK;

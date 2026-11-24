@@ -241,9 +241,9 @@ void CacheFileHandle::Log() {
          "isDoomed=%d, priority=%d, closed=%d, invalid=%d, "
          "pinning=%" PRIu32 ", fileExists=%d, fileSize=%" PRId64
          ", leafName=%s, key=%s]",
-         this, bool(mIsDoomed), bool(mPriority), bool(mClosed), bool(mInvalid),
-         static_cast<uint32_t>(mPinning), bool(mFileExists), int64_t(mFileSize),
-         leafName.get(), mKey.get()));
+         this, mIsDoomed.load(), bool(mPriority), mClosed.load(),
+         mInvalid.load(), static_cast<uint32_t>(mPinning), bool(mFileExists),
+         mFileSize.load(), leafName.get(), mKey.get()));
   } else {
     LOG(
         ("CacheFileHandle::Log() - entry file [this=%p, "
@@ -251,9 +251,9 @@ void CacheFileHandle::Log() {
          "isDoomed=%d, priority=%d, closed=%d, invalid=%d, "
          "pinning=%" PRIu32 ", fileExists=%d, fileSize=%" PRId64
          ", leafName=%s, key=%s]",
-         this, LOGSHA1(mHash), bool(mIsDoomed), bool(mPriority), bool(mClosed),
-         bool(mInvalid), static_cast<uint32_t>(mPinning), bool(mFileExists),
-         int64_t(mFileSize), leafName.get(), mKey.get()));
+         this, LOGSHA1(mHash), mIsDoomed.load(), bool(mPriority),
+         mClosed.load(), mInvalid.load(), static_cast<uint32_t>(mPinning),
+         bool(mFileExists), mFileSize.load(), leafName.get(), mKey.get()));
   }
 }
 
@@ -647,7 +647,7 @@ class ShutdownEvent : public Runnable, nsITimerCallback {
     MOZ_ASSERT(NS_SUCCEEDED(rv));
 
     mozilla::SpinEventLoopUntil("CacheFileIOManager::ShutdownEvent"_ns,
-                                [&]() { return bool(mNotified); });
+                                [&]() { return mNotified.load(); });
 
     if (mTimer) {
       mTimer->Cancel();

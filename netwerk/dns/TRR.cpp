@@ -540,8 +540,7 @@ void TRR::SaveAdditionalRecords(
     // This is quite hacky, and should be fixed.
     hostRecord->Reset();
     hostRecord->mResolving++;
-    hostRecord->mEffectiveTRRMode =
-        static_cast<nsIRequest::TRRMode>(mRec->mEffectiveTRRMode);
+    hostRecord->mEffectiveTRRMode = mRec->mEffectiveTRRMode.load();
     LOG(("Completing lookup for additional: %s",
          PromiseFlatCString(recordEntry.GetKey()).get()));
     (void)mHostResolver->CompleteLookup(hostRecord, NS_OK, ai, mPB,
@@ -585,8 +584,7 @@ void TRR::StoreIPHintAsDNSRecord(const struct SVCB& aSVCBRecord) {
   // to set these fields to avoid assertions in CompleteLookup.
   // This is quite hacky, and should be fixed.
   hostRecord->mResolving++;
-  hostRecord->mEffectiveTRRMode =
-      static_cast<nsIRequest::TRRMode>(mRec->mEffectiveTRRMode);
+  hostRecord->mEffectiveTRRMode = mRec->mEffectiveTRRMode.load();
   (void)mHostResolver->CompleteLookup(hostRecord, NS_OK, ai, mPB, mOriginSuffix,
                                       TRRSkippedReason::TRR_OK, this);
 }

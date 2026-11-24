@@ -5719,7 +5719,7 @@ nsresult nsHttpChannel::OnCacheEntryAvailableInternal(nsICacheEntry* entry,
 
   if (mCanceled) {
     LOG(("channel was canceled [this=%p status=%" PRIx32 "]\n", this,
-         static_cast<uint32_t>(static_cast<nsresult>(mStatus))));
+         static_cast<uint32_t>(mStatus.load())));
     return mStatus;
   }
 
@@ -6170,7 +6170,7 @@ void nsHttpChannel::CloseCacheEntry(bool doomOnFailure) {
 
   LOG(("nsHttpChannel::CloseCacheEntry [this=%p] mStatus=%" PRIx32
        " CacheEntryIsWriteOnly=%x",
-       this, static_cast<uint32_t>(static_cast<nsresult>(mStatus)),
+       this, static_cast<uint32_t>(mStatus.load()),
        LoadCacheEntryIsWriteOnly()));
 
   // If we have begun to create or replace a cache entry, and that cache
@@ -8848,7 +8848,7 @@ nsHttpChannel::OnProxyAvailable(nsICancelable* request, nsIChannel* channel,
   LOG(("nsHttpChannel::OnProxyAvailable [this=%p pi=%p status=%" PRIx32
        " mStatus=%" PRIx32 "]\n",
        this, pi, static_cast<uint32_t>(status),
-       static_cast<uint32_t>(static_cast<nsresult>(mStatus))));
+       static_cast<uint32_t>(mStatus.load())));
   mProxyRequest = nullptr;
 
   nsresult rv;
@@ -9427,7 +9427,7 @@ nsHttpChannel::OnStartRequest(nsIRequest* request) {
 
   LOG(("nsHttpChannel::OnStartRequest [this=%p request=%p status=%" PRIx32
        "]\n",
-       this, request, static_cast<uint32_t>(static_cast<nsresult>(mStatus))));
+       this, request, static_cast<uint32_t>(mStatus.load())));
 
   RecordOnStartTelemetry(mStatus, IsNavigation());
 
@@ -10357,7 +10357,7 @@ nsHttpChannel::OnStopRequest(nsIRequest* request, nsresult status) {
     // keep the connection around after the transaction is finished.
     //
     LOG(("  mAuthRetryPending=%d, status=%" PRIx32 ", sticky conn cap=%d",
-         static_cast<bool>(mAuthRetryPending), static_cast<uint32_t>(status),
+         mAuthRetryPending.load(), static_cast<uint32_t>(status),
          mCaps & NS_HTTP_STICKY_CONNECTION));
     // We must check caps for stickinness also on the transaction because it
     // might have been updated by the transaction itself during inspection of

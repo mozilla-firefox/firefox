@@ -3061,7 +3061,7 @@ nsresult WebSocketChannel::StartPinging() {
                                nsITimer::TYPE_ONE_SHOT);
   if (NS_SUCCEEDED(rv)) {
     LOG(("WebSocketChannel will generate ping after %d ms of receive silence\n",
-         (uint32_t)mPingInterval));
+         mPingInterval.load()));
   } else {
     NS_WARNING("unable to create ping timer. Carrying on.");
   }

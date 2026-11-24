@@ -214,7 +214,7 @@ void nsHttpTransaction::PrintDiagnostics(nsCString& log) {
   nsAutoCString requestURI;
   mRequestHead->RequestURI(requestURI);
   log.AppendPrintf("       :::: uri = %s\n", requestURI.get());
-  log.AppendPrintf("       caps = 0x%x\n", static_cast<uint32_t>(mCaps));
+  log.AppendPrintf("       caps = 0x%x\n", mCaps.load());
   log.AppendPrintf("       priority = %d\n", mPriority);
   log.AppendPrintf("       restart count = %u\n", mRestartCount);
 }

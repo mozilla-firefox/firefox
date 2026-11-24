@@ -142,8 +142,7 @@ nsWifiMonitor::Observe(nsISupports* subject, const char* topic,
     // If we were polling, keep polling.
     LOG(("nsWifiMonitor %p | mPollingId %" PRIu64
          " | received: " NS_NETWORK_LINK_TOPIC " with status %s",
-         this, static_cast<uint64_t>(mPollingId),
-         NS_ConvertUTF16toUTF8(data).get()));
+         this, mPollingId.load(), NS_ConvertUTF16toUTF8(data).get()));
     DispatchScanToBackgroundThread(0);
   } else if (!strcmp(topic, NS_NETWORK_LINK_TYPE_TOPIC)) {
     // Network type has changed (e.g. from wifi to mobile).  When on some
@@ -153,8 +152,7 @@ nsWifiMonitor::Observe(nsISupports* subject, const char* topic,
     // Use IDs to make sure only one task is polling at a time.
     LOG(("nsWifiMonitor %p | mPollingId %" PRIu64
          " | received: " NS_NETWORK_LINK_TYPE_TOPIC " with status %s",
-         this, static_cast<uint64_t>(mPollingId),
-         NS_ConvertUTF16toUTF8(data).get()));
+         this, mPollingId.load(), NS_ConvertUTF16toUTF8(data).get()));
 
     bool wasPolling = ShouldPoll();
     MOZ_ASSERT(wasPolling || mPollingId == 0);
@@ -186,8 +184,7 @@ NS_IMETHODIMP nsWifiMonitor::StartWatching(nsIWifiListener* aListener,
                                            bool aForcePolling) {
   LOG(("nsWifiMonitor::StartWatching %p | listener %p | mPollingId %" PRIu64
        " | aForcePolling %s",
-       this, aListener, static_cast<uint64_t>(mPollingId),
-       aForcePolling ? "true" : "false"));
+       this, aListener, mPollingId.load(), aForcePolling ? "true" : "false"));
   MOZ_ASSERT(NS_IsMainThread());
 
   if (!aListener) {
@@ -213,7 +210,7 @@ NS_IMETHODIMP nsWifiMonitor::StartWatching(nsIWifiListener* aListener,
 
 NS_IMETHODIMP nsWifiMonitor::StopWatching(nsIWifiListener* aListener) {
   LOG(("nsWifiMonitor::StopWatching %p | listener %p | mPollingId %" PRIu64,
-       this, aListener, static_cast<uint64_t>(mPollingId)));
+       this, aListener, mPollingId.load()));
   MOZ_ASSERT(NS_IsMainThread());
 
   if (!aListener) {
@@ -280,7 +277,7 @@ bool nsWifiMonitor::IsBackgroundThread() {
 void nsWifiMonitor::Scan(uint64_t aPollingId) {
   MOZ_ASSERT(IsBackgroundThread());
   LOG(("nsWifiMonitor::Scan aPollingId: %" PRIu64 " | mPollingId: %" PRIu64,
-       aPollingId, static_cast<uint64_t>(mPollingId)));
+       aPollingId, mPollingId.load()));
 
   // If we are using a stale polling ID then stop.  If this request to
   // Scan is not for polling (aPollingId is 0) then always allow it.

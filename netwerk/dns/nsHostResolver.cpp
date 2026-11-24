@@ -179,7 +179,7 @@ nsresult nsHostResolver::Init() MOZ_NO_THREAD_SAFETY_ANALYSIS {
 #elif defined(XP_LINUX) || defined(XP_MACOSX) || defined(XP_FREEBSD)
   sNativeHTTPSSupported = true;
 #endif
-  LOG(("Native HTTPS records supported=%d", bool(sNativeHTTPSSupported)));
+  LOG(("Native HTTPS records supported=%d", sNativeHTTPSSupported.load()));
 
   nsCOMPtr<nsIThreadPool> threadPool = new nsThreadPool();
   MOZ_ALWAYS_SUCCEEDS(threadPool->SetThreadLimit(MaxResolverThreads()));
@@ -1251,8 +1251,7 @@ nsresult nsHostResolver::NameLookup(nsHostRecord* rec) {
   }
 
   LOG(("NameLookup: %s effectiveTRRmode: %d flags: %X", rec->host.get(),
-       static_cast<nsIRequest::TRRMode>(rec->mEffectiveTRRMode),
-       static_cast<uint32_t>(rec->flags)));
+       rec->mEffectiveTRRMode.load(), static_cast<uint32_t>(rec->flags)));
 
   if (rec->flags & nsIDNSService::RESOLVE_DISABLE_TRR) {
     rec->RecordReason(TRRSkippedReason::TRR_DISABLED_FLAG);
@@ -1536,7 +1535,7 @@ nsHostResolver::LookupStatus nsHostResolver::CompleteLookupLocked(
   LOG((
       "nsHostResolver::CompleteLookup %s %p %X resolver=%d stillResolving=%d\n",
       addrRec->host.get(), aNewRRSet, (unsigned int)status, (int)type,
-      int(addrRec->mResolving)));
+      addrRec->mResolving.load()));
 
   if (type != DNSResolverType::Native) {
     if (NS_FAILED(status) && status != NS_ERROR_UNKNOWN_HOST &&

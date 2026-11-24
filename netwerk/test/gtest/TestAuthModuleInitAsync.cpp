@@ -82,7 +82,7 @@ TEST(TestAuthModuleInitAsync, SspiKerberosInitCompletesOffMainThread)
 
   MOZ_ALWAYS_TRUE(mozilla::SpinEventLoopUntil(
       "TestAuthModuleInitAsync:SspiKerberosInitCompletesOffMainThread"_ns,
-      [&]() { return (bool)callback->mDone; }));
+      [&]() { return callback->mDone.load(); }));
 
   // "localhost" is answered without ever reaching a resolver thread, so before
   // nsAuthSSPI passed an event target to AsyncResolveNative this ran

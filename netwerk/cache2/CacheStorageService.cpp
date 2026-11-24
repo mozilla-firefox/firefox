@@ -304,7 +304,7 @@ class WalkMemoryCacheRunnable : public WalkCacheRunnable {
 
       } else {
         LOG(("  entry [left=%zu, canceled=%d]", mEntryArray.Length(),
-             (bool)mCancel));
+             mCancel.load()));
 
         // Third, notify each entry until depleted or canceled.
         if (mNextEntryIdx >= mEntryArray.Length() || mCancel) {
@@ -1336,7 +1336,7 @@ bool CacheStorageService::MemoryPool::OnMemoryConsumptionChange(
   mMemorySize -= aSavedMemorySize;
   mMemorySize += aCurrentMemoryConsumption;
 
-  LOG(("  mMemorySize=%u (+%u,-%u)", uint32_t(mMemorySize),
+  LOG(("  mMemorySize=%u (+%u,-%u)", mMemorySize.load(),
        aCurrentMemoryConsumption, aSavedMemorySize));
 
   // Bypass purging when memory has not grew up significantly
@@ -1594,7 +1594,7 @@ Result<size_t, nsresult> CacheStorageService::MemoryPool::PurgeByFrecency(
   LOG(
       ("MemoryPool::PurgeByFrecency done, purged %zu - mMemorySize %u, "
        "memoryLimit %u",
-       numPurged, (uint32_t)mMemorySize, memoryLimit));
+       numPurged, mMemorySize.load(), memoryLimit));
 
   return numPurged;
 }

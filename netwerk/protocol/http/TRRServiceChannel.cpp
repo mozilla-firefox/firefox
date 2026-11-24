@@ -313,7 +313,7 @@ TRRServiceChannel::OnProxyAvailable(nsICancelable* request, nsIChannel* channel,
   LOG(("TRRServiceChannel::OnProxyAvailable [this=%p pi=%p status=%" PRIx32
        " mStatus=%" PRIx32 "]\n",
        this, pi, static_cast<uint32_t>(status),
-       static_cast<uint32_t>(static_cast<nsresult>(mStatus))));
+       static_cast<uint32_t>(mStatus.load())));
 
   if (!mCurrentEventTarget->IsOnCurrentThread()) {
     RefPtr<TRRServiceChannel> self = this;
@@ -959,7 +959,7 @@ NS_IMETHODIMP
 TRRServiceChannel::OnStartRequest(nsIRequest* request) {
   LOG(("TRRServiceChannel::OnStartRequest [this=%p request=%p status=%" PRIx32
        "]\n",
-       this, request, static_cast<uint32_t>(static_cast<nsresult>(mStatus))));
+       this, request, static_cast<uint32_t>(mStatus.load())));
 
   if (!(mCanceled || NS_FAILED(mStatus))) {
     // capture the request's status, so our consumers will know ASAP of any
