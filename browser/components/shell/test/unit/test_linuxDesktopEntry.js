@@ -603,3 +603,34 @@ add_task(async function test_snapLauncher() {
   sandbox.restore();
   Services.prefs.clearUserPref("browser.shell.desktop-entry-api");
 });
+
+add_task(async function test_snapRealHome() {
+  Services.prefs.setStringPref("browser.shell.desktop-entry-api", "filesystem");
+  let sandbox = sinon.createSandbox();
+  sandbox.stub(ShellService, "_getSnapInstanceName").returns("firefox");
+
+  let realHome = PathUtils.join(gTmpDir.path, "realhome");
+  Services.env.set("SNAP_REAL_HOME", realHome);
+  Services.env.set("XDG_DATA_HOME", PathUtils.join(gTmpDir.path, "snapdata"));
+
+  let path = PathUtils.join(
+    realHome,
+    ".local",
+    "share",
+    "applications",
+    "snaphome.desktop"
+  );
+  await ShellService.createLinuxDesktopEntry("snaphome", "Snap Test", [], "");
+  ok(
+    await IOUtils.exists(path),
+    "The desktop file is written under SNAP_REAL_HOME"
+  );
+
+  await ShellService.deleteLinuxDesktopEntry("snaphome");
+  ok(!(await IOUtils.exists(path)), "The desktop file was deleted");
+
+  Services.env.set("SNAP_REAL_HOME", "");
+  Services.env.set("XDG_DATA_HOME", "");
+  sandbox.restore();
+  Services.prefs.clearUserPref("browser.shell.desktop-entry-api");
+});

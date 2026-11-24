@@ -1286,8 +1286,8 @@ let ShellServiceInternal = {
   /**
    * Removes the Linux desktop entry given its app ID.
    *
-   * This only removes entries within XDG_DATA_HOME as it is now, i.e. system
-   * shortcuts will not be removed.
+   * This only removes entries within XDG_DATA_HOME as it is now (or
+   * SNAP_REAL_HOME under Snap), i.e. system shortcuts will not be removed.
    *
    * @param {string} appId - The appId given to createLinuxDesktopEntry.
    */
@@ -1347,6 +1347,23 @@ let ShellServiceInternal = {
     if (this.desktopEntryApi !== "filesystem") {
       throw new Error(
         "Use DynamicLauncher instead of _getLinuxDesktopEntryPath when sandboxed"
+      );
+    }
+
+    // snapd points HOME and XDG_DATA_HOME into the snap's private directories,
+    // which the desktop environment doesn't look at.
+    let realHome = Services.env.get("SNAP_REAL_HOME");
+    if (
+      ShellService._getSnapInstanceName() &&
+      realHome &&
+      PathUtils.isAbsolute(realHome)
+    ) {
+      return PathUtils.join(
+        realHome,
+        ".local",
+        "share",
+        "applications",
+        `${appId}.desktop`
       );
     }
 
