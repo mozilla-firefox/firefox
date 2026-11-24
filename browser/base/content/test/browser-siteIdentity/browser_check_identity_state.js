@@ -7,7 +7,6 @@
 const DUMMY =
   "browser/browser/base/content/test/browser-siteIdentity/dummy_page.html";
 const INSECURE_TEXT_PREF = "security.insecure_connection_text.enabled";
-const HTTPS_FIRST_PBM_PREF = "dom.security.https_first_pbm";
 
 const NOT_SECURE_LABEL = Services.prefs.getBoolPref(
   "security.insecure_connection_text.enabled",
@@ -695,8 +694,6 @@ add_task(async function test_data_uri() {
 });
 
 add_task(async function test_pb_mode() {
-  await SpecialPowers.pushPrefEnv({ set: [[HTTPS_FIRST_PBM_PREF, false]] });
-
   let privateWin = await BrowserTestUtils.openNewBrowserWindow({
     private: true,
   });
@@ -730,6 +727,4 @@ add_task(async function test_pb_mode() {
     "Identity should be not secure"
   );
   await BrowserTestUtils.closeWindow(privateWin);
-
-  await SpecialPowers.popPrefEnv();
 });

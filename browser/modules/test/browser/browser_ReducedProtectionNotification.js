@@ -44,7 +44,6 @@ add_setup(async function () {
     set: [
       ["privacy.trackingprotection.enabled", true],
       ["privacy.reducePageProtection.infobar.enabled.pbmode", true],
-      ["dom.security.https_first_pbm", false],
     ],
   });
 

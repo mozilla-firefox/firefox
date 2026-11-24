@@ -6,6 +6,7 @@ prefs = [
   "privacy.restrict3rdpartystorage.heuristic.opened_window_after_interaction=true",
   "network.cookie.sameSite.laxByDefault=false", # Bug 1617611: Fix all the tests broken by "cookies SameSite=lax by default"
   "dom.security.https_first=false", # Disable https-first because of explicit http/https testing
+  "dom.security.https_first_pbm=false",
   "dom.storage_access.dont_grant_insecure_contexts=true", # Enable constraining storage access api to secure contexts
   "network.lna.block_trackers=false",
 ]

@@ -184,6 +184,6 @@ runTest({
   protectionPrivateEnabled: true,
   loading: false,
   expectedLogItems: [
-    [Ci.nsIWebProgressListener.STATE_BLOCKED_EMAILTRACKING_CONTENT, true, 1],
+    [Ci.nsIWebProgressListener.STATE_BLOCKED_EMAILTRACKING_CONTENT, true, 2],
   ],
 });

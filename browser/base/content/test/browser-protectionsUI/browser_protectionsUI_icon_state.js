@@ -178,10 +178,6 @@ add_task(async function testNormalBrowsing() {
 });
 
 add_task(async function testPrivateBrowsing() {
-  await SpecialPowers.pushPrefEnv({
-    set: [["dom.security.https_first_pbm", false]],
-  });
-
   let privateWin = await BrowserTestUtils.openNewBrowserWindow({
     private: true,
   });

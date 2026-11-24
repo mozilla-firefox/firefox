@@ -410,7 +410,6 @@ this.AntiTracking = {
         ["dom.storage_access.enabled", true],
         ["privacy.trackingprotection.enabled", false],
         ["privacy.trackingprotection.pbmode.enabled", false],
-        ["dom.security.https_first_pbm", false],
         [
           "privacy.trackingprotection.annotate_channels",
           cookieBehavior != BEHAVIOR_ACCEPT,
