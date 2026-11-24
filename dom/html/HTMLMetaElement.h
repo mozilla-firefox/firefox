@@ -63,6 +63,7 @@ class HTMLMetaElement final : public nsGenericHTMLElement {
                    ChangeKind aChangeKind);
   void MetaAddedOrChanged(Document& aDoc, const nsAttrValue& aName,
                           ChangeKind aChangeKind);
+  void ReportCSPReportOnlyMeta(Document& aDoc);
 };
 
 }  // namespace mozilla::dom
