@@ -178,6 +178,32 @@
   <string name="recently_visited_menu_item_remove">हटाएं</string>
   <!-- Content description for the button which navigates the user to show all of their history. -->
   <string name="past_explorations_show_all_content_description_2">पिछली सारी खोजबीन दिखाएं</string>
+  <!--
+    Browser Fragment
+
+    Label for popup button that appears when long-pressing the main menu. Tapping it allows the user to customize the main menu layout.
+  -->
+  <string name="customize_menu">मेन्यू कस्टमाइज़ करें</string>
+  <!-- Alert message shown in the "Customize menu" screen when the user tries to hide a menu section which cannot be hidden. -->
+  <string name="customize_menu_cannot_hide_section">इस सेक्शन को छिपाया नहीं जा सकता</string>
+  <!-- Customize menu screen - Accessibility description - name of the menu section that groups the Back, Forward, Share and Refresh buttons. Read aloud after "Section", followed by the button names ("Section “Page controls”: Back, Forward, Share, Refresh"). -->
+  <string name="browser_menu_section_page_controls">पेज कंट्रोल</string>
+  <!-- Customize menu screen - Accessibility description - name of the menu section that groups the page tools (Bookmark page, Find in page, Desktop site, Extensions, etc.). Read aloud after "Section", followed by the tool names ("Section “Tools”: Bookmark page, Find in page…"). -->
+  <string name="browser_menu_section_tools">टूल</string>
+  <!-- Customize menu screen - Accessibility description - name of the menu section that groups the History, Bookmarks, Downloads and Passwords items. Read aloud after "Section", followed by the item names ("Section “Library”: History, Bookmarks, Downloads, Passwords"). -->
+  <string name="browser_menu_section_library">लाइब्रेरी</string>
+  <!-- Customize menu screen - Accessibility description - name of the menu section that groups the Sign in and Settings items. Read aloud after "Section", followed by the item names ("Section “Accounts and settings”: Sign in, Settings"). -->
+  <string name="browser_menu_section_accounts_and_settings">अकाउंट और सेटिंग</string>
+  <!-- Customize menu screen - Accessibility description - name of the menu section that groups the New tab and New private tab actions. Read aloud after "Section", followed by the action names ("Section “New tab”: New tab, New private tab"). -->
+  <string name="browser_menu_section_new_tab">नया टैब</string>
+  <!-- Title of the dialog shown when resetting the menu to its default layout (removing all user customizations) -->
+  <string name="menu_customize_reset_dialog_title">मेन्यू को डिफ़ॉल्ट पर रीसेट करना है?</string>
+  <!-- Message of the dialog shown when resetting the menu to its default layout (removing all user customizations) -->
+  <string name="menu_customize_reset_dialog_message">इससे कस्टमाइज़ेशन हट जाएंगे और इसे पहले जैसा नहीं किया जा सकता।</string>
+  <!-- Primary button on the menu reset dialog. Tapping it removes all user customizations. -->
+  <string name="menu_customize_reset_dialog_reset">रीसेट करें</string>
+  <!-- Secondary button on the menu reset dialog. Tapping it cancels the reset process and preserves all user-made customizations. -->
+  <string name="menu_customize_reset_dialog_cancel">कैंसिल करें</string>
   <!-- Content description (not visible, for screen readers etc.): Navigate backward (browsing history) -->
   <string name="browser_menu_back">वापस</string>
   <!-- Content description (not visible, for screen readers etc.): Navigate forward (browsing history) -->
@@ -205,6 +231,10 @@
   <string name="browser_menu_no_extensions_installed_description">कोई एक्सटेंशन चालू नहीं है</string>
   <!-- The description of the browser menu appears when the user hasn't installed any extensions and there are recommended extensions. -->
   <string name="browser_menu_try_a_recommended_extension_description">सुझाया गया कोई एक्सटेंशन आज़माएं</string>
+  <!-- In the browser menu: Message under the Extensions menu item, displayed when one or more extensions have updates that require approving changes to their permission settings. %1$s is a comma-separated list of one or more extension names. -->
+  <string name="browser_menu_extensions_review_update_description">%1$s के अपडेट की समीक्षा करें</string>
+  <!-- In the browser menu: Message under an extension name, displayed when the update requires approving changes to extension settings. -->
+  <string name="browser_menu_extension_review_update_description">अपडेट करने के लिए सेटिंग की समीक्षा करें</string>
   <!-- Browser menu button that opens account settings -->
   <string name="browser_menu_account_settings">अकाउंट की जानकारी</string>
   <!-- Browser menu button that opens the settings menu -->
@@ -263,6 +293,8 @@
   <string name="browser_menu_passwords">पासवर्ड</string>
   <!-- Content description (not visible, for screen readers etc.) for the handle used to drag the main menu at the bottom of the screen. -->
   <string name="browser_close_main_menu_handlebar_content_description">मेन्यू बंद करें</string>
+  <!-- Content description (not visible, used by screen readers, etc.) for the heading of the menu opened from the customize menu screen to preview pending changes. It is read before the menu items. The items are shown for preview only and do nothing when tapped. -->
+  <string name="browser_menu_preview_heading_content_description">मेन्यू का प्रीव्यू। यहां आइटम चालू नहीं किए जा सकते।</string>
   <!-- Content description (not visible, for screen readers etc.) for main menu navigation header. -->
   <string name="browser_main_menu_content_description_navigation_header">नेविगेशन</string>
   <!-- Content description (not visible, for screen readers etc.) for bottom sheet handlebar custom tab menu. -->
@@ -291,6 +323,8 @@
   <string name="browser_menu_webcompat_reporter_2">खराब साइट की रिपोर्ट करें</string>
   <!-- Browser menu label for adding a tab to a tab group -->
   <string name="browser_menu_add_to_tab_group">ग्रुप में जोड़ें</string>
+  <!-- Browser menu label for moving a tab to a tab group -->
+  <string name="browser_menu_move_to_tab_group">ग्रुप में ले जाएं</string>
   <!-- Browser menu label that is displayed when the current page has been translated by the translation feature. -->
   <string name="browser_menu_translated">अनुवाद हुआ है</string>
   <!-- Browser menu label for the print feature -->
@@ -321,6 +355,10 @@
     Content description for the translate page toolbar button that opens the translations dialog when no translation has occurred.
   -->
   <string name="browser_toolbar_translate">पेज का अनुवाद करें</string>
+  <!-- Accessibility description for the toolbar button displayed when the page the user is on has a video that can be opened in a picture-in-picture window -->
+  <string name="browser_toolbar_picture_in_picture">पिक्चर-इन-पिक्चर</string>
+  <!-- Accessibility description for the toolbar button displayed while the current page's video is playing in a picture-in-picture window. Tapping the button closes that window. -->
+  <string name="browser_toolbar_picture_in_picture_close">पिक्चर-इन-पिक्चर बंद करें</string>
   <!-- CFR description for the browser toolbar describing the "Shake to summarize feature" -->
   <string name="browser_toolbar_summarize_cfr_description">चंद सेकंड में इस पेज का सारांश देखने के लिए, अपना डिवाइस हिलाएं। ⚡️</string>
   <!--
@@ -375,6 +413,10 @@
   <string name="ai_controls_voice_search_title">वॉइस सर्च</string>
   <!-- Description for the voice search AI feature toggle -->
   <string name="ai_controls_voice_search_description">Google स्पीच सर्विसेज़ के ज़रिए, ऑडियो को टेक्स्ट में बदला जाता है।</string>
+  <!-- Title for the listen to page AI feature toggle -->
+  <string name="ai_controls_listen_to_page_title">पेज सुनें</string>
+  <!-- Description for the listen to page AI feature toggle -->
+  <string name="ai_controls_listen_to_page_description">पढ़कर सुनाने के लिए आपका डिवाइस AI का इस्तेमाल कर सकता है। टेक्स्ट और ऑडियो प्राइवेट रहते हैं।</string>
   <!-- Title for the block AI enhancements confirmation dialog -->
   <string name="ai_controls_block_dialog_title">AI एन्हांसमेंट ब्लॉक करें?</string>
   <!-- Body text for the block AI enhancements confirmation dialog. %1$s is the name of the app (for example "Firefox"). -->
@@ -574,6 +616,14 @@
   <string name="nova_onboarding_sync_subtitle">किसी भी डिवाइस पर तुरंत बुकमार्क, पासवर्ड और अन्य जानकारी हासिल करें। एन्क्रिप्शन के साथ, आपका व्यक्तिगत डेटा सुरक्षित रहता है।</string>
   <!-- Sync onboarding button. -->
   <string name="nova_onboarding_sync_button">सिंक करना शुरू करें</string>
+  <!-- Title of onboarding pairing card. Displayed when installing Firefox for Android by using a pairing link from Firefox for Desktop. "Scan" refers to scanning the QR code displayed on the computer. -->
+  <string name="nova_onboarding_sync_pairing_title">अपने कंप्यूटर के साथ पेयरिंग पूरी करने के लिए स्कैन करें</string>
+  <!-- Body of the onboarding pairing card. Provides troubleshooting instructions when the QR code is not being displayed on the pairing computer. The "firefox.com/pair" URL should not be translated or edited. Bold tags should be preserved. -->
+  <string name="nova_onboarding_sync_pairing_body">QR कोड नहीं दिख रहा? अपने कंप्यूटर पर <b>firefox.com/pair</b> पर जाएं।</string>
+  <!-- Primary button of the onboarding pairing card. Opens the camera to scan the pairing QR code. -->
+  <string name="nova_onboarding_sync_pairing_scan_button">पेयरिंग कोड स्कैन करें</string>
+  <!-- Secondary button of the onboarding pairing card. Opens the Mozilla account sign-in page. -->
+  <string name="nova_onboarding_sync_pairing_email_button">ईमेल से साइन इन करें</string>
   <!-- Marketing onboarding title. -->
   <string name="nova_onboarding_marketing_title">एक बेहतर इंटरनेट बनाने में हमारी मदद करें</string>
   <!--
@@ -669,6 +719,14 @@
   <string name="search_widget_text_long">वेब सर्च करें</string>
   <!-- Content description (not visible, for screen readers etc.): Voice search -->
   <string name="search_widget_voice">वॉइस सर्च</string>
+  <!-- Content description (not visible, for screen readers etc.): Button in the search widget that starts a search in a private tab -->
+  <string name="search_widget_private_search">प्राइवेट सर्च</string>
+  <!-- Widget description in the widget picker screen for the search bar widget that includes buttons for private search and for voice search -->
+  <string name="search_bar_widget_description">प्राइवेट और वॉइस सर्च वाला सर्च बार</string>
+  <!-- Widget description in the widget picker screen for the search bar widget that includes buttons for image search, private search and voice search -->
+  <string name="search_bar_with_lens_widget_description">इमेज, प्राइवेट और वॉइस सर्च वाला सर्च बार</string>
+  <!-- Widget description in the widget picker screen for the compact search bar widget -->
+  <string name="compact_search_bar_widget_description">कॉम्पैक्ट सर्च बार</string>
   <!--
     Preferences
 
@@ -695,6 +753,8 @@
   <string name="preferences_search">सर्च</string>
   <!-- Preference for settings related to Search engines -->
   <string name="preferences_search_engines">सर्च इंजन</string>
+  <!-- Settings item that adds the Firefox search widget to the device's home screen (tapping it opens the confirmation dialogue) -->
+  <string name="preferences_search_widget_in_home_screen">होम स्क्रीन पर सर्च विजेट जोड़ें</string>
   <!-- Settings item to add a search widget on the device's homescreen. -->
   <string name="preferences_add_search_widget_from_settings">होम स्क्रीन विजेट</string>
   <!-- Preference for settings related to Search engines suggestions -->
@@ -784,6 +844,8 @@
   <string name="preferences_toolbar_select_shortcut">कोई शॉर्टकट चुनें</string>
   <!-- Title of a menu option allowing to change the shortcut button shown in the toolbar -->
   <string name="toolbar_shortcut_menu_edit_option">शॉर्टकट एडिट करें</string>
+  <!-- Preference category for menu customization -->
+  <string name="preferences_menu">मेन्यू</string>
   <!-- Preference for gestures based actions -->
   <string name="preferences_gestures">जेस्चर</string>
   <!-- Preference for settings related to visual options -->
@@ -860,6 +922,10 @@
   <string name="preferences_open_links_in_apps_ask">खोलने से पहले पूछें</string>
   <!-- Preference for open links in third party apps never open in apps option -->
   <string name="preferences_open_links_in_apps_never">कभी नहीं</string>
+  <!-- Preference category header for media related open links in apps settings -->
+  <string name="preferences_media_category">मीडिया</string>
+  <!-- Preference label for choosing whether links open in the YouTube app -->
+  <string name="preferences_open_links_in_youtube">लिंक को YouTube ऐप में खोलें</string>
   <!-- Preference category for file storage. -->
   <string name="preferences_category_file_storage">फ़ाइल स्टोरेज</string>
   <!-- Preference title for downloads default location. -->
@@ -940,6 +1006,18 @@
   <string name="customize_addon_collection_user_hint">कलेक्शन ओनर (यूज़र आईडी)</string>
   <!-- Toast shown after confirming the custom extension collection configuration -->
   <string name="toast_customize_extension_collection_done">एक्सटेंशन के कलेक्शन में बदलाव किया गया है। बदलावों को लागू करने के लिए ऐप्लिकेशन बंद किया जा रहा है…</string>
+  <!--
+    Add-on removal confirmation dialog
+
+    Title of confirmation dialog. Displayed when uninstalling an extension. %1$s is the name of the extension (for example: Firefox Relay).
+  -->
+  <string name="addon_remove_dialog_title">%1$s हटाना है?</string>
+  <!-- Body of confirmation dialog. Displayed when uninstalling an extension. -->
+  <string name="addon_remove_dialog_body">इससे एक्सटेंशन और उसकी सेटिंग इस डिवाइस से हट जाएंगी।</string>
+  <!-- Primary button on confirmation dialog. Tapping it uninstalls the selected extension. -->
+  <string name="addon_remove_dialog_confirm">हटाएं</string>
+  <!-- Secondary button on confirmation dialog. Tapping cancels the process of uninstalling the extension and closes the dialog window. -->
+  <string name="addon_remove_dialog_cancel">कैंसिल करें</string>
   <!--
     Customize Home
 
@@ -1105,6 +1183,14 @@
   <string name="preferences_sync_category">चुनें क्या सिंक करना है</string>
   <!-- Preference category for sync controls -->
   <string name="preferences_category_sync">सिंक किया गया डेटा</string>
+  <!-- Preference title for the toggle that allows user to turn sync on or off for the device they are on -->
+  <string name="preferences_enable_sync_title">इस डिवाइस को सिंक करें</string>
+  <!-- Preference summary for the toggle that turns sync on or off for the device, shown when sync is on. -->
+  <string name="preferences_enable_sync_summary_sync_enabled">आपके डेटा का बैकअप लिया गया है और यह सिंक किए गए डिवाइसों पर उपलब्ध है।</string>
+  <!-- Preference summary for the toggle that turns sync on or off for the device, shown when sync is off. It explains where synced data comes from. -->
+  <string name="preferences_enable_sync_summary_sync_disabled_2">आपके अकाउंट में सेव किया गया डेटा इस्तेमाल किया जा रहा है।</string>
+  <!-- Preference summary for the toggle that turns sync on or off for the device, shown when sync is off. It explains where synced data comes from. %1$s is the Firefox brand name. -->
+  <string name="preferences_enable_sync_summary_sync_disabled">आपके %1$s अकाउंट में सेव किया गया डेटा इस्तेमाल किया जा रहा है।</string>
   <!-- Summary for the sync preference category. -->
   <string name="preferences_sync_category_summary">अपने सभी कनेक्ट किए गए डिवाइसों पर सिंक होने वाली चीज़ें मैनेज करें</string>
   <!-- Summary for the sync preference category, when user has disabled all synchronisation items. -->
@@ -1227,6 +1313,14 @@
   <!-- Preference for removing FxA account -->
   <string name="preferences_sync_remove_account">अकाउंट हटाएं</string>
   <!--
+    Settings sign-in promo card
+
+    Sign-in promo card: Title inviting the user to sign in
+  -->
+  <string name="sign_in_promo_title">साइन इन करें</string>
+  <!-- Sign-in promo card: Body of the card listing what signing in allows the user to do -->
+  <string name="sign_in_promo_description">टैब, बुकमार्क, पासवर्ड और अन्य चीज़ें सिंक करना शुरू करें।</string>
+  <!--
     Pairing Feature strings
 
     Instructions on how to access pairing
@@ -1244,6 +1338,12 @@
   <string name="preference_simple_toolbar">सिंपल</string>
   <!-- Preference for using expanded toolbar -->
   <string name="preference_expanded_toolbar">बड़ा</string>
+  <!-- Preference for changing where the search bar is positioned on the homepage, shown when the user has set the address bar to be displayed at the top of the screen -->
+  <string name="preferences_homepage_search_location">होमपेज पर सर्च बार की लोकेशन</string>
+  <!-- Preference for showing the homepage search bar in the middle of the homepage -->
+  <string name="preference_homepage_search_location_middle">बीच में</string>
+  <!-- Preference for showing the homepage search bar at the top of the homepage (combined with the address bar, already displayed at the top) -->
+  <string name="preference_homepage_search_location_top">सबसे ऊपर</string>
   <!-- New tab shortcut in toolbar customization -->
   <string name="toolbar_customize_shortcut_new_tab">नया टैब खोलें</string>
   <!-- Share shortcut in toolbar customization -->
@@ -1325,6 +1425,8 @@
   <string name="library_desktop_bookmarks_unfiled">अन्य बुकमार्क</string>
   <!-- Option in Library to open History page -->
   <string name="library_history">हिस्ट्री</string>
+  <!-- Content description (not visible, for screen readers etc.) for the check mark that replaces a site's icon in History and Recently closed tabs when the item is selected -->
+  <string name="library_item_selected_content_description">चुना गया</string>
   <!-- Settings Page Title -->
   <string name="settings_title">सेटिंग</string>
   <!-- Content description (not visible, for screen readers etc.): "Close button for library settings" -->
@@ -1606,6 +1708,8 @@
   <string name="add_to_new_tab_group_content_description">नए टैब ग्रुप में जोड़ें</string>
   <!-- Label for adding to a new tab group. -->
   <string name="add_to_new_tab_group_title">नया टैब ग्रुप</string>
+  <!-- Label to add a link in a new tab inside a tab group. -->
+  <string name="contextmenu_open_in_tab_group">टैब ग्रुप में खोलें</string>
   <plurals name="tab_group_tabs_count_subtitle">
     <!--
       Subtitle for the number of tabs in a tab group.
@@ -1650,6 +1754,11 @@
   <string name="close_tab_and_delete_group_confirmation_dialog_cancel">कैंसिल करें</string>
   <!-- Content description for the three dot button next to a tab group" -->
   <string name="tab_group_three_dot_button_content_description">और विकल्प</string>
+  <!--
+    Content description for the Expand button on the contracted menu for a tab group:
+    when tapped, tabs are displayed in an expanded grid or list view, taking up the full screen.
+  -->
+  <string name="tab_groups_strip_expand_group_content_description">टैब को फ़ुल स्क्रीन में दिखाने के लिए बड़ा करें</string>
   <!-- Text shown on the edit button for a tab group on the three dot menu -->
   <string name="tab_group_three_dot_menu_edit">एडिट करें</string>
   <!-- Text shown on the ungroup button for a tab group on the three dot menu -->
@@ -1895,6 +2004,8 @@
   <string name="download_search_no_results_found">कोई नतीजा नहीं मिला</string>
   <!-- Text for the "Select all" button, which selects all downloaded items in the downloads list. -->
   <string name="download_select_all_items">सभी चुनें</string>
+  <!-- Shown in the downloads list in place of a website name when a file came from a data: or blob: URL that has no website address. "data" refers to the data: URL scheme. -->
+  <string name="download_item_source_data">(डेटा)</string>
   <!--
     Downloads Content Type Filters
 
@@ -2011,15 +2122,21 @@
   <string name="unsubmitted_crash_dialog_negative_button_2">बंद करें</string>
   <!-- Unsubmitted crash dialog negative button to never be asked for the submission -->
   <string name="unsubmitted_crash_requested_by_devs_dialog_never_button">फिर कभी न दिखाएं</string>
+  <!-- Unsubmitted crash dialog negative button to never be asked for the submission, displayed in all capital letters. -->
+  <string name="unsubmitted_crash_requested_by_devs_dialog_never_button_2" tools:ignore="UnusedResources">फिर कभी न दिखाएं</string>
   <!-- Unsubmitted crash dialog positive button to submit crash report -->
   <string name="unsubmitted_crash_dialog_positive_button_2">भेजें</string>
   <!-- Unsubmitted crash dialog positive button to submit crash report -->
   <string name="unsubmitted_crash_dialog_positive_button">क्रैश रिपोर्ट भेजें</string>
+  <!-- Unsubmitted crash dialog positive button to submit crash report, displayed in all capital letters. -->
+  <string name="unsubmitted_crash_dialog_positive_button_3" tools:ignore="UnusedResources">क्रैश रिपोर्ट भेजें</string>
   <!-- Body text for crash report dialog. %s is the link text in the annotated string (ie. "Learn More") -->
   <string name="unsubmitted_crash_dialog_body">क्रैश रिपोर्ट से हमें ब्राउज़र से जुड़ी समस्याओं का पता लगाने और उन्हें ठीक करने में मदद मिलती है। रिपोर्ट में व्यक्तिगत या संवेदनशील जानकारी शामिल हो सकती है। %s</string>
   <string name="unsubmitted_crash_dialog_learn_more">और जानें</string>
   <!-- Unsubmitted crash dialog button to open a web page with more details on the feature and privacy policy -->
   <string name="unsubmitted_crash_requested_by_devs_learn_more">और जानें</string>
+  <!-- Unsubmitted crash dialog button to open a web page with more details on the feature and privacy policy, displayed in all capital letters. -->
+  <string name="unsubmitted_crash_requested_by_devs_learn_more_2" tools:ignore="UnusedResources">और जानें</string>
   <!--
     Bookmarks
 
@@ -2381,6 +2498,8 @@
   <string name="sync_send_tab_empty_state_title">कोई डिवाइस कनेक्ट नहीं किया गया है</string>
   <!-- Send tab to synced devices: Empty state message - Displayed when the user has no synced devices -->
   <string name="sync_send_tab_empty_state_description" tools:ignore="BrandUsage">टैब भेजने के लिए, कम से कम एक और डिवाइस पर Firefox में साइन इन करें।</string>
+  <!-- Send tab to synced devices: Empty state link - Displayed when the user has no synced devices -->
+  <string name="sync_send_tab_empty_state_link">जानें कि डिवाइस कैसे कनेक्ट करें</string>
   <!-- Send tab to synced devices: Connectivity Error title -->
   <string name="sync_send_tab_error_connection_title">अपना इंटरनेट कनेक्शन चेक करें</string>
   <!-- Send tab to synced devices: Connectivity Error message - Suggested user action after internet connection has been established -->
@@ -2449,6 +2568,12 @@
   <string name="snackbar_private_tab_closed">प्राइवेट टैब बंद किया</string>
   <!-- Text shown in snackbar to undo deleting a tab, top site or collection -->
   <string name="snackbar_deleted_undo">पहले जैसा करें</string>
+  <!-- Confirmation message displayed when user adds a page to a tab group. %1$s is the tab group's name. -->
+  <string name="snackbar_tab_added_to_group">%1$s में जोड़ा गया</string>
+  <!-- Confirmation message displayed when user moves a page from one tab group to another. %1$s is the tab group's name. -->
+  <string name="snackbar_tab_moved_to_group">%1$s में ले जाया गया</string>
+  <!-- Button text displayed with a confirmation message when the user adds or moves a page to a tab group. Tapping it displays the tab group. -->
+  <string name="snackbar_action_view">देखें</string>
   <!--
     QR code scanner prompt which appears after scanning a code, but before navigating to it
     %1$s is the name of the app (for example "Firefox"), %2$s is the URL or text scanned
@@ -3131,6 +3256,10 @@
   <string name="preferences_credit_cards_save_and_autofill_cards_2">पेमेंट के तरीके सेव करें और भरें</string>
   <!-- Preference summary for saving and autofilling payment method data. %s is the name of the app (for example "Firefox"). -->
   <string name="preferences_credit_cards_save_and_autofill_cards_summary_2">%s आपके सेव किए गए पेमेंट के सभी तरीकों को एन्क्रिप्ट करता है</string>
+  <!-- Preference for saving the security codes of credit cards. -->
+  <string name="preferences_credit_cards_save_security_codes">सुरक्षा कोड सेव करें</string>
+  <!-- Preference summary for saving the security codes of credit cards. %s is the name of the app (for example "Firefox"). -->
+  <string name="preferences_credit_cards_save_security_codes_summary">बाद में तेज़ी से पेमेंट करने के लिए %s आपके कार्ड नंबर और सुरक्षा कोड को एन्क्रिप्ट करता है</string>
   <!-- Preference option for syncing credit cards across devices. This is displayed when the user is not signed into sync -->
   <string name="preferences_credit_cards_sync_cards_across_devices">कार्ड को सभी डिवाइसों पर सिंक करें</string>
   <!-- Preference option for syncing credit cards across devices. This is displayed when the user is signed into sync -->
@@ -3167,6 +3296,8 @@
   <string name="credit_cards_expiration_date_year">एक्सपायरी डेट वाला साल</string>
   <!-- The header for the name on the credit card -->
   <string name="credit_cards_name_on_card">कार्ड पर मौजूद नाम</string>
+  <!-- The header for the optional security code of a credit card. CVV is the abbreviation of the card security code. -->
+  <string name="credit_cards_cvv_optional">CVV (वैकल्पिक)</string>
   <!-- The text for the "Delete card" menu item for deleting a credit card -->
   <string name="credit_cards_menu_delete_card">कार्ड डिलीट करें</string>
   <!-- The text for the "Delete card" button for deleting a credit card -->
@@ -3183,10 +3314,16 @@
   <string name="credit_cards_cancel_button">कैंसिल करें</string>
   <!-- Title of the "Saved cards" screen -->
   <string name="credit_cards_saved_cards">सेव किए गए कार्ड</string>
+  <!-- Text in the saved cards list that indicates the security code for a credit card is being stored -->
+  <string name="credit_cards_cvv_saved">CVV सेव किया गया</string>
   <!-- Error message for card number validation -->
   <string name="credit_cards_number_validation_error_message_2">सही कार्ड नंबर डालें</string>
   <!-- Error message for card name on card validation -->
   <string name="credit_cards_name_on_card_validation_error_message_2">नाम जोड़ें</string>
+  <!-- Error message for a credit card security code that does not meet the 3-digit length requirement. -->
+  <string name="credit_cards_cvv_validation_error_message">सुरक्षा कोड 3 अंकों का होना चाहिए</string>
+  <!-- Error message for a credit card security code that does not meet the 4-digit length requirement (used for American Express cards only) -->
+  <string name="credit_cards_cvv_amex_validation_error_message">American Express के सुरक्षा कोड 4 अंकों के होते हैं</string>
   <!-- Message displayed in biometric prompt displayed for authentication before allowing users to view their saved credit cards -->
   <string name="credit_cards_biometric_prompt_message">आपके सेव किए गए कार्ड देखने के लिए अनलॉक करें</string>
   <!-- Title of warning dialog if users have no device authentication set up -->
@@ -3197,6 +3334,14 @@
   <string name="credit_cards_warning_dialog_set_up_now">अभी सेट करें</string>
   <!-- Negative button to ignore warning dialog if users have no device authentication set up -->
   <string name="credit_cards_warning_dialog_later">बाद में</string>
+  <!-- Title of the dialog shown on Android Automotive OS (in cars) when users have no device authentication set up and try to access their saved passwords, payment methods, or sign in to their account -->
+  <string name="automotive_authentication_setup_dialog_title">अपना संवेदनशील डेटा सुरक्षित करें</string>
+  <!-- Message of the dialog shown on Android Automotive OS (in cars) when users have no device authentication set up and try to access their saved passwords, payment methods, or sign in to their account -->
+  <string name="automotive_authentication_setup_dialog_message">कोई डिवाइस लॉक पैटर्न, पिन या पासवर्ड सेट करें, ताकि आपकी कार कोई और चला रहा हो, तो वह आपका सेव किया गया संवेदनशील डेटा एक्सेस न कर पाए।</string>
+  <!-- Primary button on the dialog shown on Android Automotive OS (in cars). Tapping it directs users to the device settings to set up a device lock -->
+  <string name="automotive_authentication_setup_dialog_set_up_now">अभी सेट करें</string>
+  <!-- Secondary button of the dialog shown on Android Automotive OS (in cars). Tapping closes the dialogue and cancels the action that triggered the dialogue. -->
+  <string name="automotive_authentication_setup_dialog_cancel">कैंसिल करें</string>
   <!-- Title of PIN verification dialog to direct users to re-enter their device credentials to access their credit cards -->
   <string name="credit_cards_biometric_prompt_message_pin">अपना डिवाइस अनलॉक करें</string>
   <!-- Message displayed in biometric prompt for authentication, before allowing users to use their stored payment method information -->
@@ -3591,6 +3736,12 @@
   <!--
     Translations options dialog
 
+    Title of the translation options dialog that allows a user to set their translation preferences for the site the user is currently on.
+  -->
+  <string name="translation_option_bottom_sheet_title_heading2">अनुवाद की प्राथमिकताएं</string>
+  <!--
+    Translations options dialog
+
     Title of the translation options dialog that allows a user to set their translation options for the site the user is currently on.
   -->
   <string name="translation_option_bottom_sheet_title_heading">अनुवाद के विकल्प</string>
@@ -3824,6 +3975,14 @@
   <string name="protection_panel_privacy_and_security_settings_2">प्राइवेसी सेटिंग</string>
   <!-- Title text for the protection panel permissions section. -->
   <string name="protection_panel_permissions_title">अनुमतियां</string>
+  <!-- Certificate panel - Title of the section that contains the website's certificate information (issued to, issued by, etc.) as verified by Firefox (thus guaranteeing the HTTPS connection is secure) -->
+  <string name="certificate_details_panel_secure_connection_title">सुरक्षित कनेक्शन</string>
+  <!-- Certificate panel - Label for the organization, locality and country the website's certificate was issued to -->
+  <string name="certificate_details_panel_issued_to_label">सर्टिफ़िकेट इन्हें जारी किया गया:</string>
+  <!-- Certificate panel - Label for the name of the certificate authority that verified and issued the website's certificate -->
+  <string name="certificate_details_panel_verified_by_label">इनके द्वारा वेरिफ़ाई किया गया:</string>
+  <!-- Certificate panel - Content description (not visible, for screen readers etc.) for the EU trust mark logo, shown when the website's certificate is a Qualified Website Authentication Certificate (QWAC) as specified in EU Regulation 2024/1183 -->
+  <string name="certificate_details_panel_eu_trust_mark_content_description">EU ट्रस्ट मार्क</string>
   <plurals name="trackers_blocked_panel_total_num_trackers_blocked_2">
     <!--
       Text for displaying the total number of trackers blocked in the trackers blocked panel.
@@ -3891,6 +4050,8 @@
   <string name="clear_site_data_dialog_negative_button_text">कैंसिल करें</string>
   <!-- Text for the connection security panel when the site is secure. -->
   <string name="connection_security_panel_secure">सुरक्षित कनेक्शन</string>
+  <!-- Action description (not visible, for screen readers etc.) for the “Secure connection” link in the protection panel header, which opens a page showing the website's certificate details. Screen readers announce it after “Double tap to” -->
+  <string name="connection_security_panel_view_certificate_details">सर्टिफ़िकेट की जानकारी देखें</string>
   <!-- Text for the connection security panel when the site is not secure. -->
   <string name="connection_security_panel_not_secure">कनेक्शन सुरक्षित नहीं है</string>
   <!-- Text for the connection security panel when accessed from local PDF. -->
@@ -4390,6 +4551,77 @@
   <!-- Link text for terms_of_use_prompt_body_line_two_alternative that links to a site with more information about the Terms of Use -->
   <string name="terms_of_use_prompt_body_line_two_alternative_link" tools:ignore="UnusedResources">यहां</string>
   <!--
+    Sports widget
+
+    Label shown on the sports widget scoreboard when a match is currently being played live.
+  -->
+  <string name="wrex_widget_match_live">लाइव</string>
+  <!-- Label shown on the sports widget match status badge when the start of a match has been delayed. -->
+  <string name="wrex_widget_match_delayed">देरी से</string>
+  <!-- Label shown on the sports widget match status badge when a match has been suspended after it started. -->
+  <string name="wrex_widget_match_suspended">रोका गया</string>
+  <!-- Label shown on the sports widget match status badge when a match has been postponed to a later date. -->
+  <string name="wrex_widget_match_postponed">स्थगित</string>
+  <!-- Label shown on the sports widget match status badge when a match has been canceled. -->
+  <string name="wrex_widget_match_canceled">रद्द</string>
+  <!-- Sports widget action label to refresh match data after an error. -->
+  <string name="wrex_widget_error_refresh">रीफ़्रेश करें</string>
+  <!-- Sports widget menu item to view the team's match results. -->
+  <string name="wrex_widget_results">नतीजे</string>
+  <!-- Sports widget menu item to view the league standings table. -->
+  <string name="wrex_widget_standings">पॉइंट टेबल</string>
+  <!-- Sports widget menu item to browse the team's wallpapers. -->
+  <string name="wrex_widget_wallpapers">वॉलपेपर</string>
+  <!-- Sports widget menu item to remove the widget from the homepage. -->
+  <string name="wrex_widget_remove_widget">विजेट हटाएं</string>
+  <!-- Sports widget match status label shown during half-time of a match. -->
+  <string name="wrex_widget_match_half_time">हाफ़-टाइम</string>
+  <!-- Sports widget match status label shown during penalties of a match. -->
+  <string name="wrex_widget_match_penalties">पेनल्टी</string>
+  <!-- Content description (for accessibility, not displayed) for the overflow (more options) menu button on the sports widget card. -->
+  <string name="wrex_widget_more_options_content_description">और विकल्प</string>
+  <!--
+    Content description (for accessibility, not displayed) announcing a soccer match.
+    %1$s is the home team name, %2$s is the away team name, %3$s is trailing context
+    (e.g. formatted score "1 - 2 (Full time)", upcoming match info "Jun 19 5:00 PM",
+    or a match status like "Full time").
+  -->
+  <string name="wrex_widget_match_content_description">%1$s बनाम %2$s, %3$s</string>
+  <!--
+    Content description (for accessibility, not displayed) used for the sports widget card header announcing a live match.
+    %s is the name of the competition the match belongs to (e.g. "FA Cup").
+  -->
+  <string name="wrex_widget_live_game_content_description">%s, लाइव मैच</string>
+  <!--
+    Content description (for accessibility, not displayed) announcing a live score.
+    %1$s is the home team name, %2$d is the home team score, %3$s is the away team name, %4$d is the away team score,
+    and %5$s is the match elapsed time (e.g. 72 minutes).
+  -->
+  <string name="wrex_widget_live_score_content_description">%1$s %2$d, %3$s %4$d, %5$s, लाइव</string>
+  <!--
+    Content description (for accessibility, not displayed) announcing the elapsed minutes of a live match.
+    %1$s is the clock value, which may be a plain number (e.g. "72") or include extra time (e.g. "90+3").
+  -->
+  <string name="wrex_widget_match_elapsed_minutes">बीता हुआ समय (मिनट में): %1$s</string>
+  <!--
+    Content description (for accessibility, not displayed) for a paginated item.
+    %1$s is the name of the competition the match belongs to (e.g. "FA Cup"),
+    %2$d is the current page number, and %3$d is the total number of pages.
+  -->
+  <string name="wrex_widget_page_position_content_description">%1$s, %3$d में से पेज %2$d</string>
+  <!-- Sports widget error card title shown when the user is offline. -->
+  <string name="wrex_widget_error_connection_offline_title">लगता है आप ऑफ़लाइन हैं</string>
+  <!-- Sports widget error card description shown when the user is offline. -->
+  <string name="wrex_widget_error_connection_offline_description">अपना इंटरनेट कनेक्शन चेक करें और फिर से कोशिश करें।</string>
+  <!-- Sports widget error card title shown when match data fails to load. -->
+  <string name="wrex_widget_error_load_failed_title">अभी मैच की जानकारी नहीं दिखाई जा सकती</string>
+  <!-- Sports widget error card description suggesting to refresh after match information could not be displayed. -->
+  <string name="wrex_widget_error_try_refreshing">रीफ़्रेश करके देखें या बाद में फिर से चेक करें।</string>
+  <!-- Sports widget error card title shown when the latest match results fail to load. -->
+  <string name="wrex_widget_error_results_load_failed_title">अभी नतीजे नहीं दिखाए जा सकते</string>
+  <!-- Content description (for accessibility, not displayed) for teams which have not yet been determined in the match schedule. -->
+  <string name="wrex_widget_team_to_be_determined">टीम अभी तय नहीं हुई है</string>
+  <!--
     Privacy notice homepage banner
 
     A message we show the user on the homepage when there is a new version of the privacy notice. 'Firefox' is intentionally hardcoded.
@@ -4411,6 +4643,8 @@
   <string name="collections_migration_homepage_card_message">अपने टैब व्यवस्थित रखने का एक आसान तरीका है</string>
   <!-- Link text shown on the collections to tab groups migration card that opens the tab groups page in the tab manager. -->
   <string name="collections_migration_homepage_card_link">मेरे टैब वाले ग्रुप देखें</string>
+  <!-- Content description (not visible, for screen readers etc.) for the button that dismisses the collections to tab groups migration card. -->
+  <string name="collections_migration_card_close_button_content_description">बंद करें</string>
   <!-- Google Lens prototype related strings -->
   <string name="preferences_debug_settings_google_lens_integration">Google Lens का इंटीग्रेशन चालू करें</string>
   <!-- Lens image search button content description -->
@@ -4445,6 +4679,16 @@
   <string name="lens_camera_mode_qr">QR स्कैनर</string>
   <!-- Toast shown when the user picks an image from the gallery in QR mode but no QR code is found in it -->
   <string name="lens_camera_qr_no_code_found">इमेज में कोई QR कोड नहीं मिला</string>
+  <!-- Status shown under an image picked from the gallery or taken with the camera while it is being sent to Google Lens for a visual search -->
+  <string name="lens_camera_loading_status">इसे खोजा जा रहा है</string>
+  <!-- Button shown under an image picked from the gallery or taken with the camera while it is being sent to Google Lens. Tapping it stops the search and returns to the camera. -->
+  <string name="lens_camera_loading_cancel_button">कैंसिल करें</string>
+  <!-- Snackbar message shown when an image picked from the gallery or taken with the camera could not be opened or read, so it was never sent to Google Lens. Shown after returning to the camera. -->
+  <string name="lens_camera_image_load_failed_v2">यह इमेज लोड नहीं की जा सकी।</string>
+  <!-- Snackbar message shown when an image picked from the gallery or taken with the camera could not be searched because of a network problem or an error from Google Lens. Shown after returning to the camera, next to the lens_camera_upload_failed_retry_button action. -->
+  <string name="lens_camera_upload_failed">Google Lens से नतीजे नहीं मिल सके</string>
+  <!-- Action in the snackbar shown when an image picked from the gallery or taken with the camera could not be searched with Google Lens. Tapping it searches the same image again. -->
+  <string name="lens_camera_upload_failed_retry_button">फिर से कोशिश करें</string>
   <!-- Title of the bottom sheet shown the first time the user opens the Google Lens camera screen -->
   <string name="lens_opt_out_title">Google Lens से इसे ढूंढें</string>
   <!-- Description of the bottom sheet shown the first time the user opens the Google Lens camera screen -->
@@ -4499,6 +4743,12 @@
   <string name="firefox_labs_website_isolation_title" tools:ignore="UnusedResources">वेबसाइट आइसोलेशन</string>
   <!-- Description of the Firefox Labs Sandboxing experiment. -->
   <string name="firefox_labs_website_isolation_description" tools:ignore="UnusedResources">वेबसाइटों के बीच सुरक्षा की एक एक्सट्रा परत, जो सभी अलग-अलग टैब में आपके डेटा की सुरक्षा में मदद करती है। इससे प्रदर्शन, स्थिरता, वेबसाइट कंपैटिबिलिटी और ब्राउज़िंग हिस्ट्री सेव करने के तरीके पर असर पड़ सकता है।</string>
+  <!--
+    PDF viewer toolbar and buttons
+
+    Content description for accessibility (used by screen readers): Description for the button that triggers the start of a signature workflow on the PDF displayed on the screen.
+  -->
+  <string name="pdf_tools_sign_content_description_2">सिग्नेचर जोड़ें</string>
   <!-- Content description for accessibility (used by screen readers): Description of the button that downloads the PDF displayed on the screen to the user's device. -->
   <string name="pdf_tools_download_content_description">PDF डाउनलोड करें</string>
   <!-- Content description for accessibility (used by screen readers): Description for the button that opens the printing dialogue window for the PDF displayed on the screen. -->
@@ -4519,8 +4769,18 @@
   <string name="pdf_tools_signature_clear_button">मिटाएं</string>
   <!-- The text for the button that adds the signature the user has typed to the PDF. -->
   <string name="pdf_tools_signature_add_button">जोड़ें</string>
+  <!-- Content description for accessibility (used by screen readers): Description for the loading indicator when a signature is in the process of being added to a PDF. -->
+  <string name="pdf_tools_signature_adding_content_description">सिग्नेचर जोड़ा जा रहा है</string>
+  <!--
+    Listen to page
+
+    Content description for the reader view panel: a group of buttons floating over the content, which allow customizing the reader view or activating the Listen to Page feature
+  -->
+  <string name="reader_mode_panel_content_description_2">रीडर व्यू के विकल्प</string>
   <!-- Content description for the button in the reader view panel that turns on the Listen to Page feature (playback of content begins when button is pressed) -->
   <string name="reader_mode_panel_listen_content_description">पढ़कर सुनाएं</string>
   <!-- Content description for media player displayed in Reader view when the Listen to Page (Read Aloud) feature is selected -->
   <string name="reader_mode_panel_media_player_content_description">मीडिया प्लेयर</string>
+  <!-- Content description for the reader view button Reader view facilitates readability and has a Listen to Page feature. Button icon is a document with headphones, and is displayed next to the page URL when the feature is available. -->
+  <string name="browser_menu_read_or_listen">रीडर व्यू, पेज पढ़ें या सुनें</string>
 </resources>

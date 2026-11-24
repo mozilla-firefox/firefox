@@ -16,6 +16,8 @@
   <string name="feedback_erase2">ब्राउज़िंग इतिहास मिटा दिया गया</string>
   <!-- "Snackbar" shown after the user has pressed the 'erase' button at the end of a custom tab browsing session -->
   <string name="feedback_erase_custom_tab">टैब का ब्राउज़िंग इतिहास मिटा दिया गया है।</string>
+  <!-- Content description for the button that opens the menu. -->
+  <string name="content_description_menu">मेन्यू</string>
   <!-- Menu item: Share the currently visible page -->
   <string name="menu_share">साझा करें…</string>
   <!--
@@ -41,6 +43,7 @@
   <string name="menu_settings">सेटिंग</string>
   <string name="menu_about">परिचय</string>
   <string name="menu_help">सहायता</string>
+  <string name="menu_terms_of_use">उपयोग की शर्तें</string>
   <!--
     This is a small text at the bottom of the menu shown in a "custom tab" for branding purposes.
     See https://github.com/mozilla-mobile/focus-android/issues/2106
@@ -52,6 +55,12 @@
     sharing an URL.
   -->
   <string name="share_dialog_title">इसके माध्यम से साझा करें</string>
+  <string name="notification_erase_title_android_14">ब्राउज़िंग इतिहास मिटाना है?</string>
+  <!--
+    Text shown in the notification description that pops up to remind the user that a browsing session is active
+    for Android 14+.
+  -->
+  <string name="notification_erase_text_android_14_1">अपना ब्राउज़िंग इतिहास सुरक्षित रूप से मिटाने के लिए, इस अधिसूचना पर टैप या स्वाइप करें।</string>
   <string name="notification_erase_text">ब्राउज़िंग इतिहास मिटाएँ</string>
   <!-- Notification action to open Focus and resume the current browsing session. -->
   <string name="notification_action_open">खोलें</string>
@@ -93,10 +102,23 @@
   <string name="text_selection_search_action_klar" tools:ignore="BrandUsage,UnusedResources">Klar पर खोजें</string>
   <!--
     This is the label of an action we offer when the user selects text in other third-party apps.
+    Focus Beta is hard coded since we can't use variables in this context.
+    Do not translate or transliterate Focus Beta.
+  -->
+  <string name="text_selection_search_action_focus_beta" tools:ignore="BrandUsage,UnusedResources">Focus Beta पर खोजें</string>
+  <!--
+    This is the label of an action we offer when the user selects text in other third-party apps.
     Focus Nightly is hard coded since we can't use variables in this context.
     Do not translate or transliterate Focus Nightly.
   -->
   <string name="text_selection_search_action_focus_nightly" tools:ignore="BrandUsage,UnusedResources">Focus Nightly पर खोजें</string>
+  <!--
+    Content of about focus. %1$s is the name of the app (for example "Firefox Focus" or "Firefox Klar").
+    %2$s is the url for the learn-more link.
+  -->
+  <string name="about_content" tools:ignore="BrandUsage,IncorrectStraightDoubleQuote"><![CDATA[<p>%1$s आपको नियंत्रण देता है।</p>\n<p>इसे निजी ब्राउज़र के रूप में इस्तेमाल करें:\n<ul>\n<li>सीधे ऐप में खोजें और ब्राउज़ करें</li>\n<li>ट्रैकर ब्लॉक करें (या ट्रैकर को अनुमति देने के लिए सेटिंग बदलें)</li>\n<li>कुकीज़ के साथ-साथ खोज और ब्राउज़िंग इतिहास हटाने के लिए मिटाएँ</li>\n</ul> </p>\n<p>%1$s को Mozilla ने बनाया है। हमारा मिशन एक स्वस्थ, खुले इंटरनेट को बढ़ावा देना है।<br/>\n<a href=\"%2$s\">और जानें</a></p>]]></string>
+  <!-- A link to SUMO at the bottom of About Focus screen. -->
+  <string name="about_screen_learn_more">और जानें</string>
   <!-- Header for the Privacy and Security settings menu -->
   <string name="preference_privacy_and_security_header">गोपनीयता और सुरक्षा</string>
   <!-- Preference summary for settings related to privacy and security -->
@@ -142,8 +164,18 @@
   <string name="preference_subitem_autocomplete">URL स्वत: पूर्ण</string>
   <!-- Title of "switch" preference that enables/disables autocomplete for the default list -->
   <string name="preference_switch_autocomplete_topsites">मुख्य साइटों के लिए</string>
+  <!--
+    Summary for the toggle to enable autocomplete for the topsites list
+    %s is the name of the app (for example "Firefox Focus" or "Firefox Klar").
+  -->
+  <string name="preference_autocomplete_topsite_summary2">पता बार में 450 से ज़्यादा लोकप्रिय URL को %s द्वारा स्वतः पूर्ण करने के लिए चालू करें।</string>
   <!-- Title of "switch" preference that enables/disables autocomplete for the user-defined list -->
   <string name="preference_switch_autocomplete_user_list">आपके द्वारा जोड़े साइटों के लिए</string>
+  <!--
+    Summary for the toggle to enable autocomplete for the user-defined list
+    %s is the name of the app (for example "Firefox Focus" or "Firefox Klar").
+  -->
+  <string name="preference_autocomplete_user_list_summary2">अपने पसंदीदा URL को %s द्वारा स्वतः पूर्ण करने के लिए चालू करें।</string>
   <!-- Item in autocomplete settings that will open a new preference screen for adding and removing URLs to the user-defined list -->
   <string name="preference_autocomplete_subitem_manage_sites">साइटों को प्रबंधित करें</string>
   <!-- Action at the bottom of the list of custom autocomplete URLs that will open a new screen to add a new URL to the list. -->
@@ -199,6 +231,13 @@
   <!-- Preference Title: Biometrics can be used to unlock Focus if the previous session's data was not erased by the user. -->
   <string name="preference_security_biometric">ऐप्प को अनलॉक करने के लिए फिंगरप्रिंट का इस्तेमाल करें</string>
   <!--
+    Preference Summary: Biometrics (iris scan, fingerprint, or facial scan) can be used to unlock Focus if the app had a URL
+    open when the app was last run to ensure that only the phone's owner can view a previous session.
+    %s is the name of the app (for example "Firefox Focus" or "Firefox Klar")
+    Shortcuts is a feature that allows the user to pin his favorite websites to Focus home screen so he can quickly access them.
+  -->
+  <string name="preference_security_biometric_summary2">अगर आपने शॉर्टकट जोड़े हैं या %s में कोई वेबसाइट पहले से खुली है, तो फिंगरप्रिंट से अनलॉक करें।</string>
+  <!--
     Preference Title: Secure Mode is a setting that prevents the app's content to show up in the "recent apps" screen
     and prevents the user from taking screenshots or casting the app to other displays.
   -->
@@ -230,8 +269,17 @@
   <string name="preference_mozilla_telemetry_summary">और अधिक जानें</string>
   <!-- %1$s will be replaced with the name of the app (e.g. Firefox Focus) -->
   <string name="preference_mozilla_telemetry_summary2" tools:ignore="BrandUsage">Mozilla मात्र वही एकत्र करने का प्रयास करता है जिसकी हमें %1$s को बेहतर बनाने और सबको उपलब्ध कराने के लिए आवश्यकता है।</string>
+  <!-- Preference switch for daily usage ping data collection -->
+  <string name="preference_daily_usage_ping_title">दैनिक उपयोग वाली पिंग</string>
+  <string name="preference_daily_usage_ping_description" tools:ignore="BrandUsage">इससे Mozilla को सक्रिय उपयोगकर्ताओं का अनुमान लगाने में मदद मिलती है।</string>
   <!-- In-app link (in settings) to Focus privacy notice. -->
   <string name="preference_privacy_notice">गोपनीयता सूचना</string>
+  <!-- In-app link (in settings) to Focus licensing information. -->
+  <string name="preference_licensing_info">लाइसेंसिंग जानकारी</string>
+  <!-- Link to Focus licensing information from other libraries that we use. -->
+  <string name="preference_libraries_we_use">जिन लाइब्रेरी का हम इस्तेमाल करते हैं</string>
+  <!-- Link to Focus Crash reports list. -->
+  <string name="preference_crashes">क्रैश</string>
   <!-- Open Source Licenses page title. %s is the name of the app (for example "Firefox Focus" or "Firefox Klar"). -->
   <string name="open_source_licenses_title">%s | OSS लाइब्रेरी</string>
   <!-- Item in Preferences that shows the about page. %1$s is the name of the app (for example "Firefox Focus" or "Firefox Klar"). -->
@@ -281,6 +329,8 @@
   <string name="download_snackbar_finished">%1$s खत्म हुआ</string>
   <!-- Snackbar action to immediately open the successfully downloaded file. -->
   <string name="download_snackbar_open">खोले</string>
+  <!-- Snackbar that will be displayed after a website has been added to shortcuts. -->
+  <string name="snackbar_added_to_shortcuts">शॉर्टकट में जोड़ा गया!</string>
   <string name="error_hostLookup_title">सर्वर नहीं मिला</string>
   <!--
     New Onboarding flow first screen title
@@ -288,10 +338,59 @@
     %1$s is the app name and build variant (for example "Firefox Focus", "Firefox Klar Nightly").
   -->
   <string name="onboarding_first_screen_title">%1$s में आपका स्वागत हैं</string>
+  <!-- New Onboarding flow first screen subtitle the one that appears under title -->
+  <string name="onboarding_first_screen_subtitle">तेज़। निजी। कोई भटकाव नहीं।</string>
+  <!--
+    New Onboarding flow first screen 'terms of use' text
+
+    %1$s will be replaced by a link using onboarding_first_screen_terms_of_use_link as text
+  -->
+  <string name="onboarding_first_screen_terms_of_use_text_2" tools:ignore="UnusedResources">जारी रखने से, यह माना जाएगा कि आप %1$s से सहमत हैं।</string>
+  <!--
+    New Onboarding flow first screen 'terms of use link'
+
+    Text for the link used in onboarding_first_screen_terms_of_use_text
+  -->
+  <string name="onboarding_first_screen_terms_of_use_link_2" tools:ignore="BrandUsage">Firefox उपयोग की शर्तें</string>
+  <!--
+    New Onboarding flow first screen 'privacy notice' text
+
+    %1$s will be replaced by a link using onboarding_first_screen_privacy_notice_link as text
+  -->
+  <string name="onboarding_first_screen_privacy_notice_text_2" tools:ignore="BrandUsage">Firefox आपकी गोपनीयता का ख्याल रखता है। हमारी %1$s में और जानें।</string>
+  <!-- Text for the link used in onboarding_first_screen_privacy_notice_text -->
+  <string name="onboarding_first_screen_privacy_notice_link_2">गोपनीयता सूचना</string>
+  <!-- New Onboarding flow first screen button label -->
+  <string name="onboarding_first_screen_button_agree_and_continue_2">जारी रखें</string>
+  <!-- In the first screen of new onboarding flow, additional accessibility description for content that contain urls. -->
+  <string name="a11y_link_available">लिंक उपलब्ध है</string>
+  <!--
+    Onboarding second screen: Title
+
+    %1$s will be replaced by the app short name(Focus)
+  -->
+  <string name="onboarding_second_screen_title">%1$s दूसरे ब्राउज़र जैसा नहीं है</string>
+  <!-- New Onboarding flow second screen subtitle the one that appears under title -->
+  <string name="onboarding_second_screen_subtitle_one">ज़्यादा गोपनीयता के लिए, ऐप बंद करने पर हम आपका इतिहास मिटा देते हैं।</string>
+  <!--
+    New Onboarding flow second screen subtitle two the one that appears under subtitle one
+
+    %1$s will be replaced by the app short name(Focus)
+  -->
+  <string name="onboarding_second_screen_subtitle_two">आपके खोले गए हर लिंक के साथ अपने डेटा को सुरक्षित रखने के लिए %1$s को अपना डिफ़ॉल्ट ब्राउज़र बनाएँ।</string>
+  <!-- New Onboarding flow second screen make Focus default browser button label -->
+  <string name="onboarding_second_screen_default_browser_button_text">डिफ़ॉल्ट ब्राउज़र के रूप में सेट करें</string>
+  <!-- New Onboarding flow second screen skip onboarding button label -->
+  <string name="onboarding_second_screen_skip_button_text">छोड़ें</string>
   <!-- Label of the action that will add the current website to the home screen (shown in the confirmation dialog). -->
   <string name="dialog_addtohomescreen_action_add">जोड़ें</string>
   <!-- Label of the action that will close the dialog and not add anything to the home screen (shown in the confirmation dialog). -->
   <string name="dialog_addtohomescreen_action_cancel">रद्द करें</string>
+  <!--
+    When enhanced tracking protection is disabled for the current session then we will show this warning in the "Add to home screen" dialog to
+    let the user know that the shortcut will always be opened with enhanced tracking protection disabled.
+  -->
+  <string name="dialog_addtohomescreen_tracking_protection2">शॉर्टकट उन्नत ट्रैकिंग सुरक्षा बंद होने के साथ खुलेगा</string>
   <!--
     The user visible name of the "notification channel" (Android 8+ feature) for the ongoing notification shown while a browsing session is active.
     The recommended maximum length is 40 characters; the value may be truncated if it is too long.
@@ -308,11 +407,46 @@
     * To see how this string will look like in Android's UI, see: https://github.com/mozilla-mobile/focus-android/issues/863#issuecomment-324105723
   -->
   <string name="notification_browsing_session_channel_description">अधिसूचनाएँ आपको आपका %1$s सत्र एक टैप के साथ मिटाने देती हैं। आपको ऐप खोलने या ब्राउज़र में क्या चल रहा है, देखने की ज़रूरत नहीं है।</string>
+  <!-- Label for the option in the Focus "tabs tray" to clos the other tabs except the current tab. -->
+  <string name="tabs_tray_action_erase_other">अन्य टैब बंद करें</string>
+  <!-- Label for the option in the Focus "tabs tray" to add a new tab. -->
+  <string name="tabs_tray_action_add_new_tab">नया टैब जोड़ें</string>
   <!--
     If the user decides to open the current page in another browser and if Firefox is not installed then we show this
     item in the list of browsers. Clicking it will open the app store installed on the device (usually that's Google Play).
   -->
   <string name="download_firefox" tools:ignore="BrandUsage">Firefox डाउनलोड करें</string>
+  <!--
+    Text shown in Security Information Popup
+
+    %1$s will be replaced with the organization for which the certificate
+    used by the site was issued. For example, the certificate in use by
+    the site https://eidas.ec.europa.eu/ was issued to "The European
+    Commission".
+  -->
+  <string name="qualified_identity">%1$s को प्रमाणपत्र जारी किया गया</string>
+  <!--
+    Text shown in Security Information Popup
+
+    The European Union eIDAS Regulation specifies a type of certificate
+    called a "qualified website authentication certificate" (QWAC) and
+    requires that browsers identify and indicate such certificates. This
+    text was paraphrased from ETSI TS 119 411-5 V2.1.1 section 6.3 and
+    indicates that the website uses a QWAC.
+  -->
+  <string name="qualified_text">रेगुलेशन (EU) 2024/1183 में दी गई जानकारी के अनुसार योग्य है।</string>
+  <!-- Link in the header of the tracking protection panel when the site is secure. Tapping it opens a page showing the website's certificate details. -->
+  <string name="connection_details_secure_connection_link">सुरक्षित संपर्क</string>
+  <!-- Action description (not visible, for screen readers etc.) for the “Secure connection” link in the tracking protection panel header, which opens a page showing the website's certificate details. Screen readers announce it after “Double tap to” -->
+  <string name="connection_details_view_certificate_details">प्रमाणपत्र का विवरण देखें</string>
+  <!-- Title of the section that contains the website's certificate information (issued to, verified by, etc.) as verified by the browser (thus guaranteeing the HTTPS connection is secure) -->
+  <string name="certificate_details_secure_connection_title">सुरक्षित संपर्क</string>
+  <!-- Label for the organization, locality and country the website's certificate was issued to -->
+  <string name="certificate_details_issued_to_label">इसे प्रमाणपत्र जारी किया गया:</string>
+  <!-- Label for the name of the certificate authority that verified and issued the website's certificate -->
+  <string name="certificate_details_verified_by_label">इसके द्वारा सत्यापित:</string>
+  <!-- Content description (not visible, for screen readers etc.) for the EU trust mark logo, shown when the website's certificate is a Qualified Website Authentication Certificate (QWAC) as specified in EU Regulation 2024/1183 -->
+  <string name="certificate_details_eu_trust_mark_content_description">EU ट्रस्ट मार्क</string>
   <string name="preference_autocomplete_duplicate_url_error">URL पहले से मौजूद है</string>
   <!-- Label for the Find in page button -->
   <string name="find_in_page">पृष्ठ में ढूँढें</string>
@@ -326,20 +460,63 @@
   <string name="preferences_open_links_in_apps">ऐप्स में लिंक खोलें</string>
   <!-- Title of Advanced Setting category -->
   <string name="preference_category_advanced">विस्तृत</string>
+  <!-- Preference for site permissions -->
+  <string name="preference_site_permissions">साइट की अनुमतियाँ</string>
   <!-- Preference for autoplay -->
   <string name="preference_autoplay">ऑटोप्‍ले</string>
+  <!-- Heading for the instructions to allow a permission -->
+  <string name="phone_feature_blocked_intro">इसे अनुमति देने के लिए:</string>
+  <!-- First step for the allowing a permission -->
+  <string name="phone_feature_blocked_step_settings">1. Android सेटिंग में जाएँ</string>
+  <!-- Second step for the allowing a permission -->
+  <string name="phone_feature_blocked_step_permissions"><![CDATA[2. <b>अनुमतियाँ</b> पर टैप करें]]></string>
   <!-- Button label that take the user to the Android App setting -->
   <string name="phone_feature_go_to_settings">सेटिंग पर जाएं</string>
+  <!-- Third step for allowing a permission. %1$s is the permission name, for example, "Camera" -->
+  <string name="phone_feature_blocked_step_feature"><![CDATA[3. <b>%1$s</b> को टॉगल करके चालू करें]]></string>
   <!-- Preference for altering the camera access for all websites -->
   <string name="preference_phone_feature_camera">कैमरा</string>
   <!-- Preference for altering the microphone access for all websites -->
   <string name="preference_phone_feature_microphone">माइक्रोफ़ोन</string>
+  <!-- Preference for altering the location access for all websites -->
+  <string name="preference_phone_feature_location">स्थान</string>
+  <!-- Preference for altering the notification access for all websites -->
+  <string name="preference_phone_feature_notification">अधिसूचना</string>
+  <!-- Preference for altering the EME access for all websites -->
+  <string name="preference_phone_feature_media_key_system_access">DRM-नियंत्रित सामग्री</string>
+  <!-- Label that indicates that a permission must be asked always -->
+  <string name="preference_option_phone_feature_ask_to_allow">अनुमति माँगें</string>
+  <!-- Label that indicates that a permission must be blocked -->
+  <string name="preference_option_phone_feature_blocked">अवरुद्ध</string>
+  <!-- Label that indicates that a permission must be allowed -->
+  <string name="preference_option_phone_feature_allowed">अनुमति है</string>
+  <!-- Label that indicates a permission is by the Android OS -->
+  <string name="phone_feature_blocked_by_android">Android द्वारा अवरुद्ध</string>
+  <!-- Preference for allow autoplay audio and video -->
+  <string name="preference_allow_audio_video_autoplay">ऑडियो और वीडियो की अनुमति दें</string>
+  <!-- Preference for block autoplay audio only -->
+  <string name="preference_block_autoplay_audio_only">सिर्फ़ ऑडियो ब्लॉक करें</string>
+  <!-- Preference summary for block autoplay audio only -->
+  <string name="preference_block_autoplay_audio_only_summary">अनुशंसित</string>
+  <!-- Preference for block autoplay audio and video -->
+  <string name="preference_block_autoplay_audio_video">ऑडियो और वीडियो ब्लॉक करें</string>
   <!-- Preference to enable remote debugging of the app via USB or Wi-Fi -->
   <string name="preference_remote_debugging">यूएसबी/वाई-फाई से दूरस्थ दोषसुधार</string>
+  <!-- Text Button for show biometric prompt -->
+  <string name="show_biometric_button_text">अनलॉक करें</string>
+  <!-- Title text for biometric prompt pop-up -->
+  <string name="biometric_prompt_title">अपने फिंगरप्रिंट से पुष्टि करें</string>
+  <!-- Subtitle text for biometric prompt pop-up -->
+  <string name="biometric_prompt_subtitle">अपना मौजूदा ऐप सत्र जारी रखने के लिए आप अपने फिंगरप्रिंट का इस्तेमाल कर सकते हैं।</string>
   <!-- Description for the fingerprint authentication image. Used for accessibility purposes. -->
   <string name="biometric_auth_image_description">फिंगरप्रिंट चिन्ह</string>
   <!-- Title for the prompt to enable search suggestions -->
   <string name="enable_search_suggestion_title2">खोज सुझाव दिखाएँ?</string>
+  <!--
+    Description for the prompt to enable search suggestions
+    %1$s will be replaced by the app name (e.g. Firefox Focus)
+  -->
+  <string name="enable_search_suggestion_description">सुझाव पाने के लिए, %1$s को आपके द्वारा पता बार में टाइप की गई चीज़ें खोज इंजन को भेजनी होंगी।</string>
   <!-- Label used for the "NO button" for the prompt to enable search suggestions -->
   <string name="enable_search_suggestions_no">नहीं</string>
   <!-- Label used for the "YES button" for the prompt to enable search suggestions -->
@@ -352,6 +529,10 @@
   <string name="preference_safe_browsing_title">ख़तरनाक और संदेहास्पद साइटों को ब्लॉक करें</string>
   <!-- Preference summary for safe browsing which when enabled, blocks dangerous or deceptive webpages that may include phishing or malware -->
   <string name="preference_safe_browsing_summary">रिपोर्ट किये हुए भ्रामक तथा अटैक करने वाली साइटें, मैलवेयर वाली साइटें, तथा अवांछित सॉफ्टवेयर वाली साइटों को ब्लॉक करें।</string>
+  <!-- Title of the preference to enable "HTTPS-Only" mode -->
+  <string name="preference_https_only_title">HTTPS-Only मोड</string>
+  <!-- Description of the preference to enable "HTTPS-Only" mode. -->
+  <string name="preference_https_only_summary3">ज़्यादा सुरक्षा के लिए, HTTPS एन्क्रिप्शन प्रोटोकॉल का इस्तेमाल करके साइटों से अपने आप कनेक्ट करने की कोशिश करता है।</string>
   <!-- Preference for exceptions tracking protection -->
   <string name="preference_exceptions">अपवाद</string>
   <!-- Description for the exceptions preference screen -->
@@ -388,6 +569,8 @@
   <string name="secure_connection">संपर्क सुरक्षित है</string>
   <!-- Label that indicates a site is using a insecure connection. -->
   <string name="insecure_connection">संपर्क सुरक्षित नहीं है</string>
+  <!-- Title for the list of trackers enhanced tracking protection can block. -->
+  <string name="trackers_and_scripts">ब्लॉक करने के लिए ट्रैकर और स्क्रिप्ट</string>
   <!-- Content description (not visible, for screen readers etc.): Navigate back button description. -->
   <string name="go_back">वापस जाएँ</string>
   <!--
@@ -396,6 +579,17 @@
     Text for the menu button to remove a top site
   -->
   <string name="remove_top_site">हटाएँ</string>
+  <!-- Text for the menu item to remove a top site -->
+  <string name="rename_top_site_item">नाम बदलें</string>
+  <!-- Text for the dialog title for renaming a top site -->
+  <string name="rename_top_site">नाम बदलें</string>
+  <!-- Placeholder text for the input field of rename top site -->
+  <string name="placeholder_rename_top_site">शॉर्टकट का नाम</string>
+  <!--
+    Text for context menu additional note.
+    %1$s is a placeholder for the app name.
+  -->
+  <string name="contextmenu_erased_images_note2"><![CDATA[%1$s इतिहास मिटाने पर सहेजी और साझा की गई छवियाँ <b>नहीं</b> हटाई जाएँगी]]></string>
   <!--
     Theme Preferences
 
@@ -410,4 +604,88 @@
   <string name="preference_auto_battery_theme">बैटरी सेवर द्वारा सेट करें</string>
   <!-- Preference for using following device theme -->
   <string name="preference_follow_device_theme">उपकरण थीम को फॉलो करें</string>
+  <!-- The title of the error page for websites that do not support HTTPS when HTTPS-Only is turned on -->
+  <string name="errorpage_httpsonly_title2">यह साइट HTTPS का समर्थन नहीं करती</string>
+  <!--
+    The text of the error page for websites that do not support HTTPS when HTTPS-Only is turned on. %1$s is the name of the app (for example "Firefox Focus" or "Firefox Klar"),
+    %2$s is a URL to a support article. Contains a button that will redirect the user to Privacy & Security Screen.
+  -->
+  <string name="errorpage_httpsonly_message2" tools:ignore="IncorrectStraightDoubleQuote"><![CDATA[ज़्यादा सुरक्षा के लिए, %1$s जब भी संभव हो HTTPS संपर्क इस्तेमाल करने की कोशिश करता है। <a href=\"%2$s\">और जानें</a> <br/><br/> इस सेटिंग को सेटिंग > गोपनीयता और सुरक्षा > सुरक्षा में बदलें।]]></string>
+  <!--
+    The strings below override AC defaults and are only referenced from there.
+
+    The document title and heading of the error page shown when a website has an invalid or expired SSL certificate.
+  -->
+  <string name="mozac_browser_errorpages_security_bad_cert_title" tools:ignore="UnusedResources">संपर्क सुरक्षित नहीं है</string>
+  <!-- The error message shown when a website has an invalid or expired SSL certificate. -->
+  <string name="mozac_browser_errorpages_security_bad_cert_message" tools:ignore="UnusedResources"><![CDATA[यह सर्वर के कॉन्फ़िगरेशन से जुड़ी कोई समस्या हो सकती है या हो सकता है कि कोई सर्वर की नकल करने की कोशिश कर रहा हो। <br/><br/> अगर आपने पहले कभी इस सर्वर से सफलतापूर्वक कनेक्ट किया है, तो यह एक अस्थायी गड़बड़ी हो सकती है।]]></string>
+  <!-- The advanced certificate information shown when a website has an invalid SSL certificate. The %1$s will be replaced by the app name and %2$s will be replaced by website URL. It's only shown when a website has an invalid SSL certificate. -->
+  <string name="mozac_browser_errorpages_security_bad_cert_techInfo" tools:ignore="UnusedResources"><![CDATA[<label>हो सकता है कि कोई साइट की नकल करने की कोशिश कर रहा हो और आगे बढ़ना जोखिम भरा हो सकता है।</label> <br><br>\n<label>%1$s को <b>%2$s</b> पर भरोसा नहीं है, क्योंकि या तो इसका प्रमाणपत्र जारी करने वाला अज्ञात है, या प्रमाणपत्र स्व-हस्ताक्षरित है, या सर्वर सही मध्यवर्ती प्रमाणपत्र नहीं भेज रहा है।</label>]]></string>
+  <!--
+    Sessions List
+
+    Content description (not visible, for screen readers etc.): Button that closes a tab n the sessions list
+  -->
+  <string name="close_tab">टैब बंद करें</string>
+  <!--
+    Contextual Feature Recommendation Popups
+
+    CFR for Toolbar Shield Icon (Banner Info Message)
+  -->
+  <string name="cfr_for_toolbar_shield_icon2">पकड़ लिया! हमने इस साइट को आपकी जासूसी करने से रोक दिया। हम क्या ब्लॉक कर रहे हैं, यह देखने के लिए कभी भी शील्ड पर टैप करें।</string>
+  <!--
+    Tool Tip for: Privacy and Security Settings Screen  task : https://github.com/mozilla-mobile/focus-android/issues/6211
+
+    Tool Tip Title
+  -->
+  <string name="tool_tip_title">आप सुरक्षित हैं!</string>
+  <!-- Tool Tip Message -->
+  <string name="tool_tip_message">ये तयशुदा सेटिंग मज़बूत सुरक्षा देती हैं। लेकिन अपनी ज़रूरतों के हिसाब से सेटिंग में बदलाव करना भी आसान है।</string>
+  <!-- Tool Tip "X" button Content description (not visible, for screen readers etc.) :Button that closes the tool tip -->
+  <string name="tool_tip_dismiss_button_content_description">निरस्त करें</string>
+  <!-- CFR for Toolbar Delete Icon (Banner Info Message) -->
+  <string name="cfr_for_toolbar_delete_icon2">सब कुछ मिटाने के लिए यहाँ टैप करें — इतिहास, कुकीज़, सब कुछ — और नए टैब पर फिर से शुरुआत करें।</string>
+  <!--
+    Content description (not visible, for screen readers etc.): This is the description for the
+    close button from promote search widget dialog.
+  -->
+  <string name="promote_search_widget_dialog_content_description">बंद करें</string>
+  <!--
+    Content description (not visible, for screen readers etc.): This is the description for
+    picture of search widget from promote search widget dialog.
+  -->
+  <string name="promote_search_widget_dialog_picture_content_description">खोज विजेट</string>
+  <!-- This is the title of promote search widget dialog. -->
+  <string name="promote_search_widget_dialog_title">ब्राउज़िंग इतिहास मिटा दिया गया! 🎉</string>
+  <!-- Banner Info Message than will appear when user first enters in the app. The location is at the toolbar. -->
+  <string name="cfr_for_start_browsing">अपना निजी ब्राउज़िंग सत्र शुरू करें, और ब्राउज़ करते समय हम ट्रैकर और दूसरी बुरी चीज़ों को ब्लॉक कर देंगे।</string>
+  <!--
+    This is the subtitle of promote search widget dialog. %1$s will get replaced with the name
+    of the app (e.g. "Focus")
+  -->
+  <string name="promote_search_widget_dialog_subtitle">हम आपको निजी ब्राउज़िंग करने देते हैं, लेकिन अगली बार अपनी मुख्य स्क्रीन पर %1$s विजेट से जल्दी शुरुआत करें।</string>
+  <!--
+    This is te text from add search widget to home screen button .The button is located on
+    promote search widget dialog.
+  -->
+  <string name="promote_search_widget_button_text">मुख्य स्क्रीन में विजेट जोड़ें</string>
+  <!--
+    This is te text of the snackbar that appears after the search widget was added successfully
+    to the home screen.
+  -->
+  <string name="promote_search_widget_snackbar_message">मुख्य स्क्रीन में विजेट जोड़ा गया</string>
+  <!--
+    Messages explaining how to exit fullscreen mode
+
+    Message shown to explain how to exit fullscreen mode when gesture navigation is enabled.
+
+    This text should be as short as possible, max 68 chars
+  -->
+  <string name="exit_fullscreen_with_gesture_short">बाहर निकलने के लिए ऊपर से ड्रैग करें और बैक जेस्चर का इस्तेमाल करें</string>
+  <!--
+    Message shown to explain how to exit fullscreen mode when using back button navigation.
+
+    This text should be as short as possible, max 68 chars
+  -->
+  <string name="exit_fullscreen_with_back_button_short">बाहर निकलने के लिए ऊपर से ड्रैग करें और वापस बटन दबाएँ</string>
 </resources>

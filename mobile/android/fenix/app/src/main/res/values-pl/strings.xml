@@ -186,6 +186,16 @@
   <string name="customize_menu">Dostosuj menu</string>
   <!-- Alert message shown in the "Customize menu" screen when the user tries to hide a menu section which cannot be hidden. -->
   <string name="customize_menu_cannot_hide_section">Tej sekcji nie można ukryć</string>
+  <!-- Customize menu screen - Accessibility description - name of the menu section that groups the Back, Forward, Share and Refresh buttons. Read aloud after "Section", followed by the button names ("Section “Page controls”: Back, Forward, Share, Refresh"). -->
+  <string name="browser_menu_section_page_controls">Przyciski nawigacji</string>
+  <!-- Customize menu screen - Accessibility description - name of the menu section that groups the page tools (Bookmark page, Find in page, Desktop site, Extensions, etc.). Read aloud after "Section", followed by the tool names ("Section “Tools”: Bookmark page, Find in page…"). -->
+  <string name="browser_menu_section_tools">Narzędzia</string>
+  <!-- Customize menu screen - Accessibility description - name of the menu section that groups the History, Bookmarks, Downloads and Passwords items. Read aloud after "Section", followed by the item names ("Section “Library”: History, Bookmarks, Downloads, Passwords"). -->
+  <string name="browser_menu_section_library">Biblioteka</string>
+  <!-- Customize menu screen - Accessibility description - name of the menu section that groups the Sign in and Settings items. Read aloud after "Section", followed by the item names ("Section “Accounts and settings”: Sign in, Settings"). -->
+  <string name="browser_menu_section_accounts_and_settings">Konta i\u00a0ustawienia</string>
+  <!-- Customize menu screen - Accessibility description - name of the menu section that groups the New tab and New private tab actions. Read aloud after "Section", followed by the action names ("Section “New tab”: New tab, New private tab"). -->
+  <string name="browser_menu_section_new_tab">Nowa karta</string>
   <!-- Title of the dialog shown when resetting the menu to its default layout (removing all user customizations) -->
   <string name="menu_customize_reset_dialog_title">Czy przywrócić domyślne menu?</string>
   <!-- Message of the dialog shown when resetting the menu to its default layout (removing all user customizations) -->
@@ -283,6 +293,8 @@
   <string name="browser_menu_passwords">Hasła</string>
   <!-- Content description (not visible, for screen readers etc.) for the handle used to drag the main menu at the bottom of the screen. -->
   <string name="browser_close_main_menu_handlebar_content_description">Zamknij menu</string>
+  <!-- Content description (not visible, used by screen readers, etc.) for the heading of the menu opened from the customize menu screen to preview pending changes. It is read before the menu items. The items are shown for preview only and do nothing when tapped. -->
+  <string name="browser_menu_preview_heading_content_description">Podgląd menu. Tutaj nie można włączać elementów.</string>
   <!-- Content description (not visible, for screen readers etc.) for main menu navigation header. -->
   <string name="browser_main_menu_content_description_navigation_header">Nawigacja</string>
   <!-- Content description (not visible, for screen readers etc.) for bottom sheet handlebar custom tab menu. -->
@@ -343,6 +355,10 @@
     Content description for the translate page toolbar button that opens the translations dialog when no translation has occurred.
   -->
   <string name="browser_toolbar_translate">Przetłumacz stronę</string>
+  <!-- Accessibility description for the toolbar button displayed when the page the user is on has a video that can be opened in a picture-in-picture window -->
+  <string name="browser_toolbar_picture_in_picture">Obraz w\u00a0obrazie</string>
+  <!-- Accessibility description for the toolbar button displayed while the current page's video is playing in a picture-in-picture window. Tapping the button closes that window. -->
+  <string name="browser_toolbar_picture_in_picture_close">Zamknij „Obraz w\u00a0obrazie”</string>
   <!-- CFR description for the browser toolbar describing the "Shake to summarize feature" -->
   <string name="browser_toolbar_summarize_cfr_description">Potrząśnij urządzeniem, aby w\u00a0kilka sekund streścić tę stronę. ⚡️</string>
   <!--
@@ -1172,6 +1188,8 @@
   <string name="preferences_enable_sync_title">Synchronizowanie tego urządzenia</string>
   <!-- Preference summary for the toggle that turns sync on or off for the device, shown when sync is on. -->
   <string name="preferences_enable_sync_summary_sync_enabled">Kopia zapasowa Twoich danych jest dostępna na synchronizowanych urządzeniach.</string>
+  <!-- Preference summary for the toggle that turns sync on or off for the device, shown when sync is off. It explains where synced data comes from. -->
+  <string name="preferences_enable_sync_summary_sync_disabled_2">Użyje danych zachowanych na koncie.</string>
   <!-- Preference summary for the toggle that turns sync on or off for the device, shown when sync is off. It explains where synced data comes from. %1$s is the Firefox brand name. -->
   <string name="preferences_enable_sync_summary_sync_disabled">Użyje danych zachowanych na koncie przeglądarki %1$s.</string>
   <!-- Summary for the sync preference category. -->
@@ -1692,6 +1710,8 @@
   <string name="add_to_new_tab_group_content_description">Dodaj do nowej grupy kart</string>
   <!-- Label for adding to a new tab group. -->
   <string name="add_to_new_tab_group_title">Nowa grupa kart</string>
+  <!-- Label to add a link in a new tab inside a tab group. -->
+  <string name="contextmenu_open_in_tab_group">Otwórz w\u00a0grupie kart</string>
   <plurals name="tab_group_tabs_count_subtitle">
     <!--
       Subtitle for the number of tabs in a tab group.
@@ -2108,15 +2128,21 @@
   <string name="unsubmitted_crash_dialog_negative_button_2">Zamknij</string>
   <!-- Unsubmitted crash dialog negative button to never be asked for the submission -->
   <string name="unsubmitted_crash_requested_by_devs_dialog_never_button">Nie pytaj ponownie</string>
+  <!-- Unsubmitted crash dialog negative button to never be asked for the submission, displayed in all capital letters. -->
+  <string name="unsubmitted_crash_requested_by_devs_dialog_never_button_2" tools:ignore="UnusedResources">Nie pytaj ponownie</string>
   <!-- Unsubmitted crash dialog positive button to submit crash report -->
   <string name="unsubmitted_crash_dialog_positive_button_2">Wyślij</string>
   <!-- Unsubmitted crash dialog positive button to submit crash report -->
   <string name="unsubmitted_crash_dialog_positive_button">Wyślij zgłoszenie awarii</string>
+  <!-- Unsubmitted crash dialog positive button to submit crash report, displayed in all capital letters. -->
+  <string name="unsubmitted_crash_dialog_positive_button_3" tools:ignore="UnusedResources">Wyślij zgłoszenie awarii</string>
   <!-- Body text for crash report dialog. %s is the link text in the annotated string (ie. "Learn More") -->
   <string name="unsubmitted_crash_dialog_body">Zgłoszenia awarii pomagają nam diagnozować i\u00a0naprawiać problemy z\u00a0przeglądarką. Mogą one zawierać dane osobowe lub prywatne informacje. %s</string>
   <string name="unsubmitted_crash_dialog_learn_more">Więcej informacji</string>
   <!-- Unsubmitted crash dialog button to open a web page with more details on the feature and privacy policy -->
   <string name="unsubmitted_crash_requested_by_devs_learn_more">Więcej informacji</string>
+  <!-- Unsubmitted crash dialog button to open a web page with more details on the feature and privacy policy, displayed in all capital letters. -->
+  <string name="unsubmitted_crash_requested_by_devs_learn_more_2" tools:ignore="UnusedResources">Więcej informacji</string>
   <!--
     Bookmarks
 
@@ -3237,6 +3263,10 @@
   <string name="preferences_credit_cards_save_and_autofill_cards_2">Zachowywanie i\u00a0wypełnianie metod płatności</string>
   <!-- Preference summary for saving and autofilling payment method data. %s is the name of the app (for example "Firefox"). -->
   <string name="preferences_credit_cards_save_and_autofill_cards_summary_2">%s szyfruje wszystkie zachowywane metody płatności</string>
+  <!-- Preference for saving the security codes of credit cards. -->
+  <string name="preferences_credit_cards_save_security_codes">Zachowywanie kodów zabezpieczających</string>
+  <!-- Preference summary for saving the security codes of credit cards. %s is the name of the app (for example "Firefox"). -->
+  <string name="preferences_credit_cards_save_security_codes_summary">%s szyfruje numer karty i\u00a0kod zabezpieczający, co przyspiesza następne płatności</string>
   <!-- Preference option for syncing credit cards across devices. This is displayed when the user is not signed into sync -->
   <string name="preferences_credit_cards_sync_cards_across_devices">Synchronizuj karty między urządzeniami</string>
   <!-- Preference option for syncing credit cards across devices. This is displayed when the user is signed into sync -->
@@ -3273,6 +3303,8 @@
   <string name="credit_cards_expiration_date_year">Rok daty ważności</string>
   <!-- The header for the name on the credit card -->
   <string name="credit_cards_name_on_card">Imię i\u00a0nazwisko</string>
+  <!-- The header for the optional security code of a credit card. CVV is the abbreviation of the card security code. -->
+  <string name="credit_cards_cvv_optional">Kod CVV (opcjonalnie)</string>
   <!-- The text for the "Delete card" menu item for deleting a credit card -->
   <string name="credit_cards_menu_delete_card">Usuń kartę</string>
   <!-- The text for the "Delete card" button for deleting a credit card -->
@@ -3289,10 +3321,16 @@
   <string name="credit_cards_cancel_button">Anuluj</string>
   <!-- Title of the "Saved cards" screen -->
   <string name="credit_cards_saved_cards">Zachowane karty</string>
+  <!-- Text in the saved cards list that indicates the security code for a credit card is being stored -->
+  <string name="credit_cards_cvv_saved">Zachowano kod CVV</string>
   <!-- Error message for card number validation -->
   <string name="credit_cards_number_validation_error_message_2">Podaj prawidłowy numer karty</string>
   <!-- Error message for card name on card validation -->
   <string name="credit_cards_name_on_card_validation_error_message_2">Dodaj imię i\u00a0nazwisko</string>
+  <!-- Error message for a credit card security code that does not meet the 3-digit length requirement. -->
+  <string name="credit_cards_cvv_validation_error_message">Kod zabezpieczający musi mieć 3 cyfry</string>
+  <!-- Error message for a credit card security code that does not meet the 4-digit length requirement (used for American Express cards only) -->
+  <string name="credit_cards_cvv_amex_validation_error_message">Kody zabezpieczające American Express mają 4 cyfry</string>
   <!-- Message displayed in biometric prompt displayed for authentication before allowing users to view their saved credit cards -->
   <string name="credit_cards_biometric_prompt_message">Odblokuj, aby wyświetlić zachowane karty</string>
   <!-- Title of warning dialog if users have no device authentication set up -->
@@ -3705,6 +3743,12 @@
   <!--
     Translations options dialog
 
+    Title of the translation options dialog that allows a user to set their translation preferences for the site the user is currently on.
+  -->
+  <string name="translation_option_bottom_sheet_title_heading2">Preferencje tłumaczenia</string>
+  <!--
+    Translations options dialog
+
     Title of the translation options dialog that allows a user to set their translation options for the site the user is currently on.
   -->
   <string name="translation_option_bottom_sheet_title_heading">Opcje tłumaczenia</string>
@@ -3943,6 +3987,8 @@
   <string name="certificate_details_panel_secure_connection_title">Zabezpieczone połączenie</string>
   <!-- Certificate panel - Label for the organization, locality and country the website's certificate was issued to -->
   <string name="certificate_details_panel_issued_to_label">Certyfikat wystawiony dla:</string>
+  <!-- Certificate panel - Label for the name of the certificate authority that verified and issued the website's certificate -->
+  <string name="certificate_details_panel_verified_by_label">Zweryfikowane przez:</string>
   <!-- Certificate panel - Content description (not visible, for screen readers etc.) for the EU trust mark logo, shown when the website's certificate is a Qualified Website Authentication Certificate (QWAC) as specified in EU Regulation 2024/1183 -->
   <string name="certificate_details_panel_eu_trust_mark_content_description">Znak zaufania UE</string>
   <plurals name="trackers_blocked_panel_total_num_trackers_blocked_2">
@@ -4019,6 +4065,8 @@
   <string name="clear_site_data_dialog_negative_button_text">Anuluj</string>
   <!-- Text for the connection security panel when the site is secure. -->
   <string name="connection_security_panel_secure">Zabezpieczone połączenie</string>
+  <!-- Action description (not visible, for screen readers etc.) for the “Secure connection” link in the protection panel header, which opens a page showing the website's certificate details. Screen readers announce it after “Double tap to” -->
+  <string name="connection_security_panel_view_certificate_details">wyświetlić informacje o\u00a0certyfikacie</string>
   <!-- Text for the connection security panel when the site is not secure. -->
   <string name="connection_security_panel_not_secure">Niezabezpieczone połączenie</string>
   <!-- Text for the connection security panel when accessed from local PDF. -->
@@ -4529,6 +4577,8 @@
   <string name="wrex_widget_match_suspended">Zawieszony</string>
   <!-- Label shown on the sports widget match status badge when a match has been postponed to a later date. -->
   <string name="wrex_widget_match_postponed">Przełożony</string>
+  <!-- Label shown on the sports widget match status badge when a match has been canceled. -->
+  <string name="wrex_widget_match_canceled">Odwołany</string>
   <!-- Sports widget action label to refresh match data after an error. -->
   <string name="wrex_widget_error_refresh">Odśwież</string>
   <!-- Sports widget menu item to view the team's match results. -->

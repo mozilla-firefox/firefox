@@ -135,25 +135,44 @@
     %s is the search engine name (for example: DuckDuckGo).
   -->
   <string name="search_engine_icon_content_description_1">Meklētājs: %s</string>
+  <!-- Title for the privacy preferences dialog shown during onboarding. Note: The word "Firefox" should NOT be translated. -->
+  <string name="onboarding_preferences_dialog_title" tools:ignore="BrandUsage">Palīdziet mums uzlabot Firefox</string>
   <!-- Learn more link for the crash reporting option in the privacy preferences dialog shown during onboarding. -->
   <string name="onboarding_preferences_dialog_crash_reporting_learn_more_2">Uzzināt vairāk</string>
+  <!-- Body text for the startup crash page. %s is the name of the app (for example "Firefox") -->
+  <string name="startup_crash_body">Atverot %s, radās problēma.\n\nAvārijas ziņojuma nosūtīšana palīdz mums diagnosticēt un novērst problēmas ar pārlūkprogrammu. Ziņojumos var būt ietverti personas vai sensitīvi dati.</string>
+  <string name="onboarding_preferences_dialog_usage_data_description_2" tools:ignore="BrandUsage">Dati par jūsu ierīci, aparatūras konfigurāciju un to, kā jūs izmantojat Firefox, palīdz uzlabot funkcijas, veiktspēju un stabilitāti ikvienam.</string>
   <string name="onboarding_preferences_dialog_usage_data_learn_more_2">Uzzināt vairāk</string>
   <!-- Terms of use (ToU) second subheader. -->
   <string name="onboarding_redesign_tou_subheader_two" tools:ignore="UnusedResources">Automātiska aizsardzība pret izsekošanu</string>
+  <!--
+    Terms of use (ToU) third body text. 'Firefox' and 'Mozilla' are intentionally hardcoded.
+    %1$s is replaced by an active link using onboarding_redesign_tou_body_three_link_text as text (“Manage Settings”).
+  -->
+  <string name="onboarding_redesign_tou_body_three" tools:ignore="BrandUsage,UnusedResources">Lai palīdzētu uzlabot pārlūku, Firefox nosūta diagnostikas un mijiedarbības datus Mozilla. %1$s</string>
   <!-- Used as text for the link in onboarding_redesign_tou_body_three. -->
   <string name="onboarding_redesign_tou_body_three_link_text" tools:ignore="UnusedResources">Pārvaldīt iestatījumus</string>
   <!-- Terms of use (ToU) onboarding page continue button label. -->
   <string name="onboarding_redesign_tou_agree_and_continue_button_label" tools:ignore="UnusedResources">Turpināt</string>
   <!-- Onboarding label for 'Continue' button. -->
   <string name="onboarding_redesign_continue_button" tools:ignore="UnusedResources">Turpināt</string>
+  <!-- Marketing onboarding page title. 'Firefox' is intentionally hardcoded. -->
+  <string name="onboarding_marketing_redesign_title" tools:ignore="BrandUsage">Palīdziet mums attīstīt Firefox</string>
   <!-- Set to default browser onboarding redesign title. -->
   <string name="onboarding_redesign_set_default_browser_title" tools:ignore="UnusedResources">Iegūsti automātisku aizsardzību pret izsekošanu pēc noklusējuma</string>
+  <!-- Set to default browser onboarding redesign body. -->
+  <string name="onboarding_redesign_set_default_browser_body" tools:ignore="UnusedResources">Viens pieskāriens palīdz apturēt uzņēmumus no jūsu klikšķu izspiegošanas.</string>
   <!-- "Continue" onboarding button. -->
   <string name="nova_onboarding_continue_button">Turpināt</string>
   <!-- "Continue browsing" onboarding button. -->
   <string name="nova_onboarding_continue_browsing_button" tools:ignore="UnusedResources">Turpināt pārlūkošanu</string>
   <!-- "Skip" onboarding button. -->
   <string name="nova_onboarding_skip_button">Izlaist</string>
+  <!--
+    Terms of use (ToU) onboarding body line three. 'Firefox' and 'Mozilla' are intentionally hardcoded.
+    %1$s is replaced by an active link, using nova_onboarding_tou_body_line_3_link_text as text (“Manage Settings”).
+  -->
+  <string name="nova_onboarding_tou_body_line_3" tools:ignore="BrandUsage">Lai palīdzētu uzlabot pārlūku, Firefox nosūta diagnostikas un mijiedarbības datus Mozilla. %1$s</string>
   <!-- Terms of use (ToU) onboarding body line three link text for nova_onboarding_tou_body_line_3. -->
   <string name="nova_onboarding_tou_body_line_3_link_text">Pārvaldīt iestatījumus</string>
   <!-- "Set to default" onboarding title. -->
@@ -168,6 +187,10 @@
   <string name="nova_onboarding_sync_pairing_scan_button">Nolasīt pārī savienošanas kodu</string>
   <!-- Secondary button of the onboarding pairing card. Opens the Mozilla account sign-in page. -->
   <string name="nova_onboarding_sync_pairing_email_button">Pieteikties ar e-pasta adresi</string>
+  <!-- Marketing onboarding title. -->
+  <string name="nova_onboarding_marketing_title">Palīdziet mums veidot labāku internetu</string>
+  <!-- Marketing onboarding body. 'Firefox' and 'Mozilla' are intentionally hardcoded. -->
+  <string name="nova_onboarding_marketing_body_3" tools:ignore="BrandUsage,UnusedResources">Jūs varat palīdzēt mums sasniegt vairāk cilvēku, ļaujot Mozilla informēt kanālus, kuros mēs reklamējam Firefox, ka esat Firefox lietotājs.</string>
   <!-- Marketing onboarding body link text. -->
   <string name="nova_onboarding_marketing_body_link_text_1">Uzzināt vairāk</string>
   <!-- Text preview for smaller sized widgets -->
@@ -408,6 +431,14 @@
   <string name="add_to_new_tab_group_content_description">Pievienot jaunai ciļņu kopai</string>
   <!-- Label to add a link in a new tab inside a tab group. -->
   <string name="contextmenu_open_in_tab_group">Atvērt ciļņu kopā</string>
+  <!-- Title of the confirmation dialog shown when moving the last tab out of a group will delete the group. %s is the group name, which defaults to a value such as "Group 1" but can be edited by the user to contain arbitrary text. -->
+  <string name="move_last_tab_and_delete_group_confirmation_dialog_title">Pārvietot pēdējo %s cilni?</string>
+  <!-- Body of the confirmation dialog shown when moving the last tab out of a group will delete the group. %1$s is the destination group name. %2$s is the source group name that will be deleted. Both names default to values such as "Group 1" but can be edited by the user to contain arbitrary text. -->
+  <string name="move_last_tab_and_delete_group_confirmation_dialog_body">Šī cilne tiks pārvietota uz %1$s. %2$s tiks izdzēsta, jo tā būs tukša.</string>
+  <!-- Text shown on the confirm button for the confirmation dialog shown when moving the last tab out of a group will delete the group. -->
+  <string name="move_last_tab_and_delete_group_confirmation_dialog_confirm">Pārvietot cilni</string>
+  <!-- Text shown on the cancel button for the confirmation dialog shown when moving the last tab out of a group will delete the group. -->
+  <string name="move_last_tab_and_delete_group_confirmation_dialog_cancel">Atcelt</string>
   <!--
     Content description for the Expand button on the contracted menu for a tab group:
     when tapped, tabs are displayed in an expanded grid or list view, taking up the full screen.
@@ -655,6 +686,8 @@
   <string name="ip_protection_settings_title">Iebūvēts VPN</string>
   <!-- Link text that opens additional information about the browser VPN -->
   <string name="ip_protection_learn_more">Uzzināt vairāk</string>
+  <!-- Accessibility description for the button that closes promotional banners or messages on the VPN settings screen (without triggering any effect) -->
+  <string name="ip_protection_settings_message_dismiss">Noraidīt</string>
   <!-- Badge label shown in the menu item when the browser VPN has an error -->
   <string name="ip_protection_menu_error">Kļūda</string>
   <!-- Badge label shown in the VPN menu item when the user is eligible for the feature but needs to authenticate / authorize to enable it -->
@@ -663,6 +696,13 @@
   <string name="ip_protection_toolbar_pill_label_off">VPN izslēgts</string>
   <!-- Accessibility description for the browser VPN pill in the address bar when the VPN has turned off -->
   <string name="ip_protection_toolbar_pill_description_off">VPN ir izslēgts.</string>
+  <!--
+    The body of the VPN onboarding card when the user qualifies for using VPN without signing in to a Mozilla account
+    %1$d is the amount of free data in GB available without signing in (for example "5").
+    %2$d is the amount of data in GB available after signing in (for example "50").
+    %3$s is a link using ip_protection_onboarding_body_link_promo (“Learn more”) as text. It links to a support article about VPN on Firefox.
+  -->
+  <string name="ip_protection_onboarding_body_no_fxa">Ieslēdz, lai padarītu pārlūkošanu privātāku un grūtāk izsekojamu! Izmēģini to ar %1$d GB bezmaksas datiem vai piesakies, lai iegūtu %2$d GB! %3$s</string>
   <!-- Used as text for a link in ip_protection_onboarding_body. Make sure to adapt capitalization if the link is in the middle of the sentence. -->
   <string name="ip_protection_onboarding_body_link_promo">Uzzināt vairāk</string>
   <!-- Snackbar (in-app pop-up notification) text to signal the VPN location has been reset due to the previously selected VPN location being no longer available. -->
