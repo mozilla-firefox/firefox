@@ -123,8 +123,19 @@ ServiceWorker::~ServiceWorker() {
   Shutdown();
 }
 
-NS_IMPL_CYCLE_COLLECTION_INHERITED(ServiceWorker, DOMEventTargetHelper,
-                                   mRegistration);
+NS_IMPL_CYCLE_COLLECTION_CLASS(ServiceWorker)
+
+NS_IMPL_CYCLE_COLLECTION_TRAVERSE_BEGIN_INHERITED(ServiceWorker,
+                                                  DOMEventTargetHelper)
+  NS_IMPL_CYCLE_COLLECTION_TRAVERSE(mRegistration)
+NS_IMPL_CYCLE_COLLECTION_TRAVERSE_END
+
+NS_IMPL_CYCLE_COLLECTION_UNLINK_BEGIN_INHERITED(ServiceWorker,
+                                                DOMEventTargetHelper)
+  tmp->DisconnectFromOwner();
+  tmp->Shutdown();
+  NS_IMPL_CYCLE_COLLECTION_UNLINK(mRegistration)
+NS_IMPL_CYCLE_COLLECTION_UNLINK_END
 
 NS_IMPL_ADDREF_INHERITED(ServiceWorker, DOMEventTargetHelper)
 NS_IMPL_RELEASE_INHERITED(ServiceWorker, DOMEventTargetHelper)
