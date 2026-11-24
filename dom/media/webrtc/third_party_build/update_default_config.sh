@@ -58,4 +58,5 @@ MOZCONFIG=dom/media/webrtc/third_party_build/default_mozconfig \
   --bug-number $NEW_BUG_NUMBER \
   --milestone $MOZ_NEXT_LIBWEBRTC_MILESTONE \
   --release-target $MOZ_NEXT_FIREFOX_REL_TARGET \
+  --skip-gap-check \
   --output-path $SCRIPT_DIR/default_config_env
