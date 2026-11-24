@@ -216,6 +216,7 @@ struct LoadInfoArgs
   RFPTargetSet?               overriddenFingerprintingSettings;
   bool                        isMetaRefresh;
   bool                        activatedFromNavigationalPrefetch;
+  bool                        navigationalPrefetchHadNetworkTransfer;
   bool                        prefetchCandidateMatched;
   CrossOriginEmbedderPolicy   loadingEmbedderPolicy;
   bool                        originTrialCoepCredentiallessEnabledForTopLevel;

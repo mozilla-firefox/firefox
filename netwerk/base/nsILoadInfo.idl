@@ -753,6 +753,12 @@ interface nsILoadInfo : nsISupports
   [infallible] attribute boolean activatedFromNavigationalPrefetch;
 
   /**
+   * True if the final response of the prefetch this navigation was activated
+   * from came from the network rather than the HTTP cache.
+   */
+  [infallible] attribute boolean navigationalPrefetchHadNetworkTransfer;
+
+  /**
    * True if a Speculation Rules prefetch candidate covered this navigation,
    * whether or not it was fetched. Set in both branches of the prefetch
    * experiment, so a prefetched navigation can be compared against one that

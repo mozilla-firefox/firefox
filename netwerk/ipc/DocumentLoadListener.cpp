@@ -658,6 +658,8 @@ void DocumentLoadListener::ActivateFromPrefetch(
 
   nsCOMPtr<nsILoadInfo> loadInfo = mChannel->LoadInfo();
   loadInfo->SetActivatedFromNavigationalPrefetch(true);
+  loadInfo->SetNavigationalPrefetchHadNetworkTransfer(
+      aRec->FinalResponseHadNetworkTransfer());
 
   // Serve the record's own response rather than whatever entry a cache lookup
   // of the navigation URL would find.

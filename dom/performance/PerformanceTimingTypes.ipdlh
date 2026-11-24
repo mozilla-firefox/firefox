@@ -37,7 +37,7 @@ struct IPCPerformanceTimingData {
   DOMHighResTimeStamp zeroTime;
   DOMHighResTimeStamp fetchStart;
   uint64_t encodedBodySize;
-  uint64_t transferSize;
+  bool hasTransferredData;
   uint64_t decodedBodySize;
   uint16_t responseStatus;
   uint8_t redirectCount;

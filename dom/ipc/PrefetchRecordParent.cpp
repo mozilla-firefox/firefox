@@ -476,7 +476,7 @@ PrefetchRecordParent::OnDataAvailable(nsIRequest* aRequest,
 NS_IMETHODIMP
 PrefetchRecordParent::OnStopRequest(nsIRequest* aRequest, nsresult aStatus) {
   // aRequest, not mChannel: a redirected prefetch ends on the last hop.
-  AccumulateTransferSize(aRequest);
+  mFinalResponseHadNetworkTransfer = AccumulateTransferSize(aRequest) != 0;
   mChannel = nullptr;
 
   if (NS_FAILED(aStatus)) {
@@ -697,15 +697,17 @@ void PrefetchRecordParent::ActorDestroy(ActorDestroyReason aReason) {
   RecordDataUsage();
 }
 
-void PrefetchRecordParent::AccumulateTransferSize(nsIRequest* aRequest) {
+uint64_t PrefetchRecordParent::AccumulateTransferSize(nsIRequest* aRequest) {
   nsCOMPtr<nsIHttpChannel> http = do_QueryInterface(aRequest);
   if (!http) {
-    return;
+    return 0;
   }
   uint64_t size = 0;
-  if (NS_SUCCEEDED(http->GetTransferSize(&size))) {
-    mTransferSize += size;
+  if (NS_FAILED(http->GetTransferSize(&size))) {
+    return 0;
   }
+  mTransferSize += size;
+  return size;
 }
 
 void PrefetchRecordParent::RecordDataUsage() {

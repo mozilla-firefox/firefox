@@ -156,7 +156,7 @@ class PerformanceResourceTiming : public PerformanceEntry {
       return 0;
     }
     // Resource is cached.
-    if (!mTimingData->TransferSize()) {
+    if (!mTimingData->HasTransferredData()) {
       return 0;
     }
     auto encodedBodySize = EncodedBodySize(aSubjectPrincipal);

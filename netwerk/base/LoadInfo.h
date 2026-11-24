@@ -196,6 +196,10 @@ nsresult LoadInfoArgsToLoadInfo(const mozilla::net::LoadInfoArgs& aLoadInfoArgs,
          activatedFromNavigationalPrefetch, false)                             \
   SETTER(bool, ActivatedFromNavigationalPrefetch)                              \
                                                                                \
+  GETTER(bool, NavigationalPrefetchHadNetworkTransfer,                         \
+         navigationalPrefetchHadNetworkTransfer, false)                        \
+  SETTER(bool, NavigationalPrefetchHadNetworkTransfer)                         \
+                                                                               \
   GETTER(bool, PrefetchCandidateMatched, prefetchCandidateMatched, false)      \
   SETTER(bool, PrefetchCandidateMatched)                                       \
                                                                                \

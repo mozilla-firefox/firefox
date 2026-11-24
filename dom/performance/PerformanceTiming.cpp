@@ -172,7 +172,7 @@ PerformanceTimingData::PerformanceTimingData(nsITimedChannel* aChannel,
     : CacheablePerformanceTimingData(aChannel, aHttpChannel),
       mZeroTime(0.0),
       mFetchStart(0.0),
-      mTransferSize(0) {
+      mHasTransferredData(false) {
   mZeroTime = aZeroTime;
 
   if (!StaticPrefs::dom_enable_performance()) {
@@ -242,7 +242,7 @@ PerformanceTimingData::PerformanceTimingData(nsITimedChannel* aChannel,
   if (aHttpChannel) {
     // NOTE: Other fields are set by SetCacheablePropertiesFromHttpChannel,
     // called inside CacheablePerformanceTimingData constructor.
-    SetTransferSizeFromHttpChannel(aHttpChannel);
+    SetHasTransferredDataFromHttpChannel(aHttpChannel);
     SetServedFromCacheFromHttpChannel(aHttpChannel);
   }
 
@@ -282,7 +282,7 @@ PerformanceTimingData::PerformanceTimingData(
       mAsyncOpen(aStartTime),
       mResponseEnd(aEndTime),
       mZeroTime(aZeroTime),
-      mTransferSize(kLocalCacheTransferSize),
+      mHasTransferredData(false),
       mServedFromCache(true),
       mRenderBlockingStatus(aRenderBlockingStatus) {
   if (!StaticPrefs::dom_enable_performance()) {
@@ -334,7 +334,7 @@ PerformanceTimingData::PerformanceTimingData(
       mWorkerResponseEnd(aIPCData.workerResponseEnd()),
       mZeroTime(aIPCData.zeroTime()),
       mFetchStart(aIPCData.fetchStart()),
-      mTransferSize(aIPCData.transferSize()),
+      mHasTransferredData(aIPCData.hasTransferredData()),
       mServedFromCache(aIPCData.servedFromCache()),
       mRenderBlockingStatus(aIPCData.renderBlocking()
                                 ? RenderBlockingStatusType::Blocking
@@ -359,7 +359,7 @@ IPCPerformanceTimingData PerformanceTimingData::ToIPC() {
       mSecureConnectionStart, mConnectEnd, mRequestStart, mResponseStart,
       mCacheReadStart, mResponseEnd, mCacheReadEnd, mWorkerStart,
       mWorkerRequestStart, mWorkerResponseEnd, mZeroTime, mFetchStart,
-      mEncodedBodySize, mTransferSize, mDecodedBodySize, mResponseStatus,
+      mEncodedBodySize, mHasTransferredData, mDecodedBodySize, mResponseStatus,
       mRedirectCount, renderBlocking, mContentType, mAllRedirectsSameOrigin,
       mAllRedirectsPassTAO, mSecureConnection, mBodyInfoAccessAllowed,
       mTimingAllowed, mInitialized, mServedFromCache);
@@ -398,13 +398,15 @@ void CacheablePerformanceTimingData::SetCacheablePropertiesFromHttpChannel(
 void PerformanceTimingData::SetPropertiesFromHttpChannel(
     nsIHttpChannel* aHttpChannel, nsITimedChannel* aChannel) {
   SetCacheablePropertiesFromHttpChannel(aHttpChannel, aChannel);
-  SetTransferSizeFromHttpChannel(aHttpChannel);
+  SetHasTransferredDataFromHttpChannel(aHttpChannel);
   SetServedFromCacheFromHttpChannel(aHttpChannel);
 }
 
-void PerformanceTimingData::SetTransferSizeFromHttpChannel(
+void PerformanceTimingData::SetHasTransferredDataFromHttpChannel(
     nsIHttpChannel* aHttpChannel) {
-  (void)aHttpChannel->GetTransferSize(&mTransferSize);
+  uint64_t transferSize = 0;
+  (void)aHttpChannel->GetTransferSize(&transferSize);
+  mHasTransferredData = transferSize != 0;
 }
 
 void PerformanceTimingData::SetServedFromCacheFromHttpChannel(

@@ -164,6 +164,8 @@ skip-if = [
   "!nightly_build", # Page load events are only consistently sent in nightly.
 ]
 
+["browser_prefetch_transfer_size.js"]
+
 ["browser_prefetch_delivery_type.js"]
 # All channels: the test enables the prefs it needs.
 support-files = [

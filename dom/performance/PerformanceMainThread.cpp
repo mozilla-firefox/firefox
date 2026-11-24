@@ -701,9 +701,13 @@ void PerformanceMainThread::UpdateNavigationTimingEntry() {
   }
 
   // Not in Create(): the cache disposition is unresolved until the load ends.
-  if (mDOMTiming && mDOMTiming->WasActivatedFromNavigationalPrefetch() &&
+  if (httpChannel && mDOMTiming &&
+      mDOMTiming->WasActivatedFromNavigationalPrefetch() &&
       mDocEntry->ServedFromCache()) {
     mDocEntry->SetDeliveryType(u"navigational-prefetch"_ns);
+    nsCOMPtr<nsILoadInfo> loadInfo = httpChannel->LoadInfo();
+    mDocEntry->SetHasTransferredData(
+        loadInfo->GetNavigationalPrefetchHadNetworkTransfer());
   }
 }
 
