@@ -74,6 +74,8 @@ skip-if = [
 
 ["browser_creditCard_preview_cleared_on_pointer_leave.js"]
 
+["browser_creditCard_programmatic_focus.js"]
+
 ["browser_creditCard_submission_autodetect_type.js"]
 
 ["browser_creditCard_submission_normalized.js"]
