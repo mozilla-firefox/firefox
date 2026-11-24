@@ -8,6 +8,7 @@ rules:
 - text-spacing-trim-*: [text-spacing-trim]
 - text-wrap-pretty.html: [text-wrap-pretty]
 - white-space-collapse-*: [white-space-collapse]
+- white-space-trim-*: [white-space-trim]
 - text-wrap-*: [text-wrap]
 - word-spacing-*: [word-spacing]
 - tab-size-*: [tab-size]
