@@ -459,8 +459,8 @@ class TestNsisStage(unittest.TestCase):
             (d / "b").write_text(b, encoding="utf-8")
 
         self.assertNotEqual(
-            nsis_stage.stage_digest(first, set()),
-            nsis_stage.stage_digest(second, set()),
+            nsis_stage.stage_digest(first),
+            nsis_stage.stage_digest(second),
         )
 
     def test_generate_returns_locale_files(self):
@@ -519,13 +519,25 @@ class TestNsisStage(unittest.TestCase):
         self.assertTrue(first)
         self.assertEqual(first, second)
 
-    def test_generate_stamp_tracks_copied_mtime(self):
+    def test_generate_stamp_ignores_copied_mtime(self):
         installer = self._write("src/nsis/installer.nsi", "nsi")
         config_dir = self.tmpdir / "instgen"
 
         os.utime(installer, (1000000, 1000000))
         first = self._generate(installer, config_dir, 2000000)
         os.utime(installer, (1500000, 1500000))
+        second = self._generate(installer, config_dir, 2000000)
+
+        self.assertEqual(first, second)
+
+    def test_generate_stamp_tracks_copied_contents(self):
+        installer = self._write("src/nsis/installer.nsi", "nsi")
+        config_dir = self.tmpdir / "instgen"
+
+        os.utime(installer, (1000000, 1000000))
+        first = self._generate(installer, config_dir, 2000000)
+        Path(installer).write_text("new", encoding="utf-8")
+        os.utime(installer, (1000000, 1000000))
         second = self._generate(installer, config_dir, 2000000)
 
         self.assertNotEqual(first, second)

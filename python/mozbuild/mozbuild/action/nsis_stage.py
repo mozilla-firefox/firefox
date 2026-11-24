@@ -83,17 +83,13 @@ def nsis_stage(
     return 0
 
 
-def stage_digest(config_dir: Path, copied: set[str]) -> str:
+def stage_digest(config_dir: Path) -> str:
     digest = hashlib.sha256()
     for path in sorted(config_dir.rglob("*")):
         if path.is_file():
             data = path.read_bytes()
             name = path.relative_to(config_dir).as_posix()
-            # makensis stores a copied file's mtime in the installer it builds.
-            # Generated files get a fresh mtime every pass, so including theirs
-            # would stop the stamp from converging.
-            mtime = path.stat().st_mtime_ns if name in copied else 0
-            digest.update(f"{len(name)}:{name}:{len(data)}:{mtime}:".encode())
+            digest.update(f"{len(name)}:{name}:{len(data)}:".encode())
             digest.update(data)
     return digest.hexdigest()
 
@@ -297,9 +293,7 @@ def generate(output, *argv: str) -> int | set[str]:
     if ret:
         return ret
 
-    output.write(
-        stage_digest(args.config_dir, {Path(src).name for src in args.installs})
-    )
+    output.write(stage_digest(args.config_dir))
     l10n_dirs = [
         d
         for arg in args.locale_args
