@@ -44,8 +44,6 @@ class LayersIPCChannel : public LayersIPCActor,
 
   virtual bool UsesImageBridge() const { return false; }
 
-  virtual base::ProcessId GetParentPid() const = 0;
-
   virtual nsISerialEventTarget* GetThread() const = 0;
 
   virtual FixedSizeSmallShmemSectionAllocator* GetTileLockAllocator() {

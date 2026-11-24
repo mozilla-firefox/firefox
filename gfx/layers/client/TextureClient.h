@@ -177,8 +177,7 @@ class TextureReadLock {
   static already_AddRefed<TextureReadLock> Deserialize(
       ReadLockDescriptor&& aDescriptor, ISurfaceAllocator* aAllocator);
 
-  virtual bool Serialize(ReadLockDescriptor& aOutput,
-                         base::ProcessId aOther) = 0;
+  virtual bool Serialize(ReadLockDescriptor& aOutput) = 0;
 
   enum LockType {
     TYPE_NONBLOCKING_MEMORY,

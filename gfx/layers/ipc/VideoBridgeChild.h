@@ -48,7 +48,6 @@ class VideoBridgeChild final : public PVideoBridgeChild,
       wr::MaybeExternalImageId& aExternalImageId) override;
 
   // LayersIPCChannel
-  base::ProcessId GetParentPid() const override { return OtherPid(); }
   nsISerialEventTarget* GetThread() const override { return mThread; }
   void CancelWaitForNotifyNotUsed(uint64_t aTextureId) override {
     MOZ_ASSERT_UNREACHABLE("NO RECYCLING HERE");

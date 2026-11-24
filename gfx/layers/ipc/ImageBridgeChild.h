@@ -163,8 +163,6 @@ class ImageBridgeChild final : public PImageBridgeChild,
    */
   nsISerialEventTarget* GetThread() const override;
 
-  base::ProcessId GetParentPid() const override { return OtherPid(); }
-
   void SyncWithCompositor(
       const Maybe<uint64_t>& aWindowID = Nothing()) override;
 

@@ -1270,7 +1270,7 @@ bool TextureClient::InitIPDLActor(CompositableForwarder* aForwarder) {
     MutexAutoLock lock(mMutex);
     EnsureHasReadLock();
     if (mReadLock) {
-      mReadLock->Serialize(readLockDescriptor, GetAllocator()->GetParentPid());
+      mReadLock->Serialize(readLockDescriptor);
     }
   }
 
@@ -1365,7 +1365,7 @@ bool TextureClient::InitIPDLActor(KnowsCompositor* aKnowsCompositor,
     MutexAutoLock lock(mMutex);
     EnsureHasReadLock();
     if (mReadLock) {
-      mReadLock->Serialize(readLockDescriptor, GetAllocator()->GetParentPid());
+      mReadLock->Serialize(readLockDescriptor);
     }
   }
 
@@ -1682,7 +1682,7 @@ class MemoryTextureReadLock : public NonBlockingTextureReadLock {
 
   bool IsValid() const override { return true; };
 
-  bool Serialize(ReadLockDescriptor& aOutput, base::ProcessId aOther) override;
+  bool Serialize(ReadLockDescriptor& aOutput) override;
 
   Atomic<int32_t> mReadCount;
 };
@@ -1715,7 +1715,7 @@ class ShmemTextureReadLock : public NonBlockingTextureReadLock {
 
   LockType GetType() override { return TYPE_NONBLOCKING_SHMEM; }
 
-  bool Serialize(ReadLockDescriptor& aOutput, base::ProcessId aOther) override;
+  bool Serialize(ReadLockDescriptor& aOutput) override;
 
   mozilla::layers::ShmemSection& GetShmemSection() { return mShmemSection; }
 
@@ -1765,7 +1765,7 @@ class CrossProcessSemaphoreReadLock : public TextureReadLock {
   }
   bool IsValid() const override { return !!mSemaphore; }
 
-  bool Serialize(ReadLockDescriptor& aOutput, base::ProcessId aOther) override;
+  bool Serialize(ReadLockDescriptor& aOutput) override;
 
   LockType GetType() override { return TYPE_CROSS_PROCESS_SEMAPHORE; }
 
@@ -1844,8 +1844,7 @@ MemoryTextureReadLock::~MemoryTextureReadLock() {
   MOZ_COUNT_DTOR(MemoryTextureReadLock);
 }
 
-bool MemoryTextureReadLock::Serialize(ReadLockDescriptor& aOutput,
-                                      base::ProcessId aOther) {
+bool MemoryTextureReadLock::Serialize(ReadLockDescriptor& aOutput) {
   // AddRef here and Release when receiving on the host side to make sure the
   // reference count doesn't go to zero before the host receives the message.
   // see TextureReadLock::Deserialize
@@ -1891,8 +1890,7 @@ ShmemTextureReadLock::~ShmemTextureReadLock() {
   MOZ_COUNT_DTOR(ShmemTextureReadLock);
 }
 
-bool ShmemTextureReadLock::Serialize(ReadLockDescriptor& aOutput,
-                                     base::ProcessId aOther) {
+bool ShmemTextureReadLock::Serialize(ReadLockDescriptor& aOutput) {
   aOutput = ReadLockDescriptor(UntrustedShmemSection(
       Shmem(mShmemSection.shmem()), std::move(mShmemSection.offset()),
       std::move(mShmemSection.size())));
@@ -1957,8 +1955,7 @@ int32_t ShmemTextureReadLock::GetReadCount() {
   return info->readCount;
 }
 
-bool CrossProcessSemaphoreReadLock::Serialize(ReadLockDescriptor& aOutput,
-                                              base::ProcessId aOther) {
+bool CrossProcessSemaphoreReadLock::Serialize(ReadLockDescriptor& aOutput) {
   if (!mShared && IsValid()) {
     aOutput = ReadLockDescriptor(
         CrossProcessSemaphoreDescriptor(mSemaphore->CloneHandle()));
