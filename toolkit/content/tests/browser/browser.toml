@@ -162,6 +162,8 @@ skip-if = [
 
 ["browser_findbar_hiddenframes.js"]
 
+["browser_findbar_highlight_editing_host.js"]
+
 ["browser_findbar_marks.js"]
 
 ["browser_input_picker_color_scheme.js"]

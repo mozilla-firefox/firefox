@@ -332,7 +332,7 @@ FinderHighlighter.prototype = {
     // Save a clean params set for use later in the `update()` method.
     dict.lastIteratorParams = params;
     if (!this.useModal()) {
-      this.hide(window, this.finder._fastFind.getFoundRange());
+      this.hide(window, !!this.finder._fastFind.getFoundRange());
     }
     this.clear(window);
   },
@@ -399,14 +399,14 @@ FinderHighlighter.prototype = {
    * Clear all highlighted matches. If modal highlighting is enabled and
    * the outline + dimmed background is currently visible, both will be hidden.
    *
-   * @param {nsIDOMWindow} window    The dimmed background will overlay this window.
-   *                                 Optional, defaults to the finder window.
-   * @param {Range}        skipRange A range that should not be removed from the
-   *                                 find selection.
-   * @param {Event}        event     When called from an event handler, this will
-   *                                 be the triggering event.
+   * @param {nsIDOMWindow} window The dimmed background will overlay this window.
+   *                             Optional, defaults to the finder window.
+   * @param {boolean} displayAttention Whether to keep the current find result
+   *                                   displayed in attention mode.
+   * @param {Event} event When called from an event handler, this will be the
+   *                     triggering event.
    */
-  hide(window, skipRange = null, event = null) {
+  hide(window, displayAttention = false, event = null) {
     try {
       window = this.getTopWindow(window);
     } catch (ex) {
@@ -435,12 +435,12 @@ FinderHighlighter.prototype = {
 
     this._clearSelection(
       this.finder._getSelectionController(window),
-      skipRange
+      displayAttention
     );
     for (let frame of dict.frames.keys()) {
       this._clearSelection(
         this.finder._getSelectionController(frame),
-        skipRange
+        displayAttention
       );
     }
 
@@ -450,7 +450,10 @@ FinderHighlighter.prototype = {
       let doc = window.document;
       for (let x = this._editors.length - 1; x >= 0; --x) {
         if (this._editors[x].document == doc) {
-          this._clearSelection(this._editors[x].selectionController, skipRange);
+          this._clearSelection(
+            this._editors[x].selectionController,
+            displayAttention
+          );
           // We don't need to listen to this editor any more
           this._unhookListenersAtIndex(x);
         }
@@ -779,20 +782,20 @@ FinderHighlighter.prototype = {
 
   /**
    * Utility; removes all ranges from the find selection that belongs to a
-   * controller. Optionally skips a specific range.
+   * controller. Optionally keeps the normal selection, which holds the current
+   * find result, displayed as such.
    *
    * @param  {nsISelectionController} controller
-   * @param  {Range}                  restoreRange
+   * @param  {boolean} displayAttention Whether to display the normal selection
+   *                                    in attention mode.
    */
-  _clearSelection(controller, restoreRange = null) {
+  _clearSelection(controller, displayAttention = false) {
     if (!controller) {
       return;
     }
     let sel = controller.getSelection(Ci.nsISelectionController.SELECTION_FIND);
     sel.removeAllRanges();
-    if (restoreRange) {
-      sel = controller.getSelection(Ci.nsISelectionController.SELECTION_NORMAL);
-      sel.addRange(restoreRange);
+    if (displayAttention) {
       controller.setDisplaySelection(
         Ci.nsISelectionController.SELECTION_ATTENTION
       );
@@ -1734,7 +1737,7 @@ FinderHighlighter.prototype = {
       this._scheduleRepaintOfMask.bind(this, window, { contentChanged: true }),
       this._scheduleRepaintOfMask.bind(this, window, { updateAllRanges: true }),
       this._scheduleRepaintOfMask.bind(this, window, { scrollOnly: true }),
-      this.hide.bind(this, window, null),
+      this.hide.bind(this, window, false),
       () => (dict.busySelecting = true),
       () => {
         if (window.document.hidden) {
