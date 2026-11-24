@@ -48,3 +48,45 @@ add_task(async function test_query_node_tags_property() {
 
   toolbarNode.containerOpen = false;
 });
+
+add_task(async function test_folder_children_tags() {
+  let folder = await PlacesUtils.bookmarks.insert({
+    parentGuid: PlacesUtils.bookmarks.unfiledGuid,
+    type: PlacesUtils.bookmarks.TYPE_FOLDER,
+    title: "folder",
+  });
+  let taggedURL = Services.io.newURI("http://tagged.example.com/");
+  await PlacesUtils.bookmarks.insertTree({
+    guid: folder.guid,
+    children: [
+      { url: taggedURL },
+      { url: "http://untagged.example.com/" },
+      { type: PlacesUtils.bookmarks.TYPE_SEPARATOR },
+      { type: PlacesUtils.bookmarks.TYPE_FOLDER, title: "subfolder" },
+    ],
+  });
+  // Bookmark the tagged page elsewhere too, it must not affect its tags.
+  await PlacesUtils.bookmarks.insert({
+    parentGuid: PlacesUtils.bookmarks.menuGuid,
+    url: taggedURL,
+  });
+  PlacesUtils.tagging.tagURI(taggedURL, ["foo", "bar"]);
+
+  let root = PlacesUtils.getFolderContents(folder.guid).root;
+  Assert.deepEqual(
+    Array.from({ length: root.childCount }, (_, i) => root.getChild(i).tags),
+    ["bar,foo", null, null, null],
+    "Check tags of the folder children"
+  );
+  root.containerOpen = false;
+
+  root = PlacesUtils.getFolderContents(folder.guid, true).root;
+  Assert.deepEqual(
+    Array.from({ length: root.childCount }, (_, i) => root.getChild(i).tags),
+    [null],
+    "Check tags of the folder children with excludeItems"
+  );
+  root.containerOpen = false;
+
+  await PlacesUtils.bookmarks.eraseEverything();
+});

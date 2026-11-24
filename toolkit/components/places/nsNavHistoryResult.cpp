@@ -2766,14 +2766,22 @@ nsresult nsNavHistoryFolderResultNode::FillChildrenInternal(
   // by mDBGetURLPageInfo, and additionally contains columns for position,
   // item_child, and folder_child from moz_bookmarks.
   bool isAsync = !!aPendingStmt;
+  // Tags are fetched per child, as pre-aggregating all the tags of the profile
+  // would be expensive for the common small folders.
+  bool fetchTags = !isAsync && !mOptions->ExcludeItems();
   nsCString sql =
       "SELECT "
       "  h.id, h.url, b.title, h.rev_host, h.visit_count, h.last_visit_date, "
       "  null, b.id, b.dateAdded, b.lastModified, b.parent, "_ns +
-      nsCString(
-          isAsync
-              ? " null, "
-              : " (SELECT tags FROM tagged WHERE place_id = h.id) AS tags, ") +
+      nsCString(fetchTags ? " (SELECT group_concat(p.title ORDER BY p.title) "
+                            "  FROM moz_bookmarks bt "
+                            "  JOIN moz_bookmarks p ON p.id = bt.parent "
+                            "  WHERE bt.fk = h.id AND p.parent = ( "
+                            "    SELECT id FROM moz_bookmarks "
+                            "    WHERE guid = " SQL_QUOTE(TAGS_ROOT_GUID) " "
+                            "  ) "
+                            " ) AS tags, "
+                          : " null, ") +
       "  h.frecency, h.hidden, h.guid, null, null, null, b.guid, b.position, "
       "  b.type, b.fk, t.guid, t.id, t.title "
       "FROM moz_bookmarks b "
@@ -2795,10 +2803,7 @@ nsresult nsNavHistoryFolderResultNode::FillChildrenInternal(
     stmt = db->GetAsyncStatement(sql);
     NS_ENSURE_STATE(stmt);
   } else {
-    stmt = db->GetStatement(nsNavHistory::GetTagsSqlFragment(
-                                nsINavHistoryQueryOptions::QUERY_TYPE_BOOKMARKS,
-                                mOptions->ExcludeItems()) +
-                            sql);
+    stmt = db->GetStatement(sql);
     NS_ENSURE_STATE(stmt);
   }
 
