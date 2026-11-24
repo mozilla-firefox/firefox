@@ -445,6 +445,11 @@ already_AddRefed<Promise> DOMLocalization::TranslateElements(
     return nullptr;
   }
 
+  if (domElements.IsEmpty()) {
+    promise->MaybeResolveWithUndefined();
+    return promise.forget();
+  }
+
   if (IsSync()) {
     nativeHandler->RegisterPending();
     auto unregister =

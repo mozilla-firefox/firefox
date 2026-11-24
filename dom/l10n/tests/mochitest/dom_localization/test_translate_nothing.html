@@ -1,0 +1,43 @@
+<!DOCTYPE HTML>
+<html>
+<head>
+  <meta charset="utf-8">
+  <title>Test translating elements that have no data-l10n-id</title>
+  <script src="chrome://mochikit/content/tests/SimpleTest/SimpleTest.js"></script>
+  <link rel="stylesheet" type="text/css" href="chrome://mochikit/content/tests/SimpleTest/test.css">
+  <link rel="localization" href="crashreporter/aboutcrashes.ftl"/>
+  <script type="application/javascript">
+  "use strict";
+  SimpleTest.waitForExplicitFinish();
+
+  document.addEventListener("DOMContentLoaded", async function() {
+    const frag = document.getElementById("frag");
+
+    await document.l10n.translateElements([]);
+    ok(true, "translateElements([]) resolves");
+
+    await document.l10n.translateElements([frag]);
+    ok(true, "translateElements resolves for an element without data-l10n-id");
+
+    await document.l10n.translateFragment(frag);
+    is(frag.textContent.trim(), "Untranslated", "translateFragment resolves and leaves the subtree alone");
+
+    const elem = document.createElement("div");
+    document.body.appendChild(elem);
+    document.l10n.setAttributes(elem, "crash-reports-title");
+    ok(document.hasPendingL10nMutations, "Should have pending mutations");
+    elem.removeAttribute("data-l10n-id");
+    await new Promise(r =>
+      document.addEventListener("L10nMutationsFinished", r, { once: true })
+    );
+    ok(!document.hasPendingL10nMutations, "Should have no more pending mutations");
+    is(elem.textContent.length, 0, "Should not have translated the element");
+
+    SimpleTest.finish();
+  });
+  </script>
+</head>
+<body>
+  <div id="frag"><p>Untranslated</p></div>
+</body>
+</html>

@@ -58,6 +58,8 @@ support-files = ["dom_localization/file_translateElements_held.sjs"]
 
 ["dom_localization/test_translateRoots.html"]
 
+["dom_localization/test_translate_nothing.html"]
+
 ["l10n_mutations/test_append_content_post_dcl.html"]
 
 ["l10n_mutations/test_append_content_pre_dcl.html"]
