@@ -81,7 +81,7 @@ def import_marionette(prog):
                 sys.path.pop(0)
     sys.exit(
         f"{prog}: cannot import marionette_driver. Run this script as "
-        "`./mach python --virtualenv wpt <path>` from a Firefox checkout."
+        "`./mach python --virtualenv desktop-theme <path>` from a Firefox checkout."
     )
 
 

@@ -242,7 +242,7 @@ run() {
     [ -n "$timeout_ms" ] && extra+=(--timeout-ms "$timeout_ms")
     [ -n "$window_size" ] && extra+=(--window-size "$window_size")
     extra+=("${probe_extra[@]+"${probe_extra[@]}"}")
-    if ! "$mach" python --virtualenv wpt -- "$runner" --binary "$binary" \
+    if ! "$mach" python --virtualenv desktop-theme -- "$runner" --binary "$binary" \
         --realm chrome --async --script-file "$test_file" \
         --setpref "shots.label=$label" --setpref "shots.dir=$ff_shots_dir" \
         "${extra[@]+"${extra[@]}"}" \

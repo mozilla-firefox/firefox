@@ -2,14 +2,14 @@
 name: desktop-theme-probing
 description: Use when measuring anything off a running Firefox (geometry, a computed style, media-query or pseudo-class state, a pref, window state, focus, a timing) through the Firefox MCP, `firefox-probe.py`, a Marionette chrome-context probe or a scratch browser-chrome test; when writing or editing such a probe, even a small edit; when it needs `--no-headless`, `xvfb-run`, a headless compositor or the live desktop, or a headless run cannot see a value; when a chrome CSS, `.xhtml` or script edit does not show after a reload, or a launch dies on `Missing chrome or resource URL`; when a probe launch's state differs from a user's (remote-control stripes, an empty profile, about:blank); and before trusting a number a probe printed.
 allowed-tools:
-  - Bash(./mach python --virtualenv wpt .claude/skills/desktop-theme-probing/scripts/firefox-probe.py:*)
-  - Bash(./mach python --virtualenv wpt .agents/skills/desktop-theme-probing/scripts/firefox-probe.py:*)
-  - Bash(./mach python --virtualenv wpt -- .claude/skills/desktop-theme-probing/scripts/firefox-probe.py:*)
-  - Bash(./mach python --virtualenv wpt -- .agents/skills/desktop-theme-probing/scripts/firefox-probe.py:*)
-  - Bash(./mach python --virtualenv wpt .claude/skills/desktop-theme-probing/scripts/marker-probe.py:*)
-  - Bash(./mach python --virtualenv wpt .agents/skills/desktop-theme-probing/scripts/marker-probe.py:*)
-  - Bash(./mach python --virtualenv wpt -- .claude/skills/desktop-theme-probing/scripts/marker-probe.py:*)
-  - Bash(./mach python --virtualenv wpt -- .agents/skills/desktop-theme-probing/scripts/marker-probe.py:*)
+  - Bash(./mach python --virtualenv desktop-theme .claude/skills/desktop-theme-probing/scripts/firefox-probe.py:*)
+  - Bash(./mach python --virtualenv desktop-theme .agents/skills/desktop-theme-probing/scripts/firefox-probe.py:*)
+  - Bash(./mach python --virtualenv desktop-theme -- .claude/skills/desktop-theme-probing/scripts/firefox-probe.py:*)
+  - Bash(./mach python --virtualenv desktop-theme -- .agents/skills/desktop-theme-probing/scripts/firefox-probe.py:*)
+  - Bash(./mach python --virtualenv desktop-theme .claude/skills/desktop-theme-probing/scripts/marker-probe.py:*)
+  - Bash(./mach python --virtualenv desktop-theme .agents/skills/desktop-theme-probing/scripts/marker-probe.py:*)
+  - Bash(./mach python --virtualenv desktop-theme -- .claude/skills/desktop-theme-probing/scripts/marker-probe.py:*)
+  - Bash(./mach python --virtualenv desktop-theme -- .agents/skills/desktop-theme-probing/scripts/marker-probe.py:*)
 ---
 
 # How the desktop-theme family measures
@@ -70,10 +70,10 @@ sweep outlives the command timeout, and `press_key` performs no default action.
 `.claude/skills/desktop-theme-probing/scripts/firefox-probe.py --realm
 chrome` launches a build, evaluates chrome-context JS and prints the result. It
 needs the checkout's Marionette, so run it through `./mach python --virtualenv
-wpt` from the checkout:
+desktop-theme` from the checkout:
 
 ```sh
-./mach python --virtualenv wpt .claude/skills/desktop-theme-probing/scripts/firefox-probe.py \
+./mach python --virtualenv desktop-theme .claude/skills/desktop-theme-probing/scripts/firefox-probe.py \
   --binary <objdir>/dist/bin/firefox --realm chrome \
   --setpref ui.useAccessibilityTheme=1 -e 'return { ... };'
   # chrome's regime under that pref: the host's platform file, section CONTRAST
@@ -82,10 +82,10 @@ wpt` from the checkout:
 The first call in a tree, and sometimes the first after a checkout, a clobber
 or `./mach artifact install`, builds the virtualenv, and its output can land in
 stdout after the result. Build it with a call of its own before the first
-probe: `./mach python --virtualenv wpt -c pass`.
+probe: `./mach python --virtualenv desktop-theme -c pass`.
 
 The help of either bundled script (`firefox-probe.py`, `marker-probe.py`) needs
-`--` before the script path (`./mach python --virtualenv wpt --
+`--` before the script path (`./mach python --virtualenv desktop-theme --
 …/firefox-probe.py --help`), since mach takes a bare `--help` for itself.
 `--script-file FILE` replaces `-e` for a longer snippet.
 

@@ -3,8 +3,8 @@ name: desktop-theme-tokens
 description: Design tokens and CSS variables - picking one for a hard-coded value, *.tokens.json edits, Nova/Figma overrides, buildtokens, value-neutral diffs; one undefined or ineffective on a surface; finding the revision that changed a token's value; a Firefox::Theme or Toolkit::Themes bug, even when the report already names the rule or token.
 allowed-tools:
   - Bash(./mach theme resolve-token:*)
-  - Bash(./mach python --virtualenv wpt .claude/skills/desktop-theme-probing/scripts/firefox-probe.py:*)
-  - Bash(./mach python --virtualenv wpt .agents/skills/desktop-theme-probing/scripts/firefox-probe.py:*)
+  - Bash(./mach python --virtualenv desktop-theme .claude/skills/desktop-theme-probing/scripts/firefox-probe.py:*)
+  - Bash(./mach python --virtualenv desktop-theme .agents/skills/desktop-theme-probing/scripts/firefox-probe.py:*)
 ---
 
 # Verify a design-token change

@@ -259,12 +259,10 @@ differences under `--threshold`, which is §1's "too small" case. `--help`
 covers the rect's origin, `--dpr`, `--offset`, `--lines` (what a caption for a
 change one or two device pixels wide quotes) and the exit codes; the host's
 platform file in `desktop-theme-probing`, section GRABS, gives a grab's scale.
-It needs Pillow, which the `wpt` site carries. On Linux the site's first run can
-print a `PyGObject` build failure, an optional package, and then succeed (bug
-2090261), so ignore the warning and read the exit code. A completed comparison
+It needs Pillow, which the `desktop-theme` site carries. A completed comparison
 exits 0 when no pixel inside `--rect` differs by more than `--threshold`, 1 when
 some do and 2 on an error. Mach itself exits 1 when it fails before the
-comparison runs (e.g. the `wpt` site fails to set up), so a 1 is a result only
+comparison runs (e.g. the `desktop-theme` site fails to set up), so a 1 is a result only
 when the count and bounding box were printed:
 
 ```sh
@@ -288,7 +286,7 @@ Where the result depends on an OS backdrop this host cannot paint (the target's
 platform file, section COMPOSITING), a local capture shows nothing: sample
 the reporter's backdrop and composite the computed layers over it by
 arithmetic instead, and say so.
-Sample it rather than stare at it, through `./mach python --virtualenv wpt`
+Sample it rather than stare at it, through `./mach python --virtualenv desktop-theme`
 (§5 has the Pillow caveats):
 
 ```python

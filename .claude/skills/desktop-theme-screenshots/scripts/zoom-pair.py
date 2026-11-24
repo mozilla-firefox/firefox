@@ -5,9 +5,9 @@
 """Crop the same rect from a before and an after capture, enlarge both without
 smoothing, and put them side by side, before on the left.
 
-Run under `./mach python --virtualenv wpt`, the mach virtualenv with Pillow:
+Run under `./mach python --virtualenv desktop-theme`, the mach virtualenv with Pillow:
 
-    ./mach python --virtualenv wpt zoom-pair.py before.png after.png zoom.png \
+    ./mach python --virtualenv desktop-theme zoom-pair.py before.png after.png zoom.png \
         --rect X,Y,W,H [--dpr 2] [--offset X,Y] [--scale 8] [--gap 8]
 
 --rect, --dpr and --offset mean what they mean for ./mach theme pixel-diff: CSS px from

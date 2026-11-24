@@ -6,7 +6,7 @@ Forcing `root.style.fontSize` makes one launch read a token at every platform's
 root:
 
 ```sh
-./mach python --virtualenv wpt .claude/skills/desktop-theme-probing/scripts/firefox-probe.py \
+./mach python --virtualenv desktop-theme .claude/skills/desktop-theme-probing/scripts/firefox-probe.py \
   --binary <objdir>/dist/bin/firefox --realm chrome -e '
 let root = document.documentElement, p = document.createElement("div");
 root.appendChild(p);

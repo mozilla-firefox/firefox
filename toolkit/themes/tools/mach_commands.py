@@ -62,7 +62,7 @@ def tokens(command_context, args):
     "contrast",
     description="Check the contrast of text, borders and outlines against the background behind them, across states.",
     parser=parser("contrast"),
-    virtualenv_name="wpt",
+    virtualenv_name="desktop-theme",
 )
 def contrast(command_context, **kwargs):
     module = load("contrast")
@@ -76,7 +76,7 @@ def contrast(command_context, **kwargs):
     "check-hcm-colors",
     description="Check that text, icons, borders and outlines use the system colors that go with their background in high contrast mode, across states.",
     parser=parser("pair_walk"),
-    virtualenv_name="wpt",
+    virtualenv_name="desktop-theme",
 )
 def pairs(command_context, **kwargs):
     module = load("pair_walk")
@@ -91,7 +91,7 @@ def pairs(command_context, **kwargs):
     "pixel-diff",
     description="Count the pixels that differ between two captures.",
     parser=parser("pixel_diff"),
-    virtualenv_name="wpt",
+    virtualenv_name="desktop-theme",
 )
 def pixel_diff(command_context, **kwargs):
     return load("pixel_diff").run(argparse.Namespace(**kwargs))

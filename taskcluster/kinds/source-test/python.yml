@@ -45,6 +45,20 @@ task-defaults:
             - 'config/mozunit/**'
             - 'python/mach_commands.py'
 
+desktop-theme:
+    description: toolkit/themes/tools unit tests
+    platform:
+        - linux2404-64/opt
+    treeherder:
+        symbol: theme
+    run:
+        using: python-test
+        subsuite: desktop-theme
+    when:
+        files-changed:
+            - 'toolkit/themes/tools/**'
+            - 'python/sites/**'
+
 firefox-ci:
     description: taskcluster/gecko_taskgraph unit tests
     always-target: false

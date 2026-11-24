@@ -6,11 +6,11 @@ r"""Run JS in a real Firefox build, in the chrome or the content realm, and prin
 
 Run it with the checkout's mach so the in-tree marionette_driver resolves:
 
-    ./mach python --virtualenv wpt <skill>/scripts/firefox-probe.py \
+    ./mach python --virtualenv desktop-theme <skill>/scripts/firefox-probe.py \
         --binary <objdir>/dist/bin/firefox \
         --url https://example.com/ -e 'return {title: document.title}'
 
-    ./mach python --virtualenv wpt <skill>/scripts/firefox-probe.py \
+    ./mach python --virtualenv desktop-theme <skill>/scripts/firefox-probe.py \
         --binary <objdir>/dist/bin/firefox \
         --realm chrome -e 'return {state: window.windowState, hidden: document.hidden}'
 
@@ -104,7 +104,7 @@ and the exit codes are toolkit/themes/tools/probelib.py's; a failed step stops t
 output and exits 1.
 
 mach eats a bare --help, so put the -- before the script path:
-`./mach python --virtualenv wpt -- <skill>/scripts/firefox-probe.py --help`.
+`./mach python --virtualenv desktop-theme -- <skill>/scripts/firefox-probe.py --help`.
 """
 
 import argparse

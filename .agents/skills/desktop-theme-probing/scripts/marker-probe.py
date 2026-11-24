@@ -11,7 +11,7 @@ on its --lock-on ancestor), finishes the transitions the lock starts, reads
 the root's style attribute and the cue. Runs in the chrome context through
 toolkit/themes/tools/probelib.py, headless, on a throwaway profile:
 
-  ./mach python --virtualenv wpt -- marker-probe.py --binary <objdir>/dist/bin/firefox \\
+  ./mach python --virtualenv desktop-theme -- marker-probe.py --binary <objdir>/dist/bin/firefox \\
     --property fill --token x-fill --token x-fill-hover \\
     --element '#some-button .toolbarbutton-icon' --lock-on toolbarbutton \\
     --state default --state :hover --state :hover:active

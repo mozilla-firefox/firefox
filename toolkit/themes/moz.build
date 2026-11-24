@@ -64,4 +64,6 @@ else:
 with Files("**"):
     BUG_COMPONENT = ("Toolkit", "Themes")
 
+PYTHON_UNITTEST_MANIFESTS += ["tools/test/python.toml"]
+
 SPHINX_TREES["shared/design-system/docs"] = "shared/design-system/docs"

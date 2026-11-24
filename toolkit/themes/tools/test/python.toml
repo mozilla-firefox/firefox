@@ -1,0 +1,4 @@
+[DEFAULT]
+subsuite = "desktop-theme"
+
+["test_virtualenv.py"]

@@ -12,7 +12,7 @@ here. firefox-probe.py's
 `grab` step runs it; you never call it directly.
 
 It grabs with Pillow's ImageGrab under the interpreter that runs
-firefox-probe.py (`./mach python --virtualenv wpt`, which pins Pillow).
+firefox-probe.py (`./mach python --virtualenv desktop-theme`, which pins Pillow).
 
     screen-grab.py out.png [--crop X,Y,W,H] [--any-display]
 
@@ -77,7 +77,7 @@ try:
     from PIL import ImageGrab
 except ImportError:
     sys.exit(
-        f"screen-grab: Pillow is missing; run this under `./mach python --virtualenv wpt`, "
+        f"screen-grab: Pillow is missing; run this under `./mach python --virtualenv desktop-theme`, "
         f"or install it with `{sys.executable} -m pip install Pillow`"
     )
 

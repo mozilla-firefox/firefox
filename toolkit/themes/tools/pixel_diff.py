@@ -59,7 +59,7 @@ def fail(msg):
 
 def load(path):
     # Pillow is imported where it is used, so that `./mach help theme pixel-diff`
-    # can build the parser outside the wpt virtualenv.
+    # can build the parser outside the desktop-theme virtualenv.
     from PIL import Image
 
     try:
