@@ -612,7 +612,8 @@ class MOZ_RAII PEHeaders final {
         mPeHeader(nullptr),
         mImageLimit(nullptr),
         mIsImportDirectoryTampered(false) {
-    if (!mMzHeader || mMzHeader->e_magic != IMAGE_DOS_SIGNATURE) {
+    if (!mMzHeader || mMzHeader->e_magic != IMAGE_DOS_SIGNATURE ||
+        mMzHeader->e_lfanew < 0) {
       return;
     }
 
@@ -630,6 +631,11 @@ class MOZ_RAII PEHeaders final {
     // reasonable. It we aren't big enough to contain headers, we have a
     // problem!
     if (imageSize < sizeof(IMAGE_DOS_HEADER) + sizeof(IMAGE_NT_HEADERS)) {
+      return;
+    }
+
+    if (static_cast<DWORD>(mMzHeader->e_lfanew) >
+        imageSize - sizeof(IMAGE_NT_HEADERS)) {
       return;
     }
 
@@ -662,6 +668,16 @@ class MOZ_RAII PEHeaders final {
    */
   template <typename T, typename R, size_t Size = PointeeSize<T>()>
   T RVAToPtr(void* aBase, R aRva) const {
+    return RVAToPtrChecked<T>(aBase, aRva, Size);
+  }
+
+  /**
+   * Like RVAToPtr(aBase, aRva), but ensures that the whole range
+   * [aBase + aRva, aBase + aRva + aSize) falls within the bounds of this
+   * binary's memory mapping.
+   */
+  template <typename T, typename R>
+  T RVAToPtrChecked(const void* aBase, R aRva, size_t aSize) const {
     if (!mImageLimit) {
       return nullptr;
     }
@@ -669,14 +685,14 @@ class MOZ_RAII PEHeaders final {
     // aBase is not always the image base (some callers resolve offsets that
     // are relative to a resource directory or to the optional header), so
     // convert back to an image-relative RVA before bounds checking.
-    char* imageBase = reinterpret_cast<char*>(mMzHeader);
-    char* absAddress = reinterpret_cast<char*>(aBase) + aRva;
-    if (absAddress < imageBase) {
+    uintptr_t imageBase = reinterpret_cast<uintptr_t>(mMzHeader);
+    uintptr_t base = reinterpret_cast<uintptr_t>(aBase);
+    uintptr_t absAddress = base + static_cast<uintptr_t>(aRva);
+    if (base < imageBase || absAddress < base) {
       return nullptr;
     }
 
-    return RVAToPtrChecked<T>(static_cast<uintptr_t>(absAddress - imageBase),
-                              Size);
+    return RVAToPtrChecked<T>(absAddress - imageBase, aSize);
   }
 
   /**
@@ -961,7 +977,11 @@ class MOZ_RAII PEHeaders final {
         return Nothing();
       }
 
-      auto base = RVAToPtr<const uint8_t*>(rva);
+      auto base = RVAToPtrChecked<const uint8_t*>(rva, size);
+      if (!base) {
+        return Nothing();
+      }
+
       return Some(Span(base, size));
     }
 
@@ -1062,28 +1082,40 @@ class MOZ_RAII PEHeaders final {
 
   Span<IMAGE_SECTION_HEADER> GetSectionTable() const {
     MOZ_ASSERT(*this);
-    auto base = RVAToPtr<PIMAGE_SECTION_HEADER>(
-        &mPeHeader->OptionalHeader, mPeHeader->FileHeader.SizeOfOptionalHeader);
     // The Windows loader has an internal limit of 96 sections (per PE spec)
     auto numSections =
         std::min(mPeHeader->FileHeader.NumberOfSections, WORD(96));
+    if (!numSections) {
+      return {};
+    }
+
+    auto base = RVAToPtrChecked<PIMAGE_SECTION_HEADER>(
+        &mPeHeader->OptionalHeader, mPeHeader->FileHeader.SizeOfOptionalHeader,
+        numSections * sizeof(IMAGE_SECTION_HEADER));
+    if (!base) {
+      return {};
+    }
+
     return Span{base, numSections};
   }
 
   PIMAGE_RESOURCE_DIRECTORY_ENTRY
   FindResourceEntry(PIMAGE_RESOURCE_DIRECTORY aCurLevel, WORD aId) const {
-    if (!aCurLevel) {
+    if (!aCurLevel || !aCurLevel->NumberOfIdEntries) {
       return nullptr;
     }
 
     // Immediately after the IMAGE_RESOURCE_DIRECTORY structure is an array
     // of IMAGE_RESOURCE_DIRECTORY_ENTRY structures. Since this function
     // searches by ID, we need to skip past any named entries before iterating.
-    auto dirEnt =
-        reinterpret_cast<PIMAGE_RESOURCE_DIRECTORY_ENTRY>(aCurLevel + 1) +
-        aCurLevel->NumberOfNamedEntries;
-    if (!(IsWithinImage(dirEnt) &&
-          IsWithinImage(&dirEnt[aCurLevel->NumberOfIdEntries - 1].Id))) {
+    auto dirEnt = RVAToPtrChecked<PIMAGE_RESOURCE_DIRECTORY_ENTRY>(
+        aCurLevel,
+        sizeof(IMAGE_RESOURCE_DIRECTORY) +
+            size_t(aCurLevel->NumberOfNamedEntries) *
+                sizeof(IMAGE_RESOURCE_DIRECTORY_ENTRY),
+        size_t(aCurLevel->NumberOfIdEntries) *
+            sizeof(IMAGE_RESOURCE_DIRECTORY_ENTRY));
+    if (!dirEnt) {
       return nullptr;
     }
 
@@ -1098,18 +1130,19 @@ class MOZ_RAII PEHeaders final {
 
   PIMAGE_RESOURCE_DIRECTORY_ENTRY
   FindFirstResourceEntry(PIMAGE_RESOURCE_DIRECTORY aCurLevel) const {
-    // Immediately after the IMAGE_RESOURCE_DIRECTORY structure is an array
-    // of IMAGE_RESOURCE_DIRECTORY_ENTRY structures. We just return the first
-    // entry, regardless of whether it is indexed by name or by id.
-    auto dirEnt =
-        reinterpret_cast<PIMAGE_RESOURCE_DIRECTORY_ENTRY>(aCurLevel + 1);
-    WORD numEntries =
-        aCurLevel->NumberOfNamedEntries + aCurLevel->NumberOfIdEntries;
-    if (!numEntries) {
+    if (!aCurLevel) {
       return nullptr;
     }
 
-    return dirEnt;
+    // Immediately after the IMAGE_RESOURCE_DIRECTORY structure is an array
+    // of IMAGE_RESOURCE_DIRECTORY_ENTRY structures. We just return the first
+    // entry, regardless of whether it is indexed by name or by id.
+    if (!aCurLevel->NumberOfNamedEntries && !aCurLevel->NumberOfIdEntries) {
+      return nullptr;
+    }
+
+    return RVAToPtr<PIMAGE_RESOURCE_DIRECTORY_ENTRY>(
+        aCurLevel, sizeof(IMAGE_RESOURCE_DIRECTORY));
   }
 
   VS_FIXEDFILEINFO* GetFixedFileInfo(VS_VERSIONINFO_HEADER* aVerInfo) const {
@@ -1120,8 +1153,8 @@ class MOZ_RAII PEHeaders final {
 
     const wchar_t kVersionInfoKey[] = L"VS_VERSION_INFO";
     if (::RtlCompareMemory(aVerInfo->szKey, kVersionInfoKey,
-                           std::size(kVersionInfoKey)) !=
-        std::size(kVersionInfoKey)) {
+                           sizeof(kVersionInfoKey)) !=
+        sizeof(kVersionInfoKey)) {
       return nullptr;
     }
 
@@ -1137,12 +1170,14 @@ class MOZ_RAII PEHeaders final {
 #pragma warning(suppress : 4146)
     offset += (-(base + offset) & 3);
 
-    if (offset >= length) {
+    if (offset + sizeof(VS_FIXEDFILEINFO) > length) {
       return nullptr;
     }
 
-    auto result = reinterpret_cast<VS_FIXEDFILEINFO*>(base + offset);
-    if (result->dwSignature != 0xFEEF04BD) {
+    // wLength is untrusted, so make sure the fixed file info is actually
+    // within the image.
+    auto result = RVAToPtr<VS_FIXEDFILEINFO*>(aVerInfo, offset);
+    if (!result || result->dwSignature != 0xFEEF04BD) {
       return nullptr;
     }
 
