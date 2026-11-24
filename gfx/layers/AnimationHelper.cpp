@@ -26,6 +26,7 @@
 #include "mozilla/layers/APZSampler.h"          // for APZSampler
 #include "nsDisplayList.h"                      // for nsDisplayTransform, etc
 #include "nsStyleTransformMatrix.h"
+#include "nsXULAppAPI.h"
 
 namespace mozilla::layers {
 
@@ -672,8 +673,8 @@ uint64_t AnimationHelper::GetNextCompositorAnimationsId() {
   static uint32_t sNextId = 0;
   ++sNextId;
 
-  uint32_t procId = static_cast<uint32_t>(base::GetCurrentProcId());
-  uint64_t nextId = procId;
+  uint32_t childId = static_cast<uint32_t>(XRE_GetChildID());
+  uint64_t nextId = childId;
   nextId = nextId << 32 | sNextId;
   return nextId;
 }
