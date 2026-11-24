@@ -132,13 +132,13 @@ RefPtr<WindowSurface> WindowSurfaceProvider::CreateWindowSurface() {
     // 2. XPutImage
 #  ifdef MOZ_HAVE_SHMIMAGE
     if (nsShmImage::UseShm()) {
-      LOG(("Drawing to Window 0x%lx will use MIT-SHM\n", (Window)mXWindow));
+      LOG(("Drawing to Window 0x%lx will use MIT-SHM\n", mXWindow.load()));
       return MakeRefPtr<WindowSurfaceX11SHM>(DefaultXDisplay(), mXWindow,
                                              mXVisual, mXDepth);
     }
 #  endif  // MOZ_HAVE_SHMIMAGE
 
-    LOG(("Drawing to Window 0x%lx will use XPutImage\n", (Window)mXWindow));
+    LOG(("Drawing to Window 0x%lx will use XPutImage\n", mXWindow.load()));
     return MakeRefPtr<WindowSurfaceX11Image>(DefaultXDisplay(), mXWindow,
                                              mXVisual, mXDepth);
   }

@@ -153,9 +153,8 @@ void LogMemoryAddRGBA(int aUID, size_t aUsedMem) {
   gDMABufSurfaceMemoryRGBAUsed += aUsedMem;
   LOGDMAVERBOSES("UID %d Memory RGBA surfaces %zu total mem %" PRId64
                  " KB (+ %zu KB)",
-                 aUID, static_cast<size_t>(gDMABufSurfaceRGBAUsed),
-                 static_cast<int64_t>(gDMABufSurfaceMemoryRGBAUsed) / 1000,
-                 aUsedMem / 1000);
+                 aUID, gDMABufSurfaceRGBAUsed.load(),
+                 gDMABufSurfaceMemoryRGBAUsed.load() / 1000, aUsedMem / 1000);
 }
 
 void LogMemorySubRGBA(int aUID, size_t aUsedMem) {
@@ -163,9 +162,8 @@ void LogMemorySubRGBA(int aUID, size_t aUsedMem) {
   gDMABufSurfaceRGBAUsed--;
   LOGDMAVERBOSES("UID %d Memory RGBA surfaces %zu total mem %" PRId64
                  " KB (- %zu KB)",
-                 aUID, static_cast<size_t>(gDMABufSurfaceRGBAUsed),
-                 static_cast<int64_t>(gDMABufSurfaceMemoryRGBAUsed) / 1000,
-                 aUsedMem / 1000);
+                 aUID, gDMABufSurfaceRGBAUsed.load(),
+                 gDMABufSurfaceMemoryRGBAUsed.load() / 1000, aUsedMem / 1000);
 }
 
 void LogMemoryAddYUV(int aUID, size_t aUsedMem) {
@@ -173,9 +171,8 @@ void LogMemoryAddYUV(int aUID, size_t aUsedMem) {
   gDMABufSurfaceMemoryYUVUsed += aUsedMem;
   LOGDMAVERBOSES("UID %d Memory YUV surfaces %zu total mem %" PRId64
                  " KB (+ %zu KB)",
-                 aUID, static_cast<size_t>(gDMABufSurfaceYUVUsed),
-                 static_cast<int64_t>(gDMABufSurfaceMemoryYUVUsed) / 1000,
-                 aUsedMem / 1000);
+                 aUID, gDMABufSurfaceYUVUsed.load(),
+                 gDMABufSurfaceMemoryYUVUsed.load() / 1000, aUsedMem / 1000);
 }
 
 void LogMemorySubYUV(int aUID, size_t aUsedMem) {
@@ -183,9 +180,8 @@ void LogMemorySubYUV(int aUID, size_t aUsedMem) {
   gDMABufSurfaceYUVUsed--;
   LOGDMAVERBOSES("UID %d Memory YUV surfaces %zu total mem %" PRId64
                  " KB (- %zu KB)",
-                 aUID, static_cast<size_t>(gDMABufSurfaceYUVUsed),
-                 static_cast<int64_t>(gDMABufSurfaceMemoryYUVUsed) / 1000,
-                 aUsedMem / 1000);
+                 aUID, gDMABufSurfaceYUVUsed.load(),
+                 gDMABufSurfaceMemoryYUVUsed.load() / 1000, aUsedMem / 1000);
 }
 
 class DMABufSurfaceReporter final : public nsIMemoryReporter {

@@ -1001,7 +1001,7 @@ void WaylandSurface::SetCeiledScaleLocked(
   if (mScaleType == ScaleType::Ceiled) {
     mScreenScale = aScreenCeiledScale;
     LOGWAYLAND("WaylandSurface::SetCeiledScaleLocked() scale %f",
-               (double)mScreenScale);
+               mScreenScale.load());
   }
 }
 
@@ -1466,7 +1466,7 @@ double WaylandSurface::GetScale() const {
     if (LOG_ENABLED_VERBOSE() && lastLoggedScale != mScreenScale) {
       lastLoggedScale = mScreenScale;
       LOGVERBOSE("WaylandSurface::GetScale() fractional scale %f",
-                 (double)mScreenScale);
+                 mScreenScale.load());
     }
 #endif
     return mScreenScale;
