@@ -3479,6 +3479,13 @@ class Settings(
             default = { false },
         )
 
+    /** Whether customizing the items of the browser menu Tools section is allowed. */
+    var isToolsMenuCustomizationEnabled by
+        booleanPreference(
+            key = appContext.getPreferenceKey(R.string.pref_key_enable_tools_menu_customization),
+            default = { false },
+        )
+
     /** Indicates whether the app should automatically clean up downloaded files. */
     fun shouldCleanUpDownloadsAutomatically(): Boolean {
         val sharedPreferences = PreferenceManager.getDefaultSharedPreferences(appContext)

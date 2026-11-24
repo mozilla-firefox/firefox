@@ -130,6 +130,8 @@
     <string name="preferences_debug_settings_show_toolbar_in_focus_mode" translatable="false">Enable focus mode</string>
     <!-- Label for the option to enable browser menu customization screen -->
     <string name="preferences_debug_settings_enable_menu_customization_screen" translatable="false">Enable menu customization screen</string>
+    <!-- Label for the option to enable customizing the browser menu Tools items -->
+    <string name="preferences_debug_settings_enable_tools_menu_customization" translatable="false">Enable tools menu customization</string>
     <!-- Label for toggling Remote Crash Pull -->
     <string name="preferences_crash_pull_never_show_again" translatable="false">Never show Crash Pull</string>
     <!-- Label for enabling the Debug Drawer -->
