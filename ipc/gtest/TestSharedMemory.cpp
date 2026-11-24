@@ -727,9 +727,8 @@ struct MemoryReportTracker {
   int64_t Current() {
     finishCallback->done = false;
     mgr->GetReports(callback, nullptr, finishCallback, nullptr, false);
-    SpinEventLoopUntil("TestIPCMemoryAllocation"_ns, [&]() {
-      return static_cast<bool>(finishCallback->done);
-    });
+    SpinEventLoopUntil("TestIPCMemoryAllocation"_ns,
+                       [&]() { return finishCallback->done.load(); });
 
     return callback->amount;
   }
