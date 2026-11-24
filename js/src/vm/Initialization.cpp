@@ -69,7 +69,8 @@ uint64_t CanonicalizedNaNBits;
 
 static void SetupCanonicalNaN() {
   // Compute the standard NaN value that the hardware generates.
-  volatile double infinity = mozilla::PositiveInfinity<double>();
+  volatile double volatileInfinity = mozilla::PositiveInfinity<double>();
+  double infinity = volatileInfinity;
   volatile double hardwareNaN = infinity - infinity;
   uint64_t hardwareNaNBits = mozilla::BitwiseCast<uint64_t>(hardwareNaN);
   hardwareNaNBits &= ~mozilla::FloatingPoint<double>::kSignBit;
