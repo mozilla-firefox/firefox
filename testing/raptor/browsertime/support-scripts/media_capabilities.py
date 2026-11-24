@@ -9,6 +9,11 @@ from base_python_support import BasePythonSupport
 
 
 class MediaCapabilitiesSupport(BasePythonSupport):
+    def setup_test(self, next_test, args):
+        super().setup_test(next_test, args)
+        # summarize_test's test dict doesn't carry subtest_alert_threshold.
+        self.subtest_alert_threshold = float(next_test["subtest_alert_threshold"])
+
     def handle_result(self, bt_result, raw_result, **kwargs):
         """Collect the per-query timings the benchmark posts.
 
@@ -48,6 +53,8 @@ class MediaCapabilitiesSupport(BasePythonSupport):
                 continue
             subtest = self._build_standard_subtest(test, replicates, name)
             subtest["value"] = round(filters.median(replicates), 3)
+            subtest["alertChangeType"] = "absolute"
+            subtest["alertThreshold"] = self.subtest_alert_threshold
             suite["subtests"].append(subtest)
         suite["subtests"].sort(key=lambda subtest: subtest["name"])
         suite["value"] = round(

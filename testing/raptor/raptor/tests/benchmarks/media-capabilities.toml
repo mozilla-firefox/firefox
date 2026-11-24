@@ -7,6 +7,7 @@ lower_is_better = true
 owner = ":az and Media Team"
 page_cycles = 1
 page_timeout = 360000
+subtest_alert_threshold = 1.0  # absolute, in ms per query; queries range from microseconds to tens of ms
 subtest_lower_is_better = true
 subtest_unit = "ms"
 test_url = "http://<host>:<port>/media-capabilities/index.html?raptor"

@@ -1153,11 +1153,12 @@ Standard benchmarks are third-party tests (i.e. Speedometer) that we have integr
 * **expected**: pass
 * **expose browser profiler**: true
 * **gecko profile interval**: 1
-* **link searchfox**: {searchfox}`testing/raptor/raptor/tests/benchmarks/media-capabilities.toml#12`
+* **link searchfox**: {searchfox}`testing/raptor/raptor/tests/benchmarks/media-capabilities.toml#13`
 * **lower is better**: true
 * **page cycles**: 1
 * **page timeout**: 360000
 * **preferences**: privacy.reduceTimerPrecision=false privacy.reduceTimerPrecision.unconditional=false
+* **subtest alert threshold**: 1.0
 * **subtest lower is better**: true
 * **subtest unit**: ms
 * **support class**: media_capabilities.py
