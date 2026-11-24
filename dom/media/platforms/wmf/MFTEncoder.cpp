@@ -117,6 +117,13 @@ DEFINE_CODECAPI_GUID(AVEncAdaptiveMode, "4419b185-da1f-4f53-bc76-097d0c1efb1e",
 namespace mozilla {
 extern LazyLogModule sPEMLog;
 
+// Intel's hardware encoder MFTs hang or corrupt their heap when several
+// threads set up or tear down an encoder at once. Serialize the calls that do:
+// enumeration, activation, our release of the transform, and shutdown. An async
+// encoder's event callback can still drop the driver's last reference later on
+// an MF work-queue thread, outside this lock.
+static StaticMutex sActivationMutex;
+
 static const char* ErrorStr(HRESULT hr) {
   switch (hr) {
     case S_OK:
@@ -251,8 +258,11 @@ static Result<nsTArray<ComPtr<IMFActivate>>, HRESULT> EnumMFT(
 
   IMFActivate** enumerated;
   UINT32 num = 0;
-  MFT_RETURN_ERROR_IF_FAILED_S(
-      wmf::MFTEnumEx(aCategory, aFlags, aInType, aOutType, &enumerated, &num));
+  {
+    StaticMutexAutoLock lock(sActivationMutex);
+    MFT_RETURN_ERROR_IF_FAILED_S(wmf::MFTEnumEx(aCategory, aFlags, aInType,
+                                                aOutType, &enumerated, &num));
+  }
   for (UINT32 i = 0; i < num; ++i) {
     activates.AppendElement(ComPtr<IMFActivate>(enumerated[i]));
     // MFTEnumEx increments the reference count for each IMFActivate; decrement
@@ -282,6 +292,7 @@ HRESULT MFTEncoder::Factory::Shutdown() {
                  MFTEncoder::Factory::EnumValueToString(mProvider),
                  mName.get());
     // Release MFT resources via activation object.
+    StaticMutexAutoLock lock(sActivationMutex);
     hr = mActivate->ShutdownObject();
     if (FAILED(hr)) {
       MFT_ENC_LOGE("Failed to shutdown MFT: {}", ErrorStr(hr));
@@ -500,9 +511,12 @@ HRESULT MFTEncoder::Create(const GUID& aSubtype, const gfx::IntSize& aFrameSize,
   AUTO_MFTENCODER_MARKER("::Create");
 
   auto cleanup = MakeScopeExit([&] {
-    mEncoder = nullptr;
+    {
+      StaticMutexAutoLock lock(sActivationMutex);
+      mEncoder = nullptr;
+      mConfig = nullptr;
+    }
     mFactory.reset();
-    mConfig = nullptr;
   });
 
   nsTArray<MFTEncoder::Factory> factories =
@@ -519,9 +533,13 @@ HRESULT MFTEncoder::Create(const GUID& aSubtype, const gfx::IntSize& aFrameSize,
     }
 
     RefPtr<IMFTransform> encoder;
-    // Create the MFT activation object.
-    HRESULT hr = f.mActivate->ActivateObject(
-        IID_PPV_ARGS(static_cast<IMFTransform**>(getter_AddRefs(encoder))));
+    HRESULT hr;
+    {
+      // Create the MFT activation object.
+      StaticMutexAutoLock lock(sActivationMutex);
+      hr = f.mActivate->ActivateObject(
+          IID_PPV_ARGS(static_cast<IMFTransform**>(getter_AddRefs(encoder))));
+    }
     if (SUCCEEDED(hr) && encoder) {
       MFT_ENC_LOGD("{} for {} is activated", f.mName.get(), CodecStr(aSubtype));
       mFactory.emplace(std::move(f));
@@ -559,9 +577,12 @@ MFTEncoder::Destroy() {
       NS_ERROR_DOM_MEDIA_CANCELED, RESULT_DETAIL("Canceled by Destroy")));
   mPendingError = NS_OK;
 
-  mAsyncEventSource = nullptr;
-  mEncoder = nullptr;
-  mConfig = nullptr;
+  {
+    StaticMutexAutoLock lock(sActivationMutex);
+    mAsyncEventSource = nullptr;
+    mEncoder = nullptr;
+    mConfig = nullptr;
+  }
   HRESULT hr = mFactory ? mFactory->Shutdown() : S_OK;
   mFactory.reset();
   // TODO: If Factory::Shutdown() fails and the encoder is not reusable, set the
