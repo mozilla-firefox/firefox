@@ -1225,8 +1225,7 @@ void SMRegExpMacroAssembler::createStackFrame() {
     masm_.loadPtr(limit_addr, temp1_);
     masm_.addPtr(Imm32(frameSize_), temp1_);
     overrecursedFramePushed_ = masm_.framePushed();
-    masm_.branchStackPtr(Assembler::BelowOrEqual, temp1_,
-                         &overrecursed_label_);
+    masm_.branchStackPtr(Assembler::BelowOrEqual, temp1_, &overrecursed_label_);
     masm_.reserveStack(frameSize_);
   }
   masm_.checkStackAlignment();
