@@ -42,7 +42,7 @@ class TranslationsTest {
 
     @get:Rule(order = 2) val memoryLeaksRule = DetectMemoryLeaksRule(composeTestRule = { composeTestRule })
 
-    // TestRail link: https://mozilla.testrail.io/index.php?/cases/view/3105334
+    // TestRail link: https://mozilla.testrail.io/index.php?/cases/view/2436643
     @Converted(
         replacedBy =
             [
@@ -195,14 +195,9 @@ class TranslationsTest {
             }
     }
 
-    // TestRail link: https://mozilla.testrail.io/index.php?/cases/view/3167207
-    @Converted(
-        replacedBy = ["org.mozilla.fenix.ui.efficiency.tests.TranslationsTest#verifyTheShowOriginalOptionFromTheTranslationBannerTest"],
-        bug = 2082772,
-        since = "2026-10",
-    )
+    // TestRail link: https://mozilla.testrail.io/index.php?/cases/view/2437112
     @Test
-    fun verifyTheShowOriginalOptionFromTheTranslationBannerTest() {
+    fun verifyTheShowOriginalTranslationOptionTest() {
         val testPage = mockWebServer.firstForeignWebPageAsset
 
         navigationToolbar(composeTestRule) {}.enterURLAndEnterToBrowser(testPage.url) {}
@@ -369,7 +364,7 @@ class TranslationsTest {
         }
     }
 
-    // TestRail link: https://mozilla.testrail.io/index.php?/cases/view/3105335
+    // TestRail link: https://mozilla.testrail.io/index.php?/cases/view/2443276
     @SmokeTest
     @Test
     fun verifyTheTranslationIsDisplayedAutomaticallyTest() {

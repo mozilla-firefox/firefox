@@ -25,7 +25,6 @@ import org.mozilla.fenix.ui.efficiency.selectors.TranslationsSelectors
 
 class TranslationsTest : BaseTest(LaunchConfig(isPageLoadTranslationsPromptEnabled = true)) {
 
-    // TestRail link: https://mozilla.testrail.io/index.php?/cases/view/3105334
     @SmokeTest
     @Test
     fun verifyTheFirstTranslationNotNowButtonFunctionalityTest() {
