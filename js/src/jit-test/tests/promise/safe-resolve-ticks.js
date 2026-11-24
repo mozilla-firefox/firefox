@@ -3,7 +3,9 @@
 // thenable-curtailment spec, PerformPromiseResolution runs in ~deferred~
 // mode: when it finds a callable "then" it invokes PerformPromiseResolveThenable
 // synchronously rather than enqueuing a further job, so the deferred resolution
-// does not add an extra tick relative to normal assimilation.
+// does not add an extra tick relative to normal assimilation. Only a "then"
+// getter or an exotic object defers; a "then" data property resolves exactly
+// as resolve(thenable) does.
 
 // Measure at which microtask "tick" the outer reaction fires, by racing it
 // against a chain of native-promise reactions that bump `tick`.
@@ -27,14 +29,14 @@ function measure(installResolution) {
 
 // Baseline: a normal resolve(thenable). The resolve function lives on the
 // capability, so we need the resolvers; reproduce measure() inline to get it.
-function measureNormal() {
+function measureNormal(resolution) {
   const {promise, resolve} = Promise.withResolvers();
 
   let ticksAtFulfill = -1;
   let tick = 0;
   promise.then(() => { ticksAtFulfill = tick; });
 
-  resolve({ then(onFulfilled) { onFulfilled("normal"); } });
+  resolve(resolution);
 
   let pending = Promise.resolve();
   for (let i = 0; i < 6; i++) {
@@ -47,12 +49,25 @@ function measureNormal() {
 
 // Plain callable-"then" thenable.
 {
-  const baseline = measureNormal();
+  const baseline =
+      measureNormal({ then(onFulfilled) { onFulfilled("normal"); } });
   const safe = measure(p => {
     safeResolvePromise(p, { then(onFulfilled) { onFulfilled("safe"); } });
   });
   assertEq(safe, baseline,
            "SafeResolve(thenable) settles at the same tick as resolve(thenable)");
+}
+
+// A "then" getter: SafeResolve defers, and the deferred job calls "then"
+// directly, so it still settles at the same tick.
+{
+  const makeThenable = value => ({
+    get then() { return onFulfilled => onFulfilled(value); },
+  });
+  const baseline = measureNormal(makeThenable("normal"));
+  const safe = measure(p => safeResolvePromise(p, makeThenable("safe")));
+  assertEq(safe, baseline,
+           "SafeResolve(getter thenable) settles at the same tick as resolve()");
 }
 
 // A real Promise as the resolution value: same invariant.

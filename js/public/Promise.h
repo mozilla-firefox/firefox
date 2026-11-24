@@ -492,10 +492,9 @@ extern JS_PUBLIC_API bool RejectPromise(JSContext* cx,
  * resolve/reject call on the same promise (including a second SafeResolve) is
  * a silent no-op.
  *
- * If `resolutionValue` is definitely inert (not an object, or an object whose
- * `"then"` property cannot be reached without running user code and is not a
- * callable data property), resolution happens synchronously, exactly as for
- * `JS::ResolvePromise`.
+ * If `resolutionValue` is not an object, or `Get(resolutionValue, "then")`
+ * cannot run user code, resolution happens synchronously, exactly as for
+ * `JS::ResolvePromise`; a callable `"then"` is still called from a job.
  *
  * Otherwise, the resolving functions are made no-ops immediately and the actual
  * PerformPromiseResolution steps, including `Get(resolutionValue, "then")`,

@@ -3713,8 +3713,8 @@ static bool PromiseResolveBuiltinThenableJob(JSContext* cx,
  *
  * Returns true in *needsDeferral if the synchronous steps of resolving a
  * promise with `value` _might_ execute user code: e.g.
- * - a Proxy or other exotic object on the prototype chain, an accessor with a
- *   getter for `"then"`, or a callable data-property `"then"`.
+ * - a Proxy or other exotic object on the prototype chain, or an accessor with
+ *   a getter for `"then"`.
  *
  */
 static void RequiresDeferredPromiseResolution(HandleValue value, JSContext* cx,
@@ -3741,21 +3741,9 @@ static void RequiresDeferredPromiseResolution(HandleValue value, JSContext* cx,
 
   MOZ_ASSERT(prop.isNativeProperty());
 
+  // PropertyAccessCouldRunUserCode: Getter needs deferral.
   PropertyInfo propInfo = prop.propertyInfo();
-  if (propInfo.isAccessorProperty()) {
-    // PropertyAccessCouldRunUserCode: Getter needs deferral.
-    *needsDeferral = holder->hasGetter(propInfo);
-    return;
-  }
-
-  MOZ_ASSERT(propInfo.isDataProperty());
-
-  // Read the data property's value from the holder found by the lookup above,
-  // rather than looking "then" up a second time.
-  Value thenVal = holder->getSlot(propInfo.slot());
-
-  *needsDeferral = IsCallable(thenVal);
-  return;
+  *needsDeferral = propInfo.isAccessorProperty() && holder->hasGetter(propInfo);
 }
 
 /**
@@ -3856,7 +3844,7 @@ static void RequiresDeferredPromiseResolution(HandleValue value, JSContext* cx,
  * SafePromiseResolve (promiseCapability, resolution)
  *
  * Resolves `promise` with `resolution`. If the synchronous resolution steps
- * might run user code (Proxy, accessor, or callable "then" data property),
+ * might run user code (Proxy or other exotic object, or a "then" getter),
  * mark the promise's resolving functions as no-ops and defer the actual
  * PerformPromiseResolution steps to a freshly-enqueued microtask.
  *

@@ -65,6 +65,26 @@ add_task(async function test_warning_lifetime() {
   await checkWarnings(fetchResponse, 1);
   frame.remove();
 });
+
+add_task(async function test_streams_warn_only_for_then_getters() {
+  await SpecialPowers.pushPrefEnv({
+    set: [["dom.promise.experimental_safe_resolve", true]],
+  });
+  const frame = document.createElement("iframe");
+  document.body.appendChild(frame);
+  await loadFrame(frame);
+
+  const createStream = source =>
+    frame.contentWindow.eval(`new ReadableStream({ start() { ${source} } })`);
+
+  await checkWarnings(() => createStream("return Promise.resolve();"), 0);
+  await checkWarnings(() => createStream("return { then(r) { r(); } };"), 0);
+  await checkWarnings(
+    () => createStream("return { get then() { return undefined; } };"),
+    1
+  );
+  frame.remove();
+});
 </script>
 </body>
 </html>

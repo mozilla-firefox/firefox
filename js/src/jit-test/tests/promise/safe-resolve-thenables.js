@@ -1,6 +1,7 @@
-// JS::SafeResolve: promise-like and non-native-promise resolution values must
-// be handled via a deferred microtask, so that Get(resolution, "then") never
-// runs on the caller's stack.
+// JS::SafeResolve never runs user code on the caller's stack. A "then" getter
+// or an exotic object defers Get(resolution, "then") to a microtask. A "then"
+// data property is read synchronously, and, as with ordinary resolution, a
+// callable "then" is called from a job.
 
 // ---------------------------------------------------------------------------
 // Plain thenable with a callable data "then" property on the object itself.
@@ -16,7 +17,7 @@
   };
 
   safeResolvePromise(promise, thenable);
-  // Neither the getter nor the returned function should be called.
+  // "then" is called from a job, not synchronously.
   assertEq(observations.length, 0);
 
   let settled;
@@ -55,8 +56,8 @@
 }
 
 // ---------------------------------------------------------------------------
-// Thenable where "then" lives on the prototype (inherited). Must be treated
-// as callable and deferred.
+// Thenable where "then" lives on the prototype (inherited). Still called from
+// a job.
 {
   const {promise} = Promise.withResolvers();
 
@@ -150,7 +151,7 @@
 
 // ---------------------------------------------------------------------------
 // A real Promise as the resolution value, with an observable own "then" so we
-// can verify the call happens in the deferred job, not on the caller's stack.
+// can verify the call happens in a job, not on the caller's stack.
 {
   const {promise} = Promise.withResolvers();
   const inner = Promise.resolve("inner-value");
@@ -186,4 +187,58 @@
   promise.then(v => { settled = v; });
   drainJobQueue();
   assertEq(settled, "cross-realm");
+}
+
+// ---------------------------------------------------------------------------
+// A "then" data property is read when SafeResolve is called, as for ordinary
+// resolution: replacing it afterwards has no effect.
+{
+  const {promise} = Promise.withResolvers();
+  const log = [];
+  const thenable = {
+    then(onFulfilled) {
+      log.push("original-then");
+      onFulfilled(1);
+    },
+  };
+
+  safeResolvePromise(promise, thenable);
+  thenable.then = onFulfilled => {
+    log.push("replacement-then");
+    onFulfilled(2);
+  };
+
+  let settled;
+  promise.then(v => { settled = v; });
+  drainJobQueue();
+  assertEq(log.join(","), "original-then");
+  assertEq(settled, 1);
+}
+
+// ---------------------------------------------------------------------------
+// A "then" getter defers the lookup to the job, so a "then" installed after
+// SafeResolve is the one called.
+{
+  const {promise} = Promise.withResolvers();
+  const log = [];
+  const thenable = {
+    get then() {
+      log.push("getter");
+      return onFulfilled => onFulfilled(1);
+    },
+  };
+
+  safeResolvePromise(promise, thenable);
+  Object.defineProperty(thenable, "then", {
+    value: onFulfilled => {
+      log.push("replacement-then");
+      onFulfilled(2);
+    },
+  });
+
+  let settled;
+  promise.then(v => { settled = v; });
+  drainJobQueue();
+  assertEq(log.join(","), "replacement-then");
+  assertEq(settled, 2);
 }

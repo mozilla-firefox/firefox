@@ -24,7 +24,9 @@
   const {promise, resolve, reject} = Promise.withResolvers();
 
   const thenable = {
-    then(onFulfilled) { onFulfilled("from-thenable"); },
+    get then() {
+      return onFulfilled => onFulfilled("from-thenable");
+    },
   };
 
   safeResolvePromise(promise, thenable);
@@ -73,7 +75,7 @@
 // callbacks are NOT fired before drainJobQueue().
 {
   const {promise} = Promise.withResolvers();
-  const thenable = {then(r) { r("eventually"); }};
+  const thenable = {get then() { return r => r("eventually"); }};
 
   let fired = false;
   promise.then(() => { fired = true; });

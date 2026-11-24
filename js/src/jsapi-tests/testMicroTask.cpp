@@ -410,8 +410,11 @@ BEGIN_TEST(testMicroTask_inlineThenableSurvivesGC) {
       RootedValue thenable(cx);
       if (mode == 0) {
         EVAL("Promise.resolve({value: 42})", &thenable);
-      } else {
+      } else if (mode == 1) {
         EVAL("({then(resolve) { resolve({value: 42}); }})", &thenable);
+      } else {
+        EVAL("({get then() { return resolve => resolve({value: 42}); }})",
+             &thenable);
       }
       if (mode == 2) {
         CHECK(JS::SafeResolve(cx, promise, thenable));
