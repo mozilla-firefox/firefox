@@ -1771,6 +1771,7 @@ abstract class BaseBrowserFragment :
     private fun buildBrowserScreenStore() =
         fragmentStore(BrowserScreenState()) {
             BrowserScreenStore(
+                initialState = it,
                 middleware =
                     listOf(
                         BrowserScreenMiddleware(
@@ -1778,7 +1779,7 @@ abstract class BaseBrowserFragment :
                             crashReporter = requireContext().components.analytics.crashReporter,
                             fragmentManager = childFragmentManager,
                         )
-                    )
+                    ),
             )
         }
 

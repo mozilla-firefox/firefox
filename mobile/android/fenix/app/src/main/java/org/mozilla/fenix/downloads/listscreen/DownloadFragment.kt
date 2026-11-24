@@ -43,18 +43,22 @@ class DownloadFragment : Fragment(), SystemInsetsPaddedFragment {
             .dispatch(AppAction.MenuNotification.RemoveMenuNotification(SupportedMenuNotifications.Downloads))
     }
 
-    private val downloadStore by
+    // The store must outlive the view so a pending delete can still be undone after returning from the downloads
+    // settings.
+    private val downloadStore by lazy {
         fragmentStore(DownloadUIState.INITIAL) {
-            DownloadUIStore(
-                initialState = it,
-                middleware =
-                    DownloadUIMiddlewareProvider.provideMiddleware(
-                        coroutineScope = storeProvider.viewModelScope,
-                        applicationContext = requireContext().applicationContext,
-                        navController = findNavController(),
-                    ),
-            )
-        }
+                DownloadUIStore(
+                    initialState = it,
+                    middleware =
+                        DownloadUIMiddlewareProvider.provideMiddleware(
+                            coroutineScope = storeProvider.viewModelScope,
+                            applicationContext = requireContext().applicationContext,
+                            navController = findNavController(),
+                        ),
+                )
+            }
+            .value
+    }
 
     override fun onCreateView(
         inflater: LayoutInflater,

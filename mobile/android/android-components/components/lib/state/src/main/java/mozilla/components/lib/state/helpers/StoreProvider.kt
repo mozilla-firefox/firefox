@@ -11,6 +11,7 @@ import androidx.compose.runtime.Composable
 import androidx.compose.runtime.remember
 import androidx.fragment.app.Fragment
 import androidx.lifecycle.DefaultLifecycleObserver
+import androidx.lifecycle.Lifecycle
 import androidx.lifecycle.LifecycleOwner
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.ViewModelProvider
@@ -118,11 +119,16 @@ class StoreProvider<T> private constructor(@PublishedApi internal var owner: T?)
     internal fun setupCleanup() {
         if (isCleanupConfigured) {
             return
-        } else {
-            isCleanupConfigured = true
         }
 
-        ((owner as? Fragment)?.viewLifecycleOwner?.lifecycle ?: (owner as LifecycleOwner).lifecycle).addObserver(
+        val lifecycle = (owner as? Fragment)?.viewLifecycleOwner?.lifecycle ?: (owner as LifecycleOwner).lifecycle
+        if (lifecycle.currentState == Lifecycle.State.DESTROYED) {
+            owner = null
+            return
+        }
+        isCleanupConfigured = true
+
+        lifecycle.addObserver(
             object : DefaultLifecycleObserver {
                 override fun onDestroy(owner: LifecycleOwner) {
                     this@StoreProvider.owner = null
@@ -145,9 +151,9 @@ class StoreProvider<T> private constructor(@PublishedApi internal var owner: T?)
                     .apply { refreshOwner(this@storeProvider) }
 
         /**
-         * Build a [Store] with the provided parameters which will live as long as this [Fragment], surviving
+         * Build a [Store] with the provided parameters whose state lives as long as this [Fragment], surviving
          * configuration changes and activity recreations until this [Fragment] is removed from the backstack or until
-         * process death.
+         * process death. A new [Store] is built from that state for each view of this [Fragment].
          *
          * @param initialState The initial state until a dispatched [Action] creates a new state.
          * @param factory A function that receives [initialState] or the persisted state (if available) of the
@@ -156,12 +162,21 @@ class StoreProvider<T> private constructor(@PublishedApi internal var owner: T?)
          * This should be called only after this Fragment is attached i.e., after Fragment.onAttach(), and the result be
          * used i.e., by calling _.value()_ only in or after after Fragment.onCreateView() with access prior to that
          * resulting in IllegalStateException.
+         *
+         * Reads while this [Fragment] has no live view return the last [Store], if one was built. The [Store] of a
+         * previous view is no longer used once the one of the next view is built, so its middleware should not outlive
+         * its view.
          */
         @MainThread
         inline fun <reified S : State, A : Action, reified ST : Store<S, A>> Fragment.fragmentStore(
             initialState: S,
             noinline factory: (S) -> ST,
-        ): Lazy<ST> = buildPersistentStore(initialState, factory)
+        ): Lazy<ST> =
+            FragmentViewStoreLazy(this) { previous ->
+                // The persisted state misses what the previous Store changed after its view lifecycle was destroyed.
+                previous?.let { storeProvider.stores[ST::class.java.name] = it }
+                storeProvider.buildStore(initialState, factory)
+            }
 
         /**
          * Build a [Store] with the provided parameters which will live as long as this it's parent [AppCompatActivity],
@@ -263,6 +278,55 @@ class StoreProvider<T> private constructor(@PublishedApi internal var owner: T?)
         ): Lazy<ST> where O : LifecycleOwner, O : ViewModelStoreOwner {
             return lazy(mode = LazyThreadSafetyMode.NONE) {
                 storeProvider.buildStore(initialState, factory)
+            }
+        }
+
+        /**
+         * [Lazy] returning the [Store] of a [Fragment], building a new one from the last state for each view of the
+         * [Fragment]. Reads while the [Fragment] has no live view return the last [Store], if one was built.
+         *
+         * @param fragment The [Fragment] whose view lifecycle decides when a new [Store] is needed.
+         * @param build Builds a new [Store], given the one it replaces, if there is one.
+         */
+        @PublishedApi
+        internal class FragmentViewStoreLazy<ST : Store<*, *>>(
+            private val fragment: Fragment,
+            private val build: (previous: ST?) -> ST,
+        ) : Lazy<ST> {
+            private var store: ST? = null
+            private var storeViewLifecycle: Lifecycle? = null
+
+            override val value: ST
+                get() {
+                    val current = store
+                    if (current != null && isCurrent()) {
+                        return current
+                    }
+
+                    val viewLifecycle = viewLifecycleIfAlive()
+                    if (current != null && viewLifecycle == null) {
+                        return current
+                    }
+
+                    return build(current).also {
+                        store = it
+                        storeViewLifecycle = viewLifecycle
+                    }
+                }
+
+            private fun isCurrent(): Boolean {
+                val lifecycle = storeViewLifecycle
+                return lifecycle != null && lifecycle.currentState != Lifecycle.State.DESTROYED
+            }
+
+            override fun isInitialized(): Boolean = store != null
+
+            private fun viewLifecycleIfAlive(): Lifecycle? {
+                return try {
+                    fragment.viewLifecycleOwner.lifecycle.takeIf { it.currentState != Lifecycle.State.DESTROYED }
+                } catch (_: IllegalStateException) {
+                    null
+                }
             }
         }
 
