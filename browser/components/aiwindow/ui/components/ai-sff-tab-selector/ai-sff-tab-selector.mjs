@@ -121,19 +121,19 @@ export class AiSffTabSelector extends MozLitElement {
       <div class="tab-selector-dialog">
         <h1
           class="tab-selector-title"
-          data-l10n-id="ai-smart-form-fill-edit-sources"
+          data-l10n-id="ai-smart-form-fill-edit-sources-title"
         ></h1>
 
         ${this.suggestedTabs?.length
           ? this.#renderTabList(
-              "ai-smart-form-fill-suggested-tabs",
+              "ai-smart-form-fill-suggested-tabs-heading",
               this.suggestedTabs,
               selectedTabCount
             )
           : nothing}
         ${this.otherTabs?.length
           ? this.#renderTabList(
-              "ai-smart-form-fill-other-tabs",
+              "ai-smart-form-fill-other-tabs-heading",
               this.otherTabs,
               selectedTabCount,
               true
@@ -142,12 +142,12 @@ export class AiSffTabSelector extends MozLitElement {
 
         <moz-button-group class="tab-selector-actions">
           <moz-button
-            data-l10n-id="ai-smart-form-fill-cancel-tab-select"
+            data-l10n-id="ai-smart-form-fill-cancel-tab-select-button"
             size="large"
             @click=${this.#handleCancel}
           ></moz-button>
           <moz-button
-            data-l10n-id="ai-smart-form-fill-accept-tab-select"
+            data-l10n-id="ai-smart-form-fill-accept-tab-select-button"
             type="primary"
             size="large"
             .disabled=${selectedTabCount == 0 ||

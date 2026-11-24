@@ -247,7 +247,7 @@ describe("Smart Form Fill tab selector", () => {
       dialogManager,
       popup,
       tabSelector,
-      "ai-smart-form-fill-cancel-tab-select",
+      "ai-smart-form-fill-cancel-tab-select-button",
       dialogWindow
     );
     await closeAutocomplete(browser);
@@ -271,8 +271,10 @@ describe("Smart Form Fill tab selector", () => {
     await toggleTab(tabSelector, SOURCE_URL, dialogWindow);
 
     Assert.ok(
-      getDialogButton(tabSelector, "ai-smart-form-fill-accept-tab-select")
-        .disabled,
+      getDialogButton(
+        tabSelector,
+        "ai-smart-form-fill-accept-tab-select-button"
+      ).disabled,
       "Done should be disabled"
     );
 
@@ -280,7 +282,7 @@ describe("Smart Form Fill tab selector", () => {
       dialogManager,
       popup,
       tabSelector,
-      "ai-smart-form-fill-cancel-tab-select",
+      "ai-smart-form-fill-cancel-tab-select-button",
       dialogWindow
     );
     await closeAutocomplete(browser);
@@ -307,7 +309,7 @@ describe("Smart Form Fill tab selector", () => {
       dialogManager,
       popup,
       tabSelector,
-      "ai-smart-form-fill-accept-tab-select",
+      "ai-smart-form-fill-accept-tab-select-button",
       dialogWindow
     );
 
@@ -370,7 +372,7 @@ describe("Smart Form Fill tab selector", () => {
       dialogManager,
       popup,
       tabSelector,
-      "ai-smart-form-fill-cancel-tab-select",
+      "ai-smart-form-fill-cancel-tab-select-button",
       dialogWindow
     );
     await closeAutocomplete(browser);
@@ -397,7 +399,7 @@ describe("Smart Form Fill tab selector", () => {
       dialogManager,
       popup,
       tabSelector,
-      "ai-smart-form-fill-cancel-tab-select",
+      "ai-smart-form-fill-cancel-tab-select-button",
       dialogWindow
     );
 

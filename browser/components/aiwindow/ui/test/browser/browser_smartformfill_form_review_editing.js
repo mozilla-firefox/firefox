@@ -53,7 +53,7 @@ describe("Smart Form Fill form review editing", () => {
     const dialogClosed = waitForFormReviewClose(context.win, dialog);
     await activateFormReviewButton(
       reviewBrowser,
-      "ai-smart-form-fill-cancel-review"
+      "ai-smart-form-fill-cancel-review-button"
     );
     await dialogClosed;
   });
@@ -64,7 +64,7 @@ describe("Smart Form Fill form review editing", () => {
     await editFormReviewInput(reviewBrowser, 0, "edited@example.com");
     await activateFormReviewButton(
       reviewBrowser,
-      "ai-smart-form-fill-fill-form"
+      "ai-smart-form-fill-fill-form-button"
     );
     await waitForFormReviewState(reviewBrowser, FORM_REVIEW_STATES.FINAL);
 
@@ -83,7 +83,7 @@ describe("Smart Form Fill form review editing", () => {
     const dialogClosed = waitForFormReviewClose(context.win, dialog);
     await activateFormReviewButton(
       reviewBrowser,
-      "ai-smart-form-fill-close-review"
+      "ai-smart-form-fill-close-review-button"
     );
     await dialogClosed;
   });
@@ -96,7 +96,7 @@ describe("Smart Form Fill form review editing", () => {
     const dialogClosed = waitForFormReviewClose(context.win, dialog);
     await activateFormReviewButton(
       reviewBrowser,
-      "ai-smart-form-fill-cancel-review"
+      "ai-smart-form-fill-cancel-review-button"
     );
     await dialogClosed;
 

@@ -24,14 +24,14 @@ export default {
       handles: ["toggle"],
     },
     fluent: `
-ai-smart-form-fill-edit-sources = Edit sources
-ai-smart-form-fill-suggested-tabs = Suggested tabs
-ai-smart-form-fill-other-tabs = Other tabs
+ai-smart-form-fill-edit-sources-title = Edit sources
+ai-smart-form-fill-suggested-tabs-heading = Suggested tabs
+ai-smart-form-fill-other-tabs-heading = Other tabs
 ai-smart-form-fill-tab-select-toggle =
     .aria-label = Toggle tab selection for { $tabTitle }
-ai-smart-form-fill-cancel-tab-select =
+ai-smart-form-fill-cancel-tab-select-button =
     .label = Cancel
-ai-smart-form-fill-accept-tab-select =
+ai-smart-form-fill-accept-tab-select-button =
     .label = Done
     `,
   },

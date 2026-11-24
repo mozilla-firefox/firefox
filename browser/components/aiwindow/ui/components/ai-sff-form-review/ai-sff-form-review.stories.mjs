@@ -88,13 +88,13 @@ export default {
       handles: Object.values(FORM_REVIEW_ACTIONS),
     },
     fluent: `
-ai-smart-form-fill-fill-form =
+ai-smart-form-fill-fill-form-button =
     .label = Fill form
 ai-smart-form-fill-review-heading = Review suggestions
 ai-smart-form-fill-review-description = Edit or delete anything that’s not correct.
-ai-smart-form-fill-field =
+ai-smart-form-fill-field-fallback-label =
     .label = Field
-ai-smart-form-fill-cancel-review =
+ai-smart-form-fill-cancel-review-button =
     .label = Cancel
 ai-smart-form-fill-finding-suggestions = Finding suggestions
 ai-smart-form-fill-stop-finding-suggestions =
@@ -107,7 +107,7 @@ ai-smart-form-fill-no-suggestions-heading = No suggestions found
 ai-smart-form-fill-no-suggestions-description = Smart Form Fill wasn’t able to generate any suggestions for this form.
 ai-smart-form-fill-error-heading = Something happened catch-all headline
 ai-smart-form-fill-error-description = General explanation that maybe its the connection, or something else happened, and to try again
-ai-smart-form-fill-close-review =
+ai-smart-form-fill-close-review-button =
     .label = Close
     `,
   },

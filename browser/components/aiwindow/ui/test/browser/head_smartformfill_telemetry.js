@@ -385,7 +385,10 @@ async function fillReviewedForm(reviewBrowser) {
   // Fill form only enables once the generated values have been scrolled
   // through.
   await scrollFormReviewFieldsToBottom(reviewBrowser);
-  await activateFormReviewButton(reviewBrowser, "ai-smart-form-fill-fill-form");
+  await activateFormReviewButton(
+    reviewBrowser,
+    "ai-smart-form-fill-fill-form-button"
+  );
 }
 
 /**
@@ -401,7 +404,7 @@ async function cancelFormReview(win, browser) {
   const closed = waitForFormReviewClose(win, dialog);
   await activateFormReviewButton(
     reviewBrowser,
-    "ai-smart-form-fill-cancel-review"
+    "ai-smart-form-fill-cancel-review-button"
   );
   await closed;
 }

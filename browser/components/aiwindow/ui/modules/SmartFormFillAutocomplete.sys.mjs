@@ -9,7 +9,7 @@ import { XPCOMUtils } from "resource://gre/modules/XPCOMUtils.sys.mjs";
 /** @typedef {import("moz-src:///browser/components/aiwindow/ui/actors/SmartFormFillParent.sys.mjs").SmartFormFillParent} SmartFormFillParent */
 
 const lazy = XPCOMUtils.declareLazy({
-  l10n: () => new Localization(["preview/aiWindow.ftl"], true),
+  l10n: () => new Localization(["browser/aiWindow.ftl"], true),
   AIWindow:
     "moz-src:///browser/components/aiwindow/ui/modules/AIWindow.sys.mjs",
   SFF_ENABLED: { pref: "browser.smartwindow.smartformfill.enabled" },
@@ -197,7 +197,7 @@ export const SmartFormFillAutocomplete = {
         id: "ai-smart-form-fill-autocomplete-tabs-count",
         args: { tabs: sffActor.getSelectedTabSources(formId).length },
       },
-      { id: "ai-smart-form-fill-edit-sources" },
+      { id: "ai-smart-form-fill-edit-sources-button" },
     ]);
     const relevantTabsReady = sffActor.areRelevantTabsReady(formId);
     const hasSources =

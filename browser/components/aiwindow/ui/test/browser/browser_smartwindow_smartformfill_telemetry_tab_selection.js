@@ -93,7 +93,7 @@ async function toggleSelectorTab(tabSelector, url) {
 
 async function acceptTabSelector({ dialogWindow, tabSelector, edited }) {
   const button = tabSelector.renderRoot.querySelector(
-    'moz-button[data-l10n-id="ai-smart-form-fill-accept-tab-select"]'
+    'moz-button[data-l10n-id="ai-smart-form-fill-accept-tab-select-button"]'
   );
   EventUtils.synthesizeMouseAtCenter(button.buttonEl, {}, dialogWindow);
 
@@ -102,7 +102,7 @@ async function acceptTabSelector({ dialogWindow, tabSelector, edited }) {
 
 async function cancelTabSelector({ dialogWindow, tabSelector, edited }) {
   const button = tabSelector.renderRoot.querySelector(
-    'moz-button[data-l10n-id="ai-smart-form-fill-cancel-tab-select"]'
+    'moz-button[data-l10n-id="ai-smart-form-fill-cancel-tab-select-button"]'
   );
   EventUtils.synthesizeMouseAtCenter(button.buttonEl, {}, dialogWindow);
 

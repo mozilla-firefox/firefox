@@ -46,7 +46,7 @@ describe("Smart Form Fill form review generation", () => {
     const dialogClosed = waitForFormReviewClose(context.win, dialog);
     await activateFormReviewButton(
       reviewBrowser,
-      "ai-smart-form-fill-close-review"
+      "ai-smart-form-fill-close-review-button"
     );
     await dialogClosed;
   });
@@ -121,7 +121,7 @@ describe("Smart Form Fill form review generation", () => {
     const dialogClosed = waitForFormReviewClose(context.win, dialog);
     await activateFormReviewButton(
       reviewBrowser,
-      "ai-smart-form-fill-cancel-review"
+      "ai-smart-form-fill-cancel-review-button"
     );
     await dialogClosed;
   });
@@ -147,7 +147,7 @@ describe("Smart Form Fill form review generation", () => {
     const dialogClosed = waitForFormReviewClose(context.win, dialog);
     await activateFormReviewButton(
       reviewBrowser,
-      "ai-smart-form-fill-close-review"
+      "ai-smart-form-fill-close-review-button"
     );
     await dialogClosed;
   });
@@ -177,7 +177,7 @@ describe("Smart Form Fill form review generation", () => {
       const dialogClosed = waitForFormReviewClose(context.win, dialog);
       await activateFormReviewButton(
         reviewBrowser,
-        "ai-smart-form-fill-close-review"
+        "ai-smart-form-fill-close-review-button"
       );
       await dialogClosed;
     } finally {
@@ -209,7 +209,7 @@ describe("Smart Form Fill form review generation", () => {
     const dialogClosed = waitForFormReviewClose(context.win, dialog);
     await activateFormReviewButton(
       reviewBrowser,
-      "ai-smart-form-fill-close-review"
+      "ai-smart-form-fill-close-review-button"
     );
     await dialogClosed;
   });

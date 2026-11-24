@@ -76,7 +76,7 @@ describe("Smart Form Fill form review filling", () => {
 
     await activateFormReviewButton(
       reviewBrowser,
-      "ai-smart-form-fill-fill-form"
+      "ai-smart-form-fill-fill-form-button"
     );
     await waitForFormReviewState(reviewBrowser, FORM_REVIEW_STATES.FINAL);
 
@@ -100,7 +100,7 @@ describe("Smart Form Fill form review filling", () => {
     const dialogClosed = waitForFormReviewClose(context.win, dialog);
     await activateFormReviewButton(
       reviewBrowser,
-      "ai-smart-form-fill-close-review"
+      "ai-smart-form-fill-close-review-button"
     );
     await dialogClosed;
   });
@@ -115,7 +115,7 @@ describe("Smart Form Fill form review filling", () => {
     );
     await activateFormReviewButton(
       reviewBrowser,
-      "ai-smart-form-fill-fill-form"
+      "ai-smart-form-fill-fill-form-button"
     );
     await waitForFormReviewState(reviewBrowser, FORM_REVIEW_STATES.FINAL);
 
@@ -144,7 +144,7 @@ describe("Smart Form Fill form review filling", () => {
     const dialogClosed = waitForFormReviewClose(context.win, dialog);
     await activateFormReviewButton(
       reviewBrowser,
-      "ai-smart-form-fill-close-review"
+      "ai-smart-form-fill-close-review-button"
     );
     await dialogClosed;
   });
@@ -160,7 +160,7 @@ describe("Smart Form Fill form review filling", () => {
 
       await activateFormReviewButton(
         reviewBrowser,
-        "ai-smart-form-fill-fill-form"
+        "ai-smart-form-fill-fill-form-button"
       );
       await waitForFormReviewState(reviewBrowser, FORM_REVIEW_STATES.FINAL);
     });
@@ -171,7 +171,7 @@ describe("Smart Form Fill form review filling", () => {
       const dialogClosed = waitForFormReviewClose(context.win, dialog);
       await activateFormReviewButton(
         reviewBrowser,
-        "ai-smart-form-fill-close-review"
+        "ai-smart-form-fill-close-review-button"
       );
       await dialogClosed;
     });
@@ -188,7 +188,7 @@ describe("Smart Form Fill form review filling", () => {
         "The retry heading should be rendered after the first failure"
       );
       Assert.ok(
-        failed.l10nIds.includes("ai-smart-form-fill-try-again"),
+        failed.l10nIds.includes("ai-smart-form-fill-try-again-button"),
         "The retry button should be offered after the first failure"
       );
       Assert.equal(
@@ -199,7 +199,7 @@ describe("Smart Form Fill form review filling", () => {
 
       await activateFormReviewButton(
         reviewBrowser,
-        "ai-smart-form-fill-try-again"
+        "ai-smart-form-fill-try-again-button"
       );
       await waitForFormReviewL10nId(
         reviewBrowser,
@@ -225,7 +225,7 @@ describe("Smart Form Fill form review filling", () => {
 
       await activateFormReviewButton(
         reviewBrowser,
-        "ai-smart-form-fill-try-again"
+        "ai-smart-form-fill-try-again-button"
       );
       await waitForFormReviewL10nId(
         reviewBrowser,
@@ -240,7 +240,7 @@ describe("Smart Form Fill form review filling", () => {
         "The final state should still identify a fill failure"
       );
       Assert.ok(
-        !snapshot.l10nIds.includes("ai-smart-form-fill-try-again"),
+        !snapshot.l10nIds.includes("ai-smart-form-fill-try-again-button"),
         "Only one retry should be offered per review"
       );
       Assert.equal(

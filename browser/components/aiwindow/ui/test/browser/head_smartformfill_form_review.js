@@ -449,7 +449,7 @@ async function getFormReviewSnapshot(reviewBrowser) {
       ),
       fillButtonDisabled:
         review.renderRoot.querySelector(
-          'moz-button[data-l10n-id="ai-smart-form-fill-fill-form"]'
+          'moz-button[data-l10n-id="ai-smart-form-fill-fill-form-button"]'
         )?.disabled ?? null,
     };
   });

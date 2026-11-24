@@ -463,3 +463,93 @@ smartwindow-onboarding-default-window =
     .description = Use it when { -brand-short-name } starts, restarts, or opens links from other apps.
 smartwindow-onboarding-save =
     .label = Save and go
+
+## Smart Form Fill
+## Generates values for form fields from one or more sources, which are tabs
+## selected by the user.
+
+# Accessible name for the Smart Form Fill autocomplete row, read by screen
+# readers only. Should match the visible ai-smart-form-fill-autocomplete-sources-label.
+ai-smart-form-fill-autocomplete-label = Fill from sources
+ai-smart-form-fill-autocomplete-loading = Loading
+ai-smart-form-fill-autocomplete-sources-label = Fill from sources
+ai-smart-form-fill-autocomplete-choose-tabs = Open or choose pages related to this form to get autofill suggestions
+ai-smart-form-fill-autocomplete-open-tabs = Open pages related to this form to get autofill suggestions
+ai-smart-form-fill-close-review-button =
+    .label = Close
+
+# Variables:
+#   $tabs (number) - The number of tabs used as a source for autofill
+ai-smart-form-fill-autocomplete-tabs-count =
+    { $tabs ->
+        [one] { $tabs } tab
+       *[other] { $tabs } tabs
+    }
+
+# Button in the autocomplete row that opens the dialog for choosing sources.
+ai-smart-form-fill-edit-sources-button = Edit sources
+# Title of the dialog for choosing sources.
+ai-smart-form-fill-edit-sources-title = Edit sources
+ai-smart-form-fill-suggested-tabs-heading = Suggested tabs
+ai-smart-form-fill-other-tabs-heading = Other tabs
+
+# Variables:
+#   $tabTitle (string) - Title of the tab controlled by the toggle
+ai-smart-form-fill-tab-select-toggle =
+    .aria-label = Toggle tab selection for “{ $tabTitle }”
+
+ai-smart-form-fill-cancel-tab-select-button =
+    .label = Cancel
+
+ai-smart-form-fill-accept-tab-select-button =
+    .label = Done
+
+ai-smart-form-fill-fill-form-button =
+    .label = Fill form
+
+ai-smart-form-fill-review-heading = Review suggestions
+
+# Variables:
+#   $count (number) - The number of generated form field suggestions
+ai-smart-form-fill-review-description =
+    { $count ->
+        [one] We found suggestions for { $count } field. Edit or delete anything that’s not correct.
+       *[other] We found suggestions for { $count } fields. Edit or delete anything that’s not correct.
+    }
+
+# Used when a field of the form being filled in doesn’t have a name to use as
+# its label.
+ai-smart-form-fill-field-fallback-label =
+    .label = Field
+
+ai-smart-form-fill-jump-to-bottom =
+    .tooltiptext = Jump to bottom
+    .aria-label = Jump to bottom of suggestions
+
+ai-smart-form-fill-cancel-review-button =
+    .label = Cancel
+
+ai-smart-form-fill-finding-suggestions = Finding suggestions
+
+# Accessible name for the button showing a “stop” icon, read by screen readers
+# only.
+ai-smart-form-fill-stop-finding-suggestions =
+    .aria-label = Stop finding suggestions
+
+ai-smart-form-fill-success-heading = Suggestions added to form
+ai-smart-form-fill-success-description = Review the form and fill any remaining fields before you submit.
+
+ai-smart-form-fill-no-changes-heading = Nothing added to the form
+ai-smart-form-fill-no-changes-description = Some fields may have changed or were already filled in. To try again, clear a field, select it, and then choose Fill from sources.
+
+ai-smart-form-fill-no-suggestions-heading = No suggestions found
+ai-smart-form-fill-no-suggestions-description = We couldn’t read this form or find good matches in your sources. Using different sources may help.
+
+ai-smart-form-fill-error-try-again-heading = Suggestions weren’t added to the form
+ai-smart-form-fill-error-try-again-description = Something went wrong. Try adding suggestions again.
+
+ai-smart-form-fill-error-heading = Suggestions weren’t added
+ai-smart-form-fill-error-description = Something went wrong. To try again, select a form field and choose Fill from sources.
+
+ai-smart-form-fill-try-again-button =
+    .label = Try again

@@ -36,7 +36,7 @@ const TEST_ADDRESS = {
 ChromeUtils.defineLazyGetter(
   lazy,
   "l10n",
-  () => new Localization(["preview/aiWindow.ftl"], true)
+  () => new Localization(["browser/aiWindow.ftl"], true)
 );
 
 /**

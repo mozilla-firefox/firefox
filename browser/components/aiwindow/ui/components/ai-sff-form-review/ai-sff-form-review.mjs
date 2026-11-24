@@ -441,7 +441,9 @@ export class AiSffFormReview extends MozLitElement {
         .label=${label}
         .disabled=${this.filling}
         data-l10n-id=${ifDefined(
-          usesGenericLabel ? "ai-smart-form-fill-field" : undefined
+          usesGenericLabel
+            ? "ai-smart-form-fill-field-fallback-label"
+            : undefined
         )}
         @input=${event => this.#handleInput(event, field.id)}
       ></moz-input-text>
@@ -496,14 +498,14 @@ export class AiSffFormReview extends MozLitElement {
           <moz-button
             .disabled=${this.filling}
             size="large"
-            data-l10n-id="ai-smart-form-fill-cancel-review"
+            data-l10n-id="ai-smart-form-fill-cancel-review-button"
             @click=${this.#handleCancel}
           ></moz-button>
           <moz-button
             type="primary"
             .disabled=${this.filling || !this.#reviewedAllFields}
             size="large"
-            data-l10n-id="ai-smart-form-fill-fill-form"
+            data-l10n-id="ai-smart-form-fill-fill-form-button"
             @click=${this.#handleFill}
           ></moz-button>
         </moz-button-group>
@@ -612,7 +614,7 @@ export class AiSffFormReview extends MozLitElement {
                   class="form-review-close"
                   size="large"
                   .disabled=${this.filling}
-                  data-l10n-id="ai-smart-form-fill-close-review"
+                  data-l10n-id="ai-smart-form-fill-close-review-button"
                   @click=${this.#handleClose}
                 ></moz-button>
                 <moz-button
@@ -620,7 +622,7 @@ export class AiSffFormReview extends MozLitElement {
                   type="primary"
                   size="large"
                   .disabled=${this.filling}
-                  data-l10n-id="ai-smart-form-fill-try-again"
+                  data-l10n-id="ai-smart-form-fill-try-again-button"
                   @click=${this.#handleRetry}
                 ></moz-button>
               </moz-button-group>
@@ -631,7 +633,7 @@ export class AiSffFormReview extends MozLitElement {
                   class="form-review-close"
                   type="primary"
                   size="large"
-                  data-l10n-id="ai-smart-form-fill-close-review"
+                  data-l10n-id="ai-smart-form-fill-close-review-button"
                   @click=${this.#handleClose}
                 ></moz-button>
               </moz-button-group>
