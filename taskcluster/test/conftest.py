@@ -125,8 +125,9 @@ def print_dependents():
             print(f"Dependent graph for {label}:")
 
         dependents = set()
+        task_id = next(t.task_id for t in graph.tasks.values() if t.label == label)
         for task in graph.tasks.values():
-            if label in task.dependencies.values():
+            if task_id in task.dependencies.values():
                 dependents.add(task.label)
 
         print(f"{indent}{label}")
