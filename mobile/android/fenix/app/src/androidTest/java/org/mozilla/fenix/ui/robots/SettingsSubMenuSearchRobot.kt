@@ -71,6 +71,7 @@ import org.mozilla.fenix.helpers.click
 import org.mozilla.fenix.helpers.isChecked
 import org.mozilla.fenix.helpers.isEnabled
 import org.mozilla.fenix.settings.search.SearchEngineShortcutsTestTag
+import org.mozilla.fenix.settings.search.ui.SearchEngineDropdownMenuTestTag
 
 /** Implementation of Robot Pattern for the settings search sub menu. */
 class SettingsSubMenuSearchRobot {
@@ -565,20 +566,12 @@ class SettingsSubMenuSearchRobot {
         Log.i(TAG, "openCustomShortcutOverflowMenu: Clicked $searchEngineName's three dot button")
     }
 
-    fun clickEdit() {
+    fun clickEdit(testRule: ComposeTestRule) {
         Log.i(TAG, "clickEdit: Trying to click the \"Edit\" button")
-        onView(withText("Edit")).click()
+        testRule.onNodeWithTag(SearchEngineDropdownMenuTestTag.EDIT).performClick()
         Log.i(TAG, "clickEdit: Clicked the \"Edit\" button")
     }
 
-    // Used in the Default search engine menu
-    fun clickDeleteSearchEngine() {
-        Log.i(TAG, "clickDeleteSearchEngine: Trying to click the \"Delete\" button")
-        mDevice.findObject(UiSelector().textContains(getStringResource(R.string.search_engine_delete))).click()
-        Log.i(TAG, "clickDeleteSearchEngine: Clicked the \"Delete\" button")
-    }
-
-    // Used in the composable Manage search shortcuts menu, otherwise the overflow menu is not visible
     fun clickDeleteSearchEngine(testRule: ComposeTestRule) {
         Log.i(TAG, "clickDeleteSearchEngine: Trying to click the \"Delete\" button")
         testRule.onNodeWithText("Delete").performClick()

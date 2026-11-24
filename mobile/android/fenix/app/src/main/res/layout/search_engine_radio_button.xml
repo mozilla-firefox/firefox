@@ -3,7 +3,6 @@
    - License, v. 2.0. If a copy of the MPL was not distributed with this
    - file, You can obtain one at http://mozilla.org/MPL/2.0/. -->
 <LinearLayout xmlns:android="http://schemas.android.com/apk/res/android"
-    xmlns:app="http://schemas.android.com/apk/res-auto"
     xmlns:tools="http://schemas.android.com/tools"
     android:layout_height="@dimen/search_engine_radio_button_height"
     android:layout_width="match_parent"
@@ -37,12 +36,8 @@
         tools:text="Google"
         android:layout_weight="1"
         android:layout_gravity="center" />
-    <ImageButton
+    <androidx.compose.ui.platform.ComposeView
         android:id="@+id/overflow_menu"
-        android:layout_width="@dimen/glyph_button_width"
-        android:layout_height="@dimen/glyph_button_height"
-        android:background="?android:attr/selectableItemBackgroundBorderless"
-        android:contentDescription="@string/content_description_menu"
-        app:srcCompat="@drawable/mozac_ic_more_vertical_round_24"
-        app:tint="?attr/colorOnSurface" />
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content" />
 </LinearLayout>

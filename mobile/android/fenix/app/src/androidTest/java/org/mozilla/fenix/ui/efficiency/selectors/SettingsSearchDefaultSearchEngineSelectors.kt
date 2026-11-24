@@ -6,6 +6,7 @@ package org.mozilla.fenix.ui.efficiency.selectors
 
 import org.mozilla.fenix.R
 import org.mozilla.fenix.helpers.DataGenerationHelper.getStringResource
+import org.mozilla.fenix.settings.search.ui.SearchEngineDropdownMenuTestTag
 import org.mozilla.fenix.ui.efficiency.helpers.Selector
 import org.mozilla.fenix.ui.efficiency.helpers.SelectorContainer
 import org.mozilla.fenix.ui.efficiency.helpers.SelectorGroup
@@ -39,19 +40,19 @@ object SettingsSearchDefaultSearchEngineSelectors : SelectorContainer {
             description = "Add search engine button",
         )
 
-    // Overflow (three-dot) button on a custom engine's row. Only custom engines expose it on this
-    // screen, so a plain content-description match is unique when a single custom engine is present.
+    // Overflow (three-dot) button on a custom engine's row. It appears in both the normal and private browsing lists,
+    // so take the first.
     val ENGINE_OVERFLOW_MENU =
         Selector(
-            strategy = SelectorStrategy.UIAUTOMATOR_WITH_DESCRIPTION_CONTAINS,
-            value = getStringResource(R.string.content_description_menu),
+            strategy = SelectorStrategy.COMPOSE_ON_ALL_NODES_BY_TAG_ON_FIRST,
+            value = SearchEngineDropdownMenuTestTag.OVERFLOW_BUTTON,
             description = "Custom engine overflow menu button",
         )
 
     val OVERFLOW_EDIT_ITEM =
         Selector(
-            strategy = SelectorStrategy.UIAUTOMATOR_WITH_TEXT,
-            value = getStringResource(R.string.search_engine_edit),
+            strategy = SelectorStrategy.COMPOSE_BY_TAG,
+            value = SearchEngineDropdownMenuTestTag.EDIT,
             description = "Edit item in the custom engine overflow menu",
         )
 }

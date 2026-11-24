@@ -13,6 +13,7 @@ import android.view.ViewGroup
 import android.widget.CompoundButton
 import android.widget.LinearLayout
 import android.widget.RadioGroup
+import androidx.compose.ui.platform.ViewCompositionStrategy
 import androidx.core.graphics.drawable.toDrawable
 import androidx.core.view.isVisible
 import androidx.navigation.findNavController
@@ -33,7 +34,10 @@ import org.mozilla.fenix.GleanMetrics.Events
 import org.mozilla.fenix.R
 import org.mozilla.fenix.databinding.SearchEngineRadioButtonBinding
 import org.mozilla.fenix.ext.components
+import org.mozilla.fenix.ext.nav
 import org.mozilla.fenix.ext.telemetryName
+import org.mozilla.fenix.settings.search.ui.SearchEngineDropdownMenu
+import org.mozilla.fenix.theme.FirefoxTheme
 
 class RadioSearchEngineListPreference
 @JvmOverloads
@@ -162,27 +166,22 @@ constructor(
         binding.radioButton.isChecked = isSelected
         binding.radioButton.setOnCheckedChangeListener(this)
         binding.engineText.text = engine.name
+
         binding.overflowMenu.isVisible = allowDeletion || isCustomSearchEngine
-        binding.overflowMenu.setOnClickListener {
-            SearchEngineMenu(
-                    context = context,
-                    allowDeletion = allowDeletion,
-                    isCustomSearchEngine = isCustomSearchEngine,
-                    onItemTapped = {
-                        when (it) {
-                            is SearchEngineMenu.Item.Edit -> editCustomSearchEngine(wrapper, engine)
-                            is SearchEngineMenu.Item.Delete ->
-                                deleteSearchEngine(
-                                    context,
-                                    engine,
-                                )
-                        }
-                    },
-                )
-                .menuBuilder
-                .build(context)
-                .show(binding.overflowMenu)
+        if (binding.overflowMenu.isVisible) {
+            binding.overflowMenu.setViewCompositionStrategy(ViewCompositionStrategy.DisposeOnDetachedFromWindow)
+            binding.overflowMenu.setContent {
+                FirefoxTheme {
+                    SearchEngineDropdownMenu(
+                        isCustomSearchEngine = isCustomSearchEngine,
+                        allowDeletion = allowDeletion,
+                        onEditClick = { editCustomSearchEngine(wrapper, engine) },
+                        onDeleteClick = { deleteSearchEngine(context, engine) },
+                    )
+                }
+            }
         }
+
         val iconSize = res.getDimension(R.dimen.preference_icon_drawable_size).toInt()
         val engineIcon = engine.icon.toDrawable(res)
         engineIcon.setBounds(0, 0, iconSize, iconSize)
@@ -243,7 +242,7 @@ constructor(
     private fun editCustomSearchEngine(view: View, engine: SearchEngine) {
         val directions =
             DefaultSearchEngineFragmentDirections.actionDefaultEngineFragmentToSaveSearchEngineFragment(engine.id)
-        view.findNavController().navigate(directions)
+        view.findNavController().nav(R.id.defaultEngineFragment, directions)
     }
 
     private fun deleteSearchEngine(
