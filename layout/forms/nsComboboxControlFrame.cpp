@@ -174,8 +174,7 @@ void nsComboboxControlFrame::GetOptionText(uint32_t aIndex,
                                            nsAString& aText) const {
   aText.Truncate();
   if (Element* el = Select().Options()->Item(aIndex)) {
-    static_cast<dom::HTMLOptionElement*>(el)->GetRenderedLabel(
-        aText, dom::AltText::Include);
+    static_cast<dom::HTMLOptionElement*>(el)->GetRenderedLabel(aText);
   }
 }
 

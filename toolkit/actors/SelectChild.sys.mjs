@@ -432,7 +432,7 @@ function buildOptionList(select, group, uniqueStyles) {
     result.push({
       index: item.index,
       isOptGroup,
-      textContent: item.renderedLabel,
+      textContent: isOptGroup ? item.label : item.renderedLabel,
       disabled: item.disabled,
       display: cs.display,
       tooltip: item.title,

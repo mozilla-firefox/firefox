@@ -25,7 +25,6 @@ class HTMLOptGroupElement final : public nsGenericHTMLElement {
 
   // nsIContent
   void GetEventTargetParent(EventChainPreVisitor& aVisitor) override;
-  nsresult BindToTree(BindContext&, nsINode& aParent) override;
 
   nsresult Clone(dom::NodeInfo*, nsINode** aResult) const override;
 
@@ -45,23 +44,12 @@ class HTMLOptGroupElement final : public nsGenericHTMLElement {
     SetHTMLAttr(nsGkAtoms::label, aLabel, aError);
   }
 
-  // Get the group label from its first element child legend or label
-  // attribute.
-  void GetRenderedLabel(nsAString& aLabel) const;
-
   // Get the select content element that contains this optgroup
   HTMLSelectElement* GetSelect() const;
 
  protected:
   virtual ~HTMLOptGroupElement();
   JSObject* WrapNode(JSContext*, JS::Handle<JSObject*> aGivenProto) override;
-
-  void SetupShadowTree();
-  Text* GetLabelText() const;
-  void GetSlotNameFor(const ShadowRoot&, const nsIContent&,
-                      nsAString&) const override;
-  void OnChildBeforeSlotted(ShadowRoot&, nsIContent&) override;
-  void OnChildUnslotted(ShadowRoot&, nsIContent&) override;
 };
 
 }  // namespace dom

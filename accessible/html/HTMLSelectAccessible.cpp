@@ -17,7 +17,6 @@
 #include "nsCOMPtr.h"
 #include "nsComboboxControlFrame.h"
 #include "nsContainerFrame.h"
-#include "nsContentUtils.h"
 #include "nsListControlFrame.h"
 
 using namespace mozilla::a11y;
@@ -131,11 +130,11 @@ ENameValueFlag HTMLSelectOptionAccessible::NativeName(nsString& aName) const {
     if (!aName.IsEmpty()) {
       return eNameOK;
     }
-    nsContentUtils::GetHTMLAwareTextContent(*option, AltText::Include, aName);
+    option->GetText(aName);
     return eNameFromSubtree;
   }
   if (auto* group = dom::HTMLOptGroupElement::FromNode(mContent)) {
-    group->GetRenderedLabel(aName);
+    group->GetLabel(aName);
     return aName.IsEmpty() ? eNameOK : eNameFromSubtree;
   }
   MOZ_ASSERT_UNREACHABLE("What content do we have?");
@@ -301,7 +300,7 @@ void HTMLComboboxAccessible::Value(nsString& aValue) const {
   HTMLSelectElement* select = HTMLSelectElement::FromNode(mContent);
 
   if (HTMLOptionElement* option = select->GetSelectedOption()) {
-    option->GetRenderedLabel(aValue, AltText::Include);
+    option->GetRenderedLabel(aValue);
   }
 }
 

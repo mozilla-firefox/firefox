@@ -184,14 +184,17 @@ addAccessibleTask(
     );
     let children = select.getAttributeValue("AXChildren");
     for (const [i, expected] of [
+      ["​", false, false],
       ["Fruits", false, false],
       ["Banana", true, true],
       ["Apple", true, true],
       ["Orange", true, true],
+      ["​", false, false],
       ["Vegetables", false, false],
       ["Lettuce", true, true],
       ["Tomato", true, true],
       ["Onion", true, true],
+      ["​", false, false],
       ["Spices", false, false],
       ["Cumin", true, true],
       ["Coriander", true, true],
@@ -237,7 +240,7 @@ addAccessibleTask(
       "Select is direct parent of nested option"
     );
 
-    let groupLabel = select.getAttributeValue("AXChildren")[0];
+    let groupLabel = select.getAttributeValue("AXChildren")[1];
     ok(
       !groupLabel.isAttributeSettable("AXSelected"),
       "Group label should not be selectable"
