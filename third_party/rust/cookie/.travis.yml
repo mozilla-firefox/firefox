@@ -1,0 +1,13 @@
+language: rust
+matrix:
+  include:
+    - rust: stable
+    - rust: beta
+    - rust: nightly
+
+script:
+  - ./scripts/test.sh
+
+notifications:
+  email:
+    on_success: never
