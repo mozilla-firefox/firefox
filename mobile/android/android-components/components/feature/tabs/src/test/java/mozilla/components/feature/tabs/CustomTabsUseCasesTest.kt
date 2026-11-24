@@ -5,8 +5,13 @@
 package mozilla.components.feature.tabs
 
 import androidx.test.ext.junit.runners.AndroidJUnit4
+import kotlin.test.assertNotNull
 import mozilla.components.browser.state.action.CustomTabListAction
 import mozilla.components.browser.state.engine.EngineMiddleware
+import mozilla.components.browser.state.selector.findCustomTab
+import mozilla.components.browser.state.state.BrowserState
+import mozilla.components.browser.state.state.CustomTabConfig
+import mozilla.components.browser.state.state.SessionState
 import mozilla.components.browser.state.state.createCustomTab
 import mozilla.components.browser.state.store.BrowserStore
 import mozilla.components.concept.engine.Engine
@@ -15,7 +20,9 @@ import mozilla.components.support.test.any
 import mozilla.components.support.test.mock
 import mozilla.components.support.test.whenever
 import org.junit.Assert.assertEquals
+import org.junit.Assert.assertFalse
 import org.junit.Assert.assertNull
+import org.junit.Assert.assertTrue
 import org.junit.Before
 import org.junit.Test
 import org.junit.runner.RunWith
@@ -62,5 +69,109 @@ class CustomTabsUseCasesTest {
         assertEquals(2, store.state.tabs.size)
         assertEquals(0, store.state.customTabs.size)
         assertEquals(otherCustomTab.id, store.state.selectedTabId)
+    }
+
+    @Test
+    fun `GIVEN desktop mode is enabled WHEN adding a custom tab without desktopMode THEN the tab is in desktop mode`() {
+        store =
+            BrowserStore(
+                initialState = BrowserState(desktopMode = true),
+                middleware = EngineMiddleware.create(engine = engine),
+            )
+        tabsUseCases = CustomTabsUseCases(store, mock())
+
+        val tabId =
+            tabsUseCases.add(
+                url = "https://mozilla.org",
+                customTabConfig = CustomTabConfig(),
+                source = SessionState.Source.Internal.None,
+            )
+        val tab = store.state.findCustomTab(tabId)
+        assertNotNull(tab)
+        assertTrue(tab.content.desktopMode)
+    }
+
+    @Test
+    fun `GIVEN desktop mode is enabled WHEN adding a custom tab with desktopMode true THEN the tab is in desktop mode`() {
+        store =
+            BrowserStore(
+                initialState = BrowserState(desktopMode = true),
+                middleware = EngineMiddleware.create(engine = engine),
+            )
+        tabsUseCases = CustomTabsUseCases(store, mock())
+
+        val tabId =
+            tabsUseCases.add(
+                url = "https://mozilla.org",
+                customTabConfig = CustomTabConfig(),
+                source = SessionState.Source.Internal.None,
+                desktopMode = true,
+            )
+        val tab = store.state.findCustomTab(tabId)
+        assertNotNull(tab)
+        assertTrue(tab.content.desktopMode)
+    }
+
+    @Test
+    fun `GIVEN desktop mode is enabled WHEN adding a custom tab with desktopMode false THEN the tab is not in desktop mode`() {
+        store =
+            BrowserStore(
+                initialState = BrowserState(desktopMode = true),
+                middleware = EngineMiddleware.create(engine = engine),
+            )
+        tabsUseCases = CustomTabsUseCases(store, mock())
+
+        val tabId =
+            tabsUseCases.add(
+                url = "https://mozilla.org",
+                customTabConfig = CustomTabConfig(),
+                source = SessionState.Source.Internal.None,
+                desktopMode = false,
+            )
+        val tab = store.state.findCustomTab(tabId)
+        assertNotNull(tab)
+        assertFalse(tab.content.desktopMode)
+    }
+
+    @Test
+    fun `GIVEN desktop mode is disabled WHEN adding a custom tab with desktopMode true THEN the tab is in desktop mode`() {
+        store =
+            BrowserStore(
+                initialState = BrowserState(desktopMode = false),
+                middleware = EngineMiddleware.create(engine = engine),
+            )
+        tabsUseCases = CustomTabsUseCases(store, mock())
+
+        val tabId =
+            tabsUseCases.add(
+                url = "https://mozilla.org",
+                customTabConfig = CustomTabConfig(),
+                source = SessionState.Source.Internal.None,
+                desktopMode = true,
+            )
+        val tab = store.state.findCustomTab(tabId)
+        assertNotNull(tab)
+        assertTrue(tab.content.desktopMode)
+    }
+
+    @Test
+    fun `GIVEN desktop mode is disabled WHEN adding a custom tab with desktopMode false THEN the tab is not in desktop mode`() {
+        store =
+            BrowserStore(
+                initialState = BrowserState(desktopMode = false),
+                middleware = EngineMiddleware.create(engine = engine),
+            )
+        tabsUseCases = CustomTabsUseCases(store, mock())
+
+        val tabId =
+            tabsUseCases.add(
+                url = "https://mozilla.org",
+                customTabConfig = CustomTabConfig(),
+                source = SessionState.Source.Internal.None,
+                desktopMode = false,
+            )
+        val tab = store.state.findCustomTab(tabId)
+        assertNotNull(tab)
+        assertFalse(tab.content.desktopMode)
     }
 }

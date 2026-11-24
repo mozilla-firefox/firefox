@@ -9,6 +9,7 @@ import android.content.Intent.ACTION_VIEW
 import android.content.res.Resources
 import android.provider.Browser
 import androidx.annotation.VisibleForTesting
+import mozilla.components.browser.state.state.CustomTabConfig
 import mozilla.components.browser.state.state.SessionState
 import mozilla.components.browser.state.state.externalPackage
 import mozilla.components.feature.intent.ext.putSessionId
@@ -17,11 +18,19 @@ import mozilla.components.feature.tabs.CustomTabsUseCases
 import mozilla.components.support.utils.SafeIntent
 import mozilla.components.support.utils.toSafeIntent
 
-/** Processor for intents which trigger actions related to custom tabs. */
+/**
+ * Processor for intents which trigger actions related to custom tabs.
+ *
+ * @param addCustomTabUseCase Use case that creates the custom tab and starts loading the intent's url.
+ * @param resources Used to resolve resource values when building the [CustomTabConfig] from the intent.
+ * @param isPrivate Whether the custom tab is created as a private tab.
+ * @param desktopMode Whether the tab requests desktop sites, or `null` to follow the browser default.
+ */
 class CustomTabIntentProcessor(
     private val addCustomTabUseCase: CustomTabsUseCases.AddCustomTabUseCase,
     private val resources: Resources,
     private val isPrivate: Boolean = false,
+    private val desktopMode: Boolean? = null,
 ) : IntentProcessor {
 
     private fun matches(intent: Intent): Boolean {
@@ -58,11 +67,12 @@ class CustomTabIntentProcessor(
             val caller = safeIntent.externalPackage()
             val customTabId =
                 addCustomTabUseCase(
-                    url,
-                    config,
-                    isPrivate,
-                    getAdditionalHeaders(safeIntent),
+                    url = url,
+                    customTabConfig = config,
+                    private = isPrivate,
+                    additionalHeaders = getAdditionalHeaders(safeIntent),
                     source = SessionState.Source.External.CustomTab(caller),
+                    desktopMode = desktopMode,
                 )
             intent.putSessionId(customTabId)
 

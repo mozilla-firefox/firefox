@@ -10,6 +10,8 @@ import androidx.core.net.toUri
 import io.mockk.coEvery
 import io.mockk.every
 import io.mockk.mockk
+import io.mockk.verify
+import mozilla.components.feature.intent.processing.IntentProcessor
 import org.junit.Assert.assertEquals
 import org.junit.Assert.assertTrue
 import org.junit.Test
@@ -30,7 +32,7 @@ class AuthIntentReceiverActivityTest {
         val controller = Robolectric.buildActivity(AuthIntentReceiverActivity::class.java, intent)
         val activity = controller.get()
         every { activity.components.settings.lastKnownMode.isPrivate } returns false
-        every { activity.components.intentProcessors.customTabIntentProcessor } returns
+        every { activity.components.intentProcessors.authCustomTabIntentProcessor } returns
             mockk { coEvery { process(any()) } returns true }
 
         controller.create()
@@ -39,5 +41,59 @@ class AuthIntentReceiverActivityTest {
         val startedIntent = shadowOf(activity).peekNextStartedActivity()
         assertEquals(AuthCustomTabActivity::class.java.name, startedIntent.component?.className)
         assertTrue(startedIntent.getBooleanExtra(AuthCustomTabActivity.EXTRA_OPEN_HOME_ON_AUTHENTICATED, false))
+    }
+
+    @Test
+    fun `GIVEN normal browsing mode WHEN receiving an auth intent THEN the auth custom tab processor handles it`() {
+        val intent = Intent(Intent.ACTION_VIEW, "https://accounts.firefox.com/pair".toUri())
+        val controller = Robolectric.buildActivity(AuthIntentReceiverActivity::class.java, intent)
+        val activity = controller.get()
+        val customTabIntentProcessor: IntentProcessor = mockk()
+        val privateCustomTabIntentProcessor: IntentProcessor = mockk()
+        val authCustomTabIntentProcessor: IntentProcessor = mockk { every { process(any()) } returns true }
+        val privateAuthCustomTabIntentProcessor: IntentProcessor = mockk()
+
+        every { activity.components.settings.lastKnownMode.isPrivate } returns false
+        every { activity.components.intentProcessors.customTabIntentProcessor } returns customTabIntentProcessor
+        every { activity.components.intentProcessors.privateCustomTabIntentProcessor } returns
+            privateCustomTabIntentProcessor
+        every { activity.components.intentProcessors.authCustomTabIntentProcessor } returns authCustomTabIntentProcessor
+        every { activity.components.intentProcessors.privateAuthCustomTabIntentProcessor } returns
+            privateAuthCustomTabIntentProcessor
+
+        controller.create()
+        shadowOf(Looper.getMainLooper()).idle()
+
+        verify { authCustomTabIntentProcessor.process(any()) }
+        verify(exactly = 0) { customTabIntentProcessor.process(any()) }
+        verify(exactly = 0) { privateCustomTabIntentProcessor.process(any()) }
+        verify(exactly = 0) { privateAuthCustomTabIntentProcessor.process(any()) }
+    }
+
+    @Test
+    fun `GIVEN private browsing mode WHEN receiving an auth intent THEN the private auth custom tab processor handles it`() {
+        val intent = Intent(Intent.ACTION_VIEW, "https://accounts.firefox.com/pair".toUri())
+        val controller = Robolectric.buildActivity(AuthIntentReceiverActivity::class.java, intent)
+        val activity = controller.get()
+        val customTabIntentProcessor: IntentProcessor = mockk()
+        val privateCustomTabIntentProcessor: IntentProcessor = mockk()
+        val authCustomTabIntentProcessor: IntentProcessor = mockk()
+        val privateAuthCustomTabIntentProcessor: IntentProcessor = mockk { every { process(any()) } returns true }
+
+        every { activity.components.settings.lastKnownMode.isPrivate } returns true
+        every { activity.components.intentProcessors.customTabIntentProcessor } returns customTabIntentProcessor
+        every { activity.components.intentProcessors.privateCustomTabIntentProcessor } returns
+            privateCustomTabIntentProcessor
+        every { activity.components.intentProcessors.authCustomTabIntentProcessor } returns authCustomTabIntentProcessor
+        every { activity.components.intentProcessors.privateAuthCustomTabIntentProcessor } returns
+            privateAuthCustomTabIntentProcessor
+
+        controller.create()
+        shadowOf(Looper.getMainLooper()).idle()
+
+        verify { privateAuthCustomTabIntentProcessor.process(any()) }
+        verify(exactly = 0) { customTabIntentProcessor.process(any()) }
+        verify(exactly = 0) { privateCustomTabIntentProcessor.process(any()) }
+        verify(exactly = 0) { authCustomTabIntentProcessor.process(any()) }
     }
 }

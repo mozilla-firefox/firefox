@@ -7,6 +7,7 @@ package mozilla.components.feature.tabs
 import mozilla.components.browser.state.action.CustomTabListAction
 import mozilla.components.browser.state.action.TabListAction
 import mozilla.components.browser.state.selector.findCustomTab
+import mozilla.components.browser.state.state.BrowserState
 import mozilla.components.browser.state.state.CustomTabConfig
 import mozilla.components.browser.state.state.SessionState
 import mozilla.components.browser.state.state.createCustomTab
@@ -25,13 +26,23 @@ class CustomTabsUseCases(
         private val store: BrowserStore,
         private val loadUrlUseCase: SessionUseCases.DefaultLoadUrlUseCase,
     ) {
-        /** Adds a new custom tab with URL [url]. */
+        /**
+         * Adds a new custom tab with URL [url].
+         *
+         * @param url The URL to load in the custom tab.
+         * @param customTabConfig The configuration of the custom tab.
+         * @param private Whether the custom tab is created as a private tab.
+         * @param additionalHeaders The extra headers to use when loading the URL.
+         * @param source Where the request to open the custom tab came from.
+         * @param desktopMode Whether the tab requests desktop sites, or `null` to follow [BrowserState.desktopMode].
+         */
         operator fun invoke(
             url: String,
             customTabConfig: CustomTabConfig,
             private: Boolean = false,
             additionalHeaders: Map<String, String>? = null,
             source: SessionState.Source,
+            desktopMode: Boolean? = null,
         ): String {
             val loadUrlFlags = EngineSession.LoadUrlFlags.external()
             val tab =
@@ -41,7 +52,7 @@ class CustomTabsUseCases(
                     source = source,
                     config = customTabConfig,
                     initialLoadFlags = loadUrlFlags,
-                    desktopMode = store.state.desktopMode,
+                    desktopMode = desktopMode ?: store.state.desktopMode,
                 )
 
             store.dispatch(CustomTabListAction.AddCustomTabAction(tab))

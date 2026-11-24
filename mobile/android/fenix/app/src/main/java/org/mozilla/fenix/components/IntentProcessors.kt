@@ -14,6 +14,7 @@ import kotlinx.coroutines.CoroutineScope
 import mozilla.components.browser.state.store.BrowserStore
 import mozilla.components.concept.engine.Engine
 import mozilla.components.feature.customtabs.CustomTabIntentProcessor
+import mozilla.components.feature.intent.processing.IntentProcessor
 import mozilla.components.feature.intent.processing.TabIntentProcessor
 import mozilla.components.feature.pwa.ManifestStorage
 import mozilla.components.feature.pwa.intent.WebAppIntentProcessor
@@ -63,12 +64,22 @@ class IntentProcessors(
         )
     }
 
-    val customTabIntentProcessor by lazy {
+    val customTabIntentProcessor: IntentProcessor by lazy {
         CustomTabIntentProcessor(customTabsUseCases.add, context.resources, isPrivate = false)
     }
 
-    val privateCustomTabIntentProcessor by lazy {
+    val privateCustomTabIntentProcessor: IntentProcessor by lazy {
         CustomTabIntentProcessor(customTabsUseCases.add, context.resources, isPrivate = true)
+    }
+
+    /** Processes intents for the Firefox Accounts custom tab, which always loads mobile sites. */
+    val authCustomTabIntentProcessor: IntentProcessor by lazy {
+        CustomTabIntentProcessor(customTabsUseCases.add, context.resources, isPrivate = false, desktopMode = false)
+    }
+
+    /** Processes intents for the Firefox Accounts custom tab in private mode, which always loads mobile sites. */
+    val privateAuthCustomTabIntentProcessor: IntentProcessor by lazy {
+        CustomTabIntentProcessor(customTabsUseCases.add, context.resources, isPrivate = true, desktopMode = false)
     }
 
     val externalDeepLinkIntentProcessor by lazy {

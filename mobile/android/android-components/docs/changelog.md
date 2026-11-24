@@ -102,6 +102,10 @@ permalink: /changelog/
     * ⚠️ **Breaking change**: `DeviceConfig.capabilities` is now private. Use `DeviceConfig.getCapabilities(hasSyncScope)`, which returns an empty set when the account does not have the Sync scope. [Bug 2080763](https://bugzilla.mozilla.org/show_bug.cgi?id=2080763)
 * **service-firefox-accounts**
     * `FxaAccountManager` only advertises the `SEND_TAB` and `CLOSE_TABS` device capabilities when the account has the Sync scope. [Bug 2080763](https://bugzilla.mozilla.org/show_bug.cgi?id=2080763)
+* **feature-customtabs**
+    * 🆕 Added an optional `desktopMode` to `CustomTabIntentProcessor` to create custom tabs in desktop or mobile mode regardless of the browser default. [Bug 2095645](https://bugzilla.mozilla.org/show_bug.cgi?id=2095645)
+* **feature-tabs**
+    * 🆕 Added an optional `desktopMode` to `CustomTabsUseCases.AddCustomTabUseCase`, overriding `BrowserState.desktopMode`. [Bug 2095645](https://bugzilla.mozilla.org/show_bug.cgi?id=2095645)
 
 # 161.0
 * **browser-state**
