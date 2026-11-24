@@ -74,7 +74,7 @@ class WinCompositorWidget : public CompositorWidget {
   virtual void SetRootLayerTreeID(const layers::LayersId& aRootLayerTreeId) = 0;
 
   bool TransparencyModeIs(TransparencyMode aMode) const {
-    return TransparencyMode(uint32_t(mTransparencyMode)) == aMode;
+    return TransparencyMode(mTransparencyMode.load()) == aMode;
   }
 
  protected:
