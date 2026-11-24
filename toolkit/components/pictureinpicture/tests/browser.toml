@@ -62,6 +62,8 @@ prefs = [
 
 ["browser_closePipPause.js"]
 
+["browser_closePip_emptiedWhileHidden.js"]
+
 ["browser_closePip_emptySrc.js"]
 
 ["browser_closePip_pageNavigationChanges.js"]

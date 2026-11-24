@@ -2145,9 +2145,9 @@ export class PictureInPictureChild extends JSWindowActorChild {
           let video = this.getWeakVideo();
           // We may want to keep the pip window open if the video
           // is still in DOM. But if video src is no longer defined,
-          // close Picture-in-Picture.
+          // or the video is no longer rendered, close Picture-in-Picture.
           this.emptiedTimeout = setTimeout(() => {
-            if (!video || !video.src) {
+            if (!video || !video.src || !video.checkVisibility()) {
               this.closePictureInPicture({ reason: "VideoElEmptied" });
             }
           }, lazy.EMPTIED_TIMEOUT_MS);
