@@ -131,7 +131,7 @@ static const RedirEntry kRedirMap[] = {
 #endif
     {"httpsonlyerror", "chrome://global/content/httpsonlyerror/errorpage.html",
      nsIAboutModule::URI_SAFE_FOR_UNTRUSTED_CONTENT |
-         nsIAboutModule::URI_CAN_LOAD_IN_CHILD | nsIAboutModule::ALLOW_SCRIPT |
+         nsIAboutModule::URI_IS_ERROR_PAGE | nsIAboutModule::ALLOW_SCRIPT |
          nsIAboutModule::HIDE_FROM_ABOUTABOUT},
 #if defined(NIGHTLY_BUILD)
     {"inference", "chrome://global/content/aboutInference.html",
@@ -160,7 +160,7 @@ static const RedirEntry kRedirMap[] = {
 #endif
     {"neterror", "chrome://global/content/aboutNetError.html",
      nsIAboutModule::URI_SAFE_FOR_UNTRUSTED_CONTENT |
-         nsIAboutModule::URI_CAN_LOAD_IN_CHILD | nsIAboutModule::ALLOW_SCRIPT |
+         nsIAboutModule::URI_IS_ERROR_PAGE | nsIAboutModule::ALLOW_SCRIPT |
          nsIAboutModule::HIDE_FROM_ABOUTABOUT},
     {"networking", "chrome://global/content/aboutNetworking.html",
      nsIAboutModule::ALLOW_SCRIPT},
@@ -180,7 +180,7 @@ static const RedirEntry kRedirMap[] = {
     {"restricted",
      "chrome://global/content/aboutRestricted/aboutRestricted.html",
      nsIAboutModule::URI_SAFE_FOR_UNTRUSTED_CONTENT |
-         nsIAboutModule::URI_CAN_LOAD_IN_CHILD | nsIAboutModule::ALLOW_SCRIPT |
+         nsIAboutModule::URI_IS_ERROR_PAGE | nsIAboutModule::ALLOW_SCRIPT |
          nsIAboutModule::HIDE_FROM_ABOUTABOUT},
     // about:serviceworkers always wants to load in the parent process because
     // the only place nsIServiceWorkerManager has any data is in the parent
@@ -198,11 +198,13 @@ static const RedirEntry kRedirMap[] = {
 #endif
     // about:srcdoc is unresolvable by specification.  It is included here
     // because the security manager would disallow srcdoc iframes otherwise.
+    // NOTE: As `about:srcdoc` is `NS_IsContentAccessibleAboutURI`, it can load
+    // in content processes without any process-selection flags.
     {"srcdoc", "about:blank",
      nsIAboutModule::URI_SAFE_FOR_UNTRUSTED_CONTENT |
          nsIAboutModule::HIDE_FROM_ABOUTABOUT |
          // Needs to be linkable so content can touch its own srcdoc frames
-         nsIAboutModule::MAKE_LINKABLE | nsIAboutModule::URI_CAN_LOAD_IN_CHILD},
+         nsIAboutModule::MAKE_LINKABLE},
     {"support", "chrome://global/content/aboutSupport.xhtml",
      nsIAboutModule::ALLOW_SCRIPT | nsIAboutModule::IS_SECURE_CHROME_UI},
 #ifdef XP_WIN
@@ -238,13 +240,11 @@ static const RedirEntry kRedirMap[] = {
     {"crashcontent", "about:blank",
      nsIAboutModule::HIDE_FROM_ABOUTABOUT |
          nsIAboutModule::URI_SAFE_FOR_UNTRUSTED_CONTENT |
-         nsIAboutModule::URI_CAN_LOAD_IN_CHILD |
          nsIAboutModule::URI_MUST_LOAD_IN_CHILD},
 #ifdef MOZ_WIDGET_ANDROID
     {"crashcontentjava", "about:blank",
      nsIAboutModule::HIDE_FROM_ABOUTABOUT |
          nsIAboutModule::URI_SAFE_FOR_UNTRUSTED_CONTENT |
-         nsIAboutModule::URI_CAN_LOAD_IN_CHILD |
          nsIAboutModule::URI_MUST_LOAD_IN_CHILD},
 #endif
     {"crashgpu", "about:blank", nsIAboutModule::HIDE_FROM_ABOUTABOUT},

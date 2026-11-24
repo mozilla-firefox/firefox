@@ -3,10 +3,10 @@ const CHROME = {
   path: "test-chrome",
   flags: 0,
 };
-const CANREMOTE = {
+const ERRORPAGE = {
   id: "2480d3e1-9ce4-4b84-8ae3-910b9a95cbb3",
-  path: "test-allowremote",
-  flags: Ci.nsIAboutModule.URI_CAN_LOAD_IN_CHILD,
+  path: "test-errorpage",
+  flags: Ci.nsIAboutModule.URI_IS_ERROR_PAGE,
 };
 const MUSTREMOTE = {
   id: "f849cee5-e13e-44d2-981d-0fb3884aaead",
@@ -28,7 +28,7 @@ const MUSTEXTENSION = {
 
 const TEST_MODULES = [
   CHROME,
-  CANREMOTE,
+  ERRORPAGE,
   MUSTREMOTE,
   CANPRIVILEGEDREMOTE,
   MUSTEXTENSION,
@@ -104,14 +104,14 @@ add_task(async function test_chrome() {
   });
 });
 
-add_task(async function test_any() {
+add_task(async function test_errorpage() {
   test_url_for_process_types({
-    url: "about:" + CANREMOTE.path,
-    chromeResult: true,
+    url: "about:" + ERRORPAGE.path,
+    chromeResult: false,
     webContentResult: true,
-    privilegedAboutContentResult: true,
-    privilegedMozillaContentResult: true,
-    extensionProcessResult: true,
+    privilegedAboutContentResult: false,
+    privilegedMozillaContentResult: false,
+    extensionProcessResult: false,
   });
 });
 

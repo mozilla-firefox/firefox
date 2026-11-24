@@ -32,8 +32,9 @@ nsAboutBlank::NewChannel(nsIURI* aURI, nsILoadInfo* aLoadInfo,
 
 NS_IMETHODIMP
 nsAboutBlank::GetURIFlags(nsIURI* aURI, uint32_t* result) {
+  // NOTE: As `about:blank` is `NS_IsContentAccessibleAboutURI`, it can load in
+  // content processes without any process-selection flags.
   *result = nsIAboutModule::URI_SAFE_FOR_UNTRUSTED_CONTENT |
-            nsIAboutModule::URI_CAN_LOAD_IN_CHILD |
             nsIAboutModule::MAKE_LINKABLE |
             nsIAboutModule::HIDE_FROM_ABOUTABOUT;
   return NS_OK;

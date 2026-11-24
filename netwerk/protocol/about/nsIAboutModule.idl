@@ -50,9 +50,10 @@ interface nsIAboutModule : nsISupports
     const unsigned long ENABLE_INDEXED_DB = (1 << 3);
 
     /**
-     * A flag that indicates that this URI can be loaded in a child process
+     * A flag that indicates that this URI should participate in process
+     * selection as a content-loadable error page.
      */
-    const unsigned long URI_CAN_LOAD_IN_CHILD = (1 << 4);
+    const unsigned long URI_IS_ERROR_PAGE = (1 << 4);
 
     /**
      * A flag that indicates that this URI must be loaded in a child process
