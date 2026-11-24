@@ -115,4 +115,41 @@ class OnboardingScreenTest {
 
         assertFalse(isSyncPage(pagesToDisplay = pages, currentPageIndex = 2))
     }
+
+    @Test
+    fun `GIVEN actions that complete the card WHEN advancesToNextPage is read THEN it returns true`() {
+        val actions =
+            listOf(
+                OnboardingAction.DefaultBrowser.SkipClicked,
+                OnboardingAction.SyncSignIn.SkipClicked,
+                OnboardingAction.SyncPairing.EmailClicked,
+                OnboardingAction.SyncPairing.SkipClicked,
+                OnboardingAction.TermsOfService.AcceptClicked,
+                OnboardingAction.MarketingData.ContinueClicked(allowMarketingDataCollection = true),
+                OnboardingAction.MarketingData.SkipClicked,
+            )
+
+        actions.forEach { action ->
+            assertTrue("$action", action.advancesToNextPage)
+        }
+    }
+
+    @Test
+    fun `GIVEN actions handled outside the pager WHEN advancesToNextPage is read THEN it returns false`() {
+        val actions =
+            listOf(
+                OnboardingAction.DefaultBrowser.SetAsDefaultClicked,
+                OnboardingAction.SyncSignIn.SignInClicked,
+                OnboardingAction.SyncPairing.ScanClicked,
+                OnboardingAction.TermsOfService.TermsOfServiceLinkClicked("url"),
+                OnboardingAction.TermsOfService.PrivacyNoticeLinkClicked("url"),
+                OnboardingAction.TermsOfService.ManagePrivacyPreferencesLinkClicked,
+                OnboardingAction.MarketingData.LearnMoreClicked,
+                OnboardingAction.MarketingData.OptInToggled(optIn = true),
+            )
+
+        actions.forEach { action ->
+            assertFalse("$action", action.advancesToNextPage)
+        }
+    }
 }

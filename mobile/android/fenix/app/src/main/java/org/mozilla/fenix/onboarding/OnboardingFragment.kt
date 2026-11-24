@@ -53,6 +53,7 @@ import org.mozilla.fenix.ext.openSetDefaultBrowserOption
 import org.mozilla.fenix.ext.requireComponents
 import org.mozilla.fenix.nimbus.FxNimbus
 import org.mozilla.fenix.onboarding.view.ManagePrivacyPreferencesDialogFragment
+import org.mozilla.fenix.onboarding.view.OnboardingAction
 import org.mozilla.fenix.onboarding.view.OnboardingPageUiData
 import org.mozilla.fenix.onboarding.view.OnboardingScreen
 import org.mozilla.fenix.onboarding.view.sequencePosition
@@ -78,7 +79,7 @@ class OnboardingFragment : Fragment() {
     }
 
     private val termsOfServiceEventHandler by lazy {
-        DefaultOnboardingTermsOfServiceEventHandler(
+        OnboardingTermsOfServiceEventHandler(
             telemetryRecorder = telemetryRecorder,
             openLink = this::launchSandboxCustomTab,
             showManagePrivacyPreferencesDialog = this::showPrivacyPreferencesDialog,
@@ -238,7 +239,6 @@ class OnboardingFragment : Fragment() {
     }
 
     @Composable
-    @Suppress("LongMethod")
     private fun ScreenContent() {
         val isSyncFlowCompleted by OnboardingSyncFlowResult.isCompleted(navBackStackEntry).collectAsStateWithLifecycle()
 
@@ -247,70 +247,8 @@ class OnboardingFragment : Fragment() {
             initialPageIndex = requireComponents.settings.onboardingCurrentPageIndex,
             isSyncFlowCompleted = isSyncFlowCompleted,
             onSyncFlowCompletedHandled = { OnboardingSyncFlowResult.consume(navBackStackEntry) },
-            onMakeFirefoxDefaultClick = {
-                promptToSetAsDefaultBrowser()
-            },
-            onSkipDefaultClick = {
-                telemetryRecorder.onSkipSetToDefaultClick(
-                    pagesToDisplay.telemetrySequenceId(),
-                    pagesToDisplay.sequencePosition(OnboardingPageUiData.Type.DEFAULT_BROWSER),
-                )
-            },
-            onSignInButtonClick = {
-                findNavController()
-                    .nav(
-                        id = R.id.onboardingFragment,
-                        directions =
-                            OnboardingFragmentDirections.actionGlobalTurnOnSync(
-                                entrypoint = FenixFxAEntryPoint.NewUserOnboarding
-                            ),
-                    )
-                telemetryRecorder.onSyncSignInClick(
-                    sequenceId = pagesToDisplay.telemetrySequenceId(),
-                    sequencePosition = pagesToDisplay.sequencePosition(OnboardingPageUiData.Type.SYNC_SIGN_IN),
-                )
-            },
-            onSkipSignInClick = {
-                telemetryRecorder.onSkipSignInClick(
-                    pagesToDisplay.telemetrySequenceId(),
-                    pagesToDisplay.sequencePosition(OnboardingPageUiData.Type.SYNC_SIGN_IN),
-                )
-            },
-            onSyncPairingScanClick = {
-                telemetryRecorder.onSyncPairingScanClick(
-                    pagesToDisplay.telemetrySequenceId(),
-                    pagesToDisplay.sequencePosition(OnboardingPageUiData.Type.SYNC_PAIRING),
-                )
-                findNavController()
-                    .nav(
-                        id = R.id.onboardingFragment,
-                        directions =
-                            OnboardingFragmentDirections.actionGlobalPairFragment(
-                                entrypoint = FenixFxAEntryPoint.OnboardingPairing
-                            ),
-                    )
-            },
-            onSyncPairingEmailClick = {
-                telemetryRecorder.onSyncPairingEmailClick(
-                    pagesToDisplay.telemetrySequenceId(),
-                    pagesToDisplay.sequencePosition(OnboardingPageUiData.Type.SYNC_PAIRING),
-                )
-                requireComponents.services.accountsAuthFeature.beginAuthentication(
-                    context = requireContext(),
-                    entrypoint = FenixFxAEntryPoint.OnboardingPairing,
-                    service = FxaService.Sync.identifier,
-                    scopes = setOf(SCOPE_PROFILE, SCOPE_SYNC),
-                )
-            },
-            onSyncPairingSkipClick = {
-                telemetryRecorder.onSyncPairingSkipClick(
-                    pagesToDisplay.telemetrySequenceId(),
-                    pagesToDisplay.sequencePosition(OnboardingPageUiData.Type.SYNC_PAIRING),
-                )
-            },
-            onFinish = {
-                onFinish(it)
-            },
+            onAction = ::onOnboardingAction,
+            onFinish = ::onFinish,
             onImpression = {
                 telemetryRecorder.onImpression(
                     sequenceId = pagesToDisplay.telemetrySequenceId(),
@@ -320,30 +258,6 @@ class OnboardingFragment : Fragment() {
 
                 defaultBrowserPromptManager.maybePromptToSetAsDefaultBrowser(it)
             },
-            termsOfServiceEventHandler = termsOfServiceEventHandler,
-            onMarketingDataLearnMoreClick = {
-                telemetryRecorder.onMarketingDataLearnMoreClick()
-
-                val url =
-                    SupportUtils.getSumoURLForTopic(
-                        requireContext(),
-                        SupportUtils.SumoTopic.MARKETING_DATA,
-                    )
-                launchSandboxCustomTab(url)
-            },
-            onMarketingOptInToggle = { optIn ->
-                telemetryRecorder.onMarketingDataOptInToggled(optIn)
-            },
-            onMarketingDataContinueClick = { allowMarketingDataCollection ->
-                with(requireComponents.settings) {
-                    isMarketingTelemetryEnabled = allowMarketingDataCollection
-                    hasMadeMarketingTelemetrySelection = true
-                }
-                telemetryRecorder.onMarketingDataContinueClicked(allowMarketingDataCollection)
-            },
-            onMarketingDataSkipClick = {
-                telemetryRecorder.onMarketingDataSkipClicked()
-            },
             currentIndex = { index ->
                 requireComponents.settings.onboardingCurrentPageIndex = index
             },
@@ -351,6 +265,108 @@ class OnboardingFragment : Fragment() {
                 telemetryRecorder.onNavigatedToNextPage()
             },
         )
+    }
+
+    private fun onOnboardingAction(action: OnboardingAction) {
+        when (action) {
+            is OnboardingAction.DefaultBrowser -> onDefaultBrowserAction(action)
+            is OnboardingAction.SyncSignIn -> onSyncSignInAction(action)
+            is OnboardingAction.SyncPairing -> onSyncPairingAction(action)
+            is OnboardingAction.TermsOfService -> onTermsOfServiceAction(action)
+            is OnboardingAction.MarketingData -> onMarketingDataAction(action)
+        }
+    }
+
+    private fun onDefaultBrowserAction(action: OnboardingAction.DefaultBrowser) {
+        when (action) {
+            OnboardingAction.DefaultBrowser.SetAsDefaultClicked -> promptToSetAsDefaultBrowser()
+            OnboardingAction.DefaultBrowser.SkipClicked ->
+                telemetryRecorder.onSkipSetToDefaultClick(
+                    pagesToDisplay.telemetrySequenceId(),
+                    pagesToDisplay.sequencePosition(OnboardingPageUiData.Type.DEFAULT_BROWSER),
+                )
+        }
+    }
+
+    private fun onSyncSignInAction(action: OnboardingAction.SyncSignIn) {
+        val sequenceId = pagesToDisplay.telemetrySequenceId()
+        val sequencePosition = pagesToDisplay.sequencePosition(OnboardingPageUiData.Type.SYNC_SIGN_IN)
+        when (action) {
+            OnboardingAction.SyncSignIn.SignInClicked -> {
+                findNavController()
+                    .nav(
+                        id = R.id.onboardingFragment,
+                        directions =
+                            OnboardingFragmentDirections.actionGlobalTurnOnSync(
+                                entrypoint = FenixFxAEntryPoint.NewUserOnboarding
+                            ),
+                    )
+                telemetryRecorder.onSyncSignInClick(sequenceId, sequencePosition)
+            }
+            OnboardingAction.SyncSignIn.SkipClicked -> telemetryRecorder.onSkipSignInClick(sequenceId, sequencePosition)
+        }
+    }
+
+    private fun onSyncPairingAction(action: OnboardingAction.SyncPairing) {
+        val sequenceId = pagesToDisplay.telemetrySequenceId()
+        val sequencePosition = pagesToDisplay.sequencePosition(OnboardingPageUiData.Type.SYNC_PAIRING)
+        when (action) {
+            OnboardingAction.SyncPairing.ScanClicked -> {
+                telemetryRecorder.onSyncPairingScanClick(sequenceId, sequencePosition)
+                findNavController()
+                    .nav(
+                        id = R.id.onboardingFragment,
+                        directions =
+                            OnboardingFragmentDirections.actionGlobalPairFragment(
+                                entrypoint = FenixFxAEntryPoint.OnboardingPairing
+                            ),
+                    )
+            }
+            OnboardingAction.SyncPairing.EmailClicked -> {
+                telemetryRecorder.onSyncPairingEmailClick(sequenceId, sequencePosition)
+                requireComponents.services.accountsAuthFeature.beginAuthentication(
+                    context = requireContext(),
+                    entrypoint = FenixFxAEntryPoint.OnboardingPairing,
+                    service = FxaService.Sync.identifier,
+                    scopes = setOf(SCOPE_PROFILE, SCOPE_SYNC),
+                )
+            }
+            OnboardingAction.SyncPairing.SkipClicked ->
+                telemetryRecorder.onSyncPairingSkipClick(sequenceId, sequencePosition)
+        }
+    }
+
+    private fun onTermsOfServiceAction(action: OnboardingAction.TermsOfService) {
+        when (action) {
+            is OnboardingAction.TermsOfService.TermsOfServiceLinkClicked ->
+                termsOfServiceEventHandler.onTermsOfServiceLinkClicked(action.url)
+            is OnboardingAction.TermsOfService.PrivacyNoticeLinkClicked ->
+                termsOfServiceEventHandler.onPrivacyNoticeLinkClicked(action.url)
+            OnboardingAction.TermsOfService.ManagePrivacyPreferencesLinkClicked ->
+                termsOfServiceEventHandler.onManagePrivacyPreferencesLinkClicked()
+            OnboardingAction.TermsOfService.AcceptClicked -> termsOfServiceEventHandler.onAcceptTermsButtonClicked()
+        }
+    }
+
+    private fun onMarketingDataAction(action: OnboardingAction.MarketingData) {
+        when (action) {
+            OnboardingAction.MarketingData.LearnMoreClicked -> {
+                telemetryRecorder.onMarketingDataLearnMoreClick()
+                launchSandboxCustomTab(
+                    SupportUtils.getSumoURLForTopic(requireContext(), SupportUtils.SumoTopic.MARKETING_DATA)
+                )
+            }
+            is OnboardingAction.MarketingData.OptInToggled ->
+                telemetryRecorder.onMarketingDataOptInToggled(action.optIn)
+            is OnboardingAction.MarketingData.ContinueClicked -> {
+                with(requireComponents.settings) {
+                    isMarketingTelemetryEnabled = action.allowMarketingDataCollection
+                    hasMadeMarketingTelemetrySelection = true
+                }
+                telemetryRecorder.onMarketingDataContinueClicked(action.allowMarketingDataCollection)
+            }
+            OnboardingAction.MarketingData.SkipClicked -> telemetryRecorder.onMarketingDataSkipClicked()
+        }
     }
 
     private fun startGlean() {

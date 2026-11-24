@@ -71,19 +71,3 @@ data class OnboardingMarketingData(
     val bodyTwoText: String? = null,
     val bodyThreeText: String? = null,
 )
-
-/** Contains all the events which can happen in terms of service onboarding page. */
-interface OnboardingTermsOfServiceEventHandler {
-
-    /** Invoked when the terms of service link is clicked. */
-    fun onTermsOfServiceLinkClicked(url: String) = Unit
-
-    /** Invoked when the privacy notice link is clicked. */
-    fun onPrivacyNoticeLinkClicked(url: String) = Unit
-
-    /** Invoked when the manage privacy preferences link is clicked. */
-    fun onManagePrivacyPreferencesLinkClicked() = Unit
-
-    /** Invoked when the accept button is clicked. */
-    fun onAcceptTermsButtonClicked() = Unit
-}
