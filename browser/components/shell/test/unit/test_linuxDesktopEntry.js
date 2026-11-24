@@ -572,3 +572,34 @@ add_task(async function test_failsIfApiDisabled() {
 
   Services.prefs.clearUserPref("browser.shell.desktop-entry-api");
 });
+
+add_task(async function test_snapLauncher() {
+  Services.prefs.setStringPref("browser.shell.desktop-entry-api", "filesystem");
+  let sandbox = sinon.createSandbox();
+  sandbox.stub(ShellService, "_getSnapInstanceName").returns("firefox_beta");
+
+  await ShellService.createLinuxDesktopEntry(
+    "snaplauncher",
+    "Snap Test",
+    ["abc"],
+    ""
+  );
+  let path = PathUtils.join(
+    gTmpDir.path,
+    "home",
+    ".local",
+    "share",
+    "applications",
+    "snaplauncher.desktop"
+  );
+  let ini = await parseINI(path);
+  Assert.equal(
+    ini.getString("Desktop Entry", "Exec"),
+    `"snap" "run" "firefox_beta.${AppConstants.MOZ_APP_NAME}" "abc"`,
+    "The browser is started through snap run under Snap"
+  );
+
+  await IOUtils.remove(path);
+  sandbox.restore();
+  Services.prefs.clearUserPref("browser.shell.desktop-entry-api");
+});

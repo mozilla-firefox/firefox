@@ -1146,8 +1146,19 @@ let ShellServiceInternal = {
     ini.setString("Desktop Entry", "Name", title);
     ini.setString("Desktop Entry", "Icon", iconPath);
 
-    // All desktop files made with this must run the Firefox executable.
-    argv.unshift(await ShellService._findStartupCommand());
+    // All desktop files made with this must run the Firefox executable. Under
+    // Snap, the executable is in a revision-specific mount that goes away after
+    // updates, and running it directly would bypass confinement.
+    let snapInstanceName = ShellService._getSnapInstanceName();
+    if (snapInstanceName) {
+      argv.unshift(
+        "snap",
+        "run",
+        `${snapInstanceName}.${AppConstants.MOZ_APP_NAME}`
+      );
+    } else {
+      argv.unshift(await ShellService._findStartupCommand());
+    }
 
     // https://specifications.freedesktop.org/desktop-entry/latest/exec-variables
     // (\x60 = backtick, \x24 = dollar sign, \x22 = double quote, and
@@ -1348,6 +1359,26 @@ let ShellServiceInternal = {
     }
 
     return PathUtils.join(dataHome, "applications", `${appId}.desktop`);
+  },
+
+  /**
+   * Gets the name of the Snap instance this browser is running in.
+   *
+   * @returns {?string} The instance name (e.g. 'firefox' or 'firefox_beta'),
+   * or null when not running under Snap.
+   */
+  _getSnapInstanceName() {
+    if (
+      AppConstants.platform !== "linux" ||
+      !lazy.gioService.isRunningUnderSnap
+    ) {
+      return null;
+    }
+    return (
+      Services.env.get("SNAP_INSTANCE_NAME") ||
+      Services.env.get("SNAP_NAME") ||
+      null
+    );
   },
 
   async requestCreateAndPinSecondaryTile(tileId, name, iconPath, args) {
