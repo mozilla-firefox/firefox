@@ -183,6 +183,7 @@ suites:
             speedometer-experimental: "Runs the experimental Speedometer workloads from a branch of a Speedometer fork on selected desktop platforms."
             speedometer2: ""
             speedometer3: ""
+            speedometer3-a11y: "Runs Speedometer 3 with accessibility force enabled at the level a screen reader gets (Firefox: accessibility.force_disabled=-1 and accessibility.enable_all_cache_domains=true, Chrome and Chromium as Release: --force-renderer-accessibility), on desktop and Android."
             stylebench: ""
             sunspider: ""
             twitch-animation: ""

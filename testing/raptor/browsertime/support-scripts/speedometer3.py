@@ -171,7 +171,7 @@ class Speedometer3Support(BasePythonSupport):
         suite["value"] = score
         suite["replicates"] = replicates
 
-        if self.profiling:
+        if self.profiling or test.get("name") == "speedometer3-a11y":
             suite["shouldAlert"] = False
             for subtest in suite.get("subtests", []):
                 subtest["shouldAlert"] = False

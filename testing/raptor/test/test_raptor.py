@@ -401,6 +401,30 @@ def test_per_test_chrome_arguments(
     assert expected_args.intersection(cmd) == (expected_args if expected else set())
 
 
+@pytest.mark.parametrize(
+    "chrome_args, expected_args",
+    [
+        (
+            "--force-renderer-accessibility\n--use-fake-ui-for-media-stream",
+            [
+                "--chrome.args=--force-renderer-accessibility",
+                "--chrome.args=--use-fake-ui-for-media-stream",
+            ],
+        ),
+        (None, []),
+    ],
+)
+def test_android_per_test_chrome_arguments(chrome_args, expected_args):
+    perftest = object.__new__(BrowsertimeAndroid)
+    perftest.debug_mode = False
+    default_args = perftest.setup_chrome_args({"name": "speedometer3-a11y"})
+    test = {"name": "speedometer3-a11y"}
+    if chrome_args is not None:
+        test["chrome_args"] = chrome_args
+
+    assert perftest.setup_chrome_args(test) == default_args + expected_args
+
+
 def extract_arg_value(cmd, arg):
     param_index = cmd.index(arg) + 1
     return cmd[param_index]

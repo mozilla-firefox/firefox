@@ -30,6 +30,22 @@ support_class = "speedometer3.py"
 test_script = "speedometer3.js"
 test_url = "http://<host>:<port>/Speedometer3/index.html?raptor"
 
+[speedometer3-a11y]
+apps = "firefox, chrome, custom-car"
+browser_cycles = 5
+owner = "Performance Team"
+cold = true
+host_from_parent = false
+benchmark_port = 62763
+support_class = "speedometer3.py"
+test_script = "speedometer3.js"
+test_url = "http://<host>:<port>/Speedometer3/index.html?raptor"
+preferences = [
+  "accessibility.force_disabled=-1",
+  "accessibility.enable_all_cache_domains=true",
+]
+chrome_args = ["--force-renderer-accessibility"]
+
 [speedometer-experimental]
 browser_cycles = 5
 owner = "Performance Team"
