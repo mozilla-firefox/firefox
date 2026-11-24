@@ -367,6 +367,7 @@ export var Bookmarks = Object.freeze({
       if (isTagging) {
         for (let entry of await fetchBookmarksByURL(item, {
           concurrent: true,
+          includeTags: true,
         })) {
           notifications.push(
             new PlacesBookmarkTags({
@@ -955,7 +956,7 @@ export var Bookmarks = Object.freeze({
             if (isTagging) {
               for (let entry of await fetchBookmarksByTags(
                 { tags: [updatedItem.title] },
-                { concurrent: true }
+                { concurrent: true, includeTags: true }
               )) {
                 notifications.push(
                   new PlacesBookmarkTags({
@@ -2554,7 +2555,27 @@ const TAGS_BY_PLACE_CTE = `tags(fk, tags) AS MATERIALIZED (
   GROUP BY bb.fk
 )`;
 
+/**
+ * Returns the SQL fragments adding a `_tags` column to a query that selects
+ * bookmarks of pages `h`, whose ids are in a `filtered_places(id)` CTE.
+ *
+ * @param {boolean} [includeTags]
+ *        whether to add the column; if falsy, all the fragments are empty.
+ * @returns {{cte: string, column: string, join: string}}
+ */
+function tagsSQLFragments(includeTags) {
+  if (!includeTags) {
+    return { cte: "", column: "", join: "" };
+  }
+  return {
+    cte: `, ${TAGS_BY_PLACE_CTE}`,
+    column: ", t.tags AS _tags",
+    join: "LEFT JOIN tags t ON t.fk = h.id",
+  };
+}
+
 async function fetchBookmarksByTags(info, options = {}) {
+  let tagsSQL = tagsSQLFragments(options.includeTags);
   let query = async function (db) {
     let rows = await db.executeCached(
       `WITH filtered_places(id) AS MATERIALIZED (
@@ -2566,27 +2587,28 @@ async function fetchBookmarksByTags(info, options = {}) {
            ${new Array(info.tags.length).fill("?").join(",")}
          )
          GROUP BY b2.fk HAVING count(*) = ${info.tags.length}
-       ),
-       ${TAGS_BY_PLACE_CTE}
+       )${tagsSQL.cte}
        SELECT b.guid, IFNULL(p.guid, '') AS parentGuid, b.position AS 'index',
               b.dateAdded, b.lastModified, b.type, IFNULL(b.title, '') AS title,
               h.url AS url, b.id AS _id, b.parent AS _parentId,
               NULL AS _childCount,
-              p.parent AS _grandParentId, b.syncStatus AS _syncStatus,
-              t.tags AS _tags
+              p.parent AS _grandParentId, b.syncStatus AS _syncStatus
+              ${tagsSQL.column}
        FROM filtered_places
        JOIN moz_places h ON h.id = filtered_places.id
        JOIN moz_bookmarks b ON b.fk = h.id
        JOIN moz_bookmarks p ON p.id = b.parent
        JOIN moz_bookmarks g ON g.id = p.parent
-       LEFT JOIN tags t ON t.fk = h.id
+       ${tagsSQL.join}
        WHERE g.guid <> '${Bookmarks.tagsGuid}'
        ORDER BY b.lastModified DESC
       `,
       info.tags.map(t => t.toLowerCase())
     );
 
-    return rows.length ? rowsToItemsArray(rows, { includesTags: true }) : null;
+    return rows.length
+      ? rowsToItemsArray(rows, { includesTags: options.includeTags })
+      : null;
   };
 
   if (options.concurrent) {
@@ -2687,24 +2709,24 @@ async function fetchBookmarksByURLs(urls, options = {}) {
 }
 
 async function fetchBookmarksByURL(info, options = {}) {
+  let tagsSQL = tagsSQLFragments(options.includeTags);
   let query = async function (db) {
     let rows = await db.executeCached(
       `/* do not warn (bug no): not worth to add an index */
       WITH filtered_places(id) AS MATERIALIZED (
         SELECT id FROM moz_places WHERE url_hash = hash(:url) AND url = :url
-      ),
-      ${TAGS_BY_PLACE_CTE}
+      )${tagsSQL.cte}
       SELECT b.guid, IFNULL(p.guid, '') AS parentGuid, b.position AS 'index',
               b.dateAdded, b.lastModified, b.type, IFNULL(b.title, '') AS title,
               h.url AS url, b.id AS _id, b.parent AS _parentId,
               NULL AS _childCount, /* Unused for now */
-              p.parent AS _grandParentId, b.syncStatus AS _syncStatus,
-              t.tags AS _tags
+              p.parent AS _grandParentId, b.syncStatus AS _syncStatus
+              ${tagsSQL.column}
       FROM filtered_places
       JOIN moz_places h ON h.id = filtered_places.id
       JOIN moz_bookmarks b ON b.fk = h.id
       JOIN moz_bookmarks p ON p.id = b.parent
-      LEFT JOIN tags t ON t.fk = h.id
+      ${tagsSQL.join}
       WHERE _grandParentId <> :tagsFolderId
       ORDER BY b.lastModified DESC
       `,
@@ -2714,7 +2736,9 @@ async function fetchBookmarksByURL(info, options = {}) {
       }
     );
 
-    return rows.length ? rowsToItemsArray(rows, { includesTags: true }) : null;
+    return rows.length
+      ? rowsToItemsArray(rows, { includesTags: options.includeTags })
+      : null;
   };
 
   if (options.concurrent) {
