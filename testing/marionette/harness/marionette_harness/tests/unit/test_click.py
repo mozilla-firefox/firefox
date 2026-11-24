@@ -536,6 +536,28 @@ class TestClickNavigation(WindowManagerMixin, MarionetteTestCase):
         with self.assertRaises(errors.NoSuchElementException):
             self.marionette.find_element(By.ID, "anchor")
 
+    def test_wait_after_click_disabled_click_no_link_navigate(self):
+        self.marionette.timeout.page_load = 5
+        with self.marionette.using_prefs({
+            "marionette.navigate-after-click.enabled": False
+        }):
+            self.marionette.find_element(By.ID, "links").click()
+        self.assertEqual(self.marionette.get_url(), self.test_page)
+
+    def test_wait_after_click_disabled_click_beforeunload_no_unload_navigate(self):
+        self.marionette.timeout.page_load = 10
+        no_content_url = self.marionette.absolute_url("clicks.html?pipe=status(204)")
+        page = inline(
+            f"""<button onclick="location.href='{no_content_url}'">204</button>"""
+        )
+        self.marionette.navigate(page)
+
+        with self.marionette.using_prefs({
+            "marionette.navigate-after-click.enabled": False
+        }):
+            self.marionette.find_element(By.TAG_NAME, "button").click()
+        self.assertEqual(self.marionette.get_url(), page)
+
 
 class TestClickCloseContext(WindowManagerMixin, MarionetteTestCase):
     def setUp(self):

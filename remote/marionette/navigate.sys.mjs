@@ -274,6 +274,43 @@ navigate.waitForNavigationCompleted = async function waitForNavigationCompleted(
     }
   };
 
+  /**
+   * For the command "Element Click" we want to detect a potential navigation
+   * as early as possible. The `beforeunload` event is an indication for that
+   * but could still cause the navigation to get aborted by the user. As such
+   * wait a bit longer for the `unload` event to happen (only when the page
+   * load strategy is `none`), which usually will occur pretty soon after
+   * `beforeunload`.
+   *
+   * Note that with WebDriver BiDi enabled the `beforeunload` prompts might
+   * not get implicitly accepted, so lets keep the timer around until we know
+   * that it is really not required.
+   *
+   * @param {string=} reason
+   *     Reason to log when the page load listener gets canceled because no
+   *     navigation has been detected.
+   */
+  const checkForNavigation = (reason = "no navigation has been detected") => {
+    if (seenBeforeUnload) {
+      seenBeforeUnload = false;
+
+      if (!unloadTimer) {
+        unloadTimer = Cc["@mozilla.org/timer;1"].createInstance(Ci.nsITimer);
+      }
+      unloadTimer.initWithCallback(
+        onTimer,
+        TIMEOUT_UNLOAD_EVENT,
+        Ci.nsITimer.TYPE_ONE_SHOT
+      );
+
+      // If no page unload has been detected, ensure to properly stop
+      // the load listener, and return from the currently active command.
+    } else if (!seenUnload) {
+      lazy.logger.trace(`Canceled page load listener because ${reason}`);
+      checkDone({ finished: true });
+    }
+  };
+
   const onPromptClosed = (_, data) => {
     if (data.detail.promptType === "beforeunload" && !data.detail.accepted) {
       // If a beforeunload prompt is dismissed there will be no navigation.
@@ -295,36 +332,6 @@ navigate.waitForNavigationCompleted = async function waitForNavigationCompleted(
       `Canceled page load listener because a ${data.prompt.promptType} prompt opened`
     );
     checkDone({ finished: true });
-  };
-
-  const onTimer = () => {
-    // For the command "Element Click" we want to detect a potential navigation
-    // as early as possible. The `beforeunload` event is an indication for that
-    // but could still cause the navigation to get aborted by the user. As such
-    // wait a bit longer for the `unload` event to happen (only when the page
-    // load strategy is `none`), which usually will occur pretty soon after
-    // `beforeunload`.
-    //
-    // Note that with WebDriver BiDi enabled the `beforeunload` prompts might
-    // not get implicitly accepted, so lets keep the timer around until we know
-    // that it is really not required.
-    if (seenBeforeUnload) {
-      seenBeforeUnload = false;
-      unloadTimer.initWithCallback(
-        onTimer,
-        TIMEOUT_UNLOAD_EVENT,
-        Ci.nsITimer.TYPE_ONE_SHOT
-      );
-
-      // If no page unload has been detected, ensure to properly stop
-      // the load listener, and return from the currently active command.
-    } else if (!seenUnload) {
-      lazy.logger.trace(
-        "Canceled page load listener because no navigation " +
-          "has been detected"
-      );
-      checkDone({ finished: true });
-    }
   };
 
   const onNavigation = (eventName, data) => {
@@ -391,6 +398,8 @@ navigate.waitForNavigationCompleted = async function waitForNavigationCompleted(
     }
   };
 
+  const onTimer = () => checkForNavigation();
+
   const onUnload = () => {
     lazy.logger.trace(
       "Canceled page load listener " +
@@ -424,17 +433,22 @@ navigate.waitForNavigationCompleted = async function waitForNavigationCompleted(
       // Certain commands like clickElement can cause a navigation. Setup a timer
       // to check if a "beforeunload" event has been emitted within the given
       // time frame. If not resolve the Promise.
-      if (
-        !requireBeforeUnload &&
-        lazy.MarionettePrefs.navigateAfterClickEnabled
-      ) {
-        unloadTimer = Cc["@mozilla.org/timer;1"].createInstance(Ci.nsITimer);
-        unloadTimer.initWithCallback(
-          onTimer,
-          lazy.MarionettePrefs.navigateAfterClickTimeout *
-            lazy.getTimeoutMultiplier(),
-          Ci.nsITimer.TYPE_ONE_SHOT
-        );
+      if (!requireBeforeUnload) {
+        if (lazy.MarionettePrefs.navigateAfterClickEnabled) {
+          unloadTimer = Cc["@mozilla.org/timer;1"].createInstance(Ci.nsITimer);
+          unloadTimer.initWithCallback(
+            onTimer,
+            lazy.MarionettePrefs.navigateAfterClickTimeout *
+              lazy.getTimeoutMultiplier(),
+            Ci.nsITimer.TYPE_ONE_SHOT
+          );
+        } else if (!seenUnload) {
+          // Waiting for a navigation after a click is disabled, so only
+          // handle a navigation that has already been started.
+          checkForNavigation(
+            "waiting for a navigation after a click is disabled"
+          );
+        }
       }
     } catch (e) {
       // Executing the callback above could destroy the actor pair before the
