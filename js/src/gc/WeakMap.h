@@ -225,7 +225,9 @@ class WeakMapBase : public SlimLinkedListElement<WeakMapBase> {
   [[nodiscard]] bool addEphemeronEdge(gc::MarkColor color, gc::TenuredCell* src,
                                       gc::TenuredCell* dst);
 
-  gc::CellColor mapColor() const { return gc::CellColor(uint32_t(mapColor_)); }
+  gc::CellColor mapColor() const {
+    return static_cast<gc::CellColor>(mapColor_.load());
+  }
   void setMapColor(gc::CellColor newColor) { mapColor_ = uint32_t(newColor); }
 
   bool isMarked() const { return gc::IsMarked(mapColor()); }

@@ -307,7 +307,7 @@ void GeckoProfilerThread::exit(JSContext* cx, JSScript* script) {
     if (!profilingStack_->frames[sp].isJsFrame()) {
       fprintf(stderr, "--- ABOUT TO FAIL ASSERTION ---\n");
       fprintf(stderr, " frames=%p size=%u/%u\n", (void*)profilingStack_->frames,
-              uint32_t(profilingStack_->stackPointer),
+              profilingStack_->stackPointer.load(),
               profilingStack_->stackCapacity());
       for (int32_t i = sp; i >= 0; i--) {
         ProfilingStackFrame& frame = profilingStack_->frames[i];
