@@ -57,6 +57,15 @@ async function activateSupportLinkAndVerifyTelemetry(
   win,
   useKeyboard = false
 ) {
+  // Fluent fills in the link's text asynchronously, which on slow machines can
+  // land after the frame createSettingWithSupportLink waits for, leaving an
+  // empty link that the click can miss.
+  await BrowserTestUtils.waitForMutationCondition(
+    supportLink,
+    { childList: true },
+    () => supportLink.textContent
+  );
+
   let linkClickPromise = BrowserTestUtils.waitForNewTab(gBrowser, null, true);
 
   if (useKeyboard) {
