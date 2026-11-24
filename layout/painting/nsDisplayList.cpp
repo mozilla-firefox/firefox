@@ -1967,11 +1967,11 @@ void nsDisplayListBuilder::AdjustWindowDraggingRegion(nsIFrame* aFrame) {
     return;
   }
 
-  gfx::IntRect rect(transformedDevPixelBorderBoxInt.ToUnknownRect());
   if (styleUI->mWindowDragging == StyleWindowDragging::Drag) {
-    mRetainedWindowDraggingRegion.Add(aFrame, rect);
+    mRetainedWindowDraggingRegion.Add(aFrame, transformedDevPixelBorderBoxInt);
   } else {
-    mRetainedWindowNoDraggingRegion.Add(aFrame, rect);
+    mRetainedWindowNoDraggingRegion.Add(aFrame,
+                                        transformedDevPixelBorderBoxInt);
   }
 }
 
@@ -1982,11 +1982,10 @@ LayoutDeviceIntRegion nsDisplayListBuilder::GetWindowDraggingRegion() const {
     return result;
   }
 
-  LayoutDeviceIntRegion dragRegion =
-      mRetainedWindowDraggingRegion.ToLayoutDeviceIntRegion();
+  LayoutDeviceIntRegion dragRegion = mRetainedWindowDraggingRegion.ToRegion();
 
   LayoutDeviceIntRegion noDragRegion =
-      mRetainedWindowNoDraggingRegion.ToLayoutDeviceIntRegion();
+      mRetainedWindowNoDraggingRegion.ToRegion();
 
   result.Sub(dragRegion, noDragRegion);
   return result;
@@ -2027,7 +2026,8 @@ void RetainedDisplayList::AddSizeOfExcludingThis(nsWindowSizes& aSizes) const {
   aSizes.mLayoutRetainedDisplayListSize += n;
 }
 
-size_t nsDisplayListBuilder::WeakFrameRegion::SizeOfExcludingThis(
+template <typename RegionType>
+size_t nsDisplayListBuilder::WeakFrameRegion<RegionType>::SizeOfExcludingThis(
     MallocSizeOf aMallocSizeOf) const {
   size_t n = 0;
   n += mFrames.ShallowSizeOfExcludingThis(aMallocSizeOf);
@@ -2038,7 +2038,9 @@ size_t nsDisplayListBuilder::WeakFrameRegion::SizeOfExcludingThis(
 /**
  * Removes modified frames and rects from this WeakFrameRegion.
  */
-void nsDisplayListBuilder::WeakFrameRegion::RemoveModifiedFramesAndRects() {
+template <typename RegionType>
+void nsDisplayListBuilder::WeakFrameRegion<
+    RegionType>::RemoveModifiedFramesAndRects() {
   MOZ_ASSERT(mFrames.Length() == mRects.Length());
 
   uint32_t i = 0;
@@ -2063,6 +2065,9 @@ void nsDisplayListBuilder::WeakFrameRegion::RemoveModifiedFramesAndRects() {
   mFrames.TruncateLength(length);
   mRects.TruncateLength(length);
 }
+
+template struct nsDisplayListBuilder::WeakFrameRegion<nsRegion>;
+template struct nsDisplayListBuilder::WeakFrameRegion<LayoutDeviceIntRegion>;
 
 void nsDisplayListBuilder::RemoveModifiedWindowRegions() {
   mRetainedWindowDraggingRegion.RemoveModifiedFramesAndRects();

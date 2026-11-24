@@ -22,7 +22,6 @@
 #include "nsRegionFwd.h"  // for nsIntRegion
 #include "nsString.h"     // for nsCString
 #include "nsTArray.h"
-#include "pixman.h"
 
 // Uncomment this line to get additional integrity checking.
 // #define DEBUG_REGIONS
@@ -493,9 +492,11 @@ class nsRegion {
     mBounds = nsRectAbsolute::FromRect(aRect);
   }
   MOZ_IMPLICIT nsRegion(const nsRectAbsolute& aRect) { mBounds = aRect; }
-  explicit nsRegion(mozilla::gfx::ArrayView<pixman_box32_t> aRects) {
+  template <typename RectType>
+  explicit nsRegion(mozilla::gfx::ArrayView<RectType> aRects) {
     for (uint32_t i = 0; i < aRects.Length(); i++) {
-      AddRect(BoxToRect(aRects[i]));
+      const RectType& r = aRects[i];
+      AddRect(nsRectAbsolute(r.X(), r.Y(), r.XMost(), r.YMost()));
     }
   }
 
@@ -1889,16 +1890,6 @@ class nsRegion {
 
   nsCString ToString() const;
 
-  static inline pixman_box32_t RectToBox(const nsRect& aRect) {
-    pixman_box32_t box = {aRect.X(), aRect.Y(), aRect.XMost(), aRect.YMost()};
-    return box;
-  }
-
-  static inline pixman_box32_t RectToBox(const mozilla::gfx::IntRect& aRect) {
-    pixman_box32_t box = {aRect.X(), aRect.Y(), aRect.XMost(), aRect.YMost()};
-    return box;
-  }
-
  private:
   nsIntRegion ToPixels(nscoord aAppUnitsPerPixel, bool aOutsidePixels) const;
 
@@ -1924,10 +1915,6 @@ class nsRegion {
     if (mBands.Length() == 1 && mBands.begin()->mStrips.Length() == 1) {
       mBands.Clear();
     }
-  }
-
-  static inline nsRectAbsolute BoxToRect(const pixman_box32_t& aBox) {
-    return nsRectAbsolute(aBox.x1, aBox.y1, aBox.x2, aBox.y2);
   }
 
   void AddRect(const nsRectAbsolute& aRect) {
@@ -2219,7 +2206,7 @@ class BaseIntRegion {
 
   BaseIntRegion() = default;
   MOZ_IMPLICIT BaseIntRegion(const Rect& aRect) : mImpl(ToRect(aRect)) {}
-  explicit BaseIntRegion(mozilla::gfx::ArrayView<pixman_box32_t> aRects)
+  explicit BaseIntRegion(mozilla::gfx::ArrayView<Rect> aRects)
       : mImpl(aRects) {}
   BaseIntRegion(const BaseIntRegion& aRegion) = default;
   BaseIntRegion(BaseIntRegion&& aRegion) : mImpl(std::move(aRegion.mImpl)) {}
@@ -2497,7 +2484,7 @@ class IntRegionTyped
   MOZ_IMPLICIT IntRegionTyped(const IntRectTyped<units>& aRect)
       : Super(aRect) {}
   IntRegionTyped(const IntRegionTyped& aRegion) : Super(aRegion) {}
-  explicit IntRegionTyped(mozilla::gfx::ArrayView<pixman_box32_t> aRects)
+  explicit IntRegionTyped(mozilla::gfx::ArrayView<IntRectTyped<units>> aRects)
       : Super(aRects) {}
   IntRegionTyped(IntRegionTyped&& aRegion) : Super(std::move(aRegion)) {}
 

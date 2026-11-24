@@ -1655,14 +1655,16 @@ class nsDisplayListBuilder {
    * WeakFrames are used to track whether a rect still belongs to the region.
    * Modified frames and rects are removed and re-added to the region if needed.
    */
+  template <typename RegionType>
   struct WeakFrameRegion {
+    using RectType = typename RegionType::RectType;
+
     nsTHashSet<void*> mFrameSet;
     // WeakFrame does not store the frame pointer after the frame has been
     // deleted, so keep the raw pointer around to remove it from mFrameSet.
     nsTArray<std::pair<WeakFrame, void*>> mFrames;
-    nsTArray<pixman_box32_t> mRects;
+    nsTArray<RectType> mRects;
 
-    template <typename RectType>
     void Add(nsIFrame* aFrame, const RectType& aRect) {
       if (mFrameSet.Contains(aFrame)) {
         return;
@@ -1670,7 +1672,7 @@ class nsDisplayListBuilder {
 
       mFrameSet.Insert(aFrame);
       mFrames.EmplaceBack(aFrame, aFrame);
-      mRects.AppendElement(nsRegion::RectToBox(aRect));
+      mRects.AppendElement(aRect);
     }
 
     void Clear() {
@@ -1683,12 +1685,8 @@ class nsDisplayListBuilder {
 
     size_t SizeOfExcludingThis(MallocSizeOf) const;
 
-    typedef gfx::ArrayView<pixman_box32_t> BoxArrayView;
-
-    nsRegion ToRegion() const { return nsRegion(BoxArrayView(mRects)); }
-
-    LayoutDeviceIntRegion ToLayoutDeviceIntRegion() const {
-      return LayoutDeviceIntRegion(BoxArrayView(mRects));
+    RegionType ToRegion() const {
+      return RegionType(gfx::ArrayView<RectType>(mRects));
     }
   };
 
@@ -1857,11 +1855,11 @@ class nsDisplayListBuilder {
   AutoTArray<RefPtr<nsCaret>, 1> mPaintedCarets;
 
   // Tracked regions used for retained display list.
-  WeakFrameRegion mRetainedWindowDraggingRegion;
-  WeakFrameRegion mRetainedWindowNoDraggingRegion;
+  WeakFrameRegion<LayoutDeviceIntRegion> mRetainedWindowDraggingRegion;
+  WeakFrameRegion<LayoutDeviceIntRegion> mRetainedWindowNoDraggingRegion;
 
   // Window opaque region is calculated during layer building.
-  WeakFrameRegion mRetainedWindowOpaqueRegion;
+  WeakFrameRegion<nsRegion> mRetainedWindowOpaqueRegion;
 
   std::unordered_set<const DisplayItemClipChain*, DisplayItemClipChainHasher,
                      DisplayItemClipChainEqualer>

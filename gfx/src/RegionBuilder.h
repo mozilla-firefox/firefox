@@ -5,8 +5,8 @@
 #ifndef RegionBuilder_h_
 #define RegionBuilder_h_
 
+#include "mozilla/ArrayView.h"
 #include "nsTArray.h"
-#include "pixman.h"
 
 template <typename RegionType>
 class RegionBuilder {
@@ -15,15 +15,14 @@ class RegionBuilder {
 
   RegionBuilder() = default;
 
-  void OrWith(const RectType& aRect) {
-    pixman_box32_t box = {aRect.X(), aRect.Y(), aRect.XMost(), aRect.YMost()};
-    mRects.AppendElement(box);
+  void OrWith(const RectType& aRect) { mRects.AppendElement(aRect); }
+
+  RegionType ToRegion() const {
+    return RegionType(mozilla::gfx::ArrayView<RectType>(mRects));
   }
 
-  RegionType ToRegion() const { return RegionType(mRects); }
-
  private:
-  nsTArray<pixman_box32_t> mRects;
+  nsTArray<RectType> mRects;
 };
 
 #endif  // RegionBuilder_h_
