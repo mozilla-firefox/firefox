@@ -71,6 +71,8 @@ const platformSpecificInterfaces = new Map([
   // Sandbox test is only enabled for certain configurations (MOZ_SANDBOX,
   // MOZ_DEBUG, ENABLE_TESTS).
   ["mozISandboxTest", "any"],
+  // These are for MOZ_ENTERPRISE
+  ["nsIImeiProvider", "any"],
 ]);
 
 function interfaceHasProperty(interfaceName, propertyName) {
