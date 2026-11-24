@@ -369,6 +369,11 @@ class SitePermissionsTest {
     }
 
     // TestRail link: https://mozilla.testrail.io/index.php?/cases/view/2334075
+    @Converted(
+        replacedBy = ["org.mozilla.fenix.ui.efficiency.tests.SitePermissionsTest#blockLocationPermissionsTest"],
+        bug = 2095574,
+        since = "2026-11",
+    )
     @Test
     fun blockLocationPermissionsTest() {
         navigationToolbar(composeTestRule) {}
