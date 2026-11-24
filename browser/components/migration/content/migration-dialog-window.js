@@ -110,15 +110,20 @@ const MigrationDialog = {
     }
 
     this._wiz.doAutoImport(migratorKey, profile, resourceTypeStrs);
-    this._wiz.addEventListener(
-      "MigrationWizard:DoneMigration",
-      () => {
-        setTimeout(() => {
-          window.close();
-        }, 5000);
-      },
-      { once: true }
-    );
+
+    // Startup waits for this dialog to close. Nobody can click "Done" in
+    // headless mode or while Marionette drives the browser, so close it once
+    // the import is done.
+    if (
+      Services.env.get("MOZ_HEADLESS") ||
+      Services.env.get("MOZ_MARIONETTE")
+    ) {
+      this._wiz.addEventListener(
+        "MigrationWizard:DoneMigration",
+        () => window.close(),
+        { once: true }
+      );
+    }
   },
 };
 
