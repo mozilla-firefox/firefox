@@ -3315,9 +3315,7 @@ void RestyleManager::DoProcessPendingRestyles(ServoTraversalFlags aFlags) {
     doc->ClearServoRestyleRoot();
     ClearSnapshots();
 
-    while (!currentChanges.IsEmpty()) {
-      ProcessRestyledFrames(currentChanges);
-      MOZ_ASSERT(currentChanges.IsEmpty());
+    do {
       for (ReentrantChange& change : newChanges) {
         if (!(change.mHint & nsChangeHint_ReconstructFrame) &&
             !change.mContent->GetPrimaryFrame()) {
@@ -3331,7 +3329,9 @@ void RestyleManager::DoProcessPendingRestyles(ServoTraversalFlags aFlags) {
                                     change.mContent, change.mHint);
       }
       newChanges.Clear();
-    }
+      ProcessRestyledFrames(currentChanges);
+      MOZ_ASSERT(currentChanges.IsEmpty());
+    } while (!newChanges.IsEmpty());
 
     mReentrantChanges = nullptr;
 
