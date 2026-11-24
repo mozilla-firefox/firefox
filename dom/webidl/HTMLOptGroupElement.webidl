@@ -18,4 +18,10 @@ interface HTMLOptGroupElement : HTMLElement {
            attribute boolean disabled;
            [CEReactions, SetterThrows]
            attribute DOMString label;
+
+  // https://html.spec.whatwg.org/#concept-optgroup-label
+  // Chrome-only: the UA select popups use it so that they need not reimplement
+  // the legend-or-label fallback.
+  [ChromeOnly]
+  readonly attribute DOMString renderedLabel;
 };

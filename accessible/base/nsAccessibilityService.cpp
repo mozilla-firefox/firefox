@@ -70,6 +70,7 @@
 #include "mozilla/dom/ContentParent.h"
 #include "mozilla/dom/DOMStringList.h"
 #include "mozilla/dom/EventTarget.h"
+#include "mozilla/dom/HTMLOptGroupElement.h"
 #include "mozilla/dom/HTMLTableElement.h"
 #include "nsExceptionHandler.h"
 #include "nsIObserverService.h"
@@ -935,6 +936,39 @@ void nsAccessibilityService::ComboboxOptionMaybeChanged(
     if (cur->IsHTMLElement(nsGkAtoms::select)) {
       break;
     }
+  }
+}
+
+void nsAccessibilityService::OptGroupLabelMaybeChanged(
+    PresShell* aPresShell, nsIContent* aMutatingNode) {
+  DocAccessible* document = GetDocAccessible(aPresShell);
+  if (!document) {
+    return;
+  }
+
+  for (nsIContent* cur = aMutatingNode;
+       cur && !cur->IsHTMLElement(nsGkAtoms::select); cur = cur->GetParent()) {
+    auto* group = dom::HTMLOptGroupElement::FromNodeOrNull(cur->GetParent());
+    if (!group) {
+      continue;
+    }
+    // Only a first element child legend, or an element displacing one, can
+    // affect the group label.
+    if (group->GetFirstElementChild() != cur) {
+      return;
+    }
+    if (!cur->IsHTMLElement(nsGkAtoms::legend)) {
+      dom::Element* next = cur->GetNextElementSibling();
+      if (cur != aMutatingNode || !next ||
+          !next->IsHTMLElement(nsGkAtoms::legend)) {
+        return;
+      }
+    }
+    if (LocalAccessible* accessible = document->GetAccessible(group)) {
+      document->FireDelayedEvent(nsIAccessibleEvent::EVENT_NAME_CHANGE,
+                                 accessible);
+    }
+    return;
   }
 }
 

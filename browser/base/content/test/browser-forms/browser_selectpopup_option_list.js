@@ -15,6 +15,9 @@ const PAGE_CONTENT = `
 //       <div><option>Three</div> wrapper inside an optgroup
 //       <optgroup label=Nested>  a grouped optgroup groups nothing
 //         <option>Four
+//     <optgroup label=Ignored>   a first child legend labels the group
+//       <legend>Leg<img alt=end>hidden</legend>
+//       <option>Seven<img alt=!>hidden</option>
 //     <datalist><option>Five     not in the option list
 //     <select><option>Six        not in the option list
 function buildSelect() {
@@ -41,6 +44,13 @@ function buildSelect() {
   const nested = el("optgroup", group);
   nested.label = "Nested";
   el("option", nested, "Four");
+
+  const legendGroup = el("optgroup", wrapper);
+  legendGroup.label = "Ignored";
+  const legend = el("legend", legendGroup, "Leg");
+  el("img", legend, "hidden").alt = "end";
+  const seven = el("option", legendGroup, "Seven");
+  el("img", seven, "hidden").alt = "!";
 
   el("option", el("datalist", wrapper), "Five");
   el("option", el("select", wrapper), "Six");
@@ -72,6 +82,8 @@ async function testOptionList(customizableSelect) {
       ["menuseparator", null],
       ["menucaption", "Group"],
       ["menuitem", "Three"],
+      ["menucaption", "Legend"],
+      ["menuitem", "Seven!"],
     ],
     `Dropdown lists the option list, and only the option list (customizable select: ${customizableSelect})`
   );
