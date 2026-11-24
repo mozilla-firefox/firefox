@@ -28,7 +28,6 @@
 #include "VsyncSource.h"
 #include "gfx2DGlue.h"
 #include "gfxContext.h"
-#include "gfxImageSurface.h"
 #include "gfxPlatformGtk.h"
 #include "gfxUtils.h"
 #include "imgIContainer.h"
@@ -60,7 +59,6 @@
 #include "mozilla/dom/WheelEventBinding.h"
 #include "mozilla/gfx/2D.h"
 #include "mozilla/gfx/GPUProcessManager.h"
-#include "mozilla/gfx/HelpersCairo.h"
 #include "mozilla/gfx/gfxVars.h"
 #include "mozilla/layers/APZBridge.h"
 #include "mozilla/layers/APZThreadUtils.h"
@@ -3855,7 +3853,7 @@ void nsWindow::RefreshScale(bool aRefreshScreen, bool aForceRefresh) {
 }
 
 void nsWindow::SetDragPopupSurface(
-    RefPtr<gfxImageSurface> aDragPopupSurface,
+    RefPtr<gfx::DataSourceSurface> aDragPopupSurface,
     const LayoutDeviceIntRegion& aInvalidRegion) {
   MOZ_DIAGNOSTIC_ASSERT(NS_IsMainThread());
 
@@ -3874,22 +3872,24 @@ bool nsWindow::DrawDragPopupSurface(cairo_t* cr) {
   if (!mDragPopupSurface) {
     return false;
   }
-  RefPtr<gfxImageSurface> surface = std::move(mDragPopupSurface);
+  RefPtr<gfx::DataSourceSurface> surface = std::move(mDragPopupSurface);
 
   gfx::IntRect bounds = mDragPopupSurfaceRegion.GetBounds().ToUnknownRect();
   if (bounds.IsEmpty()) {
     return true;
   }
 
-  cairo_surface_t* targetSurface = cairo_get_group_target(cr);
-  gfx::IntSize size(bounds.XMost(), bounds.YMost());
-  RefPtr<gfx::DrawTarget> dt =
-      gfx::Factory::CreateDrawTargetForCairoSurface(targetSurface, size);
+  gfx::DataSourceSurface::ScopedMap map(surface, gfx::DataSourceSurface::READ);
+  if (!map.IsMapped()) {
+    return true;
+  }
 
-  RefPtr<gfx::SourceSurface> surf =
-      gfx::Factory::CreateSourceSurfaceForCairoSurface(
-          surface->CairoSurface(), surface->GetSize(), surface->Format());
-  if (!dt || !surf) {
+  gfx::IntSize size = surface->GetSize();
+  cairo_surface_t* source = cairo_image_surface_create_for_data(
+      map.GetData(), CAIRO_FORMAT_ARGB32, size.width, size.height,
+      map.GetStride());
+  auto destroySource = MakeScopeExit([&] { cairo_surface_destroy(source); });
+  if (cairo_surface_status(source) != CAIRO_STATUS_SUCCESS) {
     return true;
   }
 
@@ -3899,27 +3899,20 @@ bool nsWindow::DrawDragPopupSurface(cairo_t* cr) {
 
   if (sCairoSurfaceSetDeviceScalePtr) {
     double scale = FractionalScaleFactor();
-    sCairoSurfaceSetDeviceScalePtr(surface->CairoSurface(), scale, scale);
+    sCairoSurfaceSetDeviceScalePtr(source, scale, scale);
   }
 
-  uint32_t numRects = mDragPopupSurfaceRegion.GetNumRects();
-  if (numRects == 1) {
-    dt->CopySurface(surf, bounds, bounds.TopLeft());
-  } else {
-    AutoTArray<IntRect, 32> rects;
-    rects.SetCapacity(numRects);
-    for (auto iter = mDragPopupSurfaceRegion.RectIter(); !iter.Done();
-         iter.Next()) {
-      rects.AppendElement(iter.Get().ToUnknownRect());
-    }
-    dt->PushDeviceSpaceClipRects(rects.Elements(), rects.Length());
-
-    dt->DrawSurface(surf, gfx::Rect(bounds), gfx::Rect(bounds),
-                    DrawSurfaceOptions(),
-                    DrawOptions(1.0f, CompositionOp::OP_SOURCE));
-
-    dt->PopClip();
+  cairo_t* ctx = cairo_create(cairo_get_group_target(cr));
+  cairo_set_source_surface(ctx, source, 0, 0);
+  cairo_set_operator(ctx, CAIRO_OPERATOR_SOURCE);
+  cairo_set_antialias(ctx, CAIRO_ANTIALIAS_NONE);
+  for (auto iter = mDragPopupSurfaceRegion.RectIter(); !iter.Done();
+       iter.Next()) {
+    const auto& r = iter.Get();
+    cairo_rectangle(ctx, r.x, r.y, r.width, r.height);
   }
+  cairo_fill(ctx);
+  cairo_destroy(ctx);
 
   return true;
 }

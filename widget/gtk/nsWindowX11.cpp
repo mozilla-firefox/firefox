@@ -15,7 +15,6 @@
 #include "GUniquePtr.h"
 #include "WindowSurfaceX11Image.h"
 #include "WindowSurfaceX11SHM.h"
-#include "gfxXlibSurface.h"
 #include "mozilla/PodOperations.h"
 #include "mozilla/gfx/gfxVars.h"
 #include "mozilla/layers/CompositorBridgeChild.h"

@@ -5,26 +5,16 @@
 
 #include "WindowSurfaceX11Image.h"
 
-#include <X11/extensions/shape.h>
+#include <cairo-xlib.h>
+#include <cairo.h>
 
-#include "gfx2DGlue.h"
 #include "gfxPlatform.h"
 #include "mozilla/gfx/2D.h"
-#include "mozilla/gfx/Tools.h"
-#include "mozilla/gfx/gfxVars.h"
 
 namespace mozilla {
 namespace widget {
 
 using namespace mozilla::gfx;
-
-// gfxImageSurface pixel format configuration.
-#define SHAPED_IMAGE_SURFACE_BPP 4
-#ifdef IS_BIG_ENDIAN
-#  define SHAPED_IMAGE_SURFACE_ALPHA_INDEX 0
-#else
-#  define SHAPED_IMAGE_SURFACE_ALPHA_INDEX 3
-#endif
 
 WindowSurfaceX11Image::WindowSurfaceX11Image(Display* aDisplay, Window aWindow,
                                              Visual* aVisual,
@@ -33,63 +23,52 @@ WindowSurfaceX11Image::WindowSurfaceX11Image(Display* aDisplay, Window aWindow,
 
 WindowSurfaceX11Image::~WindowSurfaceX11Image() = default;
 
+static cairo_format_t ToCairoFormat(SurfaceFormat aFormat) {
+  switch (aFormat) {
+    case SurfaceFormat::B8G8R8A8:
+      return CAIRO_FORMAT_ARGB32;
+    case SurfaceFormat::B8G8R8X8:
+      return CAIRO_FORMAT_RGB24;
+    case SurfaceFormat::R5G6B5_UINT16:
+      return CAIRO_FORMAT_RGB16_565;
+    default:
+      MOZ_ASSERT_UNREACHABLE("Unexpected window surface format");
+      return CAIRO_FORMAT_ARGB32;
+  }
+}
+
 already_AddRefed<gfx::DrawTarget> WindowSurfaceX11Image::Lock(
     const LayoutDeviceIntRegion& aRegion) {
   gfx::IntRect bounds = aRegion.GetBounds().ToUnknownRect();
   gfx::IntSize size(bounds.XMost(), bounds.YMost());
 
-  if (!mWindowSurface || mWindowSurface->CairoStatus() ||
-      !(size <= mWindowSurface->GetSize())) {
-    mWindowSurface = new gfxXlibSurface(mDisplay, mWindow, mVisual, size);
-  }
-  if (mWindowSurface->CairoStatus()) {
-    return nullptr;
-  }
-
-  if (!mImageSurface || mImageSurface->CairoStatus() ||
-      !(size <= mImageSurface->GetSize())) {
-    gfxImageFormat format = SurfaceFormatToImageFormat(mFormat);
-    if (format == gfx::SurfaceFormat::UNKNOWN) {
-      format = mDepth == 32 ? gfx::SurfaceFormat::A8R8G8B8_UINT32
-                            : gfx::SurfaceFormat::X8R8G8B8_UINT32;
+  if (!mImageSurface || !(size <= mImageSurface->GetSize())) {
+    SurfaceFormat format = mFormat;
+    if (format == SurfaceFormat::UNKNOWN) {
+      format = mDepth == 32 ? SurfaceFormat::B8G8R8A8 : SurfaceFormat::B8G8R8X8;
     }
-
-    mImageSurface = new gfxImageSurface(size, format);
-    if (mImageSurface->CairoStatus()) {
+    mImageSurface =
+        Factory::CreateDataSourceSurface(size, format, /* aZero = */ true);
+    if (!mImageSurface) {
       return nullptr;
     }
   }
 
-  gfxImageFormat format = mImageSurface->Format();
-  // Cairo prefers compositing to BGRX instead of BGRA where possible.
-  // Cairo/pixman lacks some fast paths for compositing BGRX onto BGRA, so
-  // just report it as BGRX directly in that case.
-  // Otherwise, for Skia, report it as BGRA to the compositor. The alpha
-  // channel will be discarded when we put the image.
-  if (format == gfx::SurfaceFormat::X8R8G8B8_UINT32) {
-    gfx::BackendType backend = gfxVars::ContentBackend();
-    if (!gfx::Factory::DoesBackendSupportDataDrawtarget(backend)) {
-      backend = gfx::BackendType::SKIA;
-    }
-    if (backend != gfx::BackendType::CAIRO) {
-      format = gfx::SurfaceFormat::A8R8G8B8_UINT32;
-    }
+  // Report BGRX as BGRA to the draw target. The alpha channel will be
+  // discarded when we put the image.
+  SurfaceFormat format = mImageSurface->GetFormat();
+  if (format == SurfaceFormat::B8G8R8X8) {
+    format = SurfaceFormat::B8G8R8A8;
   }
 
-  return gfxPlatform::CreateDrawTargetForData(
-      mImageSurface->Data(), mImageSurface->GetSize(), mImageSurface->Stride(),
-      ImageFormatToSurfaceFormat(format));
+  return gfxPlatform::CreateDrawTargetForData(mImageSurface->GetData(),
+                                              mImageSurface->GetSize(),
+                                              mImageSurface->Stride(), format);
 }
 
 void WindowSurfaceX11Image::Commit(
     const LayoutDeviceIntRegion& aInvalidRegion) {
-  RefPtr<gfx::DrawTarget> dt = gfx::Factory::CreateDrawTargetForCairoSurface(
-      mWindowSurface->CairoSurface(), mWindowSurface->GetSize());
-  RefPtr<gfx::SourceSurface> surf =
-      gfx::Factory::CreateSourceSurfaceForCairoSurface(
-          mImageSurface->CairoSurface(), mImageSurface->GetSize(),
-          mImageSurface->Format());
-  if (!dt || !surf) {
+  if (!mImageSurface) {
     return;
   }
 
@@ -98,23 +77,28 @@ void WindowSurfaceX11Image::Commit(
     return;
   }
 
-  uint32_t numRects = aInvalidRegion.GetNumRects();
-  if (numRects == 1) {
-    dt->CopySurface(surf, bounds, bounds.TopLeft());
-  } else {
-    AutoTArray<IntRect, 32> rects;
-    rects.SetCapacity(numRects);
+  gfx::IntSize size = mImageSurface->GetSize();
+  cairo_surface_t* source = cairo_image_surface_create_for_data(
+      mImageSurface->GetData(), ToCairoFormat(mImageSurface->GetFormat()),
+      size.width, size.height, mImageSurface->Stride());
+  cairo_surface_t* target = cairo_xlib_surface_create(
+      mDisplay, mWindow, mVisual, bounds.XMost(), bounds.YMost());
+  if (cairo_surface_status(source) == CAIRO_STATUS_SUCCESS &&
+      cairo_surface_status(target) == CAIRO_STATUS_SUCCESS) {
+    cairo_t* cr = cairo_create(target);
+    cairo_set_source_surface(cr, source, 0, 0);
+    cairo_set_operator(cr, CAIRO_OPERATOR_SOURCE);
+    cairo_set_antialias(cr, CAIRO_ANTIALIAS_NONE);
     for (auto iter = aInvalidRegion.RectIter(); !iter.Done(); iter.Next()) {
-      rects.AppendElement(iter.Get().ToUnknownRect());
+      const auto& r = iter.Get();
+      cairo_rectangle(cr, r.x, r.y, r.width, r.height);
     }
-    dt->PushDeviceSpaceClipRects(rects.Elements(), rects.Length());
-
-    dt->DrawSurface(surf, gfx::Rect(bounds), gfx::Rect(bounds),
-                    DrawSurfaceOptions(),
-                    DrawOptions(1.0f, CompositionOp::OP_SOURCE));
-
-    dt->PopClip();
+    cairo_fill(cr);
+    cairo_destroy(cr);
+    cairo_surface_flush(target);
   }
+  cairo_surface_destroy(target);
+  cairo_surface_destroy(source);
 }
 
 }  // namespace widget

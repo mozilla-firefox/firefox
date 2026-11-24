@@ -210,8 +210,6 @@ if not CONFIG["MOZ_SYSTEM_LIBDRM"]:
         "/third_party/drm/drm/include/libdrm",
     ]
 
-DEFINES["CAIRO_GFX"] = True
-
 DEFINES["MOZ_APP_NAME"] = '"%s"' % CONFIG["MOZ_APP_NAME"]
 
 CFLAGS += CONFIG["MOZ_GTK3_CFLAGS"]

@@ -11,8 +11,7 @@
 #  include <glib.h>
 
 #  include "WindowSurfaceX11.h"
-#  include "gfxImageSurface.h"
-#  include "gfxXlibSurface.h"
+#  include "mozilla/gfx/2D.h"
 
 namespace mozilla {
 namespace widget {
@@ -29,8 +28,7 @@ class WindowSurfaceX11Image : public WindowSurfaceX11 {
   bool IsFallback() const override { return true; }
 
  private:
-  RefPtr<gfxXlibSurface> mWindowSurface;
-  RefPtr<gfxImageSurface> mImageSurface;
+  RefPtr<gfx::DataSourceSurface> mImageSurface;
 };
 
 }  // namespace widget

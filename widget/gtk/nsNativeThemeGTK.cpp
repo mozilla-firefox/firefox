@@ -12,7 +12,6 @@
 #include "gtk/gtk.h"
 #include "mozilla/StaticPrefs_widget.h"
 #include "mozilla/WidgetUtilsGtk.h"
-#include "mozilla/gfx/HelpersCairo.h"
 #include "nsDeviceContext.h"
 #include "nsIFrame.h"
 #include "nsPresContext.h"
@@ -63,8 +62,8 @@ static RefPtr<DataSourceSurface> GetWidgetFourPatch(
   }
   // Create a Cairo image surface wrapping the data surface.
   cairo_surface_t* surf = cairo_image_surface_create_for_data(
-      map.GetData(), GfxFormatToCairoFormat(dataSurface->GetFormat()),
-      surfaceRect.width, surfaceRect.height, map.GetStride());
+      map.GetData(), CAIRO_FORMAT_ARGB32, surfaceRect.width, surfaceRect.height,
+      map.GetStride());
   if (NS_WARN_IF(!surf)) {
     return nullptr;
   }

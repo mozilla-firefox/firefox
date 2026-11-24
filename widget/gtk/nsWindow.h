@@ -140,6 +140,10 @@ class NativeLayerRootRemoteWaylandParent;
 class NativeLayerRootWayland;
 }  // namespace layers
 
+namespace gfx {
+class DataSourceSurface;
+}  // namespace gfx
+
 namespace widget {
 class DBusMenuBar;
 class Screen;
@@ -151,8 +155,6 @@ class nsWindowWaylandToplevel;
 class nsWindowWaylandPopup;
 }  // namespace widget
 }  // namespace mozilla
-
-class gfxImageSurface;
 
 class nsWindow : public nsIWidget {
  public:
@@ -526,8 +528,9 @@ class nsWindow : public nsIWidget {
 
   void GtkWidgetDestroyHandler(GtkWidget* aWidget);
 
-  void SetDragPopupSurface(RefPtr<gfxImageSurface> aDragPopupSurface,
-                           const LayoutDeviceIntRegion& aInvalidRegion);
+  void SetDragPopupSurface(
+      RefPtr<mozilla::gfx::DataSourceSurface> aDragPopupSurface,
+      const LayoutDeviceIntRegion& aInvalidRegion);
 
   static nsWindow* FromGtkWidget(GtkWidget* widget);
   static nsWindow* FromGdkWindow(GdkWindow* window);
@@ -652,7 +655,7 @@ class nsWindow : public nsIWidget {
   RefPtr<mozilla::layers::NativeLayerRootWayland>
       mNativeLayerRootForRemoteWaylandParent;
 #endif
-  RefPtr<gfxImageSurface> mDragPopupSurface;
+  RefPtr<mozilla::gfx::DataSourceSurface> mDragPopupSurface;
   LayoutDeviceIntRegion mDragPopupSurfaceRegion;
 
   PlatformCompositorWidgetDelegate* mCompositorWidgetDelegate = nullptr;

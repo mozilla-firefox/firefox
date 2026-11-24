@@ -5,11 +5,8 @@
 
 #include "WindowSurfaceCairo.h"
 
-#include "gfx2DGlue.h"
 #include "gfxPlatform.h"
 #include "mozilla/gfx/2D.h"
-#include "mozilla/gfx/Tools.h"
-#include "mozilla/gfx/gfxVars.h"
 #include "nsWindow.h"
 
 namespace mozilla {
@@ -25,34 +22,17 @@ already_AddRefed<gfx::DrawTarget> WindowSurfaceCairo::Lock(
   gfx::IntRect bounds = aRegion.GetBounds().ToUnknownRect();
   gfx::IntSize size(bounds.XMost(), bounds.YMost());
 
-  if (!mImageSurface || mImageSurface->CairoStatus() ||
-      !(size <= mImageSurface->GetSize())) {
-    mImageSurface =
-        new gfxImageSurface(size, gfx::SurfaceFormat::A8R8G8B8_UINT32);
-    if (mImageSurface->CairoStatus()) {
+  if (!mImageSurface || !(size <= mImageSurface->GetSize())) {
+    mImageSurface = gfx::Factory::CreateDataSourceSurface(
+        size, gfx::SurfaceFormat::B8G8R8A8, /* aZero = */ true);
+    if (!mImageSurface) {
       return nullptr;
     }
   }
 
-  gfxImageFormat format = mImageSurface->Format();
-  // Cairo prefers compositing to BGRX instead of BGRA where possible.
-  // Cairo/pixman lacks some fast paths for compositing BGRX onto BGRA, so
-  // just report it as BGRX directly in that case.
-  // Otherwise, for Skia, report it as BGRA to the compositor. The alpha
-  // channel will be discarded when we put the image.
-  if (format == gfx::SurfaceFormat::X8R8G8B8_UINT32) {
-    gfx::BackendType backend = gfxVars::ContentBackend();
-    if (!gfx::Factory::DoesBackendSupportDataDrawtarget(backend)) {
-      backend = gfx::BackendType::SKIA;
-    }
-    if (backend != gfx::BackendType::CAIRO) {
-      format = gfx::SurfaceFormat::A8R8G8B8_UINT32;
-    }
-  }
-
   return gfxPlatform::CreateDrawTargetForData(
-      mImageSurface->Data(), mImageSurface->GetSize(), mImageSurface->Stride(),
-      ImageFormatToSurfaceFormat(format));
+      mImageSurface->GetData(), mImageSurface->GetSize(),
+      mImageSurface->Stride(), mImageSurface->GetFormat());
 }
 
 void WindowSurfaceCairo::Commit(const LayoutDeviceIntRegion& aInvalidRegion) {
@@ -82,8 +62,8 @@ void WindowSurfaceCairo::DumpToFile() {
   });
   auto size = mImageSurface->GetSize();
   surface = cairo_image_surface_create_for_data(
-      (unsigned char*)mImageSurface->Data(), CAIRO_FORMAT_ARGB32,
-      size.width, size.height, 4 * size.width);
+      mImageSurface->GetData(), CAIRO_FORMAT_ARGB32,
+      size.width, size.height, mImageSurface->Stride());
   if (cairo_surface_status(surface) == CAIRO_STATUS_SUCCESS) {
     nsCString filename;
     filename.Append(nsPrintfCString("firefox-dnd-%.5d.png", dumpSerial++));
