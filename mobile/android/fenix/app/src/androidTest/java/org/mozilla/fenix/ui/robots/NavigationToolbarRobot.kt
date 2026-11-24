@@ -33,7 +33,6 @@ import androidx.test.espresso.action.ViewActions.pressImeActionButton
 import androidx.test.espresso.assertion.PositionAssertions.isCompletelyAbove
 import androidx.test.espresso.assertion.PositionAssertions.isPartiallyBelow
 import androidx.test.espresso.assertion.ViewAssertions.matches
-import androidx.test.espresso.matcher.ViewMatchers.hasDescendant
 import androidx.test.espresso.matcher.ViewMatchers.isRoot
 import androidx.test.espresso.matcher.ViewMatchers.withId
 import androidx.test.espresso.matcher.ViewMatchers.withText
@@ -41,7 +40,6 @@ import androidx.test.uiautomator.By
 import androidx.test.uiautomator.By.textContains
 import androidx.test.uiautomator.UiSelector
 import androidx.test.uiautomator.Until
-import mozilla.components.browser.menu.R as menuR
 import mozilla.components.browser.toolbar.R as toolbarR
 import mozilla.components.compose.browser.toolbar.concept.BrowserToolbarTestTags.ADDRESSBAR_SEARCH_BOX
 import mozilla.components.compose.browser.toolbar.concept.BrowserToolbarTestTags.ADDRESSBAR_URL_BOX
@@ -68,7 +66,6 @@ import org.mozilla.fenix.helpers.TestHelper.mDevice
 import org.mozilla.fenix.helpers.TestHelper.packageName
 import org.mozilla.fenix.helpers.TestHelper.waitForAppWindowToBeUpdated
 import org.mozilla.fenix.helpers.ext.waitNotNull
-import org.mozilla.fenix.helpers.matchers.hasItemsCount
 
 /** Implementation of Robot Pattern for the URL toolbar. */
 class NavigationToolbarRobot(private val composeTestRule: ComposeTestRule) {
@@ -84,27 +81,6 @@ class NavigationToolbarRobot(private val composeTestRule: ComposeTestRule) {
         composeTestRule.onNodeWithText("New private tab", useUnmergedTree = true).assertIsDisplayed()
         composeTestRule.onNodeWithText("New tab", useUnmergedTree = true).assertIsDisplayed()
         Log.i(TAG, "verifyTabButtonShortcutMenuItems: Verified tab counter shortcut options")
-    }
-
-    fun verifyTabButtonShortcutMenuItemsForNormalHomescreen() {
-        Log.i(TAG, "verifyTabButtonShortcutMenuItemsForNormalHomescreen: Trying to verify tab counter shortcut options")
-        onView(withId(menuR.id.mozac_browser_menu_recyclerView))
-            .check(matches(hasItemsCount(2)))
-            .check(matches(hasDescendant(withText("New tab"))))
-            .check(matches(hasDescendant(withText("New private tab"))))
-        Log.i(TAG, "verifyTabButtonShortcutMenuItemsForNormalHomescreen: Verified tab counter shortcut options")
-    }
-
-    fun verifyTabButtonShortcutMenuItemsForPrivateHomescreen() {
-        Log.i(
-            TAG,
-            "verifyTabButtonShortcutMenuItemsForPrivateHomescreen: Trying to verify tab counter shortcut options",
-        )
-        onView(withId(menuR.id.mozac_browser_menu_recyclerView))
-            .check(matches(hasItemsCount(2)))
-            .check(matches(hasDescendant(withText("New tab"))))
-            .check(matches(hasDescendant(withText("New private tab"))))
-        Log.i(TAG, "verifyTabButtonShortcutMenuItemsForPrivateHomescreen: Verified tab counter shortcut options")
     }
 
     /** Matches the reader view toolbar button, whose label also offers Listen to Page when that is turned on. */

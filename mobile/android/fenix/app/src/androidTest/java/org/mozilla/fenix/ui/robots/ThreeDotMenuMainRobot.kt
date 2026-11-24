@@ -36,7 +36,6 @@ import androidx.test.espresso.matcher.ViewMatchers.withEffectiveVisibility
 import androidx.test.espresso.matcher.ViewMatchers.withId
 import androidx.test.espresso.matcher.ViewMatchers.withText
 import androidx.test.uiautomator.UiSelector
-import mozilla.components.browser.menu.R as menuR
 import mozilla.components.compose.menu.R as MozacMenuR
 import org.hamcrest.Matchers.allOf
 import org.mozilla.fenix.R
@@ -63,12 +62,6 @@ class ThreeDotMenuMainRobot(private val composeTestRule: ComposeTestRule) {
         Log.i(TAG, "verifyShareAllTabsButton: Trying to verify that the \"Share all tabs\" menu button is displayed")
         shareAllTabsButton().check(matches(isDisplayed()))
         Log.i(TAG, "verifyShareAllTabsButton: Verified that the \"Share all tabs\" menu button is displayed")
-    }
-
-    fun verifyThreeDotMenuExists() {
-        Log.i(TAG, "verifyThreeDotMenuExists: Trying to verify that the three dot menu is displayed")
-        threeDotMenuRecyclerView().check(matches(isDisplayed()))
-        Log.i(TAG, "verifyThreeDotMenuExists: Verified that the three dot menu is displayed")
     }
 
     fun verifyBookmarkThisPageButton() {
@@ -1052,8 +1045,6 @@ fun mainMenuScreen(
     ThreeDotMenuMainRobot(composeTestRule).interact()
     return ThreeDotMenuMainRobot.Transition(composeTestRule)
 }
-
-private fun threeDotMenuRecyclerView() = onView(withId(menuR.id.mozac_browser_menu_recyclerView))
 
 private fun editBookmarkButton() = onView(withText("Edit"))
 

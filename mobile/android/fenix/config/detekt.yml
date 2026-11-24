@@ -598,8 +598,10 @@ style:
         value: 'TODO:'
     allowedPatterns: ''
   ForbiddenImport:
-    active: false
-    imports: []
+    active: true
+    imports:
+      - value: 'mozilla.components.browser.menu.*'
+        reason: 'browser-menu is deprecated in Fenix. Use the compose-base DropdownMenu or the Compose main menu instead.'
     forbiddenPatterns: ''
   ForbiddenMethodCall:
     active: false

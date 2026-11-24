@@ -38,19 +38,15 @@ import androidx.core.content.ContextCompat
 import androidx.test.espresso.Espresso.onView
 import androidx.test.espresso.action.ViewActions
 import androidx.test.espresso.assertion.PositionAssertions.isPartiallyBelow
-import androidx.test.espresso.matcher.RootMatchers
 import androidx.test.espresso.matcher.ViewMatchers
 import androidx.test.espresso.matcher.ViewMatchers.withId
-import androidx.test.espresso.matcher.ViewMatchers.withText
 import androidx.test.uiautomator.By
 import androidx.test.uiautomator.UiObjectNotFoundException
 import androidx.test.uiautomator.UiSelector
 import kotlin.test.assertNotNull
-import mozilla.components.browser.menu.R as menuR
 import mozilla.components.compose.base.R as composeBaseR
 import mozilla.components.compose.browser.toolbar.concept.BrowserToolbarTestTags.ADDRESSBAR_URL_BOX
 import mozilla.components.compose.browser.toolbar.concept.BrowserToolbarTestTags.TABS_COUNTER
-import org.hamcrest.CoreMatchers.allOf
 import org.junit.Assert.assertTrue
 import org.mozilla.fenix.R
 import org.mozilla.fenix.helpers.Constants.RETRY_COUNT
@@ -1151,15 +1147,6 @@ private fun homepageWordmarkText() = itemWithResId(HOMEPAGE_WORDMARK_TEXT)
 private fun navigationToolbar() = itemWithResId("$packageName:id/composable_toolbar")
 
 private fun menuButton() = itemWithDescription(getStringResource(R.string.content_description_menu))
-
-fun deleteFromHistory() =
-    onView(
-            allOf(
-                withId(menuR.id.simple_text),
-                withText(R.string.delete_from_history),
-            )
-        )
-        .inRoot(RootMatchers.isPlatformPopup())
 
 private fun firefoxOptionSetAsDefaultBrowserDialogRadioButton() =
     itemWithClassNameAndIndex(
