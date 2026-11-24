@@ -1109,13 +1109,9 @@ void GCRuntime::markIncomingGrayCrossCompartmentPointers() {
          src = NextIncomingCrossCompartmentPointer(src, true)) {
       JSObject* dst = CrossCompartmentPointerReferent(src);
       MOZ_ASSERT(dst->compartment() == c);
-      MOZ_ASSERT_IF(src->asTenured().isMarkedBlack(),
-                    dst->asTenured().isMarkedBlack());
 
-      if (src->asTenured().isMarkedGray()) {
-        TraceManuallyBarrieredEdge(marker().tracer(), &dst,
-                                   "cross-compartment gray pointer");
-      }
+      TraceManuallyBarrieredEdge(marker().tracer(), &dst,
+                                 "cross-compartment gray pointer");
     }
 
     c->gcIncomingGrayPointers = nullptr;
