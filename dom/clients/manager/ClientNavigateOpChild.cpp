@@ -18,7 +18,6 @@
 #include "nsNetUtil.h"
 #include "nsPIDOMWindow.h"
 #include "nsPIDOMWindowInlines.h"
-#include "nsURLHelper.h"
 
 namespace mozilla::dom {
 
@@ -184,51 +183,8 @@ RefPtr<ClientOpPromise> ClientNavigateOpChild::DoNavigate(
 
   mSerialEventTarget = GetMainThreadSerialEventTarget();
 
-  // In theory we could do the URL work before paying the IPC overhead
-  // cost, but in practice its easier to do it here.  The ClientHandle
-  // may be off-main-thread while this method is guaranteed to always
-  // be main thread.
-  nsCOMPtr<nsIURI> baseURL;
-  nsresult rv = NS_NewURI(getter_AddRefs(baseURL), aArgs.baseURL());
-  if (NS_FAILED(rv)) {
-    // This is rather unexpected: This is the worker URL we passed from the
-    // parent, so we expect this to parse fine!
-    CopyableErrorResult result;
-    result.ThrowInvalidStateError("Invalid worker URL");
-    return ClientOpPromise::CreateAndReject(result, __func__);
-  }
-
-  // There is an edge case for view-source url here. According to the wpt test
-  // windowclient-navigate.https.html, a view-source URL with a relative inner
-  // URL should be treated as an invalid URL. However, we will still resolve it
-  // into a valid view-source URL since the baseURL is involved while creating
-  // the URI. So, an invalid view-source URL will be treated as a valid URL
-  // in this case. To address this, we should not take the baseURL into account
-  // for the view-source URL.
-  bool shouldUseBaseURL = true;
-  nsAutoCString scheme;
-  if (NS_SUCCEEDED(net_ExtractURLScheme(aArgs.url(), scheme)) &&
-      scheme.LowerCaseEqualsLiteral("view-source")) {
-    shouldUseBaseURL = false;
-  }
-
-  nsCOMPtr<nsIURI> url;
-  rv = NS_NewURI(getter_AddRefs(url), aArgs.url(), nullptr,
-                 shouldUseBaseURL ? baseURL.get() : nullptr);
-  if (NS_FAILED(rv)) {
-    // Per https://w3c.github.io/ServiceWorker/#dom-windowclient-navigate step
-    // 2, if the URL fails to parse, we reject with a TypeError.
-    nsPrintfCString err("Invalid URL \"%s\"", aArgs.url().get());
-    CopyableErrorResult result;
-    result.ThrowTypeError(err);
-    return ClientOpPromise::CreateAndReject(result, __func__);
-  }
-
-  if (NS_IsAboutBlankAllowQueryAndFragment(url)) {
-    CopyableErrorResult result;
-    result.ThrowTypeError("Navigation to \"about:blank\" is not allowed");
-    return ClientOpPromise::CreateAndReject(result, __func__);
-  }
+  nsCOMPtr<nsIURI> url = aArgs.uri().get();
+  nsCOMPtr<nsIURI> baseURL = aArgs.baseURI().get();
 
   RefPtr<Document> doc = window->GetExtantDoc();
   if (!doc || !doc->IsActive()) {
@@ -239,11 +195,11 @@ RefPtr<ClientOpPromise> ClientNavigateOpChild::DoNavigate(
 
   nsCOMPtr<nsIPrincipal> principal = doc->NodePrincipal();
 
-  rv = nsContentUtils::GetSecurityManager()->CheckLoadURIWithPrincipal(
+  nsresult rv = nsContentUtils::GetSecurityManager()->CheckLoadURIWithPrincipal(
       principal, url, nsIScriptSecurityManager::STANDARD, doc->InnerWindowID());
   if (NS_FAILED(rv)) {
     nsPrintfCString err("Navigation to \"%s\" is not allowed",
-                        aArgs.url().get());
+                        url->GetSpecOrDefault().get());
     CopyableErrorResult result;
     result.ThrowTypeError(err);
     return ClientOpPromise::CreateAndReject(result, __func__);
@@ -282,7 +238,7 @@ RefPtr<ClientOpPromise> ClientNavigateOpChild::DoNavigate(
     /// just fail to load rather than hitting this failure path. I've
     /// marked them as failing for now until they get fixed to match the
     /// spec.
-    nsPrintfCString err("Invalid URL \"%s\"", aArgs.url().get());
+    nsPrintfCString err("Invalid URL \"%s\"", url->GetSpecOrDefault().get());
     CopyableErrorResult result;
     result.ThrowTypeError(err);
     return ClientOpPromise::CreateAndReject(result, __func__);

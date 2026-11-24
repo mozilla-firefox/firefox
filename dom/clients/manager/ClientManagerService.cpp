@@ -434,8 +434,9 @@ RefPtr<ClientOpPromise> ClientManagerService::Navigate(
   // itself.  Instead it sends a Teardown message to the parent which then
   // calls delete.  That means we can be sure that we are not racing with
   // source destruction here.
-  ClientNavigateOpConstructorArgs args(WrapNotNull(source), aArgs.url(),
-                                       aArgs.baseURL());
+  ClientNavigateOpConstructorArgs args(
+      WrapNotNull(source), NotNull<RefPtr<nsIURI>>(aArgs.uri()),
+      NotNull<RefPtr<nsIURI>>(aArgs.baseURI()));
 
   RefPtr<ClientOpPromise::Private> promise =
       new ClientOpPromise::Private(__func__);

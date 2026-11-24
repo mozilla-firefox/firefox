@@ -15,6 +15,8 @@
 #include "mozilla/dom/WorkerScope.h"
 #include "nsIDUtils.h"
 #include "nsIGlobalObject.h"
+#include "nsNetUtil.h"
+#include "nsURLHelper.h"
 
 namespace mozilla::dom {
 
@@ -172,19 +174,45 @@ already_AddRefed<Promise> Client::Navigate(const nsAString& aURL,
   MOZ_DIAGNOSTIC_ASSERT(workerPrivate->IsServiceWorker());
   workerPrivate->AssertIsOnWorkerThread();
 
+  NS_ConvertUTF16toUTF8 spec(aURL);
+  nsIURI* baseURI = workerPrivate->GetBaseURI();
+
+  // There is an edge case for view-source url here. According to the wpt test
+  // windowclient-navigate.https.html, a view-source URL with a relative inner
+  // URL should be treated as an invalid URL. However, we will still resolve it
+  // into a valid view-source URL since the baseURL is involved while creating
+  // the URI. So, an invalid view-source URL will be treated as a valid URL
+  // in this case. To address this, we should not take the baseURL into account
+  // for the view-source URL.
+  bool shouldUseBaseURL = true;
+  nsAutoCString scheme;
+  if (NS_SUCCEEDED(net_ExtractURLScheme(spec, scheme)) &&
+      scheme.LowerCaseEqualsLiteral("view-source")) {
+    shouldUseBaseURL = false;
+  }
+
+  nsCOMPtr<nsIURI> uri;
+  nsresult rv = NS_NewURI(getter_AddRefs(uri), spec, nullptr,
+                          shouldUseBaseURL ? baseURI : nullptr);
+  if (NS_FAILED(rv)) {
+    // Per https://w3c.github.io/ServiceWorker/#dom-windowclient-navigate step
+    // 2, if the URL fails to parse, we reject with a TypeError.
+    aRv.ThrowTypeError<MSG_INVALID_URL>(spec);
+    return nullptr;
+  }
+
+  if (NS_IsAboutBlankAllowQueryAndFragment(uri)) {
+    aRv.ThrowTypeError("Navigation to \"about:blank\" is not allowed");
+    return nullptr;
+  }
+
   RefPtr<Promise> outerPromise = Promise::Create(mGlobal, aRv);
   if (aRv.Failed()) {
     return outerPromise.forget();
   }
 
-  nsCString baseURL;
-  nsresult rv = workerPrivate->GetBaseURI()->GetSpec(baseURL);
-  if (NS_FAILED(rv)) {
-    outerPromise->MaybeReject(rv);
-    return outerPromise.forget();
-  }
-
-  ClientNavigateArgs args(mData->info(), NS_ConvertUTF16toUTF8(aURL), baseURL,
+  ClientNavigateArgs args(mData->info(), WrapNotNull(uri.get()),
+                          WrapNotNull(baseURI),
                           workerPrivate->GetServiceWorkerDescriptor().ToIPC());
   RefPtr<Client> self = this;
 

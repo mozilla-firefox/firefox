@@ -106,8 +106,8 @@ struct ClientFocusArgs
 struct ClientNavigateArgs
 {
   IPCClientInfo target;
-  nsCString url;
-  nsCString baseURL;
+  nsIURI uri;
+  nsIURI baseURI;
   IPCServiceWorkerDescriptor serviceWorker;
 };
 
@@ -168,8 +168,8 @@ struct ClientList
 struct ClientNavigateOpConstructorArgs
 {
   PClientSource target;
-  nsCString url;
-  nsCString baseURL;
+  nsIURI uri;
+  nsIURI baseURI;
 };
 
 union ClientOpResult
