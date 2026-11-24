@@ -3451,7 +3451,7 @@ pref("browser.search.removeEngineInfobar.enabled", true);
 // user. This is solely intended as a rollout button - it will go away once the
 // new configuration has been rolled out.
 // Whether search-config-v3 is enabled.
-pref("browser.search.configV3.featureGate", false);
+pref("browser.search.configV3.featureGate", true);
 
 // GMPInstallManager prefs
 
