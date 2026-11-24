@@ -2726,6 +2726,11 @@ nsChangeHint nsStyleDisplay::CalcDifference(
         aOldStyle.StylePosition()->NeedsHypotheticalPositionIfAbsPos()) {
       hint |=
           nsChangeHint_NeedReflow | nsChangeHint_ReflowChangesSizeOrPosition;
+    } else if (mWebkitLineClamp.webkit_legacy) {
+      // For legacy -webkit-line-clamp, the specified display must be
+      // -webkit-box. If it has changed, so has whether line-clamp applies,
+      // therefore reflow.
+      hint |= NS_STYLE_HINT_REFLOW;
     } else {
       hint |= nsChangeHint_NeutralChange;
     }
