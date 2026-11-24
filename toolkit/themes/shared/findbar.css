@@ -32,12 +32,6 @@ xul|findbar {
     color: var(--toolbar-text-color);
   }
 
-  @media not -moz-pref("browser.nova.enabled") {
-    border-top-color: ThreeDShadow;
-    background-color: -moz-dialog;
-    --findbar-container-height: 28px;
-  }
-
   &:where([hidden]) {
     /* Override display:none to make the transition work. `!important` beats the
        global `[hidden] { display: none !important }` rule. */
@@ -98,18 +92,6 @@ xul|findbar {
   width: 18em;
   box-sizing: border-box;
 
-  @media not -moz-pref("browser.nova.enabled") {
-    border-radius: var(--border-radius-small);
-    border: 1px solid var(--input-border-color);
-    min-height: auto;
-    padding: 2px 5px;
-
-    &:focus {
-      box-shadow: 0 1px 3px rgba(0, 0, 0, 0.23);
-      outline-color: var(--toolbar-field-border-color-focus);
-    }
-  }
-
   &:focus {
     background-color: var(--toolbar-field-background-color-focus);
     color: var(--toolbar-field-text-color-focus);
@@ -148,11 +130,6 @@ xul|findbar {
   color: inherit;
   border-radius: var(--border-radius-circle);
   padding: var(--space-xsmall) var(--space-small);
-
-  @media not -moz-pref("browser.nova.enabled") {
-    border-radius: var(--border-radius-small);
-    padding: 4px 7px;
-  }
 
   @media (prefers-contrast) {
     border: var(--border-width) solid var(--toolbarbutton-outline-color);
@@ -239,10 +216,5 @@ xul|findbar {
 
   &:hover:active {
     background-color: var(--toolbarbutton-background-color-active, rgba(190, 190, 190, 0.4));
-  }
-
-  @media not -moz-pref("browser.nova.enabled") {
-    border-radius: var(--border-radius-small);
-    width: 24px;
   }
 }
