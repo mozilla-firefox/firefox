@@ -360,8 +360,8 @@ void dav1d_refmvs_find(const refmvs_tile *const rt,
     mv gmv[2], tgmv[2];
 
     *cnt = 0;
-    assert(ref.ref[0] >=  0 && ref.ref[0] <= 8 &&
-           ref.ref[1] >= -1 && ref.ref[1] <= 8);
+    assert(ref.ref[0] >=  0 && ref.ref[0] <= 7 &&
+           ref.ref[1] >= -1 && ref.ref[1] <= 7);
     if (ref.ref[0] > 0) {
         tgmv[0] = get_gmv_2d(&rf->frm_hdr->gmv[ref.ref[0] - 1],
                              bx4, by4, bw4, bh4, rf->frm_hdr);

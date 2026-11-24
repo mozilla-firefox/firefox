@@ -203,7 +203,7 @@
 #if CONFIG_ASM_DEBUG
 .macro call_c func, line, msg, first, last, ptr, offset
         push            {lr}
-        mov             lr,  sp
+        add             lr,  sp,  #4
         push            {lr}
         push            {r0-r12}
         mrs             lr,  cpsr
@@ -211,13 +211,15 @@
         vpush           {d16-d31}
         vpush           {d0-d15}
         add             r0,  \ptr, #\offset
-        push            {r0}
+        // r0 is parameter 5 to the function, pushed on the stack.
+        // r1 is unused, but pushed to keep the stack aligned to 8 bytes.
+        push            {r0-r1}
         ldr             r0,  =\line
         adr             r1,  777f
         mov             r2,  \first
         mov             r3,  \last
         bl              X(\func)
-        pop             {r0}
+        pop             {r0-r1}
         vpop            {d0-d15}
         vpop            {d16-d31}
         pop             {lr}
@@ -228,8 +230,8 @@
 .endm
 
 #define CALL_C(func, msg, first, last, ptr, offset) \
-        call_c func, __LINE__, msg, first, last, ptr, offset; \
-        b 778f; \
+        call_c          func, __LINE__, msg, first, last, ptr, offset; \
+        b               778f; \
     777: \
         .asciz msg; \
         .align 2; \
@@ -241,7 +243,21 @@
 #define DUMP_SIMD_S16(msg, first, last) CALL_C(dump_simd_s16, msg, first, last, sp, 0)
 #define DUMP_SIMD_U16(msg, first, last) CALL_C(dump_simd_u16, msg, first, last, sp, 0)
 #define DUMP_SIMD_S32(msg, first, last) CALL_C(dump_simd_s32, msg, first, last, sp, 0)
+#define DUMP_SIMD_U32(msg, first, last) CALL_C(dump_simd_u32, msg, first, last, sp, 0)
+#define DUMP_SIMD_S64(msg, first, last) CALL_C(dump_simd_s64, msg, first, last, sp, 0)
+#define DUMP_SIMD_U64(msg, first, last) CALL_C(dump_simd_u64, msg, first, last, sp, 0)
+#define DUMP_SIMD_F32(msg, first, last) CALL_C(dump_simd_f32, msg, first, last, sp, 0)
+#define DUMP_SIMD_F64(msg, first, last) CALL_C(dump_simd_f64, msg, first, last, sp, 0)
+#define DUMP_MEM_S8(msg, reg, n)        CALL_C(dump_simd_s8,  msg, 0, n-1, reg, 0)
+#define DUMP_MEM_U8(msg, reg, n)        CALL_C(dump_simd_u8,  msg, 0, n-1, reg, 0)
 #define DUMP_MEM_S16(msg, reg, n)       CALL_C(dump_simd_s16, msg, 0, n-1, reg, 0)
+#define DUMP_MEM_U16(msg, reg, n)       CALL_C(dump_simd_u16, msg, 0, n-1, reg, 0)
+#define DUMP_MEM_S32(msg, reg, n)       CALL_C(dump_simd_s32, msg, 0, n-1, reg, 0)
+#define DUMP_MEM_U32(msg, reg, n)       CALL_C(dump_simd_u32, msg, 0, n-1, reg, 0)
+#define DUMP_MEM_S64(msg, reg, n)       CALL_C(dump_simd_s64, msg, 0, n-1, reg, 0)
+#define DUMP_MEM_U64(msg, reg, n)       CALL_C(dump_simd_u64, msg, 0, n-1, reg, 0)
+#define DUMP_MEM_F32(msg, reg, n)       CALL_C(dump_simd_f32, msg, 0, n-1, reg, 0)
+#define DUMP_MEM_F64(msg, reg, n)       CALL_C(dump_simd_f64, msg, 0, n-1, reg, 0)
 #define DUMP_GPR(msg, first, last)      CALL_C(dump_gpr,      msg, first, last, sp, 260)
 
 #endif /* CONFIG_ASM_DEBUG */

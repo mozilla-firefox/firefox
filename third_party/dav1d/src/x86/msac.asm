@@ -31,6 +31,9 @@ SECTION_RODATA 64 ; avoids cacheline splits
 min_prob:  dw 60, 56, 52, 48, 44, 40, 36, 32, 28, 24, 20, 16, 12, 8, 4, 0
 pw_0xff00: times 8 dw 0xff00
 pw_32:     times 8 dw 32
+pw_cnt_inc: times 8 dw 0
+            dw 1
+            times 7 dw 0
 
 %if ARCH_X86_64
 %define resp   resq
@@ -107,29 +110,30 @@ cglobal msac_decode_symbol_adapt4, 0, 6, 6
     psubusw        m1, m3
     pxor           m2, m2
     pcmpeqw        m1, m2 ; c >= v
-    pmovmskb      eax, m1
     test          t3d, t3d
     jz .renorm ; !allow_update_cdf
 
 ; update_cdf:
     movzx         t3d, word [t1+t4*2] ; count
+    lea            t2, [rax+t2*2+18]  ; 2 * (8 - n_symbols)
     pcmpeqw        m2, m2
-    mov           t2d, t3d
+    cmp           t3d, 32
+    cmovb         rax, t2
     shr           t3d, 4
     cmp           t4d, 3
     sbb           t3d, -5 ; (count >> 4) + (n_symbols > 2) + 4
-    cmp           t2d, 32
-    adc           t2d, 0  ; count + (count < 32)
+    movq           m4, [rax-pw_0xff00+pw_cnt_inc] ; count < 32 in the count lane
     movd           m3, t3d
     pavgw          m2, m1 ; i >= val ? -1 : 32768
     psubw          m2, m0 ; for (i = 0; i < val; i++)
     psubw          m0, m1 ;     cdf[i] += (32768 - cdf[i]) >> rate;
     psraw          m2, m3 ; for (; i < n_symbols; i++)
     paddw          m0, m2 ;     cdf[i] += ((  -1 - cdf[i]) >> rate) + 1;
+    paddw          m0, m4 ; count + (count < 32)
     movq         [t1], m0
-    mov     [t1+t4*2], t2w
 
 .renorm:
+    pmovmskb      eax, m1
     tzcnt         eax, eax
     mov            t4, [t0+msac.dif]
     movzx         t1d, word [buf+rax+16] ; v
@@ -243,25 +247,25 @@ cglobal msac_decode_symbol_adapt8, 0, 6, 6
     psubusw        m1, m3
     pxor           m2, m2
     pcmpeqw        m1, m2
-    pmovmskb      eax, m1
     test          t3d, t3d
     jz m(msac_decode_symbol_adapt4, SUFFIX).renorm
     movzx         t3d, word [t1+t4*2]
+    lea            t2, [rax+t2*2+18]
     pcmpeqw        m2, m2
-    mov           t2d, t3d
+    cmp           t3d, 32
+    cmovb         rax, t2
     shr           t3d, 4
     cmp           t4d, 3 ; may be called with n_symbols <= 2
     sbb           t3d, -5
-    cmp           t2d, 32
-    adc           t2d, 0
+    movu           m4, [rax-pw_0xff00+pw_cnt_inc]
     movd           m3, t3d
     pavgw          m2, m1
     psubw          m2, m0
     psubw          m0, m1
     psraw          m2, m3
     paddw          m0, m2
+    paddw          m0, m4
     mova         [t1], m0
-    mov     [t1+t4*2], t2w
     jmp m(msac_decode_symbol_adapt4, SUFFIX).renorm
 
 cglobal msac_decode_symbol_adapt16, 0, 6, 6
@@ -491,8 +495,8 @@ cglobal msac_decode_bool, 0, 6, 0
     psubw          m0, m1
     psraw          m2, m3
     paddw          m0, m2
+    pinsrw         m0, t2d, 3
     movq         [t1], m0
-    mov      [t1+3*2], t2w
 %endif
     tzcnt         eax, eax
     movzx         ecx, word [buf+rax+16]

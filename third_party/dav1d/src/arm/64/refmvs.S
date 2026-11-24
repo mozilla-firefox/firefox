@@ -147,7 +147,7 @@ function save_tmvs_neon, export=1
         add             x9,  x9,  w12, uxtw #1    // cand_b += bw8*2
         cmp             x9,  x10
         mov             v2.8b,   v0.8b
-        b.ge            3f
+        b.hs            3f
 
         ldrb            w15, [x9, #10]            // cand_b->bs
         add             x16, x9,  #8
@@ -186,13 +186,13 @@ function save_tmvs_neon, export=1
         ext             v6.16b,  v4.16b,  v5.16b,  #4
 
         blr             x11
-        b.ge            4f  // if (cand_b >= end)
+        b.hs            4f  // if (cand_b >= end)
         mov             v0.16b,  v4.16b
         mov             v1.16b,  v5.16b
         mov             v2.16b,  v6.16b
         cmp             x9,  x10
         blr             x15
-        b.lt            2b  // if (cand_b < end)
+        b.lo            2b  // if (cand_b < end)
 
 4:
         subs            w5,  w5,  #1              // h--

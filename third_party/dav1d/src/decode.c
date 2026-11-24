@@ -1259,7 +1259,8 @@ static int decode_b(Dav1dTaskContext *const t,
         if (f->frame_hdr->loopfilter.level_y[0] ||
             f->frame_hdr->loopfilter.level_y[1])
         {
-            dav1d_create_lf_mask_intra(t->lf_mask, f->lf.level, f->b4_stride,
+            dav1d_create_lf_mask_intra(&t->c->lf_mask_dsp, t->lf_mask, f->lf.level,
+                                       f->b4_stride,
                                        (const uint8_t (*)[8][2])
                                        &ts->lflvl[b->seg_id][0][0][0],
                                        t->bx, t->by, f->w4, f->h4, bs,
@@ -1935,10 +1936,11 @@ static int decode_b(Dav1dTaskContext *const t,
                 ytx  = (enum RectTxfmSize) TX_4X4;
                 uvtx = (enum RectTxfmSize) TX_4X4;
             }
-            dav1d_create_lf_mask_inter(t->lf_mask, f->lf.level, f->b4_stride, lf_lvls,
-                                       t->bx, t->by, f->w4, f->h4, b->skip, bs,
-                                       ytx, tx_split, uvtx, f->cur.p.layout,
-                                       &t->a->tx_lpf_y[bx4], &t->l.tx_lpf_y[by4],
+            dav1d_create_lf_mask_inter(&t->c->lf_mask_dsp, t->lf_mask, f->lf.level,
+                                       f->b4_stride, lf_lvls, t->bx, t->by, f->w4,
+                                       f->h4, b->skip, bs, ytx, tx_split, uvtx,
+                                       f->cur.p.layout, &t->a->tx_lpf_y[bx4],
+                                       &t->l.tx_lpf_y[by4],
                                        has_chroma ? &t->a->tx_lpf_uv[cbx4] : NULL,
                                        has_chroma ? &t->l.tx_lpf_uv[cby4] : NULL);
         }
@@ -3043,15 +3045,17 @@ int dav1d_decode_frame_init(Dav1dFrameContext *const f) {
     // update allocation for loopfilter masks
     if (num_sb128 != f->lf.mask_sz) {
         dav1d_free(f->lf.mask);
-        dav1d_free(f->lf.level);
+        dav1d_free_aligned(f->lf.level[0]);
         f->lf.mask = dav1d_malloc(ALLOC_LF, sizeof(*f->lf.mask) * num_sb128);
         // over-allocate by 3 bytes since some of the SIMD implementations
-        // index this from the level type and can thus over-read by up to 3
-        f->lf.level = dav1d_malloc(ALLOC_LF, sizeof(*f->lf.level) * num_sb128 * 32 * 32 + 3);
-        if (!f->lf.mask || !f->lf.level) {
+        // index these from the level type and can thus over-read by up to 3
+        size_t level_bytes = sizeof(*f->lf.level[0]) * num_sb128 * 32 * 32;
+        f->lf.level[0] = dav1d_alloc_aligned(ALLOC_LF, 2 * level_bytes + 3, 64);
+        if (!f->lf.mask || !f->lf.level[0]) {
             f->lf.mask_sz = 0;
             goto error;
         }
+        f->lf.level[1] = (void*)((uint8_t*)f->lf.level[0] + level_bytes);
         if (c->n_fc > 1) {
             dav1d_free(f->frame_thread.b);
             f->frame_thread.b = dav1d_malloc(ALLOC_BLOCK, sizeof(*f->frame_thread.b) *
@@ -3351,7 +3355,7 @@ int dav1d_decode_frame(Dav1dFrameContext *const f) {
                 }
             }
             pthread_mutex_unlock(&f->task_thread.ttd->lock);
-            res = f->task_thread.retval;
+            if (!res) res = f->task_thread.retval;
         } else {
             res = dav1d_decode_frame_main(f);
             if (!res && f->frame_hdr->refresh_context && f->task_thread.update_set) {

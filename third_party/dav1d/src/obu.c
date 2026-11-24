@@ -352,6 +352,11 @@ static int read_frame_size(Dav1dContext *const c, GetBits *const gb,
                 if (!ref->p.frame_hdr) return -1;
                 hdr->width[1] = ref->p.frame_hdr->width[1];
                 hdr->height = ref->p.frame_hdr->height;
+                if (hdr->width[1] > seqhdr->max_width ||
+                    hdr->height > seqhdr->max_height)
+                {
+                    return -1;
+                }
                 hdr->render_width = ref->p.frame_hdr->render_width;
                 hdr->render_height = ref->p.frame_hdr->render_height;
                 hdr->super_res.enabled = seqhdr->super_res && dav1d_get_bit(gb);
@@ -372,6 +377,11 @@ static int read_frame_size(Dav1dContext *const c, GetBits *const gb,
     if (hdr->frame_size_override) {
         hdr->width[1] = dav1d_get_bits(gb, seqhdr->width_n_bits) + 1;
         hdr->height = dav1d_get_bits(gb, seqhdr->height_n_bits) + 1;
+        if (hdr->width[1] > seqhdr->max_width ||
+            hdr->height > seqhdr->max_height)
+        {
+            return -1;
+        }
     } else {
         hdr->width[1] = seqhdr->max_width;
         hdr->height = seqhdr->max_height;

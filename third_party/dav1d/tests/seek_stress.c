@@ -125,7 +125,7 @@ static int decode_rand(DemuxerContext *const in, Dav1dContext *const c,
     const int num_frames = xor128_rand() % (int)(fps * 5);
     for (int i = 0; i < num_frames; i++) {
         if ((res = decode_frame(&p, c, data))) break;
-        if (input_read(in, data) || data->sz == 0) break;
+        if (!data->sz && (input_read(in, data) || !data->sz)) break;
     }
     return res;
 }
@@ -135,8 +135,9 @@ static int decode_all(DemuxerContext *const in,
 {
     int res = 0;
     Dav1dPicture p;
-    do { if ((res = decode_frame(&p, c, data))) break;
-    } while (!input_read(in, data) && data->sz > 0);
+    do {
+        if ((res = decode_frame(&p, c, data))) break;
+    } while (data->sz > 0 || (!input_read(in, data) && data->sz > 0));
     return res;
 }
 
@@ -146,7 +147,9 @@ static int seek(DemuxerContext *const in, Dav1dContext *const c,
     int res;
     if ((res = input_seek(in, pts))) return res;
     Dav1dSequenceHeader seq;
-    do { if ((res = input_read(in, data))) break;
+    do {
+        dav1d_data_unref(data);
+        if ((res = input_read(in, data))) break;
     } while (dav1d_parse_sequence_header(&seq, data->data, data->sz));
     dav1d_flush(c);
     return res;
@@ -164,7 +167,7 @@ int main(const int argc, char *const *const argv) {
     Dav1dSettings lib_settings;
     DemuxerContext *in;
     Dav1dContext *c;
-    Dav1dData data;
+    Dav1dData data = { 0 };
     unsigned total, i_fps[2], i_timebase[2];
     double timebase, spf, fps;
     uint64_t pts;
@@ -173,13 +176,18 @@ int main(const int argc, char *const *const argv) {
     parse(argc, argv, &cli_settings, &lib_settings);
 
     if (input_open(&in, "ivf", cli_settings.inputfile,
-                   i_fps, &total, i_timebase) < 0 ||
-        !i_timebase[0] || !i_timebase[1] ||  !i_fps[0] || !i_fps[1])
+                   i_fps, &total, i_timebase) < 0)
     {
         return EXIT_SUCCESS;
     }
-    if (dav1d_open(&c, &lib_settings))
+    if (!i_timebase[0] || !i_timebase[1] || !i_fps[0] || !i_fps[1]) {
+        input_close(in);
+        return EXIT_SUCCESS;
+    }
+    if (dav1d_open(&c, &lib_settings)) {
+        input_close(in);
         return EXIT_FAILURE;
+    }
 
     timebase = (double)i_timebase[1] / i_timebase[0];
     spf = (double)i_fps[1] / i_fps[0];
@@ -226,7 +234,8 @@ int main(const int argc, char *const *const argv) {
         shift += 5;
         if (shift > total)
             shift = total;
-    } while (seek(in, c, FRAME_OFFSET_TO_PTS(total - shift), &data));
+    } while (seek(in, c, FRAME_OFFSET_TO_PTS(total - shift), &data) &&
+             shift < total);
 
     // simulate seeking after the end of the file
     for (int i = 0; i < NUM_END_SEEK; i++) {
@@ -237,6 +246,7 @@ int main(const int argc, char *const *const argv) {
     }
 
 end:
+    dav1d_data_unref(&data);
     input_close(in);
     dav1d_close(&c);
     return EXIT_SUCCESS;
