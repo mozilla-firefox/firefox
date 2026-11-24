@@ -1,0 +1,69 @@
+
+<!DOCTYPE html>
+<html>
+<head>
+  <meta charset="utf-8">
+  <title>Bug 1876303 - Report-Only meta console error</title>
+  <script src="/tests/SimpleTest/SimpleTest.js"></script>
+</head>
+<body>
+<script>
+SimpleTest.waitForExplicitFinish();
+
+const reportOnly = "Content-Security-Policy-Report-Only";
+
+SimpleTest.expectConsoleMessages(
+  () => {
+    // Test 1: Set attributes before binding.
+    const m1 = document.createElement("meta");
+    m1.setAttribute("http-equiv", reportOnly);
+    m1.setAttribute("content", "script-src 'none'");
+    document.head.append(m1);
+
+    // Test 2: Set http-equiv before content.
+    const m2 = document.createElement("meta");
+    document.head.append(m2);
+    m2.setAttribute("http-equiv", reportOnly);
+    m2.setAttribute("content", "object-src 'none'");
+
+    // Test 3: Set content before http-equiv.
+    const m3 = document.createElement("meta");
+    document.head.append(m3);
+    m3.setAttribute("content", "img-src 'none'");
+    m3.setAttribute("http-equiv", reportOnly);
+
+    // Verify the ignored policy does not block scripts.
+    window.scriptExecuted = false;
+
+    const script = document.createElement("script");
+    script.textContent = "window.scriptExecuted = true;";
+    document.head.append(script);
+
+    ok(window.scriptExecuted,
+       "Report-Only meta must not enforce CSP");
+  },
+  [
+    {
+      errorMessage: /script-src 'none'.*policy has been ignored/,
+      category: "CSP_ReportOnlyMetaIgnored",
+      isScriptError: true,
+      isWarning: true,
+    },
+    {
+      errorMessage: /object-src 'none'.*policy has been ignored/,
+      category: "CSP_ReportOnlyMetaIgnored",
+      isScriptError: true,
+      isWarning: true,
+    },
+    {
+      errorMessage: /img-src 'none'.*policy has been ignored/,
+      category: "CSP_ReportOnlyMetaIgnored",
+      isScriptError: true,
+      isWarning: true,
+    },
+  ],
+  () => SimpleTest.finish()
+);
+</script>
+</body>
+</html>
