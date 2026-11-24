@@ -1549,6 +1549,21 @@ features:
         type: Boolean
         default: false
 
+  qwac-ui:
+    contacts:
+      - lmccracken@mozilla.com
+    description: >
+      Feature that shows the certificate details of the current website in the Trust Panel, including the EU trust mark
+      for websites that present a Qualified Website Authentication Certificate (QWAC).
+    variables:
+      enabled:
+        description: >
+          If true, the Trust Panel header shows a "Secure connection" link that opens the certificate details sub-page,
+          which shows the EU trust mark for websites that present a QWAC. If false, the Trust Panel shows the previous
+          connection security row instead, and neither the sub-page nor the EU trust mark is shown.
+        type: Boolean
+        default: true
+
 types:
   objects:
     GleanServerKnobsConfiguration:

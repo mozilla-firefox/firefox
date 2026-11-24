@@ -188,8 +188,8 @@ class UnifiedTrustPanelPage(composeRule: AndroidComposeTestRule<HomeActivityInte
 
     private fun verifySiteSecurityState(isSecure: Boolean) {
         if (isSecure) {
+            // With the QWAC UI, the "Verified by" details are on the certificate details sub-page, not the panel.
             mozVerify(UnifiedTrustPanelSelectors.CONNECTION_SECURE)
-            mozVerify(UnifiedTrustPanelSelectors.CONNECTION_VERIFIED_BY)
         } else {
             mozVerify(UnifiedTrustPanelSelectors.CONNECTION_NOT_SECURE)
         }

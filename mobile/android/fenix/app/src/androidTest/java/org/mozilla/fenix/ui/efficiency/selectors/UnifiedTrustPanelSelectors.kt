@@ -190,13 +190,6 @@ object UnifiedTrustPanelSelectors : SelectorContainer {
             description = "Connection: secure",
         )
 
-    val CONNECTION_VERIFIED_BY =
-        Selector(
-            strategy = SelectorStrategy.COMPOSE_BY_TEXT_SUBSTRING,
-            value = "Verified by",
-            description = "Connection: verified-by line",
-        )
-
     val CONNECTION_NOT_SECURE =
         Selector(
             strategy = SelectorStrategy.COMPOSE_BY_TEXT,

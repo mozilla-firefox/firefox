@@ -529,7 +529,8 @@
     <string name="pref_key_enable_menu_customization_screen" translatable="false">pref_key_enable_menu_customization_screen</string>
     <string name="pref_key_enable_account_settings_new_ui" translatable="false">pref_key_enable_account_settings_new_ui</string>
     <string name="pref_key_enable_sync_decoupling" translatable="false">pref_key_enable_sync_decoupling</string>
-    <string name="pref_key_enable_qwac_ui" translatable="false">pref_key_enable_qwac_ui</string>
+    <!-- Renamed when the QWAC UI moved to Nimbus, so that values saved from the old XML default of false are ignored. -->
+    <string name="pref_key_enable_qwac_ui" translatable="false">pref_key_enable_qwac_ui_v2</string>
     <!-- Preference for the feature flag -->
     <string name="pref_key_enable_shake_to_summarize" translatable="false">pref_key_enable_shake_to_summarize</string>
     <string name="pref_key_enable_weekly_privacy_notification" translatable="false">pref_key_enable_weekly_privacy_notification</string>

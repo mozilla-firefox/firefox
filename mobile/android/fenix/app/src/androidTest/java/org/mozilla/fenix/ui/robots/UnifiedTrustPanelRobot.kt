@@ -289,16 +289,13 @@ class UnifiedTrustPanelRobot {
             Log.i(TAG, "verifyTheSiteSecurityOption: Verified that the web site is secure")
             Log.i(
                 TAG,
-                "verifyTheSiteSecurityOption: Trying to verify that the \"Secure connection\" option and \"Verified by\" description are displayed",
+                "verifyTheSiteSecurityOption: Trying to verify that the \"Secure connection\" link is displayed",
             )
+            // With the QWAC UI, the "Verified by" details are on the certificate details sub-page, not the panel.
             composeTestRule
                 .onNodeWithText(getStringResource(R.string.connection_security_panel_secure), useUnmergedTree = true)
                 .assertIsDisplayed()
-            composeTestRule.onNodeWithText("Verified by", useUnmergedTree = true, substring = true).assertIsDisplayed()
-            Log.i(
-                TAG,
-                "verifyTheSiteSecurityOption: Verified that the \"Secure connection\" option and \"Verified by\" description are displayed",
-            )
+            Log.i(TAG, "verifyTheSiteSecurityOption: Verified that the \"Secure connection\" link is displayed")
         } else {
             Log.i(TAG, "verifyTheSiteSecurityOption: Verified that the web site is not secure")
             Log.i(
