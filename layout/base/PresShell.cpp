@@ -4570,9 +4570,7 @@ static inline void AssertFrameTreeIsSane(const PresShell& aPresShell) {
 }
 
 void PresShell::DoFlushPendingNotifications(mozilla::ChangesToFlush aFlush) {
-  // FIXME(emilio, bug 1530177): Turn into a release assert when bug 1530188 and
-  // bug 1530190 are fixed.
-  MOZ_DIAGNOSTIC_ASSERT(!mForbiddenToFlush, "This is bad!");
+  MOZ_RELEASE_ASSERT(!mForbiddenToFlush, "This is bad!");
 
   // Per our API contract, hold a strong ref to ourselves until we return.
   RefPtr<PresShell> kungFuDeathGrip = this;
