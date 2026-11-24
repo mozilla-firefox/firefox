@@ -411,6 +411,9 @@ class _SessionStore {
   // windows yet to be restored
   #restoreCount = -1;
 
+  // The number of windows in the current restore, for logging
+  #restoreTotalCount = 0;
+
   // For each <browser> element, records the SHistoryListener.
   #browserSHistoryListener = new WeakMap();
 
@@ -1052,7 +1055,7 @@ class _SessionStore {
     this.#sessionOutcomeRecorded = true;
     Glean.sessionRestore.startupSessionOutcome.record({ outcome });
     this.#log.debug(
-      `Session outcome: ${outcome}, ${this.#restoreCount} windows`
+      `Session outcome: ${outcome}, ${this.#restoreTotalCount} windows`
     );
   }
 
@@ -1887,9 +1890,9 @@ class _SessionStore {
           Glean.sessionRestore.startupTimeline.sessionRestoreRestoring.set(
             Services.telemetry.msSinceProcessStart()
           );
-          this.#restoreCount = aInitialState.windows
-            ? aInitialState.windows.length
-            : 0;
+          this.#beginRestoreWindowsCount(
+            aInitialState.windows ? aInitialState.windows.length : 0
+          );
 
           // global data must be restored before #restoreWindow is called so that
           // it happens before observers are notified
@@ -1935,9 +1938,11 @@ class _SessionStore {
         // global data must be restored before #restoreWindow is called so that
         // it happens before observers are notified
         this.#globalState.setFromState(this.#deferredInitialState);
-        this.#restoreCount = this.#deferredInitialState.windows
-          ? this.#deferredInitialState.windows.length
-          : 0;
+        this.#beginRestoreWindowsCount(
+          this.#deferredInitialState.windows
+            ? this.#deferredInitialState.windows.length
+            : 0
+        );
         this.#restoreWindows(aWindow, this.#deferredInitialState, {
           firstWindow: true,
           restoreSource: "deferred_initial_state",
@@ -2003,7 +2008,7 @@ class _SessionStore {
 
         if (newWindowState) {
           // Ensure that the window state isn't hidden
-          this.#restoreCount = 1;
+          this.#beginRestoreWindowsCount(1);
           let state = { windows: [newWindowState] };
           let options = { overwriteTabs: this.#isCmdLineEmpty(aWindow, state) };
           this.#restoreWindow(aWindow, newWindowState, options);
@@ -3723,7 +3728,7 @@ class _SessionStore {
 
     var window = this.#getTopWindow();
     if (!window) {
-      this.#restoreCount = 1;
+      this.#beginRestoreWindowsCount(1);
       this.#openWindowWithState(state);
       return;
     }
@@ -3743,7 +3748,7 @@ class _SessionStore {
     }
 
     // determine how many windows are meant to be restored
-    this.#restoreCount = state.windows ? state.windows.length : 0;
+    this.#beginRestoreWindowsCount(state.windows ? state.windows.length : 0);
 
     // global data must be restored before #restoreWindow is called so that
     // it happens before observers are notified
@@ -5389,7 +5394,7 @@ class _SessionStore {
 
     // We're technically doing a restore, so set things up so we send the
     // notification when we're done. We want to send "sessionstore-browser-state-restored".
-    this.#restoreCount = lastSessionState.windows.length;
+    this.#beginRestoreWindowsCount(lastSessionState.windows.length);
     this.#browserSetState = true;
 
     // We want to re-use the last opened window instead of opening a new one in
@@ -6072,6 +6077,7 @@ class _SessionStore {
       if (!winData || !winData.tabs || !winData.tabs[0]) {
         this.#log.debug(`_openWindows, skipping window with no tabs data`);
         this.#restoreCount--;
+        this.#restoreTotalCount--;
         continue;
       }
       windowsOpened.push(this.#openWindowWithState({ windows: [winData] }));
@@ -8124,6 +8130,16 @@ class _SessionStore {
     return [defaultState, state];
   }
 
+  /**
+   * Starts counting a new restore of numWindows windows.
+   *
+   * @param {number} numWindows
+   */
+  #beginRestoreWindowsCount(numWindows) {
+    this.#restoreCount = numWindows;
+    this.#restoreTotalCount = numWindows;
+  }
+
   #sendRestoreCompletedNotifications() {
     // not all windows restored, yet
     if (this.#restoreCount > 1) {
@@ -8143,7 +8159,7 @@ class _SessionStore {
     if (!this.#browserSetState) {
       this.#recordSessionOutcome("restored");
       Services.obs.notifyObservers(null, NOTIFY_WINDOWS_RESTORED);
-      this.#log.debug(`All ${this.#restoreCount} windows restored`);
+      this.#log.debug(`All ${this.#restoreTotalCount} windows restored`);
       this.#maybeOpenNewTabAfterRestore();
       this.#deferredAllWindowsRestored.resolve();
     } else {
