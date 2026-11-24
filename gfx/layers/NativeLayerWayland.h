@@ -94,7 +94,7 @@ class NativeLayerRootWayland final : public NativeLayerRoot {
   }
 
   already_AddRefed<widget::DRMFormat> GetDRMFormat() {
-    return do_AddRef(static_cast<widget::DRMFormat*>(mDRMFormat));
+    return do_AddRef(mDRMFormat.load());
   }
   void SetDRMFormat(widget::DRMFormat* aFormat);
 

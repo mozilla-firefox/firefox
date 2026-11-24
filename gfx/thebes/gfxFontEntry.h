@@ -613,7 +613,7 @@ class gfxFontEntry {
   already_AddRefed<gfxCharacterMap> GetCharacterMapAddRefed() const
       MOZ_EXCLUDES(mLock) {
     mozilla::AutoReadLock lock(mLock);
-    RefPtr map = static_cast<gfxCharacterMap*>(mCharacterMap);
+    RefPtr map = mCharacterMap.load();
     return map.forget();
   }
 

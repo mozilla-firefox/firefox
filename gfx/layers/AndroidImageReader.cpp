@@ -977,7 +977,7 @@ void AndroidImageReader::MaybeRenderFirstFrame(
 bool AndroidImageReader::DoUpdateTexImage(const MonitorAutoLock& aProofOfLock,
                                           AndroidMediaCodecFrameId aFrameId,
                                           CachePolicy aCachePolicy) {
-  MOZ_ASSERT(static_cast<int32_t>(mAcquiredImageCount) <= mMaxImageCount);
+  MOZ_ASSERT(mAcquiredImageCount.load() <= mMaxImageCount);
 
   if (IsStopped() || mCurrentFrameId == aFrameId) {
     return false;
@@ -1013,7 +1013,7 @@ bool AndroidImageReader::DoUpdateTexImage(const MonitorAutoLock& aProofOfLock,
   // requested frame is still pending.
   bool acquiredAnyImage = false;
   auto ensureCapacity = [&]() MOZ_REQUIRES(mMonitor) {
-    if (static_cast<int32_t>(mAcquiredImageCount) < mMaxImageCount) {
+    if (mAcquiredImageCount.load() < mMaxImageCount) {
       return true;
     }
     if (aCachePolicy == CachePolicy::PreserveOnFull) {
@@ -1029,7 +1029,7 @@ bool AndroidImageReader::DoUpdateTexImage(const MonitorAutoLock& aProofOfLock,
       MonitorAutoUnlock unlock(mMonitor);
       previous = nullptr;
     }
-    return static_cast<int32_t>(mAcquiredImageCount) < mMaxImageCount;
+    return mAcquiredImageCount.load() < mMaxImageCount;
   };
 
   while (mCurrentFrameId != aFrameId) {
@@ -1202,7 +1202,7 @@ AndroidImageReader::AcquirePendingImage() {
                                           format, std::move(fence), *crop);
   mCurrentFrameId = frameId;
 
-  MOZ_ASSERT(static_cast<int32_t>(mAcquiredImageCount) <= mMaxImageCount);
+  MOZ_ASSERT(mAcquiredImageCount.load() <= mMaxImageCount);
 
   return AcquireImageResult::Success;
 }
