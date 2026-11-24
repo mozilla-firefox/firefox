@@ -162,14 +162,6 @@
     <string name="browser_menu_section_accounts_and_settings">Accounts and settings</string>
     <!-- Customize menu screen - Accessibility description - name of the menu section that groups the New tab and New private tab actions. Read aloud after "Section", followed by the action names ("Section “New tab”: New tab, New private tab"). -->
     <string name="browser_menu_section_new_tab">New tab</string>
-    <!-- Title of the dialog shown when resetting the menu to its default layout (removing all user customizations) -->
-    <string name="menu_customize_reset_dialog_title">Reset to default menu?</string>
-    <!-- Message of the dialog shown when resetting the menu to its default layout (removing all user customizations) -->
-    <string name="menu_customize_reset_dialog_message">This removes customizations and can’t be undone.</string>
-    <!-- Primary button on the menu reset dialog. Tapping it removes all user customizations. -->
-    <string name="menu_customize_reset_dialog_reset">Reset</string>
-    <!-- Secondary button on the menu reset dialog. Tapping it cancels the reset process and preserves all user-made customizations. -->
-    <string name="menu_customize_reset_dialog_cancel">Cancel</string>
     <!-- Content description (not visible, for screen readers etc.): Navigate backward (browsing history) -->
     <string name="browser_menu_back">Back</string>
     <!-- Content description (not visible, for screen readers etc.): Navigate forward (browsing history) -->

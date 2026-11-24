@@ -1864,14 +1864,7 @@
             <action
                 android:id="@+id/action_customizeMenuFragment_to_menuFragment"
                 app:destination="@id/menu_graph" />
-            <action
-                android:id="@+id/action_customizeMenuFragment_to_resetToDefaultDialogFragment"
-                app:destination="@id/resetToDefaultDialogFragment" />
         </fragment>
-
-        <dialog
-            android:id="@+id/resetToDefaultDialogFragment"
-            android:name="org.mozilla.fenix.components.menu.compose.customize.ResetToDefaultDialogFragment" />
     </navigation>
 
     <navigation

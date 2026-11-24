@@ -11,7 +11,6 @@ import mozilla.components.compose.menu.store.CustomizableMenuAction.Customizatio
 import mozilla.components.compose.menu.store.CustomizableMenuAction.Init
 import mozilla.components.compose.menu.store.CustomizableMenuAction.MenuStructureChanged
 import mozilla.components.compose.menu.store.CustomizableMenuAction.PreviewClicked
-import mozilla.components.compose.menu.store.CustomizableMenuAction.ResetToDefaultClicked
 import mozilla.components.compose.menu.store.CustomizableMenuAction.ResetToDefaultConfirmed
 import mozilla.components.compose.menu.store.CustomizableMenuAction.Update
 import mozilla.components.compose.menu.store.CustomizableMenuState
@@ -47,7 +46,6 @@ class CustomizeMenuTelemetryMiddleware : Middleware<CustomizableMenuState, Custo
             is MenuEvent,
             is Init,
             is CustomizationStatusChanged,
-            is ResetToDefaultClicked,
             is AttemptedRemovalOfMandatorySection -> Unit
         }
     }

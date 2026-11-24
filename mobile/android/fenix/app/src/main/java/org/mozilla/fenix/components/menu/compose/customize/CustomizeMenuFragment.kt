@@ -17,7 +17,7 @@ import mozilla.components.compose.menu.store.CustomizableMenuState
 import mozilla.components.compose.menu.store.CustomizableMenuStore
 import mozilla.components.compose.menu.ui.customize.CustomizeMenuContent
 import mozilla.components.feature.automotive.isAndroidAutomotiveAvailable
-import mozilla.components.lib.state.helpers.StoreProvider.Companion.navBackStackStore
+import mozilla.components.lib.state.helpers.StoreProvider.Companion.fragmentStore
 import mozilla.components.support.base.feature.UserInteractionHandler
 import mozilla.components.support.base.feature.ViewBoundFeatureWrapper
 import org.mozilla.fenix.HomeActivity
@@ -45,38 +45,34 @@ import org.mozilla.fenix.translations.TranslationsEnabledSettings
 class CustomizeMenuFragment : Fragment(), UserInteractionHandler, SystemInsetsPaddedFragment {
     private val snackbarBinding = ViewBoundFeatureWrapper<SnackbarBinding>()
 
-    private val menuStore: CustomizableMenuStore by lazy {
-        val backStackEntry = findNavController().getBackStackEntry(R.id.customize_menu_graph)
-        backStackEntry
-            .navBackStackStore(CustomizableMenuState(emptyList())) { restoredState ->
-                val components = requireComponents
-                val menuItemsRegistry =
-                    MenuItemsRegistry(
-                        configuration = BrowserMenuConfiguration.allSections(),
-                        resolver = buildMenuItemProvidersFactory()::buildProviderFor,
-                    )
-
-                CustomizableMenuStore(
-                    initialState = restoredState,
-                    middleware =
-                        listOf(
-                            CustomizeMenuMiddleware(
-                                repository = components.menuCustomizationRepository,
-                                menuBuilder = MenuBuilder(menuItemsRegistry),
-                                isToolbarAtBottom = requireContext().isToolbarAtBottom(),
-                                isExpandedToolbarEnabled = components.settings.shouldUseExpandedToolbar,
-                                isToolsMenuCustomizationEnabled = components.settings.isToolsMenuCustomizationEnabled,
-                                scope = viewLifecycleOwner.lifecycle.coroutineScope,
-                                appStore = components.appStore,
-                                cannotHideSectionMessage = getString(R.string.customize_menu_cannot_hide_section),
-                            ),
-                            CustomizeMenuNavigationMiddleware(findNavController()),
-                            CustomizeMenuTelemetryMiddleware(),
-                        ),
+    private val menuStore: CustomizableMenuStore by
+        fragmentStore(CustomizableMenuState(emptyList())) { restoredState ->
+            val components = requireComponents
+            val menuItemsRegistry =
+                MenuItemsRegistry(
+                    configuration = BrowserMenuConfiguration.allSections(),
+                    resolver = buildMenuItemProvidersFactory()::buildProviderFor,
                 )
-            }
-            .value
-    }
+
+            CustomizableMenuStore(
+                initialState = restoredState,
+                middleware =
+                    listOf(
+                        CustomizeMenuMiddleware(
+                            repository = components.menuCustomizationRepository,
+                            menuBuilder = MenuBuilder(menuItemsRegistry),
+                            isToolbarAtBottom = requireContext().isToolbarAtBottom(),
+                            isExpandedToolbarEnabled = components.settings.shouldUseExpandedToolbar,
+                            isToolsMenuCustomizationEnabled = components.settings.isToolsMenuCustomizationEnabled,
+                            scope = viewLifecycleOwner.lifecycle.coroutineScope,
+                            appStore = components.appStore,
+                            cannotHideSectionMessage = getString(R.string.customize_menu_cannot_hide_section),
+                        ),
+                        CustomizeMenuNavigationMiddleware(findNavController()),
+                        CustomizeMenuTelemetryMiddleware(),
+                    ),
+            )
+        }
 
     override fun onCreateView(
         inflater: LayoutInflater,

@@ -12,7 +12,6 @@ import mozilla.components.compose.menu.store.CustomizableMenuAction.Customizatio
 import mozilla.components.compose.menu.store.CustomizableMenuAction.Init
 import mozilla.components.compose.menu.store.CustomizableMenuAction.MenuStructureChanged
 import mozilla.components.compose.menu.store.CustomizableMenuAction.PreviewClicked
-import mozilla.components.compose.menu.store.CustomizableMenuAction.ResetToDefaultClicked
 import mozilla.components.compose.menu.store.CustomizableMenuAction.ResetToDefaultConfirmed
 import mozilla.components.compose.menu.store.CustomizableMenuAction.Update
 import mozilla.components.compose.menu.store.CustomizableMenuState
@@ -46,13 +45,6 @@ class CustomizeMenuNavigationMiddleware(private val navController: NavController
                     CustomizeMenuFragmentDirections.actionCustomizeMenuFragmentToMenuFragment(
                         accessPoint = MenuAccessPoint.Preview
                     ),
-                )
-            }
-
-            is ResetToDefaultClicked -> {
-                navController.nav(
-                    R.id.customizeMenuFragment,
-                    CustomizeMenuFragmentDirections.actionCustomizeMenuFragmentToResetToDefaultDialogFragment(),
                 )
             }
 

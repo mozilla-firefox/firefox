@@ -41,7 +41,7 @@ import mozilla.components.compose.base.button.OutlinedButton
 import mozilla.components.compose.base.theme.AcornTheme
 import mozilla.components.compose.menu.R
 import mozilla.components.compose.menu.store.CustomizableMenuAction.PreviewClicked
-import mozilla.components.compose.menu.store.CustomizableMenuAction.ResetToDefaultClicked
+import mozilla.components.compose.menu.store.CustomizableMenuAction.ResetToDefaultConfirmed
 import mozilla.components.compose.menu.store.CustomizableMenuState
 import mozilla.components.compose.menu.store.CustomizableMenuStore
 import mozilla.components.compose.menu.ui.customize.CustomizeMenuItemKey.DRAG_BAR
@@ -65,6 +65,7 @@ fun CustomizeMenuContent(
     modifier: Modifier = Modifier,
 ) {
     val windowWidth = LocalWindowInfo.current.containerSize.width
+    var isResetDialogShown by rememberSaveable { mutableStateOf(false) }
     // How far right of the center of the window this is, when beside a larger notch than navigation bar for example.
     var offCenter by remember { mutableFloatStateOf(0f) }
     // The list takes the whole width, to be scrolled from anywhere, with its items no wider than the maximum width.
@@ -86,6 +87,17 @@ fun CustomizeMenuContent(
             store = store,
             leftPadding = freeWidth / 2 - shift,
             rightPadding = freeWidth / 2 + shift,
+            onResetToDefaultClick = { isResetDialogShown = true },
+        )
+    }
+
+    if (isResetDialogShown) {
+        ResetToDefaultDialog(
+            onConfirm = {
+                isResetDialogShown = false
+                store.dispatch(ResetToDefaultConfirmed)
+            },
+            onDismiss = { isResetDialogShown = false },
         )
     }
 }
@@ -95,6 +107,7 @@ private fun CustomizeMenuList(
     store: CustomizableMenuStore,
     leftPadding: Dp,
     rightPadding: Dp,
+    onResetToDefaultClick: () -> Unit,
 ) {
     val menuState by store.observeAsComposableState { it }
     val listState = rememberLazyListState()
@@ -161,7 +174,7 @@ private fun CustomizeMenuList(
                 ResetButtonItem(
                     dragState = dragState,
                     itemSpacing = itemSpacing,
-                    onClick = { store.dispatch(ResetToDefaultClicked) },
+                    onClick = onResetToDefaultClick,
                 )
             }
         }

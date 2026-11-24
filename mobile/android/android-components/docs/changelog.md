@@ -21,6 +21,8 @@ permalink: /changelog/
   * 🆕 Added `DownloadUtils.fileNameFromContentDisposition`, which pulls the filename from a Content-Disposition. [Bug 2071966](https://bugzilla.mozilla.org/show_bug.cgi?id=2071966)
 * **lib-state**
   * A store declared as a `Fragment` property with `fragmentStore` is now built again, from its last state, for each new view of the fragment, instead of staying the one built for the first view. [Bug 2090975](https://bugzilla.mozilla.org/show_bug.cgi?id=2090975)
+* **compose-menu**
+  * ⚠️ **Breaking change**: The customize menu screen now asks the user to confirm resetting the menu to default itself, so `CustomizableMenuAction.ResetToDefaultClicked` was removed. [Bug 2090975](https://bugzilla.mozilla.org/show_bug.cgi?id=2090975)
 
 # 162.0
 * **concept-engine**
