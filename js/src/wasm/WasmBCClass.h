@@ -1771,7 +1771,7 @@ struct BaseCompiler final {
   [[nodiscard]] bool emitMemInit();
   [[nodiscard]] bool emitMemCopy();
   [[nodiscard]] bool memCopyCall(uint32_t dstMemIndex, uint32_t srcMemIndex);
-  void memCopyInlineM32();
+  [[nodiscard]] bool memCopyInlineM32();
   [[nodiscard]] bool emitTableCopy();
   [[nodiscard]] bool emitDataOrElemDrop(bool isData);
   [[nodiscard]] bool emitMemFill();
