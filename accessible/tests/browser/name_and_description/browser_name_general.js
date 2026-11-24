@@ -378,3 +378,75 @@ addAccessibleTask(
   },
   { chrome: true, topLevel: true }
 );
+
+/**
+ * Test that an optgroup name follows its first element child legend as the
+ * legend and the optgroup's children change.
+ */
+addAccessibleTask(
+  `
+<select id="combobox">
+  <optgroup id="comboboxGroup" label="attr">
+    <legend>a<img alt="b">c</legend>
+    <option>x</option>
+  </optgroup>
+</select>
+<select id="listbox" size="3">
+  <optgroup id="listboxGroup" label="attr">
+    <legend>a<img alt="b">c</legend>
+    <option>x</option>
+  </optgroup>
+</select>
+  `,
+  async function testOptGroupLegend(browser, docAcc) {
+    for (const id of ["combobox", "listbox"]) {
+      const group = findAccessibleChildByID(docAcc, `${id}Group`);
+      testName(group, "abc");
+
+      const steps = [
+        ["Changing legend text", "dbc"],
+        ["Changing legend image alt", "dec"],
+        ["Prepending a span", "attr"],
+        ["Removing the span", "dec"],
+        ["Removing the legend", "attr"],
+        ["Prepending a legend", "f"],
+      ];
+      for (const [step, [description, expected]] of steps.entries()) {
+        info(`${id}: ${description}`);
+        const nameChanged = waitForEvent(EVENT_NAME_CHANGE, group);
+        await invokeContentTask(
+          browser,
+          [id, step],
+          (contentId, contentStep) => {
+            const doc = content.document;
+            const g = doc.getElementById(`${contentId}Group`);
+            switch (contentStep) {
+              case 0:
+                g.firstElementChild.firstChild.data = "d";
+                break;
+              case 1:
+                g.querySelector("img").alt = "e";
+                break;
+              case 2:
+                g.prepend(doc.createElement("span"));
+                break;
+              case 3:
+              case 4:
+                g.firstElementChild.remove();
+                break;
+              case 5: {
+                const legend = doc.createElement("legend");
+                legend.textContent = "f";
+                g.prepend(legend);
+                break;
+              }
+            }
+          }
+        );
+        await nameChanged;
+        testName(group, expected);
+      }
+    }
+  },
+  { chrome: true, topLevel: true }
+);
