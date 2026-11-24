@@ -565,7 +565,7 @@ function createAIWindowConfig(modelData) {
   return {
     id: "AI_WINDOW_WELCOME",
     template: "spotlight",
-    transitions: true,
+    transitions: !window.matchMedia("(prefers-reduced-motion: reduce)").matches,
     modal: "tab",
     backdrop: "transparent",
     screens,

@@ -133,11 +133,6 @@ skip-if = [
 
 ["browser_aiwindow_chat_tool_ui.js"]
 
-["browser_aiwindow_firstrun.js"]
-skip-if = [
-  "os == 'mac' && os_version == '15.30' && arch == 'aarch64'", # Bug 2012723
-]
-
 ["browser_aiwindow_followup_tokens.js"]
 
 ["browser_aiwindow_group_tabs_button_interaction.js"]

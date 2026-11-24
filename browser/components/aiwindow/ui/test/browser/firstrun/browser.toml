@@ -1,0 +1,17 @@
+[DEFAULT]
+prefs = [
+  # firstrun.js skips the multi-stage onboarding's 1s screen transitions.
+  "ui.prefersReducedMotion=1",
+  # The Smart Window new tab page sends model requests, which must stay local.
+  "browser.smartwindow.endpoint=http://localhost:0/v1",
+]
+support-files = [
+  "head.js",
+  "!/browser/components/aiwindow/ui/test/browser/head.js",
+]
+
+["browser_firstrun_multistage.js"]
+
+["browser_firstrun_single_page.js"]
+
+["browser_firstrun_window.js"]
