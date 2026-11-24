@@ -205,6 +205,10 @@ WasmFrameIter::WasmFrameIter(JitActivation* activation, wasm::Frame* fp,
   // keep its code alive.
   exitInstance_ = instance_;
 
+#ifdef ENABLE_WASM_JSPI
+  ContStack* exitContStack = contStack_;
+#endif
+
   // Skip the exit frame.
   popFrame(/*isLeavingFrame=*/false);
   MOZ_ASSERT(!done() || unwoundCallerFP_);
@@ -214,6 +218,12 @@ WasmFrameIter::WasmFrameIter(JitActivation* activation, wasm::Frame* fp,
   // frame as being a stack switch.
   if (!done()) {
     currentFrameStackSwitched_ = dynamicSwitchToMainStack;
+
+    // The exit frame was the only frame on its stack, see unwoundContStack_.
+    if (contStack_ != exitContStack) {
+      MOZ_ASSERT(dynamicSwitchToMainStack);
+      unwoundContStack_ = exitContStack;
+    }
   }
 #endif
 }
