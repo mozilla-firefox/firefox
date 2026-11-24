@@ -25,8 +25,12 @@ const samples = [
     ["Latin, then Hebrew", "abc שלום def"],
     ["Hebrew, then Latin", "שלום abc עולם"],
     ["Hebrew and Latin in a tspan", "שלום <abc> עולם"],
+    ["Arabic", "مرحبا بالعالم"],
+    ["Latin, then Arabic", "abc مرحبا def"],
+    ["Arabic, then Latin", "مرحبا abc عالم"],
+    ["Arabic and Latin in a tspan", "مرحبا <abc> عالم"],
 ];
-const isRTLCharacter = character => /[֐-׿]/.test(character);
+const isRTLCharacter = character => /[\u0590-\u05FF\u0600-\u06FF]/.test(character);
 
 function createText(text, direction) {
     const textElement = document.createElementNS("http://www.w3.org/2000/svg", "text");
