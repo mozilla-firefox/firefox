@@ -138,8 +138,8 @@ static void copyfile(char* name, char* toname, mode_t mode, char* group,
     if (tofd < 0) fail("cannot create %s", toname);
   }
 
-  bp = buf;
-  while ((cc = read(fromfd, bp, sizeof buf)) > 0) {
+  while ((cc = read(fromfd, buf, sizeof buf)) > 0) {
+    bp = buf;
     while ((wc = write(tofd, bp, (unsigned int)cc)) > 0) {
       if ((cc -= wc) == 0) break;
       bp += wc;
