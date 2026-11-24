@@ -1659,16 +1659,14 @@ bool gfxTextRun::SetSpaceGlyphIfSimple(gfxFont* aFont, uint32_t aCharIndex,
                                        char16_t aSpaceChar,
                                        gfx::ShapedTextFlags aOrientation) {
   uint32_t spaceGlyph = aFont->GetSpaceGlyph();
-  if (!spaceGlyph || !CompressedGlyph::IsSimpleGlyphID(spaceGlyph)) {
+  if (!spaceGlyph || !CompressedGlyph::IsSimpleGlyphID(spaceGlyph) ||
+      (aOrientation & gfx::ShapedTextFlags::TEXT_ORIENT_VERTICAL_UPRIGHT)) {
     return false;
   }
 
-  gfxFont::Orientation fontOrientation =
-      (aOrientation & gfx::ShapedTextFlags::TEXT_ORIENT_VERTICAL_UPRIGHT)
-          ? nsFontMetrics::eVertical
-          : nsFontMetrics::eHorizontal;
-  uint32_t spaceWidthAppUnits = NS_lroundf(
-      aFont->GetMetrics(fontOrientation).spaceWidth * mAppUnitsPerDevUnit);
+  uint32_t spaceWidthAppUnits =
+      NS_lroundf(aFont->GetMetrics(nsFontMetrics::eHorizontal).spaceWidth *
+                 mAppUnitsPerDevUnit);
   if (!CompressedGlyph::IsSimpleAdvance(spaceWidthAppUnits)) {
     return false;
   }
