@@ -22,6 +22,7 @@
   );
   @media (forced-colors) {
     --smartwindow-border-color: CanvasText;
+    --smartwindow-card-border-color: CanvasText;
   }
 
   --smartwindow-card-border-hover: color-mix(in oklch, var(--color-violet-30) 30%, var(--color-gray-50));
@@ -61,6 +62,7 @@
       /* Smart Window Nova Tokens */
       --smartwindow-text-color-accent-primary: light-dark(var(--color-violet-60), var(--color-violet-30));
       --smartwindow-icon-color-accent-primary-desaturated: light-dark(var(--color-violet-desaturated-60), var(--color-violet-desaturated-40));
+      --smartwindow-card-border-color: light-dark(var(--color-violet-desaturated-20), var(--color-violet-desaturated-50));
       --smartwindow-card-border-hover: var(--color-violet-desaturated-30);
 
       --smartwindow-panel-item-background-color-hover: light-dark(

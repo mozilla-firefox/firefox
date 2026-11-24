@@ -339,7 +339,14 @@ var allowlist = [
   },
 
   // Bug 2078933: The widget dashboard will generate widgets with this module.
-  { file: "moz-src:///browser/components/widgets/WidgetGenerator.sys.mjs" },
+  {
+    file: "moz-src:///browser/components/widgets/WidgetGenerator.sys.mjs",
+  },
+
+  // Bug 2088187: Smart Window Digests will use this form for setup.
+  {
+    file: "chrome://browser/content/aiwindow/components/smartwindow-digest-form.mjs",
+  },
 ];
 
 if (AppConstants.NIGHTLY_BUILD) {

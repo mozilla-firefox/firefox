@@ -650,3 +650,67 @@ ai-clarifying-question-close =
 smart-actions-toolbar =
     .aria-label = Smart actions
 smart-actions-loading = Looking at this page…
+
+## Smart Window digest starter dismiss button
+## Shown on hover over a digest starter pill. Turns off the digest and
+## removes its pill from the starter row.
+## Variables:
+##   $text (String) - The label of the pill, which is the digest's title, for example "Morning News"
+
+aiwindow-starter-digest-dismiss =
+    .aria-label = Dismiss { $text }
+
+## Smart Window digest form
+## Used to create a digest, or edit an existing one. A digest is a summary
+## about a topic that is refreshed on a schedule the user sets.
+
+smartwindow-digest-form-create-heading = Create a digest
+smartwindow-digest-form-edit-heading = Edit digest
+smartwindow-digest-form-create-subheading = You’ll get a summary about this topic on a schedule you set.
+smartwindow-digest-form-edit-subheading = Change how this digest is set up.
+# Label above the digest's topic, which is generated and can't be edited
+smartwindow-digest-form-topic-label = Topic
+smartwindow-digest-form-description =
+    .label = What to cover
+    .placeholder = Describe what you want to follow and what kind of updates matter to you.
+# Info button beside the digest's topic. Opens a popup explaining where the
+# digest's topic came from.
+smartwindow-digest-form-memory-tooltip-trigger =
+    .aria-label = Where this topic came from
+# Shown in the popup opened by the info button beside the digest's topic. The
+# link opens Smart Window's memory settings.
+smartwindow-digest-form-memory-tooltip = This topic is based on <a data-l10n-name="memories-link">your memories</a>
+smartwindow-digest-form-sources =
+    .label = Preferred sources
+    .placeholder = Add a website
+smartwindow-digest-form-frequency =
+    .label = How often to update
+smartwindow-digest-form-frequency-daily =
+    .label = Daily
+smartwindow-digest-form-frequency-weekly =
+    .label = Weekly
+# The digest only updates when the user asks for it
+smartwindow-digest-form-frequency-on-demand =
+    .label = On demand
+# Shown beside the frequency dropdown when Weekly is selected
+smartwindow-digest-form-day =
+    .label = Day
+smartwindow-digest-form-time =
+    .label = Time
+smartwindow-digest-form-length =
+    .label = Digest length
+smartwindow-digest-form-length-standard =
+    .label = Standard
+smartwindow-digest-form-length-short =
+    .label = Short
+smartwindow-digest-form-required-note = * Required
+# Note shown at the bottom of the create form indicating required fields
+# The asterisk (*) marks form fields that must be filled in.
+smartwindow-digest-form-cancel =
+    .label = Cancel
+smartwindow-digest-form-create =
+    .label = Create
+smartwindow-digest-form-save =
+    .label = Save changes
+smartwindow-digest-form-error-description = Enter what you want this digest to cover.
+smartwindow-digest-form-error-url = Enter a valid website address.
