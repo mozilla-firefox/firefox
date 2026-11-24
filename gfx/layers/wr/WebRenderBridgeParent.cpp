@@ -2308,7 +2308,7 @@ void WebRenderBridgeParent::AddPipelineIdForCompositable(
       break;
     case CompositableHandleOwner::ImageBridge: {
       RefPtr<ImageBridgeParent> imageBridge =
-          ImageBridgeParent::GetInstance(OtherPid());
+          ImageBridgeParent::GetInstance(OtherChildID());
       if (!imageBridge) {
         return;
       }

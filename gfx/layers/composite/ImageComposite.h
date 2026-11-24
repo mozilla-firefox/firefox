@@ -83,7 +83,7 @@ class ImageComposite {
  protected:
   // Send ImageComposite notifications and update the ChooseImage bias.
   void OnFinishRendering(int aImageIndex, const TimedImage* aImage,
-                         base::ProcessId aProcessId,
+                         GeckoChildID aChildID,
                          const CompositableHandle& aHandle);
 
   int32_t mLastFrameID = -1;

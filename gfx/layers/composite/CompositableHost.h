@@ -30,17 +30,16 @@ namespace layers {
 class WebRenderImageHost;
 
 struct ImageCompositeNotificationInfo {
-  base::ProcessId mImageBridgeProcessId;
+  GeckoChildID mImageBridgeChildID;
   ImageCompositeNotification mNotification;
 };
 
 struct AsyncCompositableRef {
-  AsyncCompositableRef() : mProcessId(base::kInvalidProcessId) {}
-  AsyncCompositableRef(base::ProcessId aProcessId,
-                       const CompositableHandle& aHandle)
-      : mProcessId(aProcessId), mHandle(aHandle) {}
+  AsyncCompositableRef() : mChildID(kInvalidGeckoChildID) {}
+  AsyncCompositableRef(GeckoChildID aChildID, const CompositableHandle& aHandle)
+      : mChildID(aChildID), mHandle(aHandle) {}
   explicit operator bool() const { return !!mHandle; }
-  base::ProcessId mProcessId;
+  GeckoChildID mChildID;
   CompositableHandle mHandle;
 };
 

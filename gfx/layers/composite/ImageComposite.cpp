@@ -270,7 +270,7 @@ bool ImageComposite::UpdateCompositedFrame(
 
 void ImageComposite::OnFinishRendering(int aImageIndex,
                                        const TimedImage* aImage,
-                                       base::ProcessId aProcessId,
+                                       GeckoChildID aChildID,
                                        const CompositableHandle& aHandle) {
   if (mLastFrameUpdateComposition != GetCompositionOpportunityId()) {
     // The frame did not change in this composition.
@@ -279,7 +279,7 @@ void ImageComposite::OnFinishRendering(int aImageIndex,
 
   if (aHandle) {
     ImageCompositeNotificationInfo info;
-    info.mImageBridgeProcessId = aProcessId;
+    info.mImageBridgeChildID = aChildID;
     info.mNotification = ImageCompositeNotification(
         aHandle, aImage->mTimeStamp, GetCompositionTime(), mLastFrameID,
         mLastProducerID);
