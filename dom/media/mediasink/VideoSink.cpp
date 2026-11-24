@@ -691,8 +691,9 @@ void VideoSink::MaybeResolveEndPromise() {
         self->mEndPromiseHolder.ResolveIfExists(true, __func__);
         self->mUpdateScheduler.CompleteRequest();
       };
+      auto rejectEndPromise = resolveEndPromise;
       mUpdateScheduler.Ensure(target, std::move(resolveEndPromise),
-                              std::move(resolveEndPromise));
+                              std::move(rejectEndPromise));
     } else {
       mEndPromiseHolder.ResolveIfExists(true, __func__);
     }
