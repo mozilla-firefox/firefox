@@ -7,7 +7,6 @@
 #include <functional>
 #include <memory>
 
-#include "base/process_util.h"
 #include "gfxPlatform.h"
 #include "gtest/gtest.h"
 #include "mozilla/SyncRunnable.h"
@@ -16,6 +15,7 @@
 #include "mozilla/layers/RemoteTextureHostWrapper.h"
 #include "mozilla/layers/RemoteTextureMap.h"
 #include "mozilla/webrender/RenderThread.h"
+#include "nsXULAppAPI.h"
 
 using namespace mozilla;
 using namespace mozilla::layers;
@@ -43,7 +43,7 @@ class RemoteTextureMapTest : public ::testing::Test {
     }
     RunOnCompositorThread([&] {
       ASSERT_TRUE(RemoteTextureMap::Get());
-      mClient = MakeRefPtr<RemoteTextureOwnerClient>(Pid());
+      mClient = MakeRefPtr<RemoteTextureOwnerClient>(ChildID());
     });
   }
 
@@ -53,7 +53,8 @@ class RemoteTextureMapTest : public ::testing::Test {
     }
     RunOnCompositorThread([&] {
       for (const auto& [textureId, ownerId] : mWrappers) {
-        Map()->UnregisterRemoteTextureHostWrapper(textureId, ownerId, Pid());
+        Map()->UnregisterRemoteTextureHostWrapper(textureId, ownerId,
+                                                  ChildID());
       }
       mWrappers.clear();
       mClient->UnregisterAllTextureOwners();
@@ -69,26 +70,26 @@ class RemoteTextureMapTest : public ::testing::Test {
     SyncRunnable::DispatchToThread(CompositorThread(), runnable);
   }
 
-  static base::ProcessId Pid() { return base::GetCurrentProcId(); }
+  static GeckoChildID ChildID() { return XRE_GetChildID(); }
   static RemoteTextureMap* Map() { return RemoteTextureMap::Get(); }
 
   RefPtr<TextureHost> CreateWrapper(RemoteTextureId aTextureId,
                                     RemoteTextureOwnerId aOwnerId) {
     mWrappers.emplace_back(aTextureId, aOwnerId);
-    return Map()->GetOrCreateRemoteTextureHostWrapper(aTextureId, aOwnerId,
-                                                      Pid(), gfx::IntSize(1, 1),
-                                                      TextureFlags::NO_FLAGS);
+    return Map()->GetOrCreateRemoteTextureHostWrapper(
+        aTextureId, aOwnerId, ChildID(), gfx::IntSize(1, 1),
+        TextureFlags::NO_FLAGS);
   }
 
   void ReleaseWrapper(RemoteTextureId aTextureId,
                       RemoteTextureOwnerId aOwnerId) {
     std::erase(mWrappers, std::pair(aTextureId, aOwnerId));
-    Map()->UnregisterRemoteTextureHostWrapper(aTextureId, aOwnerId, Pid());
+    Map()->UnregisterRemoteTextureHostWrapper(aTextureId, aOwnerId, ChildID());
   }
 
   static RemoteTextureInfo WaitingInfo(RemoteTextureId aTextureId,
                                        RemoteTextureOwnerId aOwnerId) {
-    return RemoteTextureInfo(aTextureId, aOwnerId, Pid(),
+    return RemoteTextureInfo(aTextureId, aOwnerId, ChildID(),
                              /* aWaitForRemoteTextureOwner */ true);
   }
 
@@ -251,7 +252,7 @@ TEST_F(RemoteTextureMapTest, DeferredUnregisterWakesReadyChecks) {
   RunOnCompositorThread([&] {
     const auto ownerId = RemoteTextureOwnerId::GetNext();
     const auto textureId = RemoteTextureId::GetNext();
-    scheduler = Map()->RegisterTxnScheduler(Pid(), kTestTxnType);
+    scheduler = Map()->RegisterTxnScheduler(ChildID(), kTestTxnType);
 
     mClient->RegisterTextureOwner(ownerId);
     CreateWrapper(textureId, ownerId);

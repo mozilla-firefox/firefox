@@ -563,7 +563,7 @@ class CanvasTranslator final : public gfx::InlineTranslator,
   // Sometimes during device reset our reference DrawTarget can be null, so we
   // hold the BackendType separately.
   gfx::BackendType mBackendType = gfx::BackendType::NONE;
-  base::ProcessId mOtherPid = base::kInvalidProcessId;
+  GeckoChildID mOtherChildID = kInvalidGeckoChildID;
   struct TextureInfo {
     gfx::ReferencePtr mRefPtr;
     UniquePtr<TextureData> mTextureData;

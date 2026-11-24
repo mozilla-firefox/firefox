@@ -139,7 +139,7 @@ mozilla::ipc::IPCResult CanvasTranslator::RecvInitTranslator(
   mTextureType = aTextureType;
   mWebglTextureType = aWebglTextureType;
   mBackendType = aBackendType;
-  mOtherPid = OtherPid();
+  mOtherChildID = OtherChildID();
 
   mHeaderShmem = aReadHandle.Map();
   if (!mHeaderShmem) {
@@ -1456,7 +1456,7 @@ bool CanvasTranslator::PresentTexture(
 
 void CanvasTranslator::EnsureRemoteTextureOwner(RemoteTextureOwnerId aOwnerId) {
   if (!mRemoteTextureOwner) {
-    mRemoteTextureOwner = new RemoteTextureOwnerClient(mOtherPid);
+    mRemoteTextureOwner = new RemoteTextureOwnerClient(mOtherChildID);
   }
   if (aOwnerId.IsValid() && !mRemoteTextureOwner->IsRegistered(aOwnerId)) {
     mRemoteTextureOwner->RegisterTextureOwner(aOwnerId,

@@ -132,7 +132,7 @@ class CompositorBridgeParentBase : public PCompositorBridgeParent,
   virtual void ObserveLayersUpdate(LayersId aLayersId, bool aActive) = 0;
 
   // HostIPCAllocator
-  base::ProcessId GetChildProcessId() override;
+  GeckoChildID GetChildID() override;
   dom::ContentParentId GetContentId() override;
   void NotifyNotUsed(PTextureParent* aTexture,
                      uint64_t aTransactionId) override;

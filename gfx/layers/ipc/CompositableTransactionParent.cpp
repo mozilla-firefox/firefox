@@ -101,9 +101,8 @@ bool CompositableParentManager::ReceiveCompositableUpdate(
       auto* host = aCompositable->AsWebRenderImageHost();
       MOZ_RELEASE_ASSERT(host);
 
-      host->PushPendingRemoteTexture(op.textureId(), op.ownerId(),
-                                     GetChildProcessId(), op.size(),
-                                     op.textureFlags());
+      host->PushPendingRemoteTexture(op.textureId(), op.ownerId(), GetChildID(),
+                                     op.size(), op.textureFlags());
       host->UseRemoteTexture(/* aCalledInCallback */ false);
       break;
     }

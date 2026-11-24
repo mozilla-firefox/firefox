@@ -46,7 +46,7 @@ class WebRenderImageHost : public CompositableHost, public ImageComposite {
 
   void PushPendingRemoteTexture(const RemoteTextureId aTextureId,
                                 const RemoteTextureOwnerId aOwnerId,
-                                const base::ProcessId aForPid,
+                                const GeckoChildID aForChildID,
                                 const gfx::IntSize aSize,
                                 const TextureFlags aFlags);
   void UseRemoteTexture(bool aCalledInCallback);
@@ -97,7 +97,7 @@ class WebRenderImageHost : public CompositableHost, public ImageComposite {
   // Identifies the pending ready check, so that stale callbacks are ignored.
   uint64_t mReadyCallbackGeneration = 0;
   RemoteTextureOwnerId mReadyCallbackOwnerId;
-  base::ProcessId mReadyCallbackForPid = 0;
+  GeckoChildID mReadyCallbackForChildID = kInvalidGeckoChildID;
   bool mWaitForRemoteTextureOwner = true;
 
   RefPtr<wr::RenderTextureHostUsageInfo> mRenderTextureHostUsageInfo;

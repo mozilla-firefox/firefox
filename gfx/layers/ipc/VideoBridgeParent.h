@@ -44,7 +44,7 @@ class VideoBridgeParent final : public PVideoBridgeParent,
       GetTextureFactoryIdentifierResolver&& aResolver);
 
   // HostIPCAllocator
-  base::ProcessId GetChildProcessId() override { return OtherPid(); }
+  GeckoChildID GetChildID() override { return OtherChildID(); }
   void NotifyNotUsed(PTextureParent* aTexture,
                      uint64_t aTransactionId) override;
   void SendAsyncMessage(Span<const AsyncParentMessageData>) override;

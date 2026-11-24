@@ -1362,8 +1362,9 @@ bool WebGLContext::PushRemoteTexture(
       if (!mHost) {
         return onFailure();
       }
-      auto pid = mHost->mOwner->OtherPid();
-      mRemoteTextureOwner = MakeRefPtr<layers::RemoteTextureOwnerClient>(pid);
+      auto childID = mHost->mOwner->OtherChildID();
+      mRemoteTextureOwner =
+          MakeRefPtr<layers::RemoteTextureOwnerClient>(childID);
     }
     ownerClient = mRemoteTextureOwner;
   }
@@ -1488,8 +1489,8 @@ void WebGLContext::EnsureContextLostRemoteTextureOwner(
     if (!mHost) {
       return;
     }
-    auto pid = mHost->mOwner->OtherPid();
-    mRemoteTextureOwner = MakeRefPtr<layers::RemoteTextureOwnerClient>(pid);
+    auto childID = mHost->mOwner->OtherChildID();
+    mRemoteTextureOwner = MakeRefPtr<layers::RemoteTextureOwnerClient>(childID);
   }
 
   layers::RemoteTextureOwnerId ownerId = options.remoteTextureOwnerId;

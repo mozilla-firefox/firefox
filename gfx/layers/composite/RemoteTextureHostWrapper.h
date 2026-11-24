@@ -17,7 +17,7 @@ class RemoteTextureHostWrapper : public TextureHost {
  public:
   static RefPtr<TextureHost> Create(const RemoteTextureId aTextureId,
                                     const RemoteTextureOwnerId aOwnerId,
-                                    const base::ProcessId aForPid,
+                                    const GeckoChildID aForChildID,
                                     const gfx::IntSize aSize,
                                     const TextureFlags aFlags);
 
@@ -88,19 +88,19 @@ class RemoteTextureHostWrapper : public TextureHost {
   }
 
   RemoteTextureInfo GetRemoteTextureInfo() const {
-    return RemoteTextureInfo(mTextureId, mOwnerId, mForPid,
+    return RemoteTextureInfo(mTextureId, mOwnerId, mForChildID,
                              mWaitForRemoteTextureOwner);
   }
 
   const RemoteTextureId mTextureId;
   const RemoteTextureOwnerId mOwnerId;
-  const base::ProcessId mForPid;
+  const GeckoChildID mForChildID;
   const gfx::IntSize mSize;
 
  protected:
   RemoteTextureHostWrapper(const RemoteTextureId aTextureId,
                            const RemoteTextureOwnerId aOwnerId,
-                           const base::ProcessId aForPid,
+                           const GeckoChildID aForChildID,
                            const gfx::IntSize aSize, const TextureFlags aFlags);
   virtual ~RemoteTextureHostWrapper();
   void MaybeCreateRenderTexture();

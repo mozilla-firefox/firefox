@@ -116,7 +116,7 @@ CompositorBridgeParentBase::CompositorBridgeParentBase(
 
 CompositorBridgeParentBase::~CompositorBridgeParentBase() = default;
 
-ProcessId CompositorBridgeParentBase::GetChildProcessId() { return OtherPid(); }
+GeckoChildID CompositorBridgeParentBase::GetChildID() { return OtherChildID(); }
 
 dom::ContentParentId CompositorBridgeParentBase::GetContentId() {
   return mCompositorManager->GetContentId();

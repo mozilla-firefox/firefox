@@ -67,7 +67,7 @@ class ImageBridgeParent final : public PImageBridgeParent,
   void NotifyNotUsed(PTextureParent* aTexture,
                      uint64_t aTransactionId) override;
 
-  base::ProcessId GetChildProcessId() override { return OtherPid(); }
+  GeckoChildID GetChildID() override { return OtherChildID(); }
   dom::ContentParentId GetContentId() override { return mContentId; }
 
   // PImageBridge

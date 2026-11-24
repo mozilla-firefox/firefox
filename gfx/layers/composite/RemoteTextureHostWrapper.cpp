@@ -18,10 +18,10 @@ namespace mozilla::layers {
 /* static */
 RefPtr<TextureHost> RemoteTextureHostWrapper::Create(
     const RemoteTextureId aTextureId, const RemoteTextureOwnerId aOwnerId,
-    const base::ProcessId aForPid, const gfx::IntSize aSize,
+    const GeckoChildID aForChildID, const gfx::IntSize aSize,
     const TextureFlags aFlags) {
   RefPtr<TextureHost> textureHost =
-      new RemoteTextureHostWrapper(aTextureId, aOwnerId, aForPid, aSize,
+      new RemoteTextureHostWrapper(aTextureId, aOwnerId, aForChildID, aSize,
                                    aFlags | TextureFlags::REMOTE_TEXTURE);
   auto externalImageId = AsyncImagePipelineManager::GetNextExternalImageId();
   textureHost = new WebRenderTextureHost(aFlags, textureHost, externalImageId);
@@ -30,12 +30,12 @@ RefPtr<TextureHost> RemoteTextureHostWrapper::Create(
 
 RemoteTextureHostWrapper::RemoteTextureHostWrapper(
     const RemoteTextureId aTextureId, const RemoteTextureOwnerId aOwnerId,
-    const base::ProcessId aForPid, const gfx::IntSize aSize,
+    const GeckoChildID aForChildID, const gfx::IntSize aSize,
     const TextureFlags aFlags)
     : TextureHost(TextureHostType::Unknown, aFlags),
       mTextureId(aTextureId),
       mOwnerId(aOwnerId),
-      mForPid(aForPid),
+      mForChildID(aForChildID),
       mSize(aSize) {
   MOZ_COUNT_CTOR(RemoteTextureHostWrapper);
 }
@@ -163,7 +163,7 @@ void RemoteTextureHostWrapper::NotifyNotUsed() {
   MOZ_ASSERT(!mRemoteTexture);
 
   RemoteTextureMap::Get()->UnregisterRemoteTextureHostWrapper(
-      mTextureId, mOwnerId, mForPid);
+      mTextureId, mOwnerId, mForChildID);
 }
 
 void RemoteTextureHostWrapper::SetReadFence(Fence* aReadFence) {

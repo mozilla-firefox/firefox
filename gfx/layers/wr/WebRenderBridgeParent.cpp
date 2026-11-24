@@ -3342,9 +3342,7 @@ void WebRenderBridgeParent::NotifyNotUsed(PTextureParent* aTexture,
   MOZ_ASSERT_UNREACHABLE("unexpected to be called");
 }
 
-base::ProcessId WebRenderBridgeParent::GetChildProcessId() {
-  return OtherPid();
-}
+GeckoChildID WebRenderBridgeParent::GetChildID() { return OtherChildID(); }
 
 dom::ContentParentId WebRenderBridgeParent::GetContentId() {
   MOZ_ASSERT(mCompositorBridge);

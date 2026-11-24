@@ -161,7 +161,7 @@ void ImageBridgeParent::ActorDestroy(ActorDestroyReason aWhy) {
     sImageBridges.erase(OtherChildID());
   }
   if (auto* remoteTextureMap = RemoteTextureMap::Get()) {
-    remoteTextureMap->ClearDestroyedProcess(OtherPid());
+    remoteTextureMap->ClearDestroyedProcess(OtherChildID());
   }
   GetThread()->Dispatch(
       NewRunnableMethod("layers::ImageBridgeParent::DeferredDestroy", this,

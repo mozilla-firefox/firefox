@@ -63,7 +63,7 @@ void WebRenderImageHost::ClearPendingRemoteTextures() {
   if (auto* remoteTextureMap = RemoteTextureMap::Get()) {
     remoteTextureMap->CancelRemoteTextureReadyCheck(
         RemoteTextureInfo(RemoteTextureId{0}, mReadyCallbackOwnerId,
-                          mReadyCallbackForPid),
+                          mReadyCallbackForChildID),
         this);
   }
 }
@@ -139,7 +139,7 @@ void WebRenderImageHost::UseTextureHost(
 
 void WebRenderImageHost::PushPendingRemoteTexture(
     const RemoteTextureId aTextureId, const RemoteTextureOwnerId aOwnerId,
-    const base::ProcessId aForPid, const gfx::IntSize aSize,
+    const GeckoChildID aForChildID, const gfx::IntSize aSize,
     const TextureFlags aFlags) {
   // Ensure aOwnerId is the same as RemoteTextureOwnerId of pending
   // RemoteTextures.
@@ -147,7 +147,7 @@ void WebRenderImageHost::PushPendingRemoteTexture(
     auto* wrapper =
         mPendingRemoteTextureWrappers.front()->AsRemoteTextureHostWrapper();
     MOZ_ASSERT(wrapper);
-    if (wrapper->mOwnerId != aOwnerId || wrapper->mForPid != aForPid) {
+    if (wrapper->mOwnerId != aOwnerId || wrapper->mForChildID != aForChildID) {
       // Clear when RemoteTextureOwner is different.
       ClearPendingRemoteTextures();
       mWaitForRemoteTextureOwner = true;
@@ -161,7 +161,7 @@ void WebRenderImageHost::PushPendingRemoteTexture(
 
   RefPtr<TextureHost> texture =
       RemoteTextureMap::Get()->GetOrCreateRemoteTextureHostWrapper(
-          aTextureId, aOwnerId, aForPid, aSize, aFlags);
+          aTextureId, aOwnerId, aForChildID, aSize, aFlags);
   MOZ_ASSERT(texture);
   mPendingRemoteTextureWrappers.push_back(
       CompositableTextureHostRef(texture.get()));
@@ -220,7 +220,7 @@ void WebRenderImageHost::UseRemoteTexture(bool aCalledInCallback) {
           wrapper->GetRemoteTextureInfo(), this, readyCallback);
       if (mWaitingReadyCallback) {
         mReadyCallbackOwnerId = wrapper->mOwnerId;
-        mReadyCallbackForPid = wrapper->mForPid;
+        mReadyCallbackForChildID = wrapper->mForChildID;
         break;
       }
       RemoteTextureMap::Get()->GetRemoteTexture(wrapper);
@@ -280,7 +280,7 @@ bool WebRenderImageHost::WaitForPendingRemoteTexture() {
                                      ->AsRemoteTextureHostWrapper()
                                      ->GetRemoteTextureInfo();
   if (!RemoteTextureMap::Get()->WaitRemoteTextureReady(
-          RemoteTextureInfo(back.mTextureId, back.mOwnerId, back.mForPid,
+          RemoteTextureInfo(back.mTextureId, back.mOwnerId, back.mForChildID,
                             front.mWaitForRemoteTextureOwner))) {
     return false;
   }
@@ -289,7 +289,7 @@ bool WebRenderImageHost::WaitForPendingRemoteTexture() {
   ++mReadyCallbackGeneration;
   RemoteTextureMap::Get()->CancelRemoteTextureReadyCheck(
       RemoteTextureInfo(RemoteTextureId{0}, mReadyCallbackOwnerId,
-                        mReadyCallbackForPid),
+                        mReadyCallbackForChildID),
       this);
   UseRemoteTexture(/* aCalledInCallback */ true);
   return true;

@@ -788,7 +788,7 @@ void WebGPUParent::DeviceCreateSwapChain(
 
   if (!mRemoteTextureOwner) {
     mRemoteTextureOwner =
-        MakeRefPtr<layers::RemoteTextureOwnerClient>(OtherPid());
+        MakeRefPtr<layers::RemoteTextureOwnerClient>(OtherChildID());
   }
   mRemoteTextureOwner->RegisterTextureOwner(aOwnerId);
 

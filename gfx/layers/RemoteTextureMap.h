@@ -53,24 +53,24 @@ class RemoteTextureHostWrapper;
 struct RemoteTextureInfo {
   RemoteTextureInfo(const RemoteTextureId aTextureId,
                     const RemoteTextureOwnerId aOwnerId,
-                    const base::ProcessId aForPid)
+                    const GeckoChildID aForChildID)
       : mTextureId(aTextureId),
         mOwnerId(aOwnerId),
-        mForPid(aForPid),
+        mForChildID(aForChildID),
         mWaitForRemoteTextureOwner(false) {}
 
   RemoteTextureInfo(const RemoteTextureId aTextureId,
                     const RemoteTextureOwnerId aOwnerId,
-                    const base::ProcessId aForPid,
+                    const GeckoChildID aForChildID,
                     const bool aWaitForRemoteTextureOwner)
       : mTextureId(aTextureId),
         mOwnerId(aOwnerId),
-        mForPid(aForPid),
+        mForChildID(aForChildID),
         mWaitForRemoteTextureOwner(aWaitForRemoteTextureOwner) {}
 
   const RemoteTextureId mTextureId;
   const RemoteTextureOwnerId mOwnerId;
-  const base::ProcessId mForPid;
+  const GeckoChildID mForChildID;
   const bool mWaitForRemoteTextureOwner;
 };
 
@@ -182,8 +182,8 @@ class RemoteTextureTxnScheduler final
  private:
   friend class RemoteTextureMap;
 
-  RemoteTextureTxnScheduler(base::ProcessId aForPid, RemoteTextureTxnType aType)
-      : mForPid(aForPid), mType(aType) {}
+  RemoteTextureTxnScheduler(GeckoChildID aForChildID, RemoteTextureTxnType aType)
+      : mForChildID(aForChildID), mType(aType) {}
 
   bool WaitForTxn(const MonitorAutoLock& aProofOfLock,
                   RemoteTextureOwnerId aOwnerId, RemoteTextureTxnId aTxnId);
@@ -197,7 +197,7 @@ class RemoteTextureTxnScheduler final
     }
   };
 
-  base::ProcessId mForPid = base::kInvalidProcessId;
+  GeckoChildID mForChildID = kInvalidGeckoChildID;
   RemoteTextureTxnType mType = 0;
   RemoteTextureTxnId mLastTxnId = 0;
   std::deque<Wait> mWaits;
@@ -213,7 +213,7 @@ class RemoteTextureOwnerClient final {
  public:
   NS_INLINE_DECL_THREADSAFE_REFCOUNTING(RemoteTextureOwnerClient)
 
-  explicit RemoteTextureOwnerClient(const base::ProcessId aForPid);
+  explicit RemoteTextureOwnerClient(const GeckoChildID aForChildID);
 
   bool IsRegistered(const RemoteTextureOwnerId aOwnerId);
   void RegisterTextureOwner(const RemoteTextureOwnerId aOwnerId,
@@ -259,7 +259,7 @@ class RemoteTextureOwnerClient final {
       SurfaceDescriptor::Type aType,
       RemoteTextureOwnerId aOwnerId = RemoteTextureOwnerId());
 
-  const base::ProcessId mForPid;
+  const GeckoChildID mForChildID;
 
  protected:
   ~RemoteTextureOwnerClient() = default;
@@ -288,7 +288,7 @@ class RemoteTextureMap {
   // recycled when TextureHost is destroyed.
   void PushTexture(const RemoteTextureId aTextureId,
                    const RemoteTextureOwnerId aOwnerId,
-                   const base::ProcessId aForPid,
+                   const GeckoChildID aForChildID,
                    UniquePtr<TextureData>&& aTextureData,
                    RefPtr<TextureHost>& aTextureHost,
                    UniquePtr<SharedResourceWrapper>&& aResourceWrapper);
@@ -296,29 +296,29 @@ class RemoteTextureMap {
   // Remove waiting texture that will not be used.
   bool RemoveTexture(const RemoteTextureId aTextureId,
                      const RemoteTextureOwnerId aOwnerId,
-                     const base::ProcessId aForPid);
+                     const GeckoChildID aForChildID);
 
   webgpu::FrontBufferSnapshot GetLatestBufferSnapshot(
-      const RemoteTextureOwnerId aOwnerId, const base::ProcessId aForPid);
+      const RemoteTextureOwnerId aOwnerId, const GeckoChildID aForChildID);
 
   void RegisterTextureOwner(
-      const RemoteTextureOwnerId aOwnerId, const base::ProcessId aForPid,
+      const RemoteTextureOwnerId aOwnerId, const GeckoChildID aForChildID,
       const RefPtr<RemoteTextureRecycleBin>& aRecycleBin = nullptr);
   void UnregisterTextureOwner(const RemoteTextureOwnerId aOwnerId,
-                              const base::ProcessId aForPid);
+                              const GeckoChildID aForChildID);
   void UnregisterTextureOwners(const RemoteTextureOwnerIdSet& aOwnerIds,
-                               const base::ProcessId aForPid);
+                               const GeckoChildID aForChildID);
 
   // Forgets the pending ready checks of a process that has gone away.
-  void ClearDestroyedProcess(const base::ProcessId aForPid);
+  void ClearDestroyedProcess(const GeckoChildID aForChildID);
 
   void ClearRecycledTextures(
-      const RemoteTextureOwnerIdSet& aOwnerIds, const base::ProcessId aForPid,
+      const RemoteTextureOwnerIdSet& aOwnerIds, const GeckoChildID aForChildID,
       const RefPtr<RemoteTextureRecycleBin>& aRecycleBin = nullptr);
   void NotifyContextLost(const RemoteTextureOwnerIdSet& aOwnerIds,
-                         const base::ProcessId aForPid);
+                         const GeckoChildID aForChildID);
   void NotifyContextRestored(const RemoteTextureOwnerIdSet& aOwnerIds,
-                             const base::ProcessId aForPid);
+                             const GeckoChildID aForChildID);
 
   bool WaitForRemoteTextureOwner(RemoteTextureHostWrapper* aTextureHostWrapper);
 
@@ -326,19 +326,19 @@ class RemoteTextureMap {
   void GetRemoteTexture(RemoteTextureHostWrapper* aTextureHostWrapper);
 
   bool WaitForTxn(const RemoteTextureOwnerId aOwnerId,
-                  const base::ProcessId aForPid, RemoteTextureTxnType aTxnType,
+                  const GeckoChildID aForChildID, RemoteTextureTxnType aTxnType,
                   RemoteTextureTxnId aTxnId);
 
   void ReleaseRemoteTextureHost(RemoteTextureHostWrapper* aTextureHostWrapper);
 
   RefPtr<TextureHost> GetOrCreateRemoteTextureHostWrapper(
       const RemoteTextureId aTextureId, const RemoteTextureOwnerId aOwnerId,
-      const base::ProcessId aForPid, const gfx::IntSize& aSize,
+      const GeckoChildID aForChildID, const gfx::IntSize& aSize,
       const TextureFlags aFlags);
 
   void UnregisterRemoteTextureHostWrapper(const RemoteTextureId aTextureId,
                                           const RemoteTextureOwnerId aOwnerId,
-                                          const base::ProcessId aForPid);
+                                          const GeckoChildID aForChildID);
 
   // Returns true if the texture is ready. Otherwise aCallback will be called
   // once it should be checked again, unless aRequester cancels it with
@@ -354,13 +354,13 @@ class RemoteTextureMap {
                                      const void* aRequester);
 
   UniquePtr<TextureData> GetRecycledTextureData(
-      const RemoteTextureOwnerId aOwnerId, const base::ProcessId aForPid,
+      const RemoteTextureOwnerId aOwnerId, const GeckoChildID aForChildID,
       const RefPtr<RemoteTextureRecycleBin>& aRecycleBin,
       const gfx::IntSize& aSize, gfx::SurfaceFormat aFormat,
       TextureType aTextureType);
 
   UniquePtr<SharedResourceWrapper> GetRecycledSharedTexture(
-      const RemoteTextureOwnerId aOwnerId, const base::ProcessId aForPid,
+      const RemoteTextureOwnerId aOwnerId, const GeckoChildID aForChildID,
       const RefPtr<RemoteTextureRecycleBin>& aRecycleBin,
       const gfx::IntSize& aSize, gfx::SurfaceFormat aFormat,
       SurfaceDescriptor::Type aType);
@@ -369,7 +369,7 @@ class RemoteTextureMap {
                                                  TextureFlags aTextureFlags);
 
   already_AddRefed<RemoteTextureTxnScheduler> RegisterTxnScheduler(
-      base::ProcessId aForPid, RemoteTextureTxnType aType);
+      GeckoChildID aForChildID, RemoteTextureTxnType aType);
 
  protected:
   friend class RemoteTextureTxnScheduler;
@@ -453,7 +453,7 @@ class RemoteTextureMap {
 
   UniquePtr<TextureOwner> UnregisterTextureOwner(
       MonitorAutoLock& aProofOfLock, const RemoteTextureOwnerId aOwnerId,
-      const base::ProcessId aForPid,
+      const GeckoChildID aForChildID,
       std::vector<RefPtr<TextureHost>>& aReleasingTextures,
       std::vector<std::function<void(const RemoteTextureInfo&)>>&
           aRenderingReadyCallbacks);
@@ -478,29 +478,29 @@ class RemoteTextureMap {
 
   RemoteTextureMap::TextureOwner* GetTextureOwner(
       const MonitorAutoLock& aProofOfLock, const RemoteTextureOwnerId aOwnerId,
-      const base::ProcessId aForPid);
+      const GeckoChildID aForChildID);
 
   // Whether the owner was registered and has since been unregistered, so it
   // will never push another texture. This is only known while a
   // RemoteTextureHostWrapper for the owner exists.
   bool IsTextureOwnerGone(const MonitorAutoLock& aProofOfLock,
                           const RemoteTextureOwnerId aOwnerId,
-                          const base::ProcessId aForPid);
+                          const GeckoChildID aForChildID);
 
   void NotifyTxn(const MonitorAutoLock& aProofOfLock,
                  const RemoteTextureOwnerId aOwnerId,
-                 const base::ProcessId aForPid);
+                 const GeckoChildID aForChildID);
 
-  void UnregisterTxnScheduler(base::ProcessId aForPid,
+  void UnregisterTxnScheduler(GeckoChildID aForChildID,
                               RemoteTextureTxnType aType);
 
   Monitor mMonitor MOZ_UNANNOTATED{"RemoteTextureMap::mMonitor"};
 
-  std::map<std::pair<base::ProcessId, RemoteTextureOwnerId>,
+  std::map<std::pair<GeckoChildID, RemoteTextureOwnerId>,
            UniquePtr<WaitingTextureOwner>>
       mWaitingTextureOwners;
 
-  std::map<std::pair<base::ProcessId, RemoteTextureOwnerId>,
+  std::map<std::pair<GeckoChildID, RemoteTextureOwnerId>,
            UniquePtr<TextureOwner>>
       mTextureOwners;
 
@@ -511,15 +511,15 @@ class RemoteTextureMap {
     uint32_t mWrapperCount = 0;
     bool mWasRegistered = false;
   };
-  std::map<std::pair<base::ProcessId, RemoteTextureOwnerId>,
+  std::map<std::pair<GeckoChildID, RemoteTextureOwnerId>,
            TextureOwnerConsumers>
       mTextureOwnerConsumers;
 
-  std::map<std::pair<base::ProcessId, RemoteTextureId>,
+  std::map<std::pair<GeckoChildID, RemoteTextureId>,
            UniquePtr<RemoteTextureHostWrapperHolder>>
       mRemoteTextureHostWrapperHolders;
 
-  std::map<std::pair<base::ProcessId, RemoteTextureTxnType>,
+  std::map<std::pair<GeckoChildID, RemoteTextureTxnType>,
            ThreadSafeWeakPtr<RemoteTextureTxnScheduler>>
       mTxnSchedulers;
 
