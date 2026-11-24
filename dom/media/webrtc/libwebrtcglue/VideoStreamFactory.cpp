@@ -311,7 +311,7 @@ std::vector<webrtc::VideoStream> VideoStreamFactory::CreateEncoderStreams(
                "%s Stream with RID %s maxFps=%d (global max fps = %u), "
                "bitrate=[%dkbps, %dkbps, %dkbps]",
                __FUNCTION__, encoding.rid.c_str(), video_stream.max_framerate,
-               (unsigned)mMaxFramerateForAllStreams,
+               mMaxFramerateForAllStreams.load(),
                video_stream.min_bitrate_bps / 1000,
                video_stream.target_bitrate_bps / 1000,
                video_stream.max_bitrate_bps / 1000);
