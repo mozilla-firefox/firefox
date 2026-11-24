@@ -19,8 +19,8 @@ const require = BrowserLoader({
 XPCOMUtils.defineConstant(this, "require", require);
 
 // Localization
-const { LocalizationHelper } = require("resource://devtools/shared/l10n.js");
-this.l10n = new LocalizationHelper("devtools/client/locales/dom.properties");
+const domL10n = new Localization(["devtools/client/dom.ftl"], true);
+this.l10n = { getStr: id => domL10n.formatValueSync(id) };
 
 // Load DOM panel content
 require("resource://devtools/client/dom/content/dom-view.js");

@@ -57,7 +57,7 @@ class MainToolbar extends Component {
         key: "filter",
         delay: 250,
         onChange: this.onSearch,
-        placeholder: l10n.getStr("dom.filterDOMPanel"),
+        placeholder: l10n.getStr("dom-panel-filter-placeholder"),
         type: "filter",
       }),
       dom.span({ className: "devtools-separator" }),
@@ -65,7 +65,7 @@ class MainToolbar extends Component {
         key: "refresh",
         className: "refresh devtools-button",
         id: "dom-refresh-button",
-        title: l10n.getStr("dom.refresh"),
+        title: l10n.getStr("dom-panel-refresh-button-title"),
         onClick: this.onRefresh,
       })
     );
