@@ -78,6 +78,15 @@ listed in `typescript.yml`. To check an unlisted project, run:
 ./mach ts check path/to/dir
 ```
 
+An unlisted project usually still has errors, which makes it hard to see
+which errors a change added or removed. You can save a run before the change,
+and then compare the run after it with the saved one:
+
+```shell
+./mach ts summary path/to/dir --save before.txt
+./mach ts summary path/to/dir --diff before.txt
+```
+
 ### Files Outside the Project Directory
 
 A project's `tsconfig.json` can include a file from another directory, such as

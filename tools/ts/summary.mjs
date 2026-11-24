@@ -2,18 +2,26 @@
  * License, v. 2.0. If a copy of the MPL was not distributed with this
  * file, You can obtain one at http://mozilla.org/MPL/2.0/. */
 
-// Run tsc on one project and summarize its errors. `./mach ts summary` runs
-// this script:
+// Run tsc on one project and summarize its errors, or compare them with a
+// saved run. `./mach ts summary` runs this script:
 //
-//   summary.mjs PROJECT [--members TYPE] [--full-lists]
+//   summary.mjs PROJECT [--save FILE] [--members TYPE] [--full-lists]
 //
 // PROJECT is a directory with a tsconfig.json, or a tsconfig file.
 //
-// It prints the error total, then the counts per file, per error code with
-// TypeScript's message for it, per unresolved name (TS2304 and TS2552) and per
-// type that lacks a property (TS2339 and TS2551). --members TYPE adds the
-// missing members of that one type. Lists stop at 25 entries unless
-// --full-lists.
+// This prints the error total, then the counts per file, per error
+// code with TypeScript's message for it, per unresolved name (TS2304 and
+// TS2552) and per type that lacks a property (TS2339 and TS2551). --members
+// TYPE adds the missing members of that one type. Lists stop at 25 entries
+// unless --full-lists. --save FILE writes tsc's raw output for a later --diff,
+// unless the run failed or hit a setup error.
+//
+//   summary.mjs PROJECT [--save FILE] --diff BEFORE
+//
+// --diff compares the errors in the output saved in BEFORE with this run's,
+// as two sets. Errors match without their (line,col) positions, so a line
+// shift is no change. Equal totals with a fix and a new error show as one
+// error removed and one added.
 /* eslint-disable no-console */
 
 import { spawnSync } from "child_process";
@@ -25,7 +33,8 @@ const LIST_LIMIT = 25;
 
 function usage() {
   console.error(
-    "usage: mach ts summary PROJECT [--members TYPE] [--full-lists]"
+    "usage: mach ts summary PROJECT [--save FILE] [--members TYPE] [--full-lists]\n" +
+      "       mach ts summary PROJECT [--save FILE] --diff BEFORE"
   );
   process.exit(2);
 }
@@ -228,9 +237,169 @@ function printSummary(errors, membersOfType, fullLists, errorMessages) {
   }
 }
 
+const CLOSING_BRACKETS = { "<": ">", "(": ")", "[": "]", "{": "}" };
+
 /**
- * @returns {{projectPath: string, membersOfType?: string,
- *   fullLists: boolean}}
+ * Sorts the members of every union in a type as tsc prints it, at any depth,
+ * so that two unions with the same members compare equal.
+ *
+ * @param {string} type
+ * @returns {string}
+ *   A string to compare, not a valid type.
+ */
+function sortUnions(type) {
+  let pos = 0;
+
+  // Reads from `pos` up to `closingBracket` or the end of the type, and
+  // returns that part with each union in it sorted. A union ends at a
+  // delimiter (`,`, `;`, `:` or `=>`) or at the end of the part.
+  const readUntil = closingBracket => {
+    let result = "";
+    let unionMembers = [];
+    let currentMember = "";
+    const endUnion = () => {
+      unionMembers.push(currentMember.trim());
+      result += unionMembers.sort().join(" | ");
+      unionMembers = [];
+      currentMember = "";
+    };
+
+    while (pos < type.length && type[pos] != closingBracket) {
+      const char = type[pos];
+      if (char == '"' || char == "`") {
+        let stringEnd = pos + 1;
+        while (stringEnd < type.length && type[stringEnd] != char) {
+          stringEnd += type[stringEnd] == "\\" ? 2 : 1;
+        }
+        currentMember += type.slice(pos, stringEnd + 1);
+        pos = stringEnd + 1;
+      } else if (char in CLOSING_BRACKETS) {
+        pos++;
+        const inner = readUntil(CLOSING_BRACKETS[char]);
+        currentMember += char + inner + (type[pos] ?? "");
+        pos++;
+      } else if (type.startsWith(" | ", pos)) {
+        unionMembers.push(currentMember.trim());
+        currentMember = "";
+        pos += 3;
+      } else if (",;:".includes(char) || type.startsWith("=>", pos)) {
+        const delimiter = char == "=" ? "=>" : char;
+        endUnion();
+        result += delimiter;
+        pos += delimiter.length;
+      } else {
+        currentMember += char;
+        pos++;
+      }
+    }
+
+    endUnion();
+    return result;
+  };
+
+  return readUntil();
+}
+
+/**
+ * Returns the string that identifies an error across two runs: its first
+ * line, without the (line,col) position, with the unions in each quoted type
+ * sorted, since tsc orders a union's members by when their types were
+ * created, which an unrelated edit can change.
+ *
+ * @param {string} error
+ */
+function matchKey(error) {
+  return error
+    .split("\n", 1)[0]
+    .replace(/\(\d+,\d+\)/, "")
+    .replace(/(?<!\w)'(.*?)'(?!\w)/g, (_, type) => `'${sortUnions(type)}'`);
+}
+
+/**
+ * Reads the errors from tsc output saved with --save. Accepts a file that a
+ * Windows shell re-encoded as UTF-16 or with CRLF line ends, and exits with 2
+ * if the file holds text but no errors.
+ *
+ * @param {string} file
+ * @returns {string[]}
+ */
+function readSavedErrors(file) {
+  let bytes;
+  try {
+    bytes = fs.readFileSync(file);
+  } catch (e) {
+    console.error(`cannot read ${file}: ${e.message}`);
+    process.exit(2);
+  }
+
+  const isUtf16 = bytes[0] == 0xff && bytes[1] == 0xfe;
+  const text = bytes
+    .toString(isUtf16 ? "utf16le" : "utf8")
+    .replace(/^\uFEFF/, "")
+    .replace(/\r\n/g, "\n");
+  const errors = parseErrors(text);
+  if (!errors.length && text.trim()) {
+    console.error(
+      /^\d+ errors?$/.test(text.split("\n", 1)[0])
+        ? `${file} holds the printed summary, not tsc's output; rerun with --save`
+        : `${file} holds no tsc errors; write it with --save`
+    );
+    process.exit(2);
+  }
+  return errors;
+}
+
+/**
+ * Prints the errors of the earlier run that the later one lacks, and the
+ * errors of the later run that the earlier one lacks, matched by matchKey().
+ *
+ * @param {string[]} beforeErrors
+ * @param {string[]} afterErrors
+ * @returns {boolean}
+ *   Whether the two runs have the same errors.
+ */
+function printDifferences(beforeErrors, afterErrors) {
+  const unmatchedAfter = new Map();
+  for (const error of afterErrors) {
+    const key = matchKey(error);
+    let sameKeyErrors = unmatchedAfter.get(key);
+    if (!sameKeyErrors) {
+      sameKeyErrors = [];
+      unmatchedAfter.set(key, sameKeyErrors);
+    }
+    sameKeyErrors.push(error);
+  }
+
+  const removed = [];
+  for (const error of beforeErrors) {
+    const sameKeyErrors = unmatchedAfter.get(matchKey(error));
+    if (sameKeyErrors?.length) {
+      sameKeyErrors.pop();
+    } else {
+      removed.push(error);
+    }
+  }
+  const added = [...unmatchedAfter.values()].flat();
+
+  const identical = !removed.length && !added.length;
+  console.log(
+    `${beforeErrors.length} before, ${afterErrors.length} after, ` +
+      (identical
+        ? "identical sets"
+        : `${removed.length} removed, ${added.length} added`)
+  );
+  for (const error of removed.sort()) {
+    console.log(`- ${error}`);
+  }
+  for (const error of added.sort()) {
+    console.log(`+ ${error}`);
+  }
+  return identical;
+}
+
+/**
+ * @returns {{projectPath: string, saveFile?: string, beforeFile?: string,
+ *   membersOfType?: string, fullLists: boolean}}
  */
 function parseArgs() {
   const args = process.argv.slice(2);
@@ -244,7 +413,11 @@ function parseArgs() {
   };
   while (args.length) {
     const arg = args.shift();
-    if (arg == "--members") {
+    if (arg == "--save") {
+      options.saveFile = optionValue();
+    } else if (arg == "--diff") {
+      options.beforeFile = optionValue();
+    } else if (arg == "--members") {
       options.membersOfType = optionValue();
     } else if (arg == "--full-lists") {
       options.fullLists = true;
@@ -258,16 +431,24 @@ function parseArgs() {
   if (!options.projectPath) {
     usage();
   }
+  if (options.beforeFile && (options.membersOfType || options.fullLists)) {
+    console.error(
+      "--diff lists the changed errors instead of the summary, so it can't" +
+        " be combined with --members or --full-lists."
+    );
+    process.exit(2);
+  }
   return options;
 }
 
 /**
  * Exits with 2 unless `projectPath` is a directory with a tsconfig.json or a
- * tsconfig file.
+ * tsconfig file, and `saveFile`, if given, is a writable file name.
  *
  * @param {string} projectPath
+ * @param {string} [saveFile]
  */
-function checkProjectPath(projectPath) {
+function checkPaths(projectPath, saveFile) {
   if (
     fs.statSync(projectPath, { throwIfNoEntry: false })?.isDirectory()
       ? !fs.existsSync(path.join(projectPath, "tsconfig.json"))
@@ -276,6 +457,30 @@ function checkProjectPath(projectPath) {
     console.error(
       `${projectPath} is neither a directory with a tsconfig.json nor a tsconfig file.`
     );
+    process.exit(2);
+  }
+
+  if (!saveFile) {
+    return;
+  }
+  const saveDir = path.dirname(saveFile);
+  if (!fs.statSync(saveDir, { throwIfNoEntry: false })?.isDirectory()) {
+    console.error(
+      `${saveDir} is not a directory, so --save cannot write there.`
+    );
+    process.exit(2);
+  }
+  if (fs.statSync(saveFile, { throwIfNoEntry: false })?.isDirectory()) {
+    console.error(`${saveFile} is a directory; give --save a file name.`);
+    process.exit(2);
+  }
+  try {
+    fs.accessSync(
+      fs.existsSync(saveFile) ? saveFile : saveDir,
+      fs.constants.W_OK
+    );
+  } catch {
+    console.error(`${saveFile} is not writable, so --save cannot write there.`);
     process.exit(2);
   }
 }
@@ -334,12 +539,26 @@ function runTsc(topsrcdir, projectPath) {
 function main() {
   const options = parseArgs();
   const projectPath = path.resolve(options.projectPath);
-  checkProjectPath(projectPath);
+  const saveFile = options.saveFile && path.resolve(options.saveFile);
+  checkPaths(projectPath, saveFile);
+
+  // The errors of the saved run that --diff compares this run with.
+  const beforeErrors =
+    options.beforeFile && readSavedErrors(options.beforeFile);
 
   const topsrcdir = path.join(import.meta.dirname, "..", "..");
   const tscOutput = runTsc(topsrcdir, projectPath);
   const errors = parseErrors(tscOutput);
   exitOnSetupError(errors);
+
+  if (saveFile) {
+    fs.writeFileSync(saveFile, tscOutput);
+  }
+
+  if (beforeErrors) {
+    process.exitCode = printDifferences(beforeErrors, errors) ? 0 : 1;
+    return;
+  }
   printSummary(
     errors,
     options.membersOfType,

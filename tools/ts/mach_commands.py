@@ -43,15 +43,30 @@ def check(ctx, paths):
 @SubCommand(
     "ts",
     "summary",
-    description="Count the tsc errors in a project by file and cause.",
+    description="Count the tsc errors in a project by file and cause, or compare "
+    "them with a saved run.",
 )
 @CommandArgument("project", help="Path to a (dir with a) tsconfig.json.")
+@CommandArgument(
+    "--save", metavar="FILE", help="Write tsc's output to FILE, for a later --diff."
+)
+@CommandArgument(
+    "--diff",
+    metavar="BEFORE",
+    help="List the errors added or removed since the output saved in BEFORE, "
+    "instead of the summary, and exit with 1 if there are any. Not combinable "
+    "with --members or --full-lists.",
+)
 @CommandArgument(
     "--members", metavar="TYPE", help="Also list the properties missing from TYPE."
 )
 @CommandArgument("--full-lists", action="store_true", help="Do not shorten the lists.")
-def summary(ctx, project, members=None, full_lists=False):
+def summary(ctx, project, save=None, diff=None, members=None, full_lists=False):
     args = [project]
+    if save:
+        args += ["--save", save]
+    if diff:
+        args += ["--diff", diff]
     if members:
         args += ["--members", members]
     if full_lists:
