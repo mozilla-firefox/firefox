@@ -6221,7 +6221,9 @@ void nsFlexContainerFrame::PopulateReflowOutput(
   // to add it in.
   desiredSizeInFlexWM.BSize(flexWM) += blockEndContainerBP;
 
-  if (aStatus.IsComplete() && !aChildrenStatus.IsFullyComplete()) {
+  if ((aStatus.IsComplete() && !aChildrenStatus.IsFullyComplete()) ||
+      (aStatus.IsIncomplete() &&
+       HasAnyStateBits(NS_FRAME_IS_OVERFLOW_CONTAINER))) {
     aStatus.SetOverflowIncomplete();
     aStatus.SetNextInFlowNeedsReflow();
   }
