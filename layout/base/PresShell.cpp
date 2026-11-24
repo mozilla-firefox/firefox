@@ -3543,6 +3543,14 @@ static void AccumulateFrameBounds(nsIFrame* aContainerFrame, nsIFrame* aFrame,
   nsRect transformedBounds = nsLayoutUtils::TransformFrameRectToAncestor(
       frame, frameBounds, aContainerFrame);
 
+  if (aFrame->IsInSVGTextSubtree()) {
+    // Transforming out of SVG text can lazily resolve bidi, which destroys the
+    // block's cached line iterator.
+    aPrevBlock = nullptr;
+    aLines = nullptr;
+    aCurLine = 0;
+  }
+
   if (aHaveRect) {
     // We can't use nsRect::UnionRect since it drops empty rects on
     // the floor, and we need to include them.  (Thus we need
