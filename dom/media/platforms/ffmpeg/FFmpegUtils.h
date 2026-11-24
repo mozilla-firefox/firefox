@@ -98,11 +98,11 @@ const char* AVCodecToString(const AVCodecID& aCodec);
 // to make sure our custom get_buffer2() allocator works with any system
 // provided ffmpeg.
 
-inline int32_t GetBuffer2StrideAlign(int32_t aStride) {
-  // STRIDE_ALIGN from libavcodec/internal.h
-  static constexpr int32_t kStrideAlign = 64;
-  static constexpr int32_t kPlaneTrailingPadding = 16 + kStrideAlign - 1;
+// STRIDE_ALIGN from libavcodec/internal.h
+constexpr int32_t kStrideAlign = 64;
+constexpr int32_t kPlaneTrailingPadding = 16 + kStrideAlign - 1;
 
+constexpr int32_t GetBuffer2StrideAlign(int32_t aStride) {
   return (kPlaneTrailingPadding + aStride - 1) / aStride;
 }
 
