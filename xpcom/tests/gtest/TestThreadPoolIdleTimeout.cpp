@@ -244,7 +244,7 @@ TEST(ThreadPoolIdleTimeout, Test)
       }
       printf("%u Found %u threads alive.\n",
              (uint32_t)(TimeStamp::Now() - execStart).ToMilliseconds(),
-             (uint32_t)numberOfThreads);
+             numberOfThreads.load());
       EXPECT_EQ(numberOfThreads, (uint32_t)NUMBER_OF_MAX_THREADS);
 
       start = TimeStamp::Now();
@@ -261,7 +261,7 @@ TEST(ThreadPoolIdleTimeout, Test)
       }
       printf("%u Found %u threads alive.\n",
              (uint32_t)(TimeStamp::Now() - execStart).ToMilliseconds(),
-             (uint32_t)numberOfThreads);
+             numberOfThreads.load());
       graceTime = TimeStamp::Now() - start;
     }
     EXPECT_EQ(numberOfThreads, (uint32_t)NUMBER_OF_IDLE_THREADS);
@@ -293,7 +293,7 @@ TEST(ThreadPoolIdleTimeout, Test)
     }
     printf("%u Found %u threads alive.\n",
            (uint32_t)(TimeStamp::Now() - execStart).ToMilliseconds(),
-           (uint32_t)numberOfThreads);
+           numberOfThreads.load());
     maxTime = TimeStamp::Now() - start;
     EXPECT_EQ(numberOfThreads, (uint32_t)0);
     if (deviationPerc < 10) {
@@ -348,8 +348,8 @@ TEST(ThreadPoolIdleTimeout, Test)
     // grace timeout.
     printf("%u Found %u threads created.\n",
            (uint32_t)(TimeStamp::Now() - execStart).ToMilliseconds(),
-           (uint32_t)numberOfThreadsCreated);
-    EXPECT_EQ(NUMBER_OF_MAX_THREADS, (uint32_t)numberOfThreadsCreated);
+           numberOfThreadsCreated.load());
+    EXPECT_EQ(NUMBER_OF_MAX_THREADS, numberOfThreadsCreated.load());
   }
 
   // 3rd Test: After an initial burst, see how low noise of repeated single
@@ -362,7 +362,7 @@ TEST(ThreadPoolIdleTimeout, Test)
     }
     printf("%u Found %u threads alive.\n",
            (uint32_t)(TimeStamp::Now() - execStart).ToMilliseconds(),
-           (uint32_t)numberOfThreads);
+           numberOfThreads.load());
     EXPECT_EQ(numberOfThreads, (uint32_t)NUMBER_OF_MAX_THREADS);
 
     double deviationPerc = 0.0;
@@ -397,7 +397,7 @@ TEST(ThreadPoolIdleTimeout, Test)
                       printf("%u Execute empty runnable, num %u.\n",
                              (uint32_t)(TimeStamp::Now() - execStart)
                                  .ToMilliseconds(),
-                             (uint32_t)numberOfNoiseRunnables);
+                             numberOfNoiseRunnables.load());
                       numberOfNoiseRunnables--;
                       if (numberOfNoiseRunnables == 0) {
                         waitForRepeatExecutions.Notify();
@@ -409,7 +409,7 @@ TEST(ThreadPoolIdleTimeout, Test)
                 printf(
                     "%u Dispatch empty runnable, num %u.\n",
                     (uint32_t)(TimeStamp::Now() - execStart).ToMilliseconds(),
-                    (uint32_t)numberOfNoiseRunnables);
+                    numberOfNoiseRunnables.load());
                 rv = pool->Dispatch(runnable, NS_DISPATCH_NORMAL);
                 ASSERT_NS_SUCCEEDED(rv);
               }
@@ -432,7 +432,7 @@ TEST(ThreadPoolIdleTimeout, Test)
         while (numberOfNoiseRunnables) {
           printf("%u Runnables in flight after cancel: %u, wait...\n",
                  (uint32_t)(TimeStamp::Now() - execStart).ToMilliseconds(),
-                 (uint32_t)numberOfNoiseRunnables);
+                 numberOfNoiseRunnables.load());
           waitForRepeatExecutions.Wait();
         }
       }
@@ -446,9 +446,9 @@ TEST(ThreadPoolIdleTimeout, Test)
       // with IDLE_THREAD_MAX_TIMEOUT expired, yet.
       printf("%u End of low noise, found %u threads alive.\n",
              (uint32_t)(TimeStamp::Now() - execStart).ToMilliseconds(),
-             (uint32_t)numberOfThreads);
-      EXPECT_LE(NUMBER_OF_IDLE_THREADS, (uint32_t)numberOfThreads);
-      EXPECT_GE(NUMBER_OF_IDLE_THREADS + 1, (uint32_t)numberOfThreads);
+             numberOfThreads.load());
+      EXPECT_LE(NUMBER_OF_IDLE_THREADS, numberOfThreads.load());
+      EXPECT_GE(NUMBER_OF_IDLE_THREADS + 1, numberOfThreads.load());
     } else {
       printf(
           "Encountered flaky timers (deviation=%.2f), skipping low noise "

@@ -89,8 +89,8 @@ class Checker {
 
   Checker& operator=(Checker&& aOther) {
     // Atomic<> doesn't have an |operator=(Atomic<>&&)|.
-    mState = uint32_t(aOther.mState);
-    mIsWritable = bool(aOther.mIsWritable);
+    mState = aOther.mState.load();
+    mIsWritable = aOther.mIsWritable.load();
 
     aOther.mState = kIdle;
     // XXX Shouldn't we set mIsWritable to true here for consistency?

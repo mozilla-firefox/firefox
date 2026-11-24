@@ -77,11 +77,11 @@ class CollectorLogAnalyzerBackground {
   Result<Ok, LogError> EnsureInitialized();
 
   double GetInitProgress() {
-    double totalSize = double(size_t(mCCFileSize)) +
-                       double(size_t(mGCFileSize)) + double(size_t(mQuerySize));
-    double totalProgress = double(size_t(mCCFileProgress)) +
-                           double(size_t(mGCFileProgress)) +
-                           double(size_t(mQueryProgress));
+    double totalSize = double(mCCFileSize.load()) + double(mGCFileSize.load()) +
+                       double(mQuerySize.load());
+    double totalProgress = double(mCCFileProgress.load()) +
+                           double(mGCFileProgress.load()) +
+                           double(mQueryProgress.load());
     return totalSize > 0 ? totalProgress / totalSize : 0;
   }
 
