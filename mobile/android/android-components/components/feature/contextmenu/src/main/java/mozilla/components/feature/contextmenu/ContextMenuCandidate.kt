@@ -9,6 +9,7 @@ import android.content.ClipData
 import android.content.ClipboardManager
 import android.content.Context
 import android.content.Intent
+import android.os.PersistableBundle
 import android.view.View
 import androidx.core.net.toUri
 import com.google.android.material.snackbar.Snackbar
@@ -305,12 +306,13 @@ data class ContextMenuCandidate(
                         hitResult.isMailto() &&
                         additionalValidation(tab, hitResult)
                 },
-                action = { _, hitResult ->
+                action = { tab, hitResult ->
                     val email = hitResult.getLink().stripMailToProtocol()
                     clipPlainText(
                         context,
                         email,
                         email,
+                        tab.content.private,
                         R.string.mozac_feature_contextmenu_snackbar_email_address_copied,
                         snackBarParentView,
                         snackbarDelegate,
@@ -633,11 +635,12 @@ data class ContextMenuCandidate(
                         (hitResult.isUri() || hitResult.isImage() || hitResult.isVideoAudio()) &&
                         additionalValidation(tab, hitResult)
                 },
-                action = { _, hitResult ->
+                action = { tab, hitResult ->
                     clipPlainText(
                         context,
                         hitResult.getLink(),
                         hitResult.getUrl(),
+                        tab.content.private,
                         R.string.mozac_feature_contextmenu_snackbar_link_copied,
                         snackBarParentView,
                         snackbarDelegate,
@@ -669,12 +672,13 @@ data class ContextMenuCandidate(
                         hitResult.hasLinkText() &&
                         additionalValidation(tab, hitResult)
                 },
-                action = { _, hitResult ->
+                action = { tab, hitResult ->
                     val innerText = (hitResult as? HitResult.UNKNOWN)?.linkText ?: return@ContextMenuCandidate
                     clipPlainText(
                         context,
                         label = hitResult.getLink(),
                         plainText = innerText,
+                        isPrivate = tab.content.private,
                         displayTextId = R.string.mozac_feature_contextmenu_snackbar_link_text_copied,
                         snackBarParentView,
                         snackbarDelegate,
@@ -705,11 +709,12 @@ data class ContextMenuCandidate(
                         hitResult.isImage() &&
                         additionalValidation(tab, hitResult)
                 },
-                action = { _, hitResult ->
+                action = { tab, hitResult ->
                     clipPlainText(
                         context,
                         hitResult.getLink(),
                         hitResult.src,
+                        tab.content.private,
                         R.string.mozac_feature_contextmenu_snackbar_link_copied,
                         snackBarParentView,
                         snackbarDelegate,
@@ -721,12 +726,19 @@ data class ContextMenuCandidate(
             context: Context,
             label: String,
             plainText: String,
+            isPrivate: Boolean,
             displayTextId: Int,
             snackBarParentView: View,
             snackbarDelegate: SnackbarDelegate = DefaultSnackbarDelegate(),
         ) {
             val clipboardManager = context.getSystemService(Context.CLIPBOARD_SERVICE) as ClipboardManager
             val clip = ClipData.newPlainText(label, plainText)
+            if (isPrivate) {
+                clip.description.extras =
+                    PersistableBundle().apply {
+                        putBoolean("android.content.extra.IS_SENSITIVE", true)
+                    }
+            }
             clipboardManager.setPrimaryClip(clip)
 
             snackbarDelegate.show(

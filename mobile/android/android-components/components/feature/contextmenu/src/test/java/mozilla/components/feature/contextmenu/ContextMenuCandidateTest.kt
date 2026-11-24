@@ -5,6 +5,7 @@
 package mozilla.components.feature.contextmenu
 
 import android.content.ActivityNotFoundException
+import android.content.ClipDescription
 import android.content.ClipboardManager
 import android.content.Context
 import android.view.View
@@ -1719,6 +1720,60 @@ class ContextMenuCandidateTest {
     }
 
     @Test
+    fun `Candidate 'Copy Link' marks the clip as sensitive only in a private tab`() {
+        val candidate =
+            ContextMenuCandidate.createCopyLinkCandidate(testContext, CoordinatorLayout(testContext), snackbarDelegate)
+        val clipboardManager = testContext.getSystemService(Context.CLIPBOARD_SERVICE) as ClipboardManager
+
+        clipboardManager.clearPrimaryClip()
+        candidate.action.invoke(
+            createTab("https://www.mozilla.org", private = true),
+            HitResult.UNKNOWN("https://www.mozilla.org/link"),
+        )
+
+        assertEquals("https://www.mozilla.org/link", clipboardManager.primaryClip?.getItemAt(0)?.text)
+        assertTrue(clipboardManager.isPrimaryClipSensitive())
+
+        clipboardManager.clearPrimaryClip()
+        candidate.action.invoke(
+            createTab("https://www.mozilla.org", private = false),
+            HitResult.UNKNOWN("https://www.mozilla.org/link"),
+        )
+
+        assertEquals("https://www.mozilla.org/link", clipboardManager.primaryClip?.getItemAt(0)?.text)
+        assertFalse(clipboardManager.isPrimaryClipSensitive())
+    }
+
+    @Test
+    fun `Candidate 'Copy link text' marks the clip as sensitive only in a private tab`() {
+        val candidate =
+            ContextMenuCandidate.createCopyLinkTextCandidate(
+                testContext,
+                CoordinatorLayout(testContext),
+                snackbarDelegate,
+            )
+        val clipboardManager = testContext.getSystemService(Context.CLIPBOARD_SERVICE) as ClipboardManager
+
+        clipboardManager.clearPrimaryClip()
+        candidate.action.invoke(
+            createTab("https://www.mozilla.org", private = true),
+            HitResult.UNKNOWN(src = "https://www.mozilla.org", linkText = "Mozilla"),
+        )
+
+        assertEquals("Mozilla", clipboardManager.primaryClip?.getItemAt(0)?.text)
+        assertTrue(clipboardManager.isPrimaryClipSensitive())
+
+        clipboardManager.clearPrimaryClip()
+        candidate.action.invoke(
+            createTab("https://www.mozilla.org", private = false),
+            HitResult.UNKNOWN(src = "https://www.mozilla.org", linkText = "Mozilla"),
+        )
+
+        assertEquals("Mozilla", clipboardManager.primaryClip?.getItemAt(0)?.text)
+        assertFalse(clipboardManager.isPrimaryClipSensitive())
+    }
+
+    @Test
     fun `Candidate 'Copy Image Location'`() {
         val parentView = CoordinatorLayout(testContext)
 
@@ -1817,6 +1872,35 @@ class ContextMenuCandidateTest {
                 HitResult.IMAGE("https://www.mozilla.org"),
             )
         )
+    }
+
+    @Test
+    fun `Candidate 'Copy Image Location' marks the clip as sensitive only in a private tab`() {
+        val candidate =
+            ContextMenuCandidate.createCopyImageLocationCandidate(
+                testContext,
+                CoordinatorLayout(testContext),
+                snackbarDelegate,
+            )
+        val clipboardManager = testContext.getSystemService(Context.CLIPBOARD_SERVICE) as ClipboardManager
+
+        clipboardManager.clearPrimaryClip()
+        candidate.action.invoke(
+            createTab("https://www.mozilla.org", private = true),
+            HitResult.IMAGE_SRC("https://firefox.com", "https://getpocket.com"),
+        )
+
+        assertEquals("https://firefox.com", clipboardManager.primaryClip?.getItemAt(0)?.text)
+        assertTrue(clipboardManager.isPrimaryClipSensitive())
+
+        clipboardManager.clearPrimaryClip()
+        candidate.action.invoke(
+            createTab("https://www.mozilla.org", private = false),
+            HitResult.IMAGE_SRC("https://firefox.com", "https://getpocket.com"),
+        )
+
+        assertEquals("https://firefox.com", clipboardManager.primaryClip?.getItemAt(0)?.text)
+        assertFalse(clipboardManager.isPrimaryClipSensitive())
     }
 
     @Test
@@ -2068,6 +2152,35 @@ class ContextMenuCandidateTest {
     }
 
     @Test
+    fun `Candidate 'Copy email address' marks the clip as sensitive only in a private tab`() {
+        val candidate =
+            ContextMenuCandidate.createCopyEmailAddressCandidate(
+                testContext,
+                CoordinatorLayout(testContext),
+                snackbarDelegate,
+            )
+        val clipboardManager = testContext.getSystemService(Context.CLIPBOARD_SERVICE) as ClipboardManager
+
+        clipboardManager.clearPrimaryClip()
+        candidate.action.invoke(
+            createTab("https://www.mozilla.org", private = true),
+            HitResult.UNKNOWN("mailto:example@example.com"),
+        )
+
+        assertEquals("example@example.com", clipboardManager.primaryClip?.getItemAt(0)?.text)
+        assertTrue(clipboardManager.isPrimaryClipSensitive())
+
+        clipboardManager.clearPrimaryClip()
+        candidate.action.invoke(
+            createTab("https://www.mozilla.org", private = false),
+            HitResult.UNKNOWN("mailto:example@example.com"),
+        )
+
+        assertEquals("example@example.com", clipboardManager.primaryClip?.getItemAt(0)?.text)
+        assertFalse(clipboardManager.isPrimaryClipSensitive())
+    }
+
+    @Test
     fun `Candidate 'Share email address'`() {
         val context = spy(testContext)
 
@@ -2305,6 +2418,9 @@ class ContextMenuCandidateTest {
         }
     }
 }
+
+private fun ClipboardManager.isPrimaryClipSensitive(): Boolean =
+    primaryClip?.description?.extras?.getBoolean(ClipDescription.EXTRA_IS_SENSITIVE) == true
 
 private class TestSnackbarDelegate : SnackbarDelegate {
     var hasShownSnackbar = false
