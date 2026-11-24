@@ -4,6 +4,11 @@
 
 import { XPCOMUtils } from "resource://gre/modules/XPCOMUtils.sys.mjs";
 
+const lazy = {};
+ChromeUtils.defineESModuleGetters(lazy, {
+  assignAutoAccessKeys: "chrome://global/content/elements/auto-accesskey.mjs",
+});
+
 export var PopupAndRedirectBlockerObserver = {
   /**
    * Check if we are currently in the process of appending a notification.
@@ -216,6 +221,7 @@ export var PopupAndRedirectBlockerObserver = {
     }
 
     const menuitem = document.createXULElement("menuitem");
+    menuitem.setAttribute("auto-accesskey", "digit");
     document.l10n.setAttributes(menuitem, "popup-trigger-redirect-menuitem", {
       redirectURI: aBlockedRedirect.redirectURISpec,
     });
@@ -234,6 +240,7 @@ export var PopupAndRedirectBlockerObserver = {
     menuitem.browsingContext = aBlockedRedirect.browsingContext;
 
     blockedRedirectSeparator.after(menuitem);
+    lazy.assignAutoAccessKeys(menuitem.parentNode);
   },
 
   onPopupShowingBlockedPopups(aBlockedPopups, aWindow) {
@@ -260,6 +267,7 @@ export var PopupAndRedirectBlockerObserver = {
       const blockedPopup = aBlockedPopups[i];
 
       const menuitem = document.createXULElement("menuitem");
+      menuitem.setAttribute("auto-accesskey", "digit");
       document.l10n.setAttributes(menuitem, "popup-show-popup-menuitem", {
         popupURI: blockedPopup.popupWindowURISpec,
       });
@@ -278,6 +286,7 @@ export var PopupAndRedirectBlockerObserver = {
 
       blockedPopupsSeparator.after(menuitem);
     }
+    lazy.assignAutoAccessKeys(blockedPopupsSeparator.parentNode);
   },
 
   /**
