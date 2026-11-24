@@ -110,15 +110,6 @@ const MigrationDialog = {
     }
 
     this._wiz.doAutoImport(migratorKey, profile, resourceTypeStrs);
-    this._wiz.addEventListener(
-      "MigrationWizard:DoneMigration",
-      () => {
-        setTimeout(() => {
-          window.close();
-        }, 5000);
-      },
-      { once: true }
-    );
   },
 };
 
