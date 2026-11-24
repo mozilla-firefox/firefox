@@ -53,8 +53,21 @@ class MenuItemsRegistryTest {
                 resolver = { FakeMenuItemProvider() },
             )
 
-        assertSame(registry.providers.getValue(FindInPage), registry[FindInPage])
+        assertSame(registry.providers.getValue(FindInPage.id), registry[FindInPage])
         assertSame(registry[FindInPage], registry.get(FindInPage))
+    }
+
+    @Test
+    fun `WHEN asking for the provider of an item expanding to other items than configured THEN offer the one configured for it`() {
+        val configured = More(subMenuItems = listOf(FindInPage, Settings))
+        val registry =
+            MenuItemsRegistry(
+                configuration = listOf(sectionOf(configured)),
+                resolver = { FakeMenuItemProvider() },
+            )
+
+        assertSame(registry[configured], registry[More(subMenuItems = listOf(Settings))])
+        assertSame(registry[configured], registry[More(subMenuItems = emptyList())])
     }
 
     @Test

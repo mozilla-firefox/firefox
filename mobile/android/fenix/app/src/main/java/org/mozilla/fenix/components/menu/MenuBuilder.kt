@@ -28,41 +28,40 @@ import org.mozilla.fenix.components.menu.configuration.asMenuItemsGroup
 class MenuBuilder(private val registry: MenuItemsRegistry) {
     private val configuration = registry.configuration
 
-    private val orderedItems = registry.providers.keys.toList()
-
     /** The menu to show, re-emitted whenever any of the items in it changes. */
     val menuStructure: Flow<List<MenuItemsGroup>> =
-        orderedItems.itemsFromProviders().map { items -> configuration.toGroups(items) }.distinctUntilChanged()
+        itemsFromProviders().map { items -> configuration.toGroups(items) }.distinctUntilChanged()
 
     /**
-     * What the feature owning each of these items currently offers for it, re-emitted whenever any one of them changes.
-     * An item that should not be shown for now is offered as an empty list, meaning the provider decided that nothing
-     * should be shown for it rather than that it has not decided yet.
+     * What the feature owning each configured item currently offers for it, keyed by [FenixMenuItem.id] and re-emitted
+     * whenever any one of them changes. An item that should not be shown for now is offered as an empty list, meaning
+     * the provider decided that nothing should be shown for it rather than that it has not decided yet.
      */
-    private fun List<FenixMenuItem>.itemsFromProviders(): Flow<Map<FenixMenuItem, List<ShownMenuItem>>> =
-        combine(map { registry[it].itemsFlow }) { provided -> zip(provided).toMap() }
+    private fun itemsFromProviders(): Flow<Map<String, List<ShownMenuItem>>> =
+        combine(registry.providers.values.map { it.itemsFlow }) { provided ->
+            registry.providers.keys.zip(provided).toMap()
+        }
 
     /**
      * A [MenuItemsGroup] for each of these sections, laid out the way the section asks for and holding only the items
      * that are currently shown. Sections left with nothing to show are dropped.
      */
-    private fun List<MenuSectionConfiguration>.toGroups(items: Map<FenixMenuItem, List<ShownMenuItem>>) =
-        map { section ->
-            section.asMenuItemsGroup(shownItems = section.items.flatMap { it.getMenuItemsToShow(items) })
-        }
+    private fun List<MenuSectionConfiguration>.toGroups(items: Map<String, List<ShownMenuItem>>) = map { section ->
+        section.asMenuItemsGroup(shownItems = section.items.flatMap { it.getMenuItemsToShow(items) })
+    }
         .filterNot { it.items.isEmpty() }
 
     /**
      * Get the menu items configuration to show for this, or an empty list if none is available.
      *
-     * @param items A map of all the menu items wanted to be shown in the menu to the actual menu items configuration
-     *   available.
+     * @param items A map of the [FenixMenuItem.id] of all the menu items wanted to be shown in the menu to the actual
+     *   menu items configuration available.
      */
-    private fun FenixMenuItem.getMenuItemsToShow(items: Map<FenixMenuItem, List<ShownMenuItem>>): List<ShownMenuItem> {
-        if (this !is FenixExpandableMenuItem) return items[this].orEmpty()
+    private fun FenixMenuItem.getMenuItemsToShow(items: Map<String, List<ShownMenuItem>>): List<ShownMenuItem> {
+        if (this !is FenixExpandableMenuItem) return items[id].orEmpty()
 
-        val header = items[this]?.singleOrNull() as? ExpandableMenuItem ?: return emptyList()
-        val children = subMenuItems.flatMap { items[it].orEmpty() }.filterIsInstance<StandardMenuItem>()
+        val header = items[id]?.singleOrNull() as? ExpandableMenuItem ?: return emptyList()
+        val children = subMenuItems.flatMap { items[it.id].orEmpty() }.filterIsInstance<StandardMenuItem>()
         if (children.isEmpty()) return emptyList()
 
         val provider = registry[this] as? ExpandableMenuItemProvider

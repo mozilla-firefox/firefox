@@ -44,6 +44,7 @@ import org.mozilla.fenix.components.FindInPageMenuItemProvider
 import org.mozilla.fenix.components.accounts.MozillaAccountMenuItemProvider
 import org.mozilla.fenix.components.menu.configuration.FenixMenuItem
 import org.mozilla.fenix.components.menu.configuration.HomeMenuConfiguration
+import org.mozilla.fenix.components.menu.fake.allMenuItems
 import org.mozilla.fenix.components.menu.fake.reachableEvents
 import org.mozilla.fenix.customtabs.CustomTabAppMenuItemProvider
 import org.mozilla.fenix.downloads.DownloadsMenuItemProvider
@@ -106,18 +107,19 @@ class MenuItemProvidersFactoryTest {
         val shown = registry.providers.filterValues { it.itemsFlow.value.isNotEmpty() }.keys
         assertEquals(
             listOf(
-                FenixMenuItem.DefaultBrowserBanner,
-                FenixMenuItem.IPProtection,
-                FenixMenuItem.Extensions,
-                FenixMenuItem.History,
-                FenixMenuItem.Bookmarks,
-                FenixMenuItem.Downloads,
-                FenixMenuItem.Passwords,
-                FenixMenuItem.MozillaAccount,
-                FenixMenuItem.CustomizeHomepage,
-                FenixMenuItem.Settings,
-                FenixMenuItem.Quit,
-            ),
+                    FenixMenuItem.DefaultBrowserBanner,
+                    FenixMenuItem.IPProtection,
+                    FenixMenuItem.Extensions,
+                    FenixMenuItem.History,
+                    FenixMenuItem.Bookmarks,
+                    FenixMenuItem.Downloads,
+                    FenixMenuItem.Passwords,
+                    FenixMenuItem.MozillaAccount,
+                    FenixMenuItem.CustomizeHomepage,
+                    FenixMenuItem.Settings,
+                    FenixMenuItem.Quit,
+                )
+                .map { it.id },
             shown.toList(),
         )
         registry.providers.values
@@ -127,15 +129,6 @@ class MenuItemProvidersFactoryTest {
                 assertEquals(1, registry.providers.values.count { it.handles(event) }, "Handlers of $event")
             }
     }
-
-    private fun allMenuItems(): List<FenixMenuItem> =
-        FenixMenuItem::class.sealedSubclasses.map { type ->
-            type.objectInstance
-                ?: when (type) {
-                    FenixMenuItem.More::class -> FenixMenuItem.More(subMenuItems = emptyList())
-                    else -> error("Unknown menu item type $type")
-                }
-        }
 
     private fun createFactory(
         accessPoint: MenuAccessPoint = MenuAccessPoint.Browser,

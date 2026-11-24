@@ -14,19 +14,26 @@ import org.mozilla.fenix.components.menu.configuration.MenuSectionConfiguration
  * Everything needing the providers of a menu should get them from here to ensure working with the same.
  *
  * @property configuration The sections of the menu, in the order they should be shown in.
- * @param resolver Builds the [MenuItemProvider] for a [FenixMenuItem]. Called once for each distinct item configured,
- *   including the ones other items expand to.
+ * @param resolver Builds the [MenuItemProvider] for a [FenixMenuItem]. Called once for each [FenixMenuItem.id]
+ *   configured, including the ones of the items other items expand to.
  */
 class MenuItemsRegistry(
     val configuration: List<MenuSectionConfiguration>,
     resolver: (FenixMenuItem) -> MenuItemProvider,
 ) {
-    /** Map of the providers of each menu item shown, in the order the items are first configured in. */
-    val providers: Map<FenixMenuItem, MenuItemProvider> =
-        configuration.flatMap { it.items }.flatMap { it.withSubItems() }.distinct().associateWith(resolver)
+    /**
+     * Map of the [FenixMenuItem.id] of each menu item shown to its provider, in the order the items are first
+     * configured in.
+     */
+    val providers: Map<String, MenuItemProvider> =
+        configuration
+            .flatMap { it.items }
+            .flatMap { it.withSubItems() }
+            .distinctBy { it.id }
+            .associate { it.id to resolver(it) }
 
     /** Get the [MenuItemProvider] of the given [item] if already configured to be shown in the menu. */
-    operator fun get(item: FenixMenuItem): MenuItemProvider = providers.getValue(item)
+    operator fun get(item: FenixMenuItem): MenuItemProvider = providers.getValue(item.id)
 
     /** This item and the ones it expands to, when each of them is configured by a provider of its own. */
     private fun FenixMenuItem.withSubItems(): List<FenixMenuItem> =
