@@ -6,8 +6,7 @@
  */
 "use strict";
 
-// Note: This file is overridden in the 'package.json#browser' field to
-// substitute lib/url-browser.js instead.
-
-// Use the URL global for Node 10, and the 'url' module for Node 8.
-module.exports = typeof URL === "function" ? URL : require("url").URL;
+// `URL` has been a global since Node 10 and this package requires Node >= 18,
+// so there is no need to fall back to the 'url' core module. Requiring it would
+// also break bundlers that no longer polyfill Node core modules (webpack >= 5).
+module.exports = URL;

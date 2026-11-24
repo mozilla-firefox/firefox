@@ -8,6 +8,7 @@ DevToolsModules(
     "base64.js",
     "binary-search.js",
     "mapping-list.js",
+    "mappings-glue-browser.mjs",
     "mappings.wasm",
     "read-wasm.js",
     "source-map-consumer.js",

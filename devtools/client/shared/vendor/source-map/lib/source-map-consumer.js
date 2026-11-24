@@ -223,7 +223,7 @@ class BasicSourceMapConsumer extends SourceMapConsumer {
       that.x_google_ignoreList = x_google_ignoreList;
 
       that._computedColumnSpans = false;
-      that._mappingsPtr = 0;
+      that._wasmMappings = null;
       that._wasm = null;
 
       return wasm().then(w => {
@@ -290,12 +290,12 @@ class BasicSourceMapConsumer extends SourceMapConsumer {
     return this._absoluteSources.toArray();
   }
 
-  _getMappingsPtr() {
-    if (this._mappingsPtr === 0) {
+  _getWasmMappings() {
+    if (this._wasmMappings === null) {
       this._parseMappings();
     }
 
-    return this._mappingsPtr;
+    return this._wasmMappings;
   }
 
   /**
@@ -304,25 +304,10 @@ class BasicSourceMapConsumer extends SourceMapConsumer {
    * `this.__originalMappings` properties).
    */
   _parseMappings() {
-    const aStr = this._mappings;
-    const size = aStr.length;
-
-    // Interpret signed result of allocate_mappings as unsigned, otherwise
-    // addresses higher than 2GB will be negative.
-    const mappingsBufPtr = this._wasm.exports.allocate_mappings(size) >>> 0;
-    const mappingsBuf = new Uint8Array(
-      this._wasm.exports.memory.buffer,
-      mappingsBufPtr,
-      size
-    );
-    for (let i = 0; i < size; i++) {
-      mappingsBuf[i] = aStr.charCodeAt(i);
-    }
-
-    const mappingsPtr = this._wasm.exports.parse_mappings(mappingsBufPtr);
-
-    if (!mappingsPtr) {
-      const error = this._wasm.exports.get_last_error();
+    let mappings;
+    try {
+      mappings = this._wasm.parseMappings(this._mappings);
+    } catch (error) {
       let msg = `Error parsing mappings (code ${error}): `;
 
       // XXX: keep these error codes in sync with `wasm-mappings`.
@@ -348,41 +333,38 @@ class BasicSourceMapConsumer extends SourceMapConsumer {
       throw new Error(msg);
     }
 
-    this._mappingsPtr = mappingsPtr;
+    this._wasmMappings = mappings;
   }
 
   eachMapping(aCallback, aContext, aOrder) {
     const context = aContext || null;
     const order = aOrder || SourceMapConsumer.GENERATED_ORDER;
 
-    this._wasm.withMappingCallback(
-      mapping => {
-        if (mapping.source !== null) {
-          mapping.source = this._absoluteSources.at(mapping.source);
+    const callback = wasm.mappingCallback(mapping => {
+      if (mapping.source !== null) {
+        mapping.source = this._absoluteSources.at(mapping.source);
 
-          if (mapping.name !== null) {
-            mapping.name = this._names.at(mapping.name);
-          }
-        }
-        if (this._computedColumnSpans && mapping.lastGeneratedColumn === null) {
-          mapping.lastGeneratedColumn = Infinity;
-        }
-
-        aCallback.call(context, mapping);
-      },
-      () => {
-        switch (order) {
-          case SourceMapConsumer.GENERATED_ORDER:
-            this._wasm.exports.by_generated_location(this._getMappingsPtr());
-            break;
-          case SourceMapConsumer.ORIGINAL_ORDER:
-            this._wasm.exports.by_original_location(this._getMappingsPtr());
-            break;
-          default:
-            throw new Error("Unknown order of iteration.");
+        if (mapping.name !== null) {
+          mapping.name = this._names.at(mapping.name);
         }
       }
-    );
+      if (this._computedColumnSpans && mapping.lastGeneratedColumn === null) {
+        mapping.lastGeneratedColumn = Infinity;
+      }
+
+      aCallback.call(context, mapping);
+    });
+
+    switch (order) {
+      case SourceMapConsumer.GENERATED_ORDER:
+        this._getWasmMappings().byGeneratedLocation(callback);
+        break;
+      case SourceMapConsumer.ORIGINAL_ORDER:
+        this._getWasmMappings().byOriginalLocation(callback);
+        break;
+      default:
+        throw new Error("Unknown order of iteration.");
+    }
   }
 
   allGeneratedPositionsFor(aArgs) {
@@ -405,8 +387,12 @@ class BasicSourceMapConsumer extends SourceMapConsumer {
 
     const mappings = [];
 
-    this._wasm.withMappingCallback(
-      m => {
+    this._getWasmMappings().allGeneratedLocationsFor(
+      source,
+      originalLine - 1,
+      "column" in aArgs,
+      originalColumn,
+      wasm.mappingCallback(m => {
         let lastColumn = m.lastGeneratedColumn;
         if (this._computedColumnSpans && lastColumn === null) {
           lastColumn = Infinity;
@@ -416,25 +402,16 @@ class BasicSourceMapConsumer extends SourceMapConsumer {
           column: m.generatedColumn,
           lastColumn,
         });
-      },
-      () => {
-        this._wasm.exports.all_generated_locations_for(
-          this._getMappingsPtr(),
-          source,
-          originalLine - 1,
-          "column" in aArgs,
-          originalColumn
-        );
-      }
+      })
     );
 
     return mappings;
   }
 
   destroy() {
-    if (this._mappingsPtr !== 0) {
-      this._wasm.exports.free_mappings(this._mappingsPtr);
-      this._mappingsPtr = 0;
+    if (this._wasmMappings !== null) {
+      this._wasmMappings.free();
+      this._wasmMappings = null;
     }
   }
 
@@ -447,7 +424,7 @@ class BasicSourceMapConsumer extends SourceMapConsumer {
       return;
     }
 
-    this._wasm.exports.compute_column_spans(this._getMappingsPtr());
+    this._getWasmMappings().computeColumnSpans();
     this._computedColumnSpans = true;
   }
 
@@ -499,16 +476,11 @@ class BasicSourceMapConsumer extends SourceMapConsumer {
     }
 
     let mapping;
-    this._wasm.withMappingCallback(
-      m => (mapping = m),
-      () => {
-        this._wasm.exports.original_location_for(
-          this._getMappingsPtr(),
-          needle.generatedLine - 1,
-          needle.generatedColumn,
-          bias
-        );
-      }
+    this._getWasmMappings().originalLocationFor(
+      needle.generatedLine - 1,
+      needle.generatedColumn,
+      bias,
+      wasm.mappingCallback(m => (mapping = m))
     );
 
     if (mapping) {
@@ -640,17 +612,12 @@ class BasicSourceMapConsumer extends SourceMapConsumer {
     }
 
     let mapping;
-    this._wasm.withMappingCallback(
-      m => (mapping = m),
-      () => {
-        this._wasm.exports.generated_location_for(
-          this._getMappingsPtr(),
-          needle.source,
-          needle.originalLine - 1,
-          needle.originalColumn,
-          bias
-        );
-      }
+    this._getWasmMappings().generatedLocationFor(
+      needle.source,
+      needle.originalLine - 1,
+      needle.originalColumn,
+      bias,
+      wasm.mappingCallback(m => (mapping = m))
     );
 
     if (mapping) {

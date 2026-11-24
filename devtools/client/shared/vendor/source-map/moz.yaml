@@ -10,8 +10,8 @@ origin:
 
   url: https://github.com/mozilla/source-map
 
-  release: 13e54a38bfc62af93e80eea0240bb46acd6a330a (2025-07-10T08:07:05Z).
-  revision: 13e54a38bfc62af93e80eea0240bb46acd6a330a
+  release: 8c668f3dd3916e96d06131dec97c78a3e62bd0f3 (2026-10-12T09:32:45Z).
+  revision: 8c668f3dd3916e96d06131dec97c78a3e62bd0f3
 
   license: BSD-3-Clause
   license-file: LICENSE
@@ -30,6 +30,7 @@ vendoring:
   include:
     - source-map.js
     - "lib/*.js"
+    - "lib/*.mjs"
     - "lib/*.wasm"
 
   update-actions:
