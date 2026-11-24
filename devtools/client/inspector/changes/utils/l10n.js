@@ -4,12 +4,16 @@
 
 "use strict";
 
-const { LocalizationHelper } = require("resource://devtools/shared/l10n.js");
-const L10N = new LocalizationHelper(
-  "devtools/client/locales/changes.properties"
-);
+loader.lazyGetter(this, "L10N", () => {
+  return new Localization(["devtools/client/changes.ftl"], true);
+});
 
 module.exports = {
-  getStr: (...args) => L10N.getStr(...args),
-  getFormatStr: (...args) => L10N.getFormatStr(...args),
+  getStr: id => L10N.formatValueSync(id),
+  getAttributes: id => {
+    const [{ attributes }] = L10N.formatMessagesSync([id]);
+    return Object.fromEntries(
+      attributes.map(({ name, value }) => [name, value])
+    );
+  },
 };

@@ -53,9 +53,9 @@ class ChangesApp extends PureComponent {
           e.stopPropagation();
           this.props.onCopyAllChanges();
         },
-        title: getStr("changes.contextmenu.copyAllChangesDescription"),
+        title: getStr("changes-copy-all-changes-button-title"),
       },
-      getStr("changes.contextmenu.copyAllChanges")
+      getStr("changes-copy-all-changes-button")
     );
 
     return dom.div({ className: "changes__toolbar" }, button);
@@ -69,9 +69,9 @@ class ChangesApp extends PureComponent {
           e.stopPropagation();
           this.props.onCopyRule(ruleId);
         },
-        title: getStr("changes.contextmenu.copyRuleDescription"),
+        title: getStr("changes-copy-rule-button-title"),
       },
-      getStr("changes.contextmenu.copyRule")
+      getStr("changes-copy-rule-button")
     );
   }
 
@@ -203,15 +203,15 @@ class ChangesApp extends PureComponent {
         className: "inspector-badge",
         title: href,
       },
-      getStr("changes.iframeLabel")
+      getStr("changes-iframe-label")
     );
   }
 
   renderEmptyState() {
     return dom.div(
       { className: "devtools-sidepanel-no-result" },
-      dom.p({}, getStr("changes.noChanges")),
-      dom.p({}, getStr("changes.noChangesDescription"))
+      dom.p({}, getStr("changes-no-changes")),
+      dom.p({}, getStr("changes-no-changes-description"))
     );
   }
 

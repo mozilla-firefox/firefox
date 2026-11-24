@@ -25,10 +25,10 @@ function getSourceForDisplay(source) {
 
   switch (source.type) {
     case "element":
-      href = getStr("changes.elementStyleLabel");
+      href = getStr("changes-element-style-label");
       break;
     case "inline":
-      href = getStr("changes.inlineStyleSheetLabel2");
+      href = getStr("changes-inline-stylesheet-label");
       break;
     case "stylesheet": {
       const url = new URL(source.href);

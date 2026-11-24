@@ -12,7 +12,7 @@ loader.lazyRequireGetter(
 );
 
 const {
-  getStr,
+  getAttributes,
 } = require("resource://devtools/client/inspector/changes/utils/l10n.js");
 
 /**
@@ -46,8 +46,7 @@ class ChangesContextMenu extends Menu {
     // Copy option
     const menuitemCopy = new MenuItem({
       id: "changes-contextmenu-copy",
-      label: getStr("changes.contextmenu.copy"),
-      accesskey: getStr("changes.contextmenu.copy.accessKey"),
+      ...getAttributes("changes-context-menu-copy"),
       click: this.onCopy,
       disabled: !this._hasTextSelected(),
     });
@@ -62,7 +61,7 @@ class ChangesContextMenu extends Menu {
       this.append(
         new MenuItem({
           id: "changes-contextmenu-copy-rule",
-          label: getStr("changes.contextmenu.copyRule"),
+          ...getAttributes("changes-context-menu-copy-rule"),
           click: () => this.onCopyRule(ruleId, true),
         })
       );
@@ -71,7 +70,7 @@ class ChangesContextMenu extends Menu {
       this.append(
         new MenuItem({
           id: "changes-contextmenu-copy-declaration",
-          label: getStr("changes.contextmenu.copyDeclaration"),
+          ...getAttributes("changes-context-menu-copy-declaration"),
           click: () => this.onCopyDeclaration(declEl),
           visible: !!declEl,
         })
@@ -87,8 +86,7 @@ class ChangesContextMenu extends Menu {
     // Select All option
     const menuitemSelectAll = new MenuItem({
       id: "changes-contextmenu-select-all",
-      label: getStr("changes.contextmenu.selectAll"),
-      accesskey: getStr("changes.contextmenu.selectAll.accessKey"),
+      ...getAttributes("changes-context-menu-select-all"),
       click: this.onSelectAll,
     });
     this.append(menuitemSelectAll);
