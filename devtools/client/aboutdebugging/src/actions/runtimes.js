@@ -172,6 +172,7 @@ function connectRuntime(id) {
         : deviceDescription.version;
 
       const runtimeDetails = {
+        canDebugServiceWorkers: deviceDescription.canDebugServiceWorkers,
         clientWrapper,
         compatibilityReport,
         connectionPromptEnabled,

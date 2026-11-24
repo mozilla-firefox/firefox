@@ -56,6 +56,7 @@ class Registration extends PureComponent {
   static get propTypes() {
     return {
       className: PropTypes.string,
+      isDebugEnabled: PropTypes.bool.isRequired,
       registration: PropTypes.shape(Types.registration).isRequired,
       // this prop get automatically injected via `connect`
       dispatch: PropTypes.func.isRequired,
@@ -87,7 +88,7 @@ class Registration extends PureComponent {
   }
 
   render() {
-    const { registration, className } = this.props;
+    const { registration, isDebugEnabled, className } = this.props;
 
     const unregisterButton = this.isActive()
       ? Localized(
@@ -138,6 +139,7 @@ class Registration extends PureComponent {
               },
               Worker({
                 worker,
+                isDebugEnabled,
               })
             );
           })

@@ -7,6 +7,7 @@
 const {
   openTrustedLink,
 } = require("resource://devtools/client/shared/link.js");
+const PropTypes = require("resource://devtools/client/shared/vendor/react-prop-types.mjs");
 const {
   createFactory,
   PureComponent,
@@ -36,12 +37,13 @@ const Registration = createFactory(
 class RegistrationList extends PureComponent {
   static get propTypes() {
     return {
+      canDebugWorkers: PropTypes.bool.isRequired,
       registrations: Types.registrationArray.isRequired,
     };
   }
 
   render() {
-    const { registrations } = this.props;
+    const { canDebugWorkers, registrations } = this.props;
 
     return [
       article(
@@ -60,6 +62,7 @@ class RegistrationList extends PureComponent {
           registrations.map(registration =>
             Registration({
               key: registration.id,
+              isDebugEnabled: canDebugWorkers,
               registration,
               className: "registrations-container__item",
             })

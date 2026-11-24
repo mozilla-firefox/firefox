@@ -37,7 +37,9 @@ exports.DeviceActor = class DeviceActor extends Actor {
   }
 
   getDescription() {
-    return getSystemInfo();
+    return Object.assign({}, getSystemInfo(), {
+      canDebugServiceWorkers: true,
+    });
   }
 
   _acquireWakeLock() {

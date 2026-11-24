@@ -37,6 +37,7 @@ exports[`Registration Renders the expected snapshot for a registration with a wo
         key="id-worker-1-example"
       >
         <Connect(Worker)
+          isDebugEnabled={true}
           worker={
             Object {
               "id": "id-worker-1-example",
@@ -90,6 +91,7 @@ exports[`Registration Renders the expected snapshot for a registration with mult
         key="id-worker-1-example"
       >
         <Connect(Worker)
+          isDebugEnabled={true}
           worker={
             Object {
               "id": "id-worker-1-example",
@@ -106,11 +108,66 @@ exports[`Registration Renders the expected snapshot for a registration with mult
         key="id-worker-2-example"
       >
         <Connect(Worker)
+          isDebugEnabled={true}
           worker={
             Object {
               "id": "id-worker-2-example",
               "state": 2,
               "stateText": "installed",
+              "url": "http://example.com/worker.js",
+              "workerDescriptorFront": "",
+            }
+          }
+        />
+      </li>
+    </ul>
+  </article>
+</li>
+`;
+
+exports[`Registration Renders the expected snapshot when sw debugging is disabled 1`] = `
+<li
+  className=""
+>
+  <article
+    className="registration js-sw-container"
+  >
+    <header
+      className="registration__header"
+    >
+      <h2
+        className="registration__scope js-sw-scope devtools-ellipsis-text"
+        title="SCOPE 123"
+      >
+        SCOPE 123
+      </h2>
+    </header>
+    <aside
+      className="registration__controls"
+    >
+      <Localized
+        id="serviceworker-worker-unregister"
+      >
+        <UIButton
+          className="js-unregister-button"
+          onClick={[Function]}
+        />
+      </Localized>
+    </aside>
+    <ul
+      className="registration__workers"
+    >
+      <li
+        className="registration__workers-item"
+        key="id-worker-1-example"
+      >
+        <Connect(Worker)
+          isDebugEnabled={false}
+          worker={
+            Object {
+              "id": "id-worker-1-example",
+              "state": 4,
+              "stateText": "activated",
               "url": "http://example.com/worker.js",
               "workerDescriptorFront": "",
             }

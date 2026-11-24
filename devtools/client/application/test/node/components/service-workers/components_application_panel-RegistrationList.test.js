@@ -25,6 +25,7 @@ describe("RegistrationList", () => {
     const wrapper = shallow(
       RegistrationList({
         registrations: SINGLE_WORKER_DEFAULT_DOMAIN_LIST,
+        canDebugWorkers: true,
       })
     );
     expect(wrapper).toMatchSnapshot();
@@ -34,6 +35,7 @@ describe("RegistrationList", () => {
     const wrapper = shallow(
       RegistrationList({
         registrations: MULTIPLE_WORKER_LIST,
+        canDebugWorkers: true,
       })
     );
     expect(wrapper).toMatchSnapshot();

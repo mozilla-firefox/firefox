@@ -4,7 +4,7 @@
 
 import { setupCommands, clientCommands } from "./firefox/commands";
 import { setupCreate, createPause } from "./firefox/create";
-import { prefs } from "../utils/prefs";
+import { prefs, features } from "../utils/prefs";
 
 import { recordEvent } from "../utils/telemetry";
 import sourceQueue from "../utils/source-queue";
@@ -46,7 +46,7 @@ export async function onConnect(_commands, _resourceCommand, _actions, store) {
     descriptorFront.isBrowserProcessDescriptor
   ) {
     targetCommand.listenForWorkers = true;
-    if (descriptorFront.isLocalTab) {
+    if (descriptorFront.isLocalTab && features.windowlessServiceWorkers) {
       targetCommand.listenForServiceWorkers = true;
     }
     await targetCommand.startListening();

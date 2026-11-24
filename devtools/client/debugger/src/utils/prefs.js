@@ -147,6 +147,7 @@ export const features = new PrefsHelper("devtools.debugger.features", {
   mapAwaitExpression: ["Bool", "map-await-expression"],
   logPoints: ["Bool", "log-points"],
   inlinePreview: ["Bool", "inline-preview"],
+  windowlessServiceWorkers: ["Bool", "windowless-service-workers"],
   javascriptTracing: ["Bool", "javascript-tracing"],
   stylesheetsInDebugger: ["Bool", "stylesheets-in-debugger"],
 });
