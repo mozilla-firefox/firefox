@@ -26,8 +26,8 @@ class WebrtcTCPSocketChild : public PWebrtcTCPSocketChild {
 
   explicit WebrtcTCPSocketChild(WebrtcTCPSocketCallback* aProxyCallbacks);
 
-  void AsyncOpen(const nsACString& aHost, const int& aPort,
-                 const nsACString& aLocalAddress, const int& aLocalPort,
+  void AsyncOpen(const nsACString& aHost, const uint16_t& aPort,
+                 const nsACString& aLocalAddress, const uint16_t& aLocalPort,
                  bool aUseTls,
                  const std::shared_ptr<NrSocketProxyConfig>& aProxyConfig);
 

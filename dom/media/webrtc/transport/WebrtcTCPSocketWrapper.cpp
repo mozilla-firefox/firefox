@@ -36,13 +36,13 @@ WebrtcTCPSocketWrapper::~WebrtcTCPSocketWrapper() {
 }
 
 void WebrtcTCPSocketWrapper::AsyncOpen(
-    const nsCString& aHost, const int& aPort, const nsCString& aLocalAddress,
-    const int& aLocalPort, bool aUseTls,
+    const nsCString& aHost, const uint16_t& aPort,
+    const nsCString& aLocalAddress, const uint16_t& aLocalPort, bool aUseTls,
     const shared_ptr<NrSocketProxyConfig>& aConfig) {
   if (!NS_IsMainThread()) {
     MOZ_ALWAYS_SUCCEEDS(mMainThread->Dispatch(
-        NewRunnableMethod<const nsCString, const int, const nsCString,
-                          const int, bool,
+        NewRunnableMethod<const nsCString, const uint16_t, const nsCString,
+                          const uint16_t, bool,
                           const shared_ptr<NrSocketProxyConfig>>(
             "WebrtcTCPSocketWrapper::AsyncOpen", this,
             &WebrtcTCPSocketWrapper::AsyncOpen, aHost, aPort, aLocalAddress,

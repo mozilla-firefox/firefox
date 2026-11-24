@@ -150,8 +150,8 @@ void WebrtcTCPSocket::CloseWithReason(nsresult aReason) {
 }
 
 nsresult WebrtcTCPSocket::Open(
-    const nsACString& aHost, const int& aPort, const nsACString& aLocalAddress,
-    const int& aLocalPort, bool aUseTls,
+    const nsACString& aHost, const uint16_t& aPort,
+    const nsACString& aLocalAddress, const uint16_t& aLocalPort, bool aUseTls,
     const Maybe<net::WebrtcProxyConfig>& aProxyConfig) {
   LOG("WebrtcTCPSocket::Open {} remote-host={} local-addr={} local-port={}",
       fmt::ptr(this), PromiseFlatCString(aHost).get(),

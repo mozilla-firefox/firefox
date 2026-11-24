@@ -4,8 +4,6 @@
 
 #include "WebrtcTCPSocketParent.h"
 
-#include <limits>
-
 #include "WebrtcTCPSocket.h"
 #include "WebrtcTCPSocketLog.h"
 #include "mozilla/IceServerParser.h"
@@ -17,9 +15,9 @@ using namespace mozilla::ipc;
 namespace mozilla::net {
 
 mozilla::ipc::IPCResult WebrtcTCPSocketParent::RecvAsyncOpen(
-    const nsACString& aHost, const int& aPort, const nsACString& aLocalAddress,
-    const int& aLocalPort, const bool& aUseTls,
-    const Maybe<WebrtcProxyConfig>& aProxyConfig) {
+    const nsACString& aHost, const uint16_t& aPort,
+    const nsACString& aLocalAddress, const uint16_t& aLocalPort,
+    const bool& aUseTls, const Maybe<WebrtcProxyConfig>& aProxyConfig) {
   LOG("WebrtcTCPSocketParent::RecvAsyncOpen {} to {}:{}\n", fmt::ptr(this),
       PromiseFlatCString(aHost).get(), aPort);
 
@@ -34,9 +32,7 @@ mozilla::ipc::IPCResult WebrtcTCPSocketParent::RecvAsyncOpen(
   // check times out on its own. CleanupChannel() must run before any OnClose
   // could fire: it nulls mChannel, which is what suppresses SendOnClose and
   // makes any later RecvWrite a no-op.
-  // See Bug 2058576 for fixing the port types in AsyncOpen.
-  if (aPort < 0 || aPort > std::numeric_limits<uint16_t>::max() ||
-      !IsWebrtcPortAllowed(static_cast<uint16_t>(aPort))) {
+  if (!IsWebrtcPortAllowed(aPort)) {
     LOG("WebrtcTCPSocketParent::RecvAsyncOpen {} dropping open to disallowed "
         "port {}\n",
         fmt::ptr(this), aPort);

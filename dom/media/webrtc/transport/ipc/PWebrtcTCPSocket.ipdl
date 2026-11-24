@@ -18,9 +18,9 @@ async protocol PWebrtcTCPSocket
 
 parent:
   async AsyncOpen(nsCString aHost,
-                  int32_t aPort,
+                  uint16_t aPort,
                   nsCString aLocalAddress,
-                  int32_t aLocalPort,
+                  uint16_t aLocalPort,
                   bool aUseTls,
                   WebrtcProxyConfig? aProxyConfig);
   async Write(uint8_t[] aWriteData);
