@@ -14,6 +14,10 @@ SOURCES = [
     "TestSimpleFileInfo.cpp",
 ]
 
+# TestSafeRefPtr.cpp intentionally self-moves.
+if CONFIG["CC_TYPE"] == "gcc":
+    SOURCES["TestSafeRefPtr.cpp"].flags += ["-Wno-self-move"]
+
 include("/ipc/chromium/chromium-config.mozbuild")
 
 FINAL_LIBRARY = "xul-gtest"
