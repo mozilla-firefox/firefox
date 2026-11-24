@@ -31,7 +31,6 @@ https://bugzilla.mozilla.org/show_bug.cgi?id=1170484
     SimpleTest.executeSoon(function() {
       synthesizeMouseAtCenter($('misspelled'), {}, window);
       maybeOnSpellCheck($('area'), function() {
-        synthesizeMouseAtCenter($('misspelled'), {type: 'contextmenu'}, window);
         var mm = SpecialPowers.loadChromeScript(SimpleTest.getTestFileURL('helper_bug1170484.js'))
         info("Loaded chrome script");
         mm.addMessageListener('spellingCorrected', function() {
@@ -40,6 +39,7 @@ https://bugzilla.mozilla.org/show_bug.cgi?id=1170484
           is(inputEvents, 1, "Got correct number of input events");
           SimpleTest.finish();
         });
+        synthesizeMouseAtCenter($('misspelled'), {type: 'contextmenu'}, window);
       });
     });
   }
