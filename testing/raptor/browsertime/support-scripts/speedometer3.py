@@ -12,6 +12,10 @@ LOG = RaptorLogger(component="raptor-speedometer3-support")
 
 CRITICAL_PLATFORMS = ("windows11-64-24h2-shippable",)
 
+DETECTION_TECHNIQUES = {
+    "speedometer3": ["ttest", {"technique": "mwu", "preset": "strict"}],
+}
+
 
 class Speedometer3Support(BasePythonSupport):
     profiling = False
@@ -135,6 +139,8 @@ class Speedometer3Support(BasePythonSupport):
         suite["type"] = "benchmark"
         suite["minBackWindow"] = 24
         suite["maxBackWindow"] = 48
+        if test["name"] in DETECTION_TECHNIQUES:
+            suite["detectionTechniques"] = DETECTION_TECHNIQUES[test["name"]]
         if suite["subtests"] == {}:
             suite["subtests"] = []
         for measurement_name, replicates in test["measurements"].items():

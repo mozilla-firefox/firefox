@@ -518,7 +518,7 @@ def setup_autoland_retriggers(config, tasks):
         if config.params["project"] == "autoland" and _allow_task_duplicates(
             task["label"]
         ):
-            attrs["task_duplicates"] = 12
+            attrs["task_duplicates"] = 6
         yield task
 
 
