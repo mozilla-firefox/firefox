@@ -303,7 +303,10 @@ const char kContextualIdentityServiceLoadFinishedTopic[] =
     "contextual-identity-service-load-finished";
 const char kPrivateBrowsingObserverTopic[] = "last-pb-context-exited";
 
-const int32_t kCacheVersion = 4;
+const int32_t kCacheVersion = 5;
+
+// Number of origin row upserts per cache transaction.
+const int32_t kCacheTransactionBatchSize = 50;
 
 // Sentinel value written at the end of the metadata file to indicate that the
 // file includes the extended origin metadata format. The sentinel allows us to
@@ -426,9 +429,20 @@ nsresult CreateCacheTables(mozIStorageConnection& aConnection) {
   return NS_OK;
 }
 
+OkOrErr MarkCacheForRescan(mozIStorageConnection& aConnection) {
+  AssertIsOnIOThread();
+
+  QM_TRY(QM_TO_RESULT(aConnection.ExecuteSimpleSQL(
+      "UPDATE cache SET valid = 0 WHERE valid != 0;"_ns)));
+
+  return Ok{};
+}
+
 OkOrErr InvalidateCache(mozIStorageConnection& aConnection) {
   AssertIsOnIOThread();
 
+  // Persist incompleteness before deleting any origin rows.
+  QM_TRY(MarkCacheForRescan(aConnection));
   QM_TRY(QM_TO_RESULT(aConnection.ExecuteSimpleSQL("DELETE FROM origin;"_ns)));
 
   return Ok{};
@@ -476,8 +490,7 @@ nsresult UpgradeCacheFrom2To3(mozIStorageConnection& aConnection) {
   return NS_OK;
 }
 
-Result<bool, nsresult> DidLatestShutdownFail(
-    mozIStorageConnection& aConnection);
+Result<bool, nsresult> IsCacheIncomplete(mozIStorageConnection& aConnection);
 
 Result<bool, nsresult> UpgradeCacheFrom3To4(
     mozIStorageConnection& aConnection) {
@@ -491,10 +504,7 @@ Result<bool, nsresult> UpgradeCacheFrom3To4(
   }
 #endif
 
-  // Check for unclean shutdown BEFORE renaming columns, because
-  // DidLatestShutdownFail references the old column names.
-  QM_TRY_UNWRAP(const bool lastShutdownFailed,
-                DidLatestShutdownFail(aConnection));
+  QM_TRY_UNWRAP(const bool lastShutdownFailed, IsCacheIncomplete(aConnection));
 
   QM_TRY(MOZ_TO_RESULT(aConnection.ExecuteSimpleSQL(nsLiteralCString(
       "ALTER TABLE origin RENAME COLUMN accessed TO metadata_flags;"))));
@@ -518,6 +528,16 @@ Result<bool, nsresult> UpgradeCacheFrom3To4(
   return lastShutdownFailed;
 }
 
+nsresult UpgradeCacheFrom4To5(mozIStorageConnection& aConnection) {
+  AssertIsOnIOThread();
+
+  // Version 4 did not maintain cache.valid; rescan before trusting it.
+  QM_TRY(MarkCacheForRescan(aConnection));
+  QM_TRY(MOZ_TO_RESULT(SaveCacheVersion(aConnection, 5)));
+
+  return NS_OK;
+}
+
 class CacheSetupInfo {
  public:
   CacheSetupInfo() = default;
@@ -526,16 +546,21 @@ class CacheSetupInfo {
   void NoteUnsupportedVersion() { mUnsupportedVersion = true; }
   void NoteExistingRowsUnusable() { mExistingRowsUnusable = true; }
 
+  void NoteOriginTableIncomplete() { mOriginTableIncomplete = true; }
+
   bool CanUseExistingRows() const {
     return !mCacheCreated && !mUnsupportedVersion && !mExistingRowsUnusable;
   }
 
-  bool RequiresRebuild() const { return mCacheCreated; }
+  bool RequiresRescan() const {
+    return mCacheCreated || mOriginTableIncomplete;
+  }
 
  private:
   bool mCacheCreated = false;
   bool mUnsupportedVersion = false;
   bool mExistingRowsUnusable = false;
+  bool mOriginTableIncomplete = false;
 };
 
 Result<CacheSetupInfo, nsresult> MaybeCreateOrUpgradeCache(
@@ -600,7 +625,7 @@ Result<CacheSetupInfo, nsresult> MaybeCreateOrUpgradeCache(
       cacheInfo.NoteCacheCreated();
     } else {
       // This logic needs to change next time we change the cache!
-      static_assert(kCacheVersion == 4,
+      static_assert(kCacheVersion == 5,
                     "Upgrade function needed due to cache version increase.");
 
       while (cacheVersion != kCacheVersion) {
@@ -616,6 +641,8 @@ Result<CacheSetupInfo, nsresult> MaybeCreateOrUpgradeCache(
           if (lastShutdownFailed) {
             cacheInfo.NoteExistingRowsUnusable();
           }
+        } else if (cacheVersion == 4) {
+          QM_TRY(MOZ_TO_RESULT(UpgradeCacheFrom4To5(aConnection)));
         } else {
           QM_FAIL(Err(NS_ERROR_FAILURE), []() {
             QM_WARNING(
@@ -631,6 +658,14 @@ Result<CacheSetupInfo, nsresult> MaybeCreateOrUpgradeCache(
     }
 
     QM_TRY(MOZ_TO_RESULT(transaction.Commit()));
+  }
+
+  // Runs for every existing cache, not only upgraded ones.
+  if (!newCache) {
+    QM_TRY_INSPECT(const bool& isIncomplete, IsCacheIncomplete(aConnection));
+    if (isIncomplete) {
+      cacheInfo.NoteOriginTableIncomplete();
+    }
   }
 
   return cacheInfo;
@@ -2814,6 +2849,15 @@ void QuotaManager::InitQuotaForOrigin(
       aFullOriginMetadata.mLastMaintenanceDate, aFullOriginMetadata.mPersisted,
       aDirectoryExists);
 
+  // Private origins never get a cache row, so they never need one written. The
+  // mIsPrivate check is defense in depth: it costs one boolean evaluation and
+  // keeps a private origin from being flagged even if a matching row ever
+  // appeared, so no path can end up trusting or writing a row for it.
+  const bool needsCacheRow =
+      !aFullOriginMetadata.mIsPrivate && !cacheRowMatches;
+  MOZ_ASSERT_IF(aFullOriginMetadata.mIsPrivate, !cacheRowMatches);
+  originInfo->mCacheRowStale = needsCacheRow;
+
   // A full directory scan is always performed before InitQuotaForOrigin
   // receives a dirty origin. The two paths are:
   //
@@ -2839,15 +2883,20 @@ void QuotaManager::InitQuotaForOrigin(
   // Enqueue for storage-database flush when the existing row is stale or
   // missing.
   //
-  // During a disk scan, dirty origins are enqueued so corrected metadata
+  // Outside a full scan, dirty origins are enqueued so corrected metadata
   // is flushed back.  When the storage database is fresh (no origin
   // rows, inactive reconciliation map), every origin with a directory
   // is enqueued to populate it for the first time.
   //
+  // During a full scan nothing is enqueued: PopulateCacheAfterScan writes
+  // every stale row right after the scan, with the usage the scan just
+  // computed. Queueing would only hold the row back until the flush
+  // quiescence threshold passes.
+  //
   // Origins loaded directly from the storage database are already
   // correct.  Callers pass an active reconciliation map for these, so
   // cacheRowMatches is true and no enqueue happens.
-  if (!aFullOriginMetadata.mIsPrivate && !cacheRowMatches &&
+  if (needsCacheRow && !mFullScanInProgress &&
       (fullOriginMetadata.mDirty || !aCacheMap.IsActive()) &&
       aDirectoryExists && !mUsageModificationDisabled.load()) {
     originInfo->mLastModifiedTime = TimeStamp::Now();
@@ -3303,14 +3352,23 @@ nsresult QuotaManager::LoadQuota() {
   }
 
   if (!isCacheUseAllowed) {
+    // Persist incompleteness before the scan starts changing origin rows;
+    // MarkCacheComplete runs only after they are written.
+    QM_TRY(MarkCacheForRescan(*mStorageConnection));
+    mCacheRequiresFullScan = true;
+
     RemoveQuota();
     RemoveTemporaryOrigins();
     unaccessedOrigins.Clear();
 
     // RemoveQuota sets mUsageModificationDisabled to prevent concurrent
-    // dirty-origin pushes during teardown. Re-enable it now so that the
-    // disk scan below can register dirty origins for DB write.
+    // usage updates during teardown. Re-enable it now so that client
+    // threads can call MaybeUpdateSize during the scan.
     mUsageModificationDisabled.store(false);
+
+    mFullScanInProgress = true;
+    auto resetFullScanInProgress =
+        MakeScopeExit([&fullScan = mFullScanInProgress] { fullScan = false; });
 
     // A keeper to defer the return only in Nightly, so that the telemetry data
     // for whole profile can be collected.
@@ -3352,6 +3410,10 @@ nsresult QuotaManager::LoadQuota() {
       return statusKeeper;
     }
 #endif
+
+    // Quota is already loaded in memory; a failure here only leaves the cache
+    // marked incomplete so the next startup scans again.
+    QM_WARNONLY_TRY(PopulateCacheAfterScan());
   }
 
   const auto endTime = recordTimeDeltaHelper->End();
@@ -3383,17 +3445,10 @@ void QuotaManager::UnloadQuota() {
   // Avoid a single transaction though: if UnloadQuota still takes too long and
   // gets killed at shutdown for this reason, we don't want all the UnloadQuota
   // work to be lost, as this could result in a lot of work upon restart.
-  const auto createTransaction =
-      [this](Maybe<mozStorageTransaction>& transaction) {
-        transaction.reset();
-        transaction.emplace(mStorageConnection, /* aCommitOnComplete */ false,
-                            mozIStorageConnection::TRANSACTION_IMMEDIATE);
-        QM_WARNONLY_TRY(MOZ_TO_RESULT(transaction->Start()));
-      };
-  Maybe<mozStorageTransaction> transaction;
-  createTransaction(transaction);
+  QM_TRY(StartCacheTransaction(), QM_VOID);
+  auto rollback =
+      MakeScopeExit([&] { RollbackCacheTransactionIfInProgress(); });
 
-  static const int32_t kTransactionBatchSize = 50;
   int32_t transactionCount = 0;
 
   {
@@ -3429,49 +3484,221 @@ void QuotaManager::UnloadQuota() {
             // file and upsert the origin row in the cache DB.
             QM_WARNONLY_TRY_UNWRAP(auto originDirectory,
                                    GetOriginDirectory(metadata));
-            MOZ_ASSERT(originDirectory);
             if (originDirectory) {
-              DebugOnly<nsresult> rv =
+              const nsresult rv =
                   SettleDirectoryMetadata2(*originDirectory.ref(), metadata);
               MOZ_ASSERT(NS_FAILED(rv) == metadata.mDirty);
+              if (NS_SUCCEEDED(rv)) {
+                originInfo->LockedSetClean();
+                ++transactionCount;
+              }
+            }
+          } else if (originInfo->LockedCacheRowStale()) {
+            // A failed PopulateCacheAfterScan left this row behind.
+            QM_WARNONLY_TRY_UNWRAP(const auto refreshed,
+                                   mOriginUpserter->Refresh(metadata));
+            if (refreshed) {
+              originInfo->LockedClearCacheRowStale();
               ++transactionCount;
             }
-          } else if (mCacheRequiresFullScan) {
-            // The cache DB was created, recreated after corruption, or
-            // invalidated, so it may be missing origin rows
-            // (mCacheRequiresFullScan). The scan already computed correct
-            // usage from disk — only the DB rows need writing.
-            MOZ_ASSERT(mOriginUpserter, "We must have an origin upserter here");
-            QM_WARNONLY_TRY(mOriginUpserter->Refresh(metadata));
-            ++transactionCount;
           }
 
-          if (transactionCount >= kTransactionBatchSize) {
-            QM_WARNONLY_TRY(MOZ_TO_RESULT(transaction->Commit()));
-            createTransaction(transaction);
+          if (transactionCount >= kCacheTransactionBatchSize) {
+            QM_TRY(CommitCacheTransaction(), QM_VOID);
+            QM_TRY(StartCacheTransaction(), QM_VOID);
             transactionCount = 0;
           }
         }
+      }
+    }
 
-        groupInfo->LockedRemoveOriginInfos();
+    // Lazily initialized origins may have completed the scan during the
+    // session, so a scan session can still become complete here.
+    if (mCacheRequiresFullScan && LockedIsCacheComplete()) {
+      QM_TRY(MarkCacheComplete(), QM_VOID);
+    }
+
+    for (auto iter = mGroupInfoPairs.Iter(); !iter.Done(); iter.Next()) {
+      GroupInfoPair* const pair = iter.UserData();
+
+      for (const PersistenceType type : kBestEffortPersistenceTypes) {
+        if (RefPtr<GroupInfo> groupInfo = pair->LockedGetGroupInfo(type)) {
+          groupInfo->LockedRemoveOriginInfos();
+        }
       }
 
       iter.Remove();
     }
   }
 
+  QM_TRY(CommitCacheTransaction(), QM_VOID);
+}
+
+Result<Ok, nsresult> QuotaManager::PopulateCacheAfterScan() {
+  AssertIsOnIOThread();
+  MOZ_ASSERT(mStorageConnection);
+  MOZ_ASSERT(mOriginUpserter);
+  MOZ_ASSERT(mCacheRequiresFullScan);
+  // Temporary storage is not initialized yet, so no client threads can
+  // create or modify origins while we write.
+  MOZ_ASSERT(!mTemporaryStorageInitializedInternal);
+
+  struct StaleEntry {
+    FullOriginMetadata mMetadata;
+    RefPtr<OriginInfo> mOriginInfo;
+    bool mRefreshed = false;
+  };
+  nsTArray<StaleEntry> staleEntries;
+
+  // Collect stale origins under the lock without doing I/O.
+  {
+    MutexAutoLock lock(mQuotaMutex);
+
+    for (auto iter = mGroupInfoPairs.ConstIter(); !iter.Done(); iter.Next()) {
+      GroupInfoPair* const pair = iter.UserData();
+
+      for (const PersistenceType type : kBestEffortPersistenceTypes) {
+        RefPtr<GroupInfo> groupInfo = pair->LockedGetGroupInfo(type);
+        if (!groupInfo) {
+          continue;
+        }
+
+        for (const auto& originInfo : groupInfo->mOriginInfos) {
+          if (originInfo->mIsPrivate || !originInfo->LockedDirectoryExists() ||
+              !originInfo->LockedCacheRowStale()) {
+            continue;
+          }
+
+          staleEntries.AppendElement(
+              StaleEntry{originInfo->LockedFlattenToFullOriginMetadata(),
+                         RefPtr<OriginInfo>(originInfo.get())});
+        }
+      }
+    }
+  }
+
+  // Write origin rows in batches without holding the mutex. Each batch is a
+  // single transaction (one fsync).
+  auto rollback =
+      MakeScopeExit([&] { RollbackCacheTransactionIfInProgress(); });
+
+  const uint32_t totalEntries = staleEntries.Length();
+  const uint32_t batchSize = static_cast<uint32_t>(kCacheTransactionBatchSize);
+
+  for (uint32_t batchStart = 0; batchStart < totalEntries;
+       batchStart += batchSize) {
+    const uint32_t batchEnd = std::min(batchStart + batchSize, totalEntries);
+
+    QM_TRY(StartCacheTransaction());
+
+    for (uint32_t i = batchStart; i < batchEnd; ++i) {
+      QM_WARNONLY_TRY_UNWRAP(
+          const auto refreshed,
+          mOriginUpserter->Refresh(staleEntries[i].mMetadata));
+      if (refreshed) {
+        staleEntries[i].mRefreshed = true;
+      }
+    }
+
+    QM_TRY(CommitCacheTransaction());
+
+    {
+      MutexAutoLock lock(mQuotaMutex);
+      for (uint32_t i = batchStart; i < batchEnd; ++i) {
+        if (staleEntries[i].mRefreshed) {
+          staleEntries[i].mOriginInfo->LockedClearCacheRowStale();
+        }
+      }
+    }
+  }
+
+  bool cacheComplete;
+  {
+    MutexAutoLock lock(mQuotaMutex);
+    cacheComplete = LockedIsCacheComplete();
+  }
+
+  if (cacheComplete) {
+    QM_TRY(StartCacheTransaction());
+    QM_TRY(MarkCacheComplete());
+    QM_TRY(CommitCacheTransaction());
+  }
+
+  rollback.release();
+
+  return Ok{};
+}
+
+bool QuotaManager::LockedIsCacheComplete() const {
+  AssertIsOnIOThread();
+  AssertCurrentThreadOwnsQuotaMutex();
+
+  for (const auto& origins :
+       mIOThreadAccessible.Access()->mAllTemporaryOrigins.Values()) {
+    for (const auto& metadata : origins) {
+      if (metadata.mIsPrivate) {
+        continue;
+      }
+
+      RefPtr<OriginInfo> originInfo =
+          LockedGetOriginInfo(metadata.mPersistenceType, metadata);
+      if (!originInfo || !originInfo->LockedDirectoryExists() ||
+          originInfo->LockedCacheRowStale()) {
+        return false;
+      }
+    }
+  }
+
+  return true;
+}
+
+Result<Ok, nsresult> QuotaManager::StartCacheTransaction() {
+  AssertIsOnIOThread();
+
+  QM_TRY(ArtificialFailure(
+      nsIQuotaArtificialFailure::CATEGORY_START_CACHE_TRANSACTION));
+  QM_TRY(MOZ_TO_RESULT(
+      mStorageConnection->ExecuteSimpleSQL("BEGIN IMMEDIATE;"_ns)));
+
+  return Ok{};
+}
+
+Result<Ok, nsresult> QuotaManager::CommitCacheTransaction() {
+  AssertIsOnIOThread();
+
+  QM_TRY(ArtificialFailure(
+      nsIQuotaArtificialFailure::CATEGORY_COMMIT_CACHE_TRANSACTION));
+  QM_TRY(MOZ_TO_RESULT(mStorageConnection->ExecuteSimpleSQL("COMMIT;"_ns)));
+
+  return Ok{};
+}
+
+// A failed COMMIT may leave the transaction open.
+void QuotaManager::RollbackCacheTransactionIfInProgress() {
+  AssertIsOnIOThread();
+
+  bool inProgress = false;
+  QM_WARNONLY_TRY(
+      MOZ_TO_RESULT(mStorageConnection->GetTransactionInProgress(&inProgress)));
+  if (inProgress) {
+    QM_WARNONLY_TRY(
+        MOZ_TO_RESULT(mStorageConnection->ExecuteSimpleSQL("ROLLBACK;"_ns)));
+  }
+}
+
+Result<Ok, nsresult> QuotaManager::MarkCacheComplete() {
+  AssertIsOnIOThread();
+
   QM_TRY_INSPECT(
       const auto& stmt,
       MOZ_TO_RESULT_INVOKE_MEMBER_TYPED(
           nsCOMPtr<mozIStorageStatement>, mStorageConnection, CreateStatement,
-          "UPDATE cache SET build_id = :buildId;"_ns),
-      QM_VOID);
+          "UPDATE cache SET valid = 1, build_id = :buildId;"_ns));
 
-  QM_TRY(MOZ_TO_RESULT(stmt->BindUTF8StringByName("buildId"_ns, *gBuildId)),
-         QM_VOID);
-  QM_TRY(MOZ_TO_RESULT(stmt->Execute()), QM_VOID);
+  QM_TRY(MOZ_TO_RESULT(stmt->BindUTF8StringByName("buildId"_ns, *gBuildId)));
+  QM_TRY(MOZ_TO_RESULT(stmt->Execute()));
 
-  QM_TRY(MOZ_TO_RESULT(transaction->Commit()), QM_VOID);
+  return Ok{};
 }
 
 void QuotaManager::RemoveOriginFromCacheForEviction(
@@ -3828,6 +4055,10 @@ QuotaManager::GetOrCreateTemporaryOriginDirectory(
 
     QM_TRY(MOZ_TO_RESULT(
         CreateDirectoryMetadata2(*directory, fullOriginMetadata)));
+
+    WithOriginInfo(aOriginMetadata, [](const auto& originInfo) {
+      originInfo->LockedClearCacheRowStale();
+    });
   }
 
   return std::move(directory);
@@ -4060,12 +4291,9 @@ Result<Ok, nsresult> UpdateFullOriginMetadataPrincipalProperties(
 
 namespace {
 
-Result<bool, nsresult> DidLatestShutdownFail(
-    mozIStorageConnection& aConnection) {
-  // The `cache.valid` bit is the source of truth for "did the previous
-  // session reach UnloadQuota's commit?" — InvalidateCache writes 0 and
-  // UnloadQuota's final UPDATE writes 1 atomically. A row-by-row
-  // DB-vs-disk scan is unnecessary here.
+Result<bool, nsresult> IsCacheIncomplete(mozIStorageConnection& aConnection) {
+  // Version 3 used this bit for clean shutdown; version 5 uses it for
+  // completeness of the origin table.
   QM_TRY_INSPECT(const auto& stmt,
                  CreateAndExecuteSingleStepStatement<
                      SingleStepResult::ReturnNullIfNoResult>(
@@ -4872,7 +5100,8 @@ nsresult QuotaManager::InitializeOrigin(
     fullOriginMetadata.mClientUsages = clientUsages;
 
     // Mark the origin dirty so the flush timer writes updated metadata
-    // instead of doing synchronous I/O for every origin during init.
+    // instead of doing synchronous I/O for every origin during init. A full
+    // scan does not queue it; PopulateCacheAfterScan writes the row instead.
     if (!fullOriginMetadata.Equals(aFullOriginMetadata)) {
       fullOriginMetadata.mDirty = true;
     }
@@ -6121,7 +6350,7 @@ nsresult QuotaManager::EnsureStorageIsInitializedInternal() {
     QM_TRY_INSPECT(const auto& cacheInfo,
                    MaybeCreateOrUpgradeCache(*connection));
     mCacheUsable = cacheInfo.CanUseExistingRows();
-    mCacheRequiresFullScan = cacheInfo.RequiresRebuild();
+    mCacheRequiresFullScan = cacheInfo.RequiresRescan();
 
     if (storageFileWasCorrupted) {
       mCacheUsable = false;
@@ -7325,6 +7554,11 @@ QuotaManager::EnsureTemporaryOriginIsInitializedInternal(
 
       // Don't need to traverse the directory, since it's empty.
       InitQuotaForOrigin(fullOriginMetadata);
+
+      // CreateDirectoryMetadata2 already upserted the row.
+      WithOriginInfo(fullOriginMetadata, [](const auto& originInfo) {
+        originInfo->LockedClearCacheRowStale();
+      });
     } else {
       QM_TRY_INSPECT(const auto& metadata,
                      LoadFullOriginMetadataWithRestore(directory));

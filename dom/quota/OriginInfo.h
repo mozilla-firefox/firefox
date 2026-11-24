@@ -86,6 +86,23 @@ class OriginInfo final : public SupportsThreadSafeWeakPtr<OriginInfo> {
   void LockedSetClean() {
     AssertCurrentThreadOwnsQuotaMutex();
     mMetadataDirty = false;
+    mCacheRowStale = false;
+  }
+
+  bool LockedCacheRowStale() const {
+    AssertCurrentThreadOwnsQuotaMutex();
+
+    return mCacheRowStale;
+  }
+
+  void LockedClearCacheRowStale() {
+    AssertCurrentThreadOwnsQuotaMutex();
+    mCacheRowStale = false;
+  }
+
+  void LockedSetCacheRowStale() {
+    AssertCurrentThreadOwnsQuotaMutex();
+    mCacheRowStale = true;
   }
 
   OriginMetadata FlattenToOriginMetadata() const;
@@ -207,6 +224,9 @@ class OriginInfo final : public SupportsThreadSafeWeakPtr<OriginInfo> {
   int64_t mUsage;
   TimeStamp mLastModifiedTime;
   bool mMetadataDirty = false;
+  // The origin row in the storage database is missing or does not match this
+  // OriginInfo. Cleared when the row is upserted.
+  bool mCacheRowStale = true;
 };
 
 class OriginInfoAccessTimeComparator {

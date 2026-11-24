@@ -271,6 +271,11 @@ class QuotaManager final : public BackgroundThreadObject {
 
   void UnloadQuota();
 
+  // Upserts the origin row for every OriginInfo whose row is missing or stale
+  // after a full scan and marks the cache complete if every origin directory
+  // is represented. Failures leave the cache marked incomplete.
+  Result<Ok, nsresult> PopulateCacheAfterScan();
+
   void RemoveOriginFromCache(const OriginMetadata& aOriginMetadata);
 
   void RemoveOriginFromCacheForEviction(const OriginMetadata& aOriginMetadata);
@@ -680,7 +685,7 @@ class QuotaManager final : public BackgroundThreadObject {
     }
   }
 
-  void AssertCurrentThreadOwnsQuotaMutex() {
+  void AssertCurrentThreadOwnsQuotaMutex() const {
     mQuotaMutex.AssertCurrentThreadOwns();
   }
 
@@ -863,6 +868,18 @@ class QuotaManager final : public BackgroundThreadObject {
   already_AddRefed<OriginInfo> LockedGetOriginInfo(
       PersistenceType aPersistenceType,
       const OriginMetadata& aOriginMetadata) const;
+
+  // True when every non-private temporary origin has an OriginInfo with an
+  // existing directory and an up-to-date origin row.
+  bool LockedIsCacheComplete() const;
+
+  Result<Ok, nsresult> StartCacheTransaction();
+
+  Result<Ok, nsresult> CommitCacheTransaction();
+
+  void RollbackCacheTransactionIfInProgress();
+
+  Result<Ok, nsresult> MarkCacheComplete();
 
   nsresult UpgradeFromIndexedDBDirectoryToPersistentStorageDirectory(
       nsIFile* aIndexedDBDir);
@@ -1329,6 +1346,9 @@ class QuotaManager final : public BackgroundThreadObject {
   bool mAllTemporaryOriginsInitialized;
   bool mCacheUsable;
   bool mCacheRequiresFullScan;
+  // True on the IO thread while the repository scan runs, for the rows that
+  // PopulateCacheAfterScan will write once the scan is done.
+  bool mFullScanInProgress = false;
   std::atomic<bool> mUsageModificationDisabled{false};
   bool mStorageEncryptionEnabled = false;
 
