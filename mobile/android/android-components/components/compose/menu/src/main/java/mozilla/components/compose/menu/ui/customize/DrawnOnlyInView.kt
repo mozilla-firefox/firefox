@@ -9,17 +9,17 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.drawWithContent
 
 /**
- * While a group is dragged, and until it is dropped in its place, draw the list item with [key] only while the list
+ * While an item is dragged, and until it is dropped in its place, draw the list item with [key] only while the list
  * shows it.
  *
- * The list keeps the dragged group laid out while it is scrolled out of view, before the items shown. Compose then
- * takes it for the first item shown, so an item still moving when it is scrolled out of view at the top is drawn moving
- * down across the list to its end instead. Not needed once https://issuetracker.google.com/issues/584383294 is fixed.
+ * The list keeps the dragged item laid out while it is scrolled out of view, before the items shown. Compose then takes
+ * it for the first item shown, so an item still moving when it is scrolled out of view at the top is drawn moving down
+ * across the list to its end instead. Not needed once https://issuetracker.google.com/issues/584383294 is fixed.
  *
  * @param key Key of the list item.
- * @param dragState State of dragging the groups of the screen.
+ * @param dragState State of dragging the items of the screen.
  */
-internal fun Modifier.drawnOnlyInView(key: Any, dragState: CustomizeMenuDragState): Modifier = drawWithContent {
+internal fun Modifier.drawnOnlyInView(key: Any, dragState: CustomizeMenuDragState<*>): Modifier = drawWithContent {
     val interactionState = dragState.interactionState
     val listState = dragState.listState
     if (

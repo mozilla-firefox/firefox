@@ -38,6 +38,8 @@ internal data class CustomizeMenuGroups(
     override val hiddenTitleIndex: Int
         get() = 1 + shown.size
 
+    override fun isShownKey(key: Any) = shown.any { it.id == key }
+
     override fun cannotBeHidden(key: Any) = key in mandatoryIds
 
     override fun drop(key: Any, target: CustomizeMenuDropTarget): CustomizeMenuGroups =

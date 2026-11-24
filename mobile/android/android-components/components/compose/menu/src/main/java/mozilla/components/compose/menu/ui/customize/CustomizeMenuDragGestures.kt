@@ -20,24 +20,27 @@ import mozilla.components.compose.draggable.InteractionState
 import mozilla.components.compose.draggable.ListInteractionState
 
 /**
- * Drag the group with [groupId] once the user long presses where this is applied.
+ * Drag the item with [groupId] once the user long presses where this is applied.
  *
- * @param dragState State of dragging the groups, or `null` to not drag them.
- * @param groupId Id of the group to drag.
+ * @param dragState State of dragging the items, or `null` to not drag them.
+ * @param groupId Id of the item to drag.
  */
-internal fun Modifier.dragGroupAfterLongPress(dragState: CustomizeMenuDragState?, groupId: Any): Modifier =
+internal fun Modifier.dragGroupAfterLongPress(dragState: CustomizeMenuDragState<*>?, groupId: Any): Modifier =
     dragState?.let { dragAfterLongPress(it.interactionState, it.listState, groupId) } ?: this
 
 /**
- * Drag the group with [groupId] as soon as the user moves vertically where this is applied, without a long press, or
+ * Drag the item with [groupId] as soon as the user moves vertically where this is applied, without a long press, or
  * call [onLongPress] once the user held it for a long press without moving, after which this touch no longer drags it.
  *
- * @param dragState State of dragging the groups, or `null` to not drag them.
- * @param groupId Id of the group to drag.
+ * @param dragState State of dragging the items, or `null` to not drag them.
+ * @param groupId Id of the item to drag.
  * @param onLongPress Called when the user long presses without moving, while the finger is still down.
  */
-internal fun Modifier.dragGroup(dragState: CustomizeMenuDragState?, groupId: Any, onLongPress: () -> Unit): Modifier =
-    dragState?.let { dragOnVerticalMove(it.interactionState, it.listState, groupId, onLongPress) } ?: this
+internal fun Modifier.dragGroup(
+    dragState: CustomizeMenuDragState<*>?,
+    groupId: Any,
+    onLongPress: () -> Unit,
+): Modifier = dragState?.let { dragOnVerticalMove(it.interactionState, it.listState, groupId, onLongPress) } ?: this
 
 /**
  * Drag the list item with [key] once the user long presses where this is applied.
@@ -71,33 +74,21 @@ internal fun Modifier.dragAfterLongPress(
  * @param interactionState State of dragging the items of the list.
  * @param listState State of the list showing the item.
  * @param key Key of the list item to drag.
- * @param onLongPress Called when the user long presses without moving, while the finger is still down.
+ * @param onLongPress Called when the user long presses without moving, while the finger is still down. If `null`, a
+ *   long press without moving does nothing and the item is still dragged once the user moves vertically.
  */
 internal fun Modifier.dragOnVerticalMove(
     interactionState: ListInteractionState,
     listState: LazyListState,
     key: Any,
-    onLongPress: () -> Unit,
+    onLongPress: (() -> Unit)?,
 ): Modifier =
     this.pointerInput(interactionState, listState, key) {
         val gesture = ListItemDragGesture(interactionState, listState, key)
         awaitEachGesture {
             val down = awaitFirstDown()
-            var slop: PointerInputChange? = null
-            val isBeforeLongPress =
-                withTimeoutOrNull(viewConfiguration.longPressTimeoutMillis) {
-                    slop = awaitVerticalSlop(down, gesture)
-                    true
-                }
-            if (isBeforeLongPress == null) {
-                if (isStill(down) && interactionState.draggedItem == InteractionState.List.None) {
-                    onLongPress()
-                    consumeUntilUp(down.id)
-                    return@awaitEachGesture
-                }
-                slop = awaitVerticalSlop(down, gesture)
-            }
-            val slopChange = slop ?: return@awaitEachGesture
+            val slopChange =
+                awaitVerticalSlopOrLongPress(down, gesture, interactionState, onLongPress) ?: return@awaitEachGesture
             try {
                 // Everything moved since the finger went down, for the item not to stay behind by the touch slop.
                 gesture.drag(slopChange.position.y - down.position.y)
@@ -122,6 +113,32 @@ private suspend fun AwaitPointerEventScope.awaitVerticalSlop(
     awaitVerticalTouchSlopOrCancellation(down.id) { change, _ ->
         if (gesture.start(shouldLongPress = false)) change.consume()
     }
+
+/**
+ * Wait for the pointer of [down] to move vertically by the touch slop, or call [onLongPress], if not `null`, if it is
+ * held still for a long press, in which case this consumes the rest of the touch and returns `null`.
+ */
+private suspend fun AwaitPointerEventScope.awaitVerticalSlopOrLongPress(
+    down: PointerInputChange,
+    gesture: ListItemDragGesture,
+    interactionState: ListInteractionState,
+    onLongPress: (() -> Unit)?,
+): PointerInputChange? {
+    if (onLongPress == null) return awaitVerticalSlop(down, gesture)
+    var slop: PointerInputChange? = null
+    val isBeforeLongPress =
+        withTimeoutOrNull(viewConfiguration.longPressTimeoutMillis) {
+            slop = awaitVerticalSlop(down, gesture)
+            true
+        }
+    if (isBeforeLongPress != null) return slop
+    if (isStill(down) && interactionState.draggedItem == InteractionState.List.None) {
+        onLongPress()
+        consumeUntilUp(down.id)
+        return null
+    }
+    return awaitVerticalSlop(down, gesture)
+}
 
 /** Whether the pointer of [down] is still down within the touch slop of where it went down. */
 private fun AwaitPointerEventScope.isStill(down: PointerInputChange): Boolean {

@@ -15,6 +15,9 @@ internal interface HideableListItems {
     /** Index in the list of [CustomizeMenuItemKey.HIDDEN_TITLE]. */
     val hiddenTitleIndex: Int
 
+    /** Whether the list item with [key] is shown, above [CustomizeMenuItemKey.HIDDEN_TITLE]. */
+    fun isShownKey(key: Any): Boolean
+
     /** Whether the item with [key] cannot be hidden. */
     fun cannotBeHidden(key: Any): Boolean
 

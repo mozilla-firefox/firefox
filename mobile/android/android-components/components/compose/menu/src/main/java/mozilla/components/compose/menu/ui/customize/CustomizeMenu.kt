@@ -11,13 +11,11 @@ import androidx.compose.foundation.lazy.itemsIndexed
 import androidx.compose.foundation.lazy.rememberLazyListState
 import androidx.compose.material3.Surface
 import androidx.compose.runtime.Composable
-import androidx.compose.runtime.State
 import androidx.compose.runtime.derivedStateOf
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.remember
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.alpha
-import androidx.compose.ui.layout.layout
 import androidx.compose.ui.tooling.preview.PreviewLightDark
 import androidx.compose.ui.unit.Dp
 import androidx.compose.ui.unit.dp
@@ -50,7 +48,7 @@ import mozilla.components.ui.icons.R as iconsR
  */
 internal fun LazyListScope.customizeMenuGroups(
     menuGroups: List<MenuItemsGroup>,
-    dragState: CustomizeMenuDragState,
+    dragState: CustomizeMenuDragState<CustomizeMenuGroups>,
     firstIndex: Int,
     itemSpacing: Dp,
     onMove: (movedGroupId: String, movedGroups: CustomizeMenuGroups, announcement: String) -> Unit,
@@ -74,7 +72,7 @@ internal fun LazyListScope.customizeMenuGroups(
             position = firstIndex + index,
             modifier =
                 Modifier.drawnOnlyInView(group.id, dragState)
-                    .groupPlacement(
+                    .dragPlacement(
                         isDragged = isDragged,
                         dropTarget = dragState.dropTarget,
                         itemSpacing = itemSpacing,
@@ -85,7 +83,7 @@ internal fun LazyListScope.customizeMenuGroups(
                 modifier =
                     Modifier.customizeMenuGroupSemantics(
                             group = group,
-                            groups = dragState.groups,
+                            groups = dragState.items,
                             onMove = { movedGroups, announcement -> onMove(group.id, movedGroups, announcement) },
                             onEdit = onEdit,
                         )
@@ -96,7 +94,7 @@ internal fun LazyListScope.customizeMenuGroups(
                             start = AcornTheme.layout.space.static200,
                             end = AcornTheme.layout.space.static25,
                         ),
-                state = dragState.groups.stateOf(group, isDragged = isDragged, isHidden = isHidden),
+                state = dragState.items.stateOf(group, isDragged = isDragged, isHidden = isHidden),
                 dragState = dragState,
                 isHighlighted = group.id == highlightedGroupId,
                 onEditClick = onEdit,
@@ -105,21 +103,6 @@ internal fun LazyListScope.customizeMenuGroups(
         }
     }
 }
-
-/**
- * Lay out a group without taking any space while it is dragged, for the other groups to take its space, showing there
- * if it is dropped back.
- *
- * @param isDragged Whether the group is dragged.
- * @param dropTarget Where the dragged group is dropped.
- * @param itemSpacing Space above each item of the list, which the dragged group takes too.
- */
-@Composable
-private fun Modifier.groupPlacement(
-    isDragged: Boolean,
-    dropTarget: State<CustomizeMenuDropTarget?>,
-    itemSpacing: Dp,
-): Modifier = this.then(if (isDragged) Modifier.collapsed().inPlaceDropLine(dropTarget, itemSpacing) else Modifier)
 
 /** How [group] is shown. Dragged groups look the same, whether they were shown or hidden. */
 private fun CustomizeMenuGroups.stateOf(
@@ -133,12 +116,6 @@ private fun CustomizeMenuGroups.stateOf(
         group.id in mandatoryIds -> CustomizeMenuGroupState.MANDATORY
         else -> CustomizeMenuGroupState.SHOWN
     }
-
-/** Lay out without taking any space, drawing over what is laid out next. */
-private fun Modifier.collapsed() = layout { measurable, constraints ->
-    val placeable = measurable.measure(constraints)
-    layout(placeable.width, 0) { placeable.place(0, 0) }
-}
 
 @PreviewLightDark
 @Composable
@@ -186,7 +163,7 @@ private fun CustomizeMenuPreview() {
             val dragState = rememberCustomizeMenuDragState(store, store.state, listState)
             LazyColumn(state = listState) {
                 customizeMenuGroups(
-                    menuGroups = dragState.groups.shown,
+                    menuGroups = dragState.items.shown,
                     dragState = dragState,
                     firstIndex = 0,
                     itemSpacing = 0.dp,

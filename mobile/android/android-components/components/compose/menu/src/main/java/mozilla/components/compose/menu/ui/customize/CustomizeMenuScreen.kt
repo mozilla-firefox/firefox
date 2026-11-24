@@ -135,7 +135,7 @@ private fun CustomizeMenuList(
     var actionsGroupId by rememberSaveable { mutableStateOf<String?>(null) }
     val onMove = { movedGroupId: String, movedGroups: CustomizeMenuGroups, moveAnnouncement: String ->
         movedGroups.listIndexOf(movedGroupId)?.let { listState.moveAndKeepVisible(movedGroupId, it) }
-        store.saveMove(dragState.groups, movedGroupId, movedGroups)
+        store.saveMove(dragState.items, movedGroupId, movedGroups)
         announcer.announce(moveAnnouncement)
     }
 
@@ -159,7 +159,7 @@ private fun CustomizeMenuList(
         item(key = DRAG_BAR) { DragBarItem(onPreviewClick = { store.dispatch(PreviewClicked) }) }
 
         customizeMenuGroups(
-            menuGroups = dragState.groups.shown,
+            menuGroups = dragState.items.shown,
             dragState = dragState,
             firstIndex = 1,
             itemSpacing = itemSpacing,
@@ -175,12 +175,12 @@ private fun CustomizeMenuList(
             HiddenSectionsItem(dragState = dragState, itemSpacing = itemSpacing)
         }
 
-        if (!dragState.hasHiddenGroups) {
+        if (!dragState.hasHiddenItems) {
             item(key = DROP_AREA) { DropAreaItem(dragState = dragState) }
         }
 
         customizeMenuGroups(
-            menuGroups = dragState.groups.hidden,
+            menuGroups = dragState.items.hidden,
             dragState = dragState,
             firstIndex = dragState.firstHiddenIndex,
             itemSpacing = itemSpacing,
@@ -203,7 +203,7 @@ private fun CustomizeMenuList(
 
     CustomizeMenuSectionActionsSheetOf(
         groupId = actionsGroupId,
-        groups = dragState.groups,
+        groups = dragState.items,
         onMove = onMove,
         onDismissRequest = { actionsGroupId = null },
     )
@@ -293,11 +293,11 @@ private fun DragBarItem(onPreviewClick: () -> Unit) {
  * The [HIDDEN_TITLE] item of the list: the space keeping the hidden sections in place while a shown group is dragged,
  * then their title, each a node of the item of its own (see [HiddenAreaSpace]).
  *
- * @param dragState State of dragging the groups of the screen.
+ * @param dragState State of dragging the items of the screen.
  * @param itemSpacing Space between the items of the list.
  */
 @Composable
-private fun LazyItemScope.HiddenSectionsItem(dragState: CustomizeMenuDragState, itemSpacing: Dp) {
+private fun LazyItemScope.HiddenSectionsItem(dragState: CustomizeMenuDragState<*>, itemSpacing: Dp) {
     HiddenAreaSpace(
         dragState = dragState,
         itemSpacing = itemSpacing,
@@ -316,10 +316,10 @@ private fun LazyItemScope.HiddenSectionsItem(dragState: CustomizeMenuDragState, 
 /**
  * The [DROP_AREA] item of the list, where shown groups are dropped to hide them while none is hidden.
  *
- * @param dragState State of dragging the groups of the screen.
+ * @param dragState State of dragging the items of the screen.
  */
 @Composable
-private fun LazyItemScope.DropAreaItem(dragState: CustomizeMenuDragState) {
+private fun LazyItemScope.DropAreaItem(dragState: CustomizeMenuDragState<*>) {
     val isDropTarget by
         remember(dragState.dropTarget) {
             derivedStateOf { dragState.dropTarget.value == CustomizeMenuDropTarget.EmptyHiddenArea }
@@ -334,12 +334,12 @@ private fun LazyItemScope.DropAreaItem(dragState: CustomizeMenuDragState) {
 /**
  * The [RESET_BUTTON] item of the list.
  *
- * @param dragState State of dragging the groups of the screen.
+ * @param dragState State of dragging the items of the screen.
  * @param itemSpacing Space between the items of the list.
  * @param onClick Called when the button is clicked.
  */
 @Composable
-private fun LazyItemScope.ResetButtonItem(dragState: CustomizeMenuDragState, itemSpacing: Dp, onClick: () -> Unit) {
+private fun LazyItemScope.ResetButtonItem(dragState: CustomizeMenuDragState<*>, itemSpacing: Dp, onClick: () -> Unit) {
     CustomizeMenuResetButton(
         onClick = onClick,
         modifier = Modifier.drawnOnlyInView(RESET_BUTTON, dragState).animateItem().padding(top = itemSpacing),

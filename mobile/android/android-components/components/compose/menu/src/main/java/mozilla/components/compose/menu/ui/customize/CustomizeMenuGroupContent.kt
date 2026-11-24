@@ -55,7 +55,7 @@ internal const val EDIT_GROUP_ITEMS_BUTTON_TAG = "edit_group_items_button"
  * @param group The group to show.
  * @param modifier The [Modifier] to be applied to the group and its handle.
  * @param state How the group is shown.
- * @param dragState State of dragging the groups, or `null` to not drag them.
+ * @param dragState State of dragging the items, or `null` to not drag them.
  * @param isHighlighted Whether to highlight the group, as the one the open actions sheet acts on.
  * @param onEditClick Called when the user taps the button editing the items of the group, or `null` to not show it.
  * @param onDragHandleLongPress Called when the user long presses the drag handle without moving.
@@ -65,7 +65,7 @@ internal fun CustomizeMenuGroupContent(
     group: MenuItemsGroup,
     modifier: Modifier = Modifier,
     state: CustomizeMenuGroupState = CustomizeMenuGroupState.SHOWN,
-    dragState: CustomizeMenuDragState? = null,
+    dragState: CustomizeMenuDragState<*>? = null,
     isHighlighted: Boolean = false,
     onEditClick: (() -> Unit)? = null,
     onDragHandleLongPress: () -> Unit = {},

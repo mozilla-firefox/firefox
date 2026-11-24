@@ -11,6 +11,7 @@ import androidx.compose.runtime.State
 import androidx.compose.runtime.derivedStateOf
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.remember
+import androidx.compose.runtime.rememberUpdatedState
 import androidx.compose.runtime.snapshotFlow
 import androidx.compose.ui.platform.LocalDensity
 import androidx.compose.ui.platform.LocalWindowInfo
@@ -29,39 +30,39 @@ import mozilla.components.compose.menu.ui.customize.CustomizeMenuItemKey.RESET_B
 import mozilla.components.compose.menu.ui.utils.ext.saveMove
 
 /**
- * State of dragging the groups of the customize menu screen.
+ * State of dragging the items of a customize menu screen list.
  *
- * @property groups The shown and the hidden groups.
- * @property listState State of the list showing the groups.
- * @property interactionState State of dragging the items of the list showing the groups.
- * @property isDragging Whether a group is dragged.
- * @property hasHiddenGroups Whether groups other than the dragged one are hidden. Otherwise the area to drag groups
- *   into to hide them is shown.
- * @property dropTarget Where the dragged group is moved to if the user lets go of it, if anywhere.
- * @property draggedShownGroup Where the dragged group was when the drag started, if it was among the shown groups.
+ * @property items The shown and the hidden items.
+ * @property listState State of the list showing the items.
+ * @property interactionState State of dragging the items of the list.
+ * @property isDragging Whether an item is dragged.
+ * @property hasHiddenItems Whether items other than the dragged one are hidden. Otherwise the area to drag items into
+ *   to hide them is shown.
+ * @property dropTarget Where the dragged item is moved to if the user lets go of it, if anywhere.
+ * @property draggedShownItem Where the dragged item was when the drag started, if it was among the shown items.
  */
-internal class CustomizeMenuDragState(
-    val groups: CustomizeMenuGroups,
+internal class CustomizeMenuDragState<T : HideableListItems>(
+    val items: T,
     val listState: LazyListState,
     val interactionState: ListInteractionState,
     val isDragging: Boolean,
-    val hasHiddenGroups: Boolean,
+    val hasHiddenItems: Boolean,
     val dropTarget: State<CustomizeMenuDropTarget?>,
-    val draggedShownGroup: State<DraggedShownGroup?>,
+    val draggedShownItem: State<DraggedShownItem?>,
 ) {
     /**
-     * Index in the list of the first hidden group, after the drag bar, the shown groups, the hidden sections title and
-     * the area to drag groups into if shown.
+     * Index in the list of the first hidden item, after the drag bar, the shown items, the hidden items title and the
+     * area to drag items into if shown.
      */
-    val firstHiddenIndex = groups.hiddenTitleIndex + if (hasHiddenGroups) 1 else 2
+    val firstHiddenIndex = items.hiddenTitleIndex + if (hasHiddenItems) 1 else 2
 }
 
 /**
- * The group dragged, as it was in the list when the drag started, if it was among the shown groups.
+ * The item dragged, as it was in the list when the drag started, if it was among the shown items.
  *
- * @property size Size of the group in the list.
+ * @property size Size of the item in the list.
  */
-internal data class DraggedShownGroup(val size: Int)
+internal data class DraggedShownItem(val size: Int)
 
 // Groups can be dropped next to these items.
 private val FIXED_ITEMS = setOf(HIDDEN_TITLE, DROP_AREA)
@@ -80,89 +81,117 @@ internal fun rememberCustomizeMenuDragState(
     store: CustomizableMenuStore,
     menuState: CustomizableMenuState,
     listState: LazyListState,
-): CustomizeMenuDragState {
+): CustomizeMenuDragState<CustomizeMenuGroups> {
     val groups =
         remember(menuState.menuGroups, menuState.mandatoryGroupIds, menuState.hiddenGroupIds) {
             val (hidden, shown) = menuState.menuGroups.partition { it.id in menuState.hiddenGroupIds }
             CustomizeMenuGroups(shown = shown, hidden = hidden, mandatoryIds = menuState.mandatoryGroupIds)
         }
-    val windowHeight = with(LocalDensity.current) { LocalWindowInfo.current.containerSize.height.toDp() }
     val moveGroupsHandler = remember(store, groups) { MoveGroupsHandler(store = store, groups = groups) }
+    return rememberHideableListDragState(
+        items = groups,
+        listState = listState,
+        itemInteractionHandler = moveGroupsHandler,
+        fixedItems = FIXED_ITEMS,
+        onAttemptedHide = { (it as? String)?.let { id -> store.dispatch(AttemptedRemovalOfMandatorySection(id)) } },
+    )
+}
+
+/**
+ * Allows dragging the [items] shown in the list with [listState] to reorder them, hide them or show them again, letting
+ * [itemInteractionHandler] move them when the user lets go of a dragged item. Calls [onAttemptedHide], once for each
+ * drag, when an item which cannot be hidden is dragged over the area holding the hidden items. The user feels it
+ * whenever the line, or the highlighted area, showing where the dragged item is dropped appears or moves to another
+ * place.
+ *
+ * @param fixedItems Keys of the list items which cannot be dragged but next to which items can be dropped.
+ * @param onAttemptedHide Called with the key of the dragged item which cannot be hidden.
+ */
+@Composable
+internal fun <T : HideableListItems> rememberHideableListDragState(
+    items: T,
+    listState: LazyListState,
+    itemInteractionHandler: ItemInteractionHandler,
+    fixedItems: Set<Any>,
+    onAttemptedHide: (key: Any) -> Unit,
+): CustomizeMenuDragState<T> {
+    val windowHeight = with(LocalDensity.current) { LocalWindowInfo.current.containerSize.height.toDp() }
     val interactionState =
         createListInteractionState(
             listState = listState,
             ignoredItems = setOf(DRAG_BAR, RESET_BUTTON),
             liveReorderEnabled = false,
-            itemInteractionHandler = moveGroupsHandler,
+            itemInteractionHandler = itemInteractionHandler,
             dragAndDropEnabled = false,
-            fixedItems = FIXED_ITEMS,
-            // The groups differ in height, so a part of the window rather than of the first one shown.
+            fixedItems = fixedItems,
+            // The items differ in height, so a part of the window rather than of the first one shown.
             scrollZoneHeight = windowHeight * AUTO_SCROLL_ZONE_WINDOW_FRACTION,
             interceptInteractionMode = { dragged, mode ->
-                interactionModeOf(dragged, mode, listState.layoutInfo, groups)
+                interactionModeOf(dragged, mode, listState.layoutInfo, items)
             },
         )
     val isDragging by
         remember(interactionState) { derivedStateOf { interactionState.draggedItem != InteractionState.List.None } }
 
-    val hasHiddenGroups by
-        remember(interactionState, groups) {
-            derivedStateOf { groups.hiddenKeys.any { it != interactionState.draggedItem.key } }
+    val hasHiddenItems by
+        remember(interactionState, items) {
+            derivedStateOf { items.hiddenKeys.any { it != interactionState.draggedItem.key } }
         }
 
-    val draggedShownGroup = rememberDraggedShownGroup(interactionState, groups)
+    val draggedShownItem = rememberDraggedShownItem(interactionState, items)
 
     val dropTarget =
-        remember(interactionState, groups) {
+        remember(interactionState, items) {
             derivedStateOf {
                 val draggedItem = interactionState.draggedItem
-                val draggedGroupId = draggedItem.key ?: return@derivedStateOf null
-                // Only once moved, before which the group is still where it was picked up.
+                val draggedKey = draggedItem.key ?: return@derivedStateOf null
+                // Only once moved, before which the item is still where it was picked up.
                 if (!draggedItem.moved) return@derivedStateOf null
-                dropTargetOf(draggedGroupId, interactionState.interactionMode, groups)
+                dropTargetOf(draggedKey, interactionState.interactionMode, items)
             }
         }
 
-    DropIndicationHaptics(interactionState, groups, dropTarget)
+    DropIndicationHaptics(interactionState, items, dropTarget)
 
-    val draggedMandatoryGroupId by
-        remember(interactionState, groups) {
-            derivedStateOf { (interactionState.draggedItem.key as? String)?.takeIf { it in groups.mandatoryIds } }
+    val currentOnAttemptedHide by rememberUpdatedState(onAttemptedHide)
+    val draggedMandatoryKey by
+        remember(interactionState, items) {
+            derivedStateOf { interactionState.draggedItem.key?.takeIf { items.cannotBeHidden(it) } }
         }
     // Once for each drag, for the user not to be told again while trying again.
-    LaunchedEffect(store, draggedMandatoryGroupId) {
-        val groupId = draggedMandatoryGroupId ?: return@LaunchedEffect
+    LaunchedEffect(draggedMandatoryKey) {
+        val key = draggedMandatoryKey ?: return@LaunchedEffect
         snapshotFlow {
             (interactionState.draggedItem as? InteractionState.List.Active)?.let {
-                draggedPositionOf(dragged = it, layoutInfo = listState.layoutInfo, items = groups)
+                draggedPositionOf(dragged = it, layoutInfo = listState.layoutInfo, items = items)
             } == DraggedPosition.OVER_HIDDEN_AREA
         }
             .first { isOver -> isOver }
-        store.dispatch(AttemptedRemovalOfMandatorySection(groupId))
+        currentOnAttemptedHide(key)
     }
 
     return CustomizeMenuDragState(
-        groups = groups,
+        items = items,
         listState = listState,
         interactionState = interactionState,
         isDragging = isDragging,
-        hasHiddenGroups = hasHiddenGroups,
+        hasHiddenItems = hasHiddenItems,
         dropTarget = dropTarget,
-        draggedShownGroup = draggedShownGroup,
+        draggedShownItem = draggedShownItem,
     )
 }
 
-/** Where the group dragged with [interactionState] was when the drag started, if it was among the shown [groups]. */
+/** Where the item dragged with [interactionState] was when the drag started, if it was among the shown [items]. */
 @Composable
-private fun rememberDraggedShownGroup(
+private fun rememberDraggedShownItem(
     interactionState: ListInteractionState,
-    groups: CustomizeMenuGroups,
-): State<DraggedShownGroup?> =
-    remember(interactionState, groups) {
+    items: HideableListItems,
+): State<DraggedShownItem?> =
+    remember(interactionState, items) {
         derivedStateOf {
             (interactionState.draggedItem as? InteractionState.List.Active)
-                ?.takeIf { dragged -> groups.shown.any { it.id == dragged.key } }
-                ?.let { DraggedShownGroup(size = it.size) }
+                ?.takeIf { dragged -> items.isShownKey(dragged.key) }
+                ?.let { DraggedShownItem(size = it.size) }
         }
     }
 
