@@ -17,6 +17,12 @@ runWithMSE(async ms => {
   await once(ms, "sourceopen");
 
   ok(MediaSource.isTypeSupported("audio/mpeg"), "audio/mpeg is supported");
+  // An empty codecs parameter is treated as if it were absent, as for the
+  // other MediaSource types and as in other browsers.
+  ok(
+    MediaSource.isTypeSupported('audio/mpeg; codecs=""'),
+    "audio/mpeg with an empty codecs parameter is supported"
+  );
   // The codecs parameter must not be used with the MPEG audio byte stream
   // format, and audio/mp3 isn't in the byte stream format registry.
   for (const type of [

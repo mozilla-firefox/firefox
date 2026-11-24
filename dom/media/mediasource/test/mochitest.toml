@@ -261,6 +261,11 @@ support-files = [
   "seek-odd-keyframes/single-idr-vp9-1.mp4^headers^",
 
   # MPEG audio
+  "../../test/adts.aac",
+  "../../test/adts-cbr.aac",
+  "aac_crc.aac",
+  "aac_he.aac",
+  "aac_stereo.aac",
   "../../test/empty_size.mp3",
   "../../test/huge-id3.mp3",
   "../../test/small-shot.mp3",
@@ -271,6 +276,12 @@ support-files = [
   "mp1_tone.mp1",
   "mp2_click.mp2",
 ]
+
+["test_AAC_AbortAndResync.html"]
+
+["test_AAC_Append.html"]
+
+["test_AAC_TypeSupport.html"]
 
 ["test_BufferedSeekCanPlayThrough.html"]
 

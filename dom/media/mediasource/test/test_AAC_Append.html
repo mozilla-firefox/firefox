@@ -1,0 +1,149 @@
+<!DOCTYPE HTML>
+<html>
+<head>
+  <title>MSE: append and play audio/aac</title>
+  <script src="/tests/SimpleTest/SimpleTest.js"></script>
+  <script type="text/javascript" src="mediasource.js"></script>
+  <link rel="stylesheet" type="text/css" href="/tests/SimpleTest/test.css" />
+</head>
+<body>
+<pre id="test">
+<script class="testbody" type="text/javascript">
+
+SimpleTest.waitForExplicitFinish();
+addMSEPrefs(["media.mediasource.aac.enabled", true]);
+
+// Every ADTS frame holds 1024 samples at the sample rate of its header.
+const framesDuration = (n, rate) => (n * 1024) / rate;
+
+function concat(...parts) {
+  const bytes = new Uint8Array(parts.reduce((n, part) => n + part.length, 0));
+  let offset = 0;
+  for (const part of parts) {
+    bytes.set(part, offset);
+    offset += part.length;
+  }
+  return bytes;
+}
+
+// An ID3v2.4 tag, whose size is a 28 bit synchsafe integer.
+function id3v2Tag(payloadSize) {
+  const tag = new Uint8Array(10 + payloadSize);
+  tag.set([
+    0x49, 0x44, 0x33, 4, 0, 0,
+    (payloadSize >> 21) & 0x7f,
+    (payloadSize >> 14) & 0x7f,
+    (payloadSize >> 7) & 0x7f,
+    payloadSize & 0x7f,
+  ]);
+  return tag;
+}
+
+function id3v1Tag() {
+  const tag = new Uint8Array(128).fill(0x20);
+  tag.set([0x54, 0x41, 0x47]);
+  return tag;
+}
+
+function checkBuffered(sb, end, msg, epsilon = 1e-6) {
+  is(sb.buffered.length, 1, `${msg}: one buffered range`);
+  isfuzzy(sb.buffered.start(0), 0, 1e-6, `${msg}: buffered start`);
+  isfuzzy(sb.buffered.end(0), end, epsilon, `${msg}: buffered end`);
+}
+
+runWithMSE(async (ms, el) => {
+  await once(ms, "sourceopen");
+  const sb = ms.addSourceBuffer("audio/aac");
+  const [mono, monoCBR, stereo, crc, he] = (
+    await Promise.all(
+      ["adts.aac", "adts-cbr.aac", "aac_stereo.aac", "aac_crc.aac", "aac_he.aac"]
+        .map(file => fetchWithXHR(file))
+    )
+  ).map(buffer => new Uint8Array(buffer));
+
+  // adts.aac has 31 mono AAC LC frames at 32 kHz.
+  await loadSegment(sb, mono);
+  let end = framesDuration(31, 32000);
+  checkBuffered(sb, end, "adts.aac");
+  isfuzzy(
+    sb.timestampOffset,
+    end,
+    1e-6,
+    "timestampOffset is the end of the last frame"
+  );
+  is(ms.duration, Infinity, "The initialization segment has no duration");
+
+  // Splitting the byte stream within the frames gives the same frames.
+  for (let i = 0; i < mono.length; i += 101) {
+    await loadSegment(sb, mono.subarray(i, i + 101));
+  }
+  end += framesDuration(31, 32000);
+  checkBuffered(sb, end, "adts.aac in small chunks");
+
+  // Metadata frames are ignored as they are appended, so the attributes can
+  // be set partway through an ID3v2 tag.
+  const tagged = concat(id3v2Tag(1000), mono, id3v1Tag());
+  await loadSegment(sb, tagged.subarray(0, 500));
+  sb.timestampOffset = end;
+  sb.mode = "sequence";
+  ok(true, "The attributes can be set partway through an ID3v2 tag");
+  await loadSegment(sb, tagged.subarray(500));
+  end += framesDuration(31, 32000);
+  checkBuffered(sb, end, "ID3v2 tag, adts.aac and ID3v1 tag");
+
+  // An Icecast header and garbage are ignored too. Three frame headers in a
+  // row resynchronize the stream after garbage.
+  await loadSegment(
+    sb,
+    concat(
+      new TextEncoder().encode("ICY 200 OK\r\nicy-name: test\r\n\r\n"),
+      mono,
+      new Uint8Array(100).fill(0x55),
+      mono
+    )
+  );
+  end += framesDuration(62, 32000);
+  checkBuffered(sb, end, "Icecast header, adts.aac, garbage and adts.aac");
+
+  // aac_stereo.aac has 45 stereo frames at 44.1 kHz. The sample rate and the
+  // channel count change the track configuration. The frames after a sample
+  // rate change can start up to a sample early, as the end of the previous
+  // frame is truncated to the new sample rate.
+  await loadSegment(sb, stereo);
+  end += framesDuration(45, 44100);
+  checkBuffered(sb, end, "aac_stereo.aac", 1 / 32000);
+
+  // aac_crc.aac has the same frames, with a CRC after each header.
+  await loadSegment(sb, crc);
+  end += framesDuration(45, 44100);
+  checkBuffered(sb, end, "aac_crc.aac", 1 / 32000);
+
+  // aac_he.aac has 25 HE-AAC frames, which signal the AAC LC core at 22.05 kHz
+  // in their headers. Each frame decodes to 2048 samples at 44.1 kHz.
+  await loadSegment(sb, he);
+  end += framesDuration(25, 22050);
+  checkBuffered(sb, end, "aac_he.aac", 2 / 22050);
+
+  // adts-cbr.aac has 705 mono frames at 48 kHz.
+  await loadSegment(sb, monoCBR.subarray(0, 20000));
+  ok(sb.buffered.end(0) > end, "Part of adts-cbr.aac is buffered");
+  end = sb.buffered.end(0);
+
+  ms.endOfStream();
+  isfuzzy(
+    ms.duration,
+    end,
+    1e-6,
+    "endOfStream() sets the duration to the end of the buffered range"
+  );
+
+  el.play();
+  await once(el, "ended");
+  ok(true, "Played to the end");
+  SimpleTest.finish();
+});
+
+</script>
+</pre>
+</body>
+</html>

@@ -12815,6 +12815,12 @@
   value: @IS_NIGHTLY_BUILD@
   mirror: always
 
+# Whether MediaSource supports the audio/aac byte stream format.
+- name: media.mediasource.aac.enabled
+  type: RelaxedAtomicBool
+  value: @IS_NIGHTLY_BUILD@
+  mirror: always
+
 # true for talos tests so that VideoSink passes on the most recently decoded
 # frame to exercise the compositor even when the frame is out of date because
 # the decoder is stressed.

@@ -1,0 +1,90 @@
+<!DOCTYPE HTML>
+<html>
+<head>
+  <title>MSE: audio/aac type support and generated timestamps</title>
+  <script src="/tests/SimpleTest/SimpleTest.js"></script>
+  <script type="text/javascript" src="mediasource.js"></script>
+  <link rel="stylesheet" type="text/css" href="/tests/SimpleTest/test.css" />
+</head>
+<body>
+<pre id="test">
+<script class="testbody" type="text/javascript">
+
+SimpleTest.waitForExplicitFinish();
+addMSEPrefs(
+  ["media.mediasource.aac.enabled", true],
+  ["media.mediasource.mp3.enabled", true]
+);
+
+runWithMSE(async ms => {
+  await once(ms, "sourceopen");
+
+  ok(MediaSource.isTypeSupported("audio/aac"), "audio/aac is supported");
+  // An empty codecs parameter is treated as if it were absent, as for the
+  // other MediaSource types and as in other browsers.
+  ok(
+    MediaSource.isTypeSupported('audio/aac; codecs=""'),
+    "audio/aac with an empty codecs parameter is supported"
+  );
+  // The codecs parameter must not be used with the MPEG audio byte stream
+  // format, and only audio/aac is in the byte stream format registry.
+  for (const type of [
+    'audio/aac; codecs="mp4a.40.2"',
+    'audio/aac; codecs="aac"',
+    "audio/aacp",
+    "audio/x-aac",
+  ]) {
+    ok(!MediaSource.isTypeSupported(type), `${type} is not supported`);
+  }
+
+  // The generate timestamps flag of audio/aac is true.
+  const sb = ms.addSourceBuffer("audio/aac");
+  is(sb.mode, "sequence", "addSourceBuffer() sets mode to sequence");
+  must_throw(
+    () => (sb.mode = "segments"),
+    "Setting mode to segments throws",
+    "TypeError"
+  );
+  is(sb.mode, "sequence", "mode is unchanged");
+
+  sb.changeType("audio/mpeg");
+  is(sb.mode, "sequence", "changeType() to audio/mpeg keeps the mode");
+  sb.changeType("audio/webm");
+  sb.mode = "segments";
+  sb.changeType("audio/aac");
+  is(sb.mode, "sequence", "changeType() to audio/aac sets mode to sequence");
+
+  const decodingInfo = contentType =>
+    navigator.mediaCapabilities.decodingInfo({
+      type: "media-source",
+      audio: { contentType },
+    });
+  ok(
+    (await decodingInfo("audio/aac")).supported,
+    "decodingInfo() supports audio/aac in MediaSource"
+  );
+
+  await SpecialPowers.pushPrefEnv({
+    set: [["media.mediasource.aac.enabled", false]],
+  });
+  ok(
+    !(await decodingInfo("audio/aac")).supported,
+    "decodingInfo() doesn't support audio/aac when disabled"
+  );
+  ok(
+    !MediaSource.isTypeSupported("audio/aac"),
+    "audio/aac is not supported when disabled"
+  );
+  must_throw(
+    () => ms.addSourceBuffer("audio/aac"),
+    "addSourceBuffer() throws when disabled",
+    "NotSupportedError"
+  );
+
+  SimpleTest.finish();
+});
+
+</script>
+</pre>
+</body>
+</html>

@@ -1,0 +1,144 @@
+<!DOCTYPE HTML>
+<html>
+<head>
+  <title>MSE: audio/aac after abort(), a split frame and invalid frames</title>
+  <script src="/tests/SimpleTest/SimpleTest.js"></script>
+  <script type="text/javascript" src="mediasource.js"></script>
+  <link rel="stylesheet" type="text/css" href="/tests/SimpleTest/test.css" />
+</head>
+<body>
+<pre id="test">
+<script class="testbody" type="text/javascript">
+
+SimpleTest.waitForExplicitFinish();
+addMSEPrefs(["media.mediasource.aac.enabled", true]);
+
+const framesDuration = (n, rate) => (n * 1024) / rate;
+
+// Returns the offsets of the ADTS frames, and of the end of the last one.
+function frameOffsets(bytes) {
+  const offsets = [];
+  let offset = 0;
+  while (bytes[offset] == 0xff && (bytes[offset + 1] & 0xf6) == 0xf0) {
+    offsets.push(offset);
+    offset +=
+      ((bytes[offset + 3] & 3) << 11) |
+      (bytes[offset + 4] << 3) |
+      (bytes[offset + 5] >> 5);
+  }
+  offsets.push(offset);
+  return offsets;
+}
+
+function checkBuffered(sb, end, msg) {
+  is(sb.buffered.length, 1, `${msg}: one buffered range`);
+  isfuzzy(sb.buffered.start(0), 0, 1e-6, `${msg}: buffered start`);
+  isfuzzy(sb.buffered.end(0), end, 1e-6, `${msg}: buffered end`);
+}
+
+async function withSourceBuffer(aTest) {
+  const ms = new MediaSource();
+  const audio = document.createElement("audio");
+  audio.src = URL.createObjectURL(ms);
+  await once(ms, "sourceopen");
+  await aTest(ms.addSourceBuffer("audio/aac"), ms, audio);
+  audio.removeAttribute("src");
+  audio.load();
+}
+
+runWithMSE(async () => {
+  // aac_stereo.aac has 45 stereo frames at 44.1 kHz and no metadata.
+  const bytes = new Uint8Array(await fetchWithXHR("aac_stereo.aac"));
+  const frames = frameOffsets(bytes);
+  is(frames.length, 46, "aac_stereo.aac has 45 frames");
+
+  await withSourceBuffer(async (sb, ms) => {
+    // The 7 byte header of the first frame is an initialization segment,
+    // without waiting for the rest of the frame as Chrome does. The media
+    // segment starts with the coded audio that follows the header.
+    await loadSegment(sb, bytes.subarray(0, 6));
+    ok(isNaN(ms.duration), "A partial header isn't an initialization segment");
+    await loadSegment(sb, bytes.subarray(6, 7));
+    is(ms.duration, Infinity, "A frame header is an initialization segment");
+    sb.timestampOffset = 0;
+    ok(true, "timestampOffset can be set after a frame header");
+    await loadSegment(sb, bytes.subarray(7, 8));
+    must_throw(
+      () => (sb.timestampOffset = 100),
+      "Setting timestampOffset after the start of the coded audio throws",
+      "InvalidStateError"
+    );
+
+    // Split the byte stream within a frame.
+    const split = frames[20] + 50;
+    await loadSegment(sb, bytes.subarray(8, split));
+    must_throw(
+      () => (sb.timestampOffset = 100),
+      "Setting timestampOffset while a frame is incomplete throws",
+      "InvalidStateError"
+    );
+    checkBuffered(sb, framesDuration(20, 44100), "Frames before the split");
+
+    // abort() drops the start of the split frame, so the rest of the byte
+    // stream starts with garbage, and is resynchronized on the next frame.
+    sb.abort();
+    await loadSegment(sb, bytes.subarray(split));
+    checkBuffered(
+      sb,
+      framesDuration(44, 44100),
+      "aac_stereo.aac without the split frame"
+    );
+  });
+
+  // The CRC that follows the header of a protected frame isn't coded audio.
+  const crc = new Uint8Array(await fetchWithXHR("aac_crc.aac"));
+  await withSourceBuffer(async sb => {
+    await loadSegment(sb, crc.subarray(0, 9));
+    sb.timestampOffset = 0;
+    ok(true, "timestampOffset can be set after a frame header and its CRC");
+    await loadSegment(sb, crc.subarray(9, 10));
+    must_throw(
+      () => (sb.timestampOffset = 100),
+      "Setting timestampOffset after the CRC throws",
+      "InvalidStateError"
+    );
+  });
+
+  // Frame headers that aren't valid ADTS headers, or that Gecko doesn't
+  // support, are decode errors.
+  const frame = bytes.slice(frames[0], frames[1]);
+  const invalidFrames = {
+    "an MPEG audio frame header": [0xff, 0xfb, 0x90, 0x00],
+    "a reserved sampling frequency index": [frame[0], frame[1], frame[2] | 0x3c],
+    "a channel configuration of 0": [
+      frame[0], frame[1], frame[2] & 0xfe, frame[3] & 0x3f,
+    ],
+    "two raw data blocks": [
+      frame[0], frame[1], frame[2], frame[3], frame[4], frame[5], frame[6] | 1,
+    ],
+    "no raw data block": [
+      frame[0], frame[1], frame[2], frame[3] & 0xfc, 0, (7 << 5) | 0x1f,
+    ],
+  };
+  for (const [name, header] of Object.entries(invalidFrames)) {
+    await withSourceBuffer(async (sb, ms, el) => {
+      const invalid = frame.slice();
+      invalid.set(header);
+      const sbError = once(sb, "error");
+      const elError = once(el, "error");
+      sb.appendBuffer(invalid);
+      await sbError;
+      ok(true, `${name}: the SourceBuffer fired an error event`);
+      await elError;
+      ok(el.error, `${name}: the media element errored`);
+      isnot(ms.readyState, "open", `${name}: the MediaSource isn't open`);
+    });
+  }
+
+  SimpleTest.finish();
+});
+
+</script>
+</pre>
+</body>
+</html>

@@ -191,8 +191,15 @@ void MediaSource::IsTypeSupported(const nsAString& aType,
   }
   // https://w3c.github.io/mse-byte-stream-format-mpeg-audio/#mime-types
   // The "codecs" MIME-type parameter MUST NOT be used with these MIME-types.
+  // An empty codecs parameter is deliberately accepted, though: it is treated
+  // as if it were absent, as for the other types here and as in Chrome and
+  // Safari.
   if (mimeType == MEDIAMIMETYPE(AUDIO_MP3) &&
       StaticPrefs::media_mediasource_mp3_enabled() && codecs.IsEmpty()) {
+    return;
+  }
+  if (mimeType == MEDIAMIMETYPE(AUDIO_AAC) &&
+      StaticPrefs::media_mediasource_aac_enabled() && codecs.IsEmpty()) {
     return;
   }
 
