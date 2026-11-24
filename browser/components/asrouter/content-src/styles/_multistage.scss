@@ -1518,6 +1518,7 @@ html {
 
           @container card-stack (width <= #{$card-stack-stacked-width}) {
             background: var(--card-stack-bkg-small);
+            border-end-start-radius: 0;
           }
         }
 

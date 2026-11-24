@@ -2504,6 +2504,7 @@ html {
 @container card-stack (width <= 520px) {
   .onboardingContainer .screen[pos=card-stack] .section-secondary.card-stack-image-banner {
     background: var(--card-stack-bkg-small);
+    border-end-start-radius: 0;
   }
 }
 @container card-stack (width <= 640px) {
