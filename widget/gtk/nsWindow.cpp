@@ -7173,7 +7173,7 @@ nsresult nsWindow::SynthesizeNativeTouchPoint(
   return NS_OK;
 }
 
-nsresult nsWindow::SynthesizeNativeTouchPadPinch(
+nsresult nsWindow::SynthesizeNativeTouchpadPinch(
     TouchpadGesturePhase aEventPhase, float aScale, LayoutDeviceIntPoint aPoint,
     int32_t aModifierFlags) {
   if (!mGdkWindow) {

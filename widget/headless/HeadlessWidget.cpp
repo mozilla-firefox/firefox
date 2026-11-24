@@ -471,7 +471,7 @@ nsresult HeadlessWidget::SynthesizeNativeTouchPoint(
   return NS_OK;
 }
 
-nsresult HeadlessWidget::SynthesizeNativeTouchPadPinch(
+nsresult HeadlessWidget::SynthesizeNativeTouchpadPinch(
     TouchpadGesturePhase aEventPhase, float aScale, LayoutDeviceIntPoint aPoint,
     int32_t aModifierFlags) {
   MOZ_ASSERT(NS_IsMainThread());
@@ -555,7 +555,7 @@ nsresult HeadlessWidget::SynthesizeNativeTouchpadPan(
       PixelCastJustification::LayoutDeviceIsScreenForUntransformedEvent);
   PanGestureInput input(eventType, TimeStamp::Now(), touchpadPoint,
                         ScreenPoint(float(aDeltaX), float(aDeltaY)),
-                        // Same as SynthesizeNativeTouchPadPinch case we ignore
+                        // Same as SynthesizeNativeTouchpadPinch case we ignore
                         // aModifierFlags.
                         0);
 

@@ -378,13 +378,13 @@ nsresult PuppetWidget::SynthesizeNativeTouchPoint(
   return NS_OK;
 }
 
-nsresult PuppetWidget::SynthesizeNativeTouchPadPinch(
+nsresult PuppetWidget::SynthesizeNativeTouchpadPinch(
     TouchpadGesturePhase aEventPhase, float aScale, LayoutDeviceIntPoint aPoint,
     int32_t aModifierFlags) {
   if (!mBrowserChild) {
     return NS_ERROR_FAILURE;
   }
-  mBrowserChild->SendSynthesizeNativeTouchPadPinch(aEventPhase, aScale, aPoint,
+  mBrowserChild->SendSynthesizeNativeTouchpadPinch(aEventPhase, aScale, aPoint,
                                                    aModifierFlags);
   return NS_OK;
 }

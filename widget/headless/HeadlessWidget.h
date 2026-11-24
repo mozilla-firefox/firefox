@@ -117,7 +117,7 @@ class HeadlessWidget final : public nsIWidget {
       uint32_t aPointerOrientation,
       nsISynthesizedEventCallback* aCallback) override;
 
-  nsresult SynthesizeNativeTouchPadPinch(TouchpadGesturePhase aEventPhase,
+  nsresult SynthesizeNativeTouchpadPinch(TouchpadGesturePhase aEventPhase,
                                          float aScale,
                                          LayoutDeviceIntPoint aPoint,
                                          int32_t aModifierFlags) override;

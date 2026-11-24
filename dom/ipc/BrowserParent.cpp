@@ -2030,14 +2030,14 @@ mozilla::ipc::IPCResult BrowserParent::RecvSynthesizeNativeTouchPoint(
   return IPC_OK();
 }
 
-mozilla::ipc::IPCResult BrowserParent::RecvSynthesizeNativeTouchPadPinch(
+mozilla::ipc::IPCResult BrowserParent::RecvSynthesizeNativeTouchpadPinch(
     const TouchpadGesturePhase& aEventPhase, const float& aScale,
     const LayoutDeviceIntPoint& aPoint, const int32_t& aModifierFlags) {
   NS_ENSURE_TRUE(xpc::IsInAutomation(), IPC_FAIL(this, "Unexpected event"));
 
   nsCOMPtr<nsIWidget> widget = GetWidget();
   if (widget) {
-    widget->SynthesizeNativeTouchPadPinch(aEventPhase, aScale, aPoint,
+    widget->SynthesizeNativeTouchpadPinch(aEventPhase, aScale, aPoint,
                                           aModifierFlags);
   }
   return IPC_OK();

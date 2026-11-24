@@ -491,7 +491,7 @@ parent:
                                      double aPointerPressure,
                                      uint32_t aPointerOrientation,
                                      uint64_t? aCallbackId);
-    async SynthesizeNativeTouchPadPinch(TouchpadGesturePhase aEventPhase,
+    async SynthesizeNativeTouchpadPinch(TouchpadGesturePhase aEventPhase,
                                         float aScale,
                                         LayoutDeviceIntPoint aPoint,
                                         int32_t aModifierFlags);

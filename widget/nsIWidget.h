@@ -1777,7 +1777,7 @@ class nsIWidget : public nsSupportsWeakReference {
   }
 
   /*
-   * TouchpadGesturePhase states for SynthesizeNativeTouchPadPinch and
+   * TouchpadGesturePhase states for SynthesizeNativeTouchpadPinch and
    * SynthesizeNativeTouchpadPan. Match phase states in nsIDOMWindowUtils.idl.
    */
   enum TouchpadGesturePhase {
@@ -1810,10 +1810,10 @@ class nsIWidget : public nsSupportsWeakReference {
   /*
    * See nsIDOMWindowUtils.sendNativeTouchpadPinch().
    */
-  virtual nsresult SynthesizeNativeTouchPadPinch(
+  virtual nsresult SynthesizeNativeTouchpadPinch(
       TouchpadGesturePhase aEventPhase, float aScale,
       LayoutDeviceIntPoint aPoint, int32_t aModifierFlags) {
-    MOZ_CRASH("SynthesizeNativeTouchPadPinch not implemented on this platform");
+    MOZ_CRASH("SynthesizeNativeTouchpadPinch not implemented on this platform");
     return NS_ERROR_UNEXPECTED;
   }
 

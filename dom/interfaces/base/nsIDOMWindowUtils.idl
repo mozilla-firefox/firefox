@@ -536,7 +536,7 @@ interface nsIDOMWindowUtils : nsISupports {
   const long TOUCH_CANCEL  = 0x08;
 
   /**
-   * Phase states for sendNativeTouchPadPinch.
+   * Phase states for sendNativeTouchpadPinch.
    */
   const long PHASE_BEGIN = 0;
   const long PHASE_UPDATE = 1;
