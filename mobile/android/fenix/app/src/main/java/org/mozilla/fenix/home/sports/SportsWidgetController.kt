@@ -12,9 +12,17 @@ import org.mozilla.fenix.home.HomeFragmentDirections
 /**
  * Controller for handling sports widget interactions on the homepage.
  *
- * @param navController [NavController] used to navigate to homepage settings.
+ * @param navController [NavController] used for navigation.
  */
 class SportsWidgetController(private val navController: NavController) {
+    /** Handles the user selecting the "Wallpapers" menu item by opening the wallpaper settings. */
+    fun handleSportsWidgetWallpapersClicked() {
+        navController.nav(
+            R.id.homeFragment,
+            HomeFragmentDirections.actionGlobalWallpaperSettingsFragment(),
+        )
+    }
+
     /** Handles the user removing the sports widget from the homepage. */
     fun handleSportsWidgetRemoved() {
         navController.nav(

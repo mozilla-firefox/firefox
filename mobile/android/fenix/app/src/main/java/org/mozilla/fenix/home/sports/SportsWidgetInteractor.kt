@@ -7,6 +7,9 @@ package org.mozilla.fenix.home.sports
 /** Interface for sports widget user interactions on the homepage. */
 interface SportsWidgetInteractor {
 
+    /** Called when the user selects the "Wallpapers" menu item of the sports widget. */
+    fun onSportsWidgetWallpapersClicked()
+
     /** Called when the user removes the sports widget. */
     fun onSportsWidgetRemoveClicked()
 }

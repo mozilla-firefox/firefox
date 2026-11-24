@@ -16,6 +16,7 @@ import org.mozilla.fenix.home.HomeFragmentDirections
 class SportsWidgetControllerTest {
 
     private lateinit var navController: NavController
+    private lateinit var controller: SportsWidgetController
 
     @Before
     fun setup() {
@@ -25,12 +26,24 @@ class SportsWidgetControllerTest {
             mockk {
                 every { id } returns R.id.homeFragment
             }
+
+        controller = SportsWidgetController(navController = navController)
+    }
+
+    @Test
+    fun `WHEN handleSportsWidgetWallpapersClicked is called THEN navigate to the wallpaper settings`() {
+        controller.handleSportsWidgetWallpapersClicked()
+
+        verify {
+            navController.navigate(
+                HomeFragmentDirections.actionGlobalWallpaperSettingsFragment(),
+                null,
+            )
+        }
     }
 
     @Test
     fun `WHEN handleSportsWidgetRemoved is called THEN navigate to home settings`() {
-        val controller = SportsWidgetController(navController = navController)
-
         controller.handleSportsWidgetRemoved()
 
         verify {
