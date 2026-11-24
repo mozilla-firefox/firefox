@@ -12,8 +12,11 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.drawBehind
 import androidx.compose.ui.geometry.Offset
 import androidx.compose.ui.graphics.StrokeCap
-import androidx.compose.ui.graphics.drawscope.DrawScope
+import androidx.compose.ui.layout.layout
+import androidx.compose.ui.unit.Density
 import androidx.compose.ui.unit.Dp
+import androidx.compose.ui.unit.constrainHeight
+import androidx.compose.ui.unit.offset
 import mozilla.components.compose.base.theme.AcornTheme
 import mozilla.components.compose.draggable.InteractionMode
 import mozilla.components.compose.draggable.InteractionState
@@ -45,7 +48,7 @@ internal sealed interface CustomizeMenuDropTarget {
  *
  * @param dragged The dragged group or item.
  * @param mode The interaction the list found for the dragged group or item.
- * @param layoutInfo Layout of the list showing the groups or items.
+ * @param layoutInfo Layout of the list showing the groups or items, leaving out the drop line's space.
  * @param items The groups or items as they were before dragging.
  */
 internal fun interactionModeOf(
@@ -55,8 +58,8 @@ internal fun interactionModeOf(
     items: HideableListItems,
 ): InteractionMode.List {
     // Until the list lays out the dragged one taking no space, the others are not yet where they move to.
-    // The dragged one must then be laid out with a size of exactly 0, as by `collapsed` in CustomizeMenu.kt,
-    // or it is never dropped anywhere.
+    // The dragged one must then take exactly no space (see `collapsed` in CustomizeMenu.kt), not counting the drop
+    // line, or it is never dropped anywhere.
     if (layoutInfo.visibleItemsInfo.any { it.key == dragged.key && it.size > 0 }) return InteractionMode.List.None
     val position = draggedPositionOf(dragged, layoutInfo, items)
     val isOverHiddenArea = position == DraggedPosition.OVER_HIDDEN_AREA
@@ -131,57 +134,98 @@ internal fun dropTargetOf(
     return if (items.drop(draggedKey, target) == items) CustomizeMenuDropTarget.InPlace else target
 }
 
-/**
- * Draw a line in the space between list items where a dragged group is dropped, if next to the list item with [key].
- *
- * @param key Key of the list item this is applied to.
- * @param dropTarget Where the dragged group is dropped, read only when drawing.
- * @param itemSpacing Space between the items of the list.
- * @param placeAfter Whether to draw the line only if the dragged group is dropped after the list item, or only if it is
- *   dropped before it. Null to draw it either way.
- */
-@Composable
-internal fun Modifier.dropLine(
-    key: Any,
-    dropTarget: State<CustomizeMenuDropTarget?>,
-    itemSpacing: Dp,
-    placeAfter: Boolean? = null,
-): Modifier = dropLineAt {
-    val target = dropTarget.value as? CustomizeMenuDropTarget.NextTo
-    when {
-        target?.key != key -> null
-        placeAfter != null && target.placeAfter != placeAfter -> null
-        target.placeAfter -> size.height + itemSpacing.toPx() / 2
-        else -> -itemSpacing.toPx() / 2
-    }
+/** Which side of a list item gets the space for the line showing where the dragged group is dropped. */
+internal enum class DropLineSpace {
+    ABOVE,
+    BELOW,
 }
 
 /**
- * Draw a line in the space between the items around where the dragged group was taken from, if dropped there. Applied
- * to where the dragged group is laid out, without taking any space, so the space above the item below it.
+ * Which side of the list item with [key] gets the space for the drop line, or null if none does. When the dragged group
+ * would go back where it was, it gets the space itself.
  *
- * @param dropTarget Where the dragged group is dropped, read only when drawing.
- * @param itemSpacing Space between the items of the list.
+ * @param key Key of the list item.
+ * @param isDragged Whether the list item is the dragged group.
+ * @param dropTarget Where the dragged group is dropped.
  */
-@Composable
-internal fun Modifier.inPlaceDropLine(dropTarget: State<CustomizeMenuDropTarget?>, itemSpacing: Dp): Modifier =
-    dropLineAt {
-        if (dropTarget.value == CustomizeMenuDropTarget.InPlace) itemSpacing.toPx() / 2 else null
+internal fun dropLineSpaceOf(key: Any, isDragged: Boolean, dropTarget: CustomizeMenuDropTarget?): DropLineSpace? =
+    when (dropTarget) {
+        is CustomizeMenuDropTarget.NextTo ->
+            when {
+                dropTarget.key != key -> null
+                dropTarget.placeAfter -> DropLineSpace.BELOW
+                else -> DropLineSpace.ABOVE
+            }
+        CustomizeMenuDropTarget.InPlace -> if (isDragged) DropLineSpace.BELOW else null
+        CustomizeMenuDropTarget.EmptyHiddenArea,
+        null -> null
     }
 
-/** Draw a line at the vertical offset returned by [lineY], if any. */
+/**
+ * Show the drop line next to the list item with [key], if the dragged group is dropped there. The line takes space like
+ * a section: the item grows by the item spacing plus the line's thickness, and records it in [extraSpace]. The spacing
+ * on the other side of the line is the one every item already has above itself.
+ *
+ * @param key Key of the list item this is applied to.
+ * @param isDragged Whether the list item is the dragged group.
+ * @param dropTarget Where the dragged group is dropped, read only when measuring and drawing.
+ * @param extraSpace Where the space taken by the line is recorded.
+ * @param itemSpacing Space between the items of the list.
+ * @param part Which part of the list item this is applied to, for an item made of several nodes.
+ * @param sides Sides of the list item this takes space on for the line.
+ */
 @Composable
-internal fun Modifier.dropLineAt(lineY: DrawScope.() -> Float?): Modifier {
+internal fun Modifier.dropLineSpace(
+    key: Any,
+    isDragged: Boolean,
+    dropTarget: State<CustomizeMenuDropTarget?>,
+    extraSpace: ExtraItemSpace,
+    itemSpacing: Dp,
+    part: Int = 0,
+    sides: Set<DropLineSpace> = DropLineSpace.entries.toSet(),
+): Modifier {
+    val lineThickness = AcornTheme.layout.border.heaviest
+    fun space() =
+        dropLineSpaceOf(key = key, isDragged = isDragged, dropTarget = dropTarget.value)?.takeIf { it in sides }
+    return this.dropLineAt(itemSpacing) { space() }
+        .layout { measurable, constraints ->
+            val space = space()
+            val extra = if (space == null) 0 else dropLineSpacePx(itemSpacing = itemSpacing, thickness = lineThickness)
+            val placeable = measurable.measure(constraints.offset(vertical = -extra))
+            val height = constraints.constrainHeight(placeable.height + extra)
+            extraSpace.record(key = key, extra = extra, size = height, part = part)
+            layout(placeable.width, height) { placeable.place(0, if (space == DropLineSpace.ABOVE) extra else 0) }
+        }
+}
+
+/** Pixels the drop line takes: the item spacing plus the line's [thickness]. */
+internal fun Density.dropLineSpacePx(itemSpacing: Dp, thickness: Dp): Int =
+    itemSpacing.roundToPx() + thickness.roundToPx()
+
+/**
+ * Draw the drop line on the side returned by [lineSpace], if any, in the space taken for it there.
+ *
+ * @param itemSpacing Space between the items of the list, left above the line when it is drawn above.
+ * @param lineSpace Side to draw the line on, read only when drawing.
+ */
+@Composable
+internal fun Modifier.dropLineAt(itemSpacing: Dp, lineSpace: () -> DropLineSpace?): Modifier {
     val color = MaterialTheme.colorScheme.tertiary
-    val strokeWidth = AcornTheme.layout.border.heaviest
+    val lineThickness = AcornTheme.layout.border.heaviest
     val horizontalInset = AcornTheme.layout.space.static200
-    return drawBehind {
-        val y = lineY() ?: return@drawBehind
+    return this.drawBehind {
+        val thickness = lineThickness.roundToPx()
+        val y =
+            when (lineSpace()) {
+                DropLineSpace.ABOVE -> itemSpacing.roundToPx() + thickness / 2f
+                DropLineSpace.BELOW -> size.height - thickness / 2f
+                null -> return@drawBehind
+            }
         drawLine(
             color = color,
             start = Offset(horizontalInset.toPx(), y),
             end = Offset(size.width - horizontalInset.toPx(), y),
-            strokeWidth = strokeWidth.toPx(),
+            strokeWidth = thickness.toFloat(),
             cap = StrokeCap.Round,
         )
     }

@@ -14,6 +14,7 @@ import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.absoluteOffset
 import androidx.compose.foundation.lazy.LazyItemScope
 import androidx.compose.foundation.lazy.LazyListItemInfo
+import androidx.compose.foundation.lazy.LazyListLayoutInfo
 import androidx.compose.foundation.lazy.LazyListState
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.SideEffect
@@ -66,11 +67,14 @@ import kotlinx.coroutines.launch
  * @param scrollZoneHeight Height of the areas at the start and at the end of the list in which the center of a dragged
  *   item scrolls it, once the item went past the edge of the list there. `null` for a third of the first visible item
  *   other than the dragged one, whether the dragged item went past the edge or not.
- * @param interceptInteractionMode Called with the dragged item and the interaction the list found for it, whenever the
- *   item is dragged, to return the interaction to use instead, for example to retarget it or to reject it with
- *   [InteractionMode.List.None]. The interaction it returns is optionally shown via a Rect parameter and acted upon
- *   when the user lets go. Whatever it returns, an item dragged past the edge of the list scrolls it only if the list
- *   found nothing to place it next to or drop it onto.
+ * @param interceptInteractionMode Called with the dragged item, the interaction the list found for it and the layout it
+ *   was found in, as adjusted by [targetingLayoutInfo], whenever the item is dragged. Returns the interaction to use
+ *   instead, for example to retarget it or to reject it with [InteractionMode.List.None]. The interaction it returns is
+ *   optionally shown via a Rect parameter and acted upon when the user lets go. Whatever it returns, an item dragged
+ *   past the edge of the list scrolls it only if the list found nothing to place it next to or drop it onto.
+ * @param targetingLayoutInfo Adjusts the list's current layout before the interaction is found in it, for example to
+ *   remove space reserved for displaying the drop target, so that this space cannot move the target. Unchanged by
+ *   default.
  */
 @Composable
 fun createListInteractionState(
@@ -82,10 +86,12 @@ fun createListInteractionState(
     dragAndDropEnabled: Boolean = true,
     fixedItems: Set<Any> = emptySet(),
     scrollZoneHeight: Dp? = null,
-    interceptInteractionMode: (InteractionState.List.Active, InteractionMode.List) -> InteractionMode.List =
-        { _, mode ->
+    interceptInteractionMode:
+        (InteractionState.List.Active, InteractionMode.List, LazyListLayoutInfo) -> InteractionMode.List =
+        { _, mode, _ ->
             mode
         },
+    targetingLayoutInfo: (LazyListLayoutInfo) -> LazyListLayoutInfo = { it },
 ): ListInteractionState {
     val scope = rememberCoroutineScope()
     val touchSlop = LocalViewConfiguration.current.touchSlop
@@ -106,6 +112,7 @@ fun createListInteractionState(
                 dragAndDropEnabled = dragAndDropEnabled,
                 liveReorderEnabled = liveReorderEnabled,
                 interceptInteractionMode = interceptInteractionMode,
+                targetingLayoutInfo = targetingLayoutInfo,
             )
         }
     SideEffect {
@@ -117,6 +124,7 @@ fun createListInteractionState(
         state.liveReorderEnabled = liveReorderEnabled
         state.onLongPress = onLongPress
         state.interceptInteractionMode = interceptInteractionMode
+        state.targetingLayoutInfo = targetingLayoutInfo
     }
     return state
 }
@@ -215,8 +223,10 @@ interface ListInteractionState {
  * @param scrollZoneHeight Height in pixels of the areas at the start and at the end of the list in which the center of
  *   a dragged item scrolls it, once the item went past the edge of the list there. `null` for a third of the first
  *   visible item other than the dragged one, whether the dragged item went past the edge or not.
- * @param interceptInteractionMode Called with the dragged item and the interaction found for it, whenever the item is
- *   dragged, to return the interaction to use instead. The list scrolls only for the interaction it found.
+ * @param interceptInteractionMode Called with the dragged item, the interaction the list found for it and the layout it
+ *   was found in, as adjusted by [targetingLayoutInfo], whenever the item is dragged. Returns the interaction to use
+ *   instead. The list scrolls only for the interaction it found.
+ * @param targetingLayoutInfo Adjusts the list's current layout before the interaction is found in it.
  */
 internal class ListInteractionStateImpl(
     private val listState: LazyListState,
@@ -230,10 +240,12 @@ internal class ListInteractionStateImpl(
     var onLongPress: (LazyListItemInfo) -> Unit = {},
     var fixedItems: Set<Any> = emptySet(),
     var scrollZoneHeight: Float? = null,
-    var interceptInteractionMode: (InteractionState.List.Active, InteractionMode.List) -> InteractionMode.List =
-        { _, mode ->
+    var interceptInteractionMode:
+        (InteractionState.List.Active, InteractionMode.List, LazyListLayoutInfo) -> InteractionMode.List =
+        { _, mode, _ ->
             mode
         },
+    var targetingLayoutInfo: (LazyListLayoutInfo) -> LazyListLayoutInfo = { it },
 ) : ListInteractionState {
     override var draggedItem by mutableStateOf<InteractionState.List>(InteractionState.List.None)
         private set
@@ -476,6 +488,7 @@ internal class ListInteractionStateImpl(
                 draggingItemOffset = computeDraggedItemOffset(),
                 itemSize = draggingItem.size,
             )
+        val layoutInfo = targetingLayoutInfo(listState.layoutInfo)
         val foundMode =
             determineInteractionMode(
                 listState = listState,
@@ -484,6 +497,7 @@ internal class ListInteractionStateImpl(
                 ignoredItems = ignoredItems,
                 dragAndDropEnabled = dragAndDropEnabled,
                 scrollZoneHeight = scrollZoneHeight,
+                layoutInfo = layoutInfo,
             )
         // An item dragged past the edge of the list scrolls it only if the list found nothing to place it next to or
         // drop it onto, or is already scrolling.
@@ -491,7 +505,7 @@ internal class ListInteractionStateImpl(
         if (foundMode is InteractionMode.List.Scroll || foundMode is InteractionMode.List.None) {
             scrollPastEdge(itemOffset)
         }
-        val mode = interceptInteractionMode(draggingItem, foundMode)
+        val mode = interceptInteractionMode(draggingItem, foundMode, layoutInfo)
         // Debounce duplicate reorder events.
         // Note that multiple duplicate scroll events are valid
         if (mode == interactionMode && interactionMode is InteractionMode.List.Reordering) {
@@ -522,6 +536,7 @@ private fun determineInteractionMode(
     ignoredItems: Set<Any>,
     dragAndDropEnabled: Boolean,
     scrollZoneHeight: Float?,
+    layoutInfo: LazyListLayoutInfo,
 ): InteractionMode.List {
     if (listState.isScrollInProgress) return InteractionMode.List.None
     if (draggedItem is InteractionState.List.None) return InteractionMode.List.None
@@ -533,6 +548,7 @@ private fun determineInteractionMode(
                 draggedItem = draggedItem,
                 ignoredItems = ignoredItems,
                 scrollZoneHeight = scrollZoneHeight,
+                layoutInfo = layoutInfo,
             )
             .filter { item ->
                 // Filter out the drag and drop interaction type if it is disabled, as in private tabs
@@ -617,15 +633,16 @@ private fun getScrollCandidates(
     listState: LazyListState,
     draggedItemOffset: ListItemOffset,
     scrollZoneHeight: Float?,
+    layoutInfo: LazyListLayoutInfo,
 ): List<ListInteractionCandidate> {
-    val visibleItems = listState.layoutInfo.visibleItemsInfo
+    val visibleItems = layoutInfo.visibleItemsInfo
     val firstVisible = visibleItems.firstOrNull() ?: return emptyList()
     // The dragged item may take no space, so it is not used to size the areas.
     val sizingItem = visibleItems.firstOrNull { it.key != draggedItemOffset.draggedItem.key } ?: firstVisible
     val candidates = mutableListOf<ListInteractionCandidate>()
     val scrollRectSize =
         Size(
-            width = listState.layoutInfo.viewportSize.width.toFloat(),
+            width = layoutInfo.viewportSize.width.toFloat(),
             height = scrollZoneHeight ?: (sizingItem.size / 3.0f),
         )
     // Given a height, the areas only scroll when the dragged item went past the edge of the list, as that scrolls it.
@@ -650,14 +667,11 @@ private fun getScrollCandidates(
         }
     }
     // Scroll down can only be a candidate if we are not at the bottom of the view
-    val lastVisible = listState.layoutInfo.visibleItemsInfo.lastOrNull() ?: return candidates
-    if (
-        lastVisibleItemIndex(listState) < listState.layoutInfo.totalItemsCount - 1 &&
-            (overscroll == null || overscroll > 0f)
-    ) {
+    val lastVisible = layoutInfo.visibleItemsInfo.lastOrNull() ?: return candidates
+    if (hasItemsAfterLastVisible(layoutInfo) && (overscroll == null || overscroll > 0f)) {
         val scrollDownRect =
             Rect(
-                offset = Offset(0f, listState.layoutInfo.viewportSize.height - scrollRectSize.height),
+                offset = Offset(0f, layoutInfo.viewportSize.height - scrollRectSize.height),
                 size = scrollRectSize,
             )
         if (scrollDownRect.top < draggedItemOffset.end) {
@@ -673,8 +687,9 @@ private fun getScrollCandidates(
     return candidates
 }
 
-private fun lastVisibleItemIndex(listState: LazyListState): Int {
-    return listState.layoutInfo.visibleItemsInfo.lastOrNull()?.index ?: 0
+private fun hasItemsAfterLastVisible(layoutInfo: LazyListLayoutInfo): Boolean {
+    val lastVisibleItemIndex = layoutInfo.visibleItemsInfo.lastOrNull()?.index ?: 0
+    return lastVisibleItemIndex < layoutInfo.totalItemsCount - 1
 }
 
 internal fun gatherCandidates(
@@ -683,6 +698,7 @@ internal fun gatherCandidates(
     draggedItem: InteractionState,
     ignoredItems: Set<Any>,
     scrollZoneHeight: Float? = null,
+    layoutInfo: LazyListLayoutInfo = listState.layoutInfo,
 ): List<ListInteractionCandidate> {
     val candidates = mutableListOf<ListInteractionCandidate>()
     candidates.addAll(
@@ -691,14 +707,15 @@ internal fun gatherCandidates(
                 listState = listState,
                 draggedItemOffset = draggedItemOffset,
                 scrollZoneHeight = scrollZoneHeight,
+                layoutInfo = layoutInfo,
             )
     )
-    for (itemCandidate in listState.layoutInfo.visibleItemsInfo) {
+    for (itemCandidate in layoutInfo.visibleItemsInfo) {
         if (itemCandidate.key in ignoredItems || itemCandidate.key == draggedItem.key) continue
-        val gutterSpacing = listState.layoutInfo.mainAxisItemSpacing
+        val gutterSpacing = layoutInfo.mainAxisItemSpacing
         val horizontalGutterSize =
             Size(
-                width = listState.layoutInfo.viewportSize.width.toFloat(),
+                width = layoutInfo.viewportSize.width.toFloat(),
                 height = gutterSpacing.toFloat(),
             )
 
@@ -708,7 +725,7 @@ internal fun gatherCandidates(
                 offset = Offset(x = 0f, y = itemCandidate.offset.toFloat()),
                 size =
                     Size(
-                        width = listState.layoutInfo.viewportSize.width.toFloat(),
+                        width = layoutInfo.viewportSize.width.toFloat(),
                         height = itemCandidate.size.toFloat(),
                     ),
             )

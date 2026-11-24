@@ -64,7 +64,7 @@ internal fun LazyItemScope.EditMenuItemRow(
         modifier =
             modifier
                 .drawnOnlyInView(row.key, dragState)
-                .dragPlacement(isDragged = isDragged, dropTarget = dragState.dropTarget, itemSpacing = itemSpacing),
+                .dragPlacement(key = row.key, isDragged = isDragged, dragState = dragState, itemSpacing = itemSpacing),
     ) {
         when (row) {
             is EditMenuItemsRow.Item ->
@@ -99,10 +99,7 @@ private fun ItemRow(
         isSubItem = row.parentId != null,
         dragState = dragState,
         dragKey = dragKey,
-        modifier =
-            Modifier.alpha(if (isDragged) DRAGGED_GROUP_ALPHA else 1f)
-                .padding(top = itemSpacing)
-                .dropLine(row.key, dragState.dropTarget, itemSpacing),
+        modifier = Modifier.alpha(if (isDragged) DRAGGED_GROUP_ALPHA else 1f).padding(top = itemSpacing),
     ) {
         CustomizedGroupTheme(containerColor = if (row.isHidden) Color.Transparent else null) {
             if (item is ExpandableMenuItem) {

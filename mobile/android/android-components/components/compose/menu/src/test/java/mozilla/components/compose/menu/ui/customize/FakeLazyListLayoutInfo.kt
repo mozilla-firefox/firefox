@@ -18,20 +18,21 @@ internal fun dragged(id: String, center: Float) =
 
 /**
  * Layout of a list showing the items with [keys] one after another from its top, the first being the item at
- * [firstIndex] of the [totalItemsCount] items of the list. The item with the [collapsed] key takes no space, as a
- * dragged group does.
+ * [firstIndex] of the [totalItemsCount] items of the list. The item with the [collapsed] key takes [collapsedSize], no
+ * space by default, as a dragged group does.
  */
 internal fun layoutOf(
     vararg keys: Any,
     firstIndex: Int = 0,
     totalItemsCount: Int = firstIndex + keys.size,
     collapsed: Any? = null,
+    collapsedSize: Int = 0,
 ): LazyListLayoutInfo {
     var offset = 0
     return FakeLayoutInfo(
         visibleItemsInfo =
             keys.mapIndexed { position, key ->
-                val size = if (key == collapsed) 0 else ITEM_SIZE
+                val size = if (key == collapsed) collapsedSize else ITEM_SIZE
                 FakeItemInfo(index = firstIndex + position, key = key, offset = offset, size = size).also {
                     offset += size
                 }

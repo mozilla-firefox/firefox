@@ -39,6 +39,8 @@ import mozilla.components.compose.menu.ui.utils.ext.saveMove
  * @property hasHiddenItems Whether items other than the dragged one are hidden. Otherwise the area to drag items into
  *   to hide them is shown.
  * @property dropTarget Where the dragged item is moved to if the user lets go of it, if anywhere.
+ * @property extraSpace Space the list items take, or give up, only to show the drop line, left out when picking where
+ *   the dragged item is dropped.
  * @property draggedShownItem Where the dragged item was when the drag started, if it was among the shown items.
  */
 internal class CustomizeMenuDragState<T : HideableListItems>(
@@ -48,6 +50,7 @@ internal class CustomizeMenuDragState<T : HideableListItems>(
     val isDragging: Boolean,
     val hasHiddenItems: Boolean,
     val dropTarget: State<CustomizeMenuDropTarget?>,
+    val extraSpace: ExtraItemSpace,
     val draggedShownItem: State<DraggedShownItem?>,
 ) {
     /**
@@ -58,11 +61,12 @@ internal class CustomizeMenuDragState<T : HideableListItems>(
 }
 
 /**
- * The item dragged, as it was in the list when the drag started, if it was among the shown items.
+ * Where the dragged item was in the list when the drag started, if it was among the shown items.
  *
+ * @property index Index of the item in the list.
  * @property size Size of the item in the list.
  */
-internal data class DraggedShownItem(val size: Int)
+internal data class DraggedShownItem(val index: Int, val size: Int)
 
 // Groups or items can be dropped next to these list items.
 internal val FIXED_ITEMS = setOf(HIDDEN_TITLE, DROP_AREA)
@@ -116,6 +120,7 @@ internal fun <T : HideableListItems> rememberHideableListDragState(
     onAttemptedHide: (key: Any) -> Unit,
 ): CustomizeMenuDragState<T> {
     val windowHeight = with(LocalDensity.current) { LocalWindowInfo.current.containerSize.height.toDp() }
+    val extraSpace = remember { ExtraItemSpace() }
     val interactionState =
         createListInteractionState(
             listState = listState,
@@ -126,9 +131,11 @@ internal fun <T : HideableListItems> rememberHideableListDragState(
             fixedItems = fixedItems,
             // The items differ in height, so a part of the window rather than of the first one shown.
             scrollZoneHeight = windowHeight * AUTO_SCROLL_ZONE_WINDOW_FRACTION,
-            interceptInteractionMode = { dragged, mode ->
-                interactionModeOf(dragged, mode, listState.layoutInfo, items)
+            interceptInteractionMode = { dragged, mode, layoutInfo ->
+                interactionModeOf(dragged, mode, layoutInfo, items)
             },
+            // Leave out the drop line's space, or moving the line would move where the item is dropped.
+            targetingLayoutInfo = { it.without(extraSpace) },
         )
     val isDragging by
         remember(interactionState) { derivedStateOf { interactionState.draggedItem != InteractionState.List.None } }
@@ -163,7 +170,11 @@ internal fun <T : HideableListItems> rememberHideableListDragState(
         val key = draggedMandatoryKey ?: return@LaunchedEffect
         snapshotFlow {
             (interactionState.draggedItem as? InteractionState.List.Active)?.let {
-                draggedPositionOf(dragged = it, layoutInfo = listState.layoutInfo, items = items)
+                draggedPositionOf(
+                    dragged = it,
+                    layoutInfo = listState.layoutInfo.without(extraSpace),
+                    items = items,
+                )
             } == DraggedPosition.OVER_HIDDEN_AREA
         }
             .first { isOver -> isOver }
@@ -177,6 +188,7 @@ internal fun <T : HideableListItems> rememberHideableListDragState(
         isDragging = isDragging,
         hasHiddenItems = hasHiddenItems,
         dropTarget = dropTarget,
+        extraSpace = extraSpace,
         draggedShownItem = draggedShownItem,
     )
 }
@@ -191,7 +203,7 @@ private fun rememberDraggedShownItem(
         derivedStateOf {
             (interactionState.draggedItem as? InteractionState.List.Active)
                 ?.takeIf { dragged -> items.isShownKey(dragged.key) }
-                ?.let { DraggedShownItem(size = it.size) }
+                ?.let { DraggedShownItem(index = it.index, size = it.size) }
         }
     }
 

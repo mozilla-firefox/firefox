@@ -5,6 +5,7 @@
 package mozilla.components.compose.draggable
 
 import androidx.compose.foundation.lazy.LazyListItemInfo
+import androidx.compose.foundation.lazy.LazyListLayoutInfo
 import androidx.compose.foundation.lazy.LazyListState
 import androidx.compose.runtime.MonotonicFrameClock
 import androidx.compose.ui.geometry.Offset
@@ -1072,7 +1073,7 @@ class InteractableListTest {
             twoTabReorderState(
                 alphaTabOffset = 10,
                 betaTabOffset = dragItemOffset,
-                interceptInteractionMode = { _, mode ->
+                interceptInteractionMode = { _, mode, _ ->
                     found += mode
                     InteractionMode.List.None
                 },
@@ -1086,6 +1087,73 @@ class InteractableListTest {
     }
 
     @Test
+    fun `GIVEN a scroll candidate can only be detected from the injected layout, WHEN gather candidates is called, THEN a scroll candidate is created`() {
+        val items =
+            listOf(
+                mockListItem("key", index = 0),
+                mockListItem(TabKeys.TAB_BETA, index = 1),
+                mockListItem("key3", index = 2),
+            )
+        val listState = mockListState(items, totalItems = items.size)
+        val draggedItem = InteractionState.List.Active(index = 0, key = "key", size = 10, initialOffset = 10f)
+        val draggedItemOffset = ListItemOffset(draggedItem = draggedItem, draggingItemOffset = 10f, itemSize = 10)
+
+        val candidatesFromListState =
+            gatherCandidates(
+                listState = listState,
+                draggedItemOffset = draggedItemOffset,
+                draggedItem = draggedItem,
+                ignoredItems = defaultIgnoredItems,
+            )
+        val candidatesFromInjectedLayout =
+            gatherCandidates(
+                listState = listState,
+                draggedItemOffset = draggedItemOffset,
+                draggedItem = draggedItem,
+                ignoredItems = defaultIgnoredItems,
+                layoutInfo = FakeListLayoutInfo(visibleItemsInfo = items, totalItemsCount = 10),
+            )
+
+        assertEquals(0, candidatesFromListState.count { it.type is InteractionType.Scroll })
+        assertEquals(1, candidatesFromInjectedLayout.count { it.type is InteractionType.Scroll })
+    }
+
+    @Test
+    fun `GIVEN a layout to find interactions from WHEN an item is dragged THEN its interaction is found in that layout AND interceptInteractionMode is given that same layout`() {
+        val dragged = mockListItem("key", index = 1, size = 10, offset = 0)
+        val listState =
+            mockListState(listOf(dragged, mockListItem(TabKeys.TAB_ALPHA, index = 2, size = 10, offset = 10)))
+        val targetingLayouts = mutableListOf<LazyListLayoutInfo>()
+        val interceptedLayouts = mutableListOf<LazyListLayoutInfo>()
+        val found = mutableListOf<InteractionMode.List>()
+        val reorderState =
+            fakeListInteractionState(
+                listState,
+                dragAndDropEnabled = false,
+                interceptInteractionMode = { _, mode, layoutInfo ->
+                    interceptedLayouts += layoutInfo
+                    mode.also { found += it }
+                },
+                targetingLayoutInfo = {
+                    FakeListLayoutInfo(
+                            visibleItemsInfo =
+                                listOf(dragged, mockListItem(TabKeys.TAB_BETA, index = 2, size = 10, offset = 10)),
+                            totalItemsCount = 2,
+                        )
+                        .also { targetingLayouts += it }
+                },
+            )
+
+        reorderState.onTouchSlopPassed(offset = 5f, shouldLongPress = false)
+        reorderState.dragDown(distance = 10f, preserveSelectMode = false)
+
+        assertEquals(TabKeys.TAB_BETA, assertIs<InteractionMode.List.Reordering>(found.last()).target.key)
+        assertTrue(interceptedLayouts.isNotEmpty())
+        assertEquals(targetingLayouts.size, interceptedLayouts.size)
+        assertTrue(targetingLayouts.zip(interceptedLayouts).all { (targeting, given) -> targeting === given })
+    }
+
+    @Test
     fun `GIVEN interceptInteractionMode retargets the dragged item WHEN the user lets go of it THEN the handler is told about the retargeted move`() {
         val handler = RecordingItemInteractionHandler()
         val dragItemOffset = 30
@@ -1094,7 +1162,7 @@ class InteractableListTest {
                 handler = handler,
                 alphaTabOffset = 10,
                 betaTabOffset = dragItemOffset,
-                interceptInteractionMode = { _, mode ->
+                interceptInteractionMode = { _, mode, _ ->
                     (mode as? InteractionMode.List.Reordering)?.copy(placeAfter = true) ?: mode
                 },
             )
@@ -1123,7 +1191,7 @@ class InteractableListTest {
                 handler = handler,
                 alphaTabOffset = 10,
                 betaTabOffset = dragItemOffset,
-                interceptInteractionMode = { _, _ -> InteractionMode.List.None },
+                interceptInteractionMode = { _, _, _ -> InteractionMode.List.None },
             )
 
         reorderState.onTouchSlopPassed(dragItemOffset.toFloat(), false)
@@ -1142,7 +1210,7 @@ class InteractableListTest {
         val reorderState =
             fakeListInteractionState(
                 listState,
-                interceptInteractionMode = { dragged, _ ->
+                interceptInteractionMode = { dragged, _, _ ->
                     InteractionMode.List.Reordering(source = dragged, target = dragged, placeAfter = true)
                 },
             )
@@ -1159,7 +1227,7 @@ class InteractableListTest {
         val listState = mockListState(listOf(mockListItem(key = TabKeys.TAB_ALPHA, index = 1, size = 10, offset = 0)))
         val found = mutableListOf<InteractionMode.List>()
         val reorderState =
-            fakeListInteractionState(listState, interceptInteractionMode = { _, mode -> mode.also { found += it } })
+            fakeListInteractionState(listState, interceptInteractionMode = { _, mode, _ -> mode.also { found += it } })
 
         reorderState.onTouchSlopPassed(offset = 5f, shouldLongPress = false)
         reorderState.dragDown(distance = 20f, preserveSelectMode = false)
@@ -1180,7 +1248,7 @@ class InteractableListTest {
         val reorderState =
             fakeListInteractionState(
                 listState,
-                interceptInteractionMode = { _, mode ->
+                interceptInteractionMode = { _, mode, _ ->
                     found += mode
                     InteractionMode.List.None
                 },
@@ -1208,7 +1276,7 @@ class InteractableListTest {
             fakeListInteractionState(
                 listState,
                 dragAndDropEnabled = false,
-                interceptInteractionMode = { _, mode ->
+                interceptInteractionMode = { _, mode, _ ->
                     found += mode
                     InteractionMode.List.None
                 },
@@ -1231,8 +1299,9 @@ class InteractableListTest {
         liveReorderEnabled: Boolean = false,
         fixedItems: Set<Any> = emptySet(),
         onLongPress: (LazyListItemInfo) -> Unit = {},
-        interceptInteractionMode: (InteractionState.List.Active, InteractionMode.List) -> InteractionMode.List =
-            { _, mode ->
+        interceptInteractionMode:
+            (InteractionState.List.Active, InteractionMode.List, LazyListLayoutInfo) -> InteractionMode.List =
+            { _, mode, _ ->
                 mode
             },
     ): ListInteractionState {
@@ -1275,10 +1344,12 @@ class InteractableListTest {
         onLongPress: (LazyListItemInfo) -> Unit = {},
         fixedItems: Set<Any> = emptySet(),
         coroutineScope: CoroutineScope = scope,
-        interceptInteractionMode: (InteractionState.List.Active, InteractionMode.List) -> InteractionMode.List =
-            { _, mode ->
+        interceptInteractionMode:
+            (InteractionState.List.Active, InteractionMode.List, LazyListLayoutInfo) -> InteractionMode.List =
+            { _, mode, _ ->
                 mode
             },
+        targetingLayoutInfo: (LazyListLayoutInfo) -> LazyListLayoutInfo = { it },
     ): ListInteractionState {
         return ListInteractionStateImpl(
             listState = listState,
@@ -1292,6 +1363,7 @@ class InteractableListTest {
             liveReorderEnabled = liveReorderEnabled,
             fixedItems = fixedItems,
             interceptInteractionMode = interceptInteractionMode,
+            targetingLayoutInfo = targetingLayoutInfo,
         )
     }
 

@@ -49,6 +49,7 @@ import mozilla.components.compose.menu.ui.customize.CustomizeMenuItemKey.DRAG_BA
 import mozilla.components.compose.menu.ui.customize.CustomizeMenuItemKey.DROP_AREA
 import mozilla.components.compose.menu.ui.customize.CustomizeMenuItemKey.HIDDEN_TITLE
 import mozilla.components.compose.menu.ui.customize.CustomizeMenuItemKey.RESET_BUTTON
+import mozilla.components.compose.menu.ui.utils.HIDDEN_SECTIONS_TITLE_PART
 import mozilla.components.compose.menu.ui.utils.customizeMenuPreviewData
 import mozilla.components.compose.menu.ui.utils.ext.saveMove
 import mozilla.components.compose.menu.ui.utils.rememberA11yUpdatesAnnouncer
@@ -316,8 +317,16 @@ internal fun LazyItemScope.HiddenSectionsItem(title: String, dragState: Customiz
         modifier =
             Modifier.drawnOnlyInView(HIDDEN_TITLE, dragState)
                 .animateItem()
-                .padding(top = itemSpacing)
-                .dropLine(HIDDEN_TITLE, dragState.dropTarget, itemSpacing, placeAfter = true),
+                .dropLineSpace(
+                    key = HIDDEN_TITLE,
+                    isDragged = false,
+                    dropTarget = dragState.dropTarget,
+                    extraSpace = dragState.extraSpace,
+                    itemSpacing = itemSpacing,
+                    part = HIDDEN_SECTIONS_TITLE_PART,
+                    sides = setOf(DropLineSpace.BELOW),
+                )
+                .padding(top = itemSpacing),
     )
 }
 

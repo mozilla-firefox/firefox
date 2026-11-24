@@ -73,8 +73,9 @@ internal fun LazyListScope.customizeMenuGroups(
             modifier =
                 Modifier.drawnOnlyInView(group.id, dragState)
                     .dragPlacement(
+                        key = group.id,
                         isDragged = isDragged,
-                        dropTarget = dragState.dropTarget,
+                        dragState = dragState,
                         itemSpacing = itemSpacing,
                     ),
         ) {
@@ -88,7 +89,6 @@ internal fun LazyListScope.customizeMenuGroups(
                             onEdit = onEdit,
                         )
                         .padding(top = itemSpacing)
-                        .dropLine(group.id, dragState.dropTarget, itemSpacing)
                         .alpha(if (isDragged) DRAGGED_GROUP_ALPHA else 1f)
                         .padding(
                             start = AcornTheme.layout.space.static200,

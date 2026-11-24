@@ -5,25 +5,34 @@
 package mozilla.components.compose.menu.ui.customize
 
 import androidx.compose.runtime.Composable
-import androidx.compose.runtime.State
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.layout.layout
 import androidx.compose.ui.unit.Dp
 
 /**
- * Lay out a list item without taking any space while it is dragged, for the other items to take its space, showing
- * there if it is dropped back.
+ * While the item is dragged, it takes no space, so the other items close the gap. It only takes space for the drop
+ * line, when it would be dropped back where it was.
  *
+ * @param key Key of the list item.
  * @param isDragged Whether the item is dragged.
- * @param dropTarget Where the dragged item is dropped.
- * @param itemSpacing Space above each item of the list, which the dragged item takes too.
+ * @param dragState State of dragging the items of the screen.
+ * @param itemSpacing Space above each item of the list.
  */
 @Composable
 internal fun Modifier.dragPlacement(
+    key: Any,
     isDragged: Boolean,
-    dropTarget: State<CustomizeMenuDropTarget?>,
+    dragState: CustomizeMenuDragState<*>,
     itemSpacing: Dp,
-): Modifier = this.then(if (isDragged) Modifier.collapsed().inPlaceDropLine(dropTarget, itemSpacing) else Modifier)
+): Modifier =
+    this.dropLineSpace(
+            key = key,
+            isDragged = isDragged,
+            dropTarget = dragState.dropTarget,
+            extraSpace = dragState.extraSpace,
+            itemSpacing = itemSpacing,
+        )
+        .then(if (isDragged) Modifier.collapsed() else Modifier)
 
 /** Lay out without taking any space, drawing over what is laid out next. */
 private fun Modifier.collapsed() = layout { measurable, constraints ->

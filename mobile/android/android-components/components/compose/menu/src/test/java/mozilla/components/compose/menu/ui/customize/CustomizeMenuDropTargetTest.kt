@@ -86,6 +86,22 @@ class CustomizeMenuDropTargetTest {
     }
 
     @Test
+    fun `GIVEN the dragged group only takes the drop line's space WHEN the space is left out THEN it still counts as collapsed and is dropped in place`() {
+        val extraSpace = ExtraItemSpace().apply { record("a", extra = 16, size = 16) }
+
+        assertEquals(
+            InPlace,
+            dropTargetOf(
+                found = reorderingNextTo("b", placeAfter = false),
+                draggedCenter = aboveHiddenArea,
+                layout =
+                    layoutOf(DRAG_BAR, "a", "b", HIDDEN_TITLE, "c", collapsed = "a", collapsedSize = 16)
+                        .without(extraSpace),
+            ),
+        )
+    }
+
+    @Test
     fun `GIVEN the last shown group dragged above the hidden area WHEN the list places it with the hidden groups THEN it is dropped in place`() {
         assertEquals(
             InPlace,
@@ -249,6 +265,37 @@ class CustomizeMenuDropTargetTest {
     @Test
     fun `WHEN a group is dropped in place THEN no group is moved`() {
         assertEquals(groups, groups.drop("a", InPlace))
+    }
+
+    @Test
+    fun `WHEN a group is dropped before a list item THEN the item takes space above itself for the line`() {
+        assertEquals(DropLineSpace.ABOVE, dropLineSpaceOf("b", isDragged = false, NextTo("b", placeAfter = false)))
+    }
+
+    @Test
+    fun `WHEN a group is dropped after a list item THEN the item takes space below itself for the line`() {
+        assertEquals(DropLineSpace.BELOW, dropLineSpaceOf("b", isDragged = false, NextTo("b", placeAfter = true)))
+    }
+
+    @Test
+    fun `WHEN a group is dropped next to another list item THEN the item takes no space for the line`() {
+        assertNull(dropLineSpaceOf("b", isDragged = false, NextTo("c", placeAfter = true)))
+    }
+
+    @Test
+    fun `WHEN a group is dropped in place THEN it takes space below itself for the line`() {
+        assertEquals(DropLineSpace.BELOW, dropLineSpaceOf("a", isDragged = true, InPlace))
+    }
+
+    @Test
+    fun `WHEN a group is dropped in place THEN the other list items take no space for the line`() {
+        assertNull(dropLineSpaceOf("b", isDragged = false, InPlace))
+    }
+
+    @Test
+    fun `WHEN a group is dropped into the empty hidden area or nowhere THEN no list item takes space for a line`() {
+        assertNull(dropLineSpaceOf("a", isDragged = true, EmptyHiddenArea))
+        assertNull(dropLineSpaceOf("a", isDragged = true, null))
     }
 
     /**

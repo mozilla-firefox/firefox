@@ -37,6 +37,8 @@ import androidx.test.ext.junit.runners.AndroidJUnit4
 import mozilla.components.compose.base.R as baseR
 import mozilla.components.compose.base.text.Text
 import mozilla.components.compose.base.theme.AcornTheme
+import mozilla.components.compose.base.theme.layout.AcornLayout
+import mozilla.components.compose.base.theme.layout.AcornSpace
 import mozilla.components.compose.menu.R
 import mozilla.components.compose.menu.data.MenuItemTitle
 import mozilla.components.compose.menu.data.MenuItemsGroup
@@ -480,6 +482,84 @@ class CustomizeMenuContentTest {
 
         assertTrue(boundsOf("Shown 2").top < shown1.bottom)
 
+        release()
+    }
+
+    @Test
+    fun `WHEN a section is dragged below another section THEN the line showing where it is dropped takes space after that section`() {
+        setContent(menuState(shown = listOf(row("Shown 1"), row("Shown 2"), row("Shown 3"))))
+        val oldGap = gapBetween("Shown 2", "Shown 3")
+
+        longPressAndMove(title = "Shown 1", to = { boundsOf("Shown 2").bottomCenter })
+
+        assertEquals(oldGap + dropLineSpace(), gapBetween("Shown 2", "Shown 3"), 0.5f)
+        release()
+    }
+
+    @Test
+    fun `WHEN a section is dragged above the first section THEN the line showing where it is dropped takes space before it`() {
+        setContent(menuState(shown = listOf(row("Shown 1"), row("Shown 2"), row("Shown 3"))))
+        val oldTop = boundsOf("Shown 1").top
+
+        longPressAndMove(title = "Shown 3", to = { Offset(boundsOf("Shown 1").center.x, oldTop) })
+
+        assertEquals(oldTop + dropLineSpace(), boundsOf("Shown 1").top, 0.5f)
+        release()
+    }
+
+    @Test
+    fun `WHEN a section is dragged back to where it was THEN the line showing it is dropped there takes space where the section was`() {
+        setContent(menuState(shown = listOf(row("Shown 1"), row("Shown 2"), row("Shown 3"))))
+        val oldGap = gapBetween("Shown 1", "Shown 2")
+        val shown2 = boundsOf("Shown 2")
+
+        longPressAndMove(title = "Shown 2", to = { shown2.topCenter })
+
+        assertEquals(oldGap + dropLineSpace(), gapBetween("Shown 1", "Shown 3"), 0.5f)
+        release()
+    }
+
+    @Test
+    fun `WHEN a section dragged back to where it was is let go THEN the line showing where it is dropped takes no more space`() {
+        setContent(menuState(shown = listOf(row("Shown 1"), row("Shown 2"), row("Shown 3"))))
+        val oldGap = gapBetween("Shown 1", "Shown 2")
+        val shown2 = boundsOf("Shown 2")
+
+        longPressAndDrag(title = "Shown 2", to = { shown2.topCenter })
+
+        assertEquals(oldGap, gapBetween("Shown 1", "Shown 2"), 0.5f)
+    }
+
+    @Test
+    fun `WHEN the gesture dragging a section is cancelled THEN the line showing where it is dropped takes no more space`() {
+        setContent(menuState(shown = listOf(row("Shown 1"), row("Shown 2"), row("Shown 3"))))
+        val oldGap = gapBetween("Shown 2", "Shown 3")
+
+        longPressAndMove(title = "Shown 1", to = { boundsOf("Shown 2").bottomCenter })
+        cancelGesture()
+
+        assertEquals(oldGap, gapBetween("Shown 2", "Shown 3"), 0.5f)
+    }
+
+    @Test
+    fun `WHEN a hidden section is dragged onto the bottom of the hidden sections title THEN the line showing where it is dropped takes space above the title`() {
+        setContent(menuState(shown = listOf(row("Shown 1"), row("Shown 2")), hidden = listOf(row("Hidden"))))
+        val oldGap = gapBetween("Shown 2", hiddenSectionsTitle)
+
+        longPressAndMove(title = "Hidden", to = { boundsOf(hiddenSectionsTitle).bottomCenter })
+
+        assertEquals(oldGap + dropLineSpace(), gapBetween("Shown 2", hiddenSectionsTitle), 0.5f)
+        release()
+    }
+
+    @Test
+    fun `GIVEN hidden sections WHEN a shown section is dragged over them THEN the line showing where it is dropped takes space below the hidden sections title`() {
+        setContent(menuState(shown = listOf(row("Shown 1"), row("Shown 2")), hidden = listOf(row("Hidden"))))
+        val oldGap = gapBetween(hiddenSectionsTitle, "Hidden")
+
+        longPressAndMove(title = "Shown 1", to = { boundsOf("Hidden").topCenter })
+
+        assertEquals(oldGap + dropLineSpace(), gapBetween(hiddenSectionsTitle, "Hidden"), 0.5f)
         release()
     }
 
@@ -985,6 +1065,14 @@ class CustomizeMenuContentTest {
             assertEquals(at, boundsOf(hiddenSectionsTitle))
         }
     }
+
+    private fun gapBetween(above: String, below: String) = boundsOf(below).top - boundsOf(above).bottom
+
+    /** Space the drop line takes: the spacing between sections plus the line's thickness. */
+    private fun dropLineSpace() =
+        with(composeTestRule.density) {
+            (AcornSpace.Small.static150.roundToPx() + AcornLayout.AcornBorder.heaviest.roundToPx()).toFloat()
+        }
 
     private fun rootBounds() = composeTestRule.onRoot().fetchSemanticsNode().boundsInRoot
 
