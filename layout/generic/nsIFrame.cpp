@@ -3508,10 +3508,15 @@ void nsIFrame::BuildDisplayListForStackingContext(
     }
   }
 
+  // The root element's filter, mask and clip-path are applied in
+  // ScrollContainerFrame::MaybeCreateTopLayerAndWrapRootItems, so that they
+  // also apply to the canvas background
+  // (https://drafts.fxtf.org/compositing/#pagebackdrop).
   const bool usingFilter = effects->HasFilters() && !style.IsRootElementStyle();
   const SVGUtils::MaskUsage maskUsage =
       SVGUtils::DetermineMaskUsage(this, false);
-  const bool usingMask = maskUsage.UsingMaskOrClipPath();
+  const bool usingMask =
+      maskUsage.UsingMaskOrClipPath() && !style.IsRootElementStyle();
   const bool usingSVGEffects = usingFilter || usingMask;
 
   const nsRect visibleRectOutsideSVGEffects = visibleRect;

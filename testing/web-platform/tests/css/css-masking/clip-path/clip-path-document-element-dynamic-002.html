@@ -1,0 +1,28 @@
+<!DOCTYPE html>
+<html class="reftest-wait">
+<style>
+html {
+  background: red;
+  clip-path: polygon(50px 50px, 100px 50px, 100px 100px, 150px 100px, 150px 150px, 50px 150px);
+}
+div {
+  width: 500px;
+  height: 500px;
+  background: green;
+}
+</style>
+<link rel="help" href="https://drafts.fxtf.org/compositing/#pagebackdrop">
+<link rel="match" href="reference/clip-path-document-element-dynamic-002-ref.html">
+<meta name="assert" content="Clip-path removed from the document element after
+    the initial paint stops clipping the root background. The test passes if
+    there is a green square on a red canvas.">
+<div></div>
+<script>
+onload = () => {
+  requestAnimationFrame(() => requestAnimationFrame(() => {
+    document.documentElement.style.clipPath = "none";
+    document.documentElement.classList.remove("reftest-wait");
+  }));
+};
+</script>
+</html>
