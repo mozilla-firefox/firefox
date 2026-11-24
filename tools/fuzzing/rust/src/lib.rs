@@ -246,8 +246,11 @@ pub extern "C" fn fuzz_rkv_calls(raw_data: *const u8, size: libc::size_t) -> lib
 
         let mut writer = env.write().unwrap();
 
+        // Deleting a random key that isn't in the store is expected and not a
+        // bug, so don't panic on it.
         match store.delete(&mut writer, key) {
             Ok(_) => {}
+            Err(rkv::StoreError::KeyValuePairNotFound) => {}
             Err(err) => panic_with_err(err),
         };
 
