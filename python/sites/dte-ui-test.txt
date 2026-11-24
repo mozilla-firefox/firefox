@@ -3,6 +3,7 @@ pypi:auto-fxui==0.1.2
 pypi:iniconfig==2.3.1
 pypi:pluggy==1.7.0
 pypi:pypom==2.2.4
+pypi:pytest-httpserver==1.1.5
 pypi:pytest-json-report==1.5.0
 pypi:pytest==9.0.3
 pypi:selenium==4.23.1
