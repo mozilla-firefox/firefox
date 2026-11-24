@@ -250,3 +250,4 @@ skip-if(isDebugBuild) == draw-large-image.html draw-large-image-ref.html
 == 1984014-1.html 1984014-1-ref.html
 == 1911583-1.html 1911583-1-ref.html
 == 2074107-1.html 2074107-1-ref.html
+== 2094571-1.html 2094571-1-ref.html

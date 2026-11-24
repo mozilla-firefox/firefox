@@ -1,0 +1,69 @@
+<!DOCTYPE html>
+<meta charset="utf-8">
+<title>Red and blue swapped by CSS color filters in drawImage on an accelerated 2D canvas</title>
+<style>
+  body { font: 14px sans-serif; }
+  canvas { width: 96px; height: 96px; }
+  td, th { padding: 6px 10px; text-align: left; vertical-align: middle; }
+</style>
+<p>
+  Every canvas below draws light blue content, rgb(64, 64, 255), with
+  <code>ctx.filter = "hue-rotate(240deg)"</code>, which turns it green,
+  rgb(0, 131, 0). <b>Every square should be green.</b> An orange-red square,
+  rgb(255, 101, 65), means red and blue were swapped while the filter was
+  applied. Hover over a square to see its pixel value.
+</p>
+<p>
+  The 512&times;512 canvases are accelerated when accelerated canvas is enabled
+  (about:support, Canvas 2D). The 16&times;16 canvases are below
+  gfx.canvas.accelerated.min-size and stay in software.
+</p>
+<table>
+  <tbody id="rows"></tbody>
+</table>
+<script>
+const FILTER = "hue-rotate(240deg)";
+const COLOR = "rgb(64, 64, 255)";
+const BLUE_PNG = "data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAABAAAAAQCAIAAACQkWg2AAAAFklEQVR4nGNwcPhPEmIY1TCqYfhqAADeV38Q4GWnigAAAABJRU5ErkJggg==";
+
+function filtered(size, draw) {
+  const canvas = document.createElement("canvas");
+  canvas.width = canvas.height = size;
+  const ctx = canvas.getContext("2d");
+  ctx.filter = FILTER;
+  draw(ctx, size);
+  canvas.title = Array.from(ctx.getImageData(4, 4, 1, 1).data).join(",");
+  return canvas;
+}
+
+(async () => {
+  const img = new Image();
+  img.src = BLUE_PNG;
+  await img.decode();
+  const blueCanvas = document.createElement("canvas");
+  blueCanvas.width = blueCanvas.height = 16;
+  const blueCtx = blueCanvas.getContext("2d");
+  blueCtx.fillStyle = COLOR;
+  blueCtx.fillRect(0, 0, 16, 16);
+
+  const contents = [
+    ["fillRect", (ctx, size) => {
+      ctx.fillStyle = COLOR;
+      ctx.fillRect(0, 0, size, size);
+    }],
+    ["drawImage of a PNG", (ctx, size) => ctx.drawImage(img, 0, 0, size, size)],
+    ["drawImage of a canvas",
+     (ctx, size) => ctx.drawImage(blueCanvas, 0, 0, size, size)],
+  ];
+  for (const [name, draw] of contents) {
+    const tr = document.createElement("tr");
+    const label = document.createElement("td");
+    label.textContent = name;
+    tr.append(label);
+    const td = document.createElement("td");
+    td.append(filtered(512, draw));
+    tr.append(td);
+    document.getElementById("rows").append(tr);
+  }
+})();
+</script>
