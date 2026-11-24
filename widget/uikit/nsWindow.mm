@@ -30,9 +30,7 @@
 #include "TextInputHandler.h"
 #include "UIKitUtils.h"
 #include "gfxContext.h"
-#include "gfxImageSurface.h"
 #include "gfxPlatform.h"
-#include "gfxQuartzSurface.h"
 #include "gfxUtils.h"
 #include "nsObjCExceptions.h"
 #include "nsQueryObject.h"
@@ -459,67 +457,9 @@ class nsAutoRetainUIKitObject {
   }
   AUTO_PROFILER_LABEL("ChildView::drawRect", OTHER);
 
-  // The CGContext that drawRect supplies us with comes with a transform that
-  // scales one user space unit to one Cocoa point, which can consist of
-  // multiple dev pixels. But Gecko expects its supplied context to be scaled
-  // to device pixels, so we need to reverse the scaling.
-  double scale = mGeckoChild->BackingScaleFactor();
-  CGContextSaveGState(aContext);
-  CGContextScaleCTM(aContext, 1.0 / scale, 1.0 / scale);
-
-  CGSize viewSize = [self bounds].size;
-  gfx::IntSize backingSize(NSToIntRound(viewSize.width * scale),
-                           NSToIntRound(viewSize.height * scale));
-
-  CGContextSaveGState(aContext);
-
-  LayoutDeviceIntRegion region =
-      LayoutDeviceIntRect(NSToIntRound(aRect.origin.x * scale),
-                          NSToIntRound(aRect.origin.y * scale),
-                          NSToIntRound(aRect.size.width * scale),
-                          NSToIntRound(aRect.size.height * scale));
-
-  // Create Cairo objects.
-  RefPtr<gfxQuartzSurface> targetSurface;
-
-  UniquePtr<gfxContext> targetContext;
-  if (gfxPlatform::GetPlatform()->SupportsAzureContentForType(
-          gfx::BackendType::CAIRO)) {
-    // This is dead code unless you mess with prefs, but keep it around for
-    // debugging.
-    targetSurface = new gfxQuartzSurface(aContext, backingSize);
-    RefPtr<gfx::DrawTarget> dt =
-        gfxPlatform::CreateDrawTargetForSurface(targetSurface, backingSize);
-    if (!dt || !dt->IsValid()) {
-      gfxDevCrash(mozilla::gfx::LogReason::InvalidContext)
-          << "Window context problem 2 " << backingSize;
-      return;
-    }
-    targetContext = gfxContext::CreateOrNull(dt);
-  } else {
-    MOZ_ASSERT_UNREACHABLE("COREGRAPHICS is the only supported backend");
-  }
-  MOZ_ASSERT(targetContext);  // already checked for valid draw targets above
-
-  // Set up the clip region.
-  targetContext->NewPath();
-  for (auto iter = region.RectIter(); !iter.Done(); iter.Next()) {
-    const LayoutDeviceIntRect& r = iter.Get();
-    targetContext->Rectangle(gfxRect(r.x, r.y, r.width, r.height));
-  }
-  targetContext->Clip();
-
-  // nsAutoRetainCocoaObject kungFuDeathGrip(self);
-  bool painted = false;
-  targetContext = nullptr;
-  targetSurface = nullptr;
-
-  CGContextRestoreGState(aContext);
-
-  // Undo the scale transform so that from now on the context is in
-  // CocoaPoints again.
-  CGContextRestoreGState(aContext);
-  if (!painted && [self isOpaque]) {
+  // Gecko content is painted through the compositor, so we have nothing to
+  // draw here.
+  if ([self isOpaque]) {
     // Gecko refused to draw, but we've claimed to be opaque, so we have to
     // draw something--fill with white.
     CGContextSetRGBFillColor(aContext, 1, 1, 1, 1);
