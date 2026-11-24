@@ -35,6 +35,8 @@ tags = "os_integration"
 
 ["browser_privacy_ipprotection.js"]
 
+["browser_privacy_ipprotection_promos.js"]
+
 ["browser_privacy_ipprotection_siterules.js"]
 
 ["browser_privacy_passwordGenerationAndAutofill.js"]
