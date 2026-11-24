@@ -392,9 +392,13 @@ class SettingsFragment : PreferenceFragmentCompat(), SystemInsetsPaddedFragment 
                 }
 
                 resources.getString(R.string.pref_key_account_auth_error) -> {
-                    SettingsFragmentDirections.actionSettingsFragmentToAccountProblemFragment(
-                        entrypoint = FenixFxAEntryPoint.SettingsMenu
-                    )
+                    if (requireComponents.settings.accountSettingsNewUi) {
+                        SettingsFragmentDirections.actionSettingsFragmentToAccountSettingsFragment()
+                    } else {
+                        SettingsFragmentDirections.actionSettingsFragmentToAccountProblemFragment(
+                            entrypoint = FenixFxAEntryPoint.SettingsMenu
+                        )
+                    }
                 }
 
                 // General preferences

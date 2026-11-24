@@ -11,6 +11,7 @@ import android.content.Intent
 import android.os.Bundle
 import android.provider.Settings
 import android.text.InputFilter
+import android.text.format.DateFormat
 import android.text.format.DateUtils
 import android.view.View
 import androidx.annotation.StringRes
@@ -29,14 +30,17 @@ import kotlinx.coroutines.Dispatchers.Main
 import kotlinx.coroutines.launch
 import mozilla.appservices.syncmanager.SyncTelemetry
 import mozilla.components.concept.sync.AccountObserver
+import mozilla.components.concept.sync.AuthType
 import mozilla.components.concept.sync.ConstellationState
 import mozilla.components.concept.sync.DeviceConstellationObserver
+import mozilla.components.concept.sync.OAuthAccount
 import mozilla.components.concept.sync.Profile
 import mozilla.components.concept.sync.SyncEngine
 import mozilla.components.lib.state.ext.consumeFrom
 import mozilla.components.lib.state.helpers.StoreProvider.Companion.fragmentStore
 import mozilla.components.service.fxa.manager.FxaAccountManager
 import mozilla.components.service.fxa.manager.SyncEnginesStorage
+import mozilla.components.service.fxa.store.SyncStatus
 import mozilla.components.service.fxa.sync.SyncReason
 import mozilla.components.service.fxa.sync.SyncStatusObserver
 import mozilla.components.service.fxa.sync.getLastSynced
@@ -45,6 +49,7 @@ import mozilla.components.support.utils.ext.pixelSizeFor
 import mozilla.components.ui.widgets.withCenterAlignedButtons
 import mozilla.telemetry.glean.private.NoExtras
 import org.mozilla.fenix.GleanMetrics.SyncAccount
+import org.mozilla.fenix.NavGraphDirections
 import org.mozilla.fenix.R
 import org.mozilla.fenix.components.accounts.FenixFxAEntryPoint
 import org.mozilla.fenix.compose.snackbar.Snackbar
@@ -52,6 +57,7 @@ import org.mozilla.fenix.compose.snackbar.SnackbarState
 import org.mozilla.fenix.e2e.SystemInsetsPaddedFragment
 import org.mozilla.fenix.ext.components
 import org.mozilla.fenix.ext.getPreferenceKey
+import org.mozilla.fenix.ext.nav
 import org.mozilla.fenix.ext.requireComponents
 import org.mozilla.fenix.ext.secure
 import org.mozilla.fenix.ext.showToolbar
@@ -83,9 +89,30 @@ class AccountSettingsFragment : PreferenceFragmentCompat(), SystemInsetsPaddedFr
     // Navigate away from this fragment when we encounter auth problems or logout events.
     private val accountStateObserver =
         object : AccountObserver {
+            override fun onReady(authenticatedAccount: OAuthAccount?) {
+                viewLifecycleOwner.lifecycleScope.launch {
+                    updateAccountErrorPreference()
+                }
+            }
+
             override fun onAuthenticationProblems() {
                 viewLifecycleOwner.lifecycleScope.launch {
-                    findNavController().popBackStack()
+                    if (isNewUiEnabled) {
+                        requirePreference<Preference>(R.string.pref_key_sync_now).apply {
+                            title = getString(R.string.preferences_sync_now)
+                            isEnabled = true
+                        }
+                        setDisabledWhileSyncing(false)
+                        updateAccountErrorPreference()
+                    } else {
+                        findNavController().popBackStack()
+                    }
+                }
+            }
+
+            override fun onAuthenticated(account: OAuthAccount, authType: AuthType) {
+                viewLifecycleOwner.lifecycleScope.launch {
+                    updateAccountErrorPreference()
                 }
             }
 
@@ -105,6 +132,7 @@ class AccountSettingsFragment : PreferenceFragmentCompat(), SystemInsetsPaddedFr
                 if (!isNewUiEnabled) return
                 viewLifecycleOwner.lifecycleScope.launch {
                     context?.let { accountPreferenceUpdater?.update(it, profile) }
+                    updateAccountErrorPreference()
                 }
             }
         }
@@ -124,6 +152,7 @@ class AccountSettingsFragment : PreferenceFragmentCompat(), SystemInsetsPaddedFr
     override fun onResume() {
         super.onResume()
         showToolbar(getString(R.string.preferences_account_and_sync_settings))
+        updateAccountErrorPreference()
         args.preferenceToScrollTo?.let {
             scrollToPreferenceWithHighlight(it)
         }
@@ -207,6 +236,11 @@ class AccountSettingsFragment : PreferenceFragmentCompat(), SystemInsetsPaddedFr
             )
 
         setupPreferenceListeners()
+        if (isNewUiEnabled) {
+            consumeFrom(requireComponents.backgroundServices.syncStore) {
+                updateSyncErrorPreference(isVisible = it.status == SyncStatus.Error)
+            }
+        }
     }
 
     override fun onCreatePreferences(savedInstanceState: Bundle?, rootKey: String?) {
@@ -219,6 +253,18 @@ class AccountSettingsFragment : PreferenceFragmentCompat(), SystemInsetsPaddedFr
             }
         setPreferencesFromResource(layout, rootKey)
         setPreferencesVisibility()
+        if (isNewUiEnabled) {
+            initializeAccountAndSyncPreferences()
+        }
+    }
+
+    private fun initializeAccountAndSyncPreferences() {
+        val services = requireComponents.backgroundServices
+        val needsReauth = services.accountManager.accountNeedsReauth()
+        requirePreference<AccountErrorPreference>(R.string.pref_key_account_error_card_auth).isVisible = needsReauth
+        requirePreference<PreferenceCategory>(R.string.preferences_sync_category).isVisible = !needsReauth
+        updateDeviceSyncPreference(needsReauth)
+        updateSyncErrorPreference(isVisible = services.syncStore.state.status == SyncStatus.Error)
     }
 
     private fun setPreferencesVisibility() {
@@ -249,6 +295,7 @@ class AccountSettingsFragment : PreferenceFragmentCompat(), SystemInsetsPaddedFr
     }
 
     private fun setupPreferenceListeners() {
+        setupAccountErrorPreferences()
         val preferenceManageAccount = requirePreference<Preference>(R.string.pref_key_sync_manage_account)
         preferenceManageAccount.onPreferenceClickListener = getClickListenerForManageAccount()
 
@@ -264,6 +311,56 @@ class AccountSettingsFragment : PreferenceFragmentCompat(), SystemInsetsPaddedFr
             owner = this,
             autoPause = true,
         )
+    }
+
+    private fun setupAccountErrorPreferences() {
+        if (!isNewUiEnabled) return
+
+        requirePreference<AccountErrorPreference>(R.string.pref_key_account_error_card_sync).apply {
+            onCardClick = ::syncNow
+        }
+
+        requirePreference<AccountErrorPreference>(R.string.pref_key_account_error_card_auth).apply {
+            state = AccountErrorPreference.State.AccountError
+            onCardClick = {
+                findNavController()
+                    .nav(
+                        R.id.accountSettingsFragment,
+                        NavGraphDirections.actionGlobalAccountProblemFragment(
+                            entrypoint = FenixFxAEntryPoint.SettingsMenu
+                        ),
+                    )
+            }
+        }
+    }
+
+    private fun updateAccountErrorPreference() {
+        if (!isNewUiEnabled || !::accountManager.isInitialized || preferenceScreen == null) return
+
+        val needsReauth = accountManager.accountNeedsReauth()
+        requirePreference<AccountErrorPreference>(R.string.pref_key_account_error_card_auth).isVisible = needsReauth
+        requirePreference<PreferenceCategory>(R.string.preferences_sync_category).isVisible = !needsReauth
+        updateDeviceSyncPreference(needsReauth)
+    }
+
+    @Suppress("DEPRECATION") // getLastSynced is deprecated; see bug 2067060.
+    private fun updateSyncErrorPreference(isVisible: Boolean) {
+        if (!isNewUiEnabled) return
+
+        requirePreference<AccountErrorPreference>(R.string.pref_key_account_error_card_sync).apply {
+            if (isVisible) {
+                val lastSynced = getLastSynced(requireContext())
+                val date =
+                    if (lastSynced == 0L) {
+                        getString(R.string.account_error_never_synced)
+                    } else {
+                        DateFormat.getDateFormat(requireContext()).format(lastSynced)
+                    }
+                val summary = context.getString(R.string.account_error_last_sync, date)
+                state = AccountErrorPreference.State.SyncError(summary)
+            }
+            this.isVisible = isVisible
+        }
     }
 
     private fun setupSignInOutPreferenceListeners() {
@@ -313,6 +410,18 @@ class AccountSettingsFragment : PreferenceFragmentCompat(), SystemInsetsPaddedFr
                     true
                 }
             }
+        }
+    }
+
+    private fun updateDeviceSyncPreference(needsReauth: Boolean) {
+        requirePreference<TwoStatePreference>(R.string.pref_key_sync_enable_sync).apply {
+            val syncEnabled = sharedPreferences?.getBoolean(key, true) ?: true
+            val wasPersistent = isPersistent
+            isPersistent = false
+            isChecked = !needsReauth && syncEnabled
+            isPersistent = wasPersistent
+            isEnabled = !needsReauth
+            setDeviceSyncSummary(isChecked)
         }
     }
 

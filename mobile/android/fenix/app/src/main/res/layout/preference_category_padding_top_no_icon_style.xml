@@ -12,4 +12,4 @@
     android:layout_marginStart="@dimen/top_bar_no_icon_alignment_margin_start"
     android:layout_marginTop="@dimen/section_header_padding_top"
     android:gravity="start|center_vertical"
-    app:allowDividerAbove="true" />
+    app:allowDividerAbove="false" />
