@@ -55,7 +55,7 @@ class TabSwitcher:
         try:
             await self.session.switch_to_window(handle)
         except Exception:
-            logger.error("Could not switch to handle %s" % str(handle))
+            logger.error(f"Could not switch to handle {handle}")
 
 
 # 10 minutes

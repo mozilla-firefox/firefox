@@ -51,7 +51,7 @@ class AndroidDevice:
         self.log_file = log_file
         if self.log_file is None:
             return
-        logger.info("Setting ADB log file to %s" % self.log_file)
+        logger.info(f"Setting ADB log file to {self.log_file}")
         adb_logger = logging.getLogger("adb")
         adb_logger.setLevel(logging.DEBUG)
         self._adb_fh = logging.FileHandler(self.log_file)
@@ -99,7 +99,7 @@ class AndroidDevice:
 
         # checking that the app is installed
         if not device.is_app_installed(self.app_name):
-            raise Exception("%s is not installed" % self.app_name)
+            raise Exception(f"{self.app_name} is not installed")
 
         if not device.confirm_clear_app_data(self.app_name):
             raise Exception(
@@ -115,9 +115,9 @@ class AndroidDevice:
         except ADBError as e:
             logger.info(f"pm clear {self.app_name} failed: {e}. Continuing.")
 
-        logger.info("Setting %s as the debug app on the phone" % self.app_name)
+        logger.info(f"Setting {self.app_name} as the debug app on the phone")
         device.shell(
-            "am set-debug-app --persistent %s" % self.app_name,
+            f"am set-debug-app --persistent {self.app_name}",
             stdout_callback=logger.info,
         )
 
@@ -177,7 +177,7 @@ class AndroidDevice:
         logger.info("Creating the profile on the device")
 
         remote_profile = posixpath.join(self.remote_test_root, "profile")
-        logger.info("The profile on the phone will be at %s" % remote_profile)
+        logger.info(f"The profile on the phone will be at {remote_profile}")
 
         # best-effort cleanup, this can fail when storage/shell permissions are
         # not setup correctly, push below overwrites existing files, but can leave
@@ -190,7 +190,7 @@ class AndroidDevice:
                 "Continuing."
             )
 
-        logger.info("Pushing %s on the phone" % self.profile)
+        logger.info(f"Pushing {self.profile} on the phone")
         device.push(profile, remote_profile)
 
         # best-effort, FAT/scoped-storage paths reject chmod, push sets perms though
@@ -212,12 +212,12 @@ class AndroidDevice:
             "env": {"LOG_VERBOSE": 1, "R_LOG_LEVEL": 6, "MOZ_LOG": ""},
         }
 
-        yml_name = "%s-geckoview-config.yaml" % self.app_name
+        yml_name = f"{self.app_name}-geckoview-config.yaml"
         yml_on_host = posixpath.join(tempfile.mkdtemp(), yml_name)
         write_yml_file(yml_on_host, yml_data)
         tmp_on_device = posixpath.join("/data", "local", "tmp")
         if not device.exists(tmp_on_device):
-            raise IOError("%s does not exists on the device" % tmp_on_device)
+            raise IOError(f"{tmp_on_device} does not exists on the device")
         yml_on_device = posixpath.join(tmp_on_device, yml_name)
         try:
             device.rm(yml_on_device, force=True, recursive=True)
@@ -235,12 +235,12 @@ class AndroidDevice:
             self.app_name, self.activity, intent, extras=None, url="about:blank"
         )
         if not device.process_exist(self.app_name):
-            raise Exception("Could not start %s" % self.app_name)
+            raise Exception(f"Could not start {self.app_name}")
 
-        logger.info("Creating socket forwarding on port %d" % self.marionette_port)
+        logger.info(f"Creating socket forwarding on port {self.marionette_port}")
         device.forward(
-            local="tcp:%d" % self.marionette_port,
-            remote="tcp:%d" % self.marionette_port,
+            local=f"tcp:{self.marionette_port}",
+            remote=f"tcp:{self.marionette_port}",
         )
 
         # we don't have a clean way for now to check that GV or Fenix
@@ -249,7 +249,7 @@ class AndroidDevice:
         time.sleep(30)
 
     def stop_browser(self):
-        logger.info("Stopping %s" % self.app_name)
+        logger.info(f"Stopping {self.app_name}")
         try:
             self.device.stop_application(self.app_name)
         except ADBError:
@@ -257,7 +257,7 @@ class AndroidDevice:
 
         time.sleep(5)
         if self.device.process_exist(self.app_name):
-            logger.info("%s still running, trying SIGKILL" % self.app_name)
+            logger.info(f"{self.app_name} still running, trying SIGKILL")
             num_tries = 0
             while self.device.process_exist(self.app_name) and num_tries < 5:
                 try:
@@ -266,10 +266,10 @@ class AndroidDevice:
                     pass
                 num_tries += 1
                 time.sleep(1)
-        logger.info("%s stopped" % self.app_name)
+        logger.info(f"{self.app_name} stopped")
 
     def collect_profile(self):
-        logger.info("Collecting profile from %s" % self.remote_profile)
+        logger.info(f"Collecting profile from {self.remote_profile}")
         self.device.pull(self.remote_profile, self.profile)
 
     def close(self):
@@ -277,7 +277,7 @@ class AndroidDevice:
         if self.device is None:
             return
         try:
-            self.device.remove_forwards("tcp:%d" % self.marionette_port)
+            self.device.remove_forwards(f"tcp:{self.marionette_port}")
         except ADBError:
             logger.warning("Could not remove forward port")
 
@@ -301,7 +301,7 @@ class AndroidGeckodriver(Geckodriver):
     async def start(self):
         port = free_port()
         await self._check_version()
-        logger.info("Running Webdriver on port %d" % port)
+        logger.info(f"Running Webdriver on port {port}")
         logger.info("Running Marionette on port 2828")
         pargs = [
             self.binary,
@@ -330,7 +330,7 @@ class AndroidEnv(BaseEnv):
         app = self.firefox.split("org.mozilla.")[-1]
         if self.device_name is None:
             return app
-        return "%s-%s" % (self.device_name, app)
+        return f"{self.device_name}-{app}"
 
     def dump_logs(self):
         logger.info("Dumping Android logs")
@@ -339,7 +339,7 @@ class AndroidEnv(BaseEnv):
             if logcat:
                 # local path, not using posixpath
                 logfile = os.path.join(self.archive, "logcat.log")
-                logger.info("Writing logcat at %s" % logfile)
+                logger.info(f"Writing logcat at {logfile}")
                 with open(logfile, "wb") as f:
                     for line in logcat:
                         f.write(line.encode("utf8", errors="replace") + b"\n")

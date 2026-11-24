@@ -78,17 +78,11 @@ class ProfileCreator:
                 self.tmp_dir = tempfile.mkdtemp()
 
     def _log_filename(self, name):
-        filename = "%s-%s-%s.log" % (
-            name,
-            self.scenario,
-            self.customization_data["name"],
-        )
+        filename = f"{name}-{self.scenario}-{self.customization_data['name']}.log"
         return os.path.join(self.archive or self.tmp_dir, filename)
 
     async def run(self, headless=True):
-        logger.info(
-            "Building %s x %s" % (self.scenario, self.customization_data["name"])
-        )
+        logger.info(f"Building {self.scenario} x {self.customization_data['name']}")
 
         if self.scenario in self.customization_data.get("ignore_scenario", []):
             logger.info("Skipping (ignored scenario in that customization)")
@@ -137,9 +131,9 @@ class ProfileCreator:
             if not os.path.exists(dir):
                 os.makedirs(dir)
             archiver.create_archive(archive_name)
-            logger.info("Archive created at %s" % archive_name)
+            logger.info(f"Archive created at {archive_name}")
             statinfo = os.stat(archive_name)
-            logger.info("Current size is %d" % statinfo.st_size)
+            logger.info(f"Current size is {statinfo.st_size}")
 
         logger.info("Extracting logs")
         if "logs" in metadata:
@@ -163,7 +157,7 @@ class ProfileCreator:
         scenario_func = scenarii[scenario]
         if scenario in customization_data.get("scenario", {}):
             options = customization_data["scenario"][scenario]
-            logger.info("Loaded options for that scenario %s" % str(options))
+            logger.info(f"Loaded options for that scenario {options}")
         else:
             options = {}
 
@@ -180,14 +174,14 @@ class ProfileCreator:
         else:
             fresh_profile(profile, customization_data)
 
-        logger.info("Updating profile located at %r" % profile)
+        logger.info(f"Updating profile located at {profile!r}")
         metadata = Metadata(profile)
 
         logger.info("Starting the Gecko app...")
         adb_logs = self._log_filename("adb")
         self.env.prepare(logfile=adb_logs)
         geckodriver_logs = self._log_filename("geckodriver")
-        logger.info("Writing geckodriver logs in %s" % geckodriver_logs)
+        logger.info(f"Writing geckodriver logs in {geckodriver_logs}")
         step = START
         try:
             firefox_instance = Firefox(**self.env.get_browser_args(headless))
@@ -198,19 +192,19 @@ class ProfileCreator:
                 async with get_session(geckodriver, firefox_instance) as session:
                     step = START_SCENARIO
                     self.env.check_session(session)
-                    logger.info("Running the %s scenario" % scenario)
+                    logger.info(f"Running the {scenario} scenario")
                     metadata.update(await scenario_func(session, options))
-                    logger.info("%s scenario done." % scenario)
+                    logger.info(f"{scenario} scenario done.")
                     await close_extra_windows(session)
         except Exception:
-            logger.error("%s scenario broke!" % scenario)
+            logger.error(f"{scenario} scenario broke!")
             if step == START:
                 logger.info("Could not initialize the browser")
             elif step == INIT_GECKODRIVER:
                 logger.info("Could not initialize Geckodriver")
             elif step == START_SESSION:
                 logger.info(
-                    "Could not start the session, check %s first" % geckodriver_logs
+                    f"Could not start the session, check {geckodriver_logs} first"
                 )
             else:
                 logger.info("Could not run the scenario, probably a faulty scenario")
@@ -230,5 +224,5 @@ class ProfileCreator:
             platform=self.env.target_platform,
         )
 
-        logger.info("Profile at %s.\nDone." % profile)
+        logger.info(f"Profile at {profile}.\nDone.")
         return metadata

@@ -64,10 +64,10 @@ class Runner:
         # early checks to avoid extra work
         if self.customization != "all":
             if find_customization(self.customization) is None:
-                raise IOError("Cannot find customization %r" % self.customization)
+                raise IOError(f"Cannot find customization {self.customization!r}")
 
         if self.scenario != "all" and self.scenario not in scenarii:
-            raise IOError("Cannot find scenario %r" % self.scenario)
+            raise IOError(f"Cannot find scenario {self.scenario!r}")
 
         if not self.android and self.firefox is not None:
             logger.info("Verifying Desktop Firefox binary")
@@ -80,29 +80,27 @@ class Runner:
                         self.firefox = target
 
             if not os.path.exists(self.firefox):
-                raise IOError("Cannot find %s" % self.firefox)
+                raise IOError(f"Cannot find {self.firefox}")
 
             mozversion.get_version(self.firefox)
 
         logger.info(os.environ)
         if self.archive:
             self.archive = os.path.abspath(self.archive)
-            logger.info("Archives directory is %s" % self.archive)
+            logger.info(f"Archives directory is {self.archive}")
             if not os.path.exists(self.archive):
                 os.makedirs(self.archive, exist_ok=True)
 
         if shutil.which(self.geckodriver) is None and not os.path.exists(
             self.geckodriver
         ):
-            raise IOError("Cannot find %s" % self.geckodriver)
+            raise IOError(f"Cannot find {self.geckodriver}")
 
         if not self.skip_logs:
             try:
                 if self.android:
-                    plat = "%s-%s" % (
-                        self.device_name,
-                        self.firefox.split("org.mozilla.")[-1],
-                    )
+                    app = self.firefox.split("org.mozilla.")[-1]
+                    plat = f"{self.device_name}-{app}"
                 else:
                     plat = get_current_platform()
                 self.changelog = read_changelog(plat)
@@ -124,7 +122,7 @@ class Runner:
         )
 
     def display_error(self, scenario, customization):
-        logger.error("%s x %s failed." % (scenario, customization), exc_info=True)
+        logger.error(f"{scenario} x {customization} failed.", exc_info=True)
         # TODO: this might avoid the exceptions that slip through in automation
         # if self.strict:
         #     raise
@@ -166,7 +164,7 @@ class Runner:
                     self.display_error(scenario, self.customization)
             else:
                 for customization in get_customizations():
-                    logger.info("Customization %s" % customization)
+                    logger.info(f"Customization {customization}")
                     try:
                         res.append(await self.one_run(scenario, customization))
                     except Exception:
@@ -201,7 +199,7 @@ def run(
 
     try:
         failures, results = loop.run_until_complete(runner.run_all())
-        logger.info("Saving changelog in %s" % archive)
+        logger.info(f"Saving changelog in {archive}")
         runner.save()
         if failures > 0:
             raise Exception("At least one scenario failed")

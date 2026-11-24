@@ -22,7 +22,7 @@ class DesktopGeckodriver(Geckodriver):
     async def start(self):
         port = free_port()
         await self._check_version()
-        logger.info("Running Webdriver on port %d" % port)
+        logger.info(f"Running Webdriver on port {port}")
         logger.info("Running Marionette on port 2828")
         pargs = [
             self.binary,
