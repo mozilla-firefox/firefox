@@ -8,12 +8,12 @@
 
 version = 1
 
-# Front-end conventions: HTML, JS, CSS, SVG for desktop browser chrome,
+# Front-end conventions: HTML, JS, SVG for desktop browser chrome,
 # toolkit UI, and devtools. Loaded whenever a patch touches desktop front-end
 # source, excluding test-only changes.
 [[rules]]
 name = "Firefox desktop frontend"
-description = "Front-end conventions for browser chrome, toolkit UI, and devtools (HTML, JS, CSS, SVG)."
+description = "Front-end conventions for browser chrome, toolkit UI, and devtools (HTML, JS, SVG)."
 when = { any_file = { include = [
   "browser/**",
   "toolkit/**",
@@ -26,7 +26,6 @@ when = { any_file = { include = [
   ".mjs",
   ".html",
   ".xhtml",
-  ".css",
   ".svg",
 ] } }
 load = [
@@ -47,25 +46,38 @@ load = [
   { type = "file", path = ".claude/skills/recomp-frontend-review/references/runsheet.md" },
 ]
 
-# Desktop theme: theme stylesheets and design-token files, excluding test-only
-# changes. On design-system files it fires alongside the design-system rule.
+# CSS guidelines for devtools stylesheets, which the desktop-theme rule
+# doesn't cover. Excludes test-only changes.
 [[rules]]
-name = "Desktop theme colors, layout and design tokens"
-description = "Color, high-contrast, dark-mode, layout and design-token checks for theme stylesheets and token files."
+name = "DevTools CSS"
+description = "General CSS conventions for devtools stylesheets."
 when = { any_file = { include = [
-  "browser/themes/**",
-  "toolkit/themes/**",
-  "**/*.tokens.json",
-  "**/*.tokens.css",
+  "devtools/**/*.css",
 ], exclude = [
   "**/test/**",
   "**/tests/**",
-  "toolkit/themes/shared/design-system/package.json",
-  "toolkit/themes/shared/design-system/package-lock.json",
-  "browser/themes/triage.json",
-], ext = [
-  ".css",
-  ".json",
+] } }
+load = [
+  { type = "file", path = "docs/code-quality/coding-style/css_guidelines.md" },
+]
+
+# Desktop theme: stylesheets under browser/ and toolkit/, built-in theme
+# manifests and design-token files, excluding test-only changes and webcompat
+# site interventions. On design-system files it fires alongside the
+# design-system rule.
+[[rules]]
+name = "Desktop theme colors, layout and design tokens"
+description = "Color, high-contrast, dark-mode, layout and design-token checks for front-end stylesheets, theme manifests and token files."
+when = { any_file = { include = [
+  "browser/**/*.css",
+  "browser/**/*.scss",
+  "toolkit/**/*.css",
+  "browser/themes/addons/**/manifest*.json",
+  "**/*.tokens.json",
+], exclude = [
+  "**/test/**",
+  "**/tests/**",
+  "browser/extensions/webcompat/**",
 ] } }
 load = [
   { type = "file", path = ".claude/skills/desktop-theme/SKILL.md" },
