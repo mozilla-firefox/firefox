@@ -65,6 +65,7 @@
 #ifndef BASE_FILE_PATH_H_
 #define BASE_FILE_PATH_H_
 
+#include <iosfwd>
 #include <string>
 
 #include "base/basictypes.h"
