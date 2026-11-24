@@ -179,6 +179,9 @@ run-if = [
 ["browser_display_plaintext_types.js"]
 support-files = ["res_hello_h1.sjs"]
 
+["browser_dns_lookups_per_host.js"]
+support-files = ["!/netwerk/test/unit/http2-ca.pem"] # for node server
+
 ["browser_dns_prefetch_link_header.js"]
 
 ["browser_essential_domain_fallbacks.js"]

@@ -679,6 +679,11 @@ skip-if = [
 
 ["test_dns_localredirect.js"]
 
+["test_dns_lookups_per_host.js"]
+skip-if = [
+  "os == 'android'", # The servers run on the host, not the device
+]
+
 ["test_dns_negative_grace.js"]
 skip-if = [
   "os == 'android'",
