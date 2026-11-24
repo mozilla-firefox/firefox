@@ -1367,6 +1367,10 @@ void nsBidiPresUtils::TraverseFrames(nsIFrame* aCurrentFrame,
                 aBpd->mCurrentTraverseLine.GetLine()->MarkDirty();
               }
               ResolveParagraphWithinBlock(aBpd);
+              // Resolving reset mPrevContent, but this loop still appends the
+              // rest of this text node, so a later continuation of it under
+              // another parent must not append it again.
+              aBpd->mPrevContent = content;
 
               if (!nextSibling && !createdContinuation) {
                 break;
