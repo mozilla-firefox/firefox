@@ -13,9 +13,7 @@ pypi:pywatchman==4.0.0
 pypi:sphinx-copybutton==0.5.2
 pypi:sphinx-design==0.7.0
 pypi:sphinx-js==5.0.3
-pypi:sphinx-markdown-tables==0.0.17
 pypi:sphinx-rtd-theme==3.1.0
-pypi:sphinx-tabs==3.5.0
 pypi:sphinxcontrib-mermaid==2.1.1
 # psutil is needed for autodoc to import mozbuild.doctor and marionette_driver.processhandler
 requirements-txt:build/psutil_requirements.txt
