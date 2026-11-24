@@ -31,11 +31,12 @@
       // pwmgr_common.js uses internally some helper methods from SimpleTest.
       SimpleTest.waitForExplicitFinish();
 
-      runChecksAfterCommonInit();
+      const commonInitPromise = runChecksAfterCommonInit();
 
       onpageshow = async function(pageShow) {
         if (!pageShow.persisted) {
           // This is the initial page load.
+          await commonInitPromise;
           await setStoredLoginsAsync([location.origin, "", null, "autofilled", "pass1", "", ""]);
         } else {
           await promiseFormsProcessedInSameProcess();
