@@ -20,8 +20,8 @@
  */
 
 /**
- * pdfjsVersion = 7.0.213
- * pdfjsBuild = 541d197e6
+ * pdfjsVersion = 7.0.229
+ * pdfjsBuild = 32fb05b3b
  */
 export const __webpack_esm_ids__ = ["openjpeg"];
 export const __webpack_esm_modules__ = {
@@ -32,34 +32,22 @@ export const __webpack_esm_modules__ = {
 __webpack_require__.r(__webpack_exports__);
 async function OpenJPEG(moduleArg = {}) {
   var Module = moduleArg;
-  var ENVIRONMENT_IS_WEB = true;
-  var ENVIRONMENT_IS_WORKER = false;
-  var programArgs = [];
-  var thisProgram = "./this.program";
   var _scriptName = import.meta.url;
   var scriptDirectory = "";
-  var readAsync, readBinary;
-  if (ENVIRONMENT_IS_WEB || ENVIRONMENT_IS_WORKER) {
-    try {
-      scriptDirectory = new URL(".", _scriptName).href;
-    } catch {}
-    readAsync = async url => {
-      var response = await fetch(url, {
-        credentials: "same-origin"
-      });
-      if (response.ok) {
-        return response.arrayBuffer();
-      }
-      throw new Error(response.status + " : " + response.url);
-    };
-  } else {}
+  var readAsync;
+  try {
+    scriptDirectory = new URL(".", _scriptName).href;
+  } catch {}
+  readAsync = async url => {
+    var response = await fetch(url, {
+      credentials: "same-origin"
+    });
+    if (response.ok) return response.arrayBuffer();
+    throw new Error(response.status + " : " + response.url);
+  };
   var out = console.log.bind(console);
   var err = console.error.bind(console);
-  var wasmBinary;
   var ABORT = false;
-  class EmscriptenEH {}
-  class EmscriptenSjLj extends EmscriptenEH {}
-  var runtimeInitialized = false;
   function getMemoryBuffer() {
     return wasmMemory.buffer;
   }
@@ -74,19 +62,19 @@ async function OpenJPEG(moduleArg = {}) {
   function preRun() {
     var preRun = Module["preRun"];
     if (preRun) {
-      if (typeof preRun == "function") preRun = [preRun];
+      if (typeof preRun === "function") preRun = [preRun];
       onPreRuns.push(...preRun);
     }
     callRuntimeCallbacks(onPreRuns);
   }
   function initRuntime() {
-    runtimeInitialized = true;
+    0;
     wasmExports["j"]();
   }
   function postRun() {
     var postRun = Module["postRun"];
     if (postRun) {
-      if (typeof postRun == "function") postRun = [postRun];
+      if (typeof postRun === "function") postRun = [postRun];
       onPostRuns.push(...postRun);
     }
     callRuntimeCallbacks(onPostRuns);
@@ -98,46 +86,16 @@ async function OpenJPEG(moduleArg = {}) {
     };
     return imports;
   }
-  async function createWasm() {
-    function receiveInstance(instance) {
-      wasmExports = instance.exports;
-      assignWasmExports(wasmExports);
-      updateMemoryViews();
-      return wasmExports;
-    }
-    var info = getWasmImports();
-    var instantiateWasm = Module["instantiateWasm"];
-    return new Promise(resolve => {
-      instantiateWasm(info, inst => resolve(receiveInstance(inst)));
-    });
-  }
-  class ExitStatus {
-    name = "ExitStatus";
-    constructor(status) {
-      this.message = `Program terminated with exit(${status})`;
-      this.status = status;
-    }
-  }
   var HEAP8;
   var callRuntimeCallbacks = callbacks => {
-    while (callbacks.length > 0) {
-      callbacks.shift()(Module);
-    }
+    while (callbacks.length > 0) callbacks.shift()(Module);
   };
   var onPostRuns = [];
   var onPreRuns = [];
-  var noExitRuntime = true;
   var HEAP32;
-  function _copy_component(comp_ptr, index, nb_comps, nb_pixels) {
-    comp_ptr >>= 2;
-    const imageData = Module.imageData;
-    const comp = HEAP32.subarray(comp_ptr, comp_ptr + nb_pixels);
-    for (let i = 0, j = index; i < nb_pixels; i++, j += nb_comps) {
-      imageData[j] = comp[i];
-    }
-  }
-  var getHeapMax = () => 2147483648;
+  var HEAPU8;
   var alignMemory = (size, alignment) => Math.ceil(size / alignment) * alignment;
+  var getHeapMax = () => 2147483648;
   var growMemory = size => {
     var oldHeapSize = wasmMemory.buffer.byteLength;
     var pages = (size - oldHeapSize + 65535) / 65536 | 0;
@@ -147,33 +105,8 @@ async function OpenJPEG(moduleArg = {}) {
       return 1;
     } catch (e) {}
   };
-  var HEAPU8;
-  var _emscripten_resize_heap = requestedSize => {
-    var oldSize = HEAPU8.length;
-    requestedSize >>>= 0;
-    var maxHeapSize = getHeapMax();
-    if (requestedSize > maxHeapSize) {
-      return false;
-    }
-    for (var cutDown = 1; cutDown <= 4; cutDown *= 2) {
-      var overGrownHeapSize = oldSize * (1 + .2 / cutDown);
-      overGrownHeapSize = Math.min(overGrownHeapSize, requestedSize + 100663296);
-      var newSize = Math.min(maxHeapSize, alignMemory(Math.max(requestedSize, overGrownHeapSize), 65536));
-      var replacement = growMemory(newSize);
-      if (replacement) {
-        return true;
-      }
-    }
-    return false;
-  };
-  var INT53_MAX = 9007199254740992;
-  var INT53_MIN = -9007199254740992;
-  var bigintToI53Checked = num => num < INT53_MIN || num > INT53_MAX ? NaN : Number(num);
-  function _fd_seek(fd, offset, whence, newOffset) {
-    offset = bigintToI53Checked(offset);
-    return 70;
-  }
-  var printCharBuffers = [null, [], []];
+  var bigintToI53Checked = num => num < -9007199254740992 || num > 9007199254740992 ? NaN : Number(num);
+  var HEAPU32;
   var UTF8Decoder = globalThis.TextDecoder && new TextDecoder();
   var findStringEnd = (heapOrArray, idx, maxBytesToRead, ignoreNul) => {
     var maxIdx = idx + maxBytesToRead;
@@ -183,9 +116,7 @@ async function OpenJPEG(moduleArg = {}) {
   };
   var UTF8ArrayToString = (heapOrArray, idx = 0, maxBytesToRead, ignoreNul) => {
     var endPtr = findStringEnd(heapOrArray, idx, maxBytesToRead, ignoreNul);
-    if (endPtr - idx > 16 && heapOrArray.buffer && UTF8Decoder) {
-      return UTF8Decoder.decode(heapOrArray.subarray(idx, endPtr));
-    }
+    if (endPtr - idx > 16 && heapOrArray.buffer && UTF8Decoder) return UTF8Decoder.decode(heapOrArray.subarray(idx, endPtr));
     var str = "";
     while (idx < endPtr) {
       var u0 = heapOrArray[idx++];
@@ -199,98 +130,111 @@ async function OpenJPEG(moduleArg = {}) {
         continue;
       }
       var u2 = heapOrArray[idx++] & 63;
-      if ((u0 & 240) == 224) {
-        u0 = (u0 & 15) << 12 | u1 << 6 | u2;
-      } else {
-        u0 = (u0 & 7) << 18 | u1 << 12 | u2 << 6 | heapOrArray[idx++] & 63;
-      }
-      if (u0 < 65536) {
-        str += String.fromCharCode(u0);
-      } else {
+      if ((u0 & 240) == 224) u0 = (u0 & 15) << 12 | u1 << 6 | u2;else u0 = (u0 & 7) << 18 | u1 << 12 | u2 << 6 | heapOrArray[idx++] & 63;
+      if (u0 < 65536) str += String.fromCharCode(u0);else {
         var ch = u0 - 65536;
         str += String.fromCharCode(55296 | ch >> 10, 56320 | ch & 1023);
       }
     }
     return str;
   };
+  var printCharBuffers = [null, [], []];
   var printChar = (stream, curr) => {
     var buffer = printCharBuffers[stream];
     if (!curr || curr === 10) {
       (stream === 1 ? out : err)(UTF8ArrayToString(buffer));
       buffer.length = 0;
-    } else {
-      buffer.push(curr);
-    }
+    } else buffer.push(curr);
   };
   var UTF8ToString = (ptr, maxBytesToRead, ignoreNul) => ptr ? UTF8ArrayToString(HEAPU8, ptr, maxBytesToRead, ignoreNul) : "";
-  var HEAPU32;
-  var _fd_write = (fd, iov, iovcnt, pnum) => {
-    var num = 0;
-    for (var i = 0; i < iovcnt; i++) {
-      var ptr = HEAPU32[iov >> 2];
-      var len = HEAPU32[iov + 4 >> 2];
-      iov += 8;
-      for (var j = 0; j < len; j++) {
-        printChar(fd, HEAPU8[ptr + j]);
-      }
-      num += len;
-    }
-    HEAPU32[pnum >> 2] = num;
-    return 0;
-  };
-  function _init_pixels(size) {
-    Module.imageData = new Uint8ClampedArray(size);
-  }
-  function _jsPrintWarning(message_ptr) {
-    const message = UTF8ToString(message_ptr);
-    (Module.warn || console.warn)(`OpenJPEG: ${message}`);
-  }
-  function _setImageData(array_ptr, array_size) {
-    Module.imageData = new Uint8ClampedArray(HEAPU8.slice(array_ptr, array_ptr + array_size).buffer);
-  }
-  function _storeErrorMessage(message_ptr) {
-    const message = UTF8ToString(message_ptr);
-    if (!Module.errorMessages) {
-      Module.errorMessages = message;
-    } else {
-      Module.errorMessages += "\n" + message;
-    }
-  }
-  var writeArrayToMemory = (array, buffer) => {
-    HEAP8.set(array, buffer);
-  };
-  if (Module["noExitRuntime"]) noExitRuntime = Module["noExitRuntime"];
+  if (Module["noExitRuntime"]) Module["noExitRuntime"];
   if (Module["print"]) out = Module["print"];
   if (Module["printErr"]) err = Module["printErr"];
-  if (Module["arguments"]) programArgs = Module["arguments"];
-  if (Module["thisProgram"]) thisProgram = Module["thisProgram"];
+  if (Module["arguments"]) Module["arguments"];
+  if (Module["thisProgram"]) Module["thisProgram"];
   var preInit = Module["preInit"];
   if (preInit) {
-    if (typeof preInit == "function") Module["preInit"] = preInit = [preInit];
-    while (preInit.length > 0) {
-      preInit.shift()();
-    }
+    if (typeof preInit === "function") Module["preInit"] = preInit = [preInit];
+    while (preInit.length > 0) preInit.shift()();
   }
-  Module["writeArrayToMemory"] = writeArrayToMemory;
-  var _malloc, _free, _jp2_decode, memory, __indirect_function_table, wasmMemory;
+  Module["writeArrayToMemory"] = (array, buffer) => {
+    HEAP8.set(array, buffer);
+  };
+  var wasmMemory;
   function assignWasmExports(wasmExports) {
-    _malloc = Module["_malloc"] = wasmExports["k"];
-    _free = Module["_free"] = wasmExports["l"];
-    _jp2_decode = Module["_jp2_decode"] = wasmExports["m"];
-    memory = wasmMemory = wasmExports["i"];
-    __indirect_function_table = wasmExports["__indirect_function_table"];
+    Module["_malloc"] = wasmExports["k"];
+    Module["_free"] = wasmExports["l"];
+    Module["_jp2_decode"] = wasmExports["m"];
+    wasmMemory = wasmExports["i"];
+    wasmExports["__indirect_function_table"];
   }
   var wasmImports = {
-    g: _copy_component,
-    c: _emscripten_resize_heap,
-    d: _fd_seek,
-    b: _fd_write,
-    h: _init_pixels,
-    e: _jsPrintWarning,
-    f: _setImageData,
-    a: _storeErrorMessage
+    g: function (comp_ptr, index, nb_comps, nb_pixels) {
+      comp_ptr >>= 2;
+      const imageData = Module.imageData;
+      const comp = HEAP32.subarray(comp_ptr, comp_ptr + nb_pixels);
+      for (let i = 0, j = index; i < nb_pixels; i++, j += nb_comps) imageData[j] = comp[i];
+    },
+    c: requestedSize => {
+      var oldSize = HEAPU8.length;
+      requestedSize >>>= 0;
+      var maxHeapSize = getHeapMax();
+      if (requestedSize > maxHeapSize) return false;
+      for (var cutDown = 1; cutDown <= 4; cutDown *= 2) {
+        var overGrownHeapSize = oldSize * (1 + .2 / cutDown);
+        overGrownHeapSize = Math.min(overGrownHeapSize, requestedSize + 100663296);
+        var newSize = Math.min(maxHeapSize, alignMemory(Math.max(requestedSize, overGrownHeapSize), 65536));
+        var replacement = growMemory(newSize);
+        if (replacement) return true;
+      }
+      return false;
+    },
+    d: function (fd, offset) {
+      offset = bigintToI53Checked(offset);
+      return 70;
+    },
+    b: (fd, iov, iovcnt, pnum) => {
+      var num = 0;
+      for (var i = 0; i < iovcnt; i++) {
+        var ptr = HEAPU32[iov >> 2];
+        var len = HEAPU32[iov + 4 >> 2];
+        iov += 8;
+        for (var j = 0; j < len; j++) printChar(fd, HEAPU8[ptr + j]);
+        num += len;
+      }
+      HEAPU32[pnum >> 2] = num;
+      return 0;
+    },
+    h: function (size) {
+      Module.imageData = new Uint8ClampedArray(size);
+    },
+    e: function (message_ptr) {
+      const message = UTF8ToString(message_ptr);
+      (Module.warn || console.warn)(`OpenJPEG: ${message}`);
+    },
+    f: function (array_ptr, array_size) {
+      Module.imageData = new Uint8ClampedArray(HEAPU8.slice(array_ptr, array_ptr + array_size).buffer);
+    },
+    a: function (message_ptr) {
+      const message = UTF8ToString(message_ptr);
+      if (!Module.errorMessages) Module.errorMessages = message;else Module.errorMessages += "\n" + message;
+    }
   };
-  async function run() {
+  var wasmExports;
+  wasmExports = await async function () {
+    function receiveInstance(instance) {
+      wasmExports = instance.exports;
+      assignWasmExports(wasmExports);
+      updateMemoryViews();
+      return wasmExports;
+    }
+    var info = getWasmImports();
+    var instantiateWasm = Module["instantiateWasm"];
+    return new Promise(resolve => {
+      instantiateWasm(info, inst => resolve(receiveInstance(inst)));
+    });
+  }();
+  await async function () {
     preRun();
     var setStatus = Module["setStatus"];
     if (setStatus) {
@@ -302,10 +246,7 @@ async function OpenJPEG(moduleArg = {}) {
     initRuntime();
     Module["onRuntimeInitialized"]?.();
     postRun();
-  }
-  var wasmExports;
-  wasmExports = await createWasm();
-  await run();
+  }();
   return Module;
 }
 /* harmony default export */ const __WEBPACK_DEFAULT_EXPORT__ = (OpenJPEG);

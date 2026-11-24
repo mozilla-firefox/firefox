@@ -20,8 +20,8 @@
  */
 
 /**
- * pdfjsVersion = 7.0.213
- * pdfjsBuild = 541d197e6
+ * pdfjsVersion = 7.0.229
+ * pdfjsBuild = 32fb05b3b
  */
 export const __webpack_esm_ids__ = ["print-appearances"];
 export const __webpack_esm_modules__ = {
@@ -38,7 +38,7 @@ export const __webpack_esm_modules__ = {
 /* harmony import */ var _core_utils_js__WEBPACK_IMPORTED_MODULE_3__ = __webpack_require__(5399);
 /* harmony import */ var _evaluator_js__WEBPACK_IMPORTED_MODULE_4__ = __webpack_require__(9285);
 /* harmony import */ var _parser_js__WEBPACK_IMPORTED_MODULE_5__ = __webpack_require__(1440);
-/* harmony import */ var _pdf_manager_js__WEBPACK_IMPORTED_MODULE_6__ = __webpack_require__(4902);
+/* harmony import */ var _pdf_manager_js__WEBPACK_IMPORTED_MODULE_6__ = __webpack_require__(7877);
 /* harmony import */ var _stream_js__WEBPACK_IMPORTED_MODULE_7__ = __webpack_require__(4106);
 
 

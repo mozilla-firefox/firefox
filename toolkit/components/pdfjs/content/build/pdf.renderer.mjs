@@ -20,8 +20,8 @@
  */
 
 /**
- * pdfjsVersion = 7.0.213
- * pdfjsBuild = 541d197e6
+ * pdfjsVersion = 7.0.229
+ * pdfjsBuild = 32fb05b3b
  */
 
 ;// ./src/shared/util.js
@@ -6241,9 +6241,6 @@ class MessageHandler {
     this.#messageAC?.abort();
     this.#messageAC = null;
   }
-  get destroyed() {
-    return !this.#messageAC;
-  }
 }
 
 ;// ./src/shared/obj_bin_transform_utils.js
@@ -7609,7 +7606,7 @@ class RendererMessageHandler {
     this.#connection = null;
   }
   static #sendReady(handler) {
-    const workerVersion = "7.0.213";
+    const workerVersion = "7.0.229";
     const testObj = new Uint8Array();
     handler.send("ready", {
       testObj,

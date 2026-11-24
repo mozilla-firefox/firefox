@@ -20,8 +20,8 @@
  */
 
 /**
- * pdfjsVersion = 7.0.213
- * pdfjsBuild = 541d197e6
+ * pdfjsVersion = 7.0.229
+ * pdfjsBuild = 32fb05b3b
  */
 export const __webpack_esm_ids__ = ["jpeg"];
 export const __webpack_esm_modules__ = {
@@ -34,7 +34,7 @@ export const __webpack_esm_modules__ = {
 /* harmony export */ });
 /* harmony import */ var _shared_util_js__WEBPACK_IMPORTED_MODULE_0__ = __webpack_require__(4292);
 /* harmony import */ var _jpeg_utils_js__WEBPACK_IMPORTED_MODULE_1__ = __webpack_require__(2478);
-/* harmony import */ var _colorspace_utils_js__WEBPACK_IMPORTED_MODULE_2__ = __webpack_require__(5719);
+/* harmony import */ var _colorspace_utils_js__WEBPACK_IMPORTED_MODULE_2__ = __webpack_require__(2056);
 /* harmony import */ var _colorspace_js__WEBPACK_IMPORTED_MODULE_3__ = __webpack_require__(3069);
 /* harmony import */ var _shared_image_utils_js__WEBPACK_IMPORTED_MODULE_4__ = __webpack_require__(8609);
 
@@ -939,14 +939,6 @@ class JpegImage {
     }
     return out;
   }
-  _convertYcckToRgb(data) {
-    this._convertYcckToCmyk(data);
-    return this._convertCmykToRgb(data);
-  }
-  _convertYcckToRgba(data) {
-    this._convertYcckToCmyk(data);
-    return this._convertCmykToRgba(data);
-  }
   _convertYcckToCmyk(data) {
     let Y, Cb, Cr;
     for (let i = 0, ii = data.length; i < ii; i += 4) {
@@ -959,14 +951,13 @@ class JpegImage {
     }
     return data;
   }
-  _convertCmykToRgb(data) {
+  #convertCmyk(data, cmyk, forceRGBA) {
     const count = data.length / 4;
-    _colorspace_utils_js__WEBPACK_IMPORTED_MODULE_2__.ColorSpaceUtils.cmyk.getRgbBuffer(data, 0, count, data, 0, 8, 0);
-    return data.subarray(0, count * 3);
-  }
-  _convertCmykToRgba(data) {
-    _colorspace_utils_js__WEBPACK_IMPORTED_MODULE_2__.ColorSpaceUtils.cmyk.getRgbBuffer(data, 0, data.length / 4, data, 0, 8, 1);
-    if (_colorspace_utils_js__WEBPACK_IMPORTED_MODULE_2__.ColorSpaceUtils.cmyk instanceof _colorspace_js__WEBPACK_IMPORTED_MODULE_3__.DeviceCmykCS) {
+    cmyk.getRgbBuffer(data, 0, count, data, 0, 8, forceRGBA ? 1 : 0);
+    if (!forceRGBA) {
+      return data.subarray(0, count * 3);
+    }
+    if (cmyk instanceof _colorspace_js__WEBPACK_IMPORTED_MODULE_3__.DeviceCmykCS) {
       for (let i = 3, ii = data.length; i < ii; i += 4) {
         data[i] = 255;
       }
@@ -977,7 +968,8 @@ class JpegImage {
     width,
     height,
     forceRGBA = false,
-    forceRGB = false
+    forceRGB = false,
+    cmyk = _colorspace_utils_js__WEBPACK_IMPORTED_MODULE_2__.ColorSpaceUtils.deviceCmyk
   }) {
     if (this.numComponents > 4) {
       throw new _jpeg_utils_js__WEBPACK_IMPORTED_MODULE_1__.JpegError("Unsupported color mode");
@@ -1005,14 +997,10 @@ class JpegImage {
       return this._convertYccToRgb(data);
     } else if (this.numComponents === 4) {
       if (this._isColorConversionNeeded) {
-        if (forceRGBA) {
-          return this._convertYcckToRgba(data);
-        }
-        return forceRGB ? this._convertYcckToRgb(data) : this._convertYcckToCmyk(data);
-      } else if (forceRGBA) {
-        return this._convertCmykToRgba(data);
-      } else if (forceRGB) {
-        return this._convertCmykToRgb(data);
+        this._convertYcckToCmyk(data);
+      }
+      if (forceRGBA || forceRGB) {
+        return this.#convertCmyk(data, cmyk, forceRGBA);
       }
     }
     return data;

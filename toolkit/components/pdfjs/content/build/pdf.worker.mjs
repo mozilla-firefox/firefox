@@ -20,10 +20,64 @@
  */
 
 /**
- * pdfjsVersion = 7.0.213
- * pdfjsBuild = 541d197e6
+ * pdfjsVersion = 7.0.229
+ * pdfjsBuild = 32fb05b3b
  */
 /******/ var __webpack_modules__ = ({
+
+/***/ 8212
+(__unused_webpack___webpack_module__, __webpack_exports__, __webpack_require__) {
+
+/* harmony export */ __webpack_require__.d(__webpack_exports__, {
+/* harmony export */   QCMS: () => (/* binding */ QCMS),
+/* harmony export */   copy_result: () => (/* binding */ copy_result)
+/* harmony export */ });
+const ALPHA_MASK = new Uint8Array(new Uint32Array([1]).buffer)[0] === 1 ? 0xff000000 : 0x000000ff;
+const RGB_MASK = ~ALPHA_MASK;
+class QCMS {
+  static #memoryArray = null;
+  static _memory = null;
+  static _destBuffer = null;
+  static _destOffset = 0;
+  static _keepAlpha = false;
+  static get _memoryArray() {
+    const array = this.#memoryArray;
+    if (array?.byteLength) {
+      return array;
+    }
+    return this.#memoryArray = new Uint8Array(this._memory.buffer);
+  }
+}
+function copy_result(ptr, len) {
+  const {
+    _destBuffer,
+    _destOffset,
+    _keepAlpha,
+    _memoryArray
+  } = QCMS;
+  if (!_keepAlpha) {
+    _destBuffer.set(_memoryArray.subarray(ptr, ptr + len), _destOffset);
+    return;
+  }
+  const count = len >> 2;
+  const destStart = _destBuffer.byteOffset + _destOffset;
+  if (((destStart | ptr) & 3) === 0) {
+    const dest32 = new Uint32Array(_destBuffer.buffer, destStart, count);
+    const src32 = new Uint32Array(QCMS._memory.buffer, ptr, count);
+    for (let i = 0; i < count; i++) {
+      dest32[i] = dest32[i] & ALPHA_MASK | src32[i] & RGB_MASK;
+    }
+    return;
+  }
+  for (let i = ptr, ii = ptr + len, j = _destOffset; i < ii; i += 4, j += 4) {
+    _destBuffer[j] = _memoryArray[i];
+    _destBuffer[j + 1] = _memoryArray[i + 1];
+    _destBuffer[j + 2] = _memoryArray[i + 2];
+  }
+}
+
+
+/***/ },
 
 /***/ 3738
 (__unused_webpack___webpack_module__, __webpack_exports__, __webpack_require__) {
@@ -47,8 +101,8 @@ var core_utils = __webpack_require__(5399);
 var primitives = __webpack_require__(5632);
 // EXTERNAL MODULE: ./src/core/stream.js
 var core_stream = __webpack_require__(4106);
-// EXTERNAL MODULE: ./src/core/colorspace_utils.js
-var colorspace_utils = __webpack_require__(5719);
+// EXTERNAL MODULE: ./src/core/colorspace_utils.js + 1 modules
+var colorspace_utils = __webpack_require__(2056);
 // EXTERNAL MODULE: ./src/core/evaluator.js + 5 modules
 var evaluator = __webpack_require__(9285);
 // EXTERNAL MODULE: ./src/core/image_utils.js
@@ -68,10 +122,11 @@ var string_utils = __webpack_require__(5389);
 
 
 class DefaultAppearanceEvaluator extends evaluator.EvaluatorPreprocessor {
-  constructor(str) {
+  constructor(str, xref) {
     super(new core_stream.StringStream(str));
+    this.xref = xref;
   }
-  parse() {
+  async parse() {
     const operation = {
       fn: 0,
       args: []
@@ -111,8 +166,11 @@ class DefaultAppearanceEvaluator extends evaluator.EvaluatorPreprocessor {
             colorspace_utils.ColorSpaceUtils.gray.getRgbItem(args, 0, result.fontColor, 0);
             break;
           case util.OPS.setFillCMYKColor:
-            colorspace_utils.ColorSpaceUtils.cmyk.getRgbItem(args, 0, result.fontColor, 0);
-            break;
+            {
+              const cmyk = await colorspace_utils.ColorSpaceUtils.getCmyk(this.xref);
+              cmyk.getRgbItem(args, 0, result.fontColor, 0);
+              break;
+            }
         }
       }
     } catch (reason) {
@@ -121,8 +179,8 @@ class DefaultAppearanceEvaluator extends evaluator.EvaluatorPreprocessor {
     return result;
   }
 }
-function parseDefaultAppearance(str) {
-  return new DefaultAppearanceEvaluator(str).parse();
+function parseDefaultAppearance(str, xref) {
+  return new DefaultAppearanceEvaluator(str, xref).parse();
 }
 class AppearanceStreamEvaluator extends evaluator.EvaluatorPreprocessor {
   constructor(stream, xref, globalColorSpaceCache) {
@@ -210,8 +268,11 @@ class AppearanceStreamEvaluator extends evaluator.EvaluatorPreprocessor {
             colorspace_utils.ColorSpaceUtils.gray.getRgbItem(args, 0, result.fontColor, 0);
             break;
           case util.OPS.setFillCMYKColor:
-            colorspace_utils.ColorSpaceUtils.cmyk.getRgbItem(args, 0, result.fontColor, 0);
-            break;
+            {
+              const cmyk = await colorspace_utils.ColorSpaceUtils.getCmyk(this.xref);
+              cmyk.getRgbItem(args, 0, result.fontColor, 0);
+              break;
+            }
           case util.OPS.showText:
           case util.OPS.showSpacedText:
           case util.OPS.nextLineShowText:
@@ -627,9 +688,9 @@ class AnnotationFactory {
     };
     switch (subtype) {
       case "Link":
-        return new LinkAnnotation(parameters);
+        return LinkAnnotation.create(parameters);
       case "Text":
-        return new TextAnnotation(parameters);
+        return TextAnnotation.create(parameters);
       case "Widget":
         let fieldType = (0,core_utils.getInheritableProperty)({
           dict,
@@ -638,52 +699,52 @@ class AnnotationFactory {
         fieldType = fieldType instanceof primitives.Name ? fieldType.name : null;
         switch (fieldType) {
           case "Tx":
-            return new TextWidgetAnnotation(parameters);
+            return TextWidgetAnnotation.create(parameters);
           case "Btn":
-            return new ButtonWidgetAnnotation(parameters);
+            return ButtonWidgetAnnotation.create(parameters);
           case "Ch":
-            return new ChoiceWidgetAnnotation(parameters);
+            return ChoiceWidgetAnnotation.create(parameters);
           case "Sig":
-            return new SignatureWidgetAnnotation(parameters);
+            return SignatureWidgetAnnotation.create(parameters);
         }
         ;(0,util.warn)(`Unimplemented widget field type "${fieldType}", ` + "falling back to base field type.");
-        return new WidgetAnnotation(parameters);
+        return WidgetAnnotation.create(parameters);
       case "Popup":
-        return new PopupAnnotation(parameters);
+        return PopupAnnotation.create(parameters);
       case "FreeText":
-        return new FreeTextAnnotation(parameters);
+        return FreeTextAnnotation.create(parameters);
       case "Line":
-        return new LineAnnotation(parameters);
+        return LineAnnotation.create(parameters);
       case "Square":
-        return new SquareAnnotation(parameters);
+        return SquareAnnotation.create(parameters);
       case "Circle":
-        return new CircleAnnotation(parameters);
+        return CircleAnnotation.create(parameters);
       case "PolyLine":
-        return new PolylineAnnotation(parameters);
+        return PolylineAnnotation.create(parameters);
       case "Polygon":
-        return new PolygonAnnotation(parameters);
+        return PolygonAnnotation.create(parameters);
       case "Caret":
-        return new CaretAnnotation(parameters);
+        return CaretAnnotation.create(parameters);
       case "Ink":
-        return new InkAnnotation(parameters);
+        return InkAnnotation.create(parameters);
       case "Highlight":
-        return new HighlightAnnotation(parameters);
+        return HighlightAnnotation.create(parameters);
       case "Underline":
-        return new UnderlineAnnotation(parameters);
+        return UnderlineAnnotation.create(parameters);
       case "Squiggly":
-        return new SquigglyAnnotation(parameters);
+        return SquigglyAnnotation.create(parameters);
       case "StrikeOut":
-        return new StrikeOutAnnotation(parameters);
+        return StrikeOutAnnotation.create(parameters);
       case "Stamp":
-        return new StampAnnotation(parameters);
+        return StampAnnotation.create(parameters);
       case "FileAttachment":
-        return new FileAttachmentAnnotation(parameters);
+        return FileAttachmentAnnotation.create(parameters);
       case "RichMedia":
-        return new RichMediaAnnotation(parameters);
+        return RichMediaAnnotation.create(parameters);
       case "Screen":
-        return new ScreenAnnotation(parameters);
+        return ScreenAnnotation.create(parameters);
       case "Sound":
-        return new SoundAnnotation(parameters);
+        return SoundAnnotation.create(parameters);
       default:
         if (!collectFields) {
           if (!subtype) {
@@ -692,7 +753,7 @@ class AnnotationFactory {
             (0,util.warn)(`Unimplemented annotation type "${subtype}", ` + "falling back to base annotation.");
           }
         }
-        return new Annotation(parameters);
+        return Annotation.create(parameters);
     }
   }
   static async _getPageIndex(xref, ref, pdfManager) {
@@ -874,7 +935,7 @@ class AnnotationFactory {
               smaskStream,
               smaskRenderStream
             } = image;
-            const imageRef = imageRenderStream || new jpeg_stream.JpegStream(imageStream, imageStream.length);
+            const imageRef = imageRenderStream || new jpeg_stream.JpegStream(imageStream, imageStream.length, null, xref.pdfManager);
             if (smaskStream || smaskRenderStream) {
               imageRef.dict.set("SMask", smaskRenderStream || smaskStream);
             }
@@ -897,27 +958,6 @@ class AnnotationFactory {
       }
     }
     return Promise.all(promises);
-  }
-}
-function getRgbColor(color, defaultColor = new Uint8ClampedArray(3)) {
-  if (!Array.isArray(color)) {
-    return defaultColor;
-  }
-  const rgbColor = defaultColor || new Uint8ClampedArray(3);
-  switch (color.length) {
-    case 0:
-      return null;
-    case 1:
-      colorspace_utils.ColorSpaceUtils.gray.getRgbItem(color, 0, rgbColor, 0);
-      return rgbColor;
-    case 3:
-      colorspace_utils.ColorSpaceUtils.rgb.getRgbItem(color, 0, rgbColor, 0);
-      return rgbColor;
-    case 4:
-      colorspace_utils.ColorSpaceUtils.cmyk.getRgbItem(color, 0, rgbColor, 0);
-      return rgbColor;
-    default:
-      return defaultColor;
   }
 }
 function getPdfColorArray(color, defaultValue = null) {
@@ -968,21 +1008,49 @@ function writeLineToCurveToAppearance(data, buffer, maybeClose = false) {
   }
 }
 class Annotation {
+  #cmyk;
+  static _hasDefaultAppearance = false;
   appearance = null;
   _oc = undefined;
-  constructor(params) {
+  static async create(params) {
     const {
       annotationGlobals,
       dict,
       orphanFields,
       ref,
-      subtype,
       xref
     } = params;
     const parentRef = orphanFields?.get(ref);
     if (parentRef) {
       dict.set("Parent", parentRef);
     }
+    if (this._hasCmykColor(dict)) {
+      params.cmyk = await colorspace_utils.ColorSpaceUtils.getCmyk(xref);
+    }
+    if (this._hasDefaultAppearance) {
+      const da = (0,core_utils.getInheritableProperty)({
+        dict,
+        key: "DA"
+      }) || annotationGlobals.acroForm.get("DA");
+      params.defaultAppearance = typeof da === "string" ? da : "";
+      params.defaultAppearanceData = await parseDefaultAppearance(params.defaultAppearance, xref);
+    }
+    return new this(params);
+  }
+  static _hasCmykColor(dict) {
+    const isCmyk = color => Array.isArray(color) && color.length === 4;
+    const mk = dict.get("MK"),
+      parent = dict.get("Parent");
+    return isCmyk(dict.get("C")) || isCmyk(dict.get("IC")) || mk instanceof primitives.Dict && (isCmyk(mk.get("BC")) || isCmyk(mk.get("BG"))) || [parent, dict.get("IRT"), parent instanceof primitives.Dict && parent.get("IRT")].some(related => related instanceof primitives.Dict && isCmyk(related.get("C")));
+  }
+  constructor(params) {
+    const {
+      annotationGlobals,
+      dict,
+      subtype,
+      xref
+    } = params;
+    this.#cmyk = params.cmyk;
     this.setTitle(dict.get("T"));
     this.setContents(dict.get("Contents"));
     this.setModificationDate(dict.get("M"));
@@ -1023,6 +1091,10 @@ class Annotation {
       isEditable: false,
       structParent: -1
     };
+    if (params.defaultAppearanceData) {
+      this._defaultAppearance = params.defaultAppearance;
+      this.data.defaultAppearanceData = params.defaultAppearanceData;
+    }
     if (annotationGlobals.structTreeRoot) {
       let structParent = dict.get("StructParent");
       this.data.structParent = structParent = Number.isInteger(structParent) && structParent >= 0 ? structParent : -1;
@@ -1117,17 +1189,29 @@ class Annotation {
       dir
     };
   }
-  setDefaultAppearance(params) {
-    const {
-      dict,
-      annotationGlobals
-    } = params;
-    const defaultAppearance = (0,core_utils.getInheritableProperty)({
-      dict,
-      key: "DA"
-    }) || annotationGlobals.acroForm.get("DA");
-    this._defaultAppearance = typeof defaultAppearance === "string" ? defaultAppearance : "";
-    this.data.defaultAppearanceData = parseDefaultAppearance(this._defaultAppearance);
+  _getRgbColor(color, defaultColor = new Uint8ClampedArray(3)) {
+    if (!Array.isArray(color)) {
+      return defaultColor;
+    }
+    let colorSpace;
+    switch (color.length) {
+      case 0:
+        return null;
+      case 1:
+        colorSpace = colorspace_utils.ColorSpaceUtils.gray;
+        break;
+      case 3:
+        colorSpace = colorspace_utils.ColorSpaceUtils.rgb;
+        break;
+      case 4:
+        colorSpace = this.#cmyk ?? colorspace_utils.ColorSpaceUtils.deviceCmyk;
+        break;
+      default:
+        return defaultColor;
+    }
+    const rgb = defaultColor ?? new Uint8ClampedArray(3);
+    colorSpace.getRgbItem(color, 0, rgb, 0);
+    return rgb;
   }
   setTitle(title) {
     this._title = this._parseStringHelper(title);
@@ -1151,7 +1235,7 @@ class Annotation {
     this.rectangle = (0,core_utils.lookupNormalRect)(rectangle, [0, 0, 0, 0]);
   }
   setColor(color) {
-    this.color = getRgbColor(color);
+    this.color = this._getRgbColor(color);
   }
   setLineEndings(lineEndings) {
     throw new Error("Not implemented: setLineEndings");
@@ -1171,8 +1255,8 @@ class Annotation {
   }
   setBorderAndBackgroundColors(mk) {
     if (mk instanceof primitives.Dict) {
-      this.borderColor = getRgbColor(mk.getArray("BC"), null);
-      this.backgroundColor = getRgbColor(mk.getArray("BG"), null);
+      this.borderColor = this._getRgbColor(mk.getArray("BC"), null);
+      this.backgroundColor = this._getRgbColor(mk.getArray("BG"), null);
     } else {
       this.borderColor = this.backgroundColor = null;
     }
@@ -1538,6 +1622,9 @@ class AnnotationBorderStyle {
   }
 }
 class MarkupAnnotation extends Annotation {
+  _getInteriorColor(dict) {
+    return getPdfColorArray(this._getRgbColor(dict.getArray("IC"), null));
+  }
   constructor(params) {
     super(params);
     const {
@@ -1691,7 +1778,7 @@ class MarkupAnnotation extends Annotation {
     const annotationDict = this.createNewDict(annotation, xref, ap ? {
       ap
     } : {});
-    const newAnnotation = new this.prototype.constructor({
+    const newAnnotation = await this.create({
       dict: annotationDict,
       xref,
       annotationGlobals,
@@ -1704,6 +1791,7 @@ class MarkupAnnotation extends Annotation {
   }
 }
 class WidgetAnnotation extends Annotation {
+  static _hasDefaultAppearance = true;
   constructor(params) {
     super(params);
     const {
@@ -1742,7 +1830,6 @@ class WidgetAnnotation extends Annotation {
       data.fieldValue = data.defaultFieldValue;
     }
     data.alternativeText = (0,string_utils.stringToPDFString)(dict.get("TU") || "");
-    this.setDefaultAppearance(params);
     data.hasAppearance ||= this._needAppearances && data.fieldValue !== undefined && data.fieldValue !== null;
     const fieldType = (0,core_utils.getInheritableProperty)({
       dict,
@@ -1787,6 +1874,18 @@ class WidgetAnnotation extends Annotation {
       return (0,string_utils.stringToPDFString)(formValue);
     }
     return null;
+  }
+  _ensureDefaultAppearance() {
+    if (this._defaultAppearance) {
+      return;
+    }
+    const appearanceData = {
+      fontName: "Helvetica",
+      fontSize: 0,
+      fontColor: new Uint8ClampedArray(3)
+    };
+    this.data.defaultAppearanceData = appearanceData;
+    this._defaultAppearance = createDefaultAppearance(appearanceData);
   }
   hasFieldFlag(flag) {
     return !!(this.data.fieldFlags & flag);
@@ -2086,9 +2185,7 @@ class WidgetAnnotation extends Annotation {
     if (rotation === 90 || rotation === 270) {
       [totalWidth, totalHeight] = [totalHeight, totalWidth];
     }
-    if (!this._defaultAppearance) {
-      this.data.defaultAppearanceData = parseDefaultAppearance(this._defaultAppearance = "/Helvetica 0 Tf 0 g");
-    }
+    this._ensureDefaultAppearance();
     if (!this.data.defaultAppearanceData.fontSize && (totalWidth <= 2 * defaultHPadding || totalHeight <= 2 * defaultPadding)) {
       return `/Tx BMC q ${colors}Q EMC`;
     }
@@ -3177,9 +3274,7 @@ class ChoiceWidgetAnnotation extends WidgetAnnotation {
         valueIndices.push(i);
       }
     }
-    if (!this._defaultAppearance) {
-      this.data.defaultAppearanceData = parseDefaultAppearance(this._defaultAppearance = "/Helvetica 0 Tf 0 g");
-    }
+    this._ensureDefaultAppearance();
     const font = await WidgetAnnotation._getFontData(evaluator, task, this.data.defaultAppearanceData, this._fieldResources.mergedResources);
     let defaultAppearance;
     let {
@@ -3370,6 +3465,7 @@ class PopupAnnotation extends Annotation {
   }
 }
 class FreeTextAnnotation extends MarkupAnnotation {
+  static _hasDefaultAppearance = true;
   constructor(params) {
     super(params);
     this.data.hasOwnCanvas = this.data.noRotate;
@@ -3378,7 +3474,6 @@ class FreeTextAnnotation extends MarkupAnnotation {
     const {
       xref
     } = params;
-    this.setDefaultAppearance(params);
     this._hasAppearance = !!this.appearance;
     if (!this._hasAppearance) {
       this.data.defaultAppearanceData.fontSize ||= 10;
@@ -3603,8 +3698,7 @@ class LineAnnotation extends MarkupAnnotation {
     if (!this.appearance) {
       const strokeColor = getPdfColorArray(this.color, [0, 0, 0]);
       const strokeAlpha = dict.get("CA");
-      const interiorColor = getRgbColor(dict.getArray("IC"), null);
-      const fillColor = getPdfColorArray(interiorColor);
+      const fillColor = this._getInteriorColor(dict);
       const fillAlpha = fillColor ? strokeAlpha : null;
       const borderWidth = this.borderStyle.width || 1,
         borderAdjust = 2 * borderWidth;
@@ -3639,8 +3733,7 @@ class SquareAnnotation extends MarkupAnnotation {
     if (!this.appearance) {
       const strokeColor = getPdfColorArray(this.color, [0, 0, 0]);
       const strokeAlpha = dict.get("CA");
-      const interiorColor = getRgbColor(dict.getArray("IC"), null);
-      const fillColor = getPdfColorArray(interiorColor);
+      const fillColor = this._getInteriorColor(dict);
       const fillAlpha = fillColor ? strokeAlpha : null;
       if (this.borderStyle.width === 0 && !fillColor) {
         return;
@@ -3679,8 +3772,7 @@ class CircleAnnotation extends MarkupAnnotation {
     if (!this.appearance) {
       const strokeColor = getPdfColorArray(this.color, [0, 0, 0]);
       const strokeAlpha = dict.get("CA");
-      const interiorColor = getRgbColor(dict.getArray("IC"), null);
-      const fillColor = getPdfColorArray(interiorColor);
+      const fillColor = this._getInteriorColor(dict);
       const fillAlpha = fillColor ? strokeAlpha : null;
       if (this.borderStyle.width === 0 && !fillColor) {
         return;
@@ -3732,8 +3824,7 @@ class PolylineAnnotation extends MarkupAnnotation {
     if (!this.appearance) {
       const strokeColor = getPdfColorArray(this.color, [0, 0, 0]);
       const strokeAlpha = dict.get("CA");
-      let fillColor = getRgbColor(dict.getArray("IC"), null);
-      fillColor &&= getPdfColorArray(fillColor);
+      const fillColor = this._getInteriorColor(dict);
       let operator;
       if (fillColor) {
         if (this.color) {
@@ -7036,8 +7127,8 @@ var name_number_tree = __webpack_require__(1740);
 var base_stream = __webpack_require__(1834);
 // EXTERNAL MODULE: ./src/core/cleanup_helper.js
 var cleanup_helper = __webpack_require__(3447);
-// EXTERNAL MODULE: ./src/core/colorspace_utils.js
-var colorspace_utils = __webpack_require__(5719);
+// EXTERNAL MODULE: ./src/core/colorspace_utils.js + 1 modules
+var colorspace_utils = __webpack_require__(2056);
 // EXTERNAL MODULE: ./src/core/file_spec.js
 var file_spec = __webpack_require__(3944);
 // EXTERNAL MODULE: ./src/core/xml_parser.js
@@ -8792,8 +8883,6 @@ class CharCodeMap {
 /* harmony import */ var _pattern_js__WEBPACK_IMPORTED_MODULE_0__ = __webpack_require__(918);
 /* harmony import */ var _primitives_js__WEBPACK_IMPORTED_MODULE_1__ = __webpack_require__(5632);
 /* harmony import */ var _unicode_js__WEBPACK_IMPORTED_MODULE_2__ = __webpack_require__(115);
-/* harmony import */ var _wasm_image_js__WEBPACK_IMPORTED_MODULE_3__ = __webpack_require__(5412);
-
 
 
 
@@ -8801,7 +8890,6 @@ function clearGlobalCaches() {
   (0,_pattern_js__WEBPACK_IMPORTED_MODULE_0__.clearPatternCaches)();
   (0,_primitives_js__WEBPACK_IMPORTED_MODULE_1__.clearPrimitiveCaches)();
   (0,_unicode_js__WEBPACK_IMPORTED_MODULE_2__.clearUnicodeCaches)();
-  _wasm_image_js__WEBPACK_IMPORTED_MODULE_3__.WasmImage.cleanup();
 }
 
 
@@ -9514,18 +9602,146 @@ class LabCS extends ColorSpace {
 
 /***/ },
 
-/***/ 5719
+/***/ 2056
 (__unused_webpack___webpack_module__, __webpack_exports__, __webpack_require__) {
 
-/* harmony export */ __webpack_require__.d(__webpack_exports__, {
-/* harmony export */   ColorSpaceUtils: () => (/* binding */ ColorSpaceUtils)
-/* harmony export */ });
-/* harmony import */ var _colorspace_js__WEBPACK_IMPORTED_MODULE_0__ = __webpack_require__(3069);
-/* harmony import */ var _icc_colorspace_js__WEBPACK_IMPORTED_MODULE_1__ = __webpack_require__(3141);
-/* harmony import */ var _primitives_js__WEBPACK_IMPORTED_MODULE_2__ = __webpack_require__(5632);
-/* harmony import */ var _shared_util_js__WEBPACK_IMPORTED_MODULE_3__ = __webpack_require__(4292);
-/* harmony import */ var _shared_math_clamp_js__WEBPACK_IMPORTED_MODULE_4__ = /*#__PURE__*/__webpack_require__(4566);
-/* harmony import */ var _core_utils_js__WEBPACK_IMPORTED_MODULE_5__ = __webpack_require__(5399);
+
+// EXPORTS
+__webpack_require__.d(__webpack_exports__, {
+  ColorSpaceUtils: () => (/* binding */ ColorSpaceUtils)
+});
+
+// EXTERNAL MODULE: ./src/core/colorspace.js
+var colorspace = __webpack_require__(3069);
+// EXTERNAL MODULE: ./src/core/primitives.js
+var primitives = __webpack_require__(5632);
+// EXTERNAL MODULE: ./src/shared/util.js
+var util = __webpack_require__(4292);
+// EXTERNAL MODULE: ./external/qcms/qcms_utils.js
+var qcms_utils = __webpack_require__(8212);
+// EXTERNAL MODULE: ./src/core/wasm_loader.js
+var wasm_loader = __webpack_require__(3070);
+;// ./src/core/icc_colorspace.js
+
+
+
+
+class IccColorSpace extends colorspace.ColorSpace {
+  #transformer;
+  #convertPixel;
+  static #loadPromises = new WeakMap();
+  static #qcms = null;
+  static #finalizer = null;
+  constructor(iccProfile, name, numComps) {
+    const qcms = IccColorSpace.#qcms;
+    if (!qcms) {
+      throw new Error("No ICC color space support");
+    }
+    super(name, numComps);
+    let inType;
+    switch (numComps) {
+      case 1:
+        inType = qcms.DataType.Gray8;
+        this.#convertPixel = (src, srcOffset) => qcms.qcms_convert_one(this.#transformer, src[srcOffset] * 255);
+        break;
+      case 3:
+        inType = qcms.DataType.RGB8;
+        this.#convertPixel = (src, srcOffset) => qcms.qcms_convert_three(this.#transformer, src[srcOffset] * 255, src[srcOffset + 1] * 255, src[srcOffset + 2] * 255);
+        break;
+      case 4:
+        inType = qcms.DataType.CMYK;
+        this.#convertPixel = (src, srcOffset) => qcms.qcms_convert_four(this.#transformer, src[srcOffset] * 255, src[srcOffset + 1] * 255, src[srcOffset + 2] * 255, src[srcOffset + 3] * 255);
+        break;
+      default:
+        throw new Error(`Unsupported number of components: ${numComps}`);
+    }
+    this.#transformer = qcms.qcms_transformer_from_memory(iccProfile, inType, qcms.Intent.Perceptual);
+    if (!this.#transformer) {
+      throw new Error("Failed to create ICC color space");
+    }
+    IccColorSpace.#finalizer ||= new FinalizationRegistry(transformer => {
+      qcms.qcms_drop_transformer(transformer);
+    });
+    IccColorSpace.#finalizer.register(this, this.#transformer);
+  }
+  getRgbHex(src, srcOffset) {
+    const color = this.#convertPixel(src, srcOffset);
+    return util.Util.makeHexColor(color >> 16, color >> 8 & 0xff, color & 0xff);
+  }
+  getRgbItem(src, srcOffset, dest, destOffset) {
+    const color = this.#convertPixel(src, srcOffset);
+    dest[destOffset] = color >> 16;
+    dest[destOffset + 1] = color >> 8 & 0xff;
+    dest[destOffset + 2] = color & 0xff;
+  }
+  getRgbItems(src, count, dest, destOffset, alpha01) {
+    const {
+      numComps
+    } = this;
+    const length = count * numComps;
+    const scaled = new Uint8Array(length);
+    for (let i = 0; i < length; i++) {
+      scaled[i] = src[i] * 255;
+    }
+    qcms_utils.QCMS._destBuffer = dest;
+    qcms_utils.QCMS._destOffset = destOffset;
+    qcms_utils.QCMS._keepAlpha = alpha01 === 1;
+    IccColorSpace.#qcms.qcms_convert_array(this.#transformer, scaled, alpha01 === 1);
+    qcms_utils.QCMS._destBuffer = null;
+  }
+  getRgbBuffer(src, srcOffset, count, dest, destOffset, bits, alpha01) {
+    src = src.subarray(srcOffset, srcOffset + count * this.numComps);
+    if (bits !== 8) {
+      const scale = 255 / ((1 << bits) - 1);
+      for (let i = 0, ii = src.length; i < ii; i++) {
+        src[i] *= scale;
+      }
+    }
+    qcms_utils.QCMS._destBuffer = dest;
+    qcms_utils.QCMS._destOffset = destOffset;
+    qcms_utils.QCMS._keepAlpha = alpha01 === 1 && dest.buffer !== src.buffer;
+    IccColorSpace.#qcms.qcms_convert_array(this.#transformer, src, alpha01 === 1);
+    qcms_utils.QCMS._destBuffer = null;
+  }
+  static load(context) {
+    if (!context?.options.useWasm) {
+      return false;
+    }
+    return this.#loadPromises.getOrInsertComputed(context, async () => {
+      try {
+        const [qcms, module] = await Promise.all([this.#qcms || __webpack_require__.e(/* import() | qcms */ "qcms").then(() => (__webpack_require__(2762))), wasm_loader.WasmLoader.compile(context, "qcms_bg.wasm")]);
+        if (!this.#qcms) {
+          qcms_utils.QCMS._memory = qcms.initSync({
+            module
+          }).memory;
+          this.#qcms = qcms;
+        }
+        return true;
+      } catch (ex) {
+        ;(0,util.warn)(`No ICC color space support: "${ex}".`);
+        return false;
+      }
+    });
+  }
+  static async createCmyk(context) {
+    if (!(await this.load(context))) {
+      return null;
+    }
+    try {
+      const iccProfile = await wasm_loader.WasmLoader.fetch(context, "iccUrl", "CGATS001Compat-v2-micro.icc");
+      return new IccColorSpace(iccProfile, "DeviceCMYK", 4);
+    } catch (ex) {
+      ;(0,util.warn)(`No CMYK ICC profile support: "${ex}".`);
+      return null;
+    }
+  }
+}
+
+// EXTERNAL MODULE: ./src/shared/math_clamp.js
+var math_clamp = /*#__PURE__*/__webpack_require__(4566);
+// EXTERNAL MODULE: ./src/core/core_utils.js
+var core_utils = __webpack_require__(5399);
+;// ./src/core/colorspace_utils.js
 
 
 
@@ -9533,6 +9749,7 @@ class LabCS extends ColorSpace {
 
 
 class ColorSpaceUtils {
+  static #cmykByContext = new WeakMap();
   static parse({
     cs,
     xref,
@@ -9548,7 +9765,7 @@ class ColorSpaceUtils {
       globalColorSpaceCache
     };
     let csName, csRef;
-    if (cs instanceof _primitives_js__WEBPACK_IMPORTED_MODULE_2__.Ref) {
+    if (cs instanceof primitives.Ref) {
       csRef = cs;
       const cachedCS = globalColorSpaceCache.getByRef(csRef) || localColorSpaceCache.getByRef(csRef);
       if (cachedCS) {
@@ -9556,7 +9773,7 @@ class ColorSpaceUtils {
       }
       cs = xref.fetch(cs);
     }
-    if (cs instanceof _primitives_js__WEBPACK_IMPORTED_MODULE_2__.Name) {
+    if (cs instanceof primitives.Name) {
       csName = cs.name;
       const cachedCS = localColorSpaceCache.getByName(csName);
       if (cachedCS) {
@@ -9577,7 +9794,7 @@ class ColorSpaceUtils {
     return parsedCS;
   }
   static #subParse(cs, options) {
-    if (!(cs instanceof _primitives_js__WEBPACK_IMPORTED_MODULE_2__.Ref)) {
+    if (!(cs instanceof primitives.Ref)) {
       return this.#parse(cs, options);
     }
     return options.globalColorSpaceCache.getByRef(cs) || this.#parseAndCacheGlobally(cs, cs, options);
@@ -9590,7 +9807,7 @@ class ColorSpaceUtils {
       globalColorSpaceCache
     } = options;
     cs = xref.fetchIfRef(cs);
-    if (cs instanceof _primitives_js__WEBPACK_IMPORTED_MODULE_2__.Name) {
+    if (cs instanceof primitives.Name) {
       switch (cs.name) {
         case "G":
         case "DeviceGray":
@@ -9602,16 +9819,16 @@ class ColorSpaceUtils {
           return this.rgba;
         case "CMYK":
         case "DeviceCMYK":
-          return this.cmyk;
+          return this.getCmyk(xref);
         case "Pattern":
-          return new _colorspace_js__WEBPACK_IMPORTED_MODULE_0__.PatternCS(null);
+          return new colorspace.PatternCS(null);
         default:
-          if (resources instanceof _primitives_js__WEBPACK_IMPORTED_MODULE_2__.Dict) {
+          if (resources instanceof primitives.Dict) {
             const colorSpaces = resources.get("ColorSpace");
-            if (colorSpaces instanceof _primitives_js__WEBPACK_IMPORTED_MODULE_2__.Dict) {
+            if (colorSpaces instanceof primitives.Dict) {
               const resourcesCS = colorSpaces.get(cs.name);
               if (resourcesCS) {
-                if (resourcesCS instanceof _primitives_js__WEBPACK_IMPORTED_MODULE_2__.Name) {
+                if (resourcesCS instanceof primitives.Name) {
                   return this.#parse(resourcesCS, options);
                 }
                 cs = resourcesCS;
@@ -9619,7 +9836,7 @@ class ColorSpaceUtils {
               }
             }
           }
-          ;(0,_shared_util_js__WEBPACK_IMPORTED_MODULE_3__.warn)(`Unrecognized ColorSpace: ${cs.name}`);
+          ;(0,util.warn)(`Unrecognized ColorSpace: ${cs.name}`);
           return this.gray;
       }
     }
@@ -9635,22 +9852,23 @@ class ColorSpaceUtils {
           return this.rgb;
         case "CMYK":
         case "DeviceCMYK":
-          return this.cmyk;
+          return this.getCmyk(xref);
         case "CalGray":
           params = xref.fetchIfRef(cs[1]);
           whitePoint = params.getArray("WhitePoint");
           blackPoint = params.getArray("BlackPoint");
           gamma = params.get("Gamma");
-          return new _colorspace_js__WEBPACK_IMPORTED_MODULE_0__.CalGrayCS(whitePoint, blackPoint, gamma);
+          return new colorspace.CalGrayCS(whitePoint, blackPoint, gamma);
         case "CalRGB":
           params = xref.fetchIfRef(cs[1]);
           whitePoint = params.getArray("WhitePoint");
           blackPoint = params.getArray("BlackPoint");
           gamma = params.getArray("Gamma");
           const matrix = params.getArray("Matrix");
-          return new _colorspace_js__WEBPACK_IMPORTED_MODULE_0__.CalRGBCS(whitePoint, blackPoint, gamma, matrix);
+          return new colorspace.CalRGBCS(whitePoint, blackPoint, gamma, matrix);
         case "ICCBased":
-          const isRef = cs[1] instanceof _primitives_js__WEBPACK_IMPORTED_MODULE_2__.Ref;
+          const isRef = cs[1] instanceof primitives.Ref;
+          const useIcc = await IccColorSpace.load(xref.pdfManager?.binaryDataContext);
           if (isRef) {
             const cachedCS = globalColorSpaceCache.getByRef(cs[1]);
             if (cachedCS) {
@@ -9660,18 +9878,18 @@ class ColorSpaceUtils {
           const stream = xref.fetchIfRef(cs[1]);
           const dict = stream.dict;
           numComps = dict.get("N");
-          if (_icc_colorspace_js__WEBPACK_IMPORTED_MODULE_1__.IccColorSpace.isUsable) {
+          if (useIcc) {
             try {
-              const iccCS = new _icc_colorspace_js__WEBPACK_IMPORTED_MODULE_1__.IccColorSpace(stream.getBytes(), "ICCBased", numComps);
+              const iccCS = new IccColorSpace(stream.peekBytes(), "ICCBased", numComps);
               if (isRef) {
                 globalColorSpaceCache.set(null, cs[1], iccCS);
               }
               return iccCS;
             } catch (ex) {
-              if (ex instanceof _core_utils_js__WEBPACK_IMPORTED_MODULE_5__.MissingDataException) {
+              if (ex instanceof core_utils.MissingDataException) {
                 throw ex;
               }
-              ;(0,_shared_util_js__WEBPACK_IMPORTED_MODULE_3__.warn)(`ICCBased color space (${cs[1]}): "${ex}".`);
+              ;(0,util.warn)(`ICCBased color space (${cs[1]}): "${ex}".`);
             }
           }
           const altRaw = dict.getRaw("Alternate");
@@ -9680,63 +9898,67 @@ class ColorSpaceUtils {
             if (altCS.numComps === numComps) {
               return altCS;
             }
-            ;(0,_shared_util_js__WEBPACK_IMPORTED_MODULE_3__.warn)("ICCBased color space: Ignoring incorrect /Alternate entry.");
+            ;(0,util.warn)("ICCBased color space: Ignoring incorrect /Alternate entry.");
           }
           if (numComps === 1) {
             return this.gray;
           } else if (numComps === 3) {
             return this.rgb;
           } else if (numComps === 4) {
-            return this.cmyk;
+            return this.getCmyk(xref);
           }
           break;
         case "Pattern":
-          return new _colorspace_js__WEBPACK_IMPORTED_MODULE_0__.PatternCS(cs[1] ? await this.#subParse(cs[1], options) : null);
+          return new colorspace.PatternCS(cs[1] ? await this.#subParse(cs[1], options) : null);
         case "I":
         case "Indexed":
           baseCS = await this.#subParse(cs[1], options);
-          const hiVal = (0,_shared_math_clamp_js__WEBPACK_IMPORTED_MODULE_4__.MathClamp)(xref.fetchIfRef(cs[2]), 0, 255);
+          const hiVal = (0,math_clamp.MathClamp)(xref.fetchIfRef(cs[2]), 0, 255);
           const lookup = xref.fetchIfRef(cs[3]);
-          return new _colorspace_js__WEBPACK_IMPORTED_MODULE_0__.IndexedCS(baseCS, hiVal, lookup);
+          return new colorspace.IndexedCS(baseCS, hiVal, lookup);
         case "Separation":
         case "DeviceN":
           const name = xref.fetchIfRef(cs[1]);
           numComps = Array.isArray(name) ? name.length : 1;
           baseCS = await this.#subParse(cs[2], options);
           const tintFn = await pdfFunctionFactory.create(cs[3]);
-          return new _colorspace_js__WEBPACK_IMPORTED_MODULE_0__.AlternateCS(numComps, baseCS, tintFn);
+          return new colorspace.AlternateCS(numComps, baseCS, tintFn);
         case "Lab":
           params = xref.fetchIfRef(cs[1]);
           whitePoint = params.getArray("WhitePoint");
           blackPoint = params.getArray("BlackPoint");
           const range = params.getArray("Range");
-          return new _colorspace_js__WEBPACK_IMPORTED_MODULE_0__.LabCS(whitePoint, blackPoint, range);
+          return new colorspace.LabCS(whitePoint, blackPoint, range);
         default:
-          (0,_shared_util_js__WEBPACK_IMPORTED_MODULE_3__.warn)(`Unimplemented ColorSpace object: ${mode}`);
+          (0,util.warn)(`Unimplemented ColorSpace object: ${mode}`);
           return this.gray;
       }
     }
-    ;(0,_shared_util_js__WEBPACK_IMPORTED_MODULE_3__.warn)(`Unrecognized ColorSpace object: ${cs}`);
+    ;(0,util.warn)(`Unrecognized ColorSpace object: ${cs}`);
     return this.gray;
   }
   static get gray() {
-    return (0,_shared_util_js__WEBPACK_IMPORTED_MODULE_3__.shadow)(this, "gray", new _colorspace_js__WEBPACK_IMPORTED_MODULE_0__.DeviceGrayCS());
+    return (0,util.shadow)(this, "gray", new colorspace.DeviceGrayCS());
   }
   static get rgb() {
-    return (0,_shared_util_js__WEBPACK_IMPORTED_MODULE_3__.shadow)(this, "rgb", new _colorspace_js__WEBPACK_IMPORTED_MODULE_0__.DeviceRgbCS());
+    return (0,util.shadow)(this, "rgb", new colorspace.DeviceRgbCS());
   }
   static get rgba() {
-    return (0,_shared_util_js__WEBPACK_IMPORTED_MODULE_3__.shadow)(this, "rgba", new _colorspace_js__WEBPACK_IMPORTED_MODULE_0__.DeviceRgbaCS());
+    return (0,util.shadow)(this, "rgba", new colorspace.DeviceRgbaCS());
   }
-  static get cmyk() {
-    if (_icc_colorspace_js__WEBPACK_IMPORTED_MODULE_1__.CmykICCBasedCS.isUsable) {
-      try {
-        return (0,_shared_util_js__WEBPACK_IMPORTED_MODULE_3__.shadow)(this, "cmyk", new _icc_colorspace_js__WEBPACK_IMPORTED_MODULE_1__.CmykICCBasedCS());
-      } catch {
-        ;(0,_shared_util_js__WEBPACK_IMPORTED_MODULE_3__.warn)("CMYK fallback: DeviceCMYK");
-      }
+  static get deviceCmyk() {
+    return (0,util.shadow)(this, "deviceCmyk", new colorspace.DeviceCmykCS());
+  }
+  static getCmyk(xref) {
+    const context = xref?.pdfManager?.binaryDataContext;
+    if (!context?.options.useWasm) {
+      return this.deviceCmyk;
     }
-    return (0,_shared_util_js__WEBPACK_IMPORTED_MODULE_3__.shadow)(this, "cmyk", new _colorspace_js__WEBPACK_IMPORTED_MODULE_0__.DeviceCmykCS());
+    return this.#cmykByContext.getOrInsertComputed(context, () => IccColorSpace.createCmyk(context).then(colorSpace => {
+      const cmyk = colorSpace ?? this.deviceCmyk;
+      this.#cmykByContext.set(context, cmyk);
+      return cmyk;
+    }));
   }
 }
 
@@ -11189,6 +11411,8 @@ class TextLayerFonts {
   }
 }
 
+// EXTERNAL MODULE: ./src/core/wasm_image.js
+var wasm_image = __webpack_require__(5412);
 ;// ./src/core/xref.js
 
 
@@ -11972,6 +12196,7 @@ class XRef {
 
 
 
+
 const LETTER_SIZE_MEDIABOX = [0, 0, 612, 792];
 const SIGNATURE_TAIL_CHUNK_SIZE = 65536;
 class Page {
@@ -12317,7 +12542,7 @@ class Page {
     }
     const pageListPromise = Promise.all([contentStreamPromise, resourcesPromise]).then(async ([contentStream]) => {
       const resources = await this.#getMergedResources(contentStream.dict, core_utils.RESOURCES_KEYS_OPERATOR_LIST);
-      const opList = new operator_list.OperatorList(intent, sink);
+      const opList = new operator_list.OperatorList(intent, sink, this.evaluatorOptions);
       handler.send("StartRenderPage", {
         transparency: partialEvaluator.hasBlendModes(resources, this.nonBlendModesSet),
         pageProxyId,
@@ -13268,6 +13493,7 @@ class PDFDocument {
     }
   }
   async cleanup(manuallyTriggered = false) {
+    wasm_image.WasmImage.cleanup(this.pdfManager.binaryDataContext);
     return this.catalog ? this.catalog.cleanup(manuallyTriggered) : (0,cleanup_helper.clearGlobalCaches)();
   }
   async #collectFieldObjects(name, parentRef, fieldRef, promises, annotationGlobals, visitedRefs, orphanFields) {
@@ -14536,8 +14762,8 @@ var evaluator_utils = __webpack_require__(5275);
 var bidi = __webpack_require__(7092);
 // EXTERNAL MODULE: ./src/core/colorspace.js
 var colorspace = __webpack_require__(3069);
-// EXTERNAL MODULE: ./src/core/colorspace_utils.js
-var colorspace_utils = __webpack_require__(5719);
+// EXTERNAL MODULE: ./src/core/colorspace_utils.js + 1 modules
+var colorspace_utils = __webpack_require__(2056);
 // EXTERNAL MODULE: ./src/core/obj_bin_transform_core.js + 1 modules
 var obj_bin_transform_core = __webpack_require__(5709);
 ;// ./src/core/font_substitutions.js
@@ -15892,6 +16118,7 @@ class PartialEvaluator {
     if (imageMask) {
       imgData = await core_image.PDFImage.createMask({
         image,
+        imageResizer: this.xref.pdfManager.imageResizer,
         isOffscreenCanvasSupported: isOffscreenCanvasSupported && !this.parsingType3Font
       });
       if (imgData.isSingleOpaquePixel) {
@@ -16622,6 +16849,11 @@ class PartialEvaluator {
         operatorList.addOp(util.OPS.endMarkedContent, []);
       }
     }
+    function setCmykColor(cmyk, fn, args) {
+      const isFill = fn === util.OPS.setFillCMYKColor;
+      stateManager.state[isFill ? "fillColorSpace" : "strokeColorSpace"] = cmyk;
+      operatorList.addOp(isFill ? util.OPS.setFillRGBColor : util.OPS.setStrokeRGBColor, [cmyk.getRgbHex(args, 0)]);
+    }
     return new Promise(function promiseBody(resolve, reject) {
       const next = function (promise) {
         Promise.all([promise, operatorList.ready]).then(function () {
@@ -16851,21 +17083,19 @@ class PartialEvaluator {
             fn = util.OPS.setStrokeRGBColor;
             break;
           case util.OPS.setFillCMYKColor:
-            if (!(0,core_utils.isNumberArray)(args, null)) {
-              continue;
-            }
-            stateManager.state.fillColorSpace = colorspace_utils.ColorSpaceUtils.cmyk;
-            args = [colorspace_utils.ColorSpaceUtils.cmyk.getRgbHex(args, 0)];
-            fn = util.OPS.setFillRGBColor;
-            break;
           case util.OPS.setStrokeCMYKColor:
-            if (!(0,core_utils.isNumberArray)(args, null)) {
-              continue;
+            {
+              if (!(0,core_utils.isNumberArray)(args, null)) {
+                continue;
+              }
+              const cmyk = colorspace_utils.ColorSpaceUtils.getCmyk(xref);
+              if (cmyk instanceof colorspace.ColorSpace) {
+                setCmykColor(cmyk, fn, args);
+                continue;
+              }
+              next(cmyk.then(colorSpace => setCmykColor(colorSpace, fn, args)));
+              return;
             }
-            stateManager.state.strokeColorSpace = colorspace_utils.ColorSpaceUtils.cmyk;
-            args = [colorspace_utils.ColorSpaceUtils.cmyk.getRgbHex(args, 0)];
-            fn = util.OPS.setStrokeRGBColor;
-            break;
           case util.OPS.setFillRGBColor:
             if (!(0,core_utils.isNumberArray)(args, null)) {
               continue;
@@ -26885,19 +27115,13 @@ const FunctionType = {
   POSTSCRIPT_CALCULATOR: 4
 };
 class PDFFunctionFactory {
-  static #useWasm = true;
-  static setOptions({
-    useWasm
-  }) {
-    this.#useWasm = useWasm;
-  }
   constructor({
     xref
   }) {
     this.xref = xref;
   }
   get useWasm() {
-    return PDFFunctionFactory.#useWasm;
+    return this.xref.pdfManager.evaluatorOptions.useWasm;
   }
   async create(fn, parseArray = false) {
     let fnRef, parsedFn;
@@ -31752,410 +31976,6 @@ const getDingbatsGlyphsUnicode = (0,_core_utils_js__WEBPACK_IMPORTED_MODULE_0__.
 
 /***/ },
 
-/***/ 3141
-(__unused_webpack___webpack_module__, __webpack_exports__, __webpack_require__) {
-
-
-// EXPORTS
-__webpack_require__.d(__webpack_exports__, {
-  CmykICCBasedCS: () => (/* binding */ CmykICCBasedCS),
-  IccColorSpace: () => (/* binding */ IccColorSpace)
-});
-
-;// ./external/qcms/qcms_utils.js
-const ALPHA_MASK = new Uint8Array(new Uint32Array([1]).buffer)[0] === 1 ? 0xff000000 : 0x000000ff;
-const RGB_MASK = ~ALPHA_MASK;
-class QCMS {
-  static #memoryArray = null;
-  static _memory = null;
-  static _destBuffer = null;
-  static _destOffset = 0;
-  static _keepAlpha = false;
-  static get _memoryArray() {
-    const array = this.#memoryArray;
-    if (array?.byteLength) {
-      return array;
-    }
-    return this.#memoryArray = new Uint8Array(this._memory.buffer);
-  }
-}
-function copy_result(ptr, len) {
-  const {
-    _destBuffer,
-    _destOffset,
-    _keepAlpha,
-    _memoryArray
-  } = QCMS;
-  if (!_keepAlpha) {
-    _destBuffer.set(_memoryArray.subarray(ptr, ptr + len), _destOffset);
-    return;
-  }
-  const count = len >> 2;
-  const destStart = _destBuffer.byteOffset + _destOffset;
-  if (((destStart | ptr) & 3) === 0) {
-    const dest32 = new Uint32Array(_destBuffer.buffer, destStart, count);
-    const src32 = new Uint32Array(QCMS._memory.buffer, ptr, count);
-    for (let i = 0; i < count; i++) {
-      dest32[i] = dest32[i] & ALPHA_MASK | src32[i] & RGB_MASK;
-    }
-    return;
-  }
-  for (let i = ptr, ii = ptr + len, j = _destOffset; i < ii; i += 4, j += 4) {
-    _destBuffer[j] = _memoryArray[i];
-    _destBuffer[j + 1] = _memoryArray[i + 1];
-    _destBuffer[j + 2] = _memoryArray[i + 2];
-  }
-}
-
-;// ./external/qcms/qcms.js
-
-const DataType = Object.freeze({
-  RGB8: 0,
-  "0": "RGB8",
-  RGBA8: 1,
-  "1": "RGBA8",
-  BGRA8: 2,
-  "2": "BGRA8",
-  Gray8: 3,
-  "3": "Gray8",
-  GrayA8: 4,
-  "4": "GrayA8",
-  CMYK: 5,
-  "5": "CMYK"
-});
-const Intent = Object.freeze({
-  Perceptual: 0,
-  "0": "Perceptual",
-  RelativeColorimetric: 1,
-  "1": "RelativeColorimetric",
-  Saturation: 2,
-  "2": "Saturation",
-  AbsoluteColorimetric: 3,
-  "3": "AbsoluteColorimetric"
-});
-function qcms_convert_array(transformer, src, add_alpha) {
-  const ptr0 = passArray8ToWasm0(src, wasm.__wbindgen_malloc);
-  const len0 = WASM_VECTOR_LEN;
-  wasm.qcms_convert_array(transformer, ptr0, len0, add_alpha);
-}
-function qcms_convert_four(transformer, src1, src2, src3, src4) {
-  const ret = wasm.qcms_convert_four(transformer, src1, src2, src3, src4);
-  return ret >>> 0;
-}
-function qcms_convert_one(transformer, src) {
-  const ret = wasm.qcms_convert_one(transformer, src);
-  return ret >>> 0;
-}
-function qcms_convert_three(transformer, src1, src2, src3) {
-  const ret = wasm.qcms_convert_three(transformer, src1, src2, src3);
-  return ret >>> 0;
-}
-function qcms_drop_transformer(transformer) {
-  wasm.qcms_drop_transformer(transformer);
-}
-function qcms_transformer_from_memory(mem, in_type, intent) {
-  const ptr0 = passArray8ToWasm0(mem, wasm.__wbindgen_malloc);
-  const len0 = WASM_VECTOR_LEN;
-  const ret = wasm.qcms_transformer_from_memory(ptr0, len0, in_type, intent);
-  return ret >>> 0;
-}
-function __wbg_get_imports() {
-  const import0 = {
-    __proto__: null,
-    __wbg___wbindgen_throw_344f42d3211c4765: function (arg0, arg1) {
-      throw new Error(getStringFromWasm0(arg0, arg1));
-    },
-    __wbg_copy_result_0d15f3bf9d9012ae: function (arg0, arg1) {
-      copy_result(arg0 >>> 0, arg1 >>> 0);
-    },
-    __wbindgen_init_externref_table: function () {
-      const table = wasm.__wbindgen_externrefs;
-      const offset = table.grow(4);
-      table.set(0, undefined);
-      table.set(offset + 0, undefined);
-      table.set(offset + 1, null);
-      table.set(offset + 2, true);
-      table.set(offset + 3, false);
-    }
-  };
-  return {
-    __proto__: null,
-    "./qcms_bg.js": import0
-  };
-}
-function getStringFromWasm0(ptr, len) {
-  return decodeText(ptr >>> 0, len);
-}
-let cachedUint8ArrayMemory0 = null;
-function getUint8ArrayMemory0() {
-  if (cachedUint8ArrayMemory0 === null || cachedUint8ArrayMemory0.byteLength === 0) {
-    cachedUint8ArrayMemory0 = new Uint8Array(wasm.memory.buffer);
-  }
-  return cachedUint8ArrayMemory0;
-}
-function passArray8ToWasm0(arg, malloc) {
-  const ptr = malloc(arg.length * 1, 1) >>> 0;
-  getUint8ArrayMemory0().set(arg, ptr / 1);
-  WASM_VECTOR_LEN = arg.length;
-  return ptr;
-}
-let cachedTextDecoder = new TextDecoder('utf-8', {
-  ignoreBOM: true,
-  fatal: true
-});
-cachedTextDecoder.decode();
-const MAX_SAFARI_DECODE_BYTES = 2146435072;
-let numBytesDecoded = 0;
-function decodeText(ptr, len) {
-  numBytesDecoded += len;
-  if (numBytesDecoded >= MAX_SAFARI_DECODE_BYTES) {
-    cachedTextDecoder = new TextDecoder('utf-8', {
-      ignoreBOM: true,
-      fatal: true
-    });
-    cachedTextDecoder.decode();
-    numBytesDecoded = len;
-  }
-  return cachedTextDecoder.decode(getUint8ArrayMemory0().subarray(ptr, ptr + len));
-}
-let WASM_VECTOR_LEN = 0;
-let wasmModule, wasmInstance, wasm;
-function __wbg_finalize_init(instance, module) {
-  wasmInstance = instance;
-  wasm = instance.exports;
-  wasmModule = module;
-  cachedUint8ArrayMemory0 = null;
-  wasm.__wbindgen_start();
-  return wasm;
-}
-async function __wbg_load(module, imports) {
-  if (typeof Response === 'function' && module instanceof Response) {
-    if (typeof WebAssembly.instantiateStreaming === 'function') {
-      try {
-        return await WebAssembly.instantiateStreaming(module, imports);
-      } catch (e) {
-        const validResponse = module.ok && expectedResponseType(module.type);
-        if (validResponse && module.headers.get('Content-Type') !== 'application/wasm') {
-          console.warn("`WebAssembly.instantiateStreaming` failed because your server does not serve Wasm with `application/wasm` MIME type. Falling back to `WebAssembly.instantiate` which is slower. Original error:\n", e);
-        } else {
-          throw e;
-        }
-      }
-    }
-    const bytes = await module.arrayBuffer();
-    return await WebAssembly.instantiate(bytes, imports);
-  } else {
-    const instance = await WebAssembly.instantiate(module, imports);
-    if (instance instanceof WebAssembly.Instance) {
-      return {
-        instance,
-        module
-      };
-    } else {
-      return instance;
-    }
-  }
-  function expectedResponseType(type) {
-    switch (type) {
-      case 'basic':
-      case 'cors':
-      case 'default':
-        return true;
-    }
-    return false;
-  }
-}
-function initSync(module) {
-  if (wasm !== undefined) return wasm;
-  if (module !== undefined) {
-    if (Object.getPrototypeOf(module) === Object.prototype) {
-      ({
-        module
-      } = module);
-    } else {
-      console.warn('using deprecated parameters for `initSync()`; pass a single object instead');
-    }
-  }
-  const imports = __wbg_get_imports();
-  if (!(module instanceof WebAssembly.Module)) {
-    module = new WebAssembly.Module(module);
-  }
-  const instance = new WebAssembly.Instance(module, imports);
-  return __wbg_finalize_init(instance, module);
-}
-async function __wbg_init(module_or_path) {
-  if (wasm !== undefined) return wasm;
-  if (module_or_path !== undefined) {
-    if (Object.getPrototypeOf(module_or_path) === Object.prototype) {
-      ({
-        module_or_path
-      } = module_or_path);
-    } else {
-      console.warn('using deprecated parameters for the initialization function; pass a single object instead');
-    }
-  }
-  const imports = __wbg_get_imports();
-  if (typeof module_or_path === 'string' || typeof Request === 'function' && module_or_path instanceof Request || typeof URL === 'function' && module_or_path instanceof URL) {
-    module_or_path = fetch(module_or_path);
-  }
-  const {
-    instance,
-    module
-  } = await __wbg_load(await module_or_path, imports);
-  return __wbg_finalize_init(instance, module);
-}
-
-// EXTERNAL MODULE: ./src/shared/util.js
-var util = __webpack_require__(4292);
-// EXTERNAL MODULE: ./src/core/colorspace.js
-var colorspace = __webpack_require__(3069);
-;// ./src/core/icc_colorspace.js
-
-
-
-
-function fetchSync(url) {
-  const xhr = new XMLHttpRequest();
-  xhr.open("GET", url, false);
-  xhr.responseType = "arraybuffer";
-  xhr.send(null);
-  return xhr.response;
-}
-class IccColorSpace extends colorspace.ColorSpace {
-  #transformer;
-  #convertPixel;
-  static #useWasm = true;
-  static #wasmUrl = null;
-  static #finalizer = null;
-  constructor(iccProfile, name, numComps) {
-    if (!IccColorSpace.isUsable) {
-      throw new Error("No ICC color space support");
-    }
-    super(name, numComps);
-    let inType;
-    switch (numComps) {
-      case 1:
-        inType = DataType.Gray8;
-        this.#convertPixel = (src, srcOffset) => qcms_convert_one(this.#transformer, src[srcOffset] * 255);
-        break;
-      case 3:
-        inType = DataType.RGB8;
-        this.#convertPixel = (src, srcOffset) => qcms_convert_three(this.#transformer, src[srcOffset] * 255, src[srcOffset + 1] * 255, src[srcOffset + 2] * 255);
-        break;
-      case 4:
-        inType = DataType.CMYK;
-        this.#convertPixel = (src, srcOffset) => qcms_convert_four(this.#transformer, src[srcOffset] * 255, src[srcOffset + 1] * 255, src[srcOffset + 2] * 255, src[srcOffset + 3] * 255);
-        break;
-      default:
-        throw new Error(`Unsupported number of components: ${numComps}`);
-    }
-    this.#transformer = qcms_transformer_from_memory(iccProfile, inType, Intent.Perceptual);
-    if (!this.#transformer) {
-      throw new Error("Failed to create ICC color space");
-    }
-    IccColorSpace.#finalizer ||= new FinalizationRegistry(transformer => {
-      qcms_drop_transformer(transformer);
-    });
-    IccColorSpace.#finalizer.register(this, this.#transformer);
-  }
-  getRgbHex(src, srcOffset) {
-    const color = this.#convertPixel(src, srcOffset);
-    return util.Util.makeHexColor(color >> 16, color >> 8 & 0xff, color & 0xff);
-  }
-  getRgbItem(src, srcOffset, dest, destOffset) {
-    const color = this.#convertPixel(src, srcOffset);
-    dest[destOffset] = color >> 16;
-    dest[destOffset + 1] = color >> 8 & 0xff;
-    dest[destOffset + 2] = color & 0xff;
-  }
-  getRgbItems(src, count, dest, destOffset, alpha01) {
-    const {
-      numComps
-    } = this;
-    const length = count * numComps;
-    const scaled = new Uint8Array(length);
-    for (let i = 0; i < length; i++) {
-      scaled[i] = src[i] * 255;
-    }
-    QCMS._destBuffer = dest;
-    QCMS._destOffset = destOffset;
-    QCMS._keepAlpha = alpha01 === 1;
-    qcms_convert_array(this.#transformer, scaled, alpha01 === 1);
-    QCMS._destBuffer = null;
-  }
-  getRgbBuffer(src, srcOffset, count, dest, destOffset, bits, alpha01) {
-    src = src.subarray(srcOffset, srcOffset + count * this.numComps);
-    if (bits !== 8) {
-      const scale = 255 / ((1 << bits) - 1);
-      for (let i = 0, ii = src.length; i < ii; i++) {
-        src[i] *= scale;
-      }
-    }
-    QCMS._destBuffer = dest;
-    QCMS._destOffset = destOffset;
-    QCMS._keepAlpha = alpha01 === 1 && dest.buffer !== src.buffer;
-    qcms_convert_array(this.#transformer, src, alpha01 === 1);
-    QCMS._destBuffer = null;
-  }
-  static setOptions({
-    useWasm,
-    useWorkerFetch,
-    wasmUrl
-  }) {
-    if (!useWorkerFetch) {
-      this.#useWasm = false;
-      return;
-    }
-    this.#useWasm = useWasm;
-    this.#wasmUrl = wasmUrl;
-  }
-  static get isUsable() {
-    let isUsable = false;
-    if (this.#useWasm) {
-      if (this.#wasmUrl) {
-        try {
-          this._module = initSync({
-            module: fetchSync(`${this.#wasmUrl}qcms_bg.wasm`)
-          });
-          isUsable = !!this._module;
-          QCMS._memory = this._module.memory;
-        } catch (e) {
-          ;(0,util.warn)(`ICCBased color space: "${e}".`);
-        }
-      } else {
-        (0,util.warn)("No ICC color space support due to missing `wasmUrl` API option");
-      }
-    }
-    return (0,util.shadow)(this, "isUsable", isUsable);
-  }
-}
-class CmykICCBasedCS extends IccColorSpace {
-  static #iccUrl;
-  constructor() {
-    const iccProfile = new Uint8Array(fetchSync(`${CmykICCBasedCS.#iccUrl}CGATS001Compat-v2-micro.icc`));
-    super(iccProfile, "DeviceCMYK", 4);
-  }
-  static setOptions({
-    iccUrl
-  }) {
-    this.#iccUrl = iccUrl;
-  }
-  static get isUsable() {
-    let isUsable = false;
-    if (IccColorSpace.isUsable) {
-      if (this.#iccUrl) {
-        isUsable = true;
-      } else {
-        (0,util.warn)("No CMYK ICC profile support due to missing `iccUrl` API option");
-      }
-    }
-    return (0,util.shadow)(this, "isUsable", isUsable);
-  }
-}
-
-
-/***/ },
-
 /***/ 8545
 (__unused_webpack___webpack_module__, __webpack_exports__, __webpack_require__) {
 
@@ -32166,14 +31986,12 @@ class CmykICCBasedCS extends IccColorSpace {
 /* harmony import */ var _shared_image_utils_js__WEBPACK_IMPORTED_MODULE_1__ = __webpack_require__(8609);
 /* harmony import */ var _base_stream_js__WEBPACK_IMPORTED_MODULE_2__ = __webpack_require__(1834);
 /* harmony import */ var _colorspace_js__WEBPACK_IMPORTED_MODULE_3__ = __webpack_require__(3069);
-/* harmony import */ var _colorspace_utils_js__WEBPACK_IMPORTED_MODULE_4__ = __webpack_require__(5719);
+/* harmony import */ var _colorspace_utils_js__WEBPACK_IMPORTED_MODULE_4__ = __webpack_require__(2056);
 /* harmony import */ var _decode_stream_js__WEBPACK_IMPORTED_MODULE_5__ = __webpack_require__(4563);
-/* harmony import */ var _image_resizer_js__WEBPACK_IMPORTED_MODULE_6__ = __webpack_require__(2320);
-/* harmony import */ var _jpeg_stream_js__WEBPACK_IMPORTED_MODULE_7__ = __webpack_require__(5495);
-/* harmony import */ var _jpx_js__WEBPACK_IMPORTED_MODULE_8__ = __webpack_require__(4242);
-/* harmony import */ var _shared_math_clamp_js__WEBPACK_IMPORTED_MODULE_9__ = /*#__PURE__*/__webpack_require__(4566);
-/* harmony import */ var _primitives_js__WEBPACK_IMPORTED_MODULE_10__ = __webpack_require__(5632);
-
+/* harmony import */ var _jpeg_stream_js__WEBPACK_IMPORTED_MODULE_6__ = __webpack_require__(5495);
+/* harmony import */ var _jpx_js__WEBPACK_IMPORTED_MODULE_7__ = __webpack_require__(4242);
+/* harmony import */ var _shared_math_clamp_js__WEBPACK_IMPORTED_MODULE_8__ = /*#__PURE__*/__webpack_require__(4566);
+/* harmony import */ var _primitives_js__WEBPACK_IMPORTED_MODULE_9__ = __webpack_require__(5632);
 
 
 
@@ -32209,14 +32027,15 @@ function sumPreblendedRow(sums, rgbRow, rgbX, alpha, alphaOffset, alphaX, [matte
     const opacity = alpha[alphaOffset + alphaX[x]];
     if (opacity !== 0) {
       const i = rgbX[x];
-      sums[k] += (0,_shared_math_clamp_js__WEBPACK_IMPORTED_MODULE_9__.MathClamp)((rgbRow[i] - matteR) * 255 + matteR * opacity, 0, 255 * opacity);
-      sums[k + 1] += (0,_shared_math_clamp_js__WEBPACK_IMPORTED_MODULE_9__.MathClamp)((rgbRow[i + 1] - matteG) * 255 + matteG * opacity, 0, 255 * opacity);
-      sums[k + 2] += (0,_shared_math_clamp_js__WEBPACK_IMPORTED_MODULE_9__.MathClamp)((rgbRow[i + 2] - matteB) * 255 + matteB * opacity, 0, 255 * opacity);
+      sums[k] += (0,_shared_math_clamp_js__WEBPACK_IMPORTED_MODULE_8__.MathClamp)((rgbRow[i] - matteR) * 255 + matteR * opacity, 0, 255 * opacity);
+      sums[k + 1] += (0,_shared_math_clamp_js__WEBPACK_IMPORTED_MODULE_8__.MathClamp)((rgbRow[i + 1] - matteG) * 255 + matteG * opacity, 0, 255 * opacity);
+      sums[k + 2] += (0,_shared_math_clamp_js__WEBPACK_IMPORTED_MODULE_8__.MathClamp)((rgbRow[i + 2] - matteB) * 255 + matteB * opacity, 0, 255 * opacity);
       sums[k + 3] += opacity;
     }
   }
 }
 class PDFImage {
+  #imageResizer;
   async #initialize({
     xref,
     res,
@@ -32230,14 +32049,15 @@ class PDFImage {
     localColorSpaceCache
   }) {
     this.image = image;
+    this.#imageResizer = xref.pdfManager.imageResizer;
     const dict = image.dict;
     const filter = dict.get("F", "Filter");
     let filterName;
-    if (filter instanceof _primitives_js__WEBPACK_IMPORTED_MODULE_10__.Name) {
+    if (filter instanceof _primitives_js__WEBPACK_IMPORTED_MODULE_9__.Name) {
       filterName = filter.name;
     } else if (Array.isArray(filter)) {
       const lastFilter = xref.fetchIfRef(filter.at(-1));
-      if (lastFilter instanceof _primitives_js__WEBPACK_IMPORTED_MODULE_10__.Name) {
+      if (lastFilter instanceof _primitives_js__WEBPACK_IMPORTED_MODULE_9__.Name) {
         filterName = lastFilter.name;
       }
     }
@@ -32248,9 +32068,9 @@ class PDFImage {
           height: image.height,
           componentsCount: image.numComps,
           bitsPerComponent: image.bitsPerComponent
-        } = _jpx_js__WEBPACK_IMPORTED_MODULE_8__.JpxImage.parseImageProperties(image.stream));
+        } = _jpx_js__WEBPACK_IMPORTED_MODULE_7__.JpxImage.parseImageProperties(image.stream));
         image.stream.reset();
-        const reducePower = _image_resizer_js__WEBPACK_IMPORTED_MODULE_6__.ImageResizer.getReducePowerForJPX(image.width, image.height, image.numComps);
+        const reducePower = this.#imageResizer.getReducePowerForJPX(image.width, image.height, image.numComps);
         this.jpxDecoderOptions = {
           numComponents: 0,
           isIndexedColormap: false,
@@ -32314,7 +32134,7 @@ class PDFImage {
         this.jpxPremultiplied = true;
         if (this.matte) {
           const matteColorSpace = await _colorspace_utils_js__WEBPACK_IMPORTED_MODULE_4__.ColorSpaceUtils.parse({
-            cs: hasColorSpace ? colorSpace : _primitives_js__WEBPACK_IMPORTED_MODULE_10__.Name.get("DeviceRGB"),
+            cs: hasColorSpace ? colorSpace : _primitives_js__WEBPACK_IMPORTED_MODULE_9__.Name.get("DeviceRGB"),
             xref,
             resources: isInline ? res : null,
             pdfFunctionFactory,
@@ -32326,24 +32146,24 @@ class PDFImage {
       }
       if (!hasColorSpace) {
         if (this.jpxDecoderOptions) {
-          colorSpace = _primitives_js__WEBPACK_IMPORTED_MODULE_10__.Name.get("DeviceRGBA");
+          colorSpace = _primitives_js__WEBPACK_IMPORTED_MODULE_9__.Name.get("DeviceRGBA");
         } else {
           switch (image.numComps) {
             case 1:
-              colorSpace = _primitives_js__WEBPACK_IMPORTED_MODULE_10__.Name.get("DeviceGray");
+              colorSpace = _primitives_js__WEBPACK_IMPORTED_MODULE_9__.Name.get("DeviceGray");
               break;
             case 3:
-              colorSpace = _primitives_js__WEBPACK_IMPORTED_MODULE_10__.Name.get("DeviceRGB");
+              colorSpace = _primitives_js__WEBPACK_IMPORTED_MODULE_9__.Name.get("DeviceRGB");
               break;
             case 4:
-              colorSpace = _primitives_js__WEBPACK_IMPORTED_MODULE_10__.Name.get("DeviceCMYK");
+              colorSpace = _primitives_js__WEBPACK_IMPORTED_MODULE_9__.Name.get("DeviceCMYK");
               break;
             default:
               throw new Error(`Images with ${image.numComps} color components not supported.`);
           }
         }
       } else if (this.jpxDecoderOptions?.smaskInData) {
-        colorSpace = _primitives_js__WEBPACK_IMPORTED_MODULE_10__.Name.get("DeviceRGBA");
+        colorSpace = _primitives_js__WEBPACK_IMPORTED_MODULE_9__.Name.get("DeviceRGBA");
       }
       this.colorSpace = await _colorspace_utils_js__WEBPACK_IMPORTED_MODULE_4__.ColorSpaceUtils.parse({
         cs: colorSpace,
@@ -32442,6 +32262,7 @@ class PDFImage {
   }
   static async createMask({
     image,
+    imageResizer,
     isOffscreenCanvasSupported = false
   }) {
     const {
@@ -32461,7 +32282,7 @@ class PDFImage {
       };
     }
     if (isOffscreenCanvasSupported) {
-      if (_image_resizer_js__WEBPACK_IMPORTED_MODULE_6__.ImageResizer.needsToBeResized(width, height)) {
+      if (imageResizer.needsToBeResized(width, height)) {
         const data = new Uint8ClampedArray(width * height * 4);
         (0,_shared_image_utils_js__WEBPACK_IMPORTED_MODULE_1__.convertBlackAndWhiteToRGBA)({
           src: imgArray,
@@ -32471,7 +32292,7 @@ class PDFImage {
           nonBlackColor: 0,
           inverseDecode
         });
-        return _image_resizer_js__WEBPACK_IMPORTED_MODULE_6__.ImageResizer.createImage({
+        return imageResizer.createImage({
           kind: _shared_util_js__WEBPACK_IMPORTED_MODULE_0__.ImageKind.RGBA_32BPP,
           data,
           width,
@@ -32546,7 +32367,7 @@ class PDFImage {
     let index = 0;
     for (i = 0, ii = this.width * this.height; i < ii; i++) {
       for (let j = 0; j < numComps; j++) {
-        buffer[index] = (0,_shared_math_clamp_js__WEBPACK_IMPORTED_MODULE_9__.MathClamp)(decodeAddends[j] + buffer[index] * decodeCoefficients[j], 0, max);
+        buffer[index] = (0,_shared_math_clamp_js__WEBPACK_IMPORTED_MODULE_8__.MathClamp)(decodeAddends[j] + buffer[index] * decodeCoefficients[j], 0, max);
         index++;
       }
     }
@@ -32612,7 +32433,7 @@ class PDFImage {
           bits += 8;
         }
         const remainingBits = bits - bpc;
-        output[i] = (0,_shared_math_clamp_js__WEBPACK_IMPORTED_MODULE_9__.MathClamp)(buf >> remainingBits, 0, max);
+        output[i] = (0,_shared_math_clamp_js__WEBPACK_IMPORTED_MODULE_8__.MathClamp)(buf >> remainingBits, 0, max);
         buf &= (1 << remainingBits) - 1;
         bits = remainingBits;
       }
@@ -32699,6 +32520,7 @@ class PDFImage {
     PDFImage.#undoPreblend(buffer, width * height * 4, matteRgb[0], matteRgb[1], matteRgb[2]);
   }
   async createImageData(forceRGBA = false, isOffscreenCanvasSupported = false) {
+    const imageResizer = this.#imageResizer;
     const drawWidth = this.drawWidth;
     const drawHeight = this.drawHeight;
     const imgData = {
@@ -32713,7 +32535,7 @@ class PDFImage {
     const originalHeight = this.height;
     const bpc = this.bpc;
     const rowBytes = originalWidth * numComps * bpc + 7 >> 3;
-    const mustBeResized = isOffscreenCanvasSupported && _image_resizer_js__WEBPACK_IMPORTED_MODULE_6__.ImageResizer.needsToBeResized(drawWidth, drawHeight);
+    const mustBeResized = isOffscreenCanvasSupported && imageResizer.needsToBeResized(drawWidth, drawHeight);
     if (!this.smask && !this.mask && this.colorSpace.name === "DeviceRGBA") {
       imgData.kind = _shared_util_js__WEBPACK_IMPORTED_MODULE_0__.ImageKind.RGBA_32BPP;
       const imgArray = imgData.data = await this.getImageBytes(originalHeight * originalWidth * 4, {
@@ -32727,7 +32549,7 @@ class PDFImage {
         if (!mustBeResized) {
           return this.createBitmap(_shared_util_js__WEBPACK_IMPORTED_MODULE_0__.ImageKind.RGBA_32BPP, drawWidth, drawHeight, imgArray);
         }
-        return _image_resizer_js__WEBPACK_IMPORTED_MODULE_6__.ImageResizer.createImage(imgData, false);
+        return imageResizer.createImage(imgData);
       }
       return imgData;
     }
@@ -32748,7 +32570,7 @@ class PDFImage {
         });
         if (isOffscreenCanvasSupported) {
           if (mustBeResized) {
-            return _image_resizer_js__WEBPACK_IMPORTED_MODULE_6__.ImageResizer.createImage({
+            return imageResizer.createImage({
               data,
               kind,
               width: drawWidth,
@@ -32769,7 +32591,7 @@ class PDFImage {
         }
         return imgData;
       }
-      if (this.image instanceof _jpeg_stream_js__WEBPACK_IMPORTED_MODULE_7__.JpegStream && !this.needsDecode) {
+      if (this.image instanceof _jpeg_stream_js__WEBPACK_IMPORTED_MODULE_6__.JpegStream && !this.needsDecode) {
         let isHandled = false;
         switch (this.colorSpace.name) {
           case "DeviceGray":
@@ -32813,15 +32635,15 @@ class PDFImage {
             forceRGB: true,
             internal: mustBeResized
           });
-          return mustBeResized ? _image_resizer_js__WEBPACK_IMPORTED_MODULE_6__.ImageResizer.createImage(imgData) : imgData;
+          return mustBeResized ? imageResizer.createImage(imgData) : imgData;
         }
       }
     }
     if (mustBeResized && !Array.isArray(this.mask)) {
-      const reducePower = _image_resizer_js__WEBPACK_IMPORTED_MODULE_6__.ImageResizer.getReducePower(drawWidth, drawHeight);
+      const reducePower = imageResizer.getReducePower(drawWidth, drawHeight);
       const width = Math.max(1, drawWidth >> reducePower);
       const height = Math.max(1, drawHeight >> reducePower);
-      if (!_image_resizer_js__WEBPACK_IMPORTED_MODULE_6__.ImageResizer.needsToBeResized(width, height)) {
+      if (!imageResizer.needsToBeResized(width, height)) {
         const rgba = new Uint8ClampedArray(width * height * 4);
         await this._fillDownscaledRgba(rgba, width, height);
         return this.createBitmap(_shared_util_js__WEBPACK_IMPORTED_MODULE_0__.ImageKind.RGBA_32BPP, width, height, rgba);
@@ -32879,7 +32701,7 @@ class PDFImage {
       };
     }
     imgData.data = data;
-    return mustBeResized ? _image_resizer_js__WEBPACK_IMPORTED_MODULE_6__.ImageResizer.createImage(imgData) : imgData;
+    return mustBeResized ? imageResizer.createImage(imgData) : imgData;
   }
   async fillGrayBuffer(buffer, {
     destWidth,
@@ -33181,398 +33003,6 @@ class PDFImage {
     }
     ;(0,_shared_util_js__WEBPACK_IMPORTED_MODULE_0__.assert)(imageBytes instanceof Uint8Array, 'PDFImage.getImageBytes: Unsupported "imageBytes" type.');
     return new Uint8Array(imageBytes);
-  }
-}
-
-
-/***/ },
-
-/***/ 2320
-(__unused_webpack___webpack_module__, __webpack_exports__, __webpack_require__) {
-
-/* harmony export */ __webpack_require__.d(__webpack_exports__, {
-/* harmony export */   ImageResizer: () => (/* binding */ ImageResizer)
-/* harmony export */ });
-/* harmony import */ var _shared_util_js__WEBPACK_IMPORTED_MODULE_0__ = __webpack_require__(4292);
-/* harmony import */ var _shared_image_utils_js__WEBPACK_IMPORTED_MODULE_1__ = __webpack_require__(8609);
-/* harmony import */ var _core_utils_js__WEBPACK_IMPORTED_MODULE_2__ = __webpack_require__(5399);
-
-
-
-const MIN_IMAGE_DIM = 2048;
-const MAX_IMAGE_DIM = 32768;
-const MAX_ERROR = 128;
-class ImageResizer {
-  static #goodSquareLength = MIN_IMAGE_DIM;
-  static #isImageDecoderSupported = _shared_util_js__WEBPACK_IMPORTED_MODULE_0__.FeatureTest.isImageDecoderSupported;
-  constructor(imgData, isMask) {
-    this._imgData = imgData;
-    this._isMask = isMask;
-  }
-  static get canUseImageDecoder() {
-    return (0,_shared_util_js__WEBPACK_IMPORTED_MODULE_0__.shadow)(this, "canUseImageDecoder", this.#isImageDecoderSupported ? ImageDecoder.isTypeSupported("image/bmp") : Promise.resolve(false));
-  }
-  static needsToBeResized(width, height) {
-    if (width <= this.#goodSquareLength && height <= this.#goodSquareLength) {
-      return false;
-    }
-    const {
-      MAX_DIM
-    } = this;
-    if (width > MAX_DIM || height > MAX_DIM) {
-      return true;
-    }
-    const area = width * height;
-    if (this._hasMaxArea) {
-      return area > this.MAX_AREA;
-    }
-    if (area < this.#goodSquareLength ** 2) {
-      return false;
-    }
-    if (this._areGoodDims(width, height)) {
-      this.#goodSquareLength = Math.max(this.#goodSquareLength, Math.floor(Math.sqrt(width * height)));
-      return false;
-    }
-    this.#goodSquareLength = this._guessMax(this.#goodSquareLength, MAX_DIM, MAX_ERROR, 0);
-    const maxArea = this.MAX_AREA = this.#goodSquareLength ** 2;
-    return area > maxArea;
-  }
-  static getReducePower(width, height, maxArea = Infinity) {
-    if (!Number.isInteger(width) || width <= 0 || !Number.isInteger(height) || height <= 0) {
-      return 0;
-    }
-    const area = width * height;
-    if (!this.needsToBeResized(width, height)) {
-      return area > maxArea ? Math.ceil(Math.log2(area / maxArea)) : 0;
-    }
-    const {
-      MAX_DIM,
-      MAX_AREA
-    } = this;
-    const minFactor = Math.max(width / MAX_DIM, height / MAX_DIM, Math.sqrt(area / Math.min(maxArea, MAX_AREA)));
-    return Math.max(0, Math.ceil(Math.log2(minFactor)));
-  }
-  static getReducePowerForJPX(width, height, componentsCount) {
-    return this.getReducePower(width, height, 2 ** 30 / (componentsCount * 4));
-  }
-  static get MAX_DIM() {
-    return (0,_shared_util_js__WEBPACK_IMPORTED_MODULE_0__.shadow)(this, "MAX_DIM", this._guessMax(MIN_IMAGE_DIM, MAX_IMAGE_DIM, 0, 1));
-  }
-  static get MAX_AREA() {
-    this._hasMaxArea = true;
-    return (0,_shared_util_js__WEBPACK_IMPORTED_MODULE_0__.shadow)(this, "MAX_AREA", this._guessMax(this.#goodSquareLength, this.MAX_DIM, MAX_ERROR, 0) ** 2);
-  }
-  static set MAX_AREA(area) {
-    if (area >= 0) {
-      this._hasMaxArea = true;
-      (0,_shared_util_js__WEBPACK_IMPORTED_MODULE_0__.shadow)(this, "MAX_AREA", area);
-    }
-  }
-  static setOptions({
-    canvasMaxAreaInBytes = -1,
-    isImageDecoderSupported = false
-  }) {
-    if (!this._hasMaxArea) {
-      this.MAX_AREA = canvasMaxAreaInBytes >> 2;
-    }
-    this.#isImageDecoderSupported = isImageDecoderSupported;
-  }
-  static _areGoodDims(width, height) {
-    try {
-      const canvas = new OffscreenCanvas(width, height);
-      const ctx = canvas.getContext("2d");
-      ctx.fillRect(0, 0, 1, 1);
-      const opacity = ctx.getImageData(0, 0, 1, 1).data[3];
-      canvas.width = canvas.height = 1;
-      return opacity !== 0;
-    } catch {
-      return false;
-    }
-  }
-  static _guessMax(start, end, tolerance, defaultHeight) {
-    while (start + tolerance + 1 < end) {
-      const middle = Math.floor((start + end) / 2);
-      const height = defaultHeight || middle;
-      if (this._areGoodDims(middle, height)) {
-        start = middle;
-      } else {
-        end = middle;
-      }
-    }
-    return start;
-  }
-  static async createImage(imgData, isMask = false) {
-    return new ImageResizer(imgData, isMask)._createImage();
-  }
-  async _createImage() {
-    const {
-      _imgData: imgData
-    } = this;
-    const {
-      width,
-      height
-    } = imgData;
-    if (width * height * 4 > _core_utils_js__WEBPACK_IMPORTED_MODULE_2__.MAX_INT_32) {
-      const result = this._rescaleImageData();
-      if (result) {
-        return result;
-      }
-    }
-    const data = this._encodeBMP();
-    let decoder, imagePromise;
-    if (await ImageResizer.canUseImageDecoder) {
-      decoder = new ImageDecoder({
-        data,
-        type: "image/bmp",
-        preferAnimation: false,
-        transfer: [data.buffer]
-      });
-      imagePromise = decoder.decode().catch(reason => {
-        (0,_shared_util_js__WEBPACK_IMPORTED_MODULE_0__.warn)(`BMP image decoding failed: ${reason}`);
-        return createImageBitmap(new Blob([this._encodeBMP().buffer], {
-          type: "image/bmp"
-        }));
-      }).finally(() => {
-        decoder.close();
-      });
-    } else {
-      imagePromise = createImageBitmap(new Blob([data.buffer], {
-        type: "image/bmp"
-      }));
-    }
-    const {
-      MAX_AREA,
-      MAX_DIM
-    } = ImageResizer;
-    const minFactor = Math.max(width / MAX_DIM, height / MAX_DIM, Math.sqrt(width * height / MAX_AREA));
-    const firstFactor = Math.max(minFactor, 2);
-    const factor = Math.round(10 * (minFactor + 1.25)) / 10 / firstFactor;
-    const N = Math.floor(Math.log2(factor));
-    const steps = new Array(N + 2).fill(2);
-    steps[0] = firstFactor;
-    steps.splice(-1, 1, factor / (1 << N));
-    let newWidth = width;
-    let newHeight = height;
-    const result = await imagePromise;
-    let bitmap = result.image || result;
-    for (const step of steps) {
-      const prevWidth = newWidth;
-      const prevHeight = newHeight;
-      newWidth = Math.floor(newWidth / step);
-      newHeight = Math.floor(newHeight / step);
-      const canvas = new OffscreenCanvas(newWidth, newHeight);
-      const ctx = canvas.getContext("2d");
-      ctx.drawImage(bitmap, 0, 0, prevWidth, prevHeight, 0, 0, newWidth, newHeight);
-      bitmap.close();
-      bitmap = canvas.transferToImageBitmap();
-    }
-    imgData.data = null;
-    imgData.bitmap = bitmap;
-    imgData.width = newWidth;
-    imgData.height = newHeight;
-    return imgData;
-  }
-  _rescaleImageData(maxSize = _core_utils_js__WEBPACK_IMPORTED_MODULE_2__.MAX_INT_32) {
-    const {
-      _imgData: imgData
-    } = this;
-    const {
-      data,
-      width,
-      height,
-      kind
-    } = imgData;
-    const rgbaSize = width * height * 4;
-    const K = Math.ceil(Math.log2(rgbaSize / maxSize));
-    const newWidth = width >> K;
-    const newHeight = height >> K;
-    let rgbaData;
-    let maxHeight = height;
-    try {
-      rgbaData = new Uint8Array(rgbaSize);
-    } catch {
-      let n = Math.floor(Math.log2(rgbaSize + 1));
-      while (true) {
-        try {
-          rgbaData = new Uint8Array(2 ** n - 1);
-          break;
-        } catch {
-          n -= 1;
-        }
-      }
-      maxHeight = Math.floor((2 ** n - 1) / (width * 4));
-      if (maxHeight === 0) {
-        return null;
-      }
-      if (maxHeight >= 4) {
-        maxHeight -= maxHeight % 4;
-      }
-      const newSize = width * maxHeight * 4;
-      if (newSize < rgbaData.length) {
-        rgbaData = new Uint8Array(newSize);
-      }
-    }
-    const src32 = new Uint32Array(rgbaData.buffer);
-    const dest32 = new Uint32Array(newWidth * newHeight);
-    let srcPos = 0;
-    let newIndex = 0;
-    const lastRow = newHeight << K;
-    let row = 0;
-    for (let y = 0; y < height; y += maxHeight) {
-      const h = Math.min(maxHeight, height - y);
-      ({
-        srcPos
-      } = (0,_shared_image_utils_js__WEBPACK_IMPORTED_MODULE_1__.convertToRGBA)({
-        kind,
-        src: data,
-        dest: src32,
-        width,
-        height: h,
-        inverseDecode: this._isMask,
-        srcPos
-      }));
-      for (const end = Math.min(y + h, lastRow); row < end; row += 1 << K) {
-        const buf = src32.subarray((row - y) * width);
-        for (let j = 0; j < newWidth; j++) {
-          dest32[newIndex++] = buf[j << K];
-        }
-      }
-    }
-    if (ImageResizer.needsToBeResized(newWidth, newHeight)) {
-      imgData.data = dest32;
-      imgData.width = newWidth;
-      imgData.height = newHeight;
-      imgData.kind = _shared_util_js__WEBPACK_IMPORTED_MODULE_0__.ImageKind.RGBA_32BPP;
-      return null;
-    }
-    const canvas = new OffscreenCanvas(newWidth, newHeight);
-    const ctx = canvas.getContext("2d", {
-      willReadFrequently: true
-    });
-    ctx.putImageData(new ImageData(new Uint8ClampedArray(dest32.buffer), newWidth, newHeight), 0, 0);
-    imgData.data = null;
-    imgData.bitmap = canvas.transferToImageBitmap();
-    imgData.width = newWidth;
-    imgData.height = newHeight;
-    return imgData;
-  }
-  _encodeBMP() {
-    const {
-      width,
-      height,
-      kind
-    } = this._imgData;
-    let data = this._imgData.data;
-    let bitPerPixel;
-    let colorTable = new Uint8Array(0);
-    let maskTable = colorTable;
-    let compression = 0;
-    switch (kind) {
-      case _shared_util_js__WEBPACK_IMPORTED_MODULE_0__.ImageKind.GRAYSCALE_1BPP:
-        {
-          bitPerPixel = 1;
-          colorTable = new Uint8Array(this._isMask ? [255, 255, 255, 255, 0, 0, 0, 0] : [0, 0, 0, 0, 255, 255, 255, 255]);
-          const rowLen = width + 7 >> 3;
-          const rowSize = rowLen + 3 & -4;
-          if (rowLen !== rowSize) {
-            const newData = new Uint8Array(rowSize * height);
-            let k = 0;
-            for (let i = 0, ii = height * rowLen; i < ii; i += rowLen, k += rowSize) {
-              newData.set(data.subarray(i, i + rowLen), k);
-            }
-            data = newData;
-          }
-          break;
-        }
-      case _shared_util_js__WEBPACK_IMPORTED_MODULE_0__.ImageKind.RGB_24BPP:
-        {
-          bitPerPixel = 24;
-          if (width & 3) {
-            const rowLen = 3 * width;
-            const rowSize = rowLen + 3 & -4;
-            const extraLen = rowSize - rowLen;
-            const newData = new Uint8Array(rowSize * height);
-            let k = 0;
-            for (let i = 0, ii = height * rowLen; i < ii; i += rowLen) {
-              const row = data.subarray(i, i + rowLen);
-              for (let j = 0; j < rowLen; j += 3) {
-                newData[k++] = row[j + 2];
-                newData[k++] = row[j + 1];
-                newData[k++] = row[j];
-              }
-              k += extraLen;
-            }
-            data = newData;
-          } else {
-            for (let i = 0, ii = data.length; i < ii; i += 3) {
-              const tmp = data[i];
-              data[i] = data[i + 2];
-              data[i + 2] = tmp;
-            }
-          }
-          break;
-        }
-      case _shared_util_js__WEBPACK_IMPORTED_MODULE_0__.ImageKind.RGBA_32BPP:
-        bitPerPixel = 32;
-        compression = 3;
-        maskTable = new Uint8Array(4 + 4 + 4 + 4 + 52);
-        const view = new DataView(maskTable.buffer);
-        if (_shared_util_js__WEBPACK_IMPORTED_MODULE_0__.FeatureTest.isLittleEndian) {
-          view.setUint32(0, 0x000000ff, true);
-          view.setUint32(4, 0x0000ff00, true);
-          view.setUint32(8, 0x00ff0000, true);
-          view.setUint32(12, 0xff000000, true);
-        } else {
-          view.setUint32(0, 0xff000000, true);
-          view.setUint32(4, 0x00ff0000, true);
-          view.setUint32(8, 0x0000ff00, true);
-          view.setUint32(12, 0x000000ff, true);
-        }
-        break;
-      default:
-        throw new Error("invalid format");
-    }
-    let i = 0;
-    const headerLength = 40 + maskTable.length;
-    const fileLength = 14 + headerLength + colorTable.length + data.length;
-    const bmpData = new Uint8Array(fileLength);
-    const view = new DataView(bmpData.buffer);
-    view.setUint16(i, 0x4d42, true);
-    i += 2;
-    view.setUint32(i, fileLength, true);
-    i += 4;
-    view.setUint32(i, 0, true);
-    i += 4;
-    view.setUint32(i, 14 + headerLength + colorTable.length, true);
-    i += 4;
-    view.setUint32(i, headerLength, true);
-    i += 4;
-    view.setInt32(i, width, true);
-    i += 4;
-    view.setInt32(i, -height, true);
-    i += 4;
-    view.setUint16(i, 1, true);
-    i += 2;
-    view.setUint16(i, bitPerPixel, true);
-    i += 2;
-    view.setUint32(i, compression, true);
-    i += 4;
-    view.setUint32(i, 0, true);
-    i += 4;
-    view.setInt32(i, 0, true);
-    i += 4;
-    view.setInt32(i, 0, true);
-    i += 4;
-    view.setUint32(i, colorTable.length / 4, true);
-    i += 4;
-    view.setUint32(i, 0, true);
-    i += 4;
-    bmpData.set(maskTable, i);
-    i += maskTable.length;
-    bmpData.set(colorTable, i);
-    i += colorTable.length;
-    bmpData.set(data, i);
-    return bmpData;
   }
 }
 
@@ -33897,31 +33327,27 @@ class GlobalImageCache {
 /* harmony export */   JpegStream: () => (/* binding */ JpegStream)
 /* harmony export */ });
 /* harmony import */ var _shared_util_js__WEBPACK_IMPORTED_MODULE_0__ = __webpack_require__(4292);
-/* harmony import */ var _decode_stream_js__WEBPACK_IMPORTED_MODULE_1__ = __webpack_require__(4563);
-/* harmony import */ var _primitives_js__WEBPACK_IMPORTED_MODULE_2__ = __webpack_require__(5632);
-/* harmony import */ var _jpeg_utils_js__WEBPACK_IMPORTED_MODULE_3__ = __webpack_require__(2478);
-/* harmony import */ var _image_resizer_js__WEBPACK_IMPORTED_MODULE_4__ = __webpack_require__(2320);
+/* harmony import */ var _colorspace_utils_js__WEBPACK_IMPORTED_MODULE_1__ = __webpack_require__(2056);
+/* harmony import */ var _decode_stream_js__WEBPACK_IMPORTED_MODULE_2__ = __webpack_require__(4563);
+/* harmony import */ var _primitives_js__WEBPACK_IMPORTED_MODULE_3__ = __webpack_require__(5632);
+/* harmony import */ var _jpeg_utils_js__WEBPACK_IMPORTED_MODULE_4__ = __webpack_require__(2478);
 
 
 
 
 
-class JpegStream extends _decode_stream_js__WEBPACK_IMPORTED_MODULE_1__.DecodeStream {
-  static #isImageDecoderSupported = _shared_util_js__WEBPACK_IMPORTED_MODULE_0__.FeatureTest.isImageDecoderSupported;
-  constructor(stream, maybeLength, params) {
+class JpegStream extends _decode_stream_js__WEBPACK_IMPORTED_MODULE_2__.DecodeStream {
+  #pdfManager;
+  constructor(stream, maybeLength, params, pdfManager) {
     super(maybeLength);
     this.stream = stream;
     this.dict = stream.dict;
     this.maybeLength = maybeLength;
     this.params = params;
+    this.#pdfManager = pdfManager;
   }
   static get canUseImageDecoder() {
-    return (0,_shared_util_js__WEBPACK_IMPORTED_MODULE_0__.shadow)(this, "canUseImageDecoder", this.#isImageDecoderSupported ? ImageDecoder.isTypeSupported("image/jpeg") : Promise.resolve(false));
-  }
-  static setOptions({
-    isImageDecoderSupported = false
-  }) {
-    this.#isImageDecoderSupported = isImageDecoderSupported;
+    return (0,_shared_util_js__WEBPACK_IMPORTED_MODULE_0__.shadow)(this, "canUseImageDecoder", ImageDecoder.isTypeSupported("image/jpeg"));
   }
   get bytes() {
     return (0,_shared_util_js__WEBPACK_IMPORTED_MODULE_0__.shadow)(this, "bytes", this.stream.getBytes(this.maybeLength));
@@ -33934,7 +33360,7 @@ class JpegStream extends _decode_stream_js__WEBPACK_IMPORTED_MODULE_1__.DecodeSt
     const jpegOptions = {
       colorTransform: undefined
     };
-    if (this.params instanceof _primitives_js__WEBPACK_IMPORTED_MODULE_2__.Dict) {
+    if (this.params instanceof _primitives_js__WEBPACK_IMPORTED_MODULE_3__.Dict) {
       const colorTransform = this.params.get("ColorTransform");
       if (Number.isInteger(colorTransform)) {
         jpegOptions.colorTransform = colorTransform;
@@ -33967,11 +33393,17 @@ class JpegStream extends _decode_stream_js__WEBPACK_IMPORTED_MODULE_1__.DecodeSt
     } = await __webpack_require__.e(/* import() | jpeg */ "jpeg").then(() => (__webpack_require__(1011)));
     const jpegImage = new JpegImage(this.jpegOptions);
     jpegImage.parse(bytes);
+    const {
+      forceRGBA,
+      forceRGB
+    } = this;
+    const cmyk = jpegImage.numComponents === 4 && (forceRGBA || forceRGB) ? await _colorspace_utils_js__WEBPACK_IMPORTED_MODULE_1__.ColorSpaceUtils.getCmyk(this.dict?.xref) : undefined;
     const data = jpegImage.getData({
       width: this.drawWidth,
       height: this.drawHeight,
-      forceRGBA: this.forceRGBA,
-      forceRGB: this.forceRGB
+      forceRGBA,
+      forceRGB,
+      cmyk
     });
     this.buffer = data;
     this.bufferLength = data.length;
@@ -33982,7 +33414,7 @@ class JpegStream extends _decode_stream_js__WEBPACK_IMPORTED_MODULE_1__.DecodeSt
     return this.stream.isAsync;
   }
   async getTransferableImage(width, height) {
-    if (!(await JpegStream.canUseImageDecoder)) {
+    if (!this.#pdfManager.evaluatorOptions.isImageDecoderSupported || !(await JpegStream.canUseImageDecoder)) {
       return null;
     }
     const jpegOptions = this.jpegOptions;
@@ -33993,7 +33425,7 @@ class JpegStream extends _decode_stream_js__WEBPACK_IMPORTED_MODULE_1__.DecodeSt
         return null;
       }
       let data = this.#skipUselessBytes(bytes);
-      const info = (0,_jpeg_utils_js__WEBPACK_IMPORTED_MODULE_3__.getJpegImageInfo)(data, jpegOptions.colorTransform);
+      const info = (0,_jpeg_utils_js__WEBPACK_IMPORTED_MODULE_4__.getJpegImageInfo)(data, jpegOptions.colorTransform);
       if (!info) {
         return null;
       }
@@ -34003,7 +33435,7 @@ class JpegStream extends _decode_stream_js__WEBPACK_IMPORTED_MODULE_1__.DecodeSt
         exifStart,
         exifEnd
       } = info;
-      const reducePower = _image_resizer_js__WEBPACK_IMPORTED_MODULE_4__.ImageResizer.getReducePower(frameWidth, frameHeight);
+      const reducePower = this.#pdfManager.imageResizer.getReducePower(frameWidth, frameHeight);
       if ((frameWidth !== width || frameHeight !== height) && (reducePower || !frameHeight)) {
         return null;
       }
@@ -34189,7 +33621,7 @@ class JpxImage extends _wasm_image_js__WEBPACK_IMPORTED_MODULE_1__.WasmImage {
   static get instance() {
     return (0,_shared_util_js__WEBPACK_IMPORTED_MODULE_0__.shadow)(this, "instance", new JpxImage("openjpeg.wasm", "openjpeg_nowasm_fallback.js"));
   }
-  async decode(bytes, {
+  async decode(context, bytes, {
     numComponents,
     isIndexedColormap = false,
     smaskInData = false,
@@ -34197,7 +33629,7 @@ class JpxImage extends _wasm_image_js__WEBPACK_IMPORTED_MODULE_1__.WasmImage {
   } = {}) {
     const padComponents = numComponents !== undefined;
     numComponents ??= 4;
-    const module = await this._getModule(() => __webpack_require__.e(/* import() | openjpeg */ "openjpeg").then(() => (__webpack_require__(3530))));
+    const module = await this._getModule(context, () => __webpack_require__.e(/* import() | openjpeg */ "openjpeg").then(() => (__webpack_require__(3530))));
     if (!module) {
       throw new JpxError("OpenJPEG failed to initialize");
     }
@@ -38285,14 +37717,14 @@ class NullOptimizer {
   reset() {}
 }
 class QueueOptimizer extends NullOptimizer {
-  constructor(queue) {
+  constructor(queue, isOffscreenCanvasSupported) {
     super(queue);
     this.state = null;
     this.context = {
       iCurr: 0,
       fnArray: queue.fnArray,
       argsArray: queue.argsArray,
-      isOffscreenCanvasSupported: OperatorList.isOffscreenCanvasSupported
+      isOffscreenCanvasSupported
     };
     this.match = null;
     this.lastProcessed = 0;
@@ -38359,20 +37791,16 @@ class QueueOptimizer extends NullOptimizer {
 class OperatorList {
   static CHUNK_SIZE = 1000;
   static CHUNK_SIZE_ABOUT = this.CHUNK_SIZE - 5;
-  static isOffscreenCanvasSupported = false;
-  constructor(intent = 0, streamSink) {
+  constructor(intent = 0, streamSink, {
+    isOffscreenCanvasSupported = false
+  } = {}) {
     this._streamSink = streamSink;
     this.fnArray = [];
     this.argsArray = [];
-    this.optimizer = streamSink && !(intent & _shared_util_js__WEBPACK_IMPORTED_MODULE_0__.RenderingIntentFlag.OPLIST) ? new QueueOptimizer(this) : new NullOptimizer(this);
+    this.optimizer = streamSink && !(intent & _shared_util_js__WEBPACK_IMPORTED_MODULE_0__.RenderingIntentFlag.OPLIST) ? new QueueOptimizer(this, isOffscreenCanvasSupported) : new NullOptimizer(this);
     this.dependencies = new Set();
     this.weight = 0;
     this._resolved = streamSink ? null : Promise.resolve();
-  }
-  static setOptions({
-    isOffscreenCanvasSupported
-  }) {
-    this.isOffscreenCanvasSupported = isOffscreenCanvasSupported;
   }
   get length() {
     return this.argsArray.length;
@@ -38678,8 +38106,8 @@ class JBig2CCITTFaxImage extends wasm_image.WasmImage {
   static get instance() {
     return (0,util.shadow)(this, "instance", new JBig2CCITTFaxImage("jbig2.wasm", "jbig2_nowasm_fallback.js"));
   }
-  async decode(bytes, width, height, globals, CCITTOptions) {
-    const module = await this._getModule(() => __webpack_require__.e(/* import() | jbig2 */ "jbig2").then(() => (__webpack_require__(2708))));
+  async decode(context, bytes, width, height, globals, CCITTOptions) {
+    const module = await this._getModule(context, () => __webpack_require__.e(/* import() | jbig2 */ "jbig2").then(() => (__webpack_require__(2708))));
     if (!module) {
       throw new Jbig2Error("JBig2 failed to initialize");
     }
@@ -38723,11 +38151,13 @@ class JBig2CCITTFaxImage extends wasm_image.WasmImage {
 
 
 class CCITTFaxStream extends decode_stream.DecodeStream {
-  constructor(str, maybeLength, params) {
+  #pdfManager;
+  constructor(str, maybeLength, params, pdfManager) {
     super(maybeLength);
     this.stream = str;
     this.maybeLength = maybeLength;
     this.dict = str.dict;
+    this.#pdfManager = pdfManager;
     if (!(params instanceof primitives.Dict)) {
       params = primitives.Dict.empty;
     }
@@ -38755,7 +38185,7 @@ class CCITTFaxStream extends decode_stream.DecodeStream {
       return this.buffer;
     }
     bytes ??= this.stream.isAsync ? (await this.stream.asyncGetBytes()) || this.bytes : this.bytes;
-    this.buffer = await JBig2CCITTFaxImage.instance.decode(bytes, this.dict.get("W", "Width"), this.dict.get("H", "Height"), null, this.params);
+    this.buffer = await JBig2CCITTFaxImage.instance.decode(this.#pdfManager.binaryDataContext, bytes, this.dict.get("W", "Width"), this.dict.get("H", "Height"), null, this.params);
     this.bufferLength = this.buffer.length;
     this.eof = true;
     return this.buffer;
@@ -39066,12 +38496,14 @@ var base_stream = __webpack_require__(1834);
 
 
 class Jbig2Stream extends decode_stream.DecodeStream {
-  constructor(stream, maybeLength, params) {
+  #pdfManager;
+  constructor(stream, maybeLength, params, pdfManager) {
     super(maybeLength);
     this.stream = stream;
     this.dict = stream.dict;
     this.maybeLength = maybeLength;
     this.params = params;
+    this.#pdfManager = pdfManager;
   }
   get bytes() {
     return (0,util.shadow)(this, "bytes", this.stream.getBytes(this.maybeLength));
@@ -39102,7 +38534,7 @@ class Jbig2Stream extends decode_stream.DecodeStream {
         globals = Jbig2Stream.stripFileHeader(globalsStream.getBytes());
       }
     }
-    this.buffer = await JBig2CCITTFaxImage.instance.decode(bytes, this.dict.get("Width"), this.dict.get("Height"), globals);
+    this.buffer = await JBig2CCITTFaxImage.instance.decode(this.#pdfManager.binaryDataContext, bytes, this.dict.get("Width"), this.dict.get("Height"), globals);
     this.bufferLength = this.buffer.length;
     this.eof = true;
     return this.buffer;
@@ -39121,11 +38553,13 @@ var jpx = __webpack_require__(4242);
 
 
 class JpxStream extends decode_stream.DecodeStream {
-  constructor(stream, maybeLength) {
+  #pdfManager;
+  constructor(stream, maybeLength, pdfManager) {
     super(maybeLength);
     this.stream = stream;
     this.dict = stream.dict;
     this.maybeLength = maybeLength;
+    this.#pdfManager = pdfManager;
   }
   get bytes() {
     return (0,util.shadow)(this, "bytes", this.stream.getBytes(this.maybeLength));
@@ -39139,7 +38573,7 @@ class JpxStream extends decode_stream.DecodeStream {
       return this.buffer;
     }
     bytes ||= this.bytes;
-    this.buffer = await jpx.JpxImage.instance.decode(bytes, decoderOptions);
+    this.buffer = await jpx.JpxImage.instance.decode(this.#pdfManager.binaryDataContext, bytes, decoderOptions);
     this.bufferLength = this.buffer.length;
     this.eof = true;
     return this.buffer;
@@ -40026,6 +39460,7 @@ class Parser {
       (0,util.warn)(`Empty "${name}" stream.`);
       return new core_stream.NullStream();
     }
+    const pdfManager = this.xref?.pdfManager;
     try {
       switch (name) {
         case "Fl":
@@ -40046,10 +39481,10 @@ class Parser {
           return new LZWStream(stream, maybeLength, earlyChange);
         case "DCT":
         case "DCTDecode":
-          return new jpeg_stream.JpegStream(stream, maybeLength, params);
+          return new jpeg_stream.JpegStream(stream, maybeLength, params, pdfManager);
         case "JPX":
         case "JPXDecode":
-          return new JpxStream(stream, maybeLength);
+          return new JpxStream(stream, maybeLength, pdfManager);
         case "A85":
         case "ASCII85Decode":
           return new Ascii85Stream(stream, maybeLength);
@@ -40058,12 +39493,12 @@ class Parser {
           return new AsciiHexStream(stream, maybeLength);
         case "CCF":
         case "CCITTFaxDecode":
-          return new CCITTFaxStream(stream, maybeLength, params);
+          return new CCITTFaxStream(stream, maybeLength, params, pdfManager);
         case "RL":
         case "RunLengthDecode":
           return new RunLengthStream(stream, maybeLength);
         case "JBIG2Decode":
-          return new Jbig2Stream(stream, maybeLength, params);
+          return new Jbig2Stream(stream, maybeLength, params, pdfManager);
         case "BrotliDecode":
           if (params) {
             return new PredictorStream(new brotli_stream.BrotliStream(stream, maybeLength), maybeLength, params);
@@ -40540,7 +39975,7 @@ class Linearization {
 /* harmony import */ var _shared_util_js__WEBPACK_IMPORTED_MODULE_0__ = __webpack_require__(4292);
 /* harmony import */ var _core_utils_js__WEBPACK_IMPORTED_MODULE_1__ = __webpack_require__(5399);
 /* harmony import */ var _base_stream_js__WEBPACK_IMPORTED_MODULE_2__ = __webpack_require__(1834);
-/* harmony import */ var _colorspace_utils_js__WEBPACK_IMPORTED_MODULE_3__ = __webpack_require__(5719);
+/* harmony import */ var _colorspace_utils_js__WEBPACK_IMPORTED_MODULE_3__ = __webpack_require__(2056);
 /* harmony import */ var _shared_math_clamp_js__WEBPACK_IMPORTED_MODULE_4__ = /*#__PURE__*/__webpack_require__(4566);
 
 
@@ -41473,7 +40908,7 @@ function getTilingPatternIR(operatorList, dict, color, needsIsolation = true) {
 
 /***/ },
 
-/***/ 4902
+/***/ 7877
 (__unused_webpack___webpack_module__, __webpack_exports__, __webpack_require__) {
 
 
@@ -41483,8 +40918,6 @@ __webpack_require__.d(__webpack_exports__, {
   NetworkPdfManager: () => (/* binding */ NetworkPdfManager)
 });
 
-// EXTERNAL MODULE: ./src/core/icc_colorspace.js + 2 modules
-var icc_colorspace = __webpack_require__(3141);
 // EXTERNAL MODULE: ./src/shared/util.js
 var util = __webpack_require__(4292);
 // EXTERNAL MODULE: ./src/core/core_utils.js
@@ -41874,24 +41307,394 @@ class ChunkedStreamManager {
   }
 }
 
-// EXTERNAL MODULE: ./src/core/image_resizer.js
-var image_resizer = __webpack_require__(2320);
-// EXTERNAL MODULE: ./src/core/jpeg_stream.js
-var jpeg_stream = __webpack_require__(5495);
-// EXTERNAL MODULE: ./src/core/operator_list.js
-var operator_list = __webpack_require__(8857);
+// EXTERNAL MODULE: ./src/shared/image_utils.js
+var image_utils = __webpack_require__(8609);
+;// ./src/core/image_resizer.js
+
+
+
+const MIN_IMAGE_DIM = 2048;
+const MAX_IMAGE_DIM = 32768;
+const MAX_ERROR = 128;
+class ImageResizer {
+  static #goodSquareLength = MIN_IMAGE_DIM;
+  #isImageDecoderSupported;
+  #maxArea;
+  constructor({
+    canvasMaxAreaInBytes = -1,
+    isImageDecoderSupported = false
+  } = {}) {
+    this.#maxArea = canvasMaxAreaInBytes < 0 ? null : Math.floor(canvasMaxAreaInBytes / 4);
+    this.#isImageDecoderSupported = isImageDecoderSupported;
+  }
+  static get canUseImageDecoder() {
+    return (0,util.shadow)(this, "canUseImageDecoder", ImageDecoder.isTypeSupported("image/bmp"));
+  }
+  needsToBeResized(width, height) {
+    if (this.#maxArea === null) {
+      return ImageResizer.#needsToBeResized(width, height);
+    }
+    if (width <= MIN_IMAGE_DIM && height <= MIN_IMAGE_DIM) {
+      return false;
+    }
+    const {
+      MAX_DIM
+    } = this;
+    return width > MAX_DIM || height > MAX_DIM || width * height > this.#maxArea;
+  }
+  static #needsToBeResized(width, height) {
+    if (width <= this.#goodSquareLength && height <= this.#goodSquareLength) {
+      return false;
+    }
+    const {
+      MAX_DIM
+    } = this;
+    if (width > MAX_DIM || height > MAX_DIM) {
+      return true;
+    }
+    const area = width * height;
+    if (this._hasMaxArea) {
+      return area > this.MAX_AREA;
+    }
+    if (area < this.#goodSquareLength ** 2) {
+      return false;
+    }
+    if (this._areGoodDims(width, height)) {
+      this.#goodSquareLength = Math.max(this.#goodSquareLength, Math.floor(Math.sqrt(width * height)));
+      return false;
+    }
+    this.#goodSquareLength = this._guessMax(this.#goodSquareLength, MAX_DIM, MAX_ERROR, 0);
+    const maxArea = this.#goodSquareLength ** 2;
+    this._hasMaxArea = true;
+    (0,util.shadow)(this, "MAX_AREA", maxArea);
+    return area > maxArea;
+  }
+  getReducePower(width, height, maxArea = Infinity) {
+    if (!Number.isInteger(width) || width <= 0 || !Number.isInteger(height) || height <= 0) {
+      return 0;
+    }
+    const area = width * height;
+    if (!this.needsToBeResized(width, height)) {
+      return area > maxArea ? Math.ceil(Math.log2(area / maxArea)) : 0;
+    }
+    const {
+      MAX_DIM,
+      MAX_AREA
+    } = this;
+    const minFactor = Math.max(width / MAX_DIM, height / MAX_DIM, Math.sqrt(area / Math.min(maxArea, MAX_AREA)));
+    return Math.max(0, Math.ceil(Math.log2(minFactor)));
+  }
+  getReducePowerForJPX(width, height, componentsCount) {
+    return this.getReducePower(width, height, 2 ** 30 / (componentsCount * 4));
+  }
+  static get MAX_DIM() {
+    return (0,util.shadow)(this, "MAX_DIM", this._guessMax(MIN_IMAGE_DIM, MAX_IMAGE_DIM, 0, 1));
+  }
+  static get MAX_AREA() {
+    this._hasMaxArea = true;
+    return (0,util.shadow)(this, "MAX_AREA", this._guessMax(this.#goodSquareLength, this.MAX_DIM, MAX_ERROR, 0) ** 2);
+  }
+  get MAX_DIM() {
+    return ImageResizer.MAX_DIM;
+  }
+  get MAX_AREA() {
+    return this.#maxArea ?? ImageResizer.MAX_AREA;
+  }
+  static _areGoodDims(width, height) {
+    try {
+      const canvas = new OffscreenCanvas(width, height);
+      const ctx = canvas.getContext("2d");
+      ctx.fillRect(0, 0, 1, 1);
+      const opacity = ctx.getImageData(0, 0, 1, 1).data[3];
+      canvas.width = canvas.height = 1;
+      return opacity !== 0;
+    } catch {
+      return false;
+    }
+  }
+  static _guessMax(start, end, tolerance, defaultHeight) {
+    while (start + tolerance + 1 < end) {
+      const middle = Math.floor((start + end) / 2);
+      const height = defaultHeight || middle;
+      if (this._areGoodDims(middle, height)) {
+        start = middle;
+      } else {
+        end = middle;
+      }
+    }
+    return start;
+  }
+  async createImage(imgData, isMask = false) {
+    const {
+      width,
+      height
+    } = imgData;
+    if (width * height * 4 > core_utils.MAX_INT_32) {
+      const result = this._rescaleImageData(imgData, isMask);
+      if (result) {
+        return result;
+      }
+    }
+    const data = this._encodeBMP(imgData, isMask);
+    let decoder, imagePromise;
+    if (this.#isImageDecoderSupported && (await ImageResizer.canUseImageDecoder)) {
+      decoder = new ImageDecoder({
+        data,
+        type: "image/bmp",
+        preferAnimation: false,
+        transfer: [data.buffer]
+      });
+      imagePromise = decoder.decode().catch(reason => {
+        (0,util.warn)(`BMP image decoding failed: ${reason}`);
+        return createImageBitmap(new Blob([this._encodeBMP(imgData, isMask).buffer], {
+          type: "image/bmp"
+        }));
+      }).finally(() => {
+        decoder.close();
+      });
+    } else {
+      imagePromise = createImageBitmap(new Blob([data.buffer], {
+        type: "image/bmp"
+      }));
+    }
+    const {
+      MAX_AREA,
+      MAX_DIM
+    } = this;
+    const minFactor = Math.max(width / MAX_DIM, height / MAX_DIM, Math.sqrt(width * height / MAX_AREA));
+    const firstFactor = Math.max(minFactor, 2);
+    const factor = Math.round(10 * (minFactor + 1.25)) / 10 / firstFactor;
+    const N = Math.floor(Math.log2(factor));
+    const steps = new Array(N + 2).fill(2);
+    steps[0] = firstFactor;
+    steps.splice(-1, 1, factor / (1 << N));
+    let newWidth = width;
+    let newHeight = height;
+    const result = await imagePromise;
+    let bitmap = result.image || result;
+    for (const step of steps) {
+      const prevWidth = newWidth;
+      const prevHeight = newHeight;
+      newWidth = Math.floor(newWidth / step);
+      newHeight = Math.floor(newHeight / step);
+      const canvas = new OffscreenCanvas(newWidth, newHeight);
+      const ctx = canvas.getContext("2d");
+      ctx.drawImage(bitmap, 0, 0, prevWidth, prevHeight, 0, 0, newWidth, newHeight);
+      bitmap.close();
+      bitmap = canvas.transferToImageBitmap();
+    }
+    imgData.data = null;
+    imgData.bitmap = bitmap;
+    imgData.width = newWidth;
+    imgData.height = newHeight;
+    return imgData;
+  }
+  _rescaleImageData(imgData, isMask, maxSize = core_utils.MAX_INT_32) {
+    const {
+      data,
+      width,
+      height,
+      kind
+    } = imgData;
+    const rgbaSize = width * height * 4;
+    const K = Math.ceil(Math.log2(rgbaSize / maxSize));
+    const newWidth = width >> K;
+    const newHeight = height >> K;
+    let rgbaData;
+    let maxHeight = height;
+    try {
+      rgbaData = new Uint8Array(rgbaSize);
+    } catch {
+      let n = Math.floor(Math.log2(rgbaSize + 1));
+      while (true) {
+        try {
+          rgbaData = new Uint8Array(2 ** n - 1);
+          break;
+        } catch {
+          n -= 1;
+        }
+      }
+      maxHeight = Math.floor((2 ** n - 1) / (width * 4));
+      if (maxHeight === 0) {
+        return null;
+      }
+      if (maxHeight >= 4) {
+        maxHeight -= maxHeight % 4;
+      }
+      const newSize = width * maxHeight * 4;
+      if (newSize < rgbaData.length) {
+        rgbaData = new Uint8Array(newSize);
+      }
+    }
+    const src32 = new Uint32Array(rgbaData.buffer);
+    const dest32 = new Uint32Array(newWidth * newHeight);
+    let srcPos = 0;
+    let newIndex = 0;
+    const lastRow = newHeight << K;
+    let row = 0;
+    for (let y = 0; y < height; y += maxHeight) {
+      const h = Math.min(maxHeight, height - y);
+      ({
+        srcPos
+      } = (0,image_utils.convertToRGBA)({
+        kind,
+        src: data,
+        dest: src32,
+        width,
+        height: h,
+        inverseDecode: isMask,
+        srcPos
+      }));
+      for (const end = Math.min(y + h, lastRow); row < end; row += 1 << K) {
+        const buf = src32.subarray((row - y) * width);
+        for (let j = 0; j < newWidth; j++) {
+          dest32[newIndex++] = buf[j << K];
+        }
+      }
+    }
+    if (this.needsToBeResized(newWidth, newHeight)) {
+      imgData.data = dest32;
+      imgData.width = newWidth;
+      imgData.height = newHeight;
+      imgData.kind = util.ImageKind.RGBA_32BPP;
+      return null;
+    }
+    const canvas = new OffscreenCanvas(newWidth, newHeight);
+    const ctx = canvas.getContext("2d", {
+      willReadFrequently: true
+    });
+    ctx.putImageData(new ImageData(new Uint8ClampedArray(dest32.buffer), newWidth, newHeight), 0, 0);
+    imgData.data = null;
+    imgData.bitmap = canvas.transferToImageBitmap();
+    imgData.width = newWidth;
+    imgData.height = newHeight;
+    return imgData;
+  }
+  _encodeBMP(imgData, isMask) {
+    const {
+      width,
+      height,
+      kind
+    } = imgData;
+    let {
+      data
+    } = imgData;
+    let bitPerPixel;
+    let colorTable = new Uint8Array(0);
+    let maskTable = colorTable;
+    let compression = 0;
+    switch (kind) {
+      case util.ImageKind.GRAYSCALE_1BPP:
+        {
+          bitPerPixel = 1;
+          colorTable = new Uint8Array(isMask ? [255, 255, 255, 255, 0, 0, 0, 0] : [0, 0, 0, 0, 255, 255, 255, 255]);
+          const rowLen = width + 7 >> 3;
+          const rowSize = rowLen + 3 & -4;
+          if (rowLen !== rowSize) {
+            const newData = new Uint8Array(rowSize * height);
+            let k = 0;
+            for (let i = 0, ii = height * rowLen; i < ii; i += rowLen, k += rowSize) {
+              newData.set(data.subarray(i, i + rowLen), k);
+            }
+            data = newData;
+          }
+          break;
+        }
+      case util.ImageKind.RGB_24BPP:
+        {
+          bitPerPixel = 24;
+          if (width & 3) {
+            const rowLen = 3 * width;
+            const rowSize = rowLen + 3 & -4;
+            const extraLen = rowSize - rowLen;
+            const newData = new Uint8Array(rowSize * height);
+            let k = 0;
+            for (let i = 0, ii = height * rowLen; i < ii; i += rowLen) {
+              const row = data.subarray(i, i + rowLen);
+              for (let j = 0; j < rowLen; j += 3) {
+                newData[k++] = row[j + 2];
+                newData[k++] = row[j + 1];
+                newData[k++] = row[j];
+              }
+              k += extraLen;
+            }
+            data = newData;
+          } else {
+            for (let i = 0, ii = data.length; i < ii; i += 3) {
+              const tmp = data[i];
+              data[i] = data[i + 2];
+              data[i + 2] = tmp;
+            }
+          }
+          break;
+        }
+      case util.ImageKind.RGBA_32BPP:
+        bitPerPixel = 32;
+        compression = 3;
+        maskTable = new Uint8Array(4 + 4 + 4 + 4 + 52);
+        const view = new DataView(maskTable.buffer);
+        if (util.FeatureTest.isLittleEndian) {
+          view.setUint32(0, 0x000000ff, true);
+          view.setUint32(4, 0x0000ff00, true);
+          view.setUint32(8, 0x00ff0000, true);
+          view.setUint32(12, 0xff000000, true);
+        } else {
+          view.setUint32(0, 0xff000000, true);
+          view.setUint32(4, 0x00ff0000, true);
+          view.setUint32(8, 0x0000ff00, true);
+          view.setUint32(12, 0x000000ff, true);
+        }
+        break;
+      default:
+        throw new Error("invalid format");
+    }
+    let i = 0;
+    const headerLength = 40 + maskTable.length;
+    const fileLength = 14 + headerLength + colorTable.length + data.length;
+    const bmpData = new Uint8Array(fileLength);
+    const view = new DataView(bmpData.buffer);
+    view.setUint16(i, 0x4d42, true);
+    i += 2;
+    view.setUint32(i, fileLength, true);
+    i += 4;
+    view.setUint32(i, 0, true);
+    i += 4;
+    view.setUint32(i, 14 + headerLength + colorTable.length, true);
+    i += 4;
+    view.setUint32(i, headerLength, true);
+    i += 4;
+    view.setInt32(i, width, true);
+    i += 4;
+    view.setInt32(i, -height, true);
+    i += 4;
+    view.setUint16(i, 1, true);
+    i += 2;
+    view.setUint16(i, bitPerPixel, true);
+    i += 2;
+    view.setUint32(i, compression, true);
+    i += 4;
+    view.setUint32(i, 0, true);
+    i += 4;
+    view.setInt32(i, 0, true);
+    i += 4;
+    view.setInt32(i, 0, true);
+    i += 4;
+    view.setUint32(i, colorTable.length / 4, true);
+    i += 4;
+    view.setUint32(i, 0, true);
+    i += 4;
+    bmpData.set(maskTable, i);
+    i += maskTable.length;
+    bmpData.set(colorTable, i);
+    i += colorTable.length;
+    bmpData.set(data, i);
+    return bmpData;
+  }
+}
+
 // EXTERNAL MODULE: ./src/core/document.js + 4 modules
 var core_document = __webpack_require__(9397);
-// EXTERNAL MODULE: ./src/core/function.js
-var core_function = __webpack_require__(4950);
-// EXTERNAL MODULE: ./src/core/wasm_image.js
-var wasm_image = __webpack_require__(5412);
 ;// ./src/core/pdf_manager.js
-
-
-
-
-
 
 
 
@@ -41909,7 +41712,6 @@ function parseDocBaseUrl(url) {
   return null;
 }
 class BasePdfManager {
-  static #handlers = new Map();
   constructor({
     docBaseUrl,
     docId,
@@ -41922,21 +41724,14 @@ class BasePdfManager {
     this._docId = docId;
     this._password = password;
     this.enableXfa = enableXfa;
-    BasePdfManager.#handlers.set(this, handler);
     evaluatorOptions.isOffscreenCanvasSupported &&= util.FeatureTest.isOffscreenCanvasSupported;
     evaluatorOptions.isImageDecoderSupported &&= util.FeatureTest.isImageDecoderSupported;
     this.evaluatorOptions = Object.freeze(evaluatorOptions);
-    image_resizer.ImageResizer.setOptions(evaluatorOptions);
-    jpeg_stream.JpegStream.setOptions(evaluatorOptions);
-    operator_list.OperatorList.setOptions(evaluatorOptions);
-    const options = {
-      ...evaluatorOptions,
-      getHandler: () => BasePdfManager.#handlers.values().find(h => !h.destroyed)
+    this.binaryDataContext = {
+      handler,
+      options: this.evaluatorOptions
     };
-    icc_colorspace.IccColorSpace.setOptions(options);
-    icc_colorspace.CmykICCBasedCS.setOptions(options);
-    core_function.PDFFunctionFactory.setOptions(options);
-    wasm_image.WasmImage.setOptions(options);
+    this.imageResizer = new ImageResizer(this.evaluatorOptions);
   }
   get docId() {
     return this._docId;
@@ -41993,9 +41788,7 @@ class BasePdfManager {
     this._password = password;
     this.pdfDocument.xref.encrypt?.setPassword(password);
   }
-  terminate(reason) {
-    BasePdfManager.#handlers.delete(this);
-  }
+  terminate(reason) {}
 }
 class LocalPdfManager extends BasePdfManager {
   constructor(args) {
@@ -44946,31 +44739,13 @@ function clearUnicodeCaches() {
 
 class WasmImage {
   static #instances = new Set();
-  static #options = {
-    useWasm: true,
-    useWorkerFetch: true,
-    wasmUrl: null
-  };
-  #modulePromise = null;
-  static setOptions({
-    getHandler,
-    useWasm,
-    useWorkerFetch,
-    wasmUrl
-  }) {
-    WasmImage.#options = {
-      getHandler,
-      useWasm,
-      useWorkerFetch,
-      wasmUrl
-    };
-  }
+  #modulePromises = new WeakMap();
   static get instance() {
-    ;(0,_shared_util_js__WEBPACK_IMPORTED_MODULE_0__.unreachable)("Abstract getter `instance` accessed");
+    (0,_shared_util_js__WEBPACK_IMPORTED_MODULE_0__.unreachable)("Abstract getter `instance` accessed");
   }
-  static cleanup() {
+  static cleanup(context) {
     for (const instance of WasmImage.#instances) {
-      instance.#modulePromise = null;
+      instance.#modulePromises.delete(context);
     }
   }
   constructor(filename, noWasmFilename) {
@@ -44978,33 +44753,29 @@ class WasmImage {
     this._noWasmFilename = noWasmFilename;
     WasmImage.#instances.add(this);
   }
-  async #instantiateWasm(failureCallback, imports, successCallback) {
-    const loaded = await _wasm_loader_js__WEBPACK_IMPORTED_MODULE_1__.WasmLoader.load({
-      handler: WasmImage.#options.getHandler?.(),
-      options: WasmImage.#options
-    }, this._filename, this._noWasmFilename, instantiate => successCallback({
+  async #instantiateWasm(context, failureCallback, imports, successCallback) {
+    const loaded = await _wasm_loader_js__WEBPACK_IMPORTED_MODULE_1__.WasmLoader.load(context, this._filename, this._noWasmFilename, instantiate => successCallback({
       exports: instantiate(imports)
     }));
     if (!loaded) {
       failureCallback(null);
     }
   }
-  _getModule(loadDecoder) {
-    if (!this.#modulePromise) {
+  _getModule(context, loadDecoder) {
+    return this.#modulePromises.getOrInsertComputed(context, () => {
       const {
         promise,
         resolve
       } = (0,_shared_util_js__WEBPACK_IMPORTED_MODULE_0__.createPromiseCapability)();
-      this.#modulePromise = Promise.race([promise, loadDecoder().then(({
+      return Promise.race([promise, loadDecoder().then(({
         default: createDecoder
       }) => createDecoder({
         warn: _shared_util_js__WEBPACK_IMPORTED_MODULE_0__.warn,
-        instantiateWasm: this.#instantiateWasm.bind(this, resolve)
+        instantiateWasm: this.#instantiateWasm.bind(this, context, resolve)
       }))]);
-    }
-    return this.#modulePromise;
+    });
   }
-  async decode(bytes, _params) {
+  async decode(context, bytes, _params) {
     ;(0,_shared_util_js__WEBPACK_IMPORTED_MODULE_0__.unreachable)("Abstract method `decode` called");
   }
 }
@@ -45032,40 +44803,43 @@ async function decodeBrotli(data) {
 class WasmLoader {
   static #modules = new Map();
   static async fetch(context, kind, filename) {
-    const {
-      handler,
-      options
-    } = context;
-    const response = await this.#workerFetch(options[kind], filename);
+    const url = this.#getWorkerUrl(context, kind, filename);
+    const response = await this.#workerFetch(url);
     return response.bytes();
   }
-  static async #workerFetch(baseUrl, filename) {
-    const url = `${baseUrl}${filename}`,
-      response = await fetch(url);
+  static #getWorkerUrl({
+    options
+  }, kind, filename) {
+    const baseUrl = options[kind];
+    if (!baseUrl) {
+      throw new Error(`Ensure that the \`${kind}\` API parameter is provided.`);
+    }
+    return `${baseUrl}${filename}`;
+  }
+  static async #workerFetch(url) {
+    const response = await fetch(url);
     if (!response.ok) {
       throw new Error(`Failed to fetch file "${url}" with "${response.statusText}".`);
     }
     return response;
   }
-  static async #fetchAndCompile(context, filename) {
-    const {
-      options
-    } = context;
+  static async #fetchAndCompile(context, filename, url) {
     const {
       body
-    } = await this.#workerFetch(options.wasmUrl, filename);
+    } = await this.#workerFetch(url);
     return WebAssembly.compileStreaming(new Response(body, {
       headers: {
         "Content-Type": "application/wasm"
       }
     }));
   }
-  static #compile(context, filename) {
+  static async compile(context, filename) {
+    const url = this.#getWorkerUrl(context, "wasmUrl", filename);
     const cached = this.#modules.get(filename);
     if (cached) {
-      return cached.catch(() => this.#compile(context, filename));
+      return cached.catch(() => this.compile(context, filename));
     }
-    const promise = this.#fetchAndCompile(context, filename).catch(ex => {
+    const promise = this.#fetchAndCompile(context, filename, url).catch(ex => {
       this.#modules.delete(filename);
       throw ex;
     });
@@ -45076,7 +44850,7 @@ class WasmLoader {
     let source;
     const {
       body
-    } = await this.#workerFetch(wasmUrl, `${filename}.br`);
+    } = await this.#workerFetch(`${wasmUrl}${filename}.br`);
     source = body.pipeThrough(new DecompressionStream("brotli"));
     const blob = await new Response(source, {
       headers: {
@@ -45100,7 +44874,7 @@ class WasmLoader {
     } = context.options;
     if (useWasm) {
       try {
-        const module = await this.#compile(context, filename);
+        const module = await this.compile(context, filename);
         init(imports => new WebAssembly.Instance(module, imports).exports);
         return true;
       } catch (ex) {
@@ -46758,10 +46532,11 @@ if (typeof Iterator.prototype.join !== "function") {
 /******/ 		"editor": () => (import("./pdf.worker.editor.mjs")),
 /******/ 		"flatten": () => (import("./pdf.worker.flatten.mjs")),
 /******/ 		"print-appearances": () => (import("./pdf.worker.print-appearances.mjs")),
-/******/ 		"jpeg": () => (import("./pdf.worker.jpeg.mjs")),
 /******/ 		"xfa": () => (import("./pdf.worker.xfa.mjs")),
 /******/ 		"rich-text": () => (import("./pdf.worker.rich-text.mjs")),
+/******/ 		"qcms": () => (import("./pdf.worker.qcms.mjs")),
 /******/ 		"jbig2": () => (import("./pdf.worker.jbig2.mjs")),
+/******/ 		"jpeg": () => (import("./pdf.worker.jpeg.mjs")),
 /******/ 		"openjpeg": () => (import("./pdf.worker.openjpeg.mjs")),
 /******/ 		"postscript": () => (import("./pdf.worker.postscript.mjs")),
 /******/ 		"crypto": () => (import("./pdf.worker.crypto.mjs"))
@@ -46837,8 +46612,8 @@ var util = __webpack_require__(4292);
 var core_utils = __webpack_require__(5399);
 // EXTERNAL MODULE: ./src/core/primitives.js
 var primitives = __webpack_require__(5632);
-// EXTERNAL MODULE: ./src/core/pdf_manager.js + 1 modules
-var pdf_manager = __webpack_require__(4902);
+// EXTERNAL MODULE: ./src/core/pdf_manager.js + 2 modules
+var pdf_manager = __webpack_require__(7877);
 ;// ./src/shared/message_handler.js
 
 const CallbackKind = {
@@ -47244,9 +47019,6 @@ class MessageHandler {
     this.#messageAC?.abort();
     this.#messageAC = null;
   }
-  get destroyed() {
-    return !this.#messageAC;
-  }
 }
 
 // EXTERNAL MODULE: ./src/core/annotation.js + 2 modules
@@ -47473,7 +47245,7 @@ class WorkerMessageHandler {
       docId,
       apiVersion
     } = docParams;
-    const workerVersion = "7.0.213";
+    const workerVersion = "7.0.229";
     if (apiVersion !== workerVersion) {
       throw new Error(`The API version "${apiVersion}" does not match the Worker version "${workerVersion}".`);
     }
