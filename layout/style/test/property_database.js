@@ -12481,6 +12481,11 @@ var gCSSProperties = {
 }; // end of gCSSProperties
 
 if (IsCSSPropertyPrefEnabled("layout.css.line-clamp.enabled")) {
+  gCSSProperties["-webkit-line-clamp"].alias_for = "line-clamp";
+  gCSSProperties["-webkit-line-clamp"].legacy_mapping = {
+    1: "1 -webkit-legacy",
+    2: "2 -webkit-legacy",
+  };
   gCSSProperties["line-clamp"] = {
     domProp: "lineClamp",
     inherited: false,
@@ -12489,12 +12494,14 @@ if (IsCSSPropertyPrefEnabled("layout.css.line-clamp.enabled")) {
     other_values: [
       "1",
       "2",
+      "auto",
+      "no-ellipsis",
       "auto 3",
       "3 auto",
       "3 no-ellipsis",
       "3 -webkit-legacy",
     ],
-    invalid_values: ["0", "-1", "auto", "no-ellipsis", "-webkit-legacy"],
+    invalid_values: ["0", "-1", "-webkit-legacy"],
   };
 } else {
   gCSSProperties["-webkit-line-clamp"].subproperties = [];
