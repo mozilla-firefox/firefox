@@ -568,10 +568,9 @@ void CookiePersistentStorage::RemoveAllInternal() {
 }
 
 void CookiePersistentStorage::HandleCorruptDB() {
-  COOKIE_LOGSTRING(
-      LogLevel::Debug,
-      ("HandleCorruptDB(): CookieStorage %p has mCorruptFlag %u", this,
-       static_cast<unsigned>(static_cast<CorruptFlag>(mCorruptFlag))));
+  COOKIE_LOGSTRING(LogLevel::Debug,
+                   ("HandleCorruptDB(): CookieStorage %p has mCorruptFlag %u",
+                    this, static_cast<unsigned>(mCorruptFlag.load())));
 
   mWriteQueue->Clear();
 
