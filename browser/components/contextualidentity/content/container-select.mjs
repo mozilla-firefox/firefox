@@ -2,7 +2,7 @@
  * License, v. 2.0. If a copy of the MPL was not distributed with this
  * file, You can obtain one at http://mozilla.org/MPL/2.0/. */
 
-import { html } from "chrome://global/content/vendor/lit.all.mjs";
+import { html, render } from "chrome://global/content/vendor/lit.all.mjs";
 import { MozSelect } from "chrome://global/content/elements/moz-select.mjs";
 
 const lazy = {};
@@ -46,6 +46,14 @@ export default class ContainerSelect extends MozSelect {
   // moz-select only watches the attributes it reads itself.
   #colorObserver = new MutationObserver(() => this.populateOptions());
 
+  /**
+   * In a chrome document the panel-list is rendered in a XUL panel, which is
+   * not clipped by the frame the select is in, for instance a dialog.
+   *
+   * @type {?XULPopupElement}
+   */
+  #xulPanel = null;
+
   constructor() {
     super();
     this.site = "";
@@ -75,7 +83,17 @@ export default class ContainerSelect extends MozSelect {
       <link
         rel="stylesheet"
         href="chrome://browser/content/usercontext/container-select.css"
-      />`;
+      />
+      ${document.createXULElement
+        ? html`<link rel="stylesheet" href="chrome://global/skin/popup.css" />`
+        : ""}`;
+  }
+
+  /**
+   * @type {MozSelect['panelListTemplate']}
+   */
+  panelListTemplate() {
+    return document.createXULElement ? "" : super.panelListTemplate();
   }
 
   /**
@@ -117,6 +135,18 @@ export default class ContainerSelect extends MozSelect {
    */
   updated(changedProperties) {
     super.updated(changedProperties);
+    if (this.usePanelList && !this.#xulPanel && document.createXULElement) {
+      this.#xulPanel = document.createXULElement("panel");
+      this.#xulPanel.setAttribute("escapecontentshell", "true");
+      this.renderRoot.append(this.#xulPanel);
+    }
+    if (this.#xulPanel) {
+      render(
+        this.usePanelList ? super.panelListTemplate() : "",
+        this.#xulPanel,
+        { host: this }
+      );
+    }
     for (let [index, item] of [
       ...(this.panelList?.querySelectorAll("panel-item") ?? []),
     ].entries()) {
