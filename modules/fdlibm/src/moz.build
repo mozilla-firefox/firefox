@@ -17,11 +17,13 @@ if CONFIG['CC_TYPE'] in ('clang', 'gcc'):
 if CONFIG['CC_TYPE'] == 'clang':
     CXXFLAGS += [
         '-Wno-dangling-else',
+        '-Wno-unsequenced',
     ]
 
 if CONFIG['CC_TYPE'] == 'clang-cl':
     CXXFLAGS += [
         '-Wno-sign-compare',
+        '-Wno-unsequenced',
         '-wd4146', # unary minus operator applied to unsigned type
         '-wd4305', # truncation from 'double' to 'const float'
         '-wd4723', # potential divide by 0
