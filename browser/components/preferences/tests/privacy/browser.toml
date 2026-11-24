@@ -58,9 +58,6 @@ run-if = [
 ["browser_privacypane_2.js"]
 
 ["browser_privacypane_3.js"]
-skip-if = [
-  "os == 'linux' && os_version == '24.04' && arch == 'x86_64' && display == 'x11' && opt && a11y_checks",
-]
 
 ["browser_sanitizeOnShutdown_prefLocked.js"]
 

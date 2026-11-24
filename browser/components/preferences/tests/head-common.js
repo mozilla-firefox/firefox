@@ -473,25 +473,14 @@ async function updateCheckBoxElement(checkbox, value) {
   // Scroll into view for click to succeed.
   checkbox.scrollIntoView();
 
-  // Toggle the state.
-  EventUtils.synthesizeMouseAtCenter(checkbox, {}, checkbox.documentGlobal);
-}
-
-async function updateCheckBox(win, id, value) {
-  let checkbox = win.document.getElementById(id);
-  ok(checkbox, "the " + id + " checkbox should exist");
-  is_element_visible(checkbox, "the " + id + " checkbox should be visible");
-
-  // No need to click if we're already in the desired state.
-  if (checkbox.checked === value) {
-    return;
-  }
-
-  // Scroll into view for click to succeed.
-  checkbox.scrollIntoView();
-
-  // Toggle the state.
-  EventUtils.synthesizeMouseAtCenter(checkbox, {}, checkbox.documentGlobal);
+  // We need to click the checkbox's input rather than "just" the checkbox,
+  // as otherwise the click can land on the disabled buttons under alwaysClear.
+  EventUtils.synthesizeMouseAtCenter(
+    checkbox.inputEl,
+    {},
+    checkbox.documentGlobal
+  );
+  is(checkbox.checked, value, "the " + checkbox.id + " checkbox was toggled");
 }
 
 /**
