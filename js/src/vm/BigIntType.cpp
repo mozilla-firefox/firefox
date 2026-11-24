@@ -2264,6 +2264,13 @@ BigInt* BigInt::mulMod(JSContext* cx, HandleBigInt x, HandleBigInt y,
     return createFromDigitVector(cx, storage, isNegative);
   }
 
+  // Avoid writing the result to the scratch vector if the result will have at
+  // most one digit.
+  if (n == 1) {
+    Digit mod = modDigitsByDigit(product.First(length), mDigits[0]);
+    return mod ? createFromDigit(cx, mod, isNegative) : zero(cx);
+  }
+
   Digits u = Digits(storage).First(length + 1);
   u[length] = 0;
   if (!modDigitsInPlace(u, mDigits)) {
