@@ -17,8 +17,7 @@ import androidx.compose.ui.semantics.clearAndSetSemantics
  * @param scope The scope that shows and hides the layout.
  */
 internal fun Modifier.inertWhileTransitioning(scope: AnimatedVisibilityScope): Modifier {
-    val transition = scope.transition
-    if (transition.currentState == EnterExitState.Visible && transition.targetState == EnterExitState.Visible) {
+    if (scope.isSettled) {
         return this
     }
     return this.clearAndSetSemantics {}
@@ -30,3 +29,7 @@ internal fun Modifier.inertWhileTransitioning(scope: AnimatedVisibilityScope): M
             }
         }
 }
+
+/** Whether the layout has finished fading in and is shown as is. */
+internal val AnimatedVisibilityScope.isSettled: Boolean
+    get() = transition.currentState == EnterExitState.Visible && transition.targetState == EnterExitState.Visible

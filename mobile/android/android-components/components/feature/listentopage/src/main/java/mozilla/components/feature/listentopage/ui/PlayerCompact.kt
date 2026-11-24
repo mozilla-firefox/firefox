@@ -23,6 +23,7 @@ import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.platform.testTag
 import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.semantics.Role
@@ -59,6 +60,7 @@ internal fun PlayerCompact(
                 onClick = { onAction(ListenAction.User.Session.StopRequested()) },
                 colors = IconButtonDefaults.iconButtonColors(containerColor = MaterialTheme.colorScheme.surface),
                 contentDescription = stringResource(R.string.mozac_feature_listentopage_close),
+                modifier = Modifier.testTag(PlayerControl.Close.testTag),
             ) {
                 Icon(
                     painter = painterResource(iconsR.drawable.mozac_ic_cross_24),
@@ -70,6 +72,7 @@ internal fun PlayerCompact(
                 article = article,
                 modifier =
                     Modifier.weight(1f)
+                        .testTag(PlayerControl.Heading.testTag)
                         .heightIn(min = AcornTheme.layout.size.static600)
                         .clickable(
                             onClickLabel = stringResource(R.string.mozac_feature_listentopage_expand_player),

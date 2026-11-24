@@ -28,6 +28,7 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.layout.layout
 import androidx.compose.ui.platform.LocalConfiguration
 import androidx.compose.ui.platform.LocalLayoutDirection
+import androidx.compose.ui.platform.testTag
 import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.semantics.semantics
@@ -77,6 +78,7 @@ internal fun PlayerExpanded(
             IconButton(
                 onClick = { onAction(ListenAction.User.Session.StopRequested()) },
                 contentDescription = stringResource(R.string.mozac_feature_listentopage_close),
+                modifier = Modifier.testTag(PlayerControl.Close.testTag),
             ) {
                 Icon(
                     painter = painterResource(iconsR.drawable.mozac_ic_cross_24),
@@ -85,6 +87,7 @@ internal fun PlayerExpanded(
             }
             ArticleHeading(
                 article = article,
+                modifier = Modifier.testTag(PlayerControl.Heading.testTag),
                 playbackUiState = playbackUiState,
                 shouldScrollTitle =
                     playbackUiState is PlaybackUiState.Playing || playbackUiState is PlaybackUiState.Buffering,

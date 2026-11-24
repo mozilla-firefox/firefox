@@ -4,12 +4,20 @@
 
 package mozilla.components.feature.listentopage.ui
 
+import android.accessibilityservice.AccessibilityServiceInfo
+import android.view.View
+import android.view.ViewGroup
+import android.view.accessibility.AccessibilityEvent
+import android.view.accessibility.AccessibilityManager
+import android.view.accessibility.AccessibilityNodeInfo
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.requiredWidth
+import androidx.compose.runtime.State
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.platform.LocalView
 import androidx.compose.ui.semantics.LiveRegionMode
 import androidx.compose.ui.semantics.Role
 import androidx.compose.ui.semantics.SemanticsActions
@@ -32,6 +40,8 @@ import androidx.compose.ui.test.performSemanticsAction
 import androidx.compose.ui.test.performTouchInput
 import androidx.compose.ui.unit.Dp
 import androidx.compose.ui.unit.dp
+import androidx.core.view.AccessibilityDelegateCompat
+import androidx.core.view.ViewCompat
 import java.util.Locale
 import mozilla.components.compose.base.theme.AcornTheme
 import mozilla.components.feature.listentopage.ArticleProgress
@@ -49,6 +59,7 @@ import org.junit.Rule
 import org.junit.Test
 import org.junit.runner.RunWith
 import org.robolectric.RobolectricTestRunner
+import org.robolectric.Shadows.shadowOf
 import org.robolectric.annotation.Config
 
 // The expanded player is taller than Robolectric's default window, so `assertIsDisplayed` on anything
@@ -79,8 +90,11 @@ class ListenSheetTest {
         }
     }
 
+    private lateinit var view: View
+
     private fun setContent(
-        expanded: Boolean,
+        expanded: Boolean = true,
+        expandedState: State<Boolean> = mutableStateOf(expanded),
         onAction: (ListenAction) -> Unit = {},
         articleProgress: ArticleProgress = ArticleProgress(LESS_THAN_ONE_SEC_ELAPSED_TIME_MS, TOTAL_DURATION_MS),
         playbackPhase: PlaybackPhase = PlaybackPhase.Playing,
@@ -88,6 +102,7 @@ class ListenSheetTest {
         availableWidth: Dp = NARROW_WINDOW_WIDTH,
     ) {
         composeTestRule.setContent {
+            view = LocalView.current
             AcornTheme {
                 Box(modifier = Modifier.requiredWidth(availableWidth)) {
                     ListenSheet(
@@ -97,7 +112,7 @@ class ListenSheetTest {
                         speed = PlaybackSpeed.Default,
                         voiceState = VoiceState(),
                         onAction = onAction,
-                        expanded = expanded,
+                        expanded = expandedState.value,
                         error = error,
                         modifier = Modifier.fillMaxWidth(),
                     )
@@ -401,6 +416,98 @@ class ListenSheetTest {
                         testContext.getString(R.string.mozac_feature_listentopage_expand_player)
                 }
             )
+    }
+
+    @Test
+    fun `GIVEN TalkBack is on the speed button WHEN the sheet collapses THEN the compact play button gets the focus`() {
+        assertCollapseHandsFocus(from = PlayerControl.Speed, to = PlayerControl.PlayPause)
+    }
+
+    @Test
+    fun `GIVEN TalkBack is on the forward button WHEN the sheet collapses THEN the compact play button gets the focus`() {
+        assertCollapseHandsFocus(from = PlayerControl.Forward, to = PlayerControl.PlayPause)
+    }
+
+    @Test
+    fun `GIVEN TalkBack is on the voice button WHEN the sheet collapses THEN the compact rewind button gets the focus`() {
+        assertCollapseHandsFocus(from = PlayerControl.Voices, to = PlayerControl.Rewind)
+    }
+
+    @Test
+    fun `GIVEN TalkBack is on the seek bar WHEN the sheet collapses THEN the compact rewind button gets the focus`() {
+        assertCollapseHandsFocus(from = PlayerControl.Seek, to = PlayerControl.Rewind)
+    }
+
+    @Test
+    fun `GIVEN TalkBack is on the rewind button WHEN the sheet collapses THEN the compact rewind button gets the focus`() {
+        assertCollapseHandsFocus(from = PlayerControl.Rewind, to = PlayerControl.Rewind)
+    }
+
+    @Test
+    fun `GIVEN TalkBack is not on the player WHEN the sheet collapses THEN no player control is given the focus`() {
+        enableTouchExploration()
+        val expanded = mutableStateOf(true)
+        setContent(expandedState = expanded)
+        val focusedTags = recordAccessibilityFocus()
+
+        expanded.value = false
+        composeTestRule.waitForIdle()
+
+        assertEquals(emptyList<String?>(), focusedTags)
+    }
+
+    private fun assertCollapseHandsFocus(from: PlayerControl, to: PlayerControl) {
+        enableTouchExploration()
+        val expanded = mutableStateOf(true)
+        setContent(expandedState = expanded)
+        val fromId = composeTestRule.onNodeWithTag(from.testTag).fetchSemanticsNode().id
+        view.accessibilityNodeProvider.performAction(fromId, AccessibilityNodeInfo.ACTION_ACCESSIBILITY_FOCUS, null)
+        assertEquals(from.testTag, accessibilityFocusedTag())
+        val focusedTags = recordAccessibilityFocus()
+
+        expanded.value = false
+        composeTestRule.waitForIdle()
+
+        assertEquals(listOf(to.testTag), focusedTags)
+    }
+
+    // Compose only lets accessibility focus be placed when a touch exploration service, such as TalkBack, is on.
+    private fun enableTouchExploration() {
+        val accessibilityManager = testContext.getSystemService(AccessibilityManager::class.java)
+        shadowOf(accessibilityManager).apply {
+            setEnabled(true)
+            setTouchExplorationEnabled(true)
+            setEnabledAccessibilityServiceList(listOf(AccessibilityServiceInfo()))
+        }
+    }
+
+    private fun accessibilityFocusedTag(): String? =
+        view.accessibilityNodeProvider.findFocus(AccessibilityNodeInfo.FOCUS_ACCESSIBILITY)?.viewIdResourceName
+
+    /**
+     * Returns the tags of the nodes that accessibility focus is moved to from now on, in order.
+     *
+     * Robolectric's window is never visible, so the window clears accessibility focus on its next layout. This records
+     * where each focus event puts it, which is what TalkBack follows, instead of reading the focus back afterwards.
+     */
+    private fun recordAccessibilityFocus(): List<String?> {
+        val focusedTags = mutableListOf<String?>()
+        ViewCompat.setAccessibilityDelegate(
+            view.parent as View,
+            object : AccessibilityDelegateCompat() {
+                override fun onRequestSendAccessibilityEvent(
+                    host: ViewGroup,
+                    child: View,
+                    event: AccessibilityEvent,
+                ): Boolean {
+                    if (event.eventType == AccessibilityEvent.TYPE_VIEW_ACCESSIBILITY_FOCUSED) {
+                        focusedTags += accessibilityFocusedTag()
+                    }
+                    return super.onRequestSendAccessibilityEvent(host, child, event)
+                }
+            },
+        )
+        return focusedTags
     }
 
     private companion object {

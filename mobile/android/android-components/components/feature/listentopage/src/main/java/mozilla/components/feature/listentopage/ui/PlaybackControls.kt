@@ -25,6 +25,7 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.platform.LocalConfiguration
 import androidx.compose.ui.platform.LocalLayoutDirection
+import androidx.compose.ui.platform.testTag
 import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.semantics.semantics
@@ -133,7 +134,7 @@ private fun SpeedControls(
             onClick = onClick,
             contentDescription = stringResource(R.string.mozac_feature_listentopage_playback_speed),
             modifier =
-                Modifier.semantics {
+                Modifier.testTag(PlayerControl.Speed.testTag).semantics {
                     stateDescription = speedsStateDescription
                 },
         ) {
@@ -170,7 +171,10 @@ private fun VoiceControls(
             enabled = enabled,
             onClick = onClick,
             contentDescription = stringResource(R.string.mozac_feature_listentopage_voice_options),
-            modifier = Modifier.semantics { stateDescription = voicesStateDescription },
+            modifier =
+                Modifier.testTag(PlayerControl.Voices.testTag).semantics {
+                    stateDescription = voicesStateDescription
+                },
         ) {
             Icon(
                 painter = painterResource(iconsR.drawable.mozac_ic_audio_wave_24),
@@ -216,6 +220,7 @@ private fun CenterControls(
             enabled = enabled,
             onClick = { onAction(ListenAction.User.Controls.ForwardClicked) },
             contentDescription = stringResource(R.string.mozac_feature_listentopage_forward_30_sec),
+            modifier = Modifier.testTag(PlayerControl.Forward.testTag),
         ) {
             // Speed icon hardcoded as of now
             Icon(
@@ -242,6 +247,7 @@ internal fun RewindButton(
         enabled = displayAsEnabled,
         onClick = { onAction(ListenAction.User.Controls.RewindClicked) },
         contentDescription = stringResource(R.string.mozac_feature_listentopage_back_10_sec),
+        modifier = Modifier.testTag(PlayerControl.Rewind.testTag),
     ) {
         Icon(
             painter = painterResource(iconsR.drawable.mozac_ic_playback_rewind_24),

@@ -13,14 +13,9 @@ import androidx.compose.animation.core.updateTransition
 import androidx.compose.animation.fadeIn
 import androidx.compose.animation.fadeOut
 import androidx.compose.animation.togetherWith
-import androidx.compose.foundation.BorderStroke
 import androidx.compose.foundation.focusable
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.widthIn
-import androidx.compose.foundation.shape.RoundedCornerShape
-import androidx.compose.material3.Card
-import androidx.compose.material3.CardDefaults
-import androidx.compose.material3.MaterialTheme
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.SideEffect
 import androidx.compose.runtime.State
@@ -30,11 +25,12 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.focus.FocusRequester
 import androidx.compose.ui.focus.focusRequester
-import androidx.compose.ui.platform.testTag
+import androidx.compose.ui.platform.LocalView
+import androidx.compose.ui.semantics.semantics
+import androidx.compose.ui.semantics.testTagsAsResourceId
 import androidx.compose.ui.tooling.preview.PreviewLightDark
 import androidx.compose.ui.unit.dp
 import mozilla.components.compose.base.annotation.FlexibleWindowLightDarkPreview
-import mozilla.components.compose.base.theme.AcornCorners
 import mozilla.components.compose.base.theme.AcornTheme
 import mozilla.components.feature.listentopage.ArticleProgress
 import mozilla.components.feature.listentopage.ListenAction
@@ -102,21 +98,19 @@ fun ListenSheet(
     val transition = updateTransition(targetState = expanded, label = "ListenSheet")
     val playbackUiState = playbackPhase.toUiState(error = error)
     val sheetFocusRequester = remember { FocusRequester() }
+    val view = LocalView.current
+    val focusMover = remember(view) { AccessibilityFocusMover(view) }
+    // Read before the collapse is applied, while the expanded player's controls are still in the semantics tree.
+    val controlToBeFocused =
+        remember(expanded) {
+            if (expanded) null else focusMover.focusedControl()?.compactCounterpart
+        }
 
     SideEffect(Unit) {
         sheetFocusRequester.requestFocus()
     }
-    Box(modifier = modifier.focusRequester(sheetFocusRequester).focusable()) {
-        Card(
-            shape = RoundedCornerShape(AcornCorners.extraLarge),
-            colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surface),
-            elevation = CardDefaults.cardElevation(AcornTheme.layout.elevation.level2),
-            border = BorderStroke(AcornTheme.layout.border.default, MaterialTheme.colorScheme.outlineVariant),
-            modifier =
-                Modifier.widthIn(max = PlayerMaxWidth)
-                    .align(Alignment.Center)
-                    .testTag(LISTEN_SHEET_PLAYER_CARD_TEST_TAG),
-        ) {
+    Box(modifier = modifier.semantics { testTagsAsResourceId = true }.focusRequester(sheetFocusRequester).focusable()) {
+        ListenPlayerCard {
             transition.AnimatedContent(
                 transitionSpec = {
                     ContentEnter togetherWith
@@ -149,6 +143,7 @@ fun ListenSheet(
                         onAction = onAction,
                         modifier = Modifier.inertWhileTransitioning(scope = this),
                     )
+                    focusMover.MoveFocusWhenSettled(isSettled, controlToBeFocused)
                 }
             }
         }
