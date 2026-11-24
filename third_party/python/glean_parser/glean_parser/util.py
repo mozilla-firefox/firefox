@@ -16,11 +16,9 @@ import textwrap
 from typing import Any, Callable, Iterable, Sequence, Tuple, Union, Optional
 import urllib.request
 
-import diskcache  # type: ignore
 import jinja2
 import jsonschema  # type: ignore
 from jsonschema import _utils  # type: ignore
-import platformdirs  # type: ignore
 import yaml
 
 try:
@@ -283,32 +281,17 @@ def get_null_resolver(schema):
     return NullResolver.from_schema(schema)
 
 
-def fetch_remote_url(url: str, cache: bool = True):
+def fetch_remote_url(url: str):
     """
-    Fetches the contents from an HTTP url or local file path, and optionally
-    caches it to disk.
+    Fetches the contents from an HTTP url or local file path.
     """
-    # Include the Python version in the cache key, since caches aren't
-    # sharable across Python versions.
-    key = (url, str(sys.version_info))
-
     is_http = url.startswith("http")
 
     if not is_http:
         with open(url, "r", encoding="utf-8") as fd:
             return fd.read()
 
-    if cache:
-        cache_dir = platformdirs.user_cache_dir("glean_parser", "mozilla")
-        with diskcache.Cache(cache_dir, disk=diskcache.JSONDisk) as dc:
-            if key in dc:
-                return dc[key]
-
     contents = urllib.request.urlopen(url).read().decode("utf-8")
-
-    if cache:
-        with diskcache.Cache(cache_dir, disk=diskcache.JSONDisk) as dc:
-            dc[key] = contents
 
     return contents
 

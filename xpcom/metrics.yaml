@@ -1325,6 +1325,8 @@ system.os:
       - sync
       - update
       - third-party-modules
+    no_lint:
+      - NAME_TOO_SIMILAR  # similar to system.os_version (in resistfingerprinting/metrics.yaml), but they don't share a ping (bug 2095530)
 
   locale:
     type: string

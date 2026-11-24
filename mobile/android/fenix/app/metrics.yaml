@@ -15544,6 +15544,8 @@ nimbus_system:
     send_in_pings:
       - nimbus-targeting-context
     lifetime: application
+    no_lint:
+      - UNKNOWN_PING_REFERENCED  # nimbus-targeting-context is defined in appservices
 
 partnerships:
   vivo_file_check_error:

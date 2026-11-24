@@ -14,6 +14,7 @@ from pathlib import Path
 from typing import Any, Dict, Optional, Union
 
 from . import __version__
+from . import flows
 from . import metrics
 from . import pings
 from . import tags
@@ -181,7 +182,7 @@ class Category:
     def __init__(
         self,
         name: str,
-        objs: Dict[str, Union[metrics.Metric, pings.Ping, tags.Tag]],
+        objs: Dict[str, Union[metrics.Metric, pings.Ping, tags.Tag, flows.Flow]],
         contains_pings: bool,
     ):
         self.name = name
@@ -237,5 +238,6 @@ def output_rust(
                 categories=categories,
                 extra_metric_args=util.extra_metric_args,
                 common_metric_args=util.common_metric_args,
+                flows=flows.registration_data(options.get("flows", {})),
             )
         )

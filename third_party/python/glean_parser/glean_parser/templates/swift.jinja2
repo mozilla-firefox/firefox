@@ -156,6 +156,29 @@ extension {{ namespace }} {
     }
     {% endif %}
 
+    {% if flows %}
+    /// The flows declared in this application's and its libraries' `flows.yaml` files.
+    ///
+    /// Pass `definitions` to Glean as the `flows` configuration option.
+    enum GleanFlows {
+        static let definitions: [FlowDefinition] = [
+            {% for flow in flows %}
+            FlowDefinition(
+                name: "{{ flow.name }}",
+                events: [
+                    {% for event in flow.events %}
+                    "{{ event.identifier }}": .{{ event.role|lower }}{{ "," if not loop.last }}{% if event.unresolved %} // Unresolved: assumed to be defined elsewhere.{% endif %}
+
+                    {% endfor %}
+                ],
+                autoCloseTimeoutMs: {% if flow.auto_close_timeout_ms is not none %}{{ flow.auto_close_timeout_ms }}{% else %}nil{% endif %},
+                disabled: {{ flow.disabled|lower }}
+            ){{ "," if not loop.last }}
+            {% endfor %}
+        ]
+    }
+    {% endif %}
+
     {% for category in categories %}
     {% if category.contains_pings %}
     final class {{ category.name|Camelize }}: Sendable {

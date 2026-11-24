@@ -29,6 +29,7 @@ Jinja2 template is not. Please file bugs! #}
     #[serde(deny_unknown_fields)]
     pub struct {{ name }} {
         {% for itemname, val in struct.properties.items() %}
+          #[serde(rename = "{{ itemname }}")]
           {% if val.type == "array" %}
           #[serde(skip_serializing_if = "Vec::is_empty", default = "Vec::new", deserialize_with = "::glean::traits::__serde_helper::vec_null")]
           pub {{itemname|snake_case}}: {{ name ~ itemname|Camelize }},
@@ -194,4 +195,34 @@ pub mod {{ category.name|snake_case }} {
 {% endfor %}
 {% if metric_by_type|length > 0 %}
 
+{% endif %}
+{% if flows %}
+
+/// The flows declared in this application's and its libraries' `flows.yaml` files.
+///
+/// Pass `definitions()` to Glean as the `flows` configuration option.
+pub mod glean_flows {
+    use glean::{FlowDefinition, FlowRole};
+
+    pub fn definitions() -> Vec<FlowDefinition> {
+        vec![
+            {% for flow in flows %}
+            FlowDefinition {
+                name: "{{ flow.name }}".into(),
+                events: [
+                    {% for event in flow.events %}
+                    ("{{ event.identifier }}", FlowRole::{{ event.role }}),{% if event.unresolved %} // Unresolved: assumed to be defined elsewhere.{% endif %}
+
+                    {% endfor %}
+                ]
+                .into_iter()
+                .map(|(event, role)| (event.to_string(), role))
+                .collect(),
+                auto_close_timeout_ms: {% if flow.auto_close_timeout_ms is not none %}Some({{ flow.auto_close_timeout_ms }}){% else %}None{% endif %},
+                disabled: {{ flow.disabled|lower }},
+            },
+            {% endfor %}
+        ]
+    }
+}
 {% endif %}

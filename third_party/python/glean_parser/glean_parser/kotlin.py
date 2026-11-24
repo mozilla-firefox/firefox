@@ -14,6 +14,7 @@ from pathlib import Path
 from typing import Any, Dict, List, Optional, Union  # noqa
 
 from . import __version__
+from . import flows
 from . import metrics
 from . import pings
 from . import util
@@ -227,6 +228,22 @@ def output_kotlin(
                     namespace_package=namespace_package,
                     glean_namespace=glean_namespace,
                     build_date=build_date,
+                )
+            )
+            fd.write("\n")
+
+    # Write out the flow registration data, only if there are any flows. The
+    # filename starts with "Glean" so it can never clash with a metric category.
+    flow_data = flows.registration_data(options.get("flows", {}))
+    if flow_data:
+        flows_template = util.get_jinja2_template("kotlin.flows.jinja2")
+        with (output_dir / "GleanFlows.kt").open("w", encoding="utf-8") as fd:
+            fd.write(
+                flows_template.render(
+                    parser_version=__version__,
+                    namespace=namespace,
+                    glean_namespace=glean_namespace,
+                    flows=flow_data,
                 )
             )
             fd.write("\n")

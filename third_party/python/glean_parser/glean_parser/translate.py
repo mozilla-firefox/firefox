@@ -14,6 +14,7 @@ import shutil
 import tempfile
 from typing import Any, Callable, Dict, Iterable, List, Optional
 
+from . import flows
 from . import lint
 from . import parser
 from . import go_server
@@ -134,7 +135,10 @@ def translate_metrics(
         generating the output files. By default, no files will be cleared (i.e.
         the directory should be left alone).
     :param options: dictionary of options. The available options are backend
-        format specific. These are passed unchanged to `translation_func`.
+        format specific. These are passed to `translation_func` unchanged,
+        except that if any `flows.yaml` files define flows, they are removed
+        from the object tree and passed as the `flows` option instead, a
+        dictionary of flow name to `flows.Flow`.
     :param parser_config: A dictionary of options that change parsing behavior.
         See `parser.parse_metrics` for more info.
     """
@@ -169,6 +173,14 @@ def translate_metrics(
 
     # We don't render tags anywhere yet.
     all_objects.value.pop("tags", None)
+
+    # Flows are not metrics, so they are taken out of the tree and handed to the
+    # outputters that emit them (registration data, docs) through the `flows`
+    # option, present only when there are flows. The rest never see them.
+    found_flows = flows.flows_in(all_objects.value)
+    if found_flows:
+        all_objects.value.pop("flows")
+        options = dict(options, flows=found_flows)
 
     # Apply additional general transformations to all metrics
     transform_metrics(all_objects.value)

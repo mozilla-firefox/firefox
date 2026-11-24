@@ -12,6 +12,7 @@ import enum
 from typing import Any, Dict, List, Optional, Type, Union  # noqa
 
 
+from . import flows
 from . import pings
 from . import tags
 from . import util
@@ -629,4 +630,4 @@ class DualLabeledCounter(Metric):
         return d
 
 
-ObjectTree = Dict[str, Dict[str, Union[Metric, pings.Ping, tags.Tag]]]
+ObjectTree = Dict[str, Dict[str, Union[Metric, pings.Ping, tags.Tag, flows.Flow]]]

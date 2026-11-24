@@ -14,6 +14,7 @@ from pathlib import Path
 from typing import Any, Dict, Optional, Union
 
 from . import __version__
+from . import flows
 from . import metrics
 from . import pings
 from . import tags
@@ -198,7 +199,7 @@ class Category:
     """
 
     name: str
-    objs: Dict[str, Union[metrics.Metric, pings.Ping, tags.Tag]]
+    objs: Dict[str, Union[metrics.Metric, pings.Ping, tags.Tag, flows.Flow]]
     contains_pings: bool
 
 
@@ -275,6 +276,7 @@ def output_swift(
                 glean_namespace=glean_namespace,
                 allow_reserved=options.get("allow_reserved", False),
                 build_info=build_info,
+                flows=flows.registration_data(options.get("flows", {})),
             )
         )
         # Jinja2 squashes the final newline, so we explicitly add it

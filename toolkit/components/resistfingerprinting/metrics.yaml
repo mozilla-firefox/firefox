@@ -6156,6 +6156,8 @@ characteristics:
     expires: never
     data_sensitivity:
       - technical
+    no_lint:
+      - NAME_TOO_SIMILAR  # similar to system.os.version, but they don't share a ping (bug 2095530)
 
   os_distro:
     type: string

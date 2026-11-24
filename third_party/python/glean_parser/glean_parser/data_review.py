@@ -13,6 +13,7 @@ from typing import Sequence
 import re
 
 
+from . import flows
 from . import parser
 from . import util
 
@@ -47,7 +48,9 @@ def generate(
     durations = set()
     responsible_emails = set()
     filtered_metrics = list()
-    for metrics in all_objects.value.values():
+    for category_key, metrics in all_objects.value.items():
+        if flows.flows_in({category_key: metrics}):
+            continue
         for metric in metrics.values():
             if not any([len(reobj.findall(bug)) == 1 for bug in metric.bugs]):
                 continue

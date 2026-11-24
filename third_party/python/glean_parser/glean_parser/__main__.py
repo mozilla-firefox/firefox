@@ -233,6 +233,7 @@ def dump(input, allow_reserved, allow_missing_files, require_tags):
     metrics = {
         metric.identifier(): metric.serialize()
         for category, probes in results.value.items()
+        if not glean_parser.flows.flows_in({category: probes})
         for probe_name, metric in probes.items()
     }
 

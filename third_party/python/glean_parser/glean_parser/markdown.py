@@ -14,6 +14,7 @@ from urllib.parse import urlsplit, parse_qs
 
 
 from . import __version__
+from . import flows
 from . import metrics
 from . import pings
 from . import util
@@ -172,6 +173,20 @@ def data_sensitivity_numbers(
         return ", ".join(str(x.value) for x in data_sensitivity)
 
 
+def timeout_desc(timeout_ms: Optional[int]) -> str:
+    """
+    A readable description of a flow's `auto_close_timeout`.
+    """
+    if timeout_ms is None:
+        return "none: an instance stays open until it exits or its session ends"
+    for unit, ms in (("day", 86400000), ("hour", 3600000), ("minute", 60000)):
+        if timeout_ms % ms == 0:
+            count = timeout_ms // ms
+            return f"{count} {unit}{'s' if count != 1 else ''}"
+    count = timeout_ms // 1000
+    return f"{count} second{'s' if count != 1 else ''}"
+
+
 def output_markdown(
     objs: metrics.ObjectTree, output_dir: Path, options: Optional[Dict[str, Any]] = None
 ) -> None:
@@ -234,6 +249,16 @@ def output_markdown(
             metrics_by_pings[ping_name], key=lambda x: x.identifier()
         )
 
+    # The flows each event belongs to, so the event's row can link to them.
+    flow_data = flows.registration_data(options.get("flows", {}))
+    role_labels = {"Start": "entry", "End": "exit", "Member": "member"}
+    flows_by_event: Dict[str, List[Tuple[str, str]]] = defaultdict(list)
+    for flow in flow_data:
+        for event in flow["events"]:
+            flows_by_event[event["identifier"]].append(
+                (flow["name"], role_labels[event["role"]])
+            )
+
     project_title = options.get("project_title", "this project")
     introduction_extra = options.get("introduction_extra")
 
@@ -254,6 +279,8 @@ def output_markdown(
                 lambda x: ping_include_client_id(x, custom_pings_cache),
             ),
             ("data_sensitivity_numbers", data_sensitivity_numbers),
+            ("event_flows", lambda x: flows_by_event.get(x.identifier(), [])),
+            ("timeout_desc", timeout_desc),
         ),
     )
 
@@ -265,6 +292,7 @@ def output_markdown(
             template.render(
                 parser_version=__version__,
                 metrics_by_pings=metrics_by_pings,
+                flows=flow_data,
                 project_title=project_title,
                 introduction_extra=introduction_extra,
             )

@@ -1,0 +1,178 @@
+# This Source Code Form is subject to the terms of the Mozilla Public
+# License, v. 2.0. If a copy of the MPL was not distributed with this
+# file, You can obtain one at http://mozilla.org/MPL/2.0/.
+
+---
+$schema: http://json-schema.org/draft-07/schema#
+title: Flows
+description: |
+  Schema for the flows.yaml files for Mozilla's Glean telemetry SDK.
+
+  A flow is a named, multi-step task measured as a unit. The top-level of the
+  `flows.yaml` file has a key defining the name of each flow. The values name
+  the events that open the flow, close it, and belong to it in between.
+
+  Flows generate no API. The Glean SDK opens and closes instances of a flow as
+  its events are recorded.
+
+$id: moz://mozilla.org/schemas/glean/flows/1-0-0
+
+definitions:
+  event_list:
+    type: array
+    items:
+      title: Event identifier
+      description: |
+        An event metric, named by its identifier, `category.name`, exactly as
+        in `metrics.yaml`.
+      type: string
+      pattern: "^[a-z_][a-z0-9_]*(\\.[a-z_][a-z0-9_]*)+$"
+    uniqueItems: true
+
+type: object
+
+propertyNames:
+  anyOf:
+    - enum: ["$schema"]
+    - title: Flow name
+      description: |
+        Flow names appear in event payloads and as metric labels, so they are
+        limited to lowercase letters, digits, and underscores, starting with a
+        letter, up to 111 characters, the limit for metric labels.
+      type: string
+      pattern: "^[a-z][a-z0-9_]{0,110}$"
+
+properties:
+  $schema:
+    type: string
+    format: url
+
+  no_lint:
+    title: Lint checks to skip globally
+    description: |
+      This parameter lists any lint checks to skip for this whole file.
+    type: array
+    items:
+      type: string
+
+additionalProperties:
+  type: object
+  properties:
+    description:
+      title: Description
+      description: |
+        **Required.**
+
+        What task the flow measures, from where to where.
+
+        Descriptions may contain [markdown
+        syntax](https://www.markdownguide.org/basic-syntax/).
+      type: string
+
+    bugs:
+      title: Related bugs
+      description: |
+        **Required.**
+
+        A list of bugs (e.g. Bugzilla and Github) that are relevant to this
+        flow, e.g., tracking its original implementation or later changes to
+        it.
+
+        It must be a URL to a bug page in a tracker.
+      type: array
+      minItems: 1
+      items:
+        type: string
+        format: uri
+
+    data_reviews:
+      title: Review references
+      description: |
+        **Required.**
+
+        A list of URLs to any data collection reviews relevant to the flow.
+      type: array
+      items:
+        type: string
+        format: uri
+
+    notification_emails:
+      title: Notification emails
+      description: |
+        **Required.**
+
+        A list of email addresses to notify for important events with the
+        flow or when people with context or ownership for the flow need to
+        be contacted.
+      type: array
+      minItems: 1
+      items:
+        type: string
+        format: email
+
+    starts_on:
+      title: Entry events
+      description: |
+        **Required.**
+
+        Events that open an instance of the flow when recorded, if none is
+        open. At least one is required.
+      allOf:
+        - $ref: "#/definitions/event_list"
+        - minItems: 1
+
+    ends_on:
+      title: Exit events
+      description: |
+        Events that close the open instance of the flow when recorded.
+
+        A flow without exit events can only close by timing out or when its
+        session ends, so it can never record a conclusive outcome. Until it
+        closes, recording an entry event again does not open a new instance.
+      $ref: "#/definitions/event_list"
+
+    includes:
+      title: Member events
+      description: |
+        Other events that belong to the flow without opening or closing it.
+
+        Entry and exit events are members by definition, and are not repeated
+        here.
+      $ref: "#/definitions/event_list"
+
+    auto_close_timeout:
+      title: Automatic close timeout
+      description: |
+        The longest an instance of the flow may stay open, measured from when
+        it opened, as `<integer><unit>` where the unit is one of `s`
+        (seconds), `m` (minutes), `h` (hours), or `d` (days). For example
+        `45m` or `7d`.
+
+        Without it, an instance stays open until it exits or its session
+        ends.
+      type: string
+      pattern: "^[1-9][0-9]*[smhd]$"
+
+    disabled:
+      title: Disabled
+      description: |
+        If `true`, the flow ships switched off and no instance of it opens.
+        This can be overridden remotely.
+      type: boolean
+      default: false
+
+    no_lint:
+      title: Lint checks to skip
+      description: |
+        This parameter lists any lint checks to skip for this flow only.
+      type: array
+      items:
+        type: string
+
+  required:
+    - description
+    - bugs
+    - data_reviews
+    - notification_emails
+    - starts_on
+  additionalProperties: false

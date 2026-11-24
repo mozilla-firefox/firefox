@@ -16,6 +16,7 @@ from typing import Any, cast, Dict, Generator, Iterable, Optional, Set, Tuple, U
 import jsonschema  # type: ignore
 from jsonschema.exceptions import ValidationError  # type: ignore
 
+from .flows import Flow, flows_in
 from .metrics import Metric, ObjectTree
 from .pings import Ping, RESERVED_PING_NAMES
 from .tags import Tag
@@ -29,6 +30,7 @@ SCHEMAS_DIR = ROOT_DIR / "schemas"
 METRICS_ID = "moz://mozilla.org/schemas/glean/metrics/2-0-0"
 PINGS_ID = "moz://mozilla.org/schemas/glean/pings/2-0-0"
 TAGS_ID = "moz://mozilla.org/schemas/glean/tags/1-0-0"
+FLOWS_ID = "moz://mozilla.org/schemas/glean/flows/1-0-0"
 
 
 def _update_validator(validator):
@@ -56,7 +58,7 @@ def _load_file(
     filepath: Path, parser_config: Dict[str, Any]
 ) -> Generator[str, None, Tuple[Dict[str, util.JSONType], Optional[str]]]:
     """
-    Load a metrics.yaml or pings.yaml format file.
+    Load a metrics.yaml, pings.yaml, tags.yaml, or flows.yaml format file.
 
     If the `filepath` does not exist, raises `FileNotFoundError`, unless
     `parser_config["allow_missing_files"]` is `True`.
@@ -92,12 +94,13 @@ def _load_file(
     except IndexError:
         filetype = None
 
-    if filetype not in ("metrics", "pings", "tags"):
+    if filetype not in ("metrics", "pings", "tags", "flows"):
         filetype = None
 
-    for error in validate(content, filepath):
-        content = {}
-        yield error
+    if not parser_config.get("skip_schema_validation", False):
+        for error in validate(content, filepath):
+            content = {}
+            yield error
 
     return content, filetype
 
@@ -428,6 +431,104 @@ def _instantiate_tags(
             sources[tag_key] = filepath
 
 
+def _instantiate_flows(
+    all_objects: ObjectTree,
+    sources: Dict[Any, Path],
+    content: Dict[str, util.JSONType],
+    filepath: Path,
+    config: Dict[str, Any],
+) -> Generator[str, None, None]:
+    """
+    Load a list of flows.yaml files, convert the JSON information into Flow
+    objects.
+    """
+    global_no_lint = content.get("no_lint", [])
+    assert isinstance(global_no_lint, list)
+
+    for flow_key, flow_val in sorted(content.items()):
+        if flow_key.startswith("$"):
+            continue
+        if flow_key == "no_lint":
+            continue
+        if not isinstance(flow_val, dict):
+            raise TypeError(f"Invalid content for flow {flow_key}")
+        flow_val["name"] = flow_key
+        try:
+            flow_obj = Flow(
+                defined_in=getattr(flow_val, "defined_in", None),
+                _validated=True,
+                **flow_val,
+            )
+        except Exception as e:
+            yield util.format_error(filepath, f"On flow '{flow_key}'", str(e))
+            continue
+
+        flow_obj.no_lint = sorted(set(flow_obj.no_lint + global_no_lint))
+        if isinstance(filepath, Path) and flow_obj.defined_in is not None:
+            flow_obj.defined_in["filepath"] = str(filepath)
+
+        # Flow names share no namespace with pings or tags, so key their
+        # sources separately.
+        already_seen = sources.get(("flow", flow_key))
+        if already_seen is not None:
+            # Definitions are never merged: a library must not be able to
+            # redefine an application's flow by declaring one of the same name.
+            yield util.format_error(
+                filepath,
+                "",
+                f"Duplicate flow name '{flow_key}' already defined in '{already_seen}'",
+            )
+        else:
+            all_objects.setdefault("flows", {})[flow_key] = flow_obj
+            sources[("flow", flow_key)] = filepath
+
+
+def _resolve_flow_events(all_objects: ObjectTree) -> Generator[str, None, None]:
+    """
+    Check every event the flows name against the metrics that were parsed.
+
+    An event defined in the files given to the parser must be an `in_session`
+    event metric. An event that isn't defined in any of them is assumed to be
+    defined elsewhere, such as in a library built separately, and is recorded
+    on the flow as unresolved. The linter warns about those.
+    """
+    stored = all_objects.get("flows", {})
+    if not any(isinstance(obj, Flow) for obj in stored.values()):
+        return
+
+    # A metric category named `flows` shares the key flows are stored under.
+    if any(isinstance(obj, Metric) for obj in stored.values()):
+        yield util.format_error(
+            "",
+            "",
+            "A metrics category named 'flows' can't be used together with flows.yaml.",
+        )
+        return
+
+    for flow in flows_in(all_objects).values():
+        filepath = (flow.defined_in or {}).get("filepath", "")
+        for event, role in flow.events().items():
+            category, _, name = event.rpartition(".")
+            metric = all_objects.get(category, {}).get(name)
+            if not isinstance(metric, Metric):
+                flow.unresolved.add(event)
+                continue
+            if metric.type != "event":
+                yield util.format_error(
+                    filepath,
+                    f"On flow '{flow.name}'",
+                    f"'{event}' in `{role}` is a {metric.type} metric. "
+                    "Flows may only name event metrics.",
+                )
+            elif not metric.in_session:
+                yield util.format_error(
+                    filepath,
+                    f"On flow '{flow.name}'",
+                    f"'{event}' in `{role}` is not `in_session`. "
+                    "Flows live inside sessions, so they may only name in-session events.",
+                )
+
+
 def _preprocess_objects(objs: ObjectTree, config: Dict[str, Any]) -> ObjectTree:
     """
     Preprocess the object tree to better set defaults.
@@ -456,8 +557,9 @@ def parse_objects(
     filepaths: Iterable[Path], config: Optional[Dict[str, Any]] = None
 ) -> Generator[str, None, ObjectTree]:
     """
-    Parse one or more metrics.yaml and/or pings.yaml files, returning a tree of
-    `metrics.Metric`, `pings.Ping`, and `tags.Tag` instances.
+    Parse one or more metrics.yaml, pings.yaml, tags.yaml, and/or flows.yaml
+    files, returning a tree of `metrics.Metric`, `pings.Ping`, `tags.Tag`, and
+    `flows.Flow` instances.
 
     The result is a generator over any errors.  If there are no errors, the
     actual metrics can be obtained from `result.value`.  For example::
@@ -469,8 +571,9 @@ def parse_objects(
 
     The result value is a dictionary of category names to categories, where
     each category is a dictionary from metric name to `metrics.Metric`
-    instances.  There are also the special categories `pings` and `tags`
-    containing all of the `pings.Ping` and `tags.Tag` instances, respectively.
+    instances.  There are also the special categories `pings`, `tags`, and
+    `flows` containing all of the `pings.Ping`, `tags.Tag`, and `flows.Flow`
+    instances, respectively.
 
     :param filepaths: list of Path objects to metrics.yaml, pings.yaml, and/or
         tags.yaml files
@@ -486,6 +589,10 @@ def parse_objects(
           the input `filepaths` do not exist.
         - `interesting`: Contains an array of interesting metrics/ping files.
           Probes not included in these files will be marked as disabled.
+        - `skip_schema_validation`: Don't validate the input files against the
+          schema, including checking that `$schema` is a known schema. This is
+          only safe when they have been validated elsewhere: invalid input may
+          raise exceptions rather than produce errors.
     """
     if config is None:
         config = {}
@@ -507,6 +614,12 @@ def parse_objects(
             yield from _instantiate_tags(
                 all_objects, sources, content, filepath, config
             )
+        elif filetype == "flows":
+            yield from _instantiate_flows(
+                all_objects, sources, content, filepath, config
+            )
+
+    yield from _resolve_flow_events(all_objects)
 
     if config.get("interesting"):
         # We're configured to disable probes not included in the interesting list.
@@ -533,7 +646,7 @@ def parse_objects(
                     interesting_metrics_dict[category_key][metric_key] = metric_val
 
         for category_key, category_val in all_objects.items():
-            if category_key == "tags":
+            if category_key == "tags" or flows_in({category_key: category_val}):
                 continue
 
             for metric_key, metric_val in sorted(category_val.items()):

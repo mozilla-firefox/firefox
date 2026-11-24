@@ -398,15 +398,6 @@ wheels = [
 ]
 
 [[package]]
-name = "diskcache"
-version = "5.6.3"
-source = { registry = "https://pypi.org/simple" }
-sdist = { url = "https://files.pythonhosted.org/packages/3f/21/1c1ffc1a039ddcc459db43cc108658f32c57d271d7289a2794e401d0fdb6/diskcache-5.6.3.tar.gz", hash = "sha256:2c3a3fa2743d8535d832ec61c2054a1641f41775aa7c556758a109941e33e4fc", size = 67916, upload-time = "2023-08-31T06:12:00.316Z" }
-wheels = [
-    { url = "https://files.pythonhosted.org/packages/3f/27/4570e78fc0bf5ea0ca45eb1de3818a23787af9b390c0b0a0033a1b8236f9/diskcache-5.6.3-py3-none-any.whl", hash = "sha256:5e31b2d5fbad117cc363ebaf6b689474db18a1f6438bc82358b024abd4c2ca19", size = 45550, upload-time = "2023-08-31T06:11:58.822Z" },
-]
-
-[[package]]
 name = "distro"
 version = "1.9.0"
 source = { registry = "https://pypi.org/simple" }
@@ -572,19 +563,18 @@ wheels = [
 
 [[package]]
 name = "glean-parser"
-version = "22.0.1"
+version = "22.1.0"
 source = { registry = "https://pypi.org/simple" }
 dependencies = [
     { name = "click" },
-    { name = "diskcache" },
     { name = "jinja2" },
     { name = "jsonschema" },
     { name = "platformdirs" },
     { name = "pyyaml" },
 ]
-sdist = { url = "https://files.pythonhosted.org/packages/83/9d/ee3b1fe7ce98d3f64d2f108b03039a115e1d45d6e474b6f5d16990e5c5f8/glean_parser-22.0.1.tar.gz", hash = "sha256:27dfde50605ed7922fdee1789c29d886132daf4f7406cfb4b2980acaf6bc2ced", size = 140674, upload-time = "2026-10-20T18:36:45.807Z" }
+sdist = { url = "https://files.pythonhosted.org/packages/9e/07/5113fa8ea4f31061d2ab35ccb55c0f3f50154bbc32f03ff77a18ced57795/glean_parser-22.1.0.tar.gz", hash = "sha256:9b083497857a655e127b7b274a9368ce5c98d0332eab53ffbe87b699502030c4", size = 150581, upload-time = "2026-11-20T11:28:41.334Z" }
 wheels = [
-    { url = "https://files.pythonhosted.org/packages/bb/65/92255fcce39677c5df74c01f8e5514235461a627fe0760c6cd4f8829c3b1/glean_parser-22.0.1-py3-none-any.whl", hash = "sha256:e62f007d179e11760ec8c065bddadb4cd4ce565c0c88986a7bc9e72c5f2955c4", size = 123171, upload-time = "2026-10-20T18:36:44.407Z" },
+    { url = "https://files.pythonhosted.org/packages/fe/e1/371af6e629d1daf4097041cda563c834f7d2ba51d5b344d1da0f79581cf8/glean_parser-22.1.0-py3-none-any.whl", hash = "sha256:c79bdaba0d9089de5db5ca22f628e9084fc39d5c616b2cfcf417d9f90cccbc17", size = 131944, upload-time = "2026-11-20T11:28:40.147Z" },
 ]
 
 [[package]]
@@ -902,7 +892,7 @@ requires-dist = [
     { name = "esprima", specifier = "==4.0.1" },
     { name = "fluent-migrate", specifier = "~=0.13" },
     { name = "fluent-syntax", specifier = "==0.19.0" },
-    { name = "glean-parser", specifier = "==22.0.1" },
+    { name = "glean-parser", specifier = "==22.1.0" },
     { name = "importlib-metadata", specifier = "~=8.0" },
     { name = "jinja2", specifier = "==3.1.6" },
     { name = "json-e", specifier = "~=4.5" },

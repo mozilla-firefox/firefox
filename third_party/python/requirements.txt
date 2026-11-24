@@ -282,10 +282,6 @@ diskarzhan==0.1.9 \
     --hash=sha256:c72aa7dd71eac7720f90d28fabdb7f0c3652740a2631c4b7a344da49b68e917f \
     --hash=sha256:d2c92606a04369c84c04c8a2787f2616ff40405275f37ce846b908bb70aa810c
     # via mozilla-third-party-python-vendor-dir
-diskcache==5.6.3 \
-    --hash=sha256:2c3a3fa2743d8535d832ec61c2054a1641f41775aa7c556758a109941e33e4fc \
-    --hash=sha256:5e31b2d5fbad117cc363ebaf6b689474db18a1f6438bc82358b024abd4c2ca19
-    # via glean-parser
 distro==1.9.0 \
     --hash=sha256:2fa77c6fd8940f116ee1d6b94a2f90b13b5ea8d019b98bc8bafdcabcdd9bdbed \
     --hash=sha256:7bffd925d65168f85027d8da9af6bddab658135b840670a223589bc0c8ef02b2
@@ -408,9 +404,9 @@ giturlparse==0.12.0 \
     --hash=sha256:412b74f2855f1da2fefa89fd8dde62df48476077a72fc19b62039554d27360eb \
     --hash=sha256:c0fff7c21acc435491b1779566e038757a205c1ffdcb47e4f81ea52ad8c3859a
     # via mozilla-repo-urls
-glean-parser==22.0.1 \
-    --hash=sha256:27dfde50605ed7922fdee1789c29d886132daf4f7406cfb4b2980acaf6bc2ced \
-    --hash=sha256:e62f007d179e11760ec8c065bddadb4cd4ce565c0c88986a7bc9e72c5f2955c4
+glean-parser==22.1.0 \
+    --hash=sha256:9b083497857a655e127b7b274a9368ce5c98d0332eab53ffbe87b699502030c4 \
+    --hash=sha256:c79bdaba0d9089de5db5ca22f628e9084fc39d5c616b2cfcf417d9f90cccbc17
     # via mozilla-third-party-python-vendor-dir
 idna==3.10 \
     --hash=sha256:12f65c9b470abda6dc35cf8e63cc574b1c52b11df2c86030af0ac09b01b13ea9 \
