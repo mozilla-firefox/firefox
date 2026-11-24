@@ -832,37 +832,9 @@ android-x86_64-appservices/debug:
 
 # Nightly-as-release builds compile the nightly source with a release
 # milestone (--as-milestone=release).
-# This will allow performance tests measure the release
+# This will allow performance tests to measure the release
 # configuration, similar to the nightly as release variant on Desktop
 # platforms
-android-arm-nightlyasrelease/opt:
-    description: "Android Arm Nightly-As-Release"
-    use-pgo: android-arm-shippable/opt
-    attributes:
-        enable-full-crashsymbols: true
-    index:
-        job-name: android-arm-nightlyasrelease-opt
-    treeherder:
-        platform: android-5-0-armv7-nightlyasrelease/opt
-        symbol: Bpgo(Bnar)
-    run-on-projects: []
-    worker-type: b-linux-docker-xlarge-amd
-    worker:
-        env:
-            TOOLTOOL_MANIFEST: "mobile/android/config/tooltool-manifests/android/releng.manifest"
-            PERFHERDER_EXTRA_OPTIONS: nightly-as-release
-    mozconfig:
-        variant: nightly-as-release
-    run:
-        actions: [get-secrets, build]
-        config: [taskcluster_nightly.py]
-        custom-build-variant-cfg: arm
-    fetches:
-        toolchain:
-            - linux64-clang
-            - linux64-rust-android
-            - android-gradle-dependencies
-
 android-aarch64-nightlyasrelease/opt:
     description: "Android AArch64 Nightly-As-Release"
     use-pgo: android-aarch64-nightlyasrelease/opt
@@ -891,34 +863,6 @@ android-aarch64-nightlyasrelease/opt:
             # for the browsertime task. A multi-locale build puts them in
             # en-US/. The android-hw harness needs top-level packages.
             multi_locale: false
-    fetches:
-        toolchain:
-            - linux64-clang
-            - linux64-rust-android
-            - android-gradle-dependencies
-
-android-x86_64-nightlyasrelease/opt:
-    description: "Android x86-64 Nightly-As-Release"
-    use-pgo: android-x86_64-shippable/opt
-    attributes:
-        enable-full-crashsymbols: true
-    index:
-        job-name: android-x86_64-nightlyasrelease-opt
-    treeherder:
-        platform: android-5-0-x86_64-nightlyasrelease/opt
-        symbol: Bpgo(Bnar)
-    run-on-projects: []
-    worker-type: b-linux-docker-xlarge-amd
-    worker:
-        env:
-            TOOLTOOL_MANIFEST: "mobile/android/config/tooltool-manifests/android-x86/releng.manifest"
-            PERFHERDER_EXTRA_OPTIONS: nightly-as-release
-    mozconfig:
-        variant: nightly-as-release
-    run:
-        actions: [get-secrets, build]
-        config: [taskcluster_nightly.py]
-        custom-build-variant-cfg: x86_64
     fetches:
         toolchain:
             - linux64-clang

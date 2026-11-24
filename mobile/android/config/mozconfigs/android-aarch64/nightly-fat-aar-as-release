@@ -1,0 +1,3 @@
+. "$topsrcdir/mobile/android/config/mozconfigs/android-aarch64/nightly-fat-aar"
+
+ac_add_options --as-milestone=release

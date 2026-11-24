@@ -115,17 +115,9 @@ task-defaults:
             - sysroot-x86_64-linux-gnu
             - sysroot-wasm32-wasi
             - terser
-        armeabi-v7a:
-            - artifact: target.maven.zip
-              dest: armeabi-v7a
-              extract: false
         arm64-v8a:
             - artifact: target.maven.zip
               dest: arm64-v8a
-              extract: false
-        x86_64:
-            - artifact: target.maven.zip
-              dest: x86_64
               extract: false
 
 tasks:
@@ -163,6 +155,15 @@ tasks:
         fetches:
             toolchain:
                 - android-gradle-dependencies
+            <<: &armv7-x86_64-fetches
+                armeabi-v7a:
+                    - artifact: target.maven.zip
+                      dest: armeabi-v7a
+                      extract: false
+                x86_64:
+                    - artifact: target.maven.zip
+                      dest: x86_64
+                      extract: false
         optimization:
             skip-unless-backstop: null
 
@@ -202,11 +203,12 @@ tasks:
         fetches:
             toolchain:
                 - android-gradle-dependencies
+            <<: *armv7-x86_64-fetches
         optimization:
             skip-unless-backstop: null
 
     android-geckoview-fat-aar-nightlyasrelease/opt:
-        description: "Android GeckoView multi-architecture fat AAR Nightly-As-Release"
+        description: "Android GeckoView arm64-v8a fat AAR Nightly-As-Release"
         # shippable:true makes build-apk set MOZ_UPDATE_CHANNEL to
         # nightly-{project}. This matches the geckoview-nightly-{project}-omni
         # maven artifact that this task makes. Without it, the Fenix build
@@ -226,23 +228,22 @@ tasks:
             symbol: Bnar
         run-on-projects: []
         dependencies:
-            x86_64: build-android-x86_64-nightlyasrelease/opt
-            armeabi-v7a: build-android-arm-nightlyasrelease/opt
             arm64-v8a: build-android-aarch64-nightlyasrelease/opt
         worker-type: b-linux-docker-xlarge-amd
         worker:
             env:
                 PERFHERDER_EXTRA_OPTIONS: android-geckoview-fat-aar-nightlyasrelease
-                MOZ_ARTIFACT_TASK: {task-reference: '<armeabi-v7a>'}
+                MOZ_ARTIFACT_TASK: {task-reference: '<arm64-v8a>'}
+                MOZ_ANDROID_FAT_AAR_ARCHITECTURES: "arm64-v8a"
         mozconfig:
-            platform: android-arm
+            platform: android-aarch64
             variant: nightly-fat-aar-as-release
         run:
             actions: [get-secrets, build]
             config:
                 - builds/releng_base_android_64_builds.py
                 - taskcluster_nightly.py
-            custom-build-variant-cfg: arm
+            custom-build-variant-cfg: aarch64
         fetches:
             toolchain:
                 - android-gradle-dependencies
@@ -275,6 +276,7 @@ tasks:
             toolchain:
                 - linux64-sccache
                 - android-gradle-dependencies
+            <<: *armv7-x86_64-fetches
 
     android-geckoview-fat-aar-appservices/opt:
         description: "Android GeckoView multi-architecture fat AAR Opt with an in-tree app-services"
@@ -314,6 +316,7 @@ tasks:
             toolchain:
                 - linux64-sccache
                 - android-gradle-dependencies-appservices
+            <<: *armv7-x86_64-fetches
             linux-x86-64:
                 - artifact: target.libmegazord_so_artifacts.zip
                   dest: linux-x86-64

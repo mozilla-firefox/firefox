@@ -1,3 +1,0 @@
-. "$topsrcdir/mobile/android/config/mozconfigs/android-x86_64/nightly"
-
-ac_add_options --as-milestone=release
