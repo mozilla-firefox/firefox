@@ -41,7 +41,6 @@ if CONFIG["MOZ_AUTH_EXTENSION"]:
 
 LOCAL_INCLUDES += [
     "!/netwerk/dns",
-    "/modules/brotli/dec",
 ]
 
 SOURCE_HEADERS += [

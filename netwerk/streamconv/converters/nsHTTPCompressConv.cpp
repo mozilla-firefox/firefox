@@ -36,7 +36,7 @@
 #undef assert
 #include "assert.h"
 #include "brotli/decode.h"
-#include "state.h"
+#include "dec/state.h"
 
 #define ZSTD_STATIC_LINKING_ONLY 1
 #include "zstd/zstd.h"

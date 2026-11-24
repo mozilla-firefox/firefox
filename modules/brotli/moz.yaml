@@ -10,15 +10,15 @@ origin:
 
   url: https://github.com/google/brotli
 
-  release: 089e71983611a42643d75194fedfde086c5e58af (2026-10-27T09:32:21Z).
-  revision: 089e71983611a42643d75194fedfde086c5e58af
+  release: fed075f48eaffa447243a8e0452a88b103506118 (2026-11-20T14:22:23Z).
+  revision: fed075f48eaffa447243a8e0452a88b103506118
 
   license: MIT
 
 updatebot:
   maintainer-phab: jesup
   maintainer-bz: rjesup@jesup.org
-  fuzzy-query: "'xpcshell | 'web-platform-tests | 'reftest !webrtc !webcodecs !eme !webgpu !canvas !nofis !swr !msix !-dc !nogpu !isolated !java-media !verify !-pb !-s-"
+  fuzzy-query: "'xpcshell | 'web-platform-tests | 'reftest !webrtc !webcodecs !eme !webgpu !canvas !nofis !swr !msix !-dc !nogpu !isolated !java-media !verify !-pb !-s- !csp-next"
   fuzzy-paths:
     - layout/reftests/font-face
     - netwerk/test/unit
@@ -69,12 +69,5 @@ vendoring:
     - action: move-dir
       from: '{vendor_dir}/c/enc'
       to: '{vendor_dir}/enc'
-    # To prevent the build error:
-    # enc/static_init.c from UNIFIED_SOURCES would have the same object name as
-    # dec/static_init.c from UNIFIED_SOURCES in non-unified builds.
-    # See bug 1733308.
-    - action: move-file
-      from: '{vendor_dir}/enc/static_init.c'
-      to: '{vendor_dir}/enc/static_init_enc.c'
     - action: delete-path
       path: '{vendor_dir}/c'

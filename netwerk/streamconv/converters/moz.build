@@ -24,7 +24,7 @@ UNIFIED_SOURCES += [
 FINAL_LIBRARY = "xul"
 
 LOCAL_INCLUDES += [
-    "/modules/brotli/dec",
+    "/modules/brotli",
     "/netwerk/base",
 ]
 

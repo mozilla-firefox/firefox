@@ -21,11 +21,11 @@ UNIFIED_SOURCES += [
     'common/shared_dictionary.c',
     'common/transform.c',
     'dec/bit_reader.c',
+    'dec/dec_static_init.c',
     'dec/decode.c',
     'dec/huffman.c',
     'dec/prefix.c',
     'dec/state.c',
-    'dec/static_init.c',
     'enc/backward_references.c',
     'enc/backward_references_hq.c',
     'enc/bit_cost.c',
@@ -35,6 +35,7 @@ UNIFIED_SOURCES += [
     'enc/command.c',
     'enc/compound_dictionary.c',
     'enc/dictionary_hash.c',
+    'enc/enc_static_init.c',
     'enc/encode.c',
     'enc/encoder_dict.c',
     'enc/fast_log.c',
@@ -44,7 +45,6 @@ UNIFIED_SOURCES += [
     'enc/metablock.c',
     'enc/static_dict.c',
     'enc/static_dict_lut.c',
-    'enc/static_init_enc.c',
     'enc/utf8_util.c',
 ]
 
