@@ -80,7 +80,7 @@ static nsTArray<nsCString> CollectReportPaths(const nsACString& aPathPrefix) {
   mgr->GetReports(handleReport, nullptr, finishReporting, nullptr, false);
 
   SpinEventLoopUntil("TestPrefixSetMemoryReporter"_ns,
-                     [&]() { return static_cast<bool>(done); });
+                     [&]() { return done.load(); });
 
   return paths;
 }
@@ -160,7 +160,7 @@ TEST(UrlClassifierPrefixSetReporter, ConcurrentDestroyAndReport)
 
   SpinEventLoopUntil("WaitForDestroy"_ns,
                      [&]() { return destroyed == kNumSets; });
-  EXPECT_EQ(static_cast<uint32_t>(destroyed), kNumSets);
+  EXPECT_EQ(destroyed.load(), kNumSets);
 
   // All should be gone now.
   paths = CollectReportPaths("explicit/storage/prefix-set/concurrent-test-"_ns);
