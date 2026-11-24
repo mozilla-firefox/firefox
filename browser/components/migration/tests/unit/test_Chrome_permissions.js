@@ -438,3 +438,54 @@ add_task(async function test_filePickerStartsInDataFolder() {
 
   sandbox.restore();
 });
+
+/**
+ * Tests that if the user first selects a wrong folder and then the original
+ * data folder, we read from the original data folder again instead of the
+ * wrong one.
+ */
+add_task(async function test_selectOriginalFolderAfterWrongFolder() {
+  let wrongDir = await IOUtils.createUniqueDirectory(
+    PathUtils.tempDir,
+    "test-chrome-wrong-folder"
+  );
+  registerCleanupFunction(async () => {
+    await IOUtils.remove(wrongDir, { recursive: true });
+  });
+
+  let sandbox = sinon.createSandbox();
+  registerCleanupFunction(() => {
+    sandbox.restore();
+  });
+
+  sandbox.stub(MigratorBase, "needsFolderSelectionToReadData").returns(true);
+  sandbox.stub(MigrationUtils, "canGetPermissionsOnPlatform").resolves(true);
+  sandbox.stub(ChromeMigrationUtils, "getDataPath").resolves(gTempDir.path);
+
+  let migrator = new ChromeProfileMigrator();
+  let filePickerSeenCount = 0;
+  MockFilePicker.showCallback = () => {
+    filePickerSeenCount++;
+    if (filePickerSeenCount == 1) {
+      MockFilePicker.useDirectory([wrongDir]);
+      return MockFilePicker.returnOK;
+    }
+    if (filePickerSeenCount == 2) {
+      MockFilePicker.useDirectory([gTempDir.path]);
+      return MockFilePicker.returnOK;
+    }
+    return MockFilePicker.returnCancel;
+  };
+  Assert.ok(
+    await migrator.getPermissions(),
+    "Should report that we got permissions."
+  );
+  Assert.equal(filePickerSeenCount, 2, "Should have shown the picker twice.");
+  Assert.equal(
+    await migrator.canGetPermissions(),
+    gTempDir.path,
+    "Should read from the original data folder."
+  );
+
+  sandbox.restore();
+});

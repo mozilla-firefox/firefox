@@ -201,6 +201,8 @@ export class ChromeProfileMigrator extends MigratorBase {
         fp.file && this._getDataPathFromPermissionFolder(fp.file.path);
       if (selectedDataPath && selectedDataPath !== originalDataPath) {
         this.#dataPathRemappings.set(originalDataPath, selectedDataPath);
+      } else {
+        this.#dataPathRemappings.delete(originalDataPath);
       }
     }
     return true;
