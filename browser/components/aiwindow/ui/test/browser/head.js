@@ -409,7 +409,19 @@ async function withModelChoiceWindow(
   }
 }
 
+// Cleanup functions run in the order they were registered, so registering this
+// first closes the shared windows before the test search engine is removed:
+// a window left open would query the restored default engine.
+const gSharedWindows = new Set();
+
 add_setup(async function () {
+  registerCleanupFunction(async () => {
+    for (const win of gSharedWindows) {
+      await BrowserTestUtils.closeWindow(win);
+    }
+    gSharedWindows.clear();
+  });
+
   if (parseInt(Services.env.get("MOZ_CHAOSMODE"), 16)) {
     // When running chaos mode in --verify test runs, the amount of time
     // that we spend on animations dramatically increases the time that
@@ -571,10 +583,7 @@ function clearSmartWindowUsagePrefs() {
  */
 async function openSharedAIWindow() {
   const win = await openAIWindow();
-  registerCleanupFunction(async () => {
-    await BrowserTestUtils.closeWindow(win);
-    clearSmartWindowUsagePrefs();
-  });
+  gSharedWindows.add(win);
   return win;
 }
 

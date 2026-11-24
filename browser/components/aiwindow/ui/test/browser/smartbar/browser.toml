@@ -15,3 +15,17 @@ support-files = [
 ["browser_smartbar_context_chips_added_tab.js"]
 
 ["browser_smartbar_context_chips_current_tab.js"]
+
+["browser_smartbar_telemetry_add_tabs.js"]
+
+["browser_smartbar_telemetry_chat.js"]
+
+["browser_smartbar_telemetry_commands.js"]
+
+["browser_smartbar_telemetry_engagement.js"]
+
+["browser_smartbar_telemetry_mentions.js"]
+
+["browser_smartbar_telemetry_navigate.js"]
+
+["browser_smartbar_telemetry_sidebar.js"]

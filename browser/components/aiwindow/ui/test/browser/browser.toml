@@ -213,12 +213,6 @@ skip-if = [
 
 ["browser_aiwindow_smartbar_tabgroups.js"]
 
-["browser_aiwindow_smartbar_telemetry.js"]
-skip-if = [
-  "os == 'linux' && os_version == '24.04' && arch == 'x86_64' && display == 'x11' && tsan",
-  "os == 'win' && os_version == '11.26200' && arch == 'x86_64' && asan", # Bug 2055099
-]
-
 ["browser_aiwindow_smartwindow_promo.js"]
 
 ["browser_aiwindow_stop_generation.js"]
