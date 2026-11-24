@@ -149,6 +149,7 @@ import org.mozilla.fenix.home.sessioncontrol.DefaultSessionControlController
 import org.mozilla.fenix.home.sessioncontrol.SessionControlController
 import org.mozilla.fenix.home.sessioncontrol.SessionControlControllerCallback
 import org.mozilla.fenix.home.sessioncontrol.SessionControlInteractor
+import org.mozilla.fenix.home.sports.SportsWidgetController
 import org.mozilla.fenix.home.store.HomeToolbarStoreBuilder
 import org.mozilla.fenix.home.store.HomepageState
 import org.mozilla.fenix.home.termsofuse.DefaultPrivacyNoticeBannerController
@@ -1733,6 +1734,7 @@ class HomeFragment : Fragment(), UserInteractionHandler, OnLongPressedListener {
                         navController = findNavController(),
                         currentSessionId = requireComponents.core.store.state.selectedTabId,
                     ),
+                sportsWidgetController = SportsWidgetController(navController = findNavController()),
             )
     }
 

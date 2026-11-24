@@ -280,6 +280,7 @@ internal fun Homepage(
                                 SportsWidget(
                                     state = sportsWidgetState,
                                     modifier = Modifier.padding(top = FirefoxTheme.layout.space.static500),
+                                    onRemove = interactor::onSportsWidgetRemoveClicked,
                                 )
                             }
 

@@ -23,6 +23,7 @@ import org.mozilla.fenix.home.recentvisits.controller.RecentVisitsController
 import org.mozilla.fenix.home.search.HomeSearchController
 import org.mozilla.fenix.home.sessioncontrol.DefaultSessionControlController
 import org.mozilla.fenix.home.sessioncontrol.SessionControlInteractor
+import org.mozilla.fenix.home.sports.SportsWidgetController
 import org.mozilla.fenix.home.termsofuse.PrivacyNoticeBannerController
 import org.mozilla.fenix.home.toolbar.ToolbarController
 import org.mozilla.fenix.home.topsites.controller.TopSiteController
@@ -40,6 +41,7 @@ class RecentVisitsInteractorTest {
     private val topSiteController: TopSiteController = mockk(relaxed = true)
     private val privacyNoticeBannerController: PrivacyNoticeBannerController = mockk(relaxed = true)
     private val trackingProtectionController: TrackingProtectionController = mockk(relaxed = true)
+    private val sportsWidgetController: SportsWidgetController = mockk(relaxed = true)
 
     private lateinit var interactor: SessionControlInteractor
 
@@ -59,6 +61,7 @@ class RecentVisitsInteractorTest {
                 topSiteController,
                 privacyNoticeBannerController,
                 trackingProtectionController,
+                sportsWidgetController,
             )
     }
 

@@ -28,6 +28,7 @@ import org.mozilla.fenix.home.recentvisits.RecentlyVisitedItem.RecentHistoryGrou
 import org.mozilla.fenix.home.recentvisits.RecentlyVisitedItem.RecentHistoryHighlight
 import org.mozilla.fenix.home.recentvisits.controller.RecentVisitsController
 import org.mozilla.fenix.home.search.HomeSearchController
+import org.mozilla.fenix.home.sports.SportsWidgetController
 import org.mozilla.fenix.home.termsofuse.PrivacyNoticeBannerController
 import org.mozilla.fenix.home.toolbar.ToolbarController
 import org.mozilla.fenix.home.topsites.AddShortcutEntryPoint
@@ -149,6 +150,7 @@ class SessionControlInteractor(
     private val topSiteController: TopSiteController,
     private val privacyNoticeBannerController: PrivacyNoticeBannerController,
     private val trackingProtectionController: TrackingProtectionController,
+    private val sportsWidgetController: SportsWidgetController,
 ) : HomepageInteractor {
 
     override fun onCollectionOpenTabClicked(tab: Tab) {
@@ -371,5 +373,9 @@ class SessionControlInteractor(
 
     override fun onPrivacyReportTapped() {
         trackingProtectionController.handleProtectionStatusPillClicked()
+    }
+
+    override fun onSportsWidgetRemoveClicked() {
+        sportsWidgetController.handleSportsWidgetRemoved()
     }
 }
