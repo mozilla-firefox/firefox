@@ -10,7 +10,6 @@ import android.content.DialogInterface
 import android.content.DialogInterface.BUTTON_NEGATIVE
 import android.content.DialogInterface.BUTTON_NEUTRAL
 import android.content.DialogInterface.BUTTON_POSITIVE
-import android.icu.util.TimeZone
 import android.os.Bundle
 import android.text.format.DateFormat
 import android.view.View
@@ -36,6 +35,7 @@ import mozilla.components.feature.prompts.ext.minute
 import mozilla.components.feature.prompts.ext.second
 import mozilla.components.feature.prompts.ext.toCalendar
 import mozilla.components.feature.prompts.ext.toLocalDayStartAsUtcMillis
+import mozilla.components.feature.prompts.ext.utcDayStartToLocalDate
 import mozilla.components.feature.prompts.widget.MonthAndYearPicker
 import mozilla.components.feature.prompts.widget.TimePrecisionPicker
 import mozilla.components.support.utils.TimePicker.shouldShowSecondsPicker
@@ -127,12 +127,7 @@ internal class TimePickerDialogFragment :
                 .build()
 
         timePicker.addOnPositiveButtonClickListener {
-            val finalCalendar =
-                (dateSelection?.let {
-                    Calendar.getInstance().apply {
-                        timeInMillis = it - TimeZone.getDefault().getOffset(it)
-                    }
-                } ?: selectedDate.toCalendar())
+            val finalCalendar = (dateSelection?.utcDayStartToLocalDate() ?: selectedDate).toCalendar()
 
             finalCalendar.set(Calendar.HOUR_OF_DAY, timePicker.hour)
             finalCalendar.set(Calendar.MINUTE, timePicker.minute)
@@ -168,7 +163,7 @@ internal class TimePickerDialogFragment :
     }
 
     private fun createMaterialDatePickerDialog(isDateTimePicker: Boolean = false) {
-        val initialUtcTime = initialDate.time + TimeZone.getDefault().getOffset(initialDate.time)
+        val initialUtcTime = initialDate.toLocalDayStartAsUtcMillis()
 
         val datePicker =
             MaterialDatePicker.Builder.datePicker()
@@ -183,9 +178,7 @@ internal class TimePickerDialogFragment :
                 createMaterialTimePickerDialog(selection)
             } else {
                 // For the date-only picker, we confirm the selection and dismiss everything.
-                val millis = (selection ?: 0L) - TimeZone.getDefault().getOffset(selection ?: 0L)
-
-                selectedDate = Date(millis)
+                selectedDate = (selection ?: 0L).utcDayStartToLocalDate()
                 feature?.onConfirm(sessionId, promptRequestUID, selectedDate)
             }
         }

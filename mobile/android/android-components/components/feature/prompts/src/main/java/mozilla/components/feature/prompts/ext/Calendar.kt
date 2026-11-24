@@ -6,6 +6,7 @@
 
 package mozilla.components.feature.prompts.ext
 
+import java.time.Instant
 import java.time.ZoneId
 import java.time.ZoneOffset
 import java.util.Calendar
@@ -19,6 +20,13 @@ internal fun Date.toCalendar() = Calendar.getInstance().also { it.time = this }
  */
 internal fun Date.toLocalDayStartAsUtcMillis(zone: ZoneId = ZoneId.systemDefault()): Long =
     toInstant().atZone(zone).toLocalDate().atStartOfDay().toInstant(ZoneOffset.UTC).toEpochMilli()
+
+/**
+ * Inverse of [toLocalDayStartAsUtcMillis]: interprets these epoch milliseconds as midnight UTC on some day and returns
+ * the start of that same calendar day in [zone], the device timezone by default.
+ */
+internal fun Long.utcDayStartToLocalDate(zone: ZoneId = ZoneId.systemDefault()): Date =
+    Date.from(Instant.ofEpochMilli(this).atZone(ZoneOffset.UTC).toLocalDate().atStartOfDay(zone).toInstant())
 
 internal var Calendar.millisecond: Int
     get() = get(Calendar.MILLISECOND)
