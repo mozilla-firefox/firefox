@@ -1027,7 +1027,8 @@ where
                             &sib,
                             ElementSelectorFlags::RELATIVE_SELECTOR_SEARCH_DIRECTION_SIBLING,
                         ) {
-                            return;
+                            // Break this loop, but continue up the ancestor chain.
+                            break;
                         }
                         self.handle_anchor(sib, invalidation, handled);
                         sibling = sib.prev_sibling_element();

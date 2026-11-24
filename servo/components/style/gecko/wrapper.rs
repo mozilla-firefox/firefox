@@ -1677,16 +1677,8 @@ impl<'le> TElement for GeckoElement<'le> {
 
     fn relative_selector_search_direction(&self) -> ElementSelectorFlags {
         let flags = node_flags_to_selector_flags(self.as_node().style_flags());
-        // FIXME(bug 2096610): This seems like it should just be flags &
-        // ElementSelectorFlags::RELATIVE_SELECTOR_SEARCH_DIRECTION_ANCESTOR_SIBLING, but
-        // tests fail without it.
-        if flags
-            .intersects(ElementSelectorFlags::RELATIVE_SELECTOR_SEARCH_DIRECTION_ANCESTOR_SIBLING)
-        {
-            ElementSelectorFlags::RELATIVE_SELECTOR_SEARCH_DIRECTION_ANCESTOR_SIBLING
-        } else {
-            ElementSelectorFlags::empty()
-        }
+        flags
+            .intersection(ElementSelectorFlags::RELATIVE_SELECTOR_SEARCH_DIRECTION_ANCESTOR_SIBLING)
     }
 
     fn get_attr(&self, attr: &LocalName, namespace: &Namespace) -> Option<String> {

@@ -8787,6 +8787,7 @@ pub extern "C" fn Servo_StyleSet_MaybeInvalidateRelativeSelectorForInsertion(
         element.prev_sibling_element(),
     );
     // Technically, we're not handling breakouts, where the anchor is a (later-sibling) descendant.
+    // e.g. For `.anchor:has(:is(.a .b) .c)`, `.a` may be an ancestor of `.anchor`.
     // For descendant case, we're ok since it's a descendant of an element yet to be styled.
     // For later-sibling descendant, `HAS_SLOW_SELECTOR_LATER_SIBLINGS` is set anyway.
     if inherited.is_empty() {
@@ -8805,13 +8806,16 @@ pub extern "C" fn Servo_StyleSet_MaybeInvalidateRelativeSelectorForInsertion(
         element.next_sibling_element(),
     ) {
         (Some(prev_sibling), Some(next_sibling)) => 'sibling: {
-            // If the prev sibling is not on the sibling search path, skip.
-            if !prev_sibling
-                .relative_selector_search_direction()
-                .intersects(ElementSelectorFlags::RELATIVE_SELECTOR_SEARCH_DIRECTION_SIBLING)
-            {
+            let prev_sibling_search_direction = prev_sibling.relative_selector_search_direction();
+            if prev_sibling_search_direction.is_empty() {
+                // Breakouts are handled as above, so just need to handle invalidations
+                // of elements that are descendants or later siblings of the anchor.
                 break 'sibling;
             }
+            // If this element causes a side-effect invalidation, it must bridge the
+            // gap in the sibling search path.
+            // TODO(dshin): This could move closer to where we do the actual
+            // sibling traversal.
             element.apply_selector_flags(
                 ElementSelectorFlags::RELATIVE_SELECTOR_SEARCH_DIRECTION_SIBLING,
             );
@@ -8865,6 +8869,7 @@ pub extern "C" fn Servo_StyleSet_MaybeInvalidateRelativeSelectorForAppend(
         first_node.parent_element(),
         first_node.prev_sibling_element(),
     );
+    // See comment in `Servo_StyleSet_MaybeInvalidateRelativeSelectorForInsertion`.
     if inherited.is_empty() {
         return;
     }
@@ -8907,7 +8912,8 @@ pub extern "C" fn Servo_StyleSet_MaybeInvalidateRelativeSelectorForRemoval(
     let search_direction = element.relative_selector_search_direction();
     // This element was in-tree, so we can safely say that if it was not on
     // the relative selector search path, its removal will not invalidate any
-    // relative selector.
+    // relative selector. For breakouts, also see comment in
+    // `Servo_StyleSet_MaybeInvalidateRelativeSelectorForInsertion`.
     if search_direction.is_empty() {
         return;
     }
