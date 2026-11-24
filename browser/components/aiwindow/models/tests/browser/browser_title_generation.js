@@ -6,18 +6,26 @@
 const { generateChatTitle } = ChromeUtils.importESModule(
   "moz-src:///browser/components/aiwindow/models/TitleGeneration.sys.mjs"
 );
+const { MockEngineManager } = ChromeUtils.importESModule(
+  "resource://testing-common/AIWindowTestUtils.sys.mjs"
+);
 
-add_task(async function test_title_generation_with_mock_server() {
-  const { server, port } = startTitleGenerationServer("fake title");
-  await SpecialPowers.pushPrefEnv({
-    set: [["browser.smartwindow.endpoint", `http://localhost:${port}/v1`]],
-  });
+add_task(async function test_title_generation_with_mock_engine() {
+  const mockEngineManager = new MockEngineManager();
 
   try {
-    const generated = await generateChatTitle("message", null);
-    Assert.equal(generated, "fake title", "Should return the generated title");
+    const generated = generateChatTitle("message", null);
+    await mockEngineManager.respondTo({
+      purpose: "title-generation",
+      response: "fake title",
+    });
+    Assert.equal(
+      await generated,
+      "fake title",
+      "Should return the generated title"
+    );
   } finally {
-    await SpecialPowers.popPrefEnv();
-    await stopMockOpenAI(server);
+    await mockEngineManager.rejectAllRequests();
+    mockEngineManager.cleanupMocks();
   }
 });

@@ -16,146 +16,148 @@ describe("SmartWindowRequestResponseTelemetry", () => {
   it("records model_request and model_response on success", async () => {
     sb.stub(AuthProvider, "currentProviderName").get(() => "guest");
 
-    await AIWindowTestUtils.withHTTPChatWindow(
-      { streamChunks: ["Hello from mock."], streamChunkDelayMs: 25 },
-      async ({ browser }) => {
-        await typeInSmartbar(browser, "testing telemetry");
-        await submitSmartbar(browser);
-        await TestUtils.waitForCondition(
-          () => Glean.smartWindow.modelResponse.testGetValue()?.length > 0,
-          "Wait for model_response event"
-        );
+    mockEngineManager = new MockEngineManager();
+    win = await openAIWindow();
+    const browser = win.gBrowser.selectedBrowser;
+    await typeInSmartbar(browser, "testing telemetry");
+    await submitSmartbar(browser);
+    await mockEngineManager.respondTo({
+      purpose: "chat",
+      response: "Hello from mock.",
+    });
+    await TestUtils.waitForCondition(
+      () => Glean.smartWindow.modelResponse.testGetValue()?.length > 0,
+      "Wait for model_response event"
+    );
 
-        const submitEvents = Glean.smartWindow.chatSubmit.testGetValue();
-        const requestEvents = Glean.smartWindow.modelRequest.testGetValue();
-        Assert.equal(
-          requestEvents?.length,
-          1,
-          "One model_request event was recorded"
-        );
-        Assert.equal(
-          requestEvents[0].extra.location,
-          "home",
-          "model_request: location is home"
-        );
-        Assert.equal(
-          requestEvents[0].extra.intent,
-          "chat",
-          "model_request: intent is chat"
-        );
-        Assert.equal(
-          requestEvents[0].extra.message_seq,
-          1,
-          "model_request: message_seq is 1"
-        );
-        Assert.equal(
-          requestEvents[0].extra.memories,
-          0,
-          "model_request: memories is 0"
-        );
-        Assert.ok(
-          "tokens" in requestEvents[0].extra,
-          "model_request: tokens exists"
-        );
-        Assert.ok(
-          "chat_id" in requestEvents[0].extra,
-          "model_request: chat_id exists"
-        );
-        Assert.ok(
-          "request_id" in requestEvents[0].extra,
-          "model_request: request_id exists"
-        );
+    const submitEvents = Glean.smartWindow.chatSubmit.testGetValue();
+    const requestEvents = Glean.smartWindow.modelRequest.testGetValue();
+    Assert.equal(
+      requestEvents?.length,
+      1,
+      "One model_request event was recorded"
+    );
+    Assert.equal(
+      requestEvents[0].extra.location,
+      "home",
+      "model_request: location is home"
+    );
+    Assert.equal(
+      requestEvents[0].extra.intent,
+      "chat",
+      "model_request: intent is chat"
+    );
+    Assert.equal(
+      requestEvents[0].extra.message_seq,
+      1,
+      "model_request: message_seq is 1"
+    );
+    Assert.equal(
+      requestEvents[0].extra.memories,
+      0,
+      "model_request: memories is 0"
+    );
+    Assert.ok(
+      "tokens" in requestEvents[0].extra,
+      "model_request: tokens exists"
+    );
+    Assert.ok(
+      "chat_id" in requestEvents[0].extra,
+      "model_request: chat_id exists"
+    );
+    Assert.ok(
+      "request_id" in requestEvents[0].extra,
+      "model_request: request_id exists"
+    );
 
-        const responseEvents = Glean.smartWindow.modelResponse.testGetValue();
-        Assert.equal(
-          responseEvents?.length,
-          1,
-          "One model_response event was recorded"
-        );
-        Assert.equal(
-          responseEvents[0].extra.location,
-          "home",
-          "model_response: location is home"
-        );
-        Assert.equal(
-          responseEvents[0].extra.model,
-          "custom-model",
-          "model_response: model is custom-model"
-        );
-        Assert.equal(
-          responseEvents[0].extra.intent,
-          "chat",
-          "model_response: intent is chat"
-        );
-        Assert.equal(
-          responseEvents[0].extra.message_seq,
-          2,
-          "model_response: message_seq is 2"
-        );
-        Assert.equal(
-          responseEvents[0].extra.memories,
-          0,
-          "model_response: memories is 0"
-        );
-        Assert.ok(
-          "tokens" in responseEvents[0].extra,
-          "model_response: tokens exists"
-        );
-        Assert.ok(
-          "duration" in responseEvents[0].extra,
-          "model_response: duration exists"
-        );
-        Assert.ok(
-          "latency" in responseEvents[0].extra,
-          "model_response: latency exists"
-        );
-        Assert.equal(
-          responseEvents[0].extra.auth_provider,
-          "guest",
-          "model_response: auth_provider is the current provider"
-        );
-        Assert.equal(
-          submitEvents?.[0].extra.auth_provider,
-          "guest",
-          "chat_submit: auth_provider is the current provider"
-        );
-        Assert.greater(
-          Number(responseEvents[0].extra.latency),
-          0,
-          "model_response: latency is greater than 0"
-        );
-        Assert.ok(
-          /^\d+$/.test(responseEvents[0].extra.latency),
-          `model_response: latency is integer ms (got ${responseEvents[0].extra.latency})`
-        );
-        Assert.ok(
-          /^\d+$/.test(responseEvents[0].extra.duration),
-          `model_response: duration is integer ms (got ${responseEvents[0].extra.duration})`
-        );
-        Assert.ok(
-          "chat_id" in responseEvents[0].extra,
-          "model_response: chat_id exists"
-        );
-        Assert.ok(
-          "request_id" in responseEvents[0].extra,
-          "model_response: request_id exists"
-        );
-        Assert.equal(
-          responseEvents[0].extra.request_id,
-          requestEvents[0].extra.request_id,
-          "model_request and model_response share the same request_id"
-        );
-        Assert.equal(
-          responseEvents[0].extra.error,
-          "",
-          "model_response: error is empty on success"
-        );
-        Assert.equal(
-          Number(responseEvents[0].extra.http_status),
-          0,
-          "model_response: http_status is 0 on success"
-        );
-      }
+    const responseEvents = Glean.smartWindow.modelResponse.testGetValue();
+    Assert.equal(
+      responseEvents?.length,
+      1,
+      "One model_response event was recorded"
+    );
+    Assert.equal(
+      responseEvents[0].extra.location,
+      "home",
+      "model_response: location is home"
+    );
+    Assert.equal(
+      responseEvents[0].extra.model,
+      "custom-model",
+      "model_response: model is custom-model"
+    );
+    Assert.equal(
+      responseEvents[0].extra.intent,
+      "chat",
+      "model_response: intent is chat"
+    );
+    Assert.equal(
+      responseEvents[0].extra.message_seq,
+      2,
+      "model_response: message_seq is 2"
+    );
+    Assert.equal(
+      responseEvents[0].extra.memories,
+      0,
+      "model_response: memories is 0"
+    );
+    Assert.ok(
+      "tokens" in responseEvents[0].extra,
+      "model_response: tokens exists"
+    );
+    Assert.ok(
+      "duration" in responseEvents[0].extra,
+      "model_response: duration exists"
+    );
+    Assert.ok(
+      "latency" in responseEvents[0].extra,
+      "model_response: latency exists"
+    );
+    Assert.equal(
+      responseEvents[0].extra.auth_provider,
+      "guest",
+      "model_response: auth_provider is the current provider"
+    );
+    Assert.equal(
+      submitEvents?.[0].extra.auth_provider,
+      "guest",
+      "chat_submit: auth_provider is the current provider"
+    );
+    Assert.greater(
+      Number(responseEvents[0].extra.latency),
+      0,
+      "model_response: latency is greater than 0"
+    );
+    Assert.ok(
+      /^\d+$/.test(responseEvents[0].extra.latency),
+      `model_response: latency is integer ms (got ${responseEvents[0].extra.latency})`
+    );
+    Assert.ok(
+      /^\d+$/.test(responseEvents[0].extra.duration),
+      `model_response: duration is integer ms (got ${responseEvents[0].extra.duration})`
+    );
+    Assert.ok(
+      "chat_id" in responseEvents[0].extra,
+      "model_response: chat_id exists"
+    );
+    Assert.ok(
+      "request_id" in responseEvents[0].extra,
+      "model_response: request_id exists"
+    );
+    Assert.equal(
+      responseEvents[0].extra.request_id,
+      requestEvents[0].extra.request_id,
+      "model_request and model_response share the same request_id"
+    );
+    Assert.equal(
+      responseEvents[0].extra.error,
+      "",
+      "model_response: error is empty on success"
+    );
+    Assert.equal(
+      Number(responseEvents[0].extra.http_status),
+      0,
+      "model_response: http_status is 0 on success"
     );
   });
 
@@ -316,81 +318,92 @@ describe("SmartWindowRequestResponseTelemetry", () => {
   });
 
   it("separate conversations have isolated IDs", async () => {
-    await AIWindowTestUtils.withHTTPChatWindow(
-      { streamChunks: ["Response."], streamChunkDelayMs: 25 },
-      async ({ browser, buildStub }) => {
-        // -- Conversation A --
-        await typeInSmartbar(browser, "conversation A");
-        await submitSmartbar(browser);
-        await TestUtils.waitForCondition(
-          () => Glean.smartWindow.modelResponse.testGetValue()?.length >= 1,
-          "Wait for conversation A model_response"
-        );
+    mockEngineManager = new MockEngineManager();
+    const buildSpy = sb.spy(openAIEngine, "build");
+    win = await openAIWindow();
+    const browser = win.gBrowser.selectedBrowser;
 
-        const chatSubmitsA = Glean.smartWindow.chatSubmit.testGetValue();
-        const chatIdA = chatSubmitsA[0].extra.chat_id;
+    // -- Conversation A --
+    await typeInSmartbar(browser, "conversation A");
+    await submitSmartbar(browser);
+    await mockEngineManager.respondTo({
+      purpose: "chat",
+      response: "Response.",
+    });
+    await TestUtils.waitForCondition(
+      () => Glean.smartWindow.modelResponse.testGetValue()?.length >= 1,
+      "Wait for conversation A model_response"
+    );
 
-        const aiWindowElement =
-          browser.contentDocument.querySelector("ai-window");
-        await aiWindowElement.conversation.titlePromise;
+    const chatSubmitsA = Glean.smartWindow.chatSubmit.testGetValue();
+    const chatIdA = chatSubmitsA[0].extra.chat_id;
 
-        // -- Start new chat (resets conversationId) --
-        await SpecialPowers.spawn(browser, [], async () => {
-          const aiWindow = content.document.querySelector("ai-window");
-          aiWindow.onCreateNewChatClick();
-        });
+    const aiWindowElement = browser.contentDocument.querySelector("ai-window");
+    await mockEngineManager.respondTo({
+      purpose: "title-generation",
+      response: "Conversation A",
+    });
+    await aiWindowElement.conversation.titlePromise;
 
-        // -- Conversation B --
-        await typeInSmartbar(browser, "conversation B");
-        const responseComplete = BrowserTestUtils.waitForMutationCondition(
-          aiWindowElement.renderRoot,
-          { attributes: true, subtree: true },
-          () => Glean.smartWindow.modelResponse.testGetValue()?.length === 2
-        );
-        await submitSmartbar(browser);
-        await TestUtils.waitForCondition(
-          () => Glean.smartWindow.chatSubmit.testGetValue()?.length >= 2,
-          "Wait for conversation B chat_submit"
-        );
-        await responseComplete;
+    // -- Start new chat (resets conversationId) --
+    await SpecialPowers.spawn(browser, [], async () => {
+      const aiWindow = content.document.querySelector("ai-window");
+      aiWindow.onCreateNewChatClick();
+    });
 
-        const chatSubmits = Glean.smartWindow.chatSubmit.testGetValue();
-        Assert.equal(chatSubmits.length, 2, "Two chat_submit events total");
+    // -- Conversation B --
+    await typeInSmartbar(browser, "conversation B");
+    const responseComplete = BrowserTestUtils.waitForMutationCondition(
+      aiWindowElement.renderRoot,
+      { attributes: true, subtree: true },
+      () => Glean.smartWindow.modelResponse.testGetValue()?.length === 2
+    );
+    await submitSmartbar(browser);
+    await TestUtils.waitForCondition(
+      () => Glean.smartWindow.chatSubmit.testGetValue()?.length >= 2,
+      "Wait for conversation B chat_submit"
+    );
+    await mockEngineManager.respondTo({
+      purpose: "chat",
+      response: "Response.",
+    });
+    await responseComplete;
 
-        const chatIdB = chatSubmits[1].extra.chat_id;
+    const chatSubmits = Glean.smartWindow.chatSubmit.testGetValue();
+    Assert.equal(chatSubmits.length, 2, "Two chat_submit events total");
 
-        Assert.ok(chatIdA, "Conversation A has a chat_id");
-        Assert.ok(chatIdB, "Conversation B has a chat_id");
-        Assert.notEqual(
-          chatIdA,
-          chatIdB,
-          "Conversations A and B have different chat_ids"
-        );
+    const chatIdB = chatSubmits[1].extra.chat_id;
 
-        const chatBuilds = buildStub
-          .getCalls()
-          .filter(call => call.args[0]?.feature === "chat");
-        Assert.greaterOrEqual(
-          chatBuilds.length,
-          2,
-          "At least two chat engine builds"
-        );
+    Assert.ok(chatIdA, "Conversation A has a chat_id");
+    Assert.ok(chatIdB, "Conversation B has a chat_id");
+    Assert.notEqual(
+      chatIdA,
+      chatIdB,
+      "Conversations A and B have different chat_ids"
+    );
 
-        const flowIds = new Set(chatBuilds.map(call => call.args[0].flowId));
-        Assert.ok(
-          flowIds.has(chatIdA),
-          "Engine build for conversation A used chatIdA as flowId"
-        );
-        Assert.ok(
-          flowIds.has(chatIdB),
-          "Engine build for conversation B used chatIdB as flowId"
-        );
-        Assert.greaterOrEqual(
-          flowIds.size,
-          2,
-          "flowIds are distinct across conversations"
-        );
-      }
+    const chatBuilds = buildSpy
+      .getCalls()
+      .filter(call => call.args[0]?.feature === "chat");
+    Assert.greaterOrEqual(
+      chatBuilds.length,
+      2,
+      "At least two chat engine builds"
+    );
+
+    const flowIds = new Set(chatBuilds.map(call => call.args[0].flowId));
+    Assert.ok(
+      flowIds.has(chatIdA),
+      "Engine build for conversation A used chatIdA as flowId"
+    );
+    Assert.ok(
+      flowIds.has(chatIdB),
+      "Engine build for conversation B used chatIdB as flowId"
+    );
+    Assert.greaterOrEqual(
+      flowIds.size,
+      2,
+      "flowIds are distinct across conversations"
     );
   });
 });

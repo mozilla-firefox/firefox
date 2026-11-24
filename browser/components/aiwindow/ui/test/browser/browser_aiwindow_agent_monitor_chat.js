@@ -3,6 +3,10 @@
 
 "use strict";
 
+const { MockEngineManager } = ChromeUtils.importESModule(
+  "resource://testing-common/AIWindowTestUtils.sys.mjs"
+);
+
 async function setupConversationWithToolUI(aichatBrowser, data) {
   await SpecialPowers.spawn(aichatBrowser, [data], async config => {
     const chatContent = await ContentTaskUtils.waitForCondition(
@@ -101,9 +105,7 @@ async function getDisplayCardActionDetail(
   } = {}
 ) {
   const restoreSignIn = skipSignIn();
-  const { restore } = await stubEngineNetworkBoundaries({
-    serverOptions: { streamChunks: ["Watching this page."] },
-  });
+  const mockEngineManager = new MockEngineManager();
   const win = await openAIWindow();
 
   try {
@@ -164,7 +166,8 @@ async function getDisplayCardActionDetail(
   } finally {
     await BrowserTestUtils.closeWindow(win);
     restoreSignIn();
-    await restore();
+    await mockEngineManager.rejectAllRequests();
+    mockEngineManager.cleanupMocks();
   }
 }
 
@@ -176,9 +179,7 @@ add_setup(async function () {
 
 add_task(async function test_agent_monitor_item_renders_in_chat() {
   const restoreSignIn = skipSignIn();
-  const { restore } = await stubEngineNetworkBoundaries({
-    serverOptions: { streamChunks: ["Set up a monitor for this page."] },
-  });
+  const mockEngineManager = new MockEngineManager();
   const win = await openAIWindow();
 
   try {
@@ -212,15 +213,14 @@ add_task(async function test_agent_monitor_item_renders_in_chat() {
   } finally {
     await BrowserTestUtils.closeWindow(win);
     restoreSignIn();
-    await restore();
+    await mockEngineManager.rejectAllRequests();
+    mockEngineManager.cleanupMocks();
   }
 });
 
 add_task(async function test_create_card_autofocuses_task_name() {
   const restoreSignIn = skipSignIn();
-  const { restore } = await stubEngineNetworkBoundaries({
-    serverOptions: { streamChunks: ["Set up a monitor for this page."] },
-  });
+  const mockEngineManager = new MockEngineManager();
   const win = await openAIWindow();
 
   try {
@@ -247,15 +247,14 @@ add_task(async function test_create_card_autofocuses_task_name() {
   } finally {
     await BrowserTestUtils.closeWindow(win);
     restoreSignIn();
-    await restore();
+    await mockEngineManager.rejectAllRequests();
+    mockEngineManager.cleanupMocks();
   }
 });
 
 add_task(async function test_monitor_start_dispatches_create_update() {
   const restoreSignIn = skipSignIn();
-  const { restore } = await stubEngineNetworkBoundaries({
-    serverOptions: { streamChunks: ["Set up a monitor for this page."] },
-  });
+  const mockEngineManager = new MockEngineManager();
   const win = await openAIWindow();
 
   try {
@@ -317,15 +316,14 @@ add_task(async function test_monitor_start_dispatches_create_update() {
   } finally {
     await BrowserTestUtils.closeWindow(win);
     restoreSignIn();
-    await restore();
+    await mockEngineManager.rejectAllRequests();
+    mockEngineManager.cleanupMocks();
   }
 });
 
 add_task(async function test_form_edit_dispatches_draft_update() {
   const restoreSignIn = skipSignIn();
-  const { restore } = await stubEngineNetworkBoundaries({
-    serverOptions: { streamChunks: ["Set up a monitor for this page."] },
-  });
+  const mockEngineManager = new MockEngineManager();
   const win = await openAIWindow();
 
   try {
@@ -392,15 +390,14 @@ add_task(async function test_form_edit_dispatches_draft_update() {
   } finally {
     await BrowserTestUtils.closeWindow(win);
     restoreSignIn();
-    await restore();
+    await mockEngineManager.rejectAllRequests();
+    mockEngineManager.cleanupMocks();
   }
 });
 
 add_task(async function test_monitor_cancel_dispatches_cancel_update() {
   const restoreSignIn = skipSignIn();
-  const { restore } = await stubEngineNetworkBoundaries({
-    serverOptions: { streamChunks: ["Set up a monitor for this page."] },
-  });
+  const mockEngineManager = new MockEngineManager();
   const win = await openAIWindow();
 
   try {
@@ -447,7 +444,8 @@ add_task(async function test_monitor_cancel_dispatches_cancel_update() {
   } finally {
     await BrowserTestUtils.closeWindow(win);
     restoreSignIn();
-    await restore();
+    await mockEngineManager.rejectAllRequests();
+    mockEngineManager.cleanupMocks();
   }
 });
 
@@ -538,9 +536,7 @@ add_task(async function test_create_card_chip_shows_open_tab_title() {
   Assert.ok(openTitle, "The open test page has a title");
 
   const restoreSignIn = skipSignIn();
-  const { restore } = await stubEngineNetworkBoundaries({
-    serverOptions: { streamChunks: ["Set up a monitor for this page."] },
-  });
+  const mockEngineManager = new MockEngineManager();
   const win = await openAIWindow();
 
   try {
@@ -586,7 +582,8 @@ add_task(async function test_create_card_chip_shows_open_tab_title() {
     await BrowserTestUtils.closeWindow(win);
     BrowserTestUtils.removeTab(tab);
     restoreSignIn();
-    await restore();
+    await mockEngineManager.rejectAllRequests();
+    mockEngineManager.cleanupMocks();
   }
 });
 
@@ -676,9 +673,7 @@ function getHeaderBottom(sidebarBrowser, aichatBrowser) {
  */
 async function withMonitorCardInSidebar(task) {
   const restoreSignIn = skipSignIn();
-  const { restore } = await stubEngineNetworkBoundaries({
-    serverOptions: { streamChunks: ["Set up a monitor for this page."] },
-  });
+  const mockEngineManager = new MockEngineManager();
   const { win, sidebarBrowser } = await openAIWindowWithSidebar();
 
   try {
@@ -688,7 +683,8 @@ async function withMonitorCardInSidebar(task) {
   } finally {
     await BrowserTestUtils.closeWindow(win);
     restoreSignIn();
-    await restore();
+    await mockEngineManager.rejectAllRequests();
+    mockEngineManager.cleanupMocks();
   }
 }
 

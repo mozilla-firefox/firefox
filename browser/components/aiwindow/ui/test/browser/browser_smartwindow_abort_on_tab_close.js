@@ -3,13 +3,16 @@
 
 "use strict";
 
-/* global openAIWindowWithSidebar, skipSignIn, stubEngineNetworkBoundaries,
-   submitSmartbar, typeInSmartbar */
+/* global openAIWindowWithSidebar, skipSignIn, submitSmartbar, typeInSmartbar */
+
+const { MockEngineManager } = ChromeUtils.importESModule(
+  "resource://testing-common/AIWindowTestUtils.sys.mjs"
+);
 
 // Closing the website tab that owns the captured browsingContext aborts the
 // in-flight sidebar generation.
 add_task(async function test_tab_close_aborts_sidebar_generation() {
-  const { restore } = await stubEngineNetworkBoundaries();
+  const mockEngineManager = new MockEngineManager();
   const restoreSignIn = skipSignIn();
   const { win, sidebarBrowser } = await openAIWindowWithSidebar();
   const tab = win.gBrowser.selectedTab;
@@ -20,17 +23,14 @@ add_task(async function test_tab_close_aborts_sidebar_generation() {
   await BrowserTestUtils.openNewForegroundTab(win.gBrowser, "about:blank");
   win.gBrowser.selectedTab = tab;
 
-  const pending = Promise.withResolvers();
-  const sidebarCall = Promise.withResolvers();
-  const fetchStub = sinon.stub(Chat, "fetchWithHistory").callsFake(args => {
-    sidebarCall.resolve(args);
-    return pending.promise;
-  });
-
   try {
     await typeInSmartbar(sidebarBrowser, "from sidebar");
     await submitSmartbar(sidebarBrowser);
-    const { signal } = await sidebarCall.promise;
+    await TestUtils.waitForCondition(
+      () => Chat.fetchWithHistory.called,
+      "Wait for the sidebar chat turn"
+    );
+    const { signal } = Chat.fetchWithHistory.firstCall.args[0];
 
     Assert.ok(
       !signal.aborted,
@@ -47,12 +47,11 @@ add_task(async function test_tab_close_aborts_sidebar_generation() {
       "Window should remain open; abort came from the single tab close"
     );
   } finally {
-    pending.resolve();
-    fetchStub.restore();
-    restoreSignIn();
-    await restore();
     if (!win.closed) {
       await BrowserTestUtils.closeWindow(win);
     }
+    await mockEngineManager.rejectAllRequests();
+    mockEngineManager.cleanupMocks();
+    restoreSignIn();
   }
 });

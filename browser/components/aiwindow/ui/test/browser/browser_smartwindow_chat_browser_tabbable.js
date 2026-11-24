@@ -5,6 +5,9 @@
 const { Region } = ChromeUtils.importESModule(
   "resource://gre/modules/Region.sys.mjs"
 );
+const { MockEngineManager } = ChromeUtils.importESModule(
+  "resource://testing-common/AIWindowTestUtils.sys.mjs"
+);
 
 async function waitForAIWindow(browser) {
   await SpecialPowers.spawn(browser, [], async () => {
@@ -20,7 +23,7 @@ async function waitForAIWindow(browser) {
 // smartbar. Verify it is now skipped while no chat is active.
 add_task(async function test_aichat_browser_not_tabbable_when_chat_inactive() {
   const restoreSignIn = skipSignIn();
-  const { restore } = await stubEngineNetworkBoundaries();
+  const mockEngineManager = new MockEngineManager();
 
   let win;
   try {
@@ -53,8 +56,9 @@ add_task(async function test_aichat_browser_not_tabbable_when_chat_inactive() {
     if (win) {
       await BrowserTestUtils.closeWindow(win);
     }
+    await mockEngineManager.rejectAllRequests();
+    mockEngineManager.cleanupMocks();
     restoreSignIn();
-    await restore();
   }
 });
 
@@ -63,9 +67,7 @@ add_task(async function test_aichat_browser_not_tabbable_when_chat_inactive() {
 // etc.) is reachable by keyboard.
 add_task(async function test_aichat_browser_tabbable_when_chat_active() {
   const restoreSignIn = skipSignIn();
-  const { restore } = await stubEngineNetworkBoundaries({
-    serverOptions: { streamChunks: ["Hello from mock."] },
-  });
+  const mockEngineManager = new MockEngineManager();
 
   let win;
   try {
@@ -75,6 +77,10 @@ add_task(async function test_aichat_browser_tabbable_when_chat_active() {
 
     await typeInSmartbar(browser, "start a chat");
     await submitSmartbar(browser);
+    await mockEngineManager.respondTo({
+      purpose: "chat",
+      response: "Hello from mock.",
+    });
 
     const tabindex = await SpecialPowers.spawn(browser, [], async () => {
       const aiWindow = content.document.querySelector("ai-window");
@@ -96,8 +102,9 @@ add_task(async function test_aichat_browser_tabbable_when_chat_active() {
     if (win) {
       await BrowserTestUtils.closeWindow(win);
     }
+    await mockEngineManager.rejectAllRequests();
+    mockEngineManager.cleanupMocks();
     restoreSignIn();
-    await restore();
   }
 });
 
@@ -108,7 +115,7 @@ add_task(async function test_aichat_browser_tabbable_when_chat_active() {
 // click focused it (bug 2073449).
 add_task(async function test_aichat_browser_tabbable_after_sidebar_command() {
   const restoreSignIn = skipSignIn();
-  const { restore } = await stubEngineNetworkBoundaries();
+  const mockEngineManager = new MockEngineManager();
 
   const originalRegion = Region.home;
   Region._setHomeRegion("US", false);
@@ -172,7 +179,8 @@ add_task(async function test_aichat_browser_tabbable_after_sidebar_command() {
     }
     await SpecialPowers.popPrefEnv();
     Region._setHomeRegion(originalRegion, false);
+    await mockEngineManager.rejectAllRequests();
+    mockEngineManager.cleanupMocks();
     restoreSignIn();
-    await restore();
   }
 });

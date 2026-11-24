@@ -258,27 +258,38 @@ export class MockEngineManager {
    * Reject all outstanding engine requests, and abort the chat turns still
    * running, rejecting their requests until they finish. Await this before
    * `cleanupMocks()`: a turn that outlived the mocks would build a real engine
-   * and reach the production endpoint.
+   * and reach the production endpoint. Never throws, so cleanup can await it
+   * without wrapping it; a turn that doesn't finish fails the test instead.
    */
   async rejectAllRequests() {
-    this.#abortController.abort();
-    this.#rejectPendingRequests();
-    if (this.#chatTurns.size) {
-      let settled = false;
-      Promise.allSettled(this.#chatTurns).then(() => (settled = true));
-      // An aborted turn can still make one more request before it returns, so
-      // keep rejecting until every turn is done.
-      await TestUtils.waitForCondition(
-        () => {
-          this.#rejectPendingRequests();
-          return settled;
-        },
-        "The chat turns didn't finish after their requests were rejected",
-        100,
-        200
-      );
+    try {
+      this.#abortController.abort();
+      this.#rejectPendingRequests();
+      if (this.#chatTurns.size) {
+        let settled = false;
+        Promise.allSettled(this.#chatTurns).then(() => (settled = true));
+        // An aborted turn can still make one more request before it returns, so
+        // keep rejecting until every turn is done.
+        await TestUtils.waitForCondition(
+          () => {
+            this.#rejectPendingRequests();
+            return settled;
+          },
+          "The chat turns didn't finish after their requests were rejected",
+          100,
+          200
+        );
+      }
+    } catch (error) {
+      const assert = testContext.scope?.Assert;
+      if (assert) {
+        assert.ok(false, String(error));
+      } else {
+        console.error(error);
+      }
+    } finally {
+      this.#abortController = new AbortController();
     }
-    this.#abortController = new AbortController();
   }
 
   #rejectPendingRequests() {
@@ -1045,18 +1056,31 @@ export const AIWindowTestUtils = {
    */
   async withHTTPChatWindow(serverOptions, task) {
     const { SpecialPowers } = context().window;
-    const { stubEngineNetworkBoundaries } = context().scope;
-    const { restore, port } = await stubEngineNetworkBoundaries({
-      passthroughFeatures: new Set(["chat", "title-generation"]),
-      serverOptions,
-    });
+    const { server, port } = AIWindowTestUtils.startMockOpenAI(serverOptions);
     await SpecialPowers.pushPrefEnv({
       set: [
+        ["browser.smartwindow.endpoint", `http://localhost:${port}/v1`],
         ["browser.smartwindow.customEndpoint", `http://localhost:${port}/v1`],
       ],
     });
 
     const sandbox = sinon.createSandbox();
+    const realFeatures = new Set(["chat", "title-generation"]);
+    const originalBuild = openAIEngine.build.bind(openAIEngine);
+    sandbox.stub(openAIEngine, "build").callsFake(async config => {
+      if (realFeatures.has(config.feature)) {
+        return originalBuild(config);
+      }
+      return {
+        feature: config.feature,
+        model: config.model,
+        async run() {
+          return { finalOutput: "Mock" };
+        },
+        runWithGenerator() {},
+      };
+    });
+    sandbox.stub(AuthProvider, "getToken").resolves("mock-fxa-token");
     const abortController = new AbortController();
     const turns = new Set();
     const conversations = new Set();
@@ -1103,7 +1127,7 @@ export const AIWindowTestUtils = {
         } finally {
           sandbox.restore();
           await SpecialPowers.popPrefEnv();
-          await restore();
+          await AIWindowTestUtils.stopMockOpenAI(server);
         }
       }
     }
@@ -1376,11 +1400,8 @@ export const AIWindowTestUtils = {
    * Convenience wrapper that starts a mock OpenAI server, pushes the endpoint
    * pref, stubs getToken, runs a task, then tears everything down.
    *
-   * Consider using stubEngineNetworkBoundaries (in the functional suite's
-   * head.js) instead for new tests — it additionally stubs openAIEngine.build
-   * to prevent leaked-window issues from background async operations, and its
-   * setup/restore pattern fits beforeEach/afterEach without requiring a
-   * callback wrapper.
+   * Only for tests of the real engine or HTTP layer; use MockEngineManager
+   * otherwise.
    *
    * @param {MockOpenAIServerOptions} serverOptions - Options for the mock
    *   server.

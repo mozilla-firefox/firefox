@@ -12,6 +12,9 @@ Services.scriptloader.loadSubScript(
 const { Region } = ChromeUtils.importESModule(
   "resource://gre/modules/Region.sys.mjs"
 );
+const { MockEngineManager } = ChromeUtils.importESModule(
+  "resource://testing-common/AIWindowTestUtils.sys.mjs"
+);
 
 // Trailing slash needed, see promiseNavigateAndLoad in head.js
 const WATCHABLE_PAGE = "https://example.com/";
@@ -80,7 +83,7 @@ describe("when the user copies an assistant message", () => {
   let gSidebarBrowser;
   let gAichatBrowser;
   let gRestoreSignIn;
-  let gRestoreEngine;
+  let gMockEngineManager;
   let gOriginalRegion;
 
   beforeEach(async () => {
@@ -96,9 +99,7 @@ describe("when the user copies an assistant message", () => {
       ],
     });
     gRestoreSignIn = skipSignIn();
-    ({ restore: gRestoreEngine } = await stubEngineNetworkBoundaries({
-      serverOptions: { streamChunks: [MODEL_REPLY] },
-    }));
+    gMockEngineManager = new MockEngineManager();
     ({ win: gWin, sidebarBrowser: gSidebarBrowser } =
       await openAIWindowWithSidebar(WATCHABLE_PAGE));
     gAichatBrowser = await getAichatBrowser(gSidebarBrowser);
@@ -106,7 +107,8 @@ describe("when the user copies an assistant message", () => {
 
   afterEach(async () => {
     await BrowserTestUtils.closeWindow(gWin);
-    await gRestoreEngine();
+    await gMockEngineManager.rejectAllRequests();
+    gMockEngineManager.cleanupMocks();
     gRestoreSignIn();
     await SpecialPowers.popPrefEnv();
     Region._setHomeRegion(gOriginalRegion, false);
@@ -138,6 +140,10 @@ describe("when the user copies an assistant message", () => {
     it("should copy the model's reply", async () => {
       await typeInSmartbar(gSidebarBrowser, "hello");
       await submitSmartbar(gSidebarBrowser);
+      await gMockEngineManager.respondTo({
+        purpose: "chat",
+        response: MODEL_REPLY,
+      });
 
       await assertLastAssistantMessageCopied(gAichatBrowser, MODEL_REPLY);
     });

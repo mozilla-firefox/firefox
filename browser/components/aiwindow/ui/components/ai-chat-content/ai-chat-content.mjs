@@ -474,10 +474,13 @@ export class AIChatContent extends MozLitElement {
     this.#overflowObserver = new ResizeObserver(() =>
       this.#updateOverflowState()
     );
+    // Watch the scroll container too: it can grow or shrink while its content
+    // stays the same size, which changes whether it scrolls.
     this.updateComplete.then(() => {
       this.#overflowObserver.observe(
         this.shadowRoot.querySelector(".chat-inner-wrapper")
       );
+      this.#overflowObserver.observe(this.#wrapper);
     });
   }
 

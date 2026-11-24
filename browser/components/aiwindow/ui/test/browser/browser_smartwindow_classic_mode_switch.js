@@ -7,6 +7,9 @@
 const { AIWindowUI } = ChromeUtils.importESModule(
   "moz-src:///browser/components/aiwindow/ui/modules/AIWindowUI.sys.mjs"
 );
+const { MockEngineManager } = ChromeUtils.importESModule(
+  "resource://testing-common/AIWindowTestUtils.sys.mjs"
+);
 
 add_setup(async function setup() {
   await SpecialPowers.pushPrefEnv({
@@ -22,7 +25,7 @@ add_setup(async function setup() {
 
 // Switching to classic mode tears down tab state management
 add_task(async function test_classic_mode_disables_tab_state_events() {
-  const { restore } = await stubEngineNetworkBoundaries();
+  const mockEngineManager = new MockEngineManager();
 
   let win, newTab;
   try {
@@ -32,6 +35,7 @@ add_task(async function test_classic_mode_disables_tab_state_events() {
 
     await typeInSmartbar(browser, "hello");
     await submitSmartbar(browser);
+    await mockEngineManager.respondTo({ purpose: "chat", response: "Mock" });
 
     await SpecialPowers.spawn(browser, [], async () => {
       const el = content.document.querySelector("ai-window");
@@ -82,7 +86,8 @@ add_task(async function test_classic_mode_disables_tab_state_events() {
     await promiseNavigateAndLoad(win.gBrowser.selectedBrowser, "about:blank");
 
     await BrowserTestUtils.closeWindow(win);
-    await restore();
+    await mockEngineManager.rejectAllRequests();
+    mockEngineManager.cleanupMocks();
   }
 });
 

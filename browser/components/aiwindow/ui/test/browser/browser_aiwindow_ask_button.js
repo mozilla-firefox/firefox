@@ -6,6 +6,9 @@
 const { PromiseTestUtils } = ChromeUtils.importESModule(
   "resource://testing-common/PromiseTestUtils.sys.mjs"
 );
+const { MockEngineManager } = ChromeUtils.importESModule(
+  "resource://testing-common/AIWindowTestUtils.sys.mjs"
+);
 // AI chat content loads Fluent strings asynchronously, which may not complete
 // before the test finishes. This is expected and doesn't affect test behavior.
 PromiseTestUtils.allowMatchingRejectionsGlobally(
@@ -249,9 +252,7 @@ add_task(async function test_ask_button_immersive_view_vertical_tabs() {
  * Test if the close button inside the sidebar chat closes the sidebar
  */
 add_task(async function test_sidebar_close_button() {
-  const { restore } = await stubEngineNetworkBoundaries({
-    serverOptions: null,
-  });
+  const mockEngineManager = new MockEngineManager();
   let win;
   try {
     win = await openAIWindow();
@@ -305,6 +306,7 @@ add_task(async function test_sidebar_close_button() {
     );
   } finally {
     await BrowserTestUtils.closeWindow(win);
-    await restore();
+    await mockEngineManager.rejectAllRequests();
+    mockEngineManager.cleanupMocks();
   }
 });

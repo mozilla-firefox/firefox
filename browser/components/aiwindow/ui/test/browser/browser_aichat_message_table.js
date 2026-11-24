@@ -3,6 +3,10 @@
 
 "use strict";
 
+const { MockEngineManager } = ChromeUtils.importESModule(
+  "resource://testing-common/AIWindowTestUtils.sys.mjs"
+);
+
 const TABLE_MARKDOWN = `| Header 1 | Header 2 |
 |----------|----------|
 | A        | B        |`;
@@ -239,50 +243,42 @@ describe("chat message table rendering", () => {
   it("should copy table markdown to clipboard", async () => {
     const restoreSignIn = skipSignIn();
     const messageWithTable = `Here is a markdown table:\n\n${TABLE_MARKDOWN}\n\nThis was a markdown table.`;
-    const { restore } = await stubEngineNetworkBoundaries({
-      serverOptions: { streamChunks: [messageWithTable] },
-    });
+    const mockEngineManager = new MockEngineManager();
 
+    let win;
     try {
-      const win = await openAIWindow();
+      win = await openAIWindow();
       const browser = win.gBrowser.selectedBrowser;
 
       await typeInSmartbar(browser, "show me a table");
       await submitSmartbar(browser);
-
-      const aiWindowEl = browser.contentDocument.querySelector("ai-window");
-      await BrowserTestUtils.waitForMutationCondition(
-        aiWindowEl.shadowRoot,
-        { childList: true, subtree: true },
-        () => aiWindowEl.shadowRoot.querySelector("#aichat-browser")
-      );
-      const aichatBrowser =
-        aiWindowEl.shadowRoot.querySelector("#aichat-browser");
+      const aichatBrowser = await getAichatBrowser(browser);
+      await mockEngineManager.respondTo({
+        purpose: "chat",
+        response: messageWithTable,
+      });
 
       await SimpleTest.promiseClipboardChange(TABLE_MARKDOWN, async () => {
         await SpecialPowers.spawn(aichatBrowser, [], async () => {
           const chatContent = content.document.querySelector("ai-chat-content");
           let copyButton;
-          await ContentTaskUtils.waitForMutationCondition(
-            chatContent.shadowRoot,
-            { childList: true, subtree: true },
-            () => {
-              const message =
-                chatContent.shadowRoot.querySelectorAll("ai-chat-message")[1];
-              const table = message?.shadowRoot.querySelector("ai-chat-table");
-              copyButton =
-                table?.shadowRoot.querySelector(".table-copy-button");
-              return copyButton;
-            }
-          );
+          await ContentTaskUtils.waitForCondition(() => {
+            const message =
+              chatContent.shadowRoot.querySelectorAll("ai-chat-message")[1];
+            const table = message?.shadowRoot.querySelector("ai-chat-table");
+            copyButton = table?.shadowRoot.querySelector(".table-copy-button");
+            return copyButton;
+          }, "Wait for the table copy button");
           copyButton.click();
         });
       });
-
-      await BrowserTestUtils.closeWindow(win);
     } finally {
+      if (win) {
+        await BrowserTestUtils.closeWindow(win);
+      }
+      await mockEngineManager.rejectAllRequests();
+      mockEngineManager.cleanupMocks();
       restoreSignIn();
-      await restore();
     }
   });
 
@@ -293,44 +289,34 @@ describe("chat message table rendering", () => {
 | 4     | 5     | 6     |`;
     const restoreSignIn = skipSignIn();
     const messageWithTwoTables = `First table:\n\n${TABLE_MARKDOWN}\n\nSecond table:\n\n${TABLE_MARKDOWN_SECOND}`;
-    const { restore } = await stubEngineNetworkBoundaries({
-      serverOptions: { streamChunks: [messageWithTwoTables] },
-    });
+    const mockEngineManager = new MockEngineManager();
 
+    let win;
     try {
-      const win = await openAIWindow();
+      win = await openAIWindow();
       const browser = win.gBrowser.selectedBrowser;
 
       await typeInSmartbar(browser, "show me two tables");
       await submitSmartbar(browser);
-
-      const aiWindowEl = browser.contentDocument.querySelector("ai-window");
-      await BrowserTestUtils.waitForMutationCondition(
-        aiWindowEl.shadowRoot,
-        { childList: true, subtree: true },
-        () => aiWindowEl.shadowRoot.querySelector("#aichat-browser")
-      );
-      const aichatBrowser =
-        aiWindowEl.shadowRoot.querySelector("#aichat-browser");
+      const aichatBrowser = await getAichatBrowser(browser);
+      await mockEngineManager.respondTo({
+        purpose: "chat",
+        response: messageWithTwoTables,
+      });
 
       // Copy first table
       await SimpleTest.promiseClipboardChange(TABLE_MARKDOWN, async () => {
         await SpecialPowers.spawn(aichatBrowser, [], async () => {
           const chatContent = content.document.querySelector("ai-chat-content");
           let copyButton;
-          await ContentTaskUtils.waitForMutationCondition(
-            chatContent.shadowRoot,
-            { childList: true, subtree: true },
-            () => {
-              const message =
-                chatContent.shadowRoot.querySelectorAll("ai-chat-message")[1];
-              const table =
-                message?.shadowRoot.querySelectorAll("ai-chat-table")[0];
-              copyButton =
-                table?.shadowRoot.querySelector(".table-copy-button");
-              return copyButton;
-            }
-          );
+          await ContentTaskUtils.waitForCondition(() => {
+            const message =
+              chatContent.shadowRoot.querySelectorAll("ai-chat-message")[1];
+            const table =
+              message?.shadowRoot.querySelectorAll("ai-chat-table")[0];
+            copyButton = table?.shadowRoot.querySelector(".table-copy-button");
+            return copyButton;
+          }, "Wait for the table copy button");
           copyButton.click();
         });
       });
@@ -360,11 +346,13 @@ describe("chat message table rendering", () => {
           });
         }
       );
-
-      await BrowserTestUtils.closeWindow(win);
     } finally {
+      if (win) {
+        await BrowserTestUtils.closeWindow(win);
+      }
+      await mockEngineManager.rejectAllRequests();
+      mockEngineManager.cleanupMocks();
       restoreSignIn();
-      await restore();
     }
   });
 });

@@ -2,7 +2,11 @@
  * http://creativecommons.org/publicdomain/zero/1.0/ */
 "use strict";
 
-/* global promiseNavigateAndLoad, AIWINDOW_URL, openAIWindow, typeInSmartbar, submitSmartbar, stubEngineNetworkBoundaries */
+/* global promiseNavigateAndLoad, AIWINDOW_URL, openAIWindow, typeInSmartbar, submitSmartbar */
+
+const { MockEngineManager } = ChromeUtils.importESModule(
+  "resource://testing-common/AIWindowTestUtils.sys.mjs"
+);
 
 add_setup(async function setup() {
   await SpecialPowers.pushPrefEnv({
@@ -20,7 +24,7 @@ add_task(
     await SpecialPowers.pushPrefEnv({
       set: [["browser.smartwindow.sidebar.openByDefault", false]],
     });
-    const { restore } = await stubEngineNetworkBoundaries();
+    const mockEngineManager = new MockEngineManager();
     let win, tab;
     try {
       win = await openAIWindow();
@@ -29,6 +33,7 @@ add_task(
 
       await typeInSmartbar(browser, "hello");
       await submitSmartbar(browser);
+      await mockEngineManager.respondTo({ purpose: "chat", response: "Mock" });
 
       await promiseNavigateAndLoad(browser, "https://example.com/");
       await new Promise(resolve => win.setTimeout(resolve, 100));
@@ -42,7 +47,8 @@ add_task(
         await BrowserTestUtils.removeTab(tab);
       }
       await BrowserTestUtils.closeWindow(win);
-      await restore();
+      await mockEngineManager.rejectAllRequests();
+      mockEngineManager.cleanupMocks();
       await SpecialPowers.popPrefEnv();
     }
   }
@@ -51,7 +57,7 @@ add_task(
 // Changing sidebar.openByDefault pref applies to tabs that have not been explicitly toggled
 add_task(
   async function test_pref_change_applies_to_tabs_without_explicit_toggle() {
-    const { restore } = await stubEngineNetworkBoundaries();
+    const mockEngineManager = new MockEngineManager();
     let win, tabA, tabB;
     try {
       win = await openAIWindow();
@@ -60,6 +66,7 @@ add_task(
 
       await typeInSmartbar(browserA, "hello");
       await submitSmartbar(browserA);
+      await mockEngineManager.respondTo({ purpose: "chat", response: "Mock" });
 
       // Navigate away with openByDefault = true - sidebar opens
       await promiseNavigateAndLoad(browserA, "https://example.com/");
@@ -103,14 +110,15 @@ add_task(
         await BrowserTestUtils.removeTab(tabB);
       }
       await BrowserTestUtils.closeWindow(win);
-      await restore();
+      await mockEngineManager.rejectAllRequests();
+      mockEngineManager.cleanupMocks();
     }
   }
 );
 
 // Explicitly toggled sidebar state persists regardless of sidebar.openByDefault pref changes
 add_task(async function test_explicit_toggle_persists_across_pref_change() {
-  const { restore } = await stubEngineNetworkBoundaries();
+  const mockEngineManager = new MockEngineManager();
   let win, tab;
   try {
     win = await openAIWindow();
@@ -119,6 +127,7 @@ add_task(async function test_explicit_toggle_persists_across_pref_change() {
 
     await typeInSmartbar(browser, "hello");
     await submitSmartbar(browser);
+    await mockEngineManager.respondTo({ purpose: "chat", response: "Mock" });
 
     await promiseNavigateAndLoad(browser, "https://example.com/");
     await TestUtils.waitForCondition(
@@ -164,6 +173,7 @@ add_task(async function test_explicit_toggle_persists_across_pref_change() {
       await BrowserTestUtils.removeTab(tab);
     }
     await BrowserTestUtils.closeWindow(win);
-    await restore();
+    await mockEngineManager.rejectAllRequests();
+    mockEngineManager.cleanupMocks();
   }
 });

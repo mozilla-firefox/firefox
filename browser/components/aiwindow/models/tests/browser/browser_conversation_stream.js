@@ -228,55 +228,57 @@ add_task(async function test_chat_tool_call_search_browsing_history() {
     { uri: "https://example.org/guide", title: "Llama Guide" },
   ]);
 
+  const mockEngineManager = new MockEngineManager();
+
   try {
-    await withServer(
-      {
-        toolCall: {
-          name: "search_browsing_history",
-          args: JSON.stringify({ searchTerm: "llama", historyLimit: 5 }),
-        },
-        followupChunks: ["History ready."],
-      },
-      async () => {
-        const conversation = new ChatConversation({
-          title: "chat title",
-          description: "chat desc",
-          pageUrl: new URL("https://example.com"),
-          pageMeta: {},
-        });
-        conversation.addUserMessage("Search history", "https://example.com", 0);
-        conversation.addAssistantMessage("text", "");
+    const conversation = new ChatConversation({
+      title: "chat title",
+      description: "chat desc",
+      pageUrl: new URL("https://example.com"),
+      pageMeta: {},
+    });
+    conversation.addUserMessage("Search history", "https://example.com", 0);
+    conversation.addAssistantMessage("text", "");
 
-        const engine = await openAIEngine.build({
-          model: TEST_MODEL,
-          serviceType: SERVICE_TYPES.AI,
-          purpose: PURPOSES.CHAT,
-          flowId: null,
-          feature: MODEL_FEATURES.CHAT,
-        });
-        conversation.engine = engine;
-        await Chat.fetchWithHistory({ conversation });
+    const engine = await openAIEngine.build({
+      model: TEST_MODEL,
+      serviceType: SERVICE_TYPES.AI,
+      purpose: PURPOSES.CHAT,
+      flowId: null,
+      feature: MODEL_FEATURES.CHAT,
+    });
+    conversation.engine = engine;
+    const fetchPromise = Chat.fetchWithHistory({ conversation });
+    await mockEngineManager.respondToWithToolCall({
+      toolName: "search_browsing_history",
+      toolParams: { searchTerm: "llama", historyLimit: 5 },
+    });
+    await mockEngineManager.respondTo({
+      purpose: PURPOSES.CHAT,
+      response: "History ready.",
+    });
+    await fetchPromise;
 
-        Assert.equal(
-          getLastAssistantResponse(conversation).content.body,
-          "History ready.",
-          "Assistant should stream follow-up text"
-        );
+    Assert.equal(
+      getLastAssistantResponse(conversation).content.body,
+      "History ready.",
+      "Assistant should stream follow-up text"
+    );
 
-        const toolMessages = conversation.messages.filter(
-          message => message.role === MESSAGE_ROLE.TOOL
-        );
-        Assert.equal(toolMessages.length, 1, "Tool result recorded");
-        const toolResult = toolMessages[0].content.body;
-        info("got history: " + JSON.stringify(toolResult));
-        Assert.greaterOrEqual(
-          toolResult.results.length,
-          1,
-          "History tool returns stored visits"
-        );
-      }
+    const toolMessages = conversation.messages.filter(
+      message => message.role === MESSAGE_ROLE.TOOL
+    );
+    Assert.equal(toolMessages.length, 1, "Tool result recorded");
+    const toolResult = toolMessages[0].content.body;
+    info("got history: " + JSON.stringify(toolResult));
+    Assert.greaterOrEqual(
+      toolResult.results.length,
+      1,
+      "History tool returns stored visits"
     );
   } finally {
+    await mockEngineManager.rejectAllRequests();
+    mockEngineManager.cleanupMocks();
     await PlacesUtils.history.clear();
   }
 });
@@ -286,57 +288,59 @@ add_task(async function test_chat_tool_call_get_page_content() {
   const { url, server: pageServer } = serveHTML(html);
   const tab = await BrowserTestUtils.openNewForegroundTab(gBrowser, url, true);
 
+  const mockEngineManager = new MockEngineManager();
+
   try {
-    await withServer(
-      {
-        toolCall: {
-          name: "get_page_content",
-          args: JSON.stringify({ url_list: [url] }),
-        },
-        followupChunks: ["Content ready."],
-      },
-      async () => {
-        const conversation = new ChatConversation({
-          title: "chat title",
-          description: "chat desc",
-          pageUrl: new URL("https://example.com"),
-          pageMeta: {},
-        });
-        conversation.addUserMessage("Read page", "https://example.com", 0);
-        conversation.addAssistantMessage("text", "");
+    const conversation = new ChatConversation({
+      title: "chat title",
+      description: "chat desc",
+      pageUrl: new URL("https://example.com"),
+      pageMeta: {},
+    });
+    conversation.addUserMessage("Read page", "https://example.com", 0);
+    conversation.addAssistantMessage("text", "");
 
-        const engine = await openAIEngine.build({
-          model: TEST_MODEL,
-          serviceType: SERVICE_TYPES.AI,
-          purpose: PURPOSES.CHAT,
-          flowId: null,
-          feature: MODEL_FEATURES.CHAT,
-        });
-        conversation.engine = engine;
-        await Chat.fetchWithHistory({ conversation });
+    const engine = await openAIEngine.build({
+      model: TEST_MODEL,
+      serviceType: SERVICE_TYPES.AI,
+      purpose: PURPOSES.CHAT,
+      flowId: null,
+      feature: MODEL_FEATURES.CHAT,
+    });
+    conversation.engine = engine;
+    const fetchPromise = Chat.fetchWithHistory({ conversation });
+    await mockEngineManager.respondToWithToolCall({
+      toolName: "get_page_content",
+      toolParams: { url_list: [url] },
+    });
+    await mockEngineManager.respondTo({
+      purpose: PURPOSES.CHAT,
+      response: "Content ready.",
+    });
+    await fetchPromise;
 
-        Assert.equal(
-          getLastAssistantResponse(conversation).content.body,
-          "Content ready.",
-          "Assistant should stream follow-up text"
-        );
+    Assert.equal(
+      getLastAssistantResponse(conversation).content.body,
+      "Content ready.",
+      "Assistant should stream follow-up text"
+    );
 
-        const toolMessages = conversation.messages.filter(
-          message => message.role === MESSAGE_ROLE.TOOL
-        );
-        Assert.equal(toolMessages.length, 1, "Tool result recorded");
-        const contentArray = toolMessages[0].content.body;
-        info("got content: " + contentArray);
-        Assert.ok(
-          Array.isArray(contentArray) &&
-            typeof contentArray[0] === "string" &&
-            contentArray[0].includes("Headline") &&
-            contentArray[0].includes("Body text."),
-          "Page content should be extracted"
-        );
-      }
+    const toolMessages = conversation.messages.filter(
+      message => message.role === MESSAGE_ROLE.TOOL
+    );
+    Assert.equal(toolMessages.length, 1, "Tool result recorded");
+    const contentArray = toolMessages[0].content.body;
+    info("got content: " + contentArray);
+    Assert.ok(
+      Array.isArray(contentArray) &&
+        typeof contentArray[0] === "string" &&
+        contentArray[0].includes("Headline") &&
+        contentArray[0].includes("Body text."),
+      "Page content should be extracted"
     );
   } finally {
+    await mockEngineManager.rejectAllRequests();
+    mockEngineManager.cleanupMocks();
     window.document.documentElement.removeAttribute("ai-window");
     BrowserTestUtils.removeTab(tab);
     await new Promise(resolve => pageServer.stop(resolve));
@@ -363,63 +367,65 @@ add_task(async function test_chat_tool_call_get_navigation_info() {
     FAKE_NAV_RESULTS
   );
 
+  const mockEngineManager = new MockEngineManager();
+
   try {
-    await withServer(
-      {
-        toolCall: {
-          name: "get_navigation_info",
-          args: JSON.stringify({ query: "manage memories" }),
-        },
-        followupChunks: ["Navigation ready."],
-      },
-      async () => {
-        const conversation = new ChatConversation({
-          title: "chat title",
-          description: "chat desc",
-          pageUrl: new URL("https://example.com"),
-          pageMeta: {},
-        });
-        conversation.addUserMessage(
-          "How do I manage memories?",
-          "https://example.com",
-          0
-        );
-        conversation.addAssistantMessage("text", "");
-
-        const engine = await openAIEngine.build({
-          model: TEST_MODEL,
-          serviceType: SERVICE_TYPES.AI,
-          purpose: PURPOSES.CHAT,
-          flowId: null,
-          feature: MODEL_FEATURES.CHAT,
-        });
-        conversation.engine = engine;
-        await Chat.fetchWithHistory({ conversation });
-
-        Assert.equal(
-          getLastAssistantResponse(conversation).content.body,
-          "Navigation ready.",
-          "Assistant should stream follow-up text"
-        );
-
-        const toolMessages = conversation.messages.filter(
-          message => message.role === MESSAGE_ROLE.TOOL
-        );
-        Assert.equal(toolMessages.length, 1, "Tool result recorded");
-
-        const navResults = toolMessages[0].content.body;
-        info("got nav results: " + JSON.stringify(navResults));
-        Assert.equal(navResults.length, 1, "Returns the stubbed nav entry");
-        Assert.equal(
-          navResults[0].url,
-          "about:preferences#manageMemories",
-          "Nav entry url flows through"
-        );
-        Assert.ok(navResults[0].label, "Nav entry has label");
-        Assert.ok(navResults[0].breadcrumb, "Nav entry has breadcrumb");
-      }
+    const conversation = new ChatConversation({
+      title: "chat title",
+      description: "chat desc",
+      pageUrl: new URL("https://example.com"),
+      pageMeta: {},
+    });
+    conversation.addUserMessage(
+      "How do I manage memories?",
+      "https://example.com",
+      0
     );
+    conversation.addAssistantMessage("text", "");
+
+    const engine = await openAIEngine.build({
+      model: TEST_MODEL,
+      serviceType: SERVICE_TYPES.AI,
+      purpose: PURPOSES.CHAT,
+      flowId: null,
+      feature: MODEL_FEATURES.CHAT,
+    });
+    conversation.engine = engine;
+    const fetchPromise = Chat.fetchWithHistory({ conversation });
+    await mockEngineManager.respondToWithToolCall({
+      toolName: "get_navigation_info",
+      toolParams: { query: "manage memories" },
+    });
+    await mockEngineManager.respondTo({
+      purpose: PURPOSES.CHAT,
+      response: "Navigation ready.",
+    });
+    await fetchPromise;
+
+    Assert.equal(
+      getLastAssistantResponse(conversation).content.body,
+      "Navigation ready.",
+      "Assistant should stream follow-up text"
+    );
+
+    const toolMessages = conversation.messages.filter(
+      message => message.role === MESSAGE_ROLE.TOOL
+    );
+    Assert.equal(toolMessages.length, 1, "Tool result recorded");
+
+    const navResults = toolMessages[0].content.body;
+    info("got nav results: " + JSON.stringify(navResults));
+    Assert.equal(navResults.length, 1, "Returns the stubbed nav entry");
+    Assert.equal(
+      navResults[0].url,
+      "about:preferences#manageMemories",
+      "Nav entry url flows through"
+    );
+    Assert.ok(navResults[0].label, "Nav entry has label");
+    Assert.ok(navResults[0].breadcrumb, "Nav entry has breadcrumb");
   } finally {
+    await mockEngineManager.rejectAllRequests();
+    mockEngineManager.cleanupMocks();
     sb.restore();
   }
 });
@@ -452,67 +458,69 @@ add_task(async function test_chat_tool_call_get_user_memories() {
     await MemoryStore.addMemory(memory);
   }
 
+  const mockEngineManager = new MockEngineManager();
+
   try {
-    await withServer(
-      {
-        toolCall: {
-          name: "get_user_memories",
-          args: "{}",
-        },
-        followupChunks: ["Memories ready."],
-      },
-      async () => {
-        const conversation = new ChatConversation({
-          title: "chat title",
-          description: "chat desc",
-          pageUrl: new URL("https://example.com"),
-          pageMeta: {},
-        });
-        conversation.addUserMessage(
-          "Tell me everything you know about me",
-          "https://example.com",
-          0
-        );
-        conversation.addAssistantMessage("text", "");
+    const conversation = new ChatConversation({
+      title: "chat title",
+      description: "chat desc",
+      pageUrl: new URL("https://example.com"),
+      pageMeta: {},
+    });
+    conversation.addUserMessage(
+      "Tell me everything you know about me",
+      "https://example.com",
+      0
+    );
+    conversation.addAssistantMessage("text", "");
 
-        const engine = await openAIEngine.build({
-          model: TEST_MODEL,
-          serviceType: SERVICE_TYPES.AI,
-          purpose: PURPOSES.CHAT,
-          flowId: null,
-          feature: MODEL_FEATURES.CHAT,
-        });
-        conversation.engine = engine;
-        await Chat.fetchWithHistory({ conversation });
+    const engine = await openAIEngine.build({
+      model: TEST_MODEL,
+      serviceType: SERVICE_TYPES.AI,
+      purpose: PURPOSES.CHAT,
+      flowId: null,
+      feature: MODEL_FEATURES.CHAT,
+    });
+    conversation.engine = engine;
+    const fetchPromise = Chat.fetchWithHistory({ conversation });
+    await mockEngineManager.respondToWithToolCall({
+      toolName: "get_user_memories",
+      toolParams: {},
+    });
+    await mockEngineManager.respondTo({
+      purpose: PURPOSES.CHAT,
+      response: "Memories ready.",
+    });
+    await fetchPromise;
 
-        Assert.equal(
-          getLastAssistantResponse(conversation).content.body,
-          "Memories ready.",
-          "Assistant should stream follow-up text"
-        );
+    Assert.equal(
+      getLastAssistantResponse(conversation).content.body,
+      "Memories ready.",
+      "Assistant should stream follow-up text"
+    );
 
-        const toolMessages = conversation.messages.filter(
-          message => message.role === MESSAGE_ROLE.TOOL
-        );
-        Assert.equal(toolMessages.length, 1, "Tool result recorded");
-        const returnedMemories = toolMessages[0].content.body;
-        info("got memories: " + returnedMemories);
-        Assert.ok(
-          returnedMemories.includes("Loves drinking coffee"),
-          "Memories tool call should return the 1st expected memory"
-        );
-        Assert.ok(
-          returnedMemories.includes("Buys dog food online"),
-          "Memories tool call should return the 2nd expected memory"
-        );
-        Assert.equal(
-          returnedMemories.length,
-          2,
-          "Memories tool call should return exactly 2 memories"
-        );
-      }
+    const toolMessages = conversation.messages.filter(
+      message => message.role === MESSAGE_ROLE.TOOL
+    );
+    Assert.equal(toolMessages.length, 1, "Tool result recorded");
+    const returnedMemories = toolMessages[0].content.body;
+    info("got memories: " + returnedMemories);
+    Assert.ok(
+      returnedMemories.includes("Loves drinking coffee"),
+      "Memories tool call should return the 1st expected memory"
+    );
+    Assert.ok(
+      returnedMemories.includes("Buys dog food online"),
+      "Memories tool call should return the 2nd expected memory"
+    );
+    Assert.equal(
+      returnedMemories.length,
+      2,
+      "Memories tool call should return exactly 2 memories"
     );
   } finally {
+    await mockEngineManager.rejectAllRequests();
+    mockEngineManager.cleanupMocks();
     // Clear temp memories
     const postTestMemories = await MemoryStore.getMemories({
       includeSoftDeleted: true,

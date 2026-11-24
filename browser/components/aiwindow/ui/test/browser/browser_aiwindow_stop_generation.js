@@ -6,16 +6,15 @@
 const { PromiseTestUtils } = ChromeUtils.importESModule(
   "resource://testing-common/PromiseTestUtils.sys.mjs"
 );
+const { MockEngineManager } = ChromeUtils.importESModule(
+  "resource://testing-common/AIWindowTestUtils.sys.mjs"
+);
 
 // AI chat content loads Fluent strings asynchronously, which may not complete
 // before the test finishes. This is expected and doesn't affect test behavior.
 PromiseTestUtils.allowMatchingRejectionsGlobally(
   /Missing message.*smartwindow-messages-document-title/
 );
-
-// Stopping generation cancels the in-flight request, which causes the engine
-// to surface a 400 error. This is expected and doesn't affect test behavior.
-PromiseTestUtils.allowMatchingRejectionsGlobally(/400 Bad request/);
 
 /**
  * Waits for the input-cta to show the stop button.
@@ -37,12 +36,7 @@ async function waitForStopButton(browser) {
 }
 
 add_task(async function test_stop_button_appears_during_generation() {
-  const { restore } = await stubEngineNetworkBoundaries({
-    serverOptions: {
-      streamChunks: ["Hello", " from", " mock."],
-      streamChunkDelayMs: 500,
-    },
-  });
+  const mockEngineManager = new MockEngineManager();
 
   const win = await openAIWindow();
   const browser = win.gBrowser.selectedBrowser;
@@ -67,17 +61,13 @@ add_task(async function test_stop_button_appears_during_generation() {
     );
   } finally {
     await BrowserTestUtils.closeWindow(win);
-    await restore();
+    await mockEngineManager.rejectAllRequests();
+    mockEngineManager.cleanupMocks();
   }
 });
 
 add_task(async function test_stop_button_stops_generation() {
-  const { restore } = await stubEngineNetworkBoundaries({
-    serverOptions: {
-      streamChunks: ["Hello", " from", " mock."],
-      streamChunkDelayMs: 500,
-    },
-  });
+  const mockEngineManager = new MockEngineManager();
 
   const win = await openAIWindow();
   const browser = win.gBrowser.selectedBrowser;
@@ -132,18 +122,14 @@ add_task(async function test_stop_button_stops_generation() {
     Assert.ok(loaderGone, "Loading spinner should be dismissed after stop");
   } finally {
     await BrowserTestUtils.closeWindow(win);
-    await restore();
+    await mockEngineManager.rejectAllRequests();
+    mockEngineManager.cleanupMocks();
   }
 });
 
 add_task(
   async function test_smartbar_cta_reflects_input_when_typing_during_generation() {
-    const { restore } = await stubEngineNetworkBoundaries({
-      serverOptions: {
-        streamChunks: ["Hello", " from", " mock."],
-        streamChunkDelayMs: 500,
-      },
-    });
+    const mockEngineManager = new MockEngineManager();
 
     const win = await openAIWindow();
     const browser = win.gBrowser.selectedBrowser;
@@ -153,6 +139,10 @@ add_task(
       await submitSmartbar(browser);
       await waitForStopButton(browser);
       await typeInSmartbar(browser, "second message");
+      await mockEngineManager.respondTo({
+        purpose: "chat",
+        response: ["Hello", " from", " mock."],
+      });
 
       const action = await SpecialPowers.spawn(browser, [], async () => {
         const aiWindowElement = content.document.querySelector("ai-window");
@@ -175,7 +165,8 @@ add_task(
       );
     } finally {
       await BrowserTestUtils.closeWindow(win);
-      await restore();
+      await mockEngineManager.rejectAllRequests();
+      mockEngineManager.cleanupMocks();
     }
   }
 );

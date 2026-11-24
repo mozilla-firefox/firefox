@@ -3,16 +3,18 @@
 
 "use strict";
 
+const { MockEngineManager } = ChromeUtils.importESModule(
+  "resource://testing-common/AIWindowTestUtils.sys.mjs"
+);
+
 // Long enough that a single assistant reply overflows the scroll container on
 // any window size the harness gives us.
 const LONG_MESSAGE = "Lorem ipsum dolor sit amet ".repeat(200);
 
-async function setupChatContent(streamChunks = ["Hello from mock."]) {
+function setupChatContent() {
   const restoreSignIn = skipSignIn();
-  const { restore } = await stubEngineNetworkBoundaries({
-    serverOptions: { streamChunks },
-  });
-  return { restoreSignIn, restore };
+  const mockEngineManager = new MockEngineManager();
+  return { restoreSignIn, mockEngineManager };
 }
 
 /**
@@ -24,10 +26,11 @@ async function setupChatContent(streamChunks = ["Hello from mock."]) {
  * attribute never saw the content grow.
  */
 add_task(async function test_scrolling_and_overflowing_attribute() {
-  const { restoreSignIn, restore } = await setupChatContent([LONG_MESSAGE]);
+  const { restoreSignIn, mockEngineManager } = setupChatContent();
 
+  let win;
   try {
-    const win = await openAIWindow();
+    win = await openAIWindow();
     const browser = win.gBrowser.selectedBrowser;
 
     const aiWindowEl = browser.contentDocument?.querySelector("ai-window");
@@ -38,6 +41,10 @@ add_task(async function test_scrolling_and_overflowing_attribute() {
 
     await typeInSmartbar(browser, "Tell me a long story");
     await submitSmartbar(browser);
+    await mockEngineManager.respondTo({
+      purpose: "chat",
+      response: LONG_MESSAGE,
+    });
 
     await SpecialPowers.spawn(aichatBrowser, [], async () => {
       const chatContent = content.document.querySelector("ai-chat-content");
@@ -88,20 +95,23 @@ add_task(async function test_scrolling_and_overflowing_attribute() {
         "chat-content-wrapper must opt out of scrollable-region tab focus"
       );
     });
-
-    await BrowserTestUtils.closeWindow(win);
   } finally {
+    if (win) {
+      await BrowserTestUtils.closeWindow(win);
+    }
+    await mockEngineManager.rejectAllRequests();
+    mockEngineManager.cleanupMocks();
     restoreSignIn();
-    await restore();
   }
 });
 
 add_task(async function test_long_word_wraps_in_assistant_reply() {
   const longWord = "3." + "1415926535".repeat(100);
-  const { restoreSignIn, restore } = await setupChatContent([longWord]);
+  const { restoreSignIn, mockEngineManager } = setupChatContent();
 
+  let win;
   try {
-    const win = await openAIWindow();
+    win = await openAIWindow();
     const browser = win.gBrowser.selectedBrowser;
 
     const aiWindowEl = browser.contentDocument?.querySelector("ai-window");
@@ -112,6 +122,7 @@ add_task(async function test_long_word_wraps_in_assistant_reply() {
 
     await typeInSmartbar(browser, "List 1000 digits of pi");
     await submitSmartbar(browser);
+    await mockEngineManager.respondTo({ purpose: "chat", response: longWord });
 
     await SpecialPowers.spawn(aichatBrowser, [longWord], async expected => {
       const chatContent = content.document.querySelector("ai-chat-content");
@@ -148,11 +159,13 @@ add_task(async function test_long_word_wraps_in_assistant_reply() {
         "The chat doesn't scroll horizontally"
       );
     });
-
-    await BrowserTestUtils.closeWindow(win);
   } finally {
+    if (win) {
+      await BrowserTestUtils.closeWindow(win);
+    }
+    await mockEngineManager.rejectAllRequests();
+    mockEngineManager.cleanupMocks();
     restoreSignIn();
-    await restore();
   }
 });
 
@@ -160,10 +173,11 @@ add_task(async function test_long_word_wraps_in_assistant_reply() {
  * Test that the overflowing attribute DOESN'T show up when the scrollbar is NOT visible
  */
 add_task(async function test_no_scrolling_and_no_overflowing_attribute() {
-  const { restoreSignIn, restore } = await setupChatContent();
+  const { restoreSignIn, mockEngineManager } = setupChatContent();
 
+  let win;
   try {
-    const win = await openAIWindow();
+    win = await openAIWindow();
     const browser = win.gBrowser.selectedBrowser;
 
     await typeInSmartbar(
@@ -171,6 +185,10 @@ add_task(async function test_no_scrolling_and_no_overflowing_attribute() {
       "hello this should be a short message that doesn't trigger the overflowing attribute."
     );
     await submitSmartbar(browser);
+    await mockEngineManager.respondTo({
+      purpose: "chat",
+      response: "Hello from mock.",
+    });
 
     const aiWindowEl = browser.contentDocument?.querySelector("ai-window");
     const aichatBrowser = await TestUtils.waitForCondition(
@@ -188,15 +206,23 @@ add_task(async function test_no_scrolling_and_no_overflowing_attribute() {
         { childList: true, subtree: true },
         () => chatContent.shadowRoot.querySelector(".chat-bubble-assistant")
       );
-      // Let the ResizeObserver deliver the settled size before asserting.
-      await new Promise(r =>
-        content.requestAnimationFrame(() => content.requestAnimationFrame(r))
-      );
-
       const chatContentWrapper = chatContent.shadowRoot.querySelector(
         ".chat-content-wrapper"
       );
       Assert.ok(chatContentWrapper, "chat-content-wrapper should exist");
+
+      // The scroll container can still be collapsed while the window lays out.
+      await ContentTaskUtils.waitForCondition(
+        () =>
+          chatContentWrapper.clientHeight &&
+          chatContentWrapper.scrollHeight <=
+            chatContentWrapper.clientHeight + 10,
+        "Wait for the scroll container to fit the short conversation"
+      );
+      // Let the ResizeObserver deliver the settled size before asserting.
+      await new Promise(r =>
+        content.requestAnimationFrame(() => content.requestAnimationFrame(r))
+      );
 
       Assert.lessOrEqual(
         chatContentWrapper.scrollHeight,
@@ -209,10 +235,12 @@ add_task(async function test_no_scrolling_and_no_overflowing_attribute() {
         "chat-content-wrapper should NOT have the overflowing attribute"
       );
     });
-
-    await BrowserTestUtils.closeWindow(win);
   } finally {
+    if (win) {
+      await BrowserTestUtils.closeWindow(win);
+    }
+    await mockEngineManager.rejectAllRequests();
+    mockEngineManager.cleanupMocks();
     restoreSignIn();
-    await restore();
   }
 });

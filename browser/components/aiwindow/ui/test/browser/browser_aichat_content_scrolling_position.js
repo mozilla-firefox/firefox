@@ -3,14 +3,16 @@
 
 "use strict";
 
+const { MockEngineManager } = ChromeUtils.importESModule(
+  "resource://testing-common/AIWindowTestUtils.sys.mjs"
+);
+
 const LONG_MESSAGE = "Lorem ipsum dolor sit amet ".repeat(15);
 
-async function setupChatContent() {
+function setupChatContent() {
   const restoreSignIn = skipSignIn();
-  const { restore } = await stubEngineNetworkBoundaries({
-    serverOptions: { streamChunks: [LONG_MESSAGE] },
-  });
-  return { restoreSignIn, restore };
+  const mockEngineManager = new MockEngineManager();
+  return { restoreSignIn, mockEngineManager };
 }
 
 async function getAichatBrowser(sidebarBrowser) {
@@ -24,10 +26,20 @@ async function getAichatBrowser(sidebarBrowser) {
   );
 }
 
-async function buildConversation(sidebarBrowser, aichatBrowser, prefix, turns) {
+async function buildConversation(
+  sidebarBrowser,
+  aichatBrowser,
+  mockEngineManager,
+  prefix,
+  turns
+) {
   for (let i = 0; i < turns; i++) {
     await typeInSmartbar(sidebarBrowser, `${prefix} ${i}: ${LONG_MESSAGE}`);
     await submitSmartbar(sidebarBrowser);
+    await mockEngineManager.respondTo({
+      purpose: "chat",
+      response: LONG_MESSAGE,
+    });
     await SpecialPowers.spawn(aichatBrowser, [i + 1], async expected => {
       const chatContent = content.document.querySelector("ai-chat-content");
       await ContentTaskUtils.waitForMutationCondition(
@@ -61,13 +73,21 @@ async function buildConversation(sidebarBrowser, aichatBrowser, prefix, turns) {
  * - When the user leaves a conversation at the bottom, returning to it goes to the bottom (wasAtBottom override).
  */
 add_task(async function test_scrolling_is_restored() {
-  const { restoreSignIn, restore } = await setupChatContent();
+  const { restoreSignIn, mockEngineManager } = setupChatContent();
 
+  let win;
   try {
-    const { win, sidebarBrowser } = await openAIWindowWithSidebar();
+    let sidebarBrowser;
+    ({ win, sidebarBrowser } = await openAIWindowWithSidebar());
     const aichatBrowser = await getAichatBrowser(sidebarBrowser);
 
-    await buildConversation(sidebarBrowser, aichatBrowser, "Conv1", 4);
+    await buildConversation(
+      sidebarBrowser,
+      aichatBrowser,
+      mockEngineManager,
+      "Conv1",
+      4
+    );
     const conv1Id = await getConversationId(sidebarBrowser);
 
     // Scroll up so the saved position is not at the bottom. Disable smooth
@@ -110,7 +130,13 @@ add_task(async function test_scrolling_is_restored() {
     }, "Sidebar should switch away from conv 1");
 
     // Build conversation 2 and ensure we end scrolled at the bottom.
-    await buildConversation(sidebarBrowser, aichatBrowser, "Conv2", 4);
+    await buildConversation(
+      sidebarBrowser,
+      aichatBrowser,
+      mockEngineManager,
+      "Conv2",
+      4
+    );
     const conv2Id = await getConversationId(sidebarBrowser);
     Assert.notEqual(conv1Id, conv2Id, "Conversations should be distinct");
 
@@ -171,10 +197,12 @@ add_task(async function test_scrolling_is_restored() {
         return lastChildRect.bottom <= wrapperRect.bottom + 5;
       }, "Last actual content should align with viewport bottom in conv 2");
     });
-
-    await BrowserTestUtils.closeWindow(win);
   } finally {
+    if (win) {
+      await BrowserTestUtils.closeWindow(win);
+    }
+    await mockEngineManager.rejectAllRequests();
+    mockEngineManager.cleanupMocks();
     restoreSignIn();
-    await restore();
   }
 });

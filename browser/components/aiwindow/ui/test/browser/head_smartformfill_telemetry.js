@@ -199,6 +199,7 @@ async function withFormPage(overrides, callback) {
   sandbox
     .stub(SmartFormFillModel, "generateFormValues")
     .callsFake(overrides.generateFormValues ?? generateEveryValue);
+  const mockEngineManager = new MockEngineManager();
 
   const win = await openAIWindow();
 
@@ -229,6 +230,8 @@ async function withFormPage(overrides, callback) {
 
     BrowserTestUtils.removeTab(tab);
     await BrowserTestUtils.closeWindow(win);
+    await mockEngineManager.rejectAllRequests();
+    mockEngineManager.cleanupMocks();
     sandbox.restore();
   }
 }

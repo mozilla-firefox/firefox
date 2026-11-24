@@ -953,105 +953,98 @@ add_task(async function test_fast_search_through_chat() {
   ];
 
   await pushSearchPrefs(true);
+  const mockEngineManager = new MockEngineManager();
   const mockSearchManager = new MockSearchManager();
-  const wireRequests = [];
 
   try {
-    await withServer(
-      {
-        toolCall: { name: SEARCH_THE_WEB, args: JSON.stringify({ query }) },
-        followupChunks: ["Widgets cost nine dollars."],
-        onRequest(body) {
-          wireRequests.push(body);
-        },
-      },
-      async () => {
-        const conversation = new ChatConversation({
-          pageUrl: new URL("https://example.com"),
-          pageMeta: {},
-        });
-        conversation.engine = await openAIEngine.build({
-          model: TEST_MODEL,
-          serviceType: SERVICE_TYPES.AI,
-          purpose: PURPOSES.CHAT,
-          flowId: null,
-          feature: MODEL_FEATURES.CHAT,
-        });
-        conversation.addUserMessage(query, "https://example.com", 0);
-        conversation.addAssistantMessage("text", "");
+    const conversation = new ChatConversation({
+      pageUrl: new URL("https://example.com"),
+      pageMeta: {},
+    });
+    conversation.engine = await openAIEngine.build({
+      model: TEST_MODEL,
+      serviceType: SERVICE_TYPES.AI,
+      purpose: PURPOSES.CHAT,
+      flowId: null,
+      feature: MODEL_FEATURES.CHAT,
+    });
+    conversation.addUserMessage(query, "https://example.com", 0);
+    conversation.addAssistantMessage("text", "");
 
-        const fetchPromise = Chat.fetchWithHistory({ conversation });
-        await mockSearchManager.respondTo({ response: { results } });
-        await fetchPromise;
+    const fetchPromise = Chat.fetchWithHistory({ conversation });
+    await mockEngineManager.respondToWithToolCall({
+      toolName: SEARCH_THE_WEB,
+      toolParams: { query },
+    });
+    await mockSearchManager.respondTo({ response: { results } });
+    const followupTurn = await mockEngineManager.captureRequest({
+      purpose: PURPOSES.CHAT,
+    });
+    followupTurn.respond("Widgets cost nine dollars.");
+    await fetchPromise;
 
-        const toolMessages = conversation.messages.filter(
-          message => message.role === MESSAGE_ROLE.TOOL
-        );
-        Assert.equal(toolMessages.length, 1, "One search tool result recorded");
-        Assert.deepEqual(
-          toolMessages[0].content.body,
-          {
-            results: results.map(item => ({
-              title: sanitizeUntrustedContent(item.title),
-              url: item.url,
-              snippet: item.text,
-            })),
-            requiresSearchHandoff: false,
-          },
-          "The snippets reach the conversation as the tool result"
-        );
-
-        // No commit() here: the follow-up turn committed the staged flags.
-        Assert.ok(
-          conversation.securityProperties.privateData,
-          "The follow-up turn commits the private-data flag the tool staged"
-        );
-        Assert.ok(
-          conversation.securityProperties.untrustedInput,
-          "The follow-up turn commits the untrusted-input flag the tool staged"
-        );
-
-        Assert.deepEqual(
-          conversation.getCitationsSnapshot(),
-          results.map(item => ({ url: item.url, title: item.title })),
-          "Every returned result is registered as a citation, with its raw title"
-        );
-        Assert.deepEqual(
-          [...conversation.serpUrlsForAnonymousFetch],
-          results.map(item => item.url),
-          "The returned results are eligible for anonymous page extraction"
-        );
-
-        // The follow-up turn carries the tool result back to the model, which
-        // is where the generic URL tokenization has to have taken effect.
-        Assert.equal(
-          wireRequests.length,
-          2,
-          "A tool turn and a follow-up turn"
-        );
-        const wireToolMessage = wireRequests[1].messages.find(
-          message => message.role === "tool"
-        );
-        Assert.ok(
-          wireToolMessage,
-          "The follow-up turn includes the tool result"
-        );
-        for (const item of results) {
-          const token = conversation.urlToToken.get(item.url);
-          Assert.ok(token, `The result URL is tokenized: ${item.url}`);
-          Assert.ok(
-            wireToolMessage.content.includes(`§url_token: ${token}§`),
-            "The model sees the token for the result URL"
-          );
-          Assert.ok(
-            !wireToolMessage.content.includes(item.url),
-            "The model does not see the raw result URL"
-          );
-        }
-      }
+    const toolMessages = conversation.messages.filter(
+      message => message.role === MESSAGE_ROLE.TOOL
     );
+    Assert.equal(toolMessages.length, 1, "One search tool result recorded");
+    Assert.deepEqual(
+      toolMessages[0].content.body,
+      {
+        results: results.map(item => ({
+          title: sanitizeUntrustedContent(item.title),
+          url: item.url,
+          snippet: item.text,
+        })),
+        requiresSearchHandoff: false,
+      },
+      "The snippets reach the conversation as the tool result"
+    );
+
+    // No commit() here: the follow-up turn committed the staged flags.
+    Assert.ok(
+      conversation.securityProperties.privateData,
+      "The follow-up turn commits the private-data flag the tool staged"
+    );
+    Assert.ok(
+      conversation.securityProperties.untrustedInput,
+      "The follow-up turn commits the untrusted-input flag the tool staged"
+    );
+
+    Assert.deepEqual(
+      conversation.getCitationsSnapshot(),
+      results.map(item => ({ url: item.url, title: item.title })),
+      "Every returned result is registered as a citation, with its raw title"
+    );
+    Assert.deepEqual(
+      [...conversation.serpUrlsForAnonymousFetch],
+      results.map(item => item.url),
+      "The returned results are eligible for anonymous page extraction"
+    );
+
+    // The follow-up turn carries the tool result back to the model, which
+    // is where the generic URL tokenization has to have taken effect.
+    const wireToolMessage = followupTurn.request.args.find(
+      message => message.role === "tool"
+    );
+    Assert.ok(wireToolMessage, "The follow-up turn includes the tool result");
+    for (const item of results) {
+      const token = conversation.urlToToken.get(item.url);
+      Assert.ok(token, `The result URL is tokenized: ${item.url}`);
+      Assert.ok(
+        wireToolMessage.content.includes(`§url_token: ${token}§`),
+        "The model sees the token for the result URL"
+      );
+      Assert.ok(
+        !wireToolMessage.content.includes(item.url),
+        "The model does not see the raw result URL"
+      );
+    }
+    mockEngineManager.assertAllRequestsHandled();
+    mockSearchManager.assertAllRequestsHandled();
   } finally {
+    await mockEngineManager.rejectAllRequests();
     mockSearchManager.rejectAllRequests();
+    mockEngineManager.cleanupMocks();
     mockSearchManager.cleanupMocks();
     await SpecialPowers.popPrefEnv();
   }
@@ -1490,78 +1483,78 @@ add_task(async function test_fast_search_failure_marks_tool_call_error() {
   await pushSearchPrefs(true);
 
   const query = "how much are widgets?";
+  const mockEngineManager = new MockEngineManager();
   const mockSearchManager = new MockSearchManager();
   const runSearchStub = sinon
     .stub(RunSearch, "runSearch")
     .resolves("Search handoff results");
 
   try {
-    await withServer(
-      {
-        toolCall: { name: SEARCH_THE_WEB, args: JSON.stringify({ query }) },
-      },
-      async () => {
-        const conversation = new ChatConversation({
-          pageUrl: new URL("https://example.com"),
-          pageMeta: {},
-        });
-        conversation.engine = await openAIEngine.build({
-          model: TEST_MODEL,
-          serviceType: SERVICE_TYPES.AI,
-          purpose: PURPOSES.CHAT,
-          flowId: null,
-          feature: MODEL_FEATURES.CHAT,
-        });
-        conversation.addUserMessage(query, "https://example.com", 0);
-        conversation.addAssistantMessage("text", "");
+    const conversation = new ChatConversation({
+      pageUrl: new URL("https://example.com"),
+      pageMeta: {},
+    });
+    conversation.engine = await openAIEngine.build({
+      model: TEST_MODEL,
+      serviceType: SERVICE_TYPES.AI,
+      purpose: PURPOSES.CHAT,
+      flowId: null,
+      feature: MODEL_FEATURES.CHAT,
+    });
+    conversation.addUserMessage(query, "https://example.com", 0);
+    conversation.addAssistantMessage("text", "");
 
-        const fetchPromise = Chat.fetchWithHistory({
-          conversation,
-          mode: "fullpage",
-        });
-        await mockSearchManager.respondTo({
-          response: "upstream exploded",
-          status: 503,
-        });
-        await fetchPromise;
+    const fetchPromise = Chat.fetchWithHistory({
+      conversation,
+      mode: "fullpage",
+    });
+    await mockEngineManager.respondToWithToolCall({
+      toolName: SEARCH_THE_WEB,
+      toolParams: { query },
+    });
+    await mockSearchManager.respondTo({
+      response: "upstream exploded",
+      status: 503,
+    });
+    await fetchPromise;
 
-        const toolCalls = Glean.smartWindow.toolCall.testGetValue();
-        Assert.equal(toolCalls?.length, 1, "One tool_call event is recorded");
-        Assert.equal(
-          toolCalls[0].extra.tool_name,
-          SEARCH_THE_WEB,
-          "The event is attributed to search_the_web"
-        );
-        Assert.equal(
-          toolCalls[0].extra.error,
-          "execution_failed",
-          "A failed search is not counted as a successful tool call"
-        );
-        Assert.ok(runSearchStub.calledOnce, "The failed search hands off");
-        const handoffEvents = Glean.smartWindow.searchHandoff.testGetValue();
-        Assert.equal(handoffEvents?.length, 1, "The handoff is recorded");
-        Assert.equal(
-          handoffEvents?.[0]?.extra.reason,
-          "search_failed",
-          "The handoff is recorded as caused by the failed search"
-        );
+    const toolCalls = Glean.smartWindow.toolCall.testGetValue();
+    Assert.equal(toolCalls?.length, 1, "One tool_call event is recorded");
+    Assert.equal(
+      toolCalls[0].extra.tool_name,
+      SEARCH_THE_WEB,
+      "The event is attributed to search_the_web"
+    );
+    Assert.equal(
+      toolCalls[0].extra.error,
+      "execution_failed",
+      "A failed search is not counted as a successful tool call"
+    );
+    Assert.ok(runSearchStub.calledOnce, "The failed search hands off");
+    const handoffEvents = Glean.smartWindow.searchHandoff.testGetValue();
+    Assert.equal(handoffEvents?.length, 1, "The handoff is recorded");
+    Assert.equal(
+      handoffEvents?.[0]?.extra.reason,
+      "search_failed",
+      "The handoff is recorded as caused by the failed search"
+    );
 
-        const extra = getSearchTheWebExtra();
-        Assert.equal(
-          extra.error,
-          "http_error",
-          "The precise reason lives on the search_the_web event"
-        );
-        Assert.equal(
-          extra.location,
-          "fullpage",
-          "Chat passes the surface through to the flow"
-        );
-      }
+    const extra = getSearchTheWebExtra();
+    Assert.equal(
+      extra.error,
+      "http_error",
+      "The precise reason lives on the search_the_web event"
+    );
+    Assert.equal(
+      extra.location,
+      "fullpage",
+      "Chat passes the surface through to the flow"
     );
   } finally {
     runSearchStub.restore();
+    await mockEngineManager.rejectAllRequests();
     mockSearchManager.rejectAllRequests();
+    mockEngineManager.cleanupMocks();
     mockSearchManager.cleanupMocks();
     await SpecialPowers.popPrefEnv();
   }
@@ -1573,46 +1566,49 @@ add_task(
     await pushSearchPrefs(true);
 
     const query = "how much are widgets?";
+    const mockEngineManager = new MockEngineManager();
     const mockSearchManager = new MockSearchManager();
 
     try {
-      await withServer(
-        {
-          toolCall: { name: SEARCH_THE_WEB, args: JSON.stringify({ query }) },
-          followupChunks: ["Widgets cost nine dollars."],
-        },
-        async () => {
-          const conversation = new ChatConversation({
-            pageUrl: new URL("https://example.com"),
-            pageMeta: {},
-          });
-          conversation.engine = await openAIEngine.build({
-            model: TEST_MODEL,
-            serviceType: SERVICE_TYPES.AI,
-            purpose: PURPOSES.CHAT,
-            flowId: null,
-            feature: MODEL_FEATURES.CHAT,
-          });
-          conversation.addUserMessage(query, "https://example.com", 0);
-          conversation.addAssistantMessage("text", "");
+      const conversation = new ChatConversation({
+        pageUrl: new URL("https://example.com"),
+        pageMeta: {},
+      });
+      conversation.engine = await openAIEngine.build({
+        model: TEST_MODEL,
+        serviceType: SERVICE_TYPES.AI,
+        purpose: PURPOSES.CHAT,
+        flowId: null,
+        feature: MODEL_FEATURES.CHAT,
+      });
+      conversation.addUserMessage(query, "https://example.com", 0);
+      conversation.addAssistantMessage("text", "");
 
-          const fetchPromise = Chat.fetchWithHistory({ conversation });
-          await mockSearchManager.respondTo({
-            response: { results: TELEMETRY_RESULTS },
-          });
-          await fetchPromise;
+      const fetchPromise = Chat.fetchWithHistory({ conversation });
+      await mockEngineManager.respondToWithToolCall({
+        toolName: SEARCH_THE_WEB,
+        toolParams: { query },
+      });
+      await mockSearchManager.respondTo({
+        response: { results: TELEMETRY_RESULTS },
+      });
+      await mockEngineManager.respondTo({
+        purpose: PURPOSES.CHAT,
+        response: "Widgets cost nine dollars.",
+      });
+      await fetchPromise;
 
-          const toolCalls = Glean.smartWindow.toolCall.testGetValue();
-          Assert.equal(toolCalls?.length, 1, "One tool_call event is recorded");
-          Assert.equal(
-            toolCalls[0].extra.error,
-            "",
-            "A successful search still reports no tool_call error"
-          );
-        }
+      const toolCalls = Glean.smartWindow.toolCall.testGetValue();
+      Assert.equal(toolCalls?.length, 1, "One tool_call event is recorded");
+      Assert.equal(
+        toolCalls[0].extra.error,
+        "",
+        "A successful search still reports no tool_call error"
       );
     } finally {
+      await mockEngineManager.rejectAllRequests();
       mockSearchManager.rejectAllRequests();
+      mockEngineManager.cleanupMocks();
       mockSearchManager.cleanupMocks();
       await SpecialPowers.popPrefEnv();
     }

@@ -7,6 +7,9 @@
 const { AIWindowUI } = ChromeUtils.importESModule(
   "moz-src:///browser/components/aiwindow/ui/modules/AIWindowUI.sys.mjs"
 );
+const { MockEngineManager } = ChromeUtils.importESModule(
+  "resource://testing-common/AIWindowTestUtils.sys.mjs"
+);
 
 add_setup(async function setup() {
   await SpecialPowers.pushPrefEnv({
@@ -21,7 +24,7 @@ add_setup(async function setup() {
 
 // Memories toggle state persists when switching tabs
 add_task(async function test_memories_toggle_state_persists_on_tab_switch() {
-  const { restore } = await stubEngineNetworkBoundaries();
+  const mockEngineManager = new MockEngineManager();
 
   let originalTab, newTab, win, aiWindowEl, sidebarBrowser, browser;
   try {
@@ -32,6 +35,7 @@ add_task(async function test_memories_toggle_state_persists_on_tab_switch() {
     // Type and submit a message to start a conversation
     await typeInSmartbar(browser, "hello");
     await submitSmartbar(browser);
+    await mockEngineManager.respondTo({ purpose: "chat", response: "Mock" });
 
     // Navigate to example.com to trigger sidebar mode
     await promiseNavigateAndLoad(browser, "https://example.com/");
@@ -121,6 +125,7 @@ add_task(async function test_memories_toggle_state_persists_on_tab_switch() {
 
     await promiseNavigateAndLoad(win.gBrowser.selectedBrowser, "about:blank");
     await BrowserTestUtils.closeWindow(win);
-    await restore();
+    await mockEngineManager.rejectAllRequests();
+    mockEngineManager.cleanupMocks();
   }
 });

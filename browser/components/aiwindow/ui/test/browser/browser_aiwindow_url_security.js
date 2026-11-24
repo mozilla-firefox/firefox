@@ -20,6 +20,10 @@
  * Lit property setters from firing in mochitest environment.
  */
 
+const { MockEngineManager } = ChromeUtils.importESModule(
+  "resource://testing-common/AIWindowTestUtils.sys.mjs"
+);
+
 /**
  * Test 1: Verify fail-closed default behavior.
  *
@@ -500,9 +504,7 @@ add_task(async function test_malformed_url_does_not_throw() {
   await SpecialPowers.pushPrefEnv({
     set: [["browser.smartwindow.enabled", true]],
   });
-  const { restore } = await stubEngineNetworkBoundaries({
-    serverOptions: { streamChunks: ["Oops: [click](http://[unclosed)"] },
-  });
+  const mockEngineManager = new MockEngineManager();
   const restoreSignIn = skipSignIn();
 
   let win;
@@ -512,6 +514,10 @@ add_task(async function test_malformed_url_does_not_throw() {
 
     await typeInSmartbar(browser, "hello");
     await submitSmartbar(browser);
+    await mockEngineManager.respondTo({
+      purpose: "chat",
+      response: "Oops: [click](http://[unclosed)",
+    });
 
     // If #isSettingsURL throws on a null-parsed URL then getAssistantMessage()
     // never completes and no assistant message appears.
@@ -523,8 +529,9 @@ add_task(async function test_malformed_url_does_not_throw() {
     if (win) {
       await BrowserTestUtils.closeWindow(win);
     }
+    await mockEngineManager.rejectAllRequests();
+    mockEngineManager.cleanupMocks();
     restoreSignIn();
-    await restore();
     await SpecialPowers.popPrefEnv();
   }
 });

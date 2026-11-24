@@ -324,10 +324,6 @@ async function withServer(serverOptions, task) {
   }
 }
 
-function startTitleGenerationServer(title) {
-  return startMockOpenAI({ streamChunks: [title] });
-}
-
 /**
  * Replaces the platform alerts service with a mock that records shown alerts
  * and their observers, so tests can simulate action-button clicks.

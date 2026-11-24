@@ -6,14 +6,12 @@
 const { generateConversationStartersSidebar } = ChromeUtils.importESModule(
   "moz-src:///browser/components/aiwindow/models/ConversationSuggestions.sys.mjs"
 );
+const { MockEngineManager } = ChromeUtils.importESModule(
+  "resource://testing-common/AIWindowTestUtils.sys.mjs"
+);
 
-add_task(async function test_convo_starter_generation_with_mock_server() {
-  const { server, port } = startMockOpenAI({
-    streamChunks: ["suggestion 1\nsuggestion 2"],
-  });
-  await SpecialPowers.pushPrefEnv({
-    set: [["browser.smartwindow.endpoint", `http://localhost:${port}/v1`]],
-  });
+add_task(async function test_convo_starter_generation_with_mock_engine() {
+  const mockEngineManager = new MockEngineManager();
 
   try {
     const tabs = [
@@ -22,9 +20,13 @@ add_task(async function test_convo_starter_generation_with_mock_server() {
         title: "Example Domain",
       },
     ];
-    const generated = await generateConversationStartersSidebar(tabs, 2, true);
+    const generated = generateConversationStartersSidebar(tabs, 2, true);
+    await mockEngineManager.respondTo({
+      purpose: "convo-starters-sidebar",
+      response: "suggestion 1\nsuggestion 2",
+    });
     Assert.deepEqual(
-      generated,
+      await generated,
       [
         { text: "suggestion 1", type: "chat" },
         { text: "suggestion 2", type: "chat" },
@@ -32,7 +34,7 @@ add_task(async function test_convo_starter_generation_with_mock_server() {
       "Should return two suggestions"
     );
   } finally {
-    await SpecialPowers.popPrefEnv();
-    await stopMockOpenAI(server);
+    await mockEngineManager.rejectAllRequests();
+    mockEngineManager.cleanupMocks();
   }
 });

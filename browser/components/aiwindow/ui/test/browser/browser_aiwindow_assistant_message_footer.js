@@ -1,5 +1,9 @@
 "use strict";
 
+const { MockEngineManager } = ChromeUtils.importESModule(
+  "resource://testing-common/AIWindowTestUtils.sys.mjs"
+);
+
 const TEST_PAGE =
   "chrome://mochitests/content/browser/browser/components/aiwindow/ui/test/browser/test_assistant_message_footer_page.html";
 
@@ -125,16 +129,19 @@ add_task(async function test_feedback_buttons() {
 
 add_task(async function test_message_footer_shows_up_on_last_chunk() {
   const restoreSignIn = skipSignIn();
-  const { restore } = await stubEngineNetworkBoundaries({
-    serverOptions: { streamChunks: ["Hello from mock."] },
-  });
+  const mockEngineManager = new MockEngineManager();
 
+  let win;
   try {
-    const win = await openAIWindow();
+    win = await openAIWindow();
     const browser = win.gBrowser.selectedBrowser;
 
     await typeInSmartbar(browser, "hello");
     await submitSmartbar(browser);
+    await mockEngineManager.respondTo({
+      purpose: "chat",
+      response: "Hello from mock.",
+    });
 
     const aiWindowEl = browser.contentDocument?.querySelector("ai-window");
     const aichatBrowser = await TestUtils.waitForCondition(
@@ -156,10 +163,12 @@ add_task(async function test_message_footer_shows_up_on_last_chunk() {
         "assistant chat bubble should have the footer when message is complete"
       );
     });
-
-    await BrowserTestUtils.closeWindow(win);
   } finally {
+    if (win) {
+      await BrowserTestUtils.closeWindow(win);
+    }
+    await mockEngineManager.rejectAllRequests();
+    mockEngineManager.cleanupMocks();
     restoreSignIn();
-    await restore();
   }
 });

@@ -23,8 +23,8 @@ ChromeUtils.defineESModuleGetters(lazy, {
     "moz-src:///browser/components/aiwindow/models/Conversation.sys.mjs",
 });
 
-const { HttpServer } = ChromeUtils.importESModule(
-  "resource://testing-common/httpd.sys.mjs"
+const { MockEngineManager } = ChromeUtils.importESModule(
+  "resource://testing-common/AIWindowTestUtils.sys.mjs"
 );
 
 const PROMPTS_PAGE =
@@ -94,98 +94,49 @@ async function openBackgroundTab(url, window) {
   return tab;
 }
 
-function startMockNonStreamingServer(responseContent) {
-  const mockServer = new HttpServer();
-  mockServer.delay = 1;
-  let reqCount = 0;
-  const pendingResponses = [];
-
-  mockServer.registerPathHandler("/v1/chat/completions", (_req, res) => {
-    reqCount++;
-    res.processAsync();
-
-    const body = JSON.stringify({
-      id: "chatcmpl-mock",
-      object: "chat.completion",
-      created: Math.floor(Date.now() / 1000),
-      model: "mock",
-      choices: [
-        {
-          index: 0,
-          message: { role: "assistant", content: responseContent[0] },
-          finish_reason: "stop",
-        },
-      ],
-    });
-
-    const entry = { timerId: null, res };
-    pendingResponses.push(entry);
-
-    // eslint-disable-next-line mozilla/no-arbitrary-setTimeout
-    entry.timerId = setTimeout(() => {
-      const idx = pendingResponses.indexOf(entry);
-      if (idx !== -1) {
-        pendingResponses.splice(idx, 1);
-      }
-      try {
-        res.setStatusLine(_req.httpVersion, 200, "OK");
-        res.setHeader("Content-Type", "application/json", false);
-        res.write(body);
-        res.finish();
-      } catch (e) {
-        // Connection may have closed before the delayed response was sent
-        // or connection already torn down.
-      }
-    }, mockServer.delay);
-  });
-
-  mockServer.start(-1);
-  return {
-    pendingResponses,
-    server: mockServer,
-    port: mockServer.identity.primaryPort,
-    get requestCount() {
-      return reqCount;
-    },
-    cleanup() {
-      for (const { timerId, res } of pendingResponses) {
-        clearTimeout(timerId);
-        try {
-          res.finish();
-        } catch (e) {
-          // Already finished or connection gone.
-        }
-      }
-      pendingResponses.length = 0;
-    },
-  };
-}
-
 describe("sidebar conversation starter prompts", () => {
-  let responseContent, mock, gAiWindow, backgroundTab;
+  let responseContent,
+    gMockEngineManager,
+    gStarterRequestCount,
+    gStartersReleased,
+    gAiWindow,
+    backgroundTab;
+
+  /**
+   * Answers every starter request with responseContent as it reaches the
+   * model, waiting for gStartersReleased first while that is set.
+   *
+   * @param {MockEngineManager} mockEngineManager
+   */
+  async function answerStarterRequests(mockEngineManager) {
+    for (;;) {
+      const { respond } = await mockEngineManager.captureRequest({
+        purpose: "convo-starters-sidebar",
+      });
+      gStarterRequestCount++;
+      await gStartersReleased;
+      respond(responseContent[0]);
+    }
+  }
 
   beforeEach(async () => {
     responseContent = ["prompt 1\nprompt 2"];
-    mock = startMockNonStreamingServer(responseContent);
-
-    await SpecialPowers.pushPrefEnv({
-      set: [
-        ["browser.smartwindow.endpoint", `http://localhost:${mock.port}/v1`],
-      ],
-    });
+    gStarterRequestCount = 0;
+    gStartersReleased = null;
+    gMockEngineManager = new MockEngineManager();
+    answerStarterRequests(gMockEngineManager).catch(() => {});
 
     gAiWindow = await openAIWindow();
   });
 
   afterEach(async () => {
-    mock.cleanup();
     if (backgroundTab) {
       BrowserTestUtils.removeTab(backgroundTab);
     }
 
     await BrowserTestUtils.closeWindow(gAiWindow);
-    await SpecialPowers.popPrefEnv();
-    await stopMockOpenAI(mock.server);
+    await gMockEngineManager.rejectAllRequests();
+    gMockEngineManager.cleanupMocks();
 
     gAiWindow = null;
   });
@@ -234,6 +185,7 @@ describe("sidebar conversation starter prompts", () => {
         gAiWindow.document.getElementById("ai-window-browser");
       await typeInSmartbar(sidebarBrowser, "Hello world");
       await submitSmartbar(sidebarBrowser);
+      await gMockEngineManager.respondTo({ purpose: "chat", response: "Hi" });
       await TestUtils.waitForCondition(
         () => !getSidebarPromptButtons(gAiWindow).length,
         "Starter prompts should be hidden after starting a conversation on tab 2"
@@ -247,7 +199,7 @@ describe("sidebar conversation starter prompts", () => {
       );
       BrowserTestUtils.startLoadingURIString(
         firstTab.linkedBrowser,
-        "https://example.com"
+        "https://example.org"
       );
       await firstTabLoaded;
 
@@ -257,21 +209,24 @@ describe("sidebar conversation starter prompts", () => {
         return el && el.conversationMessageCount > 0;
       }, "Tab 2's conversation should have messages after submit");
 
-      // Add an artificial delay on the starter prompts mocked response
-      mock.server.delay = 200;
+      // Hold the starter prompts mocked response
+      const { promise: startersReleased, resolve: releaseStarters } =
+        Promise.withResolvers();
+      gStartersReleased = startersReleased;
+      const requestCountBeforeSwitch = gStarterRequestCount;
 
       // Switch back to tab 1 to trigger loading starter prompts, and before
-      // the 200 ms delay switch back to tab 2 where starter prompts should
+      // they are answered switch back to tab 2 where starter prompts should
       // not display
       await BrowserTestUtils.switchTab(gAiWindow.gBrowser, firstTab);
-      // eslint-disable-next-line mozilla/no-arbitrary-setTimeout
-      await new Promise(resolve => gAiWindow.setTimeout(resolve, 10));
+      await TestUtils.waitForCondition(
+        () => gStarterRequestCount > requestCountBeforeSwitch,
+        "Switching to tab 1 should request starter prompts"
+      );
       await BrowserTestUtils.switchTab(gAiWindow.gBrowser, secondTab);
 
-      await TestUtils.waitForCondition(
-        () => mock.pendingResponses.length === 0,
-        "Waiting for all starter prompt requests/etc to resolve"
-      );
+      gStartersReleased = null;
+      releaseStarters();
 
       // Wait for conversation to start and starters to hide
       const sidebarBrowser2 =
@@ -382,6 +337,9 @@ describe("sidebar conversation starter prompts", () => {
         [],
         "Canceled starter prompts should not reappear before messages arrive"
       );
+
+      releaseGeneration.resolve();
+      await gMockEngineManager.respondTo({ purpose: "chat", response: "Hi" });
     } finally {
       for (const load of loads) {
         load.release.resolve();
@@ -488,7 +446,7 @@ describe("sidebar conversation starter prompts", () => {
         "First set of prompts should be rendered"
       );
 
-      const requestCountAfterFirstLoad = mock.requestCount;
+      const requestCountAfterFirstLoad = gStarterRequestCount;
 
       responseContent[0] = "prompt 3\nprompt 4";
       await navigateTo("https://example.org", gAiWindow);
@@ -497,7 +455,7 @@ describe("sidebar conversation starter prompts", () => {
         "Second set of prompts should be rendered"
       );
       Assert.equal(
-        mock.requestCount,
+        gStarterRequestCount,
         requestCountAfterFirstLoad + 1,
         "Navigating to a new URI should generate a new starter request"
       );
@@ -514,7 +472,7 @@ describe("sidebar conversation starter prompts", () => {
         "Should display newly generated prompts when navigating back"
       );
       Assert.equal(
-        mock.requestCount,
+        gStarterRequestCount,
         requestCountAfterFirstLoad + 2,
         "Navigating back to a previously visited URI should generate a new starter request"
       );
@@ -530,7 +488,7 @@ describe("sidebar conversation starter prompts", () => {
         );
       }
 
-      const requestCountAfterFillingCache = mock.requestCount;
+      const requestCountAfterFillingCache = gStarterRequestCount;
 
       responseContent[0] = "prompt evicted a\nprompt evicted b";
       await navigateTo("https://example.com/0", gAiWindow);
@@ -540,7 +498,7 @@ describe("sidebar conversation starter prompts", () => {
       );
 
       Assert.equal(
-        mock.requestCount,
+        gStarterRequestCount,
         requestCountAfterFillingCache + 1,
         "Revisiting the oldest URI after the cache limit should generate a new starter request"
       );
@@ -981,65 +939,58 @@ add_task(async function test_resume_prompt_click_injects_context() {
 
 add_task(async function test_resume_prompt_click_marks_memory_applied() {
   const sb = sinon.createSandbox();
-  const { server, port } = startMockOpenAI({
-    streamChunks: ["Sure, here's an update."],
-  });
+  let mockEngineManager;
   try {
-    await SpecialPowers.pushPrefEnv({
-      set: [["browser.smartwindow.endpoint", `http://localhost:${port}/v1`]],
+    await testResumeActivityClick(sb, async ({ browser, buttons }) => {
+      // MockEngineManager stubs getToken itself.
+      AuthProvider.getToken.restore();
+      mockEngineManager = new MockEngineManager();
+      buttons[0].click();
+      await mockEngineManager.respondTo({
+        purpose: "chat",
+        response: "Sure, here's an update.",
+      });
+
+      const aichatBrowser = await getAichatBrowser(browser);
+
+      await SpecialPowers.spawn(aichatBrowser, [], async () => {
+        const chatRoot = await ContentTaskUtils.waitForCondition(
+          () => content.document.querySelector("ai-chat-content")?.shadowRoot,
+          "Wait for chat content shadow root"
+        );
+
+        await ContentTaskUtils.waitForMutationCondition(
+          chatRoot,
+          { childList: true, subtree: true },
+          () => chatRoot.querySelector("assistant-message-footer")
+        );
+        let appliedButton;
+        await ContentTaskUtils.waitForCondition(() => {
+          const button = chatRoot
+            .querySelector("assistant-message-footer")
+            ?.shadowRoot?.querySelector("applied-memories-button");
+          // Unwrap the content element so Lit's prototype-backed
+          // properties are visible through SpecialPowers.
+          appliedButton = button?.wrappedJSObject ?? button;
+          return appliedButton?.appliedMemories?.length;
+        }, "Wait for the resume-activity memory to be marked applied");
+
+        Assert.equal(
+          appliedButton.appliedMemories.length,
+          1,
+          "Resume-activity response should have exactly one applied memory"
+        );
+        Assert.equal(
+          appliedButton.appliedMemories[0].memory_summary,
+          "Research project",
+          "Applied memory should be the one that drove the resume-activity conversation"
+        );
+      });
     });
-
-    try {
-      await testResumeActivityClick(
-        sb,
-        async ({ browser, buttons }) => {
-          buttons[0].click();
-
-          const aichatBrowser = await getAichatBrowser(browser);
-
-          await SpecialPowers.spawn(aichatBrowser, [], async () => {
-            const chatRoot = await ContentTaskUtils.waitForCondition(
-              () =>
-                content.document.querySelector("ai-chat-content")?.shadowRoot,
-              "Wait for chat content shadow root"
-            );
-
-            await ContentTaskUtils.waitForMutationCondition(
-              chatRoot,
-              { childList: true, subtree: true },
-              () => chatRoot.querySelector("assistant-message-footer")
-            );
-            let appliedButton;
-            await ContentTaskUtils.waitForCondition(() => {
-              const button = chatRoot
-                .querySelector("assistant-message-footer")
-                ?.shadowRoot?.querySelector("applied-memories-button");
-              // Unwrap the content element so Lit's prototype-backed
-              // properties are visible through SpecialPowers.
-              appliedButton = button?.wrappedJSObject ?? button;
-              return appliedButton?.appliedMemories?.length;
-            }, "Wait for the resume-activity memory to be marked applied");
-
-            Assert.equal(
-              appliedButton.appliedMemories.length,
-              1,
-              "Resume-activity response should have exactly one applied memory"
-            );
-            Assert.equal(
-              appliedButton.appliedMemories[0].memory_summary,
-              "Research project",
-              "Applied memory should be the one that drove the resume-activity conversation"
-            );
-          });
-        },
-        { token: "mock-fxa-token" }
-      );
-    } finally {
-      await SpecialPowers.popPrefEnv();
-    }
   } finally {
+    await mockEngineManager?.rejectAllRequests();
+    mockEngineManager?.cleanupMocks();
     sb.restore();
-    await stopMockOpenAI(server);
   }
 });
 

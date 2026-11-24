@@ -7,6 +7,9 @@
 const { AIWindowUI } = ChromeUtils.importESModule(
   "moz-src:///browser/components/aiwindow/ui/modules/AIWindowUI.sys.mjs"
 );
+const { MockEngineManager } = ChromeUtils.importESModule(
+  "resource://testing-common/AIWindowTestUtils.sys.mjs"
+);
 
 add_setup(async function setup() {
   await SpecialPowers.pushPrefEnv({
@@ -24,7 +27,7 @@ add_task(
   async function test_switch_back_to_tab_with_conversation_reopens_sidebar() {
     let win, newTab, originalTab;
 
-    const { restore } = await stubEngineNetworkBoundaries();
+    const mockEngineManager = new MockEngineManager();
 
     try {
       win = await openAIWindow();
@@ -32,6 +35,7 @@ add_task(
       originalTab = win.gBrowser.selectedTab;
       await typeInSmartbar(browser, "hello");
       await submitSmartbar(browser);
+      await mockEngineManager.respondTo({ purpose: "chat", response: "Mock" });
 
       // Navigate away from AIWINDOW_URL (simulates user browsing after starting a chat)
       await promiseNavigateAndLoad(browser, "https://example.com/");
@@ -64,7 +68,8 @@ add_task(
       }
 
       await BrowserTestUtils.closeWindow(win);
-      await restore();
+      await mockEngineManager.rejectAllRequests();
+      mockEngineManager.cleanupMocks();
     }
   }
 );
@@ -72,7 +77,7 @@ add_task(
 // Switching between tabs with different conversations maintains correct state
 add_task(
   async function test_switch_between_tabs_with_different_conversations() {
-    const { restore } = await stubEngineNetworkBoundaries();
+    const mockEngineManager = new MockEngineManager();
 
     let tabA, tabB, win;
     try {
@@ -82,6 +87,7 @@ add_task(
 
       await typeInSmartbar(browserA, "hello");
       await submitSmartbar(browserA);
+      await mockEngineManager.respondTo({ purpose: "chat", response: "Mock" });
       await promiseNavigateAndLoad(browserA, "https://example.com/");
 
       // Open tab B with a different conversation
@@ -93,6 +99,7 @@ add_task(
       const browserB = win.gBrowser.selectedBrowser;
       await typeInSmartbar(browserB, "hello");
       await submitSmartbar(browserB);
+      await mockEngineManager.respondTo({ purpose: "chat", response: "Mock" });
       await promiseNavigateAndLoad(browserB, "https://example.org/");
 
       Assert.ok(
@@ -121,14 +128,15 @@ add_task(
       }
 
       await BrowserTestUtils.closeWindow(win);
-      await restore();
+      await mockEngineManager.rejectAllRequests();
+      mockEngineManager.cleanupMocks();
     }
   }
 );
 
 // Switching between tabs with empty and non-empty conversations
 add_task(async function test_switch_between_empty_and_nonempty_conversations() {
-  const { restore } = await stubEngineNetworkBoundaries();
+  const mockEngineManager = new MockEngineManager();
 
   let tabA, tabB, win;
   try {
@@ -138,6 +146,7 @@ add_task(async function test_switch_between_empty_and_nonempty_conversations() {
 
     await typeInSmartbar(browserA, "hello");
     await submitSmartbar(browserA);
+    await mockEngineManager.respondTo({ purpose: "chat", response: "Mock" });
     await promiseNavigateAndLoad(browserA, "https://example.com/");
 
     Assert.ok(
@@ -181,12 +190,13 @@ add_task(async function test_switch_between_empty_and_nonempty_conversations() {
     }
 
     await BrowserTestUtils.closeWindow(win);
-    await restore();
+    await mockEngineManager.rejectAllRequests();
+    mockEngineManager.cleanupMocks();
   }
 });
 
 add_task(async function test_sidebar_state_after_multiple_navigations() {
-  const { restore } = await stubEngineNetworkBoundaries();
+  const mockEngineManager = new MockEngineManager();
 
   let win;
   try {
@@ -195,6 +205,7 @@ add_task(async function test_sidebar_state_after_multiple_navigations() {
 
     await typeInSmartbar(browser, "hello");
     await submitSmartbar(browser);
+    await mockEngineManager.respondTo({ purpose: "chat", response: "Mock" });
 
     Assert.ok(
       !AIWindowUI.isSidebarOpen(win),
@@ -229,7 +240,8 @@ add_task(async function test_sidebar_state_after_multiple_navigations() {
     );
   } finally {
     await BrowserTestUtils.closeWindow(win);
-    await restore();
+    await mockEngineManager.rejectAllRequests();
+    mockEngineManager.cleanupMocks();
   }
 });
 
@@ -237,7 +249,7 @@ add_task(async function test_sidebar_state_after_multiple_navigations() {
 add_task(async function test_ask_button_close_persists_across_tab_switches() {
   let win, tab2;
 
-  const { restore } = await stubEngineNetworkBoundaries();
+  const mockEngineManager = new MockEngineManager();
 
   try {
     win = await openAIWindow();
@@ -246,6 +258,7 @@ add_task(async function test_ask_button_close_persists_across_tab_switches() {
 
     await typeInSmartbar(browser, "hello");
     await submitSmartbar(browser);
+    await mockEngineManager.respondTo({ purpose: "chat", response: "Mock" });
 
     await SpecialPowers.spawn(browser, [], async () => {
       const el = content.document.querySelector("ai-window");
@@ -290,7 +303,8 @@ add_task(async function test_ask_button_close_persists_across_tab_switches() {
     await promiseNavigateAndLoad(win.gBrowser.selectedBrowser, "about:blank");
 
     await BrowserTestUtils.closeWindow(win);
-    await restore();
+    await mockEngineManager.rejectAllRequests();
+    mockEngineManager.cleanupMocks();
   }
 });
 
@@ -299,7 +313,7 @@ add_task(async function test_ask_button_close_persists_across_tab_switches() {
 add_task(async function test_x_close_persists_across_tab_switches() {
   let win, tab2;
 
-  const { restore } = await stubEngineNetworkBoundaries();
+  const mockEngineManager = new MockEngineManager();
 
   try {
     win = await openAIWindow();
@@ -308,6 +322,7 @@ add_task(async function test_x_close_persists_across_tab_switches() {
 
     await typeInSmartbar(browser, "hello");
     await submitSmartbar(browser);
+    await mockEngineManager.respondTo({ purpose: "chat", response: "Mock" });
 
     await SpecialPowers.spawn(browser, [], async () => {
       const el = content.document.querySelector("ai-window");
@@ -361,6 +376,7 @@ add_task(async function test_x_close_persists_across_tab_switches() {
     await promiseNavigateAndLoad(win.gBrowser.selectedBrowser, "about:blank");
 
     await BrowserTestUtils.closeWindow(win);
-    await restore();
+    await mockEngineManager.rejectAllRequests();
+    mockEngineManager.cleanupMocks();
   }
 });

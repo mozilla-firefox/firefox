@@ -3,6 +3,10 @@
 
 "use strict";
 
+const { MockEngineManager } = ChromeUtils.importESModule(
+  "resource://testing-common/AIWindowTestUtils.sys.mjs"
+);
+
 /**
  * Test that messageEvent handler is properly set up and receives events
  */
@@ -138,9 +142,7 @@ add_task(async function test_messageEvent_assistant() {
 
 add_task(async function test_completed_assistant_message_announced() {
   const restoreSignIn = skipSignIn();
-  const { restore } = await stubEngineNetworkBoundaries({
-    serverOptions: { streamChunks: ["**Final** answer\n\nSecond paragraph"] },
-  });
+  const mockEngineManager = new MockEngineManager();
 
   let win;
   try {
@@ -159,13 +161,7 @@ add_task(async function test_completed_assistant_message_announced() {
       !(await getStubOpenSERPResult(browser)).called,
       "Submitting should ask the assistant, not run a search"
     );
-
-    const aiWindowEl = browser.contentDocument?.querySelector("ai-window");
-    const aichatBrowser = await TestUtils.waitForCondition(
-      () => aiWindowEl.shadowRoot?.querySelector("#aichat-browser"),
-      "Wait for aichat-browser"
-    );
-
+    const aichatBrowser = await getAichatBrowser(browser);
     await SpecialPowers.spawn(aichatBrowser, [], async () => {
       const chatContent = content.document.querySelector("ai-chat-content");
       const announcer = await ContentTaskUtils.waitForCondition(
@@ -191,8 +187,28 @@ add_task(async function test_completed_assistant_message_announced() {
         "announcer should announce its full contents"
       );
 
+      // Record each announcement before the reply arrives: a live region is
+      // read out when it changes, and a later update can clear it again.
+      content.wrappedJSObject.announcements = Cu.cloneInto([], content);
+      new content.MutationObserver(() =>
+        content.wrappedJSObject.announcements.push(announcer.textContent.trim())
+      ).observe(announcer, {
+        childList: true,
+        characterData: true,
+        subtree: true,
+      });
+    });
+    await mockEngineManager.respondTo({
+      purpose: "chat",
+      response: "**Final** answer\n\nSecond paragraph",
+    });
+
+    await SpecialPowers.spawn(aichatBrowser, [], async () => {
       await ContentTaskUtils.waitForCondition(
-        () => announcer.textContent.trim() === "Final answer Second paragraph",
+        () =>
+          content.wrappedJSObject.announcements.includes(
+            "Final answer Second paragraph"
+          ),
         "completed assistant response should be announced"
       );
     });
@@ -200,8 +216,9 @@ add_task(async function test_completed_assistant_message_announced() {
     if (win) {
       await BrowserTestUtils.closeWindow(win);
     }
+    await mockEngineManager.rejectAllRequests();
+    mockEngineManager.cleanupMocks();
     restoreSignIn();
-    await restore();
   }
 });
 

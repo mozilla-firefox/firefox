@@ -7,6 +7,9 @@
 const { AIWindowUI } = ChromeUtils.importESModule(
   "moz-src:///browser/components/aiwindow/ui/modules/AIWindowUI.sys.mjs"
 );
+const { MockEngineManager } = ChromeUtils.importESModule(
+  "resource://testing-common/AIWindowTestUtils.sys.mjs"
+);
 
 const { require: devtoolsRequire } = ChromeUtils.importESModule(
   "resource://devtools/shared/loader/Loader.sys.mjs"
@@ -33,7 +36,7 @@ registerCleanupFunction(() => {
 
 // Switching to a new AIWindow tab from a tab with the sidebar open closes the sidebar
 add_task(async function test_new_tab_closes_opened_sidebar_convo() {
-  const { restore } = await stubEngineNetworkBoundaries();
+  const mockEngineManager = new MockEngineManager();
 
   let win, newTab;
   try {
@@ -42,6 +45,7 @@ add_task(async function test_new_tab_closes_opened_sidebar_convo() {
 
     await typeInSmartbar(browser, "hello");
     await submitSmartbar(browser);
+    await mockEngineManager.respondTo({ purpose: "chat", response: "Mock" });
     await promiseNavigateAndLoad(browser, "https://example.com/");
     Assert.ok(
       AIWindowUI.isSidebarOpen(win),
@@ -62,14 +66,15 @@ add_task(async function test_new_tab_closes_opened_sidebar_convo() {
     }
 
     await BrowserTestUtils.closeWindow(win);
-    await restore();
+    await mockEngineManager.rejectAllRequests();
+    mockEngineManager.cleanupMocks();
   }
 });
 
 // Navigating to a website moves an active fullwindow chat to the sidebar
 add_task(
   async function test_navigate_to_url_with_active_chat_move_convo_to_sidebar() {
-    const { restore } = await stubEngineNetworkBoundaries();
+    const mockEngineManager = new MockEngineManager();
 
     let win;
     try {
@@ -78,18 +83,20 @@ add_task(
 
       await typeInSmartbar(browser, "hello");
       await submitSmartbar(browser);
+      await mockEngineManager.respondTo({ purpose: "chat", response: "Mock" });
       await promiseNavigateAndLoad(browser, "https://example.com/");
 
       Assert.ok(AIWindowUI.isSidebarOpen(win), "The sidebar should be open");
     } finally {
       await BrowserTestUtils.closeWindow(win);
-      await restore();
+      await mockEngineManager.rejectAllRequests();
+      mockEngineManager.cleanupMocks();
     }
   }
 );
 
 add_task(async function test_navigate_back_to_aiwindow_closes_sidebar() {
-  const { restore } = await stubEngineNetworkBoundaries();
+  const mockEngineManager = new MockEngineManager();
 
   let win;
   try {
@@ -98,6 +105,7 @@ add_task(async function test_navigate_back_to_aiwindow_closes_sidebar() {
 
     await typeInSmartbar(browser, "hello");
     await submitSmartbar(browser);
+    await mockEngineManager.respondTo({ purpose: "chat", response: "Mock" });
     await promiseNavigateAndLoad(browser, "https://example.com/");
     Assert.ok(
       AIWindowUI.isSidebarOpen(win),
@@ -112,7 +120,8 @@ add_task(async function test_navigate_back_to_aiwindow_closes_sidebar() {
     );
   } finally {
     await BrowserTestUtils.closeWindow(win);
-    await restore();
+    await mockEngineManager.rejectAllRequests();
+    mockEngineManager.cleanupMocks();
   }
 });
 
@@ -120,7 +129,7 @@ add_task(async function test_navigate_back_to_aiwindow_closes_sidebar() {
 add_task(async function test_navigate_with_empty_conversation_opens_sidebar() {
   let win;
 
-  const { restore } = await stubEngineNetworkBoundaries();
+  const mockEngineManager = new MockEngineManager();
 
   try {
     win = await openAIWindow();
@@ -133,7 +142,8 @@ add_task(async function test_navigate_with_empty_conversation_opens_sidebar() {
     );
   } finally {
     await BrowserTestUtils.closeWindow(win);
-    await restore();
+    await mockEngineManager.rejectAllRequests();
+    mockEngineManager.cleanupMocks();
   }
 });
 
@@ -142,7 +152,7 @@ add_task(
   async function test_cleared_conversation_keeps_sidebar_open_on_tab_switch() {
     let win, newTab, originalTab;
 
-    const { restore } = await stubEngineNetworkBoundaries();
+    const mockEngineManager = new MockEngineManager();
 
     try {
       win = await openAIWindow();
@@ -151,6 +161,7 @@ add_task(
 
       await typeInSmartbar(browser, "hello");
       await submitSmartbar(browser);
+      await mockEngineManager.respondTo({ purpose: "chat", response: "Mock" });
       await promiseNavigateAndLoad(browser, "https://example.com/");
       Assert.ok(
         AIWindowUI.isSidebarOpen(win),
@@ -181,14 +192,15 @@ add_task(
       }
 
       await BrowserTestUtils.closeWindow(win);
-      await restore();
+      await mockEngineManager.rejectAllRequests();
+      mockEngineManager.cleanupMocks();
     }
   }
 );
 
 // Closing a tab with an active sidebar cleans up properly
 add_task(async function test_close_tab_with_active_sidebar() {
-  const { restore } = await stubEngineNetworkBoundaries();
+  const mockEngineManager = new MockEngineManager();
 
   let win, newTab;
   try {
@@ -198,6 +210,7 @@ add_task(async function test_close_tab_with_active_sidebar() {
 
     await typeInSmartbar(browser, "hello");
     await submitSmartbar(browser);
+    await mockEngineManager.respondTo({ purpose: "chat", response: "Mock" });
     await promiseNavigateAndLoad(browser, "https://example.com/");
     Assert.ok(AIWindowUI.isSidebarOpen(win), "Sidebar should be open");
 
@@ -224,7 +237,8 @@ add_task(async function test_close_tab_with_active_sidebar() {
     }
 
     await BrowserTestUtils.closeWindow(win);
-    await restore();
+    await mockEngineManager.rejectAllRequests();
+    mockEngineManager.cleanupMocks();
   }
 });
 
@@ -232,7 +246,7 @@ add_task(async function test_close_tab_with_active_sidebar() {
 add_task(async function test_tab_with_no_state_should_keep_sidebar() {
   let win, newTab;
 
-  const { restore } = await stubEngineNetworkBoundaries();
+  const mockEngineManager = new MockEngineManager();
 
   try {
     win = await openAIWindow();
@@ -240,6 +254,7 @@ add_task(async function test_tab_with_no_state_should_keep_sidebar() {
 
     await typeInSmartbar(browser, "hello");
     await submitSmartbar(browser);
+    await mockEngineManager.respondTo({ purpose: "chat", response: "Mock" });
     await promiseNavigateAndLoad(browser, "https://example.com/");
     Assert.ok(
       AIWindowUI.isSidebarOpen(win),
@@ -260,7 +275,8 @@ add_task(async function test_tab_with_no_state_should_keep_sidebar() {
     }
 
     await BrowserTestUtils.closeWindow(win);
-    await restore();
+    await mockEngineManager.rejectAllRequests();
+    mockEngineManager.cleanupMocks();
   }
 });
 
@@ -268,7 +284,7 @@ add_task(async function test_tab_with_no_state_should_keep_sidebar() {
 add_task(async function test_ask_button_close_persists_across_navigation() {
   let win;
 
-  const { restore } = await stubEngineNetworkBoundaries();
+  const mockEngineManager = new MockEngineManager();
 
   try {
     win = await openAIWindow();
@@ -276,6 +292,7 @@ add_task(async function test_ask_button_close_persists_across_navigation() {
 
     await typeInSmartbar(browser, "hello");
     await submitSmartbar(browser);
+    await mockEngineManager.respondTo({ purpose: "chat", response: "Mock" });
     await promiseNavigateAndLoad(browser, "https://example.com/");
     Assert.ok(
       AIWindowUI.isSidebarOpen(win),
@@ -292,7 +309,8 @@ add_task(async function test_ask_button_close_persists_across_navigation() {
     );
   } finally {
     await BrowserTestUtils.closeWindow(win);
-    await restore();
+    await mockEngineManager.rejectAllRequests();
+    mockEngineManager.cleanupMocks();
   }
 });
 
@@ -300,7 +318,7 @@ add_task(async function test_ask_button_close_persists_across_navigation() {
 add_task(async function test_slide_reserved_for_ask_close_button() {
   await SpecialPowers.pushPrefEnv({ set: [["ui.prefersReducedMotion", 0]] });
 
-  const { restore } = await stubEngineNetworkBoundaries();
+  const mockEngineManager = new MockEngineManager();
 
   let win;
   try {
@@ -349,7 +367,8 @@ add_task(async function test_slide_reserved_for_ask_close_button() {
     await openPromise;
   } finally {
     await BrowserTestUtils.closeWindow(win);
-    await restore();
+    await mockEngineManager.rejectAllRequests();
+    mockEngineManager.cleanupMocks();
     await SpecialPowers.popPrefEnv();
   }
 });
@@ -358,7 +377,7 @@ add_task(
   async function test_tabs_after_first_should_open_sidebar_on_site_navigation() {
     let gAiWindow, newTab;
 
-    const { restore } = await stubEngineNetworkBoundaries();
+    const mockEngineManager = new MockEngineManager();
 
     try {
       gAiWindow = await openAIWindow();
@@ -383,13 +402,15 @@ add_task(
       }
 
       await BrowserTestUtils.closeWindow(gAiWindow);
-      await restore();
+      await mockEngineManager.rejectAllRequests();
+      mockEngineManager.cleanupMocks();
     }
   }
 );
 
 // Attempting to overdrag the sidebar does not extend into the content area.
 add_task(async function test_sidebar_splitter_clamps_at_max_width() {
+  const mockEngineManager = new MockEngineManager();
   let gAiWindow;
 
   try {
@@ -431,11 +452,14 @@ add_task(async function test_sidebar_splitter_clamps_at_max_width() {
   } finally {
     AIWindowUI.closeSidebar(gAiWindow);
     await BrowserTestUtils.closeWindow(gAiWindow);
+    await mockEngineManager.rejectAllRequests();
+    mockEngineManager.cleanupMocks();
   }
 });
 
 // Overdragging the sidebar does not extend over a side-docked devtools toolbox.
 add_task(async function test_sidebar_splitter_does_not_drag_over_devtools() {
+  const mockEngineManager = new MockEngineManager();
   let gAiWindow, toolbox;
   try {
     gAiWindow = await openAIWindow();
@@ -494,5 +518,7 @@ add_task(async function test_sidebar_splitter_does_not_drag_over_devtools() {
     await toolbox?.destroy();
     AIWindowUI.closeSidebar(gAiWindow);
     await BrowserTestUtils.closeWindow(gAiWindow);
+    await mockEngineManager.rejectAllRequests();
+    mockEngineManager.cleanupMocks();
   }
 });
