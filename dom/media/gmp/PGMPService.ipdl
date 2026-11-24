@@ -5,8 +5,7 @@
 include protocol PGMPContent;
 include GMPTypes;
 
-// FIXME: Should use GeckoChildID over ProcessId to identify processes.
-using base::ProcessId from "base/process.h";
+using GeckoChildID from "mozilla/ProcessType.h";
 using GMPPluginType from "GMPNativeTypes.h";
 
 namespace mozilla {
@@ -15,7 +14,7 @@ namespace gmp {
 struct GMPLaunchResult {
   uint32_t pluginId;
   GMPPluginType pluginType;
-  ProcessId pid;
+  GeckoChildID childID;
   nsCString displayName;
   Endpoint<PGMPContentParent> endpoint;
   nsresult result;
@@ -29,7 +28,7 @@ parent:
   async LaunchGMP(NodeIdVariant nodeIdVariant,
                   nsCString api,
                   nsCString[] tags,
-                  ProcessId[] alreadyBridgedTo)
+                  GeckoChildID[] alreadyBridgedTo)
     returns (GMPLaunchResult aResult);
 
   async GetGMPNodeId(nsString origin, nsString topLevelOrigin, nsString gmpName)

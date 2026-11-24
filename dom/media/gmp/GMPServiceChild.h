@@ -151,14 +151,14 @@ class GMPServiceChild : public PGMPServiceChild {
       : mService(aService) {}
 
   already_AddRefed<GMPContentParent> GetBridgedGMPContentParent(
-      ProcessId aOtherPid, ipc::Endpoint<PGMPContentParent>&& endpoint);
+      GeckoChildID aOtherChildID, ipc::Endpoint<PGMPContentParent>&& endpoint);
 
   void RemoveGMPContentParent(GMPContentParent* aGMPContentParent);
 
-  bool HasAlreadyBridgedTo(base::ProcessId aPid) const;
+  bool HasAlreadyBridgedTo(GeckoChildID aChildID) const;
 
   void GetAndBlockAlreadyBridgedTo(
-      nsTArray<ProcessId>& aAlreadyBridgedTo,
+      nsTArray<GeckoChildID>& aAlreadyBridgedTo,
       nsTArray<RefPtr<GMPContentParentCloseBlocker>>& aBlockers);
 
   static bool Create(Endpoint<PGMPServiceChild>&& aGMPService);
@@ -172,7 +172,8 @@ class GMPServiceChild : public PGMPServiceChild {
  private:
   ~GMPServiceChild() = default;
 
-  nsRefPtrHashtable<nsUint64HashKey, GMPContentParent> mContentParents;
+  nsRefPtrHashtable<nsIntegralHashKey<GeckoChildID>, GMPContentParent>
+      mContentParents;
 
   // Raw pointer to our owning service. The service owns us via a RefPtr in
   // mServiceChild, so it strictly outlives us.

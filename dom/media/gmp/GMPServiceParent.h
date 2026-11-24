@@ -285,7 +285,7 @@ class GMPServiceParent final : public PGMPServiceParent {
   ipc::IPCResult RecvLaunchGMP(const NodeIdVariant& aNodeIdVariant,
                                const nsACString& aAPI,
                                nsTArray<nsCString>&& aTags,
-                               nsTArray<ProcessId>&& aAlreadyBridgedTo,
+                               nsTArray<GeckoChildID>&& aAlreadyBridgedTo,
                                LaunchGMPResolver&& aResolve) override;
 
   // Releases the profile-before-change shutdown blocker. Called from

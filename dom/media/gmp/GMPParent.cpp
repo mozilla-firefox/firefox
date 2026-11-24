@@ -1401,11 +1401,11 @@ already_AddRefed<GMPContentParent> GMPParent::ForgetGMPContentParent() {
   return mGMPContentParent.forget();
 }
 
-bool GMPParent::EnsureProcessLoaded(base::ProcessId* aID) {
+bool GMPParent::EnsureProcessLoaded(GeckoChildID* aID) {
   if (!EnsureProcessLoaded()) {
     return false;
   }
-  *aID = OtherPid();
+  *aID = OtherChildID();
   return true;
 }
 

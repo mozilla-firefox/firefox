@@ -2058,14 +2058,14 @@ void GMPServiceParent::BeginShutdown() {
 
 mozilla::ipc::IPCResult GMPServiceParent::RecvLaunchGMP(
     const NodeIdVariant& aNodeIdVariant, const nsACString& aAPI,
-    nsTArray<nsCString>&& aTags, nsTArray<ProcessId>&& aAlreadyBridgedTo,
+    nsTArray<nsCString>&& aTags, nsTArray<GeckoChildID>&& aAlreadyBridgedTo,
     LaunchGMPResolver&& aResolve) {
   GMPLaunchResult result;
 
   if (mService->IsShuttingDown()) {
     result.pluginId() = 0;
     result.pluginType() = GMPPluginType::Unknown;
-    result.pid() = base::kInvalidProcessId;
+    result.childID() = kInvalidGeckoChildID;
     result.result() = NS_ERROR_ILLEGAL_DURING_SHUTDOWN;
     result.errorDescription() = "Service is shutting down."_ns;
     aResolve(std::move(result));
@@ -2077,7 +2077,7 @@ mozilla::ipc::IPCResult GMPServiceParent::RecvLaunchGMP(
   if (NS_WARN_IF(NS_FAILED(rv))) {
     result.pluginId() = 0;
     result.pluginType() = GMPPluginType::Unknown;
-    result.pid() = base::kInvalidProcessId;
+    result.childID() = kInvalidGeckoChildID;
     result.result() = rv;
     result.errorDescription() = "GetNodeId failed."_ns;
     aResolve(std::move(result));
@@ -2092,26 +2092,26 @@ mozilla::ipc::IPCResult GMPServiceParent::RecvLaunchGMP(
   } else {
     result.pluginId() = 0;
     result.pluginType() = GMPPluginType::Unknown;
-    result.pid() = base::kInvalidProcessId;
+    result.childID() = kInvalidGeckoChildID;
     result.result() = NS_ERROR_FAILURE;
     result.errorDescription() = "SelectPluginForAPI returns nullptr."_ns;
     aResolve(std::move(result));
     return IPC_OK();
   }
 
-  if (!gmp->EnsureProcessLoaded(&result.pid())) {
-    result.pid() = base::kInvalidProcessId;
+  if (!gmp->EnsureProcessLoaded(&result.childID())) {
+    result.childID() = kInvalidGeckoChildID;
     result.result() = NS_ERROR_FAILURE;
     result.errorDescription() = "Process has not loaded."_ns;
     aResolve(std::move(result));
     return IPC_OK();
   }
 
-  MOZ_ASSERT(result.pid() != base::kInvalidProcessId);
+  MOZ_ASSERT(result.childID() != kInvalidGeckoChildID);
 
   result.displayName() = gmp->GetDisplayName();
 
-  if (aAlreadyBridgedTo.Contains(result.pid())) {
+  if (aAlreadyBridgedTo.Contains(result.childID())) {
     result.result() = NS_OK;
     aResolve(std::move(result));
     return IPC_OK();

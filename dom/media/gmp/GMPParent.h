@@ -142,7 +142,7 @@ class GMPParent final : public PGMPParent,
       UniquePtr<MozPromiseHolder<GetGMPContentParentPromise>>&& aPromiseHolder);
   already_AddRefed<GMPContentParent> ForgetGMPContentParent();
 
-  bool EnsureProcessLoaded(base::ProcessId* aID);
+  bool EnsureProcessLoaded(GeckoChildID* aID);
 
   void IncrementGMPContentChildCount();
 
