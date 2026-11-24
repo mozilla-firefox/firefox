@@ -270,6 +270,10 @@ enum class NodeStyleFlags : uint32_t {
 
   // Whether this element has dirty descendants for Servo's style system.
   HasDirtyDescendants = 1 << 16,
+
+  // Whether this shadow host may have slotted children with snapshots, which
+  // need to be processed before traversing its flat tree children.
+  MayHaveSlottedSnapshots = 1 << 17,
 };
 
 MOZ_MAKE_ENUM_CLASS_BITWISE_OPERATORS(NodeStyleFlags);

@@ -1353,6 +1353,15 @@ impl<'le> TElement for GeckoElement<'le> {
     }
 
     #[inline]
+    fn may_have_slotted_snapshots(&self) -> bool {
+        self.has_style_flags(NodeStyleFlags::MayHaveSlottedSnapshots)
+    }
+
+    unsafe fn unset_may_have_slotted_snapshots(&self) {
+        unsafe { self.unset_style_flags(NodeStyleFlags::MayHaveSlottedSnapshots) }
+    }
+
+    #[inline]
     fn has_dirty_descendants(&self) -> bool {
         self.has_style_flags(NodeStyleFlags::HasDirtyDescendants)
     }

@@ -3205,6 +3205,17 @@ ServoElementSnapshot& RestyleManager::SnapshotFor(Element& aElement) {
       mSnapshots.GetOrInsertNew(&aElement, aElement);
   aElement.SetStyleFlags(NodeStyleFlags::HasSnapshot);
 
+  if (aElement.GetAssignedSlot()) {
+    // Invalidations of a slotted element can reach siblings assigned to other
+    // slots, so make sure that the restyle root includes the shadow host, and
+    // that the host processes the snapshots of its children before traversing
+    // its slots.
+    Element* host = aElement.GetParentElement();
+    MOZ_ASSERT(host && host->GetShadowRoot());
+    host->SetStyleFlags(NodeStyleFlags::MayHaveSlottedSnapshots);
+    host->NoteDirtyForServo();
+  }
+
   // Now that we have a snapshot, make sure a restyle is triggered.
   aElement.NoteDirtyForServo();
   return *snapshot;

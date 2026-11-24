@@ -756,6 +756,13 @@ fn note_children<E, D, F>(
     trace!("note_children: {:?}", element);
     let flags = context.shared.traversal_flags;
 
+    if element.may_have_slotted_snapshots() {
+        unsafe { element.unset_may_have_slotted_snapshots() };
+        if !is_initial_style && element.shadow_root().is_some() {
+            invalidate_shadow_host_children(context, element);
+        }
+    }
+
     // Loop over all the traversal children.
     for child_node in element.traversal_children() {
         let Some(child) = child_node.as_element() else {
@@ -806,6 +813,29 @@ fn note_children<E, D, F>(
                 }
             }
         }
+    }
+}
+
+/// Process the snapshots of the light tree children of a shadow host before traversing its flat
+/// tree children. Due to slot reordering, a child's sibling invalidations can reach flat tree
+/// subtrees that we'd have otherwise already skipped.
+fn invalidate_shadow_host_children<E>(context: &mut StyleContext<E>, host: E)
+where
+    E: TElement,
+{
+    for child in host.as_node().dom_children() {
+        let Some(child) = child.as_element() else {
+            continue;
+        };
+        let Some(mut child_data) = child.mutate_data() else {
+            continue;
+        };
+        child_data.invalidate_style_if_needed(
+            child,
+            context.shared,
+            Some(&context.thread_local.stack_limit_checker),
+            &mut context.thread_local.selector_caches,
+        );
     }
 }
 

@@ -606,6 +606,17 @@ pub trait TElement:
     /// Flags this element as having handled already its snapshot.
     unsafe fn set_handled_snapshot(&self);
 
+    /// Returns whether this shadow host may have light tree children that need to process their
+    /// snapshots before its flat tree children get traversed.
+    fn may_have_slotted_snapshots(&self) -> bool {
+        true
+    }
+
+    /// Clears the flag above.
+    ///
+    /// Only safe to call with exclusive access to the element.
+    unsafe fn unset_may_have_slotted_snapshots(&self) {}
+
     /// A unique value for the element to use in the generation of random base values
     /// for element-scoped CSS `random()` functions.
     fn random_seed(&self) -> u64 {
