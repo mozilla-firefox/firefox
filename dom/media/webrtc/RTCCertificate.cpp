@@ -64,12 +64,11 @@ NS_INTERFACE_MAP_END
 
 // Note: explicit casts necessary to avoid
 //       warning C4307: '*' : integral constant overflow
-#define ONE_DAY_USEC                            \
-  PRTime(PR_USEC_PER_SEC) * PRTime(60)  /*sec*/ \
-      * PRTime(60) /*min*/ * PRTime(24) /*hours*/
-#define EXPIRATION_DEFAULT_USEC ONE_DAY_USEC* PRTime(30)
-#define EXPIRATION_SLACK_USEC ONE_DAY_USEC
-#define EXPIRATION_MAX_USEC ONE_DAY_USEC* PRTime(365) /*year*/
+constexpr PRTime ONE_DAY_USEC = PRTime(PR_USEC_PER_SEC) * PRTime(60) /*sec*/
+                                * PRTime(60) /*min*/ * PRTime(24) /*hours*/;
+constexpr PRTime EXPIRATION_DEFAULT_USEC = ONE_DAY_USEC * PRTime(30);
+constexpr PRTime EXPIRATION_SLACK_USEC = ONE_DAY_USEC;
+constexpr PRTime EXPIRATION_MAX_USEC = ONE_DAY_USEC * PRTime(365) /*year*/;
 
 const size_t RTCCertificateCommonNameLength = 16;
 const size_t RTCCertificateMinRsaSize = 1024;
