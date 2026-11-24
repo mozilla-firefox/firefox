@@ -162,13 +162,13 @@ Also update `taskcluster/config.yml` to add the new module's display name to `tr
 After creating the component, verify it builds with the debug variant:
 
 ```bash
-./mach gradle :components:{category}-{name}:buildDebug
+./mach gradle :components:{category}-{name}:assembleDebug
 ```
 
 Run tests:
 
 ```bash
-./mach gradle :components:{category}-{name}:testDebug
+./mach gradle :components:{category}-{name}:testDebugUnitTest
 ```
 
 Format and lint:
