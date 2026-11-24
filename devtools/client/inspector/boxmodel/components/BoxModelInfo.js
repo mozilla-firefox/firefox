@@ -13,8 +13,7 @@ const { LocalizationHelper } = require("resource://devtools/shared/l10n.js");
 
 const Types = require("resource://devtools/client/inspector/boxmodel/types.js");
 
-const BOXMODEL_STRINGS_URI = "devtools/client/locales/boxmodel.properties";
-const BOXMODEL_L10N = new LocalizationHelper(BOXMODEL_STRINGS_URI);
+const BOXMODEL_L10N = require("resource://devtools/client/inspector/boxmodel/utils/l10n.js");
 
 const SHARED_STRINGS_URI = "devtools/client/locales/shared.properties";
 const SHARED_L10N = new LocalizationHelper(SHARED_STRINGS_URI);
@@ -66,7 +65,7 @@ class BoxModelInfo extends PureComponent {
         isPositionEditable
           ? dom.button({
               className: buttonClass,
-              title: BOXMODEL_L10N.getStr("boxmodel.geometryButton.tooltip"),
+              title: BOXMODEL_L10N.getStr("boxmodel-geometry-button-title"),
               onClick: this.onToggleGeometryEditor,
             })
           : null,

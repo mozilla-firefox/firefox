@@ -10,7 +10,6 @@ const {
 } = require("resource://devtools/client/shared/vendor/react.mjs");
 const dom = require("resource://devtools/client/shared/vendor/react-dom-factories.js");
 const PropTypes = require("resource://devtools/client/shared/vendor/react-prop-types.mjs");
-const { LocalizationHelper } = require("resource://devtools/shared/l10n.js");
 
 const ComputedProperty = createFactory(
   require("resource://devtools/client/inspector/boxmodel/components/ComputedProperty.js")
@@ -18,8 +17,7 @@ const ComputedProperty = createFactory(
 
 const Types = require("resource://devtools/client/inspector/boxmodel/types.js");
 
-const BOXMODEL_STRINGS_URI = "devtools/client/locales/boxmodel.properties";
-const BOXMODEL_L10N = new LocalizationHelper(BOXMODEL_STRINGS_URI);
+const BOXMODEL_L10N = require("resource://devtools/client/inspector/boxmodel/utils/l10n.js");
 
 class BoxModelProperties extends PureComponent {
   static get propTypes() {
@@ -68,7 +66,7 @@ class BoxModelProperties extends PureComponent {
     ) {
       return {
         referenceElement: this.props.boxModel.offsetParent,
-        referenceElementType: BOXMODEL_L10N.getStr("boxmodel.offsetParent"),
+        referenceElementType: BOXMODEL_L10N.getStr("boxmodel-offset-parent"),
       };
     }
 
@@ -125,12 +123,12 @@ class BoxModelProperties extends PureComponent {
           role: "button",
           "aria-label": BOXMODEL_L10N.getStr(
             this.state.isOpen
-              ? "boxmodel.propertiesHideLabel"
-              : "boxmodel.propertiesShowLabel"
+              ? "boxmodel-properties-hide-label"
+              : "boxmodel-properties-show-label"
           ),
           onClick: this.onToggleExpander,
         }),
-        BOXMODEL_L10N.getStr("boxmodel.propertiesLabel")
+        BOXMODEL_L10N.getStr("boxmodel-properties-label")
       ),
       dom.div(
         {

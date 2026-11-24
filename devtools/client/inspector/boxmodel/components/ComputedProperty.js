@@ -9,7 +9,6 @@ const {
 } = require("resource://devtools/client/shared/vendor/react.mjs");
 const dom = require("resource://devtools/client/shared/vendor/react-dom-factories.js");
 const PropTypes = require("resource://devtools/client/shared/vendor/react-prop-types.mjs");
-const { LocalizationHelper } = require("resource://devtools/shared/l10n.js");
 
 loader.lazyRequireGetter(
   this,
@@ -22,8 +21,7 @@ const {
   unhighlightNode,
 } = require("resource://devtools/client/inspector/boxmodel/actions/box-model-highlighter.js");
 
-const BOXMODEL_STRINGS_URI = "devtools/client/locales/boxmodel.properties";
-const BOXMODEL_L10N = new LocalizationHelper(BOXMODEL_STRINGS_URI);
+const BOXMODEL_L10N = require("resource://devtools/client/inspector/boxmodel/utils/l10n.js");
 
 class ComputedProperty extends PureComponent {
   static get propTypes() {
@@ -62,7 +60,7 @@ class ComputedProperty extends PureComponent {
         {
           className: "reference-element-type",
           role: "button",
-          title: BOXMODEL_L10N.getStr("boxmodel.offsetParent.title"),
+          title: BOXMODEL_L10N.getStr("boxmodel-offset-parent-title"),
         },
         referenceElementType
       ),

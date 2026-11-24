@@ -37,8 +37,7 @@ const BoxModelTypes = require("resource://devtools/client/inspector/boxmodel/typ
 const FlexboxTypes = require("resource://devtools/client/inspector/flexbox/types.js");
 const GridTypes = require("resource://devtools/client/inspector/grids/types.js");
 
-const BOXMODEL_STRINGS_URI = "devtools/client/locales/boxmodel.properties";
-const BOXMODEL_L10N = new LocalizationHelper(BOXMODEL_STRINGS_URI);
+const BOXMODEL_L10N = require("resource://devtools/client/inspector/boxmodel/utils/l10n.js");
 
 const LAYOUT_STRINGS_URI = "devtools/client/locales/layout.properties";
 const LAYOUT_L10N = new LocalizationHelper(LAYOUT_STRINGS_URI);
@@ -85,7 +84,7 @@ class LayoutApp extends PureComponent {
       component: BoxModel,
       componentProps: this.props,
       contentClassName: "layout-content",
-      header: BOXMODEL_L10N.getStr("boxmodel.title"),
+      header: BOXMODEL_L10N.getStr("boxmodel-title"),
       id: "layout-section-boxmodel",
       opened: Services.prefs.getBoolPref(BOXMODEL_OPENED_PREF),
       onToggle: opened => {
