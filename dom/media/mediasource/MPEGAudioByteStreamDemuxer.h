@@ -23,14 +23,16 @@ DDLoggedTypeDeclNameAndBase(MPEGAudioByteStreamDemuxer, MediaDataDemuxer);
 // Init() reads the initialization segment that MPEGAudioContainerParser
 // extracted, a frame header, from the start of the resource. The frames that
 // are appended after it, without the bytes that the container parser ignores,
-// are returned as samples. Their timestamps only count the samples that came
-// before them, as the coded frame processing algorithm generates the
-// presentation timestamps.
+// are returned as samples. ADTS frames are returned without their header, as
+// decoders expect raw AAC. The timestamps of the samples only count the audio
+// that came before them, as the coded frame processing algorithm generates
+// the presentation timestamps.
 class MPEGAudioByteStreamDemuxer
     : public MediaDataDemuxer,
       public DecoderDoctorLifeLogger<MPEGAudioByteStreamDemuxer> {
  public:
-  explicit MPEGAudioByteStreamDemuxer(SourceBufferResource* aSource);
+  MPEGAudioByteStreamDemuxer(SourceBufferResource* aSource,
+                             mpeg_audio::Format aFormat);
 
   RefPtr<InitPromise> Init() override;
   uint32_t GetNumberTracks(TrackInfo::TrackType aType) const override;
@@ -40,6 +42,7 @@ class MPEGAudioByteStreamDemuxer
 
  private:
   const RefPtr<SourceBufferResource> mSource;
+  const mpeg_audio::Format mFormat;
   RefPtr<MPEGAudioByteStreamTrackDemuxer> mTrackDemuxer;
 };
 
@@ -49,7 +52,8 @@ class MPEGAudioByteStreamTrackDemuxer
     : public MediaTrackDemuxer,
       public DecoderDoctorLifeLogger<MPEGAudioByteStreamTrackDemuxer> {
  public:
-  explicit MPEGAudioByteStreamTrackDemuxer(SourceBufferResource* aSource);
+  MPEGAudioByteStreamTrackDemuxer(SourceBufferResource* aSource,
+                                  mpeg_audio::Format aFormat);
 
   bool Init();
 
@@ -75,6 +79,7 @@ class MPEGAudioByteStreamTrackDemuxer
   Result<Span<const uint8_t>, MediaResult> Peek(size_t aSize);
 
   const RefPtr<SourceBufferResource> mSource;
+  const mpeg_audio::Format mFormat;
   AudioInfo mInfo;
   mpeg_audio::FrameInfo mConfig;
   // Offset of the first frame that hasn't been demuxed.

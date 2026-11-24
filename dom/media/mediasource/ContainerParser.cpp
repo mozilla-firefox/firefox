@@ -601,145 +601,6 @@ class MP4ContainerParser : public ContainerParser,
   RefPtr<MP4Stream> mStream;
   UniquePtr<MoofParser> mParser;
 };
-DDLoggedTypeDeclNameAndBase(ADTSContainerParser, ContainerParser);
-
-class ADTSContainerParser
-    : public ContainerParser,
-      public DecoderDoctorLifeLogger<ADTSContainerParser> {
- public:
-  explicit ADTSContainerParser(const MediaContainerType& aType)
-      : ContainerParser(aType) {}
-
-  typedef struct {
-    size_t header_length;  // Length of just the initialization data.
-    size_t frame_length;   // Includes header_length;
-    uint8_t aac_frames;    // Number of AAC frames in the ADTS frame.
-    bool have_crc;
-  } Header;
-
-  /// Helper to parse the ADTS header, returning data we care about.
-  /// Returns true if the header is parsed successfully.
-  /// Returns false if the header is invalid or incomplete,
-  /// without modifying the passed-in Header object.
-  bool Parse(const MediaSpan& aData, Header& header) {
-    // ADTS initialization segments are just the packet header.
-    if (aData.Length() < 7) {
-      MSE_DEBUG("buffer too short for header.");
-      return false;
-    }
-    // Check 0xfffx sync word plus layer 0.
-    if ((aData[0] != 0xff) || ((aData[1] & 0xf6) != 0xf0)) {
-      MSE_DEBUG("no syncword.");
-      return false;
-    }
-    bool have_crc = !(aData[1] & 0x01);
-    if (have_crc && aData.Length() < 9) {
-      MSE_DEBUG("buffer too short for header with crc.");
-      return false;
-    }
-    uint8_t frequency_index = (aData[2] & 0x3c) >> 2;
-    MOZ_ASSERT(frequency_index < 16);
-    if (frequency_index == 15) {
-      MSE_DEBUG("explicit frequency disallowed.");
-      return false;
-    }
-    size_t header_length = have_crc ? 9 : 7;
-    size_t data_length = ((aData[3] & 0x03) << 11) | ((aData[4] & 0xff) << 3) |
-                         ((aData[5] & 0xe0) >> 5);
-    uint8_t frames = (aData[6] & 0x03) + 1;
-    MOZ_ASSERT(frames > 0);
-    MOZ_ASSERT(frames < 4);
-
-    // Return successfully parsed data.
-    header.header_length = header_length;
-    header.frame_length = header_length + data_length;
-    header.aac_frames = frames;
-    header.have_crc = have_crc;
-    return true;
-  }
-
-  MediaResult IsInitSegmentPresent(const MediaSpan& aData) override {
-    // Call superclass for logging.
-    ContainerParser::IsInitSegmentPresent(aData);
-
-    Header header;
-    if (!Parse(aData, header)) {
-      return NS_ERROR_NOT_AVAILABLE;
-    }
-
-    MSE_DEBUGV("{} byte frame {} aac frames{}",
-               static_cast<unsigned long long>(header.frame_length),
-               static_cast<int>(header.aac_frames),
-               header.have_crc ? " crc" : "");
-
-    return NS_OK;
-  }
-
-  MediaResult IsMediaSegmentPresent(const MediaSpan& aData) override {
-    // Call superclass for logging.
-    ContainerParser::IsMediaSegmentPresent(aData);
-
-    // Make sure we have a header so we know how long the frame is.
-    // NB this assumes the media segment buffer starts with an
-    // initialization segment. Since every frame has an ADTS header
-    // this is a normal place to divide packets, but we can re-parse
-    // mInitData if we need to handle separate media segments.
-    Header header;
-    if (!Parse(aData, header)) {
-      return NS_ERROR_NOT_AVAILABLE;
-    }
-    // We're supposed to return true as long as aData contains the
-    // start of a media segment, whether or not it's complete. So
-    // return true if we have any data beyond the header.
-    if (aData.Length() <= header.header_length) {
-      return NS_ERROR_NOT_AVAILABLE;
-    }
-
-    // We should have at least a partial frame.
-    return NS_OK;
-  }
-
-  MediaResult ParseStartAndEndTimestamps(const MediaSpan& aData,
-                                         media::TimeUnit& aStart,
-                                         media::TimeUnit& aEnd) override {
-    // ADTS header.
-    Header header;
-    if (!Parse(aData, header)) {
-      return NS_ERROR_NOT_AVAILABLE;
-    }
-    mHasInitData = true;
-    mCompleteInitSegmentRange =
-        MediaByteRange(0, int64_t(header.header_length));
-
-    // Cache raw header in case the caller wants a copy.
-    mInitData = new MediaByteBuffer(header.header_length);
-    mInitData->AppendElements(aData.Elements(), header.header_length);
-
-    // Check that we have enough data for the frame body.
-    if (aData.Length() < header.frame_length) {
-      MSE_DEBUGV(
-          "Not enough data for {} byte frame"
-          " in {} byte buffer.",
-          static_cast<unsigned long long>(header.frame_length),
-          static_cast<unsigned long long>(aData.Length()));
-      return NS_ERROR_NOT_AVAILABLE;
-    }
-    mCompleteMediaSegmentRange =
-        MediaByteRange(header.header_length, header.frame_length);
-    // The ADTS MediaSource Byte Stream Format document doesn't
-    // define media header. Just treat it the same as the whole
-    // media segment.
-    mCompleteMediaHeaderRange = mCompleteMediaSegmentRange;
-
-    MSE_DEBUG("[{}, {}]", aStart.ToMicroseconds(), aEnd.ToMicroseconds());
-    // We don't update timestamps, regardless.
-    return NS_ERROR_NOT_AVAILABLE;
-  }
-
-  // Audio shouldn't have gaps.
-  // Especially when we generate the timestamps ourselves.
-  int64_t GetRoundingError() override { return 0; }
-};
 
 DDLoggedTypeDeclNameAndBase(MPEGAudioContainerParser, ContainerParser);
 
@@ -749,7 +610,10 @@ class MPEGAudioContainerParser
       public DecoderDoctorLifeLogger<MPEGAudioContainerParser> {
  public:
   explicit MPEGAudioContainerParser(const MediaContainerType& aType)
-      : ContainerParser(aType) {}
+      : ContainerParser(aType),
+        mFormat(aType.Type() == MEDIAMIMETYPE(AUDIO_AAC)
+                    ? mpeg_audio::Format::ADTS
+                    : mpeg_audio::Format::MPEGAudio) {}
 
   // Every MPEG audio frame header is an initialization segment, and the coded
   // audio that follows it is a media segment. The header alone is enough to
@@ -771,8 +635,9 @@ class MPEGAudioContainerParser
         mSkip -= skipped;
         continue;
       }
-      const mpeg_audio::Unit unit = mpeg_audio::ParseUnit(
-          data.From(ignored), mResyncing, /* aHeaderOnly = */ true);
+      const mpeg_audio::Unit unit =
+          mpeg_audio::ParseUnit(mFormat, data.From(ignored), mResyncing,
+                                /* aHeaderOnly = */ true);
       switch (unit.mType) {
         case mpeg_audio::Unit::Type::Metadata:
           mSkip = unit.mLength;
@@ -828,11 +693,10 @@ class MPEGAudioContainerParser
       return NS_ERROR_NOT_AVAILABLE;
     }
     // The media segment is the coded audio of the frame, so it only starts
-    // once data follows the header. Chromium starts it with the header,
-    // except for the first one.
-    return aData.Length() > mpeg_audio::kFrameHeaderSize
-               ? NS_OK
-               : NS_ERROR_NOT_AVAILABLE;
+    // once data follows the header and its CRC. Chromium starts it with the
+    // header, except for the first one.
+    return aData.Length() > frame.mHeaderLength ? NS_OK
+                                                : NS_ERROR_NOT_AVAILABLE;
   }
 
   // Timestamps are generated, so this never returns any. It parses the frame
@@ -903,8 +767,8 @@ class MPEGAudioContainerParser
   // SkipIgnorableBytesAtStart() removes any bytes before it.
   MediaResult ParseFrameHeaderAtStart(Span<const uint8_t> aData,
                                       mpeg_audio::FrameInfo& aFrame) const {
-    const mpeg_audio::Unit unit =
-        mpeg_audio::ParseUnit(aData, mResyncing, /* aHeaderOnly = */ true);
+    const mpeg_audio::Unit unit = mpeg_audio::ParseUnit(
+        mFormat, aData, mResyncing, /* aHeaderOnly = */ true);
     switch (unit.mType) {
       case mpeg_audio::Unit::Type::NeedMoreData:
         return NS_ERROR_NOT_AVAILABLE;
@@ -937,11 +801,13 @@ class MPEGAudioContainerParser
     }
     mConfig = Some(frame);
     mInitData = new MediaByteBuffer();
-    mInitData->AppendElements(aData.Elements(), mpeg_audio::kFrameHeaderSize);
+    mInitData->AppendElements(aData.Elements(),
+                              mpeg_audio::FrameHeaderSize(mFormat));
     mHasInitData = true;
     mSegmentStart = mSegmentEnd = aDataOffset + aData.Length();
-    MSE_DEBUG("init segment at {}: layer={} rate={} channels={}", aDataOffset,
-              frame.mLayer, frame.mSampleRate, frame.mChannels);
+    MSE_DEBUG("init segment at {}: layer={} object type={} rate={} channels={}",
+              aDataOffset, frame.mLayer, frame.mObjectType, frame.mSampleRate,
+              frame.mChannels);
     return aData.Length();
   }
 
@@ -950,7 +816,7 @@ class MPEGAudioContainerParser
     size_t consumed = 0;
     while (consumed < aData.Length()) {
       const mpeg_audio::Unit unit = mpeg_audio::ParseUnit(
-          aData.From(consumed), /* aConfirmSync = */ false);
+          mFormat, aData.From(consumed), /* aConfirmSync = */ false);
       switch (unit.mType) {
         case mpeg_audio::Unit::Type::NeedMoreData:
           return consumed;
@@ -983,6 +849,7 @@ class MPEGAudioContainerParser
     mSegmentEnded = true;
   }
 
+  const mpeg_audio::Format mFormat;
   // The configuration of the current initialization segment.
   Maybe<mpeg_audio::FrameInfo> mConfig;
   // Total bytes passed to ParseStartAndEndTimestamps.
@@ -1012,10 +879,8 @@ UniquePtr<ContainerParser> ContainerParser::CreateForMIMEType(
       aType.Type() == MEDIAMIMETYPE(AUDIO_MP4)) {
     return std::make_unique<MP4ContainerParser>(aType);
   }
-  if (aType.Type() == MEDIAMIMETYPE("audio/aac")) {
-    return std::make_unique<ADTSContainerParser>(aType);
-  }
-  if (aType.Type() == MEDIAMIMETYPE(AUDIO_MP3)) {
+  if (aType.Type() == MEDIAMIMETYPE(AUDIO_MP3) ||
+      aType.Type() == MEDIAMIMETYPE(AUDIO_AAC)) {
     return std::make_unique<MPEGAudioContainerParser>(aType);
   }
 

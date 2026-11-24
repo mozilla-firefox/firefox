@@ -1204,8 +1204,12 @@ void TrackBuffersManager::CreateDemuxerforMIMEType() {
     return;
   }
 
-  if (mType.Type() == MEDIAMIMETYPE(AUDIO_MP3)) {
-    mInputDemuxer = new MPEGAudioByteStreamDemuxer(mCurrentInputBuffer);
+  if (mType.Type() == MEDIAMIMETYPE(AUDIO_MP3) ||
+      mType.Type() == MEDIAMIMETYPE(AUDIO_AAC)) {
+    mInputDemuxer = new MPEGAudioByteStreamDemuxer(
+        mCurrentInputBuffer, mType.Type() == MEDIAMIMETYPE(AUDIO_MP3)
+                                 ? mpeg_audio::Format::MPEGAudio
+                                 : mpeg_audio::Format::ADTS);
     mFrameEndTimeBeforeRecreateDemuxer.reset();
     DDLINKCHILD("demuxer", mInputDemuxer.get());
     return;

@@ -85,6 +85,40 @@ Bytes ID3v2(uint32_t aPayloadSize, bool aFooter = false) {
   return tag;
 }
 
+// The fields of an ADTS header. The defaults are AAC LC, 44100 Hz, stereo.
+struct ADTSParams {
+  uint8_t mProfile = 1;
+  uint8_t mSamplingFrequencyIndex = 4;
+  uint8_t mChannelConfiguration = 2;
+  bool mCRC = false;
+  uint8_t mRawDataBlocks = 1;
+  uint8_t mLayer = 0;
+};
+
+constexpr size_t kADTSFrameLength = 300;
+
+// The 7 byte header of an ADTS frame of aLength bytes.
+Bytes ADTSHeader(size_t aLength = kADTSFrameLength,
+                 const ADTSParams& aParams = ADTSParams()) {
+  return {0xFF,
+          uint8_t(0xF0 | aParams.mLayer << 1 | (aParams.mCRC ? 0 : 1)),
+          uint8_t(aParams.mProfile << 6 | aParams.mSamplingFrequencyIndex << 2 |
+                  aParams.mChannelConfiguration >> 2),
+          uint8_t((aParams.mChannelConfiguration & 0x3) << 6 |
+                  ((aLength >> 11) & 0x3)),
+          uint8_t((aLength >> 3) & 0xFF),
+          uint8_t((aLength & 0x7) << 5 | 0x1F),
+          uint8_t(0xFC | (aParams.mRawDataBlocks - 1))};
+}
+
+// An ADTS frame whose bytes after the header all equal aFill.
+Bytes ADTSFrame(uint8_t aFill = 0, size_t aLength = kADTSFrameLength,
+                const ADTSParams& aParams = ADTSParams()) {
+  Bytes frame = ADTSHeader(aLength, aParams);
+  frame.resize(aLength, aFill);
+  return frame;
+}
+
 Bytes Text(const char* aText) { return Bytes(aText, aText + strlen(aText)); }
 
 Bytes ID3v1() {
@@ -125,9 +159,10 @@ MediaByteRange MakeRange(size_t aStart, size_t aEnd) {
   return MediaByteRange(int64_t(aStart), int64_t(aEnd));
 }
 
-UniquePtr<ContainerParser> CreateParser() {
-  return ContainerParser::CreateForMIMEType(
-      MediaContainerType(MEDIAMIMETYPE("audio/mpeg")));
+UniquePtr<ContainerParser> CreateParser(Format aFormat = Format::MPEGAudio) {
+  return ContainerParser::CreateForMIMEType(MediaContainerType(
+      aFormat == Format::ADTS ? MEDIAMIMETYPE("audio/aac")
+                              : MEDIAMIMETYPE("audio/mpeg")));
 }
 
 // As TrackBuffersManager::RecreateParser(true) does.
@@ -147,11 +182,20 @@ nsresult Parse(ContainerParser& aParser, const Bytes& aBytes) {
   return aParser.ParseStartAndEndTimestamps(AsMediaSpan(aBytes), start, end);
 }
 
+// As TrackBuffersManager::RecreateParser(true) does, for audio/aac.
+UniquePtr<ContainerParser> CreateADTSParserWithInitData(
+    const Bytes& aHeader = ADTSHeader()) {
+  UniquePtr<ContainerParser> parser = CreateParser(Format::ADTS);
+  EXPECT_EQ(Parse(*parser, aHeader), NS_ERROR_NOT_AVAILABLE);
+  EXPECT_TRUE(parser->HasCompleteInitData());
+  return parser;
+}
+
 }  // namespace
 
 TEST(MPEGAudioByteStream, FrameHeader)
 {
-  Maybe<FrameInfo> frame = ParseFrameHeader(kStereoHeader);
+  Maybe<FrameInfo> frame = ParseFrameHeader(Format::MPEGAudio, kStereoHeader);
   ASSERT_TRUE(frame);
   EXPECT_EQ(frame->mLayer, 3u);
   EXPECT_EQ(frame->mSampleRate, 44100u);
@@ -161,17 +205,17 @@ TEST(MPEGAudioByteStream, FrameHeader)
   EXPECT_TRUE(frame->mIsMPEG1);
 
   const uint8_t padded[] = {0xFF, 0xFB, 0x92, 0x00};
-  frame = ParseFrameHeader(padded);
+  frame = ParseFrameHeader(Format::MPEGAudio, padded);
   ASSERT_TRUE(frame);
   EXPECT_EQ(frame->mLength, kStereoFrameLength + 1);
 
-  frame = ParseFrameHeader(kMonoHeader);
+  frame = ParseFrameHeader(Format::MPEGAudio, kMonoHeader);
   ASSERT_TRUE(frame);
   EXPECT_EQ(frame->mSampleRate, 48000u);
   EXPECT_EQ(frame->mChannels, 1u);
   EXPECT_EQ(frame->mLength, kMonoFrameLength);
 
-  frame = ParseFrameHeader(kMPEG2Header);
+  frame = ParseFrameHeader(Format::MPEGAudio, kMPEG2Header);
   ASSERT_TRUE(frame);
   EXPECT_EQ(frame->mSampleRate, 22050u);
   EXPECT_EQ(frame->mChannels, 1u);
@@ -179,22 +223,25 @@ TEST(MPEGAudioByteStream, FrameHeader)
   EXPECT_EQ(frame->mLength, kMPEG2FrameLength);
   EXPECT_FALSE(frame->mIsMPEG1);
 
-  EXPECT_FALSE(frame->HasSameConfig(*ParseFrameHeader(kMonoHeader)));
-  EXPECT_TRUE(ParseFrameHeader(kStereoHeader)
-                  ->HasSameConfig(*ParseFrameHeader(padded)));
+  EXPECT_FALSE(
+      frame->HasSameConfig(*ParseFrameHeader(Format::MPEGAudio, kMonoHeader)));
+  EXPECT_TRUE(
+      ParseFrameHeader(Format::MPEGAudio, kStereoHeader)
+          ->HasSameConfig(*ParseFrameHeader(Format::MPEGAudio, padded)));
 
-  frame = ParseFrameHeader(kLayer2Header);
+  frame = ParseFrameHeader(Format::MPEGAudio, kLayer2Header);
   ASSERT_TRUE(frame);
   EXPECT_EQ(frame->mLayer, 2u);
   EXPECT_EQ(frame->mSampleRate, 44100u);
   EXPECT_EQ(frame->mChannels, 2u);
   EXPECT_EQ(frame->mSamplesPerFrame, 1152u);
   EXPECT_EQ(frame->mLength, kLayer2FrameLength);
-  EXPECT_FALSE(frame->HasSameConfig(*ParseFrameHeader(kStereoHeader)));
+  EXPECT_FALSE(frame->HasSameConfig(
+      *ParseFrameHeader(Format::MPEGAudio, kStereoHeader)));
 
   // MPEG-2 Layer II, 64 kb/s, 22050 Hz.
   const uint8_t mpeg2Layer2[] = {0xFF, 0xF5, 0x80, 0xC0};
-  frame = ParseFrameHeader(mpeg2Layer2);
+  frame = ParseFrameHeader(Format::MPEGAudio, mpeg2Layer2);
   ASSERT_TRUE(frame);
   EXPECT_EQ(frame->mSampleRate, 22050u);
   EXPECT_EQ(frame->mSamplesPerFrame, 1152u);
@@ -202,26 +249,26 @@ TEST(MPEGAudioByteStream, FrameHeader)
 
   // MPEG-2.5 Layer II, 160 kb/s, 8000 Hz, padded.
   const uint8_t mpeg25Layer2[] = {0xFF, 0xE5, 0xEA, 0xC0};
-  frame = ParseFrameHeader(mpeg25Layer2);
+  frame = ParseFrameHeader(Format::MPEGAudio, mpeg25Layer2);
   ASSERT_TRUE(frame);
   EXPECT_EQ(frame->mSampleRate, 8000u);
-  EXPECT_EQ(frame->mLength, kMaxFrameLength);
+  EXPECT_EQ(frame->mLength, kMaxMPEGAudioFrameLength);
 
   // Layer I frames are made of 4 byte slots, so their length is a multiple of
   // 4.
-  frame = ParseFrameHeader(kLayer1Header);
+  frame = ParseFrameHeader(Format::MPEGAudio, kLayer1Header);
   ASSERT_TRUE(frame);
   EXPECT_EQ(frame->mLayer, 1u);
   EXPECT_EQ(frame->mSamplesPerFrame, 384u);
   EXPECT_EQ(frame->mLength, kLayer1FrameLength);
   const uint8_t paddedLayer1[] = {0xFF, 0xFF, 0x92, 0x00};
-  frame = ParseFrameHeader(paddedLayer1);
+  frame = ParseFrameHeader(Format::MPEGAudio, paddedLayer1);
   ASSERT_TRUE(frame);
   EXPECT_EQ(frame->mLength, kLayer1FrameLength + 4);
 
   // MPEG-2 Layer I, 256 kb/s, 16000 Hz.
   const uint8_t mpeg2Layer1[] = {0xFF, 0xF7, 0xE8, 0x00};
-  frame = ParseFrameHeader(mpeg2Layer1);
+  frame = ParseFrameHeader(Format::MPEGAudio, mpeg2Layer1);
   ASSERT_TRUE(frame);
   EXPECT_EQ(frame->mSampleRate, 16000u);
   EXPECT_EQ(frame->mLength, 768u);
@@ -235,7 +282,7 @@ TEST(MPEGAudioByteStream, FrameHeader)
       {0xFE, 0xFB, 0x90, 0x00},  // No sync
   };
   for (const auto& header : invalid) {
-    EXPECT_FALSE(ParseFrameHeader(header));
+    EXPECT_FALSE(ParseFrameHeader(Format::MPEGAudio, header));
   }
 }
 
@@ -243,34 +290,37 @@ TEST(MPEGAudioByteStream, Frames)
 {
   const Bytes frame = StereoFrame();
 
-  Unit unit = ParseUnit(AsSpan(frame), false);
+  Unit unit = ParseUnit(Format::MPEGAudio, AsSpan(frame), false);
   EXPECT_EQ(unit.mType, Unit::Type::Frame);
   EXPECT_EQ(unit.mLength, kStereoFrameLength);
   EXPECT_EQ(unit.mFrame.mSampleRate, 44100u);
 
-  EXPECT_EQ(ParseUnit(AsSpan(frame).To(3), false).mType,
+  EXPECT_EQ(ParseUnit(Format::MPEGAudio, AsSpan(frame).To(3), false).mType,
             Unit::Type::NeedMoreData);
-  EXPECT_EQ(ParseUnit(AsSpan(frame).To(100), false).mType,
+  EXPECT_EQ(ParseUnit(Format::MPEGAudio, AsSpan(frame).To(100), false).mType,
             Unit::Type::NeedMoreData);
-  unit = ParseUnit(AsSpan(frame).To(4), false, /* aHeaderOnly = */ true);
+  unit = ParseUnit(Format::MPEGAudio, AsSpan(frame).To(4), false,
+                   /* aHeaderOnly = */ true);
   EXPECT_EQ(unit.mType, Unit::Type::Frame);
   EXPECT_EQ(unit.mLength, kStereoFrameLength);
 
   const Bytes invalid = Frame(kInvalidHeader, 100);
-  EXPECT_EQ(ParseUnit(AsSpan(invalid), false).mType, Unit::Type::Error);
+  EXPECT_EQ(ParseUnit(Format::MPEGAudio, AsSpan(invalid), false).mType,
+            Unit::Type::Error);
 
   for (const char* tag : {"Xing", "Info"}) {
     const Bytes info = InfoFrame(tag);
-    unit = ParseUnit(AsSpan(info), false);
+    unit = ParseUnit(Format::MPEGAudio, AsSpan(info), false);
     EXPECT_EQ(unit.mType, Unit::Type::InfoFrame);
     EXPECT_EQ(unit.mLength, kStereoFrameLength);
-    EXPECT_EQ(ParseUnit(AsSpan(info), false, true).mType, Unit::Type::Frame);
+    EXPECT_EQ(ParseUnit(Format::MPEGAudio, AsSpan(info), false, true).mType,
+              Unit::Type::Frame);
   }
 
   // Xing and Info tags are only defined for Layer III.
   Bytes layer2 = Frame(kLayer2Header, kLayer2FrameLength);
   memcpy(layer2.data() + 4 + 32, "Info", 4);
-  unit = ParseUnit(AsSpan(layer2), false);
+  unit = ParseUnit(Format::MPEGAudio, AsSpan(layer2), false);
   EXPECT_EQ(unit.mType, Unit::Type::Frame);
   EXPECT_EQ(unit.mLength, kLayer2FrameLength);
   EXPECT_EQ(unit.mFrame.mLayer, 2u);
@@ -279,46 +329,53 @@ TEST(MPEGAudioByteStream, Frames)
 TEST(MPEGAudioByteStream, Metadata)
 {
   Bytes tag = ID3v2(257);
-  Unit unit = ParseUnit(AsSpan(tag).To(10), false);
+  Unit unit = ParseUnit(Format::MPEGAudio, AsSpan(tag).To(10), false);
   EXPECT_EQ(unit.mType, Unit::Type::Metadata);
   EXPECT_EQ(unit.mLength, 267u);
-  EXPECT_EQ(ParseUnit(AsSpan(tag).To(9), false).mType,
+  EXPECT_EQ(ParseUnit(Format::MPEGAudio, AsSpan(tag).To(9), false).mType,
             Unit::Type::NeedMoreData);
   tag[8] = 0x80;
-  EXPECT_EQ(ParseUnit(AsSpan(tag), false).mType, Unit::Type::Error);
+  EXPECT_EQ(ParseUnit(Format::MPEGAudio, AsSpan(tag), false).mType,
+            Unit::Type::Error);
 
-  unit = ParseUnit(AsSpan(ID3v2(257, true)), false);
+  unit = ParseUnit(Format::MPEGAudio, AsSpan(ID3v2(257, true)), false);
   EXPECT_EQ(unit.mType, Unit::Type::Metadata);
   EXPECT_EQ(unit.mLength, 277u);
 
-  unit = ParseUnit(AsSpan(Text("TAG.")), false);
+  unit = ParseUnit(Format::MPEGAudio, AsSpan(Text("TAG.")), false);
   EXPECT_EQ(unit.mType, Unit::Type::Metadata);
   EXPECT_EQ(unit.mLength, 128u);
   // "TAG+" starts an extended tag only when an ID3v1 tag follows it.
   // Otherwise it's an ID3v1 tag with a title that starts with "+".
   Bytes extended = Text("TAG+");
   extended.resize(227, 'x');
-  EXPECT_EQ(ParseUnit(AsSpan(extended), false).mType, Unit::Type::NeedMoreData);
-  unit = ParseUnit(AsSpan(Concat({extended, ID3v1()})), false);
+  EXPECT_EQ(ParseUnit(Format::MPEGAudio, AsSpan(extended), false).mType,
+            Unit::Type::NeedMoreData);
+  unit =
+      ParseUnit(Format::MPEGAudio, AsSpan(Concat({extended, ID3v1()})), false);
   EXPECT_EQ(unit.mType, Unit::Type::Metadata);
   EXPECT_EQ(unit.mLength, 227u);
   Bytes plusTitle = Text("TAG+");
   plusTitle.resize(128, 'x');
-  unit = ParseUnit(AsSpan(Concat({plusTitle, StereoFrame()})), false);
+  unit = ParseUnit(Format::MPEGAudio,
+                   AsSpan(Concat({plusTitle, StereoFrame()})), false);
   EXPECT_EQ(unit.mType, Unit::Type::Metadata);
   EXPECT_EQ(unit.mLength, 128u);
 
   const Bytes icy = Text("ICY 200 OK\r\nicy-name: test\r\n\r\n");
-  unit = ParseUnit(AsSpan(icy), false);
+  unit = ParseUnit(Format::MPEGAudio, AsSpan(icy), false);
   EXPECT_EQ(unit.mType, Unit::Type::Metadata);
   EXPECT_EQ(unit.mLength, icy.size());
-  EXPECT_EQ(ParseUnit(AsSpan(icy).To(icy.size() - 1), false).mType,
-            Unit::Type::NeedMoreData);
+  EXPECT_EQ(
+      ParseUnit(Format::MPEGAudio, AsSpan(icy).To(icy.size() - 1), false).mType,
+      Unit::Type::NeedMoreData);
   const Bytes longIcy = Concat({Text("ICY 200 OK\r\n"), Garbage(4096)});
-  EXPECT_EQ(ParseUnit(AsSpan(longIcy), false).mType, Unit::Type::Error);
+  EXPECT_EQ(ParseUnit(Format::MPEGAudio, AsSpan(longIcy), false).mType,
+            Unit::Type::Error);
   // "ICY" only starts an Icecast header when a space follows it.
   const Bytes notIcy = Text("ICY200 OK\r\nicy-name: test\r\n\r\n");
-  EXPECT_EQ(ParseUnit(AsSpan(notIcy), false).mType, Unit::Type::Garbage);
+  EXPECT_EQ(ParseUnit(Format::MPEGAudio, AsSpan(notIcy), false).mType,
+            Unit::Type::Garbage);
 }
 
 TEST(MPEGAudioByteStream, Garbage)
@@ -326,23 +383,24 @@ TEST(MPEGAudioByteStream, Garbage)
   const Bytes frames = Concat({StereoFrame(), StereoFrame(), StereoFrame()});
   const Bytes data = Concat({Garbage(100), frames, Garbage(1)});
 
-  Unit unit = ParseUnit(AsSpan(data), false);
+  Unit unit = ParseUnit(Format::MPEGAudio, AsSpan(data), false);
   EXPECT_EQ(unit.mType, Unit::Type::Garbage);
   EXPECT_EQ(unit.mLength, 100u);
-  unit = ParseUnit(AsSpan(data).From(100), true);
+  unit = ParseUnit(Format::MPEGAudio, AsSpan(data).From(100), true);
   EXPECT_EQ(unit.mType, Unit::Type::Frame);
 
   // Resynchronizing needs the third frame to end within the data.
-  unit = ParseUnit(AsSpan(frames), true);
+  unit = ParseUnit(Format::MPEGAudio, AsSpan(frames), true);
   EXPECT_EQ(unit.mType, Unit::Type::NeedMoreData);
   // Garbage is skipped up to a frame sync that may start the next frame.
-  unit = ParseUnit(AsSpan(Concat({Garbage(10), frames})), false);
+  unit = ParseUnit(Format::MPEGAudio, AsSpan(Concat({Garbage(10), frames})),
+                   false);
   EXPECT_EQ(unit.mType, Unit::Type::Garbage);
   EXPECT_EQ(unit.mLength, 10u);
 
   // A frame sync that isn't followed by more frames is garbage.
   const Bytes falseSync = Concat({Header(kStereoHeader), Garbage(1000)});
-  unit = ParseUnit(AsSpan(falseSync), true);
+  unit = ParseUnit(Format::MPEGAudio, AsSpan(falseSync), true);
   EXPECT_EQ(unit.mType, Unit::Type::Garbage);
   EXPECT_EQ(unit.mLength, falseSync.size());
 }
@@ -387,10 +445,20 @@ TEST(MPEGAudioContainerParser, MediaSegments)
   EXPECT_NS_SUCCEEDED(parser->IsMediaSegmentPresent(AsMediaSpan(frames)));
   // The media segment starts with the coded audio that follows the header.
   EXPECT_EQ(parser->IsMediaSegmentPresent(
-                AsMediaSpan(Slice(frames, 0, kFrameHeaderSize))),
+                AsMediaSpan(Slice(frames, 0, kMPEGAudioHeaderSize))),
             NS_ERROR_NOT_AVAILABLE);
   EXPECT_NS_SUCCEEDED(parser->IsMediaSegmentPresent(
-      AsMediaSpan(Slice(frames, 0, kFrameHeaderSize + 1))));
+      AsMediaSpan(Slice(frames, 0, kMPEGAudioHeaderSize + 1))));
+  // The CRC of a protected frame isn't coded audio.
+  constexpr uint8_t kProtectedHeader[] = {0xFF, 0xFA, 0x90, 0x00};
+  const Bytes protectedFrame = Frame(kProtectedHeader, kStereoFrameLength);
+  for (size_t length : {4, 5, 6}) {
+    EXPECT_EQ(parser->IsMediaSegmentPresent(
+                  AsMediaSpan(Slice(protectedFrame, 0, length))),
+              NS_ERROR_NOT_AVAILABLE);
+  }
+  EXPECT_NS_SUCCEEDED(
+      parser->IsMediaSegmentPresent(AsMediaSpan(Slice(protectedFrame, 0, 7))));
 
   // The media segment ends after the last complete frame.
   const size_t split = frames.size() + 100;
@@ -504,7 +572,7 @@ TEST(MPEGAudioByteStreamDemuxer, Samples)
   RefPtr<SourceBufferResource> resource = new SourceBufferResource();
   resource->AppendData(AsMediaSpan(Header(kStereoHeader)));
   RefPtr<MPEGAudioByteStreamDemuxer> demuxer =
-      new MPEGAudioByteStreamDemuxer(resource);
+      new MPEGAudioByteStreamDemuxer(resource, Format::MPEGAudio);
   EXPECT_EQ(WaitForResolve(demuxer->Init()), NS_OK);
   ASSERT_EQ(demuxer->GetNumberTracks(TrackInfo::kAudioTrack), 1u);
   EXPECT_EQ(demuxer->GetNumberTracks(TrackInfo::kVideoTrack), 0u);
@@ -573,7 +641,7 @@ TEST(MPEGAudioByteStreamDemuxer, Layer1)
   RefPtr<SourceBufferResource> resource = new SourceBufferResource();
   resource->AppendData(AsMediaSpan(Header(kLayer1Header)));
   RefPtr<MPEGAudioByteStreamDemuxer> demuxer =
-      new MPEGAudioByteStreamDemuxer(resource);
+      new MPEGAudioByteStreamDemuxer(resource, Format::MPEGAudio);
   EXPECT_EQ(WaitForResolve(demuxer->Init()), NS_OK);
   RefPtr<MediaTrackDemuxer> track =
       demuxer->GetTrackDemuxer(TrackInfo::kAudioTrack, 0);
@@ -601,13 +669,253 @@ TEST(MPEGAudioByteStreamDemuxer, Layer1)
   }
 }
 
+TEST(MPEGAudioByteStream, ADTSFrameHeader)
+{
+  Maybe<FrameInfo> frame = ParseFrameHeader(Format::ADTS, AsSpan(ADTSHeader()));
+  ASSERT_TRUE(frame);
+  EXPECT_EQ(frame->mSampleRate, 44100u);
+  EXPECT_EQ(frame->mChannels, 2u);
+  EXPECT_EQ(frame->mLayer, 0u);
+  EXPECT_EQ(frame->mSamplesPerFrame, 1024u);
+  EXPECT_EQ(frame->mLength, kADTSFrameLength);
+  EXPECT_EQ(frame->mHeaderLength, 7u);
+  EXPECT_EQ(frame->mObjectType, 2u);
+
+  // The header is followed by a CRC when the protection_absent bit is clear.
+  ADTSParams params;
+  params.mCRC = true;
+  Maybe<FrameInfo> crc =
+      ParseFrameHeader(Format::ADTS, AsSpan(ADTSHeader(300, params)));
+  ASSERT_TRUE(crc);
+  EXPECT_EQ(crc->mHeaderLength, 9u);
+  EXPECT_TRUE(crc->HasSameConfig(*frame));
+
+  // The longest frame, the lowest sample rate and 7.1 channels.
+  params = ADTSParams();
+  params.mSamplingFrequencyIndex = 12;
+  params.mChannelConfiguration = 7;
+  Maybe<FrameInfo> other = ParseFrameHeader(
+      Format::ADTS, AsSpan(ADTSHeader(kMaxADTSFrameLength, params)));
+  ASSERT_TRUE(other);
+  EXPECT_EQ(other->mSampleRate, 7350u);
+  EXPECT_EQ(other->mChannels, 8u);
+  EXPECT_EQ(other->mLength, kMaxADTSFrameLength);
+  EXPECT_FALSE(other->HasSameConfig(*frame));
+
+  // The audio object type is part of the configuration.
+  params = ADTSParams();
+  params.mProfile = 0;
+  Maybe<FrameInfo> main =
+      ParseFrameHeader(Format::ADTS, AsSpan(ADTSHeader(300, params)));
+  ASSERT_TRUE(main);
+  EXPECT_EQ(main->mObjectType, 1u);
+  EXPECT_FALSE(main->HasSameConfig(*frame));
+
+  // Reserved and unsupported values.
+  for (uint8_t index : {13, 14, 15}) {
+    params = ADTSParams();
+    params.mSamplingFrequencyIndex = index;
+    EXPECT_FALSE(
+        ParseFrameHeader(Format::ADTS, AsSpan(ADTSHeader(300, params))));
+  }
+  params = ADTSParams();
+  params.mLayer = 1;
+  EXPECT_FALSE(ParseFrameHeader(Format::ADTS, AsSpan(ADTSHeader(300, params))));
+  params = ADTSParams();
+  params.mChannelConfiguration = 0;
+  EXPECT_FALSE(ParseFrameHeader(Format::ADTS, AsSpan(ADTSHeader(300, params))));
+  params = ADTSParams();
+  params.mRawDataBlocks = 2;
+  EXPECT_FALSE(ParseFrameHeader(Format::ADTS, AsSpan(ADTSHeader(300, params))));
+  // A frame must hold more than its header.
+  EXPECT_FALSE(ParseFrameHeader(Format::ADTS, AsSpan(ADTSHeader(7))));
+  EXPECT_TRUE(ParseFrameHeader(Format::ADTS, AsSpan(ADTSHeader(8))));
+  params = ADTSParams();
+  params.mCRC = true;
+  EXPECT_FALSE(ParseFrameHeader(Format::ADTS, AsSpan(ADTSHeader(9, params))));
+  // An MPEG audio frame header isn't an ADTS header, and vice versa.
+  const Bytes mpegAudio = Concat({Header(kStereoHeader), Garbage(3)});
+  EXPECT_FALSE(ParseFrameHeader(Format::ADTS, AsSpan(mpegAudio)));
+  EXPECT_FALSE(ParseFrameHeader(Format::MPEGAudio, AsSpan(ADTSHeader())));
+}
+
+TEST(MPEGAudioByteStream, ADTSFrames)
+{
+  const Bytes frame = ADTSFrame();
+  Unit unit = ParseUnit(Format::ADTS, AsSpan(frame), false);
+  EXPECT_EQ(unit.mType, Unit::Type::Frame);
+  EXPECT_EQ(unit.mLength, kADTSFrameLength);
+  // The header is 7 bytes long.
+  EXPECT_EQ(ParseUnit(Format::ADTS, AsSpan(frame).To(6), false).mType,
+            Unit::Type::NeedMoreData);
+  EXPECT_EQ(ParseUnit(Format::ADTS, AsSpan(frame).To(100), false).mType,
+            Unit::Type::NeedMoreData);
+  unit = ParseUnit(Format::ADTS, AsSpan(frame).To(7), false,
+                   /* aHeaderOnly = */ true);
+  EXPECT_EQ(unit.mType, Unit::Type::Frame);
+  EXPECT_EQ(unit.mLength, kADTSFrameLength);
+
+  // A syncword that follows a unit must start a valid header.
+  const Bytes mpegAudio = StereoFrame();
+  EXPECT_EQ(ParseUnit(Format::ADTS, AsSpan(mpegAudio), false).mType,
+            Unit::Type::Error);
+
+  // Metadata frames and garbage are handled as for MPEG audio.
+  unit = ParseUnit(Format::ADTS, AsSpan(ID3v2(257)), false);
+  EXPECT_EQ(unit.mType, Unit::Type::Metadata);
+  EXPECT_EQ(unit.mLength, 267u);
+  const Bytes frames = Concat({frame, frame, frame});
+  unit = ParseUnit(Format::ADTS, AsSpan(Concat({Garbage(10), frames})), false);
+  EXPECT_EQ(unit.mType, Unit::Type::Garbage);
+  EXPECT_EQ(unit.mLength, 10u);
+  EXPECT_EQ(ParseUnit(Format::ADTS, AsSpan(frames), true).mType,
+            Unit::Type::NeedMoreData);
+  unit = ParseUnit(Format::ADTS, AsSpan(Concat({frames, ADTSHeader()})), true);
+  EXPECT_EQ(unit.mType, Unit::Type::Frame);
+}
+
+TEST(MPEGAudioContainerParser, ADTS)
+{
+  UniquePtr<ContainerParser> parser = CreateParser(Format::ADTS);
+  EXPECT_TRUE(parser->HasImplicitInitSegment());
+
+  // The 7 byte header is an initialization segment.
+  const Bytes frame = ADTSFrame();
+  EXPECT_EQ(parser->IsInitSegmentPresent(AsMediaSpan(Slice(frame, 0, 6))),
+            NS_ERROR_NOT_AVAILABLE);
+  EXPECT_NS_SUCCEEDED(
+      parser->IsInitSegmentPresent(AsMediaSpan(Slice(frame, 0, 7))));
+  EXPECT_EQ(Parse(*parser, Slice(frame, 0, 7)), NS_ERROR_NOT_AVAILABLE);
+  ASSERT_TRUE(parser->HasCompleteInitData());
+  EXPECT_EQ(parser->InitData()->Length(), 7u);
+  EXPECT_TRUE(parser->InitSegmentRange().IsEmpty());
+
+  // The media segment starts with the coded audio that follows the header.
+  parser = CreateADTSParserWithInitData();
+  ADTSParams crc;
+  crc.mCRC = true;
+  const Bytes frames =
+      Concat({ADTSFrame(1), ADTSFrame(2, 400, crc), ADTSFrame(3)});
+  EXPECT_EQ(parser->IsInitSegmentPresent(AsMediaSpan(frames)),
+            NS_ERROR_NOT_AVAILABLE);
+  EXPECT_EQ(parser->IsMediaSegmentPresent(AsMediaSpan(Slice(frames, 0, 7))),
+            NS_ERROR_NOT_AVAILABLE);
+  EXPECT_NS_SUCCEEDED(
+      parser->IsMediaSegmentPresent(AsMediaSpan(Slice(frames, 0, 8))));
+  // The CRC of a protected frame isn't coded audio.
+  const Bytes protectedFrame = ADTSFrame(0, 400, crc);
+  for (size_t length : {7, 8, 9}) {
+    EXPECT_EQ(parser->IsMediaSegmentPresent(
+                  AsMediaSpan(Slice(protectedFrame, 0, length))),
+              NS_ERROR_NOT_AVAILABLE);
+  }
+  EXPECT_NS_SUCCEEDED(
+      parser->IsMediaSegmentPresent(AsMediaSpan(Slice(protectedFrame, 0, 10))));
+
+  // It ends after the last complete frame.
+  const size_t split = 300 + 400 + 100;
+  EXPECT_EQ(Parse(*parser, Slice(frames, 0, split)), NS_ERROR_NOT_AVAILABLE);
+  EXPECT_EQ(parser->MediaSegmentRange(), MakeRange(7, 7 + 700));
+  EXPECT_EQ(Parse(*parser, Slice(frames, split, frames.size())),
+            NS_ERROR_NOT_AVAILABLE);
+  EXPECT_EQ(parser->MediaSegmentRange(), MakeRange(7, 7 + 1000));
+
+  // A header that changes the configuration is a new initialization segment.
+  ADTSParams mono;
+  mono.mChannelConfiguration = 1;
+  const Bytes monoFrame = ADTSFrame(0, 200, mono);
+  parser = CreateADTSParserWithInitData();
+  EXPECT_NS_SUCCEEDED(parser->IsInitSegmentPresent(AsMediaSpan(monoFrame)));
+  EXPECT_EQ(parser->IsMediaSegmentPresent(AsMediaSpan(monoFrame)),
+            NS_ERROR_NOT_AVAILABLE);
+  EXPECT_EQ(Parse(*parser, Concat({frame, monoFrame})), NS_ERROR_NOT_AVAILABLE);
+  EXPECT_EQ(parser->MediaSegmentRange(), MakeRange(7, 7 + 300));
+
+  // Metadata frames and garbage are ignored, and an invalid header is an
+  // error.
+  parser = CreateADTSParserWithInitData();
+  const Bytes data = Concat({ID3v2(100), Garbage(50), frame, frame, frame});
+  EXPECT_EQ(parser->SkipIgnorableBytesAtStart(AsMediaSpan(data)), 110u + 50u);
+  parser = CreateADTSParserWithInitData();
+  MediaResult rv = Parse(*parser, Concat({frame, StereoFrame()}));
+  EXPECT_TRUE(NS_FAILED(rv) && rv != NS_ERROR_NOT_AVAILABLE);
+}
+
+TEST(MPEGAudioByteStreamDemuxer, ADTSSamples)
+{
+  ADTSParams params;
+  params.mSamplingFrequencyIndex = 3;
+  params.mChannelConfiguration = 6;
+  RefPtr<SourceBufferResource> resource = new SourceBufferResource();
+  resource->AppendData(AsMediaSpan(ADTSHeader(300, params)));
+  RefPtr<MPEGAudioByteStreamDemuxer> demuxer =
+      new MPEGAudioByteStreamDemuxer(resource, Format::ADTS);
+  EXPECT_EQ(WaitForResolve(demuxer->Init()), NS_OK);
+  RefPtr<MediaTrackDemuxer> track =
+      demuxer->GetTrackDemuxer(TrackInfo::kAudioTrack, 0);
+  ASSERT_TRUE(track);
+  UniquePtr<TrackInfo> info = track->GetInfo();
+  const AudioInfo* audio = info->GetAsAudioInfo();
+  ASSERT_TRUE(audio);
+  EXPECT_EQ(audio->mMimeType, "audio/mp4a-latm"_ns);
+  EXPECT_EQ(audio->mRate, 48000u);
+  EXPECT_EQ(audio->mChannels, 6u);
+  EXPECT_EQ(audio->mProfile, 2u);
+  EXPECT_EQ(audio->mExtendedProfile, 2u);
+  EXPECT_TRUE(info->mDuration.IsZero());
+  // The AudioSpecificConfig for AAC LC, 48000 Hz and 5.1 channels.
+  ASSERT_TRUE(audio->mCodecSpecificConfig.is<AudioCodecSpecificBinaryBlob>());
+  const MediaByteBuffer& config =
+      *audio->mCodecSpecificConfig.as<AudioCodecSpecificBinaryBlob>()
+           .mBinaryBlob;
+  ASSERT_EQ(config.Length(), 2u);
+  EXPECT_EQ(config[0], 0x11);
+  EXPECT_EQ(config[1], 0xB0);
+
+  // The samples are the raw data blocks, without the header and its CRC.
+  resource->EvictAll();
+  ADTSParams crc = params;
+  crc.mCRC = true;
+  const Bytes data = Concat({ADTSFrame(1, 300, params), ADTSFrame(2, 400, crc),
+                             ADTSFrame(3, 300, params)});
+  const size_t split = 300 + 400 + 100;
+  resource->AppendData(AsMediaSpan(AsSpan(data).To(split)));
+  auto samples = WaitFor(track->GetSamples(-1));
+  ASSERT_TRUE(samples.isOk());
+  const nsTArray<RefPtr<MediaRawData>>& first = samples.inspect()->GetSamples();
+  ASSERT_EQ(first.Length(), 2u);
+  EXPECT_EQ(first[0]->Size(), 300u - 7u);
+  EXPECT_EQ(first[0]->Data()[0], 1);
+  EXPECT_EQ(first[0]->mTime, TimeUnit(0, 48000));
+  EXPECT_EQ(first[0]->mDuration, TimeUnit(1024, 48000));
+  EXPECT_TRUE(first[0]->mKeyframe);
+  EXPECT_EQ(first[1]->Size(), 400u - 9u);
+  EXPECT_EQ(first[1]->Data()[0], 2);
+  EXPECT_EQ(first[1]->mTime, TimeUnit(1024, 48000));
+  EXPECT_EQ(track->GetEvictionOffset(TimeUnit::Zero()), 7 + 700);
+
+  // The incomplete frame is returned once the rest of it arrives.
+  samples = WaitFor(track->GetSamples(-1));
+  ASSERT_TRUE(samples.isErr());
+  EXPECT_EQ(samples.inspectErr().Code(), NS_ERROR_DOM_MEDIA_WAITING_FOR_DATA);
+  resource->AppendData(AsMediaSpan(AsSpan(data).From(split)));
+  samples = WaitFor(track->GetSamples(-1));
+  ASSERT_TRUE(samples.isOk());
+  const nsTArray<RefPtr<MediaRawData>>& second =
+      samples.inspect()->GetSamples();
+  ASSERT_EQ(second.Length(), 1u);
+  EXPECT_EQ(second[0]->Size(), 300u - 7u);
+  EXPECT_EQ(second[0]->Data()[0], 3);
+  EXPECT_EQ(second[0]->mTime, TimeUnit(2048, 48000));
+}
+
 namespace {
 
 // As TrackBuffersManager::RecreateParser(true) does, after an initialization
 // segment.
 UniquePtr<ContainerParser> CreateParserWithInitData(
-    const MediaByteBuffer& aInitData) {
-  UniquePtr<ContainerParser> parser = CreateParser();
+    const MediaByteBuffer& aInitData, Format aFormat = Format::MPEGAudio) {
+  UniquePtr<ContainerParser> parser = CreateParser(aFormat);
   Parse(*parser, Bytes(aInitData.begin(), aInitData.end()));
   return parser;
 }
@@ -617,14 +925,15 @@ UniquePtr<ContainerParser> CreateParserWithInitData(
 // TrackBuffersManager does. The first byte sets the chunk size. Returns false
 // if the demuxer disagrees with the parser about a media segment, which must
 // only hold complete frames with the current configuration.
-bool AppendAndDemux(Span<const uint8_t> aData) {
+bool AppendAndDemux(Span<const uint8_t> aData,
+                    Format aFormat = Format::MPEGAudio) {
   if (aData.IsEmpty()) {
     return true;
   }
   const size_t chunkSize = 1 + aData[0] * 8;
   aData = aData.From(1);
 
-  UniquePtr<ContainerParser> parser = CreateParser();
+  UniquePtr<ContainerParser> parser = CreateParser(aFormat);
   RefPtr<MediaByteBuffer> initData;
   RefPtr<SourceBufferResource> resource;
   RefPtr<MediaTrackDemuxer> track;
@@ -649,7 +958,7 @@ bool AppendAndDemux(Span<const uint8_t> aData) {
         }
         MediaResult rv = parser->IsInitSegmentPresent(AsMediaSpan(input));
         if (NS_SUCCEEDED(rv)) {
-          parser = CreateParser();
+          parser = CreateParser(aFormat);
           if (Parse(*parser, input) != NS_ERROR_NOT_AVAILABLE ||
               !parser->HasCompleteInitData()) {
             return false;
@@ -659,13 +968,13 @@ bool AppendAndDemux(Span<const uint8_t> aData) {
           resource->AppendData(initData);
           appended = int64_t(initData->Length());
           RefPtr<MPEGAudioByteStreamDemuxer> demuxer =
-              new MPEGAudioByteStreamDemuxer(resource);
+              new MPEGAudioByteStreamDemuxer(resource, aFormat);
           // The demuxer crashes this if it rejects the initialization
           // segment.
           WaitForResolve(demuxer->Init());
           track = demuxer->GetTrackDemuxer(TrackInfo::kAudioTrack, 0);
           resource->EvictAll();
-          parser = CreateParserWithInitData(*initData);
+          parser = CreateParserWithInitData(*initData, aFormat);
           continue;
         }
         if (rv != NS_ERROR_NOT_AVAILABLE) {
@@ -720,7 +1029,7 @@ bool AppendAndDemux(Span<const uint8_t> aData) {
       resource->EvictBefore(demuxed);
       input.erase(input.begin(), input.begin() + length);
       parsingMediaSegment = false;
-      parser = CreateParserWithInitData(*initData);
+      parser = CreateParserWithInitData(*initData, aFormat);
     }
   }
   return true;
@@ -728,29 +1037,20 @@ bool AppendAndDemux(Span<const uint8_t> aData) {
 
 }  // namespace
 
-TEST(MPEGAudioByteStream, MutatedStreams)
-{
-  const Bytes mono = Frame(kMonoHeader, kMonoFrameLength);
-  const Bytes mpeg2 = Frame(kMPEG2Header, kMPEG2FrameLength);
-  const Bytes layer2 = Frame(kLayer2Header, kLayer2FrameLength);
-  const Bytes layer1 = Frame(kLayer1Header, kLayer1FrameLength);
-  const std::vector<Bytes> streams = {
-      Concat({ID3v2(300), InfoFrame("Info"), StereoFrame(1), StereoFrame(2),
-              StereoFrame(3), ID3v1()}),
-      Concat({Text("ICY 200 OK\r\n\r\n"), StereoFrame(), StereoFrame(),
-              Garbage(50), StereoFrame(), StereoFrame(), StereoFrame(), mono,
-              mono, mono, mpeg2, mpeg2, layer2, layer2, layer1, layer1}),
-  };
-  for (const Bytes& stream : streams) {
+// Checks AppendAndDemux() with aStreams, split into chunks of several sizes,
+// and with random edits of them.
+static void AppendAndDemuxMutations(const std::vector<Bytes>& aStreams,
+                                    Format aFormat) {
+  for (const Bytes& stream : aStreams) {
     for (uint8_t chunkSize : {0, 3, 50, 255}) {
       Bytes input = Concat({{chunkSize}, stream});
-      EXPECT_TRUE(AppendAndDemux(AsSpan(input)));
+      EXPECT_TRUE(AppendAndDemux(AsSpan(input), aFormat));
     }
   }
 
   std::mt19937 random(1169485);
   for (int i = 0; i < 2000; ++i) {
-    Bytes input = streams[random() % streams.size()];
+    Bytes input = aStreams[random() % aStreams.size()];
     for (uint32_t edits = 1 + random() % 8; edits; --edits) {
       const size_t at = random() % input.size();
       switch (random() % 3) {
@@ -766,8 +1066,40 @@ TEST(MPEGAudioByteStream, MutatedStreams)
       }
     }
     input.insert(input.begin(), uint8_t(random()));
-    EXPECT_TRUE(AppendAndDemux(AsSpan(input))) << "mutation " << i;
+    EXPECT_TRUE(AppendAndDemux(AsSpan(input), aFormat)) << "mutation " << i;
   }
+}
+
+TEST(MPEGAudioByteStream, MutatedStreams)
+{
+  const Bytes mono = Frame(kMonoHeader, kMonoFrameLength);
+  const Bytes mpeg2 = Frame(kMPEG2Header, kMPEG2FrameLength);
+  const Bytes layer2 = Frame(kLayer2Header, kLayer2FrameLength);
+  const Bytes layer1 = Frame(kLayer1Header, kLayer1FrameLength);
+  const std::vector<Bytes> streams = {
+      Concat({ID3v2(300), InfoFrame("Info"), StereoFrame(1), StereoFrame(2),
+              StereoFrame(3), ID3v1()}),
+      Concat({Text("ICY 200 OK\r\n\r\n"), StereoFrame(), StereoFrame(),
+              Garbage(50), StereoFrame(), StereoFrame(), StereoFrame(), mono,
+              mono, mono, mpeg2, mpeg2, layer2, layer2, layer1, layer1}),
+  };
+  AppendAndDemuxMutations(streams, Format::MPEGAudio);
+}
+
+TEST(MPEGAudioByteStream, MutatedADTSStreams)
+{
+  ADTSParams mono;
+  mono.mChannelConfiguration = 1;
+  ADTSParams crc;
+  crc.mCRC = true;
+  const std::vector<Bytes> streams = {
+      Concat({ID3v2(300), ADTSFrame(1), ADTSFrame(2), ADTSFrame(3), ID3v1()}),
+      Concat({Text("ICY 200 OK\r\n\r\n"), ADTSFrame(), ADTSFrame(), Garbage(50),
+              ADTSFrame(), ADTSFrame(), ADTSFrame(), ADTSFrame(),
+              ADTSFrame(0, 200, mono), ADTSFrame(0, 200, mono),
+              ADTSFrame(0, 400, crc), ADTSFrame(0, 400, crc)}),
+  };
+  AppendAndDemuxMutations(streams, Format::ADTS);
 }
 
 #ifdef FUZZING_INTERFACES
@@ -778,4 +1110,11 @@ static int FuzzingRunMediaSourceMPEGAudio(const uint8_t* aData, size_t aSize) {
 
 MOZ_FUZZING_INTERFACE_RAW(nullptr, FuzzingRunMediaSourceMPEGAudio,
                           MediaSourceMPEGAudio);
+
+static int FuzzingRunMediaSourceADTS(const uint8_t* aData, size_t aSize) {
+  MOZ_RELEASE_ASSERT(AppendAndDemux(Span(aData, aSize), Format::ADTS));
+  return 0;
+}
+
+MOZ_FUZZING_INTERFACE_RAW(nullptr, FuzzingRunMediaSourceADTS, MediaSourceADTS);
 #endif

@@ -118,6 +118,8 @@ class FrameParser {
 };
 
 // Extract the audiospecificconfig from an ADTS header
+void InitAudioSpecificConfig(const FrameHeader& aHeader,
+                             MediaByteBuffer* aBuffer);
 void InitAudioSpecificConfig(const Frame& aFrame, MediaByteBuffer* aBuffer);
 bool StripHeader(MediaRawData* aSample);
 Result<uint8_t, bool> GetFrequencyIndex(uint32_t aSamplesPerSecond);

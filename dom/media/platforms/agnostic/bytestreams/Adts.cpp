@@ -274,12 +274,16 @@ bool FrameParser::Parse(uint64_t aOffset, const uint8_t* aStart,
 // Only handles two-byte version for AAC-LC.
 void InitAudioSpecificConfig(const ADTS::Frame& frame,
                              MediaByteBuffer* aBuffer) {
-  const ADTS::FrameHeader& header = frame.Header();
-  MOZ_ASSERT(header.IsValid());
+  InitAudioSpecificConfig(frame.Header(), aBuffer);
+}
 
-  int audioObjectType = header.mObjectType;
-  int samplingFrequencyIndex = header.mSamplingIndex;
-  int channelConfig = header.mChannelConfig;
+void InitAudioSpecificConfig(const ADTS::FrameHeader& aHeader,
+                             MediaByteBuffer* aBuffer) {
+  MOZ_ASSERT(aHeader.IsValid());
+
+  int audioObjectType = aHeader.mObjectType;
+  int samplingFrequencyIndex = aHeader.mSamplingIndex;
+  int channelConfig = aHeader.mChannelConfig;
 
   uint8_t asc[2];
   asc[0] = (audioObjectType & 0x1F) << 3 | (samplingFrequencyIndex & 0x0E) >> 1;

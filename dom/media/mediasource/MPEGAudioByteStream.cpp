@@ -8,7 +8,9 @@
 
 #include <algorithm>
 
+#include "Adts.h"
 #include "mozilla/Assertions.h"
+#include "mozilla/Casting.h"
 
 namespace mozilla::mpeg_audio {
 
@@ -47,18 +49,49 @@ bool StartsWith(Span<const uint8_t> aData, const char (&aTag)[N]) {
          memcmp(aData.Elements(), aTag, length) == 0;
 }
 
-bool StartsWithFrameSync(Span<const uint8_t> aData) {
-  // The 11 bit frame sync of MPEG-1, MPEG-2 and MPEG-2.5.
-  return aData.Length() >= 2 && aData[0] == 0xFF && (aData[1] & 0xE0) == 0xE0;
+bool StartsWithFrameSync(Format aFormat, Span<const uint8_t> aData) {
+  // The 11 bit frame sync of MPEG-1, MPEG-2 and MPEG-2.5, or the 12 bit
+  // syncword of ADTS.
+  const uint8_t mask = aFormat == Format::ADTS ? 0xF0 : 0xE0;
+  return aData.Length() >= 2 && aData[0] == 0xFF && (aData[1] & mask) == mask;
+}
+
+Maybe<FrameInfo> ParseADTSHeader(Span<const uint8_t> aData) {
+  // This rejects a layer that isn't 0, and the sampling frequency indexes
+  // that are reserved or that mean that the rate is in the stream, which
+  // ADTS has no room for.
+  ADTS::FrameHeader header;
+  if (!header.Parse(aData)) {
+    return Nothing();
+  }
+  FrameInfo info;
+  info.mHeaderLength = AssertedCast<uint32_t>(header.HeaderSize());
+  // These aren't supported:
+  // - A channel configuration of 0, where a program config element in the raw
+  //   data block describes the channels. Chromium accepts the frame, but
+  //   fails to create a decoder for it.
+  // - Several raw data blocks in a frame, which can't be split up without
+  //   decoding them. Chromium accepts them.
+  // - No raw data block. Chromium accepts the frame, but fails to decode it.
+  if (header.mChannelConfig == 0 || header.mNumAACFrames != 1 ||
+      header.mFrameLength <= info.mHeaderLength) {
+    return Nothing();
+  }
+  info.mObjectType = header.mObjectType;
+  info.mSampleRate = header.mSampleRate;
+  info.mChannels = header.mChannels;
+  info.mSamplesPerFrame = header.mSamples;
+  info.mLength = header.mFrameLength;
+  return Some(info);
 }
 
 // The Xing or Info tag follows the Layer III side information.
 size_t InfoTagOffset(const FrameInfo& aFrame) {
   const bool mono = aFrame.mChannels == 1;
   if (aFrame.mIsMPEG1) {
-    return kFrameHeaderSize + (mono ? 17 : 32);
+    return kMPEGAudioHeaderSize + (mono ? 17 : 32);
   }
-  return kFrameHeaderSize + (mono ? 9 : 17);
+  return kMPEGAudioHeaderSize + (mono ? 9 : 17);
 }
 
 bool IsInfoFrame(Span<const uint8_t> aFrame, const FrameInfo& aInfo) {
@@ -95,15 +128,15 @@ Maybe<size_t> FindIcecastHeaderLength(Span<const uint8_t> aData) {
 
 enum class SyncState { RuledOut, Undecidable, Confirmed };
 
-SyncState ConfirmSync(Span<const uint8_t> aData) {
+SyncState ConfirmSync(Format aFormat, Span<const uint8_t> aData) {
   size_t offset = 0;
   for (size_t i = 0; i < kSyncConfirmationFrames; ++i) {
     MOZ_ASSERT(offset <= aData.Length());
     Span<const uint8_t> rest = aData.From(offset);
-    if (rest.Length() < kFrameHeaderSize) {
+    if (rest.Length() < FrameHeaderSize(aFormat)) {
       return SyncState::Undecidable;
     }
-    Maybe<FrameInfo> frame = ParseFrameHeader(rest);
+    Maybe<FrameInfo> frame = ParseFrameHeader(aFormat, rest);
     if (!frame) {
       return SyncState::RuledOut;
     }
@@ -118,9 +151,10 @@ SyncState ConfirmSync(Span<const uint8_t> aData) {
 
 // aData doesn't start with a unit. Skip to the first frame sync that isn't
 // ruled out.
-Unit SkipGarbage(Span<const uint8_t> aData) {
+Unit SkipGarbage(Format aFormat, Span<const uint8_t> aData) {
   for (size_t i = 1; i < aData.Length(); ++i) {
-    if (aData[i] == 0xFF && ConfirmSync(aData.From(i)) != SyncState::RuledOut) {
+    if (aData[i] == 0xFF &&
+        ConfirmSync(aFormat, aData.From(i)) != SyncState::RuledOut) {
       return {Unit::Type::Garbage, i};
     }
   }
@@ -129,10 +163,13 @@ Unit SkipGarbage(Span<const uint8_t> aData) {
 
 }  // namespace
 
-Maybe<FrameInfo> ParseFrameHeader(Span<const uint8_t> aData) {
-  MOZ_ASSERT(aData.Length() >= kFrameHeaderSize);
-  if (!StartsWithFrameSync(aData)) {
+Maybe<FrameInfo> ParseFrameHeader(Format aFormat, Span<const uint8_t> aData) {
+  MOZ_ASSERT(aData.Length() >= FrameHeaderSize(aFormat));
+  if (!StartsWithFrameSync(aFormat, aData)) {
     return Nothing();
+  }
+  if (aFormat == Format::ADTS) {
+    return ParseADTSHeader(aData);
   }
   // 0 is MPEG-2.5, 1 is reserved, 2 is MPEG-2 and 3 is MPEG-1.
   const uint8_t version = (aData[1] >> 3) & 0x3;
@@ -141,12 +178,14 @@ Maybe<FrameInfo> ParseFrameHeader(Span<const uint8_t> aData) {
   const uint8_t bitrateIndex = aData[2] >> 4;
   const uint8_t sampleRateIndex = (aData[2] >> 2) & 0x3;
   const bool padding = aData[2] & 0x2;
+  const bool hasCRC = !(aData[1] & 0x1);
   // Free format bitrates (index 0) aren't supported, as in Chromium.
   if (version == 1 || layerIndex == 0 || bitrateIndex == 0 ||
       bitrateIndex == 0xF || sampleRateIndex == 3) {
     return Nothing();
   }
   FrameInfo info;
+  info.mHeaderLength = kMPEGAudioHeaderSize + (hasCRC ? kCRCSize : 0);
   info.mIsMPEG1 = version == 3;
   info.mLayer = 4 - layerIndex;
   info.mSampleRate = kSampleRates[sampleRateIndex] >>
@@ -164,28 +203,29 @@ Maybe<FrameInfo> ParseFrameHeader(Span<const uint8_t> aData) {
     info.mLength =
         info.mSamplesPerFrame / 8 * bitrate / info.mSampleRate + padding;
   }
-  MOZ_ASSERT(info.mLength > kFrameHeaderSize);
-  MOZ_ASSERT(info.mLength <= kMaxFrameLength);
+  MOZ_ASSERT(info.mLength > info.mHeaderLength);
+  MOZ_ASSERT(info.mLength <= kMaxMPEGAudioFrameLength);
   return Some(info);
 }
 
-Unit ParseUnit(Span<const uint8_t> aData, bool aConfirmSync, bool aHeaderOnly) {
-  if (aData.Length() < kFrameHeaderSize) {
+Unit ParseUnit(Format aFormat, Span<const uint8_t> aData, bool aConfirmSync,
+               bool aHeaderOnly) {
+  if (aData.Length() < FrameHeaderSize(aFormat)) {
     return {};
   }
 
-  if (StartsWithFrameSync(aData)) {
+  if (StartsWithFrameSync(aFormat, aData)) {
     if (aConfirmSync) {
-      switch (ConfirmSync(aData)) {
+      switch (ConfirmSync(aFormat, aData)) {
         case SyncState::RuledOut:
-          return SkipGarbage(aData);
+          return SkipGarbage(aFormat, aData);
         case SyncState::Undecidable:
           return {};
         case SyncState::Confirmed:
           break;
       }
     }
-    Maybe<FrameInfo> frame = ParseFrameHeader(aData);
+    Maybe<FrameInfo> frame = ParseFrameHeader(aFormat, aData);
     if (!frame) {
       // A frame sync that follows a unit must start a valid frame header.
       return {Unit::Type::Error};
@@ -244,7 +284,7 @@ Unit ParseUnit(Span<const uint8_t> aData, bool aConfirmSync, bool aHeaderOnly) {
     return {Unit::Type::Metadata, kID3v2HeaderSize + size};
   }
 
-  return SkipGarbage(aData);
+  return SkipGarbage(aFormat, aData);
 }
 
 }  // namespace mozilla::mpeg_audio
