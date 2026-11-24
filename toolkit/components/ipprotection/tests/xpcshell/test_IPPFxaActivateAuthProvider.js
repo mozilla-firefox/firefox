@@ -21,6 +21,10 @@ const { ExtensionTestUtils } = ChromeUtils.importESModule(
 
 do_get_profile();
 
+const fxAccounts = ChromeUtils.importESModule(
+  "resource://gre/modules/FxAccounts.sys.mjs"
+).getFxAccountsSingleton();
+
 AddonTestUtils.init(this);
 AddonTestUtils.createAppInfo(
   "xpcshell@tests.mozilla.org",
@@ -32,6 +36,7 @@ AddonTestUtils.createAppInfo(
 ExtensionTestUtils.init(this);
 
 add_setup(async function () {
+  Services.fog.initializeFOG();
   IPProtectionActivator.setAuthProvider(IPPFxaActivateAuthProvider);
   await putServerInRemoteSettings();
   IPProtectionService.uninit();
@@ -319,6 +324,83 @@ add_task(async function test_enroll_success() {
     IPPFxaActivateAuthProvider.entitlement,
     entitlement,
     "Entitlement should be set after a successful enroll"
+  );
+
+  IPProtectionService.uninit();
+  sandbox.restore();
+});
+
+/**
+ * Tests that enroll re-reads a stale sign-in watcher, so that a successful
+ * enrollment leaves the service ready instead of back on "Get started".
+ */
+add_task(async function test_enroll_resyncs_stale_signin_watcher() {
+  const sandbox = sinon.createSandbox();
+  sandbox
+    .stub(IPPFxaActivateAuthProvider, "getEntitlement")
+    .resolves({ error: "parse_error" });
+  const getSignedInUser = sandbox
+    .stub(fxAccounts, "getSignedInUser")
+    .resolves(null);
+
+  await IPProtectionService.init();
+  // Let the watcher's initial read settle before FxA reports a sign-in.
+  await new Promise(resolve => executeSoon(resolve));
+  IPPFxaActivateAuthProvider._setEntitlement(null);
+  IPPSignInWatcher.isSignedIn = false;
+
+  getSignedInUser.resolves({ verified: true });
+  sandbox
+    .stub(IPPFxaActivateAuthProvider, "getToken")
+    .resolves({ token: "fake-token" });
+  sandbox
+    .stub(IPPFxaActivateAuthProvider.guardian, "activate")
+    .resolves({ ok: true, entitlement: createTestEntitlement() });
+  Services.fog.testResetFOG();
+
+  await IPPFxaActivateAuthProvider.enroll();
+
+  Assert.equal(
+    IPProtectionService.state,
+    IPProtectionStates.READY,
+    "The service should be ready after enrolling"
+  );
+  Assert.deepEqual(
+    Glean.ipprotection.error.testGetValue()?.map(e => e.extra.source),
+    ["AuthProvider:SignInDesync"],
+    "Only the desync should be reported"
+  );
+
+  IPProtectionService.uninit();
+  IPPSignInWatcher.isSignedIn = false;
+  sandbox.restore();
+});
+
+/**
+ * Tests that a successful enrollment that still leaves the service
+ * unauthenticated, i.e. back on "Get started", is reported.
+ */
+add_task(async function test_enroll_reports_enrolled_but_unauthenticated() {
+  const sandbox = sinon.createSandbox();
+  useFxaAuthProvider(sandbox, { ...defaultStubOptions, signedIn: false });
+
+  await IPProtectionService.init();
+  IPPFxaActivateAuthProvider._setEntitlement(null);
+
+  sandbox
+    .stub(IPPFxaActivateAuthProvider, "getToken")
+    .resolves({ token: "fake-token" });
+  sandbox
+    .stub(IPPFxaActivateAuthProvider.guardian, "activate")
+    .resolves({ ok: true, entitlement: createTestEntitlement() });
+  Services.fog.testResetFOG();
+
+  await IPPFxaActivateAuthProvider.enroll();
+
+  Assert.deepEqual(
+    Glean.ipprotection.error.testGetValue()?.map(e => e.extra.source),
+    ["AuthProvider:SignInDesync", "AuthProvider:EnrolledButUnauthenticated"],
+    "Both the desync and the outcome should be reported"
   );
 
   IPProtectionService.uninit();

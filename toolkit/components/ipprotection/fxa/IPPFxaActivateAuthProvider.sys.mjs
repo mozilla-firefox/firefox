@@ -26,6 +26,8 @@ ChromeUtils.defineESModuleGetters(lazy, {
     "moz-src:///toolkit/components/ipprotection/fxa/IPPSignInWatcher.sys.mjs",
   IPProtectionService:
     "moz-src:///toolkit/components/ipprotection/IPProtectionService.sys.mjs",
+  IPProtectionStates:
+    "moz-src:///toolkit/components/ipprotection/IPProtectionService.sys.mjs",
   IPPStartupCache:
     "moz-src:///toolkit/components/ipprotection/IPPStartupCache.sys.mjs",
 });
@@ -183,9 +185,11 @@ class IPPFxaActivateAuthProviderSingleton extends IPPAuthProvider {
   }
 
   async enroll() {
-    if (!this.signInWatcher.isSignedIn) {
+    const watcherStale = !this.signInWatcher.isSignedIn;
+    if (watcherStale) {
       // The token request below fails if the account is genuinely signed out,
-      // so a stale watcher is reported rather than treated as fatal.
+      // so a stale watcher is reported and re-read rather than treated as
+      // fatal.
       lazy.logConsole.warn(
         "enroll() called while the sign-in watcher reports signed out."
       );
@@ -193,7 +197,11 @@ class IPPFxaActivateAuthProviderSingleton extends IPPAuthProvider {
     }
     this.#isEnrolling = true;
     this.dispatchEvent(new CustomEvent("IPPAuthProvider:StateChanged"));
+    let enrolled = false;
     try {
+      if (watcherStale) {
+        await this.signInWatcher.refresh?.();
+      }
       const tokenHandle = await this.getToken();
       const { ok, entitlement, error } =
         await this.guardian.activate(tokenHandle);
@@ -201,6 +209,7 @@ class IPPFxaActivateAuthProviderSingleton extends IPPAuthProvider {
         return { isEnrolledAndEntitled: false, error };
       }
       this._setEntitlement(entitlement ?? null);
+      enrolled = true;
       return { isEnrolledAndEntitled: true, error: null };
     } catch (error) {
       lazy.logConsole.error("Enrollment failed:", error);
@@ -211,6 +220,16 @@ class IPPFxaActivateAuthProviderSingleton extends IPPAuthProvider {
     } finally {
       this.#isEnrolling = false;
       lazy.IPProtectionService.updateState();
+      if (
+        enrolled &&
+        lazy.IPProtectionService.state ===
+          lazy.IPProtectionStates.UNAUTHENTICATED
+      ) {
+        lazy.logConsole.warn("Enrolled, but the service is unauthenticated.");
+        Glean.ipprotection.error.record({
+          source: "AuthProvider:EnrolledButUnauthenticated",
+        });
+      }
       this.dispatchEvent(new CustomEvent("IPPAuthProvider:StateChanged"));
     }
   }

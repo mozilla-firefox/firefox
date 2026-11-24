@@ -35,6 +35,15 @@ class IPPSignInWatcherSingleton extends EventTarget {
     this.#refreshFromFxA();
   }
 
+  /**
+   * Re-reads the sign-in state from FxA, for callers that found it stale.
+   *
+   * @returns {Promise<void>}
+   */
+  refresh() {
+    return this.#refreshFromFxA();
+  }
+
   async #refreshFromFxA() {
     let signedIn = false;
     try {
