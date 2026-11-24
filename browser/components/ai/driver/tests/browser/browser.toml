@@ -3,6 +3,7 @@
 skip-if = ["!nightly_build"]
 prefs = [
   "browser.ml.logLevel=Info",
+  "browser.smartwindow.enabled=true",
 ]
 
 ["browser_aidriver_pageextractor.js"]

@@ -183,6 +183,10 @@ class AIDriver:
         """Extract text from a page loaded in a hidden browser."""
         return self._send("get_headless_page_text", url, options or {}, anonymous_fetch)
 
+    def init_conversation(self) -> dict[str, Any]:
+        """Start a new Smart Window conversation and make it the current one."""
+        return self._send("init_conversation")
+
     def quit(self) -> None:
         """Exit Firefox at the end of a session."""
         self.driver.quit()

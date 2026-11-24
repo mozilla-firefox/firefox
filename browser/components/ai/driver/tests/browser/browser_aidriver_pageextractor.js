@@ -73,7 +73,24 @@ add_task(async function test_describe() {
     "A toolkit command is listed."
   );
   Assert.ok(
+    described.commands.includes("init_conversation"),
+    "A browser-only command is listed."
+  );
+  Assert.ok(
     described.commands.includes("describe"),
     "describe lists itself, so clients can probe for it."
+  );
+});
+
+add_task(async function test_init_conversation() {
+  const first = await handleMessage("init_conversation");
+  ok(first.ok, "The command reports success.");
+  ok(first.conversationId, "A conversation id is returned.");
+
+  const second = await handleMessage("init_conversation");
+  Assert.notEqual(
+    second.conversationId,
+    first.conversationId,
+    "A second call starts a distinct conversation."
   );
 });
