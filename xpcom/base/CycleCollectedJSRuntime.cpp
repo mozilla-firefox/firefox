@@ -244,108 +244,6 @@ void NoteWeakMapsTracer::trace(JSObject* aMap, JS::GCCellPtr aKey,
   }
 }
 
-// Report whether the key or value of a weak mapping entry are gray but need to
-// be marked black.
-static void ShouldWeakMappingEntryBeBlack(JSObject* aMap, JS::GCCellPtr aKey,
-                                          JS::GCCellPtr aDelegate,
-                                          JS::GCCellPtr aValue,
-                                          bool* aKeyShouldBeBlack,
-                                          bool* aValueShouldBeBlack) {
-  *aKeyShouldBeBlack = false;
-  *aValueShouldBeBlack = false;
-
-  // If nothing that could be held alive by this entry is marked gray, return.
-  bool keyMightNeedMarking = aKey && JS::GCThingIsMarkedGrayInCC(aKey);
-  bool valueMightNeedMarking = aValue && JS::GCThingIsMarkedGrayInCC(aValue) &&
-                               aValue.kind() != JS::TraceKind::String;
-  if (!keyMightNeedMarking && !valueMightNeedMarking) {
-    return;
-  }
-
-  if (!JS::IsCCTraceKind(aKey.kind())) {
-    aKey = nullptr;
-  }
-
-  if (keyMightNeedMarking) {
-    if (aDelegate && !JS::GCThingIsMarkedGrayInCC(aDelegate) &&
-        (!aMap || !JS::ObjectIsMarkedGray(aMap))) {
-      *aKeyShouldBeBlack = true;
-    }
-  }
-
-  if (aValue && JS::GCThingIsMarkedGrayInCC(aValue) &&
-      (!aKey || !JS::GCThingIsMarkedGrayInCC(aKey)) &&
-      (!aMap || !JS::ObjectIsMarkedGray(aMap)) &&
-      aValue.kind() != JS::TraceKind::Shape) {
-    *aValueShouldBeBlack = true;
-  }
-}
-
-struct FixWeakMappingGrayBitsTracer : public js::WeakMapTracer {
-  explicit FixWeakMappingGrayBitsTracer(JSRuntime* aRt)
-      : js::WeakMapTracer(aRt) {}
-
-  void FixAll() {
-    do {
-      mAnyMarked = false;
-      js::TraceWeakMaps(this);
-    } while (mAnyMarked);
-  }
-
-  void trace(JSObject* aMap, JS::GCCellPtr aKey, JS::GCCellPtr aDelegate,
-             JS::GCCellPtr aValue) override {
-    bool keyShouldBeBlack;
-    bool valueShouldBeBlack;
-    ShouldWeakMappingEntryBeBlack(aMap, aKey, aDelegate, aValue,
-                                  &keyShouldBeBlack, &valueShouldBeBlack);
-    if (keyShouldBeBlack && JS::UnmarkGrayGCThingRecursively(aKey)) {
-      mAnyMarked = true;
-    }
-
-    if (valueShouldBeBlack && JS::UnmarkGrayGCThingRecursively(aValue)) {
-      mAnyMarked = true;
-    }
-  }
-
-  bool mAnyMarked = false;
-};
-
-#ifdef DEBUG
-// Check whether weak maps are marked correctly according to the logic above.
-struct CheckWeakMappingGrayBitsTracer : public js::WeakMapTracer {
-  explicit CheckWeakMappingGrayBitsTracer(JSRuntime* aRt)
-      : js::WeakMapTracer(aRt), mFailed(false) {}
-
-  static bool Check(JSRuntime* aRt) {
-    CheckWeakMappingGrayBitsTracer tracer(aRt);
-    js::TraceWeakMaps(&tracer);
-    return !tracer.mFailed;
-  }
-
-  void trace(JSObject* aMap, JS::GCCellPtr aKey, JS::GCCellPtr aDelegate,
-             JS::GCCellPtr aValue) override {
-    bool keyShouldBeBlack;
-    bool valueShouldBeBlack;
-    ShouldWeakMappingEntryBeBlack(aMap, aKey, aDelegate, aValue,
-                                  &keyShouldBeBlack, &valueShouldBeBlack);
-
-    if (keyShouldBeBlack) {
-      fprintf(stderr, "Weak mapping key %p of map %p should be black\n",
-              aKey.asCell(), aMap);
-      mFailed = true;
-    }
-
-    if (valueShouldBeBlack) {
-      fprintf(stderr, "Weak mapping value %p of map %p should be black\n",
-              aValue.asCell(), aMap);
-      mFailed = true;
-    }
-  }
-
-  bool mFailed;
-};
-#endif  // DEBUG
-
 static void CheckParticipatesInCycleCollection(JS::GCCellPtr aThing,
                                                const char* aName,
                                                void* aClosure) {
@@ -1782,15 +1680,6 @@ nsresult CycleCollectedJSRuntime::TraverseRoots(
 
 bool CycleCollectedJSRuntime::UsefulToMergeZones() const { return false; }
 
-void CycleCollectedJSRuntime::FixWeakMappingGrayBits() const {
-  MOZ_ASSERT(!JS::IsIncrementalGCInProgress(mJSRuntime),
-             "Don't call FixWeakMappingGrayBits during a GC.");
-  MOZ_ASSERT(AreGCGrayBitsValid());
-
-  FixWeakMappingGrayBitsTracer fixer(mJSRuntime);
-  fixer.FixAll();
-}
-
 void CycleCollectedJSRuntime::CheckGrayBits() const {
   MOZ_ASSERT(!JS::IsIncrementalGCInProgress(mJSRuntime),
              "Don't call CheckGrayBits during a GC.");
@@ -1801,7 +1690,7 @@ void CycleCollectedJSRuntime::CheckGrayBits() const {
   // timeout.
 
   MOZ_ASSERT(js::CheckGrayMarkingState(mJSRuntime));
-  MOZ_ASSERT(CheckWeakMappingGrayBitsTracer::Check(mJSRuntime));
+  MOZ_ASSERT(js::CheckWeakMappingGrayBits(mJSRuntime));
 #endif
 }
 

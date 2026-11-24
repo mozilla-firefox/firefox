@@ -3620,7 +3620,7 @@ void nsCycleCollector::FixGrayBits(bool aIsShutdown, TimeLog& aTimeLog) {
 
   if (!aIsShutdown && !wantAllTraces && !grayBitsInvalid) {
     // No need to GC. We only need to fix up the gray bits.
-    mCCJSRuntime->FixWeakMappingGrayBits();
+    js::FixWeakMappingGrayBits(mCCJSRuntime->Runtime());
     aTimeLog.Checkpoint("FixGrayBits::FixWeakMappingGrayBits");
     return;
   }

@@ -108,6 +108,11 @@ struct WeakMapTracer {
 
 extern JS_PUBLIC_API void TraceWeakMaps(WeakMapTracer* trc);
 
+// Gray unmarking does not trace through weak maps. Unmark any gray weak map
+// keys and values that are kept alive by a map and key (or key delegate) that
+// are not gray. This happens in preparation for cycle collection.
+extern JS_PUBLIC_API void FixWeakMappingGrayBits(JSRuntime* rt);
+
 extern JS_PUBLIC_API bool AreGCGrayBitsValid(JSRuntime* rt);
 
 extern JS_PUBLIC_API bool ZoneGlobalsAreAllGray(JS::Zone* zone);
@@ -131,6 +136,10 @@ extern JS_PUBLIC_API void IterateGrayObjects(
 //
 // This doesn't trace weak maps as these are handled separately.
 extern JS_PUBLIC_API bool CheckGrayMarkingState(JSRuntime* rt);
+
+// Check that no weak map entry has gray keys or values that
+// FixWeakMappingGrayBits would unmark.
+extern JS_PUBLIC_API bool CheckWeakMappingGrayBits(JSRuntime* rt);
 #endif
 
 }  // namespace js

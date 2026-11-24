@@ -516,7 +516,6 @@ class CycleCollectedJSRuntime {
 
   nsresult TraverseRoots(nsCycleCollectionNoteRootCallback& aCb);
   virtual bool UsefulToMergeZones() const;
-  void FixWeakMappingGrayBits() const;
   void CheckGrayBits() const;
   bool AreGCGrayBitsValid() const;
   void GarbageCollect(JS::GCOptions options, JS::GCReason aReason) const;

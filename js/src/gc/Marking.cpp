@@ -3327,7 +3327,7 @@ JS_FOR_EACH_PUBLIC_TAGGED_GC_POINTER_TYPE(
  * Handling these implicit edges has two parts:
  * - A special pass enumerating all of the containers that know about the
  *   implicit edges to fix any black-gray edges that have been created. This
- *   is implemented in nsXPConnect::FixWeakMappingGrayBits.
+ *   is implemented in js::FixWeakMappingGrayBits.
  * - To prevent any incorrectly gray objects from escaping to live JS outside
  *   of the containers, we must add unmark-graying read barriers to these
  *   containers.

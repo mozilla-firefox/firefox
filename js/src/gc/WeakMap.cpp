@@ -3,6 +3,7 @@
  * file, You can obtain one at http://mozilla.org/MPL/2.0/. */
 
 #include "gc/PublicIterators.h"
+#include "js/friend/CycleCollector.h"
 #include "vm/JSObject.h"
 
 #include "gc/AtomMarking-inl.h"
@@ -291,6 +292,123 @@ void WeakMapBase::traceAllMappings(WeakMapTracer* tracer) {
     });
   }
 }
+
+// Report whether the key or value of a weak mapping entry are gray but need to
+// be marked black.
+static void ShouldWeakMappingEntryBeBlack(JSObject* map, JS::GCCellPtr key,
+                                          JS::GCCellPtr delegate,
+                                          JS::GCCellPtr value,
+                                          bool* keyShouldBeBlack,
+                                          bool* valueShouldBeBlack) {
+  *keyShouldBeBlack = false;
+  *valueShouldBeBlack = false;
+
+  // If nothing that could be held alive by this entry is marked gray, return.
+  bool keyMightNeedMarking = key && JS::GCThingIsMarkedGrayInCC(key);
+  bool valueMightNeedMarking = value && JS::GCThingIsMarkedGrayInCC(value) &&
+                               value.kind() != JS::TraceKind::String;
+  if (!keyMightNeedMarking && !valueMightNeedMarking) {
+    return;
+  }
+
+  if (!JS::IsCCTraceKind(key.kind())) {
+    key = nullptr;
+  }
+
+  if (keyMightNeedMarking) {
+    if (delegate && !JS::GCThingIsMarkedGrayInCC(delegate) &&
+        (!map || !JS::ObjectIsMarkedGray(map))) {
+      *keyShouldBeBlack = true;
+    }
+  }
+
+  if (value && JS::GCThingIsMarkedGrayInCC(value) &&
+      (!key || !JS::GCThingIsMarkedGrayInCC(key)) &&
+      (!map || !JS::ObjectIsMarkedGray(map)) &&
+      value.kind() != JS::TraceKind::Shape) {
+    *valueShouldBeBlack = true;
+  }
+}
+
+namespace {
+
+struct FixWeakMappingGrayBitsTracer final : public WeakMapTracer {
+  explicit FixWeakMappingGrayBitsTracer(JSRuntime* rt) : WeakMapTracer(rt) {}
+
+  void fixAll() {
+    do {
+      anyMarked = false;
+      WeakMapBase::traceAllMappings(this);
+    } while (anyMarked);
+  }
+
+  void trace(JSObject* map, JS::GCCellPtr key, JS::GCCellPtr delegate,
+             JS::GCCellPtr value) override {
+    bool keyShouldBeBlack;
+    bool valueShouldBeBlack;
+    ShouldWeakMappingEntryBeBlack(map, key, delegate, value, &keyShouldBeBlack,
+                                  &valueShouldBeBlack);
+    if (keyShouldBeBlack && JS::UnmarkGrayGCThingRecursively(key)) {
+      anyMarked = true;
+    }
+
+    if (valueShouldBeBlack && JS::UnmarkGrayGCThingRecursively(value)) {
+      anyMarked = true;
+    }
+  }
+
+  bool anyMarked = false;
+};
+
+#if defined(JS_GC_ZEAL) || defined(DEBUG)
+struct CheckWeakMappingGrayBitsTracer final : public WeakMapTracer {
+  explicit CheckWeakMappingGrayBitsTracer(JSRuntime* rt) : WeakMapTracer(rt) {}
+
+  void trace(JSObject* map, JS::GCCellPtr key, JS::GCCellPtr delegate,
+             JS::GCCellPtr value) override {
+    bool keyShouldBeBlack;
+    bool valueShouldBeBlack;
+    ShouldWeakMappingEntryBeBlack(map, key, delegate, value, &keyShouldBeBlack,
+                                  &valueShouldBeBlack);
+
+    if (keyShouldBeBlack) {
+      fprintf(stderr, "Weak mapping key %p of map %p should be black\n",
+              key.asCell(), map);
+      failed = true;
+    }
+
+    if (valueShouldBeBlack) {
+      fprintf(stderr, "Weak mapping value %p of map %p should be black\n",
+              value.asCell(), map);
+      failed = true;
+    }
+  }
+
+  bool failed = false;
+};
+#endif
+
+}  // namespace
+
+JS_PUBLIC_API void js::FixWeakMappingGrayBits(JSRuntime* rt) {
+  MOZ_ASSERT(!JS::RuntimeHeapIsBusy());
+  MOZ_ASSERT(!rt->gc.isIncrementalGCInProgress());
+  MOZ_ASSERT(rt->gc.areGrayBitsValid());
+
+  FixWeakMappingGrayBitsTracer fixer(rt);
+  fixer.fixAll();
+}
+
+#if defined(JS_GC_ZEAL) || defined(DEBUG)
+JS_PUBLIC_API bool js::CheckWeakMappingGrayBits(JSRuntime* rt) {
+  MOZ_ASSERT(!JS::RuntimeHeapIsBusy());
+  MOZ_ASSERT(!rt->gc.isIncrementalGCInProgress());
+
+  CheckWeakMappingGrayBitsTracer tracer(rt);
+  WeakMapBase::traceAllMappings(&tracer);
+  return !tracer.failed;
+}
+#endif
 
 #if defined(JS_GC_ZEAL)
 
