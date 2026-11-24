@@ -4,6 +4,8 @@
 
 package org.mozilla.fenix.onboarding.view
 
+import mozilla.components.service.fxa.manager.AccountState
+import mozilla.components.service.fxa.store.SyncState
 import org.junit.Assert.assertEquals
 import org.junit.Assert.assertFalse
 import org.junit.Assert.assertTrue
@@ -114,5 +116,23 @@ class OnboardingScreenTest {
         val pages = listOf(termsOfServicePageUiData, syncPairingPageUiData)
 
         assertFalse(isSyncPage(pagesToDisplay = pages, currentPageIndex = 2))
+    }
+
+    @Test
+    fun `GIVEN an authenticated account without a profile WHEN isAccountAuthenticated is called THEN it returns true`() {
+        val syncState = SyncState(account = null, accountState = AccountState.Authenticated)
+        assertTrue(isAccountAuthenticated(syncState))
+    }
+
+    @Test
+    fun `GIVEN an account that is not authenticated WHEN isAccountAuthenticated is called THEN it returns false`() {
+        val syncState = SyncState(account = null, accountState = AccountState.NotAuthenticated)
+        assertFalse(isAccountAuthenticated(syncState))
+    }
+
+    @Test
+    fun `GIVEN an account with authentication problems WHEN isAccountAuthenticated is called THEN it returns false`() {
+        val syncState = SyncState(account = null, accountState = AccountState.AuthenticationProblem)
+        assertFalse(isAccountAuthenticated(syncState))
     }
 }
