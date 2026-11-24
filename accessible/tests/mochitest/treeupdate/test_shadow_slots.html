@@ -80,6 +80,28 @@
         }, { SECTION: [{ SECTION: [{ SECTION: [{ name: "green"} ] }] }] }, ["shadowdiv"]);
     }
 
+    // A slot of the outer host's shadow tree is slotted into the inner host,
+    // so the outer host's light children are rendered through the inner
+    // host's slot. Changing the inner slot's name hides and shows the outer
+    // host's light child.
+    async function reslotNested() {
+      await _dynamicShadowTest("reslotNested",
+        (container) => {
+          testAccessibleTree(container,
+            { SECTION: [{ SECTION: [{ REGION: [{ name: "red"} ] }] }] });
+          container.querySelector(".host").shadowRoot.querySelector(".inner")
+            .shadowRoot.querySelector("slot").name = "nomatch";
+        }, { SECTION: [{ SECTION: [{ REGION: [] }] }] },
+        [evt => evt.accessible.name == "inner"]);
+
+      await _dynamicShadowTest("reslotNested",
+        (container) => {
+          container.querySelector(".host").shadowRoot.querySelector(".inner")
+            .shadowRoot.querySelector("slot").name = "innerslot";
+        }, { SECTION: [{ SECTION: [{ REGION: [{ name: "red"} ] }] }] },
+        [evt => evt.accessible.name == "inner"]);
+    }
+
     async function changeSlotSingleChild() {
       await _dynamicShadowTest("changeSlotSingleChild",
         (container) => {
@@ -219,6 +241,8 @@
 
       await changeSlotNested();
 
+      await reslotNested();
+
       await changeSlotSingleChild();
 
       await changeSlotNoShadow();
@@ -346,6 +370,35 @@
         innerShadow.appendChild(
           document.querySelector("#changeSlotNested > .shadowtree.inner").
             content.cloneNode(true));
+      })();
+    </script>
+  </div>
+
+  <div id="reslotNested">
+    <template class="shadowtree outer">
+      <section class="inner" aria-label="inner">
+        <slot name="outerslot" slot="innerslot"></slot>
+      </section>
+    </template>
+    <template class="shadowtree inner">
+      <style>::slotted(*) { display: block; width: 100px; height: 100px }</style>
+      <slot name="innerslot"></slot>
+    </template>
+    <section class="host">
+      <div style="background: red" aria-label="red" slot="outerslot"></div>
+    </section>
+    <script>
+      (function() {
+        let outerShadow =
+          document.querySelector("#reslotNested > .host").
+            attachShadow({ mode: "open" });
+        outerShadow.appendChild(
+          document.querySelector("#reslotNested > .shadowtree.outer").
+            content.cloneNode(true));
+        outerShadow.querySelector(".inner").attachShadow({ mode: "open" })
+          .appendChild(
+            document.querySelector("#reslotNested > .shadowtree.inner").
+              content.cloneNode(true));
       })();
     </script>
   </div>
