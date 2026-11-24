@@ -295,6 +295,7 @@ impl Wrench {
         dump_shader_source: Option<String>,
         notifier: Option<Box<dyn RenderNotifier>>,
         layer_compositor: Option<Box<dyn Compositor>>,
+        sw_compositor: bool,
         compositor_clips_override: Option<bool>,
     ) -> Self {
         println!("Shader override path: {:?}", shader_override_path);
@@ -318,6 +319,19 @@ impl Wrench {
             Some(compositor) => CompositorConfig::Layer { compositor },
             None => CompositorConfig::default(),
         };
+        #[cfg(feature = "software")]
+        let compositor_config = match window.software_gl() {
+            Some(swgl) if sw_compositor => CompositorConfig::Native {
+                compositor: Box::new(webrender::sw_compositor::SwCompositor::new(
+                    *swgl,
+                    Box::new(crate::null_compositor::NullMappableCompositor { gl: *swgl }),
+                    false,
+                )),
+            },
+            _ => compositor_config,
+        };
+        #[cfg(not(feature = "software"))]
+        let _ = sw_compositor;
 
         let opts = webrender::WebRenderOptions {
             resource_override_path: shader_override_path,

@@ -680,6 +680,7 @@ struct WrenchApp {
     vsync: bool,
     angle: bool,
     software: bool,
+    sw_compositor: bool,
     using_compositor: bool,
     gl_request: GlApiRequest,
     headless: bool,
@@ -853,6 +854,7 @@ impl ApplicationHandler for WrenchApp {
             self.dump_shader_source.clone(),
             notifier,
             layer_compositor,
+            self.sw_compositor,
             self.compositor_clips,
         );
 
@@ -1210,6 +1212,10 @@ fn build_app(args: clap::ArgMatches, proxy: Option<EventLoopProxy<()>>) -> Wrenc
     let headless = args.is_present("headless");
     let angle = args.is_present("angle");
     let software = args.is_present("software");
+    let sw_compositor = args.is_present("sw_compositor");
+    if sw_compositor && !software {
+        panic!("--sw-compositor requires --software");
+    }
     let vsync = args.is_present("vsync");
     let using_compositor = args.is_present("compositor");
     let use_optimized_shaders = !args.is_present("use_unoptimized_shaders");
@@ -1341,7 +1347,7 @@ fn build_app(args: clap::ArgMatches, proxy: Option<EventLoopProxy<()>>) -> Wrenc
     };
 
     WrenchApp {
-        size, vsync, angle, software, using_compositor, gl_request, headless,
+        size, vsync, angle, software, sw_compositor, using_compositor, gl_request, headless,
         res_path, use_optimized_shaders, rebuild, no_subpixel_aa, verbose,
         no_scissor, no_batch_global, color_target_init, precache, dump_shader_source, profiler_ui,
         subcommand, compositor_clips, reftest_specific, reftest_fuzz,
@@ -1469,6 +1475,7 @@ fn run_headless(args: clap::ArgMatches) -> i32 {
         app.dump_shader_source.clone(),
         notifier,
         layer_compositor,
+        app.sw_compositor,
         app.compositor_clips,
     );
 

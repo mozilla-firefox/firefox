@@ -29,4 +29,6 @@ python3 script/headless.py rawtest
 python3 script/headless.py test_invalidation
 CXX=clang++ cargo run ${CARGOFLAGS} --release --features=software -- \
   --software --headless reftest
+CXX=clang++ cargo run ${CARGOFLAGS} --release --features=software -- \
+  --software --sw-compositor --headless reftest reftests/sw-compositor
 popd

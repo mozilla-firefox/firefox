@@ -87,3 +87,83 @@ impl Compositor for NullLayerCompositor {
         }
     }
 }
+
+/// The inner compositor of a `SwCompositor` that composites into the window
+/// itself. It only clears the window before the tiles are composited. Tiles
+/// are composited with a top-left origin, so the output is vertically flipped.
+#[cfg(feature = "software")]
+pub struct NullMappableCompositor {
+    pub gl: swgl::Context,
+}
+
+#[cfg(feature = "software")]
+impl Compositor for NullMappableCompositor {
+    fn create_surface(&mut self, _id: NativeSurfaceId, _tile_size: DeviceIntSize, _is_opaque: bool) {}
+    fn create_external_surface(&mut self, _id: NativeSurfaceId, _is_opaque: bool) {}
+    fn create_backdrop_surface(&mut self, _id: NativeSurfaceId, _color: ColorF) {}
+    fn destroy_surface(&mut self, _id: NativeSurfaceId) {}
+    fn create_tile(&mut self, _id: NativeTileId) {}
+    fn destroy_tile(&mut self, _id: NativeTileId) {}
+    fn attach_external_image(&mut self, _id: NativeSurfaceId, _external_image: ExternalImageId) {}
+    fn bind(
+        &mut self,
+        _id: NativeTileId,
+        _dirty_rect: DeviceIntRect,
+        _valid_rect: DeviceIntRect,
+    ) -> NativeSurfaceInfo {
+        unreachable!("SwCompositor binds its own tiles");
+    }
+    fn unbind(&mut self) {}
+    fn begin_frame(&mut self) {}
+    fn add_surface(
+        &mut self,
+        _id: NativeSurfaceId,
+        _transform: CompositorSurfaceTransform,
+        _clip_rect: DeviceIntRect,
+        _image_rendering: ImageRendering,
+        _rounded_clip_rect: DeviceIntRect,
+        _rounded_clip_radii: ClipRadius,
+    ) {}
+    fn start_compositing(
+        &mut self,
+        clear_color: ColorF,
+        _dirty_rects: &[DeviceIntRect],
+        _opaque_rects: &[DeviceIntRect],
+    ) {
+        let (_, width, height, _) = self.gl.get_color_buffer(0, false);
+        self.gl.clear_color_rect(
+            0, 0, 0, width, height,
+            clear_color.r, clear_color.g, clear_color.b, clear_color.a,
+        );
+    }
+    fn end_frame(&mut self) {}
+    fn deinit(&mut self) {}
+    fn get_capabilities(&self) -> CompositorCapabilities {
+        Default::default()
+    }
+    fn get_window_visibility(&self) -> WindowVisibility {
+        Default::default()
+    }
+}
+
+#[cfg(feature = "software")]
+impl webrender::MappableCompositor for NullMappableCompositor {
+    fn map_tile(
+        &mut self,
+        _id: NativeTileId,
+        _dirty_rect: DeviceIntRect,
+        _valid_rect: DeviceIntRect,
+    ) -> Option<webrender::MappedTileInfo> {
+        None
+    }
+    fn unmap_tile(&mut self) {}
+    fn lock_composite_surface(
+        &mut self,
+        _ctx: *mut std::os::raw::c_void,
+        _external_image_id: ExternalImageId,
+        _composite_info: *mut webrender::SWGLCompositeSurfaceInfo,
+    ) -> bool {
+        false
+    }
+    fn unlock_composite_surface(&mut self, _ctx: *mut std::os::raw::c_void, _external_image_id: ExternalImageId) {}
+}

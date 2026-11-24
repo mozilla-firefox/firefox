@@ -46,7 +46,7 @@ core-foundation = "0.9"
 [features]
 default = [ "env_logger" ]
 headless = [ "osmesa-sys", "osmesa-src" ]
-software = [ "swgl" ]
+software = [ "swgl", "webrender/sw_compositor" ]
 debugger = [ "webrender/debugger" ]
 
 [target.'cfg(target_os = "windows")'.dependencies]

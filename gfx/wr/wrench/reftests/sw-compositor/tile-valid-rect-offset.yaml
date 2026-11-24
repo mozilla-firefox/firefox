@@ -1,0 +1,37 @@
+# Rotated primitives with an axis-aligned rect clip in a picture cache tile
+# whose valid rect does not start at the tile origin. Nothing covers the
+# top-left corner of the tile, and the blue square keeps the clip from being
+# shared by every primitive of the tile.
+---
+root:
+  items:
+    - type: rect
+      bounds: [60, 70, 20, 20]
+      color: [0, 0, 255, 1]
+    - type: clip
+      id: 2
+      bounds: [100, 100, 300, 200]
+    - type: clip-chain
+      id: 3
+      clips: [2]
+    - type: stacking-context
+      transform: rotate(30)
+      transform-origin: 250 200
+      items:
+        - type: gradient
+          bounds: [100, 50, 300, 300]
+          start: 0 0
+          end: 300 0
+          stops: [0.0, [0, 0, 255, 1], 0.5, [255, 128, 0, 1], 1.0, [255, 255, 0, 1]]
+          clip-chain: 3
+    - type: stacking-context
+      transform: rotate(-20)
+      transform-origin: 250 200
+      items:
+        - type: rect
+          bounds: [180, 20, 140, 360]
+          color: [0, 128, 0, 0.8]
+          clip-chain: 3
+        - image: checkerboard(2, 16, 16)
+          bounds: [280, 40, 64, 320]
+          clip-chain: 3

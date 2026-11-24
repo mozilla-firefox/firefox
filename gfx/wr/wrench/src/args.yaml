@@ -42,6 +42,9 @@ args:
   - software:
       long: software
       help: Enable software rendering
+  - sw_compositor:
+      long: sw-compositor
+      help: Composite picture cache tiles with the software compositor (requires --software)
   - size:
       short: s
       long: size

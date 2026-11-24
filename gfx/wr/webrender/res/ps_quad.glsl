@@ -67,11 +67,11 @@ varying highp vec2 vLocalPos;
 #endif
 
 #ifdef WR_QUAD_ROUNDED_CLIP
-// xy: center of the clip rect in the render target, in the same space as
-// gl_FragCoord. zw: half size of the clip rect minus the radius.
+// Position relative to the center of the clip rect, in device pixels.
+varying highp vec2 v_rounded_clip_pos;
+// xy: half size of the clip rect minus the radius. z: radius.
+// w: 1.0 if the clip is enabled.
 flat varying highp vec4 v_rounded_clip;
-// x: radius, y: 1.0 if the clip is enabled.
-flat varying highp vec2 v_rounded_clip_radius;
 #endif
 
 #ifdef WR_VERTEX_SHADER
@@ -223,6 +223,7 @@ QuadInstance decode_instance() {
 
 struct VertexInfo {
     vec2 local_pos;
+    vec2 device_pos;
 };
 
 VertexInfo write_vertex(vec2 local_pos,
@@ -251,6 +252,7 @@ VertexInfo write_vertex(vec2 local_pos,
     } else {
         vi.local_pos = local_pos;
     }
+    vi.device_pos = device_pos;
 
     // Apply offsets for the render task to get correct screen location.
     vec2 final_offset = -content_origin + task_rect.p0;
@@ -391,12 +393,11 @@ PrimitiveInfo quad_primive_info(void) {
     if ((qi.quad_flags & QF_ROUNDED_RECT_CLIP) != 0) {
         QuadRoundedClip clip = fetch_rounded_clip(qi.prim_address_f);
         vec2 half_size = 0.5 * (clip.rect.p1 - clip.rect.p0);
-        vec2 center = clip.rect.p0 + half_size - task.content_origin + task.task_rect.p0;
-        v_rounded_clip = vec4(center, half_size - clip.radius);
-        v_rounded_clip_radius = vec2(clip.radius, 1.0);
+        v_rounded_clip_pos = vi.device_pos - (clip.rect.p0 + half_size);
+        v_rounded_clip = vec4(half_size - clip.radius, clip.radius, 1.0);
     } else {
+        v_rounded_clip_pos = vec2(0.0);
         v_rounded_clip = vec4(0.0);
-        v_rounded_clip_radius = vec2(0.0);
     }
 #endif
 
@@ -466,15 +467,15 @@ vec4 pattern_fragment(vec4 base_color);
 
 #ifdef WR_QUAD_ROUNDED_CLIP
 bool rounded_clip_is_enabled() {
-    return v_rounded_clip_radius.y != 0.0;
+    return v_rounded_clip.w != 0.0;
 }
 
 float rounded_clip_fragment() {
     // Signed distance to a rounded box centered on the origin, see
     // https://www.shadertoy.com/view/4llXD7
     // The position is in device pixels, so the AA range is one.
-    float radius = v_rounded_clip_radius.x;
-    vec2 q = abs(gl_FragCoord.xy - v_rounded_clip.xy) - v_rounded_clip.zw;
+    float radius = v_rounded_clip.z;
+    vec2 q = abs(v_rounded_clip_pos) - v_rounded_clip.xy;
     // Uniform per primitive. With a zero radius the clip is a rectangle.
     float dist = radius == 0.0
         ? max(q.x, q.y)
@@ -486,16 +487,17 @@ float rounded_clip_fragment() {
 #ifdef SWGL_DRAW_SPAN
 // The span commits can only apply the clip if it is a rectangle.
 bool rounded_clip_span_is_supported() {
-    return !rounded_clip_is_enabled() || v_rounded_clip_radius.x == 0.0;
+    return !rounded_clip_is_enabled() || v_rounded_clip.z == 0.0;
 }
 
-// The clip rect to pass to the span commits.
+// The clip rect to pass to the span commits, in the same space as
+// gl_FragCoord.
 vec4 rounded_clip_span_rect() {
     if (!rounded_clip_is_enabled()) {
         return SWGL_NO_CLIP_RECT;
     }
-    return vec4(v_rounded_clip.xy - v_rounded_clip.zw,
-                v_rounded_clip.xy + v_rounded_clip.zw);
+    vec2 center = swgl_forceScalar(gl_FragCoord.xy - v_rounded_clip_pos);
+    return vec4(center - v_rounded_clip.xy, center + v_rounded_clip.xy);
 }
 #endif
 #endif
