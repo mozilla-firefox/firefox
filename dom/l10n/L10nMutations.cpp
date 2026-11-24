@@ -178,11 +178,6 @@ void L10nMutations::ResumeObserving() { mObserving = true; }
 
 void L10nMutations::WillRefresh(mozilla::TimeStamp aTime) {
   StopRefreshObserver();
-  // Translations that can be formatted without waiting are resolved
-  // synchronously, so run their promise reactions now, before this tick's
-  // layout and paint.
-  RefPtr<Document> doc = GetDocument();
-  nsAutoMicroTaskForDocument mt(doc);
   FlushPendingTranslations();
 }
 
