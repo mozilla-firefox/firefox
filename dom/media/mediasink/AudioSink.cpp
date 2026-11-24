@@ -748,7 +748,7 @@ void AudioSink::GetDebugInfo(dom::MediaSinkDebugInfo& aInfo) {
   aInfo.mAudioSinkWrapper.mAudioSink.mIsPlaying = mPlaying;
   aInfo.mAudioSinkWrapper.mAudioSink.mOutputRate = mOutputRate;
   aInfo.mAudioSinkWrapper.mAudioSink.mWritten = mWritten;
-  aInfo.mAudioSinkWrapper.mAudioSink.mHasErrored = bool(mErrored);
+  aInfo.mAudioSinkWrapper.mAudioSink.mHasErrored = mErrored.load();
   aInfo.mAudioSinkWrapper.mAudioSink.mPlaybackComplete =
       mAudioStream ? mAudioStream->IsPlaybackCompleted() : false;
 }

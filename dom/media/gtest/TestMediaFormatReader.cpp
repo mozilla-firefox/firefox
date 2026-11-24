@@ -807,7 +807,7 @@ TEST_F(VideoSkipTest, AudioResetDoesNotOrphanVideoSkip) {
   RefPtr video = mProxy->RequestVideoData(TimeUnit::Zero(),
                                           /* aRequestNextKeyFrame */ true);
   SpinEventLoopUntil("video skip started"_ns,
-                     [&]() { return bool(mSkipStarted); });
+                     [&]() { return mSkipStarted.load(); });
   const int demuxCountBeforeSkip = mVideoDemuxCount;
 
   mProxy->ResetDecode(MediaFormatReader::TrackSet(TrackType::kAudioTrack));
@@ -1408,7 +1408,7 @@ TEST_F(FlushErrorAfterResetTest, AudioRecoversWhenReadWithoutSeek) {
         mAudioResult.emplace(std::move(aValue));
       });
   SpinEventLoopUntil("decode failed"_ns, [&]() {
-    return bool(mDecodeFailed) || mAudioResult.isSome();
+    return mDecodeFailed.load() || mAudioResult.isSome();
   });
   ASSERT_TRUE(mDecodeFailed);
   AwaitErrorHandled();

@@ -61,7 +61,7 @@ void DirectMediaTrackListener::IncreaseDisabled(DisabledTrackMode aMode) {
        "mode {}. Current counts are: freeze={}, black={}",
        fmt::ptr(this),
        aMode == DisabledTrackMode::SILENCE_FREEZE ? "freeze" : "black",
-       int32_t(mDisabledFreezeCount), int32_t(mDisabledBlackCount)));
+       mDisabledFreezeCount.load(), mDisabledBlackCount.load()));
 }
 
 void DirectMediaTrackListener::DecreaseDisabled(DisabledTrackMode aMode) {
@@ -80,7 +80,7 @@ void DirectMediaTrackListener::DecreaseDisabled(DisabledTrackMode aMode) {
        "mode {}. Current counts are: freeze={}, black={}",
        fmt::ptr(this),
        aMode == DisabledTrackMode::SILENCE_FREEZE ? "freeze" : "black",
-       int32_t(mDisabledFreezeCount), int32_t(mDisabledBlackCount)));
+       mDisabledFreezeCount.load(), mDisabledBlackCount.load()));
 }
 
 }  // namespace mozilla

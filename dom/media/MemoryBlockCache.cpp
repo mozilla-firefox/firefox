@@ -16,9 +16,9 @@ namespace mozilla {
 
 #undef LOG
 LazyLogModule gMemoryBlockCacheLog("MemoryBlockCache");
-#define LOG(x, ...)                                                           \
-  MOZ_LOG_FMT(gMemoryBlockCacheLog, LogLevel::Debug, "{} " x, fmt::ptr(this), \
-              ##__VA_ARGS__)
+#define LOG(x, ...)                                           \
+  MOZ_LOG_FMT(gMemoryBlockCacheLog, LogLevel::Debug, "{} " x, \
+              fmt::ptr(this), ##__VA_ARGS__)
 
 // Combined sizes of all MemoryBlockCache buffers.
 // Initialized to 0 by non-local static initialization.
@@ -90,7 +90,7 @@ bool MemoryBlockCache::EnsureBufferCanContain(size_t aContentLength) {
         size_t(StaticPrefs::media_memory_caches_combined_limit_kb()) * 1024,
         sysmem * StaticPrefs::media_memory_caches_combined_limit_pc_sysmem() /
             100);
-    const size_t currentSizes = static_cast<size_t>(gCombinedSizes);
+    const size_t currentSizes = gCombinedSizes.load();
     if (currentSizes + extra > limit) {
       LOG("EnsureBufferCanContain({}) - buffer size {}, wanted + {} = {};"
           " combined sizes {} + {} > limit {}",

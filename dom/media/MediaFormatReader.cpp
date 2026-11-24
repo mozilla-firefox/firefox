@@ -2736,7 +2736,7 @@ void MediaFormatReader::Update(TrackType aTrack) {
       "Update({}) ni={} no={} in:{} out:{} qs={} decoding:{} flushing:{} "
       "desc:{} pending:{} waiting:{} eos:{} ds:{} sid:{} waitcdm:{}",
       TrackTypeToStr(aTrack), needInput, needOutput, decoder.mNumSamplesInput,
-      decoder.mNumSamplesOutput, uint32_t(size_t(decoder.mSizeOfQueue)),
+      decoder.mNumSamplesOutput, decoder.mSizeOfQueue.load(),
       decoder.mDecodeRequest.Exists(), decoder.mFlushing,
       decoder.mDescription.get(), uint32_t(decoder.mOutput.Length()),
       !!decoder.mWaitingForDataStartTime, decoder.mDemuxEOS,

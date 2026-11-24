@@ -21,7 +21,7 @@ static DDMediaLogs* sMediaLogs;
 
 /* static */
 void DecoderDoctorLogger::Init() {
-  MOZ_ASSERT(static_cast<LogState>(sLogState) == scDisabled);
+  MOZ_ASSERT(sLogState.load() == scDisabled);
   if (MOZ_LOG_TEST(sDecoderDoctorLoggerLog, LogLevel::Error) ||
       MOZ_LOG_TEST(sDecoderDoctorLoggerEndLog, LogLevel::Error)) {
     EnableLogging();
@@ -57,7 +57,7 @@ static StaticAutoPtr<DDLogDeleter> sDDLogDeleter;
 /* static */
 void DecoderDoctorLogger::PanicInternal(const char* aReason, bool aDontBlock) {
   for (;;) {
-    const LogState state = static_cast<LogState>(sLogState);
+    const LogState state = sLogState.load();
     if (state == scEnabling && !aDontBlock) {
       // Wait for the end of the enabling process (unless we're in it, in which
       // case we don't want to block.)
@@ -95,7 +95,7 @@ bool DecoderDoctorLogger::EnsureLogIsEnabled() {
   return false;
 #else
   for (;;) {
-    LogState state = static_cast<LogState>(sLogState);
+    LogState state = sLogState.load();
     switch (state) {
       case scDisabled:
         // Currently disabled, try to be the one to enable.

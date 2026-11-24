@@ -1334,8 +1334,7 @@ AudioCallbackDriver::TryStartingFallbackDriver() {
 RefPtr<AudioCallbackDriver::FallbackWrapper>
 AudioCallbackDriver::CreateFallbackSystemClockDriver() {
   MOZ_ASSERT(mFallbackDriverState == FallbackDriverState::Running);
-  DebugOnly<AudioStreamState> audioStreamState =
-      static_cast<AudioStreamState>(mAudioStreamState);
+  DebugOnly<AudioStreamState> audioStreamState = mAudioStreamState.load();
   MOZ_ASSERT(audioStreamState == AudioStreamState::None ||
              audioStreamState == AudioStreamState::Pending ||
              audioStreamState == AudioStreamState::ChangingDevice);

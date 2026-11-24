@@ -60,9 +60,9 @@ using CrashReporter::AnnotationTable;
 
 namespace mozilla::gmp {
 
-#define GMP_PARENT_LOG_DEBUG(x, ...)                                       \
-  GMP_LOG_DEBUG("GMPParent[{}|childPid={}] " x, fmt::ptr(this), mChildPid, \
-                ##__VA_ARGS__)
+#define GMP_PARENT_LOG_DEBUG(x, ...)                            \
+  GMP_LOG_DEBUG("GMPParent[{}|childPid={}] " x, fmt::ptr(this), \
+                mChildPid, ##__VA_ARGS__)
 
 #ifdef __CLASS__
 #  undef __CLASS__
@@ -579,8 +579,7 @@ void GMPParent::CloseIfUnused() {
 
 void GMPParent::CloseActive(bool aDieWhenUnloaded) {
   MOZ_ASSERT(GMPEventTarget()->IsOnCurrentThread());
-  GMP_PARENT_LOG_DEBUG("{}: state {}", __FUNCTION__,
-                       uint32_t(GMPState(mState)));
+  GMP_PARENT_LOG_DEBUG("{}: state {}", __FUNCTION__, uint32_t(mState.load()));
 
   if (aDieWhenUnloaded) {
     mDeleteProcessOnlyOnUnload = true;  // don't allow this to go back...
@@ -841,7 +840,7 @@ static void GMPNotifyObservers(const uint32_t aPluginID,
 void GMPParent::ActorDestroy(ActorDestroyReason aWhy) {
   MOZ_ASSERT(GMPEventTarget()->IsOnCurrentThread());
   GMP_PARENT_LOG_DEBUG("{}: ({}), state={}", __FUNCTION__, (int)aWhy,
-                       uint32_t(GMPState(mState)));
+                       uint32_t(mState.load()));
 
   if (AbnormalShutdown == aWhy) {
     glean::subprocess::abnormal_abort.Get("gmplugin"_ns).Add(1);
