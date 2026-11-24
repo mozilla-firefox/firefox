@@ -596,6 +596,22 @@ class BidiBrowsingContextProtocolPart(ProtocolPart):
         """
         pass
 
+    @abstractmethod
+    async def set_viewport(self,
+                           context: Optional[str],
+                           viewport: Union[Optional[Mapping[str, Any]], "Undefined"],
+                           device_pixel_ratio: Union[Optional[float], "Undefined"],
+                           user_contexts: Optional[List[str]]) -> None:
+        """
+        Modifies specific viewport characteristics for a browsing context or
+        user contexts.
+
+        `viewport=None` or `device_pixel_ratio=None` clears the corresponding
+        override.
+        Passing `UNDEFINED` means the corresponding field is omitted from the
+        BiDi command.
+        """
+        pass
 
 class BidiEventsProtocolPart(ProtocolPart):
     """Protocol part for managing BiDi events"""

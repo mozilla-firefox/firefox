@@ -809,6 +809,76 @@
                 }
             },
             /**
+             * `browsingContext <https://www.w3.org/TR/webdriver-bidi/#module-browsingContext>`_ module.
+             */
+            browsing_context: {
+                /**
+                 * Sets the viewport and/or device pixel ratio override for the
+                 * specified browsing context. Matches the
+                 * `browsingContext.setViewport
+                 * <https://www.w3.org/TR/webdriver-bidi/#command-browsingContext-setViewport>`_
+                 * WebDriver BiDi command.
+                 *
+                 * @example
+                 * await test_driver.bidi.browsing_context.set_viewport(t, {
+                 *     devicePixelRatio: 2
+                 * });
+                 *
+                 * @param {Test} test - The current testharness Test object used to register
+                 * cleanup.
+                 * @param {object} params - Parameters for the command.
+                 * @param {Context} [params.context] The optional browsing
+                 * context to update. If omitted and `params.userContexts` is
+                 * not provided, this wrapper defaults to the current window.
+                 * @param {null|object} [params.viewport] The optional viewport
+                 * override. Passing `null` clears the viewport override.
+                 * @param {null|number} [params.devicePixelRatio] The optional
+                 * device pixel ratio override. Passing `null` clears the DPR
+                 * override.
+                 * @param {Array.<string>} [params.userContexts] The
+                 * optional user contexts to update.
+                 * @returns {Promise<void>} Resolves when the viewport settings
+                 * are successfully applied.
+                 */
+                set_viewport: async function(test, params) {
+                    assertBidiIsEnabled();
+                    // Validate before changing browser state so an invalid
+                    // call cannot leave an override without cleanup.
+                    if (!test || typeof test.add_cleanup !== "function") {
+                        throw new TypeError(
+                            "set_viewport requires a testharness Test object " +
+                            "as its first argument");
+                    }
+
+                    const cleanupParams = {};
+
+                    if (params.context !== undefined) {
+                        cleanupParams.context = params.context;
+                    } else if (params.userContexts !== undefined) {
+                        cleanupParams.userContexts = params.userContexts;
+                    }
+                    // Clear only non-null overrides set by this call.
+                    if (params.viewport !== undefined &&
+                        params.viewport !== null) {
+                        cleanupParams.viewport = null;
+                    }
+                    if (params.devicePixelRatio !== undefined &&
+                        params.devicePixelRatio !== null) {
+                        cleanupParams.devicePixelRatio = null;
+                    }
+
+                    await window.test_driver_internal.bidi.browsing_context
+                        .set_viewport(params);
+
+                    if ("viewport" in cleanupParams ||
+                        "devicePixelRatio" in cleanupParams) {
+                        test.add_cleanup(() =>
+                            window.test_driver_internal.bidi.browsing_context
+                                .set_viewport(cleanupParams));
+                    }
+                },
+            },
+            /**
              * `speculation <https://wicg.github.io/nav-speculation/prefetch.html>`_ module.
              */
             speculation: {
@@ -2750,6 +2820,12 @@
                             'bidi.bluetooth.descriptor_event_generated.on is not implemented by testdriver-vendor.js');
                     }
                 }
+            },
+            browsing_context: {
+                set_viewport: function() {
+                    throw new Error(
+                        'bidi.browsing_context.set_viewport is not implemented by testdriver-vendor.js');
+                },
             },
             emulation: {
                 set_geolocation_override: function (params) {
