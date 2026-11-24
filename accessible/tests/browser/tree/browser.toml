@@ -61,6 +61,8 @@ skip-if = [
 
 ["browser_test_nsIAccessibleDocument_URL.js"]
 
+["browser_unrendered_listener_attribute.js"]
+
 ["browser_view_transition.js"]
 
 ["browser_xul_aria_grid.js"]

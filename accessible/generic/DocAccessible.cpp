@@ -977,6 +977,17 @@ void DocAccessible::AttributeChanged(dom::Element* aElement,
 
   LocalAccessible* accessible = GetAccessibleOrDocument(aElement);
   if (!accessible) {
+    if (aAttribute == nsGkAtoms::label) {
+      HTMLComboboxAccessible::SelectedOptionLabelMaybeChanged(this, aElement);
+      return;
+    }
+
+    // An element that isn't rendered can't get an Accessible; frame
+    // construction will notify us if it becomes rendered later.
+    if (!aElement->GetPrimaryFrame() &&
+        !nsCoreUtils::CanCreateAccessibleWithoutFrame(aElement)) {
+      return;
+    }
     if (aModType == AttrModType::Addition &&
         aria::AttrCharacteristicsFor(aAttribute) & ATTR_GLOBAL) {
       // The element doesn't have an Accessible, but a global ARIA attribute
@@ -989,10 +1000,6 @@ void DocAccessible::AttributeChanged(dom::Element* aElement,
       // Accessible. Create one if appropriate.
       ContentInserted(aElement, aElement->GetNextSibling());
       return;
-    }
-
-    if (aAttribute == nsGkAtoms::label) {
-      HTMLComboboxAccessible::SelectedOptionLabelMaybeChanged(this, aElement);
     }
 
     // The element doesn't have an Accessible, so ignore the attribute
