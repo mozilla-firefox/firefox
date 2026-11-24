@@ -323,10 +323,16 @@ that justifies a placement the rebuild never makes has nothing to harvest.
 ## Review-tool side
 
 `moz-phab submit` updates the diffs but leaves the stack's parent/child edges
-where they were. Scope the submit to the commits you rewrote: a full-range
-submit updates revisions that did not change, and any rewrite of a mid-stack
-commit, a message-only reword included, re-parents the commits above it, so
-their revisions get no-op updates on the next push. Then run
+where they were. Submit every commit that now sits on different code than when
+it was uploaded, because it or a commit below it moved, changed or was dropped:
+Lando applies each stored diff on top of the one below it, and a hunk's context
+still holds the neighbours of the old order, so such a commit can fail to land.
+A range-diff `=` shows that the commit's own change is unchanged, not that its
+diff still applies at the new position: range-diff may check less context than
+the diff Lando applies. Leave out the commits above the rewritten range when it
+nets to its original diff, so that they sit on the same code as before: a
+message-only reword of a mid-stack commit re-parents them without changing their
+diffs, so a full-range submit gives their revisions no-op updates. Then run
 `moz-phab reorg [start_rev] [end_rev]` to recompute the edges from the local
 order (`docs/contributing/stack_quickref.md`).
 
