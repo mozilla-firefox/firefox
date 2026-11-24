@@ -994,6 +994,7 @@ var PlacesSearchBox = {
         break;
     }
     this.focus();
+    this.searchFilter.select();
   },
 
   /**

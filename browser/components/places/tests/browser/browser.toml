@@ -181,6 +181,8 @@ https_first_disabled = true
 
 ["browser_library_downloads.js"]
 
+["browser_library_find_selects_search.js"]
+
 ["browser_library_left_pane_middleclick.js"]
 
 ["browser_library_left_pane_select_hierarchy.js"]
