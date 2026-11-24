@@ -2145,7 +2145,7 @@ uint32_t RuntimeService::ClampedHardwareConcurrency(bool aRFPHardcoded,
     return 4;
   }
 
-  return std::min(uint32_t(unclampedHardwareConcurrency),
+  return std::min(unclampedHardwareConcurrency.load(),
                   StaticPrefs::dom_maxHardwareConcurrency());
 }
 
