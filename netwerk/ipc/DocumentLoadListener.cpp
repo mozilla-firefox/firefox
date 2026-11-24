@@ -1486,10 +1486,6 @@ auto DocumentLoadListener::OpenInParent(nsDocShellLoadState* aLoadState,
               browsingContext->GetContentParent(), &rv);
 }
 
-base::ProcessId DocumentLoadListener::OtherPid() const {
-  return mContentParent ? mContentParent->OtherPid() : base::ProcessId{0};
-}
-
 void DocumentLoadListener::FireStateChange(uint32_t aStateFlags,
                                            nsresult aStatus) {
   nsCOMPtr<nsIChannel> request = GetChannel();
@@ -2714,11 +2710,8 @@ void DocumentLoadListener::TriggerRedirectToRealChannel(
 
   nsTArray<ParentEndpoint> parentEndpoints(aStreamFilterRequests.Length());
   if (!aStreamFilterRequests.IsEmpty()) {
-    base::ProcessId pid =
-        contentParent ? contentParent->OtherPid() : base::ProcessId{0};
-
     for (StreamFilterRequest& request : aStreamFilterRequests) {
-      if (!pid) {
+      if (!contentParent) {
         request.mPromise->Reject(false, __func__);
         request.mPromise = nullptr;
         continue;

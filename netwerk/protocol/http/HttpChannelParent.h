@@ -112,8 +112,6 @@ class HttpChannelParent final : public nsIInterfaceRequestor,
   // Callback while background channel is destroyed.
   void OnBackgroundParentDestroyed();
 
-  base::ProcessId OtherPid() const;
-
   // Inform the child actor that our referrer info was modified late during
   // BeginConnect.
   void OverrideReferrerInfoDuringBeginConnect(nsIReferrerInfo* aReferrerInfo);

@@ -290,8 +290,6 @@ class nsHttpChannel final : public HttpBaseChannel,
   // Should only be called on the same thread as ODA.
   bool IsReadingFromCache() const { return mIsReadingFromCache; }
 
-  base::ProcessId ProcessId();
-
   using ChildEndpointPromise =
       MozPromise<mozilla::ipc::Endpoint<extensions::PStreamFilterChild>, bool,
                  true>;

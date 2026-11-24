@@ -290,13 +290,6 @@ void HttpChannelParent::CleanupBackgroundChannel() {
   }
 }
 
-base::ProcessId HttpChannelParent::OtherPid() const {
-  if (mIPCClosed) {
-    return 0;
-  }
-  return PHttpChannelParent::OtherPid();
-}
-
 //-----------------------------------------------------------------------------
 // HttpChannelParent::nsISupports
 //-----------------------------------------------------------------------------

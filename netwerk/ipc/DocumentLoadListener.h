@@ -273,10 +273,6 @@ class DocumentLoadListener : public nsIInterfaceRequestor,
   // if connected to the parent process.
   dom::ContentParent* GetContentParent() const { return mContentParent; }
 
-  // The process id of the content process that we are being called from
-  // or 0 initiated from a parent process load.
-  base::ProcessId OtherPid() const;
-
   [[nodiscard]] RefPtr<ChildEndpointPromise> AttachStreamFilter();
 
   // EarlyHints aren't supported on ParentProcessDocumentChannels yet, allow

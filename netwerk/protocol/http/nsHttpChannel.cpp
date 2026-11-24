@@ -8671,25 +8671,9 @@ nsHttpChannel::SetChannelIsForDownload(bool aChannelIsForDownload) {
   return HttpBaseChannel::SetChannelIsForDownload(aChannelIsForDownload);
 }
 
-base::ProcessId nsHttpChannel::ProcessId() {
-  nsCOMPtr<nsIParentChannel> parentChannel;
-  NS_QueryNotificationCallbacks(this, parentChannel);
-  if (RefPtr<HttpChannelParent> httpParent = do_QueryObject(parentChannel)) {
-    return httpParent->OtherPid();
-  }
-  if (RefPtr<DocumentLoadListener> docParent = do_QueryObject(parentChannel)) {
-    return docParent->OtherPid();
-  }
-  return base::GetCurrentProcId();
-}
-
 auto nsHttpChannel::AttachStreamFilter() -> RefPtr<ChildEndpointPromise> {
   LOG(("nsHttpChannel::AttachStreamFilter [this=%p]", this));
   MOZ_ASSERT(!LoadOnStartRequestCalled());
-
-  if (!ProcessId()) {
-    return ChildEndpointPromise::CreateAndReject(false, __func__);
-  }
 
   nsCOMPtr<nsIParentChannel> parentChannel;
   NS_QueryNotificationCallbacks(this, parentChannel);
@@ -8700,6 +8684,9 @@ auto nsHttpChannel::AttachStreamFilter() -> RefPtr<ChildEndpointPromise> {
   // here until CallOnStartRequest, and attach the StreamFilter before the
   // multipart handler (in the parent process!) if applicable.
   if (RefPtr<DocumentLoadListener> docParent = do_QueryObject(parentChannel)) {
+    if (!docParent->GetContentParent()) {
+      return ChildEndpointPromise::CreateAndReject(false, __func__);
+    }
     StreamFilterRequest* request = mStreamFilterRequests.AppendElement();
     request->mPromise = new ChildEndpointPromise::Private(__func__);
     return request->mPromise;
