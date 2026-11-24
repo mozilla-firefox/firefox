@@ -5739,22 +5739,8 @@ int XREMain::XRE_mainStartup(bool* aExitFlag) {
 
 #if defined(MOZ_HAS_REMOTE)
   if (gRemoteService) {
-    // Use the full profile path to identify the profile.
-    nsCString profilePath;
-
-#  ifdef XP_WIN
-    nsString path;
-    rv = mProfD->GetPath(path);
+    rv = gRemoteService->SetProfile(mProfD, profile);
     if (NS_SUCCEEDED(rv)) {
-      CopyUTF16toUTF8(path, profilePath);
-    }
-#  else
-    rv = mProfD->GetNativePath(profilePath);
-#  endif
-
-    if (NS_SUCCEEDED(rv)) {
-      gRemoteService->SetProfile(profilePath);
-
       if (!mDisableRemoteClient) {
         // Try to remote the entire command line. If this fails, start up
         // normally.
@@ -5769,19 +5755,6 @@ int XREMain::XRE_mainStartup(bool* aExitFlag) {
         gRemoteService->SetStartupToken(startupToken);
 #  endif
         rv = gRemoteService->StartClient();
-
-        if (rv == NS_ERROR_NOT_AVAILABLE && profile) {
-          // Older versions would use the profile name in preference to the
-          // path.
-          nsCString profileName;
-          profile->GetName(profileName);
-          gRemoteService->SetProfile(profileName);
-
-          rv = gRemoteService->StartClient();
-
-          // Reset back to the path.
-          gRemoteService->SetProfile(profilePath);
-        }
 
         if (NS_SUCCEEDED(rv)) {
           *aExitFlag = true;

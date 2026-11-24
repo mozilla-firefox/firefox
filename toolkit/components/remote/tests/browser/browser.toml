@@ -1,5 +1,10 @@
 [DEFAULT]
 
+["browser_remote_profile_path.js"]
+skip-if = [
+  "os == 'win'", # Profile paths are not resolved on Windows.
+]
+
 ["browser_runtime_remote.js"]
 run-if = [
   "os != 'linux'", # Linux clients cannot remote themselves.
