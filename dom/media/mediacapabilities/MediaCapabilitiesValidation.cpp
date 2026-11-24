@@ -188,13 +188,14 @@ static ValidationResult CheckMIMETypeValidity(
   // See: bug 2024767, https://github.com/w3c/media-capabilities/issues/235, and
   // https://github.com/w3c/media-capabilities/issues/238.
   //
-  // In MediaSource, audio/mpeg allows a single codec too: its byte stream
-  // format says that the codecs parameter must not be used.
+  // In MediaSource, audio/mpeg and audio/aac allow a single codec too: their
+  // byte stream format says that the codecs parameter must not be used.
   // https://w3c.github.io/mse-byte-stream-format-mpeg-audio/#mime-types
   const bool isMediaSourceMPEGAudio =
       aMediaType.is<MediaDecodingType>() &&
       aMediaType.as<MediaDecodingType>() == MediaDecodingType::Media_source &&
-      mimetype == MEDIAMIMETYPE("audio/mpeg");
+      (mimetype == MEDIAMIMETYPE("audio/mpeg") ||
+       mimetype == MEDIAMIMETYPE("audio/aac"));
   const size_t numParams = aMime.GetParameterCount();
   if (((IsSingleCodecType(aMime) && !IsMediaTypeWebRTC(aMediaType)) ||
        isMediaSourceMPEGAudio) &&

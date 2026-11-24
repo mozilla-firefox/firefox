@@ -63,6 +63,14 @@ runWithMSE(async ms => {
     (await decodingInfo("audio/aac")).supported,
     "decodingInfo() supports audio/aac in MediaSource"
   );
+  // A type that allows a single codec must have no parameters.
+  for (const type of ['audio/aac; codecs="mp4a.40.2"', "audio/aac; foo=bar"]) {
+    await must_reject(
+      () => decodingInfo(type),
+      `decodingInfo() rejects ${type} in MediaSource`,
+      "TypeError"
+    );
+  }
 
   await SpecialPowers.pushPrefEnv({
     set: [["media.mediasource.aac.enabled", false]],
