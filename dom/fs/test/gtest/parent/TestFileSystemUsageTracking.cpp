@@ -162,4 +162,40 @@ TEST_F(TestFileSystemUsageTracking, RemovingFileShouldDecreaseUsage) {
   ASSERT_NO_FATAL_FAILURE(CheckUsageEqualTo(usageNow, initialDbUsage));
 }
 
+TEST_F(TestFileSystemUsageTracking, LockAfterUncleanCloseShouldRecoverUsage) {
+  ASSERT_NO_FATAL_FAILURE(EnsureDataManager());
+
+  EntryId testFileId;
+  ASSERT_NO_FATAL_FAILURE(CreateNewEmptyFile(testFileId));
+
+  quota::UsageInfo usageNow;
+  ASSERT_NO_FATAL_FAILURE(GetDatabaseUsage(usageNow));
+
+  uint64_t initialDbUsage;
+  ASSERT_NO_FATAL_FAILURE(GetUsageValue(usageNow, initialDbUsage));
+
+  ASSERT_NO_FATAL_FAILURE(LockExclusive(testFileId));
+
+  const nsCString& testData = GetTestData();
+
+  ASSERT_NO_FATAL_FAILURE(WriteDataToFile(testFileId, testData));
+
+  // Releasing the data manager while the file is locked leaves its usage
+  // tracked, as when the browser is killed with a sync access handle open, and
+  // no origin initialization rescans it before the next lock.
+  ASSERT_NO_FATAL_FAILURE(ReleaseDataManager());
+  ASSERT_NO_FATAL_FAILURE(EnsureDataManager());
+
+  ASSERT_NO_FATAL_FAILURE(GetDatabaseUsage(usageNow));
+  ASSERT_NO_FATAL_FAILURE(CheckUsageEqualTo(usageNow, initialDbUsage));
+
+  ASSERT_NO_FATAL_FAILURE(LockExclusive(testFileId));
+
+  ASSERT_NO_FATAL_FAILURE(GetDatabaseUsage(usageNow));
+  ASSERT_NO_FATAL_FAILURE(
+      CheckUsageEqualTo(usageNow, initialDbUsage + testData.Length()));
+
+  ASSERT_NO_FATAL_FAILURE(UnlockExclusive(testFileId));
+}
+
 }  // namespace mozilla::dom::fs::test

@@ -377,8 +377,7 @@ nsresult UpdateUsageUnsetTracked(const FileSystemConnection& aConnection,
 Result<Maybe<Usage>, QMResult> GetMaybeTrackedUsage(
     const FileSystemConnection& aConnection, const FileId& aFileId) {
   const nsLiteralCString trackedUsageQuery =
-      "SELECT usage FROM Usages WHERE tracked = TRUE AND handle = :handle "
-      ");"_ns;
+      "SELECT usage FROM Usages WHERE tracked = TRUE AND handle = :handle;"_ns;
 
   QM_TRY_UNWRAP(ResultStatement stmt,
                 ResultStatement::Create(aConnection, trackedUsageQuery));
