@@ -15,7 +15,6 @@
 #include "Units.h"
 
 class nsIFrame;
-class nsIWidget;
 
 namespace mozilla {
 namespace dom {
@@ -26,12 +25,12 @@ class BrowserParent;
 
 interface nsIPolicyContainer;
 interface nsIFile;
+interface nsIWidget;
 
 [ptr] native BrowserParentPtr(mozilla::dom::BrowserParent);
 native EventMessage(mozilla::EventMessage);
 [ref] native LayoutDeviceIntPoint(mozilla::LayoutDeviceIntPoint);
 [ptr] native nsIFramePtr(nsIFrame);
-[ptr] native nsIWidgetPtr(nsIWidget);
 [ref] native StringSet(const nsTHashSet<nsString>);
 native nsSize(nsSize);
 
@@ -101,6 +100,12 @@ interface nsIDragSession : nsISupports
    * triggered in a browsing context inside it.
    */
   attribute nsIPolicyContainer policyContainer;
+
+  /**
+   * The root widget where the drag was initiated.
+   */
+  [noscript, infallible]
+  readonly attribute nsIWidget sourceWidget;
 
   /**
    * The data transfer object for the current drag.
@@ -182,7 +187,8 @@ interface nsIDragSession : nsISupports
    */
   [noscript, can_run_script]
   void fireDragEventAtSource(in EventMessage aEventMessage,
-                             in unsigned long aKeyModifiers);
+                             in unsigned long aKeyModifiers,
+                             [const] in LayoutDeviceIntPoint aPoint);
 
   [notxpcom, nostdcall] boolean maybeAddBrowser(in BrowserParentPtr aBP);
   [notxpcom, nostdcall] boolean removeAllBrowsers();
@@ -244,7 +250,7 @@ interface nsIDragSession : nsISupports
    */
   [noscript, can_run_script]
   void dispatchToDropTargetAndResumeEndDragSession(
-      in nsIWidgetPtr aWidget,
+      in nsIWidget aWidget,
       [const] in LayoutDeviceIntPoint aPt,
       in boolean aShouldDrop,
       in StringSet aAllowedFilePaths);

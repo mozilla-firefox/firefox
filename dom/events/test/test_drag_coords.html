@@ -17,7 +17,7 @@ add_task(async function test_drag_coords() {
   let target = document.getElementById("draggable");
   let coords = {};
   let promises = [];
-  for (let type of ["dragstart", "dragend"]) {
+  for (let type of ["dragstart", "drag", "dragend"]) {
     promises.push(new Promise(function(resolve) {
       target.addEventListener(type, function(e) {
         info("Got " + e.type);
@@ -35,23 +35,41 @@ add_task(async function test_drag_coords() {
       });
     }));
   }
-  synthesizePlainDragAndDrop({
-    srcElement: target,
-    srcX: 2,
-    srcY: 2,
-    stepX: 10,
-    stepY: 10,
-  });
+  const step = [10, 10];
+  const dragOptions = {
+    srcElement: "draggable",
+    targetElement: "draggable",
+    sourceOffset: [2, 2],
+    targetOffset: [102, 102],
+    step,
+  };
+  synthesizeMockDragAndDrop(dragOptions);
   await Promise.all(promises);
   info(JSON.stringify(coords));
+  const elementRect = target.getBoundingClientRect();
+  is(coords.dragstart.client.x, elementRect.x + dragOptions.sourceOffset[0],
+     "dragstart event clientX is correct");
+  // FIXME(bug 2097152): these should always be the same, but they're
+  //                     different by 1 pixel on macOS VM.
+  ok(Math.abs(coords.dragstart.client.y - (elementRect.y + dragOptions.sourceOffset[1])) <= 1,
+     "dragstart event clientY is correct");
   for (let coordType of ["screen", "client"]) {
-    // Let (tx,ty) = (target.x, target.y).  Then synthesizePlainDragAndDrop
-    // sends mousedown/dragstart at (tx + srcX, ty + srcY), or (tx + 2, ty + 2).
-    // It later sends dragend at (tx + srcX + 2*stepX, ty + srcY + 2*stepY),
-    // or (tx + 22, ty + 22).  In other words, the position at dragend should
-    // be the position at dragstart, but offset by (20, 20).  
-    is(coords.dragend[coordType].x, coords.dragstart[coordType].x + 20, `x ${coordType} is correct`);
-    is(coords.dragend[coordType].y, coords.dragstart[coordType].y + 20, `y ${coordType} is correct`);
+    const delta = [0, 1].map(i => dragOptions.targetOffset[i] - dragOptions.sourceOffset[i]);
+    is(coords.drag[coordType].x - coords.dragstart[coordType].x,
+       delta[0],
+       `drag event x ${coordType} is correct`);
+    is(coords.drag[coordType].y - coords.dragstart[coordType].y,
+       delta[1],
+       `drag event y ${coordType} is correct`);
+
+    // synthesizeMockDragAndDrop does one extra step after going to the target
+    // before firing dragend, so we need to add the step value here.
+    is(coords.dragend[coordType].x - coords.dragstart[coordType].x,
+       delta[0] + step[0],
+       `dragend event x ${coordType} is correct`);
+    is(coords.dragend[coordType].y - coords.dragstart[coordType].y,
+       delta[1] + step[1],
+       `dragend event y ${coordType} is correct`);
   }
 });
 </script>
