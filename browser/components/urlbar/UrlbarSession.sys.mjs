@@ -404,32 +404,24 @@ export class UrlbarSession {
   }
 
   /**
-   * Converts a search source string to a sap string.
-   * Both are the same concept but they have slightly different values.
-   * The sap string is used in urlbar.* telemetry.
+   * Gets the sap value to use for urlbar.* telemetry.
    *
-   * @see {BrowserSearchTelemetry.KNOWN_SEARCH_SOURCES} For an overview
-   * of the available values of search source and which telemetry uses it.
+   * This should not be confused with @see {BrowserSearchTelemetry.KNOWN_SEARCH_SOURCES},
+   * which is used for search telemetry.
    *
    * @param {string} searchSource
-   *   The search source string to convert.
-   * @returns {null|"urlbar"|"newtab_searchbar"|"searchbar"|"smartbar"|"handoff"|"urlbar_newtab"|"urlbar_addonpage"}
-   *   The sap value for urlbar.* telemetry or null if the browser window
-   *   already started closing. In that case, no telemetry should be recorded.
+   *   The search source (from search telemetry).
+   * @returns {UrlbarTelemetrySapName|null}
+   *   The sap name for telemetry, or null if the browser window started
+   *   closing. In that case, no telemetry should be recorded.
    */
-  #searchSourceToSap(searchSource) {
-    if (searchSource === "urlbar_handoff") {
+  #getTelemetrySap(searchSource) {
+    if (this._controller.sapName != "urlbar") {
+      return this._controller.sapName;
+    }
+
+    if (searchSource == "urlbar_handoff") {
       return "handoff";
-    }
-    // TODO (bug 2024630): Ideally, we would not add every new SAP here.
-    if (searchSource === "searchbar") {
-      return "searchbar";
-    }
-    if (searchSource === "newtab_searchbar") {
-      return "newtab_searchbar";
-    }
-    if (searchSource === "smartbar") {
-      return "smartbar";
     }
     let browserWindow = this._controller.browserWindow;
     if (browserWindow.closed) {
@@ -516,7 +508,7 @@ export class UrlbarSession {
         // session it never started.
         console.error(`Recording a ${method} with no query context`);
       }
-      let sap = this.#searchSourceToSap(searchSource);
+      let sap = this.#getTelemetrySap(searchSource);
 
       if (built && sap) {
         this.#fillAndRecord(built, sap);
@@ -551,7 +543,7 @@ export class UrlbarSession {
    *
    * @param {{metric: string, eventInfo: object}} built
    *   The built event from `UrlbarTelemetryUtils.buildEventInfo()`.
-   * @param {string} sap
+   * @param {UrlbarTelemetrySapName} sap
    *   The already-resolved search access point.
    */
   #fillAndRecord(built, sap) {
@@ -645,7 +637,7 @@ export class UrlbarSession {
    *   The detected intent for the input. Only set when sap is `smartbar`.
    * @param {string} [details.model]
    *   Model selected by the user. Only set when sap is `smartbar`.
-   * @param {?string} [details.engagementSap]
+   * @param {?UrlbarTelemetrySapName} [details.engagementSap]
    *   The search access point. The address bar's `urlbar`, `urlbar_newtab` and
    *   `urlbar_addonpage` depend on the page loaded at the time the search was
    *   made. The engagement itself loads a new page, so a recording deferred
@@ -677,7 +669,7 @@ export class UrlbarSession {
       engagementSap,
     }
   ) {
-    let sap = engagementSap ?? this.#searchSourceToSap(searchSource);
+    let sap = engagementSap ?? this.#getTelemetrySap(searchSource);
     if (!sap) {
       return;
     }
@@ -814,7 +806,7 @@ export class UrlbarSession {
    *
    * @param {Array<{resultType: string, keyword: ?string, terminal: boolean}>} list
    *   The resolved exposures.
-   * @param {string} sap
+   * @param {UrlbarTelemetrySapName} sap
    *   The search access point.
    */
   #recordExposureList(list, sap) {
@@ -1080,7 +1072,7 @@ export class UrlbarSession {
       return;
     }
 
-    let sap = this.#searchSourceToSap(state.searchSource);
+    let sap = this.#getTelemetrySap(state.searchSource);
     if (sap) {
       this.#fillAndRecord(state.built, sap);
     }
@@ -1118,7 +1110,7 @@ export class UrlbarSession {
     if (!snapshot) {
       return;
     }
-    let sap = this.#searchSourceToSap(snapshot.searchSource);
+    let sap = this.#getTelemetrySap(snapshot.searchSource);
     // There is no sap when the window is closing.
     if (!sap) {
       return;
@@ -1142,7 +1134,7 @@ export class UrlbarSession {
    */
   async startTrackingBuiltBounce(payload) {
     let { built, searchSource, browserId } = payload;
-    let sap = this.#searchSourceToSap(searchSource);
+    let sap = this.#getTelemetrySap(searchSource);
     if (!sap) {
       return;
     }
@@ -1190,7 +1182,7 @@ export class UrlbarSession {
    *   The bounce snapshot from `UrlbarTelemetryUtils.collectBounceSnapshot()`.
    * @param {number} viewTime
    *   The time spent on the tab before navigating away, in milliseconds.
-   * @param {string} sap
+   * @param {UrlbarTelemetrySapName} sap
    *   The sap resolved when the engagement happened. A bounce never resolves
    *   its own.
    */

@@ -25,10 +25,19 @@ type UrlbarResult = import("../content/UrlbarResult.mjs").UrlbarResult;
  * values are a superset of UrlbarSapName, see `KNOWN_SEARCH_SOURCES`.
  *
  * In urlbar telemetry, it is related to the `sap` extra key whose possible
- * values are a different superset of UrlbarSapName, see return value of
- * `#searchSourceToSap`.
+ * values are a different superset of UrlbarSapName, @see UrlbarTelemetrySapName.
  */
 type UrlbarSapName = "newtab_searchbar" | "searchbar" | "smartbar" | "urlbar";
+
+/**
+ * Extension of UrlbarSapName to be used for urlbar.* telemetry.
+ * For search telemetry, see BrowserSearchTelemetry.KNOWN_SEARCH_SOURCES.
+ */
+type UrlbarTelemetrySapName =
+  | UrlbarSapName
+  | "handoff"
+  | "urlbar_newtab"
+  | "urlbar_addonpage";
 
 /**
  * A structure that holds the details of commands for results.
