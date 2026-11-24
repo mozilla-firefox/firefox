@@ -1000,7 +1000,7 @@ SettingGroupManager.registerGroups({
         id: "syncCwtsMigrationNotification",
         l10nId: "sync-cwts-migration-notification",
         control: "moz-message-bar",
-        supportPage: "how-do-i-choose-what-information-sync-firefox",
+        supportPage: "how-sync-choices-work-across-your-devices",
         controlAttrs: {
           dismissable: true,
           role: "status",
