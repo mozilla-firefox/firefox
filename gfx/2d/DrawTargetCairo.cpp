@@ -1267,9 +1267,9 @@ void DrawTargetCairo::ClearRect(const Rect& aRect) {
 
   AutoPrepareForDrawing prep(this, mContext);
 
-  if (!mContext || aRect.Width() < 0 || aRect.Height() < 0 ||
-      !std::isfinite(aRect.X()) || !std::isfinite(aRect.Width()) ||
-      !std::isfinite(aRect.Y()) || !std::isfinite(aRect.Height())) {
+  if (aRect.Width() < 0 || aRect.Height() < 0 || !std::isfinite(aRect.X()) ||
+      !std::isfinite(aRect.Width()) || !std::isfinite(aRect.Y()) ||
+      !std::isfinite(aRect.Height())) {
     gfxCriticalNote << "ClearRect with invalid argument " << gfx::hexa(mContext)
                     << " with " << aRect.Width() << "x" << aRect.Height()
                     << " [" << aRect.X() << ", " << aRect.Y() << "]";
