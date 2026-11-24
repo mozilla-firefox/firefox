@@ -5,7 +5,7 @@ description: Front-end CSS and markup issues and changes that move, size or clip
 
 # Debug a front-end CSS or layout misbehavior
 
-Load `desktop-theme-probing` before hand-rolling a probe; it defines the host's
+Load `desktop-probing` before hand-rolling a probe; it defines the host's
 and the target's platform file that this skill cites by section. For a
 positioned box, a popover or an anchored box that lands wrong or grows the page,
 read [`references/positioning.md`](references/positioning.md): §1 for what the
@@ -29,7 +29,7 @@ Sweep these from the chrome context and emit one row per cell:
 
 - **System font size.** `document.documentElement.style.fontSize`, on the root,
   not `body`. Sweep the span of the platforms' chrome roots, about 11px to 15px.
-  Section FONT of each platform file (`desktop-theme-probing`) gives the
+  Section FONT of each platform file (`desktop-probing`) gives the
   target's size and how to read the host's. Popups keep their own font size
   (css_guidelines "Chrome versus in-content"): set it on the popup too, and read
   an item's computed `font-size` back. Before sweeping this axis on an
@@ -37,10 +37,10 @@ Sweep these from the chrome context and emit one row per cell:
 - **Scrollbars.** `ui.useOverlayScrollbars`: 1 overlay, 0 classic; set it at
   launch, since a live change notifies only media queries (bug 2090576), and read it back in
   each cell (`references/environment-sweep.md` §3). Each platform's
-  default is in its platform file (`desktop-theme-probing`), section
+  default is in its platform file (`desktop-probing`), section
   SCROLLBARS. A classic scrollbar takes width
   from the box; an overlay one does not.
-- **Compositing.** Where the target's platform file (`desktop-theme-probing`),
+- **Compositing.** Where the target's platform file (`desktop-probing`),
   section COMPOSITING, names a media query that compositing decides, sweep both
   sides of it and read the query back in each cell; that section has the pref
   and how to take the paint.
@@ -81,7 +81,7 @@ attributes the changed selectors key on (e.g. `[open]`, `[checked]`,
 for it. When a declaration moves under a narrower selector, also measure the
 elements the new selector no longer matches, which lose the declaration; when
 one moves under a wider selector, measure the elements it newly matches, which
-gain it. Enumerate either set with `desktop-theme-probing`'s
+gain it. Enumerate either set with `desktop-probing`'s
 `references/probe-recipes.md` §8.
 
 The sweep also covers every surface and branch the changed declarations reach.
@@ -195,7 +195,7 @@ ink is transparent shows nothing, and forced colors or a `prefers-contrast` rule
 can make it opaque. Pair it with a positive control, the same comparison in a
 configuration that certainly overflows (e.g. a larger font, a larger offset or
 outline width). In chrome the capture is one privileged `ctx.drawWindow()` call
-returning counts; before trusting its pixels, read `desktop-theme-probing`'s
+returning counts; before trusting its pixels, read `desktop-probing`'s
 `references/measuring-pixels.md` §1 "Chrome and content canvases" for what it
 does not composite.
 

@@ -39,7 +39,7 @@ supplies what the measurement needs.
 
 ```
 env -u WAYLAND_DISPLAY GDK_BACKEND=x11 MOZ_ENABLE_WAYLAND=0 xvfb-run -a -s "-screen 0 1600x1000x24" \
-    ./mach python --virtualenv desktop-theme .claude/skills/desktop-theme-probing/scripts/firefox-probe.py \
+    ./mach python --virtualenv desktop-theme .claude/skills/desktop-probing/scripts/firefox-probe.py \
     --binary <objdir>/dist/bin/firefox --no-headless ...
 ```
 

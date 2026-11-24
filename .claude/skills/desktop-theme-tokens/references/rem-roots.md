@@ -6,7 +6,7 @@ Forcing `root.style.fontSize` makes one launch read a token at every platform's
 root:
 
 ```sh
-./mach python --virtualenv desktop-theme .claude/skills/desktop-theme-probing/scripts/firefox-probe.py \
+./mach python --virtualenv desktop-theme .claude/skills/desktop-probing/scripts/firefox-probe.py \
   --binary <objdir>/dist/bin/firefox --realm chrome -e '
 let root = document.documentElement, p = document.createElement("div");
 root.appendChild(p);
@@ -27,7 +27,7 @@ Swap `width` and `--space-small` for the property and token under test
 
 For this desktop's own value read the computed size off an element set to
 `font: message-box`, on a display that reads the real system font: the host's
-platform file (`desktop-theme-probing`), section FONT, says whether a headless
+platform file (`desktop-probing`), section FONT, says whether a headless
 run does. Before choosing the display for that run, read §1 "Pick
-the display rung by what the measurement needs" in `desktop-theme-probing`'s
+the display rung by what the measurement needs" in `desktop-probing`'s
 `references/running-a-probe.md`.

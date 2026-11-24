@@ -1,8 +1,8 @@
 {
   "skillOverrides": {
+    "desktop-probing": "name-only",
     "desktop-theme-colors": "name-only",
     "desktop-theme-layout": "name-only",
-    "desktop-theme-probing": "name-only",
     "desktop-theme-screenshots": "name-only",
     "desktop-theme-tokens": "name-only"
   },

@@ -1,15 +1,15 @@
 ---
-name: desktop-theme-probing
+name: desktop-probing
 description: Use when measuring anything off a running Firefox (geometry, a computed style, media-query or pseudo-class state, a pref, window state, focus, a timing) through the Firefox MCP, `firefox-probe.py`, a Marionette chrome-context probe or a scratch browser-chrome test; when writing or editing such a probe, even a small edit; when it needs `--no-headless`, `xvfb-run`, a headless compositor or the live desktop, or a headless run cannot see a value; when a chrome CSS, `.xhtml` or script edit does not show after a reload, or a launch dies on `Missing chrome or resource URL`; when a probe launch's state differs from a user's (remote-control stripes, an empty profile, about:blank); and before trusting a number a probe printed.
 allowed-tools:
-  - Bash(./mach python --virtualenv desktop-theme .claude/skills/desktop-theme-probing/scripts/firefox-probe.py:*)
-  - Bash(./mach python --virtualenv desktop-theme .agents/skills/desktop-theme-probing/scripts/firefox-probe.py:*)
-  - Bash(./mach python --virtualenv desktop-theme -- .claude/skills/desktop-theme-probing/scripts/firefox-probe.py:*)
-  - Bash(./mach python --virtualenv desktop-theme -- .agents/skills/desktop-theme-probing/scripts/firefox-probe.py:*)
-  - Bash(./mach python --virtualenv desktop-theme .claude/skills/desktop-theme-probing/scripts/marker-probe.py:*)
-  - Bash(./mach python --virtualenv desktop-theme .agents/skills/desktop-theme-probing/scripts/marker-probe.py:*)
-  - Bash(./mach python --virtualenv desktop-theme -- .claude/skills/desktop-theme-probing/scripts/marker-probe.py:*)
-  - Bash(./mach python --virtualenv desktop-theme -- .agents/skills/desktop-theme-probing/scripts/marker-probe.py:*)
+  - Bash(./mach python --virtualenv desktop-theme .claude/skills/desktop-probing/scripts/firefox-probe.py:*)
+  - Bash(./mach python --virtualenv desktop-theme .agents/skills/desktop-probing/scripts/firefox-probe.py:*)
+  - Bash(./mach python --virtualenv desktop-theme -- .claude/skills/desktop-probing/scripts/firefox-probe.py:*)
+  - Bash(./mach python --virtualenv desktop-theme -- .agents/skills/desktop-probing/scripts/firefox-probe.py:*)
+  - Bash(./mach python --virtualenv desktop-theme .claude/skills/desktop-probing/scripts/marker-probe.py:*)
+  - Bash(./mach python --virtualenv desktop-theme .agents/skills/desktop-probing/scripts/marker-probe.py:*)
+  - Bash(./mach python --virtualenv desktop-theme -- .claude/skills/desktop-probing/scripts/marker-probe.py:*)
+  - Bash(./mach python --virtualenv desktop-theme -- .agents/skills/desktop-probing/scripts/marker-probe.py:*)
 ---
 
 # How the desktop-theme family measures
@@ -67,13 +67,13 @@ configured one, a
 sweep outlives the command timeout, and `press_key` performs no default action.
 
 **A one-shot chrome read without the MCP: the bundled probe runner.**
-`.claude/skills/desktop-theme-probing/scripts/firefox-probe.py --realm
+`.claude/skills/desktop-probing/scripts/firefox-probe.py --realm
 chrome` launches a build, evaluates chrome-context JS and prints the result. It
 needs the checkout's Marionette, so run it through `./mach python --virtualenv
 desktop-theme` from the checkout:
 
 ```sh
-./mach python --virtualenv desktop-theme .claude/skills/desktop-theme-probing/scripts/firefox-probe.py \
+./mach python --virtualenv desktop-theme .claude/skills/desktop-probing/scripts/firefox-probe.py \
   --binary <objdir>/dist/bin/firefox --realm chrome \
   --setpref ui.useAccessibilityTheme=1 -e 'return { ... };'
   # chrome's regime under that pref: the host's platform file, section CONTRAST

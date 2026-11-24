@@ -1,6 +1,6 @@
 # Scratch browser-chrome probes
 
-A bare `SKILL.md` §N means `desktop-theme-probing`'s SKILL.md.
+A bare `SKILL.md` §N means `desktop-probing`'s SKILL.md.
 
 ## 1. The skeleton
 
