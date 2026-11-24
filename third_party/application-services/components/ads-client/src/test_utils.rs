@@ -4,6 +4,7 @@
 */
 
 use std::collections::HashMap;
+use std::time::Duration;
 
 use url::Url;
 use url_macro::url;
@@ -11,13 +12,31 @@ use url_macro::url;
 #[cfg(feature = "stateful")]
 use crate::ads::{Ad, PlacementId};
 use crate::ads::{AdCallbacks, AdImage, AdSpoc, AdTile, SpocFrequencyCaps, SpocRanking};
+#[cfg(feature = "stateful")]
+use crate::ads_store::AdsStore;
+use crate::bytesize::ByteSize;
+use crate::http_cache::HttpCache;
 use crate::mars::{
     ad_request::{AdContentCategory, AdPlacementRequest, IABContentTaxonomy},
     ad_response::AdResponse,
 };
-use crate::MozAdsTelemetry;
+use crate::{MozAdsTelemetry, IN_MEMORY_DB_PATH};
 
 pub const TEST_CONTEXT_ID: &str = "00000000-0000-4000-8000-000000000001";
+
+pub fn memory_http_cache() -> HttpCache {
+    HttpCache::new(
+        IN_MEMORY_DB_PATH,
+        Duration::from_secs(300),
+        ByteSize::mib(1),
+    )
+    .expect("a memory cache should open")
+}
+
+#[cfg(feature = "stateful")]
+pub fn memory_ads_store() -> AdsStore {
+    AdsStore::new(IN_MEMORY_DB_PATH, ByteSize::mib(1)).expect("a memory store should open")
+}
 
 pub struct NoopMozAdsTelemetry;
 

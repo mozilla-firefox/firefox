@@ -1854,8 +1854,7 @@ public interface MozAdsClientBuilderInterface {
     fun `build`(): MozAdsClient
     
     /**
-     * Enables the HTTP cache with this configuration. Without it, nothing is
-     * cached.
+     * Configures the HTTP cache. Without it, responses are cached in memory.
      */
     fun `cacheConfig`(`cacheConfig`: MozAdsCacheConfig): MozAdsClientBuilder
     
@@ -1907,8 +1906,8 @@ open class MozAdsClientBuilder: Disposable, AutoCloseable, MozAdsClientBuilderIn
         this.cleanable = null
     }
     /**
-     * A builder with the defaults: the production environment, no cache and
-     * no telemetry.
+     * A builder with the defaults: the production environment, a cache in
+     * memory and no telemetry.
      */
     constructor() :
         this(UniffiWithHandle, 
@@ -2014,8 +2013,7 @@ open class MozAdsClientBuilder: Disposable, AutoCloseable, MozAdsClientBuilderIn
 
     
     /**
-     * Enables the HTTP cache with this configuration. Without it, nothing is
-     * cached.
+     * Configures the HTTP cache. Without it, responses are cached in memory.
      */override fun `cacheConfig`(`cacheConfig`: MozAdsCacheConfig): MozAdsClientBuilder {
             return FfiConverterTypeMozAdsClientBuilder.lift(
     callWithHandle {

@@ -8,17 +8,14 @@ pub(crate) mod telemetry;
 use crate::ads::{
     AdCallbacks, AdImage, AdImageOrSpoc, AdSpoc, AdTile, SpocFrequencyCaps, SpocRanking,
 };
-#[cfg(feature = "stateful")]
-use crate::client::config::AdsStoreConfig;
-use crate::client::config::{AdsCacheConfig, AdsClientConfig};
-use crate::client::AdsClient;
+use crate::bytesize::ByteSize;
+use crate::client::builder::AdsClientBuilder;
 use crate::http_cache::CachePolicy;
 use crate::mars::ad_request::{
     AdContentCategory, AdPlacementRequest, AdRequestFlags, IABContentTaxonomy,
 };
 use crate::mars::Environment;
 use crate::mars::ReportReason;
-use crate::non_empty_string::NonEmptyString;
 use crate::AdsClientUrl;
 use crate::MozAdsClient;
 use parking_lot::Mutex;
@@ -26,6 +23,7 @@ use std::collections::HashMap;
 use std::sync::Arc;
 #[cfg(test)]
 use std::sync::Weak;
+use std::time::Duration;
 
 pub use error::{AdsClientApiResult, MozAdsClientApiError};
 pub use telemetry::MozAdsTelemetry;
@@ -93,12 +91,8 @@ pub struct MozAdsClientBuilder(Mutex<MozAdsClientBuilderInner>);
 
 #[derive(Default)]
 struct MozAdsClientBuilderInner {
-    cache_config: Option<MozAdsCacheConfig>,
-    environment: Option<MozAdsEnvironment>,
-    #[cfg(feature = "stateful")]
-    store_config: Option<MozAdsStoreConfig>,
+    builder: AdsClientBuilder,
     telemetry: Option<Arc<dyn MozAdsTelemetry>>,
-    user_agent: Option<NonEmptyString>,
 }
 
 impl Default for MozAdsClientBuilder {
@@ -109,8 +103,8 @@ impl Default for MozAdsClientBuilder {
 
 #[uniffi::export]
 impl MozAdsClientBuilder {
-    /// A builder with the defaults: the production environment, no cache and
-    /// no telemetry.
+    /// A builder with the defaults: the production environment, a cache in
+    /// memory and no telemetry.
     #[uniffi::constructor]
     pub fn new() -> Self {
         Self::default()
@@ -124,29 +118,29 @@ impl MozAdsClientBuilder {
         if let Some(callback) = inner.telemetry.take() {
             telemetry::install(callback);
         }
-        let client_config = AdsClientConfig {
-            cache_config: inner.cache_config.clone().map(Into::into),
-            environment: inner.environment.clone().unwrap_or_default().into(),
-            #[cfg(feature = "stateful")]
-            store_config: inner.store_config.clone().map(Into::into),
-            user_agent: inner.user_agent.clone(),
-        };
-
-        let client = AdsClient::new(client_config);
-        let inner = Arc::new(client);
-        MozAdsClient { inner }
+        MozAdsClient {
+            inner: Arc::new(inner.builder.build()),
+        }
     }
 
-    /// Enables the HTTP cache with this configuration. Without it, nothing is
-    /// cached.
+    /// Configures the HTTP cache. Without it, responses are cached in memory.
     pub fn cache_config(self: Arc<Self>, cache_config: MozAdsCacheConfig) -> Arc<Self> {
-        self.0.lock().cache_config = Some(cache_config);
+        self.0
+            .lock()
+            .builder
+            .cache_db_path(cache_config.db_path)
+            .cache_default_ttl(
+                cache_config
+                    .default_cache_ttl_seconds
+                    .map(Duration::from_secs),
+            )
+            .cache_max_size(cache_config.max_size_mib.map(ByteSize::mib));
         self
     }
 
     /// The MARS environment to send requests to. Defaults to production.
     pub fn environment(self: Arc<Self>, environment: MozAdsEnvironment) -> Arc<Self> {
-        self.0.lock().environment = Some(environment);
+        self.0.lock().builder.environment(environment.into());
         self
     }
 
@@ -160,7 +154,7 @@ impl MozAdsClientBuilder {
     /// The browser's user agent, sent to MARS on OHTTP requests when the
     /// preflight returns none. Defaults to viaduct's global default user agent.
     pub fn user_agent(self: Arc<Self>, user_agent: String) -> Arc<Self> {
-        self.0.lock().user_agent = NonEmptyString::new(user_agent);
+        self.0.lock().builder.user_agent(user_agent);
         self
     }
 }
@@ -168,10 +162,11 @@ impl MozAdsClientBuilder {
 #[cfg(feature = "stateful")]
 #[uniffi::export]
 impl MozAdsClientBuilder {
-    /// Where the stateful client keeps its ads database.
+    /// Where the stateful client keeps its ads database. Without it, the
+    /// database is kept in memory.
     #[cfg(feature = "stateful")]
     pub fn store_config(self: Arc<Self>, store_config: MozAdsStoreConfig) -> Arc<Self> {
-        self.0.lock().store_config = Some(store_config);
+        self.0.lock().builder.store_db_path(store_config.db_path);
         self
     }
 }
@@ -502,25 +497,6 @@ impl From<&MozAdsRequestOptions> for AdRequestFlags {
 impl From<MozAdsRequestOptions> for CachePolicy {
     fn from(options: MozAdsRequestOptions) -> Self {
         options.cache_policy.map(Into::into).unwrap_or_default()
-    }
-}
-
-impl From<MozAdsCacheConfig> for AdsCacheConfig {
-    fn from(config: MozAdsCacheConfig) -> Self {
-        Self {
-            db_path: config.db_path,
-            default_cache_ttl_seconds: config.default_cache_ttl_seconds,
-            max_size_mib: config.max_size_mib,
-        }
-    }
-}
-
-#[cfg(feature = "stateful")]
-impl From<MozAdsStoreConfig> for AdsStoreConfig {
-    fn from(config: MozAdsStoreConfig) -> Self {
-        Self {
-            db_path: config.db_path,
-        }
     }
 }
 

@@ -89,19 +89,6 @@ buildconfig.projects.each { project ->
     setupProject(project.key, project.value, appServicesRootDir)
 }
 
-if (gradle.root.hasProperty("mozconfig")) {
-    // The mozilla-central android-components/fenix "second pass" build resolves
-    // these components as Maven AARs from target.maven.zip, so the geckoview
-    // archive build must publish every app-services component, not just the
-    // megazord. Aggregate their publish tasks behind a single task.
-    def appServicesPublishTasks = buildconfig.projects.keySet().collect { ":${it}:publish" }
-    gradle.rootProject { rootProject ->
-        rootProject.tasks.register("publishAppServicesAndroid") { task ->
-            task.dependsOn(appServicesPublishTasks)
-        }
-    }
-}
-
 Properties localProperties = new Properties();
 if (file('local.properties').canRead()) {
     localProperties.load(file('local.properties').newDataInputStream())
@@ -141,6 +128,7 @@ class Config {
     // semantic versioning (MAJOR.MINOR.PATCH). See https://semver.org/
     public final String componentsVersion
     public final String componentsGroupId
+    public final String appServicesGroupId
     public final Integer jvmTargetCompatibility
     public final Integer compileSdkMajorVersion
     public final Integer compileSdkMinorVersion
@@ -152,6 +140,7 @@ class Config {
     Config(
             String componentsVersion,
             String componentsGroupId,
+            String appServicesGroupId,
             Integer jvmTargetCompatibility,
             Integer compileSdkMajorVersion,
             Integer compileSdkMinorVersion,
@@ -162,6 +151,7 @@ class Config {
     ) {
         this.componentsVersion = componentsVersion
         this.componentsGroupId = componentsGroupId
+        this.appServicesGroupId = appServicesGroupId
         this.jvmTargetCompatibility = jvmTargetCompatibility
         this.compileSdkMajorVersion = compileSdkMajorVersion
         this.compileSdkMinorVersion = compileSdkMinorVersion
@@ -188,6 +178,7 @@ gradle.projectsLoaded { ->
             // but which is unlikely to be depended on by accident otherwise.
             calcVersion(buildconfig), // version,
             calcGroupId(buildconfig), // componentsGroupId
+            calcGroupId(buildconfig), // appServicesGroupId
             17, // jvmTargetCompatibility,
             37, // compileSdkMajorVersion,
             2,  // compileSdkMinorVersion,

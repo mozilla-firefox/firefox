@@ -20,23 +20,12 @@ impl FirefoxAccount {
     ///
     /// **💾 This method alters the persisted account state.**
     pub fn get_profile(&mut self, ignore_cache: bool) -> Result<Profile> {
-        match self.get_profile_helper(ignore_cache) {
-            Ok(res) => Ok(res),
-            Err(e) => match e {
-                Error::RemoteError { code: 401, .. } => {
-                    crate::warn!(
-                        "Access token rejected, clearing the tokens cache and trying again."
-                    );
-                    self.clear_access_token_cache();
-                    self.clear_devices_and_attached_clients_cache();
-                    self.get_profile_helper(ignore_cache)
-                }
-                _ => Err(e),
-            },
-        }
+        self.with_auth_and_network_retry(scopes::PROFILE, "get_profile", |s| {
+            s._get_profile(ignore_cache)
+        })
     }
 
-    fn get_profile_helper(&mut self, ignore_cache: bool) -> Result<Profile> {
+    fn _get_profile(&mut self, ignore_cache: bool) -> Result<Profile> {
         let mut etag = None;
         if let Some(cached_profile) = self.state.last_seen_profile() {
             if !ignore_cache && util::now() < cached_profile.cached_at + PROFILE_FRESHNESS_THRESHOLD

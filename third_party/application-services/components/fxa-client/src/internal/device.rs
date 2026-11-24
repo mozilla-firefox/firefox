@@ -113,6 +113,17 @@ impl FirefoxAccount {
         device_type: DeviceType,
         capabilities: &[DeviceCapability],
     ) -> Result<LocalDevice> {
+        self.with_network_retry("initialize_device", |s| {
+            s._initialize_device(name, device_type, capabilities)
+        })
+    }
+
+    fn _initialize_device(
+        &mut self,
+        name: &str,
+        device_type: DeviceType,
+        capabilities: &[DeviceCapability],
+    ) -> Result<LocalDevice> {
         self.state
             .set_device_capabilities(capabilities.iter().cloned());
         let commands = self.register_capabilities(capabilities)?;
@@ -135,6 +146,12 @@ impl FirefoxAccount {
         &mut self,
         capabilities: &[DeviceCapability],
     ) -> Result<LocalDevice> {
+        self.with_network_retry("ensure_capabilities", |s| {
+            s._ensure_capabilities(capabilities)
+        })
+    }
+
+    fn _ensure_capabilities(&mut self, capabilities: &[DeviceCapability]) -> Result<LocalDevice> {
         self.state
             .set_device_capabilities(capabilities.iter().cloned());
         // Don't re-register if we already have exactly those capabilities.

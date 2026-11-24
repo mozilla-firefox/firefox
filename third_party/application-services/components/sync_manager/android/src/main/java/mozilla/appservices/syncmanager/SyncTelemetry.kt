@@ -500,4 +500,22 @@ object SyncTelemetry {
 
         SyncSettings.save.record(extras)
     }
+
+    /**
+     * Records a `sync_settings.engine_toggled` event when the user turns a single
+     * sync engine on or off.
+     *
+     * @param engine The name of the engine that was toggled (e.g. "bookmarks").
+     * @param enabled `true` if the engine was enabled, `false` if it was disabled.
+     * @param enabledCount The total number of enabled engines after the change.
+     */
+    fun processEngineToggledTelemetry(engine: String, enabled: Boolean, enabledCount: Int) {
+        SyncSettings.engineToggled.record(
+            SyncSettings.EngineToggledExtra(
+                engine = engine,
+                enabled = enabled,
+                enabledCount = enabledCount,
+            ),
+        )
+    }
 }

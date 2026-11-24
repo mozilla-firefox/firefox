@@ -3,7 +3,9 @@
  * file, You can obtain one at http://mozilla.org/MPL/2.0/. */
 
 #[cfg(feature = "stateful")]
-use ads_client::ads_store::builder::AdsStoreBuilder;
+use ads_client::ads_store::AdsStore;
+#[cfg(feature = "stateful")]
+use ads_client::bytesize::ByteSize;
 #[cfg(feature = "stateful")]
 use std::path::Path;
 
@@ -30,35 +32,24 @@ fn clear_test_dbs(test_db_locations: &[&'static str]) {
 fn test_bad_path_opens_memory_db() {
     clear_test_dbs(&["good_path.db"]);
 
-    let good_path = AdsStoreBuilder::new()
-        .db_path("good_path_adsstore.db")
-        .build()
+    let good_path = AdsStore::new("good_path_adsstore.db", ByteSize::mib(1))
         .expect("Should be able to build a bad path");
     assert!(
         !good_path.is_memory().unwrap(),
         "A valid path should result in a file-based sqlite database"
     );
 
-    let bad_path = AdsStoreBuilder::new()
-        .db_path("this/is/a/test/bad/path")
-        .build()
+    let bad_path = AdsStore::new("this/is/a/test/bad/path", ByteSize::mib(1))
         .expect("Should be able to build a bad path");
     assert!(
         bad_path.is_memory().unwrap(),
         "Invalid path should result in a memory-based sqlite database"
     );
 
-    let empty_path = AdsStoreBuilder::new().db_path("").build();
+    let memory =
+        AdsStore::new(":memory:", ByteSize::mib(1)).expect("Should be able to build a memory db");
     assert!(
-        empty_path.is_err(),
-        "An empty string for a path should result in an error"
-    );
-
-    let no_path = AdsStoreBuilder::new()
-        .build()
-        .expect("Should be able to build a memory db");
-    assert!(
-        no_path.is_memory().unwrap(),
-        "`builder` without `database` should result in a memory-based sqlite database"
+        memory.is_memory().unwrap(),
+        "`:memory:` should result in a memory-based sqlite database"
     )
 }

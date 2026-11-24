@@ -83,6 +83,9 @@ android {
     testOptions {
         unitTests {
             includeAndroidResources = true
+            all {
+                jvmArgs "-javaagent:${configurations.mockitoAgent.asPath}"
+            }
         }
     }
 
@@ -92,26 +95,24 @@ android {
 
 }
 
+configurations { mockitoAgent }
+
 dependencies {
     testImplementation platform(libs.junit.bom)
     testImplementation libs.junit4
     testRuntimeOnly libs.junit.platform.launcher
     testRuntimeOnly libs.junit.vintage
     testImplementation libs.mockito
+    mockitoAgent(libs.mockito) {
+        transitive = false
+    }
     testImplementation libs.robolectric
 
     androidTestImplementation libs.androidx.test.espresso.core
     androidTestImplementation libs.androidx.test.runner
 }
 
-// Pick the publish group id by build context. In m-c, `config` belongs to
-// android-components (`config.componentsGroupId` is `org.mozilla.components`),
-// so we hardcode `org.mozilla.appservices`. Standalone app-services uses
-// `config.componentsGroupId`, which is the only place that appends the
-// `.nightly` suffix nightly builds publish under.
-ext.appServicesGroupId = gradle.root.hasProperty("mozconfig")
-    ? "org.mozilla.appservices"
-    : rootProject.config.componentsGroupId
+ext.appServicesGroupId = rootProject.config.appServicesGroupId
 
 // Shared logic for projects that depend on libmegazord
 //

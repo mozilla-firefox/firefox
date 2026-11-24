@@ -214,18 +214,8 @@ if (!gradle.hasProperty("mozconfig")) {
     }
 }
 
-// Duplicated from component-common.gradle, which the megazord doesn't apply.
-// Pick the publish group id by build context. In m-c, `config` belongs to
-// android-components (`config.componentsGroupId` is `org.mozilla.components`),
-// so we hardcode `org.mozilla.appservices`. Standalone app-services uses
-// `config.componentsGroupId`, which is the only place that appends the
-// `.nightly` suffix nightly builds publish under.
-ext.appServicesGroupId = gradle.root.hasProperty("mozconfig")
-    ? "org.mozilla.appservices"
-    : rootProject.config.componentsGroupId
-
 apply from: "$publishDir/publish.gradle"
-ext.configurePublish(appServicesGroupId, project.name, project.ext.description)
+ext.configurePublish(rootProject.config.appServicesGroupId, project.name, project.ext.description)
 
 afterEvaluate {
     def libUrl="https://github.com/mozilla/application-services"
@@ -248,7 +238,7 @@ afterEvaluate {
                 }
 
                 pom {
-                    groupId = project.ext.appServicesGroupId
+                    groupId = rootProject.config.appServicesGroupId
                     artifactId = "${project.ext.artifactId}-libsForTests"
                     description = project.ext.description
                     // For mavenLocal publishing workflow, increment the version number every publish.

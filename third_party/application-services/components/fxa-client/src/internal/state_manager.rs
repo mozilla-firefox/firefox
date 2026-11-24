@@ -142,10 +142,18 @@ impl StateManager {
         self.persisted_state.access_token_cache.get(scope)
     }
 
+    pub fn has_cached_access_token(&self, scope: &str) -> bool {
+        self.persisted_state.access_token_cache.contains_key(scope)
+    }
+
     pub fn add_cached_access_token(&mut self, scope: impl Into<String>, token: AccessTokenInfo) {
         self.persisted_state
             .access_token_cache
             .insert(scope.into(), token);
+    }
+
+    pub fn remove_cached_access_token(&mut self, scope: &str) {
+        self.persisted_state.access_token_cache.remove(scope);
     }
 
     pub fn clear_access_token_cache(&mut self) {

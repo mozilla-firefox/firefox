@@ -2,30 +2,49 @@
  * License, v. 2.0. If a copy of the MPL was not distributed with this
  * file, You can obtain one at http://mozilla.org/MPL/2.0/. */
 
-pub mod builder;
 pub mod connection_initializer;
 pub mod store;
 
 use crate::{
     ads::PlacementId,
-    ads_store::{builder::AdsStoreBuilder, store::AdsStoreHolder},
+    ads_store::{connection_initializer::AdsStoreConnectionInitializer, store::AdsStoreHolder},
     bytesize::ByteSize,
+    telemetry, IN_MEMORY_DB_PATH,
 };
-use sql_support::open_database;
-use std::{collections::HashMap, path::Path};
+use rusqlite::OpenFlags;
+use sql_support::{open_database, LazyDb};
+use std::path::Path;
+
+#[derive(Debug, thiserror::Error)]
+pub enum AdsStoreError {
+    #[error("Database error: {0}")]
+    Database(#[from] open_database::Error),
+    // TODO: Remove this once memory dbs confirmed to be OK.
+    #[error("Database (memory) error: {0}")]
+    DatabaseMemory(open_database::Error),
+    #[error("Database path cannot be empty")]
+    EmptyDbPath,
+}
 
 pub struct AdsStore {
     holder: AdsStoreHolder,
-    #[expect(
-        dead_code,
-        reason = "validated by the builder, but nothing trims the store to it yet"
-    )]
+    #[expect(dead_code, reason = "nothing trims the store to it yet")]
     max_size: ByteSize,
 }
 
 impl AdsStore {
-    pub fn builder() -> AdsStoreBuilder {
-        AdsStoreBuilder::new()
+    /// Falls back to a memory db if `db_path` cannot be opened.
+    ///
+    /// # Telemetry
+    ///
+    /// Records the failure to open `db_path` in `ads_client.build_cache_error`.
+    /// If the memory db fails to open too, that error is returned for the
+    /// caller to record.
+    pub fn new<P: AsRef<Path>>(db_path: P, max_size: ByteSize) -> Result<Self, AdsStoreError> {
+        Ok(Self {
+            holder: AdsStoreHolder::new(open_db(db_path.as_ref())?),
+            max_size,
+        })
     }
 
     pub fn clear(&self) -> Result<(), open_database::Error> {
@@ -47,25 +66,50 @@ impl AdsStore {
     }
 }
 
+// Opens the db at `db_path`, or a memory db if it fails to open.
+fn open_db(db_path: &Path) -> Result<LazyDb<AdsStoreConnectionInitializer>, AdsStoreError> {
+    let memory = Path::new(IN_MEMORY_DB_PATH);
+    if db_path != memory {
+        match open_connection(db_path) {
+            Ok(db) => return Ok(db),
+            Err(e) => telemetry::record_ads_store_error(&AdsStoreError::from(e)),
+        }
+    }
+
+    // TODO: This is cast to DatabaseMemory rather than Database. Remove this when DatabaseMemory is removed.
+    open_connection(memory).map_err(AdsStoreError::DatabaseMemory)
+}
+
+// Opens the db at `path`, eagerly opening the initial connection so failures surface here.
+fn open_connection(
+    path: &Path,
+) -> Result<LazyDb<AdsStoreConnectionInitializer>, open_database::Error> {
+    let db = LazyDb::new(path, OpenFlags::default(), AdsStoreConnectionInitializer {});
+    drop(db.lock()?);
+    Ok(db)
+}
+
 #[cfg(test)]
 mod tests {
     use super::*;
-    use crate::test_utils::get_example_happy_image_ads;
-    use crate::IN_MEMORY_DB_PATH;
+    use crate::test_utils::{get_example_happy_image_ads, memory_ads_store};
 
     #[test]
     fn test_ads_store_creation() {
-        // Test that AdsStore can be created successfully with test config
-        let store: Result<AdsStore, _> = AdsStore::builder().db_path(IN_MEMORY_DB_PATH).build();
-        assert!(store.is_ok());
+        assert!(memory_ads_store().is_memory().unwrap());
+    }
+
+    #[test]
+    fn test_unopenable_path_falls_back_to_memory_db() {
+        // The fallback records telemetry, so don't race the telemetry tests.
+        let _lock = crate::telemetry::test_lock();
+        let store = AdsStore::new("this/is/a/test/bad/path", ByteSize::mib(1)).unwrap();
+        assert!(store.is_memory().unwrap());
     }
 
     #[test]
     fn test_clear_store() {
-        let store: AdsStore = AdsStore::builder()
-            .db_path(IN_MEMORY_DB_PATH)
-            .build()
-            .unwrap();
+        let store = memory_ads_store();
 
         let (placement_id, ads) = get_example_happy_image_ads("mock_billboard_1");
         store.holder.store_ads(&placement_id, &ads).unwrap();
@@ -84,10 +128,7 @@ mod tests {
 
     #[test]
     fn test_invalidate_by_id() {
-        let store: AdsStore = AdsStore::builder()
-            .db_path(IN_MEMORY_DB_PATH)
-            .build()
-            .unwrap();
+        let store = memory_ads_store();
 
         let (placement_1, ads_1) = get_example_happy_image_ads("mock_billboard_1");
         let (placement_2, ads_2) = get_example_happy_image_ads("mock_billboard_2");

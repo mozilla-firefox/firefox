@@ -12,15 +12,13 @@ For example, when completing an OAuth flow: a successful `CompleteOAuthFlow` tra
 
 There are two layers:
 
-1. **`transitions.rs`** — Each `match` arm reads as: do the work (calling methods on the `RetryingAccount` wrapper), attach the target state for the error path with `.to_state_machine_err(|| target)?`, return the success state. Returns `Result<FxaState, StateMachineErr>`, the `Err` variant carries both the error cause (for logging) and the target state to land in.
+1. **`transitions.rs`** — Each `match` arm reads as: do the work, attach the target state for the error path with `.to_state_machine_err(|| target)?`, return the success state. Returns `Result<FxaState, StateMachineErr>`, the `Err` variant carries both the error cause (for logging) and the target state to land in.
 2. **`helpers.rs`** — the supporting types:
-   - [`RetryingAccount`] wraps a `&mut FirefoxAccount` and exposes only the methods the FSM uses, with retry policy applied automatically. Holding a `&mut RetryingAccount` instead of a `&mut FirefoxAccount` makes it hard to call a network method without retry.
    - [`StateMachineErr`] + [`ResultExt::to_state_machine_err()`] extension trait give the `?` ergonomics for "on error, transition to this state".
-   - [`RetryPolicy`] holds the network-retry count and auth-recovery flag.
 
-The driver in `mod.rs` validates the `Initialize` invariant, builds a `RetryingAccount`, calls `transition()` once, routes the error (if any) through `convert_log_report_error` for logging/Sentry, commits the new state, and fires `on_auth_issues()` if applicable.
+The driver in `mod.rs` validates the `Initialize` invariant, calls `transition()` once, routes the error (if any) through `convert_log_report_error` for logging/Sentry, commits the new state, and fires `on_auth_issues()` if applicable.
 
-Adding a new event is straightforward: add a `match` arm in `transition()`. If the event needs a new account method, add a one-line wrapper to `RetryingAccount` — that's the moment to think about retry semantics for the new operation.
+Adding a new event is straightforward: add a `match` arm in `transition()`.
 
 ## State diagram
 
@@ -49,12 +47,3 @@ graph LR;
 ```
 
 `Authenticating { initial_state }` tracks where the user came from. Error and cancel paths from `Authenticating` return to `initial_state` (not always `Disconnected`) — so a re-auth attempt from `AuthIssues` that the user cancels lands back at `AuthIssues`, and an OAuth flow started from `Connected` that errors out keeps the user at `Connected`. The exception is `InitializeDevice` errors, which always land at `Disconnected`. A `CompleteOAuthFlow` success from `Authenticating { initial_state: Connected }` skips `InitializeDevice` because the device is already initialized.
-
-## Retry behavior
-
-`RetryingAccount` applies this policy:
-
-- **Network errors** retry up to 3 times.
-- **Auth errors** trigger a single recovery attempt: clear the access token cache, call `check_authorization_status`, and (if still active) retry the operation once.
-
-Methods that auto-recover from auth errors: `complete_oauth_flow`, `begin_oauth_flow`, `begin_pairing_flow`, `get_profile`. Methods that don't (auth errors are FSM-recoverable, not operation-recoverable): `initialize_device`, `ensure_capabilities`, `check_authorization_status`. The `EnsureDeviceCapabilities` auth-error case is handled at the FSM level — the transition arm matches on the error and dispatches to `CheckAuthorizationStatus`.

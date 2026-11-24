@@ -6,24 +6,21 @@
 use crate::ads::{AdImage, AdImageOrSpoc, AdSpoc, AdTile};
 #[cfg(feature = "stateful")]
 use crate::ads_store::AdsStore;
-use crate::bytesize::ByteSize;
-use crate::http_cache::{CachePolicy, HttpCache};
+use crate::http_cache::CachePolicy;
 use crate::mars::ad_request::{AdPlacementRequest, AdRequestFlags, AdRequestRelevance};
 use crate::mars::ad_response::AdResponse;
 use crate::mars::error::{RecordClickError, RecordImpressionError, ReportAdError};
 use crate::mars::{MARSClient, ReportReason};
 use crate::telemetry::{self, ClientOperation};
-use config::AdsClientConfig;
 use context_id::{ContextIDComponent, DefaultContextIdCallback};
 use error::RequestAdsError;
 use sql_support::open_database;
 use std::collections::HashMap;
 use std::sync::Arc;
-use std::time::Duration;
 use url::Url;
 use uuid::Uuid;
 
-pub(crate) mod config;
+pub(crate) mod builder;
 pub(crate) mod error;
 
 const DEFAULT_ROTATION_DAYS: u8 = 3;
@@ -40,8 +37,15 @@ pub struct AdsClientInner {
 }
 
 impl AdsClient {
-    pub(crate) fn new(client_config: AdsClientConfig) -> Self {
-        let inner = Arc::new(AdsClientInner::new(client_config));
+    pub(crate) fn new(
+        client: MARSClient,
+        #[cfg(feature = "stateful")] ads_store: Option<AdsStore>,
+    ) -> Self {
+        let inner = Arc::new(AdsClientInner::new(
+            client,
+            #[cfg(feature = "stateful")]
+            ads_store,
+        ));
         AdsClient { inner }
     }
 
@@ -150,7 +154,10 @@ impl AdsClient {
 }
 
 impl AdsClientInner {
-    pub(crate) fn new(client_config: AdsClientConfig) -> Self {
+    pub(crate) fn new(
+        client: MARSClient,
+        #[cfg(feature = "stateful")] ads_store: Option<AdsStore>,
+    ) -> Self {
         let context_id_component = ContextIDComponent::new(
             &Uuid::new_v4().to_string(),
             0,
@@ -158,46 +165,6 @@ impl AdsClientInner {
             Box::new(DefaultContextIdCallback),
         );
 
-        let environment = client_config.environment;
-
-        // Configure the HttpCache if a path is provided (otherwise, default to memory).
-        // Defaults for ttl and cache size set in the builder if unspecified.
-        let mut http_cache = HttpCache::builder();
-        if let Some(config) = client_config.cache_config {
-            http_cache = http_cache.db_path(config.db_path);
-            if let Some(default_cache_ttl) = config.default_cache_ttl_seconds {
-                http_cache = http_cache.default_ttl(Duration::from_secs(default_cache_ttl));
-            }
-            if let Some(max_size_mib) = config.max_size_mib {
-                http_cache = http_cache.max_size(ByteSize::mib(max_size_mib));
-            }
-        }
-
-        let http_cache = match http_cache.build() {
-            Ok(cache) => Some(cache),
-            Err(e) => {
-                telemetry::record_build_cache_error(&e);
-                None
-            }
-        };
-
-        // Configure the AdsStore if a path is provided (otherwise, default to memory).
-        #[cfg(feature = "stateful")]
-        let mut ads_store = AdsStore::builder();
-        #[cfg(feature = "stateful")]
-        if let Some(config) = client_config.store_config {
-            ads_store = ads_store.db_path(config.db_path);
-        }
-        #[cfg(feature = "stateful")]
-        let ads_store = match ads_store.build() {
-            Ok(store) => Some(store),
-            Err(e) => {
-                telemetry::record_ads_store_error(&e);
-                None
-            }
-        };
-
-        let client = MARSClient::new(environment, http_cache, client_config.user_agent);
         telemetry::record_client_operation(ClientOperation::New);
         Self {
             #[cfg(feature = "stateful")]
@@ -445,27 +412,29 @@ impl AdsClientInner {
 #[cfg(test)]
 mod tests {
 
-    #[cfg(feature = "stateful")]
-    use crate::ads_store::builder::AdsStoreBuilder;
     use crate::{
         mars::Environment,
         test_utils::{
             get_example_happy_image_response, get_example_happy_spoc_response,
-            get_example_happy_uatile_response, make_happy_placement_requests,
+            get_example_happy_uatile_response, make_happy_placement_requests, memory_http_cache,
         },
     };
 
+    use super::builder::AdsClientBuilder;
     use super::*;
+    #[cfg(feature = "stateful")]
+    use crate::test_utils::memory_ads_store;
+
+    fn test_client() -> AdsClient {
+        AdsClientBuilder::default()
+            .environment(Environment::Test)
+            .build()
+    }
 
     fn new_with_mars_client(client: MARSClient) -> AdsClient {
         let inner = Arc::new(AdsClientInner {
             #[cfg(feature = "stateful")]
-            ads_store: Arc::new(Some(
-                AdsStoreBuilder::new()
-                    .db_path(crate::IN_MEMORY_DB_PATH)
-                    .build()
-                    .expect("Simplest AdsStoreBuilder should be constructable"),
-            )),
+            ads_store: Arc::new(Some(memory_ads_store())),
             client,
             context_id_component: ContextIDComponent::new(
                 &Uuid::new_v4().to_string(),
@@ -481,14 +450,7 @@ mod tests {
 
     #[test]
     fn test_get_context_id() {
-        let config = AdsClientConfig {
-            cache_config: None,
-            environment: Environment::Test,
-            #[cfg(feature = "stateful")]
-            store_config: None,
-            user_agent: None,
-        };
-        let client = AdsClient::new(config);
+        let client = test_client();
         let context_id = client.get_context_id().unwrap();
         assert!(!context_id.is_empty());
     }
@@ -573,14 +535,7 @@ mod tests {
     fn test_context_id_is_sent_to_mars() {
         viaduct_dev::init_backend_dev();
 
-        let config = AdsClientConfig {
-            cache_config: None,
-            environment: Environment::Test,
-            #[cfg(feature = "stateful")]
-            store_config: None,
-            user_agent: None,
-        };
-        let client = AdsClient::new(config);
+        let client = test_client();
 
         // The client generates its own context id, so read it back first and
         // assert that exactly that value reaches the wire.
@@ -612,14 +567,7 @@ mod tests {
     fn test_context_id_is_not_sent_to_mars_when_relevance_is_set() {
         viaduct_dev::init_backend_dev();
 
-        let config = AdsClientConfig {
-            cache_config: None,
-            environment: Environment::Test,
-            #[cfg(feature = "stateful")]
-            store_config: None,
-            user_agent: None,
-        };
-        let client = AdsClient::new(config);
+        let client = test_client();
 
         // Matcher::Json compares the whole body, ignoring key order, so any
         // extra key such as context_id makes the request go unmatched.
@@ -679,7 +627,7 @@ mod tests {
     #[ignore = "Cache invalidation temporarily disabled - will be re-enabled behind Nimbus experiment"]
     fn test_record_click_invalidates_cache() {
         viaduct_dev::init_backend_dev();
-        let cache = HttpCache::builder().build().unwrap();
+        let cache = memory_http_cache();
         let mars_client = MARSClient::new(Environment::Test, Some(cache), None);
         let ads_client = new_with_mars_client(mars_client);
 

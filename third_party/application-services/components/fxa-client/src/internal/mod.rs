@@ -30,6 +30,7 @@ mod http_client;
 mod oauth;
 mod profile;
 mod push;
+mod retry;
 mod scoped_keys;
 mod scopes;
 mod send_tab;
@@ -56,6 +57,8 @@ pub struct FirefoxAccount {
     devices_cache: Option<CachedResponse<Vec<http_client::GetDeviceResponse>>>,
     auth_circuit_breaker: AuthCircuitBreaker,
     telemetry: FxaTelemetry,
+    network_retry_bucket: retry::TokenBucket,
+    auth_retry_bucket: retry::TokenBucket,
     // TODO: Cleanup our usage of the word "state" and change this field name to `state`
     // https://bugzilla.mozilla.org/show_bug.cgi?id=1868610
     pub(crate) auth_state: FxaState,
@@ -73,6 +76,8 @@ impl FirefoxAccount {
             auth_circuit_breaker: Default::default(),
             telemetry: FxaTelemetry::new(),
             auth_state: FxaState::Uninitialized,
+            network_retry_bucket: retry::TokenBucket::network(),
+            auth_retry_bucket: retry::TokenBucket::auth(),
             device_config: None,
         }
     }

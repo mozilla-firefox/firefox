@@ -3889,8 +3889,7 @@ export class MozAdsClientBuilderInterface {
       throw Error("build not implemented");
     }
     /**
-     * Enables the HTTP cache with this configuration. Without it, nothing is
-     * cached.
+     * Configures the HTTP cache. Without it, responses are cached in memory.
      * @param {MozAdsCacheConfig} cacheConfig
      * @returns {MozAdsClientBuilder}
      */
@@ -3948,8 +3947,8 @@ export class MozAdsClientBuilder extends MozAdsClientBuilderInterface {
         this[uniffiObjectPtr] = opts[constructUniffiObject];
     }
     /**
-     * A builder with the defaults: the production environment, no cache and
-     * no telemetry.
+     * A builder with the defaults: the production environment, a cache in
+     * memory and no telemetry.
      * @returns {MozAdsClientBuilder}
      */
     static init() {
@@ -3983,8 +3982,7 @@ export class MozAdsClientBuilder extends MozAdsClientBuilderInterface {
     }
 
     /**
-     * Enables the HTTP cache with this configuration. Without it, nothing is
-     * cached.
+     * Configures the HTTP cache. Without it, responses are cached in memory.
      * @param {MozAdsCacheConfig} cacheConfig
      * @returns {MozAdsClientBuilder}
      */

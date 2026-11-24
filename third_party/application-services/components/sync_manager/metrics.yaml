@@ -1055,3 +1055,30 @@ sync_settings:
         description: |
           A comma-delimited list of engines that were disabled by the user.
         type: string
+
+  engine_toggled:
+    type: event
+    description: |
+      Records each time the user toggles an individual engine on or off.
+    bugs:
+      - https://mozilla-hub.atlassian.net/browse/SYNC-5532
+    data_reviews:
+      - https://github.com/mozilla/application-services/pull/7813#issuecomment-7025127713
+    data_sensitivity:
+      - interaction
+    notification_emails:
+      - sync-dev@mozilla.org
+    expires: never
+    extra_keys:
+      engine:
+        description: |
+          The engine that was enabled or disabled.
+        type: string
+      enabled:
+        description: |
+          The engine's enablement value, true if enabled and false if disabled.
+        type: boolean
+      enabled_count:
+        description: |
+          The total number of enabled engines after the change.
+        type: quantity

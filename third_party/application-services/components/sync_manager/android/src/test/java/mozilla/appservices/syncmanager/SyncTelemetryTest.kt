@@ -1296,4 +1296,23 @@ class SyncTelemetryTest {
         assertEquals("bookmarks,tabs", events.elementAt(0).extra!!["enabled_engines"])
         assertEquals("logins", events.elementAt(0).extra!!["disabled_engines"])
     }
+
+    @Test
+    fun `checks received engine toggled telemetry when it should`() {
+        SyncTelemetry.processEngineToggledTelemetry("bookmarks", false, 3)
+        SyncTelemetry.processEngineToggledTelemetry("logins", true, 4)
+        val events = SyncSettings.engineToggled.testGetValue()!!
+        assertEquals(2, events.size)
+
+        assertEquals("sync_settings", events.elementAt(0).category)
+        assertEquals("engine_toggled", events.elementAt(0).name)
+        assertEquals("bookmarks", events.elementAt(0).extra!!["engine"])
+        assertEquals("false", events.elementAt(0).extra!!["enabled"])
+        assertEquals("3", events.elementAt(0).extra!!["enabled_count"])
+
+        assertEquals("engine_toggled", events.elementAt(1).name)
+        assertEquals("logins", events.elementAt(1).extra!!["engine"])
+        assertEquals("true", events.elementAt(1).extra!!["enabled"])
+        assertEquals("4", events.elementAt(1).extra!!["enabled_count"])
+    }
 }
