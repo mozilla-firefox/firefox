@@ -274,8 +274,15 @@ export class PanelList extends HTMLElement {
     // Set the showing attribute to hide the panel until its alignment is set.
     this.setAttribute("showing", "true");
     // Tell the host element to hide any overflow in case the panel extends off
-    // the page before the alignment is set.
-    hostElement.style.overflow = "hidden";
+    // the page before the alignment is set. A popover skips this, because the
+    // clip would also cut off the host's own overflowing descendants (e.g. a
+    // shadow drawn outside it). Until showPopover() moves it to the top layer,
+    // the hidden popover can still extend the page's overflow while it
+    // measures.
+    const hideHostOverflow = !this.supportsPopover();
+    if (hideHostOverflow) {
+      hostElement.style.overflow = "hidden";
+    }
 
     // Wait for a layout flush, then find the bounds.
     let {
@@ -396,7 +403,9 @@ export class PanelList extends HTMLElement {
       // Set the alignments and show the panel.
       this.setAttribute("align", align);
       this.setAttribute("valign", valign);
-      hostElement.style.overflow = "";
+      if (hideHostOverflow) {
+        hostElement.style.overflow = "";
+      }
       // Decide positioning based on where this panel will be rendered
       const offsetParentIsBody =
         this.supportsPopover() ||

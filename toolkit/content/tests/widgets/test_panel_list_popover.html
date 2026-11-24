@@ -182,6 +182,37 @@
         await hidden;
       });
 
+      add_task(async function testPopoverLeavesHostOverflowAlone() {
+        let host = panelList.parentElement;
+        host.style.overflow = "auto";
+        let overflowValues = [];
+        let observer = new MutationObserver(() =>
+          overflowValues.push(host.style.overflow)
+        );
+        observer.observe(host, { attributeFilter: ["style"] });
+
+        let shown = BrowserTestUtils.waitForEvent(panelList, "shown");
+        panelList.show();
+        await shown;
+        observer.disconnect();
+
+        isDeeply(
+          overflowValues,
+          [],
+          "Showing a popover panel doesn't touch the host's style"
+        );
+        is(
+          host.style.overflow,
+          "auto",
+          "Showing a popover panel keeps the host's overflow"
+        );
+
+        let hidden = BrowserTestUtils.waitForEvent(panelList, "hidden");
+        panelList.hide();
+        await hidden;
+        host.style.overflow = "";
+      });
+
       add_task(async function testPopoverPanelHidesOnOutsideScroll() {
         let shown = BrowserTestUtils.waitForEvent(panelList, "shown");
         panelList.show();
