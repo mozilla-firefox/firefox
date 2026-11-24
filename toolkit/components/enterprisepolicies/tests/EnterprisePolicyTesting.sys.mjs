@@ -72,10 +72,12 @@ export var EnterprisePolicyTesting = {
   // file to disk.
   async setupPolicyEngineWithJsonForSearch(json, customSchema) {
     lazy.SearchService.reset();
-    await EnterprisePolicyTesting.setupPolicyEngineWithJson(json, customSchema);
+    // The SearchEngines policy, or any other caller, can initialise the search
+    // service and write its settings before the policies are all applied.
     let settingsWritten = lazy.SearchTestUtils.promiseSearchNotification(
       "write-settings-to-disk-complete"
     );
+    await EnterprisePolicyTesting.setupPolicyEngineWithJson(json, customSchema);
     await lazy.SearchService.init();
     await settingsWritten;
   },
