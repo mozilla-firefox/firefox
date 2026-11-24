@@ -2306,7 +2306,8 @@ nsIFrame* nsCSSFrameConstructor::ConstructDocElementFrame(
   if (!aDocElement->HasServoData()) {
     mPresShell->StyleSet()->StyleNewSubtree(aDocElement);
   }
-  aDocElement->UnsetFlags(NODE_DESCENDANTS_NEED_FRAMES | NODE_NEEDS_FRAME);
+  aDocElement->UnsetStyleFlags(NodeStyleFlags::DescendantsNeedFrames |
+                               NodeStyleFlags::NeedsFrame);
 
   // Make sure to call UpdateViewportScrollStylesOverride before
   // SetUpDocElementContainingBlock, since it sets up our scrollbar state
@@ -2950,7 +2951,8 @@ static inline void ClearLazyBits(nsIContent* aStartContent,
 
   for (nsIContent* cur = aStartContent; cur != aEndContent;
        cur = cur->GetNextSibling()) {
-    cur->UnsetFlags(NODE_DESCENDANTS_NEED_FRAMES | NODE_NEEDS_FRAME);
+    cur->UnsetStyleFlags(NodeStyleFlags::DescendantsNeedFrames |
+                         NodeStyleFlags::NeedsFrame);
   }
 }
 
@@ -4875,7 +4877,8 @@ void nsCSSFrameConstructor::AppendPageBreakItem(
 bool nsCSSFrameConstructor::ShouldCreateItemsForChild(
     nsFrameConstructorState& aState, nsIContent* aContent,
     nsContainerFrame* aParentFrame) {
-  aContent->UnsetFlags(NODE_DESCENDANTS_NEED_FRAMES | NODE_NEEDS_FRAME);
+  aContent->UnsetStyleFlags(NodeStyleFlags::DescendantsNeedFrames |
+                            NodeStyleFlags::NeedsFrame);
   if (aContent->GetPrimaryFrame() && !aState.mCreatingExtraFrames) {
     MOZ_ASSERT(false,
                "asked to create frame construction item for a node that "
@@ -5872,7 +5875,7 @@ void nsCSSFrameConstructor::AddTextItemIfNeeded(
   MOZ_ASSERT(aPossibleTextContent, "Must have node");
   if (!aPossibleTextContent->IsText() ||
       !aPossibleTextContent->HasFlag(NS_CREATE_FRAME_IF_NON_WHITESPACE) ||
-      aPossibleTextContent->HasFlag(NODE_NEEDS_FRAME)) {
+      aPossibleTextContent->HasStyleFlag(NodeStyleFlags::NeedsFrame)) {
     // Not text, or not suppressed due to being all-whitespace (if it were being
     // suppressed, it would have the NS_CREATE_FRAME_IF_NON_WHITESPACE flag), or
     // going to be reframed anyway.
@@ -5887,7 +5890,7 @@ void nsCSSFrameConstructor::AddTextItemIfNeeded(
 void nsCSSFrameConstructor::ReframeTextIfNeeded(nsIContent* aContent) {
   if (!aContent->IsText() ||
       !aContent->HasFlag(NS_CREATE_FRAME_IF_NON_WHITESPACE) ||
-      aContent->HasFlag(NODE_NEEDS_FRAME)) {
+      aContent->HasStyleFlag(NodeStyleFlags::NeedsFrame)) {
     // Not text, or not suppressed due to being all-whitespace (if it were being
     // suppressed, it would have the NS_CREATE_FRAME_IF_NON_WHITESPACE flag), or
     // going to be reframed anyway.
@@ -5901,7 +5904,7 @@ void nsCSSFrameConstructor::ReframeTextIfNeeded(nsIContent* aContent) {
 #ifdef DEBUG
 void nsCSSFrameConstructor::CheckBitsForLazyFrameConstruction(
     nsIContent* aParent) {
-  // If we hit a node with no primary frame, or the NODE_NEEDS_FRAME bit set
+  // If we hit a node with no primary frame, or the NeedsFrame bit set
   // we want to assert, but leaf frames that process their own children and may
   // ignore anonymous children (eg framesets) make this complicated. So we set
   // these two booleans if we encounter these situations and unset them if we
@@ -5915,14 +5918,16 @@ void nsCSSFrameConstructor::CheckBitsForLazyFrameConstruction(
   bool noPrimaryFrame = false;
   bool needsFrameBitSet = false;
   nsIContent* content = aParent;
-  while (content && !content->HasFlag(NODE_DESCENDANTS_NEED_FRAMES)) {
+  while (content &&
+         !content->HasStyleFlag(NodeStyleFlags::DescendantsNeedFrames)) {
     if (content->GetPrimaryFrame() && content->GetPrimaryFrame()->IsLeaf()) {
       noPrimaryFrame = needsFrameBitSet = false;
     }
     if (!noPrimaryFrame && !content->GetPrimaryFrame()) {
       noPrimaryFrame = !IsDisplayContents(content);
     }
-    if (!needsFrameBitSet && content->HasFlag(NODE_NEEDS_FRAME)) {
+    if (!needsFrameBitSet &&
+        content->HasStyleFlag(NodeStyleFlags::NeedsFrame)) {
       needsFrameBitSet = true;
     }
 
@@ -5967,12 +5972,12 @@ void nsCSSFrameConstructor::ConstructLazily(nsIContent* aStartChild,
     return;
   }
 
-  // Set NODE_NEEDS_FRAME on the new nodes.
+  // Set NeedsFrame on the new nodes.
   for (nsIContent* child = aStartChild; child != aEndChild;
        child = child->GetNextSibling()) {
     NS_ASSERTION(!child->GetPrimaryFrame(),
                  "setting NEEDS_FRAME on a node that already has a frame?");
-    child->SetFlags(NODE_NEEDS_FRAME);
+    child->SetStyleFlags(NodeStyleFlags::NeedsFrame);
   }
 
   CheckBitsForLazyFrameConstruction(parent);
@@ -6211,7 +6216,7 @@ void nsCSSFrameConstructor::ContentRangeInserted(
 
     MOZ_ASSERT(!mRootElementFrame, "root element frame already created");
     if (aInsertionKind == InsertionKind::Async) {
-      docElement->SetFlags(NODE_NEEDS_FRAME);
+      docElement->SetStyleFlags(NodeStyleFlags::NeedsFrame);
       LazilyStyleNewChildRange(docElement, nullptr);
       return;
     }
@@ -9102,9 +9107,10 @@ void nsCSSFrameConstructor::AddFCItemsForAnonymousContent(
     nsIContent* content = info.mContent;
     // Gecko-styled nodes should have no pending restyle flags.
     // Assert some things about this content
-    MOZ_ASSERT(!(content->GetFlags() &
-                 (NODE_DESCENDANTS_NEED_FRAMES | NODE_NEEDS_FRAME)),
-               "Should not be marked as needing frames");
+    MOZ_ASSERT(
+        !content->HasAnyOfStyleFlags(NodeStyleFlags::DescendantsNeedFrames |
+                                     NodeStyleFlags::NeedsFrame),
+        "Should not be marked as needing frames");
     MOZ_ASSERT(!content->GetPrimaryFrame(), "Should have no existing frame");
     MOZ_ASSERT(!content->IsComment() && !content->IsProcessingInstruction(),
                "Why is someone creating garbage anonymous content");

@@ -29,7 +29,8 @@ inline HTMLBodyElement* Document::GetBodyElement(
       GetHtmlChildElement(nsGkAtoms::body, aContentToIgnore));
 }
 
-inline void Document::SetServoRestyleRoot(nsINode* aRoot, uint32_t aDirtyBits) {
+inline void Document::SetServoRestyleRoot(nsINode* aRoot,
+                                          NodeStyleFlags aDirtyBits) {
   MOZ_ASSERT(aRoot);
 
   MOZ_ASSERT(!mServoRestyleRoot || mServoRestyleRoot == aRoot ||
@@ -43,9 +44,9 @@ inline void Document::SetServoRestyleRoot(nsINode* aRoot, uint32_t aDirtyBits) {
 // Note: we break this out of SetServoRestyleRoot so that callers can add
 // bits without doing a no-op assignment to the restyle root, which would
 // involve cycle-collected refcount traffic.
-inline void Document::SetServoRestyleRootDirtyBits(uint32_t aDirtyBits) {
-  MOZ_ASSERT(aDirtyBits);
-  MOZ_ASSERT((aDirtyBits & ~Element::kAllServoDescendantBits) == 0);
+inline void Document::SetServoRestyleRootDirtyBits(NodeStyleFlags aDirtyBits) {
+  MOZ_ASSERT(aDirtyBits != NodeStyleFlags(0));
+  MOZ_ASSERT(!(aDirtyBits & ~Element::kAllServoDescendantBits));
   MOZ_ASSERT((aDirtyBits & mServoRestyleRootDirtyBits) ==
              mServoRestyleRootDirtyBits);
   MOZ_ASSERT(mServoRestyleRoot);

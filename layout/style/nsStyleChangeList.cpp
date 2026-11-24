@@ -31,7 +31,8 @@ void nsStyleChangeList::AppendChange(nsIFrame* aFrame, nsIContent* aContent,
           (aFrame && aContent->GetFlattenedTreeParentElementForStyle() &&
            Servo_Element_IsDisplayContents(
                aContent->GetFlattenedTreeParentElementForStyle())) ||
-          (aContent->IsText() && aContent->HasFlag(NODE_NEEDS_FRAME) &&
+          (aContent->IsText() &&
+           aContent->HasStyleFlag(NodeStyleFlags::NeedsFrame) &&
            aHint & nsChangeHint_ReconstructFrame),
       "Shouldn't be trying to restyle non-elements directly, "
       "except if it's a display:contents child or a text node "

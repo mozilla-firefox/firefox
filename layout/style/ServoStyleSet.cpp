@@ -830,8 +830,8 @@ bool ServoStyleSet::StyleDocument(ServoTraversalFlags aFlags) {
     MOZ_ASSERT(MayTraverseFrom(root));
 
     Element* parent = root->GetFlattenedTreeParentElementForStyle();
-    MOZ_ASSERT_IF(parent,
-                  !parent->HasAnyOfFlags(Element::kAllServoDescendantBits));
+    MOZ_ASSERT_IF(
+        parent, !parent->HasAnyOfStyleFlags(Element::kAllServoDescendantBits));
 
     if (MOZ_UNLIKELY(!root->HasServoData()) && !parent) {
       StyleNewSubtree(root);
@@ -843,10 +843,10 @@ bool ServoStyleSet::StyleDocument(ServoTraversalFlags aFlags) {
 
     postTraversalRequired |=
         Servo_TraverseSubtree(root, mRawData.get(), &snapshots, aFlags) ||
-        root->HasAnyOfFlags(Element::kAllServoDescendantBits |
-                            NODE_NEEDS_FRAME);
+        root->HasAnyOfStyleFlags(Element::kAllServoDescendantBits |
+                                 NodeStyleFlags::NeedsFrame);
 
-    uint32_t existingBits = mDocument->GetServoRestyleRootDirtyBits();
+    const auto existingBits = mDocument->GetServoRestyleRootDirtyBits();
     Element* newRoot = nullptr;
     while (parent && parent->HasDirtyDescendantsForServo()) {
       MOZ_ASSERT(root == mDocument->GetServoRestyleRoot(),
@@ -855,14 +855,14 @@ bool ServoStyleSet::StyleDocument(ServoTraversalFlags aFlags) {
       // need to post-traverse them, even if the root wasn't restyled after
       // all.
       // We need to propagate the existing bits to the ancestor.
-      parent->SetFlags(existingBits);
+      parent->SetStyleFlags(existingBits);
       newRoot = parent;
       parent = parent->GetFlattenedTreeParentElementForStyle();
     }
 
     if (newRoot) {
       mDocument->SetServoRestyleRoot(
-          newRoot, existingBits | ELEMENT_HAS_DIRTY_DESCENDANTS_FOR_SERVO);
+          newRoot, existingBits | NodeStyleFlags::HasDirtyDescendants);
       postTraversalRequired = true;
     }
   }
@@ -888,8 +888,8 @@ bool ServoStyleSet::StyleDocument(ServoTraversalFlags aFlags) {
       AutoPrepareTraversal guard(this);
       postTraversalRequired |=
           Servo_TraverseSubtree(root, mRawData.get(), &snapshots, aFlags) ||
-          root->HasAnyOfFlags(Element::kAllServoDescendantBits |
-                              NODE_NEEDS_FRAME);
+          root->HasAnyOfStyleFlags(Element::kAllServoDescendantBits |
+                                   NodeStyleFlags::NeedsFrame);
     }
   }
 

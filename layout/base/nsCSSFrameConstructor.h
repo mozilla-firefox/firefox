@@ -187,8 +187,8 @@ class nsCSSFrameConstructor final : public nsFrameManager {
    * inserts/appends as passed from the presshell, except for the insert of the
    * root element, which is always non-lazy.
    *
-   * If we construct lazily, then we add NODE_NEEDS_FRAME bits to the newly
-   * inserted/appended nodes and adds NODE_DESCENDANTS_NEED_FRAMES bits to the
+   * If we construct lazily, then we add NeedsFrame bits to the newly
+   * inserted/appended nodes and adds DescendantsNeedFrames bits to the
    * container and up along the parent chain until it hits the root or another
    * node with that bit set. Then it posts a restyle event to ensure that a
    * flush happens to construct those frames.

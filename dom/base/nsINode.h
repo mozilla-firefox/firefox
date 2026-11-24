@@ -153,47 +153,33 @@ enum : uint32_t {
   // Whether the node participates in a shadow tree.
   NODE_IS_IN_SHADOW_TREE = NODE_FLAG_BIT(5),
 
-  // This node needs to go through frame construction to get a frame (or
-  // undisplayed entry).
-  NODE_NEEDS_FRAME = NODE_FLAG_BIT(6),
-
-  // At least one descendant in the flattened tree has NODE_NEEDS_FRAME set.
-  // This should be set on every node on the flattened tree path between the
-  // node(s) with NODE_NEEDS_FRAME and the root content.
-  NODE_DESCENDANTS_NEED_FRAMES = NODE_FLAG_BIT(7),
-
   // Set if the node has the accesskey attribute set.
-  NODE_HAS_ACCESSKEY = NODE_FLAG_BIT(8),
+  NODE_HAS_ACCESSKEY = NODE_FLAG_BIT(6),
 
-  NODE_HAS_BEEN_IN_UA_WIDGET = NODE_FLAG_BIT(9),
+  NODE_HAS_BEEN_IN_UA_WIDGET = NODE_FLAG_BIT(7),
 
   // Set if the node has a nonce value and a header delivered CSP.
-  NODE_HAS_NONCE_AND_HEADER_CSP = NODE_FLAG_BIT(10),
+  NODE_HAS_NONCE_AND_HEADER_CSP = NODE_FLAG_BIT(8),
 
-  NODE_KEEPS_DOMARENA = NODE_FLAG_BIT(11),
+  NODE_KEEPS_DOMARENA = NODE_FLAG_BIT(9),
 
-  NODE_MAY_HAVE_ELEMENT_CHILDREN = NODE_FLAG_BIT(12),
+  NODE_MAY_HAVE_ELEMENT_CHILDREN = NODE_FLAG_BIT(10),
 
-  NODE_HAS_SCHEDULED_SELECTION_CHANGE_EVENT = NODE_FLAG_BIT(13),
+  NODE_HAS_SCHEDULED_SELECTION_CHANGE_EVENT = NODE_FLAG_BIT(11),
 
   // Remaining bits are node type specific.
-  NODE_TYPE_SPECIFIC_BITS_OFFSET = 14
+  NODE_TYPE_SPECIFIC_BITS_OFFSET = 12
 };
 
-// Flags for selectors that persist to the DOM node.
-enum class NodeSelectorFlags : uint32_t {
-  // Node has an :empty or :-moz-only-whitespace selector
-  HasEmptySelector = 1 << 0,
-
+// Style system flags that persist to the DOM node. These can be set from the
+// style traversal, potentially off the main thread.
+// The bits up to HasSnapshot must match the Rust ElementSelectorFlags.
+enum class NodeStyleFlags : uint32_t {
   /// A child of the node has a selector such that any insertion,
   /// removal, or appending of children requires restyling the parent, if the
   /// parent is an element. If the parent is the shadow root, the child's
   /// siblings are restyled.
-  HasSlowSelector = 1 << 1,
-
-  /// A child of the node has a :first-child, :-moz-first-node,
-  /// :only-child, :last-child or :-moz-last-node selector.
-  HasEdgeChildSelector = 1 << 2,
+  HasSlowSelector = 1 << 0,
 
   /// A child of the node has a selector such that any insertion or
   /// removal of children requires restyling later siblings of that
@@ -202,23 +188,53 @@ enum class NodeSelectorFlags : uint32_t {
   /// other content tree changes (e.g., the child changes to or from
   /// matching :empty due to a grandchild insertion or removal), the
   /// child's later siblings must also be restyled.
-  HasSlowSelectorLaterSiblings = 1 << 3,
+  HasSlowSelectorLaterSiblings = 1 << 1,
 
   /// HasSlowSelector* was set by the presence of :nth (But not of).
-  HasSlowSelectorNth = 1 << 4,
+  HasSlowSelectorNth = 1 << 2,
 
   /// A child of this node might be matched by :nth-child(.. of <selector>) or
   /// :nth-last-child(.. of <selector>). If a DOM mutation may have caused the
   /// selector to either match or no longer match that child, the child's
   /// siblings are restyled.
-  HasSlowSelectorNthOf = 1 << 5,
+  HasSlowSelectorNthOf = 1 << 3,
 
   /// All instances of :nth flags.
   HasSlowSelectorNthAll = HasSlowSelectorNthOf | HasSlowSelectorNth,
 
+  /// A child of the node has a :first-child, :-moz-first-node,
+  /// :only-child, :last-child or :-moz-last-node selector.
+  HasEdgeChildSelector = 1 << 4,
+
+  // Node has an :empty or :-moz-only-whitespace selector
+  HasEmptySelector = 1 << 5,
+
+  // This node was evaluated as an anchor for a relative selector.
+  RelativeSelectorAnchor = 1 << 6,
+
+  // This node was evaluated as an anchor for a relative selector, and that
+  // relative selector was not the subject of the overall selector.
+  RelativeSelectorAnchorNonSubject = 1 << 7,
+
+  // This node's sibling(s) performed a relative selector search to this node.
+  RelativeSelectorSearchDirectionSibling = 1 << 8,
+
+  // This node's ancestor(s) performed a relative selector search to this node.
+  RelativeSelectorSearchDirectionAncestor = 1 << 9,
+
+  // This node's sibling(s) and ancestor(s), and/or this node's ancestor's
+  // sibling(s) performed a relative selector search to this node.
+  RelativeSelectorSearchDirectionAncestorSibling =
+      RelativeSelectorSearchDirectionSibling |
+      RelativeSelectorSearchDirectionAncestor,
+
   /// A child of this node may be using sibling-index() or sibling-count(),
   /// and must be recascaded if other children are added or removed.
-  MayHaveTreeCountingFunction = 1 << 6,
+  MayHaveTreeCountingFunction = 1 << 10,
+
+  // This node was evaluated as a container for a container query with attr()
+  // functions whose attribute names can't be known at parse time.
+  ContainerQueryWithUnparsedAttr = 1 << 11,
 
   /// Set of selector flags that may trigger a restyle on DOM append, with
   /// restyle on siblings or a single parent (And perhaps their subtrees).
@@ -231,31 +247,32 @@ enum class NodeSelectorFlags : uint32_t {
   AllSimpleRestyleFlags =
       AllSimpleRestyleFlagsForAppend | HasSlowSelectorLaterSiblings,
 
-  // This node was evaluated as an anchor for a relative selector.
-  RelativeSelectorAnchor = 1 << 7,
+  // Whether the element has been snapshotted due to attribute or state changes
+  // by the Servo restyle manager.
+  HasSnapshot = 1 << 12,
 
-  // This node was evaluated as an anchor for a relative selector, and that
-  // relative selector was not the subject of the overall selector.
-  RelativeSelectorAnchorNonSubject = 1 << 8,
+  // Whether the element has already handled its relevant snapshot.
+  //
+  // Used by the servo restyle process in order to accurately track whether the
+  // style of an element is up-to-date, even during the same restyle process.
+  HandledSnapshot = 1 << 13,
 
-  // This node's sibling(s) performed a relative selector search to this node.
-  RelativeSelectorSearchDirectionSibling = 1 << 9,
+  // This node needs to go through frame construction to get a frame (or
+  // undisplayed entry).
+  // NOTE: Should only be used on nsIContent nodes
+  NeedsFrame = 1 << 14,
 
-  // This node's ancestor(s) performed a relative selector search to this node.
-  RelativeSelectorSearchDirectionAncestor = 1 << 10,
+  // At least one descendant in the flattened tree has NeedsFrame set. This
+  // should be set on every node on the flattened tree path between the node(s)
+  // with NeedsFrame and the root content.
+  // NOTE: Should only be used on nsIContent nodes
+  DescendantsNeedFrames = 1 << 15,
 
-  // This node's sibling(s) and ancestor(s), and/or this node's ancestor's
-  // sibling(s) performed a relative selector search to this node.
-  RelativeSelectorSearchDirectionAncestorSibling =
-      RelativeSelectorSearchDirectionSibling |
-      RelativeSelectorSearchDirectionAncestor,
-
-  // This node was evaluated as a container for a container query with attr()
-  // functions whose attribute names can't be known at parse time.
-  ContainerQueryWithUnparsedAttr = 1 << 11,
+  // Whether this element has dirty descendants for Servo's style system.
+  HasDirtyDescendants = 1 << 16,
 };
 
-MOZ_MAKE_ENUM_CLASS_BITWISE_OPERATORS(NodeSelectorFlags);
+MOZ_MAKE_ENUM_CLASS_BITWISE_OPERATORS(NodeStyleFlags);
 
 enum class BatchRemovalOrder {
   FrontToBack,
@@ -1878,13 +1895,11 @@ class nsINode : public mozilla::dom::EventTarget {
 #endif
 
   void SetFlags(FlagsType aFlagsToSet) {
-    NS_ASSERTION(
-        !(aFlagsToSet &
-          (NODE_IS_NATIVE_ANONYMOUS_ROOT | NODE_IS_IN_NATIVE_ANONYMOUS_SUBTREE |
-           NODE_DESCENDANTS_NEED_FRAMES | NODE_NEEDS_FRAME |
-           NODE_HAS_BEEN_IN_UA_WIDGET)) ||
-            IsContent(),
-        "Flag only permitted on nsIContent nodes");
+    NS_ASSERTION(!(aFlagsToSet & (NODE_IS_NATIVE_ANONYMOUS_ROOT |
+                                  NODE_IS_IN_NATIVE_ANONYMOUS_SUBTREE |
+                                  NODE_HAS_BEEN_IN_UA_WIDGET)) ||
+                     IsContent(),
+                 "Flag only permitted on nsIContent nodes");
     nsWrapperCache::SetFlags(aFlagsToSet);
   }
 
@@ -3210,8 +3225,33 @@ class nsINode : public mozilla::dom::EventTarget {
 #undef TOUCH_EVENT
 #undef EVENT
 
-  NodeSelectorFlags GetSelectorFlags() const {
-    return static_cast<NodeSelectorFlags>(mSelectorFlags.Get());
+  NodeStyleFlags GetStyleFlags() const {
+    return static_cast<NodeStyleFlags>(mStyleFlags.Get());
+  }
+
+  bool HasStyleFlag(NodeStyleFlags aFlag) const {
+    return !!(GetStyleFlags() & aFlag);
+  }
+
+  bool HasAnyOfStyleFlags(NodeStyleFlags aFlags) const {
+    return !!(GetStyleFlags() & aFlags);
+  }
+
+  bool HasAllStyleFlags(NodeStyleFlags aFlags) const {
+    return (GetStyleFlags() & aFlags) == aFlags;
+  }
+
+  void SetStyleFlags(NodeStyleFlags aFlags) {
+    MOZ_ASSERT(NS_IsMainThread());
+    MOZ_ASSERT_IF(aFlags & (NodeStyleFlags::NeedsFrame |
+                            NodeStyleFlags::DescendantsNeedFrames),
+                  IsContent());
+    mStyleFlags.Set(mStyleFlags.Get() | static_cast<uint32_t>(aFlags));
+  }
+
+  void UnsetStyleFlags(NodeStyleFlags aFlags) {
+    MOZ_ASSERT(NS_IsMainThread());
+    mStyleFlags.Set(mStyleFlags.Get() & ~static_cast<uint32_t>(aFlags));
   }
 
   void AriaNotify(const nsAString& aAnnouncement,
@@ -3234,7 +3274,7 @@ class nsINode : public mozilla::dom::EventTarget {
   uint32_t mBoolFlags;
 #endif
 
-  mozilla::RustCell<uint32_t> mSelectorFlags{0};
+  mozilla::RustCell<uint32_t> mStyleFlags{0};
 
   uint32_t mChildCount;
 

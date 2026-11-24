@@ -356,7 +356,7 @@ class RestyleManager {
    * Restyle an element's previous and/or next siblings.
    */
   void RestyleSiblingsForNthOf(dom::Element* aChild,
-                               NodeSelectorFlags aParentFlags);
+                               NodeStyleFlags aParentFlags);
 
   /**
    * Posts restyle hints for siblings of an element and their descendants if the
@@ -482,7 +482,7 @@ class RestyleManager {
 
   ServoStyleSet* StyleSet() const { return PresContext()->StyleSet(); }
 
-  void RestyleWholeContainer(nsINode* aContainer, NodeSelectorFlags);
+  void RestyleWholeContainer(nsINode* aContainer, NodeStyleFlags);
   void RestylePreviousSiblings(nsIContent* aStartingSibling);
   void RestyleSiblingsStartingWith(nsIContent* aStartingSibling);
   void RecascadeForTreeCountingFunctions(nsINode* aContainer);

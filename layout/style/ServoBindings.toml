@@ -57,7 +57,7 @@ hide-types = [
 bitfield-enums = [
     "nsChangeHint",
     "mozilla::OriginFlags",
-    "NodeSelectorFlags",
+    "NodeStyleFlags",
 ]
 rusty-enums = [
     "nsCompatibility",
@@ -276,7 +276,7 @@ allowlist-types = [
     "mozilla::InheritTarget",
     "mozilla::dom::MediaList",
     "mozilla::StyleRuleInclusion",
-    "NodeSelectorFlags",
+    "NodeStyleFlags",
     "AnchorPosResolutionParams",
     "AnchorPosOffsetResolutionParams",
 ]

@@ -837,7 +837,7 @@ where
         }
     }
 
-    // Make sure not to clear NODE_NEEDS_FRAME on the root.
+    // Make sure not to clear NeedsFrame on the root.
     unsafe {
         root.clear_descendant_bits();
     }

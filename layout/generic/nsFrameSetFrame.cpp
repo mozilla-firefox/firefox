@@ -263,11 +263,13 @@ void nsHTMLFramesetFrame::Init(nsIContent* aContent, nsContainerFrame* aParent,
       // Clear the lazy bits in the remaining children.  Also clear
       // the restyle flags, like nsCSSFrameConstructor::ProcessChildren does.
       for (; child; child = child->GetNextSibling()) {
-        child->UnsetFlags(NODE_DESCENDANTS_NEED_FRAMES | NODE_NEEDS_FRAME);
+        child->UnsetStyleFlags(NodeStyleFlags::DescendantsNeedFrames |
+                               NodeStyleFlags::NeedsFrame);
       }
       break;
     }
-    child->UnsetFlags(NODE_DESCENDANTS_NEED_FRAMES | NODE_NEEDS_FRAME);
+    child->UnsetStyleFlags(NodeStyleFlags::DescendantsNeedFrames |
+                           NodeStyleFlags::NeedsFrame);
 
     // IMPORTANT: This must match the conditions in
     // nsCSSFrameConstructor::ContentAppended/Inserted/Removed

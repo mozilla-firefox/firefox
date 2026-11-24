@@ -407,7 +407,8 @@ nsresult CharacterData::BindToTree(BindContext& aContext, nsINode& aParent) {
   if (connected) {
     // Clear the lazy frame construction bits.
     // XXX Why here?
-    UnsetFlags(NODE_NEEDS_FRAME | NODE_DESCENDANTS_NEED_FRAMES);
+    UnsetStyleFlags(NodeStyleFlags::NeedsFrame |
+                    NodeStyleFlags::DescendantsNeedFrames);
     if (mBuffer.IsBidi()) {
       aContext.OwnerDoc().SetBidiEnabled();
     }

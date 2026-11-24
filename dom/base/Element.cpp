@@ -3017,7 +3017,7 @@ nsresult Element::BindToTree(BindContext& aContext, nsINode& aParent) {
   MOZ_ASSERT(!!GetParent() == aParent.IsContent());
 
   MOZ_ASSERT_IF(!aContext.IsMove(),
-                !HasAnyOfFlags(Element::kAllServoDescendantBits));
+                !HasAnyOfStyleFlags(Element::kAllServoDescendantBits));
 
   SetSubtreeRootPointer(aParent.SubtreeRoot());
   const bool connected = aParent.IsInComposedDoc();
@@ -3025,7 +3025,8 @@ nsresult Element::BindToTree(BindContext& aContext, nsINode& aParent) {
   if (connected) {
     // Clear the lazy frame construction bits.
     // XXX Why here?
-    UnsetFlags(NODE_NEEDS_FRAME | NODE_DESCENDANTS_NEED_FRAMES);
+    UnsetStyleFlags(NodeStyleFlags::NeedsFrame |
+                    NodeStyleFlags::DescendantsNeedFrames);
   }
   if (aParent.IsInUncomposedDoc()) {
     SetIsInDocument();
@@ -3409,7 +3410,8 @@ void Element::UnbindFromTree(UnbindContext& aContext) {
     shadowRoot->Unbind();
   }
 
-  MOZ_ASSERT_IF(!aContext.IsMove(), !HasAnyOfFlags(kAllServoDescendantBits));
+  MOZ_ASSERT_IF(!aContext.IsMove(),
+                !HasAnyOfStyleFlags(kAllServoDescendantBits));
   MOZ_ASSERT_IF(!aContext.IsMove(),
                 !document || document->GetServoRestyleRoot() != this);
 }
@@ -4637,8 +4639,8 @@ void Element::List(FILE* out, int32_t aIndent, const nsCString& aPrefix) const {
   fprintf(out, " state=[%llx]",
           static_cast<unsigned long long>(State().GetInternalValue()));
   fprintf(out, " flags=[%08x]", static_cast<unsigned int>(GetFlags()));
-  fprintf(out, " selectorflags=[%08x]",
-          static_cast<unsigned int>(GetSelectorFlags()));
+  fprintf(out, " styleflags=[%08x]",
+          static_cast<unsigned int>(GetStyleFlags()));
   if (IsClosestCommonInclusiveAncestorForRangeInSelection()) {
     const LinkedList<AbstractRange>* ranges =
         GetExistingClosestCommonInclusiveAncestorRanges();
@@ -6190,8 +6192,9 @@ void Element::ClearServoData(Document* aDoc) {
     Servo_Element_ClearData(this);
   } else {
     // NOTE: Matches the flags cleared in GeckoElement::clear_data.
-    UnsetFlags(ELEMENT_HAS_SNAPSHOT | ELEMENT_HANDLED_SNAPSHOT |
-               kAllServoDescendantBits | NODE_NEEDS_FRAME);
+    UnsetStyleFlags(NodeStyleFlags::HasSnapshot |
+                    NodeStyleFlags::HandledSnapshot | kAllServoDescendantBits |
+                    NodeStyleFlags::NeedsFrame);
   }
   // Since this element is losing its servo data, nothing under it may have
   // servo data either, so we can forget restyles rooted at this element. This
@@ -6474,14 +6477,14 @@ void Element::AddSizeOfExcludingThis(nsWindowSizes& aSizes,
 }
 
 #ifdef DEBUG
-static bool BitsArePropagated(const Element* aElement, uint32_t aBits,
+static bool BitsArePropagated(const Element* aElement, NodeStyleFlags aBits,
                               nsINode* aRestyleRoot) {
   const Element* curr = aElement;
   while (curr) {
     if (curr == aRestyleRoot) {
       return true;
     }
-    if (!curr->HasAllFlags(aBits)) {
+    if (!curr->HasAllStyleFlags(aBits)) {
       return false;
     }
     nsINode* parentNode = curr->GetParentNode();
@@ -6502,7 +6505,7 @@ static inline void AssertNoBitsPropagatedFrom(nsINode* aRoot) {
 
   auto* element = aRoot->GetFlattenedTreeParentElementForStyle();
   while (element) {
-    MOZ_ASSERT(!element->HasAnyOfFlags(Element::kAllServoDescendantBits));
+    MOZ_ASSERT(!element->HasAnyOfStyleFlags(Element::kAllServoDescendantBits));
     element = element->GetFlattenedTreeParentElementForStyle();
   }
 #endif
@@ -6511,11 +6514,12 @@ static inline void AssertNoBitsPropagatedFrom(nsINode* aRoot) {
 // Sets `aBits` on `aElement` and all of its flattened-tree ancestors up to and
 // including aStopAt or the root element (whichever is encountered first), and
 // as long as `aBitsToStopAt` isn't found anywhere in the chain.
-static inline Element* PropagateBits(Element* aElement, uint32_t aBits,
-                                     nsINode* aStopAt, uint32_t aBitsToStopAt) {
+static inline Element* PropagateBits(Element* aElement, NodeStyleFlags aBits,
+                                     nsINode* aStopAt,
+                                     NodeStyleFlags aBitsToStopAt) {
   Element* curr = aElement;
-  while (curr && !curr->HasAllFlags(aBitsToStopAt)) {
-    curr->SetFlags(aBits);
+  while (curr && !curr->HasAllStyleFlags(aBitsToStopAt)) {
+    curr->SetStyleFlags(aBits);
     if (curr == aStopAt) {
       break;
     }
@@ -6523,7 +6527,7 @@ static inline Element* PropagateBits(Element* aElement, uint32_t aBits,
   }
 
   if (aBitsToStopAt != aBits && curr) {
-    curr->SetFlags(aBits);
+    curr->SetStyleFlags(aBits);
   }
 
   return curr;
@@ -6563,7 +6567,7 @@ static inline Element* PropagateBits(Element* aElement, uint32_t aBits,
 // Note that, since we track a root, we try to optimize the case where an
 // element under the current root is dirtied, that's why we don't trivially use
 // `nsContentUtils::GetCommonFlattenedTreeAncestorForStyle`.
-static void NoteDirtyElement(Element* aElement, uint32_t aBits) {
+static void NoteDirtyElement(Element* aElement, NodeStyleFlags aBits) {
   MOZ_ASSERT(aElement->IsInComposedDoc());
 
   // Check the existing root early on, since it may allow us to short-circuit
@@ -6592,7 +6596,7 @@ static void NoteDirtyElement(Element* aElement, uint32_t aBits) {
 
     // Similarly, if our parent already has the bit we're propagating, we can
     // assume everything is already set up.
-    if (parent->HasAllFlags(aBits)) {
+    if (parent->HasAllStyleFlags(aBits)) {
       return;
     }
 
@@ -6637,7 +6641,7 @@ static void NoteDirtyElement(Element* aElement, uint32_t aBits) {
       !parent->IsElement() ||
       !PropagateBits(parent->AsElement(), aBits, existingRoot, aBits);
 
-  uint32_t existingBits = doc->GetServoRestyleRootDirtyBits();
+  const auto existingBits = doc->GetServoRestyleRootDirtyBits();
   if (!reachedDocRoot || existingRoot == doc) {
     // We're a descendant of the existing root. All that's left to do is to
     // make sure the bit we propagated is also registered on the root.
@@ -6661,8 +6665,8 @@ static void NoteDirtyElement(Element* aElement, uint32_t aBits) {
       doc->SetServoRestyleRoot(commonAncestor, existingBits | aBits);
       Element* curr = commonAncestor;
       while ((curr = curr->GetFlattenedTreeParentElementForStyle())) {
-        MOZ_ASSERT(curr->HasAllFlags(aBits));
-        curr->UnsetFlags(aBits);
+        MOZ_ASSERT(curr->HasAllStyleFlags(aBits));
+        curr->UnsetStyleFlags(aBits);
       }
       AssertNoBitsPropagatedFrom(commonAncestor);
     } else {
@@ -6692,8 +6696,8 @@ void Element::NoteDirtySubtreeForServo() {
 
   Document* doc = GetComposedDoc();
   nsINode* existingRoot = doc->GetServoRestyleRoot();
-  uint32_t existingBits =
-      existingRoot ? doc->GetServoRestyleRootDirtyBits() : 0;
+  const auto existingBits =
+      existingRoot ? doc->GetServoRestyleRootDirtyBits() : NodeStyleFlags(0);
 
   if (existingRoot && existingRoot->IsElement() && existingRoot != this &&
       nsContentUtils::ContentIsFlattenedTreeDescendantOfForStyle(
@@ -6705,12 +6709,11 @@ void Element::NoteDirtySubtreeForServo() {
     doc->ClearServoRestyleRoot();
   }
 
-  NoteDirtyElement(this,
-                   existingBits | ELEMENT_HAS_DIRTY_DESCENDANTS_FOR_SERVO);
+  NoteDirtyElement(this, existingBits | NodeStyleFlags::HasDirtyDescendants);
 }
 
 void Element::NoteDirtyForServo() {
-  NoteDirtyElement(this, ELEMENT_HAS_DIRTY_DESCENDANTS_FOR_SERVO);
+  NoteDirtyElement(this, NodeStyleFlags::HasDirtyDescendants);
 }
 
 void Element::NoteDescendantsNeedFramesForServo() {
@@ -6718,8 +6721,8 @@ void Element::NoteDescendantsNeedFramesForServo() {
   // Note() method operates on the parent of the frame-requiring content, unlike
   // the other Note() methods above (which operate directly on the element that
   // needs processing).
-  NoteDirtyElement(this, NODE_DESCENDANTS_NEED_FRAMES);
-  SetFlags(NODE_DESCENDANTS_NEED_FRAMES);
+  NoteDirtyElement(this, NodeStyleFlags::DescendantsNeedFrames);
+  SetStyleFlags(NodeStyleFlags::DescendantsNeedFrames);
 }
 
 double Element::FirstLineBoxBSize() const {

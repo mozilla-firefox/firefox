@@ -4604,19 +4604,19 @@ class Document : public nsINode,
 
   nsINode* GetServoRestyleRoot() const { return mServoRestyleRoot; }
 
-  uint32_t GetServoRestyleRootDirtyBits() const {
+  NodeStyleFlags GetServoRestyleRootDirtyBits() const {
     MOZ_ASSERT(mServoRestyleRoot);
-    MOZ_ASSERT(mServoRestyleRootDirtyBits);
+    MOZ_ASSERT(mServoRestyleRootDirtyBits != NodeStyleFlags(0));
     return mServoRestyleRootDirtyBits;
   }
 
   void ClearServoRestyleRoot() {
     mServoRestyleRoot = nullptr;
-    mServoRestyleRootDirtyBits = 0;
+    mServoRestyleRootDirtyBits = NodeStyleFlags(0);
   }
 
-  inline void SetServoRestyleRoot(nsINode* aRoot, uint32_t aDirtyBits);
-  inline void SetServoRestyleRootDirtyBits(uint32_t aDirtyBits);
+  inline void SetServoRestyleRoot(nsINode* aRoot, NodeStyleFlags aDirtyBits);
+  inline void SetServoRestyleRootDirtyBits(NodeStyleFlags aDirtyBits);
 
   bool ShouldThrowOnDynamicMarkupInsertion() {
     return mThrowOnDynamicMarkupInsertionCounter;
@@ -6059,7 +6059,7 @@ class Document : public nsINode,
   // We also track which "descendant" bits (normal/animation-only/lazy-fc) the
   // root corresponds to.
   nsCOMPtr<nsINode> mServoRestyleRoot;
-  uint32_t mServoRestyleRootDirtyBits;
+  NodeStyleFlags mServoRestyleRootDirtyBits;
 
   // Used in conjunction with the create-an-element-for-the-token algorithm to
   // prevent custom element constructors from being able to use document.open(),

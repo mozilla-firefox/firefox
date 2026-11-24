@@ -3060,7 +3060,7 @@ void PresShell::SlotAssignmentWillChange(Element& aElement,
                !Servo_Element_IsDisplayNone(aNewSlot)) {
       // Set the reframe bits...
       aNewSlot->NoteDescendantsNeedFramesForServo();
-      aElement.SetFlags(NODE_NEEDS_FRAME);
+      aElement.SetStyleFlags(NodeStyleFlags::NeedsFrame);
       // Now the style dirty bits. Note that we can't just do
       // aElement.NoteDirtyForServo(), because the new slot is not setup yet.
       aNewSlot->SetHasDirtyDescendantsForServo();

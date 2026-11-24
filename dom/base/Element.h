@@ -167,55 +167,42 @@ already_AddRefed<mozilla::dom::ContentList> NS_GetContentList(
 
 // Element-specific flags
 enum : uint32_t {
-  // Whether this node has dirty descendants for Servo's style system.
-  ELEMENT_HAS_DIRTY_DESCENDANTS_FOR_SERVO = ELEMENT_FLAG_BIT(0),
-
-  // Whether the element has been snapshotted due to attribute or state changes
-  // by the Servo restyle manager.
-  ELEMENT_HAS_SNAPSHOT = ELEMENT_FLAG_BIT(2),
-
-  // Whether the element has already handled its relevant snapshot.
-  //
-  // Used by the servo restyle process in order to accurately track whether the
-  // style of an element is up-to-date, even during the same restyle process.
-  ELEMENT_HANDLED_SNAPSHOT = ELEMENT_FLAG_BIT(3),
-
   // If this flag is set on an element, that means that it is a HTML datalist
   // element or has a HTML datalist element ancestor.
-  ELEMENT_IS_DATALIST_OR_HAS_DATALIST_ANCESTOR = ELEMENT_FLAG_BIT(4),
+  ELEMENT_IS_DATALIST_OR_HAS_DATALIST_ANCESTOR = ELEMENT_FLAG_BIT(0),
 
   // If this flag is set on an element, that means this element
   // has been considered by our LargestContentfulPaint algorithm and
   // it's not going to be considered again.
-  ELEMENT_PROCESSED_BY_LCP_FOR_TEXT = ELEMENT_FLAG_BIT(5),
+  ELEMENT_PROCESSED_BY_LCP_FOR_TEXT = ELEMENT_FLAG_BIT(1),
 
   // If this flag is set on an element, this means the HTML parser encountered
   // a duplicate attribute error:
   // https://html.spec.whatwg.org/multipage/parsing.html#parse-error-duplicate-attribute
   // This flag is used for detecting dangling markup attacks in the CSP
   // algorithm https://w3c.github.io/webappsec-csp/#is-element-nonceable.
-  ELEMENT_PARSER_HAD_DUPLICATE_ATTR_ERROR = ELEMENT_FLAG_BIT(6),
+  ELEMENT_PARSER_HAD_DUPLICATE_ATTR_ERROR = ELEMENT_FLAG_BIT(2),
 
   // If this flag is set, this element is in
   // Document::mContentIdentifiersForLCP.
-  ELEMENT_IN_CONTENT_IDENTIFIER_FOR_LCP = ELEMENT_FLAG_BIT(7),
+  ELEMENT_IN_CONTENT_IDENTIFIER_FOR_LCP = ELEMENT_FLAG_BIT(3),
 
   // 2-bit field encoding the element's custom element registry state.
   // See CustomElementRegistryState for the possible values.
-  ELEMENT_CUSTOM_ELEMENT_REGISTRY_LOW_BIT = ELEMENT_FLAG_BIT(8),
+  ELEMENT_CUSTOM_ELEMENT_REGISTRY_LOW_BIT = ELEMENT_FLAG_BIT(4),
   ELEMENT_CUSTOM_ELEMENT_REGISTRY_MASK =
-      ELEMENT_FLAG_BIT(8) | ELEMENT_FLAG_BIT(9),
+      ELEMENT_FLAG_BIT(4) | ELEMENT_FLAG_BIT(5),
 
   // Whether this element has an associated EditContext
   // https://w3c.github.io/edit-context
-  ELEMENT_HAS_EDIT_CONTEXT = ELEMENT_FLAG_BIT(10),
+  ELEMENT_HAS_EDIT_CONTEXT = ELEMENT_FLAG_BIT(6),
 
   // Set while this element is on the HTML parser's stack of open elements.
   // Used for rel=expect.
-  ELEMENT_ON_PARSER_STACK = ELEMENT_FLAG_BIT(11),
+  ELEMENT_ON_PARSER_STACK = ELEMENT_FLAG_BIT(7),
 
   // Remaining bits are for subclasses
-  ELEMENT_TYPE_SPECIFIC_BITS_OFFSET = NODE_TYPE_SPECIFIC_BITS_OFFSET + 12
+  ELEMENT_TYPE_SPECIFIC_BITS_OFFSET = NODE_TYPE_SPECIFIC_BITS_OFFSET + 8
 };
 
 #undef ELEMENT_FLAG_BIT
@@ -604,8 +591,9 @@ class Element : public FragmentOrElement {
 
   Directionality GetComputedDirectionality() const;
 
-  static const uint32_t kAllServoDescendantBits =
-      ELEMENT_HAS_DIRTY_DESCENDANTS_FOR_SERVO | NODE_DESCENDANTS_NEED_FRAMES;
+  static constexpr NodeStyleFlags kAllServoDescendantBits =
+      NodeStyleFlags::HasDirtyDescendants |
+      NodeStyleFlags::DescendantsNeedFrames;
 
   /**
    * Notes that something in the given subtree of this element needs dirtying,
@@ -621,15 +609,15 @@ class Element : public FragmentOrElement {
   void NoteDescendantsNeedFramesForServo();
 
   bool HasDirtyDescendantsForServo() const {
-    return HasFlag(ELEMENT_HAS_DIRTY_DESCENDANTS_FOR_SERVO);
+    return HasStyleFlag(NodeStyleFlags::HasDirtyDescendants);
   }
 
   void SetHasDirtyDescendantsForServo() {
-    SetFlags(ELEMENT_HAS_DIRTY_DESCENDANTS_FOR_SERVO);
+    SetStyleFlags(NodeStyleFlags::HasDirtyDescendants);
   }
 
   void UnsetHasDirtyDescendantsForServo() {
-    UnsetFlags(ELEMENT_HAS_DIRTY_DESCENDANTS_FOR_SERVO);
+    UnsetStyleFlags(NodeStyleFlags::HasDirtyDescendants);
   }
 
   bool HasServoData() const { return !!mServoData.Get(); }

@@ -87,11 +87,11 @@ bitflags! {
 
         /// A child of this element may be using sibling-index() or sibling-count(),
         /// and must be recascaded if other children are added or removed.
-        const MAY_HAVE_TREE_COUNTING_FUNCTION = 1 << 11;
+        const MAY_HAVE_TREE_COUNTING_FUNCTION = 1 << 10;
 
         /// The element was evaluated as a container for a container query with
         /// `attr()` functions whose attribute names can't be known at parse time.
-        const CONTAINER_QUERY_WITH_UNPARSED_ATTR = 1 << 12;
+        const CONTAINER_QUERY_WITH_UNPARSED_ATTR = 1 << 11;
     }
 }
 

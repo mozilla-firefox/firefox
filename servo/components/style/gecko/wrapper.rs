@@ -38,12 +38,8 @@ use crate::gecko_bindings::bindings::Gecko_IsSignificantChild;
 use crate::gecko_bindings::bindings::Gecko_MatchLang;
 use crate::gecko_bindings::bindings::Gecko_UpdateAnimations;
 use crate::gecko_bindings::structs;
-use crate::gecko_bindings::structs::ELEMENT_HANDLED_SNAPSHOT;
-use crate::gecko_bindings::structs::ELEMENT_HAS_DIRTY_DESCENDANTS_FOR_SERVO;
-use crate::gecko_bindings::structs::ELEMENT_HAS_SNAPSHOT;
 use crate::gecko_bindings::structs::EffectCompositor_CascadeLevel as CascadeLevel;
-use crate::gecko_bindings::structs::NODE_DESCENDANTS_NEED_FRAMES;
-use crate::gecko_bindings::structs::NODE_NEEDS_FRAME;
+use crate::gecko_bindings::structs::NodeStyleFlags;
 use crate::gecko_bindings::structs::nsChangeHint;
 use crate::gecko_bindings::structs::{Element as RawGeckoElement, nsINode as RawGeckoNode};
 use crate::gecko_bindings::structs::{nsAtom, nsIContent, nsINode_BooleanFlag};
@@ -216,6 +212,10 @@ impl<'lr> TShadowRoot for GeckoShadowRoot<'lr> {
     }
 }
 
+/// Matches `Element::kAllServoDescendantBits`.
+const ALL_DESCENDANT_BITS: NodeStyleFlags =
+    NodeStyleFlags(NodeStyleFlags::HasDirtyDescendants.0 | NodeStyleFlags::DescendantsNeedFrames.0);
+
 /// A simple wrapper over a non-null Gecko node (`nsINode`) pointer.
 ///
 /// Important: We don't currently refcount the DOM, because the wrapper lifetime
@@ -274,11 +274,6 @@ impl<'ln> GeckoNode<'ln> {
         GeckoNode(&content._base)
     }
 
-    #[inline]
-    fn set_flags(&self, flags: u32) {
-        self.flags_atomic().fetch_or(flags, Ordering::Relaxed);
-    }
-
     fn flags_atomic_for(flags: &Cell<u32>) -> &AtomicU32 {
         const_assert!(mem::size_of::<Cell<u32>>() == mem::size_of::<AtomicU32>());
         const_assert!(mem::align_of::<Cell<u32>>() == mem::align_of::<AtomicU32>());
@@ -306,19 +301,24 @@ impl<'ln> GeckoNode<'ln> {
     }
 
     #[inline]
-    fn selector_flags_atomic(&self) -> &AtomicU32 {
-        Self::flags_atomic_for(&self.0.mSelectorFlags)
+    fn style_flags_atomic(&self) -> &AtomicU32 {
+        Self::flags_atomic_for(&self.0.mStyleFlags)
     }
 
     #[inline]
-    fn selector_flags(&self) -> u32 {
-        self.selector_flags_atomic().load(Ordering::Relaxed)
+    fn style_flags(&self) -> u32 {
+        self.style_flags_atomic().load(Ordering::Relaxed)
     }
 
     #[inline]
-    fn set_selector_flags(&self, flags: u32) {
-        self.selector_flags_atomic()
-            .fetch_or(flags, Ordering::Relaxed);
+    fn set_style_flags(&self, flags: u32) {
+        self.style_flags_atomic().fetch_or(flags, Ordering::Relaxed);
+    }
+
+    #[inline]
+    fn unset_style_flags(&self, flags: u32) {
+        self.style_flags_atomic()
+            .fetch_and(!flags, Ordering::Relaxed);
     }
 
     #[inline]
@@ -669,11 +669,11 @@ impl<'le> GeckoElement<'le> {
         unsafe {
             // NOTE: When adding flags here consider whether they need to be dropped in
             // Element::ClearServoData.
-            self.unset_flags(
-                ELEMENT_HAS_SNAPSHOT
-                    | ELEMENT_HANDLED_SNAPSHOT
-                    | structs::Element_kAllServoDescendantBits
-                    | NODE_NEEDS_FRAME,
+            self.unset_style_flags(
+                NodeStyleFlags::HasSnapshot
+                    | NodeStyleFlags::HandledSnapshot
+                    | ALL_DESCENDANT_BITS
+                    | NodeStyleFlags::NeedsFrame,
             );
             if ptr.is_null() {
                 return None;
@@ -746,27 +746,30 @@ impl<'le> GeckoElement<'le> {
     }
 
     #[inline]
-    fn set_flags(&self, flags: u32) {
-        self.as_node().set_flags(flags);
+    fn has_style_flags(&self, flags: NodeStyleFlags) -> bool {
+        self.as_node().style_flags() & flags.0 != 0
     }
 
     #[inline]
-    unsafe fn unset_flags(&self, flags: u32) {
-        self.as_node()
-            .flags_atomic()
-            .fetch_and(!flags, Ordering::Relaxed);
+    fn set_style_flags(&self, flags: NodeStyleFlags) {
+        self.as_node().set_style_flags(flags.0);
+    }
+
+    #[inline]
+    unsafe fn unset_style_flags(&self, flags: NodeStyleFlags) {
+        self.as_node().unset_style_flags(flags.0);
     }
 
     /// Returns true if this element has descendants for lazy frame construction.
     #[inline]
     pub fn descendants_need_frames(&self) -> bool {
-        self.flags() & NODE_DESCENDANTS_NEED_FRAMES != 0
+        self.has_style_flags(NodeStyleFlags::DescendantsNeedFrames)
     }
 
     /// Returns true if this element needs lazy frame construction.
     #[inline]
     pub fn needs_frame(&self) -> bool {
-        self.flags() & NODE_NEEDS_FRAME != 0
+        self.has_style_flags(NodeStyleFlags::NeedsFrame)
     }
 
     /// Returns a reference to the DOM slots for this Element, if they exist.
@@ -943,67 +946,57 @@ impl<'le> GeckoElement<'le> {
 
     /// Get slow selector flags required for nth-of invalidation.
     pub fn slow_selector_flags(&self) -> ElementSelectorFlags {
-        slow_selector_flags_from_node_selector_flags(self.as_node().selector_flags())
+        slow_selector_flags_from_node_selector_flags(self.as_node().style_flags())
     }
 }
 
-/// Convert slow selector flags from the raw `NodeSelectorFlags`.
-pub fn slow_selector_flags_from_node_selector_flags(flags: u32) -> ElementSelectorFlags {
-    use crate::gecko_bindings::structs::NodeSelectorFlags;
-    let mut result = ElementSelectorFlags::empty();
-    if flags & NodeSelectorFlags::HasSlowSelector.0 != 0 {
-        result.insert(ElementSelectorFlags::HAS_SLOW_SELECTOR);
-    }
-    if flags & NodeSelectorFlags::HasSlowSelectorLaterSiblings.0 != 0 {
-        result.insert(ElementSelectorFlags::HAS_SLOW_SELECTOR_LATER_SIBLINGS);
-    }
-    result
+macro_rules! assert_selector_flags_match {
+    ($($rust:ident => $gecko:ident,)*) => {
+        $(
+            const_assert_eq!(
+                ElementSelectorFlags::$rust.bits(),
+                NodeStyleFlags::$gecko.0 as usize
+            );
+        )*
+        const_assert_eq!(
+            ElementSelectorFlags::all().bits(),
+            0 $(| NodeStyleFlags::$gecko.0 as usize)*
+        );
+    };
 }
 
-/// Converts flags from the layout used by rust-selectors to the layout used
-/// by Gecko. We could align these and then do this without conditionals, but
-/// it's probably not worth the trouble.
+assert_selector_flags_match! {
+    HAS_SLOW_SELECTOR => HasSlowSelector,
+    HAS_SLOW_SELECTOR_LATER_SIBLINGS => HasSlowSelectorLaterSiblings,
+    HAS_SLOW_SELECTOR_NTH => HasSlowSelectorNth,
+    HAS_SLOW_SELECTOR_NTH_OF => HasSlowSelectorNthOf,
+    HAS_EDGE_CHILD_SELECTOR => HasEdgeChildSelector,
+    HAS_EMPTY_SELECTOR => HasEmptySelector,
+    ANCHORS_RELATIVE_SELECTOR => RelativeSelectorAnchor,
+    ANCHORS_RELATIVE_SELECTOR_NON_SUBJECT => RelativeSelectorAnchorNonSubject,
+    RELATIVE_SELECTOR_SEARCH_DIRECTION_SIBLING => RelativeSelectorSearchDirectionSibling,
+    RELATIVE_SELECTOR_SEARCH_DIRECTION_ANCESTOR => RelativeSelectorSearchDirectionAncestor,
+    MAY_HAVE_TREE_COUNTING_FUNCTION => MayHaveTreeCountingFunction,
+    CONTAINER_QUERY_WITH_UNPARSED_ATTR => ContainerQueryWithUnparsedAttr,
+}
+
+const_assert!(ElementSelectorFlags::all().bits() < NodeStyleFlags::HasSnapshot.0 as usize);
+
+#[inline]
+fn node_flags_to_selector_flags(flags: u32) -> ElementSelectorFlags {
+    ElementSelectorFlags::from_bits_truncate(flags as usize)
+}
+
+#[inline]
 fn selector_flags_to_node_flags(flags: ElementSelectorFlags) -> u32 {
-    use crate::gecko_bindings::structs::NodeSelectorFlags;
-    let mut gecko_flags = 0u32;
-    if flags.contains(ElementSelectorFlags::HAS_SLOW_SELECTOR) {
-        gecko_flags |= NodeSelectorFlags::HasSlowSelector.0;
-    }
-    if flags.contains(ElementSelectorFlags::HAS_SLOW_SELECTOR_LATER_SIBLINGS) {
-        gecko_flags |= NodeSelectorFlags::HasSlowSelectorLaterSiblings.0;
-    }
-    if flags.contains(ElementSelectorFlags::HAS_SLOW_SELECTOR_NTH) {
-        gecko_flags |= NodeSelectorFlags::HasSlowSelectorNth.0;
-    }
-    if flags.contains(ElementSelectorFlags::HAS_SLOW_SELECTOR_NTH_OF) {
-        gecko_flags |= NodeSelectorFlags::HasSlowSelectorNthOf.0;
-    }
-    if flags.contains(ElementSelectorFlags::HAS_EDGE_CHILD_SELECTOR) {
-        gecko_flags |= NodeSelectorFlags::HasEdgeChildSelector.0;
-    }
-    if flags.contains(ElementSelectorFlags::HAS_EMPTY_SELECTOR) {
-        gecko_flags |= NodeSelectorFlags::HasEmptySelector.0;
-    }
-    if flags.contains(ElementSelectorFlags::ANCHORS_RELATIVE_SELECTOR) {
-        gecko_flags |= NodeSelectorFlags::RelativeSelectorAnchor.0;
-    }
-    if flags.contains(ElementSelectorFlags::ANCHORS_RELATIVE_SELECTOR_NON_SUBJECT) {
-        gecko_flags |= NodeSelectorFlags::RelativeSelectorAnchorNonSubject.0;
-    }
-    if flags.contains(ElementSelectorFlags::RELATIVE_SELECTOR_SEARCH_DIRECTION_ANCESTOR) {
-        gecko_flags |= NodeSelectorFlags::RelativeSelectorSearchDirectionAncestor.0;
-    }
-    if flags.contains(ElementSelectorFlags::RELATIVE_SELECTOR_SEARCH_DIRECTION_SIBLING) {
-        gecko_flags |= NodeSelectorFlags::RelativeSelectorSearchDirectionSibling.0;
-    }
-    if flags.contains(ElementSelectorFlags::MAY_HAVE_TREE_COUNTING_FUNCTION) {
-        gecko_flags |= NodeSelectorFlags::MayHaveTreeCountingFunction.0;
-    }
-    if flags.contains(ElementSelectorFlags::CONTAINER_QUERY_WITH_UNPARSED_ATTR) {
-        gecko_flags |= NodeSelectorFlags::ContainerQueryWithUnparsedAttr.0;
-    }
+    flags.bits() as u32
+}
 
-    gecko_flags
+/// Convert slow selector flags from the raw `NodeStyleFlags`.
+pub fn slow_selector_flags_from_node_selector_flags(flags: u32) -> ElementSelectorFlags {
+    node_flags_to_selector_flags(flags)
+        & (ElementSelectorFlags::HAS_SLOW_SELECTOR
+            | ElementSelectorFlags::HAS_SLOW_SELECTOR_LATER_SIBLINGS)
 }
 
 fn get_animation_rule(
@@ -1346,38 +1339,36 @@ impl<'le> TElement for GeckoElement<'le> {
 
     #[inline]
     fn has_snapshot(&self) -> bool {
-        self.flags() & ELEMENT_HAS_SNAPSHOT != 0
+        self.has_style_flags(NodeStyleFlags::HasSnapshot)
     }
 
     #[inline]
     fn handled_snapshot(&self) -> bool {
-        self.flags() & ELEMENT_HANDLED_SNAPSHOT != 0
+        self.has_style_flags(NodeStyleFlags::HandledSnapshot)
     }
 
     unsafe fn set_handled_snapshot(&self) {
         debug_assert!(self.has_data());
-        self.set_flags(ELEMENT_HANDLED_SNAPSHOT)
+        self.set_style_flags(NodeStyleFlags::HandledSnapshot)
     }
 
     #[inline]
     fn has_dirty_descendants(&self) -> bool {
-        self.flags() & ELEMENT_HAS_DIRTY_DESCENDANTS_FOR_SERVO != 0
+        self.has_style_flags(NodeStyleFlags::HasDirtyDescendants)
     }
 
     unsafe fn set_dirty_descendants(&self) {
         debug_assert!(self.has_data());
         debug!("Setting dirty descendants: {:?}", self);
-        self.set_flags(ELEMENT_HAS_DIRTY_DESCENDANTS_FOR_SERVO)
+        self.set_style_flags(NodeStyleFlags::HasDirtyDescendants)
     }
 
     unsafe fn unset_dirty_descendants(&self) {
-        unsafe { self.unset_flags(ELEMENT_HAS_DIRTY_DESCENDANTS_FOR_SERVO) }
+        unsafe { self.unset_style_flags(NodeStyleFlags::HasDirtyDescendants) }
     }
 
     unsafe fn clear_descendant_bits(&self) {
-        unsafe {
-            self.unset_flags(ELEMENT_HAS_DIRTY_DESCENDANTS_FOR_SERVO | NODE_DESCENDANTS_NEED_FRAMES)
-        }
+        unsafe { self.unset_style_flags(ALL_DESCENDANT_BITS) }
     }
 
     fn is_visited_link(&self) -> bool {
@@ -1672,18 +1663,18 @@ impl<'le> TElement for GeckoElement<'le> {
 
     fn has_selector_flags(&self, flags: ElementSelectorFlags) -> bool {
         let node_flags = selector_flags_to_node_flags(flags);
-        self.as_node().selector_flags() & node_flags == node_flags
+        self.as_node().style_flags() & node_flags == node_flags
     }
 
     fn relative_selector_search_direction(&self) -> ElementSelectorFlags {
-        use crate::gecko_bindings::structs::NodeSelectorFlags;
-        let flags = self.as_node().selector_flags();
-        if (flags & NodeSelectorFlags::RelativeSelectorSearchDirectionAncestorSibling.0) != 0 {
+        let flags = node_flags_to_selector_flags(self.as_node().style_flags());
+        // FIXME(bug 2096610): This seems like it should just be flags &
+        // ElementSelectorFlags::RELATIVE_SELECTOR_SEARCH_DIRECTION_ANCESTOR_SIBLING, but
+        // tests fail without it.
+        if flags
+            .intersects(ElementSelectorFlags::RELATIVE_SELECTOR_SEARCH_DIRECTION_ANCESTOR_SIBLING)
+        {
             ElementSelectorFlags::RELATIVE_SELECTOR_SEARCH_DIRECTION_ANCESTOR_SIBLING
-        } else if (flags & NodeSelectorFlags::RelativeSelectorSearchDirectionAncestor.0) != 0 {
-            ElementSelectorFlags::RELATIVE_SELECTOR_SEARCH_DIRECTION_ANCESTOR
-        } else if (flags & NodeSelectorFlags::RelativeSelectorSearchDirectionSibling.0) != 0 {
-            ElementSelectorFlags::RELATIVE_SELECTOR_SEARCH_DIRECTION_SIBLING
         } else {
             ElementSelectorFlags::empty()
         }
@@ -1820,7 +1811,7 @@ impl<'le> ::selectors::Element for GeckoElement<'le> {
         let self_flags = flags.for_self();
         if !self_flags.is_empty() {
             self.as_node()
-                .set_selector_flags(selector_flags_to_node_flags(self_flags))
+                .set_style_flags(selector_flags_to_node_flags(self_flags))
         }
 
         // Handle flags that apply to the parent.
@@ -1829,7 +1820,7 @@ impl<'le> ::selectors::Element for GeckoElement<'le> {
             && let Some(p) = self.as_node().parent_node()
             && (p.is_element() || p.is_shadow_root())
         {
-            p.set_selector_flags(selector_flags_to_node_flags(parent_flags));
+            p.set_style_flags(selector_flags_to_node_flags(parent_flags));
         }
     }
 
