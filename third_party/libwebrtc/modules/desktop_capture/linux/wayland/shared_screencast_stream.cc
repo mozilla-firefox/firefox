@@ -209,14 +209,14 @@ class SharedScreenCastStreamPrivate {
     ~PipeWireThreadLoop() {
       pw_thread_loop_stop(main_loop);
 
+      // The stream must be destroyed before `renegotiate`, since an in-flight
+      // OnStreamProcess() may still signal `renegotiate` until the stream is
+      // disconnected from PipeWire's data loop.
+      DestroyStream();
+
       if (renegotiate) {
         pw_loop_destroy_source(pw_thread_loop_get_loop(main_loop), renegotiate);
         renegotiate = nullptr;
-      }
-
-      if (stream) {
-        pw_stream_disconnect(stream);
-        pw_stream_destroy(stream);
       }
 
       if (core) {
@@ -225,6 +225,20 @@ class SharedScreenCastStreamPrivate {
 
       pw_context_destroy(context);
       pw_thread_loop_destroy(main_loop);
+    }
+
+    // Disconnects and destroys `stream`, if any. OnStreamProcess() runs on
+    // PipeWire's data loop thread rather than on `main_loop`, so stopping
+    // `main_loop` does not stop it. pw_stream_disconnect() removes the stream
+    // from the data loop and blocks until any in-flight OnStreamProcess() call
+    // has returned.
+    void DestroyStream() {
+      if (!stream) {
+        return;
+      }
+      pw_stream_disconnect(stream);
+      pw_stream_destroy(stream);
+      stream = nullptr;
     }
 
     struct pw_thread_loop* const main_loop;
@@ -745,10 +759,12 @@ void SharedScreenCastStreamPrivate::ClearRenegotiateEventForTest() {
 }
 
 void SharedScreenCastStreamPrivate::StopAndCleanupStream() {
-  // We get buffers on the PipeWire thread, but this is called from the capturer
-  // thread, so we need to wait on and stop the pipewire thread before we
-  // disconnect the stream so that we can guarantee we aren't in the middle of
-  // processing a new frame.
+  // We get buffers on PipeWire's data loop thread, but this is called from the
+  // capturer thread. Stopping `pw_->main_loop` does not stop the data loop, so
+  // we must disconnect the stream (which blocks until any in-flight
+  // OnStreamProcess() has returned) before resetting the members it uses. In
+  // particular, `pw_` must stay valid until then, since OnStreamProcess()
+  // dereferences it.
 
   // Even if we *do* somehow have the other objects without a pipewire thread,
   // destroying them without a thread causes a crash.
@@ -760,6 +776,8 @@ void SharedScreenCastStreamPrivate::StopAndCleanupStream() {
   pw_thread_loop_stop(pw_->main_loop);
 
   if (pw_->stream) {
+    pw_->DestroyStream();
+
     {
       MutexLock latest_frame_lock(&latest_frame_lock_);
       latest_available_frame_ = nullptr;
