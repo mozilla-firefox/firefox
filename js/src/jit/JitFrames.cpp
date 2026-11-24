@@ -701,9 +701,7 @@ static JitFrameLayout* GetLastProfilingFrame(ResumeFromException* rfe) {
 void HandleException(ResumeFromException* rfe) {
   JSContext* cx = TlsContext.get();
 
-  if (!CheckForOOMStackTraceInterrupt(cx)) {
-    return;
-  }
+  MaybeCaptureOOMStackTrace(cx);
 
   cx->realm()->localAllocSite = nullptr;
 #ifdef DEBUG

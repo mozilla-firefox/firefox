@@ -4487,7 +4487,7 @@ error:
       goto successful_return_continuation;
 
     case ErrorReturnContinuation:
-      CheckForOOMStackTraceInterrupt(cx);
+      MaybeCaptureOOMStackTrace(cx);
       interpReturnOK = false;
       goto return_continuation;
 
