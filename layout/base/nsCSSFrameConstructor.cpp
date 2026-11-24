@@ -5133,7 +5133,8 @@ void nsCSSFrameConstructor::AddFrameConstructionItemsInternal(
   // NOTE(emilio): This is rather hacky, we should ideally remove this and make
   // shadow tree creation faster, see bug 2017005.
   if (const RefPtr input = HTMLInputElement::FromNode(aContent)) {
-    if (auto* sr = input->CreateShadowTreeBeforeLayoutIfNeeded()) {
+    if (auto* sr = input->CreateShadowTreeBeforeLayoutIfNeeded(
+            HTMLInputElement::FromFrameConstruction::Yes)) {
       StyleNewChildRange(sr->GetFirstChild(), nullptr);
     }
   }

@@ -915,7 +915,8 @@ class HTMLInputElement final : public TextControlElement,
   // Returns the ShadowRoot _only if it was just created_!
   // NOTE: This must be called with blocking script because this uses
   // Element::SetupShadowTreeWithDispatchingChromeEventAsync().
-  ShadowRoot* CreateShadowTreeBeforeLayoutIfNeeded();
+  enum FromFrameConstruction : bool { No, Yes };
+  ShadowRoot* CreateShadowTreeBeforeLayoutIfNeeded(FromFrameConstruction);
 
  protected:
   MOZ_CAN_RUN_SCRIPT_BOUNDARY virtual ~HTMLInputElement();

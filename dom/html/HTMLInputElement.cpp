@@ -4628,16 +4628,25 @@ void HTMLInputElement::SetupShadowTree(bool aNotify) {
   TextControlElement::SetupShadowTree(*shadow, aNotify);
 }
 
-ShadowRoot* HTMLInputElement::CreateShadowTreeBeforeLayoutIfNeeded() {
+ShadowRoot* HTMLInputElement::CreateShadowTreeBeforeLayoutIfNeeded(
+    FromFrameConstruction aFromFrameConstruction) {
   if (!CreatesUAShadowTree() || GetShadowRoot()) {
     return nullptr;
   }
-  if (HasChildren()) [[unlikely]] {
-    // In the unlikely case we have any child, they are guaranteed to not have
-    // frames, but they might still be styled and about to go out of the flat
-    // tree, so need to clear their styles now, before creating the shadow tree.
-    RestyleManager::ClearServoDataFromSubtree(this,
-                                              RestyleManager::IncludeRoot::No);
+  if (HasChildren() && IsInComposedDoc()) [[unlikely]] {
+    if (aFromFrameConstruction == FromFrameConstruction::Yes) {
+      // In the unlikely case we have any child, they are guaranteed to not have
+      // frames if we're running from frame construction, but they might still
+      // be styled and about to go out of the flat tree, so need to clear their
+      // styles now, before creating the shadow tree.
+      RestyleManager::ClearServoDataFromSubtree(
+          this, RestyleManager::IncludeRoot::No);
+    } else if (RefPtr ps = OwnerDoc()->GetPresShell()) {
+      // If we're not running from frame construction, we do need to tear down
+      // the frames now (there could be frames in the case our type dynamically
+      // switched to text).
+      ps->DestroyFramesForAndRestyle(this);
+    }
   }
   SetupShadowTree(/* aNotify = */ false);
   return GetShadowRoot();

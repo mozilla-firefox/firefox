@@ -4588,10 +4588,9 @@ already_AddRefed<nsINode> nsINode::CloneAndAdopt(
         // `clone`) being connected already.
         clone->AsElement()->CloneAnimationsFrom(*aNode->AsElement());
 
-        if (auto* input = HTMLInputElement::FromNode(aNode);
-            input && input->CreateShadowTreeBeforeLayoutIfNeeded()) {
-          nsLayoutUtils::PostRestyleEvent(input, RestyleHint::RestyleSubtree(),
-                                          nsChangeHint(0));
+        if (auto* input = HTMLInputElement::FromNode(aNode)) {
+          input->CreateShadowTreeBeforeLayoutIfNeeded(
+              HTMLInputElement::FromFrameConstruction::No);
         }
 
         // Clone the Shadow DOM
