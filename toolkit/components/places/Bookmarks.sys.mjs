@@ -2536,36 +2536,51 @@ async function fetchBookmarkByPosition(info, options = {}) {
   );
 }
 
+/**
+ * A `tags(fk, tags)` CTE with the comma separated, sorted tags of each page in
+ * a `filtered_places(id)` CTE that must be defined before it. Computing tags
+ * once per page, rather than once per bookmark through a correlated subquery,
+ * avoids quadratic cost when a page is bookmarked many times. CROSS JOIN forces
+ * `filtered_places` to be the outer loop, otherwise SQLite may walk all the tag
+ * entries.
+ */
+const TAGS_BY_PLACE_CTE = `tags(fk, tags) AS MATERIALIZED (
+  SELECT bb.fk, group_concat(pp.title ORDER BY pp.title)
+  FROM filtered_places
+  CROSS JOIN moz_bookmarks bb ON bb.fk = filtered_places.id
+  JOIN moz_bookmarks pp ON pp.id = bb.parent
+  JOIN moz_bookmarks gg ON gg.id = pp.parent
+  WHERE gg.guid = '${Bookmarks.tagsGuid}'
+  GROUP BY bb.fk
+)`;
+
 async function fetchBookmarksByTags(info, options = {}) {
   let query = async function (db) {
     let rows = await db.executeCached(
-      `SELECT b.guid, IFNULL(p.guid, '') AS parentGuid, b.position AS 'index',
+      `WITH filtered_places(id) AS MATERIALIZED (
+         SELECT b2.fk FROM moz_bookmarks b2
+         JOIN moz_bookmarks p2 ON p2.id = b2.parent
+         JOIN moz_bookmarks g2 ON g2.id = p2.parent
+         WHERE g2.guid = '${Bookmarks.tagsGuid}'
+         AND lower(p2.title) IN (
+           ${new Array(info.tags.length).fill("?").join(",")}
+         )
+         GROUP BY b2.fk HAVING count(*) = ${info.tags.length}
+       ),
+       ${TAGS_BY_PLACE_CTE}
+       SELECT b.guid, IFNULL(p.guid, '') AS parentGuid, b.position AS 'index',
               b.dateAdded, b.lastModified, b.type, IFNULL(b.title, '') AS title,
               h.url AS url, b.id AS _id, b.parent AS _parentId,
               NULL AS _childCount,
               p.parent AS _grandParentId, b.syncStatus AS _syncStatus,
-              (SELECT group_concat(pp.title ORDER BY pp.title)
-               FROM moz_bookmarks bb
-               JOIN moz_bookmarks pp ON pp.id = bb.parent
-               JOIN moz_bookmarks gg ON gg.id = pp.parent
-               WHERE bb.fk = h.id
-               AND gg.guid = '${Bookmarks.tagsGuid}'
-              ) AS _tags
-       FROM moz_bookmarks b
+              t.tags AS _tags
+       FROM filtered_places
+       JOIN moz_places h ON h.id = filtered_places.id
+       JOIN moz_bookmarks b ON b.fk = h.id
        JOIN moz_bookmarks p ON p.id = b.parent
        JOIN moz_bookmarks g ON g.id = p.parent
-       JOIN moz_places h ON h.id = b.fk
+       LEFT JOIN tags t ON t.fk = h.id
        WHERE g.guid <> '${Bookmarks.tagsGuid}'
-       AND b.fk IN (
-          SELECT b2.fk FROM moz_bookmarks b2
-          JOIN moz_bookmarks p2 ON p2.id = b2.parent
-          JOIN moz_bookmarks g2 ON g2.id = p2.parent
-          WHERE g2.guid = '${Bookmarks.tagsGuid}'
-          AND lower(p2.title) IN (
-            ${new Array(info.tags.length).fill("?").join(",")}
-          )
-          GROUP BY b2.fk HAVING count(*) = ${info.tags.length}
-       )
        ORDER BY b.lastModified DESC
       `,
       info.tags.map(t => t.toLowerCase())
@@ -2627,23 +2642,23 @@ async function fetchBookmarksByURLs(urls, options = {}) {
       `/* do not warn (bug no): not worth to add an index */
       WITH urls(url, url_hash) AS (
         SELECT value, hash(value) FROM carray(:urls)
-      )
+      ),
+      filtered_places(id) AS MATERIALIZED (
+        SELECT DISTINCT h.id FROM urls
+        JOIN moz_places h ON h.url_hash = urls.url_hash AND h.url = urls.url
+      ),
+      ${TAGS_BY_PLACE_CTE}
       SELECT b.guid, IFNULL(p.guid, '') AS parentGuid, b.position AS 'index',
               b.dateAdded, b.lastModified, b.type, IFNULL(b.title, '') AS title,
               h.url AS url, b.id AS _id, b.parent AS _parentId,
               NULL AS _childCount,
               p.parent AS _grandParentId, b.syncStatus AS _syncStatus,
-              (SELECT group_concat(pp.title ORDER BY pp.title)
-               FROM moz_bookmarks bb
-               JOIN moz_bookmarks pp ON bb.parent = pp.id
-               JOIN moz_bookmarks gg ON pp.parent = gg.id
-               WHERE bb.fk = h.id
-               AND gg.guid = '${Bookmarks.tagsGuid}'
-              ) AS _tags
-      FROM moz_bookmarks b
+              t.tags AS _tags
+      FROM filtered_places
+      JOIN moz_places h ON h.id = filtered_places.id
+      JOIN moz_bookmarks b ON b.fk = h.id
       JOIN moz_bookmarks p ON p.id = b.parent
-      JOIN moz_places h ON h.id = b.fk
-      JOIN urls ON urls.url = h.url AND urls.url_hash = h.url_hash
+      LEFT JOIN tags t ON t.fk = h.id
       WHERE _grandParentId <> :tagsFolderId
       ORDER BY h.url, b.lastModified DESC`,
       params
@@ -2675,23 +2690,22 @@ async function fetchBookmarksByURL(info, options = {}) {
   let query = async function (db) {
     let rows = await db.executeCached(
       `/* do not warn (bug no): not worth to add an index */
+      WITH filtered_places(id) AS MATERIALIZED (
+        SELECT id FROM moz_places WHERE url_hash = hash(:url) AND url = :url
+      ),
+      ${TAGS_BY_PLACE_CTE}
       SELECT b.guid, IFNULL(p.guid, '') AS parentGuid, b.position AS 'index',
               b.dateAdded, b.lastModified, b.type, IFNULL(b.title, '') AS title,
               h.url AS url, b.id AS _id, b.parent AS _parentId,
               NULL AS _childCount, /* Unused for now */
               p.parent AS _grandParentId, b.syncStatus AS _syncStatus,
-              (SELECT group_concat(pp.title ORDER BY pp.title)
-               FROM moz_bookmarks bb
-               JOIN moz_bookmarks pp ON bb.parent = pp.id
-               JOIN moz_bookmarks gg ON pp.parent = gg.id
-               WHERE bb.fk = h.id
-               AND gg.guid = '${Bookmarks.tagsGuid}'
-              ) AS _tags
-      FROM moz_bookmarks b
+              t.tags AS _tags
+      FROM filtered_places
+      JOIN moz_places h ON h.id = filtered_places.id
+      JOIN moz_bookmarks b ON b.fk = h.id
       JOIN moz_bookmarks p ON p.id = b.parent
-      JOIN moz_places h ON h.id = b.fk
-      WHERE h.url_hash = hash(:url) AND h.url = :url
-      AND _grandParentId <> :tagsFolderId
+      LEFT JOIN tags t ON t.fk = h.id
+      WHERE _grandParentId <> :tagsFolderId
       ORDER BY b.lastModified DESC
       `,
       {
