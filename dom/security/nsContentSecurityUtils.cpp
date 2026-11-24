@@ -657,7 +657,7 @@ bool nsContentSecurityUtils::IsEvalAllowed(JSContext* cx,
       "resource://devtools/shared/performance-new/symbolication.sys.mjs"_ns,
 
       // The devtools use a WASM module to optimize source-map mapping.
-      "resource://devtools/client/shared/vendor/source-map/lib/wasm.js"_ns,
+      "resource://devtools/client/shared/vendor/source-map/lib/mappings-glue-browser.mjs"_ns,
 
       // The Browser Toolbox/Console
       "debugger"_ns,
