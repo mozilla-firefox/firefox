@@ -540,6 +540,8 @@ class BaseStackFrame final : public BaseStackFrameAllocator {
   void checkStack(Register tmp1, Register tmp2, Label* stackOverflowTrap) {
     masm.loadPtr(Address(InstanceReg, wasm::Instance::offsetOfCx()), tmp2);
     stackAddOffset_ = masm.sub32FromStackPtrWithPatch(tmp1);
+    // If the subtraction wrapped around, tmp1 will be above the stack pointer.
+    masm.branchStackPtr(Assembler::Below, tmp1, stackOverflowTrap);
     masm.branchPtr(Assembler::AboveOrEqual,
                    Address(tmp2, JSContext::offsetOfWasm() +
                                      wasm::Context::offsetOfStackLimit()),
