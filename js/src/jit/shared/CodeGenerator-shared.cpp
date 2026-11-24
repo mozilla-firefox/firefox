@@ -161,6 +161,14 @@ bool CodeGeneratorShared::generatePrologue() {
     masm.profilerEnterFrame(FramePointer, CallTempReg0);
   }
 
+  if (frameSize() > MAX_UNCHECKED_UNDERFLOW_SIZE) {
+    Label noUnderflow;
+    masm.branchStackPtr(Assembler::AboveOrEqual, Imm32(frameSize()),
+                        &noUnderflow);
+    masm.assumeUnreachable("stack underflow");
+    masm.bind(&noUnderflow);
+  }
+
   // Note that this automatically sets MacroAssembler::framePushed().
   masm.reserveStack(frameSize());
   MOZ_ASSERT(masm.framePushed() == frameSize());

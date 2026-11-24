@@ -1114,6 +1114,7 @@ class MacroAssemblerCompat : public vixl::MacroAssembler {
   // StackPointer testing functions.
   inline void branchTestStackPtr(Condition cond, Imm32 rhs, Label* label);
   inline void branchStackPtr(Condition cond, Register rhs, Label* label);
+  inline void branchStackPtr(Condition cond, Imm32 rhs, Label* label);
   inline void branchStackPtrRhs(Condition cond, Address lhs, Label* label);
   inline void branchStackPtrRhs(Condition cond, AbsoluteAddress lhs,
                                 Label* label);

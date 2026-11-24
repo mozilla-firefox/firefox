@@ -4753,6 +4753,15 @@ void MacroAssemblerCompat::branchStackPtr(Condition cond, Register rhs_,
   B(label, cond);
 }
 
+void MacroAssemblerCompat::branchStackPtr(Condition cond, Imm32 rhs,
+                                          Label* label) {
+  vixl::UseScratchRegisterScope temps(this);
+  const ARMRegister scratch = temps.AcquireX();
+  Mov(scratch, GetStackPointer64());
+  Cmp(scratch, Operand(rhs.value));
+  B(label, cond);
+}
+
 void MacroAssemblerCompat::branchStackPtrRhs(Condition cond, Address lhs,
                                              Label* label) {
   vixl::UseScratchRegisterScope temps(this);

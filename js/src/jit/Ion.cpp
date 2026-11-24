@@ -2455,13 +2455,14 @@ bool jit::IonCompileScriptForBaselineOSR(JSContext* cx, BaselineFrame* frame,
 
   // The new Ion frame may be bigger than the baseline frame; ensure
   // that it doesn't exceed the stack limit.
-  uint8_t* newsp =
-      reinterpret_cast<uint8_t*>(frame->framePrefix()) - ion->frameSize();
 #ifdef JS_SIMULATOR
-  if (Simulator::Current()->overRecursed(uintptr_t(newsp))) {
+  uintptr_t frameAddr = reinterpret_cast<uintptr_t>(frame->framePrefix());
+  if (ion->frameSize() >= frameAddr ||
+      Simulator::Current()->overRecursed(frameAddr - ion->frameSize())) {
 #else
   AutoCheckRecursionLimit recursion(cx);
-  if (!recursion.checkWithStackPointerDontReport(cx, newsp)) {
+  if (!recursion.checkWithStackPointerAndExtraDontReport(
+          cx, frame->framePrefix(), ion->frameSize())) {
 #endif
     ReportOverRecursed(cx);
     return false;
