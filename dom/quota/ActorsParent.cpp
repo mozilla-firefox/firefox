@@ -518,33 +518,47 @@ Result<bool, nsresult> UpgradeCacheFrom3To4(
   return lastShutdownFailed;
 }
 
-struct CacheSetupInfo {
-  bool usable;
-  bool requiresFullScan;
+class CacheSetupInfo {
+ public:
+  CacheSetupInfo() = default;
+
+  void NoteCacheCreated() { mCacheCreated = true; }
+  void NoteUnsupportedVersion() { mUnsupportedVersion = true; }
+  void NoteExistingRowsUnusable() { mExistingRowsUnusable = true; }
+
+  bool CanUseExistingRows() const {
+    return !mCacheCreated && !mUnsupportedVersion && !mExistingRowsUnusable;
+  }
+
+  bool RequiresRebuild() const { return mCacheCreated; }
+
+ private:
+  bool mCacheCreated = false;
+  bool mUnsupportedVersion = false;
+  bool mExistingRowsUnusable = false;
 };
 
 Result<CacheSetupInfo, nsresult> MaybeCreateOrUpgradeCache(
     mozIStorageConnection& aConnection) {
   GECKO_TRACE_SCOPE("dom::quota", "MaybeCreateOrUpgradeCache");
 
-  bool cacheUsable = true;
-  bool newlyCreated = false;
+  CacheSetupInfo cacheInfo;
 
   QM_TRY_UNWRAP(int32_t cacheVersion, LoadCacheVersion(aConnection));
 
   if (cacheVersion > kCacheVersion) {
-    cacheUsable = false;
-  } else if (cacheVersion != kCacheVersion) {
-    const bool newCache = !cacheVersion;
+    cacheInfo.NoteUnsupportedVersion();
+    return cacheInfo;
+  }
 
+  const bool newCache = !cacheVersion;
+  if (cacheVersion != kCacheVersion) {
     mozStorageTransaction transaction(
         &aConnection, false, mozIStorageConnection::TRANSACTION_IMMEDIATE);
 
     QM_TRY(MOZ_TO_RESULT(transaction.Start()));
 
     if (newCache) {
-      newlyCreated = true;
-
       QM_TRY(MOZ_TO_RESULT(CreateCacheTables(aConnection)));
 
 #ifdef DEBUG
@@ -583,7 +597,7 @@ Result<CacheSetupInfo, nsresult> MaybeCreateOrUpgradeCache(
 
       // An empty origin table would be trusted as "no origins exist," missing
       // all origins already on disk. Force InitializeRepository to scan.
-      cacheUsable = false;
+      cacheInfo.NoteCacheCreated();
     } else {
       // This logic needs to change next time we change the cache!
       static_assert(kCacheVersion == 4,
@@ -592,15 +606,15 @@ Result<CacheSetupInfo, nsresult> MaybeCreateOrUpgradeCache(
       while (cacheVersion != kCacheVersion) {
         if (cacheVersion == 1) {
           QM_TRY(MOZ_TO_RESULT(UpgradeCacheFrom1To2(aConnection)));
-          cacheUsable = false;
+          cacheInfo.NoteExistingRowsUnusable();
         } else if (cacheVersion == 2) {
           QM_TRY(MOZ_TO_RESULT(UpgradeCacheFrom2To3(aConnection)));
-          cacheUsable = false;
+          cacheInfo.NoteExistingRowsUnusable();
         } else if (cacheVersion == 3) {
           QM_TRY_UNWRAP(const bool lastShutdownFailed,
                         UpgradeCacheFrom3To4(aConnection));
           if (lastShutdownFailed) {
-            cacheUsable = false;
+            cacheInfo.NoteExistingRowsUnusable();
           }
         } else {
           QM_FAIL(Err(NS_ERROR_FAILURE), []() {
@@ -619,7 +633,7 @@ Result<CacheSetupInfo, nsresult> MaybeCreateOrUpgradeCache(
     QM_TRY(MOZ_TO_RESULT(transaction.Commit()));
   }
 
-  return CacheSetupInfo{cacheUsable, newlyCreated};
+  return cacheInfo;
 }
 
 Result<nsCOMPtr<mozIStorageConnection>, nsresult> CreateWebAppsStoreConnection(
@@ -6106,8 +6120,8 @@ nsresult QuotaManager::EnsureStorageIsInitializedInternal() {
 
     QM_TRY_INSPECT(const auto& cacheInfo,
                    MaybeCreateOrUpgradeCache(*connection));
-    mCacheUsable = cacheInfo.usable;
-    mCacheRequiresFullScan = cacheInfo.requiresFullScan;
+    mCacheUsable = cacheInfo.CanUseExistingRows();
+    mCacheRequiresFullScan = cacheInfo.RequiresRebuild();
 
     if (storageFileWasCorrupted) {
       mCacheUsable = false;

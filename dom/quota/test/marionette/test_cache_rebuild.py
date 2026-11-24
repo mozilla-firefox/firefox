@@ -59,6 +59,53 @@ class CacheRebuild(QuotaTestCase):
         with self._stopped_browser():
             self._assert_cache_has_origin()
 
+    def test_missing_database_recovers_indexeddb(self):
+        self.marionette.set_pref(CACHE_CHECK_BUILD_ID_PREF, False)
+        value = "missing-cache-data"
+        self.assertEqual(self._indexeddb_value(value), value)
+        usage = self.getFullOriginMetadata("default", self.origin)["originUsage"]
+        self.assertGreater(usage, 0)
+
+        with self._stopped_browser():
+            self._assert_cache_has_origin()
+            os.remove(self.storage_file)
+
+        for _ in range(2):
+            assert self.initStorage()
+            assert self.initTemporaryStorage()
+            # WAL checkpoint at shutdown can change the physical file layout,
+            # so compare against a fresh disk walk instead of the pre-restart
+            # in-memory value.
+            self.assertEqual(
+                self.getFullOriginMetadata("default", self.origin)["originUsage"],
+                self._disk_usage(self.origin),
+            )
+            self.assertEqual(self._indexeddb_value(), value)
+            with self._stopped_browser():
+                self._assert_cache_has_origin()
+
+    def test_unsupported_cache_version_recovers_indexeddb(self):
+        self.marionette.set_pref(CACHE_CHECK_BUILD_ID_PREF, False)
+        value = "unsupported-cache-data"
+        self.assertEqual(self._indexeddb_value(value), value)
+
+        with self._stopped_browser():
+            unsupported_version = self._cache_version() + 1
+            self._execute_sql(
+                f"UPDATE database SET cache_version = {unsupported_version}; "
+                "DELETE FROM origin;"
+            )
+
+        assert self.initStorage()
+        assert self.initTemporaryStorage()
+        self.assertEqual(
+            self.getFullOriginMetadata("default", self.origin)["originUsage"],
+            self._disk_usage(self.origin),
+        )
+        self.assertEqual(self._indexeddb_value(), value)
+        with self._stopped_browser():
+            self.assertEqual(self._cache_version(), unsupported_version)
+
     def tearDown(self):
         self.marionette.clear_pref(CLEAR_EMPTY_ORIGINS_PREF)
         self.marionette.clear_pref(CACHE_CHECK_BUILD_ID_PREF)
@@ -73,6 +120,70 @@ class CacheRebuild(QuotaTestCase):
             yield
         finally:
             self.marionette.start_session()
+
+    def _cache_version(self):
+        with closing(sqlite3.connect(self.storage_file)) as connection:
+            return connection.execute("SELECT cache_version FROM database").fetchone()[
+                0
+            ]
+
+    def _execute_sql(self, sql):
+        with closing(sqlite3.connect(self.storage_file)) as connection:
+            connection.executescript(f"BEGIN IMMEDIATE;\n{sql}\nCOMMIT;")
+
+    def _disk_usage(self, origin):
+        with self.marionette.using_context(self.marionette.CONTEXT_CHROME):
+            return self.executeAsyncScript(
+                """
+                const [origin] = arguments;
+                async function main() {
+                  const principal = Services.scriptSecurityManager
+                    .createContentPrincipalFromOrigin(origin);
+                  const request = Services.qms.getUsageForPrincipal(
+                    principal, () => {}
+                  );
+                  const result = await requestFinished(request);
+                  return result.usage;
+                }
+                """,
+                script_args=(origin,),
+            )
+
+    def _indexeddb_value(self, value=None):
+        with self.marionette.using_context(self.marionette.CONTEXT_CHROME):
+            return self.executeAsyncScript(
+                """
+                async function main() {
+                  const [origin, value] = argumentsFromPython;
+                  const principal = Services.scriptSecurityManager
+                    .createContentPrincipalFromOrigin(origin);
+                  const request = indexedDB.openForPrincipal(principal, "cache-rebuild", 1);
+                  request.onupgradeneeded = () => request.result.createObjectStore("store");
+                  const database = await new Promise((resolve, reject) => {
+                    request.onsuccess = () => resolve(request.result);
+                    request.onerror = () => reject(request.error);
+                  });
+                  try {
+                    return await new Promise((resolve, reject) => {
+                      const transaction = database.transaction(
+                        "store", value === null ? "readonly" : "readwrite"
+                      );
+                      const store = transaction.objectStore("store");
+                      if (value !== null) {
+                        store.put(value, "key");
+                      }
+                      const read = store.get("key");
+                      transaction.oncomplete = () => resolve(read.result);
+                      transaction.onabort = () => reject(transaction.error);
+                    });
+                  } finally {
+                    database.close();
+                  }
+                }
+                const argumentsFromPython = arguments;
+                """,
+                script_args=(self.origin, value),
+            )
 
     def _assert_cache_has_origin(self):
         self.assertTrue(
