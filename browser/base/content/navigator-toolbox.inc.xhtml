@@ -183,6 +183,7 @@
             data-l10n-id="urlbar-identity-button2"
             data-l10n-args='{"count":0}'
             data-l10n-attrs="aria-label"
+            aria-describedby="trust-icon-tooltip-label"
             urlbar-slot="site-info"
           >
             <image id="trust-icon"/>
@@ -197,6 +198,9 @@
             <span id="trust-icon-tracker-count-shortform-wrapper">
               <label id="trust-icon-tracker-count-shortform" />
             </span>
+            <tooltip id="trust-icon-tooltip">
+              <description id="trust-icon-tooltip-label" class="tooltip-label"/>
+            </tooltip>
           </box>
 
           <!-- Use onclick instead of normal popup= syntax since the popup

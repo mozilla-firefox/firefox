@@ -977,7 +977,7 @@ class TrustPanel {
     }
     icon.classList.add(...targetClasses);
 
-    icon.setAttribute("tooltiptext", this.#tooltipText());
+    this.#updateTooltip();
     icon.classList.toggle("chickletShown", this.#isInternalSecurePage);
   }
 
@@ -2040,6 +2040,49 @@ class TrustPanel {
       }
     }
     return { supplemental, verifier, owner };
+  }
+
+  // The icon's own Fluent message would remove a tooltiptext attribute each
+  // time it's translated, so the tooltip is a separate element.
+  #updateTooltip() {
+    let icon = document.getElementById("trust-icon-container");
+    let label = document.getElementById("trust-icon-tooltip-label");
+    let l10nId = this.#trackerCountTooltipL10nId();
+    if (l10nId) {
+      document.l10n.setAttributes(label, l10nId, {
+        count: this.#getCumulativeTrackerCount(),
+      });
+      icon.setAttribute("tooltip", "trust-icon-tooltip");
+      return;
+    }
+    let tooltip = this.#tooltipText();
+    label.removeAttribute("data-l10n-id");
+    label.textContent = tooltip;
+    if (tooltip) {
+      icon.setAttribute("tooltip", "trust-icon-tooltip");
+    } else {
+      icon.removeAttribute("tooltip");
+    }
+  }
+
+  #trackerCountTooltipL10nId() {
+    if (
+      !this.#trackerCountEnabled ||
+      !this.#isWebPage() ||
+      !this.#isSecurePage() ||
+      this.#breachedStatus === "breached"
+    ) {
+      return null;
+    }
+    if (!this.#trackingProtectionEnabled) {
+      return "urlbar-trust-icon-tracking-protection-off-tooltip";
+    }
+    if (this.#getCumulativeTrackerCount() > 0) {
+      return "urlbar-trust-icon-trackers-blocked-tooltip";
+    }
+    return this.#blockersChecked
+      ? "urlbar-trust-icon-no-trackers-found-tooltip"
+      : null;
   }
 
   #tooltipText() {

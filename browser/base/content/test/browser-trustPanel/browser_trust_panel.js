@@ -118,11 +118,10 @@ add_task(async function basic_test() {
     "Showing trusted icon"
   );
 
-  Assert.equal(
-    window.document
-      .getElementById("trust-icon-container")
-      .getAttribute("tooltiptext"),
-    "Verified by: Mozilla Testing",
+  await TestUtils.waitForCondition(
+    () =>
+      window.document.getElementById("trust-icon-tooltip-label").textContent ==
+      "No trackers found on this site",
     "Tooltip has been set"
   );
 
@@ -135,6 +134,12 @@ add_task(async function basic_test() {
   await TestUtils.waitForCondition(
     () => urlbarIcon(window) == ETP_DISABLED_ICON,
     "Showing ETP disabled icon"
+  );
+  await TestUtils.waitForCondition(
+    () =>
+      window.document.getElementById("trust-icon-tooltip-label").textContent ==
+      "Tracking protection is off for this site",
+    "Tooltip describes ETP being off"
   );
 
   await toggleETP(tab);

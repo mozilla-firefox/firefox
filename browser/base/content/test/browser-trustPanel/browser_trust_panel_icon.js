@@ -2865,3 +2865,102 @@ add_task(async function test_entry_page_crossfades_into_shortform() {
     BrowserTestUtils.removeTab(tab);
   }
 });
+
+async function waitForTrustIconTooltip(tooltip) {
+  await TestUtils.waitForCondition(
+    () =>
+      trustIconContainer().getAttribute("tooltip") == "trust-icon-tooltip" &&
+      document.getElementById("trust-icon-tooltip-label").textContent ==
+        tooltip,
+    `Waiting for the trust icon tooltip to be "${tooltip}"`
+  );
+}
+
+add_task(async function test_tooltip_reflects_blocked_trackers() {
+  const tab = await BrowserTestUtils.openNewForegroundTab({
+    gBrowser,
+    opening: "https://example.com/",
+    waitForLoad: true,
+  });
+
+  try {
+    await waitForTrustIconTooltip("No trackers found on this site");
+
+    setBlockedTrackers(tab, 1);
+    gTrustPanelHandler.onNavigationComplete();
+    await waitForTrustIconTooltip("1 tracker blocked on this site");
+
+    setBlockedTrackers(tab, 3);
+    gTrustPanelHandler.onNavigationComplete();
+    await waitForTrustIconTooltip("3 trackers blocked on this site");
+  } finally {
+    BrowserTestUtils.removeTab(tab);
+  }
+});
+
+add_task(async function test_tooltip_on_insecure_page() {
+  const tab = await BrowserTestUtils.openNewForegroundTab({
+    gBrowser,
+    opening: TRACKING_PAGE,
+    waitForLoad: true,
+  });
+
+  try {
+    setBlockedTrackers(tab, 3);
+    gTrustPanelHandler.onNavigationComplete();
+    await waitForTrustIconClass(
+      "has-blocked-trackers",
+      "Waiting for the tracker count"
+    );
+    await waitForTrustIconTooltip("Connection is not secure");
+  } finally {
+    BrowserTestUtils.removeTab(tab);
+  }
+});
+
+add_task(async function test_tooltip_when_tracker_count_hidden() {
+  const tab = await openTabWithBlockedTrackers(3);
+  const otherTab = await BrowserTestUtils.openNewForegroundTab(
+    gBrowser,
+    "https://example.net/"
+  );
+
+  try {
+    await BrowserTestUtils.switchTab(gBrowser, tab);
+    await waitForTrustIconClass(
+      "has-blocked-trackers",
+      "Waiting for the tracker count"
+    );
+    await waitForTrustIconTooltip("3 trackers blocked on this site");
+
+    await SpecialPowers.pushPrefEnv({
+      set: [["browser.urlbar.trackerCount.enabled", false]],
+    });
+    await BrowserTestUtils.switchTab(gBrowser, otherTab);
+    await BrowserTestUtils.switchTab(gBrowser, tab);
+    await waitForTrustIconWithoutClass(
+      "has-blocked-trackers",
+      "The tracker count is hidden"
+    );
+    await waitForTrustIconTooltip("Verified by: Mozilla Testing");
+  } finally {
+    await SpecialPowers.popPrefEnv();
+    BrowserTestUtils.removeTab(otherTab);
+    BrowserTestUtils.removeTab(tab);
+  }
+});
+
+add_task(async function test_tooltip_on_breached_page() {
+  const tab = await BrowserTestUtils.openNewForegroundTab({
+    gBrowser,
+    opening: "https://example.org/",
+    waitForLoad: true,
+  });
+
+  try {
+    await waitForTrustIconClass("breached", "Waiting for breached class");
+    await waitForTrustIconTooltip("Verified by: Mozilla Testing");
+  } finally {
+    BrowserTestUtils.removeTab(tab);
+  }
+});
