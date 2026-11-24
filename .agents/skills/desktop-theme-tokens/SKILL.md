@@ -78,6 +78,8 @@ no build:
 
 Both sides of a *diff* have to be generated output, so run `./mach buildtokens`
 first; an unbuilt `*.tokens.json` edit diffs empty and reads as value-neutral.
+The script reads the working tree, so in a review it reflects the patch only
+once the patch is applied.
 Apart from `--declared`, which reads the files it is given, the script reads
 only the three `dist/` sheets: a component
 `*.tokens.css`, New Tab's `_tokens.scss` and a hand-written redefinition

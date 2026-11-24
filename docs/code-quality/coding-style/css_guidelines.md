@@ -298,6 +298,17 @@ anything fails the test too, on the platforms the entry applies to.
 
 ### Using variables
 
+#### Prefer design tokens over hard-coded values
+
+Use a token from the design system (`toolkit/themes/shared/design-system`) for
+a color, size, space, border radius or font size wherever one fits. Tokens keep
+the UI consistent and let a style change across the board.
+The
+[design tokens page](https://firefoxux.github.io/firefox-desktop-components/?path=/docs/docs-design-tokens--docs)
+in Storybook lists them and says how they are generated. The
+[stylelint-plugin-mozilla/use-design-tokens](../lint/linters/stylelint-plugin-mozilla/rules/use-design-tokens.md)
+rule reports a literal value where a token is expected.
+
 #### Use the variable according to its naming
 
 Do this:
