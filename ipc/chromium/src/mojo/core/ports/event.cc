@@ -103,6 +103,13 @@ static_assert(sizeof(UserMessageReadAckEventData) % kPortsMessageAlignment == 0,
 static_assert(sizeof(UpdatePreviousPeerEventData) % kPortsMessageAlignment == 0,
               "Invalid UpdatePreviousPeerEventData size.");
 
+bool IsValidPortDescriptor(const Event::PortDescriptor& descriptor) {
+  return descriptor.peer_node_name != kInvalidNodeName &&
+         descriptor.peer_port_name != kInvalidPortName &&
+         descriptor.referring_node_name != kInvalidNodeName &&
+         descriptor.referring_port_name != kInvalidPortName;
+}
+
 }  // namespace
 
 Event::~Event() = default;
@@ -117,6 +124,9 @@ ScopedEvent Event::Deserialize(const void* buffer, size_t num_bytes) {
   const PortName& port_name = header->port_name;
   const PortName& from_port = header->from_port;
   const uint64_t control_sequence_num = header->control_sequence_num;
+  if (port_name == kInvalidPortName) {
+    return nullptr;
+  }
   const size_t data_size = num_bytes - sizeof(*header);
   switch (header->type) {
     case Type::kUserMessage:
@@ -202,7 +212,8 @@ ScopedEvent UserMessageEvent::Deserialize(const PortName& port_name,
                                           uint64_t control_sequence_num,
                                           const void* buffer,
                                           size_t num_bytes) {
-  if (num_bytes < sizeof(UserMessageEventData)) {
+  if (from_port == kInvalidPortName ||
+      num_bytes < sizeof(UserMessageEventData)) {
     return nullptr;
   }
 
@@ -224,11 +235,17 @@ ScopedEvent UserMessageEvent::Deserialize(const PortName& port_name,
   event->ReservePorts(data->num_ports);
   const auto* in_descriptors =
       reinterpret_cast<const PortDescriptor*>(data + 1);
-  std::copy(in_descriptors, in_descriptors + data->num_ports,
-            event->port_descriptors());
-
   const auto* in_names =
       reinterpret_cast<const PortName*>(in_descriptors + data->num_ports);
+  for (uint32_t i = 0; i < data->num_ports; ++i) {
+    if (in_names[i] == kInvalidPortName ||
+        !IsValidPortDescriptor(in_descriptors[i])) {
+      return nullptr;
+    }
+  }
+
+  std::copy(in_descriptors, in_descriptors + data->num_ports,
+            event->port_descriptors());
   std::copy(in_names, in_names + data->num_ports, event->ports());
   return event;
 }
@@ -317,11 +334,18 @@ ScopedEvent ObserveProxyEvent::Deserialize(const PortName& port_name,
                                            uint64_t control_sequence_num,
                                            const void* buffer,
                                            size_t num_bytes) {
-  if (num_bytes < sizeof(ObserveProxyEventData)) {
+  if (from_port == kInvalidPortName ||
+      num_bytes < sizeof(ObserveProxyEventData)) {
     return nullptr;
   }
 
   const auto* data = static_cast<const ObserveProxyEventData*>(buffer);
+  if (data->proxy_node_name == kInvalidNodeName ||
+      data->proxy_port_name == kInvalidPortName ||
+      data->proxy_target_node_name == kInvalidNodeName ||
+      data->proxy_target_port_name == kInvalidPortName) {
+    return nullptr;
+  }
   return std::make_unique<ObserveProxyEvent>(
       port_name, from_port, control_sequence_num, data->proxy_node_name,
       data->proxy_port_name, data->proxy_target_node_name,
@@ -355,7 +379,8 @@ ScopedEvent ObserveProxyAckEvent::Deserialize(const PortName& port_name,
                                               uint64_t control_sequence_num,
                                               const void* buffer,
                                               size_t num_bytes) {
-  if (num_bytes < sizeof(ObserveProxyAckEventData)) {
+  if (from_port == kInvalidPortName ||
+      num_bytes < sizeof(ObserveProxyAckEventData)) {
     return nullptr;
   }
 
@@ -388,7 +413,8 @@ ScopedEvent ObserveClosureEvent::Deserialize(const PortName& port_name,
                                              uint64_t control_sequence_num,
                                              const void* buffer,
                                              size_t num_bytes) {
-  if (num_bytes < sizeof(ObserveClosureEventData)) {
+  if (from_port == kInvalidPortName ||
+      num_bytes < sizeof(ObserveClosureEventData)) {
     return nullptr;
   }
 
@@ -427,6 +453,10 @@ ScopedEvent MergePortEvent::Deserialize(const PortName& port_name,
   }
 
   const auto* data = static_cast<const MergePortEventData*>(buffer);
+  if (data->new_port_name == kInvalidPortName ||
+      !IsValidPortDescriptor(data->new_port_descriptor)) {
+    return nullptr;
+  }
   return std::make_unique<MergePortEvent>(
       port_name, from_port, control_sequence_num, data->new_port_name,
       data->new_port_descriptor);
@@ -455,7 +485,8 @@ UserMessageReadAckRequestEvent::~UserMessageReadAckRequestEvent() = default;
 ScopedEvent UserMessageReadAckRequestEvent::Deserialize(
     const PortName& port_name, const PortName& from_port,
     uint64_t control_sequence_num, const void* buffer, size_t num_bytes) {
-  if (num_bytes < sizeof(UserMessageReadAckRequestEventData)) {
+  if (from_port == kInvalidPortName ||
+      num_bytes < sizeof(UserMessageReadAckRequestEventData)) {
     return nullptr;
   }
 
@@ -490,7 +521,8 @@ ScopedEvent UserMessageReadAckEvent::Deserialize(const PortName& port_name,
                                                  uint64_t control_sequence_num,
                                                  const void* buffer,
                                                  size_t num_bytes) {
-  if (num_bytes < sizeof(UserMessageReadAckEventData)) {
+  if (from_port == kInvalidPortName ||
+      num_bytes < sizeof(UserMessageReadAckEventData)) {
     return nullptr;
   }
 
@@ -527,8 +559,15 @@ ScopedEvent UpdatePreviousPeerEvent::Deserialize(const PortName& port_name,
                                                  uint64_t control_sequence_num,
                                                  const void* buffer,
                                                  size_t num_bytes) {
-  if (num_bytes < sizeof(UpdatePreviousPeerEventData)) return nullptr;
+  if (from_port == kInvalidPortName ||
+      num_bytes < sizeof(UpdatePreviousPeerEventData)) {
+    return nullptr;
+  }
   const auto* data = static_cast<const UpdatePreviousPeerEventData*>(buffer);
+  if (data->new_node_name == kInvalidNodeName ||
+      data->new_port_name == kInvalidPortName) {
+    return nullptr;
+  }
   return std::make_unique<UpdatePreviousPeerEvent>(
       port_name, from_port, control_sequence_num, data->new_node_name,
       data->new_port_name);
