@@ -351,19 +351,12 @@ export class TaskbarTabsRegistry {
    * Retrieves the Taskbar Tab matching the ID.
    *
    * @param {string} aId - The ID of the Taskbar Tab.
-   * @returns {TaskbarTab} The matching Taskbar Tab.
-   * @throws {Error} If `aId` is not a valid Taskbar Tab ID.
+   * @returns {?TaskbarTab} The matching Taskbar Tab, or null if none match.
    */
   getTaskbarTab(aId) {
-    const tt = this.#taskbarTabs.find(aTaskbarTab => {
-      return aTaskbarTab.id === aId;
-    });
-    if (!tt) {
-      lazy.logConsole.error(`Taskbar Tab Id ${aId} not found.`);
-      throw new Error(`Taskbar Tab Id ${aId} is invalid.`);
-    }
-
-    return tt;
+    return (
+      this.#taskbarTabs.find(aTaskbarTab => aTaskbarTab.id === aId) ?? null
+    );
   }
 
   /**

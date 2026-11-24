@@ -71,6 +71,9 @@ export const TaskbarTabs = new (class {
    */
   async getTaskbarTabTitleInfo(aId) {
     let taskbarTab = await this.getTaskbarTab(aId);
+    if (!taskbarTab) {
+      throw new Error(`Taskbar Tab Id ${aId} is invalid.`);
+    }
     return {
       name: taskbarTab.name,
       userContextId: taskbarTab.userContextId,

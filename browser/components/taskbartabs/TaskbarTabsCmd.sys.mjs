@@ -72,14 +72,12 @@ export class CommandLineHandler {
  * @param {object} aContext - Command line retrieved flags and context.
  */
 async function launchTaskbarTab(aContext) {
-  let taskbarTab;
-  try {
-    taskbarTab = await lazy.TaskbarTabs.getTaskbarTab(aContext.id);
-
+  let taskbarTab = await lazy.TaskbarTabs.getTaskbarTab(aContext.id);
+  if (taskbarTab) {
     lazy.logConsole.debug(
       `Found Taskbar Tab matching the flag "-taskbar-tab ${aContext.id}"`
     );
-  } catch (e) {
+  } else {
     lazy.logConsole.debug(
       `Taskbar Tab for ID ${aContext.id} doesn't exist, reconstructing it.`
     );

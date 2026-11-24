@@ -105,6 +105,12 @@ add_task(async function test_remove_taskbar_tab() {
   );
 
   Assert.strictEqual(
+    registry.getTaskbarTab(taskbarTab.id),
+    null,
+    "Null was returned since no Taskbar Tab with that ID exists"
+  );
+
+  Assert.strictEqual(
     registry.removeTaskbarTab(taskbarTab.id),
     null,
     "Null was returned since no Taskbar Tab with that ID exists"
