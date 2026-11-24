@@ -729,6 +729,35 @@ void WeakMap<K, V, AP>::traceMappings(WeakMapTracer* tracer) {
   }
 }
 
+template <class K, class V, class AP>
+bool WeakMap<K, V, AP>::fixGrayMappings() {
+  bool anyMarked = false;
+  for (auto iter = this->iter(); !iter.done(); iter.next()) {
+    const K& key = iter.get().key();
+    gc::Cell* keyCell = gc::ToMarkable(key);
+    MOZ_ASSERT(keyCell);
+    gc::Cell* delegate = gc::detail::GetDelegate(key);
+    gc::Cell* valueCell = gc::ToMarkable(iter.get().value());
+
+    bool keyShouldBeBlack;
+    bool valueShouldBeBlack;
+    gc::ShouldWeakMappingEntryBeBlack(memberOf, keyCell, delegate, valueCell,
+                                      &keyShouldBeBlack, &valueShouldBeBlack);
+
+    if (keyShouldBeBlack && JS::UnmarkGrayGCThingRecursively(JS::GCCellPtr(
+                                keyCell, keyCell->getTraceKind()))) {
+      anyMarked = true;
+    }
+
+    if (valueShouldBeBlack && JS::UnmarkGrayGCThingRecursively(JS::GCCellPtr(
+                                  valueCell, valueCell->getTraceKind()))) {
+      anyMarked = true;
+    }
+  }
+
+  return anyMarked;
+}
+
 #ifdef DEBUG
 template <class K, class V, class AP>
 void WeakMap<K, V, AP>::checkCachedFlags() const {
