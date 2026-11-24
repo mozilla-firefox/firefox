@@ -171,7 +171,10 @@ class ProgressTracker : public mozilla::SupportsWeakPtr {
   // We manage a set of observers that are using an image and thus concerned
   // with its loading progress. Weak pointers.
   void AddObserver(IProgressObserver* aObserver);
-  bool RemoveObserver(IProgressObserver* aObserver);
+  // If aEmulateRequestFinished is false, aObserver won't be sent a load
+  // complete notification even if the load hasn't completed.
+  bool RemoveObserver(IProgressObserver* aObserver,
+                      bool aEmulateRequestFinished = true);
   uint32_t ObserverCount() const;
 
   // Resets our weak reference to our image. Image subclasses should call this
