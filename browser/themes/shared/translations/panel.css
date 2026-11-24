@@ -24,10 +24,13 @@
 
 .translations-panel-content {
   padding: var(--panel-padding);
+  /* Prefer pixels over space tokens in platform code: see bug 2088614 */
+  /* stylelint-disable-next-line stylelint-plugin-mozilla/use-design-tokens */
   padding-block-end: 8px;
 }
 
 #full-page-translations-panel-lang-selection > label {
+  /* stylelint-disable-next-line stylelint-plugin-mozilla/use-design-tokens */
   margin-block: var(--panel-padding) 6px;
 }
 
@@ -45,7 +48,10 @@
 }
 
 #full-page-translations-panel-error-message-hint {
+  /* Use pixels to align the message text with the warning */
+  /* stylelint-disable-next-line stylelint-plugin-mozilla/use-design-tokens */
   margin-inline-start: 21px;
+  /* stylelint-disable-next-line stylelint-plugin-mozilla/use-design-tokens */
   margin-block: 8px;
 }
 
@@ -57,8 +63,9 @@
   -moz-context-properties: fill;
   fill: currentColor;
   list-style-image: url(chrome://global/skin/icons/error.svg);
+  /* stylelint-disable-next-line stylelint-plugin-mozilla/use-design-tokens */
   margin-inline-end: 5px;
-  width: 16px;
+  width: var(--icon-size);
 }
 
 .translations-panel-error-header {
@@ -68,6 +75,7 @@
 #full-page-translations-panel-error {
   border: 1px solid currentColor;
   border-radius: var(--border-radius-small);
+  /* stylelint-disable-next-line stylelint-plugin-mozilla/use-design-tokens */
   padding: 12px;
 }
 

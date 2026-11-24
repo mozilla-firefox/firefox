@@ -170,7 +170,6 @@ module.exports = [
       "browser/themes/shared/tabbrowser/fullscreen-and-pointerlock.css",
       "browser/themes/shared/tabbrowser/tab-hover-preview.css",
       "browser/themes/shared/tabbrowser/tabs.css",
-      "browser/themes/shared/translations/panel.css",
       "browser/themes/shared/urlbar.css",
       "browser/themes/shared/urlbar/dynamic-results.css",
       "browser/themes/shared/urlbar/view-nova.css",
