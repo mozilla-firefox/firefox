@@ -4,11 +4,19 @@ import sys
 from argparse import Namespace
 
 import pytest
+from mozlog.structuredlog import (
+    StructuredLogger,
+    get_default_logger,
+    set_default_logger,
+)
 
 # need this so the raptor unit tests can find raptor/raptor classes
 here = os.path.abspath(os.path.dirname(__file__))
 raptor_dir = os.path.join(os.path.dirname(here), "raptor")
 sys.path.insert(0, raptor_dir)
+
+if get_default_logger() is None:
+    set_default_logger(StructuredLogger("raptor-unit-tests"))
 
 from browsertime import Browsertime
 from perftest import Perftest
