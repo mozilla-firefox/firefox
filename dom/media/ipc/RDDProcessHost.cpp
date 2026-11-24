@@ -6,6 +6,7 @@
 #include "RDDChild.h"
 #include "chrome/common/process_watcher.h"
 #include "mozilla/Preferences.h"
+#include "mozilla/ProfilerMarkers.h"
 #include "mozilla/StaticPrefs_media.h"
 #include "mozilla/dom/ContentParent.h"
 #include "mozilla/ipc/ProcessUtils.h"
@@ -48,6 +49,8 @@ bool RDDProcessHost::Launch(geckoargs::ChildProcessArgs aExtraOpts) {
   mPrefSerializer = std::make_unique<ipc::SharedPreferenceSerializer>();
   if (!mPrefSerializer->SerializeToSharedMemory(GeckoProcessType_RDD,
                                                 /* remoteType */ {})) {
+    PROFILER_MARKER_TEXT("RDDProcessHost", MEDIA_PLAYBACK, {},
+                         "Launch: pref serialization failed"_ns);
     return false;
   }
   mPrefSerializer->AddSharedPrefCmdLineArgs(*this, aExtraOpts);
@@ -72,6 +75,11 @@ bool RDDProcessHost::Launch(geckoargs::ChildProcessArgs aExtraOpts) {
             "RDDProcessHost::Launchtimeout",
             [weakSelf = ThreadSafeWeakPtr<RDDProcessHost>{this}]() {
               RefPtr<RDDProcessHost> self(weakSelf);
+              PROFILER_MARKER_FMT(
+                  "RDDProcessHost", MEDIA_PLAYBACK, {},
+                  "Launch timeout: alive={} shutdown={} checked={}", !!self,
+                  self && self->mShutdownRequested,
+                  self && self->mTimerChecked);
               if (!self || self->mShutdownRequested || self->mTimerChecked) {
                 // We have been deleted or the runnable has already started, we
                 // can abort.
@@ -85,6 +93,8 @@ bool RDDProcessHost::Launch(geckoargs::ChildProcessArgs aExtraOpts) {
   }
 
   if (!GeckoChildProcessHost::AsyncLaunch(std::move(aExtraOpts))) {
+    PROFILER_MARKER_TEXT("RDDProcessHost", MEDIA_PLAYBACK, {},
+                         "Launch: AsyncLaunch failed"_ns);
     mLaunchPhase = LaunchPhase::Complete;
     mPrefSerializer = nullptr;
     return false;
@@ -112,6 +122,8 @@ void RDDProcessHost::InitAfterConnect(bool aSucceeded) {
 
   mLaunchPhase = LaunchPhase::Complete;
 
+  PROFILER_MARKER_FMT("RDDProcessHost", MEDIA_PLAYBACK, {},
+                      "InitAfterConnect({})", aSucceeded);
   if (!aSucceeded) {
     RejectPromise();
     return;

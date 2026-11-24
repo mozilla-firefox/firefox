@@ -7,6 +7,7 @@
 #include "RDDProcessHost.h"
 #include "mozilla/MemoryReportingProcess.h"
 #include "mozilla/Preferences.h"
+#include "mozilla/ProfilerMarkers.h"
 #include "mozilla/RemoteMediaManagerChild.h"
 #include "mozilla/RemoteMediaManagerParent.h"
 #include "mozilla/StaticPrefs_media.h"
@@ -116,6 +117,11 @@ void RDDProcessManager::OnPreferenceChange(const char16_t* aData) {
 RefPtr<GenericNonExclusivePromise> RDDProcessManager::LaunchRDDProcess() {
   MOZ_ASSERT(NS_IsMainThread());
 
+  PROFILER_MARKER_FMT(
+      "RDDProcessManager", MEDIA_PLAYBACK, {},
+      "LaunchRDDProcess process={} child={} attempts={} shutdown={}",
+      !!mProcess, !!mRDDChild, mNumProcessAttempts, IsShutdown());
+
   if (IsShutdown()) {
     return GenericNonExclusivePromise::CreateAndReject(NS_ERROR_NOT_AVAILABLE,
                                                        __func__);
@@ -148,6 +154,9 @@ RefPtr<GenericNonExclusivePromise> RDDProcessManager::LaunchRDDProcess() {
   mLaunchRDDPromise = mProcess->LaunchPromise()->Then(
       GetMainThreadSerialEventTarget(), __func__,
       [this](bool) {
+        PROFILER_MARKER_FMT("RDDProcessManager", MEDIA_PLAYBACK, {},
+                            "RDD launch resolved, launching={}",
+                            IsRDDProcessLaunching());
         if (IsShutdown()) {
           return GenericNonExclusivePromise::CreateAndReject(
               NS_ERROR_NOT_AVAILABLE, __func__);
@@ -176,6 +185,8 @@ RefPtr<GenericNonExclusivePromise> RDDProcessManager::LaunchRDDProcess() {
         if (NS_WARN_IF(!mRDDChild->CanSend()) || NS_WARN_IF(!gpm) ||
             NS_WARN_IF(NS_FAILED(gpm->EnsureGPUReady())) ||
             NS_WARN_IF(NS_FAILED(gpm->CreateRddVideoBridge(this, mRDDChild)))) {
+          PROFILER_MARKER_FMT("RDDProcessManager", MEDIA_PLAYBACK, {},
+                              "RDD launch: GPU or video bridge setup failed");
           mNumProcessAttempts++;
           DestroyProcess();
           return GenericNonExclusivePromise::CreateAndReject(
@@ -186,6 +197,9 @@ RefPtr<GenericNonExclusivePromise> RDDProcessManager::LaunchRDDProcess() {
         return GenericNonExclusivePromise::CreateAndResolve(true, __func__);
       },
       [this](nsresult aError) {
+        PROFILER_MARKER_FMT("RDDProcessManager", MEDIA_PLAYBACK, {},
+                            "RDD launch rejected: {:#010x}",
+                            static_cast<uint32_t>(aError));
         if (Get()) {
           mNumProcessAttempts++;
           DestroyProcess();
@@ -201,9 +215,15 @@ auto RDDProcessManager::EnsureRDDProcessAndCreateBridge(
   return InvokeAsync(
       GetMainThreadSerialEventTarget(), __func__,
       [aOtherProcess, aParentId, this]() -> RefPtr<EnsureRDDPromise> {
+        PROFILER_MARKER_FMT("RDDProcessManager", MEDIA_PLAYBACK, {},
+                            "EnsureRDDProcessAndCreateBridge");
         return LaunchRDDProcess()->Then(
             GetMainThreadSerialEventTarget(), __func__,
             [aOtherProcess, aParentId, this]() {
+              PROFILER_MARKER_FMT(
+                  "RDDProcessManager", MEDIA_PLAYBACK, {},
+                  "EnsureRDDProcessAndCreateBridge: launched, alive={}",
+                  IsRDDProcessAlive());
               if (IsShutdown()) {
                 return EnsureRDDPromise::CreateAndReject(NS_ERROR_NOT_AVAILABLE,
                                                          __func__);
@@ -218,6 +238,10 @@ auto RDDProcessManager::EnsureRDDProcessAndCreateBridge(
                                                         __func__);
             },
             [](nsresult aError) {
+              PROFILER_MARKER_FMT(
+                  "RDDProcessManager", MEDIA_PLAYBACK, {},
+                  "EnsureRDDProcessAndCreateBridge: rejected {:#010x}",
+                  static_cast<uint32_t>(aError));
               return EnsureRDDPromise::CreateAndReject(aError, __func__);
             });
       });
@@ -237,6 +261,8 @@ void RDDProcessManager::OnProcessUnexpectedShutdown(RDDProcessHost* aHost) {
   MOZ_ASSERT(NS_IsMainThread());
   MOZ_ASSERT(mProcess && mProcess == aHost);
 
+  PROFILER_MARKER_FMT("RDDProcessManager", MEDIA_PLAYBACK, {},
+                      "OnProcessUnexpectedShutdown");
   mNumUnexpectedCrashes++;
 
   DestroyProcess();
@@ -270,6 +296,8 @@ void RDDProcessManager::DestroyProcess() {
     return;
   }
 
+  PROFILER_MARKER_FMT("RDDProcessManager", MEDIA_PLAYBACK, {},
+                      "DestroyProcess");
   // Move onto the stack to ensure we don't re-enter from a chained promise
   // rejection on the process shutdown.
   RefPtr<RDDProcessHost> process = mProcess.forget();
