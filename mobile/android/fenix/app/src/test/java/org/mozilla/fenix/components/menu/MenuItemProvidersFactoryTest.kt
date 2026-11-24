@@ -9,6 +9,7 @@ import io.mockk.every
 import io.mockk.mockk
 import kotlin.reflect.KClass
 import kotlin.test.assertEquals
+import kotlin.test.assertTrue
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.cancel
 import kotlinx.coroutines.test.StandardTestDispatcher
@@ -34,6 +35,7 @@ import org.mozilla.fenix.browser.RefreshMenuItemProvider
 import org.mozilla.fenix.browser.ShareMenuItemProvider
 import org.mozilla.fenix.browser.applinks.OpenInAppMenuItemProvider
 import org.mozilla.fenix.browser.applinks.OpenInFirefoxMenuItemProvider
+import org.mozilla.fenix.browser.browsingmode.BrowsingMode
 import org.mozilla.fenix.browser.menu.MoreMenuItemsProvider
 import org.mozilla.fenix.browser.menu.MoveToNormalTabsMenuItemProvider
 import org.mozilla.fenix.browser.menu.NewPrivateTabMenuItemProvider
@@ -42,6 +44,7 @@ import org.mozilla.fenix.browser.readermode.ReaderViewMenuItemProvider
 import org.mozilla.fenix.components.AppStore
 import org.mozilla.fenix.components.FindInPageMenuItemProvider
 import org.mozilla.fenix.components.accounts.MozillaAccountMenuItemProvider
+import org.mozilla.fenix.components.appstate.AppState
 import org.mozilla.fenix.components.menu.configuration.FenixMenuItem
 import org.mozilla.fenix.components.menu.configuration.HomeMenuConfiguration
 import org.mozilla.fenix.components.menu.fake.allMenuItems
@@ -130,9 +133,32 @@ class MenuItemProvidersFactoryTest {
             }
     }
 
+    @Test
+    fun `GIVEN private browsing WHEN customizing the menu THEN show the item to move to a non-private tab`() {
+        val factory =
+            createFactory(
+                target = MenuTarget.CustomizeMenu,
+                appStore = AppStore(AppState(mode = BrowsingMode.Private)),
+            )
+
+        assertTrue(factory.buildProviderFor(FenixMenuItem.MoveToNormalTabs).itemsFlow.value.isNotEmpty())
+    }
+
+    @Test
+    fun `GIVEN normal browsing WHEN customizing the menu THEN don't show the item to move to a non-private tab`() {
+        val factory =
+            createFactory(
+                target = MenuTarget.CustomizeMenu,
+                appStore = AppStore(AppState(mode = BrowsingMode.Normal)),
+            )
+
+        assertTrue(factory.buildProviderFor(FenixMenuItem.MoveToNormalTabs).itemsFlow.value.isEmpty())
+    }
+
     private fun createFactory(
         accessPoint: MenuAccessPoint = MenuAccessPoint.Browser,
         target: MenuTarget = MenuTarget.BrowserTab,
+        appStore: AppStore = AppStore(),
         ipProtectionStore: IPProtectionStore = IPProtectionStore(),
         settings: Settings = mockk(relaxed = true),
     ) =
@@ -141,7 +167,7 @@ class MenuItemProvidersFactoryTest {
             accessPoint = accessPoint,
             target = target,
             browserStore = BrowserStore(),
-            appStore = AppStore(),
+            appStore = appStore,
             ipProtectionStore = ipProtectionStore,
             syncStore = SyncStore(),
             httpClient = mockk(relaxed = true),

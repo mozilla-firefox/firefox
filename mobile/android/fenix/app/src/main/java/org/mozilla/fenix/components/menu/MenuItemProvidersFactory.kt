@@ -242,6 +242,7 @@ class MenuItemProvidersFactory(
                     browserStore = browserStore,
                     target = target,
                     migratePrivateTab = useCases.tabsUseCases.migratePrivateTabUseCase,
+                    inPrivateBrowsing = appStore.state.mode.isPrivate,
                 )
 
             FenixMenuItem.ReportBrokenSite ->
