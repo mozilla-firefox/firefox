@@ -1399,6 +1399,7 @@ STATIC_ATOMS = [
     Atom("willChange", "will-change"),
     Atom("window", "window"),
     Atom("headerWindowTarget", "window-target"),
+    Atom("windowclass", "windowclass"),
     Atom("windowtype", "windowtype"),
     Atom("withParam", "with-param"),
     Atom("wrap", "wrap"),

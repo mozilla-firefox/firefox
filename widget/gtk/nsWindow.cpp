@@ -4779,6 +4779,15 @@ void nsWindow::SetWindowClass(const nsAString& xulWinType,
   RefreshWindowClass();
 }
 
+void nsWindow::UpdateWindowClass(const nsAString& aXulWinClass) {
+  if (!mShell) {
+    return;
+  }
+
+  CopyUTF16toUTF8(aXulWinClass, mGtkWindowAppClass);
+  RefreshWindowClass();
+}
+
 nsAutoCString nsWindow::GetDebugTag() const {
   nsAutoCString tag;
   tag.AppendPrintf("[%p]", this);

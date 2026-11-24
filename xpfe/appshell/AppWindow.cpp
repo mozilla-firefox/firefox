@@ -1419,7 +1419,7 @@ void AppWindow::SyncOneShotAttributesToWidget() {
   // "windowtype", "windowclass", "windowname" attributes
   nsAutoString windowClassAttr, windowNameAttr;
   windowElement->GetAttr(nsGkAtoms::windowtype, attr);
-  windowElement->GetAttribute(u"windowclass"_ns, windowClassAttr);
+  windowElement->GetAttr(nsGkAtoms::windowclass, windowClassAttr);
   windowElement->GetAttribute(u"windowname"_ns, windowNameAttr);
   mWindow->SetWindowClass(attr, windowClassAttr, windowNameAttr);
 

@@ -333,6 +333,9 @@ interface nsIXULRuntime : nsISupports
   /** Returns the desktop environment identifier. Only meaningful on GTK */
   readonly attribute ACString desktopEnvironment;
 
+  /** Whether the desktop environment is GNOME. Only meaningful on GTK */
+  readonly attribute boolean isGnomeDesktopEnvironment;
+
   /** Whether we use Wayland. Only meaningful on GTK */
   readonly attribute boolean isWayland;
 

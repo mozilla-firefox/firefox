@@ -261,6 +261,14 @@ add_task(async function test_open_window_raises_existing_windows() {
 }).skip(AppConstants.platform !== "win"); // Existing windows are only raised on Windows.
 
 add_task(async function test_window_class() {
+  // On Linux, windows only open with the web app's window class once its
+  // desktop entry exists. Windows opened before that are tested in
+  // browser_taskbarTabs_windowClass.js.
+  if (AppConstants.platform === "linux") {
+    registry.patchTaskbarTab(taskbarTab1, {
+      shortcutRelativePath: `${TaskbarTabsUtils._determineNewDesktopEntryName(id1)}.desktop`,
+    });
+  }
   const wm = new TaskbarTabsWindowManager();
 
   let winOpen = await wm.openWindow(taskbarTab1);
@@ -281,6 +289,8 @@ add_task(async function test_window_class() {
   );
   checkWindowAssociatedApp(taskbarTab1, winReplace);
   await BrowserTestUtils.closeWindow(winReplace);
+
+  registry.patchTaskbarTab(taskbarTab1, { shortcutRelativePath: null });
 });
 
 /**

@@ -40,6 +40,9 @@ support-files = [
 
 ["browser_taskbarTabs_uriTest.js"]
 
+["browser_taskbarTabs_windowClass.js"]
+run-if = ["os == 'linux'"]
+
 ["browser_taskbarTabs_windowManager.js"]
 support-files = [
   "../../../places/tests/browser/favicon-normal16.png",

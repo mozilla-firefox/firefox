@@ -269,6 +269,7 @@ class nsWindow : public nsIWidget {
   void SetIcon(const nsAString& aIconSpec) override;
   void SetWindowClass(const nsAString& xulWinType, const nsAString& xulWinClass,
                       const nsAString& xulWinName) override;
+  void UpdateWindowClass(const nsAString& aXulWinClass) override;
   LayoutDeviceIntPoint WidgetToScreenOffset() override;
   DesktopIntPoint WidgetToScreenOffsetUnscaled();
   void CaptureRollupEvents(bool aDoCapture) override;

@@ -30,6 +30,7 @@ class ChromeObserver final : public nsStubMutationObserver {
   void SetCustomTitlebar(bool);
   void SetMica(bool);
   void RecomputeIcon(Element&);
+  void UpdateWindowClass(Element&);
   ~ChromeObserver() = default;
   // A weak pointer cleared when the element will be destroyed.
   Document* MOZ_NON_OWNING_REF mDocument;

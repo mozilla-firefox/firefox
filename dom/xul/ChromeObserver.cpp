@@ -31,6 +31,10 @@ void ChromeObserver::Init() {
   uint32_t i = 0;
   while (BorrowedAttrInfo info = rootElement->GetAttrInfoAt(i++)) {
     const nsAttrName* name = info.mName;
+    if (name->Equals(nsGkAtoms::windowclass)) {
+      // Handled along with windowtype in SyncOneShotAttributesToWidget.
+      continue;
+    }
     AttributeChanged(rootElement, name->NamespaceID(), name->LocalName(),
                      AttrModType::Addition, nullptr);
   }
@@ -80,6 +84,9 @@ void ChromeObserver::AttributeChanged(dom::Element* aElement,
   if (aName == nsGkAtoms::icon) {
     RecomputeIcon(*aElement);
   }
+  if (aName == nsGkAtoms::windowclass && aModType != AttrModType::Removal) {
+    UpdateWindowClass(*aElement);
+  }
   if (aName == nsGkAtoms::localedir) {
     // if the localedir changed on the root element, reset the document
     // direction
@@ -101,6 +108,14 @@ void ChromeObserver::RecomputeIcon(Element& aElement) {
     if (aElement.GetAttr(nsGkAtoms::icon, value)) {
       mainWidget->SetIcon(value);
     }
+  }
+}
+
+void ChromeObserver::UpdateWindowClass(Element& aElement) {
+  if (RefPtr mainWidget = GetWindowWidget()) {
+    nsAutoString value;
+    aElement.GetAttr(nsGkAtoms::windowclass, value);
+    mainWidget->UpdateWindowClass(value);
   }
 }
 

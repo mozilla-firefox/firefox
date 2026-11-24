@@ -1584,6 +1584,13 @@ class nsIWidget : public nsSupportsWeakReference {
                               const nsAString& xulWinClass,
                               const nsAString& xulWinName) {}
 
+  /**
+   * Changes the window class given to SetWindowClass, leaving the window type
+   * and name as they are. Used when the window class changes after the window
+   * has been shown.
+   */
+  virtual void UpdateWindowClass(const nsAString& aXulWinClass) {}
+
   virtual void SetIsEarlyBlankWindow(bool) {}
 
   /**

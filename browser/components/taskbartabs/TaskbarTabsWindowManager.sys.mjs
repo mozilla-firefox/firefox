@@ -11,6 +11,7 @@ let lazy = {};
 
 ChromeUtils.defineESModuleGetters(lazy, {
   BrowserWindowTracker: "resource:///modules/BrowserWindowTracker.sys.mjs",
+  setTimeout: "resource://gre/modules/Timer.sys.mjs",
   TaskbarTabsUtils:
     "moz-src:///browser/components/taskbartabs/TaskbarTabsUtils.sys.mjs",
 });
@@ -19,6 +20,17 @@ XPCOMUtils.defineLazyServiceGetters(lazy, {
   WindowsUIUtils: ["@mozilla.org/windows-ui-utils;1", Ci.nsIWindowsUIUtils],
   WinTaskbar: ["@mozilla.org/windows-taskbar;1", Ci.nsIWinTaskbar],
 });
+
+// How long applyWindowClass waits on GNOME Shell. GNOME Shell reloads its
+// desktop entries 5 seconds after the applications folders stop changing. The
+// rest is a safety margin. 0 turns the wait off, e.g. to test a GNOME Shell fix
+// for https://gitlab.gnome.org/GNOME/gnome-shell/-/merge_requests/4175.
+XPCOMUtils.defineLazyPreferenceGetter(
+  lazy,
+  "gnomeShellDelayMs",
+  "browser.taskbarTabs.gnomeShellDelayMs",
+  7000
+);
 
 ChromeUtils.defineLazyGetter(lazy, "logConsole", () => {
   return console.createInstance({
@@ -62,10 +74,10 @@ export class TaskbarTabsWindowManager {
     );
     extraOptions.setPropertyAsAString("taskbartab", aTaskbarTab.id);
     if (AppConstants.platform === "linux") {
-      extraOptions.setPropertyAsAString(
-        "taskbartabclass",
-        getLinuxWindowClass(aTaskbarTab)
-      );
+      let windowClass = getInitialLinuxWindowClass(aTaskbarTab);
+      if (windowClass) {
+        extraOptions.setPropertyAsAString("taskbartabclass", windowClass);
+      }
     }
 
     let args = Cc["@mozilla.org/array;1"].createInstance(Ci.nsIMutableArray);
@@ -94,10 +106,10 @@ export class TaskbarTabsWindowManager {
     );
     extraOptions.setPropertyAsAString("taskbartab", aTaskbarTab.id);
     if (AppConstants.platform === "linux") {
-      extraOptions.setPropertyAsAString(
-        "taskbartabclass",
-        getLinuxWindowClass(aTaskbarTab)
-      );
+      let windowClass = getInitialLinuxWindowClass(aTaskbarTab);
+      if (windowClass) {
+        extraOptions.setPropertyAsAString("taskbartabclass", windowClass);
+      }
     }
 
     let userContextId = Cc["@mozilla.org/supports-PRUint32;1"].createInstance(
@@ -122,6 +134,42 @@ export class TaskbarTabsWindowManager {
       this.#focusWindowsForTaskbarTab(aTaskbarTab);
     }
     return await this.#openWindow(aTaskbarTab, args, aIcon);
+  }
+
+  /**
+   * On Linux, gives the windows of a Taskbar Tab their own window class once
+   * pinning has created its desktop entry. Until then, they open with
+   * Firefox's window class; see getInitialLinuxWindowClass.
+   *
+   * On GNOME Shell, this waits until it has had time to load the new desktop
+   * entry. Elsewhere, it happens right away.
+   *
+   * @param {TaskbarTab} aTaskbarTab - The Taskbar Tab whose desktop entry was
+   * just created.
+   * @param {function(): boolean} aIsRegistered - Returns whether the Taskbar
+   * Tab is still registered. If it was removed in the meantime, its desktop
+   * entry is gone, so its windows keep Firefox's window class.
+   */
+  applyWindowClass(aTaskbarTab, aIsRegistered) {
+    if (AppConstants.platform !== "linux") {
+      return;
+    }
+
+    let apply = () => {
+      if (!aIsRegistered()) {
+        return;
+      }
+      let windowClass = getLinuxWindowClass(aTaskbarTab);
+      for (let win of this.getWindowsForId(aTaskbarTab.id)) {
+        win.document.documentElement.setAttribute("windowclass", windowClass);
+      }
+    };
+
+    if (Services.appinfo.isGnomeDesktopEnvironment && lazy.gnomeShellDelayMs) {
+      lazy.setTimeout(apply, lazy.gnomeShellDelayMs);
+    } else {
+      apply();
+    }
   }
 
   /**
@@ -411,6 +459,29 @@ function getTabId(aTab) {
  */
 function getWindowId(aWindow) {
   return aWindow.docShell.outerWindowID;
+}
+
+/**
+ * Returns the window class to open a Taskbar Tab window with, or null to use
+ * Firefox's.
+ *
+ * Windows only get their own class once the desktop entry exists, and
+ * applyWindowClass gives it to the windows opened before. This is needed for
+ * GNOME Shell, which takes a few seconds to load a new desktop entry. A window
+ * whose class doesn't match any entry is assigned to another app, such as
+ * Firefox, and GNOME Shell only looks at it again if the class changes. Other
+ * desktops go through the same steps, without the wait, so that this works the
+ * same everywhere. See bug 2021458 and
+ * https://gitlab.gnome.org/GNOME/gnome-shell/-/merge_requests/4175.
+ *
+ * @param {TaskbarTab} aTaskbarTab - The Taskbar Tab the window is for.
+ * @returns {?string} The window class, or null.
+ */
+function getInitialLinuxWindowClass(aTaskbarTab) {
+  if (!aTaskbarTab.shortcutRelativePath) {
+    return null;
+  }
+  return getLinuxWindowClass(aTaskbarTab);
 }
 
 function getLinuxWindowClass(aTaskbarTab) {
