@@ -31,8 +31,38 @@ add_task(async function test_backgroundtask_shouldprocessupdates() {
   // Since we've changed the xpcshell executable name, the background task won't
   // see us and think another instance is running.  This time, there is no
   // reason to not process updates.
+  // MOZ_AGENT_ALLOW_UPDATE_PROCESSING keeps this working when the test itself
+  // runs under an AI agent.
   exitCode = await do_backgroundtask("shouldprocessupdates", {
     extraArgs: ["--test-should-not-process-updates"],
+    extraEnv: { MOZ_AGENT_ALLOW_UPDATE_PROCESSING: "1" },
+  });
+  Assert.equal(81, exitCode);
+
+  // Same setup, but launched by an AI agent.
+  let printedAgentMessage = false;
+  exitCode = await do_backgroundtask("shouldprocessupdates", {
+    extraArgs: ["--test-should-not-process-updates"],
+    extraEnv: {
+      CODEX_SANDBOX: "seatbelt",
+      MOZ_AGENT_ALLOW_UPDATE_PROCESSING: "",
+    },
+    onStdoutLine: line => {
+      if (line.includes("Pending updates will not be applied")) {
+        printedAgentMessage = true;
+      }
+    },
+  });
+  Assert.equal(76, exitCode);
+  Assert.ok(printedAgentMessage, "Should explain why updates were not applied");
+
+  // MOZ_AGENT_ALLOW_UPDATE_PROCESSING lets an AI agent launch process updates.
+  exitCode = await do_backgroundtask("shouldprocessupdates", {
+    extraArgs: ["--test-should-not-process-updates"],
+    extraEnv: {
+      CODEX_SANDBOX: "seatbelt",
+      MOZ_AGENT_ALLOW_UPDATE_PROCESSING: "1",
+    },
   });
   Assert.equal(81, exitCode);
 

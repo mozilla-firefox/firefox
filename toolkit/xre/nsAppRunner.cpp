@@ -5255,7 +5255,8 @@ enum struct ShouldNotProcessUpdatesReason {
   NotAnUpdatingTask,
   OtherInstanceRunning,
   FirstStartup,
-  DisabledByEnvironment
+  DisabledByEnvironment,
+  LaunchedByAIAgent
 };
 
 const char* ShouldNotProcessUpdatesReasonAsString(
@@ -5269,9 +5270,28 @@ const char* ShouldNotProcessUpdatesReasonAsString(
       return "OtherInstanceRunning";
     case ShouldNotProcessUpdatesReason::DisabledByEnvironment:
       return "DisabledByEnvironment";
+    case ShouldNotProcessUpdatesReason::LaunchedByAIAgent:
+      return "LaunchedByAIAgent";
     default:
       MOZ_CRASH("impossible value for ShouldNotProcessUpdatesReason");
   }
+}
+
+// Returns the name of the first environment variable found that indicates a
+// launch by an AI agent, or nullptr if there is none.
+static const char* GetAIAgentEnvVar() {
+  static const char* const kAIAgentEnvVars[] = {
+      "CLAUDECODE",     "CLINE_ACTIVE", "CODEX_SANDBOX",     "CODEX_THREAD_ID",
+      "COPILOT_AGENT",  "COPILOT_CLI",  "CURSOR_AGENT",      "DSH_SHELL",
+      "GEMINI_CLI",     "HERMES_AGENT", "HERMES_SESSION_ID", "MUSE_SESSION_ID",
+      "OPENCLAW_SHELL", "OPENCODE",     "PI_CODING_AGENT",   "PI_TOOL_CALL_ID",
+  };
+  for (const char* envVar : kAIAgentEnvVars) {
+    if (EnvHasValue(envVar)) {
+      return envVar;
+    }
+  }
+  return nullptr;
 }
 
 Maybe<ShouldNotProcessUpdatesReason> ShouldNotProcessUpdates(
@@ -5355,6 +5375,25 @@ Maybe<ShouldNotProcessUpdatesReason> ShouldNotProcessUpdates(
     }
   }
 #  endif
+
+  // Applying a pending update forces other running instances of the same
+  // installation to restart (bug 1480452), which an AI agent launching its own
+  // instance should not do to the user.
+  if (ARG_FOUND != CheckArgExists("test-process-updates") &&
+      !EnvHasValue("MOZ_TEST_PROCESS_UPDATES") &&
+      !EnvHasValue("MOZ_AGENT_ALLOW_UPDATE_PROCESSING")) {
+    if (const char* agentEnvVar = GetAIAgentEnvVar()) {
+      printf(
+          "Pending updates will not be applied because %s is set in the "
+          "environment, which indicates a launch by an AI agent. Set "
+          "MOZ_AGENT_ALLOW_UPDATE_PROCESSING=1 to apply pending updates at "
+          "startup.\n",
+          agentEnvVar);
+      fflush(stdout);
+      NS_WARNING("ShouldNotProcessUpdates(): LaunchedByAIAgent");
+      return Some(ShouldNotProcessUpdatesReason::LaunchedByAIAgent);
+    }
+  }
 
   return Nothing();
 }
