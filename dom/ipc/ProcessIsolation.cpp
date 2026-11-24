@@ -427,6 +427,43 @@ static nsAutoCString OriginAttributesString(const OriginAttributes& aAttrs) {
   return originSuffix;
 }
 
+/**
+ * Extract the nsIPrincipal which should be used to look up high-value
+ * permissions from a more specific principal. The returned principal is a
+ * site-origin, and strips unused origin attributes.
+ *
+ * Returns `nullptr` if high-value permissions cannot be recorded for this
+ * principal.
+ */
+static already_AddRefed<nsIPrincipal> HighValuePermissionPrincipal(
+    nsIPrincipal* aPrincipal) {
+  if (!aPrincipal->GetIsContentPrincipal()) {
+    return nullptr;
+  }
+
+  nsAutoCString siteOriginNoSuffix;
+  if (NS_FAILED(aPrincipal->GetSiteOriginNoSuffix(siteOriginNoSuffix))) {
+    return nullptr;
+  }
+
+  nsCOMPtr<nsIURI> siteOriginURI;
+  if (NS_FAILED(NS_NewURI(getter_AddRefs(siteOriginURI), siteOriginNoSuffix))) {
+    return nullptr;
+  }
+
+  OriginAttributes attrs(aPrincipal->OriginAttributesRef());
+  attrs.StripAttributes(OriginAttributes::STRIP_FIRST_PARTY_DOMAIN |
+                        OriginAttributes::STRIP_PARTITION_KEY);
+
+  nsCOMPtr<nsIPrincipal> highValuePrincipal =
+      BasePrincipal::CreateContentPrincipal(siteOriginURI, attrs);
+  if (!highValuePrincipal || !highValuePrincipal->GetIsContentPrincipal()) {
+    return nullptr;
+  }
+
+  return highValuePrincipal.forget();
+}
+
 static already_AddRefed<BasePrincipal> GetAboutReaderURLPrincipal(
     nsIURI* aURI, const OriginAttributes& aAttrs) {
   if (nsCOMPtr<nsIURI> readerUri = GetAboutReaderURL(aURI)) {
@@ -494,15 +531,31 @@ static bool ShouldIsolateSite(nsIPrincipal* aPrincipal,
         return true;
       }
 
-      static constexpr nsLiteralCString kHighValuePermissions[] = {
-          mozilla::dom::kHighValueCOOPPermission,
-          mozilla::dom::kHighValueHasSavedLoginPermission,
-          mozilla::dom::kHighValueIsLoggedInPermission,
-      };
+      nsCOMPtr<nsIPrincipal> highValuePrincipal =
+          HighValuePermissionPrincipal(aPrincipal);
+      if (NS_WARN_IF(!highValuePrincipal)) {
+        MOZ_LOG(gProcessIsolationLog, LogLevel::Verbose,
+                ("Not isolating '%s' as it cannot be high-value",
+                 OriginString(aPrincipal).get()));
+        return false;
+      }
 
-      for (const auto& type : kHighValuePermissions) {
+      nsCOMPtr<nsIPrincipal> globalHighValuePrincipal =
+          BasePrincipal::Cast(highValuePrincipal)
+              ->CloneForcingOriginAttributes({});
+
+      static constexpr std::pair<nsLiteralCString, bool>
+          kHighValuePermissions[] = {
+              {mozilla::dom::kHighValueCOOPPermission, false},
+              {mozilla::dom::kHighValueHasSavedLoginPermission, true},
+              {mozilla::dom::kHighValueIsLoggedInPermission, false},
+          };
+
+      for (const auto& [type, global] : kHighValuePermissions) {
+        nsIPrincipal* principal =
+            global ? globalHighValuePrincipal : highValuePrincipal;
         uint32_t permission = nsIPermissionManager::UNKNOWN_ACTION;
-        if (NS_SUCCEEDED(perms->TestPermissionFromPrincipal(aPrincipal, type,
+        if (NS_SUCCEEDED(perms->TestPermissionFromPrincipal(principal, type,
                                                             &permission)) &&
             permission == nsIPermissionManager::ALLOW_ACTION) {
           MOZ_LOG(gProcessIsolationLog, LogLevel::Verbose,
@@ -1463,23 +1516,16 @@ void AddHighValuePermission(nsIPrincipal* aResultPrincipal,
     }
   }
 
-  // Use the site-origin principal as we want to add the permission for the
-  // entire site, rather than a specific subdomain, as process isolation acts on
-  // a site granularity.
-  nsAutoCString siteOrigin;
-  if (NS_FAILED(resultOrPrecursor->GetSiteOrigin(siteOrigin))) {
-    return;
-  }
-
-  nsCOMPtr<nsIPrincipal> sitePrincipal =
-      BasePrincipal::CreateContentPrincipal(siteOrigin);
-  if (!sitePrincipal || !sitePrincipal->GetIsContentPrincipal()) {
+  nsCOMPtr<nsIPrincipal> highValuePrincipal =
+      HighValuePermissionPrincipal(resultOrPrecursor);
+  if (!highValuePrincipal) {
     return;
   }
 
   MOZ_LOG(dom::gProcessIsolationLog, LogLevel::Verbose,
           ("Adding %s Permission for site '%s'",
-           PromiseFlatCString(aPermissionType).get(), siteOrigin.get()));
+           PromiseFlatCString(aPermissionType).get(),
+           OriginString(highValuePrincipal).get()));
 
   uint32_t expiration = 0;
   if (aPermissionType.Equals(mozilla::dom::kHighValueCOOPPermission)) {
@@ -1499,7 +1545,7 @@ void AddHighValuePermission(nsIPrincipal* aResultPrincipal,
   int64_t expirationTime =
       (PR_Now() / PR_USEC_PER_MSEC) + (int64_t(expiration) * PR_MSEC_PER_SEC);
   (void)perms->AddFromPrincipal(
-      sitePrincipal, aPermissionType, nsIPermissionManager::ALLOW_ACTION,
+      highValuePrincipal, aPermissionType, nsIPermissionManager::ALLOW_ACTION,
       nsIPermissionManager::EXPIRE_TIME, expirationTime);
 }
 

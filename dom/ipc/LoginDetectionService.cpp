@@ -10,6 +10,7 @@
 #include "nsILoginInfo.h"
 #include "nsILoginManager.h"
 #include "nsIObserver.h"
+#include "nsIPrincipal.h"
 #include "nsIXULRuntime.h"
 #include "nsServiceManagerUtils.h"
 #include "nsXULAppAPI.h"
@@ -144,9 +145,10 @@ NS_IMETHODIMP
 LoginDetectionService::Observe(nsISupports* aSubject, const char* aTopic,
                                const char16_t* aData) {
   if ("passwordmgr-form-submission-detected"_ns.Equals(aTopic)) {
-    nsDependentString origin(aData);
-    AddHighValuePermission(NS_ConvertUTF16toUTF8(origin),
-                           mozilla::dom::kHighValueIsLoggedInPermission);
+    if (nsCOMPtr<nsIPrincipal> principal = do_QueryInterface(aSubject)) {
+      AddHighValuePermission(principal,
+                             mozilla::dom::kHighValueIsLoggedInPermission);
+    }
   }
 
   return NS_OK;

@@ -416,9 +416,8 @@ export class LoginManagerParent extends JSWindowActorParent {
 
   #onFormSubmit() {
     Services.obs.notifyObservers(
-      null,
-      "passwordmgr-form-submission-detected",
-      this.origin
+      this.manager.documentPrincipal,
+      "passwordmgr-form-submission-detected"
     );
   }
 
