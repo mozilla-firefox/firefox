@@ -1,0 +1,67 @@
+# This Source Code Form is subject to the terms of the Mozilla Public
+# License, v. 2.0. If a copy of the MPL was not distributed with this
+# file, You can obtain one at http://mozilla.org/MPL/2.0/.
+---
+task-defaults:
+    worker-type: b-linux-docker-amd
+    worker:
+        max-run-time: 1800
+    run:
+        using: toolchain-script
+        script: build-libcxx.sh
+
+linux64-x64-libcxx-22:
+    description: "Linux x64 libc++ for Clang 22 toolchain build"
+    treeherder:
+        symbol: TL(libcxx-22)
+    run:
+        arguments:
+            - build/build-clang/clang-22.json
+        resources:
+            - build/build-clang/clang-22.json
+            - taskcluster/scripts/misc/build-llvm-common.sh
+        toolchain-artifact: public/build/libcxx-x86_64-unknown-linux-gnu.tar.zst
+    fetches:
+        fetch:
+            - clang-22
+        toolchain:
+            - linux64-clang-22-stage1
+            - sysroot-x86_64-linux-gnu
+
+linux64-x64-libcxx-23:
+    description: "Linux x64 libc++ for Clang 23 toolchain build"
+    treeherder:
+        symbol: TL(libcxx-23)
+    run:
+        arguments:
+            - build/build-clang/clang-23.json
+        resources:
+            - build/build-clang/clang-23.json
+            - taskcluster/scripts/misc/build-llvm-common.sh
+        toolchain-artifact: public/build/libcxx-x86_64-unknown-linux-gnu.tar.zst
+    fetches:
+        fetch:
+            - clang-23
+        toolchain:
+            - linux64-clang-23-stage1
+            - sysroot-x86_64-linux-gnu
+
+linux64-x64-libcxx-trunk:
+    description: "Linux x64 libc++ for Clang trunk toolchain build"
+    attributes:
+        cached_task: false
+    treeherder:
+        symbol: TL(libcxx-trunk)
+    run:
+        arguments:
+            - build/build-clang/clang-trunk.json
+        resources:
+            - build/build-clang/clang-trunk.json
+            - taskcluster/scripts/misc/build-llvm-common.sh
+        toolchain-artifact: public/build/libcxx-x86_64-unknown-linux-gnu.tar.zst
+    fetches:
+        fetch:
+            - clang-trunk
+        toolchain:
+            - linux64-clang-trunk-stage1
+            - sysroot-x86_64-linux-gnu

@@ -200,6 +200,7 @@ linux64-clang-22:
             - linux32-compiler-rt-22
             - linux64-aarch64-compiler-rt-22
             - linux64-x64-compiler-rt-22
+            - linux64-x64-libcxx-22
             - macosx64-aarch64-compiler-rt-22
             - macosx64-x64-compiler-rt-22
             - wasm32-wasi-compiler-rt-22
@@ -262,6 +263,7 @@ linux64-aarch64-clang-22:
             - linux32-compiler-rt-22
             - linux64-aarch64-compiler-rt-22
             - linux64-x64-compiler-rt-22
+            - linux64-x64-libcxx-22
             - macosx64-aarch64-compiler-rt-22
             - macosx64-x64-compiler-rt-22
             - wasm32-wasi-compiler-rt-22
@@ -384,6 +386,7 @@ macosx64-clang-22:
             - linux32-compiler-rt-22
             - linux64-aarch64-compiler-rt-22
             - linux64-x64-compiler-rt-22
+            - linux64-x64-libcxx-22
             - macosx64-aarch64-compiler-rt-22
             - macosx64-x64-compiler-rt-22
             - wasm32-wasi-compiler-rt-22
@@ -504,6 +507,7 @@ macosx64-aarch64-clang-22:
             - linux32-compiler-rt-22
             - linux64-aarch64-compiler-rt-22
             - linux64-x64-compiler-rt-22
+            - linux64-x64-libcxx-22
             - macosx64-aarch64-compiler-rt-22
             - macosx64-x64-compiler-rt-22
             - wasm32-wasi-compiler-rt-22
@@ -627,6 +631,7 @@ win64-clang-22:
             - linux32-compiler-rt-22
             - linux64-aarch64-compiler-rt-22
             - linux64-x64-compiler-rt-22
+            - linux64-x64-libcxx-22
             - macosx64-aarch64-compiler-rt-22
             - macosx64-x64-compiler-rt-22
             - wasm32-wasi-compiler-rt-22
@@ -692,6 +697,7 @@ win64-aarch64-clang-22:
             - linux32-compiler-rt-22
             - linux64-aarch64-compiler-rt-22
             - linux64-x64-compiler-rt-22
+            - linux64-x64-libcxx-22
             - macosx64-aarch64-compiler-rt-22
             - macosx64-x64-compiler-rt-22
             - wasm32-wasi-compiler-rt-22
@@ -835,6 +841,7 @@ linux64-clang-23:
             - linux32-compiler-rt-23
             - linux64-aarch64-compiler-rt-23
             - linux64-x64-compiler-rt-23
+            - linux64-x64-libcxx-23
             - macosx64-aarch64-compiler-rt-23
             - macosx64-x64-compiler-rt-23
             - wasm32-wasi-compiler-rt-23
@@ -893,6 +900,7 @@ linux64-aarch64-clang-23:
             - linux32-compiler-rt-23
             - linux64-aarch64-compiler-rt-23
             - linux64-x64-compiler-rt-23
+            - linux64-x64-libcxx-23
             - macosx64-aarch64-compiler-rt-23
             - macosx64-x64-compiler-rt-23
             - wasm32-wasi-compiler-rt-23
@@ -1009,6 +1017,7 @@ macosx64-clang-23:
             - linux32-compiler-rt-23
             - linux64-aarch64-compiler-rt-23
             - linux64-x64-compiler-rt-23
+            - linux64-x64-libcxx-23
             - macosx64-aarch64-compiler-rt-23
             - macosx64-x64-compiler-rt-23
             - wasm32-wasi-compiler-rt-23
@@ -1125,6 +1134,7 @@ macosx64-aarch64-clang-23:
             - linux32-compiler-rt-23
             - linux64-aarch64-compiler-rt-23
             - linux64-x64-compiler-rt-23
+            - linux64-x64-libcxx-23
             - macosx64-aarch64-compiler-rt-23
             - macosx64-x64-compiler-rt-23
             - wasm32-wasi-compiler-rt-23
@@ -1242,6 +1252,7 @@ win64-clang-23:
             - linux32-compiler-rt-23
             - linux64-aarch64-compiler-rt-23
             - linux64-x64-compiler-rt-23
+            - linux64-x64-libcxx-23
             - macosx64-aarch64-compiler-rt-23
             - macosx64-x64-compiler-rt-23
             - wasm32-wasi-compiler-rt-23
@@ -1303,6 +1314,7 @@ win64-aarch64-clang-23:
             - linux32-compiler-rt-23
             - linux64-aarch64-compiler-rt-23
             - linux64-x64-compiler-rt-23
+            - linux64-x64-libcxx-23
             - macosx64-aarch64-compiler-rt-23
             - macosx64-x64-compiler-rt-23
             - wasm32-wasi-compiler-rt-23
@@ -1472,6 +1484,7 @@ linux64-clang-trunk:
             - linux32-compiler-rt-trunk
             - linux64-aarch64-compiler-rt-trunk
             - linux64-x64-compiler-rt-trunk
+            - linux64-x64-libcxx-trunk
             - macosx64-aarch64-compiler-rt-trunk
             - macosx64-x64-compiler-rt-trunk
             - wasm32-wasi-compiler-rt-trunk
@@ -1536,6 +1549,7 @@ linux64-aarch64-clang-trunk:
             - linux32-compiler-rt-trunk
             - linux64-aarch64-compiler-rt-trunk
             - linux64-x64-compiler-rt-trunk
+            - linux64-x64-libcxx-trunk
             - macosx64-aarch64-compiler-rt-trunk
             - macosx64-x64-compiler-rt-trunk
             - wasm32-wasi-compiler-rt-trunk
@@ -1665,6 +1679,7 @@ macosx64-clang-trunk:
             - linux32-compiler-rt-trunk
             - linux64-aarch64-compiler-rt-trunk
             - linux64-x64-compiler-rt-trunk
+            - linux64-x64-libcxx-trunk
             - macosx64-aarch64-compiler-rt-trunk
             - macosx64-x64-compiler-rt-trunk
             - wasm32-wasi-compiler-rt-trunk
@@ -1791,6 +1806,7 @@ macosx64-aarch64-clang-trunk:
             - linux32-compiler-rt-trunk
             - linux64-aarch64-compiler-rt-trunk
             - linux64-x64-compiler-rt-trunk
+            - linux64-x64-libcxx-trunk
             - macosx64-aarch64-compiler-rt-trunk
             - macosx64-x64-compiler-rt-trunk
             - wasm32-wasi-compiler-rt-trunk
@@ -1918,6 +1934,7 @@ win64-clang-trunk:
             - linux32-compiler-rt-trunk
             - linux64-aarch64-compiler-rt-trunk
             - linux64-x64-compiler-rt-trunk
+            - linux64-x64-libcxx-trunk
             - macosx64-aarch64-compiler-rt-trunk
             - macosx64-x64-compiler-rt-trunk
             - wasm32-wasi-compiler-rt-trunk
@@ -1985,6 +2002,7 @@ win64-aarch64-clang-trunk:
             - linux32-compiler-rt-trunk
             - linux64-aarch64-compiler-rt-trunk
             - linux64-x64-compiler-rt-trunk
+            - linux64-x64-libcxx-trunk
             - macosx64-aarch64-compiler-rt-trunk
             - macosx64-x64-compiler-rt-trunk
             - wasm32-wasi-compiler-rt-trunk

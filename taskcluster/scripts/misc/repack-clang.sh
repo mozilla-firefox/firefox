@@ -12,6 +12,7 @@ cd $MOZ_FETCHES_DIR
 # We have some libunwinds in $MOZ_FETCHES_DIR/libunwind*
 # We copy everything from the compiler-rts into clang/lib/clang/$version/
 # and everything from the libunwinds into clang/
+# We move the libcxxs as-is into clang/
 clang_ver_dir=$(echo clang/lib/clang/*/include)
 clang_ver_dir=${clang_ver_dir%/include}
 [ -n "$clang_ver_dir" ] && for c in compiler-rt* libunwind*; do
@@ -43,6 +44,12 @@ clang_ver_dir=${clang_ver_dir%/include}
       cp "$f" "$target_file"
     done
   done
+done
+
+# libc++ stays in its own directory, as clang would otherwise prefer its
+# headers over the macOS SDK ones.
+for l in libcxx-*; do
+  mv $l clang/
 done
 
 if [ -n "$UPLOAD_DIR" ]; then
