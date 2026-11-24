@@ -1,0 +1,31 @@
+[build-system]
+requires = ["setuptools>=68", "wheel"]
+build-backend = "setuptools.build_meta"
+
+[project]
+name = "mozai"
+version = "0.1.0"
+description = "Drive Firefox's AI features from Python via Selenium"
+readme = "README.md"
+requires-python = ">=3.10"
+license = { text = "MPL-2.0" }
+dependencies = [
+  # 4.6+ ships Selenium Manager, which auto-fetches a matching geckodriver.
+  "selenium>=4.6",
+]
+keywords = ["firefox", "selenium", "machine-learning"]
+classifiers = [
+  "Programming Language :: Python",
+  "Programming Language :: Python :: 3",
+  "License :: OSI Approved :: Mozilla Public License 2.0 (MPL 2.0)",
+  "Operating System :: OS Independent",
+]
+
+[tool.setuptools]
+package-dir = {"" = "src"}
+
+[tool.setuptools.packages.find]
+where = ["src"]
+
+[tool.setuptools.package-data]
+"mozai" = ["bootstrap.js"]
