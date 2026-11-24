@@ -109,6 +109,15 @@ export class SearchModeSwitcher {
   #countedBadgeFor = new WeakMap();
 
   /**
+   * Store the page each browser had its badge suppressed for. The content pref
+   * cache can briefly return the count from before the suppression, so the
+   * badge must not rely on it for the rest of that visit.
+   *
+   * @type {WeakMap<MozBrowser, string>}
+   */
+  #suppressedBadgeFor = new WeakMap();
+
+  /**
    * @param {UrlbarInput} input
    */
   constructor(input) {
@@ -627,6 +636,10 @@ export class SearchModeSwitcher {
       if (browser != this.#input.browserWindow?.gBrowser?.selectedBrowser) {
         return;
       }
+      if (this.#suppressedBadgeFor.get(browser) == spec) {
+        this.#button.removeAttribute("addengines");
+        return;
+      }
       // Don't hide already shown badges.
       let show =
         this.#countedBadgeFor.get(browser) == spec ||
@@ -659,6 +672,27 @@ export class SearchModeSwitcher {
         handleError() {},
         handleCompletion: () => apply(count),
       }
+    );
+  }
+
+  /**
+   * Hides the addEngines badge and stops it being shown again for this page.
+   */
+  #suppressAddEnginesBadge() {
+    if (this.#input.isSearchbarSAP) {
+      return;
+    }
+    this.#button.removeAttribute("addengines");
+    let browser = this.#input.browserWindow.gBrowser.selectedBrowser;
+    let uri = browser.currentURI;
+    this.#countedBadgeFor.delete(browser);
+    this.#suppressedBadgeFor.set(browser, uri.spec);
+    this.#contentPrefs.set(
+      uri.spec,
+      ADD_ENGINES_BADGE_PREF,
+      /** @type {any} */ (MAX_ADD_ENGINES_BADGE_SHOWN),
+      browser.loadContext,
+      null
     );
   }
 
@@ -1190,6 +1224,10 @@ export class SearchModeSwitcher {
    *   The engine to install.
    */
   async #installOpenSearchEngine(engine) {
+    // Hide the badge now in case the install fails or we can't
+    // detect the install properly.
+    this.#suppressAddEnginesBadge();
+
     /** @type {(_: string, newEngine: PartialSearchEngine) => void} */
     let observer = (_, newEngine) => {
       this.#input.search(this.#getSearchString(), {

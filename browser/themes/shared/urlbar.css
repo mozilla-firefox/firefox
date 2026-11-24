@@ -46,6 +46,10 @@
      the container's border box. */
   --urlbar-container-padding-block: var(--urlbar-padding-block);
 
+  --search-add-engine-badge-fill: light-dark(var(--color-green-50), var(--color-green-20));
+  --search-add-engine-badge-stroke: light-dark(white, black);
+  --search-add-engine-badge-filter-deemphasized: grayscale(1);
+
   @media not -moz-pref("browser.nova.enabled") {
     --urlbar-basic-component-size: calc(var(--urlbar-height) - 2 * (var(--urlbar-input-container-border-width) + var(--urlbar-input-container-padding)));
     --urlbar-icon-padding: calc((var(--urlbar-height) - 2px /* border */ - 2px /* padding */ - 16px /* icon */) / 2);
@@ -88,6 +92,16 @@
     @media (max-width: 550px) {
       --urlbar-container-min-width: 140px;
     }
+  }
+
+  @media (prefers-contrast) {
+    --search-add-engine-badge-fill: light-dark(var(--color-green-70), var(--color-green-20));
+  }
+
+  @media (forced-colors) {
+    --search-add-engine-badge-fill: CanvasText;
+    --search-add-engine-badge-stroke: Canvas;
+    --search-add-engine-badge-filter-deemphasized: none;
   }
 }
 
@@ -1309,6 +1323,10 @@ toolbar[inactive="true"] .urlbar,
 
   .searchbar-search-button[addengines="true"] > & {
     list-style-image: url(chrome://browser/skin/search-indicator-badge-add.svg);
+    -moz-context-properties: fill, stroke;
+    fill: var(--search-add-engine-badge-fill);
+    stroke: var(--search-add-engine-badge-stroke);
+    filter: var(--search-add-engine-badge-filter-deemphasized);
     margin-inline: -15px 4px;
     margin-top: -10px;
     width: 11px;
@@ -1317,6 +1335,10 @@ toolbar[inactive="true"] .urlbar,
     &:dir(rtl) {
       margin-inline: -25px 14px;
     }
+  }
+
+  .searchbar-search-button[addengines="true"]:is(:hover, [aria-expanded="true"]) > & {
+    filter: none;
   }
 
   .searchbar-search-button:hover:not([addengines="true"]) > & {
@@ -1345,7 +1367,10 @@ toolbar[inactive="true"] .urlbar,
     content: "";
     position: absolute;
     display: block;
-    background: url(chrome://browser/skin/search-indicator-badge-add.svg) no-repeat center;
+    background: url(chrome://browser/skin/search-indicator-badge-add.svg) no-repeat center / contain;
+    -moz-context-properties: fill, stroke;
+    fill: var(--search-add-engine-badge-fill);
+    stroke: var(--search-add-engine-badge-stroke);
     height: 11px;
     width: 11px;
     margin-inline-start: 9px;
@@ -1485,10 +1510,17 @@ toolbar[inactive="true"] .urlbar,
     width: 11px;
     height: 11px;
     inset-block-start: var(--space-xxsmall);
-    inset-inline-start: var(--icon-size);
-    background: url(chrome://browser/skin/search-indicator-badge-add.svg) no-repeat center;
-    background-size: contain;
+    inset-inline-start: calc(var(--icon-size) - 1px);
+    background: url(chrome://browser/skin/search-indicator-badge-add.svg) no-repeat center / contain;
+    -moz-context-properties: fill, stroke;
+    fill: var(--search-add-engine-badge-fill);
+    stroke: var(--search-add-engine-badge-stroke);
+    filter: var(--search-add-engine-badge-filter-deemphasized);
     pointer-events: none;
+  }
+
+  &[addengines]:is(:hover, [open])::part(button)::after {
+    filter: none;
   }
 }
 
@@ -1642,7 +1674,10 @@ toolbar[inactive="true"] .urlbar,
     content: "";
     position: absolute;
     display: flex;
-    background: url(chrome://browser/skin/search-indicator-badge-add.svg) no-repeat center;
+    background: url(chrome://browser/skin/search-indicator-badge-add.svg) no-repeat center / contain;
+    -moz-context-properties: fill, stroke;
+    fill: var(--search-add-engine-badge-fill);
+    stroke: var(--search-add-engine-badge-stroke);
     height: 11px;
     width: 11px;
     top: 4px;

@@ -61,6 +61,8 @@ https_first_disabled = true
 
 ["browser_preview.js"]
 
+["browser_searchModeSwitcher_addEngineBadge.js"]
+
 ["browser_searchModeSwitcher_appProvidedEngines.js"]
 tags = "persisted-search"
 
