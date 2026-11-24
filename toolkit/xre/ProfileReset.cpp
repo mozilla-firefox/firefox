@@ -138,8 +138,11 @@ nsresult ProfileResetCleanup(nsToolkitProfileService* aService,
     return rv;
   }
   // Close the progress window now that the cleanup thread is done.
-  auto* piWindow = nsPIDOMWindowOuter::From(progressWindow);
-  MOZ_KnownLive(piWindow)->Close();
+  // OpenWindow can succeed without returning a window, so this may be null.
+  if (const nsCOMPtr<nsPIDOMWindowOuter> piWindow =
+          nsPIDOMWindowOuter::From(progressWindow)) {
+    piWindow->Close();
+  }
 
   return aService->ApplyResetProfile(aOldProfile);
 }
