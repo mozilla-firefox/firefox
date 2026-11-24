@@ -132,6 +132,7 @@ for (const type of [
   "DISCOVERY_STREAM_DEV_IMPRESSIONS",
   "DISCOVERY_STREAM_DEV_REFRESH_CACHE",
   "DISCOVERY_STREAM_DEV_SHOW_PLACEHOLDER",
+  "DISCOVERY_STREAM_DEV_STAGING_ADS",
   "DISCOVERY_STREAM_DEV_SYNC_RS",
   "DISCOVERY_STREAM_DEV_SYSTEM_TICK",
   "DISCOVERY_STREAM_EXPERIMENT_DATA",
@@ -651,9 +652,6 @@ const PREF_CONTEXTUAL_BANNER_PLACEMENTS = "discoverystream.placements.contextual
 const PREF_CONTEXTUAL_BANNER_COUNTS = "discoverystream.placements.contextualBanners.counts";
 const PREF_UNIFIED_ADS_ENABLED = "unifiedAds.spocs.enabled";
 const PREF_UNIFIED_ADS_ENDPOINT = "unifiedAds.endpoint";
-const PREF_ALLOWED_ENDPOINTS = "discoverystream.endpoints";
-const PREF_OHTTP_CONFIG = "discoverystream.ohttp.configURL";
-const PREF_OHTTP_RELAY = "discoverystream.ohttp.relayURL";
 const Row = props => /*#__PURE__*/external_React_default().createElement("tr", _extends({
   className: "message-item"
 }, props), props.children);
@@ -1185,40 +1183,15 @@ class DiscoveryStreamAdminUI extends (external_React_default()).PureComponent {
     }))));
   }
   handleAllizomToggle(e) {
-    const prefs = this.props.otherPrefs;
-    const unifiedAdsSpocsEnabled = prefs[PREF_UNIFIED_ADS_ENABLED];
-    if (!unifiedAdsSpocsEnabled) {
+    if (!this.props.otherPrefs[PREF_UNIFIED_ADS_ENABLED]) {
       return;
     }
-    const {
-      pressed
-    } = e.target;
-    const {
-      dispatch
-    } = this.props;
-    const allowedEndpoints = prefs[PREF_ALLOWED_ENDPOINTS];
-    const setPref = (pref = "", value = "") => {
-      dispatch(actionCreators.SetPref(pref, value));
-    };
-    const clearPref = (pref = "") => {
-      dispatch(actionCreators.OnlyToMain({
-        type: actionTypes.CLEAR_PREF,
-        data: {
-          name: pref
-        }
-      }));
-    };
-    if (pressed) {
-      setPref(PREF_UNIFIED_ADS_ENDPOINT, "https://ads.allizom.org/");
-      setPref(PREF_ALLOWED_ENDPOINTS, `${allowedEndpoints},https://ads.allizom.org/`);
-      setPref(PREF_OHTTP_CONFIG, "https://stage.ohttp-gateway.nonprod.webservices.mozgcp.net/ohttp-configs");
-      setPref(PREF_OHTTP_RELAY, "https://mozilla-ohttp-relay-test.edgecompute.app/");
-    } else {
-      clearPref(PREF_UNIFIED_ADS_ENDPOINT);
-      clearPref(PREF_ALLOWED_ENDPOINTS);
-      clearPref(PREF_OHTTP_CONFIG);
-      clearPref(PREF_OHTTP_RELAY);
-    }
+    this.props.dispatch(actionCreators.OnlyToMain({
+      type: actionTypes.DISCOVERY_STREAM_DEV_STAGING_ADS,
+      data: {
+        enabled: e.target.pressed
+      }
+    }));
   }
   renderSpocs() {
     const {
