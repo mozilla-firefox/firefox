@@ -378,8 +378,7 @@ class SettingsFragment : PreferenceFragmentCompat(), SystemInsetsPaddedFragment 
 
         val directions: NavDirections? =
             when (preference.key) {
-                /* Top level account preferences.
-                Note: Only ONE of these preferences is visible at a time. */
+                // Top level account preferences.
                 resources.getString(R.string.pref_key_sign_in) -> {
                     SettingsMetrics.signIntoSync.add()
                     SettingsFragmentDirections.actionSettingsFragmentToTurnOnSyncFragment(
@@ -391,14 +390,11 @@ class SettingsFragment : PreferenceFragmentCompat(), SystemInsetsPaddedFragment 
                     SettingsFragmentDirections.actionSettingsFragmentToAccountSettingsFragment()
                 }
 
-                resources.getString(R.string.pref_key_account_auth_error) -> {
-                    if (requireComponents.settings.accountSettingsNewUi) {
-                        SettingsFragmentDirections.actionSettingsFragmentToAccountSettingsFragment()
-                    } else {
-                        SettingsFragmentDirections.actionSettingsFragmentToAccountProblemFragment(
-                            entrypoint = FenixFxAEntryPoint.SettingsMenu
-                        )
-                    }
+                resources.getString(R.string.pref_key_account_auth_error),
+                resources.getString(R.string.pref_key_account_error_card_auth) -> {
+                    SettingsFragmentDirections.actionSettingsFragmentToAccountProblemFragment(
+                        entrypoint = FenixFxAEntryPoint.SettingsMenu
+                    )
                 }
 
                 // General preferences
