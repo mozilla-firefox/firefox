@@ -171,6 +171,11 @@ constructor(
                         BrowserMenuConfiguration.hasNotificationToShow(
                             context.components.appStore.state.supportedMenuNotifications,
                             context.components.menuCustomizationRepository.customizedMenuInfo.value,
+                            if (context.components.settings.isToolsMenuCustomizationEnabled) {
+                                context.components.menuCustomizationRepository.customizedSectionsInfo.value.orEmpty()
+                            } else {
+                                emptyMap()
+                            },
                         ),
                     onClick = object : BrowserToolbarEvent {},
                 )

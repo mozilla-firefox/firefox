@@ -10,7 +10,9 @@ import kotlin.test.assertTrue
 import org.junit.Test
 import org.mozilla.fenix.R
 import org.mozilla.fenix.components.appstate.SupportedMenuNotifications
+import org.mozilla.fenix.components.menu.CustomizedItemInfo
 import org.mozilla.fenix.components.menu.CustomizedMenuInfo
+import org.mozilla.fenix.components.menu.CustomizedSectionInfo
 import org.mozilla.fenix.components.menu.configuration.BrowserMenuConfiguration.ACCOUNTS_AND_SETTINGS_GROUP_ID
 import org.mozilla.fenix.components.menu.configuration.BrowserMenuConfiguration.LIBRARY_GROUP_ID
 import org.mozilla.fenix.components.menu.configuration.BrowserMenuConfiguration.PAGE_CONTROLS_GROUP_ID
@@ -23,11 +25,17 @@ import org.mozilla.fenix.components.menu.configuration.FenixMenuItem.Back
 import org.mozilla.fenix.components.menu.configuration.FenixMenuItem.Bookmark
 import org.mozilla.fenix.components.menu.configuration.FenixMenuItem.CustomizeHomepage
 import org.mozilla.fenix.components.menu.configuration.FenixMenuItem.DefaultBrowserBanner
+import org.mozilla.fenix.components.menu.configuration.FenixMenuItem.DesktopSite
+import org.mozilla.fenix.components.menu.configuration.FenixMenuItem.Extensions
+import org.mozilla.fenix.components.menu.configuration.FenixMenuItem.FindInPage
 import org.mozilla.fenix.components.menu.configuration.FenixMenuItem.Forward
+import org.mozilla.fenix.components.menu.configuration.FenixMenuItem.More
 import org.mozilla.fenix.components.menu.configuration.FenixMenuItem.NewPrivateTab
 import org.mozilla.fenix.components.menu.configuration.FenixMenuItem.NewTab
+import org.mozilla.fenix.components.menu.configuration.FenixMenuItem.Print
 import org.mozilla.fenix.components.menu.configuration.FenixMenuItem.Refresh
 import org.mozilla.fenix.components.menu.configuration.FenixMenuItem.Share
+import org.mozilla.fenix.components.menu.configuration.FenixMenuItem.Translate
 import org.mozilla.fenix.components.menu.configuration.MenuPresentationMode.Grid
 import org.mozilla.fenix.components.menu.configuration.MenuPresentationMode.Row
 
@@ -346,6 +354,33 @@ class BrowserMenuConfigurationTest {
     }
 
     @Test
+    fun `GIVEN the user customized the tools items WHEN building the browser menu THEN show the shown ones in the saved order`() {
+        val toolsInfo =
+            CustomizedSectionInfo(
+                sectionId = TOOLS_GROUP_ID,
+                items =
+                    listOf(
+                        CustomizedItemInfo(Translate.id),
+                        CustomizedItemInfo("more", subItemIds = listOf(Print.id, FenixMenuItem.SummarizePage.id)),
+                        CustomizedItemInfo(FindInPage.id),
+                    ),
+                hiddenItems = listOf(CustomizedItemInfo(DesktopSite.id), CustomizedItemInfo(Extensions.id)),
+            )
+
+        val configuration =
+            BrowserMenuConfiguration.sections(
+                isToolbarAtBottom = false,
+                isExpandedToolbarEnabled = false,
+                customizedSectionsInfo = mapOf(TOOLS_GROUP_ID to toolsInfo),
+            )
+
+        assertEquals(
+            listOf(Translate, More(listOf(Print, FenixMenuItem.SummarizePage)), FindInPage),
+            configuration.first { it.id == TOOLS_GROUP_ID }.items,
+        )
+    }
+
+    @Test
     fun `GIVEN customization info WHEN checking notifications THEN check visible section ids`() {
         val customization = menuInfo(shown = listOf(TOOLS_GROUP_ID))
 
@@ -369,6 +404,107 @@ class BrowserMenuConfigurationTest {
                 listOf(SupportedMenuNotifications.ExtensionUpdate),
                 customization,
             )
+        )
+    }
+
+    @Test
+    fun `GIVEN the user hid tools items WHEN checking notifications THEN only the items still shown count`() {
+        val sectionsInfo =
+            mapOf(
+                TOOLS_GROUP_ID to
+                    CustomizedSectionInfo(
+                        sectionId = TOOLS_GROUP_ID,
+                        items =
+                            listOf(
+                                CustomizedItemInfo(FindInPage.id),
+                                CustomizedItemInfo("more", subItemIds = listOf(FenixMenuItem.SummarizePage.id)),
+                            ),
+                        hiddenItems =
+                            listOf(CustomizedItemInfo(Extensions.id), CustomizedItemInfo(FenixMenuItem.OpenInApp.id)),
+                    )
+            )
+        val customization = menuInfo(shown = listOf(TOOLS_GROUP_ID))
+
+        assertTrue(
+            BrowserMenuConfiguration.hasNotificationToShow(
+                listOf(SupportedMenuNotifications.Summarize),
+                customization,
+                sectionsInfo,
+            )
+        )
+        assertFalse(
+            BrowserMenuConfiguration.hasNotificationToShow(
+                listOf(SupportedMenuNotifications.ExtensionUpdate),
+                customization,
+                sectionsInfo,
+            )
+        )
+        assertFalse(
+            BrowserMenuConfiguration.hasNotificationToShow(
+                listOf(SupportedMenuNotifications.OpenInApp),
+                customization,
+                sectionsInfo,
+            )
+        )
+    }
+
+    @Test
+    fun `GIVEN the user customized the tools items WHEN building the browser menu THEN show the other sections with their default items`() {
+        val toolsInfo =
+            CustomizedSectionInfo(
+                sectionId = TOOLS_GROUP_ID,
+                items = listOf(CustomizedItemInfo(FindInPage.id)),
+                hiddenItems = emptyList(),
+            )
+        val defaultSections =
+            BrowserMenuConfiguration.sections(isToolbarAtBottom = false, isExpandedToolbarEnabled = false)
+
+        val configuration =
+            BrowserMenuConfiguration.sections(
+                isToolbarAtBottom = false,
+                isExpandedToolbarEnabled = false,
+                customizedSectionsInfo = mapOf(TOOLS_GROUP_ID to toolsInfo),
+            )
+
+        assertEquals(
+            defaultSections.filterNot { it.id == TOOLS_GROUP_ID },
+            configuration.filterNot { it.id == TOOLS_GROUP_ID },
+        )
+    }
+
+    @Test
+    fun `WHEN getting the default items of the sections THEN return only the tools items with the ids they are saved with`() {
+        assertEquals(
+            mapOf(
+                TOOLS_GROUP_ID to
+                    CustomizedSectionInfo(
+                        sectionId = TOOLS_GROUP_ID,
+                        items =
+                            listOf(
+                                CustomizedItemInfo("find_in_page"),
+                                CustomizedItemInfo("desktop_site"),
+                                CustomizedItemInfo("extensions"),
+                                CustomizedItemInfo(
+                                    id = "more",
+                                    subItemIds =
+                                        listOf(
+                                            "translate",
+                                            "summarize_page",
+                                            "move_to_normal_tabs",
+                                            "report_broken_site",
+                                            "shortcut",
+                                            "add_to_home_screen",
+                                            "tab_group",
+                                            "open_in_app",
+                                            "save_as_pdf",
+                                            "print",
+                                        ),
+                                ),
+                            ),
+                        hiddenItems = emptyList(),
+                    )
+            ),
+            BrowserMenuConfiguration.defaultSectionsInfo(),
         )
     }
 

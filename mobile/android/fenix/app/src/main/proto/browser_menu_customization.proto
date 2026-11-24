@@ -21,11 +21,32 @@ message CustomizedMenuRecord {
   // Whether the user moved the navigation section, which is then shown where it was saved until the menu is restored
   // to its default structure. Otherwise it is shown on the same side of the menu as the toolbar.
   bool is_navigation_section_moved = 4;
+  // Items of the sections the user customized. Sections not here show the items of the app's default configuration.
+  repeated CustomizedSection customized_sections = 5;
 
   // A menu section as customized by the user.
   // Anything not set here, like the section's items, comes from the app's default menu configuration.
   message Section {
     // Id of the section, as declared in [org.mozilla.fenix.components.menu.configuration.BrowserMenuConfiguration].
     string id = 1;
+  }
+
+  // The items of a menu section as customized by the user.
+  // See [org.mozilla.fenix.components.menu.CustomizedSectionInfo]
+  message CustomizedSection {
+    // Id of the section, as declared in [org.mozilla.fenix.components.menu.configuration.BrowserMenuConfiguration].
+    string section_id = 1;
+    // Items to show, in the order they should be shown in.
+    repeated Item items = 2;
+    // Items the user removed from the section.
+    repeated Item hidden_items = 3;
+
+    // A menu item as customized by the user.
+    message Item {
+      // Id of the item, as declared in [org.mozilla.fenix.components.menu.configuration.FenixMenuItem].
+      string id = 1;
+      // Ids of the items this expands to, in the order they should be shown in.
+      repeated string sub_item_ids = 2;
+    }
   }
 }

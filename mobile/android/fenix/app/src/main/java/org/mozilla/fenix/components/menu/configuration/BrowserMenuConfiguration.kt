@@ -7,7 +7,9 @@ package org.mozilla.fenix.components.menu.configuration
 import androidx.annotation.VisibleForTesting
 import org.mozilla.fenix.R
 import org.mozilla.fenix.components.appstate.SupportedMenuNotifications
+import org.mozilla.fenix.components.menu.CustomizedItemInfo
 import org.mozilla.fenix.components.menu.CustomizedMenuInfo
+import org.mozilla.fenix.components.menu.CustomizedSectionInfo
 import org.mozilla.fenix.components.menu.configuration.FenixMenuItem.AddToHomeScreen
 import org.mozilla.fenix.components.menu.configuration.FenixMenuItem.Back
 import org.mozilla.fenix.components.menu.configuration.FenixMenuItem.Bookmark
@@ -58,6 +60,9 @@ object BrowserMenuConfiguration {
     /** Ids of browser menu sections that start as initially hidden. */
     val HIDDEN_BY_DEFAULT_SECTION_IDS = setOf(TABS_CONTROLS_GROUP_ID)
 
+    /** Ids of the browser menu sections whose items the user can customize. */
+    val ITEMS_CUSTOMIZABLE_SECTION_IDS = setOf(TOOLS_GROUP_ID)
+
     /**
      * The menu shown while browsing.
      *
@@ -65,15 +70,19 @@ object BrowserMenuConfiguration {
      * @param isExpandedToolbarEnabled Whether the expanded toolbar is used.
      * @param customizationInfo The order and visibility of the sections chosen by the user. The default sections are
      *   shown if this is `null`.
+     * @param customizedSectionsInfo The items of each section chosen by the user, keyed by section id. Sections not in
+     *   here show their default items.
      */
     fun sections(
         isToolbarAtBottom: Boolean,
         isExpandedToolbarEnabled: Boolean,
         customizationInfo: CustomizedMenuInfo? = null,
+        customizedSectionsInfo: Map<String, CustomizedSectionInfo> = emptyMap(),
     ): List<MenuSectionConfiguration> {
         val shouldShowNavigationItemsAtTheTop =
             shouldShowNavigationItemsAtTheTop(isToolbarAtBottom, isExpandedToolbarEnabled)
-        val defaultSections = allSections(shouldShowNavigationItemsAtTheTop)
+        val defaultSections =
+            allSections(shouldShowNavigationItemsAtTheTop).map { it.withCustomizedItems(customizedSectionsInfo[it.id]) }
         if (customizationInfo == null) {
             return defaultSections.filterNot { it.id in HIDDEN_BY_DEFAULT_SECTION_IDS }
         }
@@ -132,8 +141,47 @@ object BrowserMenuConfiguration {
         return CustomizedMenuInfo(visibleSectionIds = shownIds, hiddenSectionIds = hiddenIds)
     }
 
+    /**
+     * The items of each section in [ITEMS_CUSTOMIZABLE_SECTION_IDS], keyed by section id, for users who didn't
+     * customize them.
+     */
+    fun defaultSectionsInfo(): Map<String, CustomizedSectionInfo> =
+        allSections()
+            .filter { it.id in ITEMS_CUSTOMIZABLE_SECTION_IDS }
+            .associate { section ->
+                section.id to
+                    CustomizedSectionInfo(
+                        sectionId = section.id,
+                        items = section.items.map { it.toCustomizedItemInfo() },
+                        hiddenItems = emptyList(),
+                    )
+            }
+
     /** All the sections of the browser menu, including the ones hidden by default. */
     fun allSections(): List<MenuSectionConfiguration> = allSections(shouldShowNavigationItemsAtTheTop = true)
+
+    private val FenixMenuItem.expandsTo: List<FenixMenuItem>
+        get() = (this as? FenixExpandableMenuItem)?.subMenuItems.orEmpty()
+
+    private fun FenixMenuItem.toCustomizedItemInfo() = CustomizedItemInfo(id = id, subItemIds = expandsTo.map { it.id })
+
+    /** This section with the items chosen by the user in [sectionInfo], or with its default ones if that is `null`. */
+    private fun MenuSectionConfiguration.withCustomizedItems(
+        sectionInfo: CustomizedSectionInfo?
+    ): MenuSectionConfiguration {
+        if (sectionInfo == null) return this
+
+        val available = items.flatMap { listOf(it) + it.expandsTo }.associateBy { it.id }
+        return copy(
+            items =
+                sectionInfo.items.mapNotNull { item ->
+                    when (val menuItem = available[item.id]) {
+                        is More -> More(item.subItemIds.mapNotNull { available[it] })
+                        else -> menuItem
+                    }
+                }
+        )
+    }
 
     private fun shouldShowNavigationItemsAtTheTop(isToolbarAtBottom: Boolean, isExpandedToolbarEnabled: Boolean) =
         !isToolbarAtBottom && !isExpandedToolbarEnabled
@@ -229,15 +277,27 @@ object BrowserMenuConfiguration {
     /**
      * Whether any of [notifications] needs the user's attention on an item shown in the browser menu, so the menu
      * button should be highlighted.
+     *
+     * @param notifications The notifications to check.
+     * @param customizationInfo The order and visibility of the sections chosen by the user, or `null` for the default.
+     * @param customizedSectionsInfo The items of each section chosen by the user, keyed by section id. Sections not in
+     *   here show their default items.
      */
     fun hasNotificationToShow(
         notifications: Collection<SupportedMenuNotifications>,
         customizationInfo: CustomizedMenuInfo?,
-    ): Boolean = notifications.any { isShown(it, customizationInfo) }
+        customizedSectionsInfo: Map<String, CustomizedSectionInfo> = emptyMap(),
+    ): Boolean = notifications.any { isShown(it, customizationInfo, customizedSectionsInfo) }
 
-    private fun isShown(notification: SupportedMenuNotifications, customizationInfo: CustomizedMenuInfo?): Boolean {
+    private fun isShown(
+        notification: SupportedMenuNotifications,
+        customizationInfo: CustomizedMenuInfo?,
+        customizedSectionsInfo: Map<String, CustomizedSectionInfo>,
+    ): Boolean {
         val item = notification.menuItem ?: return false
-        val section = allSections().find { it.containsItem(item) } ?: return false
+        val section =
+            allSections().map { it.withCustomizedItems(customizedSectionsInfo[it.id]) }.find { it.containsItem(item) }
+                ?: return false
         return when (customizationInfo) {
             null -> section.id !in HIDDEN_BY_DEFAULT_SECTION_IDS
             else -> section.id in customizationInfo.visibleSectionIds

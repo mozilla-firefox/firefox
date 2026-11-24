@@ -65,6 +65,7 @@ class CustomizeMenuFragment : Fragment(), UserInteractionHandler, SystemInsetsPa
                                 menuBuilder = MenuBuilder(menuItemsRegistry),
                                 isToolbarAtBottom = requireContext().isToolbarAtBottom(),
                                 isExpandedToolbarEnabled = components.settings.shouldUseExpandedToolbar,
+                                isToolsMenuCustomizationEnabled = components.settings.isToolsMenuCustomizationEnabled,
                                 scope = viewLifecycleOwner.lifecycle.coroutineScope,
                                 appStore = components.appStore,
                                 cannotHideSectionMessage = getString(R.string.customize_menu_cannot_hide_section),

@@ -1013,12 +1013,23 @@ class BrowserToolbarMiddleware(
 
     private fun observeMenuHighlightChanges(store: Store<BrowserToolbarState, BrowserToolbarAction>) {
         val customizationFlow = menuCustomizationRepository?.customizedMenuInfo ?: flowOf(null)
+        val sectionsCustomizationFlow =
+            if (settings.isToolsMenuCustomizationEnabled) {
+                menuCustomizationRepository?.customizedSectionsInfo ?: flowOf(null)
+            } else {
+                flowOf(null)
+            }
         scope.launch {
             combine(
                     appStore.flow().map { it.supportedMenuNotifications }.distinctUntilChanged(),
                     customizationFlow,
-                ) { notifications, customizationInfo ->
-                    BrowserMenuConfiguration.hasNotificationToShow(notifications, customizationInfo)
+                    sectionsCustomizationFlow,
+                ) { notifications, customizationInfo, sectionsCustomization ->
+                    BrowserMenuConfiguration.hasNotificationToShow(
+                        notifications,
+                        customizationInfo,
+                        sectionsCustomization.orEmpty(),
+                    )
                 }
                 .distinctUntilChanged()
                 .collect {
@@ -1354,6 +1365,11 @@ class BrowserToolbarMiddleware(
                         BrowserMenuConfiguration.hasNotificationToShow(
                             appStore.state.supportedMenuNotifications,
                             menuCustomizationRepository?.customizedMenuInfo?.value,
+                            if (settings.isToolsMenuCustomizationEnabled) {
+                                menuCustomizationRepository?.customizedSectionsInfo?.value.orEmpty()
+                            } else {
+                                emptyMap()
+                            },
                         ),
                     onClick = MenuClicked(source),
                 )

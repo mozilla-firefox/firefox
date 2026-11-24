@@ -447,6 +447,7 @@ class Components(
                     isExpandedToolbarEnabled = settings.shouldUseExpandedToolbar,
                 )
             },
+            defaultSectionsInfo = BrowserMenuConfiguration.defaultSectionsInfo(),
             requiredSectionIds = BrowserMenuConfiguration.REQUIRED_SECTION_IDS,
             scope = applicationScope,
         )

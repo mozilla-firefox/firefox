@@ -423,6 +423,7 @@ class MenuFragment : BottomSheetDialogFragment() {
                     isToolbarAtBottom = requireContext().isToolbarAtBottom(),
                     isExpandedToolbarEnabled = requireComponents.settings.shouldUseExpandedToolbar,
                     customizationInfo = readMenuCustomization(),
+                    customizedSectionsInfo = readSectionsCustomization(),
                 )
             MenuAccessPoint.Home -> HomeMenuConfiguration.sections()
             MenuAccessPoint.External ->
@@ -441,6 +442,14 @@ class MenuFragment : BottomSheetDialogFragment() {
             customizedMenuInfo.value
         }
     }
+
+    /** The user's customization of the items of the browser menu sections, waiting for it to be read if enabled. */
+    private suspend fun readSectionsCustomization(): Map<String, CustomizedSectionInfo> =
+        if (requireComponents.settings.isToolsMenuCustomizationEnabled) {
+            requireComponents.menuCustomizationRepository.customizedSectionsInfo.filterNotNull().first()
+        } else {
+            emptyMap()
+        }
 }
 
 @Composable

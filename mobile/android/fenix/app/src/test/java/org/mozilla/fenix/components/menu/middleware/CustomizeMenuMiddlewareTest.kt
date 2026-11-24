@@ -33,6 +33,7 @@ import org.mozilla.fenix.components.appstate.AppAction
 import org.mozilla.fenix.components.appstate.AppAction.SnackbarAction
 import org.mozilla.fenix.components.appstate.AppState
 import org.mozilla.fenix.components.menu.CustomizedMenuInfo
+import org.mozilla.fenix.components.menu.CustomizedSectionInfo
 import org.mozilla.fenix.components.menu.MenuBuilder
 import org.mozilla.fenix.components.menu.MenuCustomizationRepository
 import org.mozilla.fenix.components.menu.configuration.BrowserMenuConfiguration
@@ -455,14 +456,96 @@ class CustomizeMenuMiddlewareTest {
             }
         }
 
+    @Test
+    fun `GIVEN the user changed the tools items WHEN the screen is shown THEN show the menu as customized`() = runTest {
+        createStore(
+            customization = MutableStateFlow(defaultMenuInfo),
+            sectionsCustomization = MutableStateFlow(mapOf(TOOLS_GROUP_ID to changedToolsInfo())),
+            isToolsMenuCustomizationEnabled = true,
+        )
+        runCurrent()
+
+        captureActions.assertLastAction(Update::class) { assertTrue(it.isCustomized) }
+    }
+
+    @Test
+    fun `GIVEN the user changed the tools items but they are not shown WHEN the screen is shown THEN show the menu as not customized`() =
+        runTest {
+            createStore(
+                customization = MutableStateFlow(defaultMenuInfo),
+                sectionsCustomization = MutableStateFlow(mapOf(TOOLS_GROUP_ID to changedToolsInfo())),
+                isToolsMenuCustomizationEnabled = false,
+            )
+            runCurrent()
+
+            captureActions.assertLastAction(Update::class) { assertFalse(it.isCustomized) }
+        }
+
+    @Test
+    fun `GIVEN the user moved the tools items back as by default WHEN the screen is shown THEN show the menu as not customized`() =
+        runTest {
+            val defaultToolsInfo = BrowserMenuConfiguration.defaultSectionsInfo().getValue(TOOLS_GROUP_ID)
+            createStore(
+                customization = MutableStateFlow(defaultMenuInfo),
+                sectionsCustomization = MutableStateFlow(mapOf(TOOLS_GROUP_ID to defaultToolsInfo)),
+                isToolsMenuCustomizationEnabled = true,
+            )
+            runCurrent()
+
+            captureActions.assertLastAction(Update::class) { assertFalse(it.isCustomized) }
+        }
+
+    @Test
+    fun `GIVEN the user changed the tools items WHEN the user resets to default THEN show the menu as not customized`() =
+        runTest {
+            val store =
+                createStore(
+                    initialState = CustomizableMenuState(menuGroups = defaultGroups(), isCustomized = true),
+                    sectionsCustomization = MutableStateFlow(mapOf(TOOLS_GROUP_ID to changedToolsInfo())),
+                    isToolsMenuCustomizationEnabled = true,
+                )
+
+            store.dispatch(ResetToDefaultConfirmed)
+            runCurrent()
+
+            verify { repository.reset() }
+            captureActions.assertLastAction(Update::class) { assertFalse(it.isCustomized) }
+        }
+
+    @Test
+    fun `GIVEN the user changed the tools items and reset to default WHEN the user restores the default structure before the reset is reported THEN show the menu as not customized`() =
+        runTest {
+            val store =
+                createStore(
+                    initialState = CustomizableMenuState(menuGroups = defaultGroups(), isCustomized = true),
+                    sectionsCustomization = MutableStateFlow(mapOf(TOOLS_GROUP_ID to changedToolsInfo())),
+                    isToolsMenuCustomizationEnabled = true,
+                )
+            store.dispatch(ResetToDefaultConfirmed)
+            runCurrent()
+
+            store.dispatch(
+                MenuStructureChanged(
+                    items = groups(*BrowserMenuConfiguration.allSections().map { it.id }.toTypedArray()),
+                    hiddenGroupIds = defaultMenuInfo.hiddenSectionIds.toSet(),
+                    movedGroupId = TABS_CONTROLS_GROUP_ID,
+                )
+            )
+
+            assertFalse(store.state.isCustomized)
+        }
+
     // The customization is read on a scope that runTest cancels at the end of each test.
     private fun TestScope.createStore(
         initialState: CustomizableMenuState = CustomizableMenuState(menuGroups = emptyList()),
         customization: StateFlow<CustomizedMenuInfo?> = MutableStateFlow(null),
+        sectionsCustomization: StateFlow<Map<String, CustomizedSectionInfo>?> = MutableStateFlow(emptyMap()),
         menuGroups: List<MenuItemsGroup> = groups(*BrowserMenuConfiguration.allSections().map { it.id }.toTypedArray()),
         isToolbarAtBottom: Boolean = false,
+        isToolsMenuCustomizationEnabled: Boolean = false,
     ): CustomizableMenuStore {
         every { repository.customizedMenuInfo } returns customization
+        every { repository.customizedSectionsInfo } returns sectionsCustomization
         every { menuBuilder.menuStructure } returns flowOf(menuGroups)
 
         return CustomizableMenuStore(
@@ -475,12 +558,18 @@ class CustomizeMenuMiddlewareTest {
                         menuBuilder = menuBuilder,
                         isToolbarAtBottom = isToolbarAtBottom,
                         isExpandedToolbarEnabled = false,
+                        isToolsMenuCustomizationEnabled = isToolsMenuCustomizationEnabled,
                         scope = backgroundScope,
                         appStore = appStore,
                         cannotHideSectionMessage = cannotHideSectionMessage,
                     ),
                 ),
         )
+    }
+
+    private fun changedToolsInfo(): CustomizedSectionInfo {
+        val defaultToolsInfo = BrowserMenuConfiguration.defaultSectionsInfo().getValue(TOOLS_GROUP_ID)
+        return defaultToolsInfo.copy(items = defaultToolsInfo.items.reversed())
     }
 
     private fun defaultGroups() = groups(*defaultMenuInfo.visibleSectionIds.toTypedArray())

@@ -152,11 +152,14 @@ import org.mozilla.fenix.components.appstate.AppState
 import org.mozilla.fenix.components.appstate.OrientationMode.Landscape
 import org.mozilla.fenix.components.appstate.OrientationMode.Portrait
 import org.mozilla.fenix.components.appstate.SupportedMenuNotifications
+import org.mozilla.fenix.components.menu.CustomizedItemInfo
 import org.mozilla.fenix.components.menu.CustomizedMenuInfo
+import org.mozilla.fenix.components.menu.CustomizedSectionInfo
 import org.mozilla.fenix.components.menu.MenuAccessPoint
 import org.mozilla.fenix.components.menu.MenuCustomizationRepository
 import org.mozilla.fenix.components.menu.configuration.BrowserMenuConfiguration.LIBRARY_GROUP_ID
 import org.mozilla.fenix.components.menu.configuration.BrowserMenuConfiguration.TOOLS_GROUP_ID
+import org.mozilla.fenix.components.menu.configuration.FenixMenuItem
 import org.mozilla.fenix.components.search.BOOKMARKS_SEARCH_ENGINE_ID
 import org.mozilla.fenix.components.search.HISTORY_SEARCH_ENGINE_ID
 import org.mozilla.fenix.components.search.TABS_SEARCH_ENGINE_ID
@@ -3570,6 +3573,82 @@ class BrowserToolbarMiddlewareTest {
 
             val updatedMenuButton = toolbarStore.state.displayState.browserActionsEnd[2] as ActionButtonRes
             assertFalse(updatedMenuButton.highlighted)
+        }
+
+    @Test
+    fun `GIVEN the user hid the extensions item WHEN an extension update notification is added THEN menu button is not highlighted`() =
+        runTest(testDispatcher) {
+            settings.isToolsMenuCustomizationEnabled = true
+            val appStore = AppStore()
+            val menuCustomizationRepository: MenuCustomizationRepository = mockk()
+            every { menuCustomizationRepository.customizedMenuInfo } returns
+                MutableStateFlow(
+                    CustomizedMenuInfo(visibleSectionIds = listOf(TOOLS_GROUP_ID), hiddenSectionIds = emptyList())
+                )
+            every { menuCustomizationRepository.customizedSectionsInfo } returns
+                MutableStateFlow(
+                    mapOf(
+                        TOOLS_GROUP_ID to
+                            CustomizedSectionInfo(
+                                sectionId = TOOLS_GROUP_ID,
+                                items = listOf(CustomizedItemInfo(FenixMenuItem.Bookmark.id)),
+                                hiddenItems = listOf(CustomizedItemInfo(FenixMenuItem.Extensions.id)),
+                            )
+                    )
+                )
+
+            val middleware =
+                buildMiddleware(
+                    appStore = appStore,
+                    menuCustomizationRepository = menuCustomizationRepository,
+                )
+            val toolbarStore = buildStore(middleware)
+
+            appStore.dispatch(
+                AppAction.MenuNotification.AddMenuNotification(SupportedMenuNotifications.ExtensionUpdate)
+            )
+            testDispatcher.scheduler.advanceUntilIdle()
+
+            val updatedMenuButton = toolbarStore.state.displayState.browserActionsEnd[2] as ActionButtonRes
+            assertFalse(updatedMenuButton.highlighted)
+        }
+
+    @Test
+    fun `GIVEN tools menu customization is disabled and the extensions item was hidden WHEN an extension update notification is added THEN menu button is highlighted`() =
+        runTest(testDispatcher) {
+            settings.isToolsMenuCustomizationEnabled = false
+            val appStore = AppStore()
+            val menuCustomizationRepository: MenuCustomizationRepository = mockk()
+            every { menuCustomizationRepository.customizedMenuInfo } returns
+                MutableStateFlow(
+                    CustomizedMenuInfo(visibleSectionIds = listOf(TOOLS_GROUP_ID), hiddenSectionIds = emptyList())
+                )
+            every { menuCustomizationRepository.customizedSectionsInfo } returns
+                MutableStateFlow(
+                    mapOf(
+                        TOOLS_GROUP_ID to
+                            CustomizedSectionInfo(
+                                sectionId = TOOLS_GROUP_ID,
+                                items = listOf(CustomizedItemInfo(FenixMenuItem.Bookmark.id)),
+                                hiddenItems = listOf(CustomizedItemInfo(FenixMenuItem.Extensions.id)),
+                            )
+                    )
+                )
+
+            val middleware =
+                buildMiddleware(
+                    appStore = appStore,
+                    menuCustomizationRepository = menuCustomizationRepository,
+                )
+            val toolbarStore = buildStore(middleware)
+
+            appStore.dispatch(
+                AppAction.MenuNotification.AddMenuNotification(SupportedMenuNotifications.ExtensionUpdate)
+            )
+            testDispatcher.scheduler.advanceUntilIdle()
+
+            val updatedMenuButton = toolbarStore.state.displayState.browserActionsEnd[2] as ActionButtonRes
+            assertTrue(updatedMenuButton.highlighted)
         }
 
     @Test
