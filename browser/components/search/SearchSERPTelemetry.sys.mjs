@@ -397,6 +397,7 @@ class TelemetryHandler {
   constructor() {
     this._contentHandler = new ContentHandler({
       findItemForBrowser: this.findItemForBrowser.bind(this),
+      hasTrackedBrowsers: () => this._browserInfoByURL.size > 0,
     });
   }
 
@@ -1535,9 +1536,12 @@ class ContentHandler {
    *   The options for the handler.
    * @param {(browser: object) => object} options.findItemForBrowser
    *   The function for finding an item for the browser.
+   * @param {() => boolean} options.hasTrackedBrowsers
+   *   The function for checking whether any SERP is being tracked.
    */
   constructor(options) {
     this._findItemForBrowser = options.findItemForBrowser;
+    this._hasTrackedBrowsers = options.hasTrackedBrowsers;
   }
 
   /**
@@ -1615,7 +1619,8 @@ class ContentHandler {
    * @param {nsIChannel} channel   The channel that generated the activity.
    */
   observeActivity(channel) {
-    if (!(channel instanceof Ci.nsIChannel)) {
+    // Only responses following a tracked SERP can be ad clicks.
+    if (!this._hasTrackedBrowsers() || !(channel instanceof Ci.nsIChannel)) {
       return;
     }
 
