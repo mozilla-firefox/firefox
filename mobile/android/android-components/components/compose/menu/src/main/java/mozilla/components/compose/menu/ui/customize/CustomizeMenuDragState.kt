@@ -12,11 +12,8 @@ import androidx.compose.runtime.derivedStateOf
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.snapshotFlow
-import androidx.compose.ui.hapticfeedback.HapticFeedbackType
 import androidx.compose.ui.platform.LocalDensity
-import androidx.compose.ui.platform.LocalHapticFeedback
 import androidx.compose.ui.platform.LocalWindowInfo
-import kotlinx.coroutines.flow.filterNotNull
 import kotlinx.coroutines.flow.first
 import mozilla.components.compose.draggable.InteractionState
 import mozilla.components.compose.draggable.ItemInteractionHandler
@@ -27,7 +24,7 @@ import mozilla.components.compose.menu.store.CustomizableMenuState
 import mozilla.components.compose.menu.store.CustomizableMenuStore
 import mozilla.components.compose.menu.ui.customize.CustomizeMenuItemKey.DRAG_BAR
 import mozilla.components.compose.menu.ui.customize.CustomizeMenuItemKey.DROP_AREA
-import mozilla.components.compose.menu.ui.customize.CustomizeMenuItemKey.HIDDEN_SECTIONS
+import mozilla.components.compose.menu.ui.customize.CustomizeMenuItemKey.HIDDEN_TITLE
 import mozilla.components.compose.menu.ui.customize.CustomizeMenuItemKey.RESET_BUTTON
 import mozilla.components.compose.menu.ui.utils.ext.saveMove
 
@@ -56,7 +53,7 @@ internal class CustomizeMenuDragState(
      * Index in the list of the first hidden group, after the drag bar, the shown groups, the hidden sections title and
      * the area to drag groups into if shown.
      */
-    val firstHiddenIndex = groups.hiddenSectionsIndex + if (hasHiddenGroups) 1 else 2
+    val firstHiddenIndex = groups.hiddenTitleIndex + if (hasHiddenGroups) 1 else 2
 }
 
 /**
@@ -67,7 +64,7 @@ internal class CustomizeMenuDragState(
 internal data class DraggedShownGroup(val size: Int)
 
 // Groups can be dropped next to these items.
-private val FIXED_ITEMS = setOf(HIDDEN_SECTIONS, DROP_AREA)
+private val FIXED_ITEMS = setOf(HIDDEN_TITLE, DROP_AREA)
 
 private const val AUTO_SCROLL_ZONE_WINDOW_FRACTION = 0.1f
 
@@ -110,7 +107,7 @@ internal fun rememberCustomizeMenuDragState(
 
     val hasHiddenGroups by
         remember(interactionState, groups) {
-            derivedStateOf { groups.hidden.any { it.id != interactionState.draggedItem.key } }
+            derivedStateOf { groups.hiddenKeys.any { it != interactionState.draggedItem.key } }
         }
 
     val draggedShownGroup = rememberDraggedShownGroup(interactionState, groups)
@@ -137,8 +134,8 @@ internal fun rememberCustomizeMenuDragState(
         val groupId = draggedMandatoryGroupId ?: return@LaunchedEffect
         snapshotFlow {
             (interactionState.draggedItem as? InteractionState.List.Active)?.let {
-                draggedGroupPositionOf(dragged = it, layoutInfo = listState.layoutInfo, groups = groups)
-            } == DraggedGroupPosition.OVER_HIDDEN_AREA
+                draggedPositionOf(dragged = it, layoutInfo = listState.layoutInfo, items = groups)
+            } == DraggedPosition.OVER_HIDDEN_AREA
         }
             .first { isOver -> isOver }
         store.dispatch(AttemptedRemovalOfMandatorySection(groupId))
@@ -168,32 +165,6 @@ private fun rememberDraggedShownGroup(
                 ?.let { DraggedShownGroup(size = it.size) }
         }
     }
-
-/**
- * Lets the user feel it whenever the line, or the highlighted area, showing where the group dragged with
- * [interactionState] is dropped appears or moves to another place.
- *
- * @param interactionState State of dragging the items of the list showing the groups.
- * @param groups The groups as last saved.
- * @param dropTarget Where the dragged group is moved to if the user lets go of it, if anywhere.
- */
-@Composable
-private fun DropIndicationHaptics(
-    interactionState: ListInteractionState,
-    groups: CustomizeMenuGroups,
-    dropTarget: State<CustomizeMenuDropTarget?>,
-) {
-    val hapticFeedback = LocalHapticFeedback.current
-    LaunchedEffect(interactionState, groups, dropTarget) {
-        // Different drop targets can show the line at the same place, which is felt only once.
-        snapshotFlow {
-            val draggedGroupId = interactionState.draggedItem.key ?: return@snapshotFlow null
-            dropTarget.value?.let { groups.drop(draggedGroupId, it) }
-        }
-            .filterNotNull()
-            .collect { hapticFeedback.performHapticFeedback(HapticFeedbackType.LongPress) }
-    }
-}
 
 /**
  * Moves the groups of a customize menu screen when the user lets go of a dragged group, saving the move.

@@ -115,7 +115,7 @@ internal fun CustomizeMenuGroupContent(
 @Composable
 private fun CustomizeMenuGroup(group: MenuItemsGroup, isHidden: Boolean, isHighlighted: Boolean) {
     val contentAlpha = if (isHidden) DISABLED_ALPHA else 1f
-    val groupModifier = if (isHidden && !isHighlighted) Modifier.hiddenSectionBorder() else Modifier
+    val groupModifier = if (isHidden && !isHighlighted) Modifier.hiddenBorder() else Modifier
 
     when (group) {
         is MenuItemsGroup.Grid ->
@@ -163,7 +163,7 @@ private fun CustomizedGroupTheme(containerColor: Color?, content: @Composable ()
  * @param isHighlighted Whether to highlight the border, to show that a dragged section is dropped inside.
  */
 @Composable
-internal fun Modifier.hiddenSectionBorder(isHighlighted: Boolean = false): Modifier =
+internal fun Modifier.hiddenBorder(isHighlighted: Boolean = false): Modifier =
     this.dashedBorder(
         color = if (isHighlighted) MaterialTheme.colorScheme.tertiary else MaterialTheme.colorScheme.outlineVariant,
         cornerRadius = AcornCorners.extraLarge,

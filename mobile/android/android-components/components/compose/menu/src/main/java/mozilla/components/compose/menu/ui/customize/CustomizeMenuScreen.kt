@@ -5,23 +5,17 @@
 package mozilla.components.compose.menu.ui.customize
 
 import androidx.compose.foundation.background
-import androidx.compose.foundation.basicMarquee
-import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.BoxWithConstraints
 import androidx.compose.foundation.layout.PaddingValues
-import androidx.compose.foundation.layout.Row
-import androidx.compose.foundation.layout.defaultMinSize
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.padding
-import androidx.compose.foundation.layout.wrapContentHeight
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.LazyItemScope
 import androidx.compose.foundation.lazy.LazyListState
 import androidx.compose.foundation.lazy.rememberLazyListState
 import androidx.compose.material3.MaterialTheme
-import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.derivedStateOf
 import androidx.compose.runtime.getValue
@@ -39,13 +33,11 @@ import androidx.compose.ui.platform.LocalWindowInfo
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.semantics.CollectionInfo
 import androidx.compose.ui.semantics.collectionInfo
-import androidx.compose.ui.semantics.heading
 import androidx.compose.ui.semantics.semantics
 import androidx.compose.ui.tooling.preview.PreviewLightDark
 import androidx.compose.ui.unit.Dp
 import androidx.compose.ui.unit.dp
 import mozilla.components.compose.base.button.OutlinedButton
-import mozilla.components.compose.base.button.TextButton
 import mozilla.components.compose.base.theme.AcornTheme
 import mozilla.components.compose.menu.R
 import mozilla.components.compose.menu.store.CustomizableMenuAction.PreviewClicked
@@ -54,7 +46,7 @@ import mozilla.components.compose.menu.store.CustomizableMenuState
 import mozilla.components.compose.menu.store.CustomizableMenuStore
 import mozilla.components.compose.menu.ui.customize.CustomizeMenuItemKey.DRAG_BAR
 import mozilla.components.compose.menu.ui.customize.CustomizeMenuItemKey.DROP_AREA
-import mozilla.components.compose.menu.ui.customize.CustomizeMenuItemKey.HIDDEN_SECTIONS
+import mozilla.components.compose.menu.ui.customize.CustomizeMenuItemKey.HIDDEN_TITLE
 import mozilla.components.compose.menu.ui.customize.CustomizeMenuItemKey.RESET_BUTTON
 import mozilla.components.compose.menu.ui.utils.customizeMenuPreviewData
 import mozilla.components.compose.menu.ui.utils.ext.saveMove
@@ -133,9 +125,7 @@ private fun CustomizeMenuList(
             ),
         horizontalAlignment = Alignment.CenterHorizontally,
     ) {
-        item(key = DRAG_BAR) {
-            CustomizeMenuDragBar({ store.dispatch(PreviewClicked) })
-        }
+        item(key = DRAG_BAR) { DragBarItem(onPreviewClick = { store.dispatch(PreviewClicked) }) }
 
         customizeMenuGroups(
             menuGroups = dragState.groups.shown,
@@ -147,7 +137,7 @@ private fun CustomizeMenuList(
             onShowActions = { actionsGroupId = it },
         )
 
-        item(key = HIDDEN_SECTIONS) {
+        item(key = HIDDEN_TITLE) {
             HiddenSectionsItem(dragState = dragState, itemSpacing = itemSpacing)
         }
 
@@ -252,41 +242,22 @@ private fun CustomizeMenuResetButton(
     }
 }
 
+/**
+ * The [DRAG_BAR] item of the list.
+ *
+ * @param onPreviewClick Called when the "Preview" button is clicked.
+ */
 @Composable
-private fun CustomizeMenuDragBar(
-    onPreviewClick: () -> Unit,
-    modifier: Modifier = Modifier,
-) {
-    Row(
-        modifier =
-            modifier
-                .fillMaxWidth()
-                .defaultMinSize(minHeight = AcornTheme.layout.space.static600)
-                .background(MaterialTheme.colorScheme.surfaceContainer)
-                .padding(
-                    start = AcornTheme.layout.space.static200,
-                    end = AcornTheme.layout.space.static100,
-                ),
-        horizontalArrangement = Arrangement.SpaceBetween,
-        verticalAlignment = Alignment.CenterVertically,
-    ) {
-        Text(
-            text = stringResource(R.string.mozac_menu_customize_drag_to_reorder),
-            modifier = Modifier.weight(1f).basicMarquee().semantics { heading() },
-            style = AcornTheme.typography.headline8,
-            color = MaterialTheme.colorScheme.onSurfaceVariant,
-            maxLines = 1,
-        )
-        TextButton(
-            text = stringResource(R.string.mozac_menu_customize_preview),
-            onClick = onPreviewClick,
-        )
-    }
+private fun DragBarItem(onPreviewClick: () -> Unit) {
+    CustomizeMenuDragBar(
+        text = stringResource(R.string.mozac_menu_customize_drag_to_reorder),
+        onPreviewClick = onPreviewClick,
+    )
 }
 
 /**
- * The [HIDDEN_SECTIONS] item of the list: the space keeping the hidden sections in place while a shown group is
- * dragged, then their title, each a node of the item of its own (see [HiddenAreaSpace]).
+ * The [HIDDEN_TITLE] item of the list: the space keeping the hidden sections in place while a shown group is dragged,
+ * then their title, each a node of the item of its own (see [HiddenAreaSpace]).
  *
  * @param dragState State of dragging the groups of the screen.
  * @param itemSpacing Space between the items of the list.
@@ -296,14 +267,15 @@ private fun LazyItemScope.HiddenSectionsItem(dragState: CustomizeMenuDragState, 
     HiddenAreaSpace(
         dragState = dragState,
         itemSpacing = itemSpacing,
-        modifier = Modifier.drawnOnlyInView(HIDDEN_SECTIONS, dragState).animateItem(),
+        modifier = Modifier.drawnOnlyInView(HIDDEN_TITLE, dragState).animateItem(),
     )
-    CustomizeMenuHiddenSectionsTitle(
+    CustomizeMenuHiddenTitle(
+        text = stringResource(R.string.mozac_menu_customize_hidden_sections),
         modifier =
-            Modifier.drawnOnlyInView(HIDDEN_SECTIONS, dragState)
+            Modifier.drawnOnlyInView(HIDDEN_TITLE, dragState)
                 .animateItem()
                 .padding(top = itemSpacing)
-                .dropLine(HIDDEN_SECTIONS, dragState.dropTarget, itemSpacing, placeAfter = true)
+                .dropLine(HIDDEN_TITLE, dragState.dropTarget, itemSpacing, placeAfter = true),
     )
 }
 
@@ -319,6 +291,7 @@ private fun LazyItemScope.DropAreaItem(dragState: CustomizeMenuDragState) {
             derivedStateOf { dragState.dropTarget.value == CustomizeMenuDropTarget.EmptyHiddenArea }
         }
     CustomizeMenuDropArea(
+        text = stringResource(R.string.mozac_menu_customize_drag_to_hide),
         isDropTarget = isDropTarget,
         modifier = Modifier.drawnOnlyInView(DROP_AREA, dragState).animateItem(),
     )
@@ -337,71 +310,6 @@ private fun LazyItemScope.ResetButtonItem(dragState: CustomizeMenuDragState, ite
         onClick = onClick,
         modifier = Modifier.drawnOnlyInView(RESET_BUTTON, dragState).animateItem().padding(top = itemSpacing),
     )
-}
-
-@Composable
-private fun CustomizeMenuHiddenSectionsTitle(modifier: Modifier = Modifier) {
-    Text(
-        text = stringResource(R.string.mozac_menu_customize_hidden_sections),
-        modifier =
-            modifier
-                .semantics { heading() }
-                .fillMaxWidth()
-                .defaultMinSize(minHeight = AcornTheme.layout.space.static600)
-                .padding(
-                    start = AcornTheme.layout.space.static200,
-                    end = AcornTheme.layout.space.static100,
-                    top = AcornTheme.layout.space.static100,
-                    bottom = AcornTheme.layout.space.static50,
-                )
-                .wrapContentHeight(Alignment.CenterVertically),
-        style = AcornTheme.typography.headline8,
-        color = MaterialTheme.colorScheme.onSurfaceVariant,
-    )
-}
-
-/**
- * The empty area to drag groups into to hide them.
- *
- * @param isDropTarget Whether a dragged group is dropped into it, which highlights it.
- * @param modifier The [Modifier] to be applied to the area.
- */
-@Composable
-private fun CustomizeMenuDropArea(isDropTarget: Boolean, modifier: Modifier = Modifier) {
-    Box(
-        modifier =
-            modifier
-                .fillMaxWidth()
-                .padding(
-                    start = AcornTheme.layout.space.static200,
-                    top = AcornTheme.layout.space.static150,
-                    end = AcornTheme.layout.space.static200,
-                )
-                .then(
-                    if (isDropTarget) {
-                        Modifier.background(
-                            color = MaterialTheme.colorScheme.tertiaryContainer,
-                            shape = MaterialTheme.shapes.extraLarge,
-                        )
-                    } else {
-                        Modifier
-                    }
-                )
-                .hiddenSectionBorder(isHighlighted = isDropTarget)
-                .defaultMinSize(minHeight = 72.dp),
-        contentAlignment = Alignment.Center,
-    ) {
-        Text(
-            text = stringResource(R.string.mozac_menu_customize_drag_to_hide),
-            style = AcornTheme.typography.body2,
-            color =
-                if (isDropTarget) {
-                    MaterialTheme.colorScheme.tertiary
-                } else {
-                    MaterialTheme.colorScheme.onSurfaceVariant
-                },
-        )
-    }
 }
 
 @PreviewLightDark

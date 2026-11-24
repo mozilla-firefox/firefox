@@ -10,7 +10,7 @@ import androidx.compose.runtime.Composable
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.layout.layout
 import androidx.compose.ui.unit.Dp
-import mozilla.components.compose.menu.ui.customize.CustomizeMenuItemKey.HIDDEN_SECTIONS
+import mozilla.components.compose.menu.ui.customize.CustomizeMenuItemKey.HIDDEN_TITLE
 
 /**
  * Empty space above the hidden sections title, keeping the hidden sections in place while a shown group is dragged and
@@ -29,7 +29,7 @@ internal fun HiddenAreaSpace(dragState: CustomizeMenuDragState, itemSpacing: Dp,
             .fillMaxWidth()
             .dropLineAt {
                 val target = dragState.dropTarget.value as? CustomizeMenuDropTarget.NextTo
-                if (target?.key == HIDDEN_SECTIONS && !target.placeAfter) itemSpacing.toPx() / 2 else null
+                if (target?.key == HIDDEN_TITLE && !target.placeAfter) itemSpacing.toPx() / 2 else null
             }
             .layout { measurable, constraints ->
                 val height = dragState.draggedShownGroup.value?.size ?: 0

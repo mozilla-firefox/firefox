@@ -5,7 +5,7 @@
 package mozilla.components.compose.menu.ui.customize
 
 import mozilla.components.compose.menu.data.MenuItemsGroup
-import mozilla.components.compose.menu.ui.customize.CustomizeMenuItemKey.HIDDEN_SECTIONS
+import mozilla.components.compose.menu.ui.customize.CustomizeMenuItemKey.HIDDEN_TITLE
 import org.junit.Assert.assertEquals
 import org.junit.Test
 
@@ -32,7 +32,7 @@ class CustomizeMenuGroupsTest {
     fun `WHEN a shown group is moved before the hidden sections THEN it is placed as the last visible group`() {
         assertEquals(
             CustomizeMenuGroups(shown = groups("b", "c", "a"), hidden = groups("d", "e")),
-            groups.moveGroup(sourceId = "a", targetKey = HIDDEN_SECTIONS, placeAfter = false),
+            groups.moveGroup(sourceId = "a", targetKey = HIDDEN_TITLE, placeAfter = false),
         )
     }
 
@@ -40,7 +40,7 @@ class CustomizeMenuGroupsTest {
     fun `WHEN a shown group is moved after the hidden sections THEN it is placed as the first hidden item`() {
         assertEquals(
             CustomizeMenuGroups(shown = groups("a", "c"), hidden = groups("b", "d", "e")),
-            groups.moveGroup(sourceId = "b", targetKey = HIDDEN_SECTIONS, placeAfter = true),
+            groups.moveGroup(sourceId = "b", targetKey = HIDDEN_TITLE, placeAfter = true),
         )
     }
 
@@ -58,7 +58,7 @@ class CustomizeMenuGroupsTest {
 
         assertEquals(
             CustomizeMenuGroups(shown = emptyList(), hidden = groups("a")),
-            groups.moveGroup(sourceId = "a", targetKey = HIDDEN_SECTIONS, placeAfter = true),
+            groups.moveGroup(sourceId = "a", targetKey = HIDDEN_TITLE, placeAfter = true),
         )
     }
 
@@ -66,7 +66,7 @@ class CustomizeMenuGroupsTest {
     fun `WHEN a hidden group is moved before the hidden sections THEN it is placed as the last visible group`() {
         assertEquals(
             CustomizeMenuGroups(shown = groups("a", "b", "c", "e"), hidden = groups("d")),
-            groups.moveGroup(sourceId = "e", targetKey = HIDDEN_SECTIONS, placeAfter = false),
+            groups.moveGroup(sourceId = "e", targetKey = HIDDEN_TITLE, placeAfter = false),
         )
     }
 
@@ -115,7 +115,7 @@ class CustomizeMenuGroupsTest {
     fun `WHEN a mandatory group is moved after the hidden sections THEN nothing changes`() {
         val groups = CustomizeMenuGroups(shown = groups("a", "m"), hidden = groups("d"), mandatoryIds = setOf("m"))
 
-        assertEquals(groups, groups.moveGroup(sourceId = "m", targetKey = HIDDEN_SECTIONS, placeAfter = true))
+        assertEquals(groups, groups.moveGroup(sourceId = "m", targetKey = HIDDEN_TITLE, placeAfter = true))
     }
 
     @Test

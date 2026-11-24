@@ -8,15 +8,15 @@ import androidx.compose.foundation.lazy.LazyListLayoutInfo
 import mozilla.components.compose.menu.data.MenuItemsGroup
 import mozilla.components.compose.menu.ui.customize.CustomizeMenuItemKey.DRAG_BAR
 import mozilla.components.compose.menu.ui.customize.CustomizeMenuItemKey.DROP_AREA
-import mozilla.components.compose.menu.ui.customize.CustomizeMenuItemKey.HIDDEN_SECTIONS
+import mozilla.components.compose.menu.ui.customize.CustomizeMenuItemKey.HIDDEN_TITLE
 import mozilla.components.compose.menu.ui.customize.CustomizeMenuItemKey.RESET_BUTTON
-import mozilla.components.compose.menu.ui.customize.DraggedGroupPosition.ABOVE_HIDDEN_AREA
-import mozilla.components.compose.menu.ui.customize.DraggedGroupPosition.BELOW_HIDDEN_AREA
-import mozilla.components.compose.menu.ui.customize.DraggedGroupPosition.OVER_HIDDEN_AREA
+import mozilla.components.compose.menu.ui.customize.DraggedPosition.ABOVE_HIDDEN_AREA
+import mozilla.components.compose.menu.ui.customize.DraggedPosition.BELOW_HIDDEN_AREA
+import mozilla.components.compose.menu.ui.customize.DraggedPosition.OVER_HIDDEN_AREA
 import org.junit.Assert.assertEquals
 import org.junit.Test
 
-class DraggedGroupPositionTest {
+class DraggedPositionTest {
     // Laid out as: drag bar, a, b, hidden sections title, then the hidden groups or the area to drag groups into.
     // The hidden area starts at 400.
     private val groups = CustomizeMenuGroups(shown = groups("a", "b"), hidden = groups("c"))
@@ -26,7 +26,7 @@ class DraggedGroupPositionTest {
     fun `WHEN a group is dragged above the bottom of the hidden sections title THEN it is above the hidden area`() {
         assertEquals(
             ABOVE_HIDDEN_AREA,
-            positionOf(center = 350f, layout = layoutOf(DRAG_BAR, "a", "b", HIDDEN_SECTIONS, "c", RESET_BUTTON)),
+            positionOf(center = 350f, layout = layoutOf(DRAG_BAR, "a", "b", HIDDEN_TITLE, "c", RESET_BUTTON)),
         )
     }
 
@@ -34,7 +34,7 @@ class DraggedGroupPositionTest {
     fun `WHEN a group is dragged with its center at the bottom of the hidden sections title THEN it is above the hidden area`() {
         assertEquals(
             ABOVE_HIDDEN_AREA,
-            positionOf(center = 400f, layout = layoutOf(DRAG_BAR, "a", "b", HIDDEN_SECTIONS, "c", RESET_BUTTON)),
+            positionOf(center = 400f, layout = layoutOf(DRAG_BAR, "a", "b", HIDDEN_TITLE, "c", RESET_BUTTON)),
         )
     }
 
@@ -42,7 +42,7 @@ class DraggedGroupPositionTest {
     fun `WHEN a group is dragged with its center at the top of the reset button THEN it is over the hidden area`() {
         assertEquals(
             OVER_HIDDEN_AREA,
-            positionOf(center = 500f, layout = layoutOf(DRAG_BAR, "a", "b", HIDDEN_SECTIONS, "c", RESET_BUTTON)),
+            positionOf(center = 500f, layout = layoutOf(DRAG_BAR, "a", "b", HIDDEN_TITLE, "c", RESET_BUTTON)),
         )
     }
 
@@ -50,7 +50,7 @@ class DraggedGroupPositionTest {
     fun `WHEN a group is dragged over the hidden groups THEN it is over the hidden area`() {
         assertEquals(
             OVER_HIDDEN_AREA,
-            positionOf(center = 450f, layout = layoutOf(DRAG_BAR, "a", "b", HIDDEN_SECTIONS, "c", RESET_BUTTON)),
+            positionOf(center = 450f, layout = layoutOf(DRAG_BAR, "a", "b", HIDDEN_TITLE, "c", RESET_BUTTON)),
         )
     }
 
@@ -58,7 +58,7 @@ class DraggedGroupPositionTest {
     fun `WHEN a group is dragged over the reset button THEN it is below the hidden area`() {
         assertEquals(
             BELOW_HIDDEN_AREA,
-            positionOf(center = 550f, layout = layoutOf(DRAG_BAR, "a", "b", HIDDEN_SECTIONS, "c", RESET_BUTTON)),
+            positionOf(center = 550f, layout = layoutOf(DRAG_BAR, "a", "b", HIDDEN_TITLE, "c", RESET_BUTTON)),
         )
     }
 
@@ -66,7 +66,7 @@ class DraggedGroupPositionTest {
     fun `GIVEN no reset button WHEN a group is dragged below the last hidden group THEN it is below the hidden area`() {
         assertEquals(
             BELOW_HIDDEN_AREA,
-            positionOf(center = 550f, layout = layoutOf(DRAG_BAR, "a", "b", HIDDEN_SECTIONS, "c")),
+            positionOf(center = 550f, layout = layoutOf(DRAG_BAR, "a", "b", HIDDEN_TITLE, "c")),
         )
     }
 
@@ -76,7 +76,7 @@ class DraggedGroupPositionTest {
             OVER_HIDDEN_AREA,
             positionOf(
                 center = 550f,
-                layout = layoutOf(DRAG_BAR, "a", "b", HIDDEN_SECTIONS, "c", totalItemsCount = 6),
+                layout = layoutOf(DRAG_BAR, "a", "b", HIDDEN_TITLE, "c", totalItemsCount = 6),
                 groups = groups.copy(hidden = groups("c", "d")),
             ),
         )
@@ -88,7 +88,7 @@ class DraggedGroupPositionTest {
             OVER_HIDDEN_AREA,
             positionOf(
                 center = 450f,
-                layout = layoutOf(DRAG_BAR, "a", "b", HIDDEN_SECTIONS, DROP_AREA, RESET_BUTTON),
+                layout = layoutOf(DRAG_BAR, "a", "b", HIDDEN_TITLE, DROP_AREA, RESET_BUTTON),
                 groups = noHiddenGroups,
             ),
         )
@@ -100,7 +100,7 @@ class DraggedGroupPositionTest {
             BELOW_HIDDEN_AREA,
             positionOf(
                 center = 550f,
-                layout = layoutOf(DRAG_BAR, "a", "b", HIDDEN_SECTIONS, DROP_AREA, RESET_BUTTON),
+                layout = layoutOf(DRAG_BAR, "a", "b", HIDDEN_TITLE, DROP_AREA, RESET_BUTTON),
                 groups = noHiddenGroups,
             ),
         )
@@ -112,7 +112,7 @@ class DraggedGroupPositionTest {
             OVER_HIDDEN_AREA,
             positionOf(
                 center = 450f,
-                layout = layoutOf(DRAG_BAR, "a", "b", HIDDEN_SECTIONS, totalItemsCount = 5),
+                layout = layoutOf(DRAG_BAR, "a", "b", HIDDEN_TITLE, totalItemsCount = 5),
                 groups = noHiddenGroups,
             ),
         )
@@ -124,7 +124,7 @@ class DraggedGroupPositionTest {
             OVER_HIDDEN_AREA,
             positionOf(
                 center = 550f,
-                layout = layoutOf(DRAG_BAR, "a", "b", HIDDEN_SECTIONS, DROP_AREA, "c"),
+                layout = layoutOf(DRAG_BAR, "a", "b", HIDDEN_TITLE, DROP_AREA, "c"),
                 draggedId = "c",
             ),
         )
@@ -188,7 +188,7 @@ class DraggedGroupPositionTest {
         layout: LazyListLayoutInfo,
         groups: CustomizeMenuGroups = this.groups,
         draggedId: String = "a",
-    ) = draggedGroupPositionOf(dragged(draggedId, center), layout, groups)
+    ) = draggedPositionOf(dragged(draggedId, center), layout, groups)
 
     private fun groups(vararg ids: String) = ids.map { MenuItemsGroup.Row(id = it, items = emptyList()) }
 }
