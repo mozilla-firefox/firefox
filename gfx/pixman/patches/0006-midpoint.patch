@@ -1,0 +1,36 @@
+From: Serge Guelton <sguelton@mozilla.com>
+Subject: Ensure we don't run in an integer overflow when computing midpoint
+
+As detected by our civet static analysis.
+
+This is only asserted because it's pretty clear the code make the assumption
+there's no overflow when adding x and i (from line y_line[x + i]) so it should
+be safe to compute the midpoint in the naive way afterward.
+
+diff --git a/pixman/pixman-access.c b/pixman/pixman-access.c
+index 822bef6a3a57e..44f49fa009e8a 100644
+--- a/pixman/pixman-access.c
++++ b/pixman/pixman-access.c
+@@ -32,6 +32,7 @@
+ #include <string.h>
+ #include <assert.h>
+ #include <math.h>
++#include <limits.h>
+ 
+ #include "pixman-accessor.h"
+ #include "pixman-private.h"
+@@ -883,9 +884,11 @@ fetch_scanline_yv12 (bits_image_t   *image,
+ 	int16_t y, u, v;
+ 	int32_t r, g, b;
+ 
+-	y = y_line[x + i] - 16;
+-	u = u_line[(x + i) >> 1] - 128;
+-	v = v_line[(x + i) >> 1] - 128;
++  assert((x <= INT_MAX - i) && "no integer overflow");
++  int x_i = x + i;
++	y = y_line[x_i] - 16;
++	u = u_line[(x_i) >> 1] - 128;
++	v = v_line[(x_i) >> 1] - 128;
+ 
+ 	/* R = 1.164(Y - 16) + 1.596(V - 128) */
+ 	r = 0x012b27 * y + 0x019a2e * v;

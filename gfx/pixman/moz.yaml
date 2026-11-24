@@ -65,6 +65,7 @@ vendoring:
     - patches/0003-rename.patch
     - patches/0004-translation-round-in-wide.patch
     - patches/0005-edge-saturate.patch
+    - patches/0006-midpoint.patch
 
 updatebot:
   maintainer-phab: "#gfx-reviewers"
