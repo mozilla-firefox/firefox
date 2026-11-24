@@ -10,6 +10,7 @@
 #include "nsReadableUtils.h"
 
 class nsIPrincipal;
+class nsIURI;
 namespace mozilla::dom {
 class IPCNotification;
 }  // namespace mozilla::dom
@@ -20,8 +21,7 @@ nsresult RespondOnClick(nsIPrincipal* aPrincipal, const nsAString& aScope,
                         const IPCNotification& aNotification,
                         const nsAString& aActionName);
 
-nsresult OpenWindowFor(nsIPrincipal* aPrincipal,
-                       const nsCString& aURL = EmptyCString());
+nsresult OpenWindowFor(nsIPrincipal* aPrincipal, nsIURI* aURI = nullptr);
 
 class NotificationHandler final : public nsINotificationHandler {
  public:

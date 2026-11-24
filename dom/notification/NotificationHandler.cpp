@@ -14,6 +14,7 @@
 #include "mozilla/dom/ServiceWorkerManager.h"
 #include "mozilla/dom/ServiceWorkerUtils.h"
 #include "mozilla/ipc/PBackgroundSharedTypes.h"
+#include "nsNetUtil.h"
 #include "xpcprivate.h"
 
 namespace mozilla::dom::notification {
@@ -35,9 +36,7 @@ nsresult RespondOnClick(nsIPrincipal* aPrincipal, const nsAString& aScope,
       }
     }
     if (navigate) {
-      nsAutoCString spec;
-      navigate->GetSpec(spec);
-      return OpenWindowFor(aPrincipal, spec);
+      return OpenWindowFor(aPrincipal, navigate);
     }
   }
   RefPtr<ServiceWorkerManager> swm = ServiceWorkerManager::GetInstance();
@@ -59,9 +58,7 @@ nsresult RespondOnClick(nsIPrincipal* aPrincipal, const nsAString& aScope,
   return NS_OK;
 }
 
-nsresult OpenWindowFor(nsIPrincipal* aPrincipal, const nsCString& aURL) {
-  nsAutoCString origin;
-  MOZ_TRY(aPrincipal->GetOriginNoSuffix(origin));
+nsresult OpenWindowFor(nsIPrincipal* aPrincipal, nsIURI* aURI) {
   if (!aPrincipal->GetIsOriginPotentiallyTrustworthy()) {
     // We expect only secure context origins for web notifications.
     return NS_ERROR_INVALID_ARG;
@@ -71,13 +68,21 @@ nsresult OpenWindowFor(nsIPrincipal* aPrincipal, const nsCString& aURL) {
   mozilla::ipc::PrincipalInfo info{};
   MOZ_TRY(PrincipalToPrincipalInfo(aPrincipal, &info));
 
+  nsAutoCString origin;
+  MOZ_TRY(aPrincipal->GetOriginNoSuffix(origin));
+  nsCOMPtr<nsIURI> baseURI;
+  MOZ_TRY(NS_NewURI(getter_AddRefs(baseURI), origin));
+  nsCOMPtr<nsIURI> uri = aURI ? aURI : baseURI.get();
+
   NS_DispatchToCurrentThread(NS_NewRunnableFunction(
       "OpenWindowFor",
-      [info = std::move(info), url = aURL, origin = std::move(origin)]()
-          MOZ_CAN_RUN_SCRIPT_BOUNDARY_LAMBDA {
-            (void)ClientOpenWindow(
-                nullptr, ClientOpenWindowArgs(info, Nothing(), url, origin));
-          }));
+      [info = std::move(info), uri = std::move(uri),
+       baseURI = std::move(baseURI)]() MOZ_CAN_RUN_SCRIPT_BOUNDARY_LAMBDA {
+        (void)ClientOpenWindow(
+            nullptr,
+            ClientOpenWindowArgs(info, Nothing(), WrapNotNull(uri.get()),
+                                 WrapNotNull(baseURI.get())));
+      }));
   return NS_OK;
 }
 
