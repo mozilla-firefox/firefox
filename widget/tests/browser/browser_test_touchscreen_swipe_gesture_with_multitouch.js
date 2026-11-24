@@ -35,6 +35,9 @@ add_setup(async function () {
       // contacts (See the official doc), but nsWindow::InjectTouchPoint() passes
       // only the one being changed. So injecting a second finger fails. So, dispatch
       // the touches directly through nsIWidget::DispatchTouchInput() instead.
+      // Also, for "test_pen_swipe_during_touch_gesture_does_not_navigate",
+      // touch input automatically ends when pen input begins maybe because of
+      // palm rejection when using the native injection.
       ["apz.test.fails_with_native_injection", AppConstants.platform == "win"],
       ["apz.touch_start_tolerance", 0.0],
       ["apz.touch_move_tolerance", 0.0],
@@ -459,6 +462,168 @@ add_task(
       tab.linkedBrowser.currentURI.spec,
       firstPage,
       "A single-finger swipe after the multi-finger gesture navigates back"
+    );
+
+    BrowserTestUtils.removeTab(tab);
+  }
+);
+
+add_task(
+  async function test_pen_swipe_during_touch_gesture_does_not_navigate() {
+    if (AppConstants.platform != "win") {
+      // promiseNativePointerInput() can handle pen inputs only on Windows.
+      // See nsIWidget::SynthesizeNativePenInput().
+      ok(true, "Skip this test on platforms other than Windows.");
+      return;
+    }
+
+    await SpecialPowers.pushPrefEnv({
+      set: [
+        // These prefs are necessary to route pen inputs to DispatchTouchInput().
+        // See nsWindow::OnPenPointerEvents()
+        ["dom.w3c_pointer_events.dispatch_by_pointer_messages", true],
+        ["dom.w3c_pointer_events.scroll_by_pen.enabled", true],
+      ],
+    });
+
+    const firstPage = "about:about";
+    const tab = await BrowserTestUtils.openNewForegroundTab(
+      gBrowser,
+      firstPage
+    );
+
+    const URL_ROOT = getRootDirectory(gTestPath).replace(
+      "chrome://mochitests/content/",
+      "http://mochi.test:8888/"
+    );
+    const secondPage = URL_ROOT + "helper_swipe_gesture.html";
+    BrowserTestUtils.startLoadingURIString(tab.linkedBrowser, secondPage);
+    await BrowserTestUtils.browserLoaded(tab.linkedBrowser, false, secondPage);
+    ok(gBrowser.webNavigation.canGoBack);
+
+    await SpecialPowers.spawn(tab.linkedBrowser, [], async () => {
+      await content.wrappedJSObject.promiseApzFlushedRepaints();
+      is(content.document.documentElement.scrollLeft, 0, "At the left edge");
+    });
+
+    const { TOUCH_CONTACT, TOUCH_REMOVE } = SpecialPowers.DOMWindowUtils;
+    await promiseNativePointerInput(
+      tab.linkedBrowser,
+      "touch",
+      TOUCH_CONTACT,
+      100,
+      100
+    );
+    await promiseNativePointerInput(
+      tab.linkedBrowser,
+      "pen",
+      TOUCH_CONTACT,
+      300,
+      200,
+      {
+        pointerId: 1,
+      }
+    );
+    await promiseNativePointerInput(
+      tab.linkedBrowser,
+      "pen",
+      TOUCH_CONTACT,
+      400,
+      200,
+      {
+        pointerId: 1,
+      }
+    );
+    await promiseNativePointerInput(
+      tab.linkedBrowser,
+      "pen",
+      TOUCH_CONTACT,
+      500,
+      200,
+      {
+        pointerId: 1,
+      }
+    );
+    // Touch inputs are dispatched synchronously, but pen inputs go through the
+    // native event queue. Wait for the end of the pen stroke before lifting
+    // the touch.
+    const penTouchEnd = BrowserTestUtils.waitForEvent(
+      tab.linkedBrowser,
+      "touchend"
+    );
+    await promiseNativePointerInput(
+      tab.linkedBrowser,
+      "pen",
+      TOUCH_REMOVE,
+      500,
+      200,
+      {
+        pointerId: 1,
+      }
+    );
+    await penTouchEnd;
+    await promiseNativePointerInput(
+      tab.linkedBrowser,
+      "touch",
+      TOUCH_REMOVE,
+      100,
+      100
+    );
+
+    await waitForWhile();
+
+    is(
+      tab.linkedBrowser.currentURI.spec,
+      secondPage,
+      "The pen stroke during the touch did not navigate"
+    );
+
+    // Check if a new pen swipe can still navigate just in case.
+
+    const started = BrowserTestUtils.browserStarted(
+      tab.linkedBrowser,
+      firstPage
+    );
+    const stopped = BrowserTestUtils.browserStopped(
+      tab.linkedBrowser,
+      firstPage
+    );
+
+    await promiseNativePointerInput(
+      tab.linkedBrowser,
+      "pen",
+      TOUCH_CONTACT,
+      300,
+      200
+    );
+    await promiseNativePointerInput(
+      tab.linkedBrowser,
+      "pen",
+      TOUCH_CONTACT,
+      400,
+      200
+    );
+    await promiseNativePointerInput(
+      tab.linkedBrowser,
+      "pen",
+      TOUCH_CONTACT,
+      500,
+      200
+    );
+    await promiseNativePointerInput(
+      tab.linkedBrowser,
+      "pen",
+      TOUCH_REMOVE,
+      500,
+      200
+    );
+
+    await Promise.all([started, stopped]);
+
+    is(
+      tab.linkedBrowser.currentURI.spec,
+      firstPage,
+      "A pen swipe after the mixed gesture navigates back"
     );
 
     BrowserTestUtils.removeTab(tab);

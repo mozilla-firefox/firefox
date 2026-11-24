@@ -81,6 +81,10 @@ struct TouchSwipeState {
   // Non-null only while phase is WaitingForAPZ.
   UniquePtr<TouchSwipeInfoQueue> touchSwipeInfoQueue;
 
+  // Prevent pen and touch inputs from being mixed up.
+  uint16_t currentInputSource =
+      /* MouseEvent_Binding::MOZ_SOURCE_UNKNOWN = */ 0;
+
   void AssertCountConsistency() const;
 
   void Start(mozilla::SideBits aSwipableDirections,

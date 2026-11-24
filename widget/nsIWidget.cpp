@@ -1577,84 +1577,85 @@ void nsIWidget::DispatchTouchInput(MultiTouchInput& aInput) {
   if (mAPZC) {
     MOZ_ASSERT(APZThreadUtils::IsControllerThread());
 
-    switch (aInput.mInputSource) {
-      case mozilla::dom::MouseEvent_Binding::MOZ_SOURCE_TOUCH: {
-        mTouchSwipeState.AssertCountConsistency();
+    mTouchSwipeState.AssertCountConsistency();
 
-        if (mTouchSwipeState.phase == TouchSwipeState::Phase::WaitingForAPZ &&
-            aInput.mType == MultiTouchInput::MULTITOUCH_START) {
-          // A new touch block discards the waiting one. An added finger
-          // rejects swipe in HandleTouchInputForSwipe().
-          mAPZC->Bridge()->SetBrowserGestureResponse(
-              mTouchSwipeState.touchSwipeInfoQueue->inputBlockId,
-              BrowserGestureResponse::NotConsumed);
-          if (aInput.mTouches.Length() == 1) {
-            mTouchSwipeState.Reset();
-          }
-        }
-
-        // This must be after the Reset() above, so that the touchstart of a new
-        // gesture can trigger swipe.
-        aInput.mMayTriggerSwipe = MayTriggerSwipe(aInput);
-
-        if (mTouchSwipeState.phase == TouchSwipeState::Phase::WaitingForAPZ &&
-            aInput.mType != MultiTouchInput::MULTITOUCH_START) {
-          // Queue the input to handle it for swipe once APZ notifies the
-          // swipable directions. See ReceiveTouchSwipableDirections().
-          const APZEventResult result =
-              mAPZC->Bridge()->ReceiveInputEvent(aInput);
-          mTouchSwipeState.QueueInfo(
-              TouchSwipeInfo{.input = aInput, .result = result});
-          if (result.GetStatus() == nsEventStatus_eConsumeNoDefault) {
-            return;
-          }
-          WidgetTouchEvent event = aInput.ToWidgetEvent(this);
-          ProcessUntransformedAPZEvent(&event, result);
-          return;
-        }
-
-        const bool touchSwipeEnabled = IsTouchSwipeEnabled();
-        if (touchSwipeEnabled) {
-          // Count touches before passing the input to APZ because APZ may
-          // consume some events of a gesture.
-          mTouchSwipeState.touchCounter.Update(aInput);
-        }
-
-        APZEventResult result = mAPZC->Bridge()->ReceiveInputEvent(aInput);
+    // Another pointer type comes. Prevent if from affecting swipe or update the
+    // current input source.
+    if (aInput.mInputSource != mTouchSwipeState.currentInputSource) {
+      if (mTouchSwipeState.phase != mozilla::TouchSwipeState::Phase::Idle) {
+        const APZEventResult result =
+            mAPZC->Bridge()->ReceiveInputEvent(aInput);
         if (result.GetStatus() == nsEventStatus_eConsumeNoDefault) {
-          if (touchSwipeEnabled) {
-            HandleTouchInputForSwipe(aInput, result);
-          }
           return;
         }
-
-        // Note that HandleTouchInputForSwipe must be used after passing the
-        // input to APZ. We have to pass each event to APZ first so that APZ can
-        // track the full block, from MULTITOUCH_START through MULTITOUCH_END or
-        // MULTITOUCH_CANCEL. Also, we have to pass each event to UI and Content
-        // Process as well, because events such as touchmove have to be fired
-        // even during swipe-to-nav on touchscreen.
-        if (touchSwipeEnabled) {
-          HandleTouchInputForSwipe(aInput, result);
-        }
-
         WidgetTouchEvent event = aInput.ToWidgetEvent(this);
         ProcessUntransformedAPZEvent(&event, result);
         return;
       }
-      case mozilla::dom::MouseEvent_Binding::MOZ_SOURCE_PEN: {
-        APZEventResult result = mAPZC->Bridge()->ReceiveInputEvent(aInput);
-        if (result.GetStatus() == nsEventStatus_eConsumeNoDefault) {
-          return;
-        }
-
-        WidgetTouchEvent event = aInput.ToWidgetEvent(this);
-        ProcessUntransformedAPZEvent(&event, result);
-        return;
-      }
-      default:
-        MOZ_ASSERT_UNREACHABLE("Unexpected type.");
+      mTouchSwipeState.currentInputSource = aInput.mInputSource;
     }
+
+    if (mTouchSwipeState.phase == TouchSwipeState::Phase::WaitingForAPZ &&
+        aInput.mType == MultiTouchInput::MULTITOUCH_START) {
+      // A new touch block discards the waiting one. An added finger
+      // rejects swipe in HandleTouchInputForSwipe().
+      mAPZC->Bridge()->SetBrowserGestureResponse(
+          mTouchSwipeState.touchSwipeInfoQueue->inputBlockId,
+          BrowserGestureResponse::NotConsumed);
+      if (aInput.mTouches.Length() == 1) {
+        mTouchSwipeState.Reset();
+        // Reset() resets the current input source. Because this input starts a
+        // new gesture, keep tracking its source.
+        mTouchSwipeState.currentInputSource = aInput.mInputSource;
+      }
+    }
+
+    // This must be after the Reset() above, so that the touchstart of a new
+    // gesture can trigger swipe.
+    aInput.mMayTriggerSwipe = MayTriggerSwipe(aInput);
+
+    if (mTouchSwipeState.phase == TouchSwipeState::Phase::WaitingForAPZ &&
+        aInput.mType != MultiTouchInput::MULTITOUCH_START) {
+      // Queue the input to handle it for swipe once APZ notifies the
+      // swipable directions. See ReceiveTouchSwipableDirections().
+      const APZEventResult result = mAPZC->Bridge()->ReceiveInputEvent(aInput);
+      mTouchSwipeState.QueueInfo(
+          TouchSwipeInfo{.input = aInput, .result = result});
+      if (result.GetStatus() == nsEventStatus_eConsumeNoDefault) {
+        return;
+      }
+      WidgetTouchEvent event = aInput.ToWidgetEvent(this);
+      ProcessUntransformedAPZEvent(&event, result);
+      return;
+    }
+
+    const bool touchSwipeEnabled = IsTouchSwipeEnabled();
+    if (touchSwipeEnabled) {
+      // Count touches before passing the input to APZ because APZ may
+      // consume some events of a gesture.
+      mTouchSwipeState.touchCounter.Update(aInput);
+    }
+
+    APZEventResult result = mAPZC->Bridge()->ReceiveInputEvent(aInput);
+    if (result.GetStatus() == nsEventStatus_eConsumeNoDefault) {
+      if (touchSwipeEnabled) {
+        HandleTouchInputForSwipe(aInput, result);
+      }
+      return;
+    }
+
+    // Note that HandleTouchInputForSwipe must be used after passing the
+    // input to APZ. We have to pass each event to APZ first so that APZ can
+    // track the full block, from MULTITOUCH_START through MULTITOUCH_END or
+    // MULTITOUCH_CANCEL. Also, we have to pass each event to UI and Content
+    // Process as well, because events such as touchmove have to be fired
+    // even during swipe-to-nav on touchscreen.
+    if (touchSwipeEnabled) {
+      HandleTouchInputForSwipe(aInput, result);
+    }
+
+    WidgetTouchEvent event = aInput.ToWidgetEvent(this);
+    ProcessUntransformedAPZEvent(&event, result);
   } else {
     WidgetTouchEvent event = aInput.ToWidgetEvent(this);
     DispatchEvent(&event);
