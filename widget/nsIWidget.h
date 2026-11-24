@@ -1332,6 +1332,15 @@ class nsIWidget : public nsSupportsWeakReference {
   void ReceiveTouchSwipableDirections(uint64_t aInputBlockId,
                                       mozilla::SideBits aSwipableDirections);
 
+  // A structure that groups the statuses from APZ dispatch and content
+  // dispatch.
+  struct ContentAndAPZEventStatus {
+    // Either of these may not be set if the event was not dispatched
+    // to APZ or to content.
+    nsEventStatus mApzStatus = nsEventStatus_eIgnore;
+    nsEventStatus mContentStatus = nsEventStatus_eIgnore;
+  };
+
  protected:
   nsIWidget();
   virtual ~nsIWidget();
@@ -1392,7 +1401,7 @@ class nsIWidget : public nsSupportsWeakReference {
    * be called from the main thread, and if APZ is enabled, that must also be
    * the APZ controller thread.
    */
-  void DispatchTouchInput(mozilla::MultiTouchInput& aInput);
+  ContentAndAPZEventStatus DispatchTouchInput(mozilla::MultiTouchInput& aInput);
 
   void MayStartSwipeForTouchInput(
       const mozilla::MultiTouchInput& aInput,
@@ -1524,15 +1533,6 @@ class nsIWidget : public nsSupportsWeakReference {
    * Returns true if it's consumed.  Otherwise, false.
    */
   virtual bool DispatchWindowEvent(mozilla::WidgetGUIEvent& event);
-
-  // A structure that groups the statuses from APZ dispatch and content
-  // dispatch.
-  struct ContentAndAPZEventStatus {
-    // Either of these may not be set if the event was not dispatched
-    // to APZ or to content.
-    nsEventStatus mApzStatus = nsEventStatus_eIgnore;
-    nsEventStatus mContentStatus = nsEventStatus_eIgnore;
-  };
 
   /**
    * Dispatches an event that must be handled by APZ first, when APZ is

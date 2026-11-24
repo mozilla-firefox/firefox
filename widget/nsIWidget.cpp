@@ -1568,7 +1568,18 @@ void nsIWidget::HandleTouchInputForSwipe(const MultiTouchInput& aInput,
   }
 }
 
-void nsIWidget::DispatchTouchInput(MultiTouchInput& aInput) {
+nsIWidget::ContentAndAPZEventStatus nsIWidget::DispatchTouchInput(
+    MultiTouchInput& aInput) {
+  const auto dispatchToContent = [this](const MultiTouchInput& aInput,
+                                        const APZEventResult& aResult) {
+    WidgetTouchEvent event = aInput.ToWidgetEvent(this);
+    const auto contentStatus = ProcessUntransformedAPZEvent(&event, aResult);
+    return ContentAndAPZEventStatus{
+        .mApzStatus = aResult.GetStatus(),
+        .mContentStatus = contentStatus,
+    };
+  };
+
   MOZ_ASSERT(NS_IsMainThread());
   MOZ_ASSERT(aInput.mInputSource ==
                  mozilla::dom::MouseEvent_Binding::MOZ_SOURCE_TOUCH ||
@@ -1586,11 +1597,11 @@ void nsIWidget::DispatchTouchInput(MultiTouchInput& aInput) {
         const APZEventResult result =
             mAPZC->Bridge()->ReceiveInputEvent(aInput);
         if (result.GetStatus() == nsEventStatus_eConsumeNoDefault) {
-          return;
+          return ContentAndAPZEventStatus{
+              .mApzStatus = result.GetStatus(),
+          };
         }
-        WidgetTouchEvent event = aInput.ToWidgetEvent(this);
-        ProcessUntransformedAPZEvent(&event, result);
-        return;
+        return dispatchToContent(aInput, result);
       }
       mTouchSwipeState.currentInputSource = aInput.mInputSource;
     }
@@ -1622,11 +1633,11 @@ void nsIWidget::DispatchTouchInput(MultiTouchInput& aInput) {
       mTouchSwipeState.QueueInfo(
           TouchSwipeInfo{.input = aInput, .result = result});
       if (result.GetStatus() == nsEventStatus_eConsumeNoDefault) {
-        return;
+        return ContentAndAPZEventStatus{
+            .mApzStatus = result.GetStatus(),
+        };
       }
-      WidgetTouchEvent event = aInput.ToWidgetEvent(this);
-      ProcessUntransformedAPZEvent(&event, result);
-      return;
+      return dispatchToContent(aInput, result);
     }
 
     const bool touchSwipeEnabled = IsTouchSwipeEnabled();
@@ -1641,7 +1652,9 @@ void nsIWidget::DispatchTouchInput(MultiTouchInput& aInput) {
       if (touchSwipeEnabled) {
         HandleTouchInputForSwipe(aInput, result);
       }
-      return;
+      return ContentAndAPZEventStatus{
+          .mApzStatus = result.GetStatus(),
+      };
     }
 
     // Note that HandleTouchInputForSwipe must be used after passing the
@@ -1654,12 +1667,13 @@ void nsIWidget::DispatchTouchInput(MultiTouchInput& aInput) {
       HandleTouchInputForSwipe(aInput, result);
     }
 
-    WidgetTouchEvent event = aInput.ToWidgetEvent(this);
-    ProcessUntransformedAPZEvent(&event, result);
-  } else {
-    WidgetTouchEvent event = aInput.ToWidgetEvent(this);
-    DispatchEvent(&event);
+    return dispatchToContent(aInput, result);
   }
+
+  WidgetTouchEvent event = aInput.ToWidgetEvent(this);
+  return ContentAndAPZEventStatus{
+      .mContentStatus = DispatchEvent(&event),
+  };
 }
 
 void nsIWidget::DispatchPanGestureInput(PanGestureInput& aInput) {
