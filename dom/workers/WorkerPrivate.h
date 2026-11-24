@@ -220,18 +220,6 @@ class WorkerPrivate final
   // things.
   using TerminationCallback = std::function<void(void)>;
 
-  struct LocationInfo {
-    nsCString mHref;
-    nsCString mProtocol;
-    nsCString mHost;
-    nsCString mHostname;
-    nsCString mPort;
-    nsCString mPathname;
-    nsCString mSearch;
-    nsCString mHash;
-    nsString mOrigin;
-  };
-
   NS_INLINE_DECL_REFCOUNTING(WorkerPrivate)
 
   FONT_VISIBILITY_PROVIDER_IMPL
@@ -757,8 +745,6 @@ class WorkerPrivate final
     TimeDuration duration = aTimeStamp - mCreationTimeStamp;
     return duration.ToMilliseconds();
   }
-
-  LocationInfo& GetLocationInfo() { return mLocationInfo; }
 
   void CopyJSSettings(workerinternals::JSSettings& aSettings) {
     mozilla::MutexAutoLock lock(mMutex);
@@ -1519,7 +1505,6 @@ class WorkerPrivate final
   // The lifetime of these objects within LoadInfo is managed explicitly;
   // they do not need to be cycle collected.
   WorkerLoadInfo mLoadInfo;
-  LocationInfo mLocationInfo;
 
   // Protected by mMutex.
   workerinternals::JSSettings mJSSettings MOZ_GUARDED_BY(mMutex);

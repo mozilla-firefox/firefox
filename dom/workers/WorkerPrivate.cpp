@@ -2581,54 +2581,6 @@ void WorkerPrivate::SetBaseURI(nsIURI* aBaseURI) {
   }
 
   mLoadInfo.mBaseURI = aBaseURI;
-
-  if (NS_FAILED(aBaseURI->GetSpec(mLocationInfo.mHref))) {
-    mLocationInfo.mHref.Truncate();
-  }
-
-  mLocationInfo.mHostname.Truncate();
-  nsContentUtils::GetHostOrIPv6WithBrackets(aBaseURI, mLocationInfo.mHostname);
-
-  nsCOMPtr<nsIURL> url(do_QueryInterface(aBaseURI));
-  if (!url || NS_FAILED(url->GetFilePath(mLocationInfo.mPathname))) {
-    mLocationInfo.mPathname.Truncate();
-  }
-
-  nsCString temp;
-
-  if (url && NS_SUCCEEDED(url->GetQuery(temp)) && !temp.IsEmpty()) {
-    mLocationInfo.mSearch.Assign('?');
-    mLocationInfo.mSearch.Append(temp);
-  }
-
-  if (NS_SUCCEEDED(aBaseURI->GetRef(temp)) && !temp.IsEmpty()) {
-    if (mLocationInfo.mHash.IsEmpty()) {
-      mLocationInfo.mHash.Assign('#');
-      mLocationInfo.mHash.Append(temp);
-    }
-  }
-
-  if (NS_SUCCEEDED(aBaseURI->GetScheme(mLocationInfo.mProtocol))) {
-    mLocationInfo.mProtocol.Append(':');
-  } else {
-    mLocationInfo.mProtocol.Truncate();
-  }
-
-  int32_t port;
-  if (NS_SUCCEEDED(aBaseURI->GetPort(&port)) && port != -1) {
-    mLocationInfo.mPort.AppendInt(port);
-
-    nsAutoCString host(mLocationInfo.mHostname);
-    host.Append(':');
-    host.Append(mLocationInfo.mPort);
-
-    mLocationInfo.mHost.Assign(host);
-  } else {
-    mLocationInfo.mHost.Assign(mLocationInfo.mHostname);
-  }
-
-  nsContentUtils::GetWebExposedOriginSerialization(aBaseURI,
-                                                   mLocationInfo.mOrigin);
 }
 
 nsresult WorkerPrivate::SetPrincipalsOnMainThread(

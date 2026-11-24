@@ -177,8 +177,14 @@ already_AddRefed<Promise> Client::Navigate(const nsAString& aURL,
     return outerPromise.forget();
   }
 
-  ClientNavigateArgs args(mData->info(), NS_ConvertUTF16toUTF8(aURL),
-                          workerPrivate->GetLocationInfo().mHref,
+  nsCString baseURL;
+  nsresult rv = workerPrivate->GetBaseURI()->GetSpec(baseURL);
+  if (NS_FAILED(rv)) {
+    outerPromise->MaybeReject(rv);
+    return outerPromise.forget();
+  }
+
+  ClientNavigateArgs args(mData->info(), NS_ConvertUTF16toUTF8(aURL), baseURL,
                           workerPrivate->GetServiceWorkerDescriptor().ToIPC());
   RefPtr<Client> self = this;
 

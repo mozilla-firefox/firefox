@@ -226,7 +226,12 @@ already_AddRefed<Promise> Clients::OpenWindow(const nsAString& aURL,
 
   const PrincipalInfo& principalInfo = workerPrivate->GetPrincipalInfo();
   Maybe<const CSPInfo&> cspInfo = workerPrivate->GetCSPInfo();
-  nsCString baseURL = workerPrivate->GetLocationInfo().mHref;
+  nsCString baseURL;
+  nsresult rv = workerPrivate->GetBaseURI()->GetSpec(baseURL);
+  if (NS_FAILED(rv)) {
+    outerPromise->MaybeReject(rv);
+    return outerPromise.forget();
+  }
 
   ClientOpenWindowArgs args(principalInfo, cspInfo ? Some(*cspInfo) : Nothing(),
                             NS_ConvertUTF16toUTF8(aURL), baseURL);

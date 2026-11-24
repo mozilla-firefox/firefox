@@ -12,30 +12,9 @@
 namespace mozilla::dom {
 
 class WorkerLocation final : public nsWrapperCache {
-  nsString mHref;
-  nsString mProtocol;
-  nsString mHost;
-  nsString mHostname;
-  nsString mPort;
-  nsString mPathname;
-  nsString mSearch;
-  nsString mHash;
-  nsString mOrigin;
+  nsCOMPtr<nsIURI> mURI;
 
-  WorkerLocation(const nsAString& aHref, const nsAString& aProtocol,
-                 const nsAString& aHost, const nsAString& aHostname,
-                 const nsAString& aPort, const nsAString& aPathname,
-                 const nsAString& aSearch, const nsAString& aHash,
-                 const nsAString& aOrigin)
-      : mHref(aHref),
-        mProtocol(aProtocol),
-        mHost(aHost),
-        mHostname(aHostname),
-        mPort(aPort),
-        mPathname(aPathname),
-        mSearch(aSearch),
-        mHash(aHash),
-        mOrigin(aOrigin) {
+  explicit WorkerLocation(nsIURI* aURI) : mURI(aURI) {
     MOZ_COUNT_CTOR(WorkerLocation);
   }
 
@@ -45,24 +24,23 @@ class WorkerLocation final : public nsWrapperCache {
   NS_INLINE_DECL_CYCLE_COLLECTING_NATIVE_REFCOUNTING(WorkerLocation)
   NS_DECL_CYCLE_COLLECTION_NATIVE_WRAPPERCACHE_CLASS(WorkerLocation)
 
-  static already_AddRefed<WorkerLocation> Create(
-      WorkerPrivate::LocationInfo& aInfo);
+  static already_AddRefed<WorkerLocation> Create(nsIURI* aURI);
 
   virtual JSObject* WrapObject(JSContext* aCx,
                                JS::Handle<JSObject*> aGivenProto) override;
 
   nsISupports* GetParentObject() const { return nullptr; }
 
-  void Stringify(nsString& aHref) const { aHref = mHref; }
-  void GetHref(nsString& aHref) const { aHref = mHref; }
-  void GetProtocol(nsString& aProtocol) const { aProtocol = mProtocol; }
-  void GetHost(nsString& aHost) const { aHost = mHost; }
-  void GetHostname(nsString& aHostname) const { aHostname = mHostname; }
-  void GetPort(nsString& aPort) const { aPort = mPort; }
-  void GetPathname(nsString& aPathname) const { aPathname = mPathname; }
-  void GetSearch(nsString& aSearch) const { aSearch = mSearch; }
-  void GetHash(nsString& aHash) const { aHash = mHash; }
-  void GetOrigin(nsString& aOrigin) const { aOrigin = mOrigin; }
+  void Stringify(nsACString& aHref) const { GetHref(aHref); }
+  void GetHref(nsACString& aHref) const;
+  void GetProtocol(nsACString& aProtocol) const;
+  void GetHost(nsACString& aHost) const;
+  void GetHostname(nsACString& aHostname) const;
+  void GetPort(nsACString& aPort) const;
+  void GetPathname(nsACString& aPathname) const;
+  void GetSearch(nsACString& aSearch) const;
+  void GetHash(nsACString& aHash) const;
+  void GetOrigin(nsACString& aOrigin) const;
 };
 
 }  // namespace mozilla::dom

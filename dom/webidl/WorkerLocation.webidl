@@ -13,13 +13,13 @@
 
 [Exposed=Worker]
 interface WorkerLocation {
-  stringifier readonly attribute USVString href;
-  readonly attribute USVString origin;
-  readonly attribute USVString protocol;
-  readonly attribute USVString host;
-  readonly attribute USVString hostname;
-  readonly attribute USVString port;
-  readonly attribute USVString pathname;
-  readonly attribute USVString search;
-  readonly attribute USVString hash;
+  stringifier readonly attribute UTF8String href;
+  readonly attribute UTF8String origin;
+  readonly attribute UTF8String protocol;
+  readonly attribute UTF8String host;
+  readonly attribute UTF8String hostname;
+  readonly attribute UTF8String port;
+  readonly attribute UTF8String pathname;
+  readonly attribute UTF8String search;
+  readonly attribute UTF8String hash;
 };

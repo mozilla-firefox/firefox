@@ -111,9 +111,8 @@ already_AddRefed<Response> Response::Redirect(const GlobalObject& aGlobal,
     MOZ_ASSERT(worker);
     worker->AssertIsOnWorkerThread();
 
-    const auto& baseURL = worker->GetLocationInfo().mHref;
-    RefPtr<URL> url =
-        URL::Constructor(aGlobal.GetAsSupports(), aUrl, baseURL, aRv);
+    RefPtr<URL> url = URL::Constructor(aGlobal.GetAsSupports(), aUrl,
+                                       worker->GetBaseURI(), aRv);
     if (aRv.Failed()) {
       return nullptr;
     }

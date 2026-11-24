@@ -592,7 +592,7 @@ already_AddRefed<WorkerLocation> WorkerGlobalScope::Location() {
   AssertIsOnWorkerThread();
 
   if (!mLocation) {
-    mLocation = WorkerLocation::Create(mWorkerPrivate->GetLocationInfo());
+    mLocation = WorkerLocation::Create(mWorkerPrivate->GetBaseURI());
     MOZ_ASSERT(mLocation);
   }
 
