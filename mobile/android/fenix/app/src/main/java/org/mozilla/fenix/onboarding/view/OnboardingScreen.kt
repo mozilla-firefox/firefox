@@ -27,10 +27,8 @@ import androidx.compose.foundation.pager.rememberPagerState
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
-import androidx.compose.runtime.State
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableIntStateOf
-import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.rememberCoroutineScope
 import androidx.compose.runtime.setValue
@@ -52,6 +50,8 @@ import mozilla.components.compose.base.PagerIndicator
 import mozilla.components.compose.base.annotation.FlexibleWindowLightDarkPreview
 import mozilla.components.compose.base.button.TextButton
 import mozilla.components.lib.state.ext.observeAsComposableState
+import mozilla.components.service.fxa.manager.AccountState
+import mozilla.components.service.fxa.store.SyncState
 import mozilla.components.support.base.log.logger.Logger
 import org.mozilla.fenix.R
 import org.mozilla.fenix.components.components
@@ -65,9 +65,6 @@ private val logger = Logger("OnboardingScreen")
  *
  * @param pagesToDisplay List of pages to be displayed in onboarding pager ui.
  * @param initialPageIndex The initial page index of the pager.
- * @param isSyncFlowCompleted Whether a sync flow started from a sync page completed. When true, the onboarding moves to
- *   the next page or finishes.
- * @param onSyncFlowCompletedHandled Invoked when [isSyncFlowCompleted] has been handled.
  * @param onMakeFirefoxDefaultClick Invoked when positive button on default browser page is clicked.
  * @param onSkipDefaultClick Invoked when negative button on default browser page is clicked.
  * @param onSignInButtonClick Invoked when the positive button on the sign in page is clicked.
@@ -92,8 +89,6 @@ private val logger = Logger("OnboardingScreen")
 fun OnboardingScreen(
     pagesToDisplay: MutableList<OnboardingPageUiData>,
     initialPageIndex: Int,
-    isSyncFlowCompleted: Boolean,
-    onSyncFlowCompletedHandled: () -> Unit,
     onMakeFirefoxDefaultClick: () -> Unit,
     onSkipDefaultClick: () -> Unit,
     onSignInButtonClick: () -> Unit,
@@ -120,8 +115,7 @@ fun OnboardingScreen(
             initialPage = resumedPageIndex(initialPageIndex, pages.size),
             pageCount = { pages.size },
         )
-    val isSignedIn: State<Boolean?> =
-        components.backgroundServices.syncStore.observeAsComposableState { it.account != null }
+    val isSignedIn by components.backgroundServices.syncStore.observeAsComposableState(::isAccountAuthenticated)
     val isSetToDefault by components.appStore.observeAsComposableState { it.isDefaultBrowser }
     var lastSettledPage by remember { mutableIntStateOf(pagerState.settledPage) }
 
@@ -157,29 +151,12 @@ fun OnboardingScreen(
         }
     }
 
-    val hasScrolledToNextPage = remember { mutableStateOf(false) }
-
-    LaunchedEffect(isSignedIn.value, isSetToDefault) {
-        val scrollToNextCard =
-            shouldLaunchEffectScrollToNextPage(
-                isSignedIn = isSignedIn,
-                isSetToDefault = isSetToDefault,
-                pagesToDisplay = pagesToDisplay,
-                pagerState = pagerState,
-            )
-
-        if (scrollToNextCard && !hasScrolledToNextPage.value) {
-            scrollToNextPageOrDismiss()
-            hasScrolledToNextPage.value = true
-        }
-    }
-
-    SyncFlowCompletedEffect(
-        isSyncFlowCompleted = isSyncFlowCompleted,
+    OnboardingAutoAdvanceEffects(
+        isSignedIn = isSignedIn,
+        isSetToDefault = isSetToDefault,
         pagerState = pagerState,
         pagesToDisplay = pagesToDisplay,
         scrollToNextPageOrDismiss = scrollToNextPageOrDismiss,
-        onSyncFlowCompletedHandled = onSyncFlowCompletedHandled,
     )
 
     LaunchedEffect(pagerState) {
@@ -229,10 +206,7 @@ fun OnboardingScreen(
             scrollToNextPageOrDismiss()
         },
         onSyncPairingScanClick = onSyncPairingScanClick,
-        onSyncPairingEmailClick = {
-            onSyncPairingEmailClick()
-            scrollToNextPageOrDismiss()
-        },
+        onSyncPairingEmailClick = onSyncPairingEmailClick,
         onSyncPairingSkipClick = {
             onSyncPairingSkipClick()
             scrollToNextPageOrDismiss()
@@ -296,22 +270,8 @@ private fun OnboardingPagerHaptics(pagerState: PagerState) {
 }
 
 @VisibleForTesting
-@Composable
-internal fun SyncFlowCompletedEffect(
-    isSyncFlowCompleted: Boolean,
-    pagerState: PagerState,
-    pagesToDisplay: List<OnboardingPageUiData>,
-    scrollToNextPageOrDismiss: () -> Unit,
-    onSyncFlowCompletedHandled: () -> Unit,
-) {
-    LaunchedEffect(isSyncFlowCompleted) {
-        if (!isSyncFlowCompleted) return@LaunchedEffect
-        if (isSyncPage(pagesToDisplay, pagerState.currentPage)) {
-            scrollToNextPageOrDismiss()
-        }
-        onSyncFlowCompletedHandled()
-    }
-}
+internal fun isAccountAuthenticated(syncState: SyncState): Boolean =
+    syncState.accountState == AccountState.Authenticated
 
 @VisibleForTesting
 internal fun isSyncPage(
@@ -336,31 +296,30 @@ private fun setToDefaultClick(
     }
 }
 
-private fun shouldLaunchEffectScrollToNextPage(
-    isSignedIn: State<Boolean?>,
+/**
+ * Moves the onboarding past the current page when the action of that page is completed outside the pager (for example:
+ * signing in from a sync page or setting Firefox as the default browser from the default browser page).
+ */
+@VisibleForTesting
+@Composable
+internal fun OnboardingAutoAdvanceEffects(
+    isSignedIn: Boolean,
     isSetToDefault: Boolean,
-    pagesToDisplay: List<OnboardingPageUiData>,
     pagerState: PagerState,
-): Boolean {
-    val scrollToNextCardFromSignIn =
-        isSignedIn.value?.let {
-            scrollToNextCardFromSignIn(
-                pagesToDisplay,
-                pagerState.currentPage,
-                it,
-            )
-        } ?: false
+    pagesToDisplay: List<OnboardingPageUiData>,
+    scrollToNextPageOrDismiss: () -> Unit,
+) {
+    LaunchedEffect(isSignedIn) {
+        if (scrollToNextCardFromSignIn(pagesToDisplay, pagerState.currentPage, isSignedIn)) {
+            scrollToNextPageOrDismiss()
+        }
+    }
 
-    val scrollToNextCardFromSetToDefault =
-        scrollToNextCardFromSetToDefault(
-            pagesToDisplay,
-            pagerState.currentPage,
-            isSetToDefault,
-        )
-
-    val scrollToNextCard = scrollToNextCardFromSignIn || scrollToNextCardFromSetToDefault
-
-    return scrollToNextCard
+    LaunchedEffect(isSetToDefault) {
+        if (scrollToNextCardFromSetToDefault(pagesToDisplay, pagerState.currentPage, isSetToDefault)) {
+            scrollToNextPageOrDismiss()
+        }
+    }
 }
 
 @VisibleForTesting
