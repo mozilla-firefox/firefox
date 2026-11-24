@@ -2782,9 +2782,9 @@
       },
       "id": "dd3f80b3-99e7-4995-84a4-ace52d7ce08d",
       "identifier": "google",
-      "last_modified": 1792080251609,
+      "last_modified": 1795454431893,
       "recordType": "engine",
-      "schema": 1791906680043,
+      "schema": 1795305611649,
       "variants": [
         {
           "environment": {
@@ -2937,25 +2937,25 @@
                 ]
               },
               "partner": {
-                "context": {
-                  "code": "linux-firefoxmnt-cm-re",
-                  "telemetrySuffix": "linux-mint-context"
-                },
                 "default": {
-                  "code": "linux-firefoxmnt-o-re",
-                  "telemetrySuffix": "linux-mint-main"
-                },
-                "errorpage": {
-                  "code": "",
-                  "telemetrySuffix": "com-nocodes"
-                },
-                "newtab": {
-                  "code": "linux-firefoxmnt-ntp-re",
-                  "telemetrySuffix": "linux-mint-newtab"
-                },
-                "newtab_search_widget": {
-                  "code": "firefox-b-exp1",
-                  "telemetrySuffix": "b-exp1"
+                  "code": "firefox-b-lm",
+                  "telemetrySuffix": "b-lm"
+                }
+              }
+            },
+            {
+              "environment": {
+                "distributions": [
+                  "mint-001"
+                ],
+                "regions": [
+                  "us"
+                ]
+              },
+              "partner": {
+                "default": {
+                  "code": "firefox-b-1-lm",
+                  "telemetrySuffix": "b-1-lm"
                 }
               }
             }
@@ -8689,5 +8689,5 @@
       "schema": 1791922375886
     }
   ],
-  "timestamp": 1792153336376
+  "timestamp": 1795454431893
 }

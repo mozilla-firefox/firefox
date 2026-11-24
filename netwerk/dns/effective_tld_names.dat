@@ -5,8 +5,8 @@
 // Please pull this list from, and only from https://publicsuffix.org/list/public_suffix_list.dat,
 // rather than any other VCS sites. Pulling from any other URL is not guaranteed to be supported.
 
-// VERSION: 2026-11-21_04-33-45_UTC
-// COMMIT: 87a2c1b8de5886a133ff4da21b2aa6fec88d8739
+// VERSION: 2026-11-24_16-45-31_UTC
+// COMMIT: cb637a7ba4c2bd119bcf19595731949988bdaf50
 
 // Instructions on pulling and using this list can be found at https://publicsuffix.org/list/.
 
@@ -12475,6 +12475,10 @@ d.gv.vc
 // Submitted by Hector Martin <marcan@euskalencounter.org>
 user.party.eus
 
+// Aspire Themes : https://aspirethemes.com
+// Submitted by Ahmad <psl@aspirethemes.com>
+sites.aspirethemes.com
+
 // Association potager.org : https://potager.org/
 // Submitted by Lunar <jardiniers@potager.org>
 pimienta.org
@@ -12489,8 +12493,11 @@ myasustor.com
 // Atlassian : https://atlassian.com
 // Submitted by Benjamin McAlary <edge-services@atlassian.com>
 *.atlassian-3p.com
+*.shared.atlassian-3p.com
 *.atlassian-3p-us-gov-mod.com
+*.shared.atlassian-3p-us-gov-mod.com
 *.atlassian-isolated-3p.com
+*.shared.atlassian-isolated-3p.com
 cdn.prod.atlassian-dev.net
 
 // Automattic Inc. : https://automattic.com
@@ -12569,6 +12576,11 @@ ship.place
 // Blackbaud, Inc. : https://www.blackbaud.com
 // Submitted by Paul Crowder <paul.crowder@blackbaud.com>
 blackbaudcdn.net
+
+// Blacktops, Inc. : https://blacktops.ai
+// Submitted by Ravi Kolandaiswamy <psl@blacktops.ai>
+blacktops.app
+blacktops.page
 
 // Blatech : http://www.blatech.net
 // Submitted by Luke Bratch <luke@bratch.co.uk>
@@ -13485,6 +13497,11 @@ twmail.org
 mymailer.com.tw
 url.tw
 
+// EFM Networks (ipTIME) : https://iptime.com
+// Submitted by EFM Networks Development Team <server@iptime.com>
+ipdisk.co.kr
+iptime.org
+
 // Electromagnetic Field : https://www.emfcamp.org
 // Submitted by <noc@emfcamp.org>
 at.emf.camp
@@ -14050,6 +14067,8 @@ vibehost.space
 
 // GoDaddy Registry : https://registry.godaddy
 // Submitted by Rohan Durrant <tldns@registry.godaddy>
+*.airoapp.ai
+*.host.cloud
 graphic.design
 
 // GoIP DNS Services : http://www.goip.de
@@ -14201,6 +14220,10 @@ homesklep.pl
 *.kin.one
 *.id.pub
 *.kin.pub
+
+// Homemade : https://homemade.dev
+// Submitted by Homemade Support <support@homemade.dev>
+onhomemade.com
 
 // HOOC AG : https://www.hooc.ch
 // Submitted by Fabrizio Steiner <info@hooc.ch>
@@ -14409,7 +14432,6 @@ cloud.interhostsolutions.be
 alp1.ae.flow.ch
 appengine.flow.ch
 es-1.axarnet.cloud
-diadem.cloud
 vip.jelastic.cloud
 jele.cloud
 it1.eur.aruba.jenv-aruba.cloud
@@ -14441,7 +14463,6 @@ j.scaleforce.com.cy
 jelastic.dogado.eu
 fi.cloudplatform.fi
 jele.host
-mircloud.host
 paas.beebyte.io
 sekd1.beebyteapp.io
 jele.io
@@ -14471,7 +14492,6 @@ jelastic.team
 orangecloud.tn
 j.layershift.co.uk
 phx.enscaled.us
-mircloud.us
 
 // Jino : https://www.jino.ru
 // Submitted by Sergey Ulyashin <ulyashin@jino.ru>
@@ -14599,8 +14619,6 @@ lpusercontent.com
 // Leapcell : https://leapcell.io/
 // Submitted by Leapcell Team <support@leapcell.io>
 leapcell.app
-leapcell.dev
-leapcell.online
 
 // Liara : https://liara.ir
 // Submitted by Amirhossein Badinloo <info@liara.ir>
@@ -15728,10 +15746,6 @@ devices.resinstaging.io
 // Submitted by Andrew Guan <security@retool.com>
 retool.app
 
-// Rico Developments Limited : https://adimo.co
-// Submitted by Colin Brown <hello@adimo.co>
-adimo.co.uk
-
 // Riseup Networks : https://riseup.net
 // Submitted by Micah Anderson <micah@riseup.net>
 itcouldbewor.se
@@ -16011,6 +16025,10 @@ zicp.fun
 // Sheezy.Art : https://sheezy.art
 // Submitted by Nyoom <admin@sheezy.art>
 sheezy.games
+
+// ShipStatic : https://www.shipstatic.com
+// Submitted by ShipStatic Team <hello@shipstatic.com>
+shipstatic.com
 
 // Shopblocks : http://www.shopblocks.com/
 // Submitted by Alex Bowers <alex@shopblocks.com>
