@@ -438,6 +438,7 @@ OkOrErr MarkCacheForRescan(mozIStorageConnection& aConnection) {
   return Ok{};
 }
 
+// Used by schema upgrades whose old rows cannot be reconciled against.
 OkOrErr InvalidateCache(mozIStorageConnection& aConnection) {
   AssertIsOnIOThread();
 
@@ -4390,6 +4391,20 @@ Result<OriginCacheMap, nsresult> LoadOriginCacheIntoMap(
   return map;
 }
 
+Result<Ok, nsresult> DeleteOriginRowsForRepository(
+    mozIStorageConnection& aConnection, PersistenceType aPersistenceType) {
+  QM_TRY_INSPECT(
+      const auto& stmt,
+      MOZ_TO_RESULT_INVOKE_MEMBER_TYPED(
+          nsCOMPtr<mozIStorageStatement>, aConnection, CreateStatement,
+          "DELETE FROM origin WHERE repository_id = :repository_id"_ns));
+  QM_TRY(MOZ_TO_RESULT(
+      stmt->BindInt32ByName("repository_id"_ns, aPersistenceType)));
+  QM_TRY(MOZ_TO_RESULT(stmt->Execute()));
+
+  return Ok{};
+}
+
 // Delete every row in the `origin` table whose key remains in `aMap`
 // (origins present in the L1 cache but no longer found on disk).
 // Wraps the per-row DELETE in a single immediate transaction.
@@ -4762,10 +4777,25 @@ nsresult QuotaManager::InitializeRepository(PersistenceType aPersistenceType,
   QM_TRY_UNWRAP(
       auto cacheMap,
       ([this, aPersistenceType]() -> Result<OriginCacheMap, nsresult> {
-        if (mCacheUsable) {
-          return LoadOriginCacheIntoMap(*mStorageConnection, aPersistenceType);
+        if (!mCacheUsable) {
+          return OriginCacheMap{};
         }
-        return OriginCacheMap{};
+
+        QM_TRY_RETURN(QM_OR_ELSE_WARN(
+            // Expression.
+            LoadOriginCacheIntoMap(*mStorageConnection, aPersistenceType),
+            // Fallback. Rows that cannot be decoded are useless for
+            // reconciliation. Only this repository's rows are dropped; other
+            // repositories may already have reconciled against theirs. The
+            // empty map stays active so every origin found by the scan is
+            // flagged for a row upsert.
+            ([&](const nsresult) -> Result<OriginCacheMap, nsresult> {
+              QM_TRY(DeleteOriginRowsForRepository(*mStorageConnection,
+                                                   aPersistenceType));
+              OriginCacheMap map;
+              map.Activate();
+              return map;
+            })));
       }()));
 
   QM_TRY_INSPECT(const auto& directory,
@@ -6367,8 +6397,10 @@ nsresult QuotaManager::EnsureStorageIsInitializedInternal() {
         (invalidationLevel == QuotaManager::CacheInvalidationLevel::Soft &&
          StaticPrefs::dom_quotaManager_caching_checkBuildId());
 
+    // The rows are kept so the scan can reconcile against them; rows for
+    // directories that no longer exist are deleted after the scan.
     if (mCacheUsable && shouldInvalidateCache) {
-      QM_TRY(InvalidateCache(*connection));
+      QM_TRY(MarkCacheForRescan(*connection));
       mCacheRequiresFullScan = true;
     }
 

@@ -66,8 +66,82 @@ class CacheRescan(QuotaTestCase):
         assert self.initStorage()
         assert self.initTemporaryStorage()
 
+        with self._stopped_browser(in_app=False):
+            self._assert_cache_complete()
+
+    def test_stale_rows_pruned_after_invalidation(self):
+        stale_origin = "https://stale.example.com"
         with self._stopped_browser():
             self._assert_cache_complete()
+            self._execute_sql(
+                f"""
+                INSERT INTO origin (repository_id, suffix, group_, origin,
+                  client_usages, usage, last_access_time, last_maintenance_date,
+                  metadata_flags)
+                SELECT repository_id, suffix, group_, '{stale_origin}',
+                  client_usages, usage, last_access_time, last_maintenance_date,
+                  metadata_flags
+                FROM origin WHERE origin = '{self.origin}';
+                """
+            )
+            self._change_build_id(self.compatibility_file)
+
+        assert self.initStorage()
+        assert self.initTemporaryStorage()
+
+        with self._stopped_browser(in_app=False):
+            self._assert_cache_complete()
+            self.assertFalse(self._has_origin(self.storage_file, stale_origin))
+
+    def test_undecodable_row_does_not_block_rebuild(self):
+        # The temporary repository is scanned before the default one, so an
+        # undecodable default row must not discard its already reconciled rows.
+        bad_origin = "https://undecodable.example.com"
+        temporary_origin = "https://undecodable-temporary.example.com"
+        assert self.initTemporaryOrigin("temporary", temporary_origin)
+        with self._stopped_browser():
+            self._assert_cache_complete()
+            self.assertTrue(self._has_origin(self.storage_file, temporary_origin))
+            self._execute_sql(
+                f"""
+                INSERT INTO origin (repository_id, suffix, group_, origin,
+                  client_usages, usage, last_access_time, last_maintenance_date,
+                  metadata_flags)
+                SELECT repository_id, suffix, group_, '{bad_origin}',
+                  'bad', usage, last_access_time, last_maintenance_date,
+                  metadata_flags
+                FROM origin WHERE origin = '{self.origin}';
+                """
+            )
+
+        assert self.initStorage()
+        assert self.initTemporaryStorage()
+
+        with self._stopped_browser(in_app=False):
+            self._assert_cache_complete()
+            self.assertFalse(self._has_origin(self.storage_file, bad_origin))
+            self.assertTrue(self._has_origin(self.storage_file, temporary_origin))
+
+    def test_changed_usage_refreshes_row_after_invalidation(self):
+        value = "refresh-row-value" * 1024
+        self.assertEqual(self._indexeddb_value(value), value)
+        usage = self.getFullOriginMetadata("default", self.origin)["originUsage"]
+        self.assertGreater(usage, 0)
+
+        with self._stopped_browser(in_app=False):
+            self._execute_sql(
+                f"UPDATE origin SET usage = 0 WHERE origin = '{self.origin}';"
+            )
+            self._change_build_id(self.compatibility_file)
+
+        assert self.initStorage()
+        assert self.initTemporaryStorage()
+        cached_usage = self.getFullOriginMetadata("default", self.origin)["originUsage"]
+        self.assertGreater(cached_usage, 0)
+
+        with self._stopped_browser(in_app=False):
+            self._assert_cache_complete()
+            self.assertEqual(self._row_usage(self.origin), cached_usage)
 
     def test_rescan_completes_without_clean_shutdown(self):
         self.marionette.set_pref(CACHE_CHECK_BUILD_ID_PREF, False)
@@ -100,9 +174,11 @@ class CacheRescan(QuotaTestCase):
             except AssertionError:
                 pass
 
+            # Rows are kept for reconciliation; only the completeness bit
+            # changes.
             with self._stopped_browser(in_app=False):
                 self.assertEqual(self._cache_state()[0], 0)
-                self.assertFalse(self._has_origin(self.storage_file, self.origin))
+                self.assertTrue(self._has_origin(self.storage_file, self.origin))
 
         with self._stopped_browser():
             pass
@@ -521,6 +597,12 @@ class CacheRescan(QuotaTestCase):
                 """,
                 script_args=(origin,),
             )
+
+    def _row_usage(self, origin):
+        with closing(sqlite3.connect(self.storage_file)) as connection:
+            return connection.execute(
+                "SELECT usage FROM origin WHERE origin = ?", (origin,)
+            ).fetchone()[0]
 
     def _indexeddb_value(self, value=None):
         with self.marionette.using_context(self.marionette.CONTEXT_CHROME):
