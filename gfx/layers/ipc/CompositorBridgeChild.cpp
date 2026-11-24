@@ -36,6 +36,7 @@
 #include "nsISupportsImpl.h"   // for MOZ_COUNT_CTOR, etc
 #include "nsTArray.h"          // for nsTArray, nsTArray_Impl
 #include "nsThreadUtils.h"
+#include "nsXULAppAPI.h"
 #if defined(XP_WIN)
 #  include "WinUtils.h"
 #endif
@@ -89,7 +90,7 @@ CompositorBridgeChild::~CompositorBridgeChild() {
 }
 
 bool CompositorBridgeChild::IsSameProcess() const {
-  return OtherPid() == base::GetCurrentProcId();
+  return OtherChildID() == XRE_GetChildID();
 }
 
 void CompositorBridgeChild::PrepareFinalDestroy() {
@@ -270,7 +271,8 @@ bool CompositorBridgeChild::CompositorIsInGPUProcess() {
     return false;
   }
 
-  return bridge->OtherPid() != dom::ContentChild::GetSingleton()->OtherPid();
+  return bridge->OtherChildID() !=
+         dom::ContentChild::GetSingleton()->OtherChildID();
 }
 
 mozilla::ipc::IPCResult CompositorBridgeChild::RecvDidComposite(

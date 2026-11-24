@@ -459,7 +459,7 @@ ContentCompositorBridgeParent::AllocPTextureParent(
 }
 
 bool ContentCompositorBridgeParent::IsSameProcess() const {
-  return OtherPid() == base::GetCurrentProcId();
+  return OtherChildID() == XRE_GetChildID();
 }
 
 void ContentCompositorBridgeParent::ObserveLayersUpdate(LayersId aLayersId,

@@ -36,6 +36,7 @@
 #include "nsTArray.h"                // for AutoTArray, nsTArray, etc
 #include "nsTArrayForwardDeclare.h"  // for AutoTArray
 #include "nsThreadUtils.h"           // for NS_IsMainThread
+#include "nsXULAppAPI.h"
 #include "transport/runnable_utils.h"
 
 #if defined(XP_WIN)
@@ -936,7 +937,7 @@ void ImageBridgeChild::ClearImagesFromCompositable(
 }
 
 bool ImageBridgeChild::IsSameProcess() const {
-  return OtherPid() == base::GetCurrentProcId();
+  return OtherChildID() == XRE_GetChildID();
 }
 
 bool ImageBridgeChild::CanPostTask() const {

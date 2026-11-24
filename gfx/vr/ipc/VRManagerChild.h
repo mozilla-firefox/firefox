@@ -13,6 +13,7 @@
 #include "mozilla/layers/ISurfaceAllocator.h"  // for ISurfaceAllocator
 #include "mozilla/layers/LayersTypes.h"        // for LayersBackend
 #include "nsISupportsImpl.h"
+#include "nsXULAppAPI.h"
 
 namespace mozilla {
 namespace dom {
@@ -128,7 +129,7 @@ class VRManagerChild : public PVRManagerChild {
   MOZ_CAN_RUN_SCRIPT_BOUNDARY
   mozilla::ipc::IPCResult RecvNotifyPuppetResetComplete();
 
-  bool IsSameProcess() const { return OtherPid() == base::GetCurrentProcId(); }
+  bool IsSameProcess() const { return OtherChildID() == XRE_GetChildID(); }
 
  private:
   void FireDOMVRDisplayMountedEventInternal(uint32_t aDisplayID);

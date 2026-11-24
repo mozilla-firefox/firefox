@@ -10,6 +10,7 @@
 #include "mozilla/StaticMutex.h"
 #include "mozilla/dom/ContentChild.h"
 #include "mozilla/ipc/Endpoint.h"
+#include "nsXULAppAPI.h"
 #include "transport/runnable_utils.h"
 
 namespace mozilla {
@@ -195,7 +196,7 @@ already_AddRefed<PTextureChild> VideoBridgeChild::CreateTexture(
 }
 
 bool VideoBridgeChild::IsSameProcess() const {
-  return OtherPid() == base::GetCurrentProcId();
+  return OtherChildID() == XRE_GetChildID();
 }
 
 void VideoBridgeChild::HandleFatalError(const char* aMsg) {

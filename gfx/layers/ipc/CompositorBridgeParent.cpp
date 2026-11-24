@@ -70,6 +70,7 @@
 #include "nsIWidget.h"        // for nsIWidget
 #include "nsTArray.h"         // for nsTArray
 #include "nsThreadUtils.h"    // for NS_IsMainThread
+#include "nsXULAppAPI.h"
 #ifdef XP_WIN
 #  include "mozilla/layers/CompositorD3D11.h"
 #  include "mozilla/widget/WinCompositorWidget.h"
@@ -1935,7 +1936,7 @@ already_AddRefed<PTextureParent> CompositorBridgeParent::AllocPTextureParent(
 }
 
 bool CompositorBridgeParent::IsSameProcess() const {
-  return OtherPid() == base::GetCurrentProcId();
+  return OtherChildID() == XRE_GetChildID();
 }
 
 struct ContentFrameMarker : public BaseMarkerType<ContentFrameMarker> {

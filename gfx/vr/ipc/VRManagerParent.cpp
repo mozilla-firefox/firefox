@@ -14,6 +14,7 @@
 #include "mozilla/ipc/ProtocolTypes.h"
 #include "mozilla/ipc/ProtocolUtils.h"  // for IToplevelProtocol
 #include "mozilla/layers/LayerTreeLog.h"
+#include "nsXULAppAPI.h"
 
 using mozilla::dom::GamepadHandle;
 
@@ -58,7 +59,7 @@ already_AddRefed<PVRLayerParent> VRManagerParent::AllocPVRLayerParent(
 }
 
 bool VRManagerParent::IsSameProcess() const {
-  return OtherPid() == base::GetCurrentProcId();
+  return OtherChildID() == XRE_GetChildID();
 }
 
 void VRManagerParent::RegisterWithManager() {

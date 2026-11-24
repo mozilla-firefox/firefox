@@ -121,7 +121,7 @@ void CanvasManagerParent::Bind(Endpoint<PCanvasManagerParent>&& aEndpoint) {
 #ifdef DEBUG
   for (CanvasManagerParent* i : sManagers) {
     MOZ_ASSERT_IF(i->mContentId == mContentId,
-                  i->OtherPidMaybeInvalid() == OtherPidMaybeInvalid());
+                  i->OtherChildIDMaybeInvalid() == OtherChildIDMaybeInvalid());
   }
 #endif
 

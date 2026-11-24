@@ -48,6 +48,7 @@
 #include "mozilla/webrender/RenderThread.h"
 #include "mozilla/widget/CompositorWidget.h"
 #include "nsExceptionHandler.h"
+#include "nsXULAppAPI.h"
 
 #ifdef XP_WIN
 #  include "mozilla/gfx/DeviceManagerDx.h"
@@ -3351,7 +3352,7 @@ dom::ContentParentId WebRenderBridgeParent::GetContentId() {
 }
 
 bool WebRenderBridgeParent::IsSameProcess() const {
-  return OtherPid() == base::GetCurrentProcId();
+  return OtherChildID() == XRE_GetChildID();
 }
 
 mozilla::ipc::IPCResult WebRenderBridgeParent::RecvNewCompositable(

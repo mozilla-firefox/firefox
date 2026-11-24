@@ -16,6 +16,7 @@
 #include "mozilla/layers/TextureHost.h"
 #include "mozilla/layers/VideoBridgeUtils.h"
 #include "mozilla/webrender/RenderThread.h"
+#include "nsXULAppAPI.h"
 
 #ifdef XP_WIN
 #  include "mozilla/gfx/DeviceManagerDx.h"
@@ -428,7 +429,7 @@ bool VideoBridgeParent::DeallocShmem(ipc::Shmem& aShmem) {
 }
 
 bool VideoBridgeParent::IsSameProcess() const {
-  return OtherPid() == base::GetCurrentProcId();
+  return OtherChildID() == XRE_GetChildID();
 }
 
 void VideoBridgeParent::NotifyNotUsed(PTextureParent* aTexture,

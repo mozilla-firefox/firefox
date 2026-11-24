@@ -454,7 +454,7 @@ bool ImageBridgeParent::DeallocShmem(ipc::Shmem& aShmem) {
 }
 
 bool ImageBridgeParent::IsSameProcess() const {
-  return OtherPid() == base::GetCurrentProcId();
+  return OtherChildID() == XRE_GetChildID();
 }
 
 void ImageBridgeParent::NotifyNotUsed(PTextureParent* aTexture,

@@ -16,6 +16,7 @@
 #include "mozilla/layers/RemoteTextureMap.h"
 #include "mozilla/layers/SharedSurfacesParent.h"
 #include "mozilla/webrender/RenderThread.h"
+#include "nsXULAppAPI.h"
 
 namespace mozilla {
 namespace layers {
@@ -58,7 +59,7 @@ bool CompositorManagerParent::Create(
 
   // We are creating a manager for the another process, inside the GPU process
   // (or UI process if it subsumbed the GPU process).
-  MOZ_RELEASE_ASSERT(aEndpoint.OtherPid() != base::GetCurrentProcId());
+  MOZ_RELEASE_ASSERT(aEndpoint.OtherChildID() != XRE_GetChildID());
 
   if (!CompositorThreadHolder::IsActive()) {
     return false;
@@ -255,7 +256,7 @@ CompositorManagerParent::AllocPCompositorBridgeParent(
       // Only the UI process is allowed to create widget compositors in the
       // compositor process.
       gfx::GPUParent* gpu = gfx::GPUParent::GetSingleton();
-      if (NS_WARN_IF(!gpu || OtherPid() != gpu->OtherPid())) {
+      if (NS_WARN_IF(!gpu || OtherChildID() != gpu->OtherChildID())) {
         MOZ_ASSERT_UNREACHABLE("Child cannot create widget compositor!");
         break;
       }
@@ -270,7 +271,7 @@ CompositorManagerParent::AllocPCompositorBridgeParent(
       // If the GPU and UI process are combined, we actually already created the
       // CompositorBridgeParent, so we need to reuse that to inject it into the
       // IPDL framework.
-      if (NS_WARN_IF(OtherPid() != base::GetCurrentProcId())) {
+      if (NS_WARN_IF(OtherChildID() != XRE_GetChildID())) {
         MOZ_ASSERT_UNREACHABLE("Child cannot create same process compositor!");
         break;
       }
