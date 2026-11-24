@@ -28,12 +28,14 @@ import mozilla.components.compose.menu.ui.displayedInGrid
  * @param groups The groups of the screen, as last saved.
  * @param onMove Called with the groups as moved by one of the custom actions, to save them, and what to tell the user
  *   about the move.
+ * @param onEdit Called by the custom action editing the items of the group, or `null` to not offer it.
  */
 @Composable
 internal fun Modifier.customizeMenuGroupSemantics(
     group: MenuItemsGroup,
     groups: CustomizeMenuGroups,
     onMove: (movedGroups: CustomizeMenuGroups, announcement: String) -> Unit,
+    onEdit: (() -> Unit)? = null,
 ): Modifier {
     val itemNames = group.itemNames()
     val groupName = group.name?.value
@@ -48,6 +50,7 @@ internal fun Modifier.customizeMenuGroupSemantics(
         } else {
             stringResource(R.string.mozac_menu_customize_shown_section, label, shownIndex + 1, shownCount)
         }
+    val editLabel = stringResource(R.string.mozac_menu_customize_edit_items)
     val actions =
         customizeMenuSectionActions(group, groups).mapNotNull { action ->
             action.movedGroups?.let {
@@ -56,7 +59,15 @@ internal fun Modifier.customizeMenuGroupSemantics(
                     true
                 }
             }
-        }
+        } +
+            listOfNotNull(
+                onEdit?.let {
+                    CustomAccessibilityAction(editLabel) {
+                        it()
+                        true
+                    }
+                }
+            )
     return this.clearAndSetSemantics {
         contentDescription = description
         if (actions.isNotEmpty()) customActions = actions

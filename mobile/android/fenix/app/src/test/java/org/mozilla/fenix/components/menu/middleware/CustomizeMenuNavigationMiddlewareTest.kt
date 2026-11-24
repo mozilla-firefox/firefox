@@ -11,6 +11,7 @@ import io.mockk.every
 import io.mockk.mockk
 import io.mockk.verify
 import mozilla.components.compose.menu.store.CustomizableMenuAction.BackPressed
+import mozilla.components.compose.menu.store.CustomizableMenuAction.EditGroupItemsClicked
 import mozilla.components.compose.menu.store.CustomizableMenuAction.Init
 import mozilla.components.compose.menu.store.CustomizableMenuAction.PreviewClicked
 import mozilla.components.compose.menu.store.CustomizableMenuAction.ResetToDefaultConfirmed
@@ -35,6 +36,20 @@ class CustomizeMenuNavigationMiddlewareTest {
                 CustomizeMenuFragmentDirections.actionCustomizeMenuFragmentToMenuFragment(
                     accessPoint = MenuAccessPoint.Preview
                 ),
+                null,
+            )
+        }
+    }
+
+    @Test
+    fun `WHEN EditGroupItemsClicked is dispatched THEN navigate to the screen editing the items of that section`() {
+        val store = createStore()
+
+        store.dispatch(EditGroupItemsClicked("tools"))
+
+        verify {
+            navController.navigate(
+                CustomizeMenuFragmentDirections.actionCustomizeMenuFragmentToEditMenuItemsFragment(sectionId = "tools"),
                 null,
             )
         }

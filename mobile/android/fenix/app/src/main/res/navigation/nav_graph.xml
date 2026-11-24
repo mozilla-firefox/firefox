@@ -1864,6 +1864,25 @@
             <action
                 android:id="@+id/action_customizeMenuFragment_to_menuFragment"
                 app:destination="@id/menu_graph" />
+            <action
+                android:id="@+id/action_customizeMenuFragment_to_editMenuItemsFragment"
+                app:destination="@id/editMenuItemsFragment"
+                app:enterAnim="@anim/slide_in_right"
+                app:exitAnim="@anim/slide_out_left"
+                app:popEnterAnim="@anim/slide_in_left"
+                app:popExitAnim="@anim/slide_out_right" />
+        </fragment>
+
+        <fragment
+            android:id="@+id/editMenuItemsFragment"
+            android:name="org.mozilla.fenix.components.menu.compose.customize.EditMenuItemsFragment"
+            android:label="@string/edit_menu_items">
+            <argument
+                android:name="sectionId"
+                app:argType="string" />
+            <action
+                android:id="@+id/action_editMenuItemsFragment_to_menuFragment"
+                app:destination="@id/menu_graph" />
         </fragment>
     </navigation>
 

@@ -45,6 +45,7 @@ import mozilla.components.ui.icons.R as iconsR
  *   moved, to save them, and what to tell the user about the move.
  * @param highlightedGroupId Id of the group to highlight, as the one the open actions sheet acts on, if any.
  * @param onShowActions Called with the id of a group when the user long presses its drag handle, to show its actions.
+ * @param editAction The action editing the items of the group with this id, or `null` when they can't be edited.
  * @param isHidden Whether these groups were removed from the menu.
  */
 internal fun LazyListScope.customizeMenuGroups(
@@ -55,6 +56,7 @@ internal fun LazyListScope.customizeMenuGroups(
     onMove: (movedGroupId: String, movedGroups: CustomizeMenuGroups, announcement: String) -> Unit,
     highlightedGroupId: String?,
     onShowActions: (groupId: String) -> Unit,
+    editAction: (groupId: String) -> (() -> Unit)? = { null },
     isHidden: Boolean = false,
 ) {
     val interactionState = dragState.interactionState
@@ -63,6 +65,8 @@ internal fun LazyListScope.customizeMenuGroups(
             remember(interactionState, group.id) {
                 derivedStateOf { interactionState.draggedItem.key == group.id }
             }
+
+        val onEdit = editAction(group.id).takeIf { !isHidden && !isDragged }
 
         InteractableDragItemContainer(
             state = interactionState,
@@ -83,6 +87,7 @@ internal fun LazyListScope.customizeMenuGroups(
                             group = group,
                             groups = dragState.groups,
                             onMove = { movedGroups, announcement -> onMove(group.id, movedGroups, announcement) },
+                            onEdit = onEdit,
                         )
                         .padding(top = itemSpacing)
                         .dropLine(group.id, dragState.dropTarget, itemSpacing)
@@ -94,6 +99,7 @@ internal fun LazyListScope.customizeMenuGroups(
                 state = dragState.groups.stateOf(group, isDragged = isDragged, isHidden = isHidden),
                 dragState = dragState,
                 isHighlighted = group.id == highlightedGroupId,
+                onEditClick = onEdit,
                 onDragHandleLongPress = { onShowActions(group.id) },
             )
         }

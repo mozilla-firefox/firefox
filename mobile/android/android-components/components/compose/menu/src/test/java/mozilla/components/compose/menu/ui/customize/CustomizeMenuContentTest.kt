@@ -10,17 +10,23 @@ import androidx.compose.ui.geometry.Rect
 import androidx.compose.ui.hapticfeedback.HapticFeedback
 import androidx.compose.ui.hapticfeedback.HapticFeedbackType
 import androidx.compose.ui.platform.LocalHapticFeedback
+import androidx.compose.ui.semantics.SemanticsActions
 import androidx.compose.ui.semantics.SemanticsProperties
 import androidx.compose.ui.test.SemanticsMatcher
+import androidx.compose.ui.test.assertCountEquals
 import androidx.compose.ui.test.assertIsDisplayed
 import androidx.compose.ui.test.assertIsEnabled
 import androidx.compose.ui.test.assertIsNotEnabled
 import androidx.compose.ui.test.getUnclippedBoundsInRoot
+import androidx.compose.ui.test.hasAnyAncestor
 import androidx.compose.ui.test.hasContentDescription
 import androidx.compose.ui.test.hasScrollAction
+import androidx.compose.ui.test.hasTestTag
 import androidx.compose.ui.test.isRoot
 import androidx.compose.ui.test.junit4.v2.createComposeRule
+import androidx.compose.ui.test.onAllNodesWithTag
 import androidx.compose.ui.test.onNodeWithContentDescription
+import androidx.compose.ui.test.onNodeWithTag
 import androidx.compose.ui.test.onNodeWithText
 import androidx.compose.ui.test.onRoot
 import androidx.compose.ui.test.performClick
@@ -878,6 +884,73 @@ class CustomizeMenuContentTest {
         assertEquals(listOf("Shown 2", "Shown 3", "Shown 1"), shownIds(store))
     }
 
+    @Test
+    fun `GIVEN sections whose items can be edited THEN only the shown ones have the button editing them`() {
+        setContent(
+            menuState(
+                shown = listOf(row("Editable"), row("Other")),
+                hidden = listOf(row("Hidden editable")),
+                editableIds = setOf("Editable", "Hidden editable"),
+            )
+        )
+
+        composeTestRule.onAllNodesWithTag(EDIT_GROUP_ITEMS_BUTTON_TAG, useUnmergedTree = true).assertCountEquals(1)
+        composeTestRule
+            .onAllNodes(hasTestTag(EDIT_GROUP_ITEMS_BUTTON_TAG) and sectionAncestor("Editable"), useUnmergedTree = true)
+            .assertCountEquals(1)
+        composeTestRule
+            .onAllNodes(hasTestTag(EDIT_GROUP_ITEMS_BUTTON_TAG) and sectionAncestor("Other"), useUnmergedTree = true)
+            .assertCountEquals(0)
+    }
+
+    @Test
+    fun `WHEN a section whose items can be edited is dragged THEN it has no button nor action editing them AND has them again once dropped`() {
+        val editItems = testContext.getString(R.string.mozac_menu_customize_edit_items)
+        setContent(menuState(shown = listOf(row("Editable"), row("Other")), editableIds = setOf("Editable")))
+        assertTrue(editItems in customActionLabelsOf("Editable"))
+
+        longPressAndMove(title = "Editable", to = { boundsOf("Other").bottomCenter })
+
+        composeTestRule.onAllNodes(hasContentDescription("Editable", substring = true)).assertCountEquals(1)
+        composeTestRule.onAllNodesWithTag(EDIT_GROUP_ITEMS_BUTTON_TAG, useUnmergedTree = true).assertCountEquals(0)
+        assertTrue(editItems !in customActionLabelsOf("Editable"))
+
+        release()
+
+        composeTestRule.onAllNodesWithTag(EDIT_GROUP_ITEMS_BUTTON_TAG, useUnmergedTree = true).assertCountEquals(1)
+        assertTrue(editItems in customActionLabelsOf("Editable"))
+    }
+
+    @Test
+    fun `GIVEN no section whose items can be edited THEN no section has the button editing its items`() {
+        setContent(menuState(shown = listOf(row("First"), row("Second"))))
+
+        composeTestRule.onAllNodesWithTag(EDIT_GROUP_ITEMS_BUTTON_TAG, useUnmergedTree = true).assertCountEquals(0)
+    }
+
+    @Test
+    fun `WHEN the user taps the button editing the items of a section THEN tell the store`() {
+        val actions = mutableListOf<CustomizableMenuAction>()
+        val captureActions: Middleware<CustomizableMenuState, CustomizableMenuAction> = { _, next, action ->
+            actions.add(action)
+            next(action)
+        }
+        setContent(menuState(shown = listOf(row("Editable")), editableIds = setOf("Editable")), listOf(captureActions))
+
+        composeTestRule.onNodeWithTag(EDIT_GROUP_ITEMS_BUTTON_TAG, useUnmergedTree = true).performClick()
+
+        assertTrue(CustomizableMenuAction.EditGroupItemsClicked("Editable") in actions)
+    }
+
+    private fun sectionAncestor(itemNames: String) = hasAnyAncestor(hasContentDescription(itemNames, substring = true))
+
+    private fun customActionLabelsOf(itemNames: String) =
+        composeTestRule
+            .onAllNodes(hasContentDescription(itemNames, substring = true))
+            .fetchSemanticsNodes()
+            .flatMap { it.config.getOrElse(SemanticsActions.CustomActions) { emptyList() } }
+            .map { it.label }
+
     private fun setContent(
         state: CustomizableMenuState,
         middleware: List<Middleware<CustomizableMenuState, CustomizableMenuAction>> = emptyList(),
@@ -1040,12 +1113,14 @@ class CustomizeMenuContentTest {
         hidden: List<MenuItemsGroup> = emptyList(),
         mandatoryIds: Set<String> = emptySet(),
         isCustomized: Boolean = false,
+        editableIds: Set<String> = emptySet(),
     ) =
         CustomizableMenuState(
             menuGroups = shown + hidden,
             mandatoryGroupIds = mandatoryIds,
             hiddenGroupIds = hidden.map { it.id }.toSet(),
             isCustomized = isCustomized,
+            editableGroupIds = editableIds,
         )
 
     private fun row(title: String) = row(id = title, title)

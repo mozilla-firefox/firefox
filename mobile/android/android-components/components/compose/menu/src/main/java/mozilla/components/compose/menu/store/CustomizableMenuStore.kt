@@ -7,6 +7,7 @@ package mozilla.components.compose.menu.store
 import mozilla.components.compose.menu.store.CustomizableMenuAction.AttemptedRemovalOfMandatorySection
 import mozilla.components.compose.menu.store.CustomizableMenuAction.BackPressed
 import mozilla.components.compose.menu.store.CustomizableMenuAction.CustomizationStatusChanged
+import mozilla.components.compose.menu.store.CustomizableMenuAction.EditGroupItemsClicked
 import mozilla.components.compose.menu.store.CustomizableMenuAction.Init
 import mozilla.components.compose.menu.store.CustomizableMenuAction.MenuStructureChanged
 import mozilla.components.compose.menu.store.CustomizableMenuAction.PreviewClicked
@@ -39,6 +40,7 @@ private fun reduce(state: CustomizableMenuState, action: CustomizableMenuAction)
                 mandatoryGroupIds = action.mandatoryGroupIds,
                 hiddenGroupIds = action.hiddenGroupIds,
                 isCustomized = action.isCustomized,
+                editableGroupIds = action.editableGroupIds,
             )
         is MenuStructureChanged -> state.copy(menuGroups = action.items, hiddenGroupIds = action.hiddenGroupIds)
         is CustomizationStatusChanged -> state.copy(isCustomized = action.isCustomized)
@@ -47,5 +49,6 @@ private fun reduce(state: CustomizableMenuState, action: CustomizableMenuAction)
         is BackPressed,
         is ResetToDefaultConfirmed,
         is PreviewClicked,
+        is EditGroupItemsClicked,
         is MenuEvent -> state
     }

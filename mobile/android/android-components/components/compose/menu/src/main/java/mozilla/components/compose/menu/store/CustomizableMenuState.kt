@@ -15,10 +15,12 @@ import mozilla.components.lib.state.State
  * @property mandatoryGroupIds Ids of the [menuGroups] which cannot be removed from the menu.
  * @property hiddenGroupIds Ids of the [menuGroups] removed from the menu.
  * @property isCustomized Whether the menu structure differs from the default one.
+ * @property editableGroupIds Ids of the [menuGroups] whose items can be edited in a screen of their own.
  */
 data class CustomizableMenuState(
     val menuGroups: List<MenuItemsGroup>,
     val mandatoryGroupIds: Set<String> = emptySet(),
     val hiddenGroupIds: Set<String> = emptySet(),
     val isCustomized: Boolean = false,
+    val editableGroupIds: Set<String> = emptySet(),
 ) : State

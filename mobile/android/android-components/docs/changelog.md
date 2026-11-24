@@ -23,6 +23,8 @@ permalink: /changelog/
   * A store declared as a `Fragment` property with `fragmentStore` is now built again, from its last state, for each new view of the fragment, instead of staying the one built for the first view. [Bug 2090975](https://bugzilla.mozilla.org/show_bug.cgi?id=2090975)
 * **compose-menu**
   * ⚠️ **Breaking change**: The customize menu screen now asks the user to confirm resetting the menu to default itself, so `CustomizableMenuAction.ResetToDefaultClicked` was removed. [Bug 2090975](https://bugzilla.mozilla.org/show_bug.cgi?id=2090975)
+  * 🆕 Added `EditMenuItemsContent`, the screen showing the items of a menu section as `CustomizableMenuItem`s, shown and hidden, with `CustomizableMenuItemsStore`, `CustomizableMenuItemsState` and `CustomizableMenuItemsAction` for its state. [Bug 2090975](https://bugzilla.mozilla.org/show_bug.cgi?id=2090975)
+  * 🆕 Added `CustomizableMenuState.editableGroupIds` and `CustomizableMenuAction.Update.editableGroupIds`, the groups the customize menu screen shows a button for editing the items of, which dispatches the new `CustomizableMenuAction.EditGroupItemsClicked`. [Bug 2090975](https://bugzilla.mozilla.org/show_bug.cgi?id=2090975)
 
 # 162.0
 * **concept-engine**

@@ -9,6 +9,7 @@ import mozilla.components.compose.menu.store.CustomizableMenuAction
 import mozilla.components.compose.menu.store.CustomizableMenuAction.AttemptedRemovalOfMandatorySection
 import mozilla.components.compose.menu.store.CustomizableMenuAction.BackPressed
 import mozilla.components.compose.menu.store.CustomizableMenuAction.CustomizationStatusChanged
+import mozilla.components.compose.menu.store.CustomizableMenuAction.EditGroupItemsClicked
 import mozilla.components.compose.menu.store.CustomizableMenuAction.Init
 import mozilla.components.compose.menu.store.CustomizableMenuAction.MenuStructureChanged
 import mozilla.components.compose.menu.store.CustomizableMenuAction.PreviewClicked
@@ -44,6 +45,15 @@ class CustomizeMenuNavigationMiddleware(private val navController: NavController
                     R.id.customizeMenuFragment,
                     CustomizeMenuFragmentDirections.actionCustomizeMenuFragmentToMenuFragment(
                         accessPoint = MenuAccessPoint.Preview
+                    ),
+                )
+            }
+
+            is EditGroupItemsClicked -> {
+                navController.nav(
+                    R.id.customizeMenuFragment,
+                    CustomizeMenuFragmentDirections.actionCustomizeMenuFragmentToEditMenuItemsFragment(
+                        sectionId = action.groupId
                     ),
                 )
             }

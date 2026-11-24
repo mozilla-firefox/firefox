@@ -469,6 +469,23 @@ class CustomizeMenuMiddlewareTest {
     }
 
     @Test
+    fun `GIVEN the tools items can be customized WHEN the screen is shown THEN the items of the tools section can be edited`() =
+        runTest {
+            createStore(customization = MutableStateFlow(defaultMenuInfo), isToolsMenuCustomizationEnabled = true)
+            runCurrent()
+
+            captureActions.assertLastAction(Update::class) { assertEquals(setOf(TOOLS_GROUP_ID), it.editableGroupIds) }
+        }
+
+    @Test
+    fun `GIVEN the tools items cannot be customized WHEN the screen is shown THEN no items can be edited`() = runTest {
+        createStore(customization = MutableStateFlow(defaultMenuInfo), isToolsMenuCustomizationEnabled = false)
+        runCurrent()
+
+        captureActions.assertLastAction(Update::class) { assertEquals(emptySet(), it.editableGroupIds) }
+    }
+
+    @Test
     fun `GIVEN the user changed the tools items but they are not shown WHEN the screen is shown THEN show the menu as not customized`() =
         runTest {
             createStore(

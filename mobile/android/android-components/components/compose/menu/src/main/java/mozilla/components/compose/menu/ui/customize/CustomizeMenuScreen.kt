@@ -40,6 +40,7 @@ import androidx.compose.ui.unit.dp
 import mozilla.components.compose.base.button.OutlinedButton
 import mozilla.components.compose.base.theme.AcornTheme
 import mozilla.components.compose.menu.R
+import mozilla.components.compose.menu.store.CustomizableMenuAction.EditGroupItemsClicked
 import mozilla.components.compose.menu.store.CustomizableMenuAction.PreviewClicked
 import mozilla.components.compose.menu.store.CustomizableMenuAction.ResetToDefaultConfirmed
 import mozilla.components.compose.menu.store.CustomizableMenuState
@@ -165,6 +166,9 @@ private fun CustomizeMenuList(
             onMove = onMove,
             highlightedGroupId = actionsGroupId,
             onShowActions = { actionsGroupId = it },
+            editAction = { id ->
+                { store.dispatch(EditGroupItemsClicked(id)) }.takeIf { id in menuState.editableGroupIds }
+            },
         )
 
         item(key = HIDDEN_TITLE) {

@@ -12,6 +12,7 @@ import mozilla.components.compose.menu.store.CustomizableMenuAction
 import mozilla.components.compose.menu.store.CustomizableMenuAction.AttemptedRemovalOfMandatorySection
 import mozilla.components.compose.menu.store.CustomizableMenuAction.BackPressed
 import mozilla.components.compose.menu.store.CustomizableMenuAction.CustomizationStatusChanged
+import mozilla.components.compose.menu.store.CustomizableMenuAction.EditGroupItemsClicked
 import mozilla.components.compose.menu.store.CustomizableMenuAction.Init
 import mozilla.components.compose.menu.store.CustomizableMenuAction.MenuStructureChanged
 import mozilla.components.compose.menu.store.CustomizableMenuAction.PreviewClicked
@@ -74,6 +75,7 @@ class CustomizeMenuMiddleware(
             is Update,
             is BackPressed,
             is PreviewClicked,
+            is EditGroupItemsClicked,
             is CustomizationStatusChanged -> Unit
         }
     }
@@ -132,6 +134,12 @@ class CustomizeMenuMiddleware(
                 mandatoryGroupIds = BrowserMenuConfiguration.REQUIRED_SECTION_IDS,
                 hiddenGroupIds = hiddenSections.map { it.id }.toSet(),
                 isCustomized = isCustomized(customization, sectionsCustomization),
+                editableGroupIds =
+                    if (isToolsMenuCustomizationEnabled) {
+                        BrowserMenuConfiguration.ITEMS_CUSTOMIZABLE_SECTION_IDS
+                    } else {
+                        emptySet()
+                    },
             )
         )
     }

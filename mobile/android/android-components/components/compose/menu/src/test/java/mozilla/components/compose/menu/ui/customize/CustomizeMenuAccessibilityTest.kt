@@ -56,6 +56,7 @@ class CustomizeMenuAccessibilityTest {
     private val moveDown = testContext.getString(R.string.mozac_menu_customize_move_down)
     private val hide = testContext.getString(R.string.mozac_menu_customize_hide)
     private val unhide = testContext.getString(R.string.mozac_menu_customize_unhide)
+    private val editItems = testContext.getString(R.string.mozac_menu_customize_edit_items)
 
     @Test
     fun `THEN the titles above the shown sections and above the hidden sections are headings`() {
@@ -161,6 +162,38 @@ class CustomizeMenuAccessibilityTest {
         )
 
         assertEquals(listOf(moveUp, moveDown), actionsOf("Mandatory"))
+    }
+
+    @Test
+    fun `GIVEN a section whose items can be edited THEN it has the custom action editing them, after the ones moving it`() {
+        setContent(
+            menuState(
+                shown = listOf(row("First"), row("Editable")),
+                hidden = listOf(row("Hidden editable")),
+                editableIds = setOf("Editable", "Hidden editable"),
+            )
+        )
+
+        assertEquals(listOf(moveUp, hide, editItems), actionsOf("Editable"))
+        assertEquals(listOf(unhide), actionsOf("Hidden editable"))
+        assertEquals(listOf(moveDown, hide), actionsOf("First"))
+    }
+
+    @Test
+    fun `WHEN the custom action editing the items of a section is performed THEN tell the store`() {
+        val actions = mutableListOf<CustomizableMenuAction>()
+        val captureActions: Middleware<CustomizableMenuState, CustomizableMenuAction> = { _, next, action ->
+            actions.add(action)
+            next(action)
+        }
+        setContent(
+            menuState(shown = listOf(row("First"), row("Editable")), editableIds = setOf("Editable")),
+            middleware = listOf(captureActions),
+        )
+
+        performAction("Editable", editItems)
+
+        assertTrue(CustomizableMenuAction.EditGroupItemsClicked("Editable") in actions)
     }
 
     @Test
@@ -448,12 +481,14 @@ class CustomizeMenuAccessibilityTest {
         hidden: List<MenuItemsGroup> = emptyList(),
         mandatoryIds: Set<String> = emptySet(),
         isCustomized: Boolean = false,
+        editableIds: Set<String> = emptySet(),
     ) =
         CustomizableMenuState(
             menuGroups = shown + hidden,
             mandatoryGroupIds = mandatoryIds,
             hiddenGroupIds = hidden.map { it.id }.toSet(),
             isCustomized = isCustomized,
+            editableGroupIds = editableIds,
         )
 
     private fun row(title: String) = row(id = title, title)
