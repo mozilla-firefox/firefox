@@ -265,7 +265,11 @@ bool Simulator::overRecursed(uintptr_t newsp) const {
 
 
 bool Simulator::overRecursedWithExtra(uint32_t extra) const {
-  uintptr_t newsp = get_sp() - extra;
+  uintptr_t cursp = get_sp();
+  if (extra >= cursp) {
+    return true;
+  }
+  uintptr_t newsp = cursp - extra;
   return newsp <= stackLimit();
 }
 
