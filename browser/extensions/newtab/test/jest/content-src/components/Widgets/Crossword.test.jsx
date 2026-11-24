@@ -384,6 +384,22 @@ describe("<Crossword>", () => {
       expect(targetOrigin).not.toBe("*");
     });
 
+    it("posts see_theme_articles when Show articles is clicked", () => {
+      const { container } = renderCrossword();
+      const frame = container.querySelector("iframe.crossword-frame");
+      const postSpy = jest
+        .spyOn(frame.contentWindow, "postMessage")
+        .mockImplementation(() => {});
+
+      fireEvent.click(container.querySelector("panel-item.show-articles"));
+
+      expect(postSpy).toHaveBeenCalledTimes(1);
+      expect(postSpy.mock.calls[0][0]).toMatchObject({
+        type: "menu_action",
+        action: "see_theme_articles",
+      });
+    });
+
     it("posts reveal_grid when Solve puzzle is clicked", () => {
       const { container } = renderCrossword();
       const frame = container.querySelector("iframe.crossword-frame");

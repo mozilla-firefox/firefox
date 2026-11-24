@@ -33,9 +33,10 @@ const USER_ACTION_TYPES = {
   POWERED_BY_PARTICLE: "powered_by_particle",
   PUZZLE_COMPLETED: "puzzle_completed",
   // Also sent to the Particle bundle as menu_action commands, so changing
-  // either value breaks that menu item.
+  // any of the values breaks that menu item.
   REVEAL_GRID: "reveal_grid",
   SHOW_ALL_CLUES: "show_all_clues",
+  SEE_THEME_ARTICLES: "see_theme_articles",
 };
 
 const PARTICLE_URL = "https://particle.news";
@@ -106,6 +107,11 @@ const MENU_ACTION_ITEMS = [
     key: "show-all-clues",
     l10nId: "newtab-crossword-widget-menu-show-clues",
     action: USER_ACTION_TYPES.SHOW_ALL_CLUES,
+  },
+  {
+    key: "show-articles",
+    l10nId: "newtab-crossword-widget-menu-show-articles",
+    action: USER_ACTION_TYPES.SEE_THEME_ARTICLES,
   },
   {
     // "Solve puzzle" only shows when the crossword is in the intro state or

@@ -30,6 +30,8 @@ newtab-crossword-widget-title = Daily crossword
 newtab-crossword-widget-frame =
     .title = Crossword
 newtab-crossword-widget-menu-show-clues = Show Clues
+# Shows articles related to today’s crosswords
+newtab-crossword-widget-menu-show-articles = Show Articles
 newtab-crossword-widget-menu-solve-puzzle = Solve Puzzle
 # Context menu item linking to the Particle website, the provider of the crossword.
 newtab-crossword-menu-powered-by-particle = Powered by Particle
