@@ -219,7 +219,8 @@ static nsresult GetCommandFromCommandline(
   if (!g_shell_parse_argv(PromiseFlatCString(aCommandWithArguments).get(),
                           nullptr, &argv, getter_Transfers(error)) ||
       !argv[0]) {
-    g_warning("Cannot parse command with arguments: %s", error->message);
+    g_warning("Cannot parse command with arguments: %s",
+              error ? error->message : "<null error>");
     g_strfreev(argv);
     return NS_ERROR_FAILURE;
   }
@@ -450,7 +451,7 @@ gboolean g_app_info_launch_uris_openbsd(GAppInfo* mApp, const char* uri,
 
   if (!result) {
     g_warning("Cannot launch application %s with arg %s: %s", bin, path,
-              (*error)->message);
+              *error ? (*error)->message : "<null error>");
     return FALSE;
   }
   return TRUE;
@@ -511,7 +512,8 @@ static NS_IMETHODIMP LaunchWithURIImpl(RefPtr<GAppInfo> aInfo, nsIURI* aUri,
       aInfo, &uris, GetLaunchContext(aXDGToken).get(), getter_Transfers(error));
 #endif
   if (!result) {
-    g_warning("Cannot launch application: %s", error->message);
+    g_warning("Cannot launch application: %s",
+              error ? error->message : "<null error>");
     return NS_ERROR_FAILURE;
   }
 
@@ -931,7 +933,7 @@ static nsresult ShowURIImpl(nsIURI* aURI, const char* aXDGToken = nullptr) {
 #endif
           getter_Transfers(error))) {
     g_warning("Could not launch default application for URI: %s",
-              error->message);
+              error ? error->message : "<null error>");
     return NS_ERROR_FAILURE;
   }
   return NS_OK;
@@ -1095,7 +1097,7 @@ static nsresult RevealFileViaDBusWithProxy(GDBusProxy* aProxy, nsIFile* aFile,
             },
             [file = RefPtr{aFile}, aMethod](GUniquePtr<GError>&& aError) {
               g_printerr("Failed to query file manager via %s: %s\n", aMethod,
-                         aError->message);
+                         aError ? aError->message : "<null error>");
               RevealDirectory(file, /* aForce = */ true);
             });
   } else {
@@ -1130,7 +1132,7 @@ static nsresult RevealFileViaDBusWithProxy(GDBusProxy* aProxy, nsIFile* aFile,
             },
             [file = RefPtr{aFile}, aMethod](GUniquePtr<GError>&& aError) {
               g_printerr("Failed to query file manager via %s: %s\n", aMethod,
-                         aError->message);
+                         aError ? aError->message : "<null error>");
               RevealDirectory(file, /* aForce = */ true);
             });
   }
@@ -1152,7 +1154,7 @@ static void RevealFileViaDBus(nsIFile* aFile, const char* aName,
           },
           [file = RefPtr{aFile}, aName](GUniquePtr<GError>&& aError) {
             g_printerr("Failed to create DBUS proxy for %s: %s\n", aName,
-                       aError->message);
+                       aError ? aError->message : "<null error>");
             RevealDirectory(file, /* aForce = */ true);
           });
 }
@@ -1290,7 +1292,7 @@ nsGIOService::CreateAppFromCommand(nsACString const& cmd,
       G_APP_INFO_CREATE_SUPPORTS_URIS, getter_Transfers(error)));
   if (!app_info) {
     g_warning("Cannot create application info from command: %s",
-              error->message);
+              error ? error->message : "<null error>");
     return NS_ERROR_FAILURE;
   }
 
