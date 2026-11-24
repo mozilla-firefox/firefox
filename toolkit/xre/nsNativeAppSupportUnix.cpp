@@ -10,6 +10,7 @@
 #include "nsIObserverService.h"
 #include "nsIAppStartup.h"
 #include "nsServiceManagerUtils.h"
+#include "prenv.h"
 #include "prlink.h"
 #include "nsXREDirProvider.h"
 #include "nsReadableUtils.h"
@@ -39,7 +40,20 @@
 
 #ifdef MOZ_ENABLE_DBUS
 #  include <dbus/dbus.h>
+#  include <gio/gio.h>
+
+#  include "mozilla/ClearOnShutdown.h"
+#  include "mozilla/WidgetUtilsGtk.h"
+#  include "mozilla/widget/AsyncDBus.h"
+#  include "nsPrintfCString.h"
+#  include "nsThreadUtils.h"
 #endif
+
+#ifdef MOZ_BACKGROUNDTASKS
+#  include "mozilla/BackgroundTasks.h"
+#endif
+
+using namespace mozilla;
 
 #if MOZ_X11
 #  undef IceSetIOErrorHandler
@@ -103,8 +117,6 @@ enum ClientState {
   STATE_SHUTDOWN_CANCELLED
 };
 
-using namespace mozilla;
-
 static const char* gClientStateTable[] = {"DISCONNECTED", "REGISTERING", "IDLE",
                                           "INTERACTING", "SHUTDOWN_CANCELLED"};
 
@@ -113,22 +125,31 @@ static LazyLogModule sMozSMLog("MozSM");
 
 class nsNativeAppSupportUnix : public nsNativeAppSupportBase {
  public:
+  NS_IMETHOD Start(bool* aRetVal) override;
+
+ protected:
+  // Session management is off with --sm-disable and in background task mode.
+  bool mSMDisabled = false;
 #if MOZ_X11
-  nsNativeAppSupportUnix()
+  nsAutoCString mPrevClientId;
+#endif
+};
+
+#if MOZ_X11
+class nsNativeAppSupportXSMP final : public nsNativeAppSupportUnix {
+ public:
+  nsNativeAppSupportXSMP()
       : mSessionConnection(nullptr), mClientState(STATE_DISCONNECTED) {};
-  ~nsNativeAppSupportUnix() {
+  ~nsNativeAppSupportXSMP() {
     // this goes out of scope after "web-workers-shutdown" async shutdown phase
     // so it's safe to disconnect here (i.e. the application won't lose data)
     DisconnectFromSM();
   };
 
   void DisconnectFromSM();
-#endif
   NS_IMETHOD Start(bool* aRetVal) override;
-  NS_IMETHOD Enable() override;
 
  private:
-#if MOZ_X11
   static void SaveYourselfCB(SmcConn smc_conn, SmPointer client_data,
                              int save_style, Bool shutdown, int interact_style,
                              Bool fast);
@@ -145,8 +166,41 @@ class nsNativeAppSupportUnix : public nsNativeAppSupportBase {
 
   SmcConn mSessionConnection;
   ClientState mClientState;
-#endif
 };
+#endif
+
+#ifdef MOZ_ENABLE_DBUS
+class nsNativeAppSupportDBus final : public nsNativeAppSupportUnix {
+ public:
+  NS_IMETHOD Enable() override;
+
+ private:
+  void StartSessionMonitor();
+  void StopSessionMonitor();
+  void UpdateSessionMonitor();
+  static void SessionMonitorOwnerChanged(GObject* aObject, GParamSpec* aPSpec,
+                                         gpointer aUserData);
+  static void SessionMonitorSignal(GDBusProxy* aProxy, gchar* aSenderName,
+                                   gchar* aSignalName, GVariant* aParameters,
+                                   gpointer aUserData);
+
+  RefPtr<GDBusProxy> mSessionMonitorProxy;
+  RefPtr<GCancellable> mSessionMonitorCancellable;
+  nsCString mSessionMonitorOwner;
+  nsCString mSessionMonitorHandle;
+};
+#endif
+
+#if defined(MOZ_X11) || defined(MOZ_ENABLE_DBUS)
+static void QuitAtSessionEnd() {
+  nsCOMPtr<nsIAppStartup> appService =
+      do_GetService("@mozilla.org/toolkit/app-startup;1");
+
+  if (appService) {
+    appService->Quit(nsIAppStartup::eForceQuit, 0);
+  }
+}
+#endif
 
 #if MOZ_X11
 static gboolean process_ice_messages(IceConn connection) {
@@ -159,7 +213,7 @@ static gboolean process_ice_messages(IceConn connection) {
       return TRUE;
 
     case IceProcessMessagesIOError: {
-      nsNativeAppSupportUnix* native = static_cast<nsNativeAppSupportUnix*>(
+      nsNativeAppSupportXSMP* native = static_cast<nsNativeAppSupportXSMP*>(
           IceGetConnectionContext(connection));
       native->DisconnectFromSM();
     }
@@ -215,10 +269,10 @@ static void ice_init(void) {
   }
 }
 
-void nsNativeAppSupportUnix::InteractCB(SmcConn smc_conn,
+void nsNativeAppSupportXSMP::InteractCB(SmcConn smc_conn,
                                         SmPointer client_data) {
-  nsNativeAppSupportUnix* self =
-      static_cast<nsNativeAppSupportUnix*>(client_data);
+  nsNativeAppSupportXSMP* self =
+      static_cast<nsNativeAppSupportXSMP*>(client_data);
 
   self->SetClientState(STATE_INTERACTING);
 
@@ -229,11 +283,11 @@ void nsNativeAppSupportUnix::InteractCB(SmcConn smc_conn,
   // with a pending ShutdownCancelled, and we would certainly like to handle Die
   // whilst a dialog is displayed
   NS_DispatchToCurrentThread(
-      NewRunnableMethod("nsNativeAppSupportUnix::DoInteract", self,
-                        &nsNativeAppSupportUnix::DoInteract));
+      NewRunnableMethod("nsNativeAppSupportXSMP::DoInteract", self,
+                        &nsNativeAppSupportXSMP::DoInteract));
 }
 
-void nsNativeAppSupportUnix::DoInteract() {
+void nsNativeAppSupportXSMP::DoInteract() {
   nsCOMPtr<nsIObserverService> obsServ =
       mozilla::services::GetObserverService();
   if (!obsServ) {
@@ -257,12 +311,7 @@ void nsNativeAppSupportUnix::DoInteract() {
   if (!abortQuit && mClientState == STATE_DISCONNECTED) {
     // The session manager disappeared, whilst we were interacting, so
     // quit now
-    nsCOMPtr<nsIAppStartup> appService =
-        do_GetService("@mozilla.org/toolkit/app-startup;1");
-
-    if (appService) {
-      appService->Quit(nsIAppStartup::eForceQuit, 0);
-    }
+    QuitAtSessionEnd();
   } else {
     if (mClientState != STATE_SHUTDOWN_CANCELLED) {
       // Only do this if the shutdown wasn't cancelled
@@ -274,12 +323,12 @@ void nsNativeAppSupportUnix::DoInteract() {
   }
 }
 
-void nsNativeAppSupportUnix::SaveYourselfCB(SmcConn smc_conn,
+void nsNativeAppSupportXSMP::SaveYourselfCB(SmcConn smc_conn,
                                             SmPointer client_data,
                                             int save_style, Bool shutdown,
                                             int interact_style, Bool fast) {
-  nsNativeAppSupportUnix* self =
-      static_cast<nsNativeAppSupportUnix*>(client_data);
+  nsNativeAppSupportXSMP* self =
+      static_cast<nsNativeAppSupportXSMP*>(client_data);
 
   // Expect a SaveYourselfCB if we're registering a new client.
   // All properties are already set in Start() so just reply with
@@ -337,28 +386,23 @@ void nsNativeAppSupportUnix::SaveYourselfCB(SmcConn smc_conn,
   if (!status && shutdown && interact_style != SmInteractStyleNone) {
     if (self->mClientState != STATE_INTERACTING) {
       SmcInteractRequest(smc_conn, SmDialogNormal,
-                         nsNativeAppSupportUnix::InteractCB, client_data);
+                         nsNativeAppSupportXSMP::InteractCB, client_data);
     }
   } else {
     SmcSaveYourselfDone(smc_conn, True);
   }
 }
 
-void nsNativeAppSupportUnix::DieCB(SmcConn smc_conn, SmPointer client_data) {
-  nsCOMPtr<nsIAppStartup> appService =
-      do_GetService("@mozilla.org/toolkit/app-startup;1");
-
-  if (appService) {
-    appService->Quit(nsIAppStartup::eForceQuit, 0);
-  }
+void nsNativeAppSupportXSMP::DieCB(SmcConn smc_conn, SmPointer client_data) {
+  QuitAtSessionEnd();
   // Quit causes the shutdown to begin but the shutdown process is asynchronous
   // so we can't DisconnectFromSM() yet
 }
 
-void nsNativeAppSupportUnix::ShutdownCancelledCB(SmcConn smc_conn,
+void nsNativeAppSupportXSMP::ShutdownCancelledCB(SmcConn smc_conn,
                                                  SmPointer client_data) {
-  nsNativeAppSupportUnix* self =
-      static_cast<nsNativeAppSupportUnix*>(client_data);
+  nsNativeAppSupportXSMP* self =
+      static_cast<nsNativeAppSupportXSMP*>(client_data);
 
   // Interacting is the only time when we wouldn't already have called
   // SmcSaveYourselfDone. Do that now, then set the state to make sure we
@@ -369,7 +413,7 @@ void nsNativeAppSupportUnix::ShutdownCancelledCB(SmcConn smc_conn,
   }
 }
 
-void nsNativeAppSupportUnix::DisconnectFromSM() {
+void nsNativeAppSupportXSMP::DisconnectFromSM() {
   // the SM is free to exit any time after we disconnect, so callers must be
   // sure to have reached a sufficiently advanced phase of shutdown that there
   // is no risk of data loss:
@@ -418,13 +462,14 @@ nsNativeAppSupportUnix::Start(bool* aRetVal) {
 
   *aRetVal = true;
 
-#ifdef MOZ_X11
-  gboolean sm_disable = FALSE;
-  if (!getenv("SESSION_MANAGER")) {
-    sm_disable = TRUE;
+#ifdef MOZ_BACKGROUNDTASKS
+  // NS_CreateNativeAppSupport() runs before BackgroundTasks::Init(), so the
+  // mode is known only here.
+  if (BackgroundTasks::IsBackgroundTaskMode()) {
+    mSMDisabled = true;
+    return NS_OK;
   }
-
-  nsAutoCString prev_client_id;
+#endif
 
   char** curarg = gArgv + 1;
   while (*curarg) {
@@ -433,104 +478,122 @@ nsNativeAppSupportUnix::Start(bool* aRetVal) {
       arg += 2;
       if (!strcmp(arg, "sm-disable")) {
         RemoveArg(curarg);
-        sm_disable = TRUE;
+        mSMDisabled = true;
         continue;
-      } else if (!strcmp(arg, "sm-client-id")) {
+      }
+#ifdef MOZ_X11
+      if (!strcmp(arg, "sm-client-id")) {
         RemoveArg(curarg);
         if (*curarg[0] != '-') {
-          prev_client_id = *curarg;
+          mPrevClientId = *curarg;
           RemoveArg(curarg);
         }
         continue;
       }
+#endif
     }
 
     ++curarg;
   }
 
-  if (prev_client_id.IsEmpty()) {
-    prev_client_id = getenv("DESKTOP_AUTOSTART_ID");
+#ifdef MOZ_X11
+  if (mPrevClientId.IsEmpty()) {
+    mPrevClientId = getenv("DESKTOP_AUTOSTART_ID");
   }
 
   // We don't want child processes to use the same ID
   unsetenv("DESKTOP_AUTOSTART_ID");
+#endif /* MOZ_X11 */
+
+  return NS_OK;
+}
+
+#if MOZ_X11
+static bool LoadSMLibraries() {
+  PRLibrary* iceLib = PR_LoadLibrary("libICE.so.6");
+  if (!iceLib) {
+    return false;
+  }
+
+  PRLibrary* smLib = PR_LoadLibrary("libSM.so.6");
+  if (!smLib) {
+    PR_UnloadLibrary(iceLib);
+    return false;
+  }
+
+  IceSetIOErrorHandler = (IceSetIOErrorHandlerFn)PR_FindFunctionSymbol(
+      iceLib, "IceSetIOErrorHandler");
+  IceAddConnectionWatch = (IceAddConnectionWatchFn)PR_FindFunctionSymbol(
+      iceLib, "IceAddConnectionWatch");
+  IceConnectionNumber = (IceConnectionNumberFn)PR_FindFunctionSymbol(
+      iceLib, "IceConnectionNumber");
+  IceProcessMessages =
+      (IceProcessMessagesFn)PR_FindFunctionSymbol(iceLib, "IceProcessMessages");
+  IceGetConnectionContext = (IceGetConnectionContextFn)PR_FindFunctionSymbol(
+      iceLib, "IceGetConnectionContext");
+  if (!IceSetIOErrorHandler || !IceAddConnectionWatch || !IceConnectionNumber ||
+      !IceProcessMessages || !IceGetConnectionContext) {
+    PR_UnloadLibrary(iceLib);
+    PR_UnloadLibrary(smLib);
+    return false;
+  }
+
+  SmcInteractDone =
+      (SmcInteractDoneFn)PR_FindFunctionSymbol(smLib, "SmcInteractDone");
+  SmcSaveYourselfDone = (SmcSaveYourselfDoneFn)PR_FindFunctionSymbol(
+      smLib, "SmcSaveYourselfDone");
+  SmcInteractRequest =
+      (SmcInteractRequestFn)PR_FindFunctionSymbol(smLib, "SmcInteractRequest");
+  SmcCloseConnection =
+      (SmcCloseConnectionFn)PR_FindFunctionSymbol(smLib, "SmcCloseConnection");
+  SmcOpenConnection =
+      (SmcOpenConnectionFn)PR_FindFunctionSymbol(smLib, "SmcOpenConnection");
+  SmcSetProperties =
+      (SmcSetPropertiesFn)PR_FindFunctionSymbol(smLib, "SmcSetProperties");
+  if (!SmcInteractDone || !SmcSaveYourselfDone || !SmcInteractRequest ||
+      !SmcCloseConnection || !SmcOpenConnection || !SmcSetProperties) {
+    PR_UnloadLibrary(iceLib);
+    PR_UnloadLibrary(smLib);
+    return false;
+  }
+  return true;
+}
+
+NS_IMETHODIMP
+nsNativeAppSupportXSMP::Start(bool* aRetVal) {
+  nsresult rv = nsNativeAppSupportUnix::Start(aRetVal);
+  NS_ENSURE_SUCCESS(rv, rv);
+
+  if (mSMDisabled || !LoadSMLibraries()) {
+    return NS_OK;
+  }
+
+  ice_init();
+
+  // all callbacks are mandatory in libSM 1.0, so listen even if we don't
+  // care.
+  unsigned long mask = SmcSaveYourselfProcMask | SmcDieProcMask |
+                       SmcSaveCompleteProcMask | SmcShutdownCancelledProcMask;
+
+  SmcCallbacks callbacks;
+  callbacks.save_yourself.callback = nsNativeAppSupportXSMP::SaveYourselfCB;
+  callbacks.save_yourself.client_data = static_cast<SmPointer>(this);
+
+  callbacks.die.callback = nsNativeAppSupportXSMP::DieCB;
+  callbacks.die.client_data = static_cast<SmPointer>(this);
+
+  callbacks.save_complete.callback = nsNativeAppSupportXSMP::SaveCompleteCB;
+  callbacks.save_complete.client_data = nullptr;
+
+  callbacks.shutdown_cancelled.callback =
+      nsNativeAppSupportXSMP::ShutdownCancelledCB;
+  callbacks.shutdown_cancelled.client_data = static_cast<SmPointer>(this);
 
   char* client_id = nullptr;
-  if (!sm_disable) {
-    PRLibrary* iceLib = PR_LoadLibrary("libICE.so.6");
-    if (!iceLib) {
-      return NS_OK;
-    }
-
-    PRLibrary* smLib = PR_LoadLibrary("libSM.so.6");
-    if (!smLib) {
-      PR_UnloadLibrary(iceLib);
-      return NS_OK;
-    }
-
-    IceSetIOErrorHandler = (IceSetIOErrorHandlerFn)PR_FindFunctionSymbol(
-        iceLib, "IceSetIOErrorHandler");
-    IceAddConnectionWatch = (IceAddConnectionWatchFn)PR_FindFunctionSymbol(
-        iceLib, "IceAddConnectionWatch");
-    IceConnectionNumber = (IceConnectionNumberFn)PR_FindFunctionSymbol(
-        iceLib, "IceConnectionNumber");
-    IceProcessMessages = (IceProcessMessagesFn)PR_FindFunctionSymbol(
-        iceLib, "IceProcessMessages");
-    IceGetConnectionContext = (IceGetConnectionContextFn)PR_FindFunctionSymbol(
-        iceLib, "IceGetConnectionContext");
-    if (!IceSetIOErrorHandler || !IceAddConnectionWatch ||
-        !IceConnectionNumber || !IceProcessMessages ||
-        !IceGetConnectionContext) {
-      PR_UnloadLibrary(iceLib);
-      PR_UnloadLibrary(smLib);
-      return NS_OK;
-    }
-
-    SmcInteractDone =
-        (SmcInteractDoneFn)PR_FindFunctionSymbol(smLib, "SmcInteractDone");
-    SmcSaveYourselfDone = (SmcSaveYourselfDoneFn)PR_FindFunctionSymbol(
-        smLib, "SmcSaveYourselfDone");
-    SmcInteractRequest = (SmcInteractRequestFn)PR_FindFunctionSymbol(
-        smLib, "SmcInteractRequest");
-    SmcCloseConnection = (SmcCloseConnectionFn)PR_FindFunctionSymbol(
-        smLib, "SmcCloseConnection");
-    SmcOpenConnection =
-        (SmcOpenConnectionFn)PR_FindFunctionSymbol(smLib, "SmcOpenConnection");
-    SmcSetProperties =
-        (SmcSetPropertiesFn)PR_FindFunctionSymbol(smLib, "SmcSetProperties");
-    if (!SmcInteractDone || !SmcSaveYourselfDone || !SmcInteractRequest ||
-        !SmcCloseConnection || !SmcOpenConnection || !SmcSetProperties) {
-      PR_UnloadLibrary(iceLib);
-      PR_UnloadLibrary(smLib);
-      return NS_OK;
-    }
-
-    ice_init();
-
-    // all callbacks are mandatory in libSM 1.0, so listen even if we don't
-    // care.
-    unsigned long mask = SmcSaveYourselfProcMask | SmcDieProcMask |
-                         SmcSaveCompleteProcMask | SmcShutdownCancelledProcMask;
-
-    SmcCallbacks callbacks;
-    callbacks.save_yourself.callback = nsNativeAppSupportUnix::SaveYourselfCB;
-    callbacks.save_yourself.client_data = static_cast<SmPointer>(this);
-
-    callbacks.die.callback = nsNativeAppSupportUnix::DieCB;
-    callbacks.die.client_data = static_cast<SmPointer>(this);
-
-    callbacks.save_complete.callback = nsNativeAppSupportUnix::SaveCompleteCB;
-    callbacks.save_complete.client_data = nullptr;
-
-    callbacks.shutdown_cancelled.callback =
-        nsNativeAppSupportUnix::ShutdownCancelledCB;
-    callbacks.shutdown_cancelled.client_data = static_cast<SmPointer>(this);
-
-    char errbuf[256];
-    mSessionConnection = SmcOpenConnection(
-        nullptr, this, SmProtoMajor, SmProtoMinor, mask, &callbacks,
-        prev_client_id.get(), &client_id, sizeof(errbuf), errbuf);
-  }
+  char errbuf[256];
+  mSessionConnection = SmcOpenConnection(
+      nullptr, this, SmProtoMajor, SmProtoMinor, mask, &callbacks,
+      mPrevClientId.get(), &client_id, sizeof(errbuf), errbuf);
 
   if (!mSessionConnection) {
     return NS_OK;
@@ -538,8 +601,8 @@ nsNativeAppSupportUnix::Start(bool* aRetVal) {
 
   LogModule::Init(
       gArgc, gArgv);  // need to make sure initialized before SetClientState
-  if (prev_client_id.IsEmpty() ||
-      (client_id && !prev_client_id.Equals(client_id))) {
+  if (mPrevClientId.IsEmpty() ||
+      (client_id && !mPrevClientId.Equals(client_id))) {
     SetClientState(STATE_REGISTERING);
   } else {
     SetClientState(STATE_IDLE);
@@ -632,20 +695,190 @@ nsNativeAppSupportUnix::Start(bool* aRetVal) {
   SmcSetProperties(mSessionConnection, n, props);
 
   g_free(client_id);
-#endif /* MOZ_X11 */
 
   return NS_OK;
 }
+#endif /* MOZ_X11 */
+
+#ifdef MOZ_ENABLE_DBUS
+// https://flatpak.github.io/xdg-desktop-portal/docs/doc-org.freedesktop.portal.Inhibit.html
+enum class PortalSessionState : uint32_t {
+  Running = 1,
+  QueryEnd = 2,
+  Ending = 3,
+};
+
+static void WarnSessionMonitorError(const char* aAction, GError* aError) {
+  if (!widget::IsCancelledGError(aError)) {
+    NS_WARNING(
+        nsPrintfCString("Failed to %s: %s", aAction, aError->message).get());
+  }
+}
+
+void nsNativeAppSupportDBus::StartSessionMonitor() {
+  mSessionMonitorCancellable = dont_AddRef(g_cancellable_new());
+  RefPtr<nsNativeAppSupportDBus> self = this;
+  RunOnShutdown([self] { self->StopSessionMonitor(); },
+                ShutdownPhase::XPCOMWillShutdown);
+  widget::CreateDBusProxyForBus(
+      G_BUS_TYPE_SESSION,
+      GDBusProxyFlags(G_DBUS_PROXY_FLAGS_DO_NOT_LOAD_PROPERTIES |
+                      G_DBUS_PROXY_FLAGS_DO_NOT_AUTO_START),
+      /* aInterfaceInfo = */ nullptr, "org.freedesktop.portal.Desktop",
+      "/org/freedesktop/portal/desktop", "org.freedesktop.portal.Inhibit",
+      mSessionMonitorCancellable)
+      ->Then(
+          GetCurrentSerialEventTarget(), __func__,
+          [self](RefPtr<GDBusProxy>&& aProxy) {
+            if (!self->mSessionMonitorCancellable) {
+              return;
+            }
+            self->mSessionMonitorProxy = std::move(aProxy);
+            g_signal_connect(self->mSessionMonitorProxy, "notify::g-name-owner",
+                             G_CALLBACK(SessionMonitorOwnerChanged),
+                             self.get());
+            g_signal_connect(self->mSessionMonitorProxy, "g-signal",
+                             G_CALLBACK(SessionMonitorSignal), self.get());
+            self->UpdateSessionMonitor();
+          },
+          [](GUniquePtr<GError>&& aError) {
+            WarnSessionMonitorError("connect to the Inhibit portal",
+                                    aError.get());
+          });
+}
+
+void nsNativeAppSupportDBus::StopSessionMonitor() {
+  if (mSessionMonitorProxy) {
+    g_signal_handlers_disconnect_matched(mSessionMonitorProxy,
+                                         G_SIGNAL_MATCH_DATA, 0, 0, nullptr,
+                                         nullptr, this);
+    mSessionMonitorProxy = nullptr;
+  }
+  if (mSessionMonitorCancellable) {
+    g_cancellable_cancel(mSessionMonitorCancellable);
+    mSessionMonitorCancellable = nullptr;
+  }
+}
+
+// A monitor ends with the portal process, so one is created for each owner of
+// the portal's name. Without an owner, a call would start the portal again.
+void nsNativeAppSupportDBus::UpdateSessionMonitor() {
+  GUniquePtr<gchar> owner(g_dbus_proxy_get_name_owner(mSessionMonitorProxy));
+  if (!owner) {
+    mSessionMonitorOwner.Truncate();
+    return;
+  }
+  if (mSessionMonitorOwner.Equals(owner.get())) {
+    return;
+  }
+  mSessionMonitorOwner = owner.get();
+
+  nsAutoCString token;
+  widget::MakePortalRequestToken("session_monitor"_ns, token);
+  widget::GetPortalSessionPath(mSessionMonitorProxy, token,
+                               mSessionMonitorHandle);
+
+  GVariantBuilder options;
+  g_variant_builder_init(&options, G_VARIANT_TYPE_VARDICT);
+  g_variant_builder_add(&options, "{sv}", "session_handle_token",
+                        g_variant_new_string(token.get()));
+  widget::DBusProxyCall(mSessionMonitorProxy, "CreateMonitor",
+                        g_variant_new("(sa{sv})", "", &options),
+                        G_DBUS_CALL_FLAGS_NO_AUTO_START, -1,
+                        mSessionMonitorCancellable)
+      ->Then(
+          GetCurrentSerialEventTarget(), __func__, [](RefPtr<GVariant>&&) {},
+          [](GUniquePtr<GError>&& aError) {
+            WarnSessionMonitorError("monitor the session", aError.get());
+          });
+}
+
+void nsNativeAppSupportDBus::SessionMonitorOwnerChanged(GObject* aObject,
+                                                        GParamSpec* aPSpec,
+                                                        gpointer aUserData) {
+  static_cast<nsNativeAppSupportDBus*>(aUserData)->UpdateSessionMonitor();
+}
+
+void nsNativeAppSupportDBus::SessionMonitorSignal(GDBusProxy* aProxy,
+                                                  gchar* aSenderName,
+                                                  gchar* aSignalName,
+                                                  GVariant* aParameters,
+                                                  gpointer aUserData) {
+  if (g_strcmp0(aSignalName, "StateChanged") ||
+      !g_variant_is_of_type(aParameters, G_VARIANT_TYPE("(oa{sv})"))) {
+    return;
+  }
+  auto* self = static_cast<nsNativeAppSupportDBus*>(aUserData);
+  const char* handle = nullptr;
+  GVariant* rawState = nullptr;
+  g_variant_get(aParameters, "(&o@a{sv})", &handle, &rawState);
+  RefPtr<GVariant> state = dont_AddRef(rawState);
+  if (!self->mSessionMonitorHandle.Equals(handle)) {
+    return;
+  }
+  uint32_t sessionState = 0;
+  if (!g_variant_lookup(state, "session-state", "u", &sessionState)) {
+    return;
+  }
+  switch (PortalSessionState(sessionState)) {
+    case PortalSessionState::QueryEnd:
+      widget::DBusProxyCall(
+          aProxy, "QueryEndResponse", g_variant_new("(o)", handle),
+          G_DBUS_CALL_FLAGS_NO_AUTO_START, -1, self->mSessionMonitorCancellable)
+          ->Then(
+              GetCurrentSerialEventTarget(), __func__,
+              [](RefPtr<GVariant>&&) {},
+              [](GUniquePtr<GError>&& aError) {
+                WarnSessionMonitorError("answer the end of the session",
+                                        aError.get());
+              });
+      break;
+    case PortalSessionState::Ending:
+      QuitAtSessionEnd();
+      break;
+    default:
+      break;
+  }
+}
 
 NS_IMETHODIMP
-nsNativeAppSupportUnix::Enable() { return NS_OK; }
+nsNativeAppSupportDBus::Enable() {
+  if (!mSMDisabled) {
+    StartSessionMonitor();
+  }
+  return NS_OK;
+}
+#endif
+
+#if MOZ_X11
+// XSMP does not depend on the display, so a session manager which offers it
+// through SESSION_MANAGER is followed through it also on Wayland, unless
+// MOZ_DBUS_SESSION_MANAGEMENT=1 selects the Inhibit portal.
+static bool UseXSMP() {
+  const char* dbus = PR_GetEnv("MOZ_DBUS_SESSION_MANAGEMENT");
+  if (dbus && *dbus == '1') {
+    return false;
+  }
+  const char* sessionManager = PR_GetEnv("SESSION_MANAGER");
+  return sessionManager && *sessionManager;
+}
+#endif
 
 nsresult NS_CreateNativeAppSupport(nsINativeAppSupport** aResult) {
-  nsNativeAppSupportBase* native = new nsNativeAppSupportUnix();
-  if (!native) return NS_ERROR_OUT_OF_MEMORY;
-
-  *aResult = native;
-  NS_ADDREF(*aResult);
-
+  RefPtr<nsNativeAppSupportBase> native;
+#if MOZ_X11
+  if (UseXSMP()) {
+    native = new nsNativeAppSupportXSMP();
+  }
+#endif
+#ifdef MOZ_ENABLE_DBUS
+  if (!native) {
+    native = new nsNativeAppSupportDBus();
+  }
+#endif
+  if (!native) {
+    native = new nsNativeAppSupportUnix();
+  }
+  native.forget(aResult);
   return NS_OK;
 }
