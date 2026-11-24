@@ -1165,6 +1165,16 @@ webgl::ReadPixelsResult WebGLContext::ReadPixelsImpl(
 
   ////
 
+  // validate skipRows:
+  // - it is originally GLint but stored as uint32_t
+  // - here it has to be checked that it's not too large
+  const CheckedInt<GLint> skipRows = packing.skipRows;
+  if (!skipRows.isValid()) {
+    ErrorInvalidOperation("PACK_SKIP_ROWS must be in the range of [0..%d]",
+                          std::numeric_limits<int32_t>::max());
+    return {};
+  }
+
   int32_t readX, readY;
   int32_t writeX, writeY;
   int32_t rwWidth, rwHeight;
@@ -1181,7 +1191,7 @@ webgl::ReadPixelsResult WebGLContext::ReadPixelsImpl(
   if (IsWebGL2()) {
     gl->fPixelStorei(LOCAL_GL_PACK_ROW_LENGTH, packing.rowLength);
     gl->fPixelStorei(LOCAL_GL_PACK_SKIP_PIXELS, packing.skipPixels);
-    gl->fPixelStorei(LOCAL_GL_PACK_SKIP_ROWS, packing.skipRows);
+    gl->fPixelStorei(LOCAL_GL_PACK_SKIP_ROWS, skipRows.value());
   }
 
   if (!rwWidth || !rwHeight) {
@@ -1216,11 +1226,25 @@ webgl::ReadPixelsResult WebGLContext::ReadPixelsImpl(
   // Read only the in-bounds pixels.
 
   if (IsWebGL2()) {
+    const CheckedInt<GLint> packSkipRows = skipRows + writeY;
+
+    // ensure packSkipRows is not too large
+    if (!packSkipRows.isValid()) {
+      ErrorInvalidOperation("PACK_SKIP_ROWS + clipped rows is too large.");
+      return {};
+    }
+
+    // ensure packSkipRows is a positive number
+    if (packSkipRows.value() < 0) {
+      ErrorInvalidOperation("PACK_SKIP_ROWS + clipped rows is negative.");
+      return {};
+    }
+
     if (!packing.rowLength) {
       gl->fPixelStorei(LOCAL_GL_PACK_ROW_LENGTH, packing.skipPixels + size.x);
     }
     gl->fPixelStorei(LOCAL_GL_PACK_SKIP_PIXELS, packing.skipPixels + writeX);
-    gl->fPixelStorei(LOCAL_GL_PACK_SKIP_ROWS, packing.skipRows + writeY);
+    gl->fPixelStorei(LOCAL_GL_PACK_SKIP_ROWS, packSkipRows.value());
 
     auto desc2 = desc;
     desc2.srcOffset = {readX, readY};
