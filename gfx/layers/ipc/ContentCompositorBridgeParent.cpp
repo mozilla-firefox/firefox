@@ -52,7 +52,7 @@ already_AddRefed<PAPZCTreeManagerParent>
 ContentCompositorBridgeParent::AllocPAPZCTreeManagerParent(
     const LayersId& aLayersId) {
   // Check to see if this child process has access to this layer tree.
-  if (!LayerTreeOwnerTracker::Get()->IsMapped(aLayersId, OtherPid())) {
+  if (!LayerTreeOwnerTracker::Get()->IsMapped(aLayersId, OtherChildID())) {
     NS_ERROR(
         "Unexpected layers id in AllocPAPZCTreeManagerParent; dropping "
         "message...");
@@ -99,7 +99,7 @@ ContentCompositorBridgeParent::AllocPAPZCTreeManagerParent(
 already_AddRefed<PAPZParent> ContentCompositorBridgeParent::AllocPAPZParent(
     const LayersId& aLayersId) {
   // Check to see if this child process has access to this layer tree.
-  if (!LayerTreeOwnerTracker::Get()->IsMapped(aLayersId, OtherPid())) {
+  if (!LayerTreeOwnerTracker::Get()->IsMapped(aLayersId, OtherChildID())) {
     NS_ERROR("Unexpected layers id in AllocPAPZParent; dropping message...");
     return nullptr;
   }
@@ -133,7 +133,7 @@ ContentCompositorBridgeParent::AllocPWebRenderBridgeParent(
     const WindowKind& aWindowKind) {
   LayersId layersId = wr::AsLayersId(aPipelineId);
   // Check to see if this child process has access to this layer tree.
-  if (!LayerTreeOwnerTracker::Get()->IsMapped(layersId, OtherPid())) {
+  if (!LayerTreeOwnerTracker::Get()->IsMapped(layersId, OtherChildID())) {
     NS_ERROR(
         "Unexpected layers id in AllocPWebRenderBridgeParent; dropping "
         "message...");
@@ -219,7 +219,7 @@ ContentCompositorBridgeParent::AllocPWebRenderBridgeParent(
 mozilla::ipc::IPCResult
 ContentCompositorBridgeParent::RecvMapAndNotifyChildCreated(
     const LayersId& child, const LayersId& embedderId,
-    const base::ProcessId& pid, CompositorOptions* aOptions) {
+    const GeckoChildID& owner, CompositorOptions* aOptions) {
   // This can only be called from the browser process, as the mapping
   // ensures proper window ownership of layer trees.
   return IPC_FAIL_NO_REASON(this);
@@ -255,7 +255,8 @@ mozilla::ipc::IPCResult ContentCompositorBridgeParent::RecvCheckContentOnlyTDR(
 mozilla::ipc::IPCResult
 ContentCompositorBridgeParent::RecvCheckAndClearWRDidRasterize(
     const LayersId& aId, bool* aDidRasterize) {
-  if (NS_WARN_IF(!LayerTreeOwnerTracker::Get()->IsMapped(aId, OtherPid()))) {
+  if (NS_WARN_IF(
+          !LayerTreeOwnerTracker::Get()->IsMapped(aId, OtherChildID()))) {
     return IPC_OK();
   }
 

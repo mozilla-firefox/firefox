@@ -30,20 +30,18 @@ void LayerTreeOwnerTracker::Shutdown() { sSingleton = nullptr; }
 
 LayerTreeOwnerTracker* LayerTreeOwnerTracker::Get() { return sSingleton; }
 
-void LayerTreeOwnerTracker::Map(LayersId aLayersId,
-                                base::ProcessId aProcessId) {
+void LayerTreeOwnerTracker::Map(LayersId aLayersId, GeckoChildID aChildID) {
   MutexAutoLock lock(mLayerIdsLock);
 
-  LAYERTREE_LOG("Map layer tree {:x} to pid {}", aLayersId, aProcessId);
+  LAYERTREE_LOG("Map layer tree {:x} to child {}", aLayersId, aChildID);
 
   // Add the mapping to the list
-  const auto i = mLayerIds.insert({aLayersId, aProcessId});
-  MOZ_RELEASE_ASSERT(i.second || i.first->second == aProcessId,
+  const auto i = mLayerIds.insert({aLayersId, aChildID});
+  MOZ_RELEASE_ASSERT(i.second || i.first->second == aChildID,
                      "Mapping layers ID already owned by another process!");
 }
 
-void LayerTreeOwnerTracker::Unmap(LayersId aLayersId,
-                                  base::ProcessId aProcessId) {
+void LayerTreeOwnerTracker::Unmap(LayersId aLayersId, GeckoChildID aChildID) {
   MutexAutoLock lock(mLayerIdsLock);
 
   auto i = mLayerIds.find(aLayersId);
@@ -51,25 +49,25 @@ void LayerTreeOwnerTracker::Unmap(LayersId aLayersId,
     return;
   }
 
-  if (NS_WARN_IF(i->second != aProcessId)) {
+  if (NS_WARN_IF(i->second != aChildID)) {
     MOZ_ASSERT_UNREACHABLE("Unmapping layers ID for another process!");
     return;
   }
 
-  LAYERTREE_LOG("Unmap layer tree {:x} from pid {}", aLayersId, aProcessId);
+  LAYERTREE_LOG("Unmap layer tree {:x} from child {}", aLayersId, aChildID);
   mLayerIds.erase(i);
 }
 
 bool LayerTreeOwnerTracker::IsMapped(LayersId aLayersId,
-                                     base::ProcessId aProcessId) {
+                                     GeckoChildID aChildID) {
   MutexAutoLock lock(mLayerIdsLock);
 
   auto iter = mLayerIds.find(aLayersId);
-  return iter != mLayerIds.end() && iter->second == aProcessId;
+  return iter != mLayerIds.end() && iter->second == aChildID;
 }
 
 void LayerTreeOwnerTracker::Iterate(
-    const std::function<void(LayersId aLayersId, base::ProcessId aProcessId)>&
+    const std::function<void(LayersId aLayersId, GeckoChildID aChildID)>&
         aCallback) {
   MutexAutoLock lock(mLayerIdsLock);
 

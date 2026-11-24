@@ -47,7 +47,7 @@ class ContentCompositorBridgeParent final : public CompositorBridgeParentBase {
   }
   mozilla::ipc::IPCResult RecvMapAndNotifyChildCreated(
       const LayersId& child, const LayersId& embedderId,
-      const base::ProcessId& pid, CompositorOptions* aOptions) override;
+      const GeckoChildID& owner, CompositorOptions* aOptions) override;
   mozilla::ipc::IPCResult RecvNotifyChildRecreated(
       const LayersId& child, const LayersId& embedderId,
       CompositorOptions* aOptions) override {

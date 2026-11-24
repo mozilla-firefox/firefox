@@ -25,7 +25,7 @@ include protocol PSandboxTesting;
 include "mozilla/ipc/ByteBufUtils.h";
 include "mozilla/layers/LayersMessageUtils.h";
 
-using base::ProcessId from "base/process.h";
+using GeckoChildID from "mozilla/ProcessType.h";
 using mozilla::dom::ContentParentId from "mozilla/dom/ipc/IdType.h";
 using mozilla::Telemetry::HistogramAccumulation from "mozilla/TelemetryComms.h";
 using mozilla::Telemetry::KeyedHistogramAccumulation from "mozilla/TelemetryComms.h";
@@ -50,7 +50,7 @@ namespace gfx {
 
 struct LayerTreeIdMapping {
   LayersId layersId;
-  ProcessId ownerId;
+  GeckoChildID ownerId;
 };
 
 // This protocol allows the UI process to talk to the GPU process. There is one

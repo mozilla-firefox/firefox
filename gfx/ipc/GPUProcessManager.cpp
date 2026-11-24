@@ -1714,7 +1714,7 @@ nsresult GPUProcessManager::EnsureVideoBridge(
 }
 
 void GPUProcessManager::UnmapLayerTreeId(LayersId aLayersId,
-                                         base::ProcessId aOwningId) {
+                                         GeckoChildID aOwningId) {
   // If the GPU process is down, but not disabled, there is no need to relaunch
   // here because the layers ID is already invalid.
   if (mGPUChild) {
@@ -1728,7 +1728,7 @@ void GPUProcessManager::UnmapLayerTreeId(LayersId aLayersId,
 }
 
 bool GPUProcessManager::IsLayerTreeIdMapped(LayersId aLayersId,
-                                            base::ProcessId aRequestingId) {
+                                            GeckoChildID aRequestingId) {
   return LayerTreeOwnerTracker::Get()->IsMapped(aLayersId, aRequestingId);
 }
 
@@ -1759,21 +1759,21 @@ uint32_t GPUProcessManager::AllocateNamespace() {
 }
 
 bool GPUProcessManager::AllocateAndConnectLayerTreeId(
-    PCompositorBridgeChild* aCompositorBridge, base::ProcessId aOtherPid,
+    PCompositorBridgeChild* aCompositorBridge, GeckoChildID aOtherChildID,
     LayersId aEmbedderLayersId, LayersId* aOutLayersId,
     CompositorOptions* aOutCompositorOptions) {
   MOZ_ASSERT(aOutLayersId);
 
   LayersId layersId = AllocateLayerTreeId();
   *aOutLayersId = layersId;
-  LAYERTREE_LOG("Allocated layer tree {:x} for pid {}, embedder {:x}, {}",
-                layersId, aOtherPid, aEmbedderLayersId,
+  LAYERTREE_LOG("Allocated layer tree {:x} for child {}, embedder {:x}, {}",
+                layersId, aOtherChildID, aEmbedderLayersId,
                 aCompositorBridge ? "with compositor" : "without compositor");
 
   // We always map the layer ID in the parent process so that we can recover
   // from GPU process crashes. In that case, the tree will be shared with the
   // new GPU process at initialization.
-  LayerTreeOwnerTracker::Get()->Map(layersId, aOtherPid);
+  LayerTreeOwnerTracker::Get()->Map(layersId, aOtherChildID);
 
   if (NS_WARN_IF(NS_FAILED(EnsureGPUReady()))) {
     return false;
@@ -1786,7 +1786,7 @@ bool GPUProcessManager::AllocateAndConnectLayerTreeId(
   if (aCompositorBridge) {
     if (mGPUChild) {
       return aCompositorBridge->SendMapAndNotifyChildCreated(
-          layersId, aEmbedderLayersId, aOtherPid, aOutCompositorOptions);
+          layersId, aEmbedderLayersId, aOtherChildID, aOutCompositorOptions);
     }
     return aCompositorBridge->SendNotifyChildCreated(
         layersId, aEmbedderLayersId, aOutCompositorOptions);
@@ -1796,7 +1796,7 @@ bool GPUProcessManager::AllocateAndConnectLayerTreeId(
   // LayerTreeOwnerTracker::Map in the compositing process.
   if (mGPUChild) {
     mGPUChild->SendAddLayerTreeIdMapping(
-        LayerTreeIdMapping(layersId, aOtherPid));
+        LayerTreeIdMapping(layersId, aOtherChildID));
   }
   return false;
 }

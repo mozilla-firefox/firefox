@@ -137,11 +137,11 @@ class GPUProcessManager final : public GPUProcessHost::Listener {
   // Release compositor-thread resources referred to by |aID|.
   //
   // Must run on the content main thread.
-  void UnmapLayerTreeId(LayersId aLayersId, base::ProcessId aOwningId);
+  void UnmapLayerTreeId(LayersId aLayersId, GeckoChildID aOwningId);
 
   // Checks to see if aLayersId and aRequestingPID have been mapped by
   // MapLayerTreeId
-  bool IsLayerTreeIdMapped(LayersId aLayersId, base::ProcessId aRequestingId);
+  bool IsLayerTreeIdMapped(LayersId aLayersId, GeckoChildID aRequestingId);
 
   // Allocate an ID that can be used to refer to a layer tree and
   // associated resources that live only on the compositor thread.
@@ -162,7 +162,7 @@ class GPUProcessManager final : public GPUProcessHost::Listener {
   //
   // Note that a layer tree id is always allocated, even if this returns false.
   bool AllocateAndConnectLayerTreeId(PCompositorBridgeChild* aCompositorBridge,
-                                     base::ProcessId aOtherPid,
+                                     GeckoChildID aOtherChildID,
                                      LayersId aEmbedderLayersId,
                                      LayersId* aOutLayersId,
                                      CompositorOptions* aOutCompositorOptions);

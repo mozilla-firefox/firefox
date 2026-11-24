@@ -207,7 +207,7 @@ class CompositorBridgeParentBase : public PCompositorBridgeParent,
       const LayersId& id, const LayersId& embedderId,
       CompositorOptions* compositorOptions) = 0;
   virtual mozilla::ipc::IPCResult RecvMapAndNotifyChildCreated(
-      const LayersId& id, const LayersId& embedderId, const ProcessId& owner,
+      const LayersId& id, const LayersId& embedderId, const GeckoChildID& owner,
       CompositorOptions* compositorOptions) = 0;
   virtual mozilla::ipc::IPCResult RecvNotifyChildRecreated(
       const LayersId& id, const LayersId& embedderId,
@@ -273,7 +273,7 @@ class CompositorBridgeParent final : public CompositorBridgeParentBase {
       CompositorOptions* aOptions) override;
   mozilla::ipc::IPCResult RecvMapAndNotifyChildCreated(
       const LayersId& aChild, const LayersId& aEmbedderId,
-      const base::ProcessId& aPid, CompositorOptions* aOptions) override;
+      const GeckoChildID& aChildID, CompositorOptions* aOptions) override;
   mozilla::ipc::IPCResult RecvNotifyChildRecreated(
       const LayersId& aChild, const LayersId& aEmbedderId,
       CompositorOptions* aOptions) override;

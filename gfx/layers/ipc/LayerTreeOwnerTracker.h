@@ -8,9 +8,9 @@
 #include <functional>
 #include <map>
 
-#include "LayersTypes.h"    // for LayersId
-#include "base/process.h"   // for base::ProcessId
-#include "mozilla/Mutex.h"  // for mozilla::Mutex
+#include "LayersTypes.h"          // for LayersId
+#include "mozilla/Mutex.h"        // for mozilla::Mutex
+#include "mozilla/ProcessType.h"  // for GeckoChildID
 
 namespace mozilla {
 
@@ -24,9 +24,9 @@ namespace layers {
  * A utility class for tracking which content processes should be allowed
  * to access which layer trees.
  *
- * ProcessId's are used to track which content process can access the layer
+ * GeckoChildID's are used to track which content process can access the layer
  * tree, and in the case of nested browser's we use the top level content
- * processes' ProcessId.
+ * processes' GeckoChildID.
  *
  * This class is only available in the main process and gpu process. Mappings
  * are synced from main process to the gpu process. The actual syncing happens
@@ -39,30 +39,29 @@ class LayerTreeOwnerTracker final {
   static LayerTreeOwnerTracker* Get();
 
   /**
-   * Map aLayersId and aProcessId together so that that process
+   * Map aLayersId and aChildID together so that that process
    * can access that layer tree.
    */
-  void Map(LayersId aLayersId, base::ProcessId aProcessId);
+  void Map(LayersId aLayersId, GeckoChildID aChildID);
 
   /**
    * Remove an existing mapping.
    */
-  void Unmap(LayersId aLayersId, base::ProcessId aProcessId);
+  void Unmap(LayersId aLayersId, GeckoChildID aChildID);
 
   /**
-   * Checks whether it is okay for aProcessId to access aLayersId.
+   * Checks whether it is okay for aChildID to access aLayersId.
    */
-  bool IsMapped(LayersId aLayersId, base::ProcessId aProcessId);
+  bool IsMapped(LayersId aLayersId, GeckoChildID aChildID);
 
-  void Iterate(
-      const std::function<void(LayersId aLayersId, base::ProcessId aProcessId)>&
-          aCallback);
+  void Iterate(const std::function<void(LayersId aLayersId,
+                                        GeckoChildID aChildID)>& aCallback);
 
  private:
   LayerTreeOwnerTracker();
 
   mozilla::Mutex mLayerIdsLock MOZ_UNANNOTATED;
-  std::map<LayersId, base::ProcessId> mLayerIds;
+  std::map<LayersId, GeckoChildID> mLayerIds;
 };
 
 }  // namespace layers

@@ -35,7 +35,7 @@ using mozilla::layers::CompositorOptions from "mozilla/layers/CompositorOptions.
 using mozilla::wr::PipelineId from "mozilla/webrender/WebRenderTypes.h";
 using mozilla::wr::IdNamespace from "mozilla/webrender/WebRenderTypes.h";
 using mozilla::wr::RenderReasons from "mozilla/webrender/webrender_ffi.h";
-using base::ProcessId from "base/process.h";
+using GeckoChildID from "mozilla/ProcessType.h";
 using mozilla::wr::MaybeExternalImageId from "mozilla/webrender/WebRenderTypes.h";
 using mozilla::layers::TransactionId from "mozilla/layers/LayersTypes.h";
 
@@ -149,7 +149,7 @@ parent:
   //
   // See bug 1316632 comment #33 for why this has to be sync. Otherwise,
   // there are ordering issues with SendPLayerTransactionConstructor.
-  sync MapAndNotifyChildCreated(LayersId id, LayersId embedderId, ProcessId owner)
+  sync MapAndNotifyChildCreated(LayersId id, LayersId embedderId, GeckoChildID owner)
     returns (CompositorOptions compositorOptions);
 
   // |embedderId| is |id|'s current embedder, recomputed by the caller at

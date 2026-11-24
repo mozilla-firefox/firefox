@@ -85,14 +85,14 @@ bool RemoteLayerTreeOwner::Initialize(BrowserParent* aBrowserParent) {
   RefPtr<WindowRenderer> renderer = GetWindowRenderer(mBrowserParent);
   PCompositorBridgeChild* compositor =
       renderer ? renderer->GetCompositorBridgeChild() : nullptr;
-  mTabProcessId = mBrowserParent->Manager()->OtherPid();
+  mTabChildID = mBrowserParent->Manager()->ChildID();
 
   // Our remote frame will push layers updates to the compositor,
   // and we'll keep an indirect reference to that tree.
   GPUProcessManager* gpm = GPUProcessManager::Get();
   mLayersConnected = gpm->AllocateAndConnectLayerTreeId(
-      compositor, mTabProcessId, GetEmbedderLayersId(mBrowserParent),
-      &mLayersId, &mCompositorOptions);
+      compositor, mTabChildID, GetEmbedderLayersId(mBrowserParent), &mLayersId,
+      &mCompositorOptions);
   LAYERTREE_LOG("Layer tree {:x} for content {} initialized, connected {}",
                 mLayersId, mBrowserParent->Manager()->ChildID(),
                 mLayersConnected);
@@ -106,7 +106,7 @@ void RemoteLayerTreeOwner::Destroy() {
     LAYERTREE_LOG("Layer tree {:x} for content {} destroyed", mLayersId,
                   mBrowserParent ? mBrowserParent->Manager()->ChildID()
                                  : dom::ContentParentId());
-    GPUProcessManager::Get()->UnmapLayerTreeId(mLayersId, mTabProcessId);
+    GPUProcessManager::Get()->UnmapLayerTreeId(mLayersId, mTabChildID);
   }
 
   mBrowserParent = nullptr;

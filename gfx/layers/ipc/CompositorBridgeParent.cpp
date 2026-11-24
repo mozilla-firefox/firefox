@@ -1038,12 +1038,12 @@ void CompositorBridgeParent::CollectEmbeddedChildNamespaces(
 
 mozilla::ipc::IPCResult CompositorBridgeParent::RecvMapAndNotifyChildCreated(
     const LayersId& aChild, const LayersId& aEmbedderId,
-    const base::ProcessId& aOwnerPid, CompositorOptions* aOptions) {
+    const GeckoChildID& aOwnerChildID, CompositorOptions* aOptions) {
   // We only use this message when the remote compositor is in the GPU process.
   // It is harmless to call it, though.
   MOZ_RELEASE_ASSERT(XRE_IsGPUProcess());
 
-  LayerTreeOwnerTracker::Get()->Map(aChild, aOwnerPid);
+  LayerTreeOwnerTracker::Get()->Map(aChild, aOwnerChildID);
 
   LayersId oldEmbedder;
   {

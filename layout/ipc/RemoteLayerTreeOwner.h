@@ -5,7 +5,7 @@
 #ifndef mozilla_layout_RemoteLayerTreeOwner_h
 #define mozilla_layout_RemoteLayerTreeOwner_h
 
-#include "base/process.h"
+#include "mozilla/ProcessType.h"
 #include "mozilla/dom/ipc/IdType.h"
 #include "mozilla/layers/CompositorOptions.h"
 #include "mozilla/layers/LayersTypes.h"
@@ -57,9 +57,9 @@ class RemoteLayerTreeOwner final {
   bool IsLayersConnected() const { return mLayersConnected; }
 
  private:
-  // The process id of the remote frame. This is used by the compositor to
+  // The GeckoChildID of the remote frame. This is used by the compositor to
   // do security checks on incoming layer transactions.
-  base::ProcessId mTabProcessId = 0;
+  GeckoChildID mTabChildID = kInvalidGeckoChildID;
   // The layers id of the remote frame.
   LayersId mLayersId;
   // The compositor options for this layers id. This is only meaningful if

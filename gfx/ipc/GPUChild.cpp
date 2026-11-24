@@ -57,8 +57,8 @@ RefPtr<GPUChild::InitPromiseType> GPUChild::Init() {
 
   nsTArray<LayerTreeIdMapping> mappings;
   LayerTreeOwnerTracker::Get()->Iterate(
-      [&](LayersId aLayersId, base::ProcessId aProcessId) {
-        mappings.AppendElement(LayerTreeIdMapping(aLayersId, aProcessId));
+      [&](LayersId aLayersId, GeckoChildID aChildID) {
+        mappings.AppendElement(LayerTreeIdMapping(aLayersId, aChildID));
       });
 
   nsCOMPtr<nsIGfxInfo> gfxInfo = components::GfxInfo::Service();
