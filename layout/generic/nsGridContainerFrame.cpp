@@ -9263,7 +9263,8 @@ nsGridContainerFrame* nsGridContainerFrame::ParentGridContainerForSubgrid()
   }
   MOZ_ASSERT(p->IsGridContainerFrame());
   auto* parent = static_cast<nsGridContainerFrame*>(p);
-  MOZ_ASSERT(parent->HasSubgridItems());
+  // The parent only learns about its subgrid items when it reflows.
+  MOZ_ASSERT(parent->HasSubgridItems() || parent->IsSubtreeDirty());
   return parent;
 }
 
@@ -10352,9 +10353,26 @@ bool nsGridContainerFrame::DrainSelfOverflowList() {
   return DrainAndMergeSelfOverflowList();
 }
 
+// A subgrid's Subgrid::mGridItems is rebuilt by the first-in-flow of its root
+// grid (see Grid::SubgridPlaceGridItems), not by the subgrid itself. A child
+// list change may only dirty a continuation of the root, so we need to dirty
+// its first-in-flow too.
+static void MarkRootGridFirstInFlowDirty(nsGridContainerFrame* aSubgrid) {
+  if (!aSubgrid->IsSubgrid()) {
+    return;
+  }
+  nsGridContainerFrame* root = aSubgrid;
+  do {
+    root = root->ParentGridContainerForSubgrid();
+  } while (root->IsSubgrid());
+  aSubgrid->PresShell()->FrameNeedsReflow(
+      root->FirstInFlow(), IntrinsicDirty::None, NS_FRAME_IS_DIRTY);
+}
+
 void nsGridContainerFrame::AppendFrames(ChildListID aListID,
                                         nsFrameList&& aFrameList) {
   NoteNewChildren(aListID, aFrameList);
+  MarkRootGridFirstInFlowDirty(this);
   nsContainerFrame::AppendFrames(aListID, std::move(aFrameList));
 }
 
@@ -10362,6 +10380,7 @@ void nsGridContainerFrame::InsertFrames(
     ChildListID aListID, nsIFrame* aPrevFrame,
     const nsLineList::iterator* aPrevFrameLine, nsFrameList&& aFrameList) {
   NoteNewChildren(aListID, aFrameList);
+  MarkRootGridFirstInFlowDirty(this);
   nsContainerFrame::InsertFrames(aListID, aPrevFrame, aPrevFrameLine,
                                  std::move(aFrameList));
 }
@@ -10375,6 +10394,7 @@ void nsGridContainerFrame::RemoveFrame(DestroyContext& aContext,
   SetDidPushItemsBitIfNeeded(aListID, aOldFrame);
 #endif
 
+  MarkRootGridFirstInFlowDirty(this);
   nsContainerFrame::RemoveFrame(aContext, aListID, aOldFrame);
 }
 
