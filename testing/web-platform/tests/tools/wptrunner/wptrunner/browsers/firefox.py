@@ -872,6 +872,10 @@ class ProfileCreator:
                 }
             )
         else:
+            # Remove once support for click and wait can be removed from WebDriver classic:
+            # https://bugzilla.mozilla.org/show_bug.cgi?id=1961138
+            prefs["marionette.navigate-after-click.enabled"] = False
+
             # Dispatch wheel scroll as widget event by default. It stays
             # disabled for wdspec until it can be enabled for all input sources.
             prefs["remote.events.async.wheel.enabled"] = True
