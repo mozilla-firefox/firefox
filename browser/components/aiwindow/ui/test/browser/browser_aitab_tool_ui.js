@@ -22,38 +22,11 @@ const SURFACE = {
   dataModel: {},
 };
 
-const AITAB_RECORDS = [
-  {
-    kind: "params",
-    feature: "aitab",
-    model: "test-model",
-    service_type: "ai",
-    purpose: "aitab",
-    parameters: {},
-    modules: [
-      { name: "system-instructions", version: "v1.0" },
-      { name: "user-data", version: "v1.0" },
-    ],
-    version: "v1.0",
-    is_default: true,
-  },
-  {
-    kind: "module",
-    feature: "aitab",
-    module: "system-instructions",
-    model: "test-model",
-    prompts: "Create a page using these components:\n{schemas}",
-    version: "v1.0",
-  },
-  {
-    kind: "module",
-    feature: "aitab",
-    module: "user-data",
-    model: "test-model",
-    prompts: "Focus: {focus}\n{pageContent}",
-    version: "v1.0",
-  },
-];
+/* import-globals-from head_aitab.js */
+Services.scriptloader.loadSubScript(
+  getRootDirectory(gTestPath) + "head_aitab.js",
+  this
+);
 
 let STATE_CHOOSE, STATE_COMPLETE;
 
@@ -215,7 +188,7 @@ describe("AITab ToolUI", () => {
     });
     await AITabStore.destroyDatabase();
     _setRemoteClientForTesting({
-      get: async () => [...MOCK_RS_RECORDS, ...AITAB_RECORDS],
+      get: async () => [...MOCK_RS_RECORDS, ...AITAB_GENERATION_RECORDS],
     });
     restoreSignIn = skipSignIn();
     mockEngine = new MockEngineManager();

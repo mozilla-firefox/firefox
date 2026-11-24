@@ -31,6 +31,12 @@ const { MockEngineManager } = ChromeUtils.importESModule(
   "resource://testing-common/AIWindowTestUtils.sys.mjs"
 );
 
+/* import-globals-from head_aitab.js */
+Services.scriptloader.loadSubScript(
+  getRootDirectory(gTestPath) + "head_aitab.js",
+  this
+);
+
 function createMockConversation(id = "test-restore-id") {
   const conversation = new ChatConversation({
     id,
@@ -457,39 +463,8 @@ add_task(async function test_restore_pending_aitab_into_existing_smart_tab() {
   }
 
   function mockAITabPrompts() {
-    const modules = [
-      {
-        name: "system-instructions",
-        prompts: "Create a page using these components:\n{schemas}",
-      },
-      {
-        name: "user-data",
-        prompts: "Focus: {focus}\n{pageContent}",
-      },
-    ];
     _setRemoteClientForTesting({
-      get: async () => [
-        ...MOCK_RS_RECORDS,
-        {
-          kind: "params",
-          feature: "aitab",
-          model: "test-model",
-          service_type: "ai",
-          purpose: "aitab",
-          parameters: {},
-          modules: modules.map(({ name }) => ({ name, version: "v1.0" })),
-          version: "v1.0",
-          is_default: true,
-        },
-        ...modules.map(({ name, prompts }) => ({
-          kind: "module",
-          feature: "aitab",
-          module: name,
-          model: "test-model",
-          prompts,
-          version: "v1.0",
-        })),
-      ],
+      get: async () => [...MOCK_RS_RECORDS, ...AITAB_GENERATION_RECORDS],
     });
   }
 
