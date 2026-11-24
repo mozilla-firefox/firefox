@@ -288,6 +288,9 @@ run-if = [
 run-if = [
   "mda_gpu",
 ]
+skip-if = [
+  "os == 'mac' && os_version == '10.15'", # decoder init fails for SPS-less HEVC, Bug 1942396
+]
 
 ["test_MediaSource_memory_reporting.html"]
 
