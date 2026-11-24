@@ -304,6 +304,8 @@ class AtomicBase {
   // operator T() here, it would cause errors when comparing Atomic<bool> with
   // a regular bool.
 
+  T load() const { return Intrinsics::load(mValue); }
+
   T operator=(T aVal) {
     Intrinsics::store(mValue, aVal);
     return aVal;
@@ -345,7 +347,7 @@ class AtomicBaseIncDec : public AtomicBase<T, Order> {
 
   AtomicBaseIncDec(const AtomicBaseIncDec& aCopy) = delete;
 
-  operator T() const { return Base::Intrinsics::load(Base::mValue); }
+  operator T() const { return this->load(); }
   T operator++(int) { return Base::Intrinsics::inc(Base::mValue); }
   T operator--(int) { return Base::Intrinsics::dec(Base::mValue); }
   T operator++() { return Base::Intrinsics::inc(Base::mValue) + 1; }
@@ -462,7 +464,7 @@ class Atomic<T, Order, std::enable_if_t<std::is_enum_v<T>>>
   constexpr Atomic() : Base() {}
   explicit constexpr Atomic(T aInit) : Base(aInit) {}
 
-  operator T() const { return T(Base::Intrinsics::load(Base::mValue)); }
+  operator T() const { return this->load(); }
 
   using Base::operator=;
 
@@ -496,9 +498,9 @@ class Atomic<bool, Order> : protected detail::AtomicBase<uint32_t, Order> {
   Atomic(Atomic& aOther) = delete;
 
   // We provide boolean wrappers for the underlying AtomicBase methods.
-  MOZ_IMPLICIT operator bool() const {
-    return Base::Intrinsics::load(Base::mValue);
-  }
+  MOZ_IMPLICIT operator bool() const { return static_cast<bool>(load()); }
+
+  bool load() const { return static_cast<bool>(Base::load()); }
 
   bool operator=(bool aVal) { return Base::operator=(aVal); }
 
@@ -522,9 +524,9 @@ class Atomic<double, Order> : protected detail::AtomicBase<double, Order> {
 
   Atomic(Atomic& aOther) = delete;
 
-  operator double() const {
-    return double(Base::Intrinsics::load(Base::mValue));
-  }
+  operator double() const { return load(); }
+
+  using Base::load;
 
   double operator=(double aVal) { return Base::operator=(aVal); }
 };

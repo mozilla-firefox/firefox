@@ -3,6 +3,7 @@
  * file, You can obtain one at http://mozilla.org/MPL/2.0/. */
 
 #include <stdint.h>
+#include <type_traits>
 
 #include "mozilla/Assertions.h"
 #include "mozilla/Atomics.h"
@@ -19,6 +20,10 @@ template <typename T, MemoryOrdering Order>
 static void TestTypeWithOrdering() {
   Atomic<T, Order> atomic(5);
   A(atomic == 5, "Atomic variable did not initialize");
+
+  // Test load
+  static_assert(std::is_same_v<decltype(atomic.load()), T>);
+  A(atomic.load() == T(5), "Atomic load did not work");
 
   // Test atomic increment
   A(++atomic == T(6), "Atomic increment did not work");
@@ -84,6 +89,10 @@ static void TestPointerWithOrdering() {
   Atomic<T*, Order> atomic(array1);
   A(atomic == array1, "Atomic variable did not initialize");
 
+  // Test load
+  static_assert(std::is_same_v<decltype(atomic.load()), T*>);
+  A(atomic.load() == array1, "Atomic load did not work");
+
   // Test atomic increment
   A(++atomic == array1 + 1, "Atomic increment did not work");
   A(atomic++ == array1 + 1, "Atomic post-increment did not work");
@@ -136,6 +145,10 @@ static void TestEnumWithOrdering() {
   Atomic<EnumType, Order> atomic(EnumType_2);
   A(atomic == EnumType_2, "Atomic variable did not initialize");
 
+  // Test load
+  static_assert(std::is_same_v<decltype(atomic.load()), EnumType>);
+  A(atomic.load() == EnumType_2, "Atomic load did not work");
+
   // Test assignment
   EnumType result;
   result = (atomic = EnumType_3);
@@ -171,6 +184,10 @@ static void TestEnumClassWithOrdering() {
   Atomic<EnumClass, Order> atomic(EnumClass::Value2);
   A(atomic == EnumClass::Value2, "Atomic variable did not initialize");
 
+  // Test load
+  static_assert(std::is_same_v<decltype(atomic.load()), EnumClass>);
+  A(atomic.load() == EnumClass::Value2, "Atomic load did not work");
+
   // Test assignment
   EnumClass result;
   result = (atomic = EnumClass::Value3);
@@ -200,6 +217,10 @@ static void TestBoolWithOrdering() {
   Atomic<bool, Order> atomic(false);
   A(atomic == false, "Atomic variable did not initialize");
 
+  // Test load
+  static_assert(std::is_same_v<decltype(atomic.load()), bool>);
+  A(atomic.load() == false, "Atomic load did not work");
+
   // Test assignment
   bool result;
   result = (atomic = true);
@@ -221,6 +242,22 @@ static void TestBoolWithOrdering() {
   boolResult = atomic.compareExchange(false, true);
   A(boolResult, "CAS should have succeeded.");
   A(atomic == true, "CAS should have changed atomic's value.");
+}
+
+template <MemoryOrdering Order>
+static void TestDoubleWithOrdering() {
+  Atomic<double, Order> atomic(1.5);
+  A(atomic == 1.5, "Atomic variable did not initialize");
+
+  // Test load
+  static_assert(std::is_same_v<decltype(atomic.load()), double>);
+  A(atomic.load() == 1.5, "Atomic load did not work");
+
+  // Test assignment
+  double result;
+  result = (atomic = 2.5);
+  A(atomic.load() == 2.5, "Atomic assignment failed");
+  A(result == 2.5, "Atomic assignment returned the wrong value");
 }
 
 template <typename T>
@@ -253,6 +290,12 @@ static void TestBool() {
   TestBoolWithOrdering<Relaxed>();
 }
 
+static void TestDouble() {
+  TestDoubleWithOrdering<SequentiallyConsistent>();
+  TestDoubleWithOrdering<ReleaseAcquire>();
+  TestDoubleWithOrdering<Relaxed>();
+}
+
 #undef A
 
 int main() {
@@ -268,5 +311,6 @@ int main() {
   TestPointer<uint32_t*>();
   TestEnum();
   TestBool();
+  TestDouble();
   return 0;
 }
