@@ -51,17 +51,16 @@ void Ping::Submit(const nsACString& aReason) const {
 nsresult Ping::SubmitInternal(const nsACString& aReason,
                               const nsACString& aPingName) const {
   nsresult rv = NS_OK;
-  if (NS_WARN_IF(!aPingName.Length())) {
+  if (NS_WARN_IF(aPingName.IsEmpty())) {
     return NS_ERROR_FAILURE;
-  } else {
-    auto callback = Maybe<FalliblePingTestCallback>();
-    GetCallbackMapLock().apply(
-        [&](const auto& lock) { callback = lock.ref()->Extract(aPingName); });
-    // Calling the callback outside of the lock allows it to register a new
-    // callback itself.
-    if (callback) {
-      rv = callback.extract()(aReason);
-    }
+  }
+  auto callback = Maybe<FalliblePingTestCallback>();
+  GetCallbackMapLock().apply(
+      [&](const auto& lock) { callback = lock.ref()->Extract(aPingName); });
+  // Calling the callback outside of the lock allows it to register a new
+  // callback itself.
+  if (callback) {
+    rv = callback.extract()(aReason);
   }
   fog_submit_ping_by_id(mId, &aReason);
   return rv;
