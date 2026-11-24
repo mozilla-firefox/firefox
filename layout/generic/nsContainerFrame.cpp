@@ -2362,15 +2362,11 @@ LogicalSize nsContainerFrame::ComputeSizeWithIntrinsicDimensions(
 
 nsRect nsContainerFrame::ComputeSimpleTightBounds(
     DrawTarget* aDrawTarget) const {
-  if (StyleOutline()->ShouldPaintOutline() || StyleBorder()->HasBorder() ||
-      !StyleBackground()->IsTransparent(this) ||
+  nsRect r;
+  if (StyleBorder()->HasBorder() || !StyleBackground()->IsTransparent(this) ||
       StyleDisplay()->HasNativeAppearance()) {
-    // Not necessarily tight, due to clipping, negative
-    // outline-offset, and lots of other issues, but that's OK
-    return InkOverflowRect();
+    r = GetRectRelativeToSelf();
   }
-
-  nsRect r(0, 0, 0, 0);
   for (const auto& childLists : ChildLists()) {
     for (nsIFrame* child : childLists.mList) {
       r.UnionRect(

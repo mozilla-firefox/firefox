@@ -7503,7 +7503,7 @@ nscoord nsIFrame::ComputeBSizeValueAsPercentageBasis(
 }
 
 nsRect nsIFrame::ComputeTightBounds(DrawTarget* aDrawTarget) const {
-  return InkOverflowRect();
+  return GetRectRelativeToSelf();
 }
 
 /* virtual */

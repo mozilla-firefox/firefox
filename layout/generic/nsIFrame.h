@@ -3192,19 +3192,15 @@ class nsIFrame : public nsQueryFrame {
 
  public:
   /**
-   * Compute a tight bounding rectangle for the frame. This is a rectangle
-   * that encloses the pixels that are actually drawn. We're allowed to be
-   * conservative and currently we don't try very hard. The rectangle is
-   * in appunits and relative to the origin of this frame.
+   * Compute a tight bounding rectangle for the frame, accounting for things
+   * that affect layout.
    *
-   * This probably only needs to include frame bounds, glyph bounds, and
-   * text decorations, but today it sometimes includes other things that
-   * contribute to ink overflow.
+   * This probably only needs to include frame bounds and glyph bounds.
    *
-   * @param aDrawTarget a draw target that can be used if we need
-   * to do measurement
+   * TODO(emilio): This is only used for "foreign" content on MathML layout, but
+   * it seems we could probably just use the bounding box of the block nowadays.
    */
-  virtual nsRect ComputeTightBounds(DrawTarget* aDrawTarget) const;
+  virtual nsRect ComputeTightBounds(DrawTarget*) const;
 
   /**
    * This function is similar to GetPrefISize and ComputeTightBounds: it
@@ -3215,7 +3211,7 @@ class nsIFrame : public nsQueryFrame {
    * frame. Currently, this function is only implemented for nsBlockFrame and
    * nsTextFrame and is used to determine intrinsic widths of MathML token
    * elements.
-
+   *
    * @param aContext a rendering context that can be used if we need
    * to do measurement
    * @param aX      computed left coordinate of the tight bounding rectangle

@@ -1001,10 +1001,6 @@ nscoord nsBlockFrame::PrefISize(const IntrinsicSizeInput& aInput) {
 }
 
 nsRect nsBlockFrame::ComputeTightBounds(DrawTarget* aDrawTarget) const {
-  // be conservative
-  if (Style()->HasTextDecorationLines()) {
-    return InkOverflowRect();
-  }
   return ComputeSimpleTightBounds(aDrawTarget);
 }
 

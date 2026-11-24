@@ -10507,11 +10507,6 @@ static nsRect RoundOut(const gfxRect& aRect) {
 }
 
 nsRect nsTextFrame::ComputeTightBounds(DrawTarget* aDrawTarget) const {
-  if (Style()->HasTextDecorationLines() || HasAnyStateBits(TEXT_HYPHEN_BREAK)) {
-    // This is conservative, but OK.
-    return InkOverflowRect();
-  }
-
   gfxSkipCharsIterator iter =
       const_cast<nsTextFrame*>(this)->EnsureTextRun(nsTextFrame::eInflated);
   if (!mTextRun) {
