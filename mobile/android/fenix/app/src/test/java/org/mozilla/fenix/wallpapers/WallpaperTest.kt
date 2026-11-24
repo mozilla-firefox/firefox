@@ -11,13 +11,6 @@ import org.junit.Test
 
 class WallpaperTest {
     @Test
-    fun `GIVEN blank wallpaper name WHEN checking whether is solid THEN is solid`() {
-        val result = Wallpaper.nameIsSolid("")
-
-        assertTrue(result)
-    }
-
-    @Test
     fun `GIVEN the solid wallpaper is set to be shown WHEN checking whether the current wallpaper is solid THEN return true`() {
         val result = Wallpaper.nameIsSolid(Wallpaper.SOLID)
 
@@ -32,19 +25,22 @@ class WallpaperTest {
     }
 
     @Test
-    fun `GIVEN the legacy wallpaper default name none WHEN checking whether the current wallpaper is solid THEN return true`() {
-        val result = Wallpaper.nameIsSolid("NONE")
-
-        assertTrue(result)
-    }
-
-    @Test
-    fun `GIVEN the legacy default wallpaper name WHEN migrating it THEN return the solid wallpaper name`() {
+    fun `GIVEN the legacy wallpaper name is default WHEN migrating it THEN return the solid wallpaper name`() {
         assertEquals(Wallpaper.SOLID, Wallpaper.migrateLegacyName("default"))
     }
 
     @Test
-    fun `GIVEN the legacy edge-to-edge wallpaper name WHEN migrating it THEN return the gradient wallpaper name`() {
+    fun `GIVEN the legacy wallpaper name is NONE WHEN migrating it THEN return the solid wallpaper name`() {
+        assertEquals(Wallpaper.SOLID, Wallpaper.migrateLegacyName("NONE"))
+    }
+
+    @Test
+    fun `GIVEN an empty wallpaper name WHEN migrating it THEN return the solid wallpaper name`() {
+        assertEquals(Wallpaper.SOLID, Wallpaper.migrateLegacyName(""))
+    }
+
+    @Test
+    fun `GIVEN the legacy wallpaper name is edge-to-edge WHEN migrating it THEN return the gradient wallpaper name`() {
         assertEquals(Wallpaper.GRADIENT, Wallpaper.migrateLegacyName("edge-to-edge"))
     }
 
@@ -52,6 +48,5 @@ class WallpaperTest {
     fun `GIVEN any other wallpaper name WHEN migrating it THEN return it unchanged`() {
         assertEquals("amethyst", Wallpaper.migrateLegacyName("amethyst"))
         assertEquals(Wallpaper.SOLID, Wallpaper.migrateLegacyName(Wallpaper.SOLID))
-        assertEquals("", Wallpaper.migrateLegacyName(""))
     }
 }

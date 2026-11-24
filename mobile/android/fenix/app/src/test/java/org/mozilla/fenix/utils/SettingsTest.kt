@@ -177,6 +177,14 @@ class SettingsTest {
         assertEquals(Wallpaper.SOLID, settings.currentWallpaperName)
         assertEquals(Wallpaper.SOLID, settings.preferences.getString(key, null))
 
+        settings.preferences.edit().putString(key, "NONE").apply()
+        assertEquals(Wallpaper.SOLID, settings.currentWallpaperName)
+        assertEquals(Wallpaper.SOLID, settings.preferences.getString(key, null))
+
+        settings.preferences.edit().putString(key, "").apply()
+        assertEquals(Wallpaper.SOLID, settings.currentWallpaperName)
+        assertEquals(Wallpaper.SOLID, settings.preferences.getString(key, null))
+
         settings.preferences.edit().putString(key, "edge-to-edge").apply()
         assertEquals(Wallpaper.GRADIENT, settings.currentWallpaperName)
         assertEquals(Wallpaper.GRADIENT, settings.preferences.getString(key, null))
