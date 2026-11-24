@@ -314,7 +314,7 @@ class Benchmark:
                 LOG.info(
                     "Removing repo with a different remote origin before installing new one"
                 )
-                mozfile.remove(external_repo_path)
+                mozfile.remove(str(external_repo_path))
                 self._full_clone(benchmark_repository, external_repo_path)
             else:
                 self._update_benchmark_repo(external_repo_path)

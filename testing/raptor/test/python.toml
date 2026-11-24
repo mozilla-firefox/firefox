@@ -27,6 +27,8 @@ subsuite = "raptor"
 
 ["test_perf_profile.py"]
 
+["test_performance_tuning.py"]
+
 ["test_perftest.py"]
 
 ["test_playback.py"]
