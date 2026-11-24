@@ -67,6 +67,11 @@ if CONFIG["OS_ARCH"] == "WINNT":
 if CONFIG["OS_ARCH"] == "Darwin":
     LDFLAGS += ["-Wl,-rpath,@executable_path/../../../"]
 
+if CONFIG["MOZ_WIDGET_TOOLKIT"] == "gtk":
+    # Link Gtk+ before libxul so that Gtk+ uses the real libwayland-client
+    # instead of libxul's mozwayland stubs, see js/xpconnect/shell/moz.build.
+    LDFLAGS += CONFIG["MOZ_GTK3_LIBS"]
+
 WIN32_WIDE_ENTRY = True
 if CONFIG["CC_TYPE"] == "clang-cl":
     # Always enter a Windows program through wmain, whether or not we're

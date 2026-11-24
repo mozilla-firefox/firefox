@@ -81,4 +81,9 @@ if CONFIG["OS_TARGET"] == "Darwin":
 if CONFIG["MOZ_WIDGET_TOOLKIT"] == "gtk":
     CFLAGS += CONFIG["MOZ_GTK3_CFLAGS"]
     CXXFLAGS += CONFIG["MOZ_GTK3_CFLAGS"]
-    OS_LIBS += CONFIG["MOZ_GTK3_LIBS"]
+    # Link Gtk+ before libxul, so that the dynamic linker loads Gtk+'s
+    # dependencies, including libwayland-client, before libxul's mozwayland
+    # stubs, which would otherwise take precedence and break Wayland support.
+    # Firefox avoids this by loading libraries in dependentlibs.list order, see
+    # toolkit/library/moz.build.
+    LDFLAGS += CONFIG["MOZ_GTK3_LIBS"]
