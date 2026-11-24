@@ -1211,28 +1211,25 @@ void SMRegExpMacroAssembler::createStackFrame() {
   size_t frameBytes = sizeof(FrameData) + num_registers_ * sizeof(void*);
   frameSize_ = js::jit::StackDecrementForCall(js::jit::ABIStackAlignment,
                                               masm_.framePushed(), frameBytes);
-  masm_.reserveStack(frameSize_);
-  masm_.checkStackAlignment();
 
   // Check if we have space on the stack. Use the *NoInterrupt stack limit to
   // avoid failing repeatedly when the regex code is called from Ion JIT code.
   // (See bug 1208819)
-  js::jit::Label stack_ok;
   AbsoluteAddress limit_addr(cx_->addressOfJitStackLimitNoInterrupt());
-  masm_.branchStackPtrRhs(Assembler::Below, limit_addr, &stack_ok);
-
-  masm_.loadJSContext(temp0_);
-  masm_.store8(Imm32(1),
-               Address(temp0_, JSContext::offsetOfHasDelayedOverRecursed()));
-
-  // There is not enough space on the stack. Exit with an exception.
-  // We haven't initialized our stack frame yet, so we must jump to
-  // a special label that won't try to update the RegExp::Stack.
-  masm_.movePtr(ImmWord(int32_t(js::RegExpRunStatus::Error)),
-                js::jit::ReturnReg);
-  masm_.jump(&exit_overrecursed_label_);
-
-  masm_.bind(&stack_ok);
+  if (!needsUnderflowCheck()) {
+    masm_.reserveStack(frameSize_);
+    overrecursedFramePushed_ = masm_.framePushed();
+    masm_.branchStackPtrRhs(Assembler::AboveOrEqual, limit_addr,
+                            &overrecursed_label_);
+  } else {
+    masm_.loadPtr(limit_addr, temp1_);
+    masm_.addPtr(Imm32(frameSize_), temp1_);
+    overrecursedFramePushed_ = masm_.framePushed();
+    masm_.branchStackPtr(Assembler::BelowOrEqual, temp1_,
+                         &overrecursed_label_);
+    masm_.reserveStack(frameSize_);
+  }
+  masm_.checkStackAlignment();
 }
 
 void SMRegExpMacroAssembler::initFrameAndRegs() {
@@ -1423,9 +1420,10 @@ void SMRegExpMacroAssembler::exitHandler() {
       backtrack_stack_pointer_,
       AbsoluteAddress(ExternalReference::RegexpStackPointer(isolate())));
 
-  masm_.bind(&exit_overrecursed_label_);
-
   masm_.freeStack(frameSize_);
+
+  js::jit::Label exit_overrecursed;
+  masm_.bind(&exit_overrecursed);
 
   // Restore registers which were saved on entry
   for (GeneralRegisterBackwardIterator iter(savedRegisters_); iter.more();
@@ -1459,6 +1457,23 @@ void SMRegExpMacroAssembler::exitHandler() {
     // Exit with an error result to signal thrown exception
     masm_.movePtr(ImmWord(int32_t(js::RegExpRunStatus::Error)), temp0_);
     masm_.jump(&exit_label_);
+  }
+
+  if (overrecursed_label_.used()) {
+    masm_.bind(&overrecursed_label_);
+    masm_.setFramePushed(overrecursedFramePushed_);
+    // If we don't need an underflow check, we allocate the stack
+    // frame before checking, so we have to free it here.
+    if (!needsUnderflowCheck()) {
+      masm_.freeStack(frameSize_);
+    }
+    // There isn't enough space on the stack. Exit with an exception.
+    masm_.loadJSContext(temp0_);
+    masm_.store8(Imm32(1),
+                 Address(temp0_, JSContext::offsetOfHasDelayedOverRecursed()));
+    masm_.movePtr(ImmWord(int32_t(js::RegExpRunStatus::Error)),
+                  js::jit::ReturnReg);
+    masm_.jump(&exit_overrecursed);
   }
 }
 
