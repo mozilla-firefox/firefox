@@ -178,6 +178,14 @@
   <string name="recently_visited_menu_item_remove">Тоза кардан</string>
   <!-- Content description for the button which navigates the user to show all of their history. -->
   <string name="past_explorations_show_all_content_description_2">Нишон додани ҳамаи тадқиқотҳои охирин</string>
+  <!-- Customize menu screen - Accessibility description - name of the menu section that groups the New tab and New private tab actions. Read aloud after "Section", followed by the action names ("Section “New tab”: New tab, New private tab"). -->
+  <string name="browser_menu_section_new_tab">Варақаи нав</string>
+  <!-- Title of the dialog shown when resetting the menu to its default layout (removing all user customizations) -->
+  <string name="menu_customize_reset_dialog_title">Ба менюи пешфарз барқарор мекунед?</string>
+  <!-- Primary button on the menu reset dialog. Tapping it removes all user customizations. -->
+  <string name="menu_customize_reset_dialog_reset">Аз нав танзим кардан</string>
+  <!-- Secondary button on the menu reset dialog. Tapping it cancels the reset process and preserves all user-made customizations. -->
+  <string name="menu_customize_reset_dialog_cancel">Бекор кардан</string>
   <!-- Content description (not visible, for screen readers etc.): Navigate backward (browsing history) -->
   <string name="browser_menu_back">Бозгашт</string>
   <!-- Content description (not visible, for screen readers etc.): Navigate forward (browsing history) -->
@@ -321,6 +329,10 @@
     Content description for the translate page toolbar button that opens the translations dialog when no translation has occurred.
   -->
   <string name="browser_toolbar_translate">Тарҷума кардани саҳифа</string>
+  <!-- Accessibility description for the toolbar button displayed when the page the user is on has a video that can be opened in a picture-in-picture window -->
+  <string name="browser_toolbar_picture_in_picture">Реҷаи «Расм-дар-расм»</string>
+  <!-- Accessibility description for the toolbar button displayed while the current page's video is playing in a picture-in-picture window. Tapping the button closes that window. -->
+  <string name="browser_toolbar_picture_in_picture_close">Пӯшидани реҷаи «Расм-дар-расм»</string>
   <!-- CFR description for the browser toolbar describing the "Shake to summarize feature" -->
   <string name="browser_toolbar_summarize_cfr_description">Дастгоҳи худро такон диҳед, то хулоса дар бораи ин саҳифа дар сонияҳо омода карда шавад. ⚡️</string>
   <!--
@@ -1123,6 +1135,8 @@
   <string name="preferences_sync_category">Интихоб кунед, ки чӣ ҳамоҳанг карда мешавад</string>
   <!-- Preference category for sync controls -->
   <string name="preferences_category_sync">Маълумоти ҳамоҳангшуда</string>
+  <!-- Preference title for the toggle that allows user to turn sync on or off for the device they are on -->
+  <string name="preferences_enable_sync_title">Ҳамоҳанг кардани ин дастгоҳ</string>
   <!-- Summary for the sync preference category. -->
   <string name="preferences_sync_category_summary">Он чизҳоеро, ки дар ҳамаи дастгоҳҳои пайвастшудаи шумо ҳамоҳанг мешаванд, идора намоед</string>
   <!-- Preference for syncing history -->
@@ -2044,6 +2058,8 @@
   <string name="unsubmitted_crash_dialog_learn_more">Маълумоти бештар</string>
   <!-- Unsubmitted crash dialog button to open a web page with more details on the feature and privacy policy -->
   <string name="unsubmitted_crash_requested_by_devs_learn_more">Маълумоти бештар</string>
+  <!-- Unsubmitted crash dialog button to open a web page with more details on the feature and privacy policy, displayed in all capital letters. -->
+  <string name="unsubmitted_crash_requested_by_devs_learn_more_2" tools:ignore="UnusedResources">МАЪЛУМОТИ БЕШТАР</string>
   <!--
     Bookmarks
 
@@ -2473,6 +2489,8 @@
   <string name="snackbar_private_tab_closed">Варақаи хусусӣ пӯшида шуд</string>
   <!-- Text shown in snackbar to undo deleting a tab, top site or collection -->
   <string name="snackbar_deleted_undo">БОТИЛ КАРДАН</string>
+  <!-- Button text displayed with a confirmation message when the user adds or moves a page to a tab group. Tapping it displays the tab group. -->
+  <string name="snackbar_action_view">Намоиш</string>
   <!--
     QR code scanner prompt which appears after scanning a code, but before navigating to it
     %1$s is the name of the app (for example "Firefox"), %2$s is the URL or text scanned
@@ -3191,6 +3209,8 @@
   <string name="credit_cards_expiration_date_year">Соли санаи анҷоми муҳлат</string>
   <!-- The header for the name on the credit card -->
   <string name="credit_cards_name_on_card">Ном дар корт</string>
+  <!-- The header for the optional security code of a credit card. CVV is the abbreviation of the card security code. -->
+  <string name="credit_cards_cvv_optional">CVV (интихобӣ)</string>
   <!-- The text for the "Delete card" menu item for deleting a credit card -->
   <string name="credit_cards_menu_delete_card">Нест кардани корт</string>
   <!-- The text for the "Delete card" button for deleting a credit card -->
@@ -3207,6 +3227,8 @@
   <string name="credit_cards_cancel_button">Бекор кардан</string>
   <!-- Title of the "Saved cards" screen -->
   <string name="credit_cards_saved_cards">Кортҳои нигоҳдошташуда</string>
+  <!-- Text in the saved cards list that indicates the security code for a credit card is being stored -->
+  <string name="credit_cards_cvv_saved">«CVV» нигоҳ дошта шуд</string>
   <!-- Error message for card number validation -->
   <string name="credit_cards_number_validation_error_message_2">Рақами корти дурустро ворид намоед</string>
   <!-- Error message for card name on card validation -->
@@ -3616,6 +3638,12 @@
     %1$s is the size in kilobytes or megabytes of the language file.
   -->
   <string name="translations_download_language_file_dialog_title">Забонро дар реҷаи сарфаи маълумот боргирӣ мекунед (%1$s)?</string>
+  <!--
+    Translations options dialog
+
+    Title of the translation options dialog that allows a user to set their translation preferences for the site the user is currently on.
+  -->
+  <string name="translation_option_bottom_sheet_title_heading2">Хусусиятҳои тарҷума</string>
   <!--
     Translations options dialog
 
@@ -4464,6 +4492,8 @@
   <string name="wrex_widget_error_connection_offline_title">Чунин ба назар мерасад, ки шумо дар реҷаи офлайн ҳастед</string>
   <!-- Sports widget error card description shown when the user is offline. -->
   <string name="wrex_widget_error_connection_offline_description">Пайвасти интернети худро санҷед ва аз нав кӯшиш намоед.</string>
+  <!-- Content description (for accessibility, not displayed) for teams which have not yet been determined in the match schedule. -->
+  <string name="wrex_widget_team_to_be_determined">Дастае, ки баъдтар муайян карда мешавад</string>
   <!--
     Privacy notice homepage banner
 
@@ -4486,6 +4516,8 @@
   <string name="collections_migration_homepage_card_message">Роҳи осонтари барои ба тартиб даровардани варақаҳои шумо мавҷуд аст</string>
   <!-- Link text shown on the collections to tab groups migration card that opens the tab groups page in the tab manager. -->
   <string name="collections_migration_homepage_card_link">Намоиши гурӯҳҳои варақаҳои ман</string>
+  <!-- Content description (not visible, for screen readers etc.) for the button that dismisses the collections to tab groups migration card. -->
+  <string name="collections_migration_card_close_button_content_description">Пӯшидан</string>
   <!-- Google Lens prototype related strings -->
   <string name="preferences_debug_settings_google_lens_integration">Фаъол кардани ҳамгироии «Google Lens»</string>
   <!-- Lens image search button content description -->

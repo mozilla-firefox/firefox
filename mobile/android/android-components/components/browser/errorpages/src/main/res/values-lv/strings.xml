@@ -71,16 +71,69 @@
   <string name="mozac_browser_errorpages_net_timeout_message"><![CDATA[<p>Pieprasītā vietne neatbildēja uz savienojuma pieprasījumu, un pārlūks pārstāja gaidīt atbildi.</p>\n<ul>\n<li>Vai serverī varētu būt liels pieprasījumu skaits vai īslaicīgi darbības traucējumi? Vēlāk jāmēģina vēlreiz.</li>\n<li>Vai nav iespējams pārlūkot citas vietnes? jāpārbauda ierīces savienojums ar tīklu.</li>\n<li>Vai ierīci vai tīklu aizsargā ugunsmūris vai starpniekserveris? Nepareizi iestatījumi var traucēt tīmekļa pārlūkošanu.</li>\n<li>Joprojām ir sarežģījumi? Jāsazinās ar tīkla pārvaldītāju vai interneta pakalpojumu sniedzēju, lai iegūtu palīdzību.</li>\n</ul>]]></string>
   <!-- The document title and heading of the error page shown when a website could not be reached. -->
   <string name="mozac_browser_errorpages_connection_failure_title">Nevar pieslēgties</string>
+  <!-- The error message shown when a website could not be reached. -->
+  <string name="mozac_browser_errorpages_connection_failure_message"><![CDATA[<ul>\n<li>Vietne, iespējams, īslaicīgi nav pieejama vai ir pārāk noslogota. Pēc brīža mēģiniet vēlreiz.</li>\n<li>Ja nevarat ielādēt nevienu lapu, pārbaudiet ierīces datus vai Wi-Fi savienojumu.</li>\n</ul>]]></string>
+  <!-- The document title and heading of the error page shown when a website responds in an unexpected way and the browser cannot continue. -->
+  <string name="mozac_browser_errorpages_unknown_socket_type_title">Negaidīta atbilde no servera</string>
+  <!-- The error message shown when a website responds in an unexpected way and the browser cannot continue. -->
+  <string name="mozac_browser_errorpages_unknown_socket_type_message"><![CDATA[<p>Lapa atbildēja uz tīkla pieprasījumu negaidītā veidā un pārlūks nevar turpināt.</p>]]></string>
+  <!-- The document title and heading of the error page shown when the browser gets stuck in an infinite loop when loading a website. -->
+  <string name="mozac_browser_errorpages_redirect_loop_title">Lapa netiek pareizi pāradresēta</string>
+  <!-- The error message shown when the browser gets stuck in an infinite loop when loading a website. -->
+  <string name="mozac_browser_errorpages_redirect_loop_message"><![CDATA[<p>Pārlūks vairs nemēģina izgūt pieprasīto vienumu. Vietne novirza pieprasījumu tā, ka to nav iespējams pabeigt.</p>\n<ul>\n<li>Vai šai vietnei nepieciešamās sīkdatnes ir atspējotas vai bloķētas?</li>\n<li>Ja vietnes sīkdatņu pieņemšana neatrisina problēmu, visticamāk, tā ir saistīta ar servera konfigurāciju, nevis jūsu ierīci.</li>\n</ul>]]></string>
   <!-- The document title and heading of the error page shown when a website cannot be loaded because the browser is in offline mode. -->
   <string name="mozac_browser_errorpages_offline_title">Bezsaistē</string>
   <!-- The error message shown when a website cannot be loaded because the browser is in offline mode. -->
   <string name="mozac_browser_errorpages_offline_message"><![CDATA[<p>Pārlūks darbojas bezsaistes režīmā un nevar savienoties ar pieprasīto vienumu.</p>\n<ul>\n<li>Vai ierīce ir savienota ar darbojošos tīklu?</li>\n<li>Jāspiež “Mēģināt vēlreiz”, lai pārslēgtos uz tiešsaistes režīmu un pārlādētu lapu.</li>\n</ul>]]></string>
+  <!-- The document title and heading of the error page shown when the browser prevents loading a website on a restricted port. -->
+  <string name="mozac_browser_errorpages_port_blocked_title">Ports ir ierobežots drošības apsvērumu dēļ</string>
+  <!-- The error message shown when the browser prevents loading a website on a restricted port. -->
+  <string name="mozac_browser_errorpages_port_blocked_message"><![CDATA[<p>Pieprasītajā adresē ir norādīts ports (piemēram, <q>mozilla.org:80</q> apzīmē mozilla.org 80. portu), ko parasti izmanto <em>citiem</em> nolūkiem, nevis tīmekļa pārlūkošanai. Lai aizsargātu jūs un gādātu par jūsu drošību, pārlūks atcēla pieprasījumu.</p>]]></string>
+  <!-- The document title and heading of the error page shown when the Internet connection is disrupted while loading a website. -->
+  <string name="mozac_browser_errorpages_net_reset_title">Savienojums tika pārtraukts</string>
   <!-- The error message shown when the Internet connection is disrupted while loading a website. -->
   <string name="mozac_browser_errorpages_net_reset_message"><![CDATA[<p>Tīkla savienojums tika pārtraukts savienojuma izveidošanas laikā. Lūgums mēģināt vēlreiz.</p>\n<ul>\n<li>Vietne varētu īslaicīgi būt nepieejama vai pārāk noslogota. Pēc kāda brīža jāmēģina vēlreiz.</li>\n<li>Ja nav iespējams ielādēt nevienu lapu, jāpārbauda ierīces datu vai Wi-Fi savienojums.</li>\n</ul>]]></string>
+  <!-- The document title and heading of the error page shown when the browser refuses to load a type of file that is considered unsafe. -->
+  <string name="mozac_browser_errorpages_unsafe_content_type_title">Nedrošs datnes formāts</string>
+  <!-- The error message shown when the browser refuses to load a type of file that is considered unsafe. -->
+  <string name="mozac_browser_errorpages_unsafe_content_type_message"><![CDATA[<ul>\n<li>Lūdzu, sazinieties ar vietnes īpašniekiem un informējiet viņus par šo problēmu.</li>\n</ul>]]></string>
+  <!-- The document title and heading of the error page shown when a file cannot be loaded because of a detected data corruption. -->
+  <string name="mozac_browser_errorpages_corrupted_content_title">Bojāta satura kļūda</string>
+  <!-- The error message shown when shown when a file cannot be loaded because of a detected data corruption. -->
+  <string name="mozac_browser_errorpages_corrupted_content_message"><![CDATA[<p>Lapu, kuru mēģināt skatīt, nevar parādīt, jo datu pārraides laikā tika konstatēta kļūda.</p>\n<ul>\n<li>Lūdzu, sazinieties ar vietnes īpašniekiem un informējiet viņus par šo problēmu.</li>\n</ul>]]></string>
+  <!-- The document title and heading of an error page. -->
+  <string name="mozac_browser_errorpages_content_crashed_title">Satura avārija</string>
+  <string name="mozac_browser_errorpages_content_crashed_message"><![CDATA[<p>Lapu, kuru mēģināt skatīt, nevar parādīt, jo datu pārraides laikā tika konstatēta kļūda.</p>\n<ul>\n<li>Lūdzu, sazinieties ar vietnes īpašniekiem un informējiet viņus par šo problēmu.</li>\n</ul>]]></string>
+  <!-- The document title and heading of an error page. -->
+  <string name="mozac_browser_errorpages_invalid_content_encoding_title">Satura kodējuma kļūda</string>
+  <string name="mozac_browser_errorpages_invalid_content_encoding_message"><![CDATA[<p>Lapu, kuru mēģināt apskatīt, nevar parādīt, jo tajā tiek izmantota nederīga vai neatbalstīta saspiešanas forma.</p>\n<ul>\n<li>Lūdzu, sazinieties ar vietnes īpašniekiem, lai informētu viņus par šo problēmu.</li>\n</ul>]]></string>
+  <!-- The document title and heading of an error page. -->
+  <string name="mozac_browser_errorpages_unknown_host_title">Adresi neizdevās atrast</string>
+  <!-- In the example, the two URLs in markup do not need to be translated. -->
+  <string name="mozac_browser_errorpages_unknown_host_message"><![CDATA[<p>Pārlūkam neizdevās atrast norādītajai adresei atbilstošo serveri.</p>\n<ul>\n<li>Pārbaudiet, vai adresē nav pārrakstīšanās kļūdu, piemēram, <strong>ww</strong>.example.com, nevis <strong>www</strong>.example.com.</li>\n<li>Ja nevarat ielādēt nevienu lapu, pārbaudiet ierīces mobilo datu vai Wi-Fi savienojumu.</li>\n</ul>]]></string>
   <!-- The document title and heading of an error page. -->
   <string name="mozac_browser_errorpages_no_internet_title_2">Izskatās, ka ir sarežģījums ar interneta savienojumu</string>
+  <!-- The main body text of this error page. It will be shown beneath the title -->
+  <string name="mozac_browser_errorpages_no_internet_message_2">Mēģiniet izveidot savienojumu, izmantojot citu ierīci. Pārbaudiet modemu vai maršrutētāju. Atvienojiet un atkārtoti pievienojiet Wi-Fi.</string>
   <!-- The document title and heading of an error page. -->
   <string name="mozac_browser_errorpages_no_internet_error_code">Kļūdas kods: NS_ERROR_OFFLINE</string>
+  <!-- Text that will show up on the button at the bottom of the error page -->
+  <string name="mozac_browser_errorpages_no_internet_refresh_button">Ielādēt vēlreiz</string>
+  <!-- The document title and heading of an error page. -->
+  <string name="mozac_browser_errorpages_malformed_uri_title">Nepareiza adrese</string>
+  <string name="mozac_browser_errorpages_malformed_uri_message"><![CDATA[<p>Norādītās adreses formāts nav atpazīts. Pārbaudiet, vai adreses joslā nav kļūdu, un mēģiniet vēlreiz.</p>]]></string>
+  <!-- The document title and heading of an error page. -->
+  <string name="mozac_browser_errorpages_malformed_uri_title_alternative">Adrese nav pareiza</string>
+  <!-- This string contains markup. The URL should not be localized. -->
+  <string name="mozac_browser_errorpages_malformed_uri_message_alternative"><![CDATA[<ul>\n<li>Tīmekļa adreses parasti tiek rakstītas šādi: <strong>http://www.example.com/</strong></li>\n<li>Pārliecinieties, ka izmantojat slīpsvītras (piemēram, <strong>/</strong>).</li>\n</ul>]]></string>
+  <!-- The document title and heading of an error page. -->
+  <string name="mozac_browser_errorpages_unknown_protocol_title">Neatpazīts protokols</string>
+  <string name="mozac_browser_errorpages_unknown_protocol_message"><![CDATA[<p>Adrese norāda protokolu (piemēram, <q>wxyz://</q>), ko pārlūks neatpazīst, tāpēc pārlūks nevar pareizi izveidot savienojumu ar vietni.</p>\n<ul>\n<li>Vai mēģināt piekļūt multivides vai citiem pakalpojumiem, kas nav teksts? Pārbaudiet vietnē papildu prasības.</li>\n<li>Dažiem protokoliem var būt nepieciešama trešo pušu programmatūra vai spraudņi, pirms pārlūks tos var atpazīt.</li>\n</ul>]]></string>
+  <!-- The document title and heading of an error page. -->
+  <string name="mozac_browser_errorpages_file_not_found_title">Datne nav atrasta</string>
+  <string name="mozac_browser_errorpages_file_not_found_message"><![CDATA[<ul>\n<li>Vai vienums nav pārdēvēts, izdzēsts vai pārvietots?</li>\n<li>Vai adresē nav pareizrakstības, lielo un mazo burtu lietojuma vai citas drukas kļūdas?</li>\n<li>Vai jums ir nepieciešamās atļaujas, lai piekļūtu pieprasītajam vienumam?</li>\n</ul>]]></string>
+  <!-- The document title and heading of an error page. -->
+  <string name="mozac_browser_errorpages_file_access_denied_title">Pieeja datnei tika liegta</string>
   <string name="mozac_browser_errorpages_proxy_connection_refused_message"><![CDATA[<p>Pārlūks ir konfigurēts izmantot starpniekserveri, bet starpniekserveris atteica savienojumu.</p>\n<ul>\n<li>Vai pārlūka starpniekservera konfigurācija ir pareiza? Jāpārbauda iestatījumi un jāmēģina vēlreiz.</li>\n<li>Vai starpniekservera pakalpojums atļauj savienojumus no šī tīkla?</li>\n<li>Joprojām ir sarežģījumi? Jāsazinās ar tīkla pārvaldītāju vai interneta pakalpojuma sniedzēju, lai iegūtu palīdzību.</li>\n</ul>]]></string>
   <string name="mozac_browser_errorpages_unknown_proxy_host_message"><![CDATA[<p>Pārlūks ir konfigurēts izmantot starpniekserveri, bet to nevarēja atrast.</p>\n<ul>\n<li>Vai pārlūka starpniekservera konfigurācija ir pareiza? Jāpārbauda iestatījumi un jāmēģina vēlreiz.</li>\n<li>Vai ierīce ir savienota ar darbīgu tīklu?</li>\n<li>Joprojām ir sarežģījumi? Jāsazinās ar tīkla pārvaldītāju vai interneta pakalpojuma sniedzēju, lai iegūtu palīdzību.</li>\n</ul>]]></string>
   <!-- Button on error page for websites that do not support HTTPS when HTTPS-Only is turned on. Clicking the button allows the user to nevertheless load the website using HTTP. -->
