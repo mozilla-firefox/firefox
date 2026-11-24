@@ -51,7 +51,7 @@ class SharedSurfacesParent final {
   static bool Release(const wr::ExternalImageId& aId, bool aForCreator = false);
 
   static void Add(const wr::ExternalImageId& aId,
-                  SurfaceDescriptorShared&& aDesc, base::ProcessId aPid);
+                  SurfaceDescriptorShared&& aDesc, GeckoChildID aChildID);
 
   static void Remove(const wr::ExternalImageId& aId);
 

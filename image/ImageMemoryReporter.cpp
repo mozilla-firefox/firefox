@@ -5,12 +5,12 @@
 #include "ImageMemoryReporter.h"
 
 #include "Image.h"
-#include "base/process_util.h"
 #include "mozilla/StaticPrefs_image.h"
 #include "mozilla/ipc/SharedMemoryMapping.h"
 #include "mozilla/layers/SharedSurfacesParent.h"
 #include "nsIMemoryReporter.h"
 #include "nsISupportsImpl.h"
+#include "nsXULAppAPI.h"
 
 namespace mozilla {
 namespace image {
@@ -93,8 +93,8 @@ void ImageMemoryReporter::ReportSharedSurface(
   }
 
   if (aIsForCompositor) {
-    path.AppendLiteral("pid=");
-    path.AppendInt(uint32_t(aEntry.mCreatorPid));
+    path.AppendLiteral("childid=");
+    path.AppendInt(aEntry.mCreatorChildID);
     path.AppendLiteral("/");
   }
 
@@ -120,7 +120,7 @@ void ImageMemoryReporter::ReportSharedSurface(
   // explicit section in the surface cache), we don't want report it again as
   // KIND_NONHEAP and have it counted again. The paths must be different if the
   // kinds are different to avoid problems when diffing memory reports.
-  bool sameProcess = aEntry.mCreatorPid == base::GetCurrentProcId();
+  bool sameProcess = aEntry.mCreatorChildID == XRE_GetChildID();
   int32_t kind;
   if (aIsForCompositor && !sameProcess) {
     path.AppendLiteral("nonheap");

@@ -8,9 +8,9 @@
 #include <cstdint>  // for uint32_t
 #include <unordered_map>
 
-#include "base/process.h"
 #include "ipc/IPCMessageUtils.h"
 #include "ipc/IPCMessageUtilsSpecializations.h"
+#include "mozilla/ProcessType.h"
 #include "mozilla/gfx/Point.h"  // for IntSize
 
 namespace mozilla {
@@ -20,7 +20,7 @@ class SharedSurfacesMemoryReport final {
  public:
   class SurfaceEntry final {
    public:
-    base::ProcessId mCreatorPid;
+    GeckoChildID mCreatorChildID;
     gfx::IntSize mSize;
     int32_t mStride;
     uint32_t mConsumers;
@@ -28,7 +28,7 @@ class SharedSurfacesMemoryReport final {
     PaddingField<bool, 3> _padding;
 
     auto MutTiedFields() {
-      return std::tie(mCreatorPid, mSize, mStride, mConsumers, mCreatorRef,
+      return std::tie(mCreatorChildID, mSize, mStride, mConsumers, mCreatorRef,
                       _padding);
     }
   };

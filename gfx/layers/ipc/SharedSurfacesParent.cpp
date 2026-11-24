@@ -15,6 +15,7 @@
 #include "mozilla/webrender/RenderSharedSurfaceTextureHost.h"
 #include "mozilla/webrender/RenderThread.h"
 #include "nsThreadUtils.h"  // for GetCurrentSerialEventTarget
+#include "nsXULAppAPI.h"
 
 namespace mozilla {
 namespace layers {
@@ -278,9 +279,9 @@ already_AddRefed<DataSourceSurface> SharedSurfacesParent::GetForIdNamespace(
 /* static */
 void SharedSurfacesParent::Add(const wr::ExternalImageId& aId,
                                SurfaceDescriptorShared&& aDesc,
-                               base::ProcessId aPid) {
+                               GeckoChildID aChildID) {
   MOZ_RELEASE_ASSERT(CompositorThreadHolder::IsInCompositorThread());
-  MOZ_RELEASE_ASSERT(aPid != base::GetCurrentProcId());
+  MOZ_RELEASE_ASSERT(aChildID != XRE_GetChildID());
 
   if (aDesc.format() != SurfaceFormat::B8G8R8X8 &&
       aDesc.format() != SurfaceFormat::B8G8R8A8) {
@@ -297,7 +298,7 @@ void SharedSurfacesParent::Add(const wr::ExternalImageId& aId,
   //
   // Note that the surface wrapper maps in the given handle as read only.
   surface->Init(aDesc.size(), aDesc.stride(), aDesc.format(),
-                std::move(aDesc.handle()), aPid);
+                std::move(aDesc.handle()), aChildID);
 
   StaticMutexAutoLock lock(sMutex);
   if (!sInstance) {
@@ -426,7 +427,7 @@ void SharedSurfacesParent::AccumulateMemoryReport(
     aReport.mSurfaces.insert(std::make_pair(
         entry.GetKey(),
         SharedSurfacesMemoryReport::SurfaceEntry{
-            surface->GetCreatorPid(), surface->GetSize(), surface->Stride(),
+            surface->GetCreatorChildID(), surface->GetSize(), surface->Stride(),
             surface->GetConsumers(), surface->HasCreatorRef()}));
   }
 }
@@ -453,7 +454,7 @@ bool SharedSurfacesParent::AccumulateMemoryReport(
     aReport.mSurfaces.insert(std::make_pair(
         entry.GetKey(),
         SharedSurfacesMemoryReport::SurfaceEntry{
-            surface->GetCreatorPid(), surface->GetSize(), surface->Stride(),
+            surface->GetCreatorChildID(), surface->GetSize(), surface->Stride(),
             surface->GetConsumers(), surface->HasCreatorRef()}));
   }
 

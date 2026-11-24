@@ -324,7 +324,7 @@ mozilla::ipc::IPCResult CompositorManagerParent::RecvAddSharedSurface(
     return IPC_OK();
   }
 
-  SharedSurfacesParent::Add(aId, std::move(aDesc), OtherPid());
+  SharedSurfacesParent::Add(aId, std::move(aDesc), OtherChildID());
 
   StaticMonitorAutoLock lock(sMonitor);
   uint32_t resourceId = static_cast<uint32_t>(wr::AsUint64(aId));

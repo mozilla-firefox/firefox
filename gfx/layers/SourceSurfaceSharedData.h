@@ -5,8 +5,8 @@
 #ifndef MOZILLA_GFX_SOURCESURFACESHAREDDATA_H_
 #define MOZILLA_GFX_SOURCESURFACESHAREDDATA_H_
 
-#include "base/process.h"
 #include "mozilla/Mutex.h"
+#include "mozilla/ProcessType.h"
 #include "mozilla/gfx/2D.h"
 #include "mozilla/ipc/SharedMemoryHandle.h"
 #include "mozilla/ipc/SharedMemoryMapping.h"
@@ -41,11 +41,11 @@ class SourceSurfaceSharedDataWrapper final : public DataSourceSurface {
 
   void Init(const IntSize& aSize, int32_t aStride, SurfaceFormat aFormat,
             mozilla::ipc::ReadOnlySharedMemoryHandle aHandle,
-            base::ProcessId aCreatorPid);
+            GeckoChildID aCreatorChildID);
 
   void Init(SourceSurfaceSharedData* aSurface);
 
-  base::ProcessId GetCreatorPid() const { return mCreatorPid; }
+  GeckoChildID GetCreatorChildID() const { return mCreatorChildID; }
 
   int32_t Stride() override { return mStride; }
 
@@ -114,7 +114,7 @@ class SourceSurfaceSharedDataWrapper final : public DataSourceSurface {
   mozilla::ipc::ReadOnlySharedMemoryHandle mBufHandle;
   std::shared_ptr<mozilla::ipc::MutableOrReadOnlySharedMemoryMapping> mBuf;
   SurfaceFormat mFormat = SurfaceFormat::UNKNOWN;
-  base::ProcessId mCreatorPid = 0;
+  GeckoChildID mCreatorChildID = kInvalidGeckoChildID;
   bool mCreatorRef = true;
 };
 

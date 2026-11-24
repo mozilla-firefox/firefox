@@ -4,7 +4,6 @@
 
 #include "SourceSurfaceSharedData.h"
 
-#include "base/process_util.h"
 #include "mozilla/Likely.h"
 #include "mozilla/StaticPrefs_image.h"
 #include "mozilla/image/SurfaceCache.h"
@@ -12,6 +11,7 @@
 #include "mozilla/layers/SharedSurfacesChild.h"
 #include "mozilla/layers/SharedSurfacesParent.h"
 #include "nsDebug.h"  // for NS_ABORT_OOM
+#include "nsXULAppAPI.h"
 
 #ifdef DEBUG
 /**
@@ -30,12 +30,12 @@ namespace gfx {
 
 void SourceSurfaceSharedDataWrapper::Init(
     const IntSize& aSize, int32_t aStride, SurfaceFormat aFormat,
-    ipc::ReadOnlySharedMemoryHandle aHandle, base::ProcessId aCreatorPid) {
+    ipc::ReadOnlySharedMemoryHandle aHandle, GeckoChildID aCreatorChildID) {
   MOZ_ASSERT(!mBuf);
   mSize = aSize;
   mStride = aStride;
   mFormat = aFormat;
-  mCreatorPid = aCreatorPid;
+  mCreatorChildID = aCreatorChildID;
 
   size_t len = GetAlignedDataLength();
   mBufHandle = std::move(aHandle);
@@ -70,7 +70,7 @@ void SourceSurfaceSharedDataWrapper::Init(SourceSurfaceSharedData* aSurface) {
   mSize = aSurface->mSize;
   mStride = aSurface->mStride;
   mFormat = aSurface->mFormat;
-  mCreatorPid = base::GetCurrentProcId();
+  mCreatorChildID = XRE_GetChildID();
   mBuf = aSurface->mBuf;
 }
 
