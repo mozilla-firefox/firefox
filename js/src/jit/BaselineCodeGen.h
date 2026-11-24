@@ -118,7 +118,9 @@ class BaselineCodeGen {
   void restoreInterpreterPCReg();
 
   // Subtracts |script->nslots() * sizeof(Value)| from reg.
-  void subtractScriptSlotsSize(Register reg, Register scratch);
+  // Jumps to `underflow` if the subtraction underflows.
+  void subtractScriptSlotsSize(Register reg, Register scratch,
+                               Label* underflow);
 
   // Loads the resume entries of the current BaselineScript* in dest
   void loadBaselineScriptResumeEntries(Register dest, Register scratch);

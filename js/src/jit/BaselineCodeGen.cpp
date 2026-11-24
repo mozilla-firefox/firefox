@@ -980,10 +980,12 @@ bool BaselineCodeGen<Handler>::emitStackCheck(RetAddrEntry::Kind kind,
   Label skipCall;
   if (handler.mustIncludeSlotsInStackCheck()) {
     // Subtract the size of script->nslots() first.
+    Label underflow;
     masm.moveStackPtrTo(scratch1);
-    subtractScriptSlotsSize(scratch1, scratch2);
+    subtractScriptSlotsSize(scratch1, scratch2, &underflow);
     masm.branchPtr(Assembler::BelowOrEqual, AbsoluteAddress(stackLimitAddr),
                    scratch1, &skipCall);
+    masm.bind(&underflow);
   } else {
     masm.branchStackPtrRhs(Assembler::BelowOrEqual,
                            AbsoluteAddress(stackLimitAddr), &skipCall);
@@ -1109,14 +1111,17 @@ bool BaselineInterpreterCodeGen::emitHandleCodeCoverageAtPrologue() {
 
 template <>
 void BaselineCompilerCodeGen::subtractScriptSlotsSize(Register reg,
-                                                      Register scratch) {
+                                                      Register scratch,
+                                                      Label* underflow) {
   uint32_t slotsSize = handler.script()->nslots() * sizeof(Value);
+  masm.branchPtr(Assembler::Below, reg, Imm32(slotsSize), underflow);
   masm.subPtr(Imm32(slotsSize), reg);
 }
 
 template <>
 void BaselineInterpreterCodeGen::subtractScriptSlotsSize(Register reg,
-                                                         Register scratch) {
+                                                         Register scratch,
+                                                         Label* underflow) {
   // reg = reg - script->nslots() * sizeof(Value)
   MOZ_ASSERT(reg != scratch);
   loadScript(scratch);
@@ -1127,6 +1132,7 @@ void BaselineInterpreterCodeGen::subtractScriptSlotsSize(Register reg,
   static_assert(sizeof(Value) == 8,
                 "shift by 3 below assumes Value is 8 bytes");
   masm.lshiftPtr(Imm32(3), scratch);
+  masm.branchPtr(Assembler::Below, reg, scratch, underflow);
   masm.subPtr(scratch, reg);
 }
 
