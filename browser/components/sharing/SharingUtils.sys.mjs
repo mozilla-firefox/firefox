@@ -109,7 +109,6 @@ class SharingUtilsCls {
 
     let menu = document.createXULElement("menu");
     let menuPopup = document.createXULElement("menupopup");
-    menuPopup.setAttribute("accesskey-conflicts-bug", "2073899");
     menuPopup.addEventListener("popupshowing", this);
     menu.appendChild(menuPopup);
 
@@ -326,7 +325,7 @@ class SharingUtilsCls {
       menuPopup.appendChild(document.createXULElement("menuseparator"));
       let winShareItem = document.createXULElement("menuitem");
       winShareItem.classList.add("share-windows-item");
-      document.l10n.setAttributes(winShareItem, "menu-share-windows");
+      document.l10n.setAttributes(winShareItem, "menu-share-windows2");
       if (!shouldEnable || isMultiTab) {
         winShareItem.setAttribute("disabled", "true");
       }
