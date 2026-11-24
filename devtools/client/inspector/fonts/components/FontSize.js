@@ -71,7 +71,7 @@ class FontSize extends PureComponent {
     return FontPropertyValue({
       allowOverflow: true,
       disabled: this.props.disabled,
-      label: getStr("fontinspector.fontSizeLabel"),
+      label: getStr("font-inspector-font-size-label"),
       min: 0,
       max: this.historicMax[unit],
       name: "font-size",

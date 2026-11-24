@@ -80,7 +80,7 @@ class LineHeight extends PureComponent {
     return FontPropertyValue({
       allowOverflow: true,
       disabled: this.props.disabled,
-      label: getStr("fontinspector.lineHeightLabelCapitalized"),
+      label: getStr("font-inspector-line-height-label"),
       min: 0,
       max: this.historicMax[unit],
       name: "line-height",

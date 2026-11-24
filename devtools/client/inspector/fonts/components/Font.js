@@ -110,7 +110,7 @@ class Font extends PureComponent {
         : dom.button({
             className: "font-truncated-string-expander",
             onClick: this.onFontFaceRuleToggle,
-            title: getStr("fontinspector.showFullText"),
+            title: getStr("font-inspector-show-full-text"),
           }),
       trailing
     );
@@ -123,7 +123,7 @@ class Font extends PureComponent {
       className: "theme-twisty",
       onClick: this.onFontFaceRuleToggle,
       "aria-expanded": isFontFaceRuleExpanded,
-      title: getStr("fontinspector.showFullText"),
+      title: getStr("font-inspector-show-full-text"),
     });
   }
 

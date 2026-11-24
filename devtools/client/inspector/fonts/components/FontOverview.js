@@ -52,7 +52,7 @@ class FontOverview extends PureComponent {
     return Accordion({
       items: [
         {
-          header: getStr("fontinspector.allFontsOnPageHeader"),
+          header: getStr("font-inspector-all-fonts-on-page-header"),
           id: "font-list-details",
           component: FontList,
           componentProps: {

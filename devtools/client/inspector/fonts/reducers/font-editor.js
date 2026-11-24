@@ -21,7 +21,7 @@ const {
   UPDATE_WARNING_MESSAGE,
 } = require("resource://devtools/client/inspector/fonts/actions/index.js");
 
-const CUSTOM_INSTANCE_NAME = getStr("fontinspector.customInstanceName");
+const CUSTOM_INSTANCE_NAME = getStr("font-inspector-custom-instance-name");
 
 const INITIAL_STATE = {
   // Variable font axes.
@@ -42,7 +42,7 @@ const INITIAL_STATE = {
   // Unique identifier for the selected element.
   id: "",
   // Warning message with the reason why the font editor cannot be shown.
-  warning: getStr("fontinspector.noFontsUsedOnCurrentElement"),
+  warning: getStr("font-inspector-no-fonts-used"),
 };
 
 const reducers = {

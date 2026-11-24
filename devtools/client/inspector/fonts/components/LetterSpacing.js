@@ -83,7 +83,7 @@ class LetterSpacing extends PureComponent {
       allowOverflow: true,
       allowUnderflow: true,
       disabled: this.props.disabled,
-      label: getStr("fontinspector.letterSpacingLabel"),
+      label: getStr("font-inspector-letter-spacing-label"),
       min: this.historicMin[unit],
       max: this.historicMax[unit],
       name: "letter-spacing",

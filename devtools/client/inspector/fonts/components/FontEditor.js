@@ -121,11 +121,11 @@ class FontEditor extends PureComponent {
             {},
             dom.span(
               { className: "label-open" },
-              getStr("fontinspector.showMore")
+              getStr("font-inspector-show-more")
             ),
             dom.span(
               { className: "label-close" },
-              getStr("fontinspector.showLess")
+              getStr("font-inspector-show-less")
             )
           ),
           moreFontsList
@@ -139,7 +139,7 @@ class FontEditor extends PureComponent {
         {
           className: "font-control-label",
         },
-        getStr("fontinspector.fontsUsedLabel")
+        getStr("font-inspector-fonts-used-label")
       ),
       dom.div(
         {
@@ -250,7 +250,7 @@ class FontEditor extends PureComponent {
   renderInstances(fontInstances = [], selectedInstance = {}) {
     // Append a "Custom" instance entry which represents the latest manual axes changes.
     const customInstance = {
-      name: getStr("fontinspector.customInstanceName"),
+      name: getStr("font-inspector-custom-instance-name"),
       values: this.props.fontEditor.customInstanceValues,
     };
     fontInstances = [...fontInstances, customInstance];
@@ -290,7 +290,7 @@ class FontEditor extends PureComponent {
         {
           className: "font-control-label",
         },
-        getStr("fontinspector.fontInstanceLabel")
+        getStr("font-inspector-font-instance-label")
       ),
       instanceSelect
     );

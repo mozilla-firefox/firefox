@@ -52,7 +52,7 @@ class FontOrigin extends PureComponent {
         {
           className: "font-origin system",
         },
-        getStr("fontinspector.system")
+        getStr("font-inspector-system")
       );
     }
 
@@ -70,7 +70,7 @@ class FontOrigin extends PureComponent {
       dom.button({
         className: "copy-icon",
         onClick: this.onCopyURL,
-        title: getStr("fontinspector.copyURL"),
+        title: getStr("font-inspector-copy-url-title"),
       })
     );
   }

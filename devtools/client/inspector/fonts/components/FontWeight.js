@@ -30,7 +30,7 @@ class FontWeight extends PureComponent {
   render() {
     return FontPropertyValue({
       disabled: this.props.disabled,
-      label: getStr("fontinspector.fontWeightLabel"),
+      label: getStr("font-inspector-font-weight-label"),
       min: 100,
       max: 900,
       name: "font-weight",

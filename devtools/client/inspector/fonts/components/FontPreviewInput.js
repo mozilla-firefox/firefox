@@ -65,7 +65,7 @@ class FontPreviewInput extends PureComponent {
         onChange: this.onChange,
         onFocus: this.onFocus,
         maxLength: PREVIEW_TEXT_MAX_LENGTH,
-        placeholder: getStr("fontinspector.previewTextPlaceholder"),
+        placeholder: getStr("font-inspector-preview-text-placeholder"),
         ref: this.inputRef,
         type: "text",
         value: this.state.value,

@@ -53,7 +53,7 @@ class FontMetadata extends PureComponent {
       });
     };
 
-    const title = getStr("fontinspector.showFullText");
+    const title = getStr("font-inspector-show-full-text");
 
     return [
       dom.button(
@@ -83,7 +83,7 @@ class FontMetadata extends PureComponent {
 
     if (font.version) {
       dlItems.push(
-        dom.dt({}, getStr("fontinspector.fontVersion")),
+        dom.dt({}, getStr("font-inspector-font-version")),
         // font.version might already have the `Version` prefix, remove it.
         dom.dd({}, font.version.replace(/^version(\s|:)*/i, ""))
       );
@@ -99,7 +99,7 @@ class FontMetadata extends PureComponent {
 
     if (font.designer) {
       dlItems.push(
-        dom.dt({}, getStr("fontinspector.fontDesigner")),
+        dom.dt({}, getStr("font-inspector-font-designer")),
         dom.dd(
           {},
           font.designerUrl && URL.canParse(font.designerUrl)
@@ -117,14 +117,14 @@ class FontMetadata extends PureComponent {
 
     if (font.manufacturer) {
       dlItems.push(
-        dom.dt({}, getStr("fontinspector.fontManufacturer")),
+        dom.dt({}, getStr("font-inspector-font-manufacturer")),
         dom.dd({}, font.manufacturer)
       );
     }
 
     if (font.vendorUrl) {
       dlItems.push(
-        dom.dt({}, getStr("fontinspector.fontVendor")),
+        dom.dt({}, getStr("font-inspector-font-vendor")),
         dom.dd(
           {},
           dom.a({ href: font.vendorUrl, onClick: onClickLink }, font.vendorUrl)
@@ -134,21 +134,21 @@ class FontMetadata extends PureComponent {
 
     if (font.description) {
       dlItems.push(
-        dom.dt({}, getStr("fontinspector.fontDescription")),
+        dom.dt({}, getStr("font-inspector-font-description")),
         dom.dd({}, this.renderExpandableString("description"))
       );
     }
 
     if (font.license) {
       dlItems.push(
-        dom.dt({}, getStr("fontinspector.fontLicense")),
+        dom.dt({}, getStr("font-inspector-font-license")),
         dom.dd({}, this.renderExpandableString("license"))
       );
     }
 
     if (font.licenseUrl) {
       dlItems.push(
-        dom.dt({}, getStr("fontinspector.fontLicenseInfoUrl")),
+        dom.dt({}, getStr("font-inspector-font-license-info-url")),
         dom.dd(
           {},
           dom.a(

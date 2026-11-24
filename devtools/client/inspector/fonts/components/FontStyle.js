@@ -46,7 +46,7 @@ class FontStyle extends PureComponent {
         {
           className: "font-control-label",
         },
-        getStr("fontinspector.fontItalicLabel")
+        getStr("font-inspector-font-italic-label")
       ),
       dom.div(
         {

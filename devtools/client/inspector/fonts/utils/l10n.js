@@ -4,11 +4,10 @@
 
 "use strict";
 
-const { LocalizationHelper } = require("resource://devtools/shared/l10n.js");
-const L10N = new LocalizationHelper(
-  "devtools/client/locales/font-inspector.properties"
-);
+loader.lazyGetter(this, "L10N", () => {
+  return new Localization(["devtools/client/font-inspector.ftl"], true);
+});
 
 module.exports = {
-  getStr: (...args) => L10N.getStr(...args),
+  getStr: id => L10N.formatValueSync(id),
 };
