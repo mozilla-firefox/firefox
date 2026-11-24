@@ -118,7 +118,7 @@ ipc::IPCResult IPDLUnitTestParent::RecvReport(const TestPartResult& aReport) {
 
   // Report the failure
   ADD_FAILURE_AT(aReport.filename().get(), aReport.lineNumber())
-      << "[child " << OtherPid() << "] " << aReport.summary();
+      << "[child " << OtherChildID() << "] " << aReport.summary();
 
   // If the failure was fatal, kill the child process to avoid hangs.
   if (aReport.fatal()) {
