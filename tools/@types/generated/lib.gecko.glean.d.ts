@@ -1411,6 +1411,8 @@ interface GleanImpl {
     startupSessionDecision: GleanEventWithExtras<{ action?: string, init_error?: string, interstitial_reason?: string, permanent_private?: string|boolean, previous_session_crashed?: string|boolean, resume_reason?: string, session_type?: string }>;
     startupSessionOutcome: GleanEventWithExtras<{ outcome?: string }>;
     startupTimeline: Record<"sessionRestoreInitialized"|"sessionRestoreRestoring", GleanQuantity>;
+    tabGroupIntegrityChecked: Record<"closed_group"|"closed_window_group"|"closed_window_grouped_tab"|"open_window_group"|"open_window_grouped_tab"|"saved_group", GleanCounter>;
+    tabGroupIntegrityProblems: Record<"closed_group_without_tabs"|"closed_window_check_failed"|"closed_window_group_without_tabs"|"closed_window_tab_missing_group"|"last_session_check_failed"|"open_window_check_failed"|"open_window_group_without_tabs"|"open_window_tab_missing_group"|"saved_group_not_object"|"saved_group_stale_restore_flag"|"saved_group_without_tabs"|"saved_groups_check_failed", GleanCounter>;
     windowFeaturesMismatchIgnored: GleanEventWithExtras<{ entry_point?: string, existing_features?: string, requested_features?: string }>;
     writeAttempts: GleanCounter;
     writeFailure: GleanEventWithExtras<{ cause?: string, is_final_write?: string|boolean, session_written?: string|boolean, step?: string }>;

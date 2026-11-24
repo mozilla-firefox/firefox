@@ -73,6 +73,12 @@ skip-if = [
 
 ["test_startup_session_async.js"]
 
+["test_startup_tab_group_integrity.js"]
+
+["test_startup_tab_group_integrity_malformed.js"]
+
+["test_tab_group_integrity.js"]
+
 ["test_tab_group_state.js"]
 
 ["test_write_outcome.js"]

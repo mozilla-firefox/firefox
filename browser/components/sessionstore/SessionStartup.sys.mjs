@@ -39,6 +39,8 @@ const lazy = XPCOMUtils.declareLazy({
   SessionFile: "moz-src:///browser/components/sessionstore/SessionFile.sys.mjs",
   StartupPerformance:
     "moz-src:///browser/components/sessionstore/StartupPerformance.sys.mjs",
+  TabGroupIntegrity:
+    "moz-src:///browser/components/sessionstore/TabGroupIntegrity.sys.mjs",
   sessionStoreLogger:
     "moz-src:///browser/components/sessionstore/SessionLogger.sys.mjs",
 });
@@ -260,6 +262,8 @@ class _SessionStartup {
       return;
     }
 
+    this.#recordTabGroupIntegrity(this.#initialState);
+
     let initialState = this.#initialState;
     Services.tm.idleDispatchToMainThread(() => {
       let pinnedTabCount = initialState.windows.reduce((winAcc, win) => {
@@ -390,6 +394,29 @@ class _SessionStartup {
 
   get onceInitialized() {
     return gOnceInitializedDeferred.promise;
+  }
+
+  /**
+   * Must run before lastSessionState is discarded for a deferred startup, and before
+   * SessionStore changes the state.
+   *
+   * @param {object} state
+   */
+  #recordTabGroupIntegrity(state) {
+    try {
+      let { checked, problems } = lazy.TabGroupIntegrity.check(state);
+      for (let [label, count] of Object.entries(checked)) {
+        Glean.sessionRestore.tabGroupIntegrityChecked[label].add(count);
+      }
+      for (let [label, count] of Object.entries(problems)) {
+        Glean.sessionRestore.tabGroupIntegrityProblems[label].add(count);
+      }
+      if (Object.keys(problems).length) {
+        lazy.sessionStoreLogger.warn("Tab group integrity problems", problems);
+      }
+    } catch (ex) {
+      lazy.sessionStoreLogger.error("Failed to check tab group integrity", ex);
+    }
   }
 
   /**

@@ -32,6 +32,7 @@ MOZ_SRC_FILES += [
     "SessionWriter.sys.mjs",
     "StartupPerformance.sys.mjs",
     "TabAttributes.sys.mjs",
+    "TabGroupIntegrity.sys.mjs",
     "TabGroupState.sys.mjs",
     "TabSplitViewState.sys.mjs",
     "TabState.sys.mjs",

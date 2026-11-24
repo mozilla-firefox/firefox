@@ -900,6 +900,72 @@ session_restore:
     data_sensitivity:
       - interaction
 
+  tab_group_integrity_checked:
+    type: labeled_counter
+    description: >
+      Recorded once per startup, when the session file has been read. Counts
+      the tab groups, and the tabs with a group id, that were checked for
+      broken references, by where they were found in the session state. Use it
+      as the denominator for tab_group_integrity_problems.
+    bugs:
+      - https://bugzilla.mozilla.org/show_bug.cgi?id=2092154
+    data_reviews:
+      - https://bugzilla.mozilla.org/show_bug.cgi?id=2092154
+    notification_emails:
+      - session-restore-telemetry-alerts@mozilla.com
+    # We should have identified all of the problem areas after several months
+    expires: 190
+    labels:
+      - open_window_group
+      - open_window_grouped_tab
+      - closed_window_group
+      - closed_window_grouped_tab
+      - closed_group
+      - saved_group
+    data_sensitivity:
+      - technical
+
+  tab_group_integrity_problems:
+    type: labeled_counter
+    description: >
+      Recorded once per startup, when the session file has been read. Counts
+      broken tab group references in the session state, by kind:
+      a group in a window that no tab in that window points to
+      (*_group_without_tabs), a tab whose group id has no matching group in
+      its window (*_tab_missing_group), a closed or saved group with no tabs,
+      a saved group entry that is not an object, and a saved group flagged
+      removeAfterRestore that the last session to be restored would not reopen
+      (saved_group_stale_restore_flag), which restoring that session would
+      delete. Not counted when there is no last session to restore.
+      Malformed session data is counted as *_check_failed:
+      once per open or closed window that could not be checked (which
+      adds no other counts), once if the list of windows isn't a list, or once
+      if the saved groups or the last session's windows could not be checked.
+      The counts from everything else in the session are still recorded.
+    bugs:
+      - https://bugzilla.mozilla.org/show_bug.cgi?id=2092154
+    data_reviews:
+      - https://bugzilla.mozilla.org/show_bug.cgi?id=2092154
+    notification_emails:
+      - session-restore-telemetry-alerts@mozilla.com
+    # We should have identified all of the problem areas after several months
+    expires: 190
+    labels:
+      - open_window_group_without_tabs
+      - open_window_tab_missing_group
+      - closed_window_group_without_tabs
+      - closed_window_tab_missing_group
+      - closed_group_without_tabs
+      - saved_group_without_tabs
+      - saved_group_not_object
+      - saved_group_stale_restore_flag
+      - open_window_check_failed
+      - closed_window_check_failed
+      - saved_groups_check_failed
+      - last_session_check_failed
+    data_sensitivity:
+      - technical
+
   window_features_mismatch_ignored:
     type: event
     # We should have identified all of the problem areas after a few months
