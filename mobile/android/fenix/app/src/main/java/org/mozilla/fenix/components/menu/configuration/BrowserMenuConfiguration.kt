@@ -160,6 +160,15 @@ object BrowserMenuConfiguration {
     /** All the sections of the browser menu, including the ones hidden by default. */
     fun allSections(): List<MenuSectionConfiguration> = allSections(shouldShowNavigationItemsAtTheTop = true)
 
+    /**
+     * All the sections of the browser menu, including the ones hidden by default, with the items chosen by the user.
+     *
+     * @param customizedSectionsInfo The items of each section chosen by the user, keyed by section id. Sections not in
+     *   here have their default items.
+     */
+    fun allSections(customizedSectionsInfo: Map<String, CustomizedSectionInfo>): List<MenuSectionConfiguration> =
+        allSections().map { it.withCustomizedItems(customizedSectionsInfo[it.id]) }
+
     private val FenixMenuItem.expandsTo: List<FenixMenuItem>
         get() = (this as? FenixExpandableMenuItem)?.subMenuItems.orEmpty()
 

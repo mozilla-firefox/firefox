@@ -147,6 +147,31 @@ class MenuBuilderTest {
         assertEquals(moreItem.copy(subMenuItems = listOf(findInPageItem)), shown)
     }
 
+    @Test
+    fun `GIVEN a configuration other than the registry's WHEN building the menu THEN build only its sections with their items`() =
+        runTest {
+            val registry =
+                MenuItemsRegistry(
+                    configuration = sectionOf(Row),
+                    resolver = { FakeMenuItemProvider(MutableStateFlow(listOf(readerViewItem))) },
+                )
+            val configuration =
+                listOf(
+                    MenuSectionConfiguration(
+                        id = "other",
+                        presentationMode = Grid,
+                        items = listOf(CustomizeReaderView),
+                    )
+                )
+
+            val builder = MenuBuilder(registry, configuration)
+
+            assertEquals(
+                listOf(MenuItemsGroup.Grid(id = "other", items = listOf(readerViewItem))),
+                builder.menuStructure.first(),
+            )
+        }
+
     private fun createExpandingMenuBuilder(
         expandingTo: StateFlow<List<MenuItem>>,
         header: StateFlow<List<MenuItem>> = MutableStateFlow(listOf(moreItem)),

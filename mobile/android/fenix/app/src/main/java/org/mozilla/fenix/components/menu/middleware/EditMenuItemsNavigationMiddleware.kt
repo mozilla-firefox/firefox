@@ -8,6 +8,7 @@ import androidx.navigation.NavController
 import mozilla.components.compose.menu.store.CustomizableMenuItemsAction
 import mozilla.components.compose.menu.store.CustomizableMenuItemsAction.ExpansionToggled
 import mozilla.components.compose.menu.store.CustomizableMenuItemsAction.Init
+import mozilla.components.compose.menu.store.CustomizableMenuItemsAction.ItemsChanged
 import mozilla.components.compose.menu.store.CustomizableMenuItemsAction.PreviewClicked
 import mozilla.components.compose.menu.store.CustomizableMenuItemsAction.Update
 import mozilla.components.compose.menu.store.CustomizableMenuItemsState
@@ -45,6 +46,7 @@ class EditMenuItemsNavigationMiddleware(private val navController: NavController
 
             is Init,
             is Update,
+            is ItemsChanged,
             is ExpansionToggled -> Unit
         }
     }

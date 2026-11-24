@@ -4,11 +4,15 @@
 
 package mozilla.components.compose.menu.ui.customize
 
+import androidx.compose.ui.geometry.Offset
 import androidx.compose.ui.test.assertIsDisplayed
 import androidx.compose.ui.test.getUnclippedBoundsInRoot
 import androidx.compose.ui.test.junit4.v2.createComposeRule
 import androidx.compose.ui.test.onNodeWithText
+import androidx.compose.ui.test.onRoot
 import androidx.compose.ui.test.performClick
+import androidx.compose.ui.test.performTouchInput
+import androidx.compose.ui.unit.dp
 import androidx.test.ext.junit.runners.AndroidJUnit4
 import mozilla.components.compose.base.text.Text
 import mozilla.components.compose.base.theme.AcornTheme
@@ -18,6 +22,7 @@ import mozilla.components.compose.menu.data.ExpandableMenuItem
 import mozilla.components.compose.menu.data.MenuItemTitle
 import mozilla.components.compose.menu.data.StandardMenuItem
 import mozilla.components.compose.menu.store.CustomizableMenuItemsAction
+import mozilla.components.compose.menu.store.CustomizableMenuItemsAction.ItemsChanged
 import mozilla.components.compose.menu.store.CustomizableMenuItemsAction.PreviewClicked
 import mozilla.components.compose.menu.store.CustomizableMenuItemsState
 import mozilla.components.compose.menu.store.CustomizableMenuItemsStore
@@ -25,6 +30,7 @@ import mozilla.components.compose.menu.store.MenuEvent
 import mozilla.components.compose.menu.ui.MenuItemState
 import mozilla.components.lib.state.Middleware
 import mozilla.components.support.test.robolectric.testContext
+import org.junit.Assert.assertEquals
 import org.junit.Assert.assertTrue
 import org.junit.Rule
 import org.junit.Test
@@ -133,12 +139,149 @@ class EditMenuItemsContentTest {
         assertTrue(PreviewClicked in actions)
     }
 
+    @Test
+    fun `WHEN a shown item is dragged by its handle above another one THEN it is shown before it`() {
+        val actions = mutableListOf<CustomizableMenuItemsAction>()
+        val store =
+            setContent(
+                CustomizableMenuItemsState(items = listOf(item("Shown 1"), item("Shown 2"), item("Shown 3"))),
+                listOf(capturing(actions)),
+            )
+
+        dragByHandle(title = "Shown 3", to = { boundsOf("Shown 1").topCenter })
+
+        assertEquals(listOf("Shown 3", "Shown 1", "Shown 2"), store.state.items.map { it.id })
+        assertEquals(
+            ItemsChanged(items = store.state.items, hiddenItems = emptyList()),
+            actions.filterIsInstance<ItemsChanged>().single(),
+        )
+    }
+
+    @Test
+    fun `WHEN a sub-item is dragged by its handle below another sub-item THEN it is shown after it`() {
+        val more = expandable("More", item("Sub 1"), item("Sub 2"), item("Sub 3"))
+        val store =
+            setContent(CustomizableMenuItemsState(items = listOf(item("Shown"), more), expandedItemIds = setOf("More")))
+
+        dragByHandle(title = "Sub 1", to = { boundsOf("Sub 2").bottomCenter })
+
+        val subItems = store.state.items.first { it.id == "More" }.subItems
+        assertEquals(listOf("Sub 2", "Sub 1", "Sub 3"), subItems.map { it.id })
+        assertEquals(listOf("Shown", "More"), store.state.items.map { it.id })
+    }
+
+    @Test
+    fun `WHEN a shown item is dragged by its handle among the sub-items of another item THEN it is put back`() {
+        val actions = mutableListOf<CustomizableMenuItemsAction>()
+        val more = expandable("More", item("Sub 1"), item("Sub 2"))
+        val store =
+            setContent(
+                CustomizableMenuItemsState(items = listOf(item("Shown"), more), expandedItemIds = setOf("More")),
+                listOf(capturing(actions)),
+            )
+
+        dragByHandle(title = "Shown", to = { boundsOf("Sub 2").center })
+
+        assertEquals(listOf("Shown", "More"), store.state.items.map { it.id })
+        assertTrue(actions.none { it is ItemsChanged })
+    }
+
+    @Test
+    fun `WHEN a shown item is dragged by its handle into the area to hide items THEN it is put back`() {
+        val actions = mutableListOf<CustomizableMenuItemsAction>()
+        val store =
+            setContent(
+                CustomizableMenuItemsState(items = listOf(item("Shown 1"), item("Shown 2"))),
+                listOf(capturing(actions)),
+            )
+
+        dragByHandle(title = "Shown 1", to = { boundsOf(dragToHide).center })
+
+        assertEquals(listOf("Shown 1", "Shown 2"), store.state.items.map { it.id })
+        assertTrue(actions.none { it is ItemsChanged })
+    }
+
+    @Test
+    fun `WHEN a shown item is long pressed on its body and dragged above another one THEN it is shown before it`() {
+        val actions = mutableListOf<CustomizableMenuItemsAction>()
+        val store =
+            setContent(
+                CustomizableMenuItemsState(items = listOf(item("Shown 1"), item("Shown 2"), item("Shown 3"))),
+                listOf(capturing(actions)),
+            )
+
+        dragFrom(start = boundsOf("Shown 3").center, afterLongPress = true, to = { boundsOf("Shown 1").topCenter })
+
+        assertEquals(listOf("Shown 3", "Shown 1", "Shown 2"), store.state.items.map { it.id })
+        assertEquals(
+            ItemsChanged(items = store.state.items, hiddenItems = emptyList()),
+            actions.filterIsInstance<ItemsChanged>().single(),
+        )
+    }
+
+    @Test
+    fun `WHEN an expanded item is pressed where the handle of other items is and moved THEN nothing is saved`() {
+        val actions = mutableListOf<CustomizableMenuItemsAction>()
+        val store =
+            setContent(
+                CustomizableMenuItemsState(
+                    items = listOf(item("Shown"), expandable("More", item("Sub 1"))),
+                    expandedItemIds = setOf("More"),
+                ),
+                listOf(capturing(actions)),
+            )
+
+        dragByHandle(title = "More", to = { boundsOf("Shown").topCenter })
+
+        assertEquals(listOf("Shown", "More"), store.state.items.map { it.id })
+        assertTrue(actions.none { it is ItemsChanged })
+    }
+
     private fun setContent(
         state: CustomizableMenuItemsState,
         middleware: List<Middleware<CustomizableMenuItemsState, CustomizableMenuItemsAction>> = emptyList(),
-    ) {
+    ): CustomizableMenuItemsStore {
         val store = CustomizableMenuItemsStore(initialState = state, middleware = middleware)
         composeTestRule.setContent { AcornTheme { EditMenuItemsContent(store = store) } }
+        return store
+    }
+
+    private fun capturing(
+        actions: MutableList<CustomizableMenuItemsAction>
+    ): Middleware<CustomizableMenuItemsState, CustomizableMenuItemsAction> = { _, next, action ->
+        actions.add(action)
+        next(action)
+    }
+
+    private fun boundsOf(text: String) = composeTestRule.onNodeWithText(text).fetchSemanticsNode().boundsInRoot
+
+    /** Tap the handle of the row with [title], drag it in steps to [to] and let go of it. */
+    private fun dragByHandle(title: String, to: () -> Offset) {
+        val listBounds = composeTestRule.onRoot().fetchSemanticsNode().boundsInRoot
+        val distanceFromEnd = with(composeTestRule.density) { 30.dp.toPx() }
+        dragFrom(Offset(listBounds.right - distanceFromEnd, boundsOf(title).center.y), afterLongPress = false, to = to)
+    }
+
+    /** Press at [start], hold it for a long press if [afterLongPress], drag in steps to [to] and let go. */
+    private fun dragFrom(start: Offset, afterLongPress: Boolean, to: () -> Offset) {
+        composeTestRule.onRoot().performTouchInput {
+            down(start)
+            if (!afterLongPress) moveBy(Offset(0f, viewConfiguration.touchSlop * 3))
+        }
+        if (afterLongPress) composeTestRule.mainClock.advanceTimeBy(LONG_PRESS_WAIT_MILLIS)
+        composeTestRule.onRoot().performTouchInput { moveBy(Offset(0f, viewConfiguration.touchSlop * 3)) }
+        composeTestRule.waitForIdle()
+
+        var from = Offset.Zero
+        composeTestRule.onRoot().performTouchInput { from = checkNotNull(currentPosition()) }
+        val steps = 10
+        val step = (to() - from) / steps.toFloat()
+        repeat(steps) {
+            composeTestRule.onRoot().performTouchInput { moveBy(step) }
+            composeTestRule.waitForIdle()
+        }
+        composeTestRule.onRoot().performTouchInput { up() }
+        composeTestRule.waitForIdle()
     }
 
     private fun item(title: String) =
@@ -161,3 +304,5 @@ class EditMenuItemsContentTest {
             subItems = subItems.toList(),
         )
 }
+
+private const val LONG_PRESS_WAIT_MILLIS = 1_000L

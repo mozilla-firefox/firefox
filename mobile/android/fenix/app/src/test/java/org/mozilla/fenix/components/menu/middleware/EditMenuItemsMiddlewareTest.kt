@@ -6,6 +6,7 @@ package org.mozilla.fenix.components.menu.middleware
 
 import io.mockk.every
 import io.mockk.mockk
+import io.mockk.verify
 import kotlin.test.assertEquals
 import kotlin.test.assertNull
 import kotlinx.coroutines.ExperimentalCoroutinesApi
@@ -19,6 +20,7 @@ import mozilla.components.compose.menu.data.MenuItem
 import mozilla.components.compose.menu.data.MenuItemTitle
 import mozilla.components.compose.menu.data.StandardMenuItem
 import mozilla.components.compose.menu.store.CustomizableMenuItemsAction
+import mozilla.components.compose.menu.store.CustomizableMenuItemsAction.ItemsChanged
 import mozilla.components.compose.menu.store.CustomizableMenuItemsAction.Update
 import mozilla.components.compose.menu.store.CustomizableMenuItemsState
 import mozilla.components.compose.menu.store.CustomizableMenuItemsStore
@@ -127,6 +129,42 @@ class EditMenuItemsMiddlewareTest {
                 assertNull(it.hiddenItems.single().item)
             }
         }
+
+    @Test
+    fun `WHEN the user moves an item THEN save the shown and the hidden items with their sub-items`() = runTest {
+        val store = createStore(sectionsCustomization = MutableStateFlow(emptyMap()))
+        runCurrent()
+        val more = More(emptyList()).id
+
+        store.dispatch(
+            ItemsChanged(
+                items =
+                    listOf(
+                        CustomizableMenuItem(FindInPage.id, itemOf(FindInPage.id)),
+                        CustomizableMenuItem(
+                            more,
+                            itemOf(more),
+                            subItems = listOf(CustomizableMenuItem(Print.id, itemOf(Print.id))),
+                        ),
+                    ),
+                hiddenItems = listOf(CustomizableMenuItem(DesktopSite.id, itemOf(DesktopSite.id))),
+            )
+        )
+
+        verify {
+            repository.save(
+                CustomizedSectionInfo(
+                    sectionId = TOOLS_GROUP_ID,
+                    items =
+                        listOf(
+                            CustomizedItemInfo(FindInPage.id),
+                            CustomizedItemInfo(more, subItemIds = listOf(Print.id)),
+                        ),
+                    hiddenItems = listOf(CustomizedItemInfo(DesktopSite.id)),
+                )
+            )
+        }
+    }
 
     private fun itemOf(id: String): MenuItem = StandardMenuItem(title = MenuItemTitle(Text.String(id)))
 

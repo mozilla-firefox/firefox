@@ -473,6 +473,32 @@ class BrowserMenuConfigurationTest {
     }
 
     @Test
+    fun `GIVEN the user customized the tools items WHEN getting all the browser menu sections THEN the tools section has the saved items and the others are unchanged`() {
+        val toolsInfo =
+            CustomizedSectionInfo(
+                sectionId = TOOLS_GROUP_ID,
+                items =
+                    listOf(
+                        CustomizedItemInfo(Translate.id),
+                        CustomizedItemInfo("more", subItemIds = listOf(Print.id, FenixMenuItem.SummarizePage.id)),
+                        CustomizedItemInfo(FindInPage.id),
+                    ),
+                hiddenItems = listOf(CustomizedItemInfo(DesktopSite.id), CustomizedItemInfo(Extensions.id)),
+            )
+
+        val sections = BrowserMenuConfiguration.allSections(mapOf(TOOLS_GROUP_ID to toolsInfo))
+
+        assertEquals(
+            listOf(Translate, More(listOf(Print, FenixMenuItem.SummarizePage)), FindInPage),
+            sections.first { it.id == TOOLS_GROUP_ID }.items,
+        )
+        assertEquals(
+            BrowserMenuConfiguration.allSections().filterNot { it.id == TOOLS_GROUP_ID },
+            sections.filterNot { it.id == TOOLS_GROUP_ID },
+        )
+    }
+
+    @Test
     fun `WHEN getting the default items of the sections THEN return only the tools items with the ids they are saved with`() {
         assertEquals(
             mapOf(

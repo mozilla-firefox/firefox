@@ -11,6 +11,7 @@ import mozilla.components.compose.menu.data.MenuItemTitle
 import mozilla.components.compose.menu.data.StandardMenuItem
 import mozilla.components.compose.menu.store.CustomizableMenuItemsAction.ExpansionToggled
 import mozilla.components.compose.menu.store.CustomizableMenuItemsAction.Init
+import mozilla.components.compose.menu.store.CustomizableMenuItemsAction.ItemsChanged
 import mozilla.components.compose.menu.store.CustomizableMenuItemsAction.Update
 import mozilla.components.lib.state.Middleware
 import org.junit.Assert.assertEquals
@@ -71,6 +72,22 @@ class CustomizableMenuItemsStoreTest {
 
         store.dispatch(ExpansionToggled("more"))
         assertEquals(setOf("other"), store.state.expandedItemIds)
+    }
+
+    @Test
+    fun `WHEN items are moved THEN the shown and hidden items are the moved ones and the expanded items are kept`() {
+        val store = CustomizableMenuItemsStore()
+        store.dispatch(
+            Update(items = listOf(item("a"), expandable("more", item("b"))), hiddenItems = listOf(item("c")))
+        )
+
+        store.dispatch(
+            ItemsChanged(items = listOf(expandable("more", item("b")), item("a")), hiddenItems = emptyList())
+        )
+
+        assertEquals(listOf("more", "a"), store.state.items.map { it.id })
+        assertEquals(emptyList<String>(), store.state.hiddenItems.map { it.id })
+        assertEquals(setOf("more"), store.state.expandedItemIds)
     }
 
     private fun item(id: String) =

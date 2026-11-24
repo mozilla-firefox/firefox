@@ -7,6 +7,7 @@ package mozilla.components.compose.menu.store
 import mozilla.components.compose.menu.data.ExpandableMenuItem
 import mozilla.components.compose.menu.store.CustomizableMenuItemsAction.ExpansionToggled
 import mozilla.components.compose.menu.store.CustomizableMenuItemsAction.Init
+import mozilla.components.compose.menu.store.CustomizableMenuItemsAction.ItemsChanged
 import mozilla.components.compose.menu.store.CustomizableMenuItemsAction.PreviewClicked
 import mozilla.components.compose.menu.store.CustomizableMenuItemsAction.Update
 import mozilla.components.lib.state.Middleware
@@ -43,6 +44,7 @@ private fun reduce(state: CustomizableMenuItemsState, action: CustomizableMenuIt
                     },
             )
         }
+        is ItemsChanged -> state.copy(items = action.items, hiddenItems = action.hiddenItems)
         is ExpansionToggled ->
             state.copy(
                 expandedItemIds =

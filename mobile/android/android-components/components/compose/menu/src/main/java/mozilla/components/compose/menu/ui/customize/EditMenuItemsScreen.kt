@@ -7,14 +7,18 @@ package mozilla.components.compose.menu.ui.customize
 import androidx.compose.foundation.layout.PaddingValues
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.lazy.LazyColumn
-import androidx.compose.foundation.lazy.items
+import androidx.compose.foundation.lazy.LazyListScope
+import androidx.compose.foundation.lazy.itemsIndexed
+import androidx.compose.foundation.lazy.rememberLazyListState
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.remember
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.layout.onGloballyPositioned
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.tooling.preview.PreviewLightDark
+import androidx.compose.ui.unit.Dp
 import mozilla.components.compose.base.theme.AcornTheme
 import mozilla.components.compose.menu.R
 import mozilla.components.compose.menu.store.CustomizableMenuItemsAction.ExpansionToggled
@@ -44,46 +48,95 @@ fun EditMenuItemsContent(
         remember(state.items, state.hiddenItems, state.expandedItemIds) {
             CustomizeMenuItems(state.items, state.hiddenItems, state.expandedItemIds)
         }
+    val listState = rememberLazyListState()
+    val dragState =
+        rememberHideableListDragState(
+            items = menuItems,
+            listState = listState,
+            itemInteractionHandler = remember(store, menuItems) { MoveItemsHandler(store, menuItems) },
+            fixedItems = FIXED_ITEMS,
+            onAttemptedHide = {},
+        )
 
     CustomizeMenuCenteredList(modifier = modifier) { leftPadding, rightPadding ->
-        LazyColumn(
-            modifier = Modifier.fillMaxSize(),
-            contentPadding =
-                PaddingValues.Absolute(
-                    left = leftPadding,
-                    right = rightPadding,
-                    bottom = AcornTheme.layout.space.static300,
-                ),
-            horizontalAlignment = Alignment.CenterHorizontally,
-        ) {
-            item(key = DRAG_BAR) {
-                CustomizeMenuDragBar(
-                    text = stringResource(R.string.mozac_menu_customize_drag_items_to_reorder),
-                    onPreviewClick = { store.dispatch(PreviewClicked) },
+        EditMenuItemsList(
+            store = store,
+            menuItems = menuItems,
+            dragState = dragState,
+            leftPadding = leftPadding,
+            rightPadding = rightPadding,
+        )
+    }
+}
+
+@Composable
+private fun EditMenuItemsList(
+    store: CustomizableMenuItemsStore,
+    menuItems: CustomizeMenuItems,
+    dragState: CustomizeMenuDragState<CustomizeMenuItems>,
+    leftPadding: Dp,
+    rightPadding: Dp,
+) {
+    val itemSpacing = AcornTheme.layout.space.static50
+    val onExpansionToggle = { itemId: String -> store.dispatch(ExpansionToggled(itemId)) }
+
+    LazyColumn(
+        modifier = Modifier.fillMaxSize().onGloballyPositioned(dragState.interactionState::updateListLayoutCoordinates),
+        state = dragState.listState,
+        userScrollEnabled = !dragState.isDragging,
+        contentPadding =
+            PaddingValues.Absolute(
+                left = leftPadding,
+                right = rightPadding,
+                bottom = AcornTheme.layout.space.static300,
+            ),
+        horizontalAlignment = Alignment.CenterHorizontally,
+    ) {
+        item(key = DRAG_BAR) {
+            CustomizeMenuDragBar(
+                text = stringResource(R.string.mozac_menu_customize_drag_items_to_reorder),
+                onPreviewClick = { store.dispatch(PreviewClicked) },
+            )
+        }
+
+        editMenuItemRows(menuItems.shownRows, firstIndex = 1, dragState, itemSpacing, onExpansionToggle)
+
+        item(key = HIDDEN_TITLE) {
+            HiddenSectionsItem(
+                title = stringResource(R.string.mozac_menu_customize_hidden_items),
+                dragState = dragState,
+                itemSpacing = itemSpacing,
+            )
+        }
+
+        if (!dragState.hasHiddenItems) {
+            item(key = DROP_AREA) {
+                DropAreaItem(
+                    text = stringResource(R.string.mozac_menu_customize_drag_items_to_hide),
+                    dragState = dragState,
                 )
             }
-
-            items(items = menuItems.shownRows, key = { it.key }) { row ->
-                EditMenuItemRow(row = row, onExpansionToggle = { store.dispatch(ExpansionToggled(it)) })
-            }
-
-            item(key = HIDDEN_TITLE) {
-                CustomizeMenuHiddenTitle(text = stringResource(R.string.mozac_menu_customize_hidden_items))
-            }
-
-            if (menuItems.hiddenRows.isEmpty()) {
-                item(key = DROP_AREA) {
-                    CustomizeMenuDropArea(
-                        text = stringResource(R.string.mozac_menu_customize_drag_items_to_hide),
-                        isDropTarget = false,
-                    )
-                }
-            }
-
-            items(items = menuItems.hiddenRows, key = { it.key }) { row ->
-                EditMenuItemRow(row = row, onExpansionToggle = { store.dispatch(ExpansionToggled(it)) })
-            }
         }
+
+        editMenuItemRows(menuItems.hiddenRows, dragState.firstHiddenIndex, dragState, itemSpacing, onExpansionToggle)
+    }
+}
+
+private fun LazyListScope.editMenuItemRows(
+    rows: List<EditMenuItemsRow>,
+    firstIndex: Int,
+    dragState: CustomizeMenuDragState<CustomizeMenuItems>,
+    itemSpacing: Dp,
+    onExpansionToggle: (itemId: String) -> Unit,
+) {
+    itemsIndexed(items = rows, key = { _, row -> row.key }) { index, row ->
+        EditMenuItemRow(
+            row = row,
+            position = firstIndex + index,
+            dragState = dragState,
+            itemSpacing = itemSpacing,
+            onExpansionToggle = onExpansionToggle,
+        )
     }
 }
 

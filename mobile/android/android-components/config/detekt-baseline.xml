@@ -74,6 +74,7 @@
     <ID>ForbiddenSuppress:CreditCardUtils.kt$CreditCardUtils$@Suppress("MagicNumber", "LargeClass")</ID>
     <ID>ForbiddenSuppress:CurrentTabDetails.kt$@Suppress("LongMethod")</ID>
     <ID>ForbiddenSuppress:CustomPlacementPopup.kt$@Suppress("CyclomaticComplexMethod", "ReturnCount", "CognitiveComplexMethod")</ID>
+    <ID>ForbiddenSuppress:CustomizeMenuScreen.kt$@Suppress("LongMethod")</ID>
     <ID>ForbiddenSuppress:Dispatchers.kt$Dispatchers$@Suppress("MagicNumber")</ID>
     <ID>ForbiddenSuppress:DownloadsDatabase.kt$Migrations$@Suppress("MaxLineLength", "MagicNumber")</ID>
     <ID>ForbiddenSuppress:Dropdown.kt$@Suppress("LongMethod")</ID>

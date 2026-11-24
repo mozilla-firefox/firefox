@@ -120,6 +120,7 @@ internal fun CustomizeMenuCenteredList(
     }
 }
 
+@Suppress("LongMethod")
 @Composable
 private fun CustomizeMenuList(
     store: CustomizableMenuStore,
@@ -172,11 +173,17 @@ private fun CustomizeMenuList(
         )
 
         item(key = HIDDEN_TITLE) {
-            HiddenSectionsItem(dragState = dragState, itemSpacing = itemSpacing)
+            HiddenSectionsItem(
+                title = stringResource(R.string.mozac_menu_customize_hidden_sections),
+                dragState = dragState,
+                itemSpacing = itemSpacing,
+            )
         }
 
         if (!dragState.hasHiddenItems) {
-            item(key = DROP_AREA) { DropAreaItem(dragState = dragState) }
+            item(key = DROP_AREA) {
+                DropAreaItem(text = stringResource(R.string.mozac_menu_customize_drag_to_hide), dragState = dragState)
+            }
         }
 
         customizeMenuGroups(
@@ -290,21 +297,22 @@ private fun DragBarItem(onPreviewClick: () -> Unit) {
 }
 
 /**
- * The [HIDDEN_TITLE] item of the list: the space keeping the hidden sections in place while a shown group is dragged,
- * then their title, each a node of the item of its own (see [HiddenAreaSpace]).
+ * The [HIDDEN_TITLE] item of the list: the space keeping the hidden groups or items in place while a shown one is
+ * dragged, then their title, each a node of the item of its own (see [HiddenAreaSpace]).
  *
+ * @param title The title shown above the hidden groups or items.
  * @param dragState State of dragging the items of the screen.
  * @param itemSpacing Space between the items of the list.
  */
 @Composable
-private fun LazyItemScope.HiddenSectionsItem(dragState: CustomizeMenuDragState<*>, itemSpacing: Dp) {
+internal fun LazyItemScope.HiddenSectionsItem(title: String, dragState: CustomizeMenuDragState<*>, itemSpacing: Dp) {
     HiddenAreaSpace(
         dragState = dragState,
         itemSpacing = itemSpacing,
         modifier = Modifier.drawnOnlyInView(HIDDEN_TITLE, dragState).animateItem(),
     )
     CustomizeMenuHiddenTitle(
-        text = stringResource(R.string.mozac_menu_customize_hidden_sections),
+        text = title,
         modifier =
             Modifier.drawnOnlyInView(HIDDEN_TITLE, dragState)
                 .animateItem()
@@ -314,18 +322,19 @@ private fun LazyItemScope.HiddenSectionsItem(dragState: CustomizeMenuDragState<*
 }
 
 /**
- * The [DROP_AREA] item of the list, where shown groups are dropped to hide them while none is hidden.
+ * The [DROP_AREA] item of the list, where shown groups or items are dropped to hide them while none is hidden.
  *
+ * @param text What to tell the user to drag into it.
  * @param dragState State of dragging the items of the screen.
  */
 @Composable
-private fun LazyItemScope.DropAreaItem(dragState: CustomizeMenuDragState<*>) {
+internal fun LazyItemScope.DropAreaItem(text: String, dragState: CustomizeMenuDragState<*>) {
     val isDropTarget by
         remember(dragState.dropTarget) {
             derivedStateOf { dragState.dropTarget.value == CustomizeMenuDropTarget.EmptyHiddenArea }
         }
     CustomizeMenuDropArea(
-        text = stringResource(R.string.mozac_menu_customize_drag_to_hide),
+        text = text,
         isDropTarget = isDropTarget,
         modifier = Modifier.drawnOnlyInView(DROP_AREA, dragState).animateItem(),
     )

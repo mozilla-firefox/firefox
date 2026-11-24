@@ -26,6 +26,17 @@ sealed interface CustomizableMenuItemsAction : Action {
     ) : CustomizableMenuItemsAction
 
     /**
+     * The user moved an item.
+     *
+     * @property items The items shown in the menu, in the order they are shown in, as moved.
+     * @property hiddenItems The items the user removed from the menu, as moved.
+     */
+    data class ItemsChanged(
+        val items: List<CustomizableMenuItem>,
+        val hiddenItems: List<CustomizableMenuItem>,
+    ) : CustomizableMenuItemsAction
+
+    /**
      * The user expanded or collapsed an expandable item.
      *
      * @property itemId Id of the item.

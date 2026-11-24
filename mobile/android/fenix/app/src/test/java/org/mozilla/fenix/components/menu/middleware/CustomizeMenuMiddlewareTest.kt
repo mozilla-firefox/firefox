@@ -12,11 +12,15 @@ import kotlin.test.assertFalse
 import kotlin.test.assertTrue
 import kotlinx.coroutines.ExperimentalCoroutinesApi
 import kotlinx.coroutines.flow.MutableStateFlow
-import kotlinx.coroutines.flow.flowOf
 import kotlinx.coroutines.test.TestScope
 import kotlinx.coroutines.test.runCurrent
 import kotlinx.coroutines.test.runTest
+import mozilla.components.compose.base.text.Text
+import mozilla.components.compose.menu.data.ExpandableMenuItem
+import mozilla.components.compose.menu.data.MenuItem
+import mozilla.components.compose.menu.data.MenuItemTitle
 import mozilla.components.compose.menu.data.MenuItemsGroup
+import mozilla.components.compose.menu.data.StandardMenuItem
 import mozilla.components.compose.menu.store.CustomizableMenuAction
 import mozilla.components.compose.menu.store.CustomizableMenuAction.AttemptedRemovalOfMandatorySection
 import mozilla.components.compose.menu.store.CustomizableMenuAction.CustomizationStatusChanged
@@ -25,16 +29,21 @@ import mozilla.components.compose.menu.store.CustomizableMenuAction.ResetToDefau
 import mozilla.components.compose.menu.store.CustomizableMenuAction.Update
 import mozilla.components.compose.menu.store.CustomizableMenuState
 import mozilla.components.compose.menu.store.CustomizableMenuStore
+import mozilla.components.compose.menu.store.MenuEvent
 import mozilla.components.support.test.middleware.CaptureActionsMiddleware
 import org.junit.Test
 import org.mozilla.fenix.components.AppStore
 import org.mozilla.fenix.components.appstate.AppAction
 import org.mozilla.fenix.components.appstate.AppAction.SnackbarAction
 import org.mozilla.fenix.components.appstate.AppState
+import org.mozilla.fenix.components.menu.CustomizedItemInfo
 import org.mozilla.fenix.components.menu.CustomizedMenuInfo
 import org.mozilla.fenix.components.menu.CustomizedSectionInfo
-import org.mozilla.fenix.components.menu.MenuBuilder
+import org.mozilla.fenix.components.menu.ExpandableMenuItemProvider
 import org.mozilla.fenix.components.menu.MenuCustomizationRepository
+import org.mozilla.fenix.components.menu.MenuHost
+import org.mozilla.fenix.components.menu.MenuItemProvider
+import org.mozilla.fenix.components.menu.MenuItemsRegistry
 import org.mozilla.fenix.components.menu.configuration.BrowserMenuConfiguration
 import org.mozilla.fenix.components.menu.configuration.BrowserMenuConfiguration.ACCOUNTS_AND_SETTINGS_GROUP_ID
 import org.mozilla.fenix.components.menu.configuration.BrowserMenuConfiguration.LIBRARY_GROUP_ID
@@ -44,15 +53,21 @@ import org.mozilla.fenix.components.menu.configuration.BrowserMenuConfiguration.
 import org.mozilla.fenix.components.menu.configuration.BrowserMenuConfiguration.TABS_CONTROLS_GROUP_ID
 import org.mozilla.fenix.components.menu.configuration.BrowserMenuConfiguration.TOOLS_GROUP_ID
 import org.mozilla.fenix.components.menu.configuration.BrowserMenuConfiguration.VPN_GROUP_ID
+import org.mozilla.fenix.components.menu.configuration.FenixMenuItem.DesktopSite
+import org.mozilla.fenix.components.menu.configuration.FenixMenuItem.Extensions
+import org.mozilla.fenix.components.menu.configuration.FenixMenuItem.FindInPage
+import org.mozilla.fenix.components.menu.configuration.FenixMenuItem.More
+import org.mozilla.fenix.components.menu.configuration.FenixMenuItem.Print
+import org.mozilla.fenix.components.menu.configuration.FenixMenuItem.Translate
 
 @OptIn(ExperimentalCoroutinesApi::class)
 class CustomizeMenuMiddlewareTest {
     private val repository: MenuCustomizationRepository = mockk(relaxed = true)
-    private val menuBuilder: MenuBuilder = mockk()
     private val captureActions = CaptureActionsMiddleware<CustomizableMenuState, CustomizableMenuAction>()
     private val captureAppActions = CaptureActionsMiddleware<AppState, AppAction>()
     private val appStore = AppStore(middlewares = listOf(captureAppActions))
     private val cannotHideSectionMessage = "Can't hide this section"
+    private val moreId = More(emptyList()).id
     private val defaultMenuInfo =
         BrowserMenuConfiguration.defaultMenuInfo(isToolbarAtBottom = false, isExpandedToolbarEnabled = false)
 
@@ -77,7 +92,7 @@ class CustomizeMenuMiddlewareTest {
 
             captureActions.assertLastAction(Update::class) {
                 assertEquals(
-                    groups(
+                    listOf(
                         PAGE_CONTROLS_GROUP_ID,
                         TOOLS_GROUP_ID,
                         READER_VIEW_GROUP_ID,
@@ -86,7 +101,7 @@ class CustomizeMenuMiddlewareTest {
                         ACCOUNTS_AND_SETTINGS_GROUP_ID,
                         QUIT_GROUP_ID,
                     ),
-                    it.items,
+                    it.items.map { group -> group.id },
                 )
                 assertEquals(setOf(ACCOUNTS_AND_SETTINGS_GROUP_ID), it.mandatoryGroupIds)
                 assertEquals(setOf(QUIT_GROUP_ID), it.hiddenGroupIds)
@@ -113,15 +128,7 @@ class CustomizeMenuMiddlewareTest {
     fun `GIVEN a section has nothing to show WHEN the screen is shown THEN don't show it`() = runTest {
         createStore(
             customization = MutableStateFlow(defaultMenuInfo),
-            menuGroups =
-                groups(
-                    PAGE_CONTROLS_GROUP_ID,
-                    VPN_GROUP_ID,
-                    TOOLS_GROUP_ID,
-                    LIBRARY_GROUP_ID,
-                    ACCOUNTS_AND_SETTINGS_GROUP_ID,
-                    QUIT_GROUP_ID,
-                ),
+            sectionsWithNothingToShow = setOf(READER_VIEW_GROUP_ID, TABS_CONTROLS_GROUP_ID),
         )
         runCurrent()
 
@@ -485,6 +492,76 @@ class CustomizeMenuMiddlewareTest {
     }
 
     @Test
+    fun `GIVEN the user saved the tools items AND they can be customized WHEN the screen is shown THEN show the saved ones`() =
+        runTest {
+            createStore(
+                customization = MutableStateFlow(defaultMenuInfo),
+                sectionsCustomization = MutableStateFlow(mapOf(TOOLS_GROUP_ID to savedToolsInfo())),
+                isToolsMenuCustomizationEnabled = true,
+            )
+            runCurrent()
+
+            captureActions.assertLastAction(Update::class) {
+                assertEquals(
+                    listOf(Text.String(FindInPage.id), Text.String(DesktopSite.id)),
+                    it.items.first { group -> group.id == TOOLS_GROUP_ID }.items.map { item -> item.title.text },
+                )
+            }
+        }
+
+    @Test
+    fun `GIVEN the user saved the tools items with the more items reordered AND they can be customized WHEN the screen is shown THEN show the more items in the saved order`() =
+        runTest {
+            createStore(
+                customization = MutableStateFlow(defaultMenuInfo),
+                sectionsCustomization = MutableStateFlow(mapOf(TOOLS_GROUP_ID to savedToolsInfoWithMore())),
+                isToolsMenuCustomizationEnabled = true,
+            )
+            runCurrent()
+
+            captureActions.assertLastAction(Update::class) {
+                val toolsItems = it.toolsItems()
+                assertEquals(
+                    listOf(FindInPage.id, moreId, DesktopSite.id).map { id -> Text.String(id) },
+                    toolsItems.map { item -> item.title.text },
+                )
+                assertEquals(
+                    listOf(Print.id, Translate.id).map { id -> Text.String(id) },
+                    (toolsItems[1] as ExpandableMenuItem).subMenuItems.map { item -> item.title.text },
+                )
+            }
+        }
+
+    @Test
+    fun `GIVEN the user saved the tools items with the more items reordered AND they cannot be customized WHEN the screen is shown THEN show the default more items`() =
+        runTest {
+            createStore(
+                customization = MutableStateFlow(defaultMenuInfo),
+                sectionsCustomization = MutableStateFlow(mapOf(TOOLS_GROUP_ID to savedToolsInfoWithMore())),
+                isToolsMenuCustomizationEnabled = false,
+            )
+            runCurrent()
+
+            captureActions.assertLastAction(Update::class) { assertEquals(defaultToolsTitles(), it.toolsTitles()) }
+        }
+
+    @Test
+    fun `GIVEN the user saved the tools items WHEN the user resets to default THEN show the default tools items`() =
+        runTest {
+            val store =
+                createStore(
+                    initialState = CustomizableMenuState(menuGroups = defaultGroups(), isCustomized = true),
+                    sectionsCustomization = MutableStateFlow(mapOf(TOOLS_GROUP_ID to savedToolsInfoWithMore())),
+                    isToolsMenuCustomizationEnabled = true,
+                )
+
+            store.dispatch(ResetToDefaultConfirmed)
+            runCurrent()
+
+            captureActions.assertLastAction(Update::class) { assertEquals(defaultToolsTitles(), it.toolsTitles()) }
+        }
+
+    @Test
     fun `GIVEN the user changed the tools items but they are not shown WHEN the screen is shown THEN show the menu as not customized`() =
         runTest {
             createStore(
@@ -578,7 +655,7 @@ class CustomizeMenuMiddlewareTest {
         initialState: CustomizableMenuState = CustomizableMenuState(menuGroups = emptyList()),
         customization: MutableStateFlow<CustomizedMenuInfo?> = MutableStateFlow(null),
         sectionsCustomization: MutableStateFlow<Map<String, CustomizedSectionInfo>?> = MutableStateFlow(emptyMap()),
-        menuGroups: List<MenuItemsGroup> = groups(*BrowserMenuConfiguration.allSections().map { it.id }.toTypedArray()),
+        sectionsWithNothingToShow: Set<String> = emptySet(),
         isToolbarAtBottom: Boolean = false,
         isToolsMenuCustomizationEnabled: Boolean = false,
     ): CustomizableMenuStore {
@@ -590,7 +667,22 @@ class CustomizeMenuMiddlewareTest {
                 customization.value = defaultMenuInfo
                 sectionsCustomization.value = emptyMap()
             }
-        every { menuBuilder.menuStructure } returns flowOf(menuGroups)
+        val unavailableItemIds =
+            BrowserMenuConfiguration.allSections()
+                .filter { it.id in sectionsWithNothingToShow }
+                .flatMap { it.items }
+                .map { it.id }
+                .toSet()
+        val registry =
+            MenuItemsRegistry(
+                configuration = BrowserMenuConfiguration.allSections(),
+                resolver = { item ->
+                    val isOffered = item.id !in unavailableItemIds
+                    val offered =
+                        if (isOffered) listOf(if (item is More) moreItem() else itemOf(item.id)) else emptyList()
+                    if (item is More) FakeExpandableMenuItemProvider(offered) else FakeMenuItemProvider(offered)
+                },
+            )
 
         return CustomizableMenuStore(
             initialState = initialState,
@@ -599,7 +691,7 @@ class CustomizeMenuMiddlewareTest {
                     captureActions,
                     CustomizeMenuMiddleware(
                         repository = repository,
-                        menuBuilder = menuBuilder,
+                        registry = registry,
                         isToolbarAtBottom = isToolbarAtBottom,
                         isExpandedToolbarEnabled = false,
                         isToolsMenuCustomizationEnabled = isToolsMenuCustomizationEnabled,
@@ -611,12 +703,68 @@ class CustomizeMenuMiddlewareTest {
         )
     }
 
+    private fun savedToolsInfo() =
+        CustomizedSectionInfo(
+            sectionId = TOOLS_GROUP_ID,
+            items = listOf(CustomizedItemInfo(FindInPage.id), CustomizedItemInfo(DesktopSite.id)),
+            hiddenItems = listOf(CustomizedItemInfo(Extensions.id)),
+        )
+
+    private fun savedToolsInfoWithMore() =
+        CustomizedSectionInfo(
+            sectionId = TOOLS_GROUP_ID,
+            items =
+                listOf(
+                    CustomizedItemInfo(FindInPage.id),
+                    CustomizedItemInfo(moreId, subItemIds = listOf(Print.id, Translate.id)),
+                    CustomizedItemInfo(DesktopSite.id),
+                ),
+            hiddenItems = listOf(CustomizedItemInfo(Extensions.id)),
+        )
+
+    private fun Update.toolsItems() = items.first { group -> group.id == TOOLS_GROUP_ID }.items
+
+    private fun Update.toolsTitles() =
+        toolsItems().map { item ->
+            listOf(item.title.text) + (item as? ExpandableMenuItem)?.subMenuItems?.map { it.title.text }.orEmpty()
+        }
+
+    private fun defaultToolsTitles() =
+        BrowserMenuConfiguration.defaultSectionsInfo().getValue(TOOLS_GROUP_ID).items.map { item ->
+            listOf(Text.String(item.id)) + item.subItemIds.map { id -> Text.String(id) }
+        }
+
     private fun changedToolsInfo(): CustomizedSectionInfo {
         val defaultToolsInfo = BrowserMenuConfiguration.defaultSectionsInfo().getValue(TOOLS_GROUP_ID)
         return defaultToolsInfo.copy(items = defaultToolsInfo.items.reversed())
     }
 
+    private fun itemOf(id: String): MenuItem = StandardMenuItem(title = MenuItemTitle(Text.String(id)))
+
+    private fun moreItem(): MenuItem =
+        ExpandableMenuItem(
+            title = MenuItemTitle(Text.String(moreId)),
+            onClickEvent = object : MenuEvent {},
+            subMenuItems = emptyList(),
+        )
+
     private fun defaultGroups() = groups(*defaultMenuInfo.visibleSectionIds.toTypedArray())
 
     private fun groups(vararg ids: String) = ids.map { MenuItemsGroup.Row(id = it, items = emptyList()) }
+
+    private class FakeExpandableMenuItemProvider(items: List<MenuItem>) : ExpandableMenuItemProvider {
+        override val itemsFlow = MutableStateFlow(items)
+
+        override fun handles(event: MenuEvent) = false
+
+        override fun onEvent(event: MenuEvent, menu: MenuHost) = Unit
+    }
+
+    private class FakeMenuItemProvider(items: List<MenuItem>) : MenuItemProvider {
+        override val itemsFlow = MutableStateFlow(items)
+
+        override fun handles(event: MenuEvent) = false
+
+        override fun onEvent(event: MenuEvent, menu: MenuHost) = Unit
+    }
 }

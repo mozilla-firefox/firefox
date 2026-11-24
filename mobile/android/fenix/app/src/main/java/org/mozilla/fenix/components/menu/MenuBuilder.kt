@@ -24,10 +24,13 @@ import org.mozilla.fenix.components.menu.configuration.asMenuItemsGroup
  * its [MenuItemProvider].
  *
  * @param registry [MenuItemsRegistry] with the sections of the menu and the provider of each item in them.
+ * @param configuration The sections to build, in the order they should be shown in. All their items must be in
+ *   [registry].
  */
-class MenuBuilder(private val registry: MenuItemsRegistry) {
-    private val configuration = registry.configuration
-
+class MenuBuilder(
+    private val registry: MenuItemsRegistry,
+    private val configuration: List<MenuSectionConfiguration> = registry.configuration,
+) {
     /** The menu to show, re-emitted whenever any of the items in it changes. */
     val menuStructure: Flow<List<MenuItemsGroup>> =
         itemsFromProviders().map { items -> configuration.toGroups(items) }.distinctUntilChanged()

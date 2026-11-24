@@ -29,6 +29,7 @@ import org.mozilla.fenix.components.menu.CustomizedMenuInfo
 import org.mozilla.fenix.components.menu.CustomizedSectionInfo
 import org.mozilla.fenix.components.menu.MenuBuilder
 import org.mozilla.fenix.components.menu.MenuCustomizationRepository
+import org.mozilla.fenix.components.menu.MenuItemsRegistry
 import org.mozilla.fenix.components.menu.configuration.BrowserMenuConfiguration
 
 /**
@@ -36,7 +37,7 @@ import org.mozilla.fenix.components.menu.configuration.BrowserMenuConfiguration
  * structure.
  *
  * @param repository [MenuCustomizationRepository] persisting the user's customization of the browser menu.
- * @param menuBuilder [MenuBuilder] providing the items of all the sections of the browser menu.
+ * @param registry [MenuItemsRegistry] with the providers of the items of all the sections of the browser menu.
  * @param isToolbarAtBottom Whether the toolbar is shown at the bottom of the screen.
  * @param isExpandedToolbarEnabled Whether the expanded toolbar is used.
  * @param isToolsMenuCustomizationEnabled Whether the items of the menu sections chosen by the user are shown.
@@ -46,7 +47,7 @@ import org.mozilla.fenix.components.menu.configuration.BrowserMenuConfiguration
  */
 class CustomizeMenuMiddleware(
     private val repository: MenuCustomizationRepository,
-    private val menuBuilder: MenuBuilder,
+    private val registry: MenuItemsRegistry,
     private val isToolbarAtBottom: Boolean,
     private val isExpandedToolbarEnabled: Boolean,
     private val isToolsMenuCustomizationEnabled: Boolean,
@@ -116,7 +117,9 @@ class CustomizeMenuMiddleware(
         customization: CustomizedMenuInfo,
         sectionsCustomization: Map<String, CustomizedSectionInfo>,
     ) {
-        val groups = menuBuilder.menuStructure.first().associateBy { it.id }
+        val itemsCustomization = if (isToolsMenuCustomizationEnabled) sectionsCustomization else emptyMap()
+        val sections = BrowserMenuConfiguration.allSections(itemsCustomization)
+        val groups = MenuBuilder(registry, sections).menuStructure.first().associateBy { it.id }
         val shownSections =
             BrowserMenuConfiguration.sections(isToolbarAtBottom, isExpandedToolbarEnabled, customization)
         val hiddenSections = BrowserMenuConfiguration.hiddenSections(customization)

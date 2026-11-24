@@ -20,7 +20,6 @@ import mozilla.components.lib.state.helpers.StoreProvider.Companion.fragmentStor
 import mozilla.components.support.base.feature.UserInteractionHandler
 import mozilla.components.support.base.feature.ViewBoundFeatureWrapper
 import org.mozilla.fenix.R
-import org.mozilla.fenix.components.menu.MenuBuilder
 import org.mozilla.fenix.components.menu.MenuItemsRegistry
 import org.mozilla.fenix.components.menu.configuration.BrowserMenuConfiguration
 import org.mozilla.fenix.components.menu.middleware.CustomizeMenuMiddleware
@@ -53,7 +52,7 @@ class CustomizeMenuFragment : Fragment(), UserInteractionHandler, SystemInsetsPa
                     listOf(
                         CustomizeMenuMiddleware(
                             repository = components.menuCustomizationRepository,
-                            menuBuilder = MenuBuilder(menuItemsRegistry),
+                            registry = menuItemsRegistry,
                             isToolbarAtBottom = requireContext().isToolbarAtBottom(),
                             isExpandedToolbarEnabled = components.settings.shouldUseExpandedToolbar,
                             isToolsMenuCustomizationEnabled = components.settings.isToolsMenuCustomizationEnabled,

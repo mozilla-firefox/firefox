@@ -12,18 +12,21 @@ import mozilla.components.compose.menu.data.CustomizableMenuItem
 import mozilla.components.compose.menu.store.CustomizableMenuItemsAction
 import mozilla.components.compose.menu.store.CustomizableMenuItemsAction.ExpansionToggled
 import mozilla.components.compose.menu.store.CustomizableMenuItemsAction.Init
+import mozilla.components.compose.menu.store.CustomizableMenuItemsAction.ItemsChanged
 import mozilla.components.compose.menu.store.CustomizableMenuItemsAction.PreviewClicked
 import mozilla.components.compose.menu.store.CustomizableMenuItemsAction.Update
 import mozilla.components.compose.menu.store.CustomizableMenuItemsState
 import mozilla.components.lib.state.Middleware
 import mozilla.components.lib.state.Store
 import org.mozilla.fenix.components.menu.CustomizedItemInfo
+import org.mozilla.fenix.components.menu.CustomizedSectionInfo
 import org.mozilla.fenix.components.menu.MenuCustomizationRepository
 import org.mozilla.fenix.components.menu.MenuItemsRegistry
 import org.mozilla.fenix.components.menu.configuration.BrowserMenuConfiguration
 
 /**
- * [Middleware] showing the items of a menu section as customized by the user, in the screen customizing them.
+ * [Middleware] showing the items of a menu section as customized by the user, in the screen customizing them, and
+ * saving the changes the user makes.
  *
  * @param repository [MenuCustomizationRepository] persisting the user's customization of the browser menu.
  * @param registry [MenuItemsRegistry] providing the items of the section.
@@ -45,6 +48,7 @@ class EditMenuItemsMiddleware(
 
         when (action) {
             is Init -> showItems(store)
+            is ItemsChanged -> saveItems(action)
             is Update,
             is ExpansionToggled,
             is PreviewClicked -> Unit
@@ -63,6 +67,18 @@ class EditMenuItemsMiddleware(
             )
         )
     }
+
+    private fun saveItems(action: ItemsChanged) {
+        repository.save(
+            CustomizedSectionInfo(
+                sectionId = sectionId,
+                items = action.items.map { it.toInfo() },
+                hiddenItems = action.hiddenItems.map { it.toInfo() },
+            )
+        )
+    }
+
+    private fun CustomizableMenuItem.toInfo() = CustomizedItemInfo(id = id, subItemIds = subItems.map { it.id })
 
     private fun CustomizedItemInfo.toCustomizable() =
         CustomizableMenuItem(

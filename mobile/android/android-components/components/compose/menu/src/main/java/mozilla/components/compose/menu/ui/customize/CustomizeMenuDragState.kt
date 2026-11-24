@@ -64,8 +64,8 @@ internal class CustomizeMenuDragState<T : HideableListItems>(
  */
 internal data class DraggedShownItem(val size: Int)
 
-// Groups can be dropped next to these items.
-private val FIXED_ITEMS = setOf(HIDDEN_TITLE, DROP_AREA)
+// Groups or items can be dropped next to these list items.
+internal val FIXED_ITEMS = setOf(HIDDEN_TITLE, DROP_AREA)
 
 private const val AUTO_SCROLL_ZONE_WINDOW_FRACTION = 0.1f
 
