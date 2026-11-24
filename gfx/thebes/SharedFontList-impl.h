@@ -238,7 +238,7 @@ class FontList {
    * an additional block that was not already passed to it (because the
    * list has changed/grown since the child was first initialized).
    */
-  void ShareShmBlockToProcess(uint32_t aIndex, base::ProcessId aPid,
+  void ShareShmBlockToProcess(uint32_t aIndex,
                               ipc::ReadOnlySharedMemoryHandle* aOut) {
     MOZ_RELEASE_ASSERT(mReadOnlyShmems.Length() == mBlocks.Length());
     if (aIndex >= mReadOnlyShmems.Length()) {
@@ -254,14 +254,12 @@ class FontList {
 
   /**
    * Collect an array of handles to all the shmem blocks, ready to be
-   * shared to the given process. This is used at child process startup
+   * shared to a child process. This is used at child process startup
    * to pass the complete list at once.
    */
-  void ShareBlocksToProcess(nsTArray<ipc::ReadOnlySharedMemoryHandle>* aBlocks,
-                            base::ProcessId aPid);
+  void ShareBlocksToProcess(nsTArray<ipc::ReadOnlySharedMemoryHandle>* aBlocks);
 
-  ipc::ReadOnlySharedMemoryHandle ShareBlockToProcess(uint32_t aIndex,
-                                                      base::ProcessId aPid);
+  ipc::ReadOnlySharedMemoryHandle ShareBlockToProcess(uint32_t aIndex);
 
   void ShmBlockAdded(uint32_t aGeneration, uint32_t aIndex,
                      ipc::ReadOnlySharedMemoryHandle aHandle);

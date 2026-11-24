@@ -941,7 +941,7 @@ bool FontList::UpdateShmBlocks(bool aMustLock) MOZ_NO_THREAD_SAFETY_ANALYSIS {
 }
 
 void FontList::ShareBlocksToProcess(
-    nsTArray<ipc::ReadOnlySharedMemoryHandle>* aBlocks, base::ProcessId aPid) {
+    nsTArray<ipc::ReadOnlySharedMemoryHandle>* aBlocks) {
   MOZ_RELEASE_ASSERT(mReadOnlyShmems.Length() == mBlocks.Length());
   for (auto& shmem : mReadOnlyShmems) {
     auto handle = shmem.Clone();
@@ -957,8 +957,7 @@ void FontList::ShareBlocksToProcess(
   }
 }
 
-ipc::ReadOnlySharedMemoryHandle FontList::ShareBlockToProcess(
-    uint32_t aIndex, base::ProcessId aPid) {
+ipc::ReadOnlySharedMemoryHandle FontList::ShareBlockToProcess(uint32_t aIndex) {
   MOZ_RELEASE_ASSERT(XRE_IsParentProcess());
   MOZ_RELEASE_ASSERT(mReadOnlyShmems.Length() == mBlocks.Length());
   MOZ_RELEASE_ASSERT(aIndex < mReadOnlyShmems.Length());
