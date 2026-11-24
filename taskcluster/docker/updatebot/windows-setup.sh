@@ -68,7 +68,15 @@ cd updatebot
 git checkout "$UPDATEBOT_REVISION"
 
 # base python needs
-python3 -m pip install --no-warn-script-location --user -U pip
+python3 -m pip install --no-warn-script-location --user -U pip certifi==2026.10.19
+python3 - <<'PYTHON'
+import shutil
+
+import certifi
+from pip._vendor import certifi as pip_certifi
+
+shutil.copyfile(certifi.where(), pip_certifi.where())
+PYTHON
 python3 -m pip install --no-warn-script-location --user poetry wheel requests setuptools
 
 # updatebot dependencies
