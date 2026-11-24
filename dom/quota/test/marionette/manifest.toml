@@ -3,4 +3,6 @@ subsuite = "integration"
 tags = "inc-origin-init os_integration"
 support-files = ["quota_test_case.py"]
 
+["test_cache_rebuild.py"]
+
 ["test_private_repository_cleanup.py"]
