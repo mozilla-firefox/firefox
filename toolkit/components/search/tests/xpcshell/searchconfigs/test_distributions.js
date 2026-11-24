@@ -218,60 +218,48 @@ tests.push({
   test: engines => hasDefault(engines, "GMX - Recherche web"),
 });
 
+tests.push({
+  locale: "en-US",
+  region: "US",
+  distribution: "mint-001",
+  test: engines =>
+    hasParams(engines, "DuckDuckGo", new Map([["default", "t=lm"]])) &&
+    hasParams(
+      engines,
+      "Google",
+      new Map([["default", "client=firefox-b-1-lm"]])
+    ) &&
+    hasDefault(engines, "Google") &&
+    hasEnginesFirst(engines, ["Google"]) &&
+    hasTelemetryId(engines, "Google", "google-b-1-lm"),
+});
+
+tests.push({
+  locale: "en-GB",
+  region: "GB",
+  distribution: "mint-001",
+  test: engines =>
+    hasParams(engines, "DuckDuckGo", new Map([["default", "t=lm"]])) &&
+    hasParams(
+      engines,
+      "Google",
+      new Map([["default", "client=firefox-b-lm"]])
+    ) &&
+    hasDefault(engines, "Google") &&
+    hasEnginesFirst(engines, ["Google"]) &&
+    hasTelemetryId(engines, "Google", "google-b-lm"),
+});
+
+tests.push({
+  region: "ru",
+  distribution: "mint-001",
+  test: engines =>
+    hasDefault(engines, "Google") &&
+    hasEnginesFirst(engines, ["Google"]) &&
+    hasTelemetryId(engines, "Google", "google-com-nocodes"),
+});
+
 if (SearchUtils.configV3FeatureGate) {
-  tests.push({
-    locale: "en-US",
-    region: "US",
-    distribution: "mint-001",
-    platform: "linux",
-    test: engines =>
-      hasParams(engines, "DuckDuckGo", new Map([["default", "t=lm"]])) &&
-      hasParams(
-        engines,
-        "Google",
-        new Map([
-          ["default", "client=linux-firefoxmnt-o-re"],
-          ["context", "client=linux-firefoxmnt-cm-re"],
-          ["newtab", "client=linux-firefoxmnt-ntp-re"],
-        ])
-      ) &&
-      hasDefault(engines, "Google") &&
-      hasEnginesFirst(engines, ["Google"]) &&
-      hasTelemetryId(engines, "Google", "google-linux-mint-main"),
-  });
-
-  tests.push({
-    locale: "en-GB",
-    region: "GB",
-    distribution: "mint-001",
-    platform: "linux",
-    test: engines =>
-      hasParams(engines, "DuckDuckGo", new Map([["default", "t=lm"]])) &&
-      hasParams(
-        engines,
-        "Google",
-        new Map([
-          ["default", "client=linux-firefoxmnt-o-re"],
-          ["context", "client=linux-firefoxmnt-cm-re"],
-          ["newtab", "client=linux-firefoxmnt-ntp-re"],
-        ])
-      ) &&
-      hasDefault(engines, "Google") &&
-      hasEnginesFirst(engines, ["Google"]) &&
-      hasTelemetryId(engines, "Google", "google-linux-mint-main"),
-  });
-
-  tests.push({
-    region: "ru",
-    distribution: "mint-001",
-    platform: "linux",
-    test: engines =>
-      hasDefault(engines, "Google") &&
-      doesNotHaveParams(engines, "Google", ["client"]) &&
-      hasEnginesFirst(engines, ["Google"]) &&
-      hasTelemetryId(engines, "Google", "google-com-nocodes"),
-  });
-
   // Android distributions all use the same Google codes as the main version for
   // search-config-v3.
   let googleChecksForV3 = engines =>
@@ -405,47 +393,6 @@ if (SearchUtils.configV3FeatureGate) {
   });
 } else {
   // V2 specific tests
-
-  tests.push({
-    locale: "en-US",
-    region: "US",
-    distribution: "mint-001",
-    test: engines =>
-      hasParams(engines, "DuckDuckGo", new Map([["default", "t=lm"]])) &&
-      hasParams(
-        engines,
-        "Google",
-        new Map([["default", "client=firefox-b-1-lm"]])
-      ) &&
-      hasDefault(engines, "Google") &&
-      hasEnginesFirst(engines, ["Google"]) &&
-      hasTelemetryId(engines, "Google", "google-b-1-lm"),
-  });
-
-  tests.push({
-    locale: "en-GB",
-    region: "GB",
-    distribution: "mint-001",
-    test: engines =>
-      hasParams(engines, "DuckDuckGo", new Map([["default", "t=lm"]])) &&
-      hasParams(
-        engines,
-        "Google",
-        new Map([["default", "client=firefox-b-lm"]])
-      ) &&
-      hasDefault(engines, "Google") &&
-      hasEnginesFirst(engines, ["Google"]) &&
-      hasTelemetryId(engines, "Google", "google-b-lm"),
-  });
-
-  tests.push({
-    region: "ru",
-    distribution: "mint-001",
-    test: engines =>
-      hasDefault(engines, "Google") &&
-      hasEnginesFirst(engines, ["Google"]) &&
-      hasTelemetryId(engines, "Google", "google-com-nocodes"),
-  });
 
   // This distribution is used on mobile, but we can test it here as it only
   // needs the distribution id referencing.
