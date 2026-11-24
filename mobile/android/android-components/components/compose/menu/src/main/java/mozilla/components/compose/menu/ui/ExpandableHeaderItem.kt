@@ -98,58 +98,26 @@ fun ExpandableHeaderItem(
     state: MenuItemState = DEFAULT,
 ) {
     var isExpanded by rememberSaveable { mutableStateOf(false) }
-    val contentDescriptionValue = contentDescription?.value
-    val expandedDescription = stringResource(composeBaseR.string.mozac_compose_base_a11y_state_label_expanded)
-    val collapsedDescription = stringResource(composeBaseR.string.mozac_compose_base_a11y_state_label_collapsed)
     var headerHeight by remember { mutableIntStateOf(0) }
 
     if (!hideOnExpand || !isExpanded) {
-        Row(
-            modifier =
-                modifier
-                    .onSizeChanged { headerHeight = it.height }
-                    .background(MaterialTheme.colorScheme.surfaceBright)
-                    .defaultMinSize(
-                        minHeight =
-                            when (summary) {
-                                null -> dimensionResource(R.dimen.mozac_menu_item_min_height)
-                                else -> dimensionResource(R.dimen.mozac_menu_item_with_summary_min_height)
-                            }
-                    )
-                    .semantics(mergeDescendants = true) {
-                        contentDescriptionValue?.let { this.contentDescription = it }
-                        this.stateDescription = if (isExpanded) expandedDescription else collapsedDescription
-                        this.role = role
-                    }
-                    .clickable(
-                        enabled = state != MenuItemState.DISABLED,
-                        onClickLabel =
-                            if (isExpanded) {
-                                stringResource(composeBaseR.string.mozac_compose_base_a11y_action_label_collapse)
-                            } else {
-                                stringResource(composeBaseR.string.mozac_compose_base_a11y_action_label_expand)
-                            },
-                    ) {
-                        isExpanded = !isExpanded
-                        onClickEvent?.let { onInteraction(it) }
-                    }
-                    .padding(
-                        horizontal = AcornTheme.layout.space.dynamic200,
-                        vertical = AcornTheme.layout.space.static100,
-                    ),
-            verticalAlignment = CenterVertically,
-            horizontalArrangement = Arrangement.spacedBy(AcornTheme.layout.space.static200),
-        ) {
-            MenuListItemIcon(icon, state)
-
-            MenuListItemText(title, state, summary)
-
-            MenuListItemNewIndicator(showNewIndicator, state)
-
-            MenuListItemBadge(badge)
-
-            ChevronBadge(actionButtonText?.value, isExpanded)
-        }
+        ExpandableMenuItemHeader(
+            title = title,
+            isExpanded = isExpanded,
+            onClick = {
+                isExpanded = !isExpanded
+                onClickEvent?.let { onInteraction(it) }
+            },
+            modifier = modifier.onSizeChanged { headerHeight = it.height },
+            role = role,
+            contentDescription = contentDescription,
+            summary = summary,
+            icon = icon,
+            showNewIndicator = showNewIndicator,
+            badge = badge,
+            actionButtonText = actionButtonText,
+            state = state,
+        )
     }
 
     // Sub-items replacing their header start from its height, so that the menu only grows when expanding.
@@ -172,6 +140,86 @@ fun ExpandableHeaderItem(
                 onInteraction = onInteraction,
             )
         }
+    }
+}
+
+/**
+ * The header of a menu item that can be expanded to show others or collapsed to hide them.
+ *
+ * @param title The title of the menu item.
+ * @param isExpanded Whether the menu item is expanded.
+ * @param onClick Called when the header is clicked.
+ * @param modifier The modifier to apply to the header.
+ * @param role The [Role] of the menu item.
+ * @param contentDescription Optional custom content description for the menu item.
+ * @param summary An optional summary of the menu item.
+ * @param icon An optional icon of the menu item.
+ * @param showNewIndicator Whether to show a new indicator.
+ * @param badge An optional badge to show.
+ * @param actionButtonText An optional text to show in the expanded button indicator.
+ * @param state The state of this menu item.
+ */
+@Composable
+internal fun ExpandableMenuItemHeader(
+    title: MenuItemTitle,
+    isExpanded: Boolean,
+    onClick: () -> Unit,
+    modifier: Modifier = Modifier,
+    role: Role = Button,
+    contentDescription: Text? = null,
+    summary: MenuItemSummary? = null,
+    icon: MenuItemIcon? = null,
+    showNewIndicator: Boolean = false,
+    badge: MenuItemBadge? = null,
+    actionButtonText: Text? = null,
+    state: MenuItemState = DEFAULT,
+) {
+    val contentDescriptionValue = contentDescription?.value
+    val expandedDescription = stringResource(composeBaseR.string.mozac_compose_base_a11y_state_label_expanded)
+    val collapsedDescription = stringResource(composeBaseR.string.mozac_compose_base_a11y_state_label_collapsed)
+
+    Row(
+        modifier =
+            modifier
+                .background(MaterialTheme.colorScheme.surfaceBright)
+                .defaultMinSize(
+                    minHeight =
+                        when (summary) {
+                            null -> dimensionResource(R.dimen.mozac_menu_item_min_height)
+                            else -> dimensionResource(R.dimen.mozac_menu_item_with_summary_min_height)
+                        }
+                )
+                .semantics(mergeDescendants = true) {
+                    contentDescriptionValue?.let { this.contentDescription = it }
+                    this.stateDescription = if (isExpanded) expandedDescription else collapsedDescription
+                    this.role = role
+                }
+                .clickable(
+                    enabled = state != MenuItemState.DISABLED,
+                    onClickLabel =
+                        if (isExpanded) {
+                            stringResource(composeBaseR.string.mozac_compose_base_a11y_action_label_collapse)
+                        } else {
+                            stringResource(composeBaseR.string.mozac_compose_base_a11y_action_label_expand)
+                        },
+                    onClick = onClick,
+                )
+                .padding(
+                    horizontal = AcornTheme.layout.space.dynamic200,
+                    vertical = AcornTheme.layout.space.static100,
+                ),
+        verticalAlignment = CenterVertically,
+        horizontalArrangement = Arrangement.spacedBy(AcornTheme.layout.space.static200),
+    ) {
+        MenuListItemIcon(icon, state)
+
+        MenuListItemText(title, state, summary)
+
+        MenuListItemNewIndicator(showNewIndicator, state)
+
+        MenuListItemBadge(badge)
+
+        ChevronBadge(actionButtonText?.value, isExpanded)
     }
 }
 

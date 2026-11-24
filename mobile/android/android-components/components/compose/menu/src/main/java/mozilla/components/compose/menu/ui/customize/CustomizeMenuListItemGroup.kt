@@ -26,6 +26,8 @@ import androidx.compose.ui.layout.layout
 import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.tooling.preview.PreviewLightDark
 import androidx.compose.ui.tooling.preview.PreviewParameter
+import androidx.compose.ui.unit.Constraints
+import androidx.compose.ui.unit.constrainHeight
 import kotlin.math.roundToInt
 import mozilla.components.compose.base.theme.AcornTheme
 import mozilla.components.compose.menu.data.MenuItem
@@ -98,11 +100,12 @@ internal fun CustomizeMenuListItemGroup(
 
 /**
  * Report only the [PEEK_RATIO] of the height of this, with the rest of its content overflowing the reported bounds for
- * an ancestor to clip.
+ * an ancestor to clip. The content is measured for its full height, not squeezed into the reported one.
  */
 private fun Modifier.peekOnly() = layout { measurable, constraints ->
-    val placeable = measurable.measure(constraints)
-    layout(placeable.width, (placeable.height * PEEK_RATIO).roundToInt()) { placeable.place(0, 0) }
+    val placeable = measurable.measure(constraints.copy(minHeight = 0, maxHeight = Constraints.Infinity))
+    val height = constraints.constrainHeight((placeable.height * PEEK_RATIO).roundToInt())
+    layout(placeable.width, height) { placeable.place(0, 0) }
 }
 
 /**

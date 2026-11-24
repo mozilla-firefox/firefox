@@ -64,8 +64,40 @@ fun CustomizeMenuContent(
     store: CustomizableMenuStore,
     modifier: Modifier = Modifier,
 ) {
-    val windowWidth = LocalWindowInfo.current.containerSize.width
     var isResetDialogShown by rememberSaveable { mutableStateOf(false) }
+    CustomizeMenuCenteredList(modifier = modifier) { leftPadding, rightPadding ->
+        CustomizeMenuList(
+            store = store,
+            leftPadding = leftPadding,
+            rightPadding = rightPadding,
+            onResetToDefaultClick = { isResetDialogShown = true },
+        )
+    }
+
+    if (isResetDialogShown) {
+        ResetToDefaultDialog(
+            onConfirm = {
+                isResetDialogShown = false
+                store.dispatch(ResetToDefaultConfirmed)
+            },
+            onDismiss = { isResetDialogShown = false },
+        )
+    }
+}
+
+/**
+ * Layout for the lists of the customize menu screens, taking the whole width to be scrolled from anywhere, with the
+ * items no wider than the maximum width and centered in the window, as far as the free width allows.
+ *
+ * @param modifier The [Modifier] to be applied to the layout.
+ * @param content The list, given the left and right padding to apply to its content.
+ */
+@Composable
+internal fun CustomizeMenuCenteredList(
+    modifier: Modifier = Modifier,
+    content: @Composable (leftPadding: Dp, rightPadding: Dp) -> Unit,
+) {
+    val windowWidth = LocalWindowInfo.current.containerSize.width
     // How far right of the center of the window this is, when beside a larger notch than navigation bar for example.
     var offCenter by remember { mutableFloatStateOf(0f) }
     // The list takes the whole width, to be scrolled from anywhere, with its items no wider than the maximum width.
@@ -83,22 +115,7 @@ fun CustomizeMenuContent(
             }
         // The items are centered in the window, as far as the free width allows.
         val shift = with(LocalDensity.current) { offCenter.toDp() }.coerceIn(-freeWidth / 2, freeWidth / 2)
-        CustomizeMenuList(
-            store = store,
-            leftPadding = freeWidth / 2 - shift,
-            rightPadding = freeWidth / 2 + shift,
-            onResetToDefaultClick = { isResetDialogShown = true },
-        )
-    }
-
-    if (isResetDialogShown) {
-        ResetToDefaultDialog(
-            onConfirm = {
-                isResetDialogShown = false
-                store.dispatch(ResetToDefaultConfirmed)
-            },
-            onDismiss = { isResetDialogShown = false },
-        )
+        content(freeWidth / 2 - shift, freeWidth / 2 + shift)
     }
 }
 
