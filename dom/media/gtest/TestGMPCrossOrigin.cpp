@@ -121,7 +121,6 @@ class RunTestGMPCrossOrigin : public Base {
   RunTestGMPCrossOrigin(GMPTestMonitor& aMonitor, const nsCString& aOrigin1,
                         const nsCString& aOrigin2)
       : Base(aMonitor),
-        mGMP(nullptr),
         mOrigin2(aOrigin2),
         mShouldBeEqual(aOrigin1.Equals(aOrigin2)) {}
 
@@ -147,7 +146,6 @@ class RunTestGMPCrossOrigin : public Base {
     bool mShouldBeEqual;
   };
 
-  typename Base::GMPCodecType* mGMP;
   nsCString mOrigin2;
   bool mShouldBeEqual;
 };
