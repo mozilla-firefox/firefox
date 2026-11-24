@@ -572,6 +572,8 @@ support-files = ["file_link_rel_preload.html"]
 
 ["test_meta_header_dual.html"]
 
+["test_meta_report_only_console.html"]
+
 ["test_meta_whitespace_skipping.html"]
 
 ["test_multi_policy_injection_bypass.html"]
