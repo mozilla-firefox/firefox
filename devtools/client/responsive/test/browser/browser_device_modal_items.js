@@ -10,10 +10,6 @@ const {
   parseUserAgent,
 } = require("resource://devtools/client/responsive/utils/ua.js");
 
-const L10N = new LocalizationHelper(
-  "devtools/client/locales/device.properties",
-  true
-);
 addRDMTask(
   TEST_URL,
   async function ({ ui }) {
@@ -45,7 +41,7 @@ addRDMTask(
 
       is(
         header?.textContent,
-        L10N.getStr(`device.${type}`),
+        getDeviceString(type),
         `Got expected text for ${type} header`
       );
 

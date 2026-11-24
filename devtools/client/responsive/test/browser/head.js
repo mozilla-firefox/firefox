@@ -37,6 +37,7 @@ const {
 } = require("resource://devtools/client/responsive/utils/window.js");
 const {
   addDevice,
+  getDeviceString,
   removeDevice,
   removeLocalDevices,
 } = require("resource://devtools/client/shared/devices.js");

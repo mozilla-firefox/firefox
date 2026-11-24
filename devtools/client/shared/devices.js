@@ -4,10 +4,19 @@
 
 "use strict";
 
-const { LocalizationHelper } = require("resource://devtools/shared/l10n.js");
-const L10N = new LocalizationHelper(
-  "devtools/client/locales/device.properties"
-);
+loader.lazyGetter(this, "L10N", () => {
+  return new Localization(["devtools/client/device.ftl"], true);
+});
+
+const DEVICE_TYPE_L10N_IDS = {
+  phones: "device-type-phones",
+  tablets: "device-type-tablets",
+  laptops: "device-type-laptops",
+  televisions: "device-type-televisions",
+  consoles: "device-type-consoles",
+  watches: "device-type-watches",
+  custom: "device-type-custom",
+};
 
 const { RemoteSettings } = ChromeUtils.importESModule(
   "resource://services-settings/remote-settings.sys.mjs"
@@ -169,7 +178,8 @@ async function getDevices() {
  * Get the localized string for a device type.
  */
 function getDeviceString(deviceType) {
-  return L10N.getStr("device." + deviceType);
+  const l10nId = DEVICE_TYPE_L10N_IDS[deviceType];
+  return l10nId ? L10N.formatValueSync(l10nId) : deviceType;
 }
 
 module.exports = {
