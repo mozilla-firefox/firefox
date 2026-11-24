@@ -32,6 +32,7 @@ SYSTEM_ADDON_UPDATES_PREF = "extensions.systemAddon.update.enabled"
 DOWNLOAD_TO_TEMP_PREF = "browser.download.start_downloads_in_tmp_dir"
 DELETE_DOWNLOADS_PREF = "browser.helperApps.deleteTempFileOnExit"
 PLATFORM_OVERRIDE_PREF = "extensions.webcompat.platform_override"
+EME_ENABLED_PREF = "media.eme.enabled"
 
 
 class WebDriver:
@@ -132,6 +133,9 @@ class FirefoxWebDriver(WebDriver):
             prefs["layout.css.prefixes.transforms"] = True
         elif test_config.get("disable_moztransform"):
             prefs["layout.css.prefixes.transforms"] = False
+
+        # keep EME off, otherwise the tests try to download the CDM
+        prefs[EME_ENABLED_PREF] = False
 
         # keep system addon updates off to prevent bug 1882562
         prefs[SYSTEM_ADDON_UPDATES_PREF] = False

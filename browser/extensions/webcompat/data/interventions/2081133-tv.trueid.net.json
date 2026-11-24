@@ -1,0 +1,15 @@
+{
+  "label": "tv.trueid.net",
+  "bugs": {
+    "2081133": {
+      "issue": "broken-videos",
+      "matches": ["*://tv.trueid.net/*"]
+    }
+  },
+  "interventions": [
+    {
+      "platforms": ["all"],
+      "ua_string": ["add_Chrome"]
+    }
+  ]
+}
