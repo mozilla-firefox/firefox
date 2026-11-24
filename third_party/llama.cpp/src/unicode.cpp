@@ -145,6 +145,12 @@ static std::vector<unicode_cpt_flags> unicode_cpt_flags_array() {
         cpt_flags[range.nfd].is_nfd = true;
     }
 
+    for (auto range : unicode_ranges_nonspacing_mark) {  // first, last
+        for (uint32_t cpt = range.first; cpt <= range.second; ++cpt) {
+            cpt_flags[cpt].is_nonspacing_mark = true;
+        }
+    }
+
     return cpt_flags;
 }
 
@@ -1117,18 +1123,66 @@ std::string unicode_cpt_to_utf8(uint32_t cpt) {
     throw std::invalid_argument("invalid codepoint");
 }
 
-std::vector<uint32_t> unicode_cpts_normalize_nfd(const std::vector<uint32_t> & cpts) {
-    auto comp = [] (const uint32_t cpt, const range_nfd & range) {
+static uint8_t unicode_canonical_class(uint32_t cpt) {
+    auto comp = [] (const uint32_t cpt, const range_ccc & range) {
         return cpt < range.first;
     };
-    std::vector<uint32_t> result(cpts.size());
-    for (size_t i = 0; i < cpts.size(); ++i) {
-        const uint32_t cpt = cpts[i];
-        auto it = std::upper_bound(unicode_ranges_nfd.begin(), unicode_ranges_nfd.end(), cpt, comp) - 1;
-        result[i] = (it->first <= cpt && cpt <= it->last) ? it->nfd : cpt;
+    const auto * it = std::upper_bound(unicode_ranges_combining_class.begin(), unicode_ranges_combining_class.end(), cpt, comp);
+    return (it != unicode_ranges_combining_class.begin() && cpt <= (it - 1)->last) ? (it - 1)->ccc : 0;
+}
+
+static void unicode_canonical_decompose(uint32_t cpt, std::vector<uint32_t> & result) {
+    // Hangul syllables have no entry in the decomposition tables. Unicode defines
+    // each one by formula (19 leading consonants x 21 vowels x 28 optional final
+    // consonants), so split its offset from U+AC00 back into those 2-3 letters.
+    if (cpt >= 0xAC00 && cpt < 0xAC00 + 11172) {
+        const uint32_t index = cpt - 0xAC00;
+        result.push_back(0x1100 + index / 588);
+        result.push_back(0x1161 + (index % 588) / 28);
+        if (index % 28) {
+            result.push_back(0x11A7 + index % 28);
+        }
+        return;
+    }
+    auto comp = [] (const nfd_full & entry, const uint32_t cpt) {
+        return entry.cpt < cpt;
+    };
+    const auto * it = std::lower_bound(unicode_map_nfd_full.begin(), unicode_map_nfd_full.end(), cpt, comp);
+    if (it == unicode_map_nfd_full.end() || it->cpt != cpt) {
+        result.push_back(cpt);
+        return;
+    }
+    for (const uint32_t part : it->parts) {
+        if (part) {
+            result.push_back(part);
+        }
+    }
+}
+
+std::vector<uint32_t> unicode_cpts_normalize_nfd(const std::vector<uint32_t> & cpts) {
+    // unicode_ranges_nfd keeps only the first codepoint of a decomposition, so it cannot be used here.
+    std::vector<uint32_t> result;
+    result.reserve(cpts.size());
+    for (const uint32_t cpt : cpts) {
+        unicode_canonical_decompose(cpt, result);
+    }
+
+    // Canonical ordering: sort each run of combining marks; equal classes retain their order.
+    for (size_t i = 0; i < result.size();) {
+        if (unicode_canonical_class(result[i]) == 0) {
+            ++i;
+        }
+        const size_t begin = i;
+        while (i < result.size() && unicode_canonical_class(result[i]) != 0) {
+            ++i;
+        }
+        std::stable_sort(result.begin() + begin, result.begin() + i, [](uint32_t a, uint32_t b) {
+            return unicode_canonical_class(a) < unicode_canonical_class(b);
+        });
     }
     return result;
 }
+
 
 std::vector<uint32_t> unicode_cpts_from_utf8(const std::string & utf8) {
     std::vector<uint32_t> result;

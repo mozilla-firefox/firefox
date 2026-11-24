@@ -22,3 +22,19 @@ const std::unordered_set<uint32_t> & get_unicode_set_whitespace();
 extern const std::initializer_list<std::pair<uint32_t, uint32_t>> unicode_map_lowercase;
 extern const std::initializer_list<std::pair<uint32_t, uint32_t>> unicode_map_uppercase;
 extern const std::initializer_list<range_nfd> unicode_ranges_nfd;
+
+// WordPiece (BERT) normalization: full canonical decomposition, then drop Mn.
+struct range_ccc {
+    uint32_t first;
+    uint32_t last;
+    uint8_t  ccc;   // canonical combining class
+};
+
+struct nfd_full {
+    uint32_t cpt;
+    uint32_t parts[4];  // fully expanded, canonically ordered; unused entries are 0
+};
+
+extern const std::initializer_list<range_ccc> unicode_ranges_combining_class;
+extern const std::initializer_list<nfd_full> unicode_map_nfd_full;
+extern const std::initializer_list<std::pair<uint32_t, uint32_t>> unicode_ranges_nonspacing_mark;

@@ -105,3 +105,4 @@ vendoring:
      - metal-disable.patch # let caller decide to not attempt to use acceleration
      - gemma4-chat-template.patch # render the Gemma 4 chat template
      - vec-dot-signatures.patch # give the f32/f16/bf16 dot kernels the ggml_vec_dot_t signature, for UBSan
+     - wordpiece-tokenizer.patch # match HF/transformers.js WordPiece normalization
