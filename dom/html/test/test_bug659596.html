@@ -90,6 +90,38 @@ var option = document.createElement("option");
 checkReflection(option, "value");
 checkReflection(option, "label");
 
+{
+  const richOption = document.createElement("option");
+  const image = document.createElement("img");
+  image.alt = "ALT";
+  image.append("hidden image text");
+  richOption.append("before", image, "after");
+  is(SpecialPowers.wrap(richOption).renderedLabel, "beforeALTafter",
+     "The displayed option label includes alternative text without extra spaces");
+
+  const select = document.createElement("select");
+  select.append(richOption);
+  document.body.append(select);
+  is(SpecialPowers.wrap(select).openOrClosedShadowRoot.querySelector("label").textContent,
+     "beforeALTafter", "The select fallback button includes image alternative text");
+  image.alt = "NEW";
+  is(SpecialPowers.wrap(select).openOrClosedShadowRoot.querySelector("label").textContent,
+     "beforeNEWafter", "Changing image alternative text updates the select button");
+  image.removeAttribute("alt");
+  is(SpecialPowers.wrap(select).openOrClosedShadowRoot.querySelector("label").textContent,
+     "beforeafter", "Removing image alternative text updates the select button");
+  image.alt = "ALT";
+  select.remove();
+
+  richOption.label = "";
+  is(richOption.label, "", "An empty option label attribute is reflected");
+  is(SpecialPowers.wrap(richOption).renderedLabel, "beforeALTafter",
+     "An empty option label attribute falls back to the displayed text");
+  richOption.label = "explicit";
+  is(SpecialPowers.wrap(richOption).renderedLabel, "explicit",
+     "A nonempty option label takes precedence over its contents");
+}
+
 </script>
 </pre>
 </body>

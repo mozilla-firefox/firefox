@@ -329,13 +329,6 @@ void nsListControlFrame::ElementStateChanged(ElementState aStates) {
   }
 }
 
-void nsListControlFrame::GetOptionText(uint32_t aIndex, nsAString& aStr) {
-  aStr.Truncate();
-  if (dom::HTMLOptionElement* optionElement = GetOption(aIndex)) {
-    optionElement->GetRenderedLabel(aStr);
-  }
-}
-
 #ifdef DEBUG_FRAME_DUMP
 nsresult nsListControlFrame::GetFrameName(nsAString& aResult) const {
   return MakeFrameName(u"ListControl"_ns, aResult);

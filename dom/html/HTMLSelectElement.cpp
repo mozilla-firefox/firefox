@@ -1644,7 +1644,7 @@ void HTMLSelectElement::SelectedContentTextMightHaveChanged(
   if (!mPreviewValue.IsEmpty()) {
     newText.Assign(mPreviewValue);
   } else if (auto* selectedOption = GetSelectedOption(aIgnored)) {
-    selectedOption->GetRenderedLabel(newText);
+    selectedOption->GetRenderedLabel(newText, AltText::Include);
   }
   ButtonControlFrame::EnsureNonEmptyLabel(newText);
   textNode->SetText(newText, aNotify);
@@ -1683,21 +1683,6 @@ void HTMLSelectElement::UserFinishedInteracting(bool aChanged) {
                                        Cancelable::eNo);
 }
 
-void HTMLSelectElement::AttributeChanged(dom::Element* aElement,
-                                         int32_t aNameSpaceID,
-                                         nsAtom* aAttribute, AttrModType,
-                                         const nsAttrValue* aOldValue) {
-  if (aElement->IsHTMLElement(nsGkAtoms::option) &&
-      aNameSpaceID == kNameSpaceID_None && aAttribute == nsGkAtoms::label) {
-    // A11y has its own mutation listener for this so no need to do
-    // OptionValueMightHaveChanged().
-    SelectedContentTextMightHaveChanged();
-    if (!mIsUpdatingSelectedContent) {
-      ScheduleSelectedContentUpdate();
-    }
-  }
-}
-
 static bool InsideSelectedOption(nsIContent* aContent,
                                  HTMLSelectElement* aLimit) {
   for (nsIContent* cur = aContent->GetParent(); cur != aLimit;
@@ -1707,6 +1692,33 @@ static bool InsideSelectedOption(nsIContent* aContent,
     }
   }
   return false;
+}
+
+void HTMLSelectElement::AttributeChanged(dom::Element* aElement,
+                                         int32_t aNameSpaceID,
+                                         nsAtom* aAttribute, AttrModType,
+                                         const nsAttrValue* aOldValue) {
+  if (aNameSpaceID != kNameSpaceID_None) {
+    return;
+  }
+  if (aElement->IsHTMLElement(nsGkAtoms::option) &&
+      aAttribute == nsGkAtoms::label) {
+    // A11y has its own mutation listener for this so no need to do
+    // OptionValueMightHaveChanged().
+    SelectedContentTextMightHaveChanged();
+    if (!mIsUpdatingSelectedContent) {
+      ScheduleSelectedContentUpdate();
+    }
+    return;
+  }
+  if (aElement->IsHTMLElement(nsGkAtoms::img) && aAttribute == nsGkAtoms::alt &&
+      IsInComposedDoc() && IsCombobox() &&
+      nsContentUtils::IsInSameAnonymousTree(this, aElement)) {
+    OptionValueMightHaveChanged(aElement);
+    if (InsideSelectedOption(aElement, this)) {
+      SelectedContentTextMightHaveChanged();
+    }
+  }
 }
 
 void HTMLSelectElement::CharacterDataChanged(nsIContent* aContent,
@@ -2642,7 +2654,7 @@ nsresult HTMLSelectElement::HandleKeyPress(EventChainPostVisitor& aVisitor) {
     }
 
     nsAutoString text;
-    optionElement->GetRenderedLabel(text);
+    optionElement->GetRenderedLabel(text, AltText::Include);
     if (!StringBeginsWith(
             nsContentUtils::TrimWhitespace<
                 nsContentUtils::IsHTMLWhitespaceOrNBSP>(text, false),

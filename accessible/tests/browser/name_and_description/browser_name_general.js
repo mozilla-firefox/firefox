@@ -349,3 +349,32 @@ addAccessibleTask(
   },
   { topLevel: true, chrome: true }
 );
+
+/**
+ * Test that an option name includes image alternative text, and updates when
+ * it changes.
+ */
+addAccessibleTask(
+  `
+<select id="combobox">
+  <option id="comboboxOption">a<img id="comboboxImg" alt="b">c</option>
+</select>
+<select id="listbox" size="2">
+  <option id="listboxOption">a<img id="listboxImg" alt="b">c</option>
+</select>
+  `,
+  async function testOptionImageAlt(browser, docAcc) {
+    for (const id of ["combobox", "listbox"]) {
+      const option = findAccessibleChildByID(docAcc, `${id}Option`);
+      testName(option, "abc");
+      info(`Changing ${id} image alt`);
+      const nameChanged = waitForEvent(EVENT_NAME_CHANGE, option);
+      await invokeContentTask(browser, [id], contentId => {
+        content.document.getElementById(`${contentId}Img`).alt = "d";
+      });
+      await nameChanged;
+      testName(option, "adc");
+    }
+  },
+  { chrome: true, topLevel: true }
+);

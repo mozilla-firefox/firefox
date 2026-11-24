@@ -31,9 +31,9 @@ interface HTMLOptionElement : HTMLElement {
   attribute DOMString text;
   readonly attribute long index;
 
-  // https://html.spec.whatwg.org/#concept-option-rendered-label
+  // https://html.spec.whatwg.org/#concept-option-label
   // Chrome-only: the UA select popups use it so that they need not reimplement
   // the label-or-text fallback.
-  [ChromeOnly]
+  [ChromeOnly, BinaryName=renderedLabelForBindings]
   readonly attribute DOMString renderedLabel;
 };

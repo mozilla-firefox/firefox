@@ -64,13 +64,6 @@ class nsListControlFrame final : public mozilla::ScrollContainerFrame {
   mozilla::a11y::AccType AccessibleType() final;
 #endif
 
-  /**
-   * Gets the text of the currently selected item.
-   * If the there are zero items then an empty string is returned
-   * If there is nothing selected, then the 0th item's text is returned.
-   */
-  void GetOptionText(uint32_t aIndex, nsAString& aStr);
-
   nscoord GetBSizeOfARow();
 
   /**
