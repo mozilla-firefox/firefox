@@ -99,7 +99,10 @@ export class SidebarWidgetStudio extends SidebarPage {
   }
 
   signInTemplate() {
-    if (this.authentication.authenticated) {
+    if (
+      this.authentication.isStatusPending ||
+      this.authentication.authenticated
+    ) {
       return nothing;
     }
     return html`<section id="sign-in-prompt">

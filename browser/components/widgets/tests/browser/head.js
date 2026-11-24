@@ -3,6 +3,9 @@
 
 "use strict";
 
+const { getFxAccountsSingleton } = ChromeUtils.importESModule(
+  "resource://gre/modules/FxAccounts.sys.mjs"
+);
 const { PROMPT_MAJOR_VERSION } = ChromeUtils.importESModule(
   "moz-src:///browser/components/widgets/WidgetGenerator.sys.mjs"
 );
@@ -16,6 +19,7 @@ const { UIState } = ChromeUtils.importESModule(
 const WIDGETS_VIEW = "viewWidgetsSidebar";
 
 let gUIStateGet;
+let gGetSignedInUser;
 
 ChromeUtils.defineLazyGetter(this, "SidebarTestUtils", () => {
   const { SidebarTestUtils: utils } = ChromeUtils.importESModule(
@@ -25,15 +29,61 @@ ChromeUtils.defineLazyGetter(this, "SidebarTestUtils", () => {
   return utils;
 });
 
-async function openWidgetsSidebar(win = window) {
+/**
+ * Opens Widget Studio and optionally waits for the sign-in status.
+ *
+ * @param {Window} [win=window] - the browser window
+ * @param {object} [options]
+ * @param {boolean} [options.waitForStatus=true] - pass false to return while the sign-in status is still unknown
+ * @returns {Promise<SidebarWidgetStudio>} the panel
+ */
+async function openWidgetsSidebar(win = window, { waitForStatus = true } = {}) {
   await SidebarTestUtils.showPanel(win, WIDGETS_VIEW);
-  return TestUtils.waitForCondition(
+  const panel = await TestUtils.waitForCondition(
     () =>
       win.SidebarController.browser.contentDocument?.querySelector(
         "sidebar-widget-studio"
       ),
     "Panel in the sidebar"
   );
+  if (waitForStatus) {
+    await waitForSignInStatus(panel);
+  }
+  return panel;
+}
+
+/**
+ * Closes Widget Studio and resets the mocked account lookup.
+ */
+function closeWidgetsSidebar() {
+  SidebarController.hide();
+  gGetSignedInUser.reset();
+  gGetSignedInUser.resolves(null);
+}
+
+/**
+ * Holds the account lookup until the returned deferred is settled.
+ *
+ * @returns {object} the deferred account lookup
+ */
+function holdSignedInUser() {
+  setUIStatus(UIState.STATUS_NOT_CONFIGURED);
+  const lookup = Promise.withResolvers();
+  gGetSignedInUser.returns(lookup.promise);
+  return lookup;
+}
+
+/**
+ * Waits for the sign-in status and the panel's resulting update.
+ *
+ * @param {SidebarWidgetStudio} panel - the panel to wait for
+ */
+async function waitForSignInStatus(panel) {
+  await TestUtils.waitForCondition(
+    () => !panel.authentication.isStatusPending,
+    "The sign-in status is known"
+  );
+  await panel.updateComplete;
 }
 
 /**
@@ -44,11 +94,24 @@ async function mockAuthentication() {
     set: [["identity.fxaccounts.account.device.name", ""]],
   });
   gUIStateGet = sinon.stub(UIState, "get");
+  gGetSignedInUser = sinon
+    .stub(getFxAccountsSingleton(), "getSignedInUser")
+    .resolves(null);
   setSignedIn(false);
   registerCleanupFunction(() => {
     gUIStateGet.restore();
+    gGetSignedInUser.restore();
     Services.obs.notifyObservers(null, UIState.ON_UPDATE);
   });
+}
+
+/**
+ * Sets the mocked FxA status without notifying observers.
+ *
+ * @param {string} status - a UIState.STATUS_* value
+ */
+function setUIStatus(status) {
+  gUIStateGet.returns({ status });
 }
 
 /**

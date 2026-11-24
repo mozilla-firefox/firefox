@@ -6,6 +6,7 @@ const lazy = {};
 ChromeUtils.defineESModuleGetters(lazy, {
   SpecialMessageActions:
     "resource://messaging-system/lib/SpecialMessageActions.sys.mjs",
+  getFxAccountsSingleton: "resource://gre/modules/FxAccounts.sys.mjs",
   UIState: "resource://services-sync/UIState.sys.mjs",
 });
 
@@ -14,8 +15,8 @@ ChromeUtils.defineESModuleGetters(lazy, {
  * that changes. It also starts the sign-in flow and tracks it while it runs.
  */
 export class AuthenticationController {
-  /** @type {boolean} whether the user is signed in */
-  authenticated = false;
+  /** @type {?boolean} whether the user is signed in, null until the status is known */
+  authenticated = null;
 
   /** @type {boolean} whether a sign-in flow is running */
   pending = false;
@@ -28,9 +29,29 @@ export class AuthenticationController {
     host.addController(this);
   }
 
+  get isStatusPending() {
+    return this.authenticated === null;
+  }
+
   hostConnected() {
     Services.obs.addObserver(this, lazy.UIState.ON_UPDATE);
     this.observe();
+    if (this.isStatusPending) {
+      this.#loadStatus();
+    }
+  }
+
+  async #loadStatus() {
+    let signedIn = false;
+    try {
+      let user = await lazy.getFxAccountsSingleton().getSignedInUser();
+      signedIn = !!user?.verified;
+    } catch (e) {
+      console.error("Error reading the sign-in status:", e);
+    }
+    if (this.isStatusPending) {
+      this.#setAuthenticated(signedIn);
+    }
   }
 
   hostDisconnected() {
@@ -38,9 +59,17 @@ export class AuthenticationController {
   }
 
   observe() {
-    let authenticated =
-      lazy.UIState.get().status == lazy.UIState.STATUS_SIGNED_IN;
-    if (authenticated != this.authenticated) {
+    let { status } = lazy.UIState.get();
+    if (this.isStatusPending && status == lazy.UIState.STATUS_NOT_CONFIGURED) {
+      // UIState reports not_configured both before it has loaded the account
+      // and when signed out, so wait for the account lookup instead.
+      return;
+    }
+    this.#setAuthenticated(status == lazy.UIState.STATUS_SIGNED_IN);
+  }
+
+  #setAuthenticated(authenticated) {
+    if (authenticated !== this.authenticated) {
       this.authenticated = authenticated;
       this.host.requestUpdate();
     }
