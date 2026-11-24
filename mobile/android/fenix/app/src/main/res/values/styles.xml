@@ -485,10 +485,6 @@
         <item name="tabCounterTintColor">?attr/colorOnSurface</item>
     </style>
 
-    <style name="Mozac.Browser.Menu2" parent="" tools:ignore="UnusedResources">
-        <item name="cardBackgroundColor">?attr/layer2</item>
-    </style>
-
     <style name="PrivateTheme" parent="PrivateThemeBase">
         <item name="android:windowLightStatusBar">false</item>
 

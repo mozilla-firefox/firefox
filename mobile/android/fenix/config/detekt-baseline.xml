@@ -603,7 +603,6 @@
     <ID>UndocumentedPublicFunction:ImageButton.kt$fun ImageButton.showAndEnable()</ID>
     <ID>UndocumentedPublicFunction:IntentReceiverActivity.kt$IntentReceiverActivity$fun processIntent(intent: Intent)</ID>
     <ID>UndocumentedPublicFunction:LibrarySiteItemView.kt$LibrarySiteItemView$fun &lt;T&gt; setSelectionInteractor(item: T, holder: SelectionHolder&lt;T&gt;, interactor: SelectionInteractor&lt;T&gt;)</ID>
-    <ID>UndocumentedPublicFunction:LibrarySiteItemView.kt$LibrarySiteItemView$fun attachMenu(menuController: MenuController)</ID>
     <ID>UndocumentedPublicFunction:LibrarySiteItemView.kt$LibrarySiteItemView$fun loadFavicon(url: String)</ID>
     <ID>UndocumentedPublicFunction:LocaleAdapter.kt$LocaleAdapter$fun updateData(localeList: List&lt;Locale&gt;, selectedLocale: Locale)</ID>
     <ID>UndocumentedPublicFunction:LocaleManagerExtension.kt$fun LocaleManager.isDefaultLocaleSelected(context: Context): Boolean</ID>

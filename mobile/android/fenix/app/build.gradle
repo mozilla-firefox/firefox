@@ -486,7 +486,6 @@ dependencies {
     implementation project(':components:concept-awesomebar')
     implementation project(':components:concept-base')
     implementation project(':components:concept-engine')
-    implementation project(':components:concept-menu')
     implementation project(':components:concept-push')
     implementation project(':components:concept-storage')
     implementation project(':components:concept-sync')

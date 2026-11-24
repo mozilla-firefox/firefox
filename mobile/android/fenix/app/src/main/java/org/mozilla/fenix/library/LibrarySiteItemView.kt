@@ -13,8 +13,6 @@ import android.widget.TextView
 import androidx.constraintlayout.widget.ConstraintLayout
 import androidx.core.content.res.use
 import androidx.core.view.isVisible
-import mozilla.components.concept.menu.MenuController
-import mozilla.components.concept.menu.Orientation
 import mozilla.components.support.ktx.android.view.pixelSizeFor
 import org.mozilla.fenix.R
 import org.mozilla.fenix.databinding.LibrarySiteItemBinding
@@ -73,15 +71,6 @@ constructor(
 
     fun loadFavicon(url: String) {
         context.components.core.icons.loadIntoView(iconView, url)
-    }
-
-    fun attachMenu(menuController: MenuController) {
-        overflowView.setOnClickListener {
-            menuController.show(
-                anchor = it,
-                orientation = Orientation.DOWN,
-            )
-        }
     }
 
     fun <T> setSelectionInteractor(item: T, holder: SelectionHolder<T>, interactor: SelectionInteractor<T>) {
