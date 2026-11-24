@@ -63,11 +63,19 @@ async function test_flag_override_priority(
 }
 
 add_task(async function test_prio_header_no_override() {
-  await test_flag_override_priority(null, "u=2", Ci.nsIClassOfService.Leader);
+  await test_flag_override_priority(
+    null,
+    "u=2, i",
+    Ci.nsIClassOfService.Leader
+  );
 });
 
 add_task(async function test_prio_header_no_override2() {
-  await test_flag_override_priority(null, "u=4", Ci.nsIClassOfService.Follower);
+  await test_flag_override_priority(
+    null,
+    "u=4, i",
+    Ci.nsIClassOfService.Follower
+  );
 });
 
 add_task(async function test_prio_header_override() {

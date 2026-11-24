@@ -2538,9 +2538,7 @@ nsresult imgLoader::LoadImage(
       if (aUseUrgentStartForChannel && !aLinkPreload) {
         cos->AddClassFlags(nsIClassOfService::UrgentStart);
       }
-      if (StaticPrefs::image_priority_incremental()) {
-        cos->SetIncremental(true);
-      }
+      cos->SetIncremental(true);
 
       if (StaticPrefs::network_http_tailing_enabled() &&
           aContentPolicyType == nsIContentPolicy::TYPE_INTERNAL_IMAGE_FAVICON) {

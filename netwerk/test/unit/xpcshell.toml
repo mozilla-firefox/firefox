@@ -1577,6 +1577,8 @@ prefs = ["network.auth.force-generic-ntlm=true"]
 
 ["test_prio_header_override_forbid.js"]
 
+["test_priority_incremental.js"]
+
 ["test_private_cookie_changed.js"]
 
 ["test_private_necko_channel.js"]

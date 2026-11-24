@@ -3761,18 +3761,12 @@ networkPrioritization:
       setPref:
         branch: default
         pref: "network.http.http3.send_background_tabs_deprioritization"
-    documentPriorityIncremental:
-      description: Sets the incremental flag on the Priority header for document requests
+    priorityIncrementalByDefault:
+      description: Set the incremental flag by default based on the content policy type.
       type: boolean
       setPref:
         branch: default
-        pref: "dom.document_priority.incremental"
-    imagePriorityIncremental:
-      description: Sets the incremental flag on the Priority header for image requests
-      type: boolean
-      setPref:
-        branch: default
-        pref: "image.priority.incremental"
+        pref: "network.http.priority.incremental_by_default"
     imageAdjustLayoutPriority:
       description: Whether the network request priority should be adjusted according the layout and view frame position of each particular image.
       type: boolean

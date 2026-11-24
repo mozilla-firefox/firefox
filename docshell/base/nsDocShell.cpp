@@ -9662,9 +9662,7 @@ nsIPrincipal* nsDocShell::GetInheritedPrincipal(
       nsCOMPtr<nsIClassOfService> cos(do_QueryInterface(channel));
       if (cos) {
         cos->AddClassFlags(nsIClassOfService::UrgentStart);
-        if (StaticPrefs::dom_document_priority_incremental()) {
-          cos->SetIncremental(true);
-        }
+        cos->SetIncremental(true);
       }
     }
   }

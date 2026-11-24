@@ -32,7 +32,9 @@ add_task(async function setup() {
 // tests various flags when priority has been enabled on variable incremental
 // this function should only be called the preferences priority disabled
 async function test_http3_prio_enabled(incremental) {
-  await test_flag_priority("enabled (none)", null, "u=4", null, false); // default-test
+  // No explicit incremental value means use the default, which is true for a
+  // TYPE_OTHER load.
+  await test_flag_priority("enabled (none)", null, "u=4", null, true); // default-test
   await test_flag_priority(
     "enabled (urgent_start)",
     Ci.nsIClassOfService.UrgentStart,

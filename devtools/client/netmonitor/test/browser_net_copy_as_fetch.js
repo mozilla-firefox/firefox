@@ -29,6 +29,7 @@ add_task(async function testBasicCopyAsFetch() {
         "Sec-Fetch-Dest": "empty",
         "Sec-Fetch-Mode": "cors",
         "Sec-Fetch-Site": "same-origin",
+        "Priority": "i",
         "Pragma": "no-cache",
         "Cache-Control": "no-cache"
     },

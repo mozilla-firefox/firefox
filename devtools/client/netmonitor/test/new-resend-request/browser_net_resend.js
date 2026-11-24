@@ -60,12 +60,11 @@ async function testResendRequest() {
     "The resent request has the same url and query parameters and the first request"
   );
 
-  // The priority header only appears when the urgency and incremental values
-  // are not both default values (u=3 and i=false). In this case the original
-  // request has no priority header and the resent request does, hence we subtract one.
+  // Both requests send a priority header, since requests are incremental by
+  // default (Bug 2059766)
   is(
     firstResend.originalResource.requestHeaders.headers.length,
-    firstResend.newResource.requestHeaders.headers.length - 1,
+    firstResend.newResource.requestHeaders.headers.length,
     "The no of headers are the same"
   );
 

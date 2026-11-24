@@ -24,6 +24,7 @@ add_task(async function () {
         "X-Custom-Header-1": "Custom value",
         "X-Custom-Header-2": "8.8.8.8",
         "X-Custom-Header-3": "Mon, 3 Mar 2014 11:11:11 GMT",
+        "Priority": "i",
         "Pragma": "no-cache",
         "Cache-Control": "no-cache"
     },

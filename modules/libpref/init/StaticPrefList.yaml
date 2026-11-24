@@ -3285,13 +3285,6 @@
   value: false
   mirror: always
 
-# Whether to set the incremental flag on the top level document's
-# priority header
-- name: dom.document_priority.incremental
-  type: RelaxedAtomicBool
-  value: true
-  mirror: always
-
 # Whether the Document PictureInPicture API is enabled
 # https://wicg.github.io/document-picture-in-picture/#api
 - name: dom.documentpip.enabled
@@ -9508,12 +9501,6 @@
   value: false
   mirror: always
 
-# Whether to set the incremental attribute in the Priority header for images
-- name: image.priority.incremental
-  type: RelaxedAtomicBool
-  value: true
-  mirror: always
-
 # How strict we are in accepting/rejecting AVIF inputs according to whether they
 # conform to the specification
 # 0 = Permissive: accept whatever we can simply, unambiguously interpret
@@ -15409,6 +15396,12 @@
 
 # Whether to add urgency and incremental to request headers
 - name: network.http.priority_header.enabled
+  type: RelaxedAtomicBool
+  value: true
+  mirror: always
+
+# Set the incremental flag by default based on the content policy type.
+- name: network.http.priority.incremental_by_default
   type: RelaxedAtomicBool
   value: true
   mirror: always

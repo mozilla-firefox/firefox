@@ -3794,15 +3794,7 @@ export const FeatureManifest: {
                     pref: string;
                 };
             };
-            documentPriorityIncremental: {
-                description: string;
-                type: string;
-                setPref: {
-                    branch: string;
-                    pref: string;
-                };
-            };
-            imagePriorityIncremental: {
+            priorityIncrementalByDefault: {
                 description: string;
                 type: string;
                 setPref: {

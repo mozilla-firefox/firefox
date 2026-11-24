@@ -329,6 +329,30 @@ static bool isSecureOrTrustworthyURL(nsIURI* aURI) {
           nsMixedContentBlocker::IsPotentiallyTrustworthyLoopbackURL(aURI));
 }
 
+// The default value of the RFC 9218 incremental flag for a resource of the
+// given type. We follow Chrome's model, where only types that are unusable
+// until fully received are non-incremental.
+static bool DefaultIncremental(ExtContentPolicyType aType) {
+  if (!StaticPrefs::network_http_priority_incremental_by_default()) {
+    return false;
+  }
+  switch (aType) {
+    case ExtContentPolicyType::TYPE_STYLESHEET:
+    case ExtContentPolicyType::TYPE_SCRIPT:
+    case ExtContentPolicyType::TYPE_JSON:
+    case ExtContentPolicyType::TYPE_TEXT:
+    case ExtContentPolicyType::TYPE_FONT:
+    case ExtContentPolicyType::TYPE_UA_FONT:
+    case ExtContentPolicyType::TYPE_XSLT:
+    case ExtContentPolicyType::TYPE_DTD:
+    case ExtContentPolicyType::TYPE_WEB_MANIFEST:
+    case ExtContentPolicyType::TYPE_WEB_IDENTITY:
+      return false;
+    default:
+      return true;
+  }
+}
+
 nsresult HttpBaseChannel::Init(nsIURI* aURI, uint32_t aCaps,
                                nsProxyInfo* aProxyInfo,
                                uint32_t aProxyResolveFlags, nsIURI* aProxyURI,
@@ -394,6 +418,8 @@ nsresult HttpBaseChannel::Init(nsIURI* aURI, uint32_t aCaps,
         break;
     }
   }
+
+  mClassOfService.SetIncremental(DefaultIncremental(contentPolicyType));
 
   RefPtr<mozilla::dom::BrowsingContext> browsingContext;
   mLoadInfo->GetBrowsingContext(getter_AddRefs(browsingContext));

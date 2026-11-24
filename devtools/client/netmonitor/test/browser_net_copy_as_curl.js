@@ -76,6 +76,7 @@ function buildTestData(QUOTE, isWin) {
     header("Sec-Fetch-Dest: empty"),
     header("Sec-Fetch-Mode: cors"),
     header("Sec-Fetch-Site: same-origin"),
+    header("Priority: i"),
   ];
 
   const COOKIE_PARTIAL_RESULT = [header("Cookie: bob=true; tom=cool")];
