@@ -24,8 +24,8 @@ namespace dom {
 
 RemoteWorkerControllerParent::RemoteWorkerControllerParent(
     const RemoteWorkerData& aRemoteWorkerData)
-    : mRemoteWorkerController(RemoteWorkerController::Create(
-          aRemoteWorkerData, this, 0 /* random process ID */)) {
+    : mRemoteWorkerController(
+          RemoteWorkerController::Create(aRemoteWorkerData, this)) {
   AssertIsInMainProcess();
   AssertIsOnBackgroundThread();
   MOZ_ASSERT(mRemoteWorkerController);

@@ -60,7 +60,7 @@ SharedWorkerManager::~SharedWorkerManager() {
 
 bool SharedWorkerManager::MaybeCreateRemoteWorker(
     const RemoteWorkerData& aData, uint64_t aWindowID,
-    UniqueMessagePortId& aPortIdentifier, base::ProcessId aProcessId) {
+    UniqueMessagePortId& aPortIdentifier, GeckoChildID aChildID) {
   ::mozilla::ipc::AssertIsOnBackgroundThread();
 
   // Creating remote workers may result in creating new processes, but during
@@ -71,7 +71,7 @@ bool SharedWorkerManager::MaybeCreateRemoteWorker(
 
   if (!mRemoteWorkerController) {
     mRemoteWorkerController =
-        RemoteWorkerController::Create(aData, this, aProcessId);
+        RemoteWorkerController::Create(aData, this, aChildID);
     if (NS_WARN_IF(!mRemoteWorkerController)) {
       return false;
     }

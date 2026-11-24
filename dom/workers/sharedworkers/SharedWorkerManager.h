@@ -105,7 +105,7 @@ class SharedWorkerManager final : public RemoteWorkerObserver {
   bool MaybeCreateRemoteWorker(const RemoteWorkerData& aData,
                                uint64_t aWindowID,
                                UniqueMessagePortId& aPortIdentifier,
-                               base::ProcessId aProcessId);
+                               GeckoChildID aChildID);
 
   void AddActor(SharedWorkerParent* aParent);
 

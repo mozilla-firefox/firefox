@@ -27,6 +27,7 @@
 #include "nsImportModule.h"
 #include "nsTArray.h"
 #include "nsThreadUtils.h"
+#include "nsXULAppAPI.h"
 
 mozilla::LazyLogModule gRemoteWorkerManagerLog("RemoteWorkerManager");
 
@@ -213,11 +214,11 @@ void RemoteWorkerManager::UnregisterActor(RemoteWorkerServiceParent* aActor) {
 
 void RemoteWorkerManager::Launch(RemoteWorkerController* aController,
                                  const RemoteWorkerData& aData,
-                                 base::ProcessId aProcessId) {
+                                 GeckoChildID aChildID) {
   AssertIsInMainProcess();
   AssertIsOnBackgroundThread();
 
-  TargetActorAndKeepAlive target = SelectTargetActor(aData, aProcessId);
+  TargetActorAndKeepAlive target = SelectTargetActor(aData, aChildID);
 
   // If there is no available actor, try to start a process, and connect to it.
   if (!target.mActor) {
@@ -329,19 +330,19 @@ void RemoteWorkerManager::AsyncCreationFailed(
 }
 
 template <typename Callback>
-void RemoteWorkerManager::ForEachActor(
-    Callback&& aCallback, const RemoteType& aRemoteType,
-    Maybe<base::ProcessId> aProcessId) const {
+void RemoteWorkerManager::ForEachActor(Callback&& aCallback,
+                                       const RemoteType& aRemoteType,
+                                       Maybe<GeckoChildID> aChildID) const {
   AssertIsOnBackgroundThread();
 
   const auto length = mChildActors.Length();
 
   auto end = static_cast<uint32_t>(rand()) % length;
-  if (aProcessId) {
-    // Start from the actor with the given processId instead of starting from
+  if (aChildID) {
+    // Start from the actor with the given child ID instead of starting from
     // a random index.
     for (auto j = length - 1; j > 0; j--) {
-      if (mChildActors[j]->OtherPid() == *aProcessId) {
+      if (mChildActors[j]->OtherChildID() == *aChildID) {
         end = j;
         break;
       }
@@ -387,8 +388,8 @@ void RemoteWorkerManager::ForEachActor(
  * KeepAlive in that way.
  */
 RemoteWorkerManager::TargetActorAndKeepAlive
-RemoteWorkerManager::SelectTargetActorInternal(
-    const RemoteWorkerData& aData, base::ProcessId aProcessId) const {
+RemoteWorkerManager::SelectTargetActorInternal(const RemoteWorkerData& aData,
+                                               GeckoChildID aChildID) const {
   AssertIsOnBackgroundThread();
   MOZ_ASSERT(!mChildActors.IsEmpty());
 
@@ -405,7 +406,7 @@ RemoteWorkerManager::SelectTargetActorInternal(
         // remote worker.
         //
         // ForEachActor will start from the child actor coming from the child
-        // process with a pid equal to aProcessId if any, otherwise it would
+        // process with a child ID equal to aChildID if any, otherwise it would
         // start from a random actor in the mChildActors array, this guarantees
         // that we will choose that actor if it does also match the remote type.
         if ((keepAlive = aContentHandle->TryAddKeepAlive())) {
@@ -415,14 +416,14 @@ RemoteWorkerManager::SelectTargetActorInternal(
         MOZ_ASSERT(!actor);
         return true;
       },
-      workerRemoteType, IsServiceWorker(aData) ? Nothing() : Some(aProcessId));
+      workerRemoteType, IsServiceWorker(aData) ? Nothing() : Some(aChildID));
 
   return {actor, std::move(keepAlive)};
 }
 
 RemoteWorkerManager::TargetActorAndKeepAlive
 RemoteWorkerManager::SelectTargetActor(const RemoteWorkerData& aData,
-                                       base::ProcessId aProcessId) {
+                                       GeckoChildID aChildID) {
   AssertIsInMainProcess();
   AssertIsOnBackgroundThread();
 
@@ -434,8 +435,7 @@ RemoteWorkerManager::SelectTargetActor(const RemoteWorkerData& aData,
 
   // Extension principal workers are allowed to run on the parent process
   // when "extensions.webextensions.remote" pref is false.
-  if (aProcessId == base::GetCurrentProcId() &&
-      aData.remoteType().IsNotRemote() &&
+  if (aChildID == XRE_GetChildID() && aData.remoteType().IsNotRemote() &&
       !StaticPrefs::extensions_webextensions_remote() &&
       HasExtensionPrincipal(aData)) {
     MOZ_ASSERT(mParentActor);
@@ -449,13 +449,13 @@ RemoteWorkerManager::SelectTargetActor(const RemoteWorkerData& aData,
   }
 
   // We shouldn't have to worry about content-principal parent-process workers.
-  MOZ_ASSERT(aProcessId != base::GetCurrentProcId());
+  MOZ_ASSERT(aChildID != XRE_GetChildID());
 
   if (mChildActors.IsEmpty()) {
     return {nullptr, nullptr};
   }
 
-  return SelectTargetActorInternal(aData, aProcessId);
+  return SelectTargetActorInternal(aData, aChildID);
 }
 
 RefPtr<RemoteWorkerManager::LaunchProcessPromise>

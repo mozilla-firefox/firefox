@@ -31,7 +31,7 @@ namespace dom {
 /* static */
 already_AddRefed<RemoteWorkerController> RemoteWorkerController::Create(
     const RemoteWorkerData& aData, RemoteWorkerObserver* aObserver,
-    base::ProcessId aProcessId) {
+    GeckoChildID aChildID) {
   AssertIsInMainProcess();
   AssertIsOnBackgroundThread();
   MOZ_ASSERT(aObserver);
@@ -43,7 +43,7 @@ already_AddRefed<RemoteWorkerController> RemoteWorkerController::Create(
   MOZ_ASSERT(manager);
 
   // XXX: We do not check for failure here, should we?
-  manager->Launch(controller, aData, aProcessId);
+  manager->Launch(controller, aData, aChildID);
 
   return controller.forget();
 }

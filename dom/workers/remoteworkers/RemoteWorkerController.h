@@ -5,6 +5,7 @@
 #ifndef mozilla_dom_RemoteWorkerController_h
 #define mozilla_dom_RemoteWorkerController_h
 
+#include "mozilla/ProcessType.h"
 #include "mozilla/RefPtr.h"
 #include "mozilla/UniquePtr.h"
 #include "mozilla/dom/DOMTypes.h"
@@ -130,7 +131,7 @@ class RemoteWorkerController final {
 
   static already_AddRefed<RemoteWorkerController> Create(
       const RemoteWorkerData& aData, RemoteWorkerObserver* aObserver,
-      base::ProcessId = 0);
+      GeckoChildID aChildID = kInvalidGeckoChildID);
 
   void AddWindowID(uint64_t aWindowID);
 
