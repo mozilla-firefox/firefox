@@ -570,7 +570,10 @@ impl NeqoHttp3Conn {
             .connection_parameters(params)
             .webtransport(webtransport)
             .connect(true)
-            .http3_datagram(true);
+            .http3_datagram(true)
+            .send_initial_priority_update(static_prefs::pref!(
+                "network.http.http3.send_initial_priority_update"
+            ));
 
         let Ok(mut conn) = Connection::new_client(
             origin_conv,
