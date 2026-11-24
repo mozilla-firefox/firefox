@@ -11,6 +11,10 @@ To inform decision-making when writing and reviewing code use the principles doc
 
 ## Workflow
 - Instead of `gradlew`, use `./mach gradle` as the wrapper. Use `-p` argument of gradle if you need to run in a subdirectory
+- Instead of an `android` binary from `PATH`, use `./mach android cli <args>`. It runs the `android` launcher from the Android SDK that the build uses, against that SDK.
+    - Use `./mach android cli -- --help` for the CLI's own help, because mach handles `help`, `--help` and `-h` that come before `--`.
+    - Don't run `./mach android cli init`. It installs files into agent skill directories.
+    - Start emulators with `./mach android-emulator`. `./mach android cli emulator` does not list the AVDs that `./mach bootstrap` installed.
 
 ## Android Frontend
 When working in `mobile/android/fenix`, `mobile/android/focus-android` or `mobile/android/android-components` directories override instructions from the top-level `AGENTS.md` with:

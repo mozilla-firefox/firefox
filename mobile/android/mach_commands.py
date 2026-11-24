@@ -764,6 +764,48 @@ def android_nimbus_cli(command_context, update=False, force_update=False, args=(
         return nimbus_cli.run(command_context, args)
 
 
+@SubCommand(
+    "android",
+    "cli",
+    """Run the Android CLI (android) from the Android SDK that the build system would use.
+
+Arguments are passed through, e.g. `sdk list`. Use `-- --help` for the Android
+CLI's own help.""",
+)
+@CommandArgument("args", nargs=argparse.REMAINDER)
+def android_cli(command_context, args):
+    from pathlib import Path
+
+    from mozboot import android
+    from mozbuild.base import BuildEnvironmentNotFoundException
+
+    try:
+        sdk_root = command_context.substs.get("ANDROID_SDK_ROOT")
+    except BuildEnvironmentNotFoundException:
+        sdk_root = None
+    sdk_path = (
+        Path(sdk_root)
+        if sdk_root
+        else android.get_sdk_path(android.get_os_name_for_android())
+    )
+    android_cli_path = android.get_android_cli_path(sdk_path)
+    if not android_cli_path.is_file():
+        command_context.log(
+            logging.ERROR,
+            "android",
+            {"path": str(android_cli_path)},
+            "'android' not found at {path}. "
+            "Did you run `mach bootstrap` with Android selected yet?",
+        )
+        return 1
+
+    return command_context.run_process(
+        [str(android_cli_path), "--no-metrics", f"--sdk={sdk_path}"] + args,
+        pass_thru=True,
+        ensure_exit_code=False,
+    )
+
+
 @Command(
     "gradle",
     category="devenv",
