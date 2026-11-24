@@ -324,6 +324,7 @@ export const PREFS_CONFIG = new Map([
     {
       title: "Displays Top Sites on the New Tab Page",
       value: PREF_DEFAULT_VALUE_TOPSITES_ENABLED,
+      allowSetFromContent: { type: "boolean" },
     },
   ],
   [
@@ -460,6 +461,7 @@ export const PREFS_CONFIG = new Map([
     {
       title: "showWeather",
       value: true,
+      allowSetFromContent: { type: "boolean" },
     },
   ],
   [
@@ -483,6 +485,7 @@ export const PREFS_CONFIG = new Map([
       title:
         "Enable opt-in dialog to display for weather widget in GDPR regions.",
       value: true,
+      allowSetFromContent: { type: "boolean" },
     },
   ],
   [
@@ -491,6 +494,7 @@ export const PREFS_CONFIG = new Map([
       title:
         "User choice made when prompted with the opt-in dialog for weather.",
       value: false,
+      allowSetFromContent: { type: "boolean" },
     },
   ],
   [
@@ -506,6 +510,7 @@ export const PREFS_CONFIG = new Map([
     {
       title: "weather.query",
       value: "",
+      allowSetFromContent: { type: "string" },
     },
   ],
   [
@@ -520,6 +525,7 @@ export const PREFS_CONFIG = new Map([
     {
       title: "Switch the temperature between Celsius and Fahrenheit",
       getValue: ({ geo }) => (geo === "US" ? "f" : "c"),
+      allowSetFromContent: { oneOf: ["c", "f"] },
     },
   ],
   [
@@ -528,6 +534,7 @@ export const PREFS_CONFIG = new Map([
       title:
         "Toggle the weather widget to include a text summary of the current conditions",
       value: "detailed",
+      allowSetFromContent: { oneOf: ["simple", "detailed"] },
     },
   ],
   [
@@ -645,6 +652,7 @@ export const PREFS_CONFIG = new Map([
     {
       title: "Number of rows of Top Sites to display",
       value: 1,
+      allowSetFromContent: { type: "number" },
     },
   ],
   [
@@ -741,6 +749,7 @@ export const PREFS_CONFIG = new Map([
     {
       title: "Whether top stories are enabled by default.",
       value: PREF_DEFAULT_VALUE_TOPSTORIES_ENABLED,
+      allowSetFromContent: { type: "boolean" },
     },
   ],
   [
@@ -770,6 +779,7 @@ export const PREFS_CONFIG = new Map([
       title:
         "Boolean flag controlling wallpaper visibility -- if true the user's selected wallpaper is shown, if false it is hidden",
       value: false,
+      allowSetFromContent: { type: "boolean" },
     },
   ],
   [
@@ -800,6 +810,7 @@ export const PREFS_CONFIG = new Map([
       title:
         "Boolean flag used for telemetry to track if a user has previously uploaded a custom wallpaper",
       value: false,
+      allowSetFromContent: { type: "boolean" },
     },
   ],
   [
@@ -828,6 +839,7 @@ export const PREFS_CONFIG = new Map([
     {
       title: "Boolean flag to turn the leaderboard ad size on and off",
       value: false,
+      allowSetFromContent: { type: "boolean" },
     },
   ],
   [
@@ -843,6 +855,7 @@ export const PREFS_CONFIG = new Map([
     {
       title: "Boolean flag to turn the billboard ad size on and off",
       value: false,
+      allowSetFromContent: { type: "boolean" },
     },
   ],
   [
@@ -858,6 +871,7 @@ export const PREFS_CONFIG = new Map([
     {
       title: "Boolean flag to turn the medium (MREC) ad size on and off",
       value: false,
+      allowSetFromContent: { type: "boolean" },
     },
   ],
   [
@@ -872,6 +886,7 @@ export const PREFS_CONFIG = new Map([
     {
       title: "Boolean flag whether the promo card is visible or not",
       value: false,
+      allowSetFromContent: { type: "boolean" },
     },
   ],
   [
@@ -879,6 +894,7 @@ export const PREFS_CONFIG = new Map([
     {
       title: "Boolean flag to enable section layout UI in recommended stories",
       getValue: showSectionLayout,
+      allowSetFromContent: { type: "boolean" },
     },
   ],
   [
@@ -903,6 +919,7 @@ export const PREFS_CONFIG = new Map([
       title:
         "Boolean flag to enable revised pocket story card UI in recommended stories",
       value: false,
+      allowSetFromContent: { type: "boolean" },
     },
   ],
   [
@@ -975,6 +992,7 @@ export const PREFS_CONFIG = new Map([
     {
       title: "User pref to toggle inferred personalizaton",
       value: false,
+      allowSetFromContent: { type: "boolean" },
     },
   ],
   [
@@ -1017,6 +1035,7 @@ export const PREFS_CONFIG = new Map([
     {
       title: "comma separated string of sections that are visible",
       value: "",
+      allowSetFromContent: { type: "string" },
     },
   ],
   [
@@ -1046,6 +1065,7 @@ export const PREFS_CONFIG = new Map([
       title:
         "CSV string of the banner placement ids on newtab Pocket grid. This placement id tells us which banner is visible when contexual ads are on",
       value: "",
+      allowSetFromContent: { type: "string" },
     },
   ],
   [
@@ -1054,6 +1074,7 @@ export const PREFS_CONFIG = new Map([
       title:
         "CSV string of AdBanner placement counts on newtab Pocket grid. The count tells the ad server how many banners to return for this position and placement.",
       value: "",
+      allowSetFromContent: { type: "string" },
     },
   ],
   [
@@ -1061,6 +1082,7 @@ export const PREFS_CONFIG = new Map([
     {
       title:
         "CSV string of spoc placement ids on newtab Pocket grid. A placement id tells our ad server where the ads are intended to be displayed.",
+      allowSetFromContent: { type: "string" },
     },
   ],
   [
@@ -1068,6 +1090,7 @@ export const PREFS_CONFIG = new Map([
     {
       title:
         "CSV string of spoc placement counts on newtab Pocket grid. The count tells the ad server how many ads to return for this position and placement.",
+      allowSetFromContent: { type: "string" },
     },
   ],
   [
@@ -1139,6 +1162,7 @@ export const PREFS_CONFIG = new Map([
     {
       title: "Currently set wallpaper",
       value: "",
+      allowSetFromContent: { type: "string" },
     },
   ],
   [
@@ -1147,6 +1171,7 @@ export const PREFS_CONFIG = new Map([
       title:
         "Initial wallpaper set by a Nimbus experiment. Persists after experiment ends.",
       value: "",
+      allowSetFromContent: { type: "string" },
     },
   ],
   [
@@ -1191,6 +1216,7 @@ export const PREFS_CONFIG = new Map([
     {
       title: "Enables visibility of all widgets and controls to enable them",
       value: false,
+      allowSetFromContent: { type: "boolean" },
     },
   ],
   [
@@ -1198,6 +1224,7 @@ export const PREFS_CONFIG = new Map([
     {
       title: "Allows users to toggle all widgets on and off at once",
       value: true,
+      allowSetFromContent: { type: "boolean" },
     },
   ],
   [
@@ -1205,6 +1232,7 @@ export const PREFS_CONFIG = new Map([
     {
       title: "Enables the to-do lists widget",
       value: true,
+      allowSetFromContent: { type: "boolean" },
     },
   ],
   [
@@ -1227,6 +1255,7 @@ export const PREFS_CONFIG = new Map([
     {
       title: "Enables the to-do lists widget experiment in Nimbus",
       value: false,
+      allowSetFromContent: { type: "boolean" },
     },
   ],
   [
@@ -1235,6 +1264,7 @@ export const PREFS_CONFIG = new Map([
       title:
         "Boolean flag for determining if a user has interacted with the lists widget",
       value: false,
+      allowSetFromContent: { type: "boolean" },
     },
   ],
   [
@@ -1257,6 +1287,7 @@ export const PREFS_CONFIG = new Map([
       title:
         "Toggles maximized state for all widgets in the widgets section. It defaults to true as the default widget size is large",
       value: true,
+      allowSetFromContent: { type: "boolean" },
     },
   ],
   [
@@ -1272,6 +1303,7 @@ export const PREFS_CONFIG = new Map([
       title:
         "Whether the Nova widgets row is expanded beyond its first visual row. Persists the user's Show more / Show less choice across sessions.",
       value: false,
+      allowSetFromContent: { type: "boolean" },
     },
   ],
   [
@@ -1279,6 +1311,7 @@ export const PREFS_CONFIG = new Map([
     {
       title: "Enables the focus timer widget",
       value: true,
+      allowSetFromContent: { type: "boolean" },
     },
   ],
   [
@@ -1286,6 +1319,7 @@ export const PREFS_CONFIG = new Map([
     {
       title: "Enables the focus timer widget experiment in Nimbus",
       value: false,
+      allowSetFromContent: { type: "boolean" },
     },
   ],
   [
@@ -1294,6 +1328,7 @@ export const PREFS_CONFIG = new Map([
       title:
         "Boolean flag for determining if a user has interacted with the timer widget",
       value: false,
+      allowSetFromContent: { type: "boolean" },
     },
   ],
   [
@@ -1301,6 +1336,7 @@ export const PREFS_CONFIG = new Map([
     {
       title: "Enables the focus timer widget to show system notifications",
       value: false,
+      allowSetFromContent: { type: "boolean" },
     },
   ],
   [
@@ -1315,6 +1351,7 @@ export const PREFS_CONFIG = new Map([
     {
       title: "Enables the weather widget",
       value: true,
+      allowSetFromContent: { type: "boolean" },
     },
   ],
   [
@@ -1322,6 +1359,7 @@ export const PREFS_CONFIG = new Map([
     {
       title: "Enables the weather widget experiment in Nimbus",
       getValue: showWeather,
+      allowSetFromContent: { type: "boolean" },
     },
   ],
   [
@@ -1344,6 +1382,7 @@ export const PREFS_CONFIG = new Map([
     {
       title: "Size of the weather forecast widget (small, medium, or large)",
       getValue: getWeatherWidgetSize,
+      allowSetFromContent: { oneOf: ["small", "medium", "large"] },
     },
   ],
   [
@@ -1351,6 +1390,7 @@ export const PREFS_CONFIG = new Map([
     {
       title: "Enables the clock widget",
       value: true,
+      allowSetFromContent: { type: "boolean" },
     },
   ],
   [
@@ -1358,6 +1398,7 @@ export const PREFS_CONFIG = new Map([
     {
       title: "Enables the clock widget experiment in Nimbus",
       value: false,
+      allowSetFromContent: { type: "boolean" },
     },
   ],
   [
@@ -1372,6 +1413,7 @@ export const PREFS_CONFIG = new Map([
     {
       title: "Size of the lists widget (medium or large)",
       value: "",
+      allowSetFromContent: { oneOf: ["small", "medium", "large"] },
     },
   ],
   [
@@ -1379,6 +1421,7 @@ export const PREFS_CONFIG = new Map([
     {
       title: "Size of the focus timer widget (medium or large)",
       value: "",
+      allowSetFromContent: { oneOf: ["small", "medium", "large"] },
     },
   ],
   [
@@ -1386,6 +1429,7 @@ export const PREFS_CONFIG = new Map([
     {
       title: "Enables the sports widget",
       value: true,
+      allowSetFromContent: { type: "boolean" },
     },
   ],
   [
@@ -1393,6 +1437,7 @@ export const PREFS_CONFIG = new Map([
     {
       title: "Enables the sports widget experiment in Nimbus",
       value: false,
+      allowSetFromContent: { type: "boolean" },
     },
   ],
   [
@@ -1400,6 +1445,7 @@ export const PREFS_CONFIG = new Map([
     {
       title: "Size of the sports widget (medium or large)",
       value: "",
+      allowSetFromContent: { oneOf: ["small", "medium", "large"] },
     },
   ],
   [
@@ -1439,6 +1485,7 @@ export const PREFS_CONFIG = new Map([
       title:
         "Boolean flag for determining if a user has interacted with the sports widget",
       value: false,
+      allowSetFromContent: { type: "boolean" },
     },
   ],
   [
@@ -1446,6 +1493,7 @@ export const PREFS_CONFIG = new Map([
     {
       title: "Size of the clock widget (small, medium, or large)",
       value: "",
+      allowSetFromContent: { oneOf: ["small", "medium", "large"] },
     },
   ],
   [
@@ -1454,6 +1502,7 @@ export const PREFS_CONFIG = new Map([
       title:
         "User override for clock widget hour format ('12', '24', or empty string to use locale default)",
       value: "",
+      allowSetFromContent: { type: "string" },
     },
   ],
   [
@@ -1461,6 +1510,7 @@ export const PREFS_CONFIG = new Map([
     {
       title: "Saved clock widget time zones",
       value: "",
+      allowSetFromContent: { type: "string" },
     },
   ],
   [
@@ -1483,6 +1533,7 @@ export const PREFS_CONFIG = new Map([
       title:
         "Widget display order as a comma-separated list of widget IDs. Empty string means use the default registry order.",
       value: "",
+      allowSetFromContent: { type: "string" },
     },
   ],
   [
@@ -1628,6 +1679,7 @@ export const PREFS_CONFIG = new Map([
     {
       title: "Selected topics",
       value: "",
+      allowSetFromContent: { type: "string" },
     },
   ],
   [
@@ -1642,6 +1694,7 @@ export const PREFS_CONFIG = new Map([
     {
       title: "Returns true only if the user has previously selected topics",
       value: false,
+      allowSetFromContent: { type: "boolean" },
     },
   ],
   [
@@ -1649,6 +1702,7 @@ export const PREFS_CONFIG = new Map([
     {
       title: "amount of times that topic selection onboarding has been shown",
       value: 0,
+      allowSetFromContent: { type: "number" },
     },
   ],
   [
@@ -1657,6 +1711,7 @@ export const PREFS_CONFIG = new Map([
       title:
         "Whether the onboarding should be shown, based on previous interactions",
       value: true,
+      allowSetFromContent: { type: "boolean" },
     },
   ],
   [
@@ -1672,6 +1727,7 @@ export const PREFS_CONFIG = new Map([
     {
       title: "time in ms that the onboarding show be shown next",
       value: 0,
+      allowSetFromContent: { type: "number" },
     },
   ],
   [
@@ -2052,6 +2108,13 @@ for (const config of FEEDS_DATA) {
   FEEDS_CONFIG.set(pref, config.factory);
   PREFS_CONFIG.set(pref, config);
 }
+
+// Copied out at load because PREFS_CONFIG entries are replaced at runtime.
+export const CONTENT_PREF_RULES = new Map(
+  [...PREFS_CONFIG]
+    .filter(([, config]) => config.allowSetFromContent)
+    .map(([name, config]) => [name, Object.freeze(config.allowSetFromContent)])
+);
 
 export class ActivityStream {
   #createdInstant = null;
