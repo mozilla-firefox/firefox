@@ -59,6 +59,14 @@ MOZ_BEGIN_EXTERN_C
 #  define malloc_impl malloc
 #  define malloc_impl_
 #endif
+#ifndef calloc_impl
+#  define calloc_impl calloc
+#  define calloc_impl_
+#endif
+#ifndef realloc_impl
+#  define realloc_impl realloc
+#  define realloc_impl_
+#endif
 
 /*
  * Each declaration below is analogous to a "standard" allocation
@@ -135,19 +143,30 @@ MOZ_END_EXTERN_C
  */
 class InfallibleAllocPolicy {
  public:
+  // Note that the maybe_* methods are still fallible even though this is the
+  // InfallibleAllocPolicy.
+
   template <typename T>
   T* maybe_pod_malloc(size_t aNumElems) {
-    return pod_malloc<T>(aNumElems);
+    size_t size;
+    if (MOZ_UNLIKELY(!mozilla::SafeMul(aNumElems, sizeof(T), &size))) {
+      return nullptr;
+    }
+    return static_cast<T*>(malloc_impl(size));
   }
 
   template <typename T>
   T* maybe_pod_calloc(size_t aNumElems) {
-    return pod_calloc<T>(aNumElems);
+    return static_cast<T*>(calloc_impl(aNumElems, sizeof(T)));
   }
 
   template <typename T>
   T* maybe_pod_realloc(T* aPtr, size_t aOldSize, size_t aNewSize) {
-    return pod_realloc<T>(aPtr, aOldSize, aNewSize);
+    size_t size;
+    if (MOZ_UNLIKELY(!mozilla::SafeMul(aNewSize, sizeof(T), &size))) {
+      return nullptr;
+    }
+    return static_cast<T*>(realloc_impl(aPtr, size));
   }
 
   template <typename T>
@@ -185,6 +204,14 @@ class InfallibleAllocPolicy {
 
 #endif /* ifdef __cplusplus */
 
+#ifdef realloc_impl_
+#  undef realloc_impl_
+#  undef realloc_impl
+#endif
+#ifdef calloc_impl_
+#  undef calloc_impl_
+#  undef calloc_impl
+#endif
 #ifdef malloc_impl_
 #  undef malloc_impl_
 #  undef malloc_impl

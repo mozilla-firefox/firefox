@@ -27,19 +27,24 @@ namespace mozilla {
  *
  *  - public copy constructor, assignment, destructor
  *  - template <typename T> T* maybe_pod_malloc(size_t)
- *      Fallible, but doesn't report an error on OOM.
+ *      Fallible. Returns nullptr on failure but doesn't report an error.
  *  - template <typename T> T* maybe_pod_calloc(size_t)
- *      Fallible, but doesn't report an error on OOM.
+ *      Fallible. Returns nullptr on failure but doesn't report an error.
  *  - template <typename T> T* maybe_pod_realloc(T*, size_t, size_t)
- *      Fallible, but doesn't report an error on OOM.  The old allocation
- *      size is passed in, in addition to the new allocation size requested.
+ *      Fallible. Returns nullptr on failure but doesn't report an error.
+ *      The old allocation size is passed in, in addition to the new allocation
+ *      size requested.
  *  - template <typename T> T* pod_malloc(size_t)
- *      Responsible for OOM reporting when null is returned.
+ *      May or may not be fallible depending on the policy. If fallible,
+ *      returns nullptr on failure and is responsible for any OOM reporting.
  *  - template <typename T> T* pod_calloc(size_t)
- *      Responsible for OOM reporting when null is returned.
+ *      May or may not be fallible depending on the policy. If fallible,
+ *      returns nullptr on failure and is responsible for any OOM reporting.
  *  - template <typename T> T* pod_realloc(T*, size_t, size_t)
- *      Responsible for OOM reporting when null is returned.  The old allocation
- *      size is passed in, in addition to the new allocation size requested.
+ *      May or may not be fallible depending on the policy. If fallible,
+ *      returns nullptr on failure and is responsible for any OOM reporting.
+ *      The old allocation size is passed in, in addition to the new allocation
+ *      size requested.
  *  - template <typename T> void free_(T*, size_t)
  *      The capacity passed in must match the old allocation size.
  *  - template <typename T> void free_(T*)
