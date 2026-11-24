@@ -70,6 +70,11 @@
     static android.os.Parcelable$Creator CREATOR;
 }
 
+# Google Play Services FIDO results cross Binder as Parcelables that are looked
+# up by class name when unmarshalled. Obfuscating their names makes the
+# unmarshalling fail, and the WebAuthn calls in WebAuthnTokenManager then hang.
+-keepnames class com.google.android.gms.fido.** implements android.os.Parcelable
+
 # Preserve static fields of inner classes of R classes that might be accessed
 # through introspection.
 
