@@ -19,9 +19,8 @@ struct SkippedRangeStartComparator {
 void gfxSkipCharsIterator::SetOriginalOffset(int32_t aOffset) {
   aOffset += mOriginalStringToSkipCharsOffset;
   if (MOZ_UNLIKELY(uint32_t(aOffset) > mSkipChars->mCharCount)) {
-    gfxCriticalError() << "invalid offset " << aOffset
-                       << " for gfxSkipChars length " << mSkipChars->mCharCount;
-    aOffset = mSkipChars->mCharCount;
+    MOZ_CRASH_UNSAFE_PRINTF("invalid offset %d for gfxSkipChars len %u",
+                            aOffset, mSkipChars->mCharCount);
   }
 
   mOriginalStringOffset = aOffset;
