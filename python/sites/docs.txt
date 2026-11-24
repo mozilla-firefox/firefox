@@ -7,11 +7,11 @@ pypi:boto3==1.43.62
 pypi:fluent.pygments==1.0
 pypi:livereload==2.7.1
 pypi:mots==0.14.0
-pypi:myst-parser==5.1.0
-pypi:pytest==9.1.1
+pypi:myst-parser==5.2.0
+pypi:pytest==9.2.0
 pypi:pywatchman==4.0.0
 pypi:sphinx-copybutton==0.5.2
-pypi:sphinx-design==0.7.0
+pypi:sphinx-design==0.8.0
 pypi:sphinx-js==5.0.3
 pypi:sphinx-rtd-theme==3.1.0
 pypi:sphinxcontrib-mermaid==2.1.1
