@@ -102,6 +102,7 @@ if CONFIG['TARGET_CPU'] in ('x86', 'x86_64'):
             '../../../third_party/dav1d/src/x86/itx16_avx512.asm',
             '../../../third_party/dav1d/src/x86/itx_avx2.asm',
             '../../../third_party/dav1d/src/x86/itx_avx512.asm',
+            '../../../third_party/dav1d/src/x86/lf_mask.asm',
             '../../../third_party/dav1d/src/x86/loopfilter16_avx2.asm',
             '../../../third_party/dav1d/src/x86/loopfilter16_avx512.asm',
             '../../../third_party/dav1d/src/x86/loopfilter_avx2.asm',
@@ -204,6 +205,7 @@ elif CONFIG['TARGET_CPU'] == 'arm' or CONFIG['TARGET_CPU'] == 'aarch64':
             # itx.S is used for both 8 and 16 bpc.
             '../../../third_party/dav1d/src/arm/64/itx.S',
             '../../../third_party/dav1d/src/arm/64/itx16.S',
+            '../../../third_party/dav1d/src/arm/64/lf_mask.S',
             '../../../third_party/dav1d/src/arm/64/loopfilter.S',
             '../../../third_party/dav1d/src/arm/64/loopfilter16.S',
             '../../../third_party/dav1d/src/arm/64/looprestoration.S',
