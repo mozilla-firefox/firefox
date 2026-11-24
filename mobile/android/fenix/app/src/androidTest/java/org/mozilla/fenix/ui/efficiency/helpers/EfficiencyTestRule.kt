@@ -21,6 +21,7 @@ import org.mozilla.fenix.helpers.AppAndSystemHelper.allowOrPreventSystemUIFromRe
 import org.mozilla.fenix.helpers.AppAndSystemHelper.clearDownloadsFolder
 import org.mozilla.fenix.helpers.AppAndSystemHelper.disableDebugDrawer
 import org.mozilla.fenix.helpers.AppAndSystemHelper.enableDataSaverSystemSetting
+import org.mozilla.fenix.helpers.AppAndSystemHelper.ensureNetworkConnected
 import org.mozilla.fenix.helpers.AppAndSystemHelper.runWithCondition
 import org.mozilla.fenix.helpers.NetworkConnectionStatusHelper.getNetworkDetails
 import org.mozilla.fenix.helpers.TestHelper.appContext
@@ -75,6 +76,10 @@ private class EfficiencyTestEnvironment(private val context: EfficiencyExecution
         val before = snapshot()
         initialSnapshot = before
         applyRequirements()
+        // Recover connectivity a prior network-toggling test may have left disabled, before this one
+        // launches the app. Best-effort and logged; the subsequent getNetworkDetails() in
+        // clearExternalState() then reports the recovered state.
+        ensureNetworkConnected()
         clearExternalState()
         val after = snapshot()
         record("environmentPreflight", before, after)
@@ -84,6 +89,10 @@ private class EfficiencyTestEnvironment(private val context: EfficiencyExecution
     fun restore() {
         val before = snapshot()
         restoreSnapshot(checkNotNull(initialSnapshot) { "Environment was not sampled before restore" })
+        // Symmetry with prepare(): recover connectivity a network-toggling test may have left disabled
+        // (e.g. if it died before its own cleanup) so the test ends connected and the end-of-test
+        // getNetworkDetails() below reports the restored state.
+        ensureNetworkConnected()
         clearExternalState()
         val after = snapshot()
         record("environmentRestore", before, after)

@@ -6,9 +6,13 @@ package org.mozilla.fenix.ui.efficiency.tests
 
 import mozilla.components.browser.errorpages.R as errorpagesR
 import org.junit.Test
+import org.mozilla.fenix.customannotations.Critical
 import org.mozilla.fenix.customannotations.SmokeTest
+import org.mozilla.fenix.helpers.AppAndSystemHelper.setNetworkEnabled
 import org.mozilla.fenix.helpers.DataGenerationHelper.getStringResource
+import org.mozilla.fenix.helpers.TestAssetHelper.waitingTimeLong
 import org.mozilla.fenix.ui.efficiency.helpers.BaseTest
+import org.mozilla.fenix.ui.efficiency.selectors.BrowserPageSelectors
 
 class BrowsingErrorPagesTest : BaseTest() {
     private val malwareWarning =
@@ -53,5 +57,32 @@ class BrowsingErrorPagesTest : BaseTest() {
         val harmfulURl = "https://itisatrap.org/firefox/harmful.html"
 
         on.browserPage.navigateToPage(harmfulURl).verifyPageContent(harmfulSiteWarning)
+    }
+
+    // TestRail link: https://mozilla.testrail.io/index.php?/cases/view/2140588
+    @Critical
+    @Test
+    fun verifyNoInternetConnectionErrorMessageTest() {
+        val url = "www.example.com"
+
+        // The device is brought online before every test by EfficiencyTestRule.ensureNetworkConnected(),
+        // so this starts from a known-online state. Re-enable the network even if the offline
+        // assertions throw, so a failure can't leave the device offline for the tests that follow --
+        // nothing resets it in teardown.
+        setNetworkEnabled(false)
+        try {
+            on.browserPage
+                .navigateToPage(url)
+                .mozVerify(BrowserPageSelectors.NO_INTERNET_CONNECTION_ERROR_TITLE, timeout = waitingTimeLong)
+                .mozVerify(BrowserPageSelectors.ERROR_TRY_AGAIN_BUTTON)
+        } finally {
+            setNetworkEnabled(true)
+        }
+
+        on.browserPage.clickPageObjectUntilContent(
+            selector = BrowserPageSelectors.ERROR_TRY_AGAIN_BUTTON,
+            url = url,
+            expectedContent = "Example Domain",
+        )
     }
 }

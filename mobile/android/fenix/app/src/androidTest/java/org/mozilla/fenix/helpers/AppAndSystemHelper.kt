@@ -16,6 +16,7 @@ import android.net.ConnectivityManager
 import android.net.NetworkCapabilities
 import android.os.Build
 import android.os.Environment
+import android.os.SystemClock
 import android.os.storage.StorageManager
 import android.os.storage.StorageVolume
 import android.provider.Settings
@@ -25,7 +26,6 @@ import androidx.compose.ui.test.junit4.AndroidComposeTestRule
 import androidx.compose.ui.test.junit4.ComposeTestRule
 import androidx.core.net.toUri
 import androidx.core.os.LocaleListCompat
-import androidx.test.espresso.Espresso
 import androidx.test.espresso.IdlingRegistry
 import androidx.test.espresso.IdlingResource
 import androidx.test.espresso.intent.Intents.intended
@@ -68,7 +68,6 @@ import org.mozilla.fenix.helpers.MatcherHelper.itemContainingText
 import org.mozilla.fenix.helpers.MatcherHelper.itemWithPackageNameAndDescription
 import org.mozilla.fenix.helpers.MatcherHelper.itemWithResId
 import org.mozilla.fenix.helpers.MatcherHelper.itemWithResIdContainingText
-import org.mozilla.fenix.helpers.NetworkConnectionStatusHelper.checkActiveNetworkState
 import org.mozilla.fenix.helpers.TestAssetHelper.waitingTime
 import org.mozilla.fenix.helpers.TestAssetHelper.waitingTimeLong
 import org.mozilla.fenix.helpers.TestAssetHelper.waitingTimeShort
@@ -76,11 +75,31 @@ import org.mozilla.fenix.helpers.TestHelper.appContext
 import org.mozilla.fenix.helpers.TestHelper.mDevice
 import org.mozilla.fenix.helpers.TestHelper.packageName
 import org.mozilla.fenix.helpers.ext.waitNotNull
-import org.mozilla.fenix.helpers.idlingresource.NetworkConnectionIdlingResource
 import org.mozilla.fenix.ui.robots.BrowserRobot
 import org.mozilla.gecko.util.ThreadUtils
 
 object AppAndSystemHelper {
+
+    // Upper bound for a `svc` network toggle to take effect. Generous because enabling waits on the OS
+    // validating the connection, not just the interface coming up; the poll returns as soon as the
+    // state is reached, so this is only hit when the toggle genuinely fails.
+    // Per-attempt wait for a `svc` toggle to take effect. The poll returns as soon as the state is
+    // reached, so a full window is only ever spent when the command was lost or the toggle is failing.
+    private const val NETWORK_STATE_CHANGE_TIMEOUT = 15_000L
+    private const val NETWORK_STATE_POLL_INTERVAL = 500L
+
+    // How many times setNetworkEnabled re-issues the `svc` command (re-sending it on each timed-out
+    // attempt) before giving up -- guards against a single dropped command. Worst-case total budget is
+    // NETWORK_TOGGLE_ATTEMPTS * NETWORK_STATE_CHANGE_TIMEOUT, and that is only reached on failure.
+    private const val NETWORK_TOGGLE_ATTEMPTS = 2
+
+    // Short grace window for an existing connection to settle (interface up but not yet VALIDATED)
+    // before ensureNetworkConnected concludes the device is offline and re-enables it.
+    private const val NETWORK_SETTLE_GRACE_TIMEOUT = 5_000L
+
+    // Bounded window, on enable, to let WiFi become the active validated network before settling for
+    // whatever connectivity exists. Best-effort: a cellular-only device simply proceeds after this.
+    private const val WIFI_PREFERENCE_TIMEOUT = 10_000L
 
     private val bookmarksStorage = PlacesBookmarksStorage(appContext.applicationContext)
 
@@ -317,127 +336,129 @@ object AppAndSystemHelper {
         )
     }
 
+    /**
+     * Enables or disables the device's data and Wi-Fi connections, blocking until the live connectivity state actually
+     * reaches the requested one.
+     *
+     * `svc ... enable/disable` returns immediately, but the system takes a few seconds to bring the connection up or
+     * down. When enabling, Android only reports the network as usable once it has been validated
+     * (NET_CAPABILITY_VALIDATED), which lags the interface itself coming up. This polls the live connectivity state via
+     * [NetworkConnectionStatusHelper.isDeviceOnline] -- which re-reads the active network on every check so a cached
+     * handle can't mask a change -- rather than relying on an Espresso idling resource, whose idle callback only fires
+     * while the main looper is busy and so could miss a state flip that lands once the app has gone idle.
+     *
+     * The command is re-issued on each timed-out attempt ([NETWORK_TOGGLE_ATTEMPTS] attempts of
+     * [NETWORK_STATE_CHANGE_TIMEOUT] each), so a single dropped `svc` command recovers on the next attempt instead of
+     * burning the whole budget. The happy path is unaffected: the poll returns the instant the state flips, so the
+     * extra attempt only ever costs time when a toggle is failing. The network overview is logged via
+     * [NetworkConnectionStatusHelper.getNetworkDetails] once the wait settles, giving a usable picture of what the
+     * connection looked like.
+     *
+     * @throws AssertionError if the target state is not reached within all attempts.
+     */
     fun setNetworkEnabled(enabled: Boolean) {
-        val networkDisconnectedIdlingResource = NetworkConnectionIdlingResource(false)
-        val networkConnectedIdlingResource = NetworkConnectionIdlingResource(true)
-        val enableNetworkTimerIdlingResource = TimerIdlingResource(5000)
-        val disableNetworkTimerIdlingResource = TimerIdlingResource(3000)
-
-        when (enabled) {
-            true -> {
-                Log.i(TAG, "setNetworkEnabled: Trying to enable the network connection.")
-                mDevice.executeShellCommand("svc data enable")
-                Log.i(TAG, "setNetworkEnabled: Data network connection enable command sent.")
-                mDevice.executeShellCommand("svc wifi enable")
-                Log.i(TAG, "setNetworkEnabled: Wifi network connection enable command sent.")
-
-                // Wait for network connection to be completely enabled
-                Log.i(TAG, "setNetworkEnabled: Waiting for connection to be enabled.")
-
-                // Wait until both idling resources are idle
-                val registered =
-                    IdlingRegistry.getInstance()
-                        .register(
-                            networkConnectedIdlingResource,
-                            enableNetworkTimerIdlingResource,
-                        )
-
-                Log.i(
-                    TAG,
-                    "setNetworkEnabled: Trying to verify that the idling resources for enabling the connection are registered.",
-                )
-                if (registered) {
-                    Log.i(
-                        TAG,
-                        "setNetworkEnabled: Verified that the idling resources for enabling the connection are registered.",
-                    )
-                    Espresso.onIdle {
-                        // Unregister resources after they become idle
-                        val unregistered =
-                            IdlingRegistry.getInstance()
-                                .unregister(
-                                    networkConnectedIdlingResource,
-                                    enableNetworkTimerIdlingResource,
-                                )
-                        Log.i(
-                            TAG,
-                            "setNetworkEnabled: Trying to verify that the idling resources for enabling the connection are unregistered.",
-                        )
-                        if (unregistered) {
-                            Log.i(
-                                TAG,
-                                "setNetworkEnabled: Verified that the idling resources for enabling the connection are unregistered.",
-                            )
-                            Log.i(TAG, "setNetworkEnabled: Network connection was enabled.")
-                            checkActiveNetworkState(enabled = true)
-                        } else {
-                            Log.i(
-                                TAG,
-                                "setNetworkEnabled: Failed to unregister the idling resources for enabling the connection.",
-                            )
-                        }
-                    }
-                } else {
-                    Log.i(TAG, "setNetworkEnabled: Failed to register idling resources for enabling the connection.")
-                }
-            }
-
-            false -> {
-                Log.i(TAG, "setNetworkEnabled: Trying to disable the network connection.")
-                mDevice.executeShellCommand("svc data disable")
-                Log.i(TAG, "setNetworkEnabled: Data network connection disable command sent.")
-                mDevice.executeShellCommand("svc wifi disable")
-                Log.i(TAG, "setNetworkEnabled: Wifi network connection disable command sent.")
-
-                // Wait for network connection to be completely disabled
-                Log.i(TAG, "setNetworkEnabled: Waiting for connection to be disabled.")
-
-                val registered =
-                    IdlingRegistry.getInstance()
-                        .register(
-                            networkDisconnectedIdlingResource,
-                            disableNetworkTimerIdlingResource,
-                        )
-
-                Log.i(
-                    TAG,
-                    "setNetworkEnabled: Trying to verify that the idling resources for disabling the connection are registered.",
-                )
-                if (registered) {
-                    Log.i(
-                        TAG,
-                        "setNetworkEnabled: Verified that the idling resources for disabling the connection are registered.",
-                    )
-                    Espresso.onIdle {
-                        val unregistered =
-                            IdlingRegistry.getInstance()
-                                .unregister(
-                                    networkDisconnectedIdlingResource,
-                                    disableNetworkTimerIdlingResource,
-                                )
-                        Log.i(
-                            TAG,
-                            "setNetworkEnabled: Trying to verify that the idling resources for disabling the connection are unregistered.",
-                        )
-                        if (unregistered) {
-                            Log.i(
-                                TAG,
-                                "setNetworkEnabled: Verified that the idling resources for disabling the connection are unregistered.",
-                            )
-                            Log.i(TAG, "setNetworkEnabled: Network connection was disabled.")
-                            checkActiveNetworkState(enabled = false)
-                        } else {
-                            Log.i(
-                                TAG,
-                                "setNetworkEnabled: Failed to unregister the idling resources for disabling the connection.",
-                            )
-                        }
-                    }
-                } else {
-                    Log.i(TAG, "setNetworkEnabled: Failed to register idling resources for disabling the connection.")
-                }
-            }
+        val action = if (enabled) "enable" else "disable"
+        var reached = false
+        for (attempt in 1..NETWORK_TOGGLE_ATTEMPTS) {
+            Log.i(TAG, "setNetworkEnabled: Trying to $action the network connection (attempt $attempt).")
+            mDevice.executeShellCommand("svc data $action")
+            mDevice.executeShellCommand("svc wifi $action")
+            Log.i(TAG, "setNetworkEnabled: $action commands sent; waiting for the connection to be ${action}d.")
+            reached = waitForNetworkConnectionState(online = enabled)
+            if (reached) break
+            Log.w(TAG, "setNetworkEnabled: connection not ${action}d after attempt $attempt; re-issuing the command.")
         }
+
+        // Prefer WiFi as the active network when enabling: cellular often validates a beat before WiFi
+        // and the OS defaults to it until WiFi takes over. Give WiFi a bounded chance; don't fail or
+        // hang if it never becomes active (e.g. a cellular-only device) -- just proceed and log it.
+        if (enabled && reached && !waitForWifiActive()) {
+            Log.w(
+                TAG,
+                "setNetworkEnabled: WiFi did not become the active network within ${WIFI_PREFERENCE_TIMEOUT}ms; " +
+                    "proceeding with the current connectivity.",
+            )
+        }
+
+        NetworkConnectionStatusHelper.getNetworkDetails()
+        Log.i(
+            TAG,
+            "setNetworkEnabled: active transport matches expected connected=$enabled: " +
+                "${NetworkConnectionStatusHelper.checkActiveNetworkState(enabled)}",
+        )
+        if (!reached) {
+            throw AssertionError(
+                "setNetworkEnabled: network did not become ${if (enabled) "online" else "offline"} " +
+                    "after $NETWORK_TOGGLE_ATTEMPTS attempts of ${NETWORK_STATE_CHANGE_TIMEOUT}ms each for '$action'."
+            )
+        }
+        Log.i(TAG, "setNetworkEnabled: Network connection was ${action}d.")
+    }
+
+    /**
+     * General pre-flight run before every test: make sure the device starts with a validated internet connection. A
+     * no-op fast path when it is already online (the common case, so it costs nothing), otherwise a best-effort
+     * re-enable -- typically recovering a connection a prior network-toggling test failed to restore.
+     *
+     * Deliberately never throws. A device that cannot be brought online is logged, not failed here, so tests that do
+     * not need the network still run; those that do will fail on their own network step with a clearer signal than an
+     * opaque setup error.
+     */
+    fun ensureNetworkConnected() {
+        // Give an existing (or still-coming-up) connection a short grace period to settle before
+        // deciding it is offline: isDeviceOnline() is a single live read, and right after a prior test
+        // or a device handoff the interface can be up but not yet VALIDATED. Without this, that
+        // transient would trigger a needless svc-enable + full wait. The already-online case still
+        // returns after one read, since the poll checks before it sleeps.
+        if (waitForNetworkConnectionState(online = true, timeout = NETWORK_SETTLE_GRACE_TIMEOUT)) {
+            Log.i(TAG, "ensureNetworkConnected: device online.")
+            return
+        }
+        Log.w(TAG, "ensureNetworkConnected: device offline at test start; attempting to re-enable the network.")
+        runCatching { setNetworkEnabled(true) }
+            .onFailure { Log.w(TAG, "ensureNetworkConnected: could not re-enable the network: ${it.message}") }
+    }
+
+    /**
+     * Polls [NetworkConnectionStatusHelper.isDeviceOnline] until it matches [online] or [timeout] elapses, reading a
+     * fresh active network on every check. Returns whether the target state was reached.
+     */
+    private fun waitForNetworkConnectionState(
+        online: Boolean,
+        timeout: Long = NETWORK_STATE_CHANGE_TIMEOUT,
+        pollInterval: Long = NETWORK_STATE_POLL_INTERVAL,
+    ): Boolean {
+        val deadline = SystemClock.uptimeMillis() + timeout
+        while (SystemClock.uptimeMillis() < deadline) {
+            if (NetworkConnectionStatusHelper.isDeviceOnline() == online) {
+                Log.i(TAG, "waitForNetworkConnectionState: reached online=$online.")
+                return true
+            }
+            SystemClock.sleep(pollInterval)
+        }
+        val reached = NetworkConnectionStatusHelper.isDeviceOnline() == online
+        Log.i(TAG, "waitForNetworkConnectionState: timed out after ${timeout}ms; online=$online reached=$reached.")
+        return reached
+    }
+
+    /**
+     * Polls [NetworkConnectionStatusHelper.isWifiActiveAndValidated] until WiFi is the active validated network or
+     * [timeout] elapses. Returns whether WiFi became active. Returns at the first check when WiFi is already active, so
+     * it adds no delay in that case.
+     */
+    private fun waitForWifiActive(
+        timeout: Long = WIFI_PREFERENCE_TIMEOUT,
+        pollInterval: Long = NETWORK_STATE_POLL_INTERVAL,
+    ): Boolean {
+        val deadline = SystemClock.uptimeMillis() + timeout
+        while (SystemClock.uptimeMillis() < deadline) {
+            if (NetworkConnectionStatusHelper.isWifiActiveAndValidated()) {
+                Log.i(TAG, "waitForWifiActive: WiFi is the active validated network.")
+                return true
+            }
+            SystemClock.sleep(pollInterval)
+        }
+        return NetworkConnectionStatusHelper.isWifiActiveAndValidated()
     }
 
     fun disableWifiNetworkConnection() {

@@ -4,6 +4,7 @@
 
 package org.mozilla.fenix.ui.efficiency.selectors
 
+import mozilla.components.browser.errorpages.R as errorpagesR
 import mozilla.components.feature.app.links.R as applinksR
 import mozilla.components.feature.prompts.R as promptsR
 import mozilla.components.feature.summarize.R as summarizeR
@@ -45,6 +46,26 @@ object BrowserPageSelectors : SelectorContainer {
             strategy = SelectorStrategy.UIAUTOMATOR_WITH_TEXT,
             value = "mozilla",
             description = "Page content",
+        )
+
+    // --- GeckoView error pages (about:neterror) ---
+
+    // The "no internet connection" error page title, matched by substring like the legacy
+    // BrowserRobot.verifyNoInternetConnectionErrorMessage (itemContainingText).
+    val NO_INTERNET_CONNECTION_ERROR_TITLE =
+        Selector(
+            strategy = SelectorStrategy.UIAUTOMATOR_WITH_TEXT_CONTAINS,
+            value = getStringResource(errorpagesR.string.mozac_browser_errorpages_no_internet_title_2),
+            description = "No internet connection error page title",
+        )
+
+    // The "Try Again" button on a GeckoView error page. A raw (unprefixed) DOM id, exactly as the
+    // legacy itemWithResId("errorTryAgain") matched it.
+    val ERROR_TRY_AGAIN_BUTTON =
+        Selector(
+            strategy = SelectorStrategy.UIAUTOMATOR_WITH_RAW_RES_ID,
+            value = "errorTryAgain",
+            description = "Error page 'Try Again' button",
         )
 
     // The Play control on the media test pages (video's custom <button>Play</button> and audio's native

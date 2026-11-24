@@ -7,12 +7,14 @@ package org.mozilla.fenix.helpers
 
 import android.content.Context
 import android.net.ConnectivityManager
+import android.net.Network
 import android.net.NetworkCapabilities
 import android.net.wifi.WifiManager
 import android.os.Build
 import android.telephony.TelephonyManager
 import android.util.Log
 import androidx.test.platform.app.InstrumentationRegistry
+import org.mozilla.fenix.ext.isOnline
 import org.mozilla.fenix.helpers.Constants.TAG
 
 object NetworkConnectionStatusHelper {
@@ -22,87 +24,95 @@ object NetworkConnectionStatusHelper {
     // Get the ConnectivityManager system service to manage network connections
     val connectivityManager = context.getSystemService(Context.CONNECTIVITY_SERVICE) as ConnectivityManager
 
-    // Get a list of all networks currently available
-    val allNetworks = connectivityManager.allNetworks
+    // All networks currently available. Computed on each access, never cached: the device's
+    // connections change at runtime (e.g. when a test toggles Wi-Fi/data), and a value captured once
+    // would report stale state forever after.
+    val allNetworks: Array<Network>
+        get() = connectivityManager.allNetworks
 
-    // Get the active network the device is currently connected to
-    val activeNetwork = connectivityManager.activeNetwork
+    // The active network the device is currently connected to, or null when offline. Computed on each
+    // access for the same reason as allNetworks.
+    val activeNetwork: Network?
+        get() = connectivityManager.activeNetwork
 
-    fun getNetworkDetails() {
-        // Get the network capabilities of the active network
-        val activeNetworkCapabilities = connectivityManager.getNetworkCapabilities(activeNetwork)
-        // Check if the active network has capabilities and determine its type
-        if (activeNetworkCapabilities != null) {
-            when {
-                activeNetworkCapabilities.hasTransport(NetworkCapabilities.TRANSPORT_WIFI) -> {
-                    Log.i(TAG, "getNetworkDetails: The device's active network is: WiFi")
-                }
-                activeNetworkCapabilities.hasTransport(NetworkCapabilities.TRANSPORT_CELLULAR) -> {
-                    Log.i(TAG, "getNetworkDetails: The device's active network is: Cellular")
-                }
-                else -> {
-                    Log.i(TAG, "getNetworkDetails: The device's active network is: Unknown")
-                }
-            }
-        } else {
-            Log.i(TAG, "getNetworkDetails: No active network")
-        }
+    // Whether the device currently has a validated internet connection, re-read live on each call.
+    // This is the same signal the app itself uses to decide it is offline (INTERNET + VALIDATED
+    // capabilities), which makes it the right oracle for "has the network actually come up/down yet".
+    fun isDeviceOnline(): Boolean = connectivityManager.isOnline()
 
-        // Iterate through all available networks to check their capabilities
-        for (network in allNetworks) {
-            // Get the network capabilities for a specific network
-            val networkCapabilities = connectivityManager.getNetworkCapabilities(network)
-            // Check if network capabilities are available
-            if (networkCapabilities != null) {
-                when {
-                    networkCapabilities.hasTransport(NetworkCapabilities.TRANSPORT_WIFI) -> {
-                        Log.i(TAG, "getNetworkDetails: Connected to WiFi")
-                        val wifiStrength = getWifiSignalStrength(context)
-                        Log.i(TAG, "getNetworkDetails: WiFi Signal Strength: $wifiStrength")
-                    }
-                    networkCapabilities.hasTransport(NetworkCapabilities.TRANSPORT_CELLULAR) -> {
-                        Log.i(TAG, "getNetworkDetails: Connected to Cellular Network")
-                        val signalStrength = getCellularSignalStrength(context)
-                        Log.i(TAG, "getNetworkDetails: Cellular Signal Strength: $signalStrength")
-                    }
-                    else -> {
-                        Log.i(TAG, "getNetworkDetails: Connected to Unknown Network")
-                    }
-                }
-            } else {
-                Log.i(TAG, "getNetworkDetails: No Network Connection")
-            }
-        }
+    // Whether the ACTIVE network is WiFi with validated internet. On enable, cellular and WiFi come
+    // up together and the OS can default to cellular until WiFi validates; this is the signal for
+    // "WiFi has taken over as the active connection", preferred because cellular can be unreliable.
+    fun isWifiActiveAndValidated(): Boolean {
+        val capabilities = connectivityManager.getNetworkCapabilities(activeNetwork) ?: return false
+        return capabilities.hasTransport(NetworkCapabilities.TRANSPORT_WIFI) &&
+            capabilities.hasCapability(NetworkCapabilities.NET_CAPABILITY_INTERNET) &&
+            capabilities.hasCapability(NetworkCapabilities.NET_CAPABILITY_VALIDATED)
     }
 
-    fun checkActiveNetworkState(enabled: Boolean): Boolean {
-        // Get the network capabilities of the active network
-        val activeNetworkCapabilities = connectivityManager.getNetworkCapabilities(activeNetwork)
-
-        return if (activeNetworkCapabilities != null) {
-            // Determine the type of active network connection
-            val connectionType =
+    // Best-effort diagnostic: logs the active network type, every available network and its signal
+    // strength, and whether the device has validated internet. Wrapped so it can never throw -- this
+    // runs in the test setup/teardown path, and a logging hiccup (e.g. a signal-strength read failing
+    // right after an interface comes up) must not fail or mask a test.
+    fun getNetworkDetails() {
+        runCatching {
+            // Read the live state once per call (activeNetwork/allNetworks are computed, not cached).
+            val activeNetworkCapabilities = connectivityManager.getNetworkCapabilities(activeNetwork)
+            val activeType =
                 when {
+                    activeNetworkCapabilities == null -> "No active network"
                     activeNetworkCapabilities.hasTransport(NetworkCapabilities.TRANSPORT_WIFI) -> "WiFi"
                     activeNetworkCapabilities.hasTransport(NetworkCapabilities.TRANSPORT_CELLULAR) -> "Cellular"
                     else -> "Unknown"
                 }
+            Log.i(TAG, "getNetworkDetails: The device's active network is: $activeType")
+            Log.i(TAG, "getNetworkDetails: Device has validated internet: ${isDeviceOnline()}")
 
-            // Check if the active network is connected to WiFi or Cellular
-            val isConnected =
-                activeNetworkCapabilities.hasTransport(NetworkCapabilities.TRANSPORT_WIFI) ||
-                    activeNetworkCapabilities.hasTransport(NetworkCapabilities.TRANSPORT_CELLULAR)
-            Log.i(
-                TAG,
-                "checkActiveNetworkState: Active network is ${if (isConnected) "connected" else "not connected"} ($connectionType)",
-            )
-            // Return true if the enabled parameter matches the connection state
-            enabled == isConnected
-        } else {
-            // Log and return false if there is no active network connection
-            Log.i(TAG, "checkActiveNetworkState: No active network connection")
-            false
+            for (network in allNetworks) {
+                val networkCapabilities = connectivityManager.getNetworkCapabilities(network)
+                when {
+                    networkCapabilities == null -> Log.i(TAG, "getNetworkDetails: No Network Connection")
+                    networkCapabilities.hasTransport(NetworkCapabilities.TRANSPORT_WIFI) -> {
+                        val wifiStrength = runCatching { getWifiSignalStrength(context) }.getOrDefault("N/A")
+                        Log.i(TAG, "getNetworkDetails: Connected to WiFi. Signal Strength: $wifiStrength")
+                    }
+                    networkCapabilities.hasTransport(NetworkCapabilities.TRANSPORT_CELLULAR) -> {
+                        val signalStrength = runCatching { getCellularSignalStrength(context) }.getOrDefault("N/A")
+                        Log.i(TAG, "getNetworkDetails: Connected to Cellular Network. Signal Strength: $signalStrength")
+                    }
+                    else -> Log.i(TAG, "getNetworkDetails: Connected to Unknown Network")
+                }
+            }
         }
+            .onFailure { Log.i(TAG, "getNetworkDetails: failed to gather network details: ${it.message}") }
+    }
+
+    fun checkActiveNetworkState(enabled: Boolean): Boolean {
+        // Get the network capabilities of the active network (null when there is no active network)
+        val activeNetworkCapabilities = connectivityManager.getNetworkCapabilities(activeNetwork)
+
+        // The active network is considered connected when it carries a WiFi or Cellular transport;
+        // no active network (null capabilities) means not connected.
+        val isConnected =
+            activeNetworkCapabilities?.let {
+                it.hasTransport(NetworkCapabilities.TRANSPORT_WIFI) ||
+                    it.hasTransport(NetworkCapabilities.TRANSPORT_CELLULAR)
+            } ?: false
+
+        val connectionType =
+            when {
+                activeNetworkCapabilities == null -> "None"
+                activeNetworkCapabilities.hasTransport(NetworkCapabilities.TRANSPORT_WIFI) -> "WiFi"
+                activeNetworkCapabilities.hasTransport(NetworkCapabilities.TRANSPORT_CELLULAR) -> "Cellular"
+                else -> "Unknown"
+            }
+        Log.i(
+            TAG,
+            "checkActiveNetworkState: Active network is ${if (isConnected) "connected" else "not connected"} ($connectionType)",
+        )
+        // Return true when the observed connection state matches the expected one. Unlike before, an
+        // offline device (null capabilities) correctly matches enabled = false.
+        return enabled == isConnected
     }
 
     // Function to get WiFi signal strength based on the RSSI (Received Signal Strength Indicator)

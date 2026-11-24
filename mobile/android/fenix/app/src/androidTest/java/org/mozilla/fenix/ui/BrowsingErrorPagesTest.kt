@@ -7,10 +7,10 @@ package org.mozilla.fenix.ui
 import androidx.compose.ui.test.junit4.v2.AndroidComposeTestRule as AndroidComposeTestRuleV2
 import androidx.core.net.toUri
 import mozilla.components.browser.errorpages.R as errorpagesR
-import org.junit.Ignore
 import org.junit.Rule
 import org.junit.Test
 import org.mozilla.fenix.customannotations.Converted
+import org.mozilla.fenix.customannotations.Critical
 import org.mozilla.fenix.customannotations.SmokeTest
 import org.mozilla.fenix.helpers.AppAndSystemHelper.setNetworkEnabled
 import org.mozilla.fenix.helpers.DataGenerationHelper.getStringResource
@@ -163,7 +163,13 @@ class BrowsingErrorPagesTest {
     }
 
     // TestRail link: https://mozilla.testrail.io/index.php?/cases/view/2140588
-    @Ignore("Failing, see https://bugzilla.mozilla.org/show_bug.cgi?id=1987355")
+    @Converted(
+        replacedBy =
+            ["org.mozilla.fenix.ui.efficiency.tests.BrowsingErrorPagesTest#verifyNoInternetConnectionErrorMessageTest"],
+        bug = 2086589,
+        since = "2026-10",
+    )
+    @Critical
     @Test
     fun verifyNoInternetConnectionErrorMessageTest() {
         val url = "www.example.com"
