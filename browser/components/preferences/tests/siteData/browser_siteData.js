@@ -188,6 +188,25 @@ add_task(async function test_clear_service_worker() {
   BrowserTestUtils.removeTab(gBrowser.selectedTab);
 });
 
+// The site data dialog formats the "Last Used" column relative to when it
+// built its list, which happened at some point between `since` and now.
+function relativeDatesSince(lastAccessed, since) {
+  let formatter = new Services.intl.RelativeTimeFormat(undefined, {});
+  let dates = new Set();
+  for (
+    let referenceTime = Math.floor(since / 1000) * 1000;
+    referenceTime <= Date.now();
+    referenceTime += 1000
+  ) {
+    dates.add(
+      formatter.formatBestUnit(new Date(lastAccessed), {
+        now: new Date(referenceTime),
+      })
+    );
+  }
+  return [...dates];
+}
+
 // Test showing and removing sites with cookies.
 add_task(async function test_manage_sites_with_cookies() {
   // Add some test cookies.
@@ -261,6 +280,9 @@ add_task(async function test_manage_sites_with_cookies() {
   // We made two valid cookies for example.com.
   let cookie1 = cookies1[1];
   let cookie2 = cookies2[0];
+  // The dialog shows the most recent access across the host's cookies.
+  let lastAccessed1 = Math.max(...cookies1.map(c => c.lastAccessed)) / 1000;
+  let lastAccessed2 = cookie2.lastAccessed / 1000;
 
   let fullFormatter = new Services.intl.DateTimeFormat(undefined, {
     dateStyle: "short",
@@ -270,7 +292,10 @@ add_task(async function test_manage_sites_with_cookies() {
   await openPreferencesViaOpenPreferencesAPI("privacy", { leaveOpen: true });
 
   // Open the site data manager and remove one site.
+  let dialogOpenTime = Date.now();
   await openSiteDataSettingsDialog();
+  let relativeDates1 = relativeDatesSince(lastAccessed1, dialogOpenTime);
+  let relativeDates2 = relativeDatesSince(lastAccessed2, dialogOpenTime);
   let creationDate1 = new Date(cookie1.lastAccessed / 1000);
   let creationDate1Formatted = fullFormatter.format(creationDate1);
   let creationDate2 = new Date(cookie2.lastAccessed / 1000);
@@ -285,6 +310,8 @@ add_task(async function test_manage_sites_with_cookies() {
       {
         creationDate1Formatted,
         creationDate2Formatted,
+        relativeDates1,
+        relativeDates2,
       },
     ],
     function (args) {
@@ -301,9 +328,8 @@ add_task(async function test_manage_sites_with_cookies() {
       is(columns[0].value, "example.com", "Should show the correct host.");
       is(columns[1].value, "2", "Should show the correct number of cookies.");
       is(columns[2].value, "", "Should show no site data.");
-      is(
-        /(now|second)/.test(columns[3].value),
-        true,
+      ok(
+        args.relativeDates1.includes(columns[3].value),
         "Should show the relative date."
       );
       is(
@@ -317,9 +343,8 @@ add_task(async function test_manage_sites_with_cookies() {
       is(columns[0].value, "example.org", "Should show the correct host.");
       is(columns[1].value, "1", "Should show the correct number of cookies.");
       is(columns[2].value, "", "Should show no site data.");
-      is(
-        /(now|second)/.test(columns[3].value),
-        true,
+      ok(
+        args.relativeDates2.includes(columns[3].value),
         "Should show the relative date."
       );
       is(
@@ -348,11 +373,13 @@ add_task(async function test_manage_sites_with_cookies() {
   );
 
   // Open the site data manager and remove another site.
+  dialogOpenTime = Date.now();
   await openSiteDataSettingsDialog();
+  relativeDates1 = relativeDatesSince(lastAccessed1, dialogOpenTime);
   let acceptRemovePromise = BrowserTestUtils.promiseAlertDialogOpen("accept");
   await SpecialPowers.spawn(
     gBrowser.selectedBrowser,
-    [{ creationDate1Formatted }],
+    [{ creationDate1Formatted, relativeDates1 }],
     function (args) {
       let frameDoc = content.gSubDialog._topDialog._frame.contentDocument;
 
@@ -366,9 +393,8 @@ add_task(async function test_manage_sites_with_cookies() {
       is(columns[0].value, "example.com", "Should show the correct host.");
       is(columns[1].value, "2", "Should show the correct number of cookies.");
       is(columns[2].value, "", "Should show no site data.");
-      is(
-        /(now|second)/.test(columns[3].value),
-        true,
+      ok(
+        args.relativeDates1.includes(columns[3].value),
         "Should show the relative date."
       );
       is(
