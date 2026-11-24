@@ -627,20 +627,6 @@ class Settings(
             default = 0,
         )
 
-    /** Indicates if the current legacy wallpaper should be migrated. */
-    var shouldMigrateLegacyWallpaper by
-        booleanPreference(
-            key = appContext.getPreferenceKey(R.string.pref_key_should_migrate_wallpaper),
-            default = true,
-        )
-
-    /** Indicates if the current legacy wallpaper card colors should be migrated. */
-    var shouldMigrateLegacyWallpaperCardColors by
-        booleanPreference(
-            key = appContext.getPreferenceKey(R.string.pref_key_should_migrate_wallpaper_card_colors),
-            default = true,
-        )
-
     /** Indicates if the wallpaper onboarding dialog should be shown. */
     var showWallpaperOnboarding by
         booleanPreference(

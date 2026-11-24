@@ -58,10 +58,6 @@ class WallpapersUseCasesTest {
             every { currentWallpaperCardColorLight = any() } just Runs
             every { currentWallpaperCardColorDark } returns 0L
             every { currentWallpaperCardColorDark = any() } just Runs
-            every { shouldMigrateLegacyWallpaper } returns false
-            every { shouldMigrateLegacyWallpaper = any() } just Runs
-            every { shouldMigrateLegacyWallpaperCardColors } returns false
-            every { shouldMigrateLegacyWallpaperCardColors = any() } just Runs
         }
 
     private val mockMetadataFetcher = mockk<WallpaperMetadataFetcher>()

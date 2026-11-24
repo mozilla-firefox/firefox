@@ -408,8 +408,6 @@
     <string name="pref_key_current_wallpaper_card_color_light" translatable="false">pref_key_current_wallpaper_card_color_light</string>
     <string name="pref_key_current_wallpaper_card_color_dark" translatable="false">pref_key_current_wallpaper_card_color_dark</string>
     <string name="pref_key_wallpapers_onboarding" translatable="false">pref_key_wallpapers_onboarding</string>
-    <string name="pref_key_should_migrate_wallpaper" translatable="false">pref_key_should_migrate_wallpaper</string>
-    <string name="pref_key_should_migrate_wallpaper_card_colors" translatable="false">pref_key_should_migrate_wallpaper_card_colors</string>
 
     <!-- Top Sites -->
     <string name="default_top_sites_added" translatable="false">pref_key_pocket_top_site_added</string>
