@@ -25,6 +25,7 @@
   flex-direction: column;
   /* stylelint-disable-next-line stylelint-plugin-mozilla/use-design-tokens */
   gap: var(--aitab-text-block-content-gap);
+  line-height: 28px;
 }
 
 .aitab-text-block-references {
