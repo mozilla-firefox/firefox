@@ -19,6 +19,8 @@ import {
 import {
   FRAMED_WIDGETS,
   isAllowedFrameUrl,
+  isEndpointAllowlisted,
+  isFramedStageAllowed,
   isWidgetEnabled,
 } from "resource://newtab/common/WidgetsRegistry.mjs";
 
@@ -29,8 +31,6 @@ const PREF_WIDGETS_ENABLED = "widgets.enabled";
 const PREF_ENVIRONMENT = "widgets.framed.environment";
 // Suffixed with the environment: widgets.framed.endpoint.prod / .stage
 const PREF_ENDPOINT_PREFIX = "widgets.framed.endpoint.";
-const PREF_ENDPOINTS_ALLOWLIST = "discoverystream.endpoints";
-const STAGE_MERINO_ORIGIN = "https://merino.services.allizom.org/";
 
 // How long a cached manifest is served before it is refetched.
 const CACHE_EXPIRY_MS = 30 * 60 * 1000;
@@ -61,30 +61,13 @@ export class FramedWidgetsFeed {
     );
   }
 
-  isAllowlisted(endpoint) {
-    const { values } = this.store.getState().Prefs;
-    return (values[PREF_ENDPOINTS_ALLOWLIST] ?? "")
-      .split(",")
-      .map(item => item.trim())
-      .filter(item => item)
-      .some(prefix => endpoint.startsWith(prefix));
-  }
-
-  // Stage is used on Nightly when it points at stage Merino, or anywhere once
-  // its endpoint is in the shared allowlist; otherwise prod is. Stage is
-  // checked here rather than added to the discoverystream.endpoints default:
-  // that allowlist is shared with other feeds, and a user value (set by Nimbus
-  // or the staging ads toggle) would hide a new default. Falling back to prod
-  // keeps a stage setting carried to Beta or Release from hiding every framed
+  // Falls back to prod where stage isn't allowed (see isFramedStageAllowed),
+  // so a stage setting carried to Beta or Release can't hide every framed
   // widget.
   getEnvironment() {
     const { values } = this.store.getState().Prefs;
-    const stageEndpoint = values[`${PREF_ENDPOINT_PREFIX}stage`];
     return values[PREF_ENVIRONMENT] === "stage" &&
-      stageEndpoint &&
-      (this.isAllowlisted(stageEndpoint) ||
-        (this.isNightlyBuild() &&
-          stageEndpoint.startsWith(STAGE_MERINO_ORIGIN)))
+      isFramedStageAllowed(values, this.isNightlyBuild())
       ? "stage"
       : "prod";
   }
@@ -98,7 +81,7 @@ export class FramedWidgetsFeed {
     if (!endpoint) {
       return null;
     }
-    if (environment === "prod" && !this.isAllowlisted(endpoint)) {
+    if (environment === "prod" && !isEndpointAllowlisted(values, endpoint)) {
       console.error(`Framed widgets endpoint not in allowlist: ${endpoint}`);
       return null;
     }

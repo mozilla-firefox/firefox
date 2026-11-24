@@ -697,6 +697,48 @@ export const FRAMED_WIDGET_SANDBOX =
   "allow-scripts allow-same-origin allow-forms allow-popups allow-popups-to-escape-sandbox";
 
 /**
+ * Returns true if the endpoint starts with one of the comma-separated prefixes
+ * in the discoverystream.endpoints pref.
+ *
+ * @param {object} prefs - current pref values from the Redux store
+ * @param {string} endpoint
+ * @returns {boolean}
+ */
+export function isEndpointAllowlisted(prefs, endpoint) {
+  return (prefs["discoverystream.endpoints"] ?? "")
+    .split(",")
+    .map(item => item.trim())
+    .filter(item => item)
+    .some(prefix => endpoint.startsWith(prefix));
+}
+
+export const FRAMED_STAGE_MERINO_ORIGIN =
+  "https://merino.services.allizom.org/";
+
+/**
+ * Returns true if framed widgets may load their manifest from the stage
+ * endpoint (widgets.framed.endpoint.stage): on Nightly when it points at stage
+ * Merino, or on any build once it is covered by the discoverystream.endpoints
+ * allowlist. This is not added to that allowlist's default because the list is
+ * shared with other feeds, and a user value (set by Nimbus or the staging ads
+ * toggle) would hide a new default.
+ *
+ * @param {object} prefs - current pref values from the Redux store
+ * @param {boolean} isNightlyBuild - AppConstants.NIGHTLY_BUILD
+ * @returns {boolean}
+ */
+export function isFramedStageAllowed(prefs, isNightlyBuild) {
+  const endpoint = prefs["widgets.framed.endpoint.stage"];
+  if (!endpoint) {
+    return false;
+  }
+  return (
+    (isNightlyBuild && endpoint.startsWith(FRAMED_STAGE_MERINO_ORIGIN)) ||
+    isEndpointAllowlisted(prefs, endpoint)
+  );
+}
+
+/**
  * Returns true if a framed widget may load this URL. Framed widget URLs set the
  * iframe src and the origin the widget trusts for postMessage, so only https
  * URLs whose host ends with one of the comma-separated suffixes in the

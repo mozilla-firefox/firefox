@@ -749,6 +749,9 @@ export class PrefsFeed {
     values.isPrivateBrowsingEnabled = lazy.PrivateBrowsingUtils.enabled;
     values.platform = AppConstants.platform;
     Object.assign(values, {
+      // app.update.channel is "default" on local builds, so it can't tell
+      // Nightly apart.
+      isNightlyBuild: AppConstants.NIGHTLY_BUILD,
       /**
        * @backward-compat { version 161 }
        * MozAdsReportReason only has SCAM, MISLEADING and OFFENSIVE from 161, so

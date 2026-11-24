@@ -137,6 +137,11 @@
   .toggle-wrapper {
     margin-block: var(--space-large);
     width: 200px;
+
+    &:has(#widgets-framed-environment) {
+      width: max-content;
+      white-space: nowrap;
+    }
   }
 
   .admin-button-row {

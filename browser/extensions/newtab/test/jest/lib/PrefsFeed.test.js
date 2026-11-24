@@ -180,8 +180,14 @@ describe("PrefsFeed", () => {
       "branch.str.pref.test"
     );
   });
-  it("should dispatch PREFS_INITIAL_VALUES on init with pref values and .isPrivateBrowsingEnabled", () => {
-    feed.onAction({ type: at.INIT });
+  it("should dispatch PREFS_INITIAL_VALUES on init with pref values, .isPrivateBrowsingEnabled and .isNightlyBuild", () => {
+    const wasNightly = globalThis.AppConstants.NIGHTLY_BUILD;
+    globalThis.AppConstants.NIGHTLY_BUILD = true;
+    try {
+      feed.onAction({ type: at.INIT });
+    } finally {
+      globalThis.AppConstants.NIGHTLY_BUILD = wasNightly;
+    }
     expect(feed.store.dispatch).toHaveBeenCalledTimes(1);
     expect(feed.store.dispatch.mock.calls[0][0].type).toBe(
       at.PREFS_INITIAL_VALUES
@@ -190,6 +196,7 @@ describe("PrefsFeed", () => {
     expect(data.foo).toBe(1);
     expect(data.bar).toBe(2);
     expect(data.isPrivateBrowsingEnabled).toBe(true);
+    expect(data.isNightlyBuild).toBe(true);
   });
   describe(".adsNewReportReasonsSupported", () => {
     it("should be true on 161 and newer", () => {
