@@ -6,6 +6,7 @@
 #define mozilla_CycleCollectedJSRuntime_h
 
 #include "js/TypeDecls.h"
+#include "js/friend/CycleCollector.h"
 #include "jsapi.h"
 #include "jsfriendapi.h"
 #include "mozilla/CycleCollectedJSContext.h"
@@ -546,6 +547,9 @@ class CycleCollectedJSRuntime {
   // whichever was most recent. If there were no such zones and the GC was not
   // triggered by the JS engine, prepare for a full GC.
   void PrepareWaitingZonesForGC(JS::GCReason aReason);
+
+  virtual void ClearWhiteJSWeakReferences(
+      JS::ShouldClearWeakRefTargetCallback aCallback, void* aData);
 
   // Get the current thread's CycleCollectedJSRuntime.  Returns null if there
   // isn't one.
