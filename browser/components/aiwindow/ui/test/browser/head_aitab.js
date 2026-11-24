@@ -3,6 +3,11 @@
 
 /* import-globals-from head.js */
 
+const { FEATURE_MAJOR_VERSIONS } = ChromeUtils.importESModule(
+  "moz-src:///browser/components/aiwindow/models/Utils.sys.mjs"
+);
+const AITAB_PROMPT_VERSION = `v${FEATURE_MAJOR_VERSIONS.aitab}.0`;
+
 const AITAB_GENERATION_RECORDS = [
   {
     kind: "params",
@@ -12,10 +17,10 @@ const AITAB_GENERATION_RECORDS = [
     purpose: "aitab",
     parameters: {},
     modules: [
-      { name: "system-instructions", version: "v1.0" },
-      { name: "user-data", version: "v1.0" },
+      { name: "system-instructions", version: AITAB_PROMPT_VERSION },
+      { name: "user-data", version: AITAB_PROMPT_VERSION },
     ],
-    version: "v1.0",
+    version: AITAB_PROMPT_VERSION,
     is_default: true,
   },
   {
@@ -24,7 +29,7 @@ const AITAB_GENERATION_RECORDS = [
     module: "system-instructions",
     model: "test-model",
     prompts: "Create a page using these components:\n{schemas}",
-    version: "v1.0",
+    version: AITAB_PROMPT_VERSION,
   },
   {
     kind: "module",
@@ -32,7 +37,7 @@ const AITAB_GENERATION_RECORDS = [
     module: "user-data",
     model: "test-model",
     prompts: "Focus: {focus}\n{pageContent}",
-    version: "v1.0",
+    version: AITAB_PROMPT_VERSION,
   },
 ];
 

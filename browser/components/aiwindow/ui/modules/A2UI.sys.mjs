@@ -28,6 +28,20 @@ import {
   httpUrl,
 } from "chrome://browser/content/aiwindow/modules/AITabUtils.mjs";
 
+const IMAGE_POLICY = Object.freeze({
+  // Keep each available image, even when sibling items have no image.
+  INDEPENDENT: "independent",
+  // Show images only when every rendered item in this instance has one.
+  ALL_OR_NONE: "all-or-none",
+});
+
+const IMAGE_POLICIES = Object.freeze({
+  TextBlock: { policy: IMAGE_POLICY.INDEPENDENT },
+  RankedTable: { policy: IMAGE_POLICY.ALL_OR_NONE, collection: "rows" },
+  Timeline: { policy: IMAGE_POLICY.ALL_OR_NONE, collection: "items" },
+  Highlights: { policy: IMAGE_POLICY.ALL_OR_NONE, collection: "items" },
+});
+
 /**
  * Parses A2UI JSON objects to prepare for rendering
  */
@@ -172,6 +186,14 @@ export class A2UI {
       );
     }
 
+    if (component.image) {
+      component.image = this.#resolveValue(
+        component.image,
+        undefined,
+        dataModel
+      );
+    }
+
     return component;
   }
 
@@ -302,6 +324,46 @@ export class A2UI {
     }
   }
 
+  #applyImagePolicy(component) {
+    const { policy, collection: property } =
+      IMAGE_POLICIES[component?.component] ?? {};
+
+    if (policy !== IMAGE_POLICY.ALL_OR_NONE) {
+      return component;
+    }
+
+    const collection = component[property];
+
+    if (!Array.isArray(collection)) {
+      return component;
+    }
+
+    const items = collection.filter(Boolean);
+    const hasMixedImages =
+      items.some(item => item.image) && items.some(item => !item.image);
+
+    if (!hasMixedImages) {
+      return component;
+    }
+
+    return {
+      ...component,
+      [property]: this.#removeImages(collection),
+    };
+  }
+
+  #removeImages(items) {
+    return items.map(item => {
+      if (!item) {
+        return item;
+      }
+
+      const copy = { ...item };
+      delete copy.image;
+      return copy;
+    });
+  }
+
   /**
    * Converts a block that the model sent in a shape that does not render
    * well. Add each new normalization step here.
@@ -310,7 +372,7 @@ export class A2UI {
    * @returns {AITabComponent|null} The component to render, or null to drop it.
    */
   #normalize(component) {
-    return this.#normalizeHighlights(component);
+    return this.#normalizeHighlights(this.#applyImagePolicy(component));
   }
 
   /**
@@ -371,6 +433,7 @@ export class A2UI {
       lead: item.title || item.eyebrow || "",
       paragraphs: item.body ? [item.body] : [],
       references,
+      ...(item.image ? { image: item.image } : {}),
     };
   }
 

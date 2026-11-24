@@ -462,6 +462,24 @@ describe("A2UI", () => {
         );
       });
 
+      it("keeps bound Highlights images when every statement has an image", () => {
+        const image = {
+          src: "https://example.com/highlight.png",
+          alt_text: "Highlight image",
+        };
+        a2uiData.components[2].items[0].image = image;
+        a2uiData.components[2].items[1].image = image;
+        a2uiData.dataModel.highlightItems = a2uiData.components[2].items;
+        a2uiData.components[2].items = { path: "/highlightItems" };
+        a2ui = new A2UI(a2uiData);
+
+        Assert.deepEqual(
+          a2ui.toUI().children[1].items.map(item => item.image),
+          [image, image],
+          "every bound Highlights image is preserved"
+        );
+      });
+
       it("drops a highlights block with no statements", () => {
         a2uiData.dataModel.highlightItems = [null];
         a2uiData.components[2].items = { path: "/highlightItems" };
@@ -474,6 +492,10 @@ describe("A2UI", () => {
       });
 
       it("turns a single statement into a text block", () => {
+        const image = {
+          src: "https://example.com/highlight.png",
+          alt_text: "Highlight image",
+        };
         a2uiData.dataModel.sources.push({ title: "route", href: "route-id" });
         a2uiData.components[2].items = [
           null,
@@ -481,6 +503,7 @@ describe("A2UI", () => {
             eyebrow: "Verdict",
             title: "Dual-fuel is the safe pick.",
             body: "Eight of nine sources back dual-fuel.",
+            image,
             sources: { items: { path: "/sources" } },
           },
         ];
@@ -490,6 +513,7 @@ describe("A2UI", () => {
           id: "ans",
           component: "TextBlock",
           lead: "Dual-fuel is the safe pick.",
+          image,
           paragraphs: ["Eight of nine sources back dual-fuel."],
           references: [
             { title: "site1 name", href: "https://www.site1.com" },
@@ -680,6 +704,58 @@ describe("A2UI", () => {
           "Then the eyebrow"
         );
         Assert.equal(leadOf({}, { body: "Rain." }), "", "Else no lead");
+      });
+    });
+
+    describe("when there is a text block with an image", () => {
+      let image;
+
+      beforeEach(() => {
+        image = {
+          src: "https://example.com/image.png",
+          alt_text: "Example image",
+        };
+        a2uiData.components[0].children.push("note");
+        a2uiData.components.push({
+          id: "note",
+          component: "TextBlock",
+          lead: "The lead sentence",
+          image,
+        });
+        a2uiData.dataModel = { image };
+      });
+
+      it("preserves an inline image", () => {
+        a2ui = new A2UI(a2uiData);
+
+        Assert.deepEqual(a2ui.toUI().children[1].image, image);
+      });
+
+      it("resolves an absolute image binding", () => {
+        a2uiData.components[2].image = { path: "/image" };
+        a2ui = new A2UI(a2uiData);
+
+        Assert.deepEqual(a2ui.toUI().children[1].image, image);
+      });
+
+      it("resolves a relative image binding in a repeated component", () => {
+        const secondImage = {
+          src: "https://example.com/second.png",
+          alt_text: "Second image",
+        };
+        a2uiData.components[0].children = {
+          componentId: "note",
+          path: "/entries",
+        };
+        a2uiData.components[2].image = { path: "image" };
+        a2uiData.dataModel = {
+          entries: [{ image }, { image: secondImage }],
+        };
+        a2ui = new A2UI(a2uiData);
+
+        const children = a2ui.toUI().children;
+        Assert.deepEqual(children[1].image, image);
+        Assert.deepEqual(children[2].image, secondImage);
       });
     });
 
@@ -941,6 +1017,23 @@ describe("A2UI", () => {
         });
       });
 
+      it("keeps bound RankedTable images when every row has an image", () => {
+        const image = {
+          src: "https://example.com/installer.png",
+          alt_text: "Installer image",
+        };
+        a2uiData.dataModel.quotes[0].image = image;
+        a2uiData.dataModel.quotes[1].image = image;
+        a2uiData.dataModel.quotes[2].image = image;
+        a2ui = new A2UI(a2uiData);
+
+        Assert.deepEqual(
+          a2ui.toUI().children[1].rows.map(row => row.image),
+          [image, image, image],
+          "every bound RankedTable image is preserved"
+        );
+      });
+
       it("keeps literal rows as is", () => {
         const rows = a2uiData.dataModel.quotes;
         a2uiData.components[2].rows = rows;
@@ -1111,6 +1204,19 @@ describe("A2UI", () => {
         };
 
         a2ui = new A2UI(a2uiData);
+      });
+
+      it("keeps bound Timeline images when every entry has an image", () => {
+        const image = {
+          src: "https://example.com/event.png",
+          alt_text: "Event image",
+        };
+        a2uiData.dataModel.timelineitems[0].image = image;
+        a2uiData.dataModel.timelineitems[1].image = image;
+        a2uiData.dataModel.timelineitems[2].image = image;
+        a2ui = new A2UI(a2uiData);
+
+        Assert.deepEqual(a2ui.toUI().children[1].items[0].image, image);
       });
 
       it("resolves timeline blocks with items array, and title and descriptions", () => {
@@ -1506,5 +1612,183 @@ describe("A2UI", () => {
         });
       });
     });
+  });
+});
+
+describe("A2UI image policies", () => {
+  const image = { src: "https://example.com/image.png" };
+
+  function renderComponents(components, dataModel = {}) {
+    return new A2UI({
+      components: [
+        {
+          id: "root",
+          component: "Page",
+          children: components.map(component => component.id),
+        },
+        ...components,
+      ],
+      dataModel,
+    }).toUI().children;
+  }
+
+  it("applies independent and all-or-none image policies across component types", () => {
+    const rendered = renderComponents([
+      {
+        id: "illustrated",
+        component: "TextBlock",
+        lead: "Paris",
+        image,
+      },
+      {
+        id: "plain",
+        component: "TextBlock",
+        lead: "Rome",
+      },
+      {
+        id: "table",
+        component: "RankedTable",
+        rows: [{ name: "Paris", image }, { name: "Rome" }],
+      },
+      {
+        id: "timeline",
+        component: "Timeline",
+        items: [
+          { date_label: "Monday", title: "Paris", image },
+          { date_label: "Tuesday", title: "Rome" },
+        ],
+      },
+      {
+        id: "highlights",
+        component: "Highlights",
+        title: "City highlights",
+        items: [
+          { title: "Paris", body: "See the Louvre.", image },
+          { title: "Rome", body: "See the Colosseum." },
+        ],
+      },
+    ]);
+    const [illustrated, plain, table, timeline, highlights] = rendered;
+
+    Assert.deepEqual(illustrated.image, image);
+    Assert.ok(!Object.hasOwn(plain, "image"));
+    Assert.ok(table.rows.every(row => !Object.hasOwn(row, "image")));
+    Assert.ok(timeline.items.every(item => !Object.hasOwn(item, "image")));
+    Assert.ok(highlights.items.every(item => !Object.hasOwn(item, "image")));
+  });
+
+  it("hides every RankedTable row image when one row has no image", () => {
+    const [table] = renderComponents([
+      {
+        id: "table",
+        component: "RankedTable",
+        rows: [{ name: "Paris", image }, { name: "Rome" }],
+      },
+    ]);
+
+    Assert.ok(table.rows.every(row => !Object.hasOwn(row, "image")));
+  });
+
+  it("keeps another table and TextBlock images when a table shares their image data", () => {
+    const sharedRow = { name: "Paris", image };
+    const dataModel = {
+      mixedRows: [sharedRow, { name: "Rome" }],
+      completeRows: [sharedRow],
+      hero: image,
+    };
+    const original = structuredClone(dataModel);
+    const [mixed, complete, text] = renderComponents(
+      [
+        { id: "mixed", component: "RankedTable", rows: { path: "/mixedRows" } },
+        {
+          id: "complete",
+          component: "RankedTable",
+          rows: { path: "/completeRows" },
+        },
+        {
+          id: "text",
+          component: "TextBlock",
+          lead: "Paris",
+          image: { path: "/hero" },
+        },
+      ],
+      dataModel
+    );
+
+    Assert.ok(mixed.rows.every(row => !Object.hasOwn(row, "image")));
+    Assert.deepEqual(complete.rows[0].image, image);
+    Assert.deepEqual(text.image, image);
+    Assert.deepEqual(dataModel, original, "the source data is unchanged");
+  });
+
+  it("applies RankedTable image consistency separately to each repeater instance", () => {
+    const children = new A2UI({
+      components: [
+        {
+          id: "root",
+          component: "Page",
+          children: { componentId: "table", path: "/tables" },
+        },
+        { id: "table", component: "RankedTable", rows: { path: "rows" } },
+      ],
+      dataModel: {
+        tables: [
+          { rows: [{ name: "Paris", image }, { name: "Rome" }] },
+          {
+            rows: [
+              { name: "London", image },
+              { name: "York", image },
+            ],
+          },
+        ],
+      },
+    }).toUI().children;
+
+    Assert.ok(children[0].rows.every(row => !Object.hasOwn(row, "image")));
+    Assert.deepEqual(children[1].rows[0].image, image);
+    Assert.deepEqual(children[1].rows[1].image, image);
+  });
+
+  it("hides every Timeline image when one entry has no image", () => {
+    const [timeline] = renderComponents([
+      {
+        id: "timeline",
+        component: "Timeline",
+        items: [
+          { date_label: "Monday", title: "Paris", image },
+          { date_label: "Tuesday", title: "Rome" },
+        ],
+      },
+    ]);
+
+    Assert.ok(timeline.items.every(item => !Object.hasOwn(item, "image")));
+  });
+
+  it("keeps every Timeline image when all entries have images", () => {
+    const items = [
+      { date_label: "Monday", title: "Paris", image },
+      { date_label: "Tuesday", title: "Rome", image },
+    ];
+    const [timeline] = renderComponents([
+      { id: "timeline", component: "Timeline", items },
+    ]);
+
+    Assert.deepEqual(timeline.items, items);
+  });
+
+  it("hides every Highlights image when one statement has no image", () => {
+    const [highlights] = renderComponents([
+      {
+        id: "highlights",
+        component: "Highlights",
+        title: "City highlights",
+        items: [
+          { title: "Paris", body: "See the Louvre.", image },
+          { title: "Rome", body: "See the Colosseum." },
+        ],
+      },
+    ]);
+
+    Assert.ok(highlights.items.every(item => !Object.hasOwn(item, "image")));
   });
 });
