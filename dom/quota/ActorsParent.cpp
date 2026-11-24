@@ -3423,12 +3423,10 @@ void QuotaManager::UnloadQuota() {
               ++transactionCount;
             }
           } else if (mCacheRequiresFullScan) {
-            // The cache DB was freshly created (or recreated after
-            // corruption) and has no origin rows yet. The .metadata-v2
-            // file on disk is already correct — only the DB needs
-            // populating. We must not rewrite the file here because the
-            // in-memory timestamps may be stale (e.g. lastAccessTime
-            // could have been updated on disk after initialization).
+            // The cache DB was created, recreated after corruption, or
+            // invalidated, so it may be missing origin rows
+            // (mCacheRequiresFullScan). The scan already computed correct
+            // usage from disk — only the DB rows need writing.
             MOZ_ASSERT(mOriginUpserter, "We must have an origin upserter here");
             QM_WARNONLY_TRY(mOriginUpserter->Refresh(metadata));
             ++transactionCount;
@@ -6128,6 +6126,7 @@ nsresult QuotaManager::EnsureStorageIsInitializedInternal() {
 
     if (mCacheUsable && shouldInvalidateCache) {
       QM_TRY(InvalidateCache(*connection));
+      mCacheRequiresFullScan = true;
     }
 
     uint32_t pauseOnIOThreadMs =
