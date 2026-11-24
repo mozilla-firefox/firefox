@@ -29,7 +29,7 @@ use crate::invalidation::stylesheets::{RuleChangeKind, StylesheetInvalidationSet
 #[cfg(feature = "gecko")]
 use crate::properties::StyleBuilder;
 use crate::properties::{
-    self, AnimationDeclarations, CascadeMode, ComputedValues, FirstLineReparenting,
+    self, AnimationDeclarations, CascadeMode, CascadeReparenting, ComputedValues,
     PropertyDeclarationBlock,
 };
 use crate::properties_and_values::registry::{
@@ -1372,7 +1372,7 @@ impl Stylist {
             guards,
             parent_style,
             parent_style,
-            FirstLineReparenting::No,
+            CascadeReparenting::No,
             &PositionTryFallbacksTryTactic::default(),
             /* rule_cache = */ None,
             &mut RuleCacheConditions::default(),
@@ -1455,7 +1455,7 @@ impl Stylist {
                     guards,
                     parent_style,
                     layout_parent_style,
-                    FirstLineReparenting::No,
+                    CascadeReparenting::PositionTry { base_style: style },
                     &name_and_try_tactic.try_tactic,
                     /* rule_cache = */ None,
                     &mut RuleCacheConditions::default(),
@@ -1485,7 +1485,7 @@ impl Stylist {
         guards: &StylesheetGuards,
         parent_style: Option<&ComputedValues>,
         layout_parent_style: Option<&ComputedValues>,
-        first_line_reparenting: FirstLineReparenting,
+        cascade_reparenting: CascadeReparenting,
         try_tactic: &PositionTryFallbacksTryTactic,
         rule_cache: Option<&RuleCache>,
         rule_cache_conditions: &mut RuleCacheConditions,
@@ -1526,7 +1526,7 @@ impl Stylist {
             guards,
             parent_style,
             layout_parent_style,
-            first_line_reparenting,
+            cascade_reparenting,
             try_tactic,
             visited_rules,
             inputs.flags,
@@ -2020,7 +2020,7 @@ impl Stylist {
             }),
             Some(parent_style),
             Some(parent_style),
-            FirstLineReparenting::No,
+            CascadeReparenting::No,
             &PositionTryFallbacksTryTactic::default(),
             CascadeMode::Unvisited {
                 visited_rules: None,

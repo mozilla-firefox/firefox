@@ -11,7 +11,7 @@ use crate::data::{EagerPseudoStyles, ElementStyles};
 use crate::dom::TElement;
 use crate::matching::MatchMethods;
 use crate::properties::longhands::display::computed_value::T as Display;
-use crate::properties::{ComputedValues, FirstLineReparenting};
+use crate::properties::{CascadeReparenting, ComputedValues};
 use crate::rule_tree::{RuleCascadeFlags, RuleTree, StrongRuleNode};
 use crate::selector_parser::{PseudoElement, SelectorImpl};
 use crate::stylist::RuleInclusion;
@@ -355,7 +355,7 @@ where
             &self.context.shared.guards,
             parent_style,
             layout_parent_style,
-            FirstLineReparenting::No,
+            CascadeReparenting::No,
             /* try_tactic = */ &Default::default(),
             Some(&self.context.thread_local.rule_cache),
             &mut conditions,
