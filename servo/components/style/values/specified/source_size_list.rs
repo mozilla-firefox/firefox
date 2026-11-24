@@ -6,8 +6,9 @@
 
 use crate::device::Device;
 use crate::dom::AttributeTracker;
+use crate::media_queries::MediaCondition;
 use crate::parser::{Parse, ParserContext};
-use crate::queries::{FeatureType, QueryCondition};
+use crate::queries::boolean_expression::BooleanExprTest;
 use crate::stylesheets::CustomMediaEvaluator;
 use crate::values::computed::{self, ToComputedValue};
 use crate::values::specified::length::LengthUnit;
@@ -22,13 +23,13 @@ use style_traits::ParseError;
 /// https://html.spec.whatwg.org/multipage/#source-size
 #[derive(Clone, Debug)]
 pub struct SourceSize {
-    condition: QueryCondition,
+    condition: MediaCondition,
     value: Length,
 }
 
 impl Parse for SourceSize {
     fn parse(context: &ParserContext, input: &mut Parser) -> Result<Self, ParseError> {
-        let condition = QueryCondition::parse(context, input, FeatureType::Media)?;
+        let condition = MediaCondition::parse(context, input)?;
         let value = Length::parse_non_negative(context, input)?;
         Ok(Self { condition, value })
     }
@@ -58,7 +59,7 @@ impl SourceSizeList {
             let matching_source_size = self.source_sizes.iter().find(|source_size| {
                 source_size
                     .condition
-                    .matches(
+                    .evaluate(
                         context,
                         &mut CustomMediaEvaluator::none(),
                         &mut AttributeTracker::new_dummy(),

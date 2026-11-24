@@ -7,6 +7,8 @@
 use crate::Atom;
 use crate::derives::*;
 use crate::parser::ParserContext;
+use crate::queries::boolean_expression::BooleanExpr;
+use crate::substitution::ReferenceFlags;
 use crate::values::computed::{self, CSSPixelLength, Ratio, Resolution};
 use cssparser::Parser;
 use selectors::kleene_value::KleeneValue;
@@ -105,9 +107,9 @@ macro_rules! keyword_evaluator {
 /// Different flags or toggles that change how a expression is parsed or
 /// evaluated.
 #[derive(Clone, Copy, Debug, Eq, MallocSizeOf, PartialEq, ToShmem)]
-pub struct FeatureFlags(u8);
+pub struct FeatureFlags(u16);
 bitflags! {
-    impl FeatureFlags : u8 {
+    impl FeatureFlags : u16 {
         /// The feature should only be parsed in chrome and ua sheets.
         const CHROME_AND_UA_ONLY = 1 << 0;
         /// The feature requires a -webkit- prefix.
@@ -124,6 +126,8 @@ bitflags! {
         const VIEWPORT_DEPENDENT = 1 << 6;
         /// The feature evaluation depends on style queries.
         const STYLE = 1 << 7;
+        /// The feature contains an unknown `<general-enclosed>` term.
+        const UNKNOWN_TERM = 1 << 8;
     }
 }
 
@@ -144,6 +148,33 @@ impl FeatureFlags {
     /// Returns our subset of container axis flags.
     pub fn container_axes(self) -> Self {
         self.intersection(Self::all_container_axes())
+    }
+}
+
+/// Resolves `FeatureFlags` for the query.
+pub trait FeatureFlagsInfo {
+    /// The feature flags of this query.
+    fn feature_flags(&self) -> FeatureFlags;
+}
+
+impl<T: FeatureFlagsInfo> FeatureFlagsInfo for BooleanExpr<T> {
+    fn feature_flags(&self) -> FeatureFlags {
+        match self {
+            Self::Test(test) => test.feature_flags(),
+            Self::GeneralEnclosed(..) => FeatureFlags::UNKNOWN_TERM,
+            Self::Unparsed(value) => {
+                // Substituting `var()` depends on the custom properties, like a style query does.
+                if value.references.flags.intersects(ReferenceFlags::VAR) {
+                    FeatureFlags::STYLE
+                } else {
+                    FeatureFlags::empty()
+                }
+            },
+            Self::Not(expr) | Self::InParens(expr) => expr.feature_flags(),
+            Self::Operation(exprs, _) => exprs.iter().fold(FeatureFlags::empty(), |flags, expr| {
+                flags | expr.feature_flags()
+            }),
+        }
     }
 }
 

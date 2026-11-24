@@ -5,24 +5,26 @@
 //! Style queries.
 //! https://drafts.csswg.org/css-conditional-5/#typedef-style-query
 
-use super::condition::{AllowOr, OperationParser, Operator, consume_any_value, try_parse_block};
-use super::{FeatureType, QueryStyleRange};
+use super::feature::FeatureFlagsInfo;
+use super::{FeatureFlags, QueryStyleRange};
 use crate::computed_value_flags::ComputedValueFlags;
 use crate::custom_properties;
 use crate::derives::*;
 use crate::dom::AttributeTracker;
-use crate::parser::ParserContext;
 use crate::properties::CSSWideKeyword;
 use crate::properties_and_values::rule::Descriptors as PropertyDescriptors;
 use crate::properties_and_values::value::{
     AllowComputationallyDependent, ComputedValue as ComputedRegisteredValue,
     SpecifiedValue as SpecifiedRegisteredValue,
 };
+use crate::queries::boolean_expression::{BooleanExpr, BooleanExprTest};
+use crate::stylesheets::CustomMediaEvaluator;
 use crate::stylesheets::container_rule::AttrReferenceSet;
 use crate::stylist::Stylist;
 use crate::substitution;
 use crate::values::computed;
-use cssparser::{Parser, Token, parse_important};
+use crate::{parser::Parse, parser::ParserContext};
+use cssparser::{Parser, parse_important};
 use selectors::kleene_value::KleeneValue;
 use servo_arc::Arc;
 use std::fmt::{self, Write};
@@ -34,109 +36,29 @@ enum StyleFeatureValue {
     Keyword(CSSWideKeyword),
 }
 
+/// A `<style-query>`, which is a combination of style query tests.
 /// https://drafts.csswg.org/css-conditional-5/#typedef-style-query
-#[derive(Clone, Debug, MallocSizeOf, PartialEq, ToShmem)]
-pub enum StyleQuery {
-    /// A negation of a condition.
-    Not(Box<StyleQuery>),
-    /// A set of joint operations.
-    Operation(Box<[StyleQuery]>, Operator),
-    /// A condition wrapped in parenthesis.
-    InParens(Box<StyleQuery>),
-    /// A feature query (`--foo: bar` or just `--foo`).
-    Feature(StyleFeature),
-    /// An unknown "general-enclosed" term.
-    GeneralEnclosed(String),
-}
-
-impl ToCss for StyleQuery {
-    fn to_css<W>(&self, dest: &mut CssWriter<W>) -> fmt::Result
-    where
-        W: fmt::Write,
-    {
-        match *self {
-            StyleQuery::Not(ref c) => {
-                dest.write_str("not ")?;
-                c.maybe_parenthesized(dest)
-            },
-            StyleQuery::Operation(ref list, op) => {
-                let mut iter = list.iter();
-                let item = iter.next().unwrap();
-                item.maybe_parenthesized(dest)?;
-                for item in iter {
-                    dest.write_char(' ')?;
-                    op.to_css(dest)?;
-                    dest.write_char(' ')?;
-                    item.maybe_parenthesized(dest)?;
-                }
-                Ok(())
-            },
-            StyleQuery::InParens(ref c) => match &**c {
-                StyleQuery::Feature(_) | StyleQuery::InParens(_) => {
-                    dest.write_char('(')?;
-                    c.to_css(dest)?;
-                    dest.write_char(')')
-                },
-                _ => c.to_css(dest),
-            },
-            StyleQuery::Feature(ref f) => f.to_css(dest),
-            StyleQuery::GeneralEnclosed(ref s) => dest.write_str(s),
-        }
-    }
-}
+pub type StyleQuery = BooleanExpr<StyleQueryTest>;
 
 impl StyleQuery {
-    // Helper for to_css when handling values within boolean operators:
-    // GeneralEnclosed includes its parens in the string, so we don't need to
-    // wrap the value with an additional set here.
-    fn maybe_parenthesized<W>(&self, dest: &mut CssWriter<W>) -> fmt::Result
-    where
-        W: fmt::Write,
-    {
-        if let StyleQuery::GeneralEnclosed(s) = self {
-            dest.write_str(s)
-        } else {
-            dest.write_char('(')?;
-            self.to_css(dest)?;
-            dest.write_char(')')
-        }
-    }
-
     /// Determines whether the style queries are enabled.
-    pub fn enabled(feature_type: FeatureType) -> bool {
-        crate::pref!("layout.css.style-queries.enabled") && feature_type == FeatureType::Container
+    pub fn enabled() -> bool {
+        crate::pref!("layout.css.style-queries.enabled")
     }
 
-    /// Parses a style query.
-    pub fn parse(
+    /// Parses a `<style-query>`, with the `style()` function already consumed. Note
+    /// that at the top-level, an unparenthesized `<style-feature>` is valid.
+    pub fn parse_top_level(
         context: &ParserContext,
         input: &mut Parser,
-        feature_type: FeatureType,
     ) -> Result<Self, ParseError> {
         if let Ok(feature) = input.try_parse(|input| StyleFeature::parse(context, input)) {
-            return Ok(Self::Feature(feature));
+            return Ok(Self::Test(StyleQueryTest {
+                feature,
+                parenthesized: false,
+            }));
         }
-
-        let inner = Self::parse_internal(context, input, feature_type, AllowOr::Yes)?;
-        Ok(Self::InParens(Box::new(inner)))
-    }
-
-    fn parse_in_parenthesis_block(
-        context: &ParserContext,
-        input: &mut Parser,
-    ) -> Result<Self, ParseError> {
-        // Base case. Make sure to preserve this error as it's more generally
-        // relevant.
-        let feature_error = match input.try_parse(|input| StyleFeature::parse(context, input)) {
-            Ok(feature) => return Ok(Self::Feature(feature)),
-            Err(e) => e,
-        };
-
-        if let Ok(inner) = Self::parse(context, input, FeatureType::Container) {
-            return Ok(inner);
-        }
-
-        Err(feature_error)
+        Self::parse(context, input)
     }
 
     /// Evaluate whether the style query matches.
@@ -147,75 +69,64 @@ impl StyleQuery {
     ) -> KleeneValue {
         ctx.builder
             .add_flags(ComputedValueFlags::DEPENDS_ON_CONTAINER_STYLE_QUERY);
-        match *self {
-            StyleQuery::Feature(ref f) => f.matches(ctx, attribute_tracker),
-            StyleQuery::Not(ref c) => !c.matches(ctx, attribute_tracker),
-            StyleQuery::InParens(ref c) => c.matches(ctx, attribute_tracker),
-            StyleQuery::Operation(ref conditions, op) => {
-                debug_assert!(!conditions.is_empty(), "We never create an empty op");
-                match op {
-                    Operator::And => KleeneValue::any_false(conditions.iter(), |c| {
-                        c.matches(ctx, attribute_tracker)
-                    }),
-                    Operator::Or => {
-                        KleeneValue::any(conditions.iter(), |c| c.matches(ctx, attribute_tracker))
-                    },
-                }
-            },
-            StyleQuery::GeneralEnclosed(_) => KleeneValue::Unknown,
-        }
+        self.evaluate(ctx, &mut CustomMediaEvaluator::none(), attribute_tracker)
     }
 
     /// Recurses into the query to collect all referenced attributes.
     pub fn collect_attribute_references(&self, references: &mut AttrReferenceSet) {
-        match self {
-            Self::Feature(c) => c.collect_attribute_references(references),
-            Self::GeneralEnclosed(_) => {},
-            Self::InParens(c) => c.collect_attribute_references(references),
-            Self::Not(c) => c.collect_attribute_references(references),
-            Self::Operation(c, _) => c
-                .iter()
-                .for_each(|c| c.collect_attribute_references(references)),
-        }
+        self.for_each_test(&mut |test| test.feature.collect_attribute_references(references));
     }
 }
 
-impl OperationParser for StyleQuery {
-    fn parse_in_parens(
-        context: &ParserContext,
-        input: &mut Parser,
-        feature_type: FeatureType,
-    ) -> Result<Self, ParseError> {
-        assert!(feature_type == FeatureType::Container);
-        input.skip_whitespace();
-        let start = input.position();
-        let start_location = input.current_source_location();
-        match *input.next()? {
-            Token::ParenthesisBlock => {
-                if let Some(nested) = try_parse_block(context, input, start, start_location, |i| {
-                    Self::parse_in_parenthesis_block(context, i)
-                }) {
-                    return Ok(nested);
-                }
-                // Accept <ident>: <any-value> as a GeneralEnclosed (which evaluates
-                // to false, but does not invalidate the query as a whole).
-                input.parse_nested_block(|i| {
-                    i.expect_ident()?;
-                    i.expect_colon()?;
-                    consume_any_value(i)
-                })?;
-                Ok(Self::GeneralEnclosed(input.slice_from(start).to_owned()))
-            },
-            _ => Err(ParseError::unexpected_token()),
+/// A `<style-feature>` test in a `<style-query>`. Excludes both the nested `(<style-query>)`
+///  and `<general-enclosed>`, which are handled by the outer `BooleanExpr<StyleQueryTest>`.
+#[derive(Clone, Debug, MallocSizeOf, PartialEq, ToShmem)]
+pub struct StyleQueryTest {
+    /// The feature query.
+    feature: StyleFeature,
+    /// Whether the feature was written within parentheses.
+    parenthesized: bool,
+}
+
+impl ToCss for StyleQueryTest {
+    fn to_css<W>(&self, dest: &mut CssWriter<W>) -> fmt::Result
+    where
+        W: fmt::Write,
+    {
+        if !self.parenthesized {
+            return self.feature.to_css(dest);
         }
+        dest.write_char('(')?;
+        self.feature.to_css(dest)?;
+        dest.write_char(')')
     }
+}
 
-    fn new_not(inner: Box<Self>) -> Self {
-        Self::Not(inner)
+impl Parse for StyleQueryTest {
+    fn parse(context: &ParserContext, input: &mut Parser) -> Result<Self, ParseError> {
+        input.expect_parenthesis_block()?;
+        let feature = input.parse_nested_block(|input| StyleFeature::parse(context, input))?;
+        Ok(Self {
+            feature,
+            parenthesized: true,
+        })
     }
+}
 
-    fn new_operation(conditions: Box<[Self]>, operator: Operator) -> Self {
-        Self::Operation(conditions, operator)
+impl BooleanExprTest for StyleQueryTest {
+    fn evaluate(
+        &self,
+        context: &computed::Context,
+        _: &mut CustomMediaEvaluator,
+        attribute_tracker: &mut AttributeTracker,
+    ) -> KleeneValue {
+        self.feature.matches(context, attribute_tracker)
+    }
+}
+
+impl FeatureFlagsInfo for StyleQueryTest {
+    fn feature_flags(&self) -> FeatureFlags {
+        FeatureFlags::STYLE
     }
 }
 
@@ -229,7 +140,7 @@ pub enum StyleFeature {
     Range(QueryStyleRange),
 }
 
-impl StyleFeature {
+impl Parse for StyleFeature {
     fn parse(context: &ParserContext, input: &mut Parser) -> Result<Self, ParseError> {
         if let Ok(range) = input.try_parse(|i| QueryStyleRange::parse(context, i)) {
             return Ok(Self::Range(range));
@@ -237,7 +148,9 @@ impl StyleFeature {
 
         Ok(Self::Plain(StyleFeaturePlain::parse(context, input)?))
     }
+}
 
+impl StyleFeature {
     fn matches(
         &self,
         ctx: &computed::Context,

@@ -13,6 +13,7 @@ use crate::device::Device;
 use crate::dom::AttributeTracker;
 use crate::error_reporting::ContextualParseError;
 use crate::parser::ParserContext;
+use crate::queries::boolean_expression::BooleanExprTest;
 use crate::stylesheets::CustomMediaEvaluator;
 use crate::values::computed;
 use cssparser::Token;
@@ -106,7 +107,7 @@ impl MediaList {
         KleeneValue::any(self.media_queries.iter(), |mq| {
             let mut query_match = if mq.media_type.matches(context.device().media_type()) {
                 mq.condition.as_ref().map_or(KleeneValue::True, |c| {
-                    c.matches(context, custom, &mut AttributeTracker::new_dummy())
+                    c.evaluate(context, custom, &mut AttributeTracker::new_dummy())
                 })
             } else {
                 KleeneValue::False

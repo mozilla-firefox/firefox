@@ -3604,7 +3604,7 @@ pub extern "C" fn Servo_ContainerRule_GetContainerQuery(
     result: &mut nsACString,
 ) {
     if let Some(condition) = rule.conditions.0.get(i) {
-        if let Some(condition) = condition.query_condition() {
+        if let Some(condition) = condition.query() {
             condition.to_css(&mut CssWriter::new(result)).unwrap();
         }
     }

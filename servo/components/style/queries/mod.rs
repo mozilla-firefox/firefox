@@ -7,8 +7,8 @@
 //! [mq]: https://drafts.csswg.org/mediaqueries/
 //! [cq]: https://drafts.csswg.org/css-contain-3/#container-rule
 
-pub mod condition;
-
+pub mod boolean_expression;
+pub mod container;
 #[macro_use]
 pub mod feature;
 pub mod feature_expression;
@@ -16,6 +16,6 @@ pub mod moz_pref;
 pub mod style;
 pub mod values;
 
-pub use self::condition::QueryCondition;
+pub use self::container::ContainerQuery;
 pub use self::feature::FeatureFlags;
 pub use self::feature_expression::{FeatureType, QueryFeatureExpression, QueryStyleRange};

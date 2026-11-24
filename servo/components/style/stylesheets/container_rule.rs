@@ -4,16 +4,19 @@
 
 //! A [`@container`][container] rule.
 //!
-//! [container]: https://drafts.csswg.org/css-contain-3/#container-rule
+//! [container]: https://drafts.csswg.org/css-conditional-5/#container-rule
 
 use crate::computed_value_flags::ComputedValueFlags;
 use crate::dom::{AttributeTracker, TElement};
 use crate::logical_geometry::{LogicalSize, WritingMode};
-use crate::parser::ParserContext;
+use crate::parser::{Parse, ParserContext};
 use crate::properties::ComputedValues;
-use crate::queries::feature::{AllowsRanges, Evaluator, FeatureFlags, QueryFeatureDescription};
+use crate::queries::ContainerQuery;
+use crate::queries::boolean_expression::BooleanExprTest;
+use crate::queries::feature::{
+    AllowsRanges, Evaluator, FeatureFlags, FeatureFlagsInfo, QueryFeatureDescription,
+};
 use crate::queries::values::Orientation;
-use crate::queries::{FeatureType, QueryCondition};
 use crate::selector_map::{PrecomputedHashMap, PrecomputedHashSet};
 use crate::shared_lock::{
     DeepCloneWithLock, Locked, SharedRwLock, SharedRwLockReadGuard, ToCssWithGuard,
@@ -145,7 +148,7 @@ impl ContainerAttributeDependencyKind {
 pub struct ContainerCondition {
     #[css(skip_if = "ContainerName::is_none")]
     name: ContainerName,
-    condition: Option<QueryCondition>,
+    query: Option<ContainerQuery>,
     #[css(skip)]
     flags: FeatureFlags,
     #[css(skip)]
@@ -219,8 +222,8 @@ impl ContainerCondition {
     }
     /// Get the query condition of this condition
     #[inline]
-    pub fn query_condition(&self) -> Option<&QueryCondition> {
-        self.condition.as_ref()
+    pub fn query(&self) -> Option<&ContainerQuery> {
+        self.query.as_ref()
     }
     /// Parse a container condition.
     pub fn parse(context: &ParserContext, input: &mut Parser) -> Result<Self, ParseError> {
@@ -228,22 +231,22 @@ impl ContainerCondition {
             .try_parse(|input| ContainerName::parse_for_query(context, input))
             .ok()
             .unwrap_or_else(ContainerName::none);
-        let condition = input
-            .try_parse(|input| QueryCondition::parse(context, input, FeatureType::Container))
+        let query = input
+            .try_parse(|input| ContainerQuery::parse(context, input))
             .ok();
-        if condition.is_none() && name.is_none() {
+        if query.is_none() && name.is_none() {
             return Err(ParseError::custom(StyleParseErrorKind::UnspecifiedError));
         }
         let mut attributes_referenced = AttrReferenceSet::default();
-        if let Some(c) = condition.as_ref() {
-            c.collect_attribute_references(&mut attributes_referenced)
+        if let Some(query) = query.as_ref() {
+            query.collect_attribute_references(&mut attributes_referenced)
         }
-        let flags = condition
+        let flags = query
             .as_ref()
-            .map_or(FeatureFlags::empty(), |c| c.cumulative_flags());
+            .map_or(FeatureFlags::empty(), |query| query.feature_flags());
         Ok(Self {
             name,
-            condition,
+            query,
             flags,
             attributes_referenced,
         })
@@ -335,8 +338,14 @@ impl ContainerCondition {
     where
         E: TElement,
     {
+        // No query container is eligible for a condition that contains a `<general-enclosed>`.
+        // This early check prevents a nested unknown term from being hidden by an `or true`.
+        // See: https://github.com/w3c/csswg-drafts/issues/7551
+        if self.flags.contains(FeatureFlags::UNKNOWN_TERM) {
+            return KleeneValue::Unknown;
+        }
         let result = self.find_container(element, originating_element_style);
-        if self.condition.is_none() {
+        if self.query.is_none() {
             // Condition-less container query (name only): matches if a
             // named container was found.
             return KleeneValue::from(result.is_some());
@@ -390,7 +399,7 @@ impl ContainerCondition {
     where
         E: TElement,
     {
-        let Some(ref condition) = self.condition else {
+        let Some(ref condition) = self.query else {
             debug_assert!(false, "Should only be called if a condition exists");
             return (KleeneValue::False, ComputedValueFlags::empty());
         };
@@ -409,7 +418,7 @@ impl ContainerCondition {
             size_query_container_lookup,
             &container.element,
             |context| {
-                let matches = condition.matches(
+                let matches = condition.evaluate(
                     context,
                     &mut CustomMediaEvaluator::none(),
                     attribute_tracker,
@@ -431,7 +440,7 @@ impl ContainerCondition {
     where
         E: TElement,
     {
-        if self.condition.is_none() || !self.has_unparsed_attr_references() {
+        if self.query.is_none() || !self.has_unparsed_attr_references() {
             return ContainerAttributeDependencyKind::None;
         }
         let TraversalResult::Done(result) = self.valid_container_info(container, None) else {
