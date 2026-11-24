@@ -11,8 +11,7 @@
 #include "gfxPlatform.h"
 #include "mozilla/gfx/2D.h"
 
-namespace mozilla {
-namespace widget {
+namespace mozilla::widget {
 
 using namespace mozilla::gfx;
 
@@ -101,5 +100,4 @@ void WindowSurfaceX11Image::Commit(
   cairo_surface_destroy(source);
 }
 
-}  // namespace widget
-}  // namespace mozilla
+}  // namespace mozilla::widget

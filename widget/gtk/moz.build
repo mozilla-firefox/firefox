@@ -158,11 +158,11 @@ if CONFIG["MOZ_X11"]:
         "nsShmImage.cpp",
         "RetrievalContextX11.cpp",
         "WindowSurfaceX11.cpp",
-        "WindowSurfaceX11Image.cpp",
         "WindowSurfaceX11SHM.cpp",
     ]
     SOURCES += [
         "nsWindowX11.cpp",  # conflicts with X11 headers
+        "WindowSurfaceX11Image.cpp",  # conflicts with X11 headers
     ]
     SOURCE_HEADERS += [
         "nsShmImage.h",
