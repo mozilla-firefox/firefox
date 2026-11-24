@@ -121,9 +121,8 @@ async protocol PWebTransport
   /**
   * Update datagram queue parameters
   * @param outgoingMaxBufferedDatagrams queue depth before backpressure kicks in
-  * @param outgoingMaxAge maximum age in milliseconds; Infinity for no limit.
-  *   Must be positive and not NaN; the parent rejects anything else with
-  *   IPC_FAIL.
+  * @param outgoingMaxAge maximum age in milliseconds; Infinity for no limit,
+  *   NaN for null (use the implementation-defined default)
   */
   async UpdateDatagramQueueParams(uint32_t outgoingMaxBufferedDatagrams, double outgoingMaxAge);
 

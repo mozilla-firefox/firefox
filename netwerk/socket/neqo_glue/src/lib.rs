@@ -2907,18 +2907,16 @@ pub extern "C" fn neqo_http3conn_webtransport_set_datagram_max_age(
     session_id: u64,
     max_age: f64,
 ) -> nsresult {
-    // Infinity, or anything too big for a Duration, means no limit; anything
-    // else that isn't positive would otherwise saturate to no limit too.
-    if max_age.is_nan() || max_age <= 0.0 {
-        return NS_ERROR_INVALID_ARG;
-    }
-    let max_age = Duration::try_from_secs_f64(max_age / 1000.0).unwrap_or(Duration::MAX);
+    // NaN means outgoingMaxAge is null (the setter rejects a real NaN), so neqo
+    // uses its default.  Infinity, or anything too big for a Duration, means no
+    // limit.  The setter also rejects negative values, but this comes from the
+    // content process, so a negative one is clamped to the shortest age rather
+    // than falling into that saturation.
+    let max_age = (!max_age.is_nan()).then(|| {
+        Duration::try_from_secs_f64(max_age.max(0.0) / 1000.0).unwrap_or(Duration::MAX)
+    });
     conn.conn
-        .webtransport_set_datagram_max_age(
-            StreamId::from(session_id),
-            Some(max_age),
-            Instant::now(),
-        )
+        .webtransport_set_datagram_max_age(StreamId::from(session_id), max_age, Instant::now())
         .map_or(NS_ERROR_UNEXPECTED, |()| NS_OK)
 }
 

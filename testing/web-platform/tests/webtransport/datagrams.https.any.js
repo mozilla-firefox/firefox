@@ -100,6 +100,7 @@ promise_test(async t => {
   wt.closed.catch(() => {});
   t.add_cleanup(() => wt.close());
   await wt.ready;
+  wt.datagrams.outgoingMaxAge = Infinity;
 
   const writer = wt.datagrams.createWritable().getWriter();
   const reader = wt.datagrams.readable.getReader();
@@ -127,6 +128,7 @@ promise_test(async t => {
   wt.closed.catch(() => {});
   t.add_cleanup(() => wt.close());
   await wt.ready;
+  wt.datagrams.outgoingMaxAge = Infinity;
 
   const writer = wt.datagrams.createWritable().getWriter();
   const reader = wt.datagrams.readable.getReader({ mode: 'byob' });
@@ -169,6 +171,7 @@ promise_test(async t => {
   wt.closed.catch(() => {});
   t.add_cleanup(() => wt.close());
   await wt.ready;
+  wt.datagrams.outgoingMaxAge = Infinity;
 
   const writer = wt.datagrams.createWritable().getWriter();
   const reader = wt.datagrams.readable.getReader({ mode: 'byob' });
@@ -195,6 +198,7 @@ promise_test(async t => {
   wt.closed.catch(() => {});
   t.add_cleanup(() => wt.close());
   await wt.ready;
+  wt.datagrams.outgoingMaxAge = Infinity;
 
   const writer = wt.datagrams.createWritable().getWriter();
   const reader = wt.datagrams.readable.getReader();
@@ -248,6 +252,7 @@ promise_test(async t => {
   const wt = new WebTransport(webtransport_url('echo.py'));
   wt.closed.catch(() => {});
   t.add_cleanup(() => wt.close());
+  wt.datagrams.outgoingMaxAge = Infinity;
 
   const writer = wt.datagrams.createWritable().getWriter();
   const reader = wt.datagrams.readable.getReader();
@@ -315,6 +320,7 @@ promise_test(async t => {
   wt.closed.catch(() => {});
   t.add_cleanup(() => wt.close());
   await wt.ready;
+  wt.datagrams.outgoingMaxAge = Infinity;
 
   const N = 5;
   wt.datagrams.incomingMaxBufferedDatagrams = N;
@@ -372,7 +378,7 @@ promise_test(async t => {
   await wt.ready;
 
   assert_equals(wt.datagrams.incomingMaxAge, null);
-  assert_equals(wt.datagrams.outgoingMaxAge, Infinity);
+  assert_equals(wt.datagrams.outgoingMaxAge, null);
 
   wt.datagrams.incomingMaxAge = 5;
   assert_equals(wt.datagrams.incomingMaxAge, 5);
@@ -386,13 +392,8 @@ promise_test(async t => {
 
   wt.datagrams.incomingMaxAge = 0;
   assert_equals(wt.datagrams.incomingMaxAge, null);
-  assert_throws_js(RangeError, () => { wt.datagrams.outgoingMaxAge = 0; });
-  assert_equals(wt.datagrams.outgoingMaxAge, 5);
-  // null converts to 0 for the non-nullable attribute.
-  assert_throws_js(RangeError, () => { wt.datagrams.outgoingMaxAge = null; });
-  assert_equals(wt.datagrams.outgoingMaxAge, 5);
-  wt.datagrams.outgoingMaxAge = Infinity;
-  assert_equals(wt.datagrams.outgoingMaxAge, Infinity);
+  wt.datagrams.outgoingMaxAge = 0;
+  assert_equals(wt.datagrams.outgoingMaxAge, null);
 }, 'Datagram MaxAge getters/setters work correctly');
 
 promise_test(async t => {

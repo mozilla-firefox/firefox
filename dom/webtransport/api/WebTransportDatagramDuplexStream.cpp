@@ -90,12 +90,11 @@ void WebTransportDatagramDuplexStream::Init(bool aUseByteStream,
 }
 
 void WebTransportDatagramDuplexStream::SetChild(WebTransportChild* aChild) {
-  // The page may have changed outgoingMaxAge or outgoingMaxBufferedDatagrams
-  // from their defaults before the session connected.  The parent must know
-  // them before it sees any pre-connect datagram: queuing them below can flush
-  // a batch straight away.
-  aChild->SendUpdateDatagramQueueParams(mOutgoingMaxBufferedDatagrams,
-                                        mOutgoingMaxAge);
+  // The parent must know outgoingMaxAge before it sees any pre-connect
+  // datagram: queuing them below can flush a batch straight away.
+  aChild->SendUpdateDatagramQueueParams(
+      mOutgoingMaxBufferedDatagrams,
+      mOutgoingMaxAge.IsNull() ? NAN : mOutgoingMaxAge.Value());
   mOutgoingAlgorithms->SetChild(aChild);
   for (auto& writable : mCreatedWritables) {
     writable->SetChild(aChild);
@@ -128,21 +127,30 @@ void WebTransportDatagramDuplexStream::SetIncomingMaxAge(
   mIncomingMaxAge = value;
 }
 
-void WebTransportDatagramDuplexStream::SetOutgoingMaxAge(double aMaxAge,
-                                                         ErrorResult& aRv) {
+void WebTransportDatagramDuplexStream::SetOutgoingMaxAge(
+    const Nullable<double>& aMaxAge, ErrorResult& aRv) {
   // https://w3c.github.io/webtransport/#dom-webtransportdatagramduplexstream-outgoingmaxage
-  // Step 1: If value is negative, 0, or NaN, throw a RangeError.
-  if (isnan(aMaxAge) || aMaxAge <= 0.) {
-    aRv.ThrowRangeError("Invalid OutgoingMaxAge");
-    return;
+  Nullable<double> value = aMaxAge;
+  if (!value.IsNull()) {
+    // Step 1
+    if (isnan(value.Value()) || value.Value() < 0.) {
+      aRv.ThrowRangeError("Invalid OutgoingMaxAge");
+      return;
+    }
+    // Step 2
+    if (value.Value() == 0.) {
+      value.SetNull();
+    }
   }
-  // Step 2: Set this.[[OutgoingDatagramsExpirationDuration]] to value.
-  mOutgoingMaxAge = aMaxAge;
+  // Step 3
+  mOutgoingMaxAge = value;
 
   // Keep the new params ordered after datagrams already written.
   FlushOutgoingDatagrams();
-  mOutgoingAlgorithms->UpdateQueueParams(mOutgoingMaxBufferedDatagrams,
-                                         mOutgoingMaxAge);
+  // NaN tells the parent outgoingMaxAge is null; the setter rejects a real NaN.
+  mOutgoingAlgorithms->UpdateQueueParams(
+      mOutgoingMaxBufferedDatagrams,
+      mOutgoingMaxAge.IsNull() ? NAN : mOutgoingMaxAge.Value());
 }
 
 void WebTransportDatagramDuplexStream::SetIncomingMaxBufferedDatagrams(
@@ -164,8 +172,9 @@ void WebTransportDatagramDuplexStream::SetOutgoingMaxBufferedDatagrams(
 
   // Send updated parameters to parent/neqo
   FlushOutgoingDatagrams();
-  mOutgoingAlgorithms->UpdateQueueParams(mOutgoingMaxBufferedDatagrams,
-                                         mOutgoingMaxAge);
+  mOutgoingAlgorithms->UpdateQueueParams(
+      mOutgoingMaxBufferedDatagrams,
+      mOutgoingMaxAge.IsNull() ? NAN : mOutgoingMaxAge.Value());
 }
 
 already_AddRefed<WebTransportDatagramsWritable>
