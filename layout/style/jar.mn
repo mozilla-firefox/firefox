@@ -13,6 +13,7 @@ toolkit.jar:
    res/accessiblecaret.css                   (res/accessiblecaret.css)
    res/details.css                           (res/details.css)
    res/select.css                            (res/select.css)
+   res/optgroup.css                          (res/optgroup.css)
  #ifdef ANDROID
    res/accessiblecaret-normal.svg            (res/accessiblecaret-normal.svg)
    res/accessiblecaret-tilt-left.svg         (res/accessiblecaret-tilt-left.svg)

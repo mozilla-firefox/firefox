@@ -387,9 +387,13 @@ optgroup option {
   font-weight: normal;
 }
 
-optgroup[label]::before {
+optgroup::-moz-optgroup-label {
+  display: none;
+}
+
+optgroup[label]::-moz-optgroup-label {
   display: block;
-  content: "\200b" attr(label);
+  min-block-size: 1lh;
 }
 
 @media (-moz-platform: android) {
@@ -638,14 +642,14 @@ input[type="file"] {
  *  which is a (direct or indirect) child of the text control.
  *
  * <select>:
- *  inherit into the label and the <optgroup>'s ':before' pseudo-element,
- *  which is where the label of the <optgroup> gets displayed. The <option>s
- *  don't use anonymous boxes, so they need no special rules.
+ *  inherit into the label and the <optgroup>'s '::-moz-optgroup-label'
+ *  pseudo-element, which is where the label of the <optgroup> gets displayed.
+ *  The <option>s don't use anonymous boxes, so they need no special rules.
  */
 ::placeholder,
 ::-moz-text-control-editing-root,
 ::-moz-select-content,
-optgroup::before {
+::-moz-optgroup-label {
   unicode-bidi: inherit;
   text-overflow: inherit;
 }
@@ -1065,9 +1069,9 @@ textarea:autofill {
     }
 
     /* The spec renders the label attribute in an anonymous label element,
-     * which is what optgroup::before is for us. */
+     * which is what ::-moz-optgroup-label is for us. */
     select optgroup legend,
-    select optgroup::before {
+    select optgroup::-moz-optgroup-label {
       padding-inline: 0.5em;
       min-block-size: 1lh;
     }

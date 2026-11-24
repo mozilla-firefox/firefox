@@ -1074,6 +1074,7 @@ class StyleSheetsManager extends EventEmitter {
     if (
       href === "resource://gre-resources/accessiblecaret.css" ||
       href === "resource://gre-resources/details.css" ||
+      href === "resource://gre-resources/optgroup.css" ||
       (href === "resource://devtools-highlighter-styles/highlighters.css" &&
         this.#targetActor.sessionContext.type !== "all")
     ) {

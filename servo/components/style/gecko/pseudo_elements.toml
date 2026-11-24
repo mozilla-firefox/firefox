@@ -99,6 +99,10 @@ enabled_in = "chrome"
 [-moz-select-content]
 enabled_in = "chrome"
 is_element_backed = true
+# The label of an <optgroup>
+[-moz-optgroup-label]
+enabled_in = "chrome"
+is_element_backed = true
 # The menulist button of a <select>
 [picker-icon]
 enabled_in = "chrome"
