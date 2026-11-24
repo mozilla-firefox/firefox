@@ -9,6 +9,7 @@ from mozboot.android import (
     AndroidPackageInstallError,
     ensure_android_packages,
     ensure_gradle_jdk_installations,
+    get_android_cli_path,
 )
 
 KEY = "org.gradle.java.installations.paths"
@@ -150,8 +151,23 @@ def android_cli(tmp_path, monkeypatch):
 
     monkeypatch.setattr("mozboot.android.get_sdk_path", lambda os_name: tmp_path)
     monkeypatch.setattr("mozboot.android.subprocess.check_call", check_call)
+    monkeypatch.setattr("mozboot.android.subprocess.call", lambda args: 0)
     monkeypatch.delenv("REPO_OS_OVERRIDE", raising=False)
     return calls
+
+
+def test_install_updates_cli_first(android_cli, monkeypatch, tmp_path):
+    updates = []
+
+    def call(args):
+        assert not android_cli
+        updates.append(args)
+        return 0xC0000409
+
+    monkeypatch.setattr("mozboot.android.subprocess.call", call)
+    ensure_android_packages("linux", set(PACKAGES))
+    assert updates == [[str(get_android_cli_path(tmp_path)), "--no-metrics", "update"]]
+    assert len(android_cli) == 1
 
 
 def test_install_without_platform_override(android_cli, tmp_path):

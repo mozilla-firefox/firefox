@@ -637,12 +637,8 @@ def ensure_android_packages(
         packages = get_android_packages(AndroidPackageList.ALL)
 
     sdk_path = get_sdk_path(os_name)
-    android_cli = [
-        str(get_android_cli_path(sdk_path)),
-        "--no-metrics",
-        f"--sdk={sdk_path}",
-        "sdk",
-    ]
+    android = [str(get_android_cli_path(sdk_path)), "--no-metrics"]
+    android_cli = [*android, f"--sdk={sdk_path}", "sdk"]
 
     if avd_manifest is not None:
         packages.add(avd_manifest["emulator_package"])
@@ -652,6 +648,8 @@ def ensure_android_packages(
     sys.stderr.flush()
     repo_os = os.environ.get("REPO_OS_OVERRIDE")
     platform = [f"--platform={repo_os}"] if repo_os else []
+    # Android CLI 1.0.16406183 exits 0xC0000409 on Windows after a successful update.
+    subprocess.call([*android, "update"])
     subprocess.check_call(
         android_cli + ["install", "--force"] + platform + list(packages)
     )
