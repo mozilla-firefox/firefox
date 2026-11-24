@@ -16,8 +16,11 @@
 
 #include "wasm/WasmModuleTypes.h"
 
+#include "mozilla/DebugOnly.h"
+
 #include <bit>
 
+#include "js/CharacterEncoding.h"
 #include "vm/JSAtomUtils.h"  // AtomizeUTF8Chars
 #include "vm/MallocProvider.h"
 #include "wasm/WasmUtility.h"
@@ -94,14 +97,6 @@ class TagLayout {
 //=========================================================================
 
 /* static */
-CacheableName CacheableName::fromUTF8Chars(UniqueChars&& utf8Chars) {
-  size_t length = strlen(utf8Chars.get());
-  UTF8Bytes bytes;
-  bytes.replaceRawBuffer(utf8Chars.release(), length, length + 1);
-  return CacheableName(std::move(bytes));
-}
-
-/* static */
 bool CacheableName::fromUTF8Chars(const char* utf8Chars, CacheableName* name) {
   size_t utf8CharsLen = strlen(utf8Chars);
   UTF8Bytes bytes;
@@ -120,6 +115,20 @@ bool CacheableName::fromUTF8Bytes(mozilla::Span<const char> utf8Bytes,
   if (!bytes.append(utf8Bytes.data(), utf8Bytes.Length())) {
     return false;
   }
+  *name = CacheableName(std::move(bytes));
+  return true;
+}
+
+/* static */
+bool CacheableName::fromLinearString(JSLinearString* str, CacheableName* name) {
+  size_t length = JS::GetDeflatedUTF8StringLength(str);
+  UTF8Bytes bytes;
+  if (!bytes.resizeUninitialized(length)) {
+    return false;
+  }
+  mozilla::DebugOnly<size_t> written =
+      JS::DeflateStringToUTF8Buffer(str, mozilla::Span(bytes.begin(), length));
+  MOZ_ASSERT(written == length);
   *name = CacheableName(std::move(bytes));
   return true;
 }

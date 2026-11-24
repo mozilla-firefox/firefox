@@ -1143,14 +1143,15 @@ bool js::WasmModuleExecute(JSContext* cx, Handle<ModuleObject*> record) {
         }
       }
 
-      UniqueChars resolvedNameChars =
-          StringToNewUTF8CharsZ(cx, *resolvedBinding->bindingName());
-      if (!resolvedNameChars) {
+      CacheableName resolvedNameUTF8;
+      if (!CacheableName::fromLinearString(resolvedBinding->bindingName(),
+                                           &resolvedNameUTF8)) {
+        ReportOutOfMemory(cx);
         return false;
       }
       Maybe<const CoreExternType&> externType =
           resolvedModuleType->value()->instanceType()->getExport(
-              CacheableName::fromUTF8Chars(std::move(resolvedNameChars)));
+              resolvedNameUTF8);
       MOZ_ASSERT(externType);
 
       // Step 9.7.9. Let externtype be the value of type for the element
