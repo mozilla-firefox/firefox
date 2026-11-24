@@ -526,10 +526,6 @@ criteria = "safe-to-deploy"
 version = "1.3.3"
 criteria = "safe-to-deploy"
 
-[[exemptions.cookie]]
-version = "0.16.0"
-criteria = "safe-to-run"
-
 [[exemptions.coreaudio-sys]]
 version = "0.2.10"
 criteria = "safe-to-deploy"

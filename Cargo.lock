@@ -1144,16 +1144,6 @@ dependencies = [
 ]
 
 [[package]]
-name = "cookie"
-version = "0.16.2"
-source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "e859cd57d0710d9e06c381b550c06e76992472a8c6d527aecd2fc673dcc231fb"
-dependencies = [
- "time",
- "version_check",
-]
-
-[[package]]
 name = "core-foundation"
 version = "0.9.999"
 dependencies = [
@@ -9159,7 +9149,6 @@ version = "0.54.0"
 dependencies = [
  "base64 0.22.1",
  "bytes",
- "cookie",
  "http",
  "icu_segmenter",
  "log",

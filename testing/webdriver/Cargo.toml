@@ -24,7 +24,6 @@ server = ["tokio", "warp"]
 [dependencies]
 base64 = "0.22"
 bytes = "1.0"
-cookie = { version = "0.16", default-features = false }
 http = "1.4"
 icu_segmenter = { version = "2.0", default-features = false, features = ["auto", "compiled_data"] }
 log = "0.4"
