@@ -679,9 +679,6 @@ android-em-arm64-benchmark-tests:
 android-hw-speedometer3-nightlyasrelease:
     - browsertime-benchmark-speedometer3-mobile
 
-android-hw-speedometer3-a11y:
-    - browsertime-benchmark-speedometer3-a11y-mobile
-
 android-hw-nav-bench-nightlyasrelease:
     - browsertime-nav-bench-m
 
