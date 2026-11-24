@@ -54,10 +54,6 @@ data class Wallpaper(
     )
 
     companion object {
-        const val AMETHYST = "amethyst"
-        const val CERULEAN = "cerulean"
-        const val SUNRISE = "sunrise"
-        const val BEACH_VIBE = "beach-vibe"
         const val FIREFOX_COLLECTION = "firefox"
         const val SOLID = "solid"
         const val GRADIENT = "gradient"
@@ -125,16 +121,6 @@ data class Wallpaper(
                 thumbnailFileState = ImageFileState.Downloaded,
                 assetsFileState = ImageFileState.Downloaded,
             )
-
-        /**
-         * Defines the standard path at which a wallpaper resource is kept on disk.
-         *
-         * @param orientation One of landscape/portrait.
-         * @param theme One of dark/light.
-         * @param name The name of the wallpaper.
-         */
-        fun legacyGetLocalPath(orientation: String, theme: String, name: String): String =
-            "wallpapers/$orientation/$theme/$name.png"
 
         /**
          * Defines the standard path at which a wallpaper resource is kept on disk.
