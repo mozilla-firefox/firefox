@@ -1095,16 +1095,6 @@
     <string name="preferences_manage_account_summary">Change your password, manage data collection, or delete your account</string>
     <!-- Preference for triggering sync -->
     <string name="preferences_sync_now">Sync now</string>
-    <!-- Sync preferences - Title of the error message displayed if syncing fails -->
-    <string name="account_sync_error_title">Couldn’t sync your data</string>
-    <!-- Sync preferences - Title of the error message displayed if syncing fails because the user needs to re-authenticate -->
-    <string name="account_error_title">Account error. Please sign in again to resume sync.</string>
-    <!-- Sync preferences - Body of the sync error message. %1$s is the date of the last successful sync. -->
-    <string name="account_error_last_sync">Last sync: %1$s</string>
-    <!-- Sync preferences - Body of the sync error message. Displayed after "Last sync:" (account_error_last_sync) instead of a date, when the account has never successfully synced in the past. -->
-    <string name="account_error_never_synced">never</string>
-    <!-- Sync preferences - Link button in the sync error message. Clicking it retries syncing. -->
-    <string name="account_sync_error_retry">Retry</string>
     <!-- Preference category for sync -->
     <string name="preferences_sync_category">Choose what to sync</string>
     <!-- Preference category for sync controls -->

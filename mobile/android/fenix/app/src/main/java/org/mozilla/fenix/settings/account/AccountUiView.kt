@@ -29,8 +29,6 @@ class AccountUiView(
     private val preferenceFirefoxAccount = fragment.requirePreference<AccountPreference>(R.string.pref_key_account)
     private val preferenceFirefoxAccountAuthError =
         fragment.requirePreference<AccountAuthErrorPreference>(R.string.pref_key_account_auth_error)
-    private val accountErrorCard =
-        fragment.requirePreference<AccountErrorPreference>(R.string.pref_key_account_error_card_auth)
     private val accountPreferenceCategory =
         fragment.requirePreference<PreferenceCategory>(R.string.pref_key_account_category)
     private val accountPreferenceUpdater =
@@ -46,13 +44,9 @@ class AccountUiView(
      */
     fun updateAccountUIState(context: Context, profile: Profile?) {
         val account = accountManager.authenticatedAccount()
-        val needsReauth = accountManager.accountNeedsReauth()
-        val newUiEnabled = context.components.settings.accountSettingsNewUi
-        val accountIsHealthy = account != null && !needsReauth
-        val showAccountErrorCard = newUiEnabled && account != null && needsReauth
 
-        // Signed-in or showing an authentication error in the new UI.
-        if (accountIsHealthy || showAccountErrorCard) {
+        // Signed-in, no problems.
+        if (account != null && !accountManager.accountNeedsReauth()) {
             preferenceSignIn.isVisible = false
             preferenceSignInPromo.isVisible = false
 
@@ -60,15 +54,13 @@ class AccountUiView(
 
             preferenceSignIn.onPreferenceClickListener = null
             preferenceFirefoxAccountAuthError.isVisible = false
-            accountErrorCard.isVisible = needsReauth
             preferenceFirefoxAccount.isVisible = true
             accountPreferenceCategory.isVisible = true
 
             // Signed-in, need to re-authenticate.
-        } else if (account != null && needsReauth) {
+        } else if (account != null && accountManager.accountNeedsReauth()) {
             preferenceFirefoxAccount.isVisible = false
             preferenceFirefoxAccountAuthError.isVisible = true
-            accountErrorCard.isVisible = false
             accountPreferenceCategory.isVisible = true
 
             preferenceSignIn.isVisible = false
@@ -91,7 +83,6 @@ class AccountUiView(
             preferenceSignInPromo.isVisible = false
             preferenceFirefoxAccount.isVisible = false
             preferenceFirefoxAccountAuthError.isVisible = false
-            accountErrorCard.isVisible = false
             accountPreferenceCategory.isVisible = false
         }
     }
