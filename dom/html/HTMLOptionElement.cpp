@@ -229,6 +229,16 @@ void HTMLOptionElement::AfterSetAttr(int32_t aNameSpaceID, nsAtom* aName,
       aNameSpaceID, aName, aValue, aOldValue, aSubjectPrincipal, aNotify);
 }
 
+void HTMLOptionElement::GetRenderedLabel(nsAString& aLabel, AltText aAltText) {
+  if (!GetAttr(nsGkAtoms::label, aLabel) || aLabel.IsEmpty()) {
+    nsContentUtils::GetHTMLAwareTextContent(*this, aAltText, aLabel);
+  }
+}
+
+void HTMLOptionElement::GetRenderedLabelForBindings(nsAString& aLabel) {
+  GetRenderedLabel(aLabel, AltText::Include);
+}
+
 void HTMLOptionElement::GetText(nsAString& aText) {
   nsContentUtils::GetHTMLAwareTextContent(*this, AltText::Exclude, aText);
 }
