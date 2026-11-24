@@ -83,10 +83,22 @@ impl InheritFunction {
         name: &CustomPropertyName,
     ) -> (&'b PropertyDescriptors, Option<&'b ComputedRegisteredValue>) {
         let registration = context.stylist.get_custom_property_registration(&name.0);
-        let parent_value = context
-            .computed_context
-            .inherited_custom_properties()
-            .get(registration, &name.0);
+        // The root element's inherited value is the property's initial value.
+        // <https://drafts.csswg.org/css-cascade-5/#inherited-value>
+        //
+        // TODO(Bug 2097268) - Make the inherited custom properties map for the
+        // root element just hold the right initial values by default.
+        let parent_value = if context.computed_context.is_root_element() {
+            context
+                .stylist
+                .get_custom_property_initial_values()
+                .get(registration, &name.0)
+        } else {
+            context
+                .computed_context
+                .inherited_custom_properties()
+                .get(registration, &name.0)
+        };
         (registration, parent_value)
     }
 
