@@ -35,8 +35,7 @@ void nsHtml5StreamListener::DropDelegateImpl() {
   mozilla::ReentrantMonitorAutoEnter autoEnter(mDelegateMonitor);
   if (mDelegate) {
     nsCOMPtr<nsIRunnable> releaser = new nsHtml5StreamParserReleaser(mDelegate);
-    if (NS_FAILED(((nsHtml5StreamParser*)mDelegate)
-                      ->DispatchToMain(releaser.forget()))) {
+    if (NS_FAILED(mDelegate.load()->DispatchToMain(releaser.forget()))) {
       NS_WARNING("Failed to dispatch releaser event.");
     }
     mDelegate = nullptr;
@@ -66,7 +65,7 @@ nsHtml5StreamListener::OnStartRequest(nsIRequest* aRequest) {
   if (MOZ_UNLIKELY(!mDelegate)) {
     return NS_ERROR_NOT_AVAILABLE;
   }
-  return ((nsHtml5StreamParser*)mDelegate)->OnStartRequest(aRequest);
+  return mDelegate.load()->OnStartRequest(aRequest);
 }
 
 NS_IMETHODIMP
@@ -75,8 +74,7 @@ nsHtml5StreamListener::OnStopRequest(nsIRequest* aRequest, nsresult aStatus) {
   if (MOZ_UNLIKELY(!mDelegate)) {
     return NS_ERROR_NOT_AVAILABLE;
   }
-  return ((nsHtml5StreamParser*)mDelegate)
-      ->OnStopRequest(aRequest, aStatus, autoEnter);
+  return mDelegate.load()->OnStopRequest(aRequest, aStatus, autoEnter);
 }
 
 NS_IMETHODIMP
@@ -88,8 +86,8 @@ nsHtml5StreamListener::OnDataAvailable(nsIRequest* aRequest,
   if (MOZ_UNLIKELY(!mDelegate)) {
     return NS_ERROR_NOT_AVAILABLE;
   }
-  return ((nsHtml5StreamParser*)mDelegate)
-      ->OnDataAvailable(aRequest, aInStream, aSourceOffset, aLength);
+  return mDelegate.load()->OnDataAvailable(aRequest, aInStream, aSourceOffset,
+                                           aLength);
 }
 
 NS_IMETHODIMP
@@ -100,6 +98,5 @@ nsHtml5StreamListener::OnDataFinished(nsresult aStatus) {
     return NS_ERROR_NOT_AVAILABLE;
   }
 
-  return ((nsHtml5StreamParser*)mDelegate)
-      ->OnStopRequest(nullptr, aStatus, autoEnter);
+  return mDelegate.load()->OnStopRequest(nullptr, aStatus, autoEnter);
 }
