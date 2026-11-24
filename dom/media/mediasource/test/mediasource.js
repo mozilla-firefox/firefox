@@ -50,6 +50,7 @@ async function runWithMSE(testFunction) {
     await testFunction(ms, el);
   } catch (e) {
     ok(false, `${testFunction.name} failed with error ${e.name}`);
+    SimpleTest.finish();
     throw e;
   }
 }
