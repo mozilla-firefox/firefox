@@ -271,6 +271,7 @@ export interface Modules {
   "moz-src:///browser/components/aboutlogins/AboutLoginsParent.sys.mjs": typeof import("moz-src:///browser/components/aboutlogins/AboutLoginsParent.sys.mjs"),
   "moz-src:///browser/components/aboutlogins/ChangePasswordURLs.sys.mjs": typeof import("moz-src:///browser/components/aboutlogins/ChangePasswordURLs.sys.mjs"),
   "moz-src:///browser/components/aboutlogins/LoginBreaches.sys.mjs": typeof import("moz-src:///browser/components/aboutlogins/LoginBreaches.sys.mjs"),
+  "moz-src:///browser/components/ai/driver/BrowserAIDriver.sys.mjs": typeof import("moz-src:///browser/components/ai/driver/BrowserAIDriver.sys.mjs"),
   "moz-src:///browser/components/aiwindow/models/AuthProvider.sys.mjs": typeof import("moz-src:///browser/components/aiwindow/models/AuthProvider.sys.mjs"),
   "moz-src:///browser/components/aiwindow/models/Chat.sys.mjs": typeof import("moz-src:///browser/components/aiwindow/models/Chat.sys.mjs"),
   "moz-src:///browser/components/aiwindow/models/ChatUtils.sys.mjs": typeof import("moz-src:///browser/components/aiwindow/models/ChatUtils.sys.mjs"),
