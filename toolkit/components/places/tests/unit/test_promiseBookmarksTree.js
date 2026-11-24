@@ -208,7 +208,7 @@ async function test_promiseBookmarksTreeForEachNode(
     if (child.itemId != PlacesUtils.tagsFolderId) {
       await test_promiseBookmarksTreeForEachNode(
         child,
-        { includeItemIds: true },
+        { includeItemIds: true, includeIcons: true },
         aExcludedGuids
       );
     }
@@ -218,7 +218,7 @@ async function test_promiseBookmarksTreeForEachNode(
 
 async function test_promiseBookmarksTreeAgainstResult(
   aItemGuid = PlacesUtils.bookmarks.rootGuid,
-  aOptions = { includeItemIds: true },
+  aOptions = { includeItemIds: true, includeIcons: true },
   aExcludedGuids
 ) {
   let node = PlacesUtils.getFolderContents(aItemGuid).root;
@@ -280,9 +280,25 @@ add_task(async function () {
         return aItem.root == "bookmarksMenuFolder";
       },
       includeItemIds: true,
+      includeIcons: true,
     },
     [PlacesUtils.bookmarks.menuGuid]
   );
   Assert.equal(guidsPassedToExcludeCallback.size, 5);
   Assert.equal(placesRootWithoutTheMenu.children.length, 3);
+
+  let findIconBookmark = tree =>
+    tree.children.find(c => c.uri == urlWithCharsetAndFavicon.spec);
+  let tree = await PlacesUtils.promiseBookmarksTree(folderGuid);
+  Assert.ok(
+    !("iconUri" in findIconBookmark(tree)),
+    "Icons are not fetched by default"
+  );
+  tree = await PlacesUtils.promiseBookmarksTree(folderGuid, {
+    includeIcons: true,
+  });
+  Assert.ok(
+    "iconUri" in findIconBookmark(tree),
+    "Icons are fetched when requested"
+  );
 });

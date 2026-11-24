@@ -1679,6 +1679,9 @@ export var PlacesUtils = {
    * @param {any} [aOptions.includeItemIds]
    *   Opt-in to include the deprecated id property.
    *   Use it if you must. It'll be removed once the switch to GUIDs is complete.
+   * @param {boolean} [aOptions.includeIcons]
+   *   Opt-in to include the iconUri property, as looking up favicons is
+   *   expensive for large trees.
    *
    * @returns {Promise}
    *   Resolves to a JS object that represents either a single item or a
@@ -1714,7 +1717,8 @@ export var PlacesUtils = {
    *  - charset (string): the last known charset of the bookmark.
    *  - keyword (string): the bookmark's keyword (unset if none).
    *  - postData (string): the bookmark's keyword postData (unset if none).
-   *  - iconUri (string): the bookmark's favicon url.
+   *  - iconUri (string): the bookmark's favicon url, only if
+   *    aOptions.includeIcons is set.
    * The last four properties are not set at all if they're irrelevant (e.g.
    * |charset| is not set if no charset was previously set for the bookmark
    * url).
@@ -1829,18 +1833,21 @@ export var PlacesUtils = {
        )
        SELECT d.level, d.id, d.guid, d.parent, d.parentGuid, d.type,
               d.position AS [index], IFNULL(d.title, '') AS title, d.dateAdded,
-              d.lastModified, h.url, (SELECT icon_url FROM moz_icons i
+              d.lastModified, h.url, ${
+                aOptions.includeIcons
+                  ? `(SELECT icon_url FROM moz_icons i
                       JOIN moz_icons_to_pages ON icon_id = i.id
                       JOIN moz_pages_w_icons pi ON page_id = pi.id
-                      WHERE pi.page_url_hash = hash(h.url) AND pi.page_url = h.url
-                      ORDER BY (flags & ${Ci.nsIFaviconService.ICONDATA_FLAGS_RICH}) ASC, width DESC LIMIT 1) AS iconUri,
+                      WHERE pi.page_url_hash = h.url_hash AND pi.page_url = h.url
+                      ORDER BY (flags & ${Ci.nsIFaviconService.ICONDATA_FLAGS_RICH}) ASC, width DESC, i.id DESC LIMIT 1)`
+                  : "NULL"
+              } AS iconUri,
               (SELECT tags FROM tagged WHERE place_id = h.id) AS tags,
               (SELECT a.content FROM moz_annos a
                JOIN moz_anno_attributes n ON a.anno_attribute_id = n.id
                WHERE place_id = h.id AND n.name = :charset_anno
               ) AS charset
        FROM descendants d
-       LEFT JOIN moz_bookmarks b3 ON b3.id = d.parent
        LEFT JOIN moz_places h ON h.id = d.fk
        ORDER BY d.level, d.parent, d.position`;
 

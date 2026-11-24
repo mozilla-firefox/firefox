@@ -1282,12 +1282,8 @@ export class SidebarBookmarks extends SidebarPage {
     guidToL10nId,
     shortcutTargets = new Set()
   ) {
-    if (node.iconUri && !node.iconUri.startsWith("fake-favicon-uri:")) {
-      node.icon = node.iconUri;
-    } else if (node.uri) {
-      node.icon = `page-icon:${node.uri}`;
-    }
     if (node.uri) {
+      node.icon = `page-icon:${node.uri}`;
       node.url = node.uri;
     }
     if (node.type === lazy.PlacesUtils.TYPE_X_MOZ_PLACE_CONTAINER) {

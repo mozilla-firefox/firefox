@@ -544,6 +544,7 @@ export var PlacesBackups = {
       lazy.PlacesUtils.bookmarks.rootGuid,
       {
         includeItemIds: true,
+        includeIcons: true,
       }
     );
 
