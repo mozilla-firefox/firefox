@@ -1185,10 +1185,16 @@ void ScrollContainerFrame::PlaceScrollArea(ScrollReflowInput& aState,
     }
     AdjustForPerspective(aState.mContentsOverflowAreas.ScrollableOverflow());
   }
+  StoreScrolledFrameOverflow(
+      aState.mContentsOverflowAreas.ScrollableOverflow());
+}
+
+void ScrollContainerFrame::StoreScrolledFrameOverflow(
+    const nsRect& aScrollableOverflow) {
   // Preserve the width or height of empty rects
   const nsSize portSize = ScrollPort().Size();
-  nsRect scrolledRect = GetUnsnappedScrolledRectInternal(
-      aState.mContentsOverflowAreas.ScrollableOverflow(), portSize);
+  nsRect scrolledRect =
+      GetUnsnappedScrolledRectInternal(aScrollableOverflow, portSize);
   nsRect scrolledArea = scrolledRect.UnionEdges(nsRect(nsPoint(), portSize));
   // Store the new overflow area. Note that this changes where an outline
   // of the scrolled frame would be painted, but scrolled frames can't have
@@ -6632,6 +6638,15 @@ void ScrollContainerFrame::ReflowCallbackCanceled() {
 bool ScrollContainerFrame::ComputeCustomOverflow(
     OverflowAreas& aOverflowAreas) {
   ScrollStyles ss = GetScrollStyles();
+
+  if (ChildrenHavePerspective()) {
+    // The scrolled frame's overflow was just recomputed without taking
+    // perspective into account, which makes the scrollable overflow depend on
+    // the scroll position.
+    nsRect scrollableOverflow;
+    AdjustForPerspective(scrollableOverflow);
+    StoreScrolledFrameOverflow(scrollableOverflow);
+  }
 
   // Reflow when the change in overflow leads to one of our scrollbars
   // changing or might require repositioning the scrolled content due to

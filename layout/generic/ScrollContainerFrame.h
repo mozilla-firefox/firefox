@@ -141,6 +141,10 @@ class ScrollContainerFrame : public nsContainerFrame,
   // at different rates.
   void AdjustForPerspective(nsRect& aScrollableOverflow);
 
+  // Stores the overflow areas of the scrolled frame, given its scrollable
+  // overflow.
+  void StoreScrolledFrameOverflow(const nsRect& aScrollableOverflow);
+
   // Called to set the child frames. We typically have three: the scroll area,
   // the vertical scrollbar, and the horizontal scrollbar.
   void SetInitialChildList(ChildListID aListID,
