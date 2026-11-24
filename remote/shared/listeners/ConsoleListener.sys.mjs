@@ -109,6 +109,12 @@ export class ConsoleListener {
       return;
     }
 
+    if (message.innerWindowID !== this.#innerWindowId) {
+      // If the message doesn't match the innerWindowId of the current context
+      // ignore it.
+      return;
+    }
+
     // Bail if this message was already emitted, useful to filter out cached
     // messages already received by the consumer.
     if (this.#emittedMessages.has(message)) {
@@ -116,12 +122,6 @@ export class ConsoleListener {
     }
 
     this.#emittedMessages.add(message);
-
-    if (message.innerWindowID !== this.#innerWindowId) {
-      // If the message doesn't match the innerWindowId of the current context
-      // ignore it.
-      return;
-    }
 
     const { errorFlag, warningFlag, infoFlag } = Ci.nsIScriptError;
     let level;

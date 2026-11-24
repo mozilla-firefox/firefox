@@ -106,6 +106,12 @@ export class ConsoleAPIListener {
   #onConsoleAPIMessage = message => {
     const messageObject = message.wrappedJSObject;
 
+    if (messageObject.innerID !== this.#innerWindowId) {
+      // If the message doesn't match the innerWindowId of the current context
+      // ignore it.
+      return;
+    }
+
     // Bail if this message was already emitted, useful to filter out cached
     // messages already received by the consumer.
     if (this.#emittedMessages.has(messageObject)) {
@@ -113,12 +119,6 @@ export class ConsoleAPIListener {
     }
 
     this.#emittedMessages.add(messageObject);
-
-    if (messageObject.innerID !== this.#innerWindowId) {
-      // If the message doesn't match the innerWindowId of the current context
-      // ignore it.
-      return;
-    }
 
     this.emit("message", {
       arguments: messageObject.arguments,

@@ -63,6 +63,85 @@ add_task(async function test_stacktrace() {
   await clearConsole();
 });
 
+add_task(async function test_messages_from_other_windows_not_retained() {
+  const tab = addTab(
+    gBrowser,
+    "https://example.com/document-builder.sjs?html=test"
+  );
+  await BrowserTestUtils.browserLoaded(tab.linkedBrowser);
+
+  await SpecialPowers.spawn(tab.linkedBrowser, [], async () => {
+    const { ConsoleListener } = ChromeUtils.importESModule(
+      "chrome://remote/content/shared/listeners/ConsoleListener.sys.mjs"
+    );
+    const listener = new ConsoleListener(
+      content.windowGlobalChild.innerWindowId
+    );
+    listener.startListening();
+
+    const iframe = content.document.createElement("iframe");
+    const onLoad = new Promise(resolve =>
+      iframe.addEventListener("load", resolve, { once: true })
+    );
+    iframe.srcdoc = "<div>frame</div>";
+    content.document.body.append(iframe);
+    await onLoad;
+
+    const frameWindowId = iframe.contentWindow.windowGlobalChild.innerWindowId;
+    const onFrameError = new Promise(resolve => {
+      const onMessage = message => {
+        if (
+          message instanceof Ci.nsIScriptError &&
+          message.innerWindowID === frameWindowId
+        ) {
+          Services.console.unregisterListener(onMessage);
+          resolve();
+        }
+      };
+      Services.console.registerListener(onMessage);
+    });
+
+    const frameDocument = iframe.contentDocument;
+    const script = frameDocument.createElement("script");
+    script.append(
+      frameDocument.createTextNode(`(() => { throw new Error("foo"); })()`)
+    );
+    frameDocument.body.append(script);
+    await onFrameError;
+
+    content.backup = {
+      listener,
+      frameDocumentRef: Cu.getWeakReference(frameDocument),
+    };
+    iframe.remove();
+  });
+
+  // Use a separate task so that local references to the iframe's
+  // document from the previous task no longer keep it alive.
+  await SpecialPowers.spawn(tab.linkedBrowser, [], async () => {
+    for (let i = 0; i < 3; i++) {
+      Cu.forceGC();
+      Cu.forceCC();
+      await new Promise(resolve => Cu.schedulePreciseShrinkingGC(resolve));
+    }
+
+    const { listener, frameDocumentRef } = content.backup;
+    is(
+      frameDocumentRef.get(),
+      null,
+      "Document of the removed iframe has been garbage collected"
+    );
+
+    listener.destroy();
+    delete content.backup;
+  });
+
+  // Clear the console to avoid side effects with other tests in this file.
+  await clearConsole();
+
+  await BrowserTestUtils.removeTab(tab);
+});
+
 function logConsoleMessage(options = {}) {
   info(`Log console message ${options.message}`);
   return SpecialPowers.spawn(gBrowser.selectedBrowser, [options], _options => {

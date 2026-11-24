@@ -100,6 +100,80 @@ add_task(async function test_stacktrace() {
   checkStackFrame(stacktrace[2], "about:blank", "", 4, 5);
 });
 
+add_task(async function test_messages_from_other_windows_not_retained() {
+  const tab = addTab(gBrowser, TEST_PAGE);
+  await BrowserTestUtils.browserLoaded(tab.linkedBrowser);
+
+  await SpecialPowers.spawn(tab.linkedBrowser, [], async () => {
+    const { ConsoleAPIListener } = ChromeUtils.importESModule(
+      "chrome://remote/content/shared/listeners/ConsoleAPIListener.sys.mjs"
+    );
+    const listener = new ConsoleAPIListener(
+      content.windowGlobalChild.innerWindowId
+    );
+    listener.startListening();
+
+    const iframe = content.document.createElement("iframe");
+    const onLoad = new Promise(resolve =>
+      iframe.addEventListener("load", resolve, { once: true })
+    );
+    iframe.srcdoc = "<div>frame</div>";
+    content.document.body.append(iframe);
+    await onLoad;
+
+    const frameWindowId = iframe.contentWindow.windowGlobalChild.innerWindowId;
+    const consoleAPIStorage = Cc[
+      "@mozilla.org/consoleAPI-storage;1"
+    ].getService(Ci.nsIConsoleAPIStorage);
+    const onFrameMessage = new Promise(resolve => {
+      const onMessage = message => {
+        if (message.wrappedJSObject.innerID === frameWindowId) {
+          consoleAPIStorage.removeLogEventListener(onMessage);
+          resolve();
+        }
+      };
+      consoleAPIStorage.addLogEventListener(
+        onMessage,
+        Cc["@mozilla.org/systemprincipal;1"].createInstance(Ci.nsIPrincipal)
+      );
+    });
+
+    const frameDocument = iframe.contentDocument;
+    const script = frameDocument.createElement("script");
+    script.append(frameDocument.createTextNode(`console.log(document);`));
+    frameDocument.body.append(script);
+    await onFrameMessage;
+
+    content.backup = {
+      listener,
+      frameDocumentRef: Cu.getWeakReference(frameDocument),
+    };
+    iframe.remove();
+  });
+
+  // Use a separate task so that local references to the iframe's
+  // document from the previous task no longer keep it alive.
+  await SpecialPowers.spawn(tab.linkedBrowser, [], async () => {
+    for (let i = 0; i < 3; i++) {
+      Cu.forceGC();
+      Cu.forceCC();
+      await new Promise(resolve => Cu.schedulePreciseShrinkingGC(resolve));
+    }
+
+    const { listener, frameDocumentRef } = content.backup;
+    is(
+      frameDocumentRef.get(),
+      null,
+      "Document of the removed iframe has been garbage collected"
+    );
+
+    listener.destroy();
+    delete content.backup;
+  });
+
+  await BrowserTestUtils.removeTab(tab);
+});
+
 function useConsoleInContent(method, args) {
   info(`Call console API: console.${method}("${args.join('", "')}");`);
   return SpecialPowers.spawn(
