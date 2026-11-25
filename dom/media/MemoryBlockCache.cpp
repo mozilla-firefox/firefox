@@ -16,9 +16,9 @@ namespace mozilla {
 
 #undef LOG
 LazyLogModule gMemoryBlockCacheLog("MemoryBlockCache");
-#define LOG(x, ...)                                           \
-  MOZ_LOG_FMT(gMemoryBlockCacheLog, LogLevel::Debug, "{} " x, \
-              fmt::ptr(this), ##__VA_ARGS__)
+#define LOG(x, ...)                                                           \
+  MOZ_LOG_FMT(gMemoryBlockCacheLog, LogLevel::Debug, "{} " x, fmt::ptr(this), \
+              ##__VA_ARGS__)
 
 // Combined sizes of all MemoryBlockCache buffers.
 // Initialized to 0 by non-local static initialization.

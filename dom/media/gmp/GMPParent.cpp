@@ -60,9 +60,9 @@ using CrashReporter::AnnotationTable;
 
 namespace mozilla::gmp {
 
-#define GMP_PARENT_LOG_DEBUG(x, ...)                            \
-  GMP_LOG_DEBUG("GMPParent[{}|childPid={}] " x, fmt::ptr(this), \
-                mChildPid, ##__VA_ARGS__)
+#define GMP_PARENT_LOG_DEBUG(x, ...)                                       \
+  GMP_LOG_DEBUG("GMPParent[{}|childPid={}] " x, fmt::ptr(this), mChildPid, \
+                ##__VA_ARGS__)
 
 #ifdef __CLASS__
 #  undef __CLASS__
