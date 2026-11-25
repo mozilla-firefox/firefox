@@ -43,6 +43,7 @@
 #include "mozilla/dom/FromParser.h"
 #include "mozilla/fallible.h"
 #include "mozilla/gfx/Point.h"
+#include "mozilla/intl/FluentArg.h"
 #include "nsCOMPtr.h"
 #include "nsIContent.h"
 #include "nsIContentPolicy.h"
@@ -281,6 +282,10 @@ enum class PropertiesFile : uint8_t {
 
 namespace mozilla::dom {
 enum JSONBehavior { UndefinedIsNullStringLiteral, UndefinedIsVoidString };
+
+// Fluent resources that can be used to report localized messages from C++.
+enum class FluentResourceFile : uint8_t { DOM, _COUNT };
+
 }  // namespace mozilla::dom
 
 /**
@@ -1415,6 +1420,25 @@ class nsContentUtils {
           mozilla::JSCallingLocation::Get());
 
   /**
+   * Report a message localized with Fluent to the error console.
+   *   @param aErrorFlags See nsIScriptError.
+   *   @param aCategory Name of module reporting error.
+   *   @param aDocument Reference to the document which triggered the message.
+   *   @param aFile Fluent resource containing the localized message.
+   *   @param aL10nId Fluent message identifier.
+   *   @param [aArgs=empty-array] (Optional) Named arguments for the message.
+   *   @param aLocation message location. Pass the empty location to omit it.
+   */
+  static nsresult ReportToConsole(
+      uint32_t aErrorFlags, const nsACString& aCategory,
+      const Document* aDocument, mozilla::dom::FluentResourceFile aFile,
+      const nsACString& aL10nId,
+      const nsTArray<mozilla::intl::FluentArg>& aArgs =
+          nsTArray<mozilla::intl::FluentArg>(),
+      const mozilla::SourceLocation& aLocation =
+          mozilla::JSCallingLocation::Get());
+
+  /**
    * Queue a deprecation report for a deprecated operation, to be delivered
    * through the Reporting API. The localized warning message for the operation
    * is looked up in the DOM properties file.
@@ -1564,6 +1588,15 @@ class nsContentUtils {
   static nsresult FormatMaybeLocalizedString(
       PropertiesFile aFile, const char* aKey, Document* aDocument,
       const nsTArray<nsString>& aParamArray, nsAString& aResult);
+
+  /**
+   * Format the Fluent message |aL10nId| from resource |aFile| synchronously,
+   * using the application locales. Returns an error if the message is missing
+   * or can't be formatted.
+   */
+  static nsresult FormatFluentString(
+      mozilla::dom::FluentResourceFile aFile, const nsACString& aL10nId,
+      const nsTArray<mozilla::intl::FluentArg>& aArgs, nsAString& aResult);
 
   /**
    * Returns true if aDocument is a chrome document

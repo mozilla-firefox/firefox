@@ -1,0 +1,33 @@
+<!DOCTYPE HTML>
+<html>
+<head>
+  <meta charset="utf-8">
+  <title>Test the warning reported when updateCharacterBounds() isn't called in characterboundsupdate.</title>
+  <script src="/tests/SimpleTest/SimpleTest.js"></script>
+  <link rel="stylesheet" href="/tests/SimpleTest/test.css"/>
+</head>
+<body>
+<div></div>
+<script>
+"use strict";
+
+add_task(async function test_character_bounds_warning() {
+  const consoleDone = new Promise(resolve =>
+    SimpleTest.monitorConsole(resolve, [
+      {
+        errorMessage:
+          "EditContext.updateCharacterBounds() was not called synchronously in characterboundsupdate event listener. IME interface may move around unexpectedly for some users. More information: https://developer.mozilla.org/docs/Web/API/EditContext/updateCharacterBounds",
+      },
+    ])
+  );
+  const host = document.querySelector("div");
+  host.editContext = new EditContext();
+  host.editContext.updateText(0, 0, "hello");
+  host.focus();
+  host.blur();
+  SimpleTest.endMonitorConsole();
+  await consoleDone;
+});
+</script>
+</body>
+</html>

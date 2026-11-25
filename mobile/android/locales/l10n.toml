@@ -134,6 +134,10 @@ exclude-multi-locale = [
     l10n = "{l}dom/chrome/dom/dom.properties"
 
 [[paths]]
+    reference = "dom/locales/en-US/dom/*.ftl"
+    l10n = "{l}dom/dom/*.ftl"
+
+[[paths]]
     reference = "toolkit/locales/en-US/toolkit/about/*About.ftl"
     l10n = "{l}toolkit/toolkit/about/*About.ftl"
 

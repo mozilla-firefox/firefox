@@ -903,7 +903,10 @@ void EditContext::FireCharacterBoundsUpdateIfNeeded(IsFromFocus aIsFromFocus) {
     if (!mWarnedAboutUpdateCharacterBoundsNotCalled) {
       nsContentUtils::ReportToConsole(
           nsIScriptError::warningFlag, "DOM"_ns, mText->OwnerDoc(),
-          PropertiesFile::DOM_PROPERTIES, "EditContextCharacterBoundsWarning");
+          FluentResourceFile::DOM,
+          "dom-edit-context-character-bounds-warning"_ns,
+          {{"url"_ns,
+            "https://developer.mozilla.org/docs/Web/API/EditContext/updateCharacterBounds"_ns}});
       mWarnedAboutUpdateCharacterBoundsNotCalled = true;
     }
   };

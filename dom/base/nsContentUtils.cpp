@@ -246,6 +246,7 @@
 #endif
 #include "mozilla/dom/ContentList.h"
 #include "mozilla/intl/LocaleService.h"
+#include "mozilla/intl/Localization.h"
 #include "mozilla/ipc/ProtocolUtils.h"
 #include "mozilla/widget/IMEData.h"
 #include "nsAboutProtocolUtils.h"
@@ -462,6 +463,12 @@ static constexpr size_t kPropertiesFileCount =
     static_cast<size_t>(PropertiesFile::COUNT);
 
 static StaticRefPtr<nsIStringBundle> sStringBundles[kPropertiesFileCount];
+
+static constexpr size_t kFluentResourceFileCount =
+    static_cast<size_t>(FluentResourceFile::_COUNT);
+
+static StaticRefPtr<intl::Localization>
+    sLocalizations[kFluentResourceFileCount];
 
 nsIContentPolicy* nsContentUtils::sContentPolicyService;
 bool nsContentUtils::sTriedToGetContentPolicy = false;
@@ -2424,6 +2431,9 @@ void nsContentUtils::Shutdown() {
   sTriedToGetContentPolicy = false;
   for (StaticRefPtr<nsIStringBundle>& bundle : sStringBundles) {
     bundle = nullptr;
+  }
+  for (StaticRefPtr<intl::Localization>& l10n : sLocalizations) {
+    l10n = nullptr;
   }
 
   NS_IF_RELEASE(sStringBundleService);
@@ -5918,6 +5928,113 @@ nsresult nsContentUtils::FormatLocalizedString(
   return bundle->FormatStringFromName(aKey, aParams, aResult);
 }
 
+// Must line up with the enum values in |FluentResourceFile| enum. Each entry
+// lists the Fluent resources to load, including the ones referenced by the
+// messages, like branding.
+static const char* const gFluentResourceFilePaths[][2] = {
+    {"dom/dom.ftl"},
+};
+static_assert(std::size(gFluentResourceFilePaths) == kFluentResourceFileCount,
+              "gFluentResourceFilePaths must have an entry for each "
+              "FluentResourceFile");
+
+static nsresult FormatFluentStringImpl(FluentResourceFile aFile,
+                                       const nsACString& aL10nId,
+                                       const nsTArray<intl::FluentArg>& aArgs,
+                                       nsAString& aResult);
+
+class FormatFluentStringRunnable final : public WorkerMainThreadRunnable {
+ public:
+  FormatFluentStringRunnable(WorkerPrivate* aWorkerPrivate,
+                             FluentResourceFile aFile,
+                             const nsACString& aL10nId,
+                             const nsTArray<intl::FluentArg>& aArgs,
+                             nsAString& aLocalizedString)
+      : WorkerMainThreadRunnable(aWorkerPrivate,
+                                 "FormatFluentStringRunnable"_ns),
+        mFile(aFile),
+        mL10nId(aL10nId),
+        mArgs(aArgs),
+        mLocalizedString(aLocalizedString) {
+    MOZ_ASSERT(aWorkerPrivate);
+    aWorkerPrivate->AssertIsOnWorkerThread();
+  }
+
+  bool MainThreadRun() override {
+    AssertIsOnMainThread();
+
+    mResult = FormatFluentStringImpl(mFile, mL10nId, mArgs, mLocalizedString);
+    (void)NS_WARN_IF(NS_FAILED(mResult));
+    return true;
+  }
+
+  nsresult GetResult() const { return mResult; }
+
+ private:
+  const FluentResourceFile mFile;
+  const nsACString& mL10nId;
+  const nsTArray<intl::FluentArg>& mArgs;
+  nsresult mResult = NS_ERROR_FAILURE;
+  nsAString& mLocalizedString;
+};
+
+static already_AddRefed<intl::Localization> GetFluentLocalization(
+    FluentResourceFile aFile) {
+  MOZ_ASSERT(NS_IsMainThread());
+  StaticRefPtr<intl::Localization>& cached = sLocalizations[size_t(aFile)];
+  if (!cached) {
+    AutoTArray<nsCString, 2> resIds;
+    for (const char* resId : gFluentResourceFilePaths[size_t(aFile)]) {
+      if (!resId) {
+        break;
+      }
+      resIds.AppendElement(nsDependentCString(resId));
+    }
+    cached = intl::Localization::Create(resIds, true);
+  }
+  return do_AddRef(cached.get());
+}
+
+static nsresult FormatFluentStringImpl(FluentResourceFile aFile,
+                                       const nsACString& aL10nId,
+                                       const nsTArray<intl::FluentArg>& aArgs,
+                                       nsAString& aResult) {
+  if (!NS_IsMainThread()) {
+    // Localization objects are main-thread only.
+    WorkerPrivate* workerPrivate = GetCurrentThreadWorkerPrivate();
+    if (NS_WARN_IF(!workerPrivate)) {
+      return NS_ERROR_UNEXPECTED;
+    }
+
+    auto runnable = MakeRefPtr<FormatFluentStringRunnable>(
+        workerPrivate, aFile, aL10nId, aArgs, aResult);
+
+    runnable->Dispatch(workerPrivate, Canceling, IgnoreErrors());
+    return runnable->GetResult();
+  }
+
+  RefPtr<intl::Localization> l10n = GetFluentLocalization(aFile);
+
+  // A value can be formatted with errors, e.g. after falling back to en-US.
+  // Localization logs those errors and, in automation, also sets them on the
+  // ErrorResult, so only treat a missing value as a failure.
+  nsAutoCString value;
+  value.SetIsVoid(true);
+  l10n->FormatValueSync(aL10nId, aArgs, value, IgnoreErrors());
+  if (value.IsVoid()) {
+    return NS_ERROR_NOT_AVAILABLE;
+  }
+  CopyUTF8toUTF16(value, aResult);
+  return NS_OK;
+}
+
+/* static */
+nsresult nsContentUtils::FormatFluentString(
+    FluentResourceFile aFile, const nsACString& aL10nId,
+    const nsTArray<intl::FluentArg>& aArgs, nsAString& aResult) {
+  return FormatFluentStringImpl(aFile, aL10nId, aArgs, aResult);
+}
+
 /* static */
 void nsContentUtils::LogSimpleConsoleError(const nsAString& aErrorText,
                                            const nsACString& aCategory,
@@ -5955,9 +6072,25 @@ nsresult nsContentUtils::ReportToConsole(
 }
 
 /* static */
+nsresult nsContentUtils::ReportToConsole(uint32_t aErrorFlags,
+                                         const nsACString& aCategory,
+                                         const Document* aDocument,
+                                         FluentResourceFile aFile,
+                                         const nsACString& aL10nId,
+                                         const nsTArray<intl::FluentArg>& aArgs,
+                                         const SourceLocation& aLoc) {
+  nsAutoString errorText;
+  nsresult rv = FormatFluentString(aFile, aL10nId, aArgs, errorText);
+  NS_ENSURE_SUCCESS(rv, rv);
+  return ReportToConsoleNonLocalized(errorText, aErrorFlags, aCategory,
+                                     aDocument, aLoc);
+}
+
+/* static */
 void nsContentUtils::ReportEmptyGetElementByIdArg(const Document* aDoc) {
   ReportToConsole(nsIScriptError::warningFlag, "DOM"_ns, aDoc,
-                  PropertiesFile::DOM_PROPERTIES, "EmptyGetElementByIdParam");
+                  FluentResourceFile::DOM,
+                  "dom-get-element-by-id-empty-param"_ns);
 }
 
 /* static */
