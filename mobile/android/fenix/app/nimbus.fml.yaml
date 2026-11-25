@@ -995,15 +995,6 @@ features:
         value:
           opening_animation_enabled: true
 
-  tab-groups:
-    no-lint: [MISSING_CONTACTS]
-    description: Control the visibility of the tab groups feature.
-    variables:
-      enabled:
-        description: >
-          Whether or not to enable the tab groups feature.
-        type: Boolean
-        default: true
   tab-groups-drag-and-drop:
     no-lint: [MISSING_CONTACTS]
     description: Control the visibility of drag and drop for tab groups.

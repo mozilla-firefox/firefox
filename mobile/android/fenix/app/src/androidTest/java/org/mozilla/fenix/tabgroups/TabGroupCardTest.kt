@@ -46,7 +46,6 @@ class TabGroupCardTest {
     private val tabManagementFeatureHelper =
         object : TabManagementFeatureHelper {
             override val openingAnimationEnabled: Boolean = false
-            override val tabGroupsEnabled: Boolean = true
             override val tabGroupsDragAndDropEnabled: Boolean = false
             override val ungroupTabGroupEnabled: Boolean = true
             override val tabGroupsOnboardingEnabled: Boolean = false
