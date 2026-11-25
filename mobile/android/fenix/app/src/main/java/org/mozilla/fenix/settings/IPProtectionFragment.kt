@@ -10,6 +10,7 @@ import android.view.View
 import android.view.ViewGroup
 import androidx.compose.material3.SnackbarHostState
 import androidx.compose.runtime.LaunchedEffect
+import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.setValue
@@ -43,6 +44,7 @@ import org.mozilla.fenix.ipprotection.helpers.IsoPromoDeadline
 import org.mozilla.fenix.ipprotection.helpers.formatPromoDateOrCatch
 import org.mozilla.fenix.ipprotection.ui.IPProtectionSnackbarBinding
 import org.mozilla.fenix.nimbus.FxNimbus
+import org.mozilla.fenix.settings.ipprotection.IPProtectionMessagingBinding
 import org.mozilla.fenix.snackbar.FenixSnackbarDelegate
 import org.mozilla.fenix.theme.FirefoxTheme
 
@@ -56,6 +58,7 @@ class IPProtectionFragment : Fragment(), SystemInsetsPaddedFragment {
 
     private val ipProtectionWarningBinding = ViewBoundFeatureWrapper<IPProtectionWarningBinding>()
     private val ipProtectionSnackbarBinding = ViewBoundFeatureWrapper<IPProtectionSnackbarBinding>()
+    private val ipProtectionMessagingBinding = ViewBoundFeatureWrapper<IPProtectionMessagingBinding>()
     private val snackbarHostState = SnackbarHostState()
 
     override fun onCreate(savedInstanceState: Bundle?) {
@@ -76,6 +79,9 @@ class IPProtectionFragment : Fragment(), SystemInsetsPaddedFragment {
         // When navigating to the fragment from the vpn onboarding screen, it immediately starts the auth flow.
         // To make the transition smoother, we prevent the fragment from drawing UI in that case.
         if (shouldHideUi(state)) return@content
+
+        val messagingBinding = ipProtectionMessagingBinding.get()
+        val message = messagingBinding?.message?.collectAsState()
 
         val promoDate =
             FxNimbus.features.ipProtection.value().promoDeadline.let { promoDate ->
@@ -122,6 +128,15 @@ class IPProtectionFragment : Fragment(), SystemInsetsPaddedFragment {
                 onNavigateBack = { findNavController().popBackStack() },
                 onLocationClicked = { handleOnLocationClicked() },
                 isLocationSelectionEnabled = true,
+                message = message?.value,
+                onMessageClick = { clickedMessage ->
+                    messagingBinding?.clickMessageAction(clickedMessage)?.let { intent ->
+                        startActivity(intent)
+                    }
+                },
+                onMessageDismiss = {
+                    messagingBinding?.dismissMessage(it)
+                },
             )
 
             if (showDebugDialog) {
@@ -152,6 +167,12 @@ class IPProtectionFragment : Fragment(), SystemInsetsPaddedFragment {
                 ),
             view = view,
             owner = this,
+        )
+
+        ipProtectionMessagingBinding.set(
+            feature = requireComponents.ipProtection.iPProtectionMessagingBinding,
+            view = view,
+            owner = viewLifecycleOwner,
         )
 
         ipProtectionWarningBinding.set(
