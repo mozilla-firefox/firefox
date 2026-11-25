@@ -4578,7 +4578,6 @@ NSRect IMEInputHandler::FirstRectForCharacterRange(NSRange& aRange,
   LayoutDeviceIntRect r;
   bool useCaretRect = (aRange.length == 0);
   if (!useCaretRect) {
-    WidgetQueryContentEvent queryTextRectEvent(true, eQueryTextRect, mWidget);
     QueryContentOptions options;
     int64_t startOffset = aRange.location;
     if (mIMECompositionStartBeforeStart.isSome()) {
@@ -4590,12 +4589,15 @@ NSRect IMEInputHandler::FirstRectForCharacterRange(NSRange& aRange,
       options.mRelativeToInsertionPoint = true;
       startOffset -= *mIMECompositionStartBeforeStart;
     }
-    queryTextRectEvent.InitForQueryTextRect(startOffset, 1, options);
-    DispatchEvent(queryTextRectEvent);
-    if (queryTextRectEvent.Succeeded()) {
-      r = queryTextRectEvent.mReply->mRect;
-      actualRange = MakeNSRangeFrom(queryTextRectEvent.mReply->mOffsetAndData);
-      mWritingMode = queryTextRectEvent.mReply->WritingModeRef();
+    const Maybe<QueryContentResult> queryTextRectResult =
+        dispatcher->QueryTextRect(startOffset, 1, options);
+    if (!mWidget) [[unlikely]] {
+      return rect;
+    }
+    if (queryTextRectResult.isSome()) [[likely]] {
+      r = queryTextRectResult->mRect;
+      actualRange = MakeNSRangeFrom(queryTextRectResult->mOffsetAndData);
+      mWritingMode = queryTextRectResult->WritingModeRef();
       mRangeForWritingMode = actualRange;
     } else {
       useCaretRect = true;

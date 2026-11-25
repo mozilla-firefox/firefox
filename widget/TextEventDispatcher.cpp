@@ -1369,8 +1369,8 @@ Maybe<QueryContentResult> TextEventDispatcher::QueryTextRect(
     int64_t aOffset, uint32_t aLength,
     const QueryContentOptions& aOptions) const {
   if (NS_WARN_IF(!mWidget) ||
-      NS_WARN_IF(aOffset < 0 && !aOptions.mRelativeToInsertionPoint) ||
-      NS_WARN_IF(aOffset + aLength > UINT32_MAX)) [[unlikely]] {
+      NS_WARN_IF(aOffset < 0 && !aOptions.mRelativeToInsertionPoint))
+      [[unlikely]] {
     return Nothing{};
   }
   WidgetQueryContentEvent queryEvent(true, eQueryTextRect, mWidget);

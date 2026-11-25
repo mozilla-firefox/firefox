@@ -101,13 +101,12 @@ class StartAndEndOffsets {
     mEndOffset = endOffset.isValid() ? endOffset.value() : MaxOffset();
   }
 
+  template <typename IntTypeInner>
+  friend std::string format_as(const StartAndEndOffsets<IntTypeInner>&);
   friend std::ostream& operator<<(
       std::ostream& aStream,
       const StartAndEndOffsets<IntType>& aStartAndEndOffsets) {
-    aStream << "{ mStartOffset=" << aStartAndEndOffsets.mStartOffset
-            << ", mEndOffset=" << aStartAndEndOffsets.mEndOffset
-            << ", Length()=" << aStartAndEndOffsets.Length() << " }";
-    return aStream;
+    return aStream << format_as(aStartAndEndOffsets);
   }
 
  private:
