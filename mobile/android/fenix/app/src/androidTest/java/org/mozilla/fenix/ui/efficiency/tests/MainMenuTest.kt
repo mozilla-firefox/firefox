@@ -159,8 +159,10 @@ class MainMenuTest : BaseTest() {
         on.bookmarks
             .mozVerifyElementsByGroup(BookmarksSelectors.Group.EDIT_BOOKMARKS_VIEW)
             .mozClick(DELETE_BOOKMARK_BUTTON)
-        on.browserPage.navigateToPage()
-        on.mainMenu.navigateToPage().mozVerify(BOOKMARK_THIS_PAGE_BUTTON)
+        // Deleting the bookmark drops back onto the browser, but PageStateTracker still reads
+        // MainMenuPage, so navigateToPage() would flake on a stale start state. Click the menu directly.
+        on.browserPage.mozClick(HomeSelectors.MAIN_MENU_BUTTON_UIAUTOMATOR)
+        on.mainMenu.mozVerify(BOOKMARK_THIS_PAGE_BUTTON)
     }
 
     // TestRail link: https://mozilla.testrail.io/index.php?/cases/view/3080136
