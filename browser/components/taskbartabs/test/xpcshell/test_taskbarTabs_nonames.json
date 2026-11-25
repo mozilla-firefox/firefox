@@ -6,6 +6,13 @@
       "scopes": [{ "hostname": "www.test.com" }],
       "userContextId": 0,
       "startUrl": "https://www.test.com/start"
+    },
+    {
+      "id": "0a7a7ef6-3d38-4d38-9a43-6d6b0e3ab1b2",
+      "scopes": [{ "hostname": "www.empty.com" }],
+      "userContextId": 0,
+      "startUrl": "https://www.empty.com/start",
+      "name": ""
     }
   ]
 }

@@ -243,3 +243,22 @@ add_task(async function test_pin_error_returns_shortcut() {
   pinShortcutToTaskbar.resolves();
   registry.removeTaskbarTab(taskbarTab.id);
 });
+
+add_task(async function test_unpin_without_shortcut() {
+  const exampleUrl = Services.io.newURI("https://unpinned.example.com");
+  const tt = createTaskbarTab(registry, exampleUrl, 0);
+
+  sinon.resetHistory();
+  await TaskbarTabsPin.unpinTaskbarTab(tt);
+
+  ok(
+    kMockNativeShellService.unpinShortcutFromTaskbar.notCalled,
+    "Nothing should be unpinned when no shortcut was created."
+  );
+  ok(
+    kMockNativeShellService.deleteShortcut.notCalled,
+    "Nothing should be deleted when no shortcut was created."
+  );
+
+  registry.removeTaskbarTab(tt.id);
+});

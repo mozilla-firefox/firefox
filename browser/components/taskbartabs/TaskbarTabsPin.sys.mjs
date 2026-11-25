@@ -101,7 +101,9 @@ export const TaskbarTabsPin = {
       let relativePath = aTaskbarTab.shortcutRelativePath;
 
       try {
-        lazy.platformPin.unpinFromTaskbar(relativePath);
+        if (relativePath) {
+          lazy.platformPin.unpinFromTaskbar(relativePath);
+        }
       } catch (e) {
         lazy.logConsole.error(`Failed to unpin shortcut: ${e.message}`);
         unpinError = e;

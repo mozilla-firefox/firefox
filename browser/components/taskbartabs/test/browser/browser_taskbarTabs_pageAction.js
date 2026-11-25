@@ -488,6 +488,27 @@ add_task(async function test_extension_name_is_used() {
   });
 });
 
+add_task(async function test_whitespace_extension_name_is_ignored() {
+  let extension = ExtensionTestUtils.loadExtension({
+    manifest: { name: "   ", version: "1.0" },
+    files: { "example.html": "<!doctype html>addon example page" },
+  });
+  await extension.startup();
+
+  let uri = Services.io.newURI(
+    `moz-extension://${extension.uuid}/example.html`
+  );
+  let result = await TaskbarTabs.findOrCreateTaskbarTab(uri, 0);
+  is(
+    result.taskbarTab.name,
+    extension.uuid,
+    "A whitespace-only extension name should fall back to a generated name."
+  );
+
+  await TaskbarTabs.removeTaskbarTab(result.taskbarTab.id);
+  await extension.unload();
+});
+
 add_task(async function test_pageActionRequiresDesktopEntryApi() {
   await SpecialPowers.pushPrefEnv({
     set: [["browser.shell.desktop-entry-api", "disabled"]],

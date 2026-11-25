@@ -148,7 +148,7 @@ export const TaskbarTabs = new (class {
     if (!aDetails.manifest?.name && aUrl.scheme === "moz-extension") {
       aDetails.manifest = {
         ...aDetails.manifest,
-        name: WebExtensionPolicy.getByURI(aUrl)?.name,
+        name: WebExtensionPolicy.getByURI(aUrl)?.name?.trim(),
       };
     }
 

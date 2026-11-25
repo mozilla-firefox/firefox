@@ -4,7 +4,7 @@
 
 "use strict";
 
-const { TaskbarTabsRegistry, TaskbarTabsRegistryStorage } =
+const { TaskbarTabsRegistry, TaskbarTabsRegistryStorage, generateName } =
   ChromeUtils.importESModule(
     "moz-src:///browser/components/taskbartabs/TaskbarTabsRegistry.sys.mjs"
   );
@@ -247,6 +247,12 @@ add_task(async function test_load_and_save_migrates_name() {
   );
 
   equal(typeof tt.name, "string", "A name should be present in-memory.");
+  equal(
+    registry.findTaskbarTab(Services.io.newURI("https://www.empty.com"), 0)
+      .name,
+    "Empty",
+    "An empty stored name should be regenerated."
+  );
 
   await storage.save(registry);
 
@@ -382,3 +388,44 @@ add_task(async function test_multiple_match_longest_prefix() {
   equal(find("/abc/d/").id, ttABCD.id, "/abc/d/ matches /abc/d/");
   equal(find("/abc/d/efgh").id, ttABCD.id, "/abc/d/efgh matches /abc/d/");
 }).skip(); // TODO bug 2000948
+
+add_task(async function test_empty_manifest_name_falls_back() {
+  const registry = createInMemoryRegistry();
+  const url = Services.io.newURI("https://play.example.com/discover");
+
+  let tt = createTaskbarTab(registry, url, 0, {
+    manifest: { name: "", short_name: "Short" },
+  });
+  equal(tt.name, "Short", "An empty name should fall back to short_name.");
+  registry.removeTaskbarTab(tt.id);
+
+  tt = createTaskbarTab(registry, url, 0, {
+    manifest: { name: "", short_name: "" },
+  });
+  equal(
+    tt.name,
+    "Example Play",
+    "Empty name and short_name should fall back to a generated name."
+  );
+});
+
+add_task(async function test_generated_name_uses_host_as_fallback() {
+  const registry = createInMemoryRegistry();
+  for (let host of ["192.168.1.10", "localhost"]) {
+    let tt = createTaskbarTab(
+      registry,
+      Services.io.newURI(`http://${host}/`),
+      0
+    );
+    equal(tt.name, host, `${host} should be named after its host.`);
+  }
+});
+
+add_task(async function test_generated_name_without_host_uses_spec() {
+  const uri = Services.io.newURI("file:///C:/app/index.html");
+  equal(
+    generateName(uri),
+    uri.spec,
+    "A URI without a host should be named after its spec."
+  );
+});
