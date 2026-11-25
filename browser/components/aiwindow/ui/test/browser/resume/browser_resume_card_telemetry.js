@@ -3,8 +3,8 @@
 
 "use strict";
 
-const { ToolUI } = ChromeUtils.importESModule(
-  "moz-src:///browser/components/aiwindow/ui/modules/ToolUI.sys.mjs"
+const { ToolTabActions } = ChromeUtils.importESModule(
+  "moz-src:///browser/components/aiwindow/ui/modules/ToolTabActions.sys.mjs"
 );
 
 let win;
@@ -45,7 +45,7 @@ describe("Resume card telemetry", () => {
     });
 
     it("records open_tabs with the card's position", async () => {
-      sandbox.stub(ToolUI, "openOrGroupTabs").resolves();
+      sandbox.stub(ToolTabActions, "openOrGroupTabs").resolves();
 
       await clickResumeCardMenuItem(
         cardAt(section, 1),

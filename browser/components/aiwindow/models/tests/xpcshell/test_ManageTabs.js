@@ -23,6 +23,9 @@ const { BrowserWindowTracker } = ChromeUtils.importESModule(
 const { ToolUI } = ChromeUtils.importESModule(
   "moz-src:///browser/components/aiwindow/ui/modules/ToolUI.sys.mjs"
 );
+const { ToolTabActions } = ChromeUtils.importESModule(
+  "moz-src:///browser/components/aiwindow/ui/modules/ToolTabActions.sys.mjs"
+);
 
 function createFakeTab(
   url,
@@ -193,7 +196,7 @@ add_task(async function test_manageTabsAction_direct_close_path() {
       createFakeWindow([targetTab, otherTab], { selectedTab: otherTab })
     );
 
-    sb.stub(ToolUI, "closeSelectedTabs").resolves({
+    sb.stub(ToolTabActions, "closeSelectedTabs").resolves({
       operationIds: ["op-1"],
       closedTabs: [],
       failedTabs: [],
@@ -280,7 +283,7 @@ add_task(async function test_manageTabsAction_direct_group_path() {
       })
     );
 
-    const createTabGroup = sb.stub(ToolUI, "createTabGroup").resolves({
+    const createTabGroup = sb.stub(ToolTabActions, "createTabGroup").resolves({
       operationId: "op-1",
       failedTabs: [],
       group: { id: "op-1", label: "Bears", color: "blue", tabCount: 2 },
@@ -359,7 +362,7 @@ add_task(async function test_manageTabsAction_offers_the_chat_tab() {
     });
     chatTab.documentGlobal = win;
     setupBrowserWindowTracker(sb, win);
-    sb.stub(ToolUI, "findChatTab").returns(chatTab);
+    sb.stub(ToolTabActions, "findChatTab").returns(chatTab);
     const registerTabKeys = sb.stub(ToolUI, "registerTabKeys");
 
     const { uiData } = await manageTabsAction(
@@ -434,9 +437,9 @@ add_task(async function test_manageTabsAction_direct_group_skips_chat_tab() {
         selectedTab: otherTab,
       })
     );
-    sb.stub(ToolUI, "findChatTab").returns(chatTab);
+    sb.stub(ToolTabActions, "findChatTab").returns(chatTab);
 
-    const createTabGroup = sb.stub(ToolUI, "createTabGroup").resolves({
+    const createTabGroup = sb.stub(ToolTabActions, "createTabGroup").resolves({
       operationId: "op-1",
       failedTabs: [],
       group: { id: "op-1", label: "Bears", color: "blue", tabCount: 1 },
@@ -476,7 +479,7 @@ function setupWindowWithChatTab(sandbox, url, chatTabState) {
   const win = createFakeWindow([chatTab, targetTab], { selectedTab: chatTab });
   Object.assign(chatTab, chatTabState, { documentGlobal: win });
   setupBrowserWindowTracker(sandbox, win);
-  sandbox.stub(ToolUI, "findChatTab").returns(chatTab);
+  sandbox.stub(ToolTabActions, "findChatTab").returns(chatTab);
   sandbox.stub(ToolUI, "registerTabKeys");
 }
 
@@ -551,7 +554,7 @@ add_task(async function test_manageTabsAction_marks_failed_tabs() {
       })
     );
 
-    sb.stub(ToolUI, "closeSelectedTabs").resolves({
+    sb.stub(ToolTabActions, "closeSelectedTabs").resolves({
       operationIds: ["op-1"],
       closedTabs: [],
       failedTabs: [{ tab: failedTab, reason: "already-closing" }],
@@ -707,7 +710,7 @@ add_task(
         sb,
         createFakeWindow([grouped, other], { selectedTab: other })
       );
-      sb.stub(ToolUI, "findChatTab").returns(null);
+      sb.stub(ToolTabActions, "findChatTab").returns(null);
       sb.stub(ToolUI, "registerTabKeys");
 
       const { uiData } = await requestGroupTabs(url);
@@ -734,7 +737,7 @@ add_task(
         sb,
         createFakeWindow([grouped, other], { selectedTab: other })
       );
-      sb.stub(ToolUI, "closeSelectedTabs").resolves({
+      sb.stub(ToolTabActions, "closeSelectedTabs").resolves({
         operationIds: ["op-1"],
         failedTabs: [],
       });
@@ -771,7 +774,7 @@ add_task(
         createFakeWindow([topTab], { selectedTab: topTab }),
         createFakeWindow([grouped, other], { selectedTab: other }),
       ]);
-      sb.stub(ToolUI, "findChatTab").returns(null);
+      sb.stub(ToolTabActions, "findChatTab").returns(null);
       sb.stub(ToolUI, "registerTabKeys");
 
       const { uiData } = await requestGroupTabs(url);

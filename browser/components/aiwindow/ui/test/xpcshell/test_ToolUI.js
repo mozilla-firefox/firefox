@@ -7,6 +7,9 @@ do_get_profile();
 const { ToolUI } = ChromeUtils.importESModule(
   "moz-src:///browser/components/aiwindow/ui/modules/ToolUI.sys.mjs"
 );
+const { ToolTabActions } = ChromeUtils.importESModule(
+  "moz-src:///browser/components/aiwindow/ui/modules/ToolTabActions.sys.mjs"
+);
 const { ChatConversation } = ChromeUtils.importESModule(
   "moz-src:///browser/components/aiwindow/ui/modules/ChatConversation.sys.mjs"
 );
@@ -18,6 +21,12 @@ const { BrowserWindowTracker } = ChromeUtils.importESModule(
 );
 const { ToolUITelemetry } = ChromeUtils.importESModule(
   "moz-src:///browser/components/aiwindow/ui/modules/ToolUITelemetry.sys.mjs"
+);
+const { ChatStore } = ChromeUtils.importESModule(
+  "moz-src:///browser/components/aiwindow/ui/modules/ChatStore.sys.mjs"
+);
+const { sinon } = ChromeUtils.importESModule(
+  "resource://testing-common/Sinon.sys.mjs"
 );
 
 let gPermanentKeySeq = 0;
@@ -63,6 +72,12 @@ add_task = (task, fn = task) =>
   });
 
 add_setup(function () {
+  // Resolving a confirmation persists without awaiting, which would open the
+  // database while xpcshell shuts down.
+  const sandbox = sinon.createSandbox();
+  sandbox.stub(ChatStore, "updateConversation").resolves();
+  registerCleanupFunction(() => sandbox.restore());
+
   const descriptor = Object.getOwnPropertyDescriptor(
     BrowserWindowTracker,
     "orderedWindows"
@@ -530,7 +545,7 @@ add_task(async function test_prompt_and_response_entrypoint_telemetry() {
     const conversation = new ChatConversation({});
     const message = conversation.addAssistantMessage("text", "Confirm?");
     message.toolUIData = { toolCallId: "entrypoint", ...toolUIData };
-    ToolUI.handleUIDisplayTelemetry(message.toolUIData, {
+    ToolUITelemetry.recordPromptDisplay(message.toolUIData, {
       location: "fullpage",
       chat_id: conversation.id,
       message_seq: conversation.messageCount,
@@ -1176,7 +1191,7 @@ add_task(async function test_undo_with_failed_restoration() {
 });
 
 /**
- * Test ToolUI.closeSelectedTabs public method directly
+ * Test ToolTabActions.closeSelectedTabs public method directly
  */
 add_task(async function test_closeSelectedTabs_public_method() {
   // Mock the tabManagementService since closeSelectedTabs calls it internally
@@ -1205,7 +1220,7 @@ add_task(async function test_closeSelectedTabs_public_method() {
 
   let result;
   try {
-    result = await ToolUI.closeSelectedTabs(
+    result = await ToolTabActions.closeSelectedTabs(
       selectedTabs,
       tokenToKey,
       mockWindow
@@ -1236,7 +1251,7 @@ add_task(async function test_closeSelectedTabs_public_method() {
 });
 
 /**
- * Test ToolUI.closeSelectedTabs returns null when no window provided
+ * Test ToolTabActions.closeSelectedTabs returns null when no window provided
  */
 add_task(async function test_closeSelectedTabs_no_window() {
   const selectedTabsData = [
@@ -1247,13 +1262,17 @@ add_task(async function test_closeSelectedTabs_no_window() {
     },
   ];
 
-  const result = await ToolUI.closeSelectedTabs(selectedTabsData, null, null);
+  const result = await ToolTabActions.closeSelectedTabs(
+    selectedTabsData,
+    null,
+    null
+  );
 
   Assert.equal(result, null, "Should return null when no window provided");
 });
 
 /**
- * Test ToolUI.closeSelectedTabs returns null when no valid tabs to close
+ * Test ToolTabActions.closeSelectedTabs returns null when no valid tabs to close
  */
 add_task(async function test_closeSelectedTabs_no_valid_tabs() {
   // Window has no tabs, so the selection's token resolves to nothing.
@@ -1263,7 +1282,7 @@ add_task(async function test_closeSelectedTabs_no_valid_tabs() {
     missingTab,
   ]);
 
-  const result = await ToolUI.closeSelectedTabs(
+  const result = await ToolTabActions.closeSelectedTabs(
     selectedTabs,
     tokenToKey,
     mockWindow
@@ -1903,7 +1922,11 @@ add_task(async function test_closeSelectedTabs_tags_active_tab_source() {
   ]);
 
   try {
-    await ToolUI.closeSelectedTabs(selectedTabs, tokenToKey, mockWindow);
+    await ToolTabActions.closeSelectedTabs(
+      selectedTabs,
+      tokenToKey,
+      mockWindow
+    );
   } finally {
     tabManagementService.closeTabs = originalCloseTabs;
   }
@@ -1951,7 +1974,11 @@ add_task(async function test_closeSelectedTabs_spans_multiple_windows() {
 
   let result;
   try {
-    result = await ToolUI.closeSelectedTabs(selectedTabs, tokenToKey, windowA);
+    result = await ToolTabActions.closeSelectedTabs(
+      selectedTabs,
+      tokenToKey,
+      windowA
+    );
   } finally {
     tabManagementService.closeTabs = originalCloseTabs;
   }
@@ -2002,7 +2029,7 @@ add_task(async function test_createTabGroup_selects_owning_window() {
 
   let result;
   try {
-    result = await ToolUI.createTabGroup({
+    result = await ToolTabActions.createTabGroup({
       tabs: selectedTabs,
       tokenToKey,
       window: interactingWindow,
@@ -2264,10 +2291,10 @@ add_task(async function test_undo_tab_group_error_telemetry() {
 });
 
 /**
- * Test ToolUI.openAndGroupTabs returns null for an empty tabs array
+ * Test ToolTabActions.openAndGroupTabs returns null for an empty tabs array
  */
 add_task(async function test_openAndGroupTabs_no_tabs_returns_null() {
-  const result = await ToolUI.openAndGroupTabs({
+  const result = await ToolTabActions.openAndGroupTabs({
     tabs: [],
     window: makeWindow([]),
   });
@@ -2276,7 +2303,7 @@ add_task(async function test_openAndGroupTabs_no_tabs_returns_null() {
 });
 
 /**
- * Test ToolUI.openAndGroupTabs carries mergedCount through from
+ * Test ToolTabActions.openAndGroupTabs carries mergedCount through from
  * resolveOrOpenTabs into the final result
  */
 add_task(async function test_openAndGroupTabs_merges_mergedCount() {
@@ -2297,7 +2324,7 @@ add_task(async function test_openAndGroupTabs_merges_mergedCount() {
 
   let result;
   try {
-    result = await ToolUI.openAndGroupTabs({
+    result = await ToolTabActions.openAndGroupTabs({
       tabs: [{ url: "https://example.com/" }],
       window: mockWindow,
       label: "L",
@@ -2337,7 +2364,7 @@ async function captureGroupedTabs({ resolvedTabs, ...options }) {
   };
 
   try {
-    const result = await ToolUI.openAndGroupTabs(options);
+    const result = await ToolTabActions.openAndGroupTabs(options);
     return { groupedTabs, result };
   } finally {
     tabManagementService.resolveOrOpenTabs = originalResolve;
@@ -2346,7 +2373,7 @@ async function captureGroupedTabs({ resolvedTabs, ...options }) {
 }
 
 /**
- * Test ToolUI.openAndGroupTabs puts the originating chat tab in the group it
+ * Test ToolTabActions.openAndGroupTabs puts the originating chat tab in the group it
  * creates, ahead of the tabs that were just opened (bug 2068714)
  */
 add_task(async function test_openAndGroupTabs_includes_origin_tab() {
@@ -2377,7 +2404,7 @@ add_task(async function test_openAndGroupTabs_includes_origin_tab() {
 });
 
 /**
- * Test ToolUI.openAndGroupTabs leaves the group untouched when there is no
+ * Test ToolTabActions.openAndGroupTabs leaves the group untouched when there is no
  * originating tab, which is the case for sidebar conversations
  */
 add_task(async function test_openAndGroupTabs_without_origin_tab() {
@@ -2398,7 +2425,7 @@ add_task(async function test_openAndGroupTabs_without_origin_tab() {
 });
 
 /**
- * Test ToolUI.openAndGroupTabs does not add the originating tab twice when it
+ * Test ToolTabActions.openAndGroupTabs does not add the originating tab twice when it
  * is already among the resolved tabs
  */
 add_task(async function test_openAndGroupTabs_origin_tab_not_duplicated() {
@@ -2464,11 +2491,11 @@ add_task(async function test_handleUpdate_open_tabs_groups_origin_tab() {
 
   const originalResolve = tabManagementService.resolveOrOpenTabs;
   const originalCreateGroup = tabManagementService.createTabGroup;
-  const originalFindChatTab = ToolUI.findChatTab;
+  const originalFindChatTab = ToolTabActions.findChatTab;
   let groupedTabs = null;
   // The real lookup needs a live tab-state manager, which mock tabs cannot
   // provide; browser_smartwindow_manage_tabs_tool.js covers it for real.
-  ToolUI.findChatTab = () => chatTab;
+  ToolTabActions.findChatTab = () => chatTab;
   tabManagementService.resolveOrOpenTabs = async () => {
     // resolveOrOpenTabs hands back tabs that are in the window
     const opened = [makeTab(selectedTabs[0].url), makeTab(selectedTabs[1].url)];
@@ -2502,7 +2529,7 @@ add_task(async function test_handleUpdate_open_tabs_groups_origin_tab() {
   } finally {
     tabManagementService.resolveOrOpenTabs = originalResolve;
     tabManagementService.createTabGroup = originalCreateGroup;
-    ToolUI.findChatTab = originalFindChatTab;
+    ToolTabActions.findChatTab = originalFindChatTab;
   }
 
   Assert.equal(result, true, "Should return true on success");
@@ -2524,7 +2551,7 @@ add_task(async function test_handleUpdate_open_tabs_groups_origin_tab() {
 });
 
 /**
- * Test ToolUI.openOrSwitchToTab switches to an already-open tab without
+ * Test ToolTabActions.openOrSwitchToTab switches to an already-open tab without
  * navigating
  */
 add_task(async function test_openOrSwitchToTab_switches_when_open() {
@@ -2541,7 +2568,7 @@ add_task(async function test_openOrSwitchToTab_switches_when_open() {
 
   let result;
   try {
-    result = await ToolUI.openOrSwitchToTab({
+    result = await ToolTabActions.openOrSwitchToTab({
       tab: { url: "https://example.com/" },
       window: mockWindow,
     });
@@ -2559,7 +2586,7 @@ add_task(async function test_openOrSwitchToTab_switches_when_open() {
 });
 
 /**
- * Test ToolUI.openOrSwitchToTab when the tab isn't already open: it should
+ * Test ToolTabActions.openOrSwitchToTab when the tab isn't already open: it should
  * open a new tab and switch to it, without navigating the current tab.
  */
 add_task(
@@ -2586,7 +2613,7 @@ add_task(
 
     let result;
     try {
-      result = await ToolUI.openOrSwitchToTab({
+      result = await ToolTabActions.openOrSwitchToTab({
         tab: { url: "https://example.com/" },
         window: mockWindow,
       });
@@ -2606,7 +2633,7 @@ add_task(
 );
 
 /**
- * Test ToolUI.openOrSwitchToTab when opening the new tab fails
+ * Test ToolTabActions.openOrSwitchToTab when opening the new tab fails
  */
 add_task(
   async function test_openOrSwitchToTab_reports_failure_when_open_fails() {
@@ -2622,7 +2649,7 @@ add_task(
 
     let result;
     try {
-      result = await ToolUI.openOrSwitchToTab({
+      result = await ToolTabActions.openOrSwitchToTab({
         tab: { url: "https://example.com/" },
         window: mockWindow,
       });
@@ -3001,7 +3028,7 @@ add_task(async function test_createTabGroup_drops_a_lone_chat_tab() {
   };
 
   try {
-    await ToolUI.createTabGroup({
+    await ToolTabActions.createTabGroup({
       tabs: selectedTabs,
       tokenToKey,
       window: win,
@@ -3044,7 +3071,7 @@ add_task(async function test_createTabGroup_keeps_chat_tab_with_others() {
   };
 
   try {
-    await ToolUI.createTabGroup({
+    await ToolTabActions.createTabGroup({
       tabs: selectedTabs,
       tokenToKey,
       window: win,

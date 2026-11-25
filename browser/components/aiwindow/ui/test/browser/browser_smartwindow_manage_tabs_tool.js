@@ -7,8 +7,11 @@ const { MockEngineManager } = ChromeUtils.importESModule(
   "resource://testing-common/AIWindowTestUtils.sys.mjs"
 );
 
-const { UI_TYPES, ToolUI } = ChromeUtils.importESModule(
+const { UI_TYPES } = ChromeUtils.importESModule(
   "moz-src:///browser/components/aiwindow/ui/modules/ToolUI.sys.mjs"
+);
+const { ToolTabActions } = ChromeUtils.importESModule(
+  "moz-src:///browser/components/aiwindow/ui/modules/ToolTabActions.sys.mjs"
 );
 
 const { tabManagementService } = ChromeUtils.importESModule(
@@ -430,7 +433,7 @@ add_task(async function test_close_tab_in_non_interacting_window() {
       "Target tab starts open in the non-interacting window"
     );
 
-    const result = await ToolUI.closeSelectedTabs(
+    const result = await ToolTabActions.closeSelectedTabs(
       selectedTabs,
       tokenToKey,
       interactingWindow
@@ -488,7 +491,7 @@ add_task(async function test_close_tabs_spanning_multiple_windows() {
   ];
 
   try {
-    const result = await ToolUI.closeSelectedTabs(
+    const result = await ToolTabActions.closeSelectedTabs(
       selectedTabs,
       tokenToKey,
       windowA
@@ -539,7 +542,7 @@ add_task(async function test_group_tabs_skips_chat_tab_window() {
   ];
 
   try {
-    const result = await ToolUI.createTabGroup({
+    const result = await ToolTabActions.createTabGroup({
       tabs: selectedTabs,
       tokenToKey,
       window: interactingWindow,
@@ -589,7 +592,7 @@ add_task(async function test_undo_close_tabs_spanning_multiple_windows() {
   ];
 
   try {
-    const closeResult = await ToolUI.closeSelectedTabs(
+    const closeResult = await ToolTabActions.closeSelectedTabs(
       selectedTabs,
       tokenToKey,
       windowA
@@ -664,7 +667,7 @@ add_task(async function test_close_last_tab_keeps_window_open() {
   const selectedTabs = [{ token: "token-a", url: "https://example.com/" }];
 
   try {
-    const result = await ToolUI.closeSelectedTabs(
+    const result = await ToolTabActions.closeSelectedTabs(
       selectedTabs,
       tokenToKey,
       interactingWindow

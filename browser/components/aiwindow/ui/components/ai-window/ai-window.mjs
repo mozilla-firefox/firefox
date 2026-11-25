@@ -81,7 +81,11 @@ const lazy = XPCOMUtils.declareLazy({
     "moz-src:///browser/components/aiwindow/models/Utils.sys.mjs",
   MODELS_DATA_CHANGED_TOPIC:
     "moz-src:///browser/components/aiwindow/models/Utils.sys.mjs",
+  ToolTabActions:
+    "moz-src:///browser/components/aiwindow/ui/modules/ToolTabActions.sys.mjs",
   ToolUI: "moz-src:///browser/components/aiwindow/ui/modules/ToolUI.sys.mjs",
+  ToolUITelemetry:
+    "moz-src:///browser/components/aiwindow/ui/modules/ToolUITelemetry.sys.mjs",
   AgentUI: "moz-src:///browser/components/aiwindow/ui/modules/AgentUI.sys.mjs",
   ACTION_LOG_UI_TYPE:
     "moz-src:///browser/components/aiwindow/ui/modules/ToolActionLog.sys.mjs",
@@ -668,7 +672,7 @@ export class AIWindow extends MozLitElement {
     }
 
     if (message.toolUIData) {
-      lazy.ToolUI.handleUIDisplayTelemetry(message.toolUIData, {
+      lazy.ToolUITelemetry.recordPromptDisplay(message.toolUIData, {
         location: this.mode,
         chat_id: this.conversationId,
         message_seq: this.#conversation?.messageCount ?? 0,
@@ -1858,7 +1862,7 @@ export class AIWindow extends MozLitElement {
       return;
     }
 
-    await lazy.ToolUI.openOrGroupTabs({
+    await lazy.ToolTabActions.openOrGroupTabs({
       tabs: previewTabs,
       window: win,
       label: formatResumeTabGroupLabel(card.content.headline),

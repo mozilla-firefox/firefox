@@ -85,6 +85,7 @@ MOZ_SRC_FILES += [
     "modules/SQLiteStoreBase.sys.mjs",
     "modules/TabManagementService.sys.mjs",
     "modules/ToolActionLog.sys.mjs",
+    "modules/ToolTabActions.sys.mjs",
     "modules/ToolUI.sys.mjs",
     "modules/ToolUITelemetry.sys.mjs",
     "modules/ToUSpotlight.sys.mjs",

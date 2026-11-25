@@ -3,8 +3,8 @@
 
 "use strict";
 
-const { ToolUI } = ChromeUtils.importESModule(
-  "moz-src:///browser/components/aiwindow/ui/modules/ToolUI.sys.mjs"
+const { ToolTabActions } = ChromeUtils.importESModule(
+  "moz-src:///browser/components/aiwindow/ui/modules/ToolTabActions.sys.mjs"
 );
 
 const { MockEngineManager } = ChromeUtils.importESModule(
@@ -84,14 +84,14 @@ describe("Resume card actions", () => {
 
     it("opens every preview tab as a group in its window", async () => {
       const openAndGroupTabs = sandbox
-        .stub(ToolUI, "openAndGroupTabs")
+        .stub(ToolTabActions, "openAndGroupTabs")
         .resolves({ success: true, group: { id: "group-1" } });
 
       selectMenuItem(card, journeyId, "open_tabs");
 
       await TestUtils.waitForCondition(
         () => openAndGroupTabs.called,
-        "Wait for ToolUI.openAndGroupTabs to be called"
+        "Wait for ToolTabActions.openAndGroupTabs to be called"
       );
       const [{ tabs, window: openWindow }] = openAndGroupTabs.firstCall.args;
       Assert.deepEqual(
@@ -119,15 +119,15 @@ describe("Resume card actions", () => {
 
     it("switches to the tab instead of grouping it", async () => {
       const openOrSwitchToTab = sandbox
-        .stub(ToolUI, "openOrSwitchToTab")
+        .stub(ToolTabActions, "openOrSwitchToTab")
         .resolves({ success: true, switched: false });
-      const openAndGroupTabs = sandbox.stub(ToolUI, "openAndGroupTabs");
+      const openAndGroupTabs = sandbox.stub(ToolTabActions, "openAndGroupTabs");
 
       selectMenuItem(card, journeyId, "open_tabs");
 
       await TestUtils.waitForCondition(
         () => openOrSwitchToTab.called,
-        "Wait for ToolUI.openOrSwitchToTab to be called"
+        "Wait for ToolTabActions.openOrSwitchToTab to be called"
       );
       const [{ tab, window: openWindow }] = openOrSwitchToTab.firstCall.args;
       Assert.deepEqual(

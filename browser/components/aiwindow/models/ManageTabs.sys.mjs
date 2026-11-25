@@ -15,6 +15,8 @@ const lazy = XPCOMUtils.declareLazy({
   AIWindow:
     "moz-src:///browser/components/aiwindow/ui/modules/AIWindow.sys.mjs",
   BrowserWindowTracker: "resource:///modules/BrowserWindowTracker.sys.mjs",
+  ToolTabActions:
+    "moz-src:///browser/components/aiwindow/ui/modules/ToolTabActions.sys.mjs",
   ToolUI: "moz-src:///browser/components/aiwindow/ui/modules/ToolUI.sys.mjs",
   ToolUITelemetry:
     "moz-src:///browser/components/aiwindow/ui/modules/ToolUITelemetry.sys.mjs",
@@ -225,7 +227,7 @@ async function runManageTabsFlow(state, toolHandler) {
  * @param {boolean} checked - Whether the chat tab starts ticked
  */
 function offerChatTab(gathered, conversation, checked) {
-  const chatTab = lazy.ToolUI.findChatTab(conversation?.id);
+  const chatTab = lazy.ToolTabActions.findChatTab(conversation?.id);
   if (
     !chatTab ||
     !gathered.matchedTabs.some(({ win }) => win === chatTab.documentGlobal)
@@ -315,7 +317,7 @@ const closeTabsToolHandler = {
   failureMessage: "some_tabs_failed_to_close",
 
   async takeUIAction(gatheredResult) {
-    return await lazy.ToolUI.closeSelectedTabs(
+    return await lazy.ToolTabActions.closeSelectedTabs(
       gatheredResult.tabs,
       gatheredResult.tabKeyByToken,
       gatheredResult.topAIWin
@@ -400,7 +402,7 @@ function makeGroupTabsToolHandler(rawLabel) {
 
     async takeUIAction(gathered) {
       const label = await getLabel(gathered);
-      const result = await lazy.ToolUI.createTabGroup({
+      const result = await lazy.ToolTabActions.createTabGroup({
         tabs: gathered.tabs,
         tokenToKey: gathered.tabKeyByToken,
         window: gathered.topAIWin,
