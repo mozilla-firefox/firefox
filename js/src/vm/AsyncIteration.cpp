@@ -430,6 +430,52 @@ AsyncGeneratorRequest* AsyncGeneratorRequest::create(
   return true;
 }
 
+// Performs AsyncGeneratorYield. If the generator has to be resumed, because the
+// queue isn't empty or because AsyncGeneratorYield failed with a catchable
+// exception, sets |*resumeAgain| to true and stores the completion to resume
+// with in |*completionKind| and |resumeValue|.
+[[nodiscard]] static bool AsyncGeneratorYieldAndGetResumption(
+    JSContext* cx, Handle<AsyncGeneratorObject*> generator, HandleValue value,
+    bool* resumeAgain, CompletionKind* completionKind,
+    MutableHandleValue resumeValue) {
+  if (AsyncGeneratorYield(cx, generator, value, resumeAgain, completionKind,
+                          resumeValue)) {
+    MOZ_ASSERT_IF(*resumeAgain, *completionKind != CompletionKind::Return);
+    return true;
+  }
+
+  // Not much we can do about uncatchable exceptions, so just bail.
+  if (!cx->isExceptionPending()) {
+    return false;
+  }
+  // This can happen if PromiseResolve inside Await fails during
+  // AsyncGeneratorUnwrapYieldResumption, which is performed only if the queue
+  // is not empty.
+  //
+  // Per spec, the PromiseResolve failure happens before suspending the
+  // generator. Given that implementation-wise we've already suspended the
+  // generator, return a throw completion to resume the generator with.
+  //
+  // On the other hand, per spec, if the queue is empty, this generator
+  // is getting suspended and there's no fallible operation.
+  // However, we can hit OOM during it, for example in
+  // AsyncGeneratorCompleteStep while creating the iterator result object.
+  //
+  // And in this case, there's no spec-compliant way to report it, either to
+  // the generator itself or to the consumer of the generator. Treat it as an
+  // error that happened as a part of microtask handling, and propagate it to
+  // the microtask queue.
+  if (generator->isQueueEmpty()) {
+    return false;
+  }
+  if (!GetAndClearException(cx, resumeValue)) {
+    return false;
+  }
+  *resumeAgain = true;
+  *completionKind = CompletionKind::Throw;
+  return true;
+}
+
 // ES2026 draft rev bdfd596ffad5aeb2957aed4e1db36be3665c69ec
 //
 // Await in async function
@@ -1315,42 +1361,12 @@ bool js::AsyncGeneratorThrow(JSContext* cx, unsigned argc, Value* vp) {
     MOZ_ASSERT(suspendOp == JSOp::Yield || suspendOp == JSOp::AwaitThenYield);
 
     bool resumeAgain = false;
-    if (!AsyncGeneratorYield(cx, generator, thisOrRval, &resumeAgain,
-                             &completionKind, &resumeArgument)) {
-      // Not much we can do about uncatchable exceptions, so just bail.
-      if (!cx->isExceptionPending()) {
-        return false;
-      }
-      // This can also happen if PromiseResolve inside Await fails
-      // during AsyncGeneratorUnwrapYieldResumption.
-      // AsyncGeneratorUnwrapYieldResumption is performed only if the
-      // queue is not empty.
-      //
-      // Per spec, the PromiseResolve failure happens before suspending the
-      // generator.
-      // Given that implementation-wise we've already suspended the generator,
-      // resume it with a throw completion.
-      //
-      // On the other hand, per spec, if the queue is empty, this generator
-      // is getting suspended and there's no fallible operation.
-      // However, we can hit OOM during it, for example in
-      // AsyncGeneratorCompleteStep while creating the iterator result object.
-      //
-      // And in this case, there's no spec-compliant way to report it, to
-      // either to the generator itself or to the consumer of the generator.
-      // Treat it as an error happened as a a part of microtask handling,
-      // and propagate it to the microtask queue.
-      if (generator->isQueueEmpty()) {
-        return false;
-      }
-      if (!GetAndClearException(cx, &resumeArgument)) {
-        return false;
-      }
-      completionKind = CompletionKind::Throw;
-      continue;
+    if (!AsyncGeneratorYieldAndGetResumption(cx, generator, thisOrRval,
+                                             &resumeAgain, &completionKind,
+                                             &resumeArgument)) {
+      return false;
     }
     if (resumeAgain) {
-      MOZ_ASSERT(completionKind != CompletionKind::Return);
       continue;
     }
     return true;
