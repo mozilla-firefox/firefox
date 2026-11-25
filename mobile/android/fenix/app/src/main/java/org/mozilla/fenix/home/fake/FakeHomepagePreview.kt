@@ -110,6 +110,10 @@ internal object FakeHomepagePreview {
                     /* no op */
                 }
 
+                override fun onSportsWidgetMatchesAndResultsClicked() {
+                    /* no op */
+                }
+
                 override fun onSportsWidgetWallpapersClicked() {
                     /* no op */
                 }

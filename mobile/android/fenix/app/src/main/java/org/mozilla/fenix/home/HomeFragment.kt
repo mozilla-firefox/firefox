@@ -1734,7 +1734,12 @@ class HomeFragment : Fragment(), UserInteractionHandler, OnLongPressedListener {
                         navController = findNavController(),
                         currentSessionId = requireComponents.core.store.state.selectedTabId,
                     ),
-                sportsWidgetController = SportsWidgetController(navController = findNavController()),
+                sportsWidgetController =
+                    SportsWidgetController(
+                        navController = findNavController(),
+                        fenixBrowserUseCases = requireComponents.useCases.fenixBrowserUseCases,
+                        settings = requireComponents.settings,
+                    ),
             )
     }
 
