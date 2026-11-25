@@ -22,7 +22,7 @@ dependencies = [
     "esprima==4.0.1",
     "fluent-migrate~=0.13",
     "fluent-syntax==0.19.0",
-    "glean-parser==22.1.0",
+    "glean-parser==22.1.1",
     "importlib-metadata~=8.0",
     # Required for compatibility with Flask >= 2 in tools/tryselect/selectors/chooser
     "jinja2==3.1.6",

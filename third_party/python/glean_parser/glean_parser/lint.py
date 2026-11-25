@@ -395,6 +395,9 @@ def check_unknown_ping(
     or in the list of defined custom pings.
     """
     available_pings = [p for p in all_pings]
+    reserved_pings = sorted(
+        pings.RESERVED_PING_NAMES + pings.INTERNAL_RESERVED_PING_NAMES
+    )
 
     for _, metric in metrics.items():
         if check_name in metric.no_lint:
@@ -402,11 +405,11 @@ def check_unknown_ping(
 
         send_in_pings = metric.send_in_pings
         for target_ping in send_in_pings:
-            if target_ping in pings.RESERVED_PING_NAMES:
+            if target_ping in reserved_pings:
                 continue
 
             if target_ping not in available_pings:
-                msg = f"Ping `{target_ping} `in `send_in_pings` is unknown."
+                msg = f"Ping `{target_ping}` in `send_in_pings` is unknown."
                 name = ".".join([metric.category, metric.name])
                 nit = GlinterNit(
                     check_name,

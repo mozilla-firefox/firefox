@@ -13,6 +13,12 @@ from typing import Dict, List, Optional
 
 from . import util
 
+# These are not real pings, but used to handle Glean SDK-internal data.
+INTERNAL_RESERVED_PING_NAMES = [
+    "all-pings",
+    "glean_client_info",
+    "glean_internal_info",
+]
 
 RESERVED_PING_NAMES = [
     "baseline",
