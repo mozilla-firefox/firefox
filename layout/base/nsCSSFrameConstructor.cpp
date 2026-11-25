@@ -8007,12 +8007,7 @@ nsIFrame* nsCSSFrameConstructor::CreateContinuingFrame(
     newFrame = NS_NewContinuingTextFrame(mPresShell, computedStyle);
     newFrame->Init(content, aParentFrame, aFrame);
   } else if (LayoutFrameType::Inline == frameType) {
-    if (aFrame->GetClassID() ==
-        nsQueryFrame::ClassID::nsMathMLmathInlineFrame_id) {
-      newFrame = NS_NewMathMLmathInlineFrame(mPresShell, computedStyle);
-    } else {
-      newFrame = NS_NewInlineFrame(mPresShell, computedStyle);
-    }
+    newFrame = NS_NewInlineFrame(mPresShell, computedStyle);
     newFrame->Init(content, aParentFrame, aFrame);
   } else if (LayoutFrameType::Block == frameType) {
     MOZ_ASSERT(!aFrame->IsTableCaption(),
