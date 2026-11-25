@@ -91,6 +91,7 @@ class MacroAssemblerNone : public Assembler {
 
   void nop() { MOZ_CRASH(); }
   void breakpoint() { MOZ_CRASH(); }
+  void crash() { MOZ_CRASH(); }
   void abiret() { MOZ_CRASH(); }
   void ret() { MOZ_CRASH(); }
 

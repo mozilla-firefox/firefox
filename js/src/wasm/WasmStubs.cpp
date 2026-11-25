@@ -2212,7 +2212,7 @@ static bool GenerateImportInterpExit(MacroAssembler& masm, const FuncImport& fi,
       case ValType::V128:
         // Note, CallImport_Rtt/V128 currently always throws, so we should never
         // reach this point.
-        masm.breakpoint();
+        masm.crash();
         break;
       case ValType::F32:
         masm.loadFloat32(argv, ReturnFloat32Reg);
@@ -2413,7 +2413,7 @@ static bool GenerateImportJitExit(MacroAssembler& masm, const FuncImport& fi,
         break;
       case ValType::V128:
         // Unreachable as callImport should not call the stub.
-        masm.breakpoint();
+        masm.crash();
         break;
       case ValType::F32:
         masm.convertValueToFloat(JSReturnOperand, ReturnFloat32Reg,
@@ -2911,7 +2911,7 @@ static bool GenerateThrowStub(MacroAssembler& masm, Label* throwLabel,
   masm.branch32(Assembler::Equal, scratch1,
                 Imm32(jit::ExceptionResumeKind::Wasm), &leaveWasm);
 
-  masm.breakpoint();
+  masm.crash();
 
   // The case where a Wasm catch handler was found while unwinding the stack.
   masm.bind(&resumeCatch);

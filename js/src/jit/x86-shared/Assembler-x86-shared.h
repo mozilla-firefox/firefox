@@ -1156,6 +1156,14 @@ class AssemblerX86Shared : public AssemblerShared {
   }
 
   void breakpoint() { masm.int3(); }
+
+  void crash() {
+#ifdef DEBUG
+    breakpoint();
+#endif
+    masm.ud2();
+  }
+
   CodeOffset ud2() {
     MOZ_ASSERT(hasCreator());
     CodeOffset off(masm.currentOffset());

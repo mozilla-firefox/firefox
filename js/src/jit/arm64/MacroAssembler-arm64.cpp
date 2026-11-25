@@ -233,7 +233,7 @@ void MacroAssemblerCompat::handleFailureWithHandlerTail(Label* profilerExitTail,
   asMasm().branch32(Assembler::Equal, r0, Imm32(ExceptionResumeKind::WasmCatch),
                     &wasmCatch);
 
-  breakpoint();  // Invalid kind.
+  crash();  // Invalid kind.
 
   // No exception handler. Load the error value, restore state and return from
   // the entry frame.
@@ -422,6 +422,13 @@ void MacroAssemblerCompat::breakpoint() {
   // Note, other payloads are possible, but GDB is known to misinterpret them
   // sometimes and iloop on the breakpoint instead of stopping properly.
   Brk(0);
+}
+
+void MacroAssemblerCompat::crash() {
+#ifdef DEBUG
+  breakpoint();
+#endif
+  Unreachable();
 }
 
 // Either `any` is valid or `sixtyfour` is valid.  Return a 32-bit ARMRegister

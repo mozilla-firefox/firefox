@@ -1849,6 +1849,8 @@ void MacroAssemblerRiscv64Compat::popValue(ValueOperand val) {
 
 void MacroAssemblerRiscv64Compat::breakpoint(uint32_t value) { break_(value); }
 
+void MacroAssemblerRiscv64Compat::crash() { break_(0); }
+
 void MacroAssemblerRiscv64Compat::ensureDouble(const ValueOperand& source,
                                                FloatRegister dest,
                                                Label* failure) {
@@ -1915,7 +1917,7 @@ void MacroAssemblerRiscv64Compat::handleFailureWithHandlerTail(
   asMasm().branch32(Assembler::Equal, a0, Imm32(ExceptionResumeKind::WasmCatch),
                     &wasmCatch);
 
-  breakpoint();  // Invalid kind.
+  crash();  // Invalid kind.
 
   // No exception handler. Load the error value, restore state and return from
   // the entry frame.

@@ -533,7 +533,7 @@ bool BaseCompiler::endFunction() {
   JitSpew(JitSpew_Codegen, "# endFunction: start of function epilogue");
 
   // Always branch to returnLabel_.
-  masm.breakpoint();
+  masm.crash();
 
   // Patch the add in the prologue so that it checks against the correct
   // frame size. Flush the constant pool in case it needs to be patched.

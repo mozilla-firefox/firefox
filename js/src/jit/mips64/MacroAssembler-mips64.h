@@ -784,6 +784,7 @@ class MacroAssemblerMIPS64Compat : public MacroAssemblerMIPS64 {
   void convertUInt64ToDouble(Register src, FloatRegister dest);
 
   void breakpoint();
+  void crash();
 
   void checkStackAlignment();
 

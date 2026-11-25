@@ -3060,7 +3060,7 @@ void MacroAssembler::assumeUnreachable(const char* output) {
   }
 #endif
 
-  breakpoint();
+  crash();
 }
 
 void MacroAssembler::printf(const char* output) {
