@@ -13,6 +13,9 @@
 
 namespace mozilla {
 
+// The MediaCodec MIME type for aCodec, or "" if unsupported.
+const char* AndroidEncoderMimeType(CodecType aCodec);
+
 class AndroidDataEncoder final : public MediaDataEncoder {
  public:
   NS_INLINE_DECL_THREADSAFE_REFCOUNTING(AndroidDataEncoder, final);

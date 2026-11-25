@@ -7,11 +7,13 @@ package org.mozilla.gecko.util;
 import android.media.MediaCodec;
 import android.media.MediaCodecInfo;
 import android.media.MediaCodecInfo.CodecCapabilities;
+import android.media.MediaCodecInfo.VideoCapabilities;
 import android.media.MediaCodecList;
 import android.os.Build;
 import android.util.Log;
 import java.util.ArrayList;
 import java.util.Arrays;
+import java.util.HashMap;
 import java.util.HashSet;
 import java.util.Locale;
 import java.util.Set;
@@ -361,6 +363,73 @@ public final class HardwareCodecCapabilityUtils {
   @WrapForJNI
   public static boolean hasHWHEVC(final boolean aIsEncoder) {
     return getHWCodecCapability(HEVC_MIME_TYPE, aIsEncoder);
+  }
+
+  private static final HashMap<String, Integer> sMaxEncoderPixels = new HashMap<>();
+
+  // The largest frame size, in pixels, any encoder for aMimeType accepts, or 0
+  // when unknown.
+  @WrapForJNI
+  public static synchronized int getMaxEncoderPixels(final String aMimeType) {
+    final Integer cached = sMaxEncoderPixels.get(aMimeType);
+    if (cached != null) {
+      return cached;
+    }
+    int max = 0;
+    for (final MediaCodecInfo info : getCodecList()) {
+      if (!info.isEncoder()) {
+        continue;
+      }
+      final CodecCapabilities capabilities;
+      try {
+        capabilities = info.getCapabilitiesForType(aMimeType);
+      } catch (final IllegalArgumentException e) {
+        continue;
+      }
+      final VideoCapabilities video = capabilities.getVideoCapabilities();
+      if (video == null) {
+        continue;
+      }
+      max = Math.max(max, widestFramePixels(video));
+      max = Math.max(max, tallestFramePixels(video));
+      Log.d(LOGTAG, "Encoder " + info.getName() + " max pixels " + max);
+    }
+    sMaxEncoderPixels.put(aMimeType, max);
+    return max;
+  }
+
+  // The widest frame aVideo accepts, in pixels, or 0 if unknown.
+  private static int widestFramePixels(final VideoCapabilities aVideo) {
+    try {
+      final int width = aVideo.getSupportedWidths().getUpper();
+      return supportedAlignedPixels(aVideo, width, aVideo.getSupportedHeightsFor(width).getUpper());
+    } catch (final IllegalArgumentException e) {
+      return 0;
+    }
+  }
+
+  // The tallest frame aVideo accepts, in pixels, or 0 if unknown.
+  private static int tallestFramePixels(final VideoCapabilities aVideo) {
+    try {
+      final int height = aVideo.getSupportedHeights().getUpper();
+      return supportedAlignedPixels(
+          aVideo, aVideo.getSupportedWidthsFor(height).getUpper(), height);
+    } catch (final IllegalArgumentException e) {
+      return 0;
+    }
+  }
+
+  // aWidth x aHeight rounded down to aVideo's alignment, in pixels, or 0 if
+  // aVideo doesn't accept that size. The width and height ranges alone are only
+  // a bounding box, so the pair is verified with isSizeSupported.
+  private static int supportedAlignedPixels(
+      final VideoCapabilities aVideo, final int aWidth, final int aHeight) {
+    final int width = aWidth - aWidth % aVideo.getWidthAlignment();
+    final int height = aHeight - aHeight % aVideo.getHeightAlignment();
+    if (!aVideo.isSizeSupported(width, height)) {
+      return 0;
+    }
+    return width * height;
   }
 
   @WrapForJNI

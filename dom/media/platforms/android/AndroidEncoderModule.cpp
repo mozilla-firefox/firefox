@@ -7,6 +7,7 @@
 #include "AndroidDataEncoder.h"
 #include "mozilla/Logging.h"
 #include "mozilla/gfx/gfxVars.h"
+#include "mozilla/java/HardwareCodecCapabilityUtilsWrappers.h"
 
 using mozilla::media::EncodeSupport;
 using mozilla::media::EncodeSupportSet;
@@ -41,6 +42,18 @@ EncodeSupportSet AndroidEncoderModule::SupportsCodec(CodecType aCodec) const {
       break;
   }
   return supports;
+}
+
+Maybe<uint32_t> AndroidEncoderModule::MaxPixelsPerFrame(
+    CodecType aCodec) const {
+  int32_t pixels = java::HardwareCodecCapabilityUtils::GetMaxEncoderPixels(
+      nsDependentCString(AndroidEncoderMimeType(aCodec)));
+  if (pixels <= 0) {
+    return Nothing();
+  }
+  AND_PEM_LOG("Codec {} max pixels per frame: {}", static_cast<int>(aCodec),
+              pixels);
+  return Some(static_cast<uint32_t>(pixels));
 }
 
 EncodeSupportSet AndroidEncoderModule::Supports(

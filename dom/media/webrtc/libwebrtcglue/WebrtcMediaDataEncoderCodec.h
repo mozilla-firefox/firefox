@@ -60,6 +60,7 @@ class WebrtcMediaDataEncoder : public RefCountedWebrtcVideoEncoder {
 
   const RefPtr<TaskQueue> mTaskQueue;
   const RefPtr<PEMFactory> mFactory;
+  const Maybe<uint32_t> mMaxPixelsPerFrame;
   RefPtr<MediaDataEncoder> mEncoder;
 
   Mutex mCallbackMutex;

@@ -13,6 +13,7 @@
 #include "PEMFactory.h"
 #include "VideoUtils.h"
 #include "api/video_codecs/h264_profile_level_id.h"
+#include "api/video_codecs/video_codec.h"
 #include "media/base/media_constants.h"
 #include "modules/video_coding/utility/vp8_header_parser.h"
 #include "modules/video_coding/utility/vp9_uncompressed_header_parser.h"
@@ -153,6 +154,8 @@ WebrtcMediaDataEncoder::WebrtcMediaDataEncoder(
           TaskQueue::Create(GetMediaThreadPool(MediaThreadType::SUPERVISOR),
                             "WebrtcMediaDataEncoder::mTaskQueue")),
       mFactory(new PEMFactory()),
+      mMaxPixelsPerFrame(mFactory->MaxPixelsPerFrame(
+          ToCodecType(webrtc::PayloadStringToCodecType(aFormat.name)))),
       mCallbackMutex("WebrtcMediaDataEncoderCodec encoded callback mutex"),
       mPendingMutex("WebrtcMediaDataEncoderCodec pending frames mutex"),
       mFormatParams(aFormat.parameters),
@@ -335,6 +338,9 @@ WebrtcVideoEncoder::EncoderInfo WebrtcMediaDataEncoder::GetEncoderInfo() const {
   info.implementation_name = "MediaDataEncoder";
   info.is_hardware_accelerated = false;
   info.supports_simulcast = false;
+  if (mMaxPixelsPerFrame) {
+    info.max_pixels_per_frame = *mMaxPixelsPerFrame;
+  }
 
   if (mCodecSpecific.codecType == webrtc::VideoCodecType::kVideoCodecH264) {
     // Without this, libwebrtc's QualityScalerResource is torn down whenever

@@ -45,7 +45,7 @@ RefPtr<MediaDataEncoder::InitPromise> AndroidDataEncoder::Init() {
                      &AndroidDataEncoder::ProcessInit);
 }
 
-static const char* MimeTypeOf(CodecType aCodec) {
+const char* AndroidEncoderMimeType(CodecType aCodec) {
   switch (aCodec) {
     case CodecType::H264:
       return "video/avc";
@@ -128,9 +128,9 @@ using FormatResult = Result<java::sdk::MediaFormat::LocalRef, MediaResult>;
 FormatResult ToMediaFormat(const EncoderConfig& aConfig) {
   nsresult rv = NS_OK;
   java::sdk::MediaFormat::LocalRef format;
-  rv = java::sdk::MediaFormat::CreateVideoFormat(MimeTypeOf(aConfig.mCodec),
-                                                 aConfig.mSize.width,
-                                                 aConfig.mSize.height, &format);
+  rv = java::sdk::MediaFormat::CreateVideoFormat(
+      AndroidEncoderMimeType(aConfig.mCodec), aConfig.mSize.width,
+      aConfig.mSize.height, &format);
   NS_ENSURE_SUCCESS(
       rv, FormatResult(MediaResult(NS_ERROR_DOM_MEDIA_FATAL_ERR,
                                    "fail to create Java MediaFormat object")));

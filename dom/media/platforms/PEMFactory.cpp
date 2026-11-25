@@ -493,6 +493,23 @@ RefPtr<PEMSupportsEncoderPromise> PEMFactory::SupportsAsync(
           });
 }
 
+Maybe<uint32_t> PEMFactory::MaxPixelsPerFrame(CodecType aCodec) const {
+  Maybe<uint32_t> max;
+  for (const auto& m : mCurrentPEMs) {
+    if (m->SupportsCodec(aCodec).isEmpty()) {
+      continue;
+    }
+    Maybe<uint32_t> pemMax = m->MaxPixelsPerFrame(aCodec);
+    if (!pemMax) {
+      return Nothing();
+    }
+    if (!max || *pemMax > *max) {
+      max = pemMax;
+    }
+  }
+  return max;
+}
+
 EncodeSupportSet PEMFactory::SupportsCodec(CodecType aCodec) const {
   EncodeSupportSet supports{};
   for (const auto& m : mCurrentPEMs) {

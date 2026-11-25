@@ -16,6 +16,7 @@ class AndroidEncoderModule final : public PlatformEncoderModule {
   // aCodec is the full codec string
   media::EncodeSupportSet Supports(const EncoderConfig& aConfig) const override;
   media::EncodeSupportSet SupportsCodec(CodecType aCodec) const override;
+  Maybe<uint32_t> MaxPixelsPerFrame(CodecType aCodec) const override;
 
   const char* GetName() const override { return "Android Encoder Module"; }
 

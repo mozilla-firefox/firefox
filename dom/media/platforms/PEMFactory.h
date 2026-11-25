@@ -35,6 +35,10 @@ class PEMFactory final {
   media::EncodeSupportSet Supports(const EncoderConfig& aConfig) const;
   media::EncodeSupportSet SupportsCodec(CodecType aCodec) const;
 
+  // The largest frame size, in pixels, any module supporting aCodec accepts.
+  // Nothing() if some supporting module has no known limit.
+  Maybe<uint32_t> MaxPixelsPerFrame(CodecType aCodec) const;
+
   // Asynchronous variant of Supports() that resolves once the encoder module
   // which would handle aConfig can report accurate (hardware-inclusive)
   // support. For remote modules this waits for the relevant process to report

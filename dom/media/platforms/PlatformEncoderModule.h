@@ -45,6 +45,12 @@ class PlatformEncoderModule {
       const EncoderConfig& aConfig) const = 0;
   virtual media::EncodeSupportSet SupportsCodec(CodecType aCodecType) const = 0;
 
+  // The largest frame size, in pixels, this module's encoders for aCodecType
+  // accept. Nothing() when the limit is unknown.
+  virtual Maybe<uint32_t> MaxPixelsPerFrame(CodecType aCodecType) const {
+    return Nothing();
+  }
+
   using SupportsEncoderPromise =
       MozPromise<media::EncodeSupportSet, nsresult, /* IsExclusive = */ true>;
 
