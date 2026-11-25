@@ -1,6 +1,7 @@
 [DEFAULT]
 prefs = [
   "browser.widgets.generated.enabled=true",
+  "extensions.widgets.generated.enabled=true",
 ]
 support-files = ["head.js"]
 

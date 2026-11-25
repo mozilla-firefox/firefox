@@ -8,6 +8,7 @@ const { NimbusTestUtils } = ChromeUtils.importESModule(
 );
 
 const ENABLED_PREF = "browser.widgets.generated.enabled";
+const ORDER_PREF = "browser.widgets.studio.order";
 
 add_setup(mockAuthentication);
 
@@ -264,5 +265,50 @@ add_task(async function test_panel_composer() {
     () => composer.shadowRoot.activeElement?.localName == "textarea",
     "Composer focused again"
   );
+  SidebarController.hide();
+});
+
+add_task(async function test_generated_widgets_listed() {
+  let { WidgetManager } = ChromeUtils.importESModule(
+    "moz-src:///toolkit/components/widgets/WidgetManager.sys.mjs"
+  );
+  let { GeneratedWidgetsProvider } = ChromeUtils.importESModule(
+    "moz-src:///toolkit/components/widgets/GeneratedWidgetsProvider.sys.mjs"
+  );
+  registerCleanupFunction(() => Services.prefs.clearUserPref(ORDER_PREF));
+  let panel = await openWidgetsSidebar();
+  let a = await installGeneratedWidget({ name: "Widget A" });
+  let b = await installGeneratedWidget({ name: "Widget B" });
+  let { widgets } = panel;
+  let ids = list =>
+    list.map(widget => widget.id).filter(id => id == a || id == b);
+  await TestUtils.waitForCondition(
+    () => ids(widgets.all).length == 2,
+    "Widgets listed"
+  );
+  Assert.deepEqual(ids(widgets.all), [a, b], "Install order");
+  Assert.deepEqual(widgets.order.slice(-2), [a, b], "Order saved");
+  Assert.deepEqual(ids(widgets.disabled), [a, b], "Disabled");
+
+  widgets.order = [b, a];
+  Assert.deepEqual(ids(widgets.all), [b, a], "Saved order");
+
+  WidgetManager.getWidgetByID(b).enabled = true;
+  await TestUtils.waitForCondition(
+    () => ids(widgets.enabled).length == 1,
+    "Widget enabled"
+  );
+  Assert.deepEqual(ids(widgets.enabled), [b], "Enabled");
+  Assert.deepEqual(ids(widgets.disabled), [a], "Disabled");
+
+  SidebarController.hide();
+  await GeneratedWidgetsProvider.uninstall(a);
+  Assert.ok(widgets.order.includes(a), "Kept while closed");
+  ({ widgets } = await openWidgetsSidebar());
+  await TestUtils.waitForCondition(
+    () => !widgets.order.includes(a),
+    "Uninstalled widget unsaved"
+  );
+  Assert.deepEqual(ids(widgets.all), [b], "Uninstalled widget removed");
   SidebarController.hide();
 });

@@ -169,3 +169,50 @@ function simulateWriteFileResponse(files) {
     })),
   };
 }
+
+/**
+ * Installs a generated widget and, at cleanup, uninstalls it and clears its
+ * prefs.
+ *
+ * @param {object} widget
+ * @param {string} widget.name - the widget's name
+ * @returns {Promise<string>} the widget's id
+ */
+async function installGeneratedWidget({ name }) {
+  let { ExtensionTestCommon } = ChromeUtils.importESModule(
+    "resource://testing-common/ExtensionTestCommon.sys.mjs"
+  );
+  let { ExtensionCommon } = ChromeUtils.importESModule(
+    "resource://gre/modules/ExtensionCommon.sys.mjs"
+  );
+  let { GeneratedWidgetsProvider, widgetsDirectory } =
+    ChromeUtils.importESModule(
+      "moz-src:///toolkit/components/widgets/GeneratedWidgetsProvider.sys.mjs"
+    );
+  let { WidgetManager } = ChromeUtils.importESModule(
+    "moz-src:///toolkit/components/widgets/WidgetManager.sys.mjs"
+  );
+  let scratch = PathUtils.join(widgetsDirectory(), "scratch");
+  await IOUtils.makeDirectory(scratch);
+  let path = await IOUtils.createUniqueFile(scratch, "widget.zip");
+  let file = ExtensionTestCommon.generateZipFile(
+    {
+      "widget.html": `<!doctype html><title>${name}</title>`,
+      "widget.json": JSON.stringify({ name, prompt: name }),
+    },
+    "generated-widget.zip"
+  );
+  await IOUtils.move(file.path, path);
+  let { id } = await GeneratedWidgetsProvider.install(path);
+  registerCleanupFunction(async () => {
+    await GeneratedWidgetsProvider.uninstall(id);
+    Services.prefs.deleteBranch(
+      `extensions.widgets.${ExtensionCommon.makeWidgetId(id)}.`
+    );
+  });
+  await TestUtils.waitForCondition(
+    () => WidgetManager.getWidgetByID(id),
+    "Widget registered"
+  );
+  return id;
+}
