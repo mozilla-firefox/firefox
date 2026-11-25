@@ -20,8 +20,8 @@
  */
 
 /**
- * pdfjsVersion = 7.0.229
- * pdfjsBuild = 32fb05b3b
+ * pdfjsVersion = 7.0.234
+ * pdfjsBuild = 3471ae169
  */
 export const __webpack_esm_ids__ = ["flatten"];
 export const __webpack_esm_modules__ = {

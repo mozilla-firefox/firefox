@@ -20,8 +20,8 @@
  */
 
 /**
- * pdfjsVersion = 7.0.229
- * pdfjsBuild = 32fb05b3b
+ * pdfjsVersion = 7.0.234
+ * pdfjsBuild = 3471ae169
  */
 
 ;// ./src/shared/util.js
@@ -2013,7 +2013,7 @@ class FloatingToolbar {
 }
 
 ;// ./src/shared/internal_evt.js
-const INTERNAL_EVT = "e285167f-468a-4371-bac8-b636e792b69c";
+const INTERNAL_EVT = "7659b85a-a6a1-420a-b779-aa2cc2e76feb";
 const internalOpt = Object.freeze({
   internal: INTERNAL_EVT
 });
@@ -14688,7 +14688,7 @@ class RendererWorker {
         terminateEarly("TypedArray transfer test failed.");
         return;
       }
-      const apiVersion = "7.0.229";
+      const apiVersion = "7.0.234";
       if (apiVersion !== data.workerVersion) {
         terminateEarly(`The API version "${apiVersion}" does not match the Worker version "${data.workerVersion}".`);
         return;
@@ -15103,6 +15103,7 @@ class TextLayer {
     }
     let fontFamily = this.#fontInspectorEnabled && style.fontSubstitution || style.fontFamily;
     fontFamily = TextLayer.fontFamilyMap.get(fontFamily) || fontFamily;
+    let shouldScaleText = geom.str.length > 1;
     let ascent;
     const {
       textLayerFont
@@ -15110,6 +15111,7 @@ class TextLayer {
     if (textLayerFont && this.#fonts.get(textLayerFont.name)?.fontFace.status === "loaded") {
       fontFamily = `"${textLayerFont.name}", ${fontFamily}`;
       ascent = textLayerFont.ascent;
+      shouldScaleText ||= textLayerFont.advanceScale !== 1;
     }
     const fontHeight = Math.hypot(tx[2], tx[3]);
     const fontAscent = fontHeight * (ascent ?? TextLayer.#getAscent(fontFamily, style, this.#layoutTextParams.ctx));
@@ -15137,15 +15139,12 @@ class TextLayer {
     if (angle !== 0) {
       textDivProperties.angle = angle * (180 / Math.PI);
     }
-    let shouldScaleText = false;
-    if (geom.str.length > 1) {
-      shouldScaleText = true;
-    } else if (geom.str !== " " && geom.transform[0] !== geom.transform[3]) {
-      const absScaleX = Math.abs(geom.transform[0]),
-        absScaleY = Math.abs(geom.transform[3]);
-      if (absScaleX !== absScaleY && Math.max(absScaleX, absScaleY) / Math.min(absScaleX, absScaleY) > 1.5) {
-        shouldScaleText = true;
-      }
+    const scaleX = geom.transform[0],
+      scaleY = geom.transform[3];
+    if (!shouldScaleText && geom.str !== " " && scaleX !== scaleY) {
+      const absScaleX = Math.abs(scaleX),
+        absScaleY = Math.abs(scaleY);
+      shouldScaleText = Math.max(absScaleX, absScaleY) > 1.5 * Math.min(absScaleX, absScaleY);
     }
     if (shouldScaleText) {
       textDivProperties.canvasWidth = style.vertical ? geom.height : geom.width;
@@ -15395,7 +15394,7 @@ function getDocument(src = {}) {
   }
   const docParams = {
     docId,
-    apiVersion: "7.0.229",
+    apiVersion: "7.0.234",
     data,
     password,
     disableAutoFetch,
@@ -17115,8 +17114,8 @@ class InternalRenderTask {
     }
   }
 }
-const version = "7.0.229";
-const build = "32fb05b3b";
+const version = "7.0.234";
+const build = "3471ae169";
 
 ;// ./src/display/editor/color_picker.js
 

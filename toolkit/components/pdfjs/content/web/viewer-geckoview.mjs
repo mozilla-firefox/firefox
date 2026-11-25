@@ -20,8 +20,8 @@
  */
 
 /**
- * pdfjsVersion = 7.0.229
- * pdfjsBuild = 32fb05b3b
+ * pdfjsVersion = 7.0.234
+ * pdfjsBuild = 3471ae169
  */
 
 ;// ./web/ui_utils.js
@@ -912,7 +912,7 @@ const {
 } = globalThis.pdfjsLib;
 
 ;// ./web/internal_evt.js
-const INTERNAL_EVT = "e285167f-468a-4371-bac8-b636e792b69c";
+const INTERNAL_EVT = "7659b85a-a6a1-420a-b779-aa2cc2e76feb";
 const internalOpt = Object.freeze({
   internal: INTERNAL_EVT
 });
@@ -5908,7 +5908,11 @@ class PDFScriptingManager {
             break;
           }
           if (command === "print") {
-            await pdfViewer.pagesPromise;
+            try {
+              await pdfViewer.pagesPromise;
+            } catch {
+              break;
+            }
           }
           this.#eventBus.dispatch(command === "print" ? "print" : "download", {
             source: this
@@ -9034,7 +9038,7 @@ class PDFViewer {
   #savedPageViews = null;
   #deletedPageNumbers = null;
   constructor(options) {
-    const viewerVersion = "7.0.229";
+    const viewerVersion = "7.0.234";
     if (version !== viewerVersion) {
       throw new Error(`The API version "${version}" does not match the Viewer version "${viewerVersion}".`);
     }
@@ -9411,6 +9415,7 @@ class PDFViewer {
       this.eventBus.dispatch("pagesdestroy", {
         source: this
       });
+      this._pagesCapability.reject(new AbortException("Document was closed."));
       this._cancelRendering();
       this._resetView();
       this.findController?.setDocument(null);
@@ -9605,6 +9610,9 @@ class PDFViewer {
               this._pagesCapability.resolve();
             }
           }, reason => {
+            if (pdfDocument !== this.pdfDocument) {
+              return;
+            }
             console.error(`Unable to get page ${pageNum} to initialize viewer`, reason);
             if (--getPagesLeft === 0) {
               this._pagesCapability.resolve();
@@ -9612,6 +9620,9 @@ class PDFViewer {
           });
           if (pageNum % PagesCountLimit.PAUSE_EAGER_PAGE_INIT === 0) {
             await promise;
+            if (pdfDocument !== this.pdfDocument) {
+              break;
+            }
           }
         }
       });
@@ -9629,6 +9640,9 @@ class PDFViewer {
         }
       });
     }).catch(reason => {
+      if (pdfDocument !== this.pdfDocument) {
+        return;
+      }
       console.error("Unable to initialize viewer", reason);
       this._pagesCapability.reject(reason);
     });
@@ -10278,13 +10292,19 @@ class PDFViewer {
     if (pageView.pdfPage) {
       return pageView.pdfPage;
     }
+    const {
+      pdfDocument
+    } = this;
     try {
-      const pdfPage = await this.pdfDocument.getPage(pageView.id);
+      const pdfPage = await pdfDocument.getPage(pageView.id);
       if (!pageView.pdfPage) {
         pageView.setPdfPage(pdfPage);
       }
       return pdfPage;
     } catch (reason) {
+      if (pdfDocument !== this.pdfDocument) {
+        return null;
+      }
       console.error("Unable to get page for page view", reason);
       return null;
     }
@@ -10310,8 +10330,10 @@ class PDFViewer {
     const ignoreDetailViews = this.#scaleTimeoutId !== null || this.#scrollTimeoutId !== null && visiblePages.views.some(page => page.detailView?.renderingCancelled);
     const pageView = this.renderingQueue.getHighestPriority(visiblePages, this._pages, scrollAhead, preRenderExtra, ignoreDetailViews);
     if (pageView) {
-      this.#ensurePdfPageLoaded(pageView).then(() => {
-        this.renderingQueue.renderView(pageView);
+      this.#ensurePdfPageLoaded(pageView).then(pdfPage => {
+        if (pdfPage !== null) {
+          this.renderingQueue.renderView(pageView);
+        }
       });
       return true;
     }
@@ -11974,6 +11996,9 @@ const PDFViewerApplication = {
         pdfViewer.currentScaleValue = pdfViewer.currentScaleValue;
         this.setInitialView(hash);
       }).catch(() => {
+        if (pdfDocument !== this.pdfDocument) {
+          return;
+        }
         this.setInitialView();
       }).then(() => {
         pdfViewer.update();
@@ -11983,6 +12008,9 @@ const PDFViewerApplication = {
       this._unblockDocumentLoadEvent();
       this._initializeAutoPrint(pdfDocument, openActionPromise);
     }, reason => {
+      if (pdfDocument !== this.pdfDocument) {
+        return;
+      }
       this._documentError("pdfjs-loading-error", {
         message: reason.message
       });

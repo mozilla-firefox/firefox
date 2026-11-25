@@ -20,8 +20,8 @@
  */
 
 /**
- * pdfjsVersion = 7.0.229
- * pdfjsBuild = 32fb05b3b
+ * pdfjsVersion = 7.0.234
+ * pdfjsBuild = 3471ae169
  */
 /******/ var __webpack_modules__ = ({
 
@@ -11116,27 +11116,30 @@ function getAscentRatio({
   bbox,
   fontMatrix,
   isType3Font
-}) {
+}, heightScaled = false) {
   const isValid = ratio => ratio > 0.5 && ratio < 0.95;
-  let ratio = ascent / (ascent + Math.abs(descent));
+  const ratio = ascent / (ascent + Math.abs(descent));
   if (isValid(ratio)) {
     return ratio;
   }
-  if (bbox) {
-    let yMin = bbox[1],
-      yMax = bbox[3];
-    if (isType3Font && fontMatrix) {
-      const bounds = util.BBOX_INIT.slice();
-      util.Util.axialAlignedBoundingBox(bbox, fontMatrix, bounds);
-      yMin = bounds[1];
-      yMax = bounds[3];
-    }
-    ratio = yMax / (yMax - yMin);
-    if (isValid(ratio)) {
-      return ratio;
-    }
+  if (!bbox) {
+    return DEFAULT_ASCENT;
   }
-  return DEFAULT_ASCENT;
+  if (isType3Font && fontMatrix && !heightScaled) {
+    const bounds = util.BBOX_INIT.slice();
+    util.Util.axialAlignedBoundingBox(bbox, fontMatrix, bounds);
+    bbox = bounds;
+  }
+  const [, yMin,, yMax] = bbox;
+  const height = yMax - yMin;
+  if (!(height > 0 && Number.isFinite(height))) {
+    return DEFAULT_ASCENT;
+  }
+  const bboxRatio = yMax / height;
+  if (isType3Font && yMin <= 0 && yMax >= 0) {
+    return bboxRatio;
+  }
+  return isValid(bboxRatio) ? bboxRatio : DEFAULT_ASCENT;
 }
 function addCount(samples, key, advance) {
   const counts = samples.getOrInsertComputed(key, util.makeMap);
@@ -11177,7 +11180,7 @@ function createBoxGlyph(width, yMin, yMax) {
   }
   return glyph;
 }
-function buildTextLayerFont(advances, ascent, drawBoxes = false) {
+function buildTextLayerFont(advances, ascent, drawBoxes = false, advanceScale = 1) {
   const hmtxAdvances = [0];
   const glyphIds = new Map();
   const charCodeToGlyphId = new Map();
@@ -11186,10 +11189,11 @@ function buildTextLayerFont(advances, ascent, drawBoxes = false) {
     firstChar = 0xffff,
     lastChar = 0;
   for (const [codePoint, advance] of advances) {
-    if (!(advance >= 0 && advance <= MAX_ADVANCE)) {
+    const scaledAdvance = advance / advanceScale;
+    const units = Math.round(scaledAdvance * UNITS_PER_EM / 1000);
+    if (!(scaledAdvance >= 0 && scaledAdvance <= MAX_ADVANCE) || units === 0 && scaledAdvance > 0) {
       return null;
     }
-    const units = Math.round(advance * UNITS_PER_EM / 1000);
     let glyphId = glyphIds.get(units);
     if (glyphId === undefined) {
       glyphId = hmtxAdvances.push(units) - 1;
@@ -11203,6 +11207,7 @@ function buildTextLayerFont(advances, ascent, drawBoxes = false) {
     lastChar = Math.max(lastChar, char);
   }
   const numGlyphs = hmtxAdvances.length;
+  const avgCharWidth = Math.round(advanceSum / (numGlyphs - 1));
   const ascender = Math.round(ascent * UNITS_PER_EM);
   const descender = ascender - UNITS_PER_EM;
   const builder = new opentype_file_builder.OpenTypeFileBuilder("true");
@@ -11234,7 +11239,7 @@ function buildTextLayerFont(advances, ascent, drawBoxes = false) {
   maxp.setUint16(14, 2);
   const os2 = createTable("OS/2", 96);
   os2.setUint16(0, 4);
-  os2.setInt16(2, Math.round(advanceSum / (numGlyphs - 1)));
+  os2.setInt16(2, Math.min(avgCharWidth, 0x7fff));
   os2.setUint16(4, 400);
   os2.setUint16(6, 5);
   os2.setUint32(58, 0x5044464a, false);
@@ -11243,7 +11248,7 @@ function buildTextLayerFont(advances, ascent, drawBoxes = false) {
   os2.setUint16(66, lastChar);
   os2.setInt16(68, ascender);
   os2.setInt16(70, descender);
-  os2.setUint16(74, ascender);
+  os2.setUint16(74, Math.max(ascender, 1));
   os2.setUint16(76, -descender);
   os2.setUint16(92, 0x20);
   os2.setUint16(94, 1);
@@ -11288,6 +11293,7 @@ class TextLayerFonts {
   #buildBound = this.#build.bind(this);
   #chunks = [];
   #drawBoxes;
+  #heightScaled = new WeakSet();
   #idFactory;
   #loadedNames = new Map();
   #sink;
@@ -11306,8 +11312,11 @@ class TextLayerFonts {
       ...chunk
     });
   }
-  addFont(loadedName, font) {
+  addFont(loadedName, font, heightScaled = false) {
     this.#loadedNames.set(loadedName, font);
+    if (heightScaled) {
+      this.#heightScaled.add(font);
+    }
   }
   #getStats(font) {
     return this.#stats.getOrInsertComputed(font, createStats);
@@ -11377,19 +11386,30 @@ class TextLayerFonts {
         advances.getOrInsert(codePoint, advance);
       }
     }
-    if (!advances.has(0x20)) {
+    if (!advances.has(0x20) && stats.spaceGaps.length > 0) {
       const gaps = stats.spaceGaps.sort((a, b) => a - b);
-      advances.set(0x20, gaps.length > 0 ? gaps[gaps.length >> 1] : DEFAULT_SPACE_ADVANCE);
+      advances.set(0x20, gaps[gaps.length >> 1]);
     }
-    const ascent = font.vertical ? 0.5 : getAscentRatio(font);
-    const data = buildTextLayerFont(advances, ascent, this.#drawBoxes);
+    let advanceScale = 1;
+    for (const advance of advances.values()) {
+      if (!Number.isFinite(advance)) {
+        return null;
+      }
+      while (advance > MAX_ADVANCE * advanceScale) {
+        advanceScale *= 2;
+      }
+    }
+    advances.getOrInsert(0x20, Math.max(DEFAULT_SPACE_ADVANCE, advanceScale * 1000 / UNITS_PER_EM));
+    const ascent = font.vertical ? 0.5 : getAscentRatio(font, this.#heightScaled.has(font));
+    const data = buildTextLayerFont(advances, ascent, this.#drawBoxes, advanceScale);
     if (!data) {
       return null;
     }
     return {
       name: `${this.#idFactory.getDocId()}_t${this.#idFactory.createFontId()}`,
       data,
-      ascent
+      ascent,
+      advanceScale
     };
   }
   send() {
@@ -17483,6 +17503,7 @@ class PartialEvaluator {
     const preprocessor = new EvaluatorPreprocessor(stream, xref, stateManager);
     let textState, currentTextState;
     let lastFakeSpaceExtraCharId = -1;
+    let hScaleChanged = false;
     function getUnmirroredTransform([a, b, c, d, e, f], width) {
       if (a * d - b * c >= 0 || d <= 0) {
         return null;
@@ -17510,15 +17531,22 @@ class PartialEvaluator {
         hasEOL: false
       });
     }
-    function getCurrentTextTransform() {
-      const font = textState.font;
-      const tsm = [textState.fontSize * textState.textHScale, 0, 0, textState.fontSize, 0, textState.textRise];
-      if (font.isType3Font && (textState.fontSize <= 1 || font.isCharBBox) && !(0,util.isArrayEqual)(textState.fontMatrix, util.FONT_IDENTITY_MATRIX)) {
+    function getType3HeightScale() {
+      const {
+        font,
+        fontMatrix,
+        fontSize
+      } = textState;
+      if (font.isType3Font && (fontSize <= 1 || font.isCharBBox) && !(0,util.isArrayEqual)(fontMatrix, util.FONT_IDENTITY_MATRIX)) {
         const glyphHeight = font.bbox[3] - font.bbox[1];
         if (glyphHeight > 0) {
-          tsm[3] *= glyphHeight * textState.fontMatrix[3];
+          return glyphHeight * fontMatrix[3];
         }
       }
+      return 1;
+    }
+    function getCurrentTextTransform() {
+      const tsm = [textState.fontSize * textState.textHScale, 0, 0, textState.fontSize * getType3HeightScale(), 0, textState.textRise];
       return util.Util.transform(textState.ctm, util.Util.transform(textState.textMatrix, tsm));
     }
     function ensureTextContentItem() {
@@ -17542,7 +17570,7 @@ class PartialEvaluator {
           style.fontSubstitution = font.systemFontInfo.css;
           style.fontSubstitutionLoadedName = font.systemFontInfo.loadedName;
         }
-        textLayerFonts?.addFont(loadedName, font);
+        textLayerFonts?.addFont(loadedName, font, getType3HeightScale() !== 1);
       }
       textContentItem.fontName = loadedName;
       const trm = textContentItem.transform = getCurrentTextTransform();
@@ -17653,6 +17681,15 @@ class PartialEvaluator {
       textContentItem.pendingSpaceIndex = -1;
       textContentItem.pendingSpaceAdvance = 0;
       textContentItem.pendingSpaceExtraCharId = -1;
+    }
+    function resetTextMatrix() {
+      textState.setTextMatrix(textState.textLineMatrix);
+      hScaleChanged = false;
+      resetAdaptiveSpacing();
+    }
+    function moveText(x, y) {
+      textState.translateTextLineMatrix(x, y);
+      resetTextMatrix();
     }
     function recordPendingSpace(advance, textOrientation) {
       if (textContentItem.useCharWidthThreshold || textContentItem.minAdvance < Infinity) {
@@ -17768,7 +17805,7 @@ class PartialEvaluator {
           } else {
             textContentItem.height += advanceY;
           }
-        } else if (!addFakeSpaces(advanceY, textContentItem.prevTransform, textOrientation)) {
+        } else if (!addFakeSpaces(advanceY, currentTransform, textOrientation)) {
           if (textContentItem.str.length === 0) {
             resetLastChars();
             pushWhitespace({
@@ -17825,7 +17862,7 @@ class PartialEvaluator {
         } else {
           textContentItem.width += advanceX;
         }
-      } else if (!addFakeSpaces(advanceX, textContentItem.prevTransform, textOrientation)) {
+      } else if (!addFakeSpaces(advanceX, currentTransform, textOrientation)) {
         if (textContentItem.str.length === 0) {
           resetLastChars();
           pushWhitespace({
@@ -17872,7 +17909,7 @@ class PartialEvaluator {
       }
       const glyphs = font.charsToGlyphs(chars);
       const scale = textState.fontMatrix[0] * textState.fontSize;
-      const advanceScale = Math.abs(textState.fontMatrix[0] * 1000);
+      const advanceScale = Math.abs(textState.fontMatrix[0] * 1000 / getType3HeightScale());
       for (let i = 0, ii = glyphs.length; i < ii; i++) {
         const glyph = glyphs[i];
         const {
@@ -17903,7 +17940,9 @@ class PartialEvaluator {
           saveLastChar(" ");
           continue;
         }
-        if (!isZeroWidthDiacritic && !compareWithLastPosition(scaledDim)) {
+        const inView = isZeroWidthDiacritic || compareWithLastPosition(scaledDim);
+        hScaleChanged = false;
+        if (!inView) {
           if (!font.vertical) {
             textState.translateTextMatrix(scaledDim * textState.textHScale, 0);
           } else {
@@ -17970,16 +18009,19 @@ class PartialEvaluator {
         });
       }
     }
-    function addFakeSpaces(width, transf, textOrientation) {
+    function addFakeSpaces(width, currentTransform, textOrientation) {
       lastFakeSpaceExtraCharId = -1;
       if (textOrientation * textContentItem.spaceInFlowMin <= width && width <= textOrientation * textContentItem.spaceInFlowMax) {
         if (textContentItem.initialized) {
           resetLastChars();
           textContentItem.str.push(" ");
           lastFakeSpaceExtraCharId = intersector?.addExtraChar(" ") ?? -1;
-          if (textLayerFonts && !textContentItem.vertical) {
-            const [,, c, d] = textContentItem.transform;
-            textLayerFonts.addSpaceGap(textContentItem.fontName, 1000 * Math.abs(width) * textContentItem.textAdvanceScale / Math.hypot(c, d));
+          if (textLayerFonts && !textContentItem.vertical && !hScaleChanged) {
+            const [a, b] = currentTransform;
+            const emLength = Math.hypot(a, b) * Math.abs(getType3HeightScale());
+            if (emLength > 0) {
+              textLayerFonts.addSpaceGap(textContentItem.fontName, 1000 * Math.abs(width) * textContentItem.textAdvanceScale / emLength);
+            }
           }
         }
         return false;
@@ -17995,7 +18037,6 @@ class PartialEvaluator {
       pushWhitespace({
         width: Math.abs(width),
         height: Math.abs(height),
-        transform: transf || getCurrentTextTransform(),
         fontName
       });
       return true;
@@ -18083,32 +18124,25 @@ class PartialEvaluator {
           case util.OPS.setHScale:
             if (textState.textHScale !== args[0] / 100) {
               textState.textHScale = args[0] / 100;
+              hScaleChanged = true;
               resetAdaptiveSpacing();
             }
             break;
           case util.OPS.setLeading:
             textState.leading = args[0];
             break;
-          case util.OPS.moveText:
-            textState.translateTextLineMatrix(args[0], args[1]);
-            textState.textMatrix = textState.textLineMatrix.slice();
-            resetAdaptiveSpacing();
-            break;
           case util.OPS.setLeadingMoveText:
             textState.leading = -args[1];
-            textState.translateTextLineMatrix(args[0], args[1]);
-            textState.textMatrix = textState.textLineMatrix.slice();
-            resetAdaptiveSpacing();
+          case util.OPS.moveText:
+            moveText(args[0], args[1]);
             break;
           case util.OPS.nextLine:
-            textState.carriageReturn();
-            resetAdaptiveSpacing();
+            moveText(0, -textState.leading);
             break;
           case util.OPS.setTextMatrix:
-            textState.setTextMatrix(args[0], args[1], args[2], args[3], args[4], args[5]);
-            textState.setTextLineMatrix(args[0], args[1], args[2], args[3], args[4], args[5]);
+            textState.setTextLineMatrix(args);
+            resetTextMatrix();
             updateAdvanceScale();
-            resetAdaptiveSpacing();
             break;
           case util.OPS.setCharSpacing:
             if (textState.charSpacing !== args[0]) {
@@ -18123,9 +18157,8 @@ class PartialEvaluator {
             }
             break;
           case util.OPS.beginText:
-            textState.textMatrix = core_utils.IDENTITY_MATRIX.slice();
-            textState.textLineMatrix = core_utils.IDENTITY_MATRIX.slice();
-            resetAdaptiveSpacing();
+            textState.setTextLineMatrix(core_utils.IDENTITY_MATRIX);
+            resetTextMatrix();
             textMarkedContentLevel = markedContentLevel;
             break;
           case util.OPS.endText:
@@ -18172,31 +18205,17 @@ class PartialEvaluator {
             });
             break;
           case util.OPS.nextLineShowText:
-            if (!stateManager.state.font) {
-              self.ensureStateFont(stateManager.state);
-              continue;
-            }
-            textState.carriageReturn();
-            resetAdaptiveSpacing();
-            buildTextContentItem({
-              chars: args[0],
-              extraSpacing: 0
-            });
-            break;
           case util.OPS.nextLineSetSpacingShowText:
             if (!stateManager.state.font) {
               self.ensureStateFont(stateManager.state);
               continue;
             }
-            if (textState.wordSpacing !== args[0] || textState.charSpacing !== args[1]) {
-              textState.wordSpacing = args[0];
-              textState.charSpacing = args[1];
-              resetAdaptiveSpacing();
+            if (fn === util.OPS.nextLineSetSpacingShowText) {
+              [textState.wordSpacing, textState.charSpacing] = args;
             }
-            textState.carriageReturn();
-            resetAdaptiveSpacing();
+            moveText(0, -textState.leading);
             buildTextContentItem({
-              chars: args[2],
+              chars: args.at(-1),
               extraSpacing: 0
             });
             break;
@@ -19458,23 +19477,17 @@ class TextState {
   leading = 0;
   textHScale = 1;
   textRise = 0;
-  setTextMatrix(a, b, c, d, e, f) {
+  setTextMatrix(matrix) {
     const m = this.textMatrix;
-    m[0] = a;
-    m[1] = b;
-    m[2] = c;
-    m[3] = d;
-    m[4] = e;
-    m[5] = f;
+    for (let i = 0; i < 6; i++) {
+      m[i] = matrix[i];
+    }
   }
-  setTextLineMatrix(a, b, c, d, e, f) {
+  setTextLineMatrix(matrix) {
     const m = this.textLineMatrix;
-    m[0] = a;
-    m[1] = b;
-    m[2] = c;
-    m[3] = d;
-    m[4] = e;
-    m[5] = f;
+    for (let i = 0; i < 6; i++) {
+      m[i] = matrix[i];
+    }
   }
   translateTextMatrix(x, y) {
     const m = this.textMatrix;
@@ -19485,10 +19498,6 @@ class TextState {
     const m = this.textLineMatrix;
     m[4] = m[0] * x + m[2] * y + m[4];
     m[5] = m[1] * x + m[3] * y + m[5];
-  }
-  carriageReturn() {
-    this.translateTextLineMatrix(0, -this.leading);
-    this.textMatrix = this.textLineMatrix.slice();
   }
   clone() {
     const clone = Object.assign(Object.create(this), this);
@@ -47245,7 +47254,7 @@ class WorkerMessageHandler {
       docId,
       apiVersion
     } = docParams;
-    const workerVersion = "7.0.229";
+    const workerVersion = "7.0.234";
     if (apiVersion !== workerVersion) {
       throw new Error(`The API version "${apiVersion}" does not match the Worker version "${workerVersion}".`);
     }
