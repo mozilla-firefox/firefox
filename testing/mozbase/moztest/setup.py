@@ -4,10 +4,10 @@
 
 from setuptools import find_packages, setup
 
-PACKAGE_VERSION = "1.1.0"
+PACKAGE_VERSION = "1.2.0"
 
 # dependencies
-deps = ["mozinfo"]
+deps = ["mozinfo >= 0.7"]
 
 setup(
     name="moztest",
