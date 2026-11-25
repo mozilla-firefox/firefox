@@ -46,22 +46,48 @@ add_setup(async function () {
   });
 });
 
+// The impression these tasks expect is the one recorded when the tab closes
+// before the child actor has scanned the page. The scan runs on a timer after
+// DOMContentLoaded, which a slow run can fire before the tab closes, so delay
+// it past the end of the task.
+async function withPageScanPrevented(task) {
+  let loadTimeout = Services.ppmm.sharedData.get(
+    SEARCH_TELEMETRY_SHARED.LOAD_TIMEOUT
+  );
+  Services.ppmm.sharedData.set(
+    SEARCH_TELEMETRY_SHARED.LOAD_TIMEOUT,
+    60 * 60 * 1000
+  );
+  Services.ppmm.sharedData.flush();
+  try {
+    await task();
+  } finally {
+    Services.ppmm.sharedData.set(
+      SEARCH_TELEMETRY_SHARED.LOAD_TIMEOUT,
+      loadTimeout
+    );
+    Services.ppmm.sharedData.flush();
+  }
+}
+
 add_task(async function test_simple_search_page_visit() {
   resetTelemetry();
 
-  await BrowserTestUtils.withNewTab(
-    {
-      gBrowser,
-      url: getSERPUrl("searchTelemetry.html"),
-    },
-    async () => {
-      await assertSearchSourcesTelemetry(
-        {},
-        {
-          "browser.search.content.unknown": { "example:tagged:ff": 1 },
-        }
-      );
-    }
+  await withPageScanPrevented(() =>
+    BrowserTestUtils.withNewTab(
+      {
+        gBrowser,
+        url: getSERPUrl("searchTelemetry.html"),
+      },
+      async () => {
+        await assertSearchSourcesTelemetry(
+          {},
+          {
+            "browser.search.content.unknown": { "example:tagged:ff": 1 },
+          }
+        );
+      }
+    )
   );
 
   assertSERPTelemetry([
@@ -80,22 +106,24 @@ add_task(async function test_simple_search_page_visit() {
 });
 
 add_task(async function test_follow_on_visit() {
-  await BrowserTestUtils.withNewTab(
-    {
-      gBrowser,
-      url: getSERPFollowOnUrl(getPageUrl()),
-    },
-    async () => {
-      await assertSearchSourcesTelemetry(
-        {},
-        {
-          "browser.search.content.unknown": {
-            "example:tagged:ff": 1,
-            "example:tagged-follow-on:ff": 1,
-          },
-        }
-      );
-    }
+  await withPageScanPrevented(() =>
+    BrowserTestUtils.withNewTab(
+      {
+        gBrowser,
+        url: getSERPFollowOnUrl(getPageUrl()),
+      },
+      async () => {
+        await assertSearchSourcesTelemetry(
+          {},
+          {
+            "browser.search.content.unknown": {
+              "example:tagged:ff": 1,
+              "example:tagged-follow-on:ff": 1,
+            },
+          }
+        );
+      }
+    )
   );
   assertSERPTelemetry([
     {
