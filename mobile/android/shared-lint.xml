@@ -80,9 +80,6 @@
     <issue id="UselessParent" severity="error" />
     <issue id="UnusedNamespace" severity="error" />
     <issue id="UnusedResources" severity="error">
-        <!-- The sports widget (bug 2084788) has badges for teams it doesn't reference yet. The resource
-             shrinker still removes the unreferenced ones from release builds. -->
-        <ignore path="**/drawable-*/team_badge_*" />
         <!-- Localized strings are removed by the l10n import a while after the string is removed from
              the default strings.xml, so the localized files temporarily hold unreferenced strings. -->
         <ignore path="**/values-*/strings.xml" />
