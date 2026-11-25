@@ -1,0 +1,7 @@
+requires-python:>=3.10
+# Selenium and its transitive dependencies are NOT vendored. This site is built lazily and
+# only when `./mach ai` (virtualenv_name="ai") runs, so no other mach command and the
+# default `common` site ever pull selenium. Do not move selenium into `common`; future
+# non-selenium ai tooling should stay on the default `common` site.
+pth:browser/components/ai/driver/python/src
+pypi:selenium==4.20.0
