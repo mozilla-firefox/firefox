@@ -101,7 +101,7 @@ They are easy to conflate, so this is the one place that lists them all.
 
 | Mechanism | What it controls | Who sets it | Checked in |
 |---|---|---|---|
-| Permissions Policy `on-device-speech-recognition` | Per-frame: cross-origin iframes are blocked unless delegated | The embedding page (`allow="on-device-speech-recognition"` / `Permissions-Policy` header); `self` by default | `available()`, `install()`, and (if preffed on) the model download of `start()` |
+| Permissions Policy `on-device-speech-recognition` | Per-frame: cross-origin iframes are blocked unless delegated | The embedding page (`allow="on-device-speech-recognition"` / `Permissions-Policy` header); `self` by default | `available()`, `install()`, `start()` |
 | AI Controls | Per-profile: the user disabling on-device AI globally or per-feature | The user, in `Settings > Firefox AI`; backed by `browser.ai.control.speechRecognition` (falls back to `browser.ai.control.default` when `"default"`) | `available()`, `install()`, `start()` |
 | Model-download permission doorhanger | Per install transaction (site + requested languages): whether this download may proceed | The user, once per transaction; not persisted | `install()`, and `start()` when `media.webspeech.recognition.install_on_start` is on |
 
@@ -115,10 +115,15 @@ Registered in `PermissionsPolicyUtils.cpp` with a default value of `self`, like
 `PermissionsPolicyUtils::IsFeatureAllowed(doc, u"on-device-speech-recognition"_ns)`.
 `available()` resolves `"unavailable"` when disallowed, matching the spec's
 availability algorithm, which never rejects. `install()` rejects with
-`NotAllowedError`. `start()` only checks it before it offers to download a
-missing model. When disallowed, `start()` proceeds as if
-`media.webspeech.recognition.install_on_start` were off. It does the same
-without transient user activation, which it consumes, like `install()`.
+`NotAllowedError`. `start()` fires `service-not-allowed` when disallowed. The
+spec has `start()` treat a language pack as unavailable until `install()`
+unmasks it for the caller's storage key. Gecko doesn't track that masking
+state, but a document that can't call `install()` can't unmask it itself.
+
+Without transient user activation, `start()` doesn't offer to download a
+missing model, and proceeds as if
+`media.webspeech.recognition.install_on_start` were off. It consumes the
+activation, like `install()`.
 
 ### AI Controls
 

@@ -882,6 +882,19 @@ void SpeechRecognition::StartImpl(MediaStreamTrack* aAudioTrack,
     langFromUserLanguage = true;
   }
 
+  // Step 4 also treats a language pack as unavailable while its download
+  // masking state is not "unmasked" for the caller's storage key, which only
+  // install() does. Gecko doesn't track that state, but a document that
+  // Permissions Policy keeps from calling install() can't unmask it itself.
+  Document* doc = win->GetExtantDoc();
+  if (!doc || !PermissionsPolicyUtils::IsFeatureAllowed(
+                  doc, u"on-device-speech-recognition"_ns)) {
+    LOGE("on-device-speech-recognition is not allowed in this document");
+    DispatchErrorAndEnd(SpeechRecognitionErrorCode::Service_not_allowed,
+                        "Local speech recognition is not available"_ns);
+    return;
+  }
+
   // Step 4.1: "If the user agent determines that local speech recognition is
   // not available for this.lang [...] fire an event named error [...] with its
   // error attribute initialized to service-not-allowed".
@@ -950,14 +963,11 @@ void SpeechRecognition::StartImpl(MediaStreamTrack* aAudioTrack,
 
   // Pages predating install() just call start(): offer to download the model
   // rather than failing the session. No event has fired yet, so it merely
-  // starts later. With no language there is no model to ask for. The offer
-  // clears the same gates as install(), and otherwise start() proceeds as if
-  // the pref were off.
-  Document* doc = win->GetExtantDoc();
+  // starts later. With no language there is no model to ask for. Like
+  // install(), the offer needs transient user activation, and without it
+  // start() proceeds as if the pref were off.
   if (!StaticPrefs::media_webspeech_recognition_install_on_start() ||
-      effectiveLang.IsEmpty() || !doc ||
-      !PermissionsPolicyUtils::IsFeatureAllowed(
-          doc, u"on-device-speech-recognition"_ns) ||
+      effectiveLang.IsEmpty() ||
       !doc->ConsumeTransientUserGestureActivation()) {
     BeginSession(std::move(session));
     return;
