@@ -1,0 +1,15 @@
+// Checks the declaration files in tools/@types, which other projects load
+// without reporting errors in them.
+{
+  "extends": "../tsconfig.json",
+  "include": ["../**/*.d.ts", "../**/*.d.mts"],
+  "compilerOptions": {
+    "checkJs": true,
+    "plugins": [
+      {
+        "transform": "../../ts/plugins/checkRootOnly.js",
+        "transformProgram": true
+      }
+    ]
+  }
+}

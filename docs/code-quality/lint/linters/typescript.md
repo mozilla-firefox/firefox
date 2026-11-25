@@ -101,6 +101,22 @@ another project can break, and the linter won't check that project. After
 either kind of change, check every listed project with
 `./mach lint -l typescript .`.
 
+That run checks the code that uses a declaration file under `tools/@types`, but
+not the file itself unless a project lists it in `include`. A project reports
+errors only in the files that its `include` list matches, and projects load
+most of these files through `tools/@types/index.d.ts` without listing them, e.g.
+`lib.gecko.augmentations.d.ts` and the generated `lib.gecko.*.d.ts` files. So
+an unknown type name in such a file reads as `any`, and a conflicting second
+declaration of a name can go unreported. To check the declaration files
+themselves, run:
+
+```shell
+./mach ts check tools/@types/check
+```
+
+That project isn't listed in `typescript.yml`, and it reports errors that the
+files already have, so compare its output before and after your change.
+
 ### In CI
 
 The `typescript` task, shown as `js(TSC)` on Treeherder, runs

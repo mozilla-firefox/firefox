@@ -261,6 +261,10 @@ That file affects every project, so check all of them afterwards:
 ./mach lint -l typescript .
 ```
 
+That run doesn't report errors in `lib.gecko.augmentations.d.ts` itself. To
+check the file, run `./mach ts check tools/@types/check` (see
+[Files Outside the Project Directory](../lint/linters/typescript.md#files-outside-the-project-directory)).
+
 ### Files with API Documentation
 
 The modules under `js_source_paths` in {searchfox}`docs/config.yml` have
