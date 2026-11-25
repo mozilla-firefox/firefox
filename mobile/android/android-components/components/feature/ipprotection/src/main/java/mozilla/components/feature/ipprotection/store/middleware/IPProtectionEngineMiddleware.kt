@@ -97,6 +97,7 @@ class IPProtectionEngineMiddleware(
             is IPProtectionAction.EligibilityAction.EligibilityChanged,
             is IPProtectionAction.ServiceAction.CurrentAuthProviderChanged,
             is IPProtectionAction.UsageAction.UsageChanged,
+            is IPProtectionAction.UsageAction.UsageResetPromptPending,
             is IPProtectionAction.AccountAction.AccountStateChanged,
             is IPProtectionAction.AccountAction.CheckAccount,
             is IPProtectionAction.AccountAction.AccountReadyForEnrollment,

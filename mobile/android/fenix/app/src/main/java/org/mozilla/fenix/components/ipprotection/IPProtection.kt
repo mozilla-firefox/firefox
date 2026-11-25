@@ -73,7 +73,7 @@ class IPProtection(
                         messages = snackbarMessages,
                     ),
                     IPProtectionTelemetryMiddleware(),
-                    IPProtectionPreferencesMiddleware(ipProtectionRepository),
+                    IPProtectionPreferencesMiddleware(preferences = ipProtectionRepository),
                     IPProtectionLocationMiddleware(repository = DefaultIPProtectionLocationRepository(context)),
                     engineMiddleware,
                 )

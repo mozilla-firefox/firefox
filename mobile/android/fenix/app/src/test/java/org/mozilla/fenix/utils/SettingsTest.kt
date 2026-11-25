@@ -1707,6 +1707,22 @@ class SettingsTest {
     }
 
     @Test
+    fun `GIVEN a usage cycle reset, WHEN setting the last known cycle reset time THEN it is persisted and returned`() {
+        settings.ipProtectionLastUsageCycleResetTime = "2026-11-01T00:00:00Z"
+
+        assertEquals("2026-11-01T00:00:00Z", settings.ipProtectionLastUsageCycleResetTime)
+    }
+
+    @Test
+    fun `GIVEN a pending quota reset prompt WHEN settings are recreated THEN the prompt stays pending`() {
+        assertFalse(settings.ipProtectionUsageQuotaResetPromptPending)
+
+        settings.ipProtectionUsageQuotaResetPromptPending = true
+
+        assertTrue(Settings(testContext).ipProtectionUsageQuotaResetPromptPending)
+    }
+
+    @Test
     fun `GIVEN a fresh install WHEN reading the last auth flow entrypoint THEN it is null`() {
         assertNull(settings.lastAuthFlowEntrypoint)
     }

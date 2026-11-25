@@ -59,6 +59,7 @@ internal fun buildIPProtectionState(
     updateState: LocationListUpdateState = LocationListUpdateState.NotRequested,
     proxyRequest: ProxyRequest? = null,
     proxyActivation: ProxyActivation = ProxyActivation.Idle,
+    usageResetPromptPending: Boolean = false,
 ): IPProtectionState {
     return IPProtectionState(
         accountState = AccountState(accountStatus),
@@ -68,5 +69,6 @@ internal fun buildIPProtectionState(
         locationState = LocationState(updateState = updateState),
         proxyActivation = proxyActivation,
         proxyRequest = proxyRequest,
+        usageQuotaResetPromptPending = usageResetPromptPending,
     )
 }

@@ -22,6 +22,7 @@ import mozilla.components.lib.state.State
  * @property serviceStatus The state of the IPProtection service.
  * @property currentAuthProvider The auth provider the IPProtection service uses.
  * @property usageQuota The usage quota in the current cycle, or null if unavailable.
+ * @property usageQuotaResetPromptPending Whether the usage quota reset prompt is pending.
  * @property accountState The state of the authenticator being used.
  * @property lastError The last error received from the IPProtection service.
  * @property proxyActivation Tracks recent activation or deactivation state changes. See [ProxyActivation].
@@ -36,6 +37,7 @@ data class IPProtectionState(
     val serviceStatus: ServiceState = ServiceState.Uninitialized,
     val currentAuthProvider: CurrentAuthProvider = CurrentAuthProvider.Unknown,
     val usageQuota: UsageQuota? = null,
+    val usageQuotaResetPromptPending: Boolean = false,
     val accountState: AccountState = AccountState(),
     val lastError: String? = null,
     val proxyActivation: ProxyActivation = ProxyActivation.Idle,

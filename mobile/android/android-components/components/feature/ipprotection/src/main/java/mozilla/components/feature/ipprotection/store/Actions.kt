@@ -72,6 +72,13 @@ sealed class IPProtectionAction : Action {
             val max: Long,
             val resetTime: String?,
         ) : UsageAction()
+
+        /**
+         * Action that reports whether a usage quota reset prompt is pending.
+         *
+         * @property pending `true` if a usage quota reset prompt is pending.
+         */
+        data class UsageResetPromptPending(val pending: Boolean) : UsageAction()
     }
 
     /** [IPProtectionAction]s related to the account status. */

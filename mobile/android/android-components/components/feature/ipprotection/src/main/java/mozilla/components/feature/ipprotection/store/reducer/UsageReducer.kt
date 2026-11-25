@@ -22,6 +22,9 @@ internal object UsageReducer {
             is IPProtectionAction.UsageAction.UsageChanged -> {
                 state.copy(usageQuota = action.toUsageQuota())
             }
+
+            is IPProtectionAction.UsageAction.UsageResetPromptPending ->
+                state.copy(usageQuotaResetPromptPending = action.pending)
         }
 }
 

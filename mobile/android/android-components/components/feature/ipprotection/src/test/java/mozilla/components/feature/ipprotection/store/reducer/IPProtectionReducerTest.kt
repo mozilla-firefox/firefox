@@ -4,8 +4,10 @@
 
 package mozilla.components.feature.ipprotection.store.reducer
 
+import kotlin.test.assertFalse
 import kotlin.test.assertNotNull
 import kotlin.test.assertNull
+import kotlin.test.assertTrue
 import kotlin.time.Instant
 import mozilla.components.ExperimentalAndroidComponentsApi
 import mozilla.components.concept.engine.ipprotection.CurrentAuthProvider
@@ -918,6 +920,32 @@ class IPProtectionReducerTest {
             )
 
         assertEquals(LocationListUpdateState.Updated, resultState.locationState.updateState)
+    }
+
+    @Test
+    fun `GIVEN usage reset prompt previously pending WHEN UsageResetPromptPending is dispatched with false THEN there is no prompt declared pending`() {
+        val initialState = buildIPProtectionState(usageResetPromptPending = true)
+
+        val resultState =
+            iPProtectionReducer(
+                state = initialState,
+                action = IPProtectionAction.UsageAction.UsageResetPromptPending(pending = false),
+            )
+
+        assertFalse(resultState.usageQuotaResetPromptPending)
+    }
+
+    @Test
+    fun `GIVEN usage reset prompt is pending WHEN UsageResetPromptPending is dispatched THEN there a prompt declared pending`() {
+        val initialState = buildIPProtectionState()
+
+        val resultState =
+            iPProtectionReducer(
+                state = initialState,
+                action = IPProtectionAction.UsageAction.UsageResetPromptPending(pending = true),
+            )
+
+        assertTrue(resultState.usageQuotaResetPromptPending)
     }
 }
 

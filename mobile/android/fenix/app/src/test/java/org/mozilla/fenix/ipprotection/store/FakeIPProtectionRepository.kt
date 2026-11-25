@@ -10,4 +10,6 @@ import kotlin.time.Instant
 class FakeIPProtectionRepository(
     override var hasAlreadyUsedVpn: Boolean = false,
     override var lastDataLimitNoticeCycleResetTime: Instant? = null,
+    override var lastUsageCycleResetTime: Instant? = null,
+    override var usageQuotaResetPromptPending: Boolean = false,
 ) : IPProtectionRepository

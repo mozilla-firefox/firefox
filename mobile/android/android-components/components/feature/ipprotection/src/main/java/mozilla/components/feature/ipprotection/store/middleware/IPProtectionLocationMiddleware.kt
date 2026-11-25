@@ -58,6 +58,7 @@ class IPProtectionLocationMiddleware(
             is IPProtectionAction.ServiceAction.CurrentAuthProviderChanged,
             is IPProtectionAction.ProxyAction.ProxyStateChanged,
             is IPProtectionAction.UsageAction.UsageChanged,
+            is IPProtectionAction.UsageAction.UsageResetPromptPending,
             is IPProtectionAction.AccountAction.AccountStateChanged,
             is IPProtectionAction.AccountAction.CheckAccount,
             is IPProtectionAction.AccountAction.AccountManagerStateChanged,
