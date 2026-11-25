@@ -252,9 +252,12 @@ export class MigratorBase {
    *   The top-level DOM window hosting the UI that is requesting the permission.
    *   This can be used to, for example, anchor a file picker window to the
    *   same window that is hosting the migration UI.
+   * @param {object} [_options]
+   * @param {Function} [_options.onFilePickerShown]
+   *   Called each time a file picker is shown to ask for access.
    * @returns {Promise<boolean>}
    */
-  async getPermissions(_win) {
+  async getPermissions(_win, _options) {
     return Promise.resolve(true);
   }
 

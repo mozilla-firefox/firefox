@@ -718,7 +718,7 @@ export class SafariProfileMigrator extends MigratorBase {
     }
   }
 
-  async getPermissions(win) {
+  async getPermissions(win, { onFilePickerShown } = {}) {
     // Keep prompting the user until they pick something that grants us access
     // to Safari's bookmarks and favicons or they cancel out of the file open panel.
     while (!(await this.hasPermissions())) {
@@ -731,6 +731,7 @@ export class SafariProfileMigrator extends MigratorBase {
       // the Safari folder, macOS will grant us read access to everything
       // inside, so we don't need to check or do anything else with what's
       // returned by the filepicker.
+      onFilePickerShown?.();
       let result = await new Promise(resolve => fp.open(resolve));
       // Bail if the user cancels the dialog:
       if (result == Ci.nsIFilePicker.returnCancel) {

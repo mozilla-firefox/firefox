@@ -117,12 +117,18 @@ add_task(async function test_getPermissions() {
     };
   });
   MockFilePicker.returnValue = MockFilePicker.returnOK;
+  let onFilePickerShown = sinon.spy();
   Assert.ok(
-    await migrator.getPermissions(),
+    await migrator.getPermissions(null, { onFilePickerShown }),
     "Should report that we got permissions."
   );
 
   await filePickerShownPromise;
+  Assert.equal(
+    onFilePickerShown.callCount,
+    filePickerSeenCount,
+    "Reported each file picker."
+  );
 
   // Make sure that the user can also hit "cancel" and that we
   // file picker loop.
@@ -139,11 +145,13 @@ add_task(async function test_getPermissions() {
     };
   });
   MockFilePicker.returnValue = MockFilePicker.returnCancel;
+  onFilePickerShown.resetHistory();
   Assert.ok(
-    !(await migrator.getPermissions()),
+    !(await migrator.getPermissions(null, { onFilePickerShown })),
     "Should report that we didn't get permissions."
   );
   await filePickerShownPromise;
+  Assert.equal(onFilePickerShown.callCount, 1, "Reported the file picker.");
 
   sandbox.restore();
 });

@@ -33,6 +33,7 @@ add_setup(async function () {
  */
 add_task(async function test_permissions() {
   Services.telemetry.clearEvents();
+  Services.fog.testResetFOG();
 
   let sandbox = sinon.createSandbox();
   registerCleanupFunction(() => {
@@ -61,10 +62,22 @@ add_task(async function test_permissions() {
     "Got migrator, even though we don't yet have permission to read its resources."
   );
 
-  sandbox.stub(testingMigrator, "getPermissions").callsFake(async () => {
+  // The first request doesn't get access, as if the user cancelled the file
+  // picker. The second one does, after a folder that didn't give access.
+  let { promise: firstRequestDone, resolve: firstRequestResolve } =
+    Promise.withResolvers();
+  let getPermissionsStub = sandbox.stub(testingMigrator, "getPermissions");
+  getPermissionsStub.onFirstCall().callsFake(async (win, options) => {
+    options.onFilePickerShown();
+    firstRequestResolve();
+    return false;
+  });
+  getPermissionsStub.callsFake(async (win, options) => {
+    options.onFilePickerShown();
+    options.onFilePickerShown();
     testingMigrator.flushResourceCache();
     hasPermissionsStub.resolves(true);
-    return Promise.resolve(true);
+    return true;
   });
 
   let getResourcesStub = sandbox
@@ -135,10 +148,36 @@ add_task(async function test_permissions() {
       "Get permissions button shown."
     );
 
+    getPermissionButton.click();
+    await firstRequestDone;
+    // Nothing in the wizard changes when access isn't granted.
+    await TestUtils.waitForCondition(
+      () => Glean.browserMigration.getPermissionsWizard.testGetValue(),
+      "Waiting for the request to be recorded."
+    );
+    Assert.deepEqual(
+      Glean.browserMigration.getPermissionsWizard
+        .testGetValue()
+        .map(event => event.extra),
+      [
+        {
+          migrator_key: InternalTestingProfileMigrator.key,
+          granted: "false",
+          attempts: "1",
+        },
+      ],
+      "Recorded that access was not granted."
+    );
+    Assert.ok(
+      BrowserTestUtils.isVisible(noPermissionsMessage),
+      "Still asks for access."
+    );
+
     // Now put the permissions functions back into their default
     // state - which is the "permission granted" state.
     getResourcesStub.restore();
     hasPermissionsStub.restore();
+    Services.fog.testResetFOG();
 
     let refreshDone = BrowserTestUtils.waitForEvent(
       wizard,
@@ -149,6 +188,19 @@ add_task(async function test_permissions() {
 
     await refreshDone;
     Assert.ok(true, "Refreshed migrator list.");
+    Assert.deepEqual(
+      Glean.browserMigration.getPermissionsWizard
+        .testGetValue()
+        .map(event => event.extra),
+      [
+        {
+          migrator_key: InternalTestingProfileMigrator.key,
+          granted: "true",
+          attempts: "2",
+        },
+      ],
+      "Recorded that access was granted the second time."
+    );
 
     let wizardDone = BrowserTestUtils.waitForEvent(
       wizard,

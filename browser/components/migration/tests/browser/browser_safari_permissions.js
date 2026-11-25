@@ -23,6 +23,7 @@ const { SafariProfileMigrator } = ChromeUtils.importESModule(
  * this test run reliably and repeatably.
  */
 add_task(async function test_safari_permissions() {
+  Services.fog.testResetFOG();
   let sandbox = sinon.createSandbox();
   registerCleanupFunction(() => {
     sandbox.restore();
@@ -42,10 +43,13 @@ add_task(async function test_safari_permissions() {
 
   sandbox.stub(MigrationUtils, "getMigrator").resolves(safariMigrator);
 
-  sandbox.stub(safariMigrator, "getPermissions").callsFake(async () => {
-    hasPermissionsStub.resolves(true);
-    return Promise.resolve(true);
-  });
+  sandbox
+    .stub(safariMigrator, "getPermissions")
+    .callsFake(async (win, options) => {
+      options.onFilePickerShown();
+      hasPermissionsStub.resolves(true);
+      return Promise.resolve(true);
+    });
 
   sandbox.stub(safariMigrator, "getResources").callsFake(() => {
     return Promise.resolve([
@@ -122,6 +126,19 @@ add_task(async function test_safari_permissions() {
     requestPermissions.click();
     await didMigration;
     Assert.ok(true, "Completed migration");
+    Assert.deepEqual(
+      Glean.browserMigration.getPermissionsWizard
+        .testGetValue()
+        .map(event => event.extra),
+      [
+        {
+          migrator_key: SafariProfileMigrator.key,
+          granted: "true",
+          attempts: "1",
+        },
+      ],
+      "Recorded that access to Safari's data was granted."
+    );
 
     let dialog = prefsWin.document.querySelector("#migrationWizardDialog");
     let doneButton = shadow.querySelector(

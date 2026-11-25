@@ -145,10 +145,7 @@ export class MigrationWizardParent extends JSWindowActorParent {
       }
 
       case "RequestSafariPermissions": {
-        let safariMigrator = await MigrationUtils.getMigrator("safari");
-        return safariMigrator.getPermissions(
-          this.browsingContext.topChromeWindow
-        );
+        return this.#getPermissions("safari");
       }
 
       case "SelectManualPasswordFile": {
@@ -169,8 +166,7 @@ export class MigrationWizardParent extends JSWindowActorParent {
       }
 
       case "GetPermissions": {
-        let migrator = await MigrationUtils.getMigrator(message.data.key);
-        return migrator.getPermissions(this.browsingContext.topChromeWindow);
+        return this.#getPermissions(message.data.key);
       }
 
       case "OpenURL": {
@@ -203,6 +199,31 @@ export class MigrationWizardParent extends JSWindowActorParent {
    */
   #recordEvent(type, args) {
     Glean.browserMigration[type + "Wizard"].record(args);
+  }
+
+  /**
+   * Asks the migrator for the passed in key to get access to its browser's
+   * data, and records whether access was granted and how many times a file
+   * picker was shown.
+   *
+   * @param {string} migratorKey
+   *   The key of the migrator to get access for.
+   * @returns {Promise<boolean>}
+   *   Resolves to true if access was granted.
+   */
+  async #getPermissions(migratorKey) {
+    let migrator = await MigrationUtils.getMigrator(migratorKey);
+    let attempts = 0;
+    let granted = await migrator.getPermissions(
+      this.browsingContext.topChromeWindow,
+      { onFilePickerShown: () => attempts++ }
+    );
+    Glean.browserMigration.getPermissionsWizard.record({
+      migrator_key: migratorKey,
+      granted,
+      attempts,
+    });
+    return granted;
   }
 
   /**

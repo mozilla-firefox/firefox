@@ -214,6 +214,39 @@ browser.migration:
     expires: never
     telemetry_mirror: BrowserMigration_SafariPerms_Wizard
 
+  get_permissions_wizard:
+    type: event
+    description: >
+      Recorded when the user asks the migration wizard to get access to a
+      browser's data, for example by choosing "Continue" on the page that
+      asks for access to its profile folder, and the request has finished.
+      This is after the file picker has closed.
+    bugs:
+      - https://bugzil.la/2096052
+    data_reviews:
+      - https://bugzil.la/2096052
+    data_sensitivity:
+      - interaction
+    notification_emails:
+      - mconley@mozilla.com
+      - spohl@mozilla.com
+    expires: 175
+    extra_keys:
+      migrator_key:
+        description: >
+          The key of the migrator that access was requested for.
+        type: string
+      granted:
+        description: >
+          True if access was granted. False if the user cancelled the file
+          picker.
+        type: boolean
+      attempts:
+        description: >
+          The number of times a file picker was shown. The file picker is
+          shown again as long as the selected folder doesn't give access.
+        type: quantity
+
   safari_password_file_wizard:
     type: event
     description: >

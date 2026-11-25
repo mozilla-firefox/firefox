@@ -163,7 +163,7 @@ export class ChromeProfileMigrator extends MigratorBase {
     return false;
   }
 
-  async getPermissions(win) {
+  async getPermissions(win, { onFilePickerShown } = {}) {
     // Get the original path to the user data and ignore any existing remapping.
     // This allows us to set a new remapping if the user navigates the platforms
     // filepicker to a different directory on a second permission request attempt.
@@ -187,6 +187,7 @@ export class ChromeProfileMigrator extends MigratorBase {
       // the local state folder, the OS should grant us read access to everything
       // inside, so we don't need to check or do anything else with what's
       // returned by the filepicker.
+      onFilePickerShown?.();
       let result = await new Promise(resolve => fp.open(resolve));
       // Bail if the user cancels the dialog:
       if (result == Ci.nsIFilePicker.returnCancel) {
