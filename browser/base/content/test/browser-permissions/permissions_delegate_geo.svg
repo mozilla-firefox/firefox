@@ -1,0 +1,6 @@
+<svg xmlns="http://www.w3.org/2000/svg" xmlns:html="http://www.w3.org/1999/xhtml">
+  <script href="permissions_delegate_geo.js" />
+  <foreignObject width="200" height="50">
+    <html:button id="geo">Geolocation</html:button>
+  </foreignObject>
+</svg>

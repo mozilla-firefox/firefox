@@ -30,6 +30,11 @@ support-files = ["empty.html"]
 support-files = ["empty.html"]
 
 ["browser_permission_delegate_geo.js"]
+support-files = [
+  "permissions_delegate_geo.xhtml",
+  "permissions_delegate_geo.svg",
+  "permissions_delegate_geo.js",
+]
 
 ["browser_permissions.js"]
 

@@ -242,6 +242,35 @@ add_task(async function testPromptChangeLocationUnsafePermissionDelegation() {
   );
 });
 
+for (let page of [
+  "permissions_delegate_geo.xhtml",
+  "permissions_delegate_geo.svg",
+]) {
+  add_task(async function testUnsafeDelegationInXMLDocument() {
+    await BrowserTestUtils.withNewTab(CROSS_SUBFRAME_PAGE, async browser => {
+      PermissionTestUtils.add(uri, "geo", Perms.ALLOW_ACTION);
+      try {
+        let iframe = await SpecialPowers.spawn(browser, [], () => {
+          return content.document.getElementById("frameAllowsAll")
+            .browsingContext;
+        });
+        let otherURI = `https://test1.example.com/browser/browser/base/content/test/browser-permissions/${page}`;
+        let loaded = BrowserTestUtils.browserLoaded(browser, true, otherURI);
+        await SpecialPowers.spawn(iframe, [otherURI], target => {
+          content.location = target;
+        });
+        await loaded;
+
+        await checkGeolocation(browser, "frameAllowsAll", PromptResult.PROMPT);
+        await checkNotificationBothOrigins(uri.host, "test1.example.com");
+      } finally {
+        SitePermissions.removeFromPrincipal(null, "geo", browser);
+        PermissionTestUtils.remove(uri, "geo");
+      }
+    });
+  });
+}
+
 // If we are in unsafe permission delegation and the origin is explicitly
 // trusted in ancestor chain. Do not need prompt
 add_task(async function testExplicitlyAllowedInChain() {
