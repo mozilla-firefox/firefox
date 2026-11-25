@@ -1,0 +1,42 @@
+/* This Source Code Form is subject to the terms of the Mozilla Public
+ * License, v. 2.0. If a copy of the MPL was not distributed with this
+ * file, You can obtain one at http://mozilla.org/MPL/2.0/. */
+
+:host {
+  --digest-toast-offset: var(--space-xlarge);
+
+  background: none;
+  border: none;
+  inset: auto;
+  inset-block-start: var(--space-large);
+  inset-inline-end: var(--space-large);
+  margin: 0;
+  overflow: visible;
+  padding: 0;
+  /* stylelint-disable-next-line stylelint-plugin-mozilla/use-design-tokens */
+  width: min(25em, 100% - 2 * var(--space-large));
+}
+
+:host(:dir(rtl)) {
+  --digest-toast-offset: calc(-1 * var(--space-xlarge));
+}
+
+@media (prefers-reduced-motion: no-preference) {
+  :host {
+    transition:
+      opacity var(--panel-motion-duration-enter) var(--panel-motion-easing),
+      translate var(--panel-motion-duration-enter) var(--panel-motion-easing);
+  }
+
+  :host(:popover-open) {
+    @starting-style {
+      opacity: 0;
+      translate: var(--digest-toast-offset) 0;
+    }
+  }
+
+  :host([closing]) {
+    opacity: 0;
+    transition-duration: var(--panel-motion-duration-exit);
+  }
+}

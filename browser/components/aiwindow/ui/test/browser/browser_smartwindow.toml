@@ -44,6 +44,7 @@ support-files = [
   "test_smartformfill_telemetry.html",
   "test_smartwindow_digest_form_page.html",
   "test_smartwindow_digest_modal_page.html",
+  "test_smartwindow_digest_toast_page.html",
   "test_smartwindow_panel_list_page.html",
   "test_smartwindow_panel_list.mjs",
   "test_smartwindow_onboarding_page.html",
@@ -144,6 +145,8 @@ support-files = [
   "!/browser/components/aiwindow/ui/test/browser/starters/test_smartwindow_prompts_page.html",
   "!/browser/components/aiwindow/ui/test/browser/starters/test_smartwindow_prompts.mjs",
 ]
+
+["browser_smartwindow_digest_toast.js"]
 
 ["browser_smartwindow_disclaimer.js"]
 

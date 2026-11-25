@@ -590,6 +590,31 @@ smartwindow-digest-modal-edit =
 smartwindow-digest-modal-close =
     .aria-label = Close
 
+## Smart Window digest toast
+## Shown after the user creates a digest. Variables:
+##   $title (String) - The digest's topic, for example "Nutrition research".
+
+smartwindow-digest-toast-created-daily =
+    .heading = Daily digest created for “{ $title }”
+    .message = Find it on your new tab.
+smartwindow-digest-toast-created-weekly =
+    .heading = Weekly digest created for “{ $title }”
+    .message = Find it on your new tab.
+smartwindow-digest-toast-created =
+    .heading = Digest created for “{ $title }”
+    .message = Find it on your new tab.
+smartwindow-digest-toast-view =
+    .label = View digest
+
+## Shown when creating or editing a digest fails.
+
+smartwindow-digest-toast-error-create =
+    .heading = Couldn’t create digest
+    .message = Something went wrong. Try again.
+smartwindow-digest-toast-error-edit =
+    .heading = Couldn’t save changes
+    .message = Something went wrong. Try again.
+
 ## Smart Window digest form
 ## Used to create a digest, or edit an existing one. A digest is a summary
 ## about a topic that is refreshed on a schedule the user sets.
