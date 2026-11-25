@@ -1384,6 +1384,34 @@ Maybe<QueryContentResult> TextEventDispatcher::QueryTextRect(
   return std::move(queryEvent.mReply);
 }
 
+Maybe<QueryContentResult> TextEventDispatcher::QueryTextRectArray(
+    uint32_t aOffset, uint32_t aLength) const {
+  return QueryTextRectArray(aOffset, aLength, QueryContentOptions());
+}
+
+Maybe<QueryContentResult> TextEventDispatcher::QueryTextRectArray(
+    int64_t aOffset, uint32_t aLength,
+    const QueryContentOptions& aOptions) const {
+  if (NS_WARN_IF(!mWidget) || NS_WARN_IF(aOffset > UINT32_MAX) ||
+      // FIXME: ContentEventHandler::OnQueryTextRectArray() should support
+      // relative offset input (ContentCacheInParent::HandleQueryContentEvent()
+      // supports it).
+      NS_WARN_IF(aOptions.mRelativeToInsertionPoint) ||
+      // FIXME: So, negative offset is always an error for now.
+      NS_WARN_IF(aOffset < 0)) [[unlikely]] {
+    return Nothing{};
+  }
+  WidgetQueryContentEvent queryEvent(true, eQueryTextRectArray, mWidget);
+  queryEvent.InitForQueryTextRectArray(aOffset, aLength, aOptions);
+  // FYI: mWidget is grabbed by queryEvent so that it's safe to call
+  // DispatchEvent without a local strong pointer.
+  mWidget->DispatchEvent(&queryEvent);
+  if (queryEvent.Failed()) [[unlikely]] {
+    return Nothing{};
+  }
+  return std::move(queryEvent.mReply);
+}
+
 /******************************************************************************
  * TextEventDispatcher::PendingComposition
  *****************************************************************************/

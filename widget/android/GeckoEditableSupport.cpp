@@ -811,15 +811,13 @@ void GeckoEditableSupport::UpdateCompositionRects() {
 
   jni::ObjectArray::LocalRef rects;
   if (composition) {
-    uint32_t offset = composition->NativeOffsetOfStartComposition();
-    WidgetQueryContentEvent queryTextRectsEvent(true, eQueryTextRectArray,
-                                                widget);
-    queryTextRectsEvent.InitForQueryTextRectArray(
-        offset, composition->String().Length());
-    widget->DispatchEvent(&queryTextRectsEvent);
+    const Maybe<QueryContentResult> queryTextRectArrayResult =
+        dispatcher->QueryTextRectArray(
+            composition->NativeOffsetOfStartComposition(),
+            composition->String().Length());
     rects = ConvertRectArrayToJavaRectFArray(
-        queryTextRectsEvent.Succeeded()
-            ? queryTextRectsEvent.mReply->mRectArray
+        queryTextRectArrayResult.isSome()
+            ? queryTextRectArrayResult->mRectArray
             : CopyableTArray<mozilla::LayoutDeviceIntRect>());
   } else {
     rects = ConvertRectArrayToJavaRectFArray(
