@@ -345,5 +345,6 @@ manifest-sandbox
 ## Other Topics
 
 ```{toctree}
+mochia
 tree-closure
 ```

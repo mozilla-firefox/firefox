@@ -44,3 +44,12 @@ This component grew quickly, and much of the existing code across this directory
 ## Patch scope and review
 - Keep Remote Settings dump updates, toolkit reusable-component changes and drive-by fixes in separate patches. Rebase the stack before asking for review.
 - Pref-gated early work may defer polish to filed bugs, but don't land code that isn't hooked up.
+
+## Testing
+Before creating, modifying, or reviewing automated tests under any of these
+directories (which are all relative to the working copy root), read and follow
+`browser/components/aiwindow/TESTING.md` and any applicable nested `AGENTS.md`
+files:
+
+- `browser/components/aiwindow/ui/test/browser`
+- `browser/components/aiwindow/ui/test/xpcshell`
