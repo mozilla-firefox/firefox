@@ -51,6 +51,7 @@ tasks-from:
     - libxml2.yml
     - llvm-symbolizer.yml
     - macos-sdk.yml
+    - metal.yml
     - mingw.yml
     - minidump-stackwalk.yml
     - misc.yml

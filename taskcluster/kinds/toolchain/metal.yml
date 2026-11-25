@@ -1,0 +1,27 @@
+# This Source Code Form is subject to the terms of the Mozilla Public
+# License, v. 2.0. If a copy of the MPL was not distributed with this
+# file, You can obtain one at http://mozilla.org/MPL/2.0/.
+---
+macosx64-metal:
+    description: "Xcode MetalToolchain component 27B47"
+    treeherder:
+        symbol: TM(metal)
+    worker-type: b-linux-docker-amd
+    worker:
+        max-run-time: 1800
+    run:
+        script: private_local_toolchain.sh
+        arguments:
+            - unpack-metal.py
+            - http://taskcluster/tooltool.mozilla-releng.net/sha512/049c2c90394c6c0ef8345687bc4a219ce92632c36a99a6ddb445fb688297d8eca5da930a98b45493444877c0c54d17ac3d4a04d62305c8f4d7bc268772a4d04b
+            - 049c2c90394c6c0ef8345687bc4a219ce92632c36a99a6ddb445fb688297d8eca5da930a98b45493444877c0c54d17ac3d4a04d62305c8f4d7bc268772a4d04b
+            - Metal.xctoolchain
+        resources:
+            - taskcluster/scripts/misc/unpack-metal.py
+        tooltool-downloads: internal
+        toolchain-artifact: project/gecko/metal/metal.tar.zst
+    fetches:
+        toolchain:
+            - linux64-7zz
+    # Expiry similar to that of fetches
+    expires-after: 1000 years

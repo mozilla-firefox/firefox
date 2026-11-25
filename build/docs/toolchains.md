@@ -125,6 +125,8 @@ latter is automatically invoked by the bootstrapping mechanism.
 
 ## MacOS
 
+### MacOS SDK
+
 The `build/macosx/catalog.py` and `taskcluster/scripts/misc/unpack-sdk.py`
 scripts are used to manage and get macOS SDKs.
 
@@ -186,6 +188,16 @@ On automation, the script will download the file from tooltool instead of the
 original url, so the file should also be uploaded to tooltool with `internal`
 visibility.
 See <https://github.com/mozilla-releng/tooltool>.
+
+### Metal Toolchain
+
+The Metal Xcode toolchain can be obtained by running
+`xcodebuild -downloadComponent MetalToolchain -buildVersion <version> -exportPath .`.
+Omitting the `-buildVersion` flag will download the latest. This will create a
+`MetalToolchain-<version>.exportedBundle` directory. The `.dmg` file found
+within this directory should be uploaded to tooltool with `internal` visibility.
+The toolchain task in `taskcluster/kinds/toolchain/metal.yml` should be updated
+with the new version number and tooltool sha.
 
 ## Firefox for Android with Gradle
 
