@@ -7743,7 +7743,7 @@ static nsIFrame* FindPreviousNonWhitespaceSibling(nsIFrame* aFrame) {
 // paginated contexts (see nsTableCellMap::Synchronize and
 // CreateContinuingTableFrame).
 static nsIFrame* GetNearestFragmentedTable(nsIFrame* aFrame) {
-  for (nsIFrame* f = aFrame; f; f = f->GetParent()) {
+  for (nsIFrame* f = aFrame; f; f = f->GetInFlowParent()) {
     if (f->IsTableFrame() && (f->GetPrevInFlow() || f->GetNextInFlow())) {
       return f;
     }
