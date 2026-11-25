@@ -2722,7 +2722,10 @@ def host_is_linux(host):
 with only_when(compile_environment & target_is_osx & (host_is_osx | host_is_linux)):
     option(
         "--enable-angle-metal-shader-compilation",
-        help="Enable build-time compilation of ANGLE's internal Metal shaders",
+        default=depends(host_is_osx, moz_automation)(
+            lambda is_osx, automation: is_osx or automation
+        ),
+        help="{Enable|Disable} build-time compilation of ANGLE's internal Metal shaders",
     )
 
     enable_angle_metal_shader_compilation = depends(

@@ -35,6 +35,8 @@ task-defaults:
             - linux64-cbindgen
             - linux64-nasm
             - linux64-node
+            - linux64-darling
+            - macosx64-metal
             - sysroot-x86_64-linux-gnu
 
 macosx64/debug:

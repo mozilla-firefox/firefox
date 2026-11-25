@@ -136,6 +136,8 @@ tasks:
                 - linux64-rust-analyzer
                 - linux64-cbindgen
                 - linux64-dump_syms
+                - linux64-darling
+                - macosx64-metal
                 - macosx64-sdk
                 - sysroot-x86_64-linux-gnu
                 - sysroot-wasm32-wasi
@@ -170,6 +172,8 @@ tasks:
                 - linux64-rust-analyzer
                 - linux64-cbindgen
                 - linux64-dump_syms
+                - linux64-darling
+                - macosx64-metal
                 - macosx64-sdk
                 - sysroot-x86_64-linux-gnu
                 - sysroot-wasm32-wasi
@@ -205,6 +209,8 @@ tasks:
                 - linux64-rust-analyzer
                 - linux64-cbindgen
                 - linux64-dump_syms
+                - linux64-darling
+                - macosx64-metal
                 - macosx64-sdk
                 - sysroot-x86_64-linux-gnu
                 - sysroot-wasm32-wasi
