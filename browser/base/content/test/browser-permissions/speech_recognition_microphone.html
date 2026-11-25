@@ -1,0 +1,39 @@
+<!DOCTYPE HTML>
+<html>
+<head>
+  <meta charset="utf-8">
+  <title>SpeechRecognition microphone test</title>
+</head>
+<body>
+<iframe src="https://example.org/browser/browser/base/content/test/browser-permissions/speech_recognition_microphone_frame.html" allow="microphone"></iframe>
+<script>
+"use strict";
+
+let recognition;
+
+window.addEventListener("message", async ({ data }) => {
+  const reply = message => window.postMessage(message, "*");
+  if (data == "start") {
+    recognition = new SpeechRecognition();
+    recognition.lang = "en-US";
+    recognition.onstart = () => reply("started");
+    recognition.onerror = event => reply(`error: ${event.error}`);
+    recognition.start();
+  } else if (data == "abort") {
+    recognition.onend = () => reply("ended");
+    recognition.abort();
+  } else if (data == "start-camera") {
+    try {
+      window.stream = await navigator.mediaDevices.getUserMedia({ video: true });
+      reply("camera-started");
+    } catch (error) {
+      reply(`error: ${error.name}`);
+    }
+  } else if (data == "stop-camera") {
+    window.stream.getTracks().forEach(track => track.stop());
+    reply("camera-stopped");
+  }
+});
+</script>
+</body>
+</html>

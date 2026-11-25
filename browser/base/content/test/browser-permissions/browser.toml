@@ -51,6 +51,12 @@ support-files = ["dummy.js"]
 
 ["browser_site_scoped_permissions.js"]
 
+["browser_speech_recognition_microphone_reload.js"]
+support-files = [
+  "speech_recognition_microphone.html",
+  "speech_recognition_microphone_frame.html",
+]
+
 ["browser_speech_recognition_model_download_prompt.js"]
 support-files = ["empty.html"]
 

@@ -1,0 +1,24 @@
+<!DOCTYPE HTML>
+<html>
+<head>
+  <meta charset="utf-8">
+  <title>Child frame</title>
+</head>
+<body>
+<script>
+"use strict";
+
+window.addEventListener("message", async ({ data }) => {
+  if (data != "start-gum") {
+    return;
+  }
+  try {
+    window.stream = await navigator.mediaDevices.getUserMedia({ audio: true });
+    window.parent.postMessage("gum-started", "*");
+  } catch (error) {
+    window.parent.postMessage(`error: ${error.name}`, "*");
+  }
+});
+</script>
+</body>
+</html>

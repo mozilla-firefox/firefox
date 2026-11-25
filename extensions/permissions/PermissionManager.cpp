@@ -3226,7 +3226,11 @@ NS_IMETHODIMP PermissionManager::Observe(nsISupports* aSubject,
       nsCOMPtr<nsILoadContext> loadContext = do_QueryInterface(aSubject);
       if (loadContext) {
         auto* bc = static_cast<BrowsingContext*>(loadContext.get());
-        discardedBrowserId = bc->BrowserId();
+        // Child browsing contexts share their top-level context's browser ID,
+        // so only a top-level discard ends the browser-scoped lifetime.
+        if (bc->IsTop()) {
+          discardedBrowserId = bc->BrowserId();
+        }
       }
     }
   }
