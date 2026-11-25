@@ -5694,27 +5694,55 @@ void PresShell::AddCanvasBackgroundColorItem(nsDisplayListBuilder* aBuilder,
   }
 
   const SingleCanvasBackground& canvasBg = mCanvasBackground.mViewport;
-  const nscolor bgcolor = NS_ComposeColors(aBackstopColor, canvasBg.mColor);
-  if (NS_GET_A(bgcolor) == 0) {
+  // The root element's clip-path/mask applies to the CSS canvas background
+  // (https://drafts.fxtf.org/compositing/#pagebackdrop), which the root
+  // scroll frame handles; only the backstop may be painted unclipped here.
+  nsIFrame* rootElementFrame = FrameConstructor()->GetRootElementFrame();
+  const bool maskedOrClipped =
+      rootElementFrame && SVGUtils::DetermineMaskUsage(rootElementFrame, false)
+                              .UsingMaskOrClipPath();
+
+  bool isCheckerboard = false;
+  const nscolor colorToPaint = [&]() -> nscolor {
+    if (maskedOrClipped) {
+      // Every canvas background item is clipped by the root element, so only
+      // the page backdrop may be painted here: the opaque default for a
+      // top-level document even when the backstop is transparent (e.g. with a
+      // non-opaque widget), transparent for a transparent container so the
+      // parent shows through the clipped-out area.
+      if (IsTransparentContainerElement()) {
+        return aBackstopColor;
+      }
+      return NS_ComposeColors(aBackstopColor,
+                              GetDefaultBackgroundColorToDraw());
+    }
+    const nscolor canvasColor =
+        NS_ComposeColors(aBackstopColor, canvasBg.mColor);
+    if (NS_GET_A(canvasColor) == 0 || !canvasBg.mCSSSpecified) {
+      // The canvas is transparent, or the default backdrop, which is never
+      // semi-transparent and is not painted by nsCanvasFrame.
+      return canvasColor;
+    }
+    if (NS_GET_A(canvasColor) == 255 &&
+        nsLayoutUtils::UsesAsyncScrolling(aFrame)) {
+      // With async scrolling, we'd like to have two instances of the
+      // background color: one that scrolls with the content and one underneath
+      // which does not scroll with the content, but which can be shown during
+      // checkerboarding and overscroll and the dynamic toolbar movement. We
+      // can only do that if the color is opaque.
+      isCheckerboard = true;
+      return canvasColor;
+    }
+    // The canvas is semi-transparent and will be drawn by nsCanvasFrame, so we
+    // can't draw behind it.
+    return NS_TRANSPARENT;
+  }();
+
+  if (NS_GET_A(colorToPaint) == 0) {
     return;
   }
 
-  // With async scrolling, we'd like to have two instances of the background
-  // color: one that scrolls with the content and one underneath which does not
-  // scroll with the content, but which can be shown during checkerboarding and
-  // overscroll and the dynamic toolbar movement. We can only do that if the
-  // color is opaque.
-  //
-  // We also need to paint the background if CSS hasn't specified it (since
-  // otherwise nsCanvasFrame might not paint it). Note that non-CSS-specified
-  // backgrounds shouldn't ever be semi-transparent.
-  const bool forceUnscrolledItem =
-      nsLayoutUtils::UsesAsyncScrolling(aFrame) && NS_GET_A(bgcolor) == 255;
-  if (canvasBg.mCSSSpecified && !forceUnscrolledItem) {
-    return;
-  }
-
-  MOZ_ASSERT(NS_GET_A(bgcolor) == 255);
+  MOZ_ASSERT(NS_GET_A(colorToPaint) == 255);
   const bool isRootContentDocumentCrossProcess =
       mPresContext->IsRootContentDocumentCrossProcess();
   MOZ_ASSERT_IF(
@@ -5725,12 +5753,12 @@ void PresShell::AddCanvasBackgroundColorItem(nsDisplayListBuilder* aBuilder,
           nsLayoutUtils::ExpandHeightForDynamicToolbar(
               mPresContext, aFrame->InkOverflowRectRelativeToSelf().Size()));
 
-  nsDisplaySolidColor* item =
-      MakeDisplayItem<nsDisplaySolidColor>(aBuilder, aFrame, aBounds, bgcolor);
+  nsDisplaySolidColor* item = MakeDisplayItem<nsDisplaySolidColor>(
+      aBuilder, aFrame, aBounds, colorToPaint);
   if (!item) {
     return;
   }
-  if (canvasBg.mCSSSpecified && isRootContentDocumentCrossProcess) {
+  if (isCheckerboard && isRootContentDocumentCrossProcess) {
     item->SetIsCheckerboardBackground();
   }
   AddDisplayItemToBottom(aBuilder, aList, item);

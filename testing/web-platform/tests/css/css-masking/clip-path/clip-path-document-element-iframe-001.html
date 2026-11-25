@@ -1,0 +1,22 @@
+<!DOCTYPE html>
+<html class="reftest-wait">
+<style>
+body {
+  margin: 0;
+  background: green;
+}
+iframe {
+  border: none;
+  width: 200px;
+  height: 200px;
+}
+</style>
+<link rel="help" href="https://drafts.fxtf.org/compositing/#pagebackdrop">
+<link rel="match" href="reference/clip-path-document-element-iframe-001-ref.html">
+<meta name="assert" content="A clip-path that clips away the whole root element
+    of an iframe document also clips the iframe's canvas background, letting
+    the parent document show through. The test passes if the page is green
+    without red.">
+<iframe srcdoc="<html style='clip-path: inset(100%)'><body style='background: red'></body></html>"
+        onload="document.documentElement.classList.remove('reftest-wait')"></iframe>
+</html>
