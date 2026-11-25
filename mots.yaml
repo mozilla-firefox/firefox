@@ -26,6 +26,10 @@ people:
     bmo_id: 689628
     name: Noah Bond
     nick: '007'
+  - &aborondo
+    bmo_id: 783730
+    name: Antonio Borondo
+    nick: aborondo
   - &acottner
     bmo_id: 736702
     name: Alex Cottner
@@ -540,6 +544,10 @@ people:
     bmo_id: 623993
     name: Iain Ireland
     nick: iain
+  - &iholmes
+    bmo_id: 783766
+    name: Iain Holmes
+    nick: iholmes
   - &ini
     bmo_id: 741020
     name: Irene Ni
@@ -883,6 +891,10 @@ people:
     bmo_id: 403756
     name: Mike Conley
     nick: mconley
+  - &mferreiro
+    bmo_id: 797527
+    name: Mauro Ferreiro
+    nick: mferreiro
   - &mgaudet
     bmo_id: 607045
     name: Matthew Gaudet
@@ -1295,6 +1307,10 @@ people:
     bmo_id: 712696
     name: Yannis Juglaret
     nick: yannis
+  - &yazan
+    bmo_id: 753849
+    name: Yazan Al Macki
+    nick: yazan
   - &yulia
     bmo_id: 600802
     name: Yulia Startsev
@@ -4190,6 +4206,23 @@ modules:
           - *niklas
           - *hsohaney
 
+      - name: Profile Backup
+        description: Back up a profile to a file and restore it.
+        includes:
+          - browser/components/backup/**/*
+        meta:
+          components:
+            - Firefox::Profile Backup
+          review_group: desktop-integrations-reviewers
+        owners:
+          - *hsohaney
+        peers:
+          - *aborondo
+          - *iholmes
+          - *mferreiro
+          - *yazan
+        machine_name: profile_backup
+
       - name: Profile Migration
         description: Migrating data from other browsers.
         includes:
@@ -4320,6 +4353,32 @@ modules:
           - *mconley
         machine_name: settings_ui
 
+      - name: Shell Integration
+        description: >
+          Integration with the OS shell, such as setting Firefox as the default
+          browser, pinning to the taskbar and Start menu, setting the desktop
+          background, and Launch on Login.
+        includes:
+          - browser/app/pbproxy/**/*
+          - browser/components/defaultlaunchonlogin/**/*
+          - browser/components/shell/**/*
+          - browser/modules/FirefoxBridgeExtensionUtils.sys.mjs
+          - browser/modules/WindowsJumpLists.sys.mjs
+          - toolkit/modules/launchonlogin/**/*
+          - toolkit/mozapps/msixcomserver-rust/**/*
+          - toolkit/mozapps/msixcomserver/**/*
+        meta:
+          components:
+            - Firefox::Shell Integration
+          review_group: desktop-integrations-reviewers
+        owners:
+          - *aborondo
+          - *hsohaney
+          - *iholmes
+          - *mferreiro
+        peers: []
+        machine_name: shell_integration
+
       - name: Tabbed Browser
         description: The UI component controlling browser tabs.
         includes:
@@ -4346,6 +4405,22 @@ modules:
           - *kcochrane
           - *jsudiaman
         machine_name: tabbed_browser
+
+      - name: Web Apps
+        description: Pin a site to the taskbar and open it in its own window.
+        includes:
+          - browser/components/taskbartabs/**/*
+        meta:
+          components:
+            - Firefox::Web Apps
+          review_group: desktop-integrations-reviewers
+        owners:
+          - *iholmes
+          - *mferreiro
+        peers:
+          - *aborondo
+          - *hsohaney
+        machine_name: web_apps
 
       - name: Windows Installer
         description: The installer for Windows.
@@ -5060,6 +5135,59 @@ modules:
           peers_emeritus:
             - *froydnj
         machine_name: application_startup
+
+      - name: Background Tasks
+        description: Run Firefox in headless mode to do short tasks without a window.
+        includes:
+          - toolkit/components/backgroundtasks/**/*
+        meta:
+          components:
+            - Toolkit::Background Tasks
+          review_group: desktop-integrations-reviewers
+        owners:
+          - *aborondo
+          - *hsohaney
+        peers:
+          - *iholmes
+          - *mferreiro
+        machine_name: background_tasks
+
+      - name: Default Browser Agent
+        description: >
+          Windows scheduled task that reports default browser telemetry and
+          shows notifications.
+        includes:
+          - toolkit/mozapps/defaultagent/**/*
+        meta:
+          components:
+            - Toolkit::Default Browser Agent
+          review_group: desktop-integrations-reviewers
+        owners:
+          - *aborondo
+          - *hsohaney
+          - *iholmes
+        peers:
+          - *mferreiro
+        machine_name: default_browser_agent
+
+      - name: Push Service
+        description: >
+          The Web Push client and the helper that wakes Firefox for push
+          messages.
+        includes:
+          - toolkit/components/push/**/*
+          - toolkit/mozapps/pushnotificationhelper/**/*
+        meta:
+          components:
+            - Toolkit::Push Service
+          review_group: desktop-integrations-reviewers
+        owners:
+          - *aborondo
+        peers:
+          - *hsohaney
+          - *iholmes
+          - *mferreiro
+        machine_name: push_service
 
       - name: Telemetry
         description: >

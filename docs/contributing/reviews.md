@@ -168,6 +168,9 @@ A group ending in `-rotation` assigns the review to one of its members in turn.
    * - #cubeb-reviewers
      - cubeb, Gecko's audio input/output library and associated projects (audioipc, cubeb-rs, rust cubeb backends)
      - `Member list <https://phabricator.services.mozilla.com/project/profile/129/>`__
+   * - #desktop-integrations-reviewers
+     - `Desktop Integrations modules </mots/index.html#profile-backup>`__
+     - `Member list <https://phabricator.services.mozilla.com/project/members/282/>`__
    * - #devtools-reviewers
      - `Firefox DevTools </mots/index.html#devtools>`__
      - `Member list <https://phabricator.services.mozilla.com/project/members/153/>`__
