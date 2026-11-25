@@ -3398,11 +3398,16 @@ bool LocalAccessible::IsActiveDescendant(LocalAccessible** aWidget) const {
 
 void LocalAccessible::Announce(const nsAString& aAnnouncement,
                                uint16_t aPriority) {
-  // Don't fire announcement events if the document is in the background (not
-  // active).
   if (!mDoc) {
     return;
   }
+  if (!mDoc->HasLoadState(DocAccessible::eTreeConstructed)) {
+    // We must not fire events for a document if its initial tree hasn't been
+    // constructed yet.
+    return;
+  }
+  // Don't fire announcement events if the document is in the background (not
+  // active).
   dom::Document* docNode = mDoc->DocumentNode();
   if (!docNode) {
     return;

@@ -230,3 +230,12 @@ addAccessibleTask(
   },
   { chrome: true, topLevel: true }
 );
+
+/**
+ * Test that an ariaNotify call prior to accessibility tree construction doesn't
+ * cause a failed assertion.
+ */
+addAccessibleTask(
+  `<script> document.ariaNotify(""); </script>`,
+  async function testBeforeDocLoad() {}
+);
