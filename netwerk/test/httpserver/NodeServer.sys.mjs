@@ -1866,11 +1866,13 @@ export class HTTP3Server {
     }
   }
 
-  async start(path, dbPath) {
-    let result = await NodeServer.sendCommand(
-      "",
-      `/forkH3Server?path=${path}&dbPath=${dbPath}`
-    );
+  /// @env - extra environment variables for the server process.
+  async start(path, dbPath, env) {
+    let command = `/forkH3Server?path=${path}&dbPath=${dbPath}`;
+    if (env) {
+      command += `&env=${encodeURIComponent(JSON.stringify(env))}`;
+    }
+    let result = await NodeServer.sendCommand("", command);
     this.processId = result.id;
 
     const lineMatch = result.output.match(
