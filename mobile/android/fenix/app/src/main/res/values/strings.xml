@@ -3260,6 +3260,8 @@
     <string name="homepage_shortcuts_popular_sites">Popular sites</string>
     <!-- Label for the preference to show the shortcuts for the most visited top sites on the homepage -->
     <string name="top_sites_toggle_top_recent_sites_4">Shortcuts</string>
+    <!-- Label for the preference to show frequently visited sites as shortcuts on the browser homepage -->
+    <string name="top_sites_toggle_frequently_visited_sites">Frequently visited sites</string>
     <!-- Title text displayed in the rename top site dialog. -->
     <string name="top_sites_rename_dialog_title">Name</string>
     <!-- Hint for renaming title of a shortcut -->

@@ -37,8 +37,12 @@ internal fun getTopSitesConfig(
         TopSitesConfig(
             targetSitesCount = settings.topSitesMaxLimit,
             frecencyConfig =
-                TopSitesFrecencyConfig(frecencyTresholdOption = FrecencyThresholdOption.SKIP_ONE_TIME_PAGES) {
-                    !it.url.toUri().containsQueryParameters(settings.frecencyFilterQuery)
+                if (settings.showTopFrecentSites) {
+                    TopSitesFrecencyConfig(frecencyTresholdOption = FrecencyThresholdOption.SKIP_ONE_TIME_PAGES) {
+                        !it.url.toUri().containsQueryParameters(settings.frecencyFilterQuery)
+                    }
+                } else {
+                    null
                 },
             providerConfig =
                 TopSitesProviderConfig(

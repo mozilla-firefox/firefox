@@ -80,6 +80,11 @@ class HomeSettingsFragment : PreferenceFragmentCompat(), SystemInsetsPaddedFragm
             onPreferenceChangeListener = createMetricPreferenceChangeListener("contile")
         }
 
+        requirePreference<CheckBoxPreference>(R.string.pref_key_show_top_frecent_sites).apply {
+            isChecked = fenixSettings.showTopFrecentSites
+            onPreferenceChangeListener = createMetricPreferenceChangeListener("frecent_sites")
+        }
+
         requirePreference<SwitchPreferenceCompat>(R.string.pref_key_privacy_report).apply {
             isChecked = fenixSettings.showPrivacyReportFeature
             onPreferenceChangeListener =

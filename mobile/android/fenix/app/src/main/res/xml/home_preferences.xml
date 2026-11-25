@@ -19,6 +19,12 @@
         android:key="@string/pref_key_enable_contile"
         android:title="@string/customize_toggle_contile" />
 
+    <androidx.preference.CheckBoxPreference
+        android:dependency="@string/pref_key_show_top_sites"
+        android:layout="@layout/checkbox_left_sub_preference"
+        android:key="@string/pref_key_show_top_frecent_sites"
+        android:title="@string/top_sites_toggle_frequently_visited_sites" />
+
     <androidx.preference.SwitchPreferenceCompat
       android:key="@string/pref_key_show_homepage_weather_widget"
       android:title="@string/customize_toggle_weather" />

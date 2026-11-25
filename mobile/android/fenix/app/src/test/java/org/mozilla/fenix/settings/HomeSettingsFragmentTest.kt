@@ -149,6 +149,45 @@ internal class HomeSettingsFragmentTest {
     }
 
     @Test
+    fun `GIVEN frecent top sites are hidden WHEN accessing settings THEN the frequently visited sites setting is unchecked`() {
+        every { appSettings.showTopFrecentSites } returns false
+
+        activateFragment()
+
+        assertFalse(getFrecentSitesPreference().isChecked)
+    }
+
+    @Test
+    fun `GIVEN frecent top sites are shown WHEN accessing settings THEN the frequently visited sites setting is checked`() {
+        every { appSettings.showTopFrecentSites } returns true
+
+        activateFragment()
+
+        assertTrue(getFrecentSitesPreference().isChecked)
+    }
+
+    @Test
+    fun `WHEN toggling the frequently visited sites setting THEN customize home preference_toggled is recorded with the frecent_sites key`() {
+        every { appSettings.showTopFrecentSites } returns true
+
+        activateFragment()
+
+        val result = getFrecentSitesPreference().callChangeListener(false)
+
+        assertTrue(result)
+        val events = CustomizeHome.preferenceToggled.testGetValue()!!
+        assertEquals(1, events.size)
+        assertEquals("frecent_sites", events.single().extra?.get("preference_key"))
+        assertEquals("false", events.single().extra?.get("enabled"))
+        verify {
+            appPrefsEditor.putBoolean(
+                homeSettingsFragment.getString(R.string.pref_key_show_top_frecent_sites),
+                false,
+            )
+        }
+    }
+
+    @Test
     fun `WHEN toggling the weather setting THEN customize home preference_toggled is recorded with the weather key`() {
         every { appSettings.enableHomepageWeatherWidget } returns true
 
@@ -267,6 +306,11 @@ internal class HomeSettingsFragmentTest {
     private fun getSponsoredStoriesPreference(): CheckBoxPreference =
         homeSettingsFragment.findPreference(
             homeSettingsFragment.getPreferenceKey(R.string.pref_key_pocket_sponsored_stories)
+        )!!
+
+    private fun getFrecentSitesPreference(): CheckBoxPreference =
+        homeSettingsFragment.findPreference(
+            homeSettingsFragment.getPreferenceKey(R.string.pref_key_show_top_frecent_sites)
         )!!
 
     private fun getSwitchPreference(keyId: Int): SwitchPreferenceCompat =

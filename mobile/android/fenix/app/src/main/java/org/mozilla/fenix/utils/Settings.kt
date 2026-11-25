@@ -307,6 +307,13 @@ class Settings(
             default = { homescreenSections[HomeScreenSection.TOP_SITES] == true },
         )
 
+    /** Indicates whether or not the top frecent sites are shown along with the pinned top sites. */
+    var showTopFrecentSites by
+        booleanPreference(
+            appContext.getPreferenceKey(R.string.pref_key_show_top_frecent_sites),
+            default = true,
+        )
+
     /** Indicates whether or not the privacy report should be shown on the home screen. */
     var showPrivacyReportFeature by
         booleanPreference(

@@ -16,6 +16,7 @@ import mozilla.components.feature.top.sites.TopSite
 import mozilla.components.feature.top.sites.TopSitesConfig
 import org.junit.Assert.assertEquals
 import org.junit.Assert.assertFalse
+import org.junit.Assert.assertNull
 import org.junit.Assert.assertTrue
 import org.junit.Before
 import org.junit.Test
@@ -38,6 +39,16 @@ class TopSitesConfigCreatorTest {
     fun setUp() {
         settings = mockk(relaxed = true)
         every { settings.topSitesMaxLimit } returns 10
+        every { settings.showTopFrecentSites } returns true
+    }
+
+    @Test
+    fun `GIVEN frecent top sites are hidden WHEN creating the TopSitesConfig THEN frecencyConfig is null`() {
+        every { settings.showTopFrecentSites } returns false
+
+        val topSitesConfig = getTopSitesConfig(settings = settings, store = browserStore).invoke()
+
+        assertNull(topSitesConfig.frecencyConfig)
     }
 
     @Test

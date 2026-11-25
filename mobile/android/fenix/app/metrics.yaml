@@ -4124,7 +4124,7 @@ customize_home:
           The preference key for the boolean (true/false) preference the user
           toggled.
 
-          We currently track: most_visited_sites, jump_back_in,
+          We currently track: most_visited_sites, frecent_sites, jump_back_in,
           recently_visited, bookmarks, pocket, contile, privacy_report,
           weather, and wrexham_widget. We previously tracked bookmarks as
           recently_saved.
@@ -4133,11 +4133,13 @@ customize_home:
         description: "Whether or not the preference is *now* enabled"
     bugs:
       - https://github.com/mozilla-mobile/fenix/issues/21095
+      - https://bugzilla.mozilla.org/show_bug.cgi?id=2097254
     data_reviews:
       - https://github.com/mozilla-mobile/fenix/pull/1896
       - https://github.com/mozilla-mobile/fenix/pull/26123#issuecomment-1190794469
       - https://github.com/mozilla-mobile/firefox-android/pull/2597
       - https://phabricator.services.mozilla.com/D337007
+      - https://bugzilla.mozilla.org/show_bug.cgi?id=2097254
     data_sensitivity:
       - technical
       - interaction

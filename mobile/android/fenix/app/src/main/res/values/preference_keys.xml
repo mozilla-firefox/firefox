@@ -415,6 +415,8 @@
     <string name="pref_key_top_sites_max_limit" translatable="false">pref_key_top_sites_max_limit</string>
     <!-- Whether or not the top sites section is shown on the home screen -->
     <string name="pref_key_show_top_sites" translatable="false">pref_key_show_top_sites</string>
+    <!-- Whether or not the top frecent sites are shown along with the pinned top sites -->
+    <string name="pref_key_show_top_frecent_sites" translatable="false">pref_key_show_top_frecent_sites</string>
     <!-- Whether or not the sponsored shortcuts are shown along with the top recent sites shortcuts -->
     <string name="pref_key_enable_contile" translatable="false">pref_key_enable_contile</string>
     <!-- Query containing the search parameters to be hidden from the top frecent sites  -->
