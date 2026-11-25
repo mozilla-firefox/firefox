@@ -55,6 +55,7 @@
 #include "mozilla/dom/workerinternals/RuntimeService.h"
 #include "mozilla/dom/SyncedContextInlines.h"
 #include "mozilla/dom/XULFrameElement.h"
+#include "mozilla/intl/Locale.h"
 #include "mozilla/ipc/ProtocolUtils.h"
 #include "mozilla/net/DocumentLoadListener.h"
 #include "mozilla/net/RequestContextService.h"
@@ -3636,7 +3637,7 @@ void BrowsingContext::DidSet(FieldIndex<IDX_AnimationsPlayBackRateMultiplier>,
   PresContextAffectingFieldChanged();
 }
 
-void BrowsingContext::DidSet(FieldIndex<IDX_LanguageOverride>,
+void BrowsingContext::DidSet(FieldIndex<IDX_LanguageOverrideInternal>,
                              nsCString&& /*aOldValue*/) {
   MOZ_ASSERT(IsTop());
 
@@ -3674,6 +3675,36 @@ void BrowsingContext::DidSet(FieldIndex<IDX_LanguageOverride>,
       }
     }
   });
+}
+
+// The empty string resets the override; anything else must be a structurally
+// valid BCP 47 language tag, which is what Intl.getCanonicalLocales accepts.
+static bool IsValidLanguageOverride(const nsACString& aLanguageOverride) {
+  if (aLanguageOverride.IsEmpty()) {
+    return true;
+  }
+  intl::Locale locale;
+  return intl::LocaleParser::TryParse(aLanguageOverride, locale).isOk();
+}
+
+void BrowsingContext::SetLanguageOverride(const nsACString& aLanguageOverride,
+                                          ErrorResult& aRv) {
+  if (!IsTop()) {
+    aRv.ThrowInvalidModificationError(
+        "languageOverride can only be set on top BrowsingContext");
+    return;
+  }
+  if (!XRE_IsParentProcess()) {
+    aRv.ThrowInvalidModificationError(
+        "languageOverride can only be set from the parent process");
+    return;
+  }
+  if (!IsValidLanguageOverride(aLanguageOverride)) {
+    aRv.ThrowRangeError(
+        "languageOverride must be a structurally valid language tag");
+    return;
+  }
+  SetLanguageOverrideInternal(aLanguageOverride, aRv);
 }
 
 void BrowsingContext::DidSet(FieldIndex<IDX_MediumOverride>,

@@ -257,7 +257,9 @@ interface BrowsingContext {
   // Enable media query medium override, for DevTools.
   [SetterThrows] attribute DOMString mediumOverride;
 
-  // Language emulation for WebDriver BiDi and DevTools.
+  // Language emulation for WebDriver BiDi and DevTools. Settable only from the
+  // parent process on a top-level browsing context, to a structurally valid
+  // BCP 47 language tag; the empty string resets the override.
   [SetterThrows] attribute UTF8String languageOverride;
 
   // Timezone emulation for WebDriver BiDi and DevTools per browsing context.

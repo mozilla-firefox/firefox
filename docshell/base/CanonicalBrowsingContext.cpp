@@ -322,7 +322,7 @@ void CanonicalBrowsingContext::ReplacedBy(
 
   if (!GetLanguageOverride().IsEmpty()) {
     // Reapply language override to update the corresponding realm.
-    txn.SetLanguageOverride(GetLanguageOverride());
+    txn.SetLanguageOverrideInternal(GetLanguageOverride());
   }
   if (!GetTimezoneOverride().IsEmpty()) {
     // Reapply timezone override to update the corresponding realm.
