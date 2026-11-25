@@ -19,9 +19,6 @@ const { InternalTestingProfileMigrator } = ChromeUtils.importESModule(
 const { TelemetryTestUtils } = ChromeUtils.importESModule(
   "resource://testing-common/TelemetryTestUtils.sys.mjs"
 );
-const { ChromeMigrationUtils } = ChromeUtils.importESModule(
-  "moz-src:///browser/components/migration/ChromeMigrationUtils.sys.mjs"
-);
 
 const DIALOG_URL =
   "chrome://browser/content/migration/migration-dialog-window.html";
@@ -565,28 +562,3 @@ function getEntrypointHistogramIndex(entrypoint) {
     }
   }
 }
-
-const migrationMockAddonRepository = () => {
-  return {
-    async getMappedAddons() {
-      return Promise.resolve({
-        addons: [],
-        matchedIDs: [],
-        unmatchedIDs: [],
-      });
-    },
-  };
-};
-
-/**
- * Make sure to set a fake addon repository so we don't attempt to connect to
- * non-local address
- */
-add_setup(function setup() {
-  ChromeMigrationUtils._addonRepository = migrationMockAddonRepository();
-
-  registerCleanupFunction(() => {
-    // Clear the add-on repository override.
-    ChromeMigrationUtils._addonRepository = null;
-  });
-});

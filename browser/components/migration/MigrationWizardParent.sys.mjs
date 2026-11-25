@@ -16,8 +16,6 @@ ChromeUtils.defineLazyGetter(lazy, "gFluentStrings", function () {
 });
 
 ChromeUtils.defineESModuleGetters(lazy, {
-  ChromeMigrationUtils:
-    "moz-src:///browser/components/migration/ChromeMigrationUtils.sys.mjs",
   FileUtils: "resource://gre/modules/FileUtils.sys.mjs",
   FirefoxProfileMigrator:
     "moz-src:///browser/components/migration/FirefoxProfileMigrator.sys.mjs",
@@ -81,8 +79,6 @@ export class MigrationWizardParent extends JSWindowActorParent {
         if (!gHasOpenedBefore) {
           Glean.migration.timeToProduceMigratorList.start();
         }
-
-        lazy.ChromeMigrationUtils.clearMappedAddonsCache();
 
         let availableMigrators = [];
         for (const key of MigrationUtils.availableMigratorKeys) {
@@ -751,11 +747,13 @@ export class MigrationWizardParent extends JSWindowActorParent {
 
         Glean.migration.discoveredMigrators[key].add(sourceProfiles.length);
 
-        return await Promise.all(
-          sourceProfiles.map(profile =>
-            this.#serializeMigratorAndProfile(migrator, profile)
-          )
-        );
+        let result = [];
+        for (let profile of sourceProfiles) {
+          result.push(
+            await this.#serializeMigratorAndProfile(migrator, profile)
+          );
+        }
+        return result;
       }
 
       Glean.migration.discoveredMigrators[key].add(1);
@@ -796,7 +794,7 @@ export class MigrationWizardParent extends JSWindowActorParent {
     permissionsPath
   ) {
     let [profileMigrationData, lastModifiedDate] = await Promise.all([
-      migrator.getImportableMigrateData(profileObj),
+      migrator.getMigrateData(profileObj),
       migrator.getLastUsedDate(),
     ]);
 
