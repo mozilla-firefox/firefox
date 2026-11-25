@@ -809,6 +809,12 @@ void wasm::HandleExceptionWasm(JSContext* cx, JitFrameIter& iter,
   // re-added to the map of live frames, right as it becomes trash).
   iter.asWasm().setIsLeavingFrames();
 
+  // If an import call into another same-compartment realm threw an exception,
+  // cx->realm is still the callee's realm. That callee's frame is gone, so
+  // switch to the innermost frame's realm now, before allocating the wrapped
+  // exception object, instead of waiting for the loop below.
+  cx->setRealmForJitExceptionHandler(iter.asWasm().instance()->realm());
+
   // Get (or wrap) the exception that we'll search for catch handlers for.
   Rooted<WasmExceptionObject*> wasmExn(cx,
                                        GetOrWrapWasmException(activation, cx));
