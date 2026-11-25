@@ -90,7 +90,12 @@ add_task(async function test_label_scheme_less_url() {
 });
 
 add_task(async function test_label_search_term() {
-  await assertLabelForClipboard("firefox browser", PASTE_AND_SEARCH_L10N_ID);
+  await assertLabelForClipboard(
+    "firefox browser",
+    AppConstants.platform == "win"
+      ? PASTE_AND_GO_L10N_ID
+      : PASTE_AND_SEARCH_L10N_ID
+  );
 });
 
 add_task(async function test_label_clipboard_too_large() {
