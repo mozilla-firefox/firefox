@@ -1089,6 +1089,17 @@ class WidgetCompositionEvent final : public WidgetGUIEvent {
 };
 
 /******************************************************************************
+ * mozilla::QueryContentOptions
+ ******************************************************************************/
+
+struct QueryContentOptions final {
+  explicit QueryContentOptions() = default;
+  explicit QueryContentOptions(const WidgetQueryContentEvent& aEvent);
+
+  bool mRelativeToInsertionPoint = false;
+};
+
+/******************************************************************************
  * mozilla::QueryContentResult
  ******************************************************************************/
 
@@ -1242,21 +1253,14 @@ class WidgetQueryContentEvent final : public WidgetGUIEvent {
     MOZ_CRASH("WidgetQueryContentEvent doesn't support Duplicate()");
   }
 
-  struct Options final {
-    explicit Options() {}  // NOLINT(modernize-use-equals-default)
-    explicit Options(const WidgetQueryContentEvent& aEvent)
-        : mRelativeToInsertionPoint(aEvent.mInput.mRelativeToInsertionPoint) {}
-
-    bool mRelativeToInsertionPoint = false;
-  };
-
-  void Init(const Options& aOptions) {
+  void Init(const QueryContentOptions& aOptions) {
     mInput.mRelativeToInsertionPoint = aOptions.mRelativeToInsertionPoint;
     MOZ_ASSERT(mInput.IsValidEventMessage(mMessage));
   }
 
-  void InitForQueryTextContent(int64_t aOffset, uint32_t aLength,
-                               const Options& aOptions = Options()) {
+  void InitForQueryTextContent(
+      int64_t aOffset, uint32_t aLength,
+      const QueryContentOptions& aOptions = QueryContentOptions()) {
     NS_ASSERTION(mMessage == eQueryTextContent, "wrong initializer is called");
     mInput.mOffset = aOffset;
     mInput.mLength = aLength;
@@ -1264,16 +1268,18 @@ class WidgetQueryContentEvent final : public WidgetGUIEvent {
     MOZ_ASSERT(mInput.IsValidOffset());
   }
 
-  void InitForQueryCaretRect(int64_t aOffset,
-                             const Options& aOptions = Options()) {
+  void InitForQueryCaretRect(
+      int64_t aOffset,
+      const QueryContentOptions& aOptions = QueryContentOptions()) {
     NS_ASSERTION(mMessage == eQueryCaretRect, "wrong initializer is called");
     mInput.mOffset = aOffset;
     Init(aOptions);
     MOZ_ASSERT(mInput.IsValidOffset());
   }
 
-  void InitForQueryTextRect(int64_t aOffset, uint32_t aLength,
-                            const Options& aOptions = Options()) {
+  void InitForQueryTextRect(
+      int64_t aOffset, uint32_t aLength,
+      const QueryContentOptions& aOptions = QueryContentOptions()) {
     NS_ASSERTION(mMessage == eQueryTextRect, "wrong initializer is called");
     mInput.mOffset = aOffset;
     mInput.mLength = aLength;
@@ -1281,8 +1287,9 @@ class WidgetQueryContentEvent final : public WidgetGUIEvent {
     MOZ_ASSERT(mInput.IsValidOffset());
   }
 
-  void InitForQuerySelectedText(SelectionType aSelectionType,
-                                const Options& aOptions = Options()) {
+  void InitForQuerySelectedText(
+      SelectionType aSelectionType,
+      const QueryContentOptions& aOptions = QueryContentOptions()) {
     MOZ_ASSERT(mMessage == eQuerySelectedText);
     MOZ_ASSERT(aSelectionType != SelectionType::eNone);
     mInput.mSelectionType = aSelectionType;
@@ -1296,8 +1303,9 @@ class WidgetQueryContentEvent final : public WidgetGUIEvent {
     mRefPoint = aPoint;
   }
 
-  void InitForQueryTextRectArray(uint32_t aOffset, uint32_t aLength,
-                                 const Options& aOptions = Options()) {
+  void InitForQueryTextRectArray(
+      uint32_t aOffset, uint32_t aLength,
+      const QueryContentOptions& aOptions = QueryContentOptions()) {
     NS_ASSERTION(mMessage == eQueryTextRectArray,
                  "wrong initializer is called");
     mInput.mOffset = aOffset;

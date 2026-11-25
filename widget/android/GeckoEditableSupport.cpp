@@ -831,7 +831,7 @@ void GeckoEditableSupport::UpdateCompositionRects() {
   }
 
   WidgetQueryContentEvent queryCaretRectEvent(true, eQueryCaretRect, widget);
-  WidgetQueryContentEvent::Options options;
+  QueryContentOptions options;
   options.mRelativeToInsertionPoint = true;
   queryCaretRectEvent.InitForQueryCaretRect(0, options);
 
