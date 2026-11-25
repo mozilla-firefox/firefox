@@ -53,7 +53,10 @@ export class LinkPreviewChild extends JSWindowActorChild {
     // Make requests with a channel to automatically get safe browsing checks.
     // Use null principals in combination with anonymous for now ahead of
     // fetching content with cookies to handle sites requiring login.
-    const principal = Services.scriptSecurityManager.createNullPrincipal({});
+    const principal = Services.scriptSecurityManager.createNullPrincipal(
+      this.contentWindow.gBrowser.selectedBrowser.browsingContext
+        .originAttributes
+    );
     const channel = lazy.NetUtil.newChannel({
       contentPolicyType: Ci.nsIContentPolicy.TYPE_DOCUMENT,
       loadingPrincipal: principal,
