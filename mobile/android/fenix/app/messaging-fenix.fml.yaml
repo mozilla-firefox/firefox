@@ -58,6 +58,11 @@ import:
               FXA_CURRENTLY_SIGNED_IN: "is_fxa_signed_in == true"
               FXA_MORE_THAN_1_DEVICE: "fxa_connected_devices > 1"
 
+              # VPN feature triggers
+              VPN_READY: "triggerContext.vpn.is_ready_to_use == true"
+              VPN_AUTH_PROVIDER_GPI: "triggerContext.vpn.auth_provider == 'gpi'"
+              VPN_AUTH_PROVIDER_FXA: "triggerContext.vpn.auth_provider == 'fxa'"
+
               # Has the user signed in the last 4 years
               FXA_SIGNED_IN: "'sync_auth.sign_in'|eventLastSeen('Years', 0) <= 4"
               FXA_NOT_SIGNED_IN: "'sync_auth.sign_in'|eventLastSeen('Years', 0) > 4"

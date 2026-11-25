@@ -211,7 +211,7 @@ fun IPProtectionScreen(
     }
 }
 
-private fun IPProtectionStatus.isReadyToUse() =
+internal fun IPProtectionStatus.isReadyToUse() =
     when (this) {
         IPProtectionStatus.Disabled,
         IPProtectionStatus.Activating,

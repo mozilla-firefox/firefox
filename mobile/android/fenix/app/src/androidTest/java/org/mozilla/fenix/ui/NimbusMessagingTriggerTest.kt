@@ -4,6 +4,14 @@
 
 package org.mozilla.fenix.ui
 
+import mozilla.components.ExperimentalAndroidComponentsApi
+import mozilla.components.concept.engine.ipprotection.CurrentAuthProvider
+import mozilla.components.concept.engine.ipprotection.ServiceState
+import mozilla.components.feature.ipprotection.store.state.AccountState
+import mozilla.components.feature.ipprotection.store.state.AccountStatus
+import mozilla.components.feature.ipprotection.store.state.Authorized
+import mozilla.components.feature.ipprotection.store.state.EligibilityStatus
+import mozilla.components.feature.ipprotection.store.state.IPProtectionState
 import mozilla.components.service.nimbus.messaging.FxNimbusMessaging
 import mozilla.components.service.nimbus.messaging.Messaging
 import org.junit.Assert
@@ -17,6 +25,7 @@ import org.mozilla.fenix.helpers.FenixTestRule
 import org.mozilla.fenix.helpers.HomeActivityIntentTestRule
 import org.mozilla.fenix.helpers.TestHelper
 import org.mozilla.fenix.messaging.CustomAttributeProvider
+import org.mozilla.fenix.settings.ipprotection.toMessageContext
 
 /**
  * Test to instantiate Nimbus and automatically test all trigger expressions shipping with the app.
@@ -25,6 +34,7 @@ import org.mozilla.fenix.messaging.CustomAttributeProvider
  * - as much of the custom targeting and trigger attributes are recorded as possible.
  * - we can run the Rust JEXL evaluator.
  */
+@OptIn(ExperimentalAndroidComponentsApi::class) // IPProtectionState
 class NimbusMessagingTriggerTest {
     private lateinit var feature: Messaging
     private lateinit var nimbus: NimbusInterface
@@ -42,7 +52,9 @@ class NimbusMessagingTriggerTest {
     @Test
     fun testAllMessageTriggersAreValid() {
         val triggers = feature.triggers
-        val customAttributes = CustomAttributeProvider.getCustomAttributes(TestHelper.appContext)
+        val customAttributes =
+            CustomAttributeProvider.getCustomAttributes(TestHelper.appContext)
+                .put("triggerContext", ipProtectionTriggerContext())
         val jexl = nimbus.createMessageHelper(customAttributes)
 
         val failed = mutableMapOf<String, String>()
@@ -78,5 +90,18 @@ class NimbusMessagingTriggerTest {
                 // NOOP
             }
         }
+    }
+
+    /** VPN feature produces additional trigger context needed for this test to be added here */
+    private fun ipProtectionTriggerContext(): Map<String, Any?> {
+        val vpnState =
+            IPProtectionState(
+                eligibilityStatus = EligibilityStatus.Eligible,
+                proxyStatus = Authorized.Idle,
+                serviceStatus = ServiceState.Ready,
+                currentAuthProvider = CurrentAuthProvider.Gpi,
+                accountState = AccountState(AccountStatus.NoAccount),
+            )
+        return vpnState.toMessageContext()
     }
 }
