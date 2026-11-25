@@ -2820,13 +2820,10 @@ void GCRuntime::endSweepPhase(bool destroyingRuntime) {
     AutoLockSweepingLock lock(rt);
     callFinalizeCallbacks(rt->gcContext(), JSFINALIZE_COLLECTION_END);
 
-    if (grayBitsInvalid) {
-      if (grayBitsInvalid & GrayBitsInvalidatedInCurrentGC) {
-        grayBitsInvalid &= ~GrayBitsInvalidatedInCurrentGC;
-        MOZ_ASSERT(grayBitsInvalid == GrayBitsInvalid);
-      } else if (allCCVisibleZonesWereCollected()) {
-        grayBitsInvalid = 0;
-      }
+    // Update gray marking state at the end of a full (relative to the CC)
+    // collection to just those changes that happened during collection.
+    if (allCCVisibleZonesWereCollected()) {
+      grayMarkingState = uint32_t{grayMarkingStateChangesInGC};
     }
   }
 

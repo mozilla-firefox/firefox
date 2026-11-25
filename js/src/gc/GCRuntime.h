@@ -610,9 +610,8 @@ class GCRuntime {
   bool isCompactingGc() const { return isCompacting; }
   bool didCompactZones() const { return isCompacting && zonesCompacted; }
 
-  bool areGrayBitsValid() const { return grayBitsInvalid == 0; }
+  bool areGrayBitsValid() const { return grayMarkingState == 0; }
   void setGrayBitsInvalid();
-  void setGrayBitsInvalidForReset();
 
   mozilla::TimeStamp lastGCStartTime() const { return lastGCStartTime_; }
   mozilla::TimeStamp lastGCEndTime() const { return lastGCEndTime_; }
@@ -1248,12 +1247,13 @@ class GCRuntime {
   mozilla::Atomic<size_t, mozilla::ReleaseAcquire> numActiveZoneIters;
 
   /*
-   * The gray bits can become invalid if UnmarkGray overflows the stack. A
-   * full GC will reset this bit, since it fills in all the gray bits.
+   * The gray mark bits can become invalid if UnmarkGray overflows the stack or
+   * the GC is aborted part way through. A full GC can reset this state since it
+   * recalculates all the gray bits.
    */
   static constexpr uint32_t GrayBitsInvalid = Bit(0);
-  static constexpr uint32_t GrayBitsInvalidatedInCurrentGC = Bit(1);
-  mozilla::Atomic<uint32_t, mozilla::Relaxed> grayBitsInvalid;
+  mozilla::Atomic<uint32_t, mozilla::Relaxed> grayMarkingState;
+  mozilla::Atomic<uint32_t, mozilla::Relaxed> grayMarkingStateChangesInGC;
 
   mozilla::Atomic<JS::GCReason, mozilla::ReleaseAcquire> majorGCTriggerReason;
 

@@ -430,8 +430,6 @@ void gc::GCRuntime::endVerifyPreBarriers() {
     zone->bufferAllocator.clearMarkStateAfterBarrierVerification();
   }
 
-  // Clear this flag in line with GCRuntime::endSweepPhase.
-  grayBitsInvalid &= ~GrayBitsInvalidatedInCurrentGC;
   MOZ_ASSERT(!areGrayBitsValid());
 
   js_delete(trc);
