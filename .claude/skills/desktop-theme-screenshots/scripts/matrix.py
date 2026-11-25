@@ -144,12 +144,13 @@ pixels that differ by more than --threshold (default 0: both halves run one
 build headless, so a pixel that differs is the change's) and writes
 OUTDIR/SET/REGIME/diff-NAME.png where any do; with a threshold, it also counts
 the pixels that differ by less, and a shot with only those still goes on the
-pixels list. It turns the two halves' readings into notes: a value that
-changed, a size that changed and an error. A row is one shot of one set
-across its regimes, and it goes on the first list that fits: a reading
-changed in some regime; a shot failed the same way in both halves, or one half
-did not finish; only
-pixels differ. A row shows each
+pixels list. It turns the two halves' readings into notes:
+a style property that changed, naming the elements it changed on; an element
+rendered in one half only; any other value that changed; a size that changed;
+and an error. A row is one shot of one set across its regimes, and it goes
+on the first list that fits: a reading changed in some regime; a shot failed
+the same way in both halves, or one half did not finish; only pixels differ. A
+row shows each
 regime that is not identical, folding a regime where no pixel differs and the
 notes match an earlier one into that one, and names the regimes that are
 identical and those it could not compare.
@@ -882,8 +883,12 @@ def flatten(value, prefix=""):
 def compare(before, after):
     """Return the notes on what changed between two halves' readings of one
     shot, and on errors the same in both."""
-    b, a = flatten(as_readings(before)), flatten(as_readings(after))
-    changed, errors = [], []
+    before, after = as_readings(before), as_readings(after)
+    changed = []
+    if isinstance(before.get("styles"), dict) and isinstance(after.get("styles"), dict):
+        changed = compare_styles(before.pop("styles"), after.pop("styles"))
+    b, a = flatten(before), flatten(after)
+    errors = []
     for key in [*b, *(k for k in a if k not in b)]:
         vb, va = b.get(key), a.get(key)
         if key not in a:
@@ -910,6 +915,77 @@ def as_readings(value):
     if isinstance(value, dict):
         return dict(value)
     return {} if value is None else {"value": value}
+
+
+SHOWN_ELEMENTS = 6
+
+
+def elements(keys):
+    names = [key or "the element" for key in keys]
+    more = len(names) - SHOWN_ELEMENTS
+    if more > 1:
+        names = names[:SHOWN_ELEMENTS] + [f"{more} more"]
+    return ", ".join(names)
+
+
+def compare_styles(before, after):
+    """Notes on the computed styles `shot()` read in two halves, one per
+    property and change, naming the elements it changed on."""
+    groups = {}
+    only = {"before": [], "after": []}
+    for kb, ka in pair_styles(before, after):
+        if ka is None or kb is None:
+            only["before" if ka is None else "after"].append(kb or ka)
+            continue
+        vb, va = before[kb], after[ka]
+        name = kb if kb == ka else f"{kb} (after: {ka})"
+        for prop in [*vb, *(p for p in va if p not in vb)]:
+            if vb.get(prop) != va.get(prop):
+                change = (prop, vb.get(prop), va.get(prop))
+                groups.setdefault(change, []).append(name)
+    notes = [
+        f"{prop} {shown_style(old)} → {shown_style(new)}: {elements(keys)}"
+        for (prop, old, new), keys in groups.items()
+    ]
+    for half, keys in only.items():
+        if keys:
+            notes.append(f"rendered only {half}: {elements(keys)}")
+    return notes
+
+
+def pair_styles(before, after):
+    """Pair the elements of two halves' styles, keyed as readStyles() keys
+    them, within each family of keys that differ only in a sibling index
+    such as [2]: same key and styles first, then, when the family has a
+    sibling more in one half, same styles, then the rest in order, so a
+    sibling that appears or disappears shifts no other pair.
+    Return (before key or None, after key or None) pairs."""
+    families = {}
+    for i, styles in enumerate((before, after)):
+        for key in styles:
+            family = re.sub(r"\[\d+\]", "", key)
+            families.setdefault(family, ([], []))[i].append(key)
+    pairs = []
+    for bk, ak in families.values():
+        matches = [lambda kb, ka: kb == ka and before[kb] == after[ka]]
+        if len(bk) != len(ak):
+            matches.append(lambda kb, ka: before[kb] == after[ka])
+        for match in matches:
+            for kb in list(bk):
+                ka = next((ka for ka in ak if match(kb, ka)), None)
+                if ka is not None:
+                    bk.remove(kb)
+                    ak.remove(ka)
+                    pairs.append((kb, ka))
+        n = min(len(bk), len(ak))
+        pairs += list(zip(bk[:n], ak[:n]))
+        pairs += [(kb, None) for kb in bk[n:]]
+        pairs += [(None, ka) for ka in ak[n:]]
+    return pairs
+
+
+def shown_style(value):
+    return "(none)" if value is None or value == "" else value
 
 
 STATUS_ORDER = ["changed", "error", "pixels", "same"]
