@@ -461,28 +461,15 @@ void AbstractGeneratorObject::setClosed(JSContext* cx) {
   DebugAPI::onGeneratorClosed(cx, this);
 }
 
-bool AbstractGeneratorObject::isAfterYield() {
-  return isAfterYieldOrAwait(JSOp::Yield);
-}
-
-bool AbstractGeneratorObject::isAfterAwait() {
-  return isAfterYieldOrAwait(JSOp::Await);
-}
-
-bool AbstractGeneratorObject::isAfterYieldOrAwait(JSOp op) {
-  if (isClosed() || isRunning()) {
-    return false;
-  }
+JSOp AbstractGeneratorObject::suspendOp() const {
+  MOZ_RELEASE_ASSERT(isSuspended());
 
   JSScript* script = this->script();
   jsbytecode* code = script->code();
   uint32_t nextOffset = script->resumeOffsets()[resumeIndex()];
-  if (JSOp(code[nextOffset]) != JSOp::AfterYield) {
-    return false;
-  }
+  MOZ_RELEASE_ASSERT(JSOp(code[nextOffset]) == JSOp::AfterYield);
 
-  jsbytecode* suspendPC = SuspendPCForAfterYield(code + nextOffset);
-  return JSOp(*suspendPC) == op;
+  return JSOp(*SuspendPCForAfterYield(code + nextOffset));
 }
 
 template <>

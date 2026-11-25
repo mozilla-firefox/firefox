@@ -1995,10 +1995,9 @@
     MACRO(InitialYield, initial_yield, NULL, 4, 1, 2, JOF_RESUMEINDEX) \
     /*
      * Bytecode emitted after `yield` expressions. This is useful for the
-     * Debugger and `AbstractGeneratorObject::isAfterYieldOrAwait`. It's
-     * treated as jump target op so that the Baseline Interpreter can
-     * efficiently restore the frame's interpreterICEntry when resuming a
-     * generator.
+     * Debugger and `AbstractGeneratorObject::suspendOp`. It's treated as jump
+     * target op so that the Baseline Interpreter can efficiently restore the
+     * frame's interpreterICEntry when resuming a generator.
      *
      * The preceding instruction in the script must be `Yield`, `InitialYield`,
      * or `Await`.

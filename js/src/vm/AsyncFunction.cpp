@@ -175,7 +175,7 @@ static bool AsyncFunctionResume(JSContext* cx,
   MOZ_ASSERT_IF(generator->isClosed(), generatorOrValue.isObject());
   MOZ_ASSERT_IF(generator->isClosed(),
                 &generatorOrValue.toObject() == resultPromise);
-  MOZ_ASSERT_IF(!generator->isClosed(), generator->isAfterAwait());
+  MOZ_ASSERT_IF(!generator->isClosed(), generator->suspendOp() == JSOp::Await);
 
   return true;
 }

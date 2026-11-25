@@ -189,13 +189,10 @@ class AbstractGeneratorObject : public NativeObject {
   }
   void setClosed(JSContext* cx);
 
-  bool isAfterYield();
-  bool isAfterAwait();
+  // Returns the JSOp that suspended this generator (for example JSOp::Yield or
+  // JSOp::Await).
+  JSOp suspendOp() const;
 
- private:
-  bool isAfterYieldOrAwait(JSOp op);
-
- public:
   void trace(JSTracer* trc);
 
   static size_t offsetOfCalleeOrModuleSlot() {
