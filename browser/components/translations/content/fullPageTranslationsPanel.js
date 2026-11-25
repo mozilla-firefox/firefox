@@ -1914,12 +1914,12 @@ var FullPageTranslationsPanel = new (class {
             if (TranslationsParent.hasUserEverTranslated()) {
               document.l10n.setAttributes(
                 button,
-                "urlbar-translations-button2"
+                "urlbar-translations-button3"
               );
             } else {
               document.l10n.setAttributes(
                 button,
-                "urlbar-translations-button-intro"
+                "urlbar-translations-button-intro-2"
               );
             }
           }

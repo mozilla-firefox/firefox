@@ -38,7 +38,7 @@ add_task(async function test_translations_moz_extension() {
       "The button is available."
     );
 
-  is(button.getAttribute("data-l10n-id"), "urlbar-translations-button-intro");
+  is(button.getAttribute("data-l10n-id"), "urlbar-translations-button-intro-2");
 
   await FullPageTranslationsTestUtils.assertPageIsNotTranslated(runInPage);
 

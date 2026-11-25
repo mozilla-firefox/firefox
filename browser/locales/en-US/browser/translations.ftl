@@ -2,16 +2,12 @@
 # License, v. 2.0. If a copy of the MPL was not distributed with this
 # file, You can obtain one at http://mozilla.org/MPL/2.0/.
 
-# The button for "Firefox Translations" in the url bar. Note that here "Beta" should
-# not be translated, as it is a reflection of the un-localized BETA icon that is in the
-# panel.
-urlbar-translations-button2 =
-  .tooltiptext = Translate this page - Beta
+# The button for "Firefox Translations" in the url bar.
+urlbar-translations-button3 =
+  .tooltiptext = Translate this page
 
-# Note that here "Beta" should not be translated, as it is a reflection of the
-# un-localized BETA icon that is in the panel.
-urlbar-translations-button-intro =
-  .tooltiptext = Try private translations in { -brand-shorter-name } - Beta
+urlbar-translations-button-intro-2 =
+  .tooltiptext = Try private translations in { -brand-shorter-name }
 
 # If your language requires declining the language name, a possible solution
 # is to adapt the structure of the phrase, or use a support noun, e.g.
