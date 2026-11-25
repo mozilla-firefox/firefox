@@ -21,6 +21,7 @@ UNIFIED_SOURCES += [
     "ModuleLoader.cpp",
     "OSObject.cpp",
     "ShellModuleObjectWrapper.cpp",
+    "ShellOptions.cpp",
     "WasmTesting.cpp",
 ]
 
@@ -85,6 +86,7 @@ SOURCE_HEADERS += [
     "ModuleLoader.h",
     "OSObject.h",
     "ShellModuleObjectWrapper.h",
+    "ShellOptions.h",
     "StringUtils.h",
     "WasmTesting.h",
 ]

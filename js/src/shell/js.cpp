@@ -58,19 +58,10 @@
 #  include <sys/stat.h>
 #  include <unistd.h>
 #endif
-#ifdef XP_LINUX
-#  include <sys/prctl.h>
-#endif
 
 #include "jsapi.h"
 #include "jsfriendapi.h"
 #include "jstypes.h"
-
-#include "fmt/format.h"
-#ifndef JS_WITHOUT_NSPR
-#  include "prerror.h"
-#  include "prlink.h"
-#endif
 
 #include "builtin/Array.h"
 #include "builtin/MapObject.h"
@@ -79,6 +70,7 @@
 #include "builtin/TestingFunctions.h"
 #include "builtin/TestingUtility.h"  // js::ParseCompileOptions, js::ParseDebugMetadata, js::CreateScriptPrivate
 #include "debugger/DebugAPI.h"
+#include "fmt/format.h"
 #include "frontend/CompilationStencil.h"
 #include "frontend/FrontendContext.h"  // AutoReportFrontendContext
 #include "frontend/ModuleSharedContext.h"
@@ -163,6 +155,7 @@
 #include "shell/jsshell.h"
 #include "shell/OSObject.h"
 #include "shell/ShellModuleObjectWrapper.h"
+#include "shell/ShellOptions.h"
 #include "shell/WasmTesting.h"
 #include "threading/ConditionVariable.h"
 #include "threading/ExclusiveData.h"
@@ -230,15 +223,7 @@ using mozilla::TimeStamp;
 using mozilla::Utf8Unit;
 using mozilla::Variant;
 
-bool InitOptionParser(OptionParser& op);
-bool SetGlobalOptionsPreJSInit(const OptionParser& op);
-bool SetGlobalOptionsPostJSInit(const OptionParser& op);
-bool SetContextOptions(JSContext* cx, const OptionParser& op);
-bool SetContextWasmOptions(JSContext* cx, const OptionParser& op);
-bool SetContextJITOptions(JSContext* cx, const OptionParser& op);
-bool SetContextGCOptions(JSContext* cx, const OptionParser& op);
-bool ApplyBenchmarkMode(JSContext* cx, const OptionParser& op);
-bool InitModuleLoader(JSContext* cx, const OptionParser& op);
+bool InitModuleLoader(JSContext* cx);
 
 #ifdef FUZZING_JS_FUZZILLI
 #  define REPRL_CRFD 100
@@ -493,13 +478,6 @@ static bool SetMozLog(JSContext* cx, unsigned argc, Value* vp) {
  * that represent the time internally in microseconds using 32-bit int.
  */
 static const int32_t MAX_TIMEOUT_SECONDS = 1800;
-
-// Not necessarily in sync with the browser
-#ifdef ENABLE_SHARED_MEMORY
-#  define SHARED_MEMORY_DEFAULT 1
-#else
-#  define SHARED_MEMORY_DEFAULT 0
-#endif
 
 // Fuzzing support for JS runtime fuzzing
 #ifdef FUZZING_INTERFACES
@@ -867,9 +845,6 @@ struct MOZ_STACK_CLASS EnvironmentPreparer
 
 const char* shell::selfHostedXDRPath = nullptr;
 bool shell::encodeSelfHostedCode = false;
-enum class BenchmarkMode { Off, Enable, Strict };
-static BenchmarkMode sBenchmarkMode = BenchmarkMode::Off;
-
 bool shell::enableCodeCoverage = false;
 bool shell::enableDisassemblyDumps = false;
 bool shell::offthreadBaselineCompilation = false;
@@ -4289,10 +4264,10 @@ static bool FuzzilliReprlGetAndRun(JSContext* cx) {
 
 #endif /* FUZZING_JS_FUZZILLI */
 
-static bool FuzzilliUseReprlMode(OptionParser* op) {
+static bool FuzzilliUseReprlMode() {
 #ifdef FUZZING_JS_FUZZILLI
   // Check if we should use REPRL mode
-  bool reprl_mode = op->getBoolOption("reprl");
+  bool reprl_mode = gOptions.getBoolOption("reprl");
   if (reprl_mode) {
     // Check in with parent
     char helo[] = "HELO";
@@ -5240,60 +5215,6 @@ static bool CheckRegExpSyntax(JSContext* cx, unsigned argc, Value* vp) {
 }
 
 template <typename T>
-static bool ParsePrefValue(const char* name, const char* val, T* result) {
-  if constexpr (std::is_same_v<T, bool>) {
-    if (strcmp(val, "true") == 0) {
-      *result = true;
-      return true;
-    }
-    if (strcmp(val, "false") == 0) {
-      *result = false;
-      return true;
-    }
-    fprintf(stderr, "Invalid value for boolean pref %s: %s\n", name, val);
-    return false;
-  } else {
-    static_assert(std::is_same_v<T, int32_t> || std::is_same_v<T, uint32_t>);
-    char* end;
-    long v = strtol(val, &end, 10);
-    if (end != val + strlen(val) || static_cast<long>(static_cast<T>(v)) != v) {
-      fprintf(stderr, "Invalid value for integer pref %s: %s\n", name, val);
-      return false;
-    }
-    *result = static_cast<T>(v);
-    return true;
-  }
-}
-
-static bool SetPrefToTrueForBool(const char* name) {
-  // Search for a matching pref and try to set it to a default value for the
-  // type.
-#define CHECK_PREF(NAME, CPP_NAME, TYPE, SETTER, IS_STARTUP_PREF,      \
-                   FUZZING_SAFE)                                       \
-  if (strcmp(name, NAME) == 0) {                                       \
-    if constexpr (std::is_same_v<TYPE, bool>) {                        \
-      JS::Prefs::SETTER(true);                                         \
-      return true;                                                     \
-    } else {                                                           \
-      fprintf(stderr, "Pref %s must have a value specified.\n", name); \
-      return false;                                                    \
-    }                                                                  \
-  }
-  FOR_EACH_JS_PREF(CHECK_PREF)
-#undef CHECK_PREF
-
-  // Nothing matched. If --fuzzing-safe is used, return true after printing a
-  // message, to continue execution without breaking fuzzing when a pref is
-  // removed.
-  if (fuzzingSafe) {
-    fprintf(stderr, "Warning: Ignoring unknown pref name: %s\n", name);
-    return true;
-  }
-  fprintf(stderr, "Invalid pref name: %s\n", name);
-  return false;
-}
-
-template <typename T>
 static bool ConvertPrefValue(JSContext* cx, HandleValue val, T* result) {
   if constexpr (std::is_same_v<T, bool>) {
     *result = ToBoolean(val);
@@ -5348,72 +5269,6 @@ static bool SetPrefValue(JSContext* cx, unsigned argc, Value* vp) {
   }
   JS_ReportErrorASCII(cx, "invalid pref name");
   return false;
-}
-
-static bool SetPrefToValue(const char* name, size_t nameLen,
-                           const char* value) {
-  // Search for a matching pref and try to set it to the provided value.
-#define CHECK_PREF(NAME, CPP_NAME, TYPE, SETTER, IS_STARTUP_PREF,         \
-                   FUZZING_SAFE)                                          \
-  if (nameLen == strlen(NAME) && memcmp(name, NAME, strlen(NAME)) == 0) { \
-    TYPE v;                                                               \
-    if (!ParsePrefValue<TYPE>(NAME, value, &v)) {                         \
-      return false;                                                       \
-    }                                                                     \
-    JS::Prefs::SETTER(v);                                                 \
-    return true;                                                          \
-  }
-  FOR_EACH_JS_PREF(CHECK_PREF)
-#undef CHECK_PREF
-
-  // Nothing matched. If --fuzzing-safe is used, return true after printing a
-  // message, to continue execution without breaking fuzzing when a pref is
-  // removed.
-  if (fuzzingSafe) {
-    fprintf(stderr, "Warning: Ignoring unknown pref name: %s\n", name);
-    return true;
-  }
-  fprintf(stderr, "Invalid pref name: %s\n", name);
-  return false;
-}
-
-static bool SetPref(const char* pref) {
-  const char* assign = strchr(pref, '=');
-  if (!assign) {
-    if (!SetPrefToTrueForBool(pref)) {
-      return false;
-    }
-    return true;
-  }
-
-  size_t nameLen = assign - pref;
-  const char* valStart = assign + 1;  // Skip '='.
-
-  if (!SetPrefToValue(pref, nameLen, valStart)) {
-    return false;
-  }
-  return true;
-}
-
-static void ListPrefs() {
-  auto printPref = [](const char* name, auto defaultVal, bool fuzzingSafe) {
-    const char* suffix = fuzzingSafe ? "" : "  [not fuzzing-safe]";
-    using T = decltype(defaultVal);
-    if constexpr (std::is_same_v<T, bool>) {
-      fprintf(stderr, "%s=%s%s\n", name, defaultVal ? "true" : "false", suffix);
-    } else if constexpr (std::is_same_v<T, int32_t>) {
-      fprintf(stderr, "%s=%d%s\n", name, defaultVal, suffix);
-    } else {
-      static_assert(std::is_same_v<T, uint32_t>);
-      fprintf(stderr, "%s=%u%s\n", name, defaultVal, suffix);
-    }
-  };
-
-#define PRINT_PREF(NAME, CPP_NAME, TYPE, SETTER, IS_STARTUP_PREF, \
-                   FUZZING_SAFE)                                  \
-  printPref(NAME, JS::Prefs::CPP_NAME(), FUZZING_SAFE);
-  FOR_EACH_JS_PREF(PRINT_PREF)
-#undef PRINT_PREF
 }
 
 static bool SetJitCompilerOption(JSContext* cx, unsigned argc, Value* vp) {
@@ -7215,8 +7070,6 @@ char** shell::sArgv;
 #ifndef __wasi__
 static const char sWasmCompileAndSerializeFlag[] =
     "--wasm-compile-and-serialize";
-MOZ_RUNINIT static Vector<const char*, 5, js::SystemAllocPolicy>
-    sCompilerProcessFlags;
 
 static bool CompileAndSerializeInSeparateProcess(JSContext* cx,
                                                  const uint8_t* bytecode,
@@ -12314,10 +12167,10 @@ static JSObject* NewGlobalObject(JSContext* cx, JS::RealmOptions& options,
   return glob;
 }
 
-static bool BindScriptArgs(JSContext* cx, OptionParser* op) {
+static bool BindScriptArgs(JSContext* cx) {
   AutoReportException are(cx);
 
-  MultiStringRange msr = op->getMultiStringArg("scriptArgs");
+  MultiStringRange msr = gOptions.getMultiStringArg("scriptArgs");
   RootedObject scriptArgs(cx);
   scriptArgs = JS::NewArrayObject(cx, 0);
   if (!scriptArgs) {
@@ -12341,7 +12194,7 @@ static bool BindScriptArgs(JSContext* cx, OptionParser* op) {
   }
 
   RootedValue scriptPathValue(cx);
-  if (const char* scriptPath = op->getStringArg("script")) {
+  if (const char* scriptPath = gOptions.getStringArg("script")) {
     UniqueChars scriptPathUtf8 = JS::EncodeNarrowToUtf8(cx, scriptPath);
     if (!scriptPathUtf8) {
       return false;
@@ -12363,11 +12216,6 @@ static bool BindScriptArgs(JSContext* cx, OptionParser* op) {
   return true;
 }
 
-static bool OptionFailure(const char* option, const char* str) {
-  fprintf(stderr, "Unrecognized option for %s: %s\n", option, str);
-  return false;
-}
-
 template <typename... Ts>
 auto minVal(Ts... args);
 template <typename T>
@@ -12380,32 +12228,32 @@ auto minVal(T a, Ts... args) {
   return std::min(a, minVal(args...));
 }
 
-[[nodiscard]] static bool ProcessArgs(JSContext* cx, OptionParser* op) {
+[[nodiscard]] static bool ProcessArgs(JSContext* cx) {
   ShellContext* sc = GetShellContext(cx);
 
   /* |scriptArgs| gets bound on the global before any code is run. */
-  if (!BindScriptArgs(cx, op)) {
+  if (!BindScriptArgs(cx)) {
     return false;
   }
 
-  MultiStringRange filePaths = op->getMultiStringOption('f');
-  MultiStringRange utf16FilePaths = op->getMultiStringOption('u');
-  MultiStringRange preludePaths = op->getMultiStringOption('p');
-  MultiStringRange codeChunks = op->getMultiStringOption('e');
-  MultiStringRange modulePaths = op->getMultiStringOption('m');
+  MultiStringRange filePaths = gOptions.getMultiStringOption('f');
+  MultiStringRange utf16FilePaths = gOptions.getMultiStringOption('u');
+  MultiStringRange preludePaths = gOptions.getMultiStringOption('p');
+  MultiStringRange codeChunks = gOptions.getMultiStringOption('e');
+  MultiStringRange modulePaths = gOptions.getMultiStringOption('m');
 
 #ifdef FUZZING_JS_FUZZILLI
   // Check for REPRL file source
-  if (op->getBoolOption("reprl")) {
+  if (gOptions.getBoolOption("reprl")) {
     return FuzzilliReprlGetAndRun(cx);
   }
 #endif /* FUZZING_JS_FUZZILLI */
 
   if (filePaths.empty() && utf16FilePaths.empty() && codeChunks.empty() &&
-      modulePaths.empty() && !op->getStringArg("script")) {
+      modulePaths.empty() && !gOptions.getStringArg("script")) {
     // Always use the interactive shell when -i is used. Without -i we let
     // Process figure it out based on isatty.
-    bool forceTTY = op->getBoolOption('i');
+    bool forceTTY = gOptions.getBoolOption('i');
     return Process(cx, nullptr, forceTTY, FileScript);
   }
 
@@ -12507,7 +12355,7 @@ auto minVal(T a, Ts... args) {
   }
 
   /* The |script| argument is processed after all options. */
-  if (const char* path = op->getStringArg("script")) {
+  if (const char* path = gOptions.getStringArg("script")) {
     UniqueChars pathUtf8 = JS::EncodeNarrowToUtf8(cx, path);
     if (!pathUtf8) {
       return false;
@@ -12517,7 +12365,7 @@ auto minVal(T a, Ts... args) {
     }
   }
 
-  if (op->getBoolOption('i')) {
+  if (gOptions.getBoolOption('i')) {
     if (!Process(cx, nullptr, true, FileScript)) {
       return false;
     }
@@ -12693,7 +12541,7 @@ ShellContext::~ShellContext() {
   MOZ_ASSERT(offThreadJobs.empty());
 }
 
-static int Shell(JSContext* cx, OptionParser* op) {
+static int Shell(JSContext* cx) {
 #ifdef JS_STRUCTURED_SPEW
   cx->spewer().enableSpewing();
 #endif
@@ -12709,30 +12557,30 @@ static int Shell(JSContext* cx, OptionParser* op) {
 #endif
 
   Maybe<JS::AutoDisableGenerationalGC> noggc;
-  if (op->getBoolOption("no-ggc")) {
+  if (gOptions.getBoolOption("no-ggc")) {
     noggc.emplace(cx);
   }
 
   Maybe<AutoDisableCompactingGC> nocgc;
-  if (op->getBoolOption("no-cgc")) {
+  if (gOptions.getBoolOption("no-cgc")) {
     nocgc.emplace(cx);
   }
 
 #ifdef DEBUG
-  if (op->getBoolOption("differential-testing")) {
+  if (gOptions.getBoolOption("differential-testing")) {
     JS::SetSupportDifferentialTesting(true);
   }
 #endif
 
-  if (op->getBoolOption("disable-oom-functions")) {
+  if (gOptions.getBoolOption("disable-oom-functions")) {
     disableOOMFunctions = true;
   }
 
-  if (op->getBoolOption("more-compartments")) {
+  if (gOptions.getBoolOption("more-compartments")) {
     defaultToSameCompartment = false;
   }
 
-  bool reprl_mode = FuzzilliUseReprlMode(op);
+  bool reprl_mode = FuzzilliUseReprlMode();
 
   // Begin REPRL Loop
   int result = EXIT_SUCCESS;
@@ -12749,7 +12597,7 @@ static int Shell(JSContext* cx, OptionParser* op) {
     JSAutoRealm ar(cx, glob);
 
     ShellContext* sc = GetShellContext(cx);
-    if (!sc->moduleLoader && !InitModuleLoader(cx, *op)) {
+    if (!sc->moduleLoader && !InitModuleLoader(cx)) {
       return EXIT_FAILURE;
     }
 
@@ -12763,7 +12611,7 @@ static int Shell(JSContext* cx, OptionParser* op) {
     result = EXIT_SUCCESS;
     {
       AutoReportException are(cx);
-      if (!ProcessArgs(cx, op) && !sc->quitting) {
+      if (!ProcessArgs(cx) && !sc->quitting) {
         result = EXITCODE_RUNTIME_ERROR;
       }
     }
@@ -12864,34 +12712,6 @@ static void PreInit() {
 #endif
 }
 
-#ifndef JS_WITHOUT_NSPR
-class AutoLibraryLoader {
-  Vector<PRLibrary*, 4, SystemAllocPolicy> libraries;
-
- public:
-  ~AutoLibraryLoader() {
-    for (auto dll : libraries) {
-      PR_UnloadLibrary(dll);
-    }
-  }
-
-  PRLibrary* load(const char* path) {
-    PRLibSpec libSpec;
-    libSpec.type = PR_LibSpec_Pathname;
-    libSpec.value.pathname = path;
-    PRLibrary* dll = PR_LoadLibraryWithFlags(libSpec, PR_LD_NOW | PR_LD_GLOBAL);
-    if (!dll) {
-      fprintf(stderr, "LoadLibrary '%s' failed with code %d\n", path,
-              PR_GetError());
-      MOZ_CRASH("Failed to load library");
-    }
-
-    MOZ_ALWAYS_TRUE(libraries.append(dll));
-    return dll;
-  }
-};
-#endif
-
 static bool ReadSelfHostedXDRFile(JSContext* cx, FileContents& buf) {
   FILE* file = fopen(selfHostedXDRPath, "rb");
   if (!file) {
@@ -12941,65 +12761,6 @@ static bool WriteSelfHostedXDRFile(JSContext* cx, JS::SelfHostedCache buffer) {
   return true;
 }
 
-static bool SetGCParameterFromArg(JSContext* cx, char* arg) {
-  char* c = strchr(arg, '=');
-  if (!c) {
-    fprintf(stderr,
-            "Error: --gc-param argument '%s' must be of the form "
-            "name=decimalValue\n",
-            arg);
-    return false;
-  }
-
-  *c = '\0';
-  const char* name = arg;
-  const char* valueStr = c + 1;
-
-  JSGCParamKey key;
-  bool writable;
-  if (!GetGCParameterInfo(name, &key, &writable)) {
-    fprintf(stderr, "Error: Unknown GC parameter name '%s'\n", name);
-    fprintf(stderr, "Writable GC parameter names are:\n");
-#define PRINT_WRITABLE_PARAM_NAME(name, _, writable) \
-  if (writable) {                                    \
-    fprintf(stderr, "  %s\n", name);                 \
-  }
-    FOR_EACH_GC_PARAM(PRINT_WRITABLE_PARAM_NAME)
-#undef PRINT_WRITABLE_PARAM_NAME
-    return false;
-  }
-
-  if (!writable) {
-    fprintf(stderr, "Error: GC parameter '%s' is not writable\n", name);
-    return false;
-  }
-
-  char* end = nullptr;
-  unsigned long int value = strtoul(valueStr, &end, 10);
-  if (end == valueStr || *end) {
-    fprintf(stderr,
-            "Error: Could not parse '%s' as decimal for GC parameter '%s'\n",
-            valueStr, name);
-    return false;
-  }
-
-  // Some Params are not yet fuzzing safe and so we silently skip changing said
-  // parameters.
-  if (fuzzingSafe && !IsGCParameterFuzzingSafe(key)) {
-    return true;
-  }
-
-  uint32_t paramValue = uint32_t(value);
-  if (value == ULONG_MAX || value != paramValue ||
-      !cx->runtime()->gc.setParameter(cx, key, paramValue)) {
-    fprintf(stderr, "Error: Value %s is out of range for GC parameter '%s'\n",
-            valueStr, name);
-    return false;
-  }
-
-  return true;
-}
-
 int main(int argc, char** argv) {
   PreInit();
 
@@ -13026,28 +12787,20 @@ int main(int argc, char** argv) {
   moz_set_max_dirty_page_modifier(4);
 #endif
 
-  OptionParser op("Usage: {progname} [options] [[script] scriptArgs*]");
-  if (!InitOptionParser(op)) {
+  if (!InitOptionParser()) {
     return EXIT_FAILURE;
   }
 
-  switch (op.parseArgs(argc, argv)) {
-    case OptionParser::EarlyExit:
-      return EXIT_SUCCESS;
-    case OptionParser::ParseError:
-      op.printHelp(argv[0]);
-      return EXIT_FAILURE;
-    case OptionParser::Fail:
-      return EXIT_FAILURE;
-    case OptionParser::Okay:
-      break;
+  int rc = 0;
+  if (!ParseOptions(argc, argv, &rc)) {
+    return rc;
   }
 
-  if (op.getHelpOption()) {
+  if (gOptions.getHelpOption()) {
     return EXIT_SUCCESS;
   }
 
-  if (!SetGlobalOptionsPreJSInit(op)) {
+  if (!SetGlobalOptionsPreJSInit()) {
     return EXIT_FAILURE;
   }
 
@@ -13073,7 +12826,7 @@ int main(int argc, char** argv) {
 
   auto shutdownEngine = MakeScopeExit([] { JS_ShutDown(); });
 
-  if (!SetGlobalOptionsPostJSInit(op)) {
+  if (!SetGlobalOptionsPostJSInit()) {
     return EXIT_FAILURE;
   }
 
@@ -13101,11 +12854,11 @@ int main(int argc, char** argv) {
     return 1;
   }
 
-  if (!SetContextOptions(cx, op)) {
+  if (!SetContextOptions(cx)) {
     return 1;
   }
 
-  if (!ApplyBenchmarkMode(cx, op)) {
+  if (!ApplyBenchmarkMode(cx)) {
     return 1;
   }
 
@@ -13170,7 +12923,7 @@ int main(int argc, char** argv) {
 
   JS::SetProcessLargeAllocationFailureCallback(my_LargeAllocFailCallback);
 
-  if (op.getBoolOption("wasm-compile-and-serialize")) {
+  if (gOptions.getBoolOption("wasm-compile-and-serialize")) {
 #ifdef __wasi__
     MOZ_CRASH("WASI doesn't support wasm");
 #else
@@ -13183,7 +12936,7 @@ int main(int argc, char** argv) {
     return EXIT_SUCCESS;
   }
 
-  result = Shell(cx, &op);
+  result = Shell(cx);
 
 #ifdef DEBUG
   if (OOM_printAllocationCount) {
@@ -13194,1805 +12947,9 @@ int main(int argc, char** argv) {
   return result;
 }
 
-bool InitOptionParser(OptionParser& op) {
-  op.setDescription(
-      "The SpiderMonkey shell provides a command line interface to the "
-      "JavaScript engine. Code and file options provided via the command line "
-      "are "
-      "run left to right. If provided, the optional script argument is run "
-      "after "
-      "all options have been processed. Just-In-Time compilation modes may be "
-      "enabled via "
-      "command line options.");
-  op.setDescriptionWidth(72);
-  op.setHelpWidth(80);
-  op.setVersion(JS_GetImplementationVersion());
-
-  if (!op.addMultiStringOption(
-          'f', "file", "PATH",
-          "File path to run, parsing file contents as UTF-8") ||
-      !op.addMultiStringOption(
-          'u', "utf16-file", "PATH",
-          "File path to run, inflating the file's UTF-8 contents to UTF-16 and "
-          "then parsing that") ||
-      !op.addMultiStringOption('m', "module", "PATH", "Module path to run") ||
-      !op.addMultiStringOption('p', "prelude", "PATH", "Prelude path to run") ||
-      !op.addMultiStringOption('e', "execute", "CODE", "Inline code to run") ||
-      !op.addStringOption('\0', "selfhosted-xdr-path", "[filename]",
-                          "Read/Write selfhosted script data from/to the given "
-                          "XDR file") ||
-      !op.addStringOption('\0', "selfhosted-xdr-mode", "(encode,decode,off)",
-                          "Whether to encode/decode data of the file provided"
-                          "with --selfhosted-xdr-path.") ||
-      !op.addBoolOption('i', "shell", "Enter prompt after running code") ||
-      !op.addBoolOption('c', "compileonly",
-                        "Only compile, don't run (syntax checking mode)") ||
-      !op.addBoolOption('w', "warnings", "Emit warnings") ||
-      !op.addBoolOption('W', "nowarnings", "Don't emit warnings") ||
-      !op.addBoolOption('D', "dump-bytecode",
-                        "Dump bytecode with exec count for all scripts") ||
-      !op.addBoolOption('b', "print-timing",
-                        "Print sub-ms runtime for each file that's run") ||
-      !op.addBoolOption('\0', "code-coverage",
-                        "Enable code coverage instrumentation.") ||
-      !op.addBoolOption(
-          '\0', "disable-parser-deferred-alloc",
-          "Disable deferred allocation of GC objects until after parser") ||
-#ifdef DEBUG
-      !op.addBoolOption('O', "print-alloc",
-                        "Print the number of allocations at exit") ||
-#endif
-      !op.addOptionalStringArg("script",
-                               "A script to execute (after all options)") ||
-      !op.addOptionalMultiStringArg(
-          "scriptArgs",
-          "String arguments to bind as |scriptArgs| in the "
-          "shell's global") ||
-      !op.addIntOption(
-          '\0', "cpu-count", "COUNT",
-          "Set the number of CPUs (hardware threads) to COUNT, the "
-          "default is the actual number of CPUs. The total number of "
-          "background helper threads is the CPU count plus some constant.",
-          -1) ||
-      !op.addIntOption('\0', "thread-count", "COUNT", "Alias for --cpu-count.",
-                       -1) ||
-      !op.addBoolOption('\0', "ion", "Enable IonMonkey (default)") ||
-      !op.addBoolOption('\0', "no-ion", "Disable IonMonkey") ||
-      !op.addBoolOption('\0', "no-ion-for-main-context",
-                        "Disable IonMonkey for the main context only") ||
-      !op.addIntOption('\0', "inlining-entry-threshold", "COUNT",
-                       "The minimum stub entry count before trial-inlining a"
-                       " call",
-                       -1) ||
-      !op.addIntOption('\0', "small-function-length", "COUNT",
-                       "The maximum bytecode length of a 'small function' for "
-                       "the purpose of inlining.",
-                       -1) ||
-      !op.addBoolOption('\0', "only-inline-selfhosted",
-                        "Only inline selfhosted functions") ||
-      !op.addStringOption(
-          '\0', "wasm-compiler", "[option]",
-          "Choose to enable a subset of the wasm compilers, valid options are "
-          "'none', 'baseline', 'ion', 'optimizing', "
-          "'baseline+ion', 'baseline+optimizing'.") ||
-      !op.addBoolOption('\0', "wasm-verbose",
-                        "Enable WebAssembly verbose logging") ||
-      !op.addBoolOption('\0', "disable-wasm-huge-memory",
-                        "Disable WebAssembly huge memory") ||
-      !op.addBoolOption('\0', "test-wasm-await-tier2",
-                        "Forcibly activate tiering and block "
-                        "instantiation on completion of tier2") ||
-      !op.addBoolOption('\0', "disable-main-thread-wasm-denormals",
-                        "Disable denormals (FTZ+DAZ) for wasm execution on "
-                        "the main thread, to emulate WebAudio worklets") ||
-      !op.addBoolOption('\0', "no-native-regexp",
-                        "Disable native regexp compilation") ||
-      !op.addIntOption(
-          '\0', "regexp-warmup-threshold", "COUNT",
-          "Wait for COUNT invocations before compiling regexps to native code "
-          "(default 10)",
-          -1) ||
-      !op.addBoolOption('\0', "trace-regexp-parser", "Trace regexp parsing") ||
-      !op.addBoolOption('\0', "trace-regexp-assembler",
-                        "Trace regexp assembler") ||
-      !op.addBoolOption('\0', "trace-regexp-compiler",
-                        "Trace regexp compiler") ||
-      !op.addBoolOption('\0', "trace-regexp-graph-building",
-                        "Trace regexp graph building") ||
-      !op.addBoolOption('\0', "trace-regexp-interpreter",
-                        "Trace regexp interpreter") ||
-      !op.addBoolOption('\0', "trace-regexp-peephole",
-                        "Trace regexp peephole optimization") ||
-      !op.addBoolOption('\0', "less-debug-code",
-                        "Emit less machine code for "
-                        "checking assertions under DEBUG.") ||
-      !op.addBoolOption('\0', "disable-tosource", "Disable toSource/uneval") ||
-      !op.addBoolOption('\0', "disable-property-error-message-fix",
-                        "Disable fix for the error message when accessing "
-                        "property of null or undefined") ||
-      !op.addBoolOption('\0', "enable-iterator-helpers",
-                        "Enable iterator helpers") ||
-      !op.addBoolOption('\0', "enable-async-iterator-helpers",
-                        "Enable async iterator helpers") ||
-      !op.addBoolOption('\0', "disable-array-grouping",
-                        "Disable Object.groupBy and Map.groupBy") ||
-      !op.addBoolOption('\0', "enable-symbols-as-weakmap-keys",
-                        "Enable Symbols As WeakMap keys") ||
-      !op.addBoolOption('\0', "no-symbols-as-weakmap-keys",
-                        "Disable Symbols As WeakMap keys") ||
-      !op.addBoolOption('\0', "enable-top-level-await",
-                        "Enable top-level await") ||
-      !op.addStringOption('\0', "shared-memory", "on/off",
-                          "SharedArrayBuffer and Atomics "
-#if SHARED_MEMORY_DEFAULT
-                          "(default: on, off to disable)"
-#else
-                          "(default: off, on to enable)"
-#endif
-                          ) ||
-      !op.addStringOption('\0', "spectre-mitigations", "on/off",
-                          "Whether Spectre mitigations are enabled (default: "
-                          "off, on to enable)") ||
-      !op.addStringOption('\0', "write-protect-code", "on/off",
-                          "Whether the W^X policy is enforced to mark JIT code "
-                          "pages as either writable or executable but never "
-                          "both at the same time (default: on, off to "
-                          "disable)") ||
-      !op.addStringOption('\0', "cache-ir-stubs", "on/off/call",
-                          "Use CacheIR stubs (default: on, off to disable, "
-                          "call to enable work-in-progress call ICs)") ||
-      !op.addStringOption('\0', "ion-shared-stubs", "on/off",
-                          "Use shared stubs (default: on, off to disable)") ||
-      !op.addStringOption(
-          '\0', "stub-folding", "on/off",
-          "Enable stub folding (default: on, off to disable)") ||
-      !op.addStringOption('\0', "stub-folding-loads-and-stores", "on/off",
-                          "Enable stub folding for load and stores (default: "
-                          "on, off to disable)") ||
-      !op.addStringOption('\0', "ion-scalar-replacement", "on/off",
-                          "Scalar Replacement (default: on, off to disable)") ||
-      !op.addStringOption('\0', "ion-gvn", "[mode]",
-                          "Specify Ion global value numbering:\n"
-                          "  off: disable GVN\n"
-                          "  on:  enable GVN (default)\n") ||
-      !op.addStringOption(
-          '\0', "ion-licm", "on/off",
-          "Loop invariant code motion (default: on, off to disable)") ||
-      !op.addStringOption('\0', "ion-edgecase-analysis", "on/off",
-                          "Find edge cases where Ion can avoid bailouts "
-                          "(default: on, off to disable)") ||
-      !op.addStringOption('\0', "ion-pruning", "on/off",
-                          "Branch pruning (default: on, off to disable)") ||
-      !op.addStringOption('\0', "ion-range-analysis", "on/off",
-                          "Range analysis (default: on, off to disable)") ||
-      !op.addStringOption(
-          '\0', "ion-instruction-reordering", "on/off",
-          "Instruction reordering (default: off, on to enable)") ||
-      !op.addStringOption(
-          '\0', "ion-optimize-shapeguards", "on/off",
-          "Eliminate redundant shape guards (default: on, off to disable)") ||
-      !op.addStringOption(
-          '\0', "ion-optimize-gcbarriers", "on/off",
-          "Eliminate redundant GC barriers (default: on, off to disable)") ||
-      !op.addStringOption('\0', "ion-iterator-indices", "on/off",
-                          "Optimize property access in for-in loops "
-                          "(default: on, off to disable)") ||
-      !op.addStringOption('\0', "ion-load-keys", "on/off",
-                          "Atomize property loads used as keys "
-                          "(default: on, off to disable)") ||
-      !op.addBoolOption('\0', "ion-check-range-analysis",
-                        "Range analysis checking") ||
-      !op.addBoolOption('\0', "ion-extra-checks",
-                        "Perform extra dynamic validation checks") ||
-      !op.addStringOption(
-          '\0', "ion-inlining", "on/off",
-          "Inline methods where possible (default: on, off to disable)") ||
-      !op.addStringOption(
-          '\0', "ion-osr", "on/off",
-          "On-Stack Replacement (default: on, off to disable)") ||
-      !op.addBoolOption('\0', "disable-bailout-loop-check",
-                        "Turn off bailout loop check") ||
-      !op.addStringOption(
-          '\0', "canonicalize-nan-at-uses", "on/off",
-          "Canonicalize NaN values at uses (default: on, off to disable)") ||
-      !op.addBoolOption('\0', "enable-stub-frame-pointers",
-                        "Use frame pointers in baseline IC stubs and other "
-                        "trampolines. No-op on x86.") ||
-      !op.addBoolOption('\0', "scalar-replace-arguments",
-                        "Use scalar replacement to optimize ArgumentsObject") ||
-      !op.addStringOption(
-          '\0', "ion-limit-script-size", "on/off",
-          "Don't compile very large scripts (default: on, off to disable)") ||
-      !op.addIntOption('\0', "ion-warmup-threshold", "COUNT",
-                       "Wait for COUNT calls or iterations before compiling "
-                       "at the normal optimization level (default: 1500)",
-                       -1) ||
-      !op.addStringOption(
-          '\0', "ion-regalloc", "[mode]",
-          "Specify Ion register allocation:\n"
-          "  backtracking: Priority based backtracking register allocation "
-          "(default)\n"
-          "  simple: Simple register allocator optimized for compile time") ||
-      !op.addBoolOption(
-          '\0', "ion-eager",
-          "Always ion-compile methods (implies --baseline-eager)") ||
-      !op.addBoolOption('\0', "fast-warmup",
-                        "Reduce warmup thresholds for each tier.") ||
-      !op.addStringOption(
-          '\0', "baseline-offthread-compile", "on/off",
-          "Compile baseline scripts offthread (default: off)") ||
-      !op.addStringOption(
-          '\0', "baseline-batching", "on/off",
-          "Batch baseline scripts before dispatching (default: off)") ||
-      !op.addStringOption('\0', "ion-offthread-compile", "on/off",
-                          "Compile Ion scripts offthread (default: on)") ||
-      !op.addStringOption('\0', "ion-parallel-compile", "on/off",
-                          "--ion-parallel compile is deprecated. Use "
-                          "--ion-offthread-compile.") ||
-      !op.addStringOption('\0', "object-keys-scalar-replacement", "on/off",
-                          "Replace Object.keys with a NativeIterators "
-                          "(default: on)") ||
-      !op.addBoolOption('\0', "baseline",
-                        "Enable baseline compiler (default)") ||
-      !op.addBoolOption('\0', "no-baseline", "Disable baseline compiler") ||
-      !op.addBoolOption('\0', "baseline-eager",
-                        "Always baseline-compile methods") ||
-#ifdef ENABLE_PORTABLE_BASELINE_INTERP
-      !op.addBoolOption('\0', "portable-baseline-eager",
-                        "Always use the portable baseline interpreter") ||
-      !op.addBoolOption('\0', "portable-baseline",
-                        "Enable Portable Baseline Interpreter (default)") ||
-      !op.addBoolOption('\0', "no-portable-baseline",
-                        "Disable Portable Baseline Interpreter") ||
-#endif
-#ifdef ENABLE_JS_AOT_ICS
-      !op.addBoolOption('\0', "aot-ics", "Enable ahead-of-time-known ICs") ||
-      !op.addBoolOption(
-          '\0', "enforce-aot-ics",
-          "Enable enforcing only use of ahead-of-time-known ICs") ||
-#endif
-      !op.addIntOption(
-          '\0', "baseline-warmup-threshold", "COUNT",
-          "Wait for COUNT calls or iterations before baseline-compiling "
-          "(default: 10)",
-          -1) ||
-      !op.addIntOption(
-          '\0', "baseline-queue-capacity", "CAPACITY",
-          "Wait for at most CAPACITY scripts to be added to baseline compile"
-          "queue before dispatching (default: 8)",
-          -1) ||
-      !op.addBoolOption('\0', "blinterp",
-                        "Enable Baseline Interpreter (default)") ||
-      !op.addBoolOption('\0', "no-blinterp", "Disable Baseline Interpreter") ||
-      !op.addBoolOption('\0', "disable-jithints",
-                        "Disable caching eager baseline compilation hints.") ||
-      !op.addBoolOption(
-          '\0', "emit-interpreter-entry",
-          "Emit Interpreter entry trampolines (default under --enable-perf)") ||
-      !op.addBoolOption(
-          '\0', "no-emit-interpreter-entry",
-          "Do not emit Interpreter entry trampolines (default).") ||
-      !op.addBoolOption('\0', "blinterp-eager",
-                        "Always Baseline-interpret scripts") ||
-      !op.addIntOption(
-          '\0', "blinterp-warmup-threshold", "COUNT",
-          "Wait for COUNT calls or iterations before Baseline-interpreting "
-          "(default: 10)",
-          -1) ||
-      !op.addIntOption(
-          '\0', "trial-inlining-warmup-threshold", "COUNT",
-          "Wait for COUNT calls or iterations before trial-inlining "
-          "(default: 500)",
-          -1) ||
-      !op.addStringOption(
-          '\0', "monomorphic-inlining", "default/always/never",
-          "Whether monomorphic inlining is used instead of trial inlining "
-          "always, never, or based on heuristics (default)") ||
-      !op.addBoolOption(
-          '\0', "no-sse3",
-          "Pretend CPU does not support SSE3 instructions and above "
-          "to test JIT codegen (no-op on platforms other than x86 and x64).") ||
-      !op.addBoolOption(
-          '\0', "no-ssse3",
-          "Pretend CPU does not support SSSE3 [sic] instructions and above "
-          "to test JIT codegen (no-op on platforms other than x86 and x64).") ||
-      !op.addBoolOption(
-          '\0', "no-sse41",
-          "Pretend CPU does not support SSE4.1 instructions "
-          "to test JIT codegen (no-op on platforms other than x86 and x64).") ||
-      !op.addBoolOption('\0', "no-sse4", "Alias for --no-sse41") ||
-      !op.addBoolOption(
-          '\0', "no-sse42",
-          "Pretend CPU does not support SSE4.2 instructions "
-          "to test JIT codegen (no-op on platforms other than x86 and x64).") ||
-#ifdef ENABLE_JIT_AVX
-      !op.addBoolOption('\0', "enable-avx",
-                        "No-op. AVX is enabled by default, if available.") ||
-      !op.addBoolOption(
-          '\0', "no-avx",
-          "Pretend CPU does not support AVX or AVX2 instructions "
-          "to test JIT codegen (no-op on platforms other than x86 and x64).") ||
-#else
-      !op.addBoolOption('\0', "enable-avx",
-                        "AVX is disabled by default. Enable AVX. "
-                        "(no-op on platforms other than x86 and x64).") ||
-      !op.addBoolOption('\0', "no-avx",
-                        "No-op. AVX is currently disabled by default.") ||
-#endif
-      !op.addBoolOption('\0', "no-fjcvtzs",
-                        "Pretend CPU does not support FJCVTZS instruction.") ||
-      !op.addBoolOption('\0', "no-cssc",
-                        "Pretend CPU does not support CSSC extension.") ||
-      !op.addBoolOption('\0', "more-compartments",
-                        "Make newGlobal default to creating a new "
-                        "compartment.") ||
-      !op.addBoolOption('\0', "benchmark-mode",
-                        "Configure the shell for realistic benchmarking. "
-                        "Prints warnings for detected issues.") ||
-      !op.addBoolOption('\0', "strict-benchmark-mode",
-                        "Like --benchmark-mode but refuses to run if the "
-                        "build config is wrong or conflicting settings "
-                        "exist.") ||
-      !op.addBoolOption('\0', "fuzzing-safe",
-                        "Don't expose functions that aren't safe for "
-                        "fuzzers to call") ||
-#ifdef DEBUG
-      !op.addBoolOption('\0', "differential-testing",
-                        "Avoid random/undefined behavior that disturbs "
-                        "differential testing (correctness fuzzing)") ||
-#endif
-      !op.addBoolOption('\0', "disable-oom-functions",
-                        "Disable functions that cause "
-                        "artificial OOMs") ||
-      !op.addBoolOption('\0', "no-threads", "Disable helper threads") ||
-      !op.addBoolOption(
-          '\0', "no-jit-backend",
-          "Disable the JIT backend completely for this process") ||
-#ifdef DEBUG
-      !op.addBoolOption('\0', "dump-entrained-variables",
-                        "Print variables which are "
-                        "unnecessarily entrained by inner functions") ||
-#endif
-      !op.addBoolOption('\0', "no-ggc", "Disable Generational GC") ||
-      !op.addBoolOption('\0', "no-cgc", "Disable Compacting GC") ||
-      !op.addBoolOption('\0', "no-incremental-gc", "Disable Incremental GC") ||
-      !op.addBoolOption('\0', "no-parallel-marking",
-                        "Disable GC parallel marking") ||
-      !op.addBoolOption('\0', "enable-parallel-marking",
-                        "Enable GC parallel marking") ||
-#ifdef JS_GC_CONCURRENT_MARKING
-      !op.addBoolOption('\0', "no-concurrent-marking",
-                        "Disable GC concurrent marking") ||
-      !op.addBoolOption('\0', "enable-concurrent-marking",
-                        "Enable GC concurrent marking") ||
-#endif
-      !op.addStringOption('\0', "nursery-strings", "on/off",
-                          "Allocate strings in the nursery") ||
-      !op.addStringOption('\0', "nursery-bigints", "on/off",
-                          "Allocate BigInts in the nursery") ||
-      !op.addIntOption('\0', "available-memory", "SIZE",
-                       "Select GC settings based on available memory (MB)",
-                       0) ||
-      !op.addBoolOption('\0', "disable-decommit",
-                        "Disable decommitting unsued GC memory") ||
-      !op.addStringOption('\0', "arm-hwcap", "[features]",
-                          "Specify ARM code generation features, or 'help' to "
-                          "list all features.") ||
-      !op.addIntOption('\0', "arm-asm-nop-fill", "SIZE",
-                       "Insert the given number of NOP instructions at all "
-                       "possible pool locations.",
-                       0) ||
-      !op.addIntOption('\0', "asm-pool-max-offset", "OFFSET",
-                       "The maximum pc relative OFFSET permitted in pool "
-                       "reference instructions.",
-                       1024) ||
-      !op.addBoolOption('\0', "arm-sim-icache-checks",
-                        "Enable icache flush checks in the ARM "
-                        "simulator.") ||
-      !op.addIntOption('\0', "arm-sim-stop-at", "NUMBER",
-                       "Stop the ARM simulator after the given "
-                       "NUMBER of instructions.",
-                       -1) ||
-      !op.addBoolOption('\0', "mips-sim-icache-checks",
-                        "Enable icache flush checks in the MIPS "
-                        "simulator.") ||
-      !op.addIntOption('\0', "mips-sim-stop-at", "NUMBER",
-                       "Stop the MIPS simulator after the given "
-                       "NUMBER of instructions.",
-                       -1) ||
-#ifdef JS_CODEGEN_LOONG64
-      !op.addStringOption(
-          '\0', "loong64-isa", "[isa]",
-          "Specify the LoongArch code generation ISA (\"la64v1.0\" or "
-          "\"la64v1.1\").") ||
-#endif
-#if defined(JS_SIMULATOR_LOONG64)
-      !op.addBoolOption('\0', "loong64-sim-icache-checks",
-                        "Enable icache flush checks in the LoongArch64 "
-                        "simulator.") ||
-      !op.addIntOption('\0', "loong64-sim-stop-at", "NUMBER",
-                       "Stop the LoongArch64 simulator after the given "
-                       "NUMBER of instructions.",
-                       -1) ||
-#endif
-      // Like arm-hwcap, accepted by every shell so that jit-test variants can
-      // pass it; only riscv64 builds read it.
-      !op.addStringOption(
-          '\0', "riscv-ext", "[features]",
-          "Specify RISCV code generation features. Starts with ISA (\"rv64g\") "
-          "or profile (\"rva20u64\", \"rva22u64\", \"rva23u64\"), followed by "
-          "extensions separated with '_'.") ||
-#ifdef JS_CODEGEN_RISCV64
-      !op.addBoolOption('\0', "riscv-debug",
-                        "Print riscv debugging messages.") ||
-#endif
-#ifdef JS_SIMULATOR_RISCV64
-      !op.addBoolOption('\0', "riscv-sim-trace",
-                        "Print the RISC-V simulator info.") ||
-      !op.addBoolOption('\0', "riscv-sim-debug",
-                        "Debug the RISC-V simulator.") ||
-      !op.addBoolOption('\0', "riscv-trap-to-simulator-debugger",
-                        "Trap into the RISC-V simulator debuggger.") ||
-      !op.addBoolOption('\0', "riscv-sim-icache-checks",
-                        "Enable icache flush checks in the RISC-V "
-                        "simulator.") ||
-      !op.addIntOption('\0', "riscv-sim-stop-at", "NUMBER",
-                       "Stop the RISC-V simulator after the given "
-                       "NUMBER of instructions.",
-                       -1) ||
-#endif
-      !op.addIntOption('\0', "nursery-size", "SIZE-MB",
-                       "Set the maximum nursery size in MB",
-                       JS::DefaultNurseryMaxBytes / 1024 / 1024) ||
-#ifdef JS_GC_ZEAL
-      !op.addStringOption('z', "gc-zeal", "LEVEL(;LEVEL)*[,N]",
-                          gc::ZealModeHelpText) ||
-#else
-      !op.addStringOption('z', "gc-zeal", "LEVEL(;LEVEL)*[,N]",
-                          "option ignored in non-gc-zeal builds") ||
-#endif
-      !op.addMultiStringOption('\0', "gc-param", "NAME=VALUE",
-                               "Set a named GC parameter") ||
-      !op.addStringOption('\0', "module-load-path", "DIR",
-                          "Set directory to load modules from") ||
-      !op.addBoolOption('\0', "no-source-pragmas",
-                        "Disable source(Mapping)URL pragma parsing") ||
-      !op.addBoolOption('\0', "no-async-stacks", "Disable async stacks") ||
-      !op.addBoolOption('\0', "async-stacks-capture-debuggee-only",
-                        "Limit async stack capture to only debuggees") ||
-      !op.addMultiStringOption('\0', "dll", "LIBRARY",
-                               "Dynamically load LIBRARY") ||
-      !op.addBoolOption('\0', "suppress-minidump",
-                        "Suppress crash minidumps") ||
-      !op.addStringOption(
-          '\0', "delazification-mode", "[option]",
-          "Select one of the delazification mode for scripts given on the "
-          "command line, valid options are: "
-          "'on-demand', 'concurrent-df', 'eager', 'concurrent-df+on-demand'. "
-          "Choosing 'concurrent-df+on-demand' will run both concurrent-df and "
-          "on-demand delazification mode, and compare compilation outcome. ") ||
-      !op.addBoolOption('\0', "wasm-compile-and-serialize",
-                        "Compile the wasm bytecode from stdin and serialize "
-                        "the results to stdout") ||
-#ifdef FUZZING_JS_FUZZILLI
-      !op.addBoolOption('\0', "reprl", "Enable REPRL mode for fuzzing") ||
-#endif
-      !op.addMultiStringOption('P', "setpref", "name[=val]",
-                               "Set the value of a JS pref. The value may "
-                               "be omitted for boolean prefs, in which case "
-                               "they default to true. Use --list-prefs "
-                               "to print all pref names.") ||
-      !op.addBoolOption(
-          '\0', "list-prefs",
-          "Print list of prefs that can be set with --setpref.") ||
-      !op.addBoolOption('\0', "use-fdlibm-for-sin-cos-tan",
-                        "Use fdlibm for Math.sin, Math.cos, and Math.tan") ||
-      !op.addBoolOption('\0', "wasm-gc", "Enable WebAssembly gc proposal.") ||
-      !op.addBoolOption('\0', "wasm-relaxed-simd",
-                        "Enable WebAssembly relaxed-simd proposal.") ||
-      !op.addBoolOption('\0', "wasm-multi-memory",
-                        "Enable WebAssembly multi-memory proposal.") ||
-      !op.addBoolOption('\0', "wasm-memory-control",
-                        "Enable WebAssembly memory-control proposal.") ||
-      !op.addBoolOption('\0', "wasm-memory64",
-                        "Enable WebAssembly memory64 proposal.") ||
-      !op.addBoolOption('\0', "wasm-tail-calls",
-                        "Enable WebAssembly tail-calls proposal.") ||
-      !op.addBoolOption('\0', "wasm-js-string-builtins",
-                        "Enable WebAssembly js-string-builtins proposal.") ||
-      !op.addBoolOption('\0', "enable-iterator-sequencing",
-                        "Enable Iterator Sequencing") ||
-      !op.addBoolOption('\0', "enable-error-iserror", "Enable Error.isError") ||
-      !op.addBoolOption('\0', "enable-error-stack-trace-limit",
-                        "Enable Error.stackTraceLimit") ||
-      !op.addBoolOption('\0', "enable-iterator-range",
-                        "Enable Iterator.range") ||
-      !op.addBoolOption('\0', "enable-joint-iteration",
-                        "Enable Joint Iteration") ||
-      !op.addBoolOption('\0', "enable-atomics-pause", "Enable Atomics pause") ||
-      !op.addBoolOption('\0', "enable-import-bytes", "Enable import bytes") ||
-      !op.addBoolOption('\0', "enable-export-star-default",
-                        "Include default in export * declarations") ||
-      !op.addBoolOption('\0', "enable-import-text", "Enable import text") ||
-      !op.addBoolOption('\0', "enable-promise-allkeyed",
-                        "Enable Promise.allKeyed") ||
-      !op.addBoolOption('\0', "enable-arraybuffer-immutable",
-                        "Enable immutable ArrayBuffers") ||
-      !op.addBoolOption('\0', "enable-iterator-chunking",
-                        "Enable Iterator Chunking") ||
-      !op.addBoolOption('\0', "enable-iterator-join", "Enable Iterator.join") ||
-      !op.addBoolOption('\0', "enable-iterator-includes",
-                        "Enable Iterator.prototype.includes") ||
-      !op.addBoolOption('\0', "enable-intl-locale-info",
-                        "Enable Intl Locale Info") ||
-      !op.addBoolOption('\0', "enable-source-phase-imports",
-                        "Enable source phase imports") ||
-      !op.addBoolOption(
-          '\0', "enable-source-phase-imports-test262-module-source",
-          "Support <module source> specifier for test262 tests") ||
-      !op.addBoolOption('\0', "enable-legacy-regexp",
-                        "Enable Legacy RegExp features") ||
-      !op.addBoolOption('\0', "enable-regexp-buffer-boundaries",
-                        "Enable RegExp Buffer Boundaries") ||
-      !op.addBoolOption('\0', "enable-wasm-esm-integration",
-                        "Enable wasm/esm integration") ||
-      !op.addBoolOption('\0', "enable-defer-import-eval",
-                        "Enable Deferred Import Evaluation")) {
-    return false;
-  }
-
-  op.setArgTerminatesOptions("script", true);
-  op.setArgCapturesRest("scriptArgs");
-
-  // If --fuzzing-safe is used, print a warning for unknown shell flags instead
-  // of aborting execution.
-  op.setIgnoresUnknownOptions("fuzzing-safe", true);
-
-  return true;
-}
-
-bool SetGlobalOptionsPreJSInit(const OptionParser& op) {
-  if (op.getBoolOption("fuzzing-safe")) {
-    fuzzingSafe = true;
-  } else {
-    fuzzingSafe =
-        (getenv("MOZ_FUZZING_SAFE") && getenv("MOZ_FUZZING_SAFE")[0] != '0');
-  }
-  JS::Prefs::setFuzzingSafe(fuzzingSafe);
-  JS::Prefs::setReportIgnoredFuzzingUnsafePrefs(true);
-
-  if (op.getBoolOption("strict-benchmark-mode")) {
-    sBenchmarkMode = BenchmarkMode::Strict;
-  } else if (op.getBoolOption("benchmark-mode")) {
-    sBenchmarkMode = BenchmarkMode::Enable;
-  }
-
-  for (MultiStringRange args = op.getMultiStringOption("setpref");
-       !args.empty(); args.popFront()) {
-    if (!SetPref(args.front())) {
-      return false;
-    }
-  }
-
-#if defined(DEBUG) || defined(NIGHTLY_BUILD) || defined(JS_GC_ZEAL)
-  if (sBenchmarkMode != BenchmarkMode::Off) {
-    JS::Prefs::setAtStartup_extra_gc_poisoning(false);
-  }
-#endif
-
-  // Override pref values for prefs that have a custom shell flag.
-  // If you're adding a new feature, consider using --setpref instead.
-  if (op.getBoolOption("enable-atomics-pause")) {
-    JS::Prefs::setAtStartup_experimental_atomics_pause(true);
-  }
-  if (op.getBoolOption("enable-error-iserror")) {
-    JS::Prefs::set_experimental_error_iserror(true);
-  }
-
-  bool symbolsAsWeakMapKeys = true;
-  if (op.getBoolOption("enable-symbols-as-weakmap-keys")) {
-    symbolsAsWeakMapKeys = true;
-  }
-  if (op.getBoolOption("no-symbols-as-weakmap-keys")) {
-    symbolsAsWeakMapKeys = false;
-  }
-  JS::Prefs::setAtStartup_experimental_symbols_as_weakmap_keys(
-      symbolsAsWeakMapKeys);
-  if (op.getBoolOption("enable-joint-iteration")) {
-    JS::Prefs::setAtStartup_experimental_joint_iteration(true);
-  }
-  if (op.getBoolOption("enable-legacy-regexp")) {
-    JS::Prefs::setAtStartup_experimental_legacy_regexp(true);
-  }
-  if (op.getBoolOption("enable-import-text")) {
-    JS::Prefs::set_experimental_import_text(true);
-  }
-  if (op.getBoolOption("enable-intl-locale-info")) {
-    JS::Prefs::setAtStartup_experimental_intl_locale_info(true);
-  }
-  if (op.getBoolOption("enable-iterator-includes")) {
-    JS::Prefs::setAtStartup_experimental_iterator_includes(true);
-  }
-  if (op.getBoolOption("enable-iterator-join")) {
-    JS::Prefs::setAtStartup_experimental_iterator_join(true);
-  }
-  if (op.getBoolOption("enable-iterator-chunking")) {
-    JS::Prefs::setAtStartup_experimental_iterator_chunking(true);
-  }
-  if (op.getBoolOption("enable-regexp-buffer-boundaries")) {
-    JS::Prefs::setAtStartup_experimental_regexp_buffer_boundaries(true);
-  }
-#ifdef NIGHTLY_BUILD
-  if (op.getBoolOption("enable-async-iterator-helpers")) {
-    JS::Prefs::setAtStartup_experimental_async_iterator_helpers(true);
-  }
-  if (op.getBoolOption("enable-iterator-sequencing")) {
-    JS::Prefs::setAtStartup_experimental_iterator_sequencing(true);
-  }
-  if (op.getBoolOption("enable-iterator-range")) {
-    JS::Prefs::setAtStartup_experimental_iterator_range(true);
-  }
-  if (op.getBoolOption("enable-arraybuffer-immutable")) {
-    JS::Prefs::setAtStartup_experimental_arraybuffer_immutable(true);
-  }
-  if (op.getBoolOption("enable-import-bytes")) {
-    JS::Prefs::setAtStartup_experimental_import_bytes(true);
-  }
-  if (op.getBoolOption("enable-export-star-default")) {
-    JS::Prefs::setAtStartup_experimental_export_star_default(true);
-  }
-  if (op.getBoolOption("enable-promise-allkeyed")) {
-    JS::Prefs::setAtStartup_experimental_promise_allkeyed(true);
-  }
-  if (op.getBoolOption("enable-error-stack-trace-limit")) {
-    JS::Prefs::setAtStartup_experimental_error_stack_trace_limit(true);
-  }
-  if (op.getBoolOption("enable-wasm-esm-integration")) {
-    JS::Prefs::set_experimental_wasm_esm_integration(true);
-  }
-  if (op.getBoolOption("enable-defer-import-eval")) {
-    JS::Prefs::setAtStartup_experimental_defer_import_eval(true);
-  }
-#endif
-  if (op.getBoolOption("enable-source-phase-imports")) {
-    JS::Prefs::set_experimental_source_phase_imports(true);
-  }
-  if (op.getBoolOption("enable-source-phase-imports-test262-module-source")) {
-    JS::Prefs::
-        setAtStartup_experimental_source_phase_imports_test262_module_source(
-            true);
-  }
-  JS::Prefs::setAtStartup_experimental_weakrefs_expose_cleanupSome(true);
-
-  if (op.getBoolOption("disable-property-error-message-fix")) {
-    JS::Prefs::setAtStartup_property_error_message_fix(false);
-  }
-
-  JS::Prefs::set_use_fdlibm_for_sin_cos_tan(
-      op.getBoolOption("use-fdlibm-for-sin-cos-tan"));
-
-  if (const char* str = op.getStringOption("ion-regalloc")) {
-    auto allocator = jit::LookupRegisterAllocator(str);
-    if (allocator.isNothing()) {
-      return OptionFailure("ion-regalloc", str);
-    }
-    switch (*allocator) {
-      case jit::RegisterAllocator_Backtracking:
-        JS::Prefs::setAtStartup_ion_regalloc(1);
-        break;
-      case jit::RegisterAllocator_Simple:
-        JS::Prefs::setAtStartup_ion_regalloc(2);
-        break;
-    }
-  }
-
-  if (op.getBoolOption("wasm-gc") || op.getBoolOption("wasm-relaxed-simd") ||
-      op.getBoolOption("wasm-multi-memory") ||
-      op.getBoolOption("wasm-memory-control") ||
-      op.getBoolOption("wasm-memory64") ||
-      op.getBoolOption("wasm-tail-calls") ||
-      op.getBoolOption("wasm-js-string-builtins")) {
-    fprintf(
-        stderr,
-        "Wasm shell flags are now using prefs, use -P wasm_feature instead.\n");
-    return false;
-  }
-
-  if (op.getBoolOption("list-prefs")) {
-    ListPrefs();
-    return false;
-  }
-
-  // Note: DisableJitBackend must be called before JS_InitWithFailureDiagnostic.
-  if (op.getBoolOption("no-jit-backend")) {
-    JS::DisableJitBackend();
-  }
-
-#if defined(JS_CODEGEN_ARM)
-  if (const char* str = op.getStringOption("arm-hwcap")) {
-    jit::SetARMHwCapFlagsString(str);
-  }
-
-  int32_t fill = op.getIntOption("arm-asm-nop-fill");
-  if (fill >= 0) {
-    jit::Assembler::NopFill = fill;
-  }
-
-  int32_t poolMaxOffset = op.getIntOption("asm-pool-max-offset");
-
-  if (poolMaxOffset >= 5 && poolMaxOffset <= 1024) {
-    jit::Assembler::AsmPoolMaxOffset = poolMaxOffset;
-  }
-#endif
-
-  // Fish around in `op` for various important compiler-configuration flags
-  // and make sure they get handed on to any child processes we might create.
-  // See bug 1700900.  Semantically speaking, this is all rather dubious:
-  //
-  // * What set of flags need to be propagated in order to guarantee that the
-  //   child produces code that is "compatible" (in whatever sense) with that
-  //   produced by the parent? This isn't always easy to determine.
-  //
-  // * There's nothing that ensures that flags given to the child are
-  //   presented in the same order that they exist in the parent's `argv[]`.
-  //   That could be a problem in the case where two flags with contradictory
-  //   meanings are given, and they are presented to the child in the opposite
-  //   order.  For example: --wasm-compiler=optimizing --wasm-compiler=baseline.
-
-#if defined(JS_CODEGEN_X86) || defined(JS_CODEGEN_X64)
-  MOZ_ASSERT(!js::jit::CPUFlagsHaveBeenComputed());
-
-  if (op.getBoolOption("no-avx")) {
-    js::jit::CPUInfo::SetAVXDisabled();
-    if (!sCompilerProcessFlags.append("--no-avx")) {
-      return false;
-    }
-  }
-  if (op.getBoolOption("enable-avx")) {
-    js::jit::CPUInfo::SetAVXEnabled();
-    if (!sCompilerProcessFlags.append("--enable-avx")) {
-      return false;
-    }
-  }
-  if (op.getBoolOption("no-sse3")) {
-    js::jit::CPUInfo::SetSSE3Disabled();
-    if (!sCompilerProcessFlags.append("--no-sse3")) {
-      return false;
-    }
-  }
-  if (op.getBoolOption("no-ssse3")) {
-    js::jit::CPUInfo::SetSSSE3Disabled();
-    if (!sCompilerProcessFlags.append("--no-ssse3")) {
-      return false;
-    }
-  }
-  if (op.getBoolOption("no-sse4") || op.getBoolOption("no-sse41")) {
-    js::jit::CPUInfo::SetSSE41Disabled();
-    if (!sCompilerProcessFlags.append("--no-sse41")) {
-      return false;
-    }
-  }
-  if (op.getBoolOption("no-sse42")) {
-    js::jit::CPUInfo::SetSSE42Disabled();
-    if (!sCompilerProcessFlags.append("--no-sse42")) {
-      return false;
-    }
-  }
-#endif
-#if defined(JS_CODEGEN_ARM64)
-  if (op.getBoolOption("no-fjcvtzs")) {
-    vixl::CPUFeatures fjcvtzs(vixl::CPUFeatures::kJSCVT);
-    jit::ARM64Flags::DisableCPUFeatures(fjcvtzs);
-  }
-  if (op.getBoolOption("no-cssc")) {
-    vixl::CPUFeatures cssc(vixl::CPUFeatures::kCSSC);
-    jit::ARM64Flags::DisableCPUFeatures(cssc);
-  }
-#endif
-#if defined(JS_CODEGEN_LOONG64)
-  if (const char* str = op.getStringOption("loong64-isa")) {
-    jit::SetLOONG64ISAString(str);
-  }
-#endif
-#if defined(JS_CODEGEN_RISCV64)
-  if (const char* str = op.getStringOption("riscv-ext")) {
-    jit::SetRISCV64ExtensionsString(str);
-  }
-#endif
-#ifndef __wasi__
-  if (op.getBoolOption("disable-wasm-huge-memory")) {
-    JS::Prefs::setAtStartup_wasm_disable_huge_memory(true);
-    if (!sCompilerProcessFlags.append("--disable-wasm-huge-memory")) {
-      return false;
-    }
-  }
-#endif
-
-  if (op.getBoolOption("disable-decommit")) {
-    gc::DisableDecommit();
-  }
-
-  return true;
-}
-
-bool SetGlobalOptionsPostJSInit(const OptionParser& op) {
-  // Allow dumping on Linux with the fuzzing flag set, even when running with
-  // the suid/sgid flag set on the shell.
-#ifdef XP_LINUX
-  if (op.getBoolOption("fuzzing-safe")) {
-    prctl(PR_SET_DUMPABLE, 1);
-  }
-#endif
-
-#ifdef DEBUG
-  /*
-   * Process OOM options as early as possible so that we can observe as many
-   * allocations as possible.
-   */
-  OOM_printAllocationCount = op.getBoolOption('O');
-#endif
-
-  if (op.getBoolOption("no-threads")) {
-    js::DisableExtraThreads();
-  }
-
-  enableCodeCoverage = op.getBoolOption("code-coverage");
-  if (enableCodeCoverage) {
-    js::EnableCodeCoverage();
-  }
-
-  // If LCov is enabled, then the default delazification mode should be changed
-  // to parse everything eagerly, such that we know the location of every
-  // instruction, to report them in the LCov summary, even if there is no uses
-  // of these instructions.
-  //
-  // Note: code coverage can be enabled either using the --code-coverage command
-  // line, or the JS_CODE_COVERAGE_OUTPUT_DIR environment variable, which is
-  // processed by JS_InitWithFailureDiagnostic.
-  if (coverage::IsLCovEnabled()) {
-    defaultDelazificationMode =
-        JS::DelazificationOption::ParseEverythingEagerly;
-  }
-
-  if (const char* xdr = op.getStringOption("selfhosted-xdr-path")) {
-    if (fuzzingSafe) {
-      fprintf(stderr,
-              "Warning: ignoring --selfhosted-xdr-path with --fuzzing-safe\n");
-    } else {
-      shell::selfHostedXDRPath = xdr;
-    }
-  }
-  if (const char* opt = op.getStringOption("selfhosted-xdr-mode")) {
-    if (fuzzingSafe) {
-      fprintf(stderr,
-              "Warning: ignoring --selfhosted-xdr-mode with --fuzzing-safe\n");
-    } else {
-      if (strcmp(opt, "encode") == 0) {
-        shell::encodeSelfHostedCode = true;
-      } else if (strcmp(opt, "decode") == 0) {
-        shell::encodeSelfHostedCode = false;
-      } else if (strcmp(opt, "off") == 0) {
-        shell::selfHostedXDRPath = nullptr;
-      } else {
-        MOZ_CRASH(
-            "invalid option value for --selfhosted-xdr-mode, must be "
-            "encode/decode");
-      }
-    }
-  }
-
-#ifdef JS_WITHOUT_NSPR
-  if (!op.getMultiStringOption("dll").empty()) {
-    fprintf(stderr, "Error: --dll requires NSPR support!\n");
-    return false;
-  }
-#else
-  AutoLibraryLoader loader;
-  MultiStringRange dllPaths = op.getMultiStringOption("dll");
-  while (!dllPaths.empty()) {
-    char* path = dllPaths.front();
-    loader.load(path);
-    dllPaths.popFront();
-  }
-#endif
-
-  if (op.getBoolOption("suppress-minidump")) {
-    js::NoteIntentionalCrash();
-  }
-
-  // The fake CPU count must be set before initializing the Runtime,
-  // which spins up the thread pool.
-  int32_t cpuCount = op.getIntOption("cpu-count");  // What we're really setting
-  if (cpuCount < 0) {
-    cpuCount = op.getIntOption("thread-count");  // Legacy name
-  }
-  if (cpuCount >= 0 && !SetFakeCPUCount(cpuCount)) {
-    return false;
-  }
-
-  return true;
-}
-
-bool SetContextOptions(JSContext* cx, const OptionParser& op) {
-  if (!SetContextWasmOptions(cx, op) || !SetContextJITOptions(cx, op) ||
-      !SetContextGCOptions(cx, op)) {
-    return false;
-  }
-
-  enableSourcePragmas = !op.getBoolOption("no-source-pragmas");
-  enableAsyncStacks = !op.getBoolOption("no-async-stacks");
-  enableAsyncStackCaptureDebuggeeOnly =
-      op.getBoolOption("async-stacks-capture-debuggee-only");
-  enableToSource = !op.getBoolOption("disable-tosource");
-  JS::ContextOptionsRef(cx)
-      .setSourcePragmas(enableSourcePragmas)
-      .setAsyncStack(enableAsyncStacks)
-      .setAsyncStackCaptureDebuggeeOnly(enableAsyncStackCaptureDebuggeeOnly);
-
-  if (const char* str = op.getStringOption("shared-memory")) {
-    if (strcmp(str, "off") == 0) {
-      enableSharedMemory = false;
-    } else if (strcmp(str, "on") == 0) {
-      enableSharedMemory = true;
-    } else {
-      return OptionFailure("shared-memory", str);
-    }
-  }
-
-  reportWarnings = op.getBoolOption('w');
-  compileOnly = op.getBoolOption('c');
-  printTiming = op.getBoolOption('b');
-  enableDisassemblyDumps = op.getBoolOption('D');
-  cx->runtime()->profilingScripts =
-      enableCodeCoverage || enableDisassemblyDumps;
-
-  if (const char* mode = op.getStringOption("delazification-mode")) {
-    if (strcmp(mode, "on-demand") == 0) {
-      defaultDelazificationMode = JS::DelazificationOption::OnDemandOnly;
-    } else if (strcmp(mode, "concurrent-df") == 0) {
-      defaultDelazificationMode =
-          JS::DelazificationOption::ConcurrentDepthFirst;
-    } else if (strcmp(mode, "eager") == 0) {
-      defaultDelazificationMode =
-          JS::DelazificationOption::ParseEverythingEagerly;
-    } else if (strcmp(mode, "concurrent-df+on-demand") == 0 ||
-               strcmp(mode, "on-demand+concurrent-df") == 0) {
-      defaultDelazificationMode =
-          JS::DelazificationOption::CheckConcurrentWithOnDemand;
-    } else {
-      return OptionFailure("delazification-mode", mode);
-    }
-  }
-
-  return true;
-}
-
-bool SetContextWasmOptions(JSContext* cx, const OptionParser& op) {
-  enableWasm = true;
-  enableWasmBaseline = true;
-  enableWasmOptimizing = true;
-
-  if (const char* str = op.getStringOption("wasm-compiler")) {
-    if (strcmp(str, "none") == 0) {
-      enableWasm = false;
-    } else if (strcmp(str, "baseline") == 0) {
-      MOZ_ASSERT(enableWasmBaseline);
-      enableWasmOptimizing = false;
-    } else if (strcmp(str, "optimizing") == 0 ||
-               strcmp(str, "optimized") == 0 || strcmp(str, "ion") == 0) {
-      enableWasmBaseline = false;
-      MOZ_ASSERT(enableWasmOptimizing);
-    } else if (strcmp(str, "baseline+optimizing") == 0 ||
-               strcmp(str, "baseline+optimized") == 0 ||
-               strcmp(str, "baseline+ion") == 0) {
-      MOZ_ASSERT(enableWasmBaseline);
-      MOZ_ASSERT(enableWasmOptimizing);
-    } else {
-      return OptionFailure("wasm-compiler", str);
-    }
-  }
-
-  enableTestWasmAwaitTier2 = op.getBoolOption("test-wasm-await-tier2");
-
-  JS::ContextOptionsRef(cx)
-      .setWasm(enableWasm)
-      .setWasmForTrustedPrinciples(enableWasm)
-      .setWasmBaseline(enableWasmBaseline)
-      .setWasmIon(enableWasmOptimizing)
-      .setTestWasmAwaitTier2(enableTestWasmAwaitTier2);
-  if (op.getBoolOption("disable-main-thread-wasm-denormals")) {
-    JS::ContextOptionsRef(cx).setWasmDisablesDenormals();
-  }
-
-#ifndef __wasi__
-  // Also the following are to be propagated.
-  const char* to_propagate[] = {
-      // Compiler selection options
-      "--test-wasm-await-tier2",
-  };
-  for (const char* p : to_propagate) {
-    if (op.getBoolOption(p + 2 /* 2 => skip the leading '--' */)) {
-      if (!sCompilerProcessFlags.append(p)) {
-        return false;
-      }
-    }
-  }
-
-  // Also --wasm-compiler= is to be propagated.  This is tricky because it is
-  // necessary to reconstitute the --wasm-compiler=<whatever> string from its
-  // pieces, without causing a leak.  Hence it is copied into a static buffer.
-  // This is thread-unsafe, but we're in `main()` and on the process' root
-  // thread.  Also, we do this only once -- it wouldn't work properly if we
-  // handled multiple --wasm-compiler= flags in a loop.
-  const char* wasm_compiler = op.getStringOption("wasm-compiler");
-  if (wasm_compiler) {
-    size_t n_needed =
-        2 + strlen("wasm-compiler") + 1 + strlen(wasm_compiler) + 1;
-    const size_t n_avail = 128;
-    static char buf[n_avail];
-    // `n_needed` depends on the compiler name specified.  However, it can't
-    // be arbitrarily long, since previous flag-checking should have limited
-    // it to a set of known possibilities: "baseline", "ion",
-    // "baseline+ion",  Still, assert this for safety.
-    MOZ_RELEASE_ASSERT(n_needed < n_avail);
-    memset(buf, 0, sizeof(buf));
-    SprintfBuf(buf, n_avail, "--%s=%s", "wasm-compiler", wasm_compiler);
-    if (!sCompilerProcessFlags.append(buf)) {
-      return false;
-    }
-  }
-#endif  // __wasi__
-
-  return true;
-}
-
-bool SetContextJITOptions(JSContext* cx, const OptionParser& op) {
-  // Check --fast-warmup first because it sets default warm-up thresholds. These
-  // thresholds can then be overridden below by --ion-eager and other flags.
-  if (op.getBoolOption("fast-warmup")) {
-    jit::JitOptions.setFastWarmUp();
-  }
-
-  if (op.getBoolOption("no-ion-for-main-context")) {
-    JS::ContextOptionsRef(cx).setDisableIon();
-  }
-
-  if (const char* str = op.getStringOption("cache-ir-stubs")) {
-    if (strcmp(str, "on") == 0) {
-      jit::JitOptions.disableCacheIR = false;
-    } else if (strcmp(str, "off") == 0) {
-      jit::JitOptions.disableCacheIR = true;
-    } else {
-      return OptionFailure("cache-ir-stubs", str);
-    }
-  }
-
-  if (const char* str = op.getStringOption("stub-folding")) {
-    if (strcmp(str, "on") == 0) {
-      jit::JitOptions.disableStubFolding = false;
-    } else if (strcmp(str, "off") == 0) {
-      jit::JitOptions.disableStubFolding = true;
-    } else {
-      return OptionFailure("stub-folding", str);
-    }
-  }
-
-  if (const char* str = op.getStringOption("stub-folding-loads-and-stores")) {
-    if (strcmp(str, "on") == 0) {
-      jit::JitOptions.disableStubFoldingLoadsAndStores = false;
-    } else if (strcmp(str, "off") == 0) {
-      jit::JitOptions.disableStubFoldingLoadsAndStores = true;
-    } else {
-      return OptionFailure("stub-folding-loads-and-stores", str);
-    }
-  }
-
-  if (const char* str = op.getStringOption("spectre-mitigations")) {
-    if (strcmp(str, "on") == 0) {
-#if defined(JS_CODEGEN_RISCV64) || defined(JS_CODEGEN_LOONG64) || \
-    defined(JS_CODEGEN_MIPS64) || defined(JS_CODEGEN_WASM32)
-      // MacroAssembler::spectreZeroRegister and MacroAssembler::spectreMovePtr
-      // are not implemented for these targets.
-      fprintf(
-          stderr,
-          "Warning: Spectre mitigations are not implemented for this target."
-          " --spectre-mitigations=on is ignored.\n");
-#else
-      jit::JitOptions.spectreIndexMasking = true;
-      jit::JitOptions.spectreObjectMitigations = true;
-      jit::JitOptions.spectreStringMitigations = true;
-      jit::JitOptions.spectreValueMasking = true;
-      jit::JitOptions.spectreJitToCxxCalls = true;
-#endif
-    } else if (strcmp(str, "off") == 0) {
-      jit::JitOptions.spectreIndexMasking = false;
-      jit::JitOptions.spectreObjectMitigations = false;
-      jit::JitOptions.spectreStringMitigations = false;
-      jit::JitOptions.spectreValueMasking = false;
-      jit::JitOptions.spectreJitToCxxCalls = false;
-    } else {
-      return OptionFailure("spectre-mitigations", str);
-    }
-  }
-
-  if (const char* str = op.getStringOption("write-protect-code")) {
-    if (strcmp(str, "on") == 0) {
-      jit::JitOptions.maybeSetWriteProtectCode(true);
-    } else if (strcmp(str, "off") == 0) {
-      jit::JitOptions.maybeSetWriteProtectCode(false);
-    } else {
-      return OptionFailure("write-protect-code", str);
-    }
-  }
-
-  if (const char* str = op.getStringOption("monomorphic-inlining")) {
-    if (strcmp(str, "default") == 0) {
-      jit::JitOptions.monomorphicInlining =
-          jit::UseMonomorphicInlining::Default;
-    } else if (strcmp(str, "always") == 0) {
-      jit::JitOptions.monomorphicInlining = jit::UseMonomorphicInlining::Always;
-    } else if (strcmp(str, "never") == 0) {
-      jit::JitOptions.monomorphicInlining = jit::UseMonomorphicInlining::Never;
-    } else {
-      return OptionFailure("monomorphic-inlining", str);
-    }
-  }
-
-  if (const char* str = op.getStringOption("ion-scalar-replacement")) {
-    if (strcmp(str, "on") == 0) {
-      jit::JitOptions.disableScalarReplacement = false;
-    } else if (strcmp(str, "off") == 0) {
-      jit::JitOptions.disableScalarReplacement = true;
-    } else {
-      return OptionFailure("ion-scalar-replacement", str);
-    }
-  }
-
-  if (op.getStringOption("ion-shared-stubs")) {
-    // Dead option, preserved for now for potential fuzzer interaction.
-  }
-
-  if (const char* str = op.getStringOption("ion-gvn")) {
-    if (strcmp(str, "off") == 0) {
-      jit::JitOptions.disableGvn = true;
-    } else if (strcmp(str, "on") != 0 && strcmp(str, "optimistic") != 0 &&
-               strcmp(str, "pessimistic") != 0) {
-      // We accept "pessimistic" and "optimistic" as synonyms for "on"
-      // for backwards compatibility.
-      return OptionFailure("ion-gvn", str);
-    }
-  }
-
-  if (const char* str = op.getStringOption("ion-licm")) {
-    if (strcmp(str, "on") == 0) {
-      jit::JitOptions.disableLicm = false;
-    } else if (strcmp(str, "off") == 0) {
-      jit::JitOptions.disableLicm = true;
-    } else {
-      return OptionFailure("ion-licm", str);
-    }
-  }
-
-  if (const char* str = op.getStringOption("ion-edgecase-analysis")) {
-    if (strcmp(str, "on") == 0) {
-      jit::JitOptions.disableEdgeCaseAnalysis = false;
-    } else if (strcmp(str, "off") == 0) {
-      jit::JitOptions.disableEdgeCaseAnalysis = true;
-    } else {
-      return OptionFailure("ion-edgecase-analysis", str);
-    }
-  }
-
-  if (const char* str = op.getStringOption("ion-pruning")) {
-    if (strcmp(str, "on") == 0) {
-      jit::JitOptions.disablePruning = false;
-    } else if (strcmp(str, "off") == 0) {
-      jit::JitOptions.disablePruning = true;
-    } else {
-      return OptionFailure("ion-pruning", str);
-    }
-  }
-
-  if (const char* str = op.getStringOption("ion-range-analysis")) {
-    if (strcmp(str, "on") == 0) {
-      jit::JitOptions.disableRangeAnalysis = false;
-    } else if (strcmp(str, "off") == 0) {
-      jit::JitOptions.disableRangeAnalysis = true;
-    } else {
-      return OptionFailure("ion-range-analysis", str);
-    }
-  }
-
-  if (const char* str = op.getStringOption("ion-optimize-shapeguards")) {
-    if (strcmp(str, "on") == 0) {
-      jit::JitOptions.disableRedundantShapeGuards = false;
-    } else if (strcmp(str, "off") == 0) {
-      jit::JitOptions.disableRedundantShapeGuards = true;
-    } else {
-      return OptionFailure("ion-optimize-shapeguards", str);
-    }
-  }
-
-  if (const char* str = op.getStringOption("ion-optimize-gcbarriers")) {
-    if (strcmp(str, "on") == 0) {
-      jit::JitOptions.disableRedundantGCBarriers = false;
-    } else if (strcmp(str, "off") == 0) {
-      jit::JitOptions.disableRedundantGCBarriers = true;
-    } else {
-      return OptionFailure("ion-optimize-gcbarriers", str);
-    }
-  }
-
-  if (const char* str = op.getStringOption("ion-instruction-reordering")) {
-    if (strcmp(str, "on") == 0) {
-      jit::JitOptions.disableInstructionReordering = false;
-    } else if (strcmp(str, "off") == 0) {
-      jit::JitOptions.disableInstructionReordering = true;
-    } else {
-      return OptionFailure("ion-instruction-reordering", str);
-    }
-  }
-
-  if (op.getBoolOption("ion-check-range-analysis")) {
-    jit::JitOptions.checkRangeAnalysis = true;
-  }
-
-  if (op.getBoolOption("ion-extra-checks")) {
-    jit::JitOptions.runExtraChecks = true;
-  }
-
-  if (const char* str = op.getStringOption("ion-inlining")) {
-    if (strcmp(str, "on") == 0) {
-      jit::JitOptions.disableInlining = false;
-    } else if (strcmp(str, "off") == 0) {
-      jit::JitOptions.disableInlining = true;
-    } else {
-      return OptionFailure("ion-inlining", str);
-    }
-  }
-
-  if (const char* str = op.getStringOption("ion-osr")) {
-    if (strcmp(str, "on") == 0) {
-      jit::JitOptions.osr = true;
-    } else if (strcmp(str, "off") == 0) {
-      jit::JitOptions.osr = false;
-    } else {
-      return OptionFailure("ion-osr", str);
-    }
-  }
-
-  if (const char* str = op.getStringOption("ion-limit-script-size")) {
-    if (strcmp(str, "on") == 0) {
-      jit::JitOptions.limitScriptSize = true;
-    } else if (strcmp(str, "off") == 0) {
-      jit::JitOptions.limitScriptSize = false;
-    } else {
-      return OptionFailure("ion-limit-script-size", str);
-    }
-  }
-
-  if (const char* str = op.getStringOption("object-keys-scalar-replacement")) {
-    if (strcmp(str, "on") == 0) {
-      jit::JitOptions.disableObjectKeysScalarReplacement = false;
-    } else if (strcmp(str, "off") == 0) {
-      jit::JitOptions.disableObjectKeysScalarReplacement = true;
-    } else {
-      return OptionFailure("object-keys-scalar-replacement", str);
-    }
-  }
-
-  int32_t warmUpThreshold = op.getIntOption("ion-warmup-threshold");
-  if (warmUpThreshold >= 0) {
-    jit::JitOptions.setNormalIonWarmUpThreshold(warmUpThreshold);
-  }
-
-  warmUpThreshold = op.getIntOption("baseline-warmup-threshold");
-  if (warmUpThreshold >= 0) {
-    jit::JitOptions.baselineJitWarmUpThreshold = warmUpThreshold;
-  }
-
-  warmUpThreshold = op.getIntOption("trial-inlining-warmup-threshold");
-  if (warmUpThreshold >= 0) {
-    jit::JitOptions.trialInliningWarmUpThreshold = warmUpThreshold;
-  }
-
-  warmUpThreshold = op.getIntOption("regexp-warmup-threshold");
-  if (warmUpThreshold >= 0) {
-    jit::JitOptions.regexpWarmUpThreshold = warmUpThreshold;
-  }
-
-  if (op.getBoolOption("baseline-eager")) {
-    jit::JitOptions.setEagerBaselineCompilation();
-  }
-
-#ifdef ENABLE_PORTABLE_BASELINE_INTERP
-  if (op.getBoolOption("portable-baseline-eager")) {
-    jit::JitOptions.setEagerPortableBaselineInterpreter();
-  }
-  if (op.getBoolOption("portable-baseline")) {
-    jit::JitOptions.portableBaselineInterpreter = true;
-  }
-  if (op.getBoolOption("no-portable-baseline")) {
-    jit::JitOptions.portableBaselineInterpreter = false;
-  }
-#endif
-
-#ifdef ENABLE_JS_AOT_ICS
-  if (op.getBoolOption("aot-ics")) {
-    jit::JitOptions.enableAOTICs = true;
-  }
-  if (op.getBoolOption("enforce-aot-ics")) {
-    jit::JitOptions.enableAOTICEnforce = true;
-  }
-#endif
-
-  if (op.getBoolOption("blinterp")) {
-    jit::JitOptions.baselineInterpreter = true;
-  }
-
-  if (op.getBoolOption("no-blinterp")) {
-    jit::JitOptions.baselineInterpreter = false;
-  }
-
-  if (op.getBoolOption("disable-jithints")) {
-    jit::JitOptions.disableJitHints = true;
-  }
-
-  if (op.getBoolOption("emit-interpreter-entry")) {
-    jit::JitOptions.emitInterpreterEntryTrampoline = true;
-  }
-
-  if (op.getBoolOption("no-emit-interpreter-entry")) {
-    jit::JitOptions.emitInterpreterEntryTrampoline = false;
-  }
-
-  warmUpThreshold = op.getIntOption("blinterp-warmup-threshold");
-  if (warmUpThreshold >= 0) {
-    jit::JitOptions.baselineInterpreterWarmUpThreshold = warmUpThreshold;
-  }
-
-  if (op.getBoolOption("blinterp-eager")) {
-    jit::JitOptions.baselineInterpreterWarmUpThreshold = 0;
-  }
-
-  if (op.getBoolOption("no-baseline")) {
-    jit::JitOptions.baselineJit = false;
-  }
-
-  if (op.getBoolOption("no-ion")) {
-    jit::JitOptions.ion = false;
-  }
-
-  if (op.getBoolOption("no-native-regexp")) {
-    jit::JitOptions.nativeRegExp = false;
-  }
-
-  if (op.getBoolOption("trace-regexp-parser")) {
-    jit::JitOptions.trace_regexp_parser = true;
-  }
-  if (op.getBoolOption("trace-regexp-assembler")) {
-    jit::JitOptions.trace_regexp_assembler = true;
-  }
-  if (op.getBoolOption("trace-regexp-compiler")) {
-    jit::JitOptions.trace_regexp_compiler = true;
-  }
-  if (op.getBoolOption("trace-regexp-graph-building")) {
-    jit::JitOptions.trace_regexp_graph_building = true;
-  }
-  if (op.getBoolOption("trace-regexp-interpreter")) {
-    jit::JitOptions.trace_regexp_bytecodes = true;
-  }
-  if (op.getBoolOption("trace-regexp-peephole")) {
-    jit::JitOptions.trace_regexp_peephole_optimization = true;
-  }
-
-  if (op.getBoolOption("less-debug-code")) {
-    jit::JitOptions.lessDebugCode = true;
-  }
-
-  int32_t inliningEntryThreshold = op.getIntOption("inlining-entry-threshold");
-  if (inliningEntryThreshold > 0) {
-    jit::JitOptions.inliningEntryThreshold = inliningEntryThreshold;
-  }
-
-  int32_t smallFunctionLength = op.getIntOption("small-function-length");
-  if (smallFunctionLength > 0) {
-    jit::JitOptions.smallFunctionMaxBytecodeLength = smallFunctionLength;
-  }
-
-  if (op.getBoolOption("ion-eager")) {
-    jit::JitOptions.setEagerIonCompilation();
-  }
-
-  offthreadBaselineCompilation = false;
-  if (const char* str = op.getStringOption("baseline-offthread-compile")) {
-    if (strcmp(str, "on") == 0) {
-      offthreadBaselineCompilation = true;
-    } else if (strcmp(str, "off") != 0) {
-      return OptionFailure("baseline-offthread-compile", str);
-    }
-  }
-  cx->runtime()->setOffthreadBaselineCompilationEnabled(
-      offthreadBaselineCompilation);
-
-  if (const char* str = op.getStringOption("baseline-batching")) {
-    if (strcmp(str, "on") == 0) {
-      jit::JitOptions.baselineBatching = true;
-    } else if (strcmp(str, "off") == 0) {
-      jit::JitOptions.baselineBatching = false;
-    } else {
-      return OptionFailure("baseline-batching", str);
-    }
-  }
-
-  int32_t queueCapacity = op.getIntOption("baseline-queue-capacity");
-  if (queueCapacity == 0) {
-    fprintf(stderr, "baseline-queue-capacity must be positive\n");
-    return false;
-  }
-  if (queueCapacity > 0) {
-    jit::JitOptions.baselineQueueCapacity = std::min(
-        uint32_t(queueCapacity), js::jit::BaselineCompileQueue::MaxCapacity);
-  }
-
-  offthreadIonCompilation = true;
-  if (const char* str = op.getStringOption("ion-offthread-compile")) {
-    if (strcmp(str, "off") == 0) {
-      offthreadIonCompilation = false;
-    } else if (strcmp(str, "on") != 0) {
-      return OptionFailure("ion-offthread-compile", str);
-    }
-  }
-  cx->runtime()->setOffthreadIonCompilationEnabled(offthreadIonCompilation);
-
-  if (op.getStringOption("ion-parallel-compile")) {
-    fprintf(stderr,
-            "--ion-parallel-compile is deprecated. Please use "
-            "--ion-offthread-compile instead.\n");
-    return false;
-  }
-
-  if (op.getBoolOption("disable-bailout-loop-check")) {
-    jit::JitOptions.disableBailoutLoopCheck = true;
-  }
-
-  if (const char* str = op.getStringOption("canonicalize-nan-at-uses")) {
-    if (strcmp(str, "on") == 0) {
-      jit::JitOptions.disableCanonicalizeNaNAtUses = false;
-    } else if (strcmp(str, "off") == 0) {
-      jit::JitOptions.disableCanonicalizeNaNAtUses = true;
-    } else {
-      return OptionFailure("canonicalize-nan-at-uses", str);
-    }
-  }
-
-  if (op.getBoolOption("only-inline-selfhosted")) {
-    jit::JitOptions.onlyInlineSelfHosted = true;
-  }
-
-  if (op.getBoolOption("enable-stub-frame-pointers")) {
-#ifndef JS_CODEGEN_X86
-    jit::JitOptions.enableStubFramePointers = true;
-#endif
-  }
-
-  if (const char* str = op.getStringOption("ion-iterator-indices")) {
-    if (strcmp(str, "on") == 0) {
-      jit::JitOptions.disableIteratorIndices = false;
-    } else if (strcmp(str, "off") == 0) {
-      jit::JitOptions.disableIteratorIndices = true;
-    } else {
-      return OptionFailure("ion-iterator-indices", str);
-    }
-  }
-
-  if (const char* str = op.getStringOption("ion-load-keys")) {
-    if (strcmp(str, "on") == 0) {
-      jit::JitOptions.disableMarkLoadsUsedAsPropertyKeys = false;
-    } else if (strcmp(str, "off") == 0) {
-      jit::JitOptions.disableMarkLoadsUsedAsPropertyKeys = true;
-    } else {
-      return OptionFailure("ion-load-keys", str);
-    }
-  }
-
-#if defined(JS_SIMULATOR_ARM)
-  if (op.getBoolOption("arm-sim-icache-checks")) {
-    jit::SimulatorProcess::ICacheCheckingDisableCount = 0;
-  }
-
-  int32_t stopAt = op.getIntOption("arm-sim-stop-at");
-  if (stopAt >= 0) {
-    jit::Simulator::StopSimAt = stopAt;
-  }
-#elif defined(JS_SIMULATOR_MIPS64)
-  if (op.getBoolOption("mips-sim-icache-checks")) {
-    jit::SimulatorProcess::ICacheCheckingDisableCount = 0;
-  }
-
-  int32_t stopAt = op.getIntOption("mips-sim-stop-at");
-  if (stopAt >= 0) {
-    jit::Simulator::StopSimAt = stopAt;
-  }
-#elif defined(JS_SIMULATOR_LOONG64)
-  if (op.getBoolOption("loong64-sim-icache-checks")) {
-    jit::SimulatorProcess::ICacheCheckingDisableCount = 0;
-  }
-
-  int32_t stopAt = op.getIntOption("loong64-sim-stop-at");
-  if (stopAt >= 0) {
-    jit::Simulator::StopSimAt = stopAt;
-  }
-#endif
-
-#ifdef DEBUG
-#  ifdef JS_CODEGEN_RISCV64
-  if (op.getBoolOption("riscv-debug")) {
-    jit::Assembler::FLAG_riscv_debug = true;
-  }
-#  endif
-#  ifdef JS_SIMULATOR_RISCV64
-  if (op.getBoolOption("riscv-sim-trace")) {
-    jit::Simulator::FLAG_trace_sim = true;
-  }
-  if (op.getBoolOption("riscv-sim-debug")) {
-    jit::Simulator::FLAG_debug_sim = true;
-  }
-  if (op.getBoolOption("riscv-sim-icache-checks")) {
-    jit::SimulatorProcess::ICacheCheckingDisableCount = 0;
-  }
-  if (op.getBoolOption("riscv-trap-to-simulator-debugger")) {
-    jit::Simulator::FLAG_riscv_trap_to_simulator_debugger = true;
-  }
-  int32_t stopAt = op.getIntOption("riscv-sim-stop-at");
-  if (stopAt >= 0) {
-    jit::Simulator::StopSimAt = stopAt;
-  }
-#  endif
-#endif
-
-  return true;
-}
-
-bool SetContextGCOptions(JSContext* cx, const OptionParser& op) {
-  JS_SetGCParameter(cx, JSGC_MAX_BYTES, 0xffffffff);
-
-  size_t nurseryBytes = op.getIntOption("nursery-size") * 1024L * 1024L;
-  if (nurseryBytes == 0) {
-    fprintf(stderr, "Error: --nursery-size parameter must be non-zero.\n");
-    fprintf(stderr,
-            "The nursery can be disabled by passing the --no-ggc option.\n");
-    return false;
-  }
-  JS_SetGCParameter(cx, JSGC_MAX_NURSERY_BYTES, nurseryBytes);
-
-  size_t availMemMB = op.getIntOption("available-memory");
-  if (availMemMB > 0) {
-    JS_SetGCParametersBasedOnAvailableMemory(cx, availMemMB);
-  }
-
-  if (const char* opt = op.getStringOption("nursery-strings")) {
-    if (strcmp(opt, "on") == 0) {
-      cx->runtime()->gc.nursery().enableStrings();
-    } else if (strcmp(opt, "off") == 0) {
-      cx->runtime()->gc.nursery().disableStrings();
-    } else {
-      MOZ_CRASH("invalid option value for --nursery-strings, must be on/off");
-    }
-  }
-
-  if (const char* opt = op.getStringOption("nursery-bigints")) {
-    if (strcmp(opt, "on") == 0) {
-      cx->runtime()->gc.nursery().enableBigInts();
-    } else if (strcmp(opt, "off") == 0) {
-      cx->runtime()->gc.nursery().disableBigInts();
-    } else {
-      MOZ_CRASH("invalid option value for --nursery-bigints, must be on/off");
-    }
-  }
-
-  bool incrementalGC = !op.getBoolOption("no-incremental-gc");
-  JS_SetGCParameter(cx, JSGC_INCREMENTAL_GC_ENABLED, incrementalGC);
-
-#ifndef ANDROID
-  bool parallelMarking = true;
-#else
-  bool parallelMarking = false;
-#endif
-  if (op.getBoolOption("enable-parallel-marking")) {
-    parallelMarking = true;
-  }
-  if (op.getBoolOption("no-parallel-marking")) {
-    parallelMarking = false;
-  }
-  JS_SetGCParameter(cx, JSGC_PARALLEL_MARKING_ENABLED, parallelMarking);
-
-#ifdef JS_GC_CONCURRENT_MARKING
-  bool concurrentMarking = false;
-  if (op.getBoolOption("enable-concurrent-marking")) {
-    concurrentMarking = true;
-  }
-  if (op.getBoolOption("no-concurrent-marking")) {
-    concurrentMarking = false;
-  }
-  JS_SetGCParameter(cx, JSGC_CONCURRENT_MARKING_ENABLED, concurrentMarking);
-#endif
-
-  JS_SetGCParameter(cx, JSGC_SLICE_TIME_BUDGET_MS, 5);
-
-  JS_SetGCParameter(cx, JSGC_PER_ZONE_GC_ENABLED, true);
-
-  for (MultiStringRange args = op.getMultiStringOption("gc-param");
-       !args.empty(); args.popFront()) {
-    if (!SetGCParameterFromArg(cx, args.front())) {
-      return false;
-    }
-  }
-
-#ifdef DEBUG
-  dumpEntrainedVariables = op.getBoolOption("dump-entrained-variables");
-#endif
-
-#ifdef JS_GC_ZEAL
-  const char* zealStr = op.getStringOption("gc-zeal");
-  if (zealStr) {
-    if (!cx->runtime()->gc.parseAndSetZeal(zealStr)) {
-      return false;
-    }
-    uint32_t nextScheduled;
-    cx->runtime()->gc.getZealBits(&gZealBits, &gZealFrequency, &nextScheduled);
-  }
-#endif
-
-  return true;
-}
-
-bool ApplyBenchmarkMode(JSContext* cx, const OptionParser& op) {
-  if (sBenchmarkMode == BenchmarkMode::Off) {
-    return true;
-  }
-
-  bool isStrict = (sBenchmarkMode == BenchmarkMode::Strict);
-  bool hasErrors = false;
-
-  auto warn = [](const char* msg) {
-    fprintf(stderr, "--benchmark-mode: WARNING: %s\n", msg);
-  };
-
-  auto issue = [&](const char* msg) {
-    hasErrors = true;
-    if (isStrict) {
-      fprintf(stderr, "--benchmark-mode: ERROR: %s\n", msg);
-    } else {
-      warn(msg);
-    }
-  };
-
-  // Build configuration checks.
-#ifdef JS_DEBUG
-  issue("This is a DEBUG build. Use an optimized, non-debug build.");
-#endif
-#ifdef MOZ_ASAN
-  issue("This is an AddressSanitizer (ASan) build.");
-#endif
-#ifdef MOZ_TSAN
-  issue("This is a ThreadSanitizer (TSan) build.");
-#endif
-#ifdef MOZ_MSAN
-  issue("This is a MemorySanitizer (MSan) build.");
-#endif
-#if defined(JS_SIMULATOR)
-  issue("Running on a CPU simulator.");
-#endif
-#ifdef FUZZING
-  issue("This is a fuzzing build.");
-#endif
-#ifdef JS_GC_ZEAL
-  warn(
-      "Build has GC zeal support (JS_GC_ZEAL). "
-      "This may indicate a non-optimized build.");
-#endif
-
-  // Runtime option checks.
-#ifdef JS_GC_ZEAL
-  if (op.getStringOption("gc-zeal") != nullptr) {
-    issue("--gc-zeal is active.");
-  }
-#endif
-
-  if (op.getBoolOption("code-coverage")) {
-    issue("--code-coverage adds instrumentation overhead.");
-  }
-
-  if (op.getBoolOption("ion-check-range-analysis")) {
-    issue("--ion-check-range-analysis adds runtime checks.");
-  }
-
-  if (op.getBoolOption("ion-extra-checks")) {
-    issue("--ion-extra-checks adds runtime checks.");
-  }
-
-  if (op.getBoolOption("emit-interpreter-entry")) {
-    issue("--emit-interpreter-entry adds overhead.");
-  }
-
-  if (op.getBoolOption("enable-stub-frame-pointers")) {
-    issue(
-        "--enable-stub-frame-pointers adds overhead to IC stubs and various "
-        "trampolines.");
-  }
-
-  if (op.getBoolOption("no-ion")) {
-    issue("IonMonkey JIT is disabled (--no-ion).");
-  }
-
-  if (op.getBoolOption("no-baseline")) {
-    issue("Baseline compiler is disabled (--no-baseline).");
-  }
-
-  if (op.getBoolOption("no-threads")) {
-    issue("Helper threads are disabled (--no-threads).");
-  }
-
-  if (op.getBoolOption("fuzzing-safe")) {
-    issue("--fuzzing-safe is set.");
-  }
-
-#ifdef WASM_SUPPORTS_HUGE_MEMORY
-  // Wasm checks
-  if (JS::Prefs::wasm_disable_huge_memory()) {
-    issue("huge memory disabled");
-  }
-#endif
-
-  if (!JS::ContextOptionsRef(cx).wasmIon() ||
-      !JS::ContextOptionsRef(cx).wasmBaseline()) {
-    issue("missing wasm compiler");
-  }
-  if (JS::Prefs::wasm_test_serialization()) {
-    issue("testing serialization");
-  }
-  if (JS::Prefs::wasm_lazy_tiering_synchronous()) {
-    issue("tiering test configuration");
-  }
-
-  if (jit::JitOptions.spectreIndexMasking ||
-      jit::JitOptions.spectreObjectMitigations ||
-      jit::JitOptions.spectreStringMitigations ||
-      jit::JitOptions.spectreValueMasking ||
-      jit::JitOptions.spectreJitToCxxCalls) {
-    issue("Spectre mitigations are enabled.");
-  }
-
-  // Apply benchmark-mode overrides.
-  jit::JitOptions.spectreIndexMasking = false;
-  jit::JitOptions.spectreObjectMitigations = false;
-  jit::JitOptions.spectreStringMitigations = false;
-  jit::JitOptions.spectreValueMasking = false;
-  jit::JitOptions.spectreJitToCxxCalls = false;
-
-  // See the default set for
-  // javascript.options.content_process_write_protect_code
-#if !defined(XP_OPENBSD)
-  jit::JitOptions.maybeSetWriteProtectCode(false);
-#endif
-
-  JS::ContextOptionsRef(cx).setAsyncStack(false);
-
-  jit::JitOptions.fullDebugChecks = false;
-
-  if (isStrict && hasErrors) {
-    fprintf(stderr,
-            "--benchmark-mode: Refusing to run due to errors listed above.\n");
-    return false;
-  }
-
-  return true;
-}
-
-bool InitModuleLoader(JSContext* cx, const OptionParser& op) {
+bool InitModuleLoader(JSContext* cx) {
   RootedString moduleLoadPath(cx);
-  if (const char* option = op.getStringOption("module-load-path")) {
+  if (const char* option = gOptions.getStringOption("module-load-path")) {
     UniqueChars pathUtf8 = JS::EncodeNarrowToUtf8(cx, option);
     if (!pathUtf8) {
       return false;
