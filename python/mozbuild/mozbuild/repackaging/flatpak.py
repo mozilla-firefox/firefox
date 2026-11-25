@@ -85,6 +85,44 @@ def _render_flatpak_templates(template_dir, build_dir, variables):
             )
 
 
+def _flatpak_basename(flatpak_name):
+    return flatpak_name.rsplit(".", 1)[-1]
+
+
+def _build_finish_args(flatpak_name):
+    flatpak_basename = _flatpak_basename(flatpak_name)
+    return [
+        "flatpak",
+        "build-finish",
+        "build",
+        "--allow=devel",
+        "--share=ipc",
+        "--share=network",
+        "--socket=pulseaudio",
+        "--socket=wayland",
+        "--socket=fallback-x11",
+        "--socket=pcsc",
+        "--socket=cups",
+        "--require-version=0.11.1",
+        "--persist=.mozilla",
+        "--env=DICPATH=/usr/share/hunspell",
+        f"--env=MOZ_DBUS_APP_NAME={flatpak_basename}",
+        "--filesystem=xdg-config/gtk-3.0:ro",
+        "--filesystem=xdg-download:rw",
+        "--filesystem=/run/.heim_org.h5l.kcm-socket",
+        "--filesystem=/run/udev:ro",
+        "--filesystem=xdg-run/speech-dispatcher:ro",
+        "--device=all",
+        "--talk-name=org.freedesktop.FileManager1",
+        "--system-talk-name=org.freedesktop.NetworkManager",
+        "--talk-name=org.a11y.Bus",
+        "--talk-name=org.gtk.vfs.*",
+        "--own-name=org.mpris.MediaPlayer2.firefox.*",
+        f"--own-name={flatpak_name}.*",
+        "--command=firefox",
+    ]
+
+
 def repackage_flatpak(
     log,
     infile,
@@ -148,12 +186,11 @@ def repackage_flatpak(
         application_ini_data = application_ini_data_from_directory(str(lib_dir))
         variables = get_build_variables(application_ini_data, arch, version)
 
-        flatpak_basename = flatpak_name.split(".")[-1]
         variables.update({
             "FREEDESKTOP_VERSION": FREEDESKTOP_VERSION,
             "FIREFOX_BASEAPP_CHANNEL": FIREFOX_BASEAPP_CHANNEL,
             "FLATPAK_BRANCH": flatpak_branch,
-            "FLATPAK_BASENAME": flatpak_basename,
+            "FLATPAK_BASENAME": _flatpak_basename(flatpak_name),
             "FLATPAK_NAME": flatpak_name,
             "DATE": variables["TIMESTAMP"].strftime("%Y-%m-%d"),
             # Override PKG_NAME since we use branches for beta vs release
@@ -238,39 +275,7 @@ def repackage_flatpak(
                 app_dir / f"lib/{product}/distribution/extensions/{name}.xpi",
             )
 
-        run_command(
-            log,
-            [
-                "flatpak",
-                "build-finish",
-                "build",
-                "--allow=devel",
-                "--share=ipc",
-                "--share=network",
-                "--socket=pulseaudio",
-                "--socket=wayland",
-                "--socket=fallback-x11",
-                "--socket=pcsc",
-                "--socket=cups",
-                "--require-version=0.11.1",
-                "--persist=.mozilla",
-                "--env=DICPATH=/usr/share/hunspell",
-                "--filesystem=xdg-config/gtk-3.0:ro",
-                "--filesystem=xdg-download:rw",
-                "--filesystem=/run/.heim_org.h5l.kcm-socket",
-                "--filesystem=/run/udev:ro",
-                "--filesystem=xdg-run/speech-dispatcher:ro",
-                "--device=all",
-                "--talk-name=org.freedesktop.FileManager1",
-                "--system-talk-name=org.freedesktop.NetworkManager",
-                "--talk-name=org.a11y.Bus",
-                "--talk-name=org.gtk.vfs.*",
-                "--own-name=org.mpris.MediaPlayer2.firefox.*",
-                f"--own-name={flatpak_name}.*",
-                "--command=firefox",
-            ],
-            cwd=tmpdir,
-        )
+        run_command(log, _build_finish_args(flatpak_name), cwd=tmpdir)
 
         run_command(
             log,
