@@ -125,6 +125,10 @@ objects:
       microsurvey-config:
         type: Option<MicrosurveyConfig>
         description: Optional configuration data for a microsurvey.
+      settings-vpn-config:
+        type: Option<SettingsVpnMessageConfig>
+        description: Optional configuration data for the settings VPN message.
+        default: null
       is-control:
         type: Boolean
         description: Indicates if this message is the control message, if true shouldn't be displayed
@@ -227,7 +231,15 @@ objects:
         type: Text
         description: The text for the answer.
         default: "" # This should never be defaulted.
-
+  SettingsVpnMessageConfig:
+    description: Formatting config & options for the VPN settings message.
+    fields:
+      title-args:
+        type: List<String>
+        description: >
+          Argument keys for the title format string, in positional order.
+          The arguments are defined in the nimbus messages and substituted programmatically in the VpnSettingsMessage.
+        default: []
 enums:
   ControlMessageBehavior:
     description: An enum to influence what should be displayed when a control message is selected.
