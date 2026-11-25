@@ -724,10 +724,7 @@ bool ModuleNamespaceObject::ProxyHandler::getOwnPropertyDescriptor(
   }
 
   // Step 4. Let value be ? O.[[Get]](P, O).
-  RootedValue value(cx);
-  if (!env->getBindingValue(cx, prop->slot(), &value)) {
-    return false;
-  }
+  RootedValue value(cx, env->getSlot(prop->slot()));
   if (value.isMagic(JS_UNINITIALIZED_LEXICAL)) {
     ReportUninitializedModuleBinding(cx, id);
     return false;
@@ -846,10 +843,7 @@ bool ModuleNamespaceObject::ProxyHandler::get(JSContext* cx, HandleObject proxy,
     return true;
   }
 
-  RootedValue value(cx);
-  if (!env->getBindingValue(cx, prop->slot(), &value)) {
-    return false;
-  }
+  RootedValue value(cx, env->getSlot(prop->slot()));
   if (value.isMagic(JS_UNINITIALIZED_LEXICAL)) {
     ReportUninitializedModuleBinding(cx, id);
     return false;
@@ -1914,17 +1908,7 @@ void ModuleObject::initWasmExportBindings(JSContext* cx,
              env->firstSyntheticValueSlot() + values.length());
 
   for (uint32_t i = 0; i < values.length(); i++) {
-    uint32_t slot = env->firstSyntheticValueSlot() + i;
-    if (env->hasWasmMutableGlobalBinding(slot)) {
-      MOZ_RELEASE_ASSERT(values[i].isObject() &&
-                         values[i].toObject().is<WasmGlobalObject>());
-      env->getRawSlot(slot)
-          .toObject()
-          .as<WasmMutableGlobalBindingObject>()
-          .initGlobal(&values[i].toObject().as<WasmGlobalObject>());
-    } else {
-      env->setAliasedBinding(slot, values[i]);
-    }
+    env->setAliasedBinding(env->firstSyntheticValueSlot() + i, values[i]);
   }
 }
 
@@ -1940,28 +1924,9 @@ bool ModuleObject::createWasmEnvironment(JSContext* cx,
 
   // The export bindings are immutable and remain uninitialized until the
   // module is executed, so that reading one before then is a reference error.
-  const wasm::Module& module =
-      self->moduleSource()->as<WasmModuleObject>().module();
-  const auto& exports = module.moduleMeta().exports;
-  const auto& globals = module.codeMeta().globals;
-  MOZ_ASSERT(exports.length() == exportNames.length());
-  RootedValue value(cx);
-  for (uint32_t i = 0; i < exports.length(); i++) {
-    value.setMagic(JS_UNINITIALIZED_LEXICAL);
-    const wasm::Export& exp = exports[i];
-    // Exported mutable globals instead get a WasmMutableGlobalBindingObject
-    // that is initialized in place on execution and never replaced.
-    if (exp.kind() == wasm::DefinitionKind::Global) {
-      const wasm::GlobalDesc& global = globals[exp.globalIndex()];
-      if (global.isMutable() && global.type().isExposable()) {
-        auto* binding = WasmMutableGlobalBindingObject::create(cx);
-        if (!binding) {
-          return false;
-        }
-        value.setObject(*binding);
-      }
-    }
-    env->setAliasedBinding(env->firstSyntheticValueSlot() + i, value);
+  for (uint32_t slot = env->firstSyntheticValueSlot(); slot < env->slotSpan();
+       slot++) {
+    env->setAliasedBinding(slot, MagicValue(JS_UNINITIALIZED_LEXICAL));
   }
 
   self->setInitialEnvironment(env);

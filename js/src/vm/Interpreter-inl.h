@@ -21,7 +21,6 @@
 #include "vm/ThrowMsgKind.h"
 #include "vm/Watchtower.h"
 
-#include "vm/EnvironmentObject-inl.h"
 #include "vm/GlobalObject-inl.h"
 #include "vm/JSAtomUtils-inl.h"  // PrimitiveValueToId, TypeName
 #include "vm/JSContext-inl.h"
@@ -61,10 +60,6 @@ static inline bool IsUninitializedLexicalSlot(HandleObject obj,
     return false;
   }
 
-  if (obj->is<ModuleEnvironmentObject>()) {
-    return obj->as<ModuleEnvironmentObject>().isBindingUninitialized(
-        propInfo.slot());
-  }
   return IsUninitializedLexical(
       obj->as<NativeObject>().getSlot(propInfo.slot()));
 }
@@ -108,14 +103,7 @@ inline bool FetchName(JSContext* cx, HandleObject receiver, HandleObject holder,
     PropertyInfo propInfo = prop.propertyInfo();
     if (propInfo.isDataProperty()) {
       /* Fast path for Object instance properties. */
-      if (holder->is<ModuleEnvironmentObject>()) {
-        if (!holder->as<ModuleEnvironmentObject>().getBindingValue(
-                cx, propInfo.slot(), vp)) {
-          return false;
-        }
-      } else {
-        vp.set(holder->as<NativeObject>().getSlot(propInfo.slot()));
-      }
+      vp.set(holder->as<NativeObject>().getSlot(propInfo.slot()));
     } else {
       // Unwrap 'with' environments for reasons given in
       // GetNameBoundInEnvironment.
@@ -145,12 +133,6 @@ inline bool FetchNameNoGC(NativeObject* pobj, PropertyResult prop, Value* vp) {
 
   PropertyInfo propInfo = prop.propertyInfo();
   if (!propInfo.isDataProperty()) {
-    return false;
-  }
-
-  if (pobj->is<ModuleEnvironmentObject>() &&
-      pobj->as<ModuleEnvironmentObject>().hasWasmMutableGlobalBinding(
-          propInfo.slot())) {
     return false;
   }
 

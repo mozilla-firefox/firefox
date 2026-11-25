@@ -214,7 +214,6 @@ namespace jit {
   _(GetPropMaybeCached, js::jit::GetPropMaybeCached)                           \
   _(GetPrototypeOf, js::jit::GetPrototypeOf)                                   \
   _(GetSparseElementHelper, js::GetSparseElementHelper)                        \
-  _(GetWasmMutableGlobalValue, js::jit::GetWasmMutableGlobalValue)             \
   _(GlobalDeclInstantiationFromIon, js::jit::GlobalDeclInstantiationFromIon)   \
   _(GlobalOrEvalDeclInstantiation, js::GlobalOrEvalDeclInstantiation)          \
   _(HandleDebugTrap, js::jit::HandleDebugTrap)                                 \

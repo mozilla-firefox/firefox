@@ -179,8 +179,6 @@ void WarpGetImport::dumpData(GenericPrinter& out) const {
   out.printf("    numFixedSlots: %u\n", numFixedSlots());
   out.printf("    slot: %u\n", slot());
   out.printf("    needsLexicalCheck: %u\n", needsLexicalCheck());
-  out.printf("    needsWasmMutableGlobalRead: %u\n",
-             needsWasmMutableGlobalRead());
 }
 
 void WarpRest::dumpData(GenericPrinter& out) const {

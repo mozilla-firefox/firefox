@@ -1277,23 +1277,18 @@ bool js::WasmModuleExecute(JSContext* cx, Handle<ModuleObject*> record) {
         // Step 14.3.6.1. Perform !
         // record.[[Environment]].InitializeBinding(name,
         //                                          ToJSValue(global_value)).
-        if (!globalObject->isMutable()) {
-          if (!globalValue.get().toJSValue(cx, &value)) {
-            MOZ_ASSERT(cx->isThrowingOutOfMemory());
-            return false;
-          }
-        } else {
-          // Step 14.3.6.2. If mut is var, then associate all future mutations
-          // of globaladdr with the ECMA-262 binding record for name in
-          // record.[[Environment]], such that
-          // record.[[Environment]].GetBindingValue(name, true) always returns
-          // ToJSValue(global_read(store, globaladdr)) for
-          // the current surrounding agent’s associated store store.
-          //
-          // The binding reads the global's current value on every access, so
-          // initializing it with the global itself covers both steps.
-          value.setObject(*globalObject);
+        if (!globalValue.get().toJSValue(cx, &value)) {
+          MOZ_ASSERT(cx->isThrowingOutOfMemory());
+          return false;
         }
+
+        // Step 14.3.6.2. If mut is var, then associate all future mutations of
+        // globaladdr with the ECMA-262 binding record for name in
+        // record.[[Environment]], such that
+        // record.[[Environment]].GetBindingValue(name, true) always returns
+        // ToJSValue(global_read(store, globaladdr)) for
+        // the current surrounding agent’s associated store store.
+        // TODO(Bug 2078378): Implement this.
       }
     } else {
       // Step 14.4. Otherwise,
@@ -4690,42 +4685,6 @@ bool WasmGlobalObject::type(JSContext* cx, unsigned argc, Value* vp) {
   return CallNonGenericMethod<IsGlobal, typeImpl>(cx, args);
 }
 #endif
-
-// ============================================================================
-// WasmMutableGlobalBindingObject
-
-const JSClass WasmMutableGlobalBindingObject::class_ = {
-    "WasmMutableGlobalBinding", JSCLASS_HAS_RESERVED_SLOTS(RESERVED_SLOTS)};
-
-/* static */
-WasmMutableGlobalBindingObject* WasmMutableGlobalBindingObject::create(
-    JSContext* cx) {
-  return NewObjectWithGivenProto<WasmMutableGlobalBindingObject>(cx, nullptr);
-}
-
-bool WasmMutableGlobalBindingObject::isInitialized() const {
-  return getReservedSlotTyped(GLOBAL_SLOT).isObject();
-}
-
-void WasmMutableGlobalBindingObject::initGlobal(WasmGlobalObject* global) {
-  MOZ_ASSERT(!isInitialized());
-  MOZ_ASSERT(global->isMutable() && global->type().isExposable());
-  initReservedSlotTyped(GLOBAL_SLOT, ObjectValue(*global));
-}
-
-WasmGlobalObject& WasmMutableGlobalBindingObject::global() const {
-  return getReservedSlotTyped(GLOBAL_SLOT).toObject().as<WasmGlobalObject>();
-}
-
-bool WasmMutableGlobalBindingObject::getValue(JSContext* cx,
-                                              MutableHandleValue value) const {
-  if (!isInitialized()) {
-    value.setMagic(JS_UNINITIALIZED_LEXICAL);
-    return true;
-  }
-  RootedVal globalValue(cx, global().val().get());
-  return globalValue.get().toJSValue(cx, value);
-}
 
 // ============================================================================
 // WebAssembly.Tag class and methods

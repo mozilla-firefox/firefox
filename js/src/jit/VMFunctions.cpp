@@ -937,16 +937,6 @@ bool GetIntrinsicValue(JSContext* cx, Handle<PropertyName*> name,
   return GlobalObject::getIntrinsicValue(cx, cx->global(), name, rval);
 }
 
-bool GetWasmMutableGlobalValue(JSContext* cx, HandleObject environment,
-                               uint32_t slot, Handle<PropertyName*> name,
-                               MutableHandleValue rval) {
-  if (!environment->as<ModuleEnvironmentObject>().getBindingValue(cx, slot,
-                                                                  rval)) {
-    return false;
-  }
-  return CheckUninitializedLexical(cx, name, rval);
-}
-
 static uint32_t NumTraceableArgsForCreateThis(HandleFunction fun,
                                               uint32_t argc) {
   uint32_t numActualArgs = std::max(argc, uint32_t(fun->nargs()));

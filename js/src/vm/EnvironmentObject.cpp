@@ -613,18 +613,11 @@ bool ModuleEnvironmentObject::getProperty(JSContext* cx, HandleObject obj,
   mozilla::Maybe<PropertyInfo> prop;
   ModuleEnvironmentObject* env;
   if (bindings.lookup(id, &env, &prop)) {
-    return env->getBindingValue(cx, prop->slot(), vp);
+    vp.set(env->getSlot(prop->slot()));
+    return true;
   }
 
-  Rooted<ModuleEnvironmentObject*> self(cx,
-                                        &obj->as<ModuleEnvironmentObject>());
-  if (self->module().isWasmModule()) {
-    prop = self->lookup(cx, id);
-    if (prop && prop->isDataProperty() &&
-        self->hasWasmMutableGlobalBinding(prop->slot())) {
-      return self->getBindingValue(cx, prop->slot(), vp);
-    }
-  }
+  Rooted<NativeObject*> self(cx, &obj->as<NativeObject>());
   return NativeGetProperty(cx, self, receiver, id, vp);
 }
 
@@ -651,31 +644,13 @@ bool ModuleEnvironmentObject::getOwnPropertyDescriptor(
   mozilla::Maybe<PropertyInfo> prop;
   ModuleEnvironmentObject* env;
   if (bindings.lookup(id, &env, &prop)) {
-    RootedValue value(cx);
-    if (!env->getBindingValue(cx, prop->slot(), &value)) {
-      return false;
-    }
     desc.set(mozilla::Some(PropertyDescriptor::Data(
-        value,
+        env->getSlot(prop->slot()),
         {JS::PropertyAttribute::Enumerable, JS::PropertyAttribute::Writable})));
     return true;
   }
 
-  Rooted<ModuleEnvironmentObject*> self(cx,
-                                        &obj->as<ModuleEnvironmentObject>());
-  if (self->module().isWasmModule()) {
-    prop = self->lookup(cx, id);
-    if (prop && prop->isDataProperty() &&
-        self->hasWasmMutableGlobalBinding(prop->slot())) {
-      RootedValue value(cx);
-      if (!self->getBindingValue(cx, prop->slot(), &value)) {
-        return false;
-      }
-      desc.set(mozilla::Some(
-          PropertyDescriptor::Data(value, prop->propAttributes())));
-      return true;
-    }
-  }
+  Rooted<NativeObject*> self(cx, &obj->as<NativeObject>());
   return NativeGetOwnPropertyDescriptor(cx, self, id, desc);
 }
 
