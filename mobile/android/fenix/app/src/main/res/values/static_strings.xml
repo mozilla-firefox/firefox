@@ -200,7 +200,6 @@
 
     <!-- Label for enabling IPProtection through secret settings -->
     <string name="preferences_debug_settings_ip_protection" translatable="false">Enable IP Protection UI</string>
-    <string name="preferences_debug_settings_ip_protection_locations" translatable="false">Enable IP Protection Locations selection</string>
 
     <!-- Label for allowing GPI (Google Play Integrity) authentication for IPProtection through secret settings -->
     <string name="preferences_debug_settings_ip_protection_use_gpi" translatable="false">Use GPI authentication for IP Protection while signed out (requires restart)</string>
