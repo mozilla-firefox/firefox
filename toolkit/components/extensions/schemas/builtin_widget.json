@@ -62,6 +62,57 @@
         }
       },
       {
+        "id": "GeneratedWidgetManifest",
+        "type": "object",
+        "description": "Represents the manifest of a generated widget, built from its widget.json.",
+        "$import": "ManifestBase",
+        "additionalProperties": false,
+        "properties": {
+          "name": {
+            "type": "string",
+            "minLength": 1,
+            "maxLength": 75
+          },
+          "description": {
+            "type": "string",
+            "optional": true,
+            "maxLength": 2000
+          },
+          "permissions": {
+            "type": "array",
+            "optional": true,
+            "items": {
+              "type": "string",
+              "enum": ["storage", "unlimitedStorage", "idle"]
+            }
+          },
+          "optional_permissions": {
+            "type": "array",
+            "items": { "type": "string" },
+            "maxItems": 0,
+            "optional": true,
+            "default": []
+          },
+          "host_permissions": {
+            "type": "array",
+            "items": { "type": "string" },
+            "maxItems": 0,
+            "optional": true,
+            "default": []
+          },
+          "optional_host_permissions": {
+            "type": "array",
+            "items": { "type": "string" },
+            "maxItems": 0,
+            "optional": true,
+            "default": []
+          },
+          "generated_widget": {
+            "$ref": "GeneratedWidget"
+          }
+        }
+      },
+      {
         "$extend": "WebExtensionManifest",
         "properties": {
           "builtin_widget": {

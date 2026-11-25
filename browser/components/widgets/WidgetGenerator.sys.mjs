@@ -51,6 +51,12 @@ const WIDGET_PAGE = "widget.html";
 
 export const OUTPUT_DIRECTORY = "widget-generator";
 
+/**
+ * The longest prompt that GeneratedWidgetManifest in builtin_widget.json
+ * accepts.
+ */
+const MAX_PROMPT_LENGTH = 2000;
+
 const ENDPOINT_PREF = "browser.widgets.generated.endpoint";
 const API_KEY_PREF = "browser.widgets.generated.apiKey";
 const MODEL_PREF = "browser.widgets.generated.model";
@@ -118,6 +124,12 @@ class _WidgetGenerator {
    */
   async generate({ prompt, signal }) {
     signal?.throwIfAborted();
+    if (prompt.length > MAX_PROMPT_LENGTH) {
+      throw new WidgetGeneratorError(
+        `The prompt is longer than ${MAX_PROMPT_LENGTH} characters`,
+        GENERATION_ERRORS.GENERATION
+      );
+    }
     this.#throwIfBlocked();
     let endpoint = Services.prefs.getStringPref(ENDPOINT_PREF, "");
     let connection = {};
@@ -376,12 +388,12 @@ class _WidgetGenerator {
   }
 
   /**
-   * Checks the manifest has a name and a written page.
+   * Checks the manifest has a name and the files have a widget page.
    *
    * @param {object} manifest - the model's manifest
    * @param {Map<string, string>} files - the model's files, by path
-   * @throws {WidgetGeneratorError} when the manifest has no name or the files
-   *   have no widget.html
+   * @throws {WidgetGeneratorError} when the name is missing or the files have
+   *   no widget.html
    */
   #validate(manifest, files) {
     let name = manifest?.name;

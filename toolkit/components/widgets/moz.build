@@ -6,7 +6,11 @@ with Files("**"):
     BUG_COMPONENT = ("Firefox", "Widgets")
 
 MOZ_SRC_FILES += [
+    "GeneratedWidgetExtension.sys.mjs",
+    "GeneratedWidgetsProvider.sys.mjs",
     "WidgetManager.sys.mjs",
 ]
+
+BROWSER_CHROME_MANIFESTS += ["tests/browser/browser.toml"]
 
 XPCSHELL_TESTS_MANIFESTS += ["tests/xpcshell/xpcshell.toml"]

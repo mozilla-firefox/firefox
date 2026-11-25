@@ -1,3 +1,12 @@
 [DEFAULT]
 
+["test_GeneratedWidgetsProvider.js"]
+# Prevent a failure due to the per-file timeout killing the test file while it is running.
+requesttimeoutfactor = 2
+firefox-appdir = "browser"
+skip-if = [
+  "os == 'android'",
+  "!nightly_build",
+]
+
 ["test_WidgetManager.js"]

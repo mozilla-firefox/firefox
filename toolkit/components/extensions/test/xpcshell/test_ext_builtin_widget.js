@@ -203,6 +203,25 @@ add_task(async function test_generated_widget_temporary_install_is_rejected() {
   ExtensionTestUtils.failOnSchemaWarnings(true);
 });
 
+add_task(async function test_generated_widget_needs_generated_extension() {
+  const stub = sinon
+    .stub(Extension.prototype, "canUseGeneratedWidgets")
+    .returns(true);
+  const id = "ungenerated-widget@mochi.test";
+  const extension = loadWidgetExtension({
+    id,
+    manifestKey: "generated_widget",
+    widget: GENERATED_WIDGET,
+  });
+  await Assert.rejects(
+    extension.startup(),
+    /Only generated widgets can use 'generated_widget'/,
+    "Startup rejected"
+  );
+  Assert.equal(WidgetManager.getWidgetByID(id), null, "No widget");
+  stub.restore();
+});
+
 add_task(async function test_invalid_pref_branch() {
   ExtensionTestUtils.failOnSchemaWarnings(false);
   for (const pref_branch of ["", ".test", "test.", "test..widget"]) {

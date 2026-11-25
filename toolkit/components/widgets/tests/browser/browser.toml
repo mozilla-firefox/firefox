@@ -1,0 +1,6 @@
+[DEFAULT]
+
+["browser_GeneratedWidgetsProvider.js"]
+skip-if = [
+  "!nightly_build",
+]

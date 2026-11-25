@@ -5,6 +5,9 @@ prefs = [
 support-files = ["head.js"]
 
 ["browser_generated_widgets.js"]
+skip-if = [
+  "!nightly_build",
+]
 
 ["browser_sidebar_widget_studio.js"]
 

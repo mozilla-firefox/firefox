@@ -11,6 +11,10 @@ category app-startup nsBrowserGlue @mozilla.org/browser/browserglue;1 applicatio
 
 category first-startup-new-profile resource:///modules/AboutNewTabResourceMapping.sys.mjs AboutNewTabResourceMapping.firstStartupNewProfile
 
+#ifdef NIGHTLY_BUILD
+category addon-provider-module GeneratedWidgetsProvider moz-src:///toolkit/components/widgets/GeneratedWidgetsProvider.sys.mjs
+#endif
+
 # Browser global components initializing before UI startup
 category browser-before-ui-startup moz-src:///browser/components/sessionstore/SessionStore.sys.mjs SessionStore.init
 category browser-before-ui-startup resource:///modules/BuiltInThemes.sys.mjs BuiltInThemes.maybeInstallActiveBuiltInTheme

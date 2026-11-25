@@ -3112,6 +3112,13 @@ pref("extensions.webextensions.keepUuidOnUninstall", false);
 pref("extensions.webextensions.identity.redirectDomain", "extensions.allizom.org");
 pref("extensions.webextensions.restrictedDomains", "accounts-static.cdn.mozilla.net,accounts.firefox.com,addons.cdn.mozilla.net,addons.mozilla.org,api.accounts.firefox.com,content.cdn.mozilla.net,discovery.addons.mozilla.org,oauth.accounts.firefox.com,profile.accounts.firefox.com,support.mozilla.org,sync.services.mozilla.com");
 
+// Whether the add-on manager loads generated widgets.
+#ifdef NIGHTLY_BUILD
+pref("extensions.widgets.generated.enabled", false);
+#else
+pref("extensions.widgets.generated.enabled", false, locked);
+#endif
+
 // Extensions are prevented from accessing Quarantined Domains by default.
 pref("extensions.quarantinedDomains.enabled", true);
 pref("extensions.quarantinedDomains.list", "");

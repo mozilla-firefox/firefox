@@ -7,6 +7,9 @@ const { GENERATION_ERRORS, OUTPUT_DIRECTORY, WidgetGenerator } =
   ChromeUtils.importESModule(
     "moz-src:///browser/components/widgets/WidgetGenerator.sys.mjs"
   );
+const { GeneratedWidgetsProvider } = ChromeUtils.importESModule(
+  "moz-src:///toolkit/components/widgets/GeneratedWidgetsProvider.sys.mjs"
+);
 const { MockEngineManager } = ChromeUtils.importESModule(
   "resource://testing-common/AIWindowTestUtils.sys.mjs"
 );
@@ -22,6 +25,8 @@ const ZipReader = Components.Constructor(
   "nsIZipReader",
   "open"
 );
+
+const PROVIDER_PREF = "extensions.widgets.generated.enabled";
 
 const LOCAL_PROMPT_PREF = "browser.widgets.generated.localPrompt";
 
@@ -179,6 +184,7 @@ add_setup(async function () {
     })
   );
   await setGeneratorRecords();
+  await SpecialPowers.pushPrefEnv({ set: [[PROVIDER_PREF, true]] });
 
   registerCleanupFunction(async () => {
     build.restore();
@@ -881,4 +887,62 @@ add_task(async function test_an_incomplete_widget_fails_validation() {
       message
     );
   }
+});
+
+add_task(async function test_a_long_prompt_is_rejected() {
+  let [createEngine, getToken] = mockEngine.mocks;
+  createEngine.resetHistory();
+  getToken.resetHistory();
+  await Assert.rejects(
+    WidgetGenerator.generate({ prompt: "x".repeat(2001) }),
+    error =>
+      error.code == GENERATION_ERRORS.GENERATION &&
+      /prompt/.test(error.message),
+    "Long prompt"
+  );
+  Assert.ok(getToken.notCalled, "No token");
+  Assert.ok(createEngine.notCalled, "No engine");
+  await generate(
+    { prompt: "x".repeat(2000) },
+    simulateWriteFileResponse(FILES),
+    "Done."
+  );
+});
+
+add_task(async function test_a_long_name_is_packaged() {
+  let files = {
+    ...FILES,
+    "manifest.json": JSON.stringify({ name: "x".repeat(76) }),
+  };
+  let path = await generate(
+    { prompt: PROMPT },
+    simulateWriteFileResponse(files),
+    "Done."
+  );
+  let { name } = JSON.parse(readZip(path).get("widget.json"));
+  Assert.equal(name.length, 76, "Long name");
+});
+
+add_task(async function test_a_package_installs_and_its_page_loads() {
+  let path = await generate(
+    { prompt: PROMPT },
+    simulateWriteFileResponse(FILES),
+    "Done."
+  );
+  let { id } = await GeneratedWidgetsProvider.install(path);
+  registerCleanupFunction(() => GeneratedWidgetsProvider.uninstall(id));
+  let policy = WebExtensionPolicy.getByID(id);
+  Assert.ok(policy?.active, "Running");
+  let text = await BrowserTestUtils.withNewTab(
+    policy.getURL("widget.html"),
+    browser =>
+      SpecialPowers.spawn(browser, [], async () => {
+        await ContentTaskUtils.waitForCondition(
+          () => content.document.body?.textContent,
+          "Waiting for the widget"
+        );
+        return content.document.body.textContent;
+      })
+  );
+  Assert.equal(text, "21.5°C", "Page");
 });

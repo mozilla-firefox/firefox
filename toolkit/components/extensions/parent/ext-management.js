@@ -49,7 +49,9 @@ const getExtensionInfoForAddon = (extension, addon) => {
     enabled: addon.isActive,
     optionsUrl: addon.optionsURL || "",
     installType: installType(addon),
-    type: addon.type,
+    // Generated widgets only reach this through getSelf(), and report the
+    // "extension" type while "generatedwidget" is experimental.
+    type: addon.type == "generatedwidget" ? "extension" : addon.type,
   };
 
   if (extension) {
@@ -202,7 +204,8 @@ this.management = class extends ExtensionAPIPersistent {
       management: {
         async get(id) {
           let addon = await AddonManager.getAddonByID(id);
-          if (!addon) {
+          // Generated widgets are experimental and stay hidden like unknown ids.
+          if (!addon || addon.type == "generatedwidget") {
             throw new ExtensionError(`No such addon ${id}`);
           }
           if (!checkAllowedAddon(addon)) {
@@ -301,7 +304,8 @@ this.management = class extends ExtensionAPIPersistent {
 
         async setEnabled(id, enabled) {
           let addon = await AddonManager.getAddonByID(id);
-          if (!addon) {
+          // Generated widgets are experimental and stay hidden like unknown ids.
+          if (!addon || addon.type == "generatedwidget") {
             throw new ExtensionError(`No such addon ${id}`);
           }
 

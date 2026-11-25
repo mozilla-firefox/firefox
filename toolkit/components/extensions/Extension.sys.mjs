@@ -1700,8 +1700,14 @@ export class ExtensionData {
     return normalized.value;
   }
 
+  // GeneratedWidgetExtension overrides this to normalize the manifest
+  // as manifest.GeneratedWidgetManifest.
+  get manifestSchemaType() {
+    return manifestTypes.get(this.type);
+  }
+
   async _getNormalizedManifest(locale) {
-    let manifestType = manifestTypes.get(this.type);
+    let manifestType = this.manifestSchemaType;
 
     let context = {
       url: this.baseURI && this.baseURI.spec,
@@ -3478,6 +3484,9 @@ export class Extension extends ExtensionData {
       delete addonData.cleanupFile;
     }
 
+    // GeneratedWidgetExtension sets this to keep its manifest data out of the
+    // webext.sc.lz4 startup cache.
+    this.dontCacheManifestData = false;
     if (addonData.TEST_NO_ADDON_MANAGER) {
       this.dontSaveStartupData = true;
     }
@@ -3761,12 +3770,18 @@ export class Extension extends ExtensionData {
 
   async parseManifest() {
     await this.startupClearCachePromise;
+    if (this.dontCacheManifestData) {
+      return super.parseManifest();
+    }
     return StartupCache.manifests.get(this.manifestCacheKey, () =>
       super.parseManifest()
     );
   }
 
   async cachePermissions() {
+    if (this.dontCacheManifestData) {
+      return;
+    }
     let manifestData = await this.parseManifest();
 
     manifestData.originPermissions = this.allowedOrigins.patterns.map(
