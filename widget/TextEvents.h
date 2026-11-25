@@ -1089,6 +1089,119 @@ class WidgetCompositionEvent final : public WidgetGUIEvent {
 };
 
 /******************************************************************************
+ * mozilla::QueryContentResult
+ ******************************************************************************/
+
+struct QueryContentResult {
+  QueryContentResult() = delete;
+  explicit QueryContentResult(EventMessage aEventMessage)
+      : mEventMessage(aEventMessage) {}
+
+  // Don't allow to copy/move because of `mEventMessage`.
+  QueryContentResult(const QueryContentResult& aOther) = delete;
+  QueryContentResult(QueryContentResult&& aOther) = delete;
+  QueryContentResult& operator=(const QueryContentResult& aOther) = delete;
+  QueryContentResult& operator=(QueryContentResult&& aOther) = delete;
+
+  MOZ_NEVER_INLINE_DEBUG uint32_t StartOffset() const {
+    MOZ_ASSERT(mOffsetAndData.isSome());
+    return mOffsetAndData->StartOffset();
+  }
+  MOZ_NEVER_INLINE_DEBUG uint32_t EndOffset() const {
+    MOZ_ASSERT(mOffsetAndData.isSome());
+    return mOffsetAndData->EndOffset();
+  }
+  MOZ_NEVER_INLINE_DEBUG uint32_t DataLength() const {
+    MOZ_ASSERT(mOffsetAndData.isSome() || mEventMessage == eQuerySelectedText);
+    return mOffsetAndData.isSome() ? mOffsetAndData->Length() : 0;
+  }
+  MOZ_NEVER_INLINE_DEBUG uint32_t AnchorOffset() const {
+    MOZ_ASSERT(mEventMessage == eQuerySelectedText);
+    MOZ_ASSERT(mOffsetAndData.isSome());
+    return StartOffset() + (mReversed ? DataLength() : 0);
+  }
+
+  MOZ_NEVER_INLINE_DEBUG uint32_t FocusOffset() const {
+    MOZ_ASSERT(mEventMessage == eQuerySelectedText);
+    MOZ_ASSERT(mOffsetAndData.isSome());
+    return StartOffset() + (mReversed ? 0 : DataLength());
+  }
+
+  const WritingMode& WritingModeRef() const {
+    MOZ_ASSERT(mEventMessage == eQuerySelectedText ||
+               mEventMessage == eQueryCaretRect ||
+               mEventMessage == eQueryTextRect);
+    MOZ_ASSERT(mOffsetAndData.isSome() || mEventMessage == eQuerySelectedText);
+    return mWritingMode;
+  }
+
+  MOZ_NEVER_INLINE_DEBUG const nsString& DataRef() const {
+    MOZ_ASSERT(mOffsetAndData.isSome() || mEventMessage == eQuerySelectedText);
+    return mOffsetAndData.isSome() ? mOffsetAndData->DataRef() : EmptyString();
+  }
+  MOZ_NEVER_INLINE_DEBUG bool IsDataEmpty() const {
+    MOZ_ASSERT(mOffsetAndData.isSome() || mEventMessage == eQuerySelectedText);
+    return mOffsetAndData.isSome() ? mOffsetAndData->IsDataEmpty() : true;
+  }
+  MOZ_NEVER_INLINE_DEBUG bool IsOffsetInRange(uint32_t aOffset) const {
+    MOZ_ASSERT(mOffsetAndData.isSome() || mEventMessage == eQuerySelectedText);
+    return mOffsetAndData.isSome() ? mOffsetAndData->IsOffsetInRange(aOffset)
+                                   : false;
+  }
+  MOZ_NEVER_INLINE_DEBUG bool IsOffsetInRangeOrEndOffset(
+      uint32_t aOffset) const {
+    MOZ_ASSERT(mOffsetAndData.isSome() || mEventMessage == eQuerySelectedText);
+    return mOffsetAndData.isSome()
+               ? mOffsetAndData->IsOffsetInRangeOrEndOffset(aOffset)
+               : false;
+  }
+  MOZ_NEVER_INLINE_DEBUG void TruncateData(uint32_t aLength = 0) {
+    MOZ_ASSERT(mOffsetAndData.isSome());
+    mOffsetAndData->TruncateData(aLength);
+  }
+
+  friend std::string format_as(const QueryContentResult& aResult);
+  friend std::ostream& operator<<(std::ostream& aStream,
+                                  const QueryContentResult& aResult) {
+    return aStream << format_as(aResult);
+  }
+
+  EventMessage const mEventMessage;
+  void* mContentsRoot = nullptr;
+  Maybe<OffsetAndData<uint32_t>> mOffsetAndData;
+  // mTentativeCaretOffset is used by only eQueryCharacterAtPoint.
+  // This is the offset where caret would be if user clicked at the mRefPoint.
+  Maybe<uint32_t> mTentativeCaretOffset;
+  // mRect is used by eQueryTextRect, eQueryCaretRect, eQueryCharacterAtPoint
+  // and eQueryEditorRect. The coordinates is system coordinates relative to
+  // the top level widget of mFocusedWidget.  E.g., if a <xul:panel> which
+  // is owned by a window has focused editor, the offset of mRect is relative
+  // to the owner window, not the <xul:panel>.
+  mozilla::LayoutDeviceIntRect mRect;
+  // The return widget has the caret. This is set at all query events.
+  nsIWidget* mFocusedWidget = nullptr;
+  // mozilla::WritingMode value at the end (focus) of the selection
+  mozilla::WritingMode mWritingMode;
+  // Used by eQuerySelectionAsTransferable
+  nsCOMPtr<nsITransferable> mTransferable;
+  // Used by eQueryTextContent with font ranges requested
+  CopyableAutoTArray<mozilla::FontRange, 1> mFontRanges;
+  // Used by eQueryTextRectArray
+  CopyableTArray<mozilla::LayoutDeviceIntRect> mRectArray;
+  // Set to the element that a drop at the given coordinates would target
+  mozilla::dom::Element* mDropElement = nullptr;
+  // Set to the frame that a drop at the given coordinates would target
+  nsIFrame* mDropFrame = nullptr;
+  // true if selection is reversed (end < start)
+  // FIXME: Use RangeDirection enum class.
+  bool mReversed = false;
+  // true if DOM element under mouse belongs to widget
+  bool mWidgetIsHit = false;
+  // true if mContentRoot is focused editable content
+  bool mIsEditableContent = false;
+};
+
+/******************************************************************************
  * mozilla::WidgetQueryContentEvent
  ******************************************************************************/
 
@@ -1300,166 +1413,8 @@ class WidgetQueryContentEvent final : public WidgetGUIEvent {
     }
   } mInput;
 
-  struct Reply final {
-    EventMessage const mEventMessage;
-    void* mContentsRoot = nullptr;
-    Maybe<OffsetAndData<uint32_t>> mOffsetAndData;
-    // mTentativeCaretOffset is used by only eQueryCharacterAtPoint.
-    // This is the offset where caret would be if user clicked at the mRefPoint.
-    Maybe<uint32_t> mTentativeCaretOffset;
-    // mRect is used by eQueryTextRect, eQueryCaretRect, eQueryCharacterAtPoint
-    // and eQueryEditorRect. The coordinates is system coordinates relative to
-    // the top level widget of mFocusedWidget.  E.g., if a <xul:panel> which
-    // is owned by a window has focused editor, the offset of mRect is relative
-    // to the owner window, not the <xul:panel>.
-    mozilla::LayoutDeviceIntRect mRect;
-    // The return widget has the caret. This is set at all query events.
-    nsIWidget* mFocusedWidget = nullptr;
-    // mozilla::WritingMode value at the end (focus) of the selection
-    mozilla::WritingMode mWritingMode;
-    // Used by eQuerySelectionAsTransferable
-    nsCOMPtr<nsITransferable> mTransferable;
-    // Used by eQueryTextContent with font ranges requested
-    CopyableAutoTArray<mozilla::FontRange, 1> mFontRanges;
-    // Used by eQueryTextRectArray
-    CopyableTArray<mozilla::LayoutDeviceIntRect> mRectArray;
-    // true if selection is reversed (end < start)
-    // FIXME: Use RangeDirection enum class.
-    bool mReversed = false;
-    // true if DOM element under mouse belongs to widget
-    bool mWidgetIsHit = false;
-    // true if mContentRoot is focused editable content
-    bool mIsEditableContent = false;
-    // Set to the element that a drop at the given coordinates would target
-    mozilla::dom::Element* mDropElement;
-    // Set to the frame that a drop at the given coordinates would target
-    nsIFrame* mDropFrame;
-
-    Reply() = delete;
-    explicit Reply(EventMessage aEventMessage) : mEventMessage(aEventMessage) {}
-
-    // Don't allow to copy/move because of `mEventMessage`.
-    Reply(const Reply& aOther) = delete;
-    Reply(Reply&& aOther) = delete;
-    Reply& operator=(const Reply& aOther) = delete;
-    Reply& operator=(Reply&& aOther) = delete;
-
-    MOZ_NEVER_INLINE_DEBUG uint32_t StartOffset() const {
-      MOZ_ASSERT(mOffsetAndData.isSome());
-      return mOffsetAndData->StartOffset();
-    }
-    MOZ_NEVER_INLINE_DEBUG uint32_t EndOffset() const {
-      MOZ_ASSERT(mOffsetAndData.isSome());
-      return mOffsetAndData->EndOffset();
-    }
-    MOZ_NEVER_INLINE_DEBUG uint32_t DataLength() const {
-      MOZ_ASSERT(mOffsetAndData.isSome() ||
-                 mEventMessage == eQuerySelectedText);
-      return mOffsetAndData.isSome() ? mOffsetAndData->Length() : 0;
-    }
-    MOZ_NEVER_INLINE_DEBUG uint32_t AnchorOffset() const {
-      MOZ_ASSERT(mEventMessage == eQuerySelectedText);
-      MOZ_ASSERT(mOffsetAndData.isSome());
-      return StartOffset() + (mReversed ? DataLength() : 0);
-    }
-
-    MOZ_NEVER_INLINE_DEBUG uint32_t FocusOffset() const {
-      MOZ_ASSERT(mEventMessage == eQuerySelectedText);
-      MOZ_ASSERT(mOffsetAndData.isSome());
-      return StartOffset() + (mReversed ? 0 : DataLength());
-    }
-
-    const WritingMode& WritingModeRef() const {
-      MOZ_ASSERT(mEventMessage == eQuerySelectedText ||
-                 mEventMessage == eQueryCaretRect ||
-                 mEventMessage == eQueryTextRect);
-      MOZ_ASSERT(mOffsetAndData.isSome() ||
-                 mEventMessage == eQuerySelectedText);
-      return mWritingMode;
-    }
-
-    MOZ_NEVER_INLINE_DEBUG const nsString& DataRef() const {
-      MOZ_ASSERT(mOffsetAndData.isSome() ||
-                 mEventMessage == eQuerySelectedText);
-      return mOffsetAndData.isSome() ? mOffsetAndData->DataRef()
-                                     : EmptyString();
-    }
-    MOZ_NEVER_INLINE_DEBUG bool IsDataEmpty() const {
-      MOZ_ASSERT(mOffsetAndData.isSome() ||
-                 mEventMessage == eQuerySelectedText);
-      return mOffsetAndData.isSome() ? mOffsetAndData->IsDataEmpty() : true;
-    }
-    MOZ_NEVER_INLINE_DEBUG bool IsOffsetInRange(uint32_t aOffset) const {
-      MOZ_ASSERT(mOffsetAndData.isSome() ||
-                 mEventMessage == eQuerySelectedText);
-      return mOffsetAndData.isSome() ? mOffsetAndData->IsOffsetInRange(aOffset)
-                                     : false;
-    }
-    MOZ_NEVER_INLINE_DEBUG bool IsOffsetInRangeOrEndOffset(
-        uint32_t aOffset) const {
-      MOZ_ASSERT(mOffsetAndData.isSome() ||
-                 mEventMessage == eQuerySelectedText);
-      return mOffsetAndData.isSome()
-                 ? mOffsetAndData->IsOffsetInRangeOrEndOffset(aOffset)
-                 : false;
-    }
-    MOZ_NEVER_INLINE_DEBUG void TruncateData(uint32_t aLength = 0) {
-      MOZ_ASSERT(mOffsetAndData.isSome());
-      mOffsetAndData->TruncateData(aLength);
-    }
-
-    friend std::ostream& operator<<(std::ostream& aStream,
-                                    const Reply& aReply) {
-      aStream << "{ ";
-      if (aReply.mEventMessage == eQuerySelectedText ||
-          aReply.mEventMessage == eQueryTextContent ||
-          aReply.mEventMessage == eQueryTextRect ||
-          aReply.mEventMessage == eQueryCaretRect ||
-          aReply.mEventMessage == eQueryCharacterAtPoint) {
-        aStream << "mOffsetAndData=" << ToString(aReply.mOffsetAndData).c_str()
-                << ", ";
-        if (aReply.mEventMessage == eQueryCharacterAtPoint) {
-          aStream << "mTentativeCaretOffset="
-                  << ToString(aReply.mTentativeCaretOffset).c_str() << ", ";
-        }
-      }
-      if (aReply.mOffsetAndData.isSome() && aReply.mOffsetAndData->Length()) {
-        if (aReply.mEventMessage == eQuerySelectedText) {
-          aStream << ", mReversed=" << (aReply.mReversed ? "true" : "false");
-        }
-        if (aReply.mEventMessage == eQuerySelectionAsTransferable) {
-          aStream << ", mTransferable=0x" << aReply.mTransferable;
-        }
-      }
-      if (aReply.mEventMessage == eQuerySelectedText ||
-          aReply.mEventMessage == eQueryTextRect ||
-          aReply.mEventMessage == eQueryCaretRect) {
-        aStream << ", mWritingMode=" << ToString(aReply.mWritingMode).c_str();
-      }
-      aStream << ", mContentsRoot=0x" << aReply.mContentsRoot
-              << ", mIsEditableContent="
-              << (aReply.mIsEditableContent ? "true" : "false")
-              << ", mFocusedWidget=0x" << aReply.mFocusedWidget;
-      if (aReply.mEventMessage == eQueryTextContent) {
-        aStream << ", mFontRanges={ Length()=" << aReply.mFontRanges.Length()
-                << " }";
-      } else if (aReply.mEventMessage == eQueryTextRect ||
-                 aReply.mEventMessage == eQueryCaretRect ||
-                 aReply.mEventMessage == eQueryCharacterAtPoint) {
-        aStream << ", mRect=" << ToString(aReply.mRect).c_str();
-      } else if (aReply.mEventMessage == eQueryTextRectArray) {
-        aStream << ", mRectArray={ Length()=" << aReply.mRectArray.Length()
-                << " }";
-      } else if (aReply.mEventMessage == eQueryDOMWidgetHittest) {
-        aStream << ", mWidgetIsHit="
-                << (aReply.mWidgetIsHit ? "true" : "false");
-      }
-      return aStream << " }";
-    }
-  };
-
   void EmplaceReply() { mReply.emplace(mMessage); }
-  Maybe<Reply> mReply;
+  Maybe<QueryContentResult> mReply;
 
   // values of mComputedScrollAction
   enum { SCROLL_ACTION_NONE, SCROLL_ACTION_LINE, SCROLL_ACTION_PAGE };
