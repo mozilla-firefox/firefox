@@ -614,6 +614,7 @@ class Components(
                     integrityClient = lazy { integrityClient },
                 ),
             lazyAppStore = lazy { appStore },
+            lazyNimbusController = lazy { nimbus.messaging },
             settings = settings,
             context = context,
         )

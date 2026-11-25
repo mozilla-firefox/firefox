@@ -6,6 +6,7 @@ package org.mozilla.fenix.components.ipprotection
 
 import android.content.Context
 import androidx.lifecycle.ProcessLifecycleOwner
+import kotlinx.coroutines.Dispatchers
 import mozilla.components.ExperimentalAndroidComponentsApi
 import mozilla.components.browser.state.store.BrowserStore
 import mozilla.components.concept.engine.Engine
@@ -20,6 +21,7 @@ import mozilla.components.feature.ipprotection.store.middleware.IPProtectionLoca
 import mozilla.components.lib.integrity.googleplay.GooglePlayIntegrityClient
 import mozilla.components.service.fxa.manager.FxaAccountManager
 import mozilla.components.service.fxa.store.SyncStore
+import mozilla.components.service.nimbus.messaging.NimbusMessagingControllerInterface
 import mozilla.components.support.base.log.logger.Logger
 import org.mozilla.fenix.Config
 import org.mozilla.fenix.R
@@ -32,6 +34,7 @@ import org.mozilla.fenix.ipprotection.store.IPProtectionPreferencesMiddleware
 import org.mozilla.fenix.ipprotection.store.IPProtectionSnackbarMessages
 import org.mozilla.fenix.ipprotection.store.IPProtectionSnackbarMiddleware
 import org.mozilla.fenix.ipprotection.store.IPProtectionTelemetryMiddleware
+import org.mozilla.fenix.settings.ipprotection.IPProtectionMessagingBinding
 import org.mozilla.fenix.utils.Settings
 
 /**
@@ -50,6 +53,7 @@ class IPProtection(
     val syncStore: SyncStore,
     val authSources: IPProtectionAuthSources,
     val lazyAppStore: Lazy<AppStore>,
+    private val lazyNimbusController: Lazy<NimbusMessagingControllerInterface>,
     val settings: Settings,
     val context: Context,
 ) {
@@ -103,6 +107,16 @@ class IPProtection(
             store = store,
             syncStore = syncStore,
             lazyAccountManager = authSources.fxaAccountManager,
+        )
+    }
+
+    /** Binds IP Protection state to Nimbus messages for the VPN settings surface */
+    val iPProtectionMessagingBinding by lazy {
+        IPProtectionMessagingBinding(
+            appStore = lazyAppStore.value,
+            nimbusController = lazyNimbusController.value,
+            iPProtectionStore = store,
+            mainDispatcher = Dispatchers.Main,
         )
     }
 
