@@ -60,6 +60,7 @@ static int testMoz2DRenderCallback(const uint8_t* buf, size_t size) {
   UniquePtr<uint8_t[]> outBuffer(new uint8_t[outLength]);
 
   wr_moz2d_render_cb(mozilla::wr::ByteSlice{blobBuffer.get(), blobLength},
+                     mozilla::wr::IdNamespace{0},
                      static_cast<mozilla::wr::ImageFormat>(imageFormat),
                      &renderRect, &visibleRect, tileSize,
                      tileSize ? &tileOffset : nullptr,

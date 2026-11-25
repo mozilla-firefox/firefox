@@ -373,6 +373,9 @@ WebRenderBridgeParent::WebRenderBridgeParent(
       wr::AsUint64(mPipelineId), wr::AsUint64(mLateInit->mApi->GetId()),
       IsRootWebRenderBridgeParent());
 
+  SharedSurfacesParent::AddIdNamespace(
+      mLateInit->mIdNamespace,
+      aCompositorBridge->GetCompositorManager()->GetNamespace());
   mLateInit->mAsyncImageManager->AddPipeline(mPipelineId, this);
   mRemoteTextureTxnScheduler =
       RemoteTextureTxnScheduler::Create(aCompositorBridge);
@@ -434,6 +437,9 @@ void WebRenderBridgeParent::FinishInitialization(
       .mCompositorScheduler = new CompositorVsyncScheduler(this, mWidget),
       .mIdNamespace = aApi->GetNamespace(),
   });
+  SharedSurfacesParent::AddIdNamespace(
+      mLateInit->mIdNamespace,
+      mCompositorBridge->GetCompositorManager()->GetNamespace());
   mLateInit->mAsyncImageManager->AddPipeline(mPipelineId, this);
 
   UpdateDebugFlags();
@@ -555,6 +561,37 @@ void WebRenderBridgeParent::Destroy() {
     entry.second->OnReleased();
   }
   mCompositables.clear();
+
+  if (mLateInit->mApi) {
+    // Blobs already submitted for this namespace may still be rasterizing on
+    // the scene builder thread, resolving their external image IDs against the
+    // namespace's mapping. A notification is delivered once the scene builder
+    // has processed everything queued before this transaction, so the mapping
+    // outlives that rasterization. Any checkpoint means we are done with it,
+    // including TransactionDropped, which WebRender guarantees for a
+    // notification it never delivers.
+    class RemoveIdNamespaceNotification final : public wr::NotificationHandler {
+     public:
+      explicit RemoveIdNamespaceNotification(
+          const wr::IdNamespace& aIdNamespace)
+          : mIdNamespace(aIdNamespace) {}
+
+      void Notify(wr::Checkpoint) override {
+        SharedSurfacesParent::RemoveIdNamespace(mIdNamespace);
+      }
+
+     private:
+      wr::IdNamespace mIdNamespace;
+    };
+
+    wr::TransactionBuilder txn(mLateInit->mApi);
+    txn.SetLowPriority(true);
+    txn.Notify(wr::Checkpoint::SceneBuilt,
+               std::make_unique<RemoveIdNamespaceNotification>(
+                   mLateInit->mIdNamespace));
+    mLateInit->mApi->SendTransaction(txn);
+  }
+
   ClearResources();
 #ifdef MOZ_WIDGET_ANDROID
   if (mScreenPixelsRequest) {
@@ -2361,6 +2398,9 @@ wr::Epoch WebRenderBridgeParent::UpdateWebRender(
   // Update id name space to identify obsoleted keys.
   // Since usage of invalid keys could cause crash in webrender.
   mLateInit->mIdNamespace = aApi->GetNamespace();
+  SharedSurfacesParent::AddIdNamespace(
+      mLateInit->mIdNamespace,
+      mCompositorBridge->GetCompositorManager()->GetNamespace());
   // XXX Remove it when webrender supports sharing/moving Keys between different
   // webrender instances.
   // XXX It requests client to update/reallocate webrender related resources,

@@ -117,6 +117,7 @@ def main():
     print()
     print("wr_moz2d_render_cb(")
     print(f"  mozilla::wr::ByteSlice {{ .buffer: blob_buffer, .len: {blob_len} }},")
+    print("  mozilla::wr::IdNamespace { .mHandle: 0 },")
     if aFormat in WR_IMAGEFORMATS:
         print(f"  mozilla:wr::ImageFormat::{WR_IMAGEFORMATS[aFormat]},")
     else:

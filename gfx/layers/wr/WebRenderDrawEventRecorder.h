@@ -38,12 +38,20 @@ class WebRenderDrawEventRecorder final : public gfx::DrawEventRecorderMemory {
 
 class WebRenderTranslator final : public gfx::InlineTranslator {
  public:
+  // aIdNamespace is the WebRender ID namespace of the blob image whose
+  // recording is being translated. Recordings come from the process that owns
+  // that namespace and may name any external image ID, so it is needed to
+  // scope external surface lookups to that process.
   explicit WebRenderTranslator(gfx::DrawTarget* aDT,
+                               const wr::IdNamespace& aIdNamespace,
                                void* aFontContext = nullptr)
-      : InlineTranslator(aDT, aFontContext) {}
+      : InlineTranslator(aDT, aFontContext), mIdNamespace(aIdNamespace) {}
 
   already_AddRefed<gfx::SourceSurface> LookupExternalSurface(
       uint64_t aKey) final;
+
+ private:
+  wr::IdNamespace mIdNamespace;
 };
 
 }  // namespace layers

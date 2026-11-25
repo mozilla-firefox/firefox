@@ -609,6 +609,7 @@ fn rasterize_blob(mut job: Job) -> (BlobImageRequest, BlobImageResult) {
         unsafe {
             if wr_moz2d_render_cb(
                 ByteSlice::new(&job.commands[..]),
+                request.key.0 .0,
                 descriptor.format,
                 &descriptor.rect,
                 &job.visible_rect,

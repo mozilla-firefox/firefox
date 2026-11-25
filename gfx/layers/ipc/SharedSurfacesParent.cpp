@@ -24,6 +24,10 @@ using namespace mozilla::gfx;
 StaticMutex SharedSurfacesParent::sMutex;
 StaticAutoPtr<SharedSurfacesParent> SharedSurfacesParent::sInstance;
 
+StaticMutex SharedSurfacesParent::sIdNamespaceMutex;
+MOZ_RUNINIT std::unordered_map<uint32_t, uint32_t>
+    SharedSurfacesParent::sIdNamespaces;
+
 void SharedSurfacesParent::MappingTracker::NotifyExpiredLocked(
     SourceSurfaceSharedDataWrapper* aSurface,
     const StaticMutexAutoLock& aAutoLock) {
@@ -233,6 +237,42 @@ void SharedSurfacesParent::RemoveAll(uint32_t aNamespace) {
       i.Remove();
     }
   }
+}
+
+/* static */
+void SharedSurfacesParent::AddIdNamespace(const wr::IdNamespace& aIdNamespace,
+                                          uint32_t aNamespace) {
+  StaticMutexAutoLock lock(sIdNamespaceMutex);
+  sIdNamespaces[aIdNamespace.mHandle] = aNamespace;
+}
+
+/* static */
+void SharedSurfacesParent::RemoveIdNamespace(
+    const wr::IdNamespace& aIdNamespace) {
+  StaticMutexAutoLock lock(sIdNamespaceMutex);
+  sIdNamespaces.erase(aIdNamespace.mHandle);
+}
+
+/* static */
+already_AddRefed<DataSourceSurface> SharedSurfacesParent::GetForIdNamespace(
+    const wr::IdNamespace& aIdNamespace, const wr::ExternalImageId& aId) {
+  uint32_t surfaceNamespace;
+  {
+    StaticMutexAutoLock lock(sIdNamespaceMutex);
+    auto i = sIdNamespaces.find(aIdNamespace.mHandle);
+    if (NS_WARN_IF(i == sIdNamespaces.end())) {
+      return nullptr;
+    }
+    surfaceNamespace = i->second;
+  }
+
+  if (NS_WARN_IF(surfaceNamespace !=
+                 static_cast<uint32_t>(wr::AsUint64(aId) >> 32))) {
+    MOZ_ASSERT_UNREACHABLE("Wrong namespace?");
+    return nullptr;
+  }
+
+  return Get(aId);
 }
 
 /* static */

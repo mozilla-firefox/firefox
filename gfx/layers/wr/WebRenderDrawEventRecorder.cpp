@@ -25,7 +25,8 @@ void WebRenderDrawEventRecorder::StoreSourceSurfaceRecording(
 
 already_AddRefed<SourceSurface> WebRenderTranslator::LookupExternalSurface(
     uint64_t aKey) {
-  return SharedSurfacesParent::Get(wr::ToExternalImageId(aKey));
+  return SharedSurfacesParent::GetForIdNamespace(mIdNamespace,
+                                                 wr::ToExternalImageId(aKey));
 }
 
 }  // namespace layers
