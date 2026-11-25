@@ -676,7 +676,16 @@ export class _DSCard extends React.PureComponent {
           tabIndex={this.props.tabIndex}
           onFocus={this.props.onFocus}
         >
-          <div className="img-wrapper">{images}</div>
+          <div className="img-wrapper">
+            {images}
+            {this.props.showEditorsPickBadge && (
+              <moz-badge
+                className="ds-card-editors-pick-badge"
+                iconSrc="chrome://newtab/content/data/content/assets/glyph-heart-12.svg"
+                data-l10n-id="newtab-editors-pick-badge"
+              ></moz-badge>
+            )}
+          </div>
           {/* Only the carousel passes isActive, and only its visible slide gets
               true. This stays mounted while the slide is hidden, so a card that
               is shown more than once still reports a single impression. */}

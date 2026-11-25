@@ -57,6 +57,7 @@ const PREF_SPOCS_STARTUPCACHE_ENABLED =
   "discoverystream.spocs.startupCache.enabled";
 const PREF_CAROUSEL_ENABLED = "discoverystream.carousel.enabled";
 const PREF_CAROUSEL_SLIDE_COUNT = "discoverystream.carousel.slideCount";
+const PREF_EDITORS_PICK_SHOW_BADGE = "discoverystream.editorsPick.showBadge";
 const PREF_TOPIC_NAVIGATION_ENABLED =
   "discoverystream.sections.topicNavigation.enabled";
 // @nova-cleanup(remove-pref): Remove PREF_NOVA_ENABLED
@@ -322,6 +323,9 @@ function CardSection({
   const carouselSlideCount =
     prefs.trainhopConfig?.carousel?.slideCount ??
     prefs[PREF_CAROUSEL_SLIDE_COUNT];
+  const editorsPickShowBadge =
+    prefs.trainhopConfig?.editorsPick?.showBadge ??
+    prefs[PREF_EDITORS_PICK_SHOW_BADGE];
 
   const { sectionKey, title, subtitle, followable } = section;
   const { responsiveLayouts, name: layoutName } = section.layout;
@@ -485,6 +489,7 @@ function CardSection({
         source_section_id={rec.source_section_id}
         format={rec.format}
         is_ad_eligible_position={rec.is_ad_eligible_position}
+        showEditorsPickBadge={!!rec.is_editors_pick && editorsPickShowBadge}
         alt_text={rec.alt_text}
         mayHaveSectionsCards={mayHaveSectionsCards}
         selectedTopics={selectedTopics}

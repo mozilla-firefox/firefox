@@ -43,6 +43,42 @@ export function keepOnlySections(layoutRender, sectionKeys) {
   }, []);
 }
 
+const EDITORS_PICKS_SECTION_KEY = "editors-picks-2";
+
+/**
+ * Swap the Editors' Pick story into a fixed tile of a section's data, after ads
+ * are placed. Merino puts the pick at received_rank 1. Swapping, rather than
+ * moving, leaves ads and their ad-eligible flags in their slots.
+ *
+ * @param {Array} data - section data with ads already placed
+ * @param {number} position - index of the tile to pin the pick to
+ * @returns {Array}
+ */
+export function pinEditorsPick(data, position) {
+  const index = data.findIndex(
+    rec =>
+      rec.received_rank === 1 &&
+      rec.source_section_id === EDITORS_PICKS_SECTION_KEY
+  );
+  const target = data[position];
+  if (index === -1 || !target || target.flight_id) {
+    return data;
+  }
+  const result = [...data];
+  result[position] = {
+    ...data[index],
+    is_editors_pick: true,
+    is_ad_eligible_position: target.is_ad_eligible_position,
+  };
+  if (index !== position) {
+    result[index] = {
+      ...target,
+      is_ad_eligible_position: data[index].is_ad_eligible_position,
+    };
+  }
+  return result;
+}
+
 export const selectLayoutRender = ({ state = {}, prefs = {} }) => {
   const { layout, feeds, spocs } = state;
   let spocIndexPlacementMap = {};
@@ -309,6 +345,12 @@ export const selectLayoutRender = ({ state = {}, prefs = {} }) => {
       prefs,
       sections.map(section => section.sectionKey)
     );
+    const editorsPickEnabled =
+      prefs.trainhopConfig?.editorsPick?.enabled ??
+      prefs["discoverystream.editorsPick.enabled"];
+    const editorsPickPosition =
+      prefs.trainhopConfig?.editorsPick?.position ??
+      prefs["discoverystream.editorsPick.position"];
     data = {
       ...data,
       ...(sectionsEnabled
@@ -350,13 +392,18 @@ export const selectLayoutRender = ({ state = {}, prefs = {} }) => {
                   });
                 }
               });
+              const dataWithSpocs = handleSpocs(
+                sectionData,
+                sectionsSpocsPositions,
+                spocsPlacement
+              );
               return {
                 ...section,
-                data: handleSpocs(
-                  sectionData,
-                  sectionsSpocsPositions,
-                  spocsPlacement
-                ),
+                data:
+                  editorsPickEnabled &&
+                  section.sectionKey === "top_stories_section"
+                    ? pinEditorsPick(dataWithSpocs, editorsPickPosition)
+                    : dataWithSpocs,
               };
             }),
             // We don't fill spocs in recs if sections are enabled,

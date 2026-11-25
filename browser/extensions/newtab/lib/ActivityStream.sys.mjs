@@ -1364,6 +1364,27 @@ export const PREFS_CONFIG = new Map([
     },
   ],
   [
+    "discoverystream.editorsPick.enabled",
+    {
+      title: "Boolean flag to pin the Editors' Pick story in Popular Today",
+      value: false,
+    },
+  ],
+  [
+    "discoverystream.editorsPick.position",
+    {
+      title: "Popular Today tile position the Editors' Pick story is pinned to",
+      value: 2,
+    },
+  ],
+  [
+    "discoverystream.editorsPick.showBadge",
+    {
+      title: "Boolean flag to show the Editors' Pick badge on the pinned story",
+      value: false,
+    },
+  ],
+  [
     "discoverystream.sections.ordering",
     {
       title: "Name of the sections ordering to render from Remote Settings",

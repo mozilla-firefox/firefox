@@ -36,3 +36,11 @@ newtab-crossword-widget-menu-solve-puzzle = Solve Puzzle
 # Context menu item linking to the Particle website, the provider of the crossword.
 newtab-crossword-menu-powered-by-particle = Powered by Particle
 newtab-crossword-widget-menu-learn-more = Learn More
+
+## Editors’ pick
+
+# Badge shown on a story that was chosen by human editors. The title is shown
+# as a tooltip when hovering the badge.
+newtab-editors-pick-badge =
+    .label = Editors’ pick
+    .title = { -brand-product-name } editors recommend this story

@@ -5,7 +5,10 @@
 import { combineReducers, createStore } from "redux";
 import { actionTypes as at } from "common/Actions.mjs";
 import { reducers } from "common/Reducers.sys.mjs";
-import { selectLayoutRender } from "content-src/lib/selectLayoutRender";
+import {
+  pinEditorsPick,
+  selectLayoutRender,
+} from "content-src/lib/selectLayoutRender";
 const FAKE_LAYOUT = [
   {
     width: 3,
@@ -998,5 +1001,148 @@ describe("selectLayoutRender", () => {
         "ad4",
       ]);
     });
+  });
+
+  describe("Editors' Pick", () => {
+    const fakeLayout = [
+      {
+        width: 3,
+        components: [{ type: "CardGrid", feed: { url: "foo.com" } }],
+      },
+    ];
+    const sectionLayout = {
+      responsiveLayouts: [
+        {
+          columnCount: 1,
+          tiles: [0, 1, 2, 3].map(position => ({ position, hasAd: false })),
+        },
+      ],
+    };
+    const recs = section => [
+      { id: `${section}-a`, section, received_rank: 0 },
+      {
+        id: `${section}-pick`,
+        section,
+        received_rank: 1,
+        source_section_id: "editors-picks-2",
+      },
+      { id: `${section}-b`, section, received_rank: 2 },
+      { id: `${section}-c`, section, received_rank: 3 },
+    ];
+
+    function renderSections(prefs) {
+      store.dispatch({
+        type: at.DISCOVERY_STREAM_LAYOUT_UPDATE,
+        data: { layout: fakeLayout },
+      });
+      store.dispatch({
+        type: at.DISCOVERY_STREAM_FEED_UPDATE,
+        data: {
+          feed: {
+            data: {
+              recommendations: [
+                ...recs("top_stories_section"),
+                ...recs("other"),
+              ],
+              sections: [
+                {
+                  sectionKey: "top_stories_section",
+                  receivedRank: 0,
+                  layout: sectionLayout,
+                },
+                { sectionKey: "other", receivedRank: 1, layout: sectionLayout },
+              ],
+            },
+          },
+          url: "foo.com",
+        },
+      });
+      store.dispatch({ type: at.DISCOVERY_STREAM_FEEDS_UPDATE });
+      store.dispatch({
+        type: at.DISCOVERY_STREAM_SPOCS_UPDATE,
+        data: { lastUpdated: 0, spocs: {} },
+      });
+      const { layoutRender } = selectLayoutRender({
+        state: store.getState().DiscoveryStream,
+        prefs: {
+          "discoverystream.sections.enabled": true,
+          "feeds.section.topstories": true,
+          "feeds.system.topstories": true,
+          "discoverystream.editorsPick.position": 2,
+          ...prefs,
+        },
+      });
+      return layoutRender[0].components[0].data.sections.map(section =>
+        section.data.map(item => item.id)
+      );
+    }
+
+    it("should pin the pick in Popular Today only, when enabled", () => {
+      const [topStories, other] = renderSections({
+        "discoverystream.editorsPick.enabled": true,
+      });
+      expect(topStories).toEqual([
+        "top_stories_section-a",
+        "top_stories_section-b",
+        "top_stories_section-pick",
+        "top_stories_section-c",
+      ]);
+      expect(other).toEqual(recs("other").map(rec => rec.id));
+    });
+
+    it("should leave Popular Today unchanged when disabled", () => {
+      const [topStories] = renderSections({
+        "discoverystream.editorsPick.enabled": false,
+      });
+      expect(topStories).toEqual(
+        recs("top_stories_section").map(rec => rec.id)
+      );
+    });
+  });
+});
+
+describe("pinEditorsPick", () => {
+  const pick = {
+    id: "pick",
+    received_rank: 1,
+    source_section_id: "editors-picks-2",
+  };
+  const ad = { id: "ad", flight_id: "flight", is_ad_eligible_position: true };
+
+  it("should flag the pick when an ad already puts it at the position", () => {
+    const result = pinEditorsPick([{ id: "a" }, ad, pick, { id: "b" }], 2);
+    expect(result.map(item => item.id)).toEqual(["a", "ad", "pick", "b"]);
+    expect(result[2].is_editors_pick).toBe(true);
+    expect(result[1].is_ad_eligible_position).toBe(true);
+  });
+
+  it("should swap the pick in and keep ad-eligible flags on their slots", () => {
+    const result = pinEditorsPick(
+      [
+        { id: "a" },
+        { ...pick, is_ad_eligible_position: true },
+        { id: "b" },
+        { id: "c" },
+      ],
+      2
+    );
+    expect(result.map(item => item.id)).toEqual(["a", "b", "pick", "c"]);
+    expect(result[1].is_ad_eligible_position).toBe(true);
+    expect(result[2].is_ad_eligible_position).toBeUndefined();
+    expect(result[2].is_editors_pick).toBe(true);
+  });
+
+  it("should not move an ad out of the position", () => {
+    const data = [{ id: "a" }, pick, ad, { id: "b" }];
+    expect(pinEditorsPick(data, 2)).toBe(data);
+  });
+
+  it("should do nothing without a pick", () => {
+    const data = [
+      { id: "a" },
+      { id: "b", received_rank: 1, source_section_id: "other" },
+      { id: "c" },
+    ];
+    expect(pinEditorsPick(data, 2)).toBe(data);
   });
 });

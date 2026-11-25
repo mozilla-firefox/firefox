@@ -167,6 +167,20 @@ describe("<DSCard>", () => {
     expect(container.querySelector(".status-message")).toBeInTheDocument();
   });
 
+  it("should render the Editors' Pick badge only when showEditorsPickBadge is set", () => {
+    act(() => {
+      cardRef.current.setState({ isSeen: true });
+    });
+    const badgeSelector = "moz-badge.ds-card-editors-pick-badge";
+    expect(wrapper.container.querySelector(badgeSelector)).toBeNull();
+
+    setProps({ showEditorsPickBadge: true });
+    expect(wrapper.container.querySelector(badgeSelector)).toHaveAttribute(
+      "data-l10n-id",
+      "newtab-editors-pick-badge"
+    );
+  });
+
   it("should render Sponsored Context for a spoc element", () => {
     const sponsorContext = "Sponsored by Foo";
     cardRef = React.createRef();

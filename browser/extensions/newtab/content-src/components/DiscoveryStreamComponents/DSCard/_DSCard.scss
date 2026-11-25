@@ -99,6 +99,27 @@ $ds-card-image-gradient-solid: rgba(0, 0, 0, 100%);
     position: relative;
   }
 
+  .ds-card-editors-pick-badge {
+    position: absolute;
+    inset-block-start: var(--space-small);
+    inset-inline-start: var(--space-small);
+    display: inline-flex;
+    min-block-size: var(--space-xlarge);
+    --editors-pick-badge-background-color: light-dark(
+      var(--color-orange-20),
+      var(--color-orange-60)
+    );
+
+    background-color: var(--editors-pick-badge-background-color);
+    // Ensure the background fill matches the badge's own border radius.
+    border-radius: var(--badge-border-radius);
+
+    // Outside forced colors only, so the badge keeps its outline there.
+    @media (forced-colors: none) {
+      --badge-border-color: transparent;
+    }
+  }
+
   .card-stp-button-hover-background {
     opacity: 0;
     width: 100%;
