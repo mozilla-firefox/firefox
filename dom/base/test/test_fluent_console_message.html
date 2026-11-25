@@ -17,6 +17,17 @@ add_task(async function test_get_element_by_id_empty_param() {
   SimpleTest.endMonitorConsole();
   await consoleDone;
 });
+
+add_task(async function test_message_with_argument() {
+  const consoleDone = new Promise(resolve =>
+    SimpleTest.monitorConsole(resolve, [
+      { errorMessage: "Ignoring unsupported entryTypes: invalid." },
+    ])
+  );
+  new PerformanceObserver(() => {}).observe({ entryTypes: ["invalid", "mark"] });
+  SimpleTest.endMonitorConsole();
+  await consoleDone;
+});
 </script>
 </body>
 </html>

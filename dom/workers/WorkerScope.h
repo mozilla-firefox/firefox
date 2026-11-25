@@ -323,6 +323,10 @@ class WorkerGlobalScope : public WorkerGlobalScopeBase {
                        PropertiesFile aFile, const nsCString& aMessageName,
                        const nsTArray<nsString>& aParams,
                        const mozilla::SourceLocation& aLocation) final;
+  void ReportToConsole(uint32_t aErrorFlags, const nsCString& aCategory,
+                       FluentResourceFile aFile, const nsCString& aL10nId,
+                       const nsTArray<intl::FluentArg>& aArgs,
+                       const mozilla::SourceLocation& aLocation) final;
 
   // WorkerGlobalScope WebIDL implementation
   WorkerGlobalScope* Self() { return this; }

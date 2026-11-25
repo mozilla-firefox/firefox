@@ -553,6 +553,15 @@ void nsIGlobalObject::ReportToConsole(
                                   aMessageName.get(), aParams, aLocation);
 }
 
+void nsIGlobalObject::ReportToConsole(
+    uint32_t aErrorFlags, const nsCString& aCategory,
+    mozilla::dom::FluentResourceFile aFile, const nsCString& aL10nId,
+    const nsTArray<mozilla::intl::FluentArg>& aArgs,
+    const mozilla::SourceLocation& aLocation) {
+  nsContentUtils::ReportToConsole(aErrorFlags, aCategory, nullptr, aFile,
+                                  aL10nId, aArgs, aLocation);
+}
+
 void nsIGlobalObject::ClearReports() {
   mReportBuffer.Clear();
   mReportPerTypeCount.Clear();

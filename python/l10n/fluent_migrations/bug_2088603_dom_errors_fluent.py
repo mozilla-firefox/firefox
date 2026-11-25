@@ -51,5 +51,19 @@ def migrate(ctx):
                     ),
                 ),
             ),
+            FTL.Message(
+                id=FTL.Identifier("dom-performance-observer-unsupported-entry-types"),
+                value=REPLACE(
+                    source,
+                    "UnsupportedEntryTypesIgnored",
+                    {
+                        "%1$S": VARIABLE_REFERENCE("entryTypes"),
+                    },
+                ),
+            ),
+            FTL.Message(
+                id=FTL.Identifier("dom-performance-observer-no-valid-entry-types"),
+                value=COPY(source, "AllEntryTypesIgnored"),
+            ),
         ],
     )
