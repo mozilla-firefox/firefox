@@ -60,7 +60,7 @@ function checkTooLongValidity(element)
   ok(!element.validity.valid, "Element should be invalid");
   ok(!element.checkValidity(), "The element should not be valid");
   is(element.validationMessage,
-          "Please shorten this text to 1 characters or less (you are currently using 2 characters).",
+          "Please shorten this text to 1 character or less (current length: 2).",
           "The validation message text is not correct");
 
   synthesizeKey("KEY_Backspace");
@@ -94,7 +94,7 @@ function checkTooLongValidity(element)
   ok(!element.validity.valid, "Element should be invalid");
   ok(!element.checkValidity(), "The element should not be valid");
   is(element.validationMessage,
-          "Please shorten this text to 0 characters or less (you are currently using 1 characters).",
+          "Please shorten this text to 0 characters or less (current length: 1).",
           "The validation message text is not correct");
 
   element.maxLength = 1;

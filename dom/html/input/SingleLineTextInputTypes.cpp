@@ -112,9 +112,10 @@ bool URLInputType::HasTypeMismatch() const {
 }
 
 nsresult URLInputType::GetTypeMismatchMessage(nsAString& aMessage) {
-  return nsContentUtils::GetMaybeLocalizedString(
-      PropertiesFile::DOM_PROPERTIES, "FormValidationInvalidURL",
-      mInputElement->OwnerDoc(), aMessage);
+  return nsContentUtils::FormatMaybeLocalizedFluentString(
+      FluentResourceFile::DOM_FORM_VALIDATION,
+      "dom-form-validation-invalid-url"_ns, {}, mInputElement->OwnerDoc(),
+      aMessage);
 }
 
 /* input type=email */
@@ -151,15 +152,17 @@ bool EmailInputType::HasBadInput() const {
 }
 
 nsresult EmailInputType::GetTypeMismatchMessage(nsAString& aMessage) {
-  return nsContentUtils::GetMaybeLocalizedString(
-      PropertiesFile::DOM_PROPERTIES, "FormValidationInvalidEmail",
-      mInputElement->OwnerDoc(), aMessage);
+  return nsContentUtils::FormatMaybeLocalizedFluentString(
+      FluentResourceFile::DOM_FORM_VALIDATION,
+      "dom-form-validation-invalid-email"_ns, {}, mInputElement->OwnerDoc(),
+      aMessage);
 }
 
 nsresult EmailInputType::GetBadInputMessage(nsAString& aMessage) {
-  return nsContentUtils::GetMaybeLocalizedString(
-      PropertiesFile::DOM_PROPERTIES, "FormValidationInvalidEmail",
-      mInputElement->OwnerDoc(), aMessage);
+  return nsContentUtils::FormatMaybeLocalizedFluentString(
+      FluentResourceFile::DOM_FORM_VALIDATION,
+      "dom-form-validation-invalid-email"_ns, {}, mInputElement->OwnerDoc(),
+      aMessage);
 }
 
 /* static */

@@ -5941,6 +5941,7 @@ static const char* const gFluentResourceFilePaths[][2] = {
     {"dom/dom.ftl"},
     {"dom/deprecations.ftl"},
     {"dom/dialogs.ftl", "branding/brand.ftl"},
+    {"dom/form-validation.ftl"},
 };
 static_assert(std::size(gFluentResourceFilePaths) == kFluentResourceFileCount,
               "gFluentResourceFilePaths must have an entry for each "
@@ -6060,6 +6061,16 @@ nsresult nsContentUtils::FormatMaybeLocalizedFluentString(
     nsAString& aResult) {
   bool spoofEnglish =
       nsContentUtils::ShouldResistFingerprinting(aGlobal, RFPTarget::JSLocale);
+  return FormatFluentStringImpl(aFile, aL10nId, aArgs, spoofEnglish, aResult);
+}
+
+/* static */
+nsresult nsContentUtils::FormatMaybeLocalizedFluentString(
+    FluentResourceFile aFile, const nsACString& aL10nId,
+    const nsTArray<intl::FluentArg>& aArgs, const Document* aDocument,
+    nsAString& aResult) {
+  bool spoofEnglish = nsContentUtils::ShouldResistFingerprinting(
+      aDocument, RFPTarget::JSLocale);
   return FormatFluentStringImpl(aFile, aL10nId, aArgs, spoofEnglish, aResult);
 }
 

@@ -1563,9 +1563,9 @@ nsresult HTMLSelectElement::GetValidationMessage(nsAString& aValidationMessage,
   switch (aType) {
     case VALIDITY_STATE_VALUE_MISSING: {
       nsAutoString message;
-      nsresult rv = nsContentUtils::GetMaybeLocalizedString(
-          PropertiesFile::DOM_PROPERTIES, "FormValidationSelectMissing",
-          OwnerDoc(), message);
+      nsresult rv = nsContentUtils::FormatMaybeLocalizedFluentString(
+          FluentResourceFile::DOM_FORM_VALIDATION,
+          "dom-form-validation-select-missing"_ns, {}, OwnerDoc(), message);
       aValidationMessage = std::move(message);
       return rv;
     }

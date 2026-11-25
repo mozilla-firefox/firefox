@@ -136,6 +136,152 @@ def migrate(ctx):
         ],
     )
 
+    target = "dom/dom/form-validation.ftl"
+    ctx.add_transforms(
+        target,
+        target,
+        [
+            FTL.Message(
+                id=FTL.Identifier("dom-form-validation-value-missing"),
+                value=COPY(source, "FormValidationValueMissing"),
+            ),
+            FTL.Message(
+                id=FTL.Identifier("dom-form-validation-checkbox-missing"),
+                value=COPY(source, "FormValidationCheckboxMissing"),
+            ),
+            FTL.Message(
+                id=FTL.Identifier("dom-form-validation-radio-missing"),
+                value=COPY(source, "FormValidationRadioMissing"),
+            ),
+            FTL.Message(
+                id=FTL.Identifier("dom-form-validation-file-missing"),
+                value=COPY(source, "FormValidationFileMissing"),
+            ),
+            FTL.Message(
+                id=FTL.Identifier("dom-form-validation-select-missing"),
+                value=COPY(source, "FormValidationSelectMissing"),
+            ),
+            FTL.Message(
+                id=FTL.Identifier("dom-form-validation-invalid-email"),
+                value=COPY(source, "FormValidationInvalidEmail"),
+            ),
+            FTL.Message(
+                id=FTL.Identifier("dom-form-validation-invalid-url"),
+                value=COPY(source, "FormValidationInvalidURL"),
+            ),
+            FTL.Message(
+                id=FTL.Identifier("dom-form-validation-invalid-date"),
+                value=COPY(source, "FormValidationInvalidDate"),
+            ),
+            FTL.Message(
+                id=FTL.Identifier("dom-form-validation-invalid-time"),
+                value=COPY(source, "FormValidationInvalidTime"),
+            ),
+            FTL.Message(
+                id=FTL.Identifier("dom-form-validation-invalid-date-time"),
+                value=COPY(source, "FormValidationInvalidDateTime"),
+            ),
+            FTL.Message(
+                id=FTL.Identifier("dom-form-validation-invalid-month"),
+                value=COPY(source, "FormValidationInvalidDateMonth"),
+            ),
+            FTL.Message(
+                id=FTL.Identifier("dom-form-validation-invalid-week"),
+                value=COPY(source, "FormValidationInvalidDateWeek"),
+            ),
+            FTL.Message(
+                id=FTL.Identifier("dom-form-validation-pattern-mismatch"),
+                value=COPY(source, "FormValidationPatternMismatch"),
+            ),
+            FTL.Message(
+                id=FTL.Identifier("dom-form-validation-pattern-mismatch-with-title"),
+                value=REPLACE(
+                    source,
+                    "FormValidationPatternMismatchWithTitle",
+                    {
+                        "%1$S": VARIABLE_REFERENCE("title"),
+                    },
+                ),
+            ),
+            FTL.Message(
+                id=FTL.Identifier("dom-form-validation-number-range-overflow"),
+                value=REPLACE(
+                    source,
+                    "FormValidationNumberRangeOverflow",
+                    {
+                        "%1$S": VARIABLE_REFERENCE("maximum"),
+                    },
+                ),
+            ),
+            FTL.Message(
+                id=FTL.Identifier("dom-form-validation-date-time-range-overflow"),
+                value=REPLACE(
+                    source,
+                    "FormValidationDateTimeRangeOverflow",
+                    {
+                        "%1$S": VARIABLE_REFERENCE("maximum"),
+                    },
+                ),
+            ),
+            FTL.Message(
+                id=FTL.Identifier("dom-form-validation-number-range-underflow"),
+                value=REPLACE(
+                    source,
+                    "FormValidationNumberRangeUnderflow",
+                    {
+                        "%1$S": VARIABLE_REFERENCE("minimum"),
+                    },
+                ),
+            ),
+            FTL.Message(
+                id=FTL.Identifier("dom-form-validation-date-time-range-underflow"),
+                value=REPLACE(
+                    source,
+                    "FormValidationDateTimeRangeUnderflow",
+                    {
+                        "%1$S": VARIABLE_REFERENCE("minimum"),
+                    },
+                ),
+            ),
+            FTL.Message(
+                id=FTL.Identifier("dom-form-validation-step-mismatch"),
+                value=REPLACE(
+                    source,
+                    "FormValidationStepMismatch",
+                    {
+                        "%1$S": VARIABLE_REFERENCE("lowValue"),
+                        "%2$S": VARIABLE_REFERENCE("highValue"),
+                    },
+                ),
+            ),
+            FTL.Message(
+                id=FTL.Identifier("dom-form-validation-step-mismatch-one-value"),
+                value=REPLACE(
+                    source,
+                    "FormValidationStepMismatchOneValue",
+                    {
+                        "%1$S": VARIABLE_REFERENCE("value"),
+                    },
+                ),
+            ),
+            FTL.Message(
+                id=FTL.Identifier("dom-form-validation-time-reversed-range"),
+                value=REPLACE(
+                    source,
+                    "FormValidationTimeReversedRangeUnderflowAndOverflow",
+                    {
+                        "%1$S": VARIABLE_REFERENCE("minimum"),
+                        "%2$S": VARIABLE_REFERENCE("maximum"),
+                    },
+                ),
+            ),
+            FTL.Message(
+                id=FTL.Identifier("dom-form-validation-bad-input-number"),
+                value=COPY(source, "FormValidationBadInputNumber"),
+            ),
+        ],
+    )
+
     target = "dom/dom/dialogs.ftl"
     ctx.add_transforms(
         target,

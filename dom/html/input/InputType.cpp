@@ -153,34 +153,18 @@ nsresult InputType::GetValidationMessage(
   aValidationMessage.Truncate();
 
   switch (aType) {
-    case nsIConstraintValidation::VALIDITY_STATE_TOO_LONG: {
-      int32_t maxLength = mInputElement->MaxLength();
-      int32_t textLength = mInputElement->InputTextLength(CallerType::System);
-      nsAutoString strMaxLength;
-      nsAutoString strTextLength;
-
-      strMaxLength.AppendInt(maxLength);
-      strTextLength.AppendInt(textLength);
-
-      return nsContentUtils::FormatMaybeLocalizedString(
-          aValidationMessage, PropertiesFile::DOM_PROPERTIES,
-          "FormValidationTextTooLong", mInputElement->OwnerDoc(), strMaxLength,
-          strTextLength);
-    }
-    case nsIConstraintValidation::VALIDITY_STATE_TOO_SHORT: {
-      int32_t minLength = mInputElement->MinLength();
-      int32_t textLength = mInputElement->InputTextLength(CallerType::System);
-      nsAutoString strMinLength;
-      nsAutoString strTextLength;
-
-      strMinLength.AppendInt(minLength);
-      strTextLength.AppendInt(textLength);
-
-      return nsContentUtils::FormatMaybeLocalizedString(
-          aValidationMessage, PropertiesFile::DOM_PROPERTIES,
-          "FormValidationTextTooShort", mInputElement->OwnerDoc(), strMinLength,
-          strTextLength);
-    }
+    case nsIConstraintValidation::VALIDITY_STATE_TOO_LONG:
+      return ConstraintValidation::GetTextLengthValidationMessage(
+          mInputElement->OwnerDoc(), ConstraintValidation::TextLengthLimit::Max,
+          mInputElement->MaxLength(),
+          mInputElement->InputTextLength(CallerType::System),
+          aValidationMessage);
+    case nsIConstraintValidation::VALIDITY_STATE_TOO_SHORT:
+      return ConstraintValidation::GetTextLengthValidationMessage(
+          mInputElement->OwnerDoc(), ConstraintValidation::TextLengthLimit::Min,
+          mInputElement->MinLength(),
+          mInputElement->InputTextLength(CallerType::System),
+          aValidationMessage);
     case nsIConstraintValidation::VALIDITY_STATE_VALUE_MISSING:
       return GetValueMissingMessage(aValidationMessage);
     case nsIConstraintValidation::VALIDITY_STATE_TYPE_MISMATCH: {
@@ -191,8 +175,9 @@ nsresult InputType::GetValidationMessage(
       mInputElement->GetAttr(nsGkAtoms::title, title);
 
       if (title.IsEmpty()) {
-        return nsContentUtils::GetMaybeLocalizedString(
-            PropertiesFile::DOM_PROPERTIES, "FormValidationPatternMismatch",
+        return nsContentUtils::FormatMaybeLocalizedFluentString(
+            FluentResourceFile::DOM_FORM_VALIDATION,
+            "dom-form-validation-pattern-mismatch"_ns, {},
             mInputElement->OwnerDoc(), aValidationMessage);
       }
 
@@ -201,10 +186,10 @@ nsresult InputType::GetValidationMessage(
         title.Truncate(
             nsIConstraintValidation::sContentSpecifiedMaxLengthMessage);
       }
-      return nsContentUtils::FormatMaybeLocalizedString(
-          aValidationMessage, PropertiesFile::DOM_PROPERTIES,
-          "FormValidationPatternMismatchWithTitle", mInputElement->OwnerDoc(),
-          title);
+      return nsContentUtils::FormatMaybeLocalizedFluentString(
+          FluentResourceFile::DOM_FORM_VALIDATION,
+          "dom-form-validation-pattern-mismatch-with-title"_ns,
+          {{"title"_ns, title}}, mInputElement->OwnerDoc(), aValidationMessage);
     }
     case nsIConstraintValidation::VALIDITY_STATE_RANGE_OVERFLOW:
       return GetRangeOverflowMessage(aValidationMessage);
@@ -234,24 +219,27 @@ nsresult InputType::GetValidationMessage(
         ConvertNumberToString(valueHigh, Localized::Yes, valueHighStr);
 
         if (valueLowStr.Equals(valueHighStr)) {
-          return nsContentUtils::FormatMaybeLocalizedString(
-              aValidationMessage, PropertiesFile::DOM_PROPERTIES,
-              "FormValidationStepMismatchOneValue", mInputElement->OwnerDoc(),
-              valueLowStr);
+          return nsContentUtils::FormatMaybeLocalizedFluentString(
+              FluentResourceFile::DOM_FORM_VALIDATION,
+              "dom-form-validation-step-mismatch-one-value"_ns,
+              {{"value"_ns, valueLowStr}}, mInputElement->OwnerDoc(),
+              aValidationMessage);
         }
-        return nsContentUtils::FormatMaybeLocalizedString(
-            aValidationMessage, PropertiesFile::DOM_PROPERTIES,
-            "FormValidationStepMismatch", mInputElement->OwnerDoc(),
-            valueLowStr, valueHighStr);
+        return nsContentUtils::FormatMaybeLocalizedFluentString(
+            FluentResourceFile::DOM_FORM_VALIDATION,
+            "dom-form-validation-step-mismatch"_ns,
+            {{"lowValue"_ns, valueLowStr}, {"highValue"_ns, valueHighStr}},
+            mInputElement->OwnerDoc(), aValidationMessage);
       }
 
       nsAutoString valueLowStr;
       ConvertNumberToString(valueLow, Localized::Yes, valueLowStr);
 
-      return nsContentUtils::FormatMaybeLocalizedString(
-          aValidationMessage, PropertiesFile::DOM_PROPERTIES,
-          "FormValidationStepMismatchOneValue", mInputElement->OwnerDoc(),
-          valueLowStr);
+      return nsContentUtils::FormatMaybeLocalizedFluentString(
+          FluentResourceFile::DOM_FORM_VALIDATION,
+          "dom-form-validation-step-mismatch-one-value"_ns,
+          {{"value"_ns, valueLowStr}}, mInputElement->OwnerDoc(),
+          aValidationMessage);
     }
     case nsIConstraintValidation::VALIDITY_STATE_BAD_INPUT:
       return GetBadInputMessage(aValidationMessage);
@@ -262,9 +250,10 @@ nsresult InputType::GetValidationMessage(
 }
 
 nsresult InputType::GetValueMissingMessage(nsAString& aMessage) {
-  return nsContentUtils::GetMaybeLocalizedString(
-      PropertiesFile::DOM_PROPERTIES, "FormValidationValueMissing",
-      mInputElement->OwnerDoc(), aMessage);
+  return nsContentUtils::FormatMaybeLocalizedFluentString(
+      FluentResourceFile::DOM_FORM_VALIDATION,
+      "dom-form-validation-value-missing"_ns, {}, mInputElement->OwnerDoc(),
+      aMessage);
 }
 
 nsresult InputType::GetTypeMismatchMessage(nsAString& aMessage) {

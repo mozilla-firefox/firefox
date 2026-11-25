@@ -964,39 +964,23 @@ nsresult HTMLTextAreaElement::GetValidationMessage(
   switch (aType) {
     case VALIDITY_STATE_TOO_LONG: {
       nsAutoString message;
-      int32_t maxLength = MaxLength();
-      int32_t textLength = GetTextLength();
-      nsAutoString strMaxLength;
-      nsAutoString strTextLength;
-
-      strMaxLength.AppendInt(maxLength);
-      strTextLength.AppendInt(textLength);
-
-      rv = nsContentUtils::FormatMaybeLocalizedString(
-          message, PropertiesFile::DOM_PROPERTIES, "FormValidationTextTooLong",
-          OwnerDoc(), strMaxLength, strTextLength);
+      rv =
+          GetTextLengthValidationMessage(OwnerDoc(), TextLengthLimit::Max,
+                                         MaxLength(), GetTextLength(), message);
       aValidationMessage = std::move(message);
     } break;
     case VALIDITY_STATE_TOO_SHORT: {
       nsAutoString message;
-      int32_t minLength = MinLength();
-      int32_t textLength = GetTextLength();
-      nsAutoString strMinLength;
-      nsAutoString strTextLength;
-
-      strMinLength.AppendInt(minLength);
-      strTextLength.AppendInt(textLength);
-
-      rv = nsContentUtils::FormatMaybeLocalizedString(
-          message, PropertiesFile::DOM_PROPERTIES, "FormValidationTextTooShort",
-          OwnerDoc(), strMinLength, strTextLength);
+      rv =
+          GetTextLengthValidationMessage(OwnerDoc(), TextLengthLimit::Min,
+                                         MinLength(), GetTextLength(), message);
       aValidationMessage = std::move(message);
     } break;
     case VALIDITY_STATE_VALUE_MISSING: {
       nsAutoString message;
-      rv = nsContentUtils::GetMaybeLocalizedString(
-          PropertiesFile::DOM_PROPERTIES, "FormValidationValueMissing",
-          OwnerDoc(), message);
+      rv = nsContentUtils::FormatMaybeLocalizedFluentString(
+          FluentResourceFile::DOM_FORM_VALIDATION,
+          "dom-form-validation-value-missing"_ns, {}, OwnerDoc(), message);
       aValidationMessage = std::move(message);
     } break;
     default:

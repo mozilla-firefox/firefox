@@ -13,12 +13,27 @@ class ErrorResult;
 
 namespace dom {
 
+class Document;
+
 class ConstraintValidation : public nsIConstraintValidation {
  public:
   // Web IDL binding methods
   void GetValidationMessage(nsAString& aValidationMessage,
                             mozilla::ErrorResult& aError);
   MOZ_CAN_RUN_SCRIPT bool CheckValidity();
+
+  enum class TextLengthLimit { Max, Min };
+
+  /**
+   * Formats the validation message for a text that is too long (if aLimitType
+   * is Max) or too short (if Min), given the length limit and the current
+   * length of the text.
+   */
+  static nsresult GetTextLengthValidationMessage(const Document* aDocument,
+                                                 TextLengthLimit aLimitType,
+                                                 int32_t aLimit,
+                                                 int32_t aTextLength,
+                                                 nsAString& aResult);
 
  protected:
   // You can't instantiate an object from that class.
