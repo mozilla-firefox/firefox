@@ -464,7 +464,7 @@ MOZ_CAN_RUN_SCRIPT_BOUNDARY void HTMLEditor::ContentWillBeRemoved(
 
   // We don't need to handle our own modifications
   if (!GetTopLevelEditSubAction() && aChild->GetParentNode()->IsEditable()) {
-    if (aChild && EditorUtils::IsPaddingBRElementForEmptyEditor(*aChild)) {
+    if (EditorUtils::IsPaddingBRElementForEmptyEditor(*aChild)) {
       // Ignore removal of the padding <br> element for empty editor.
       return;
     }
