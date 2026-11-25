@@ -405,7 +405,7 @@ export class MozBrowser extends MozElements.MozElementMixin(XULFrameElement) {
       },
     };
 
-    this._userTypedValue = null;
+    this._urlbarOverrideValue = null;
 
     this._AUTOSCROLL_SNAP = 10;
 
@@ -831,13 +831,13 @@ export class MozBrowser extends MozElements.MozElementMixin(XULFrameElement) {
     return this.browsingContext.secureBrowserUI;
   }
 
-  set userTypedValue(val) {
+  set urlbarOverrideValue(val) {
     this.urlbarChangeTracker.userTyped();
-    this._userTypedValue = val;
+    this._urlbarOverrideValue = val;
   }
 
-  get userTypedValue() {
-    return this._userTypedValue;
+  get urlbarOverrideValue() {
+    return this._urlbarOverrideValue;
   }
 
   get dontPromptAndDontUnload() {
@@ -1674,7 +1674,7 @@ export class MozBrowser extends MozElements.MozElementMixin(XULFrameElement) {
           "_contentPartitionedPrincipal",
           "_isSyntheticDocument",
           "_originalURI",
-          "_userTypedValue",
+          "_urlbarOverrideValue",
         ]
       );
     }

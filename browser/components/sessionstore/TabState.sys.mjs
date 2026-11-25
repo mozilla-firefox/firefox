@@ -236,11 +236,11 @@ class _TabState {
       tabData.image = tabbrowser.getIcon(tab);
     }
 
-    // If there is a userTypedValue set, then either the user has typed something
+    // If there is a urlbarOverrideValue set, then either the user has typed something
     // in the URL bar, or a new tab was opened with a URI to load.
     // If so, we also track whether we were still in the process of loading something.
-    if (!("userTypedValue" in tabData) && browser.userTypedValue) {
-      tabData.userTypedValue = browser.userTypedValue;
+    if (!("userTypedValue" in tabData) && browser.urlbarOverrideValue) {
+      tabData.userTypedValue = browser.urlbarOverrideValue;
       // We always used to keep track of the loading state as an integer, where
       // '0' indicated the user had typed since the last load (or no load was
       // ongoing), and any positive value indicated we had started a load since

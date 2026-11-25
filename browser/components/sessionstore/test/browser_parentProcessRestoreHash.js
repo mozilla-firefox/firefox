@@ -105,7 +105,7 @@ add_task(async function () {
   );
 
   ok(
-    !tab.linkedBrowser.userTypedValue,
+    !tab.linkedBrowser.urlbarOverrideValue,
     "No userTypedValue should be on the browser."
   );
 

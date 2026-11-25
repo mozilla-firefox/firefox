@@ -32,7 +32,7 @@ function test() {
         "No history entries still sets currentURI to about:blank"
       );
       is(
-        browser.userTypedValue,
+        browser.urlbarOverrideValue,
         "example.com",
         "userTypedValue was correctly restored"
       );
@@ -106,7 +106,7 @@ function test() {
         "No history entries still sets currentURI to about:blank"
       );
       is(
-        browser.userTypedValue,
+        browser.urlbarOverrideValue,
         "example.org",
         "userTypedValue was correctly restored"
       );
@@ -189,7 +189,7 @@ function test() {
         "browser.currentURI set to current entry in SH"
       );
       is(
-        browser.userTypedValue,
+        browser.urlbarOverrideValue,
         "example.com",
         "userTypedValue was correctly restored"
       );
@@ -236,7 +236,7 @@ function test() {
         "browser.currentURI set to current entry in SH"
       );
       is(
-        browser.userTypedValue,
+        browser.urlbarOverrideValue,
         "example.org",
         "userTypedValue was correctly restored"
       );
@@ -321,7 +321,7 @@ function test() {
     waitForBrowserState(state, function () {
       let browser = gBrowser.selectedBrowser;
       // Make sure this tab isn't loading and state is clear before we test.
-      is(browser.userTypedValue, null, "userTypedValue is empty to start");
+      is(browser.urlbarOverrideValue, null, "userTypedValue is empty to start");
       ok(
         !browser.didStartLoadSinceLastUserTyping(),
         "Initially, no load should be ongoing"
@@ -334,7 +334,7 @@ function test() {
 
       executeSoon(function () {
         is(
-          browser.userTypedValue,
+          browser.urlbarOverrideValue,
           "example.org",
           "userTypedValue was set when changing URLBar value"
         );
@@ -386,7 +386,7 @@ function test() {
         "userTypedClear=2 caused userTypedValue to be loaded"
       );
       is(
-        browser.userTypedValue,
+        browser.urlbarOverrideValue,
         null,
         "userTypedValue was null after loading a URI"
       );
@@ -425,13 +425,13 @@ function test() {
   function runNextTest() {
     if (tests.length) {
       waitForBrowserState(state, function () {
-        gBrowser.selectedBrowser.userTypedValue = null;
+        gBrowser.selectedBrowser.urlbarOverrideValue = null;
         gURLBar.setURI();
         tests.shift()();
       });
     } else {
       waitForBrowserState(originalState, function () {
-        gBrowser.selectedBrowser.userTypedValue = null;
+        gBrowser.selectedBrowser.urlbarOverrideValue = null;
         gURLBar.setURI();
         finish();
       });

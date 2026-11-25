@@ -11,7 +11,7 @@ add_task(async function () {
       let originalValue = gURLBar.value;
       let tab = gBrowser.selectedTab;
       info("Put a typed value.");
-      gBrowser.userTypedValue = "foobar";
+      gBrowser.urlbarOverrideValue = "foobar";
       info("Switch tabs.");
       gBrowser.selectedTab = gBrowser.tabs[0];
       gBrowser.selectedTab = tab;

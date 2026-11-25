@@ -27,7 +27,7 @@ add_task(async function switchTabs() {
   await BrowserTestUtils.switchTab(gBrowser, tabs[0]);
 
   // Do a search and enter search mode.  Pass fireInputEvent so that
-  // userTypedValue is set and restored when we switch back to this tab.  This
+  // urlbarOverrideValue is set and restored when we switch back to this tab.  This
   // isn't really necessary but it simulates the user's typing, and it also
   // means that we'll start a search when we switch back to this tab.
   await UrlbarTestUtils.promiseAutocompleteResultPopup({

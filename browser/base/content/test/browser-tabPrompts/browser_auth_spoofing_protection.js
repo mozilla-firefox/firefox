@@ -100,7 +100,7 @@ async function waitForDialog(doConfirmPrompt, crossDomain, prefEnabled) {
         "Tab title is manipulated"
       );
       // make sure a value that the user types in has a higher priority than our prompts location
-      gBrowser.selectedBrowser.userTypedValue = "user value";
+      gBrowser.selectedBrowser.urlbarOverrideValue = "user value";
       gURLBar.setURI();
       Assert.equal(
         window.gURLBar.value,
@@ -108,7 +108,7 @@ async function waitForDialog(doConfirmPrompt, crossDomain, prefEnabled) {
         "User typed value is shown"
       );
       // if the user clears the url bar we again fall back to the location of the prompt if we trigger setURI by a tab switch
-      gBrowser.selectedBrowser.userTypedValue = "";
+      gBrowser.selectedBrowser.urlbarOverrideValue = "";
       gURLBar.setURI({ dueToTabSwitch: true });
       Assert.equal(
         window.gURLBar.value,

@@ -2190,9 +2190,9 @@ var XULBrowserWindow = {
         if (aRequest instanceof Ci.nsIChannel || "URI" in aRequest) {
           location = aRequest.URI;
 
-          // For keyword URIs clear the user typed value since they will be changed into real URIs
+          // For keyword URIs clear the address bar value override since they will be changed into real URIs
           if (location.scheme == "keyword" && aWebProgress.isTopLevel) {
-            gBrowser.userTypedValue = null;
+            gBrowser.urlbarOverrideValue = null;
           }
 
           canViewSource = location.scheme != "view-source";

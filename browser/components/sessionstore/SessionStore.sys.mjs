@@ -3295,12 +3295,12 @@ class _SessionStore {
     this.#crashedBrowsers.delete(browser.permanentKey);
     aTab.removeAttribute("crashed");
 
-    let { userTypedValue = null } = browser;
+    let { urlbarOverrideValue = null } = browser;
     let hasStartedLoad = browser.didStartLoadSinceLastUserTyping();
 
     let cacheState = lazy.TabStateCache.get(browser.permanentKey);
 
-    // Cache the browser userTypedValue either if there is no cache state
+    // Cache the browser's urlbarOverrideValue either if there is no cache state
     // at all (e.g. if it was already discarded before we got to cache its state)
     // or it may have been created but not including a userTypedValue (e.g.
     // for a private tab we will cache `isPrivate: true` as soon as the tab
@@ -3316,7 +3316,7 @@ class _SessionStore {
     //   tab will not be restored with the expected url once activated again,
     //   see Bug 1724205).
     let shouldUpdateCacheState =
-      userTypedValue &&
+      urlbarOverrideValue &&
       (!cacheState || (hasStartedLoad && !cacheState.userTypedValue));
 
     if (shouldUpdateCacheState) {
@@ -3325,7 +3325,7 @@ class _SessionStore {
       // restore will be successful.  This information is necessary for
       // #restoreTabEntry to work properly.
       lazy.TabStateCache.update(browser.permanentKey, {
-        userTypedValue,
+        userTypedValue: urlbarOverrideValue,
         userTypedClear: 1,
       });
     }
@@ -3333,7 +3333,7 @@ class _SessionStore {
     TAB_LAZY_STATES.set(aTab, {
       url: browser.currentURI.spec,
       title: aTab.label,
-      userTypedValue,
+      urlbarOverrideValue,
     });
   }
 
@@ -6926,7 +6926,7 @@ class _SessionStore {
       TAB_LAZY_STATES.set(tab, {
         url,
         title,
-        userTypedValue: tabData.userTypedValue || "",
+        urlbarOverrideValue: tabData.userTypedValue || "",
       });
     }
 
@@ -8859,10 +8859,10 @@ class _SessionStore {
         ...tabData,
         userTypedValue: null,
       }).then(() => {
-        if (browser.userTypedValue) {
+        if (browser.urlbarOverrideValue) {
           return;
         }
-        browser.userTypedValue = userTypedValue;
+        browser.urlbarOverrideValue = userTypedValue;
         let win = browser.documentGlobal;
         if (win.gBrowser.selectedBrowser == browser) {
           win.gURLBar.setURI();
@@ -8972,7 +8972,7 @@ class _SessionStore {
       // If the user was typing into the URL bar when we crashed, but hadn't hit
       // enter yet, then we just need to write that value to the URL bar without
       // loading anything. This must happen after the load, as the load will clear
-      // userTypedValue.
+      // urlbarOverrideValue.
       //
       // Note that we only want to do that if we're restoring state for reasons
       // _other_ than a navigateAndRestore remoteness-flip, as such a flip
@@ -8981,9 +8981,9 @@ class _SessionStore {
       if (
         tabData.userTypedValue &&
         !tabData.userTypedClear &&
-        !browser.userTypedValue
+        !browser.urlbarOverrideValue
       ) {
-        browser.userTypedValue = tabData.userTypedValue;
+        browser.urlbarOverrideValue = tabData.userTypedValue;
         if (tab.selected) {
           win.gURLBar.setURI();
         }
@@ -9003,12 +9003,12 @@ class _SessionStore {
     if (!tab) {
       return;
     }
-    // Restore search mode and its search string in userTypedValue, if
+    // Restore search mode and its search string in urlbarOverrideValue, if
     // appropriate.
     let cacheState = lazy.TabStateCache.get(browser.permanentKey);
     if (cacheState.searchMode) {
       win.gURLBar.setSearchMode(cacheState.searchMode, browser);
-      browser.userTypedValue = cacheState.userTypedValue;
+      browser.urlbarOverrideValue = cacheState.userTypedValue;
       if (tab.selected) {
         win.gURLBar.setURI();
       }

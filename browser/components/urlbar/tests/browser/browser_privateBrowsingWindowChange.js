@@ -44,7 +44,7 @@ add_task(async function () {
     "URL bar value should be the same once about:privatebrowsing has loaded"
   );
   is(
-    win.gBrowser.selectedBrowser.userTypedValue,
+    win.gBrowser.selectedBrowser.urlbarOverrideValue,
     urlbarTestValue,
     "User typed value should be the same once about:privatebrowsing has loaded"
   );

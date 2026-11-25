@@ -28,7 +28,7 @@ async function moveTabIntoNewWindowAndBack(url = "about:blank") {
   gURLBar.value = "hello world";
   UrlbarTestUtils.fireInputEvent(window);
   Assert.equal(
-    gBrowser.userTypedValue,
+    gBrowser.urlbarOverrideValue,
     "hello world",
     "The user typed value should be replaced with hello world."
   );

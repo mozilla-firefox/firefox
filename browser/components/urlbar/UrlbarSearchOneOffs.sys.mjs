@@ -242,7 +242,7 @@ export class UrlbarSearchOneOffs extends SearchOneOffs {
         this.input.setSearchMode(searchMode, newTab.linkedBrowser);
         if (userTypedSearchString) {
           // Set the search string for the new tab.
-          newTab.linkedBrowser.userTypedValue = this.input.value;
+          newTab.linkedBrowser.urlbarOverrideValue = this.input.value;
         }
         if (!params?.inBackground) {
           this.input.browserWindow.gBrowser.selectedTab = newTab;
