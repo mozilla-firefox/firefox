@@ -208,16 +208,6 @@ EnterprisePoliciesManager.prototype = {
       "resource:///modules/policies/schema.sys.mjs"
     );
 
-    if (previouslyApplied) {
-      // Allow a policy to provide a default for when the provider did not set a policy.
-      for (let policyName of Object.keys(lazy.Policies)) {
-        let policyImpl = lazy.Policies[policyName];
-        if (policyImpl.onMissing && !(policyName in unparsedPolicies)) {
-          unparsedPolicies[policyName] = policyImpl.onMissing();
-        }
-      }
-    }
-
     for (let policyName of Object.keys(unparsedPolicies)) {
       let policySchema = schema.properties[policyName];
       let policyParameters = unparsedPolicies[policyName];
@@ -285,12 +275,16 @@ EnterprisePoliciesManager.prototype = {
         }
       }
     }
+
+    if (previouslyApplied) {
+      this._runMissingPolicyCallbacks(unparsedPolicies);
+    }
   },
 
-  _runMissingPolicyCallbacks() {
+  _runMissingPolicyCallbacks(presentPolicies = {}) {
     for (let policyName of Object.keys(lazy.Policies)) {
       let policyImpl = lazy.Policies[policyName];
-      if (!policyImpl.onMissing) {
+      if (!policyImpl.onMissing || policyName in presentPolicies) {
         continue;
       }
       let params = policyImpl.onMissing();

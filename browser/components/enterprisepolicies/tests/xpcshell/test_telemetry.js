@@ -24,6 +24,21 @@ add_task(async function test_telemetry_basic() {
   equal(Services.policies.isEnterprise, true);
 });
 
+add_task(async function test_telemetry_count_ignores_onMissing() {
+  do_get_profile();
+  Services.fog.initializeFOG();
+
+  // The second run has previouslyApplied set, so onMissing() defaults
+  // (e.g. SitePolicies) are injected.
+  await setupPolicyEngineWithJson({ policies: { BlockAboutSupport: true } });
+  await setupPolicyEngineWithJson({ policies: { BlockAboutSupport: true } });
+
+  Assert.deepEqual(Object.keys(Services.policies.getActivePolicies()), [
+    "BlockAboutSupport",
+  ]);
+  Assert.equal(Glean.policies.count.testGetValue(), 1);
+});
+
 add_task(async function test_telemetry_roots_plus_policy() {
   await setupPolicyEngineWithJson({
     policies: {
