@@ -457,6 +457,11 @@ class ModuleLoaderBase : public nsISupports {
                                      JS::ColumnNumberOneOrigin aColumnNumber);
   static bool FinishLoadingImportedModule(JSContext* aCx,
                                           ModuleLoadRequest* aRequest);
+  static bool FinishLoadingImportedModuleFailed(JSContext* aCx,
+                                                Handle<Value> aPayload,
+                                                Handle<Value> aError);
+  static bool FinishLoadingImportedModuleFailedWithPendingException(
+      JSContext* aCx, Handle<Value> aPayload);
 
   static bool HostPopulateImportMeta(JSContext* aCx,
                                      Handle<JSObject*> aModuleRecord,
