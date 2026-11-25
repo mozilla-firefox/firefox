@@ -12,6 +12,7 @@
 #include "mozilla/AddonManagerWebAPI.h"
 #include "mozilla/BasePrincipal.h"
 #include "mozilla/dom/WindowGlobalChild.h"
+#include "mozilla/dom/WindowGlobalParent.h"
 #include "mozilla/ResultExtensions.h"
 #include "mozilla/StaticPrefs_extensions.h"
 #include "mozilla/Try.h"
@@ -347,26 +348,58 @@ bool WebExtensionPolicyCore::FileSchemeAllowed() const {
   return HasPermission(nsGkAtoms::fileSchemeAllowedPermission);
 }
 
-bool WebExtensionPolicyCore::CanAccessURI(const URLInfo& aURI, bool aExplicit,
-                                          bool aCheckRestricted,
-                                          bool aAllowFilePermission) const {
-  if (aCheckRestricted && WebExtensionPolicy::IsRestrictedURI(aURI)) {
-    return false;
+bool WebExtensionPolicyCore::CanAccessURI(const URLInfo& aURI,
+                                          uint32_t aFlags) const {
+  if (aURI.Scheme() == nsGkAtoms::moz_extension) {
+    // For moz-extension:-URLs we do not consult host permissions, because the
+    // caller should specify whether access to extension URLs is acceptable.
+    // Besides, "moz-extension:" cannot be requested as a permission by
+    // extensions anyway (not matched by "MatchPattern" type in manifest.json).
+    //
+    // TODO bug 1713196: check more host names if use_dynamic_url is supported.
+    return MozExtensionHostname().Equals(aURI.Host())
+               ? !!(aFlags & ACCESS_OWN_EXTENSION)
+               : !!(aFlags & ACCESS_OTHER_EXTENSIONS);
   }
-  if (aCheckRestricted && QuarantinedFromURI(aURI)) {
-    return false;
+
+  if (!(aFlags & ACCESS_IGNORE_RESTRICTIONS)) {
+    if (WebExtensionPolicy::IsRestrictedURI(aURI)) {
+      return false;
+    }
+    if (QuarantinedFromURI(aURI)) {
+      return false;
+    }
+    if (CheckGuarded(aURI).isSome()) {
+      return false;
+    }
   }
-  if (!aAllowFilePermission && aURI.Scheme() == nsGkAtoms::file) {
-    // aAllowFilePermission defaults to false. If you call CanAccessURI with
-    // it set to true, make sure to check FileSchemeAllowed() if needed.
-    return false;
-  }
-  if (CheckGuarded(aURI).isSome()) {
+
+  if (aURI.Scheme() == nsGkAtoms::file &&
+      // file: not matched by default, unless enabled unconditionally
+      !(aFlags & ACCESS_FILE_ALWAYS) &&
+      // or enabled through user opt-in.
+      !((aFlags & ACCESS_FILE_WITH_OPT_IN) && FileSchemeAllowed())) {
     return false;
   }
 
+  if (aFlags & ACCESS_WITHOUT_HOST_PERMISSIONS) {
+    // Note: ACCESS_REQUIRE_EXPLICIT_DOMAIN is not checked: `<all_urls>` is a
+    // wildcard pattern, so enforcing it would reject every URL.
+    return MatchPatternCore::MatchesAllURLs(aURI);
+    // ^ this is intended to match all URLs that an extension can access. This
+    // is the case for regular extensions, but privileged extensions have one
+    // edge case: privileged extensions with "mozillaAddons" permission may
+    // specify "resource:" and "about:" as host permissions, accepted by:
+    // https://searchfox.org/firefox-main/rev/99f2f8d691af521b71ef2ada549f4da708aa2f0d/toolkit/components/extensions/schemas/manifest.json#750,766,770,780
+    // As of writing there are no active uses for this (bug 1948364 removed the
+    // only use from the past - "resource://pdf.js/*" and "about:reader*").
+    // See bug 1780507 if there is ever a desire to expand support.
+  }
+
   AutoReadLock lock(mLock);
-  return mHostPermissions && mHostPermissions->Matches(aURI, aExplicit);
+  return mHostPermissions &&
+         mHostPermissions->Matches(aURI,
+                                   !!(aFlags & ACCESS_REQUIRE_EXPLICIT_DOMAIN));
 }
 
 bool WebExtensionPolicyCore::QuarantinedFromDoc(const DocInfo& aDoc) const {
@@ -647,6 +680,92 @@ bool WebExtensionPolicy::BackgroundServiceWorkerEnabled(GlobalObject& aGlobal) {
 /* static */
 bool WebExtensionPolicy::QuarantinedDomainsEnabled(GlobalObject& aGlobal) {
   return EPS().GetQuarantinedDomainsEnabled();
+}
+
+/* static */
+already_AddRefed<nsIURI> WebExtensionPolicy::GetURLForMatching(
+    nsIPrincipal* aPrincipal, const URLInfo& aDocumentURI) {
+  if (!aPrincipal) {
+    return nullptr;
+  }
+  nsCOMPtr<nsIURI> uri;
+  if (aPrincipal->GetIsContentPrincipal()) {
+    // Most common case.
+    BasePrincipal::Cast(aPrincipal)->GetURI(getter_AddRefs(uri));
+  } else if (aPrincipal->GetIsNullPrincipal()) {
+    nsCOMPtr<nsIPrincipal> precursor;
+    if (aDocumentURI.IsNonOpaqueURL()) {
+      // Use URL itself if non-opaque, otherwise precursor from null principal.
+      //
+      // For view-source: (part of IsNonOpaqueURL), we want to look at the URL
+      // instead of the principal to avoid scripting view-source (bug 1897759).
+      //
+      // For MozDocumentMatcher::MatchesURI, we prefer the document's URL over
+      // the principal, because the URL may have more details such as path and
+      // query components, whereas the precursor URI only has an origin.
+      // This enables matching of sandboxed about:blank / about:srcdoc / blob:
+      // when match_origin_as_fallback:true is used.
+      //
+      // NOTE: PDF documents currently have a resource://pdf.js/ principal and
+      // do not match (bug 1454760). It will start matching here if changed to
+      // a null principal (which is being considered in bug 1450443).
+      uri = aDocumentURI.URI();
+    } else if ((precursor = aPrincipal->GetPrecursorPrincipal()) &&
+               precursor->GetIsContentPrincipal()) {
+      BasePrincipal::Cast(precursor)->GetURI(getter_AddRefs(uri));
+    } else {
+      // Top-level data:-URLs are an example of a precursorless null principal,
+      // fall back to the URL to allow matching by `<all_urls>`.
+      uri = aDocumentURI.URI();
+    }
+  } else {
+    // System principal: extensions should not have access.
+    // Expanded principal: documents cannot have expanded principals.
+    // Fall through to returning below (equivalent to returning nullptr).
+  }
+  return uri.forget();
+}
+
+static bool IsCommittedTopLevel(WindowGlobalParent& aWindowGlobal) {
+  return aWindowGlobal.IsTop() && !aWindowGlobal.IsUncommittedInitialDocument();
+}
+
+static bool IsCommittedTopLevel(WindowGlobalChild& aWindowGlobal) {
+  Document* doc = aWindowGlobal.GetWindowGlobal()->GetExtantDoc();
+  return aWindowGlobal.WindowContext()->IsTop() && doc &&
+         !doc->IsUncommittedInitialDocument();
+}
+
+template <typename WindowGlobalT>
+static bool CanAccessDocumentImpl(const WebExtensionPolicy& aPolicy,
+                                  WindowGlobalT& aWindowGlobal,
+                                  uint32_t aFlags) {
+  nsCOMPtr<nsIURI> uri = WebExtensionPolicy::GetURLForMatching(
+      aWindowGlobal.DocumentPrincipal(),
+      URLInfo(aWindowGlobal.GetDocumentURI()));
+  if (!uri) {
+    return false;
+  }
+  URLInfo url(uri);
+  if (aPolicy.CanAccessURI(url, aFlags)) {
+    return true;
+  }
+  // Like content scripts, allow top-level about:blank with an opaque origin
+  // (bug 2034938 comment 10), see DocInfo::IsTopLevelOpaqueAboutBlank.
+  return (aFlags & ACCESS_WITHOUT_HOST_PERMISSIONS) &&
+         url.Scheme() == nsGkAtoms::about &&
+         IsCommittedTopLevel(aWindowGlobal) &&
+         url.CSpec().EqualsLiteral("about:blank");
+}
+
+bool WebExtensionPolicy::CanAccessDocument(WindowGlobalParent& aWindowGlobal,
+                                           uint32_t aFlags) const {
+  return CanAccessDocumentImpl(*this, aWindowGlobal, aFlags);
+}
+
+bool WebExtensionPolicy::CanAccessDocument(WindowGlobalChild& aWindowGlobal,
+                                           uint32_t aFlags) const {
+  return CanAccessDocumentImpl(*this, aWindowGlobal, aFlags);
 }
 
 /* static */
@@ -1062,21 +1181,24 @@ bool MozDocumentMatcher::MatchesURI(const URLInfo& aURL,
     return false;
   }
 
-  if (mCheckPermissions && !aIgnorePermissions) {
-    // CanAccessURI() also calls CheckGuarded() internally.
-    if (!mExtension->CanAccessURI(aURL, false, false, true)) {
-      return false;
-    }
-  } else if (mExtension && !mExtension->CheckGuarded(aURL).IsNull()) {
-    // Guards must be enforced regardless of mCheckPermissions.
+  // Guards must be enforced regardless of mCheckPermissions.
+  if (mExtension && !mExtension->CheckGuarded(aURL).IsNull()) {
     return false;
   }
 
+  if (mCheckPermissions && !aIgnorePermissions) {
+    // ACCESS_IGNORE_RESTRICTIONS because we already check restrictions above.
+    // ACCESS_FILE_ALWAYS because we already check file access below.
+    if (!mExtension->CanAccessURI(aURL, ACCESS_IGNORE_RESTRICTIONS |
+                                            ACCESS_FILE_ALWAYS |
+                                            ACCESS_OWN_EXTENSION)) {
+      return false;
+    }
+  }
+
+  // FileSchemeAllowed() must be enforced regardless of mCheckPermissions.
   if (aURL.Scheme() == nsGkAtoms::file && mExtension &&
       !mExtension->FileSchemeAllowed()) {
-    // Although CanAccessURI above accepts an aAllowFilePermission parameter,
-    // the logic is conditional on mCheckPermissions. We want the file access
-    // to be enforced unconditionally, so check it here instead.
     return false;
   }
 
@@ -1438,26 +1560,14 @@ const URLInfo& DocInfo::PrincipalURL() const {
   }
 
   if (mPrincipalURL.isNothing()) {
-    nsIPrincipal* prin = Principal();
-    nsCOMPtr<nsIPrincipal> precursor;
-    if (prin->GetIsContentPrincipal()) {
-      // Most common case.
-      nsCOMPtr<nsIURI> uri;
-      BasePrincipal::Cast(prin)->GetURI(getter_AddRefs(uri));
-      mPrincipalURL.emplace(uri);
-    } else if (prin->GetIsNullPrincipal() && !URL().IsNonOpaqueURL() &&
-               (precursor = prin->GetPrecursorPrincipal()) &&
-               precursor->GetIsContentPrincipal()) {
-      // Use precursor from null principal, unless the URL itself is not opaque.
-      // We want to use URL() when IsNonOpaqueURL() because the URL may have
-      // more details such as path and query components, whereas the precursor
-      // URI only has an origin.
-      // This enables matching of sandboxed about:blank / about:srcdoc / blob:
-      // when match_origin_as_fallback:true is used.
-      nsCOMPtr<nsIURI> uri;
-      BasePrincipal::Cast(precursor)->GetURI(getter_AddRefs(uri));
-      mPrincipalURL.emplace(uri);
+    nsCOMPtr<nsIURI> uri =
+        WebExtensionPolicy::GetURLForMatching(Principal(), URL());
+    if (uri) {
+      mPrincipalURL.emplace(uri.get());
     } else {
+      // Extension content script matching does not rely on this fall back.
+      // In theory non-WebExtensionContentScript MozDocumentMatcher could rely
+      // on this, but that code is unused (bug 2074183).
       mPrincipalURL.emplace(URL());
     }
   }

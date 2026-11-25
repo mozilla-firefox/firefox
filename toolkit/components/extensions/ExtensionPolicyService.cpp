@@ -755,7 +755,9 @@ nsresult ExtensionPolicyService::AddonMayLoadURI(const nsAString& aAddonId,
                                                  nsIURI* aURI, bool aExplicit,
                                                  bool* aResult) {
   if (WebExtensionPolicy* policy = GetByID(aAddonId)) {
-    *aResult = policy->CanAccessURI(aURI, aExplicit);
+    *aResult = policy->CanAccessURI(
+        aURI, extensions::ACCESS_OWN_EXTENSION |
+                  (aExplicit ? extensions::ACCESS_REQUIRE_EXPLICIT_DOMAIN : 0));
     return NS_OK;
   }
   return NS_ERROR_INVALID_ARG;

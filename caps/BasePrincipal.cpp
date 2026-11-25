@@ -1421,7 +1421,9 @@ bool BasePrincipal::AddonAllowsLoad(nsIURI* aURI,
     return As<ExpandedPrincipal>()->AddonAllowsLoad(aURI, aExplicit);
   }
   if (auto policy = AddonPolicyCore()) {
-    return policy->CanAccessURI(aURI, aExplicit);
+    return policy->CanAccessURI(
+        aURI, extensions::ACCESS_OWN_EXTENSION |
+                  (aExplicit ? extensions::ACCESS_REQUIRE_EXPLICIT_DOMAIN : 0));
   }
   return false;
 }

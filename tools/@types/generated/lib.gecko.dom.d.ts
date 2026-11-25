@@ -37135,8 +37135,11 @@ interface WebExtensionPolicy {
     readonly type: string;
     /** <!-- binding_to(idl, attribute, WEBIDL_WebExtensionPolicy_version) --> */
     readonly version: string;
+    /** <!-- binding_to(idl, method, WEBIDL_WebExtensionPolicy_canAccessDocument) --> */
+    canAccessDocument(windowGlobal: WindowGlobalParent, flags?: number): boolean;
+    canAccessDocument(windowGlobal: WindowGlobalChild, flags?: number): boolean;
     /** <!-- binding_to(idl, method, WEBIDL_WebExtensionPolicy_canAccessURI) --> */
-    canAccessURI(uri: URI, explicit?: boolean, checkRestricted?: boolean, allowFilePermission?: boolean): boolean;
+    canAccessURI(uri: URI, flags?: number): boolean;
     /** <!-- binding_to(idl, method, WEBIDL_WebExtensionPolicy_canAccessWindow) --> */
     canAccessWindow(window: WindowProxy): boolean;
     /** <!-- binding_to(idl, method, WEBIDL_WebExtensionPolicy_checkGuarded) --> */
@@ -37161,11 +37164,39 @@ interface WebExtensionPolicy {
     sourceMayAccessPath(sourceURI: URI, pathname: string): boolean;
     /** <!-- binding_to(idl, method, WEBIDL_WebExtensionPolicy_unregisterContentScript) --> */
     unregisterContentScript(script: WebExtensionContentScript): void;
+    /** <!-- binding_to(idl, const, WEBIDL_WebExtensionPolicy_ACCESS_REQUIRE_EXPLICIT_DOMAIN) --> */
+    readonly ACCESS_REQUIRE_EXPLICIT_DOMAIN: 0x01;
+    /** <!-- binding_to(idl, const, WEBIDL_WebExtensionPolicy_ACCESS_WITHOUT_HOST_PERMISSIONS) --> */
+    readonly ACCESS_WITHOUT_HOST_PERMISSIONS: 0x02;
+    /** <!-- binding_to(idl, const, WEBIDL_WebExtensionPolicy_ACCESS_IGNORE_RESTRICTIONS) --> */
+    readonly ACCESS_IGNORE_RESTRICTIONS: 0x04;
+    /** <!-- binding_to(idl, const, WEBIDL_WebExtensionPolicy_ACCESS_FILE_WITH_OPT_IN) --> */
+    readonly ACCESS_FILE_WITH_OPT_IN: 0x08;
+    /** <!-- binding_to(idl, const, WEBIDL_WebExtensionPolicy_ACCESS_FILE_ALWAYS) --> */
+    readonly ACCESS_FILE_ALWAYS: 0x10;
+    /** <!-- binding_to(idl, const, WEBIDL_WebExtensionPolicy_ACCESS_OWN_EXTENSION) --> */
+    readonly ACCESS_OWN_EXTENSION: 0x20;
+    /** <!-- binding_to(idl, const, WEBIDL_WebExtensionPolicy_ACCESS_OTHER_EXTENSIONS) --> */
+    readonly ACCESS_OTHER_EXTENSIONS: 0x40;
 }
 
 declare var WebExtensionPolicy: {
     prototype: WebExtensionPolicy;
     new(options: WebExtensionInit): WebExtensionPolicy;
+    /** <!-- binding_to(idl, const, WEBIDL_WebExtensionPolicy_ACCESS_REQUIRE_EXPLICIT_DOMAIN) --> */
+    readonly ACCESS_REQUIRE_EXPLICIT_DOMAIN: 0x01;
+    /** <!-- binding_to(idl, const, WEBIDL_WebExtensionPolicy_ACCESS_WITHOUT_HOST_PERMISSIONS) --> */
+    readonly ACCESS_WITHOUT_HOST_PERMISSIONS: 0x02;
+    /** <!-- binding_to(idl, const, WEBIDL_WebExtensionPolicy_ACCESS_IGNORE_RESTRICTIONS) --> */
+    readonly ACCESS_IGNORE_RESTRICTIONS: 0x04;
+    /** <!-- binding_to(idl, const, WEBIDL_WebExtensionPolicy_ACCESS_FILE_WITH_OPT_IN) --> */
+    readonly ACCESS_FILE_WITH_OPT_IN: 0x08;
+    /** <!-- binding_to(idl, const, WEBIDL_WebExtensionPolicy_ACCESS_FILE_ALWAYS) --> */
+    readonly ACCESS_FILE_ALWAYS: 0x10;
+    /** <!-- binding_to(idl, const, WEBIDL_WebExtensionPolicy_ACCESS_OWN_EXTENSION) --> */
+    readonly ACCESS_OWN_EXTENSION: 0x20;
+    /** <!-- binding_to(idl, const, WEBIDL_WebExtensionPolicy_ACCESS_OTHER_EXTENSIONS) --> */
+    readonly ACCESS_OTHER_EXTENSIONS: 0x40;
     /** <!-- binding_to(idl, attribute, WEBIDL_WebExtensionPolicy_backgroundServiceWorkerEnabled) --> */
     readonly backgroundServiceWorkerEnabled: boolean;
     /** <!-- binding_to(idl, attribute, WEBIDL_WebExtensionPolicy_isExtensionProcess) --> */
@@ -37184,6 +37215,8 @@ declare var WebExtensionPolicy: {
     getByID(id: string): WebExtensionPolicy | null;
     /** <!-- binding_to(idl, method, WEBIDL_WebExtensionPolicy_getByURI) --> */
     getByURI(uri: URI): WebExtensionPolicy | null;
+    /** <!-- binding_to(idl, method, WEBIDL_WebExtensionPolicy_getURLForMatching) --> */
+    getURLForMatching(principal: Principal, documentURI: URI): URI | null;
     /** <!-- binding_to(idl, method, WEBIDL_WebExtensionPolicy_isQuarantinedURI) --> */
     isQuarantinedURI(uri: URI): boolean;
     /** <!-- binding_to(idl, method, WEBIDL_WebExtensionPolicy_isRestrictedURI) --> */

@@ -1,5 +1,9 @@
 "use strict";
 
+const { setEnterpriseGuards } = ChromeUtils.importESModule(
+  "resource://gre/modules/ExtensionPermissions.sys.mjs"
+);
+
 XPCOMUtils.defineLazyServiceGetter(
   this,
   "gProxyService",
@@ -247,6 +251,27 @@ add_task(async function test_passthrough() {
   proxyInfo = await getProxyInfo();
   equal(proxyInfo, null, `expected no proxy`);
   await ext1.unload();
+});
+
+add_task(async function test_passthrough_guarded_url() {
+  setEnterpriseGuards({
+    "*": {
+      runtime_blocked_hosts: ["*://guarded.example.com/*"],
+      runtime_allowed_hosts: [],
+    },
+  });
+
+  let extension = await getExtension({
+    host: "1.2.3.4",
+    port: 8888,
+    type: "https",
+  });
+
+  let proxyInfo = await getProxyInfo("https://guarded.example.com/");
+  equal(proxyInfo.host, "1.2.3.4", `guard ignored in proxy.onRequest`);
+
+  await extension.unload();
+  setEnterpriseGuards({});
 });
 
 add_task(async function test_ftp_disabled() {

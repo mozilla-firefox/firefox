@@ -2,6 +2,7 @@
  * License, v. 2.0. If a copy of the MPL was not distributed with this
  * file, You can obtain one at http://mozilla.org/MPL/2.0/. */
 
+interface Principal;
 interface URI;
 interface WindowProxy;
 
@@ -217,11 +218,86 @@ interface WebExtensionPolicy {
   boolean canAccessWindow(WindowProxy window);
 
   /**
-   * Returns true if the extension has cross-origin access to the given URI.
+   * Flags with "ACCESS_" prefix for canAccessURI and canAccessDocument.
+   * Keep list in sync with the shorthands in WebExtensionPolicy.h.
    */
-  boolean canAccessURI(URI uri, optional boolean explicit = false,
-                       optional boolean checkRestricted = true,
-                       optional boolean allowFilePermission = false);
+  // Match iff any host permission has a matching non-wildcard domain.
+  const unsigned long ACCESS_REQUIRE_EXPLICIT_DOMAIN = 0x01;
+  // Skip host permission check; require URL to match `<all_urls>` instead.
+  const unsigned long ACCESS_WITHOUT_HOST_PERMISSIONS = 0x02;
+  // Opt out of enforcement of restricted/quarantined domains and guard sets.
+  const unsigned long ACCESS_IGNORE_RESTRICTIONS = 0x04;
+  // Allow "file:" match patterns to match file:-URLs iff fileSchemeAllowed.
+  const unsigned long ACCESS_FILE_WITH_OPT_IN = 0x08;
+  // Allow "file:" match patterns to match file:-URLs, unconditionally.
+  const unsigned long ACCESS_FILE_ALWAYS = 0x10;
+  // Allow match of own moz-extension:-URL (host permissions are not checked).
+  const unsigned long ACCESS_OWN_EXTENSION = 0x20;
+  // Allow match of moz-extension:-URL from other extensions (host permissions
+  // are not checked). Only exists for DNR logic from bug 1810753.
+  // TODO bug 2074091: Remove this flag.
+  const unsigned long ACCESS_OTHER_EXTENSIONS = 0x40;
+
+  /**
+   * Returns true if the extension has cross-origin access to the given URI.
+   * See canAccessDocument, which is preferred for documents.
+   *
+   * Flags can be a combination of the ACCESS_-prefixed flags above.
+   */
+  boolean canAccessURI(URI uri, optional unsigned long flags = 0);
+
+  /**
+   * Returns true if the extension has access to the document of the given
+   * window global, based on host permissions, restrictions and the given
+   * flags, like canAccessURI. getURLForMatching resolves the URL to check.
+   * The window global is not required to be current.
+   *
+   * Extensions can only access documents when this method returns true, with
+   * the following exceptions (of situations that return false but can still
+   * be accessed by extensions):
+   * - A top-level about:blank document from a direct navigation has a null
+   *   principal without precursor. Content scripts may run there (see
+   *   https://bugzilla.mozilla.org/show_bug.cgi?id=2034938#c10), but this
+   *   method returns false unless ACCESS_WITHOUT_HOST_PERMISSIONS is set.
+   * - Privileged extensions can use experiment_apis to run code with system
+   *   privileges, bypassing any checks enforced by WebExtensionPolicy.
+   *
+   * canAccessURI can return true where canAccessDocument returns false:
+   * - data-URL iframe has a null principal with precursor from parent page.
+   *   canAccessURI returns true because `<all_urls>` contains `data:`.
+   *   canAccessDocument returns false if web page is not in host permissions.
+   * - JSON documents may have URLs that match a permitted scheme (e.g. https)
+   *   but if opened with jsonview they have the resource://devtools principal.
+   * - PDF documents may have URLs that match a permitted scheme (e.g. https)
+   *   but if opened with PDF.js have the resource://pdf.js principal.
+   *   Extensions are currently not allowed to script PDF.js (bug 1454760).
+   *
+   * canAccessURI can return false where canAccessDocument returns true:
+   * - about:blank iframe inherits the principal from the web page.
+   *   canAccessURI returns false because `about:` is not a permitted scheme.
+   *   canAccessDocument may return true if web page is in host permissions.
+   *
+   * Flags can be a combination of the ACCESS_-prefixed flags above.
+   */
+  boolean canAccessDocument(WindowGlobalParent windowGlobal,
+                            optional unsigned long flags = 0);
+  boolean canAccessDocument(WindowGlobalChild windowGlobal,
+                            optional unsigned long flags = 0);
+
+  /**
+   * Returns the URL used for matching in canAccessDocument, given a
+   * document described by the given principal and URL:
+   * - For a content principal, its URI is returned. This is the common case.
+   * - For a null principal, its precursor URI or the documentURI is returned.
+   * - For a system principal or expanded principal, null is returned.
+   *
+   * In short: principal.URI is usually returned, except for null principals.
+   * When a null principal is passed:
+   * - https/http/view-source/file-URLs: documentURI is returned.
+   * - data:-URLs: precursor URI if available, documentURI otherwise.
+   * - everything else: precursor URI if available, documentURI otherwise.
+   */
+  static URI? getURLForMatching(Principal principal, URI documentURI);
 
   /**
    * Returns true if the extension currently has the given permission.

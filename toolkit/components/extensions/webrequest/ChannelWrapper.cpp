@@ -658,28 +658,29 @@ bool ChannelWrapper::Matches(
       return false;
     }
 
-    // The third parameter (aCheckRestricted) is false because we already check
-    // restricted URLs below as part of CanModify().
-    // The fourth parameter (aAllowFilePermission, default false) does not
-    // matter because file:-channels are never wrapped by ChannelWrapper.
-    if (!aExtension->CanAccessURI(urlInfo, false, false)) {
+    bool isProxyRequest =
+        aOptions.mIsProxy && aExtension->HasPermission(nsGkAtoms::proxy);
+
+    // Proxies are allowed access to all urls, including restricted urls.
+    if (!aExtension->CanAccessURI(
+            urlInfo, isProxyRequest ? ACCESS_IGNORE_RESTRICTIONS : 0)) {
       return false;
     }
 
-    // Proxies are allowed access to all urls, including restricted urls.
     // If this isn't the proxy phase of the request, check that the extension
     // has origin permissions for origin that originated the request.
-    if (!aOptions.mIsProxy || !aExtension->HasPermission(nsGkAtoms::proxy)) {
+    if (!isProxyRequest) {
       if (!CanModify()) {
         return false;
       }
 
       auto origin = DocumentURLInfo();
-      // The fourth parameter (aAllowFilePermission) is true instead of gated
-      // on aExtension->FileSchemeAllowed(), because we want extensions to have
+      // ACCESS_FILE_ALWAYS is passed instead of gating file access on
+      // aExtension->FileSchemeAllowed(), because we want extensions to have
       // the ability to block http(s) requests from file origins (bug 1621935),
       // without the user being required to grant access to all local files.
-      if (origin && !aExtension->CanAccessURI(*origin, false, false, true)) {
+      if (origin && !aExtension->CanAccessURI(
+                        *origin, ACCESS_FILE_ALWAYS | ACCESS_OWN_EXTENSION)) {
         return false;
       }
     }
@@ -885,10 +886,7 @@ already_AddRefed<nsITraceableChannel> ChannelWrapper::GetTraceableChannel(
     // so we do not need to check that again here because it is constant for
     // the duration of the request. We need to revalidate FinalURLInfo() in
     // case it changed, e.g. due to a redirect or permission change.
-    if (!HaveChannel() ||
-        // The fourth parameter (aAllowFilePermission, default false) does not
-        // matter because file:-channels are never wrapped by ChannelWrapper.
-        !aAddon.CanAccessURI(FinalURLInfo())) {
+    if (!HaveChannel() || !aAddon.CanAccessURI(FinalURLInfo())) {
       return nullptr;
     }
 

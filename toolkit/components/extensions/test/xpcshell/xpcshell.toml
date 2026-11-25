@@ -59,6 +59,8 @@ skip-if = [
 
 ["test_WebExtensionPolicy.js"]
 
+["test_WebExtensionPolicy_flags.js"]
+
 ["test_csp_custom_policies.js"]
 
 ["test_csp_validator.js"]

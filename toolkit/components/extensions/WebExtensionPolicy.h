@@ -22,9 +22,13 @@
 #include "nsISupports.h"
 #include "nsWrapperCache.h"
 
+class nsIPrincipal;
+
 namespace mozilla {
 namespace dom {
 class Promise;
+class WindowGlobalChild;
+class WindowGlobalParent;
 }  // namespace dom
 
 namespace extensions {
@@ -32,6 +36,16 @@ namespace extensions {
 using dom::WebAccessibleResourceInit;
 using dom::WebExtensionInit;
 using dom::WebExtensionLocalizeCallback;
+
+// Shorthands for the ACCESS_* flag constants from WebExtensionPolicy.webidl,
+// for use with CanAccessURI and CanAccessDocument.
+using dom::WebExtensionPolicy_Binding::ACCESS_FILE_ALWAYS;
+using dom::WebExtensionPolicy_Binding::ACCESS_FILE_WITH_OPT_IN;
+using dom::WebExtensionPolicy_Binding::ACCESS_IGNORE_RESTRICTIONS;
+using dom::WebExtensionPolicy_Binding::ACCESS_OTHER_EXTENSIONS;
+using dom::WebExtensionPolicy_Binding::ACCESS_OWN_EXTENSION;
+using dom::WebExtensionPolicy_Binding::ACCESS_REQUIRE_EXPLICIT_DOMAIN;
+using dom::WebExtensionPolicy_Binding::ACCESS_WITHOUT_HOST_PERMISSIONS;
 
 class DocInfo;
 class WebExtensionContentScript;
@@ -132,9 +146,8 @@ class WebExtensionPolicyCore final {
 
   bool FileSchemeAllowed() const;
 
-  bool CanAccessURI(const URLInfo& aURI, bool aExplicit = false,
-                    bool aCheckRestricted = true,
-                    bool aAllowFilePermission = false) const;
+  bool CanAccessURI(const URLInfo& aURI, uint32_t aFlags = 0) const
+      MOZ_EXCLUDES(mLock);
 
   bool IgnoreQuarantine() const MOZ_EXCLUDES(mLock) {
     AutoReadLock lock(mLock);
@@ -269,12 +282,14 @@ class WebExtensionPolicy final : public nsISupports, public nsWrapperCache {
 
   void InjectContentScripts(ErrorResult& aRv);
 
-  bool CanAccessURI(const URLInfo& aURI, bool aExplicit = false,
-                    bool aCheckRestricted = true,
-                    bool aAllowFilePermission = false) const {
-    return mCore->CanAccessURI(aURI, aExplicit, aCheckRestricted,
-                               aAllowFilePermission);
+  bool CanAccessURI(const URLInfo& aURI, uint32_t aFlags = 0) const {
+    return mCore->CanAccessURI(aURI, aFlags);
   }
+
+  bool CanAccessDocument(dom::WindowGlobalParent& aWindowGlobal,
+                         uint32_t aFlags = 0) const;
+  bool CanAccessDocument(dom::WindowGlobalChild& aWindowGlobal,
+                         uint32_t aFlags = 0) const;
 
   bool IsWebAccessiblePath(const nsACString& aPath) const {
     return mCore->IsWebAccessiblePath(aPath);
@@ -291,6 +306,9 @@ class WebExtensionPolicy final : public nsISupports, public nsWrapperCache {
     RefPtr<nsAtom> atom = NS_AtomizeMainThread(aPermission);
     return HasPermission(atom);
   }
+
+  static already_AddRefed<nsIURI> GetURLForMatching(
+      nsIPrincipal* aPrincipal, const URLInfo& aDocumentURI);
 
   static bool IsRestrictedDoc(const DocInfo& aDoc);
   static bool IsRestrictedURI(const URLInfo& aURI);
@@ -409,6 +427,12 @@ class WebExtensionPolicy final : public nsISupports, public nsWrapperCache {
 
   static already_AddRefed<WebExtensionPolicy> GetByURI(
       dom::GlobalObject& aGlobal, nsIURI* aURI);
+
+  static already_AddRefed<nsIURI> GetURLForMatching(
+      dom::GlobalObject& aGlobal, nsIPrincipal* aPrincipal,
+      const URLInfo& aDocumentURI) {
+    return GetURLForMatching(aPrincipal, aDocumentURI);
+  }
 
   static bool IsRestrictedURI(dom::GlobalObject& aGlobal, const URLInfo& aURI) {
     return IsRestrictedURI(aURI);
