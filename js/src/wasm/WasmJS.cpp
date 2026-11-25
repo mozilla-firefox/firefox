@@ -1277,18 +1277,23 @@ bool js::WasmModuleExecute(JSContext* cx, Handle<ModuleObject*> record) {
         // Step 14.3.6.1. Perform !
         // record.[[Environment]].InitializeBinding(name,
         //                                          ToJSValue(global_value)).
-        if (!globalValue.get().toJSValue(cx, &value)) {
-          MOZ_ASSERT(cx->isThrowingOutOfMemory());
-          return false;
+        if (!globalObject->isMutable()) {
+          if (!globalValue.get().toJSValue(cx, &value)) {
+            MOZ_ASSERT(cx->isThrowingOutOfMemory());
+            return false;
+          }
+        } else {
+          // Step 14.3.6.2. If mut is var, then associate all future mutations
+          // of globaladdr with the ECMA-262 binding record for name in
+          // record.[[Environment]], such that
+          // record.[[Environment]].GetBindingValue(name, true) always returns
+          // ToJSValue(global_read(store, globaladdr)) for
+          // the current surrounding agent’s associated store store.
+          //
+          // The binding reads the global's current value on every access, so
+          // initializing it with the global itself covers both steps.
+          value.setObject(*globalObject);
         }
-
-        // Step 14.3.6.2. If mut is var, then associate all future mutations of
-        // globaladdr with the ECMA-262 binding record for name in
-        // record.[[Environment]], such that
-        // record.[[Environment]].GetBindingValue(name, true) always returns
-        // ToJSValue(global_read(store, globaladdr)) for
-        // the current surrounding agent’s associated store store.
-        // TODO(Bug 2078378): Implement this.
       }
     } else {
       // Step 14.4. Otherwise,
