@@ -4,6 +4,8 @@
 
 #include "SSLTokensCache.h"
 
+#include <algorithm>
+
 #include "CertVerifier.h"
 #include "CommonSocketControl.h"
 #include "TransportSecurityInfo.h"
@@ -32,6 +34,7 @@
 #include "nsIGlobalObject.h"
 #include "nsIOService.h"
 #include "nsIObserverService.h"
+#include "nsITimer.h"
 #include "nsThreadUtils.h"
 #include "nss.h"
 #include "prtime.h"
@@ -39,9 +42,17 @@
 #include "sslexp.h"
 #include "xpcpublic.h"
 
+#ifdef ENABLE_TESTS
+#  include "mozilla/Atomics.h"
+#  include "mozilla/StaticMonitor.h"
+#endif
+
 #define SSL_TOKENS_CACHE_DB_FILE "ssl_tokens_cache.sqlite"
 
 constexpr int32_t kSSLTokensCacheSchemaVersion = 1;
+
+// Matches network.cookie.db.flushIntervalMs.
+constexpr uint32_t kDBDeleteFlushDelayMs = 500;
 
 namespace mozilla {
 namespace net {
@@ -309,6 +320,47 @@ StaticRefPtr<SSLTokensCache> SSLTokensCache::gInstance;
 StaticMutex SSLTokensCache::sLock;
 uint64_t SSLTokensCache::sRecordId = 0;
 
+#ifdef ENABLE_TESTS
+static constexpr uint32_t kLoadNotPausedForTest = UINT32_MAX;
+static StaticMonitor sLoadPauseMonitor;
+// Row count at which the startup load blocks; written under sLoadPauseMonitor.
+static Atomic<uint32_t> sLoadPausedAtRowsForTest(kLoadNotPausedForTest);
+// Set by the hooks below; gates the load-complete notification.
+static Atomic<bool> sLoadHookArmedForTest(false);
+// Number of upcoming OpenActiveDB calls that fail.
+static Atomic<uint32_t> sFailDBOpensForTest(0);
+// Set by FailDBOpensForTest; gates the DB-removed notification.
+static Atomic<bool> sFailDBOpensArmedForTest(false);
+
+static void NotifyObserversForTest(const char* aTopic) {
+  NS_DispatchToMainThread(NS_NewRunnableFunction(
+      "SSLTokensCache::NotifyObserversForTest", [aTopic] {
+        if (nsCOMPtr<nsIObserverService> obs =
+                mozilla::services::GetObserverService()) {
+          obs->NotifyObservers(nullptr, aTopic, nullptr);
+        }
+      }));
+}
+
+static void SetLoadPausedAtRowsForTest(uint32_t aRows) {
+  StaticMonitorAutoLock lock(sLoadPauseMonitor);
+  sLoadPausedAtRowsForTest = aRows;
+  lock.NotifyAll();
+}
+
+// Called on mDBQueue after aRows rows of the startup load.
+static void WaitWhileLoadPausedForTest(uint32_t aRows) {
+  if (sLoadPausedAtRowsForTest != aRows) {
+    return;
+  }
+  MOZ_ASSERT(!NS_IsMainThread());
+  StaticMonitorAutoLock lock(sLoadPauseMonitor);
+  while (sLoadPausedAtRowsForTest == aRows) {
+    lock.Wait();
+  }
+}
+#endif
+
 SSLTokensCache::TokenCacheRecord::~TokenCacheRecord() {
   if (!gInstance) {
     return;
@@ -381,12 +433,88 @@ void SSLTokensCache::RemoveMatchingLocked(Pred&& aPredicate) {
   }
 }
 
+nsISerialEventTarget* SSLTokensCache::ActiveDBQueueLocked() const {
+  sLock.AssertCurrentThreadOwns();
+  return mDBActive ? mDBQueue.get() : nullptr;
+}
+
+// static
+template <typename F>
+void SSLTokensCache::DispatchToDBQueue(nsISerialEventTarget* aQueue,
+                                       const char* aName, F&& aFunction) {
+  aQueue->Dispatch(NS_NewRunnableFunction(aName, std::forward<F>(aFunction)),
+                   NS_DISPATCH_EVENT_MAY_BLOCK);
+}
+
+// static
+void SSLTokensCache::RemoveMatchingAndQueueDeletes(
+    StringPredicate&& aPredicate) {
+  MOZ_ASSERT(NS_IsMainThread());
+  StaticMutexAutoLock lock(sLock);
+  if (!gInstance) {
+    return;
+  }
+  gInstance->RemoveMatchingLocked(aPredicate);
+  if (!gInstance->mDBActive) {
+    return;
+  }
+  gInstance->mPendingDBRemovals.AppendElement(aPredicate);
+  if (!gInstance->mLoadComplete) {
+    // OnLoadCompleteNotify flushes mPendingDBRemovals.
+    gInstance->mRemovalsBeforeLoad.AppendElement(std::move(aPredicate));
+    return;
+  }
+  if (!gInstance->mDBDeleteTimer) {
+    NS_NewTimerWithCallback(
+        getter_AddRefs(gInstance->mDBDeleteTimer),
+        [](nsITimer*) { FlushPendingDBDeletes(); }, kDBDeleteFlushDelayMs,
+        nsITimer::TYPE_ONE_SHOT, "SSLTokensCache::FlushPendingDBDeletes"_ns);
+  }
+}
+
+// static
+void SSLTokensCache::FlushPendingDBDeletes() {
+  MOZ_ASSERT(NS_IsMainThread());
+  nsTArray<StringPredicate> removals;
+  nsCOMPtr<nsISerialEventTarget> queue;
+  {
+    StaticMutexAutoLock lock(sLock);
+    if (!gInstance) {
+      return;
+    }
+    gInstance->mDBDeleteTimer = nullptr;
+    queue = gInstance->ActiveDBQueueLocked();
+    if (queue) {
+      removals = std::move(gInstance->mPendingDBRemovals);
+    }
+  }
+  if (removals.IsEmpty()) {
+    return;
+  }
+  DispatchToDBQueue(queue, "SSLTokensCache::DeleteMatchesFromDB",
+                    [removals = std::move(removals)]() mutable {
+                      DeleteMatchesFromDB(std::move(removals));
+                    });
+}
+
+// static
+void SSLTokensCache::RemoveDBFileAfterFailure() {
+  RemoveDBFileSync();
+#ifdef ENABLE_TESTS
+  if (sFailDBOpensArmedForTest) {
+    NotifyObserversForTest("ssl-tokens-cache-db-removed-for-test");
+  }
+#endif
+}
+
 void SSLTokensCache::ClearCacheLocked() {
   sLock.AssertCurrentThreadOwns();
   mLoadGeneration++;
   mExpirationArray.Clear();
   mTokenCacheRecords.Clear();
   mCacheSize = 0;
+  mPendingDBRemovals.Clear();
+  mRemovalsBeforeLoad.Clear();
 }
 
 void SSLTokensCache::CollectRecordInfosLocked(
@@ -552,6 +680,9 @@ nsresult SSLTokensCache::Init() {
 // static
 nsresult SSLTokensCache::Shutdown() {
   MOZ_ASSERT(NS_IsMainThread());
+#ifdef ENABLE_TESTS
+  SetLoadPausedAtRowsForTest(kLoadNotPausedForTest);
+#endif
   RefPtr<SSLTokensCache> instance;
   bool blockerRegistered = false;
   {
@@ -702,6 +833,9 @@ uint32_t SSLTokensCache::LoadValidRecordsFrom(mozIStorageConnection* aConn,
   NS_ENSURE_SUCCESS(rv, 0);
 
   uint32_t count = 0;
+#ifdef ENABLE_TESTS
+  uint32_t rows = 0;
+#endif
   bool hasResult = false;
   for (;;) {
     rv = stmt->ExecuteStep(&hasResult);
@@ -733,6 +867,9 @@ uint32_t SSLTokensCache::LoadValidRecordsFrom(mozIStorageConnection* aConn,
     if (PutFromPersisted(rec, aLoadGen, /* aRestored */ true)) {
       count++;
     }
+#ifdef ENABLE_TESTS
+    WaitWhileLoadPausedForTest(++rows);
+#endif
   }
   return count;
 }
@@ -1162,16 +1299,12 @@ void SSLTokensCache::Clear() {
     }
 
     gInstance->ClearCacheLocked();
-    if (gInstance->mDBActive) {
-      queue = gInstance->mDBQueue;
-    }
+    queue = gInstance->ActiveDBQueueLocked();
   }
 
   if (queue) {
     // The serial queue guarantees this runs after any pending write.
-    queue->Dispatch(
-        NS_NewRunnableFunction("SSLTokensCache::ClearDB", [] { ClearDB(); }),
-        NS_DISPATCH_EVENT_MAY_BLOCK);
+    DispatchToDBQueue(queue, "SSLTokensCache::ClearDB", [] { ClearDB(); });
   }
 }
 
@@ -1182,9 +1315,7 @@ void SSLTokensCache::DoWrite(bool aSynchronous) {
     if (!gInstance) {
       return;
     }
-    if (mDBActive) {
-      queue = mDBQueue;
-    }
+    queue = ActiveDBQueueLocked();
   }
 
   if (!queue) {
@@ -1202,10 +1333,8 @@ void SSLTokensCache::DoWrite(bool aSynchronous) {
     return;
   }
 
-  queue->Dispatch(
-      NS_NewRunnableFunction("SSLTokensCache::DoWriteAsync",
-                             [] { CollectAndWriteSnapshotIfLoaded(); }),
-      NS_DISPATCH_EVENT_MAY_BLOCK);
+  DispatchToDBQueue(queue, "SSLTokensCache::DoWriteAsync",
+                    [] { CollectAndWriteSnapshotIfLoaded(); });
 }
 
 // static
@@ -1213,6 +1342,7 @@ void SSLTokensCache::CollectAndWriteSnapshotIfLoaded() {
   MOZ_ASSERT(!NS_IsMainThread());
   // The serial queue guarantees this runs after any queued OpenAndLoad.
   nsTArray<SSLTokensCacheRecordInfo> snapshot;
+  bool hadPendingRemovals = false;
   {
     StaticMutexAutoLock lock(sLock);
     if (!gInstance || !gInstance->mLoadComplete) {
@@ -1220,8 +1350,12 @@ void SSLTokensCache::CollectAndWriteSnapshotIfLoaded() {
     }
     gInstance->CollectRecordInfosLocked(snapshot,
                                         /* aFilterForPersistence */ true);
+    hadPendingRemovals = !gInstance->mPendingDBRemovals.IsEmpty();
+    gInstance->mPendingDBRemovals.Clear();  // The snapshot supersedes them.
   }
-  WriteSnapshotToDB(std::move(snapshot));
+  if (!WriteSnapshotToDB(std::move(snapshot)) && hadPendingRemovals) {
+    RemoveDBFileAfterFailure();
+  }
 }
 
 // static
@@ -1234,13 +1368,13 @@ void SSLTokensCache::DispatchOpenAndLoad(uint32_t aLoadGen) {
     }
     queue = gInstance->mDBQueue;
   }
-  queue->Dispatch(NS_NewRunnableFunction("SSLTokensCache::OpenAndLoad",
-                                         [aLoadGen]() {
-                                           uint32_t count =
-                                               LoadFromDB(aLoadGen);
-                                           OnLoadCompleteNotify(count);
-                                         }),
-                  NS_DISPATCH_EVENT_MAY_BLOCK);
+  DispatchToDBQueue(queue, "SSLTokensCache::OpenAndLoad", [aLoadGen]() {
+#ifdef ENABLE_TESTS
+    WaitWhileLoadPausedForTest(0);
+#endif
+    uint32_t count = LoadFromDB(aLoadGen);
+    OnLoadCompleteNotify(count);
+  });
 }
 
 // static
@@ -1249,18 +1383,29 @@ void SSLTokensCache::OnLoadCompleteNotify(uint32_t aCount) {
       AssertedCast<int32_t>(aCount));
 
   TimeDuration elapsed;
+  nsTArray<StringPredicate> removals;
   {
     StaticMutexAutoLock lock(sLock);
     if (!gInstance) {
       return;
     }
     gInstance->mLoadComplete = true;
+    gInstance->mRemovalsBeforeLoad.Clear();
+    removals = std::move(gInstance->mPendingDBRemovals);
     elapsed = TimeStamp::Now() - gInstance->mLoadStartTime;
+  }
+  if (!removals.IsEmpty()) {
+    DeleteMatchesFromDB(std::move(removals));  // Already on mDBQueue.
   }
   mozilla::glean::network::ssl_token_cache_load_time.AccumulateRawDuration(
       elapsed);
   LOG(("SSLTokensCache::OnLoadCompleteNotify [records=%u, time=%.1fms]", aCount,
        elapsed.ToMilliseconds()));
+#ifdef ENABLE_TESTS
+  if (sLoadHookArmedForTest) {
+    NotifyObserversForTest("ssl-tokens-cache-load-complete-for-test");
+  }
+#endif
 }
 
 // static
@@ -1281,6 +1426,9 @@ bool SSLTokensCache::PutFromPersisted(const SSLTokensCacheRecordInfo& aRec,
                                       uint32_t aExpectedGen, bool aRestored) {
   StaticMutexAutoLock lock(sLock);
   if (!gInstance || gInstance->mLoadGeneration != aExpectedGen) {
+    return false;
+  }
+  if (MatchesAny(gInstance->mRemovalsBeforeLoad, aRec.key)) {
     return false;
   }
   auto rec = MakeRecord(aRec.key, static_cast<PRTime>(aRec.expirationTime),
@@ -1412,6 +1560,13 @@ already_AddRefed<mozIStorageConnection> SSLTokensCache::OpenActiveDB() {
   if (!IsPersistenceStillActive()) {
     return nullptr;
   }
+#ifdef ENABLE_TESTS
+  uint32_t failOpens = sFailDBOpensForTest;
+  if (failOpens &&
+      sFailDBOpensForTest.compareExchange(failOpens, failOpens - 1)) {
+    return nullptr;
+  }
+#endif
   nsCOMPtr<mozIStorageConnection> conn;
   if (!OpenDB(conn)) {
     return nullptr;
@@ -1439,11 +1594,11 @@ uint32_t SSLTokensCache::LoadFromDB(uint32_t aLoadGen) {
 }
 
 // static
-void SSLTokensCache::WriteSnapshotToDB(
+bool SSLTokensCache::WriteSnapshotToDB(
     nsTArray<SSLTokensCacheRecordInfo>&& aSnapshot) {
   nsCOMPtr<mozIStorageConnection> conn = OpenActiveDB();
   if (!conn) {
-    return;
+    return false;
   }
   nsCOMPtr<mozIStorageStatement> stmtInsert;
   nsresult rv = PrepareInsertStatement(conn, stmtInsert);
@@ -1455,17 +1610,76 @@ void SSLTokensCache::WriteSnapshotToDB(
     mozilla::glean::network::ssl_token_cache_db_errors.Get("write"_ns).Add(1);
   }
   conn->Close();
+  return NS_SUCCEEDED(rv);
 }
 
 // static
 void SSLTokensCache::ClearDB() {
   nsCOMPtr<mozIStorageConnection> conn = OpenActiveDB();
   if (!conn) {
+    RemoveDBFileAfterFailure();
     return;
   }
-  (void)NS_WARN_IF(
-      NS_FAILED(conn->ExecuteSimpleSQL("DELETE FROM ssl_tokens"_ns)));
+  nsresult rv = conn->ExecuteSimpleSQL("DELETE FROM ssl_tokens"_ns);
   conn->Close();
+  if (NS_WARN_IF(NS_FAILED(rv))) {
+    RemoveDBFileAfterFailure();
+  }
+}
+
+// static
+void SSLTokensCache::DeleteMatchesFromDB(
+    nsTArray<StringPredicate>&& aRemovals) {
+  nsCOMPtr<mozIStorageConnection> conn = OpenActiveDB();
+  if (!conn) {
+    RemoveDBFileAfterFailure();
+    return;
+  }
+  nsresult rv = DeleteMatchesFrom(conn, aRemovals);
+  conn->Close();
+  if (NS_WARN_IF(NS_FAILED(rv))) {
+    mozilla::glean::network::ssl_token_cache_db_errors.Get("delete"_ns).Add(1);
+    RemoveDBFileAfterFailure();
+  }
+}
+
+// static
+nsresult SSLTokensCache::DeleteMatchesFrom(
+    mozIStorageConnection* aConn, const nsTArray<StringPredicate>& aRemovals) {
+  nsCOMPtr<mozIStorageStatement> select;
+  nsresult rv = aConn->CreateStatement("SELECT DISTINCT key FROM ssl_tokens"_ns,
+                                       getter_AddRefs(select));
+  NS_ENSURE_SUCCESS(rv, rv);
+  mozStorageTransaction transaction(aConn, false);
+  rv = transaction.Start();
+  NS_ENSURE_SUCCESS(rv, rv);
+  nsTArray<nsCString> keys;
+  {
+    mozStorageStatementScoper scoper(select);
+    bool hasResult = false;
+    while (NS_SUCCEEDED(rv = select->ExecuteStep(&hasResult)) && hasResult) {
+      nsAutoCString key;
+      rv = select->GetUTF8String(0, key);
+      NS_ENSURE_SUCCESS(rv, rv);
+      if (MatchesAny(aRemovals, key)) {
+        keys.AppendElement(key);
+      }
+    }
+    NS_ENSURE_SUCCESS(rv, rv);
+  }
+  if (keys.IsEmpty()) {
+    return NS_OK;
+  }
+  nsCOMPtr<mozIStorageStatement> stmt;
+  rv = aConn->CreateStatement(
+      "DELETE FROM ssl_tokens WHERE key IN carray(:keys)"_ns,
+      getter_AddRefs(stmt));
+  NS_ENSURE_SUCCESS(rv, rv);
+  rv = stmt->BindArrayOfUTF8StringsByName("keys"_ns, keys);
+  NS_ENSURE_SUCCESS(rv, rv);
+  rv = stmt->Execute();
+  NS_ENSURE_SUCCESS(rv, rv);
+  return transaction.Commit();
 }
 
 // static
@@ -1493,25 +1707,29 @@ uint64_t SSLTokensCache::InsertRecordLocked(UniquePtr<TokenCacheRecord> aRec) {
 }
 
 // static
+bool SSLTokensCache::MatchesAny(const nsTArray<StringPredicate>& aPredicates,
+                                const nsACString& aKey) {
+  return std::any_of(
+      aPredicates.begin(), aPredicates.end(),
+      [&](const StringPredicate& aPredicate) { return aPredicate(aKey); });
+}
+
+// static
 bool SSLTokensCache::ShouldPersistKey(const nsACString& aKey,
                                       uint8_t aOverridableError) {
   return aOverridableError == 0 && OAFromPeerId(aKey).mPrivateBrowsingId == 0;
 }
 
 // static
-void SSLTokensCache::RemoveByMatchAndOAPattern(
-    const nsACString& aValue, const nsACString& aSeparatedValue,
-    const mozilla::OriginAttributesPattern& aPattern) {
-  StaticMutexAutoLock lock(sLock);
-  if (!gInstance) {
-    return;
-  }
-  gInstance->RemoveMatchingLocked(
-      [&aValue, &aSeparatedValue, &aPattern](const nsACString& aKey) {
+void SSLTokensCache::RemoveByHostMatchAndOAPattern(
+    const mozilla::OriginAttributesPattern& aPattern,
+    StringPredicate&& aHostMatches) {
+  RemoveMatchingAndQueueDeletes(
+      [pattern = aPattern,
+       hostMatches = std::move(aHostMatches)](const nsACString& aKey) {
         nsDependentCSubstring host = HostFromBasePart(BasePartFromKey(aKey));
-        return !host.IsEmpty() &&
-               (host.Equals(aValue) || StringEndsWith(host, aSeparatedValue)) &&
-               aPattern.Matches(OAFromPeerId(aKey));
+        return !host.IsEmpty() && hostMatches(host) &&
+               pattern.Matches(OAFromPeerId(aKey));
       });
 }
 
@@ -1519,7 +1737,12 @@ void SSLTokensCache::RemoveByMatchAndOAPattern(
 void SSLTokensCache::RemoveByHostAndOAPattern(
     const nsACString& aHost, const mozilla::OriginAttributesPattern& aPattern) {
   LOG(("SSLTokensCache::RemoveByHostAndOAPattern"));
-  RemoveByMatchAndOAPattern(aHost, ":"_ns + aHost, aPattern);
+  RemoveByHostMatchAndOAPattern(
+      aPattern,
+      [host = nsCString(aHost),
+       colonHost = nsCString(":"_ns + aHost)](const nsACString& aKeyHost) {
+        return aKeyHost.Equals(host) || StringEndsWith(aKeyHost, colonHost);
+      });
 }
 
 // static
@@ -1540,19 +1763,12 @@ void SSLTokensCache::RemoveBySiteAndOAPattern(
   //   "sub.example.com"   — subdomain                → ends with "."_ns + aSite
   //   "anon:example.com"  — connection-type prefix   → ends with ":"_ns + aSite
   // (Prefixed subdomains like "anon:sub.example.com" are caught by dotSite.)
-  nsAutoCString dotSite("."_ns + aSite);
-  nsAutoCString colonSite(":"_ns + aSite);
-  StaticMutexAutoLock lock(sLock);
-  if (!gInstance) {
-    return;
-  }
-  gInstance->RemoveMatchingLocked(
-      [&aSite, &dotSite, &colonSite, &aPattern](const nsACString& aKey) {
-        nsDependentCSubstring host = HostFromBasePart(BasePartFromKey(aKey));
-        return !host.IsEmpty() &&
-               (host.Equals(aSite) || StringEndsWith(host, dotSite) ||
-                StringEndsWith(host, colonSite)) &&
-               aPattern.Matches(OAFromPeerId(aKey));
+  RemoveByHostMatchAndOAPattern(
+      aPattern,
+      [site = nsCString(aSite), dotSite = nsCString("."_ns + aSite),
+       colonSite = nsCString(":"_ns + aSite)](const nsACString& aHost) {
+        return aHost.Equals(site) || StringEndsWith(aHost, dotSite) ||
+               StringEndsWith(aHost, colonSite);
       });
 }
 
@@ -1678,6 +1894,23 @@ void SSLTokensCache::ReplaceAllRecordsForTest(
   }
 }
 
+// static
+void SSLTokensCache::HoldLoadForTest(bool aHold) {
+  PauseLoadAfterRowsForTest(aHold ? 0 : kLoadNotPausedForTest);
+}
+
+// static
+void SSLTokensCache::PauseLoadAfterRowsForTest(uint32_t aRows) {
+  sLoadHookArmedForTest = true;
+  SetLoadPausedAtRowsForTest(aRows);
+}
+
+// static
+void SSLTokensCache::FailDBOpensForTest(uint32_t aCount) {
+  sFailDBOpensArmedForTest = true;
+  sFailDBOpensForTest = aCount;
+}
+
 #endif  // ENABLE_TESTS
 
 // static
@@ -1731,10 +1964,8 @@ void SSLTokensCache::ReconcilePersistence(const char*, void*) {
     // Drop any DB left behind by a session that had persistence on.
     if (queueForRemoval) {
       // Ordered after any pending write.
-      queueForRemoval->Dispatch(
-          NS_NewRunnableFunction("SSLTokensCache::RemoveDB",
-                                 []() { RemoveDBFileSync(); }),
-          NS_DISPATCH_EVENT_MAY_BLOCK);
+      DispatchToDBQueue(queueForRemoval, "SSLTokensCache::RemoveDB",
+                        [] { RemoveDBFileSync(); });
     } else if (nsCOMPtr<nsIFile> dbFile = ProfileDBFile()) {
       NS_DispatchBackgroundTask(
           NS_NewRunnableFunction("SSLTokensCache::RemoveDB",
@@ -1792,12 +2023,13 @@ SSLTokensCache::BlockShutdown(nsIAsyncShutdownClient* /* aClient */) {
 
   MOZ_ASSERT(NS_IsMainThread());
   MOZ_ASSERT(XRE_IsParentProcess());
+#ifdef ENABLE_TESTS
+  SetLoadPausedAtRowsForTest(kLoadNotPausedForTest);
+#endif
   nsCOMPtr<nsISerialEventTarget> queue;
   {
     StaticMutexAutoLock lock(sLock);
-    if (mDBActive) {
-      queue = mDBQueue;
-    }
+    queue = ActiveDBQueueLocked();
   }
   if (!queue) {
     RemoveShutdownBlocker();
@@ -1975,6 +2207,24 @@ SSLTokensCacheService::CountSSLTokens(uint32_t* aCount) {
 NS_IMETHODIMP
 SSLTokensCacheService::PutSSLTokenForTest(const nsACString& aKey) {
   SSLTokensCache::PutForTest(aKey);
+  return NS_OK;
+}
+
+NS_IMETHODIMP
+SSLTokensCacheService::HoldLoadForTest(bool aHold) {
+  SSLTokensCache::HoldLoadForTest(aHold);
+  return NS_OK;
+}
+
+NS_IMETHODIMP
+SSLTokensCacheService::PauseLoadAfterRowsForTest(uint32_t aRows) {
+  SSLTokensCache::PauseLoadAfterRowsForTest(aRows);
+  return NS_OK;
+}
+
+NS_IMETHODIMP
+SSLTokensCacheService::FailDBOpensForTest(uint32_t aCount) {
+  SSLTokensCache::FailDBOpensForTest(aCount);
   return NS_OK;
 }
 #endif  // ENABLE_TESTS

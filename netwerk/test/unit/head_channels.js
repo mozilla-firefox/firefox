@@ -643,3 +643,11 @@ async function asyncSetupFaultyServer(callbackServer, { use0RTT = true } = {}) {
     Services.prefs.clearUserPref("network.http.speculative-parallel-limit");
   });
 }
+
+function getCacheServices() {
+  const contractId = "@mozilla.org/network/ssl-tokens-cache;1";
+  return {
+    cache: Cc[contractId].getService(Ci.nsISSLTokensCache),
+    testCache: Cc[contractId].getService(Ci.nsISSLTokensCacheTest),
+  };
+}

@@ -8,7 +8,6 @@
 
 import os
 import sys
-import time
 from pathlib import Path
 
 from marionette_harness import MarionetteTestCase
@@ -57,6 +56,9 @@ class SSLTokenCacheClearingBugsTestCase(SSLTokensCacheMixin, MarionetteTestCase)
 
     def _count(self):
         return self.marionette.execute_async_script(_COUNT_SCRIPT)
+
+    def _wait_for_count(self, expected, timeout=5):
+        return self._wait_for(self._count, lambda c: c == expected, None, timeout)
 
     def _fire_last_pb_context_exited(self):
         self.marionette.execute_script(
@@ -124,13 +126,55 @@ class SSLTokenCacheClearingBugsTestCase(SSLTokensCacheMixin, MarionetteTestCase)
 
         # Disabling persistence must delete the file immediately.
         self.marionette.set_pref("network.ssl_tokens_cache_persistence", False)
-        deadline = time.monotonic() + 5
-        while cache_file.exists() and time.monotonic() < deadline:
-            time.sleep(0.25)
-        self.assertFalse(
-            cache_file.exists(),
+        self.assertTrue(
+            self.wait_for_cache_file_removed(cache_file),
             "file must be deleted when persistence is disabled",
         )
+
+    def test_site_removal_reaches_disk_before_crash(self):
+        """A site removal is deleted from disk without a snapshot, so a
+        killed-and-restarted browser does not reload the site's token."""
+        self.marionette.set_pref("network.ssl_tokens_cache_persistence", True)
+        cache_file = Path(self.marionette.profile_path) / "ssl_tokens_cache.sqlite"
+        try:
+            self.assertEqual(self._put_token(HOST_A_KEY), 1)
+            self.assertEqual(self._put_token(HOST_B_KEY), 2)
+            self.marionette.execute_script(
+                "Services.obs.notifyObservers(null, 'application-background', null);"
+            )
+            self.assertEqual(
+                self.wait_for_cache_keys(cache_file, [HOST_A_KEY, HOST_B_KEY]),
+                [HOST_A_KEY, HOST_B_KEY],
+            )
+
+            self.marionette.execute_script(
+                """
+                Cc["@mozilla.org/network/ssl-tokens-cache;1"]
+                  .getService(Ci.nsISSLTokensCache)
+                  .removeSSLTokensBySiteAndOriginAttributesPattern(
+                    "hostA.example.com", "{}");
+                """
+            )
+            self.assertEqual(self._count(), 1, "memory must be updated at once")
+            self.assertEqual(
+                self.wait_for_cache_keys(cache_file, [HOST_B_KEY]),
+                [HOST_B_KEY],
+                "the delayed DELETE must remove the site's row",
+            )
+
+            # Blocking write, so persistence stays on across the kill.
+            self.marionette.execute_script(
+                "Services.prefs.savePrefFile(Services.dirsvc.get('PrefF', Ci.nsIFile));"
+            )
+            self.marionette.quit(in_app=False)
+            self.assertEqual(self.cache_keys(cache_file), [HOST_B_KEY])
+
+            self.marionette.start_session()
+            self.marionette.set_context("chrome")
+            self.assertEqual(self._wait_for_count(1), 1)
+            self.assertEqual(self.cache_keys(cache_file), [HOST_B_KEY])
+        finally:
+            self.marionette.restart(in_app=False, clean=True)
 
     def test_non_cipher_security_pref_change_preserves_tokens(self):
         """Changing a non-cipher security.* pref must not evict tokens."""
