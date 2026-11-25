@@ -6,7 +6,7 @@ import os
 
 from setuptools import setup
 
-PACKAGE_VERSION = "1.0.1"
+PACKAGE_VERSION = "2.0.0"
 
 try:
     pwd = os.path.dirname(os.path.abspath(__file__))
@@ -30,6 +30,6 @@ setup(
     url="https://wiki.mozilla.org/Auto-tools/Projects/Mozbase",
     packages=["mozsystemmonitor"],
     version=PACKAGE_VERSION,
-    install_requires=["psutil >= 3.1.1"],
+    install_requires=["moztest >= 1.2.0", "psutil >= 3.1.1"],
     python_requires=">=3.9",
 )
