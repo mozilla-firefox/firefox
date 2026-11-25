@@ -164,6 +164,7 @@ import org.mozilla.fenix.home.HomeFragmentDirections
 import org.mozilla.fenix.home.TopSitesRefresher
 import org.mozilla.fenix.home.intent.AssistIntentProcessor
 import org.mozilla.fenix.home.intent.CrashReporterIntentProcessor
+import org.mozilla.fenix.home.intent.FxaAuthFlowIntentProcessor
 import org.mozilla.fenix.home.intent.HomeDeepLinkIntentProcessor
 import org.mozilla.fenix.home.intent.LensResultIntentProcessor
 import org.mozilla.fenix.home.intent.OpenBrowserIntentProcessor
@@ -409,6 +410,15 @@ open class HomeActivity : LocaleAwareAppCompatActivity(), NavHostActivity, Crash
 
     private val externalSourceIntentProcessors by lazy {
         listOf(
+            // auth flow intent should be before HomeDeepLinkIntentProcessor because
+            // the HomeDeepLinkIntentProcessor consumes/intercepts any built-in deeplink
+            FxaAuthFlowIntentProcessor(
+                accountManager = components.backgroundServices.accountManager,
+                syncConfig = components.backgroundServices.syncConfig,
+                coroutineScope = lifecycleScope,
+                ioDispatcher = IO,
+                mainDispatcher = Main,
+            ),
             HomeDeepLinkIntentProcessor(
                 activity = this,
                 shareUseCases = components.useCases.shareUseCases,

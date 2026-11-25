@@ -553,6 +553,7 @@
                 <data android:host="urls_history"/>
                 <data android:host="settings_private_browsing"/>
                 <data android:host="protections_dashboard"/>
+                <data android:host="fxa_begin_auth"/>
             </intent-filter>
         </activity>
 

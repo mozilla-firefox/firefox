@@ -126,7 +126,7 @@ class BackgroundServices(
             if (areCredentialsSyncable) SyncEngine.CreditCards else null,
             if (settings.isAddressSyncEnabled) SyncEngine.Addresses else null,
         )
-    private val syncConfig by lazy {
+    val syncConfig by lazy {
         SyncConfig(
             supportedEngines = supportedEngines,
             periodicSyncConfig = PeriodicSyncConfig(periodMinutes = 240), // four hours
