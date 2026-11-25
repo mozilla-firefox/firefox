@@ -708,8 +708,8 @@ export const AIWindowUI = {
   },
 
   /**
-   * Triggers updating the starter prompts on the active ai-window
-   * for the given chrome window. The target is resolved by mode:
+   * Triggers updating the starter prompts and resume cards on the active
+   * ai-window for the given chrome window. The target is resolved by mode:
    * sidebar uses the chrome window's sidebar ai-window, fullpage
    * uses the ai-window inside the owning tab's browser.
    *
@@ -718,13 +718,14 @@ export const AIWindowUI = {
    * @param {"sidebar"|"fullpage"} [mode="sidebar"]
    * @param {MozTabbrowserTab|null} [tab=null] Owner tab for fullpage mode
    */
-  updateStarterPrompts(win, clear = true, mode = "sidebar", tab = null) {
+  updateNewChatContent(win, clear = true, mode = "sidebar", tab = null) {
     const aiWindow = this._getActiveAiWindow(win, mode, tab);
     if (!aiWindow) {
       return;
     }
 
     aiWindow.loadStarterPrompts(clear, win.gBrowser.selectedTab);
+    aiWindow.loadResumeCards(win.gBrowser.selectedTab);
   },
 
   /**

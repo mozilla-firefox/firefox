@@ -384,9 +384,9 @@ describe("sidebar conversation starter prompts", () => {
     });
 
     it("should not reload prompts when background tabs change URL", async () => {
-      const updateStarterPromptsSpy = sinon.spy(
+      const updateNewChatContentSpy = sinon.spy(
         lazy.AIWindowUI,
-        "updateStarterPrompts"
+        "updateNewChatContent"
       );
 
       try {
@@ -408,7 +408,7 @@ describe("sidebar conversation starter prompts", () => {
         );
 
         responseContent[0] = "prompt 3\nprompt 4";
-        updateStarterPromptsSpy.resetHistory();
+        updateNewChatContentSpy.resetHistory();
 
         backgroundTab = await openBackgroundTab(
           "https://example.org",
@@ -422,11 +422,11 @@ describe("sidebar conversation starter prompts", () => {
         );
         Assert.equal(
           0,
-          updateStarterPromptsSpy.callCount,
+          updateNewChatContentSpy.callCount,
           "There should not be any more calls to update starter prompts"
         );
       } finally {
-        updateStarterPromptsSpy.restore();
+        updateNewChatContentSpy.restore();
       }
     });
 
@@ -500,6 +500,47 @@ describe("sidebar conversation starter prompts", () => {
       );
     });
   });
+});
+
+add_task(async function test_starters_render_while_resume_cards_pending() {
+  const sb = sinon.createSandbox();
+  let win;
+
+  await SpecialPowers.pushPrefEnv({
+    set: [
+      ["browser.smartwindow.memories.generateFromConversation", true],
+      ["browser.smartwindow.memories.generateFromHistory", true],
+    ],
+  });
+
+  try {
+    // The resume gate refreshes memories first. Leave that pending so the
+    // cards can't load; the starters must not wait on it.
+    const getAllMemoriesStub = sb
+      .stub(MemoriesManager, "getAllMemories")
+      .returns(new Promise(() => {}));
+    win = await openAIWindow();
+    const browser = win.gBrowser.selectedBrowser;
+    const buttons = await getPromptButtons(browser);
+    const aiWindow = browser.contentDocument.querySelector("ai-window");
+
+    await TestUtils.waitForCondition(
+      () => getAllMemoriesStub.called,
+      "Wait for the resume gate to start refreshing memories"
+    );
+    Assert.equal(
+      buttons.length,
+      3,
+      "Starters should render while the resume cards are pending"
+    );
+    Assert.deepEqual(aiWindow.resumeCards, [], "No resume cards have loaded");
+  } finally {
+    if (win) {
+      await BrowserTestUtils.closeWindow(win);
+    }
+    sb.restore();
+    await SpecialPowers.popPrefEnv();
+  }
 });
 
 add_task(async function test_starter_prompts_click_triggers_chat_on_new_tab() {

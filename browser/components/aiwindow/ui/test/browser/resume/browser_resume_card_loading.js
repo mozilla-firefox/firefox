@@ -140,6 +140,60 @@ describe("Resume card loading", () => {
         "A new tab should surface the pool's 5th candidate in the dismissed slot"
       );
     });
+
+    it("shows skeleton cards while the lookup is slow", async () => {
+      let resolveLookup;
+      sandbox
+        .stub(MemoriesManager, "getAllMemories")
+        .resolves([{ id: "memory-1", memory_summary: "Test" }]);
+      sandbox.stub(JourneyManager, "suggestJourneysToResume").returns(
+        new Promise(resolve => {
+          resolveLookup = resolve;
+        })
+      );
+
+      const aiWindow = await openOnlyAIWindowTab(win);
+
+      await TestUtils.waitForCondition(
+        () => aiWindow.resumeCardsLoading,
+        "Wait for the loading state once the lookup is slow"
+      );
+      const section = await TestUtils.waitForCondition(
+        () => aiWindow.shadowRoot.querySelector("smartwindow-resume-section"),
+        "Wait for smartwindow-resume-section element"
+      );
+      await TestUtils.waitForCondition(
+        () => section.shadowRoot.querySelector(".resume-card-skeleton"),
+        "Wait for the skeleton cards"
+      );
+
+      resolveLookup([
+        {
+          memory: { id: "memory-1" },
+          content: {
+            headline: "Pick up your research",
+            status: "Continue reading",
+            previewTabs: [{ url: "https://example.com/1", title: "Example 1" }],
+          },
+        },
+      ]);
+      await TestUtils.waitForCondition(
+        () => !aiWindow.resumeCardsLoading && aiWindow.resumeCards.length,
+        "Wait for the lookup to resolve into cards"
+      );
+      await section.updateComplete;
+
+      Assert.equal(
+        section.shadowRoot.querySelector(".resume-card-skeleton"),
+        null,
+        "Skeleton cards should be gone once the lookup resolves"
+      );
+      Assert.equal(
+        section.shadowRoot.querySelectorAll("smartwindow-resume-card").length,
+        1,
+        "The resolved card should render"
+      );
+    });
   });
 
   describe("when generation is gated off", () => {
@@ -161,7 +215,8 @@ describe("Resume card loading", () => {
       const suggestSpy = sandbox.spy(JourneyManager, "suggestJourneysToResume");
 
       const aiWindow = await openOnlyAIWindowTab(win);
-      // Starters render after the resume gates have been checked.
+      // Wait for the starters to render. The stubbed memories resolve
+      // immediately, so the resume gate should have settled by then.
       await getPromptButtons(win.gBrowser.selectedBrowser);
 
       Assert.deepEqual(
@@ -185,6 +240,9 @@ describe("Resume card loading", () => {
       stubs = await stubResumeActivityGeneration(sandbox);
 
       const aiWindow = await openOnlyAIWindowTab(win);
+      // Wait for the starters to render. loadResumeCards waits on the same
+      // smartbar-ready promise and returns right away with the feature
+      // disabled.
       await getPromptButtons(win.gBrowser.selectedBrowser);
 
       Assert.ok(
@@ -208,6 +266,8 @@ describe("Resume card loading", () => {
       const suggestSpy = sandbox.spy(JourneyManager, "suggestJourneysToResume");
 
       const aiWindow = await openOnlyAIWindowTab(win);
+      // Wait for the starters to render. The stubbed memories resolve
+      // immediately, so the resume gate should have settled by then.
       await getPromptButtons(win.gBrowser.selectedBrowser);
 
       Assert.deepEqual(

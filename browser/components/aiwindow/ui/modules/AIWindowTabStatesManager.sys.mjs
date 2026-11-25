@@ -930,7 +930,7 @@ export class AIWindowTabStatesManager {
       return;
     }
 
-    lazy.AIWindowUI.updateStarterPrompts(this.#window, false, mode, tab);
+    lazy.AIWindowUI.updateNewChatContent(this.#window, false, mode, tab);
   };
 
   /**
@@ -1084,7 +1084,7 @@ export class AIWindowTabStatesManager {
         const tab = this.#window.gBrowser.selectedTab;
         let tabState = this.#tabStates.get(tab);
 
-        lazy.AIWindowUI.updateStarterPrompts(this.#window, true);
+        lazy.AIWindowUI.updateNewChatContent(this.#window, true);
 
         if (!tabState || !tabState.state?.conversationId) {
           return;
