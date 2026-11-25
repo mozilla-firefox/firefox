@@ -105,6 +105,10 @@ void Http2StreamTunnel::CloseStream(nsresult aReason) {
     mInput->OnSocketReady(aReason);
   }
   mClosed = true;
+  // The tunneled nsHttpConnection owns this stream as its socket transport,
+  // and the transaction owns a handle to that connection. Drop the reference
+  // so the transaction can be released and the connection reclaimed.
+  mTransaction = nullptr;
 }
 
 NS_IMETHODIMP
