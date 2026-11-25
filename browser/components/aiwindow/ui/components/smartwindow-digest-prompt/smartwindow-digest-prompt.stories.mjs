@@ -6,6 +6,7 @@ import { html } from "chrome://global/content/vendor/lit.all.mjs";
 import "chrome://browser/content/aiwindow/components/smartwindow-prompts.mjs";
 
 window.MozXULElement.insertFTLIfNeeded("browser/aiWindow.ftl");
+window.MozXULElement.insertFTLIfNeeded("preview/aiWindow.ftl");
 
 // The digest pill borrows smartwindow-prompts' styles, so each story renders
 // it inside a prompts row.

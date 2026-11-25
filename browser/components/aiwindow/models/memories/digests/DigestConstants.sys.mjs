@@ -21,3 +21,12 @@ export const DIGEST_SCHEDULE_TYPE = Object.freeze({
   WEEKLY: SCHEDULE_TYPES.WEEKLY,
   ON_DEMAND: "on-demand",
 });
+
+/**
+ * Digest lengths. Not stored yet: DigestStore gets a length field in
+ * bug 2085182.
+ */
+export const DIGEST_LENGTH = Object.freeze({
+  STANDARD: "standard",
+  SHORT: "short",
+});

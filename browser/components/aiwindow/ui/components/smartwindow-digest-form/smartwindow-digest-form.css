@@ -1,0 +1,154 @@
+/* This Source Code Form is subject to the terms of the Mozilla Public
+ * License, v. 2.0. If a copy of the MPL was not distributed with this
+ * file, You can obtain one at http://mozilla.org/MPL/2.0/. */
+
+:host {
+  display: block;
+  box-sizing: border-box;
+  padding: var(--space-large);
+  /* stylelint-disable-next-line stylelint-plugin-mozilla/use-design-tokens */
+  border: var(--border-width) solid var(--smartwindow-card-border-color);
+  border-radius: var(--border-radius-large);
+  background-color: var(--background-color-box);
+  color: var(--text-color);
+  /* Scrolls inside the card when a host limits its height. */
+  overflow-y: auto;
+}
+
+form {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-large);
+}
+
+header {
+  display: flex;
+  flex-direction: column;
+  /* stylelint-disable-next-line stylelint-plugin-mozilla/use-design-tokens */
+  gap: 6px;
+
+  h2 {
+    font-size: var(--font-size-root);
+    font-weight: var(--font-weight-semibold);
+    margin: 0;
+  }
+
+  p {
+    margin: 0;
+  }
+}
+
+.field {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-xsmall);
+}
+
+.field-input {
+  display: flex;
+  align-items: center;
+  gap: var(--space-xxsmall);
+}
+
+.field-readonly {
+  color: var(--text-color-deemphasized);
+}
+
+.field-topic {
+  .memory-tooltip-trigger {
+    anchor-name: --memory-tooltip;
+    --button-icon-fill: var(--text-color-deemphasized);
+
+    @media not (forced-colors) {
+      --memory-tooltip-trigger-background: light-dark(var(--color-violet-desaturated-10), var(--color-violet-desaturated-60));
+      --button-background-color-ghost-hover: var(--memory-tooltip-trigger-background);
+      --button-background-color-ghost-active: var(--memory-tooltip-trigger-background);
+      --button-background-color-ghost-selected: var(--memory-tooltip-trigger-background);
+
+      @media not (-moz-pref("browser.nova.enabled")) {
+        --memory-tooltip-trigger-background: light-dark(var(--color-violet-0), var(--color-violet-80));
+      }
+    }
+
+    &::part(button) {
+      cursor: pointer;
+    }
+  }
+
+  .memory-tooltip {
+    position-anchor: --memory-tooltip;
+    position-area: block-end span-inline-end;
+    position-try-fallbacks: flip-block, flip-inline;
+    margin: var(--space-xxsmall) 0 0;
+    max-width: var(--size-layout-small);
+    padding: var(--space-small) var(--space-medium);
+    border: 1px solid var(--border-color);
+    border-radius: var(--border-radius-medium);
+    background: var(--background-color-box);
+    color: var(--text-color);
+    box-shadow: var(--box-shadow-level-3);
+
+    > p {
+      margin: 0;
+    }
+
+    a {
+      color: var(--link-color);
+    }
+  }
+}
+
+.field-description {
+  .description-input {
+    --input-min-height: 85px;
+  }
+}
+
+.error-message {
+  display: inline-flex;
+  align-items: center;
+  gap: var(--space-xsmall);
+  color: var(--text-color-error);
+  font-size: var(--font-size-small);
+
+  &::before {
+    content: "";
+    width: var(--icon-size-xsmall);
+    height: var(--icon-size-xsmall);
+    flex: none;
+    -moz-context-properties: fill;
+    fill: currentColor;
+    background: url("chrome://browser/content/aiwindow/assets/error-outline.svg") no-repeat center / contain;
+  }
+}
+
+.field-sources {
+  gap: var(--space-small);
+
+  .chips {
+    display: flex;
+    flex-wrap: wrap;
+    gap: var(--space-small);
+  }
+}
+
+.field-row {
+  display: flex;
+  flex-wrap: wrap;
+  gap: var(--space-small);
+
+  > moz-select {
+    flex: 1;
+    min-width: 0;
+  }
+}
+
+moz-select {
+  --select-font-weight: var(--font-weight);
+}
+
+.required-note {
+  color: var(--text-color-deemphasized);
+  font-size: var(--font-size-small);
+  margin: 0;
+}
