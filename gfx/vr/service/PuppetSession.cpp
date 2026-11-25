@@ -26,7 +26,8 @@ PuppetSession::~PuppetSession() { Shutdown(); }
 
 bool PuppetSession::Initialize(mozilla::gfx::VRSystemState& aSystemState,
                                bool aDetectRuntimesOnly) {
-  if (!StaticPrefs::dom_vr_webxr_enabled() || !StaticPrefs::dom_vr_puppet_enabled()) {
+  if (!StaticPrefs::dom_vr_webxr_enabled() ||
+      !StaticPrefs::dom_vr_puppet_enabled()) {
     return false;
   }
   if (!VRPuppetCommandBuffer::IsCreated()) {
