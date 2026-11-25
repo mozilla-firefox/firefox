@@ -602,7 +602,7 @@ JSExtensibleString& JSLinearString::makeExtensible(size_t capacity) {
   size_t oldSize = allocSize();
   js::RemoveCellMemory(this, oldSize, js::MemoryUse::StringContents);
   changeStringType(length(), flags() | StringFlags::EXTENSIBLE_FLAGS);
-  d.s.u3.capacity = capacity;
+  setField(&d.s.u3.capacity, capacity);
   size_t newSize = allocSize();
   js::AddCellMemory(this, newSize, js::MemoryUse::StringContents);
   MOZ_ASSERT(newSize >= oldSize);
@@ -1263,7 +1263,7 @@ finish_root:
     flags |=
         left.flags() & StringFlags::PRESERVE_LINEAR_NONATOM_BITS_ON_REPLACE;
     left.changeStringType(left.length(), flags);
-    left.d.s.u3.base = &root->asLinear();
+    setField(&left.d.s.u3.base, &root->asLinear());
     if (left.isTenured() && !root->isTenured()) {
       // leftmost child -> root is a tenured -> nursery edge. Put the leftmost
       // child in the store buffer and prevent the root's chars from moving or
@@ -2925,7 +2925,7 @@ bool JSString::tryReplaceWithAtomRef(JSAtom* atom) {
            (isRope() ? StringFlags::PRESERVE_ROPE_BITS_ON_REPLACE
                      : StringFlags::PRESERVE_LINEAR_NONATOM_BITS_ON_REPLACE);
   changeStringType(length(), flags);
-  d.s.u3.base = atom;
+  setField(&d.s.u3.base, static_cast<JSLinearString*>(atom));
   if (atom->hasLatin1Chars()) {
     setNonInlineChars(atom->chars<Latin1Char>(nogc), atom->hasStringBuffer());
   } else {
