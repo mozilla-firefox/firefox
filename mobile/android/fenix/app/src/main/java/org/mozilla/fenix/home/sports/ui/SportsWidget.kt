@@ -49,7 +49,7 @@ fun SportsWidget(
     state: SportsWidgetState,
     modifier: Modifier = Modifier,
     onRefresh: () -> Unit = {},
-    onMatchClicked: (String, String, String) -> Unit = { _, _, _ -> },
+    onMatchClicked: () -> Unit = {},
     onMatchesAndResults: () -> Unit = {},
     onWallpapers: () -> Unit = {},
     onShare: () -> Unit = {},
@@ -105,7 +105,7 @@ internal fun sportsWidgetPages(
     matchCards: List<MatchCardState>,
     errorState: SportCardErrorState?,
     onRefresh: () -> Unit,
-    onMatchClicked: (String, String, String) -> Unit,
+    onMatchClicked: () -> Unit,
 ): SportsWidgetPages {
     val hasLiveMatch = matchCards.any { card -> card.matches.any { it.matchStatus.isLive() } }
 

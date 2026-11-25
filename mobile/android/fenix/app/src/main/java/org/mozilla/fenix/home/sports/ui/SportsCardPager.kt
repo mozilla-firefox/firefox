@@ -395,7 +395,7 @@ private fun SportsCardPagerPreview() {
                                 errorState = null,
                                 modifier = Modifier.fillMaxWidth(),
                                 onRefresh = {},
-                                onMatchClicked = { _, _, _ -> },
+                                onMatchClicked = {},
                                 pageNumber = pageNumber,
                                 pageCount = pageCount,
                             )

@@ -49,7 +49,7 @@ fun MatchCard(
     state: MatchCardState,
     errorState: SportCardErrorState?,
     onRefresh: (LiveMatchRefreshSource) -> Unit,
-    onMatchClicked: (String, String, String) -> Unit,
+    onMatchClicked: () -> Unit,
     modifier: Modifier = Modifier,
     pageNumber: Int? = null,
     pageCount: Int? = null,
@@ -98,7 +98,7 @@ private val MatchContentHorizontalPadding: Dp
 internal fun MatchBody(
     match: Match,
     errorState: SportCardErrorState?,
-    onMatchClicked: (String, String, String) -> Unit,
+    onMatchClicked: () -> Unit,
     onRefresh: (LiveMatchRefreshSource) -> Unit,
 ) {
     if (errorState != null && match.matchStatus.isLive()) {
@@ -112,10 +112,8 @@ internal fun MatchBody(
         Row(
             modifier =
                 Modifier.fillMaxWidth()
+                    .clickable(onClick = onMatchClicked)
                     .padding(horizontal = MatchContentHorizontalPadding)
-                    .clickable(
-                        onClick = { onMatchClicked(match.home.name, match.away.name, "${match.date} ${match.time}") }
-                    )
                     .clearAndSetSemantics {
                         contentDescription = rowContentDescription
                     },
@@ -223,7 +221,7 @@ private fun MatchCardPreview(@PreviewParameter(MatchCardPreviewProvider::class) 
                 state = preview.state,
                 errorState = null,
                 onRefresh = {},
-                onMatchClicked = { _, _, _ -> },
+                onMatchClicked = {},
             )
         }
     }
@@ -238,7 +236,7 @@ private fun MatchCardErrorPreview(@PreviewParameter(MatchCardPreviewProvider::cl
                 state = preview.state,
                 errorState = SportCardErrorState.LoadFailed,
                 onRefresh = {},
-                onMatchClicked = { _, _, _ -> },
+                onMatchClicked = {},
             )
         }
     }

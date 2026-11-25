@@ -125,6 +125,6 @@ class SportsWidgetPagesTest {
             matchCards = matchCards,
             errorState = errorState,
             onRefresh = {},
-            onMatchClicked = { _, _, _ -> },
+            onMatchClicked = {},
         )
 }
