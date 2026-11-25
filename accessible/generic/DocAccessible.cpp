@@ -2477,7 +2477,13 @@ void DocAccessible::MaybeFireEventsForChangedPopover(LocalAccessible* aAcc) {
   while (Accessible* invoker = invokers.LocalNext()) {
     auto expandedChangeEvent =
         MakeRefPtr<AccStateChangeEvent>(invoker->AsLocal(), states::EXPANDED);
-    FireDelayedEvent(expandedChangeEvent);
+    // We fire this event immediately instead of using FireDelayedEvent because
+    // dismissing a popover might focus an invoker. Since focus events get fired
+    // before other queued events, queuing this event would result in the
+    // expanded state being stale in the RemoteAccessible cache when the focus
+    // event fires, which might cause clients to report expanded instead of
+    // collapsed when handling the focus event.
+    nsEventShell::FireEvent(expandedChangeEvent);
   }
 
   // When a popover opens or closes, invalidate relations so invokers can

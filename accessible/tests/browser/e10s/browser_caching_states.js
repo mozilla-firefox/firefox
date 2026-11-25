@@ -978,3 +978,34 @@ addAccessibleTask(
   },
   { topLevel: true, iframe: true, remoteIframe: true, chrome: true }
 );
+
+/**
+ * Test that the expanded state is cleared when focus returns to a popover
+ * invoker after the popover is dismissed.
+ */
+addAccessibleTask(
+  `
+<button id="invoke" popovertarget="popover">invoke</button>
+<dialog id="popover" popover>popover</dialog>
+  `,
+  async function testInvokerCollapsedWhenFocusedByDismiss(browser, docAcc) {
+    info("Focusing invoke");
+    const invoke = findAccessibleChildByID(docAcc, "invoke");
+    let focused = waitForEvent(EVENT_FOCUS, invoke);
+    invoke.takeFocus();
+    await focused;
+    info("doAction on invoke");
+    focused = waitForEvent(EVENT_FOCUS, "popover");
+    invoke.doAction(0);
+    await focused;
+    ok(true, "popover focused");
+    testStates(invoke, STATE_EXPANDED, EXT_STATE_EXPANDABLE, STATE_COLLAPSED);
+    info("Dismissing dialog");
+    focused = waitForEvent(EVENT_FOCUS, invoke);
+    EventUtils.synthesizeKey("KEY_Escape");
+    await focused;
+    ok(true, "invoke focused");
+    testStates(invoke, STATE_COLLAPSED, EXT_STATE_EXPANDABLE, STATE_EXPANDED);
+  },
+  { chrome: true, topLevel: true }
+);
