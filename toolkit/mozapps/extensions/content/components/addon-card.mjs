@@ -202,6 +202,7 @@ export class AddonCard extends AboutAddonsHTMLElement {
     // If we've already rendered we can just update, otherwise render.
     if (this.children.length) {
       this.update();
+      this.focusOptionsButtonIfExpanded();
     } else {
       this.render();
     }
@@ -801,12 +802,20 @@ export class AddonCard extends AboutAddonsHTMLElement {
 
     this.appendChild(this.card);
 
-    if (this.expanded) {
-      requestAnimationFrame(() => this.optionsButton.focus());
+    // focus() does nothing on a card that isn't in the document yet, as when
+    // the detail view renders it: connectedCallback focuses it then.
+    if (this.isConnected) {
+      this.focusOptionsButtonIfExpanded();
     }
 
     // Return the promise of details rendering to wait on in DetailView.
     return doneRenderPromise;
+  }
+
+  focusOptionsButtonIfExpanded() {
+    if (this.expanded) {
+      requestAnimationFrame(() => this.optionsButton.focus());
+    }
   }
 
   sendEvent(name, detail) {

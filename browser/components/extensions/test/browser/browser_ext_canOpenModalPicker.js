@@ -169,7 +169,7 @@ add_task(async function test_canOpenModalPicker_in_options_ui() {
     "openOptionsPage() opened about:addons tab"
   );
 
-  // AddonCard's render() calls optionsButton.focus() from a rAF callback.
+  // AddonCard calls optionsButton.focus() from a rAF callback.
   // Wait for that to have happened, so that it cannot steal focus from the
   // options browser later in this test.
   let moreOptionsButton = aboutaddonsBrowser.contentDocument.querySelector(
