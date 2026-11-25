@@ -196,14 +196,18 @@ bool nsCSPContext::permitsInternal(
     nsIURI* aContentLocation, nsIURI* aOriginalURIIfRedirect, bool aSpecific,
     bool aSendViolationReports, bool aSendContentLocationInViolationReports) {
   EnsureIPCPoliciesRead();
-  bool permits = true;
 
+  bool upgradeInsecure = false;
+  GetUpgradeInsecureRequests(&upgradeInsecure);
+
+  bool permits = true;
   nsAutoString violatedDirective;
   nsAutoString violatedDirectiveString;
   for (uint32_t p = 0; p < mPolicies.Length(); p++) {
     if (!mPolicies[p]->permits(aDir, aLoadInfo, aContentLocation,
                                aOriginalURIIfRedirect, aSpecific,
-                               violatedDirective, violatedDirectiveString)) {
+                               upgradeInsecure, violatedDirective,
+                               violatedDirectiveString)) {
       // If the policy is violated and not report-only, reject the load and
       // report to the console
       if (!mPolicies[p]->getReportOnlyFlag()) {
