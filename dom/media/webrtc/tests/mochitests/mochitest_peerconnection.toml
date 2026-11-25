@@ -424,6 +424,8 @@ skip-if = [
 
 ["test_peerConnection_setParameters_scaleResolutionDownBy.html"]
 
+["test_peerConnection_setParameters_scaleResolutionDownBy_oddResolution.html"]
+
 ["test_peerConnection_setParameters_scaleResolutionDownBy_oldSetParameters.html"]
 
 ["test_peerConnection_setRemoteAnswerInHaveRemoteOffer.html"]

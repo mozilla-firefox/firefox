@@ -1,0 +1,132 @@
+<!DOCTYPE HTML>
+<html>
+<head>
+  <script type="application/javascript" src="pc.js"></script>
+  <script type="application/javascript" src="/tests/dom/canvas/test/captureStream_common.js"></script>
+  <script type="application/javascript" src="simulcast.js"></script>
+</head>
+<body>
+<pre id="test">
+<script type="application/javascript">
+createHTML({
+  bug: "2073405",
+  title: "Video keeps flowing when scaleResolutionDownBy yields an odd width or height",
+  visible: true
+});
+
+async function connect(track, mimeType) {
+  const offerer = new RTCPeerConnection();
+  const answerer = new RTCPeerConnection();
+  const add = (pc, can, failed) => can && pc.addIceCandidate(can).catch(failed);
+  offerer.onicecandidate = e => add(answerer, e.candidate, generateErrorCallback());
+  answerer.onicecandidate = e => add(offerer, e.candidate, generateErrorCallback());
+
+  const transceiver = offerer.addTransceiver(track);
+  const codecs = RTCRtpSender.getCapabilities("video").codecs.filter(
+    c => c.mimeType == mimeType
+  );
+  ok(codecs.length, `${mimeType} is available`);
+  transceiver.setCodecPreferences(codecs);
+
+  const remoteVideo = new Promise(resolve => {
+    answerer.ontrack = e => resolve(getPlaybackWithLoadedMetadata(e.track));
+  });
+  await offerer.setLocalDescription();
+  await answerer.setRemoteDescription(offerer.localDescription);
+  await answerer.setLocalDescription();
+  await offerer.setRemoteDescription(answerer.localDescription);
+  return { offerer, answerer, sender: transceiver.sender, remoteVideo: await remoteVideo };
+}
+
+async function sentMimeType(sender) {
+  const stats = await sender.getStats();
+  return [...stats.values()].find(s => s.type == "codec").mimeType;
+}
+
+// The spec only forbids sending more than the integer part of the scaled size.
+// Firefox sends exactly that size when the encoder has no alignment
+// requirement. This test expects that exact size, so that the odd sizes really
+// reach the encoder.
+function scaledSize(size, scale) {
+  return Math.floor(size / scale);
+}
+
+async function checkScaledVideoFlows(helper, sender, remoteVideo, width, height, scale) {
+  const RESIZE_TIMEOUT_MS = 5000;
+  const scaledWidth = scaledSize(width, scale);
+  const scaledHeight = scaledSize(height, scale);
+  const parameters = sender.getParameters();
+  const oldScale = parameters.encodings[0].scaleResolutionDownBy;
+  const resized = haveEvent(
+    remoteVideo,
+    "resize",
+    wait(
+      RESIZE_TIMEOUT_MS,
+      new Error(`No resize to ${scaledWidth}x${scaledHeight} within ` +
+                `${RESIZE_TIMEOUT_MS}ms of changing the scale from ` +
+                `${oldScale} to ${scale}`)
+    )
+  );
+  parameters.encodings[0].scaleResolutionDownBy = scale;
+  await sender.setParameters(parameters);
+  await resized;
+  is(remoteVideo.videoWidth, scaledWidth,
+    `Width should be ${scaledWidth} when scaling down by ${scale}`);
+  is(remoteVideo.videoHeight, scaledHeight,
+    `Height should be ${scaledHeight} when scaling down by ${scale}`);
+  await helper.checkVideoPlaying(remoteVideo);
+}
+
+runNetworkTest(async () => {
+  const prefs = [
+    ["media.peerconnection.video.lock_scaling", true],
+    // Use the built-in libwebrtc encoders on every platform. Android defaults
+    // to its hardware encoders, for which Firefox requests a 16-pixel
+    // alignment, so the sent sizes would not be odd.
+    ["media.webrtc.encoder_creation_strategy", 0],
+  ];
+  if (navigator.userAgent.includes("Android")) {
+    // [TODO] re-enable HW decoder after bug 1526207 is fixed.
+    prefs.push(["media.navigator.mediadatadecoder_vpx_enabled", false]);
+  }
+
+  await withPrefs(prefs, async () => {
+    const helper = new VideoStreamHelper();
+    const width = 1280;
+    const height = 720;
+    const evenScale = 4; // 320x180
+    const oddHeightScale = height / 125; // 222x125
+    const oddWidthScale = width / 211; // 211x118
+    is(scaledSize(height, oddHeightScale) % 2, 1,
+      `Scaling ${height} down by ${oddHeightScale} gives an odd height`);
+    is(scaledSize(width, oddWidthScale) % 2, 1,
+      `Scaling ${width} down by ${oddWidthScale} gives an odd width`);
+
+    const emitter = new VideoFrameEmitter(helper.green, helper.red, width, height);
+    const track = emitter.stream().getVideoTracks()[0];
+    emitter.start();
+
+    for (const mimeType of ["video/VP8", "video/VP9"]) {
+      info(`Testing ${mimeType}`);
+      const { offerer, answerer, sender, remoteVideo } = await connect(track, mimeType);
+      await helper.checkVideoPlaying(remoteVideo);
+      is(await sentMimeType(sender), mimeType, `Sending ${mimeType}`);
+
+      // An even size, an odd height, an odd width, then an even size again.
+      for (const scale of [evenScale, oddHeightScale, oddWidthScale, evenScale]) {
+        await checkScaledVideoFlows(helper, sender, remoteVideo, width, height, scale);
+      }
+
+      remoteVideo.srcObject = null;
+      remoteVideo.remove();
+      offerer.close();
+      answerer.close();
+    }
+
+    emitter.stop();
+  });
+});
+</script>
+</pre>
+</body>
+</html>
