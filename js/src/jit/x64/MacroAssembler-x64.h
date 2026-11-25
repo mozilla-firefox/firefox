@@ -63,6 +63,9 @@ class MacroAssemblerX64 : public MacroAssemblerX86Shared {
 
   void bindOffsets(const MacroAssemblerX86Shared::UsesVector&);
 
+  // The constant pool entry holding the shifted tag for |type|.
+  Double* getShiftedTag(JSValueType type);
+
   void vpRiprOpSimd128(const SimdConstant& v, FloatRegister reg,
                        JmpSrc (X86Encoding::BaseAssemblerX64::*op)(
                            X86Encoding::XMMRegisterID id));
@@ -230,6 +233,12 @@ class MacroAssemblerX64 : public MacroAssemblerX86Shared {
 
   void boxValue(JSValueType type, Register src, Register dest);
   void boxValue(Register type, Register src, Register dest);
+
+  // Load the shifted tag for |type| into |dest|, or combine |dest| with it,
+  // reading it from the constant pool with a rip-relative operand.
+  void movShiftedTag(JSValueType type, Register dest);
+  void xorShiftedTag(JSValueType type, Register dest);
+  void orShiftedTag(JSValueType type, Register dest);
 
   Condition testUndefined(Condition cond, Register tag) {
     MOZ_ASSERT(cond == Equal || cond == NotEqual);
@@ -841,11 +850,9 @@ class MacroAssemblerX64 : public MacroAssemblerX86Shared {
       return;
     }
     if (src.valueReg() == dest) {
-      ScratchRegisterScope scratch(asMasm());
-      mov(ImmShiftedTag(type), scratch);
-      xorq(scratch, dest);
+      xorShiftedTag(type, dest);
     } else {
-      mov(ImmShiftedTag(type), dest);
+      movShiftedTag(type, dest);
       xorq(src.valueReg(), dest);
     }
   }
@@ -856,20 +863,15 @@ class MacroAssemblerX64 : public MacroAssemblerX86Shared {
       return;
     }
     // Explicitly permits |dest| to be used in |src|.
-    ScratchRegisterScope scratch(asMasm());
-    MOZ_ASSERT(dest != scratch);
-    if (src.containsReg(dest)) {
-      mov(ImmShiftedTag(type), scratch);
-      // If src is already a register, then src and dest are the same
-      // thing and we don't need to move anything into dest.
-      if (src.kind() != Operand::REG) {
-        movq(src, dest);
-      }
-      xorq(scratch, dest);
-    } else {
-      mov(ImmShiftedTag(type), dest);
+    if (!src.containsReg(dest)) {
+      movShiftedTag(type, dest);
       xorq(src, dest);
+      return;
     }
+    if (src.kind() != Operand::REG) {
+      movq(src, dest);
+    }
+    xorShiftedTag(type, dest);
   }
   void unboxNonDouble(const Address& src, Register dest, JSValueType type) {
     unboxNonDouble(Operand(src), dest, type);

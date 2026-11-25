@@ -1332,7 +1332,8 @@ void MacroAssemblerX64::fallibleUnboxPtrImpl(const Operand& src, Register dest,
   //
   // Note: src and dest can be the same register.
   ScratchRegisterScope scratch(asMasm());
-  mov(ImmShiftedTag(type), scratch);
+  MOZ_ASSERT(!src.containsReg(scratch));
+  movShiftedTag(type, scratch);
   xorq(src, scratch);
   mov(scratch, dest);
   shrq(Imm32(JSVAL_TAG_SHIFT), scratch);

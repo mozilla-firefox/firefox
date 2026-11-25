@@ -549,8 +549,7 @@ void MacroAssemblerX64::tagValue(JSValueType type, Register payload,
 
     AssertValidPayload(asMasm(), type, payload, scratch);
 
-    mov(ImmShiftedTag(type), scratch);
-    orq(scratch, dest.valueReg());
+    orShiftedTag(type, dest.valueReg());
   } else {
     boxNonDouble(type, payload, dest);
   }
@@ -563,8 +562,42 @@ void MacroAssemblerX64::boxValue(JSValueType type, Register src,
 
   AssertValidPayload(asMasm(), type, src, dest);
 
-  mov(ImmShiftedTag(type), dest);
+  movShiftedTag(type, dest);
   orq(src, dest);
+}
+
+MacroAssemblerX64::Double* MacroAssemblerX64::getShiftedTag(JSValueType type) {
+  // The double pool is keyed and emitted by bit pattern, so it can hold the
+  // tag.
+  return getDouble(
+      mozilla::BitwiseCast<double>(uint64_t(ImmShiftedTag(type).value)));
+}
+
+void MacroAssemblerX64::movShiftedTag(JSValueType type, Register dest) {
+  Double* tag = getShiftedTag(type);
+  if (!tag) {
+    return;
+  }
+  JmpSrc j = masm.movq_ripr(dest.encoding());
+  propagateOOM(tag->uses.append(j));
+}
+
+void MacroAssemblerX64::xorShiftedTag(JSValueType type, Register dest) {
+  Double* tag = getShiftedTag(type);
+  if (!tag) {
+    return;
+  }
+  JmpSrc j = masm.xorq_ripr(dest.encoding());
+  propagateOOM(tag->uses.append(j));
+}
+
+void MacroAssemblerX64::orShiftedTag(JSValueType type, Register dest) {
+  Double* tag = getShiftedTag(type);
+  if (!tag) {
+    return;
+  }
+  JmpSrc j = masm.orq_ripr(dest.encoding());
+  propagateOOM(tag->uses.append(j));
 }
 
 void MacroAssemblerX64::boxValue(Register type, Register src, Register dest) {

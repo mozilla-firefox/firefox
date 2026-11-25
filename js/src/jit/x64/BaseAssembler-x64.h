@@ -932,6 +932,24 @@ class BaseAssemblerX64 : public BaseAssembler {
     return label;
   }
 
+  [[nodiscard]] JmpSrc xorq_ripr(RegisterID dst) {
+    auto offset = currentOffset();
+    m_formatter.oneByteRipOp64(OP_XOR_GvEv, 0, dst);
+    JmpSrc label(m_formatter.size());
+    spew(offset, "xorq       " MEM_o32r ", %s", ADDR_o32r(label.offset()),
+         GPRegName(dst));
+    return label;
+  }
+
+  [[nodiscard]] JmpSrc orq_ripr(RegisterID dst) {
+    auto offset = currentOffset();
+    m_formatter.oneByteRipOp64(OP_OR_GvEv, 0, dst);
+    JmpSrc label(m_formatter.size());
+    spew(offset, "orq        " MEM_o32r ", %s", ADDR_o32r(label.offset()),
+         GPRegName(dst));
+    return label;
+  }
+
   [[nodiscard]] JmpSrc movq_rrip(RegisterID src) {
     auto offset = currentOffset();
     m_formatter.oneByteRipOp64(OP_MOV_EvGv, 0, (RegisterID)src);
