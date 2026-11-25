@@ -16,6 +16,7 @@ ChromeUtils.defineESModuleGetters(lazy, {
 
 XPCOMUtils.defineLazyServiceGetters(lazy, {
   Favicons: ["@mozilla.org/browser/favicon-service;1", Ci.nsIFaviconService],
+  WinTaskbar: ["@mozilla.org/windows-taskbar;1", Ci.nsIWinTaskbar],
 });
 
 ChromeUtils.defineLazyGetter(
@@ -104,6 +105,34 @@ export const TaskbarTabsUtils = {
    */
   getTaskbarTabIdFromWindow(aWin) {
     return aWin.document.documentElement.getAttribute("taskbartab");
+  },
+
+  /**
+   * Sets a Taskbar Tab window's AUMID. Does nothing outside Windows.
+   *
+   * Must be called before the window is first shown: Windows ignores an AUMID
+   * change made shortly after the taskbar button appears.
+   *
+   * @param {DOMWindow} aWin - The Taskbar Tab window.
+   * @param {string} aTaskbarTabId - The ID of the Taskbar Tab it belongs to.
+   */
+  setWindowGroupId(aWin, aTaskbarTabId) {
+    if (AppConstants.platform !== "win") {
+      return;
+    }
+
+    // On MSIX, match the secondary tile ID from TaskbarTabsPinMsix.sys.mjs;
+    // otherwise use the shortcut's AUMID, which is just the ID.
+    let aumid = aTaskbarTabId;
+    if (this.isMSIX()) {
+      let pfn = Services.sysinfo.getProperty("winPackageFamilyName");
+      aumid = `${pfn}!App:taskbartab-${aTaskbarTabId}`;
+    }
+    try {
+      lazy.WinTaskbar.setGroupIdForWindow(aWin, aumid);
+    } catch (e) {
+      console.error("Failed to set the Taskbar Tab window's AUMID:", e);
+    }
   },
 
   /**

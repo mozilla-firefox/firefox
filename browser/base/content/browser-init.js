@@ -189,6 +189,12 @@ var gBrowserInit = {
           taskbarTabId
         );
         window.document.documentElement.id = "taskbartab-" + taskbarTabId;
+        if (AppConstants.platform == "win") {
+          const { TaskbarTabsUtils } = ChromeUtils.importESModule(
+            "moz-src:///browser/components/taskbartabs/TaskbarTabsUtils.sys.mjs"
+          );
+          TaskbarTabsUtils.setWindowGroupId(window, taskbarTabId);
+        }
       }
       if (extraOptions.hasKey("ai-window")) {
         document.documentElement.setAttribute("ai-window", true);

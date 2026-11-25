@@ -293,6 +293,75 @@ add_task(async function test_window_class() {
   registry.patchTaskbarTab(taskbarTab1, { shortcutRelativePath: null });
 });
 
+add_task(async function test_aumid_set_before_shown() {
+  if (AppConstants.platform !== "win") {
+    ok(true, "AUMIDs only apply to Windows.");
+    return;
+  }
+
+  const wm = new TaskbarTabsWindowManager();
+
+  let { win: winOpen, aumid } = await getAumidWhenShown(() =>
+    wm.openWindow(taskbarTab1)
+  );
+  is(
+    aumid,
+    getExpectedAumid(taskbarTab1),
+    "An opened Taskbar Tab window should have its AUMID when first shown."
+  );
+  await BrowserTestUtils.closeWindow(winOpen);
+
+  let tab = await BrowserTestUtils.addTab(window.gBrowser, url1.spec);
+  let { win: winReplace, aumid: aumidReplace } = await getAumidWhenShown(() =>
+    wm.replaceTabWithWindow(taskbarTab1, tab)
+  );
+  is(
+    aumidReplace,
+    getExpectedAumid(taskbarTab1),
+    "A Taskbar Tab window replacing a tab should have its AUMID when first shown."
+  );
+  await BrowserTestUtils.closeWindow(winReplace);
+});
+
+// Records the AUMID of the window opened by aOpen at the moment it's shown.
+async function getAumidWhenShown(aOpen) {
+  let opened = null;
+  let aumid = null;
+  let onOpened = aSubject => {
+    opened ??= aSubject;
+  };
+  let onVisible = () => {
+    if (opened && aumid === null) {
+      aumid = WinTaskbar.getGroupIdForWindow(opened);
+    }
+  };
+
+  Services.obs.addObserver(onOpened, "domwindowopened");
+  Services.obs.addObserver(onVisible, "xul-window-visible");
+  let win;
+  try {
+    win = await aOpen();
+  } finally {
+    Services.obs.removeObserver(onOpened, "domwindowopened");
+    Services.obs.removeObserver(onVisible, "xul-window-visible");
+  }
+
+  is(opened, win, "The observed window should be the Taskbar Tab window.");
+  return { win, aumid };
+}
+
+function getExpectedAumid(aTaskbarTab) {
+  if (TaskbarTabsUtils.isMSIX()) {
+    // The format of this doesn't seem to be documented anywhere; I got it
+    // through a small custom utility using the undocumented IPinnedList3 API
+    // (the one we use for pinning on Windows 10). It's possible that Windows
+    // could change it, in which case the Taskbar Tab window wouldn't line up
+    // with its taskbar entry.
+    return `${Services.sysinfo.getProperty("winPackageFamilyName")}!App:taskbartab-${aTaskbarTab.id}`;
+  }
+  return aTaskbarTab.id;
+}
+
 /**
  * Asserts that aWindow has the expected AUMID (on Windows) or 'windowclass' (on
  * Linux) for aTaskbarTab.
@@ -302,24 +371,11 @@ add_task(async function test_window_class() {
  */
 function checkWindowAssociatedApp(aTaskbarTab, aWindow) {
   if (AppConstants.platform === "win") {
-    if (TaskbarTabsUtils.isMSIX()) {
-      // The format of this doesn't seem to be documented anywhere; I got it
-      // through a small custom utility using the undocumented IPinnedList3 API
-      // (the one we use for pinning on Windows 10). It's possible that Windows
-      // could change it, in which case the Taskbar Tab window wouldn't line up
-      // with its taskbar entry.
-      is(
-        WinTaskbar.getGroupIdForWindow(aWindow),
-        `${Services.sysinfo.getProperty("winPackageFamilyName")}!App:taskbartab-${aTaskbarTab.id}`,
-        "The window AUMID should match the ID likely assigned by Windows."
-      );
-    } else {
-      is(
-        WinTaskbar.getGroupIdForWindow(aWindow),
-        taskbarTab1.id,
-        "The window AUMID should match the Taskbar Tab ID when opened."
-      );
-    }
+    is(
+      WinTaskbar.getGroupIdForWindow(aWindow),
+      getExpectedAumid(aTaskbarTab),
+      "The window AUMID should match the Taskbar Tab's taskbar entry."
+    );
   } else if (AppConstants.platform === "linux") {
     is(
       aWindow.document.documentElement.getAttribute("windowclass"),
