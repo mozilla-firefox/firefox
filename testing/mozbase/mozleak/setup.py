@@ -7,7 +7,6 @@ from setuptools import setup
 PACKAGE_NAME = "mozleak"
 PACKAGE_VERSION = "2.1.0"
 
-
 setup(
     name=PACKAGE_NAME,
     version=PACKAGE_VERSION,
@@ -25,6 +24,6 @@ setup(
     license="MPL",
     packages=["mozleak"],
     zip_safe=False,
-    install_requires=[],
+    install_requires=["mozlog >= 9.0.1"],
     python_requires=">=3.9",
 )
