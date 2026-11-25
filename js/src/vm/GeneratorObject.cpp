@@ -225,7 +225,7 @@ AbstractGeneratorObject* js::GetGeneratorObjectForModule(ModuleObject* module) {
     return nullptr;
   }
 
-  Value genValue = moduleEnv->getSlot(prop->slot());
+  Value genValue = moduleEnv->getRawSlot(prop->slot());
   return genValue.isObject()
              ? &genValue.toObject().as<AbstractGeneratorObject>()
              : nullptr;

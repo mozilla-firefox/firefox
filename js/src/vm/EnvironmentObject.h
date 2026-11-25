@@ -772,6 +772,24 @@ class ModuleEnvironmentObject : public DisposableEnvironmentObject {
   bool lookupImport(jsid name, ModuleEnvironmentObject** envOut,
                     mozilla::Maybe<PropertyInfo>* propOut);
 
+  // Whether the binding in |slot| is a live view of a Wasm mutable global.
+  // This never changes after the environment is created.
+  inline bool hasWasmMutableGlobalBinding(uint32_t slot) const;
+
+  // Reading a slot holding a WasmMutableGlobalBindingObject would expose the
+  // binding object rather than the global's value, so getSlot is unavailable.
+  // Use getBindingValue to read a binding's value, or getRawSlot where the
+  // slot's contents are needed.
+  const Value& getSlot(uint32_t slot) const = delete;
+  const Value& getRawSlot(uint32_t slot) const {
+    return NativeObject::getSlot(slot);
+  }
+
+  // Uninitialized bindings are returned as JS_UNINITIALIZED_LEXICAL.
+  inline bool getBindingValue(JSContext* cx, uint32_t slot,
+                              MutableHandleValue value) const;
+  inline bool isBindingUninitialized(uint32_t slot) const;
+
   // If `env` or any enclosing environment is a ModuleEnvironmentObject,
   // return that ModuleEnvironmentObject; else null.
   //

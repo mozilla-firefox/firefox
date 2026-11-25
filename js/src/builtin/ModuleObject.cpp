@@ -724,7 +724,7 @@ bool ModuleNamespaceObject::ProxyHandler::getOwnPropertyDescriptor(
   }
 
   // Step 4. Let value be ? O.[[Get]](P, O).
-  RootedValue value(cx, env->getSlot(prop->slot()));
+  RootedValue value(cx, env->getRawSlot(prop->slot()));
   if (value.isMagic(JS_UNINITIALIZED_LEXICAL)) {
     ReportUninitializedModuleBinding(cx, id);
     return false;
@@ -843,7 +843,7 @@ bool ModuleNamespaceObject::ProxyHandler::get(JSContext* cx, HandleObject proxy,
     return true;
   }
 
-  RootedValue value(cx, env->getSlot(prop->slot()));
+  RootedValue value(cx, env->getRawSlot(prop->slot()));
   if (value.isMagic(JS_UNINITIALIZED_LEXICAL)) {
     ReportUninitializedModuleBinding(cx, id);
     return false;

@@ -286,7 +286,7 @@ AbortReasonOr<Ok> WarpScriptOracle::snapshotGetImport(
 
   uint32_t numFixedSlots = targetEnv->numFixedSlots();
   uint32_t slot = prop->slot();
-  Value value = targetEnv->getSlot(slot);
+  Value value = targetEnv->getRawSlot(slot);
 
   if (!prop->writable() && JS::Prefs::ion_environment_specialization()) {
     bool addedConstant =
