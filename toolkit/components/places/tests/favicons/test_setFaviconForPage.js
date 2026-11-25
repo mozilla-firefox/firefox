@@ -325,6 +325,60 @@ add_task(async function test_sameHostRedirect() {
   await PlacesUtils.history.clear();
 });
 
+add_task(async function test_sameHostRedirectAfterManyVisits() {
+  // The redirect from the bookmarked page is found even if the destination
+  // page has many older visits.
+  let srcUrl = "http://manyvisits.bookmarked.com/";
+  let destUrl = "https://other.manyvisits.bookmarked.com/";
+  let minutesAgo = minutes => (Date.now() - minutes * 60000) * 1000;
+  await PlacesTestUtils.addVisits([
+    ...Array.from({ length: 20 }, (_, i) => ({
+      uri: destUrl,
+      transition: TRANSITION_LINK,
+      visitDate: minutesAgo(i + 10),
+    })),
+    { uri: srcUrl, transition: TRANSITION_LINK, visitDate: minutesAgo(5) },
+    {
+      uri: destUrl,
+      transition: TRANSITION_REDIRECT_TEMPORARY,
+      referrer: srcUrl,
+      visitDate: minutesAgo(5),
+    },
+    // Newer visits to other pages must not affect the lookup.
+    ...Array.from({ length: 10 }, (_, i) => ({
+      uri: `https://unrelated.example.com/${i}`,
+      transition: TRANSITION_LINK,
+      visitDate: minutesAgo(1),
+    })),
+  ]);
+  await PlacesUtils.bookmarks.insert({
+    parentGuid: PlacesUtils.bookmarks.unfiledGuid,
+    url: srcUrl,
+  });
+
+  let promise = PlacesTestUtils.waitForNotification("favicon-changed", events =>
+    events.some(e => e.url == srcUrl && e.faviconUrl == SMALLPNG_DATA_URI.spec)
+  );
+  await PlacesUtils.favicons.setFaviconForPage(
+    Services.io.newURI(destUrl),
+    SMALLPNG_DATA_URI,
+    SMALLPNG_DATA_URI
+  );
+  await promise;
+
+  let favicon = await PlacesUtils.favicons.getFaviconForPage(
+    PlacesUtils.toURI(srcUrl)
+  );
+  Assert.equal(
+    favicon.rawData.length,
+    SMALLPNG_DATA_LEN,
+    "Check favicon dataLen"
+  );
+
+  await PlacesUtils.bookmarks.eraseEverything();
+  await PlacesUtils.history.clear();
+});
+
 add_task(async function test_otherHostRedirect() {
   // Add a bookmarked page that redirects to another page, set a favicon on the
   // latter and check the former gets it too, if they are in the same host.

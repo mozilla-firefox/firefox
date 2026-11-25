@@ -44,6 +44,13 @@ namespace places {
 
 namespace {
 
+// Number of most recent visits to a page used to find a bookmarked page
+// redirecting to it. The relevant redirect chain is the one of the load setting
+// the icon, so older visits are not worth reading.
+// TODO: Bug 1999939 should allow to look up redirects directly, removing this
+// limit.
+constexpr int32_t MAX_VISITS_TO_FIND_BOOKMARKED_REDIRECT_SOURCE = 10;
+
 /**
  * Fetches information about a page from the database.
  *
@@ -64,7 +71,10 @@ nsresult FetchPageInfo(const RefPtr<Database>& aDB, PageData& _page) {
       "destinations(visit_type, from_visit, place_id, rev_host, bm) AS ( "
       "SELECT v.visit_type, v.from_visit, p.id, p.rev_host, b.id "
       "FROM moz_places p  "
-      "LEFT JOIN moz_historyvisits v ON v.place_id = p.id  "
+      "LEFT JOIN ( "
+      "  SELECT visit_type, from_visit, place_id FROM moz_historyvisits "
+      "  WHERE place_id = h.id ORDER BY visit_date DESC LIMIT %d "
+      ") v ON v.place_id = p.id  "
       "LEFT JOIN moz_bookmarks b ON b.fk = p.id "
       "WHERE p.id = h.id "
       "UNION "
@@ -87,6 +97,7 @@ nsresult FetchPageInfo(const RefPtr<Database>& aDB, PageData& _page) {
       "LEFT JOIN moz_pages_w_icons pi ON page_url_hash = hash(:page_url) AND "
       "page_url = :page_url "
       "WHERE h.url_hash = hash(:page_url) AND h.url = :page_url",
+      MAX_VISITS_TO_FIND_BOOKMARKED_REDIRECT_SOURCE,
       nsINavHistoryService::TRANSITION_REDIRECT_PERMANENT,
       nsINavHistoryService::TRANSITION_REDIRECT_TEMPORARY);
 
