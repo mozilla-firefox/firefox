@@ -5,6 +5,8 @@ support-files = [
   "head.js",
 ]
 prefs = [
+  # AIWindowTestUtils.openAIWindow only opens a Smart Window with this set,
+  # and this directory's head.js doesn't set it.
   "browser.smartwindow.enabled=true",
 ]
 

@@ -3,10 +3,12 @@
 # separate browser session so neither manifest exhausts a 32-bit address space.
 [DEFAULT]
 prefs = [
+  # Tabs opening the Smart Window new tab page, as openOnlyAIWindowTab does, can
+  # otherwise take the preloaded page and never finish loading.
   "browser.newtab.preload=false",
-  "browser.search.suggest.enabled=false",
-  "browser.urlbar.suggest.searches=false",
-  "browser.smartwindow.endpoint=http://localhost:0/v1"
+  # head.js sets this only during each test; model requests from the Smart
+  # Window new tab page outside one, as in verify reruns, must stay local too.
+  "browser.smartwindow.endpoint=http://localhost:0/v1",
 ]
 support-files = [
   "head.js",

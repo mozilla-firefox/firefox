@@ -1,11 +1,8 @@
 [DEFAULT]
 prefs = [
-  "browser.newtab.preload=false",
-  "browser.search.suggest.enabled=false",
-  "browser.urlbar.suggest.searches=false",
+  # head.js sets this only during each test; model requests from the Smart
+  # Window new tab page outside one, as in verify reruns, must stay local too.
   "browser.smartwindow.endpoint=http://localhost:0/v1",
-  "browser.smartwindow.enabled=true",
-  "browser.smartwindow.firstrun.hasCompleted=true",
 ]
 support-files = ["!/browser/components/aiwindow/ui/test/browser/head.js"]
 
