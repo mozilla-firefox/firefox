@@ -186,6 +186,8 @@
   <string name="customize_menu">سفارشی کردن نومگه</string>
   <!-- Alert message shown in the "Customize menu" screen when the user tries to hide a menu section which cannot be hidden. -->
   <string name="customize_menu_cannot_hide_section">نتره ای بشن ن بؽڌار کونه</string>
+  <!-- Customize menu screen - Accessibility description - name of the menu section that groups the Back, Forward, Share and Refresh buttons. Read aloud after "Section", followed by the button names ("Section “Page controls”: Back, Forward, Share, Refresh"). -->
+  <string name="browser_menu_section_page_controls">کونتورولا بلگه</string>
   <!-- Customize menu screen - Accessibility description - name of the menu section that groups the page tools (Bookmark page, Find in page, Desktop site, Extensions, etc.). Read aloud after "Section", followed by the tool names ("Section “Tools”: Bookmark page, Find in page…"). -->
   <string name="browser_menu_section_tools">ٱوزارا</string>
   <!-- Customize menu screen - Accessibility description - name of the menu section that groups the History, Bookmarks, Downloads and Passwords items. Read aloud after "Section", followed by the item names ("Section “Library”: History, Bookmarks, Downloads, Passwords"). -->
@@ -291,6 +293,8 @@
   <string name="browser_menu_passwords">رزما</string>
   <!-- Content description (not visible, for screen readers etc.) for the handle used to drag the main menu at the bottom of the screen. -->
   <string name="browser_close_main_menu_handlebar_content_description">بستن نومگه</string>
+  <!-- Content description (not visible, used by screen readers, etc.) for the heading of the menu opened from the customize menu screen to preview pending changes. It is read before the menu items. The items are shown for preview only and do nothing when tapped. -->
+  <string name="browser_menu_preview_heading_content_description">پؽش نشووݩ نومگه. نترین ایچونا مووردا ن فعال کۊنین.</string>
   <!-- Content description (not visible, for screen readers etc.) for main menu navigation header. -->
   <string name="browser_main_menu_content_description_navigation_header">ناوبری</string>
   <!-- Content description (not visible, for screen readers etc.) for bottom sheet handlebar custom tab menu. -->
@@ -2118,15 +2122,21 @@
   <string name="unsubmitted_crash_dialog_negative_button_2">بستن</string>
   <!-- Unsubmitted crash dialog negative button to never be asked for the submission -->
   <string name="unsubmitted_crash_requested_by_devs_dialog_never_button">دی هرگشت نشووݩ داڌه نبۊ</string>
+  <!-- Unsubmitted crash dialog negative button to never be asked for the submission, displayed in all capital letters. -->
+  <string name="unsubmitted_crash_requested_by_devs_dialog_never_button_2" tools:ignore="UnusedResources">دی هرگشت نشووݩ مڌه</string>
   <!-- Unsubmitted crash dialog positive button to submit crash report -->
   <string name="unsubmitted_crash_dialog_positive_button_2">فشناڌن</string>
   <!-- Unsubmitted crash dialog positive button to submit crash report -->
   <string name="unsubmitted_crash_dialog_positive_button">فشناڌن گوزارش خراوی</string>
+  <!-- Unsubmitted crash dialog positive button to submit crash report, displayed in all capital letters. -->
+  <string name="unsubmitted_crash_dialog_positive_button_3" tools:ignore="UnusedResources">فشناڌن گوزارش خراوی</string>
   <!-- Body text for crash report dialog. %s is the link text in the annotated string (ie. "Learn More") -->
   <string name="unsubmitted_crash_dialog_body">گوزارشا خراوی و ایما هیاری اده تا موشکلا گشت گر ن تشخیس دیم وو رفع کۊنیم. گوزارشا گاشڌ داده یل سیخومی یا هساس ایسا ن منسووݩ داشته بۊن. %s</string>
   <string name="unsubmitted_crash_dialog_learn_more">قلوه دووسته بۊین</string>
   <!-- Unsubmitted crash dialog button to open a web page with more details on the feature and privacy policy -->
   <string name="unsubmitted_crash_requested_by_devs_learn_more">قلوه دووسته بۊین</string>
+  <!-- Unsubmitted crash dialog button to open a web page with more details on the feature and privacy policy, displayed in all capital letters. -->
+  <string name="unsubmitted_crash_requested_by_devs_learn_more_2" tools:ignore="UnusedResources">قلوه دووسته بۊین</string>
   <!--
     Bookmarks
 
@@ -3246,6 +3256,10 @@
   <string name="preferences_credit_cards_save_and_autofill_cards_2">زفت وو پور کردن بارتا پرداخت</string>
   <!-- Preference summary for saving and autofilling payment method data. %s is the name of the app (for example "Firefox"). -->
   <string name="preferences_credit_cards_save_and_autofill_cards_summary_2">%s پوی بارتا پرداختی ک زفت اکۊنی ن رزم انه ریسووݩ</string>
+  <!-- Preference for saving the security codes of credit cards. -->
+  <string name="preferences_credit_cards_save_security_codes">زفت کردن کود ٱمنیتی</string>
+  <!-- Preference summary for saving the security codes of credit cards. %s is the name of the app (for example "Firefox"). -->
+  <string name="preferences_credit_cards_save_security_codes_summary">%s شوماره کارت وو کود ٱمنیتی ایسا ن رزم انه ریس تا پرداختا دینداتری زی تر ٱنجوم بۊن</string>
   <!-- Preference option for syncing credit cards across devices. This is displayed when the user is not signed into sync -->
   <string name="preferences_credit_cards_sync_cards_across_devices">هوم گوم کردن کارتا منجا دسگا یل</string>
   <!-- Preference option for syncing credit cards across devices. This is displayed when the user is signed into sync -->
@@ -3306,6 +3320,10 @@
   <string name="credit_cards_number_validation_error_message_2">شوماره کارتی ک زبال هڌ ن بزنین</string>
   <!-- Error message for card name on card validation -->
   <string name="credit_cards_name_on_card_validation_error_message_2">ی نوم بزنین</string>
+  <!-- Error message for a credit card security code that does not meet the 3-digit length requirement. -->
+  <string name="credit_cards_cvv_validation_error_message">کود ٱمنیتی وا 3 رقمی بۊ</string>
+  <!-- Error message for a credit card security code that does not meet the 4-digit length requirement (used for American Express cards only) -->
+  <string name="credit_cards_cvv_amex_validation_error_message">کودا ٱمنیتی ٱمریکن اکسپرس 4 رقمی هڌن</string>
   <!-- Message displayed in biometric prompt displayed for authentication before allowing users to view their saved credit cards -->
   <string name="credit_cards_biometric_prompt_message">سی نیشتن کارتا اعتواری چفت ن بۊگۊشین</string>
   <!-- Title of warning dialog if users have no device authentication set up -->
@@ -4032,6 +4050,8 @@
   <string name="clear_site_data_dialog_negative_button_text">لقو</string>
   <!-- Text for the connection security panel when the site is secure. -->
   <string name="connection_security_panel_secure">منپیز ٱمن</string>
+  <!-- Action description (not visible, for screen readers etc.) for the “Secure connection” link in the protection panel header, which opens a page showing the website's certificate details. Screen readers announce it after “Double tap to” -->
+  <string name="connection_security_panel_view_certificate_details">نیشتن جۊزعیات گوواهی</string>
   <!-- Text for the connection security panel when the site is not secure. -->
   <string name="connection_security_panel_not_secure">منپیز ٱمن نؽ</string>
   <!-- Text for the connection security panel when accessed from local PDF. -->

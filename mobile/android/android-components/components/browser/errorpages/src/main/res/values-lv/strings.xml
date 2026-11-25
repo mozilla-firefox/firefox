@@ -134,8 +134,23 @@
   <string name="mozac_browser_errorpages_file_not_found_message"><![CDATA[<ul>\n<li>Vai vienums nav pārdēvēts, izdzēsts vai pārvietots?</li>\n<li>Vai adresē nav pareizrakstības, lielo un mazo burtu lietojuma vai citas drukas kļūdas?</li>\n<li>Vai jums ir nepieciešamās atļaujas, lai piekļūtu pieprasītajam vienumam?</li>\n</ul>]]></string>
   <!-- The document title and heading of an error page. -->
   <string name="mozac_browser_errorpages_file_access_denied_title">Pieeja datnei tika liegta</string>
+  <string name="mozac_browser_errorpages_file_access_denied_message"><![CDATA[<ul>\n<li>Iespējams, tas ir noņemts, pārvietots vai arī piekļuvi tam neļauj faila atļaujas.</li>\n</ul>]]></string>
+  <!-- The document title and heading of an error page. -->
+  <string name="mozac_browser_errorpages_proxy_connection_refused_title">Starpniekserveris noraidīja savienojumu</string>
   <string name="mozac_browser_errorpages_proxy_connection_refused_message"><![CDATA[<p>Pārlūks ir konfigurēts izmantot starpniekserveri, bet starpniekserveris atteica savienojumu.</p>\n<ul>\n<li>Vai pārlūka starpniekservera konfigurācija ir pareiza? Jāpārbauda iestatījumi un jāmēģina vēlreiz.</li>\n<li>Vai starpniekservera pakalpojums atļauj savienojumus no šī tīkla?</li>\n<li>Joprojām ir sarežģījumi? Jāsazinās ar tīkla pārvaldītāju vai interneta pakalpojuma sniedzēju, lai iegūtu palīdzību.</li>\n</ul>]]></string>
+  <!-- The document title and heading of an error page. -->
+  <string name="mozac_browser_errorpages_unknown_proxy_host_title">Starpniekserveris nav atrasts</string>
   <string name="mozac_browser_errorpages_unknown_proxy_host_message"><![CDATA[<p>Pārlūks ir konfigurēts izmantot starpniekserveri, bet to nevarēja atrast.</p>\n<ul>\n<li>Vai pārlūka starpniekservera konfigurācija ir pareiza? Jāpārbauda iestatījumi un jāmēģina vēlreiz.</li>\n<li>Vai ierīce ir savienota ar darbīgu tīklu?</li>\n<li>Joprojām ir sarežģījumi? Jāsazinās ar tīkla pārvaldītāju vai interneta pakalpojuma sniedzēju, lai iegūtu palīdzību.</li>\n</ul>]]></string>
+  <!-- The document title and heading of an error page. -->
+  <string name="mozac_browser_errorpages_safe_browsing_malware_uri_title">Ļaunprogrammatūras vietnes problēma</string>
+  <!-- The %1$s will be replaced by the malicious website URL -->
+  <string name="mozac_browser_errorpages_safe_browsing_malware_uri_message"><![CDATA[<p>Vietne %1$s ir ziņota kā uzbrukuma vietne un ir bloķēta, pamatojoties uz jūsu drošības iestādījumiem.</p>]]></string>
+  <!-- The document title and heading of an error page. -->
+  <string name="mozac_browser_errorpages_safe_browsing_unwanted_uri_title">Nevēlamas vietnes problēma</string>
+  <!-- The %1$s will be replaced by the malicious website URL -->
+  <string name="mozac_browser_errorpages_safe_browsing_unwanted_uri_message"><![CDATA[<p>Ir ziņots, ka vietne %1$s piedāvā nevēlamu programmatūru, un tā ir bloķēta, pamatojoties uz jūsu drošības iestatījumiem.</p>]]></string>
+  <!-- The document title and heading of an error page. -->
+  <string name="mozac_browser_errorpages_safe_harmful_uri_title">Bīstama vietne</string>
   <!-- Button on error page for websites that do not support HTTPS when HTTPS-Only is turned on. Clicking the button allows the user to nevertheless load the website using HTTP. -->
   <string name="mozac_browser_errorpages_httpsonly_button">Doties uz HTTP vietni</string>
   <!-- Button on error page for websites that do not support HTTPS when HTTPS-Only is turned on.  Clicking the button allows the user to go back. -->

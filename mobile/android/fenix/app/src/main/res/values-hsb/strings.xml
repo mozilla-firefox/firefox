@@ -1762,6 +1762,14 @@
   <string name="close_tab_and_delete_group_confirmation_dialog_confirm">Skupinu zhašeć</string>
   <!-- Text shown on the cancel button in the Close last tab and delete tab group confirmation dialog. -->
   <string name="close_tab_and_delete_group_confirmation_dialog_cancel">Přetorhnyć</string>
+  <!-- Title of the confirmation dialog shown when moving the last tab out of a group will delete the group. %s is the group name, which defaults to a value such as "Group 1" but can be edited by the user to contain arbitrary text. -->
+  <string name="move_last_tab_and_delete_group_confirmation_dialog_title">Posledni rajtark z %s přesunyć?</string>
+  <!-- Body of the confirmation dialog shown when moving the last tab out of a group will delete the group. %1$s is the destination group name. %2$s is the source group name that will be deleted. Both names default to values such as "Group 1" but can be edited by the user to contain arbitrary text. -->
+  <string name="move_last_tab_and_delete_group_confirmation_dialog_body">Tutón rajtark so do %1$s přesunje. %2$s so zhaša, dokelž budźe prózdna.</string>
+  <!-- Text shown on the confirm button for the confirmation dialog shown when moving the last tab out of a group will delete the group. -->
+  <string name="move_last_tab_and_delete_group_confirmation_dialog_confirm">Rajtark přesunyć</string>
+  <!-- Text shown on the cancel button for the confirmation dialog shown when moving the last tab out of a group will delete the group. -->
+  <string name="move_last_tab_and_delete_group_confirmation_dialog_cancel">Přetorhnyć</string>
   <!-- Content description for the three dot button next to a tab group" -->
   <string name="tab_group_three_dot_button_content_description">Dalše nastajenja</string>
   <!--
@@ -3144,6 +3152,8 @@
   <string name="ip_protection_learn_more">Dalše informacije</string>
   <!-- Label for the monthly data allowance section on the browser VPN settings screen -->
   <string name="ip_protection_data_limit_label">Měsačny datowy limit</string>
+  <!-- Accessibility description for the button that closes promotional banners or messages on the VPN settings screen (without triggering any effect) -->
+  <string name="ip_protection_settings_message_dismiss">Zaćisnyć</string>
   <!--
     Data usage shown on the browser VPN settings screen.
     %1$.1f is the data remaining in GB (for example "8.3").
@@ -3211,6 +3221,13 @@
     %2$s is a link using ip_protection_onboarding_body_link_promo (“Learn more”) as text. It links to a support article about VPN on Firefox.
   -->
   <string name="ip_protection_onboarding_body_promo">Zmóžńće jón, zo byšće swoje přehladowanje priwatniše a ćešo přesćěhujomne činił. Wupruwujće jón nětko, zo byšće njewobmjezowanu šěrokosć pasma přez %1$s dóstał. %2$s</string>
+  <!--
+    The body of the VPN onboarding card when the user qualifies for using VPN without signing in to a Mozilla account
+    %1$d is the amount of free data in GB available without signing in (for example "5").
+    %2$d is the amount of data in GB available after signing in (for example "50").
+    %3$s is a link using ip_protection_onboarding_body_link_promo (“Learn more”) as text. It links to a support article about VPN on Firefox.
+  -->
+  <string name="ip_protection_onboarding_body_no_fxa">Zmóžńće jón, zo byšće swoje přehladowanje priwatniše a ćešo přesćěhujomne činił. Wupruwujće jón z %1$d GB darmotneje šěrokosće pasma abo přizjewće so za %2$d GB. %3$s</string>
   <!-- Used as text for a link in ip_protection_onboarding_body. Make sure to adapt capitalization if the link is in the middle of the sentence. -->
   <string name="ip_protection_onboarding_body_link_promo">Dalše informacije</string>
   <!-- Label for the dismiss button on the onboarding bottom sheet. -->

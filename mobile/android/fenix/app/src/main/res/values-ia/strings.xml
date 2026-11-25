@@ -1752,6 +1752,10 @@
   <string name="close_tab_and_delete_group_confirmation_dialog_confirm">Deler gruppo</string>
   <!-- Text shown on the cancel button in the Close last tab and delete tab group confirmation dialog. -->
   <string name="close_tab_and_delete_group_confirmation_dialog_cancel">Cancellar</string>
+  <!-- Body of the confirmation dialog shown when moving the last tab out of a group will delete the group. %1$s is the destination group name. %2$s is the source group name that will be deleted. Both names default to values such as "Group 1" but can be edited by the user to contain arbitrary text. -->
+  <string name="move_last_tab_and_delete_group_confirmation_dialog_body">Iste scheda sera movite a %1$s. %2$s sera delite perque illo sera vacue.</string>
+  <!-- Text shown on the cancel button for the confirmation dialog shown when moving the last tab out of a group will delete the group. -->
+  <string name="move_last_tab_and_delete_group_confirmation_dialog_cancel">Cancellar</string>
   <!-- Content description for the three dot button next to a tab group" -->
   <string name="tab_group_three_dot_button_content_description">Altere optiones</string>
   <!--

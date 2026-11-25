@@ -186,6 +186,14 @@
   <string name="customize_menu">Menu oanpasse</string>
   <!-- Alert message shown in the "Customize menu" screen when the user tries to hide a menu section which cannot be hidden. -->
   <string name="customize_menu_cannot_hide_section">Kin dizze seksje net ferstopje</string>
+  <!-- Customize menu screen - Accessibility description - name of the menu section that groups the page tools (Bookmark page, Find in page, Desktop site, Extensions, etc.). Read aloud after "Section", followed by the tool names ("Section “Tools”: Bookmark page, Find in page…"). -->
+  <string name="browser_menu_section_tools">Ark</string>
+  <!-- Customize menu screen - Accessibility description - name of the menu section that groups the History, Bookmarks, Downloads and Passwords items. Read aloud after "Section", followed by the item names ("Section “Library”: History, Bookmarks, Downloads, Passwords"). -->
+  <string name="browser_menu_section_library">Biblioteek</string>
+  <!-- Customize menu screen - Accessibility description - name of the menu section that groups the Sign in and Settings items. Read aloud after "Section", followed by the item names ("Section “Accounts and settings”: Sign in, Settings"). -->
+  <string name="browser_menu_section_accounts_and_settings">Accounts en ynstellingen</string>
+  <!-- Customize menu screen - Accessibility description - name of the menu section that groups the New tab and New private tab actions. Read aloud after "Section", followed by the action names ("Section “New tab”: New tab, New private tab"). -->
+  <string name="browser_menu_section_new_tab">Nij ljepblêd</string>
   <!-- Title of the dialog shown when resetting the menu to its default layout (removing all user customizations) -->
   <string name="menu_customize_reset_dialog_title">Menu weromsette nei standertyndieling?</string>
   <!-- Message of the dialog shown when resetting the menu to its default layout (removing all user customizations) -->
@@ -343,6 +351,10 @@
     Content description for the translate page toolbar button that opens the translations dialog when no translation has occurred.
   -->
   <string name="browser_toolbar_translate">Side oersette</string>
+  <!-- Accessibility description for the toolbar button displayed when the page the user is on has a video that can be opened in a picture-in-picture window -->
+  <string name="browser_toolbar_picture_in_picture">Picture-in-picture</string>
+  <!-- Accessibility description for the toolbar button displayed while the current page's video is playing in a picture-in-picture window. Tapping the button closes that window. -->
+  <string name="browser_toolbar_picture_in_picture_close">Picture-in-picture slute</string>
   <!-- CFR description for the browser toolbar describing the "Shake to summarize feature" -->
   <string name="browser_toolbar_summarize_cfr_description">Skodzje jo apparaat om dizze side yn sekonden gear te fetsjen. ⚡️</string>
   <!--
@@ -2102,15 +2114,21 @@
   <string name="unsubmitted_crash_dialog_negative_button_2">SLUTE</string>
   <!-- Unsubmitted crash dialog negative button to never be asked for the submission -->
   <string name="unsubmitted_crash_requested_by_devs_dialog_never_button">Nea wer toane</string>
+  <!-- Unsubmitted crash dialog negative button to never be asked for the submission, displayed in all capital letters. -->
+  <string name="unsubmitted_crash_requested_by_devs_dialog_never_button_2" tools:ignore="UnusedResources">NEA MEAR TOANE</string>
   <!-- Unsubmitted crash dialog positive button to submit crash report -->
   <string name="unsubmitted_crash_dialog_positive_button_2">FERSTJOERE</string>
   <!-- Unsubmitted crash dialog positive button to submit crash report -->
   <string name="unsubmitted_crash_dialog_positive_button">Ungelokrapport ferstjoere</string>
+  <!-- Unsubmitted crash dialog positive button to submit crash report, displayed in all capital letters. -->
+  <string name="unsubmitted_crash_dialog_positive_button_3" tools:ignore="UnusedResources">ÛNGELOKRAPPORT FERSTJOERE</string>
   <!-- Body text for crash report dialog. %s is the link text in the annotated string (ie. "Learn More") -->
   <string name="unsubmitted_crash_dialog_body">Ungelokrapporten helpe ús problemen mei de browser te analysearjen en op te lossen. Rapporten kinne persoanlike of gefoelige gegevens befetsje. %s</string>
   <string name="unsubmitted_crash_dialog_learn_more">Mear ynfo</string>
   <!-- Unsubmitted crash dialog button to open a web page with more details on the feature and privacy policy -->
   <string name="unsubmitted_crash_requested_by_devs_learn_more">Mear ynfo</string>
+  <!-- Unsubmitted crash dialog button to open a web page with more details on the feature and privacy policy, displayed in all capital letters. -->
+  <string name="unsubmitted_crash_requested_by_devs_learn_more_2" tools:ignore="UnusedResources">MEAR YNFO</string>
   <!--
     Bookmarks
 
@@ -3230,6 +3248,10 @@
   <string name="preferences_credit_cards_save_and_autofill_cards_2">Betellingsmetoaden bewarje en ynfolje</string>
   <!-- Preference summary for saving and autofilling payment method data. %s is the name of the app (for example "Firefox"). -->
   <string name="preferences_credit_cards_save_and_autofill_cards_summary_2">%s fersiferet alle betellingsmetoaden dy’t jo bewarje</string>
+  <!-- Preference for saving the security codes of credit cards. -->
+  <string name="preferences_credit_cards_save_security_codes">Befeiligingskoade bewarje</string>
+  <!-- Preference summary for saving the security codes of credit cards. %s is the name of the app (for example "Firefox"). -->
+  <string name="preferences_credit_cards_save_security_codes_summary">%s fersiferet jo kaartnûmer en befeiligingskoade foar flugger betellingen letter</string>
   <!-- Preference option for syncing credit cards across devices. This is displayed when the user is not signed into sync -->
   <string name="preferences_credit_cards_sync_cards_across_devices">Kaarten syngronisearje tusken apparaten</string>
   <!-- Preference option for syncing credit cards across devices. This is displayed when the user is signed into sync -->
@@ -3266,6 +3288,8 @@
   <string name="credit_cards_expiration_date_year">Ferrindatum – jier</string>
   <!-- The header for the name on the credit card -->
   <string name="credit_cards_name_on_card">Namme op kaart</string>
+  <!-- The header for the optional security code of a credit card. CVV is the abbreviation of the card security code. -->
+  <string name="credit_cards_cvv_optional">CVV (opsjoneel)</string>
   <!-- The text for the "Delete card" menu item for deleting a credit card -->
   <string name="credit_cards_menu_delete_card">Kaart fuortsmite</string>
   <!-- The text for the "Delete card" button for deleting a credit card -->
@@ -3282,6 +3306,8 @@
   <string name="credit_cards_cancel_button">Annulearje</string>
   <!-- Title of the "Saved cards" screen -->
   <string name="credit_cards_saved_cards">Bewarre kaarten</string>
+  <!-- Text in the saved cards list that indicates the security code for a credit card is being stored -->
+  <string name="credit_cards_cvv_saved">CVV bewarre</string>
   <!-- Error message for card number validation -->
   <string name="credit_cards_number_validation_error_message_2">Fier in jildich kaartnûmer yn</string>
   <!-- Error message for card name on card validation -->
@@ -3698,6 +3724,12 @@
   <!--
     Translations options dialog
 
+    Title of the translation options dialog that allows a user to set their translation preferences for the site the user is currently on.
+  -->
+  <string name="translation_option_bottom_sheet_title_heading2">Oersetfoarkarren</string>
+  <!--
+    Translations options dialog
+
     Title of the translation options dialog that allows a user to set their translation options for the site the user is currently on.
   -->
   <string name="translation_option_bottom_sheet_title_heading">Oersetopsjes</string>
@@ -3935,6 +3967,8 @@
   <string name="certificate_details_panel_secure_connection_title">Befeilige ferbining</string>
   <!-- Certificate panel - Label for the organization, locality and country the website's certificate was issued to -->
   <string name="certificate_details_panel_issued_to_label">Sertifikaat útjûn oan:</string>
+  <!-- Certificate panel - Label for the name of the certificate authority that verified and issued the website's certificate -->
+  <string name="certificate_details_panel_verified_by_label">Ferifiearre troch:</string>
   <!-- Certificate panel - Content description (not visible, for screen readers etc.) for the EU trust mark logo, shown when the website's certificate is a Qualified Website Authentication Certificate (QWAC) as specified in EU Regulation 2024/1183 -->
   <string name="certificate_details_panel_eu_trust_mark_content_description">EU-fertrouwensmerk</string>
   <plurals name="trackers_blocked_panel_total_num_trackers_blocked_2">
@@ -4004,6 +4038,8 @@
   <string name="clear_site_data_dialog_negative_button_text">Annulearje</string>
   <!-- Text for the connection security panel when the site is secure. -->
   <string name="connection_security_panel_secure">Befeilige ferbining</string>
+  <!-- Action description (not visible, for screen readers etc.) for the “Secure connection” link in the protection panel header, which opens a page showing the website's certificate details. Screen readers announce it after “Double tap to” -->
+  <string name="connection_security_panel_view_certificate_details">sertifikaatdetails besjen</string>
   <!-- Text for the connection security panel when the site is not secure. -->
   <string name="connection_security_panel_not_secure">Ferbining net befeilige</string>
   <!-- Text for the connection security panel when accessed from local PDF. -->
@@ -4514,6 +4550,8 @@
   <string name="wrex_widget_match_suspended">Underbrutsen</string>
   <!-- Label shown on the sports widget match status badge when a match has been postponed to a later date. -->
   <string name="wrex_widget_match_postponed">Utsteld</string>
+  <!-- Label shown on the sports widget match status badge when a match has been canceled. -->
+  <string name="wrex_widget_match_canceled">Annulearre</string>
   <!-- Sports widget action label to refresh match data after an error. -->
   <string name="wrex_widget_error_refresh">Fernije</string>
   <!-- Sports widget menu item to view the team's match results. -->

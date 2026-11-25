@@ -1752,6 +1752,14 @@
   <string name="close_tab_and_delete_group_confirmation_dialog_confirm">Supprimer le groupe</string>
   <!-- Text shown on the cancel button in the Close last tab and delete tab group confirmation dialog. -->
   <string name="close_tab_and_delete_group_confirmation_dialog_cancel">Annuler</string>
+  <!-- Title of the confirmation dialog shown when moving the last tab out of a group will delete the group. %s is the group name, which defaults to a value such as "Group 1" but can be edited by the user to contain arbitrary text. -->
+  <string name="move_last_tab_and_delete_group_confirmation_dialog_title">Déplacer le dernier onglet de %s\u00a0?</string>
+  <!-- Body of the confirmation dialog shown when moving the last tab out of a group will delete the group. %1$s is the destination group name. %2$s is the source group name that will be deleted. Both names default to values such as "Group 1" but can be edited by the user to contain arbitrary text. -->
+  <string name="move_last_tab_and_delete_group_confirmation_dialog_body">Cet onglet sera déplacé vers %1$s. %2$s sera supprimé car il sera vide.</string>
+  <!-- Text shown on the confirm button for the confirmation dialog shown when moving the last tab out of a group will delete the group. -->
+  <string name="move_last_tab_and_delete_group_confirmation_dialog_confirm">Déplacer l’onglet</string>
+  <!-- Text shown on the cancel button for the confirmation dialog shown when moving the last tab out of a group will delete the group. -->
+  <string name="move_last_tab_and_delete_group_confirmation_dialog_cancel">Annuler</string>
   <!-- Content description for the three dot button next to a tab group" -->
   <string name="tab_group_three_dot_button_content_description">Options supplémentaires</string>
   <!--
@@ -2123,13 +2131,13 @@
   <!-- Unsubmitted crash dialog negative button to never be asked for the submission -->
   <string name="unsubmitted_crash_requested_by_devs_dialog_never_button">Ne plus afficher ce message</string>
   <!-- Unsubmitted crash dialog negative button to never be asked for the submission, displayed in all capital letters. -->
-  <string name="unsubmitted_crash_requested_by_devs_dialog_never_button_2" tools:ignore="UnusedResources">Ne plus afficher le message</string>
+  <string name="unsubmitted_crash_requested_by_devs_dialog_never_button_2" tools:ignore="UnusedResources">NE PLUS JAMAIS AFFICHER</string>
   <!-- Unsubmitted crash dialog positive button to submit crash report -->
   <string name="unsubmitted_crash_dialog_positive_button_2">ENVOYER</string>
   <!-- Unsubmitted crash dialog positive button to submit crash report -->
   <string name="unsubmitted_crash_dialog_positive_button">Envoyer le rapport de plantage</string>
   <!-- Unsubmitted crash dialog positive button to submit crash report, displayed in all capital letters. -->
-  <string name="unsubmitted_crash_dialog_positive_button_3" tools:ignore="UnusedResources">ENVOYER LE RAPPORT DE Plantage</string>
+  <string name="unsubmitted_crash_dialog_positive_button_3" tools:ignore="UnusedResources">ENVOYER LE RAPPORT DE PLANTAGE</string>
   <!-- Body text for crash report dialog. %s is the link text in the annotated string (ie. "Learn More") -->
   <string name="unsubmitted_crash_dialog_body">Les rapports de plantage nous aident à diagnostiquer et à corriger des problèmes avec le navigateur. Les rapports peuvent contenir des données personnelles ou sensibles. %s</string>
   <string name="unsubmitted_crash_dialog_learn_more">En savoir plus</string>
@@ -3130,6 +3138,8 @@
   <string name="ip_protection_learn_more">En savoir plus</string>
   <!-- Label for the monthly data allowance section on the browser VPN settings screen -->
   <string name="ip_protection_data_limit_label">Quota mensuel de données</string>
+  <!-- Accessibility description for the button that closes promotional banners or messages on the VPN settings screen (without triggering any effect) -->
+  <string name="ip_protection_settings_message_dismiss">Ignorer</string>
   <!--
     Data usage shown on the browser VPN settings screen.
     %1$.1f is the data remaining in GB (for example "8.3").
@@ -3197,6 +3207,13 @@
     %2$s is a link using ip_protection_onboarding_body_link_promo (“Learn more”) as text. It links to a support article about VPN on Firefox.
   -->
   <string name="ip_protection_onboarding_body_promo">Activez-le pour rendre votre navigation plus privée et plus difficile à tracer. Essayez-le maintenant pour obtenir une bande passante illimitée jusqu’au %1$s. %2$s</string>
+  <!--
+    The body of the VPN onboarding card when the user qualifies for using VPN without signing in to a Mozilla account
+    %1$d is the amount of free data in GB available without signing in (for example "5").
+    %2$d is the amount of data in GB available after signing in (for example "50").
+    %3$s is a link using ip_protection_onboarding_body_link_promo (“Learn more”) as text. It links to a support article about VPN on Firefox.
+  -->
+  <string name="ip_protection_onboarding_body_no_fxa">Activez-le pour rendre votre navigation plus privée et plus difficile à tracer. Essayez-le avec %1$d\u00a0Go de bande passante gratuite ou connectez-vous pour %2$d\u00a0Go. %3$s</string>
   <!-- Used as text for a link in ip_protection_onboarding_body. Make sure to adapt capitalization if the link is in the middle of the sentence. -->
   <string name="ip_protection_onboarding_body_link_promo">En savoir plus</string>
   <!-- Label for the dismiss button on the onboarding bottom sheet. -->
@@ -3323,7 +3340,7 @@
   <!-- Error message for a credit card security code that does not meet the 3-digit length requirement. -->
   <string name="credit_cards_cvv_validation_error_message">Le code de sécurité doit être composé de 3 chiffres</string>
   <!-- Error message for a credit card security code that does not meet the 4-digit length requirement (used for American Express cards only) -->
-  <string name="credit_cards_cvv_amex_validation_error_message">Les codes de sécurité American Express sont à 4 chiffres</string>
+  <string name="credit_cards_cvv_amex_validation_error_message">Les codes de sécurité des cartes American Express comportent 4 chiffres</string>
   <!-- Message displayed in biometric prompt displayed for authentication before allowing users to view their saved credit cards -->
   <string name="credit_cards_biometric_prompt_message">Déverrouillez pour afficher vos cartes enregistrées</string>
   <!-- Title of warning dialog if users have no device authentication set up -->

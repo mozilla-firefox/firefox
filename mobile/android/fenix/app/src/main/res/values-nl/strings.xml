@@ -186,6 +186,14 @@
   <string name="customize_menu">Menu aanpassen</string>
   <!-- Alert message shown in the "Customize menu" screen when the user tries to hide a menu section which cannot be hidden. -->
   <string name="customize_menu_cannot_hide_section">Kan deze sectie niet verbergen</string>
+  <!-- Customize menu screen - Accessibility description - name of the menu section that groups the page tools (Bookmark page, Find in page, Desktop site, Extensions, etc.). Read aloud after "Section", followed by the tool names ("Section “Tools”: Bookmark page, Find in page…"). -->
+  <string name="browser_menu_section_tools">Hulpmiddelen</string>
+  <!-- Customize menu screen - Accessibility description - name of the menu section that groups the History, Bookmarks, Downloads and Passwords items. Read aloud after "Section", followed by the item names ("Section “Library”: History, Bookmarks, Downloads, Passwords"). -->
+  <string name="browser_menu_section_library">Bibliotheek</string>
+  <!-- Customize menu screen - Accessibility description - name of the menu section that groups the Sign in and Settings items. Read aloud after "Section", followed by the item names ("Section “Accounts and settings”: Sign in, Settings"). -->
+  <string name="browser_menu_section_accounts_and_settings">Accounts en instellingen</string>
+  <!-- Customize menu screen - Accessibility description - name of the menu section that groups the New tab and New private tab actions. Read aloud after "Section", followed by the action names ("Section “New tab”: New tab, New private tab"). -->
+  <string name="browser_menu_section_new_tab">Nieuw tabblad</string>
   <!-- Title of the dialog shown when resetting the menu to its default layout (removing all user customizations) -->
   <string name="menu_customize_reset_dialog_title">Menu terugzetten naar standaardindeling?</string>
   <!-- Message of the dialog shown when resetting the menu to its default layout (removing all user customizations) -->
@@ -343,6 +351,10 @@
     Content description for the translate page toolbar button that opens the translations dialog when no translation has occurred.
   -->
   <string name="browser_toolbar_translate">Pagina vertalen</string>
+  <!-- Accessibility description for the toolbar button displayed when the page the user is on has a video that can be opened in a picture-in-picture window -->
+  <string name="browser_toolbar_picture_in_picture">Picture-in-picture</string>
+  <!-- Accessibility description for the toolbar button displayed while the current page's video is playing in a picture-in-picture window. Tapping the button closes that window. -->
+  <string name="browser_toolbar_picture_in_picture_close">Picture-in-picture sluiten</string>
   <!-- CFR description for the browser toolbar describing the "Shake to summarize feature" -->
   <string name="browser_toolbar_summarize_cfr_description">Schud uw apparaat om deze pagina binnen enkele seconden samen te vatten. ⚡️</string>
   <!--
@@ -2102,15 +2114,21 @@
   <string name="unsubmitted_crash_dialog_negative_button_2">SLUITEN</string>
   <!-- Unsubmitted crash dialog negative button to never be asked for the submission -->
   <string name="unsubmitted_crash_requested_by_devs_dialog_never_button">Nooit meer tonen</string>
+  <!-- Unsubmitted crash dialog negative button to never be asked for the submission, displayed in all capital letters. -->
+  <string name="unsubmitted_crash_requested_by_devs_dialog_never_button_2" tools:ignore="UnusedResources">NOOIT MEER TONEN</string>
   <!-- Unsubmitted crash dialog positive button to submit crash report -->
   <string name="unsubmitted_crash_dialog_positive_button_2">VERZENDEN</string>
   <!-- Unsubmitted crash dialog positive button to submit crash report -->
   <string name="unsubmitted_crash_dialog_positive_button">Crashrapport verzenden</string>
+  <!-- Unsubmitted crash dialog positive button to submit crash report, displayed in all capital letters. -->
+  <string name="unsubmitted_crash_dialog_positive_button_3" tools:ignore="UnusedResources">CRASHRAPPORT VERZENDEN</string>
   <!-- Body text for crash report dialog. %s is the link text in the annotated string (ie. "Learn More") -->
   <string name="unsubmitted_crash_dialog_body">Crashrapporten helpen ons problemen met de browser te analyseren en op te lossen. Rapporten kunnen persoonlijke of gevoelige gegevens bevatten. %s</string>
   <string name="unsubmitted_crash_dialog_learn_more">Meer info</string>
   <!-- Unsubmitted crash dialog button to open a web page with more details on the feature and privacy policy -->
   <string name="unsubmitted_crash_requested_by_devs_learn_more">Meer info</string>
+  <!-- Unsubmitted crash dialog button to open a web page with more details on the feature and privacy policy, displayed in all capital letters. -->
+  <string name="unsubmitted_crash_requested_by_devs_learn_more_2" tools:ignore="UnusedResources">MEER INFO</string>
   <!--
     Bookmarks
 
@@ -3230,6 +3248,10 @@
   <string name="preferences_credit_cards_save_and_autofill_cards_2">Betalingsmethoden opslaan en invullen</string>
   <!-- Preference summary for saving and autofilling payment method data. %s is the name of the app (for example "Firefox"). -->
   <string name="preferences_credit_cards_save_and_autofill_cards_summary_2">%s versleutelt alle betalingsmethoden die u opslaat</string>
+  <!-- Preference for saving the security codes of credit cards. -->
+  <string name="preferences_credit_cards_save_security_codes">Beveiligingscode opslaan</string>
+  <!-- Preference summary for saving the security codes of credit cards. %s is the name of the app (for example "Firefox"). -->
+  <string name="preferences_credit_cards_save_security_codes_summary">%s versleutelt uw kaartnummer en beveiligingscode voor snellere betalingen later</string>
   <!-- Preference option for syncing credit cards across devices. This is displayed when the user is not signed into sync -->
   <string name="preferences_credit_cards_sync_cards_across_devices">Kaarten synchroniseren tussen apparaten</string>
   <!-- Preference option for syncing credit cards across devices. This is displayed when the user is signed into sync -->
@@ -3266,6 +3288,8 @@
   <string name="credit_cards_expiration_date_year">Vervaldatum – jaar</string>
   <!-- The header for the name on the credit card -->
   <string name="credit_cards_name_on_card">Naam op kaart</string>
+  <!-- The header for the optional security code of a credit card. CVV is the abbreviation of the card security code. -->
+  <string name="credit_cards_cvv_optional">CVV (optioneel)</string>
   <!-- The text for the "Delete card" menu item for deleting a credit card -->
   <string name="credit_cards_menu_delete_card">Kaart verwijderen</string>
   <!-- The text for the "Delete card" button for deleting a credit card -->
@@ -3282,10 +3306,16 @@
   <string name="credit_cards_cancel_button">Annuleren</string>
   <!-- Title of the "Saved cards" screen -->
   <string name="credit_cards_saved_cards">Opgeslagen kaarten</string>
+  <!-- Text in the saved cards list that indicates the security code for a credit card is being stored -->
+  <string name="credit_cards_cvv_saved">CVV opgeslagen</string>
   <!-- Error message for card number validation -->
   <string name="credit_cards_number_validation_error_message_2">Voer een geldig kaartnummer in</string>
   <!-- Error message for card name on card validation -->
   <string name="credit_cards_name_on_card_validation_error_message_2">Voeg een naam toe</string>
+  <!-- Error message for a credit card security code that does not meet the 3-digit length requirement. -->
+  <string name="credit_cards_cvv_validation_error_message">Beveiligingscode moet uit 3 cijfers bestaan</string>
+  <!-- Error message for a credit card security code that does not meet the 4-digit length requirement (used for American Express cards only) -->
+  <string name="credit_cards_cvv_amex_validation_error_message">American Express-beveiligingscodes bestaan uit 4 cijfers</string>
   <!-- Message displayed in biometric prompt displayed for authentication before allowing users to view their saved credit cards -->
   <string name="credit_cards_biometric_prompt_message">Ontgrendel om uw opgeslagen kaarten te bekijken</string>
   <!-- Title of warning dialog if users have no device authentication set up -->
@@ -3698,6 +3728,12 @@
   <!--
     Translations options dialog
 
+    Title of the translation options dialog that allows a user to set their translation preferences for the site the user is currently on.
+  -->
+  <string name="translation_option_bottom_sheet_title_heading2">Vertaalvoorkeuren</string>
+  <!--
+    Translations options dialog
+
     Title of the translation options dialog that allows a user to set their translation options for the site the user is currently on.
   -->
   <string name="translation_option_bottom_sheet_title_heading">Vertaalopties</string>
@@ -3935,6 +3971,8 @@
   <string name="certificate_details_panel_secure_connection_title">Beveiligde verbinding</string>
   <!-- Certificate panel - Label for the organization, locality and country the website's certificate was issued to -->
   <string name="certificate_details_panel_issued_to_label">Certificaat uitgegeven aan:</string>
+  <!-- Certificate panel - Label for the name of the certificate authority that verified and issued the website's certificate -->
+  <string name="certificate_details_panel_verified_by_label">Geverifieerd door:</string>
   <!-- Certificate panel - Content description (not visible, for screen readers etc.) for the EU trust mark logo, shown when the website's certificate is a Qualified Website Authentication Certificate (QWAC) as specified in EU Regulation 2024/1183 -->
   <string name="certificate_details_panel_eu_trust_mark_content_description">EU-vertrouwensmerk</string>
   <plurals name="trackers_blocked_panel_total_num_trackers_blocked_2">
@@ -4004,6 +4042,8 @@
   <string name="clear_site_data_dialog_negative_button_text">Annuleren</string>
   <!-- Text for the connection security panel when the site is secure. -->
   <string name="connection_security_panel_secure">Beveiligde verbinding</string>
+  <!-- Action description (not visible, for screen readers etc.) for the “Secure connection” link in the protection panel header, which opens a page showing the website's certificate details. Screen readers announce it after “Double tap to” -->
+  <string name="connection_security_panel_view_certificate_details">certificaatdetails bekijken</string>
   <!-- Text for the connection security panel when the site is not secure. -->
   <string name="connection_security_panel_not_secure">Verbinding niet beveiligd</string>
   <!-- Text for the connection security panel when accessed from local PDF. -->
@@ -4514,6 +4554,8 @@
   <string name="wrex_widget_match_suspended">Onderbroken</string>
   <!-- Label shown on the sports widget match status badge when a match has been postponed to a later date. -->
   <string name="wrex_widget_match_postponed">Uitgesteld</string>
+  <!-- Label shown on the sports widget match status badge when a match has been canceled. -->
+  <string name="wrex_widget_match_canceled">Geannuleerd</string>
   <!-- Sports widget action label to refresh match data after an error. -->
   <string name="wrex_widget_error_refresh">Vernieuwen</string>
   <!-- Sports widget menu item to view the team's match results. -->
