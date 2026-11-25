@@ -819,6 +819,75 @@ add_task(async function keep_urlbar_state_on_open_in_background_tab() {
   await SpecialPowers.popPrefEnv();
 });
 
+add_task(async function keep_urlbar_value_on_open_result_in_background_tab() {
+  await SpecialPowers.pushPrefEnv({
+    set: [["browser.tabs.loadInBackground", true]],
+  });
+  let provider = new UrlbarTestUtils.TestProvider({
+    results: ["https://example.com/result1", "https://example.com/result2"].map(
+      url =>
+        new UrlbarResult({
+          type: UrlbarShared.RESULT_TYPE.URL,
+          source: UrlbarShared.RESULT_SOURCE.HISTORY,
+          payload: { url, title: url },
+        })
+    ),
+    priority: 2,
+  });
+  let providersManager = ProvidersManager.getInstanceForSap("urlbar");
+  providersManager.registerProvider(provider);
+
+  let openInBackgroundTab = async index => {
+    let { element, url } = await UrlbarTestUtils.getDetailsOfResultAt(
+      window,
+      index
+    );
+    let menu = await openContextMenu(element.row);
+    let onNewTab = BrowserTestUtils.waitForNewTab(gBrowser, url);
+    menu.querySelector("[data-open-in=tab]").click();
+    let newTab = await onNewTab;
+    Assert.notEqual(newTab, gBrowser.selectedTab);
+    Assert.ok(gURLBar.view.isOpen);
+    BrowserTestUtils.removeTab(newTab);
+    return url;
+  };
+
+  info("Test with empty string");
+  await UrlbarTestUtils.promiseAutocompleteResultPopup({
+    value: "",
+    window,
+    fireInputEvent: true,
+  });
+  Assert.equal(await openInBackgroundTab(0), "https://example.com/result1");
+  Assert.equal(gURLBar.value, "");
+  gURLBar.view.close();
+
+  info("Test with some chars");
+  await UrlbarTestUtils.promiseAutocompleteResultPopup({
+    value: "test",
+    window,
+    fireInputEvent: true,
+  });
+  Assert.equal(await openInBackgroundTab(0), "https://example.com/result1");
+  Assert.equal(gURLBar.value, "test");
+  gURLBar.view.close();
+
+  info("Test after selecting a result by the arrow key");
+  await UrlbarTestUtils.promiseAutocompleteResultPopup({
+    value: "test",
+    window,
+    fireInputEvent: true,
+  });
+  EventUtils.synthesizeKey("KEY_ArrowDown");
+  Assert.equal(gURLBar.value, "https://example.com/result1");
+  Assert.equal(await openInBackgroundTab(1), "https://example.com/result2");
+  Assert.equal(gURLBar.value, "https://example.com/result1");
+  gURLBar.view.close();
+
+  providersManager.unregisterProvider(provider);
+  await SpecialPowers.popPrefEnv();
+});
+
 // Returns the menu's items as the command or open-in target each one picks, in
 // the order they are shown, separators included.
 async function promiseMenuDescription() {
