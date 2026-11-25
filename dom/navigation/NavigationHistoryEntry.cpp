@@ -5,6 +5,7 @@
 #include "mozilla/dom/NavigationHistoryEntry.h"
 
 #include "mozilla/dom/Document.h"
+#include "mozilla/dom/FragmentDirective.h"
 #include "mozilla/dom/NavigationHistoryEntryBinding.h"
 #include "mozilla/dom/NavigationUtils.h"
 #include "mozilla/dom/SessionHistoryEntry.h"
@@ -58,7 +59,7 @@ void NavigationHistoryEntry::GetUrl(nsAString& aResult) const {
   nsCOMPtr<nsIURI> uri = mSHInfo->GetURI();
   MOZ_ASSERT(uri);
   nsCString uriSpec;
-  uri->GetSpec(uriSpec);
+  FragmentDirective::GetSpecIgnoringFragmentDirective(uri, uriSpec);
   CopyUTF8toUTF16(uriSpec, aResult);
 }
 

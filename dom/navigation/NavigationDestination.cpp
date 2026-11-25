@@ -5,6 +5,7 @@
 #include "mozilla/dom/NavigationDestination.h"
 
 #include "mozilla/ErrorResult.h"
+#include "mozilla/dom/FragmentDirective.h"
 #include "mozilla/dom/NavigationDestinationBinding.h"
 #include "mozilla/dom/NavigationHistoryEntry.h"
 #include "nsError.h"
@@ -33,8 +34,9 @@ NavigationDestination::NavigationDestination(
 
 // https://html.spec.whatwg.org/#dom-navigationdestination-url
 void NavigationDestination::GetUrl(nsString& aURL) const {
+  nsCOMPtr<nsIURI> url = mURL;
   nsAutoCString uri;
-  nsresult rv = mURL->GetSpec(uri);
+  nsresult rv = FragmentDirective::GetSpecIgnoringFragmentDirective(url, uri);
   if (NS_WARN_IF(NS_FAILED(rv))) {
     aURL.Truncate();
     return;
