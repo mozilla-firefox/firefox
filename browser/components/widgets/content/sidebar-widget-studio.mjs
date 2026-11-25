@@ -2,11 +2,19 @@
  * License, v. 2.0. If a copy of the MPL was not distributed with this
  * file, You can obtain one at http://mozilla.org/MPL/2.0/. */
 
-import { html, nothing } from "chrome://global/content/vendor/lit.all.mjs";
+import {
+  html,
+  ifDefined,
+  nothing,
+  render,
+  repeat,
+} from "chrome://global/content/vendor/lit.all.mjs";
 import { SidebarPage } from "chrome://browser/content/sidebar/sidebar-page.mjs";
 import { SUBMIT_ICON } from "chrome://browser/content/widgets/widget-composer.mjs";
 // eslint-disable-next-line import-x/no-unassigned-import
 import "chrome://global/content/elements/panel-list.mjs";
+// eslint-disable-next-line import-x/no-unassigned-import
+import "chrome://browser/content/widgets/moz-widget.mjs";
 // eslint-disable-next-line import-x/no-unassigned-import
 import "chrome://browser/content/widgets/widget-placeholder.mjs";
 
@@ -16,6 +24,7 @@ const lazy = {};
 ChromeUtils.defineESModuleGetters(lazy, {
   AuthenticationController:
     "moz-src:///browser/components/widgets/AuthenticationController.sys.mjs",
+  E10SUtils: "resource://gre/modules/E10SUtils.sys.mjs",
   WidgetsController:
     "moz-src:///browser/components/widgets/WidgetsController.sys.mjs",
 });
@@ -95,6 +104,14 @@ export class SidebarWidgetStudio extends SidebarPage {
     this.#hadFocus = !!this.renderRoot.activeElement;
   }
 
+  update(changes) {
+    super.update(changes);
+    // Browsers in the light DOM can open pickers and keep their content
+    // when moved with moveBefore().
+    let slotted = this.renderSlotted();
+    render(slotted, this, { host: this });
+  }
+
   async updated() {
     if (this.#focusNewPlaceholder) {
       this.#focusNewPlaceholder = false;
@@ -147,6 +164,33 @@ export class SidebarWidgetStudio extends SidebarPage {
       }
       composer.focus();
     }
+  }
+
+  #sizeOf(widget) {
+    // The sidebar does not support small widgets.
+    if (widget.size == "small") {
+      return "medium";
+    }
+    return widget.size;
+  }
+
+  cardsTemplate() {
+    return repeat(
+      this.widgets.all,
+      widget => widget.id,
+      widget =>
+        html`<moz-widget
+          widget-id=${widget.id}
+          .title=${widget.name}
+          padded
+          remote-type=${lazy.E10SUtils.EXTENSION_REMOTE_TYPE}
+          group-id=${ifDefined(
+            WebExtensionPolicy.getByID(widget.id)?.browsingContextGroupId
+          )}
+          src=${widget.src}
+          size=${this.#sizeOf(widget)}
+        ></moz-widget>`
+    );
   }
 
   placeholderTemplate() {
@@ -276,6 +320,10 @@ export class SidebarWidgetStudio extends SidebarPage {
     ></moz-button>`;
   }
 
+  renderSlotted() {
+    return html`${this.cardsTemplate()}`;
+  }
+
   render() {
     return html`<link
         rel="stylesheet"
@@ -310,7 +358,9 @@ export class SidebarWidgetStudio extends SidebarPage {
         ></panel-item>
       </panel-list>
       ${this.signInTemplate()}
-      <slot></slot>
+      <div class="widgets" ?hidden=${!this.widgets.all.length}>
+        <slot></slot>
+      </div>
       ${this.placeholderTemplate()} ${this.composerTemplate()}`;
   }
 }

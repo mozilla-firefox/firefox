@@ -47,11 +47,37 @@
   margin-block: auto var(--space-large);
 }
 
+.widgets {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-medium);
+  overflow: auto;
+  padding: var(--space-large);
+  padding-block-start: calc(var(--space-large) * 2 + var(--size-item-large));
+
+  @media -moz-pref("sidebar.visibility", "hide-launcher") {
+    padding-block-start: var(--space-large);
+  }
+
+  #sign-in-prompt + & {
+    padding-block-start: var(--space-large);
+  }
+
+  &[hidden] {
+    display: none;
+  }
+}
+
+::slotted(moz-widget) {
+  flex-shrink: 0;
+  inline-size: 100%;
+}
+
 widget-placeholder {
   margin-block-end: var(--space-large);
   margin-inline: var(--space-large);
 
-  slot:not(:has-slotted) + & {
+  .widgets[hidden] + & {
     margin-block-start: calc(var(--space-large) * 2 + var(--size-item-large));
   }
 }
