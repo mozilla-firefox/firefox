@@ -743,6 +743,22 @@ void NotificationController::WillRefresh(mozilla::TimeStamp aTime) {
     return;
   }
 
+  // The refresh driver doesn't flush style or layout for a document where
+  // rendering is suppressed, but we require up-to-date style and layout. Defer
+  // updates until rendering is no longer suppressed. A PresShell which hasn't
+  // been initialized has no frames, so it doesn't need to be flushed.
+  //
+  // XXX Bug 2089366: If style and layout are already up-to-date (e.g. a sync
+  // flush), the document might still be painted (e.g. a render-blocked
+  // same-process iframe), so we update in that case. Once bug 2089366 is fixed,
+  // painting won't ever occur in this case, so the NeedStyleFlush and
+  // NeedLayoutFlush checks can be removed then.
+  if (mPresShell->DidInitialize() &&
+      mDocument->DocumentNode()->IsRenderingSuppressed() &&
+      (mPresShell->NeedStyleFlush() || mPresShell->NeedLayoutFlush())) {
+    return;
+  }
+
   // Process parent's notifications before ours, to get proper ordering between
   // e.g. tab event and content event.
   if (WaitingForParent()) {
