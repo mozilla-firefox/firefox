@@ -43,6 +43,8 @@ def build_url(pairs):
         if not sep:
             sys.exit(f"argument is not a field=value pair: {arg!r}")
         fields.append((key, value))
+    if not any(key == "format" for key, _ in fields):
+        fields.append(("format", "__default__"))
     return BASE + "?" + urllib.parse.urlencode(fields, quote_via=urllib.parse.quote)
 
 
