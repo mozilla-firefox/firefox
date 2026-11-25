@@ -81,6 +81,18 @@ It is set to `false`, and can be set to `true` using Nimbus.
 Defaults to `false`.
 Controls whether the Glean SDK should store submitted pings in its database layer. When set to `true` submitted pings will be viewable in `about:glean`.
 
+`telemetry.fog.backup.*`
+
+A storage location for anything the Glean SDK might wish to externally back up.
+At present we only support `client_id`, a string that defaults to `""`.
+
+`telemetry.fog.apply_stored_client_id`
+
+Defaults to `false`.
+Whether we instruct the Glean SDK to actually use the backed-up `client_id`
+in the event it can't find it in its own storage.
+Otherwise, it merely reports on whether it could and would use it.
+
 ## Defines
 
 `MOZ_AUTOMATION`

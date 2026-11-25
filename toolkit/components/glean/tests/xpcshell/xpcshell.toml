@@ -68,6 +68,15 @@ skip-if = [
 ["test_PingReset.js"]
 run-if = ["os != 'android'"] # Android does not reload JOG on reset.
 
+["test_PrefsBackup.js"]
+run-if = ["os != 'android'"] # Android does not provide prefs-based backup to the SDK.
+
+["test_PrefsBackup_enforce.js"]
+run-if = ["os != 'android'"] # Android does not provide prefs-based backup to the SDK.
+
+["test_PrefsBackup_unenforce.js"]
+run-if = ["os != 'android'"] # Android does not provide prefs-based backup to the SDK.
+
 ["test_ProfilerMarkers.js"]
 head = "head.js head_ProfilerMarkers.js"
 

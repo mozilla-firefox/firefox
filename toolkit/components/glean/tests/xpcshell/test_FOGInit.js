@@ -17,6 +17,11 @@ add_setup(
     // We need to ensure we're not artificially decelerating early pings.
     Services.prefs.clearUserPref("telemetry.fog.test.decelerate_early_events");
 
+    Assert.equal(
+      "",
+      Services.prefs.getStringPref("telemetry.fog.backup.client_id")
+    );
+
     // We need to initialize it once, otherwise operations will be stuck in the pre-init queue.
     Services.fog.initializeFOG();
   }
@@ -56,6 +61,26 @@ add_task(
       Glean.testOnly.eventPingEvent.testGetValue()?.length || 0,
       numEvents,
       "At least one 'events' ping must've been sent early."
+    );
+  }
+);
+
+add_task(
+  /* on Android we don't backup the client_id to prefs */
+  { skip_if: () => AppConstants.platform == "android" },
+  function test_fog_inits_setting_backup_client_id() {
+    // Ensure Glean has finished init-ing:
+    Glean.fog.initializations.testGetValue();
+
+    Assert.notEqual(
+      "",
+      Services.prefs.getStringPref("telemetry.fog.backup.client_id")
+    );
+
+    Assert.equal(
+      0,
+      Glean.fog.unknownBackupKey.testGetValue() ?? 0,
+      "No problems with backup."
     );
   }
 );

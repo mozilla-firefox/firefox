@@ -18,11 +18,15 @@ use xpcom::{RefPtr, XpCom};
 use glean::{ClientInfoMetrics, Configuration, ConfigurationBuilder};
 
 #[cfg(not(target_os = "android"))]
+mod prefs_backup;
+#[cfg(not(target_os = "android"))]
 mod upload_pref;
 #[cfg(not(target_os = "android"))]
 mod user_activity;
 mod viaduct_uploader;
 
+#[cfg(not(target_os = "android"))]
+use prefs_backup::PrefsBackup;
 #[cfg(not(target_os = "android"))]
 use upload_pref::UploadPrefObserver;
 #[cfg(not(target_os = "android"))]
@@ -45,6 +49,7 @@ pub extern "C" fn fog_init(
         static_prefs::pref!("telemetry.fog.enable_store_submitted_pings");
     let recording_enabled = static_prefs::pref!("telemetry.fog.test.localhost_port") < 0;
     let uploader = Some(Box::new(ViaductUploader) as Box<dyn glean::net::PingUploader>);
+    let backup = Some(Box::new(PrefsBackup) as Box<dyn glean::ExternalBackup>);
 
     fog_init_internal(
         data_path_override,
@@ -55,6 +60,7 @@ pub extern "C" fn fog_init(
         // so we take in `disable` but pass on `enable`.
         !disable_internal_pings,
         enable_store_submitted_pings,
+        backup,
     )
     .into()
 }
@@ -77,6 +83,8 @@ pub extern "C" fn fog_init(
     let upload_enabled = true;
     // Don't set up an uploader.
     let uploader = None;
+    // Don't bother with an external backup.
+    let backup = None;
 
     fog_init_internal(
         data_path_override,
@@ -85,6 +93,7 @@ pub extern "C" fn fog_init(
         uploader,
         !disable_internal_pings,
         false,
+        backup,
     )
     .into()
 }
@@ -96,6 +105,7 @@ fn fog_init_internal(
     uploader: Option<Box<dyn glean::net::PingUploader>>,
     enable_internal_pings: bool,
     enable_store_submitted_pings: bool,
+    backup: Option<Box<dyn glean::ExternalBackup>>,
 ) -> Result<(), nsresult> {
     let timer_id = metrics::fog::initializations.start();
 
@@ -125,7 +135,7 @@ fn fog_init_internal(
     // Register all custom pings before we initialize.
     pings::register_pings(Some(&conf.application_id));
 
-    glean::initialize(conf, client_info);
+    glean::initialize(conf, client_info, backup);
 
     metrics::fog::initializations.stop_and_accumulate(timer_id);
 

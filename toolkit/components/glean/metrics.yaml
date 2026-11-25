@@ -85,6 +85,24 @@ fog:
       - glean-team@mozilla.com
     expires: never
 
+  unknown_backup_key:
+    type: counter
+    description: |
+      How often we're asked to store, load, or clear a key from FOG's `ExternalBackup`
+      implementation that FOG doesn't support.
+
+      We expect this to be zero at all times.
+    bugs:
+      - https://bugzilla.mozilla.org/show_bug.cgi?id=2092245
+    data_reviews:
+      - https://bugzilla.mozilla.org/show_bug.cgi?id=2092245
+    data_sensitivity:
+      - technical
+    notification_emails:
+      - chutten@mozilla.com
+      - glean-team@mozilla.com
+    expires: never
+
 fog.ipc:
   replay_failures:
     type: counter

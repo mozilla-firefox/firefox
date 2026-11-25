@@ -20327,6 +20327,18 @@
   mirror: always
   rust: true
 
+- name: telemetry.fog.apply_stored_client_id
+  type: RelaxedAtomicBool
+  value: false
+  mirror: always
+  rust: true
+
+- name: telemetry.fog.backup.client_id
+  type: DataMutexString
+  value: ""
+  mirror: always
+  rust: true
+
 #---------------------------------------------------------------------------
 # Prefs starting with "test."
 #---------------------------------------------------------------------------

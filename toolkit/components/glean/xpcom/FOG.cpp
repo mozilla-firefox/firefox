@@ -147,6 +147,31 @@ extern "C" uint32_t FOG_MaxPingLimit(void) {
   return Preferences::GetInt("telemetry.glean.internal.maxPingsPerMinute", 15);
 }
 
+// Prefs may only be set on the main thread. This is most easily done up here in
+// C++.
+// @param "aPrefName" A fully-qualified preference name like
+// `telemetry.fog.backup.key`.
+// @param "aPrefValue" A CString whose contents can be stored in a pref.
+extern "C" void FOG_SetPrefOnMainThread(const nsCString* aPrefName,
+                                        const nsCString* aPrefValue) {
+  MOZ_ASSERT(XRE_IsParentProcess());
+  MOZ_ASSERT(aPrefName);
+  MOZ_ASSERT(aPrefValue);
+
+  if (NS_IsMainThread()) {
+    // Well, this is convenient.
+    Preferences::SetCString((*aPrefName).get(), *aPrefValue);
+    return;
+  }
+  // We need to copy the pref name and value so it lives as long as the
+  // runnable.
+  NS_DispatchToMainThread(NS_NewRunnableFunction(
+      "FOG_SetPrefOnMainThread",
+      [name = nsCString(*aPrefName), value = nsCString(*aPrefValue)]() {
+        Preferences::SetCString(name.get(), value);
+      }));
+}
+
 NS_IMETHODIMP
 FOG::InitializeFOG(const nsACString& aDataPathOverride,
                    const nsACString& aAppIdOverride,

@@ -3240,6 +3240,14 @@ gleanInternalSdk:
       setPref:
         branch: user
         pref: telemetry.fog.enable_fog_transport
+    applyStoredClientID:
+      type: boolean
+      description: |
+        Whether or not the Glean SDK should apply the value of FOG's backup client ID,
+        in cases where the Glean SDK was unable to find one in its own storage.
+      setPref:
+        branch: user
+        pref: telemetry.fog.apply_stored_client_id
 
 legacyTelemetry:
   description: "Controls for the Legacy Telemetry data collection system"
