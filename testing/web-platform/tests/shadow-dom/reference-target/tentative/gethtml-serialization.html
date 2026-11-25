@@ -95,4 +95,19 @@
     assert_equals(serialized, expected);
   }, 'shadowrootreferencetarget is serialized before ' +
      'shadowrootcustomelementregistry');
+
+  test(() => {
+    const host = document.createElement('div');
+    const shadow = host.attachShadow({
+      mode: 'open',
+      serializable: true,
+      referenceTarget: 'START_\u0026_\u00A0_\u003C_\u003E_\u0022_END',
+    });
+    const serialized = host.getHTML({shadowRoots: [shadow]});
+    const expected = '<template shadowrootmode="open" ' +
+                     'shadowrootserializable="" ' +
+                     'shadowrootreferencetarget="START_\u0026amp;_\u0026nbsp;_\u0026lt;_\u0026gt;_\u0026quot;_END">' +
+                     '</template>';
+    assert_equals(serialized, expected);
+  }, 'shadowrootreferencetarget value is escaped in attribute mode');
 </script>
