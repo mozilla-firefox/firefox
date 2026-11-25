@@ -1937,6 +1937,11 @@ trustpanel-site-issue-steps-intro = Turn these off to see if it fixes the issue:
 trustpanel-report-broken-site-button = Report broken site
 trustpanel-report-broken-site-description = Your report helps us improve { -brand-short-name } for everyone.
 
+## Feature callout shown the first time the tracker count appears in the URL bar
+
+urlbar-trust-icon-tracker-count-callout-title = Privacy that works for you
+urlbar-trust-icon-tracker-count-callout-subtitle = { -brand-short-name } makes it harder for companies to keep tabs on you. Open the shield to see what trackers we blocked.
+
 ## Items of the bulleted list introduced by trustpanel-site-issue-steps-intro.
 ## Each one names a feature the user can turn off to check whether it causes
 ## the site issue.
