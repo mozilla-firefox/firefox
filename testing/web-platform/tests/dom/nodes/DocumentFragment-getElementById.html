@@ -59,4 +59,12 @@ test(() => {
 
   assert_true(frag.getElementById("foo").hasAttribute("data-yes"));
 }, "It must return the first element when there are matches, using a template");
+
+test(() => {
+  const root = document.createElement("div").attachShadow({ mode: "open" });
+  root.innerHTML = `<span id="foo"></span>`;
+
+  assert_equals(DocumentFragment.prototype.getElementById.call(root, "foo"),
+                root.firstChild);
+}, "It must work when called on a ShadowRoot");
 </script>

@@ -33,8 +33,8 @@ class DocumentFragment : public FragmentOrElement {
   using FragmentOrElement::GetFirstChild;
   using nsINode::QuerySelector;
   using nsINode::QuerySelectorAll;
-  // Make sure bindings can see our superclass' protected GetElementById method.
-  using nsINode::GetElementById;
+  // Reachable on a ShadowRoot via DocumentFragment.prototype.getElementById.
+  Element* GetElementById(const nsAString& aId);
 
   // nsISupports
   NS_DECL_ISUPPORTS_INHERITED
