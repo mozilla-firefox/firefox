@@ -17,6 +17,7 @@
 #include "GLContextEGL.h"
 #include "GLContextProvider.h"
 #include "ScopedGLHelpers.h"
+#include "mozilla/WidgetUtilsGtk.h"
 #include "mozilla/widget/DMABufDevice.h"
 
 using namespace mozilla;
