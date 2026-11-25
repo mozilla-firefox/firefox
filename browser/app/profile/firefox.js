@@ -2592,6 +2592,7 @@ pref("browser.widgets.generated.apiKey", "");
 pref("browser.widgets.generated.model", "");
 pref("browser.widgets.generated.maxTurns", 30);
 pref("browser.widgets.generated.localPrompt", false);
+pref("browser.widgets.generated.promptTip.seen", false);
 
 // Block insecure active content on https pages
 pref("security.mixed_content.block_active_content", true);

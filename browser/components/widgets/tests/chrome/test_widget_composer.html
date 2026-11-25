@@ -5,6 +5,7 @@
     <title>widget-composer tests</title>
     <script src="chrome://mochikit/content/tests/SimpleTest/SimpleTest.js"></script>
     <script src="chrome://mochikit/content/tests/SimpleTest/EventUtils.js"></script>
+    <script src="head.js"></script>
     <link
       rel="stylesheet"
       href="chrome://mochikit/content/tests/SimpleTest/test.css"
@@ -14,6 +15,7 @@
       href="chrome://global/skin/design-system/tokens-brand.css"
     />
     <link rel="localization" href="toolkit/global/mozButton.ftl" />
+    <link rel="localization" href="toolkit/global/mozPromo.ftl" />
     <link rel="localization" href="preview/widgets.ftl" />
     <script
       type="module"
@@ -26,26 +28,6 @@
     <div id="content"></div>
     <pre id="test"></pre>
     <script>
-      const { BrowserTestUtils } = ChromeUtils.importESModule(
-        "resource://testing-common/BrowserTestUtils.sys.mjs"
-      );
-
-      async function createComposer(props = {}) {
-        await customElements.whenDefined("widget-composer");
-        let composer = document.createElement("widget-composer");
-        Object.assign(composer, props);
-        document.getElementById("content").append(composer);
-        await composer.updateComplete;
-        return composer;
-      }
-
-      function nextSubmit(composer) {
-        return BrowserTestUtils.waitForEvent(
-          composer,
-          "WidgetComposer:Submit"
-        ).then(event => event.detail);
-      }
-
       add_task(async function test_enter_submits() {
         let composer = await createComposer();
         let submitted = false;
@@ -89,6 +71,77 @@
         synthesizeKey("KEY_Escape");
         await dismissed;
         ok(true, "dismissed");
+        composer.remove();
+      });
+
+      add_task(async function test_tip_shown_once() {
+        Services.prefs.clearUserPref(TIP_PREF);
+        let composer = await typeInNewComposer("   ");
+        ok(!tip(composer), "hidden for blank text");
+        ok(!Services.prefs.getBoolPref(TIP_PREF), "not seen yet");
+        sendString("weather");
+        await composer.updateComplete;
+        ok(tip(composer), "shown after typing");
+        ok(Services.prefs.getBoolPref(TIP_PREF), "marked as seen");
+        synthesizeKey("a", { accelKey: true });
+        synthesizeKey("KEY_Backspace");
+        await composer.updateComplete;
+        is(composer.value, "", "field cleared");
+        ok(tip(composer), "still shown after clearing");
+        composer.remove();
+        composer = await typeInNewComposer("weather");
+        ok(!tip(composer), "not shown again in a new composer");
+        composer.remove();
+      });
+
+      add_task(async function test_focus_skips_tip() {
+        Services.prefs.clearUserPref(TIP_PREF);
+        let composer = await typeInNewComposer("weather");
+        await tipRendered(composer);
+        composer.shadowRoot.activeElement.blur();
+        ok(!composer.matches(":focus-within"), "focus has left the composer");
+        composer.focus();
+        is(
+          composer.shadowRoot.activeElement,
+          composer.shadowRoot.querySelector("textarea"),
+          "textarea focused, not the tip"
+        );
+        composer.remove();
+      });
+
+      add_task(async function test_tip_in_live_region() {
+        Services.prefs.clearUserPref(TIP_PREF);
+        let composer = await createComposer();
+        let region = composer.shadowRoot.querySelector("[aria-live=polite]");
+        ok(region && !region.children.length, "live region exists, empty");
+        composer.focus();
+        sendString("weather");
+        await composer.updateComplete;
+        is(tip(composer).parentElement, region, "tip added to that region");
+        composer.remove();
+      });
+
+      add_task(async function test_tip_dismissed() {
+        Services.prefs.clearUserPref(TIP_PREF);
+        let composer = await typeInNewComposer("weather");
+        let promo = await tipRendered(composer);
+        promo.closeButton.focus();
+        is(
+          composer.shadowRoot.activeElement,
+          promo,
+          "focus starts on the tip's close button"
+        );
+        synthesizeKey("KEY_Enter");
+        await composer.updateComplete;
+        ok(!tip(composer), "hidden after dismissing");
+        is(
+          composer.shadowRoot.activeElement,
+          composer.shadowRoot.querySelector("textarea"),
+          "focus back on the textarea"
+        );
+        sendString(" more");
+        await composer.updateComplete;
+        ok(!tip(composer), "stays hidden while typing on");
         composer.remove();
       });
     </script>

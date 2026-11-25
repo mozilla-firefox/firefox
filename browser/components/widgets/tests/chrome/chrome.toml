@@ -1,4 +1,5 @@
 [DEFAULT]
+support-files = ["head.js"]
 
 ["test_moz_widget.html"]
 

@@ -30,6 +30,30 @@
   font-size: var(--font-size-root);
 }
 
+.tip {
+  --promo-border-color-vibrant: color-mix(in lch, currentColor 12%, transparent);
+  --font-size-heading-medium: 1em;
+  font-size: var(--font-size-small);
+  margin-block-end: var(--space-xxlarge);
+
+  @media (prefers-contrast) {
+    --promo-border-color-vibrant: var(--border-color);
+  }
+
+  @media (forced-colors) {
+    --promo-background-color-vibrant: var(--background-color-canvas);
+    --promo-message-text-color-vibrant: var(--text-color);
+  }
+}
+
+.tip > img[slot="image"] {
+  inline-size: var(--icon-size);
+  block-size: var(--icon-size);
+  align-self: start;
+  -moz-context-properties: fill;
+  fill: currentColor;
+}
+
 .field {
   display: flex;
   flex-direction: column;
