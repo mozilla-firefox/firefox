@@ -101,12 +101,13 @@ class StartAndEndOffsets {
     mEndOffset = endOffset.isValid() ? endOffset.value() : MaxOffset();
   }
 
-  template <typename IntTypeInner>
-  friend std::string format_as(const StartAndEndOffsets<IntTypeInner>&);
   friend std::ostream& operator<<(
       std::ostream& aStream,
       const StartAndEndOffsets<IntType>& aStartAndEndOffsets) {
-    return aStream << format_as(aStartAndEndOffsets);
+    aStream << "{ mStartOffset=" << aStartAndEndOffsets.mStartOffset
+            << ", mEndOffset=" << aStartAndEndOffsets.mEndOffset
+            << ", Length()=" << aStartAndEndOffsets.Length() << " }";
+    return aStream;
   }
 
  private:
@@ -185,12 +186,19 @@ class OffsetAndData {
     mData.Replace(aCutStart, aCutLength, aNewString);
   }
 
-  template <typename IntTypeInner>
-  friend std::string format_as(
-      const OffsetAndData<IntTypeInner>& aOffsetAndData);
   friend std::ostream& operator<<(
       std::ostream& aStream, const OffsetAndData<IntType>& aOffsetAndData) {
-    return aStream << format_as(aOffsetAndData);
+    const auto maxDataLength =
+        aOffsetAndData.mFor == OffsetAndDataFor::CompositionString
+            ? PrintStringDetail::kMaxLengthForCompositionString
+            : (aOffsetAndData.mFor == OffsetAndDataFor::SelectedString
+                   ? PrintStringDetail::kMaxLengthForSelectedString
+                   : PrintStringDetail::kMaxLengthForEditor);
+    aStream << "{ mOffset=" << aOffsetAndData.mOffset << ", mData="
+            << PrintStringDetail(aOffsetAndData.mData, maxDataLength).get()
+            << ", Length()=" << aOffsetAndData.Length()
+            << ", EndOffset()=" << aOffsetAndData.EndOffset() << " }";
+    return aStream;
   }
 
  private:

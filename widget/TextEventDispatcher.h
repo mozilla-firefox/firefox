@@ -19,9 +19,6 @@
 class nsIWidget;
 
 namespace mozilla {
-
-enum class SelectionType : short;
-
 namespace widget {
 
 class PuppetWidget;
@@ -467,85 +464,6 @@ class TextEventDispatcher final {
                                    nsEventStatus& aStatus,
                                    void* aData = nullptr,
                                    bool aNeedsCallback = false);
-
-  /**
-   * Return eQueryTextContent event result.
-   *
-   * @param aOffset     Offset from start of the flattened text content.
-   * @param aLength     Length of the text.
-   */
-  Maybe<QueryContentResult> QueryTextContent(uint32_t aOffset,
-                                             uint32_t aLength) const;
-
-  /**
-   * Return eQueryTextContent event result.
-   *
-   * @param aOffset     Offset from start of the flattened text content.
-   *                    If aOptions specifies this is a relative offset from
-   *                    selection, this can be negative value.
-   * @param aLength     Length of the text.
-   * @param aOptions    See QueryContentOptions members.
-   */
-  Maybe<QueryContentResult> QueryTextContent(
-      int64_t aOffset, uint32_t aLength,
-      const QueryContentOptions& aOptions) const;
-
-  /**
-   * Return eQuerySelectedText event result of the normal selection.
-   */
-  Maybe<QueryContentResult> QueryNormalSelection() const;
-
-  /**
-   * Return eQuerySelectedText event result of the normal selection.
-   */
-  Maybe<QueryContentResult> QueryNormalSelection(
-      const QueryContentOptions&) const;
-
-  /**
-   * Return eQuerySelectedText event result of the specified selection.
-   */
-  Maybe<QueryContentResult> QuerySelection(SelectionType) const;
-
-  /**
-   * Return eQuerySelectedText event result of the specified selection.
-   */
-  Maybe<QueryContentResult> QuerySelection(SelectionType,
-                                           const QueryContentOptions&) const;
-
-  /**
-   * Return eQueryCaretRect event result.
-   */
-  Maybe<QueryContentResult> QueryCaretRect(uint32_t aOffset) const;
-
-  /**
-   * Return eQueryCaretRect event result.
-   */
-  Maybe<QueryContentResult> QueryCaretRect(int64_t aOffset,
-                                           const QueryContentOptions&) const;
-
-  /**
-   * Return eQueryTextRect event result.
-   */
-  Maybe<QueryContentResult> QueryTextRect(uint32_t aOffset,
-                                          uint32_t aLength) const;
-
-  /**
-   * Return eQueryTextRect event result.
-   */
-  Maybe<QueryContentResult> QueryTextRect(int64_t aOffset, uint32_t aLength,
-                                          const QueryContentOptions&) const;
-
-  /**
-   * Return eQueryTextRectArray event result.
-   */
-  Maybe<QueryContentResult> QueryTextRectArray(uint32_t aOffset,
-                                               uint32_t aLength) const;
-
-  /**
-   * Return eQueryTextRectArray event result.
-   */
-  Maybe<QueryContentResult> QueryTextRectArray(
-      int64_t aOffset, uint32_t aLength, const QueryContentOptions&) const;
 
   /**
    * Return true if this is under some batching requests.

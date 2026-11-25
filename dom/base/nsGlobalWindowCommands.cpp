@@ -762,9 +762,8 @@ nsresult nsLookUpDictionaryCommand::DoCommand(const nsACString& aCommandName,
 
   WidgetQueryContentEvent queryLookUpContentEvent(true, eQueryTextContent,
                                                   widget);
-  QueryContentOptions options;
-  options.mRequestFontRanges = true;
-  queryLookUpContentEvent.InitForQueryTextContent(begin, length, options);
+  queryLookUpContentEvent.InitForQueryTextContent(begin, length);
+  queryLookUpContentEvent.RequestFontRanges();
   handler.OnQueryTextContent(&queryLookUpContentEvent);
   if (NS_WARN_IF(queryLookUpContentEvent.Failed()) ||
       NS_WARN_IF(queryLookUpContentEvent.mReply->IsDataEmpty())) {

@@ -694,7 +694,7 @@ bool WidgetEvent::AllowFlushingPendingNotifications() const {
   // be caused by that it's unsafe.  Therefore, we should allow handlers to
   // flush pending things only when the dispatcher requires the latest content
   // layout.
-  return AsQueryContentEvent()->mInput.mNeedsToFlushLayout;
+  return AsQueryContentEvent()->mNeedsToFlushLayout;
 }
 
 bool WidgetEvent::ShouldIgnoreCapturingContent() const {
@@ -2540,81 +2540,6 @@ bool WidgetKeyboardEvent::IsLockableModifier(KeyNameIndex aKeyNameIndex) {
     default:
       return false;
   }
-}
-
-/******************************************************************************
- * mozilla::QueryContentOptions (TextEvents.h)
- ******************************************************************************/
-
-QueryContentOptions::QueryContentOptions(const WidgetQueryContentEvent& aEvent)
-    : mRelativeToInsertionPoint(aEvent.mInput.mRelativeToInsertionPoint),
-      mRequestFontRanges(aEvent.mInput.mWithFontRanges),
-      mNeedsToFlushLayout(aEvent.mInput.mNeedsToFlushLayout) {
-  // FIXME: We should delete this constructor.
-}
-
-/******************************************************************************
- * mozilla::QueryContentResult (TextEvents.h)
- ******************************************************************************/
-
-std::string format_as(const QueryContentResult& aResult) {
-  if (aResult.mEventMessage == eQueryDOMWidgetHittest) {
-    return fmt::format("{{ mWidgetIsHit={} }}", aResult.mWidgetIsHit);
-  }
-  if (aResult.mEventMessage == eQueryDropTargetHittest) {
-    return fmt::format("{{ mDropElement={}, mDropFrame={} }}",
-                       RefPtr{aResult.mDropElement},
-                       static_cast<void*>(aResult.mDropFrame));
-  }
-
-  std::string result = "{ ";
-  const auto EnsurePrecedingComma = [&result]() {
-    if (result != "{ ") {
-      result += ", ";
-    }
-  };
-  if (aResult.mEventMessage == eQuerySelectedText ||
-      aResult.mEventMessage == eQueryTextContent ||
-      aResult.mEventMessage == eQueryTextRect ||
-      aResult.mEventMessage == eQueryCaretRect ||
-      aResult.mEventMessage == eQueryCharacterAtPoint) {
-    result +=
-        fmt::format("mOffsetAndData={}", ToString(aResult.mOffsetAndData));
-    if (aResult.mEventMessage == eQueryCharacterAtPoint) {
-      result += fmt::format(", mTentativeCaretOffset={}",
-                            ToString(aResult.mTentativeCaretOffset));
-    }
-  }
-  if (aResult.mOffsetAndData.isSome() && aResult.mOffsetAndData->Length()) {
-    if (aResult.mEventMessage == eQuerySelectedText) {
-      result += fmt::format(", mReversed={}", aResult.mReversed);
-    } else if (aResult.mEventMessage == eQuerySelectionAsTransferable) {
-      result += fmt::format("mTransferable={}",
-                            static_cast<void*>(aResult.mTransferable.get()));
-    }
-  }
-  if (aResult.mEventMessage == eQuerySelectedText ||
-      aResult.mEventMessage == eQueryTextRect ||
-      aResult.mEventMessage == eQueryCaretRect) {
-    result += fmt::format(", mWritingMode={}", ToString(aResult.mWritingMode));
-  }
-  EnsurePrecedingComma();
-  result +=
-      fmt::format("mContentsRoot={}, mIsEditableContent={}, mFocusedWidget={}",
-                  aResult.mContentsRoot, aResult.mIsEditableContent,
-                  static_cast<void*>(aResult.mFocusedWidget));
-  if (aResult.mEventMessage == eQueryTextContent) {
-    result += fmt::format(", mFontRanges={{ Length()={} }}",
-                          aResult.mFontRanges.Length());
-  } else if (aResult.mEventMessage == eQueryTextRect ||
-             aResult.mEventMessage == eQueryCaretRect ||
-             aResult.mEventMessage == eQueryCharacterAtPoint) {
-    result += fmt::format(", mRect={}", ToString(aResult.mRect));
-  } else if (aResult.mEventMessage == eQueryTextRectArray) {
-    result += fmt::format(", mRectArray={{ Length()={} }}",
-                          aResult.mRectArray.Length());
-  }
-  return result + " }";
 }
 
 /******************************************************************************
