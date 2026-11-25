@@ -469,15 +469,15 @@ txMozillaXSLTProcessor::AddXSLTParam(const nsString& aName,
 class nsTransformBlockerEvent : public mozilla::Runnable {
  public:
   RefPtr<txMozillaXSLTProcessor> mProcessor;
+  RefPtr<Document> mBlockedDocument;
 
-  explicit nsTransformBlockerEvent(txMozillaXSLTProcessor* processor)
-      : mozilla::Runnable("nsTransformBlockerEvent"), mProcessor(processor) {}
+  explicit nsTransformBlockerEvent(txMozillaXSLTProcessor* processor,
+                                   Document* aBlockedDocument)
+      : mozilla::Runnable("nsTransformBlockerEvent"),
+        mProcessor(processor),
+        mBlockedDocument(aBlockedDocument) {}
 
-  ~nsTransformBlockerEvent() {
-    nsCOMPtr<Document> document =
-        mProcessor->GetSourceContentModel()->OwnerDoc();
-    document->UnblockOnload(true);
-  }
+  ~nsTransformBlockerEvent() { mBlockedDocument->UnblockOnload(true); }
 
   NS_IMETHOD Run() override {
     MOZ_RELEASE_ASSERT(mProcessor->mState ==
@@ -493,7 +493,8 @@ nsresult txMozillaXSLTProcessor::DoTransform() {
   NS_ASSERTION(mObserver, "no observer");
   NS_ASSERTION(NS_IsMainThread(), "should only be on main thread");
 
-  nsCOMPtr<nsIRunnable> event = new nsTransformBlockerEvent(this);
+  nsCOMPtr<nsIRunnable> event =
+      new nsTransformBlockerEvent(this, mSource->OwnerDoc());
   mSource->OwnerDoc()->BlockOnload();
   nsresult rv = NS_DispatchToCurrentThread(event);
   if (NS_FAILED(rv)) {
