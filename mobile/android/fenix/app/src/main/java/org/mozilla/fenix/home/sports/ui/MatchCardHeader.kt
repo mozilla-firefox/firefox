@@ -25,6 +25,7 @@ import org.mozilla.fenix.R
 import org.mozilla.fenix.home.sports.Match
 import org.mozilla.fenix.home.sports.MatchStatus
 import org.mozilla.fenix.home.sports.fake.FakeSportsPreview
+import org.mozilla.fenix.home.sports.isLive
 import org.mozilla.fenix.theme.FirefoxTheme
 
 /**

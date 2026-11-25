@@ -29,6 +29,7 @@ import org.mozilla.fenix.home.sports.MatchCard as MatchCardState
 import org.mozilla.fenix.home.sports.MatchStatus
 import org.mozilla.fenix.home.sports.SportCardErrorState
 import org.mozilla.fenix.home.sports.fake.FakeMatchCardScenario
+import org.mozilla.fenix.home.sports.isLive
 import org.mozilla.fenix.theme.FirefoxTheme
 
 /**

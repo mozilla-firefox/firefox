@@ -22,6 +22,7 @@ import org.mozilla.fenix.home.sports.MatchStatus
 import org.mozilla.fenix.home.sports.SportCardErrorState
 import org.mozilla.fenix.home.sports.SportsCardType
 import org.mozilla.fenix.home.sports.fake.FakeMatchCardScenario
+import org.mozilla.fenix.home.sports.isLive
 import org.mozilla.fenix.home.sports.isPast
 import org.mozilla.fenix.home.ui.horizontalMargin
 import org.mozilla.fenix.theme.FirefoxTheme

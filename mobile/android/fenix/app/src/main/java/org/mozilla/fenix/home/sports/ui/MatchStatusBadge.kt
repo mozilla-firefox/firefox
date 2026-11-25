@@ -21,6 +21,7 @@ import androidx.compose.ui.unit.dp
 import mozilla.components.compose.base.badge.StatusBadge
 import org.mozilla.fenix.R
 import org.mozilla.fenix.home.sports.MatchStatus
+import org.mozilla.fenix.home.sports.isLive
 import org.mozilla.fenix.theme.FirefoxTheme
 
 private const val LIVE_BADGE_CONTAINER_ALPHA = 0.1f
@@ -66,15 +67,6 @@ internal fun MatchStatusBadge(
         )
     }
 }
-
-/** True when the match is currently being played (regulation, extra time or penalty shootout). */
-internal fun MatchStatus.isLive(): Boolean =
-    when (this) {
-        is MatchStatus.Live,
-        is MatchStatus.Penalties -> true
-
-        else -> false
-    }
 
 /** Returns the label for a delayed, suspended, postponed or canceled match, or null for any other status. */
 @Composable
