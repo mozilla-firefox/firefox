@@ -1152,6 +1152,15 @@ struct QueryContentResult {
     return mWritingMode;
   }
 
+  /**
+   * Return true if this is a result of eQuerySelectedText and it found a
+   * selection range.
+   */
+  [[nodiscard]] bool FoundSelectionRange() const {
+    MOZ_ASSERT(mEventMessage == eQuerySelectedText);
+    return mOffsetAndData.isSome();
+  }
+
   MOZ_NEVER_INLINE_DEBUG const nsString& DataRef() const {
     MOZ_ASSERT(mOffsetAndData.isSome() || mEventMessage == eQuerySelectedText);
     return mOffsetAndData.isSome() ? mOffsetAndData->DataRef() : EmptyString();
@@ -1337,7 +1346,7 @@ class WidgetQueryContentEvent final : public WidgetGUIEvent {
 
   bool FoundSelection() const {
     MOZ_ASSERT(mMessage == eQuerySelectedText);
-    return Succeeded() && mReply->mOffsetAndData.isSome();
+    return Succeeded() && mReply->FoundSelectionRange();
   }
 
   bool FoundChar() const {
@@ -1352,7 +1361,7 @@ class WidgetQueryContentEvent final : public WidgetGUIEvent {
 
   bool DidNotFindSelection() const {
     MOZ_ASSERT(mMessage == eQuerySelectedText);
-    return Failed() || mReply->mOffsetAndData.isNothing();
+    return Failed() || !mReply->FoundSelectionRange();
   }
 
   bool DidNotFindChar() const {
