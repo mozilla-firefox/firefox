@@ -86,11 +86,6 @@
             android:theme="@style/Theme.AppCompat.Light" />
 
         <activity
-            android:name=".addons.NotYetSupportedAddonActivity"
-            android:label="@string/mozac_feature_addons_addons"
-            android:theme="@style/Theme.AppCompat.Light" />
-
-        <activity
             android:name=".addons.WebExtensionActionPopupActivity"
             android:label="@string/mozac_feature_addons_addons"
             android:theme="@style/Theme.AppCompat.Light" />

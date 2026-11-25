@@ -23,7 +23,6 @@ import mozilla.components.browser.state.store.BrowserStore
 import mozilla.components.feature.addons.Addon
 import mozilla.components.feature.addons.R
 import mozilla.components.feature.addons.ui.AddonsManagerAdapter.DifferCallback
-import mozilla.components.feature.addons.ui.AddonsManagerAdapter.NotYetSupportedSection
 import mozilla.components.feature.addons.ui.AddonsManagerAdapter.Section
 import mozilla.components.support.test.mock
 import mozilla.components.support.test.robolectric.testContext
@@ -59,25 +58,20 @@ class AddonsManagerAdapterTest {
 
         val installedAddon: Addon = mock()
         val recommendedAddon: Addon = mock()
-        val unsupportedAddon: Addon = mock()
         val disabledAddon: Addon = mock()
 
         `when`(installedAddon.isInstalled()).thenReturn(true)
         `when`(installedAddon.isEnabled()).thenReturn(true)
-        `when`(installedAddon.isSupported()).thenReturn(true)
-        `when`(unsupportedAddon.isInstalled()).thenReturn(true)
-        `when`(unsupportedAddon.isSupported()).thenReturn(false)
         `when`(disabledAddon.isEnabled()).thenReturn(false)
         `when`(disabledAddon.isInstalled()).thenReturn(true)
-        `when`(disabledAddon.isSupported()).thenReturn(true)
 
-        val addons = listOf(installedAddon, recommendedAddon, unsupportedAddon, disabledAddon)
+        val addons = listOf(installedAddon, recommendedAddon, disabledAddon)
 
         assertEquals(0, adapter.itemCount)
 
         val itemsWithSections = adapter.createListWithSections(addons)
 
-        assertEquals(7, itemsWithSections.size)
+        assertEquals(6, itemsWithSections.size)
         assertEquals(
             R.string.mozac_feature_addons_enabled,
             (itemsWithSections[0] as Section).title,
@@ -93,26 +87,17 @@ class AddonsManagerAdapterTest {
             (itemsWithSections[4] as Section).title,
         )
         assertEquals(recommendedAddon, itemsWithSections[5])
-        assertEquals(
-            R.string.mozac_feature_addons_unavailable_section,
-            (itemsWithSections[6] as NotYetSupportedSection).title,
-        )
 
         // Test if excluededAddonIDs are excluded from recommended section
         val excludedAddonIDs = listOf(recommendedAddon.id)
         val itemsWithSections2 = adapter.createListWithSections(addons, excludedAddonIDs)
 
         // The only recommended addon should be excluded, so the recommended section should be null
-        // Section size should shrink from 7 to 6
-        assertEquals(6, itemsWithSections2.size)
-        // There should be no section between the titles of Recommended & NotYetSupported
+        // Section size should shrink from 6 to 5
+        assertEquals(5, itemsWithSections2.size)
         assertEquals(
             R.string.mozac_feature_addons_recommended_section,
             (itemsWithSections2[4] as Section).title,
-        )
-        assertEquals(
-            R.string.mozac_feature_addons_unavailable_section,
-            (itemsWithSections2[5] as NotYetSupportedSection).title,
         )
     }
 
@@ -469,63 +454,6 @@ class AddonsManagerAdapterTest {
         addon1 = addon1.copy(version = "newVersion")
 
         assertFalse(DifferCallback.areContentsTheSame(addon1, addon2))
-    }
-
-    @Test
-    fun bindNotYetSupportedSection() {
-        val addonsManagerAdapterDelegate: AddonsManagerAdapterDelegate = mock()
-        val titleView: TextView = mock()
-        val descriptionView: TextView = mock()
-        val view = View(testContext)
-        val unsupportedSectionViewHolder =
-            CustomViewHolder.UnsupportedSectionViewHolder(
-                view,
-                titleView,
-                descriptionView,
-            )
-        val unsupportedAddon =
-            Addon(
-                id = "id",
-                installedState =
-                    Addon.InstalledState(
-                        id = "id",
-                        version = "version",
-                        optionsPageUrl = "optionsPageUrl",
-                        supported = false,
-                    ),
-            )
-        val unsupportedAddonTwo =
-            Addon(
-                id = "id2",
-                installedState =
-                    Addon.InstalledState(
-                        id = "id2",
-                        version = "version2",
-                        optionsPageUrl = "optionsPageUrl2",
-                        supported = false,
-                    ),
-            )
-        val unsupportedAddons = arrayListOf(unsupportedAddon, unsupportedAddonTwo)
-        val adapter =
-            AddonsManagerAdapter(
-                addonsManagerAdapterDelegate,
-                unsupportedAddons,
-                mock(),
-                emptyList(),
-                BrowserStore(),
-            )
-
-        adapter.bindNotYetSupportedSection(unsupportedSectionViewHolder, mock())
-        verify(unsupportedSectionViewHolder.descriptionView)
-            .setText(
-                testContext.getString(
-                    R.string.mozac_feature_addons_unsupported_caption_plural_2,
-                    unsupportedAddons.size,
-                )
-            )
-
-        unsupportedSectionViewHolder.itemView.performClick()
-        verify(addonsManagerAdapterDelegate).onNotYetSupportedSectionClicked(unsupportedAddons)
     }
 
     @Test

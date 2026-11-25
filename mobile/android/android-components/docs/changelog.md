@@ -13,6 +13,8 @@ permalink: /changelog/
   * 🆕 Added `rememberSyncedTextFieldState`, which remembers a `TextFieldState` kept in sync with a caller-owned string, for moving value-based text fields onto the state-based APIs. [Bug 2094916](https://bugzilla.mozilla.org/show_bug.cgi?id=2094916)
   * ⚠️ **Breaking change**: Removed the `visualTransformation` parameter from `TextField`. Use `SecureTextField` for password input. [Bug 2094916](https://bugzilla.mozilla.org/show_bug.cgi?id=2094916)
   * 🆕 Added `SecureTextField`, an outlined text field for password input that masks its text through a `TextObfuscationMode`. [Bug 2094916](https://bugzilla.mozilla.org/show_bug.cgi?id=2094916)
+* **feature-addons**
+  * ⚠️ **Breaking change**: Removed the "Not yet supported" section of the add-ons manager, which is no longer shown since no add-on is marked as unsupported. Removed `UnsupportedAddonsAdapter`, `UnsupportedAddonsAdapterDelegate`, `CustomViewHolder.UnsupportedSectionViewHolder` and `AddonsManagerAdapterDelegate.onNotYetSupportedSectionClicked`. Installed add-ons are now listed in the enabled or disabled section whether or not they are supported. [Bug 2095972](https://bugzilla.mozilla.org/show_bug.cgi?id=2095972)
 * **concept-engine**
   * 🆕 Added `DownloadDelegate.getContentFileName`, which returns the filename a content provider has for a `content://` URI. [Bug 2071966](https://bugzilla.mozilla.org/show_bug.cgi?id=2071966)
 * **support-ktx**

@@ -153,12 +153,6 @@ class AddonsFragment : Fragment(), AddonsManagerAdapterDelegate {
         adapter?.run { notifyItemRangeChanged(0, itemCount) }
     }
 
-    override fun onNotYetSupportedSectionClicked(unsupportedAddons: List<Addon>) {
-        val intent = Intent(context, NotYetSupportedAddonActivity::class.java)
-        intent.putExtra("add_ons", ArrayList(unsupportedAddons))
-        requireContext().startActivity(intent)
-    }
-
     private fun isAlreadyADialogCreated(): Boolean {
         return findPreviousPermissionDialogFragment() != null && findPreviousInstallationDialogFragment() != null
     }

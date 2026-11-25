@@ -20,13 +20,6 @@ sealed class CustomViewHolder(view: View) : RecyclerView.ViewHolder(view) {
         val divider: View,
     ) : CustomViewHolder(view)
 
-    /** A view holder for displaying Not yet supported section items. */
-    class UnsupportedSectionViewHolder(
-        view: View,
-        val titleView: TextView,
-        val descriptionView: TextView,
-    ) : CustomViewHolder(view)
-
     /** A view holder for displaying add-on items. */
     @Suppress("LongParameterList")
     class AddonViewHolder(

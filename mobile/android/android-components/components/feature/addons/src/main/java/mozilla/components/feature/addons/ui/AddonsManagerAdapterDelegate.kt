@@ -31,13 +31,6 @@ interface AddonsManagerAdapterDelegate {
      */
     fun onInstallAddonButtonClicked(addon: Addon) = Unit
 
-    /**
-     * Handler for when the not yet supported section is clicked.
-     *
-     * @param unsupportedAddons The list of unsupported [Addon].
-     */
-    fun onNotYetSupportedSectionClicked(unsupportedAddons: List<Addon>) = Unit
-
     /** Handler to determine whether to show the "find more add-ons" button in the add-ons manager. */
     fun shouldShowFindMoreAddonsButton(): Boolean = false
 
