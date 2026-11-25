@@ -167,6 +167,8 @@ add_setup(async function () {
       ["browser.ml.modelHub.testing", true],
       ["media.webspeech.recognition.model-download.prompt.testing", true],
       ["media.navigator.streams.fake", true],
+      ["media.audio_loopback_dev", ""],
+      ["media.video_loopback_dev", ""],
       ["media.navigator.permission.fake", true],
       ["media.navigator.permission.disabled", true],
     ],
@@ -187,13 +189,15 @@ add_setup(async function () {
   });
 
   registerCleanupFunction(() => {
-    const principal = Services.scriptSecurityManager.createContentPrincipal(
-      Services.io.newURI(PAGE),
-      {}
-    );
-    Services.perms.removeFromPrincipal(principal, "microphone");
-    Services.perms.removeFromPrincipal(principal, "camera");
-    Services.perms.removeFromPrincipal(principal, "MediaManagerVideo");
+    for (const origin of ["https://example.com", "https://example.org"]) {
+      const principal = Services.scriptSecurityManager.createContentPrincipal(
+        Services.io.newURI(origin),
+        {}
+      );
+      for (const type of ["microphone", "camera", "MediaManagerVideo"]) {
+        Services.perms.removeFromPrincipal(principal, type);
+      }
+    }
   });
 });
 
@@ -280,5 +284,146 @@ add_task(async function test_camera_grace_survives_reload_with_frame() {
       "camera-stopped",
       "Camera capture ended"
     );
+  });
+});
+
+async function abortAndWaitForGrace(browser, count = 1) {
+  is(await runPageCommand(browser, "abort"), "ended", "Session ended");
+  await TestUtils.waitForCondition(
+    () => graceGrants(browser).length == count,
+    `Waiting for ${count} microphone grace grants`
+  );
+}
+
+add_task(async function test_session_takes_a_grace_period() {
+  await BrowserTestUtils.withNewTab(PAGE, async browser => {
+    is(graceGrants(browser).length, 0, "Baseline is no grace periods");
+    await startAndAllow(browser);
+    await abortAndWaitForGrace(browser);
+    await startWithoutPrompting(browser);
+    await abortAndWaitForGrace(browser);
+  });
+});
+
+add_task(async function test_grace_period_survives_reload() {
+  await BrowserTestUtils.withNewTab(PAGE, async browser => {
+    await startAndAllow(browser);
+    await abortAndWaitForGrace(browser);
+
+    const loaded = BrowserTestUtils.browserLoaded(browser, false, PAGE);
+    browser.reload();
+    await loaded;
+
+    is(graceGrants(browser).length, 1, "The grace period survived the reload");
+    await startWithoutPrompting(browser);
+    await abortAndWaitForGrace(browser);
+  });
+});
+
+add_task(async function test_grace_period_survives_same_origin_navigation() {
+  const secondPage = PAGE + "?second";
+  await BrowserTestUtils.withNewTab(PAGE, async browser => {
+    await startAndAllow(browser);
+    await abortAndWaitForGrace(browser);
+
+    const loaded = BrowserTestUtils.browserLoaded(browser, false, secondPage);
+    await SpecialPowers.spawn(browser, [secondPage], url => {
+      content.document.location = url;
+    });
+    await loaded;
+
+    is(graceGrants(browser).length, 1, "The grace period survived navigation");
+    await startWithoutPrompting(browser);
+    await abortAndWaitForGrace(browser);
+  });
+});
+
+add_task(async function test_cross_origin_navigation_prompts_again() {
+  const otherPage = PAGE.replace("https://example.com", "https://example.org");
+  await BrowserTestUtils.withNewTab(PAGE, async browser => {
+    await startAndAllow(browser);
+    await abortAndWaitForGrace(browser);
+
+    const loaded = BrowserTestUtils.browserLoaded(browser, false, otherPage);
+    await SpecialPowers.spawn(browser, [otherPage], url => {
+      content.document.location = url;
+    });
+    await loaded;
+
+    is(graceGrants(browser).length, 0, "The other origin has no grace period");
+    await startAndAllow(browser);
+    await abortAndWaitForGrace(browser);
+  });
+});
+
+add_task(async function test_denying_the_prompt_fails_the_session() {
+  await BrowserTestUtils.withNewTab(PAGE, async browser => {
+    const prompt = waitForMicrophonePrompt(browser);
+    const started = runPageCommand(browser, "start");
+    await prompt.promise;
+
+    const hidden = BrowserTestUtils.waitForPopupEvent(
+      PopupNotifications.panel,
+      "hidden"
+    );
+    PopupNotifications.panel.firstElementChild.secondaryButton.click();
+    is(
+      await started,
+      "error: not-allowed",
+      "A refused microphone fails the session with not-allowed"
+    );
+    await hidden;
+    is(graceGrants(browser).length, 0, "A refusal leaves no grace period");
+  });
+});
+
+add_task(async function test_repeated_sessions_reuse_one_grace_period() {
+  await BrowserTestUtils.withNewTab(PAGE, async browser => {
+    await startAndAllow(browser);
+    await abortAndWaitForGrace(browser);
+    const grantId = graceGrants(browser)[0].id;
+
+    for (let i = 2; i <= 4; i++) {
+      info(`Starting session ${i}`);
+      await startWithoutPrompting(browser);
+      await abortAndWaitForGrace(browser);
+      is(
+        graceGrants(browser)[0].id,
+        grantId,
+        `Session ${i} reused the same device grant`
+      );
+    }
+  });
+});
+
+add_task(async function test_replacing_the_microphone_prompts_again() {
+  await BrowserTestUtils.withNewTab(PAGE, async browser => {
+    await startAndAllow(browser);
+    await abortAndWaitForGrace(browser);
+
+    await SpecialPowers.pushPrefEnv({
+      set: [["media.getusermedia.fake-microphone-name", "Another Microphone"]],
+    });
+    try {
+      const prompt = waitForMicrophonePrompt(browser);
+      const started = runPageCommand(browser, "start");
+      await prompt.promise;
+      is(
+        document.getElementById("webRTC-selectMicrophone-menulist").label,
+        "Another Microphone",
+        "The prompt is for the replacement microphone"
+      );
+
+      const hidden = BrowserTestUtils.waitForPopupEvent(
+        PopupNotifications.panel,
+        "hidden"
+      );
+      PopupNotifications.panel.firstElementChild.button.click();
+      is(await started, "started", "Session started on the new microphone");
+      await hidden;
+      await abortAndWaitForGrace(browser, 2);
+    } finally {
+      await SpecialPowers.popPrefEnv();
+    }
   });
 });

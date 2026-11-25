@@ -7379,6 +7379,7 @@ static const PrefListEntry sDynamicPrefOverrideList[]{
     PREF_LIST_ENTRY("media.cubeb.backend"),
     PREF_LIST_ENTRY("media.cubeb.output_device"),
     PREF_LIST_ENTRY("media.getusermedia.fake-camera-name"),
+    PREF_LIST_ENTRY("media.getusermedia.fake-microphone-name"),
     PREF_LIST_ENTRY("media.hls.server.url"),
     PREF_LIST_ENTRY("media.peerconnection.nat_simulator.filtering_type"),
     PREF_LIST_ENTRY("media.peerconnection.nat_simulator.mapping_type"),

@@ -53,15 +53,13 @@ static constexpr int VIDEO_HEIGHT_DEFAULT =
 #endif
 static constexpr int VIDEO_HEIGHT_MAX = 2160;
 
-static nsString FakeVideoName() {
+static nsString DeviceNameFromPref(const char* aPref,
+                                   const nsAString& aDefault) {
   // For the purpose of testing we allow to change the name of the fake device
   // by pref.
-  nsAutoString cameraNameFromPref;
+  nsAutoString nameFromPref;
   nsresult rv;
-  auto getPref = [&]() {
-    rv = Preferences::GetString("media.getusermedia.fake-camera-name",
-                                cameraNameFromPref);
-  };
+  auto getPref = [&]() { rv = Preferences::GetString(aPref, nameFromPref); };
   if (NS_IsMainThread()) {
     getPref();
   } else {
@@ -74,9 +72,9 @@ static nsString FakeVideoName() {
   }
 
   if (NS_SUCCEEDED(rv)) {
-    return std::move(cameraNameFromPref);
+    return std::move(nameFromPref);
   }
-  return u"Default Video Device"_ns;
+  return nsString(aDefault);
 }
 
 /**
@@ -397,7 +395,6 @@ class MediaEngineFakeAudioSource : public MediaEngineSource {
  public:
   MediaEngineFakeAudioSource() = default;
 
-  static nsString GetUUID();
   static nsString GetGroupId();
 
   nsresult Allocate(const dom::MediaTrackConstraints& aConstraints,
@@ -429,10 +426,6 @@ class MediaEngineFakeAudioSource : public MediaEngineSource {
   uint32_t mFrequency = 1000;
   RefPtr<AudioSourcePullListener> mPullListener;
 };
-
-nsString MediaEngineFakeAudioSource::GetUUID() {
-  return u"B7CBD7C1-53EF-42F9-8353-73F61C70C092"_ns;
-}
 
 nsString MediaEngineFakeAudioSource::GetGroupId() {
   return u"Fake Audio Group"_ns;
@@ -596,20 +589,24 @@ void MediaEngineFake::EnumerateDevices(
 
   switch (aMediaSource) {
     case MediaSourceEnum::Camera: {
-      nsString name = FakeVideoName();
+      nsString name = DeviceNameFromPref("media.getusermedia.fake-camera-name",
+                                         u"Default Video Device"_ns);
       aDevices->EmplaceBack(
           new MediaDevice(this, aMediaSource, name, /*aRawId=*/name,
                           MediaEngineFakeVideoSource::GetGroupId(), IsScary::No,
                           OsPromptable::No));
       return;
     }
-    case MediaSourceEnum::Microphone:
+    case MediaSourceEnum::Microphone: {
+      nsString name =
+          DeviceNameFromPref("media.getusermedia.fake-microphone-name",
+                             u"Default Audio Device"_ns);
       aDevices->EmplaceBack(
-          new MediaDevice(this, aMediaSource, u"Default Audio Device"_ns,
-                          MediaEngineFakeAudioSource::GetUUID(),
+          new MediaDevice(this, aMediaSource, name, /*aRawId=*/name,
                           MediaEngineFakeAudioSource::GetGroupId(), IsScary::No,
                           OsPromptable::No));
       return;
+    }
     default:
       MOZ_ASSERT_UNREACHABLE("Unsupported source type");
       return;

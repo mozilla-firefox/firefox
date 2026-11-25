@@ -2554,6 +2554,7 @@ static void ForeachObservedPref(const Function& aFunction) {
   aFunction("media.audio_loopback_dev"_ns);
   aFunction("media.video_loopback_dev"_ns);
   aFunction("media.getusermedia.fake-camera-name"_ns);
+  aFunction("media.getusermedia.fake-microphone-name"_ns);
 #ifdef MOZ_WEBRTC
   aFunction("media.navigator.video.resize_mode.enabled"_ns);
   aFunction("media.navigator.video.default_resize_mode"_ns);
