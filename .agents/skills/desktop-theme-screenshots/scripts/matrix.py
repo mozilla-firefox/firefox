@@ -93,7 +93,8 @@ firefox-probe.py input steps run before the shots. The spec can also give:
   add these prefs to; default the one it is named like, else light-nova) and
   an optional `chromeSetup`, a chrome script that declares
   `async function setupRegime()` (such as installing an add-on theme), as in
-  regimes/. One named like a built-in regime replaces it.
+  regimes/. One named like a built-in regime replaces it. A setup that
+  throws an Error saying "regime did not take" gets the cell its retry.
 - `prelude`: a file of JS pasted ahead of every set's script or shots, for
   helpers the sets share.
 - `windowSize` for every set, and `timeoutMs` for each half (default 120000).
@@ -119,10 +120,18 @@ for them. The probe resolves with the shots, the readings and the context,
 which capture-pair.sh writes as OUTDIR/SET/REGIME/{after,before}.json beside
 the browser's output in {after,before}.log.
 
+A cell that fails is retried once, keeping the first attempt's output in
+OUTDIR/SET/REGIME/attempt-1.out, unless a retry would repeat the failure: a JS
+error, a timeout, or no shot captured. Each cell prints the shots that failed
+and their errors, whether the cell failed or not. When a set's first cell fails
+with a JS error or a timeout in a regime without a chrome setup, the run skips
+the set's other cells. A cell that does not launch (a refused path, a failed
+build, no binary, a browser that never comes up) stops the run. On Ctrl-C the
+run waits for capture-pair.sh to restore the reverted paths.
+
 The run checks the paths before it clears anything. OUTDIR is cleared first,
 and only when it holds the marker file a previous run wrote. OUTDIR/matrix.json
-records each cell's result. On Ctrl-C the run waits for capture-pair.sh to
-restore the reverted paths. It exits 0 when every cell captured, 1 when one
+records each cell's result. It exits 0 when every cell captured, 1 when one
 failed and 2 on an error.
 """
 
@@ -491,6 +500,32 @@ def prepare_outdir(outdir):
     marker.touch()
 
 
+def fails_for_good(shots):
+    """Whether a half timed out or failed with a JS error other than a
+    regime's setup saying the regime did not take."""
+    for half in ("after", "before"):
+        log = shots / f"{half}.log"
+        if log.exists():
+            text = log.read_text(errors="replace")
+            if "ScriptTimeoutException" in text:
+                return True
+            if "JavascriptException" in text and "regime did not take" not in text:
+                return True
+    return False
+
+
+def launched(shots):
+    """Whether the after half got a browser session."""
+    log = shots / "after.log"
+    if not log.exists():
+        return False
+    text = log.read_text(errors="replace")
+    return not any(
+        f"firefox-probe: {s}" in text
+        for s in ("no such binary:", "Marionette could not come up", "stale build")
+    )
+
+
 def run_capture_pair(cmd, root, env, out_path):
     """Run capture-pair.sh with its output in out_path. On Ctrl-C, which the
     child gets too, wait for it to restore the reverted paths, then re-raise."""
@@ -543,16 +578,40 @@ def run_cell(root, spec, outdir, set_name, regime_name, probe, env):
     ]:
         cmd += ["--setpref", pref]
     cmd += [probe.as_posix(), *spec["paths"], shots.as_posix()]
-    shots.mkdir(parents=True)
-    code, output = run_capture_pair(cmd, root, env, shots / "capture-pair.out")
-    return {
-        "exit": code,
-        "shots": sum(
-            1
-            for line in output.splitlines()
-            if re.match(r"SHOT .*[/\\]after-[^/\\]*\.png \d+x\d+ ", line)
-        ),
-    }
+    first_attempt = None
+    for attempt in (1, 2):
+        shutil.rmtree(shots, ignore_errors=True)
+        shots.mkdir(parents=True)
+        if first_attempt:
+            (shots / "attempt-1.out").write_text(first_attempt)
+        code, output = run_capture_pair(cmd, root, env, shots / "capture-pair.out")
+        failed_for_good = code != 0 and fails_for_good(shots)
+        result = {
+            "exit": code,
+            "shots": sum(
+                1
+                for line in output.splitlines()
+                if re.match(r"SHOT .*[/\\]after-[^/\\]*\.png \d+x\d+ ", line)
+            ),
+            "attempts": attempt,
+            # A failure every cell repeats: capture-pair.sh stopped before
+            # launching (a refusal, a failed build, no binary), or the browser
+            # never came up.
+            "launched": launched(shots),
+            "failsForGood": failed_for_good,
+        }
+        if (
+            code == 0
+            or not result["launched"]
+            or failed_for_good
+            or "no SHOT lines" in output
+        ):
+            break
+        first_attempt = "".join(
+            f"==> {f.name} <==\n{f.read_text(errors='replace')}\n"
+            for f in sorted(shots.glob("*.out")) + sorted(shots.glob("*.log"))
+        )
+    return result, output.strip().splitlines()[-1:]
 
 
 def resolve_paths(root, spec, env):
@@ -636,20 +695,70 @@ def run(args):
     summary["sets"] = {name: s["regimes"] for name, s in spec["sets"].items()}
 
     failed = 0
+    skipped_sets = set()
+    first_cell = {}
     for i, (set_name, regime) in enumerate(cells, 1):
         key = f"{set_name}/{regime}"
         print(f"[{i}/{len(cells)}] {key} ...", end=" ", flush=True)
-        result = run_cell(root, spec, outdir, set_name, regime, probes[set_name], env)
+        if set_name in skipped_sets:
+            print("skipped")
+            continue
+        result, last = run_cell(
+            root, spec, outdir, set_name, regime, probes[set_name], env
+        )
         summary["cells"][key] = result
         summary_path.write_text(json.dumps(summary, indent=2))
+        is_first = first_cell.setdefault(set_name, key) == key
         cell_dir = outdir / set_name / regime
         if result["exit"] == 0:
-            print(f"{result['shots']} shots")
+            errors = shot_errors(cell_dir)
+            print(
+                f"{result['shots']} shots"
+                + (f", {len(errors)} failed: {'; '.join(errors)}" if errors else "")
+            )
             continue
+        if not result["launched"]:
+            print("did not launch")
+            print(f"capture-pair.sh: {''.join(last)}", file=sys.stderr)
+            return EXIT_ERROR
         failed += 1
         print(f"failed; see {cell_dir / 'capture-pair.out'}")
+        for line in shot_errors(cell_dir):
+            print(f"  {line}")
+        setup = spec["regimes"][regime]["chromeSetup"]
+        others = any(c[0] == set_name for c in cells[i:])
+        if is_first and result["failsForGood"] and not setup and others:
+            skipped_sets.add(set_name)
+            print(f"{set_name}'s first cell failed for good; skipping its other cells")
     summary_path.write_text(json.dumps(summary, indent=2))
     return 1 if failed else 0
+
+
+def read_result(path):
+    """The JSON a probe resolved with, from the {after,before}.json that
+    capture-pair.sh writes; or None."""
+    try:
+        value = json.loads(path.read_text(encoding="utf-8"))
+    except (OSError, ValueError):
+        return None
+    if isinstance(value, dict) and "steps" in value and "result" in value:
+        value = value["result"]
+    return value if isinstance(value, dict) else None
+
+
+def shot_errors(cell):
+    """Each shot's error in a cell, as "NAME: ERROR" lines, naming the half
+    when only one has it."""
+    errors = {}
+    for half in ("after", "before"):
+        readings = (read_result(cell / f"{half}.json") or {}).get("readings") or {}
+        for name, value in readings.items():
+            if isinstance(value, dict) and value.get("error"):
+                errors.setdefault((name, value["error"]), []).append(half)
+    return [
+        f"{name}: {error}" + (f" ({halves[0]} half)" if len(halves) == 1 else "")
+        for (name, error), halves in errors.items()
+    ]
 
 
 def get_parser():
