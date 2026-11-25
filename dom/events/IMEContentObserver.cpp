@@ -1654,7 +1654,10 @@ bool IMEContentObserver::UpdateSelectionCache(bool aRequireFlush /* = true */) {
   //     selection offset and writing mode?
   WidgetQueryContentEvent querySelectedTextEvent(true, eQuerySelectedText,
                                                  mWidget);
-  querySelectedTextEvent.mNeedsToFlushLayout = aRequireFlush;
+  QueryContentOptions options;
+  options.mNeedsToFlushLayout = aRequireFlush;
+  querySelectedTextEvent.InitForQuerySelectedText(SelectionType::eNormal,
+                                                  options);
   ContentEventHandler handler(GetPresContext());
   handler.OnQuerySelectedText(&querySelectedTextEvent);
   if (NS_WARN_IF(querySelectedTextEvent.Failed()) ||

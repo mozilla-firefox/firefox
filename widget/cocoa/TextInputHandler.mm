@@ -4380,9 +4380,9 @@ NSAttributedString* IMEInputHandler::GetAttributedSubstringFromRange(
     options.mRelativeToInsertionPoint = true;
     startOffset -= *mIMECompositionStartBeforeStart;
   }
+  options.mRequestFontRanges = true;
   queryTextContentEvent.InitForQueryTextContent(startOffset, aRange.length,
                                                 options);
-  queryTextContentEvent.RequestFontRanges();
   DispatchEvent(queryTextContentEvent);
 
   MOZ_LOG(gIMELog, LogLevel::Info,

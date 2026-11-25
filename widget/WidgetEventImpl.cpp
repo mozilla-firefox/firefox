@@ -694,7 +694,7 @@ bool WidgetEvent::AllowFlushingPendingNotifications() const {
   // be caused by that it's unsafe.  Therefore, we should allow handlers to
   // flush pending things only when the dispatcher requires the latest content
   // layout.
-  return AsQueryContentEvent()->mNeedsToFlushLayout;
+  return AsQueryContentEvent()->mInput.mNeedsToFlushLayout;
 }
 
 bool WidgetEvent::ShouldIgnoreCapturingContent() const {
@@ -2547,7 +2547,11 @@ bool WidgetKeyboardEvent::IsLockableModifier(KeyNameIndex aKeyNameIndex) {
  ******************************************************************************/
 
 QueryContentOptions::QueryContentOptions(const WidgetQueryContentEvent& aEvent)
-    : mRelativeToInsertionPoint(aEvent.mInput.mRelativeToInsertionPoint) {}
+    : mRelativeToInsertionPoint(aEvent.mInput.mRelativeToInsertionPoint),
+      mRequestFontRanges(aEvent.mInput.mWithFontRanges),
+      mNeedsToFlushLayout(aEvent.mInput.mNeedsToFlushLayout) {
+  // FIXME: We should delete this constructor.
+}
 
 /******************************************************************************
  * mozilla::QueryContentResult (TextEvents.h)

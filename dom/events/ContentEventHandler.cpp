@@ -1569,7 +1569,7 @@ nsresult ContentEventHandler::OnQueryTextContent(
       domRangeAndAdjustedOffset.mAdjustedOffset, textInRange,
       OffsetAndDataFor::EditorString);
 
-  if (aEvent->mWithFontRanges) {
+  if (aEvent->mInput.mWithFontRanges) {
     uint32_t fontRangeLength;
     if (NS_WARN_IF(NS_FAILED(GenerateFlatFontRanges(
             domRangeAndAdjustedOffset.mRange, aEvent->mReply->mFontRanges,
