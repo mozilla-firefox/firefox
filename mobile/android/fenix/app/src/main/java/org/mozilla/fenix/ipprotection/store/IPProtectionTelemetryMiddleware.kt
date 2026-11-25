@@ -53,8 +53,10 @@ internal class IPProtectionTelemetryMiddleware(
         when (action) {
             is IPProtectionAction.ActivationAction.ToggleFailed ->
                 handleToggleFailedAction(store.state, action.error, action.operation)
-            is IPProtectionAction.LocationAction.LocationSwitchFailed -> handleLocationSwitchFailed(action.error)
-            is IPProtectionAction.LocationAction.LocationUpdateFailed -> handleLocationUpdateFailed(action.error)
+            is IPProtectionAction.LocationAction.LocationSwitchFailed ->
+                handleLocationSwitchFailed(store.state, action.error)
+            is IPProtectionAction.LocationAction.LocationUpdateFailed ->
+                handleLocationUpdateFailed(store.state, action.error)
             is IPProtectionAction.LocationAction.LocationChanged -> handleLocationChanged(store.state, action)
             is IPProtectionAction.LocationAction.LocationReset -> handleLocationReset(store.state, action)
             is IPProtectionAction.LocationAction.PersistedLocationUnavailable ->
@@ -151,6 +153,7 @@ internal class IPProtectionTelemetryMiddleware(
                 serviceState = state.serviceStatus.name.toSnakeCase(),
                 proxyState = state.proxyStatus.toString().toSnakeCase(),
                 accountState = state.accountState.status.name.toSnakeCase(),
+                authProvider = state.currentAuthProvider.name.toSnakeCase(),
             )
         )
     }
@@ -202,14 +205,26 @@ internal class IPProtectionTelemetryMiddleware(
         )
     }
 
-    private fun handleLocationSwitchFailed(error: Throwable?) {
-        Vpn.locationSwitchError.record(extra = Vpn.LocationSwitchErrorExtra(errorCode = errorCodeOf(error)))
+    private fun handleLocationSwitchFailed(state: IPProtectionState, error: Throwable?) {
+        Vpn.locationSwitchError.record(
+            extra =
+                Vpn.LocationSwitchErrorExtra(
+                    errorCode = errorCodeOf(error),
+                    authProvider = state.currentAuthProvider.name.toSnakeCase(),
+                )
+        )
     }
 
     // The location list is fetched over the GeckoView event dispatcher, which rejects with an
     // exception that carries no message, so we report the class name instead of an error code.
-    private fun handleLocationUpdateFailed(error: Throwable) {
-        Vpn.locationUpdateError.record(extra = Vpn.LocationUpdateErrorExtra(errorCode = error::class.simpleName))
+    private fun handleLocationUpdateFailed(state: IPProtectionState, error: Throwable) {
+        Vpn.locationUpdateError.record(
+            extra =
+                Vpn.LocationUpdateErrorExtra(
+                    errorCode = error::class.simpleName,
+                    authProvider = state.currentAuthProvider.name.toSnakeCase(),
+                )
+        )
     }
 
     // FIXME(IPP) the engine should pass the error code through: https://bugzilla.mozilla.org/show_bug.cgi?id=2066553

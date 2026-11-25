@@ -17771,9 +17771,15 @@ vpn:
           "awaiting_enrollment", "auth_failed", "authenticated",
           "enrolled_and_entitled", "try_again".
         type: string
+      auth_provider:
+        description: >
+          Authentication provider in the store when the failure was recorded.
+          One of "unknown", "fxa", "gpi".
+        type: string
     bugs:
       - https://bugzilla.mozilla.org/show_bug.cgi?id=2031198
       - https://bugzilla.mozilla.org/show_bug.cgi?id=2068852
+      - https://bugzilla.mozilla.org/show_bug.cgi?id=2097358
     data_reviews:
       - https://phabricator.services.mozilla.com/D293774
       - https://phabricator.services.mozilla.com/D323162
@@ -17834,8 +17840,14 @@ vpn:
         description:
           The error code or number associated with the error, if available.
         type: string
+      auth_provider:
+        description: >
+          Authentication provider in the store when the failure was recorded.
+          One of "unknown", "fxa", "gpi".
+        type: string
     bugs:
       - https://bugzilla.mozilla.org/show_bug.cgi?id=2049041
+      - https://bugzilla.mozilla.org/show_bug.cgi?id=2097358
     data_reviews:
       - https://phabricator.services.mozilla.com/D318300
     data_sensitivity:
@@ -17852,8 +17864,14 @@ vpn:
         description:
           The class name of the error associated with the failure, if available.
         type: string
+      auth_provider:
+        description: >
+          Authentication provider in the store when the failure was recorded.
+          One of "unknown", "fxa", "gpi".
+        type: string
     bugs:
       - https://bugzilla.mozilla.org/show_bug.cgi?id=2059858
+      - https://bugzilla.mozilla.org/show_bug.cgi?id=2097358
     data_reviews:
       - https://phabricator.services.mozilla.com/D319380
     data_sensitivity:

@@ -9,6 +9,7 @@ package org.mozilla.fenix.ipprotection.store
 import kotlin.reflect.KClass
 import kotlin.test.assertNotNull
 import mozilla.components.ExperimentalAndroidComponentsApi
+import mozilla.components.concept.engine.ipprotection.CurrentAuthProvider
 import mozilla.components.concept.engine.ipprotection.ServiceState
 import mozilla.components.feature.ipprotection.store.ActivationOperation
 import mozilla.components.feature.ipprotection.store.CachedLocationStatus
@@ -293,6 +294,35 @@ class IPProtectionTelemetryMiddlewareTest {
     }
 
     @Test
+    fun `GIVEN each auth provider WHEN a toggle, location switch or location list update fails THEN the error records that provider`() {
+        val expected =
+            mapOf(
+                CurrentAuthProvider.Unknown to "unknown",
+                CurrentAuthProvider.Fxa to "fxa",
+                CurrentAuthProvider.Gpi to "gpi",
+            )
+        assertEquals(
+            "Each CurrentAuthProvider records an auth_provider value. List it here and in every auth_provider " +
+                "description in the vpn category of app/metrics.yaml.",
+            CurrentAuthProvider.entries.toSet(),
+            expected.keys,
+        )
+
+        expected.keys.forEach { authProvider ->
+            val store = createStore(currentAuthProvider = authProvider)
+            store.dispatch(IPProtectionAction.ActivationAction.ToggleFailed(ActivationOperation.Activate))
+            store.dispatch(IPProtectionAction.LocationAction.LocationSwitchFailed())
+            store.dispatch(IPProtectionAction.LocationAction.LocationUpdateFailed(RuntimeException("generic-error")))
+        }
+
+        listOf(Vpn.errorEncountered, Vpn.locationSwitchError, Vpn.locationUpdateError).forEach { metric ->
+            val events = metric.testGetValue()
+            assertNotNull(events)
+            assertEquals(expected.values.toList(), events.map { it.extra?.get("auth_provider") })
+        }
+    }
+
+    @Test
     fun `GIVEN the user picks a location THEN the new country is recorded as a user action`() {
         val store = createStore(selectedLocation = Recommended)
 
@@ -438,6 +468,7 @@ class IPProtectionTelemetryMiddlewareTest {
         proxyStatus: ProxyStatus = Uninitialized,
         selectedLocation: Location = Recommended,
         locations: List<Location> = listOf(Recommended),
+        currentAuthProvider: CurrentAuthProvider = CurrentAuthProvider.Unknown,
     ) =
         IPProtectionStore(
             initialState =
@@ -445,6 +476,7 @@ class IPProtectionTelemetryMiddlewareTest {
                     accountState = AccountState(status = initialStatus),
                     serviceStatus = serviceStatus,
                     proxyStatus = proxyStatus,
+                    currentAuthProvider = currentAuthProvider,
                     locationState = LocationState(selectedLocation = selectedLocation, locations = locations),
                 ),
             middleware = listOf(middleware),
