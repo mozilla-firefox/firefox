@@ -22,19 +22,26 @@ state in every built-in regime:
     }
 
 The built-in regimes are light-nova, dark-nova, light-classic, dark-classic,
-the same four with high contrast (hc-light-nova and so on) and
-native-light-nova (the native theme). Nova and classic are browser.nova.enabled
-on and off; high contrast is ui.useAccessibilityTheme=1.
+the same four with high contrast (hc-light-nova and so on), native-light-nova
+(the native theme), alpenglow-nova (the Alpenglow add-on theme) and
+forced-light-nova. Nova and classic are browser.nova.enabled on and off; high
+contrast is ui.useAccessibilityTheme=1. forced-light-nova approximates Windows
+high contrast chrome off Windows: high contrast plus the forced-colors
+override, with `forced-color-adjust: none` on the root so that no color is
+rewritten, as in Windows' `requested` state. It still reports `active`, so a
+bare `(forced-colors)` query matches as on Windows, while `(forced-colors:
+active)` and `(forced-colors: requested)` answer the other way round.
 
 Every cell runs headless on Linux, which reads no GTK settings. Its system
 colors are fixed stand-ins rather than a GTK palette, so in native-light-nova
 some pairs match: -moz-headerbarinactive and -moz-headerbarinactivetext both
 read white. Its system fonts are sans-serif at 16px, so the chrome's root is
 16px and a rem length equals its px original: a change from px to rem shows in
-no regime. To see one, give a smaller system font in `prefs`:
-"ui.font.message-box=sans-serif" and "ui.font.message-box.size='12'" for the
-root, and the same pair for ui.font.menu for menus. The quotes make the size a
-string pref, which it has to be.
+no regime. To see one, give a smaller system font in `prefs` or in a regime of
+`defineRegimes`: "ui.font.message-box=sans-serif" and
+"ui.font.message-box.size='12'" for the root, and the same pair for
+ui.font.menu for menus. The quotes make the size a string pref, which it has
+to be.
 
 `shots` maps a shot name to the `element` selector to capture (`>>>` steps
 into the shadow root of the element before it, as in "moz-button#x >>>
@@ -80,12 +87,18 @@ firefox-probe.py input steps run before the shots. The spec can also give:
 - `prefs`: prefs for every cell, such as "browser.uidensity=1"; a regime's
   prefs win over these.
 - `regimes`: the regimes every set runs in unless it lists its own (default
-  all).
+  all, the spec's own included).
+- `defineRegimes`: regimes of its own, each a name mapped to `prefs`, an
+  optional `extends` (the built-in regime to take the prefs and setup of, then
+  add these prefs to; default the one it is named like, else light-nova) and
+  an optional `chromeSetup`, a chrome script that declares
+  `async function setupRegime()` (such as installing an add-on theme), as in
+  regimes/. One named like a built-in regime replaces it.
 - `prelude`: a file of JS pasted ahead of every set's script or shots, for
   helpers the sets share.
 - `windowSize` for every set, and `timeoutMs` for each half (default 120000).
 
-Prelude, script and steps files are relative to the spec's directory.
+Prelude, script, setup and steps files are relative to the spec's directory.
 
 A `script` handles what `shots` cannot, such as opening a second window. Each
 cell, a set in one regime, is one capture-pair.sh --probe run into
@@ -164,10 +177,12 @@ def builtin_regimes():
                 )
                 regimes[name] = regime_prefs(nova=nova, dark=dark, hc=hc)
     regimes["native-light-nova"] = regime_prefs(native=True)
+    regimes["alpenglow-nova"] = regime_prefs(setup="alpenglow.js")
+    regimes["forced-light-nova"] = regime_prefs(hc=True, setup="forced-colors.js")
     return regimes
 
 
-def regime_prefs(native=False, nova=True, dark=False, hc=False):
+def regime_prefs(native=False, nova=True, dark=False, hc=False, setup=None):
     return {
         "prefs": [
             f"browser.theme.native-theme={str(native).lower()}",
@@ -175,6 +190,7 @@ def regime_prefs(native=False, nova=True, dark=False, hc=False):
             f"ui.systemUsesDarkTheme={int(dark)}",
             f"ui.useAccessibilityTheme={int(hc)}",
         ],
+        "chromeSetup": setup and HERE / "regimes" / setup,
     }
 
 
@@ -328,6 +344,7 @@ def load_spec(path):
         "timeoutMs",
         "prefs",
         "regimes",
+        "defineRegimes",
         "prelude",
         "sets",
     }
@@ -356,7 +373,23 @@ def load_spec(path):
             raise SpecError(f"{what}: no such file: {p}")
         return p
 
-    regimes = builtin_regimes()
+    builtins = builtin_regimes()
+    regimes = dict(builtins)
+    for name, regime in mapping(spec.get("defineRegimes", {}), "defineRegimes").items():
+        extra = set(regime) - {"prefs", "extends", "chromeSetup"}
+        if extra:
+            raise SpecError(f"regime {name}: unknown keys {', '.join(sorted(extra))}")
+        extends = regime.get("extends", name if name in builtins else "light-nova")
+        start = builtins.get(extends) if isinstance(extends, str) else None
+        if not start:
+            raise SpecError(f"regime {name}: no built-in regime {extends}")
+        regimes[name] = {
+            "prefs": start["prefs"]
+            + pref_list(regime.get("prefs", []), f"regime {name} prefs"),
+            "chromeSetup": file(regime["chromeSetup"], f"regime {name}")
+            if "chromeSetup" in regime
+            else start["chromeSetup"],
+        }
 
     def regime_list(value, what):
         names = strings(value, what)
@@ -488,6 +521,17 @@ def run_cell(root, spec, outdir, set_name, regime_name, probe, env):
     cmd = ["bash", str(HERE / "capture-pair.sh"), "--probe", "--base", spec["base"]]
     cmd += ["--timeout-ms", str(spec["timeoutMs"])]
     cmd += ["--window-size", s["windowSize"]]
+    if regime["chromeSetup"]:
+        setup = outdir / "probes" / f"setup-{regime_name}.js"
+        setup.write_text(
+            regime["chromeSetup"].read_text(encoding="utf-8")
+            + "\nreturn setupRegime();\n"
+        )
+        cmd += [
+            "--chrome-setup-file",
+            setup.as_posix(),
+            "--chrome-setup-async",
+        ]
     if s["steps"]:
         cmd += ["--steps", s["steps"].as_posix()]
     for pref in [
