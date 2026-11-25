@@ -530,6 +530,8 @@ void MacroAssemblerWasm32::nop() { MOZ_CRASH(); }
 
 void MacroAssemblerWasm32::breakpoint() { MOZ_CRASH(); }
 
+void MacroAssemblerWasm32::crash() { MOZ_CRASH(); }
+
 void MacroAssemblerWasm32::abiret() { MOZ_CRASH(); }
 
 void MacroAssemblerWasm32::ret() { MOZ_CRASH(); }

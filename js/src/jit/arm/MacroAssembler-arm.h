@@ -1343,6 +1343,8 @@ class MacroAssemblerARMCompat : public MacroAssemblerARM {
   // Conditional breakpoint.
   void breakpoint(Condition cc);
 
+  void crash();
+
   // Trigger the simulator's interactive read-eval-print loop.
   // The message will be printed at the stopping point.
   // (On non-simulator builds, does nothing.)

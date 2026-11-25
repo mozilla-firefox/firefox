@@ -1194,6 +1194,13 @@ class AssemblerX86Shared : public AssemblerShared {
 
   void breakpoint() { masm.int3(); }
 
+  void crash() {
+#ifdef DEBUG
+    breakpoint();
+#endif
+    masm.ud2();
+  }
+
   void ldmxcsr(const Address& src) {
     masm.ldmxcsr_mr(src.offset, src.base.encoding());
   }

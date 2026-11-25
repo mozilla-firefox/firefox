@@ -3310,6 +3310,13 @@ void MacroAssemblerARM::ma_call(ImmPtr dest) {
 
 void MacroAssemblerARMCompat::breakpoint() { as_bkpt(); }
 
+void MacroAssemblerARMCompat::crash() {
+#ifdef DEBUG
+  breakpoint();
+#endif
+  as_illegal_trap();
+}
+
 void MacroAssemblerARMCompat::simulatorStop(const char* msg) {
 #ifdef JS_SIMULATOR_ARM
   MOZ_ASSERT(sizeof(char*) == 4);
@@ -3378,7 +3385,7 @@ void MacroAssemblerARMCompat::handleFailureWithHandlerTail(
   asMasm().branch32(Assembler::Equal, r0, Imm32(ExceptionResumeKind::WasmCatch),
                     &wasmCatch);
 
-  breakpoint();  // Invalid kind.
+  crash();  // Invalid kind.
 
   // No exception handler. Load the error value, restore state and return from
   // the entry frame.

@@ -4352,7 +4352,7 @@ void MacroAssembler::assertUnreachable(const char* output) {
   PopRegsInMask(save);
 #endif
 
-  breakpoint();
+  crash();
 }
 
 void MacroAssembler::assert32Compare(Condition condition, Register lhs,
