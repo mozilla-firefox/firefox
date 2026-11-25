@@ -432,7 +432,6 @@ class ThreadedDriver : public GraphDriver {
                  uint32_t aSampleRate);
 
   void EnsureNextIteration() override;
-  void Start() override;
   MOZ_CAN_RUN_SCRIPT void Shutdown() override;
   /**
    * Runs main control loop on the graph thread. Normally a single invocation
@@ -451,6 +450,7 @@ class ThreadedDriver : public GraphDriver {
   bool ThreadRunning() const override { return mThreadRunning; }
 
  protected:
+  void StartThread(uint32_t aStackSize);
   /* Waits until it's time to process more data. */
   void WaitForNextIteration();
   /* Implementation dependent time the ThreadedDriver should wait between
@@ -484,6 +484,7 @@ class SystemClockDriver : public ThreadedDriver {
   SystemClockDriver(GraphInterface* aGraphInterface,
                     GraphDriver* aPreviousDriver, uint32_t aSampleRate);
   virtual ~SystemClockDriver();
+  void Start() override;
   SystemClockDriver* AsSystemClockDriver() override { return this; }
   const SystemClockDriver* AsSystemClockDriver() const override { return this; }
 
@@ -509,6 +510,7 @@ class OfflineClockDriver : public ThreadedDriver {
   OfflineClockDriver(GraphInterface* aGraphInterface, uint32_t aSampleRate,
                      GraphTime aSlice);
   virtual ~OfflineClockDriver();
+  void Start() override;
   OfflineClockDriver* AsOfflineClockDriver() override { return this; }
   const OfflineClockDriver* AsOfflineClockDriver() const override {
     return this;
