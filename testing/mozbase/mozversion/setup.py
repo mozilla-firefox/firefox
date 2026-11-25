@@ -15,12 +15,6 @@ setup(
     classifiers=[
         "Programming Language :: Python",
         "Programming Language :: Python :: 3 :: Only",
-        "Programming Language :: Python :: 3.8",
-        "Programming Language :: Python :: 3.9",
-        "Programming Language :: Python :: 3.10",
-        "Programming Language :: Python :: 3.11",
-        "Programming Language :: Python :: 3.12",
-        "Programming Language :: Python :: 3.13",
     ],
     keywords="mozilla",
     author="Mozilla Automation and Testing Team",
@@ -36,5 +30,5 @@ setup(
       [console_scripts]
       mozversion = mozversion:cli
       """,
-    python_requires=">=3.8",
+    python_requires=">=3.9",
 )
