@@ -503,8 +503,9 @@ run-if = [
 tags = "os_integration"
 
 ["test_drag_coords.html"]
-run-if = [
-  "os != 'android'", # Need calculate screen coordinates.
+skip-if = [
+  "os == 'android'", # Need calculate screen coordinates.
+  "headless", # nsDragService is not available in headless mode.
 ]
 tags = "os_integration"
 
