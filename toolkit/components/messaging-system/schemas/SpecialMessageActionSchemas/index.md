@@ -1,10 +1,10 @@
 # User Actions
 
-A subset of actions are available to messages via fields like `action` on buttons for CFRs.
+A subset of actions are available to messages via fields like `action` on buttons.
 
 ## Usage
 
-For CFRs, you should add the action `type` in `action` and any additional parameters in `data`. For example:
+To use an action, add the action `type` in `action` and any additional parameters in `data`. For example:
 
 ```json
 "action": {
@@ -292,7 +292,7 @@ Focuses and expands the awesome bar.
 
 ### `CANCEL`
 
-No-op action used to dismiss CFR notifications (but not remove or block them)
+No-op action. The surface closes or hides the message, but no dismiss or block is recorded.
 
 * args: (none)
 

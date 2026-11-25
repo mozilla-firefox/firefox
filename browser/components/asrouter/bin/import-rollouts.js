@@ -94,6 +94,10 @@ async function getMessageValidators(skipValidation) {
   );
 
   const messageValidators = {
+    action_only: await getValidator(
+      "./content-src/templates/OnboardingMessage/ActionOnlyMessage.schema.json",
+      { common: true }
+    ),
     bookmarks_bar_button: await getValidator(
       "./content-src/templates/OnboardingMessage/BookmarksBarButton.schema.json",
       { common: true }
@@ -104,6 +108,14 @@ async function getMessageValidators(skipValidation) {
     ),
     pb_newtab: await getValidator(
       "./content-src/templates/PBNewtab/NewtabPromoMessage.schema.json",
+      { common: true }
+    ),
+    sidebar_chatbot_promo: await getValidator(
+      "./content-src/templates/OnboardingMessage/SidebarChatBotPromo.schema.json",
+      { common: true }
+    ),
+    smart_window_newtab_promo: await getValidator(
+      "./content-src/templates/OnboardingMessage/SmartWindowNewtabPromo.schema.json",
       { common: true }
     ),
     spotlight: await getValidator(
@@ -120,6 +132,10 @@ async function getMessageValidators(skipValidation) {
     ),
     update_action: await getValidator(
       "./content-src/templates/OnboardingMessage/UpdateAction.schema.json",
+      { common: true }
+    ),
+    urlbar_action: await getValidator(
+      "./content-src/templates/OnboardingMessage/UrlbarAction.schema.json",
       { common: true }
     ),
     feature_callout: await getValidator(

@@ -2598,8 +2598,7 @@ privacySecurityMessaging:
   owner: omc-core@mozilla.com
   hasExposure: true
   exposureDescription: >-
-    Exposure is sent when a milestone doorhanger message is seen or when the
-    milestone section of the protections popup is seen.
+    Exposure is sent when the milestone section of the protections popup is seen.
   variables:
     blockingMilestoneMessagingEnabled:
       type: boolean
@@ -2608,8 +2607,7 @@ privacySecurityMessaging:
         pref:  browser.contentblocking.cfr-milestone.enabled
       description: >-
         Enable messaging related to content blocking milestones. Setting to
-        false disables both the milestone doorhanger and the milestone section
-        of the protections popup.
+        false disables the milestone section of the protections popup.
     blockingMilestones:
       type: string
       setPref:
@@ -2618,21 +2616,15 @@ privacySecurityMessaging:
       description: >-
         A JSON array of milestones to trigger messaging for. Milestones are
         defined as the number of times a user has had tracking content blocked,
-        e.g., [1000, 5000, 10000...]. See the pref for default values. The list
-        should typically have 7 entries, because the built-in milestone messages
-        are allowed to show 7 times. If you want more or fewer milestones, you
-        should override the milestone messages by also including a messaging
-        feature in your experiment, so you can include a replacement message
-        with a frequency cap matching the number of milestones. Use a feature
-        like fxms-message-* to do that.
+        e.g., [1000, 5000, 10000...]. See the pref for default values.
     blockingMilestoneUpdateInterval:
       type: int
       setPref:
         branch: user
         pref: browser.contentblocking.cfr-milestone.update-interval
       description: >-
-        How often (in milliseconds) we check if the user is eligible for seeing
-        a milestone doorhanger. 24 hours by default.
+        How often (in milliseconds) we check if the user has reached a new
+        milestone. 24 hours by default.
 
 fullPageTranslation:
   description: This feature opens a popup panel to offer to translate a page.

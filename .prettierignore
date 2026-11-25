@@ -1573,7 +1573,6 @@ browser/components/asrouter/content/components/asrouter-newtab-multistage/asrout
 browser/components/asrouter/logs/
 browser/components/asrouter/content-src/schemas/BackgroundTaskMessagingExperiment.schema.json
 browser/components/asrouter/content-src/schemas/MessagingExperiment.schema.json
-browser/components/asrouter/tests/InflightAssetsMessageProvider.sys.mjs
 browser/components/asrouter/tests/NimbusRolloutMessageProvider.sys.mjs
 browser/components/backup/tests/marionette/compat-files/backups
 browser/components/storybook/.storybook/chrome-map.js
