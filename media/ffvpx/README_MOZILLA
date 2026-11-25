@@ -179,6 +179,9 @@ Finally, apply the patches:
 - mediacodec_xiph_flac.patch to add Opus, Vorbis and FLAC decoders via Android
   MediaCodec, with the codec specific data layout each of them expects, and to
   reorder Opus and Vorbis output from the Vorbis channel order.
+- mediacodec_max_size.patch to add max_width and max_height options to the
+  Android MediaCodec video decoders, which set the maximum resolution for
+  adaptive playback.
 - bug1603271-videodsp-pointer-overflow.patch to avoid a UBSan pointer-overflow
   by combining a two-step pointer adjustment into a single positive-offset step.
 - vp9-get-format-rollback.patch to fix a VP9 decoder error handling issue.

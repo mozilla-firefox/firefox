@@ -1,0 +1,35 @@
+diff --git a/media/ffvpx/libavcodec/mediacodecdec.c b/media/ffvpx/libavcodec/mediacodecdec.c
+--- a/media/ffvpx/libavcodec/mediacodecdec.c
++++ b/media/ffvpx/libavcodec/mediacodecdec.c
+@@ -72,6 +72,9 @@ typedef struct MediaCodecH264DecContext {
+     int use_ndk_codec;
+     // Ref. MediaFormat KEY_OPERATING_RATE
+     int operating_rate;
++    // Ref. MediaFormat KEY_MAX_WIDTH and KEY_MAX_HEIGHT
++    int max_width;
++    int max_height;
+ } MediaCodecH264DecContext;
+ 
+ static av_cold int mediacodec_decode_close(AVCodecContext *avctx)
+@@ -569,6 +572,10 @@ static av_cold int mediacodec_decode_init(AVCodecContext *avctx)
+     }
+     if (s->operating_rate > 0)
+         ff_AMediaFormat_setInt32(format, "operating-rate", s->operating_rate);
++    if (avctx->codec_type == AVMEDIA_TYPE_VIDEO && s->max_width > 0 && s->max_height > 0) {
++        ff_AMediaFormat_setInt32(format, "max-width", FFMAX(s->max_width, avctx->width));
++        ff_AMediaFormat_setInt32(format, "max-height", FFMAX(s->max_height, avctx->height));
++    }
+ 
+     s->ctx = av_mallocz(sizeof(*s->ctx));
+     if (!s->ctx) {
+@@ -748,6 +755,10 @@ static const AVOption ff_mediacodec_vdec_options[] = {
+                    OFFSET(use_ndk_codec), AV_OPT_TYPE_BOOL, {.i64 = -1}, -1, 1, VD },
+     { "operating_rate", "The desired operating rate that the codec will need to operate at, zero for unspecified",
+             OFFSET(operating_rate), AV_OPT_TYPE_INT, {.i64 = 0}, 0, INT_MAX, VD },
++    { "max_width", "The maximum width for adaptive playback, zero for unspecified",
++            OFFSET(max_width), AV_OPT_TYPE_INT, {.i64 = 0}, 0, INT_MAX, VD },
++    { "max_height", "The maximum height for adaptive playback, zero for unspecified",
++            OFFSET(max_height), AV_OPT_TYPE_INT, {.i64 = 0}, 0, INT_MAX, VD },
+     { NULL }
+ };
+ 

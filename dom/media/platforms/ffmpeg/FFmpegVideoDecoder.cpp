@@ -3301,6 +3301,21 @@ MediaResult FFmpegVideoDecoder<LIBAV_VER>::InitMediaCodecDecoder() {
   mCodecContext->opaque = this;
   InitHWCodecContext(ContextType::MediaCodec);
 
+#  ifdef USING_MOZFFVPX
+  const gfx::IntSize maxSize =
+      media::MCSInfo::GetMediaCodecAdaptivePlaybackMaxSize(
+          media::MCSInfo::GetMediaCodecFromMimeType(mInfo.mMimeType),
+          mInfo.mImage);
+  if (!maxSize.IsEmpty()) {
+    FFMPEG_LOG("  adaptive playback max size {}x{}", maxSize.width,
+               maxSize.height);
+    mLib->av_opt_set_int(mCodecContext->priv_data, "max_width", maxSize.width,
+                         0);
+    mLib->av_opt_set_int(mCodecContext->priv_data, "max_height", maxSize.height,
+                         0);
+  }
+#  endif
+
   // MOZ_REQUIRES isn't recognized in MakeScopeExit, but InitMediaCodecDecoder
   // already locks sMutex at the start, so just escape thread analysis.
   auto releaseResources = MakeScopeExit([&]() MOZ_NO_THREAD_SAFETY_ANALYSIS {
