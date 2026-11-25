@@ -68,8 +68,8 @@ without touching the browser:
 | `audioMuted` | Whether the tab carries the `muted` attribute. |
 | `fullZoom`, `textZoom` | `1`. |
 | `tabHasCustomZoom` | `false`. |
+| `loadStartedSinceUrlbarOverride` | `false`. |
 | `permitUnload` | A function returning `{ permitUnload: true }`. |
-| `didStartLoadSinceLastUserTyping` | A function returning `false`. |
 | `getTabBrowser` | A function returning `gBrowser`. |
 
 `reload` and `reloadWithFlags` are substituted with a version that inserts the

@@ -247,9 +247,7 @@ class _TabState {
       // the last time the user typed in the URL bar. Mimic this to keep the
       // session store representation in sync, even though we now represent this
       // more explicitly:
-      tabData.userTypedClear = browser.didStartLoadSinceLastUserTyping()
-        ? 1
-        : 0;
+      tabData.userTypedClear = browser.loadStartedSinceUrlbarOverride ? 1 : 0;
     }
 
     return tabData;
