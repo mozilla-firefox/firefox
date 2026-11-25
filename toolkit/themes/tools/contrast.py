@@ -363,6 +363,39 @@ BODY_TEMPLATE = r"""
 FUNCTION_TEMPLATE = "async () => {%s}"
 
 
+def page_function(name="contrast"):
+    """JS declaring `async function NAME(subjects, {states, surface, min,
+    nonText} = {})`, for another probe to paste. It takes selectors or elements
+    and resolves with what this script prints as JSON for them."""
+    core = CORE % {
+        "selector": "(__byElement ? null : __list)",
+        "states": '(__options.states ?? ["default"])',
+        "surface": "(__options.surface ?? null)",
+        "min": "(__options.min ?? null)",
+        "nonText": "!!__options.nonText",
+    }
+    return (
+        f"async function {name}(__subjects, __options = {{}}) {{\n"
+        "  const __list =\n"
+        '    typeof __subjects == "string" || !__subjects[Symbol.iterator]\n'
+        "      ? [__subjects]\n"
+        "      : [...__subjects];\n"
+        '  const __byElement = __list.some(s => typeof s != "string");\n'
+        '  if (__byElement && __list.some(s => typeof s == "string")) {\n'
+        '    throw new Error("contrast() takes selectors or elements, not both");\n'
+        "  }\n"
+        "  globalThis.contrastSubjects = __byElement ? __list : [];\n"
+        "  try {\n"
+        "    return await (async () => {\n"
+        f"{probelib.PRELUDE}{core}"
+        "    })();\n"
+        "  } finally {\n"
+        "    delete globalThis.contrastSubjects;\n"
+        "  }\n"
+        "}\n"
+    )
+
+
 def parse_color(text):
     """Parse #rgb, #rgba, #rrggbb, #rrggbbaa, rgb() or rgba() to (r, g, b, a)."""
     s = text.strip().lower()
