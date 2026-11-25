@@ -29,6 +29,14 @@ const lazy = XPCOMUtils.declareLazy({
  */
 
 /**
+ * Web progress only holds weak references to its listeners, so this keeps the
+ * hidden browser progress listeners alive until their load finishes.
+ *
+ * @type {Set<object>}
+ */
+const gProgressListeners = new Set();
+
+/**
  * Retrieves the engine data from a URI and returns it.
  *
  * @param {nsIURI} sourceURI
@@ -120,10 +128,12 @@ async function parseInHiddenBrowser(xmlData) {
             return;
           }
           browser.removeProgressListener(progressListener);
+          gProgressListeners.delete(progressListener);
           resolve();
         },
       };
 
+      gProgressListeners.add(progressListener);
       browser.addProgressListener(
         progressListener,
         Ci.nsIWebProgress.NOTIFY_STATE_NETWORK
