@@ -1,0 +1,135 @@
+<!doctype html>
+<html>
+  <head>
+    <meta charset="utf-8" />
+    <title>widget-placeholder tests</title>
+    <script src="chrome://mochikit/content/tests/SimpleTest/SimpleTest.js"></script>
+    <script src="chrome://mochikit/content/tests/SimpleTest/EventUtils.js"></script>
+    <link
+      rel="stylesheet"
+      href="chrome://mochikit/content/tests/SimpleTest/test.css"
+    />
+    <link
+      rel="stylesheet"
+      href="chrome://global/skin/design-system/tokens-brand.css"
+    />
+    <link rel="localization" href="toolkit/global/mozButton.ftl" />
+    <link rel="localization" href="preview/widgets.ftl" />
+    <script
+      type="module"
+      src="chrome://browser/content/widgets/widget-placeholder.mjs"
+    ></script>
+  </head>
+
+  <body>
+    <p id="display"></p>
+    <div id="content"></div>
+    <pre id="test"></pre>
+    <script>
+      const { BrowserTestUtils } = ChromeUtils.importESModule(
+        "resource://testing-common/BrowserTestUtils.sys.mjs"
+      );
+      const { TestUtils } = ChromeUtils.importESModule(
+        "resource://testing-common/TestUtils.sys.mjs"
+      );
+
+      async function createPlaceholder(props = {}) {
+        await customElements.whenDefined("widget-placeholder");
+        let placeholder = document.createElement("widget-placeholder");
+        Object.assign(placeholder, props);
+        placeholder.announcements = [];
+        placeholder.ariaNotify = (message, options) =>
+          placeholder.announcements.push({ message, ...options });
+        document.getElementById("content").append(placeholder);
+        await placeholder.updateComplete;
+        return placeholder;
+      }
+
+      async function assertClickFires(button, type) {
+        let fired = BrowserTestUtils.waitForEvent(
+          document.getElementById("content"),
+          type
+        );
+        button.click();
+        await fired;
+        ok(true, `${type} fired`);
+      }
+
+      add_task(async function test_creating() {
+        let placeholder = await createPlaceholder({ prompt: "weather" });
+        let root = placeholder.shadowRoot;
+        is(root.querySelector(".prompt").textContent, "weather", "Prompt text");
+        ok(!root.querySelector(".error, .edit"), "No error parts");
+
+        let content = root.querySelector(".content");
+        is(
+          content.dataset.l10nId,
+          "widget-placeholder-building",
+          "Placeholder label"
+        );
+        placeholder.focus();
+        is(root.activeElement, content, "Placeholder focused");
+        synthesizeKey("KEY_Tab");
+        let cancel = root.querySelector(".cancel");
+        is(root.activeElement, cancel, "Cancel focused");
+        await assertClickFires(cancel, "WidgetPlaceholder:Edit");
+        is(placeholder.announcements.length, 0, "No announcements");
+        placeholder.remove();
+      });
+
+      add_task(async function test_error() {
+        let placeholder = await createPlaceholder({ prompt: "weather" });
+        let root = placeholder.shadowRoot;
+        let content = root.querySelector(".content");
+        content.focus();
+        placeholder.error = "service";
+        await placeholder.updateComplete;
+        is(
+          placeholder.dataset.l10nId,
+          "widget-generation-error-service",
+          "Service error text"
+        );
+        await TestUtils.waitForCondition(
+          () => placeholder.announcements.length
+        );
+        let heading = root.querySelector(".error-heading").textContent;
+        let message = root.querySelector(".error-message").textContent;
+        ok(heading, "Error heading");
+        ok(message, "Error message");
+        isDeeply(
+          placeholder.announcements,
+          [{ message: `${heading} ${message}`, priority: "high" }],
+          "Error announced"
+        );
+        is(root.querySelector(".content"), content, "Same container");
+        is(content.dataset.l10nId, "widget-placeholder-failed", "Failed label");
+        is(root.activeElement, content, "Placeholder stays focused");
+        ok(!root.querySelector(".prompt, .cancel"), "No creating parts");
+
+        placeholder.error = "generation";
+        await placeholder.updateComplete;
+        is(
+          placeholder.dataset.l10nId,
+          "widget-generation-error-generation",
+          "Generation error text"
+        );
+
+        await assertClickFires(
+          root.querySelector(".edit"),
+          "WidgetPlaceholder:Edit"
+        );
+        placeholder.remove();
+      });
+
+      add_task(async function test_error_on_mount() {
+        let placeholder = await createPlaceholder({
+          prompt: "weather",
+          error: "service",
+        });
+        await document.l10n.translateFragment(placeholder.shadowRoot);
+        is(placeholder.announcements.length, 0, "No announcement on mount");
+        placeholder.remove();
+      });
+    </script>
+  </body>
+</html>

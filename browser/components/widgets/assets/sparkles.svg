@@ -1,0 +1,299 @@
+<!-- This Source Code Form is subject to the terms of the Mozilla Public
+   - License, v. 2.0. If a copy of the MPL was not distributed with this
+   - file, You can obtain one at http://mozilla.org/MPL/2.0/. -->
+<svg xmlns="http://www.w3.org/2000/svg" width="58" height="58" fill="none" viewBox="0 0 58 58">
+  <style>
+    #Fluid_Sparkle {
+      transform-origin: 28.7px 28.7px;
+      animation:
+        fluid-sparkle-move 2s infinite,
+        fluid-sparkle-scale 2s infinite,
+        fluid-sparkle-fade 2s infinite;
+    }
+
+    #Vector,
+    #Vector_2 {
+      transform-origin: 26.815px 39.27px;
+    }
+
+    #Vector_3,
+    #Vector_4 {
+      transform-origin: 35.132px 13.567px;
+    }
+
+    #Vector {
+      animation:
+        vector-move 2s infinite,
+        vector-scale 2s infinite,
+        vector-fade 2s infinite;
+    }
+
+    #Vector_2 {
+      animation:
+        vector-2-move 2s infinite,
+        vector-2-scale 2s infinite,
+        vector-2-fade 2s infinite;
+    }
+
+    #Vector_3 {
+      animation:
+        vector-3-move 2s infinite,
+        vector-3-scale 2s infinite,
+        vector-3-fade 2s infinite;
+    }
+
+    #Vector_4 {
+      animation:
+        vector-4-move 2s infinite,
+        vector-4-scale 2s infinite,
+        vector-4-fade 2s infinite;
+    }
+
+    @keyframes fluid-sparkle-move {
+      0% {
+        translate: 0 15px;
+        animation-timing-function: ease;
+      }
+      50%,
+      100% {
+        translate: none;
+      }
+    }
+
+    @keyframes fluid-sparkle-scale {
+      0% {
+        scale: 0.85;
+        animation-timing-function: cubic-bezier(0.4, 0, 0.2, 1);
+      }
+      50%,
+      100% {
+        scale: none;
+      }
+    }
+
+    @keyframes fluid-sparkle-fade {
+      0% {
+        opacity: 0;
+        animation-timing-function: cubic-bezier(0.4, 0, 0.2, 1);
+      }
+      40%,
+      100% {
+        opacity: 1;
+      }
+    }
+
+    @keyframes vector-move {
+      0% {
+        translate: 0 20px;
+        rotate: -0.14rad;
+        animation-timing-function: ease;
+      }
+      45%,
+      100% {
+        translate: none;
+        rotate: none;
+      }
+    }
+
+    @keyframes vector-scale {
+      0% {
+        scale: 0.6;
+        animation-timing-function: cubic-bezier(0.4, 0, 0.2, 1);
+      }
+      45%,
+      100% {
+        scale: none;
+      }
+    }
+
+    @keyframes vector-fade {
+      0% {
+        opacity: 0;
+        animation-timing-function: cubic-bezier(0.4, 0, 0.2, 1);
+      }
+      27%,
+      100% {
+        opacity: 1;
+      }
+    }
+
+    @keyframes vector-2-move {
+      0%,
+      10% {
+        translate: 0 25px;
+        rotate: 0.105rad;
+        animation-timing-function: ease;
+      }
+      55%,
+      100% {
+        translate: none;
+        rotate: none;
+      }
+    }
+
+    @keyframes vector-2-scale {
+      0%,
+      10% {
+        scale: 0.6;
+        animation-timing-function: cubic-bezier(0.4, 0, 0.2, 1);
+      }
+      55%,
+      100% {
+        scale: none;
+      }
+    }
+
+    @keyframes vector-2-fade {
+      0%,
+      10% {
+        opacity: 0;
+        animation-timing-function: cubic-bezier(0.4, 0, 0.2, 1);
+      }
+      37%,
+      100% {
+        opacity: 1;
+      }
+    }
+
+    @keyframes vector-3-move {
+      0%,
+      20% {
+        translate: 0 18px;
+        rotate: -0.087rad;
+        animation-timing-function: ease;
+      }
+      65%,
+      100% {
+        translate: none;
+        rotate: none;
+      }
+    }
+
+    @keyframes vector-3-scale {
+      0%,
+      20% {
+        scale: 0.6;
+        animation-timing-function: cubic-bezier(0.4, 0, 0.2, 1);
+      }
+      65%,
+      100% {
+        scale: none;
+      }
+    }
+
+    @keyframes vector-3-fade {
+      0%,
+      20% {
+        opacity: 0;
+        animation-timing-function: cubic-bezier(0.4, 0, 0.2, 1);
+      }
+      47%,
+      100% {
+        opacity: 1;
+      }
+    }
+
+    @keyframes vector-4-move {
+      0%,
+      27.5% {
+        translate: 0 22px;
+        rotate: 0.122rad;
+        animation-timing-function: ease;
+      }
+      72.5%,
+      100% {
+        translate: none;
+        rotate: none;
+      }
+    }
+
+    @keyframes vector-4-scale {
+      0%,
+      27.5% {
+        scale: 0.6;
+        animation-timing-function: cubic-bezier(0.4, 0, 0.2, 1);
+      }
+      72.5%,
+      100% {
+        scale: none;
+      }
+    }
+
+    @keyframes vector-4-fade {
+      0%,
+      27.5% {
+        opacity: 0;
+        animation-timing-function: cubic-bezier(0.4, 0, 0.2, 1);
+      }
+      54.5%,
+      100% {
+        opacity: 1;
+      }
+    }
+
+    @media (prefers-reduced-motion: reduce) {
+      #Fluid_Sparkle,
+      #Vector,
+      #Vector_2,
+      #Vector_3,
+      #Vector_4 {
+        animation: none;
+      }
+    }
+  </style>
+  <g id="Fluid_Sparkle" clip-path="url(#clip0_2542_7397)">
+    <path id="Vector" fill="url(#paint0_linear_2542_7397)" d="M17.802.724a1.21 1.21 0 0 0-1.166-.723h-.002a1.21 1.21 0 0 0-1.166.723l-3.405 7.65a8.33 8.33 0 0 1-4.392 4.298L.749 15.573c-.662.277-.885.992-.67 1.564.1.306.318.578.66.73l7.598 3.419c1.76.792 3.14 2.547 3.988 4.339l3.14 7.042a1.2 1.2 0 0 0 1.186.722c.463.014.932-.225 1.153-.722l3.318-7.44c.823-1.718 2.05-3.162 3.792-3.944l7.613-3.417c.312-.14.521-.378.63-.65a1.22 1.22 0 0 0-.636-1.644v.001l-6.922-2.9a8.33 8.33 0 0 1-4.392-4.299z" transform="translate(10.18 22.575)"/>
+    <path id="Vector_2" fill="url(#paint1_radial_2542_7397)" d="M17.802.724a1.21 1.21 0 0 0-1.166-.723h-.002a1.21 1.21 0 0 0-1.166.723l-3.405 7.65a8.33 8.33 0 0 1-4.392 4.298L.749 15.573c-.662.277-.885.992-.67 1.564.1.306.318.578.66.73l7.598 3.419c1.76.792 3.14 2.547 3.988 4.339l3.14 7.042a1.2 1.2 0 0 0 1.186.722c.463.014.932-.225 1.153-.722l3.318-7.44c.823-1.718 2.05-3.162 3.792-3.944l7.613-3.417c.312-.14.521-.378.63-.65a1.22 1.22 0 0 0-.636-1.644v.001l-6.922-2.9a8.33 8.33 0 0 1-4.392-4.299z" transform="translate(10.18 22.575)"/>
+    <path id="Vector_3" fill="url(#paint2_linear_2542_7397)" d="M12.088 0a.88.88 0 0 1 .848.526l2.475 5.56a6.06 6.06 0 0 0 3.192 3.122l5.03 2.108c.508.213.66.78.456 1.207a.87.87 0 0 1-.453.46l-5.532 2.483c-1.26.566-2.15 1.61-2.748 2.851l-2.419 5.422a.875.875 0 0 1-.864.525.875.875 0 0 1-.833-.525l-2.285-5.121c-.616-1.301-1.619-2.575-2.896-3.15L.536 12.985a.87.87 0 0 1-.48-.537.886.886 0 0 1 .488-1.132l5.03-2.108a6.06 6.06 0 0 0 3.192-3.122L11.24.526a.88.88 0 0 1 .847-.525" transform="translate(23.044 1.435)"/>
+    <path id="Vector_4" fill="url(#paint3_radial_2542_7397)" d="M12.088 0a.88.88 0 0 1 .848.526l2.475 5.56a6.06 6.06 0 0 0 3.192 3.122l5.03 2.108c.508.213.66.78.456 1.207a.87.87 0 0 1-.453.46l-5.532 2.483c-1.26.566-2.15 1.61-2.748 2.851l-2.419 5.422a.875.875 0 0 1-.864.525.875.875 0 0 1-.833-.525l-2.285-5.121c-.616-1.301-1.619-2.575-2.896-3.15L.536 12.985a.87.87 0 0 1-.48-.537.886.886 0 0 1 .488-1.132l5.03-2.108a6.06 6.06 0 0 0 3.192-3.122L11.24.526a.88.88 0 0 1 .847-.525" transform="translate(23.044 1.435)"/>
+  </g>
+  <defs>
+    <radialGradient id="paint1_radial_2542_7397" cx="0" cy="0" r="1" gradientTransform="rotate(46.626 -7.415 17.817)scale(26.8612 49.4242)" gradientUnits="userSpaceOnUse">
+      <stop stop-color="#e251f7"/>
+      <stop offset="1" stop-color="#271af5" stop-opacity="0"/>
+    </radialGradient>
+    <radialGradient id="paint3_radial_2542_7397" cx="0" cy="0" r="1" gradientTransform="matrix(13.4051 14.1887 -26.106 24.6662 7.723 7.973)" gradientUnits="userSpaceOnUse">
+      <stop stop-color="#e251f7"/>
+      <stop offset="1" stop-color="#271af5" stop-opacity="0"/>
+    </radialGradient>
+    <linearGradient id="paint0_linear_2542_7397" x1="5.13" x2="17.743" y1=".638" y2="33.389" gradientUnits="userSpaceOnUse">
+      <stop offset=".09" stop-color="#e652f7"/>
+      <stop offset=".133" stop-color="#e251f7"/>
+      <stop offset=".171" stop-color="#de50f7"/>
+      <stop offset=".206" stop-color="#d94ef7"/>
+      <stop offset=".241" stop-color="#d34cf7"/>
+      <stop offset=".275" stop-color="#cc4af7"/>
+      <stop offset=".312" stop-color="#c448f7"/>
+      <stop offset=".352" stop-color="#ba45f7"/>
+      <stop offset=".398" stop-color="#af42f6"/>
+      <stop offset=".45" stop-color="#a33ef6"/>
+      <stop offset=".511" stop-color="#943af6"/>
+      <stop offset=".582" stop-color="#8335f6"/>
+      <stop offset=".665" stop-color="#702ff6"/>
+      <stop offset=".761" stop-color="#5a29f6"/>
+      <stop offset=".872" stop-color="#4222f5"/>
+      <stop offset="1" stop-color="#271af5"/>
+    </linearGradient>
+    <linearGradient id="paint2_linear_2542_7397" x1="3.728" x2="12.894" y1=".464" y2="24.264" gradientUnits="userSpaceOnUse">
+      <stop offset=".09" stop-color="#e652f7"/>
+      <stop offset=".133" stop-color="#e251f7"/>
+      <stop offset=".171" stop-color="#de50f7"/>
+      <stop offset=".206" stop-color="#d94ef7"/>
+      <stop offset=".241" stop-color="#d34cf7"/>
+      <stop offset=".275" stop-color="#cc4af7"/>
+      <stop offset=".312" stop-color="#c448f7"/>
+      <stop offset=".352" stop-color="#ba45f7"/>
+      <stop offset=".398" stop-color="#af42f6"/>
+      <stop offset=".45" stop-color="#a33ef6"/>
+      <stop offset=".511" stop-color="#943af6"/>
+      <stop offset=".582" stop-color="#8335f6"/>
+      <stop offset=".665" stop-color="#702ff6"/>
+      <stop offset=".761" stop-color="#5a29f6"/>
+      <stop offset=".872" stop-color="#4222f5"/>
+      <stop offset="1" stop-color="#271af5"/>
+    </linearGradient>
+    <clipPath id="clip0_2542_7397">
+      <path fill="#fff" d="M0 0h57.4v57.4H0z"/>
+    </clipPath>
+  </defs>
+</svg>

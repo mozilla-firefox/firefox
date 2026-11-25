@@ -1,0 +1,125 @@
+/* This Source Code Form is subject to the terms of the Mozilla Public
+ * License, v. 2.0. If a copy of the MPL was not distributed with this
+ * file, You can obtain one at http://mozilla.org/MPL/2.0/. */
+
+:host {
+  --widget-placeholder-border-colors: var(--color-violet-50), var(--color-pink-40), var(--color-yellow-30), var(--color-violet-50);
+
+  position: relative;
+  display: flex;
+  box-sizing: border-box;
+  flex-shrink: 0;
+  inline-size: var(--size-layout-medium);
+  aspect-ratio: 6 / 5;
+  border: var(--card-border);
+  border-radius: var(--card-border-radius);
+  background-color: var(--card-background-color);
+  color: var(--text-color-deemphasized);
+  font-size: var(--font-size-root);
+  text-align: center;
+
+  @media not (prefers-contrast) {
+    border-color: transparent;
+
+    &::before {
+      content: "";
+      position: absolute;
+      /* stylelint-disable-next-line stylelint-plugin-mozilla/use-design-tokens */
+      inset: calc(-1 * var(--card-border-width));
+      border-radius: inherit;
+      /* stylelint-disable-next-line stylelint-plugin-mozilla/use-design-tokens */
+      padding: var(--card-border-width);
+      background: conic-gradient(from var(--widget-placeholder-angle), var(--widget-placeholder-border-colors));
+      mask:
+        linear-gradient(#fff 0 0) content-box,
+        linear-gradient(#fff 0 0);
+      mask-composite: exclude;
+      pointer-events: none;
+      animation: widget-placeholder-spin 3s linear infinite;
+    }
+  }
+}
+
+:host([error])::before {
+  animation: none;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  :host::before {
+    animation: none;
+  }
+}
+
+@keyframes widget-placeholder-spin {
+  to {
+    --widget-placeholder-angle: 360deg;
+  }
+}
+
+.content {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: var(--space-small);
+  min-inline-size: 0;
+  padding-block: calc(var(--space-medium) + var(--button-size-icon-small));
+  padding-inline: var(--space-large);
+  border-radius: inherit;
+
+  &:focus-visible {
+    outline: var(--focus-outline);
+    outline-offset: calc(var(--card-border-width) + var(--focus-outline-offset));
+  }
+}
+
+p {
+  margin: 0;
+}
+
+.sparkles {
+  inline-size: var(--size-image-medium);
+  block-size: var(--size-image-medium);
+}
+
+.prompt {
+  display: -webkit-box;
+  -webkit-box-orient: vertical;
+  -webkit-line-clamp: 2;
+  padding-inline: var(--space-medium);
+  overflow: hidden;
+  overflow-wrap: anywhere;
+
+  > q {
+    white-space: pre-wrap;
+  }
+}
+
+.error {
+  display: grid;
+  grid-template-columns: var(--icon-size) 1fr;
+  column-gap: var(--space-small);
+  margin-block-end: var(--space-xlarge);
+  padding-inline: var(--space-large);
+  color: var(--text-color-error);
+  text-align: start;
+
+  &::before {
+    content: "";
+    /* stylelint-disable-next-line stylelint-plugin-mozilla/use-design-tokens */
+    block-size: 1lh;
+    background: url("chrome://global/skin/icons/error.svg") center / var(--icon-size) no-repeat;
+    -moz-context-properties: fill;
+    fill: currentColor;
+  }
+}
+
+.error-heading,
+.error-message {
+  grid-column: 2;
+}
+
+.error-heading {
+  font-weight: var(--font-weight-bold);
+}

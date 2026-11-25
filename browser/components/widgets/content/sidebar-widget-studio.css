@@ -47,6 +47,15 @@
   margin-block: auto var(--space-large);
 }
 
+widget-placeholder {
+  margin-block-end: var(--space-large);
+  margin-inline: var(--space-large);
+
+  slot:not(:has-slotted) + & {
+    margin-block-start: calc(var(--space-large) * 2 + var(--size-item-large));
+  }
+}
+
 widget-composer {
   margin-block-start: auto;
   padding: var(--space-large);

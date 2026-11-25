@@ -99,6 +99,23 @@ experimental-features-custom-widgets =
     .label = Custom widgets
 experimental-features-custom-widgets-description = Build your own widgets for { -firefox-home-brand-name } or your sidebar just by describing what you want. For example, a habit tracker, word count tool, or dad joke generator. Each widget stays on your device. We don’t store your prompts, widgets, or widget data, and we don’t use your data to train AI. <a data-l10n-name="connect">Share feedback</a>
 
+# Labels the placeholder of a widget being made.
+widget-placeholder-building =
+  .aria-label = Building your widget
+
+# Labels the placeholder of a widget that couldn’t be made.
+widget-placeholder-failed =
+  .aria-label = Your widget couldn’t be created
+
+# Stops making the widget and reopens its prompt.
+widget-placeholder-cancel-button =
+  .title = Cancel
+  .aria-label = Cancel
+
+# Reopens the prompt of a widget that couldn’t be made.
+widget-placeholder-edit-button =
+  .label = Try again
+
 ## Errors shown on the placeholder of a widget that couldn’t be created. Each
 ## has a heading that says what went wrong and a message that says what to do.
 

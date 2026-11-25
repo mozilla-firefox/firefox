@@ -7,6 +7,8 @@ import { SidebarPage } from "chrome://browser/content/sidebar/sidebar-page.mjs";
 import { SUBMIT_ICON } from "chrome://browser/content/widgets/widget-composer.mjs";
 // eslint-disable-next-line import-x/no-unassigned-import
 import "chrome://global/content/elements/panel-list.mjs";
+// eslint-disable-next-line import-x/no-unassigned-import
+import "chrome://browser/content/widgets/widget-placeholder.mjs";
 
 const CUSTOM_WIDGETS_SUPPORT_PAGE = "firefox-custom-widgets";
 
@@ -59,12 +61,14 @@ export class SidebarWidgetStudio extends SidebarPage {
     menuButton: "#menu-button",
     menu: "#widget-studio-menu",
     composer: "widget-composer",
+    placeholder: "widget-placeholder",
   };
 
   authentication = new lazy.AuthenticationController(this);
   widgets = new lazy.WidgetsController(this);
 
   #hadFocus = false;
+  #focusNewPlaceholder = false;
 
   constructor() {
     super();
@@ -73,7 +77,7 @@ export class SidebarWidgetStudio extends SidebarPage {
 
   connectedCallback() {
     super.connectedCallback();
-    this.composing = !this.widgets.generating;
+    this.composing = !this.widgets.generating && !this.widgets.failed;
     this.addSidebarFocusedListeners();
   }
 
@@ -83,7 +87,7 @@ export class SidebarWidgetStudio extends SidebarPage {
   }
 
   handleSidebarFocusedEvent() {
-    (this.composer ?? this.composeButton)?.focus();
+    (this.composer ?? this.placeholder ?? this.composeButton)?.focus();
   }
 
   willUpdate(changes) {
@@ -92,7 +96,12 @@ export class SidebarWidgetStudio extends SidebarPage {
   }
 
   async updated() {
-    if (this.#hadFocus && !this.renderRoot.activeElement) {
+    if (this.#focusNewPlaceholder) {
+      this.#focusNewPlaceholder = false;
+      let { placeholder } = this;
+      await placeholder.updateComplete;
+      placeholder.focus();
+    } else if (this.#hadFocus && !this.renderRoot.activeElement) {
       await this.updateComplete;
       this.handleSidebarFocusedEvent();
     }
@@ -117,7 +126,42 @@ export class SidebarWidgetStudio extends SidebarPage {
 
   #create(event) {
     this.composing = false;
+    this.#focusNewPlaceholder = true;
     this.widgets.create(event.detail.prompt);
+  }
+
+  async #editPrompt(event) {
+    let placeholder = event.target;
+    if (placeholder.error) {
+      this.widgets.dismiss();
+    } else {
+      this.widgets.cancel();
+    }
+    let draft = this.composing && this.composer?.value.trim();
+    this.composing = true;
+    await this.updateComplete;
+    let { composer } = this;
+    if (composer) {
+      if (!draft) {
+        composer.value = placeholder.prompt;
+      }
+      composer.focus();
+    }
+  }
+
+  placeholderTemplate() {
+    let widget = { prompt: this.widgets.prompt, error: null };
+    if (!this.widgets.generating) {
+      widget = this.widgets.failed;
+    }
+    if (!widget) {
+      return nothing;
+    }
+    return html`<widget-placeholder
+      .prompt=${widget.prompt}
+      .error=${widget.error}
+      @WidgetPlaceholder:Edit=${this.#editPrompt}
+    ></widget-placeholder>`;
   }
 
   #openLearnMore(e) {
@@ -204,6 +248,10 @@ export class SidebarWidgetStudio extends SidebarPage {
     </section>`;
   }
 
+  get #composerBlocked() {
+    return this.widgets.generating || !!this.widgets.failed;
+  }
+
   composerTemplate() {
     if (!this.authentication.authenticated) {
       return nothing;
@@ -211,10 +259,13 @@ export class SidebarWidgetStudio extends SidebarPage {
     if (this.composing) {
       return html`<widget-composer
         autofocus
-        .submitDisabled=${this.widgets.generating}
+        .submitDisabled=${this.#composerBlocked}
         @WidgetComposer:Dismiss=${this.#closeComposer}
         @WidgetComposer:Submit=${this.#create}
       ></widget-composer>`;
+    }
+    if (this.widgets.failed) {
+      return nothing;
     }
     return html`<moz-button
       id="compose-button"
@@ -260,7 +311,7 @@ export class SidebarWidgetStudio extends SidebarPage {
       </panel-list>
       ${this.signInTemplate()}
       <slot></slot>
-      ${this.composerTemplate()}`;
+      ${this.placeholderTemplate()} ${this.composerTemplate()}`;
   }
 }
 

@@ -6,3 +6,5 @@ support-files = ["head.js"]
 ["test_moz_widget_header.html"]
 
 ["test_widget_composer.html"]
+
+["test_widget_placeholder.html"]
