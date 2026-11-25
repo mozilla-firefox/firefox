@@ -52,17 +52,13 @@ keyword or that have a
 
 ## How to select a good bug and get it assigned to you
 
-The first step is to find an unassigned bug and express interest in fixing it.
-Even with no assignee, it is polite to check if someone has recently commented
-that they're looking at fixing the issue. If you find a bug that isn't assigned,
-keep in mind that the triage owner may not have time to mentor that bug, or to
-review patches.
+The first step is to find an unassigned good-first-bug. For these bugs, don't ask
+to be assigned to those, just submit a patch and the bug will be assigned to you
+automatically. However, it is polite to check if someone has recently commented
+that they're looking at fixing the issue.
 
-If no one has expressed interest before you, comment on the bug to ask to be
-assigned and wait for a reply before submitting a patch. If you don't receive a
-response within a few days, you can set a needinfo request for the mentor or triage owner,
-but keep in mind that responses may not be immediate: people may be
-on vacation or very busy, and don't work on weekends.
+For all other bugs, ask to be assigned to a bug, and wait until you are, before submitting a patch
+for it. If you don't receive a response within a few days, you can set a needinfo request for the mentor or triage owner but keep in mind that responses may not be immediate or may not have time to review your patches: people may be on vacation or very busy, and don't work on weekends.
 
 A bug having been filed, especially years ago, doesn't mean it is still relevant
 or that we'd accept patches for it. Oftentimes it is important to get
