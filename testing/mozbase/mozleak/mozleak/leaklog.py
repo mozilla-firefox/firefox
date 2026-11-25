@@ -5,7 +5,11 @@
 import os
 import re
 
-from geckoprocesstypes import process_types
+try:
+    from geckoprocesstypes import process_types
+except ImportError:
+    # Only available in mozilla-central, but not when installed from PyPI.
+    process_types = None
 
 
 def _get_default_logger():
@@ -214,25 +218,35 @@ def process_leak_log(
     leakThresholds = leak_thresholds or {}
     ignoreMissingLeaks = ignore_missing_leaks or []
 
-    # This list is based on XRE_GeckoProcessTypeToString. ipdlunittest processes likely
-    # are not going to produce leak logs we will ever see.
+    # Without the list of known process types only the configured thresholds
+    # get logged, and the checks for unknown process types are skipped.
+    knownProcessTypes = None
+    if process_types is not None:
+        # This list is based on XRE_GeckoProcessTypeToString. ipdlunittest processes
+        # likely are not going to produce leak logs we will ever see.
+        knownProcessTypes = [
+            p.string_name for p in process_types if p.string_name != "ipdlunittest"
+        ]
 
-    knownProcessTypes = [
-        p.string_name for p in process_types if p.string_name != "ipdlunittest"
-    ]
-
-    for processType in knownProcessTypes:
+    for processType in (
+        knownProcessTypes if knownProcessTypes is not None else leakThresholds
+    ):
         log.info(
-            "TEST-INFO | leakcheck | %s process: leak threshold set at %d bytes"
-            % (processType, leakThresholds.get(processType, 0))
+            f"TEST-INFO | leakcheck | {processType} process: leak threshold set at "
+            f"{leakThresholds.get(processType, 0)} bytes"
         )
 
-    for processType in leakThresholds:
-        if processType not in knownProcessTypes:
-            log.error(
-                "TEST-UNEXPECTED-FAIL | leakcheck | "
-                "Unknown process type %s in leakThresholds" % processType
-            )
+    if knownProcessTypes is None:
+        log.info(
+            "TEST-INFO | leakcheck | leak threshold for other processes set at 0 bytes"
+        )
+    else:
+        for processType in leakThresholds:
+            if processType not in knownProcessTypes:
+                log.error(
+                    "TEST-UNEXPECTED-FAIL | leakcheck | "
+                    f"Unknown process type {processType} in leakThresholds"
+                )
 
     (leakLogFileDir, leakFileBase) = os.path.split(leakLogFile)
     if leakFileBase[-4:] == ".log":
@@ -249,10 +263,10 @@ def process_leak_log(
                 processType = m.group(1)
             else:
                 processType = "default"
-            if processType not in knownProcessTypes:
+            if knownProcessTypes is not None and processType not in knownProcessTypes:
                 log.error(
                     "TEST-UNEXPECTED-FAIL | leakcheck | "
-                    "Leak log with unknown process type %s" % processType
+                    f"Leak log with unknown process type {processType}"
                 )
             leakThreshold = leakThresholds.get(processType, 0)
             process_single_leak_file(
