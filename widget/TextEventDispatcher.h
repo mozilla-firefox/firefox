@@ -536,6 +536,18 @@ class TextEventDispatcher final {
                                           const QueryContentOptions&) const;
 
   /**
+   * Return eQueryTextRectArray event result.
+   */
+  Maybe<QueryContentResult> QueryTextRectArray(uint32_t aOffset,
+                                               uint32_t aLength) const;
+
+  /**
+   * Return eQueryTextRectArray event result.
+   */
+  Maybe<QueryContentResult> QueryTextRectArray(
+      int64_t aOffset, uint32_t aLength, const QueryContentOptions&) const;
+
+  /**
    * Return true if this is under some batching requests.
    */
   [[nodiscard]] bool IsBatching() const { return !!mBatching; }
