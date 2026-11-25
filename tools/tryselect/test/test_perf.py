@@ -1221,6 +1221,14 @@ def test_full_run(options, call_counts, log_ind, expected_log_message):
         assert srt.call_count == call_counts[5]
         assert perf_print.call_args_list[log_ind][0][0] == expected_log_message
 
+        base_revision = options.get("cached_revision", "revision")
+        new_commit_message = ptt.call_args[0][1]
+        has_base_push = not (options.get("dry_run") or options.get("single_run"))
+        assert (
+            f"\n\nPerf base revision={base_revision}\nPerf framework="
+            in new_commit_message
+        ) == has_base_push
+
 
 @pytest.mark.parametrize(
     "options, call_counts, log_ind, expected_log_message",
@@ -1346,6 +1354,50 @@ def test_full_run_lando(
         assert ccr.call_count == call_counts[4]
         assert srt.call_count == call_counts[5]
         assert perf_print.call_args_list[log_ind][0][0] == expected_log_message
+        assert ptt.call_args[0][1].endswith(
+            "\n\nPerf base lando job=lando-test/42\nPerf framework=1"
+        )
+
+
+@pytest.mark.parametrize(
+    "push_info, push_to_vcs, expected",
+    [
+        ({}, True, ""),
+        ({}, False, ""),
+        (
+            {"base_revision": "2b04563b5", "framework": 13},
+            True,
+            "\n\nPerf base revision=2b04563b5\nPerf framework=13",
+        ),
+        (
+            {"base_lando_commit_id": 42, "lando_instance": "lando-test"},
+            True,
+            "",
+        ),
+        (
+            {
+                "base_lando_commit_id": 42,
+                "lando_instance": "lando-test",
+                "framework": 1,
+            },
+            False,
+            "\n\nPerf base lando job=lando-test/42\nPerf framework=1",
+        ),
+        # With a cached base push, nothing was pushed yet to learn the instance from.
+        (
+            {"base_lando_commit_id": 42, "framework": 1},
+            False,
+            "\n\nPerf base lando job=lando-current/42\nPerf framework=1",
+        ),
+        ({"base_revision": "2b04563b5"}, False, ""),
+    ],
+)
+def test_get_base_push_info(push_info, push_to_vcs, expected):
+    with mock.patch(
+        "tryselect.selectors.perf.PerfParser.determine_lando_instance",
+        return_value="lando-current",
+    ), mock.patch.object(PerfParser, "push_info", PerfPushInfo(**push_info)):
+        assert PerfParser.get_base_push_info(push_to_vcs) == expected
 
 
 @pytest.mark.parametrize(

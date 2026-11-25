@@ -1145,6 +1145,31 @@ class PerfParser(CompareParser):
                 or PerfParser.push_info.base_revision
             )
 
+    def get_base_push_info(push_to_vcs):
+        """
+        Get the base push info to add to the commit message so we can link to
+        perfcompare from treeherder.
+
+        :param push_to_vcs bool: True if the pushes bypass Lando.
+        :return str: The lines to add, empty if we can't find a base push.
+        """
+        push_info = PerfParser.push_info
+        if push_to_vcs:
+            if not push_info.base_revision:
+                return ""
+            base = f"Perf base revision={push_info.base_revision}"
+        else:
+            if not push_info.base_lando_commit_id:
+                return ""
+            lando_instance = (
+                push_info.lando_instance
+                or PerfParser.determine_lando_instance(push_to_vcs)
+            )
+            base = (
+                f"Perf base lando job={lando_instance}/{push_info.base_lando_commit_id}"
+            )
+        return f"\n\n{base}\nPerf framework={push_info.framework}"
+
     def get_majority_framework(selected_tasks):
         suite_counts = {suite: 0 for suite in PerfParser.suites.keys()}
 
@@ -1305,6 +1330,8 @@ class PerfParser(CompareParser):
             new_extra_args = list(extra_args)
             comparator_obj.setup_new_revision(new_extra_args)
             PerfParser.setup_try_config(try_config_params, new_extra_args)
+            if not single_run:
+                new_commit_message += PerfParser.get_base_push_info(push_to_vcs)
 
             if not push_to_vcs:
                 push_data = push_to_try(
