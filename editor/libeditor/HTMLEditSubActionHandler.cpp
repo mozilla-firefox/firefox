@@ -1223,6 +1223,8 @@ Result<EditActionResult, nsresult> HTMLEditor::HandleInsertText(
       }
       InsertTextResult insertEmptyTextResult =
           insertEmptyTextResultOrError.unwrap();
+      EditorDOMPoint endOfInsertedText =
+          insertEmptyTextResult.EndOfInsertedTextRef();
       // InsertTextWithTransaction() doesn not suggest caret position if it's
       // called for IME composition. However, for the safety, let's ignore the
       // caret position explicitly.
@@ -1231,7 +1233,7 @@ Result<EditActionResult, nsresult> HTMLEditor::HandleInsertText(
       // by the web app as a private marker.
       if (preservingUnnecessaryLineBreak.isNothing()) [[likely]] {
         nsresult rv = EnsureNoFollowingUnnecessaryLineBreak(
-            insertEmptyTextResult.EndOfInsertedTextRef(),
+            endOfInsertedText,
             // When user inserting text, the web app may expect that nothing
             // extant content will be deleted. Therefore, we should preserve
             // preformatted linefeed at least.
@@ -1242,9 +1244,11 @@ Result<EditActionResult, nsresult> HTMLEditor::HandleInsertText(
               "HTMLEditor::EnsureNoFollowingUnnecessaryLineBreak() failed");
           return Err(rv);
         }
+        if (NS_WARN_IF(
+                !endOfInsertedText.IsInContentNodeAndValidInComposedDoc())) {
+          return Err(NS_ERROR_EDITOR_UNEXPECTED_DOM_TREE);
+        }
       }
-      const EditorDOMPoint& endOfInsertedText =
-          insertEmptyTextResult.EndOfInsertedTextRef();
       if (endOfInsertedText.IsInTextNode() &&
           !endOfInsertedText.IsStartOfContainer()) {
         nsresult rv = WhiteSpaceVisibilityKeeper::
