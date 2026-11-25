@@ -233,6 +233,33 @@ MOZ_RUNINIT bool avx_enabled = has_avx();
 MOZ_RUNINIT bool avx2_enabled = has_avx() && has_cpuid_bits(7u, ebx, (1u << 5));
 #  endif
 
+#  if !defined(MOZILLA_PRESUME_AVX512VBMI)
+static bool has_avx512vbmi() {
+  const unsigned OSXSAVE = 1u << 27;
+
+  const unsigned XMM_STATE = 1u << 1;
+  const unsigned YMM_STATE = 1u << 2;
+  const unsigned OPMASK_STATE = 1u << 5;
+  const unsigned ZMM_HI256_STATE = 1u << 6;
+  const unsigned HI16_ZMM_STATE = 1u << 7;
+  const unsigned AVX512_STATE =
+      XMM_STATE | YMM_STATE | OPMASK_STATE | ZMM_HI256_STATE | HI16_ZMM_STATE;
+
+  const unsigned AVX512F = 1u << 16;
+  const unsigned AVX512BW = 1u << 30;
+  const unsigned AVX512VBMI = 1u << 1;
+
+  return has_cpuid_bits(1u, ecx, OSXSAVE) &&
+         // ensure the OS supports XSAVE of opmask and ZMM registers. macOS
+         // only enables those when a thread first uses AVX-512, so this is
+         // always false there.
+         (xgetbv(0) & AVX512_STATE) == AVX512_STATE &&
+         has_cpuid_bits(7u, ebx, AVX512F | AVX512BW) &&
+         has_cpuid_bits(7u, ecx, AVX512VBMI);
+}
+MOZ_RUNINIT bool avx512vbmi_enabled = has_avx512vbmi();
+#  endif
+
 #  if !defined(MOZILLA_PRESUME_AVXVNNI)
 MOZ_RUNINIT bool avxvnni_enabled = has_cpuid_bits_ex(7u, eax, (1u << 4));
 #  endif

@@ -32,6 +32,7 @@
  *    mozilla::supports_sse4_2
  *    mozilla::supports_avx
  *    mozilla::supports_avx2
+ *    mozilla::supports_avx512vbmi
  *    mozilla::supports_aes
  *    mozilla::supports_sha
  *    mozilla::supports_sha512
@@ -141,6 +142,10 @@
 // It's ok to use AVX instructions based on the -march option.
 #    define MOZILLA_PRESUME_AVX2 1
 #  endif
+#  if defined(__AVX512F__) && defined(__AVX512BW__) && defined(__AVX512VBMI__)
+// It's ok to use AVX-512 instructions based on the -march option.
+#    define MOZILLA_PRESUME_AVX512VBMI 1
+#  endif
 #  ifdef __AVXVNNI__
 // It's ok to use AVX instructions based on the -march option.
 #    define MOZILLA_PRESUME_AVXVNNI 1
@@ -246,6 +251,9 @@ extern bool MFBT_DATA avx_enabled;
 #  endif
 #  if !defined(MOZILLA_PRESUME_AVX2)
 extern bool MFBT_DATA avx2_enabled;
+#  endif
+#  if !defined(MOZILLA_PRESUME_AVX512VBMI)
+extern bool MFBT_DATA avx512vbmi_enabled;
 #  endif
 #  if !defined(MOZILLA_PRESUME_AVXVNNI)
 extern bool MFBT_DATA avxvnni_enabled;
@@ -387,6 +395,17 @@ inline bool supports_avx2() { return true; }
 inline bool supports_avx2() { return sse_private::avx2_enabled; }
 #else
 inline bool supports_avx2() { return false; }
+#endif
+
+// Implies support for AVX-512 F and BW.
+#if defined(MOZILLA_PRESUME_AVX512VBMI)
+#  define MOZILLA_MAY_SUPPORT_AVX512VBMI 1
+inline bool supports_avx512vbmi() { return true; }
+#elif defined(MOZILLA_SSE_HAVE_CPUID_DETECTION)
+#  define MOZILLA_MAY_SUPPORT_AVX512VBMI 1
+inline bool supports_avx512vbmi() { return sse_private::avx512vbmi_enabled; }
+#else
+inline bool supports_avx512vbmi() { return false; }
 #endif
 
 #if defined(MOZILLA_PRESUME_AVXVNNI)
