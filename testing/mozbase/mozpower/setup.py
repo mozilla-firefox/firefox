@@ -5,9 +5,9 @@
 from setuptools import setup
 
 PACKAGE_NAME = "mozpower"
-PACKAGE_VERSION = "1.1.2"
+PACKAGE_VERSION = "1.1.3"
 
-deps = ["mozlog >= 6.0", "mozdevice >= 4.0.0,<5"]
+deps = ["mozlog >= 6.0", "mozdevice >= 4.0.0"]
 
 setup(
     name=PACKAGE_NAME,
