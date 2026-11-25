@@ -1421,8 +1421,6 @@ bool IMMHandler::HandleDocumentFeed(nsWindow* aWindow, LPARAM lParam,
   *oResult = 0;
   RECONVERTSTRING* pReconv = reinterpret_cast<RECONVERTSTRING*>(lParam);
 
-  LayoutDeviceIntPoint point(0, 0);
-
   bool hasCompositionString =
       mIsComposing && ShouldDrawCompositionStringOurselves();
 
@@ -1430,10 +1428,10 @@ bool IMMHandler::HandleDocumentFeed(nsWindow* aWindow, LPARAM lParam,
   if (!hasCompositionString) {
     const Maybe<ContentSelection>& contentSelection =
         GetContentSelectionWithQueryIfNothing(aWindow);
-    if (contentSelection.isNothing()) {
-      MOZ_LOG(gIMELog, LogLevel::Error,
-              ("IMMHandler::HandleDocumentFeed, FAILED, due to "
-               "Selection::GetContentSelectionWithQueryIfNothing() failure"));
+    if (contentSelection.isNothing()) [[unlikely]] {
+      MOZ_LOG_FMT(gIMELog, LogLevel::Error,
+                  "IMMHandler::HandleDocumentFeed, FAILED, due to "
+                  "Selection::GetContentSelectionWithQueryIfNothing() failure");
       return false;
     }
     if (contentSelection->HasRange()) {
@@ -1454,31 +1452,37 @@ bool IMMHandler::HandleDocumentFeed(nsWindow* aWindow, LPARAM lParam,
   // XXX nsString::Find and nsString::RFind take int32_t for offset, so,
   //     we cannot support this message when the current offset is larger than
   //     INT32_MAX.
-  if (targetOffset < 0 || targetLength < 0 || targetOffset + targetLength < 0) {
-    MOZ_LOG(gIMELog, LogLevel::Error,
-            ("IMMHandler::HandleDocumentFeed, FAILED, "
-             "due to the selection is out of range"));
+  if (targetOffset < 0 || targetLength < 0 || targetOffset + targetLength < 0)
+      [[unlikely]] {
+    MOZ_LOG_FMT(gIMELog, LogLevel::Error,
+                "IMMHandler::HandleDocumentFeed, FAILED, "
+                "due to the selection is out of range");
     return false;
   }
 
   // Get all contents of the focused editor.
-  WidgetQueryContentEvent queryTextContentEvent(true, eQueryTextContent,
-                                                aWindow);
-  queryTextContentEvent.InitForQueryTextContent(0, UINT32_MAX);
-  aWindow->InitEvent(queryTextContentEvent, &point);
-  DispatchEvent(aWindow, queryTextContentEvent);
-  if (NS_WARN_IF(queryTextContentEvent.Failed())) {
-    MOZ_LOG(gIMELog, LogLevel::Error,
-            ("IMMHandler::HandleDocumentFeed, FAILED, "
-             "due to eQueryTextContent failure"));
+  const RefPtr<TextEventDispatcher> dispatcher =
+      aWindow->GetTextEventDispatcher();
+  if (NS_WARN_IF(!dispatcher)) [[unlikely]] {
+    MOZ_LOG_FMT(gIMELog, LogLevel::Error,
+                "IMMHandler::HandleDocumentFeed, FAILED, "
+                "due to no dispatcher");
+    return false;
+  }
+  const Maybe<QueryContentResult> queryTextContentResult =
+      dispatcher->QueryTextContent(0, UINT32_MAX);
+  if (NS_WARN_IF(queryTextContentResult.isNothing())) [[unlikely]] {
+    MOZ_LOG_FMT(gIMELog, LogLevel::Error,
+                "IMMHandler::HandleDocumentFeed, FAILED, "
+                "due to TextEventDispatcher::QueryTextContent() failed");
     return false;
   }
 
-  nsAutoString str(queryTextContentEvent.mReply->DataRef());
-  if (targetOffset > static_cast<int32_t>(str.Length())) {
-    MOZ_LOG(gIMELog, LogLevel::Error,
-            ("  IMMHandler::HandleDocumentFeed, FAILED, "
-             "due to the caret offset is invalid"));
+  nsAutoString str(queryTextContentResult->DataRef());
+  if (targetOffset > static_cast<int32_t>(str.Length())) [[unlikely]] {
+    MOZ_LOG_FMT(gIMELog, LogLevel::Error,
+                "  IMMHandler::HandleDocumentFeed, FAILED, "
+                "due to the caret offset is invalid");
     return false;
   }
 
@@ -1500,17 +1504,17 @@ bool IMMHandler::HandleDocumentFeed(nsWindow* aWindow, LPARAM lParam,
 
   if (!pReconv) {
     *oResult = needSize;
-    MOZ_LOG(gIMELog, LogLevel::Info,
-            ("IMMHandler::HandleDocumentFeed, succeeded, result=%" PRIdLPTR,
-             *oResult));
+    MOZ_LOG_FMT(gIMELog, LogLevel::Info,
+                "IMMHandler::HandleDocumentFeed, succeeded, result={}",
+                *oResult);
     return true;
   }
 
   if (pReconv->dwSize < needSize) {
-    MOZ_LOG(gIMELog, LogLevel::Error,
-            ("IMMHandler::HandleDocumentFeed, FAILED, "
-             "pReconv->dwSize=%ld, needSize=%u",
-             pReconv->dwSize, needSize));
+    MOZ_LOG_FMT(gIMELog, LogLevel::Error,
+                "IMMHandler::HandleDocumentFeed, FAILED, "
+                "pReconv->dwSize={}, needSize={}",
+                pReconv->dwSize, needSize);
     return false;
   }
 
@@ -1523,10 +1527,10 @@ bool IMMHandler::HandleDocumentFeed(nsWindow* aWindow, LPARAM lParam,
     pReconv->dwCompStrOffset = (targetOffset - paragraphStart) * sizeof(WCHAR);
     // Set composition target clause information
     uint32_t offset, length;
-    if (!GetTargetClauseRange(&offset, &length)) {
-      MOZ_LOG(gIMELog, LogLevel::Error,
-              ("IMMHandler::HandleDocumentFeed, FAILED, "
-               "due to IMMHandler::GetTargetClauseRange() failure"));
+    if (!GetTargetClauseRange(&offset, &length)) [[unlikely]] {
+      MOZ_LOG_FMT(gIMELog, LogLevel::Error,
+                  "IMMHandler::HandleDocumentFeed, FAILED, "
+                  "due to IMMHandler::GetTargetClauseRange() failure");
       return false;
     }
     pReconv->dwTargetStrLen = length;
@@ -1545,10 +1549,10 @@ bool IMMHandler::HandleDocumentFeed(nsWindow* aWindow, LPARAM lParam,
   ::CopyMemory(reinterpret_cast<LPVOID>(lParam + sizeof(RECONVERTSTRING)),
                paragraph.BeginReading(), len * sizeof(WCHAR));
 
-  MOZ_LOG(gIMELog, LogLevel::Info,
-          ("IMMHandler::HandleDocumentFeed, SUCCEEDED, pReconv=%s, "
-           "result=%" PRIdLPTR,
-           GetReconvertStringLog(pReconv).get(), *oResult));
+  MOZ_LOG_FMT(
+      gIMELog, LogLevel::Info,
+      "IMMHandler::HandleDocumentFeed, SUCCEEDED, pReconv=\"{}\", result={}",
+      GetReconvertStringLog(pReconv).get(), *oResult);
 
   return true;
 }

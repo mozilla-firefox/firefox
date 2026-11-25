@@ -1111,10 +1111,13 @@ struct QueryContentResult {
   explicit QueryContentResult(EventMessage aEventMessage)
       : mEventMessage(aEventMessage) {}
 
-  // Don't allow to copy/move because of `mEventMessage`.
+  // Don't allow to copy because of `mEventMessage`.
   QueryContentResult(const QueryContentResult& aOther) = delete;
-  QueryContentResult(QueryContentResult&& aOther) = delete;
   QueryContentResult& operator=(const QueryContentResult& aOther) = delete;
+
+  // However, we want a move constructor for TextEventDispatcher::Query*() to
+  // return the result from WidgetQueryContentEvent.
+  QueryContentResult(QueryContentResult&& aOther) = default;
   QueryContentResult& operator=(QueryContentResult&& aOther) = delete;
 
   MOZ_NEVER_INLINE_DEBUG uint32_t StartOffset() const {

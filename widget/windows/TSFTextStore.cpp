@@ -943,29 +943,36 @@ bool TSFTextStore::GetCurrentText(
   MOZ_ASSERT(!mDestroyed);
   MOZ_ASSERT(mWidget && !mWidget->Destroyed());
 
-  MOZ_LOG(gIMELog, LogLevel::Debug,
-          ("0x%p   TSFTextStore::GetCurrentText(): "
-           "retrieving text from the content...",
-           this));
-
-  WidgetQueryContentEvent queryTextContentEvent(true, eQueryTextContent,
-                                                mWidget);
-  QueryContentOptions options;
-  options.mNeedsToFlushLayout =
-      aAllowToFlushLayoutIfNoCache == AllowToFlushLayoutIfNoCache::Yes;
-  queryTextContentEvent.InitForQueryTextContent(0, UINT32_MAX, options);
-  mWidget->InitEvent(queryTextContentEvent);
-  DispatchEvent(queryTextContentEvent);
-  if (NS_WARN_IF(queryTextContentEvent.Failed())) {
-    MOZ_LOG(gIMELog, LogLevel::Error,
-            ("0x%p   TSFTextStore::GetCurrentText(), FAILED, due to "
-             "eQueryTextContent failure",
-             this));
+  if (NS_WARN_IF(!mDispatcher)) [[unlikely]] {
+    MOZ_LOG_FMT(
+        gIMELog, LogLevel::Error,
+        "{}   TSFTextStore::GetCurrentText(), FAILED, due to no dispatcher",
+        static_cast<void*>(this));
     aTextContent.Truncate();
     return false;
   }
 
-  aTextContent = queryTextContentEvent.mReply->DataRef();
+  MOZ_LOG_FMT(gIMELog, LogLevel::Debug,
+              "{}   TSFTextStore::GetCurrentText(): retrieving text from the "
+              "content...",
+              static_cast<void*>(this));
+
+  const OwningNonNull<TextEventDispatcher> dispatcher = *mDispatcher;
+  QueryContentOptions options;
+  options.mNeedsToFlushLayout =
+      aAllowToFlushLayoutIfNoCache == AllowToFlushLayoutIfNoCache::Yes;
+  const Maybe<QueryContentResult> queryTextContentResult =
+      dispatcher->QueryTextContent(0, UINT32_MAX, options);
+  if (NS_WARN_IF(queryTextContentResult.isNothing())) [[unlikely]] {
+    MOZ_LOG_FMT(gIMELog, LogLevel::Error,
+                "{}   TSFTextStore::GetCurrentText(), FAILED, due to "
+                "TextEventDispatcher::QueryTextContent() failed",
+                static_cast<void*>(this));
+    aTextContent.Truncate();
+    return false;
+  }
+
+  aTextContent = queryTextContentResult->DataRef();
   return true;
 }
 
