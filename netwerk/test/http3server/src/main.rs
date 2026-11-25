@@ -1299,12 +1299,8 @@ impl HttpServer for Http3ReverseProxyServer {
 
 struct Http3ConnectProxyServer {
     server: Http3Server,
-    // Keyed by the stream rather than its StreamId, which is only unique within
-    // a connection.
-    tcp_streams: HashMap<Http3OrWebTransportStream, TcpStream>,
+    tcp_streams: HashMap<StreamId, TcpStream>,
     udp_sockets: HashMap<StreamId, UdpSocket>,
-    // When set, CONNECT requests without a Proxy-Authorization header get a 407.
-    require_auth: bool,
 }
 
 impl ::std::fmt::Display for Http3ConnectProxyServer {
@@ -1319,7 +1315,6 @@ impl Http3ConnectProxyServer {
             server,
             tcp_streams: HashMap::new(),
             udp_sockets: HashMap::new(),
-            require_auth: env::var("MOZ_HTTP3_PROXY_REQUIRE_AUTH").is_ok(),
         }
     }
 }
@@ -1352,19 +1347,6 @@ impl HttpServer for Http3ConnectProxyServer {
                         "{:?} not supported",
                         method_hdr.value_utf8().unwrap_or("<invalid utf8>")
                     );
-                    if self.require_auth
-                        && !headers.iter().any(|h| h.name() == "proxy-authorization")
-                    {
-                        stream
-                            .send_headers(&[
-                                Header::new(":status", "407"),
-                                Header::new("proxy-authenticate", "Basic realm='foo'"),
-                            ])
-                            .unwrap();
-                        stream.stream_close_send(now).unwrap();
-                        continue;
-                    }
-
                     let host_hdr = headers.iter().find(|&h| h.name() == ":authority").unwrap();
                     let host_str = host_hdr.value_utf8().unwrap();
 
@@ -1414,7 +1396,7 @@ impl HttpServer for Http3ConnectProxyServer {
                         ])
                         .unwrap();
                     self.tcp_streams.insert(
-                        stream.clone(),
+                        stream.stream_id(),
                         TcpStream {
                             send_buffer: VecDeque::new(),
                             recv_buffer: VecDeque::new(),
@@ -1427,7 +1409,7 @@ impl HttpServer for Http3ConnectProxyServer {
                 }
                 Http3ServerEvent::Data { stream, data, fin } => {
                     trace!("tcp_stream send to server len={}", data.len());
-                    let tcp_stream = self.tcp_streams.get_mut(&stream).unwrap();
+                    let tcp_stream = self.tcp_streams.get_mut(&stream.stream_id()).unwrap();
                     // TODO: extend() effectively breaks backpressure.
                     tcp_stream.send_buffer.extend(data);
                     tcp_stream.send_fin |= fin;
@@ -1437,7 +1419,7 @@ impl HttpServer for Http3ConnectProxyServer {
                         "Http3ServerEvent::DataWritable streamid={}",
                         stream.stream_id()
                     );
-                    let tcp_stream = self.tcp_streams.get_mut(&stream).unwrap();
+                    let tcp_stream = self.tcp_streams.get_mut(&stream.stream_id()).unwrap();
                     while !tcp_stream.recv_buffer.is_empty() {
                         match stream.send_data(&tcp_stream.recv_buffer.make_contiguous(), now) {
                             Ok(sent) => {

@@ -484,7 +484,7 @@ FWD_H3ST(SetRecvBufferSize, uint32_t);
 FWD_H3ST_PTR(GetResetIPFamilyPreference, bool);
 
 nsresult Http3TransportLayer::IsAlive(bool* aAlive) {
-  *aAlive = NS_SUCCEEDED(mCondition) && mStream && !mStream->Closed();
+  *aAlive = true;
   return NS_OK;
 }
 
