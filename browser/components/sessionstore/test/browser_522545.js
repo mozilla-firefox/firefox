@@ -37,7 +37,7 @@ function test() {
         "userTypedValue was correctly restored"
       );
       ok(
-        !browser.didStartLoadSinceLastUserTyping(),
+        !browser.loadStartedSinceUrlbarOverride,
         "We still know that no load is ongoing"
       );
       is(
@@ -110,13 +110,10 @@ function test() {
         "example.org",
         "userTypedValue was correctly restored"
       );
-      // didStartLoadSinceLastUserTyping does not exist on lazy tabs.
-      if (browser.didStartLoadSinceLastUserTyping) {
-        ok(
-          !browser.didStartLoadSinceLastUserTyping(),
-          "We still know that no load is ongoing"
-        );
-      }
+      ok(
+        !browser.loadStartedSinceUrlbarOverride,
+        "We still know that no load is ongoing"
+      );
       is(
         gURLBar.value,
         "about:mozilla",
@@ -194,7 +191,7 @@ function test() {
         "userTypedValue was correctly restored"
       );
       ok(
-        !browser.didStartLoadSinceLastUserTyping(),
+        !browser.loadStartedSinceUrlbarOverride,
         "We still know that no load is ongoing"
       );
       is(
@@ -241,7 +238,7 @@ function test() {
         "userTypedValue was correctly restored"
       );
       ok(
-        !browser.didStartLoadSinceLastUserTyping(),
+        !browser.loadStartedSinceUrlbarOverride,
         "We still know that no load is ongoing"
       );
       is(
@@ -323,7 +320,7 @@ function test() {
       // Make sure this tab isn't loading and state is clear before we test.
       is(browser.urlbarOverrideValue, null, "userTypedValue is empty to start");
       ok(
-        !browser.didStartLoadSinceLastUserTyping(),
+        !browser.loadStartedSinceUrlbarOverride,
         "Initially, no load should be ongoing"
       );
 
@@ -339,7 +336,7 @@ function test() {
           "userTypedValue was set when changing URLBar value"
         );
         ok(
-          !browser.didStartLoadSinceLastUserTyping(),
+          !browser.loadStartedSinceUrlbarOverride,
           "No load started since changing URLBar value"
         );
 
@@ -391,7 +388,7 @@ function test() {
         "userTypedValue was null after loading a URI"
       );
       ok(
-        !browser.didStartLoadSinceLastUserTyping(),
+        !browser.loadStartedSinceUrlbarOverride,
         "We should have reset the load state when the tab loaded"
       );
       is(

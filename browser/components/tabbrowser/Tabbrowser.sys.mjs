@@ -469,7 +469,7 @@ export class Tabbrowser {
     "stopScroll",
     "startScroll",
     "urlbarOverrideValue",
-    "didStartLoadSinceLastUserTyping",
+    "loadStartedSinceUrlbarOverride",
     "audioMuted",
   ];
 
@@ -2977,8 +2977,7 @@ export class Tabbrowser {
     // We'll be creating a new listener, so destroy the old one.
     listener?.destroy();
 
-    let oldUrlbarOverrideValue = aBrowser.urlbarOverrideValue;
-    let hadStartedLoad = aBrowser.didStartLoadSinceLastUserTyping();
+    let urlbarOverride = aBrowser.urlbarOverride;
 
     // Change the "remote" attribute.
 
@@ -3003,10 +3002,7 @@ export class Tabbrowser {
     // Once we have new frameloaders, this call sets the browser back up.
     aBrowser.construct();
 
-    aBrowser.urlbarOverrideValue = oldUrlbarOverrideValue;
-    if (hadStartedLoad) {
-      aBrowser.urlbarChangeTracker.startedLoad();
-    }
+    aBrowser.urlbarOverride = urlbarOverride;
 
     // Create a new tab progress listener for the new browser we just injected,
     // since tab progress listeners have logic for handling the initial about:blank
@@ -3280,8 +3276,8 @@ export class Tabbrowser {
             return (browser._cachedCurrentURI = Services.io.newURI(url));
           };
           break;
-        case "didStartLoadSinceLastUserTyping":
-          getter = () => () => false;
+        case "loadStartedSinceUrlbarOverride":
+          getter = () => false;
           break;
         case "fullZoom":
         case "textZoom":
@@ -10301,14 +10297,10 @@ export class Tabbrowser {
       // We'll be creating a new listener, so destroy the old one.
       oldListener.destroy();
 
-      let oldUrlbarOverrideValue = browser.urlbarOverrideValue;
-      let hadStartedLoad = browser.didStartLoadSinceLastUserTyping();
+      let urlbarOverride = browser.urlbarOverride;
 
       let didChange = () => {
-        browser.urlbarOverrideValue = oldUrlbarOverrideValue;
-        if (hadStartedLoad) {
-          browser.urlbarChangeTracker.startedLoad();
-        }
+        browser.urlbarOverride = urlbarOverride;
 
         // Create a new tab progress listener for the new browser we just
         // injected, since tab progress listeners have logic for handling the
@@ -10684,7 +10676,7 @@ class TabProgressListener {
           // page in the browser is about:blank (indicating it is a newly
           // created or re-created browser, e.g. because it just switched
           // remoteness or is a new tab/window).
-          this._browser.urlbarChangeTracker.startedLoad();
+          this._browser.setLoadStartedSinceUrlbarOverride(true);
 
           // To improve the user experience and perceived performance when
           // opening links in new tabs, we show the url and tab title sooner,
@@ -10800,7 +10792,7 @@ class TabProgressListener {
             this.#documentGlobal.gURLBar.setURI();
           }
         } else if (isSuccessful) {
-          this._browser.urlbarChangeTracker.finishedLoad();
+          this._browser.setLoadStartedSinceUrlbarOverride(false);
         }
       }
 
@@ -10896,7 +10888,7 @@ class TabProgressListener {
       // Finally, we do insert the URL if this is a same-document navigation
       // and the user cleared the URL manually.
       if (
-        this._browser.didStartLoadSinceLastUserTyping() ||
+        this._browser.loadStartedSinceUrlbarOverride ||
         (isErrorPage && aLocation.spec != "about:blank") ||
         (isSameDocument && this._browser.isNavigating) ||
         (isSameDocument && !this._browser.urlbarOverrideValue)

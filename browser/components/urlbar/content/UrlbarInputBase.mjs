@@ -1164,7 +1164,7 @@ ${
     const wasAllSelected = this.#allTextSelected;
 
     this.setValue(value, { allowTrim: true, valueIsTyped: !valid });
-    this.toggleAttribute("usertyping", !valid && value);
+    this.toggleAttribute("usertyping", !valid && !!value);
 
     if (this.focused && value != previousUntrimmedValue) {
       if (wasAllSelected && !isReverting && !dueToTabSwitch) {
