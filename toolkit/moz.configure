@@ -2713,6 +2713,140 @@ set_config("NASM_ASFLAGS", nasm_asflags)
 # ANGLE renderer
 # ==============================================================
 
+
+@depends(host)
+def host_is_linux(host):
+    return host.kernel == "Linux" and host.os == "GNU"
+
+
+with only_when(compile_environment & target_is_osx & (host_is_osx | host_is_linux)):
+    option(
+        "--enable-angle-metal-shader-compilation",
+        help="Enable build-time compilation of ANGLE's internal Metal shaders",
+    )
+
+    enable_angle_metal_shader_compilation = depends(
+        "--enable-angle-metal-shader-compilation"
+    )(lambda value: value)
+
+with only_when(enable_angle_metal_shader_compilation):
+    option(
+        "--with-metal-toolchain",
+        env="METAL_TOOLCHAIN_DIR",
+        nargs=1,
+        help="Location of the Metal toolchain",
+    )
+
+    # Returns a namespace whose `path` is the Metal toolchain directory, or None
+    # if Xcode's Metal toolchain should be used. Returns None if no Metal
+    # toolchain is available.
+    @depends(
+        "--with-metal-toolchain",
+        host,
+        bootstrap_path("metal", when=moz_automation),
+    )
+    @checking(
+        "for the Metal toolchain",
+        lambda x: (x.path or "provided by Xcode") if x else "not found",
+    )
+    @imports("os")
+    def metal_toolchain(value, host, bootstrapped):
+        toolchain = os.path.abspath(value[0]) if value else bootstrapped
+        if toolchain:
+            for tool in ("metal", "metallib"):
+                executable = os.path.join(toolchain, "usr", "bin", tool)
+                if not os.access(executable, os.X_OK):
+                    die("%s is missing or is not executable." % executable)
+            return namespace(path=toolchain)
+        # Xcode may provide a stub when the Metal toolchain is not installed.
+        # Passing `--version` will succeed for an installed toolchain and fail
+        # for the stub.
+        if host.os == "OSX" and check_cmd_output(
+            "xcrun", "--sdk", "macosx", "metal", "--version", onerror=lambda: ""
+        ):
+            return namespace(path=None)
+
+    set_config(
+        "MOZ_METAL_TOOLCHAIN_DIR",
+        depends(metal_toolchain)(lambda t: t.path if t else None),
+    )
+
+
+with only_when(enable_angle_metal_shader_compilation & host_is_linux):
+    option(
+        "--with-darling",
+        env="DARLING_DIR",
+        nargs=1,
+        help="Location of Darling, used to run the Metal toolchain",
+    )
+
+    @depends(
+        "--with-darling",
+        bootstrap_path("darling", when=moz_automation),
+    )
+    @checking("for Darling")
+    @imports("os")
+    def darling(value, bootstrapped):
+        path = os.path.abspath(value[0]) if value else bootstrapped
+        if path:
+            executable = os.path.join(path, "bin", "darling-run")
+            if not os.access(executable, os.X_OK):
+                die("%s is missing or is not executable." % executable)
+            return path
+
+    set_config("MOZ_DARLING_DIR", darling)
+
+
+@depends(
+    metal_toolchain,
+    darling,
+    host_is_osx,
+    host_is_linux,
+    enable_angle_metal_shader_compilation.origin,
+    moz_automation,
+    when=enable_angle_metal_shader_compilation,
+)
+def angle_metal_shader_compilation(
+    metal_toolchain, darling, host_is_osx, host_is_linux, origin, automation
+):
+    missing = []
+    instructions = []
+    if not metal_toolchain:
+        missing.append("the Metal toolchain")
+        if host_is_osx:
+            instructions.append(
+                "Install Xcode if required and run `xcodebuild -downloadComponent "
+                "MetalToolchain`, or use --with-metal-toolchain to give the path to "
+                "a Metal toolchain."
+            )
+        else:
+            instructions.append(
+                "Use --with-metal-toolchain to give the path to a Metal toolchain."
+            )
+    if host_is_linux and not darling:
+        missing.append("Darling")
+        instructions.append(
+            "Use --with-darling to give the path to a build of "
+            "https://github.com/mozilla/darling/tree/standalone."
+        )
+    if not missing:
+        return True
+    message = "Could not find %s.\n%s" % (
+        " and ".join(missing),
+        "\n".join(instructions),
+    )
+    if origin != "default" or automation:
+        die("%s\nOr use --disable-angle-metal-shader-compilation." % message)
+    log.warning(
+        "Disabling build-time compilation of ANGLE's internal Metal shaders.\n%s",
+        message,
+    )
+    return False
+
+
+set_config("MOZ_ANGLE_METAL_SHADER_COMPILATION", angle_metal_shader_compilation)
+
+
 with only_when(target_is_windows):
     # We only produce dxc builds for x86_64 and aarch64.
     @depends(target)
