@@ -441,6 +441,9 @@ class RustLoginStorageAuthenticator extends PrimaryPasswordAuthenticator {
   // the resulting store failure into NS_ERROR_ABORT (matching crypto-SDR).
   authCanceled = false;
 
+  #shutDown = false;
+  #cancelPendingPrompt = null;
+
   constructor() {
     super();
     this.#logger = lazy.LoginHelper.createLogger(
@@ -451,8 +454,42 @@ class RustLoginStorageAuthenticator extends PrimaryPasswordAuthenticator {
   // Called by Rust when the NSS key needs to be unlocked. Concurrent calls are not
   // possible: all store operations hold the store's internal Mutex<LoginDb> while
   // calling get_key(), so this method is always invoked serially.
-  async getPrimaryPassword() {
+  //
+  // Rust waits on the returned promise rather than on the prompt, so that
+  // shutdown() can release it while the prompt is still open.
+  getPrimaryPassword() {
     this.#logger.log("getPrimaryPassword called");
+    if (this.#shutDown) {
+      this.#logger.log("declining, the storage is shutting down");
+      this.authCanceled = true;
+      return Promise.reject(new AuthenticationCanceled("Shutting down"));
+    }
+    const { promise, resolve, reject } = Promise.withResolvers();
+    this.#cancelPendingPrompt = reject;
+    this.#promptForPrimaryPassword()
+      .then(resolve, reject)
+      .finally(() => {
+        if (this.#cancelPendingPrompt === reject) {
+          this.#cancelPendingPrompt = null;
+        }
+      });
+    return promise;
+  }
+
+  // A window-modal prompt spins a nested event loop, and shutdown can run
+  // inside it, so the prompt cannot return before shutdown is done. Stop the
+  // store from waiting on it, and decline any further prompt.
+  shutdown() {
+    this.#shutDown = true;
+    if (this.#cancelPendingPrompt) {
+      this.#logger.log("cancelling the pending prompt for shutdown");
+      this.authCanceled = true;
+      this.#cancelPendingPrompt(new AuthenticationCanceled("Shutting down"));
+      this.#cancelPendingPrompt = null;
+    }
+  }
+
+  async #promptForPrimaryPassword() {
     // Removed by bug 2067167. Declining is a workaround for requestReauth()
     // locking the token out from under in-flight store operations; once re-auth
     // stops relocking the token there is nothing left to decline.
@@ -613,6 +650,7 @@ export class LoginManagerRustStorage {
     // TODO: Currently we do not mark the instance as closed, not sure if later
     // calls would be rejected elsewhere.
 
+    this.#authenticator?.shutdown();
     // Null when initialization failed, which shuts the store down itself.
     await this.#storageAdapter?.shutdown();
   }

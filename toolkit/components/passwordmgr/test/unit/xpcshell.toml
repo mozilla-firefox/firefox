@@ -168,6 +168,8 @@ run-if = [
 
 ["test_storage.js"]
 
+["test_storage_rust_primary_password_shutdown.js"]
+
 ["test_storage_rust_shutdown.js"]
 
 ["test_storage_rust_timestamps.js"]
