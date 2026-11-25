@@ -34,7 +34,11 @@ if (metal_internal_shader_compilation_supported) {
                                "metal_tool",
                              ])
       script = "shaders/metal_wrapper.py"
-      if (angle_metal_toolchain_dir != "") {
+      if (angle_enable_metal_internal_shader_compilation) {
+        # Explicit Mozilla flag to enable internal shader compilation.
+        # metal_wrapper.py handles locating the Metal toolchain at build time.
+        args = [ metal_tool ]
+      } else if (angle_metal_toolchain_dir != "") {
         # Explicit Metal toolchain: run the "metal"/"metallib" binaries directly
         # from the provided directory. This bypasses "xcrun" and the hermetic
         # Chromium Mac SDK, which is required to prebuild the internal shaders

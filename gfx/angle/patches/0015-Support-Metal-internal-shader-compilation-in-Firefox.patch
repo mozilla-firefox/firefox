@@ -1,0 +1,105 @@
+From a4a1eac0647f75c6ca0191e9de3c33097329fb58 Mon Sep 17 00:00:00 2001
+From: Jamie Nicol <jnicol@mozilla.com>
+Date: Mon, 10 Aug 2026 15:02:04 +0100
+Subject: [PATCH] Support Metal internal shader compilation in Firefox
+
+Adds a boolean GN arg angle_enable_metal_internal_shader_compilation. If
+set, bypass ANGLE's logic for locating the Metal toolchain which is
+performed at vendor-time. Instead, metal_wrapper.py now looks for a
+Metal toolchain at build-time in the directory specified by the
+buildconfig variable `MOZ_METAL_TOOLCHAIN_DIR`. Fall back to executing
+via Xcode if unset.
+
+Optionally, look in `MOZ_DARLING_DIR` for a `darling-run` executable,
+provided by Mozilla's Darling fork:
+https://github.com/mozilla/darling/tree/standalone. This allows
+executing the Metal toolchain on a Linux host, supporting
+cross-compilation.
+---
+ src/libANGLE/renderer/metal/BUILD.gn          |  6 ++++-
+ src/libANGLE/renderer/metal/metal_backend.gni |  9 +++++++-
+ .../renderer/metal/shaders/metal_wrapper.py   | 23 ++++++++++++++++++-
+ 3 files changed, 35 insertions(+), 3 deletions(-)
+
+diff --git a/src/libANGLE/renderer/metal/BUILD.gn b/src/libANGLE/renderer/metal/BUILD.gn
+index 5906bf33f3..d86c843c5b 100644
+--- a/src/libANGLE/renderer/metal/BUILD.gn
++++ b/src/libANGLE/renderer/metal/BUILD.gn
+@@ -34,7 +34,11 @@ if (metal_internal_shader_compilation_supported) {
+                                "metal_tool",
+                              ])
+       script = "shaders/metal_wrapper.py"
+-      if (angle_metal_toolchain_dir != "") {
++      if (angle_enable_metal_internal_shader_compilation) {
++        # Explicit Mozilla flag to enable internal shader compilation.
++        # metal_wrapper.py handles locating the Metal toolchain at build time.
++        args = [ metal_tool ]
++      } else if (angle_metal_toolchain_dir != "") {
+         # Explicit Metal toolchain: run the "metal"/"metallib" binaries directly
+         # from the provided directory. This bypasses "xcrun" and the hermetic
+         # Chromium Mac SDK, which is required to prebuild the internal shaders
+diff --git a/src/libANGLE/renderer/metal/metal_backend.gni b/src/libANGLE/renderer/metal/metal_backend.gni
+index d8ab2892d6..1365ca2d28 100644
+--- a/src/libANGLE/renderer/metal/metal_backend.gni
++++ b/src/libANGLE/renderer/metal/metal_backend.gni
+@@ -92,6 +92,13 @@ declare_args() {
+   # Set to precompile internal shaders for iOS or cross-compilation.
+   # Leave empty for default behavior.
+   angle_metal_toolchain_dir = ""
++
++  # Whether to build the ANGLE internal shaders at build-time. If enabled, the
++  # Metal toolchain must at build time be present in the directory specified by
++  # the buildconfig variable `MOZ_METAL_TOOLCHAIN_DIR`, or be available via
++  # Xcode. Optionally, `MOZ_DARLING_DIR` can be used to specify the location
++  # of a `darling-run` executable for cross compilation.
++  angle_enable_metal_internal_shader_compilation = false
+ }
+ 
+ # We can build the ANGLE internal shaders at build-time if we have access to the
+@@ -103,7 +110,7 @@ declare_args() {
+ # shaders for iOS as well.
+ metal_internal_shader_compilation_supported =
+     angle_has_build &&
+-    (angle_metal_toolchain_dir != "" || (!is_ios && target_os == host_os))
++    angle_enable_metal_internal_shader_compilation
+ 
+ metal_internal_shaders_header =
+     "$root_gen_dir/angle/mtl_internal_shaders_metallib.h"
+diff --git a/src/libANGLE/renderer/metal/shaders/metal_wrapper.py b/src/libANGLE/renderer/metal/shaders/metal_wrapper.py
+index 6ec1300794..db725dcada 100644
+--- a/src/libANGLE/renderer/metal/shaders/metal_wrapper.py
++++ b/src/libANGLE/renderer/metal/shaders/metal_wrapper.py
+@@ -7,8 +7,29 @@ import subprocess
+ import sys
+ 
+ 
++def command(args):
++    import buildconfig
++
++    metal_dir = buildconfig.substs.get('MOZ_METAL_TOOLCHAIN_DIR')
++    if not metal_dir:
++        return ['xcrun', '--sdk', 'macosx'] + args
++
++    cmd = [os.path.join(metal_dir, 'usr', 'bin', args[0])]
++    args = args[1:]
++
++    # Support cross-compilation by optionally executing via `darling-run`
++    # from https://github.com/mozilla/darling/tree/standalone
++    darling_dir = buildconfig.substs.get('MOZ_DARLING_DIR')
++    if darling_dir:
++        cmd = [os.path.join(darling_dir, 'bin', 'darling-run')] + cmd
++        # Darling resolves absolute paths within its own root, so map host paths
++        # through /Volumes/SystemRoot.
++        args = ['/Volumes/SystemRoot' + a if os.path.isabs(a) else a for a in args]
++    return cmd + args
++
++
+ def main(args):
+-    return subprocess.run(args, stdout=subprocess.PIPE, text=True).returncode
++    return subprocess.run(command(args), stdout=subprocess.PIPE, text=True).returncode
+ 
+ 
+ if __name__ == '__main__':
+-- 
+2.56.0
+
