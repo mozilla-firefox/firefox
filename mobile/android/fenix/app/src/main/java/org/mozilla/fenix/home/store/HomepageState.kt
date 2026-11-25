@@ -66,7 +66,6 @@ internal sealed class HomepageState {
      * @property recentlyVisited List of [RecentlyVisitedItem] to display, or null when the recent history section is
      *   hidden.
      * @property collectionsState State of the collections section to display.
-     * @property showTopSitesHeader Whether to show the shortcuts section header and "show all" button.
      * @property showPrivacyReport Whether to show the privacy report section.
      * @property trackersBlockedCount The number of trackers blocked for the privacy report.
      * @property headerState State related to the header of the homepage.
@@ -86,7 +85,6 @@ internal sealed class HomepageState {
         val bookmarks: List<Bookmark>? = null,
         val recentlyVisited: List<RecentlyVisitedItem>? = null,
         val collectionsState: CollectionsState,
-        val showTopSitesHeader: Boolean,
         val showPrivacyReport: Boolean,
         val trackersBlockedCount: Int,
         override val headerState: HeaderState,
@@ -194,7 +192,6 @@ internal sealed class HomepageState {
                             showCollections = settings.collections,
                             shouldShowCollectionsMigrationCard = collectionsMigrationCardState.visible,
                         ),
-                    showTopSitesHeader = !settings.showMoreShortcuts,
                     showPrivacyReport = settings.showPrivacyReportFeature,
                     trackersBlockedCount = blockedTrackersState.trackersBlockedCount,
                     headerState = buildHeaderState(settings = settings),

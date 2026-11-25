@@ -50,8 +50,6 @@ import org.mozilla.fenix.components.appstate.AppAction.ShortcutAction
 import org.mozilla.fenix.components.metrics.MetricsUtils
 import org.mozilla.fenix.components.usecases.FenixBrowserUseCases
 import org.mozilla.fenix.ext.components
-import org.mozilla.fenix.ext.nav
-import org.mozilla.fenix.home.HomeFragmentDirections
 import org.mozilla.fenix.home.blocklist.hasSameBlocklistEntryAs
 import org.mozilla.fenix.home.topsites.AddShortcutEntryPoint
 import org.mozilla.fenix.home.topsites.AddShortcutSource
@@ -94,9 +92,6 @@ interface TopSiteController {
 
     /** @see [TopSiteInteractor.onTopSiteLongClicked] */
     fun handleTopSiteLongClicked(topSite: TopSite)
-
-    /** @see [TopSiteInteractor.onShowAllTopSitesClicked] */
-    fun handleShowAllTopSitesClicked()
 
     /** @see [TopSiteInteractor.onExpandToggleClicked] */
     fun handleExpandToggleClicked(isExpanded: Boolean)
@@ -411,13 +406,6 @@ class DefaultTopSiteController(
 
     override fun handleTopSiteLongClicked(topSite: TopSite) {
         TopSites.longPress.record(TopSites.LongPressExtra(type = topSite.type, source = source.sourceName))
-    }
-
-    override fun handleShowAllTopSitesClicked() {
-        navController.nav(
-            R.id.homeFragment,
-            HomeFragmentDirections.actionHomeFragmentToShortcutsFragment(),
-        )
     }
 
     override fun handleExpandToggleClicked(isExpanded: Boolean) {

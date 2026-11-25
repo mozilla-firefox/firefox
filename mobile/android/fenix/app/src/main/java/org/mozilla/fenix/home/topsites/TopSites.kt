@@ -50,7 +50,6 @@ import androidx.compose.ui.semantics.testTagsAsResourceId
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.text.style.TextOverflow
-import androidx.compose.ui.tooling.preview.PreviewLightDark
 import androidx.compose.ui.tooling.preview.PreviewParameter
 import androidx.compose.ui.unit.Dp
 import androidx.compose.ui.unit.dp
@@ -122,7 +121,6 @@ internal fun TopSites(
             isExpanded = expanded
             interactor.onExpandToggleClicked(expanded)
         },
-        isExpandToggleEnabled = state.isExpandToggleEnabled,
         isExpanded = isExpanded,
     )
 }
@@ -143,7 +141,6 @@ internal fun TopSites(
  * @param onTopSitesItemBound Invoked during the composition of a top site item.
  * @param onAddShortcutClicked Invoked when the user clicks on the "Add shortcut" tile.
  * @param onExpandToggleClick Invoked when the user clicks on the expand/collapse control.
- * @param isExpandToggleEnabled Whether the control that expands and collapses the grid is enabled.
  * @param isExpanded Whether every top site is shown rather than only the first [TOP_SITES_COLLAPSED_ROWS] rows.
  */
 @Composable
@@ -162,7 +159,6 @@ fun TopSites(
     onTopSitesItemBound: () -> Unit,
     onAddShortcutClicked: () -> Unit,
     onExpandToggleClick: () -> Unit = {},
-    isExpandToggleEnabled: Boolean = false,
     isExpanded: Boolean = false,
 ) {
     BoxWithConstraints(
@@ -206,7 +202,7 @@ fun TopSites(
                 onAddShortcutClicked = onAddShortcutClicked,
             )
 
-            if (isExpandToggleEnabled && (hasHiddenShortcuts || hasHiddenAddShortcut)) {
+            if (hasHiddenShortcuts || hasHiddenAddShortcut) {
                 Spacer(modifier = Modifier.height(FirefoxTheme.layout.space.static100))
 
                 TopSitesExpandToggle(
@@ -623,31 +619,6 @@ private fun TopSitesPreview(@PreviewParameter(PreviewThemeProvider::class) theme
                     onSponsorPrivacyClicked = {},
                     onTopSitesItemBound = {},
                     onAddShortcutClicked = {},
-                )
-            }
-        }
-    }
-}
-
-@PreviewLightDark
-@Composable
-private fun ShowMoreExperimentPreview(@PreviewParameter(PreviewThemeProvider::class) theme: Theme) {
-    FirefoxTheme(theme = theme) {
-        Surface {
-            Box(modifier = Modifier.padding(all = FirefoxTheme.layout.space.static200)) {
-                TopSites(
-                    topSites = FakeHomepagePreview.topSites(),
-                    onTopSiteClick = {},
-                    onTopSiteLongClick = {},
-                    onTopSiteImpression = { _, _ -> },
-                    onOpenInPrivateTabClicked = {},
-                    onEditTopSiteClicked = {},
-                    onRemoveTopSiteClicked = {},
-                    onSettingsClicked = {},
-                    onSponsorPrivacyClicked = {},
-                    onTopSitesItemBound = {},
-                    onAddShortcutClicked = {},
-                    isExpandToggleEnabled = true,
                 )
             }
         }

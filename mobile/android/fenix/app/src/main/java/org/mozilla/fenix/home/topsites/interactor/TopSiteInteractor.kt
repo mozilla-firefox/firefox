@@ -66,12 +66,6 @@ interface TopSiteInteractor {
     fun onTopSiteLongClicked(topSite: TopSite)
 
     /**
-     * Navigates to the Shortcuts screen. Called when an user clicks on the "Show all" button for shortcuts on the
-     * homepage.
-     */
-    fun onShowAllTopSitesClicked()
-
-    /**
      * Records telemetry when the user expands or collapses the shortcuts section. Called when an user clicks on the
      * expand/collapse control.
      *
@@ -136,10 +130,6 @@ class DefaultTopSiteInteractor(private val controller: TopSiteController) : TopS
 
     override fun onTopSiteLongClicked(topSite: TopSite) {
         controller.handleTopSiteLongClicked(topSite)
-    }
-
-    override fun onShowAllTopSitesClicked() {
-        controller.handleShowAllTopSitesClicked()
     }
 
     override fun onExpandToggleClicked(isExpanded: Boolean) {

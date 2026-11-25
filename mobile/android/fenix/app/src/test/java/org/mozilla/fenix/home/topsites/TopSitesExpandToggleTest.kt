@@ -50,7 +50,6 @@ class TopSitesExpandToggleTest {
 
     private fun setTopSitesContent(
         count: Int,
-        isExpandToggleEnabled: Boolean,
         isExpanded: Boolean,
         width: Dp = PHONE_WIDTH,
         onExpandToggleClick: () -> Unit = {},
@@ -78,7 +77,6 @@ class TopSitesExpandToggleTest {
                             onTopSitesItemBound = {},
                             onAddShortcutClicked = {},
                             onExpandToggleClick = onExpandToggleClick,
-                            isExpandToggleEnabled = isExpandToggleEnabled,
                             isExpanded = isExpanded,
                         )
                     }
@@ -88,29 +86,22 @@ class TopSitesExpandToggleTest {
     }
 
     @Test
-    fun `GIVEN the toggle is disabled WHEN rendered THEN no expand control is shown`() {
-        setTopSitesContent(count = MORE_THAN_PHONE_FITS, isExpandToggleEnabled = false, isExpanded = false)
-
-        composeTestRule.onAllNodesWithTag(TopSitesTestTag.EXPAND_TOGGLE).assertCountEquals(0)
-    }
-
-    @Test
     fun `GIVEN more shortcuts than fit WHEN collapsed THEN only two rows are rendered`() {
-        setTopSitesContent(count = MORE_THAN_PHONE_FITS, isExpandToggleEnabled = true, isExpanded = false)
+        setTopSitesContent(count = MORE_THAN_PHONE_FITS, isExpanded = false)
 
         composeTestRule.onAllNodesWithTag(TopSitesTestTag.TOP_SITE_ITEM_ROOT).assertCountEquals(PHONE_COLLAPSED)
     }
 
     @Test
     fun `GIVEN more shortcuts than fit WHEN expanded THEN every shortcut is rendered`() {
-        setTopSitesContent(count = MORE_THAN_PHONE_FITS, isExpandToggleEnabled = true, isExpanded = true)
+        setTopSitesContent(count = MORE_THAN_PHONE_FITS, isExpanded = true)
 
         composeTestRule.onAllNodesWithTag(TopSitesTestTag.TOP_SITE_ITEM_ROOT).assertCountEquals(MORE_THAN_PHONE_FITS)
     }
 
     @Test
     fun `GIVEN a wide screen WHEN collapsed THEN two rows hold more shortcuts than on a phone`() {
-        setTopSitesContent(count = WIDE_COLLAPSED, isExpandToggleEnabled = true, isExpanded = false, width = WIDE_WIDTH)
+        setTopSitesContent(count = WIDE_COLLAPSED, isExpanded = false, width = WIDE_WIDTH)
 
         composeTestRule.onAllNodesWithTag(TopSitesTestTag.TOP_SITE_ITEM_ROOT).assertCountEquals(WIDE_COLLAPSED)
         assertTrue(WIDE_COLLAPSED > PHONE_COLLAPSED)
@@ -120,7 +111,6 @@ class TopSitesExpandToggleTest {
     fun `GIVEN a wide screen with room for every shortcut WHEN collapsed THEN there is nothing to expand`() {
         setTopSitesContent(
             count = MORE_THAN_PHONE_FITS,
-            isExpandToggleEnabled = true,
             isExpanded = false,
             width = WIDE_WIDTH,
         )
@@ -131,7 +121,7 @@ class TopSitesExpandToggleTest {
 
     @Test
     fun `GIVEN the section is collapsed WHEN rendered THEN the expand label is shown`() {
-        setTopSitesContent(count = MORE_THAN_PHONE_FITS, isExpandToggleEnabled = true, isExpanded = false)
+        setTopSitesContent(count = MORE_THAN_PHONE_FITS, isExpanded = false)
 
         composeTestRule.onNodeWithTag(TopSitesTestTag.EXPAND_TOGGLE).assertIsDisplayed()
         composeTestRule.onNodeWithText("Show all").assertIsDisplayed()
@@ -139,7 +129,7 @@ class TopSitesExpandToggleTest {
 
     @Test
     fun `GIVEN the section is expanded WHEN rendered THEN the collapse label is shown`() {
-        setTopSitesContent(count = MORE_THAN_PHONE_FITS, isExpandToggleEnabled = true, isExpanded = true)
+        setTopSitesContent(count = MORE_THAN_PHONE_FITS, isExpanded = true)
 
         composeTestRule.onNodeWithText("Show less").assertIsDisplayed()
     }
@@ -149,7 +139,6 @@ class TopSitesExpandToggleTest {
         var clicked = false
         setTopSitesContent(
             count = MORE_THAN_PHONE_FITS,
-            isExpandToggleEnabled = true,
             isExpanded = false,
             onExpandToggleClick = { clicked = true },
         )
@@ -161,7 +150,7 @@ class TopSitesExpandToggleTest {
 
     @Test
     fun `GIVEN titles that fit on one line WHEN rendered THEN the toggle sits 8dp below the last row`() {
-        setTopSitesContent(count = MORE_THAN_PHONE_FITS, isExpandToggleEnabled = true, isExpanded = false)
+        setTopSitesContent(count = MORE_THAN_PHONE_FITS, isExpanded = false)
 
         val lastRowBottom =
             composeTestRule.onAllNodesWithTag(TopSitesTestTag.TOP_SITE_ITEM_ROOT).fetchSemanticsNodes().maxOf {
@@ -181,7 +170,6 @@ class TopSitesExpandToggleTest {
 
     private fun setStatefulTopSitesContent(
         count: Int,
-        isExpandToggleEnabled: Boolean = true,
         width: Dp = PHONE_WIDTH,
     ) {
         val state =
@@ -198,7 +186,6 @@ class TopSitesExpandToggleTest {
                         sponsoredTextColor = Color.Black,
                         faviconCardBackgroundColor = Color.White,
                     ),
-                isExpandToggleEnabled = isExpandToggleEnabled,
             )
         composeTestRule.setContent {
             FirefoxTheme(theme = Theme.Light) {
@@ -228,23 +215,8 @@ class TopSitesExpandToggleTest {
     }
 
     @Test
-    fun `GIVEN the experiment is off and more shortcuts than fit THEN the grid is truncated with no toggle or tile`() {
-        setStatefulTopSitesContent(
-            count = MORE_THAN_PHONE_FITS,
-            isExpandToggleEnabled = false,
-        )
-
-        composeTestRule.onAllNodesWithTag(TopSitesTestTag.TOP_SITE_ITEM_ROOT).assertCountEquals(PHONE_COLLAPSED)
-        composeTestRule.onAllNodesWithTag(TopSitesTestTag.EXPAND_TOGGLE).assertCountEquals(0)
-        composeTestRule.onAllNodesWithTag(TopSitesTestTag.ADD_SHORTCUT_ROOT).assertCountEquals(0)
-    }
-
-    @Test
-    fun `GIVEN the experiment is off and fewer shortcuts than fit THEN the add shortcut tile is shown`() {
-        setStatefulTopSitesContent(
-            count = FEWER_THAN_PHONE_FITS,
-            isExpandToggleEnabled = false,
-        )
+    fun `GIVEN fewer shortcuts than fit THEN the add shortcut tile is shown`() {
+        setStatefulTopSitesContent(count = FEWER_THAN_PHONE_FITS)
 
         composeTestRule.onAllNodesWithTag(TopSitesTestTag.TOP_SITE_ITEM_ROOT).assertCountEquals(FEWER_THAN_PHONE_FITS)
         composeTestRule.onAllNodesWithTag(TopSitesTestTag.ADD_SHORTCUT_ROOT).assertCountEquals(1)
@@ -273,7 +245,7 @@ class TopSitesExpandToggleTest {
     }
 
     @Test
-    fun `GIVEN a wide screen holding every shortcut and the add tile enabled THEN the toggle still reveals the tile`() {
+    fun `GIVEN a wide screen holding every shortcut THEN the toggle still reveals the tile`() {
         setStatefulTopSitesContent(count = WIDE_COLLAPSED, width = WIDE_WIDTH)
 
         composeTestRule.onAllNodesWithTag(TopSitesTestTag.ADD_SHORTCUT_ROOT).assertCountEquals(0)

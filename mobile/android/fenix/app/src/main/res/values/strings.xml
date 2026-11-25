@@ -3244,9 +3244,6 @@
     <!-- Top Sites -->
     <!-- Title text displayed for the shortcuts home screen section. -->
     <string name="homepage_shortcuts_title">Shortcuts</string>
-    <!-- Context description text for the "Show all" button in the shortcuts home screen section
-        which navigates the user to a screen displaying all the shortcuts. -->
-    <string name="homepage_shortcuts_show_all_content_description">Show all shortcuts</string>
     <!-- Label for the button in the shortcuts home screen section that expands the section to show
         every shortcut. -->
     <string name="homepage_shortcuts_show_all">Show all</string>

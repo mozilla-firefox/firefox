@@ -204,10 +204,6 @@ internal object FakeHomepagePreview {
                     /* no op */
                 }
 
-                override fun onShowAllTopSitesClicked() {
-                    /* no op */
-                }
-
                 override fun onExpandToggleClicked(isExpanded: Boolean) {
                     /* no op */
                 }
