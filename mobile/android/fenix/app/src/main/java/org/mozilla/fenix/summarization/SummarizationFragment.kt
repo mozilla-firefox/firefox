@@ -72,6 +72,7 @@ class SummarizationFragment : BottomSheetDialogFragment() {
     private val storeViewModel: SummarizationStoreViewModel by viewModels {
         val title = currentTab?.toDisplayTitle() ?: ""
         val cache = requireComponents.core.summarizationSettingsBinding
+        val crashReporter = requireComponents.analytics.crashReporter
 
         SummarizationStoreViewModel.factory(
             currentTab = currentTab,
@@ -88,7 +89,7 @@ class SummarizationFragment : BottomSheetDialogFragment() {
                 )
             },
             errorReporter = { tag, exception ->
-                requireComponents.analytics.crashReporter.submitCaughtException(exception)
+                crashReporter.submitCaughtException(exception)
                 Logger(tag).error(exception.message ?: "", exception)
             },
         )
