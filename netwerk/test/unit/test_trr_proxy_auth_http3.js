@@ -64,19 +64,20 @@ Requestor.prototype = {
   prompt: null,
 };
 
-// Same as test_trr_proxy_auth.js, but the CONNECT tunnel to the TRR server
-// goes through an HTTP/3 proxy that requires authentication.
-add_task(async function test_trr_proxy_auth_http3() {
-  let trrServer = new TRRServer();
+let trrServer;
+
+function dohURI() {
+  return `https://foo.example.com:${trrServer.port()}/dns-query`;
+}
+
+add_setup(async function setup() {
+  trrServer = new TRRServer();
   await trrServer.start();
   registerCleanupFunction(async () => {
     await trrServer.stop();
   });
   Services.prefs.setIntPref("network.trr.mode", 3);
-  Services.prefs.setCharPref(
-    "network.trr.uri",
-    `https://foo.example.com:${trrServer.port()}/dns-query`
-  );
+  Services.prefs.setCharPref("network.trr.uri", dohURI());
 
   await trrServer.registerDoHAnswers("test.proxy.com", "A", {
     answers: [
@@ -92,19 +93,20 @@ add_task(async function test_trr_proxy_auth_http3() {
 
   await new TRRDNSListener("test.proxy.com", "3.3.3.3");
 
+  Services.prefs.setBoolPref("network.http.http3.enable", true);
+  Services.prefs.setBoolPref("network.proxy.allow_hijacking_localhost", true);
+  Services.prefs.setCharPref("network.dns.localDomains", "alt1.example.com");
+});
+
+// Routes all requests through a new HTTP/3 proxy until the returned function
+// is called.
+async function useHttp3Proxy(env) {
   let proxy = new HTTP3Server();
   await proxy.start(
     Services.env.get("MOZ_HTTP3_SERVER_PATH"),
     Services.env.get("MOZ_HTTP3_CERT_DB_PATH"),
-    { MOZ_HTTP3_PROXY_REQUIRE_AUTH: "1" }
+    env
   );
-  registerCleanupFunction(async () => {
-    await proxy.stop();
-  });
-
-  Services.prefs.setBoolPref("network.http.http3.enable", true);
-  Services.prefs.setBoolPref("network.proxy.allow_hijacking_localhost", true);
-  Services.prefs.setCharPref("network.dns.localDomains", "alt1.example.com");
   let pps = Cc["@mozilla.org/network/protocol-proxy-service;1"].getService();
   let proxyFilter = new Http3ProxyFilter(
     "alt1.example.com",
@@ -114,9 +116,28 @@ add_task(async function test_trr_proxy_auth_http3() {
     ""
   );
   pps.registerFilter(proxyFilter, 10);
-  registerCleanupFunction(() => {
+  return async () => {
     pps.unregisterFilter(proxyFilter);
-  });
+    await proxy.stop();
+  };
+}
+
+// TRR requests made on the socket thread should work through a CONNECT tunnel
+// over an HTTP/3 proxy.
+add_task(async function test_trr_http3_proxy_no_auth() {
+  let stopProxy = await useHttp3Proxy();
+
+  Services.dns.clearCache(true);
+  await new TRRDNSListener("test.proxy.com", "3.3.3.3");
+  Assert.deepEqual(promptedURIs, [], "No credentials should be requested");
+
+  await stopProxy();
+});
+
+// Same as test_trr_proxy_auth.js, but the CONNECT tunnel to the TRR server
+// goes through an HTTP/3 proxy that requires authentication.
+add_task(async function test_trr_proxy_auth_http3() {
+  let stopProxy = await useHttp3Proxy({ MOZ_HTTP3_PROXY_REQUIRE_AUTH: "1" });
 
   let observer = {
     QueryInterface: ChromeUtils.generateQI(["nsIObserver"]),
@@ -133,9 +154,9 @@ add_task(async function test_trr_proxy_auth_http3() {
   Services.dns.clearCache(true);
   await new TRRDNSListener("test.proxy.com", "3.3.3.3");
   Assert.ok(
-    promptedURIs.some(spec =>
-      spec.startsWith(`https://foo.example.com:${trrServer.port()}/dns-query`)
-    ),
+    promptedURIs.some(spec => spec.startsWith(dohURI())),
     `Proxy credentials should be requested for the DoH channel: ${promptedURIs}`
   );
+
+  await stopProxy();
 });
