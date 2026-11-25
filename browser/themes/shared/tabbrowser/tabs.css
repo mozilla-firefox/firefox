@@ -1515,21 +1515,11 @@ tab-group > tab-split-view-wrapper {
     inset-block-end: calc(var(--tab-group-line-toolbar-border-distance) - var(--tab-margin-block) - var(--split-view-padding-block));
     /* The line is positioned against the stack, whose padding box includes
        --split-view-tab-padding-inline here. */
-    inset-inline: calc(var(--split-view-tab-padding-inline) - var(--tab-margin-overflow-clip));
-
-    @media not -moz-pref("browser.nova.enabled") {
-      inset-inline-start: calc(var(--space-small) * -2 + var(--split-view-tab-padding-inline));
-    }
-    @media -moz-pref("browser.nova.enabled") {
-      inset-inline-end: calc(-1 * var(--tab-margin-overflow-clip));
-    }
+    inset-inline: calc(var(--split-view-tab-padding-inline) - var(--tab-margin-overflow-clip)) calc(-1 * var(--tab-margin-overflow-clip));
   }
 
   &[last-tab-or-split-view] .tabbrowser-tab:last-child .tab-group-line {
-    inset-inline-end: calc(var(--tab-border-radius) / 2 + var(--split-view-tab-padding-inline));
-    @media -moz-pref("browser.nova.enabled") {
-      inset-inline-end: calc(var(--split-view-tab-padding-inline) - var(--tab-margin-overflow-clip));
-    }
+    inset-inline-end: calc(var(--split-view-tab-padding-inline) - var(--tab-margin-overflow-clip));
   }
 
   /* Small-ish subtree, but probably should be removed */
@@ -1803,10 +1793,7 @@ tab-group > tab-split-view-wrapper {
 
   @container vertical-tabs-container (max-width: 210px) {
     grid-template-columns: 1fr;
-
-    @media -moz-pref("browser.nova.enabled") {
-      border-radius: var(--border-radius-large);
-    }
+    border-radius: var(--border-radius-large);
 
     &:not([hasactivetab]) .tabbrowser-tab {
       &:first-child > .tab-stack {
@@ -1824,10 +1811,7 @@ tab-group > tab-split-view-wrapper {
 /* When expand-on-hover is enabled, always stack split-view tabs in a single column */
 :root[sidebar-expand-on-hover] #tabbrowser-tabs[orient="vertical"][expanded] tab-split-view-wrapper {
   grid-template-columns: 1fr;
-
-  @media -moz-pref("browser.nova.enabled") {
-    border-radius: var(--border-radius-large);
-  }
+  border-radius: var(--border-radius-large);
 
   &:not([hasactivetab]) .tabbrowser-tab:first-child > .tab-stack {
     border-block-end: 1px solid var(--toolbarbutton-icon-fill);
