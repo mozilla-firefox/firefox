@@ -666,8 +666,8 @@ bool shell::ParseOptions(int argc, char** argv, int* failureCodeOut) {
   }
 }
 
-static bool SetGCParameterFromArg(JSContext* cx, char* arg) {
-  char* c = strchr(arg, '=');
+static bool SetGCParameterFromArg(JSContext* cx, const char* arg) {
+  const char* c = strchr(arg, '=');
   if (!c) {
     fprintf(stderr,
             "Error: --gc-param argument '%s' must be of the form "
@@ -676,8 +676,11 @@ static bool SetGCParameterFromArg(JSContext* cx, char* arg) {
     return false;
   }
 
-  *c = '\0';
-  const char* name = arg;
+  UniqueChars nameCopy = DuplicateString(arg, c - arg);
+  if (!nameCopy) {
+    return false;
+  }
+  const char* name = nameCopy.get();
   const char* valueStr = c + 1;
 
   JSGCParamKey key;
@@ -708,9 +711,14 @@ static bool SetGCParameterFromArg(JSContext* cx, char* arg) {
     return false;
   }
 
-  // Some Params are not yet fuzzing safe and so we silently skip changing said
-  // parameters.
+  // Some parameters are not fuzzing safe and so we silently skip changing them.
   if (fuzzingSafe && !IsGCParameterFuzzingSafe(key)) {
+    return true;
+  }
+
+  // Some parameters can only be set on the main runtime so skip changing them
+  // on workers.
+  if (IsGCThreadParameter(key) && !cx->runtime()->isMainRuntime()) {
     return true;
   }
 
@@ -725,6 +733,7 @@ static bool SetGCParameterFromArg(JSContext* cx, char* arg) {
   return true;
 }
 
+static bool SetGlobalJITOptions();
 static bool SetContextWasmOptions(JSContext* cx);
 static bool SetContextJITOptions(JSContext* cx);
 static bool SetContextGCOptions(JSContext* cx);
@@ -1247,88 +1256,13 @@ bool shell::SetGlobalOptionsPostJSInit() {
   return true;
 }
 
-bool shell::SetContextOptions(JSContext* cx) {
-  if (!SetContextWasmOptions(cx) || !SetContextJITOptions(cx) ||
-      !SetContextGCOptions(cx)) {
-    return false;
+static bool SetCommonContextOptions(JSContext* cx);
+
+bool shell::SetMainThreadContextOptions(JSContext* cx) {
+  if (gOptions.getBoolOption("no-ion-for-main-context")) {
+    JS::ContextOptionsRef(cx).setDisableIon();
   }
 
-  enableToSource = !gOptions.getBoolOption("disable-tosource");
-  JS::ContextOptionsRef(cx)
-      .setSourcePragmas(!gOptions.getBoolOption("no-source-pragmas"))
-      .setAsyncStack(!gOptions.getBoolOption("no-async-stacks"))
-      .setAsyncStackCaptureDebuggeeOnly(
-          gOptions.getBoolOption("async-stacks-capture-debuggee-only"));
-
-  if (const char* str = gOptions.getStringOption("shared-memory")) {
-    if (strcmp(str, "off") == 0) {
-      enableSharedMemory = false;
-    } else if (strcmp(str, "on") == 0) {
-      enableSharedMemory = true;
-    } else {
-      return OptionFailure("shared-memory", str);
-    }
-  }
-
-  reportWarnings = gOptions.getBoolOption('w');
-  compileOnly = gOptions.getBoolOption('c');
-  printTiming = gOptions.getBoolOption('b');
-  enableDisassemblyDumps = gOptions.getBoolOption('D');
-  cx->runtime()->profilingScripts =
-      gOptions.getBoolOption("code-coverage") || enableDisassemblyDumps;
-
-  if (const char* mode = gOptions.getStringOption("delazification-mode")) {
-    if (strcmp(mode, "on-demand") == 0) {
-      defaultDelazificationMode = JS::DelazificationOption::OnDemandOnly;
-    } else if (strcmp(mode, "concurrent-df") == 0) {
-      defaultDelazificationMode =
-          JS::DelazificationOption::ConcurrentDepthFirst;
-    } else if (strcmp(mode, "eager") == 0) {
-      defaultDelazificationMode =
-          JS::DelazificationOption::ParseEverythingEagerly;
-    } else if (strcmp(mode, "concurrent-df+on-demand") == 0 ||
-               strcmp(mode, "on-demand+concurrent-df") == 0) {
-      defaultDelazificationMode =
-          JS::DelazificationOption::CheckConcurrentWithOnDemand;
-    } else {
-      return OptionFailure("delazification-mode", mode);
-    }
-  }
-
-  return true;
-}
-
-static bool SetContextWasmOptions(JSContext* cx) {
-  enableWasm = true;
-  enableWasmBaseline = true;
-  enableWasmOptimizing = true;
-
-  if (const char* str = gOptions.getStringOption("wasm-compiler")) {
-    if (strcmp(str, "none") == 0) {
-      enableWasm = false;
-    } else if (strcmp(str, "baseline") == 0) {
-      MOZ_ASSERT(enableWasmBaseline);
-      enableWasmOptimizing = false;
-    } else if (strcmp(str, "optimizing") == 0 ||
-               strcmp(str, "optimized") == 0 || strcmp(str, "ion") == 0) {
-      enableWasmBaseline = false;
-      MOZ_ASSERT(enableWasmOptimizing);
-    } else if (strcmp(str, "baseline+optimizing") == 0 ||
-               strcmp(str, "baseline+optimized") == 0 ||
-               strcmp(str, "baseline+ion") == 0) {
-      MOZ_ASSERT(enableWasmBaseline);
-      MOZ_ASSERT(enableWasmOptimizing);
-    } else {
-      return OptionFailure("wasm-compiler", str);
-    }
-  }
-
-  JS::ContextOptionsRef(cx)
-      .setWasm(enableWasm)
-      .setWasmForTrustedPrinciples(enableWasm)
-      .setWasmBaseline(enableWasmBaseline)
-      .setWasmIon(enableWasmOptimizing)
-      .setTestWasmAwaitTier2(gOptions.getBoolOption("test-wasm-await-tier2"));
   if (gOptions.getBoolOption("disable-main-thread-wasm-denormals")) {
     JS::ContextOptionsRef(cx).setWasmDisablesDenormals();
   }
@@ -1372,18 +1306,110 @@ static bool SetContextWasmOptions(JSContext* cx) {
   }
 #endif  // __wasi__
 
+  enableToSource = !gOptions.getBoolOption("disable-tosource");
+
+  if (const char* str = gOptions.getStringOption("shared-memory")) {
+    if (strcmp(str, "off") == 0) {
+      enableSharedMemory = false;
+    } else if (strcmp(str, "on") == 0) {
+      enableSharedMemory = true;
+    } else {
+      return OptionFailure("shared-memory", str);
+    }
+  }
+
+  reportWarnings = gOptions.getBoolOption('w');
+  compileOnly = gOptions.getBoolOption('c');
+  printTiming = gOptions.getBoolOption('b');
+  enableDisassemblyDumps = gOptions.getBoolOption('D');
+
+#ifdef DEBUG
+  dumpEntrainedVariables = gOptions.getBoolOption("dump-entrained-variables");
+#endif
+
+  if (const char* mode = gOptions.getStringOption("delazification-mode")) {
+    if (strcmp(mode, "on-demand") == 0) {
+      defaultDelazificationMode = JS::DelazificationOption::OnDemandOnly;
+    } else if (strcmp(mode, "concurrent-df") == 0) {
+      defaultDelazificationMode =
+          JS::DelazificationOption::ConcurrentDepthFirst;
+    } else if (strcmp(mode, "eager") == 0) {
+      defaultDelazificationMode =
+          JS::DelazificationOption::ParseEverythingEagerly;
+    } else if (strcmp(mode, "concurrent-df+on-demand") == 0 ||
+               strcmp(mode, "on-demand+concurrent-df") == 0) {
+      defaultDelazificationMode =
+          JS::DelazificationOption::CheckConcurrentWithOnDemand;
+    } else {
+      return OptionFailure("delazification-mode", mode);
+    }
+  }
+
+  return SetGlobalJITOptions() && SetCommonContextOptions(cx);
+}
+
+bool shell::SetWorkerContextOptions(JSContext* cx) {
+  // TODO: Worker-specific options will go here.
+  return SetCommonContextOptions(cx);
+}
+
+static bool SetCommonContextOptions(JSContext* cx) {
+  if (!SetContextJITOptions(cx) || !SetContextWasmOptions(cx) ||
+      !SetContextGCOptions(cx)) {
+    return false;
+  }
+
+  JS::ContextOptionsRef(cx)
+      .setSourcePragmas(!gOptions.getBoolOption("no-source-pragmas"))
+      .setAsyncStack(!gOptions.getBoolOption("no-async-stacks"))
+      .setAsyncStackCaptureDebuggeeOnly(
+          gOptions.getBoolOption("async-stacks-capture-debuggee-only"));
+
+  cx->runtime()->profilingScripts =
+      gOptions.getBoolOption("code-coverage") || enableDisassemblyDumps;
+
   return true;
 }
 
-static bool SetContextJITOptions(JSContext* cx) {
+static bool SetContextWasmOptions(JSContext* cx) {
+  bool wasm = true;
+  bool baseline = true;
+  bool optimizing = true;
+
+  if (const char* str = gOptions.getStringOption("wasm-compiler")) {
+    if (strcmp(str, "none") == 0) {
+      wasm = false;
+    } else if (strcmp(str, "baseline") == 0) {
+      MOZ_ASSERT(baseline);
+      optimizing = false;
+    } else if (strcmp(str, "optimizing") == 0 ||
+               strcmp(str, "optimized") == 0 || strcmp(str, "ion") == 0) {
+      baseline = false;
+      MOZ_ASSERT(optimizing);
+    } else if (strcmp(str, "baseline+optimizing") == 0 ||
+               strcmp(str, "baseline+optimized") == 0 ||
+               strcmp(str, "baseline+ion") == 0) {
+      MOZ_ASSERT(baseline);
+      MOZ_ASSERT(optimizing);
+    } else {
+      return OptionFailure("wasm-compiler", str);
+    }
+  }
+
+  JS::ContextOptionsRef(cx)
+      .setWasm(wasm)
+      .setWasmForTrustedPrinciples(wasm)
+      .setWasmBaseline(baseline)
+      .setWasmIon(optimizing)
+      .setTestWasmAwaitTier2(gOptions.getBoolOption("test-wasm-await-tier2"));
+  return true;
+}
+
+static bool SetGlobalJITOptions() {
   // Check --fast-warmup first because it sets default warm-up thresholds. These
   // thresholds can then be overridden below by --ion-eager and other flags.
   if (gOptions.getBoolOption("fast-warmup")) {
     jit::JitOptions.setFastWarmUp();
-  }
-
-  if (gOptions.getBoolOption("no-ion-for-main-context")) {
-    JS::ContextOptionsRef(cx).setDisableIon();
   }
 
   if (const char* str = gOptions.getStringOption("cache-ir-stubs")) {
@@ -1737,18 +1763,6 @@ static bool SetContextJITOptions(JSContext* cx) {
     jit::JitOptions.setEagerIonCompilation();
   }
 
-  offthreadBaselineCompilation = false;
-  if (const char* str =
-          gOptions.getStringOption("baseline-offthread-compile")) {
-    if (strcmp(str, "on") == 0) {
-      offthreadBaselineCompilation = true;
-    } else if (strcmp(str, "off") != 0) {
-      return OptionFailure("baseline-offthread-compile", str);
-    }
-  }
-  cx->runtime()->setOffthreadBaselineCompilationEnabled(
-      offthreadBaselineCompilation);
-
   if (const char* str = gOptions.getStringOption("baseline-batching")) {
     if (strcmp(str, "on") == 0) {
       jit::JitOptions.baselineBatching = true;
@@ -1768,16 +1782,6 @@ static bool SetContextJITOptions(JSContext* cx) {
     jit::JitOptions.baselineQueueCapacity = std::min(
         uint32_t(queueCapacity), jit::BaselineCompileQueue::MaxCapacity);
   }
-
-  offthreadIonCompilation = true;
-  if (const char* str = gOptions.getStringOption("ion-offthread-compile")) {
-    if (strcmp(str, "off") == 0) {
-      offthreadIonCompilation = false;
-    } else if (strcmp(str, "on") != 0) {
-      return OptionFailure("ion-offthread-compile", str);
-    }
-  }
-  cx->runtime()->setOffthreadIonCompilationEnabled(offthreadIonCompilation);
 
   if (gOptions.getStringOption("ion-parallel-compile")) {
     fprintf(stderr,
@@ -1888,6 +1892,32 @@ static bool SetContextJITOptions(JSContext* cx) {
   return true;
 }
 
+static bool SetContextJITOptions(JSContext* cx) {
+  bool offthreadBaselineCompilation = false;
+  if (const char* str =
+          gOptions.getStringOption("baseline-offthread-compile")) {
+    if (strcmp(str, "on") == 0) {
+      offthreadBaselineCompilation = true;
+    } else if (strcmp(str, "off") != 0) {
+      return OptionFailure("baseline-offthread-compile", str);
+    }
+  }
+  JSRuntime* runtime = cx->runtime();
+  runtime->setOffthreadBaselineCompilationEnabled(offthreadBaselineCompilation);
+
+  bool offthreadIonCompilation = true;
+  if (const char* str = gOptions.getStringOption("ion-offthread-compile")) {
+    if (strcmp(str, "off") == 0) {
+      offthreadIonCompilation = false;
+    } else if (strcmp(str, "on") != 0) {
+      return OptionFailure("ion-offthread-compile", str);
+    }
+  }
+  runtime->setOffthreadIonCompilationEnabled(offthreadIonCompilation);
+
+  return true;
+}
+
 static bool SetContextGCOptions(JSContext* cx) {
   JS_SetGCParameter(cx, JSGC_MAX_BYTES, 0xffffffff);
 
@@ -1963,18 +1993,12 @@ static bool SetContextGCOptions(JSContext* cx) {
     }
   }
 
-#ifdef DEBUG
-  dumpEntrainedVariables = gOptions.getBoolOption("dump-entrained-variables");
-#endif
-
 #ifdef JS_GC_ZEAL
   const char* zealStr = gOptions.getStringOption("gc-zeal");
   if (zealStr) {
     if (!cx->runtime()->gc.parseAndSetZeal(zealStr)) {
       return false;
     }
-    uint32_t nextScheduled;
-    cx->runtime()->gc.getZealBits(&gZealBits, &gZealFrequency, &nextScheduled);
   }
 #endif
 

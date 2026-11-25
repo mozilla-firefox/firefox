@@ -39,8 +39,8 @@ bool ParseOptions(int argc, char** argv, int* failureCodeOut);
 bool SetGlobalOptionsPreJSInit();
 bool SetGlobalOptionsPostJSInit();
 
-// Apply options to a JSContext.
-bool SetContextOptions(JSContext* cx);
+bool SetMainThreadContextOptions(JSContext* cx);
+bool SetWorkerContextOptions(JSContext* cx);
 bool ApplyBenchmarkMode(JSContext* cx);
 
 }  // namespace shell

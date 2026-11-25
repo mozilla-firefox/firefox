@@ -1265,7 +1265,7 @@ bool GCRuntime::setParameter(JSContext* cx, JSGCParamKey key, uint32_t value) {
   return setParameter(key, value, lock);
 }
 
-static bool IsGCThreadParameter(JSGCParamKey key) {
+bool js::IsGCThreadParameter(JSGCParamKey key) {
   return key == JSGC_HELPER_THREAD_RATIO || key == JSGC_MAX_HELPER_THREADS ||
          key == JSGC_MAX_MARKING_THREADS;
 }

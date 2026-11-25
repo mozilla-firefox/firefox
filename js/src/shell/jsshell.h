@@ -106,13 +106,8 @@ extern char** sArgv;
 extern const char* selfHostedXDRPath;
 extern bool encodeSelfHostedCode;
 extern bool enableDisassemblyDumps;
-extern bool offthreadBaselineCompilation;
-extern bool offthreadIonCompilation;
 extern JS::DelazificationOption defaultDelazificationMode;
-extern bool enableWasm;
 extern bool enableSharedMemory;
-extern bool enableWasmBaseline;
-extern bool enableWasmOptimizing;
 extern bool enableWeakRefs;
 extern bool enableToSource;
 extern bool enablePropertyErrorMessageFix;
@@ -124,10 +119,6 @@ extern bool enableArrayBufferResizable;
 extern bool enableSymbolsAsWeakMapKeys;
 extern bool enableNewSetMethods;
 extern bool enableDestructuringFuse;
-#ifdef JS_GC_ZEAL
-extern uint32_t gZealBits;
-extern uint32_t gZealFrequency;
-#endif
 extern bool printTiming;
 extern RCFile* gErrFile;
 extern RCFile* gOutFile;

@@ -101,6 +101,10 @@ extern bool GetGCParameterInfo(const char* name, JSGCParamKey* keyOut,
 
 extern bool IsGCParameterFuzzingSafe(JSGCParamKey key);
 
+// GC parameters that affect helper threads affect the whole process and may
+// only be set from the main runtime.
+extern bool IsGCThreadParameter(JSGCParamKey key);
+
 namespace gc {
 
 void FinishGC(JSContext* cx, JS::GCReason = JS::GCReason::FINISH_GC);

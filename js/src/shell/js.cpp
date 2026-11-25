@@ -846,19 +846,10 @@ struct MOZ_STACK_CLASS EnvironmentPreparer
 const char* shell::selfHostedXDRPath = nullptr;
 bool shell::encodeSelfHostedCode = false;
 bool shell::enableDisassemblyDumps = false;
-bool shell::offthreadBaselineCompilation = false;
-bool shell::offthreadIonCompilation = false;
 JS::DelazificationOption shell::defaultDelazificationMode =
     JS::DelazificationOption::OnDemandOnly;
-bool shell::enableWasm = false;
 bool shell::enableSharedMemory = SHARED_MEMORY_DEFAULT;
-bool shell::enableWasmBaseline = false;
-bool shell::enableWasmOptimizing = false;
 bool shell::enableToSource = false;
-#ifdef JS_GC_ZEAL
-uint32_t shell::gZealBits = 0;
-uint32_t shell::gZealFrequency = 0;
-#endif
 bool shell::printTiming = false;
 RCFile* shell::gErrFile = nullptr;
 RCFile* shell::gOutFile = nullptr;
@@ -4662,7 +4653,6 @@ static void DestroyShellCompartmentPrivate(JS::GCContext* gcx,
   js_delete(priv);
 }
 
-static void SetWorkerContextOptions(JSContext* cx);
 static bool ShellBuildId(JS::BuildIdCharVector* buildId);
 
 static constexpr size_t gWorkerStackSize = 2 * 128 * sizeof(size_t) * 1024;
@@ -4679,6 +4669,12 @@ static void WorkerMain(UniquePtr<WorkerInput> input) {
   UniquePtr<ShellContext> sc =
       MakeUnique<ShellContext>(cx, ShellContext::Worker);
   if (!sc || !sc->registerWithCx(cx)) {
+    return;
+  }
+
+  JS_SetNativeStackQuota(cx, gWorkerStackSize);
+
+  if (!SetWorkerContextOptions(cx)) {
     return;
   }
 
@@ -12369,35 +12365,6 @@ auto minVal(T a, Ts... args) {
   return true;
 }
 
-static void SetWorkerContextOptions(JSContext* cx) {
-  // Copy option values from the main thread.
-  JS::ContextOptionsRef(cx)
-      .setWasm(enableWasm)
-      .setWasmBaseline(enableWasmBaseline)
-      .setWasmIon(enableWasmOptimizing)
-
-      .setTestWasmAwaitTier2(gOptions.getBoolOption("test-wasm-await-tier2"))
-      .setSourcePragmas(!gOptions.getBoolOption("no-source-pragmas"));
-
-  cx->runtime()->setOffthreadBaselineCompilationEnabled(
-      offthreadBaselineCompilation);
-  cx->runtime()->setOffthreadIonCompilationEnabled(offthreadIonCompilation);
-  cx->runtime()->profilingScripts =
-      gOptions.getBoolOption("code-coverage") || enableDisassemblyDumps;
-
-#ifdef JS_GC_ZEAL
-  if (gZealBits && gZealFrequency) {
-    for (size_t i = 0; i < size_t(gc::ZealMode::Count); i++) {
-      if (gZealBits & (1 << i)) {
-        cx->runtime()->gc.setZeal(i, gZealFrequency);
-      }
-    }
-  }
-#endif
-
-  JS_SetNativeStackQuota(cx, gWorkerStackSize);
-}
-
 [[nodiscard]] static bool PrintUnhandledRejection(
     JSContext* cx, Handle<PromiseObject*> promise) {
   RootedValue reason(cx, promise->reason());
@@ -12502,10 +12469,6 @@ static void SetWorkerContextOptions(JSContext* cx) {
 bool ShellContext::registerWithCx(JSContext* cx) {
   cx_ = cx;
   JS_SetContextPrivate(cx, this);
-
-  if (isWorker) {
-    SetWorkerContextOptions(cx);
-  }
 
   JS::SetWarningReporter(cx, WarningReporter);
   JS_SetFutexCanWait(cx);
@@ -12849,7 +12812,7 @@ int main(int argc, char** argv) {
     return 1;
   }
 
-  if (!SetContextOptions(cx)) {
+  if (!SetMainThreadContextOptions(cx)) {
     return 1;
   }
 
