@@ -188,7 +188,8 @@ export class UrlbarContentUtils {
    * @param {Window} win
    *   The chrome window reading the clipboard.
    * @returns {Promise<?string>}
-   *   The text, or null if it exceeds the threshold or can't be read.
+   *   The text, or null if it exceeds the threshold, can't be read, or the
+   *   platform is Windows.
    */
   static getClipboardTextIfSmallerThan(threshold, win) {
     if (!port()) {

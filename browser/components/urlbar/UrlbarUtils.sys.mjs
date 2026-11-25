@@ -14,6 +14,7 @@
  * @import {SmartbarInput} from "chrome://browser/content/urlbar/SmartbarInput.mjs"
  */
 
+import { AppConstants } from "resource://gre/modules/AppConstants.sys.mjs";
 import { UrlbarShared } from "chrome://browser/content/urlbar/UrlbarShared.mjs";
 import { XPCOMUtils } from "resource://gre/modules/XPCOMUtils.sys.mjs";
 
@@ -548,9 +549,18 @@ export var UrlbarUtils = {
    * @param {Window} win
    *   The window reading the clipboard.
    * @returns {Promise<?string>}
-   *   The text, or null if it exceeds the threshold or can't be read.
+   *   The text, or null if it exceeds the threshold, can't be read, or the
+   *   platform is Windows.
    */
   async getClipboardTextIfSmallerThan(threshold, win) {
+    // On Windows, reading the clipboard blocks the main thread until the app
+    // owning it responds, which can hang the browser if that app is
+    // unresponsive. Skip the read until getDataIfSmallerThan is non-blocking
+    // (bug 2097459, bug 1997915).
+    if (AppConstants.platform == "win") {
+      return null;
+    }
+
     let transferable = Cc["@mozilla.org/widget/transferable;1"].createInstance(
       Ci.nsITransferable
     );
