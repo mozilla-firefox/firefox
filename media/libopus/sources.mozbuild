@@ -76,6 +76,7 @@ celt_sources_arm_neon_intr = [
 
 opus_sources = [
     'src/extensions.c',
+    'src/mapping_matrix_hoa.c',
     'src/opus.c',
     'src/opus_decoder.c',
     'src/opus_encoder.c',

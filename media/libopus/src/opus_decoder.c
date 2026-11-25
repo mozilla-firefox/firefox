@@ -1242,7 +1242,9 @@ int opus_decoder_ctl(OpusDecoder *st, int request, ...)
        {
           goto bad_arg;
        }
+#ifdef ENABLE_DEEP_PLC
        ret = lpcnet_plc_load_model(&st->lpcnet, data, len);
+#endif
        if (silk_LoadOSCEModels(silk_dec, data, len) != 0 || ret != 0)
           ret = OPUS_BAD_ARG;
    }

@@ -117,8 +117,9 @@ typedef struct OpusProjectionDecoder OpusProjectionDecoder;
   *                               This must be no more than 255.
   * @param mapping_family <tt>int</tt>: The mapping family to use for selecting
   *                                     the appropriate projection.
-  * @returns The size in bytes on success, or a negative error code
-  *          (see @ref opus_errorcodes) on error.
+  * @returns The size in bytes on success, or 0 on error, including for an
+  *          ambisonic order with no built-in projection matrix (see
+  *          opus_projection_ambisonics_encoder_create()).
   */
 OPUS_EXPORT OPUS_WARN_UNUSED_RESULT opus_int32 opus_projection_ambisonics_encoder_get_size(
     int channels,
@@ -129,6 +130,12 @@ OPUS_EXPORT OPUS_WARN_UNUSED_RESULT opus_int32 opus_projection_ambisonics_encode
 /** Allocates and initializes a projection encoder state.
   * Call opus_projection_encoder_destroy() to release
   * this object when finished.
+  *
+  * For mapping family 3 (ambisonics), RFC 8486 allows <code>(1 + n)^2</code>
+  * channels, optionally plus 2 non-diegetic channels, for ambisonic order
+  * <code>n</code> from 0 to 14. The encoder has built-in projection matrices
+  * only for orders 1 up to a build-time maximum: 5 by default, at most 12.
+  * Other orders return #OPUS_UNIMPLEMENTED.
   * @param Fs <tt>opus_int32</tt>: Sampling rate of the input signal (in Hz).
   *                                This must be one of 8000, 12000, 16000,
   *                                24000, or 48000.
@@ -156,7 +163,9 @@ OPUS_EXPORT OPUS_WARN_UNUSED_RESULT opus_int32 opus_projection_ambisonics_encode
   * </dl>
   * @param[out] error <tt>int *</tt>: Returns #OPUS_OK on success, or an error
   *                                   code (see @ref opus_errorcodes) on
-  *                                   failure.
+  *                                   failure. #OPUS_UNIMPLEMENTED means there
+  *                                   is no built-in projection matrix for
+  *                                   the ambisonic order.
   */
 OPUS_EXPORT OPUS_WARN_UNUSED_RESULT OpusProjectionEncoder *opus_projection_ambisonics_encoder_create(
     opus_int32 Fs,
@@ -209,7 +218,9 @@ OPUS_EXPORT OPUS_WARN_UNUSED_RESULT OpusProjectionEncoder *opus_projection_ambis
   * of operation.</dd>
   * </dl>
   * @returns #OPUS_OK on success, or an error code (see @ref opus_errorcodes)
-  *          on failure.
+  *          on failure. #OPUS_UNIMPLEMENTED means there is no built-in
+  *          projection matrix for the ambisonic order (see
+  *          opus_projection_ambisonics_encoder_create()).
   */
 OPUS_EXPORT int opus_projection_ambisonics_encoder_init(
     OpusProjectionEncoder *st,

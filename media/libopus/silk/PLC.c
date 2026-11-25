@@ -369,6 +369,14 @@ static OPUS_INLINE void silk_PLC_conceal(
 
     /* Copy LPC state */
     silk_memcpy( sLPC_Q14_ptr, psDec->sLPC_Q14_buf, MAX_LPC_ORDER * sizeof( opus_int32 ) );
+#ifdef ENABLE_OSCE
+    if( psDec->lossCnt == 0 ) {
+        for( i = 0; i < MAX_LPC_ORDER; i++ ) {
+            sLPC_Q14_ptr[ i ] = silk_ADD_SAT32( sLPC_Q14_ptr[ i ], silk_SMULWW( inv_gain_Q30,
+                psPLC->prev_osce_out[ i ] - psDec->outBuf[ psDec->ltp_mem_length - MAX_LPC_ORDER + i ] ) );
+        }
+    }
+#endif
 
     celt_assert( psDec->LPC_order >= 10 ); /* check that unrolling works */
     for( i = 0; i < psDec->frame_length; i++ ) {

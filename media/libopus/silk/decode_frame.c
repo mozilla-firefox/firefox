@@ -111,6 +111,7 @@ opus_int silk_decode_frame(
         /* Run SILK enhancer                                    */
         /********************************************************/
         osce_enhance_frame( osce_model, psDec, psDecCtrl, pOut, ec_tell(psRangeDec) - ec_start, arch );
+        silk_memcpy( psDec->sPLC.prev_osce_out, &pOut[ L - MAX_LPC_ORDER ], MAX_LPC_ORDER * sizeof( opus_int16 ) );
 #endif
 
         /********************************************************/

@@ -57,6 +57,19 @@ void mapping_matrix_init(
     opus_int32 data_size
 );
 
+/* As mapping_matrix_init(), but initializes `matrix` to the transpose of `data`, a
+ * `cols` x `rows` matrix. `gain` is stored as given, so the result is the inverse
+ * of `data` only if `data` is orthogonal and unscaled (gain 0).
+ */
+void mapping_matrix_init_transposed(
+    MappingMatrix * const matrix,
+    int rows,
+    int cols,
+    int gain,
+    const opus_int16 *data,
+    opus_int32 data_size
+);
+
 #ifndef DISABLE_FLOAT_API
 void mapping_matrix_multiply_channel_in_float(
     const MappingMatrix *matrix,
@@ -119,39 +132,92 @@ void mapping_matrix_multiply_channel_out_int24(
     int output_rows,
     int frame_size
 );
-/* Pre-computed mixing and demixing matrices for 1st to 3rd-order ambisonics.
- *   foa: first-order ambisonics
- *   soa: second-order ambisonics
- *   toa: third-order ambisonics
+/* Highest ambisonic order with a built-in projection matrix, 1 to 12 (default 5),
+ * set with --enable-ambisonics-max-order (autotools), OPUS_AMBISONICS_MAX_ORDER
+ * (CMake) or ambisonics-max-order (meson). This limits only the encoder: the decoder
+ * takes its demixing matrix from the stream.
+ */
+#ifndef OPUS_AMBISONICS_MAX_ORDER
+# define OPUS_AMBISONICS_MAX_ORDER 5
+#endif
+#if OPUS_AMBISONICS_MAX_ORDER < 1 || OPUS_AMBISONICS_MAX_ORDER > 12
+# error "OPUS_AMBISONICS_MAX_ORDER must be between 1 and 12."
+#endif
+#define MAPPING_MATRIX_MAX_AMBISONIC_ORDER OPUS_AMBISONICS_MAX_ORDER
+
+/* Get the built-in projection mixing matrix for ambisonic `order`; the demixing
+ * matrix is its transpose. Any output may be NULL. Returns OPUS_UNIMPLEMENTED,
+ * leaving the outputs untouched, if there is no matrix for that order: order 0, or
+ * above MAPPING_MATRIX_MAX_AMBISONIC_ORDER.
+ */
+int mapping_matrix_get_ambisonic(
+    int order,
+    const MappingMatrix **matrix,
+    const opus_int16 **data,
+    opus_int32 *data_size
+);
+
+/* Pre-computed projection mixing matrices, named by order: foa, soa and toa for 1st
+ * to 3rd order, then fourthoa to twelfthoa. Orders 1 to 5 are in mapping_matrix.c and
+ * 6 to 12 in mapping_matrix_hoa.c. Only orders up to
+ * MAPPING_MATRIX_MAX_AMBISONIC_ORDER are compiled in, and declared.
  */
 extern const MappingMatrix mapping_matrix_foa_mixing;
 extern const opus_int16 mapping_matrix_foa_mixing_data[36];
 
+#if MAPPING_MATRIX_MAX_AMBISONIC_ORDER >= 2
 extern const MappingMatrix mapping_matrix_soa_mixing;
 extern const opus_int16 mapping_matrix_soa_mixing_data[121];
+#endif
 
+#if MAPPING_MATRIX_MAX_AMBISONIC_ORDER >= 3
 extern const MappingMatrix mapping_matrix_toa_mixing;
 extern const opus_int16 mapping_matrix_toa_mixing_data[324];
+#endif
 
+#if MAPPING_MATRIX_MAX_AMBISONIC_ORDER >= 4
 extern const MappingMatrix mapping_matrix_fourthoa_mixing;
 extern const opus_int16 mapping_matrix_fourthoa_mixing_data[729];
+#endif
 
+#if MAPPING_MATRIX_MAX_AMBISONIC_ORDER >= 5
 extern const MappingMatrix mapping_matrix_fifthoa_mixing;
 extern const opus_int16 mapping_matrix_fifthoa_mixing_data[1444];
+#endif
 
-extern const MappingMatrix mapping_matrix_foa_demixing;
-extern const opus_int16 mapping_matrix_foa_demixing_data[36];
+#if MAPPING_MATRIX_MAX_AMBISONIC_ORDER >= 6
+extern const MappingMatrix mapping_matrix_sixthoa_mixing;
+extern const opus_int16 mapping_matrix_sixthoa_mixing_data[2601];
+#endif
 
-extern const MappingMatrix mapping_matrix_soa_demixing;
-extern const opus_int16 mapping_matrix_soa_demixing_data[121];
+#if MAPPING_MATRIX_MAX_AMBISONIC_ORDER >= 7
+extern const MappingMatrix mapping_matrix_seventhoa_mixing;
+extern const opus_int16 mapping_matrix_seventhoa_mixing_data[4356];
+#endif
 
-extern const MappingMatrix mapping_matrix_toa_demixing;
-extern const opus_int16 mapping_matrix_toa_demixing_data[324];
+#if MAPPING_MATRIX_MAX_AMBISONIC_ORDER >= 8
+extern const MappingMatrix mapping_matrix_eighthoa_mixing;
+extern const opus_int16 mapping_matrix_eighthoa_mixing_data[6889];
+#endif
 
-extern const MappingMatrix mapping_matrix_fourthoa_demixing;
-extern const opus_int16 mapping_matrix_fourthoa_demixing_data[729];
+#if MAPPING_MATRIX_MAX_AMBISONIC_ORDER >= 9
+extern const MappingMatrix mapping_matrix_ninthoa_mixing;
+extern const opus_int16 mapping_matrix_ninthoa_mixing_data[10404];
+#endif
 
-extern const MappingMatrix mapping_matrix_fifthoa_demixing;
-extern const opus_int16 mapping_matrix_fifthoa_demixing_data[1444];
+#if MAPPING_MATRIX_MAX_AMBISONIC_ORDER >= 10
+extern const MappingMatrix mapping_matrix_tenthoa_mixing;
+extern const opus_int16 mapping_matrix_tenthoa_mixing_data[15129];
+#endif
+
+#if MAPPING_MATRIX_MAX_AMBISONIC_ORDER >= 11
+extern const MappingMatrix mapping_matrix_eleventhoa_mixing;
+extern const opus_int16 mapping_matrix_eleventhoa_mixing_data[21316];
+#endif
+
+#if MAPPING_MATRIX_MAX_AMBISONIC_ORDER >= 12
+extern const MappingMatrix mapping_matrix_twelfthoa_mixing;
+extern const opus_int16 mapping_matrix_twelfthoa_mixing_data[29241];
+#endif
 
 #endif /* MAPPING_MATRIX_H */
