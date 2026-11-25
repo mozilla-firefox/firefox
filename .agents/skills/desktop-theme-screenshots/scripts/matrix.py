@@ -4,7 +4,7 @@
 # file, You can obtain one at http://mozilla.org/MPL/2.0/.
 """Capture a before/after pair of every surface in a set of color regimes.
 
-    ./mach python --virtualenv desktop-theme -- matrix.py run SPEC OUTDIR
+    ./mach python --virtualenv desktop-theme -- matrix.py run SPEC OUTDIR [--only SET/REGIME]...
 
 Run from the checkout root. The spec is a JSON file naming the surfaces to
 shoot; this one shoots the navigation toolbar and the reload button's hover
@@ -130,12 +130,17 @@ build, no binary, a browser that never comes up) stops the run. On Ctrl-C the
 run waits for capture-pair.sh to restore the reverted paths.
 
 The run checks the paths before it clears anything. OUTDIR is cleared first,
-and only when it holds the marker file a previous run wrote. OUTDIR/matrix.json
-records each cell's result. It exits 0 when every cell captured, 1 when one
-failed and 2 on an error.
+and only when it holds the marker file a previous run wrote; --only reruns the
+cells matching a SET/REGIME glob and clears only theirs. OUTDIR/matrix.json
+records each cell's result, with a stamp of the revisions, paths, set and
+regime it ran with; --only names the cells it keeps whose stamp no longer
+matches. It exits 0 when every cell captured, 1 when one failed and 2 on an
+error.
 """
 
 import argparse
+import fnmatch
+import hashlib
 import json
 import os
 import re
@@ -475,6 +480,22 @@ def probe_source(root, set_body, prelude):
     )
 
 
+def stamp(spec, set_name, regime_name, probe, head_rev, base_rev):
+    """What a cell's result depends on, hashed: the revisions, the paths, the
+    probe and the set and regime definitions."""
+    s, regime = spec["sets"][set_name], spec["regimes"][regime_name]
+    files = [regime["chromeSetup"], s["steps"]]
+    data = {
+        "revs": [head_rev, base_rev],
+        "paths": spec["paths"],
+        "prefs": spec["prefs"] + regime["prefs"],
+        "files": [f.read_text(encoding="utf-8") if f else None for f in files],
+        "probe": probe,
+        "windowSize": s["windowSize"],
+    }
+    return hashlib.sha1(json.dumps(data, sort_keys=True).encode()).hexdigest()[:12]
+
+
 def objdir(root):
     out = subprocess.run(
         [str(root / "mach"), "environment"],
@@ -490,11 +511,11 @@ def objdir(root):
     return None
 
 
-def prepare_outdir(outdir):
+def prepare_outdir(outdir, only):
     marker = outdir / MARKER
     if outdir.exists() and any(outdir.iterdir()) and not marker.exists():
         raise SpecError(f"{outdir} is not empty and holds no {MARKER}; pick another")
-    if outdir.exists():
+    if not only and outdir.exists():
         shutil.rmtree(outdir)
     outdir.mkdir(parents=True, exist_ok=True)
     marker.touch()
@@ -664,6 +685,12 @@ def run(args):
         for set_name, s in spec["sets"].items()
         for regime in s["regimes"]
     ]
+    if args.only:
+        cells = [
+            c for c in cells if any(fnmatch.fnmatch("/".join(c), p) for p in args.only)
+        ]
+        if not cells:
+            raise SpecError("--only matches no cell")
 
     env = dict(os.environ)
     if "OBJDIR" not in env:
@@ -676,7 +703,7 @@ def run(args):
         for set_name, s in spec["sets"].items()
     }
 
-    prepare_outdir(outdir)
+    prepare_outdir(outdir, args.only)
 
     scripts = outdir / "probes"
     scripts.mkdir(exist_ok=True)
@@ -687,12 +714,43 @@ def run(args):
 
     summary_path = outdir / "matrix.json"
     summary = {"cells": {}}
+    if args.only and summary_path.exists():
+        try:
+            summary = json.loads(summary_path.read_text())
+        except ValueError as e:
+            raise SpecError(
+                f"{summary_path} is not valid JSON ({e}); rerun without --only"
+            )
     summary["spec"] = str(Path(args.spec).resolve())
     summary["base"] = spec["base"]
     summary["paths"] = spec["paths"]
     summary["baseRev"] = short_rev(root, spec["base"])
     summary["headRev"] = short_rev(root, "HEAD")
     summary["sets"] = {name: s["regimes"] for name, s in spec["sets"].items()}
+    stamps = {
+        f"{set_name}/{regime}": stamp(
+            spec,
+            set_name,
+            regime,
+            sources[set_name],
+            summary["headRev"],
+            summary["baseRev"],
+        )
+        for set_name, s in spec["sets"].items()
+        for regime in s["regimes"]
+    }
+    summary["stamps"] = stamps
+    rerun = {"/".join(c) for c in cells}
+    stale = [
+        key
+        for key, cell in summary["cells"].items()
+        if key not in rerun and cell.get("stamp") != stamps.get(key)
+    ]
+    if stale:
+        print(
+            "kept from an earlier run with another revision, paths or spec: "
+            + ", ".join(sorted(stale))
+        )
 
     failed = 0
     skipped_sets = set()
@@ -701,11 +759,14 @@ def run(args):
         key = f"{set_name}/{regime}"
         print(f"[{i}/{len(cells)}] {key} ...", end=" ", flush=True)
         if set_name in skipped_sets:
+            summary["cells"].pop(key, None)
+            shutil.rmtree(outdir / set_name / regime, ignore_errors=True)
             print("skipped")
             continue
         result, last = run_cell(
             root, spec, outdir, set_name, regime, probes[set_name], env
         )
+        result["stamp"] = stamps[key]
         summary["cells"][key] = result
         summary_path.write_text(json.dumps(summary, indent=2))
         is_first = first_cell.setdefault(set_name, key) == key
@@ -769,6 +830,12 @@ def get_parser():
     r = sub.add_parser("run", help="capture every cell of a spec")
     r.add_argument("spec")
     r.add_argument("outdir")
+    r.add_argument(
+        "--only",
+        action="append",
+        metavar="SET/REGIME",
+        help="rerun only the cells matching this glob (repeatable)",
+    )
     return ap
 
 
