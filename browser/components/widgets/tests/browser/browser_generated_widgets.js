@@ -769,6 +769,40 @@ add_task(async function test_a_failed_request_is_a_service_error() {
   );
 });
 
+add_task(async function test_a_rejected_request_has_its_service_code() {
+  for (let [status, mlpaCode, code] of [
+    [401, undefined, GENERATION_ERRORS.AUTH],
+    [403, 4, GENERATION_ERRORS.CAPACITY],
+    [406, undefined, GENERATION_ERRORS.NETWORK],
+    [413, 3, GENERATION_ERRORS.GENERATION],
+    [429, 1, GENERATION_ERRORS.BUDGET],
+    [429, 2, GENERATION_ERRORS.RATE_LIMIT],
+    [429, 10, GENERATION_ERRORS.CAPACITY],
+    [429, undefined, GENERATION_ERRORS.RATE_LIMIT],
+    [500, 10, GENERATION_ERRORS.CAPACITY],
+    [500, undefined, GENERATION_ERRORS.SERVICE],
+  ]) {
+    let generating = WidgetGenerator.generate({ prompt: PROMPT });
+    let attempts = status == 401 ? 2 : 1;
+    for (let i = 0; i < attempts; i++) {
+      let { reject } = await mockEngine.captureRequest({
+        purpose: PURPOSES.WIDGET_GENERATION,
+      });
+      reject(
+        Object.assign(new Error(`${status} status code`), {
+          status,
+          error: mlpaCode,
+        })
+      );
+    }
+    await Assert.rejects(
+      generating,
+      error => error.code == code,
+      `${status} ${mlpaCode ?? ""}`
+    );
+  }
+});
+
 add_task(async function test_an_aborted_signal_ends_generation() {
   let [createEngine, getToken] = mockEngine.mocks;
   createEngine.resetHistory();

@@ -78,10 +78,18 @@ export const PROMPT_MAJOR_VERSION = 2;
 export const GENERATION_ERRORS = Object.freeze({
   /** AI Controls block custom widgets. */
   BLOCKED: "blocked",
-  /** No account is signed in. */
+  /** No account token is available, or the service rejects it. */
   AUTH: "auth",
   /** The model can't be reached. */
   SERVICE: "service",
+  /** The account reached its daily limit. */
+  BUDGET: "budget",
+  /** The account sent too many requests in a short time. */
+  RATE_LIMIT: "rate_limit",
+  /** The service has no room for more requests. */
+  CAPACITY: "capacity",
+  /** The network blocks requests to the service. */
+  NETWORK: "network",
   /** The model's files don't make a widget. */
   GENERATION: "generation",
   /** The model declined a request that needs more than a widget can do. */
@@ -91,6 +99,59 @@ export const GENERATION_ERRORS = Object.freeze({
   /** The model declined a request under the acceptable use rules. */
   POLICY: DECLINE_KINDS.POLICY,
 });
+
+/**
+ * The MLPA error codes in the body of a failed model request.
+ */
+const MLPA_ERRORS = Object.freeze({
+  BUDGET_EXCEEDED: 1,
+  RATE_LIMIT_EXCEEDED: 2,
+  MAX_USERS_REACHED: 4,
+  UPSTREAM_RATE_LIMIT: 5,
+  FASTLY_WAF_RATE_LIMIT: 6,
+  GLOBAL_BUDGET_EXCEEDED: 10,
+});
+
+/**
+ * The GENERATION_ERRORS code for each HTTP status of a failed model request,
+ * either directly or by the MLPA error code in the response body.
+ */
+const REQUEST_ERRORS = new Map([
+  [401, GENERATION_ERRORS.AUTH],
+  [403, new Map([[MLPA_ERRORS.MAX_USERS_REACHED, GENERATION_ERRORS.CAPACITY]])],
+  [406, GENERATION_ERRORS.NETWORK],
+  [413, GENERATION_ERRORS.GENERATION],
+  [
+    429,
+    new Map([
+      [MLPA_ERRORS.BUDGET_EXCEEDED, GENERATION_ERRORS.BUDGET],
+      [MLPA_ERRORS.RATE_LIMIT_EXCEEDED, GENERATION_ERRORS.RATE_LIMIT],
+      [MLPA_ERRORS.UPSTREAM_RATE_LIMIT, GENERATION_ERRORS.RATE_LIMIT],
+      [MLPA_ERRORS.FASTLY_WAF_RATE_LIMIT, GENERATION_ERRORS.RATE_LIMIT],
+      [MLPA_ERRORS.GLOBAL_BUDGET_EXCEEDED, GENERATION_ERRORS.CAPACITY],
+    ]),
+  ],
+  [
+    500,
+    new Map([[MLPA_ERRORS.GLOBAL_BUDGET_EXCEEDED, GENERATION_ERRORS.CAPACITY]]),
+  ],
+]);
+
+/**
+ * @param {Error} error - the error of a failed model request
+ * @returns {string} the GENERATION_ERRORS code for it. A 429 without a known
+ *   MLPA error code is a rate limit.
+ */
+function requestErrorCode(error) {
+  let code = REQUEST_ERRORS.get(error?.status);
+  if (code instanceof Map) {
+    code = code.get(error.error);
+  }
+  if (!code && error?.status === 429) {
+    return GENERATION_ERRORS.RATE_LIMIT;
+  }
+  return code ?? GENERATION_ERRORS.SERVICE;
+}
 
 /**
  * An error generating a widget.
@@ -306,7 +367,7 @@ class _WidgetGenerator {
       signal?.throwIfAborted();
       throw new WidgetGeneratorError(
         "The model request failed",
-        GENERATION_ERRORS.SERVICE,
+        requestErrorCode(error),
         error
       );
     }
