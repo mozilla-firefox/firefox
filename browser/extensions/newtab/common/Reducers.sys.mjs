@@ -201,17 +201,6 @@ export const INITIAL_STATE = {
     suggestedLocations: [],
   },
   // Widgets
-  Stocks: {
-    tickers: [],
-    lastUpdated: null,
-    error: false,
-    watchlistTickers: [],
-    watchlistReconciledSymbols: [],
-    searchResults: [],
-    searchStatus: "idle",
-    activeRequestId: null,
-    submittedQuery: "",
-  },
   PictureOfTheDay: {
     initialized: false,
     lastUpdated: null,
@@ -1442,51 +1431,6 @@ function TimerWidget(prevState = INITIAL_STATE.TimerWidget, action) {
   }
 }
 
-function Stocks(prevState = INITIAL_STATE.Stocks, action) {
-  switch (action.type) {
-    case at.WIDGETS_STOCKS_UPDATE:
-      return {
-        ...prevState,
-        tickers: action.data.tickers,
-        lastUpdated: action.data.lastUpdated,
-        error: action.data.error ?? false,
-      };
-    case at.WIDGETS_STOCKS_WATCHLIST_UPDATE:
-      return {
-        ...prevState,
-        watchlistTickers: action.data.watchlistTickers,
-        watchlistReconciledSymbols: action.data.reconciledSymbols,
-      };
-    case at.WIDGETS_STOCKS_SEARCH_STARTED:
-      return {
-        ...prevState,
-        searchStatus: "loading",
-        searchResults: [],
-        activeRequestId: action.data.requestId,
-        submittedQuery: action.data.query,
-      };
-    case at.WIDGETS_STOCKS_SEARCH_RESPONSE:
-      if (action.data.requestId !== prevState.activeRequestId) {
-        return prevState;
-      }
-      return {
-        ...prevState,
-        searchStatus: action.data.status,
-        searchResults: action.data.matches || [],
-      };
-    case at.WIDGETS_STOCKS_SEARCH_CLEAR:
-      return {
-        ...prevState,
-        searchStatus: "idle",
-        searchResults: [],
-        activeRequestId: null,
-        submittedQuery: "",
-      };
-    default:
-      return prevState;
-  }
-}
-
 function ListsWidget(prevState = INITIAL_STATE.ListsWidget, action) {
   switch (action.type) {
     case at.WIDGETS_LISTS_SET:
@@ -1538,7 +1482,6 @@ export const reducers = {
   SectionsLayout,
   WebNotifications,
   Weather,
-  Stocks,
   ExternalComponents,
   ExtensionWidgets,
   PrivacyWidget,

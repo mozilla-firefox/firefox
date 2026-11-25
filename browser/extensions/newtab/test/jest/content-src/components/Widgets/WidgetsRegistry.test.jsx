@@ -293,7 +293,6 @@ describe("getWidgetOrder", () => {
       "privacy",
       "crossword",
       "pictureOfTheDay",
-      "stocks",
       "recentSearches",
       "horoscopes",
       "travel",
@@ -311,7 +310,6 @@ describe("getWidgetOrder", () => {
       "focusTimer",
       "privacy",
       "crossword",
-      "stocks",
       "recentSearches",
       "horoscopes",
       "travel",
@@ -329,7 +327,6 @@ describe("getWidgetOrder", () => {
       "focusTimer",
       "privacy",
       "crossword",
-      "stocks",
       "recentSearches",
       "horoscopes",
       "travel",
@@ -354,7 +351,6 @@ describe("getWidgetOrder", () => {
       "weather",
       "privacy",
       "crossword",
-      "stocks",
       "recentSearches",
       "horoscopes",
       "travel",
@@ -383,7 +379,6 @@ describe("resolveWidgetOrder", () => {
       "clocks",
       "privacy",
       "crossword",
-      "stocks",
       "recentSearches",
       "horoscopes",
       "travel",
@@ -406,7 +401,6 @@ describe("resolveWidgetOrder", () => {
       "clocks",
       "privacy",
       "crossword",
-      "stocks",
       "recentSearches",
       "horoscopes",
       "travel",
@@ -429,7 +423,6 @@ describe("resolveWidgetOrder", () => {
       "clocks",
       "privacy",
       "crossword",
-      "stocks",
       "recentSearches",
       "horoscopes",
       "travel",
@@ -539,24 +532,6 @@ describe("isWidgetAddable", () => {
       })
     ).toBe(true);
   });
-
-  it.each([
-    ["widgets", { stocksEnabled: true }],
-    ["widgetsSettings", { stocksVisible: true }],
-  ])(
-    "makes stocks addable via %s despite its preffed-off default",
-    (type, payload) => {
-      const stocks = WIDGET_REGISTRY.find(w => w.id === "stocks");
-      const prefs = { [stocks.systemEnabledPref]: false, region: "US" };
-      expect(isWidgetAddable(stocks, prefs)).toBe(false);
-      expect(
-        isWidgetAddable(stocks, {
-          ...prefs,
-          trainhopConfig: { [type]: payload },
-        })
-      ).toBe(true);
-    }
-  );
 
   it.each([
     ["widgets", { recentSearchesEnabled: true }],
@@ -1472,7 +1447,6 @@ describe("WIDGET_REGISTRY customize panel fields", () => {
     weather: "WEATHER",
     privacy: "WIDGET_PRIVACY",
     crossword: "WIDGET_CROSSWORD",
-    stocks: "WIDGET_STOCKS",
     recentSearches: "WIDGET_RECENT_SEARCHES",
     horoscopes: "WIDGET_HOROSCOPES",
     travel: "WIDGET_TRAVEL",
@@ -1538,18 +1512,18 @@ describe("resolveWidgetEventSource", () => {
     const byId = id => WIDGET_REGISTRY.find(w => w.id === id);
     expect(resolveWidgetEventSource(byId("travel"))).toBe("iframe");
     expect(resolveWidgetEventSource(byId("crossword"))).toBe("iframe");
-    expect(resolveWidgetEventSource(byId("stocks"))).toBe("widget");
+    expect(resolveWidgetEventSource(byId("lists"))).toBe("widget");
   });
 });
 
 describe("framed widget telemetry allowlists", () => {
   const travel = WIDGET_REGISTRY.find(w => w.id === "travel");
-  const stocks = WIDGET_REGISTRY.find(w => w.id === "stocks");
+  const lists = WIDGET_REGISTRY.find(w => w.id === "lists");
 
   it("records only listed variants", () => {
     expect(resolveFrameVariant(travel, "lagoon")).toBe("lagoon");
     expect(resolveFrameVariant(travel, "london")).toBeUndefined();
-    expect(resolveFrameVariant(stocks, "lagoon")).toBeUndefined();
+    expect(resolveFrameVariant(lists, "lagoon")).toBeUndefined();
   });
 
   it("records only listed user_actions and action_values", () => {
@@ -1564,8 +1538,8 @@ describe("framed widget telemetry allowlists", () => {
       false
     );
     expect(ok({ user_action: "constructor" })).toBe(false);
-    expect(
-      isRecordedFrameUserEvent(stocks, { user_action: "route_swap" })
-    ).toBe(false);
+    expect(isRecordedFrameUserEvent(lists, { user_action: "route_swap" })).toBe(
+      false
+    );
   });
 });

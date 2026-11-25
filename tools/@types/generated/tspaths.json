@@ -6850,9 +6850,6 @@
       "resource://newtab/common/Reducers.sys.mjs": [
         "../../../browser/extensions/newtab/common/Reducers.sys.mjs"
       ],
-      "resource://newtab/common/StocksWatchlist.mjs": [
-        "../../../browser/extensions/newtab/common/StocksWatchlist.mjs"
-      ],
       "resource://newtab/common/SurfaceId.mjs": [
         "../../../browser/extensions/newtab/common/SurfaceId.mjs"
       ],
@@ -7032,9 +7029,6 @@
       ],
       "resource://newtab/lib/Widgets/RecentSearchesFeed.sys.mjs": [
         "../../../browser/extensions/newtab/lib/Widgets/RecentSearchesFeed.sys.mjs"
-      ],
-      "resource://newtab/lib/Widgets/StocksFeed.sys.mjs": [
-        "../../../browser/extensions/newtab/lib/Widgets/StocksFeed.sys.mjs"
       ],
       "resource://newtab/lib/Widgets/TimerFeed.sys.mjs": [
         "../../../browser/extensions/newtab/lib/Widgets/TimerFeed.sys.mjs"

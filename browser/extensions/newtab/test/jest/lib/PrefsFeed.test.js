@@ -972,30 +972,6 @@ describe("PrefsFeed", () => {
     );
 
     it.each([
-      ["widgets", { stocksEnabled: true }],
-      ["widgetsSettings", { stocksEnabled: true }],
-    ])(
-      "should turn on the preffed-off stocks default from %s",
-      (type, payload) => {
-        const setBoolPref = jest.fn();
-        mockDefaultBranch({
-          setBoolPref,
-          setStringPref: jest.fn(),
-        });
-        nimbusFeatures.newtabTrainhop.getAllEnrollments.mockReturnValue([
-          { meta: { isRollout: false }, value: { type, payload } },
-        ]);
-
-        feed.onTrainhopExperimentUpdated();
-
-        expect(setBoolPref).toHaveBeenCalledWith(
-          "widgets.stocks.enabled",
-          true
-        );
-      }
-    );
-
-    it.each([
       ["widgets", { crosswordEnabled: true }],
       ["widgetsSettings", { crosswordEnabled: true }],
       ["widgetCrossword", { enabled: true }],

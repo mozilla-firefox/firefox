@@ -2234,9 +2234,9 @@ add_task(async function test_recordHomeWidgets() {
     trainhopConfig: { spaces },
     "widgets.system.enabled": true,
     "widgets.enabled": true,
-    "widgets.home": '["focusTimer","lists","clocks","stocks"]',
+    "widgets.home": '["focusTimer","lists","clocks","privacy"]',
   };
-  for (const id of ["lists", "focusTimer", "clocks", "stocks"]) {
+  for (const id of ["lists", "focusTimer", "clocks", "privacy"]) {
     values[`widgets.system.${id}.enabled`] = true;
     values[`widgets.${id}.enabled`] = true;
   }
@@ -2256,7 +2256,7 @@ add_task(async function test_recordHomeWidgets() {
   instance.recordEnabledWidgets();
   Assert.deepEqual(
     Glean.newtab.widgetsHomeList.testGetValue().sort(),
-    ["clocks", "lists", "stocks"],
+    ["clocks", "lists", "privacy"],
     "widgetsHomeList lists every pinned widget that is turned on, with no limit"
   );
 

@@ -67,11 +67,11 @@ describe("WidgetError", () => {
 
   it("shows a widget's own message instead when it has one", () => {
     const { container } = renderError({
-      l10nId: "newtab-stocks-error-not-available",
+      l10nId: "newtab-test-widget-error",
     });
     expect(container.querySelector(".widget-error-text")).toHaveAttribute(
       "data-l10n-id",
-      "newtab-stocks-error-not-available"
+      "newtab-test-widget-error"
     );
   });
 

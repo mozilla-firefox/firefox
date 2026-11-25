@@ -306,37 +306,6 @@ describe("ContentSection", () => {
     expect(enabledCall?.[0].data.widget_size).toBe("large");
   });
 
-  it("should dispatch WIDGETS_ENABLED with widget_name=stocks when the stocks toggle fires", () => {
-    const dispatch = jest.fn();
-    const { instance } = renderWithInstance({
-      ...DEFAULT_PROPS,
-      dispatch,
-      enabledWidgets: {
-        listsEnabled: false,
-        timerEnabled: false,
-        widgetsMaximized: false,
-        widgetsMayBeMaximized: false,
-      },
-    });
-
-    instance.onPreferenceSelect({
-      target: {
-        nodeName: "INPUT",
-        checked: true,
-        dataset: {
-          preference: "widgets.stocks.enabled",
-          eventSource: "WIDGET_STOCKS",
-        },
-      },
-    });
-
-    const enabledCall = dispatch.mock.calls.find(
-      ([action]) => action?.type === at.WIDGETS_ENABLED
-    );
-    expect(enabledCall).toBeTruthy();
-    expect(enabledCall?.[0].data.widget_name).toBe("stocks");
-  });
-
   it("should dispatch WIDGETS_ENABLED with widget_name=recent_searches when the recent searches toggle fires", () => {
     const dispatch = jest.fn();
     const { container, instance } = renderWithInstance({
@@ -868,22 +837,6 @@ describe("<ContentSection>", () => {
       );
       expect(enabledCall?.[0].data).toMatchObject({
         widget_name: "crossword",
-        widget_source: "customize_panel",
-        enabled: true,
-        widget_size: "large",
-      });
-    });
-
-    it("dispatches WIDGETS_ENABLED with widget_name='stocks' when the stocks toggle fires", () => {
-      const dispatch = jest.fn();
-      const instance = getInstance({ dispatch });
-      instance.inputUserEvent("WIDGET_STOCKS", true);
-
-      const enabledCall = dispatch.mock.calls.find(
-        ([action]) => action?.type === at.WIDGETS_ENABLED
-      );
-      expect(enabledCall?.[0].data).toMatchObject({
-        widget_name: "stocks",
         widget_source: "customize_panel",
         enabled: true,
         widget_size: "large",

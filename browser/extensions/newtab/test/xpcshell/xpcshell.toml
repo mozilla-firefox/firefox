@@ -69,8 +69,6 @@ tags = "remote-settings"
 
 ["test_StartupCacheInit.js"]
 
-["test_StocksFeed.js"]
-
 ["test_Store.js"]
 
 ["test_TelemetryFeed.js"]

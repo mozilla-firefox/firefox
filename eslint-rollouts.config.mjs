@@ -81,8 +81,6 @@ export default [
       "browser/extensions/newtab/content-src/components/Widgets/PictureOfTheDay/PictureOfTheDay.jsx",
       "browser/extensions/newtab/content-src/components/Widgets/RecentSearches/RecentSearches.jsx",
       "browser/extensions/newtab/content-src/components/Widgets/Solitaire/Solitaire.jsx",
-      "browser/extensions/newtab/content-src/components/Widgets/Stocks/StockSearch.jsx",
-      "browser/extensions/newtab/content-src/components/Widgets/Stocks/Stocks.jsx",
       "browser/extensions/newtab/content-src/components/Widgets/Travel/Travel.jsx",
       "browser/extensions/newtab/content-src/components/Widgets/Weather/Weather.jsx",
       "browser/extensions/newtab/content-src/components/Widgets/WeatherForecast/WeatherForecast.jsx",

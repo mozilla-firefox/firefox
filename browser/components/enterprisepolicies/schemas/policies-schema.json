@@ -2409,7 +2409,7 @@
           "Snippets": true,
           "Widgets": {
             "Enabled": true,
-            "Blocked": ["crossword", "stocks"]
+            "Blocked": ["crossword", "clocks"]
           },
           "Locked": true
         }

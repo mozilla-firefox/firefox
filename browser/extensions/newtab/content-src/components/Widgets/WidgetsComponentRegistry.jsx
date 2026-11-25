@@ -10,7 +10,6 @@ import { Weather as WeatherWidget } from "./Weather/Weather";
 import { Clocks } from "./Clocks/Clocks";
 import { Privacy } from "./Privacy/Privacy";
 import { Crossword } from "./Crossword/Crossword";
-import { Stocks } from "./Stocks/Stocks";
 import { PictureOfTheDay } from "./PictureOfTheDay/PictureOfTheDay";
 import { RecentSearches } from "./RecentSearches/RecentSearches";
 import { Horoscopes } from "./Horoscopes/Horoscopes";
@@ -48,7 +47,6 @@ export const WIDGET_ROW_COMPONENTS = {
   clocks: Clocks,
   privacy: Privacy,
   crossword: Crossword,
-  stocks: Stocks,
   pictureOfTheDay: PictureOfTheDay,
   recentSearches: RecentSearches,
   horoscopes: Horoscopes,

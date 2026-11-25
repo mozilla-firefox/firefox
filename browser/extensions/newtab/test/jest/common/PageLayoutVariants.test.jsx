@@ -1220,8 +1220,8 @@ describe("the thematic spaces variant", () => {
       "widgets.lists.enabled": true,
       "widgets.system.focusTimer.enabled": true,
       "widgets.focusTimer.enabled": true,
-      "widgets.system.stocks.enabled": true,
-      "widgets.stocks.enabled": true,
+      "widgets.system.privacy.enabled": true,
+      "widgets.privacy.enabled": true,
       "widgets.system.clocks.enabled": true,
       "widgets.clocks.enabled": true,
     };
@@ -1241,7 +1241,7 @@ describe("the thematic spaces variant", () => {
       expect(resolveThematicSpaceWidgets(CONFIG, "home", ALL_ON)).toEqual([
         "pictureOfTheDay",
         "clocks",
-        "stocks",
+        "privacy",
       ]);
     });
 
@@ -1273,7 +1273,7 @@ describe("the thematic spaces variant", () => {
         "clocks",
         "lists",
         "focusTimer",
-        "stocks",
+        "privacy",
       ]);
     });
 
@@ -1379,12 +1379,12 @@ describe("the thematic spaces variant", () => {
       it("shows every enabled widget not on Home in the library", () => {
         expect(
           resolveThematicSpaceWidgets(LIBRARY, "living", ALL_ON).sort()
-        ).toEqual(["clocks", "crossword", "focusTimer", "lists", "stocks"]);
+        ).toEqual(["clocks", "crossword", "focusTimer", "lists", "privacy"]);
       });
 
       // How many start on Home is the config's call, not a limit in code.
       it("shows every pinned widget on Home", () => {
-        const pinned = ["lists", "clocks", "stocks", "focusTimer"];
+        const pinned = ["lists", "clocks", "privacy", "focusTimer"];
         const prefs = {
           ...ALL_ON,
           [PREF_HOME_WIDGETS]: JSON.stringify(pinned),
@@ -1402,9 +1402,9 @@ describe("the thematic spaces variant", () => {
           resolveThematicSpaceWidgets(LIBRARY, "home", {
             ...ALL_ON,
             "widgets.lists.enabled": false,
-            [PREF_HOME_WIDGETS]: JSON.stringify(["lists", "clocks", "stocks"]),
+            [PREF_HOME_WIDGETS]: JSON.stringify(["lists", "clocks", "privacy"]),
           }).sort()
-        ).toEqual(["clocks", "stocks"]);
+        ).toEqual(["clocks", "privacy"]);
       });
 
       it("leaves the other spaces to the config", () => {

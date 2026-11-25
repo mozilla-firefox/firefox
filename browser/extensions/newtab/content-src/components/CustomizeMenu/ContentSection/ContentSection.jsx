@@ -66,9 +66,6 @@ export class ContentSection extends React.PureComponent {
       case "WIDGET_CROSSWORD":
         widgetName = "crossword";
         break;
-      case "WIDGET_STOCKS":
-        widgetName = "stocks";
-        break;
       case "WIDGET_RECENT_SEARCHES":
         widgetName = "recent_searches";
         break;
@@ -203,7 +200,6 @@ export class ContentSection extends React.PureComponent {
       mayHaveClocksWidget,
       mayHavePrivacyWidget,
       mayHaveCrosswordWidget,
-      mayHaveStocksWidget,
       mayHavePictureOfTheDayWidget,
       mayHaveRecentSearchesWidget,
       openPreferences,
@@ -243,7 +239,6 @@ export class ContentSection extends React.PureComponent {
       clocksEnabled,
       privacyEnabled,
       crosswordEnabled,
-      stocksEnabled,
       pictureOfTheDayEnabled,
       recentSearchesEnabled,
     } = enabledWidgets;
@@ -402,19 +397,6 @@ export class ContentSection extends React.PureComponent {
                   </div>
                 )}
 
-                {/* Stocks */}
-                {mayHaveStocksWidget && (
-                  <div id="stocks-widget-section" className="section">
-                    <moz-toggle
-                      id="stocks-toggle"
-                      pressed={stocksEnabled || null}
-                      ontoggle={this.onPreferenceSelect}
-                      data-preference="widgets.stocks.enabled"
-                      data-event-source="WIDGET_STOCKS"
-                      data-l10n-id="newtab-custom-widget-stocks-toggle2"
-                    />
-                  </div>
-                )}
                 {/* Picture of the day */}
                 {mayHavePictureOfTheDayWidget && (
                   <div id="picture-widget-section" className="section">

@@ -1334,44 +1334,6 @@ describe("Reducers", () => {
     });
   });
 
-  describe("Stocks", () => {
-    it("WIDGETS_STOCKS_UPDATE replaces tickers and sets lastUpdated", () => {
-      const action = {
-        type: at.WIDGETS_STOCKS_UPDATE,
-        data: {
-          tickers: [{ ticker: "SPY", name: "SPDR S&P 500 ETF Trust" }],
-          lastUpdated: 1700000000000,
-        },
-      };
-      const nextState = reducers.Stocks(undefined, action);
-      expect(nextState.tickers).toEqual(action.data.tickers);
-      expect(nextState.lastUpdated).toBe(1700000000000);
-    });
-
-    it("returns previous state for unrelated actions", () => {
-      const prev = { tickers: [{ ticker: "DIA" }], lastUpdated: 1 };
-      expect(reducers.Stocks(prev, { type: "SOME_OTHER_ACTION" })).toBe(prev);
-    });
-
-    it("WIDGETS_STOCKS_UPDATE stores the error flag", () => {
-      const action = {
-        type: at.WIDGETS_STOCKS_UPDATE,
-        data: { tickers: [], lastUpdated: 1700000000000, error: true },
-      };
-      const nextState = reducers.Stocks(undefined, action);
-      expect(nextState.error).toBe(true);
-    });
-
-    it("WIDGETS_STOCKS_UPDATE defaults error to false when omitted", () => {
-      const action = {
-        type: at.WIDGETS_STOCKS_UPDATE,
-        data: { tickers: [], lastUpdated: 1 },
-      };
-      const nextState = reducers.Stocks(undefined, action);
-      expect(nextState.error).toBe(false);
-    });
-  });
-
   describe("WebNotifications", () => {
     const notification = {
       id: "n1",

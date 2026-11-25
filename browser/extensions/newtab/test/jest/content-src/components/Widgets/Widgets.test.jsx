@@ -85,7 +85,6 @@ const PREF_WIDGETS_SYSTEM_TIMER_ENABLED = "widgets.system.focusTimer.enabled";
 const PREF_WIDGETS_CLOCKS_ENABLED = "widgets.clocks.enabled";
 const PREF_WIDGETS_PRIVACY_ENABLED = "widgets.privacy.enabled";
 const PREF_WIDGETS_CROSSWORD_ENABLED = "widgets.crossword.enabled";
-const PREF_WIDGETS_STOCKS_ENABLED = "widgets.stocks.enabled";
 const PREF_WIDGETS_RECENT_SEARCHES_ENABLED = "widgets.recentSearches.enabled";
 const PREF_WIDGETS_HOROSCOPES_ENABLED = "widgets.horoscopes.enabled";
 const PREF_WIDGETS_TRAVEL_ENABLED = "widgets.travel.enabled";
@@ -342,14 +341,13 @@ describe("<Widgets> handleHideAllWidgets", () => {
   }
 
   function expectAllWidgetPrefsDisabled(calls) {
-    expect(calls).toHaveLength(12);
+    expect(calls).toHaveLength(11);
     for (const name of [
       PREF_WIDGETS_LISTS_ENABLED,
       PREF_WIDGETS_TIMER_ENABLED,
       PREF_WIDGETS_CLOCKS_ENABLED,
       PREF_WIDGETS_PRIVACY_ENABLED,
       PREF_WIDGETS_CROSSWORD_ENABLED,
-      PREF_WIDGETS_STOCKS_ENABLED,
       PREF_WIDGETS_PICTURE_OF_THE_DAY_ENABLED,
       PREF_WIDGETS_RECENT_SEARCHES_ENABLED,
       PREF_WIDGETS_HOROSCOPES_ENABLED,
@@ -1141,10 +1139,10 @@ function makeNovaWidgetState(widgets, extraPrefs = {}) {
       system: "widgets.system.weather.enabled",
       size: "widgets.weather.size",
     },
-    stocks: {
-      enabled: "widgets.stocks.enabled",
-      system: "widgets.system.stocks.enabled",
-      size: "widgets.stocks.size",
+    privacy: {
+      enabled: "widgets.privacy.enabled",
+      system: "widgets.system.privacy.enabled",
+      size: "widgets.privacy.size",
     },
     clocks: {
       enabled: "widgets.clocks.enabled",
@@ -1248,7 +1246,7 @@ describe("<Widgets> overflow detection", () => {
     const state = makeNovaWidgetState([
       ["lists", "medium"],
       ["focusTimer", "medium"],
-      ["stocks", "medium"],
+      ["privacy", "medium"],
     ]);
     const { container } = renderWidgets(state);
     const section = getSectionContainer(container);
@@ -1260,7 +1258,7 @@ describe("<Widgets> overflow detection", () => {
 
   it("overflow detection is size-agnostic", () => {
     const state = makeNovaWidgetState([
-      ["stocks", "medium"],
+      ["privacy", "medium"],
       ["clocks", "medium"],
       ["lists", "medium"],
       ["focusTimer", "medium"],
@@ -1277,7 +1275,7 @@ describe("<Widgets> overflow detection", () => {
       ["lists", "large"],
       ["focusTimer", "medium"],
       ["weather", "medium"],
-      ["stocks", "medium"],
+      ["privacy", "medium"],
     ]);
     const { container } = renderWidgets(state);
     const section = getSectionContainer(container);
@@ -2555,8 +2553,8 @@ describe("<Widgets> row ad slot", () => {
           "widgets.system.maximized": true,
           "widgets.system.clocks.enabled": true,
           "widgets.clocks.enabled": true,
-          "widgets.system.stocks.enabled": true,
-          "widgets.stocks.enabled": true,
+          "widgets.system.privacy.enabled": true,
+          "widgets.privacy.enabled": true,
           ...values,
         },
       },
@@ -2694,16 +2692,16 @@ describe("<Widgets> row ad slot", () => {
     (held, resident) => {
       const { container } = renderWidgets(
         adState({
-          "widgets.order": "clocks,lists,stocks",
+          "widgets.order": "clocks,lists,privacy",
           "widgets.clocks.size": resident,
-          "widgets.stocks.size": held,
+          "widgets.privacy.size": held,
         })
       );
 
       dragLastToFront(container);
 
       const dragged = container.querySelector(".widget-wrapper[data-dragging]");
-      expect(dragged).toHaveAttribute("data-widget-id", "stocks");
+      expect(dragged).toHaveAttribute("data-widget-id", "privacy");
       expect(dragged.parentElement.nextElementSibling).toHaveAttribute(
         "data-slot-key",
         "widgets-row-ad"
@@ -2720,7 +2718,7 @@ describe("<Widgets> row ad slot", () => {
     const one = renderWidgets(
       adState({
         "widgets.clocks.enabled": false,
-        "widgets.stocks.enabled": false,
+        "widgets.privacy.enabled": false,
       })
     ).container;
     expect(adCell(one)).toHaveAttribute("data-widgets-before", "1");
@@ -2758,19 +2756,19 @@ describe("<Widgets> row ad slot", () => {
 
   it("slots the row ad after the first widget", () => {
     const { container } = renderWidgets(
-      adState({ "widgets.order": "clocks,lists,stocks" })
+      adState({ "widgets.order": "clocks,lists,privacy" })
     );
     expect(slotKeys(container).slice(0, 4)).toEqual([
       "clocks",
       "widgets-row-ad",
       "lists",
-      "stocks",
+      "privacy",
     ]);
   });
 
   it("adds and removes the row ad slot as the variant changes", () => {
     const { container, store } = renderWidgets(
-      adState({ "widgets.order": "clocks,lists,stocks" })
+      adState({ "widgets.order": "clocks,lists,privacy" })
     );
     setPref(store, "pageLayouts.variant", "nova-full-width");
     expect(slotKeys(container)).not.toContain("widgets-row-ad");
@@ -2782,7 +2780,7 @@ describe("<Widgets> row ad slot", () => {
       "clocks",
       "widgets-row-ad",
       "lists",
-      "stocks",
+      "privacy",
     ]);
     expect(grid(container).querySelectorAll("[data-slot-key]")).toHaveLength(
       grid(container).children.length

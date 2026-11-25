@@ -419,13 +419,13 @@ describe("<MozWidgetCard>", () => {
 
     it("uses the entry's own message when it has one", () => {
       const { card } = renderCard({
-        errorL10nId: "newtab-stocks-error-not-available",
+        errorL10nId: "newtab-test-widget-error",
       });
       reportError(card);
 
       expect(card.querySelector(".widget-error-text")).toHaveAttribute(
         "data-l10n-id",
-        "newtab-stocks-error-not-available"
+        "newtab-test-widget-error"
       );
     });
 

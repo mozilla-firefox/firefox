@@ -1361,7 +1361,6 @@ export interface Modules {
   "resource://newtab/lib/Widgets/PictureOfTheDayFeed.sys.mjs": typeof import("resource://newtab/lib/Widgets/PictureOfTheDayFeed.sys.mjs"),
   "resource://newtab/lib/Widgets/PrivacyFeed.sys.mjs": typeof import("resource://newtab/lib/Widgets/PrivacyFeed.sys.mjs"),
   "resource://newtab/lib/Widgets/RecentSearchesFeed.sys.mjs": typeof import("resource://newtab/lib/Widgets/RecentSearchesFeed.sys.mjs"),
-  "resource://newtab/lib/Widgets/StocksFeed.sys.mjs": typeof import("resource://newtab/lib/Widgets/StocksFeed.sys.mjs"),
   "resource://newtab/lib/Widgets/TimerFeed.sys.mjs": typeof import("resource://newtab/lib/Widgets/TimerFeed.sys.mjs"),
   "resource://newtab/lib/Widgets/TravelFeed.sys.mjs": typeof import("resource://newtab/lib/Widgets/TravelFeed.sys.mjs"),
   "resource://newtab/lib/actors/NewTabAttributionParent.sys.mjs": typeof import("resource://newtab/lib/actors/NewTabAttributionParent.sys.mjs"),

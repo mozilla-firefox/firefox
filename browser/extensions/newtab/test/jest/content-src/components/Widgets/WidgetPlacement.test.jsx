@@ -41,8 +41,8 @@ const PLACEMENT_PREFS = {
   "widgets.lists.enabled": true,
   "widgets.system.clocks.enabled": true,
   "widgets.clocks.enabled": true,
-  "widgets.system.stocks.enabled": true,
-  "widgets.stocks.enabled": true,
+  "widgets.system.focusTimer.enabled": true,
+  "widgets.focusTimer.enabled": true,
 };
 
 const setPrefs = dispatch =>
@@ -111,7 +111,7 @@ describe("setWidgetOnHome", () => {
   const prefsWith = homeList => ({
     ...PLACEMENT_PREFS,
     [PREF_HOME_WIDGETS]: JSON.stringify(homeList),
-    [PREF_WIDGETS_ORDER]: "clocks,stocks,lists",
+    [PREF_WIDGETS_ORDER]: "clocks,focusTimer,lists",
   });
 
   it("pins a widget first in the Home list and the widget order", () => {
@@ -130,9 +130,14 @@ describe("setWidgetOnHome", () => {
 
   it("pins a widget however many are already pinned", () => {
     const dispatch = jest.fn();
-    setWidgetOnHome(dispatch, prefsWith(["clocks", "stocks"]), "lists", true);
+    setWidgetOnHome(
+      dispatch,
+      prefsWith(["clocks", "focusTimer"]),
+      "lists",
+      true
+    );
     expect(setPrefs(dispatch)[PREF_HOME_WIDGETS]).toBe(
-      '["lists","clocks","stocks"]'
+      '["lists","clocks","focusTimer"]'
     );
   });
 

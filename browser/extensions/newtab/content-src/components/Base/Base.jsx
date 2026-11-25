@@ -1053,7 +1053,6 @@ export class BaseContent extends React.PureComponent {
     const mayHaveClocksWidget = widgetVisibleById("clocks");
     const mayHavePrivacyWidget = widgetVisibleById("privacy");
     const mayHaveCrosswordWidget = widgetVisibleById("crossword");
-    const mayHaveStocksWidget = widgetVisibleById("stocks");
     const mayHavePictureOfTheDayWidget = widgetVisibleById("pictureOfTheDay");
     const mayHaveRecentSearchesWidget = widgetVisibleById("recentSearches");
 
@@ -1071,7 +1070,6 @@ export class BaseContent extends React.PureComponent {
         : prefs.showWeather,
       privacyEnabled: prefs["widgets.privacy.enabled"],
       crosswordEnabled: prefs["widgets.crossword.enabled"],
-      stocksEnabled: prefs["widgets.stocks.enabled"],
       pictureOfTheDayEnabled: prefs["widgets.pictureOfTheDay.enabled"],
       recentSearchesEnabled: prefs["widgets.recentSearches.enabled"],
       widgetsMaximized: prefs["widgets.maximized"],
@@ -1449,7 +1447,6 @@ export class BaseContent extends React.PureComponent {
                 mayHaveClocksWidget={mayHaveClocksWidget}
                 mayHavePrivacyWidget={mayHavePrivacyWidget}
                 mayHaveCrosswordWidget={mayHaveCrosswordWidget}
-                mayHaveStocksWidget={mayHaveStocksWidget}
                 mayHavePictureOfTheDayWidget={mayHavePictureOfTheDayWidget}
                 mayHaveRecentSearchesWidget={mayHaveRecentSearchesWidget}
                 mayHaveWeatherForecast={
@@ -1620,7 +1617,6 @@ export class BaseContent extends React.PureComponent {
               mayHaveClocksWidget={mayHaveClocksWidget}
               mayHavePrivacyWidget={mayHavePrivacyWidget}
               mayHaveCrosswordWidget={mayHaveCrosswordWidget}
-              mayHaveStocksWidget={mayHaveStocksWidget}
               mayHavePictureOfTheDayWidget={mayHavePictureOfTheDayWidget}
               mayHaveRecentSearchesWidget={mayHaveRecentSearchesWidget}
               mayHaveWeatherForecast={

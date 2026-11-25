@@ -708,12 +708,12 @@ const POLICIES_TESTS = [
     policies: {
       FirefoxHome: {
         Widgets: {
-          Blocked: ["stocks"],
+          Blocked: ["clocks"],
         },
       },
     },
     lockedPrefs: {
-      "browser.newtabpage.activity-stream.widgets.stocks.enabled": false,
+      "browser.newtabpage.activity-stream.widgets.clocks.enabled": false,
     },
   },
 

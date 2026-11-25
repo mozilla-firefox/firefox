@@ -158,11 +158,6 @@ export const PREF_WIDGETS_SYSTEM_CROSSWORD_ENABLED =
   "widgets.system.crossword.enabled";
 export const PREF_FRAMED_WIDGETS_ALLOWED_HOST_SUFFIXES =
   "widgets.framed.allowedHostSuffixes";
-export const PREF_WIDGETS_STOCKS_ENABLED = "widgets.stocks.enabled";
-export const PREF_STOCKS_SIZE = "widgets.stocks.size";
-export const PREF_STOCKS_WATCHLIST = "widgets.stocks.watchlist";
-export const PREF_WIDGETS_SYSTEM_STOCKS_ENABLED =
-  "widgets.system.stocks.enabled";
 export const PREF_WIDGETS_PICTURE_OF_THE_DAY_ENABLED =
   "widgets.pictureOfTheDay.enabled";
 export const PREF_PICTURE_OF_THE_DAY_SIZE = "widgets.pictureOfTheDay.size";
@@ -407,25 +402,6 @@ export const WIDGET_REGISTRY = [
     widgetsSettingsEnabledKey: "crosswordEnabled",
     trainhopNamespace: "widgetCrossword",
     framed: true,
-  },
-  {
-    id: "stocks",
-    telemetryName: "stocks",
-    customizeL10nId: "newtab-custom-widget-stocks-toggle2",
-    customizeEventSource: "WIDGET_STOCKS",
-    order: 7,
-    enabledPref: PREF_WIDGETS_STOCKS_ENABLED,
-    sizePref: PREF_STOCKS_SIZE,
-    defaultSize: "medium",
-    validSizes: ["small", "medium", "large"],
-    hasSidebar: false,
-    systemEnabledPref: PREF_WIDGETS_SYSTEM_STOCKS_ENABLED,
-    trainhopEnabledKey: "stocksEnabled",
-    trainhopSizeKey: "stocksSize",
-    trainhopSidebarKey: null,
-    widgetsSettingsVisibleKey: "stocksVisible",
-    widgetsSettingsEnabledKey: "stocksEnabled",
-    trainhopNamespace: "widgetStocks",
   },
   {
     id: "recentSearches",

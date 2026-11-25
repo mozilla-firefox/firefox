@@ -801,7 +801,6 @@ describe("ActivityStream", () => {
       "widgets.pictureOfTheDay.enabled",
       "widgets.privacy.enabled",
       "widgets.crossword.enabled",
-      "widgets.stocks.enabled",
       "widgets.recentSearches.enabled",
       "widgets.horoscopes.enabled",
       "widgets.travel.enabled",
@@ -925,15 +924,6 @@ describe("ActivityStream", () => {
       region.home = "PL";
       as._updateDynamicPrefs();
       expect(PREFS_CONFIG.get("widgets.system.lists.enabled").value).toBe(true);
-    });
-  });
-  describe("stocks widget defaults", () => {
-    it("should be off everywhere by default", () => {
-      as._updateDynamicPrefs();
-      expect(PREFS_CONFIG.get("widgets.stocks.enabled").value).toBe(false);
-      expect(PREFS_CONFIG.get("widgets.system.stocks.enabled").value).toBe(
-        false
-      );
     });
   });
   describe("recent searches widget defaults", () => {

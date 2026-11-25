@@ -70,14 +70,6 @@ const WIDGETS = [
     widgetSize: "medium",
   },
   {
-    id: "stocks",
-    l10nId: "newtab-custom-widget-stocks-toggle2",
-    source: "WIDGET_STOCKS",
-    widget_name: "stocks",
-    preference: "widgets.stocks.enabled",
-    widgetSize: "medium",
-  },
-  {
     id: "recentSearches",
     l10nId: "newtab-custom-widget-search-toggle",
     source: "WIDGET_RECENT_SEARCHES",
@@ -142,7 +134,6 @@ const PANEL_LABELS = {
   "newtab-custom-widget-privacy-toggle": "Privacy",
   "newtab-custom-widget-search-toggle": "Search",
   "newtab-custom-widget-solitaire-toggle": "Solitaire",
-  "newtab-custom-widget-stocks-toggle2": "Finance",
   "newtab-custom-widget-timer-toggle": "Timer",
   "newtab-custom-widget-travel-toggle": "Travel",
   "newtab-custom-widget-weather-toggle": "Weather",
@@ -152,13 +143,11 @@ const PANEL_LABELS = {
 
 // The German, Greek and Japanese labels are Firefox's own translations, apart
 // from the fixture widget's, the Japanese Search label, and the Horoscopes,
-// Travel and Solitaire labels, which have no translations yet. The Finance fixtures reuse the Stocks
-// translations as stand-ins until the renamed message is translated. Wrexham AFC
+// Travel and Solitaire labels, which have no translations yet. Wrexham AFC
 // is a preview string, so it is English in every locale.
 // Übersicht sorts before Uhr only under locale-aware collation; a code point
 // comparison would put it after Wetter.
 const GERMAN_PANEL_LABELS = {
-  "newtab-custom-widget-stocks-toggle2": "Aktien",
   "newtab-custom-widget-picture-toggle": "Bild des Tages",
   "newtab-custom-widget-privacy-toggle": "Datenschutz",
   "newtab-custom-widget-horoscopes-toggle": "Horoskope",
@@ -182,7 +171,6 @@ const GREEK_PANEL_LABELS = {
   "newtab-custom-widget-picture-toggle": "Εικόνα της ημέρας",
   "newtab-custom-widget-weather-toggle": "Καιρός",
   "newtab-custom-widget-lists-toggle": "Λίστες",
-  "newtab-custom-widget-stocks-toggle2": "Μετοχές",
   "newtab-custom-widget-solitaire-toggle": "Πασιέντζα",
   "newtab-custom-widget-clock-toggle": "Ρολόι",
   "newtab-custom-widget-crossword-toggle": "Σταυρόλεξο",
@@ -205,14 +193,12 @@ const JAPANESE_PANEL_LABELS = {
   "newtab-custom-widget-search-toggle": "最近の検索",
   "newtab-custom-widget-weather-toggle": "天気予報",
   "newtab-custom-widget-clock-toggle": "時計",
-  "newtab-custom-widget-stocks-toggle2": "株価情報",
 };
 
 // Expected orders are written by hand so the tests do not mirror the sort.
 const EN_US_ORDER = [
   "clocks",
   "crossword",
-  "stocks",
   "horoscopes",
   "lists",
   "pictureOfTheDay",
@@ -225,11 +211,10 @@ const EN_US_ORDER = [
   "wrexhamAFC",
 ];
 
-// "Finance" sorts before "Fixture widget".
+// "Fixture widget" sorts after "Crossword".
 const EN_US_ORDER_WITH_FIXTURE = [
   "clocks",
   "crossword",
-  "stocks",
   "fixtureWidget",
   "horoscopes",
   "lists",
@@ -244,7 +229,6 @@ const EN_US_ORDER_WITH_FIXTURE = [
 ];
 
 const GERMAN_ORDER = [
-  "stocks",
   "pictureOfTheDay",
   "privacy",
   "horoscopes",
@@ -268,7 +252,6 @@ const GREEK_ORDER = [
   "pictureOfTheDay",
   "weather",
   "lists",
-  "stocks",
   "solitaire",
   "clocks",
   "crossword",
@@ -289,15 +272,13 @@ const JAPANESE_ORDER = [
   "recentSearches",
   "weather",
   "clocks",
-  "stocks",
 ];
 
 // The order when Timer alone sorts under its id, the rest under their labels:
-// "focusTimer" follows "Finance" and precedes "Lists".
+// "focusTimer" follows "Crossword" and precedes "Horoscopes".
 const TIMER_ID_SORT_ORDER = [
   "clocks",
   "crossword",
-  "stocks",
   "focusTimer",
   "horoscopes",
   "lists",
@@ -321,7 +302,6 @@ const ID_ORDER = [
   "privacy",
   "recentSearches",
   "solitaire",
-  "stocks",
   "travel",
   "weather",
   "wrexhamAFC",
@@ -738,7 +718,7 @@ describe("<WidgetsManagementPanel>", () => {
 
     it("keeps a reduced set sorted when only some widgets are available", async () => {
       const prefs = allWidgetsVisible();
-      for (const id of ["clocks", "crossword", "lists", "privacy", "stocks"]) {
+      for (const id of ["clocks", "crossword", "lists", "privacy"]) {
         prefs[WIDGET_REGISTRY.find(w => w.id === id).systemEnabledPref] = false;
       }
 
