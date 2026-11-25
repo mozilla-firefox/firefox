@@ -120,4 +120,8 @@ if CONFIG["TARGET_CPU"] == "aarch64":
 
     DEFINES["__ARM_NEON__"] = "1"
 
+if CONFIG["MOZ_ANGLE_METAL_SHADER_COMPILATION"] == "1":
+
+    DEFINES["ANGLE_METAL_HAS_PREBUILT_INTERNAL_SHADERS"] = True
+
 Library("angle_metal_backend_gn")

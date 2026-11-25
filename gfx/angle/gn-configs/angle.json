@@ -3,6 +3,9 @@
   "target_dir": "angle",
   "moz_build_flag": "build_mozilla_angle",
   "mozilla_add_override_dir": "",
+  "moz_config_gn_args": {
+    "MOZ_ANGLE_METAL_SHADER_COMPILATION": "angle_enable_metal_internal_shader_compilation"
+  },
   "gn_target": {
     "*": "//:translator",
     "android": "//:libEGL",

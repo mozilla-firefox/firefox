@@ -122,3 +122,11 @@ if CONFIG["MOZ_DEBUG"] == "1" and CONFIG["TARGET_OS"] == "OSX":
     DIRS += [
         "/third_party/angle/angle_gl_enum_utils_gn"
     ]
+
+if CONFIG["MOZ_ANGLE_METAL_SHADER_COMPILATION"] == "1" and CONFIG["TARGET_OS"] == "OSX":
+
+    DIRS += [
+        "/third_party/angle/src/libANGLE/renderer/metal/angle_metal_internal_shaders_gn",
+        "/third_party/angle/src/libANGLE/renderer/metal/angle_metal_internal_shaders_to_air_gn",
+        "/third_party/angle/src/libANGLE/renderer/metal/angle_metal_internal_shaders_to_mtllib_gn"
+    ]

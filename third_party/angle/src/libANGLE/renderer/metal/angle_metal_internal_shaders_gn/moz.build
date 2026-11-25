@@ -1,0 +1,40 @@
+# This Source Code Form is subject to the terms of the Mozilla Public
+# License, v. 2.0. If a copy of the MPL was not distributed with this
+# file, You can obtain one at http://mozilla.org/MPL/2.0/.
+
+
+  ### This moz.build was AUTOMATICALLY GENERATED from a GN config,  ###
+  ### DO NOT edit it by hand.                                       ###
+
+COMPILE_FLAGS["OS_INCLUDES"] = []
+AllowCompilerWarnings()
+
+DEFINES["ANGLE_ENABLE_DEBUG_ANNOTATIONS"] = False
+DEFINES["ANGLE_ENABLE_KEYEDMUTEX"] = True
+DEFINES["ANGLE_PLATFORM_EXPORT"] = ""
+DEFINES["ANGLE_SKIP_DXGI_1_2_CHECK"] = True
+
+GeneratedFile(
+    "/third_party/angle/gen/mtl_internal_shaders_metallib.h",
+    entry_point="action",
+    extra_deps=['!/third_party/angle/gen/mtl_internal_shaders_autogen.metallib'],
+    flags=[
+        "/third_party/angle/src/libANGLE/renderer/metal/shaders/embed_in_header.py",
+        "/third_party/angle/",
+        "--source",
+        "gen/mtl_internal_shaders_autogen.metallib",
+        "--variable-name",
+        "gDefaultMetallib",
+        "--header",
+        "gen/mtl_internal_shaders_metallib.h"
+    ],
+    script="/python/mozbuild/mozbuild/action/file_generate_wrapper.py",
+)
+
+LOCAL_INCLUDES += [
+    "!/ipc/ipdl/_ipdlheaders",
+    "/ipc/chromium/src",
+    "/tools/profiler/public"
+]
+
+Library("angle_metal_internal_shaders_gn")
