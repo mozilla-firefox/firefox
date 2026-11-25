@@ -280,12 +280,28 @@ GeneratedFile(
     inputs=["MIROps.yaml"],
 )
 
+# Generate jit/MIROpClassesGenerated.h from jit/MIROps.yaml
+GeneratedFile(
+    "MIROpClassesGenerated.h",
+    script="GenerateMIRFiles.py",
+    entry_point="generate_mir_classes_header",
+    inputs=["MIROps.yaml"],
+)
+
 # Generate jit/LIROpsGenerated.h from jit/LIR.h, jit/shared/LIR-shared.h, and
 # platform-specific LIR files.
 GeneratedFile(
     "LIROpsGenerated.h",
     script="GenerateLIRFiles.py",
     entry_point="generate_lir_header",
+    inputs=["LIROps.yaml", "MIROps.yaml"],
+)
+
+# Generate jit/LIROpClassesGenerated.h from jit/LIROps.yaml and jit/MIROps.yaml
+GeneratedFile(
+    "LIROpClassesGenerated.h",
+    script="GenerateLIRFiles.py",
+    entry_point="generate_lir_classes_header",
     inputs=["LIROps.yaml", "MIROps.yaml"],
 )
 

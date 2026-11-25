@@ -6,15 +6,21 @@
 # =======================
 # This file defines all LIR opcodes as well as LIR opcode class
 # definitions. It is parsed by GenerateLIRFiles.py at build time to
-# create LIROpsGenerated.h. Each opcode consists of a
-# name and a set of attributes that are described below. Unless
-# marked as required, attributes are optional.
+# create LIROpsGenerated.h and LIROpClassesGenerated.h. Each opcode consists of
+# a name and a set of attributes that are described below. Unless marked as
+# required, attributes are optional.
 #
 # name [required]
 # ====
 # Opcode name.
 # Possible values:
 #   - opcode string: used as the name for LIR opcode.
+#
+# doc
+# ===
+# Optional documentation for the LIR opcode. Each line is emitted verbatim as a
+# comment on the generated C++ class. Not allowed when gen_boilerplate is
+# false.
 #
 # gen_boilerplate
 # ===============
@@ -152,32 +158,37 @@
 - name: MoveGroup
   gen_boilerplate: false
 
-# Constant 32-bit integer.
 - name: Integer
+  doc: |
+    Constant 32-bit integer.
   result_type: WordSized
   arguments:
     i32: int32_t
 
-# Constant 64-bit integer.
 - name: Integer64
+  doc: |
+    Constant 64-bit integer.
   result_type: Int64
   arguments:
     i64: int64_t
 
-# Constant pointer.
 - name: Pointer
+  doc: |
+    Constant pointer.
   result_type: WordSized
   arguments:
     gcptr: const gc::Cell*
 
-# Constant double.
 - name: Double
+  doc: |
+    Constant double.
   result_type: WordSized
   arguments:
     value: double
 
-# Constant float32.
 - name: Float32
+  doc: |
+    Constant float32.
   result_type: WordSized
   arguments:
     value: float
@@ -185,13 +196,15 @@
 - name: Value
   gen_boilerplate: false
 
-# Formal argument for a function, returning a box. Formal arguments are
-# initially read from the stack.
 - name: Parameter
+  doc: |
+    Formal argument for a function, returning a box. Formal arguments are
+    initially read from the stack.
   result_type: BoxedValue
 
-# Jumps to the start of a basic block.
 - name: Goto
+  doc: |
+    Jumps to the start of a basic block.
   successors: [target]
 
 - name: NewArray
@@ -245,14 +258,14 @@
   num_temps: 2
   mir_op: true
 
-# Allocates a new CallObject.
-#
-# This instruction generates two possible instruction sets:
-#   (1) If the call object is extensible, this is a callVM to create the
-#       call object.
-#   (2) Otherwise, an inline allocation of the call object is attempted.
-#
 - name: NewCallObject
+  doc: |
+    Allocates a new CallObject.
+
+    This instruction generates two possible instruction sets:
+      (1) If the call object is extensible, this is a callVM to create the
+          call object.
+      (2) Otherwise, an inline allocation of the call object is attempted.
   result_type: WordSized
   num_temps: 1
   mir_op: true
@@ -433,8 +446,9 @@
     value: BoxedValue
   mir_op: true
 
-# Writes a typed argument for a function call to the frame's argument vector.
 - name: StackArgT
+  doc: |
+    Writes a typed argument for a function call to the frame's argument vector.
   operands:
     arg: WordSized
   arguments:
@@ -442,8 +456,9 @@
     argslot: uint32_t
     type: MIRType
 
-# Writes a typed argument for a function call to the frame's argument vector.
 - name: StackArgV
+  doc: |
+    Writes a typed argument for a function call to the frame's argument vector.
   operands:
     value: BoxedValue
   arguments:
@@ -538,62 +553,71 @@
 - name: ConstructArrayNative
   gen_boilerplate: false
 
-# Takes in either an integer or boolean input and tests it for truthiness.
 - name: TestIAndBranch
+  doc: |
+    Takes in either an integer or boolean input and tests it for truthiness.
   successors: [ifTrue, ifFalse]
   operands:
     input: WordSized
 
-# Takes in intptr input and tests it for truthiness.
 - name: TestIPtrAndBranch
+  doc: |
+    Takes in intptr input and tests it for truthiness.
   successors: [ifTrue, ifFalse]
   operands:
     input: WordSized
 
-# Takes in an int64 input and tests it for truthiness.
 - name: TestI64AndBranch
+  doc: |
+    Takes in an int64 input and tests it for truthiness.
   successors: [ifTrue, ifFalse]
   operands:
     input: Int64
 
-# Takes in a double input and tests it for truthiness.
 - name: TestDAndBranch
+  doc: |
+    Takes in a double input and tests it for truthiness.
   successors: [ifTrue, ifFalse]
   operands:
     input: WordSized
 
-# Takes in a float32 input and tests it for truthiness.
 - name: TestFAndBranch
+  doc: |
+    Takes in a float32 input and tests it for truthiness.
   successors: [ifTrue, ifFalse]
   operands:
     input: WordSized
 
-# Takes in a bigint input and tests it for truthiness.
 - name: TestBIAndBranch
+  doc: |
+    Takes in a bigint input and tests it for truthiness.
   successors: [ifTrue, ifFalse]
   operands:
     input: WordSized
 
-# Takes an object and tests it for truthiness. An object is falsy iff it
-# emulates |undefined|; see js::EmulatesUndefined.
 - name: TestOAndBranch
+  doc: |
+    Takes an object and tests it for truthiness. An object is falsy iff it
+    emulates |undefined|; see js::EmulatesUndefined.
   successors: [ifTruthy, ifFalsy]
   operands:
     input: WordSized
   num_temps: 1
   mir_op: Test
 
-# Takes in a boxed value and tests it for truthiness.
 - name: TestVAndBranch
+  doc: |
+    Takes in a boxed value and tests it for truthiness.
   successors: [ifTruthy, ifFalsy]
   operands:
     input: BoxedValue
   num_temps: 3
   mir_op: Test
 
-# Compares two integral values of the same JS type, either integer or object.
-# For objects, both operands are in registers.
 - name: Compare
+  doc: |
+    Compares two integral values of the same JS type, either integer or object.
+    For objects, both operands are in registers.
   result_type: WordSized
   operands:
     left: WordSized
@@ -624,9 +648,10 @@
   mir_op: Test
   extra_name: true
 
-# Compares two integral values of the same JS type, either integer or object.
-# For objects, both operands are in registers.
 - name: CompareAndBranch
+  doc: |
+    Compares two integral values of the same JS type, either integer or object.
+    For objects, both operands are in registers.
   successors: [ifTrue, ifFalse]
   operands:
     left: WordSized
@@ -733,8 +758,9 @@
     cmpMir: MCompare*
   num_temps: 2
 
-# Fused Test and StrictConstantCompareInt32.
 - name: StrictConstantCompareInt32AndBranch
+  doc: |
+    Fused Test and StrictConstantCompareInt32.
   successors: [ifTrue, ifFalse]
   operands:
     value: BoxedValue
@@ -743,8 +769,9 @@
   mir_op: Test
   extra_name: true
 
-# Fused Test and StrictConstantCompareBoolean.
 - name: StrictConstantCompareBooleanAndBranch
+  doc: |
+    Fused Test and StrictConstantCompareBoolean.
   successors: [ifTrue, ifFalse]
   operands:
     value: BoxedValue
@@ -769,33 +796,37 @@
   arguments:
     cond: Assembler::Condition
 
-# Takes a value and tests whether it is null, undefined, or is an object that
-# emulates |undefined|, as determined by the JSCLASS_EMULATES_UNDEFINED class
-# flag on unwrapped objects.  See also js::EmulatesUndefined.
 - name: IsNullOrLikeUndefinedV
+  doc: |
+    Takes a value and tests whether it is null, undefined, or is an object that
+    emulates |undefined|, as determined by the JSCLASS_EMULATES_UNDEFINED class
+    flag on unwrapped objects.  See also js::EmulatesUndefined.
   result_type: WordSized
   operands:
     value: BoxedValue
   num_temps: 1
   mir_op: Compare
 
-# Takes an object pointer and tests whether it is an object that emulates
-# |undefined|, as above.
 - name: IsNullOrLikeUndefinedT
+  doc: |
+    Takes an object pointer and tests whether it is an object that emulates
+    |undefined|, as above.
   result_type: WordSized
   operands:
     input: WordSized
   mir_op: Compare
 
-# Takes a value and tests whether it is null.
 - name: IsNull
+  doc: |
+    Takes a value and tests whether it is null.
   result_type: WordSized
   operands:
     value: BoxedValue
   mir_op: Compare
 
-# Takes a value and tests whether it is undefined.
 - name: IsUndefined
+  doc: |
+    Takes a value and tests whether it is undefined.
   result_type: WordSized
   operands:
     value: BoxedValue
@@ -833,63 +864,72 @@
   arguments:
     cmpMir: MCompare*
 
-# Not operation on an integer.
 - name: NotI
+  doc: |
+    Not operation on an integer.
   result_type: WordSized
   operands:
     input: WordSized
 
-# Not operation on an intptr.
 - name: NotIPtr
+  doc: |
+    Not operation on an intptr.
   result_type: WordSized
   operands:
     input: WordSized
 
-# Not operation on an int64.
 - name: NotI64
+  doc: |
+    Not operation on an int64.
   result_type: WordSized
   operands:
     inputI64: Int64
 
-# Not operation on a double.
 - name: NotD
+  doc: |
+    Not operation on a double.
   result_type: WordSized
   operands:
     input: WordSized
   mir_op: Not
 
-# Not operation on a float32.
 - name: NotF
+  doc: |
+    Not operation on a float32.
   result_type: WordSized
   operands:
     input: WordSized
   mir_op: Not
 
-# Not operation on a BigInt.
 - name: NotBI
+  doc: |
+    Not operation on a BigInt.
   result_type: WordSized
   operands:
     input: WordSized
   mir_op: Not
 
-# Boolean complement operation on an object.
 - name: NotO
+  doc: |
+    Boolean complement operation on an object.
   result_type: WordSized
   operands:
     input: WordSized
   mir_op: Not
 
-# Boolean complement operation on a value.
 - name: NotV
+  doc: |
+    Boolean complement operation on a value.
   result_type: WordSized
   operands:
     input: BoxedValue
   num_temps: 2
   mir_op: Not
 
-# Bitwise not operation, takes a 32-bit integer as input and returning
-# a 32-bit integer result as an output.
 - name: BitNotI
+  doc: |
+    Bitwise not operation, takes a 32-bit integer as input and returning
+    a 32-bit integer result as an output.
   result_type: WordSized
   operands:
     input: WordSized
@@ -901,9 +941,10 @@
     input: Int64
   defer_init: true
 
-# Binary bitwise operation, taking two 32-bit integers as inputs and returning
-# a 32-bit integer result as an output.
 - name: BitOpI
+  doc: |
+    Binary bitwise operation, taking two 32-bit integers as inputs and returning
+    a 32-bit integer result as an output.
   result_type: WordSized
   operands:
     lhs: WordSized
@@ -923,9 +964,10 @@
   extra_name: true
   defer_init: true
 
-# Shift operation, taking two 32-bit integers as inputs and returning
-# a 32-bit integer result as an output.
 - name: ShiftI
+  doc: |
+    Shift operation, taking two 32-bit integers as inputs and returning
+    a 32-bit integer result as an output.
   result_type: WordSized
   operands:
     lhs: WordSized
@@ -1033,110 +1075,125 @@
   num_temps: 3
   mir_op: MinMaxArray
 
-# Negative of integer
 - name: NegI
+  doc: |
+    Negative of integer
   result_type: WordSized
   operands:
     input: WordSized
   defer_init: true
 
-# Negative of an int64
 - name: NegI64
+  doc: |
+    Negative of an int64
   result_type: Int64
   operands:
     input: Int64
   defer_init: true
 
-# Negative of double
 - name: NegD
+  doc: |
+    Negative of double
   result_type: WordSized
   operands:
     input: WordSized
   defer_init: true
 
-# Negative of float32
 - name: NegF
+  doc: |
+    Negative of float32
   result_type: WordSized
   operands:
     input: WordSized
   defer_init: true
 
-# Absolute value of an integer.
 - name: AbsI
+  doc: |
+    Absolute value of an integer.
   result_type: WordSized
   operands:
     input: WordSized
   defer_init: true
   mir_op: Abs
 
-# Absolute value of a double.
 - name: AbsD
+  doc: |
+    Absolute value of a double.
   result_type: WordSized
   operands:
     input: WordSized
   defer_init: true
 
-# Absolute value of a float32.
 - name: AbsF
+  doc: |
+    Absolute value of a float32.
   result_type: WordSized
   operands:
     input: WordSized
   defer_init: true
 
-# Copysign for doubles.
 - name: CopySignD
+  doc: |
+    Copysign for doubles.
   result_type: WordSized
   operands:
     lhs: WordSized
     rhs: WordSized
   defer_init: true
 
-# Copysign for float32.
 - name: CopySignF
+  doc: |
+    Copysign for float32.
   result_type: WordSized
   operands:
     lhs: WordSized
     rhs: WordSized
   defer_init: true
 
-# Count leading zeroes on an int32.
 - name: ClzI
+  doc: |
+    Count leading zeroes on an int32.
   result_type: WordSized
   operands:
     input: WordSized
   mir_op: Clz
 
-# Count leading zeroes on an int64.
 - name: ClzI64
+  doc: |
+    Count leading zeroes on an int64.
   result_type: Int64
   operands:
     input: Int64
   mir_op: Clz
 
-# Count trailing zeroes on an int32.
 - name: CtzI
+  doc: |
+    Count trailing zeroes on an int32.
   result_type: WordSized
   operands:
     input: WordSized
   mir_op: Ctz
 
-# Count trailing zeroes on an int64.
 - name: CtzI64
+  doc: |
+    Count trailing zeroes on an int64.
   result_type: Int64
   operands:
     input: Int64
   mir_op: Ctz
 
-# Count population on an int32.
 - name: PopcntI
+  doc: |
+    Count population on an int32.
   result_type: WordSized
   operands:
     input: WordSized
   num_temps: 1
   mir_op: Popcnt
 
-# Count population on an int64.
 - name: PopcntI64
+  doc: |
+    Count population on an int64.
   result_type: Int64
   operands:
     input: Int64
@@ -1163,16 +1220,18 @@
 - name: Hypot
   gen_boilerplate: false
 
-# Double raised to an integer power.
 - name: PowI
+  doc: |
+    Double raised to an integer power.
   result_type: WordSized
   operands:
     value: WordSized
     power: WordSized
   call_instruction: true
 
-# Integer raised to an integer power.
 - name: PowII
+  doc: |
+    Integer raised to an integer power.
   result_type: WordSized
   operands:
     value: WordSized
@@ -1180,43 +1239,49 @@
   num_temps: 2
   mir_op: Pow
 
-# Double raised to a double power.
 - name: PowD
+  doc: |
+    Double raised to a double power.
   result_type: WordSized
   operands:
     value: WordSized
     power: WordSized
   call_instruction: true
 
-# Constant of a power of two raised to an integer power.
 - name: PowOfTwoI
+  doc: |
+    Constant of a power of two raised to an integer power.
   result_type: WordSized
   operands:
     power: WordSized
   arguments:
     base: uint32_t
 
-# Sign value of an integer.
 - name: SignI
+  doc: |
+    Sign value of an integer.
   result_type: WordSized
   operands:
     input: WordSized
 
-# Sign value of an integer.
 - name: SignD
+  doc: |
+    Sign value of an integer.
   result_type: WordSized
   operands:
     input: WordSized
 
-# Sign value of a double with expected int32 result.
 - name: SignDI
+  doc: |
+    Sign value of a double with expected int32 result.
   result_type: WordSized
   operands:
     input: WordSized
   num_temps: 1
 
-# Sign value of a int32 with expected double result.
 - name: SignID
+  doc: |
+    Sign value of a int32 with expected double result.
   result_type: WordSized
   operands:
     input: WordSized
@@ -1289,8 +1354,9 @@
     rhs: WordSized
   defer_init: true
 
-# Performs an add, sub, mul, or div on two double values.
 - name: MathD
+  doc: |
+    Performs an add, sub, mul, or div on two double values.
   result_type: WordSized
   operands:
     lhs: WordSized
@@ -1300,8 +1366,9 @@
   extra_name: true
   defer_init: true
 
-# Performs an add, sub, mul, or div on two float values.
 - name: MathF
+  doc: |
+    Performs an add, sub, mul, or div on two float values.
   result_type: WordSized
   operands:
     lhs: WordSized
@@ -1565,16 +1632,18 @@
     input: WordSized
   mir_op: true
 
-# Adds two string, returning a string.
 - name: Concat
+  doc: |
+    Adds two string, returning a string.
   result_type: WordSized
   operands:
     lhs: WordSized
     rhs: WordSized
   num_temps: 5
 
-# Test if a string includes the constant search string.
 - name: StringIncludesSIMD
+  doc: |
+    Test if a string includes the constant search string.
   result_type: WordSized
   operands:
     string: WordSized
@@ -1582,8 +1651,9 @@
     searchString: JSOffThreadAtom*
   num_temps: 3
 
-# Search for the first index of the constant search string.
 - name: StringIndexOfSIMD
+  doc: |
+    Search for the first index of the constant search string.
   result_type: WordSized
   operands:
     string: WordSized
@@ -1591,8 +1661,9 @@
     searchString: JSOffThreadAtom*
   num_temps: 3
 
-# Test if a string starts with the constant search string
 - name: StringStartsWithInline
+  doc: |
+    Test if a string starts with the constant search string
   result_type: WordSized
   operands:
     string: WordSized
@@ -1600,8 +1671,9 @@
     searchString: JSOffThreadAtom*
   num_temps: 1
 
-# Test if a string ends with the constant search string
 - name: StringEndsWithInline
+  doc: |
+    Test if a string ends with the constant search string
   result_type: WordSized
   operands:
     string: WordSized
@@ -1609,35 +1681,39 @@
     searchString: JSOffThreadAtom*
   num_temps: 1
 
-# Calls the ToLowerCase case conversion function. Inlines the case conversion
-# when possible.
 - name: StringToLowerCase
+  doc: |
+    Calls the ToLowerCase case conversion function. Inlines the case conversion
+    when possible.
   result_type: WordSized
   operands:
     string: WordSized
   num_temps: 5
   mir_op: StringConvertCase
 
-# Calls the ToLowerCase case conversion function. Inlines the case conversion
-# when possible.
 - name: CharCodeToLowerCase
+  doc: |
+    Calls the ToLowerCase case conversion function. Inlines the case conversion
+    when possible.
   result_type: WordSized
   operands:
     code: WordSized
   num_temps: 1
   mir_op: CharCodeConvertCase
 
-# Calls the ToUpperCase case conversion function.
 - name: StringToUpperCase
+  doc: |
+    Calls the ToUpperCase case conversion function.
   result_type: WordSized
   operands:
     string: WordSized
   call_instruction: true
   mir_op: StringConvertCase
 
-# Calls the ToUpperCase case conversion function. Inlines the case conversion
-# when possible.
 - name: CharCodeToUpperCase
+  doc: |
+    Calls the ToUpperCase case conversion function. Inlines the case conversion
+    when possible.
   result_type: WordSized
   operands:
     code: WordSized
@@ -1688,84 +1764,94 @@
     input: WordSized
   num_temps: 1
 
-# Convert a value to a double.
 - name: ValueToDouble
+  doc: |
+    Convert a value to a double.
   result_type: WordSized
   operands:
     input: BoxedValue
   mir_op: ToDouble
 
-# Convert a value to a float32.
 - name: ValueToFloat32
+  doc: |
+    Convert a value to a float32.
   result_type: WordSized
   operands:
     input: BoxedValue
   mir_op: ToFloat32
 
-# Convert a value to a float16.
 - name: ValueToFloat16
+  doc: |
+    Convert a value to a float16.
   result_type: WordSized
   operands:
     input: BoxedValue
   num_temps: 1
   mir_op: ToFloat16
 
-# Convert a value to an int32.
 - name: ValueToNumberInt32
+  doc: |
+    Convert a value to an int32.
   result_type: WordSized
   operands:
     input: BoxedValue
   num_temps: 1
   mir_op: ToNumberInt32
 
-# Convert a value to an int32 with truncation.
 - name: ValueTruncateToInt32
+  doc: |
+    Convert a value to an int32 with truncation.
   result_type: WordSized
   operands:
     input: BoxedValue
   num_temps: 2
   mir_op: TruncateToInt32
 
-# Convert a value to a BigInt.
 - name: ValueToBigInt
+  doc: |
+    Convert a value to a BigInt.
   result_type: WordSized
   operands:
     input: BoxedValue
   mir_op: ToBigInt
 
-# Convert a double to an int32.
-#   Input: floating-point Register
-#   Output: 32-bit integer
-#   Bailout: if the double cannot be converted to an integer.
 - name: DoubleToInt32
+  doc: |
+    Convert a double to an int32.
+      Input: floating-point Register
+      Output: 32-bit integer
+      Bailout: if the double cannot be converted to an integer.
   result_type: WordSized
   operands:
     input: WordSized
   mir_op: ToNumberInt32
 
-# Convert a float32 to an int32.
-#   Input: floating-point Register
-#   Output: 32-bit integer
-#   Bailout: if the float32 cannot be converted to an integer.
 - name: Float32ToInt32
+  doc: |
+    Convert a float32 to an int32.
+      Input: floating-point Register
+      Output: 32-bit integer
+      Bailout: if the float32 cannot be converted to an integer.
   result_type: WordSized
   operands:
     input: WordSized
   mir_op: ToNumberInt32
 
-# Convert a double to a truncated int32.
-#   Input: floating-point Register
-#   Output: 32-bit integer
 - name: TruncateDToInt32
+  doc: |
+    Convert a double to a truncated int32.
+      Input: floating-point Register
+      Output: 32-bit integer
   result_type: WordSized
   operands:
     input: WordSized
   num_temps: 1
   mir_op: TruncateToInt32
 
-# Convert a double to a truncated int32 with instance offset because we need it
-# for the slow ool path.
 - name: WasmBuiltinTruncateDToInt32
+  doc: |
+    Convert a double to a truncated int32 with instance offset because we need it
+    for the slow ool path.
   result_type: WordSized
   operands:
     input: WordSized
@@ -1773,19 +1859,21 @@
   num_temps: 1
   mir_op: WasmBuiltinTruncateToInt32
 
-# Convert a float32 to a truncated int32.
-#   Input: floating-point Register
-#   Output: 32-bit integer
 - name: TruncateFToInt32
+  doc: |
+    Convert a float32 to a truncated int32.
+      Input: floating-point Register
+      Output: 32-bit integer
   result_type: WordSized
   operands:
     input: WordSized
   num_temps: 1
   mir_op: TruncateToInt32
 
-# Convert a float32 to a truncated int32 with instance offset because we need
-# it for the slow ool path.
 - name: WasmBuiltinTruncateFToInt32
+  doc: |
+    Convert a float32 to a truncated int32 with instance offset because we need
+    it for the slow ool path.
   result_type: WordSized
   operands:
     input: WordSized
@@ -1799,38 +1887,43 @@
     input: WordSized
   mir_op: true
 
-# Convert a boolean value to a string.
 - name: BooleanToString
+  doc: |
+    Convert a boolean value to a string.
   result_type: WordSized
   operands:
     input: WordSized
   mir_op: ToString
 
-# Convert an integer hosted on one definition to a string with a function call.
 - name: IntToString
+  doc: |
+    Convert an integer hosted on one definition to a string with a function call.
   result_type: WordSized
   operands:
     input: WordSized
   mir_op: ToString
 
-# Convert a double hosted on one definition to a string with a function call.
 - name: DoubleToString
+  doc: |
+    Convert a double hosted on one definition to a string with a function call.
   result_type: WordSized
   operands:
     input: WordSized
   num_temps: 1
   mir_op: ToString
 
-# Convert a primitive to a string with a function call.
 - name: ValueToString
+  doc: |
+    Convert a primitive to a string with a function call.
   result_type: WordSized
   operands:
     input: BoxedValue
   num_temps: 1
   mir_op: ToString
 
-# Double raised to a half power.
 - name: PowHalfD
+  doc: |
+    Double raised to a half power.
   result_type: WordSized
   operands:
     input: WordSized
@@ -1846,22 +1939,25 @@
 - name: OsrEntry
   gen_boilerplate: false
 
-# Materialize a Value stored in an interpreter frame for OSR.
 - name: OsrValue
+  doc: |
+    Materialize a Value stored in an interpreter frame for OSR.
   result_type: BoxedValue
   operands:
     entry: WordSized
   mir_op: true
 
-# Materialize a JSObject env chain stored in an interpreter frame for OSR.
 - name: OsrEnvironmentChain
+  doc: |
+    Materialize a JSObject env chain stored in an interpreter frame for OSR.
   result_type: WordSized
   operands:
     entry: WordSized
   mir_op: true
 
-# Materialize a JSObject env chain stored in an interpreter frame for OSR.
 - name: OsrReturnValue
+  doc: |
+    Materialize a JSObject env chain stored in an interpreter frame for OSR.
   result_type: BoxedValue
   operands:
     entry: WordSized
@@ -1945,33 +2041,37 @@
   num_temps: 3
   mir_op: true
 
-# Double to IntPtr, eligible for accessing into a TypedArray or DataView. If
-# the index isn't exactly representable as an IntPtr, depending on the
-# supportOOB flag on the MIR instruction, either bail out or produce an IntPtr
-# which is equivalent to an OOB access.
 - name: GuardNumberToIntPtrIndex
+  doc: |
+    Double to IntPtr, eligible for accessing into a TypedArray or DataView. If
+    the index isn't exactly representable as an IntPtr, depending on the
+    supportOOB flag on the MIR instruction, either bail out or produce an IntPtr
+    which is equivalent to an OOB access.
   result_type: WordSized
   operands:
     input: WordSized
   mir_op: true
 
-# Bailout if index >= length.
 - name: BoundsCheck
+  doc: |
+    Bailout if index >= length.
   operands:
     index: WordSized
     length: WordSized
   mir_op: true
 
-# Bailout if index + minimum < 0 or index + maximum >= length.
 - name: BoundsCheckRange
+  doc: |
+    Bailout if index + minimum < 0 or index + maximum >= length.
   operands:
     index: WordSized
     length: WordSized
   num_temps: 1
   mir_op: BoundsCheck
 
-# Bailout if index < minimum.
 - name: BoundsCheckLower
+  doc: |
+    Bailout if index < minimum.
   operands:
     index: WordSized
   mir_op: true
@@ -1983,9 +2083,10 @@
     length: WordSized
   mir_op: true
 
-# Load a value from a dense array's elements vector. Bail out if it's the hole
-# value.
 - name: LoadElementV
+  doc: |
+    Load a value from a dense array's elements vector. Bail out if it's the hole
+    value.
   result_type: BoxedValue
   operands:
     elements: WordSized
@@ -2000,9 +2101,10 @@
     initLength: WordSized
   mir_op: true
 
-# Load a value from an array's elements vector, loading |undefined| if we hit a
-# hole. Bail out if we get a negative index.
 - name: LoadElementHole
+  doc: |
+    Load a value from an array's elements vector, loading |undefined| if we hit a
+    hole. Bail out if we get a negative index.
   result_type: BoxedValue
   operands:
     elements: WordSized
@@ -2010,8 +2112,9 @@
     initLength: WordSized
   mir_op: true
 
-# Store a boxed value to a dense array's element vector.
 - name: StoreElementV
+  doc: |
+    Store a boxed value to a dense array's element vector.
   operands:
     elements: WordSized
     index: WordSized
@@ -2019,11 +2122,12 @@
   mir_op: StoreElement
   extra_name: true
 
-# Store a typed value to a dense array's elements vector. Compared to
-# LStoreElementV, this instruction can store doubles and constants directly,
-# and does not store the type tag if the array is monomorphic and known to
-# be packed.
 - name: StoreElementT
+  doc: |
+    Store a typed value to a dense array's elements vector. Compared to
+    LStoreElementV, this instruction can store doubles and constants directly,
+    and does not store the type tag if the array is monomorphic and known to
+    be packed.
   operands:
     elements: WordSized
     index: WordSized
@@ -2036,8 +2140,9 @@
     elements: WordSized
     index: WordSized
 
-# Like LStoreElementV, but supports indexes >= initialized length.
 - name: StoreElementHoleV
+  doc: |
+    Like LStoreElementV, but supports indexes >= initialized length.
   operands:
     object: WordSized
     elements: WordSized
@@ -2046,8 +2151,9 @@
   num_temps: 1
   mir_op: StoreElementHole
 
-# Like LStoreElementT, but supports indexes >= initialized length.
 - name: StoreElementHoleT
+  doc: |
+    Like LStoreElementT, but supports indexes >= initialized length.
   operands:
     object: WordSized
     elements: WordSized
@@ -2250,8 +2356,9 @@
 #endif
   mir_op: true
 
-# Atomic binary operation where the result is discarded.
 - name: AtomicTypedArrayElementBinopForEffect
+  doc: |
+    Atomic binary operation where the result is discarded.
   operands:
     elements: WordSized
     index: WordSized
@@ -2313,8 +2420,9 @@
 #endif
   mir_op: AtomicTypedArrayElementBinop
 
-# Atomic binary operation where the result is discarded.
 - name: AtomicTypedArrayElementBinopForEffect64
+  doc: |
+    Atomic binary operation where the result is discarded.
   operands:
     elements: WordSized
     index: WordSized
@@ -2355,24 +2463,27 @@
   num_temps: 1
   mir_op: ClampToUint8
 
-# Load a boxed value from an object's fixed slot.
 - name: LoadFixedSlotV
+  doc: |
+    Load a boxed value from an object's fixed slot.
   result_type: BoxedValue
   operands:
     object: WordSized
   mir_op: LoadFixedSlot
 
-# Load a boxed value from an object's fixed slot.
-# If it is a non-atom string, atomize it and update the slot.
 - name: LoadFixedSlotAndAtomize
+  doc: |
+    Load a boxed value from an object's fixed slot.
+    If it is a non-atom string, atomize it and update the slot.
   result_type: BoxedValue
   operands:
     object: WordSized
   num_temps: 1
   mir_op: LoadFixedSlot
 
-# Load a typed value from an object's fixed slot.
 - name: LoadFixedSlotT
+  doc: |
+    Load a typed value from an object's fixed slot.
   result_type: WordSized
   operands:
     object: WordSized
@@ -2426,15 +2537,17 @@
   num_temps: 2
   mir_op: AddAndStoreSlot
 
-# Store a boxed value to an object's fixed slot.
 - name: StoreFixedSlotV
+  doc: |
+    Store a boxed value to an object's fixed slot.
   operands:
     obj: WordSized
     value: BoxedValue
   mir_op: StoreFixedSlot
 
-# Store a typed value to an object's fixed slot.
 - name: StoreFixedSlotT
+  doc: |
+    Store a typed value to an object's fixed slot.
   operands:
     obj: WordSized
     value: WordSized
@@ -2464,45 +2577,50 @@
     id: BoxedValue
   mir_op: true
 
-# Patchable jump to stubs generated for a GetProperty cache, which loads a
-# boxed value.
 - name: GetPropertyCache
+  doc: |
+    Patchable jump to stubs generated for a GetProperty cache, which loads a
+    boxed value.
   result_type: BoxedValue
   operands:
     value: BoxedValue
     id: BoxedValue
   mir_op: true
 
-# Load a value from an object's dslots or a slots vector.
 - name: LoadDynamicSlotV
+  doc: |
+    Load a value from an object's dslots or a slots vector.
   result_type: BoxedValue
   operands:
     input: WordSized
   mir_op: LoadDynamicSlot
 
-# Load a value from an object's dslots or a slots vector.
-# If it is a non-atom string, atomize it and update the slot.
 - name: LoadDynamicSlotAndAtomize
+  doc: |
+    Load a value from an object's dslots or a slots vector.
+    If it is a non-atom string, atomize it and update the slot.
   result_type: BoxedValue
   operands:
     input: WordSized
   num_temps: 1
   mir_op: LoadDynamicSlot
 
-# Store a value to an object's dslots or a slots vector.
 - name: StoreDynamicSlotV
+  doc: |
+    Store a value to an object's dslots or a slots vector.
   operands:
     slots: WordSized
     value: BoxedValue
   mir_op: StoreDynamicSlot
 
-# Store a typed value to an object's dslots or a slots vector. This has a
-# few advantages over LStoreDynamicSlotV:
-# 1) We can bypass storing the type tag if the slot has the same type as
-#    the value.
-# 2) Better Register allocation: we can store constants and FP regs directly
-#    without requiring a second Register for the value.
 - name: StoreDynamicSlotT
+  doc: |
+    Store a typed value to an object's dslots or a slots vector. This has a
+    few advantages over LStoreDynamicSlotV:
+    1) We can bypass storing the type tag if the slot has the same type as
+       the value.
+    2) Better Register allocation: we can store constants and FP regs directly
+       without requiring a second Register for the value.
   operands:
     slots: WordSized
     value: WordSized
@@ -2524,93 +2642,105 @@
   num_temps: 1
   mir_op: StoreDynamicSlotFromOffset
 
-# Take the floor of a double precision number and converts it to an int32.
-# Implements Math.floor().
 - name: Floor
+  doc: |
+    Take the floor of a double precision number and converts it to an int32.
+    Implements Math.floor().
   result_type: WordSized
   operands:
     input: WordSized
 
-# Take the floor of a single precision number and converts it to an int32.
-# Implements Math.floor().
 - name: FloorF
+  doc: |
+    Take the floor of a single precision number and converts it to an int32.
+    Implements Math.floor().
   result_type: WordSized
   operands:
     input: WordSized
 
-# Take the ceiling of a double precision number and converts it to an int32.
-# Implements Math.ceil().
 - name: Ceil
+  doc: |
+    Take the ceiling of a double precision number and converts it to an int32.
+    Implements Math.ceil().
   result_type: WordSized
   operands:
     input: WordSized
 
-# Take the ceiling of a single precision number and converts it to an int32.
-# Implements Math.ceil().
 - name: CeilF
+  doc: |
+    Take the ceiling of a single precision number and converts it to an int32.
+    Implements Math.ceil().
   result_type: WordSized
   operands:
     input: WordSized
 
-# Round a double precision number and converts it to an int32.
-# Implements Math.round().
 - name: Round
+  doc: |
+    Round a double precision number and converts it to an int32.
+    Implements Math.round().
   result_type: WordSized
   operands:
     input: WordSized
   num_temps: 1
   mir_op: true
 
-# Round a single precision number and converts it to an int32.
-# Implements Math.round().
 - name: RoundF
+  doc: |
+    Round a single precision number and converts it to an int32.
+    Implements Math.round().
   result_type: WordSized
   operands:
     input: WordSized
   num_temps: 1
   mir_op: Round
 
-# Truncates a double precision number and converts it to an int32.
-# Implements Math.trunc().
 - name: Trunc
+  doc: |
+    Truncates a double precision number and converts it to an int32.
+    Implements Math.trunc().
   result_type: WordSized
   operands:
     input: WordSized
 
-# Truncates a single precision number and converts it to an int32.
-# Implements Math.trunc().
 - name: TruncF
+  doc: |
+    Truncates a single precision number and converts it to an int32.
+    Implements Math.trunc().
   result_type: WordSized
   operands:
     input: WordSized
 
-# Rounds a double precision number accordingly to mir()->roundingMode(),
-# and keeps a double output.
 - name: NearbyInt
+  doc: |
+    Rounds a double precision number accordingly to mir()->roundingMode(),
+    and keeps a double output.
   result_type: WordSized
   operands:
     input: WordSized
   mir_op: true
 
-# Rounds a single precision number accordingly to mir()->roundingMode(),
-# and keeps a single output.
 - name: NearbyIntF
+  doc: |
+    Rounds a single precision number accordingly to mir()->roundingMode(),
+    and keeps a single output.
   result_type: WordSized
   operands:
     input: WordSized
   mir_op: NearbyInt
 
-# Rounds a double precision number and keeps a double output.
-# Implements Math.round().
 - name: RoundToDouble
+  doc: |
+    Rounds a double precision number and keeps a double output.
+    Implements Math.round().
   result_type: WordSized
   operands:
     input: WordSized
   mir_op: true
 
-# Rounds a single precision number and keeps a single output.
-# Implements Math.round().
 - name: RoundToFloat32
+  doc: |
+    Rounds a single precision number and keeps a single output.
+    Implements Math.round().
   result_type: WordSized
   operands:
     input: WordSized
@@ -2670,8 +2800,9 @@
     otherIterator: WordSized
   num_temps: 2
 
-# Patchable jump to stubs generated for a SetProperty cache.
 - name: SetPropertyCache
+  doc: |
+    Patchable jump to stubs generated for a SetProperty cache.
   operands:
     object: WordSized
     id: BoxedValue
@@ -2714,71 +2845,80 @@
     input: WordSized
   mir_op: true
 
-# Convert a Boolean to an Int64, following ToBigInt.
 - name: BooleanToInt64
+  doc: |
+    Convert a Boolean to an Int64, following ToBigInt.
   result_type: Int64
   operands:
     input: WordSized
   mir_op: ToInt64
 
-# Convert a String to an Int64, following ToBigInt.
 - name: StringToInt64
+  doc: |
+    Convert a String to an Int64, following ToBigInt.
   result_type: Int64
   operands:
     input: WordSized
   mir_op: ToInt64
 
-# Simulate ToBigInt on a Value and produce a matching Int64.
 - name: ValueToInt64
+  doc: |
+    Simulate ToBigInt on a Value and produce a matching Int64.
   result_type: Int64
   operands:
     input: BoxedValue
   num_temps: 1
   mir_op: ToInt64
 
-# Create a new BigInt* from an unboxed uint64.
 - name: Uint64ToBigInt
+  doc: |
+    Create a new BigInt* from an unboxed uint64.
   result_type: WordSized
   operands:
     input: Int64
   num_temps: 1
   mir_op: Int64ToBigInt
 
-# Generational write barrier used when writing an object to another object.
 - name: PostWriteBarrierO
+  doc: |
+    Generational write barrier used when writing an object to another object.
   operands:
     object: WordSized
     value: WordSized
   num_temps: 1
   mir_op: PostWriteBarrier
 
-# Generational write barrier used when writing a string to an object.
 - name: PostWriteBarrierS
+  doc: |
+    Generational write barrier used when writing a string to an object.
   operands:
     object: WordSized
     value: WordSized
   num_temps: 1
   mir_op: PostWriteBarrier
 
-# Generational write barrier used when writing a BigInt to an object.
 - name: PostWriteBarrierBI
+  doc: |
+    Generational write barrier used when writing a BigInt to an object.
   operands:
     object: WordSized
     value: WordSized
   num_temps: 1
   mir_op: PostWriteBarrier
 
-# Generational write barrier used when writing a value to another object.
 - name: PostWriteBarrierV
+  doc: |
+    Generational write barrier used when writing a value to another object.
   operands:
     object: WordSized
     value: BoxedValue
   num_temps: 1
   mir_op: PostWriteBarrier
 
-# Generational write barrier used when writing an object to another object's
-# elements.
 - name: PostWriteElementBarrierO
+  doc: |
+    Generational write barrier used when writing an object to another object's
+    elements.
   operands:
     object: WordSized
     value: WordSized
@@ -2786,9 +2926,10 @@
   num_temps: 1
   mir_op: PostWriteElementBarrier
 
-# Generational write barrier used when writing a string to an object's
-# elements.
 - name: PostWriteElementBarrierS
+  doc: |
+    Generational write barrier used when writing a string to an object's
+    elements.
   operands:
     object: WordSized
     value: WordSized
@@ -2796,9 +2937,10 @@
   num_temps: 1
   mir_op: PostWriteElementBarrier
 
-# Generational write barrier used when writing a BigInt to an object's
-# elements.
 - name: PostWriteElementBarrierBI
+  doc: |
+    Generational write barrier used when writing a BigInt to an object's
+    elements.
   operands:
     object: WordSized
     value: WordSized
@@ -2806,9 +2948,10 @@
   num_temps: 1
   mir_op: PostWriteElementBarrier
 
-# Generational write barrier used when writing a value to another object's
-# elements.
 - name: PostWriteElementBarrierV
+  doc: |
+    Generational write barrier used when writing a value to another object's
+    elements.
   operands:
     object: WordSized
     index: WordSized
@@ -2816,15 +2959,17 @@
   num_temps: 1
   mir_op: PostWriteElementBarrier
 
-# Guard against an object's identity.
 - name: GuardObjectIdentity
+  doc: |
+    Guard against an object's identity.
   operands:
     input: WordSized
     expected: WordSized
   mir_op: true
 
-# Guard against an function's identity.
 - name: GuardSpecificFunction
+  doc: |
+    Guard against an function's identity.
   operands:
     input: WordSized
     expected: WordSized
@@ -3163,8 +3308,9 @@
 #endif
   mir_op: true
 
-# Atomic binary operation where the result is discarded.
 - name: WasmAtomicBinopHeapForEffect
+  doc: |
+    Atomic binary operation where the result is discarded.
   operands:
     ptr: WordSized
     value: WordSized
@@ -3310,8 +3456,9 @@
   num_temps: 1
   mir_op: true
 
-# Generational write barrier used when writing an object to another object.
 - name: WasmPostWriteBarrierWholeCell
+  doc: |
+    Generational write barrier used when writing an object to another object.
   operands:
     instance: WordSized
     object: WordSized
@@ -3319,8 +3466,9 @@
   num_temps: 1
   mir_op: true
 
-# Ditto, but with a scaled index instead of a constant offset.
 - name: WasmPostWriteBarrierEdgeAtIndex
+  doc: |
+    Ditto, but with a scaled index instead of a constant offset.
   operands:
     instance: WordSized
     object: WordSized
@@ -3477,14 +3625,16 @@
     lhs: WordSized
     rhs: WordSized
 
-# Canonicalize a double value.
 - name: CanonicalizeNaND
+  doc: |
+    Canonicalize a double value.
   result_type: WordSized
   operands:
     input: WordSized
 
-# Canonicalize a float32 value.
 - name: CanonicalizeNaNF
+  doc: |
+    Canonicalize a float32 value.
   result_type: WordSized
   operands:
     input: WordSized
@@ -3504,15 +3654,17 @@
   operands:
     value: WordSized
 
-# Constant Simd128
 - name: Simd128
+  doc: |
+    Constant Simd128
   result_type: WordSized
   arguments:
     simd128: SimdConstant
 
-# (v128, v128, v128) -> v128 effect-free operation.
-# temp is FPR.
 - name: WasmTernarySimd128
+  doc: |
+    (v128, v128, v128) -> v128 effect-free operation.
+    temp is FPR.
   result_type: WordSized
   operands:
     v0: WordSized
@@ -3522,11 +3674,12 @@
     simdOp: wasm::SimdOp
   num_temps: 1
 
-# (v128, v128) -> v128 effect-free operations
-# lhs and dest are the same.
-# temps (if in use) are FPR.
-# The op may differ from the MIR node's op.
 - name: WasmBinarySimd128
+  doc: |
+    (v128, v128) -> v128 effect-free operations
+    lhs and dest are the same.
+    temps (if in use) are FPR.
+    The op may differ from the MIR node's op.
   result_type: WordSized
   operands:
     lhs: WordSized
@@ -3544,9 +3697,10 @@
   num_temps: 1
   mir_op: true
 
-# (v128, i32) -> v128 effect-free variable-width shift operations
-# lhs and dest are the same.
 - name: WasmVariableShiftSimd128
+  doc: |
+    (v128, i32) -> v128 effect-free variable-width shift operations
+    lhs and dest are the same.
   result_type: WordSized
   operands:
     lhs: WordSized
@@ -3557,8 +3711,9 @@
 #endif
   mir_op: WasmShiftSimd128
 
-# (v128, i32) -> v128 effect-free constant-width shift operations
 - name: WasmConstantShiftSimd128
+  doc: |
+    (v128, i32) -> v128 effect-free constant-width shift operations
   result_type: WordSized
   operands:
     src: WordSized
@@ -3566,15 +3721,17 @@
     shift: int32_t
   mir_op: WasmShiftSimd128
 
-# (v128) -> v128 sign replication operation.
 - name: WasmSignReplicationSimd128
+  doc: |
+    (v128) -> v128 sign replication operation.
   result_type: WordSized
   operands:
     src: WordSized
   mir_op: WasmShiftSimd128
 
-# // (v128, v128, imm_simd) -> v128 effect-free operation.
 - name: WasmShuffleSimd128
+  doc: |
+    (v128, v128, imm_simd) -> v128 effect-free operation.
   result_type: WordSized
   operands:
     lhs: WordSized
@@ -3587,8 +3744,9 @@
   num_temps: 1
 #endif
 
-# (v128, imm_simd) -> v128 effect-free operation.
 - name: WasmPermuteSimd128
+  doc: |
+    (v128, imm_simd) -> v128 effect-free operation.
   result_type: WordSized
   operands:
     src: WordSized
@@ -3610,22 +3768,25 @@
     rhs: Int64
   mir_op: WasmReplaceLaneSimd128
 
-# (scalar) -> v128 effect-free operations, scalar != int64
 - name: WasmScalarToSimd128
+  doc: |
+    (scalar) -> v128 effect-free operations, scalar != int64
   result_type: WordSized
   operands:
     src: WordSized
   mir_op: true
 
-# (int64) -> v128 effect-free operations
 - name: WasmInt64ToSimd128
+  doc: |
+    (int64) -> v128 effect-free operations
   result_type: WordSized
   operands:
     src: Int64
   mir_op: WasmScalarToSimd128
 
-# // (v128, imm) -> scalar effect-free operations.
 - name: WasmReduceSimd128
+  doc: |
+    (v128, imm) -> scalar effect-free operations.
   result_type: WordSized
   operands:
     src: WordSized
@@ -3635,16 +3796,18 @@
 #endif
   mir_op: true
 
-# (v128, onTrue, onFalse) test-and-branch operations.
 - name: WasmReduceAndBranchSimd128
+  doc: |
+    (v128, onTrue, onFalse) test-and-branch operations.
   successors: [ifTrue, ifFalse]
   operands:
     src: WordSized
   arguments:
     simdOp: wasm::SimdOp
 
-# (v128, imm) -> i64 effect-free operations
 - name: WasmReduceSimd128ToInt64
+  doc: |
+    (v128, imm) -> i64 effect-free operations
   result_type: Int64
   operands:
     src: WordSized
@@ -3680,14 +3843,16 @@
     input: BoxedValue
   mir_op: Unbox
 
-# Convert a 32-bit unsigned integer to a double.
 - name: Uint32ToDouble
+  doc: |
+    Convert a 32-bit unsigned integer to a double.
   result_type: WordSized
   operands:
     input: WordSized
 
-# Convert a 32-bit unsigned integer to a float32.
 - name: Uint32ToFloat32
+  doc: |
+    Convert a 32-bit unsigned integer to a float32.
   result_type: WordSized
   operands:
     input: WordSized
@@ -3712,8 +3877,9 @@
   mir_op: Mod
   extra_name: true
 
-# Signed division by a power-of-two constant.
 - name: DivPowTwoI
+  doc: |
+    Signed division by a power-of-two constant.
   result_type: WordSized
   operands:
     numerator: WordSized
@@ -3739,15 +3905,17 @@
     shift: int32_t
   mir_op: Mod
 
-# Takes a tableswitch with an integer to decide.
 - name: TableSwitch
+  doc: |
+    Takes a tableswitch with an integer to decide.
   operands:
     index: WordSized
   num_temps: 2
   mir_op: true
 
-# Takes a tableswitch with a value to decide.
 - name: TableSwitchV
+  doc: |
+    Takes a tableswitch with a value to decide.
   operands:
     input: BoxedValue
   num_temps: 3
@@ -4020,9 +4188,10 @@
 - name: UDivOrModI64
   gen_boilerplate: false
 
-# LSoftDivI is a software divide for ARM cores that don't support a hardware
-# divide instruction, implemented as a C++ native call.
 - name: SoftDivI
+  doc: |
+    LSoftDivI is a software divide for ARM cores that don't support a hardware
+    divide instruction, implemented as a C++ native call.
   result_type: WordSized
   operands:
     lhs: WordSized
@@ -4155,8 +4324,9 @@
 #endif
 
 #ifdef JS_CODEGEN_ARM64
-# Int32 add, sub or bitwise op whose rhs is shifted by a constant first.
 - name: ShiftedOpI
+  doc: |
+    Int32 add, sub or bitwise op whose rhs is shifted by a constant first.
   result_type: WordSized
   operands:
     lhs: WordSized

@@ -3,7 +3,8 @@
 # file, You can obtain one at http://mozilla.org/MPL/2.0/.
 
 # This script generates jit/LIROpsGenerated.h (list of LIR instructions)
-# from LIROps.yaml.
+# and jit/LIROpClassesGenerated.h (LIR op definitions) from LIROps.yaml and
+# MIROps.yaml.
 
 import io
 from itertools import groupby
@@ -49,6 +50,13 @@ def generate_header(c_out, includeguard, contents):
             "contents": contents,
         }
     )
+
+
+def gen_doc_comment(doc):
+    code = ""
+    for line in doc.rstrip("\n").split("\n"):
+        code += f"// {line}\n" if line else "//\n"
+    return code
 
 
 operand_types = {
@@ -408,8 +416,8 @@ class {class_name} : public {parent_class}<{num_defs}, {num_operands}, {num_temp
 }};
 """
 
-    # Remove blank lines and add backslashes at line endings.
-    return "\\\n".join(line for line in code.splitlines() if line.strip())
+    # Remove blank lines.
+    return "\n".join(line for line in code.splitlines() if line.strip()) + "\n"
 
 
 def mir_type_to_lir_type(mir_type):
@@ -424,7 +432,10 @@ def mir_type_to_lir_type(mir_type):
     return "WordSized"
 
 
-def generate_lir_header(c_out, yaml_path, mir_yaml_path):
+def gen_lir_ops(yaml_path, mir_yaml_path):
+    """Returns the LIR_OPCODE_LIST items and the generated LIR op class
+    definitions from LIROps.yaml and MIROps.yaml."""
+
     data = load_yaml(yaml_path)
 
     # LIR_OPCODE_LIST opcode.
@@ -438,6 +449,12 @@ def generate_lir_header(c_out, yaml_path, mir_yaml_path):
 
         gen_boilerplate = op.get("gen_boilerplate", True)
         assert isinstance(gen_boilerplate, bool)
+
+        doc = op.get("doc", None)
+        assert doc is None or isinstance(doc, str)
+        assert doc is None or gen_boilerplate, (
+            f"{name} has a doc but no generated boilerplate to attach it to"
+        )
 
         if gen_boilerplate:
             result_type = op.get("result_type", None)
@@ -476,22 +493,23 @@ def generate_lir_header(c_out, yaml_path, mir_yaml_path):
             defer_init = op.get("defer_init", False)
             assert isinstance(defer_init, bool)
 
-            lir_op_classes.append(
-                gen_lir_class(
-                    name,
-                    result_type,
-                    successors,
-                    operands,
-                    arguments,
-                    num_temps,
-                    num_temps64,
-                    num_temp_boxes,
-                    call_instruction,
-                    mir_op,
-                    extra_name,
-                    defer_init,
-                )
+            code = gen_lir_class(
+                name,
+                result_type,
+                successors,
+                operands,
+                arguments,
+                num_temps,
+                num_temps64,
+                num_temp_boxes,
+                call_instruction,
+                mir_op,
+                extra_name,
+                defer_init,
             )
+            if doc is not None:
+                code = gen_doc_comment(doc) + code
+            lir_op_classes.append(code)
 
         ops.append(f"_({name})")
 
@@ -549,31 +567,57 @@ def generate_lir_header(c_out, yaml_path, mir_yaml_path):
 
             defer_init = False
 
-            lir_op_classes.append(
-                gen_lir_class(
-                    name,
-                    lir_result_type,
-                    successors,
-                    operands,
-                    arguments,
-                    num_temps,
-                    num_temps64,
-                    num_temp_boxes,
-                    call_instruction,
-                    mir_op,
-                    extra_name,
-                    defer_init,
-                )
+            doc = op.get("doc", None)
+            assert doc is None or isinstance(doc, str)
+            generated_note = "Generated from `generate_lir: true` in MIROps.yaml."
+            if doc is None:
+                doc = generated_note
+            else:
+                doc = doc.rstrip("\n") + "\n\n" + generated_note
+
+            code = gen_lir_class(
+                name,
+                lir_result_type,
+                successors,
+                operands,
+                arguments,
+                num_temps,
+                num_temps64,
+                num_temp_boxes,
+                call_instruction,
+                mir_op,
+                extra_name,
+                defer_init,
             )
+            lir_op_classes.append(gen_doc_comment(doc) + code)
 
             ops.append(f"_({name})")
+
+    return ops, lir_op_classes
+
+
+def generate_lir_header(c_out, yaml_path, mir_yaml_path):
+    """Generate LIROpsGenerated.h from LIROps.yaml and MIROps.yaml. The
+    generated file has a list of LIR ops.
+    """
+
+    ops, _ = gen_lir_ops(yaml_path, mir_yaml_path)
 
     contents = "#define LIR_OPCODE_LIST(_)\\\n"
     contents += "\\\n".join(ops)
     contents += "\n\n"
 
-    contents += "#define LIR_OPCODE_CLASS_GENERATED \\\n"
-    contents += "\\\n".join(lir_op_classes)
-    contents += "\n\n"
-
     generate_header(c_out, "jit_LIROpsGenerated_h", contents)
+
+
+def generate_lir_classes_header(c_out, yaml_path, mir_yaml_path):
+    """Generate LIROpClassesGenerated.h from LIROps.yaml and MIROps.yaml. The
+    generated file has the boilerplate LIR op class definitions and is
+    #include'd in the body of shared/LIR-shared.h.
+    """
+
+    _, lir_op_classes = gen_lir_ops(yaml_path, mir_yaml_path)
+
+    contents = "\n".join(lir_op_classes)
+
+    generate_header(c_out, "jit_LIROpClassesGenerated_h", contents)

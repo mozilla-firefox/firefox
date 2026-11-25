@@ -5,18 +5,24 @@
 # [SMDOC] MIR Opcodes
 # =======================
 # This file defines all MIR opcodes. It is parsed by GenerateMIRFiles.py
-# at build time to create MIROpsGenerated.h. Each opcode consists of a
-# name and a set of attributes that are described below. A few of the
-# attributes below allow setting the value to "custom", meaning the
-# method will be declared for the MIR op, but will need to be implemented
-# in C++ (typically done in MIR.cpp). Unless marked as required, attributes
-# are optional.
+# at build time to create MIROpsGenerated.h and MIROpClassesGenerated.h.
+# Each opcode consists of a name and a set of attributes that are described
+# below. A few of the attributes below allow setting the value to "custom",
+# meaning the method will be declared for the MIR op, but will need to be
+# implemented in C++ (typically done in MIR.cpp). Unless marked as required,
+# attributes are optional.
 #
 # name [required]
 # ====
 # Opcode name.
 # Possible values:
 #   - opcode string: used as the name for MIR opcode.
+#
+# doc
+# ===
+# Optional documentation for the MIR opcode. Each line is emitted verbatim as a
+# comment on the generated C++ class. Not allowed when gen_boilerplate is
+# false.
 #
 # gen_boilerplate
 # ===============
@@ -215,10 +221,11 @@
 # TODO(no-TI): try to remove this instruction.
 - name: Start
 
-# Instruction marking on entrypoint for on-stack replacement.
-# OSR may occur at loop headers (at JSOp::LoopHead).
-# There is at most one MOsrEntry per MIRGraph.
 - name: OsrEntry
+  doc: |
+    Instruction marking on entrypoint for on-stack replacement.
+    OSR may occur at loop headers (at JSOp::LoopHead).
+    There is at most one MOsrEntry per MIRGraph.
   result_type: Pointer
 
 - name: Nop
@@ -228,9 +235,10 @@
 - name: LimitedTruncate
   gen_boilerplate: false
 
-# Truncation barrier. This is intended for protecting its input against
-# follow-up truncation optimizations.
 - name: IntPtrLimitedTruncate
+  doc: |
+    Truncation barrier. This is intended for protecting its input against
+    follow-up truncation optimizations.
   operands:
     input: IntPtr
   result_type: IntPtr
@@ -238,9 +246,10 @@
   alias_set: none
   movable: true
 
-# Truncation barrier. This is intended for protecting its input against
-# follow-up truncation optimizations.
 - name: Int64LimitedTruncate
+  doc: |
+    Truncation barrier. This is intended for protecting its input against
+    follow-up truncation optimizations.
   operands:
     input: Int64
   result_type: Int64
@@ -340,8 +349,9 @@
   generate_lir: true
   lir_temps: 3
 
-# Create a new TypedArray from an Array (or Array-like object) or a TypedArray.
 - name: NewTypedArrayFromArray
+  doc: |
+    Create a new TypedArray from an Array (or Array-like object) or a TypedArray.
   operands:
     array: Object
   arguments:
@@ -352,8 +362,9 @@
   possibly_calls: true
   generate_lir: true
 
-# Create a new TypedArray from an ArrayBuffer (or SharedArrayBuffer).
 - name: NewTypedArrayFromArrayBuffer
+  doc: |
+    Create a new TypedArray from an ArrayBuffer (or SharedArrayBuffer).
   operands:
     arrayBuffer: Object
     byteOffset: Value
@@ -445,8 +456,9 @@
   generate_lir: true
   lir_result_type: none
 
-# Setting __proto__ in an object literal.
 - name: MutateProto
+  doc: |
+    Setting __proto__ in an object literal.
   operands:
     object: Object
     value: Value
@@ -499,10 +511,11 @@
 - name: Unreachable
   gen_boilerplate: false
 
-# This op serves as a way to force the encoding of a snapshot, even if there
-# is no resume point using it.  This is useful to run MAssertRecoveredOnBailout
-# assertions.
 - name: EncodeSnapshot
+  doc: |
+    This op serves as a way to force the encoding of a snapshot, even if there
+    is no resume point using it.  This is useful to run MAssertRecoveredOnBailout
+    assertions.
   guard: true
   generate_lir: true
 
@@ -619,9 +632,10 @@
   guard: true
   generate_lir: true
 
-# Caller-side allocation of |this| for |new|:
-# Constructs |this| when possible, else MagicValue(JS_IS_CONSTRUCTING).
 - name: CreateThis
+  doc: |
+    Caller-side allocation of |this| for |new|:
+    Constructs |this| when possible, else MagicValue(JS_IS_CONSTRUCTING).
   operands:
     callee: Object
     newTarget: Object
@@ -633,8 +647,9 @@
   possibly_calls: true
   generate_lir: true
 
-# Eager initialization of arguments object.
 - name: CreateArgumentsObject
+  doc: |
+    Eager initialization of arguments object.
   operands:
     callObject: Object
   arguments:
@@ -655,8 +670,9 @@
 - name: GetInlinedArgumentHole
   gen_boilerplate: false
 
-# Get argument from arguments object.
 - name: GetArgumentsObjectArg
+  doc: |
+    Get argument from arguments object.
   operands:
     argsObject: Object
   arguments:
@@ -668,8 +684,9 @@
   generate_lir: true
   lir_temps: 1
 
-# Set argument on arguments object.
 - name: SetArgumentsObjectArg
+  doc: |
+    Set argument on arguments object.
   operands:
     argsObject: Object
     value: Value
@@ -680,10 +697,11 @@
   generate_lir: true
   lir_temps: 1
 
-# Load |arguments[index]| from a mapped or unmapped arguments object. Bails out
-# when any elements were overridden or deleted. Also bails out if the index is
-# out of bounds.
 - name: LoadArgumentsObjectArg
+  doc: |
+    Load |arguments[index]| from a mapped or unmapped arguments object. Bails out
+    when any elements were overridden or deleted. Also bails out if the index is
+    out of bounds.
   operands:
     argsObject: Object
     index: Int32
@@ -695,10 +713,11 @@
   generate_lir: true
   lir_temps: 1
 
-# Load |arguments[index]| from a mapped or unmapped arguments object. Bails out
-# when any elements were overridden or deleted. Returns undefined if the index is
-# out of bounds.
 - name: LoadArgumentsObjectArgHole
+  doc: |
+    Load |arguments[index]| from a mapped or unmapped arguments object. Bails out
+    when any elements were overridden or deleted. Returns undefined if the index is
+    out of bounds.
   operands:
     argsObject: Object
     index: Int32
@@ -727,8 +746,9 @@
   generate_lir: true
   lir_temps: 1
 
-# Load |arguments.length|. Bails out if the length has been overriden.
 - name: ArgumentsObjectLength
+  doc: |
+    Load |arguments.length|. Bails out if the length has been overriden.
   operands:
     argsObject: Object
   result_type: Int32
@@ -745,8 +765,9 @@
       - DynamicSlot
   generate_lir: true
 
-# Create an array from an arguments object.
 - name: ArrayFromArgumentsObject
+  doc: |
+    Create an array from an arguments object.
   operands:
     argsObject: Object
   arguments:
@@ -755,8 +776,9 @@
   possibly_calls: true
   generate_lir: true
 
-# Guard that the given flags are not set on the arguments object.
 - name: GuardArgumentsObjectFlags
+  doc: |
+    Guard that the given flags are not set on the arguments object.
   operands:
     argsObject: Object
   arguments:
@@ -772,8 +794,9 @@
   lir_result_type: none
   lir_temps: 1
 
-# Guard cx->realm() == obj->realm().
 - name: GuardObjectHasSameRealm
+  doc: |
+    Guard cx->realm() == obj->realm().
   operands:
     object: Object
   result_type: Object
@@ -821,11 +844,12 @@
   generate_lir: true
   lir_temps: 1
 
-# Given a MIRType::Value A and a MIRType::Object B:
-# If the Value may be safely unboxed to an Object, return Object(A).
-# Otherwise, return B.
-# Used to implement return behavior for inlined constructors.
 - name: ReturnFromCtor
+  doc: |
+    Given a MIRType::Value A and a MIRType::Object B:
+    If the Value may be safely unboxed to an Object, return Object(A).
+    Otherwise, return B.
+    Used to implement return behavior for inlined constructors.
   operands:
     value: Value
     object: Object
@@ -844,8 +868,9 @@
 - name: ToFloat16
   gen_boilerplate: false
 
-# Converts a uint32 to a double.
 - name: UnsignedToDouble
+  doc: |
+    Converts a uint32 to a double.
   operands:
     def: Int32
   type_policy: none
@@ -985,8 +1010,9 @@
 - name: Int32ToIntPtr
   gen_boilerplate: false
 
-# Converts an IntPtr value >= 0 to Int32. Bails out if the value > INT32_MAX.
 - name: NonNegativeIntPtrToInt32
+  doc: |
+    Converts an IntPtr value >= 0 to Int32. Bails out if the value > INT32_MAX.
   operands:
     input: IntPtr
   result_type: Int32
@@ -997,8 +1023,9 @@
   compute_range: custom
   generate_lir: true
 
-# Converts an IntPtr value to Double.
 - name: IntPtrToDouble
+  doc: |
+    Converts an IntPtr value to Double.
   operands:
     input: IntPtr
   result_type: Double
@@ -1042,8 +1069,9 @@
 - name: ToInt64
   gen_boilerplate: false
 
-# Takes a BigInt pointer and returns its toInt64 value.
 - name: TruncateBigIntToInt64
+  doc: |
+    Takes a BigInt pointer and returns its toInt64 value.
   operands:
     input: BigInt
   result_type: Int64
@@ -1055,8 +1083,9 @@
   folds_to: custom
   generate_lir: true
 
-# Takes an Int64 and returns a fresh BigInt pointer.
 - name: Int64ToBigInt
+  doc: |
+    Takes an Int64 and returns a fresh BigInt pointer.
   operands:
     input: Int64
   arguments:
@@ -1071,8 +1100,9 @@
   generate_lir: true
   lir_temps64: 1
 
-# Takes an Int64 and returns a IntPtr.
 - name: Int64ToIntPtr
+  doc: |
+    Takes an Int64 and returns a IntPtr.
   operands:
     input: Int64
   arguments:
@@ -1085,8 +1115,9 @@
   congruent_to: if_operands_and_arguments_equal
   generate_lir: true
 
-# Takes a IntPtr and returns an Int64.
 - name: IntPtrToInt64
+  doc: |
+    Takes a IntPtr and returns an Int64.
   operands:
     input: IntPtr
   result_type: Int64
@@ -1185,8 +1216,9 @@
 - name: CopySign
   gen_boilerplate: false
 
-# Inline implementation of atan2 (arctangent of y/x).
 - name: Atan2
+  doc: |
+    Inline implementation of atan2 (arctangent of y/x).
   operands:
     y: Double
     x: Double
@@ -1456,8 +1488,9 @@
   generate_lir: true
   lir_temps: 2
 
-# Similar to CharCodeAt, but returns a negative value on out-of-bounds access.
 - name: CharCodeAtOrNegative
+  doc: |
+    Similar to CharCodeAt, but returns a negative value on out-of-bounds access.
   operands:
     string: String
     index: Int32
@@ -1484,8 +1517,9 @@
   generate_lir: true
   lir_temps: 2
 
-# Similar to CodePointAt, but returns a negative value on out-of-bounds access.
 - name: CodePointAtOrNegative
+  doc: |
+    Similar to CodePointAt, but returns a negative value on out-of-bounds access.
   operands:
     string: String
     index: Int32
@@ -1497,8 +1531,9 @@
   generate_lir: true
   lir_temps: 2
 
-# Return the input if non-negative, otherwise return NaN.
 - name: NegativeToNaN
+  doc: |
+    Return the input if non-negative, otherwise return NaN.
   operands:
     input: Int32
   result_type: Value
@@ -1507,8 +1542,9 @@
   alias_set: none
   generate_lir: true
 
-# Return the input if non-negative, otherwise return undefined.
 - name: NegativeToUndefined
+  doc: |
+    Return the input if non-negative, otherwise return undefined.
   operands:
     input: Int32
   result_type: Value
@@ -1517,8 +1553,9 @@
   alias_set: none
   generate_lir: true
 
-# Convert uint16 character code to a string.
 - name: FromCharCode
+  doc: |
+    Convert uint16 character code to a string.
   operands:
     code: Int32
   result_type: String
@@ -1529,8 +1566,9 @@
   clone: true
   generate_lir: true
 
-# Similar to FromCharCode, but returns the empty string if the input is negative.
 - name: FromCharCodeEmptyIfNegative
+  doc: |
+    Similar to FromCharCode, but returns the empty string if the input is negative.
   operands:
     code: Int32
   result_type: String
@@ -1541,8 +1579,9 @@
   clone: true
   generate_lir: true
 
-# Similar to FromCharCode, but returns the |undefined| if the input is negative.
 - name: FromCharCodeUndefinedIfNegative
+  doc: |
+    Similar to FromCharCode, but returns the |undefined| if the input is negative.
   operands:
     code: Int32
   result_type: Value
@@ -1551,8 +1590,9 @@
   alias_set: none
   generate_lir: true
 
-# Convert uint32 code point to a string.
 - name: FromCodePoint
+  doc: |
+    Convert uint32 code point to a string.
   operands:
     codePoint: Int32
   result_type: String
@@ -1564,8 +1604,9 @@
   generate_lir: true
   lir_temps: 2
 
-# Test if a string includes the search string.
 - name: StringIncludes
+  doc: |
+    Test if a string includes the search string.
   operands:
     string: String
     searchString: String
@@ -1576,8 +1617,9 @@
   possibly_calls: true
   generate_lir: true
 
-# Search for the first index of the search string.
 - name: StringIndexOf
+  doc: |
+    Search for the first index of the search string.
   operands:
     string: String
     searchString: String
@@ -1588,8 +1630,9 @@
   possibly_calls: true
   generate_lir: true
 
-# Search for the last index of the search string.
 - name: StringLastIndexOf
+  doc: |
+    Search for the last index of the search string.
   operands:
     string: String
     searchString: String
@@ -1600,8 +1643,9 @@
   possibly_calls: true
   generate_lir: true
 
-# Test if a string starts with the search string.
 - name: StringStartsWith
+  doc: |
+    Test if a string starts with the search string.
   operands:
     string: String
     searchString: String
@@ -1612,8 +1656,9 @@
   possibly_calls: true
   generate_lir: true
 
-# Test if a string ends with the search string.
 - name: StringEndsWith
+  doc: |
+    Test if a string ends with the search string.
   operands:
     string: String
     searchString: String
@@ -1646,8 +1691,9 @@
   alias_set: none
   congruent_to: if_operands_and_arguments_equal
 
-# Index of first non-whitespace character.
 - name: StringTrimStartIndex
+  doc: |
+    Index of first non-whitespace character.
   operands:
     string: String
   result_type: Int32
@@ -1657,8 +1703,9 @@
   possibly_calls: true
   generate_lir: true
 
-# Index of last non-whitespace character.
 - name: StringTrimEndIndex
+  doc: |
+    Index of last non-whitespace character.
   operands:
     string: String
     start: Int32
@@ -1729,18 +1776,20 @@
   result_type: Value
   generate_lir: true
 
-# Guard against overrecursion. This may also fire the interrupt handler, unless
-# isResumingGenerator is set: interrupt callbacks can run JS/Debugger code and a
-# frame that's in the middle of resuming a generator is only half-initialized.
 - name: CheckOverRecursed
+  doc: |
+    Guard against overrecursion. This may also fire the interrupt handler, unless
+    isResumingGenerator is set: interrupt callbacks can run JS/Debugger code and a
+    frame that's in the middle of resuming a generator is only half-initialized.
   arguments:
     isResumingGenerator: bool
   guard: true
   alias_set: none
   generate_lir: true
 
-# Check whether we need to fire the interrupt handler.
 - name: InterruptCheck
+  doc: |
+    Check whether we need to fire the interrupt handler.
   guard: true
   alias_set: none
   generate_lir: true
@@ -1755,8 +1804,9 @@
 - name: LexicalCheck
   gen_boilerplate: false
 
-# Unconditionally throw an uninitialized let error.
 - name: ThrowRuntimeLexicalError
+  doc: |
+    Unconditionally throw an uninitialized let error.
   arguments:
     errorNumber: unsigned
   result_type: None
@@ -1766,8 +1816,9 @@
   possibly_calls: true
   generate_lir: true
 
-# Unconditionally throw a known error number.
 - name: ThrowMsg
+  doc: |
+    Unconditionally throw a known error number.
   arguments:
     throwMsgKind: ThrowMsgKind
   result_type: None
@@ -1777,9 +1828,10 @@
   possibly_calls: true
   generate_lir: true
 
-# In the prologues of global and eval scripts, check for redeclarations and
-# initialize bindings.
 - name: GlobalDeclInstantiation
+  doc: |
+    In the prologues of global and eval scripts, check for redeclarations and
+    initialize bindings.
   guard: true
   generate_lir: true
 
@@ -1800,9 +1852,10 @@
   possibly_calls: true
   generate_lir: true
 
-# Note: this instruction writes to cx->regExpSearcherLastLimit.
-# See also MRegExpSearcherLastLimit.
 - name: RegExpSearcher
+  doc: |
+    Note: this instruction writes to cx->regExpSearcherLastLimit.
+    See also MRegExpSearcherLastLimit.
   operands:
     regexp: Object
     string: String
@@ -1811,10 +1864,11 @@
   possibly_calls: true
   generate_lir: true
 
-# This instruction loads cx->regExpSearcherLastLimit. We don't have a
-# specialized alias set for this so just use the default alias set similar to
-# the MRegExpSearcher instruction that precedes it.
 - name: RegExpSearcherLastLimit
+  doc: |
+    This instruction loads cx->regExpSearcherLastLimit. We don't have a
+    specialized alias set for this so just use the default alias set similar to
+    the MRegExpSearcher instruction that precedes it.
   result_type: Int32
   generate_lir: true
   lir_temps: 1
@@ -1894,8 +1948,9 @@
   possibly_calls: true
   generate_lir: true
 
-# Returns obj->slots.
 - name: Slots
+  doc: |
+    Returns obj->slots.
   operands:
     object: Object
   result_type: Slots
@@ -1907,8 +1962,9 @@
   clone: true
   generate_lir: true
 
-# Returns obj->elements.
 - name: Elements
+  doc: |
+    Returns obj->elements.
   operands:
     object: Object
   result_type: Elements
@@ -1919,8 +1975,9 @@
   clone: true
   generate_lir: true
 
-# Load the initialized length from an elements header.
 - name: InitializedLength
+  doc: |
+    Load the initialized length from an elements header.
   operands:
     elements: Elements
   type_policy: none
@@ -1933,8 +1990,9 @@
   clone: true
   generate_lir: true
 
-# Set the initialized length field in an elements header.
 - name: SetInitializedLength
+  doc: |
+    Set the initialized length field in an elements header.
   operands:
     elements: Elements
   arguments:
@@ -1947,8 +2005,9 @@
   generate_lir: true
   lir_temps: 1
 
-# Load the array length from an elements header.
 - name: ArrayLength
+  doc: |
+    Load the array length from an elements header.
   operands:
     elements: Elements
   type_policy: none
@@ -1961,8 +2020,9 @@
   clone: true
   generate_lir: true
 
-# Set the array length field in an elements header.
 - name: SetArrayLength
+  doc: |
+    Set the array length field in an elements header.
   operands:
     elements: Elements
   arguments:
@@ -1972,9 +2032,10 @@
     store: ObjectFields
   generate_lir: true
 
-# Load the function length. Bails for functions with lazy scripts or a
-# resolved "length" property.
 - name: FunctionLength
+  doc: |
+    Load the function length. Bails for functions with lazy scripts or a
+    resolved "length" property.
   operands:
     function: Object
   result_type: Int32
@@ -1990,9 +2051,10 @@
       - DynamicSlot
   generate_lir: true
 
-# Load the function name. Bails for bound functions when the bound function
-# name prefix isn't present or functions with a resolved "name" property.
 - name: FunctionName
+  doc: |
+    Load the function name. Bails for bound functions when the bound function
+    name prefix isn't present or functions with a resolved "name" property.
   operands:
     function: Object
   result_type: String
@@ -2011,8 +2073,9 @@
 - name: GetNextEntryForIterator
   gen_boilerplate: false
 
-# Read the byte length of an array buffer as IntPtr.
 - name: ArrayBufferByteLength
+  doc: |
+    Read the byte length of an array buffer as IntPtr.
   operands:
     object: Object
   result_type: IntPtr
@@ -2022,8 +2085,9 @@
     load: FixedSlot
   generate_lir: true
 
-# Read the length of an array buffer view.
 - name: ArrayBufferViewLength
+  doc: |
+    Read the length of an array buffer view.
   operands:
     object: Object
   result_type: IntPtr
@@ -2034,8 +2098,9 @@
   compute_range: custom
   generate_lir: true
 
-# Read the byteOffset of an array buffer view.
 - name: ArrayBufferViewByteOffset
+  doc: |
+    Read the byteOffset of an array buffer view.
   operands:
     object: Object
   result_type: IntPtr
@@ -2046,8 +2111,9 @@
   compute_range: custom
   generate_lir: true
 
-# Read the elements of an array buffer view.
 - name: ArrayBufferViewElements
+  doc: |
+    Read the elements of an array buffer view.
   operands:
     object: Object
   result_type: Elements
@@ -2058,8 +2124,9 @@
   clone: true
   generate_lir: true
 
-# Read the length of a resizable typed array.
 - name: ResizableTypedArrayLength
+  doc: |
+    Read the length of a resizable typed array.
   operands:
     object: Object
   arguments:
@@ -2074,8 +2141,9 @@
   generate_lir: true
   lir_temps: 1
 
-# Read the byteLength of a resizable dataview.
 - name: ResizableDataViewByteLength
+  doc: |
+    Read the byteLength of a resizable dataview.
   operands:
     object: Object
   arguments:
@@ -2090,8 +2158,9 @@
   generate_lir: true
   lir_temps: 1
 
-# Read the byte length of a growable shared array buffer as IntPtr.
 - name: GrowableSharedArrayBufferByteLength
+  doc: |
+    Read the byte length of a growable shared array buffer as IntPtr.
   operands:
     object: Object
   result_type: IntPtr
@@ -2107,8 +2176,9 @@
       - UnboxedElement
   generate_lir: true
 
-# Return the element size of a typed array.
 - name: TypedArrayElementSize
+  doc: |
+    Return the element size of a typed array.
   operands:
     object: Object
   result_type: Int32
@@ -2119,8 +2189,9 @@
   compute_range: custom
   generate_lir: true
 
-# Guard an ArrayBufferView has an attached ArrayBuffer.
 - name: GuardHasAttachedArrayBuffer
+  doc: |
+    Guard an ArrayBufferView has an attached ArrayBuffer.
   operands:
     object: Object
   result_type: Object
@@ -2135,8 +2206,9 @@
   lir_result_type: none
   lir_temps: 1
 
-# Guard a resizable typed array is in-bounds.
 - name: GuardResizableArrayBufferViewInBounds
+  doc: |
+    Guard a resizable typed array is in-bounds.
   operands:
     object: Object
   result_type: Object
@@ -2151,8 +2223,9 @@
   lir_result_type: none
   lir_temps: 1
 
-# Guard a resizable typed array is in-bounds or detached.
 - name: GuardResizableArrayBufferViewInBoundsOrDetached
+  doc: |
+    Guard a resizable typed array is in-bounds or detached.
   operands:
     object: Object
   result_type: Object
@@ -2174,8 +2247,9 @@
 - name: TypedArrayFill
   gen_boilerplate: false
 
-# Inlined TypedArray.prototype.set
 - name: TypedArraySet
+  doc: |
+    Inlined TypedArray.prototype.set
   operands:
     target: Object
     source: Object
@@ -2299,8 +2373,9 @@
 - name: ArrayPopShift
   gen_boilerplate: false
 
-# Array.prototype.push on a dense array. Returns the new array length.
 - name: ArrayPush
+  doc: |
+    Array.prototype.push on a dense array. Returns the new array length.
   operands:
     object: Object
     value: Value
@@ -2314,8 +2389,9 @@
   generate_lir: true
   lir_temps: 2
 
-# Array.prototype.slice on a dense array.
 - name: ArraySlice
+  doc: |
+    Array.prototype.slice on a dense array.
   operands:
     object: Object
     begin: Int32
@@ -2328,8 +2404,9 @@
   generate_lir: true
   lir_temps: 2
 
-# Array.prototype.slice on an arguments object.
 - name: ArgumentsSlice
+  doc: |
+    Array.prototype.slice on an arguments object.
   operands:
     object: Object
     begin: Int32
@@ -2342,8 +2419,9 @@
   generate_lir: true
   lir_temps: 2
 
-# Array.prototype.slice on an arguments object.
 - name: FrameArgumentsSlice
+  doc: |
+    Array.prototype.slice on an arguments object.
   operands:
     begin: Int32
     count: Int32
@@ -2369,10 +2447,11 @@
   folds_to: custom
   generate_lir: true
 
-# MArrayJoin doesn't override |getAliasSet()|, because Array.prototype.join
-# might coerce the elements of the Array to strings. This coercion might
-# cause the evaluation of JavaScript code.
 - name: ArrayJoin
+  doc: |
+    MArrayJoin doesn't override |getAliasSet()|, because Array.prototype.join
+    might coerce the elements of the Array to strings. This coercion might
+    cause the evaluation of JavaScript code.
   operands:
     array: Object
     separator: String
@@ -2385,8 +2464,9 @@
   # might coerce the elements of the Array to strings. This coercion might
   # cause the evaluation of JavaScript code.
 
-# Object.prototype.keys. Used to elide it when possible.
 - name: ObjectKeys
+  doc: |
+    Object.prototype.keys. Used to elide it when possible.
   operands:
     object: Object
   arguments:
@@ -2526,10 +2606,11 @@
       - GlobalGenerationCounter
   generate_lir: true
 
-# This is the equivalent of the GuardMultipleShapes CacheIR op. Because it
-# stores a pointer to the ShapeListObject, we don't need to recompile Ion code
-# when a new shape is added to the list.
 - name: GuardMultipleShapes
+  doc: |
+    This is the equivalent of the GuardMultipleShapes CacheIR op. Because it
+    stores a pointer to the ShapeListObject, we don't need to recompile Ion code
+    when a new shape is added to the list.
   operands:
     object: Object
     shapeList: Object
@@ -2545,11 +2626,12 @@
   generate_lir: true
   lir_temps: 4
 
-# Similar to GuardMultipleShapes but used when the list had a small number of
-# shapes. These shapes have been copied to the ShapeListSnapshot and are
-# available at compile-time. This lets us perform more MIR optimizations, but
-# we need to recompile when a new shape is added to the list.
 - name: GuardShapeList
+  doc: |
+    Similar to GuardMultipleShapes but used when the list had a small number of
+    shapes. These shapes have been copied to the ShapeListSnapshot and are
+    available at compile-time. This lets us perform more MIR optimizations, but
+    we need to recompile when a new shape is added to the list.
   operands:
     object: Object
   arguments:
@@ -2594,8 +2676,9 @@
 - name: GuardNullProto
   gen_boilerplate: false
 
-# Guard the object is a native object.
 - name: GuardIsNativeObject
+  doc: |
+    Guard the object is a native object.
   operands:
     object: Object
   result_type: Object
@@ -2906,9 +2989,10 @@
   generate_lir: true
   lir_result_type: none
 
-# Loads a specific JSObject* that was originally nursery-allocated.
-# See also WarpObjectField.
 - name: NurseryObject
+  doc: |
+    Loads a specific JSObject* that was originally nursery-allocated.
+    See also WarpObjectField.
   arguments:
     # Index in the Vector of objects stored in the WarpSnapshot.
     nurseryObjectIndex: uint32_t
@@ -3105,8 +3189,9 @@
     load: DynamicSlot
   generate_lir: true
 
-# Inline call to access a function's environment (scope chain).
 - name: FunctionEnvironment
+  doc: |
+    Inline call to access a function's environment (scope chain).
   operands:
     function: Object
   result_type: Object
@@ -3117,15 +3202,17 @@
   can_recover: true
   generate_lir: true
 
-# Allocate a new BlockLexicalEnvironmentObject.
 - name: NewLexicalEnvironmentObject
+  doc: |
+    Allocate a new BlockLexicalEnvironmentObject.
   operands:
     templateObj: Object
   result_type: Object
   alias_set: none
 
-# Allocate a new ClassBodyEnvironmentObject.
 - name: NewClassBodyEnvironmentObject
+  doc: |
+    Allocate a new ClassBodyEnvironmentObject.
   operands:
     templateObj: Object
   result_type: Object
@@ -3169,8 +3256,9 @@
 - name: StoreDynamicSlot
   gen_boilerplate: false
 
-# Note, Name ICs always return a Value. There are no V/T variants.
 - name: GetNameCache
+  doc: |
+    Note, Name ICs always return a Value. There are no V/T variants.
   operands:
     envObj: Object
   result_type: Value
@@ -3288,11 +3376,12 @@
   generate_lir: true
   lir_temps: 2
 
-# Okay this is a confusing name, but essentially, the above ops load/store a
-# slot of an object using the PropertyIndex associated with the *current* key
-# for the iterator. The below op uses the PropertyIndex associated with the
-# key indexed by `index`, rather than the current one.
 - name: LoadSlotByIteratorIndexIndexed
+  doc: |
+    Okay this is a confusing name, but essentially, the above ops load/store a
+    slot of an object using the PropertyIndex associated with the *current* key
+    for the iterator. The below op uses the PropertyIndex associated with the
+    key indexed by `index`, rather than the current one.
   operands:
     object: Object
     iterator: Object
@@ -3322,11 +3411,12 @@
   generate_lir: true
   lir_temps: 2
 
-# Load the private value expando from a DOM proxy. The target is stored in the
-# proxy object's private slot.
-# This is either an UndefinedValue (no expando), ObjectValue (the expando
-# object), or PrivateValue(ExpandoAndGeneration*).
 - name: LoadDOMExpandoValue
+  doc: |
+    Load the private value expando from a DOM proxy. The target is stored in the
+    proxy object's private slot.
+    This is either an UndefinedValue (no expando), ObjectValue (the expando
+    object), or PrivateValue(ExpandoAndGeneration*).
   operands:
     proxy: Object
   result_type: Value
@@ -3349,9 +3439,10 @@
     load: DOMProxyExpando
   generate_lir: true
 
-# Takes an expando Value as input, then guards it's either UndefinedValue or
-# an object with the expected shape.
 - name: GuardDOMExpandoMissingOrGuardShape
+  doc: |
+    Takes an expando Value as input, then guards it's either UndefinedValue or
+    an object with the expected shape.
   operands:
     expando: Value
   arguments:
@@ -3366,8 +3457,9 @@
   lir_result_type: none
   lir_temps: 1
 
-# Read length field of a JSString*.
 - name: StringLength
+  doc: |
+    Read length field of a JSString*.
   operands:
     string: String
   result_type: Int32
@@ -3453,8 +3545,9 @@
 - name: InArray
   gen_boilerplate: false
 
-# Bail when the element is a hole.
 - name: GuardElementNotHole
+  doc: |
+    Bail when the element is a hole.
   operands:
     elements: Elements
     index: Int32
@@ -3479,23 +3572,26 @@
 - name: HasOwnCache
   gen_boilerplate: false
 
-# Implementation for instanceof operator with specific rhs.
 - name: InstanceOf
+  doc: |
+    Implementation for instanceof operator with specific rhs.
   operands:
     obj: ValueOrObject
     proto: Object
   result_type: Boolean
 
-# Implementation for instanceof operator with unknown rhs.
 - name: InstanceOfCache
+  doc: |
+    Implementation for instanceof operator with unknown rhs.
   operands:
     obj: Value
     proto: Object
   result_type: Boolean
   generate_lir: true
 
-# Read the number of actual arguments.
 - name: ArgumentsLength
+  doc: |
+    Read the number of actual arguments.
   result_type: Int32
   movable: true
   congruent_to: if_operands_equal
@@ -3505,8 +3601,9 @@
   can_recover: true
   generate_lir: true
 
-# This MIR instruction is used to get an argument from the actual arguments.
 - name: GetFrameArgument
+  doc: |
+    This MIR instruction is used to get an argument from the actual arguments.
   operands:
     index: Int32
   result_type: Value
@@ -3517,10 +3614,11 @@
   alias_set: none
   generate_lir: true
 
-# This MIR instruction is used to get an argument from the actual arguments.
-# Returns undefined if |index| is larger-or-equals to |length|. Bails out if
-# |index| is negative.
 - name: GetFrameArgumentHole
+  doc: |
+    This MIR instruction is used to get an argument from the actual arguments.
+    Returns undefined if |index| is larger-or-equals to |length|. Bails out if
+    |index| is negative.
   operands:
     index: Int32
     length: Int32
@@ -3541,8 +3639,9 @@
   alias_set: none
   generate_lir: true
 
-# Create the rest parameter.
 - name: Rest
+  doc: |
+    Create the rest parameter.
   operands:
     numActuals: Int32
   arguments:
@@ -3571,12 +3670,13 @@
   generate_lir: true
   lir_temps: 1
 
-# Allocates a new NamedLambdaObject.
-#
-# This instruction generates two possible instruction sets:
-#   (1) An inline allocation of the call object is attempted.
-#   (2) Otherwise, a callVM create a new object.
 - name: NewNamedLambdaObject
+  doc: |
+    Allocates a new NamedLambdaObject.
+
+    This instruction generates two possible instruction sets:
+      (1) An inline allocation of the call object is attempted.
+      (2) Otherwise, a callVM create a new object.
   arguments:
     templateObj: NamedLambdaObject*
     initialHeap: gc::Heap
@@ -3662,8 +3762,9 @@
 - name: GuardToFunction
   gen_boilerplate: false
 
-# Note: we might call a proxy trap, so this instruction is effectful.
 - name: IsArray
+  doc: |
+    Note: we might call a proxy trap, so this instruction is effectful.
   operands:
     value: ValueOrObject
   result_type: Boolean
@@ -3739,9 +3840,10 @@
   generate_lir: true
   lir_temps: 2
 
-# Test the frame's FrameDescriptor::IsResumingGenerator bit. True on a resume,
-# false on a fresh call.
 - name: IsResumingGenerator
+  doc: |
+    Test the frame's FrameDescriptor::IsResumingGenerator bit. True on a resume,
+    false on a fresh call.
   result_type: Boolean
   movable: true
   congruent_to: if_operands_equal
@@ -3749,11 +3851,12 @@
     load: GeneratorResumeState
   generate_lir: true
 
-# Read one ResumeFrameArgs slot from this frame's args region. Only valid while
-# the frame is mid-resume (between the MIsResumingGenerator test and the
-# JSOp::AfterYield's MClearResumingGeneratorFlag). Not movable so LICM can't
-# hoist it out of that region.
 - name: ResumeFrameArg
+  doc: |
+    Read one ResumeFrameArgs slot from this frame's args region. Only valid while
+    the frame is mid-resume (between the MIsResumingGenerator test and the
+    JSOp::AfterYield's MClearResumingGeneratorFlag). Not movable so LICM can't
+    hoist it out of that region.
   arguments:
     slot: uint32_t
   result_type: Value
@@ -3762,8 +3865,9 @@
   alias_set: none
   generate_lir: true
 
-# Clear the frame's FrameDescriptor::IsResumingGenerator bit.
 - name: ClearResumingGeneratorFlag
+  doc: |
+    Clear the frame's FrameDescriptor::IsResumingGenerator bit.
   alias_set:
     store: GeneratorResumeState
   generate_lir: true
@@ -3962,26 +4066,28 @@
   generate_lir: true
   lir_result_type: none
 
-# Return true if the object is definitely a TypedArray constructor, but not
-# necessarily from the currently active realm. Return false if the object is
-# not a TypedArray constructor or if it's a wrapper.
 - name: IsTypedArrayConstructor
+  doc: |
+    Return true if the object is definitely a TypedArray constructor, but not
+    necessarily from the currently active realm. Return false if the object is
+    not a TypedArray constructor or if it's a wrapper.
   operands:
     object: Object
   result_type: Boolean
   alias_set: none
   generate_lir: true
 
-# Load the JSValueTag on all platforms except ARM64, RISCV64, and LOONG64.
-#
-# See the comments in MacroAssembler-arm64.h for the |cmpTag(Register, ImmTag)|
-# method for why ARM64 doesn't use the raw JSValueTag, but instead a modified
-# tag value. That modified tag value can't be directly compared against
-# JSValueTag constants.
-#
-# RISCV64 and LOONG64 use a similar scheme, see comments in
-# MacroAssembler-riscv64.h for the |splitSignExtTag(...)| method.
 - name: LoadValueTag
+  doc: |
+    Load the JSValueTag on all platforms except ARM64, RISCV64, and LOONG64.
+
+    See the comments in MacroAssembler-arm64.h for the |cmpTag(Register, ImmTag)|
+    method for why ARM64 doesn't use the raw JSValueTag, but instead a modified
+    tag value. That modified tag value can't be directly compared against
+    JSValueTag constants.
+
+    RISCV64 and LOONG64 use a similar scheme, see comments in
+    MacroAssembler-riscv64.h for the |splitSignExtTag(...)| method.
   operands:
     value: Value
   result_type: Int32
@@ -3990,10 +4096,11 @@
   alias_set: none
   generate_lir: true
 
-# Load the target object from a proxy wrapper. The target is stored in the
-# proxy object's private slot. This operation is fallible if the proxy can
-# be revoked.
 - name: LoadWrapperTarget
+  doc: |
+    Load the target object from a proxy wrapper. The target is stored in the
+    proxy object's private slot. This operation is fallible if the proxy can
+    be revoked.
   operands:
     object: Object
   arguments:
@@ -4018,8 +4125,9 @@
   lir_temps: 1
   alias_set: none
 
-# Guard the accessor shape is present on the object or its prototype chain.
 - name: GuardHasGetterSetter
+  doc: |
+    Guard the accessor shape is present on the object or its prototype chain.
   operands:
     object: Object
   arguments:
@@ -4088,9 +4196,10 @@
   generate_lir: true
   lir_result_type: none
 
-# Guard the input index is either greater than the dense initialized length of
-# an object, or a hole element.
 - name: GuardIndexIsNotDenseElement
+  doc: |
+    Guard the input index is either greater than the dense initialized length of
+    an object, or a hole element.
   operands:
     object: Object
     index: Int32
@@ -4106,9 +4215,10 @@
   lir_result_type: none
   lir_temps: 2
 
-# Guard an array object's length can be updated successfully when adding an
-# element at the input index.
 - name: GuardIndexIsValidUpdateOrAdd
+  doc: |
+    Guard an array object's length can be updated successfully when adding an
+    element at the input index.
   operands:
     object: Object
     index: Int32
@@ -4122,10 +4232,11 @@
   lir_result_type: none
   lir_temps: 2
 
-# Add or update a sparse element of an ArrayObject or PlainObject. It's allowed
-# for the sparse element to be already present on the object. It may also be an
-# accessor property, so this instruction is always marked as effectful.
 - name: CallAddOrUpdateSparseElement
+  doc: |
+    Add or update a sparse element of an ArrayObject or PlainObject. It's allowed
+    for the sparse element to be already present on the object. It may also be an
+    accessor property, so this instruction is always marked as effectful.
   operands:
     object: Object
     index: Int32
@@ -4135,9 +4246,10 @@
   possibly_calls: true
   generate_lir: true
 
-# Get a sparse element from an ArrayObject or PlainObject, possibly by calling
-# an accessor property.
 - name: CallGetSparseElement
+  doc: |
+    Get a sparse element from an ArrayObject or PlainObject, possibly by calling
+    an accessor property.
   operands:
     object: Object
     index: Int32
@@ -4162,8 +4274,9 @@
   possibly_calls: true
   generate_lir: true
 
-# Test if a native object has an own element (sparse or dense) at an index.
 - name: CallObjectHasSparseElement
+  doc: |
+    Test if a native object has an own element (sparse or dense) at an index.
   operands:
     object: Object
     index: Int32
@@ -4515,9 +4628,10 @@
     load: MapOrSetHashTable
   generate_lir: true
 
-# Note: for now these WeakMap/WeakSet instructions are non-movable and don't
-# override congruentTo, but it'd probably be fine to change this in the future.
 - name: WeakMapGetObject
+  doc: |
+    Note: for now these WeakMap/WeakSet instructions are non-movable and don't
+    override congruentTo, but it'd probably be fine to change this in the future.
   operands:
     weakMap: Object
     object: Object
@@ -4899,11 +5013,12 @@
   generate_lir: true
   lir_temps: 4
 
-# Suspends the current continuation, delivering the suspend params to the
-# matched handler. suspendResultsArea is always present (empty when the tag has
-# no results); the resumer writes the tag results there and the suspender reads
-# them FP-relative via ->base() at codegen.
 - name: WasmSuspend
+  doc: |
+    Suspends the current continuation, delivering the suspend params to the
+    matched handler. suspendResultsArea is always present (empty when the tag has
+    no results); the resumer writes the tag results there and the suspender reads
+    them FP-relative via ->base() at codegen.
   operands:
     instance: Pointer
     suspendedCont: WasmAnyRef
@@ -4925,13 +5040,14 @@
   generate_lir: true
   lir_temps: 1
 
-# Prepares a resume: validates the continuation (null/resumable checks that
-# trap on failure) and returns the destination paramsArea pointer (the resumer's
-# resumeParamsArea for a fresh continuation, or the suspender's advertised
-# suspendResultsArea for a suspended one). Emitted for every resume, so the
-# resumability check happens here. resumeParamsArea is an MWasmStackResultArea
-# (empty when the cont takes no params), read via ->base() at codegen.
 - name: WasmPrepareResume
+  doc: |
+    Prepares a resume: validates the continuation (null/resumable checks that
+    trap on failure) and returns the destination paramsArea pointer (the resumer's
+    resumeParamsArea for a fresh continuation, or the suspender's advertised
+    suspendResultsArea for a suspended one). Emitted for every resume, so the
+    resumability check happens here. resumeParamsArea is an MWasmStackResultArea
+    (empty when the cont takes no params), read via ->base() at codegen.
   operands:
     cont: WasmAnyRef
     resumeParamsArea: StackResults
@@ -4960,8 +5076,9 @@
 - name: WasmBinarySimd128WithConstant
   gen_boilerplate: false
 
-# (v128, i32) -> v128 effect-free shift operations.
 - name: WasmShiftSimd128
+  doc: |
+    (v128, i32) -> v128 effect-free shift operations.
   operands:
     lhs: Simd128
     rhs: Int32
@@ -4974,8 +5091,9 @@
   alias_set: none
   clone: true
 
-# (v128, v128, mask) -> v128 effect-free operation.
 - name: WasmShuffleSimd128
+  doc: |
+    (v128, v128, mask) -> v128 effect-free operation.
   operands:
     lhs: Simd128
     rhs: Simd128
@@ -4991,10 +5109,11 @@
 - name: WasmReplaceLaneSimd128
   gen_boilerplate: false
 
-# (v128, v128) -> v128 replace_lane of lhs with a lane extracted from rhs.
-# simdOp is the replace_lane operation, which gives the lane size, and
-# srcLaneIndex is in units of that lane size.
 - name: WasmMoveLaneSimd128
+  doc: |
+    (v128, v128) -> v128 replace_lane of lhs with a lane extracted from rhs.
+    simdOp is the replace_lane operation, which gives the lane size, and
+    srcLaneIndex is in units of that lane size.
   operands:
     lhs: Simd128
     rhs: Simd128
@@ -5082,8 +5201,9 @@
 - name: WasmRefCastAbstract
   gen_boilerplate: false
 
-# Produced by OptimizeWasmCasts when a cast is known to always succeed.
 - name: WasmRefCastInfallible
+  doc: |
+    Produced by OptimizeWasmCasts when a cast is known to always succeed.
   operands:
     ref: WasmAnyRef
   arguments:

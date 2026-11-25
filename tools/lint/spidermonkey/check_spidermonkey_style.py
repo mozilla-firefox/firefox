@@ -73,7 +73,9 @@ included_inclnames_to_ignore = set([
     "jit/AtomicOperationsGenerated.h",  # generated in $OBJDIR
     "jit/CacheIROpsGenerated.h",  # generated in $OBJDIR
     "jit/CacheIRAOTGenerated.h",  # generated in $OBJDIR
+    "jit/LIROpClassesGenerated.h",  # generated in $OBJDIR
     "jit/LIROpsGenerated.h",  # generated in $OBJDIR
+    "jit/MIROpClassesGenerated.h",  # generated in $OBJDIR
     "jit/MIROpsGenerated.h",  # generated in $OBJDIR
     "js/PrefsGenerated.h",  # generated in $OBJDIR
     "js/normalizer_glue.h",  # generated
@@ -136,6 +138,8 @@ oddly_ordered_inclnames = set([
     "frontend/ReservedWordsGenerated.h",
     "gc/StatsPhasesGenerated.h",  # Included in the body of gc/Statistics.h
     "gc/StatsPhasesGenerated.inc",  # Included in the body of gc/Statistics.cpp
+    "jit/LIROpClassesGenerated.h",  # Included in the body of jit/shared/LIR-shared.h
+    "jit/MIROpClassesGenerated.h",  # Included in the body of jit/MIR.h
     "psapi.h",  # Must be included after "util/WindowsWrapper.h" on Windows
     "machine/endian.h",  # Must be included after <sys/types.h> on BSD
     "process.h",  # Windows-specific

@@ -14,7 +14,7 @@
 namespace js {
 namespace jit {
 
-LIR_OPCODE_CLASS_GENERATED
+#include "jit/LIROpClassesGenerated.h"
 
 template <size_t Temps, size_t ExtraUses = 0>
 class LBinaryMath : public LInstructionHelper<1, 2 + ExtraUses, Temps> {

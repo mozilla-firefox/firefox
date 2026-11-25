@@ -1417,7 +1417,7 @@ enum class StringCase {
   Upper,
 };
 
-MIR_OPCODE_CLASS_GENERATED
+#include "jit/MIROpClassesGenerated.h"
 
 // Truncation barrier. This is intended for protecting its input against
 // follow-up truncation optimizations.

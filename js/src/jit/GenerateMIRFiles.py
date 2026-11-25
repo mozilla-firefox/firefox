@@ -3,7 +3,7 @@
 # file, You can obtain one at http://mozilla.org/MPL/2.0/.
 
 # This script generates jit/MIROpsGenerated.h (list of MIR instructions)
-# from MIROps.yaml, as well as MIR op definitions.
+# and jit/MIROpClassesGenerated.h (MIR op definitions) from MIROps.yaml.
 
 import io
 
@@ -47,6 +47,13 @@ def load_yaml(yaml_path):
     pp.do_include(yaml_path)
     contents = pp.out.getvalue()
     return yaml.safe_load(contents)
+
+
+def gen_doc_comment(doc):
+    code = ""
+    for line in doc.rstrip("\n").split("\n"):
+        code += f"// {line}\n" if line else "//\n"
+    return code
 
 
 type_policies = {
@@ -257,7 +264,7 @@ def gen_mir_class(
     if base_class != "MNullaryInstruction":
         assert type_policy
         type_policy = ", " + type_policy
-    code = f"class {class_name} : public {base_class}{type_policy} {{\\\n"
+    code = f"class {class_name} : public {base_class}{type_policy} {{\n"
 
     # Arguments to class constructor that require accessors.
     mir_args = []
@@ -272,7 +279,7 @@ def gen_mir_class(
                 code += "  CompilerGCPointer<" + arg_type_sig + ">"
             else:
                 code += "  " + arg_type_sig
-            code += " " + arg_name + "_;\\\n"
+            code += " " + arg_name + "_;\n"
 
     code += "  explicit {}({}) : {}(classOpcode{})".format(
         class_name,
@@ -290,7 +297,7 @@ def gen_mir_class(
             else:
                 code += arg_name
             code += ")"
-    code += " {\\\n"
+    code += " {\n"
     if operands:
         for oper_name in operands:
             mir_type = operands[oper_name]
@@ -301,40 +308,37 @@ def gen_mir_class(
 
             policy = type_policies.get(mir_type, "NoTypePolicy")
             if no_type_policy or policy == "NoTypePolicy":
-                code += (
-                    f"    MOZ_ASSERT({oper_name}->type() == MIRType::{mir_type});\\\n"
-                )
+                code += f"    MOZ_ASSERT({oper_name}->type() == MIRType::{mir_type});\n"
     if guard:
-        code += "    setGuard();\\\n"
+        code += "    setGuard();\n"
     if movable:
-        code += "    setMovable();\\\n"
+        code += "    setMovable();\n"
     if wasm_ref_type is not None:
-        code += f"    setWasmRefType({wasm_ref_type});\\\n"
+        code += f"    setWasmRefType({wasm_ref_type});\n"
     # Note: MIRType::None is the default MIR result type so don't generate a
     # setResultType call for it.
     if result and result != "None":
-        code += f"    setResultType(MIRType::{result});\\\n"
-    code += "  }\\\n public:\\\n"
+        code += f"    setResultType(MIRType::{result});\n"
+    code += "  }\n public:\n"
     if arguments:
         for arg_name in arguments:
             code += "  " + arguments[arg_name] + " " + arg_name + "() const { "
             arg_type_sig = arguments[arg_name]
             if arg_type_sig in special_storage_types:
                 _, _, load = special_storage_types[arg_type_sig]
-                code += "return " + load.format(arg_name + "_") + "; }\\\n"
+                code += "return " + load.format(arg_name + "_") + "; }\n"
             else:
-                code += "return " + arg_name + "_; }\\\n"
-    code += f"  INSTRUCTION_HEADER({name})\\\n"
-    code += "  TRIVIAL_NEW_WRAPPERS\\\n"
+                code += "return " + arg_name + "_; }\n"
+    code += f"  INSTRUCTION_HEADER({name})\n"
+    code += "  TRIVIAL_NEW_WRAPPERS\n"
     if named_operands:
-        code += "  NAMED_OPERANDS({})\\\n".format(", ".join(named_operands))
+        code += "  NAMED_OPERANDS({})\n".format(", ".join(named_operands))
     if alias_set:
         if alias_set == "custom":
-            code += "  AliasSet getAliasSet() const override;\\\n"
+            code += "  AliasSet getAliasSet() const override;\n"
         elif alias_set == "none":
             code += (
-                "  AliasSet getAliasSet() const override { "
-                "return AliasSet::None(); }\\\n"
+                "  AliasSet getAliasSet() const override { return AliasSet::None(); }\n"
             )
         else:
             assert isinstance(alias_set, dict)
@@ -350,14 +354,14 @@ def gen_mir_class(
             else:
                 expr = "AliasSet::None()"
 
-            code += f"  AliasSet getAliasSet() const override {{ return {expr}; }}\\\n"
+            code += f"  AliasSet getAliasSet() const override {{ return {expr}; }}\n"
     if might_alias:
-        code += "  AliasType mightAlias(const MDefinition* store) const override;\\\n"
+        code += "  AliasType mightAlias(const MDefinition* store) const override;\n"
     if folds_to:
-        code += "  MDefinition* foldsTo(TempAllocator& alloc) override;\\\n"
+        code += "  MDefinition* foldsTo(TempAllocator& alloc) override;\n"
     if congruent_to:
         if congruent_to == "custom":
-            code += "  bool congruentTo(const MDefinition* ins) const override;\\\n"
+            code += "  bool congruentTo(const MDefinition* ins) const override;\n"
         else:
             assert congruent_to in (
                 "if_operands_equal",
@@ -381,32 +385,30 @@ def gen_mir_class(
 
             code += (
                 "  bool congruentTo(const MDefinition* ins) const override { "
-                f"return {expr}; }}\\\n"
+                f"return {expr}; }}\n"
             )
     if value_hash:
         assert value_hash == "custom"
-        code += "  HashNumber valueHash() const override;\\\n"
+        code += "  HashNumber valueHash() const override;\n"
     if possibly_calls:
         if possibly_calls == "custom":
-            code += "  bool possiblyCalls() const override;\\\n"
+            code += "  bool possiblyCalls() const override;\n"
         else:
-            code += "  bool possiblyCalls() const override { return true; }\\\n"
+            code += "  bool possiblyCalls() const override { return true; }\n"
     if compute_range:
-        code += "  void computeRange(TempAllocator& alloc) override;\\\n"
+        code += "  void computeRange(TempAllocator& alloc) override;\n"
     if can_recover:
-        code += "  [[nodiscard]] bool writeRecoverData(\\\n"
-        code += "    CompactBufferWriter& writer) const override;\\\n"
+        code += "  [[nodiscard]] bool writeRecoverData(\n"
+        code += "    CompactBufferWriter& writer) const override;\n"
         if can_recover == "custom":
-            code += "  bool canRecoverOnBailout() const override;\\\n"
+            code += "  bool canRecoverOnBailout() const override;\n"
         else:
-            code += "  bool canRecoverOnBailout() const override { return true; }\\\n"
+            code += "  bool canRecoverOnBailout() const override { return true; }\n"
     if clone:
-        code += "  ALLOW_CLONE(" + class_name + ")\\\n"
+        code += "  ALLOW_CLONE(" + class_name + ")\n"
     if can_consume_float32:
-        code += (
-            "  bool canConsumeFloat32(MUse* use) const override { return true; }\\\n"
-        )
-    code += "};\\\n"
+        code += "  bool canConsumeFloat32(MUse* use) const override { return true; }\n"
+    code += "};\n"
     return code
 
 
@@ -429,10 +431,8 @@ def gen_non_gc_pointer_type_assertions(seen_types):
     return assertions
 
 
-def generate_mir_header(c_out, yaml_path):
-    """Generate MIROpsGenerated.h from MIROps.yaml. The generated file
-    has a list of MIR ops and boilerplate for MIR op definitions.
-    """
+def gen_mir_ops(yaml_path):
+    """Generates MIR_OPCODE_LIST and the boilerplate MIR classes."""
 
     data = load_yaml(yaml_path)
 
@@ -452,6 +452,12 @@ def generate_mir_header(c_out, yaml_path):
 
         gen_boilerplate = op.get("gen_boilerplate", True)
         assert isinstance(gen_boilerplate, bool)
+
+        doc = op.get("doc", None)
+        assert doc is None or isinstance(doc, str)
+        assert doc is None or gen_boilerplate, (
+            f"{name} has a doc but no generated boilerplate to attach it to"
+        )
 
         if gen_boilerplate:
             operands = op.get("operands", None)
@@ -531,6 +537,8 @@ def generate_mir_header(c_out, yaml_path):
                 can_consume_float32,
                 wasm_ref_type,
             )
+            if doc is not None:
+                code = gen_doc_comment(doc) + code
             mir_op_classes.append(code)
 
             if arguments:
@@ -539,12 +547,18 @@ def generate_mir_header(c_out, yaml_path):
                     if arg_type not in gc_pointer_types:
                         seen_non_gc_pointer_argument_types.add(arg_type)
 
+    return ops_items, mir_op_classes, seen_non_gc_pointer_argument_types
+
+
+def generate_mir_header(c_out, yaml_path):
+    """Generate MIROpsGenerated.h from MIROps.yaml. The generated file
+    has a list of MIR ops and static assertions about MIR op arguments.
+    """
+
+    ops_items, _, seen_non_gc_pointer_argument_types = gen_mir_ops(yaml_path)
+
     contents = "#define MIR_OPCODE_LIST(_)\\\n"
     contents += "\\\n".join(ops_items)
-    contents += "\n\n"
-
-    contents += "#define MIR_OPCODE_CLASS_GENERATED \\\n"
-    contents += "\\\n".join(mir_op_classes)
     contents += "\n\n"
 
     contents += "#define NON_GC_POINTER_TYPE_ASSERTIONS_GENERATED \\\n"
@@ -554,3 +568,16 @@ def generate_mir_header(c_out, yaml_path):
     contents += "\n\n"
 
     generate_header(c_out, "jit_MIROpsGenerated_h", contents)
+
+
+def generate_mir_classes_header(c_out, yaml_path):
+    """Generate MIROpClassesGenerated.h from MIROps.yaml. The generated file
+    has the boilerplate MIR op class definitions and is #include'd in the body
+    of MIR.h.
+    """
+
+    _, mir_op_classes, _ = gen_mir_ops(yaml_path)
+
+    contents = "\n".join(mir_op_classes)
+
+    generate_header(c_out, "jit_MIROpClassesGenerated_h", contents)
