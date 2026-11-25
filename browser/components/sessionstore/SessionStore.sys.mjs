@@ -3302,7 +3302,7 @@ class _SessionStore {
 
     // Cache the browser's urlbarOverrideValue either if there is no cache state
     // at all (e.g. if it was already discarded before we got to cache its state)
-    // or it may have been created but not including a userTypedValue (e.g.
+    // or it may have been created but not including a urlbarOverrideValue (e.g.
     // for a private tab we will cache `isPrivate: true` as soon as the tab
     // is opened).
     //
@@ -3317,7 +3317,7 @@ class _SessionStore {
     //   see Bug 1724205).
     let shouldUpdateCacheState =
       urlbarOverrideValue &&
-      (!cacheState || (hasStartedLoad && !cacheState.userTypedValue));
+      (!cacheState || (hasStartedLoad && !cacheState.urlbarOverrideValue));
 
     if (shouldUpdateCacheState) {
       // Discard was likely called before state can be cached.  Update
@@ -3325,8 +3325,8 @@ class _SessionStore {
       // restore will be successful.  This information is necessary for
       // #restoreTabEntry to work properly.
       lazy.TabStateCache.update(browser.permanentKey, {
-        userTypedValue: urlbarOverrideValue,
-        userTypedClear: 1,
+        urlbarOverrideValue,
+        urlbarOverrideLoadStarted: true,
       });
     }
 
@@ -3720,6 +3720,7 @@ class _SessionStore {
     // Initialize counter and migrate splitViewIds from persisted given state
     this.#maxSplitViewId = 0;
     this.#initSplitViewIds(state);
+    lazy.TabState.upgradeLegacyUrlbarOverrideInSession(state);
 
     this.#browserSetState = true;
 
@@ -3879,6 +3880,7 @@ class _SessionStore {
         Cr.NS_ERROR_INVALID_ARG
       );
     }
+    lazy.TabState.upgradeLegacyUrlbarOverride(tabState);
 
     let window = /** @type {BrowserWindow} */ (aTab.documentGlobal);
     if (!window || !this.#windowIds.has(window)) {
@@ -6586,6 +6588,7 @@ class _SessionStore {
       this.#sendRestoreCompletedNotifications();
       return;
     }
+    lazy.TabState.upgradeLegacyUrlbarOverrideInSession(root);
 
     // Restore closed windows if any.
     if (root._closedWindows) {
@@ -6836,14 +6839,14 @@ class _SessionStore {
     this.#crashedBrowsers.delete(browser.permanentKey);
 
     // If we're in the midst of performing a process flip, then we must
-    // have initiated a navigation. This means that these userTyped*
+    // have initiated a navigation. This means that these urlbarOverride*
     // values are now out of date.
     if (
       options.restoreContentReason ==
       RESTORE_TAB_CONTENT_REASON.NAVIGATE_AND_RESTORE
     ) {
-      delete tabData.userTypedValue;
-      delete tabData.userTypedClear;
+      delete tabData.urlbarOverrideValue;
+      delete tabData.urlbarOverrideLoadStarted;
     }
 
     // Update the persistent tab state cache with |tabData| information.
@@ -6862,8 +6865,8 @@ class _SessionStore {
       // collect it in TabState._collectBaseTabData().
       image: tabData.image || "",
       searchMode: tabData.searchMode || null,
-      userTypedValue: tabData.userTypedValue || "",
-      userTypedClear: tabData.userTypedClear || 0,
+      urlbarOverrideValue: tabData.urlbarOverrideValue || "",
+      urlbarOverrideLoadStarted: tabData.urlbarOverrideLoadStarted || null,
     });
 
     // Restore tab attributes.
@@ -6926,7 +6929,7 @@ class _SessionStore {
       TAB_LAZY_STATES.set(tab, {
         url,
         title,
-        urlbarOverrideValue: tabData.userTypedValue || "",
+        urlbarOverrideValue: tabData.urlbarOverrideValue || "",
       });
     }
 
@@ -7818,7 +7821,7 @@ class _SessionStore {
    */
   #shouldSaveTabState(aTabState) {
     // If the tab has only a transient about: history entry, no other
-    // session history, and no userTypedValue, then we don't actually want to
+    // session history, and no urlbarOverrideValue, then we don't actually want to
     // store this tab's data.
     const entryUrl = aTabState.entries[0]?.url;
     return (
@@ -7829,7 +7832,7 @@ class _SessionStore {
           (entryUrl == "about:home" && !aTabState.splitViewId) ||
           (entryUrl == "about:newtab" && !aTabState.splitViewId) ||
           entryUrl == "about:privatebrowsing") &&
-        !aTabState.userTypedValue
+        !aTabState.urlbarOverrideValue
       )
     );
   }
@@ -7871,10 +7874,10 @@ class _SessionStore {
    */
   #shouldSaveTab(aTabState) {
     // If the tab has one of the following transient about: history entry, no
-    // userTypedValue, and no customizemode attribute, then we don't actually
+    // urlbarOverrideValue, and no customizemode attribute, then we don't actually
     // want to write this tab's data to disk.
     return !!(
-      aTabState.userTypedValue ||
+      aTabState.urlbarOverrideValue ||
       (aTabState.attributes && aTabState.attributes.customizemode == "true") ||
       (aTabState.entries.length &&
         aTabState.entries[0].url != "about:privatebrowsing")
@@ -8814,9 +8817,10 @@ class _SessionStore {
    *        The tab data to restore.
    */
   #restoreTabEntry(browser, tabData) {
-    let haveUserTypedValue = tabData.userTypedValue && tabData.userTypedClear;
+    let shouldLoadUrlbarOverrideValue =
+      tabData.urlbarOverrideValue && tabData.urlbarOverrideLoadStarted;
     // First take care of the common case where we load the history entry.
-    if (!haveUserTypedValue && tabData.entries.length) {
+    if (!shouldLoadUrlbarOverrideValue && tabData.entries.length) {
       return SessionStoreUtils.initializeRestore(
         browser.browsingContext,
         lazy.SessionStoreHelper.buildRestoreData(
@@ -8830,7 +8834,7 @@ class _SessionStore {
     let triggeringPrincipal =
       Services.scriptSecurityManager.getSystemPrincipal();
     // Bypass all the fixup goop for about:blank:
-    if (!haveUserTypedValue) {
+    if (!shouldLoadUrlbarOverrideValue) {
       let blankPromise = this.#waitForStateStop(browser, "about:blank");
       browser.browsingContext.loadURI(lazy.blankURI, {
         triggeringPrincipal,
@@ -8840,29 +8844,35 @@ class _SessionStore {
     }
 
     // We have a user typed value, load that with fixup:
-    let loadPromise = this.#waitForStateStop(browser, tabData.userTypedValue);
+    let loadPromise = this.#waitForStateStop(
+      browser,
+      tabData.urlbarOverrideValue
+    );
     try {
-      browser.browsingContext.fixupAndLoadURIString(tabData.userTypedValue, {
-        loadFlags: Ci.nsIWebNavigation.LOAD_FLAGS_ALLOW_THIRD_PARTY_FIXUP,
-        triggeringPrincipal,
-      });
+      browser.browsingContext.fixupAndLoadURIString(
+        tabData.urlbarOverrideValue,
+        {
+          loadFlags: Ci.nsIWebNavigation.LOAD_FLAGS_ALLOW_THIRD_PARTY_FIXUP,
+          triggeringPrincipal,
+        }
+      );
     } catch (ex) {
-      // Bug 1986173: userTypedValue is the raw text that the user typed, not
-      // the search URL that the address bar built from it. If the text is a
-      // search term, fixup can fail if the search service, which is
+      // Bug 1986173: urlbarOverrideValue is the raw text that the user typed,
+      // not the search URL that the address bar built from it. If the text is
+      // a search term, fixup can fail if the search service, which is
       // lazy-loaded, is not ready. In this case, restore the history entry and
       // show the typed value in the address bar.
       this.#log.warn(`Could not load the typed value: ${ex}`);
       this.#restoreListeners.get(browser.permanentKey)?.unregister(false);
-      let { userTypedValue } = tabData;
+      let { urlbarOverrideValue } = tabData;
       return this.#restoreTabEntry(browser, {
         ...tabData,
-        userTypedValue: null,
+        urlbarOverrideValue: null,
       }).then(() => {
         if (browser.urlbarOverrideValue) {
           return;
         }
-        browser.urlbarOverrideValue = userTypedValue;
+        browser.urlbarOverrideValue = urlbarOverrideValue;
         let win = browser.documentGlobal;
         if (win.gBrowser.selectedBrowser == browser) {
           win.gURLBar.setURI();
@@ -8943,7 +8953,7 @@ class _SessionStore {
     // We need to be careful when restoring the urlbar's search mode because
     // we race a call to gURLBar.setURI due to the location change.  setURI
     // will exit search mode and set gURLBar.value to the restored URL,
-    // clobbering any search mode and userTypedValue we restore here.  If
+    // clobbering any search mode and urlbarOverrideValue we restore here.  If
     // this is a typical restore -- restoring on startup or restoring a
     // closed tab for example -- then we need to restore search mode after
     // that setURI call, and so we wait until restoreTabContentComplete, at
@@ -8958,7 +8968,7 @@ class _SessionStore {
       if (!initiatedBySessionStore || isNavigateAndRestore) {
         lazy.TabStateCache.update(browser.permanentKey, {
           searchMode: null,
-          userTypedValue: null,
+          urlbarOverrideValue: null,
         });
       }
       return;
@@ -8979,11 +8989,11 @@ class _SessionStore {
       // implies that the user was navigating.
       let tabData = lazy.TabState.collect(tab, TAB_CUSTOM_VALUES.get(tab));
       if (
-        tabData.userTypedValue &&
-        !tabData.userTypedClear &&
+        tabData.urlbarOverrideValue &&
+        !tabData.urlbarOverrideLoadStarted &&
         !browser.urlbarOverrideValue
       ) {
-        browser.urlbarOverrideValue = tabData.userTypedValue;
+        browser.urlbarOverrideValue = tabData.urlbarOverrideValue;
         if (tab.selected) {
           win.gURLBar.setURI();
         }
@@ -8991,8 +9001,8 @@ class _SessionStore {
 
       // Remove state we don't need any longer.
       lazy.TabStateCache.update(browser.permanentKey, {
-        userTypedValue: null,
-        userTypedClear: null,
+        urlbarOverrideValue: null,
+        urlbarOverrideLoadStarted: null,
       });
     }
   }
@@ -9008,13 +9018,13 @@ class _SessionStore {
     let cacheState = lazy.TabStateCache.get(browser.permanentKey);
     if (cacheState.searchMode) {
       win.gURLBar.setSearchMode(cacheState.searchMode, browser);
-      browser.urlbarOverrideValue = cacheState.userTypedValue;
+      browser.urlbarOverrideValue = cacheState.urlbarOverrideValue;
       if (tab.selected) {
         win.gURLBar.setURI();
       }
       lazy.TabStateCache.update(browser.permanentKey, {
         searchMode: null,
-        userTypedValue: null,
+        urlbarOverrideValue: null,
       });
     }
 

@@ -377,6 +377,8 @@ run-if = [
 
 ["browser_upgrade_backup.js"]
 
+["browser_urlbarOverride_legacy_keys.js"]
+
 ["browser_urlbarSearchMode.js"]
 
 ["browser_userTyped_restored_after_discard.js"]

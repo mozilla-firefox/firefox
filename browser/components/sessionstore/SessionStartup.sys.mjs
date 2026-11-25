@@ -43,6 +43,7 @@ const lazy = XPCOMUtils.declareLazy({
     "moz-src:///browser/components/sessionstore/TabGroupIntegrity.sys.mjs",
   sessionStoreLogger:
     "moz-src:///browser/components/sessionstore/SessionLogger.sys.mjs",
+  TabState: "moz-src:///browser/components/sessionstore/TabState.sys.mjs",
 });
 
 const STATE_RUNNING_STR = "running";
@@ -262,6 +263,7 @@ class _SessionStartup {
       return;
     }
 
+    lazy.TabState.upgradeLegacyUrlbarOverrideInSession(this.#initialState);
     this.#recordTabGroupIntegrity(this.#initialState);
 
     let initialState = this.#initialState;

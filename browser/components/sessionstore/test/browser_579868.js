@@ -11,7 +11,7 @@ function test() {
   promiseBrowserLoaded(tab1.linkedBrowser).then(() => {
     // Tell the session storer that the tab is pinned
     let newTabState =
-      '{"entries":[{"url":"about:robots"}],"pinned":true,"userTypedValue":"Hello World!"}';
+      '{"entries":[{"url":"about:robots"}],"pinned":true,"urlbarOverrideValue":"Hello World!"}';
     ss.setTabState(tab1, newTabState);
 
     // Undo pinning

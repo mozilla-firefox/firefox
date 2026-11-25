@@ -17,7 +17,7 @@ function test() {
         {
           tabs: [
             { entries: [{ url: "about:mozilla", triggeringPrincipal_base64 }] },
-            { entries: [], userTypedValue: "example.com", userTypedClear: 0 },
+            { entries: [], urlbarOverrideValue: "example.com" },
           ],
           selected: 2,
         },
@@ -34,7 +34,7 @@ function test() {
       is(
         browser.urlbarOverrideValue,
         "example.com",
-        "userTypedValue was correctly restored"
+        "urlbarOverrideValue was correctly restored"
       );
       ok(
         !browser.loadStartedSinceUrlbarOverride,
@@ -91,7 +91,7 @@ function test() {
         {
           tabs: [
             { entries: [{ url: "about:mozilla", triggeringPrincipal_base64 }] },
-            { entries: [], userTypedValue: "example.org", userTypedClear: 0 },
+            { entries: [], urlbarOverrideValue: "example.org" },
           ],
           selected: 1,
         },
@@ -108,7 +108,7 @@ function test() {
       is(
         browser.urlbarOverrideValue,
         "example.org",
-        "userTypedValue was correctly restored"
+        "urlbarOverrideValue was correctly restored"
       );
       ok(
         !browser.loadStartedSinceUrlbarOverride,
@@ -170,8 +170,7 @@ function test() {
                 { url: "about:config", triggeringPrincipal_base64 },
               ],
               index: 2,
-              userTypedValue: "example.com",
-              userTypedClear: 0,
+              urlbarOverrideValue: "example.com",
             },
           ],
         },
@@ -188,7 +187,7 @@ function test() {
       is(
         browser.urlbarOverrideValue,
         "example.com",
-        "userTypedValue was correctly restored"
+        "urlbarOverrideValue was correctly restored"
       );
       ok(
         !browser.loadStartedSinceUrlbarOverride,
@@ -197,7 +196,7 @@ function test() {
       is(
         gURLBar.value,
         "example.com",
-        "Address bar's value correctly restored to userTypedValue"
+        "Address bar's value correctly restored to urlbarOverrideValue"
       );
       runNextTest();
     });
@@ -217,8 +216,7 @@ function test() {
                 { url: "about:config", triggeringPrincipal_base64 },
               ],
               index: 1,
-              userTypedValue: "example.org",
-              userTypedClear: 0,
+              urlbarOverrideValue: "example.org",
             },
           ],
         },
@@ -235,7 +233,7 @@ function test() {
       is(
         browser.urlbarOverrideValue,
         "example.org",
-        "userTypedValue was correctly restored"
+        "urlbarOverrideValue was correctly restored"
       );
       ok(
         !browser.loadStartedSinceUrlbarOverride,
@@ -244,7 +242,7 @@ function test() {
       is(
         gURLBar.value,
         "example.org",
-        "Address bar's value correctly restored to userTypedValue"
+        "Address bar's value correctly restored to urlbarOverrideValue"
       );
       runNextTest();
     });
@@ -261,8 +259,8 @@ function test() {
 
     // We're waiting for the first location change, which should indicate
     // one of the tabs has loaded and the others haven't. So one should
-    // be in a non-userTypedValue case, while others should still have
-    // userTypedValue and userTypedClear set.
+    // be in a non-urlbarOverrideValue case, while others should still have
+    // urlbarOverrideValue and urlbarOverrideLoadStarted set.
     gBrowser.addTabsProgressListener({
       onLocationChange(aBrowser) {
         if (uris.indexOf(aBrowser.currentURI.spec) > -1) {
@@ -276,13 +274,15 @@ function test() {
       let state = JSON.parse(ss.getBrowserState());
       let hasUTV = state.windows[0].tabs.some(function (aTab) {
         return (
-          aTab.userTypedValue && aTab.userTypedClear && !aTab.entries.length
+          aTab.urlbarOverrideValue &&
+          aTab.urlbarOverrideLoadStarted &&
+          !aTab.entries.length
         );
       });
 
       ok(
         hasUTV,
-        "At least one tab has a userTypedValue with userTypedClear with no loaded URL"
+        "At least one tab has a urlbarOverrideValue with urlbarOverrideLoadStarted with no loaded URL"
       );
 
       BrowserTestUtils.waitForMessage(
@@ -293,7 +293,7 @@ function test() {
 
     function firstLoad() {
       let state = JSON.parse(ss.getTabState(gBrowser.selectedTab));
-      let hasSH = !("userTypedValue" in state) && state.entries[0].url;
+      let hasSH = !("urlbarOverrideValue" in state) && state.entries[0].url;
       ok(hasSH, "The selected tab has its entry in SH");
 
       runNextTest();
@@ -304,9 +304,9 @@ function test() {
     });
   }
 
-  // This simulates setting a userTypedValue and ensures that just typing in the
-  // URL bar doesn't set userTypedClear as well.
-  function test_getBrowserState_userTypedValue() {
+  // This simulates setting a urlbarOverrideValue and ensures that just typing in the
+  // URL bar doesn't set urlbarOverrideLoadStarted as well.
+  function test_getBrowserState_urlbarOverrideValue() {
     let state = {
       windows: [
         {
@@ -318,7 +318,11 @@ function test() {
     waitForBrowserState(state, function () {
       let browser = gBrowser.selectedBrowser;
       // Make sure this tab isn't loading and state is clear before we test.
-      is(browser.urlbarOverrideValue, null, "userTypedValue is empty to start");
+      is(
+        browser.urlbarOverrideValue,
+        null,
+        "urlbarOverrideValue is empty to start"
+      );
       ok(
         !browser.loadStartedSinceUrlbarOverride,
         "Initially, no load should be ongoing"
@@ -333,7 +337,7 @@ function test() {
         is(
           browser.urlbarOverrideValue,
           "example.org",
-          "userTypedValue was set when changing URLBar value"
+          "urlbarOverrideValue was set when changing URLBar value"
         );
         ok(
           !browser.loadStartedSinceUrlbarOverride,
@@ -343,32 +347,31 @@ function test() {
         // Now make sure ss gets these values too
         let newState = JSON.parse(ss.getBrowserState());
         is(
-          newState.windows[0].tabs[0].userTypedValue,
+          newState.windows[0].tabs[0].urlbarOverrideValue,
           "example.org",
-          "sessionstore got correct userTypedValue"
+          "sessionstore got correct urlbarOverrideValue"
         );
-        is(
-          newState.windows[0].tabs[0].userTypedClear,
-          0,
-          "sessionstore got correct userTypedClear"
+        ok(
+          !("urlbarOverrideLoadStarted" in newState.windows[0].tabs[0]),
+          "sessionstore didn't record a started load"
         );
         runNextTest();
       });
     });
   }
 
-  // test_getBrowserState_lotsOfTabsOpening tested userTypedClear in a few cases,
+  // test_getBrowserState_lotsOfTabsOpening tested urlbarOverrideLoadStarted in a few cases,
   // but not necessarily any that had legitimate URIs in the state of loading
   // (eg, "http://example.com"), so this test will cover that case.
-  function test_userTypedClearLoadURI() {
+  function test_urlbarOverrideLoadStartedLoadURI() {
     let state = {
       windows: [
         {
           tabs: [
             {
               entries: [],
-              userTypedValue: "http://example.com",
-              userTypedClear: 2,
+              urlbarOverrideValue: "http://example.com",
+              urlbarOverrideLoadStarted: true,
             },
           ],
         },
@@ -380,12 +383,12 @@ function test() {
       is(
         browser.currentURI.spec,
         "http://example.com/",
-        "userTypedClear=2 caused userTypedValue to be loaded"
+        "urlbarOverrideLoadStarted caused urlbarOverrideValue to be loaded"
       );
       is(
         browser.urlbarOverrideValue,
         null,
-        "userTypedValue was null after loading a URI"
+        "urlbarOverrideValue was null after loading a URI"
       );
       ok(
         !browser.loadStartedSinceUrlbarOverride,
@@ -406,8 +409,8 @@ function test() {
     test_existingSHEnd_noClear,
     test_existingSHMiddle_noClear,
     test_getBrowserState_lotsOfTabsOpening,
-    test_getBrowserState_userTypedValue,
-    test_userTypedClearLoadURI,
+    test_getBrowserState_urlbarOverrideValue,
+    test_urlbarOverrideLoadStartedLoadURI,
   ];
   let originalState = JSON.parse(ss.getBrowserState());
   let state = {

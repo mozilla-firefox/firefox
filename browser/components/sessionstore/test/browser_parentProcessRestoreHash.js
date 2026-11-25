@@ -52,7 +52,7 @@ let TestAboutPage = {
 
 /**
  * Test that switching from a remote to a parent process browser
- * correctly clears the userTypedValue
+ * correctly clears the urlbarOverrideValue
  */
 add_task(async function () {
   await SpecialPowers.pushPrefEnv({
@@ -106,7 +106,7 @@ add_task(async function () {
 
   ok(
     !tab.linkedBrowser.urlbarOverrideValue,
-    "No userTypedValue should be on the browser."
+    "No urlbarOverrideValue should be on the browser."
   );
 
   BrowserTestUtils.removeTab(tab);

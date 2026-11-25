@@ -25,12 +25,12 @@ add_task(async function () {
   is(
     tab.linkedBrowser.urlbarOverrideValue,
     null,
-    "userTypedValue should be null"
+    "urlbarOverrideValue should be null"
   );
   let state = JSON.parse(SessionStore.getTabState(tab));
   ok(
-    !state.userTypedValue,
-    "userTypedValue should be undefined on the tab's state"
+    !state.urlbarOverrideValue,
+    "urlbarOverrideValue should be undefined on the tab's state"
   );
   tab = null;
 
@@ -54,12 +54,12 @@ add_task(async function () {
   is(
     tab.linkedBrowser.urlbarOverrideValue,
     null,
-    "userTypedValue should be null"
+    "urlbarOverrideValue should be null"
   );
   state = JSON.parse(SessionStore.getTabState(tab));
   ok(
-    !state.userTypedValue,
-    "userTypedValue should be undefined on the tab's state"
+    !state.urlbarOverrideValue,
+    "urlbarOverrideValue should be undefined on the tab's state"
   );
 
   BrowserTestUtils.removeTab(tab);
@@ -91,12 +91,12 @@ add_task(async function () {
     is(
       tab.linkedBrowser.urlbarOverrideValue,
       null,
-      "userTypedValue should be null"
+      "urlbarOverrideValue should be null"
     );
     state = JSON.parse(SessionStore.getTabState(tab));
     ok(
-      !state.userTypedValue,
-      "userTypedValue should be undefined on the tab's state"
+      !state.urlbarOverrideValue,
+      "urlbarOverrideValue should be undefined on the tab's state"
     );
 
     info("Removing tab - " + new Date());
@@ -130,8 +130,8 @@ add_task(async function test_typed_search_restored_before_search_init() {
   );
   await promiseTabState(tab, {
     entries: [{ url: "about:mozilla", triggeringPrincipal_base64 }],
-    userTypedValue: "test",
-    userTypedClear: 1,
+    urlbarOverrideValue: "test",
+    urlbarOverrideLoadStarted: true,
   });
   stub.restore();
 

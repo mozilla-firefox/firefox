@@ -43,10 +43,12 @@ import { XPCOMUtils } from "resource://gre/modules/XPCOMUtils.sys.mjs";
  *   Values set through `SessionStore.setCustomTabValue`.
  * @property {string} [image]
  *   URL of the tab's icon.
- * @property {string} [userTypedValue]
- *   Address bar input that hasn't been loaded.
- * @property {number} [userTypedClear]
- *   1 if a load started after `userTypedValue` was typed, 0 otherwise.
+ * @property {string} [urlbarOverrideValue]
+ *   The address bar value to show instead of the tab's URL, e.g. input that
+ *   hasn't been loaded.
+ * @property {true} [urlbarOverrideLoadStarted]
+ *   Set if a load started after `urlbarOverrideValue` was set and hadn't
+ *   finished.
  * @property {object} [storage]
  *   Session storage of the tab's document, keyed by origin.
  * @property {object} [formdata]
@@ -239,18 +241,79 @@ class _TabState {
     // If there is a urlbarOverrideValue set, then either the user has typed something
     // in the URL bar, or a new tab was opened with a URI to load.
     // If so, we also track whether we were still in the process of loading something.
-    if (!("userTypedValue" in tabData) && browser.urlbarOverrideValue) {
-      tabData.userTypedValue = browser.urlbarOverrideValue;
-      // We always used to keep track of the loading state as an integer, where
-      // '0' indicated the user had typed since the last load (or no load was
-      // ongoing), and any positive value indicated we had started a load since
-      // the last time the user typed in the URL bar. Mimic this to keep the
-      // session store representation in sync, even though we now represent this
-      // more explicitly:
-      tabData.userTypedClear = browser.loadStartedSinceUrlbarOverride ? 1 : 0;
+    if (!("urlbarOverrideValue" in tabData) && browser.urlbarOverrideValue) {
+      tabData.urlbarOverrideValue = browser.urlbarOverrideValue;
+      if (browser.loadStartedSinceUrlbarOverride) {
+        tabData.urlbarOverrideLoadStarted = true;
+      }
     }
 
     return tabData;
+  }
+
+  /**
+   * Converts the address bar value override of tab data written by older
+   * versions from the `userTypedValue` and `userTypedClear` keys.
+   *
+   * TODO(bug 2092393): Remove once an ESR writes only the new keys.
+   *
+   * @param {object} tabData
+   */
+  upgradeLegacyUrlbarOverride(tabData) {
+    if (typeof tabData != "object" || !tabData) {
+      return;
+    }
+    if ("userTypedValue" in tabData && !("urlbarOverrideValue" in tabData)) {
+      tabData.urlbarOverrideValue = tabData.userTypedValue;
+      if (tabData.userTypedClear > 0) {
+        tabData.urlbarOverrideLoadStarted = true;
+      }
+    }
+    delete tabData.userTypedValue;
+    delete tabData.userTypedClear;
+  }
+
+  /**
+   * Applies `upgradeLegacyUrlbarOverride` to every tab in a session state,
+   * including closed windows, closed tabs and saved groups. Skips anything
+   * malformed, which SessionStartup's integrity checks report.
+   *
+   * TODO(bug 2092393): Remove once an ESR writes only the new keys.
+   *
+   * @param {object} state
+   */
+  upgradeLegacyUrlbarOverrideInSession(state) {
+    let list = value => (Array.isArray(value) ? value : []);
+    for (let session of [
+      state,
+      state?.deferredInitialState,
+      state?.lastSessionState,
+    ]) {
+      if (!session) {
+        continue;
+      }
+      for (let winData of [
+        ...list(session.windows),
+        ...list(session._closedWindows),
+      ]) {
+        for (let tabData of list(winData?.tabs)) {
+          this.upgradeLegacyUrlbarOverride(tabData);
+        }
+        for (let closedTab of list(winData?._closedTabs)) {
+          this.upgradeLegacyUrlbarOverride(closedTab?.state);
+        }
+        for (let group of list(winData?.closedGroups)) {
+          for (let closedTab of list(group?.tabs)) {
+            this.upgradeLegacyUrlbarOverride(closedTab?.state);
+          }
+        }
+      }
+      for (let group of list(session.savedGroups)) {
+        for (let savedTab of list(group?.tabs)) {
+          this.upgradeLegacyUrlbarOverride(savedTab?.state);
+        }
+      }
+    }
   }
 
   processAboutRestartrequiredEnties(aEntries) {
