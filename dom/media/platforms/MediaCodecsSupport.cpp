@@ -3,6 +3,7 @@
  * file, You can obtain one at http://mozilla.org/MPL/2.0/. */
 #include "MediaCodecsSupport.h"
 
+#include <algorithm>
 #include <array>
 #include <memory>
 
@@ -207,6 +208,34 @@ DecodeSupportSet MCSInfo::GetMediaCodecDecodeSupportForSize(
   }
 
   return aSupport - DecodeSupport::HardwareDecode;
+}
+
+gfx::IntSize MCSInfo::GetMediaCodecAdaptivePlaybackMaxSize(
+    const MediaCodec& aCodec, const gfx::IntSize& aSize) {
+  if (!SupportsHardwareDecode(
+          gfx::gfxVars::PlatformMediaCodecsAdaptivePlayback(), aCodec)) {
+    return gfx::IntSize();
+  }
+
+  // Orient the sizes to match the stream, as decoders support either
+  // orientation, see GetMediaCodecDecodeSupportForSize.
+  const bool portrait = aSize.height > aSize.width;
+  auto orient = [portrait](const gfx::IntSize& aOther) {
+    return (aOther.height > aOther.width) == portrait
+               ? aOther
+               : gfx::IntSize(aOther.height, aOther.width);
+  };
+
+  // Matches what the Java MediaCodec decoder requests.
+  gfx::IntSize maxSize = orient(gfx::IntSize(1920, 1080));
+  const gfx::IntSize hwMaxSize = orient(GetHardwareDecodeMaxSize(aCodec));
+  if (!hwMaxSize.IsEmpty()) {
+    maxSize = gfx::IntSize(std::min(maxSize.width, hwMaxSize.width),
+                           std::min(maxSize.height, hwMaxSize.height));
+  }
+
+  return gfx::IntSize(std::max(maxSize.width, aSize.width),
+                      std::max(maxSize.height, aSize.height));
 }
 #endif
 

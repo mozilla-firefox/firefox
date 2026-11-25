@@ -148,14 +148,17 @@ using HwDecodeMaxSizes = EnumeratedArray<media::MediaCodec, gfx::IntSize,
                                          size_t(media::MediaCodec::SENTINEL)>;
 
 // Codecs that map to a media::MediaCodec are returned in aSupported, and in
-// aSupported10Bit if they can also decode a 10-bit profile. The largest width
-// and height supported by any hardware decoder for each codec are returned in
-// aHwMaxSizes. Decoder MIME types which do not map are returned as comma
-// separated lists instead.
+// aSupported10Bit if they can also decode a 10-bit profile, and in
+// aAdaptivePlayback if their default decoder is a hardware decoder which
+// supports adaptive playback. The largest width and height supported by any
+// hardware decoder for each codec are returned in aHwMaxSizes. Decoder MIME
+// types which do not map are returned as comma separated lists instead.
 static void QueryMediaCodecsSupported(
     media::MediaCodecsSupported& aSupported,
-    media::MediaCodecsSupported& aSupported10Bit, HwDecodeMaxSizes& aHwMaxSizes,
-    nsCString& aUnmappedSwDecode, nsCString& aUnmappedHwDecode) {
+    media::MediaCodecsSupported& aSupported10Bit,
+    media::MediaCodecsSupported& aAdaptivePlayback,
+    HwDecodeMaxSizes& aHwMaxSizes, nsCString& aUnmappedSwDecode,
+    nsCString& aUnmappedHwDecode) {
   jni::ObjectArray::LocalRef supportedTypes =
       java::HardwareCodecCapabilityUtils::GetSupportedMimeTypesWithAccelInfo();
   for (size_t i = 0; i < supportedTypes->Length(); i++) {
@@ -197,6 +200,9 @@ static void QueryMediaCodecsSupported(
     } else if (caps == "HW10B"_ns) {
       aSupported10Bit += media::MCSInfo::GetMediaCodecsSupportEnum(
           codec, media::DecodeSupport::HardwareDecode);
+    } else if (caps == "HWADAPT"_ns) {
+      aAdaptivePlayback += media::MCSInfo::GetMediaCodecsSupportEnum(
+          codec, media::DecodeSupport::HardwareDecode);
     } else if (StringBeginsWith(caps, "HWMAX"_ns)) {
       Tokenizer t(Substring(caps, 5));
       int32_t width, height;
@@ -213,13 +219,15 @@ static void QueryMediaCodecsSupported(
 void gfxAndroidPlatform::InitPlatformHardwareVideoConfig() {
   media::MediaCodecsSupported supported;
   media::MediaCodecsSupported supported10Bit;
+  media::MediaCodecsSupported adaptivePlayback;
   HwDecodeMaxSizes hwMaxSizes;
   nsCString unmappedSwDecode;
   nsCString unmappedHwDecode;
-  QueryMediaCodecsSupported(supported, supported10Bit, hwMaxSizes,
-                            unmappedSwDecode, unmappedHwDecode);
+  QueryMediaCodecsSupported(supported, supported10Bit, adaptivePlayback,
+                            hwMaxSizes, unmappedSwDecode, unmappedHwDecode);
   gfxVars::SetPlatformMediaCodecsSupported(supported);
   gfxVars::SetPlatformMediaCodecs10BitSupported(supported10Bit);
+  gfxVars::SetPlatformMediaCodecsAdaptivePlayback(adaptivePlayback);
   gfxVars::SetPlatformH264HwDecodeMaxSize(hwMaxSizes[media::MediaCodec::H264]);
   gfxVars::SetPlatformHEVCHwDecodeMaxSize(hwMaxSizes[media::MediaCodec::HEVC]);
   gfxVars::SetPlatformVP8HwDecodeMaxSize(hwMaxSizes[media::MediaCodec::VP8]);

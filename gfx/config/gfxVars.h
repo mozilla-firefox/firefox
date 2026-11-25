@@ -26,6 +26,8 @@ class MOZ_STACK_CLASS gfxVarsCollectUpdates;
       MediaCodecsSupported())                                    \
     _(PlatformMediaCodecs10BitSupported, MediaCodecsSupported,   \
       MediaCodecsSupported())                                    \
+    _(PlatformMediaCodecsAdaptivePlayback, MediaCodecsSupported, \
+      MediaCodecsSupported())                                    \
     _(PlatformH264HwDecodeMaxSize, IntSize, IntSize())           \
     _(PlatformHEVCHwDecodeMaxSize, IntSize, IntSize())           \
     _(PlatformVP8HwDecodeMaxSize, IntSize, IntSize())            \

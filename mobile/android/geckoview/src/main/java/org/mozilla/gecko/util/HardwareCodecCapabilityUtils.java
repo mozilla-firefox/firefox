@@ -159,7 +159,9 @@ public final class HardwareCodecCapabilityUtils {
   // decoders, and SWE or HWE for encoders.
   // Decoders which support a 10-bit profile are additionally listed with
   // SW10B or HW10B. Hardware video decoders additionally report their largest
-  // supported width and height with HWMAX<width>,<height>.
+  // supported width and height with HWMAX<width>,<height>, and are listed with
+  // HWADAPT if they are the default decoder for the MIME type and support
+  // adaptive playback.
   @WrapForJNI
   public static String[] getSupportedMimeTypesWithAccelInfo() {
     final Set<String> mimeTypes = new HashSet<>();
@@ -175,9 +177,12 @@ public final class HardwareCodecCapabilityUtils {
       final Set<String> aMimeTypes, final MediaCodecInfo[] aInfos, final boolean aIsEncoder) {
     final String swTag = aIsEncoder ? "SWE " : "SW ";
     final String hwTag = aIsEncoder ? "HWE " : "HW ";
+    // MediaCodec.createDecoderByType picks the first decoder in list order.
+    final Set<String> defaultDecoderMimeTypes = new HashSet<>();
 
     for (final MediaCodecInfo info : aInfos) {
       for (final String mimeType : info.getSupportedTypes()) {
+        final boolean isDefaultDecoder = !aIsEncoder && defaultDecoderMimeTypes.add(mimeType);
         final CodecCapabilities caps = info.getCapabilitiesForType(mimeType);
         final boolean supports10Bit = !aIsEncoder && supports10BitProfile(mimeType, caps);
         if (!isHardwareAccelerated(info, getSupportedHWCodecPrefixes(mimeType, aIsEncoder))) {
@@ -202,6 +207,9 @@ public final class HardwareCodecCapabilityUtils {
                       + video.getSupportedHeights().getUpper()
                       + " "
                       + mimeType);
+            }
+            if (isDefaultDecoder && supportsAdaptivePlayback(mimeType, caps)) {
+              aMimeTypes.add("HWADAPT " + mimeType);
             }
           }
         }
@@ -229,20 +237,20 @@ public final class HardwareCodecCapabilityUtils {
 
   public static boolean checkSupportsAdaptivePlayback(
       final MediaCodec aCodec, final String aMimeType) {
-    if (isAdaptivePlaybackBlocklisted(aMimeType)) {
-      return false;
-    }
-
     try {
       final MediaCodecInfo info = aCodec.getCodecInfo();
-      final MediaCodecInfo.CodecCapabilities capabilities = info.getCapabilitiesForType(aMimeType);
-      return capabilities != null
-          && capabilities.isFeatureSupported(
-              MediaCodecInfo.CodecCapabilities.FEATURE_AdaptivePlayback);
+      return supportsAdaptivePlayback(aMimeType, info.getCapabilitiesForType(aMimeType));
     } catch (final IllegalArgumentException e) {
       Log.e(LOGTAG, "Retrieve codec information failed", e);
     }
     return false;
+  }
+
+  private static boolean supportsAdaptivePlayback(
+      final String aMimeType, final CodecCapabilities aCapabilities) {
+    return !isAdaptivePlaybackBlocklisted(aMimeType)
+        && aCapabilities != null
+        && aCapabilities.isFeatureSupported(CodecCapabilities.FEATURE_AdaptivePlayback);
   }
 
   // See Bug1360626 and

@@ -267,6 +267,14 @@ class MCSInfo final {
   static DecodeSupportSet GetMediaCodecDecodeSupportForSize(
       const MediaCodec& aCodec, const DecodeSupportSet& aSupport,
       const gfx::IntSize& aSize);
+
+  // Returns the maximum size to configure a hardware decoder for aCodec with,
+  // for content which starts at aSize, so that it can change resolution
+  // without reallocating its output buffers. The size has the same orientation
+  // as aSize. Returns an empty size if the default decoder does not support
+  // adaptive playback.
+  static gfx::IntSize GetMediaCodecAdaptivePlaybackMaxSize(
+      const MediaCodec& aCodec, const gfx::IntSize& aSize);
 #endif
 
   MCSInfo(MCSInfo const&) = delete;
