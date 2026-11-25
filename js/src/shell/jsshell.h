@@ -103,22 +103,10 @@ extern int sArgc;
 extern char** sArgv;
 
 // Shell state set once at startup.
-extern bool enableWeakRefs;
-extern bool enablePropertyErrorMessageFix;
-extern bool enableIteratorHelpers;
-extern bool enableArrayGrouping;
-extern bool enableWellFormedUnicodeStrings;
-extern bool enableArrayBufferTransfer;
-extern bool enableArrayBufferResizable;
-extern bool enableSymbolsAsWeakMapKeys;
-extern bool enableNewSetMethods;
-extern bool enableDestructuringFuse;
 extern RCFile* gErrFile;
 extern RCFile* gOutFile;
 extern bool disableOOMFunctions;
 extern bool defaultToSameCompartment;
-
-extern bool useFdlibmForSinCosTan;
 
 extern UniqueChars processWideModuleLoadPath;
 
