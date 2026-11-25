@@ -30,8 +30,8 @@ add_task(async function () {
   let tabState = TabState.collect(tab, ss.getInternalObjectState(tab));
   is(tabState.index, TAB_STATE.index, "correct shistory index");
 
-  // Check we don't collect userTypedValue when we shouldn't.
-  ok(!tabState.userTypedValue, "tab didn't have a userTypedValue");
+  // Check we don't collect urlbarOverrideValue when we shouldn't.
+  ok(!tabState.urlbarOverrideValue, "tab didn't have a urlbarOverrideValue");
 
   // Cleanup.
   gBrowser.removeTab(tab);

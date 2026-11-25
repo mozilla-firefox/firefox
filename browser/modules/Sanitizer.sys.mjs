@@ -821,8 +821,8 @@ export var Sanitizer = {
           "scroll",
           // The search mode of the address bar and what was typed in it.
           "searchMode",
-          "userTypedClear",
-          "userTypedValue",
+          "urlbarOverrideLoadStarted",
+          "urlbarOverrideValue",
           // sessionStorage.
           "storage",
         ]) {
