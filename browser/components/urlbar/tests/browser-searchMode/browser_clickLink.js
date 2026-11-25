@@ -51,8 +51,8 @@ async function doClickLinkTest(searchString, href) {
         fireInputEvent: true,
       });
       Assert.ok(
-        gBrowser.selectedBrowser.userTypedValue,
-        "userTypedValue should be defined"
+        gBrowser.selectedBrowser.urlbarOverrideValue,
+        "urlbarOverrideValue should be defined"
       );
     } else {
       // Open top sites.
@@ -60,9 +60,9 @@ async function doClickLinkTest(searchString, href) {
         document.getElementById("Browser:OpenLocation").doCommand();
       });
       Assert.strictEqual(
-        gBrowser.selectedBrowser.userTypedValue,
+        gBrowser.selectedBrowser.urlbarOverrideValue,
         null,
-        "userTypedValue should be null"
+        "urlbarOverrideValue should be null"
       );
     }
 

@@ -324,7 +324,7 @@ export class UrlbarInputBaseTestUtils {
    * @param {Function} options.waitForFocus The SimpleTest function
    * @param {boolean} [options.fireInputEvent] whether an input event should be
    *        used when starting the query (simulates the user's typing, sets
-   *        userTypedValued, triggers engagement event telemetry, etc.)
+   *        urlbarOverrideValue, triggers engagement event telemetry, etc.)
    * @param {number} [options.selectionStart] The input's selectionStart
    * @param {number} [options.selectionEnd] The input's selectionEnd
    * @param {boolean} [options.reopenOnBlur] Whether this method should repoen
@@ -373,7 +373,7 @@ export class UrlbarInputBaseTestUtils {
       // An input event will start a new search, so be careful not to start a
       // search if we fired an input event since that would start two searches.
       if (fireInputEvent) {
-        // This is necessary to get the urlbar to set gBrowser.userTypedValue.
+        // This is necessary to get the urlbar to set gBrowser.urlbarOverrideValue.
         this.fireInputEvent(window);
       } else {
         this.#urlbar(window).setPageProxyState("invalid");
@@ -1454,8 +1454,8 @@ export class UrlbarInputBaseTestUtils {
    *   Options for the assertions.
    * @param {string} [options.pageProxyState]
    *   The pageproxystate that should be expected.
-   * @param {string} [options.userTypedValue]
-   *   The userTypedValue that should be expected.
+   * @param {string} [options.urlbarOverrideValue]
+   *   The urlbarOverrideValue that should be expected.
    * @param {boolean} [options.persistSearchTerms]
    *   Whether the persistsearchterms attribute should be expected.
    */
@@ -1464,7 +1464,7 @@ export class UrlbarInputBaseTestUtils {
     searchString,
     {
       pageProxyState = "invalid",
-      userTypedValue = searchString,
+      urlbarOverrideValue = searchString,
       persistSearchTerms = true,
     } = {}
   ) {
@@ -1487,9 +1487,9 @@ export class UrlbarInputBaseTestUtils {
       `Search terms should match.`
     );
     this.Assert.equal(
-      window.gBrowser.userTypedValue,
-      userTypedValue,
-      "userTypedValue should match."
+      window.gBrowser.urlbarOverrideValue,
+      urlbarOverrideValue,
+      "urlbarOverrideValue should match."
     );
     this.Assert.equal(
       this.#urlbar(window).getAttribute("pageproxystate"),

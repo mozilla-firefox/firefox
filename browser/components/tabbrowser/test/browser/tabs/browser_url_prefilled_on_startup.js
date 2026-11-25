@@ -50,8 +50,8 @@ add_task(async function () {
   EventUtils.sendString(TYPED_TEXT, win);
 
   Assert.ok(
-    win.gBrowser.userTypedValue,
-    "userTypedValue should be set after typing"
+    win.gBrowser.urlbarOverrideValue,
+    "urlbarOverrideValue should be set after typing"
   );
   Assert.equal(win.gURLBar.value, TYPED_TEXT, "URL bar should show typed text");
 

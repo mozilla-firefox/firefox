@@ -110,7 +110,7 @@ add_task(async function user_overwrites_search_term_with_blank_string() {
   let tab2 = await BrowserTestUtils.openNewForegroundTab(gBrowser);
   await BrowserTestUtils.switchTab(gBrowser, tab1);
 
-  // Technically, the userTypedValue is a blank string instead of null because
+  // Technically, the urlbarOverrideValue is a blank string instead of null because
   // they cleared it.
   UrlbarTestUtils.assertSearchStringIsInUrlbar(window, SEARCH_STRING);
 

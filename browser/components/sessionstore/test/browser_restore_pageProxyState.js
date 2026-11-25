@@ -46,7 +46,7 @@ async function test_pageProxyState(url1, url2) {
   // The first tab isn't lazy and should be initialized.
   ok(gBrowser.tabs[0].linkedPanel, "first tab is not lazy");
   is(gBrowser.selectedTab, gBrowser.tabs[0], "first tab is selected");
-  is(gBrowser.userTypedValue, null, "no user typed value");
+  is(gBrowser.urlbarOverrideValue, null, "no user typed value");
   is(
     gURLBar.getAttribute("pageproxystate"),
     "valid",
@@ -57,7 +57,7 @@ async function test_pageProxyState(url1, url2) {
   ok(!gBrowser.tabs[1].linkedPanel, "second tab should be lazy");
   gBrowser.selectedTab = gBrowser.tabs[1];
   await promiseTabRestored(gBrowser.tabs[1]);
-  is(gBrowser.userTypedValue, null, "no user typed value");
+  is(gBrowser.urlbarOverrideValue, null, "no user typed value");
   is(
     gURLBar.getAttribute("pageproxystate"),
     "valid",

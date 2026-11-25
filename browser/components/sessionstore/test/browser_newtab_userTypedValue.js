@@ -22,7 +22,11 @@ add_task(async function () {
   win.BrowserCommands.openTab();
   let tab = await tabOpenedAndSwitchedTo;
   is(win.gURLBar.value, "", "URL bar should be empty");
-  is(tab.linkedBrowser.userTypedValue, null, "userTypedValue should be null");
+  is(
+    tab.linkedBrowser.urlbarOverrideValue,
+    null,
+    "userTypedValue should be null"
+  );
   let state = JSON.parse(SessionStore.getTabState(tab));
   ok(
     !state.userTypedValue,
@@ -47,7 +51,11 @@ add_task(async function () {
 
   is(win.gURLBar.value, "", "URL bar should be empty");
   tab = win.gBrowser.selectedTab;
-  is(tab.linkedBrowser.userTypedValue, null, "userTypedValue should be null");
+  is(
+    tab.linkedBrowser.urlbarOverrideValue,
+    null,
+    "userTypedValue should be null"
+  );
   state = JSON.parse(SessionStore.getTabState(tab));
   ok(
     !state.userTypedValue,
@@ -80,7 +88,11 @@ add_task(async function () {
 
     is(win.gURLBar.value, "", "URL bar should be empty");
     tab = win.gBrowser.selectedTab;
-    is(tab.linkedBrowser.userTypedValue, null, "userTypedValue should be null");
+    is(
+      tab.linkedBrowser.urlbarOverrideValue,
+      null,
+      "userTypedValue should be null"
+    );
     state = JSON.parse(SessionStore.getTabState(tab));
     ok(
       !state.userTypedValue,
@@ -125,7 +137,7 @@ add_task(async function test_typed_search_restored_before_search_init() {
 
   let browser = tab.linkedBrowser;
   is(browser.currentURI.spec, "about:mozilla", "History entry is restored");
-  is(browser.userTypedValue, "test", "userTypedValue is kept");
+  is(browser.urlbarOverrideValue, "test", "urlbarOverrideValue is kept");
   is(gURLBar.value, "test", "URL bar shows the typed value");
   ok(!SessionStore.isTabRestoring(tab), "Tab finished restoring");
 

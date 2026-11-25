@@ -4,7 +4,7 @@
 
 // Tests that search terms don't persist with navigating to non-SERP URIs.
 // Normally, when setURI is called, dependent properties for persisted search
-// like originalURI are set to a different value and the userTypedValue is
+// like originalURI are set to a different value and the urlbarOverrideValue is
 // nullified. But, we should ensure that if setURI receives a URI with a
 // different origin from the originalURI, search terms will not persist.
 

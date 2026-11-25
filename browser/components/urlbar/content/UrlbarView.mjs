@@ -724,7 +724,7 @@ export class UrlbarView {
     // implicitly unselected.
     if (this.input.searchMode?.isPreview) {
       this.input.searchMode = null;
-      this.input.userTypedValue = null;
+      this.input.overrideValue = null;
     }
 
     this.resultMenu.hide?.();

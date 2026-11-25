@@ -160,9 +160,9 @@ add_task(async function clear_search_mode_refresh() {
     "Waiting for search mode."
   );
 
-  // UserTypedValue is set when the search mode has to be recovered.
+  // UrlbarOverrideValue is set when the search mode has to be recovered.
   UrlbarTestUtils.assertSearchStringIsInUrlbar(window, SEARCH_STRING, {
-    userTypedValue: SEARCH_STRING,
+    urlbarOverrideValue: SEARCH_STRING,
   });
   await UrlbarTestUtils.assertSearchMode(window, {
     engineName: "MochiSearch",
@@ -187,7 +187,7 @@ add_task(async function clear_search_mode_switch_tab() {
   });
   await UrlbarTestUtils.promisePopupClose(window);
   UrlbarTestUtils.assertSearchStringIsInUrlbar(window, SEARCH_STRING, {
-    userTypedValue: SEARCH_STRING,
+    urlbarOverrideValue: SEARCH_STRING,
     persistSearchTerms: false,
   });
   await UrlbarTestUtils.assertSearchMode(window, null);
@@ -195,9 +195,9 @@ add_task(async function clear_search_mode_switch_tab() {
   let tab2 = await BrowserTestUtils.openNewForegroundTab(gBrowser);
   await BrowserTestUtils.switchTab(gBrowser, tab);
 
-  // UserTypedValue is set when the search mode has to be recovered.
+  // UrlbarOverrideValue is set when the search mode has to be recovered.
   UrlbarTestUtils.assertSearchStringIsInUrlbar(window, SEARCH_STRING, {
-    userTypedValue: SEARCH_STRING,
+    urlbarOverrideValue: SEARCH_STRING,
     persistSearchTerms: false,
   });
   await UrlbarTestUtils.assertSearchMode(window, null);
@@ -234,9 +234,9 @@ add_task(async function tabhistory_searchmode_non_default() {
     "Waiting for search mode."
   );
 
-  // UserTypedValue is set when the search mode has to be recovered.
+  // UrlbarOverrideValue is set when the search mode has to be recovered.
   UrlbarTestUtils.assertSearchStringIsInUrlbar(window, SEARCH_STRING, {
-    userTypedValue: SEARCH_STRING,
+    urlbarOverrideValue: SEARCH_STRING,
   });
   await UrlbarTestUtils.assertSearchMode(window, {
     engineName: "MochiSearch",
@@ -282,9 +282,9 @@ add_task(async function tabhistory_searchmode_default_engine() {
     () => gURLBar.searchMode,
     "Waiting for search mode."
   );
-  // UserTypedValue is set when the search mode has to be recovered.
+  // UrlbarOverrideValue is set when the search mode has to be recovered.
   UrlbarTestUtils.assertSearchStringIsInUrlbar(window, SEARCH_STRING, {
-    userTypedValue: SEARCH_STRING,
+    urlbarOverrideValue: SEARCH_STRING,
   });
   await UrlbarTestUtils.assertSearchMode(window, {
     engineName: "MochiSearch",
@@ -316,7 +316,7 @@ add_task(async function search_mode_switch_tab_to_default() {
   info("Check default SERP is not in a search mode.");
   await UrlbarTestUtils.assertSearchMode(window, null);
   UrlbarTestUtils.assertSearchStringIsInUrlbar(window, SEARCH_STRING, {
-    userTypedValue: SEARCH_STRING,
+    urlbarOverrideValue: SEARCH_STRING,
   });
 
   BrowserTestUtils.removeTab(tab1);
@@ -349,7 +349,7 @@ add_task(async function search_mode_switch_tab_to_non_default() {
     entry: "oneoff",
   });
   UrlbarTestUtils.assertSearchStringIsInUrlbar(window, SEARCH_STRING, {
-    userTypedValue: SEARCH_STRING,
+    urlbarOverrideValue: SEARCH_STRING,
   });
 
   BrowserTestUtils.removeTab(tab1);
