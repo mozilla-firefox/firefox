@@ -98,12 +98,6 @@ async function testConfirmationDialog(testMode) {
     await doPastePromise;
   }
 
-  let cancelQuit = Cc["@mozilla.org/supports-PRBool;1"].createInstance(
-    Ci.nsISupportsPRBool
-  );
-  if (testMode.alreadyCancelledQuit) {
-    cancelQuit.data = true;
-  }
   let quitConfirmationDialogPromise;
   if (testMode.requestActive && !testMode.alreadyCancelledQuit) {
     quitConfirmationDialogPromise = BrowserTestUtils.promiseAlertDialog(
@@ -114,13 +108,23 @@ async function testConfirmationDialog(testMode) {
   // If testMode.requestActive is false or testMode.alreadyCancelledQuit is true,
   // we don't expect a confirmation dialog to pop up. If it does, this test will
   // timeout. (since we didn't call promiseAlertDialog() above)
-  Services.obs.notifyObservers(cancelQuit, "quit-application-requested");
+  // Observers are notified in reverse registration order, so this one vetoes
+  // the quit before ContentAnalysis is given the ballot.
+  let vetoer = subject => {
+    subject.QueryInterface(Ci.nsISupportsPRBool).data = true;
+  };
+  if (testMode.alreadyCancelledQuit) {
+    Services.obs.addObserver(vetoer, "quit-application-requested");
+  }
   is(
-    cancelQuit.data,
+    !Services.startup.canQuit(),
     testMode.alreadyCancelledQuit ||
       (testMode.requestActive && testMode.cancelQuit),
     "checking if CA should abort quit"
   );
+  if (testMode.alreadyCancelledQuit) {
+    Services.obs.removeObserver(vetoer, "quit-application-requested");
+  }
   if (testMode.requestActive) {
     // Note that the dialog should have already been dismissed; this is just
     // to avoid an uncompleted Promise.

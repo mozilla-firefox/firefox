@@ -19,6 +19,9 @@ add_task(async function elevation_dialog() {
   let { startup } = Services;
   let appStartup = {
     QueryInterface: ChromeUtils.generateQI(["nsIAppStartup"]),
+    canQuit() {
+      return true;
+    },
     quit(_mode) {
       if (elevationDialog) {
         elevationDialog.close();

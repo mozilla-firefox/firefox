@@ -156,6 +156,16 @@ interface nsIAppStartup : nsISupports
     void quit(in uint32_t aMode, [optional] in int32_t aExitCode);
 
     /**
+     * Ask observers whether the application may quit, by notifying
+     * "quit-application-requested". Returns false if an observer vetoed.
+     *
+     * @param aReason
+     *        Passed through as the notification's aData. Used by some observers
+     *        to suppress the front end's "closing multiple tabs" warning.
+     */
+    boolean canQuit([optional] in AString aReason);
+
+    /**
     * These values must match the xpcom/base/ShutdownPhase.h values.
     * We do not expose late XPCOM shutdown phases here, everything
     * after SHUTDOWN_PHASE_XPCOMSHUTDOWN is expected to be irrelevant

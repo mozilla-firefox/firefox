@@ -78,13 +78,9 @@ export async function quit(flags = [], safeMode = false, isWindowless = false) {
   }
 
   // Notify all windows that an application quit has been requested.
-  const cancelQuit = Cc["@mozilla.org/supports-PRBool;1"].createInstance(
-    Ci.nsISupportsPRBool
-  );
-  Services.obs.notifyObservers(cancelQuit, "quit-application-requested");
-
   // If the shutdown of the application is prevented force quit it instead.
-  if (cancelQuit.data) {
+  const forced = !Services.startup.canQuit();
+  if (forced) {
     lazy.logger.trace(
       "Forcing shutdown because attempting to quit was prevented"
     );
@@ -104,7 +100,7 @@ export async function quit(flags = [], safeMode = false, isWindowless = false) {
 
   return {
     cause: (await quitApplicationPromise).data,
-    forced: cancelQuit.data,
+    forced,
     in_app: true,
   };
 }

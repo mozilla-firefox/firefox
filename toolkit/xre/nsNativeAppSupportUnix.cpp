@@ -20,6 +20,7 @@
 #include "nsPIDOMWindow.h"
 #include "nsIWidget.h"
 #include "mozilla/Logging.h"
+#include "mozilla/Components.h"
 #include "mozilla/Services.h"
 #include "mozilla/XREAppData.h"
 
@@ -288,25 +289,18 @@ void nsNativeAppSupportXSMP::InteractCB(SmcConn smc_conn,
 }
 
 void nsNativeAppSupportXSMP::DoInteract() {
-  nsCOMPtr<nsIObserverService> obsServ =
-      mozilla::services::GetObserverService();
-  if (!obsServ) {
+  nsCOMPtr<nsIAppStartup> appService =
+      mozilla::components::AppStartup::Service();
+  if (!appService) {
     SmcInteractDone(mSessionConnection, False);
     SmcSaveYourselfDone(mSessionConnection, True);
     SetClientState(STATE_IDLE);
     return;
   }
 
-  nsCOMPtr<nsISupportsPRBool> cancelQuit =
-      do_CreateInstance(NS_SUPPORTS_PRBOOL_CONTRACTID);
-
-  bool abortQuit = false;
-  if (cancelQuit) {
-    cancelQuit->SetData(false);
-    obsServ->NotifyObservers(cancelQuit, "quit-application-requested", nullptr);
-
-    cancelQuit->GetData(&abortQuit);
-  }
+  bool mayQuit = true;
+  appService->CanQuit(u""_ns, &mayQuit);
+  bool abortQuit = !mayQuit;
 
   if (!abortQuit && mClientState == STATE_DISCONNECTED) {
     // The session manager disappeared, whilst we were interacting, so

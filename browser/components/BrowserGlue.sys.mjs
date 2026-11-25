@@ -518,18 +518,11 @@ BrowserGlue.prototype = {
       return;
     }
 
-    let cancelQuit = Cc["@mozilla.org/supports-PRBool;1"].createInstance(
-      Ci.nsISupportsPRBool
-    );
-    Services.obs.notifyObservers(
-      cancelQuit,
-      "quit-application-requested",
-      "restart"
-    );
-
-    if (!cancelQuit.data) {
-      Services.startup.restartInSafeMode(Ci.nsIAppStartup.eAttemptQuit);
+    if (!Services.startup.canQuit("restart")) {
+      return;
     }
+
+    Services.startup.restartInSafeMode(Ci.nsIAppStartup.eAttemptQuit);
   },
 
   _notifyUnsignedAddonsDisabled() {

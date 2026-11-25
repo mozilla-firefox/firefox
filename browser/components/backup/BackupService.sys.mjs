@@ -3446,12 +3446,7 @@ export class BackupService extends EventTarget {
     }
 
     // Notify windows that a quit has been requested.
-    let cancelQuit = Cc["@mozilla.org/supports-PRBool;1"].createInstance(
-      Ci.nsISupportsPRBool
-    );
-    Services.obs.notifyObservers(cancelQuit, "quit-application-requested");
-
-    if (cancelQuit.data) {
+    if (!Services.startup.canQuit()) {
       // Something blocked our attempt to quit.
       return null;
     }

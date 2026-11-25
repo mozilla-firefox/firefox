@@ -282,17 +282,7 @@ appUpdater.prototype = {
     gAppUpdater.selectPanel("restarting");
 
     // Notify all windows that an application quit has been requested.
-    let cancelQuit = Cc["@mozilla.org/supports-PRBool;1"].createInstance(
-      Ci.nsISupportsPRBool
-    );
-    Services.obs.notifyObservers(
-      cancelQuit,
-      "quit-application-requested",
-      "restart"
-    );
-
-    // Something aborted the quit process.
-    if (cancelQuit.data) {
+    if (!Services.startup.canQuit("restart")) {
       gAppUpdater.selectPanel("apply");
       return;
     }

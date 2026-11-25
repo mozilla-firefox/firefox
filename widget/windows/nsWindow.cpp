@@ -136,6 +136,7 @@
 #include "nsFont.h"
 #include "nsFontMetrics.h"
 #include "nsHashKeys.h"
+#include "nsIAppStartup.h"
 #include "nsIClipboard.h"
 #include "nsIFile.h"
 #include "nsIFontEnumerator.h"
@@ -4907,19 +4908,15 @@ bool nsWindow::ProcessMessageInternal(UINT msg, WPARAM& wParam, LPARAM& lParam,
     // Otherwise Windows thinks the window can just be killed at will.
     case WM_QUERYENDSESSION: {
       // Ask around if it's ok to quit.
-      nsCOMPtr<nsIObserverService> obsServ =
-          mozilla::services::GetObserverService();
-      nsCOMPtr<nsISupportsPRBool> cancelQuitWrapper =
-          do_CreateInstance(NS_SUPPORTS_PRBOOL_CONTRACTID);
-      cancelQuitWrapper->SetData(false);
-
       const char16_t* quitType = GetQuitType();
-      obsServ->NotifyObservers(cancelQuitWrapper, "quit-application-requested",
-                               quitType);
+      nsDependentString quitReason(quitType ? quitType : u"");
 
-      bool shouldCancelQuit;
-      cancelQuitWrapper->GetData(&shouldCancelQuit);
-      *aRetValue = !shouldCancelQuit;
+      bool mayQuit = true;
+      if (nsCOMPtr<nsIAppStartup> appStartup =
+              mozilla::components::AppStartup::Service()) {
+        appStartup->CanQuit(quitReason, &mayQuit);
+      }
+      *aRetValue = mayQuit;
       result = true;
     } break;
 

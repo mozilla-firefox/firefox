@@ -214,7 +214,8 @@ export const ContentAnalysis = {
   async observe(aSubj, aTopic, _aData) {
     switch (aTopic) {
       case "quit-application-requested": {
-        if (aSubj.data) {
+        const cancelQuit = aSubj.QueryInterface(Ci.nsISupportsPRBool);
+        if (cancelQuit.data) {
           // something has already cancelled the quit operation,
           // so we don't need to do anything.
           return;
@@ -258,7 +259,7 @@ export const ContentAnalysis = {
         );
         if (buttonSelected === 1) {
           // Cancel the quit operation
-          aSubj.data = true;
+          cancelQuit.data = true;
         } else {
           // Ideally we would wait until "quit-application" to cancel outstanding
           // DLP requests, but the "DLP busy" or "DLP blocked" dialog can block the

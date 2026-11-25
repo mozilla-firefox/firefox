@@ -36,6 +36,8 @@
 #include "nsAppRunner.h"
 #include "nsAppShellCID.h"
 #include "nsXPCOMCIDInternal.h"
+#include "nsXPCOMCID.h"
+#include "nsISupportsPrimitives.h"
 #include "mozilla/Services.h"
 #include "jsapi.h"
 #include "js/Date.h"
@@ -636,6 +638,36 @@ nsAppStartup::ExitLastWindowClosingSurvivalArea(void) {
     Quit(eConsiderQuit, mozilla::AppShutdown::GetExitCode());
   }
 
+  return NS_OK;
+}
+
+NS_IMETHODIMP
+nsAppStartup::CanQuit(const nsAString& aReason, bool* aResult) {
+  NS_ENSURE_ARG_POINTER(aResult);
+  *aResult = true;
+
+  // Early exit if we're already shutting down. mAttemptingQuit is never
+  // cleared, but every path that abandons a quit returns before Quit() sets it.
+  if (mShuttingDown || mAttemptingQuit) {
+    return NS_OK;
+  }
+
+  nsCOMPtr<nsIObserverService> obsService =
+      mozilla::services::GetObserverService();
+  nsCOMPtr<nsISupportsPRBool> cancelQuit =
+      do_CreateInstance(NS_SUPPORTS_PRBOOL_CONTRACTID);
+  if (!obsService || !cancelQuit) {
+    return NS_OK;
+  }
+
+  cancelQuit->SetData(false);
+  obsService->NotifyObservers(
+      cancelQuit, "quit-application-requested",
+      aReason.IsEmpty() ? nullptr : PromiseFlatString(aReason).get());
+
+  bool cancelled = false;
+  cancelQuit->GetData(&cancelled);
+  *aResult = !cancelled;
   return NS_OK;
 }
 

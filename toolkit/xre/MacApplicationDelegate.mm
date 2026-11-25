@@ -45,6 +45,7 @@
 #include "nsStandaloneNativeMenu.h"
 #include "nsCocoaUtils.h"
 #include "nsMenuBarX.h"
+#include "mozilla/Components.h"
 #include "mozilla/NeverDestroyed.h"
 #include "MacAutoreleasePool.h"
 
@@ -453,30 +454,23 @@ void ActivateMacAppAfterLaunch() {
 - (NSApplicationTerminateReply)applicationShouldTerminate:
     (NSApplication*)sender {
   LOG_STARTUP_RUN_LOOP_EVENT("term");
-  nsCOMPtr<nsIObserverService> obsServ =
-      do_GetService("@mozilla.org/observer-service;1");
-  if (!obsServ) return NSTerminateNow;
-
-  nsCOMPtr<nsISupportsPRBool> cancelQuit =
-      do_CreateInstance(NS_SUPPORTS_PRBOOL_CONTRACTID);
-  if (!cancelQuit) return NSTerminateNow;
-
-  cancelQuit->SetData(false);
-  obsServ->NotifyObservers(cancelQuit, "quit-application-requested", nullptr);
-
-  bool abortQuit;
-  cancelQuit->GetData(&abortQuit);
-  if (abortQuit) return NSTerminateCancel;
-
   nsCOMPtr<nsIAppStartup> appService =
-      do_GetService("@mozilla.org/toolkit/app-startup;1");
-  if (appService) {
-    // Quit does not start a shutdown if the user keeps a window open from a
-    // beforeunload prompt.
-    appService->Quit(nsIAppStartup::eForceQuit, 0);
-    if (!appService->GetShuttingDown()) {
-      return NSTerminateCancel;
-    }
+      mozilla::components::AppStartup::Service();
+  if (!appService) {
+    return NSTerminateNow;
+  }
+
+  bool mayQuit = true;
+  appService->CanQuit(u""_ns, &mayQuit);
+  if (!mayQuit) {
+    return NSTerminateCancel;
+  }
+
+  // Quit does not start a shutdown if the user keeps a window open from a
+  // beforeunload prompt.
+  appService->Quit(nsIAppStartup::eForceQuit, 0);
+  if (!appService->GetShuttingDown()) {
+    return NSTerminateCancel;
   }
 
   return NSTerminateNow;

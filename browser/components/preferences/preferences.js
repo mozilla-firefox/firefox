@@ -1147,15 +1147,7 @@ async function confirmRestartPrompt(
   // If we have the second confirmation dialog for restart, see if the user
   // cancels out at that point.
   if (buttonIndex == CONFIRM_RESTART_PROMPT_RESTART_NOW) {
-    let cancelQuit = Cc["@mozilla.org/supports-PRBool;1"].createInstance(
-      Ci.nsISupportsPRBool
-    );
-    Services.obs.notifyObservers(
-      cancelQuit,
-      "quit-application-requested",
-      "restart"
-    );
-    if (cancelQuit.data) {
+    if (!Services.startup.canQuit("restart")) {
       buttonIndex = CONFIRM_RESTART_PROMPT_CANCEL;
     }
   }

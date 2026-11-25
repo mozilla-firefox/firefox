@@ -316,13 +316,7 @@ function onUnload() {
 }
 
 function quitApp() {
-  const quit = Cc["@mozilla.org/supports-PRBool;1"].createInstance(
-    Ci.nsISupportsPRBool
-  );
-  Services.obs.notifyObservers(quit, "quit-application-requested");
-
-  const shouldProceed = !quit.data;
-  if (shouldProceed) {
+  if (Services.startup.canQuit()) {
     Services.startup.quit(Ci.nsIAppStartup.eForceQuit);
   }
 }
