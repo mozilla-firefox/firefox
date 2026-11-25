@@ -3272,6 +3272,15 @@
   possibly_calls: true
   generate_lir: true
 
+- name: CallGetWasmMutableGlobal
+  arguments:
+    environment: JSObject*
+    slot: uint32_t
+    name: PropertyName*
+  result_type: Value
+  possibly_calls: true
+  generate_lir: true
+
 - name: DeleteProperty
   operands:
     value: Value

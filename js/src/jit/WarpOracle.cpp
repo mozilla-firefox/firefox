@@ -286,9 +286,9 @@ AbortReasonOr<Ok> WarpScriptOracle::snapshotGetImport(
 
   uint32_t numFixedSlots = targetEnv->numFixedSlots();
   uint32_t slot = prop->slot();
-  Value value = targetEnv->getRawSlot(slot);
 
-  if (!prop->writable() && JS::Prefs::ion_environment_specialization()) {
+  if (!prop->writable() && !targetEnv->hasWasmMutableGlobalBinding(slot) &&
+      JS::Prefs::ion_environment_specialization()) {
     bool addedConstant =
         MOZ_TRY(maybeAddConstantBinding(snapshots, loc, targetEnv, slot));
     if (addedConstant) {
@@ -299,11 +299,13 @@ AbortReasonOr<Ok> WarpScriptOracle::snapshotGetImport(
   // In the rare case where this import hasn't been initialized already (we have
   // an import cycle where modules reference each other's imports), we need a
   // check.
-  bool needsLexicalCheck = value.isMagic(JS_UNINITIALIZED_LEXICAL);
+  bool needsLexicalCheck = targetEnv->isBindingUninitialized(slot);
+  bool needsWasmMutableGlobalRead =
+      targetEnv->hasWasmMutableGlobalBinding(slot);
 
-  if (!AddOpSnapshot<WarpGetImport>(alloc_, snapshots,
-                                    loc.bytecodeToOffset(script_), targetEnv,
-                                    numFixedSlots, slot, needsLexicalCheck)) {
+  if (!AddOpSnapshot<WarpGetImport>(
+          alloc_, snapshots, loc.bytecodeToOffset(script_), targetEnv,
+          numFixedSlots, slot, needsLexicalCheck, needsWasmMutableGlobalRead)) {
     return abort(AbortReason::Alloc);
   }
   return Ok();
@@ -346,6 +348,8 @@ AbortReasonOr<bool> WarpScriptOracle::maybeAddConstantBinding(
     WarpOpSnapshotList& snapshots, BytecodeLocation loc, EnvironmentObject* env,
     uint32_t slot) {
   Value value = env->getSlot(slot);
+  MOZ_RELEASE_ASSERT(!value.isObject() ||
+                     !value.toObject().is<WasmMutableGlobalBindingObject>());
 
   // Uninitialized lexical bindings need a TDZ check.
   if (value.isMagic()) {

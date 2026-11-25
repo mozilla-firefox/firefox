@@ -5725,6 +5725,13 @@ void LIRGenerator::visitCallGetIntrinsicValue(MCallGetIntrinsicValue* ins) {
   assignSafepoint(lir, ins);
 }
 
+void LIRGenerator::visitCallGetWasmMutableGlobal(
+    MCallGetWasmMutableGlobal* ins) {
+  LCallGetWasmMutableGlobal* lir = new (alloc()) LCallGetWasmMutableGlobal();
+  defineReturn(lir, ins);
+  assignSafepoint(lir, ins);
+}
+
 void LIRGenerator::visitGetPropSuperCache(MGetPropSuperCache* ins) {
   MDefinition* obj = ins->object();
   MDefinition* receiver = ins->receiver();
