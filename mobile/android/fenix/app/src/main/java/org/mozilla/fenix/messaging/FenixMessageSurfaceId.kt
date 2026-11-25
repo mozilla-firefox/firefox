@@ -17,4 +17,7 @@ object FenixMessageSurfaceId {
 
     /** A microsurvey UI for a specific feature. */
     const val MICROSURVEY = "microsurvey"
+
+    /** An informational card in VPN settings. */
+    const val SETTINGS_VPN = "settings_vpn"
 }

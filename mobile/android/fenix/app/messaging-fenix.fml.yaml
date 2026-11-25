@@ -72,6 +72,7 @@ import:
 
             actions:
               ENABLE_PRIVATE_BROWSING: ://enable_private_browsing
+              FXA_BEGIN_AUTH: ://fxa_begin_auth
               INSTALL_SEARCH_WIDGET: ://install_search_widget
               MAKE_DEFAULT_BROWSER: ://make_default_browser
               VIEW_BOOKMARKS: ://urls_bookmarks
@@ -116,11 +117,18 @@ import:
               MICROSURVEY:
                 priority: 50
                 max-display-count: 5
+              SETTINGS_CARD:
+                priority: 50
+                max-display-count: 1
+              SETTINGS_CARD_PERSISTENT:
+                priority: 50
+                max-display-count: 10000
             $$surfaces:
               - homescreen
               - notification
               - survey
               - microsurvey
+              - settings_vpn
 
         - channel: developer
           value:

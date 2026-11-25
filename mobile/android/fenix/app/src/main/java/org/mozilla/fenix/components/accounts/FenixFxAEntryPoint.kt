@@ -61,6 +61,9 @@ enum class FenixFxAEntryPoint(override val entryName: String) : FxAEntryPoint, P
     /** Authenticating with the user journey started from the IP protection settings screen. */
     IPProtectionSettings("vpn_integration_android_settings"),
 
+    /** Authenticating with the user journey started from the IP protection settings screen upsell card. */
+    IPProtectionSettingsUpsell("vpn_integration_android_settings_upsell"),
+
     /**
      * Authenticating with the user journey started from the protection panel (typically accessible from the toolbar
      * globe/shield.)
