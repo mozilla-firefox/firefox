@@ -257,7 +257,8 @@ To learn whether the files differ *where you changed something*,
 box, confined by `--rect` to the element; a zero count also reports the
 differences under `--threshold`, which is §1's "too small" case. `--help`
 covers the rect's origin, `--dpr`, `--offset`, `--lines` (what a caption for a
-change one or two device pixels wide quotes) and the exit codes; the host's
+change one or two device pixels wide quotes), `--diff-image` (a picture of
+where they differ, to attach beside the pair) and the exit codes; the host's
 platform file in `desktop-probing`, section GRABS, gives a grab's scale.
 It needs Pillow, which the `desktop-theme` site carries. A completed comparison
 exits 0 when no pixel inside `--rect` differs by more than `--threshold`, 1 when

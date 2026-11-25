@@ -27,6 +27,10 @@ status panel.
 differing pixels, merged into runs, and the most common color pairs among the
 differing pixels as png -> other, so a 1px border change reads as "row 84"
 with its before and after colors.
+
+--diff-image PATH writes the first capture faded toward white with the
+differing pixels in magenta, a color no theme surface uses, cropped to --rect
+when one is given. It is written whether or not any pixel differs.
 """
 
 import argparse
@@ -149,12 +153,50 @@ def get_parser():
         type=int,
         help="also print the rows and columns with at least N differing pixels, and the top color pairs",
     )
+    ap.add_argument(
+        "--diff-image",
+        metavar="PATH",
+        help="write the first capture, faded, with the differing pixels in magenta",
+    )
     return ap
 
 
-def compare(args):
+def diff_mask(im, other, threshold):
+    """Return a mask over the larger of the two sizes that is 255 where a
+    channel differs by more than `threshold` or only one image has a pixel, and
+    the largest channel difference of each pixel the two share."""
     from PIL import Image, ImageChops
 
+    w = min(im.width, other.width)
+    h = min(im.height, other.height)
+    bands = ImageChops.difference(im.crop((0, 0, w, h)), other.crop((0, 0, w, h)))
+    r, g, b, a = bands.split()
+    channel_max = ImageChops.lighter(ImageChops.lighter(r, g), ImageChops.lighter(b, a))
+    overlap = channel_max.point(lambda v: 255 if v > threshold else 0)
+    mask = Image.new("L", (max(im.width, other.width), max(im.height, other.height)))
+    for size in (im.size, other.size):
+        mask.paste(255, (0, 0, *size))
+    mask.paste(overlap, (0, 0))
+    return mask, channel_max
+
+
+def write_diff_image(path, im, mask, box):
+    from PIL import Image
+
+    if box:
+        im, mask = im.crop(box), mask.crop(box)
+    white = Image.new("RGBA", mask.size, (255, 255, 255, 255))
+    out = Image.new("RGBA", mask.size)
+    out.paste(im, (0, 0))
+    out = Image.blend(Image.alpha_composite(white, out), white, 0.75)
+    out.paste((255, 0, 255, 255), mask=mask)
+    try:
+        out.convert("RGB").save(path)
+    except (OSError, ValueError) as e:
+        fail(e)
+
+
+def compare(args):
     if args.dpr <= 0:
         fail("--dpr must be positive")
     if args.lines is not None and args.lines < 1:
@@ -163,16 +205,7 @@ def compare(args):
 
     im = load(args.png)
     other = load(args.other)
-    w = min(im.width, other.width)
-    h = min(im.height, other.height)
-    bands = ImageChops.difference(im.crop((0, 0, w, h)), other.crop((0, 0, w, h)))
-    r, g, b, a = bands.split()
-    channel_max = ImageChops.lighter(ImageChops.lighter(r, g), ImageChops.lighter(b, a))
-    overlap = channel_max.point(lambda v: 255 if v > args.threshold else 0)
-    d = Image.new("L", (max(im.width, other.width), max(im.height, other.height)))
-    for size in (im.size, other.size):
-        d.paste(255, (0, 0, *size))
-    d.paste(overlap, (0, 0))
+    d, channel_max = diff_mask(im, other, args.threshold)
 
     notes = []
     if im.size != other.size:
@@ -199,7 +232,11 @@ def compare(args):
         if clipped != box:
             notes.append(f"rect clipped from device px {box} to {clipped}")
         box = clipped
+        if args.diff_image:
+            write_diff_image(args.diff_image, im, d, box)
         d = d.crop(box)
+    elif args.diff_image:
+        write_diff_image(args.diff_image, im, d, None)
     bbox = d.getbbox()
     if bbox and args.rect:
         bbox = (
