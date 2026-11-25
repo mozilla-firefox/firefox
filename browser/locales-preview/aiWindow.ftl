@@ -580,6 +580,16 @@ smart-actions-loading = Looking at this page…
 aiwindow-starter-digest-dismiss =
     .aria-label = Dismiss { $text }
 
+## Smart Window digest modal
+## The dialog that holds the digest form.
+
+smartwindow-digest-modal-create =
+    .aria-label = Create a digest
+smartwindow-digest-modal-edit =
+    .aria-label = Edit digest
+smartwindow-digest-modal-close =
+    .aria-label = Close
+
 ## Smart Window digest form
 ## Used to create a digest, or edit an existing one. A digest is a summary
 ## about a topic that is refreshed on a schedule the user sets.

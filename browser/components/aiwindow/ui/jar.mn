@@ -111,6 +111,8 @@ browser.jar:
   content/browser/aiwindow/components/smartwindow-digest-prompt.mjs (components/smartwindow-digest-prompt/smartwindow-digest-prompt.mjs)
   content/browser/aiwindow/components/smartwindow-digest-form.css (components/smartwindow-digest-form/smartwindow-digest-form.css)
   content/browser/aiwindow/components/smartwindow-digest-form.mjs (components/smartwindow-digest-form/smartwindow-digest-form.mjs)
+  content/browser/aiwindow/components/smartwindow-digest-modal.css (components/smartwindow-digest-modal/smartwindow-digest-modal.css)
+  content/browser/aiwindow/components/smartwindow-digest-modal.mjs (components/smartwindow-digest-modal/smartwindow-digest-modal.mjs)
   content/browser/aiwindow/components/smartwindow-panel-list.css    (components/smartwindow-panel-list/smartwindow-panel-list.css)
   content/browser/aiwindow/components/smartwindow-panel-list.mjs    (components/smartwindow-panel-list/smartwindow-panel-list.mjs)
   content/browser/aiwindow/components/smartwindow-promo.css         (components/smartwindow-promo/smartwindow-promo.css)

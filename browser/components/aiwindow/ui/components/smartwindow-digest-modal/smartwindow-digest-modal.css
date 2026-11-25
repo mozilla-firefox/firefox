@@ -1,0 +1,41 @@
+/* This Source Code Form is subject to the terms of the Mozilla Public
+ * License, v. 2.0. If a copy of the MPL was not distributed with this
+ * file, You can obtain one at http://mozilla.org/MPL/2.0/. */
+
+/* The form draws the card, so the dialog is only a shell around it. */
+dialog {
+  background: none;
+  border: none;
+  box-sizing: border-box;
+  /* stylelint-disable-next-line stylelint-plugin-mozilla/use-design-tokens */
+  max-height: calc(100% - 2 * var(--space-xlarge));
+  overflow: visible;
+  padding: 0;
+  /* stylelint-disable-next-line stylelint-plugin-mozilla/use-design-tokens */
+  width: min(350px, 100% - 2 * var(--space-large));
+
+  &::backdrop {
+    background-color: var(--background-color-overlay);
+  }
+
+  &[open] {
+    display: flex;
+    flex-direction: column;
+  }
+
+  smartwindow-digest-form {
+    min-height: 0;
+  }
+
+  .close-button {
+    /* stylelint-disable-next-line stylelint-plugin-mozilla/use-design-tokens */
+    background-color: var(--smartwindow-chat-bubble-background-color);
+    /* stylelint-disable-next-line stylelint-plugin-mozilla/use-design-tokens */
+    border: var(--border-width) solid var(--smartwindow-border-color);
+    border-radius: var(--border-radius-circle);
+    box-shadow: var(--box-shadow-level-2);
+    inset-block-start: calc(-1 * var(--space-small));
+    inset-inline-end: calc(-1 * var(--space-small));
+    position: absolute;
+  }
+}

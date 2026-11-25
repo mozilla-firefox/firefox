@@ -43,6 +43,7 @@ support-files = [
   "test_smartwindow_promo.mjs",
   "test_smartformfill_telemetry.html",
   "test_smartwindow_digest_form_page.html",
+  "test_smartwindow_digest_modal_page.html",
   "test_smartwindow_panel_list_page.html",
   "test_smartwindow_panel_list.mjs",
   "test_smartwindow_onboarding_page.html",
@@ -135,6 +136,8 @@ skip-if = [
 ["browser_smartwindow_default_startup.js"]
 
 ["browser_smartwindow_digest_form.js"]
+
+["browser_smartwindow_digest_modal.js"]
 
 ["browser_smartwindow_digest_prompt.js"]
 support-files = [

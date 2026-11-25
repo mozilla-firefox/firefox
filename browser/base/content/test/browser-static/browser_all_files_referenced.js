@@ -348,6 +348,11 @@ var allowlist = [
   {
     file: "chrome://browser/content/aiwindow/components/smartwindow-digest-form.mjs",
   },
+
+  // Bug 2092347: Smart Window Digests will use this modal.
+  {
+    file: "chrome://browser/content/aiwindow/components/smartwindow-digest-modal.mjs",
+  },
 ];
 
 if (AppConstants.NIGHTLY_BUILD) {
