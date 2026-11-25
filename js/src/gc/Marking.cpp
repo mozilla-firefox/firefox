@@ -3500,9 +3500,6 @@ bool js::gc::UnmarkGrayGCThingUnchecked(GCMarker* marker, JS::GCCellPtr thing) {
   return marker->matchTracer([thing](auto& trc) {
     UnmarkGrayTracer unmarker(&trc);
     unmarker.unmark(thing);
-    if (unmarker.unmarkedAny) {
-      trc.runtime()->gc.setGrayBitsWereMarkedBlack();
-    }
     return unmarker.unmarkedAny;
   });
 }

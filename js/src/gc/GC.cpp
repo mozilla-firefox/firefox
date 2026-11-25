@@ -513,8 +513,7 @@ GCRuntime::GCRuntime(JSRuntime* rt)
       incrementalGCEnabled(TuningDefaults::IncrementalGCEnabled),
       perZoneGCEnabled(TuningDefaults::PerZoneGCEnabled),
       numActiveZoneIters(0),
-      grayMarkingState(0),
-      grayMarkingStateChangesInGC(0),
+      grayBitsInvalid(0),
       majorGCTriggerReason(JS::GCReason::NO_REASON),
       minorGCNumber(0),
       majorGCNumber(0),
@@ -3389,10 +3388,6 @@ void GCRuntime::beginMarkPhase(AutoGCSession& session) {
 
   markSliceCount = 0;
 
-  // Track changes to gray marking state during GC. At the end of full GC, this
-  // will replace the main grayMarkingState.
-  grayMarkingStateChangesInGC = 0;
-
 #ifdef JS_GC_CONCURRENT_MARKING
   concurrentMarkingFinishedCount = 0;
 #endif
@@ -3945,6 +3940,7 @@ void GCRuntime::checkGCStateNotInUse() {
   MOZ_ASSERT(!hasDelayedMarking());
   MOZ_ASSERT(!hasAnyDeferredWeakMaps());
   MOZ_ASSERT(!didYieldAtEndOfMarkPhase);
+  MOZ_ASSERT(!(grayBitsInvalid & GrayBitsInvalidatedInCurrentGC));
 
   MOZ_ASSERT(!disableBarriersForSweeping);
   MOZ_ASSERT(foregroundFinalizedArenas.ref().isNothing());
@@ -4188,7 +4184,7 @@ GCRuntime::IncrementalResult GCRuntime::resetIncrementalGC(
 
       // The gray marking state may not be valid. We don't do gray unmarking
       // when zones are in the Prepare state.
-      setGrayBitsInvalid();
+      setGrayBitsInvalidForReset();
 
       checkGCStateNotInUse();
       break;
@@ -4247,7 +4243,7 @@ GCRuntime::IncrementalResult GCRuntime::resetIncrementalGC(
       // The gray marking state may not be valid. We depend on the mark stack to
       // do gray unmarking in zones that are being marked by the GC and we've
       // just cancelled that part way through.
-      setGrayBitsInvalid();
+      setGrayBitsInvalidForReset();
 
 #ifdef DEBUG
       for (auto& marker : markers) {
@@ -4301,20 +4297,20 @@ GCRuntime::IncrementalResult GCRuntime::resetIncrementalGC(
   return IncrementalResult::Reset;
 }
 
+void GCRuntime::setGrayBitsInvalidForReset() {
+  MOZ_ASSERT(state() < State::MarkRoots || state() > State::Sweep);
+  // Clear the GrayBitsInvalidatedInCurrentGC flag because we will skip
+  // GCRuntime::endSweepPhase.
+  grayBitsInvalid = GrayBitsInvalid;
+}
+
 void GCRuntime::setGrayBitsInvalid() {
-  grayMarkingState |= GrayBitsInvalid;
-  grayMarkingStateChangesInGC |= GrayBitsInvalid;
-}
-
-void GCRuntime::setGrayBitsWereMarkedBlack() {
-  grayMarkingState |= GrayBitsWereMarkedBlack;
-  grayMarkingStateChangesInGC |= GrayBitsWereMarkedBlack;
-}
-
-void GCRuntime::clearGrayBitsWereMarkedBlack() {
-  MOZ_ASSERT(!isIncrementalGCInProgress());
-  MOZ_ASSERT(wereGrayBitsMarkedBlack());
-  grayMarkingState &= ~GrayBitsWereMarkedBlack;
+  uint32_t bitsToSet = GrayBitsInvalid;
+  if (state() >= State::MarkRoots && state() <= State::Sweep) {
+    // This is cleared in GCRuntime::endSweepPhase.
+    bitsToSet |= GrayBitsInvalidatedInCurrentGC;
+  }
+  grayBitsInvalid |= bitsToSet;
 }
 
 void GCRuntime::disableIncrementalBarriers() {

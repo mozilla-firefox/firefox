@@ -328,13 +328,6 @@ void js::gc::ShouldWeakMappingEntryBeBlack(JSObject* map, Cell* key,
 
 /* static */
 void WeakMapBase::fixAllGrayMappings(JSRuntime* rt) {
-  // If no gray bits have been unmarked (marked black) then no fixup is
-  // required.
-  GCRuntime* gc = &rt->gc;
-  if (!gc->wereGrayBitsMarkedBlack()) {
-    return;
-  }
-
   bool anyMarked;
   do {
     anyMarked = false;
@@ -346,8 +339,6 @@ void WeakMapBase::fixAllGrayMappings(JSRuntime* rt) {
       });
     }
   } while (anyMarked);
-
-  gc->clearGrayBitsWereMarkedBlack();
 }
 
 namespace {
