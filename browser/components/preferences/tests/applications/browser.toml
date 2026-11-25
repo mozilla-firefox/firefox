@@ -19,8 +19,5 @@ run-if = [
 ]
 
 ["browser_filetype_dialog.js"]
-skip-if = [
-  "os == 'linux' && os_version == '24.04' && arch == 'x86_64' && display == 'x11' && opt && a11y_checks", # Bug 2021536
-]
 
 ["browser_pdf_disabled.js"]

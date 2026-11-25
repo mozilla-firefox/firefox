@@ -844,6 +844,9 @@ class ApplicationListItem {
     this.actionsMenu = document.createElement("moz-select");
     this.actionsMenu.slot = "actions";
     this.actionsMenu.classList.add("actionsMenu");
+    this.actionsMenu.ariaLabel = await document.l10n.formatValue(
+      "applications-action-heading"
+    );
     this.actionsMenu.disabled = Services.prefs.prefIsLocked(
       "pref.downloads.disable_button.edit_actions"
     );
