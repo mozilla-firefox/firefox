@@ -1718,6 +1718,12 @@ void FetchBody<Derived>::LockStream(JSContext* aCx, ReadableStream* aStream,
   if (aRv.Failed()) {
     return;
   }
+
+  // The consumer of the body now owns the native input stream and may read
+  // and close it off this thread, so the locked stream must not close it.
+  if (aStream->State() == ReadableStream::ReaderState::Readable) {
+    aStream->SetInputStreamIfUnread(nullptr);
+  }
 }
 
 template void FetchBody<Request>::LockStream(JSContext* aCx,
