@@ -759,6 +759,13 @@ void XPCJSRuntime::TraceAdditionalNativeGrayRoots(JSTracer* trc) {
   XPCWrappedNativeScope::TraceWrappedNativesInAllScopes(this, trc);
 }
 
+static CompartmentPrivate::RemoteProxyMap& RemoteProxyMapForScope(
+    XPCWrappedNativeScope* aScope) {
+  CompartmentPrivate* priv = CompartmentPrivate::Get(aScope->Compartment());
+  MOZ_ASSERT(priv);
+  return priv->GetRemoteProxyMap();
+}
+
 void XPCJSRuntime::TraverseAdditionalNativeRoots(
     nsCycleCollectionNoteRootCallback& cb) {
   XPCWrappedNativeScope::SuspectAllWrappers(cb);
@@ -767,6 +774,19 @@ void XPCJSRuntime::TraverseAdditionalNativeRoots(
   for (auto* wjs : mSubjectToFinalizationWJS) {
     MOZ_DIAGNOSTIC_ASSERT(wjs->IsSubjectToFinalization());
     cb.NoteXPCOMRoot(ToSupports(wjs), parti);
+  }
+
+  // There is a one-to-one mapping between XPCWrappedNativeScope and
+  // CompartmentPrivate, so iterating over mWrappedNativeScopes visits every
+  // remote proxy map.
+  for (XPCWrappedNativeScope* scope : mWrappedNativeScopes) {
+    auto& map = RemoteProxyMapForScope(scope);
+    for (auto iter = map.iter(); !iter.done(); iter.next()) {
+      JSObject* proxy = iter.get().value().unbarrieredGet();
+      if (JS::ObjectIsMarkedGray(proxy) || cb.WantAllTraces()) {
+        cb.NoteJSRoot(proxy);
+      }
+    }
   }
 }
 
@@ -798,6 +818,24 @@ void XPCJSRuntime::EndCycleCollectionCallback(CycleCollectorResults& aResults) {
 
 void XPCJSRuntime::DispatchDeferredDeletion(bool aContinuation, bool aPurge) {
   mAsyncSnowWhiteFreer->Start(aContinuation, aPurge);
+}
+
+void XPCJSRuntime::ClearWhiteJSWeakReferences(
+    JS::ShouldClearWeakRefTargetCallback aCallback, void* aData) {
+  CycleCollectedJSRuntime::ClearWhiteJSWeakReferences(aCallback, aData);
+
+  // There is a one-to-one mapping between XPCWrappedNativeScope and
+  // CompartmentPrivate, so iterating over mWrappedNativeScopes visits every
+  // remote proxy map.
+  for (XPCWrappedNativeScope* scope : mWrappedNativeScopes) {
+    auto& map = RemoteProxyMapForScope(scope);
+    for (auto iter = map.modIter(); !iter.done(); iter.next()) {
+      JSObject* proxy = iter.get().value().unbarrieredGet();
+      if (aCallback(JS::GCCellPtr(proxy), aData)) {
+        iter.remove();
+      }
+    }
+  }
 }
 
 void xpc_UnmarkSkippableJSHolders() {
