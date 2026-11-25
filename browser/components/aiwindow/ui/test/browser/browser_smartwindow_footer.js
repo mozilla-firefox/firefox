@@ -307,10 +307,6 @@ add_task(async function test_smartwindow_footer_button_clicks() {
 });
 
 add_task(async function test_smartwindow_promo_fullpage_layout() {
-  await SpecialPowers.pushPrefEnv({
-    set: [["browser.smartwindow.resumeCards.enabled", true]],
-  });
-
   let win;
   try {
     win = await openAIWindow();
@@ -365,6 +361,5 @@ add_task(async function test_smartwindow_promo_fullpage_layout() {
     if (win) {
       await BrowserTestUtils.closeWindow(win);
     }
-    await SpecialPowers.popPrefEnv();
   }
 });

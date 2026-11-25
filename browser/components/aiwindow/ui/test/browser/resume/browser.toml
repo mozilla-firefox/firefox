@@ -14,6 +14,8 @@ support-files = [
 
 ["browser_resume_card_actions.js"]
 
+["browser_resume_card_loading.js"]
+
 ["browser_resume_card_telemetry.js"]
 
 ["browser_resume_section_hide.js"]

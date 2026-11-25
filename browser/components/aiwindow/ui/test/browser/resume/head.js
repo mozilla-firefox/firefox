@@ -12,9 +12,27 @@ Services.scriptloader.loadSubScript(
 const RESUME_ACTIVITY_PREFS = [
   ["browser.smartwindow.memories.generateFromConversation", true],
   ["browser.smartwindow.memories.generateFromHistory", true],
-  ["browser.smartwindow.resumeCards.enabled", true],
 ];
 const DAY_MS = 24 * 60 * 60 * 1000;
+
+// The confirmation card attached when resuming the first journey from
+// stubResumeActivityGeneration.
+const EXPECTED_RESUME_TOOL_UI_DATA = {
+  uiType: "tab-group-confirmation",
+  toolCallId: "resume-activity-memory-1",
+  isResumeActivity: true,
+  properties: {
+    actionType: "open_tabs",
+    tabGroupLabel: "Your research",
+    tabs: [1, 2, 3, 4].map((id, index) => ({
+      token: String(index),
+      url: `https://example.com/${id}`,
+      title: `Example ${id}`,
+      iconSrc: `page-icon:https://example.com/${id}`,
+      checked: false,
+    })),
+  },
+};
 
 /**
  * @param {Element} aiWindow

@@ -638,6 +638,46 @@ async function getPromptButtons(browser) {
   return promptsEl.shadowRoot.querySelectorAll(".sw-prompt-button");
 }
 
+/**
+ * Waits for the ai-window's resume cards to load.
+ *
+ * @param {Browser} browser
+ * @returns {Promise<Element>} The ai-window element
+ */
+async function waitForResumeCards(browser) {
+  const aiWindow = await TestUtils.waitForCondition(
+    () => browser.contentDocument?.querySelector("ai-window"),
+    "Wait for ai-window element"
+  );
+  await TestUtils.waitForCondition(
+    () => aiWindow.resumeCards.length,
+    "Wait for resume cards to load"
+  );
+  return aiWindow;
+}
+
+/**
+ * @param {Element} aiWindow
+ * @returns {Array<Element>} The rendered smartwindow-resume-card elements
+ */
+function getResumeCardElements(aiWindow) {
+  const section = aiWindow.shadowRoot.querySelector(
+    "smartwindow-resume-section"
+  );
+  return Array.from(
+    section?.shadowRoot.querySelectorAll("smartwindow-resume-card") ?? []
+  );
+}
+
+/**
+ * Clicks a resume card's body, which resumes the card.
+ *
+ * @param {Element} card - The smartwindow-resume-card element
+ */
+function clickResumeCard(card) {
+  card.shadowRoot.querySelector(".resume-card-title").click();
+}
+
 async function getDismissButton(browser) {
   const aiWindow = await TestUtils.waitForCondition(
     () => browser.contentDocument?.querySelector("ai-window"),
@@ -819,15 +859,16 @@ async function stubResumeActivityGenerationPool(sb, memoryCount) {
 }
 
 /**
- * Shared setup/teardown for tests that click a resume pill: enables the
- * memories prefs, stores a journey so a real pill renders,
- * opens the AI Window, and hands the caller its buttons to click. `run`
+ * Shared setup/teardown for tests that click a resume card: enables the
+ * memories prefs, stores a journey so a real card renders,
+ * opens the AI Window, and hands the caller its first card. `run`
  * supplies whatever additional stubs it needs (engine build, fetchWithHistory,
  * etc.) via its own sandbox before calling this.
  *
  * @param {object} sb - Sinon sandbox, owned and restored by the caller
  * @param {Function} run - Async callback invoked with
- *   {win, browser, aiWindow, buttons}
+ *   {win, browser, aiWindow, resumeCard, since}, where `since` is a
+ *   Date.now() value taken before the stub ran
  * @param {object} [options]
  * @param {?string} [options.token] - Token for mock-server-backed
  *   chat completion.
@@ -839,6 +880,7 @@ async function testResumeActivityClick(sb, run, { token } = {}) {
       ["browser.smartwindow.memories.generateFromHistory", true],
     ],
   });
+  const since = Date.now();
   const resumeActivityStubs = await stubResumeActivityGeneration(sb, {
     token,
   });
@@ -847,11 +889,12 @@ async function testResumeActivityClick(sb, run, { token } = {}) {
     win = await openAIWindow();
     const browser = win.gBrowser.selectedBrowser;
     const aiWindow = browser.contentDocument.querySelector("ai-window");
-    const buttons = await TestUtils.waitForCondition(async () => {
-      const found = await getPromptButtons(browser);
-      return found.length ? found : false;
-    }, "Wait for prompt buttons to replace loading skeletons");
-    await run({ win, browser, aiWindow, buttons });
+    await waitForResumeCards(browser);
+    const resumeCard = await TestUtils.waitForCondition(
+      () => getResumeCardElements(aiWindow)[0],
+      "Wait for a resume card to render"
+    );
+    await run({ win, browser, aiWindow, resumeCard, since });
   } finally {
     if (win) {
       await BrowserTestUtils.closeWindow(win);

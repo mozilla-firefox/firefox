@@ -203,7 +203,6 @@ const PREF_HIDE_TOP_SITES = "browser.smartwindow.hideTopSites";
 const PREF_TOPSITES_FEED_ENABLED =
   "browser.newtabpage.activity-stream.feeds.topsites";
 const PREF_AGENT_ENABLED = "browser.smartwindow.agent.enabled";
-const PREF_RESUME_CARDS = "browser.smartwindow.resumeCards.enabled";
 const NIMBUS_FEATURE_SMART_WINDOW = "smartWindow";
 const NIMBUS_VARIABLE_RESUME_ACTIVITY = "resumeActivity";
 const MAX_INTERACTION_COUNT = 1000;
@@ -219,10 +218,6 @@ const HISTORY_MENU_EVENTS = [
 ];
 const MAX_SIDEBAR_STARTER_CACHE_KEYS = 20;
 const MAX_TOP_SITES = 8;
-// Temporary cap until regular starters increase to 5.
-const MAX_PILL_COUNT = 6;
-// Show 3 undismissed candidates from the larger generated pool.
-const MAX_RESUME_PILLS_DISPLAYED = 3;
 // Show up to 4 cards from the generated pool.
 const MAX_RESUME_CARDS_DISPLAYED = 4;
 // Avoid flashing skeletons for fast journey lookups.
@@ -551,13 +546,6 @@ export class AIWindow extends MozLitElement {
       this,
       "agentEnabledPref",
       PREF_AGENT_ENABLED
-    );
-    XPCOMUtils.defineLazyPreferenceGetter(
-      this,
-      "resumeCardsPref",
-      PREF_RESUME_CARDS,
-      null,
-      () => this.requestUpdate()
     );
 
     this.userPrompt = "";
@@ -1422,12 +1410,10 @@ export class AIWindow extends MozLitElement {
     }
 
     let starters = [];
-    // Cards render separately from the pills row, so once the pill fallback
-    // is gone (Bug 2077652), this path no longer needs to wait for resume
-    // content to merge into `starters` below - it can render as soon as
-    // `starters` is ready.
-    const rendersCardsIndependently =
-      this.mode === MODE.FULLPAGE && this.resumeCardsPref;
+    // Cards render separately from the pills row, so this path doesn't need
+    // to wait for resume content - it can render as soon as `starters` is
+    // ready.
+    const rendersCardsIndependently = this.mode === MODE.FULLPAGE;
     try {
       const gBrowser = window.browsingContext?.topChromeWindow.gBrowser;
       const tabCount = gBrowser?.tabs.length || 0;
@@ -1475,7 +1461,6 @@ export class AIWindow extends MozLitElement {
         }
       }
 
-      let resumeStartersPromise = null;
       let resumeCardsPromise = null;
       const shouldLoadResumeStarters =
         this.mode === MODE.FULLPAGE &&
@@ -1489,24 +1474,10 @@ export class AIWindow extends MozLitElement {
         await this.#refreshHasMemories();
 
         if (this.#resumeActivityMemoriesEnabled) {
-          const resumeActivitiesPromise =
-            lazy.JourneyManager.suggestJourneysToResume();
-
-          if (this.resumeCardsPref) {
-            resumeCardsPromise = this.#loadResumeCards(
-              resumeActivitiesPromise,
-              abortController.signal
-            );
-          } else {
-            resumeStartersPromise = resumeActivitiesPromise;
-            // Reveal all slots together once merged below - showing static
-            // starters early would risk a pill's text swapping later.
-            this.#renderStarterPrompts(
-              Array(MAX_PILL_COUNT).fill({ type: "skeleton" }),
-              true,
-              false
-            );
-          }
+          resumeCardsPromise = this.#loadResumeCards(
+            lazy.JourneyManager.suggestJourneysToResume(),
+            abortController.signal
+          );
         }
       }
 
@@ -1521,7 +1492,6 @@ export class AIWindow extends MozLitElement {
         });
 
       // Cards render separately, so static starters don't need to wait.
-      // TODO Bug 2077652: remove the pill fallback and final render.
       if (rendersCardsIndependently && !abortController.signal.aborted) {
         this.#conversation.transientStarters = starters;
         this.#renderStarterPrompts(starters);
@@ -1554,25 +1524,6 @@ export class AIWindow extends MozLitElement {
         }
       } else if (resumeCardsPromise) {
         await resumeCardsPromise;
-      } else if (resumeStartersPromise) {
-        const rawResumeActivities = await resumeStartersPromise;
-
-        if (abortController.signal.aborted) {
-          this.resumeCardsLoading = false;
-          return;
-        }
-
-        const resumeActivities =
-          this.#applyResumeActivities(rawResumeActivities);
-        this.resumeCardsLoading = false;
-
-        // The temporary pref replaces resume pills with cards.
-        if (!this.resumeCardsPref && selectedTab === this.#getCurrentTab()) {
-          const resumeStarters = this.#resumeActivitiesToStarterPrompts(
-            resumeActivities
-          ).slice(0, MAX_RESUME_PILLS_DISPLAYED);
-          starters = [...resumeStarters, ...starters].slice(0, MAX_PILL_COUNT);
-        }
       }
     } catch (e) {
       lazy.log.error("[Prompts] Failed to load initial starters:", e);
@@ -1621,7 +1572,6 @@ export class AIWindow extends MozLitElement {
    * Real cards clear any previous empty-state hide.
    *
    * @param {Array<object>} rawResumeActivities - Unfiltered resume activities
-   * @returns {Array<object>} The valid, undismissed resume activities
    */
   #applyResumeActivities(rawResumeActivities) {
     const validResumeActivities = rawResumeActivities.filter(activity =>
@@ -1639,9 +1589,6 @@ export class AIWindow extends MozLitElement {
       this.resumeCardsEmptyReason = null;
     }
 
-    // TODO Bug 2077652: this is already the permanent path; drop the pill
-    // fallback in the caller once cards ship for real (see the other
-    // Bug 2077652 TODO there, on the early starters render).
     this.resumeCards = resumeActivities
       .slice(0, MAX_RESUME_CARDS_DISPLAYED)
       .map((card, rank) => ({ ...card, rank }));
@@ -1649,20 +1596,6 @@ export class AIWindow extends MozLitElement {
       lazy.ResumeActivity.clearSectionHiddenForSession();
       this.resumeSectionHidden = false;
     }
-
-    return resumeActivities;
-  }
-
-  #resumeActivitiesToStarterPrompts(resumeActivities) {
-    return resumeActivities.map(({ memory, content }) => ({
-      text: content.headline,
-      type: "resume",
-      previewIcons: content.previewTabs.map(({ url }) => ({
-        iconSrc: `page-icon:${url}`,
-      })),
-      memory,
-      content,
-    }));
   }
 
   get #isSmartPageSidebar() {
@@ -1685,9 +1618,8 @@ export class AIWindow extends MozLitElement {
    *   false for the transient clear before an async load, which keeps Top
    *   Sites hidden until the prompts row is ready.
    * @param {boolean} [recordTelemetry=true] - Whether to record a
-   *   quick_prompt_displayed event for this render; false for the
-   *   transient skeleton render before resume starters resolve, so the
-   *   event isn't recorded twice for the same load.
+   *   quick_prompt_displayed event for this render; false when re-rendering
+   *   after a dismissal, so the event isn't recorded twice for the same load.
    * @private
    */
   #renderStarterPrompts(starters, resolved = true, recordTelemetry = true) {
@@ -4297,8 +4229,7 @@ export class AIWindow extends MozLitElement {
                 `
               : ""}
             ${this.#promoTemplate()}
-            ${this.resumeCardsPref &&
-            (this.resumeCards.length || !this.resumeSectionHidden)
+            ${this.resumeCards.length || !this.resumeSectionHidden
               ? html`
                   <smartwindow-resume-section
                     .cards=${this.resumeCards}

@@ -7,6 +7,10 @@ const { ToolUI } = ChromeUtils.importESModule(
   "moz-src:///browser/components/aiwindow/ui/modules/ToolUI.sys.mjs"
 );
 
+const { MockEngineManager } = ChromeUtils.importESModule(
+  "resource://testing-common/AIWindowTestUtils.sys.mjs"
+);
+
 let win;
 
 add_setup(async function () {
@@ -155,7 +159,6 @@ describe("Resume card actions", () => {
       ({ card } = await waitForResumeCard(aiWindow));
     });
 
-    // The same resume flow as a pill click.
     it("resumes in the same conversation with a confirmation card", async () => {
       const conversationIdAtClick = aiWindow.conversationId;
       Services.fog.testResetFOG();
@@ -185,11 +188,35 @@ describe("Resume card actions", () => {
         conversationIdAtClick,
         "Should resume in the conversation the card was clicked in"
       );
-      const assistantMessage = aiWindow.conversation.messages.at(-1);
+      const userMessage = aiWindow.conversation.messages.findLast(
+        message => message.role === MESSAGE_ROLE.USER
+      );
+      const submitEvents = Glean.smartWindow.chatSubmit.testGetValue();
       Assert.equal(
-        assistantMessage.toolUIData?.uiType,
-        "tab-group-confirmation",
-        "Clicking the card should attach the same confirmation card as a resume pill"
+        submitEvents?.length,
+        1,
+        "Resume card click records a single chat submit event"
+      );
+      Assert.equal(
+        submitEvents[0].extra.submit_type,
+        "resume",
+        "Resume card click records submit_type resume"
+      );
+      Assert.equal(
+        submitEvents[0].extra.chat_id,
+        conversationIdAtClick,
+        "Chat submit event carries the clicked conversation id"
+      );
+      Assert.equal(
+        submitEvents[0].extra.length,
+        String(userMessage.content.body.length),
+        "Chat submit event measures the resume-activity user turn"
+      );
+      const assistantMessage = aiWindow.conversation.messages.at(-1);
+      Assert.deepEqual(
+        assistantMessage.toolUIData,
+        EXPECTED_RESUME_TOOL_UI_DATA,
+        "Should attach a tab-selection confirmation card built from the card's preview tabs"
       );
       // fetchWithHistory is stubbed, so stand in for a streamed update.
       aiWindow.conversation.emit(
@@ -204,6 +231,171 @@ describe("Resume card actions", () => {
         prompt.extra.entrypoint,
         "resume",
         "The confirmation card's prompt records the resume entrypoint"
+      );
+    });
+  });
+
+  describe("when a card is resumed", () => {
+    it("injects real-time context into the user message", async () => {
+      sandbox.stub(openAIEngine, "build").resolves({});
+      const fetchWithHistory = sandbox
+        .stub(Chat, "fetchWithHistory")
+        .resolves();
+      const realTimeStub = sandbox
+        .stub(ChatConversation.prototype, "injectRealTimeContext")
+        .resolves();
+
+      await testResumeActivityClick(sandbox, async ({ resumeCard }) => {
+        clickResumeCard(resumeCard);
+
+        await TestUtils.waitForCondition(
+          () => fetchWithHistory.calledOnce,
+          "Should generate a response for the resume-activity conversation"
+        );
+
+        Assert.ok(
+          realTimeStub.calledOnce,
+          "Should inject real-time context onto the resume-activity user message"
+        );
+      });
+    });
+
+    it("marks the memory that drove it as applied", async () => {
+      let mockEngineManager;
+      try {
+        await testResumeActivityClick(
+          sandbox,
+          async ({ browser, resumeCard }) => {
+            // MockEngineManager stubs getToken itself.
+            AuthProvider.getToken.restore();
+            mockEngineManager = new MockEngineManager();
+            clickResumeCard(resumeCard);
+            await mockEngineManager.respondTo({
+              purpose: "chat",
+              response: "Sure, here's an update.",
+            });
+
+            const aichatBrowser = await getAichatBrowser(browser);
+
+            await SpecialPowers.spawn(aichatBrowser, [], async () => {
+              const chatRoot = await ContentTaskUtils.waitForCondition(
+                () =>
+                  content.document.querySelector("ai-chat-content")?.shadowRoot,
+                "Wait for chat content shadow root"
+              );
+
+              await ContentTaskUtils.waitForMutationCondition(
+                chatRoot,
+                { childList: true, subtree: true },
+                () => chatRoot.querySelector("assistant-message-footer")
+              );
+              let appliedButton;
+              await ContentTaskUtils.waitForCondition(() => {
+                const button = chatRoot
+                  .querySelector("assistant-message-footer")
+                  ?.shadowRoot?.querySelector("applied-memories-button");
+                // Unwrap the content element so Lit's prototype-backed
+                // properties are visible through SpecialPowers.
+                appliedButton = button?.wrappedJSObject ?? button;
+                return appliedButton?.appliedMemories?.length;
+              }, "Wait for the resume-activity memory to be marked applied");
+
+              Assert.equal(
+                appliedButton.appliedMemories.length,
+                1,
+                "Resume-activity response should have exactly one applied memory"
+              );
+              Assert.equal(
+                appliedButton.appliedMemories[0].memory_summary,
+                "Research project",
+                "Applied memory should be the one that drove the resume-activity conversation"
+              );
+            });
+          }
+        );
+      } finally {
+        await mockEngineManager?.rejectAllRequests();
+        mockEngineManager?.cleanupMocks();
+      }
+    });
+
+    it("still shows the confirmation card with memories toggled off", async () => {
+      const engineBuild = sandbox
+        .stub(openAIEngine, "build")
+        .resolves({ model: "stub-resume-model" });
+      const fetchWithHistory = sandbox
+        .stub(Chat, "fetchWithHistory")
+        .resolves();
+      // The engine's model drives system prompt assembly, so record which
+      // model each load ran against.
+      const modelsAtPromptLoad = [];
+      const loadSystemPrompt = ChatConversation.prototype.loadSystemPrompt;
+      sandbox
+        .stub(ChatConversation.prototype, "loadSystemPrompt")
+        .callsFake(function (...args) {
+          modelsAtPromptLoad.push(this.engine?.model ?? null);
+          return loadSystemPrompt.apply(this, args);
+        });
+
+      await testResumeActivityClick(
+        sandbox,
+        async ({ aiWindow, resumeCard }) => {
+          const memoriesButton = aiWindow.shadowRoot.querySelector(
+            "memories-icon-button"
+          );
+          memoriesButton.dispatchEvent(
+            new CustomEvent("aiwindow-memories-toggle:on-change", {
+              bubbles: true,
+              composed: true,
+              detail: { pressed: false },
+            })
+          );
+          await TestUtils.waitForCondition(
+            () => memoriesButton.pressed === false,
+            "Memories toggle should turn off"
+          );
+
+          const conversationIdAtClick = aiWindow.conversationId;
+          engineBuild.resetHistory();
+          modelsAtPromptLoad.length = 0;
+          clickResumeCard(resumeCard);
+
+          await TestUtils.waitForCondition(
+            () => fetchWithHistory.calledOnce,
+            "Should generate a response for the resume-activity conversation"
+          );
+
+          Assert.equal(
+            aiWindow.conversationId,
+            conversationIdAtClick,
+            "Should resume in the conversation the card was clicked in on the memory-free path"
+          );
+          Assert.equal(
+            engineBuild.callCount,
+            1,
+            "Should build the engine once, in the response path, not in the conversation builder"
+          );
+          Assert.equal(
+            aiWindow.conversation.engine.model,
+            "stub-resume-model",
+            "Should run the memory-free conversation on the engine the response path built"
+          );
+          Assert.equal(
+            modelsAtPromptLoad.at(-1),
+            "stub-resume-model",
+            "Should assemble the final system prompt for the built engine's model"
+          );
+          Assert.deepEqual(
+            aiWindow.conversation.messages.at(-1).toolUIData,
+            EXPECTED_RESUME_TOOL_UI_DATA,
+            "Should still attach a tab-selection confirmation card when memories are toggled off"
+          );
+          Assert.ok(
+            !aiWindow.conversation.messages.at(-2).content.userContext
+              ?.resumeActivityContext,
+            "Should not bake memory context into the conversation when memories are toggled off"
+          );
+        }
       );
     });
   });

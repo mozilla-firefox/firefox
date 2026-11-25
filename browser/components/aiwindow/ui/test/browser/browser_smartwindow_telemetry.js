@@ -19,13 +19,6 @@ const { MockEngineManager } = ChromeUtils.importESModule(
   "resource://testing-common/AIWindowTestUtils.sys.mjs"
 );
 
-// Resume pills only show when resume cards are off.
-add_setup(async function () {
-  await SpecialPowers.pushPrefEnv({
-    set: [["browser.smartwindow.resumeCards.enabled", false]],
-  });
-});
-
 async function dispatchSmartbarCommit(browser, value, action) {
   await SpecialPowers.spawn(browser, [value, action], async (val, act) => {
     const aiWindow = await ContentTaskUtils.waitForCondition(
@@ -361,15 +354,15 @@ add_task(async function test_prompt_selected_telemetry() {
   }
 });
 
-add_task(async function test_resume_prompt_click_starter_type_telemetry() {
+add_task(async function test_resume_card_click_starter_type_telemetry() {
   const sb = sinon.createSandbox();
   try {
     Services.fog.testResetFOG();
     sb.stub(openAIEngine, "build").resolves({});
     sb.stub(Chat, "fetchWithHistory").resolves();
 
-    await testResumeActivityClick(sb, async ({ buttons }) => {
-      buttons[0].click();
+    await testResumeActivityClick(sb, async ({ resumeCard }) => {
+      clickResumeCard(resumeCard);
 
       const events = await TestUtils.waitForCondition(
         () => Glean.smartWindow.quickPromptClicked.testGetValue(),
@@ -380,101 +373,21 @@ add_task(async function test_resume_prompt_click_starter_type_telemetry() {
       Assert.equal(
         events[0].extra.location,
         "fullpage",
-        "Resume pill click records location fullpage"
+        "Resume card click records location fullpage"
       );
       Assert.equal(
         events[0].extra.starter,
         "true",
-        "Resume pill click records starter true"
+        "Resume card click records starter true"
       );
       Assert.equal(
         events[0].extra.starter_type,
         "resume",
-        "Resume pill click records starter_type resume"
+        "Resume card click records starter_type resume"
       );
     });
   } finally {
     sb.restore();
-  }
-});
-
-add_task(async function test_dismiss_telemetry() {
-  const sb = sinon.createSandbox();
-  try {
-    Services.fog.testResetFOG();
-
-    await testResumeActivityClick(sb, async ({ browser }) => {
-      const conversationId = await getConversationId(browser);
-      const dismissButton = await getDismissButton(browser);
-      dismissButton.click();
-
-      const events = await TestUtils.waitForCondition(
-        () => Glean.smartWindow.quickPromptDismissed.testGetValue(),
-        "Wait for quick prompt dismissed event"
-      );
-
-      Assert.equal(events.length, 1, "One prompt dismissed event was recorded");
-      Assert.equal(
-        events[0].extra.chat_id,
-        conversationId,
-        "Dismissed event includes the conversation id"
-      );
-    });
-  } finally {
-    sb.restore();
-  }
-});
-
-add_task(async function test_fullpage_resume_starters_displayed_telemetry() {
-  const sb = sinon.createSandbox();
-  let win;
-
-  Services.fog.testResetFOG();
-  await SpecialPowers.pushPrefEnv({
-    set: [
-      ["browser.smartwindow.memories.generateFromConversation", true],
-      ["browser.smartwindow.memories.generateFromHistory", true],
-    ],
-  });
-
-  let resumeActivityStubs;
-  try {
-    resumeActivityStubs = await stubResumeActivityGeneration(sb);
-    win = await openAIWindow();
-    const browser = win.gBrowser.selectedBrowser;
-    await getPromptButtons(browser);
-
-    const aiWindow = browser.contentDocument.querySelector("ai-window");
-    const promptsEl = aiWindow.shadowRoot.querySelector("smartwindow-prompts");
-    const promptCount = promptsEl.prompts.length;
-    const resumeCount = promptsEl.prompts.filter(
-      prompt => prompt.type === "resume"
-    ).length;
-
-    const events = Glean.smartWindow.quickPromptDisplayed.testGetValue();
-    Assert.greater(
-      events?.length,
-      0,
-      "At least one quick prompt displayed event was recorded"
-    );
-    const lastEvent = events.at(-1);
-    Assert.equal(
-      lastEvent.extra.prompts,
-      String(promptCount),
-      "Displayed event includes the total prompt count"
-    );
-    Assert.equal(
-      lastEvent.extra.resume_prompts,
-      String(resumeCount),
-      "Displayed event includes the resume-pill-only count"
-    );
-  } finally {
-    if (win) {
-      await BrowserTestUtils.closeWindow(win);
-    }
-    sb.restore();
-    await resumeActivityStubs?.cleanup();
-    await SpecialPowers.popPrefEnv();
   }
 });
 

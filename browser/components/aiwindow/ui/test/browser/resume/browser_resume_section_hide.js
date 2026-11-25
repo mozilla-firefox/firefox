@@ -14,17 +14,7 @@ describe("Hiding the resume section", () => {
     _resetResumeSectionHiddenForTesting();
   });
 
-  describe("with resume cards enabled", () => {
-    beforeEach(async () => {
-      await SpecialPowers.pushPrefEnv({
-        set: [["browser.smartwindow.resumeCards.enabled", true]],
-      });
-    });
-
-    afterEach(async () => {
-      await SpecialPowers.popPrefEnv();
-    });
-
+  describe("across tabs", () => {
     it("keeps it hidden in tabs opened later this session", async () => {
       ResumeActivity.hideSectionForSession();
 
