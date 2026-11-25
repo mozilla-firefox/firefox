@@ -36,6 +36,9 @@
 #endif
 
 #ifdef MOZ_WIDGET_ANDROID
+#  include "AndroidDataEncoder.h"
+#  include "AndroidEncoderModule.h"
+
 // Create/init a H.264 encoder and check if it's SW.
 #  define SKIP_IF_ANDROID_SW()                                                \
     do {                                                                      \
@@ -1195,8 +1198,8 @@ TEST(AppleVTEncoderTest, ReadsBackIOSurfaceWithoutPixelFormat)
 }  // namespace mozilla
 #endif
 
-// For Android HW encoder only.
 #ifdef MOZ_WIDGET_ANDROID
+// For Android HW encoder only.
 TEST_F(MediaDataEncoderTest, AndroidNotSupportedSize) {
   SKIP_IF_ANDROID_SW();
   RUN_IF_SUPPORTED(CodecType::H264, []() {
@@ -1207,6 +1210,158 @@ TEST_F(MediaDataEncoderTest, AndroidNotSupportedSize) {
     EXPECT_FALSE(EnsureInit(e));
   });
 }
+
+// Frames whose size differs from the configured encode size must be scaled to
+// the configured size, as the other platform encoders do, rather than being
+// handed to the codec as-is.
+TEST_F(MediaDataEncoderTest, AndroidScalesInputToConfiguredSize) {
+  // Pin module selection so the factory hands out the Android encoder rather
+  // than a software fallback; the identity check below guards the rest.
+  ScopedPrefSetter encoderPrefs({
+      {"media.android-media-codec.enabled", true},
+      {"media.gmp.encoder.preferred", false},
+  });
+
+  RUN_IF_SUPPORTED(CodecType::H264, [this]() {
+    // Macroblock-aligned, so the encoded size is exactly the configured one,
+    // and small enough that the submitted frames cannot pass through unscaled.
+    const gfx::IntSize configSize(320, 192);
+
+    RefPtr<MediaDataEncoder> e = CreateH264Encoder(
+        Usage::Realtime, EncoderConfig::SampleFormat(ImagePixelFormat::I420),
+        configSize, ScalabilityMode::None, AsVariant(kH264SpecificAnnexB));
+    ASSERT_TRUE(e);
+    ASSERT_TRUE(e->GetDescriptionName().EqualsLiteral("Android Encoder"));
+    ASSERT_TRUE(EnsureInit(e));
+
+    MediaDataEncoder::EncodedData output =
+        GET_OR_RETURN_ON_ERROR(Encode(e, 1UL, mData));
+    WaitForShutdown(e);
+    // Wrapped so a fatal assertion in the helper, e.g. an empty output, aborts
+    // this test rather than falling through to the output[0] access below.
+    ASSERT_NO_FATAL_FAILURE(
+        CheckH264EncodeOutput(output, 1, 1, Usage::Realtime,
+                              /* aIs4KOrLarger */ false, /* aIsAVCC */ false,
+                              /* aToleratesKeyframeDrop */ false));
+
+    // Read the encoded size back from the SPS in the bitstream.
+    nsTArray<AnnexB::NALEntry> nals;
+    AnnexB::ParseNALEntries(*output[0], nals);
+    size_t spsIndex = AnnexB::FindNalType(*output[0], nals, H264_NAL_SPS, 0);
+    size_t ppsIndex = AnnexB::FindNalType(*output[0], nals, H264_NAL_PPS, 0);
+    ASSERT_NE(spsIndex, SIZE_MAX);
+    ASSERT_NE(ppsIndex, SIZE_MAX);
+
+    const Span<const uint8_t> frame(output[0]->Data(), output[0]->Size());
+    const Span<const uint8_t> spsNal =
+        frame.Subspan(static_cast<size_t>(nals[spsIndex].mOffset),
+                      static_cast<size_t>(nals[spsIndex].mSize));
+    const Span<const uint8_t> ppsNal =
+        frame.Subspan(static_cast<size_t>(nals[ppsIndex].mOffset),
+                      static_cast<size_t>(nals[ppsIndex].mSize));
+
+    RefPtr<MediaByteBuffer> extraData = new MediaByteBuffer();
+    H264::WriteExtraData(extraData, spsNal[1], spsNal[2], spsNal[3], spsNal,
+                         ppsNal);
+    SPSData sps;
+    ASSERT_TRUE(H264::DecodeSPSFromExtraData(extraData, sps));
+    EXPECT_EQ(sps.pic_width, static_cast<uint32_t>(configSize.width));
+    EXPECT_EQ(sps.pic_height, static_cast<uint32_t>(configSize.height));
+  });
+}
+
+namespace mozilla {  // For FRIEND_TEST
+
+TEST_F(MediaDataEncoderTest, AndroidDoesNotWriteBeyondConfiguredFrame) {
+  const gfx::IntSize configSize(320, 192);
+  const gfx::IntSize inputSize(640, 480);
+
+  FrameSource input;
+  input.Init(inputSize);
+
+  const EncoderConfig config(
+      CodecType::H264, configSize, Usage::Realtime,
+      EncoderConfig::SampleFormat(ImagePixelFormat::I420), FRAME_RATE,
+      KEYFRAME_INTERVAL, BIT_RATE, 0, 0, BIT_RATE_MODE,
+      HardwarePreference::None, ScalabilityMode::None,
+      AsVariant(kH264SpecificAnnexB));
+
+  const RefPtr<PlatformEncoderModule> module = new AndroidEncoderModule();
+  if (module->Supports(config).isEmpty()) {
+    return;
+  }
+
+  const RefPtr<TaskQueue> taskQueue(
+      TaskQueue::Create(GetMediaThreadPool(MediaThreadType::PLATFORM_ENCODER),
+                        "TestMediaDataEncoder"));
+  RefPtr<AndroidDataEncoder> encoder =
+      MakeRefPtr<AndroidDataEncoder>(config, taskQueue);
+  ASSERT_TRUE(EnsureInit(encoder));
+
+  // A zero means the codec expressed no preference, so the configured frame's
+  // own dimensions apply.
+  const int32_t stride =
+      std::max(encoder->mJavaEncoder->GetInputFormatStride(), configSize.width);
+  const int32_t sliceHeight = std::max(
+      encoder->mJavaEncoder->GetInputFormatYPlaneHeight(), configSize.height);
+
+  const size_t chromaWidth = (configSize.width + 1) / 2;
+  const size_t chromaHeight = (configSize.height + 1) / 2;
+  const size_t configuredExtent =
+      static_cast<size_t>(stride) * sliceHeight +
+      static_cast<size_t>(stride) * (chromaHeight - 1) + chromaWidth * 2;
+
+  // Comfortably larger than any layout the encoder can derive from either the
+  // configured or the submitted frame, so it never needs to reallocate.
+  const size_t bufferSize =
+      static_cast<size_t>(inputSize.width) * inputSize.height * 3;
+  ASSERT_LT(configuredExtent, bufferSize);
+
+  // Fill the buffer with the poison value to detect any overwrites.
+  const uint8_t kPoison = 0xe4;  // Apply ASan's malloc fill byte
+  RefPtr<MediaByteBuffer> buffer = MakeRefPtr<MediaByteBuffer>(bufferSize);
+  buffer->SetLength(bufferSize);
+  std::fill_n(buffer->Elements(), bufferSize, kPoison);
+
+  MOZ_ALWAYS_SUCCEEDS(NS_DispatchAndSpinEventLoopUntilComplete(
+      "TestMediaDataEncoder::PresetBuffer"_ns, taskQueue,
+      NS_NewRunnableFunction("TestMediaDataEncoder::PresetBuffer",
+                             [&]() { encoder->mYUVBuffer = buffer; })));
+
+  // The encode itself may fail, since the preset length is reported to the
+  // codec as the input size. The conversion has already run by then.
+  (void)Encode(encoder, 1UL, input);
+
+  bool reusedPresetBuffer = false;
+  MOZ_ALWAYS_SUCCEEDS(NS_DispatchAndSpinEventLoopUntilComplete(
+      "TestMediaDataEncoder::ReadBuffer"_ns, taskQueue,
+      NS_NewRunnableFunction("TestMediaDataEncoder::ReadBuffer", [&]() {
+        reusedPresetBuffer = encoder->mYUVBuffer == buffer;
+      })));
+  WaitForShutdown(encoder);
+
+  // Without this the scan below would pass without proving anything.
+  ASSERT_TRUE(reusedPresetBuffer)
+  << "encoder replaced the preset buffer instead of reusing it";
+
+  size_t firstWritten = bufferSize;
+  size_t lastWritten = bufferSize;
+  for (size_t i = configuredExtent; i < bufferSize; ++i) {
+    if (buffer->Elements()[i] != kPoison) {
+      if (firstWritten == bufferSize) {
+        firstWritten = i;
+      }
+      lastWritten = i;
+    }
+  }
+  EXPECT_EQ(firstWritten, bufferSize)
+      << configSize.width << "x" << configSize.height << " needs "
+      << configuredExtent << " bytes at stride " << stride
+      << " and slice height " << sliceHeight << ", but offsets " << firstWritten
+      << " to " << lastWritten << " were written";
+}
+
+}  // namespace mozilla
 #endif
 
 #if !(defined(MOZ_WIDGET_GTK) && defined(__i386__))

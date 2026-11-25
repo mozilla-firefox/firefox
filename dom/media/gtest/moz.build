@@ -11,6 +11,7 @@ LOCAL_INCLUDES += [
     "!/xpcom/components",
     "/dom/media/driftcontrol",
     "/dom/media/mediasink",
+    "/dom/media/platforms/android",
     "/dom/media/systemservices",
     "/dom/media/webrtc",
     "/dom/media/webrtc/common",
