@@ -1447,7 +1447,8 @@ already_AddRefed<nsPIDOMWindowInner> EventListenerManager::WindowFromListener(
     } else if (mTarget) {
       // This ensures `window.event` can be set properly for
       // nsWindowRoot to handle KeyPress event.
-      if (aTypeAtom == nsGkAtoms::onkeypress && mTarget->IsRootWindow()) {
+      if (aListener && aTypeAtom == nsGkAtoms::onkeypress &&
+          mTarget->IsRootWindow()) {
         nsPIWindowRoot* root = mTarget->AsWindowRoot();
         if (nsPIDOMWindowOuter* outerWindow = root->GetWindow()) {
           innerWindow = outerWindow->GetCurrentInnerWindow();

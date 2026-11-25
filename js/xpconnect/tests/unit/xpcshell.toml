@@ -417,9 +417,6 @@ head = "head_watchdog.js"
 
 ["test_xpcomutils.js"]
 
-["test_xpcshell_piped_stdin.js"]
-skip-if = ["os == 'android'"]
-
 ["test_xpcwn_instanceof.js"]
 
 ["test_xpcwn_tamperproof.js"]

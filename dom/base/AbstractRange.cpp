@@ -119,7 +119,7 @@ void AbstractRange::UpdateDescendantsInFlattenedTree(nsINode& aNode,
     }
   }
 
-  if (!target->IsContent()) {
+  if (!target || !target->IsContent()) {
     return;
   }
 

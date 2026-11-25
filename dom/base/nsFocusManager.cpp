@@ -938,7 +938,7 @@ static void UpdateFocusWithinState(Element* aElement,
                                    bool aGettingFocus) {
   Element* focusedElement = nullptr;
   Document* document = aElement->GetComposedDoc();
-  if (document) {
+  if (aElement && document) {
     if (nsPIDOMWindowOuter* window = document->GetWindow()) {
       focusedElement = window->GetFocusedElement();
     }

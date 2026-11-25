@@ -6584,7 +6584,7 @@ nsresult EventStateManager::DispatchClickEvents(
   MOZ_ASSERT(aMouseUpEvent);
   MOZ_ASSERT(EventCausesClickEvents(*aMouseUpEvent));
   MOZ_ASSERT(aStatus);
-  MOZ_ASSERT(aClickTarget);
+  MOZ_ASSERT(aClickTarget || aOverrideClickTarget);
 
   bool notDispatchToContents =
       (aMouseUpEvent->mButton == MouseButton::eMiddle ||
@@ -6605,7 +6605,7 @@ nsresult EventStateManager::DispatchClickEvents(
 
   // Fire auxclick event if necessary.
   if (fireAuxClick && *aStatus != nsEventStatus_eConsumeNoDefault &&
-      aClickTarget->IsInComposedDoc()) {
+      aClickTarget && aClickTarget->IsInComposedDoc()) {
     rv = InitAndDispatchClickEvent(aMouseUpEvent, aStatus, ePointerAuxClick,
                                    aPresShell, aClickTarget, currentTarget,
                                    false, aOverrideClickTarget);
@@ -6614,7 +6614,7 @@ nsresult EventStateManager::DispatchClickEvents(
   }
 
   // Fire double click event if click count is 2.
-  if (aMouseUpEvent->mClickCount == 2 && !fireAuxClick &&
+  if (aMouseUpEvent->mClickCount == 2 && !fireAuxClick && aClickTarget &&
       aClickTarget->IsInComposedDoc()) {
     rv = InitAndDispatchClickEvent(aMouseUpEvent, aStatus, eMouseDoubleClick,
                                    aPresShell, aClickTarget, currentTarget,
