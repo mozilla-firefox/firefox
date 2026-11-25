@@ -11954,7 +11954,7 @@ static bool StartSerializingShadowDOM(
   if (StaticPrefs::dom_shadowdom_referenceTarget_enabled() &&
       shadow->HasReferenceTarget()) {
     aBuilder.Append(u" shadowrootreferencetarget=\"");
-    aBuilder.Append(shadow->ReferenceTarget());
+    AppendEncodedAtomAttributeValue(shadow->ReferenceTarget(), aBuilder);
     aBuilder.Append(u"\"");
   }
 
