@@ -8381,13 +8381,27 @@ fn process_invalidation_result(element: GeckoElement, result: &InvalidationResul
         unsafe { bindings::Gecko_NoteDirtySubtreeForInvalidation(element.0) };
     } else if result.has_invalidated_self() {
         unsafe { bindings::Gecko_NoteDirtyElement(element.0) };
-        let flags = element
-            .parent_element()
-            .map_or(ElementSelectorFlags::empty(), |e| e.slow_selector_flags());
-        // We invalidated up to the anchor, and it has a flag for nth-of invalidation.
-        if !flags.is_empty() {
-            restyle_for_nth_of(element, flags);
-        }
+    }
+}
+
+fn process_relative_selector_invalidation_result(
+    element: GeckoElement,
+    result: &InvalidationResult,
+) {
+    process_invalidation_result(element, result);
+
+    if result.has_invalidated_siblings_or_sibling_descendants()
+        || result.has_invalidated_descendants()
+        || !result.has_invalidated_self()
+    {
+        return;
+    }
+    let flags = element
+        .parent_element()
+        .map_or(ElementSelectorFlags::empty(), |e| e.slow_selector_flags());
+    // We invalidated up to the anchor, and it has a flag for nth-of invalidation.
+    if !flags.is_empty() {
+        restyle_for_nth_of(element, flags);
     }
 }
 
@@ -8447,7 +8461,7 @@ pub extern "C" fn Servo_StyleSet_MaybeInvalidateRelativeSelectorIDDependency(
         element,
         quirks_mode,
         snapshots: Some(&snapshots),
-        invalidated: process_invalidation_result,
+        invalidated: process_relative_selector_invalidation_result,
         sibling_traversal_map: SiblingTraversalMap::default(),
     };
 
@@ -8490,7 +8504,7 @@ pub extern "C" fn Servo_StyleSet_MaybeInvalidateRelativeSelectorClassDependency(
         element,
         quirks_mode,
         snapshots: Some(&snapshots),
-        invalidated: process_invalidation_result,
+        invalidated: process_relative_selector_invalidation_result,
         sibling_traversal_map: SiblingTraversalMap::default(),
     };
 
@@ -8536,7 +8550,7 @@ pub extern "C" fn Servo_StyleSet_MaybeInvalidateRelativeSelectorAttributeDepende
                 element,
                 quirks_mode,
                 snapshots: Some(&snapshots),
-                invalidated: process_invalidation_result,
+                invalidated: process_relative_selector_invalidation_result,
                 sibling_traversal_map: SiblingTraversalMap::default(),
             };
 
@@ -8577,7 +8591,7 @@ pub extern "C" fn Servo_StyleSet_MaybeInvalidateRelativeSelectorStateDependency(
         element,
         quirks_mode,
         snapshots: Some(&snapshots),
-        invalidated: process_invalidation_result,
+        invalidated: process_relative_selector_invalidation_result,
         sibling_traversal_map: SiblingTraversalMap::default(),
     };
 
@@ -8614,7 +8628,7 @@ pub extern "C" fn Servo_StyleSet_MaybeInvalidateRelativeSelectorCustomStateDepen
         element,
         quirks_mode,
         snapshots: Some(&snapshots),
-        invalidated: process_invalidation_result,
+        invalidated: process_relative_selector_invalidation_result,
         sibling_traversal_map: SiblingTraversalMap::default(),
     };
 
@@ -8643,7 +8657,7 @@ fn invalidate_relative_selector_prev_sibling_side_effect(
         element: prev_sibling,
         quirks_mode,
         snapshots: None,
-        invalidated: process_invalidation_result,
+        invalidated: process_relative_selector_invalidation_result,
         sibling_traversal_map,
     };
     invalidator.invalidate_relative_selectors_for_dom_mutation(
@@ -8664,7 +8678,7 @@ fn invalidate_relative_selector_next_sibling_side_effect(
         element: next_sibling,
         quirks_mode,
         snapshots: None,
-        invalidated: process_invalidation_result,
+        invalidated: process_relative_selector_invalidation_result,
         sibling_traversal_map,
     };
     invalidator.invalidate_relative_selectors_for_dom_mutation(
@@ -8686,7 +8700,7 @@ fn invalidate_relative_selector_ts_dependency(
         element,
         quirks_mode,
         snapshots: None,
-        invalidated: process_invalidation_result,
+        invalidated: process_relative_selector_invalidation_result,
         sibling_traversal_map: SiblingTraversalMap::default(),
     };
 
@@ -8847,7 +8861,7 @@ pub extern "C" fn Servo_StyleSet_MaybeInvalidateRelativeSelectorForInsertion(
         element,
         quirks_mode,
         snapshots: None,
-        invalidated: process_invalidation_result,
+        invalidated: process_relative_selector_invalidation_result,
         sibling_traversal_map: SiblingTraversalMap::default(),
     };
 
@@ -8890,7 +8904,7 @@ pub extern "C" fn Servo_StyleSet_MaybeInvalidateRelativeSelectorForAppend(
             quirks_mode,
             snapshots: None,
             sibling_traversal_map: SiblingTraversalMap::default(),
-            invalidated: process_invalidation_result,
+            invalidated: process_relative_selector_invalidation_result,
         };
         invalidator.invalidate_relative_selectors_for_dom_mutation(
             true,
@@ -8966,7 +8980,7 @@ pub extern "C" fn Servo_StyleSet_MaybeInvalidateRelativeSelectorForRemoval(
         quirks_mode,
         snapshots: None,
         sibling_traversal_map: SiblingTraversalMap::default(),
-        invalidated: process_invalidation_result,
+        invalidated: process_relative_selector_invalidation_result,
     };
     invalidator.invalidate_relative_selectors_for_dom_mutation(
         true,
@@ -9337,7 +9351,7 @@ fn process_relative_selector_invalidations(
     let invalidator = RelativeSelectorInvalidator {
         element: *element,
         quirks_mode,
-        invalidated: process_invalidation_result,
+        invalidated: process_relative_selector_invalidation_result,
         sibling_traversal_map: SiblingTraversalMap::default(),
         snapshots: Some(&snapshots),
     };
@@ -9397,7 +9411,7 @@ fn process_relative_selector_invalidations(
 }
 
 #[unsafe(no_mangle)]
-pub extern "C" fn Servo_ProcessInvalidations(
+pub extern "C" fn Servo_ProcessSnapshotInvalidations(
     set: &PerDocumentStyleData,
     element: &RawGeckoElement,
     snapshots: *const ServoElementSnapshotTable,
