@@ -187,7 +187,7 @@ object SettingsSelectors : SelectorContainer {
 
     val LANGUAGE_BUTTON =
         Selector(
-            strategy = SelectorStrategy.ESPRESSO_BY_TEXT,
+            strategy = SelectorStrategy.UIAUTOMATOR_WITH_TEXT,
             value = getStringResource(R.string.preferences_language),
             description = "the Language button",
             groups = setOf(Group.GENERAL_SETTINGS_SECTION),
