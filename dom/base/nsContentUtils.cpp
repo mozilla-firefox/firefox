@@ -183,7 +183,6 @@
 #include "mozilla/dom/FileBlobImpl.h"
 #include "mozilla/dom/FileSystemSecurity.h"
 #include "mozilla/dom/FilteredNodeIterator.h"
-#include "mozilla/dom/FluentWarningMessage.h"
 #include "mozilla/dom/FormData.h"
 #include "mozilla/dom/FragmentOrElement.h"
 #include "mozilla/dom/FromParser.h"
@@ -247,7 +246,6 @@
 #endif
 #include "mozilla/dom/ContentList.h"
 #include "mozilla/intl/LocaleService.h"
-#include "mozilla/intl/Localization.h"
 #include "mozilla/ipc/ProtocolUtils.h"
 #include "mozilla/widget/IMEData.h"
 #include "nsAboutProtocolUtils.h"
@@ -464,15 +462,6 @@ static constexpr size_t kPropertiesFileCount =
     static_cast<size_t>(PropertiesFile::COUNT);
 
 static StaticRefPtr<nsIStringBundle> sStringBundles[kPropertiesFileCount];
-
-static constexpr size_t kFluentResourceFileCount =
-    static_cast<size_t>(FluentResourceFile::_COUNT);
-
-// Indexed by [spoofEnglish][FluentResourceFile], e.g.
-// sLocalizations[true][size_t(FluentResourceFile::DOM)] is the en-US only
-// Localization for dom/dom.ftl.
-static StaticRefPtr<intl::Localization>
-    sLocalizations[2][kFluentResourceFileCount];
 
 nsIContentPolicy* nsContentUtils::sContentPolicyService;
 bool nsContentUtils::sTriedToGetContentPolicy = false;
@@ -2435,11 +2424,6 @@ void nsContentUtils::Shutdown() {
   sTriedToGetContentPolicy = false;
   for (StaticRefPtr<nsIStringBundle>& bundle : sStringBundles) {
     bundle = nullptr;
-  }
-  for (auto& localizations : sLocalizations) {
-    for (StaticRefPtr<intl::Localization>& l10n : localizations) {
-      l10n = nullptr;
-    }
   }
 
   NS_IF_RELEASE(sStringBundleService);
@@ -5934,146 +5918,6 @@ nsresult nsContentUtils::FormatLocalizedString(
   return bundle->FormatStringFromName(aKey, aParams, aResult);
 }
 
-// Must line up with the enum values in |FluentResourceFile| enum. Each entry
-// lists the Fluent resources to load, including the ones referenced by the
-// messages, like branding.
-static const char* const gFluentResourceFilePaths[][2] = {
-    {"dom/dom.ftl"},
-    {"dom/deprecations.ftl"},
-    {"dom/dialogs.ftl", "branding/brand.ftl"},
-    {"dom/form-validation.ftl"},
-};
-static_assert(std::size(gFluentResourceFilePaths) == kFluentResourceFileCount,
-              "gFluentResourceFilePaths must have an entry for each "
-              "FluentResourceFile");
-
-static nsresult FormatFluentStringImpl(FluentResourceFile aFile,
-                                       const nsACString& aL10nId,
-                                       const nsTArray<intl::FluentArg>& aArgs,
-                                       bool aSpoofEnglish, nsAString& aResult);
-
-class FormatFluentStringRunnable final : public WorkerMainThreadRunnable {
- public:
-  FormatFluentStringRunnable(WorkerPrivate* aWorkerPrivate,
-                             FluentResourceFile aFile,
-                             const nsACString& aL10nId,
-                             const nsTArray<intl::FluentArg>& aArgs,
-                             bool aSpoofEnglish, nsAString& aLocalizedString)
-      : WorkerMainThreadRunnable(aWorkerPrivate,
-                                 "FormatFluentStringRunnable"_ns),
-        mFile(aFile),
-        mL10nId(aL10nId),
-        mArgs(aArgs),
-        mSpoofEnglish(aSpoofEnglish),
-        mLocalizedString(aLocalizedString) {
-    MOZ_ASSERT(aWorkerPrivate);
-    aWorkerPrivate->AssertIsOnWorkerThread();
-  }
-
-  bool MainThreadRun() override {
-    AssertIsOnMainThread();
-
-    mResult = FormatFluentStringImpl(mFile, mL10nId, mArgs, mSpoofEnglish,
-                                     mLocalizedString);
-    (void)NS_WARN_IF(NS_FAILED(mResult));
-    return true;
-  }
-
-  nsresult GetResult() const { return mResult; }
-
- private:
-  const FluentResourceFile mFile;
-  const nsACString& mL10nId;
-  const nsTArray<intl::FluentArg>& mArgs;
-  const bool mSpoofEnglish;
-  nsresult mResult = NS_ERROR_FAILURE;
-  nsAString& mLocalizedString;
-};
-
-static already_AddRefed<intl::Localization> GetFluentLocalization(
-    FluentResourceFile aFile, bool aSpoofEnglish) {
-  MOZ_ASSERT(NS_IsMainThread());
-  StaticRefPtr<intl::Localization>& cached =
-      sLocalizations[aSpoofEnglish][size_t(aFile)];
-  if (!cached) {
-    AutoTArray<nsCString, 2> resIds;
-    for (const char* resId : gFluentResourceFilePaths[size_t(aFile)]) {
-      if (!resId) {
-        break;
-      }
-      resIds.AppendElement(nsDependentCString(resId));
-    }
-    if (aSpoofEnglish) {
-      // en-US Fluent resources are always packaged, including in repacks.
-      AutoTArray<nsCString, 1> langs = {nsRFPService::GetSpoofedJSLocale()};
-      cached = intl::Localization::Create(resIds, true, langs);
-    } else {
-      cached = intl::Localization::Create(resIds, true);
-    }
-  }
-  return do_AddRef(cached.get());
-}
-
-static nsresult FormatFluentStringImpl(FluentResourceFile aFile,
-                                       const nsACString& aL10nId,
-                                       const nsTArray<intl::FluentArg>& aArgs,
-                                       bool aSpoofEnglish, nsAString& aResult) {
-  if (!NS_IsMainThread()) {
-    // Localization objects are main-thread only.
-    WorkerPrivate* workerPrivate = GetCurrentThreadWorkerPrivate();
-    if (NS_WARN_IF(!workerPrivate)) {
-      return NS_ERROR_UNEXPECTED;
-    }
-
-    auto runnable = MakeRefPtr<FormatFluentStringRunnable>(
-        workerPrivate, aFile, aL10nId, aArgs, aSpoofEnglish, aResult);
-
-    runnable->Dispatch(workerPrivate, Canceling, IgnoreErrors());
-    return runnable->GetResult();
-  }
-
-  RefPtr<intl::Localization> l10n = GetFluentLocalization(aFile, aSpoofEnglish);
-
-  // A value can be formatted with errors, e.g. after falling back to en-US.
-  // Localization logs those errors and, in automation, also sets them on the
-  // ErrorResult, so only treat a missing value as a failure.
-  nsAutoCString value;
-  value.SetIsVoid(true);
-  l10n->FormatValueSync(aL10nId, aArgs, value, IgnoreErrors());
-  if (value.IsVoid()) {
-    return NS_ERROR_NOT_AVAILABLE;
-  }
-  CopyUTF8toUTF16(value, aResult);
-  return NS_OK;
-}
-
-/* static */
-nsresult nsContentUtils::FormatFluentString(
-    FluentResourceFile aFile, const nsACString& aL10nId,
-    const nsTArray<intl::FluentArg>& aArgs, nsAString& aResult) {
-  return FormatFluentStringImpl(aFile, aL10nId, aArgs, false, aResult);
-}
-
-/* static */
-nsresult nsContentUtils::FormatMaybeLocalizedFluentString(
-    FluentResourceFile aFile, const nsACString& aL10nId,
-    const nsTArray<intl::FluentArg>& aArgs, nsIGlobalObject* aGlobal,
-    nsAString& aResult) {
-  bool spoofEnglish =
-      nsContentUtils::ShouldResistFingerprinting(aGlobal, RFPTarget::JSLocale);
-  return FormatFluentStringImpl(aFile, aL10nId, aArgs, spoofEnglish, aResult);
-}
-
-/* static */
-nsresult nsContentUtils::FormatMaybeLocalizedFluentString(
-    FluentResourceFile aFile, const nsACString& aL10nId,
-    const nsTArray<intl::FluentArg>& aArgs, const Document* aDocument,
-    nsAString& aResult) {
-  bool spoofEnglish = nsContentUtils::ShouldResistFingerprinting(
-      aDocument, RFPTarget::JSLocale);
-  return FormatFluentStringImpl(aFile, aL10nId, aArgs, spoofEnglish, aResult);
-}
-
 /* static */
 void nsContentUtils::LogSimpleConsoleError(const nsAString& aErrorText,
                                            const nsACString& aCategory,
@@ -6111,25 +5955,9 @@ nsresult nsContentUtils::ReportToConsole(
 }
 
 /* static */
-nsresult nsContentUtils::ReportToConsole(uint32_t aErrorFlags,
-                                         const nsACString& aCategory,
-                                         const Document* aDocument,
-                                         FluentResourceFile aFile,
-                                         const nsACString& aL10nId,
-                                         const nsTArray<intl::FluentArg>& aArgs,
-                                         const SourceLocation& aLoc) {
-  nsAutoString errorText;
-  nsresult rv = FormatFluentString(aFile, aL10nId, aArgs, errorText);
-  NS_ENSURE_SUCCESS(rv, rv);
-  return ReportToConsoleNonLocalized(errorText, aErrorFlags, aCategory,
-                                     aDocument, aLoc);
-}
-
-/* static */
 void nsContentUtils::ReportEmptyGetElementByIdArg(const Document* aDoc) {
   ReportToConsole(nsIScriptError::warningFlag, "DOM"_ns, aDoc,
-                  FluentResourceFile::DOM,
-                  "dom-get-element-by-id-empty-param"_ns);
+                  PropertiesFile::DOM_PROPERTIES, "EmptyGetElementByIdParam");
 }
 
 /* static */
@@ -6187,41 +6015,10 @@ static const char* kDeprecatedOperations[] = {
 
 }  // anonymous namespace
 
-// Deprecated operations whose warning has been migrated to Fluent, in
-// FluentResourceFile::DOM_DEPRECATIONS.
-static constexpr FluentWarningMessage<DeprecatedOperations>
-    kDeprecationFluentMessages[] = {
-        {DeprecatedOperations::eUseOfCaptureEvents,
-         "dom-deprecated-capture-events",
-         "https://developer.mozilla.org/docs/Web/API/EventTarget/"
-         "addEventListener",
-         {}},
-        {DeprecatedOperations::eUseOfReleaseEvents,
-         "dom-deprecated-release-events",
-         "https://developer.mozilla.org/docs/Web/API/EventTarget/"
-         "removeEventListener",
-         {}},
-        {DeprecatedOperations::eIDBObjectStoreMozGetAll,
-         "dom-deprecated-idb-object-store-moz-get-all",
-         nullptr,
-         {}},
-        {DeprecatedOperations::eMathML_DeprecatedMoExplicitAccent,
-         "dom-deprecated-mathml-mo-explicit-accent",
-         nullptr,
-         {"attribute", "element"}},
-};
-
-/* static */
-bool nsContentUtils::GetDeprecationFluentMessage(
-    DeprecatedOperations aOperation, const nsTArray<nsString>& aParams,
-    nsACString& aL10nId, nsTArray<intl::FluentArg>& aArgs) {
-  return GetFluentWarningMessage(kDeprecationFluentMessages, aOperation,
-                                 aParams, aL10nId, aArgs);
-}
-
 /* static */
 void nsContentUtils::ReportDeprecation(
-    nsIGlobalObject* aGlobal, nsIURI* aURI, DeprecatedOperations aOperation,
+    nsIGlobalObject* aGlobal, const Document* aDoc, nsIURI* aURI,
+    DeprecatedOperations aOperation,
     const mozilla::JSCallingLocation& aLocation,
     const nsTArray<nsString>& aParams) {
   MOZ_ASSERT(aGlobal);
@@ -6235,24 +6032,16 @@ void nsContentUtils::ReportDeprecation(
   nsAutoString type;
   type.AppendASCII(operation);
 
+  nsAutoCString key;
+  key.AssignLiteral(operation, strlen(operation));
+  key.AppendLiteral("Warning");
+
   // XXX do we really want the localized string for deprecation report?
   nsAutoString msg;
-  nsresult rv;
-  nsAutoCString l10nId;
-  AutoTArray<intl::FluentArg, 2> l10nArgs;
-  if (GetDeprecationFluentMessage(aOperation, aParams, l10nId, l10nArgs)) {
-    rv = FormatMaybeLocalizedFluentString(FluentResourceFile::DOM_DEPRECATIONS,
-                                          l10nId, l10nArgs, aGlobal, msg);
-  } else {
-    nsAutoCString key;
-    key.AssignLiteral(operation, strlen(operation));
-    key.AppendLiteral("Warning");
-    rv = FormatLocalizedString(
-        ShouldResistFingerprinting(aGlobal, RFPTarget::JSLocale)
-            ? PropertiesFile::DOM_PROPERTIES_en_US
-            : PropertiesFile::DOM_PROPERTIES,
-        key.get(), aParams, msg);
-  }
+  nsresult rv = FormatLocalizedString(
+      GetMaybeSpoofedPropertiesFile(PropertiesFile::DOM_PROPERTIES, key.get(),
+                                    aDoc),
+      key.get(), aParams, msg);
   if (NS_WARN_IF(NS_FAILED(rv))) {
     return;
   }

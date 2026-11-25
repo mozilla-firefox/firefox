@@ -139,20 +139,19 @@ nsresult DateTimeInputTypeBase::GetRangeOverflowMessage(nsAString& aMessage) {
   nsAutoString maxStr;
   ConvertNumberToString(mInputElement->GetMaximum(), Localized::Yes, maxStr);
 
-  return nsContentUtils::FormatMaybeLocalizedFluentString(
-      FluentResourceFile::DOM_FORM_VALIDATION,
-      "dom-form-validation-date-time-range-overflow"_ns,
-      {{"maximum"_ns, maxStr}}, mInputElement->OwnerDoc(), aMessage);
+  return nsContentUtils::FormatMaybeLocalizedString(
+      aMessage, PropertiesFile::DOM_PROPERTIES,
+      "FormValidationDateTimeRangeOverflow", mInputElement->OwnerDoc(), maxStr);
 }
 
 nsresult DateTimeInputTypeBase::GetRangeUnderflowMessage(nsAString& aMessage) {
   nsAutoString minStr;
   ConvertNumberToString(mInputElement->GetMinimum(), Localized::Yes, minStr);
 
-  return nsContentUtils::FormatMaybeLocalizedFluentString(
-      FluentResourceFile::DOM_FORM_VALIDATION,
-      "dom-form-validation-date-time-range-underflow"_ns,
-      {{"minimum"_ns, minStr}}, mInputElement->OwnerDoc(), aMessage);
+  return nsContentUtils::FormatMaybeLocalizedString(
+      aMessage, PropertiesFile::DOM_PROPERTIES,
+      "FormValidationDateTimeRangeUnderflow", mInputElement->OwnerDoc(),
+      minStr);
 }
 
 void DateTimeInputTypeBase::MinMaxStepAttrChanged() {
@@ -189,10 +188,9 @@ bool DateTimeInputTypeBase::GetTimeFromMs(double aValue, uint16_t* aHours,
 // input type=date
 
 nsresult DateInputType::GetBadInputMessage(nsAString& aMessage) {
-  return nsContentUtils::FormatMaybeLocalizedFluentString(
-      FluentResourceFile::DOM_FORM_VALIDATION,
-      "dom-form-validation-invalid-date"_ns, {}, mInputElement->OwnerDoc(),
-      aMessage);
+  return nsContentUtils::GetMaybeLocalizedString(
+      PropertiesFile::DOM_PROPERTIES, "FormValidationInvalidDate",
+      mInputElement->OwnerDoc(), aMessage);
 }
 
 auto DateInputType::ConvertStringToNumber(const nsAString& aValue,
@@ -242,10 +240,9 @@ bool DateInputType::ConvertNumberToString(Decimal aValue, Localized aLocalized,
 // input type=time
 
 nsresult TimeInputType::GetBadInputMessage(nsAString& aMessage) {
-  return nsContentUtils::FormatMaybeLocalizedFluentString(
-      FluentResourceFile::DOM_FORM_VALIDATION,
-      "dom-form-validation-invalid-time"_ns, {}, mInputElement->OwnerDoc(),
-      aMessage);
+  return nsContentUtils::GetMaybeLocalizedString(
+      PropertiesFile::DOM_PROPERTIES, "FormValidationInvalidTime",
+      mInputElement->OwnerDoc(), aMessage);
 }
 
 auto TimeInputType::ConvertStringToNumber(const nsAString& aValue,
@@ -352,11 +349,10 @@ nsresult TimeInputType::GetReversedRangeUnderflowAndOverflowMessage(
   nsAutoString minStr;
   ConvertNumberToString(mInputElement->GetMinimum(), Localized::Yes, minStr);
 
-  return nsContentUtils::FormatMaybeLocalizedFluentString(
-      FluentResourceFile::DOM_FORM_VALIDATION,
-      "dom-form-validation-time-reversed-range"_ns,
-      {{"minimum"_ns, minStr}, {"maximum"_ns, maxStr}},
-      mInputElement->OwnerDoc(), aMessage);
+  return nsContentUtils::FormatMaybeLocalizedString(
+      aMessage, PropertiesFile::DOM_PROPERTIES,
+      "FormValidationTimeReversedRangeUnderflowAndOverflow",
+      mInputElement->OwnerDoc(), minStr, maxStr);
 }
 
 nsresult TimeInputType::GetRangeOverflowMessage(nsAString& aMessage) {
@@ -374,10 +370,9 @@ nsresult TimeInputType::GetRangeUnderflowMessage(nsAString& aMessage) {
 // input type=week
 
 nsresult WeekInputType::GetBadInputMessage(nsAString& aMessage) {
-  return nsContentUtils::FormatMaybeLocalizedFluentString(
-      FluentResourceFile::DOM_FORM_VALIDATION,
-      "dom-form-validation-invalid-week"_ns, {}, mInputElement->OwnerDoc(),
-      aMessage);
+  return nsContentUtils::GetMaybeLocalizedString(
+      PropertiesFile::DOM_PROPERTIES, "FormValidationInvalidWeek",
+      mInputElement->OwnerDoc(), aMessage);
 }
 
 auto WeekInputType::ConvertStringToNumber(const nsAString& aValue,
@@ -463,10 +458,9 @@ bool WeekInputType::ConvertNumberToString(Decimal aValue, Localized aLocalized,
 // input type=month
 
 nsresult MonthInputType::GetBadInputMessage(nsAString& aMessage) {
-  return nsContentUtils::FormatMaybeLocalizedFluentString(
-      FluentResourceFile::DOM_FORM_VALIDATION,
-      "dom-form-validation-invalid-month"_ns, {}, mInputElement->OwnerDoc(),
-      aMessage);
+  return nsContentUtils::GetMaybeLocalizedString(
+      PropertiesFile::DOM_PROPERTIES, "FormValidationInvalidMonth",
+      mInputElement->OwnerDoc(), aMessage);
 }
 
 auto MonthInputType::ConvertStringToNumber(const nsAString& aValue,
@@ -532,10 +526,9 @@ bool MonthInputType::ConvertNumberToString(Decimal aValue, Localized aLocalized,
 // input type=datetime-local
 
 nsresult DateTimeLocalInputType::GetBadInputMessage(nsAString& aMessage) {
-  return nsContentUtils::FormatMaybeLocalizedFluentString(
-      FluentResourceFile::DOM_FORM_VALIDATION,
-      "dom-form-validation-invalid-date-time"_ns, {}, mInputElement->OwnerDoc(),
-      aMessage);
+  return nsContentUtils::GetMaybeLocalizedString(
+      PropertiesFile::DOM_PROPERTIES, "FormValidationInvalidDateTime",
+      mInputElement->OwnerDoc(), aMessage);
 }
 
 auto DateTimeLocalInputType::ConvertStringToNumber(const nsAString& aValue,

@@ -329,12 +329,6 @@ var allowlist = [
   // dom/xslt/xslt/txMozillaXSLTProcessor.cpp
   { file: "resource://gre/localization/en-US/dom/xslt.ftl" },
 
-  // dom/base/nsContentUtils.cpp
-  { file: "resource://gre/localization/en-US/dom/dom.ftl" },
-  { file: "resource://gre/localization/en-US/dom/deprecations.ftl" },
-  { file: "resource://gre/localization/en-US/dom/dialogs.ftl" },
-  { file: "resource://gre/localization/en-US/dom/form-validation.ftl" },
-
   // A QA and dev debug tool.
   { file: "chrome://browser/content/places/interactionsViewer.html" },
 

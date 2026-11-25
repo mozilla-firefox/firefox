@@ -4041,7 +4041,7 @@ void DeprecationWarning(JSContext* aCx, JSObject* aObject,
       do_QueryInterface(global.GetAsSupports());
   MOZ_ASSERT(globalObject);
 
-  nsContentUtils::ReportDeprecation(globalObject, uri, aOperation,
+  nsContentUtils::ReportDeprecation(globalObject, nullptr, uri, aOperation,
                                     JSCallingLocation::Get(global.Context()));
 }
 

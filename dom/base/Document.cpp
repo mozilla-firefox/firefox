@@ -179,7 +179,6 @@
 #include "mozilla/dom/Event.h"
 #include "mozilla/dom/EventListenerBinding.h"
 #include "mozilla/dom/FailedCertSecurityInfoBinding.h"
-#include "mozilla/dom/FluentWarningMessage.h"
 #include "mozilla/dom/FontFaceSet.h"
 #include "mozilla/dom/FragmentDirective.h"
 #include "mozilla/dom/FromParser.h"
@@ -11189,7 +11188,7 @@ void Document::WriteCommon(const nsAString& aText, bool aNewlineTerminate,
       // Instead of implying a call to document.open(), ignore the call.
       nsContentUtils::ReportToConsole(
           nsIScriptError::warningFlag, "DOM Events"_ns, this,
-          FluentResourceFile::DOM, "dom-document-write-ignored"_ns);
+          PropertiesFile::DOM_PROPERTIES, "DocumentWriteIgnored");
       return;
     }
     // The spec doesn't tell us to ignore opens from here, but we need to
@@ -11206,7 +11205,7 @@ void Document::WriteCommon(const nsAString& aText, bool aNewlineTerminate,
       // Instead of implying a call to document.open(), ignore the call.
       nsContentUtils::ReportToConsole(
           nsIScriptError::warningFlag, "DOM Events"_ns, this,
-          FluentResourceFile::DOM, "dom-document-write-ignored"_ns);
+          PropertiesFile::DOM_PROPERTIES, "DocumentWriteIgnored");
       return;
     }
 
@@ -15094,15 +15093,6 @@ void Document::WarnOnceAbout(
   const_cast<Document*>(this)->SetUseCounter(OperationToUseCounter(aOperation));
   uint32_t flags =
       asError ? nsIScriptError::errorFlag : nsIScriptError::warningFlag;
-  nsAutoCString l10nId;
-  AutoTArray<intl::FluentArg, 2> l10nArgs;
-  if (nsContentUtils::GetDeprecationFluentMessage(aOperation, aParams, l10nId,
-                                                  l10nArgs)) {
-    nsContentUtils::ReportToConsole(flags, "DOM Core"_ns, this,
-                                    FluentResourceFile::DOM_DEPRECATIONS,
-                                    l10nId, l10nArgs, aLocation);
-    return;
-  }
   nsContentUtils::ReportToConsole(
       flags, "DOM Core"_ns, this, PropertiesFile::DOM_PROPERTIES,
       kDeprecationWarnings[static_cast<size_t>(aOperation)], aParams,
@@ -15128,23 +15118,9 @@ void Document::WarnOnceAndReportAbout(
     return;
   }
 
-  nsContentUtils::ReportDeprecation(global, uri, aOperation, aLocation,
+  nsContentUtils::ReportDeprecation(global, this, uri, aOperation, aLocation,
                                     aParams);
 }
-
-// Document warnings that have been migrated to Fluent, in
-// FluentResourceFile::DOM.
-static constexpr FluentWarningMessage<Document::DocumentWarnings>
-    kDocumentWarningFluentMessages[] = {
-        {Document::eSVGRefLoop,
-         "dom-svg-reference-loop",
-         nullptr,
-         {"tagName", "id"}},
-        {Document::eSVGRefChainLengthExceeded,
-         "dom-svg-reference-chain-length-exceeded",
-         nullptr,
-         {"tagName", "id"}},
-};
 
 bool Document::HasWarnedAbout(DocumentWarnings aWarning) const {
   return mDocWarningWarnedAbout[aWarning];
@@ -15165,14 +15141,6 @@ void Document::WarnOnceAbout(
   const auto& category = aWarning == eSafePromiseResolveReordering
                              ? "SafePromiseResolve"_ns
                              : "DOM Core"_ns;
-  nsAutoCString l10nId;
-  AutoTArray<intl::FluentArg, 2> l10nArgs;
-  if (GetFluentWarningMessage(kDocumentWarningFluentMessages, aWarning, aParams,
-                              l10nId, l10nArgs)) {
-    nsContentUtils::ReportToConsole(flags, category, this,
-                                    FluentResourceFile::DOM, l10nId, l10nArgs);
-    return;
-  }
   nsContentUtils::ReportToConsole(flags, category, this,
                                   PropertiesFile::DOM_PROPERTIES,
                                   kDocumentWarnings[aWarning], aParams);

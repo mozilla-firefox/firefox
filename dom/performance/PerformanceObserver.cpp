@@ -235,19 +235,18 @@ void PerformanceObserver::Observe(const PerformanceObserverInit& aOptions,
     }
 
     if (!invalidTypesJoined.IsEmpty()) {
-      AutoTArray<intl::FluentArg, 1> args = {
-          {"entryTypes"_ns, invalidTypesJoined}};
-      mGlobal->ReportToConsole(
-          nsIScriptError::warningFlag, "DOM"_ns, FluentResourceFile::DOM,
-          "dom-performance-observer-unsupported-entry-types"_ns, args);
+      AutoTArray<nsString, 1> params = {std::move(invalidTypesJoined)};
+      mGlobal->ReportToConsole(nsIScriptError::warningFlag, "DOM"_ns,
+                               PropertiesFile::DOM_PROPERTIES,
+                               "UnsupportedEntryTypesIgnored"_ns, params);
       // (we don't return because we're ignoring and we keep going)
     }
 
     /* 3.3.1.5.3 */
     if (validEntryTypes.IsEmpty()) {
-      mGlobal->ReportToConsole(
-          nsIScriptError::warningFlag, "DOM"_ns, FluentResourceFile::DOM,
-          "dom-performance-observer-no-valid-entry-types"_ns, {});
+      mGlobal->ReportToConsole(nsIScriptError::warningFlag, "DOM"_ns,
+                               PropertiesFile::DOM_PROPERTIES,
+                               "AllEntryTypesIgnored"_ns);
       return;
     }
 
@@ -292,10 +291,10 @@ void PerformanceObserver::Observe(const PerformanceObserverInit& aOptions,
     }
 
     if (!typeValid) {
-      AutoTArray<intl::FluentArg, 1> args = {{"entryTypes"_ns, type}};
-      mGlobal->ReportToConsole(
-          nsIScriptError::warningFlag, "DOM"_ns, FluentResourceFile::DOM,
-          "dom-performance-observer-unsupported-entry-types"_ns, args);
+      AutoTArray<nsString, 1> params = {std::move(type)};
+      mGlobal->ReportToConsole(nsIScriptError::warningFlag, "DOM"_ns,
+                               PropertiesFile::DOM_PROPERTIES,
+                               "UnsupportedEntryTypesIgnored"_ns, params);
       return;
     }
 

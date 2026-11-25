@@ -52,10 +52,9 @@ nsresult NumericInputTypeBase::GetRangeOverflowMessage(nsAString& aMessage) {
 
   nsAutoString maxStr;
   ConvertNumberToString(maximum, Localized::Yes, maxStr);
-  return nsContentUtils::FormatMaybeLocalizedFluentString(
-      FluentResourceFile::DOM_FORM_VALIDATION,
-      "dom-form-validation-number-range-overflow"_ns, {{"maximum"_ns, maxStr}},
-      mInputElement->OwnerDoc(), aMessage);
+  return nsContentUtils::FormatMaybeLocalizedString(
+      aMessage, PropertiesFile::DOM_PROPERTIES,
+      "FormValidationNumberRangeOverflow", mInputElement->OwnerDoc(), maxStr);
 }
 
 nsresult NumericInputTypeBase::GetRangeUnderflowMessage(nsAString& aMessage) {
@@ -64,10 +63,9 @@ nsresult NumericInputTypeBase::GetRangeUnderflowMessage(nsAString& aMessage) {
 
   nsAutoString minStr;
   ConvertNumberToString(minimum, Localized::Yes, minStr);
-  return nsContentUtils::FormatMaybeLocalizedFluentString(
-      FluentResourceFile::DOM_FORM_VALIDATION,
-      "dom-form-validation-number-range-underflow"_ns, {{"minimum"_ns, minStr}},
-      mInputElement->OwnerDoc(), aMessage);
+  return nsContentUtils::FormatMaybeLocalizedString(
+      aMessage, PropertiesFile::DOM_PROPERTIES,
+      "FormValidationNumberRangeUnderflow", mInputElement->OwnerDoc(), minStr);
 }
 
 auto NumericInputTypeBase::ConvertStringToNumber(const nsAString& aValue,
@@ -149,17 +147,15 @@ bool NumberInputType::ConvertNumberToString(Decimal aValue,
 }
 
 nsresult NumberInputType::GetValueMissingMessage(nsAString& aMessage) {
-  return nsContentUtils::FormatMaybeLocalizedFluentString(
-      FluentResourceFile::DOM_FORM_VALIDATION,
-      "dom-form-validation-bad-input-number"_ns, {}, mInputElement->OwnerDoc(),
-      aMessage);
+  return nsContentUtils::GetMaybeLocalizedString(
+      PropertiesFile::DOM_PROPERTIES, "FormValidationBadInputNumber",
+      mInputElement->OwnerDoc(), aMessage);
 }
 
 nsresult NumberInputType::GetBadInputMessage(nsAString& aMessage) {
-  return nsContentUtils::FormatMaybeLocalizedFluentString(
-      FluentResourceFile::DOM_FORM_VALIDATION,
-      "dom-form-validation-bad-input-number"_ns, {}, mInputElement->OwnerDoc(),
-      aMessage);
+  return nsContentUtils::GetMaybeLocalizedString(
+      PropertiesFile::DOM_PROPERTIES, "FormValidationBadInputNumber",
+      mInputElement->OwnerDoc(), aMessage);
 }
 
 bool NumberInputType::IsMutable() const {

@@ -256,11 +256,6 @@ class nsGlobalWindowInner final : public mozilla::dom::EventTarget,
                        PropertiesFile aFile, const nsCString& aMessageName,
                        const nsTArray<nsString>& aParams,
                        const mozilla::SourceLocation& aLocation) override;
-  void ReportToConsole(uint32_t aErrorFlags, const nsCString& aCategory,
-                       mozilla::dom::FluentResourceFile aFile,
-                       const nsCString& aL10nId,
-                       const nsTArray<mozilla::intl::FluentArg>& aArgs,
-                       const mozilla::SourceLocation& aLocation) override;
 
   void TraceGlobalJSObject(JSTracer* aTrc);
 

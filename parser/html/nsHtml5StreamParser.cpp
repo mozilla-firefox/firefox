@@ -2702,10 +2702,8 @@ void nsHtml5StreamParser::ContinueAfterScriptsOrEncodingCommitment(
 
       nsContentUtils::ReportToConsole(
           nsIScriptError::warningFlag, "DOM Events"_ns,
-          mExecutor->GetDocument(), FluentResourceFile::DOM,
-          "dom-parser-speculation-failed"_ns,
-          {{"url"_ns,
-            "https://developer.mozilla.org/docs/Glossary/speculative_parsing"_ns}},
+          mExecutor->GetDocument(), PropertiesFile::DOM_PROPERTIES,
+          "SpeculationFailed2", nsTArray<nsString>(),
           SourceLocation(mExecutor->GetDocument()->GetDocumentURI(),
                          speculation->GetStartLineNumber(),
                          speculation->GetStartColumnNumber()));
