@@ -65,5 +65,27 @@ def migrate(ctx):
                 id=FTL.Identifier("dom-performance-observer-no-valid-entry-types"),
                 value=COPY(source, "AllEntryTypesIgnored"),
             ),
+            FTL.Message(
+                id=FTL.Identifier("dom-svg-reference-loop"),
+                value=REPLACE(
+                    source,
+                    "SVGRefLoopWarning",
+                    {
+                        "%1$S": VARIABLE_REFERENCE("tagName"),
+                        "%2$S": VARIABLE_REFERENCE("id"),
+                    },
+                ),
+            ),
+            FTL.Message(
+                id=FTL.Identifier("dom-svg-reference-chain-length-exceeded"),
+                value=REPLACE(
+                    source,
+                    "SVGRefChainLengthExceededWarning",
+                    {
+                        "%1$S": VARIABLE_REFERENCE("tagName"),
+                        "%2$S": VARIABLE_REFERENCE("id"),
+                    },
+                ),
+            ),
         ],
     )

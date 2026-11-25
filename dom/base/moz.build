@@ -192,6 +192,7 @@ EXPORTS.mozilla.dom += [
     "External.h",
     "FastFrontRemovableArray.h",
     "FilteredNodeIterator.h",
+    "FluentWarningMessage.h",
     "FormData.h",
     "FragmentDirective.h",
     "FragmentOrElement.h",

@@ -179,6 +179,7 @@
 #include "mozilla/dom/Event.h"
 #include "mozilla/dom/EventListenerBinding.h"
 #include "mozilla/dom/FailedCertSecurityInfoBinding.h"
+#include "mozilla/dom/FluentWarningMessage.h"
 #include "mozilla/dom/FontFaceSet.h"
 #include "mozilla/dom/FragmentDirective.h"
 #include "mozilla/dom/FromParser.h"
@@ -15122,6 +15123,20 @@ void Document::WarnOnceAndReportAbout(
                                     aParams);
 }
 
+// Document warnings that have been migrated to Fluent, in
+// FluentResourceFile::DOM.
+static constexpr FluentWarningMessage<Document::DocumentWarnings>
+    kDocumentWarningFluentMessages[] = {
+        {Document::eSVGRefLoop,
+         "dom-svg-reference-loop",
+         nullptr,
+         {"tagName", "id"}},
+        {Document::eSVGRefChainLengthExceeded,
+         "dom-svg-reference-chain-length-exceeded",
+         nullptr,
+         {"tagName", "id"}},
+};
+
 bool Document::HasWarnedAbout(DocumentWarnings aWarning) const {
   return mDocWarningWarnedAbout[aWarning];
 }
@@ -15141,6 +15156,14 @@ void Document::WarnOnceAbout(
   const auto& category = aWarning == eSafePromiseResolveReordering
                              ? "SafePromiseResolve"_ns
                              : "DOM Core"_ns;
+  nsAutoCString l10nId;
+  AutoTArray<intl::FluentArg, 2> l10nArgs;
+  if (GetFluentWarningMessage(kDocumentWarningFluentMessages, aWarning, aParams,
+                              l10nId, l10nArgs)) {
+    nsContentUtils::ReportToConsole(flags, category, this,
+                                    FluentResourceFile::DOM, l10nId, l10nArgs);
+    return;
+  }
   nsContentUtils::ReportToConsole(flags, category, this,
                                   PropertiesFile::DOM_PROPERTIES,
                                   kDocumentWarnings[aWarning], aParams);
