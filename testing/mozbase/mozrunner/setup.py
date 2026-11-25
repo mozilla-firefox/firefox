@@ -10,12 +10,12 @@ PACKAGE_VERSION = "8.5.0"
 desc = """Reliable start/stop/configuration of Mozilla Applications (Firefox, Thunderbird, etc.)"""
 
 deps = [
-    "mozdevice>=4.2.0,<5",
+    "mozdevice>=4.3.0",
     "mozfile>=1.2",
-    "mozinfo>=0.7,<2",
+    "mozinfo>=0.7",
     "mozlog>=6.0",
-    "mozprocess>=1.3.0,<2",
-    "mozprofile~=3.0",
+    "mozprocess>=1.3.0",
+    "mozprofile>=3.0",
 ]
 
 EXTRAS_REQUIRE = {"crash": ["mozcrash >= 2.3.0"]}
