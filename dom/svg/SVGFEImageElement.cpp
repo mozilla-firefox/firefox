@@ -314,6 +314,13 @@ bool SVGFEImageElement::OutputIsTainted(const nsTArray<bool>& aInputsAreTainted,
     return false;
   }
 
+  bool hadCrossOriginRedirects = true;
+  if (NS_FAILED(currentRequest->GetHadCrossOriginRedirects(
+          &hadCrossOriginRedirects)) ||
+      hadCrossOriginRedirects) {
+    return true;
+  }
+
   if (aReferencePrincipal->Subsumes(principal)) {
     // The page is allowed to read from the image.
     return false;
