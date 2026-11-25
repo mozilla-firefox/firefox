@@ -32,10 +32,6 @@ class AddonsManagementView(
         onInstallButtonClicked(addon)
     }
 
-    override fun onNotYetSupportedSectionClicked(unsupportedAddons: List<Addon>) {
-        showNotYetSupportedAddonFragment(unsupportedAddons)
-    }
-
     override fun shouldShowFindMoreAddonsButton(): Boolean = true
 
     override fun onFindMoreAddonsButtonClicked() {
@@ -62,13 +58,5 @@ class AddonsManagementView(
     private fun showDetailsFragment(addon: Addon) {
         val directions = AddonsManagementFragmentDirections.actionAddonsManagementFragmentToAddonDetailsFragment(addon)
         navController.navigateSafe(R.id.addonsManagementFragment, directions)
-    }
-
-    private fun showNotYetSupportedAddonFragment(unsupportedAddons: List<Addon>) {
-        val directions =
-            AddonsManagementFragmentDirections.actionAddonsManagementFragmentToNotYetSupportedAddonFragment(
-                unsupportedAddons.toTypedArray()
-            )
-        navController.navigate(directions)
     }
 }

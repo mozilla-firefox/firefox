@@ -1420,14 +1420,6 @@
             app:argType="mozilla.components.feature.addons.Addon" />
     </fragment>
     <fragment
-        android:id="@+id/notYetSupportedAddonFragment"
-        android:name="org.mozilla.fenix.addons.NotYetSupportedAddonFragment"
-        tools:layout="@layout/fragment_not_yet_supported_addons">
-        <argument
-            android:name="addons"
-            app:argType="mozilla.components.feature.addons.Addon[]" />
-    </fragment>
-    <fragment
         android:id="@+id/addonPermissionsDetailFragment"
         android:name="org.mozilla.fenix.addons.AddonPermissionsDetailsFragment">
         <argument
@@ -1485,9 +1477,6 @@
             <action
                 android:id="@+id/action_addonsManagementFragment_to_installedAddonDetails"
                 app:destination="@id/installedAddonDetailsFragment" />
-            <action
-                android:id="@+id/action_addonsManagementFragment_to_notYetSupportedAddonFragment"
-                app:destination="@id/notYetSupportedAddonFragment" />
             <argument
                 android:name="installAddonId"
                 android:defaultValue="@null"

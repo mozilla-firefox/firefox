@@ -168,20 +168,6 @@ class AddonsManagementViewTest {
     }
 
     @Test
-    fun `onNotYetSupportedSectionClicked shows not yet supported fragment`() {
-        val addons = listOf<Addon>(mockk(), mockk())
-        managementView.onNotYetSupportedSectionClicked(addons)
-
-        val expected =
-            AddonsManagementFragmentDirections.actionAddonsManagementFragmentToNotYetSupportedAddonFragment(
-                addons.toTypedArray()
-            )
-        verify {
-            navController.navigate(directionsEq(expected))
-        }
-    }
-
-    @Test
     fun `onFindMoreAddonsButtonClicked calls onMoreAddonsButtonClicked`() {
         managementView.onFindMoreAddonsButtonClicked()
         assertTrue(moreAddonsButtonClicked)
