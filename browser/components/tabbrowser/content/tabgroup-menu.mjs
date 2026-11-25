@@ -257,11 +257,7 @@ export class MozTabbrowserTabGroupMenu extends MozXULElement {
 
       <html:div id="tab-group-main" class="panel-subview-body">
         <html:div id="tab-group-properties-and-actions">
-          <html:moz-visual-picker
-            name="tab-group-color"
-            class="tab-group-editor-swatches"
-            data-l10n-id="tab-group-editor-color-selector"
-          />
+          <html:div id="tab-group-editor-swatches-placeholder" />
 
           <toolbarseparator class="tab-group-edit-mode-only"/>
 
@@ -427,7 +423,6 @@ export class MozTabbrowserTabGroupMenu extends MozXULElement {
         this.#nameField.blur();
       }
     });
-    this.#swatchesContainer = this.querySelector(".tab-group-editor-swatches");
     this.#createTabGroupHeading = this.querySelector(
       "#tab-group-editor-title-create"
     );
@@ -440,8 +435,6 @@ export class MozTabbrowserTabGroupMenu extends MozXULElement {
       "#tab-group-properties-and-actions"
     );
     this.#initSuggestions();
-
-    this.#populateSwatches();
 
     this.#cancelButton.addEventListener("click", () => {
       this.#handleMlTelemetry("cancel");
@@ -553,7 +546,6 @@ export class MozTabbrowserTabGroupMenu extends MozXULElement {
     this.panel.addEventListener("popupshown", this);
     this.panel.addEventListener("popuphidden", this);
     this.panel.addEventListener("keypress", this);
-    this.#swatchesContainer.addEventListener("change", this);
     Glean.tabgroup.smartTabEnabled.set(this.smartTabGroupsPrefEnabled);
   }
 
@@ -757,6 +749,25 @@ export class MozTabbrowserTabGroupMenu extends MozXULElement {
     this.#smartTabGroupsInitiated = true;
   }
 
+  #initSwatches() {
+    if (this.#swatchesContainer) {
+      return;
+    }
+    let picker = /** @type {MozVisualPicker} */ (
+      document.createElement("moz-visual-picker")
+    );
+
+    picker.name = "tab-group-color";
+    picker.classList.add("tab-group-editor-swatches");
+    picker.setAttribute("data-l10n-id", "tab-group-editor-color-selector");
+    picker.addEventListener("change", this);
+    this.querySelector("#tab-group-editor-swatches-placeholder").replaceWith(
+      picker
+    );
+    this.#swatchesContainer = picker;
+    this.#populateSwatches();
+  }
+
   #populateSwatches() {
     this.#clearSwatches();
     for (let colorCode of MozTabbrowserTabGroupMenu.COLORS) {
@@ -812,6 +823,7 @@ export class MozTabbrowserTabGroupMenu extends MozXULElement {
   }
 
   set activeGroup(group) {
+    this.#initSwatches();
     this.#activeGroup = group;
     this.#nameField.value = group ? group.label : "";
     this.#swatchesContainer.value = group ? group.color : null;

@@ -64,6 +64,14 @@ interface MozCheckbox extends HTMLElement {
 
 // toolkit/content/widgets/moz-visual-picker, whose Lit reactive properties tsc
 // cannot see. Declares only the members tabbrowser uses.
+interface MozVisualPicker extends HTMLElement {
+  name: string;
+  value: string | null;
+  disabled: boolean;
+}
+
+// toolkit/content/widgets/moz-visual-picker, whose Lit reactive properties tsc
+// cannot see. Declares only the members tabbrowser uses.
 interface MozVisualPickerItem extends HTMLElement {
   value: string;
 }
