@@ -9,6 +9,9 @@ import {
   TYPE_SVG,
   TYPE_ICO,
   TRUSTED_FAVICON_SCHEMES,
+  MAX_ICON_SIZE,
+  MAX_ICO_IMAGE_SIZE,
+  areValidFaviconSizes,
   blobAsDataURL,
 } from "moz-src:///toolkit/modules/FaviconUtils.sys.mjs";
 
@@ -52,7 +55,6 @@ const FAVICON_LARGE_ICON_MIN_WIDTH = 96;
 const PREFERRED_WIDTH = 16;
 
 const MAX_FAVICON_EXPIRATION = 7 * 24 * 60 * 60 * 1000;
-const MAX_ICON_SIZE = 2048;
 
 async function decodeImage({
   url,
@@ -62,58 +64,85 @@ async function decodeImage({
   desiredWidth,
   desiredHeight,
 }) {
+  let decoder;
   let image;
   try {
-    let decoder = new ImageDecoder({
-      type,
-      data,
-      desiredWidth,
-      desiredHeight,
-      transfer: transfer ? [data] : undefined,
-    });
+    try {
+      decoder = new ImageDecoder({
+        type,
+        data,
+        desiredWidth,
+        desiredHeight,
+        transfer: transfer ? [data] : undefined,
+      });
 
-    let result = await decoder.decode({ completeFramesOnly: true });
-    image = result.image;
-  } catch {
-    throw Components.Exception(
-      `Favicon at "${url}" could not be decoded.`,
-      Cr.NS_ERROR_FAILURE
-    );
+      let result = await decoder.decode({ completeFramesOnly: true });
+      image = result.image;
+    } catch {
+      throw Components.Exception(
+        `Favicon at "${url}" could not be decoded.`,
+        Cr.NS_ERROR_FAILURE
+      );
+    }
+
+    if (
+      image.displayWidth > MAX_ICON_SIZE ||
+      image.displayHeight > MAX_ICON_SIZE
+    ) {
+      throw Components.Exception(
+        `Favicon at "${url}" is too large.`,
+        Cr.NS_ERROR_FAILURE
+      );
+    }
+
+    let imageBuffer = new ArrayBuffer(image.allocationSize());
+    await image.copyTo(imageBuffer);
+    return {
+      blob: new Blob([imageBuffer]),
+      format: image.format,
+      displayWidth: image.displayWidth,
+      displayHeight: image.displayHeight,
+    };
+  } finally {
+    image?.close();
+    decoder?.close();
   }
-
-  if (
-    image.displayWidth > MAX_ICON_SIZE ||
-    image.displayHeight > MAX_ICON_SIZE
-  ) {
-    throw Components.Exception(
-      `Favicon at "${url}" is too large.`,
-      Cr.NS_ERROR_FAILURE
-    );
-  }
-
-  let imageBuffer = new ArrayBuffer(image.allocationSize());
-  await image.copyTo(imageBuffer);
-  return {
-    blob: new Blob([imageBuffer]),
-    format: image.format,
-    displayWidth: image.displayWidth,
-    displayHeight: image.displayHeight,
-  };
 }
 
 // Convert image data bytes to an array of blobs with associated format/size info.
 async function convertImage(url, type, data) {
+  let icoImageSizes = [];
   if (type == TYPE_ICO) {
+    let decoder;
     try {
-      let decoder = new ImageDecoder({
+      decoder = new ImageDecoder({
         type,
         data,
       });
       await decoder.tracks.ready;
-      let sizes = decoder.tracks[0].getSizes();
-      if (sizes.length > 1) {
-        return Promise.all(
-          sizes.map(({ width, height }) =>
+      // Deduplicate the sizes, an ICO may contain the same size at different color
+      // depths. Images too large in both dimensions are downscaled, the others
+      // fail the check below, because the decoder ignores a desired size larger
+      // than the intrinsic size.
+      icoImageSizes = Array.from(
+        new Map(
+          decoder.tracks[0].getSizes().map(size => {
+            if (
+              size.width > MAX_ICO_IMAGE_SIZE &&
+              size.height > MAX_ICO_IMAGE_SIZE
+            ) {
+              size = { width: MAX_ICO_IMAGE_SIZE, height: MAX_ICO_IMAGE_SIZE };
+            }
+            return [`${size.width}x${size.height}`, size];
+          })
+        ).values()
+      );
+      if (
+        icoImageSizes.length > 1 &&
+        areValidFaviconSizes(icoImageSizes, MAX_ICO_IMAGE_SIZE)
+      ) {
+        return await Promise.all(
+          icoImageSizes.map(({ width, height }) =>
             decodeImage({
               url,
               type,
@@ -127,14 +156,27 @@ async function convertImage(url, type, data) {
           )
         );
       }
-    } catch {}
+    } catch {
+      // Fall back to decoding a single image below.
+    } finally {
+      decoder?.close();
+    }
   }
 
+  // Downscale a single ICO image, but never upscale it.
+  let fallbackDesiredSize = icoImageSizes.some(
+    ({ width, height }) =>
+      width >= MAX_ICO_IMAGE_SIZE && height >= MAX_ICO_IMAGE_SIZE
+  )
+    ? MAX_ICO_IMAGE_SIZE
+    : undefined;
   let image = await decodeImage({
     url,
     type,
     transfer: true,
     data,
+    desiredWidth: fallbackDesiredSize,
+    desiredHeight: fallbackDesiredSize,
   });
   return [image];
 }

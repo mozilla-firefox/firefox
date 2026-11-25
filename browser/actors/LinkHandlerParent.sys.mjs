@@ -6,6 +6,7 @@ import {
   TYPE_ICO,
   SVG_DATA_URI_PREFIX,
   TRUSTED_FAVICON_SCHEMES,
+  areValidFaviconSizes,
   blobAsDataURL,
 } from "moz-src:///toolkit/modules/FaviconUtils.sys.mjs";
 
@@ -28,10 +29,14 @@ async function drawImageOnCanvas(canvas, image) {
     codedHeight: image.displayHeight,
   });
 
-  canvas.width = frame.displayWidth;
-  canvas.height = frame.displayHeight;
-  let ctx = canvas.getContext("2d");
-  ctx.drawImage(frame, 0, 0);
+  try {
+    canvas.width = frame.displayWidth;
+    canvas.height = frame.displayHeight;
+    let ctx = canvas.getContext("2d");
+    ctx.drawImage(frame, 0, 0);
+  } finally {
+    frame.close();
+  }
 }
 
 // Re-construct the ICO file with different sized PNG images.
@@ -186,6 +191,22 @@ export class LinkHandlerParent extends JSWindowActorParent {
     }
 
     if (images) {
+      if (
+        !Array.isArray(images) ||
+        !areValidFaviconSizes(
+          images.map(image => ({
+            width: image?.displayWidth,
+            height: image?.displayHeight,
+          }))
+        )
+      ) {
+        console.error(`Ignoring invalid images for favicon "${originalURL}".`);
+        if (isTabIcon) {
+          this.clearPendingIcon(gBrowser, browser);
+        }
+        return;
+      }
+
       let canvas = tab.ownerDocument.createElement("canvas");
 
       // We have multiple images, need to create an ICO file to collect them.

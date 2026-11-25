@@ -18,6 +18,50 @@ export const TRUSTED_FAVICON_SCHEMES = Object.freeze([
   "resource",
 ]);
 
+// Maximum width and height of a decoded favicon image.
+export const MAX_ICON_SIZE = 2048;
+
+// ICO files listing more distinct sizes than this are decoded only once.
+export const MAX_ICO_IMAGE_COUNT = 16;
+
+// ICO images larger than this in both dimensions are downscaled to it.
+export const MAX_ICO_IMAGE_SIZE = 512;
+
+/**
+ * Checks whether a list of image sizes, that will be decoded together for a
+ * single favicon, stays within the count and size limits. Their total area must
+ * not exceed the area of a single image of the maximum size.
+ *
+ * @param {Array<{width: number, height: number}>} sizes
+ * @param {number} [maxSize] Maximum width and height of each image.
+ * @returns {boolean}
+ */
+export function areValidFaviconSizes(sizes, maxSize = MAX_ICON_SIZE) {
+  if (
+    !Array.isArray(sizes) ||
+    !sizes.length ||
+    sizes.length > MAX_ICO_IMAGE_COUNT
+  ) {
+    return false;
+  }
+  let area = 0;
+  for (let size of sizes) {
+    let { width, height } = size ?? {};
+    if (
+      !Number.isInteger(width) ||
+      !Number.isInteger(height) ||
+      width <= 0 ||
+      height <= 0 ||
+      width > maxSize ||
+      height > maxSize
+    ) {
+      return false;
+    }
+    area += width * height;
+  }
+  return area <= MAX_ICON_SIZE * MAX_ICON_SIZE;
+}
+
 /**
  * Creates a moz-remote-image: URL wrapping the specified URL.
  *

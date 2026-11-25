@@ -124,6 +124,12 @@ support-files = [
   "file_multiple.ico",
 ]
 
+["browser_multiple_ico_sizes.js"]
+support-files = [
+  "blank.html",
+  "file_ico_sizes.sjs",
+]
+
 ["browser_multiple_icons_in_short_timeframe.js"]
 
 ["browser_oversized.js"]
