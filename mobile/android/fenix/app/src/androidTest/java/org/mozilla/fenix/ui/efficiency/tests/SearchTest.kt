@@ -264,13 +264,14 @@ class SearchTest : BaseTest(LaunchConfig(isPocketEnabled = false)) {
             .mozVerifyAnyContainsText(SearchBarSelectors.SEARCH_SUGGESTION, secondPageUrl)
             .mozClick(SearchBarSelectors.SEARCH_SUGGESTION_WITH_TEXT(firstPageUrl))
 
-        // Settle on the browser page before asserting: clicking a suggestion leaves the page tracker on
-        // SearchBarComponent, so the later tab-drawer hop would otherwise be routed through the edit-mode
-        // toolbar, which no longer exists once the tab is showing.
-        on.browserPage.navigateToPage().mozVerify(ToolbarSelectors.TAB_COUNTER_WITH_COUNT("2"))
+        // Clicking a suggestion opens the tab in the browser but leaves PageStateTracker on SearchBarComponent,
+        // so navigateToPage() would flake gating readiness on the gone edit-mode toolbar. Verify the counter
+        // (which waits for the browser) and open the tray by clicking the counter directly, as the edge does.
+        on.browserPage
+            .mozVerify(ToolbarSelectors.TAB_COUNTER_WITH_COUNT("2"))
+            .mozClick(ToolbarSelectors.TAB_COUNTER_ANY_LAYOUT)
 
         on.tabDrawer
-            .navigateToPage()
             .verifyOpenTabsOrder(position = 1, tabTitle = firstPageUrl)
             .verifyOpenTabsOrder(position = 2, tabTitle = secondPageUrl)
     }
