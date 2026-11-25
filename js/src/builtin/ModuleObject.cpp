@@ -1914,7 +1914,17 @@ void ModuleObject::initWasmExportBindings(JSContext* cx,
              env->firstSyntheticValueSlot() + values.length());
 
   for (uint32_t i = 0; i < values.length(); i++) {
-    env->setAliasedBinding(env->firstSyntheticValueSlot() + i, values[i]);
+    uint32_t slot = env->firstSyntheticValueSlot() + i;
+    if (env->hasWasmMutableGlobalBinding(slot)) {
+      MOZ_RELEASE_ASSERT(values[i].isObject() &&
+                         values[i].toObject().is<WasmGlobalObject>());
+      env->getRawSlot(slot)
+          .toObject()
+          .as<WasmMutableGlobalBindingObject>()
+          .initGlobal(&values[i].toObject().as<WasmGlobalObject>());
+    } else {
+      env->setAliasedBinding(slot, values[i]);
+    }
   }
 }
 
@@ -1930,9 +1940,28 @@ bool ModuleObject::createWasmEnvironment(JSContext* cx,
 
   // The export bindings are immutable and remain uninitialized until the
   // module is executed, so that reading one before then is a reference error.
-  for (uint32_t slot = env->firstSyntheticValueSlot(); slot < env->slotSpan();
-       slot++) {
-    env->setAliasedBinding(slot, MagicValue(JS_UNINITIALIZED_LEXICAL));
+  const wasm::Module& module =
+      self->moduleSource()->as<WasmModuleObject>().module();
+  const auto& exports = module.moduleMeta().exports;
+  const auto& globals = module.codeMeta().globals;
+  MOZ_ASSERT(exports.length() == exportNames.length());
+  RootedValue value(cx);
+  for (uint32_t i = 0; i < exports.length(); i++) {
+    value.setMagic(JS_UNINITIALIZED_LEXICAL);
+    const wasm::Export& exp = exports[i];
+    // Exported mutable globals instead get a WasmMutableGlobalBindingObject
+    // that is initialized in place on execution and never replaced.
+    if (exp.kind() == wasm::DefinitionKind::Global) {
+      const wasm::GlobalDesc& global = globals[exp.globalIndex()];
+      if (global.isMutable() && global.type().isExposable()) {
+        auto* binding = WasmMutableGlobalBindingObject::create(cx);
+        if (!binding) {
+          return false;
+        }
+        value.setObject(*binding);
+      }
+    }
+    env->setAliasedBinding(env->firstSyntheticValueSlot() + i, value);
   }
 
   self->setInitialEnvironment(env);
