@@ -122,6 +122,16 @@ add_task(async function testAutocompletePopup() {
     `moz-extension://${extension.uuid}/page.html`,
     "options_ui document from extension is loaded in about:addons"
   );
+  // The detail view focuses its "more options" button in an animation frame
+  // after rendering. Wait for it, or it can take the focus away from the
+  // options browser after testDatalist focused it, and the clicks don't open
+  // the popup.
+  let moreOptionsButton = aboutaddonsWin.document.querySelector(
+    "addon-card .more-options-button"
+  );
+  if (aboutaddonsWin.document.activeElement != moreOptionsButton) {
+    await BrowserTestUtils.waitForEvent(moreOptionsButton, "focus");
+  }
   await testDatalist(optionsBrowser, browserWindow.document);
 
   await BrowserTestUtils.closeWindow(browserWindow);
