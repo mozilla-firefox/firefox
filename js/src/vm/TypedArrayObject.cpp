@@ -13,10 +13,14 @@
 #include "mozilla/PodOperations.h"
 #include "mozilla/ScopeExit.h"
 #include "mozilla/SIMD.h"
+#include "mozilla/SSE.h"
 #include "mozilla/TextUtils.h"
 
 #include <algorithm>
 #include <charconv>
+#ifdef __x86_64__
+#  include <immintrin.h>
+#endif
 #include <iterator>
 #include <limits>
 #include <numeric>
@@ -5646,6 +5650,85 @@ static bool uint8array_setFromHex(JSContext* cx, unsigned argc, Value* vp) {
                                                                          args);
 }
 
+#ifdef __x86_64__
+/**
+ * Encode 24 bytes into 32 characters at a time for as long as 28 bytes can be
+ * read, and return the number of bytes encoded.
+ *
+ * Wojciech Muła and Daniel Lemire, "Faster Base64 Encoding and Decoding Using
+ * AVX2 Instructions", https://arxiv.org/abs/1704.00605
+ */
+[[gnu::target("avx2")]]
+static size_t ToBase64AVX2(const uint8_t* src, size_t length, Latin1Char* dest,
+                           const char (&base64Chars)[65]) {
+  // Arrange each group of three bytes |a b c| as |b a c b|, so that every 6-bit
+  // value lies within one 16-bit lane.
+  const __m256i shuffle = _mm256_broadcastsi128_si256(
+      _mm_setr_epi8(1, 0, 2, 1, 4, 3, 5, 4, 7, 6, 8, 7, 10, 9, 11, 10));
+
+  // Offsets from a 6-bit value to its character: index 0 for the values 0-25,
+  // 1 for 26-51, 2-11 for 52-61, 12 for 62 and 13 for 63.
+  const char upper = base64Chars[0];
+  const char lower = base64Chars[26] - 26;
+  const char digit = base64Chars[52] - 52;
+  const __m256i offsets = _mm256_broadcastsi128_si256(_mm_setr_epi8(
+      upper, lower, digit, digit, digit, digit, digit, digit, digit, digit,
+      digit, digit, base64Chars[62] - 62, base64Chars[63] - 63, 0, 0));
+
+  size_t encoded = 0;
+  for (; length - encoded >= 28; encoded += 24, dest += 32) {
+    __m256i in = _mm256_set_m128i(
+        _mm_loadu_si128(reinterpret_cast<const __m128i*>(src + encoded + 12)),
+        _mm_loadu_si128(reinterpret_cast<const __m128i*>(src + encoded)));
+    in = _mm256_shuffle_epi8(in, shuffle);
+
+    __m256i hi = _mm256_and_si256(in, _mm256_set1_epi32(0x0fc0fc00));
+    __m256i lo = _mm256_and_si256(in, _mm256_set1_epi32(0x003f03f0));
+    __m256i values =
+        _mm256_or_si256(_mm256_mulhi_epu16(hi, _mm256_set1_epi32(0x04000040)),
+                        _mm256_mullo_epi16(lo, _mm256_set1_epi32(0x01000010)));
+
+    __m256i index = _mm256_subs_epu8(values, _mm256_set1_epi8(51));
+    index =
+        _mm256_sub_epi8(index, _mm256_cmpgt_epi8(values, _mm256_set1_epi8(25)));
+    __m256i chars =
+        _mm256_add_epi8(values, _mm256_shuffle_epi8(offsets, index));
+
+    _mm256_storeu_si256(reinterpret_cast<__m256i*>(dest), chars);
+  }
+  return encoded;
+}
+
+/**
+ * Encode 48 bytes into 64 characters at a time for as long as 64 bytes can be
+ * read, and return the number of bytes encoded.
+ *
+ * Wojciech Muła and Daniel Lemire, "Base64 encoding and decoding at almost the
+ * speed of a memory copy", https://arxiv.org/abs/1910.05109
+ */
+[[gnu::target("avx512vbmi")]]
+static size_t ToBase64AVX512(const uint8_t* src, size_t length,
+                             Latin1Char* dest, const char (&base64Chars)[65]) {
+  // Arrange each group of three bytes |a b c| as |b a c b|, then take the 6-bit
+  // values at bit offsets 10, 4, 22 and 16 of each group.
+  const __m512i shuffle = _mm512_setr_epi32(
+      0x01020001, 0x04050304, 0x07080607, 0x0a0b090a, 0x0d0e0c0d, 0x10110f10,
+      0x13141213, 0x16171516, 0x191a1819, 0x1c1d1b1c, 0x1f201e1f, 0x22232122,
+      0x25262425, 0x28292728, 0x2b2c2a2b, 0x2e2f2d2e);
+  const __m512i shifts = _mm512_set1_epi64(0x3036242a1016040a);
+  const __m512i lookup = _mm512_loadu_si512(base64Chars);
+
+  size_t encoded = 0;
+  for (; length - encoded >= 64; encoded += 48, dest += 64) {
+    __m512i in = _mm512_loadu_si512(src + encoded);
+    in = _mm512_permutexvar_epi8(shuffle, in);
+    __m512i values = _mm512_multishift_epi64_epi8(shifts, in);
+    _mm512_storeu_si512(dest, _mm512_permutexvar_epi8(values, lookup));
+  }
+  return encoded;
+}
+#endif
+
 template <typename Ops>
 static void ToBase64(TypedArrayObject* tarray, size_t length, Alphabet alphabet,
                      OmitPadding omitPadding, mozilla::Range<Latin1Char> out) {
@@ -5673,6 +5756,28 @@ static void ToBase64(TypedArrayObject* tarray, size_t length, Alphabet alphabet,
   // representation instead of first collecting them into an intermediate list.
   auto data = Ops::extract(tarray).template cast<uint8_t*>();
   auto toRead = length;
+
+#ifdef __x86_64__
+  if constexpr (std::is_same_v<Ops, UnsharedOps>) {
+    // The encoders are called directly rather than through a function pointer,
+    // which the rooting hazard analysis would assume can GC.
+    MOZ_RELEASE_ASSERT(out.end() - outPtr >= toRead / 3 * 4);
+    auto advance = [&](size_t encoded) {
+      data = data + encoded;
+      toRead -= encoded;
+      outPtr += encoded / 3 * 4;
+    };
+
+    if (mozilla::supports_avx512vbmi()) {
+      advance(ToBase64AVX512(data.unwrapUnshared(), toRead, outPtr.get(),
+                             base64Chars));
+    }
+    if (mozilla::supports_avx2()) {
+      advance(ToBase64AVX2(data.unwrapUnshared(), toRead, outPtr.get(),
+                           base64Chars));
+    }
+  }
+#endif
 
   if (toRead >= 12) {
     // Align |data| to uint32_t.
