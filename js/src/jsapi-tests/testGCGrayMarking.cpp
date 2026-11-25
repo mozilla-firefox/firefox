@@ -65,7 +65,8 @@ BEGIN_TEST(testGCGrayMarking) {
   AutoGCParameter param2(cx, JSGC_PER_ZONE_GC_ENABLED, true);
 
   bool ok = TestMarking() && TestJSWeakMaps() && TestInternalWeakMaps() &&
-            TestCCWs() && TestGrayUnmarking() && TestFixWeakMappingGrayBits();
+            TestCCWs() && TestGrayUnmarking() && TestFixWeakMappingGrayBits() &&
+            TestGrayUnmarkingDuringIncrementalGC();
 
   global1 = nullptr;
   global2 = nullptr;
@@ -627,7 +628,11 @@ bool TestFixWeakMappingGrayBits(MarkKeyOrDelegate markKey,
   // specified. Gray unmarking doesn't trace through weak maps so this can leave
   // gray things that should be black until the weak map gray bits are fixed.
 
+  JS_GC(cx);
   CHECK(CheckWeakMappingGrayBitsResult(true));
+
+  GCRuntime* gc = &cx->runtime()->gc;
+  CHECK(!gc->wereGrayBitsMarkedBlack());
 
   JSObject* weakMap;
   JSObject* key;
@@ -645,12 +650,16 @@ bool TestFixWeakMappingGrayBits(MarkKeyOrDelegate markKey,
   CHECK(delegate->color() == CellColor::Gray);
   CHECK(value->color() == CellColor::Gray);
   CHECK(CheckWeakMappingGrayBitsResult(true));
+  CHECK(!gc->wereGrayBitsMarkedBlack());
 
   MaybeExposeObject(weakMap, weakMapColor);
   MaybeExposeObject(keyOrDelegate, keyOrDelegateColor);
   CHECK(weakMap->color() == weakMapColor);
   CHECK(keyOrDelegate->color() == keyOrDelegateColor);
   CHECK(value->color() == CellColor::Gray);
+  CHECK(gc->wereGrayBitsMarkedBlack() ==
+        (weakMapColor == CellColor::Black ||
+         keyOrDelegateColor == CellColor::Black));
 
   // The value should be black if both the map and the key or delegate are
   // black. If only the delegate was exposed then the key should be black too.
@@ -664,8 +673,63 @@ bool TestFixWeakMappingGrayBits(MarkKeyOrDelegate markKey,
   CHECK(key->color() == (markKey ? keyOrDelegateColor : expected));
   CHECK(value->color() == expected);
   CHECK(CheckWeakMappingGrayBitsResult(true));
+  CHECK(!gc->wereGrayBitsMarkedBlack());
 
   ClearGrayRoots();
+
+  return true;
+}
+
+bool TestGrayUnmarkingDuringIncrementalGC() {
+  // Gray unmarking that happens during an incremental GC must still be
+  // recorded after the GC finishes so that weak map fixup is not skipped.
+
+#ifdef JS_GC_ZEAL
+
+  JSRuntime* rt = cx->runtime();
+  GCRuntime* gc = &rt->gc;
+
+  JSObject* obj = AllocPlainObject();
+  CHECK(obj);
+
+  grayRoots.grayRoot1 = obj;
+  JS_GC(cx);
+  CHECK(IsMarkedGray(obj));
+  CHECK(gc->areGrayBitsValid());
+  CHECK(!gc->wereGrayBitsMarkedBlack());
+
+  // Run an incremental GC until the object's zone has finished marking and is
+  // being swept, at which point exposing a gray thing will unmark it rather
+  // than triggering a read barrier.
+  JS::SetGCZeal(cx, uint8_t(ZealMode::YieldBeforeSweepingObjects), 0);
+  JS::PrepareForFullGC(cx);
+  JS::SliceBudget budget(JS::WorkBudget(1));
+  gc->startDebugGC(JS::GCOptions::Normal, budget);
+  while (JS::IsIncrementalGCInProgress(cx) && !obj->zone()->isGCSweeping()) {
+    gc->debugGCSlice(budget);
+  }
+  CHECK(JS::IsIncrementalGCInProgress(cx));
+  CHECK(obj->zone()->isGCSweeping());
+  CHECK(!obj->zone()->needsMarkingBarrier());
+  CHECK(IsMarkedGray(obj));
+  CHECK(!gc->wereGrayBitsMarkedBlack());
+
+  JS::ExposeObjectToActiveJS(obj);
+  CHECK(IsMarkedBlack(obj));
+  CHECK(gc->wereGrayBitsMarkedBlack());
+
+  JS::FinishIncrementalGC(cx, JS::GCReason::API);
+  JS::UnsetGCZeal(cx, uint8_t(ZealMode::YieldBeforeSweepingObjects));
+  CHECK(gc->areGrayBitsValid());
+  CHECK(IsMarkedBlack(obj));
+  CHECK(gc->wereGrayBitsMarkedBlack());
+
+  js::FixWeakMappingGrayBits(rt);
+  CHECK(!gc->wereGrayBitsMarkedBlack());
+
+  ClearGrayRoots();
+
+#endif
 
   return true;
 }

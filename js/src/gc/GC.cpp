@@ -4306,6 +4306,17 @@ void GCRuntime::setGrayBitsInvalid() {
   grayMarkingStateChangesInGC |= GrayBitsInvalid;
 }
 
+void GCRuntime::setGrayBitsWereMarkedBlack() {
+  grayMarkingState |= GrayBitsWereMarkedBlack;
+  grayMarkingStateChangesInGC |= GrayBitsWereMarkedBlack;
+}
+
+void GCRuntime::clearGrayBitsWereMarkedBlack() {
+  MOZ_ASSERT(!isIncrementalGCInProgress());
+  MOZ_ASSERT(wereGrayBitsMarkedBlack());
+  grayMarkingState &= ~GrayBitsWereMarkedBlack;
+}
+
 void GCRuntime::disableIncrementalBarriers() {
   // Clear needsMarkingBarrier so we don't do any write barriers during
   // foreground finalization. This would otherwise happen when destroying

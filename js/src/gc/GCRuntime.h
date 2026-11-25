@@ -610,8 +610,16 @@ class GCRuntime {
   bool isCompactingGc() const { return isCompacting; }
   bool didCompactZones() const { return isCompacting && zonesCompacted; }
 
-  bool areGrayBitsValid() const { return grayMarkingState == 0; }
+  bool areGrayBitsValid() const {
+    return (grayMarkingState & GrayBitsInvalid) == 0;
+  }
+  bool wereGrayBitsMarkedBlack() const {
+    return grayMarkingState & GrayBitsWereMarkedBlack;
+  }
+
   void setGrayBitsInvalid();
+  void setGrayBitsWereMarkedBlack();
+  void clearGrayBitsWereMarkedBlack();
 
   mozilla::TimeStamp lastGCStartTime() const { return lastGCStartTime_; }
   mozilla::TimeStamp lastGCEndTime() const { return lastGCEndTime_; }
@@ -1250,8 +1258,13 @@ class GCRuntime {
    * The gray mark bits can become invalid if UnmarkGray overflows the stack or
    * the GC is aborted part way through. A full GC can reset this state since it
    * recalculates all the gray bits.
+   *
+   * If gray bits were marked black by the UnmarkGrayGCThing functions then we
+   * need to propagate this change through weakmaps before the next cycle
+   * collection.
    */
   static constexpr uint32_t GrayBitsInvalid = Bit(0);
+  static constexpr uint32_t GrayBitsWereMarkedBlack = Bit(1);
   mozilla::Atomic<uint32_t, mozilla::Relaxed> grayMarkingState;
   mozilla::Atomic<uint32_t, mozilla::Relaxed> grayMarkingStateChangesInGC;
 
