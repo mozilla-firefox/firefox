@@ -5,10 +5,10 @@
 from setuptools import setup
 
 PACKAGE_NAME = "mozproxy"
-PACKAGE_VERSION = "1.0"
+PACKAGE_VERSION = "2.0.0"
 
 # dependencies
-deps = ["redo", "mozinfo", "mozlog >= 6.0"]
+deps = ["redo", "mozinfo >= 0.7", "mozlog >= 6.0", "mozprocess >= 1.3.0"]
 
 setup(
     name=PACKAGE_NAME,
