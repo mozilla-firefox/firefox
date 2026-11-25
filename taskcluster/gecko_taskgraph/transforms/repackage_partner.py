@@ -168,7 +168,6 @@ def make_job_description(config, jobs):
         run = job.get("mozharness", {})
         run.update({
             "using": "mozharness",
-            "clone-with": "hg",
             "script": "mozharness/scripts/repackage.py",
             "job-script": "taskcluster/scripts/builder/repackage.sh",
             "actions": ["setup", "repackage"],
