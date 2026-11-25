@@ -1530,15 +1530,20 @@ bool JSContext::stackContainsAddress(uintptr_t address, JS::StackKind kind) {
 }
 
 void JSContext::resetJitStackLimit() {
-  // Note that, for now, we use the untrusted limit for ion. This is fine,
-  // because it's the most conservative limit, and if we hit it, we'll bail
-  // out of ion into the interpreter, which will do a proper recursion check.
+  // We use the untrusted-script limit because it's the most conservative one.
+  // When the jitStackLimit check fails, JIT code can call into C++ to do a more
+  // precise check and to handle interrupts. See the comment above
+  // requestInterrupt.
 #ifdef JS_SIMULATOR
-  jitStackLimit = jit::Simulator::StackLimit();
+  JS::NativeStackLimit limit = jit::Simulator::StackLimit();
 #else
-  jitStackLimit = nativeStackLimit[JS::StackForUntrustedScript];
+  JS::NativeStackLimit limit = nativeStackLimit[JS::StackForUntrustedScript];
 #endif
-  jitStackLimitNoInterrupt = jitStackLimit;
+  MOZ_ASSERT(limit != JS::NativeStackLimitMin);
+
+  // Note: this can race with requestInterrupt so don't read back jitStackLimit.
+  jitStackLimit = limit;
+  jitStackLimitNoInterrupt = limit;
 }
 
 void JSContext::initJitStackLimit() {
