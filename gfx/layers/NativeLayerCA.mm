@@ -818,7 +818,11 @@ CGColorRef CGColorCreateForDeviceColor(const gfx::DeviceColor& aColor) {
     return CGColorCreateSRGB(aColor.r, aColor.g, aColor.b, aColor.a);
   }
 
-  return CGColorCreateGenericRGB(aColor.r, aColor.g, aColor.b, aColor.a);
+  CFTypeRefPtr<CGColorSpaceRef> colorSpace =
+      CFTypeRefPtr<CGColorSpaceRef>::WrapUnderCreateRule(
+          CGColorSpaceCreateDeviceRGB());
+  const CGFloat components[] = {aColor.r, aColor.g, aColor.b, aColor.a};
+  return CGColorCreate(colorSpace.get(), components);
 }
 
 NativeLayerCA::NativeLayerCA(gfx::DeviceColor aColor)

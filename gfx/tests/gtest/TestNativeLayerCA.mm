@@ -5,7 +5,9 @@
 #import <AVFoundation/AVFoundation.h>
 #import <QuartzCore/QuartzCore.h>
 
+#include "CFTypeRefPtr.h"
 #include "gtest/gtest.h"
+#include "mozilla/Preferences.h"
 #include "mozilla/ScopeExit.h"
 #include "mozilla/TypedEnumBits.h"
 #include "mozilla/gfx/MacIOSurface.h"
@@ -232,6 +234,106 @@ TEST_P(NativeLayerCAVideo, NonDRMVideoLayerHasNoBacking) {
 }
 
 INSTANTIATE_TEST_SUITE_P(, NativeLayerCAVideo, ::testing::Bool(),
+                         [](const ::testing::TestParamInfo<bool>& aInfo) {
+                           return aInfo.param ? "Offscreen" : "Onscreen";
+                         });
+
+static const DeviceColor kBackdropColor(0.25f, 0.5f, 0.75f, 1.0f);
+
+// A color layer committed into a detached root CALayer, either as the onscreen
+// tree or as the offscreen tree used for snapshots.
+class NativeLayerCAColor : public ::testing::TestWithParam<bool> {
+ protected:
+  void SetUp() override {
+    mOriginalNativeSRGB =
+        Preferences::GetBool("gfx.color_management.native_srgb");
+    mRootCALayer = [[CALayer layer] retain];
+    mOffscreenRootCALayer = [[CALayer layer] retain];
+    mRoot = NativeLayerRootCA::CreateForCALayer(mRootCALayer);
+  }
+
+  void TearDown() override {
+    if (mLayer) {
+      mRoot->RemoveLayer(mLayer);
+      mLayer = nullptr;
+    }
+    mRoot = nullptr;
+    [mOffscreenRootCALayer release];
+    [mRootCALayer release];
+    Preferences::SetBool("gfx.color_management.native_srgb",
+                         mOriginalNativeSRGB);
+  }
+
+  bool IsOffscreen() const { return GetParam(); }
+
+  // Returns the background color of the committed color layer.
+  CGColorRef CommitColorLayer(bool aNativeSRGB) {
+    Preferences::SetBool("gfx.color_management.native_srgb", aNativeSRGB);
+    RefPtr<NativeLayer> layer = mRoot->CreateLayerForColor(kBackdropColor);
+    mLayer = layer->AsNativeLayerCA();
+    mLayer->SetDisplayRect(IntRect(0, 0, 16, 16));
+    mRoot->AppendLayer(mLayer);
+    if (IsOffscreen()) {
+      mRoot->CommitOffscreen(mOffscreenRootCALayer);
+      return FindBackgroundColor(mOffscreenRootCALayer);
+    }
+    mRoot->CommitToScreen();
+    return FindBackgroundColor(mRootCALayer);
+  }
+
+  static CGColorRef FindBackgroundColor(CALayer* aLayer) {
+    if (aLayer.backgroundColor) {
+      return aLayer.backgroundColor;
+    }
+    for (CALayer* sublayer in aLayer.sublayers) {
+      if (CGColorRef color = FindBackgroundColor(sublayer)) {
+        return color;
+      }
+    }
+    return nullptr;
+  }
+
+  static void ExpectBackdropComponents(CGColorRef aColor) {
+    ASSERT_EQ(CGColorGetNumberOfComponents(aColor), 4u);
+    const CGFloat* components = CGColorGetComponents(aColor);
+    EXPECT_FLOAT_EQ(components[0], kBackdropColor.r);
+    EXPECT_FLOAT_EQ(components[1], kBackdropColor.g);
+    EXPECT_FLOAT_EQ(components[2], kBackdropColor.b);
+    EXPECT_FLOAT_EQ(components[3], kBackdropColor.a);
+  }
+
+  bool mOriginalNativeSRGB = false;
+  CALayer* mRootCALayer = nil;
+  CALayer* mOffscreenRootCALayer = nil;
+  RefPtr<NativeLayerRootCA> mRoot;
+  RefPtr<NativeLayerCA> mLayer;
+};
+
+TEST_P(NativeLayerCAColor, BackdropIsDeviceRGBWithoutNativeSRGB) {
+  // Our IOSurfaces are untagged when native_srgb is off, so backdrop colors
+  // must be untagged too (DeviceRGB) or Core Animation converts them and they
+  // no longer match the tiles next to them.
+  CGColorRef color = CommitColorLayer(false);
+  ASSERT_NE(color, nullptr);
+  CFTypeRefPtr<CGColorSpaceRef> deviceRGB =
+      CFTypeRefPtr<CGColorSpaceRef>::WrapUnderCreateRule(
+          CGColorSpaceCreateDeviceRGB());
+  EXPECT_TRUE(CFEqual(CGColorGetColorSpace(color), deviceRGB.get()));
+  ExpectBackdropComponents(color);
+}
+
+TEST_P(NativeLayerCAColor, BackdropIsSRGBWithNativeSRGB) {
+  CGColorRef color = CommitColorLayer(true);
+  ASSERT_NE(color, nullptr);
+  CFTypeRefPtr<CFStringRef> name =
+      CFTypeRefPtr<CFStringRef>::WrapUnderCreateRule(
+          CGColorSpaceCopyName(CGColorGetColorSpace(color)));
+  ASSERT_TRUE(name);
+  EXPECT_TRUE(CFEqual(name.get(), kCGColorSpaceSRGB));
+  ExpectBackdropComponents(color);
+}
+
+INSTANTIATE_TEST_SUITE_P(, NativeLayerCAColor, ::testing::Bool(),
                          [](const ::testing::TestParamInfo<bool>& aInfo) {
                            return aInfo.param ? "Offscreen" : "Onscreen";
                          });
