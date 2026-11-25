@@ -293,14 +293,6 @@ object SettingsSelectors : SelectorContainer {
             groups = setOf(Group.PRIVACY_AND_SECURITY_SETTINGS_SECTION),
         )
 
-    val SIGN_IN_BUTTON =
-        Selector(
-            strategy = SelectorStrategy.ESPRESSO_BY_TEXT,
-            value = "Sign in",
-            description = "the Sign in button",
-            groups = setOf(Group.SYNC),
-        )
-
     val SIGN_IN_PROMO_CARD =
         Selector(
             strategy = SelectorStrategy.COMPOSE_BY_TAG,

@@ -783,8 +783,6 @@
     <string name="preferences_gestures">Gestures</string>
     <!-- Preference for settings related to visual options -->
     <string name="preferences_customize">Customize</string>
-    <!-- Preference description shown in the banner prompting the user to sign in for sync features -->
-    <string name="preferences_sign_in_description">Sync tabs, bookmarks, passwords, and more.</string>
     <!-- Preference shown instead of account display name while account profile information isn't available yet. -->
     <string name="preferences_account_default_name_2" tools:ignore="BrandUsage">Mozilla account</string>
     <!-- Preference text for account title when there was an error syncing FxA -->

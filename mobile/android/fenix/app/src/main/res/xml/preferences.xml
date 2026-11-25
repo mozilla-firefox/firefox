@@ -6,16 +6,9 @@
 <androidx.preference.PreferenceScreen xmlns:android="http://schemas.android.com/apk/res/android"
     xmlns:app="http://schemas.android.com/apk/res-auto">
 
-    <androidx.preference.Preference
-        android:key="@string/pref_key_sign_in"
-        android:layout="@layout/sign_in_preference"
-        android:summary="@string/preferences_sign_in_description"
-        android:title="@string/preferences_sign_in"
-        app:allowDividerBelow="false" />
-
     <androidx.preference.PreferenceCategory
         android:key="@string/pref_key_account_category"
-        android:title="@string/preferences_category_account"
+        android:title="@string/preferences_account_and_sync_settings"
         app:isPreferenceVisible="false"
         android:layout="@layout/preference_category_no_icon_style">
 

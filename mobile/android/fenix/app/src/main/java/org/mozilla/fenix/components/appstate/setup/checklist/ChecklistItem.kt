@@ -131,7 +131,7 @@ private fun signInTask(isCompleted: Boolean) =
     ChecklistItem.Task(
         type = ChecklistItem.Task.Type.SIGN_IN,
         title = R.string.setup_checklist_task_account_sync,
-        icon = R.drawable.ic_fx_accounts_avatar,
+        icon = iconsR.drawable.mozac_ic_avatar_circle_fill_24,
         isCompleted = isCompleted,
     )
 

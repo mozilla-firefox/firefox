@@ -44,7 +44,6 @@ import org.hamcrest.CoreMatchers
 import org.hamcrest.CoreMatchers.endsWith
 import org.hamcrest.Matchers.allOf
 import org.mozilla.fenix.R
-import org.mozilla.fenix.ext.components
 import org.mozilla.fenix.helpers.AppAndSystemHelper.forceCloseApp
 import org.mozilla.fenix.helpers.AppAndSystemHelper.isPackageInstalled
 import org.mozilla.fenix.helpers.Constants.LISTS_MAXSWIPES
@@ -57,7 +56,6 @@ import org.mozilla.fenix.helpers.MatcherHelper.itemContainingText
 import org.mozilla.fenix.helpers.MatcherHelper.itemWithText
 import org.mozilla.fenix.helpers.TestAssetHelper.waitingTime
 import org.mozilla.fenix.helpers.TestAssetHelper.waitingTimeShort
-import org.mozilla.fenix.helpers.TestHelper.appContext
 import org.mozilla.fenix.helpers.TestHelper.appName
 import org.mozilla.fenix.helpers.TestHelper.hasCousin
 import org.mozilla.fenix.helpers.TestHelper.mDevice
@@ -739,16 +737,9 @@ class SettingsRobot {
             composeTestRule: ComposeTestRule,
             interact: SettingsSignInToSyncRobot.() -> Unit,
         ): SettingsSignInToSyncRobot.Transition {
-            // The legacy "Sign in" branch can be removed once accountSettingsNewUi is enabled by default.
-            if (appContext.components.settings.accountSettingsNewUi) {
-                Log.i(TAG, "openTurnOnSyncMenu: Trying to click the \"Sign in\" promo card")
-                composeTestRule.onNodeWithTag(AccountSettingsTestTag.SIGN_IN_PROMO_CARD).performClick()
-                Log.i(TAG, "openTurnOnSyncMenu: Clicked the \"Sign in\" promo card")
-            } else {
-                Log.i(TAG, "openTurnOnSyncMenu: Trying to click the \"Sync and save your data\" button")
-                onView(withText("Sign in")).click()
-                Log.i(TAG, "openTurnOnSyncMenu: Clicked the \"Sync and save your data\" button")
-            }
+            Log.i(TAG, "openTurnOnSyncMenu: Trying to click the \"Sign in\" promo card")
+            composeTestRule.onNodeWithTag(AccountSettingsTestTag.SIGN_IN_PROMO_CARD).performClick()
+            Log.i(TAG, "openTurnOnSyncMenu: Clicked the \"Sign in\" promo card")
 
             SettingsSignInToSyncRobot().interact()
             return SettingsSignInToSyncRobot.Transition(composeTestRule)

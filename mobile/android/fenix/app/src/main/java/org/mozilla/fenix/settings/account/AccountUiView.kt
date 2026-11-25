@@ -5,7 +5,6 @@
 package org.mozilla.fenix.settings.account
 
 import android.content.Context
-import androidx.preference.Preference
 import androidx.preference.PreferenceCategory
 import androidx.preference.PreferenceFragmentCompat
 import kotlinx.coroutines.CoroutineScope
@@ -13,7 +12,6 @@ import mozilla.components.concept.fetch.Client
 import mozilla.components.concept.sync.Profile
 import mozilla.components.service.fxa.manager.FxaAccountManager
 import org.mozilla.fenix.R
-import org.mozilla.fenix.ext.components
 import org.mozilla.fenix.settings.requirePreference
 
 class AccountUiView(
@@ -23,7 +21,6 @@ class AccountUiView(
     private val httpClient: Client,
 ) {
 
-    private val preferenceSignIn = fragment.requirePreference<Preference>(R.string.pref_key_sign_in)
     private val preferenceSignInPromo =
         fragment.requirePreference<SignInPromoPreference>(R.string.pref_key_sign_in_promo)
     private val preferenceFirefoxAccount = fragment.requirePreference<AccountPreference>(R.string.pref_key_account)
@@ -47,12 +44,10 @@ class AccountUiView(
 
         // Signed-in, no problems.
         if (account != null && !accountManager.accountNeedsReauth()) {
-            preferenceSignIn.isVisible = false
             preferenceSignInPromo.isVisible = false
 
             accountPreferenceUpdater.update(context, profile)
 
-            preferenceSignIn.onPreferenceClickListener = null
             preferenceFirefoxAccountAuthError.isVisible = false
             preferenceFirefoxAccount.isVisible = true
             accountPreferenceCategory.isVisible = true
@@ -63,27 +58,16 @@ class AccountUiView(
             preferenceFirefoxAccountAuthError.isVisible = true
             accountPreferenceCategory.isVisible = true
 
-            preferenceSignIn.isVisible = false
             preferenceSignInPromo.isVisible = false
-            preferenceSignIn.onPreferenceClickListener = null
 
             preferenceFirefoxAccountAuthError.email = profile?.email
 
-            // Signed-out with the new account settings UI enabled.
-        } else if (context.components.settings.accountSettingsNewUi) {
+            // Signed-out.
+        } else {
             preferenceSignInPromo.isVisible = true
-            preferenceSignIn.isVisible = false
             preferenceFirefoxAccount.isVisible = false
             preferenceFirefoxAccountAuthError.isVisible = false
             accountPreferenceCategory.isVisible = true
-
-            // Signed-out.
-        } else {
-            preferenceSignIn.isVisible = true
-            preferenceSignInPromo.isVisible = false
-            preferenceFirefoxAccount.isVisible = false
-            preferenceFirefoxAccountAuthError.isVisible = false
-            accountPreferenceCategory.isVisible = false
         }
     }
 
