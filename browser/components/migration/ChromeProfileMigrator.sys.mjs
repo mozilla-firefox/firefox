@@ -351,12 +351,20 @@ export class ChromeProfileMigrator extends MigratorBase {
   }
 
   async getLastUsedDate() {
-    let sourceProfiles = await this.getSourceProfiles();
-    if (!sourceProfiles) {
-      return new Date(0);
-    }
     let chromeUserDataPath = await this._getChromeUserDataPathIfExists();
     if (!chromeUserDataPath) {
+      return new Date(0);
+    }
+    if (this.#shouldAvoidReadingData()) {
+      // The profiles can't be read before the user selects the data folder,
+      // but the modification date of Local State can.
+      let info = await IOUtils.stat(
+        PathUtils.join(chromeUserDataPath, "Local State")
+      ).catch(() => null);
+      return new Date(info?.lastModified ?? 0);
+    }
+    let sourceProfiles = await this.getSourceProfiles();
+    if (!sourceProfiles) {
       return new Date(0);
     }
     let datePromises = sourceProfiles.map(async profile => {

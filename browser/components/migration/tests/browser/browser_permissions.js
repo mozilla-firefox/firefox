@@ -39,6 +39,12 @@ add_task(async function test_permissions() {
     sandbox.restore();
   });
 
+  // Browsers installed on the machine running the test could otherwise be
+  // selected first.
+  sandbox.stub(MigrationUtils, "availableMigratorKeys").get(() => {
+    return [InternalTestingProfileMigrator.key];
+  });
+
   sandbox
     .stub(InternalTestingProfileMigrator.prototype, "canGetPermissions")
     .resolves("/some/path");

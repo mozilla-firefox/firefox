@@ -312,6 +312,38 @@ add_task(async function test_noReadsAfterWrongFolderAndCancel() {
 });
 
 /**
+ * Tests that before the user selects the data folder, the last used date
+ * comes from the modification date of Local State, without reading it, so
+ * that Chrome can still be listed first in the migration wizard.
+ */
+add_task(async function test_lastUsedDateBeforeFolderSelection() {
+  let sandbox = sinon.createSandbox();
+  registerCleanupFunction(() => {
+    sandbox.restore();
+  });
+
+  sandbox.stub(MigratorBase, "needsFolderSelectionToReadData").returns(true);
+  sandbox.stub(ChromeMigrationUtils, "getDataPath").resolves(gTempDir.path);
+  let getLocalStateSpy = sandbox.spy(ChromeMigrationUtils, "getLocalState");
+
+  let lastModified = new Date("2026-11-01T12:00:00Z").getTime();
+  await IOUtils.setModificationTime(
+    PathUtils.join(gTempDir.path, "Local State"),
+    lastModified
+  );
+
+  let migrator = new ChromeProfileMigrator();
+  Assert.equal(
+    (await migrator.getLastUsedDate()).getTime(),
+    lastModified,
+    "Should use the modification date of Local State."
+  );
+  Assert.ok(getLocalStateSpy.notCalled, "Should not have read Local State.");
+
+  sandbox.restore();
+});
+
+/**
  * Tests that looking for importable logins does not read any Chrome data
  * if the platform blocks reading it until the user selects its folder.
  */
