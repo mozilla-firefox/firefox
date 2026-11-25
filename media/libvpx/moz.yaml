@@ -54,8 +54,6 @@ vendoring:
 
   patches:
     - arm_cpu_runtime_detection_code_on_openbsd.patch
-    - input_frame_validation.patch
-    - input_frame_validation_vp9.patch
     - missing_header.patch
 
   update-actions:
