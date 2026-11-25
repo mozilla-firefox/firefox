@@ -488,12 +488,6 @@ browser-language-fallback-label =
 browser-language-install-error =
   .message = { -brand-short-name } can’t update your languages right now. Check that you are connected to the internet or try again.
 
-fx-translate-web-pages = { -translations-brand-name }
-
-translate-exceptions =
-    .label = Exceptions…
-    .accesskey = x
-
 settings-translations-header =
     .label = Translations
     .aria-label = Translations
