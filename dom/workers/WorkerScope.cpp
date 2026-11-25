@@ -1023,6 +1023,14 @@ void WorkerGlobalScope::ReportToConsole(
                                       aMessageName, aParams, aLocation);
 }
 
+void WorkerGlobalScope::ReportToConsole(
+    uint32_t aErrorFlags, const nsCString& aCategory, FluentResourceFile aFile,
+    const nsCString& aL10nId, const nsTArray<intl::FluentArg>& aArgs,
+    const mozilla::SourceLocation& aLocation) {
+  WorkerPrivate::ReportErrorToConsole(aErrorFlags, aCategory, aFile, aL10nId,
+                                      aArgs, aLocation);
+}
+
 void WorkerGlobalScope::StorageAccessPermissionGranted() {
   // Reset the IndexedDB factory.
   mIndexedDB = nullptr;

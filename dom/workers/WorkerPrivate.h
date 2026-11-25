@@ -62,8 +62,12 @@ class Dispatchable;
 
 namespace mozilla {
 class ThrottledEventQueue;
+namespace intl {
+struct FluentArg;
+}  // namespace intl
 namespace dom {
 
+enum class FluentResourceFile : uint8_t;
 class PRemoteWorkerDebuggerChild;
 class PRemoteWorkerDebuggerParent;
 class RemoteWorkerChild;
@@ -476,6 +480,14 @@ class WorkerPrivate final
       const nsTArray<nsString>& aParams = nsTArray<nsString>(),
       const mozilla::SourceLocation& aLocation =
           mozilla::JSCallingLocation::Get());
+
+  static void ReportErrorToConsole(uint32_t aErrorFlags,
+                                   const nsCString& aCategory,
+                                   FluentResourceFile aFile,
+                                   const nsCString& aL10nId,
+                                   const nsTArray<intl::FluentArg>& aArgs,
+                                   const mozilla::SourceLocation& aLocation =
+                                       mozilla::JSCallingLocation::Get());
 
   int32_t SetTimeout(JSContext* aCx, TimeoutHandler* aHandler, int32_t aTimeout,
                      bool aIsInterval, Timeout::Reason aReason,

@@ -592,6 +592,29 @@ class ReportErrorToConsoleRunnable final : public WorkerParentThreadRunnable {
                      const nsCString& aMessageName,
                      const nsTArray<nsString>& aParams,
                      const mozilla::SourceLocation& aLocation) {
+    ReportImpl(aWorkerPrivate, aErrorFlags, aCategory, AsVariant(aFile),
+               aMessageName, aParams, {}, aLocation);
+  }
+
+  static void Report(WorkerPrivate* aWorkerPrivate, uint32_t aErrorFlags,
+                     const nsCString& aCategory, FluentResourceFile aFile,
+                     const nsCString& aL10nId,
+                     const nsTArray<intl::FluentArg>& aArgs,
+                     const mozilla::SourceLocation& aLocation) {
+    ReportImpl(aWorkerPrivate, aErrorFlags, aCategory, AsVariant(aFile),
+               aL10nId, {}, aArgs, aLocation);
+  }
+
+ private:
+  using File = Variant<PropertiesFile, FluentResourceFile>;
+
+  // aParams are used for properties files, aArgs for Fluent resources.
+  static void ReportImpl(WorkerPrivate* aWorkerPrivate, uint32_t aErrorFlags,
+                         const nsCString& aCategory, const File& aFile,
+                         const nsCString& aMessageName,
+                         const nsTArray<nsString>& aParams,
+                         const nsTArray<intl::FluentArg>& aArgs,
+                         const mozilla::SourceLocation& aLocation) {
     if (aWorkerPrivate) {
       aWorkerPrivate->AssertIsOnWorkerThread();
     } else {
@@ -603,22 +626,30 @@ class ReportErrorToConsoleRunnable final : public WorkerParentThreadRunnable {
       RefPtr<ReportErrorToConsoleRunnable> runnable =
           new ReportErrorToConsoleRunnable(aWorkerPrivate, aErrorFlags,
                                            aCategory, aFile, aMessageName,
-                                           aParams, aLocation);
+                                           aParams, aArgs, aLocation);
       runnable->Dispatch(aWorkerPrivate);
       return;
     }
 
     // Log a warning to the console.
-    nsContentUtils::ReportToConsole(aErrorFlags, aCategory, nullptr, aFile,
-                                    aMessageName.get(), aParams, aLocation);
+    aFile.match(
+        [&](PropertiesFile aPropertiesFile) {
+          nsContentUtils::ReportToConsole(aErrorFlags, aCategory, nullptr,
+                                          aPropertiesFile, aMessageName.get(),
+                                          aParams, aLocation);
+        },
+        [&](FluentResourceFile aFluentFile) {
+          nsContentUtils::ReportToConsole(aErrorFlags, aCategory, nullptr,
+                                          aFluentFile, aMessageName, aArgs,
+                                          aLocation);
+        });
   }
 
- private:
   ReportErrorToConsoleRunnable(WorkerPrivate* aWorkerPrivate,
                                uint32_t aErrorFlags, const nsCString& aCategory,
-                               PropertiesFile aFile,
-                               const nsCString& aMessageName,
+                               const File& aFile, const nsCString& aMessageName,
                                const nsTArray<nsString>& aParams,
+                               const nsTArray<intl::FluentArg>& aArgs,
                                const mozilla::SourceLocation& aLocation)
       : WorkerParentThreadRunnable("ReportErrorToConsoleRunnable"),
         mErrorFlags(aErrorFlags),
@@ -626,6 +657,7 @@ class ReportErrorToConsoleRunnable final : public WorkerParentThreadRunnable {
         mFile(aFile),
         mMessageName(aMessageName),
         mParams(aParams.Clone()),
+        mArgs(aArgs.Clone()),
         mLocation(aLocation) {}
 
   virtual void PostDispatch(WorkerPrivate* aWorkerPrivate,
@@ -640,16 +672,17 @@ class ReportErrorToConsoleRunnable final : public WorkerParentThreadRunnable {
                          WorkerPrivate* aWorkerPrivate) override {
     WorkerPrivate* parent = aWorkerPrivate->GetParent();
     MOZ_ASSERT_IF(!parent, NS_IsMainThread());
-    Report(parent, mErrorFlags, mCategory, mFile, mMessageName, mParams,
-           mLocation);
+    ReportImpl(parent, mErrorFlags, mCategory, mFile, mMessageName, mParams,
+               mArgs, mLocation);
     return true;
   }
 
   const uint32_t mErrorFlags;
   const nsCString mCategory;
-  const PropertiesFile mFile;
+  const File mFile;
   const nsCString mMessageName;
   const nsTArray<nsString> mParams;
+  const nsTArray<intl::FluentArg> mArgs;
   const mozilla::SourceLocation mLocation;
 };
 
@@ -6181,6 +6214,20 @@ void WorkerPrivate::ReportErrorToConsole(
 
   ReportErrorToConsoleRunnable::Report(wp, aErrorFlags, aCategory, aFile,
                                        aMessageName, aParams, aLocation);
+}
+
+// static
+void WorkerPrivate::ReportErrorToConsole(
+    uint32_t aErrorFlags, const nsCString& aCategory, FluentResourceFile aFile,
+    const nsCString& aL10nId, const nsTArray<intl::FluentArg>& aArgs,
+    const mozilla::SourceLocation& aLocation) {
+  WorkerPrivate* wp = nullptr;
+  if (!NS_IsMainThread()) {
+    wp = GetCurrentThreadWorkerPrivate();
+  }
+
+  ReportErrorToConsoleRunnable::Report(wp, aErrorFlags, aCategory, aFile,
+                                       aL10nId, aArgs, aLocation);
 }
 
 int32_t WorkerPrivate::SetTimeout(JSContext* aCx, TimeoutHandler* aHandler,

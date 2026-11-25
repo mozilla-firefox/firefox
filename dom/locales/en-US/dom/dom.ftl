@@ -15,3 +15,11 @@ dom-parser-speculation-failed = An unbalanced tree was written using document.wr
 # Variables:
 #   $url (String) - URL of the documentation page for EditContext.updateCharacterBounds().
 dom-edit-context-character-bounds-warning = EditContext.updateCharacterBounds() was not called synchronously in characterboundsupdate event listener. IME interface may move around unexpectedly for some users. More information: { $url }
+
+# Do not translate "entryTypes".
+# Variables:
+#   $entryTypes (String) - Comma-separated list of the entry types that were ignored.
+dom-performance-observer-unsupported-entry-types = Ignoring unsupported entryTypes: { $entryTypes }.
+
+# Do not translate "entryTypes".
+dom-performance-observer-no-valid-entry-types = No valid entryTypes; aborting registration.
