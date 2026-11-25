@@ -54,6 +54,106 @@
   fill: currentColor;
 }
 
+.examples {
+  display: grid;
+  grid-template-rows: 1fr;
+}
+
+.examples-list {
+  min-block-size: 0;
+  overflow: hidden;
+  display: flex;
+  flex-direction: column;
+  align-items: flex-start;
+  gap: calc(var(--space-medium) + var(--space-xxsmall));
+  padding-block: var(--space-small) var(--space-xxlarge);
+  padding-inline: var(--space-small);
+}
+
+.examples-intro {
+  margin: 0;
+  color: var(--text-color-deemphasized);
+  font-size: var(--font-size-small);
+}
+
+/* These pills are similar to the Smart Window prompt pills in
+ * smartwindow-prompts.css, with a few differences: the text color and padding
+ * come from moz-button, there is no hover, focus or active gradient, and
+ * forced colors get plain buttons. Compare the two if they are made reusable. */
+.example {
+  --button-content-alignment: start;
+  --button-font-size: 1em;
+  --button-font-weight: var(--font-weight);
+}
+
+.example::part(button) {
+  text-align: start;
+}
+
+@media not (forced-colors) {
+  /* stylelint-disable stylelint-plugin-mozilla/use-design-tokens, stylelint-plugin-mozilla/no-base-design-tokens */
+  .example {
+    --prompt-background-color: light-dark(white, var(--color-gray-70));
+    --button-background-color: var(--prompt-background-color);
+    --button-border-radius: var(--border-radius-circle);
+  }
+
+  .example::part(button) {
+    position: relative;
+    border-color: transparent;
+    box-shadow: none;
+  }
+
+  .example::part(button)::before {
+    content: "";
+    position: absolute;
+    inset: calc(-1 * var(--border-width));
+    border-radius: inherit;
+    padding: var(--border-width);
+    background: linear-gradient(180deg, var(--prompt-background-color) 60%, var(--color-violet-30) 100%);
+    mask:
+      linear-gradient(#fff 0 0) content-box,
+      linear-gradient(#fff 0 0);
+    mask-composite: exclude;
+    pointer-events: none;
+  }
+  /* stylelint-enable stylelint-plugin-mozilla/use-design-tokens, stylelint-plugin-mozilla/no-base-design-tokens */
+}
+
+.examples[concealed] {
+  grid-template-rows: 0fr;
+  opacity: 0;
+  visibility: hidden;
+
+  .examples-list {
+    padding-block: 0;
+  }
+}
+
+@media not (prefers-reduced-motion) {
+  .examples {
+    transition:
+      grid-template-rows 0.4s ease-out,
+      opacity 0.4s ease-out,
+      visibility 0.4s ease-out;
+  }
+
+  .examples-list {
+    transition: padding-block 0.4s ease-out;
+  }
+
+  .tip {
+    transition:
+      opacity 0.2s ease-out 0.4s,
+      transform 0.3s ease-out 0.4s;
+
+    @starting-style {
+      opacity: 0;
+      transform: translateY(calc(100% + var(--space-xxlarge)));
+    }
+  }
+}
+
 .field {
   display: flex;
   flex-direction: column;

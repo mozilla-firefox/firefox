@@ -28,6 +28,10 @@
     <div id="content"></div>
     <pre id="test"></pre>
     <script>
+      const { TestUtils } = ChromeUtils.importESModule(
+        "resource://testing-common/TestUtils.sys.mjs"
+      );
+
       add_task(async function test_enter_submits() {
         let composer = await createComposer();
         let submitted = false;
@@ -143,6 +147,216 @@
         await composer.updateComplete;
         ok(!tip(composer), "stays hidden while typing on");
         composer.remove();
+      });
+
+      const examples = composer =>
+        composer.shadowRoot.querySelector(".examples");
+      const pills = composer =>
+        Array.from(composer.shadowRoot.querySelectorAll(".example"));
+      const textarea = composer =>
+        composer.shadowRoot.querySelector("textarea");
+      const isConcealed = composer =>
+        examples(composer).hasAttribute("concealed") &&
+        examples(composer).hasAttribute("inert");
+      const isShown = composer =>
+        !examples(composer).hasAttribute("concealed") &&
+        !examples(composer).hasAttribute("inert");
+
+      // Fluent applies the prompt attribute asynchronously.
+      async function pillsReady(composer) {
+        await TestUtils.waitForCondition(() => {
+          let list = pills(composer);
+          return (
+            list.length == 3 && list.every(pill => pill.getAttribute("prompt"))
+          );
+        }, "three pills have a prompt");
+        await Promise.all(pills(composer).map(pill => pill.updateComplete));
+      }
+
+      add_task(async function test_examples_render() {
+        Services.prefs.setBoolPref(TIP_PREF, false);
+        let composer = await createComposer();
+        await pillsReady(composer);
+        ok(isShown(composer), "pills shown on an empty field");
+        let list = pills(composer);
+        is(list.length, 3, "three pills");
+        let labels = list.map(pill => pill.getAttribute("label"));
+        let prompts = list.map(pill => pill.getAttribute("prompt"));
+        ok(labels.every(Boolean), "labels not empty");
+        is(new Set(labels).size, 3, "labels distinct");
+        is(new Set(prompts).size, 3, "prompts distinct");
+        ok(
+          labels.every((label, i) => label != prompts[i]),
+          "no label equals its prompt"
+        );
+        let intro = composer.shadowRoot.querySelector(".examples-intro");
+        await TestUtils.waitForCondition(
+          () => intro.textContent,
+          "examples intro is translated"
+        );
+        ok(intro.textContent, "intro text not empty");
+        is(
+          composer.shadowRoot
+            .querySelector(".examples-list")
+            .getAttribute("aria-labelledby"),
+          intro.id,
+          "group is labeled by the intro"
+        );
+        composer.remove();
+      });
+
+      add_task(async function test_focus_lands_on_textarea() {
+        Services.prefs.setBoolPref(TIP_PREF, false);
+        let composer = await createComposer();
+        await pillsReady(composer);
+        composer.shadowRoot.activeElement?.blur();
+        ok(!composer.matches(":focus-within"), "focus has left the composer");
+        composer.focus();
+        is(
+          composer.shadowRoot.activeElement,
+          textarea(composer),
+          "textarea focused, not a pill"
+        );
+        composer.remove();
+      });
+
+      add_task(async function test_pill_click_fills_field() {
+        Services.prefs.setBoolPref(TIP_PREF, false);
+        let composer = await createComposer();
+        await pillsReady(composer);
+        let pill = pills(composer)[0];
+        let prompt = pill.getAttribute("prompt");
+        pill.click();
+        await composer.updateComplete;
+        is(textarea(composer).value, prompt, "field holds the prompt");
+        is(composer.shadowRoot.activeElement, textarea(composer), "focused");
+        is(textarea(composer).selectionStart, prompt.length, "caret at end");
+        is(textarea(composer).selectionEnd, prompt.length, "nothing selected");
+        ok(isConcealed(composer), "pills concealed");
+        ok(Services.prefs.getBoolPref(TIP_PREF), "marked as seen");
+        ok(tip(composer), "tip shown after clicking a pill");
+        composer.remove();
+      });
+
+      add_task(async function test_pill_keyboard_activation() {
+        Services.prefs.setBoolPref(TIP_PREF, false);
+        for (let key of ["KEY_Enter", " "]) {
+          let composer = await createComposer();
+          await pillsReady(composer);
+          let submitted = false;
+          composer.addEventListener("WidgetComposer:Submit", () => {
+            submitted = true;
+          });
+          let pill = pills(composer)[0];
+          pill.focus();
+          synthesizeKey(key);
+          await composer.updateComplete;
+          is(
+            textarea(composer).value,
+            pill.getAttribute("prompt"),
+            `field holds the prompt after ${JSON.stringify(key)}`
+          );
+          is(
+            composer.shadowRoot.activeElement,
+            textarea(composer),
+            "focus on the textarea"
+          );
+          ok(!submitted, "not submitted");
+          composer.remove();
+        }
+      });
+
+      add_task(async function test_edit_after_pill_then_submit() {
+        Services.prefs.setBoolPref(TIP_PREF, false);
+        let composer = await createComposer();
+        await pillsReady(composer);
+        let pill = pills(composer)[0];
+        let prompt = pill.getAttribute("prompt");
+        pill.click();
+        await composer.updateComplete;
+        let field = textarea(composer);
+        field.value += " today";
+        field.dispatchEvent(new Event("input", { bubbles: true }));
+        await composer.updateComplete;
+        let detail = nextSubmit(composer);
+        field.focus();
+        synthesizeKey("KEY_Enter");
+        let { prompt: submitted } = await detail;
+        ok(submitted.startsWith(prompt), "starts with the pill prompt");
+        ok(submitted.endsWith("today"), "ends with the edit");
+        composer.remove();
+      });
+
+      add_task(async function test_pill_click_skips_tip_when_seen() {
+        Services.prefs.setBoolPref(TIP_PREF, true);
+        let composer = await createComposer();
+        await pillsReady(composer);
+        let pill = pills(composer)[0];
+        let prompt = pill.getAttribute("prompt");
+        pill.click();
+        await composer.updateComplete;
+        ok(!tip(composer), "no tip when already seen");
+        is(textarea(composer).value, prompt, "field holds the prompt");
+        composer.remove();
+      });
+
+      add_task(async function test_examples_hide_on_whitespace() {
+        Services.prefs.setBoolPref(TIP_PREF, false);
+        let composer = await typeInNewComposer(" ");
+        ok(isConcealed(composer), "pills concealed");
+        ok(!tip(composer), "no tip");
+        ok(!Services.prefs.getBoolPref(TIP_PREF), "pref untouched");
+        composer.remove();
+      });
+
+      add_task(async function test_examples_return_on_clear() {
+        Services.prefs.setBoolPref(TIP_PREF, true);
+        let composer = await typeInNewComposer("a");
+        ok(isConcealed(composer), "concealed while typing");
+        synthesizeKey("KEY_Backspace");
+        await composer.updateComplete;
+        is(composer.value, "", "field cleared");
+        ok(isShown(composer), "pills back");
+        composer.remove();
+      });
+
+      add_task(async function test_examples_while_tip() {
+        Services.prefs.setBoolPref(TIP_PREF, false);
+        let composer = await typeInNewComposer("a");
+        synthesizeKey("KEY_Backspace");
+        await composer.updateComplete;
+        is(composer.value, "", "field cleared");
+        ok(tip(composer), "tip showing");
+        ok(isConcealed(composer), "pills concealed while the tip shows");
+        let promo = await tipRendered(composer);
+        promo.closeButton.focus();
+        synthesizeKey("KEY_Enter");
+        await composer.updateComplete;
+        ok(!tip(composer), "tip dismissed");
+        ok(isShown(composer), "pills back");
+        composer.remove();
+      });
+
+      add_task(async function test_new_composer_draws_again() {
+        Services.prefs.setBoolPref(TIP_PREF, false);
+        // The module's Math.random can't be spied on from here, so check that
+        // ten composers don't all draw the same three.
+        let seen = new Set();
+        for (let i = 0; i < 10; i++) {
+          let composer = await createComposer();
+          await pillsReady(composer);
+          let ids = pills(composer).map(pill =>
+            pill.getAttribute("data-l10n-id")
+          );
+          is(new Set(ids).size, 3, "three distinct examples");
+          ok(
+            ids.every(id => id.startsWith("widget-composer-example-")),
+            "example ids"
+          );
+          ids.forEach(id => seen.add(id));
+          composer.remove();
+        }
+        ok(seen.size > 3, `composers draw their own set (${seen.size} seen)`);
       });
     </script>
   </body>

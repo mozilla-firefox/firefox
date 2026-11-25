@@ -17,6 +17,16 @@ const { XPCOMUtils } = ChromeUtils.importESModule(
 const lazy = {};
 XPCOMUtils.defineLazyPreferenceGetter(lazy, "promptTipSeen", TIP_PREF, false);
 
+const EXAMPLE_IDS = [
+  "widget-composer-example-plants",
+  "widget-composer-example-fitness",
+  "widget-composer-example-trivia",
+  "widget-composer-example-books",
+  "widget-composer-example-recipe",
+  "widget-composer-example-packing",
+  "widget-composer-example-word",
+];
+
 export const SUBMIT_ICON =
   "chrome://browser/content/aiwindow/assets/ask-icon.svg";
 
@@ -41,6 +51,11 @@ export class WidgetComposer extends MozLitElement {
     delegatesFocus: true,
   };
 
+  #examples = EXAMPLE_IDS.map(id => ({ id, key: Math.random() }))
+    .sort((a, b) => a.key - b.key)
+    .slice(0, 3)
+    .map(({ id }) => id);
+
   constructor() {
     super();
     this.value = "";
@@ -59,10 +74,24 @@ export class WidgetComposer extends MozLitElement {
 
   #onInput(event) {
     this.value = event.target.value;
+    this.#maybeShowTip();
+  }
+
+  #maybeShowTip() {
     if (this.value.trim() && !lazy.promptTipSeen) {
       Services.prefs.setBoolPref(TIP_PREF, true);
       this.showTip = true;
     }
+  }
+
+  #onExampleClick(event) {
+    let text = event.currentTarget.getAttribute("prompt");
+    if (!text) {
+      return;
+    }
+    this.value = text;
+    this.#maybeShowTip();
+    this.textareaEl.focus();
   }
 
   #onTipDismissed(event) {
@@ -102,6 +131,7 @@ export class WidgetComposer extends MozLitElement {
 
   render() {
     let hasText = !!this.value.trim();
+    let concealed = this.value !== "" || this.showTip;
     return html`
       <link
         rel="stylesheet"
@@ -124,9 +154,32 @@ export class WidgetComposer extends MozLitElement {
             </moz-promo>`
           : nothing}
       </div>
+      <div class="examples" ?concealed=${concealed} ?inert=${concealed}>
+        <div
+          class="examples-list"
+          role="group"
+          aria-labelledby="examples-intro"
+        >
+          <p
+            id="examples-intro"
+            class="examples-intro"
+            data-l10n-id="widget-composer-examples-intro"
+          ></p>
+          ${this.#examples.map(
+            id =>
+              html`<moz-button
+                class="example"
+                data-l10n-id=${id}
+                data-l10n-attrs="prompt"
+                @click=${this.#onExampleClick}
+              ></moz-button>`
+          )}
+        </div>
+      </div>
       <div class="field" ?focused=${this.focused}>
         <div class="background"></div>
         <textarea
+          autofocus
           aria-describedby="disclaimer"
           data-l10n-id="widget-composer-input"
           .value=${this.value}

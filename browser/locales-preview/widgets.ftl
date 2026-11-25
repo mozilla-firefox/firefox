@@ -57,6 +57,39 @@ widget-composer-tip =
     .heading = More details make better widgets
     .message = Describe what you want it to do, plus any key details, like topics, timeframes, or style. Edit or delete your widget any time.
 
+# Line above the prompt examples in the Widget Studio text field, shown
+# while the field is empty.
+widget-composer-examples-intro = Start with these examples, or write your own…
+
+## Each message is a starter for a widget, shown as a button above the empty
+## text field for describing a widget. .label is the short text on the button.
+## .prompt is not shown: script reads it and puts it in the text field when the
+## button is pressed, so it is the full prompt for the widget.
+
+widget-composer-example-plants =
+  .label = A plant watering schedule
+  .prompt = Make a plant watering schedule where I list my plants, how often each needs water, and check off the ones I watered today.
+widget-composer-example-fitness =
+  .label = A daily fitness tracker
+  .prompt = Make a daily fitness tracker where I log my workout type and minutes each day and see my weekly total.
+widget-composer-example-trivia =
+  .label = A movie trivia quiz
+  .prompt = Make a movie trivia quiz with ten multiple-choice questions, a running score, and a new set of questions each time.
+widget-composer-example-books =
+  .label = A book reading log
+  .prompt = Make a book reading log where I add titles, track the page I’m on, and mark books as finished with a star rating.
+widget-composer-example-recipe =
+  .label = A recipe scaler
+  .prompt = Make a recipe scaler where I enter ingredients and amounts, choose how many servings I need, and see the amounts adjust.
+widget-composer-example-packing =
+  .label = A packing checklist
+  .prompt = Make a packing checklist for a trip with sections for clothes, toiletries, and documents, where I can add items and check them off.
+widget-composer-example-word =
+  .label = A word of the day
+  .prompt = Make a word of the day widget that shows a new word each day with its meaning and an example sentence.
+
+##
+
 # Heading of the group in Firefox Labs that holds experiments in the Homepage, for example the custom widgets entry.
 experimental-features-group-custom-widgets =
   .label = Homepage
