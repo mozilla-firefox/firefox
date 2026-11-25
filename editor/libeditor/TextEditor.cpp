@@ -1095,7 +1095,6 @@ nsresult TextEditor::SetUnmaskRangeInternal(uint32_t aStart, uint32_t aLength,
   // If we're not a password editor, return error since this call does not
   // make sense.
   if (!IsPasswordEditor() || NS_WARN_IF(!mPasswordMaskData)) {
-    mPasswordMaskData->CancelTimer(PasswordMaskData::ReleaseTimer::Yes);
     return NS_ERROR_NOT_AVAILABLE;
   }
 
