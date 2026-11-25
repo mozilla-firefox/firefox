@@ -1151,7 +1151,10 @@ static SetsLineClamp IsLineClampStyle(const nsStyleDisplay* aStyleDisplay) {
   return SetsLineClamp::YesLegacy;
 }
 
-static bool IsLineClampStyleAndFrame(const nsBlockFrame* aFrame) {
+static bool IsLineClampRoot(const nsBlockFrame* aFrame) {
+  if (!aFrame->HasAnyStateBits(NS_BLOCK_BFC)) {
+    return false;
+  }
   const auto setsLineClamp = IsLineClampStyle(aFrame->StyleDisplay());
   if (setsLineClamp != SetsLineClamp::YesLegacy) {
     return setsLineClamp == SetsLineClamp::Yes;
@@ -1178,11 +1181,6 @@ static bool IsLineClampStyleAndFrame(const nsBlockFrame* aFrame) {
     return aFrame->StyleDisplay()->mOriginalDisplay;
   }();
   return origDisplay.Inside() == StyleDisplayInside::WebkitBox;
-}
-
-static bool IsLineClampRoot(const nsBlockFrame* aFrame) {
-  return aFrame->HasAnyStateBits(NS_BLOCK_BFC) &&
-         IsLineClampStyleAndFrame(aFrame);
 }
 
 const mozilla::StyleBlockEllipsis* nsBlockFrame::GetLineClampBlockEllipsis()
@@ -7775,7 +7773,7 @@ static bool EstablishesBFC(const nsBlockFrame* aFrame) {
       return true;
     }
   }
-  return StyleEstablishesBFC(style) || IsLineClampStyleAndFrame(aFrame);
+  return StyleEstablishesBFC(style);
 }
 
 void nsBlockFrame::DidSetComputedStyle(ComputedStyle* aOldStyle) {
@@ -7803,16 +7801,15 @@ void nsBlockFrame::DidSetComputedStyle(ComputedStyle* aOldStyle) {
       MarkSameFloatManagerLinesDirty(this);
     }
     AddOrRemoveStateBits(NS_BLOCK_BFC, isBFC);
-  }
-
-  const bool wasLineClampRoot =
-      wasBFC &&
-      IsLineClampStyle(aOldStyle->StyleDisplay()) != SetsLineClamp::No;
-  // `IsLineClampRoot` checks NS_BLOCK_BFC, so it must be called after
-  // the frame bit is set above.
-  const bool isLineClampRoot = isBFC && IsLineClampRoot(this);
-  if (wasLineClampRoot != isLineClampRoot) {
-    ClearLineClampEllipsis();
+    const bool wasLineClampRoot =
+        wasBFC &&
+        IsLineClampStyle(aOldStyle->StyleDisplay()) != SetsLineClamp::No;
+    // `IsLineClampRoot` checks NS_BLOCK_BFC, so it must be called after
+    // the frame bit is set above.
+    const bool isLineClampRoot = isBFC && IsLineClampRoot(this);
+    if (wasLineClampRoot != isLineClampRoot) {
+      ClearLineClampEllipsis();
+    }
   }
 }
 
