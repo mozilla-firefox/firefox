@@ -722,7 +722,6 @@ def make_job_description(config, tasks):
 
         run = jobdesc["run"] = {}
         run["using"] = "mozharness-test"
-        run["clone-with"] = "hg"
         run["test"] = task
 
         if "workdir" in task:

@@ -96,7 +96,7 @@ def installer_url(taskdesc):
     "docker-worker",
     "mozharness-test",
     schema=MozharnessTestRunSchema,
-    defaults={"clone-with": "hg"},
+    defaults={"clone-with": "git"},
 )
 def mozharness_test_on_docker(config, job, taskdesc):
     run = job["run"]
@@ -258,7 +258,7 @@ def mozharness_test_on_docker(config, job, taskdesc):
     "generic-worker",
     "mozharness-test",
     schema=MozharnessTestRunSchema,
-    defaults={"clone-with": "hg"},
+    defaults={"clone-with": "git"},
 )
 def mozharness_test_on_generic_worker(config, job, taskdesc):
     run = job["run"]
