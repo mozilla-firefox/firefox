@@ -335,6 +335,19 @@ void JitRuntime::ionLazyLinkListAdd(JSRuntime* rt, jit::IonCompileTask* task) {
   ionLazyLinkListSize_++;
 }
 
+void JitRuntime::traceOffThreadCompilations(JSTracer* trc) {
+  JSRuntime* rt = trc->runtime();
+  for (BaselineCompileTask* task : baselineOffThreadList(rt)) {
+    task->trace(trc);
+  }
+  for (IonCompileTask* task : ionOffThreadList(rt)) {
+    task->trace(trc);
+  }
+  for (IonCompileTask* task : ionLazyLinkList(rt)) {
+    task->trace(trc);
+  }
+}
+
 uint8_t* JitRuntime::allocateIonOsrTempData(size_t size) {
   MOZ_ASSERT(size > 0);
 

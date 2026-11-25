@@ -583,10 +583,6 @@ class GCMarker {
   void abortLinearWeakMarking();
 
 #ifdef DEBUG
-  // We can't check atom marking if the helper thread lock is already held by
-  // the current thread. This allows us to disable the check.
-  void setCheckAtomMarking(bool check);
-
   bool shouldCheckCompartments() { return strictCompartmentChecking; }
 
   void markOneObjectForTest(JSObject* obj);
@@ -751,12 +747,6 @@ class GCMarker {
  private:
   /* Assert that start and stop are called with correct ordering. */
   MainThreadOrGCTaskData<bool> started;
-
-  /*
-   * Whether to check that atoms traversed are present in the atom reference
-   * bitmap.
-   */
-  MainThreadOrGCTaskData<bool> checkAtomMarking;
 
   /*
    * If this is true, all marked objects must belong to a compartment being

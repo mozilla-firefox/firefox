@@ -561,6 +561,8 @@ class JitRuntime {
   void ionLazyLinkListRemove(JSRuntime* rt, js::jit::IonCompileTask* task);
   void ionLazyLinkListAdd(JSRuntime* rt, js::jit::IonCompileTask* task);
 
+  void traceOffThreadCompilations(JSTracer* trc);
+
   void handleGrowSlotsForPureCall(JSContext* cx);
 
   [[nodiscard]] bool reserveDebugModeOSRReturnSites(JSContext* cx,
