@@ -3045,7 +3045,7 @@ ${
       if (newSearchMode) {
         // Set overrideValue to the query string so that it's properly restored
         // when switching back to the current tab and across sessions.
-        this.overrideValue = this.untrimmedValue;
+        this.#replaceOverrideValue(this.untrimmedValue);
         this.valueIsTyped = true;
         this._autofillPlaceholder = null;
         if (!newSearchMode.isPreview && !areSearchModesSame) {
@@ -3184,6 +3184,38 @@ ${
       this.browserWindow.gBrowser.urlbarOverrideValue = val;
     } else {
       this._overrideValue = val;
+    }
+  }
+
+  /**
+   * Sets the override value to a value the user typed.
+   *
+   * @param {string} value
+   */
+  #setTypedOverrideValue(value) {
+    if (this.#isAddressbar) {
+      this.browserWindow.gBrowser.selectedBrowser.urlbarOverride = {
+        value,
+        typed: true,
+      };
+    } else {
+      this._overrideValue = value;
+    }
+  }
+
+  /**
+   * Replaces the override value, keeping whether the user typed it.
+   *
+   * @param {string} value
+   */
+  #replaceOverrideValue(value) {
+    if (
+      this.#isAddressbar &&
+      this.browserWindow.gBrowser.selectedBrowser.urlbarOverrideValueTyped
+    ) {
+      this.#setTypedOverrideValue(value);
+    } else {
+      this.overrideValue = value;
     }
   }
 
@@ -3374,7 +3406,7 @@ ${
     if (startQuery) {
       // Search mode stores the value to restore on tab switch. For a confirmed
       // mode that's the query string, not the keyword that entered it.
-      this.overrideValue = this.untrimmedValue;
+      this.#replaceOverrideValue(this.untrimmedValue);
 
       // The query has to run in the search mode we just entered.
       this.#searchModeApplied.then(() =>
@@ -5567,7 +5599,7 @@ ${
     this._wwwIsTrimmed = false;
     this._resultForCurrentValue = null;
 
-    this.overrideValue = value;
+    this.#setTypedOverrideValue(value);
     // Unset userSelectionBehavior because the user is modifying the search
     // string, thus there's no valid selection. This is also used by the view
     // to set "aria-activedescendant", thus it should never get stale.
@@ -5675,7 +5707,7 @@ ${
         this._autofillPlaceholder.selectionEnd != this.selectionEnd)
     ) {
       this._autofillPlaceholder = null;
-      this.overrideValue = this.value;
+      this.#setTypedOverrideValue(this.value);
     }
   }
 
@@ -5759,7 +5791,7 @@ ${
 
       const value = oldStart + pasteData + oldEnd;
       this.setValue(value, { valueIsTyped: true });
-      this.overrideValue = value;
+      this.#setTypedOverrideValue(value);
 
       // Since we prevent the default paste event, we have to ensure the
       // pageproxystate is updated. The paste event replaces the actual current

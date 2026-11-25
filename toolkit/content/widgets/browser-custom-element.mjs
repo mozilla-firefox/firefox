@@ -24,6 +24,12 @@ const { XPCOMUtils } = ChromeUtils.importESModule(
  *   The address bar value to show instead of the browser's URL.
  * @property {boolean} [loadStarted]
  *   Whether a load started after the value was set and hasn't finished yet.
+ * @property {boolean} [typed]
+ *   Whether the value comes from the user editing the address bar, e.g. by
+ *   typing, pasting or accepting autofill, as opposed to code setting it, e.g.
+ *   when opening a tab. Selecting a result without picking it keeps the value
+ *   the user typed. Session store doesn't save this, so a restored value isn't
+ *   typed.
  */
 
 let lazy = {};
@@ -847,10 +853,15 @@ export class MozBrowser extends MozElements.MozElementMixin(XULFrameElement) {
    */
   set urlbarOverride(state) {
     this._urlbarOverride = state
-      ? { value: state.value, loadStarted: !!state.loadStarted }
+      ? {
+          value: state.value,
+          loadStarted: !!state.loadStarted,
+          typed: !!state.typed,
+        }
       : null;
   }
 
+  /** @type {UrlbarOverride | null} */
   get urlbarOverride() {
     if (!this._urlbarOverride) {
       return null;
@@ -858,7 +869,18 @@ export class MozBrowser extends MozElements.MozElementMixin(XULFrameElement) {
     return {
       value: this._urlbarOverride.value,
       loadStarted: this.loadStartedSinceUrlbarOverride,
+      typed: this._urlbarOverride.typed,
     };
+  }
+
+  /**
+   * Whether the user typed the address bar value override. See `typed` in
+   * UrlbarOverride.
+   *
+   * @type {boolean}
+   */
+  get urlbarOverrideValueTyped() {
+    return !!this._urlbarOverride?.typed;
   }
 
   /**
