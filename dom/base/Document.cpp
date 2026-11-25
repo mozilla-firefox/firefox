@@ -15094,6 +15094,15 @@ void Document::WarnOnceAbout(
   const_cast<Document*>(this)->SetUseCounter(OperationToUseCounter(aOperation));
   uint32_t flags =
       asError ? nsIScriptError::errorFlag : nsIScriptError::warningFlag;
+  nsAutoCString l10nId;
+  AutoTArray<intl::FluentArg, 2> l10nArgs;
+  if (nsContentUtils::GetDeprecationFluentMessage(aOperation, aParams, l10nId,
+                                                  l10nArgs)) {
+    nsContentUtils::ReportToConsole(flags, "DOM Core"_ns, this,
+                                    FluentResourceFile::DOM_DEPRECATIONS,
+                                    l10nId, l10nArgs, aLocation);
+    return;
+  }
   nsContentUtils::ReportToConsole(
       flags, "DOM Core"_ns, this, PropertiesFile::DOM_PROPERTIES,
       kDeprecationWarnings[static_cast<size_t>(aOperation)], aParams,
@@ -15119,7 +15128,7 @@ void Document::WarnOnceAndReportAbout(
     return;
   }
 
-  nsContentUtils::ReportDeprecation(global, this, uri, aOperation, aLocation,
+  nsContentUtils::ReportDeprecation(global, uri, aOperation, aLocation,
                                     aParams);
 }
 

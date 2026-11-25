@@ -284,7 +284,7 @@ namespace mozilla::dom {
 enum JSONBehavior { UndefinedIsNullStringLiteral, UndefinedIsVoidString };
 
 // Fluent resources that can be used to report localized messages from C++.
-enum class FluentResourceFile : uint8_t { DOM, _COUNT };
+enum class FluentResourceFile : uint8_t { DOM, DOM_DEPRECATIONS, _COUNT };
 
 }  // namespace mozilla::dom
 
@@ -1441,9 +1441,10 @@ class nsContentUtils {
   /**
    * Queue a deprecation report for a deprecated operation, to be delivered
    * through the Reporting API. The localized warning message for the operation
-   * is looked up in the DOM properties file.
-   *   @param aGlobal The global object the report is associated with.
-   *   @param aDoc Document used to localize the warning message. May be null.
+   * is looked up in Fluent if it has been migrated, or in the DOM properties
+   * file otherwise.
+   *   @param aGlobal The global object the report is associated with. It is
+   *          also used to decide whether to localize the message in en-US.
    *   @param aURI URI to attribute the report to. If it uses the data scheme,
    *          only the scheme is reported to avoid copying a potentially long
    *          spec.
@@ -1454,7 +1455,7 @@ class nsContentUtils {
    *          Document::WarnOnceAbout.
    */
   static void ReportDeprecation(
-      nsIGlobalObject* aGlobal, const Document* aDoc, nsIURI* aURI,
+      nsIGlobalObject* aGlobal, nsIURI* aURI,
       mozilla::dom::DeprecatedOperations aOperation,
       const mozilla::JSCallingLocation& aLocation,
       const nsTArray<nsString>& aParams = nsTArray<nsString>());
@@ -1597,6 +1598,29 @@ class nsContentUtils {
   static nsresult FormatFluentString(
       mozilla::dom::FluentResourceFile aFile, const nsACString& aL10nId,
       const nsTArray<mozilla::intl::FluentArg>& aArgs, nsAString& aResult);
+
+  /**
+   * Same as FormatFluentString, except that it uses the en-US locale if
+   * aGlobal (a window or a worker global) should spoof English. Use this for
+   * strings that are exposed to web content.
+   */
+  static nsresult FormatMaybeLocalizedFluentString(
+      mozilla::dom::FluentResourceFile aFile, const nsACString& aL10nId,
+      const nsTArray<mozilla::intl::FluentArg>& aArgs, nsIGlobalObject* aGlobal,
+      nsAString& aResult);
+
+  /**
+   * If the warning for aOperation has been migrated to Fluent, sets its message
+   * identifier (in FluentResourceFile::DOM_DEPRECATIONS) and arguments, and
+   * returns true. aParams are the positional parameters passed to
+   * Document::WarnOnceAbout. This is transitional: once all deprecation
+   * warnings are migrated, the identifiers should move to
+   * nsDeprecatedOperationList.inc.
+   */
+  static bool GetDeprecationFluentMessage(
+      mozilla::dom::DeprecatedOperations aOperation,
+      const nsTArray<nsString>& aParams, nsACString& aL10nId,
+      nsTArray<mozilla::intl::FluentArg>& aArgs);
 
   /**
    * Returns true if aDocument is a chrome document

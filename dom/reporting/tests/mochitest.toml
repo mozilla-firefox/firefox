@@ -49,6 +49,12 @@ skip-if = [
   "http3",
 ]
 
+["test_deprecated_fluent.html"]
+support-files = [
+  "empty.html",
+  "worker_deprecated_fluent.js",
+]
+
 ["test_deprecated_params.html"]
 
 ["test_memoryPressure.html"]
