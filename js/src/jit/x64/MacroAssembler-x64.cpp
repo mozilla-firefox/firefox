@@ -682,7 +682,7 @@ void MacroAssemblerX64::handleFailureWithHandlerTail(
   asMasm().branch32(Assembler::Equal, rax,
                     Imm32(ExceptionResumeKind::WasmCatch), &wasmCatch);
 
-  breakpoint();  // Invalid kind.
+  crash();  // Invalid kind.
 
   // No exception handler. Load the error value, restore state and return from
   // the entry frame.

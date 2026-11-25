@@ -1189,6 +1189,7 @@ class MacroAssemblerRiscv64Compat : public MacroAssemblerRiscv64 {
   void convertUInt64ToDouble(Register src, FloatRegister dest);
 
   void breakpoint(uint32_t value = 0);
+  void crash();
 
   void checkStackAlignment() {
 #ifdef DEBUG

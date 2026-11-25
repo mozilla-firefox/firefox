@@ -103,6 +103,7 @@ class MacroAssemblerWasm32 : public Assembler {
   void nop();
 
   void breakpoint();
+  void crash();
 
   void abiret();
   void ret();

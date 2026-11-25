@@ -1272,7 +1272,7 @@ void EmitFindHandler(MacroAssembler& masm, Register instance, Register tag,
 
   Label isNotNull1;
   masm.branchTestPtr(Assembler::NonZero, scratch1, scratch1, &isNotNull1);
-  masm.breakpoint();
+  masm.crash();
   masm.bind(&isNotNull1);
 
   // Linear search over linked-list of wasm::Handlers to find the matching
