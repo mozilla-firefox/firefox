@@ -18,6 +18,7 @@
 #include "mozilla/dom/AudioContext.h"
 #include "mozilla/dom/AudioDeviceInfo.h"
 #include "mozilla/dom/BaseAudioContextBinding.h"
+#include "mozilla/dom/WorkletThread.h"
 
 #ifdef MOZ_WEBRTC
 #  include "webrtc/MediaEngineWebRTC.h"
@@ -145,17 +146,17 @@ class MediaTrackGraphInitThreadRunnable : public Runnable {
   RefPtr<ThreadedDriver> mDriver;
 };
 
-void ThreadedDriver::Start() {
+void ThreadedDriver::StartThread(uint32_t aStackSize) {
   MOZ_ASSERT(!ThreadRunning());
-  LOG(LogLevel::Debug, ("Starting thread for a SystemClockDriver  {}",
-                        fmt::ptr(mGraphInterface.get())));
   (void)NS_WARN_IF(mThread);
   MOZ_ASSERT(!mThread);  // Ensure we haven't already started it
 
   nsCOMPtr<nsIRunnable> event = new MediaTrackGraphInitThreadRunnable(this);
+  nsIThreadManager::ThreadCreationOptions options = {.stackSize = aStackSize};
   // Note: mThread may be null during event->Run() if we pass to NewNamedThread!
   // See AudioInitTask
-  nsresult rv = NS_NewNamedThread("MediaTrackGrph", getter_AddRefs(mThread));
+  nsresult rv = NS_NewNamedThread("MediaTrackGrph", getter_AddRefs(mThread),
+                                  nullptr, options);
   if (NS_SUCCEEDED(rv)) {
     mThread->Dispatch(event.forget(), NS_DISPATCH_NORMAL);
   }
@@ -182,6 +183,12 @@ SystemClockDriver::SystemClockDriver(GraphInterface* aGraphInterface,
       mInitialTimeStamp(TimeStamp::Now()) {}
 
 SystemClockDriver::~SystemClockDriver() = default;
+
+void SystemClockDriver::Start() {
+  LOG(LogLevel::Debug, ("Starting thread for SystemClockDriver {}",
+                        fmt::ptr(mGraphInterface.get())));
+  StartThread(nsIThreadManager::DEFAULT_STACK_SIZE);
+}
 
 void ThreadedDriver::RunThread() {
   mThreadRunning = true;
@@ -267,6 +274,12 @@ OfflineClockDriver::OfflineClockDriver(GraphInterface* aGraphInterface,
     : ThreadedDriver(aGraphInterface, nullptr, aSampleRate) {}
 
 OfflineClockDriver::~OfflineClockDriver() = default;
+
+void OfflineClockDriver::Start() {
+  LOG(LogLevel::Debug, ("Starting thread for OfflineClockDriver {}",
+                        fmt::ptr(mGraphInterface.get())));
+  StartThread(mozilla::dom::WorkletThread::StackSize());
+}
 
 void OfflineClockDriver::RunThread() {
   nsCOMPtr<nsIThreadInternal> threadInternal = do_QueryInterface(mThread);
