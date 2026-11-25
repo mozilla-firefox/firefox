@@ -1069,6 +1069,25 @@ browsertime-nav-bench:
                 default:
                     - --conditioned-profile=settled
 
+browsertime-nav-bench-a11y:
+    raptor:
+        apps: [firefox]
+        subtests: [[nav-bench-a11y, navb-a11y]]
+        run-visual-metrics: true
+    description: Raptor (browsertime) navigation benchmark across 9 sites with accessibility enabled
+    max-run-time: 3600
+    run-on-projects: []
+    tier: 3
+    treeherder-symbol: Btime(navb-a11y)
+    mozharness:
+        extra-options:
+            by-test-platform:
+                windows.*:
+                    - --browsertime-no-ffwindowrecorder
+                    - --conditioned-profile=settled
+                default:
+                    - --conditioned-profile=settled
+
 browsertime-video-playback-latency:
     <<: *tp6-defaults
     raptor:

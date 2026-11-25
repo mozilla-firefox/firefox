@@ -685,3 +685,18 @@ browsertime-nav-bench-m:
             # Bug 2011884 - annotate the videos.
             - --browsertime-arg=videoParams.convert=true
             - --browsertime-arg=videoParams.addTimer=true
+
+browsertime-nav-bench-m-a11y:
+    raptor:
+        apps: [fenix]
+        subtests: [[nav-bench-m-a11y, navbm-a11y]]
+        run-visual-metrics: true
+    description: Raptor (browsertime) mobile navigation benchmark with accessibility enabled
+    run-on-projects: []
+    tier: 3
+    treeherder-symbol: Btime(navbm-a11y)
+    mozharness:
+        extra-options:
+            # Bug 2011884 - annotate the videos.
+            - --browsertime-arg=videoParams.convert=true
+            - --browsertime-arg=videoParams.addTimer=true

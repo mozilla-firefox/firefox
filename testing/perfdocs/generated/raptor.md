@@ -38935,7 +38935,7 @@ A composite benchmark that measures page loading and sub-navigation performance 
 * **expose browser profiler**: true
 * **gecko profile interval**: 1
 * **interactive**: true
-* **link searchfox**: {searchfox}`testing/raptor/raptor/tests/nav-bench/browsertime-nav-bench.toml#60`
+* **link searchfox**: {searchfox}`testing/raptor/raptor/tests/nav-bench/browsertime-nav-bench.toml#33`
 * **lower is better**: false
 * **measure**: SpeedIndex
 * **page cycles**: 1
@@ -39127,6 +39127,192 @@ A composite benchmark that measures page loading and sub-navigation performance 
 
 ::::
 
+(nav-bench-a11y-n)=
+
+::::{dropdown} nav-bench-a11y
+:class-container: anchor-id-nav-bench-a11y-n
+
+* **Command to Run Locally**
+
+  ```
+  ./mach raptor -t nav-bench-a11y
+  ```
+
+**Owner**: PerfTest Team
+
+**Description**: Same as nav-bench, with the accessibility service enabled at startup and all accessibility cache domains enabled.
+
+
+* **accept zero vismet**: false
+* **alert on**: [SpeedIndex](raptor-metrics.md#speed-index)
+* **alert threshold**: 2.0
+* **apps**: firefox
+* **browser cycles**: 5
+* **browsertime visualmetrics**: true
+* **cold**: true
+* **custom data**: true
+* **expected**: pass
+* **expose browser profiler**: true
+* **gecko profile interval**: 1
+* **interactive**: true
+* **link searchfox**: {searchfox}`testing/raptor/raptor/tests/nav-bench/browsertime-nav-bench.toml#33`
+* **lower is better**: false
+* **measure**: SpeedIndex
+* **page cycles**: 1
+* **page timeout**: 600000
+* **playback**: mitmproxy
+* **playback manifests dir**: nav-bench
+* **playback mode**: direct
+* **playback pageset manifest**: mitm12-darwin-firefox-amazon-nav.manifest,mitm12-darwin-firefox-bbc-nav.manifest,mitm12-darwin-firefox-duckduckgo-nav.manifest,mitm12-darwin-firefox-facebook-nav.manifest,mitm12-darwin-firefox-google-docs-nav.manifest,mitm12-darwin-firefox-google-nav.manifest,mitm12-darwin-firefox-reddit-nav.manifest,mitm12-darwin-firefox-wikipedia-nav.manifest,mitm12-darwin-firefox-yahoo-nav.manifest
+* **playback version**: 12.2.1
+* **preferences**: fission.bfcacheInParent=false browser.sessionhistory.max_total_viewers=0 network.http.http3.enable=false network.http.altsvc.enabled=false gfx.font_loader.delay=0 accessibility.force_disabled=-1 accessibility.enable_all_cache_domains=true
+* **support class**: nav_bench.py
+* **test cmds**: ['measure.start', 'google-nav-load'] ['navigate', 'https://www.google.com/'] ['wait.byTime', '2000'] ['measure.stop', ''] ['navigate', 'about:blank'] ['wait.byTime', '1000'] ['measure.start', 'facebook-nav-load'] ['navigate', 'https://www.facebook.com/Cristiano'] ['wait.byTime', '2000'] ['measure.stop', ''] ['navigate', 'about:blank'] ['wait.byTime', '1000'] ['measure.start', 'yahoo-nav-load'] ['navigate', 'https://ca.yahoo.com/'] ['wait.byTime', '2000'] ['measure.stop', ''] ['navigate', 'about:blank'] ['wait.byTime', '1000'] ['measure.start', 'amazon-nav-load'] ['navigate', 'https://www.amazon.ca/s?k=laptop&ref=nb_sb_noss_1'] ['wait.byTime', '2000'] ['measure.stop', ''] ['navigate', 'about:blank'] ['wait.byTime', '1000'] ['measure.start', 'bbc-nav-load'] ['navigate', 'https://www.bbc.com/news/'] ['wait.byTime', '2000'] ['measure.stop', ''] ['measure.start', 'bbc-nav-subnav'] ['click.bySelectorAndWait', 'a[href*="bbcindepth"]'] ['wait.byTime', '2000'] ['measure.stop', ''] ['navigate', 'about:blank'] ['wait.byTime', '1000'] ['measure.start', 'duckduckgo-nav-load'] ['navigate', 'https://duckduckgo.com/?q=mandelbrot+set'] ['wait.byTime', '2000'] ['measure.stop', ''] ['measure.start', 'duckduckgo-nav-subnav'] ['click.bySelectorAndWait', 'nav ul li:nth-of-type(2) > a'] ['wait.byTime', '2000'] ['measure.stop', ''] ['navigate', 'about:blank'] ['wait.byTime', '1000'] ['measure.start', 'reddit-nav-load'] ['navigate', 'https://www.reddit.com/r/IAmA/comments/m8n4vt/im_bill_gates_cochair_of_the_bill_and_melinda/'] ['wait.byTime', '3000'] ['measure.stop', ''] ['navigate', 'about:blank'] ['wait.byTime', '1000'] ['measure.start', 'google-docs-nav-load'] ['navigate', 'https://docs.google.com/document/d/1US-07msg12slQtI_xchzYxcKlTs6Fp7WqIc6W5GK5M8/edit?usp=sharing'] ['wait.byTime', '3000'] ['measure.stop', ''] ['navigate', 'about:blank'] ['wait.byTime', '1000'] ['measure.start', 'wikipedia-nav-load'] ['navigate', 'https://en.wikipedia.org/wiki/Barack_Obama'] ['wait.byTime', '2000'] ['measure.stop', ''] ['navigate', 'about:blank'] ['wait.byTime', '1000'] ['measure.start', 'google-docs-nav-warm'] ['navigate', 'https://docs.google.com/document/d/1US-07msg12slQtI_xchzYxcKlTs6Fp7WqIc6W5GK5M8/edit?usp=sharing'] ['wait.byTime', '3000'] ['measure.stop', ''] ['navigate', 'about:blank'] ['wait.byTime', '1000']
+* **test url**: <about:blank>
+* **type**: pageload
+* **unit**: score
+* **use live sites**: false
+* **verbose**: true
+* **Test Task**:
+
+:::{list-table} **{ref}`test-linux2404-64-nightlyasrelease/opt <hardware-hpe-moonshot>`**
+:widths: 30 15 15 15 15
+:header-rows: 1
+
+* - **Test Name**
+  - mozilla-central
+  - autoland
+  - mozilla-release
+  - mozilla-beta
+* - **browsertime-nav-bench-a11y-firefox-nav-bench-a11y**
+  - ❌
+  - ❌
+  - ❌
+  - ❌
+:::
+
+
+:::{list-table} **{ref}`test-linux2404-64-shippable/opt <hardware-hpe-moonshot>`**
+:widths: 30 15 15 15 15
+:header-rows: 1
+
+* - **Test Name**
+  - mozilla-central
+  - autoland
+  - mozilla-release
+  - mozilla-beta
+* - **browsertime-nav-bench-a11y-firefox-nav-bench-a11y**
+  - ❌
+  - ❌
+  - ❌
+  - ❌
+:::
+
+
+:::{list-table} **{ref}`test-linux2404-64/opt <hardware-hpe-moonshot>`**
+:widths: 30 15 15 15 15
+:header-rows: 1
+
+* - **Test Name**
+  - mozilla-central
+  - autoland
+  - mozilla-release
+  - mozilla-beta
+* - **browsertime-nav-bench-a11y-firefox-nav-bench-a11y**
+  - ❌
+  - ❌
+  - ❌
+  - ❌
+:::
+
+
+:::{list-table} **{ref}`test-macosx1500-aarch64-nightlyasrelease/opt <hardware-mac-mini-m4>`**
+:widths: 30 15 15 15 15
+:header-rows: 1
+
+* - **Test Name**
+  - mozilla-central
+  - autoland
+  - mozilla-release
+  - mozilla-beta
+* - **browsertime-nav-bench-a11y-firefox-nav-bench-a11y**
+  - ❌
+  - ❌
+  - ❌
+  - ❌
+:::
+
+
+:::{list-table} **{ref}`test-macosx1500-aarch64-shippable/opt <hardware-mac-mini-m4>`**
+:widths: 30 15 15 15 15
+:header-rows: 1
+
+* - **Test Name**
+  - mozilla-central
+  - autoland
+  - mozilla-release
+  - mozilla-beta
+* - **browsertime-nav-bench-a11y-firefox-nav-bench-a11y**
+  - ❌
+  - ❌
+  - ❌
+  - ❌
+:::
+
+
+:::{list-table} **{ref}`test-windows11-64-24h2-nightlyasrelease/opt <hardware-nuc13-windows11>`**
+:widths: 30 15 15 15 15
+:header-rows: 1
+
+* - **Test Name**
+  - mozilla-central
+  - autoland
+  - mozilla-release
+  - mozilla-beta
+* - **browsertime-nav-bench-a11y-firefox-nav-bench-a11y**
+  - ❌
+  - ❌
+  - ❌
+  - ❌
+:::
+
+
+:::{list-table} **{ref}`test-windows11-64-24h2-shippable/opt <hardware-nuc13-windows11>`**
+:widths: 30 15 15 15 15
+:header-rows: 1
+
+* - **Test Name**
+  - mozilla-central
+  - autoland
+  - mozilla-release
+  - mozilla-beta
+* - **browsertime-nav-bench-a11y-firefox-nav-bench-a11y**
+  - ❌
+  - ❌
+  - ❌
+  - ❌
+:::
+
+
+:::{list-table} **{ref}`test-windows11-64-24h2/opt <hardware-nuc13-windows11>`**
+:widths: 30 15 15 15 15
+:header-rows: 1
+
+* - **Test Name**
+  - mozilla-central
+  - autoland
+  - mozilla-release
+  - mozilla-beta
+* - **browsertime-nav-bench-a11y-firefox-nav-bench-a11y**
+  - ❌
+  - ❌
+  - ❌
+  - ❌
+:::
+
+
+::::
+
 (nav-bench-m-n)=
 
 ::::{dropdown} nav-bench-m
@@ -39155,7 +39341,7 @@ A composite benchmark that measures page loading and sub-navigation performance 
 * **expose browser profiler**: true
 * **gecko profile interval**: 1
 * **interactive**: true
-* **link searchfox**: {searchfox}`testing/raptor/raptor/tests/nav-bench/browsertime-nav-bench-m.toml#44`
+* **link searchfox**: {searchfox}`testing/raptor/raptor/tests/nav-bench/browsertime-nav-bench-m.toml#26`
 * **lower is better**: false
 * **measure**: SpeedIndex
 * **page cycles**: 1
@@ -39236,6 +39422,107 @@ A composite benchmark that measures page loading and sub-navigation performance 
   - mozilla-release
   - mozilla-beta
 * - **browsertime-nav-bench-m-fenix-nav-bench-m**
+  - ❌
+  - ❌
+  - ❌
+  - ❌
+:::
+
+
+::::
+
+(nav-bench-m-a11y-n)=
+
+::::{dropdown} nav-bench-m-a11y
+:class-container: anchor-id-nav-bench-m-a11y-n
+
+* **Command to Run Locally**
+
+  ```
+  ./mach raptor -t nav-bench-m-a11y
+  ```
+
+**Owner**: PerfTest Team
+
+**Description**: Same as nav-bench-m, with the accessibility service enabled at startup and all accessibility cache domains enabled.
+
+
+* **accept zero vismet**: false
+* **alert on**: [SpeedIndex](raptor-metrics.md#speed-index)
+* **alert threshold**: 5.0
+* **apps**: fenix
+* **browser cycles**: 5
+* **browsertime visualmetrics**: true
+* **cold**: true
+* **custom data**: true
+* **expected**: pass
+* **expose browser profiler**: true
+* **gecko profile interval**: 1
+* **interactive**: true
+* **link searchfox**: {searchfox}`testing/raptor/raptor/tests/nav-bench/browsertime-nav-bench-m.toml#26`
+* **lower is better**: false
+* **measure**: SpeedIndex
+* **page cycles**: 1
+* **page timeout**: 600000
+* **playback**: mitmproxy-android
+* **playback manifests dir**: nav-bench
+* **playback mode**: direct
+* **playback pageset manifest**: mitm12-android-gve-amazon-nav.manifest,mitm12-android-gve-wikipedia-nav.manifest,mitm12-android-gve-duckduckgo-nav.manifest,mitm12-android-gve-bbc-nav.manifest
+* **playback version**: 12.2.1
+* **preferences**: fission.bfcacheInParent=false browser.sessionhistory.max_total_viewers=0 network.http.http3.enable=false network.http.altsvc.enabled=false gfx.font_loader.delay=0 accessibility.force_disabled=-1 accessibility.enable_all_cache_domains=true
+* **support class**: nav_bench.py
+* **test cmds**: ['measure.start', 'amazon-nav-load'] ['navigate', 'https://www.amazon.ca/s?k=laptop'] ['wait.byTime', '2000'] ['measure.stop', ''] ['measure.start', 'amazon-nav-subnav'] ['click.bySelectorAndWait', 'a[href*="/dp/"]'] ['wait.byTime', '2000'] ['measure.stop', ''] ['navigate', 'about:blank'] ['wait.byTime', '1000'] ['measure.start', 'wikipedia-nav-load'] ['navigate', 'https://en.m.wikipedia.org/wiki/Barack_Obama'] ['wait.byTime', '2000'] ['measure.stop', ''] ['measure.start', 'wikipedia-nav-subnav'] ['click.bySelectorAndWait', 'a[href*="/wiki/Honolulu"]'] ['wait.byTime', '2000'] ['measure.stop', ''] ['navigate', 'about:blank'] ['wait.byTime', '1000'] ['measure.start', 'duckduckgo-nav-load'] ['navigate', 'https://duckduckgo.com/?q=mandelbrot+set'] ['wait.byTime', '2000'] ['measure.stop', ''] ['measure.start', 'duckduckgo-nav-subnav'] ['click.bySelectorAndWait', 'a[href*="ia=images"]'] ['wait.byTime', '3000'] ['measure.stop', ''] ['navigate', 'about:blank'] ['wait.byTime', '1000'] ['measure.start', 'bbc-nav-load'] ['navigate', 'https://www.bbc.com/news/'] ['wait.byTime', '2000'] ['measure.stop', ''] ['navigate', 'about:blank'] ['wait.byTime', '1000']
+* **test url**: <about:blank>
+* **type**: pageload
+* **unit**: score
+* **use live sites**: false
+* **verbose**: true
+* **Test Task**:
+
+:::{list-table} **{ref}`test-android-em-14-arm64-shippable/opt <hardware-mac-mini-m4>`**
+:widths: 30 15 15 15 15
+:header-rows: 1
+
+* - **Test Name**
+  - mozilla-central
+  - autoland
+  - mozilla-release
+  - mozilla-beta
+* - **browsertime-nav-bench-m-a11y-fenix-nav-bench-m-a11y**
+  - ❌
+  - ❌
+  - ❌
+  - ❌
+:::
+
+
+:::{list-table} **{ref}`test-android-hw-a55-14-0-aarch64-shippable/opt <hardware-samsung-a55>`**
+:widths: 30 15 15 15 15
+:header-rows: 1
+
+* - **Test Name**
+  - mozilla-central
+  - autoland
+  - mozilla-release
+  - mozilla-beta
+* - **browsertime-nav-bench-m-a11y-fenix-nav-bench-m-a11y**
+  - ❌
+  - ❌
+  - ❌
+  - ❌
+:::
+
+
+:::{list-table} **{ref}`test-android-hw-a55-14-0-aarch64/opt <hardware-samsung-a55>`**
+:widths: 30 15 15 15 15
+:header-rows: 1
+
+* - **Test Name**
+  - mozilla-central
+  - autoland
+  - mozilla-release
+  - mozilla-beta
+* - **browsertime-nav-bench-m-a11y-fenix-nav-bench-m-a11y**
   - ❌
   - ❌
   - ❌

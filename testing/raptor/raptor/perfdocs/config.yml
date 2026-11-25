@@ -343,9 +343,15 @@ suites:
             nav-bench: >
                 Runs the nav-bench composite across Amazon, BBC, DuckDuckGo, Facebook, Google,
                 Google Docs, Reddit, Wikipedia, and Yahoo in a single combined session.
+            nav-bench-a11y: >
+                Same as nav-bench, with the accessibility service enabled at startup and all
+                accessibility cache domains enabled.
             nav-bench-m: >
                 Fenix navigation benchmark across Amazon, Wikipedia, DuckDuckGo, and BBC
                 in a single combined session.
+            nav-bench-m-a11y: >
+                Same as nav-bench-m, with the accessibility service enabled at startup and all
+                accessibility cache domains enabled.
     unittests:
         description: "These tests aren't used in standard testing, they are only used in the Raptor unit tests (they are similar to raptor-tp6 tests)."
         tests:

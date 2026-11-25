@@ -30,6 +30,7 @@ use_live_sites = false
 # inline-table prefs are silently dropped. See:
 #   testing/mozbase/manifestparser/manifestparser/toml.py:read_toml
 #   testing/raptor/raptor/browsertime/base.py:_convert_prefs_to_dict
+# Keep in sync with the preferences in [nav-bench-a11y].
 preferences = """
 fission.bfcacheInParent=false
 browser.sessionhistory.max_total_viewers=0
@@ -56,8 +57,6 @@ gfx.font_loader.delay=0
 # Set browser_cycles to control replicate count. Score per cycle =
 # 60000 / SpeedIndex_ms (LoadLine2-style); aggregated as geomean across
 # all (sites x phases x cycles) for the overall score.
-
-[nav-bench]
 playback_manifests_dir = "nav-bench"
 playback_pageset_manifest = "mitm12-darwin-firefox-amazon-nav.manifest,mitm12-darwin-firefox-bbc-nav.manifest,mitm12-darwin-firefox-duckduckgo-nav.manifest,mitm12-darwin-firefox-facebook-nav.manifest,mitm12-darwin-firefox-google-docs-nav.manifest,mitm12-darwin-firefox-google-nav.manifest,mitm12-darwin-firefox-reddit-nav.manifest,mitm12-darwin-firefox-wikipedia-nav.manifest,mitm12-darwin-firefox-yahoo-nav.manifest"
 test_url = "about:blank"
@@ -140,3 +139,22 @@ test_cmds = [
     ["navigate", "about:blank"],
     ["wait.byTime", "1000"],
 ]
+
+[nav-bench]
+
+# Same as nav-bench, with the accessibility service started at browser startup
+# by forcing accessibility on, and all cache domains enabled to approximate a
+# client that queries everything in the accessibility tree.
+[nav-bench-a11y]
+apps = "firefox"
+# A section's preferences replace the [DEFAULT] ones rather than adding to
+# them, so the [DEFAULT] prefs are repeated here.
+preferences = """
+fission.bfcacheInParent=false
+browser.sessionhistory.max_total_viewers=0
+network.http.http3.enable=false
+network.http.altsvc.enabled=false
+gfx.font_loader.delay=0
+accessibility.force_disabled=-1
+accessibility.enable_all_cache_domains=true
+"""
