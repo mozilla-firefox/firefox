@@ -50,6 +50,28 @@ privacy.ui.fpp.click:
         description: The value of the clicked menu item of the menulist.
         type: string
 
+privacy.ui.etp:
+  tracker_count_toggled:
+    type: event
+    description: >
+      Recorded when the user toggles the "Show trackers blocked in address bar"
+      option in the Privacy & Security settings. Toggles made through the Trust
+      Panel are recorded in trustpanel.tracker_count_toggled instead.
+    bugs:
+      - https://bugzil.la/2096486
+    data_reviews:
+      - https://bugzil.la/2096486
+    data_sensitivity:
+      - interaction
+    notification_emails:
+      - seceng-telemetry@mozilla.com
+    expires: never
+    extra_keys:
+      enabled:
+        description: >
+          Whether the tracker count was enabled by this toggle.
+        type: boolean
+
 network.proxy.settings:
   proxy_type_preference:
     type: event

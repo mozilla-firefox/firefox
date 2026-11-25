@@ -78,6 +78,7 @@ add_task(async function test_status_categories() {
 });
 
 add_task(async function test_tracker_count_toggle() {
+  Services.fog.testResetFOG();
   await SpecialPowers.pushPrefEnv({
     set: [
       // The feature gate ships disabled by default (bug 2065206); enable it so
@@ -105,6 +106,30 @@ add_task(async function test_tracker_count_toggle() {
   synthesizeClick(toggle);
   await prefChange;
   Assert.ok(!toggle.checked, "Toggle is off after clicking");
+  Assert.deepEqual(
+    Glean.privacyUiEtp.trackerCountToggled
+      .testGetValue()
+      ?.map(event => event.extra),
+    [{ enabled: "false" }],
+    "Disabling the tracker count is recorded"
+  );
+
+  info("Click the toggle to enable the pref again");
+  prefChange = waitForAndAssertPrefState(
+    TRACKER_COUNT_PREF,
+    true,
+    "Pref set to true after toggling on"
+  );
+  synthesizeClick(toggle);
+  await prefChange;
+  Assert.ok(toggle.checked, "Toggle is on after clicking");
+  Assert.deepEqual(
+    Glean.privacyUiEtp.trackerCountToggled
+      .testGetValue()
+      ?.map(event => event.extra),
+    [{ enabled: "false" }, { enabled: "true" }],
+    "Enabling the tracker count is recorded"
+  );
 
   await SpecialPowers.popPrefEnv();
   gBrowser.removeCurrentTab();
