@@ -520,8 +520,8 @@ describe("aichat open link", () => {
         el.setAttribute("data-message-role", "assistant");
         elJS.messageL10n = Cu.cloneInto(
           {
-            id: "smartwindow-agent-monitor-watching",
-            args: { monitorName: "Example", schedule: "daily at 9:00 AM" },
+            id: "smartwindow-agent-monitor-watching-daily",
+            args: { monitorName: "Example", time: Date.now() },
             link: { l10nName: "tasks", href: "about:smartwindowtasks" },
           },
           content

@@ -10,6 +10,11 @@ support-files = [
 
 ["browser_tasks_monitor_button.js"]
 
+["browser_tasks_monitor_chat_confirmation.js"]
+support-files = [
+  "!/browser/components/aiwindow/ui/test/browser/head_monitor_chat.js",
+]
+
 ["browser_tasks_monitor_groups.js"]
 support-files = [
   "test_monitors_display_page.html",

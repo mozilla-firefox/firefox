@@ -29,8 +29,7 @@ import "chrome://browser/content/aiwindow/components/ai-action-confirmation.mjs"
 import "chrome://browser/content/aiwindow/components/ai-action-confirmation-tab-row.mjs";
 // eslint-disable-next-line import-x/no-unassigned-import
 import "chrome://browser/content/aiwindow/components/kit-mention.mjs";
-// eslint-disable-next-line import-x/no-unassigned-import
-import "chrome://browser/content/aiwindow/components/agent-monitor-item.mjs";
+import { resolveScheduleTime } from "chrome://browser/content/aiwindow/components/agent-monitor-item.mjs";
 // TODO: Bug 2088699 - Render this as a tool UI in the research flow.
 // eslint-disable-next-line import-x/no-unassigned-import
 import "chrome://browser/content/aiwindow/components/ai-clarifying-question.mjs";
@@ -1135,7 +1134,11 @@ export class AIChatContent extends MozLitElement {
       messageId,
       body: content.body,
       messageL10n: content.l10nId
-        ? { id: content.l10nId, args: content.l10nArgs, link: content.link }
+        ? {
+            id: content.l10nId,
+            args: resolveScheduleTime(content.l10nArgs),
+            link: content.link,
+          }
         : null,
       appliedMemories: memoriesApplied ?? [],
       showCallout: showMemoriesCallout ?? false,

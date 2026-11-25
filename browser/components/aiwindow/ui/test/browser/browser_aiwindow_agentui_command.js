@@ -3,32 +3,19 @@
 
 "use strict";
 
+/* import-globals-from head_monitor_chat.js */
+Services.scriptloader.loadSubScript(
+  getRootDirectory(gTestPath) + "head_monitor_chat.js",
+  this
+);
+
 const { AgentUI } = ChromeUtils.importESModule(
   "moz-src:///browser/components/aiwindow/ui/modules/AgentUI.sys.mjs"
 );
 
-const { MonitorAgent } = ChromeUtils.importESModule(
-  "moz-src:///browser/components/aiwindow/models/agents/MonitorAgent.sys.mjs"
-);
-
-const { AGENT_COMMANDS } = ChromeUtils.importESModule(
-  "chrome://browser/content/aiwindow/modules/AgentCommands.mjs"
-);
-
-const { Region } = ChromeUtils.importESModule(
-  "resource://gre/modules/Region.sys.mjs"
-);
-
-const { MockEngineManager } = ChromeUtils.importESModule(
-  "resource://testing-common/AIWindowTestUtils.sys.mjs"
-);
-
-const PREF_AGENT_ENABLED = "browser.smartwindow.agent.enabled";
 const SUPPORTED_REGIONS_PREF = "browser.smartwindow.agent.supportedRegions";
 const TEST_REGION = "US";
 const TEST_MARKETS = JSON.stringify([[TEST_REGION, ["en-*"]]]);
-
-const WATCH_COMMAND = `/${AGENT_COMMANDS.WATCH}`;
 
 // Pin the home region to a supported one so the region gate doesn't depend on
 // where the test runs. The region-gate tasks below override the pref.
@@ -206,48 +193,41 @@ add_task(async function test_monitor_command_seeds_blank_url_in_full_page() {
   }
 });
 
-add_task(async function test_create_monitor_localizes_schedule_summary() {
-  await SpecialPowers.pushPrefEnv({ set: [[PREF_AGENT_ENABLED, true]] });
-  await MonitorAgent._resetForTesting();
-
-  try {
-    const { conversation } = makeConversationStub();
-    const message = { content: {}, toolUIData: { properties: { agent: {} } } };
-    const updateData = {
-      monitorName: "r/Watchexchange",
-      condition: "new posts",
-      watchUrls: ["https://example.com/watches"],
-      schedule: { frequency: "daily", time: "09:00", weekday: "1" },
-    };
-
-    const created = await AgentUI.handleCreateMonitor({
-      message,
-      updateData,
-      conversation,
-    });
-    Assert.ok(created, "The watch is created");
-
-    Assert.equal(
-      message.content.l10nId,
-      "smartwindow-agent-monitor-watching",
-      "The watching message renders from its l10n id"
-    );
-
-    const { schedule } = message.content.l10nArgs;
-
-    Assert.ok(
-      schedule.startsWith("daily at") && /\d/.test(schedule),
-      `The schedule arg is a localized cadence string, got: "${schedule}"`
-    );
-    Assert.ok(
-      !schedule.includes("DATETIME") && !schedule.includes("[object"),
-      "The schedule arg is fully resolved"
-    );
-  } finally {
+add_task(
+  async function test_create_monitor_requires_daily_or_weekly_schedule() {
+    await SpecialPowers.pushPrefEnv({ set: [[PREF_AGENT_ENABLED, true]] });
     await MonitorAgent._resetForTesting();
-    await SpecialPowers.popPrefEnv();
+    const createMonitor = sinon.spy(MonitorAgent, "createMonitor");
+
+    try {
+      const { conversation } = makeConversationStub();
+      const message = {
+        content: {},
+        toolUIData: { properties: { agent: {} } },
+      };
+      const created = await AgentUI.handleCreateMonitor({
+        message,
+        updateData: {
+          condition: "new posts",
+          watchUrls: ["https://example.com/watches"],
+          schedule: { time: "09:00" },
+        },
+        conversation,
+      });
+
+      Assert.ok(
+        !created,
+        "A task without a daily or weekly schedule is refused"
+      );
+      Assert.ok(createMonitor.notCalled, "No monitor is created");
+      Assert.equal(message.content.l10nId, undefined, "No confirmation is set");
+    } finally {
+      createMonitor.restore();
+      await MonitorAgent._resetForTesting();
+      await SpecialPowers.popPrefEnv();
+    }
   }
-});
+);
 
 add_task(async function test_created_card_carries_an_active_check_limit() {
   await SpecialPowers.pushPrefEnv({ set: [[PREF_AGENT_ENABLED, true]] });
@@ -278,6 +258,7 @@ add_task(async function test_created_card_carries_an_active_check_limit() {
         updateData: {
           condition: "the price drops",
           watchUrls: ["https://example.com/product"],
+          schedule: { frequency: "daily", time: "09:00", weekday: 1 },
         },
       },
       conversation
@@ -340,82 +321,6 @@ add_task(async function test_cancel_monitor_replaces_setup_message() {
     "The cancellation message has a localized string"
   );
 });
-
-// Trailing slash needed, see promiseNavigateAndLoad in head.js
-const WATCHABLE_PAGE = "https://example.com/";
-
-/**
- * Opens a Smart Window with its sidebar on a page that can be watched, with
- * the model replaced by a mock engine.
- *
- * @returns {Promise<object>} The sidebar and chat browsers, the mock engine
- *   manager, and a cleanup function
- */
-async function openWatchableChat() {
-  await SpecialPowers.pushPrefEnv({ set: [[PREF_AGENT_ENABLED, true]] });
-  await MonitorAgent._resetForTesting();
-  const restoreSignIn = skipSignIn();
-  const mockEngineManager = new MockEngineManager();
-  const { win, sidebarBrowser } = await openAIWindowWithSidebar(WATCHABLE_PAGE);
-  const aichatBrowser = await getAichatBrowser(sidebarBrowser);
-  return {
-    sidebarBrowser,
-    aichatBrowser,
-    mockEngineManager,
-    async cleanup() {
-      await BrowserTestUtils.closeWindow(win);
-      await mockEngineManager.rejectAllRequests();
-      mockEngineManager.cleanupMocks();
-      restoreSignIn();
-      await MonitorAgent._resetForTesting();
-      await SpecialPowers.popPrefEnv();
-    },
-  };
-}
-
-/**
- * Runs `/watch <condition>` from the sidebar and waits for the create card.
- *
- * @param {object} chat - Result of openWatchableChat
- * @param {string} condition - Text typed after the command
- */
-async function runWatchCommand(chat, condition) {
-  const { sidebarBrowser, aichatBrowser } = chat;
-  await typeInSmartbar(sidebarBrowser, `${WATCH_COMMAND} ${condition}`);
-  await submitSmartbar(sidebarBrowser);
-  await SpecialPowers.spawn(aichatBrowser, [], async () => {
-    const chatContent = content.document.querySelector("ai-chat-content");
-    await ContentTaskUtils.waitForCondition(
-      () =>
-        chatContent.shadowRoot.querySelector(
-          'agent-monitor-item[mode="create"]'
-        ),
-      "Waiting for the watch task card"
-    );
-  });
-}
-
-/**
- * Names the task on the create card and clicks Create.
- *
- * @param {object} chat - Result of openWatchableChat
- */
-async function createFromCard(chat) {
-  await SpecialPowers.spawn(chat.aichatBrowser, [], async () => {
-    const chatContent = content.document.querySelector("ai-chat-content");
-    const card = chatContent.shadowRoot.querySelector("agent-monitor-item");
-    await card.updateComplete;
-    card.shadowRoot.querySelector("moz-input-text").focus();
-    EventUtils.sendString("Watches", content);
-    card.shadowRoot
-      .querySelector('moz-button[data-l10n-id="ai-tasks-alert-create-button"]')
-      .click();
-    await ContentTaskUtils.waitForCondition(
-      () => card.getAttribute("mode") === "display",
-      "Waiting for the card to show the created task"
-    );
-  });
-}
 
 /**
  * Waits for the chat to hold text meant for the model, so a follow-up isn't

@@ -95,6 +95,33 @@ const TIME_OPTIONS = Array.from({ length: 48 }, (_, i) => {
 });
 
 /**
+ * Swaps a saved 'scheduleTime' ("HH:MM", with 'weekday' for weekly tasks) for
+ * the 'time' timestamp DATETIME needs. It is built at render time so the time
+ * shown follows the local clock the schedule runs on, even after a time zone
+ * change.
+ *
+ * @param {?{scheduleTime?: string, weekday?: number}} args - Fluent args saved
+ *   on the message; other fields are passed through
+ * @returns {?object} 'args' unchanged when it has no 'scheduleTime', otherwise
+ *   a copy with 'scheduleTime' and 'weekday' replaced by a numeric 'time'
+ */
+export function resolveScheduleTime(args) {
+  // Called for every localized chat message; only task confirmations carry a
+  // scheduleTime, so leave the others (and null args) unchanged.
+  if (!args?.scheduleTime) {
+    return args;
+  }
+  const { scheduleTime, weekday, ...rest } = args;
+  const [hour, minute] = scheduleTime.split(":").map(Number);
+  const time = new Date();
+  time.setHours(hour, minute, 0, 0);
+  if (weekday !== undefined) {
+    time.setDate(time.getDate() + ((weekday - time.getDay() + 7) % 7));
+  }
+  return { ...rest, time: time.getTime() };
+}
+
+/**
  * Rounds the user's local time up to the nearest TIME_OPTIONS slot, giving the
  * time input a more useful default than always starting at 9:00. Seconds are
  * ignored, so 2:00:10 PM still yields 2:00 PM while 2:01 PM yields 2:30 PM.

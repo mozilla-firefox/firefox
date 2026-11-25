@@ -16,6 +16,7 @@ support-files = [
   "head_aitab.js",
   "head_smartformfill_autocomplete.js",
   "head_history_thumbnails.js",
+  "head_monitor_chat.js",
   "head_monitor_suggest.js",
   "head_smartformfill_form_review.js",
   "head_smartformfill_telemetry.js",

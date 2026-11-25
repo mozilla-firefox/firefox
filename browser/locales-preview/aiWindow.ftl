@@ -274,12 +274,21 @@ smartwindow-agent-monitor-page-not-watchable =
 # Fallback name used for $monitorName when the watched page has no title.
 smartwindow-agent-monitor-default-name = Page Watch
 
+# Task confirmation shown in chat after the user creates a task to watch a page.
 # The <a data-l10n-name="tasks"> element links to the tasks page. Its text is
 # the page address; keep it and the element (with its name) unchanged.
 # Variables:
 #   $monitorName (string) - The name of the page or target being watched
-#   $schedule (string) - Readable check cadence, e.g. "daily at 9:00 AM"
-smartwindow-agent-monitor-watching = I’ll check { $monitorName } { $schedule }. I’ll notify you when I find content matching your task. View or edit this task anytime at <a data-l10n-name="tasks">about:smartwindowtasks</a>.
+#   $time (date) - The scheduled check time
+smartwindow-agent-monitor-watching-daily = I’ll check { $monitorName } daily at { DATETIME($time, hour: "numeric", minute: "2-digit") }. I’ll notify you when I find content matching your task. View or edit this task anytime at <a data-l10n-name="tasks">about:smartwindowtasks</a>.
+
+# Task confirmation shown in chat after the user creates a task to watch a page.
+# The <a data-l10n-name="tasks"> element links to the tasks page. Its text is
+# the page address; keep it and the element (with its name) unchanged.
+# Variables:
+#   $monitorName (string) - The name of the page or target being watched
+#   $time (date) - The scheduled check time, on the scheduled day of the week
+smartwindow-agent-monitor-watching-weekly = I’ll check { $monitorName } weekly on { DATETIME($time, weekday: "long") } at { DATETIME($time, hour: "numeric", minute: "2-digit") }. I’ll notify you when I find content matching your task. View or edit this task anytime at <a data-l10n-name="tasks">about:smartwindowtasks</a>.
 
 # Shown in place of the card when the user deletes a task from the chat.
 # Variables:
@@ -288,15 +297,6 @@ smartwindow-agent-monitor-deleted = I’ve stopped watching { $monitorName } and
 
 # Shown in place of the card when the user cancels creating a task from the chat.
 smartwindow-agent-monitor-canceled = Canceled. Is there anything else I can assist you with?
-
-# Check watch schedule, added { $schedule } in the chat message.
-# Variables:
-#   $time (date) - The scheduled check time
-smartwindow-agent-monitor-schedule-daily = daily at { DATETIME($time, hour: "numeric", minute: "2-digit") }
-
-# Variables:
-#   $time (date) - The scheduled check day and time
-smartwindow-agent-monitor-schedule-weekly = weekly on { DATETIME($time, weekday: "long") } at { DATETIME($time, hour: "numeric", minute: "2-digit") }
 
 # Status chip and change-history rows shown on a monitor card in chat.
 smartwindow-agent-monitor-status-watching = Watching
