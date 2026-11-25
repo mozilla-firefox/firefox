@@ -794,11 +794,7 @@ class Inspector extends EventEmitter {
     }
 
     const walker = rootNodeFront.walkerFront;
-    // Don't try to re-select a node if the target isn't a top level target, which can
-    // happen when selecting a document in the frame picker
-    const cssSelectors = rootNodeFront.targetFront.isTopLevel
-      ? this.selectionCssSelectors
-      : [];
+    const cssSelectors = this.selectionCssSelectors;
     // Try to find a default node using three strategies:
     const defaultNodeSelectors = [
       // - first try to match css selectors for the selection
@@ -1862,8 +1858,8 @@ class Inspector extends EventEmitter {
   /**
    * Set the array of CSS selectors for the currently selected node.
    * We use an array of selectors in case the element is in iframes.
-   * Will store the current target url and origin along with it to allow pre-selection
-   * on navigation.
+   * Will store the current target url along with it to allow pre-selection at
+   * reload
    */
   set selectionCssSelectors(cssSelectors = []) {
     if (this.#destroyed) {
@@ -1873,24 +1869,17 @@ class Inspector extends EventEmitter {
     this.#selectionCssSelectors = {
       selectors: cssSelectors,
       url: this.currentTarget.url,
-      urlOrigin: this.currentTarget.urlOrigin,
     };
   }
 
   /**
    * Get the CSS selectors for the current selection if any, that is, if a node
-   * is actually selected and that node has been selected while on the same origin (or
-   * url if the origin can't be computed)
+   * is actually selected and that node has been selected while on the same url
    */
   get selectionCssSelectors() {
     if (
       this.#selectionCssSelectors &&
-      ((this.#selectionCssSelectors.urlOrigin &&
-        this.#selectionCssSelectors.urlOrigin ===
-          this.currentTarget.urlOrigin) ||
-        // urlOrigin can be null if the url can't be parsed, in such case, only reselect
-        // the node if the URL is the same.
-        this.#selectionCssSelectors.url === this.currentTarget.url)
+      this.#selectionCssSelectors.url === this.currentTarget.url
     ) {
       return this.#selectionCssSelectors.selectors;
     }
@@ -1899,7 +1888,7 @@ class Inspector extends EventEmitter {
 
   /**
    * On any new selection made by the user, store the array of css selectors
-   * of the selected node so it can be restored after same-origin navigation
+   * of the selected node so it can be restored after reload of the same page
    */
   #updateSelectionCssSelectors() {
     if (!this.selection.isElementNode()) {
