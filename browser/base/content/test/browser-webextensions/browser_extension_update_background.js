@@ -6,6 +6,10 @@ const { AddonTestUtils } = ChromeUtils.importESModule(
   "resource://testing-common/AddonTestUtils.sys.mjs"
 );
 
+const { sinon } = ChromeUtils.importESModule(
+  "resource://testing-common/Sinon.sys.mjs"
+);
+
 AddonTestUtils.initMochitest(this);
 
 const ID = "update2@tests.mozilla.org";
@@ -96,6 +100,10 @@ async function backgroundUpdateTest(url, id, checkIconFn) {
 
   AddonManagerPrivate.backgroundUpdateCheck();
   await updatePromise;
+  await TestUtils.waitForCondition(
+    () => ExtensionsUI.updates.size == 1,
+    "Wait for the pending update notification"
+  );
 
   is(getBadgeStatus(), "addon-alert", "Should have addon alert badge");
 
@@ -173,6 +181,10 @@ async function backgroundUpdateTest(url, id, checkIconFn) {
   updatePromise = promiseInstallEvent(addon, "onDownloadEnded");
   await AddonManagerPrivate.backgroundUpdateCheck();
   await updatePromise;
+  await TestUtils.waitForCondition(
+    () => ExtensionsUI.updates.size == 1,
+    "Wait for the pending update notification"
+  );
 
   is(getBadgeStatus(), "addon-alert", "Should have addon alert badge");
 
@@ -289,3 +301,264 @@ add_task(() =>
     checkNonDefaultIcon
   )
 );
+
+function runShowPermissionsPrompt(browser) {
+  return ExtensionsUI.showPermissionsPrompt(browser, {
+    msgs: [],
+    header: "Test permission prompt",
+    addonName: "Test add-on",
+    acceptText: "Accept",
+    acceptKey: "A",
+    cancelText: "Cancel",
+    cancelKey: "C",
+  });
+}
+
+add_task(async function test_closed_tab_rejects_queued_permission_prompt() {
+  let tab = await BrowserTestUtils.openNewForegroundTab(gBrowser);
+  let browser = tab.linkedBrowser;
+
+  let popupPromise = promisePopupNotificationShown("addon-webext-permissions");
+  let firstPrompt = runShowPermissionsPrompt(browser);
+  await popupPromise;
+  let queuedPrompt = runShowPermissionsPrompt(browser);
+
+  BrowserTestUtils.removeTab(tab);
+
+  is(await firstPrompt, false, "The shown prompt is declined on tab close");
+  is(
+    await queuedPrompt,
+    false,
+    "A queued prompt is rejected after its tab closes"
+  );
+  is(
+    PopupNotifications.getNotification("addon-webext-permissions", browser),
+    null,
+    "No permissions notifications should be found for the closed tab"
+  );
+  await TestUtils.waitForCondition(
+    () => !ExtensionsUI.pendingNotifications.has(browser),
+    "The closed tab does not retain a reserved slot in ExtensionsUI.pendingNotifications"
+  );
+});
+
+add_task(async function test_notification_show_exception_releases_queue_slot() {
+  let browser = gBrowser.selectedBrowser;
+
+  let sandbox = sinon.createSandbox();
+  sandbox
+    .stub(PopupNotifications, "show")
+    .throws(new Error("Mock PopupNotifications.show exception"));
+  let failedPrompt = runShowPermissionsPrompt(browser);
+  await Assert.rejects(
+    failedPrompt,
+    /Mock PopupNotifications.show exception/,
+    "The prompt error is propagated"
+  );
+  sandbox.restore();
+  await TestUtils.waitForCondition(
+    () => !ExtensionsUI.pendingNotifications.has(browser),
+    "The rejected prompt releases its queue slot"
+  );
+
+  let popupPromise = promisePopupNotificationShown("addon-webext-permissions");
+  let prompt = runShowPermissionsPrompt(browser);
+  await popupPromise;
+  let notification = PopupNotifications.getNotification(
+    "addon-webext-permissions",
+    browser
+  );
+  notification.owner.remove(notification, true);
+  is(await prompt, false, "A later prompt can use the released queue slot");
+});
+
+function findUpdatePermissionNotification(addonId, targetWindow = null) {
+  let windows = targetWindow
+    ? [targetWindow]
+    : Services.wm.getEnumerator("navigator:browser");
+  for (let win of windows) {
+    for (let browser of win.gBrowser.browsers) {
+      let notification = win.PopupNotifications.getNotification(
+        "addon-webext-permissions",
+        browser
+      );
+      if (notification?.options.addonId == addonId) {
+        return notification;
+      }
+    }
+  }
+  return null;
+}
+
+async function verifyLatePromptRejected(existingAddon, message) {
+  let promptHandled = Promise.withResolvers();
+  Services.obs.notifyObservers(
+    {
+      wrappedJSObject: {
+        addon: existingAddon,
+        existingAddon,
+        permissions: {
+          permissions: [],
+          origins: ["<all_urls>"],
+          data_collection: [],
+        },
+        resolve: () => promptHandled.resolve("resolved"),
+        reject: () => promptHandled.resolve("rejected"),
+      },
+    },
+    "webextension-update-permission-prompt"
+  );
+  is(await promptHandled.promise, "rejected", message);
+}
+
+async function installTestAddon() {
+  let addon = await promiseInstallAddon(`${BASE}/browser_webext_update1.xpi`);
+  let { id } = addon;
+  registerCleanupFunction(async () => {
+    let installed = await AddonManager.getAddonByID(id);
+    await installed?.uninstall();
+  });
+  return addon;
+}
+
+async function installAddonWithPendingUpdate() {
+  await SpecialPowers.pushPrefEnv({
+    set: [
+      ["extensions.update.enabled", true],
+      [
+        "extensions.update.background.url",
+        `${BASE}/browser_webext_update.json`,
+      ],
+    ],
+  });
+
+  let addon = await installTestAddon();
+  let updatePromise = promiseInstallEvent(addon, "onDownloadEnded");
+  AddonManagerPrivate.backgroundUpdateCheck();
+  await updatePromise;
+  await TestUtils.waitForCondition(
+    () => ExtensionsUI.updates.size == 1,
+    "Wait for the pending update notification"
+  );
+  let cleanup = async () => {
+    let installed = await AddonManager.getAddonByID(addon.id);
+    await installed?.uninstall();
+    await SpecialPowers.popPrefEnv();
+  };
+  return { addon, update: Array.from(ExtensionsUI.updates)[0], cleanup };
+}
+
+async function showUpdatePromptInNewWindow(addon, update) {
+  let tabPromise = BrowserTestUtils.waitForNewTab(gBrowser, "about:addons");
+  let popupPromise = promisePopupNotificationShown("addon-webext-permissions");
+  let showUpdatePromise = ExtensionsUI.showUpdate(gBrowser, update);
+  await popupPromise;
+  let tab = await tabPromise;
+  let originalBrowser = tab.linkedBrowser;
+
+  let notification = PopupNotifications.getNotification(
+    "addon-webext-permissions",
+    originalBrowser
+  );
+  // Keep the prompt while tab tear-off dismisses the notification panel.
+  notification.options.removeOnDismissal = false;
+  let newWindowPromise = BrowserTestUtils.waitForNewWindow();
+  gBrowser.replaceTabWithWindow(tab);
+  let newWindow = await newWindowPromise;
+  // Pending idle tasks keep the window alive and are reported as a shutdown
+  // leak if it is closed first.
+  await newWindow.gBrowserInit.idleTasksFinished.promise;
+  await TestUtils.waitForCondition(
+    () => findUpdatePermissionNotification(addon.id, newWindow),
+    "Wait for the update permission prompt to move to the new window"
+  );
+  return { newWindow, originalBrowser, showUpdatePromise };
+}
+
+async function assertNoUpdateMenuEntries() {
+  is(getBadgeStatus(), null, "Addon alert badge should be gone");
+  is(ExtensionsUI.updates.size, 0, "Should have no pending updates");
+  await gCUITestUtils.openMainMenu();
+  is(
+    PanelUI.addonNotificationContainer.children.length,
+    0,
+    "Update menu entries should be gone"
+  );
+  await gCUITestUtils.hideMainMenu();
+}
+
+add_task(async function test_uninstall_dismisses_moved_update_prompt() {
+  let { addon, update, cleanup } = await installAddonWithPendingUpdate();
+
+  is(getBadgeStatus(), "addon-alert", "Should have addon alert badge");
+  await gCUITestUtils.openMainMenu();
+  is(
+    PanelUI.addonNotificationContainer.children.length,
+    1,
+    "Should have one update menu entry"
+  );
+  await gCUITestUtils.hideMainMenu();
+
+  let { newWindow, showUpdatePromise } = await showUpdatePromptInNewWindow(
+    addon,
+    update
+  );
+  ok(
+    findUpdatePermissionNotification(addon.id, newWindow),
+    "The update permission prompt is in the new window"
+  );
+  is(
+    findUpdatePermissionNotification(addon.id, window),
+    null,
+    "The update permission prompt is no longer in the original window"
+  );
+
+  await addon.uninstall(true);
+  await showUpdatePromise;
+  is(
+    findUpdatePermissionNotification(addon.id),
+    null,
+    "Should close an open permission prompt after its tab moves windows"
+  );
+  await assertNoUpdateMenuEntries();
+
+  await BrowserTestUtils.closeWindow(newWindow);
+  await cleanup();
+});
+
+add_task(async function test_late_update_prompt_during_pending_uninstall() {
+  let addon = await installTestAddon();
+  await addon.uninstall(true);
+  await verifyLatePromptRejected(
+    addon,
+    "Should reject an update prompt received while uninstall is pending"
+  );
+  await assertNoUpdateMenuEntries();
+  await addon.uninstall();
+});
+
+add_task(async function test_late_update_prompt_after_uninstall() {
+  let addon = await installTestAddon();
+  await addon.uninstall();
+  await verifyLatePromptRejected(
+    addon,
+    "Should reject an update prompt received after uninstall completes"
+  );
+  await assertNoUpdateMenuEntries();
+});
+
+add_task(async function test_closing_prompt_window_settles_pending_update() {
+  let { addon, update, cleanup } = await installAddonWithPendingUpdate();
+  let { newWindow, originalBrowser, showUpdatePromise } =
+    await showUpdatePromptInNewWindow(addon, update);
+
+  await BrowserTestUtils.closeWindow(newWindow);
+  await showUpdatePromise;
+  await TestUtils.waitForCondition(
+    () => !ExtensionsUI.pendingNotifications.has(originalBrowser),
+    "Closing the prompt window releases its queue slot"
+  );
+  await assertNoUpdateMenuEntries();
+
+  await cleanup();
+});

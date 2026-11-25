@@ -78,6 +78,7 @@ export var ExtensionsUI = {
     Services.obs.addObserver(this, "webextension-imported-addons-cancelled");
     Services.obs.addObserver(this, "webextension-imported-addons-complete");
     Services.obs.addObserver(this, "webextension-imported-addons-pending");
+    lazy.AddonManager.addAddonListener(this);
 
     await Services.wm.getMostRecentWindow("navigator:browser")
       .delayedStartupPromise;
@@ -134,6 +135,54 @@ export var ExtensionsUI = {
     this.emit("change");
   },
 
+  _removeUpdate(update) {
+    this.updates.delete(update);
+    this._updateNotifications();
+  },
+
+  _rejectPendingUpdatesForAddon(addon) {
+    let matchingUpdates = [...this.updates].filter(
+      update => update.existingAddon.id == addon.id
+    );
+    if (!matchingUpdates.length) {
+      return;
+    }
+
+    // Removing an add-on also cancels its downloaded update. If the uninstall
+    // is undone, a later update check can offer it again.
+    for (let update of matchingUpdates) {
+      update.reject();
+      this.updates.delete(update);
+    }
+    this._updateNotifications();
+  },
+
+  _dismissPermissionsPromptsForAddon(addonId) {
+    for (let window of Services.wm.getEnumerator("navigator:browser")) {
+      for (let browser of window.gBrowser.browsers) {
+        let notification = window.PopupNotifications.getNotification(
+          "addon-webext-permissions",
+          browser
+        );
+        if (notification?.options.addonId == addonId) {
+          // `notification.remove()` does not currently accept a
+          // `withoutUserResponse` parameter like `PopupNotification.remove()`.
+          notification.owner.remove(notification, true);
+        }
+      }
+    }
+  },
+
+  onUninstalling(addon) {
+    this._rejectPendingUpdatesForAddon(addon);
+    this._dismissPermissionsPromptsForAddon(addon.id);
+  },
+
+  onUninstalled(addon) {
+    this._rejectPendingUpdatesForAddon(addon);
+    this._dismissPermissionsPromptsForAddon(addon.id);
+  },
+
   showAddonsManager(
     tabbrowser,
     strings,
@@ -142,6 +191,8 @@ export var ExtensionsUI = {
       addon = undefined,
       shouldShowIncognitoCheckbox = false,
       shouldShowTechnicalAndInteractionCheckbox = false,
+      closeOnAddonUninstall = false,
+      isPromptStillValid = undefined,
     } = {}
   ) {
     let global = tabbrowser.selectedBrowser.documentGlobal;
@@ -152,6 +203,8 @@ export var ExtensionsUI = {
           addon,
           shouldShowIncognitoCheckbox,
           shouldShowTechnicalAndInteractionCheckbox,
+          closeOnAddonUninstall,
+          isPromptStillValid,
         });
       }
     );
@@ -193,8 +246,12 @@ export var ExtensionsUI = {
       num_strings: info.strings.msgs.length,
     });
 
-    this.showAddonsManager(browser, info.strings, info.addon.iconURL).then(
-      answer => {
+    return this.showAddonsManager(browser, info.strings, info.addon.iconURL, {
+      addon: info.existingAddon,
+      closeOnAddonUninstall: true,
+      isPromptStillValid: () => this.updates.has(info),
+    })
+      .then(answer => {
         if (answer) {
           info.resolve();
         } else {
@@ -202,10 +259,52 @@ export var ExtensionsUI = {
         }
         // At the moment, this prompt will re-appear next time we do an update
         // check.  See bug 1332360 for proposal to avoid this.
-        this.updates.delete(info);
-        this._updateNotifications();
+        this._removeUpdate(info);
+      })
+      .catch(err => {
+        console.error(err);
+        info.reject();
+        this._removeUpdate(info);
+      });
+  },
+
+  async _handleUpdatePermissionPrompt(info) {
+    try {
+      info.type = "update";
+
+      let strings = this._buildStrings(info);
+
+      // If we don't prompt for any new permissions, just apply it
+      if (!strings.msgs.length && !strings.dataCollectionPermissions?.msg) {
+        info.resolve();
+        return;
       }
-    );
+
+      let addon = await lazy.AddonManager.getAddonByID(info.existingAddon.id);
+      if (
+        !addon ||
+        addon.pendingOperations & lazy.AddonManager.PENDING_UNINSTALL
+      ) {
+        info.reject();
+        return;
+      }
+
+      let update = {
+        strings,
+        permissions: info.permissions,
+        install: info.install,
+        addon: info.addon,
+        existingAddon: addon,
+        resolve: info.resolve,
+        reject: info.reject,
+      };
+
+      this.updates.add(update);
+      this._updateNotifications();
+    } catch (err) {
+      console.error(err);
+      info.reject();
+    }
   },
 
   observe(subject, topic) {
@@ -291,6 +390,9 @@ export var ExtensionsUI = {
         addon: info.addon,
         shouldShowIncognitoCheckbox,
         shouldShowTechnicalAndInteractionCheckbox,
+        // TODO(Bug 2075364): Consider extending this behavior to optional
+        // permission requests.
+        closeOnAddonUninstall: info.type == "update",
       }).then(answer => {
         if (answer) {
           info.resolve();
@@ -299,35 +401,9 @@ export var ExtensionsUI = {
         }
       });
     } else if (topic == "webextension-update-permission-prompt") {
-      let info = subject.wrappedJSObject;
-      info.type = "update";
-
-      let strings;
-      try {
-        strings = this._buildStrings(info);
-      } catch (err) {
-        console.error(err);
-        info.reject();
-        return;
-      }
-
-      // If we don't prompt for any new permissions, just apply it
-      if (!strings.msgs.length && !strings.dataCollectionPermissions?.msg) {
-        info.resolve();
-        return;
-      }
-
-      let update = {
-        strings,
-        permissions: info.permissions,
-        install: info.install,
-        addon: info.addon,
-        resolve: info.resolve,
-        reject: info.reject,
-      };
-
-      this.updates.add(update);
-      this._updateNotifications();
+      this._handleUpdatePermissionPrompt(subject.wrappedJSObject).catch(
+        console.error
+      );
     } else if (topic == "webextension-install-notify") {
       let { target, addon, callback } = subject.wrappedJSObject;
       this.showInstallNotification(target, addon).then(() => {
@@ -426,6 +502,8 @@ export var ExtensionsUI = {
       shouldShowIncognitoCheckbox = false,
       shouldShowTechnicalAndInteractionCheckbox = false,
       isUserScriptsRequest = false,
+      closeOnAddonUninstall = false,
+      isPromptStillValid = undefined,
     } = {}
   ) {
     let { browser, window } = getTabBrowser(target);
@@ -461,20 +539,80 @@ export var ExtensionsUI = {
     // This is an opt-out setting.
     let grantTechnicalAndInteractionDataCollection = true;
 
-    // Wait for any pending prompts to complete before showing the next one.
+    // Wait for any pending prompts to complete before reserving this browser.
     let pending;
     while ((pending = this.pendingNotifications.get(browser))) {
       await pending;
     }
 
+    let promptSlot = Promise.withResolvers();
+    this.pendingNotifications.set(browser, promptSlot.promise);
+    let clearPromptSlot = () => {
+      if (this.pendingNotifications.get(browser) == promptSlot.promise) {
+        this.pendingNotifications.delete(browser);
+      }
+    };
+    promptSlot.promise.then(clearPromptSlot, error => {
+      clearPromptSlot();
+      console.error(error);
+    });
+
+    try {
+      if (closeOnAddonUninstall) {
+        let installedAddon = await lazy.AddonManager.getAddonByID(addon.id);
+        if (
+          !installedAddon ||
+          installedAddon.pendingOperations & lazy.AddonManager.PENDING_UNINSTALL
+        ) {
+          promptSlot.resolve(false);
+          return false;
+        }
+      }
+
+      if (isPromptStillValid && !isPromptStillValid()) {
+        promptSlot.resolve(false);
+        return false;
+      }
+
+      if (!browser.isConnected || window.closed) {
+        promptSlot.resolve(false);
+        return false;
+      }
+    } catch (error) {
+      promptSlot.resolve(false);
+      throw error;
+    }
+
     let promise = new Promise(resolve => {
-      function eventCallback(topic) {
+      let notificationWindow = window;
+      let settled = false;
+
+      function settle(answer) {
+        if (settled) {
+          return;
+        }
+        settled = true;
+        notificationWindow.removeEventListener("unload", onWindowUnload);
+        resolve(answer);
+      }
+
+      // Bug 609804 tracks missing "removed" events when a window closes.
+      function onWindowUnload() {
+        settle(false);
+      }
+
+      function eventCallback(topic, newBrowser) {
         if (topic == "swapping") {
+          notificationWindow.removeEventListener("unload", onWindowUnload);
+          notificationWindow = newBrowser.documentGlobal;
+          notificationWindow.addEventListener("unload", onWindowUnload, {
+            once: true,
+          });
           return true;
         }
         if (topic == "removed") {
           Services.tm.dispatchToMainThread(() => {
-            resolve(false);
+            settle(false);
           });
         }
         return false;
@@ -527,6 +665,9 @@ export var ExtensionsUI = {
           isUserScriptsRequest,
         },
       };
+      if (closeOnAddonUninstall) {
+        options.addonId = addon.id;
+      }
       // The prompt/notification machinery has a special affordance wherein
       // certain subsets of the header string can be designated "names", and
       // referenced symbolically as "<>" and "{}" to receive special formatting.
@@ -546,7 +687,7 @@ export var ExtensionsUI = {
         label: strings.acceptText,
         accessKey: strings.acceptKey,
         callback: () => {
-          resolve(true);
+          settle(true);
         },
       };
       let secondaryActions = [
@@ -554,7 +695,7 @@ export var ExtensionsUI = {
           label: strings.cancelText,
           accessKey: strings.cancelKey,
           callback: () => {
-            resolve(false);
+            settle(false);
           },
         },
       ];
@@ -571,10 +712,14 @@ export var ExtensionsUI = {
         secondaryActions,
         options
       );
+      if (!settled) {
+        notificationWindow.addEventListener("unload", onWindowUnload, {
+          once: true,
+        });
+      }
     });
 
-    this.pendingNotifications.set(browser, promise);
-    promise.finally(() => this.pendingNotifications.delete(browser));
+    promptSlot.resolve(promise);
     // NOTE: this method is also called from showQuarantineConfirmation and some of its
     // related test cases (from browser_ext_originControls.js) seem to be hitting a race
     // if the promise returned requires an additional tick to be resolved.
