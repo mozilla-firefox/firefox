@@ -25,6 +25,7 @@ class QuicSocketControl final : public CommonSocketControl {
   NS_INLINE_DECL_REFCOUNTING_INHERITED(QuicSocketControl, CommonSocketControl);
 
   NS_IMETHOD GetSSLVersionOffered(int16_t* aSSLVersionOffered) override;
+  NS_IMETHOD NoteHandshakeTimeout() override;
 
   QuicSocketControl(const nsCString& aHostName, int32_t aPort,
                     uint32_t aProviderFlags,

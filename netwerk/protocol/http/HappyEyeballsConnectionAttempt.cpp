@@ -1858,6 +1858,11 @@ void HappyEyeballsConnectionAttempt::OnTimeout() {
 void HappyEyeballsConnectionAttempt::EnterTimedOut() {
   LOG(("HappyEyeballsConnectionAttempt::EnterTimedOut %p", this));
   MOZ_ASSERT(mState == State::TimedOut);
+  for (const auto& establisher : mConnectionEstablisherTable.Values()) {
+    if (RefPtr<HttpConnectionBase> conn = establisher->ResultConn()) {
+      conn->NoteHandshakeTimeout();
+    }
+  }
   RefPtr<ConnectionEntry> entry(mEntry);
   ReleaseRealTransaction(NS_ERROR_NET_TIMEOUT, entry);
   Abandon();

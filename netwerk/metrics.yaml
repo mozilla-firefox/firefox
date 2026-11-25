@@ -3183,10 +3183,13 @@ network:
           - resumed
           - not_resumed
           - rejected
+          - failed
         description: >
           'rejected' means the TLS stack refused every token. 'not_resumed'
           means a token was accepted by the stack and sent, but the server
-          declined it. 'resumed' means the server accepted it.
+          declined it. 'resumed' means the server accepted it. 'failed' means
+          a token was accepted, but the handshake then failed for any reason,
+          including a handshake timeout or an ECH retry.
     bugs:
       - https://bugzilla.mozilla.org/show_bug.cgi?id=2066838
       - https://bugzilla.mozilla.org/show_bug.cgi?id=2090845

@@ -417,6 +417,9 @@ NS_IMETHODIMP
 CommonSocketControl::DisableEarlyData(void) { return NS_ERROR_NOT_IMPLEMENTED; }
 
 NS_IMETHODIMP
+CommonSocketControl::NoteHandshakeTimeout() { return NS_OK; }
+
+NS_IMETHODIMP
 CommonSocketControl::GetPeerId(nsACString& aResult) {
   COMMON_SOCKET_CONTROL_ASSERT_ON_OWNING_THREAD();
   if (!mPeerId.IsEmpty()) {

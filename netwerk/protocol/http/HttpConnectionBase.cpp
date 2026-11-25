@@ -23,6 +23,7 @@
 #include "nsIClassOfService.h"
 #include "nsIOService.h"
 #include "nsISocketTransport.h"
+#include "nsITLSSocketControl.h"
 #include "xpcpublic.h"
 
 namespace mozilla {
@@ -193,6 +194,14 @@ void HttpConnectionBase::SetOwner(ConnectionEntry* aEntry) {
 
 ConnectionEntry* HttpConnectionBase::OwnerEntry() const {
   return mOwnerEntry.get();
+}
+
+void HttpConnectionBase::NoteHandshakeTimeout() {
+  nsCOMPtr<nsITLSSocketControl> tlsSocketControl;
+  GetTLSSocketControl(getter_AddRefs(tlsSocketControl));
+  if (tlsSocketControl) {
+    (void)tlsSocketControl->NoteHandshakeTimeout();
+  }
 }
 
 }  // namespace net

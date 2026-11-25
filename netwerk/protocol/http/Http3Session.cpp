@@ -1416,6 +1416,7 @@ nsresult Http3Session::ProcessOutputAndEvents(nsIUDPSocket* socket) {
             ("Http3Session %p stuck in ZERORTT for %.2fms (timeout=%ums), "
              "closing connection",
              this, elapsed.ToMilliseconds(), timeout));
+        NoteHandshakeTimeout();
         return NS_ERROR_NET_TIMEOUT;
       }
     }
@@ -2381,6 +2382,12 @@ void Http3Session::CloseInternal(bool aCallNeqoClose) {
   // before-connected error when mError actually failed.
   if (mState != CONNECTED && NS_FAILED(mError)) {
     mBeforeConnectedError = true;
+  }
+
+  // Closes by necko aren't failures, except on a handshake timeout.
+  if (mTokenAccepted && !mHandshakeSucceeded && NS_FAILED(mError) &&
+      (!aCallNeqoClose || NS_FAILED(mSocketError) || mHandshakeTimedOut)) {
+    RecordTokenResumption("failed"_ns);
   }
 
   if (mState == ZERORTT) {
