@@ -111,6 +111,9 @@ run-if = [
 ["test_cert_override_read.js"]
 prefs = ["security.storage.encryption.sqlite.enabled=false"]
 
+["test_cert_override_user_context_resumption.js"]
+run-sequentially = ["true"] # hardcoded ports
+
 ["test_cert_overrides.js"]
 run-sequentially = ["true"] # hardcoded ports
 

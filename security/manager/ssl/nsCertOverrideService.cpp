@@ -432,14 +432,8 @@ nsCertOverrideService::HasMatchingOverride(
   bool disableAllSecurityCheck = false;
   {
     MutexAutoLock lock(mMutex);
-    if (mUserContextIdsWithSecurityChecksOverride.has(
-            aOriginAttributes.mUserContextId)) {
-      auto p = mUserContextIdsWithSecurityChecksOverride.lookup(
-          aOriginAttributes.mUserContextId);
-      disableAllSecurityCheck = p->value();
-    } else {
-      disableAllSecurityCheck = mDisableAllSecurityCheck;
-    }
+    disableAllSecurityCheck =
+        IsSecurityCheckDisabledFor(aOriginAttributes.mUserContextId, lock);
   }
   if (disableAllSecurityCheck) {
     *aIsTemporary = false;
@@ -639,6 +633,13 @@ static bool IsDebugger() {
   return false;
 }
 
+bool nsCertOverrideService::IsSecurityCheckDisabledFor(
+    uint32_t aUserContextId, const MutexAutoLock& aProofOfLock) const {
+  mMutex.AssertCurrentThreadOwns();
+  auto p = mUserContextIdsWithSecurityChecksOverride.lookup(aUserContextId);
+  return p ? p->value() : mDisableAllSecurityCheck;
+}
+
 NS_IMETHODIMP
 nsCertOverrideService::
     SetDisableAllSecurityChecksAndLetAttackersInterceptMyData(bool aDisable) {
@@ -672,10 +673,16 @@ nsCertOverrideService::
     return NS_ERROR_NOT_AVAILABLE;
   }
 
+  bool changed;
   {
     MutexAutoLock lock(mMutex);
+    changed = IsSecurityCheckDisabledFor(aUserContextId, lock) != aDisable;
     (void)mUserContextIdsWithSecurityChecksOverride.put(aUserContextId,
                                                         aDisable);
+  }
+
+  if (changed) {
+    mozilla::net::SSLTokensCache::ClearSessionCacheAndTokens();
   }
 
   return NS_OK;
@@ -689,9 +696,16 @@ nsCertOverrideService::
     return NS_ERROR_NOT_AVAILABLE;
   }
 
+  bool changed;
   {
     MutexAutoLock lock(mMutex);
+    changed = IsSecurityCheckDisabledFor(aUserContextId, lock) !=
+              mDisableAllSecurityCheck;
     mUserContextIdsWithSecurityChecksOverride.remove(aUserContextId);
+  }
+
+  if (changed) {
+    mozilla::net::SSLTokensCache::ClearSessionCacheAndTokens();
   }
 
   return NS_OK;
