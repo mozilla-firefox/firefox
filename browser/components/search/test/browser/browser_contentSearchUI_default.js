@@ -115,6 +115,20 @@ async function ensurePlaceholder(tab, expectedId, expectedEngine) {
         ".search-handoff-button"
       );
       let expectedAttributes = { id, args: engine ? { engine } : null };
+      // A remounted element is only labelled once its own Engine reply
+      // arrives, which can come after ensureIcon passes.
+      await ContentTaskUtils.waitForMutationCondition(
+        buttonNode,
+        { attributeFilter: ["data-l10n-id", "data-l10n-args"] },
+        () => {
+          let { id: l10nId, args } =
+            content.document.l10n.getAttributes(buttonNode);
+          return (
+            l10nId == expectedAttributes.id &&
+            JSON.stringify(args) == JSON.stringify(expectedAttributes.args)
+          );
+        }
+      );
       Assert.deepEqual(
         content.document.l10n.getAttributes(buttonNode),
         expectedAttributes,
