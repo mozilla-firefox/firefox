@@ -2,9 +2,11 @@
 # This Source Code Form is subject to the terms of the Mozilla Public
 # License, v. 2.0. If a copy of the MPL was not distributed with this
 # file, You can obtain one at http://mozilla.org/MPL/2.0/.
-"""Capture a before/after pair of every surface in a set of color regimes.
+"""Capture a before/after pair of every surface in a set of color regimes, and
+draw images comparing them.
 
     ./mach python --virtualenv desktop-theme -- matrix.py run SPEC OUTDIR [--only SET/REGIME]...
+    ./mach python --virtualenv desktop-theme -- matrix.py render OUTDIR [--notes FILE] [--threshold N]
 
 Run from the checkout root. The spec is a JSON file naming the surfaces to
 shoot; this one shoots the navigation toolbar and the reload button's hover
@@ -113,7 +115,7 @@ script reaches each state and either calls `shot()` or awaits `capture(name,
 element)` and records what it measured under the same name in
 `readings[name]`, as an object or a single value. Record a value that
 describes the cell rather than one the change should move, such as which tab
-is selected, in `context`.
+is selected, in `context`: `render` lists it per cell and compares nothing in it.
 `contrast(subjects, {states, surface, min, nonText})` takes selectors or
 elements, not a mix, and returns what `./mach theme contrast` prints as JSON
 for them. The probe resolves with the shots, the readings and the context,
@@ -130,12 +132,49 @@ build, no binary, a browser that never comes up) stops the run. On Ctrl-C the
 run waits for capture-pair.sh to restore the reverted paths.
 
 The run checks the paths before it clears anything. OUTDIR is cleared first,
-and only when it holds the marker file a previous run wrote; --only reruns the
-cells matching a SET/REGIME glob and clears only theirs. OUTDIR/matrix.json
-records each cell's result, with a stamp of the revisions, paths, set and
-regime it ran with; --only names the cells it keeps whose stamp no longer
-matches. It exits 0 when every cell captured, 1 when one failed and 2 on an
-error.
+and only when it holds the marker file a previous run wrote, so keep a --notes
+file elsewhere; --only reruns the cells matching a SET/REGIME glob and clears
+only theirs. OUTDIR/matrix.json records each cell's result, with a stamp of the
+revisions, paths, set and regime it ran with; --only names the cells it keeps
+whose stamp no longer matches. It exits 0 when every cell captured, 1 when one
+failed and 2 on an error.
+
+`render` pairs after-NAME.png with before-NAME.png in each cell, counts the
+pixels that differ by more than --threshold (default 0: both halves run one
+build headless, so a pixel that differs is the change's) and writes
+OUTDIR/SET/REGIME/diff-NAME.png where any do; with a threshold, it also counts
+the pixels that differ by less, and a shot with only those still goes on the
+pixels list. It turns the two halves' readings into notes: a value that
+changed, a size that changed and an error. A row is one shot of one set
+across its regimes, and it goes on the first list that fits: a reading
+changed in some regime; a shot failed the same way in both halves, or one half
+did not finish; only
+pixels differ. A row shows each
+regime that is not identical, folding a regime where no pixel differs and the
+notes match an earlier one into that one, and names the regimes that are
+identical and those it could not compare.
+`render` prints one line per row (its list, the shot, and per regime shown the
+pixels that differ and the first note), one per identical shot and one per
+cell with context. --notes is a JSON file mapping SET/NAME or SET/REGIME/NAME to a note shown on that row or
+regime, or beside an identical shot. `render` reports the keys naming a regime
+that is identical, which it does not show, and those matching no shot.
+
+OUTDIR/rows.json holds the comparison:
+
+- `title`; `failedCells`, `notRunCells` and `staleCells`, lists of
+  SET/REGIME.
+- `identical`: {`shot`: SET/NAME, `missing`: the regimes not compared,
+  `note`}.
+- `context`: SET/REGIME mapped to {`before`, `after`}.
+- `rows`, in list order: {`set`, `name`, `status` (changed, error or pixels),
+  `note`, `count` (the most pixels differing in one regime),
+  `same` and `missing` (regimes identical and not compared), `regimes`}.
+- Each of `regimes`: {`regime`, `sameIn` (the regimes folded into it),
+  `status`, `notes` (what changed), `errors`, `count`, `below`
+  (pixels differing by no more than --threshold), `maxDelta` (the largest
+  channel difference), `bbox`, `notRun` (the half that did not finish, or
+  null), `heldAnimations`, `note`, and the paths relative to OUTDIR `before`,
+  `after` and `diff`}.
 """
 
 import argparse
@@ -228,7 +267,7 @@ def window_size(value, what):
     return value
 
 
-RESERVED = {"probes", "matrix.json"}
+RESERVED = {"probes", "matrix.json", "rows.json"}
 
 
 def mapping(value, what):
@@ -822,6 +861,333 @@ def shot_errors(cell):
     ]
 
 
+def flatten(value, prefix=""):
+    """Map dotted keys to the scalar values under them, and to the empty
+    containers."""
+    if isinstance(value, (dict, list)) and not value and prefix:
+        return {prefix: value}
+    if isinstance(value, dict):
+        out = {}
+        for k, v in value.items():
+            out.update(flatten(v, f"{prefix}.{k}" if prefix else str(k)))
+        return out
+    if isinstance(value, list):
+        out = {}
+        for i, v in enumerate(value):
+            out.update(flatten(v, f"{prefix}[{i}]"))
+        return out
+    return {prefix: value}
+
+
+def compare(before, after):
+    """Return the notes on what changed between two halves' readings of one
+    shot, and on errors the same in both."""
+    b, a = flatten(as_readings(before)), flatten(as_readings(after))
+    changed, errors = [], []
+    for key in [*b, *(k for k in a if k not in b)]:
+        vb, va = b.get(key), a.get(key)
+        if key not in a:
+            changed.append(f"{key} only before: {shown(vb)}")
+        elif key not in b:
+            changed.append(f"{key} only after: {shown(va)}")
+        elif (key == "error" or key.endswith(".error")) and va == vb:
+            errors.append(
+                f"{va}, before and after"
+                if key == "error"
+                else f"{key}: {va}, before and after"
+            )
+        elif vb != va:
+            changed.append(f"{key}: {shown(vb)} → {shown(va)}")
+    return changed, errors
+
+
+def shown(value):
+    return json.dumps(value, ensure_ascii=False)
+
+
+def as_readings(value):
+    """A shot's readings as a dict, with a script's bare value under "value"."""
+    if isinstance(value, dict):
+        return dict(value)
+    return {} if value is None else {"value": value}
+
+
+STATUS_ORDER = ["changed", "error", "pixels", "same"]
+
+
+def link(path, cell):
+    """The path of a cell's file relative to OUTDIR."""
+    return path.relative_to(cell.parent.parent).as_posix()
+
+
+def compare_cell(cell, threshold, pixel_diff):
+    """Compare each shot of one cell; return {name: regime entry}."""
+    halves = {}
+    unfinished = []
+    for half in ("after", "before"):
+        result = read_result(cell / f"{half}.json")
+        if result is None:
+            unfinished.append(half)
+        halves[half] = (result or {}).get("readings") or {}
+    # capture-pair.sh runs the after half first and stops when it fails.
+    not_run = unfinished[0] if unfinished else None
+    names = sorted(
+        {
+            p.name.split("-", 1)[1][: -len(".png")]
+            for p in cell.glob("*.png")
+            if p.name.startswith(("after-", "before-"))
+        }
+        | set(halves["after"])
+        | set(halves["before"])
+    )
+    out = {}
+    for name in names:
+        after, before = cell / f"after-{name}.png", cell / f"before-{name}.png"
+        diff = cell / f"diff-{name}.png"
+        diff.unlink(missing_ok=True)
+        entry = {
+            "count": 0,
+            "below": 0,
+            "maxDelta": 0,
+            "bbox": None,
+            "notes": [],
+            "notRun": not_run,
+        }
+        if not_run:
+            # One half's images only, so nothing to compare them with.
+            pass
+        elif after.exists() and before.exists():
+            im, other = pixel_diff.load(str(after)), pixel_diff.load(str(before))
+            if im.size != other.size:
+                entry["notes"].append(
+                    "size {}x{} → {}x{} device px".format(*other.size, *im.size)
+                )
+            mask, channel_max = pixel_diff.diff_mask(im, other, threshold)
+            entry["count"] = mask.histogram()[255]
+            entry["below"] = sum(channel_max.histogram()[1 : threshold + 1])
+            entry["maxDelta"] = channel_max.getextrema()[1]
+            entry["bbox"] = mask.getbbox()
+            if entry["count"]:
+                pixel_diff.write_diff_image(str(diff), im, mask, None)
+        elif after.exists() or before.exists():
+            entry["notes"].append(
+                f"captured only {'after' if after.exists() else 'before'}"
+            )
+        if not_run:
+            ran = halves["after"].get(name)
+            error = ran.get("error") if isinstance(ran, dict) else None
+            changed = []
+            unfinished_note = f"the {not_run} half did not finish"
+            errors = [f"{error}; {unfinished_note}" if error else unfinished_note]
+        else:
+            changed, errors = compare(
+                halves["before"].get(name), halves["after"].get(name)
+            )
+        entry["notes"] += changed
+        entry["errors"] = errors
+        if entry["notes"]:
+            entry["status"] = "changed"
+        elif errors:
+            entry["status"] = "error"
+        elif entry["count"] or entry["below"]:
+            entry["status"] = "pixels"
+        else:
+            entry["status"] = "same"
+        for half, path in (("before", before), ("after", after), ("diff", diff)):
+            entry[half] = link(path, cell) if path.exists() else None
+        held = set()
+        for readings in halves.values():
+            if isinstance(readings.get(name), dict):
+                held.update(readings[name].get("heldAnimations") or [])
+        entry["heldAnimations"] = sorted(held)
+        out[name] = entry
+    return out
+
+
+def not_compared(missing):
+    return f"; not compared in {', '.join(missing)}" if missing else ""
+
+
+def pixel_summary(e):
+    if e["count"]:
+        return f"{e['count']} px"
+    if e["below"]:
+        return f"{e['below']} px by at most {e['maxDelta']}"
+    return ""
+
+
+def row_line(row):
+    """One line of `render`'s output for a row: status, shot, and per shown
+    regime the regimes it stands for, the pixels that differ and the first
+    note."""
+    parts = []
+    for e in row["regimes"]:
+        notes = e["notes"] + e["errors"]
+        text = ", ".join([e["regime"], *e["sameIn"]])
+        details = [d for d in (pixel_summary(e), notes and notes[0]) if d]
+        if len(notes) > 1:
+            details.append(f"{len(notes) - 1} more notes")
+        parts.append(text + (f" ({'; '.join(details)})" if details else ""))
+    return (
+        f"{row['status']:8} {row['set']}/{row['name']}: "
+        + " | ".join(parts)
+        + not_compared(row["missing"])
+    )
+
+
+def render(args):
+    outdir = Path(args.outdir).resolve()
+    summary_path = outdir / "matrix.json"
+    if not (outdir / MARKER).exists() or not summary_path.exists():
+        raise SpecError(f"{outdir} holds no matrix run")
+    if not 0 <= args.threshold <= 255:
+        raise SpecError(f"--threshold {args.threshold} is not between 0 and 255")
+    summary = json.loads(summary_path.read_text())
+    notes = {}
+    if args.notes:
+        try:
+            notes = json.loads(Path(args.notes).read_text(encoding="utf-8"))
+        except (OSError, ValueError) as e:
+            raise SpecError(f"{args.notes}: {e}")
+        if not isinstance(notes, dict) or not all(
+            isinstance(v, str) for v in notes.values()
+        ):
+            raise SpecError(f"{args.notes}: notes map SET/NAME keys to strings")
+    tools(topsrcdir())
+    import pixel_diff
+
+    rows = []
+    failed_cells = []
+    not_run_cells = []
+    stale_cells = []
+    identical = []
+    context = {}
+    used_notes = set()
+    same_keys = set()
+
+    def note(key):
+        used_notes.add(key)
+        return notes.get(key)
+
+    stamps = summary.get("stamps", {})
+    for set_name, regimes in summary["sets"].items():
+        by_name = {}
+        for regime in regimes:
+            key = f"{set_name}/{regime}"
+            cell = summary["cells"].get(key)
+            if not cell:
+                not_run_cells.append(key)
+                continue
+            if cell.get("stamp") != stamps.get(key):
+                stale_cells.append(key)
+            if cell["exit"] != 0:
+                failed_cells.append(key)
+            # A failed cell still has the readings of the shots that failed
+            # in both halves, such as a selector matching nothing.
+            cell_dir = outdir / set_name / regime
+            cell_context = {
+                half: (read_result(cell_dir / f"{half}.json") or {}).get("context")
+                for half in ("before", "after")
+            }
+            if any(cell_context.values()):
+                context[key] = cell_context
+            for name, entry in compare_cell(
+                cell_dir, args.threshold, pixel_diff
+            ).items():
+                entry["regime"] = regime
+                by_name.setdefault(name, []).append(entry)
+        for name, entries in by_name.items():
+            status = min((e["status"] for e in entries), key=STATUS_ORDER.index)
+            compared = {e["regime"] for e in entries}
+            missing = [r for r in regimes if r not in compared]
+            same_keys.update(
+                f"{set_name}/{e['regime']}/{name}"
+                for e in entries
+                if e["status"] == "same"
+            )
+            if status == "same":
+                identical.append({
+                    "shot": f"{set_name}/{name}",
+                    "missing": missing,
+                    "note": note(f"{set_name}/{name}"),
+                })
+                continue
+            # A regime showing the same notes as an earlier one, with no
+            # pixel differing in either, folds into that one's sameIn.
+            shown_regimes = {}
+            for e in (e for e in entries if e["status"] != "same"):
+                e["note"] = note(f"{set_name}/{e['regime']}/{name}")
+                key = (
+                    e["status"],
+                    tuple(e["notes"] + e["errors"]),
+                    e["note"],
+                )
+                pixels = e["count"] or e["below"]
+                if not pixels and key in shown_regimes:
+                    shown_regimes[key]["sameIn"].append(e["regime"])
+                else:
+                    e["sameIn"] = []
+                    shown_regimes[id(e) if pixels else key] = e
+            rows.append({
+                "set": set_name,
+                "name": name,
+                "status": status,
+                "note": note(f"{set_name}/{name}"),
+                "count": max(e["count"] for e in entries),
+                "regimes": list(shown_regimes.values()),
+                "same": [e["regime"] for e in entries if e["status"] == "same"],
+                "missing": missing,
+            })
+    rows.sort(key=lambda r: (STATUS_ORDER.index(r["status"]), -r["count"]))
+    data = {
+        "title": f"{Path(summary['spec']).name}: {summary.get('baseRev') or summary['base']}"
+        f" → {summary.get('headRev') or 'HEAD'}",
+        "failedCells": failed_cells,
+        "notRunCells": not_run_cells,
+        "staleCells": stale_cells,
+        "identical": identical,
+        "rows": rows,
+        "context": context,
+    }
+    (outdir / "rows.json").write_text(json.dumps(data, indent=1), encoding="utf-8")
+    counts = {s: sum(r["status"] == s for r in rows) for s in STATUS_ORDER}
+    print(
+        f"wrote rows.json in {outdir}: {counts['changed']} changed, "
+        f"{counts['error']} failing the same way in both halves or unfinished in one, "
+        f"{counts['pixels']} pixels only, "
+        f"{len(identical)} identical"
+        + (f"; cells that failed: {', '.join(failed_cells)}" if failed_cells else "")
+        + (f"; cells not run: {', '.join(not_run_cells)}" if not_run_cells else "")
+        + (f"; stale cells: {', '.join(stale_cells)}" if stale_cells else "")
+    )
+    for row in rows:
+        print(row_line(row))
+    for item in identical:
+        print(
+            f"same     {item['shot']}"
+            + not_compared(item["missing"])
+            + (f": {item['note']}" if item["note"] else "")
+        )
+    for key, halves in context.items():
+        print(
+            f"context  {key}: "
+            + "; ".join(f"{half} {json.dumps(v)}" for half, v in halves.items())
+        )
+    unused = set(notes) - used_notes
+    if unused & same_keys:
+        print(
+            "notes on identical regimes, not shown: "
+            + ", ".join(sorted(unused & same_keys)),
+            file=sys.stderr,
+        )
+    if unused - same_keys:
+        print(
+            f"notes matching no shot: {', '.join(sorted(unused - same_keys))}",
+            file=sys.stderr,
+        )
+    return 0
+
+
 def get_parser():
     ap = argparse.ArgumentParser(
         description=__doc__, formatter_class=argparse.RawDescriptionHelpFormatter
@@ -836,13 +1202,22 @@ def get_parser():
         metavar="SET/REGIME",
         help="rerun only the cells matching this glob (repeatable)",
     )
+    p = sub.add_parser("render", help="compare the halves of a run")
+    p.add_argument("outdir")
+    p.add_argument("--notes", metavar="FILE", help="JSON notes keyed by SET/NAME")
+    p.add_argument(
+        "--threshold",
+        type=int,
+        default=0,
+        help="count a pixel when a channel differs by more than this (default 0)",
+    )
     return ap
 
 
 def main():
     args = get_parser().parse_args()
     try:
-        return run(args)
+        return run(args) if args.command == "run" else render(args)
     except SpecError as e:
         print(f"matrix.py: error: {e}", file=sys.stderr)
         return EXIT_ERROR
