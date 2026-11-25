@@ -23,3 +23,12 @@ dom-performance-observer-unsupported-entry-types = Ignoring unsupported entryTyp
 
 # Do not translate "entryTypes".
 dom-performance-observer-no-valid-entry-types = No valid entryTypes; aborting registration.
+
+# Variables:
+#   $tagName (String) - Tag name of the element that starts the loop.
+#   $id (String) - ID of the element.
+dom-svg-reference-loop = The SVG <{ $tagName }> with ID “{ $id }” has a reference loop.
+# Variables:
+#   $tagName (String) - Tag name of the element where the chain was broken.
+#   $id (String) - ID of the element.
+dom-svg-reference-chain-length-exceeded = An SVG <{ $tagName }> reference chain which is too long was abandoned at the element with ID “{ $id }”.
