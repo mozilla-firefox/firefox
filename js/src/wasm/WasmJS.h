@@ -212,6 +212,21 @@ class WasmGlobalObject : public NativeObject {
   void* addressOfCell() const;
 };
 
+// The module environment binding for an exported mutable global.
+class WasmMutableGlobalBindingObject : public NativeObject {
+  JS_DEFINE_TYPED_SLOT(0, GLOBAL_SLOT, Object, Undefined);
+
+ public:
+  static constexpr uint32_t RESERVED_SLOTS = 1;
+  static const JSClass class_;
+
+  static WasmMutableGlobalBindingObject* create(JSContext* cx);
+  bool isInitialized() const;
+  void initGlobal(WasmGlobalObject* global);
+  WasmGlobalObject& global() const;
+  bool getValue(JSContext* cx, MutableHandleValue value) const;
+};
+
 // The class of WebAssembly.Instance. Each WasmInstanceObject owns a
 // wasm::Instance. These objects are used as content-facing JS objects.
 
