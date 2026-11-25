@@ -4135,14 +4135,12 @@
     <string name="wrex_widget_match_canceled">Canceled</string>
     <!-- Sports widget action label to refresh match data after an error. -->
     <string name="wrex_widget_error_refresh">Refresh</string>
-    <!-- Sports widget menu item to view the team's match results. -->
-    <string name="wrex_widget_results">Results</string>
-    <!-- Sports widget menu item to view the league standings table. -->
-    <string name="wrex_widget_standings">Standings</string>
+    <!-- Sports widget menu item that opens the team's matches and results page. -->
+    <string name="wrex_widget_matches_and_results">Matches and Results</string>
     <!-- Sports widget menu item to browse the team's wallpapers. -->
     <string name="wrex_widget_wallpapers">Wallpapers</string>
     <!-- Sports widget menu item to remove the widget from the homepage. -->
-    <string name="wrex_widget_remove_widget">Remove Widget</string>
+    <string name="wrex_widget_remove_widget">Remove widget</string>
   <!-- Sports widget match status label shown at full-time (abbreviated) - indicates the match has ended, after regulation and extra time have been played -->
     <string name="wrex_widget_match_full_time_short">FT</string>
     <!-- Sports widget match status label shown during half-time of a match. -->

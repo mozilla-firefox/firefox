@@ -23,6 +23,7 @@ import mozilla.components.compose.base.menu.MenuItem
 import mozilla.components.compose.base.text.Text
 import mozilla.components.ui.icons.R as iconsR
 import org.mozilla.fenix.R
+import org.mozilla.fenix.home.sports.WREXHAM_WEBSITE_DOMAIN
 import org.mozilla.fenix.theme.FirefoxTheme
 
 /**
@@ -30,18 +31,16 @@ import org.mozilla.fenix.theme.FirefoxTheme
  *
  * @param expanded Whether the menu is displayed.
  * @param onDismissRequest Invoked when the menu should be dismissed.
- * @param onResults Invoked when "Results" menu item is selected.
- * @param onStandings Invoked when "Standings" menu item is selected.
+ * @param onMatchesAndResults Invoked when "Matches and Results" menu item is selected.
  * @param onWallpapers Invoked when "Wallpapers" menu item is selected.
  * @param onShare Invoked when "Share" menu item is selected.
- * @param onRemove Invoked when "Remove Widget" menu item is selected.
+ * @param onRemove Invoked when "Remove widget" menu item is selected.
  */
 @Composable
 internal fun SportsWidgetMenu(
     expanded: Boolean,
     onDismissRequest: () -> Unit,
-    onResults: () -> Unit,
-    onStandings: () -> Unit,
+    onMatchesAndResults: () -> Unit,
     onWallpapers: () -> Unit,
     onShare: () -> Unit,
     onRemove: () -> Unit,
@@ -50,21 +49,15 @@ internal fun SportsWidgetMenu(
         menuItems =
             listOf(
                 MenuItem.IconItem(
-                    text = Text.Resource(R.string.wrex_widget_results),
-                    drawableRes = iconsR.drawable.mozac_ic_clipboard_24,
+                    text = Text.Resource(R.string.wrex_widget_matches_and_results),
+                    drawableRes = iconsR.drawable.mozac_ic_soccer_ball_24,
+                    supportingText = Text.String(WREXHAM_WEBSITE_DOMAIN),
                     onClick = {
                         onDismissRequest()
-                        onResults()
+                        onMatchesAndResults()
                     },
                 ),
-                MenuItem.IconItem(
-                    text = Text.Resource(R.string.wrex_widget_standings),
-                    drawableRes = iconsR.drawable.mozac_ic_reader_view_24,
-                    onClick = {
-                        onDismissRequest()
-                        onStandings()
-                    },
-                ),
+                MenuItem.Divider,
                 MenuItem.IconItem(
                     text = Text.Resource(R.string.wrex_widget_wallpapers),
                     drawableRes = iconsR.drawable.mozac_ic_wallpaper_24,
@@ -117,8 +110,7 @@ private fun SportsWidgetMenuPreview() {
                 SportsWidgetMenu(
                     expanded = expanded,
                     onDismissRequest = { expanded = false },
-                    onResults = {},
-                    onStandings = {},
+                    onMatchesAndResults = {},
                     onWallpapers = {},
                     onShare = {},
                     onRemove = {},

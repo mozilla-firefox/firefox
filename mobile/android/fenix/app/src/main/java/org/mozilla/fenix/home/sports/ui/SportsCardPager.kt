@@ -444,8 +444,7 @@ private fun SportsCardPagerPreviewHeader() {
     SportsWidgetHeader(
         teamName = "Moz ABC",
         drawableResId = iconsR.drawable.mozac_ic_soccer_ball_24,
-        onResults = {},
-        onStandings = {},
+        onMatchesAndResults = {},
         onWallpapers = {},
         onShare = {},
         onRemove = {},

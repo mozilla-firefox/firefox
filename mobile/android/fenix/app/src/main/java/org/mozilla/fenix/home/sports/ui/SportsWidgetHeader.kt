@@ -41,11 +41,10 @@ import org.mozilla.fenix.theme.FirefoxTheme
  *
  * @param teamName Display name of the followed team.
  * @param drawableResId Drawable of the followed team's badge.
- * @param onResults Invoked when "Results" is selected from the menu.
- * @param onStandings Invoked when "Standings" is selected from the menu.
+ * @param onMatchesAndResults Invoked when "Matches and Results" is selected from the menu.
  * @param onWallpapers Invoked when "Wallpapers" is selected from the menu.
  * @param onShare Invoked when "Share" is selected from the menu.
- * @param onRemove Invoked when "Remove Widget" is selected from the menu.
+ * @param onRemove Invoked when "Remove widget" is selected from the menu.
  * @param modifier [Modifier] to be applied to the header.
  */
 @Suppress("LongParameterList")
@@ -53,8 +52,7 @@ import org.mozilla.fenix.theme.FirefoxTheme
 internal fun SportsWidgetHeader(
     teamName: String,
     @DrawableRes drawableResId: Int,
-    onResults: () -> Unit,
-    onStandings: () -> Unit,
+    onMatchesAndResults: () -> Unit,
     onWallpapers: () -> Unit,
     onShare: () -> Unit,
     onRemove: () -> Unit,
@@ -84,8 +82,7 @@ internal fun SportsWidgetHeader(
             }
 
             SportsWidgetMenuButton(
-                onResults = onResults,
-                onStandings = onStandings,
+                onMatchesAndResults = onMatchesAndResults,
                 onWallpapers = onWallpapers,
                 onShare = onShare,
                 onRemove = onRemove,
@@ -98,8 +95,7 @@ internal fun SportsWidgetHeader(
 
 @Composable
 private fun SportsWidgetMenuButton(
-    onResults: () -> Unit,
-    onStandings: () -> Unit,
+    onMatchesAndResults: () -> Unit,
     onWallpapers: () -> Unit,
     onShare: () -> Unit,
     onRemove: () -> Unit,
@@ -120,8 +116,7 @@ private fun SportsWidgetMenuButton(
         SportsWidgetMenu(
             expanded = showMenu,
             onDismissRequest = { showMenu = false },
-            onResults = onResults,
-            onStandings = onStandings,
+            onMatchesAndResults = onMatchesAndResults,
             onWallpapers = onWallpapers,
             onShare = onShare,
             onRemove = onRemove,
@@ -137,8 +132,7 @@ private fun SportsWidgetHeaderPreview() {
             SportsWidgetHeader(
                 teamName = "Mozilla ABC",
                 drawableResId = iconsR.drawable.mozac_ic_soccer_ball_24,
-                onResults = {},
-                onStandings = {},
+                onMatchesAndResults = {},
                 onWallpapers = {},
                 onShare = {},
                 onRemove = {},

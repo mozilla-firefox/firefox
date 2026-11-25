@@ -9,6 +9,8 @@ import org.mozilla.fenix.R
 import org.mozilla.fenix.ext.nav
 import org.mozilla.fenix.home.HomeFragmentDirections
 
+internal const val WREXHAM_WEBSITE_DOMAIN = "wrexhamafc.co.uk"
+
 /**
  * Controller for handling sports widget interactions on the homepage.
  *
