@@ -10,8 +10,8 @@ origin:
 
   url: https://github.com/facebook/zstd
 
-  release: v1.5.7-kernel (2025-03-11T12:54:22-07:00).
-  revision: v1.5.7-kernel
+  release: v1.6.0 (2026-11-23T17:40:52-05:00).
+  revision: v1.6.0
 
   license: "BSD-3-Clause"
   license-file: "LICENSE"
