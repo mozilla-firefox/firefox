@@ -3332,6 +3332,14 @@ bool WarpBuilder::build_GetImport(BytecodeLocation loc) {
 
   ModuleEnvironmentObject* targetEnv = snapshot->targetEnv();
 
+  if (snapshot->needsWasmMutableGlobalRead()) {
+    auto* ins = MCallGetWasmMutableGlobal::New(
+        alloc(), targetEnv, snapshot->slot(), loc.getPropertyName(script_));
+    current->add(ins);
+    current->push(ins);
+    return resumeAfter(ins, loc);
+  }
+
   // Load the target environment slot.
   MConstant* obj = constant(ObjectValue(*targetEnv));
   auto* load = buildLoadSlot(obj, snapshot->numFixedSlots(), snapshot->slot());

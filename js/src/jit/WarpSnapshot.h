@@ -184,21 +184,30 @@ class WarpGetImport : public WarpOpSnapshot {
   uint32_t numFixedSlots_;
   uint32_t slot_;
   bool needsLexicalCheck_;
+  // Wasm mutable globals must be read with a VM call rather than
+  // a slot load. This call also checks for whether the binding
+  // is initialized, so needsLexicalCheck_ is unused in this case.
+  bool needsWasmMutableGlobalRead_;
 
  public:
   static constexpr Kind ThisKind = Kind::WarpGetImport;
 
   WarpGetImport(uint32_t offset, ModuleEnvironmentObject* targetEnv,
-                uint32_t numFixedSlots, uint32_t slot, bool needsLexicalCheck)
+                uint32_t numFixedSlots, uint32_t slot, bool needsLexicalCheck,
+                bool needsWasmMutableGlobalRead)
       : WarpOpSnapshot(ThisKind, offset),
         targetEnv_(targetEnv),
         numFixedSlots_(numFixedSlots),
         slot_(slot),
-        needsLexicalCheck_(needsLexicalCheck) {}
+        needsLexicalCheck_(needsLexicalCheck),
+        needsWasmMutableGlobalRead_(needsWasmMutableGlobalRead) {}
   ModuleEnvironmentObject* targetEnv() const { return targetEnv_; }
   uint32_t numFixedSlots() const { return numFixedSlots_; }
   uint32_t slot() const { return slot_; }
   bool needsLexicalCheck() const { return needsLexicalCheck_; }
+  bool needsWasmMutableGlobalRead() const {
+    return needsWasmMutableGlobalRead_;
+  }
 
   void traceData(JSTracer* trc);
 
