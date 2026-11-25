@@ -5,12 +5,12 @@
 from setuptools import find_packages, setup
 
 PACKAGE_NAME = "mozlog"
-PACKAGE_VERSION = "9.0.0"
+PACKAGE_VERSION = "9.0.1"
 DEPS = [
     "blessed>=1.19.1",
-    "mozterm",
-    "mozfile",
-    "mozsystemmonitor",
+    "mozterm >= 1.0",
+    "mozfile >= 1.0",
+    "mozsystemmonitor >= 2.0.0",
 ]
 
 
