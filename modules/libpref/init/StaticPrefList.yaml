@@ -20272,6 +20272,13 @@
   value: @IS_NIGHTLY_BUILD@
   mirror: always
 
+# Whether external resource documents (e.g. the documents referenced by
+# <svg:use href="other.svg#id">) may only load data: URL subresources.
+- name: svg.external-resource-document.only-allow-data-urls
+  type: bool
+  value: true
+  mirror: always
+
 #---------------------------------------------------------------------------
 # Prefs starting with "telemetry."
 #---------------------------------------------------------------------------
