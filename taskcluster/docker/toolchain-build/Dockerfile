@@ -30,7 +30,9 @@ RUN apt-get update && \
       gnupg \
       gpgv \
       jq \
+      libbsd-dev \
       libbz2-dev \
+      libcap2-bin \
       libexpat1-dev \
       libffi-dev \
       libncursesw5-dev \

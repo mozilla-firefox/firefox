@@ -36,6 +36,7 @@ tasks-from:
     - clang.yml
     - compiler-rt.yml
     - custom-car.yml
+    - darling.yml
     - dxc.yml
     - dump-syms.yml
     - embedded-uniffi-bindgen.yml

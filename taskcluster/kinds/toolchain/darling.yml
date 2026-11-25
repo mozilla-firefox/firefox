@@ -1,0 +1,17 @@
+# This Source Code Form is subject to the terms of the Mozilla Public
+# License, v. 2.0. If a copy of the MPL was not distributed with this
+# file, You can obtain one at http://mozilla.org/MPL/2.0/.
+---
+linux64-darling:
+    description: "Darling toolchain for macOS cross-compilation"
+    worker-type: b-linux-docker-amd
+    treeherder:
+        symbol: TL(darling)
+    worker:
+        max-run-time: 1800
+    run:
+        script: build-darling.sh
+        toolchain-artifact: public/build/darling.tar.zst
+    fetches:
+        toolchain:
+            - linux64-clang-toolchain
