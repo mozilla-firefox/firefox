@@ -21,3 +21,5 @@ skip-if = [
 ]
 
 ["browser_privbrowsing_perwindowpb.js"]
+
+["browser_smartformfill_source_pills.js"]
