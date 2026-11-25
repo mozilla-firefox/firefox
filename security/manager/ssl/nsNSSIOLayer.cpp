@@ -1873,12 +1873,11 @@ nsresult nsSSLIOLayerAddToSocket(int32_t family, const char* host, int32_t port,
   // We are going use a clear connection first //
   if (forSTARTTLS || haveProxy) {
     infoObject->SetHandshakeNotPending();
-  } else {
-    // ActivateSSL looks up the token for a connection that starts in the clear.
-    rv = infoObject->SetResumptionTokenFromExternalCache(sslSock);
-    if (NS_FAILED(rv)) {
-      return rv;
-    }
+  }
+
+  rv = infoObject->SetResumptionTokenFromExternalCache(sslSock);
+  if (NS_FAILED(rv)) {
+    return rv;
   }
   if (SSL_SetResumptionTokenCallback(sslSock, &StoreResumptionToken,
                                      infoObject) != SECSuccess) {

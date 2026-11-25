@@ -29,7 +29,6 @@ support-files = [
   "http2_test_server.js",
   "http3_proxy_common.js",
   "http3_common.js",
-  "head_ssl_token_cache_load.js",
 ]
 
 # dom.serviceWorkers.enabled is currently set to false in StaticPrefList.yaml
@@ -1287,11 +1286,6 @@ skip-if = [
   "os == 'win' && os_version == '11.26200' && arch == 'x86_64'",
 ]
 
-["test_http3_token_resumption_telemetry.js"]
-skip-if = [
-  "os == 'android' && os_version == '14' && arch == 'x86_64'", # Bug 1982955
-]
-
 ["test_http3_trans_close.js"]
 run-sequentially = ["true"] # http3server
 skip-if = [
@@ -1780,48 +1774,7 @@ run-sequentially = ["true"] # node server exceptions dont replay well
 
 ["test_speculative_connect.js"]
 
-["test_ssl_token_cache_load_clear.js"]
-head = "head_channels.js head_cache.js head_cache2.js head_cookies.js head_trr.js head_http3.js head_telemetry.js head_websocket.js head_webtransport.js head_ssl_token_cache_load.js"
-run-sequentially = ["true"] # profile dir must be exclusive
-prefs = [
-  "network.ssl_tokens_cache_persistence=true",
-]
-skip-if = ["os == 'android'"] # The runner starts the load before the test
-
-["test_ssl_token_cache_load_disable.js"]
-head = "head_channels.js head_cache.js head_cache2.js head_cookies.js head_trr.js head_http3.js head_telemetry.js head_websocket.js head_webtransport.js head_ssl_token_cache_load.js"
-run-sequentially = ["true"] # profile dir must be exclusive
-prefs = [
-  "network.ssl_tokens_cache_persistence=true",
-]
-skip-if = ["os == 'android'"] # The runner starts the load before the test
-
-["test_ssl_token_cache_load_pause.js"]
-head = "head_channels.js head_cache.js head_cache2.js head_cookies.js head_trr.js head_http3.js head_telemetry.js head_websocket.js head_webtransport.js head_ssl_token_cache_load.js"
-run-sequentially = ["true"] # profile dir must be exclusive
-prefs = [
-  "network.ssl_tokens_cache_persistence=true",
-]
-skip-if = ["os == 'android'"] # The runner starts the load before the test
-
-["test_ssl_token_cache_load_removal.js"]
-head = "head_channels.js head_cache.js head_cache2.js head_cookies.js head_trr.js head_http3.js head_telemetry.js head_websocket.js head_webtransport.js head_ssl_token_cache_load.js"
-run-sequentially = ["true"] # profile dir must be exclusive
-prefs = [
-  "network.ssl_tokens_cache_persistence=true",
-]
-skip-if = ["os == 'android'"] # The runner starts the load before the test
-
-["test_ssl_token_cache_load_shutdown.js"]
-head = "head_channels.js head_cache.js head_cache2.js head_cookies.js head_trr.js head_http3.js head_telemetry.js head_websocket.js head_webtransport.js head_ssl_token_cache_load.js"
-run-sequentially = ["true"] # profile dir must be exclusive
-prefs = [
-  "network.ssl_tokens_cache_persistence=true",
-]
-skip-if = ["os == 'android'"] # The runner starts the load before the test
-
 ["test_ssl_token_cache_persist.js"]
-head = "head_channels.js head_cache.js head_cache2.js head_cookies.js head_trr.js head_http3.js head_telemetry.js head_websocket.js head_webtransport.js head_ssl_token_cache_load.js"
 run-sequentially = ["true"] # tlsserver uses fixed port; profile dir must be exclusive
 # network.ssl_tokens_cache_persistence must be set here (before xpcshell
 # initialises the IO service and SSLTokensCache::Init runs) rather than
@@ -1843,20 +1796,6 @@ prefs = [
   "logging.SSLTokensCache=5",
   "logging.config.sync=true",
 ]
-skip-if = [
-  "os == 'win' && os_version == '11.26200' && arch == 'x86_64' && msix", # Bug 2034343
-]
-
-["test_ssl_token_cache_shutdown_failed_snapshot.js"]
-head = "head_channels.js head_cache.js head_cache2.js head_cookies.js head_trr.js head_http3.js head_telemetry.js head_websocket.js head_webtransport.js head_ssl_token_cache_load.js"
-run-sequentially = ["true"] # profile dir must be exclusive
-prefs = [
-  "network.ssl_tokens_cache_persistence=true",
-]
-skip-if = ["os == 'android'"] # The runner starts the load before the test
-
-["test_ssl_token_resumption_telemetry.js"]
-run-sequentially = ["true"] # tlsserver uses fixed port
 skip-if = [
   "os == 'win' && os_version == '11.26200' && arch == 'x86_64' && msix", # Bug 2034343
 ]

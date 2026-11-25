@@ -643,36 +643,3 @@ async function asyncSetupFaultyServer(callbackServer, { use0RTT = true } = {}) {
     Services.prefs.clearUserPref("network.http.speculative-parallel-limit");
   });
 }
-
-function getCacheServices() {
-  const contractId = "@mozilla.org/network/ssl-tokens-cache;1";
-  return {
-    cache: Cc[contractId].getService(Ci.nsISSLTokensCache),
-    testCache: Cc[contractId].getService(Ci.nsISSLTokensCacheTest),
-  };
-}
-
-// Empties the SSL tokens cache and resets the telemetry the tests assert on.
-async function resetTokensAndTelemetry() {
-  await getCacheServices().cache.asyncClearSSLExternalAndInternalSessionCache();
-  Services.fog.testResetFOG();
-}
-
-// Asserts every cell of network.ssl_token_resumption. aExpected maps
-// "key/outcome" to a count; all other cells must be unset.
-function assertTokenResumption(aExpected) {
-  for (let key of [
-    "tcp_session",
-    "tcp_restored",
-    "h3_session",
-    "h3_restored",
-  ]) {
-    for (let outcome of ["resumed", "not_resumed", "rejected", "failed"]) {
-      Assert.equal(
-        Glean.network.sslTokenResumption.get(key, outcome).testGetValue(),
-        aExpected[`${key}/${outcome}`] ?? null,
-        `ssl_token_resumption ${key}/${outcome}`
-      );
-    }
-  }
-}

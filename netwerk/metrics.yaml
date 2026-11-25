@@ -3161,44 +3161,26 @@ network:
       - miss
     expires: never
 
-  ssl_token_resumption:
-    type: dual_labeled_counter
+  ssl_token_resumption_outcome:
+    type: labeled_counter
     description: >
       The session resumption outcome of a connection that had at least one
-      cached token to try, by transport and by where the last token tried came
-      from. Recorded at most once per connection; attempts abandoned before a
-      handshake outcome are not counted.
-    dual_labels:
-      key:
-        labels:
-          - tcp_session
-          - tcp_restored
-          - h3_session
-          - h3_restored
-        description: >
-          TCP or HTTP/3, and whether the last token tried was obtained in this
-          session or restored from disk.
-      category:
-        labels:
-          - resumed
-          - not_resumed
-          - rejected
-          - failed
-        description: >
-          'rejected' means the TLS stack refused every token. 'not_resumed'
-          means a token was accepted by the stack and sent, but the server
-          declined it. 'resumed' means the server accepted it. 'failed' means
-          a token was accepted, but the handshake then failed for any reason,
-          including a handshake timeout or an ECH retry.
+      cached token to try. Recorded once per connection.
+      'rejected' means the TLS stack refused every token. 'not_resumed' means a
+      token was accepted by the stack and sent, but the server declined it.
+      'resumed' means the server accepted it.
     bugs:
       - https://bugzilla.mozilla.org/show_bug.cgi?id=2066838
-      - https://bugzilla.mozilla.org/show_bug.cgi?id=2090845
     data_reviews:
-      - https://bugzilla.mozilla.org/show_bug.cgi?id=2090845
+      - https://bugzilla.mozilla.org/show_bug.cgi?id=2066838
     data_sensitivity:
       - technical
     notification_emails:
       - necko@mozilla.com
+    labels:
+      - resumed
+      - not_resumed
+      - rejected
     expires: never
 
   ssl_token_cache_expired:
@@ -3313,11 +3295,10 @@ network:
     description: >
       Failures touching the persisted TLS token database: 'open' (unopenable,
       so removed), 'schema' (no usable table), 'read' (unreadable row),
-      'write' (snapshot not written), 'delete' (removed tokens not deleted).
-      Routine removal when persistence is disabled is not counted.
+      'write' (snapshot not written). Routine removal when persistence is
+      disabled is not counted.
     bugs:
       - https://bugzilla.mozilla.org/show_bug.cgi?id=2032036
-      - https://bugzilla.mozilla.org/show_bug.cgi?id=2088851
     data_reviews:
       - https://bugzilla.mozilla.org/show_bug.cgi?id=2032036
     data_sensitivity:
@@ -3329,7 +3310,6 @@ network:
       - schema
       - read
       - write
-      - delete
     expires: never
 
   apple_fast_datapath_used:

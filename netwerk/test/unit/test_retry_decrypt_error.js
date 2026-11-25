@@ -35,8 +35,6 @@ add_setup(
     skip_if: () => AppConstants.MOZ_SYSTEM_NSS,
   },
   async () => {
-    do_get_profile();
-    Services.fog.initializeFOG();
     httpServer = new HttpServer();
     httpServer.registerPathHandler("/callback/1", () => {
       resumeCallbackCount++;
@@ -47,11 +45,8 @@ add_setup(
     });
     await asyncSetupFaultyServer(httpServer);
     Services.prefs.setCharPref("network.dns.localDomains", kHost);
-    // Without a racing IPv6 socket, the only socket looks up the token.
-    Services.prefs.setBoolPref("network.dns.disableIPv6", true);
     registerCleanupFunction(() => {
       Services.prefs.clearUserPref("network.dns.localDomains");
-      Services.prefs.clearUserPref("network.dns.disableIPv6");
     });
   }
 );
@@ -80,7 +75,6 @@ add_task(
         beforeCallbacks,
         "FaultyServer did not fire on fresh handshake"
       );
-      assertTokenResumption({});
     }
 
     // The server has an anti-replay mechanism that prohibits it from accepting
@@ -102,8 +96,6 @@ add_task(
         beforeCallbacks + 1,
         "FaultyServer fired exactly once (on the resumption attempt)"
       );
-      // The retry evicted the token, so it records nothing itself.
-      assertTokenResumption({ "tcp_session/failed": 1 });
     }
   }
 );

@@ -4,8 +4,6 @@
 
 #include <stdio.h>
 
-#include <utility>
-
 #include "ScopedNSSTypes.h"
 #include "TLSServer.h"
 #include "mozilla/Sprintf.h"
@@ -24,9 +22,6 @@ enum FaultType {
   UnknownSNI,
   Mlkem768x25519,
   Mlkem1024,
-  DeclineResumption,
-  DeclineResumptionRequestCert,
-  StallOnResume,
 };
 
 struct FaultyServerHost {
@@ -55,11 +50,6 @@ const char* kHostMlkem768x25519AlertAfterServerHello =
 
 const char* kHostMlkem1024 = "mlkem1024.example.com";
 
-const char* kHostDeclineResumption = "decline-resumption.example.com";
-const char* kHostDeclineResumptionRequestCert =
-    "decline-resumption-request-cert.example.com";
-const char* kHostStallOnResume = "stall-on-resume.example.com";
-
 const char* kCertWildcard = "default-ee";
 
 /* Each type of failure gets a different SNI.
@@ -79,10 +69,6 @@ MOZ_RUNINIT const FaultyServerHost sFaultyServerHosts[]{
     {kHostMlkem768x25519NetInterrupt, kCertWildcard, Mlkem768x25519},
     {kHostMlkem768x25519AlertAfterServerHello, kCertWildcard, Mlkem768x25519},
     {kHostMlkem1024, kCertWildcard, Mlkem1024},
-    {kHostDeclineResumption, kCertWildcard, DeclineResumption},
-    {kHostDeclineResumptionRequestCert, kCertWildcard,
-     DeclineResumptionRequestCert},
-    {kHostStallOnResume, kCertWildcard, StallOnResume},
     {nullptr, nullptr},
 };
 
@@ -265,26 +251,6 @@ int32_t DoSNISocketConfig(PRFileDesc* aFd, const SECItem* aSrvNameArr,
       SSL_NamedGroupConfig(aFd, mlkem1024TestNamedGroups,
                            std::size(mlkem1024TestNamedGroups));
       break;
-    case DeclineResumptionRequestCert:
-      SSL_OptionSet(aFd, SSL_REQUEST_CERTIFICATE, PR_TRUE);
-      SSL_OptionSet(aFd, SSL_REQUIRE_CERTIFICATE, SSL_REQUIRE_NEVER);
-      [[fallthrough]];
-    case DeclineResumption:
-      // NSS checks whether it can resume right after this callback.
-      ssl_FindSocket(aFd)->statelessResume = PR_FALSE;
-      break;
-    case StallOnResume: {
-      // Only the first handshake completes; later ones (resumptions in the
-      // test) stall before the ServerHello until the client gives up.
-      static bool sHandshook = false;
-      if (std::exchange(sHandshook, true)) {
-        char byte;
-        (void)PR_Recv(aFd->lower, &byte, 1, PR_MSG_PEEK,
-                      PR_INTERVAL_NO_TIMEOUT);
-        return SSL_SNI_SEND_ALERT;
-      }
-      break;
-    }
     case None:
       break;
     default:
