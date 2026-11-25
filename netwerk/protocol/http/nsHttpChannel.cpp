@@ -2375,6 +2375,7 @@ nsresult nsHttpChannel::CallOnStartRequest() {
   // other paths (e.g. OnAuthCancelled()) deliver a network body without it.
   if (!mCachePump) {
     mAvailableCachedAltDataType.Truncate();
+    mAltDataInputStream = nullptr;
     StoreDeliveringAltData(false);
     mAltDataLength = -1;
   }
@@ -3569,6 +3570,7 @@ nsresult nsHttpChannel::ContinueProcessResponseAfterNotModified(nsresult aRv) {
   // inconsistent state.  Doom it and redirect the channel
   // to the same URI to reload from the network.
   mCacheInputStream.CloseAndRelease();
+  mAltDataInputStream = nullptr;
   if (mCacheEntry) {
     mCacheEntry->AsyncDoom(nullptr);
     mCacheEntry = nullptr;
@@ -3707,6 +3709,7 @@ nsresult nsHttpChannel::ContinueProcessNormal(nsresult rv) {
   // alternative data describes it.  Normally InitCacheEntry() has already
   // dropped it, but not when we no longer hold the entry it came from.
   mAvailableCachedAltDataType.Truncate();
+  mAltDataInputStream = nullptr;
   StoreDeliveringAltData(false);
   mAltDataLength = -1;
 
@@ -5196,6 +5199,7 @@ nsresult nsHttpChannel::MaybeReplaceNoVarySearchAliasEntry() {
   StoreCacheEntryIsWriteOnly(true);
   // The alt-data belonged to the entry we just let go of.
   mAvailableCachedAltDataType.Truncate();
+  mAltDataInputStream = nullptr;
   StoreDeliveringAltData(false);
 
   return NS_OK;
@@ -5237,6 +5241,7 @@ void nsHttpChannel::DiscardCacheEntryCheckState() {
   mCachedResponseHead = nullptr;
   mCacheInputStream.CloseAndRelease();
   mAvailableCachedAltDataType.Truncate();
+  mAltDataInputStream = nullptr;
   StoreDeliveringAltData(false);
   mAltDataLength = -1;
 }
@@ -6000,6 +6005,8 @@ nsresult nsHttpChannel::OpenCacheInputStream(nsICacheEntry* cacheEntry,
 
       if (deliverAltData) {
         stream = altData;
+      } else {
+        mAltDataInputStream = std::move(altData);
       }
     }
   }
@@ -6299,6 +6306,7 @@ nsresult nsHttpChannel::InitCacheEntry() {
          "recreating cache entry\n"));
     // clean the altData cache and reset this to avoid wrong content length
     mAvailableCachedAltDataType.Truncate();
+    mAltDataInputStream = nullptr;
     StoreDeliveringAltData(false);
 
     nsCOMPtr<nsICacheEntry> currentEntry;
@@ -7592,6 +7600,7 @@ nsresult nsHttpChannel::CancelInternal(nsresult status) {
   if (mProxyRequest) mProxyRequest->Cancel(status);
   CancelNetworkRequest(status);
   mCacheInputStream.CloseAndRelease();
+  mAltDataInputStream = nullptr;
   if (mCachePump) mCachePump->Cancel(status);
   if (mAuthProvider) mAuthProvider->Cancel(status);
   if (mPreflightChannel) mPreflightChannel->Cancel(status);
@@ -11353,14 +11362,10 @@ nsHttpChannel::GetAlternativeDataInputStream(nsIInputStream** aInputStream) {
   NS_ENSURE_ARG_POINTER(aInputStream);
 
   *aInputStream = nullptr;
-
-  nsCOMPtr<nsICacheEntry> cacheEntry =
-      mCacheEntry ? mCacheEntry : mAltDataCacheEntry;
-  if (!mAvailableCachedAltDataType.IsEmpty() && cacheEntry) {
-    nsresult rv = cacheEntry->OpenAlternativeInputStream(
-        mAvailableCachedAltDataType, aInputStream);
-    NS_ENSURE_SUCCESS(rv, rv);
+  if (!mAltDataInputStream) {
+    return NS_ERROR_NOT_AVAILABLE;
   }
+  mAltDataInputStream.forget(aInputStream);
   return NS_OK;
 }
 

@@ -668,6 +668,12 @@ class nsHttpChannel final : public HttpBaseChannel,
 
   // We must close mCacheInputStream explicitly to avoid leaks.
   AutoClose<nsIInputStream> mCacheInputStream;
+  // Alt-data stream opened, and validated, by OpenCacheInputStream() for
+  // SERIALIZE delivery.  Holding it open prevents the alt-data from being
+  // replaced before it is handed to the consumer.  Ownership moves to the
+  // first caller of GetAlternativeDataInputStream(), so the channel does not
+  // block later alt-data writes by keeping it open.
+  nsCOMPtr<nsIInputStream> mAltDataInputStream;
   RefPtr<nsInputStreamPump> mCachePump;
   UniquePtr<nsHttpResponseHead> mCachedResponseHead;
   nsCOMPtr<nsITransportSecurityInfo> mCachedSecurityInfo;

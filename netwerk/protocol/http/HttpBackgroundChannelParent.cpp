@@ -11,6 +11,7 @@
 #include "mozilla/ipc/BackgroundParent.h"
 #include "mozilla/net/BackgroundChannelRegistrar.h"
 #include "mozilla/net/ChannelEventQueue.h"
+#include "nsIInputStream.h"
 #include "nsNetCID.h"
 #include "nsProxyRelease.h"
 #include "nsQueryObject.h"
@@ -146,7 +147,7 @@ bool HttpBackgroundChannelParent::OnStartRequest(
     nsHttpResponseHead&& aResponseHead, const bool& aUseResponseHead,
     const nsHttpHeaderArray& aRequestHeaders,
     const HttpChannelOnStartRequestArgs& aArgs,
-    const nsCOMPtr<nsICacheEntry>& aAltDataSource,
+    const nsCOMPtr<nsIInputStream>& aAltDataStream,
     TimeStamp aOnStartRequestStart) {
   LOG(("HttpBackgroundChannelParent::OnStartRequest [this=%p]\n", this));
   AssertIsInMainProcess();
@@ -161,11 +162,11 @@ bool HttpBackgroundChannelParent::OnStartRequest(
         NewRunnableMethod<nsHttpResponseHead&&, const bool,
                           const nsHttpHeaderArray,
                           const HttpChannelOnStartRequestArgs,
-                          const nsCOMPtr<nsICacheEntry>, TimeStamp>(
+                          const nsCOMPtr<nsIInputStream>, TimeStamp>(
             "net::HttpBackgroundChannelParent::OnStartRequest", this,
             &HttpBackgroundChannelParent::OnStartRequest,
             std::move(aResponseHead), aUseResponseHead, aRequestHeaders, aArgs,
-            aAltDataSource, aOnStartRequestStart),
+            aAltDataStream, aOnStartRequestStart),
         NS_DISPATCH_NORMAL);
 
     MOZ_DIAGNOSTIC_ASSERT(NS_SUCCEEDED(rv));
@@ -174,20 +175,11 @@ bool HttpBackgroundChannelParent::OnStartRequest(
   }
 
   HttpChannelAltDataStream altData;
-  if (aAltDataSource) {
-    nsAutoCString altDataType;
-    (void)aAltDataSource->GetAltDataType(altDataType);
-
-    if (!altDataType.IsEmpty()) {
-      nsCOMPtr<nsIInputStream> inputStream;
-      nsresult rv = aAltDataSource->OpenAlternativeInputStream(
-          altDataType, getter_AddRefs(inputStream));
-      if (NS_SUCCEEDED(rv)) {
-        (void)mozilla::ipc::SerializeIPCStream(inputStream.forget(),
-                                               altData.altDataInputStream(),
-                                               /* aAllowLazy */ true);
-      }
-    }
+  if (aAltDataStream) {
+    nsCOMPtr<nsIInputStream> inputStream = aAltDataStream;
+    (void)mozilla::ipc::SerializeIPCStream(inputStream.forget(),
+                                           altData.altDataInputStream(),
+                                           /* aAllowLazy */ true);
   }
 
   return SendOnStartRequest(std::move(aResponseHead), aUseResponseHead,

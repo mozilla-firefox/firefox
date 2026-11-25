@@ -12,6 +12,7 @@
 #include "nsID.h"
 #include "nsISupportsImpl.h"
 
+class nsIInputStream;
 class nsISerialEventTarget;
 
 namespace mozilla {
@@ -47,7 +48,7 @@ class HttpBackgroundChannelParent final : public PHttpBackgroundChannelParent {
                       const bool& aUseResponseHead,
                       const nsHttpHeaderArray& aRequestHeaders,
                       const HttpChannelOnStartRequestArgs& aArgs,
-                      const nsCOMPtr<nsICacheEntry>& aCacheEntry,
+                      const nsCOMPtr<nsIInputStream>& aAltDataStream,
                       TimeStamp aOnStartRequestStart);
 
   // To send OnTransportAndData message over background channel.
