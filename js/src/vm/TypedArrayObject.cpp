@@ -17,6 +17,9 @@
 #include "mozilla/TextUtils.h"
 
 #include <algorithm>
+#ifdef __aarch64__
+#  include <arm_neon.h>
+#endif
 #include <charconv>
 #ifdef __x86_64__
 #  include <immintrin.h>
@@ -5729,6 +5732,58 @@ static size_t ToBase64AVX512(const uint8_t* src, size_t length,
 }
 #endif
 
+#ifdef __aarch64__
+static uint8x16x4_t LoadBase64CharsNEON(const char (&base64Chars)[65]) {
+  const auto* chars = reinterpret_cast<const uint8_t*>(base64Chars);
+  return {{vld1q_u8(chars), vld1q_u8(chars + 16), vld1q_u8(chars + 32),
+           vld1q_u8(chars + 48)}};
+}
+
+/**
+ * Encode 48 bytes into 64 characters at a time, and return the number of bytes
+ * encoded. If at least 48 bytes were encoded, no whole group of three bytes is
+ * left over.
+ */
+static size_t ToBase64NEON(const uint8_t* src, size_t length, Latin1Char* dest,
+                           const char (&base64Chars)[65]) {
+  const uint8x16x4_t lookup = LoadBase64CharsNEON(base64Chars);
+  const uint8x16_t mask = vdupq_n_u8(0x3f);
+
+  auto encode48 = [&](const uint8_t* blockSrc, Latin1Char* blockDest) {
+    // Load the groups of three bytes |a b c| de-interleaved, so that each 6-bit
+    // value is computed from whole vectors of |a|, |b| and |c|.
+    uint8x16x3_t in = vld3q_u8(blockSrc);
+    uint8x16_t a = in.val[0];
+    uint8x16_t b = in.val[1];
+    uint8x16_t c = in.val[2];
+
+    uint8x16x4_t chars;
+    chars.val[0] = vqtbl4q_u8(lookup, vshrq_n_u8(a, 2));
+    chars.val[1] =
+        vqtbl4q_u8(lookup, vandq_u8(vsliq_n_u8(vshrq_n_u8(b, 4), a, 4), mask));
+    chars.val[2] =
+        vqtbl4q_u8(lookup, vandq_u8(vsliq_n_u8(vshrq_n_u8(c, 6), b, 2), mask));
+    chars.val[3] = vqtbl4q_u8(lookup, vandq_u8(c, mask));
+    vst4q_u8(blockDest, chars);
+  };
+
+  size_t encoded = 0;
+  for (; length - encoded >= 48; encoded += 48, dest += 64) {
+    encode48(src + encoded, dest);
+  }
+
+  // Encode the remaining whole groups with a block that ends at the last of
+  // them and overlaps the previous block.
+  size_t remaining = (length - encoded) / 3 * 3;
+  if (encoded > 0 && remaining > 0) {
+    size_t overlap = 48 - remaining;
+    encode48(src + encoded - overlap, dest - overlap / 3 * 4);
+    encoded += remaining;
+  }
+  return encoded;
+}
+#endif
+
 template <typename Ops>
 static void ToBase64(TypedArrayObject* tarray, size_t length, Alphabet alphabet,
                      OmitPadding omitPadding, mozilla::Range<Latin1Char> out) {
@@ -5757,7 +5812,7 @@ static void ToBase64(TypedArrayObject* tarray, size_t length, Alphabet alphabet,
   auto data = Ops::extract(tarray).template cast<uint8_t*>();
   auto toRead = length;
 
-#ifdef __x86_64__
+#if defined(__x86_64__) || defined(__aarch64__)
   if constexpr (std::is_same_v<Ops, UnsharedOps>) {
     // The encoders are called directly rather than through a function pointer,
     // which the rooting hazard analysis would assume can GC.
@@ -5768,6 +5823,7 @@ static void ToBase64(TypedArrayObject* tarray, size_t length, Alphabet alphabet,
       outPtr += encoded / 3 * 4;
     };
 
+#  ifdef __x86_64__
     if (mozilla::supports_avx512vbmi()) {
       advance(ToBase64AVX512(data.unwrapUnshared(), toRead, outPtr.get(),
                              base64Chars));
@@ -5776,6 +5832,10 @@ static void ToBase64(TypedArrayObject* tarray, size_t length, Alphabet alphabet,
       advance(ToBase64AVX2(data.unwrapUnshared(), toRead, outPtr.get(),
                            base64Chars));
     }
+#  else
+    advance(
+        ToBase64NEON(data.unwrapUnshared(), toRead, outPtr.get(), base64Chars));
+#  endif
   }
 #endif
 
