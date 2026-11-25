@@ -1,0 +1,100 @@
+<!DOCTYPE HTML>
+<html>
+<head>
+  <meta charset="utf-8">
+  <title>Test for deprecation reports localized with Fluent</title>
+  <script src="/tests/SimpleTest/SimpleTest.js"></script>
+  <link rel="stylesheet" type="text/css" href="/tests/SimpleTest/test.css"/>
+</head>
+<body>
+
+<script type="application/javascript">
+
+const CASES = [
+  {
+    method: "captureEvents",
+    id: "UseOfCaptureEvents",
+    message:
+      "Use of captureEvents() is deprecated. To upgrade your code, use the DOM 2 addEventListener() method. For more help https://developer.mozilla.org/docs/Web/API/EventTarget/addEventListener",
+  },
+  {
+    method: "releaseEvents",
+    id: "UseOfReleaseEvents",
+    message:
+      "Use of releaseEvents() is deprecated. To upgrade your code, use the DOM 2 removeEventListener() method. For more help https://developer.mozilla.org/docs/Web/API/EventTarget/removeEventListener",
+  },
+];
+
+async function loadIframe() {
+  const iframe = document.createElement("iframe");
+  const loaded = new Promise(resolve => iframe.addEventListener("load", resolve, { once: true }));
+  iframe.src = "empty.html";
+  document.body.appendChild(iframe);
+  await loaded;
+  return iframe;
+}
+
+async function getReport(win, method) {
+  return new Promise(resolve => {
+    const obs = new win.ReportingObserver(reports => {
+      obs.disconnect();
+      resolve(reports[0]);
+    });
+    obs.observe();
+    win.document[method]();
+  });
+}
+
+add_task(async function test_console_and_report() {
+  const iframe = await loadIframe();
+  const consoleDone = new Promise(resolve =>
+    SimpleTest.monitorConsole(resolve, CASES.map(({ message }) => ({ errorMessage: message })))
+  );
+  for (const { method, id, message } of CASES) {
+    const report = await getReport(iframe.contentWindow, method);
+    is(report.type, "deprecation", `${method}: deprecation report received`);
+    is(report.body.id, id, `${method}: report.body.id matches`);
+    is(report.body.message, message, `${method}: report message matches`);
+  }
+  SimpleTest.endMonitorConsole();
+  await consoleDone;
+  iframe.remove();
+});
+
+// The parameters passed by the caller must be used in the report message.
+add_task(async function test_report_with_parameters() {
+  const expected =
+    "Setting the accent attribute on mo elements is deprecated. Use the “accent” attribute on “mover” instead.";
+  const iframe = await loadIframe();
+  const win = iframe.contentWindow;
+  const report = await new Promise(resolve => {
+    const obs = new win.ReportingObserver(reports => {
+      obs.disconnect();
+      resolve(reports[0]);
+    });
+    obs.observe();
+    win.document.body.innerHTML =
+      `<math><mover><mi>A</mi><mo accent="true">x</mo></mover></math>`;
+    win.document.body.getBoundingClientRect();
+  });
+  is(report.body.id, "MathML_DeprecatedMoExplicitAccent", "report.body.id matches");
+  is(report.body.message, expected, "report message includes the parameters");
+  iframe.remove();
+});
+
+add_task(async function test_worker_report() {
+  const expected =
+    "IDBObjectStore.mozGetAll() is deprecated. Use IDBObjectStore.getAll() instead.";
+  const worker = new Worker("worker_deprecated_fluent.js");
+  const { id, message } = await new Promise(resolve => {
+    worker.onmessage = e => resolve(e.data);
+    worker.postMessage(null);
+  });
+  is(id, "IDBObjectStoreMozGetAll", "report.body.id matches");
+  is(message, expected, "worker report message matches");
+  worker.terminate();
+});
+
+</script>
+</body>
+</html>

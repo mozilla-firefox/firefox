@@ -6,10 +6,11 @@ from fluent.migrate.helpers import VARIABLE_REFERENCE
 from fluent.migrate.transforms import COPY, REPLACE
 
 
-def url_replacement(url):
-    """Replace url, or the same url without en-US, with the $url variable."""
+def url_replacement(*urls):
+    """Replace any of urls, or the same urls without en-US, with the $url variable."""
     return {
         variant: VARIABLE_REFERENCE("url")
+        for url in urls
         for variant in dict.fromkeys([url, url.replace("/en-US/", "/")])
     }
 
@@ -84,6 +85,51 @@ def migrate(ctx):
                     {
                         "%1$S": VARIABLE_REFERENCE("tagName"),
                         "%2$S": VARIABLE_REFERENCE("id"),
+                    },
+                ),
+            ),
+        ],
+    )
+
+    target = "dom/dom/deprecations.ftl"
+    ctx.add_transforms(
+        target,
+        target,
+        [
+            FTL.Message(
+                id=FTL.Identifier("dom-deprecated-capture-events"),
+                value=REPLACE(
+                    source,
+                    "UseOfCaptureEventsWarning",
+                    url_replacement(
+                        "https://developer.mozilla.org/docs/Web/API/EventTarget/addEventListener",
+                        "http://developer.mozilla.org/en/docs/DOM:element.addEventListener",
+                    ),
+                ),
+            ),
+            FTL.Message(
+                id=FTL.Identifier("dom-deprecated-release-events"),
+                value=REPLACE(
+                    source,
+                    "UseOfReleaseEventsWarning",
+                    url_replacement(
+                        "https://developer.mozilla.org/docs/Web/API/EventTarget/removeEventListener",
+                        "http://developer.mozilla.org/en/docs/DOM:element.removeEventListener",
+                    ),
+                ),
+            ),
+            FTL.Message(
+                id=FTL.Identifier("dom-deprecated-idb-object-store-moz-get-all"),
+                value=COPY(source, "IDBObjectStoreMozGetAllWarning"),
+            ),
+            FTL.Message(
+                id=FTL.Identifier("dom-deprecated-mathml-mo-explicit-accent"),
+                value=REPLACE(
+                    source,
+                    "MathML_DeprecatedMoExplicitAccentWarning",
+                    {
+                        "%1$S": VARIABLE_REFERENCE("attribute"),
+                        "%2$S": VARIABLE_REFERENCE("element"),
                     },
                 ),
             ),

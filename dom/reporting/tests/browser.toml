@@ -5,6 +5,12 @@ support-files = [
   "reporting_endpoints.sjs",
 ]
 
+["browser_deprecated_fluent_spoof_english.js"]
+support-files = [
+  "localization/it/dom/deprecations.ftl",
+  "worker_deprecated_fluent.js",
+]
+
 ["browser_purgeHost.js"]
 
 ["browser_reportGeneration.js"]
