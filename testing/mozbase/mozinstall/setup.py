@@ -12,7 +12,7 @@ try:
 except OSError:
     description = None
 
-PACKAGE_VERSION = "2.1.0"
+PACKAGE_VERSION = "2.2.0"
 
 deps = [
     "mozinfo >= 0.7",
