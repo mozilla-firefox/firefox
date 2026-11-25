@@ -4,7 +4,7 @@
 
 from setuptools import setup
 
-PACKAGE_VERSION = "0.7.1"
+PACKAGE_VERSION = "0.7.2"
 deps = ["moznetwork >= 0.24", "mozinfo >= 1.0.0"]
 
 setup(
