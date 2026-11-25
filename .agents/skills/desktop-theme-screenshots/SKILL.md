@@ -26,8 +26,10 @@ what to shoot.** The doc lives in the source tree, not in this skill's
 directory, and it's kept up to date with how different parts of the code base
 interact in non-obvious ways; it may differ from what you remember.
 
-Sort the diff into one of these cases by where its difference shows; the case
-decides what you capture, force or log:
+Sort the diff into these cases by where its difference shows; the case decides
+what you capture, force or log. One diff often falls under several, such as a
+focus ring that shows only under `:focus-visible` beside a hit area that moves
+no pixels; handle every case it falls under, each with its own pair.
 
 - **Visible in the default state.** Capture and move on.
 - **Visible only in a state.** Force the state rather than driving the UI to it:
@@ -78,16 +80,22 @@ decides what you capture, force or log:
 | Chrome, no fixture needed | `firefox-probe.py --realm chrome --async` running `capture.js` |
 | Content, such as a web page or an about: page | `firefox-probe.py --steps` with a `drawSnapshot` step; the Firefox MCP last |
 | Chrome ink inside the browser's rect, such as an outline or border drawn over the page's edge | a compositor grab: `drawWindow` paints chrome over the tab panel's background, never under the composited page, so ink the page covers reads visible (§1 "Chrome and content canvases" in `desktop-probing`'s [`measuring-pixels.md`](../desktop-probing/references/measuring-pixels.md)) |
-| An open panel or menupopup | a compositor grab (§2 "The compositor's output" in `desktop-probing`'s [`measuring-pixels.md`](../desktop-probing/references/measuring-pixels.md)) |
+| An open panel or menupopup | a compositor grab (§2 "The compositor's output" in `desktop-probing`'s [`measuring-pixels.md`](../desktop-probing/references/measuring-pixels.md)), worked below under "Grab route" |
+
+A subject that matches two rows, such as a button a suite's fixture renders
+inside an open panel, takes the popup row: no fixture makes `drawWindow` draw a
+popup.
 
 `drawWindow` and the chrome window's `drawSnapshot` both leave an open popup out
 and draw what lies under it. A popup here is a `<panel>` or `<menupopup>`
 element; a dropdown built from ordinary elements in the window captures like
-the rest of the chrome. On Linux a compositor grab of a popup needs `--setpref
-ui.GtkCSDTransparencyAvailable=1` in both halves: without it `popup.css` paints
-the popup square with no shadow margin, and a change to its radius or shadow
-yields an identical pair (`platform-linux.md`, section HEADLESS, in
-`desktop-probing`).
+the rest of the chrome. On Linux without a compositing manager, as on Xvfb,
+`popup.css` paints a popup square with no shadow margin. That shows a change to
+what the popup holds, but a change to its radius or shadow yields an identical
+pair: for one, pass `--setpref ui.GtkCSDTransparencyAvailable=1` in both
+halves, and expect the corners and the margin to paint black on Xvfb, since a
+pixel the popup leaves transparent has nothing composited under it
+(`platform-linux.md`, section COMPOSITING, in `desktop-probing`).
 
 **`capture.js`.** Paste [`scripts/capture.js`](scripts/capture.js) at the head
 of the test or probe and call `await capture(name, element)` once per shot (it
@@ -103,7 +111,11 @@ root's `remotecontrol` attribute (the harness's stripes over the address bar).
 The background is white; for white ink, pass `{ background: "magenta" }` and
 check the ink's pixel count. Its `SHOT` line gives the frame's size, `dpr=` and
 `origin=` in the window, all in whole CSS px; it throws for an element with no
-box or outside the window. Log the element's rect and the computed value of each
+box or outside the window. The frame follows the element, so an element the
+change resizes gives frames of different sizes in the two halves, which compare
+out of alignment: capture an ancestor whose size the change leaves alone, such
+as the toolbar around a button, and crop both halves to the element with
+`sheet.py --rect` (§7). Log the element's rect and the computed value of each
 property the diff changes beside it (§5).
 
 - **The label and the output directory come from prefs**, `shots.label` and
@@ -150,6 +162,44 @@ page or a compositor grab (which needs `--no-headless` on the display the
 host's platform file in `desktop-probing`, section GRABS, allows), run
 each half yourself with the by-hand revert in `desktop-probing` §6
 between them.
+
+**Grab route.** Each half is a `--no-headless` chrome probe on a private Xvfb
+display. Its steps file sets the surface up and opens the popup in a `chrome`
+step, then takes `{"grab": "<name>"}`, which writes `<name>.png` beside the
+steps file, so each half needs its own directory. A step waits only for a
+promise it returns, so write a setup that awaits as
+`return (async () => { …; await shown; })()`, with `shown` the popup's
+`popupshown` promise, taken before the call that opens it. The snippet runs
+after the last step and reads the state that step left: return the popup's
+`getOuterScreenRect()` from it for `sheet.py --rect`. Xvfb takes the desktop's
+color scheme, so pin it, and with no window manager the popup hides itself
+unless `ui.popup.disable_autohide` is set. Run the whole of this as one call,
+with a tool timeout that covers both launches:
+
+```sh
+half() {  # $1: after or before
+  env -u WAYLAND_DISPLAY GDK_BACKEND=x11 MOZ_ENABLE_WAYLAND=0 \
+    xvfb-run -a -s "-screen 0 1600x1000x24" timeout 300 \
+    ./mach python --virtualenv desktop-theme .claude/skills/desktop-probing/scripts/firefox-probe.py \
+    --binary "$PWD/<objdir>/dist/bin/firefox" --no-headless --realm chrome \
+    --window-size 1200x800 \
+    --setpref ui.systemUsesDarkTheme=0 --setpref ui.popup.disable_autohide=true \
+    --steps <dir>/$1/steps.json --script-file <dir>/read.js \
+    --gecko-log <dir>/$1/gecko.log --result-file <dir>/$1/result.json
+}
+half after
+if git diff --quiet HEAD -- <paths>; then
+  ( trap 'git restore --source=HEAD --worktree -- <paths>' EXIT
+    git restore --source=<base> --worktree -- <paths> && half before )
+else
+  echo '<paths> differ from HEAD; commit the change first' >&2
+fi
+git status --short
+```
+
+One change often needs two routes, such as a grab for the button in an open
+panel and `capture-pair.sh` for the same button in the toolbar. Give the pairs
+from both to one `sheet.py` call.
 
 **Firefox MCP route.** Use `screenshot_page` or `screenshot_by_uid`, headless,
 on this tree's binary (`desktop-probing` §1's binary check). Before the
@@ -236,6 +286,13 @@ takes the text color, a marker background turns `Canvas`): mark per
 `desktop-probing` §4.
 
 ## 5. Verify the pair actually differs
+
+Look at every image before handing it over. A blank or half-painted shot, such
+as a panel grabbed before it painted, differs from its partner under `cmp` and
+`pixel-diff` like a real change. After a step that changes the state, such as
+opening a popup or switching a mode, let the surface settle before the shot:
+wait for its event (`popupshown`), finish its animations and wait two animation
+frames.
 
 `cmp` the two files. Differing byte sizes prove a difference; equal ones prove
 nothing. An identical pair means one of three things; say which:
