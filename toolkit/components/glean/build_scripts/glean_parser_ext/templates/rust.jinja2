@@ -109,13 +109,13 @@ MetricDef {
     allowed_extra_keys: {{ obj.allowed_extra_keys|extra_keys }},
     {% endif %}
     {% if obj['labels'] is defined and obj.labels and obj.labels|length %}
-    labels: {{ obj.labels|str_slice }},
+    labels: {{ obj.ordered_labels|str_slice }},
     {% endif %}
     {% if obj['keys'] is defined and obj.keys and obj.keys|length %}
-    keys: {{ obj.keys|str_slice }},
+    keys: {{ obj.ordered_keys|str_slice }},
     {% endif %}
     {% if obj['categories'] is defined and obj.categories and obj.categories|length %}
-    categories: {{ obj.categories|str_slice }},
+    categories: {{ obj.ordered_categories|str_slice }},
     {% endif %}
     {% if obj['numerators'] is defined and obj.numerators|length %}
     numerators: &[

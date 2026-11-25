@@ -17,8 +17,8 @@ use super::{
     LabeledMemoryDistributionMetric, LabeledMetric, LabeledMetricData, LabeledQuantityMetric,
     LabeledStringMetric, LabeledTimingDistributionMetric, Lifetime, MemoryDistributionMetric,
     MemoryUnit, NoExtraKeys, NumeratorMetric, ObjectMetric, QuantityMetric, RateMetric,
-    StringListMetric, StringMetric, TextMetric, TimeUnit, TimespanMetric,
-    TimingDistributionMetric, UrlMetric, UuidMetric,
+    StringListMetric, StringMetric, TextMetric, TimeUnit, TimespanMetric, TimingDistributionMetric,
+    UrlMetric, UuidMetric,
 };
 use crate::metrics::DynamicLabel;
 
