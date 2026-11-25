@@ -2379,36 +2379,41 @@ bool IMMHandler::OnKeyDownEvent(nsWindow* aWindow, WPARAM wParam, LPARAM lParam,
 }
 
 Maybe<ContentSelection> IMMHandler::QueryContentSelection(nsWindow* aWindow) {
-  WidgetQueryContentEvent querySelectedTextEvent(true, eQuerySelectedText,
-                                                 aWindow);
-  LayoutDeviceIntPoint point(0, 0);
-  aWindow->InitEvent(querySelectedTextEvent, &point);
-  DispatchEvent(aWindow, querySelectedTextEvent);
-  if (NS_WARN_IF(querySelectedTextEvent.Failed())) {
-    MOZ_LOG(gIMELog, LogLevel::Error,
-            ("  IMMHandler::Selection::Init, FAILED, due to eQuerySelectedText "
-             "failure"));
+  const RefPtr<TextEventDispatcher> dispatcher =
+      aWindow->GetTextEventDispatcher();
+  if (NS_WARN_IF(!dispatcher)) [[unlikely]] {
+    MOZ_LOG_FMT(gIMELog, LogLevel::Error,
+                "  IMMHandler::Selection::Init, FAILED, due to no text event "
+                "dispatcher");
+    return Nothing();
+  }
+  const Maybe<QueryContentResult> querySelectionResult =
+      dispatcher->QueryNormalSelection();
+  if (NS_WARN_IF(querySelectionResult.isNothing())) [[unlikely]] {
+    MOZ_LOG_FMT(gIMELog, LogLevel::Error,
+                "  IMMHandler::Selection::Init, FAILED, due to "
+                "TextEventDispatcher::QueryNormalSelection() failed");
     return Nothing();
   }
   // If the window is destroyed during querying selected text, we shouldn't
   // do anymore.
-  if (aWindow->Destroyed()) {
-    MOZ_LOG(
+  if (aWindow->Destroyed()) [[unlikely]] {
+    MOZ_LOG_FMT(
         gIMELog, LogLevel::Error,
-        ("  IMMHandler::Selection::Init, FAILED, due to the widget destroyed"));
+        "  IMMHandler::Selection::Init, FAILED, due to the widget destroyed");
     return Nothing();
   }
 
-  ContentSelection contentSelection(querySelectedTextEvent);
+  ContentSelection contentSelection(*querySelectionResult);
 
-  MOZ_LOG(gIMELog, LogLevel::Info,
-          ("IMMHandler::Selection::Init, querySelectedTextEvent={ mReply=%s }",
-           ToString(querySelectedTextEvent.mReply).c_str()));
+  MOZ_LOG_FMT(gIMELog, LogLevel::Info,
+              "IMMHandler::Selection::Init, querySelectionResult={}",
+              querySelectionResult);
 
   if (contentSelection.HasRange() &&
-      !contentSelection.OffsetAndDataRef().IsValid()) {
-    MOZ_LOG(gIMELog, LogLevel::Error,
-            ("  IMMHandler::Selection::Init, FAILED, due to invalid range"));
+      !contentSelection.OffsetAndDataRef().IsValid()) [[unlikely]] {
+    MOZ_LOG_FMT(gIMELog, LogLevel::Error,
+                "  IMMHandler::Selection::Init, FAILED, due to invalid range");
     return Nothing();
   }
   return Some(contentSelection);

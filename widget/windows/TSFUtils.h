@@ -5,6 +5,7 @@
 #ifndef TSFUtils_h
 #define TSFUtils_h
 
+#include <fmt/format.h>
 #include <msctf.h>
 #include <textstor.h>
 
@@ -15,7 +16,6 @@
 #include "mozilla/Result.h"
 #include "mozilla/StaticPtr.h"
 #include "mozilla/TextRange.h"
-#include "mozilla/ToString.h"
 #include "mozilla/widget/IMEData.h"
 #include "nsPrintfCString.h"
 #include "nsString.h"
@@ -347,8 +347,7 @@ class AutoEscapedUTF8String final : public NS_ConvertUTF16toUTF8 {
 
 }  // namespace mozilla::widget
 
-inline std::ostream& operator<<(std::ostream& aStream,
-                                const TS_SELECTIONSTYLE& aSelectionStyle) {
+inline auto format_as(const TS_SELECTIONSTYLE& aSelectionStyle) {
   const char* ase = "Unknown";
   switch (aSelectionStyle.ase) {
     case TS_AE_START:
@@ -361,14 +360,23 @@ inline std::ostream& operator<<(std::ostream& aStream,
       ase = "TS_AE_NONE";
       break;
   }
-  return aStream << "{ ase=" << ase << ", fInterimChar="
-                 << (aSelectionStyle.fInterimChar ? "TRUE" : "FALSE") << " }";
+  return fmt::format("{{ ase={}, fInterimChar={} }}", ase,
+                     aSelectionStyle.fInterimChar ? "TRUE" : "FALSE");
+}
+
+inline std::ostream& operator<<(std::ostream& aStream,
+                                const TS_SELECTIONSTYLE& aSelectionStyle) {
+  return aStream << format_as(aSelectionStyle);
+}
+
+inline auto format_as(const TS_SELECTION_ACP& aACP) {
+  return fmt::format("{{ acpStart={}, acpEnd={}, style={} }}", aACP.acpStart,
+                     aACP.acpEnd, aACP.style);
 }
 
 inline std::ostream& operator<<(std::ostream& aStream,
                                 const TS_SELECTION_ACP& aACP) {
-  return aStream << "{ acpStart=" << aACP.acpStart << ", acpEnd=" << aACP.acpEnd
-                 << ", style=" << mozilla::ToString(aACP.style).c_str() << " }";
+  return aStream << format_as(aACP);
 }
 
 inline std::ostream& operator<<(std::ostream& aStream,

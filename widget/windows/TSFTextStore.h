@@ -5,6 +5,7 @@
 #ifndef TSFTextStore_h
 #define TSFTextStore_h
 
+#include <fmt/format.h>
 #include <msctf.h>
 #include <textstor.h>
 
@@ -391,8 +392,8 @@ class TSFTextStore final : public TSFTextStoreBase,
       SetSelection(aSelectionChangeData);
     }
 
-    explicit Selection(const WidgetQueryContentEvent& aQuerySelectionEvent) {
-      SetSelection(aQuerySelectionEvent);
+    explicit Selection(const QueryContentResult& aQuerySelectionResult) {
+      SetSelection(aQuerySelectionResult);
     }
 
     Selection(uint32_t aStart, uint32_t aLength, bool aReversed,
@@ -429,10 +430,9 @@ class TSFTextStore final : public TSFTextStoreBase,
                           aSelectionChangeData.GetWritingMode());
     }
 
-    bool SetSelection(const WidgetQueryContentEvent& aQuerySelectionEvent) {
-      MOZ_ASSERT(aQuerySelectionEvent.mMessage == eQuerySelectedText);
-      MOZ_ASSERT(aQuerySelectionEvent.Succeeded());
-      if (aQuerySelectionEvent.DidNotFindSelection()) {
+    bool SetSelection(const QueryContentResult& aQuerySelectionResult) {
+      MOZ_ASSERT(aQuerySelectionResult.mEventMessage == eQuerySelectedText);
+      if (!aQuerySelectionResult.FoundSelectionRange()) [[likely]] {
         if (mACP.isNothing()) {
           return false;
         }
@@ -442,10 +442,10 @@ class TSFTextStore final : public TSFTextStoreBase,
         // apps, but they or TIP would restore selection at last point later.
         return true;
       }
-      return SetSelection(aQuerySelectionEvent.mReply->StartOffset(),
-                          aQuerySelectionEvent.mReply->DataLength(),
-                          aQuerySelectionEvent.mReply->mReversed,
-                          aQuerySelectionEvent.mReply->WritingModeRef());
+      return SetSelection(aQuerySelectionResult.StartOffset(),
+                          aQuerySelectionResult.DataLength(),
+                          aQuerySelectionResult.mReversed,
+                          aQuerySelectionResult.WritingModeRef());
     }
 
     bool SetSelection(uint32_t aStart, uint32_t aLength, bool aReversed,
@@ -542,14 +542,15 @@ class TSFTextStore final : public TSFTextStoreBase,
              aChangedSelection.mOffset == static_cast<uint32_t>(StartOffset());
     }
 
+    friend auto format_as(const Selection& aSelection) {
+      return fmt::format(
+          "{{ mACP={}, mWritingMode={}, Collapsed()={}, Length={} }}",
+          aSelection.mACP, ToString(aSelection.mWritingMode),
+          aSelection.Collapsed(), aSelection.Length());
+    }
     friend std::ostream& operator<<(std::ostream& aStream,
                                     const Selection& aSelection) {
-      aStream << "{ mACP=" << ToString(aSelection.mACP).c_str()
-              << ", mWritingMode=" << ToString(aSelection.mWritingMode).c_str()
-              << ",  Collapsed()="
-              << (aSelection.Collapsed() ? "true" : "false")
-              << ", Length=" << aSelection.Length() << " }";
-      return aStream;
+      return aStream << format_as(aSelection);
     }
 
    private:
