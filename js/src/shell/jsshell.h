@@ -105,7 +105,6 @@ extern char** sArgv;
 // Shell state set once at startup.
 extern const char* selfHostedXDRPath;
 extern bool encodeSelfHostedCode;
-extern bool enableCodeCoverage;
 extern bool enableDisassemblyDumps;
 extern bool offthreadBaselineCompilation;
 extern bool offthreadIonCompilation;
@@ -114,10 +113,6 @@ extern bool enableWasm;
 extern bool enableSharedMemory;
 extern bool enableWasmBaseline;
 extern bool enableWasmOptimizing;
-extern bool enableTestWasmAwaitTier2;
-extern bool enableSourcePragmas;
-extern bool enableAsyncStacks;
-extern bool enableAsyncStackCaptureDebuggeeOnly;
 extern bool enableWeakRefs;
 extern bool enableToSource;
 extern bool enablePropertyErrorMessageFix;

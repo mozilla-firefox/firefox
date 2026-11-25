@@ -1170,8 +1170,7 @@ bool shell::SetGlobalOptionsPostJSInit() {
     js::DisableExtraThreads();
   }
 
-  enableCodeCoverage = gOptions.getBoolOption("code-coverage");
-  if (enableCodeCoverage) {
+  if (gOptions.getBoolOption("code-coverage")) {
     js::EnableCodeCoverage();
   }
 
@@ -1254,15 +1253,12 @@ bool shell::SetContextOptions(JSContext* cx) {
     return false;
   }
 
-  enableSourcePragmas = !gOptions.getBoolOption("no-source-pragmas");
-  enableAsyncStacks = !gOptions.getBoolOption("no-async-stacks");
-  enableAsyncStackCaptureDebuggeeOnly =
-      gOptions.getBoolOption("async-stacks-capture-debuggee-only");
   enableToSource = !gOptions.getBoolOption("disable-tosource");
   JS::ContextOptionsRef(cx)
-      .setSourcePragmas(enableSourcePragmas)
-      .setAsyncStack(enableAsyncStacks)
-      .setAsyncStackCaptureDebuggeeOnly(enableAsyncStackCaptureDebuggeeOnly);
+      .setSourcePragmas(!gOptions.getBoolOption("no-source-pragmas"))
+      .setAsyncStack(!gOptions.getBoolOption("no-async-stacks"))
+      .setAsyncStackCaptureDebuggeeOnly(
+          gOptions.getBoolOption("async-stacks-capture-debuggee-only"));
 
   if (const char* str = gOptions.getStringOption("shared-memory")) {
     if (strcmp(str, "off") == 0) {
@@ -1279,7 +1275,7 @@ bool shell::SetContextOptions(JSContext* cx) {
   printTiming = gOptions.getBoolOption('b');
   enableDisassemblyDumps = gOptions.getBoolOption('D');
   cx->runtime()->profilingScripts =
-      enableCodeCoverage || enableDisassemblyDumps;
+      gOptions.getBoolOption("code-coverage") || enableDisassemblyDumps;
 
   if (const char* mode = gOptions.getStringOption("delazification-mode")) {
     if (strcmp(mode, "on-demand") == 0) {
@@ -1327,14 +1323,12 @@ static bool SetContextWasmOptions(JSContext* cx) {
     }
   }
 
-  enableTestWasmAwaitTier2 = gOptions.getBoolOption("test-wasm-await-tier2");
-
   JS::ContextOptionsRef(cx)
       .setWasm(enableWasm)
       .setWasmForTrustedPrinciples(enableWasm)
       .setWasmBaseline(enableWasmBaseline)
       .setWasmIon(enableWasmOptimizing)
-      .setTestWasmAwaitTier2(enableTestWasmAwaitTier2);
+      .setTestWasmAwaitTier2(gOptions.getBoolOption("test-wasm-await-tier2"));
   if (gOptions.getBoolOption("disable-main-thread-wasm-denormals")) {
     JS::ContextOptionsRef(cx).setWasmDisablesDenormals();
   }

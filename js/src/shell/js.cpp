@@ -845,7 +845,6 @@ struct MOZ_STACK_CLASS EnvironmentPreparer
 
 const char* shell::selfHostedXDRPath = nullptr;
 bool shell::encodeSelfHostedCode = false;
-bool shell::enableCodeCoverage = false;
 bool shell::enableDisassemblyDumps = false;
 bool shell::offthreadBaselineCompilation = false;
 bool shell::offthreadIonCompilation = false;
@@ -855,10 +854,6 @@ bool shell::enableWasm = false;
 bool shell::enableSharedMemory = SHARED_MEMORY_DEFAULT;
 bool shell::enableWasmBaseline = false;
 bool shell::enableWasmOptimizing = false;
-bool shell::enableTestWasmAwaitTier2 = false;
-bool shell::enableSourcePragmas = true;
-bool shell::enableAsyncStacks = false;
-bool shell::enableAsyncStackCaptureDebuggeeOnly = false;
 bool shell::enableToSource = false;
 #ifdef JS_GC_ZEAL
 uint32_t shell::gZealBits = 0;
@@ -12381,14 +12376,14 @@ static void SetWorkerContextOptions(JSContext* cx) {
       .setWasmBaseline(enableWasmBaseline)
       .setWasmIon(enableWasmOptimizing)
 
-      .setTestWasmAwaitTier2(enableTestWasmAwaitTier2)
-      .setSourcePragmas(enableSourcePragmas);
+      .setTestWasmAwaitTier2(gOptions.getBoolOption("test-wasm-await-tier2"))
+      .setSourcePragmas(!gOptions.getBoolOption("no-source-pragmas"));
 
   cx->runtime()->setOffthreadBaselineCompilationEnabled(
       offthreadBaselineCompilation);
   cx->runtime()->setOffthreadIonCompilationEnabled(offthreadIonCompilation);
   cx->runtime()->profilingScripts =
-      enableCodeCoverage || enableDisassemblyDumps;
+      gOptions.getBoolOption("code-coverage") || enableDisassemblyDumps;
 
 #ifdef JS_GC_ZEAL
   if (gZealBits && gZealFrequency) {
