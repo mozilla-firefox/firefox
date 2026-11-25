@@ -231,8 +231,17 @@ class JitRuntime {
       mozilla::Atomic<size_t, mozilla::SequentiallyConsistent>;
   NumFinishedOffThreadTasksType numFinishedOffThreadTasks_{0};
 
-  // List of Ion compilation waiting to get linked.
+  // Off-thread Ion compilations that are queued, running on a helper thread, or
+  // in the finished list. Tasks stay in this list until the main thread moves
+  // them to ionLazyLinkList_ or cancels them.
+  //
+  // The list itself must only be used and mutated on the main thread. The tasks
+  // can also be accessed by helper threads, so the main thread must ensure
+  // concurrent accesses are safe.
   using IonCompileTaskList = mozilla::LinkedList<js::jit::IonCompileTask>;
+  MainThreadData<IonCompileTaskList> ionOffThreadList_;
+
+  // List of Ion compilation waiting to get linked.
   MainThreadData<IonCompileTaskList> ionLazyLinkList_;
   MainThreadData<size_t> ionLazyLinkListSize_{0};
 
@@ -532,6 +541,7 @@ class JitRuntime {
     return numFinishedOffThreadTasks_;
   }
 
+  IonCompileTaskList& ionOffThreadList(JSRuntime* rt);
   IonCompileTaskList& ionLazyLinkList(JSRuntime* rt);
 
   size_t ionLazyLinkListSize() const { return ionLazyLinkListSize_; }

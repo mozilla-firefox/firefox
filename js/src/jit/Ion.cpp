@@ -98,6 +98,7 @@ JitRuntime::~JitRuntime() {
   MOZ_ASSERT(numFinishedOffThreadTasks_ == 0);
   MOZ_ASSERT(ionLazyLinkListSize_ == 0);
   MOZ_ASSERT(ionLazyLinkList_.ref().isEmpty());
+  MOZ_ASSERT(ionOffThreadList_.ref().isEmpty());
 
   MOZ_ASSERT(ionFreeTaskBatch_.ref().empty());
   MOZ_ASSERT(debugModeOSRReturnSites_.ref().empty());
@@ -296,6 +297,12 @@ JitRuntime::IonCompileTaskList& JitRuntime::ionLazyLinkList(JSRuntime* rt) {
   MOZ_ASSERT(CurrentThreadCanAccessRuntime(rt),
              "Should only be mutated by the main thread.");
   return ionLazyLinkList_.ref();
+}
+
+JitRuntime::IonCompileTaskList& JitRuntime::ionOffThreadList(JSRuntime* rt) {
+  MOZ_ASSERT(CurrentThreadCanAccessRuntime(rt),
+             "Should only be accessed on the main thread.");
+  return ionOffThreadList_.ref();
 }
 
 void JitRuntime::ionLazyLinkListRemove(JSRuntime* rt,
@@ -1937,6 +1944,8 @@ static AbortReason IonCompile(JSContext* cx, HandleScript script,
       return AbortReason::Alloc;
     }
 
+    JSRuntime* rt = cx->runtime();
+    rt->jitRuntime()->ionOffThreadList(rt).insertBack(task);
     script->jitScript()->setIsIonCompilingOffThread(script);
 
     // The allocator and associated data will be destroyed after being

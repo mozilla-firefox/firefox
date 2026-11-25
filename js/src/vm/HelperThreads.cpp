@@ -538,30 +538,21 @@ void GlobalHelperThreadState::trace(JSTracer* trc) {
       task->trace(trc);
     }
 
-    for (auto task : ionWorklist(lock)) {
-      task->trace(trc);
-    }
-    for (auto task : ionFinishedList(lock)) {
-      task->trace(trc);
-    }
-
     for (auto* helper : helperTasks(lock)) {
-      if (helper->is<jit::IonCompileTask>()) {
-        helper->as<jit::IonCompileTask>()->trace(trc);
-      } else if (helper->is<jit::BaselineCompileTask>()) {
+      if (helper->is<jit::BaselineCompileTask>()) {
         helper->as<jit::BaselineCompileTask>()->trace(trc);
       }
     }
   }
 
-  // The lazy link list is only accessed on the main thread, so trace it after
-  // releasing the lock.
+  // Trace Ion compilations without holding the lock.
   JSRuntime* rt = trc->runtime();
   if (auto* jitRuntime = rt->jitRuntime()) {
-    jit::IonCompileTask* task = jitRuntime->ionLazyLinkList(rt).getFirst();
-    while (task) {
+    for (jit::IonCompileTask* task : jitRuntime->ionOffThreadList(rt)) {
       task->trace(trc);
-      task = task->getNext();
+    }
+    for (jit::IonCompileTask* task : jitRuntime->ionLazyLinkList(rt)) {
+      task->trace(trc);
     }
   }
 }
@@ -860,7 +851,8 @@ static bool ShouldForceIonFreeTask(const CompilationSelector& selector) {
 void GlobalHelperThreadState::cancelOffThreadIonCompile(
     const CompilationSelector& selector,
     WaitForRunningCompiles waitForRunning) {
-  jit::JitRuntime* jitRuntime = GetSelectorRuntime(selector)->jitRuntime();
+  JSRuntime* runtime = GetSelectorRuntime(selector);
+  jit::JitRuntime* jitRuntime = runtime->jitRuntime();
   MOZ_ASSERT(jitRuntime);
 
   AutoStartIonFreeTask freeTask(jitRuntime, ShouldForceIonFreeTask(selector));
@@ -907,20 +899,20 @@ void GlobalHelperThreadState::cancelOffThreadIonCompile(
     for (size_t i = 0; i < finished.length(); i++) {
       jit::IonCompileTask* task = finished[i];
       if (IonCompileTaskMatches(selector, task)) {
-        JSRuntime* rt = task->script()->runtimeFromAnyThread();
         jitRuntime->numFinishedOffThreadTasksRef(lock)--;
-        jit::FinishOffThreadTask(rt, freeTask, task);
+        task->removeFrom(jitRuntime->ionOffThreadList(runtime));
+        jit::FinishOffThreadTask(runtime, freeTask, task);
         remove(finished, &i);
       }
     }
   }
 
   /* Cancel lazy linking for pending tasks (attached to the ionScript). */
-  JSRuntime* runtime = GetSelectorRuntime(selector);
   jit::IonCompileTask* task = jitRuntime->ionLazyLinkList(runtime).getFirst();
   while (task) {
     jit::IonCompileTask* next = task->getNext();
     if (IonCompileTaskMatches(selector, task)) {
+      jitRuntime->ionLazyLinkListRemove(runtime, task);
       jit::FinishOffThreadTask(runtime, freeTask, task);
     }
     task = next;
