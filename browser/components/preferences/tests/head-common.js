@@ -271,7 +271,7 @@ async function openPreferencesViaOpenPreferencesAPI(aPane, aOptions) {
   if (!aOptions || !aOptions.leaveOpen) {
     gBrowser.removeCurrentTab();
   }
-  return { selectedPane };
+  return { selectedPane, win };
 }
 
 async function runSearchInput(input) {

@@ -48,11 +48,6 @@ run-if = [
 ["browser_colors_dialog.js"]
 
 ["browser_extension_controlled.js"]
-skip-if = [
-  "true", # Bug 2084686 this will require significant changes to work with SRD UI
-  "os == 'linux' && os_version == '24.04' && arch == 'x86_64' && display == 'x11' && ccov", # Linux: bug 1613530
-  "os == 'win' && ccov",                                                                    # Windows: bug 1437051
-]
 
 ["browser_fluent.js"]
 
