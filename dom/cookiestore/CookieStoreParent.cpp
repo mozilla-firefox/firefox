@@ -34,36 +34,36 @@ namespace mozilla::dom {
 
 namespace {
 
-bool CheckContentProcessSecurity(ThreadsafeContentParentHandle* aParent,
-                                 const nsACString& aDomain,
-                                 const OriginAttributes& aOriginAttributes) {
+ContentProcessCookieAccess CheckContentProcessSecurity(
+    ThreadsafeContentParentHandle* aParent, const nsACString& aDomain,
+    const OriginAttributes& aOriginAttributes) {
   AssertIsOnMainThread();
 
   // ContentParent is null if we are dealing with the same process.
   if (!aParent) {
-    return true;
+    return ContentProcessCookieAccess::eAll;
   }
 
   RefPtr<ContentParent> contentParent = aParent->GetContentParent();
   if (!contentParent) {
-    return false;
+    return ContentProcessCookieAccess::eNone;
   }
 
   PNeckoParent* neckoParent =
       LoneManagedOrNullAsserts(contentParent->ManagedPNeckoParent());
   if (!neckoParent) {
-    return false;
+    return ContentProcessCookieAccess::eNone;
   }
 
   PCookieServiceParent* csParent =
       LoneManagedOrNullAsserts(neckoParent->ManagedPCookieServiceParent());
   if (!csParent) {
-    return false;
+    return ContentProcessCookieAccess::eNone;
   }
 
   auto* cs = static_cast<CookieServiceParent*>(csParent);
 
-  return cs->ContentProcessHasCookie(aDomain, aOriginAttributes);
+  return cs->GetContentProcessCookieAccess(aDomain, aOriginAttributes);
 }
 
 bool SubscriptionPrincipalMatchesScope(nsIPrincipal* aPrincipal,
@@ -347,7 +347,9 @@ void CookieStoreParent::GetRequestOnMainThread(
     return;
   }
 
-  if (!CheckContentProcessSecurity(aParent, baseDomain, aOriginAttributes)) {
+  ContentProcessCookieAccess access =
+      CheckContentProcessSecurity(aParent, baseDomain, aOriginAttributes);
+  if (access == ContentProcessCookieAccess::eNone) {
     return;
   }
 
@@ -382,6 +384,9 @@ void CookieStoreParent::GetRequestOnMainThread(
         continue;
       }
       if (cookie->IsHttpOnly()) {
+        continue;
+      }
+      if (cookie->IsSecure() && access != ContentProcessCookieAccess::eAll) {
         continue;
       }
       MOZ_DIAGNOSTIC_ASSERT(!cookie->IsExpired(currentTimeInMSec));
@@ -479,7 +484,10 @@ CookieStoreParent::SetReturnType CookieStoreParent::SetRequestOnMainThread(
   }
   domainWithDot.Append(domain);
 
-  if (!CheckContentProcessSecurity(aParent, domain, aOriginAttributes)) {
+  // CookieStore only creates Secure cookies.
+  ContentProcessCookieAccess access =
+      CheckContentProcessSecurity(aParent, domain, aOriginAttributes);
+  if (access != ContentProcessCookieAccess::eAll) {
     return eSilentFailure;
   }
 
@@ -565,8 +573,9 @@ bool CookieStoreParent::DeleteRequestOnMainThread(
     cookiesForDomain = NS_ConvertUTF16toUTF8(aDomain);
   }
 
-  if (!CheckContentProcessSecurity(aParent, cookiesForDomain,
-                                   aOriginAttributes)) {
+  ContentProcessCookieAccess access =
+      CheckContentProcessSecurity(aParent, cookiesForDomain, aOriginAttributes);
+  if (access == ContentProcessCookieAccess::eNone) {
     return false;
   }
 
@@ -601,6 +610,10 @@ bool CookieStoreParent::DeleteRequestOnMainThread(
     }
 
     if (cookie->IsPartitioned() != aPartitioned) continue;
+
+    if (cookie->IsSecure() && access != ContentProcessCookieAccess::eAll) {
+      return false;
+    }
 
     if (aThirdPartyContext) {
       int32_t sameSiteAttr = cookie->SameSite();
