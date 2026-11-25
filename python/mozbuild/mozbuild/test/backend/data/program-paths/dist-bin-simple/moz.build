@@ -9,3 +9,23 @@ def SimplePrograms(names):
 
 
 SimplePrograms(["simple"])
+
+TEST_HARNESS_FILES.foo += ["!simple.prog"]
+
+MACOS_BUNDLES += [
+    {
+        "bundle": "!/dist/bin/Simple.app",
+        "skeleton": None,
+        "info_plist": None,
+        "strings": None,
+        "lproj": "English.lproj",
+        "binaries": [["!/dist/bin/simple.prog", "simple"]],
+        "extra_files": [],
+        "stage": None,
+        "macos_files": None,
+        "macos_copy_files": None,
+        "moves": [],
+        "pkginfo": None,
+        "copies": [],
+    },
+]

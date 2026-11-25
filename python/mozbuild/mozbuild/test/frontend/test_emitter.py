@@ -29,6 +29,7 @@ from mozbuild.frontend.data import (
     LocalInclude,
     LocalizedFiles,
     LocalizedPreprocessedFiles,
+    MacOSBundle,
     MozSrcFiles,
     PerSourceFlag,
     Program,
@@ -1012,6 +1013,42 @@ class TestEmitterBasic(unittest.TestCase):
                     "test_program2.%s" % reader.config.substs["OBJ_SUFFIX"],
                 )
             ],
+        )
+
+    def test_simple_programs_profile_generate(self):
+        def emitted(**substs):
+            reader = self.reader(
+                "simple-programs-profile-generate", extra_substs=substs
+            )
+            objs = self.read_topsrcdir(reader)
+            (harness_files,) = [o for o in objs if isinstance(o, TestHarnessFiles)]
+            installed = [
+                f.target_basename
+                for _, files in harness_files.files.walk()
+                for f in files
+            ]
+            return [type(o) for o in objs], installed
+
+        self.assertEqual(
+            emitted(),
+            (
+                [
+                    Sources,
+                    TestHarnessFiles,
+                    MacOSBundle,
+                    ComputedFlags,
+                    ComputedFlags,
+                    SimpleProgram,
+                ],
+                ["simple.prog", "other.py"],
+            ),
+        )
+        self.assertEqual(
+            emitted(MOZ_PROFILE_GENERATE="1"),
+            (
+                [Sources, TestHarnessFiles, ComputedFlags, ComputedFlags],
+                ["other.py"],
+            ),
         )
 
     def test_program_paths(self):

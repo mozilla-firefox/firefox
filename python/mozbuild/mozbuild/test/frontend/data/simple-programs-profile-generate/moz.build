@@ -1,0 +1,31 @@
+# Any copyright is dedicated to the Public Domain.
+# http://creativecommons.org/publicdomain/zero/1.0/
+
+
+@template
+def SimplePrograms(names):
+    SIMPLE_PROGRAMS += names
+    SOURCES += [f"{n}.cpp" for n in names]
+
+
+SimplePrograms(["simple"])
+
+TEST_HARNESS_FILES.foo += ["!simple.prog", "other.py"]
+
+MACOS_BUNDLES += [
+    {
+        "bundle": "!/dist/bin/Simple.app",
+        "skeleton": None,
+        "info_plist": None,
+        "strings": None,
+        "lproj": "English.lproj",
+        "binaries": [["!/dist/bin/simple.prog", "simple"]],
+        "extra_files": [],
+        "stage": None,
+        "macos_files": None,
+        "macos_copy_files": None,
+        "moves": [],
+        "pkginfo": None,
+        "copies": [],
+    },
+]

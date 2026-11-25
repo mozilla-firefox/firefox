@@ -2130,19 +2130,50 @@ class TestRecursiveMakeBackend(BackendTester):
     def test_cpp_unit_tests_profile_generate(self):
         self.assertEqual(self._cpp_unit_tests_lines({"MOZ_PROFILE_GENERATE": "1"}), [])
 
-    def test_simple_programs_profile_generate(self):
-        def backend_mk(**substs):
-            env = self._get_environment("program-paths", substs=substs)
-            self._consume("program-paths", RecursiveMakeBackend, env=env)
-            with open(
-                os.path.join(env.topobjdir, "dist-bin-simple", "backend.mk")
-            ) as fh:
-                return fh.read()
+    def _simple_programs_backend_mk(self, **substs):
+        env = self._get_environment("program-paths", substs=substs)
+        self._consume("program-paths", RecursiveMakeBackend, env=env)
+        with open(os.path.join(env.topobjdir, "dist-bin-simple", "backend.mk")) as fh:
+            return fh.read()
 
-        self.assertIn("simple.prog_OBJS", backend_mk())
-        profile_generate = backend_mk(MOZ_PROFILE_GENERATE="1")
+    def test_simple_programs_profile_generate(self):
+        self.assertIn("simple.prog_OBJS", self._simple_programs_backend_mk())
+        profile_generate = self._simple_programs_backend_mk(MOZ_PROFILE_GENERATE="1")
         self.assertNotIn("SIMPLE_PROGRAMS", profile_generate)
         self.assertNotIn("simple.prog_OBJS", profile_generate)
+
+    def test_simple_programs_install_profile_generate(self):
+        def track_lines(**substs):
+            backend_mk = self._simple_programs_backend_mk(**substs)
+            return [l for l in backend_mk.splitlines() if ".track" in l]
+
+        manifest = "$(topobjdir)/_build_manifests/built/dist-bin-simple/misc"
+        self.assertEqual(
+            track_lines(),
+            [
+                f"misc:: {manifest}.track",
+                f"{manifest}.track: {manifest}",
+                f"\t$(call py_action,process_install_manifest dist-bin-simple/misc,"
+                f"--track {manifest}.track $(topobjdir) {manifest})",
+                f"{manifest}.track: simple.prog",
+            ],
+        )
+        self.assertEqual(track_lines(MOZ_PROFILE_GENERATE="1"), [])
+
+    def test_simple_programs_bundle_profile_generate(self):
+        def bundle_lines(**substs):
+            backend_mk = self._simple_programs_backend_mk(**substs)
+            return [l for l in backend_mk.splitlines() if "Simple.app" in l]
+
+        spec = "dist_bin_Simple.app.bundle.json"
+        self.assertEqual(
+            bundle_lines(),
+            [
+                f"libs:: $(DEPTH)/dist/bin/simple.prog {spec}",
+                f"\t$(call py_action,assemble_macos_bundle Simple.app,{spec})",
+            ],
+        )
+        self.assertEqual(bundle_lines(MOZ_PROFILE_GENERATE="1"), [])
 
     def test_linkage(self):
         env = self._consume("linkage", RecursiveMakeBackend)

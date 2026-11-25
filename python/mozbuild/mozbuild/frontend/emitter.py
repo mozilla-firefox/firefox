@@ -374,6 +374,11 @@ class TreeMetadataEmitter(LoggingMixin):
         for obj in self._binaries.values():
             if isinstance(obj, Linkable):
                 check_rust_libraries(obj)
+            # Don't build SIMPLE_PROGRAMS during the MOZ_PROFILE_GENERATE pass
+            if isinstance(obj, SimpleProgram) and self.config.substs.get(
+                "MOZ_PROFILE_GENERATE"
+            ):
+                continue
             yield obj
 
     LIBRARY_NAME_VAR = {
@@ -1597,6 +1602,26 @@ class TreeMetadataEmitter(LoggingMixin):
             for k in self._binaries.keys()
         ])
 
+        # Do not attempt to install SIMPLE_PROGRAMS during the
+        # MOZ_PROFILE_GENERATE pass
+        skipped_programs = set()
+        if self.config.substs.get("MOZ_PROFILE_GENERATE"):
+            for kind in ("SIMPLE_PROGRAMS", "CPP_UNIT_TESTS"):
+                for name in context[kind]:
+                    program = self._binaries[name]
+                    skipped_programs.update((
+                        mozpath.join(program.objdir, program.program),
+                        program.output_path.full_path,
+                    ))
+
+        def remove_skipped_programs(files):
+            strings = files._strings
+            for i in reversed(range(len(strings))):
+                if strings[i].full_path in skipped_programs:
+                    del strings[i]
+            for child in files._children.values():
+                remove_skipped_programs(child)
+
         processed_moz_src_files = None
         if "MOZ_SRC_FILES" in context:
             # We process MOZ_SRC_FILES separately such that any items in the
@@ -1644,6 +1669,12 @@ class TreeMetadataEmitter(LoggingMixin):
                 all_files = context.get(var)
             if not all_files:
                 continue
+            if skipped_programs and var in (
+                "FINAL_TARGET_FILES",
+                "OBJDIR_FILES",
+                "TEST_HARNESS_FILES",
+            ):
+                remove_skipped_programs(all_files)
             if dist_install is False and var != "TEST_HARNESS_FILES":
                 raise SandboxValidationError(
                     "%s cannot be used with DIST_INSTALL = False" % var, context
@@ -1787,6 +1818,11 @@ class TreeMetadataEmitter(LoggingMixin):
             yield JsShellArchive(context, jsshell_files)
 
         for bundle in context.get("MACOS_BUNDLES", []):
+            if skipped_programs and any(
+                Path(context, source).full_path in skipped_programs
+                for source, _ in (*bundle["binaries"], *bundle["extra_files"])
+            ):
+                continue
             yield MacOSBundle(context, bundle)
 
         rust_tests = context.get("RUST_TESTS", [])
