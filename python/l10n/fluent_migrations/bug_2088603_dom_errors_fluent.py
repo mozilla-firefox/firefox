@@ -2,7 +2,7 @@
 # http://creativecommons.org/publicdomain/zero/1.0/
 
 import fluent.syntax.ast as FTL
-from fluent.migrate.helpers import VARIABLE_REFERENCE
+from fluent.migrate.helpers import TERM_REFERENCE, VARIABLE_REFERENCE
 from fluent.migrate.transforms import COPY, REPLACE
 
 
@@ -132,6 +132,63 @@ def migrate(ctx):
                         "%2$S": VARIABLE_REFERENCE("element"),
                     },
                 ),
+            ),
+        ],
+    )
+
+    target = "dom/dom/dialogs.ftl"
+    ctx.add_transforms(
+        target,
+        target,
+        [
+            FTL.Message(
+                id=FTL.Identifier("dom-slow-script-dialog-title"),
+                value=COPY(source, "KillScriptTitle"),
+            ),
+            FTL.Message(
+                id=FTL.Identifier("dom-slow-script-dialog-message"),
+                value=COPY(source, "KillScriptMessage"),
+            ),
+            FTL.Message(
+                id=FTL.Identifier("dom-slow-script-dialog-location"),
+                value=REPLACE(
+                    source,
+                    "KillScriptLocation",
+                    {
+                        "%1$S": VARIABLE_REFERENCE("location"),
+                    },
+                ),
+            ),
+            FTL.Message(
+                id=FTL.Identifier("dom-slow-script-dialog-dont-ask-again"),
+                value=COPY(source, "DontAskAgain"),
+            ),
+            FTL.Message(
+                id=FTL.Identifier("dom-slow-script-dialog-stop-button"),
+                value=COPY(source, "StopScriptButton"),
+            ),
+            FTL.Message(
+                id=FTL.Identifier("dom-slow-script-dialog-continue-button"),
+                value=COPY(source, "WaitForScriptButton"),
+            ),
+            FTL.Message(
+                id=FTL.Identifier("dom-slow-addon-script-dialog-title"),
+                value=COPY(source, "KillAddonScriptTitle"),
+            ),
+            FTL.Message(
+                id=FTL.Identifier("dom-slow-addon-script-dialog-message"),
+                value=REPLACE(
+                    source,
+                    "KillAddonScriptMessage",
+                    {
+                        "%1$S": VARIABLE_REFERENCE("extensionName"),
+                        "%2$S": TERM_REFERENCE("brand-short-name"),
+                    },
+                ),
+            ),
+            FTL.Message(
+                id=FTL.Identifier("dom-slow-addon-script-dialog-checkbox"),
+                value=COPY(source, "KillAddonScriptGlobalMessage"),
             ),
         ],
     )

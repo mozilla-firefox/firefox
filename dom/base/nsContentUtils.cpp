@@ -5940,6 +5940,7 @@ nsresult nsContentUtils::FormatLocalizedString(
 static const char* const gFluentResourceFilePaths[][2] = {
     {"dom/dom.ftl"},
     {"dom/deprecations.ftl"},
+    {"dom/dialogs.ftl", "branding/brand.ftl"},
 };
 static_assert(std::size(gFluentResourceFilePaths) == kFluentResourceFileCount,
               "gFluentResourceFilePaths must have an entry for each "
