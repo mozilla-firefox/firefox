@@ -634,9 +634,8 @@ void MediaSource::DurationChangeOnEndOfStream() {
   // segment; ToBase(USECS_PER_S) overflows in that case. Skip setting the
   // duration rather than crashing — the clip is malformed anyway.
   if (!newDuration.IsValid()) {
-    MSE_DEBUG(
-        "DurationChangeOnEndOfStream: duration overflow (highestEndTime=%s)",
-        highestEndTime.ToString().get());
+    MSE_DEBUG("duration overflow (highestEndTime={})",
+              highestEndTime.ToString().get());
     return;
   }
   MSE_DEBUG("DurationChangeOnEndOfStream(newDuration={})",

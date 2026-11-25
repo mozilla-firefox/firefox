@@ -267,10 +267,8 @@ void MediaSourceDecoder::SetMediaSourceDuration(const TimeUnit& aDuration) {
     } else {
       // ToBase(USECS_PER_S) overflows for near-INT64_MAX timestamps; fall back
       // to floating point precision to avoid crashing.
-      MSE_DEBUG(
-          "SetMediaSourceDuration: duration overflow converting to usecs "
-          "(duration=%s)",
-          aDuration.ToString().get());
+      MSE_DEBUG("duration overflow converting to usecs (duration={})",
+                aDuration.ToString().get());
       SetExplicitDuration(aDuration.ToSeconds());
     }
   } else {
