@@ -529,21 +529,38 @@ expose things like markers (from *window.performance.mark()*).
 
 ### Use the compositor for animations
 
-Performing animations on the main thread should be treated as
-**deprecated**. Avoid doing it. Instead, animate using
-*Element.animate()*. See the article [Animating like you just don't
-care](https://hacks.mozilla.org/2016/08/animating-like-you-just-dont-care-with-element-animate/)
-for more information on how to do this.
+Animations and transitions of `opacity`, `transform`, `translate`,
+`rotate`, `scale`, the `offset-*` properties and `background-color` can
+run on the compositor, so they keep a steady frame rate while the main
+thread is busy. Any other animated property, and these ones in the cases
+that force a fallback, run on the main thread, and a property that
+affects layout reflows on every frame. DevTools' Animations panel marks
+the animations that run on the compositor.
+
+A transform animation runs on the main thread when:
+
+- part of the element is outside the visible area, and the element is
+  wider or taller than 4096 device pixels or has a larger area than
+  about 1.125 times the viewport's longer side, squared
+  ([`ShouldPrerenderTransformedContent`](https://searchfox.org/firefox-main/rev/4a7b56cdc419768220e195d758c9e3e4852bc6b2/layout/painting/nsDisplayList.cpp#6704));
+- the element is SVG content inside an `<svg>` or `<symbol>` with a
+  `viewBox` that transforms its children;
+- the element or one of its SVG descendants has, or has had,
+  `vector-effect: non-scaling-stroke`;
+- an `!important` rule overrides one of the animated transform
+  properties.
+
+The two SVG cases are checked in
+[`CanAnimateTransformOnCompositor`](https://searchfox.org/firefox-main/rev/4a7b56cdc419768220e195d758c9e3e4852bc6b2/dom/animation/KeyframeEffect.cpp#1732).
+A `background-color` animation runs on the main thread when a keyframe
+value is `currentColor`, or when it's set on the root element or
+`<body>`.
 
 ### Explicitly define start and end animation values
 
-Some optimizations in the animation code of Gecko are based on an
-expectation that the *from* (0%) and the *to* (100%) values will be
-explicitly defined in the *@keyframes* definition. Even though these
-values may be inferred through the use of initial values or the cascade,
-the offscreen animation optimizations are dependent on the explicit
-definition. See [this comment](https://bugzilla.mozilla.org/show_bug.cgi?id=1419096#c18)
-and a few previous comments on that bug for more information.
+Give `@keyframes` explicit `from` (0%) and `to` (100%) values. When one
+is left out, Gecko fills it in from the element's base style and has to
+resolve that style again each time the animation updates.
 
 ## Use IndexedDB for storage
 

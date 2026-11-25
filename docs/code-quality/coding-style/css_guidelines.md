@@ -786,6 +786,70 @@ have the `--lwt-` prefix.
 See {doc}`/performance/bestpractices`
 for more information about this.
 
+### Animations and transitions
+
+- `opacity`, `transform`, `translate`, `rotate`, `scale`, the `offset-*`
+  properties and `background-color` can be animated on the compositor,
+  which keeps the animation smooth while the main thread is busy. Other
+  properties are animated on the main thread, where every frame competes
+  with script, style and layout. `background-color` stays on the main
+  thread when a keyframe value is `currentColor` or when it's set on the
+  root element or `<body>`.
+
+- Animating a property that affects layout, such as `width`, `height`,
+  `margin`, `padding`, `top`, `font-size` or `gap`, causes a reflow on
+  every frame. To make something grow or slide in, it's usually better to
+  animate `transform` or `scale`. If a layout property really is needed,
+  add a comment explaining why.
+
+- `transition: all` also animates any property that a later change
+  happens to touch, so it's better to list the intended properties in
+  `transition-property`.
+
+- Transform animations fall back to the main thread for very large
+  elements that are partly outside the visible area, and in some SVG
+  cases. See {doc}`/performance/bestpractices` for the details.
+
+- Frame-by-frame icon animations work well as a film strip: all frames
+  side by side in one SVG image, moved with `translateX` under `steps()`,
+  with the last frame matching the icon's static state. The tab throbber
+  in `tabs.css` is an example, and
+  [this demo](https://msuja.ws/svg.html) shows the technique step by
+  step.
+
+- An effect that moves or morphs several elements between two states is
+  often simpler as a view transition (`document.startViewTransition()`)
+  than as a set of coordinated transitions. The sidebar's open and close
+  animations in `sidebar.css` are an example, with one style per
+  `:active-view-transition-type()`.
+
+- Animations that are purely decorative should only run under
+  `@media (prefers-reduced-motion: no-preference)`. If script starts the
+  animation by setting an attribute, it should check
+  `matchMedia("(prefers-reduced-motion: no-preference)")` first. In the
+  browser window, `window.gReduceMotion` is available as a proxy that
+  also reduces motion during startup as a performance optimization, and
+  can be overridden by tests via `gReduceMotionOverride`.
+
+- The `--motion-easing-*` tokens provide the standard easing curves, and
+  some components have motion tokens for durations (e.g.
+  `--panel-motion-duration-enter`), so it's a good idea to use them.
+
+- `will-change` only helps for properties the compositor can animate, and
+  only on elements that are about to animate. Setting it on a layout
+  property suggests an optimization that doesn't exist.
+
+- `@keyframes` rules should define explicit `from` and `to` (or `0%` and
+  `100%`) keyframes. See {doc}`/performance/bestpractices` for why.
+
+- `@keyframes`, `@counter-style` and `@property` names are global to the
+  document, so every stylesheet loaded into the browser window shares
+  them. A name meant for a single feature should be prefixed with that
+  feature's name, as in `tab-throbber-animation`. `@keyframes` declared
+  in a shadow root only apply within that shadow tree. `@property` and
+  `@counter-style` rules have no effect in a shadow root, so they need to
+  go in a document-level stylesheet.
+
 ## Misc
 
 ### Text aliasing
