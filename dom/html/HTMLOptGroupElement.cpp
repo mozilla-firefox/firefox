@@ -5,11 +5,16 @@
 #include "mozilla/dom/HTMLOptGroupElement.h"
 
 #include "mozilla/EventDispatcher.h"
+#include "mozilla/dom/Document.h"
 #include "mozilla/dom/HTMLOptGroupElementBinding.h"
 #include "mozilla/dom/HTMLOptionElement.h"
 #include "mozilla/dom/HTMLSelectElement.h"
+#include "mozilla/dom/HTMLSlotElement.h"
+#include "mozilla/dom/ShadowRoot.h"
+#include "mozilla/dom/Text.h"
 #include "nsGkAtoms.h"
 #include "nsIFrame.h"
+#include "nsTextNode.h"
 
 NS_IMPL_NS_NEW_HTML_ELEMENT(OptGroup)
 
@@ -24,6 +29,93 @@ HTMLOptGroupElement::HTMLOptGroupElement(
     : nsGenericHTMLElement(std::move(aNodeInfo)) {
   // We start off enabled
   AddStatesSilently(ElementState::ENABLED);
+}
+
+nsresult HTMLOptGroupElement::BindToTree(BindContext& aContext,
+                                         nsINode& aParent) {
+  MOZ_TRY(nsGenericHTMLElement::BindToTree(aContext, aParent));
+  if (IsInComposedDoc() && !GetShadowRoot()) {
+    SetupShadowTree();
+  }
+  return NS_OK;
+}
+
+// https://html.spec.whatwg.org/#the-select-element-2:the-optgroup-element-5
+void HTMLOptGroupElement::SetupShadowTree() {
+  AttachAndSetUAShadowRoot(NotifyUAWidget::No, DelegatesFocus::No,
+                           CustomSlotDispatch::Yes);
+  RefPtr<ShadowRoot> sr = GetShadowRoot();
+  if (!sr) {
+    return;
+  }
+  sr->AppendBuiltInStyleSheet(BuiltInStyleSheet::OptGroup);
+  Document* doc = OwnerDoc();
+  // An optgroup legend slot, which takes the first child element if it is a
+  // legend.
+  RefPtr legendSlot = doc->CreateHTMLElement(nsGkAtoms::slot);
+  legendSlot->SetAttr(kNameSpaceID_None, nsGkAtoms::name,
+                      u"internal-optgroup-legend"_ns, false,
+                      IsKnownNewAttr::Yes);
+  // An optgroup label element, appended to the optgroup legend slot.
+  RefPtr label = doc->CreateHTMLElement(nsGkAtoms::div);
+  label->SetPseudoElementType(PseudoStyleType::MozOptgroupLabel);
+  RefPtr text = doc->CreateEmptyTextNode();
+  nsAutoString labelText;
+  GetLabel(labelText);
+  text->SetText(labelText, false);
+  label->AppendChildTo(text, false, IgnoreErrors());
+  legendSlot->AppendChildTo(label, false, IgnoreErrors());
+  sr->AppendChildTo(legendSlot, false, IgnoreErrors());
+  // An optgroup contents slot, which takes all remaining child nodes.
+  RefPtr contentsSlot = doc->CreateHTMLElement(nsGkAtoms::slot);
+  sr->AppendChildTo(contentsSlot, false, IgnoreErrors());
+}
+
+Text* HTMLOptGroupElement::GetLabelText() const {
+  auto* sr = GetShadowRoot();
+  if (!sr) {
+    return nullptr;
+  }
+  nsINode* legendSlot = sr->GetFirstChild();
+  nsINode* label = legendSlot ? legendSlot->GetFirstChild() : nullptr;
+  return Text::FromNodeOrNull(label ? label->GetFirstChild() : nullptr);
+}
+
+void HTMLOptGroupElement::GetSlotNameFor(const ShadowRoot&,
+                                         const nsIContent& aContent,
+                                         nsAString& aName) const {
+  if (aContent.IsHTMLElement(nsGkAtoms::legend) &&
+      aContent.GetParent() == this && GetFirstElementChild() == &aContent) {
+    aName.AssignLiteral("internal-optgroup-legend");
+  }
+}
+
+void HTMLOptGroupElement::OnChildBeforeSlotted(ShadowRoot& aShadow,
+                                               nsIContent& aChild) {
+  if (!aChild.IsElement()) {
+    return;
+  }
+  // An element inserted before the slotted legend stops it being the first
+  // element child.
+  HTMLSlotElement* slot =
+      aShadow.GetFirstNamedSlot(u"internal-optgroup-legend"_ns);
+  MOZ_RELEASE_ASSERT(slot);
+  const auto& assigned = slot->AssignedNodes();
+  if (!assigned.IsEmpty()) {
+    aShadow.MaybeReassignContent(*assigned[0]->AsContent());
+  }
+}
+
+void HTMLOptGroupElement::OnChildUnslotted(ShadowRoot& aShadow,
+                                           nsIContent& aChild) {
+  if (!aChild.IsElement() || MOZ_UNLIKELY(!aShadow.GetHost())) {
+    return;
+  }
+  // Removing an element may make a legend the first element child.
+  if (Element* first = GetFirstElementChild();
+      first && first->IsHTMLElement(nsGkAtoms::legend)) {
+    aShadow.MaybeReassignContent(*first);
+  }
 }
 
 HTMLOptGroupElement::~HTMLOptGroupElement() = default;
@@ -44,6 +136,16 @@ void HTMLOptGroupElement::AfterSetAttr(int32_t aNameSpaceID, nsAtom* aName,
                                        const nsAttrValue* aOldValue,
                                        nsIPrincipal* aSubjectPrincipal,
                                        bool aNotify) {
+  if (aNameSpaceID == kNameSpaceID_None && aName == nsGkAtoms::label) {
+    if (RefPtr<Text> text = GetLabelText()) {
+      nsAutoString label;
+      if (aValue) {
+        aValue->ToString(label);
+      }
+      text->SetText(label, aNotify);
+    }
+  }
+
   if (aNameSpaceID == kNameSpaceID_None && aName == nsGkAtoms::disabled) {
     ElementState disabledStates;
     if (aValue) {

@@ -33,3 +33,4 @@ STYLE_SHEET(AccessibleCaret, "resource://gre-resources/accessiblecaret.css",
             Author)
 STYLE_SHEET(Details, "resource://gre-resources/details.css", Author)
 STYLE_SHEET(Select, "resource://gre-resources/select.css", Author)
+STYLE_SHEET(OptGroup, "resource://gre-resources/optgroup.css", Author)
