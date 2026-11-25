@@ -144,7 +144,7 @@ export class MozTabbrowserTab extends MozElements.MozTab {
         "src=image,requestcontextid,fadein,pinned,selected=visuallyselected,busy,crashed,sharing,pictureinpicture,pending,discarded",
       ".tab-sharing-icon-overlay": "sharing,selected=visuallyselected,pinned",
       ".tab-icon-overlay":
-        "sharing,pictureinpicture,crashed,busy,soundplaying,soundplaying-scheduledremoval,pinned,muted,blocked,selected=visuallyselected,activemedia-blocked",
+        "sharing,pictureinpicture,crashed,busy,soundplaying,soundplaying-scheduledremoval,pinned,muted,blocked,selected=visuallyselected,multiselected,activemedia-blocked",
       ".tab-audio-button":
         "crashed,soundplaying,soundplaying-scheduledremoval,pinned,muted,activemedia-blocked",
       ".tab-label-container": "pinned,selected=visuallyselected,labeldirection",

@@ -733,11 +733,11 @@ tab-split-view-wrapper[dragtarget] {
         background-image: image(var(--audio-overlay-extra-background)), image(var(--toolbox-background-color-inactive));
         color: var(--toolbox-text-color-inactive);
       }
-      &[selected] {
+      &:is([selected], [multiselected]) {
         background-image: image(var(--audio-overlay-extra-background)), image(var(--tab-background-color-selected)), image(var(--toolbox-background-color));
         color: var(--tab-text-color-selected);
       }
-      &[selected]:-moz-window-inactive {
+      &:is([selected], [multiselected]):-moz-window-inactive {
         background-image:
           image(var(--audio-overlay-extra-background)), image(var(--tab-background-color-selected)), image(var(--toolbox-background-color-inactive));
         color: var(--tab-text-color-selected);
