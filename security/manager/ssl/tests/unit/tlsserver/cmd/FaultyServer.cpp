@@ -22,6 +22,7 @@ enum FaultType {
   UnknownSNI,
   Mlkem768x25519,
   Mlkem1024,
+  DeclineResumption,
 };
 
 struct FaultyServerHost {
@@ -50,6 +51,8 @@ const char* kHostMlkem768x25519AlertAfterServerHello =
 
 const char* kHostMlkem1024 = "mlkem1024.example.com";
 
+const char* kHostDeclineResumption = "decline-resumption.example.com";
+
 const char* kCertWildcard = "default-ee";
 
 /* Each type of failure gets a different SNI.
@@ -69,6 +72,7 @@ MOZ_RUNINIT const FaultyServerHost sFaultyServerHosts[]{
     {kHostMlkem768x25519NetInterrupt, kCertWildcard, Mlkem768x25519},
     {kHostMlkem768x25519AlertAfterServerHello, kCertWildcard, Mlkem768x25519},
     {kHostMlkem1024, kCertWildcard, Mlkem1024},
+    {kHostDeclineResumption, kCertWildcard, DeclineResumption},
     {nullptr, nullptr},
 };
 
@@ -250,6 +254,10 @@ int32_t DoSNISocketConfig(PRFileDesc* aFd, const SECItem* aSrvNameArr,
     case Mlkem1024:
       SSL_NamedGroupConfig(aFd, mlkem1024TestNamedGroups,
                            std::size(mlkem1024TestNamedGroups));
+      break;
+    case DeclineResumption:
+      // NSS checks whether it can resume right after this callback.
+      ssl_FindSocket(aFd)->statelessResume = PR_FALSE;
       break;
     case None:
       break;

@@ -1032,7 +1032,8 @@ nsresult SSLTokensCache::Put(const nsACString& aKey, const uint8_t* aToken,
 
 // static
 nsresult SSLTokensCache::Get(const nsACString& aKey, nsTArray<uint8_t>& aToken,
-                             SessionCacheInfo& aResult, uint64_t* aTokenId) {
+                             SessionCacheInfo& aResult, uint64_t* aTokenId,
+                             bool* aRestored) {
   LOG(("SSLTokensCache::Get [key=%s]", PromiseFlatCString(aKey).get()));
 
   StaticMutexAutoLock lock(sLock);
@@ -1049,6 +1050,9 @@ nsresult SSLTokensCache::Get(const nsACString& aKey, nsTArray<uint8_t>& aToken,
     nsTArray<uint8_t> payload = DecompressRecord(owned->mCompressedPayload);
     if (!payload.IsEmpty() && DeserializeRecord(payload, aToken, aResult)) {
       mozilla::glean::network::ssl_token_cache_hits.Get("hit"_ns).Add(1);
+      if (aRestored) {
+        *aRestored = owned->mRestored;
+      }
       return NS_OK;
     }
     LOG(("  discarding undecodable record [id=%" PRIu64 "]", owned->mId));

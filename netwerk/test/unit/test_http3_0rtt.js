@@ -12,6 +12,7 @@ registerCleanupFunction(async () => {
 
 add_task(async function setup() {
   await http3_setup_tests("h3");
+  Services.fog.initializeFOG();
 });
 
 let Http3Listener = function () {};
@@ -87,10 +88,13 @@ async function test_0RTT(enable_0rtt, resumed) {
 
 add_task(async function test_0RTT_setups() {
   await test_first_conn_no_resumed();
+  assertTokenResumption({});
 
   // http3.0RTT enabled
   await test_0RTT(true, true);
+  assertTokenResumption({ "h3_session/resumed": 1 });
 
-  // http3.0RTT disabled
+  // http3.0RTT disabled: no token is looked up.
   await test_0RTT(false, false);
+  assertTokenResumption({ "h3_session/resumed": 1 });
 });
