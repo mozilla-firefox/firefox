@@ -5,7 +5,7 @@
 from setuptools import setup
 
 PACKAGE_NAME = "mozprofile"
-PACKAGE_VERSION = "3.0.1"
+PACKAGE_VERSION = "3.0.0"
 
 deps = [
     "mozfile>=1.2",
@@ -25,6 +25,12 @@ setup(
         "Operating System :: OS Independent",
         "Programming Language :: Python",
         "Programming Language :: Python :: 3 :: Only",
+        "Programming Language :: Python :: 3.8",
+        "Programming Language :: Python :: 3.9",
+        "Programming Language :: Python :: 3.10",
+        "Programming Language :: Python :: 3.11",
+        "Programming Language :: Python :: 3.12",
+        "Programming Language :: Python :: 3.13",
         "Topic :: Software Development :: Libraries :: Python Modules",
     ],
     keywords="mozilla",
@@ -45,5 +51,5 @@ setup(
       view-profile = mozprofile:view_profile
       diff-profiles = mozprofile:diff_profiles
       """,
-    python_requires=">=3.9",
+    python_requires=">=3.8",
 )

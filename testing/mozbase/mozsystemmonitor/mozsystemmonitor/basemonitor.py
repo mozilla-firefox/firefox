@@ -574,10 +574,6 @@ class BaseResourceMonitor:
 
         self._pipe, child_pipe = multiprocessing.Pipe(True)
 
-        # The collecting process reports time.monotonic() timestamps, which get
-        # compared with the ones from this process. On macOS that clock is only
-        # shared across processes since Python 3.10, so with Python 3.9 the
-        # measurements don't line up with the recorded events, markers and phases.
         self._process = multiprocessing.Process(
             target=_collect, args=(child_pipe, poll_interval)
         )

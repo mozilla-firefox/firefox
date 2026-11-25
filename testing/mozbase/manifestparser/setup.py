@@ -5,10 +5,9 @@
 from setuptools import setup
 
 PACKAGE_NAME = "manifestparser"
-PACKAGE_VERSION = "3.0.0"
+PACKAGE_VERSION = "2.4.0"
 
 DEPS = [
-    "mozinfo >= 2.0.0",
     "mozlog >= 6.0",
     "toml >= 0.10.2",
     "tomlkit >= 0.12.3",
@@ -21,6 +20,12 @@ setup(
     classifiers=[
         "Programming Language :: Python",
         "Programming Language :: Python :: 3 :: Only",
+        "Programming Language :: Python :: 3.8",
+        "Programming Language :: Python :: 3.9",
+        "Programming Language :: Python :: 3.10",
+        "Programming Language :: Python :: 3.11",
+        "Programming Language :: Python :: 3.12",
+        "Programming Language :: Python :: 3.13",
     ],
     # Get strings from http://pypi.python.org/pypi?%3Aaction=list_classifiers
     keywords="mozilla manifests",
@@ -35,5 +40,5 @@ setup(
       [console_scripts]
       manifestparser = manifestparser.cli:main
       """,
-    python_requires=">=3.9",
+    python_requires=">=3.8",
 )

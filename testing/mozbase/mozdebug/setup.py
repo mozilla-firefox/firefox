@@ -17,6 +17,12 @@ setup(
     classifiers=[
         "Programming Language :: Python",
         "Programming Language :: Python :: 3 :: Only",
+        "Programming Language :: Python :: 3.8",
+        "Programming Language :: Python :: 3.9",
+        "Programming Language :: Python :: 3.10",
+        "Programming Language :: Python :: 3.11",
+        "Programming Language :: Python :: 3.12",
+        "Programming Language :: Python :: 3.13",
     ],
     # Get strings from http://pypi.python.org/pypi?%3Aaction=list_classifiers
     keywords="mozilla",
@@ -28,5 +34,5 @@ setup(
     include_package_data=True,
     zip_safe=False,
     install_requires=DEPS,
-    python_requires=">=3.9",
+    python_requires=">=3.8",
 )
