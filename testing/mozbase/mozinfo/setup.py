@@ -4,12 +4,13 @@
 
 from setuptools import setup
 
-PACKAGE_VERSION = "1.2.3"
+PACKAGE_VERSION = "2.0.0"
 
 # dependencies
 deps = [
     "distro >= 1.4.0",
     "mozfile >= 0.12",
+    "pyyaml >= 6.0",
 ]
 
 setup(
