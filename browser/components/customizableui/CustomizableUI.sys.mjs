@@ -135,6 +135,12 @@ var gPanelsForWindow = new WeakMap();
 var gSeenWidgets = new Set();
 
 /**
+ * API widgets that their owner has declared currently unavailable. They are
+ * not treated as existing XUL widgets.
+ */
+var gUnavailableWidgets = new Set();
+
+/**
  * gDirtyAreaCache is a set of area IDs for areas where items have been added,
  * moved or removed at least once. This set is persisted, and is used to
  * optimize building of toolbars in the default case where no toolbars should
@@ -3367,7 +3373,7 @@ var CustomizableUIInternal = {
    *   Returns true if the widget ID belongs to a widget that is registered or
    *   is a "special" widget (see isSpecialWidget). This will return false for
    *   widget IDs belonging to widgets we have seen in the past, but are no
-   *   longer registered.
+   *   longer registered, and for IDs passed to markWidgetUnavailable.
    */
   widgetExists(aWidgetId) {
     if (gPalette.has(aWidgetId) || this.isSpecialWidget(aWidgetId)) {
@@ -3376,7 +3382,7 @@ var CustomizableUIInternal = {
 
     // Destroyed API widgets are in gSeenWidgets, but not in gPalette:
     // If it's not in gPalette, it doesn't exist.
-    if (gSeenWidgets.has(aWidgetId)) {
+    if (gSeenWidgets.has(aWidgetId) || gUnavailableWidgets.has(aWidgetId)) {
       return false;
     }
 
@@ -6394,6 +6400,17 @@ export var CustomizableUI = {
    */
   destroyWidget(aWidgetId) {
     CustomizableUIInternal.destroyWidget(aWidgetId);
+  },
+  /**
+   * Declare that an API widget is currently unavailable, so its default
+   * placements are ignored when checking for the default state. Placements
+   * are kept, so the widget returns to its position if it is created later.
+   *
+   * @param {string} aWidgetId
+   *   The ID of the unavailable widget.
+   */
+  markWidgetUnavailable(aWidgetId) {
+    gUnavailableWidgets.add(aWidgetId);
   },
   /**
    * Get a wrapper object with information about the widget.

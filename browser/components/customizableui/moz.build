@@ -11,6 +11,7 @@ BROWSER_CHROME_MANIFESTS += [
     "test/browser.toml",
     "test/browserFireButton.toml",
     "test/browserSidebarRevamp.toml",
+    "test/browserSmartWindowBlocked.toml",
 ]
 XPCSHELL_TESTS_MANIFESTS += ["test/unit/xpcshell.toml"]
 

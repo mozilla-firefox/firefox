@@ -1,0 +1,10 @@
+[DEFAULT]
+dupe-manifest=true
+support-files = [
+  "head.js",
+]
+prefs = [
+  "browser.ai.control.smartWindow=blocked",
+]
+
+["browser_smartWindow_blocked_default_state.js"]
