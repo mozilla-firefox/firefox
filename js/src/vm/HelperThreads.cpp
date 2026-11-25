@@ -917,53 +917,25 @@ void js::CancelOffThreadIonCompile(const CompilationSelector& selector,
 }
 
 #ifdef DEBUG
-bool GlobalHelperThreadState::hasOffThreadIonCompile(
-    Zone* zone, AutoLockHelperThreadState& lock) {
-  for (jit::IonCompileTask* task : ionWorklist(lock)) {
-    if (task->script()->zoneFromAnyThread() == zone) {
-      return true;
-    }
-  }
-
-  for (auto* helper : helperTasks(lock)) {
-    if (helper->is<jit::IonCompileTask>()) {
-      JSScript* script = helper->as<jit::IonCompileTask>()->script();
-      if (script->zoneFromAnyThread() == zone) {
-        return true;
-      }
-    }
-  }
-
-  for (jit::IonCompileTask* task : ionFinishedList(lock)) {
-    if (task->script()->zoneFromAnyThread() == zone) {
-      return true;
-    }
-  }
-
+bool js::HasOffThreadIonCompile(Zone* zone) {
   JSRuntime* rt = zone->runtimeFromMainThread();
-  if (rt->hasJitRuntime()) {
-    for (jit::IonCompileTask* task : rt->jitRuntime()->ionLazyLinkList(rt)) {
-      if (task->script()->zone() == zone) {
-        return true;
-      }
+  if (!rt->hasJitRuntime()) {
+    return false;
+  }
+
+  jit::JitRuntime* jitRuntime = rt->jitRuntime();
+  for (jit::IonCompileTask* task : jitRuntime->ionOffThreadList(rt)) {
+    if (task->script()->zone() == zone) {
+      return true;
+    }
+  }
+  for (jit::IonCompileTask* task : jitRuntime->ionLazyLinkList(rt)) {
+    if (task->script()->zone() == zone) {
+      return true;
     }
   }
 
   return false;
-}
-
-bool js::HasOffThreadIonCompile(Zone* zone) {
-  if (jit::IsPortableBaselineInterpreterEnabled()) {
-    return false;
-  }
-
-  AutoLockHelperThreadState lock;
-
-  if (!HelperThreadState().isInitialized(lock)) {
-    return false;
-  }
-
-  return HelperThreadState().hasOffThreadIonCompile(zone, lock);
 }
 #endif
 
