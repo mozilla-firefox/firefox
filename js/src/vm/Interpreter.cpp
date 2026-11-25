@@ -3774,7 +3774,7 @@ bool MOZ_NEVER_INLINE JS_HAZ_JSNATIVE_CALLER js::Interpret(JSContext* cx,
       // activation.
       bool canSkip = false;
       if (REGS.fp() == activation.entryFrame()) {
-        if (!CanSkipAwait(cx, val, &canSkip)) {
+        if (!CanSkipAwaitFromOp(cx, val, &canSkip)) {
           goto error;
         }
       }
@@ -3788,7 +3788,7 @@ bool MOZ_NEVER_INLINE JS_HAZ_JSNATIVE_CALLER js::Interpret(JSContext* cx,
       ReservedRooted<Value> canSkip(&rootValue0, REGS.sp[-1]);
 
       if (canSkip.toBoolean()) {
-        if (!ExtractAwaitValue(cx, val, val)) {
+        if (!ExtractAwaitValueFromOp(cx, val, val)) {
           goto error;
         }
       }

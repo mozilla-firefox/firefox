@@ -114,7 +114,7 @@ namespace jit {
   _(CallNativeGetter, js::jit::CallNativeGetter)                               \
   _(CallNativeSetter, js::jit::CallNativeSetter)                               \
   _(CallObjectCreateWithShape, js::CallObject::createWithShape)                \
-  _(CanSkipAwait, js::CanSkipAwait)                                            \
+  _(CanSkipAwaitFromOp, js::CanSkipAwaitFromOp)                                \
   _(CharCodeAt, js::jit::CharCodeAt)                                           \
   _(CharCodeToLowerCase, js::jit::CharCodeToLowerCase)                         \
   _(CharCodeToUpperCase, js::jit::CharCodeToUpperCase)                         \
@@ -189,7 +189,7 @@ namespace jit {
   _(DoTypeOfFallback, js::jit::DoTypeOfFallback)                               \
   _(DoUnaryArithFallback, js::jit::DoUnaryArithFallback, 1)                    \
   _(EnterWith, js::jit::EnterWith)                                             \
-  _(ExtractAwaitValue, js::ExtractAwaitValue)                                  \
+  _(ExtractAwaitValueFromOp, js::ExtractAwaitValueFromOp)                      \
   _(FinalSuspend, js::jit::FinalSuspend)                                       \
   _(FreshenLexicalEnv, js::jit::FreshenLexicalEnv)                             \
   _(FunWithProtoOperation, js::FunWithProtoOperation)                          \

@@ -8170,11 +8170,11 @@ PBIResult PortableBaselineInterpret(
         // value => value, can_skip
         bool result = false;
         // The await can only be skipped when this is the first frame of its
-        // activation. See js::CanSkipAwait.
+        // activation. See js::CanSkipAwaitFromOp.
         if (frame->framePrefix()->prevType() == FrameType::CppToJSJit) {
           ReservedRooted<Value> value0(&state.value0, VIRTSP(0).asValue());
           PUSH_EXIT_FRAME();
-          if (!CanSkipAwait(cx, value0, &result)) {
+          if (!CanSkipAwaitFromOp(cx, value0, &result)) {
             GOTO_ERROR();
           }
         }
@@ -8190,7 +8190,7 @@ PBIResult PortableBaselineInterpret(
                                        VIRTPOP().asValue());  // value
           if (can_skip.toBoolean()) {
             PUSH_EXIT_FRAME();
-            if (!ExtractAwaitValue(cx, value0, &value0)) {
+            if (!ExtractAwaitValueFromOp(cx, value0, &value0)) {
               GOTO_ERROR();
             }
           }

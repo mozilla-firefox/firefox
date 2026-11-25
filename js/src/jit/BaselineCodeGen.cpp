@@ -5710,7 +5710,7 @@ bool BaselineCodeGen<Handler>::emit_CanSkipAwait() {
   frame.syncStack(0);
 
   // The await can only be skipped when this is the first frame of its
-  // activation. See js::CanSkipAwait.
+  // activation. See js::CanSkipAwaitFromOp.
   Label notEntryFrame, done;
   masm.branchIfNotActivationEntryFrame(R1.scratchReg(), &notEntryFrame);
 
@@ -5720,7 +5720,7 @@ bool BaselineCodeGen<Handler>::emit_CanSkipAwait() {
   pushArg(R0);
 
   using Fn = bool (*)(JSContext*, HandleValue, bool* canSkip);
-  if (!callVM<Fn, js::CanSkipAwait>()) {
+  if (!callVM<Fn, js::CanSkipAwaitFromOp>()) {
     return false;
   }
   masm.jump(&done);
@@ -5748,7 +5748,7 @@ bool BaselineCodeGen<Handler>::emit_MaybeExtractAwaitValue() {
   pushArg(R0);
 
   using Fn = bool (*)(JSContext*, HandleValue, MutableHandleValue);
-  if (!callVM<Fn, js::ExtractAwaitValue>()) {
+  if (!callVM<Fn, js::ExtractAwaitValueFromOp>()) {
     return false;
   }
 

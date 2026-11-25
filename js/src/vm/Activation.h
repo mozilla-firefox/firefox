@@ -407,8 +407,8 @@ class MOZ_STACK_CLASS Activation {
   bool asyncCallIsExplicit_;
 
   // True if this activation was entered to resume a suspended generator or
-  // async function/module. Used by js::CanSkipAwait to permit the await fast
-  // path only for a resumed async frame.
+  // async function/module. Used by js::CanSkipAwaitFromOp to permit the await
+  // fast path only for a resumed async frame.
   bool enteredForGeneratorResume_ = false;
 
   enum Kind : bool { Interpreter, Jit };
