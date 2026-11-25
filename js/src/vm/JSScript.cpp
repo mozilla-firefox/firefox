@@ -2823,7 +2823,7 @@ void JSScript::assertValidJumpTargets() const {
     // bytecode order, followed by the JSOp::TableSwitch case targets. Each of
     // these entries is the offset of the op's JSOp::AfterYield.
     if (loc.is(JSOp::InitialYield) || loc.is(JSOp::Yield) ||
-        loc.is(JSOp::Await)) {
+        loc.is(JSOp::AwaitThenYield) || loc.is(JSOp::Await)) {
       MOZ_ASSERT(numSuspends < resumeOffsets().size());
       MOZ_ASSERT(loc.getResumeIndex() == numSuspends);
       MOZ_ASSERT(resumeOffsets()[numSuspends] ==

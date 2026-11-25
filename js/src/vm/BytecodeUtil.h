@@ -324,8 +324,8 @@ static inline bool BytecodeIsJumpTarget(JSOp op) {
   }
 }
 
-// Returns the pc of the InitialYield/Yield/Await op that precedes the
-// JSOp::AfterYield op at afterYieldPC.
+// Returns the pc of the InitialYield/Yield/AwaitThenYield/Await op that
+// precedes the JSOp::AfterYield op at afterYieldPC.
 static inline jsbytecode* SuspendPCForAfterYield(jsbytecode* afterYieldPC) {
   MOZ_ASSERT(JSOp(*afterYieldPC) == JSOp::AfterYield);
 
@@ -333,10 +333,13 @@ static inline jsbytecode* SuspendPCForAfterYield(jsbytecode* afterYieldPC) {
                 "JSOp::Yield and JSOp::InitialYield must have the same length");
   static_assert(JSOpLength_Yield == JSOpLength_Await,
                 "JSOp::Yield and JSOp::Await must have the same length");
+  static_assert(
+      JSOpLength_Yield == JSOpLength_AwaitThenYield,
+      "JSOp::Yield and JSOp::AwaitThenYield must have the same length");
 
   jsbytecode* pc = afterYieldPC - JSOpLength_Yield;
   MOZ_ASSERT(JSOp(*pc) == JSOp::InitialYield || JSOp(*pc) == JSOp::Yield ||
-             JSOp(*pc) == JSOp::Await);
+             JSOp(*pc) == JSOp::AwaitThenYield || JSOp(*pc) == JSOp::Await);
   return pc;
 }
 

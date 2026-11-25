@@ -2239,7 +2239,7 @@ bool BytecodeEmitter::emitYieldOp(JSOp op) {
   }
 
   MOZ_ASSERT(op == JSOp::InitialYield || op == JSOp::Yield ||
-             op == JSOp::Await);
+             op == JSOp::AwaitThenYield || op == JSOp::Await);
 
   BytecodeOffset off;
   if (!emitN(op, 3, &off)) {
@@ -2249,7 +2249,8 @@ bool BytecodeEmitter::emitYieldOp(JSOp op) {
   // InitialYield is always the first yield node.
   MOZ_ASSERT_IF(op == JSOp::InitialYield, bytecodeSection().numYields() == 0);
 
-  if (op == JSOp::InitialYield || op == JSOp::Yield) {
+  if (op == JSOp::InitialYield || op == JSOp::Yield ||
+      op == JSOp::AwaitThenYield) {
     bytecodeSection().addNumYields();
   }
 
@@ -6795,7 +6796,8 @@ bool BytecodeEmitter::emitYield(UnaryNode* yieldNode) {
     }
   }
 
-  if (sc->asSuspendableContext()->isAsync()) {
+  bool isAsync = sc->asSuspendableContext()->isAsync();
+  if (isAsync) {
     MOZ_ASSERT(!needsIteratorResult);
     if (!emitAwaitInInnermostScope()) {
       //            [stack] RESULT
@@ -6818,7 +6820,7 @@ bool BytecodeEmitter::emitYield(UnaryNode* yieldNode) {
     return false;
   }
 
-  if (!emitYieldOp(JSOp::Yield)) {
+  if (!emitYieldOp(isAsync ? JSOp::AwaitThenYield : JSOp::Yield)) {
     //              [stack] YIELDRESULT RESUMEKIND
     return false;
   }

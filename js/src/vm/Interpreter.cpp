@@ -2238,7 +2238,8 @@ bool MOZ_NEVER_INLINE JS_HAZ_JSNATIVE_CALLER js::Interpret(JSContext* cx,
         // Stack should be empty for the activation's entry frame, unless we
         // suspended at a yield or await.
         MOZ_ASSERT(REGS.stackDepth() == 0 || JSOp(*REGS.pc) == JSOp::Await ||
-                   JSOp(*REGS.pc) == JSOp::Yield);
+                   JSOp(*REGS.pc) == JSOp::Yield ||
+                   JSOp(*REGS.pc) == JSOp::AwaitThenYield);
       }
       goto exit;
     }
@@ -4206,6 +4207,7 @@ bool MOZ_NEVER_INLINE JS_HAZ_JSNATIVE_CALLER js::Interpret(JSContext* cx,
     }
 
     CASE(Yield)
+    CASE(AwaitThenYield)
     CASE(Await) {
       MOZ_ASSERT(!cx->isExceptionPending());
       MOZ_ASSERT_IF(script->isModule() && script->isAsync(),

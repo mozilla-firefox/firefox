@@ -8075,7 +8075,8 @@ PBIResult PortableBaselineInterpret(
       }
 
       CASE(Await)
-      CASE(Yield) {
+      CASE(Yield)
+      CASE(AwaitThenYield) {
         // rval1, gen => rval2, resumeKind
         ReservedRooted<JSObject*> obj0(&state.obj0,
                                        &VIRTPOP().asValue().toObject());

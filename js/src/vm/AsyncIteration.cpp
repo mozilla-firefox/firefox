@@ -1312,7 +1312,7 @@ bool js::AsyncGeneratorThrow(JSContext* cx, unsigned argc, Value* vp) {
       return true;
     }
 
-    MOZ_ASSERT(suspendOp == JSOp::Yield);
+    MOZ_ASSERT(suspendOp == JSOp::Yield || suspendOp == JSOp::AwaitThenYield);
 
     bool resumeAgain = false;
     if (!AsyncGeneratorYield(cx, generator, thisOrRval, &resumeAgain,

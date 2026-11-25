@@ -1222,7 +1222,7 @@ bool ResumeGeneratorFromJit(JSContext* cx, HandleObject obj, HandleValue value,
 bool NormalSuspend(JSContext* cx, HandleObject obj, BaselineFrame* frame,
                    uint32_t frameSize, const jsbytecode* pc) {
   MOZ_ASSERT(JSOp(*pc) == JSOp::InitialYield || JSOp(*pc) == JSOp::Yield ||
-             JSOp(*pc) == JSOp::Await);
+             JSOp(*pc) == JSOp::AwaitThenYield || JSOp(*pc) == JSOp::Await);
 
   // Minus one because we don't want to include the return value.
   uint32_t numSlots = frame->numValueSlots(frameSize) - 1;

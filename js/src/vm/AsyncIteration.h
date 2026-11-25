@@ -56,8 +56,8 @@
 // Async generators don't use JSOp::AsyncAwait, and that part is handled
 // in AsyncGeneratorResume, and AsyncGeneratorAwait called there.
 //
-// Both JSOp::Await and JSOp::Yield behave in the exactly same way,
-// and AsyncGeneratorResume checks the last opcode and branches for
+// JSOp::Await, JSOp::Yield and JSOp::AwaitThenYield behave in the exactly same
+// way, and AsyncGeneratorResume checks the last opcode and branches for
 // await/yield/return cases.
 //
 //
@@ -83,7 +83,7 @@
 //   [resume-kind check]             # RVAL
 //
 //   GetAliasedVar ".generator"      # RVAL .generator
-//   Yield 2                         # RVAL2 RESUMEKIND
+//   AwaitThenYield 2                # RVAL2 RESUMEKIND
 //
 //   AfterYield                      # RVAL2 RESUMEKIND
 //   [resume-kind check]             # RVAL2
@@ -98,8 +98,9 @@
 //     2. If generatorKind is async, return
 //        ? AsyncGeneratorYield(? Await(value)).
 //
-// The 2nd part (JSOp::Yield) suspends execution and yields the result of
-// `await`, as specified in AsyncGeneratorYield.
+// The 2nd part (JSOp::AwaitThenYield) suspends execution and yields the result
+// of `await`, as specified in AsyncGeneratorYield. `yield*` uses JSOp::Yield
+// instead.
 //
 //   AsyncGeneratorYield ( value )
 //   https://tc39.es/ecma262/#sec-asyncgeneratoryield
@@ -250,7 +251,7 @@
 // generator with the result of await.
 //
 // The return completion is finally handled by the resume-kind check
-// after JSOp::Yield.
+// after JSOp::AwaitThenYield.
 //
 //   AsyncGeneratorUnwrapYieldResumption ( resumptionValue )
 //   https://tc39.es/ecma262/#sec-asyncgeneratorunwrapyieldresumption

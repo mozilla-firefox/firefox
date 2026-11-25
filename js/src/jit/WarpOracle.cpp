@@ -971,6 +971,7 @@ AbortReasonOr<WarpScriptSnapshot*> WarpScriptOracle::createScriptSnapshot() {
       case JSOp::RetRval:
       case JSOp::InitialYield:
       case JSOp::Yield:
+      case JSOp::AwaitThenYield:
       case JSOp::Resume:
       case JSOp::ResumeKind:
       case JSOp::ThrowMsg:

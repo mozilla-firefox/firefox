@@ -2093,6 +2093,7 @@ bool ExpressionDecompiler::decompilePC(jsbytecode* pc, uint8_t defIndex) {
       case JSOp::InitialYield:
       case JSOp::Await:
       case JSOp::Yield:
+      case JSOp::AwaitThenYield:
         // Printing "yield SOMETHING" is confusing since the operand doesn't
         // match to the syntax, since the stack operand for "yield 10" is
         // the result object, not 10.

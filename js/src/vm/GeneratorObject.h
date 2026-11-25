@@ -141,9 +141,10 @@ class AbstractGeneratorObject : public NativeObject {
   // RESUME_INDEX_RUNNING.
   //
   // If the generator is suspended, it's the resumeIndex (stored as
-  // JSOp::InitialYield/JSOp::Yield/JSOp::Await operand) of the yield
-  // instruction that suspended the generator. The resumeIndex can be mapped to
-  // the bytecode offset (interpreter) or to the native code offset (JIT).
+  // JSOp::InitialYield/JSOp::Yield/JSOp::AwaitThenYield/JSOp::Await operand) of
+  // the yield instruction that suspended the generator. The resumeIndex can be
+  // mapped to the bytecode offset (interpreter) or to the native code offset
+  // (JIT).
 
   bool isBeforeInitialYield() const {
     return getFixedSlotTyped(RESUME_INDEX_SLOT).isUndefined();
@@ -165,7 +166,7 @@ class AbstractGeneratorObject : public NativeObject {
   }
   void setResumeIndex(const jsbytecode* pc) {
     MOZ_ASSERT(JSOp(*pc) == JSOp::InitialYield || JSOp(*pc) == JSOp::Yield ||
-               JSOp(*pc) == JSOp::Await);
+               JSOp(*pc) == JSOp::AwaitThenYield || JSOp(*pc) == JSOp::Await);
 
     MOZ_ASSERT_IF(JSOp(*pc) == JSOp::InitialYield,
                   getFixedSlotTyped(RESUME_INDEX_SLOT).isUndefined());

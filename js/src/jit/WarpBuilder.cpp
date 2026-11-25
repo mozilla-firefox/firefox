@@ -2935,6 +2935,10 @@ bool WarpBuilder::build_Await(BytecodeLocation loc) {
 }
 bool WarpBuilder::build_Yield(BytecodeLocation loc) { return build_Await(loc); }
 
+bool WarpBuilder::build_AwaitThenYield(BytecodeLocation loc) {
+  return build_Await(loc);
+}
+
 bool WarpBuilder::buildSuspend(BytecodeLocation loc, MDefinition* gen,
                                MDefinition* retVal) {
   MOZ_ASSERT(resumeAnalysis_.isSome());

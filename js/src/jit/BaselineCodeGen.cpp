@@ -6317,7 +6317,7 @@ bool BaselineCodeGen<Handler>::emit_Generator() {
 template <typename Handler>
 bool BaselineCodeGen<Handler>::emitSuspend(JSOp op) {
   MOZ_ASSERT(op == JSOp::InitialYield || op == JSOp::Yield ||
-             op == JSOp::Await);
+             op == JSOp::AwaitThenYield || op == JSOp::Await);
 
   // Load the generator object in R2, but leave the return value on the
   // expression stack.
@@ -6400,6 +6400,11 @@ bool BaselineCodeGen<Handler>::emit_InitialYield() {
 template <typename Handler>
 bool BaselineCodeGen<Handler>::emit_Yield() {
   return emitSuspend(JSOp::Yield);
+}
+
+template <typename Handler>
+bool BaselineCodeGen<Handler>::emit_AwaitThenYield() {
+  return emitSuspend(JSOp::AwaitThenYield);
 }
 
 template <typename Handler>

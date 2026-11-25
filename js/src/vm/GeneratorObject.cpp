@@ -120,12 +120,14 @@ bool AbstractGeneratorObject::suspend(JSContext* cx, HandleObject obj,
                                       AbstractFramePtr frame,
                                       const jsbytecode* pc, unsigned nvalues) {
   MOZ_ASSERT(JSOp(*pc) == JSOp::InitialYield || JSOp(*pc) == JSOp::Yield ||
-             JSOp(*pc) == JSOp::Await);
+             JSOp(*pc) == JSOp::AwaitThenYield || JSOp(*pc) == JSOp::Await);
 
   auto genObj = obj.as<AbstractGeneratorObject>();
   MOZ_ASSERT(!genObj->hasStackStorage() || genObj->isStackStorageEmpty());
   MOZ_ASSERT_IF(JSOp(*pc) == JSOp::Await, genObj->script()->isAsync());
   MOZ_ASSERT_IF(JSOp(*pc) == JSOp::Yield, genObj->script()->isGenerator());
+  MOZ_ASSERT_IF(JSOp(*pc) == JSOp::AwaitThenYield,
+                genObj->script()->isGenerator() && genObj->script()->isAsync());
 
   if (nvalues > 0) {
     ArrayObject* stack = nullptr;

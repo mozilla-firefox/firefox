@@ -1133,6 +1133,7 @@ static bool BytecodeIsEffectful(JSScript* script, size_t offset) {
     case JSOp::DynamicImport:
     case JSOp::InitialYield:
     case JSOp::Yield:
+    case JSOp::AwaitThenYield:
     case JSOp::Await:
     case JSOp::CanSkipAwait:
     case JSOp::AddDisposable:

@@ -1999,8 +1999,8 @@
      * target op so that the Baseline Interpreter can efficiently restore the
      * frame's interpreterICEntry when resuming a generator.
      *
-     * The preceding instruction in the script must be `Yield`, `InitialYield`,
-     * or `Await`.
+     * The preceding instruction in the script must be `Yield`,
+     * `AwaitThenYield`, `InitialYield`, or `Await`.
      *
      *   Category: Functions
      *   Type: Generators and async functions
@@ -2056,6 +2056,15 @@
      *   Stack: rval1, gen => rval2, resumeKind
      */ \
     MACRO(Yield, yield, NULL, 4, 2, 2, JOF_RESUMEINDEX) \
+    /*
+     * (Documented in a later patch.)
+     *
+     *   Category: Functions
+     *   Type: Generators and async functions
+     *   Operands: uint24_t resumeIndex
+     *   Stack: rval1, gen => rval2, resumeKind
+     */ \
+    MACRO(AwaitThenYield, await_then_yield, NULL, 4, 2, 2, JOF_RESUMEINDEX) \
     /*
      * Arrange for this async function to resume asynchronously when `value`
      * becomes resolved.
@@ -3592,7 +3601,6 @@
  */
 
 #define FOR_EACH_TRAILING_UNUSED_OPCODE(MACRO) \
-  MACRO(239)                                   \
   MACRO(240)                                   \
   MACRO(241)                                   \
   MACRO(242)                                   \
