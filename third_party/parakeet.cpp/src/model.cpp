@@ -54,7 +54,9 @@ std::unique_ptr<Model> Model::load(const std::string& gguf_path) {
     // Give the weights a CPU backend buffer ONCE so graphs reference them
     // directly as leaves (zero per-call copy). Done at load (vs. lazily on first
     // clone_weight) so the cost is paid up front, not per utterance.
-    ensure_weights_realized(m->loader_);
+    if (!ensure_weights_realized(m->loader_)) {
+        return nullptr;
+    }
     return m;
 }
 
@@ -66,7 +68,9 @@ std::unique_ptr<Model> Model::load_fd(int fd) {
     if (!m->loader_.load_fd(fd)) {
         return nullptr;
     }
-    ensure_weights_realized(m->loader_);
+    if (!ensure_weights_realized(m->loader_)) {
+        return nullptr;
+    }
     return m;
 }
 

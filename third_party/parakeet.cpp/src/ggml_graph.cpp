@@ -46,10 +46,10 @@ std::mutex g_backend_mutex;
 // are unaffected by this default.
 constexpr int kDefaultThreads = 8;
 
-Backend& global_backend() {
+// Requires g_backend_mutex.
+static Backend& global_backend_locked() {
     // Lazy create (reset-safe: shutdown_backend() can free it, and a later call
-    // recreates it). Always reached under g_backend_mutex (run_graph holds it)
-    // or before any inference thread exists, so a plain null-check is sufficient.
+    // recreates it).
     if (!g_backend) {
         const int g = g_num_threads.load(std::memory_order_relaxed);
         const int n = g > 0 ? g : kDefaultThreads;
@@ -64,6 +64,14 @@ Backend& global_backend() {
         g_backend_threads = g;
     }
     return *g_backend;
+}
+
+// Model loads run concurrently on their own threads and reach this through
+// ensure_weights_realized(), so the lazy creation must be locked. Never call
+// this with g_backend_mutex held (e.g. from a run_graph build lambda).
+Backend& global_backend() {
+    std::lock_guard<std::mutex> lock(g_backend_mutex);
+    return global_backend_locked();
 }
 
 void shutdown_backend() {
@@ -82,10 +90,10 @@ bool run_graph(size_t /*mem_bytes*/, int n_threads,
                const std::function<ggml_tensor*(ggml_context*)>& build,
                std::vector<float>& out) {
     std::lock_guard<std::mutex> lock(g_backend_mutex);
-    Backend& be = global_backend();
+    Backend& be = global_backend_locked();
     // When no global override is set, honor the caller's per-call n_threads (the
     // historical behavior, used by the unit tests). A positive global override
-    // already pinned the backend's thread count in global_backend().
+    // already pinned the backend's thread count in global_backend_locked().
     const int g = g_num_threads.load(std::memory_order_relaxed);
     if (g <= 0 && n_threads > 0 && n_threads != g_backend_threads) {
         be.set_n_threads(n_threads);

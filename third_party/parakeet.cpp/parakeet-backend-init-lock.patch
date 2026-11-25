@@ -1,0 +1,124 @@
+# Serialize the lazy creation of the global backend, and fail loads whose weights cannot be realized. Upstreamable to https://github.com/mudler/parakeet.cpp
+diff --git a/src/backend.cpp b/src/backend.cpp
+index 40055f9811c1c..740c27ad192ae 100644
+--- a/src/backend.cpp
++++ b/src/backend.cpp
+@@ -348,14 +348,14 @@ void capture_graph_output(ggml_tensor* t, std::vector<float>* dst) {
+     t_active->register_capture(t, dst);
+ }
+ 
+-void ensure_weights_realized(const ModelLoader& ml) {
+-    if (ml.weights_realized()) return;
++bool ensure_weights_realized(const ModelLoader& ml) {
++    if (ml.weights_realized()) return true;
+     // realize_weights mutates tensor->buffer; the ModelLoader is held by `const`
+     // ref throughout the inference path (the components are read-only views), but
+     // realizing the backend buffer is a one-time, semantically-const setup of the
+     // weight storage. Cast away const for that single call.
+     ModelLoader& mut = const_cast<ModelLoader&>(ml);
+-    mut.realize_weights(global_backend().handle());
++    return mut.realize_weights(global_backend().handle());
+ }
+ 
+ ggml_tensor* clone_weight(ggml_context* /*ctx*/, const ModelLoader& ml,
+diff --git a/src/backend.hpp b/src/backend.hpp
+index 99f07d741fe1f..7bac6739f25e1 100644
+--- a/src/backend.hpp
++++ b/src/backend.hpp
+@@ -142,7 +142,10 @@ ggml_tensor* clone_weight_opt(ggml_context* ctx, const ModelLoader& ml,
+ // Ensure the loader's weights have a backend buffer (zero-copy) on the
+ // process-global Backend. Idempotent; called automatically by clone_weight, but
+ // exposed so the model/test load path can realize weights up front.
+-void ensure_weights_realized(const ModelLoader& ml);
++// Returns false if the weights could not be realized; loaders must then fail:
++// run_graph (holds g_backend_mutex) -> build lambda -> clone_weight ->
++// ensure_weights_realized -> global_backend() would re-lock and deadlock.
++bool ensure_weights_realized(const ModelLoader& ml);
+ 
+ // Copy a weight tensor's f32 contents into `out` on the host, regardless of
+ // whether the weight lives in CPU or device (e.g. CUDA) memory. Ensures weights
+diff --git a/src/diarization.cpp b/src/diarization.cpp
+index d4016ae01fccf..e690ec84f203c 100644
+--- a/src/diarization.cpp
++++ b/src/diarization.cpp
+@@ -30,7 +30,7 @@ std::unique_ptr<DiarizationModel> DiarizationModel::load(const std::string& path
+ 
+     // Give the weights a backend buffer ONCE so graphs reference them
+     // directly as leaves (zero per-call copy), same as Model::load.
+-    ensure_weights_realized(m->loader_);
++    if (!ensure_weights_realized(m->loader_)) return nullptr;
+ 
+     // Construct the component objects (lightweight views over the ModelLoader).
+     m->mel_     = std::make_unique<MelFrontend>(m->loader_);
+diff --git a/src/ggml_graph.cpp b/src/ggml_graph.cpp
+index f5bf84a416b58..3c70869b9d0e3 100644
+--- a/src/ggml_graph.cpp
++++ b/src/ggml_graph.cpp
+@@ -46,10 +46,10 @@ std::mutex g_backend_mutex;
+ // are unaffected by this default.
+ constexpr int kDefaultThreads = 8;
+ 
+-Backend& global_backend() {
++// Requires g_backend_mutex.
++static Backend& global_backend_locked() {
+     // Lazy create (reset-safe: shutdown_backend() can free it, and a later call
+-    // recreates it). Always reached under g_backend_mutex (run_graph holds it)
+-    // or before any inference thread exists, so a plain null-check is sufficient.
++    // recreates it).
+     if (!g_backend) {
+         const int g = g_num_threads.load(std::memory_order_relaxed);
+         const int n = g > 0 ? g : kDefaultThreads;
+@@ -66,6 +66,14 @@ Backend& global_backend() {
+     return *g_backend;
+ }
+ 
++// Model loads run concurrently on their own threads and reach this through
++// ensure_weights_realized(), so the lazy creation must be locked. Never call
++// this with g_backend_mutex held (e.g. from a run_graph build lambda).
++Backend& global_backend() {
++    std::lock_guard<std::mutex> lock(g_backend_mutex);
++    return global_backend_locked();
++}
++
+ void shutdown_backend() {
+     // Free the process-global backend explicitly. Required for GPU backends: the
+     // backend (and its gallocr's device buffer) must be released while the CUDA/
+@@ -82,10 +90,10 @@ bool run_graph(size_t /*mem_bytes*/, int n_threads,
+                const std::function<ggml_tensor*(ggml_context*)>& build,
+                std::vector<float>& out) {
+     std::lock_guard<std::mutex> lock(g_backend_mutex);
+-    Backend& be = global_backend();
++    Backend& be = global_backend_locked();
+     // When no global override is set, honor the caller's per-call n_threads (the
+     // historical behavior, used by the unit tests). A positive global override
+-    // already pinned the backend's thread count in global_backend().
++    // already pinned the backend's thread count in global_backend_locked().
+     const int g = g_num_threads.load(std::memory_order_relaxed);
+     if (g <= 0 && n_threads > 0 && n_threads != g_backend_threads) {
+         be.set_n_threads(n_threads);
+diff --git a/src/model.cpp b/src/model.cpp
+index 5e0e2bc1b8329..d159a3e0b0c5e 100644
+--- a/src/model.cpp
++++ b/src/model.cpp
+@@ -54,7 +54,9 @@ std::unique_ptr<Model> Model::load(const std::string& gguf_path) {
+     // Give the weights a CPU backend buffer ONCE so graphs reference them
+     // directly as leaves (zero per-call copy). Done at load (vs. lazily on first
+     // clone_weight) so the cost is paid up front, not per utterance.
+-    ensure_weights_realized(m->loader_);
++    if (!ensure_weights_realized(m->loader_)) {
++        return nullptr;
++    }
+     return m;
+ }
+ 
+@@ -66,7 +68,9 @@ std::unique_ptr<Model> Model::load_fd(int fd) {
+     if (!m->loader_.load_fd(fd)) {
+         return nullptr;
+     }
+-    ensure_weights_realized(m->loader_);
++    if (!ensure_weights_realized(m->loader_)) {
++        return nullptr;
++    }
+     return m;
+ }
+ 
