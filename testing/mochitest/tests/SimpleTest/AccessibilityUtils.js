@@ -1296,6 +1296,21 @@ this.AccessibilityUtils = (function () {
     }
   }
 
+  /**
+   * Determine if a node is in a row of a toolkit autocomplete popup. These
+   * popups act on mouseup and close before the click event, so the row has to
+   * be checked on mousedown, while the popup is still open.
+   */
+  function isInAutocompleteRow(node) {
+    // Not closest(): the target is in autocomplete-row-item's shadow DOM.
+    for (; node; node = node.flattenedTreeParentNode) {
+      if (node.tagName == "richlistitem") {
+        return node.parentNode.classList.contains("autocomplete-richlistbox");
+      }
+    }
+    return false;
+  }
+
   function runIfA11YChecks(task) {
     return (...args) => (gA11YChecks ? task(...args) : null);
   }
@@ -1400,13 +1415,16 @@ this.AccessibilityUtils = (function () {
       // window object.
       this._handler ??=
         window.docShell.chromeEventHandler ?? window.docShell.domWindow;
+      this._handler.addEventListener("mousedown", this, true, true);
       this._handler.addEventListener("click", this, true, true);
       SimpleTest = simpleTest;
     },
 
     uninit() {
+      this._handler?.removeEventListener("mousedown", this, true);
       this._handler?.removeEventListener("click", this, true);
       this._handler = null;
+      this._checkedOnMousedown = null;
       SimpleTest = null;
     },
 
@@ -1421,8 +1439,18 @@ this.AccessibilityUtils = (function () {
       this._shouldHandleClicks = !shouldSuppress;
     },
 
-    handleEvent({ composedTarget }) {
+    handleEvent({ type, button, composedTarget }) {
       if (!this._shouldHandleClicks) {
+        return;
+      }
+      if (type == "mousedown") {
+        this._checkedOnMousedown = null;
+        if (button != 0 || !isInAutocompleteRow(composedTarget)) {
+          return;
+        }
+        this._checkedOnMousedown = composedTarget;
+      } else if (composedTarget == this._checkedOnMousedown) {
+        this._checkedOnMousedown = null;
         return;
       }
       if (composedTarget.tagName.toLowerCase() == "slot") {
