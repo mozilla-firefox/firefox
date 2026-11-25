@@ -334,6 +334,12 @@ class MOZ_STACK_CLASS BaselineStackBuilder {
   size_t framePushed() const { return framePushed_; }
 
   [[nodiscard]] bool subtract(size_t size, const char* info = nullptr) {
+    // Don't underflow the stack pointer.
+    if (MOZ_UNLIKELY(size >= uintptr_t(frame_) - bufferUsed_)) {
+      ReportOverRecursed(cx_);
+      return false;
+    }
+
     // enlarge the buffer if need be.
     while (size > bufferAvail_) {
       if (!enlarge()) {
@@ -1721,14 +1727,16 @@ bool jit::BailoutIonToBaseline(JSContext* cx, JitActivation* activation,
   BaselineBailoutInfo* info = builder.info();
   size_t numBytesToPush = info->copyStackTop - info->copyStackBottom;
   MOZ_ASSERT((numBytesToPush % sizeof(uintptr_t)) == 0);
-  uint8_t* newsp = info->incomingStack - numBytesToPush;
+  MOZ_RELEASE_ASSERT(numBytesToPush < uintptr_t(info->incomingStack));
 #ifdef JS_SIMULATOR
+  uint8_t* newsp = info->incomingStack - numBytesToPush;
   if (Simulator::Current()->overRecursed(uintptr_t(newsp))) {
     overRecursed = true;
   }
 #else
   AutoCheckRecursionLimit recursion(cx);
-  if (!recursion.checkWithStackPointerDontReport(cx, newsp)) {
+  if (!recursion.checkWithStackPointerAndExtraDontReport(
+          cx, info->incomingStack, numBytesToPush)) {
     overRecursed = true;
   }
 #endif
