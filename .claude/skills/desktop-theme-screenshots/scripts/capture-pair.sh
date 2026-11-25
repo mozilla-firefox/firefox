@@ -19,7 +19,7 @@
 #             against the objdir's dist/bin/firefox, dist/*.app/Contents/MacOS/firefox
 #             on macOS or dist/bin/firefox.exe on Windows (FIREFOX overrides), no
 #             harness needed; the JSON it resolves with, readings included, lands
-#             in <shots-dir>/{after,before}.log
+#             alone in <shots-dir>/{after,before}.json, beside the log
 # --setpref name=value  a pref for both halves (repeatable), such as a
 #             layout.css.devPixelsPerPx=1.25 or browser.uidensity cell: forwarded
 #             unchanged to firefox-probe.py or mochitest, which type it alike
@@ -286,8 +286,10 @@ run() {
     [ -n "$timeout_ms" ] && extra+=(--timeout-ms "$timeout_ms")
     [ -n "$window_size" ] && extra+=(--window-size "$window_size")
     extra+=("${probe_extra[@]+"${probe_extra[@]}"}")
+    rm -f "$shots_dir/$label.json"
     if ! "$mach" python --virtualenv desktop-theme -- "$runner" --binary "$binary" \
         --realm chrome --async --script-file "$test_file" \
+        --result-file "$shots_dir/$label.json" \
         --setpref "shots.label=$label" --setpref "shots.dir=$ff_shots_dir" \
         "${extra[@]+"${extra[@]}"}" \
         > "$shots_dir/$label.log" 2>&1; then

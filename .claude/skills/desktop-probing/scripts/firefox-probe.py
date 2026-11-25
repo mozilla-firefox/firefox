@@ -162,6 +162,11 @@ def main():
         "its result; a rejection exits 1",
     )
     parser.add_argument(
+        "--result-file",
+        help="also write the JSON it prints, alone, to this file; not usable "
+        "with --sample-ms",
+    )
+    parser.add_argument(
         "--sample-ms",
         help="comma-separated offsets (ms) at which to re-evaluate the snippet, "
         "printed as a table with a `pre` baseline row; not usable with --async",
@@ -189,6 +194,8 @@ def main():
         parser.error("one of -e, --script-file or --steps is required")
     if args.sample_ms and args.is_async:
         parser.error("--sample-ms and --async are mutually exclusive")
+    if args.sample_ms and args.result_file:
+        parser.error("--sample-ms prints a table, so it takes no --result-file")
     if args.sample_ms and not has_snippet:
         parser.error("--sample-ms needs a snippet (-e or --script-file)")
     if (args.setup or args.setup_file) and not has_snippet:
@@ -272,7 +279,10 @@ def main():
             result = evaluate(client, script, args.is_async)
         if steps_out is not None:
             result = {"steps": steps_out, "result": result}
-        print(probelib.dump(result, indent=2))
+        out = probelib.dump(result, indent=2)
+        print(out)
+        if args.result_file:
+            Path(args.result_file).write_text(out + "\n", encoding="utf-8")
         return 1 if steps_failed else 0
 
     return probelib.run(args, PROG, body)
