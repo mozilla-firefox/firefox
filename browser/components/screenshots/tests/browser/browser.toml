@@ -1,6 +1,7 @@
 [DEFAULT]
 support-files = [
   "head.js",
+  "delayed-reload-page.sjs",
   "first-iframe.html",
   "iframe-test-page.html",
   "large-test-page.html",
@@ -48,6 +49,8 @@ skip-if = [
 ["browser_screenshots_face_focusable.js"]
 
 ["browser_screenshots_focus_test.js"]
+
+["browser_screenshots_overlay_during_reload.js"]
 
 ["browser_screenshots_overlay_panel_sync.js"]
 

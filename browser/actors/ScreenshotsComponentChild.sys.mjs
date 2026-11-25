@@ -19,6 +19,7 @@ export class ScreenshotsComponentChild extends JSWindowActorChild {
   #resizeTask;
   #scrollTask;
   #overlay;
+  #chromeEventHandler = null;
   #preventableEventsAdded = false;
 
   static OVERLAY_EVENTS = [
@@ -276,7 +277,10 @@ export class ScreenshotsComponentChild extends JSWindowActorChild {
   }
 
   addOverlayEventListeners() {
-    let chromeEventHandler = this.docShell.chromeEventHandler;
+    // The chrome event handler outlives this document, so keep it to remove
+    // our listeners even if this actor is destroyed while the overlay is open.
+    let chromeEventHandler = (this.#chromeEventHandler =
+      this.docShell.chromeEventHandler);
     for (let event of ScreenshotsComponentChild.OVERLAY_EVENTS) {
       chromeEventHandler.addEventListener(event, this, true);
     }
@@ -325,12 +329,19 @@ export class ScreenshotsComponentChild extends JSWindowActorChild {
   }
 
   removeOverlayEventListeners() {
-    let chromeEventHandler = this.docShell.chromeEventHandler;
+    this.removeChromeEventHandlerListeners();
+    this.document.removeEventListener("selectionchange", this);
+  }
+
+  removeChromeEventHandlerListeners() {
+    let chromeEventHandler = this.#chromeEventHandler;
+    if (!chromeEventHandler) {
+      return;
+    }
+
     for (let event of ScreenshotsComponentChild.OVERLAY_EVENTS) {
       chromeEventHandler.removeEventListener(event, this, true);
     }
-
-    this.document.removeEventListener("selectionchange", this);
 
     if (this.#preventableEventsAdded) {
       for (let event of ScreenshotsComponentChild.PREVENTABLE_EVENTS) {
@@ -338,6 +349,7 @@ export class ScreenshotsComponentChild extends JSWindowActorChild {
       }
     }
 
+    this.#chromeEventHandler = null;
     this.#preventableEventsAdded = false;
   }
 
@@ -353,6 +365,7 @@ export class ScreenshotsComponentChild extends JSWindowActorChild {
   }
 
   didDestroy() {
+    this.removeChromeEventHandlerListeners();
     this.#resizeTask?.disarm();
     this.#scrollTask?.disarm();
   }
