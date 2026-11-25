@@ -359,25 +359,14 @@ function fillBookmarkTextField(id, text, win, blur = true) {
  */
 var withSidebarTree = async function (type, taskFn, win = window) {
   let sidebar = win.document.getElementById("sidebar");
-  info("withSidebarTree: waiting sidebar load");
-  let sidebarLoadedPromise = new Promise(resolve => {
-    sidebar.addEventListener(
-      "load",
-      function () {
-        executeSoon(resolve);
-      },
-      { capture: true, once: true }
-    );
-  });
+  info("withSidebarTree: waiting for the sidebar to show");
   let sidebarId =
     type == "bookmarks" ? "viewBookmarksSidebar" : "viewHistorySidebar";
-  win.SidebarController.show(sidebarId);
-  await sidebarLoadedPromise;
+  await win.SidebarController.show(sidebarId);
 
   let treeId = type == "bookmarks" ? "bookmarks-view" : "historyTree";
   let tree = sidebar.contentDocument.getElementById(treeId);
 
-  // Need to executeSoon since the tree is initialized on sidebar load.
   info("withSidebarTree: executing the task");
   try {
     await taskFn(tree);
