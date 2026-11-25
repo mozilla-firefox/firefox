@@ -161,9 +161,15 @@ pub enum GeneratedInvalidation<'a> {
 fn get_non_relative_invalidation_kind(
     selector: &Selector<SelectorImpl>,
     selector_offset: usize,
+    entries: &[NextDependencyEntry],
+    next_outer_dependency: Option<&ThinArc<(), Dependency>>,
     scope_kind: Option<ScopeDependencyInvalidationKind>,
 ) -> DependencyInvalidationKind {
-    if let Some(kind) = scope_kind {
+    if let Some(kind) = scope_kind
+        && entries.is_empty()
+        && next_outer_dependency.is_none()
+    {
+        // Invalidating out to @scope.
         return DependencyInvalidationKind::Scope(kind);
     }
     if selector_offset == 0 {
@@ -806,8 +812,8 @@ fn next_dependency(
 
     fn dependencies_from(
         entries: &mut [NextDependencyEntry],
-        next_outer_dependency: &Option<&ThinArc<(), Dependency>>,
-        next_scope_dependencies: &Option<&ThinArc<(), Dependency>>,
+        next_outer_dependency: Option<&ThinArc<(), Dependency>>,
+        next_scope_dependencies: Option<&ThinArc<(), Dependency>>,
         scope_kind: Option<ScopeDependencyInvalidationKind>,
     ) -> Option<ThinArc<(), Dependency>> {
         if entries.is_empty() {
@@ -832,6 +838,8 @@ fn next_dependency(
             kind: get_non_relative_invalidation_kind(
                 selector,
                 selector_offset,
+                previous,
+                next_outer_dependency,
                 next_scope_dependencies
                     .is_some()
                     .then_some(scope_kind)
@@ -848,8 +856,8 @@ fn next_dependency(
 
     dependencies_from(
         next_selector,
-        &next_outer_dependency,
-        &next_scope_dependencies,
+        next_outer_dependency,
+        next_scope_dependencies,
         scope_kind,
     )
 }
@@ -879,6 +887,8 @@ impl<'a, 'b, 'c> Collector for SelectorDependencyCollector<'a, 'b, 'c> {
             kind: get_non_relative_invalidation_kind(
                 self.selector,
                 offset,
+                self.next_selectors,
+                optional_dependency,
                 scope_dependencies
                     .is_some()
                     .then_some(self.scope_dependencies.scope_kind)
