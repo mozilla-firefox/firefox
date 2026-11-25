@@ -228,8 +228,43 @@ one scratch test give both halves.
 `--base` for the before half and restores it afterwards; read its `--help`
 before passing any option. Its `--probe` form takes a chrome-context script
 pasting `capture.js` in place of a test, for a chrome surface no suite's fixture
-renders. One call captures one cell of a regime matrix; run it once per cell,
-with that cell's prefs and setup file.
+renders. One call captures one cell of a regime matrix.
+
+For a change that reaches many surfaces in many regimes,
+[`scripts/matrix.py`](scripts/matrix.py) runs `capture-pair.sh --probe` once per
+cell from a JSON spec of regimes and surface sets, and its `render` mode draws
+the run into PNG sheets: one for the shots where a reading changed, one for
+those that failed or measured nothing the same way before and after, one for
+those where only pixels differ, and one for those with only a contrast failure
+before and after (which the change did not cause). Each row shows before,
+after and the difference under a numbered caption, with a zoomed crop when the
+change is narrow. `notes.md` beside the sheets gives each numbered row's notes
+and names the identical shots last: a surface you expected to change that shows
+up there is one the change does not reach. `render` prints one line per shot;
+read the details from `rows.json`. Read its `--help` for the spec and the set
+script's contract.
+A spec needs only the surfaces the change reaches: the run covers eleven
+built-in regimes (light and dark under Nova and classic, the same four in high
+contrast, the native theme, an add-on theme and an approximation of Windows
+high contrast chrome) and reverts every modified file linked into the objdir;
+list a copied file in `paths`. A set lists its shots as selectors with an
+optional pseudo-class lock and attributes to set, and records the colors,
+borders, shadows and opacity of each element and of every rendered element
+inside it; a set script reaches any other state and calls the same `shot()`. A
+popup such as the app menu is a widget of its own that `capture()` cannot
+draw, and the screen grab it needs runs only with `--no-headless`, which the
+matrix does not pass. In a set script, record in
+`readings[name]` any other value the change is meant to move, such as a
+`contrast()` result for another subject, so `notes.md` can say what changed. A
+reading that changed with no pixel changing means the value does not paint
+where you expected, such as an icon that takes its color from `fill` and not
+`color`.
+Under Nova, `contrast()` judges no tab strip text, because its walk ends on a
+background image on `body`.
+To post the result, attach the sheets to the bug with the `bug-filing` skill's
+`attach-to-bug.py`, with `notes.md` as the comment text, and link that bug
+comment from the revision if a reviewer needs it. A sheet over
+Phabricator's 8 MiB upload limit comes split into numbered parts.
 
 - **Each `<path>` is a file the browser loads.** For a `*.tokens.json` change,
   pass the generated token CSS that `./mach buildtokens` writes into the tree.
@@ -388,7 +423,7 @@ see: no channel differs by more than 64, or the differing pixels cover at most
 1% of the capture. For the others it prints "no difference drawn" with the
 numbers. When a user is there to ask, ask whether to add those differences,
 and rerun with `--diff all` if they want them; without one, keep the default.
-`sheet.py` counts every differing
+A `matrix.py` run already draws its sheets. `sheet.py` counts every differing
 pixel (`--threshold 0`) where `pixel-diff` ignores differences up to 20, so its
 count for a pair is the larger; say which threshold a quoted count used.
 

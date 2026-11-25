@@ -155,14 +155,25 @@ one half did not finish; only pixels differ; a contrast entry fails in both
 halves. A row shows each
 regime that is not identical, folding a regime where no pixel differs and the
 notes match an earlier one into that one, and names the regimes that are
-identical and those it could not compare.
+identical and those it could not compare. Each list that has rows becomes a
+PNG sheet, OUTDIR/LIST.png for LIST changed, error, pixels or failing, split
+into LIST-1.png, LIST-2.png and so on where one image would exceed
+Phabricator's 8 MiB upload limit. A sheet draws each shown regime under a
+numbered caption naming the shot and the regimes it stands for: before, after
+and difference side by side, or stacked when side by side would be wider
+than 1600 px, and below them the three cropped to the differing pixels and
+enlarged without smoothing, or the whole capture enlarged when those cover
+half its width or more and it is small enough, laid out the same way. OUTDIR/notes.md, the Markdown to post the sheets with, gives
+the notes of each numbered regime grouped by sheet, then the rows identical
+in every regime compared, the cells that failed, did not run or have a stale
+stamp, and each cell's context; a failed cell still adds the shots it read.
 `render` prints one line per row (its list, the shot, and per regime shown the
 pixels that differ and the first note), one per identical shot and one per
 cell with context. --notes is a JSON file mapping SET/NAME or SET/REGIME/NAME to a note shown on that row or
 regime, or beside an identical shot. `render` reports the keys naming a regime
 that is identical, which it does not show, and those matching no shot.
 
-OUTDIR/rows.json holds the comparison:
+OUTDIR/rows.json holds the data the sheets and notes.md are drawn from:
 
 - `title`; `failedCells`, `notRunCells` and `staleCells`, lists of
   SET/REGIME.
@@ -177,7 +188,7 @@ OUTDIR/rows.json holds the comparison:
   (pixels differing by no more than --threshold), `maxDelta` (the largest
   channel difference), `bbox`, `notRun` (the half that did not finish, or
   null), `heldAnimations`, `note`, and the paths relative to OUTDIR `before`,
-  `after` and `diff`}.
+  `after`, `diff` and `zoom` ({`before`, `after`, `diff`, `scale`} or null)}.
 """
 
 import argparse
@@ -190,6 +201,8 @@ import shutil
 import subprocess
 import sys
 from pathlib import Path
+
+import sheet
 
 HERE = Path(__file__).resolve().parent
 MARKER = ".desktop-theme-matrix"
@@ -270,7 +283,7 @@ def window_size(value, what):
     return value
 
 
-RESERVED = {"probes", "matrix.json", "rows.json"}
+RESERVED = {"probes", "matrix.json", "rows.json", "notes.md"}
 
 
 def mapping(value, what):
@@ -286,7 +299,7 @@ def mapping(value, what):
                 f"{what}: {name!r} names files, so no leading . and none of"
                 ' / \\ : * ? " < > |'
             )
-        if name in RESERVED:
+        if name in RESERVED or is_sheet(name):
             raise SpecError(f"{what}: {name!r} is a name the run writes in OUTDIR")
     return value
 
@@ -1119,6 +1132,26 @@ def shown_style(value):
 STATUS_ORDER = ["changed", "error", "pixels", "failing", "same"]
 
 
+def zoom(cell, name, bbox, size):
+    """Write before, after and the difference cropped and enlarged by
+    sheet.zoom_box(); return the paths, or None when it picks no crop."""
+    from PIL import Image
+
+    picked = sheet.zoom_box(bbox, size)
+    if not picked:
+        return None
+    box, scale = picked
+    out = {}
+    for half in ("before", "after", "diff"):
+        src = cell / f"{half}-{name}.png"
+        dest = cell / f"zoom-{half}-{name}.png"
+        with Image.open(src) as im:
+            sheet.enlarge(im, box, scale).save(dest)
+        out[half] = link(dest, cell)
+    out["scale"] = scale
+    return out
+
+
 def link(path, cell):
     """The path of a cell's file relative to OUTDIR."""
     return path.relative_to(cell.parent.parent).as_posix()
@@ -1148,12 +1181,17 @@ def compare_cell(cell, threshold, pixel_diff):
     for name in names:
         after, before = cell / f"after-{name}.png", cell / f"before-{name}.png"
         diff = cell / f"diff-{name}.png"
-        diff.unlink(missing_ok=True)
+        zooms = [
+            cell / f"zoom-{half}-{name}.png" for half in ("before", "after", "diff")
+        ]
+        for stale in [diff, *zooms]:
+            stale.unlink(missing_ok=True)
         entry = {
             "count": 0,
             "below": 0,
             "maxDelta": 0,
             "bbox": None,
+            "zoom": None,
             "notes": [],
             "failing": [],
             "notRun": not_run,
@@ -1174,6 +1212,7 @@ def compare_cell(cell, threshold, pixel_diff):
             entry["bbox"] = mask.getbbox()
             if entry["count"]:
                 pixel_diff.write_diff_image(str(diff), im, mask, None)
+                entry["zoom"] = zoom(cell, name, entry["bbox"], mask.size)
         elif after.exists() or before.exists():
             entry["notes"].append(
                 f"captured only {'after' if after.exists() else 'before'}"
@@ -1241,6 +1280,165 @@ def row_line(row):
         + " | ".join(parts)
         + not_compared(row["missing"])
     )
+
+
+LISTS = [
+    ("changed", "A reading changed"),
+    (
+        "error",
+        "The shot failed, or its contrast measured nothing, the same way before and after",
+    ),
+    ("pixels", "Only pixels differ"),
+    ("failing", "Only the same contrast failure before and after"),
+]
+
+
+def regimes_text(e):
+    return ", ".join([e["regime"], *e["sameIn"]])
+
+
+def entry_summary(e):
+    if e["notRun"]:
+        return f"not compared: the {e['notRun']} half did not finish"
+    if e["below"] and not e["count"]:
+        return (
+            f"{e['below']} pixels differ, by at most {e['maxDelta']}, "
+            "under the threshold"
+        )
+    if not (e["before"] or e["after"]):
+        return "not captured"
+    if not e["count"]:
+        return "no pixel differs"
+    text = f"{e['count']} pixels differ"
+    if e["bbox"]:
+        text += ", from {},{} to {},{}".format(*e["bbox"])
+    return text
+
+
+def entry_block(outdir, number, row, e, fonts):
+    """One sheet row: the caption, then before, after and the difference, then
+    the zoomed crops of the three when there are any."""
+    from PIL import Image
+
+    def load(rel):
+        if not rel:
+            return None
+        with Image.open(outdir / rel) as im:
+            return im.convert("RGB")
+
+    z = e["zoom"]
+    return sheet.pair_block(
+        f"{number}. {row['set']}/{row['name']}: {regimes_text(e)}",
+        entry_summary(e),
+        [load(e["before"]), load(e["after"]), load(e["diff"])],
+        fonts,
+        zoomed=(
+            ([load(z[half]) for half in ("before", "after", "diff")], z["scale"])
+            if z
+            else None
+        ),
+        missing_diff=missing_diff(e),
+    )
+
+
+def md_entry(number, e):
+    regime_note = f" {e['note']}" if e["note"] else ""
+    lines = [f"- **{number}.** {regimes_text(e)}: {entry_summary(e)}.{regime_note}"]
+    for text in e["notes"] + e["errors"] + e["failing"]:
+        lines.append(f"  - {text}")
+    if e["heldAnimations"]:
+        lines.append(
+            "  - animations held still in both halves: "
+            + ", ".join(e["heldAnimations"])
+        )
+    return lines
+
+
+def missing_diff(e):
+    """What the Difference panel says when there is no difference image."""
+    if e["notRun"]:
+        return "not compared"
+    if e["below"]:
+        return "under the threshold"
+    if e["before"] and e["after"]:
+        return "no pixel differs"
+    return "nothing to compare"
+
+
+def is_sheet(name):
+    """Whether `render` writes a sheet of this name in OUTDIR."""
+    return bool(
+        re.fullmatch(r"({})(-\d+)?\.png".format("|".join(k for k, _ in LISTS)), name)
+    )
+
+
+def draw_and_note(outdir, data):
+    """Write a sheet per non-empty list and OUTDIR/notes.md; return the sheet
+    paths."""
+    fonts = sheet.fonts()
+    for old in outdir.glob("*.png"):
+        if is_sheet(old.name):
+            old.unlink()
+    md = [f"Screenshot matrix, {data['title']}."]
+    cells = [
+        ("Cells that failed", data["failedCells"]),
+        ("Cells not run", data["notRunCells"]),
+        ("Cells from another revision, paths or spec", data["staleCells"]),
+    ]
+    sheets = []
+    number = 0
+    for key, label in LISTS:
+        rows = [r for r in data["rows"] if r["status"] == key]
+        if not rows:
+            continue
+        blocks, section = [], []
+        for row in rows:
+            section.append("")
+            extra = [row["note"]] if row["note"] else []
+            if row["same"]:
+                extra.append(f"Identical in {', '.join(row['same'])}.")
+            if row["missing"]:
+                extra.append(f"Not compared in {', '.join(row['missing'])}.")
+            heading = f"**{row['set']}/{row['name']}**"
+            section.append(heading + (": " + " ".join(extra) if extra else ""))
+            section.append("")
+            for e in row["regimes"]:
+                number += 1
+                section += md_entry(number, e)
+                blocks.append(entry_block(outdir, number, row, e, fonts))
+        paths = sheet.write_sheets(
+            outdir / f"{key}.png", f"{label}: {data['title']}", blocks, fonts
+        )
+        sheets += paths
+        md += [
+            "",
+            f"## {label}",
+            "",
+            ("Sheets: " if len(paths) > 1 else "Sheet: ")
+            + ", ".join(p.name for p in paths),
+        ]
+        md += section
+    if data["identical"]:
+        md += ["", "## Identical in every regime", ""]
+        for item in data["identical"]:
+            text = f"- {item['shot']}"
+            if item["missing"]:
+                text += f"; not compared in {', '.join(item['missing'])}"
+            if item["note"]:
+                text += f": {item['note']}"
+            md.append(text)
+    if any(cells for _, cells in cells):
+        md += ["", "## Cells", ""]
+        md += [f"- {what}: {', '.join(c)}" for what, c in cells if c]
+    if data["context"]:
+        md += ["", "## Context", ""]
+        for cell, halves in data["context"].items():
+            md.append(
+                f"- {cell}: before {json.dumps(halves['before'])}, "
+                f"after {json.dumps(halves['after'])}"
+            )
+    (outdir / "notes.md").write_text("\n".join(md) + "\n", encoding="utf-8")
+    return sheets
 
 
 def render(args):
@@ -1358,9 +1556,11 @@ def render(args):
         "context": context,
     }
     (outdir / "rows.json").write_text(json.dumps(data, indent=1), encoding="utf-8")
+    sheets = draw_and_note(outdir, data)
     counts = {s: sum(r["status"] == s for r in rows) for s in STATUS_ORDER}
     print(
-        f"wrote rows.json in {outdir}: {counts['changed']} changed, "
+        f"wrote {', '.join(p.name for p in sheets) or 'no sheet'}, notes.md and "
+        f"rows.json in {outdir}: {counts['changed']} changed, "
         f"{counts['error']} failing or measuring nothing the same way in both halves or unfinished in one, "
         f"{counts['pixels']} pixels only, "
         f"{counts['failing']} with only a contrast failure in both halves, "
@@ -1411,7 +1611,7 @@ def get_parser():
         metavar="SET/REGIME",
         help="rerun only the cells matching this glob (repeatable)",
     )
-    p = sub.add_parser("render", help="compare the halves of a run")
+    p = sub.add_parser("render", help="draw the comparison sheets for a run")
     p.add_argument("outdir")
     p.add_argument("--notes", metavar="FILE", help="JSON notes keyed by SET/NAME")
     p.add_argument(
