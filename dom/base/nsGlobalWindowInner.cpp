@@ -5322,12 +5322,11 @@ nsGlobalWindowInner::ShowSlowScriptDialog(JSContext* aCx,
   NS_ENSURE_TRUE(prompt, KillSlowScript);
 
   bool failed = false;
-  auto getString = [&](const char* name, PropertiesFile propFile =
-                                             PropertiesFile::DOM_PROPERTIES) {
+  auto getFluentString = [&](const nsACString& aL10nId,
+                             const nsTArray<intl::FluentArg>& aArgs = {}) {
     nsAutoString result;
-    nsresult rv = nsContentUtils::GetLocalizedString(propFile, name, result);
-
-    // GetStringFromName can return NS_OK and still give nullptr string
+    nsresult rv = nsContentUtils::FormatFluentString(
+        FluentResourceFile::DOM_DIALOGS, aL10nId, aArgs, result);
     failed = failed || NS_FAILED(rv) || result.IsEmpty();
     return result;
   };
@@ -5338,11 +5337,8 @@ nsGlobalWindowInner::ShowSlowScriptDialog(JSContext* aCx,
 
   nsAutoString title, checkboxMsg, msg;
   if (isAddonScript) {
-    title = getString("KillAddonScriptTitle");
-    checkboxMsg = getString("KillAddonScriptGlobalMessage");
-
-    auto appName =
-        getString("brandShortName", PropertiesFile::BRAND_PROPERTIES);
+    title = getFluentString("dom-slow-addon-script-dialog-title"_ns);
+    checkboxMsg = getFluentString("dom-slow-addon-script-dialog-checkbox"_ns);
 
     nsCOMPtr<nsIAddonPolicyService> aps =
         do_GetService("@mozilla.org/addons/policy-service;1");
@@ -5351,19 +5347,17 @@ nsGlobalWindowInner::ShowSlowScriptDialog(JSContext* aCx,
       addonName = aAddonId;
     }
 
-    rv = nsContentUtils::FormatLocalizedString(
-        msg, PropertiesFile::DOM_PROPERTIES, "KillAddonScriptMessage",
-        addonName, appName);
-
-    failed = failed || NS_FAILED(rv);
+    AutoTArray<intl::FluentArg, 1> args = {{"extensionName"_ns, addonName}};
+    msg = getFluentString("dom-slow-addon-script-dialog-message"_ns, args);
   } else {
-    title = getString("KillScriptTitle");
-    checkboxMsg = getString("DontAskAgain");
-    msg = getString("KillScriptMessage");
+    title = getFluentString("dom-slow-script-dialog-title"_ns);
+    checkboxMsg = getFluentString("dom-slow-script-dialog-dont-ask-again"_ns);
+    msg = getFluentString("dom-slow-script-dialog-message"_ns);
   }
 
-  auto stopButton = getString("StopScriptButton");
-  auto waitButton = getString("WaitForScriptButton");
+  auto stopButton = getFluentString("dom-slow-script-dialog-stop-button"_ns);
+  auto waitButton =
+      getFluentString("dom-slow-script-dialog-continue-button"_ns);
 
   if (failed) {
     NS_ERROR("Failed to get localized strings.");
@@ -5396,18 +5390,20 @@ nsGlobalWindowInner::ShowSlowScriptDialog(JSContext* aCx,
         ++cutLength;
       }
 
-      // Insert U+2026 HORIZONTAL ELLIPSIS
-      filenameUTF16.ReplaceLiteral(cutStart, cutLength, u"\x2026");
+      nsAutoString ellipsis;
+      intl::LocaleService::GetInstance()->GetEllipsis(ellipsis);
+      filenameUTF16.Replace(cutStart, cutLength, ellipsis);
     }
-    rv = nsContentUtils::FormatLocalizedString(
-        scriptLocation, PropertiesFile::DOM_PROPERTIES, "KillScriptLocation",
-        filenameUTF16);
+    filenameUTF16.Append(':');
+    filenameUTF16.AppendInt(lineno);
+    AutoTArray<intl::FluentArg, 1> args = {{"location"_ns, filenameUTF16}};
+    rv = nsContentUtils::FormatFluentString(
+        FluentResourceFile::DOM_DIALOGS, "dom-slow-script-dialog-location"_ns,
+        args, scriptLocation);
 
     if (NS_SUCCEEDED(rv)) {
       msg.AppendLiteral("\n\n");
       msg.Append(scriptLocation);
-      msg.Append(':');
-      msg.AppendInt(lineno);
     }
   }
 

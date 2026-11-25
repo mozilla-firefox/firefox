@@ -332,6 +332,7 @@ var allowlist = [
   // dom/base/nsContentUtils.cpp
   { file: "resource://gre/localization/en-US/dom/dom.ftl" },
   { file: "resource://gre/localization/en-US/dom/deprecations.ftl" },
+  { file: "resource://gre/localization/en-US/dom/dialogs.ftl" },
 
   // A QA and dev debug tool.
   { file: "chrome://browser/content/places/interactionsViewer.html" },
