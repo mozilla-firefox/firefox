@@ -1266,15 +1266,6 @@ features:
         value:
           allowed-regions: ["XX"]
 
-  show-more-shortcuts:
-    no-lint: [MISSING_CONTACTS]
-    description: Feature to show expand/collapse buttons for shortcuts on the homepage.
-    variables:
-      enabled:
-        description: If true, show the expand/collapse buttons on the homepage.
-        type: Boolean
-        default: true
-
   regional-default-shortcuts:
     no-lint: [MISSING_CONTACTS]
     description: Feature to enable the regional default shortcuts on the homepage for users on Firefox on Android.

@@ -2707,13 +2707,6 @@ class Settings(
             default = { FxNimbus.features.adsClientForStories.value().enabled },
         )
 
-    /** Indicates if more shortcuts should be shown. */
-    var showMoreShortcuts by
-        booleanPreference(
-            key = appContext.getPreferenceKey(R.string.pref_key_show_more_shortcuts),
-            default = { FxNimbus.features.showMoreShortcuts.value().enabled },
-        )
-
     /** Indicates if the regional default shortcuts are enabled. */
     val enableRegionalDefaultShortcuts: Boolean
         get() = FxNimbus.features.regionalDefaultShortcuts.value().enabled
