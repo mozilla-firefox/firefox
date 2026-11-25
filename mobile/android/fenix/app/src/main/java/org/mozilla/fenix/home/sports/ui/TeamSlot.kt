@@ -4,10 +4,13 @@
 
 package org.mozilla.fenix.home.sports.ui
 
-import androidx.compose.foundation.Image
+import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.Arrangement
+import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.size
+import androidx.compose.foundation.shape.CircleShape
+import androidx.compose.material3.Icon
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Surface
 import androidx.compose.material3.Text
@@ -22,8 +25,11 @@ import androidx.compose.ui.tooling.preview.PreviewParameter
 import androidx.compose.ui.tooling.preview.PreviewParameterProvider
 import androidx.compose.ui.unit.dp
 import mozilla.components.ui.icons.R as iconsR
+import org.mozilla.fenix.compose.Image
 import org.mozilla.fenix.home.sports.Team
 import org.mozilla.fenix.theme.FirefoxTheme
+
+private val CrestSize = 36.dp
 
 /**
  * A team's image and name.
@@ -42,9 +48,11 @@ internal fun TeamSlot(
         verticalArrangement = Arrangement.spacedBy(FirefoxTheme.layout.space.static50),
     ) {
         Image(
-            painter = painterResource(iconsR.drawable.mozac_ic_soccer_ball_24),
-            contentDescription = null,
-            modifier = Modifier.size(36.dp),
+            url = team.iconUrl,
+            modifier = Modifier.size(CrestSize),
+            targetSize = CrestSize,
+            placeholder = { CrestPlaceholder() },
+            fallback = { CrestPlaceholder() },
         )
 
         Text(
@@ -54,6 +62,22 @@ internal fun TeamSlot(
             textAlign = TextAlign.Center,
             overflow = TextOverflow.Ellipsis,
             maxLines = 2,
+        )
+    }
+}
+
+@Composable
+private fun CrestPlaceholder() {
+    Box(
+        modifier =
+            Modifier.size(CrestSize)
+                .background(color = MaterialTheme.colorScheme.surfaceContainerHigh, shape = CircleShape),
+        contentAlignment = Alignment.Center,
+    ) {
+        Icon(
+            painter = painterResource(iconsR.drawable.mozac_ic_shield_24),
+            contentDescription = null,
+            tint = MaterialTheme.colorScheme.onSurfaceVariant,
         )
     }
 }
