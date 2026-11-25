@@ -320,6 +320,8 @@ void JSRuntime::addSizeOfIncludingThis(mozilla::MallocSizeOf mallocSizeOf,
       cx->interpreterStack().sizeOfExcludingThis(mallocSizeOf);
   rtSizes->uncompressedSourceCache +=
       caches().uncompressedSourceCache.sizeOfExcludingThis(mallocSizeOf);
+  rtSizes->megamorphicSetPropCache +=
+      mallocSizeOf(caches().megamorphicSetPropCache.get());
 
   rtSizes->gc.nurseryCommitted += gc.nursery().totalCommitted();
   rtSizes->gc.nurseryMallocedBuffers +=

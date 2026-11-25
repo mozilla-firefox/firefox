@@ -2017,6 +2017,10 @@ void ReportJSRuntimeExplicitTreeStats(const JS::RuntimeStats& rtStats,
                 rtStats.runtime.uncompressedSourceCache,
                 "The uncompressed source code cache.");
 
+  RREPORT_BYTES(rtPath + "runtime/runtime/megamorphic-set-prop-cache"_ns,
+                KIND_HEAP, rtStats.runtime.megamorphicSetPropCache,
+                "The megamorphic SetProp cache.");
+
   RREPORT_BYTES(rtPath + "runtime/script-data"_ns, KIND_HEAP,
                 rtStats.runtime.scriptData,
                 "The table holding script data shared in the runtime.");

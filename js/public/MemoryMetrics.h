@@ -499,6 +499,7 @@ struct RuntimeSizes {
   MACRO(_, MallocHeap, sharedImmutableStringsCache) \
   MACRO(_, MallocHeap, sharedIntlData)              \
   MACRO(_, MallocHeap, uncompressedSourceCache)     \
+  MACRO(_, MallocHeap, megamorphicSetPropCache)     \
   MACRO(_, MallocHeap, scriptData)                  \
   MACRO(_, MallocHeap, wasmRuntime)                 \
   MACRO(_, Ignore, wasmGuardPages)                  \
