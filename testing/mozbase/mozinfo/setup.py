@@ -4,13 +4,12 @@
 
 from setuptools import setup
 
-PACKAGE_VERSION = "2.0.0"
+PACKAGE_VERSION = "1.2.3"
 
 # dependencies
 deps = [
     "distro >= 1.4.0",
     "mozfile >= 0.12",
-    "pyyaml >= 6.0",
 ]
 
 setup(
@@ -21,6 +20,12 @@ setup(
     classifiers=[
         "Programming Language :: Python",
         "Programming Language :: Python :: 3 :: Only",
+        "Programming Language :: Python :: 3.8",
+        "Programming Language :: Python :: 3.9",
+        "Programming Language :: Python :: 3.10",
+        "Programming Language :: Python :: 3.11",
+        "Programming Language :: Python :: 3.12",
+        "Programming Language :: Python :: 3.13",
         "Development Status :: 5 - Production/Stable",
     ],
     # Get strings from http://pypi.python.org/pypi?%3Aaction=list_classifiers
@@ -39,5 +44,5 @@ setup(
       [console_scripts]
       mozinfo = mozinfo:main
       """,
-    python_requires=">=3.9",
+    python_requires=">=3.8",
 )

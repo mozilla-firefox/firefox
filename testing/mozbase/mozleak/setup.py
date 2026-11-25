@@ -7,6 +7,7 @@ from setuptools import setup
 PACKAGE_NAME = "mozleak"
 PACKAGE_VERSION = "2.1.0"
 
+
 setup(
     name=PACKAGE_NAME,
     version=PACKAGE_VERSION,
@@ -15,6 +16,12 @@ setup(
     classifiers=[
         "Programming Language :: Python",
         "Programming Language :: Python :: 3 :: Only",
+        "Programming Language :: Python :: 3.8",
+        "Programming Language :: Python :: 3.9",
+        "Programming Language :: Python :: 3.10",
+        "Programming Language :: Python :: 3.11",
+        "Programming Language :: Python :: 3.12",
+        "Programming Language :: Python :: 3.13",
     ],
     # Get strings from http://pypi.python.org/pypi?%3Aaction=list_classifiers
     keywords="mozilla",
@@ -24,6 +31,6 @@ setup(
     license="MPL",
     packages=["mozleak"],
     zip_safe=False,
-    install_requires=["mozlog >= 9.0.1"],
-    python_requires=">=3.9",
+    install_requires=[],
+    python_requires=">=3.8",
 )

@@ -5,12 +5,12 @@
 from setuptools import find_packages, setup
 
 PACKAGE_NAME = "mozlog"
-PACKAGE_VERSION = "9.0.1"
+PACKAGE_VERSION = "9.0.0"
 DEPS = [
     "blessed>=1.19.1",
-    "mozterm >= 1.0",
-    "mozfile >= 1.0",
-    "mozsystemmonitor >= 2.0.0",
+    "mozterm",
+    "mozfile",
+    "mozsystemmonitor",
 ]
 
 
@@ -36,9 +36,15 @@ setup(
         "Operating System :: OS Independent",
         "Programming Language :: Python",
         "Programming Language :: Python :: 3 :: Only",
+        "Programming Language :: Python :: 3.8",
+        "Programming Language :: Python :: 3.9",
+        "Programming Language :: Python :: 3.10",
+        "Programming Language :: Python :: 3.11",
+        "Programming Language :: Python :: 3.12",
+        "Programming Language :: Python :: 3.13",
         "Topic :: Software Development :: Libraries :: Python Modules",
     ],
     package_data={"mozlog": ["formatters/html/main.js", "formatters/html/style.css"]},
     entry_points={"console_scripts": ["structlog = mozlog.scripts:main"]},
-    python_requires=">=3.9",
+    python_requires=">=3.8",
 )

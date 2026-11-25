@@ -10,12 +10,12 @@ PACKAGE_VERSION = "8.5.0"
 desc = """Reliable start/stop/configuration of Mozilla Applications (Firefox, Thunderbird, etc.)"""
 
 deps = [
-    "mozdevice>=4.3.0",
+    "mozdevice>=4.2.0,<5",
     "mozfile>=1.2",
-    "mozinfo>=0.7",
+    "mozinfo>=0.7,<2",
     "mozlog>=6.0",
-    "mozprocess>=1.3.0",
-    "mozprofile>=3.0",
+    "mozprocess>=1.3.0,<2",
+    "mozprofile~=3.0",
 ]
 
 EXTRAS_REQUIRE = {"crash": ["mozcrash >= 2.3.0"]}
@@ -33,6 +33,12 @@ setup(
         "Operating System :: OS Independent",
         "Programming Language :: Python",
         "Programming Language :: Python :: 3 :: Only",
+        "Programming Language :: Python :: 3.8",
+        "Programming Language :: Python :: 3.9",
+        "Programming Language :: Python :: 3.10",
+        "Programming Language :: Python :: 3.11",
+        "Programming Language :: Python :: 3.12",
+        "Programming Language :: Python :: 3.13",
         "Topic :: Software Development :: Libraries :: Python Modules",
     ],
     keywords="mozilla",
@@ -49,5 +55,5 @@ setup(
       [console_scripts]
       mozrunner = mozrunner:cli
       """,
-    python_requires=">=3.9",
+    python_requires=">=3.8",
 )

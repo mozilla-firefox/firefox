@@ -4,7 +4,7 @@
 
 from setuptools import setup
 
-PACKAGE_VERSION = "1.4.1"
+PACKAGE_VERSION = "1.4.0"
 
 setup(
     name="mozprocess",
@@ -19,6 +19,12 @@ setup(
         "Operating System :: OS Independent",
         "Programming Language :: Python",
         "Programming Language :: Python :: 3 :: Only",
+        "Programming Language :: Python :: 3.8",
+        "Programming Language :: Python :: 3.9",
+        "Programming Language :: Python :: 3.10",
+        "Programming Language :: Python :: 3.11",
+        "Programming Language :: Python :: 3.12",
+        "Programming Language :: Python :: 3.13",
         "Topic :: Software Development :: Libraries :: Python Modules",
     ],
     keywords="mozilla",
@@ -29,9 +35,9 @@ setup(
     packages=["mozprocess"],
     include_package_data=True,
     zip_safe=False,
-    install_requires=["mozinfo >= 0.7"],
+    install_requires=["mozinfo"],
     entry_points="""
       # -*- Entry points: -*-
       """,
-    python_requires=">=3.9",
+    python_requires=">=3.8",
 )
