@@ -147,10 +147,12 @@ the pixels that differ by less, and a shot with only those still goes on the
 pixels list. It turns the two halves' readings into notes:
 a style property that changed, naming the elements it changed on; an element
 rendered in one half only; any other value that changed; a size that changed;
-and an error. A row is one shot of one set across its regimes, and it goes
-on the first list that fits: a reading changed in some regime; a shot failed
-the same way in both halves, or one half did not finish; only pixels differ. A
-row shows each
+an error; a contrast ratio that changed or fails in both halves; and contrast
+measuring nothing in both. A row is one shot of one set across its regimes,
+and it goes on the first list that fits: a reading changed in some regime; a
+shot failed, or its contrast measured nothing, the same way in both halves, or
+one half did not finish; only pixels differ; a contrast entry fails in both
+halves. A row shows each
 regime that is not identical, folding a regime where no pixel differs and the
 notes match an earlier one into that one, and names the regimes that are
 identical and those it could not compare.
@@ -167,11 +169,11 @@ OUTDIR/rows.json holds the comparison:
 - `identical`: {`shot`: SET/NAME, `missing`: the regimes not compared,
   `note`}.
 - `context`: SET/REGIME mapped to {`before`, `after`}.
-- `rows`, in list order: {`set`, `name`, `status` (changed, error or pixels),
-  `note`, `count` (the most pixels differing in one regime),
+- `rows`, in list order: {`set`, `name`, `status` (changed, error, pixels or
+  failing), `note`, `count` (the most pixels differing in one regime),
   `same` and `missing` (regimes identical and not compared), `regimes`}.
 - Each of `regimes`: {`regime`, `sameIn` (the regimes folded into it),
-  `status`, `notes` (what changed), `errors`, `count`, `below`
+  `status`, `notes` (what changed), `errors`, `failing`, `count`, `below`
   (pixels differing by no more than --threshold), `maxDelta` (the largest
   channel difference), `bbox`, `notRun` (the half that did not finish, or
   null), `heldAnimations`, `note`, and the paths relative to OUTDIR `before`,
@@ -862,11 +864,67 @@ def shot_errors(cell):
     ]
 
 
+def is_contrast(value):
+    return isinstance(value, dict) and "subjects" in value and "regime" in value
+
+
+class Entries(list):
+    """The contrast entries one subject has for one part and text, in walk
+    order."""
+
+
+def contrast_where(entry):
+    """The part and the text or element a contrast entry measures."""
+    return " ".join(
+        str(x)
+        for x in (entry.get("part"), entry.get("text") or entry.get("element"))
+        if x
+    )
+
+
 def flatten(value, prefix=""):
-    """Map dotted keys to the scalar values under them, and to the empty
-    containers."""
+    """Map dotted keys to the scalar values under them and to the empty
+    containers, or to the Entries of a contrast result."""
     if isinstance(value, (dict, list)) and not value and prefix:
         return {prefix: value}
+    if is_contrast(value):
+        out = {}
+        if value.get("error"):
+            out[f"{prefix} error".strip()] = {"error": value["error"]}
+        seen = {}
+        for subject in value["subjects"]:
+            label = f"{prefix} {subject['subject']}".strip()
+            if subject["state"] != "default":
+                label += f" {subject['state']}"
+            seen[label] = seen.get(label, 0) + 1
+            if seen[label] > 1:
+                label += f" [{seen[label]}]"
+            if subject.get("error"):
+                out[f"{label} error"] = {"error": subject["error"]}
+            if subject.get("warning"):
+                out[f"{label} warning"] = subject["warning"]
+            for entry in subject.get("entries", []):
+                where = contrast_where(entry)
+                item = {
+                    "ratio": entry.get("ratio"),
+                    "min": entry.get("min"),
+                    "pass": entry.get("pass"),
+                }
+                if "insideRatio" in entry:
+                    item["inside"] = {
+                        "ratio": entry["insideRatio"],
+                        "min": entry.get("min"),
+                        "pass": entry.get("insidePass"),
+                    }
+                elif "insideNotJudged" in entry:
+                    item["insideNotJudged"] = entry["insideNotJudged"]
+                key = f"{label} ({where})" if where else label
+                out.setdefault(key, Entries()).append(item)
+            for entry in subject.get("notJudged", []):
+                where = contrast_where(entry)
+                key = f"{label} not judged" + (f" ({where})" if where else "")
+                out.setdefault(key, []).append(entry.get("reason"))
+        return out
     if isinstance(value, dict):
         out = {}
         for k, v in value.items():
@@ -880,33 +938,103 @@ def flatten(value, prefix=""):
     return {prefix: value}
 
 
+def align(key, before, after):
+    """Pair two halves' Entries under one key: equal entries first, then the
+    rest in walk order, so one entry more in a half shifts no other pair. A
+    pair is numbered by its entry's place in the before half's walk, and an
+    entry only after counts on from the end of that half."""
+    before = list(enumerate(before))
+    end = len(before)
+    after = list(after)
+    pairs = []
+    for i, item in list(before):
+        if item in after:
+            before.remove((i, item))
+            after.remove(item)
+            pairs.append((i, item, item))
+    n = min(len(before), len(after))
+    pairs += [(i, b, a) for (i, b), a in zip(before[:n], after[:n])]
+    pairs += [(i, b, None) for i, b in before[n:]]
+    pairs += [(end + j, None, a) for j, a in enumerate(after[n:])]
+    pairs.sort(key=lambda p: p[0])
+    return [(key if i == 0 else f"{key} #{i + 1}", b, a) for i, b, a in pairs]
+
+
+def ratio_notes(key, vb, va, changed, failing):
+    fields = ("ratio", "min", "pass")
+    if any(vb[f] != va[f] for f in fields):
+        if vb["ratio"] != va["ratio"]:
+            note = f"{key}: contrast {vb['ratio']} → {va['ratio']}"
+        elif vb["min"] != va["min"]:
+            note = f"{key}: contrast {va['ratio']}, minimum {vb['min']} → {va['min']}"
+        else:
+            # contrast() rounds the ratio it reports but judges the exact one.
+            note = f"{key}: contrast about {va['ratio']}"
+        if not va["pass"]:
+            note += f", below {va['min']}"
+        elif not vb["pass"]:
+            note += f", was below {vb['min']}"
+        changed.append(note)
+    elif not va["pass"]:
+        failing.append(
+            f"{key}: contrast {va['ratio']}, below {va['min']} before and after"
+        )
+
+
 def compare(before, after):
     """Return the notes on what changed between two halves' readings of one
-    shot, and on errors the same in both."""
+    shot, on errors or contrast measuring nothing the same in both, and on
+    contrast entries failing in both."""
     before, after = as_readings(before), as_readings(after)
     changed = []
     if isinstance(before.get("styles"), dict) and isinstance(after.get("styles"), dict):
         changed = compare_styles(before.pop("styles"), after.pop("styles"))
     b, a = flatten(before), flatten(after)
-    errors = []
+    errors, failing = [], []
     for key in [*b, *(k for k in a if k not in b)]:
-        vb, va = b.get(key), a.get(key)
-        if key not in a:
+        vb, va = b.get(key, Entries()), a.get(key, Entries())
+        if isinstance(vb, Entries) and isinstance(va, Entries):
+            for sub, eb, ea in align(key, vb, va):
+                if eb is None or ea is None:
+                    changed.append(f"{sub}: only {'after' if eb is None else 'before'}")
+                    continue
+                ratio_notes(sub, eb, ea, changed, failing)
+                ib, ia = eb.get("inside"), ea.get("inside")
+                if ib and ia:
+                    ratio_notes(f"{sub} inside", ib, ia, changed, failing)
+                elif ib or ia:
+                    changed.append(f"{sub} inside: only {'after' if ia else 'before'}")
+                nb, na = eb.get("insideNotJudged"), ea.get("insideNotJudged")
+                if nb != na:
+                    changed.append(
+                        f"{sub} inside not judged: {shown(nb)} → {shown(na)}"
+                    )
+        elif key not in a:
             changed.append(f"{key} only before: {shown(vb)}")
         elif key not in b:
             changed.append(f"{key} only after: {shown(va)}")
+        elif isinstance(va, dict) and "error" in va and va == vb:
+            errors.append(f"{key}: {va['error']}, before and after")
         elif (key == "error" or key.endswith(".error")) and va == vb:
             errors.append(
                 f"{va}, before and after"
                 if key == "error"
                 else f"{key}: {va}, before and after"
             )
+        elif (
+            key.endswith(" warning")
+            and str(va).startswith("measured nothing")
+            and va == vb
+        ):
+            errors.append(f"{key[: -len(' warning')]}: {va}, before and after")
         elif vb != va:
             changed.append(f"{key}: {shown(vb)} → {shown(va)}")
-    return changed, errors
+    return changed, errors, failing
 
 
 def shown(value):
+    if isinstance(value, dict) and "error" in value:
+        return value["error"]
     return json.dumps(value, ensure_ascii=False)
 
 
@@ -988,7 +1116,7 @@ def shown_style(value):
     return "(none)" if value is None or value == "" else value
 
 
-STATUS_ORDER = ["changed", "error", "pixels", "same"]
+STATUS_ORDER = ["changed", "error", "pixels", "failing", "same"]
 
 
 def link(path, cell):
@@ -1027,6 +1155,7 @@ def compare_cell(cell, threshold, pixel_diff):
             "maxDelta": 0,
             "bbox": None,
             "notes": [],
+            "failing": [],
             "notRun": not_run,
         }
         if not_run:
@@ -1052,21 +1181,24 @@ def compare_cell(cell, threshold, pixel_diff):
         if not_run:
             ran = halves["after"].get(name)
             error = ran.get("error") if isinstance(ran, dict) else None
-            changed = []
+            changed, failing = [], []
             unfinished_note = f"the {not_run} half did not finish"
             errors = [f"{error}; {unfinished_note}" if error else unfinished_note]
         else:
-            changed, errors = compare(
+            changed, errors, failing = compare(
                 halves["before"].get(name), halves["after"].get(name)
             )
         entry["notes"] += changed
         entry["errors"] = errors
+        entry["failing"] = failing
         if entry["notes"]:
             entry["status"] = "changed"
         elif errors:
             entry["status"] = "error"
         elif entry["count"] or entry["below"]:
             entry["status"] = "pixels"
+        elif failing:
+            entry["status"] = "failing"
         else:
             entry["status"] = "same"
         for half, path in (("before", before), ("after", after), ("diff", diff)):
@@ -1098,7 +1230,7 @@ def row_line(row):
     note."""
     parts = []
     for e in row["regimes"]:
-        notes = e["notes"] + e["errors"]
+        notes = e["notes"] + e["errors"] + e["failing"]
         text = ", ".join([e["regime"], *e["sameIn"]])
         details = [d for d in (pixel_summary(e), notes and notes[0]) if d]
         if len(notes) > 1:
@@ -1195,7 +1327,7 @@ def render(args):
                 e["note"] = note(f"{set_name}/{e['regime']}/{name}")
                 key = (
                     e["status"],
-                    tuple(e["notes"] + e["errors"]),
+                    tuple(e["notes"] + e["errors"] + e["failing"]),
                     e["note"],
                 )
                 pixels = e["count"] or e["below"]
@@ -1229,8 +1361,9 @@ def render(args):
     counts = {s: sum(r["status"] == s for r in rows) for s in STATUS_ORDER}
     print(
         f"wrote rows.json in {outdir}: {counts['changed']} changed, "
-        f"{counts['error']} failing the same way in both halves or unfinished in one, "
+        f"{counts['error']} failing or measuring nothing the same way in both halves or unfinished in one, "
         f"{counts['pixels']} pixels only, "
+        f"{counts['failing']} with only a contrast failure in both halves, "
         f"{len(identical)} identical"
         + (f"; cells that failed: {', '.join(failed_cells)}" if failed_cells else "")
         + (f"; cells not run: {', '.join(not_run_cells)}" if not_run_cells else "")
