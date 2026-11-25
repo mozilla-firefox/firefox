@@ -582,6 +582,18 @@ bool ModuleNamespaceObject::hasBindings() const {
   return !GetProxyReservedSlot(this, BindingsSlot).isUndefined();
 }
 
+size_t ModuleNamespaceObject::sizeOfMallocData(
+    mozilla::MallocSizeOf mallocSizeOf) {
+  size_t size = 0;
+  if (hasExports()) {
+    size += exports().sizeOfIncludingThis(mallocSizeOf);
+  }
+  if (hasBindings()) {
+    size += bindings().sizeOfIncludingThis(mallocSizeOf);
+  }
+  return size;
+}
+
 bool ModuleNamespaceObject::addBinding(JSContext* cx,
                                        Handle<JSAtom*> exportedName,
                                        Handle<ResolvedBindingObject*> binding) {

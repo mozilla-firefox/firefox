@@ -5,8 +5,9 @@
 #ifndef builtin_ModuleObject_h
 #define builtin_ModuleObject_h
 
-#include "mozilla/HashTable.h"  // mozilla::{HashMap, DefaultHasher}
-#include "mozilla/Maybe.h"      // mozilla::Maybe
+#include "mozilla/HashTable.h"        // mozilla::{HashMap, DefaultHasher}
+#include "mozilla/Maybe.h"            // mozilla::Maybe
+#include "mozilla/MemoryReporting.h"  // mozilla::MallocSizeOf
 #include "mozilla/Span.h"
 
 #include <cstdint>   // UINT32_MAX
@@ -272,6 +273,14 @@ class IndirectBindingMap {
 
   size_t count() const { return map_ ? map_->count() : 0; }
 
+  size_t sizeOfIncludingThis(mozilla::MallocSizeOf mallocSizeOf) const {
+    size_t size = mallocSizeOf(this);
+    if (map_) {
+      size += map_->shallowSizeOfExcludingThis(mallocSizeOf);
+    }
+    return size;
+  }
+
   bool has(jsid name) const { return map_ ? map_->has(name) : false; }
 
   bool lookup(jsid name, ModuleEnvironmentObject** envOut,
@@ -340,6 +349,8 @@ class ModuleNamespaceObject : public ProxyObject {
 
   bool addBinding(JSContext* cx, Handle<JSAtom*> exportedName,
                   Handle<ResolvedBindingObject*> binding);
+
+  size_t sizeOfMallocData(mozilla::MallocSizeOf mallocSizeOf);
 
  private:
   struct ProxyHandler : public BaseProxyHandler {

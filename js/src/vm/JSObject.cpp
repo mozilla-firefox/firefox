@@ -18,6 +18,7 @@
 #include "builtin/BigInt.h"
 #include "builtin/Date.h"
 #include "builtin/MapObject.h"
+#include "builtin/ModuleObject.h"
 #include "builtin/Number.h"
 #include "builtin/Object.h"
 #include "builtin/String.h"
@@ -2822,7 +2823,7 @@ void JSObject::addSizeOfExcludingThis(mozilla::MallocSizeOf mallocSizeOf,
   // Other things may be measured in the future if DMD indicates it is
   // worthwhile.
   if (is<JSFunction>() || is<PlainObject>() || is<ArrayObject>() ||
-      is<CallObject>() || is<RegExpObject>() || is<ProxyObject>()) {
+      is<CallObject>() || is<RegExpObject>()) {
     // Do nothing.  But this function is hot, and we win by getting the
     // common cases out of the way early.  Some stats on the most common
     // classes, as measured during a vanilla browser session:
@@ -2831,13 +2832,17 @@ void JSObject::addSizeOfExcludingThis(mozilla::MallocSizeOf mallocSizeOf,
     // - (16.9%, 88.6%): Array
     // - ( 3.9%, 92.5%): Call
     // - ( 2.8%, 95.3%): RegExp
-    // - ( 1.0%, 96.4%): Proxy
 
     // Note that any JSClass that is special cased below likely needs to
     // specify the JSCLASS_DELAY_METADATA_BUILDER flag, or else we will
     // probably crash if the object metadata callback attempts to get the
     // size of the new object (which Debugger code does) before private
     // slots are initialized.
+  } else if (is<ProxyObject>()) {
+    if (is<ModuleNamespaceObject>()) {
+      info->objectsMallocHeapMisc +=
+          as<ModuleNamespaceObject>().sizeOfMallocData(mallocSizeOf);
+    }
   } else if (is<ArgumentsObject>()) {
     info->objectsGCBufferMisc += as<ArgumentsObject>().sizeOfMisc();
   } else if (is<MapObject>()) {
