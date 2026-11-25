@@ -40,9 +40,7 @@ support-files = [
   "test_smartwindow_promo_page.html",
   "test_smartwindow_promo.mjs",
   "test_smartformfill_telemetry.html",
-  "test_smartwindow_prompts_page.html",
   "test_smartwindow_digest_form_page.html",
-  "test_smartwindow_prompts.mjs",
   "test_smartwindow_panel_list_page.html",
   "test_smartwindow_panel_list.mjs",
   "test_smartwindow_onboarding_page.html",
@@ -137,6 +135,10 @@ skip-if = [
 ["browser_smartwindow_digest_form.js"]
 
 ["browser_smartwindow_digest_prompt.js"]
+support-files = [
+  "!/browser/components/aiwindow/ui/test/browser/starters/test_smartwindow_prompts_page.html",
+  "!/browser/components/aiwindow/ui/test/browser/starters/test_smartwindow_prompts.mjs",
+]
 
 ["browser_smartwindow_disclaimer.js"]
 
@@ -190,13 +192,6 @@ skip-if = [
 ["browser_smartwindow_option_select.js"]
 
 ["browser_smartwindow_panel_list.js"]
-
-["browser_smartwindow_prompts.js"]
-skip-if = [
-  "os == 'linux' && os_version == '24.04' && arch == 'x86_64' && display == 'x11' && opt", # Bug 2022097
-  "os == 'win' && os_version == '11.26200' && arch == 'x86_64' && asan", # Bug 2022097
-  "os == 'win' && os_version == '11.26200' && arch == 'x86_64' && ccov", # Bug 2022097
-]
 
 ["browser_smartwindow_recentchats.js"]
 

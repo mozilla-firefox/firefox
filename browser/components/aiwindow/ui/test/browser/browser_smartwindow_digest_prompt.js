@@ -21,7 +21,7 @@ const { DIGEST_STATUS, DIGEST_SCHEDULE_TYPE } = ChromeUtils.importESModule(
 );
 
 const PROMPTS_PAGE =
-  "chrome://mochitests/content/browser/browser/components/aiwindow/ui/test/browser/test_smartwindow_prompts_page.html";
+  "chrome://mochitests/content/browser/browser/components/aiwindow/ui/test/browser/starters/test_smartwindow_prompts_page.html";
 
 const DIGEST_STORE_PATH = PathUtils.join(
   PathUtils.profileDir,

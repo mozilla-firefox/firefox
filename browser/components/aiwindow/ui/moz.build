@@ -17,6 +17,7 @@ BROWSER_CHROME_MANIFESTS += [
     "test/browser/sidebar/browser.toml",
     "test/browser/smart_actions/browser.toml",
     "test/browser/smartbar/browser.toml",
+    "test/browser/starters/browser.toml",
     "test/browser/tasks/browser.toml",
     "test/browser_perf/perftest.toml",
 ]

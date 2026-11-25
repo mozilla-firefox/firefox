@@ -42,8 +42,6 @@ support-files = [
   "test_smartwindow_promo_page.html",
   "test_smartwindow_promo.mjs",
   "test_smartformfill_telemetry.html",
-  "test_smartwindow_prompts_page.html",
-  "test_smartwindow_prompts.mjs",
   "test_smartwindow_panel_list_page.html",
   "test_smartwindow_panel_list.mjs",
   "test_smartformfill.html",

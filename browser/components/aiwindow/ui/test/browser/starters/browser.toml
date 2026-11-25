@@ -1,0 +1,27 @@
+[DEFAULT]
+prefs = [
+  # A preloaded new tab can take the page openOnlyAIWindowTab opens.
+  "browser.newtab.preload=false",
+  # Keep requests MockEngineManager doesn't answer off the network.
+  "browser.smartwindow.endpoint=http://localhost:0/v1",
+]
+support-files = [
+  "head.js",
+  "!/browser/components/aiwindow/ui/test/browser/head.js",
+]
+
+["browser_starters_click.js"]
+
+["browser_starters_pills.js"]
+support-files = [
+  "test_smartwindow_prompts_page.html",
+  "test_smartwindow_prompts.mjs",
+]
+
+["browser_starters_resume_cards.js"]
+
+["browser_starters_sidebar.js"]
+
+["browser_starters_sidebar_cache.js"]
+
+["browser_starters_sidebar_loading.js"]
