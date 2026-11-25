@@ -67,6 +67,75 @@ add_task(async function test_listener_proxies() {
 
   await extension.unload();
 });
+
+// This test verifies that the listener proxies in the parent process are
+// cleaned up when listeners are removed. This is a regression test for bug
+// 2087790, where the proxies weren't deleted and so leaked memory.
+add_task(async function test_listener_proxies_removed() {
+  const extension = ExtensionTestUtils.loadExtension({
+    useAddonManager: "temporary",
+    manifest: { permissions: ["storage"] },
+    background: async () => {
+      const assertCount = (expected, description) => {
+        const { promise: assertFinished, resolve } = Promise.withResolvers();
+        const onMessage = message => {
+          if (message === "assert-count-finished") {
+            browser.test.onMessage.removeListener(onMessage);
+            resolve();
+          }
+        };
+        browser.test.onMessage.addListener(onMessage);
+
+        browser.test.sendMessage("assert-count", { expected, description });
+        return assertFinished;
+      };
+
+      const listeners = [() => {}, () => {}];
+
+      await assertCount(0, "No listeners to start with");
+
+      browser.storage.onChanged.addListener(listeners[0]);
+      await assertCount(1, "First listener added");
+
+      browser.storage.onChanged.addListener(listeners[0]);
+      await assertCount(1, "First listener added for a second time");
+
+      browser.storage.onChanged.addListener(listeners[1]);
+      await assertCount(2, "Second listener added");
+
+      browser.storage.onChanged.removeListener(listeners[0]);
+      await assertCount(1, "First listener removed");
+
+      browser.storage.onChanged.removeListener(listeners[1]);
+      await assertCount(0, "Second listener removed");
+
+      browser.storage.onChanged.addListener(listeners[0]);
+      await assertCount(1, "First listener re-added");
+
+      browser.test.sendMessage("finished");
+    },
+  });
+
+  const countListenerProxies = () =>
+    SpecialPowers.spawnChrome([extension.id], id => {
+      const { WebExtensionPolicy } = Cu.getGlobalForObject(Services);
+      const context =
+        WebExtensionPolicy.getByID(id).extension.backgroundContext;
+      return context.listenerProxies.size;
+    });
+
+  extension.onMessage("assert-count", async ({ expected, description }) => {
+    await SimpleTest.promiseWaitForCondition(
+      async () => (await countListenerProxies()) === expected,
+      `Timed out waiting for ${expected} proxies`
+    );
+    is(await countListenerProxies(), expected, description);
+    extension.sendMessage("assert-count-finished");
+  });
+  await extension.startup();
+  await extension.awaitMessage("finished");
+  await extension.unload();
+});
 </script>
 
 </body>
