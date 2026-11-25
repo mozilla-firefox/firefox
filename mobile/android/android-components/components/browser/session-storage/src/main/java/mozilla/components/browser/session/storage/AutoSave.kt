@@ -22,9 +22,11 @@ import kotlinx.coroutines.Job
 import kotlinx.coroutines.delay
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.distinctUntilChanged
+import kotlinx.coroutines.flow.first
 import kotlinx.coroutines.flow.map
 import kotlinx.coroutines.launch
 import mozilla.components.browser.state.selector.normalTabs
+import mozilla.components.browser.state.selector.selectedNormalTab
 import mozilla.components.browser.state.selector.selectedTab
 import mozilla.components.browser.state.state.BrowserState
 import mozilla.components.browser.state.store.BrowserStore
@@ -96,9 +98,12 @@ class AutoSave(
         return this
     }
 
-    /** Saves the state automatically when the app goes to the background. */
+    /**
+     * Saves the state when the app goes to the background. The engine may send the selected tab's latest state shortly
+     * after, so the state is saved once more when it arrives.
+     */
     fun whenGoingToBackground(lifecycle: Lifecycle = ProcessLifecycleOwner.get().lifecycle): AutoSave {
-        lifecycle.addObserver(AutoSaveBackground(this))
+        lifecycle.addObserver(AutoSaveBackground(this, store, applicationScope, ioDispatcher))
         return this
     }
 
@@ -140,20 +145,41 @@ class AutoSave(
                     delay(delayMs)
                 }
 
-                val start = now()
-
-                try {
-                    val state = store.state
-                    sessionStorage.save(state)
-                } finally {
-                    val took = now() - start
-                    logger.debug("Saved state to disk [${took}ms]")
-                }
+                saveCurrentState()
             }
             .also {
                 saveJob = it
                 return it
             }
+    }
+
+    /**
+     * Saves the current state. Unlike [triggerSave], this never skips: if a save job is still scheduled or running, the
+     * state is saved once it completes.
+     */
+    @Synchronized
+    internal fun triggerQueuedSave(): Job {
+        val previousJob = saveJob
+        lastSaveTimestamp = now()
+
+        return applicationScope
+            .launch(ioDispatcher) {
+                previousJob?.join()
+                saveCurrentState()
+            }
+            .also { saveJob = it }
+    }
+
+    private fun saveCurrentState() {
+        val start = now()
+
+        try {
+            val state = store.state
+            sessionStorage.save(state)
+        } finally {
+            val took = now() - start
+            logger.debug("Saved state to disk [${took}ms]")
+        }
     }
 
     @VisibleForTesting(otherwise = VisibleForTesting.PRIVATE) internal fun now() = SystemClock.elapsedRealtime()
@@ -195,13 +221,42 @@ private class AutoSavePeriodically(
     }
 }
 
-/** [LifecycleObserver] to save the state when the app goes to the background. */
-private class AutoSaveBackground(private val autoSave: AutoSave) : DefaultLifecycleObserver {
-    override fun onStop(owner: LifecycleOwner) {
-        autoSave.logger.info("Save: Background")
+/**
+ * [LifecycleObserver] to save the state when the app goes to the background, and once more when the selected tab's
+ * engine session state arrives after that.
+ */
+private class AutoSaveBackground(
+    private val autoSave: AutoSave,
+    private val store: BrowserStore,
+    private val scope: CoroutineScope,
+    private val ioDispatcher: CoroutineDispatcher,
+) : DefaultLifecycleObserver {
+    private var monitoringJob: Job? = null
 
-        autoSave.triggerSave(delaySave = false)
+    override fun onStart(owner: LifecycleOwner) {
+        monitoringJob?.cancel()
+        monitoringJob = null
     }
+
+    override fun onStop(owner: LifecycleOwner) {
+        monitoringJob?.cancel()
+
+        autoSave.logger.info("Save: Background")
+        val stateWhenStopped = store.state.selectedEngineSessionState()
+        autoSave.triggerSave(delaySave = false)
+
+        monitoringJob =
+            scope.launch(ioDispatcher) {
+                // EngineSessionState has no equals: every update is a new object.
+                store.flow().map { it.selectedEngineSessionState() }.first { it !== stateWhenStopped }
+
+                autoSave.logger.info("Save: Engine session state updated in background")
+                autoSave.triggerQueuedSave()
+            }
+    }
+
+    // Private tabs are never saved.
+    private fun BrowserState.selectedEngineSessionState() = selectedNormalTab?.engineState?.engineSessionState
 }
 
 private class StateMonitoring(private val autoSave: AutoSave) {

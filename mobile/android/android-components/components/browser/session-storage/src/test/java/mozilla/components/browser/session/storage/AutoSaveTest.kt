@@ -11,16 +11,24 @@ import androidx.test.ext.junit.runners.AndroidJUnit4
 import java.util.concurrent.ScheduledExecutorService
 import java.util.concurrent.ScheduledFuture
 import java.util.concurrent.TimeUnit
+import kotlinx.coroutines.CompletableDeferred
+import kotlinx.coroutines.ExperimentalCoroutinesApi
 import kotlinx.coroutines.Job
+import kotlinx.coroutines.launch
 import kotlinx.coroutines.test.StandardTestDispatcher
+import kotlinx.coroutines.test.TestScope
 import kotlinx.coroutines.test.runTest
 import mozilla.components.browser.state.action.ContentAction
+import mozilla.components.browser.state.action.EngineAction
 import mozilla.components.browser.state.action.TabListAction
+import mozilla.components.browser.state.selector.findTab
 import mozilla.components.browser.state.state.BrowserState
 import mozilla.components.browser.state.state.createTab
 import mozilla.components.browser.state.store.BrowserStore
 import mozilla.components.concept.engine.Engine
+import mozilla.components.concept.engine.EngineSessionState
 import mozilla.components.support.test.any
+import mozilla.components.support.test.argumentCaptor
 import mozilla.components.support.test.eq
 import mozilla.components.support.test.mock
 import mozilla.components.support.test.robolectric.testContext
@@ -32,6 +40,7 @@ import org.junit.runner.RunWith
 import org.mockito.Mockito.doReturn
 import org.mockito.Mockito.mock
 import org.mockito.Mockito.never
+import org.mockito.Mockito.times
 import org.mockito.Mockito.verify
 import org.mockito.Mockito.verifyNoMoreInteractions
 import org.mockito.Mockito.`when`
@@ -58,7 +67,7 @@ class AutoSaveTest {
                         store = store,
                         sessionStorage = sessionStorage,
                         minimumIntervalMs = 0,
-                        applicationScope = this,
+                        applicationScope = backgroundScope,
                         ioDispatcher = testDispatcher,
                     )
                     .whenGoingToBackground(lifecycle)
@@ -78,9 +87,298 @@ class AutoSaveTest {
 
             lifecycle.handleLifecycleEvent(Lifecycle.Event.ON_STOP)
 
-            testDispatcher.scheduler.advanceUntilIdle()
+            runCurrent()
 
             verify(sessionStorage).save(any())
+        }
+    }
+
+    @Test
+    fun `AutoSave - saves again when the tab state arrives after the background save`() {
+        runTest(testDispatcher) {
+            val owner = mock(LifecycleOwner::class.java)
+            val lifecycle = LifecycleRegistry(owner)
+            val store = createStoreWithSelectedTab()
+            val sessionStorage: SessionStorage = mock()
+            createAutoSaveWhenGoingToBackground(store, sessionStorage, lifecycle)
+
+            lifecycle.handleLifecycleEvent(Lifecycle.Event.ON_STOP)
+            runCurrent()
+            verify(sessionStorage, times(1)).save(any())
+
+            val freshState: EngineSessionState = mock()
+            store.dispatch(EngineAction.UpdateEngineSessionStateAction("mozilla", freshState))
+            runCurrent()
+
+            val captor = argumentCaptor<BrowserState>()
+            verify(sessionStorage, times(2)).save(captor.capture())
+            assertSame(freshState, captor.value.findTab("mozilla")?.engineState?.engineSessionState)
+        }
+    }
+
+    @Test
+    fun `AutoSave - saves only the first tab state update in background`() {
+        runTest(testDispatcher) {
+            val owner = mock(LifecycleOwner::class.java)
+            val lifecycle = LifecycleRegistry(owner)
+            val store = createStoreWithSelectedTab()
+            val sessionStorage: SessionStorage = mock()
+            createAutoSaveWhenGoingToBackground(store, sessionStorage, lifecycle)
+
+            lifecycle.handleLifecycleEvent(Lifecycle.Event.ON_STOP)
+            store.dispatch(EngineAction.UpdateEngineSessionStateAction("mozilla", mock()))
+            runCurrent()
+            store.dispatch(EngineAction.UpdateEngineSessionStateAction("mozilla", mock()))
+            runCurrent()
+
+            verify(sessionStorage, times(2)).save(any())
+        }
+    }
+
+    @Test
+    fun `AutoSave - saves the tab state that arrives before the background monitoring starts`() {
+        runTest(testDispatcher) {
+            val owner = mock(LifecycleOwner::class.java)
+            val lifecycle = LifecycleRegistry(owner)
+            val store = createStoreWithSelectedTab()
+            val sessionStorage: SessionStorage = mock()
+            createAutoSaveWhenGoingToBackground(store, sessionStorage, lifecycle)
+
+            lifecycle.handleLifecycleEvent(Lifecycle.Event.ON_STOP)
+            val freshState: EngineSessionState = mock()
+            store.dispatch(EngineAction.UpdateEngineSessionStateAction("mozilla", freshState))
+            runCurrent()
+
+            val captor = argumentCaptor<BrowserState>()
+            verify(sessionStorage, times(2)).save(captor.capture())
+            assertSame(freshState, captor.value.findTab("mozilla")?.engineState?.engineSessionState)
+        }
+    }
+
+    @Test
+    fun `AutoSave - does not save on tab state updates in foreground`() {
+        runTest(testDispatcher) {
+            val owner = mock(LifecycleOwner::class.java)
+            val lifecycle = LifecycleRegistry(owner)
+            val store = createStoreWithSelectedTab()
+            val sessionStorage: SessionStorage = mock()
+            createAutoSaveWhenGoingToBackground(store, sessionStorage, lifecycle)
+
+            store.dispatch(EngineAction.UpdateEngineSessionStateAction("mozilla", mock()))
+            runCurrent()
+
+            verify(sessionStorage, never()).save(any())
+        }
+    }
+
+    @Test
+    fun `AutoSave - saves once when the tab state arrived before going to background`() {
+        runTest(testDispatcher) {
+            val owner = mock(LifecycleOwner::class.java)
+            val lifecycle = LifecycleRegistry(owner)
+            val store = createStoreWithSelectedTab()
+            val sessionStorage: SessionStorage = mock()
+            createAutoSaveWhenGoingToBackground(store, sessionStorage, lifecycle)
+
+            store.dispatch(EngineAction.UpdateEngineSessionStateAction("mozilla", mock()))
+            runCurrent()
+            lifecycle.handleLifecycleEvent(Lifecycle.Event.ON_STOP)
+            runCurrent()
+
+            verify(sessionStorage, times(1)).save(any())
+        }
+    }
+
+    @Test
+    fun `AutoSave - does not save on tab state updates after returning to foreground`() {
+        runTest(testDispatcher) {
+            val owner = mock(LifecycleOwner::class.java)
+            val lifecycle = LifecycleRegistry(owner)
+            val store = createStoreWithSelectedTab()
+            val sessionStorage: SessionStorage = mock()
+            createAutoSaveWhenGoingToBackground(store, sessionStorage, lifecycle)
+
+            lifecycle.handleLifecycleEvent(Lifecycle.Event.ON_STOP)
+            runCurrent()
+            lifecycle.handleLifecycleEvent(Lifecycle.Event.ON_START)
+
+            store.dispatch(EngineAction.UpdateEngineSessionStateAction("mozilla", mock()))
+            runCurrent()
+
+            verify(sessionStorage, times(1)).save(any())
+        }
+    }
+
+    @Test
+    fun `AutoSave - does not save when another tab's state changes in background`() {
+        runTest(testDispatcher) {
+            val owner = mock(LifecycleOwner::class.java)
+            val lifecycle = LifecycleRegistry(owner)
+            val store = createStoreWithSelectedTab()
+            val sessionStorage: SessionStorage = mock()
+            createAutoSaveWhenGoingToBackground(store, sessionStorage, lifecycle)
+
+            lifecycle.handleLifecycleEvent(Lifecycle.Event.ON_STOP)
+            runCurrent()
+
+            store.dispatch(EngineAction.UpdateEngineSessionStateAction("firefox", mock()))
+            runCurrent()
+
+            verify(sessionStorage, times(1)).save(any())
+        }
+    }
+
+    @Test
+    fun `AutoSave - a new background period saves again`() {
+        runTest(testDispatcher) {
+            val owner = mock(LifecycleOwner::class.java)
+            val lifecycle = LifecycleRegistry(owner)
+            val store = createStoreWithSelectedTab()
+            val sessionStorage: SessionStorage = mock()
+            createAutoSaveWhenGoingToBackground(store, sessionStorage, lifecycle)
+
+            lifecycle.handleLifecycleEvent(Lifecycle.Event.ON_STOP)
+            runCurrent()
+            lifecycle.handleLifecycleEvent(Lifecycle.Event.ON_START)
+            lifecycle.handleLifecycleEvent(Lifecycle.Event.ON_STOP)
+            runCurrent()
+            verify(sessionStorage, times(2)).save(any())
+
+            store.dispatch(EngineAction.UpdateEngineSessionStateAction("mozilla", mock()))
+            runCurrent()
+            verify(sessionStorage, times(3)).save(any())
+        }
+    }
+
+    @Test
+    fun `AutoSave - background save ignores the minimum interval`() {
+        runTest(testDispatcher) {
+            val owner = mock(LifecycleOwner::class.java)
+            val lifecycle = LifecycleRegistry(owner)
+            val sessionStorage: SessionStorage = mock()
+            createAutoSaveWhenGoingToBackground(
+                createStoreWithSelectedTab(),
+                sessionStorage,
+                lifecycle,
+                minimumIntervalMs = 10_000,
+            )
+
+            lifecycle.handleLifecycleEvent(Lifecycle.Event.ON_STOP)
+            runCurrent()
+
+            verify(sessionStorage, times(1)).save(any())
+        }
+    }
+
+    @Test
+    fun `AutoSave - does not save again when a private tab's state changes in background`() {
+        runTest(testDispatcher) {
+            val owner = mock(LifecycleOwner::class.java)
+            val lifecycle = LifecycleRegistry(owner)
+            val store =
+                BrowserStore(
+                    BrowserState(
+                        tabs =
+                            listOf(
+                                createTab("https://www.mozilla.org", id = "mozilla"),
+                                createTab("https://www.firefox.com", id = "private", private = true),
+                            ),
+                        selectedTabId = "private",
+                    )
+                )
+            val sessionStorage: SessionStorage = mock()
+            createAutoSaveWhenGoingToBackground(store, sessionStorage, lifecycle)
+
+            lifecycle.handleLifecycleEvent(Lifecycle.Event.ON_STOP)
+            runCurrent()
+            store.dispatch(EngineAction.UpdateEngineSessionStateAction("private", mock()))
+            runCurrent()
+
+            verify(sessionStorage, times(1)).save(any())
+        }
+    }
+
+    @Test
+    fun `AutoSave - queued save runs right away when no save is running`() {
+        runTest(testDispatcher) {
+            val sessionStorage: SessionStorage = mock()
+            val autoSave = createAutoSave(sessionStorage)
+
+            autoSave.triggerQueuedSave()
+            runCurrent()
+
+            verify(sessionStorage, times(1)).save(any())
+        }
+    }
+
+    @Test
+    fun `AutoSave - queued save runs after a save that is still running`() {
+        runTest(testDispatcher) {
+            val sessionStorage: SessionStorage = mock()
+            val autoSave = createAutoSave(sessionStorage)
+            val fakeLongRunningSave = CompletableDeferred<Unit>()
+            autoSave.saveJob = backgroundScope.launch(testDispatcher) { fakeLongRunningSave.await() }
+            runCurrent()
+
+            autoSave.triggerQueuedSave()
+            runCurrent()
+            verify(sessionStorage, never()).save(any())
+
+            fakeLongRunningSave.complete(Unit)
+            runCurrent()
+            verify(sessionStorage, times(1)).save(any())
+        }
+    }
+
+    @Test
+    fun `AutoSave - queued saves run one after another after a running save`() {
+        runTest(testDispatcher) {
+            val sessionStorage: SessionStorage = mock()
+            val autoSave = createAutoSave(sessionStorage)
+            val fakeLongRunningSave = CompletableDeferred<Unit>()
+            autoSave.saveJob = backgroundScope.launch(testDispatcher) { fakeLongRunningSave.await() }
+            runCurrent()
+
+            autoSave.triggerQueuedSave()
+            val secondQueuedSave = autoSave.triggerQueuedSave()
+            runCurrent()
+            verify(sessionStorage, never()).save(any())
+            assertSame(secondQueuedSave, autoSave.saveJob)
+
+            fakeLongRunningSave.complete(Unit)
+            runCurrent()
+            verify(sessionStorage, times(2)).save(any())
+        }
+    }
+
+    @Test
+    fun `AutoSave - queued save runs after a save that is still waiting for the minimum interval`() {
+        runTest(testDispatcher) {
+            val sessionStorage: SessionStorage = mock()
+            val autoSave = createAutoSave(sessionStorage, minimumIntervalMs = 10_000)
+
+            autoSave.triggerSave()
+            autoSave.triggerQueuedSave()
+            runCurrent()
+            verify(sessionStorage, never()).save(any())
+
+            advanceTimeAndRun(10_000)
+            verify(sessionStorage, times(2)).save(any())
+        }
+    }
+
+    @Test
+    fun `AutoSave - triggerSave skips while a queued save is pending`() {
+        runTest(testDispatcher) {
+            val sessionStorage: SessionStorage = mock()
+            val autoSave = createAutoSave(sessionStorage)
+            val fakeLongRunningSave = CompletableDeferred<Unit>()
+            autoSave.saveJob = backgroundScope.launch(testDispatcher) { fakeLongRunningSave.await() }
+            runCurrent()
+
+            val queuedSave = autoSave.triggerQueuedSave()
+
+            assertSame(queuedSave, autoSave.triggerSave())
         }
     }
 
@@ -419,4 +717,57 @@ class AutoSaveTest {
             val saveJob = autoSave.triggerSave()
             assertNotSame(completed, saveJob)
         }
+
+    @OptIn(ExperimentalCoroutinesApi::class)
+    private fun advanceTimeAndRun(millis: Long) {
+        testDispatcher.scheduler.advanceTimeBy(millis)
+        testDispatcher.scheduler.runCurrent()
+    }
+
+    @OptIn(ExperimentalCoroutinesApi::class)
+    private fun runCurrent() {
+        testDispatcher.scheduler.runCurrent()
+    }
+
+    private fun createStoreWithSelectedTab() =
+        BrowserStore(
+            BrowserState(
+                tabs =
+                    listOf(
+                        createTab("https://www.mozilla.org", id = "mozilla"),
+                        createTab("https://www.firefox.com", id = "firefox"),
+                    ),
+                selectedTabId = "mozilla",
+            )
+        )
+
+    private fun TestScope.createAutoSave(sessionStorage: SessionStorage, minimumIntervalMs: Long = 0) =
+        AutoSave(
+            store = createStoreWithSelectedTab(),
+            sessionStorage = sessionStorage,
+            minimumIntervalMs = minimumIntervalMs,
+            applicationScope = backgroundScope,
+            ioDispatcher = testDispatcher,
+        )
+
+    /** Registers the background trigger on [TestScope.backgroundScope] and starts the app in the foreground. */
+    private fun TestScope.createAutoSaveWhenGoingToBackground(
+        store: BrowserStore,
+        sessionStorage: SessionStorage,
+        lifecycle: LifecycleRegistry,
+        minimumIntervalMs: Long = 0,
+    ): AutoSave {
+        val autoSave =
+            AutoSave(
+                    store = store,
+                    sessionStorage = sessionStorage,
+                    minimumIntervalMs = minimumIntervalMs,
+                    applicationScope = backgroundScope,
+                    ioDispatcher = testDispatcher,
+                )
+                .whenGoingToBackground(lifecycle)
+        lifecycle.handleLifecycleEvent(Lifecycle.Event.ON_START)
+        testDispatcher.scheduler.advanceUntilIdle()
+        return autoSave
+    }
 }
