@@ -70,6 +70,7 @@ class MacroAssemblerWasm32 : public Assembler {
   void processCodeLabels(uint8_t*) { MOZ_CRASH(); }
 
   void flushBuffer() { MOZ_CRASH(); }
+  void flushBufferIfDue() { MOZ_CRASH(); }
 
   void bind(Label* label) { MOZ_CRASH(); }
 

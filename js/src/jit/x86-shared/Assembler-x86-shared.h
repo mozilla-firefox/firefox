@@ -4941,6 +4941,7 @@ class AssemblerX86Shared : public AssemblerShared {
   }
 
   void flushBuffer() {}
+  void flushBufferIfDue() {}
 
   // Patching.
 

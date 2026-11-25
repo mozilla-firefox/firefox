@@ -1273,6 +1273,7 @@ class AssemblerMIPSShared : public AssemblerShared {
 
  public:
   void flushBuffer() {}
+  void flushBufferIfDue() {}
 
   void comment(const char* msg) { spew("; %s", msg); }
 

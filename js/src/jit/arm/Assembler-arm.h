@@ -1892,6 +1892,7 @@ class Assembler : public AssemblerShared {
   // opportunistic dump of the pool, prefferably when it is more convenient to
   // do a dump.
   void flushBuffer();
+  void flushBufferIfDue() { flushBuffer(); }
   void enterNoPool(size_t maxInst);
   void leaveNoPool();
   void enterNoNops();

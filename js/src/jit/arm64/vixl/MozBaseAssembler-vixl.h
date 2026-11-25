@@ -306,6 +306,16 @@ class MozBaseAssembler : public js::jit::AssemblerShared {
     armbuffer_.flushPool();
   }
 
+  // Like flushBuffer(), but only if the pool would have to be moved into the
+  // instruction stream within half its range anyway, and only give veneers to
+  // the branches that would go out of range by then. Callers call this after
+  // code that does not fall through, where the pool is out of the way of
+  // execution, and before code that binds most of the pending labels, where
+  // bind() patches the branches to reach them directly.
+  void flushBufferIfDue() {
+    armbuffer_.flushPoolIfDue(BufferMaxPoolOffset / 2);
+  }
+
   // Inhibit pool flushing for the given number of instructions.
   // Generating more than |maxInst| instructions in a no-pool region
   // triggers an assertion within the ARMBuffer.

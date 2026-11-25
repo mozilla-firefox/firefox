@@ -239,6 +239,7 @@ class Assembler : public AssemblerShared,
 
   void flush() { m_buffer.flushPool(); }
   void flushBuffer() { m_buffer.flushPool(); }
+  void flushBufferIfDue() { flushBuffer(); }
 
   void enterNoPool(size_t maxInst, size_t maxNewDeadlines = 0) {
     m_buffer.enterNoPool(maxInst, maxNewDeadlines);

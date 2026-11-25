@@ -2246,6 +2246,7 @@ class AssemblerLOONG64 : public AssemblerShared {
 
  public:
   void flushBuffer() {}
+  void flushBufferIfDue() {}
 
   void comment(const char* msg) {
 #ifdef JS_DISASM_LOONG64

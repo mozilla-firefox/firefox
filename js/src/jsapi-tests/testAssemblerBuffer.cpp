@@ -2052,6 +2052,53 @@ BEGIN_TEST(testAssemblerBuffer_ARM64_PoolDataAlignment) {
   return true;
 }
 END_TEST(testAssemblerBuffer_ARM64_PoolDataAlignment)
+
+BEGIN_TEST(testAssemblerBuffer_ARM64_FlushBufferIfDue) {
+  using namespace js::jit;
+  using namespace AArch64;
+
+  js::LifoAlloc lifo(4096, js::MallocArena);
+  TempAllocator alloc(&lifo);
+  JitContext jc(cx);
+  StackMacroAssembler masm(cx, alloc);
+  AutoCreatedBy acb(masm, __func__);
+
+  // An empty pool is never due.
+  masm.flushBufferIfDue();
+  CHECK_EQUAL(masm.currentOffset(), size_t(0));
+
+  // A pool with an entry is not due right after its load.
+  masm.immPool64(vixl::x0, 0x0123456789abcdef, PoolEntryKind::Unshared);
+  masm.flushBufferIfDue();
+  CHECK_EQUAL(masm.currentOffset(), size_t(4));
+
+  // It becomes due before the instructions after the load force it out.
+  size_t poolStart;
+  while (true) {
+    masm.nop();
+    poolStart = masm.currentOffset();
+    masm.flushBufferIfDue();
+    CHECK(!masm.oom());
+    if (masm.currentOffset() != poolStart) {
+      break;
+    }
+  }
+  for (size_t offset = 4; offset < poolStart; offset += 4) {
+    CHECK_EQUAL(masm.getInstructionAt(BufferOffset(offset))->InstructionBits(),
+                nop());
+  }
+  CHECK_EQUAL(
+      masm.getInstructionAt(BufferOffset(poolStart))->InstructionBits(),
+      b(offset(BufferOffset(poolStart), BufferOffset(masm.currentOffset()))));
+  // The header, the fill that aligns the 8-byte entry, and the entry.
+  size_t fill = poolStart % 8;
+  CHECK_EQUAL(
+      masm.getInstructionAt(BufferOffset(poolStart + 4))->InstructionBits(),
+      poolheader(1 + fill / 4 + 2));
+
+  return true;
+}
+END_TEST(testAssemblerBuffer_ARM64_FlushBufferIfDue)
 #endif /* JS_CODEGEN_ARM64 */
 
 // Test that everything is put together correctly in the RISCV64 assembler.

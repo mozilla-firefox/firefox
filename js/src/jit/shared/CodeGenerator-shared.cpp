@@ -194,8 +194,10 @@ bool CodeGeneratorShared::generateEpilogue() {
 
   masm.ret();
 
-  // On systems that use a constant pool, this is a good time to emit.
-  masm.flushBuffer();
+  // On systems that use a constant pool, this is a good time to emit it, if it
+  // would be needed soon anyway. The out-of-line code that follows binds most
+  // of the pending branches.
+  masm.flushBufferIfDue();
   return true;
 }
 

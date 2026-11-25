@@ -73,6 +73,7 @@ class MacroAssemblerNone : public Assembler {
   void processCodeLabels(uint8_t*) { MOZ_CRASH(); }
 
   void flushBuffer() { MOZ_CRASH(); }
+  void flushBufferIfDue() { MOZ_CRASH(); }
 
   template <typename T>
   void bind(T) {
