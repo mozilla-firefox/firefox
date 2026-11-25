@@ -12090,7 +12090,7 @@ QuotaClient::~QuotaClient() {
 
 nsresult QuotaClient::AsyncDeleteFile(DatabaseFileManager* aFileManager,
                                       int64_t aFileId) {
-  AssertIsOnBackgroundThread();
+  MOZ_RELEASE_ASSERT(IsOnBackgroundThread());
 
   if (IsShuttingDownOnBackgroundThread()) {
     // Whoops! We want to delete an IndexedDB disk-backed File but it's too late
