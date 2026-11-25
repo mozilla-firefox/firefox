@@ -12569,12 +12569,6 @@
   value: @IS_NIGHTLY_BUILD@
   mirror: always
 
-# Whether to use tighter bounds for non-mathml content in mathml layout.
-- name: mathml.tight_bounds.disabled
-  type: bool
-  value: true
-  mirror: always
-
 #---------------------------------------------------------------------------
 # Prefs starting with "media."
 #---------------------------------------------------------------------------

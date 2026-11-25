@@ -812,11 +812,9 @@ void nsMathMLContainerFrame::ReflowChild(nsIFrame* aChildFrame,
     }
   }
   if (IsForeignChild(aChildFrame)) {
-    // aDesiredSize.mBoundingMetrics is not set.
-    const nsRect r = StaticPrefs::mathml_tight_bounds_disabled()
-                         ? nsRect(nsPoint(), aDesiredSize.PhysicalSize())
-                         : aChildFrame->ComputeTightBounds(
-                               aReflowInput.mRenderingContext->GetDrawTarget());
+    // use ComputeTightBounds API as aDesiredSize.mBoundingMetrics is not set.
+    nsRect r = aChildFrame->ComputeTightBounds(
+        aReflowInput.mRenderingContext->GetDrawTarget());
     aDesiredSize.mBoundingMetrics.leftBearing = r.x;
     aDesiredSize.mBoundingMetrics.rightBearing = r.XMost();
     aDesiredSize.mBoundingMetrics.ascent =
@@ -974,8 +972,7 @@ void nsMathMLContainerFrame::GetIntrinsicISizeMetrics(
       childDesiredSize.mBoundingMetrics.rightBearing = width;
 
       nscoord x, xMost;
-      if (!StaticPrefs::mathml_tight_bounds_disabled() &&
-          NS_SUCCEEDED(childFrame->GetPrefWidthTightBounds(aRenderingContext,
+      if (NS_SUCCEEDED(childFrame->GetPrefWidthTightBounds(aRenderingContext,
                                                            &x, &xMost))) {
         childDesiredSize.mBoundingMetrics.leftBearing = x;
         childDesiredSize.mBoundingMetrics.rightBearing = xMost;
