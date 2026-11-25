@@ -240,6 +240,11 @@ Compiler.h:
     - MOZ_GCC_VERSION_AT_LEAST
     - MOZ_GCC_VERSION_AT_MOST
 
+ConstantStringTable.h:
+  types:
+    - ConstantStringTable
+    - StringLiterals
+
 DbgMacro.h:
   macros:
     - MOZ_DBG

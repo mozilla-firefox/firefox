@@ -35,6 +35,7 @@ EXPORTS.mozilla = [
     "CheckedInt.h",
     "CompactPair.h",
     "Compiler.h",
+    "ConstantStringTable.h",
     "CumulativeAverage.h",
     "DbgMacro.h",
     "DebugOnly.h",

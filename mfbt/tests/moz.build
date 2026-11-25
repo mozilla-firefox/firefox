@@ -22,6 +22,7 @@ CppUnitTests([
     "TestCeilingFloor",
     "TestCheckedInt",
     "TestCompactPair",
+    "TestConstantStringTable",
     "TestCumulativeAverage",
     "TestDefineEnum",
     "TestDoublyLinkedList",
