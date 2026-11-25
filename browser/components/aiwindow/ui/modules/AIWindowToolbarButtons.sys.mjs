@@ -335,8 +335,6 @@ class ToolbarButtons {
     if (this.#switcherCreated) {
       lazy.CustomizableUI.destroyWidget(SWITCHER_WIDGET_ID);
       this.#switcherCreated = false;
-    } else {
-      lazy.CustomizableUI.markWidgetUnavailable(SWITCHER_WIDGET_ID);
     }
   }
 
@@ -407,8 +405,6 @@ class ToolbarButtons {
     if (this.#groupTabsCreated) {
       lazy.CustomizableUI.destroyWidget(GROUP_TABS_WIDGET_ID);
       this.#groupTabsCreated = false;
-    } else {
-      lazy.CustomizableUI.markWidgetUnavailable(GROUP_TABS_WIDGET_ID);
     }
   }
 
