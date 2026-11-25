@@ -2949,6 +2949,9 @@ class Document : public nsINode,
       nsIURI* aURI, nsIReferrerInfo* aReferrerInfo, nsINode* aRequestingNode,
       ExternalResourceLoad** aPendingLoad);
 
+  // Returns whether we can load a particular external resource.
+  bool CanLoadExternalResource(nsIURI* aURI) const;
+
   /**
    * Enumerate the external resource documents associated with this document.
    * The enumerator callback should return CallState::Continue to continue
