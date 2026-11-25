@@ -5,7 +5,7 @@
 from setuptools import setup
 
 PACKAGE_NAME = "mozgeckoprofiler"
-PACKAGE_VERSION = "1.0.0"
+PACKAGE_VERSION = "2.0.0"
 
 setup(
     name=PACKAGE_NAME,
@@ -25,7 +25,7 @@ setup(
     packages=["mozgeckoprofiler"],
     include_package_data=True,
     zip_safe=False,
-    install_requires=[],
+    install_requires=["mozlog >= 6.0"],
     tests_require=[],
     python_requires=">=3.9",
 )
