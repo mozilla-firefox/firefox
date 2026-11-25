@@ -6,14 +6,32 @@ function ThrowIncompatibleMethod(name, thisv) {
   ThrowTypeError(JSMSG_INCOMPATIBLE_PROTO, "String", name, ToString(thisv));
 }
 
-// ES 2016 draft Mar 25, 2016 21.1.3.11.
+// https://tc39.es/ecma262/#sec-string.prototype.match
 function String_match(regexp) {
-  // Step 1.
+  // Fast path for `"string".match(regexp)`, inlining the optimized
+  // path from RegExpMatch. Keep in sync with that code.
+  if (typeof this === "string" && IsObject(regexp) &&
+      IsOptimizableRegExpObject(regexp)) {
+    var flags = UnsafeGetInt32FromReservedSlot(regexp, REGEXP_FLAGS_SLOT);
+    if (flags & REGEXP_GLOBAL_FLAG) {
+      var fullUnicode = !!(flags & REGEXP_ANY_UNICODE_MASK);
+      return RegExpGlobalMatchOpt(regexp, this, fullUnicode);
+    }
+    return RegExpBuiltinExec(regexp, this);
+  }
+
+  return callFunction(StringMatchSlowPath, this, regexp);
+}
+SetIsInlinableLargeFunction(String_match);
+
+// https://tc39.es/ecma262/#sec-string.prototype.match
+function StringMatchSlowPath(regexp) {
+  // Steps 1-2.
   if (IsNullOrUndefined(this)) {
     ThrowIncompatibleMethod("match", this);
   }
 
-  // Step 2.
+  // Step 3.
   if (IsObject(regexp)) {
     // Fast path for regular expressions with the original
     // RegExp.prototype[@@match] function.
@@ -21,16 +39,16 @@ function String_match(regexp) {
       return callFunction(RegExpMatch, regexp, this);
     }
 
-    // Step 2.a.
+    // Step 3.a.
     var matcher = GetMethod(regexp, GetBuiltinSymbol("match"));
 
-    // Step 2.b.
+    // Step 3.b.
     if (matcher !== undefined) {
       return callContentFunction(matcher, regexp, this);
     }
   }
 
-  // Step 3.
+  // Step 4.
   var S = ToString(this);
 
   if (typeof regexp === "string" && IsRegExpPrototypeOptimizable()) {
@@ -40,15 +58,15 @@ function String_match(regexp) {
     }
   }
 
-  // Step 4.
+  // Step 5.
   var rx = RegExpCreate(regexp);
 
-  // Step 5 (optimized case).
+  // Step 6 (optimized case).
   if (IsRegExpPrototypeOptimizable()) {
     return RegExpMatcher(rx, S, 0);
   }
 
-  // Step 5.
+  // Step 6.
   return callContentFunction(GetMethod(rx, GetBuiltinSymbol("match")), rx, S);
 }
 
