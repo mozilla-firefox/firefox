@@ -173,13 +173,21 @@ nsresult AccessibleCaretManager::OnSelectionChanged(Document* aDoc,
 }
 
 void AccessibleCaretManager::HideCaretsAndDispatchCaretStateChangedEvent() {
-  if (mCarets.HasLogicallyVisibleCaret()) {
+  if (!mCarets.HasLogicallyVisibleCaret()) {
+    return;
+  }
+
+  {
+    // Mutating the caret elements may run scripts that destroy the PresShell
+    // and the carets. Defer them until we're done with both carets.
+    nsAutoScriptBlocker scriptBlocker;
     AC_LOG("%s", __FUNCTION__);
     mCarets.GetFirst()->SetAppearance(Appearance::None);
     mCarets.GetSecond()->SetAppearance(Appearance::None);
     mIsCaretPositionChanged = false;
-    DispatchCaretStateChangedEvent(CaretChangedReason::Visibilitychange);
   }
+
+  DispatchCaretStateChangedEvent(CaretChangedReason::Visibilitychange);
 }
 
 auto AccessibleCaretManager::MaybeFlushLayout() -> Terminated {
@@ -209,6 +217,10 @@ void AccessibleCaretManager::UpdateCarets(const UpdateCaretsHintSet& aHint) {
     case CaretMode::Selection:
       UpdateCaretsForSelectionMode(aHint);
       break;
+  }
+
+  if (IsTerminated() == Terminated::Yes) {
+    return;
   }
 
   mDesiredAsyncPanZoomState.Update(*this);
@@ -260,45 +272,55 @@ void AccessibleCaretManager::UpdateCaretsForCursorMode(
     return;
   }
 
-  PositionChangedResult result = mCarets.GetFirst()->SetPosition(frame, offset);
+  auto result = PositionChangedResult::NotChanged;
+  {
+    // Mutating the caret elements may run scripts that destroy the PresShell
+    // and the carets. Defer them until we're done with both carets.
+    nsAutoScriptBlocker scriptBlocker;
+    result = mCarets.GetFirst()->SetPosition(frame, offset);
 
-  switch (result) {
-    case PositionChangedResult::NotChanged:
-    case PositionChangedResult::Position:
-    case PositionChangedResult::Zoom:
-      if (!aHints.contains(UpdateCaretsHint::RespectOldAppearance)) {
-        if (HasNonEmptyTextContent(GetEditingHostForFrame(frame))) {
-          mCarets.GetFirst()->SetAppearance(Appearance::Normal);
-        } else if (
-            StaticPrefs::
-                layout_accessiblecaret_caret_shown_when_long_tapping_on_empty_content()) {
-          if (mCarets.GetFirst()->IsLogicallyVisible()) {
-            // Possible cases are: 1) SelectWordOrShortcut() sets the
-            // appearance to Normal. 2) When the caret is out of viewport and
-            // now scrolling into viewport, it has appearance NormalNotShown.
+    switch (result) {
+      case PositionChangedResult::NotChanged:
+      case PositionChangedResult::Position:
+      case PositionChangedResult::Zoom:
+        if (!aHints.contains(UpdateCaretsHint::RespectOldAppearance)) {
+          if (HasNonEmptyTextContent(GetEditingHostForFrame(frame))) {
             mCarets.GetFirst()->SetAppearance(Appearance::Normal);
+          } else if (
+              StaticPrefs::
+                  layout_accessiblecaret_caret_shown_when_long_tapping_on_empty_content()) {
+            if (mCarets.GetFirst()->IsLogicallyVisible()) {
+              // Possible cases are: 1) SelectWordOrShortcut() sets the
+              // appearance to Normal. 2) When the caret is out of viewport and
+              // now scrolling into viewport, it has appearance NormalNotShown.
+              mCarets.GetFirst()->SetAppearance(Appearance::Normal);
+            } else {
+              // Possible cases are: a) Single tap on current empty content;
+              // OnSelectionChanged() sets the appearance to None due to
+              // MOUSEDOWN_REASON. b) Single tap on other empty content;
+              // OnBlur() sets the appearance to None.
+              //
+              // Do nothing to make the appearance remains None so that it can
+              // be distinguished from case 2). Also do not set the appearance
+              // to NormalNotShown here like the default update behavior.
+            }
           } else {
-            // Possible cases are: a) Single tap on current empty content;
-            // OnSelectionChanged() sets the appearance to None due to
-            // MOUSEDOWN_REASON. b) Single tap on other empty content;
-            // OnBlur() sets the appearance to None.
-            //
-            // Do nothing to make the appearance remains None so that it can
-            // be distinguished from case 2). Also do not set the appearance
-            // to NormalNotShown here like the default update behavior.
+            mCarets.GetFirst()->SetAppearance(Appearance::NormalNotShown);
           }
-        } else {
-          mCarets.GetFirst()->SetAppearance(Appearance::NormalNotShown);
         }
-      }
-      break;
+        break;
 
-    case PositionChangedResult::Invisible:
-      mCarets.GetFirst()->SetAppearance(Appearance::NormalNotShown);
-      break;
+      case PositionChangedResult::Invisible:
+        mCarets.GetFirst()->SetAppearance(Appearance::NormalNotShown);
+        break;
+    }
+
+    mCarets.GetSecond()->SetAppearance(Appearance::None);
   }
 
-  mCarets.GetSecond()->SetAppearance(Appearance::None);
+  if (IsTerminated() == Terminated::Yes) {
+    return;
+  }
 
   mIsCaretPositionChanged = (result == PositionChangedResult::Position);
 
@@ -318,6 +340,9 @@ void AccessibleCaretManager::UpdateCaretsForSelectionMode(
   int32_t endOffset = 0;
   nsIFrame* endFrame =
       GetFrameForFirstRangeStartOrLastRangeEnd(eDirPrevious, &endOffset);
+
+  AutoWeakFrame weakStartFrame = startFrame;
+  AutoWeakFrame weakEndFrame = endFrame;
 
   if (!CompareTreePosition(startFrame, endFrame)) {
     // XXX: Do we really have to hide carets if this condition isn't satisfied?
@@ -345,10 +370,21 @@ void AccessibleCaretManager::UpdateCaretsForSelectionMode(
     return result;
   };
 
-  PositionChangedResult firstCaretResult =
-      updateSingleCaret(mCarets.GetFirst(), startFrame, startOffset);
-  PositionChangedResult secondCaretResult =
-      updateSingleCaret(mCarets.GetSecond(), endFrame, endOffset);
+  auto firstCaretResult = PositionChangedResult::NotChanged;
+  auto secondCaretResult = PositionChangedResult::NotChanged;
+  {
+    // Mutating the caret elements may run scripts that destroy the PresShell
+    // and the carets. Defer them until we're done with both carets.
+    nsAutoScriptBlocker scriptBlocker;
+    firstCaretResult =
+        updateSingleCaret(mCarets.GetFirst(), startFrame, startOffset);
+    secondCaretResult =
+        updateSingleCaret(mCarets.GetSecond(), endFrame, endOffset);
+  }
+
+  if (IsTerminated() == Terminated::Yes) {
+    return;
+  }
 
   mIsCaretPositionChanged =
       firstCaretResult == PositionChangedResult::Position ||
@@ -361,7 +397,17 @@ void AccessibleCaretManager::UpdateCaretsForSelectionMode(
     }
   }
 
+  // Bail out and hide the carets if either the start frame or end frame is
+  // destroyed.
+  if ((startFrame && !weakStartFrame.IsAlive()) ||
+      (endFrame && !weakEndFrame.IsAlive())) {
+    HideCaretsAndDispatchCaretStateChangedEvent();
+    return;
+  }
+
   if (!aHints.contains(UpdateCaretsHint::RespectOldAppearance)) {
+    nsAutoScriptBlocker scriptBlocker;
+
     // Only check for tilt carets when the caller doesn't ask us to preserve
     // old appearance. Otherwise we might override the appearance set by the
     // caller.
