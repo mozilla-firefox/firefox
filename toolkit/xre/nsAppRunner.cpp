@@ -117,7 +117,6 @@
 #  include <userenv.h>
 #  include <intrin.h>
 #  include <math.h>
-#  include "cairo/cairo-features.h"
 #  include "mozilla/PreXULSkeletonUI.h"
 #  include "mozilla/DllPrefetchExperimentRegistryInfo.h"
 #  include "mozilla/WindowsDllBlocklist.h"
@@ -4396,7 +4395,7 @@ const XREAppData* gAppData = nullptr;
  */
 NS_VISIBILITY_DEFAULT PRBool nspr_use_zone_allocator = PR_FALSE;
 
-#ifdef CAIRO_HAS_DWRITE_FONT
+#ifdef XP_WIN
 
 #  include <dwrite.h>
 #  include "nsWindowsHelpers.h"
@@ -4806,7 +4805,7 @@ int XREMain::XRE_mainInit(bool* aExitFlag) {
 
   SetupErrorHandling(gArgv[0]);
 
-#ifdef CAIRO_HAS_DWRITE_FONT
+#ifdef XP_WIN
   {
     // Bug 602792 - when DWriteCreateFactory is called the dwrite client dll
     // starts the FntCache service if it isn't already running (it's set
