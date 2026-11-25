@@ -741,11 +741,19 @@ class Editor extends PureComponent {
       return;
     }
 
+    // The mode has to be set on every source selection, as the editor keeps the
+    // mode of the previously selected source otherwise. Fallback to javascript.
+    let mode;
     if (selectedSource.isStyleSheet) {
-      await editor.setMode(SourceEditor.modes.css);
+      mode = SourceEditor.modes.css;
+    } else if (selectedSource.isHTML) {
+      mode = SourceEditor.modes.html;
+    } else {
+      mode = SourceEditor.modes.javascript;
     }
     await editor.setText(selectedSourceTextContent.value.value, {
       documentId: selectedSource.id,
+      mode,
     });
     const isReadOnly =
       !selectedSource.isStyleSheet ||

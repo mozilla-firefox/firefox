@@ -2886,8 +2886,13 @@ class Editor extends EventEmitter {
    *                 Will be null for loading and error messages.
    * @param {boolean} options.saveTransactionToHistory
    *                 This determines if the transaction for this specific text change should be added to the undo/redo history.
+   * @param {string} options.mode
+   *                 This is the language type which determines the syntax highlighting to apply to the text content
    */
-  async setText(value, { documentId, saveTransactionToHistory = true } = {}) {
+  async setText(
+    value,
+    { documentId, saveTransactionToHistory = true, mode } = {}
+  ) {
     const cm = editors.get(this);
     const isWasm = typeof value !== "string" && "binary" in value;
 
@@ -2943,6 +2948,14 @@ class Editor extends EventEmitter {
       });
 
       const effects = [];
+      if (mode) {
+        effects.push(
+          this.#compartments.languageCompartment.reconfigure([
+            this.#languageModes.get(mode),
+          ])
+        );
+      }
+
       if (this.config?.lineNumbers) {
         const lineNumbersConfig = {
           domEventHandlers: this.#gutterDOMEventHandlers,

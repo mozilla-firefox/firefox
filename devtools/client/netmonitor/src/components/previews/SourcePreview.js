@@ -211,8 +211,7 @@ class SourcePreview extends Component {
     const { mimeType, text, url } = this.props;
     if (this?.editor?.hasCodeMirror) {
       const mode = this.getSourceEditorModeForMimetype(mimeType);
-      await this.editor.setMode(mode);
-      await this.editor.setText(text, { documentId: url });
+      await this.editor.setText(text, { documentId: url, mode });
       // When navigating from the netmonitor search, find and highlight the
       // the current search result.
       await this.findSearchResult();
