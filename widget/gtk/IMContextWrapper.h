@@ -5,6 +5,7 @@
 #ifndef IMContextWrapper_h_
 #define IMContextWrapper_h_
 
+#include <fmt/format.h>
 #include <gdk/gdk.h>
 #include <gtk/gtk.h>
 
@@ -611,6 +612,16 @@ class IMContextWrapper final : public TextEventDispatcherListener {
     void Clear() {
       mOffset = UINT32_MAX;
       mLength = UINT32_MAX;
+    }
+
+    friend auto format_as(const Range& aRange) {
+      return aRange.IsValid() ? fmt::format("{{ mOffset={}, mLength={} }}",
+                                            aRange.mOffset, aRange.mLength)
+                              : "{ IsValid()=false }";
+    }
+    friend std::ostream& operator<<(std::ostream& aStream,
+                                    const Range& aRange) {
+      return aStream << format_as(aRange);
     }
   };
 

@@ -3221,85 +3221,90 @@ bool IMContextWrapper::SetTextRange(PangoAttrIterator* aPangoAttrIter,
 }
 
 void IMContextWrapper::SetCursorPosition(GtkIMContext* aContext) {
-  MOZ_LOG(
-      gIMELog, LogLevel::Info,
-      ("0x%p SetCursorPosition(aContext=0x%p), "
-       "mCompositionTargetRange={ mOffset=%u, mLength=%u }, "
-       "mContentSelection=%s",
-       this, aContext, mCompositionTargetRange.mOffset,
-       mCompositionTargetRange.mLength, ToString(mContentSelection).c_str()));
+  MOZ_LOG_FMT(gIMELog, LogLevel::Info,
+              "{} SetCursorPosition(aContext={}), "
+              "mCompositionTargetRange={}, mContentSelection={}",
+              static_cast<void*>(this), static_cast<void*>(aContext),
+              mCompositionTargetRange, mContentSelection);
 
   bool useCaret = false;
-  if (!mCompositionTargetRange.IsValid()) {
-    if (mContentSelection.isNothing()) {
-      MOZ_LOG(gIMELog, LogLevel::Error,
-              ("0x%p   SetCursorPosition(), FAILED, "
-               "mCompositionTargetRange and mContentSelection are invalid",
-               this));
+  if (!mCompositionTargetRange.IsValid()) [[unlikely]] {
+    if (mContentSelection.isNothing()) [[unlikely]] {
+      MOZ_LOG_FMT(gIMELog, LogLevel::Error,
+                  "{}   SetCursorPosition(), FAILED, "
+                  "mCompositionTargetRange and mContentSelection are invalid",
+                  static_cast<void*>(this));
       return;
     }
-    if (!mContentSelection->HasRange()) {
-      MOZ_LOG(gIMELog, LogLevel::Warning,
-              ("0x%p   SetCursorPosition(), FAILED, "
-               "mCompositionTargetRange is invalid and there is no selection",
-               this));
+    if (!mContentSelection->HasRange()) [[unlikely]] {
+      MOZ_LOG_FMT(
+          gIMELog, LogLevel::Warning,
+          "{}   SetCursorPosition(), FAILED, "
+          "mCompositionTargetRange is invalid and there is no selection",
+          static_cast<void*>(this));
       return;
     }
     useCaret = true;
   }
 
-  if (!mLastFocusedWindow) {
-    MOZ_LOG(gIMELog, LogLevel::Error,
-            ("0x%p   SetCursorPosition(), FAILED, due to no focused "
-             "window",
-             this));
+  const RefPtr<TextEventDispatcher> dispatcher = GetTextEventDispatcher();
+  if (!dispatcher) [[unlikely]] {
+    MOZ_LOG_FMT(
+        gIMELog, LogLevel::Error,
+        "{}   SetCursorPosition(), FAILED, due to no text event dispatcher",
+        static_cast<void*>(this));
     return;
   }
 
-  if (MOZ_UNLIKELY(!aContext)) {
-    MOZ_LOG(gIMELog, LogLevel::Error,
-            ("0x%p   SetCursorPosition(), FAILED, due to no context", this));
+  if (!aContext) [[unlikely]] {
+    MOZ_LOG_FMT(gIMELog, LogLevel::Error,
+                "{}   SetCursorPosition(), FAILED, due to no context",
+                static_cast<void*>(this));
     return;
   }
 
-  WidgetQueryContentEvent queryCaretOrTextRectEvent(
-      true, useCaret ? eQueryCaretRect : eQueryTextRect, mLastFocusedWindow);
-  if (useCaret) {
-    queryCaretOrTextRectEvent.InitForQueryCaretRect(
-        mContentSelection->OffsetAndDataRef().StartOffset());
-  } else {
+  const Maybe<QueryContentResult> queryCaretOrTextRectResult =
+      [&]() -> Maybe<QueryContentResult> {
+    if (useCaret) {
+      return dispatcher->QueryCaretRect(
+          mContentSelection->OffsetAndDataRef().StartOffset());
+    }
     if (mContentSelection->WritingModeRef().IsVertical()) {
       // For preventing the candidate window to overlap the target
       // clause, we should set fake (typically, very tall) caret rect.
-      uint32_t length =
+      const uint32_t length =
           mCompositionTargetRange.mLength ? mCompositionTargetRange.mLength : 1;
-      queryCaretOrTextRectEvent.InitForQueryTextRect(
-          mCompositionTargetRange.mOffset, length);
-    } else {
-      queryCaretOrTextRectEvent.InitForQueryTextRect(
-          mCompositionTargetRange.mOffset, 1);
+      return dispatcher->QueryTextRect(mCompositionTargetRange.mOffset, length);
     }
-  }
-  mLastFocusedWindow->DispatchEvent(&queryCaretOrTextRectEvent);
-  if (queryCaretOrTextRectEvent.Failed()) {
-    MOZ_LOG(gIMELog, LogLevel::Error,
-            ("0x%p   SetCursorPosition(), FAILED, %s was failed", this,
-             useCaret ? "eQueryCaretRect" : "eQueryTextRect"));
+    return dispatcher->QueryTextRect(mCompositionTargetRange.mOffset, 1);
+  }();
+  if (queryCaretOrTextRectResult.isNothing()) [[unlikely]] {
+    MOZ_LOG_FMT(
+        gIMELog, LogLevel::Error,
+        "{}   SetCursorPosition(), FAILED, TextEventDispatcher::{}() failed",
+        static_cast<void*>(this),
+        useCaret ? "QueryCaretRect" : "QueryTextRect");
     return;
   }
 
-  nsWindow* rootWindow =
+  if (!mLastFocusedWindow) [[unlikely]] {
+    MOZ_LOG_FMT(gIMELog, LogLevel::Error,
+                "{}   SetCursorPosition(), FAILED, due to lost focused window",
+                static_cast<void*>(this));
+    return;
+  }
+
+  nsWindow* const rootWindow =
       nsWindow::FromWidget(mLastFocusedWindow->GetTopLevelWidget());
 
   // Get the position of the rootWindow in screen.
-  LayoutDeviceIntPoint root = rootWindow->WidgetToScreenOffset();
+  const LayoutDeviceIntPoint root = rootWindow->WidgetToScreenOffset();
 
   // Get the position of IM context owner window in screen.
-  LayoutDeviceIntPoint owner = mOwnerWindow->WidgetToScreenOffset();
+  const LayoutDeviceIntPoint owner = mOwnerWindow->WidgetToScreenOffset();
 
   // Compute the caret position in the IM owner window.
-  LayoutDeviceIntRect rect =
-      queryCaretOrTextRectEvent.mReply->mRect + root - owner;
+  LayoutDeviceIntRect rect = queryCaretOrTextRectResult->mRect + root - owner;
   rect.width = 0;
   rootWindow->SetTextInputArea(rect);
 

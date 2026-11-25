@@ -1337,6 +1337,53 @@ Maybe<QueryContentResult> TextEventDispatcher::QuerySelection(
   return std::move(queryEvent.mReply);
 }
 
+Maybe<QueryContentResult> TextEventDispatcher::QueryCaretRect(
+    uint32_t aOffset) const {
+  return QueryCaretRect(aOffset, QueryContentOptions());
+}
+
+Maybe<QueryContentResult> TextEventDispatcher::QueryCaretRect(
+    int64_t aOffset, const QueryContentOptions& aOptions) const {
+  if (NS_WARN_IF(!mWidget) ||
+      NS_WARN_IF(aOffset < 0 && !aOptions.mRelativeToInsertionPoint))
+      [[unlikely]] {
+    return Nothing{};
+  }
+  WidgetQueryContentEvent queryEvent(true, eQueryCaretRect, mWidget);
+  queryEvent.InitForQueryCaretRect(aOffset, aOptions);
+  // FYI: mWidget is grabbed by queryEvent so that it's safe to call
+  // DispatchEvent without a local strong pointer.
+  mWidget->DispatchEvent(&queryEvent);
+  if (queryEvent.Failed()) [[unlikely]] {
+    return Nothing{};
+  }
+  return std::move(queryEvent.mReply);
+}
+
+Maybe<QueryContentResult> TextEventDispatcher::QueryTextRect(
+    uint32_t aOffset, uint32_t aLength) const {
+  return QueryTextRect(aOffset, aLength, QueryContentOptions());
+}
+
+Maybe<QueryContentResult> TextEventDispatcher::QueryTextRect(
+    int64_t aOffset, uint32_t aLength,
+    const QueryContentOptions& aOptions) const {
+  if (NS_WARN_IF(!mWidget) ||
+      NS_WARN_IF(aOffset < 0 && !aOptions.mRelativeToInsertionPoint) ||
+      NS_WARN_IF(aOffset + aLength > UINT32_MAX)) [[unlikely]] {
+    return Nothing{};
+  }
+  WidgetQueryContentEvent queryEvent(true, eQueryTextRect, mWidget);
+  queryEvent.InitForQueryTextRect(aOffset, aLength, aOptions);
+  // FYI: mWidget is grabbed by queryEvent so that it's safe to call
+  // DispatchEvent without a local strong pointer.
+  mWidget->DispatchEvent(&queryEvent);
+  if (queryEvent.Failed()) [[unlikely]] {
+    return Nothing{};
+  }
+  return std::move(queryEvent.mReply);
+}
+
 /******************************************************************************
  * TextEventDispatcher::PendingComposition
  *****************************************************************************/
