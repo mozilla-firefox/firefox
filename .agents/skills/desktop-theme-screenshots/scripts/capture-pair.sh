@@ -6,7 +6,12 @@
 #
 #   scripts/capture-pair.sh [--base REV] [--setpref name=value]... <test> <path>... [shots-dir]
 #   scripts/capture-pair.sh --probe [--timeout-ms N] [--window-size WxH] [--chrome-setup-file F [--chrome-setup-async]] [--steps F] [--base REV] [--setpref name=value]... <script> <path>... [shots-dir]
+#   scripts/capture-pair.sh --check-paths [--base REV] <path>...
 #
+# --check-paths  run only the checks on each <path> below, without launching
+#             anything, and print one line per path: `linked <path>`, `copied
+#             <path>` (the run would build before each half) or `refused
+#             <path>: <reason>`. Exits 2 when there is no objdir to check against.
 # <test>      the scratch browser-chrome test that pastes capture.js
 # --probe <script>  instead of a test, a chrome-context script for
 #             desktop-probing's firefox-probe.py --realm chrome --async
@@ -59,6 +64,7 @@
 set -euo pipefail
 
 probe=0
+check_paths=0
 prefs=()
 timeout_ms=
 window_size=
@@ -71,6 +77,7 @@ while [ $# -gt 0 ]; do
   case $1 in
     -h|--help) sed -n '2,/^set -euo/{/^set -euo/d;s/^# \{0,1\}//;p;}' "$0"; exit 0 ;;
     --probe) probe=1; shift ;;
+    --check-paths) check_paths=1; shift ;;
     --timeout-ms) [ $# -ge 2 ] || { echo "--timeout-ms needs a value" >&2; exit 2; }
             timeout_ms=$2; shift 2 ;;
     --window-size) [ $# -ge 2 ] || { echo "--window-size needs WxH" >&2; exit 2; }
@@ -88,8 +95,14 @@ while [ $# -gt 0 ]; do
     *) break ;;
   esac
 done
-usage="usage: $0 [--probe [--timeout-ms N] [--window-size WxH] [--chrome-setup-file F [--chrome-setup-async]] [--steps F]] [--base REV] [--setpref name=value]... <test|script> <path>... [shots-dir]"
-[ $# -ge 2 ] || { echo "$usage" >&2; exit 2; }
+usage="usage: $0 [--probe [--timeout-ms N] [--window-size WxH] [--chrome-setup-file F [--chrome-setup-async]] [--steps F]] [--base REV] [--setpref name=value]... <test|script> <path>... [shots-dir]
+       $0 --check-paths [--base REV] <path>..."
+[ $# -ge $((2 - check_paths)) ] || { echo "$usage" >&2; exit 2; }
+if [ "$check_paths" = 1 ] && { [ "$probe" = 1 ] || [ ${#prefs[@]} -gt 0 ]; }; then
+  echo "--check-paths takes only --base and paths" >&2
+  exit 2
+fi
+git rev-parse --verify --quiet "$base^{commit}" >/dev/null || { echo "unknown revision: $base" >&2; exit 2; }
 if [ "$chrome_setup_async" = 1 ] && [ "$chrome_setup" = 0 ]; then
   echo "--chrome-setup-async needs --chrome-setup-file" >&2
   exit 2
@@ -99,28 +112,43 @@ if [ "$probe" = 0 ] && { [ -n "$timeout_ms" ] || [ -n "$window_size" ] || [ ${#p
   exit 2
 fi
 
-test_file=$1
-shift
 shots_dir=$PWD/artifacts/shots
 msys=0
 case ${OSTYPE:-} in
   msys*|cygwin*|win32) msys=1 ;;
 esac
-case ${!#} in
-  /*) shots_dir=${!#}; set -- "${@:1:$#-1}" ;;
-  [A-Za-z]:/*) [ "$msys" = 1 ] && { shots_dir=${!#}; set -- "${@:1:$#-1}"; } ;;
-esac
+if [ "$check_paths" = 0 ]; then
+  test_file=$1
+  shift
+  case ${!#} in
+    /*) shots_dir=${!#}; set -- "${@:1:$#-1}" ;;
+    [A-Za-z]:/*) [ "$msys" = 1 ] && { shots_dir=${!#}; set -- "${@:1:$#-1}"; } ;;
+  esac
+fi
 [ $# -ge 1 ] || { echo "$usage" >&2; exit 2; }
 mach=${MACH:-./mach}
+# With --check-paths, report the refusal and go on to the next path.
+# ADVICE, the third argument, applies only to a capture.
+refuse() {
+  if [ "$check_paths" = 1 ]; then
+    echo "refused $1: $2"
+  else
+    echo "$1 $2${3:+ $3}" >&2
+    exit 1
+  fi
+}
 paths=()
+# The paths as given, which --check-paths reports them as.
+given=()
 for p in "$@"; do
   # ./a, a//b and the like name the same file; the objdir checks need one form.
   full=$(git ls-files --full-name -- "$p")
   if [ -z "$full" ] || [ "$full" != "${full%%$'\n'*}" ]; then
-    echo "$p is not one tracked file (options go before the test or script, and shots-dir, an absolute path, goes last)" >&2
-    exit 1
+    refuse "$p" "is not one tracked file" "(options go before the test or script, and shots-dir, an absolute path, goes last)"
+    continue
   fi
   paths+=("$full")
+  given+=("$p")
 done
 
 needs_build=$msys
@@ -139,7 +167,14 @@ check_clean() {
     fi
   done
 }
-check_clean
+if [ "$check_paths" = 1 ]; then
+  if [ -z "$objdir" ] || [ ! -d "$objdir/dist/bin" ]; then
+    echo "no objdir found to check the paths against (set OBJDIR)" >&2
+    exit 2
+  fi
+else
+  check_clean
+fi
 # What build faster installs, as type, destination and source path per line.
 manifests=()
 if [ -n "$objdir" ]; then
@@ -157,28 +192,37 @@ installed() {
     $3 in want { found = 1; exit }
     END { exit !found }' "${manifests[@]}"
 }
-for p in "${paths[@]}"; do
+for i in "${!paths[@]}"; do
+  p=${paths[$i]} arg=${given[$i]}
   if ! git cat-file -e "HEAD:$p" 2>/dev/null || ! git cat-file -e "$base:$p" 2>/dev/null; then
-    echo "$p is missing at HEAD or at $base; a file the change adds or removes cannot be reverted" >&2
-    exit 1
+    refuse "$arg" "is missing at HEAD or at $base; a file the change adds or removes cannot be reverted"
+    continue
   fi
   if git diff --quiet "$base" HEAD -- "$p"; then
-    echo "$p is unchanged between $base and HEAD; nothing to compare" >&2
-    exit 1
+    refuse "$arg" "is unchanged between $base and HEAD; nothing to compare"
+    continue
+  fi
+  if [ "$check_paths" = 1 ] && { ! git diff --quiet -- "$p" || ! git diff --cached --quiet -- "$p"; }; then
+    refuse "$arg" "has uncommitted changes; commit them first (SKILL.md §3)"
+    continue
   fi
   if [ -z "$objdir" ] || [ ! -d "$objdir/dist/bin" ]; then
     echo "warning: no objdir found; cannot check that the browser loads $p live (set OBJDIR)" >&2
   elif [ -n "$(find "$objdir/dist/bin" -lname "$root/$p" -print -quit)" ]; then
-    :
+    [ "$check_paths" = 0 ] || echo "linked $arg"
   elif { [ ${#manifests[@]} -gt 0 ] && installed "$p"; } ||
        { [ ${#manifests[@]} -eq 0 ] && [ -n "$(find "$objdir/dist/bin" -type f -name "$(basename "$p")" -print -quit)" ]; }; then
-    echo "$p is copied into the objdir, not linked; running ./mach build faster before each half"
+    if [ "$check_paths" = 1 ]; then
+      echo "copied $arg"
+    else
+      echo "$p is copied into the objdir, not linked; running ./mach build faster before each half"
+    fi
     needs_build=1
   else
-    echo "$p has no copy in $objdir/dist/bin, so reverting it changes nothing the browser loads; pass the file it loads" >&2
-    exit 1
+    refuse "$arg" "has no copy in $objdir/dist/bin, so reverting it changes nothing the browser loads; pass the file it loads"
   fi
 done
+[ "$check_paths" = 0 ] || exit 0
 
 case $shots_dir in
   /*) ;;
