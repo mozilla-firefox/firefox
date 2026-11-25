@@ -52,8 +52,8 @@ decides what you capture, force or log:
   each property the diff changes, on the element it changes, in both halves, and
   hand over the measurement, as for a 1px `color-mix()` border. A hue change
   across a wide area (a translucent shadow's color) can stay visible below the
-  threshold: diff it at `--threshold 0`, and attach a `zoom-pair.py` crop when
-  the zoom shows it.
+  threshold: diff it at `--threshold 0`, and hand it over with `sheet.py`
+  (§7), which counts every differing pixel and enlarges them below the pair.
 - **Visible only for some content or configuration.** A change to what clips,
   overflows, truncates or scrolls shows only where content reaches the boundary
   (e.g. a long label, an icon drawn to its corners, RTL), and a rule under a
@@ -312,13 +312,32 @@ Clean up per `desktop-probing` §6. Name the files so the pair is obvious
 (`before-<variant>-<subject>.png`), tell the user the directory, and say for
 each pair what to look at and what it was taken in: the element state and
 whether it was forced or the node hand-built, the color regime and theme,
-feature prefs, density, device pixel ratio and platform. A change a few device
-pixels wide is invisible in a full-window shot, so attach a zoom beside the
-pair: `scripts/zoom-pair.py before.png after.png zoom.png --rect X,Y,W,H`
-(`--help`).
+feature prefs, density, device pixel ratio and platform.
 
-Attach each image with the `bug-filing` skill's
+Hand the pairs over as one image, to the user as on a bug, so that nobody has
+to open the files one by one: [`scripts/sheet.py`](scripts/sheet.py) draws each
+pair under a caption as before and after, with both enlarged below them when
+the change is narrow or the capture small (`--help`). Caption each pair with
+its surface and state, such as "Overflow panel, :focus-visible", without a
+number, since `sheet.py` numbers the pairs. Put what every pair shares, such as
+the platform, theme and device pixel ratio, in `--title`, and what differs
+between pairs, such as a grab on Xvfb beside a headless capture, in each
+caption. Crop a screen grab to the popup with `--rect N=X,Y,W,H`, from its
+`getOuterScreenRect()`, and any pair to the region it is about, such as a
+narrow change in a capture where something wider differs too.
+
+`sheet.py` draws the pixel difference beside a pair only when it is hard to
+see: no channel differs by more than 64, or the differing pixels cover at most
+1% of the capture. For the others it prints "no difference drawn" with the
+numbers. When a user is there to ask, ask whether to add those differences,
+and rerun with `--diff all` if they want them; without one, keep the default.
+`sheet.py` counts every differing
+pixel (`--threshold 0`) where `pixel-diff` ignores differences up to 20, so its
+count for a pair is the larger; say which threshold a quoted count used.
+
+Attach the sheet with the `bug-filing` skill's
 `.agents/skills/bug-filing/attach-to-bug.py`, following that skill's dry-run
-steps; pass `--file-name` where several variant directories each hold a
-`before.png`. Attaching is outward-facing and permanent: confirm with the user
+steps. The comment names what every pair shares, as `--title` does, then gives
+one line per numbered pair saying what changed from before to after and whether
+the state was forced or the node hand-built. Attaching is outward-facing and permanent: confirm with the user
 first and say which bug.
