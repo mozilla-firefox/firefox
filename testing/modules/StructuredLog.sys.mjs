@@ -90,7 +90,7 @@ function ensureSchemaRegistered() {
   });
 
   ChromeUtils.registerMarkerSchema({
-    name: "Log",
+    name: "TestLog",
     tableLabel: "{marker.data.message}",
     display: ["marker-chart", "marker-table"],
     colorField: "color",
@@ -417,7 +417,7 @@ export class StructuredLogger {
     ensureSchemaRegistered();
 
     // Add marker type
-    data.type = "Log";
+    data.type = "TestLog";
 
     // Copy test/subtest from extra if present, normalizing test path
     if (extra) {

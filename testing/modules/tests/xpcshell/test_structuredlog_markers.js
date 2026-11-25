@@ -425,7 +425,7 @@ add_task(async function test_log_adds_profiler_markers() {
   Assert.ok(debugMarker, "Found DEBUG marker");
 
   // Verify marker data
-  Assert.equal(infoMarker.data.type, "Log", "INFO marker has Log type");
+  Assert.equal(infoMarker.data.type, "TestLog", "INFO marker has TestLog type");
   Assert.equal(infoMarker.data.test, "test1.html", "INFO marker has test name");
   Assert.equal(
     infoMarker.data.subtest,
@@ -434,13 +434,25 @@ add_task(async function test_log_adds_profiler_markers() {
   );
   Assert.ok(!infoMarker.data.color, "INFO marker has no color (default blue)");
 
-  Assert.equal(warningMarker.data.type, "Log", "WARNING marker has Log type");
+  Assert.equal(
+    warningMarker.data.type,
+    "TestLog",
+    "WARNING marker has TestLog type"
+  );
   Assert.equal(warningMarker.data.color, "orange", "WARNING marker is orange");
 
-  Assert.equal(errorMarker.data.type, "Log", "ERROR marker has Log type");
+  Assert.equal(
+    errorMarker.data.type,
+    "TestLog",
+    "ERROR marker has TestLog type"
+  );
   Assert.equal(errorMarker.data.color, "red", "ERROR marker is red");
 
-  Assert.equal(debugMarker.data.type, "Log", "DEBUG marker has Log type");
+  Assert.equal(
+    debugMarker.data.type,
+    "TestLog",
+    "DEBUG marker has TestLog type"
+  );
   Assert.equal(debugMarker.data.color, "grey", "DEBUG marker is grey");
 });
 
