@@ -507,6 +507,38 @@ def test_push_to_git_backing_returns_git_push_sha(
     assert "-o StrictHostKeyChecking=accept-new" in env.get("GIT_SSH_COMMAND", "")
 
 
+@pytest.mark.skipif(shutil.which("git") is None, reason="git not available")
+def test_push_to_git_backing_includes_files_to_change(
+    tmp_path, monkeypatch, mock_tc_secret
+):
+    """push_to_git_backing pushes a commit containing `files_to_change`."""
+    for var in ("GIT_AUTHOR", "GIT_COMMITTER"):
+        monkeypatch.setenv(f"{var}_NAME", "Test")
+        monkeypatch.setenv(f"{var}_EMAIL", "test@example.com")
+    subprocess.run(["git", "init", "-q"], cwd=tmp_path, check=True)
+    subprocess.run(
+        ["git", "commit", "-q", "--allow-empty", "-m", "base"],
+        cwd=tmp_path,
+        check=True,
+    )
+
+    git_repo = GitRepository(tmp_path)
+    monkeypatch.setattr(push, "vcs", git_repo)
+    base = git_repo.head_rev
+
+    with patch.object(git_repo, "push") as mock_push:
+        sha = push.push_to_git_backing(
+            "try", "staging release", {"config/milestone.txt": "163.0\n"}
+        )
+
+    assert sha != base
+    assert mock_push.call_args.kwargs["ref"] == sha
+    assert mock_push.call_args.kwargs["dest_branch"] == f"try/{sha}"
+    show = ["git", "show", f"{sha}:config/milestone.txt"]
+    assert subprocess.check_output(show, cwd=tmp_path, text=True) == "163.0\n"
+    assert git_repo.head_rev == base
+
+
 @pytest.mark.skipif(
     shutil.which("ssh-keygen") is None, reason="ssh-keygen not available"
 )
