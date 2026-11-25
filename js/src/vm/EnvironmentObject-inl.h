@@ -7,6 +7,8 @@
 
 #include "vm/EnvironmentObject.h"
 
+#include "wasm/WasmJS.h"
+
 #include "vm/JSObject-inl.h"
 
 namespace js {
@@ -41,6 +43,9 @@ inline const Value& EnvironmentObject::aliasedBinding(
 
 inline void EnvironmentObject::setAliasedBinding(uint32_t slot,
                                                  const Value& v) {
+  MOZ_ASSERT_IF(
+      is<ModuleEnvironmentObject>(),
+      !as<ModuleEnvironmentObject>().hasWasmMutableGlobalBinding(slot));
   setSlot(slot, v);
 }
 
@@ -56,6 +61,35 @@ inline void EnvironmentObject::setAliasedBinding(const BindingIter& bi,
                                                  const Value& v) {
   MOZ_ASSERT(bi.location().kind() == BindingLocation::Kind::Environment);
   setAliasedBinding(bi.location().slot(), v);
+}
+
+inline bool ModuleEnvironmentObject::hasWasmMutableGlobalBinding(
+    uint32_t slot) const {
+  const Value& value = getRawSlot(slot);
+  return value.isObject() &&
+         value.toObject().is<WasmMutableGlobalBindingObject>();
+}
+
+inline bool ModuleEnvironmentObject::getBindingValue(
+    JSContext* cx, uint32_t slot, MutableHandleValue value) const {
+  if (MOZ_LIKELY(!hasWasmMutableGlobalBinding(slot))) {
+    value.set(getRawSlot(slot));
+    return true;
+  }
+  Rooted<WasmMutableGlobalBindingObject*> binding(
+      cx, &getRawSlot(slot).toObject().as<WasmMutableGlobalBindingObject>());
+  return binding->getValue(cx, value);
+}
+
+inline bool ModuleEnvironmentObject::isBindingUninitialized(
+    uint32_t slot) const {
+  if (MOZ_LIKELY(!hasWasmMutableGlobalBinding(slot))) {
+    return getRawSlot(slot).isMagic(JS_UNINITIALIZED_LEXICAL);
+  }
+  return !getRawSlot(slot)
+              .toObject()
+              .as<WasmMutableGlobalBindingObject>()
+              .isInitialized();
 }
 
 inline void CallObject::setAliasedFormalFromArguments(const Value& argsValue,

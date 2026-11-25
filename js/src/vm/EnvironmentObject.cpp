@@ -613,7 +613,7 @@ bool ModuleEnvironmentObject::getProperty(JSContext* cx, HandleObject obj,
   mozilla::Maybe<PropertyInfo> prop;
   ModuleEnvironmentObject* env;
   if (bindings.lookup(id, &env, &prop)) {
-    vp.set(env->getSlot(prop->slot()));
+    vp.set(env->getRawSlot(prop->slot()));
     return true;
   }
 
@@ -645,7 +645,7 @@ bool ModuleEnvironmentObject::getOwnPropertyDescriptor(
   ModuleEnvironmentObject* env;
   if (bindings.lookup(id, &env, &prop)) {
     desc.set(mozilla::Some(PropertyDescriptor::Data(
-        env->getSlot(prop->slot()),
+        env->getRawSlot(prop->slot()),
         {JS::PropertyAttribute::Enumerable, JS::PropertyAttribute::Writable})));
     return true;
   }
