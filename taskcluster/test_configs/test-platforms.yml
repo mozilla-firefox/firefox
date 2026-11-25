@@ -543,6 +543,7 @@ android-hw-a55-14-0-aarch64-shippable/opt:
     build-platform: android-aarch64-shippable/opt
     test-sets:
         - android-hw-speedometer-tests
+        - android-hw-speedometer3-a11y
         - android-hw-browsertime
         - android-hw-aarch64
         - android-hw-aarch64-pgo-unittests
@@ -551,6 +552,7 @@ android-hw-a55-14-0-aarch64-nightlyasrelease/opt:
     build-platform: android-aarch64-nightlyasrelease/opt
     test-sets:
         - android-hw-speedometer3-nightlyasrelease
+        - android-hw-speedometer3-a11y
         - android-hw-nav-bench-nightlyasrelease
 
 android-hw-a55-14-0-aarch64/opt:

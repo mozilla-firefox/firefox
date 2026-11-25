@@ -923,6 +923,10 @@ def target_tasks_general_perf_testing(full_task_graph, parameters, graph_config)
         if "speedometer2" in try_name:
             return False
 
+        # Bug 2077267 - Only runs in the daily mozilla-central crons
+        if "speedometer3-a11y" in try_name:
+            return False
+
         # Bug 1867669 - Temporarily disable all live site tests
         if "live" in try_name and "sheriffed" not in try_name:
             return False
@@ -1081,6 +1085,12 @@ def target_tasks_speedometer_tests(full_task_graph, parameters, graph_config):
             return False
 
         try_name = attributes.get("raptor_try_name")
+        # Bug 2077267 - Run Speedometer 3 with accessibility enabled daily
+        if (
+            "firefox-speedometer3-a11y" in try_name
+            or "speedometer3-a11y-mobile-fenix" in try_name
+        ) and ("shippable" in platform or "nightlyasrelease" in platform):
+            return True
         if accept_raptor_desktop_build(platform):
             if (
                 "browsertime" in try_name
@@ -1543,6 +1553,10 @@ def target_tasks_daily_beta_perf(full_task_graph, parameters, graph_config):
         if "speedometer2" in try_name:
             return False
 
+        # Bug 2077267 - Only runs in the daily mozilla-central crons
+        if "speedometer3-a11y" in try_name:
+            return False
+
         # Select beta tasks for awsy
         if "awsy" in try_name:
             if accept_awsy_task(try_name, platform):
@@ -1620,6 +1634,10 @@ def target_tasks_weekly_release_perf(full_task_graph, parameters, graph_config):
 
         # Bug 2014270 - Disable speedometer2 on production branches
         if "speedometer2" in try_name:
+            return False
+
+        # Bug 2077267 - Only runs in the daily mozilla-central crons
+        if "speedometer3-a11y" in try_name:
             return False
 
         # Select release tasks for awsy

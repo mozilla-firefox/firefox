@@ -379,6 +379,7 @@ browsertime-benchmark:
                         safari-tp: []
                         default:
                             - [speedometer3, sp3]
+                            - [speedometer3-a11y, sp3-a11y]
                             - [speedometer-experimental, sp-exp]
                 default:
                     by-app:
@@ -391,6 +392,7 @@ browsertime-benchmark:
                             - [motionmark-htmlsuite-1-3, mm-h-1.3]
                             - [speedometer2, sp2]
                             - [speedometer3, sp3]
+                            - [speedometer3-a11y, sp3-a11y]
                             - [speedometer-experimental, sp-exp]
                             - [stylebench, sb]
                             - [twitch-animation, tw-a]
@@ -410,6 +412,7 @@ browsertime-benchmark:
                         custom-car:
                             - [speedometer2, sp2]
                             - [speedometer3, sp3]
+                            - [speedometer3-a11y, sp3-a11y]
                             - [speedometer-experimental, sp-exp]
                             - [motionmark-1-3, mm-1.3]
                             - [motionmark-htmlsuite-1-3, mm-h-1.3]
@@ -423,6 +426,7 @@ browsertime-benchmark:
                             - [motionmark-htmlsuite-1-3, mm-h-1.3]
                             - [speedometer2, sp2]
                             - [speedometer3, sp3]
+                            - [speedometer3-a11y, sp3-a11y]
                             - [speedometer-experimental, sp-exp]
                             - [stylebench, sb]
                             - [unity-webgl, ugl]
@@ -444,6 +448,7 @@ browsertime-benchmark:
             firefox:
                 by-subtest:
                     jetstream3: 2
+                    speedometer3-a11y: 2
                     speedometer-experimental: 3
                     default:
                         by-test-platform:
@@ -492,6 +497,7 @@ browsertime-benchmark:
                             default: []
                     default: []
             speedometer2: []
+            speedometer3-a11y: []
             # There is no safari-tp entry because the experimental workloads
             # aren't in the safari-tp subtest lists.
             speedometer-experimental:
@@ -538,7 +544,7 @@ browsertime-benchmark:
             motionmark-1-3: 3000
             motionmark-htmlsuite-1-3: 3000
             unity-webgl: 2400
-            speedometer3:
+            speedometer3(-a11y)?:
                 by-test-platform:
                     macosx1500.*shippable.*: 4200
                     macosx1500.*nightlyasrelease.*: 4200
@@ -560,7 +566,7 @@ browsertime-benchmark:
                         macosx1500.*shippable.*:
                             - --page-timeout=900000
                         default: []
-                speedometer(3|-experimental):
+                speedometer(3|3-a11y|-experimental):
                     by-test-platform:
                         linux.*shippable.*:
                             - --power-profile=performance

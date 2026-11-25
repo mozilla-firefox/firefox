@@ -214,6 +214,12 @@ class BrowsertimeAndroid(PerftestAndroid, Browsertime):
         if self.debug_mode:
             chrome_args.extend(["--auto-open-devtools-for-tabs"])
 
+        chrome_args.extend(
+            arg.strip()
+            for arg in test.get("chrome_args", "").splitlines()
+            if arg.strip()
+        )
+
         args_list = []
         for arg in chrome_args:
             args_list.extend(["--chrome.args=" + str(arg.replace("'", '"'))])
