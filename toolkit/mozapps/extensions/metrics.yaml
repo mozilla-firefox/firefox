@@ -95,6 +95,8 @@ addons:
       - metrics
       - heartbeat
       - addons
+    no_lint:
+      - UNKNOWN_PING_REFERENCED  # Bug 2097441
 
   theme:
     type: object
@@ -165,6 +167,8 @@ addons:
       - metrics
       - addons
       - events # Temporary until bug 2087139
+    no_lint:
+      - UNKNOWN_PING_REFERENCED  # Bug 2097441
 
   active_g_m_plugins:
     type: object
@@ -211,6 +215,8 @@ addons:
     send_in_pings:
       - metrics
       - addons
+    no_lint:
+      - UNKNOWN_PING_REFERENCED  # Bug 2097441
 
 addons_manager:
   install: &install_update_event

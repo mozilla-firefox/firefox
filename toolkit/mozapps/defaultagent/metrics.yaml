@@ -29,6 +29,8 @@ system:
     expires: never
     send_in_pings:
       - default-agent
+    no_lint:
+      - UNKNOWN_PING_REFERENCED  # Bug 2097441
 
   previous_os_version:
     type: string
@@ -58,6 +60,8 @@ system:
     expires: never
     send_in_pings:
       - default-agent
+    no_lint:
+      - UNKNOWN_PING_REFERENCED  # Bug 2097441
 
 system_default:
   browser:
@@ -95,6 +99,8 @@ system_default:
     expires: never
     send_in_pings:
       - default-agent
+    no_lint:
+      - UNKNOWN_PING_REFERENCED  # Bug 2097441
 
   previous_browser:
     type: string
@@ -125,6 +131,8 @@ system_default:
     expires: never
     send_in_pings:
       - default-agent
+    no_lint:
+      - UNKNOWN_PING_REFERENCED  # Bug 2097441
 
   pdf_handler:
     type: string
@@ -159,6 +167,8 @@ system_default:
     expires: never
     send_in_pings:
       - default-agent
+    no_lint:
+      - UNKNOWN_PING_REFERENCED  # Bug 2097441
 
 notification:
   show_success:
@@ -174,6 +184,8 @@ notification:
     expires: never
     send_in_pings:
       - default-agent
+    no_lint:
+      - UNKNOWN_PING_REFERENCED  # Bug 2097441
 
   action:
     type: string
@@ -206,6 +218,8 @@ notification:
     expires: never
     send_in_pings:
       - default-agent
+    no_lint:
+      - UNKNOWN_PING_REFERENCED  # Bug 2097441
 
 system_pin:
   is_taskbar_pinned:
@@ -229,6 +243,8 @@ system_pin:
     expires: never
     send_in_pings:
       - default-agent
+    no_lint:
+      - UNKNOWN_PING_REFERENCED  # Bug 2097441
 
   previous_is_taskbar_pinned:
     type: string
@@ -257,6 +273,8 @@ system_pin:
     expires: never
     send_in_pings:
       - default-agent
+    no_lint:
+      - UNKNOWN_PING_REFERENCED  # Bug 2097441
 
 defaultagent:
   days_since_last_app_launch:
@@ -276,6 +294,8 @@ defaultagent:
     send_in_pings:
       - default-agent
     unit: days
+    no_lint:
+      - UNKNOWN_PING_REFERENCED  # Bug 2097441
 
 install:
   has_win_package_id:
@@ -296,6 +316,8 @@ install:
     expires: never
     send_in_pings:
       - default-agent
+    no_lint:
+      - UNKNOWN_PING_REFERENCED  # Bug 2097441
 
   win_package_family_name:
     type: string
@@ -317,6 +339,8 @@ install:
     expires: never
     send_in_pings:
       - default-agent
+    no_lint:
+      - UNKNOWN_PING_REFERENCED  # Bug 2097441
 
   installer_type:
     type: string
@@ -341,6 +365,8 @@ install:
     expires: never
     send_in_pings:
       - default-agent
+    no_lint:
+      - UNKNOWN_PING_REFERENCED  # Bug 2097441
 
   from_msi:
     type: boolean
@@ -359,6 +385,8 @@ install:
     expires: never
     send_in_pings:
       - default-agent
+    no_lint:
+      - UNKNOWN_PING_REFERENCED  # Bug 2097441
 
   silent:
     type: boolean
@@ -377,3 +405,5 @@ install:
     expires: never
     send_in_pings:
       - default-agent
+    no_lint:
+      - UNKNOWN_PING_REFERENCED  # Bug 2097441

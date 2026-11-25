@@ -1443,6 +1443,8 @@ update:
     expires: never
     send_in_pings:
       - update
+    no_lint:
+      - UNKNOWN_PING_REFERENCED  # Bug 2097441
 
   target_version:
     type: string
@@ -1461,6 +1463,8 @@ update:
     expires: never
     send_in_pings:
       - update
+    no_lint:
+      - UNKNOWN_PING_REFERENCED  # Bug 2097441
 
   target_build_id:
     type: string
@@ -1479,6 +1483,8 @@ update:
     expires: never
     send_in_pings:
       - update
+    no_lint:
+      - UNKNOWN_PING_REFERENCED  # Bug 2097441
 
   target_display_version:
     type: string
@@ -1499,6 +1505,8 @@ update:
     expires: never
     send_in_pings:
       - update
+    no_lint:
+      - UNKNOWN_PING_REFERENCED  # Bug 2097441
 
   previous_channel:
     type: string
@@ -1516,6 +1524,8 @@ update:
     expires: never
     send_in_pings:
       - update
+    no_lint:
+      - UNKNOWN_PING_REFERENCED  # Bug 2097441
 
   previous_version:
     type: string
@@ -1534,6 +1544,8 @@ update:
     expires: never
     send_in_pings:
       - update
+    no_lint:
+      - UNKNOWN_PING_REFERENCED  # Bug 2097441
 
   previous_build_id:
     type: string
@@ -1552,6 +1564,8 @@ update:
     expires: never
     send_in_pings:
       - update
+    no_lint:
+      - UNKNOWN_PING_REFERENCED  # Bug 2097441
 
   blocked:
     type: counter
@@ -1664,6 +1678,8 @@ updater:
     send_in_pings:
       - metrics
       - update
+    no_lint:
+      - UNKNOWN_PING_REFERENCED  # Bug 2097441
 
 
 update.settings:
@@ -1686,6 +1702,8 @@ update.settings:
     send_in_pings:
       - metrics
       - update
+    no_lint:
+      - UNKNOWN_PING_REFERENCED  # Bug 2097441
 
   enabled:
     type: boolean
@@ -1722,6 +1740,8 @@ update.settings:
     send_in_pings:
       - metrics
       - update
+    no_lint:
+      - UNKNOWN_PING_REFERENCED  # Bug 2097441
 
   background:
     type: boolean
@@ -1740,3 +1760,5 @@ update.settings:
     send_in_pings:
       - metrics
       - update
+    no_lint:
+      - UNKNOWN_PING_REFERENCED  # Bug 2097441

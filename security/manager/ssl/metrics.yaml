@@ -1845,6 +1845,8 @@ ssl:
     send_in_pings:
       - metrics
       - network-health
+    no_lint:
+      - UNKNOWN_PING_REFERENCED  # Bug 2097441
 
   ct_policy_non_compliant_connections_by_ca_2:
     type: custom_distribution

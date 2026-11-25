@@ -64,6 +64,8 @@ update:
     send_in_pings:
       - background-update
       - events
+    no_lint:
+      - UNKNOWN_PING_REFERENCED  # Bug 2097441
 
   move_result:
     type: labeled_counter
@@ -88,6 +90,8 @@ update:
     send_in_pings:
       - background-update
       - metrics
+    no_lint:
+      - UNKNOWN_PING_REFERENCED  # Bug 2097441
 
   no_window_auto_restarts:
     type: counter
@@ -110,6 +114,8 @@ update:
     send_in_pings:
       - background-update
       - metrics
+    no_lint:
+      - UNKNOWN_PING_REFERENCED  # Bug 2097441
 
   suppress_prompts:
     type: boolean
@@ -134,6 +140,8 @@ update:
     send_in_pings:
       - background-update
       - metrics
+    no_lint:
+      - UNKNOWN_PING_REFERENCED  # Bug 2097441
 
   version_pin:
     type: string
@@ -157,3 +165,5 @@ update:
     send_in_pings:
       - background-update
       - metrics
+    no_lint:
+      - UNKNOWN_PING_REFERENCED  # Bug 2097441

@@ -1219,6 +1219,8 @@ pwmgr:
     send_in_pings:
       - metrics
       - sync
+    no_lint:
+      - UNKNOWN_PING_REFERENCED  # Bug 2097441
 
   num_improved_generated_passwords:
     type: labeled_counter
@@ -1261,6 +1263,8 @@ pwmgr:
     send_in_pings:
       - metrics
       - sync
+    no_lint:
+      - UNKNOWN_PING_REFERENCED  # Bug 2097441
 
   prompt_update_action:
     type: custom_distribution
@@ -1287,6 +1291,8 @@ pwmgr:
     send_in_pings:
       - metrics
       - sync
+    no_lint:
+      - UNKNOWN_PING_REFERENCED  # Bug 2097441
 
   is_username_only_form:
     type: labeled_counter
