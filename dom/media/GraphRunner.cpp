@@ -13,6 +13,7 @@
 #include "nsISupportsPriority.h"
 #include "prthread.h"
 #include "Tracing.h"
+#include "mozilla/dom/WorkletThread.h"
 #include "audio_thread_priority.h"
 #ifdef MOZ_WIDGET_ANDROID
 #  include "AndroidProcess.h"
@@ -37,8 +38,10 @@ GraphRunner::~GraphRunner() {
 /* static */
 already_AddRefed<GraphRunner> GraphRunner::Create(MediaTrackGraphImpl* aGraph) {
   nsCOMPtr<nsIThread> thread;
-  if (NS_WARN_IF(NS_FAILED(
-          NS_NewNamedThread("GraphRunner", getter_AddRefs(thread))))) {
+  nsIThreadManager::ThreadCreationOptions options = {
+      .stackSize = mozilla::dom::WorkletThread::StackSize()};
+  if (NS_WARN_IF(NS_FAILED(NS_NewNamedThread(
+          "GraphRunner", getter_AddRefs(thread), nullptr, options)))) {
     return nullptr;
   }
   nsCOMPtr<nsISupportsPriority> supportsPriority = do_QueryInterface(thread);

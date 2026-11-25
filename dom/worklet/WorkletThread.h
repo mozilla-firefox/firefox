@@ -45,6 +45,10 @@ class WorkletThread final : public nsThread, public nsIObserver {
 
   void Terminate();
 
+  // Recommended native stack size to use, greater than the stack size
+  // internally used by SpiderMonkey.
+  static uint32_t StackSize();
+
  private:
   explicit WorkletThread(WorkletImpl* aWorkletImpl);
   ~WorkletThread();

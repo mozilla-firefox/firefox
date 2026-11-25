@@ -1,0 +1,21 @@
+<!DOCTYPE html>
+<html class="reftest-wait">
+<script type="worklet">
+function recursive(a) {
+  if(a < 0) return 0;
+    return recursive(a - 1);
+}
+recursive(2400);
+</script>
+<script>
+var ac = new AudioContext();
+var e = document.querySelector("script[type=worklet]");
+var text = e.innerText;
+const blob = new Blob([text], { type: "application/javascript" });
+var url = URL.createObjectURL(blob);
+
+ac.audioWorklet.addModule(url).then(() => {
+  document.documentElement.removeAttribute("class");
+});
+</script>
+</html>

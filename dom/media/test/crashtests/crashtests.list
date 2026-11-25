@@ -167,4 +167,5 @@ load 1833894.mp4
 load 1835164.html
 load 1840002.webm
 load 1845350.mp4
+skip-if(Android) load audioworkletprocessor-recursion.html
 load 2014824.html
