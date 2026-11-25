@@ -99,7 +99,9 @@ class OffThreadBaselineSnapshot
 
 using BaselineSnapshotList = mozilla::LinkedList<OffThreadBaselineSnapshot>;
 
-class BaselineCompileTask final : public HelperThreadTask {
+class BaselineCompileTask final
+    : public HelperThreadTask,
+      public mozilla::LinkedListElement<BaselineCompileTask> {
  public:
   BaselineCompileTask(CompileRealm* realm, LifoAlloc* alloc,
                       BaselineSnapshotList&& snapshots)

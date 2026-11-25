@@ -5,8 +5,7 @@
 #include "vm/HelperThreads.h"
 
 #include "mozilla/ReverseIterator.h"  // mozilla::Reversed(...)
-#include "mozilla/ScopeExit.h"
-#include "mozilla/Span.h"  // mozilla::Span<TaggedScriptThingIndex>
+#include "mozilla/Span.h"             // mozilla::Span<TaggedScriptThingIndex>
 
 #include <algorithm>
 
@@ -512,42 +511,13 @@ size_t GlobalHelperThreadState::maxWasmPartialTier2CompileThreads() const {
 }
 
 void GlobalHelperThreadState::trace(JSTracer* trc) {
-  {
-    AutoLockHelperThreadState lock;
-
-#ifdef DEBUG
-    // Since we hold the helper thread lock here we must disable GCMarker's
-    // checking of the atom reference bitmap since that also relies on taking
-    // the lock.
-    GCMarker* marker = nullptr;
-    if (trc->isMarkingTracer()) {
-      marker = GCMarker::fromTracer(trc);
-      marker->setCheckAtomMarking(false);
-    }
-    auto reenableAtomMarkingCheck = mozilla::MakeScopeExit([marker] {
-      if (marker) {
-        marker->setCheckAtomMarking(true);
-      }
-    });
-#endif
-
-    for (auto task : baselineWorklist(lock)) {
-      task->trace(trc);
-    }
-    for (auto task : baselineFinishedList(lock)) {
-      task->trace(trc);
-    }
-
-    for (auto* helper : helperTasks(lock)) {
-      if (helper->is<jit::BaselineCompileTask>()) {
-        helper->as<jit::BaselineCompileTask>()->trace(trc);
-      }
-    }
-  }
-
-  // Trace Ion compilations without holding the lock.
+  // Trace off-thread compilations without taking the helper thread lock.
   JSRuntime* rt = trc->runtime();
   if (auto* jitRuntime = rt->jitRuntime()) {
+    for (jit::BaselineCompileTask* task :
+         jitRuntime->baselineOffThreadList(rt)) {
+      task->trace(trc);
+    }
     for (jit::IonCompileTask* task : jitRuntime->ionOffThreadList(rt)) {
       task->trace(trc);
     }
@@ -1123,7 +1093,12 @@ bool GlobalHelperThreadState::submitTask(
 
 bool js::StartOffThreadBaselineCompile(jit::BaselineCompileTask* task,
                                        const AutoLockHelperThreadState& lock) {
-  return HelperThreadState().submitTask(task, lock);
+  if (!HelperThreadState().submitTask(task, lock)) {
+    return false;
+  }
+  JSRuntime* rt = task->runtimeFromAnyThread();
+  rt->jitRuntime()->baselineOffThreadList(rt).insertBack(task);
+  return true;
 }
 
 /*

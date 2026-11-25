@@ -45,6 +45,7 @@ enum class ArraySortKind;
 
 namespace jit {
 
+class BaselineCompileTask;
 class FrameSizeClass;
 class Label;
 class MacroAssembler;
@@ -244,6 +245,16 @@ class JitRuntime {
   // List of Ion compilation waiting to get linked.
   MainThreadData<IonCompileTaskList> ionLazyLinkList_;
   MainThreadData<size_t> ionLazyLinkListSize_{0};
+
+  // Off-thread Baseline compilations that are queued, running on a helper
+  // thread, or in the finished list. Tasks stay in this list until the main
+  // thread finishes or cancels them.
+  //
+  // Like ionOffThreadList_, the list itself must only be used and mutated on
+  // the main thread.
+  using BaselineCompileTaskList =
+      mozilla::LinkedList<js::jit::BaselineCompileTask>;
+  MainThreadData<BaselineCompileTaskList> baselineOffThreadList_;
 
   // Pointer to trampoline code for each TrampolineNative. The JSFunction has
   // a JitEntry pointer that points to an item in this array.
@@ -543,6 +554,7 @@ class JitRuntime {
 
   IonCompileTaskList& ionOffThreadList(JSRuntime* rt);
   IonCompileTaskList& ionLazyLinkList(JSRuntime* rt);
+  BaselineCompileTaskList& baselineOffThreadList(JSRuntime* rt);
 
   size_t ionLazyLinkListSize() const { return ionLazyLinkListSize_; }
 

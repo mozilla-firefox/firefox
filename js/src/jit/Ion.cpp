@@ -15,6 +15,7 @@
 #include "jit/AliasAnalysis.h"
 #include "jit/AutoWritableJitCode.h"
 #include "jit/BacktrackingAllocator.h"
+#include "jit/BaselineCompileTask.h"
 #include "jit/BaselineFrame.h"
 #include "jit/BaselineJIT.h"
 #include "jit/BranchHinting.h"
@@ -99,6 +100,7 @@ JitRuntime::~JitRuntime() {
   MOZ_ASSERT(ionLazyLinkListSize_ == 0);
   MOZ_ASSERT(ionLazyLinkList_.ref().isEmpty());
   MOZ_ASSERT(ionOffThreadList_.ref().isEmpty());
+  MOZ_ASSERT(baselineOffThreadList_.ref().isEmpty());
 
   MOZ_ASSERT(ionFreeTaskBatch_.ref().empty());
   MOZ_ASSERT(debugModeOSRReturnSites_.ref().empty());
@@ -303,6 +305,13 @@ JitRuntime::IonCompileTaskList& JitRuntime::ionOffThreadList(JSRuntime* rt) {
   MOZ_ASSERT(CurrentThreadCanAccessRuntime(rt),
              "Should only be accessed on the main thread.");
   return ionOffThreadList_.ref();
+}
+
+JitRuntime::BaselineCompileTaskList& JitRuntime::baselineOffThreadList(
+    JSRuntime* rt) {
+  MOZ_ASSERT(CurrentThreadCanAccessRuntime(rt),
+             "Should only be accessed on the main thread.");
+  return baselineOffThreadList_.ref();
 }
 
 void JitRuntime::ionLazyLinkListRemove(JSRuntime* rt,
