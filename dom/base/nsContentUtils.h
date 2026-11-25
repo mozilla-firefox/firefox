@@ -288,6 +288,7 @@ enum class FluentResourceFile : uint8_t {
   DOM,
   DOM_DEPRECATIONS,
   DOM_DIALOGS,
+  DOM_FORM_VALIDATION,
   _COUNT
 };
 
@@ -1613,6 +1614,15 @@ class nsContentUtils {
       mozilla::dom::FluentResourceFile aFile, const nsACString& aL10nId,
       const nsTArray<mozilla::intl::FluentArg>& aArgs, nsIGlobalObject* aGlobal,
       nsAString& aResult);
+
+  /**
+   * Same as above, but uses aDocument to decide whether to spoof English (see
+   * GetMaybeLocalizedString).
+   */
+  static nsresult FormatMaybeLocalizedFluentString(
+      mozilla::dom::FluentResourceFile aFile, const nsACString& aL10nId,
+      const nsTArray<mozilla::intl::FluentArg>& aArgs,
+      const Document* aDocument, nsAString& aResult);
 
   /**
    * If the warning for aOperation has been migrated to Fluent, sets its message

@@ -60,7 +60,7 @@ function checkTooShortValidity(element)
   ok(!element.validity.valid, "Element should be invalid");
   ok(!element.checkValidity(), "The element should not be valid");
   is(element.validationMessage,
-          "Please use at least 5 characters (you are currently using 4 characters).",
+          "Please use at least 5 characters (current length: 4).",
           "The validation message text is not correct");
 
   sendString("o");
@@ -94,7 +94,7 @@ function checkTooShortValidity(element)
   ok(!element.validity.valid, "Element should be invalid");
   ok(!element.checkValidity(), "The element should not be valid");
   is(element.validationMessage,
-          "Please use at least 6 characters (you are currently using 5 characters).",
+          "Please use at least 6 characters (current length: 5).",
           "The validation message text is not correct");
 
   element.minLength = 5;

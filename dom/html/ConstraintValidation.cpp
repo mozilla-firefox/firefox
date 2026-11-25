@@ -64,4 +64,27 @@ void ConstraintValidation::SetCustomValidity(const nsAString& aError) {
   SetValidityState(VALIDITY_STATE_CUSTOM_ERROR, !mCustomValidity.IsEmpty());
 }
 
+/* static */
+nsresult ConstraintValidation::GetTextLengthValidationMessage(
+    const Document* aDocument, TextLengthLimit aLimitType, int32_t aLimit,
+    int32_t aTextLength, nsAString& aResult) {
+  const bool isTooLong = aLimitType == TextLengthLimit::Max;
+  // Web pages can read validation messages, so numbers are only used to select
+  // the plural form, and displayed as strings that Fluent doesn't format with
+  // the user's regional preferences.
+  nsAutoCString limitText;
+  limitText.AppendInt(aLimit);
+  nsAutoCString textLengthText;
+  textLengthText.AppendInt(aTextLength);
+  AutoTArray<intl::FluentArg, 3> args = {
+      {isTooLong ? "maxLength"_ns : "minLength"_ns, aLimit},
+      {isTooLong ? "maxLengthText"_ns : "minLengthText"_ns, limitText},
+      {"textLength"_ns, textLengthText}};
+  return nsContentUtils::FormatMaybeLocalizedFluentString(
+      FluentResourceFile::DOM_FORM_VALIDATION,
+      isTooLong ? "dom-form-validation-text-too-long"_ns
+                : "dom-form-validation-text-too-short"_ns,
+      args, aDocument, aResult);
+}
+
 }  // namespace mozilla::dom
