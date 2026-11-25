@@ -1914,6 +1914,12 @@ ${
 
     let resultUrl = element?.dataset.url;
     let originalUntrimmedValue = this.untrimmedValue;
+    let isCanonized = this.setValueFromResult({
+      result,
+      event,
+      element,
+      urlOverride: resultUrl,
+    });
 
     let where;
     let openParams = {
@@ -1972,15 +1978,6 @@ ${
       openParams
     );
     openParams.avoidBrowserFocus = keepViewOpen;
-
-    let isCanonized =
-      !keepViewOpen &&
-      this.setValueFromResult({
-        result,
-        event,
-        element,
-        urlOverride: resultUrl,
-      });
 
     if (!this.#providesSearchMode(result) && !keepViewOpen) {
       this.view.close({ elementPicked: true });
