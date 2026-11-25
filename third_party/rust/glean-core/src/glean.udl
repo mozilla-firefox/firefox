@@ -11,7 +11,7 @@ namespace glean {
     //
     // This will fully initialize Glean in a separate thread.
     // It will return immediately.
-    void glean_initialize(InternalConfiguration cfg, ClientInfoMetrics client_info, OnGleanEvents callbacks);
+    void glean_initialize(InternalConfiguration cfg, ClientInfoMetrics client_info, OnGleanEvents callbacks, ExternalBackup? backup);
 
     /// Shuts down Glean in an orderly fashion.
     void glean_shutdown();
@@ -256,6 +256,28 @@ callback interface OnGleanEvents {
 callback interface GleanEventListener {
     // Called when an event is recorded, indicating the id of the event
     void on_event_recorded(string id);
+};
+
+// Embedders may optionally supply an object that implements this interface to
+// provide external backup storage for Glean internal data.
+callback interface ExternalBackup {
+    // Store `value` under the key `key`.
+    void store(string key, string value);
+
+    // Retrieve the most recent value stored for `key`.
+    // Returns nothing if there is no value.
+    string? load(string key);
+
+    // Clear the stored value for `key`.
+    void clear(string key);
+
+    // Clear all values for all keys previously stored.
+    void clear_all();
+
+    // TEMPORARY ONLY FOR A LITTLE WHILE
+    // Should we actually use the value for the client_id we asked for
+    // ( if there even is one )?
+    boolean should_apply_stored_client_id();
 };
 
 // Deserialized experiment data.

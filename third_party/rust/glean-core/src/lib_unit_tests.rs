@@ -214,32 +214,35 @@ fn experimentation_id_is_set_correctly() {
     // Define an experimentation id to test
     let experimentation_id = "test-experimentation-id";
 
-    let glean = Glean::new(InternalConfiguration {
-        data_path: name,
-        application_id: GLOBAL_APPLICATION_ID.into(),
-        language_binding_name: "Rust".into(),
-        upload_enabled: true,
-        max_events: None,
-        delay_ping_lifetime_io: false,
-        app_build: "Unknown".into(),
-        use_core_mps: false,
-        trim_data_to_registered_pings: false,
-        log_level: None,
-        rate_limit: None,
-        enable_event_timestamps: true,
-        experimentation_id: Some(experimentation_id.to_string()),
-        enable_internal_pings: true,
-        ping_schedule: Default::default(),
-        ping_lifetime_threshold: 0,
-        ping_lifetime_max_time: 0,
-        max_pending_pings_count: None,
-        max_pending_pings_directory_size: None,
-        session_mode: crate::session::SessionMode::Auto,
-        session_sample_rate: 1.0,
-        session_inactivity_timeout_ms: 1_800_000,
-        events_ping_acceleration_factor: None,
-        enable_store_submitted_pings: false,
-    })
+    let glean = Glean::new(
+        InternalConfiguration {
+            data_path: name,
+            application_id: GLOBAL_APPLICATION_ID.into(),
+            language_binding_name: "Rust".into(),
+            upload_enabled: true,
+            max_events: None,
+            delay_ping_lifetime_io: false,
+            app_build: "Unknown".into(),
+            use_core_mps: false,
+            trim_data_to_registered_pings: false,
+            log_level: None,
+            rate_limit: None,
+            enable_event_timestamps: true,
+            experimentation_id: Some(experimentation_id.to_string()),
+            enable_internal_pings: true,
+            ping_schedule: Default::default(),
+            ping_lifetime_threshold: 0,
+            ping_lifetime_max_time: 0,
+            max_pending_pings_count: None,
+            max_pending_pings_directory_size: None,
+            session_mode: crate::session::SessionMode::Auto,
+            session_sample_rate: 1.0,
+            session_inactivity_timeout_ms: 1_800_000,
+            events_ping_acceleration_factor: None,
+            enable_store_submitted_pings: false,
+        },
+        None,
+    )
     .unwrap();
 
     // Check that the correct value was stored

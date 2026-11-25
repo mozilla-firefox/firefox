@@ -208,7 +208,7 @@ mod unix {
             events_ping_acceleration_factor: None,
             enable_store_submitted_pings: true,
         };
-        let glean = Glean::new(cfg);
+        let glean = Glean::new(cfg, None);
         assert!(glean.is_err());
     }
 }
@@ -257,7 +257,7 @@ fn database_externally_locked() {
         events_ping_acceleration_factor: None,
         enable_store_submitted_pings: true,
     };
-    let glean = Glean::new(cfg);
+    let glean = Glean::new(cfg, None);
     assert!(glean.is_err());
 }
 

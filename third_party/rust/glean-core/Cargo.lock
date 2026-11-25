@@ -495,7 +495,7 @@ dependencies = [
 
 [[package]]
 name = "glean-core"
-version = "71.1.0"
+version = "71.2.0"
 dependencies = [
  "android_logger",
  "bincode",

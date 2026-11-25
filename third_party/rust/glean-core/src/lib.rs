@@ -369,6 +369,38 @@ pub trait GleanEventListener: Send {
     fn on_event_recorded(&self, id: String);
 }
 
+/// Embedders may optionally supply an object that implements this interface to
+/// provide external backup storage for Glean internal data.
+pub trait ExternalBackup: Send + std::fmt::Debug {
+    /// Store `value` under the key `key`.
+    fn store(&self, key: String, value: String);
+
+    /// Retrieve the most recent value stored for `key`.
+    /// Returns nothing if there is no value.
+    fn load(&self, key: String) -> Option<String>;
+
+    /// Clear the stored value for `key`.
+    fn clear(&self, key: String);
+
+    /// Clear all values for all keys previously stored.
+    fn clear_all(&self);
+
+    /// TEMPORARY ONLY FOR A LITTLE WHILE
+    /// Should we actually use the value for the client_id we asked for
+    /// ( if there even is one )?
+    fn should_apply_stored_client_id(&self) -> bool;
+}
+
+impl malloc_size_of::MallocSizeOf for dyn ExternalBackup {
+    fn size_of(&self, _ops: &mut malloc_size_of::MallocSizeOfOps) -> usize {
+        // We don't know how big this is or is going to be.
+        // We'd like to be able to report it, just in case it's large,
+        // but we expect in most cases for this to be a very small constant value.
+        // So let's approixmate that with 0.
+        0
+    }
+}
+
 /// Initializes Glean.
 ///
 /// # Arguments
@@ -381,8 +413,9 @@ pub fn glean_initialize(
     cfg: InternalConfiguration,
     client_info: ClientInfoMetrics,
     callbacks: Box<dyn OnGleanEvents>,
+    backup: Option<Box<dyn ExternalBackup>>,
 ) {
-    initialize_inner(cfg, client_info, callbacks);
+    initialize_inner(cfg, client_info, callbacks, backup);
 }
 
 /// Shuts down Glean in an orderly fashion.
@@ -413,6 +446,7 @@ fn initialize_inner(
     cfg: InternalConfiguration,
     client_info: ClientInfoMetrics,
     callbacks: Box<dyn OnGleanEvents>,
+    backup: Option<Box<dyn ExternalBackup>>,
 ) {
     if was_initialize_called() {
         log::error!("Glean should not be initialized multiple times");
@@ -437,7 +471,7 @@ fn initialize_inner(
             None
         };
 
-        let glean = match Glean::new(cfg) {
+        let glean = match Glean::new(cfg, backup) {
             Ok(glean) => glean,
             Err(err) => {
                 log::error!("Failed to initialize Glean: {}", err);

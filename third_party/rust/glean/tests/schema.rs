@@ -88,7 +88,7 @@ fn validate_against_schema() {
         os_version: None,
     };
 
-    glean::initialize(cfg, client_info);
+    glean::initialize(cfg, client_info, None);
 
     const PING_NAME: &str = "test-ping";
 

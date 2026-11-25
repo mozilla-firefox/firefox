@@ -37,7 +37,7 @@ use crate::util::truncate_string_at_boundary;
 use crate::util::{local_now_with_offset, sanitize_application_id};
 use crate::{
     scheduler, system, AttributionMetrics, CommonMetricData, DistributionMetrics, ErrorKind,
-    InternalConfiguration, Lifetime, PingRateLimit, Result, DEFAULT_MAX_EVENTS,
+    ExternalBackup, InternalConfiguration, Lifetime, PingRateLimit, Result, DEFAULT_MAX_EVENTS,
     GLEAN_SCHEMA_VERSION, GLEAN_VERSION, KNOWN_CLIENT_ID,
 };
 
@@ -152,7 +152,7 @@ where
 ///     events_ping_acceleration_factor: None,
 ///     enable_store_submitted_pings: false,
 /// };
-/// let mut glean = Glean::new(cfg).unwrap();
+/// let mut glean = Glean::new(cfg, None).unwrap();
 /// let ping = PingType::new("sample", true, false, true, true, true, vec![], vec![], true, vec![]);
 /// glean.register_ping_type(&ping);
 ///
@@ -202,6 +202,7 @@ pub struct Glean {
     pub(crate) session_manager: SessionManager,
     events_ping_acceleration_factor: Option<usize>,
     pub(crate) store_submitted_pings_enabled: bool,
+    backup: Option<Box<dyn ExternalBackup>>,
 }
 
 impl Glean {
@@ -286,6 +287,7 @@ impl Glean {
                 .events_ping_acceleration_factor
                 .map(|x| x as usize),
             store_submitted_pings_enabled: cfg.enable_store_submitted_pings,
+            backup: None,
         };
 
         // Ensuring these pings are registered.
@@ -304,8 +306,12 @@ impl Glean {
     /// This will create the necessary directories and files in
     /// [`cfg.data_path`](InternalConfiguration::data_path). This will also initialize
     /// the core metrics.
-    pub fn new(cfg: InternalConfiguration) -> Result<Self> {
+    pub fn new(
+        cfg: InternalConfiguration,
+        backup: Option<Box<dyn ExternalBackup>>,
+    ) -> Result<Self> {
         let mut glean = Self::new_for_subprocess(&cfg, false)?;
+        glean.backup = backup;
 
         // Creating the data store creates the necessary path as well.
         // If that fails we bail out and don't initialize further.
@@ -517,6 +523,100 @@ impl Glean {
             }
         }
 
+        {
+            // state (j): Load the backup ID.
+            let backup_client_id = glean
+                .backup
+                .as_ref()
+                .and_then(|b| b.load("client_id".into()));
+            if let Some(backup_client_id) = backup_client_id {
+                let backup_client_id = Uuid::try_parse(&backup_client_id);
+                let client_id = glean
+                    .core_metrics
+                    .client_id
+                    .get_value(&glean, Some("glean_client_info"));
+                match backup_client_id {
+                    Err(_) => {
+                        log::trace!("Backup client_id not a parseable UUID");
+                        glean
+                            .health_metrics
+                            .backup_client_id_status
+                            .get("parse")
+                            .add_sync(&glean, 1);
+                    }
+                    Ok(backup_client_id) if backup_client_id == *KNOWN_CLIENT_ID => {
+                        log::trace!("c0ffee in backup client_id. But how?");
+                        glean
+                            .health_metrics
+                            .backup_client_id_status
+                            .get("c0ffee")
+                            .add_sync(&glean, 1);
+                    }
+                    Ok(backup_client_id) => {
+                        if let Some(client_id) = client_id {
+                            if backup_client_id == client_id {
+                                log::trace!("Backup client_id matches chosen client_id");
+                                glean
+                                    .health_metrics
+                                    .backup_client_id_status
+                                    .get("match")
+                                    .add_sync(&glean, 1);
+                            } else {
+                                log::trace!("Backup client_id mismatch with chosen client_id");
+                                glean
+                                    .health_metrics
+                                    .backup_client_id_status
+                                    .get("mismatch")
+                                    .add_sync(&glean, 1);
+                                glean.backup_client_id(client_id);
+                            }
+                        } else {
+                            // state (k): Here we go, the one case where the backup is used.
+                            log::trace!("No current client_id, but a valid backup client_id.");
+                            glean
+                                .health_metrics
+                                .backup_client_id_status
+                                .get("backup_only")
+                                .add_sync(&glean, 1);
+                            if glean
+                                .backup
+                                .as_ref()
+                                .is_some_and(|b| b.should_apply_stored_client_id())
+                            {
+                                log::trace!("Applying backup client_id.");
+                                glean
+                                    .health_metrics
+                                    .recovered_client_id
+                                    .set_from_uuid_sync(&glean, backup_client_id);
+                                glean.store_client_id_with_reporting(
+                                    backup_client_id,
+                                    "will have to hope backup keeps working.",
+                                );
+                                glean
+                                    .core_metrics
+                                    .client_id
+                                    .set_from_uuid_sync(&glean, backup_client_id);
+                            }
+                        }
+                    }
+                }
+            } else {
+                log::trace!("No backup or no backup-stored client_id.");
+                glean
+                    .health_metrics
+                    .backup_client_id_status
+                    .get("none")
+                    .add_sync(&glean, 1);
+                if let Some(client_id) = glean
+                    .core_metrics
+                    .client_id
+                    .get_value(&glean, Some("glean_client_info"))
+                {
+                    glean.backup_client_id(client_id);
+                }
+            }
+        }
+
         // Set experimentation identifier (if any)
         if let Some(experimentation_id) = &cfg.experimentation_id {
             glean
@@ -548,6 +648,9 @@ impl Glean {
                 Some(uuid) => {
                     if let Err(e) = glean.remove_stored_client_id() {
                         log::error!("Couldn't remove client ID on disk. This might lead to a resurrection of this client ID later. Error: {e}");
+                    }
+                    if let Some(backup) = glean.backup.as_ref() {
+                        backup.clear("client_id".into());
                     }
                     if uuid == *KNOWN_CLIENT_ID {
                         // Previously Glean kept the KNOWN_CLIENT_ID stored.
@@ -618,7 +721,7 @@ impl Glean {
             enable_store_submitted_pings: false,
         };
 
-        let mut glean = Self::new(cfg).unwrap();
+        let mut glean = Self::new(cfg, None).unwrap();
 
         // Disable all upload manager policies for testing
         glean.upload_manager = PingUploadManager::no_policy(data_path);
@@ -710,6 +813,19 @@ impl Glean {
         }
     }
 
+    /// Backup the client ID to ExternalBackup (if available).
+    fn backup_client_id(&self, client_id: Uuid) {
+        if let Some(backup) = self.backup.as_ref() {
+            backup.store(
+                "client_id".into(),
+                client_id
+                    .hyphenated()
+                    .encode_lower(&mut Uuid::encode_buffer())
+                    .into(),
+            )
+        }
+    }
+
     /// Initializes the core metrics managed by Glean's Rust core.
     fn initialize_core_metrics(&mut self) {
         let need_new_client_id = match self
@@ -721,8 +837,10 @@ impl Glean {
             Some(uuid) => uuid == *KNOWN_CLIENT_ID,
         };
         if need_new_client_id {
+            log::trace!("Generating new client_id");
             let new_clientid = self.core_metrics.client_id.generate_and_set_sync(self);
             self.store_client_id_with_reporting(new_clientid, "New client in database only.");
+            self.backup_client_id(new_clientid);
         }
     }
 
@@ -959,6 +1077,9 @@ impl Glean {
 
         if let Err(e) = self.remove_stored_client_id() {
             log::error!("Couldn't remove client ID on disk. This might lead to a resurrection of this client ID later. Error: {e}");
+        }
+        if let Some(backup) = self.backup.as_ref() {
+            backup.clear_all();
         }
 
         // Delete all stored metrics.

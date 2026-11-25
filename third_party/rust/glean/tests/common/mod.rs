@@ -50,7 +50,7 @@ pub fn initialize(cfg: Configuration) {
     };
 
     _ = PingBuilder::new("store1").with_send_if_empty(true).build();
-    glean::initialize(cfg, client_info);
+    glean::initialize(cfg, client_info, None);
 }
 
 pub struct PingBuilder {

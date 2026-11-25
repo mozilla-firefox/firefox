@@ -21,7 +21,7 @@
 //! ```rust,no_run
 //! # use glean::{ConfigurationBuilder, ClientInfoMetrics, Error, private::*};
 //! let cfg = ConfigurationBuilder::new(true, "/tmp/data", "org.mozilla.glean_core.example").build();
-//! glean::initialize(cfg, ClientInfoMetrics::unknown());
+//! glean::initialize(cfg, ClientInfoMetrics::unknown(), None);
 //!
 //! let prototype_ping = PingType::new("prototype", true, true, true, true, true, vec!(), vec!(), true, vec![]);
 //!
@@ -39,9 +39,9 @@ pub use glean_core::{
         Datetime, DistributionData, MemoryUnit, MetricIdentifier, Rate, RecordedEvent,
         TestGetValue, TimeUnit, TimerId,
     },
-    traits, AttributionMetrics, CommonMetricData, DistributionMetrics, Error, ErrorType, Glean,
-    HistogramType, LabeledMetricData, Lifetime, PingRateLimit, RecordedExperiment, Result,
-    SessionMode, SubmittedPing,
+    traits, AttributionMetrics, CommonMetricData, DistributionMetrics, Error, ErrorType,
+    ExternalBackup, Glean, HistogramType, LabeledMetricData, Lifetime, PingRateLimit,
+    RecordedExperiment, Result, SessionMode, SubmittedPing,
 };
 
 mod configuration;
@@ -64,8 +64,13 @@ const LANGUAGE_BINDING_NAME: &str = "Rust";
 /// * `cfg` - the [`Configuration`] options to initialize with.
 /// * `client_info` - the [`ClientInfoMetrics`] values used to set Glean
 ///   core metrics.
-pub fn initialize(cfg: Configuration, client_info: ClientInfoMetrics) {
-    initialize_internal(cfg, client_info);
+/// * `backup` - an optional [`ExternalBackup`] implementation.
+pub fn initialize(
+    cfg: Configuration,
+    client_info: ClientInfoMetrics,
+    backup: Option<Box<dyn ExternalBackup>>,
+) {
+    initialize_internal(cfg, client_info, backup);
 }
 
 struct GleanEvents {
@@ -100,7 +105,11 @@ impl glean_core::OnGleanEvents for GleanEvents {
     }
 }
 
-fn initialize_internal(cfg: Configuration, client_info: ClientInfoMetrics) -> Option<()> {
+fn initialize_internal(
+    cfg: Configuration,
+    client_info: ClientInfoMetrics,
+    backup: Option<Box<dyn ExternalBackup>>,
+) -> Option<()> {
     // Initialize the ping uploader.
     let upload_manager = net::UploadManager::new(
         cfg.server_endpoint
@@ -139,7 +148,7 @@ fn initialize_internal(cfg: Configuration, client_info: ClientInfoMetrics) -> Op
         enable_store_submitted_pings: cfg.enable_store_submitted_pings,
     };
 
-    glean_core::glean_initialize(core_cfg, client_info.into(), callbacks);
+    glean_core::glean_initialize(core_cfg, client_info.into(), callbacks, backup);
     Some(())
 }
 
@@ -301,7 +310,7 @@ pub(crate) fn destroy_glean(clear_stores: bool, data_path: &Path) {
 /// Resets the Glean state and triggers init again.
 pub fn test_reset_glean(cfg: Configuration, client_info: ClientInfoMetrics, clear_stores: bool) {
     destroy_glean(clear_stores, &cfg.data_path);
-    initialize_internal(cfg, client_info);
+    initialize_internal(cfg, client_info, None);
     glean_core::join_init();
 }
 

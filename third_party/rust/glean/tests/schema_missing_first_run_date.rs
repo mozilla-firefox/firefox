@@ -58,7 +58,7 @@ fn custom_ping_is_valid_when_upload_disabled() {
         os_version: None,
     };
 
-    glean::initialize(cfg, client_info);
+    glean::initialize(cfg, client_info, None);
 
     let custom_ping = PingType::new(
         "custom",

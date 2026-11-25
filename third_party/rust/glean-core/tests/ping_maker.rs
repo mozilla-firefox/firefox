@@ -78,32 +78,35 @@ fn get_client_info_must_report_all_the_available_data() {
 #[test]
 fn test_metrics_must_report_experimentation_id() {
     let (tempdir, _) = tempdir();
-    let mut glean = Glean::new(glean_core::InternalConfiguration {
-        data_path: tempdir.path().display().to_string(),
-        application_id: GLOBAL_APPLICATION_ID.into(),
-        language_binding_name: "Rust".into(),
-        upload_enabled: true,
-        max_events: None,
-        delay_ping_lifetime_io: false,
-        app_build: "Unknown".into(),
-        use_core_mps: false,
-        trim_data_to_registered_pings: false,
-        log_level: None,
-        rate_limit: None,
-        enable_event_timestamps: true,
-        experimentation_id: Some("test-experimentation-id".to_string()),
-        enable_internal_pings: true,
-        ping_schedule: Default::default(),
-        ping_lifetime_threshold: 0,
-        ping_lifetime_max_time: 0,
-        max_pending_pings_count: None,
-        max_pending_pings_directory_size: None,
-        session_mode: glean_core::SessionMode::Auto,
-        session_sample_rate: 1.0,
-        session_inactivity_timeout_ms: 1_800_000,
-        events_ping_acceleration_factor: None,
-        enable_store_submitted_pings: false,
-    })
+    let mut glean = Glean::new(
+        glean_core::InternalConfiguration {
+            data_path: tempdir.path().display().to_string(),
+            application_id: GLOBAL_APPLICATION_ID.into(),
+            language_binding_name: "Rust".into(),
+            upload_enabled: true,
+            max_events: None,
+            delay_ping_lifetime_io: false,
+            app_build: "Unknown".into(),
+            use_core_mps: false,
+            trim_data_to_registered_pings: false,
+            log_level: None,
+            rate_limit: None,
+            enable_event_timestamps: true,
+            experimentation_id: Some("test-experimentation-id".to_string()),
+            enable_internal_pings: true,
+            ping_schedule: Default::default(),
+            ping_lifetime_threshold: 0,
+            ping_lifetime_max_time: 0,
+            max_pending_pings_count: None,
+            max_pending_pings_directory_size: None,
+            session_mode: glean_core::SessionMode::Auto,
+            session_sample_rate: 1.0,
+            session_inactivity_timeout_ms: 1_800_000,
+            events_ping_acceleration_factor: None,
+            enable_store_submitted_pings: false,
+        },
+        None,
+    )
     .unwrap();
     let ping_maker = PingMaker::new();
     let ping_type = PingBuilder::new("store1").build();
@@ -140,32 +143,35 @@ fn experimentation_id_is_removed_if_send_if_empty_is_false() {
     // Initialize Glean with an experimentation id, it should be removed if the ping is empty
     // and send_if_empty is false.
     let (tempdir, _) = tempdir();
-    let mut glean = Glean::new(glean_core::InternalConfiguration {
-        data_path: tempdir.path().display().to_string(),
-        application_id: GLOBAL_APPLICATION_ID.into(),
-        language_binding_name: "Rust".into(),
-        upload_enabled: true,
-        max_events: None,
-        delay_ping_lifetime_io: false,
-        app_build: "Unknown".into(),
-        use_core_mps: false,
-        trim_data_to_registered_pings: false,
-        log_level: None,
-        rate_limit: None,
-        enable_event_timestamps: true,
-        experimentation_id: Some("test-experimentation-id".to_string()),
-        enable_internal_pings: true,
-        ping_schedule: Default::default(),
-        ping_lifetime_threshold: 0,
-        ping_lifetime_max_time: 0,
-        max_pending_pings_count: None,
-        max_pending_pings_directory_size: None,
-        session_mode: glean_core::SessionMode::Auto,
-        session_sample_rate: 1.0,
-        session_inactivity_timeout_ms: 1_800_000,
-        events_ping_acceleration_factor: None,
-        enable_store_submitted_pings: false,
-    })
+    let mut glean = Glean::new(
+        glean_core::InternalConfiguration {
+            data_path: tempdir.path().display().to_string(),
+            application_id: GLOBAL_APPLICATION_ID.into(),
+            language_binding_name: "Rust".into(),
+            upload_enabled: true,
+            max_events: None,
+            delay_ping_lifetime_io: false,
+            app_build: "Unknown".into(),
+            use_core_mps: false,
+            trim_data_to_registered_pings: false,
+            log_level: None,
+            rate_limit: None,
+            enable_event_timestamps: true,
+            experimentation_id: Some("test-experimentation-id".to_string()),
+            enable_internal_pings: true,
+            ping_schedule: Default::default(),
+            ping_lifetime_threshold: 0,
+            ping_lifetime_max_time: 0,
+            max_pending_pings_count: None,
+            max_pending_pings_directory_size: None,
+            session_mode: glean_core::SessionMode::Auto,
+            session_sample_rate: 1.0,
+            session_inactivity_timeout_ms: 1_800_000,
+            events_ping_acceleration_factor: None,
+            enable_store_submitted_pings: false,
+        },
+        None,
+    )
     .unwrap();
     let ping_maker = PingMaker::new();
 

@@ -88,7 +88,7 @@ fn session_end_metric() -> EventMetric {
 fn auto_mode_starts_session_on_first_active() {
     let (_t, data_path) = tempdir();
     let cfg = session_cfg(&data_path, SessionMode::Auto, 1.0, 1_800_000);
-    let mut glean = Glean::new(cfg).unwrap();
+    let mut glean = Glean::new(cfg, None).unwrap();
 
     // No session before the first activation.
     assert!(session_start_metric().get_value(&glean, "events").is_none());
@@ -116,7 +116,7 @@ fn auto_mode_resumes_session_within_timeout() {
     let (_t, data_path) = tempdir();
     // 30-minute timeout — will not expire during this test.
     let cfg = session_cfg(&data_path, SessionMode::Auto, 1.0, 1_800_000);
-    let mut glean = Glean::new(cfg).unwrap();
+    let mut glean = Glean::new(cfg, None).unwrap();
 
     glean.handle_client_active();
     // Going inactive: Auto mode does not end the session immediately; instead
@@ -145,7 +145,7 @@ fn auto_mode_zero_timeout_means_never_time_out() {
     let (_t, data_path) = tempdir();
     // 0 ms = "never time out".
     let cfg = session_cfg(&data_path, SessionMode::Auto, 1.0, 0);
-    let mut glean = Glean::new(cfg).unwrap();
+    let mut glean = Glean::new(cfg, None).unwrap();
 
     glean.handle_client_active();
     // Events store cleared by handle_client_inactive's ping submission.
@@ -175,7 +175,7 @@ fn auto_mode_starts_new_session_after_timeout() {
     let (_t, data_path) = tempdir();
     // 1 ms inactivity timeout — expires almost immediately.
     let cfg = session_cfg(&data_path, SessionMode::Auto, 1.0, 1);
-    let mut glean = Glean::new(cfg).unwrap();
+    let mut glean = Glean::new(cfg, None).unwrap();
 
     glean.handle_client_active();
     // Going inactive clears the events store (ping submitted).
@@ -229,7 +229,7 @@ fn auto_mode_starts_new_session_after_timeout() {
 fn lifecycle_mode_new_session_per_activation() {
     let (_t, data_path) = tempdir();
     let cfg = session_cfg(&data_path, SessionMode::Lifecycle, 1.0, 0);
-    let mut glean = Glean::new(cfg).unwrap();
+    let mut glean = Glean::new(cfg, None).unwrap();
 
     // First activation.
     glean.handle_client_active();
@@ -273,7 +273,7 @@ fn lifecycle_mode_new_session_per_activation() {
 fn lifecycle_mode_session_end_on_inactive() {
     let (_t, data_path) = tempdir();
     let cfg = session_cfg(&data_path, SessionMode::Lifecycle, 1.0, 0);
-    let mut glean = Glean::new(cfg).unwrap();
+    let mut glean = Glean::new(cfg, None).unwrap();
 
     glean.handle_client_active();
 
@@ -325,7 +325,7 @@ fn lifecycle_mode_session_end_on_inactive() {
 fn manual_mode_no_auto_sessions() {
     let (_t, data_path) = tempdir();
     let cfg = session_cfg(&data_path, SessionMode::Manual, 1.0, 0);
-    let mut glean = Glean::new(cfg).unwrap();
+    let mut glean = Glean::new(cfg, None).unwrap();
 
     glean.handle_client_active();
     assert!(
@@ -349,7 +349,7 @@ fn manual_mode_no_auto_sessions() {
 fn session_seq_monotonically_increases_across_sessions() {
     let (_t, data_path) = tempdir();
     let cfg = session_cfg(&data_path, SessionMode::Lifecycle, 1.0, 0);
-    let mut glean = Glean::new(cfg).unwrap();
+    let mut glean = Glean::new(cfg, None).unwrap();
 
     for expected_seq in 1u64..=4 {
         glean.handle_client_active();
@@ -381,7 +381,7 @@ fn session_seq_persists_across_restarts() {
 
     {
         let cfg = session_cfg(&data_path, SessionMode::Lifecycle, 1.0, 0);
-        let mut glean = Glean::new(cfg).unwrap();
+        let mut glean = Glean::new(cfg, None).unwrap();
         glean.handle_client_active(); // seq=1
         glean.handle_client_inactive();
         glean.handle_client_active(); // seq=2
@@ -391,7 +391,7 @@ fn session_seq_persists_across_restarts() {
 
     // Simulate restart — new Glean on the same data path.
     let cfg2 = session_cfg(&data_path, SessionMode::Lifecycle, 1.0, 0);
-    let mut glean2 = Glean::new(cfg2).unwrap();
+    let mut glean2 = Glean::new(cfg2, None).unwrap();
     glean2.handle_client_active(); // should be seq=3
 
     let starts = session_start_metric()
@@ -421,7 +421,7 @@ fn session_seq_persists_across_restarts() {
 fn sampling_rate_zero_blocks_user_events_within_session() {
     let (_t, data_path) = tempdir();
     let cfg = session_cfg(&data_path, SessionMode::Auto, 0.0, 1_800_000);
-    let mut glean = Glean::new(cfg).unwrap();
+    let mut glean = Glean::new(cfg, None).unwrap();
 
     glean.handle_client_active();
 
@@ -454,7 +454,7 @@ fn sampling_rate_zero_blocks_user_events_within_session() {
 fn sampling_rate_one_passes_all_user_events() {
     let (_t, data_path) = tempdir();
     let cfg = session_cfg(&data_path, SessionMode::Auto, 1.0, 1_800_000);
-    let mut glean = Glean::new(cfg).unwrap();
+    let mut glean = Glean::new(cfg, None).unwrap();
 
     glean.handle_client_active();
 
@@ -484,7 +484,7 @@ fn events_outside_session_bypass_sampling_gate() {
     let (_t, data_path) = tempdir();
     // sample_rate=0.0 — all sessions sampled out.
     let cfg = session_cfg(&data_path, SessionMode::Auto, 0.0, 1_800_000);
-    let glean = Glean::new(cfg).unwrap();
+    let glean = Glean::new(cfg, None).unwrap();
     // No handle_client_active — no session is active.
 
     let user_event = EventMetric::new(
@@ -513,7 +513,7 @@ fn events_outside_session_bypass_sampling_gate() {
 fn out_of_session_events_bypass_sampling_gate() {
     let (_t, data_path) = tempdir();
     let cfg = session_cfg(&data_path, SessionMode::Auto, 0.0, 1_800_000);
-    let mut glean = Glean::new(cfg).unwrap();
+    let mut glean = Glean::new(cfg, None).unwrap();
 
     glean.handle_client_active(); // session sampled out (rate=0.0)
 
@@ -540,7 +540,7 @@ fn out_of_session_events_bypass_sampling_gate() {
 fn sample_rate_below_zero_clamped_to_zero() {
     let (_t, data_path) = tempdir();
     let cfg = session_cfg(&data_path, SessionMode::Auto, -0.5, 1_800_000);
-    let mut glean = Glean::new(cfg).unwrap();
+    let mut glean = Glean::new(cfg, None).unwrap();
 
     glean.handle_client_active();
 
@@ -568,7 +568,7 @@ fn sample_rate_below_zero_clamped_to_zero() {
 fn sample_rate_above_one_clamped_to_one() {
     let (_t, data_path) = tempdir();
     let cfg = session_cfg(&data_path, SessionMode::Auto, 1.5, 1_800_000);
-    let mut glean = Glean::new(cfg).unwrap();
+    let mut glean = Glean::new(cfg, None).unwrap();
 
     glean.handle_client_active();
 
@@ -600,7 +600,7 @@ fn sample_rate_above_one_clamped_to_one() {
 fn session_metadata_attached_to_in_session_events() {
     let (_t, data_path) = tempdir();
     let cfg = session_cfg(&data_path, SessionMode::Auto, 1.0, 1_800_000);
-    let mut glean = Glean::new(cfg).unwrap();
+    let mut glean = Glean::new(cfg, None).unwrap();
 
     glean.handle_client_active();
 
@@ -644,7 +644,7 @@ fn session_metadata_attached_to_in_session_events() {
 fn out_of_session_events_have_no_session_metadata() {
     let (_t, data_path) = tempdir();
     let cfg = session_cfg(&data_path, SessionMode::Auto, 1.0, 1_800_000);
-    let mut glean = Glean::new(cfg).unwrap();
+    let mut glean = Glean::new(cfg, None).unwrap();
 
     glean.handle_client_active();
 
@@ -674,7 +674,7 @@ fn out_of_session_events_have_no_session_metadata() {
 fn event_seq_increments_within_session() {
     let (_t, data_path) = tempdir();
     let cfg = session_cfg(&data_path, SessionMode::Auto, 1.0, 1_800_000);
-    let mut glean = Glean::new(cfg).unwrap();
+    let mut glean = Glean::new(cfg, None).unwrap();
 
     glean.handle_client_active();
 
@@ -718,7 +718,7 @@ fn event_seq_increments_within_session() {
 fn event_seq_resets_on_new_session() {
     let (_t, data_path) = tempdir();
     let cfg = session_cfg(&data_path, SessionMode::Lifecycle, 1.0, 0);
-    let mut glean = Glean::new(cfg).unwrap();
+    let mut glean = Glean::new(cfg, None).unwrap();
 
     let user_event = EventMetric::new(
         CommonMetricData {
@@ -772,7 +772,7 @@ fn event_seq_resets_on_new_session() {
 fn manual_mode_explicit_session_start_end() {
     let (_t, data_path) = tempdir();
     let cfg = session_cfg(&data_path, SessionMode::Manual, 1.0, 0);
-    let mut glean = Glean::new(cfg).unwrap();
+    let mut glean = Glean::new(cfg, None).unwrap();
 
     // No session yet — lifecycle signals are no-ops in Manual mode.
     assert!(!glean.session_manager().is_active());
@@ -832,7 +832,7 @@ fn manual_mode_explicit_session_start_end() {
 fn manual_mode_second_session_has_seq_2() {
     let (_t, data_path) = tempdir();
     let cfg = session_cfg(&data_path, SessionMode::Manual, 1.0, 0);
-    let mut glean = Glean::new(cfg).unwrap();
+    let mut glean = Glean::new(cfg, None).unwrap();
 
     glean.session_start();
     glean.session_end(None);
@@ -866,7 +866,7 @@ fn session_boundary_events_use_wall_clock_glean_timestamp() {
     let (_t, data_path) = tempdir();
     let mut cfg = session_cfg(&data_path, SessionMode::Manual, 1.0, 0);
     cfg.enable_event_timestamps = true;
-    let mut glean = Glean::new(cfg).unwrap();
+    let mut glean = Glean::new(cfg, None).unwrap();
 
     let before = chrono::Utc::now().timestamp_millis();
     glean.session_start();
@@ -909,7 +909,7 @@ fn auto_mode_session_resumed_on_restart_before_timeout() {
     {
         // 30-minute timeout — won't expire during this test.
         let cfg = session_cfg(&data_path, SessionMode::Auto, 1.0, 1_800_000);
-        let mut glean = Glean::new(cfg).unwrap();
+        let mut glean = Glean::new(cfg, None).unwrap();
         glean.handle_client_active(); // starts session, persists state
         original_session_id = glean.session_manager().session_id().unwrap().to_string();
         glean.handle_client_inactive(); // records inactive_since, submits events ping
@@ -918,7 +918,7 @@ fn auto_mode_session_resumed_on_restart_before_timeout() {
 
     // Restart on the same data path.
     let cfg2 = session_cfg(&data_path, SessionMode::Auto, 1.0, 1_800_000);
-    let mut glean2 = Glean::new(cfg2).unwrap();
+    let mut glean2 = Glean::new(cfg2, None).unwrap();
 
     // Re-activate immediately — well within the 30-minute timeout.
     glean2.handle_client_active();
@@ -956,7 +956,7 @@ fn auto_mode_event_seq_continuous_across_restart() {
     let pre_restart_seq;
     {
         let cfg = session_cfg(&data_path, SessionMode::Auto, 1.0, 1_800_000);
-        let mut glean = Glean::new(cfg).unwrap();
+        let mut glean = Glean::new(cfg, None).unwrap();
         glean.handle_client_active();
 
         let user_event = EventMetric::new(
@@ -998,7 +998,7 @@ fn auto_mode_event_seq_continuous_across_restart() {
 
     // Restart on the same data path.
     let cfg2 = session_cfg(&data_path, SessionMode::Auto, 1.0, 1_800_000);
-    let mut glean2 = Glean::new(cfg2).unwrap();
+    let mut glean2 = Glean::new(cfg2, None).unwrap();
 
     // Re-activate within the timeout — session is resumed, not replaced.
     glean2.handle_client_active();
@@ -1045,7 +1045,7 @@ fn auto_mode_new_session_on_restart_after_timeout() {
     {
         // 1 ms timeout — expires almost immediately.
         let cfg = session_cfg(&data_path, SessionMode::Auto, 1.0, 1);
-        let mut glean = Glean::new(cfg).unwrap();
+        let mut glean = Glean::new(cfg, None).unwrap();
         glean.handle_client_active();
         original_session_id = glean.session_manager().session_id().unwrap().to_string();
         glean.handle_client_inactive(); // records inactive_since, clears store
@@ -1055,7 +1055,7 @@ fn auto_mode_new_session_on_restart_after_timeout() {
     thread::sleep(Duration::from_millis(20)); // ensure timeout has expired
 
     let cfg2 = session_cfg(&data_path, SessionMode::Auto, 1.0, 1);
-    let mut glean2 = Glean::new(cfg2).unwrap();
+    let mut glean2 = Glean::new(cfg2, None).unwrap();
     glean2.handle_client_active();
 
     // session_end("timeout") must appear.
@@ -1102,7 +1102,7 @@ fn auto_mode_sampled_out_session_stays_sampled_out_after_restart() {
     // We use rate=0.0 to guarantee every session is sampled out.
     {
         let cfg = session_cfg(&data_path, SessionMode::Auto, 0.0, 1_800_000);
-        let mut glean = Glean::new(cfg).unwrap();
+        let mut glean = Glean::new(cfg, None).unwrap();
         glean.handle_client_active(); // session starts, sampled_in=false
         assert!(
             !glean.session_manager().sampled_in(),
@@ -1113,7 +1113,7 @@ fn auto_mode_sampled_out_session_stays_sampled_out_after_restart() {
 
     // Restart — session should resume and still be sampled-out.
     let cfg2 = session_cfg(&data_path, SessionMode::Auto, 0.0, 1_800_000);
-    let mut glean2 = Glean::new(cfg2).unwrap();
+    let mut glean2 = Glean::new(cfg2, None).unwrap();
     glean2.handle_client_active(); // should resume, not start new session
 
     assert!(
@@ -1151,7 +1151,7 @@ fn auto_mode_session_start_time_persists_across_restart() {
     let original_start_time;
     {
         let cfg = session_cfg(&data_path, SessionMode::Auto, 1.0, 1_800_000);
-        let mut glean = Glean::new(cfg).unwrap();
+        let mut glean = Glean::new(cfg, None).unwrap();
         glean.handle_client_active();
         original_start_time = glean
             .session_manager()
@@ -1161,7 +1161,7 @@ fn auto_mode_session_start_time_persists_across_restart() {
     }
 
     let cfg2 = session_cfg(&data_path, SessionMode::Auto, 1.0, 1_800_000);
-    let mut glean2 = Glean::new(cfg2).unwrap();
+    let mut glean2 = Glean::new(cfg2, None).unwrap();
     glean2.handle_client_active(); // resumes session
 
     let resumed_start_time = glean2
@@ -1189,7 +1189,7 @@ fn sessions_seen_increments_regardless_of_sampling() {
     let (_t, data_path) = tempdir();
     // Use rate=0.0 so all sessions are sampled out — sessions_seen must still increment.
     let cfg = session_cfg(&data_path, SessionMode::Lifecycle, 0.0, 0);
-    let mut glean = Glean::new(cfg).unwrap();
+    let mut glean = Glean::new(cfg, None).unwrap();
 
     let sessions_seen = CounterMetric::new(CommonMetricData {
         name: "sessions_seen".into(),
@@ -1227,7 +1227,7 @@ fn sessions_seen_is_out_of_session() {
 
     let (_t, data_path) = tempdir();
     let cfg = session_cfg(&data_path, SessionMode::Auto, 0.0, 1_800_000);
-    let mut glean = Glean::new(cfg).unwrap();
+    let mut glean = Glean::new(cfg, None).unwrap();
 
     glean.handle_client_active(); // session sampled-out
 
@@ -1253,7 +1253,7 @@ fn sessions_seen_is_out_of_session() {
 fn in_session_events_share_session_id() {
     let (_t, data_path) = tempdir();
     let cfg = session_cfg(&data_path, SessionMode::Auto, 1.0, 1_800_000);
-    let mut glean = Glean::new(cfg).unwrap();
+    let mut glean = Glean::new(cfg, None).unwrap();
 
     glean.handle_client_active();
 
@@ -1294,7 +1294,7 @@ fn mode_switch_auto_to_lifecycle_emits_abandoned_session_end() {
     let original_session_id;
     {
         let cfg = session_cfg(&data_path, SessionMode::Auto, 1.0, 1_800_000);
-        let mut glean = Glean::new(cfg).unwrap();
+        let mut glean = Glean::new(cfg, None).unwrap();
         glean.handle_client_active();
         original_session_id = glean.session_manager().session_id().unwrap().to_string();
         glean.handle_client_inactive(); // persists session_id + inactive_since
@@ -1302,7 +1302,7 @@ fn mode_switch_auto_to_lifecycle_emits_abandoned_session_end() {
 
     // Restart with Lifecycle mode — the Auto session is now orphaned.
     let cfg2 = session_cfg(&data_path, SessionMode::Lifecycle, 1.0, 0);
-    let glean2 = Glean::new(cfg2).unwrap();
+    let glean2 = Glean::new(cfg2, None).unwrap();
 
     // A synthetic session_end("abandoned") must have been emitted during init.
     let end_events = session_end_metric()
@@ -1341,7 +1341,7 @@ fn mode_switch_auto_to_lifecycle_emits_abandoned_session_end() {
 fn upload_disable_then_enable_does_not_continue_old_session() {
     let (_t, data_path) = tempdir();
     let cfg = session_cfg(&data_path, SessionMode::Auto, 1.0, 1_800_000);
-    let mut glean = Glean::new(cfg).unwrap();
+    let mut glean = Glean::new(cfg, None).unwrap();
 
     glean.handle_client_active();
     let old_session_id = glean

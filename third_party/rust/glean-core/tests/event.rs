@@ -561,7 +561,7 @@ fn with_event_timestamps() {
         events_ping_acceleration_factor: None,
         enable_store_submitted_pings: false,
     };
-    let mut glean = Glean::new(cfg).unwrap();
+    let mut glean = Glean::new(cfg, None).unwrap();
     let ping = PingBuilder::new("store1").build();
     glean.register_ping_type(&ping);
 

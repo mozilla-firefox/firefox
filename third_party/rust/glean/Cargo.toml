@@ -13,7 +13,7 @@
 edition = "2021"
 rust-version = "1.90"
 name = "glean"
-version = "71.1.0"
+version = "71.2.0"
 authors = [
     "Jan-Erik Rediger <jrediger@mozilla.com>",
     "The Glean Team <glean-team@mozilla.com>",
@@ -156,7 +156,7 @@ path = "tests/uploader_capabilities.rs"
 version = "0.5"
 
 [dependencies.glean-core]
-version = "71.1.0"
+version = "71.2.0"
 
 [dependencies.inherent]
 version = "1"

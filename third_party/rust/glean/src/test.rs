@@ -487,6 +487,7 @@ fn initializing_twice_is_a_noop() {
             .with_server_endpoint("invalid-test-host")
             .build(),
         ClientInfoMetrics::unknown(),
+        None,
     );
 
     // We don't need to sleep here.

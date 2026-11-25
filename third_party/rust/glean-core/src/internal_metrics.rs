@@ -512,6 +512,9 @@ pub struct HealthMetrics {
 
     pub file_read_error: LabeledCounter,
     pub file_write_error: LabeledCounter,
+
+    // Status of the external client_id backup.
+    pub backup_client_id_status: LabeledCounter,
 }
 
 impl HealthMetrics {
@@ -577,6 +580,25 @@ impl HealthMetrics {
                     Cow::from("not-found"),
                     Cow::from("permission-denied"),
                     Cow::from("io"),
+                ]),
+            ),
+            backup_client_id_status: LabeledMetric::<CounterMetric>::new(
+                LabeledMetricData::Common {
+                    cmd: CommonMetricData {
+                        name: "backup_client_id_status".into(),
+                        category: "glean.health".into(),
+                        send_in_pings: vec!["health".into()],
+                        lifetime: Lifetime::Ping,
+                        ..Default::default()
+                    },
+                },
+                Some(vec![
+                    Cow::from("none"),
+                    Cow::from("parse"),
+                    Cow::from("c0ffee"),
+                    Cow::from("match"),
+                    Cow::from("mismatch"),
+                    Cow::from("backup_only"),
                 ]),
             ),
         }

@@ -63,5 +63,5 @@ fn main() {
     let client_info = ClientInfoMetrics::unknown();
 
     glean_set_test_mode(true);
-    glean_initialize(config, client_info, Box::new(EventHandler));
+    glean_initialize(config, client_info, Box::new(EventHandler), None);
 }
