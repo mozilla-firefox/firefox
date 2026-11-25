@@ -25,6 +25,7 @@
 #include "nsICookieManager.h"
 #include "nsICookieService.h"
 #include "nsIEffectiveTLDService.h"
+#include "nsMixedContentBlocker.h"
 #include "nsNetUtil.h"
 #include "nsProxyRelease.h"
 
@@ -48,31 +49,36 @@ CookieServiceParent* GetCookieServiceParent(ContentParent* aContentParent) {
       LoneManagedOrNullAsserts(neckoParent->ManagedPCookieServiceParent()));
 }
 
-bool CheckContentProcessSecurity(ThreadsafeContentParentHandle* aParent,
-                                 const nsACString& aDomain,
-                                 const RefPtr<nsIURI> aCookieURI,
-                                 const OriginAttributes& aOriginAttributes) {
+ContentProcessCookieAccess CheckContentProcessSecurity(
+    ThreadsafeContentParentHandle* aParent, const nsACString& aDomain,
+    const RefPtr<nsIURI> aCookieURI,
+    const OriginAttributes& aOriginAttributes) {
   AssertIsOnMainThread();
 
   // ContentParent is null if we are dealing with the same process.
   if (!aParent) {
-    return true;
+    return ContentProcessCookieAccess::eAll;
   }
 
   RefPtr<ContentParent> contentParent = aParent->GetContentParent();
   if (!contentParent) {
-    return false;
+    return ContentProcessCookieAccess::eNone;
   }
 
   if (CookieServiceParent* cs = GetCookieServiceParent(contentParent)) {
-    return cs->ContentProcessHasCookie(aDomain, aOriginAttributes);
+    return cs->GetContentProcessCookieAccess(aDomain, aOriginAttributes);
   }
 
   // No cookie service, so no key set to consult: a process hosting only a
   // service worker. Check the principal instead.
   nsCOMPtr<nsIPrincipal> principal =
       BasePrincipal::CreateContentPrincipal(aCookieURI, aOriginAttributes);
-  return contentParent->ValidatePrincipal(principal);
+  if (!contentParent->ValidatePrincipal(principal)) {
+    return ContentProcessCookieAccess::eNone;
+  }
+  return nsMixedContentBlocker::IsPotentiallyTrustworthyOrigin(aCookieURI)
+             ? ContentProcessCookieAccess::eAll
+             : ContentProcessCookieAccess::eNonSecureOnly;
 }
 
 // A process with no cookie service never receives cookie-changed, so it must
@@ -369,8 +375,9 @@ void CookieStoreParent::GetRequestOnMainThread(
     return;
   }
 
-  if (!CheckContentProcessSecurity(aParent, baseDomain, aCookieURI,
-                                   aOriginAttributes)) {
+  ContentProcessCookieAccess access = CheckContentProcessSecurity(
+      aParent, baseDomain, aCookieURI, aOriginAttributes);
+  if (access == ContentProcessCookieAccess::eNone) {
     return;
   }
 
@@ -406,6 +413,9 @@ void CookieStoreParent::GetRequestOnMainThread(
         continue;
       }
       if (cookie->IsHttpOnly()) {
+        continue;
+      }
+      if (cookie->IsSecure() && access != ContentProcessCookieAccess::eAll) {
         continue;
       }
       MOZ_DIAGNOSTIC_ASSERT(!cookie->IsExpired(currentTimeInMSec));
@@ -503,8 +513,10 @@ CookieStoreParent::SetReturnType CookieStoreParent::SetRequestOnMainThread(
   }
   domainWithDot.Append(domain);
 
-  if (!CheckContentProcessSecurity(aParent, domain, aCookieURI,
-                                   aOriginAttributes)) {
+  // CookieStore only creates Secure cookies.
+  ContentProcessCookieAccess access = CheckContentProcessSecurity(
+      aParent, domain, aCookieURI, aOriginAttributes);
+  if (access != ContentProcessCookieAccess::eAll) {
     return eSilentFailure;
   }
 
@@ -594,8 +606,9 @@ bool CookieStoreParent::DeleteRequestOnMainThread(
     cookiesForDomain = NS_ConvertUTF16toUTF8(aDomain);
   }
 
-  if (!CheckContentProcessSecurity(aParent, cookiesForDomain, aCookieURI,
-                                   aOriginAttributes)) {
+  ContentProcessCookieAccess access = CheckContentProcessSecurity(
+      aParent, cookiesForDomain, aCookieURI, aOriginAttributes);
+  if (access == ContentProcessCookieAccess::eNone) {
     return false;
   }
 
@@ -635,6 +648,10 @@ bool CookieStoreParent::DeleteRequestOnMainThread(
     }
 
     if (cookie->IsPartitioned() != aPartitioned) continue;
+
+    if (cookie->IsSecure() && access != ContentProcessCookieAccess::eAll) {
+      return false;
+    }
 
     if (aThirdPartyContext) {
       int32_t sameSiteAttr = cookie->SameSite();

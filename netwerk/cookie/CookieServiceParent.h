@@ -27,6 +27,13 @@ namespace net {
 class Cookie;
 class CookieService;
 
+// Which cookies for a given domain a content process may access.
+enum class ContentProcessCookieAccess {
+  eNone,
+  eNonSecureOnly,
+  eAll,
+};
+
 class CookieServiceParent : public PCookieServiceParent {
   friend class PCookieServiceParent;
 
@@ -85,6 +92,8 @@ class CookieServiceParent : public PCookieServiceParent {
   bool ContentProcessHasCookie(const Cookie& cookie);
   bool ContentProcessHasCookie(const nsACString& aBaseDomain,
                                const OriginAttributes& aOriginAttributes);
+  ContentProcessCookieAccess GetContentProcessCookieAccess(
+      const nsACString& aHost, const OriginAttributes& aOriginAttributes);
   bool InsecureCookieOrSecureOrigin(const Cookie& cookie);
   void UpdateCookieInContentList(nsIURI* aHostURI,
                                  const OriginAttributes& aOriginAttrs);
