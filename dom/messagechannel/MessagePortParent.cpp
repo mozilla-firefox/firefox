@@ -161,9 +161,8 @@ bool MessagePortParent::ForceClose(const nsID& aUUID,
                                    const uint32_t& aSequenceID) {
   MessagePortService* service = MessagePortService::Get();
   if (!service) {
-    NS_WARNING(
-        "The service must exist if we want to close an existing MessagePort.");
-    // There is nothing to close so we are ok.
+    // The service only exists while ports are registered, so there is nothing
+    // to close and we are ok.
     return true;
   }
 
