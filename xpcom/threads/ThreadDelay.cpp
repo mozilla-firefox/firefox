@@ -7,8 +7,9 @@
 #include "mozilla/Assertions.h"
 #include "mozilla/ChaosMode.h"
 
-#if defined(XP_WIN)
-#  include <windows.h>
+#if defined(XP_WIN) || defined(XP_MACOSX)
+#  include <thread>
+#  include "mozilla/TimeStamp.h"
 #else
 #  include <unistd.h>
 #endif
@@ -22,14 +23,18 @@ void DelayForChaosMode(ChaosFeature aFeature,
   }
 
   MOZ_ASSERT(aMicrosecondLimit <= 1000);
-#if defined(XP_WIN)
-  // Windows doesn't support sleeping at less than millisecond resolution.
-  // We could spin here, or we could just sleep for one millisecond.
-  // Sleeping for a full millisecond causes heavy delays, so we don't do
-  // anything here for now until we have found a good way to sleep more
-  // precisely here.
-#else
   const uint32_t duration = ChaosMode::randomUint32LessThan(aMicrosecondLimit);
+#if defined(XP_WIN) || defined(XP_MACOSX)
+  // Windows and macOS don't support sleeping at low resolutions.
+  // If we use normal sleep commands, it can cause heavy delays, so we spin
+  // with yields. This should be OK, as this is Chaos Mode-only and each wait
+  // is required to be <= 1ms.
+  const TimeStamp deadline =
+      TimeStamp::Now() + TimeDuration::FromMicroseconds(duration);
+  while (TimeStamp::Now() < deadline) {
+    std::this_thread::yield();
+  }
+#else
   ::usleep(duration);
 #endif
 }

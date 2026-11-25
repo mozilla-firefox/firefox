@@ -10,8 +10,7 @@
 namespace mozilla {
 
 // Sleep for a random number of microseconds less than aMicrosecondLimit
-// if aFeature is enabled.  On Windows, the sleep will always be 1 millisecond
-// due to platform limitations.
+// if aFeature is enabled.
 void DelayForChaosMode(ChaosFeature aFeature, const uint32_t aMicrosecondLimit);
 
 }  // namespace mozilla
