@@ -1648,6 +1648,10 @@ def source_package(command_context, output, upload):
             f"--exclude=./{substs['DIST']}",
             f"--exclude={os.path.basename(command_context.topobjdir)}",
         ]
+        if conditions.is_thunderbird(command_context):
+            # comm/ is a separate checkout nested in the Gecko tree, so its VCS
+            # metadata is not covered by the top-level excludes above.
+            excludes += ["--exclude=./comm/.hg*", "--exclude=./comm/.git"]
         from mozbuild.action.package import is_gnu_tar
 
         tar = substs["TAR"]
