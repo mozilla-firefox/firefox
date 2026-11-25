@@ -182,7 +182,8 @@ class RemoteTextureTxnScheduler final
  private:
   friend class RemoteTextureMap;
 
-  RemoteTextureTxnScheduler(GeckoChildID aForChildID, RemoteTextureTxnType aType)
+  RemoteTextureTxnScheduler(GeckoChildID aForChildID,
+                            RemoteTextureTxnType aType)
       : mForChildID(aForChildID), mType(aType) {}
 
   bool WaitForTxn(const MonitorAutoLock& aProofOfLock,
@@ -511,8 +512,7 @@ class RemoteTextureMap {
     uint32_t mWrapperCount = 0;
     bool mWasRegistered = false;
   };
-  std::map<std::pair<GeckoChildID, RemoteTextureOwnerId>,
-           TextureOwnerConsumers>
+  std::map<std::pair<GeckoChildID, RemoteTextureOwnerId>, TextureOwnerConsumers>
       mTextureOwnerConsumers;
 
   std::map<std::pair<GeckoChildID, RemoteTextureId>,
