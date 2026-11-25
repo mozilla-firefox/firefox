@@ -176,10 +176,6 @@ bool PermissionsPolicyUtils::IsFeatureUnsafeAllowedAll(
     Document* aDocument, const nsAString& aFeatureName) {
   MOZ_ASSERT(aDocument);
 
-  if (!aDocument->IsHTMLDocument()) {
-    return false;
-  }
-
   PermissionsPolicy* policy = aDocument->PermissionsPolicy();
   MOZ_ASSERT(policy);
 
