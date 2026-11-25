@@ -1288,6 +1288,13 @@ newtabAdsReporting:
         pref: browser.newtabpage.activity-stream.discoverystream.reportAds.newReasons.enabled
       description: >-
         Enable updated reporting reasons for ads
+    reportTileAdsEnabled:
+      type: boolean
+      setPref:
+        branch: user
+        pref: browser.newtabpage.activity-stream.discoverystream.reportAds.tiles.enabled
+      description: >-
+        Enable reporting for sponsored tiles
 
 newtabContextualContent:
   description: about:newtab contextual content feed

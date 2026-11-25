@@ -485,6 +485,20 @@ export const LinkMenuOptions = {
       }),
     };
   },
+  ReportTileAd: (site, index) => ({
+    id: "newtab-menu-report-this-ad",
+    action: ac.AlsoToMain({
+      type: at.REPORT_AD_OPEN,
+      data: {
+        block_key: site.block_key,
+        card_type: "spoc",
+        isSponsoredTopSite: site.sponsored_position,
+        position: index,
+        reporting_url: site.sponsored_report_url ?? site.shim?.report,
+        url: site.url,
+      },
+    }),
+  }),
 
   ReportContent: site => {
     return {

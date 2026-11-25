@@ -5173,6 +5173,75 @@ add_task(async function test_fetchSites_callsAdsClientWhenEnabled() {
   sandbox.restore();
 });
 
+add_task(async function test_fetchSitesWithAdsClient_keepsReportCallback() {
+  let sandbox = sinon.createSandbox();
+  sandbox.stub(AdsClient, "requestOptions").returns({});
+
+  const feed = getTopSitesFeedForTest(sandbox);
+  feed.adsClient = {
+    requestTileAds: sinon.fake.resolves(
+      new Map([
+        [
+          "newtab_tile_1",
+          {
+            blockKey: "block1",
+            name: "Tile 1",
+            url: "https://tile.example/",
+            imageUrl: "https://tile.example/img.png",
+            callbacks: {
+              click: "https://tile.example/click",
+              impression: "https://tile.example/impression",
+              report: "https://tile.example/report",
+            },
+          },
+        ],
+      ])
+    ),
+  };
+
+  const tiles = await feed._contile._fetchSitesWithAdsClient(
+    ["newtab_tile_1"],
+    {}
+  );
+
+  Assert.equal(
+    tiles.newtab_tile_1[0].callbacks.report,
+    "https://tile.example/report",
+    "The report callback is kept"
+  );
+
+  sandbox.restore();
+});
+
+add_task(async function test_readContile_setsSponsoredReportUrl() {
+  let sandbox = sinon.createSandbox();
+
+  const feed = getTopSitesFeedForTest(sandbox);
+  sandbox.stub(feed, "_contilePositions").get(() => [1]);
+  feed._contile._sites = [
+    {
+      id: "block1",
+      name: "Tile 1",
+      url: "https://tile.example/",
+      click_url: "https://tile.example/click",
+      impression_url: "https://tile.example/impression",
+      report_url: "https://tile.example/report",
+    },
+  ];
+  DEFAULT_TOP_SITES.length = 0;
+
+  feed._readContile();
+
+  Assert.equal(
+    DEFAULT_TOP_SITES[0].sponsored_report_url,
+    "https://tile.example/report",
+    "The sponsored tile link has the report url"
+  );
+
+  DEFAULT_TOP_SITES.length = 0;
+  sandbox.restore();
+});
+
 add_task(async function test_normalizeTileData_sorts() {
   let sandbox = sinon.createSandbox();
 
@@ -5187,6 +5256,7 @@ add_task(async function test_normalizeTileData_sorts() {
         callbacks: {
           click: `click_${i}`,
           impression: `impression_${i}`,
+          report: `report_${i}`,
         },
       },
     ],
@@ -5198,6 +5268,7 @@ add_task(async function test_normalizeTileData_sorts() {
       click_url: `click_${i}`,
       image_url: `image_${i}`,
       impression_url: `impression_${i}`,
+      report_url: `report_${i}`,
       image_size: 200,
       attribution: null,
     },

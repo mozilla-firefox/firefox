@@ -31,6 +31,7 @@ const NEWTAB_SOURCE = "newtab";
 const PREF_OHTTP_UNIFIED_ADS = "unifiedAds.ohttp.enabled";
 const PREF_OHTTP_UNIFIED_ADS_TILE_IMAGES =
   "unifiedAds.tiles.ohttpImages.enabled";
+const PREF_REPORT_TILE_ADS_ENABLED = "discoverystream.reportAds.tiles.enabled";
 
 // Tilt so the lifted drag ghost reads as "picked up" (counter-clockwise).
 const DRAG_GHOST_ROTATION_DEG = -7.5;
@@ -749,6 +750,15 @@ export class TopSite extends React.PureComponent {
     } else {
       menuOptions = TOP_SITES_CONTEXT_MENU_OPTIONS;
     }
+    if (
+      props.reportTileAdsEnabled &&
+      isSponsored(link) &&
+      (link.sponsored_report_url || link.shim?.report)
+    ) {
+      menuOptions = menuOptions.flatMap(option =>
+        option === "BlockUrl" ? [option, "ReportTileAd"] : [option]
+      );
+    }
 
     const menuId = `topsite-context-menu-${props.index}`;
     const options = getLinkMenuOptions({
@@ -1044,6 +1054,8 @@ export class _TopSiteList extends React.PureComponent {
         this.props.Prefs.values.isPrivateBrowsingEnabled,
       platform: this.props.Prefs.values.platform,
       privacyInfoUrl: this.props.Prefs.values["privacyInfo.url"],
+      reportTileAdsEnabled:
+        this.props.Prefs.values[PREF_REPORT_TILE_ADS_ENABLED],
       ohttpSponsoredImagesEnabled: !!(
         this.props.Prefs.values[PREF_OHTTP_UNIFIED_ADS] &&
         (this.props.Prefs.values[PREF_OHTTP_UNIFIED_ADS_TILE_IMAGES] ||

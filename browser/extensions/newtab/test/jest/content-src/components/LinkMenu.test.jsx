@@ -599,4 +599,52 @@ describe("<LinkMenu>", () => {
       expect(userEvent.data.value).not.toHaveProperty("dwell_id");
     });
   });
+
+  describe("ReportTileAd", () => {
+    function clickReportTileAd(site) {
+      const dispatch = jest.fn();
+      const { options } = mountLinkMenu({
+        site,
+        dispatch,
+        index: 2,
+        options: ["ReportTileAd"],
+        source: "TOP_SITES",
+      }).render().props;
+      options[0].onClick({});
+      const [[action]] = dispatch.mock.calls;
+      return action;
+    }
+
+    it("should open the ad report dialog with the sponsored tile's data", () => {
+      const action = clickReportTileAd({
+        url: "https://sponsor.example.com",
+        block_key: "block-key-1",
+        sponsored_position: 3,
+        sponsored_report_url: "https://ads.mozilla.org/v1/report",
+      });
+
+      expect(action.type).toBe(at.REPORT_AD_OPEN);
+      expect(action.data).toEqual({
+        block_key: "block-key-1",
+        card_type: "spoc",
+        isSponsoredTopSite: 3,
+        position: 2,
+        reporting_url: "https://ads.mozilla.org/v1/report",
+        url: "https://sponsor.example.com",
+      });
+    });
+
+    it("should use the shim report url for SPOC tiles", () => {
+      const action = clickReportTileAd({
+        url: "https://sponsor.example.com",
+        type: "SPOC",
+        sponsored_position: 1,
+        shim: { report: "https://ads.mozilla.org/v1/spoc-report" },
+      });
+
+      expect(action.data.reporting_url).toBe(
+        "https://ads.mozilla.org/v1/spoc-report"
+      );
+    });
+  });
 });

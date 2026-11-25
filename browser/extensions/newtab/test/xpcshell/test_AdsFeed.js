@@ -736,6 +736,29 @@ add_task(async function test_fetchData_OHTTP_with_adsBackendConfig() {
   sandbox.restore();
 });
 
+add_task(async function test_normalizeTileData_keepsReportUrl() {
+  let sandbox = sinon.createSandbox();
+  sandbox.stub(AdsFeed.prototype, "PersistentCache").returns({
+    set: () => {},
+    get: () => {},
+  });
+
+  const feed = getAdsFeedForTest();
+  const { tiles } = feed._normalizeTileData(mockedFetchTileData);
+
+  Assert.deepEqual(
+    tiles.map(tile => tile.report_url),
+    [
+      "https://www.test1-report.com",
+      "https://www.test2-report.com",
+      "https://www.test3-report.com",
+    ],
+    "Each tile keeps its report callback"
+  );
+
+  sandbox.restore();
+});
+
 add_task(async function test_fetchWithAdsClient_mapsToLegacyShape() {
   let sandbox = sinon.createSandbox();
   sandbox.stub(AdsFeed.prototype, "PersistentCache").returns({
@@ -759,6 +782,7 @@ add_task(async function test_fetchWithAdsClient_mapsToLegacyShape() {
             callbacks: {
               click: "https://tile.example/click",
               impression: "https://tile.example/impression",
+              report: "https://tile.example/report",
             },
           },
         ],
@@ -815,6 +839,7 @@ add_task(async function test_fetchWithAdsClient_mapsToLegacyShape() {
         click_url: "https://tile.example/click",
         image_url: "https://tile.example/img.png",
         impression_url: "https://tile.example/impression",
+        report_url: "https://tile.example/report",
         image_size: 200,
       },
     ],

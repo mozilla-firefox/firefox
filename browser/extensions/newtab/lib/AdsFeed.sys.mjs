@@ -199,6 +199,7 @@ export class AdsFeed {
           click_url: tile.callbacks.click,
           image_url: tile.image_url,
           impression_url: tile.callbacks.impression,
+          report_url: tile.callbacks.report,
           image_size: 200,
         };
 
@@ -482,6 +483,7 @@ export class AdsFeed {
         click_url: tile.callbacks.click,
         image_url: tile.imageUrl,
         impression_url: tile.callbacks.impression,
+        report_url: tile.callbacks.report,
         image_size: 200,
       }));
     }

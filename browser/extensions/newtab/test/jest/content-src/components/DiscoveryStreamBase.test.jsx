@@ -166,7 +166,7 @@ describe("<DiscoveryStreamBase>", () => {
   let wrapper;
   let instanceRef;
 
-  function mountComponent(props = {}) {
+  function mountComponent(props = {}, prefs = {}) {
     const defaultProps = {
       layout: [],
       feeds: { loaded: true },
@@ -188,6 +188,7 @@ describe("<DiscoveryStreamBase>", () => {
             "feeds.section.topstories": true,
             "feeds.system.topstories": true,
             "feeds.topsites": true,
+            ...prefs,
           },
         }}
         App={{
@@ -286,6 +287,19 @@ describe("<DiscoveryStreamBase>", () => {
         ".ds-top-sites [data-testid='topsites-mock']"
       )
     ).toBeInTheDocument();
+  });
+
+  it("should not render ReportContent when no reporting is enabled", () => {
+    expect(wrapper.queryByTestId("reportcontent-mock")).not.toBeInTheDocument();
+  });
+
+  it("should render ReportContent when sponsored tile reporting is enabled", () => {
+    wrapper = mountComponent(
+      {},
+      { "discoverystream.reportAds.tiles.enabled": true }
+    );
+
+    expect(wrapper.getByTestId("reportcontent-mock")).toBeInTheDocument();
   });
 
   describe("#onStyleMount", () => {

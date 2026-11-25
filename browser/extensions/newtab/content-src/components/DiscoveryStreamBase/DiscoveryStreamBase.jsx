@@ -247,6 +247,8 @@ export class _DiscoveryStreamBase extends React.PureComponent {
     const reportAdsEnabled =
       this.props.Prefs.values["discoverystream.reportAds.enabled"];
     const spocsEnabled = this.props.Prefs.values["unifiedAds.spocs.enabled"];
+    const reportTileAdsEnabled =
+      this.props.Prefs.values["discoverystream.reportAds.tiles.enabled"];
 
     // Find the first component of a type and remove it from layout
     const extractComponent = type => {
@@ -484,7 +486,9 @@ export class _DiscoveryStreamBase extends React.PureComponent {
     return (
       <React.Fragment>
         {/* Reporting stories/articles will only be available in sections, not the default card grid  */}
-        {((reportAdsEnabled && spocsEnabled) || sectionsEnabled) && (
+        {((reportAdsEnabled && spocsEnabled) ||
+          sectionsEnabled ||
+          reportTileAdsEnabled) && (
           <ReportContent spocs={DiscoveryStream.spocs} />
         )}
 

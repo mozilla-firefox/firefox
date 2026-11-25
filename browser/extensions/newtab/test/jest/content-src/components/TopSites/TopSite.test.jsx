@@ -565,6 +565,66 @@ describe("<TopSite>", () => {
       container.querySelectorAll("panel-item").length
     ).toBeGreaterThanOrEqual(1);
   });
+  describe("Report this ad option", () => {
+    const SPONSORED_LINK = {
+      ...DEFAULT_LINK,
+      sponsored_position: 2,
+      sponsored_report_url: "https://ads.mozilla.org/v1/report",
+    };
+
+    function menuOptionIds(props) {
+      const ref = React.createRef();
+      renderTopSite({ index: 0, ...props }, ref);
+      return findElementByType(ref.current.render(), PanelListItems)
+        .props.options.map(option => option.id)
+        .filter(Boolean);
+    }
+
+    it("should show the option right after Dismiss for a sponsored tile when the pref is on", () => {
+      const ids = menuOptionIds({
+        link: SPONSORED_LINK,
+        reportTileAdsEnabled: true,
+      });
+      expect(ids.indexOf("newtab-menu-report-this-ad")).toBe(
+        ids.indexOf("newtab-menu-dismiss") + 1
+      );
+    });
+
+    it("should show the option for a SPOC tile with a shim report url", () => {
+      const ids = menuOptionIds({
+        link: {
+          ...DEFAULT_LINK,
+          type: "SPOC",
+          sponsored_position: 1,
+          shim: { report: "https://ads.mozilla.org/v1/spoc-report" },
+        },
+        reportTileAdsEnabled: true,
+      });
+      expect(ids).toContain("newtab-menu-report-this-ad");
+    });
+
+    it("should not show the option when the pref is off", () => {
+      const ids = menuOptionIds({ link: SPONSORED_LINK });
+      expect(ids).toContain("newtab-menu-dismiss");
+      expect(ids).not.toContain("newtab-menu-report-this-ad");
+    });
+
+    it("should not show the option for a sponsored tile without a report url", () => {
+      const ids = menuOptionIds({
+        link: { ...SPONSORED_LINK, sponsored_report_url: undefined },
+        reportTileAdsEnabled: true,
+      });
+      expect(ids).not.toContain("newtab-menu-report-this-ad");
+    });
+
+    it("should not show the option for an organic tile", () => {
+      const ids = menuOptionIds({
+        link: { ...DEFAULT_LINK, sponsored_report_url: "https://example.com" },
+        reportTileAdsEnabled: true,
+      });
+      expect(ids).not.toContain("newtab-menu-report-this-ad");
+    });
+  });
   it("should record impressions for visible organic Top Sites", () => {
     const dispatch = jest.fn();
     renderTopSite({
