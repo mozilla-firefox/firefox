@@ -63,14 +63,9 @@ dbg.onEnterFrame = function(f) {
   await result1Promise;
 
   // Iteration step has fully completed, so promise state has been cleared.
+  // The frame isn't resumed for the yield's await.
   assertEq(frame.asyncPromise, null);
-
-  assertEq(promises.length, 7);
-  assertEq(promises[5][0], "enter");
-  assertEq(promises[5][1], frameIt1Promise);
-
-  assertEq(promises[6][0], "leave");
-  assertEq(promises[6][1], frameIt1Promise);
+  assertEq(promises.length, 5);
 
 
   const result2Promise = it.next();
@@ -80,25 +75,26 @@ dbg.onEnterFrame = function(f) {
   assertEq(frameIt2Promise.unsafeDereference(), result2Promise);
   assertEq(frameIt1Promise !== frameIt2Promise, true);
 
-  assertEq(promises.length, 10);
-  assertEq(promises[7][0], "enter");
+  assertEq(promises.length, 8);
+  assertEq(promises[5][0], "enter");
+  assertEq(promises[5][1], frameIt2Promise);
+
+  assertEq(promises[6][0], "dbg");
+  assertEq(promises[6][1], frameIt2Promise);
+
+  assertEq(promises[7][0], "leave");
   assertEq(promises[7][1], frameIt2Promise);
-
-  assertEq(promises[8][0], "dbg");
-  assertEq(promises[8][1], frameIt2Promise);
-
-  assertEq(promises[9][0], "leave");
-  assertEq(promises[9][1], frameIt2Promise);
 
   await result2Promise;
 
   // Frame has terminated, so accessing the property throws.
   assertThrowsInstanceOf(() => frame.asyncPromise, Error);
 
-  assertEq(promises.length, 12);
-  assertEq(promises[10][0], "enter");
-  assertEq(promises[10][1], frameIt2Promise);
+  // The frame is resumed for the return's await.
+  assertEq(promises.length, 10);
+  assertEq(promises[8][0], "enter");
+  assertEq(promises[8][1], frameIt2Promise);
 
-  assertEq(promises[11][0], "leave");
-  assertEq(promises[11][1], frameIt2Promise);
+  assertEq(promises[9][0], "leave");
+  assertEq(promises[9][1], frameIt2Promise);
 })();

@@ -41,6 +41,7 @@ dbg.onEnterFrame = function(f) {
   assertEq(ranges[0][1], 2);
   assertEq(script.getOffsetMetadata(frame.offset).lineNumber, 2);
 
+  // The frame isn't resumed for the yields' awaits.
   promise = it.next();
 
   assertEq(ranges.length, 2);
@@ -50,44 +51,38 @@ dbg.onEnterFrame = function(f) {
 
   await promise;
 
-  assertEq(ranges.length, 3);
-  assertEq(ranges[2][0], 3);
-  assertEq(ranges[2][1], 3);
+  assertEq(ranges.length, 2);
   assertEq(script.getOffsetMetadata(frame.offset).lineNumber, 3);
 
   promise = it.next();
 
-  assertEq(ranges.length, 4);
-  assertEq(ranges[3][0], 3);
-  assertEq(ranges[3][1], 4);
+  assertEq(ranges.length, 3);
+  assertEq(ranges[2][0], 3);
+  assertEq(ranges[2][1], 4);
   assertEq(script.getOffsetMetadata(frame.offset).lineNumber, 4);
 
   await promise;
+
+  assertEq(ranges.length, 3);
+  assertEq(script.getOffsetMetadata(frame.offset).lineNumber, 4);
+
+  promise = it.next();
+
+  assertEq(ranges.length, 4);
+  assertEq(ranges[3][0], 4);
+  assertEq(ranges[3][1], 5);
+  assertEq(script.getOffsetMetadata(frame.offset).lineNumber, 5);
+
+  await promise;
+
+  assertEq(ranges.length, 4);
+  assertEq(script.getOffsetMetadata(frame.offset).lineNumber, 5);
+
+  promise = it.next();
 
   assertEq(ranges.length, 5);
-  assertEq(ranges[4][0], 4);
-  assertEq(ranges[4][1], 4);
-  assertEq(script.getOffsetMetadata(frame.offset).lineNumber, 4);
-
-  promise = it.next();
-
-  assertEq(ranges.length, 6);
-  assertEq(ranges[5][0], 4);
-  assertEq(ranges[5][1], 5);
-  assertEq(script.getOffsetMetadata(frame.offset).lineNumber, 5);
-
-  await promise;
-
-  assertEq(ranges.length, 7);
-  assertEq(ranges[6][0], 5);
-  assertEq(ranges[6][1], 5);
-  assertEq(script.getOffsetMetadata(frame.offset).lineNumber, 5);
-
-  promise = it.next();
-
-  assertEq(ranges.length, 8);
-  assertEq(ranges[7][0], 5);
-  assertEq(ranges[7][1], 6);
+  assertEq(ranges[4][0], 5);
+  assertEq(ranges[4][1], 6);
 
   // The frame has finished evaluating, so the callee is no longer accessible.
   assertThrowsInstanceOf(() => frame.offset, Error);

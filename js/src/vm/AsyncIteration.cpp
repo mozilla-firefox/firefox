@@ -476,6 +476,53 @@ AsyncGeneratorRequest* AsyncGeneratorRequest::create(
   return true;
 }
 
+// Yield ( value )
+// https://tc39.es/ecma262/#sec-yield
+//
+// Step 2. The Await(value) in AsyncGeneratorYield(? Await(value)) was
+// fulfilled.
+[[nodiscard]] static bool AsyncGeneratorYieldAwaitedFulfilled(
+    JSContext* cx, Handle<AsyncGeneratorObject*> generator, HandleValue value) {
+  MOZ_ASSERT(generator->isExecuting(),
+             "Yield-Await fulfilled when not in 'Executing' state");
+
+  bool resumeAgain = false;
+  CompletionKind completionKind = CompletionKind::Normal;
+  RootedValue resumeValue(cx);
+  if (!AsyncGeneratorYieldAndGetResumption(cx, generator, value, &resumeAgain,
+                                           &completionKind, &resumeValue)) {
+    return false;
+  }
+  if (!resumeAgain) {
+    return true;
+  }
+  return AsyncGeneratorResume(cx, generator, completionKind, resumeValue);
+}
+
+// Yield ( value )
+// https://tc39.es/ecma262/#sec-yield
+//
+// Step 2. The Await(value) in AsyncGeneratorYield(? Await(value)) was
+// rejected. The generator is resumed with a throw completion at the yield.
+[[nodiscard]] static bool AsyncGeneratorYieldAwaitedRejected(
+    JSContext* cx, Handle<AsyncGeneratorObject*> generator,
+    HandleValue reason) {
+  MOZ_ASSERT(generator->isExecuting(),
+             "Yield-Await rejected when not in 'Executing' state");
+  return AsyncGeneratorResume(cx, generator, CompletionKind::Throw, reason);
+}
+
+// Yield ( value )
+// https://tc39.es/ecma262/#sec-yield
+//
+// Step 2. The Await(value) in AsyncGeneratorYield(? Await(value)).
+[[nodiscard]] static bool AsyncGeneratorYieldAwait(
+    JSContext* cx, Handle<AsyncGeneratorObject*> generator, HandleValue value) {
+  return InternalAsyncGeneratorAwait(
+      cx, generator, value, PromiseHandler::AsyncGeneratorYieldAwaitedFulfilled,
+      PromiseHandler::AsyncGeneratorYieldAwaitedRejected);
+}
+
 // ES2026 draft rev bdfd596ffad5aeb2957aed4e1db36be3665c69ec
 //
 // Await in async function
@@ -1335,8 +1382,28 @@ bool js::AsyncGeneratorThrow(JSContext* cx, unsigned argc, Value* vp) {
 
     JSOp suspendOp = generator->suspendOp();
 
-    if (suspendOp == JSOp::Await) {
-      if (!AsyncGeneratorAwait(cx, generator, thisOrRval)) {
+    bool needsAwait = suspendOp == JSOp::Await;
+    if (suspendOp == JSOp::AwaitThenYield) {
+      // If the await can be skipped, fall through to the yield below. Otherwise
+      // AsyncGeneratorYieldAwaitedFulfilled performs the yield.
+      bool canSkip;
+      if (!CanSkipAwaitAfterSuspend(cx, thisOrRval, &canSkip)) {
+        return false;
+      }
+      if (canSkip) {
+        if (!ExtractAwaitValueAfterSuspend(cx, thisOrRval, &thisOrRval)) {
+          return false;
+        }
+      } else {
+        needsAwait = true;
+      }
+    }
+
+    if (needsAwait) {
+      bool awaitOk = suspendOp == JSOp::Await
+                         ? AsyncGeneratorAwait(cx, generator, thisOrRval)
+                         : AsyncGeneratorYieldAwait(cx, generator, thisOrRval);
+      if (!awaitOk) {
         // Not much we can do about uncatchable exceptions, so just bail.
         if (!cx->isExceptionPending()) {
           return false;
@@ -1558,6 +1625,12 @@ const JSClass js::AsyncGeneratorFunctionClass = {
 
     case PromiseHandler::AsyncGeneratorYieldReturnAwaitedRejected:
       return AsyncGeneratorYieldReturnAwaitedRejected(cx, generator, argument);
+
+    case PromiseHandler::AsyncGeneratorYieldAwaitedFulfilled:
+      return AsyncGeneratorYieldAwaitedFulfilled(cx, generator, argument);
+
+    case PromiseHandler::AsyncGeneratorYieldAwaitedRejected:
+      return AsyncGeneratorYieldAwaitedRejected(cx, generator, argument);
 
     default:
       MOZ_CRASH("Bad handler in AsyncGeneratorPromiseReactionJob");

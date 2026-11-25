@@ -128,6 +128,11 @@ that is `null`, the call was resumed directly from the event loop.
 Async generators are a combination of async functions and generators that can
 use both `yield` and `await` expressions. Suspensions of async generator frames
 are reported using any combination of the completion values above.
+A `yield` expression in an async generator awaits its operand without resuming
+the frame, so it's reported as a single suspension of the form
+`{ return: value, yield: true }`, where *value* is the operand before it's
+awaited. If the await is rejected, nothing is yielded to the consumer: the frame
+is resumed with a throw completion at the `yield` expression instead.
 
 
 ## Resumption Values

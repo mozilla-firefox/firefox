@@ -39,10 +39,8 @@ collect().then(value => {
 
   Pattern([
     EXACT({ return: new DebuggerObjectPattern("Promise"), await: true }),
-    EXACT({ return: 2, await: true }),
     EXACT({ return: 2, yield: true }),
     EXACT({ return: new DebuggerObjectPattern("Promise"), await: true }),
-    EXACT({ return: 4, await: true }),
     EXACT({ return: 4, yield: true }),
     EXACT({ return: "ok", await: true }),
     EXACT({ return: "ok" }),

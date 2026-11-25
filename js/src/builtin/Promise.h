@@ -64,6 +64,13 @@ enum class PromiseHandler : uint32_t {
   AsyncGeneratorYieldReturnAwaitedFulfilled,
   AsyncGeneratorYieldReturnAwaitedRejected,
 
+  // https://tc39.es/ecma262/#sec-yield (step 2)
+  //
+  // The Await in AsyncGeneratorYield(? Await(value)) for JSOp::AwaitThenYield.
+  // The fulfilled handler performs AsyncGeneratorYield.
+  AsyncGeneratorYieldAwaitedFulfilled,
+  AsyncGeneratorYieldAwaitedRejected,
+
   // AsyncFromSyncIteratorContinuation ( result, promiseCapability )
   // https://tc39.es/ecma262/#sec-asyncfromsynciteratorcontinuation
   //

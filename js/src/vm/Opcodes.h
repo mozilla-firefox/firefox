@@ -2057,7 +2057,22 @@
      */ \
     MACRO(Yield, yield, NULL, 4, 2, 2, JOF_RESUMEINDEX) \
     /*
-     * (Documented in a later patch.)
+     * Suspend the current async generator and return to the caller. The runtime
+     * then awaits `rval1`. If the await is fulfilled, the runtime yields the
+     * result. If it's rejected, the generator is resumed with a throw
+     * completion.
+     *
+     * This instruction must appear only in scripts for async generators. `gen`
+     * must be the generator object for the current stack frame. The resume
+     * point indicated by `resumeIndex` must be the next instruction in the
+     * script, which must be `AfterYield`.
+     *
+     * When AsyncGeneratorResume resumes the generator, `rval2` and `resumeKind`
+     * receive the value and resume kind it passes to js::ResumeGenerator.
+     *
+     * Implements: [Yield][1] for async generators.
+     *
+     * [1]: https://tc39.es/ecma262/#sec-yield
      *
      *   Category: Functions
      *   Type: Generators and async functions

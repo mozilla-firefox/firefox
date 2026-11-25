@@ -56,9 +56,9 @@
 // Async generators don't use JSOp::AsyncAwait, and that part is handled
 // in AsyncGeneratorResume, and AsyncGeneratorAwait called there.
 //
-// JSOp::Await, JSOp::Yield and JSOp::AwaitThenYield behave in the exactly same
-// way, and AsyncGeneratorResume checks the last opcode and branches for
-// await/yield/return cases.
+// JSOp::Await, JSOp::Yield and JSOp::AwaitThenYield suspend the generator in
+// the exact same way, and AsyncGeneratorResume checks the last opcode and
+// branches for await/yield/return cases.
 //
 //
 // # Reaction jobs and resume after await
@@ -73,24 +73,18 @@
 // # Yield
 //
 // `yield` is implemented with the following bytecode sequence:
-// (Ignoring CanSkipAwait for simplicity)
 //
 // ```
 //   (operand here)                  # VALUE
 //   GetAliasedVar ".generator"      # VALUE .generator
-//   Await 1                         # RVAL RESUMEKIND
+//   AwaitThenYield 1                # RVAL RESUMEKIND
+//
 //   AfterYield                      # RVAL RESUMEKIND
 //   [resume-kind check]             # RVAL
-//
-//   GetAliasedVar ".generator"      # RVAL .generator
-//   AwaitThenYield 2                # RVAL2 RESUMEKIND
-//
-//   AfterYield                      # RVAL2 RESUMEKIND
-//   [resume-kind check]             # RVAL2
 // ```
 //
-// The 1st part (JSOp::Await + the resume-kind check) performs an implicit
-// `await`, as specified in Yield step 2.
+// JSOp::AwaitThenYield suspends execution and performs the implicit `await`, as
+// specified in Yield step 2:
 //
 //   Yield ( value )
 //   https://tc39.es/ecma262/#sec-yield
@@ -98,9 +92,18 @@
 //     2. If generatorKind is async, return
 //        ? AsyncGeneratorYield(? Await(value)).
 //
-// The 2nd part (JSOp::AwaitThenYield) suspends execution and yields the result
-// of `await`, as specified in AsyncGeneratorYield. `yield*` uses JSOp::Yield
-// instead.
+// When the await is fulfilled, AsyncGeneratorYieldAwaitedFulfilled yields the
+// result of `await`, as specified in AsyncGeneratorYield. When it's rejected,
+// AsyncGeneratorYieldAwaitedRejected resumes the generator with a throw
+// completion.
+//
+// AsyncGeneratorResume can skip the await (and yield the awaited value
+// immediately) if there's no JS code on the stack, the job queue is empty and
+// the operand is either a non-thenable value or an already-fulfilled promise.
+// See CanSkipAwaitAfterSuspend.
+//
+// Note that `yield*` uses JSOp::Yield, which suspends execution and yields the
+// operand without awaiting it.
 //
 //   AsyncGeneratorYield ( value )
 //   https://tc39.es/ecma262/#sec-asyncgeneratoryield

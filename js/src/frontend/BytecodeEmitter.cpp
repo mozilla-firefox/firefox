@@ -6796,14 +6796,9 @@ bool BytecodeEmitter::emitYield(UnaryNode* yieldNode) {
     }
   }
 
+  // In async generators, JSOp::AwaitThenYield performs the Await.
   bool isAsync = sc->asSuspendableContext()->isAsync();
-  if (isAsync) {
-    MOZ_ASSERT(!needsIteratorResult);
-    if (!emitAwaitInInnermostScope()) {
-      //            [stack] RESULT
-      return false;
-    }
-  }
+  MOZ_ASSERT_IF(isAsync, !needsIteratorResult);
 
   if (needsIteratorResult) {
     if (!emitFinishIteratorResult(false)) {
