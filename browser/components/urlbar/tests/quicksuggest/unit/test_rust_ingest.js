@@ -74,9 +74,7 @@ add_task(async function disableEnable() {
 
     checkIngestCounts({
       stub,
-      expected: Object.fromEntries(
-        enabledTypes.map(({ provider }) => [provider, 1])
-      ),
+      expected: expectedIngestCounts(enabledTypes),
     });
   });
 });
@@ -169,9 +167,7 @@ add_task(async function interval() {
 
       checkIngestCounts({
         stub,
-        expected: Object.fromEntries(
-          enabledTypes.map(({ provider }) => [provider, 1])
-        ),
+        expected: expectedIngestCounts(enabledTypes),
       });
     }
   });
@@ -308,6 +304,19 @@ function getIngestCounts(stub, providersFilter = null) {
 
   stub.resetHistory();
   return countsByProvider;
+}
+
+// Returns the number of ingests expected per Rust provider after all enabled
+// suggestion types are ingested. The backend ingests once per enabled feature
+// using that feature's provider constraints, so a provider shared by multiple
+// features (e.g. Dynamic, used by `DynamicSuggestions` and
+// `TemporalSuggestions`) is expected to be ingested once per feature.
+function expectedIngestCounts(enabledTypes) {
+  let counts = {};
+  for (let { provider } of enabledTypes) {
+    counts[provider] = (counts[provider] ?? 0) + 1;
+  }
+  return counts;
 }
 
 function checkIngestCounts({ stub, providersFilter, expected }) {

@@ -51,6 +51,7 @@ const EXPECTED_PREFS_US = {
   ...EXPECTED_PREFS_BASE_US_GB_EU_3,
   "addons.featureGate": true,
   "mdn.featureGate": true,
+  "temporal.featureGate": AppConstants.NIGHTLY_BUILD,
   "yelp.featureGate": true,
 };
 
@@ -75,11 +76,15 @@ const EXPECTED_PREFS_EU_157 = {
 };
 
 // Expected prefs for the CA expansion in 162 (bug 2090434)
-const EXPECTED_PREFS_CA_162_EN = { ...EXPECTED_PREFS_EU_157 };
+const EXPECTED_PREFS_CA_162_EN = {
+  ...EXPECTED_PREFS_EU_157,
+  "temporal.featureGate": AppConstants.NIGHTLY_BUILD,
+};
 const EXPECTED_PREFS_CA_162 = {
   ...EXPECTED_PREFS_CA_162_EN,
   "suggest.quicksuggest.sponsored": false,
   "amp.featureGate": false,
+  "temporal.featureGate": false,
 };
 
 add_setup(async () => {

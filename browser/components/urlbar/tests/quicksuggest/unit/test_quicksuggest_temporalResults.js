@@ -230,7 +230,7 @@ add_task(async function notShown() {
 // `temporal.featureGate`, which enables temporal results and the zero prefix
 // layout.
 add_task(async function nimbus() {
-  UrlbarPrefs.clear("temporal.featureGate");
+  UrlbarPrefs.set("temporal.featureGate", false);
   await QuickSuggestTestUtils.forceSync();
   gFeature._reset();
   Assert.ok(!gFeature.isEnabled, "Feature is disabled before enrollment");
