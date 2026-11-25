@@ -950,10 +950,7 @@ class LNode {
   static constexpr LNode::Opcode classOpcode = LNode::Opcode::opcode;
 };
 
-extern const char* const LIROpNames[];
-inline const char* LIRCodeName(LNode::Opcode op) {
-  return LIROpNames[static_cast<size_t>(op)];
-}
+const char* LIRCodeName(LNode::Opcode op);
 
 class LInstruction : public LNode,
                      public TempObject,

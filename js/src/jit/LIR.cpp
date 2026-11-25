@@ -4,6 +4,7 @@
 
 #include "jit/LIR.h"
 
+#include "mozilla/ConstantStringTable.h"
 #include "mozilla/ScopeExit.h"
 
 #include <type_traits>
@@ -18,11 +19,15 @@
 using namespace js;
 using namespace js::jit;
 
-const char* const js::jit::LIROpNames[] = {
+constexpr mozilla::ConstantStringTable LIROpNames = mozilla::StringLiterals<
 #define OPNAME(op, ...) #op,
     LIR_OPCODE_LIST(OPNAME)
 #undef OPNAME
-};
+        "">{};
+
+const char* js::jit::LIRCodeName(LNode::Opcode op) {
+  return LIROpNames[static_cast<size_t>(op)];
+}
 
 LIRGraph::LIRGraph(MIRGraph* mir)
     : constantPool_(mir->alloc()),
