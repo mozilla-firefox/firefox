@@ -13,6 +13,9 @@ const { HttpServer } = ChromeUtils.importESModule(
 const { AppConstants } = ChromeUtils.importESModule(
   "resource://gre/modules/AppConstants.sys.mjs"
 );
+const { NodeHTTPProxyServer, NodeHTTPSServer } = ChromeUtils.importESModule(
+  "resource://testing-common/NodeServer.sys.mjs"
+);
 
 const kHost = "ok.example.com";
 const kDeclineHost = "decline-resumption.example.com";
@@ -78,6 +81,52 @@ add_task(needsFaultyServer(), async function test_session_token_rejected() {
   ok(buf, "connection succeeded with a full handshake");
   assertTokenResumption({ "tcp_session/rejected": 1 });
 });
+
+add_task(
+  needsFaultyServer(),
+  async function test_session_token_rejected_through_proxy() {
+    let origin = new NodeHTTPSServer();
+    await origin.start(0, [kHost]);
+    await origin.registerPathHandler("/", (req, resp) => {
+      resp.writeHead(200);
+      resp.end("ok");
+    });
+    let proxy = new NodeHTTPProxyServer();
+    await proxy.start();
+    try {
+      // The proxy's own resolver doesn't know the test hostnames.
+      await proxy.registerConnectHandler((req, clientSocket, head) => {
+        const net = require("net");
+        const { port } = new URL(`https://${req.url}`);
+        const serverSocket = net.connect({ port, host: "127.0.0.1" }, () => {
+          clientSocket.write("HTTP/1.1 200 Connection Established\r\n\r\n");
+          serverSocket.write(head);
+          serverSocket.pipe(clientSocket);
+          clientSocket.pipe(serverSocket);
+        });
+      });
+      await resetTokensAndTelemetry();
+      getCacheServices().testCache.putSSLTokenForTest(
+        `tlsflags0x00000000:${kHost}:${origin.port()}`
+      );
+
+      let [req, buf] = await openFreshConnection(
+        kHost,
+        CL_ALLOW_UNKNOWN_CL,
+        origin.port()
+      );
+      ok(buf, "connection through the proxy succeeded");
+      Assert.equal(
+        req.QueryInterface(Ci.nsIProxiedChannel).httpProxyConnectResponseCode,
+        200
+      );
+      assertTokenResumption({ "tcp_session/rejected": 1 });
+    } finally {
+      await proxy.stop();
+      await origin.stop();
+    }
+  }
+);
 
 add_task(needsFaultyServer(), async function test_session_token_not_resumed() {
   await resetTokensAndTelemetry();
