@@ -630,9 +630,6 @@ void GeckoEditableSupport::FlushIMEChanges(FlushChangesFlag aFlags) {
 
   nsCOMPtr<nsIWidget> widget = GetWidget();
   NS_ENSURE_TRUE_VOID(widget);
-  const RefPtr<TextEventDispatcher> dispatcher =
-      mDispatcher ? mDispatcher.get() : widget->GetTextEventDispatcher();
-  NS_ENSURE_TRUE_VOID(dispatcher);
 
   struct TextRecord {
     TextRecord() : start(-1), oldEnd(-1), newEnd(-1) {}
@@ -672,17 +669,22 @@ void GeckoEditableSupport::FlushIMEChanges(FlushChangesFlag aFlags) {
            mIMEPendingTextChange.mRemovedEndOffset ||
        mIMEPendingTextChange.mStartOffset !=
            mIMEPendingTextChange.mAddedEndOffset)) {
+    WidgetQueryContentEvent queryTextContentEvent(true, eQueryTextContent,
+                                                  widget);
+
     if (mIMEPendingTextChange.mAddedEndOffset !=
         mIMEPendingTextChange.mStartOffset) {
-      const Maybe<QueryContentResult> queryTextContentResult =
-          dispatcher->QueryTextContent(mIMEPendingTextChange.mStartOffset,
-                                       mIMEPendingTextChange.mAddedEndOffset -
-                                           mIMEPendingTextChange.mStartOffset);
-      if (shouldAbort(NS_WARN_IF(queryTextContentResult.isNothing()))) {
+      queryTextContentEvent.InitForQueryTextContent(
+          mIMEPendingTextChange.mStartOffset,
+          mIMEPendingTextChange.mAddedEndOffset -
+              mIMEPendingTextChange.mStartOffset);
+      widget->DispatchEvent(&queryTextContentEvent);
+
+      if (shouldAbort(NS_WARN_IF(queryTextContentEvent.Failed()))) {
         return;
       }
 
-      textTransaction.text = queryTextContentResult->DataRef();
+      textTransaction.text = queryTextContentEvent.mReply->DataRef();
     }
 
     textTransaction.start =
@@ -703,20 +705,23 @@ void GeckoEditableSupport::FlushIMEChanges(FlushChangesFlag aFlags) {
     } else {
       // XXX Unfortunately we don't know current selection via selection
       //     change notification.
-      //     QueryNormalSelection() result might be newer data than text change
-      //     data. It means that GeckoEditableChild.onSelectionChange may throw
+      //     eQuerySelectedText might be newer data than text change data.
+      //     It means that GeckoEditableChild.onSelectionChange may throw
       //     IllegalArgumentException since we don't merge with newer text
       //     change.
-      const Maybe<QueryContentResult> querySelectionResult =
-          dispatcher->QueryNormalSelection();
+      WidgetQueryContentEvent querySelectedTextEvent(true, eQuerySelectedText,
+                                                     widget);
+      widget->DispatchEvent(&querySelectedTextEvent);
+
       if (shouldAbort(
-              NS_WARN_IF(querySelectionResult.isNothing()) ||
-              NS_WARN_IF(!querySelectionResult->FoundSelectionRange()))) {
+              NS_WARN_IF(querySelectedTextEvent.DidNotFindSelection()))) {
         return;
       }
 
-      selStart = static_cast<int32_t>(querySelectionResult->AnchorOffset());
-      selEnd = static_cast<int32_t>(querySelectionResult->FocusOffset());
+      selStart =
+          static_cast<int32_t>(querySelectedTextEvent.mReply->AnchorOffset());
+      selEnd =
+          static_cast<int32_t>(querySelectedTextEvent.mReply->FocusOffset());
     }
 
     if (aFlags == FLUSH_FLAG_RECOVER && textTransaction.IsValid()) {
@@ -807,33 +812,36 @@ void GeckoEditableSupport::UpdateCompositionRects() {
   nsCOMPtr<nsIWidget> widget = GetWidget();
   RefPtr<TextComposition> composition(GetComposition());
   NS_ENSURE_TRUE_VOID(mDispatcher && widget);
-  const OwningNonNull<TextEventDispatcher> dispatcher = *mDispatcher;
 
   jni::ObjectArray::LocalRef rects;
   if (composition) {
-    const Maybe<QueryContentResult> queryTextRectArrayResult =
-        dispatcher->QueryTextRectArray(
-            composition->NativeOffsetOfStartComposition(),
-            composition->String().Length());
+    uint32_t offset = composition->NativeOffsetOfStartComposition();
+    WidgetQueryContentEvent queryTextRectsEvent(true, eQueryTextRectArray,
+                                                widget);
+    queryTextRectsEvent.InitForQueryTextRectArray(
+        offset, composition->String().Length());
+    widget->DispatchEvent(&queryTextRectsEvent);
     rects = ConvertRectArrayToJavaRectFArray(
-        queryTextRectArrayResult.isSome()
-            ? queryTextRectArrayResult->mRectArray
+        queryTextRectsEvent.Succeeded()
+            ? queryTextRectsEvent.mReply->mRectArray
             : CopyableTArray<mozilla::LayoutDeviceIntRect>());
   } else {
     rects = ConvertRectArrayToJavaRectFArray(
         CopyableTArray<mozilla::LayoutDeviceIntRect>());
   }
 
-  QueryContentOptions options;
+  WidgetQueryContentEvent queryCaretRectEvent(true, eQueryCaretRect, widget);
+  WidgetQueryContentEvent::Options options;
   options.mRelativeToInsertionPoint = true;
-  const Maybe<QueryContentResult> queryCaretRectResult =
-      dispatcher->QueryCaretRect(0, options);
+  queryCaretRectEvent.InitForQueryCaretRect(0, options);
+
+  widget->DispatchEvent(&queryCaretRectEvent);
   auto caretRect =
-      queryCaretRectResult.isSome()
-          ? java::sdk::RectF::New(queryCaretRectResult->mRect.x,
-                                  queryCaretRectResult->mRect.y,
-                                  queryCaretRectResult->mRect.XMost(),
-                                  queryCaretRectResult->mRect.YMost())
+      queryCaretRectEvent.Succeeded()
+          ? java::sdk::RectF::New(queryCaretRectEvent.mReply->mRect.x,
+                                  queryCaretRectEvent.mReply->mRect.y,
+                                  queryCaretRectEvent.mReply->mRect.XMost(),
+                                  queryCaretRectEvent.mReply->mRect.YMost())
           : java::sdk::RectF::New();
 
   mEditable->UpdateCompositionRects(rects, caretRect);
@@ -917,11 +925,13 @@ bool GeckoEditableSupport::DoReplaceText(int32_t aStart, int32_t aEnd,
 
 #ifdef NIGHTLY_BUILD
     {
-      const Maybe<QueryContentResult> querySelectionResult =
-          dispatcher->QueryNormalSelection();
-      if (querySelectionResult.isSome()) {
-        ALOGIME("IME: Current selection: %s",
-                ToString(querySelectionResult->mOffsetAndData).c_str());
+      WidgetQueryContentEvent querySelectedTextEvent(true, eQuerySelectedText,
+                                                     widget);
+      widget->DispatchEvent(&querySelectedTextEvent);
+      if (querySelectedTextEvent.Succeeded()) {
+        ALOGIME(
+            "IME: Current selection: %s",
+            ToString(querySelectedTextEvent.mReply->mOffsetAndData).c_str());
       }
     }
 #endif
@@ -1096,16 +1106,15 @@ bool GeckoEditableSupport::DoUpdateComposition(int32_t aStart, int32_t aEnd,
     return false;
   }
 
-  const nsCOMPtr<nsIWidget> widget = GetWidget();
+  nsCOMPtr<nsIWidget> widget = GetWidget();
   NS_ENSURE_TRUE(mDispatcher && widget, false);
-  const OwningNonNull<TextEventDispatcher> dispatcher = *mDispatcher;
 
   const bool keepCurrent =
       !!(aFlags & java::GeckoEditableChild::FLAG_KEEP_CURRENT_COMPOSITION);
 
   // A composition with no ranges means we want to set the selection.
   if (mIMERanges->IsEmpty()) {
-    if (keepCurrent && dispatcher->IsComposing()) {
+    if (keepCurrent && mDispatcher->IsComposing()) {
       // Don't set selection if we want to keep current composition.
       return false;
     }
@@ -1113,9 +1122,9 @@ bool GeckoEditableSupport::DoUpdateComposition(int32_t aStart, int32_t aEnd,
     MOZ_ASSERT(aStart >= 0 && aEnd >= 0);
     const bool compositionChanged = RemoveComposition();
 
-    MOZ_ASSERT(dispatcher->GetWidget() == widget);
+    MOZ_ASSERT(mDispatcher->GetWidget() == widget);
     const uint32_t offset = std::min(aStart, aEnd);
-    dispatcher->DispatchSetSelectionEvent(
+    mDispatcher->DispatchSetSelectionEvent(
         offset, std::max(aStart, aEnd) - offset, ExpandToClusterBoundary::No,
         aStart > aEnd ? RangeDirection::Reversed : RangeDirection::Normal);
     return compositionChanged;
@@ -1133,7 +1142,7 @@ bool GeckoEditableSupport::DoUpdateComposition(int32_t aStart, int32_t aEnd,
   MOZ_ASSERT(!composition || !composition->EditorIsHandlingLatestChange());
 
   nsEventStatus status = nsEventStatus_eIgnore;
-  if (!composition || !dispatcher->IsComposing() ||
+  if (!composition || !mDispatcher->IsComposing() ||
       uint32_t(aStart) != composition->NativeOffsetOfStartComposition() ||
       uint32_t(aEnd) != composition->NativeOffsetOfStartComposition() +
                             composition->String().Length()) {
@@ -1147,8 +1156,8 @@ bool GeckoEditableSupport::DoUpdateComposition(int32_t aStart, int32_t aEnd,
     // or if the existing composition doesn't match the new one.
     RemoveComposition();
 
-    MOZ_ASSERT(dispatcher->GetWidget() == widget);
-    dispatcher->DispatchSetSelectionEvent(
+    MOZ_ASSERT(mDispatcher->GetWidget() == widget);
+    mDispatcher->DispatchSetSelectionEvent(
         uint32_t(aStart), uint32_t(aEnd - aStart), ExpandToClusterBoundary::No,
         RangeDirection::Normal, nsISelectionListener::IME_REASON);
 
@@ -1157,14 +1166,12 @@ bool GeckoEditableSupport::DoUpdateComposition(int32_t aStart, int32_t aEnd,
       // https://searchfox.org/firefox-main/rev/6762e79efb6111d51bb58951c1ebdbac886526e7/layout/base/PresShell.cpp#9295-9301
       // Then, we don't need to make ContentEventHandler recompute the new
       // selection range.
-      const Maybe<QueryContentResult> querySelectionResult =
-          dispatcher->QueryNormalSelection();
-      // XXX I don't think this assert never fails because we dispatched event
-      // above especially RemoveComposition(), so, this could happen.
-      MOZ_ASSERT(querySelectionResult.isSome());
-      if (querySelectionResult && querySelectionResult->FoundSelectionRange())
-          [[likely]] {
-        string = querySelectionResult->DataRef();
+      WidgetQueryContentEvent querySelectedTextEvent(true, eQuerySelectedText,
+                                                     widget);
+      status = widget->DispatchEvent(&querySelectedTextEvent);
+      MOZ_ASSERT(querySelectedTextEvent.Succeeded());
+      if (querySelectedTextEvent.FoundSelection()) {
+        string = querySelectedTextEvent.mReply->DataRef();
       }
     }
   } else {
@@ -1204,23 +1211,23 @@ class MOZ_STACK_CLASS AutoSelectionRestore final {
   explicit AutoSelectionRestore(nsIWidget* widget,
                                 TextEventDispatcher* dispatcher)
       : mWidget(widget), mDispatcher(dispatcher) {
-    MOZ_ASSERT(mWidget);
-    if (!mDispatcher || !mDispatcher->IsComposing()) {
+    MOZ_ASSERT(widget);
+    if (!dispatcher || !dispatcher->IsComposing()) {
       mOffset = UINT32_MAX;
       mLength = UINT32_MAX;
       return;
     }
-    const Maybe<QueryContentResult> querySelectionResult =
-        mDispatcher->QueryNormalSelection();
-    if (querySelectionResult.isNothing() ||
-        !querySelectionResult->FoundSelectionRange()) [[unlikely]] {
+    WidgetQueryContentEvent querySelectedTextEvent(true, eQuerySelectedText,
+                                                   widget);
+    widget->DispatchEvent(&querySelectedTextEvent);
+    if (querySelectedTextEvent.DidNotFindSelection()) {
       mOffset = UINT32_MAX;
       mLength = UINT32_MAX;
       return;
     }
 
-    mOffset = querySelectionResult->StartOffset();
-    mLength = querySelectionResult->DataLength();
+    mOffset = querySelectedTextEvent.mReply->StartOffset();
+    mLength = querySelectedTextEvent.mReply->DataLength();
   }
 
   ~AutoSelectionRestore() {
@@ -1240,8 +1247,8 @@ class MOZ_STACK_CLASS AutoSelectionRestore final {
   }
 
  private:
-  MOZ_KNOWN_LIVE const nsCOMPtr<nsIWidget> mWidget;
-  MOZ_KNOWN_LIVE const RefPtr<TextEventDispatcher> mDispatcher;
+  nsCOMPtr<nsIWidget> mWidget;
+  RefPtr<TextEventDispatcher> mDispatcher;
   uint32_t mOffset;
   uint32_t mLength;
 };

@@ -5,7 +5,6 @@
 #ifndef TSFTextStore_h
 #define TSFTextStore_h
 
-#include <fmt/format.h>
 #include <msctf.h>
 #include <textstor.h>
 
@@ -356,14 +355,12 @@ class TSFTextStore final : public TSFTextStoreBase,
 
     ITfCompositionView* GetView() const { return mView; }
 
-    friend auto format_as(const Composition& aComposition) {
-      return fmt::format("{{ mView={}, OffsetAndData<LONG>={} }}",
-                         static_cast<void*>(aComposition.mView),
-                         static_cast<const OffsetAndData<LONG>&>(aComposition));
-    }
     friend std::ostream& operator<<(std::ostream& aStream,
                                     const Composition& aComposition) {
-      return aStream << format_as(aComposition);
+      aStream << "{ mView=0x" << aComposition.mView.get()
+              << ", OffsetAndData<LONG>="
+              << static_cast<const OffsetAndData<LONG>&>(aComposition) << " }";
+      return aStream;
     }
 
    private:
@@ -394,8 +391,8 @@ class TSFTextStore final : public TSFTextStoreBase,
       SetSelection(aSelectionChangeData);
     }
 
-    explicit Selection(const QueryContentResult& aQuerySelectionResult) {
-      SetSelection(aQuerySelectionResult);
+    explicit Selection(const WidgetQueryContentEvent& aQuerySelectionEvent) {
+      SetSelection(aQuerySelectionEvent);
     }
 
     Selection(uint32_t aStart, uint32_t aLength, bool aReversed,
@@ -432,9 +429,10 @@ class TSFTextStore final : public TSFTextStoreBase,
                           aSelectionChangeData.GetWritingMode());
     }
 
-    bool SetSelection(const QueryContentResult& aQuerySelectionResult) {
-      MOZ_ASSERT(aQuerySelectionResult.mEventMessage == eQuerySelectedText);
-      if (aQuerySelectionResult.FoundSelectionRange()) [[likely]] {
+    bool SetSelection(const WidgetQueryContentEvent& aQuerySelectionEvent) {
+      MOZ_ASSERT(aQuerySelectionEvent.mMessage == eQuerySelectedText);
+      MOZ_ASSERT(aQuerySelectionEvent.Succeeded());
+      if (aQuerySelectionEvent.DidNotFindSelection()) {
         if (mACP.isNothing()) {
           return false;
         }
@@ -444,10 +442,10 @@ class TSFTextStore final : public TSFTextStoreBase,
         // apps, but they or TIP would restore selection at last point later.
         return true;
       }
-      return SetSelection(aQuerySelectionResult.StartOffset(),
-                          aQuerySelectionResult.DataLength(),
-                          aQuerySelectionResult.mReversed,
-                          aQuerySelectionResult.WritingModeRef());
+      return SetSelection(aQuerySelectionEvent.mReply->StartOffset(),
+                          aQuerySelectionEvent.mReply->DataLength(),
+                          aQuerySelectionEvent.mReply->mReversed,
+                          aQuerySelectionEvent.mReply->WritingModeRef());
     }
 
     bool SetSelection(uint32_t aStart, uint32_t aLength, bool aReversed,
@@ -544,15 +542,14 @@ class TSFTextStore final : public TSFTextStoreBase,
              aChangedSelection.mOffset == static_cast<uint32_t>(StartOffset());
     }
 
-    friend auto format_as(const Selection& aSelection) {
-      return fmt::format(
-          "{{ mACP={}, mWritingMode={}, Collapsed()={}, Length={} }}",
-          aSelection.mACP, ToString(aSelection.mWritingMode),
-          aSelection.Collapsed(), aSelection.Length());
-    }
     friend std::ostream& operator<<(std::ostream& aStream,
                                     const Selection& aSelection) {
-      return aStream << format_as(aSelection);
+      aStream << "{ mACP=" << ToString(aSelection.mACP).c_str()
+              << ", mWritingMode=" << ToString(aSelection.mWritingMode).c_str()
+              << ",  Collapsed()="
+              << (aSelection.Collapsed() ? "true" : "false")
+              << ", Length=" << aSelection.Length() << " }";
+      return aStream;
     }
 
    private:
@@ -872,18 +869,17 @@ class TSFTextStore final : public TSFTextStoreBase,
     Maybe<TSFTextStore::Composition>& Composition() { return mComposition; }
     Maybe<TSFTextStore::Selection>& Selection() { return mSelection; }
 
-    friend auto format_as(const Content& aContent) {
-      return fmt::format(
-          "{{ mText={}, mLastComposition={}, mLatestCompositionRange={}, "
-          "mMinModifiedOffset={} }}",
-          PrintStringDetail(aContent.mText,
-                            PrintStringDetail::kMaxLengthForEditor),
-          aContent.mLastComposition, aContent.mLatestCompositionRange,
-          aContent.mMinModifiedOffset);
-    }
     friend std::ostream& operator<<(std::ostream& aStream,
                                     const Content& aContent) {
-      return aStream << format_as(aContent);
+      aStream << "{ mText="
+              << PrintStringDetail(aContent.mText,
+                                   PrintStringDetail::kMaxLengthForEditor)
+                     .get()
+              << ", mLastComposition=" << aContent.mLastComposition
+              << ", mLatestCompositionRange="
+              << aContent.mLatestCompositionRange
+              << ", mMinModifiedOffset=" << aContent.mMinModifiedOffset << " }";
+      return aStream;
     }
 
    private:

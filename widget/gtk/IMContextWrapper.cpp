@@ -3221,90 +3221,85 @@ bool IMContextWrapper::SetTextRange(PangoAttrIterator* aPangoAttrIter,
 }
 
 void IMContextWrapper::SetCursorPosition(GtkIMContext* aContext) {
-  MOZ_LOG_FMT(gIMELog, LogLevel::Info,
-              "{} SetCursorPosition(aContext={}), "
-              "mCompositionTargetRange={}, mContentSelection={}",
-              static_cast<void*>(this), static_cast<void*>(aContext),
-              mCompositionTargetRange, mContentSelection);
+  MOZ_LOG(
+      gIMELog, LogLevel::Info,
+      ("0x%p SetCursorPosition(aContext=0x%p), "
+       "mCompositionTargetRange={ mOffset=%u, mLength=%u }, "
+       "mContentSelection=%s",
+       this, aContext, mCompositionTargetRange.mOffset,
+       mCompositionTargetRange.mLength, ToString(mContentSelection).c_str()));
 
   bool useCaret = false;
-  if (!mCompositionTargetRange.IsValid()) [[unlikely]] {
-    if (mContentSelection.isNothing()) [[unlikely]] {
-      MOZ_LOG_FMT(gIMELog, LogLevel::Error,
-                  "{}   SetCursorPosition(), FAILED, "
-                  "mCompositionTargetRange and mContentSelection are invalid",
-                  static_cast<void*>(this));
+  if (!mCompositionTargetRange.IsValid()) {
+    if (mContentSelection.isNothing()) {
+      MOZ_LOG(gIMELog, LogLevel::Error,
+              ("0x%p   SetCursorPosition(), FAILED, "
+               "mCompositionTargetRange and mContentSelection are invalid",
+               this));
       return;
     }
-    if (!mContentSelection->HasRange()) [[unlikely]] {
-      MOZ_LOG_FMT(
-          gIMELog, LogLevel::Warning,
-          "{}   SetCursorPosition(), FAILED, "
-          "mCompositionTargetRange is invalid and there is no selection",
-          static_cast<void*>(this));
+    if (!mContentSelection->HasRange()) {
+      MOZ_LOG(gIMELog, LogLevel::Warning,
+              ("0x%p   SetCursorPosition(), FAILED, "
+               "mCompositionTargetRange is invalid and there is no selection",
+               this));
       return;
     }
     useCaret = true;
   }
 
-  const RefPtr<TextEventDispatcher> dispatcher = GetTextEventDispatcher();
-  if (!dispatcher) [[unlikely]] {
-    MOZ_LOG_FMT(
-        gIMELog, LogLevel::Error,
-        "{}   SetCursorPosition(), FAILED, due to no text event dispatcher",
-        static_cast<void*>(this));
+  if (!mLastFocusedWindow) {
+    MOZ_LOG(gIMELog, LogLevel::Error,
+            ("0x%p   SetCursorPosition(), FAILED, due to no focused "
+             "window",
+             this));
     return;
   }
 
-  if (!aContext) [[unlikely]] {
-    MOZ_LOG_FMT(gIMELog, LogLevel::Error,
-                "{}   SetCursorPosition(), FAILED, due to no context",
-                static_cast<void*>(this));
+  if (MOZ_UNLIKELY(!aContext)) {
+    MOZ_LOG(gIMELog, LogLevel::Error,
+            ("0x%p   SetCursorPosition(), FAILED, due to no context", this));
     return;
   }
 
-  const Maybe<QueryContentResult> queryCaretOrTextRectResult =
-      [&]() -> Maybe<QueryContentResult> {
-    if (useCaret) {
-      return dispatcher->QueryCaretRect(
-          mContentSelection->OffsetAndDataRef().StartOffset());
-    }
+  WidgetQueryContentEvent queryCaretOrTextRectEvent(
+      true, useCaret ? eQueryCaretRect : eQueryTextRect, mLastFocusedWindow);
+  if (useCaret) {
+    queryCaretOrTextRectEvent.InitForQueryCaretRect(
+        mContentSelection->OffsetAndDataRef().StartOffset());
+  } else {
     if (mContentSelection->WritingModeRef().IsVertical()) {
       // For preventing the candidate window to overlap the target
       // clause, we should set fake (typically, very tall) caret rect.
-      const uint32_t length =
+      uint32_t length =
           mCompositionTargetRange.mLength ? mCompositionTargetRange.mLength : 1;
-      return dispatcher->QueryTextRect(mCompositionTargetRange.mOffset, length);
+      queryCaretOrTextRectEvent.InitForQueryTextRect(
+          mCompositionTargetRange.mOffset, length);
+    } else {
+      queryCaretOrTextRectEvent.InitForQueryTextRect(
+          mCompositionTargetRange.mOffset, 1);
     }
-    return dispatcher->QueryTextRect(mCompositionTargetRange.mOffset, 1);
-  }();
-  if (queryCaretOrTextRectResult.isNothing()) [[unlikely]] {
-    MOZ_LOG_FMT(
-        gIMELog, LogLevel::Error,
-        "{}   SetCursorPosition(), FAILED, TextEventDispatcher::{}() failed",
-        static_cast<void*>(this),
-        useCaret ? "QueryCaretRect" : "QueryTextRect");
+  }
+  mLastFocusedWindow->DispatchEvent(&queryCaretOrTextRectEvent);
+  if (queryCaretOrTextRectEvent.Failed()) {
+    MOZ_LOG(gIMELog, LogLevel::Error,
+            ("0x%p   SetCursorPosition(), FAILED, %s was failed", this,
+             useCaret ? "eQueryCaretRect" : "eQueryTextRect"));
     return;
   }
 
-  if (!mLastFocusedWindow) [[unlikely]] {
-    MOZ_LOG_FMT(gIMELog, LogLevel::Error,
-                "{}   SetCursorPosition(), FAILED, due to lost focused window",
-                static_cast<void*>(this));
-    return;
-  }
-
-  nsWindow* const rootWindow =
+  nsWindow* rootWindow =
       nsWindow::FromWidget(mLastFocusedWindow->GetTopLevelWidget());
 
   // Get the position of the rootWindow in screen.
-  const LayoutDeviceIntPoint root = rootWindow->WidgetToScreenOffset();
+  LayoutDeviceIntPoint root = rootWindow->WidgetToScreenOffset();
 
   // Get the position of IM context owner window in screen.
-  const LayoutDeviceIntPoint owner = mOwnerWindow->WidgetToScreenOffset();
+  LayoutDeviceIntPoint owner = mOwnerWindow->WidgetToScreenOffset();
 
   // Compute the caret position in the IM owner window.
-  LayoutDeviceIntRect rect = queryCaretOrTextRectResult->mRect + root - owner;
+  LayoutDeviceIntRect rect =
+      queryCaretOrTextRectEvent.mReply->mRect + root - owner;
   rect.width = 0;
   rootWindow->SetTextInputArea(rect);
 
@@ -3319,16 +3314,15 @@ void IMContextWrapper::SetCursorPosition(GtkIMContext* aContext) {
 
 nsresult IMContextWrapper::GetCurrentParagraph(nsAString& aText,
                                                uint32_t& aCursorPos) {
-  MOZ_LOG_FMT(gIMELog, LogLevel::Info,
-              "{} GetCurrentParagraph(), mCompositionState={}",
-              static_cast<void*>(this), GetCompositionStateName());
+  MOZ_LOG(gIMELog, LogLevel::Info,
+          ("0x%p GetCurrentParagraph(), mCompositionState=%s", this,
+           GetCompositionStateName()));
 
-  const RefPtr<TextEventDispatcher> dispatcher = GetTextEventDispatcher();
-  if (!dispatcher) [[unlikely]] {
-    MOZ_LOG_FMT(gIMELog, LogLevel::Error,
-                "{}   GetCurrentParagraph(), FAILED, there are no text "
-                "event dispatcher or no focused window",
-                static_cast<void*>(this));
+  if (!mLastFocusedWindow) {
+    MOZ_LOG(gIMELog, LogLevel::Error,
+            ("0x%p   GetCurrentParagraph(), FAILED, there are no "
+             "focused window in this module",
+             this));
     return NS_ERROR_NULL_POINTER;
   }
 
@@ -3340,10 +3334,10 @@ nsresult IMContextWrapper::GetCurrentParagraph(nsAString& aText,
   if (!EditorHasCompositionString()) {
     // Query cursor position & selection
     if (NS_WARN_IF(!EnsureToCacheContentSelection())) {
-      MOZ_LOG_FMT(gIMELog, LogLevel::Error,
-                  "{}   GetCurrentParagraph(), FAILED, due to no "
-                  "valid selection information",
-                  static_cast<void*>(this));
+      MOZ_LOG(gIMELog, LogLevel::Error,
+              ("0x%p   GetCurrentParagraph(), FAILED, due to no "
+               "valid selection information",
+               this));
       return NS_ERROR_FAILURE;
     }
 
@@ -3357,46 +3351,43 @@ nsresult IMContextWrapper::GetCurrentParagraph(nsAString& aText,
     }
   }
 
-  MOZ_LOG_FMT(gIMELog, LogLevel::Debug,
-              "{}   GetCurrentParagraph(), selOffset={}, selLength={}",
-              static_cast<void*>(this), selOffset, selLength);
+  MOZ_LOG(gIMELog, LogLevel::Debug,
+          ("0x%p   GetCurrentParagraph(), selOffset=%u, selLength=%u", this,
+           selOffset, selLength));
 
   // XXX nsString::Find and nsString::RFind take int32_t for offset, so,
   //     we cannot support this request when the current offset is larger
   //     than INT32_MAX.
   if (selOffset > INT32_MAX || selLength > INT32_MAX ||
-      selOffset + selLength > INT32_MAX) [[unlikely]] {
-    MOZ_LOG_FMT(
-        gIMELog, LogLevel::Error,
-        "{}   GetCurrentParagraph(), FAILED, The selection is out of range",
-        static_cast<void*>(this));
+      selOffset + selLength > INT32_MAX) {
+    MOZ_LOG(gIMELog, LogLevel::Error,
+            ("0x%p   GetCurrentParagraph(), FAILED, The selection is "
+             "out of range",
+             this));
     return NS_ERROR_FAILURE;
   }
 
   // Get all text contents of the focused editor
-  const Maybe<QueryContentResult> queryTextContentResult =
-      dispatcher->QueryTextContent(0, UINT32_MAX);
-  if (NS_WARN_IF(queryTextContentResult.isNothing())) [[unlikely]] {
-    MOZ_LOG_FMT(gIMELog, LogLevel::Error,
-                "{}   GetCurrentParagraph(), FAILED, due to "
-                "TextEventDispatcher::QueryTextContent() failed",
-                static_cast<void*>(this));
+  WidgetQueryContentEvent queryTextContentEvent(true, eQueryTextContent,
+                                                mLastFocusedWindow);
+  queryTextContentEvent.InitForQueryTextContent(0, UINT32_MAX);
+  mLastFocusedWindow->DispatchEvent(&queryTextContentEvent);
+  if (NS_WARN_IF(queryTextContentEvent.Failed())) {
     return NS_ERROR_FAILURE;
   }
 
-  if (selOffset + selLength > queryTextContentResult->DataLength())
-      [[unlikely]] {
-    MOZ_LOG_FMT(gIMELog, LogLevel::Error,
-                "{}   GetCurrentParagraph(), FAILED, The selection is "
-                "invalid, queryTextContentResult={}",
-                static_cast<void*>(this), queryTextContentResult);
+  if (selOffset + selLength > queryTextContentEvent.mReply->DataLength()) {
+    MOZ_LOG(gIMELog, LogLevel::Error,
+            ("0x%p   GetCurrentParagraph(), FAILED, The selection is "
+             "invalid, queryTextContentEvent={ mReply=%s }",
+             this, ToString(queryTextContentEvent.mReply).c_str()));
     return NS_ERROR_FAILURE;
   }
 
   // Remove composing string and restore the selected string because
   // GtkEntry doesn't remove selected string until committing, however,
   // our editor does it.  We should emulate the behavior for IME.
-  nsAutoString textContent(queryTextContentResult->DataRef());
+  nsAutoString textContent(queryTextContentEvent.mReply->DataRef());
   if (EditorHasCompositionString() &&
       mDispatchedCompositionString != mSelectedStringRemovedByComposition) {
     textContent.Replace(mCompositionStart,
@@ -3416,35 +3407,33 @@ nsresult IMContextWrapper::GetCurrentParagraph(nsAString& aText,
   aText = nsDependentSubstring(textContent, parStart, parEnd - parStart);
   aCursorPos = selOffset - uint32_t(parStart);
 
-  MOZ_LOG_FMT(gIMELog, LogLevel::Debug,
-              "{}   GetCurrentParagraph(), succeeded, aText=\"{}\", "
-              "aText.Length()={}, aCursorPos={}",
-              static_cast<void*>(this), NS_ConvertUTF16toUTF8(aText),
-              aText.Length(), aCursorPos);
+  MOZ_LOG(
+      gIMELog, LogLevel::Debug,
+      ("0x%p   GetCurrentParagraph(), succeeded, aText=%s, "
+       "aText.Length()=%zu, aCursorPos=%u",
+       this, NS_ConvertUTF16toUTF8(aText).get(), aText.Length(), aCursorPos));
 
   return NS_OK;
 }
 
 nsresult IMContextWrapper::DeleteText(GtkIMContext* aContext, int32_t aOffset,
                                       uint32_t aNChars) {
-  MOZ_LOG_FMT(gIMELog, LogLevel::Info,
-              "{} DeleteText(aContext={}, aOffset={}, aNChars={}), "
-              "mCompositionState={}",
-              static_cast<void*>(this), static_cast<void*>(aContext), aOffset,
-              aNChars, GetCompositionStateName());
+  MOZ_LOG(gIMELog, LogLevel::Info,
+          ("0x%p DeleteText(aContext=0x%p, aOffset=%d, aNChars=%u), "
+           "mCompositionState=%s",
+           this, aContext, aOffset, aNChars, GetCompositionStateName()));
 
-  const RefPtr<TextEventDispatcher> dispatcher = GetTextEventDispatcher();
-  if (!dispatcher) [[unlikely]] {
-    MOZ_LOG_FMT(gIMELog, LogLevel::Error,
-                "{}   DeleteText(), FAILED, there is no text event dispatcher",
-                static_cast<void*>(this));
+  if (!mLastFocusedWindow) {
+    MOZ_LOG(gIMELog, LogLevel::Error,
+            ("0x%p   DeleteText(), FAILED, there are no focused window "
+             "in this module",
+             this));
     return NS_ERROR_NULL_POINTER;
   }
 
-  if (!aNChars) [[unlikely]] {
-    MOZ_LOG_FMT(gIMELog, LogLevel::Error,
-                "{}   DeleteText(), FAILED, aNChars must not be zero",
-                static_cast<void*>(this));
+  if (!aNChars) {
+    MOZ_LOG(gIMELog, LogLevel::Error,
+            ("0x%p   DeleteText(), FAILED, aNChars must not be zero", this));
     return NS_ERROR_INVALID_ARG;
   }
 
@@ -3456,71 +3445,66 @@ nsresult IMContextWrapper::DeleteText(GtkIMContext* aContext, int32_t aOffset,
   bool editorHadCompositionString = EditorHasCompositionString();
   if (wasComposing) {
     selOffset = mCompositionStart;
-    if (!DispatchCompositionCommitEvent(
-            aContext, &mSelectedStringRemovedByComposition)) [[unlikely]] {
-      MOZ_LOG_FMT(gIMELog, LogLevel::Error,
-                  "{}   DeleteText(), FAILED, quitting from DeletText",
-                  static_cast<void*>(this));
+    if (!DispatchCompositionCommitEvent(aContext,
+                                        &mSelectedStringRemovedByComposition)) {
+      MOZ_LOG(gIMELog, LogLevel::Error,
+              ("0x%p   DeleteText(), FAILED, quitting from DeletText", this));
       return NS_ERROR_FAILURE;
     }
   } else {
-    if (NS_WARN_IF(!EnsureToCacheContentSelection())) [[unlikely]] {
-      MOZ_LOG_FMT(
-          gIMELog, LogLevel::Error,
-          "{}   DeleteText(), FAILED, due to no valid selection information",
-          static_cast<void*>(this));
+    if (NS_WARN_IF(!EnsureToCacheContentSelection())) {
+      MOZ_LOG(gIMELog, LogLevel::Error,
+              ("0x%p   DeleteText(), FAILED, due to no valid selection "
+               "information",
+               this));
       return NS_ERROR_FAILURE;
     }
-    if (!mContentSelection->HasRange()) [[unlikely]] {
-      MOZ_LOG_FMT(gIMELog, LogLevel::Debug,
-                  "{}   DeleteText(), does nothing, due to no selection range",
-                  static_cast<void*>(this));
+    if (!mContentSelection->HasRange()) {
+      MOZ_LOG(gIMELog, LogLevel::Debug,
+              ("0x%p   DeleteText(), does nothing, due to no selection range",
+               this));
       return NS_OK;
     }
     selOffset = mContentSelection->OffsetAndDataRef().StartOffset();
   }
 
   // Get all text contents of the focused editor
-  const Maybe<QueryContentResult> queryTextContentResult =
-      dispatcher->QueryTextContent(0, UINT32_MAX);
-  if (NS_WARN_IF(queryTextContentResult.isNothing())) [[unlikely]] {
-    MOZ_LOG_FMT(gIMELog, LogLevel::Error,
-                "{}   DeleteText(), FAILED, due to "
-                "TextEventDispatcher::QueryTextContent() failed",
-                static_cast<void*>(this));
+  WidgetQueryContentEvent queryTextContentEvent(true, eQueryTextContent,
+                                                mLastFocusedWindow);
+  queryTextContentEvent.InitForQueryTextContent(0, UINT32_MAX);
+  mLastFocusedWindow->DispatchEvent(&queryTextContentEvent);
+  if (NS_WARN_IF(queryTextContentEvent.Failed())) {
     return NS_ERROR_FAILURE;
   }
-  if (queryTextContentResult->IsDataEmpty()) [[unlikely]] {
-    MOZ_LOG_FMT(gIMELog, LogLevel::Error,
-                "{}   DeleteText(), FAILED, there is no contents",
-                static_cast<void*>(this));
+  if (queryTextContentEvent.mReply->IsDataEmpty()) {
+    MOZ_LOG(gIMELog, LogLevel::Error,
+            ("0x%p   DeleteText(), FAILED, there is no contents", this));
     return NS_ERROR_FAILURE;
   }
 
-  NS_ConvertUTF16toUTF8 utf8Str(
-      nsDependentSubstring(queryTextContentResult->DataRef(), 0, selOffset));
+  NS_ConvertUTF16toUTF8 utf8Str(nsDependentSubstring(
+      queryTextContentEvent.mReply->DataRef(), 0, selOffset));
   glong offsetInUTF8Characters =
       g_utf8_strlen(utf8Str.get(), utf8Str.Length()) + aOffset;
-  if (offsetInUTF8Characters < 0) [[unlikely]] {
-    MOZ_LOG_FMT(gIMELog, LogLevel::Error,
-                "{}   DeleteText(), FAILED, aOffset is too small for current "
-                "cursor pos (computed offset: {})",
-                static_cast<void*>(this), offsetInUTF8Characters);
+  if (offsetInUTF8Characters < 0) {
+    MOZ_LOG(gIMELog, LogLevel::Error,
+            ("0x%p   DeleteText(), FAILED, aOffset is too small for "
+             "current cursor pos (computed offset: %ld)",
+             this, offsetInUTF8Characters));
     return NS_ERROR_FAILURE;
   }
 
   AppendUTF16toUTF8(
-      nsDependentSubstring(queryTextContentResult->DataRef(), selOffset),
+      nsDependentSubstring(queryTextContentEvent.mReply->DataRef(), selOffset),
       utf8Str);
   glong countOfCharactersInUTF8 =
       g_utf8_strlen(utf8Str.get(), utf8Str.Length());
   glong endInUTF8Characters = offsetInUTF8Characters + aNChars;
-  if (countOfCharactersInUTF8 < endInUTF8Characters) [[unlikely]] {
-    MOZ_LOG_FMT(
-        gIMELog, LogLevel::Error,
-        "{}   DeleteText(), FAILED, aNChars is too large for "
-        "current contents (content length: {}, computed end offset: {})",
-        static_cast<void*>(this), countOfCharactersInUTF8, endInUTF8Characters);
+  if (countOfCharactersInUTF8 < endInUTF8Characters) {
+    MOZ_LOG(gIMELog, LogLevel::Error,
+            ("0x%p   DeleteText(), FAILED, aNChars is too large for "
+             "current contents (content length: %ld, computed end offset: %ld)",
+             this, countOfCharactersInUTF8, endInUTF8Characters));
     return NS_ERROR_FAILURE;
   }
 
@@ -3530,6 +3514,10 @@ nsresult IMContextWrapper::DeleteText(GtkIMContext* aContext, int32_t aOffset,
       g_utf8_offset_to_pointer(utf8Str.get(), endInUTF8Characters);
 
   // Set selection to delete
+  const RefPtr<TextEventDispatcher> dispatcher = GetTextEventDispatcher();
+  if (NS_WARN_IF(!dispatcher)) {
+    return NS_ERROR_FAILURE;
+  }
   nsDependentCSubstring utf8StrBeforeOffset(utf8Str, 0,
                                             charAtOffset - utf8Str.get());
   const uint32_t offset = NS_ConvertUTF8toUTF16(utf8StrBeforeOffset).Length();
@@ -3542,22 +3530,21 @@ nsresult IMContextWrapper::DeleteText(GtkIMContext* aContext, int32_t aOffset,
       offset, length, ExpandToClusterBoundary::No);
 
   if (!setSelectionSucceeded || lastFocusedWindow != mLastFocusedWindow ||
-      lastFocusedWindow->Destroyed()) [[unlikely]] {
-    MOZ_LOG_FMT(gIMELog, LogLevel::Error,
-                "{}   DeleteText(), FAILED, restoring selection caused focus "
-                "change or window destroyed",
-                static_cast<void*>(this));
+      lastFocusedWindow->Destroyed()) {
+    MOZ_LOG(gIMELog, LogLevel::Error,
+            ("0x%p   DeleteText(), FAILED, setting selection caused "
+             "focus change or window destroyed",
+             this));
     return NS_ERROR_FAILURE;
   }
 
   // If this deleting text caused by a key press, we need to dispatch
   // eKeyDown or eKeyUp before dispatching eContentCommandDelete event.
-  if (!MaybeDispatchKeyEventAsProcessedByIME(eContentCommandDelete))
-      [[unlikely]] {
-    MOZ_LOG_FMT(gIMELog, LogLevel::Warning,
-                "{}   DeleteText(), Warning, "
-                "MaybeDispatchKeyEventAsProcessedByIME() returned false",
-                static_cast<void*>(this));
+  if (!MaybeDispatchKeyEventAsProcessedByIME(eContentCommandDelete)) {
+    MOZ_LOG(gIMELog, LogLevel::Warning,
+            ("0x%p   DeleteText(), Warning, "
+             "MaybeDispatchKeyEventAsProcessedByIME() returned false",
+             this));
     return NS_ERROR_FAILURE;
   }
 
@@ -3566,11 +3553,11 @@ nsresult IMContextWrapper::DeleteText(GtkIMContext* aContext, int32_t aOffset,
       dispatcher->DispatchContentCommandEvent(eContentCommandDelete);
 
   if (deleteCommandResult.isErr() || lastFocusedWindow != mLastFocusedWindow ||
-      lastFocusedWindow->Destroyed()) [[unlikely]] {
-    MOZ_LOG_FMT(gIMELog, LogLevel::Error,
-                "{}   DeleteText(), FAILED, deleting the selection caused "
-                "focus change or window destroyed",
-                static_cast<void*>(this));
+      lastFocusedWindow->Destroyed()) {
+    MOZ_LOG(gIMELog, LogLevel::Error,
+            ("0x%p   DeleteText(), FAILED, deleting the selection caused "
+             "focus change or window destroyed",
+             this));
     return NS_ERROR_FAILURE;
   }
 
@@ -3579,10 +3566,10 @@ nsresult IMContextWrapper::DeleteText(GtkIMContext* aContext, int32_t aOffset,
   }
 
   // Restore the composition at new caret position.
-  if (!DispatchCompositionStart(aContext)) [[unlikely]] {
-    MOZ_LOG_FMT(gIMELog, LogLevel::Error,
-                "{}   DeleteText(), FAILED, resterting composition start",
-                static_cast<void*>(this));
+  if (!DispatchCompositionStart(aContext)) {
+    MOZ_LOG(
+        gIMELog, LogLevel::Error,
+        ("0x%p   DeleteText(), FAILED, resterting composition start", this));
     return NS_ERROR_FAILURE;
   }
 
@@ -3592,11 +3579,10 @@ nsresult IMContextWrapper::DeleteText(GtkIMContext* aContext, int32_t aOffset,
 
   nsAutoString compositionString;
   GetCompositionString(aContext, compositionString);
-  if (!DispatchCompositionChangeEvent(aContext, compositionString))
-      [[unlikely]] {
-    MOZ_LOG_FMT(gIMELog, LogLevel::Error,
-                "{}   DeleteText(), FAILED, restoring composition string",
-                static_cast<void*>(this));
+  if (!DispatchCompositionChangeEvent(aContext, compositionString)) {
+    MOZ_LOG(
+        gIMELog, LogLevel::Error,
+        ("0x%p   DeleteText(), FAILED, restoring composition string", this));
     return NS_ERROR_FAILURE;
   }
 
@@ -3616,47 +3602,39 @@ bool IMContextWrapper::EnsureToCacheContentSelection(
     return true;
   }
 
-  const RefPtr<nsWindow> dispatcherWindow =
+  RefPtr<nsWindow> dispatcherWindow =
       mLastFocusedWindow ? mLastFocusedWindow : mOwnerWindow;
-  if (NS_WARN_IF(!dispatcherWindow)) [[unlikely]] {
-    MOZ_LOG_FMT(
-        gIMELog, LogLevel::Error,
-        "{} EnsureToCacheContentSelection(), FAILED, due to no focused window",
-        static_cast<void*>(this));
-    return false;
-  }
-  const RefPtr<TextEventDispatcher> dispatcher =
-      dispatcherWindow->GetTextEventDispatcher();
-  if (NS_WARN_IF(!dispatcher)) [[unlikely]] {
-    MOZ_LOG_FMT(gIMELog, LogLevel::Error,
-                "{} EnsureToCacheContentSelection(), FAILED, due to no text "
-                "event dispatcher",
-                static_cast<void*>(this));
+  if (NS_WARN_IF(!dispatcherWindow)) {
+    MOZ_LOG(gIMELog, LogLevel::Error,
+            ("0x%p EnsureToCacheContentSelection(), FAILED, due to "
+             "no focused window",
+             this));
     return false;
   }
 
-  const Maybe<QueryContentResult> querySelectionResult =
-      dispatcher->QueryNormalSelection();
-  if (NS_WARN_IF(querySelectionResult.isNothing())) [[unlikely]] {
-    MOZ_LOG_FMT(gIMELog, LogLevel::Error,
-                "{} EnsureToCacheContentSelection(), FAILED, due to failure of "
-                "query selection event",
-                static_cast<void*>(this));
+  WidgetQueryContentEvent querySelectedTextEvent(true, eQuerySelectedText,
+                                                 dispatcherWindow);
+  dispatcherWindow->DispatchEvent(&querySelectedTextEvent);
+  if (NS_WARN_IF(querySelectedTextEvent.Failed())) {
+    MOZ_LOG(gIMELog, LogLevel::Error,
+            ("0x%p EnsureToCacheContentSelection(), FAILED, due to "
+             "failure of query selection event",
+             this));
     return false;
   }
 
-  mContentSelection = Some(ContentSelection(*querySelectionResult));
+  mContentSelection = Some(ContentSelection(querySelectedTextEvent));
   if (mContentSelection->HasRange()) {
     if (!mContentSelection->OffsetAndDataRef().IsDataEmpty() &&
         aSelectedString) {
-      aSelectedString->Assign(querySelectionResult->DataRef());
+      aSelectedString->Assign(querySelectedTextEvent.mReply->DataRef());
     }
   }
 
-  MOZ_LOG_FMT(
+  MOZ_LOG(
       gIMELog, LogLevel::Debug,
-      "{} EnsureToCacheContentSelection(), Succeeded, mContentSelection={}",
-      static_cast<void*>(this), mContentSelection);
+      ("0x%p EnsureToCacheContentSelection(), Succeeded, mContentSelection=%s",
+       this, ToString(mContentSelection).c_str()));
   return true;
 }
 

@@ -5,12 +5,10 @@
 #include "TextInputHandler.h"
 #include <Foundation/Foundation.h>
 #include <Foundation/NSObjCRuntime.h>
-#include <fmt/format.h>
 
 #include "mozilla/Logging.h"
 
 #include "mozilla/AutoRestore.h"
-#include "mozilla/CheckedInt.h"
 #include "mozilla/MacStringHelpers.h"
 #include "mozilla/MiscEvents.h"
 #include "mozilla/MouseEvents.h"
@@ -426,40 +424,15 @@ bool mozilla::widget::IsControlChar(uint32_t aCharCode) {
   return aCharCode < ' ' || aCharCode == NSDeleteCharacter;
 }
 
-inline auto format_as(const NSRange& aRange) {
-  return fmt::format("{{ location={}, length={} }}",
-                     aRange.location == NSNotFound
-                         ? "NSNotFound"
-                         : std::to_string(aRange.location),
-                     aRange.length);
-}
-
-inline std::ostream& operator<<(std::ostream& aStream, const NSRange& aRange) {
-  return aStream << format_as(aRange);
-}
-
-inline auto format_as(const NSPoint& aPoint) {
-  return fmt::format("{{ x={}, y={} }}", aPoint.x, aPoint.y);
-}
-
-inline std::ostream& operator<<(std::ostream& aStream, const NSPoint& aPoint) {
-  return aStream << format_as(aPoint);
-}
-
-inline auto format_as(const NSSize& aSize) {
-  return fmt::format("{{ width={}, height={} }}", aSize.width, aSize.height);
-}
-
-inline std::ostream& operator<<(std::ostream& aStream, const NSSize& aSize) {
-  return aStream << format_as(aSize);
-}
-
-inline auto format_as(const NSRect& aRect) {
-  return fmt::format("{{ origin={}, size={} }}", aRect.origin, aRect.size);
-}
-
-inline std::ostream& operator<<(std::ostream& aStream, const NSRect& aRect) {
-  return aStream << format_as(aRect);
+static std::ostream& operator<<(std::ostream& aStream, const NSRange& aRange) {
+  aStream << "{ location=";
+  if (aRange.location == NSNotFound) {
+    aStream << "NSNotFound";
+  } else {
+    aStream << aRange.location;
+  }
+  aStream << ", length=" << aRange.length << " }";
+  return aStream;
 }
 
 static uint32_t gHandlerInstanceCount = 0;
@@ -4349,8 +4322,7 @@ NSAttributedString* IMEInputHandler::GetAttributedSubstringFromRange(
     *aActualRange = NSMakeRange(NSNotFound, 0);
   }
 
-  if (Destroyed() || !mDispatcher || aRange.location == NSNotFound ||
-      aRange.length == 0) [[unlikely]] {
+  if (Destroyed() || aRange.location == NSNotFound || aRange.length == 0) {
     return nil;
   }
 
@@ -4394,9 +4366,10 @@ NSAttributedString* IMEInputHandler::GetAttributedSubstringFromRange(
     return result;
   }
 
-  const OwningNonNull<nsCocoaWindow> widget = *mWidget;
-
-  QueryContentOptions options;
+  nsAutoString str;
+  WidgetQueryContentEvent queryTextContentEvent(true, eQueryTextContent,
+                                                mWidget);
+  WidgetQueryContentEvent::Options options;
   int64_t startOffset = aRange.location;
   if (mIMECompositionStartBeforeStart.isSome()) {
     // The composition may be at different offset from the selection start
@@ -4407,17 +4380,17 @@ NSAttributedString* IMEInputHandler::GetAttributedSubstringFromRange(
     options.mRelativeToInsertionPoint = true;
     startOffset -= *mIMECompositionStartBeforeStart;
   }
-  options.mRequestFontRanges = true;
-  const OwningNonNull<TextEventDispatcher> dispatcher = *mDispatcher;
-  const Maybe<QueryContentResult> queryTextContentResult =
-      dispatcher->QueryTextContent(startOffset, aRange.length, options);
+  queryTextContentEvent.InitForQueryTextContent(startOffset, aRange.length,
+                                                options);
+  queryTextContentEvent.RequestFontRanges();
+  DispatchEvent(queryTextContentEvent);
 
-  MOZ_LOG_FMT(gIMELog, LogLevel::Info,
-              "{}   IMEInputHandler::GetAttributedSubstringFromRange, "
-              "queryTextContentResult={}",
-              static_cast<void*>(this), queryTextContentResult);
+  MOZ_LOG(gIMELog, LogLevel::Info,
+          ("%p   IMEInputHandler::GetAttributedSubstringFromRange, "
+           "queryTextContentEvent={ mReply=%s }",
+           this, ToString(queryTextContentEvent.mReply).c_str()));
 
-  if (queryTextContentResult.isNothing()) [[unlikely]] {
+  if (queryTextContentEvent.Failed()) {
     return nil;
   }
 
@@ -4425,11 +4398,12 @@ NSAttributedString* IMEInputHandler::GetAttributedSubstringFromRange(
   // OS will calls drawsVerticallyForCharacterAtIndex.
   NSMutableAttributedString* result =
       nsCocoaUtils::GetNSMutableAttributedString(
-          queryTextContentResult->DataRef(),
-          queryTextContentResult->mFontRanges, false,
-          widget->BackingScaleFactor());
+          queryTextContentEvent.mReply->DataRef(),
+          queryTextContentEvent.mReply->mFontRanges, false,
+          mWidget->BackingScaleFactor());
   if (aActualRange) {
-    *aActualRange = MakeNSRangeFrom(queryTextContentResult->mOffsetAndData);
+    *aActualRange =
+        MakeNSRangeFrom(queryTextContentEvent.mReply->mOffsetAndData);
   }
   return result;
 
@@ -4467,11 +4441,11 @@ NSRange IMEInputHandler::MarkedRange() {
 NSRange IMEInputHandler::SelectedRange() {
   NS_OBJC_BEGIN_TRY_BLOCK_RETURN;
 
-  MOZ_LOG_FMT(gIMELog, LogLevel::Info,
-              "{}   IMEInputHandler::SelectedRange, Destroyed()={}, "
-              "mSelectedRange={}, mSelectedRangeOverride={}",
-              static_cast<void*>(this), Destroyed(), mSelectedRange,
-              mSelectedRangeOverride);
+  MOZ_LOG(gIMELog, LogLevel::Info,
+          ("%p   IMEInputHandler::SelectedRange, Destroyed()=%s, "
+           "mSelectedRange=%s, mSelectedRangeOverride=%s",
+           this, TrueOrFalse(Destroyed()), ToString(mSelectedRange).c_str(),
+           ToString(mSelectedRangeOverride).c_str()));
 
   // If selection range is overridden during a composition, we should return the
   // override instead of selected range in the content.  That makes IME work
@@ -4481,7 +4455,7 @@ NSRange IMEInputHandler::SelectedRange() {
     return *mSelectedRangeOverride;
   }
 
-  if (Destroyed() || !mDispatcher) [[unlikely]] {
+  if (Destroyed()) {
     return mSelectedRange;
   }
 
@@ -4491,19 +4465,23 @@ NSRange IMEInputHandler::SelectedRange() {
   }
 
   RefPtr<IMEInputHandler> kungFuDeathGrip(this);
-  const OwningNonNull<TextEventDispatcher> dispatcher = *mDispatcher;
-  const Maybe<QueryContentResult> querySelectionResult =
-      dispatcher->QueryNormalSelection();
-  MOZ_LOG_FMT(gIMELog, LogLevel::Info,
-              "{}   IMEInputHandler::SelectedRange, querySelectionResult={}",
-              static_cast<void*>(this), querySelectionResult);
 
-  if (querySelectionResult.isNothing()) [[unlikely]] {
+  WidgetQueryContentEvent querySelectedTextEvent(true, eQuerySelectedText,
+                                                 mWidget);
+  DispatchEvent(querySelectedTextEvent);
+
+  MOZ_LOG(gIMELog, LogLevel::Info,
+          ("%p   IMEInputHandler::SelectedRange, querySelectedTextEvent={ "
+           "mReply=%s }",
+           this, ToString(querySelectedTextEvent.mReply).c_str()));
+
+  if (querySelectedTextEvent.Failed()) {
     return mSelectedRange;
   }
 
-  mWritingMode = querySelectionResult->WritingModeRef();
-  mRangeForWritingMode = MakeNSRangeFrom(querySelectionResult->mOffsetAndData);
+  mWritingMode = querySelectedTextEvent.mReply->WritingModeRef();
+  mRangeForWritingMode =
+      MakeNSRangeFrom(querySelectedTextEvent.mReply->mOffsetAndData);
 
   if (mIMEHasFocus) {
     mSelectedRange = mRangeForWritingMode;
@@ -4551,12 +4529,11 @@ NSRect IMEInputHandler::FirstRectForCharacterRange(NSRange& aRange,
                                                    NSRange* aActualRange) {
   NS_OBJC_BEGIN_TRY_BLOCK_RETURN;
 
-  MOZ_LOG_FMT(gIMELog, LogLevel::Info,
-              "{} IMEInputHandler::FirstRectForCharacterRange, Destroyed()={}, "
-              "mDispatcher={}, aRange={}, aActualRange={}",
-              static_cast<void*>(this), Destroyed(),
-              static_cast<void*>(mDispatcher), aRange,
-              static_cast<void*>(aActualRange));
+  MOZ_LOG(
+      gIMELog, LogLevel::Info,
+      ("%p IMEInputHandler::FirstRectForCharacterRange, Destroyed()=%s, "
+       "aRange=%s, aActualRange=%p }",
+       this, TrueOrFalse(Destroyed()), ToString(aRange).c_str(), aActualRange));
 
   // XXX this returns first character rect or caret rect, it is limitation of
   // now. We need more work for returns first line rect. But current
@@ -4567,18 +4544,17 @@ NSRect IMEInputHandler::FirstRectForCharacterRange(NSRange& aRange,
   if (aActualRange) {
     *aActualRange = actualRange;
   }
-  if (Destroyed() || !mDispatcher || aRange.location == NSNotFound)
-      [[unlikely]] {
+  if (Destroyed() || aRange.location == NSNotFound) {
     return rect;
   }
-  const OwningNonNull<TextEventDispatcher> dispatcher = *mDispatcher;
 
   RefPtr<IMEInputHandler> kungFuDeathGrip(this);
 
   LayoutDeviceIntRect r;
   bool useCaretRect = (aRange.length == 0);
   if (!useCaretRect) {
-    QueryContentOptions options;
+    WidgetQueryContentEvent queryTextRectEvent(true, eQueryTextRect, mWidget);
+    WidgetQueryContentEvent::Options options;
     int64_t startOffset = aRange.location;
     if (mIMECompositionStartBeforeStart.isSome()) {
       // The composition may be at different offset from the selection start
@@ -4589,15 +4565,12 @@ NSRect IMEInputHandler::FirstRectForCharacterRange(NSRange& aRange,
       options.mRelativeToInsertionPoint = true;
       startOffset -= *mIMECompositionStartBeforeStart;
     }
-    const Maybe<QueryContentResult> queryTextRectResult =
-        dispatcher->QueryTextRect(startOffset, 1, options);
-    if (!mWidget) [[unlikely]] {
-      return rect;
-    }
-    if (queryTextRectResult.isSome()) [[likely]] {
-      r = queryTextRectResult->mRect;
-      actualRange = MakeNSRangeFrom(queryTextRectResult->mOffsetAndData);
-      mWritingMode = queryTextRectResult->WritingModeRef();
+    queryTextRectEvent.InitForQueryTextRect(startOffset, 1, options);
+    DispatchEvent(queryTextRectEvent);
+    if (queryTextRectEvent.Succeeded()) {
+      r = queryTextRectEvent.mReply->mRect;
+      actualRange = MakeNSRangeFrom(queryTextRectEvent.mReply->mOffsetAndData);
+      mWritingMode = queryTextRectEvent.mReply->WritingModeRef();
       mRangeForWritingMode = actualRange;
     } else {
       useCaretRect = true;
@@ -4605,7 +4578,8 @@ NSRect IMEInputHandler::FirstRectForCharacterRange(NSRange& aRange,
   }
 
   if (useCaretRect) {
-    QueryContentOptions options;
+    WidgetQueryContentEvent queryCaretRectEvent(true, eQueryCaretRect, mWidget);
+    WidgetQueryContentEvent::Options options;
     int64_t startOffset = aRange.location;
     if (mIMECompositionStartBeforeStart.isSome()) {
       // The composition may be at different offset from the selection start
@@ -4616,14 +4590,14 @@ NSRect IMEInputHandler::FirstRectForCharacterRange(NSRange& aRange,
       options.mRelativeToInsertionPoint = true;
       startOffset -= *mIMECompositionStartBeforeStart;
     }
-    const Maybe<QueryContentResult> queryCaretRectResult =
-        dispatcher->QueryCaretRect(startOffset, options);
-    if (queryCaretRectResult.isNothing() || !mWidget) [[unlikely]] {
+    queryCaretRectEvent.InitForQueryCaretRect(startOffset, options);
+    DispatchEvent(queryCaretRectEvent);
+    if (queryCaretRectEvent.Failed()) {
       return rect;
     }
-    r = queryCaretRectResult->mRect;
+    r = queryCaretRectEvent.mReply->mRect;
     r.width = 0;
-    actualRange.location = queryCaretRectResult->StartOffset();
+    actualRange.location = queryCaretRectEvent.mReply->StartOffset();
     actualRange.length = 0;
   }
 
@@ -4636,10 +4610,11 @@ NSRect IMEInputHandler::FirstRectForCharacterRange(NSRange& aRange,
     *aActualRange = actualRange;
   }
 
-  MOZ_LOG_FMT(gIMELog, LogLevel::Info,
-              "{}   IMEInputHandler::FirstRectForCharacterRange, "
-              "useCaretRect={}, rect={}, actualRange={}",
-              static_cast<void*>(this), useCaretRect, rect, actualRange);
+  MOZ_LOG(gIMELog, LogLevel::Info,
+          ("%p   IMEInputHandler::FirstRectForCharacterRange, useCaretRect=%s "
+           "rect={ x=%f, y=%f, width=%f, height=%f }, actualRange=%s",
+           this, TrueOrFalse(useCaretRect), rect.origin.x, rect.origin.y,
+           rect.size.width, rect.size.height, ToString(actualRange).c_str()));
 
   return rect;
 
@@ -5183,11 +5158,11 @@ void IMEInputHandler::HandleTextSubstitution(
 void IMEInputHandler::OnTextSubstitution(uint32_t aStartOffset) {
   NS_OBJC_BEGIN_TRY_IGNORE_BLOCK;
 
-  MOZ_LOG_FMT(gIMELog, LogLevel::Info,
-              "{} IMEInputHandler::OnTextSubstitution, aStartOffset={}",
-              static_cast<void*>(this), aStartOffset);
+  MOZ_LOG(gIMELog, LogLevel::Info,
+          ("%p IMEInputHandler::OnTextSubstitution, aStartOffset=%u", this,
+           aStartOffset));
 
-  if (Destroyed() || !IsFocused() || !mDispatcher) [[unlikely]] {
+  if (Destroyed() || !IsFocused()) {
     return;
   }
 
@@ -5202,21 +5177,23 @@ void IMEInputHandler::OnTextSubstitution(uint32_t aStartOffset) {
       StaticPrefs::widget_macos_automatic_text_substitution_fetch_length();
   uint32_t startFetch =
       std::max<uint32_t>(fetchLength, aStartOffset) - fetchLength;
-  const OwningNonNull<TextEventDispatcher> dispatcher = *mDispatcher;
-  const Maybe<QueryContentResult> queryTextContentResult =
-      dispatcher->QueryTextContent(startFetch, aStartOffset - startFetch);
-  if (NS_WARN_IF(queryTextContentResult.isNothing()) || NS_WARN_IF(!mWidget))
-      [[unlikely]] {
+  WidgetQueryContentEvent queryTextContentEvent(true, eQueryTextContent,
+                                                mWidget);
+  WidgetQueryContentEvent::Options options;
+  queryTextContentEvent.InitForQueryTextContent(
+      startFetch, aStartOffset - startFetch, options);
+  DispatchEvent(queryTextContentEvent);
+  if (NS_WARN_IF(queryTextContentEvent.Failed())) {
     return;
   }
 
   NSString* str;
-  if (!queryTextContentResult->DataRef().IsEmpty() &&
-      IsLowSurrogate(queryTextContentResult->DataRef().CharAt(0))) {
+  if (!queryTextContentEvent.mReply->DataRef().IsEmpty() &&
+      IsLowSurrogate(queryTextContentEvent.mReply->DataRef().CharAt(0))) {
     str = nsCocoaUtils::ToNSString(
-        Substring(queryTextContentResult->DataRef(), 1));
+        Substring(queryTextContentEvent.mReply->DataRef(), 1));
   } else {
-    str = nsCocoaUtils::ToNSString(queryTextContentResult->DataRef());
+    str = nsCocoaUtils::ToNSString(queryTextContentEvent.mReply->DataRef());
   }
   NSSpellChecker* spellchecker = [NSSpellChecker sharedSpellChecker];
   if (!spellchecker) {
@@ -5233,10 +5210,10 @@ void IMEInputHandler::OnTextSubstitution(uint32_t aStartOffset) {
     return;
   }
 
-  MOZ_LOG_FMT(gIMELog, LogLevel::Info,
-              "{}   IMEInputHandler::HandleTextSubstitution, found text "
-              "substitution for correction.",
-              static_cast<void*>(this));
+  MOZ_LOG(gIMELog, LogLevel::Info,
+          ("%p   IMEInputHandler::HandleTextSubstitution, found text "
+           "substitution for correction.",
+           this));
 
   NSTextCheckingResult* candidate = nullptr;
   for (NSTextCheckingResult* checkingResult in results) {
@@ -5251,15 +5228,12 @@ void IMEInputHandler::OnTextSubstitution(uint32_t aStartOffset) {
       // XXX We might have to adjust caret position on out of loop.
       //     But dash/quote replacement is on caret position now.
       const nsDependentSubstring& originalStr =
-          Substring(queryTextContentResult->DataRef(), candidateRange.location,
-                    candidateRange.length);
+          Substring(queryTextContentEvent.mReply->DataRef(),
+                    candidateRange.location, candidateRange.length);
       candidateRange.location += startFetch;
       ReplaceTextForTextSubstitution(originalStr,
                                      checkingResult.replacementString,
                                      candidateRange, PreventSetSelection::No);
-      if (NS_WARN_IF(!mWidget)) [[unlikely]] {
-        return;
-      }
       continue;
     }
     // Found text replacement data.
@@ -5279,7 +5253,7 @@ void IMEInputHandler::OnTextSubstitution(uint32_t aStartOffset) {
                       replacementString:candidate.replacementString
                      alternativeStrings:candidate.alternativeStrings] retain];
   mOriginalTextForTextSubstitution =
-      Substring(queryTextContentResult->DataRef(),
+      Substring(queryTextContentEvent.mReply->DataRef(),
                 candidatedRange.location - startFetch, candidatedRange.length);
 
   // Allow to work text substitution for mouse operation. If any key event is
@@ -5292,45 +5266,39 @@ void IMEInputHandler::OnTextSubstitution(uint32_t aStartOffset) {
 void IMEInputHandler::ShowTextSubstitutionPanel() {
   NS_OBJC_BEGIN_TRY_IGNORE_BLOCK;
 
-  MOZ_LOG_FMT(
-      gIMELog, LogLevel::Info,
-      "{} IMEInputHandler::ShowTextSubstitutionPanel, "
-      "mCandidatedTextSubstitutionResult={}, mWidget={}, mDispatcher={}",
-      static_cast<void*>(this),
-      static_cast<void*>(mCandidatedTextSubstitutionResult),
-      static_cast<void*>(mWidget), static_cast<void*>(mDispatcher));
+  MOZ_LOG(gIMELog, LogLevel::Info,
+          ("%p IMEInputHandler::ShowTextSubstitutionPanel", this));
 
-  if (!mCandidatedTextSubstitutionResult || !mWidget || !mDispatcher)
-      [[unlikely]] {
+  if (!mCandidatedTextSubstitutionResult) {
     return;
   }
-  const OwningNonNull<TextEventDispatcher> dispatcher = *mDispatcher;
 
   // We won't get text rect of non-composition string on e10s. So we get caret
   // rect instead.
   NSRect rect = [&]() {
-    CheckedUint32 offset(mCandidatedTextSubstitutionResult.range.location);
-    offset += mCandidatedTextSubstitutionResult.range.length;
-    if (!offset.isValid()) [[unlikely]] {
-      return NSMakeRect(0, 0, 0, 0);
+    WidgetQueryContentEvent queryCaretRectEvent(true, eQueryCaretRect, mWidget);
+    WidgetQueryContentEvent::Options options;
+    queryCaretRectEvent.InitForQueryCaretRect(
+        mCandidatedTextSubstitutionResult.range.location +
+            mCandidatedTextSubstitutionResult.range.length,
+        options);
+    DispatchEvent(queryCaretRectEvent);
+    if (queryCaretRectEvent.Succeeded()) {
+      LayoutDeviceIntRect r = queryCaretRectEvent.mReply->mRect;
+      return nsCocoaUtils::DevPixelsToCocoaPoints(
+          r, mWidget->BackingScaleFactor());
     }
-    const Maybe<QueryContentResult> queryCaretRectResult =
-        dispatcher->QueryCaretRect(offset.value());
-    if (queryCaretRectResult.isNothing() || !mWidget) [[unlikely]] {
-      return NSMakeRect(0, 0, 0, 0);
-    }
-    return nsCocoaUtils::DevPixelsToCocoaPoints(queryCaretRectResult->mRect,
-                                                mWidget->BackingScaleFactor());
+    return NSMakeRect(0, 0, 0, 0);
   }();
 
-  if (Destroyed()) [[unlikely]] {
+  if (Destroyed()) {
     return;
   }
 
   uint32_t replacementLocation =
       mCandidatedTextSubstitutionResult.range.location;
   NSSpellChecker* spellchecker = [NSSpellChecker sharedSpellChecker];
-  if (!spellchecker) [[unlikely]] {
+  if (!spellchecker) {
     return;
   }
   [spellchecker
@@ -5343,11 +5311,10 @@ void IMEInputHandler::ShowTextSubstitutionPanel() {
                                view:mView
                   completionHandler:^(NSString* aAcceptedString) {
                     // This is always called when panel is closed.
-                    MOZ_LOG_FMT(
-                        gIMELog, LogLevel::Info,
-                        "{}   IMEInputHandler::ShowTextSubstitutionPanel, "
-                        "dismissing correction panel",
-                        static_cast<void*>(this));
+                    MOZ_LOG(gIMELog, LogLevel::Info,
+                            ("%p   IMEInputHandler::ShowTextSubstitutionPanel, "
+                             "dismissing correction panel",
+                             this));
 
                     if (!mProcessTextSubstitution) {
                       return;

@@ -943,36 +943,28 @@ bool TSFTextStore::GetCurrentText(
   MOZ_ASSERT(!mDestroyed);
   MOZ_ASSERT(mWidget && !mWidget->Destroyed());
 
-  if (NS_WARN_IF(!mDispatcher)) [[unlikely]] {
-    MOZ_LOG_FMT(
-        gIMELog, LogLevel::Error,
-        "{}   TSFTextStore::GetCurrentText(), FAILED, due to no dispatcher",
-        static_cast<void*>(this));
-    aTextContent.Truncate();
-    return false;
-  }
+  MOZ_LOG(gIMELog, LogLevel::Debug,
+          ("0x%p   TSFTextStore::GetCurrentText(): "
+           "retrieving text from the content...",
+           this));
 
-  MOZ_LOG_FMT(gIMELog, LogLevel::Debug,
-              "{}   TSFTextStore::GetCurrentText(): retrieving text from the "
-              "content...",
-              static_cast<void*>(this));
-
-  const OwningNonNull<TextEventDispatcher> dispatcher = *mDispatcher;
-  QueryContentOptions options;
-  options.mNeedsToFlushLayout =
+  WidgetQueryContentEvent queryTextContentEvent(true, eQueryTextContent,
+                                                mWidget);
+  queryTextContentEvent.InitForQueryTextContent(0, UINT32_MAX);
+  queryTextContentEvent.mNeedsToFlushLayout =
       aAllowToFlushLayoutIfNoCache == AllowToFlushLayoutIfNoCache::Yes;
-  const Maybe<QueryContentResult> queryTextContentResult =
-      dispatcher->QueryTextContent(0, UINT32_MAX, options);
-  if (NS_WARN_IF(queryTextContentResult.isNothing())) [[unlikely]] {
-    MOZ_LOG_FMT(gIMELog, LogLevel::Error,
-                "{}   TSFTextStore::GetCurrentText(), FAILED, due to "
-                "TextEventDispatcher::QueryTextContent() failed",
-                static_cast<void*>(this));
+  mWidget->InitEvent(queryTextContentEvent);
+  DispatchEvent(queryTextContentEvent);
+  if (NS_WARN_IF(queryTextContentEvent.Failed())) {
+    MOZ_LOG(gIMELog, LogLevel::Error,
+            ("0x%p   TSFTextStore::GetCurrentText(), FAILED, due to "
+             "eQueryTextContent failure",
+             this));
     aTextContent.Truncate();
     return false;
   }
 
-  aTextContent = queryTextContentResult->DataRef();
+  aTextContent = queryTextContentEvent.mReply->DataRef();
   return true;
 }
 
@@ -991,7 +983,7 @@ Maybe<TSFTextStore::Selection>& TSFTextStore::SelectionForTSF() {
 
     // We may query selection recursively if TSF does something recursively,
     // e.g., with flushing pending layout, an nsWindow may be
-    // moved/resized/focused/blurred by that.  In the case, we cannot avoid the
+    // moved/resized/focused/blured by that.  In the case, we cannot avoid the
     // loop at least first nested call.  For avoiding to make an infinite loop,
     // we should not allow to flush pending layout in the nested query.
     const bool allowToFlushPendingLayout =
@@ -1002,12 +994,12 @@ Maybe<TSFTextStore::Selection>& TSFTextStore::SelectionForTSF() {
         mIsInitializingSelectionForTSF);
     mIsInitializingSelectionForTSF = true;
 
-    const OwningNonNull<TextEventDispatcher> dispatcher = *mDispatcher;
-    QueryContentOptions options;
-    options.mNeedsToFlushLayout = allowToFlushPendingLayout;
-    const Maybe<QueryContentResult> querySelectionResult =
-        dispatcher->QueryNormalSelection(options);
-    if (NS_WARN_IF(querySelectionResult.isNothing())) [[unlikely]] {
+    WidgetQueryContentEvent querySelectedTextEvent(true, eQuerySelectedText,
+                                                   mWidget);
+    querySelectedTextEvent.mNeedsToFlushLayout = allowToFlushPendingLayout;
+    mWidget->InitEvent(querySelectedTextEvent);
+    DispatchEvent(querySelectedTextEvent);
+    if (NS_WARN_IF(querySelectedTextEvent.Failed())) {
       return mSelectionForTSF;
     }
     // If this is called recursively, the inner one should computed with the
@@ -1015,7 +1007,7 @@ Maybe<TSFTextStore::Selection>& TSFTextStore::SelectionForTSF() {
     // that nobody should invalidate the layout after that.  Therefore, let's
     // use first query result.
     if (mSelectionForTSF.isNothing()) {
-      mSelectionForTSF.emplace(*querySelectionResult);
+      mSelectionForTSF.emplace(querySelectedTextEvent);
     }
   }
 
@@ -1024,10 +1016,10 @@ Maybe<TSFTextStore::Selection>& TSFTextStore::SelectionForTSF() {
     CreateNativeCaret();
   }
 
-  MOZ_LOG_FMT(gIMELog, LogLevel::Debug,
-              "{}   TSFTextStore::SelectionForTSF() succeeded, "
-              "mSelectionForTSF={}",
-              static_cast<void*>(this), mSelectionForTSF);
+  MOZ_LOG(gIMELog, LogLevel::Debug,
+          ("0x%p   TSFTextStore::SelectionForTSF() succeeded, "
+           "mSelectionForTSF=%s",
+           this, ToString(mSelectionForTSF).c_str()));
 
   return mSelectionForTSF;
 }
@@ -1952,8 +1944,7 @@ STDMETHODIMP TSFTextStore::GetACPFromPoint(TsViewCookie vcView, const POINT* pt,
     // offset since there is no inexpensive API to check it strictly.
     // XXX If we retrieve 2 bounding boxes, one is before the offset and
     //     the other is after the offset, we could resolve the offset.
-    //     However, dispatching 2 TextEventDispatcher::QueryTextRect() may be
-    //     expensive.
+    //     However, dispatching 2 eQueryTextRect may be expensive.
 
     // So, use tentative offset for now.
     offset = queryCharAtPointEvent.mReply->mTentativeCaretOffset.valueOr(0);
@@ -1992,14 +1983,14 @@ STDMETHODIMP TSFTextStore::GetACPFromPoint(TsViewCookie vcView, const POINT* pt,
 
 STDMETHODIMP TSFTextStore::GetTextExt(TsViewCookie vcView, LONG acpStart,
                                       LONG acpEnd, RECT* prc, BOOL* pfClipped) {
-  MOZ_LOG_FMT(gIMELog, LogLevel::Info,
-              "{} TSFTextStore::GetTextExt(), mContentForTSF={}, "
-              "mSelectionForTSF={}, mComposition={}",
-              static_cast<void*>(this), mContentForTSF, mSelectionForTSF,
-              mComposition);
+  MOZ_LOG(gIMELog, LogLevel::Info,
+          ("0x%p TSFTextStore::GetTextExt(), mContentForTSF=%s, "
+           "mSelectionForTSF=%s, mComposition=%s",
+           this, mozilla::ToString(mContentForTSF).c_str(),
+           ToString(mSelectionForTSF).c_str(), ToString(mComposition).c_str()));
   HRESULT hr =
       TSFTextStoreBase::GetTextExt(vcView, acpStart, acpEnd, prc, pfClipped);
-  if (hr != E_NOTIMPL) [[unlikely]] {
+  if (MOZ_UNLIKELY(hr != E_NOTIMPL)) {
     return hr;
   }
 
@@ -2009,12 +2000,12 @@ STDMETHODIMP TSFTextStore::GetTextExt(TsViewCookie vcView, LONG acpStart,
       mContentForTSF->HasOrHadComposition() &&
       mContentForTSF->IsLayoutChanged() &&
       mContentForTSF->MinModifiedOffset().value() >
-          static_cast<uint32_t>(LONG_MAX)) [[unlikely]] {
-    MOZ_LOG_FMT(gIMELog, LogLevel::Error,
-                "{}   TSFTextStore::GetTextExt(), FAILED due to the text "
-                "is too big for TSF (cannot treat modified offset as LONG), "
-                "mContentForTSF={}",
-                static_cast<void*>(this), mContentForTSF);
+          static_cast<uint32_t>(LONG_MAX)) {
+    MOZ_LOG(gIMELog, LogLevel::Error,
+            ("0x%p   TSFTextStore::GetTextExt(), FAILED due to the text "
+             "is too big for TSF (cannot treat modified offset as LONG), "
+             "mContentForTSF=%s",
+             this, ToString(mContentForTSF).c_str()));
     return E_FAIL;
   }
 
@@ -2027,24 +2018,28 @@ STDMETHODIMP TSFTextStore::GetTextExt(TsViewCookie vcView, LONG acpStart,
       MaybeHackNoErrorLayoutBugs(acpStart, acpEnd);
   if (!hackedNoErrorLayoutBugs && mContentForTSF.isSome() &&
       mContentForTSF->IsLayoutChangedAt(acpEnd)) {
-    MOZ_LOG_FMT(gIMELog, LogLevel::Warning,
-                "{}   TSFTextStore::GetTextExt() returned TS_E_NOLAYOUT "
-                "(acpEnd={})",
-                static_cast<void*>(this), acpEnd);
+    MOZ_LOG(gIMELog, LogLevel::Error,
+            ("0x%p   TSFTextStore::GetTextExt() returned TS_E_NOLAYOUT "
+             "(acpEnd=%ld)",
+             this, acpEnd));
     mHasReturnedNoLayoutError = true;
     return TS_E_NOLAYOUT;
   }
 
-  if (mDestroyed || !mDispatcher) [[unlikely]] {
-    MOZ_LOG_FMT(gIMELog, LogLevel::Error,
-                "{}   TSFTextStore::GetTextExt() returned TS_E_NOLAYOUT "
-                "(acpEnd={}) due to destroyed or no text event dispatcher",
-                static_cast<void*>(this), acpEnd);
+  if (mDestroyed) {
+    MOZ_LOG(gIMELog, LogLevel::Error,
+            ("0x%p   TSFTextStore::GetTextExt() returned TS_E_NOLAYOUT "
+             "(acpEnd=%ld) because this has already been destroyed",
+             this, acpEnd));
     mHasReturnedNoLayoutError = true;
     return TS_E_NOLAYOUT;
   }
 
-  QueryContentOptions options;
+  // use eQueryTextRect to get rect in system, screen coordinates
+  WidgetQueryContentEvent queryTextRectEvent(true, eQueryTextRect, mWidget);
+  mWidget->InitEvent(queryTextRectEvent);
+
+  WidgetQueryContentEvent::Options options;
   int64_t startOffset = acpStart;
   if (mComposition.isSome()) {
     // If there is a composition, TSF must want character rects related to
@@ -2101,61 +2096,60 @@ STDMETHODIMP TSFTextStore::GetTextExt(TsViewCookie vcView, LONG acpStart,
     }
     return std::max(diff, 1u);
   }();
-  const OwningNonNull<TextEventDispatcher> dispatcher = *mDispatcher;
-  const Maybe<QueryContentResult> queryTextRectResult =
-      dispatcher->QueryTextRect(startOffset, length, options);
-  if (NS_WARN_IF(queryTextRectResult.isNothing()) || NS_WARN_IF(!mWidget))
-      [[unlikely]] {
-    MOZ_LOG_FMT(gIMELog, LogLevel::Error,
-                "{}   TSFTextStore::GetTextExt() FAILED due to "
-                "TextEventDispatcher::QueryTextRect() failure",
-                static_cast<void*>(this));
+  queryTextRectEvent.InitForQueryTextRect(startOffset, length, options);
+
+  DispatchEvent(queryTextRectEvent);
+  if (NS_WARN_IF(queryTextRectEvent.Failed())) {
+    MOZ_LOG(gIMELog, LogLevel::Error,
+            ("0x%p   TSFTextStore::GetTextExt() FAILED due to "
+             "eQueryTextRect failure",
+             this));
     return TS_E_INVALIDPOS;  // but unexpected failure, maybe.
   }
 
   // IMEs don't like empty rects, fix here
-  LayoutDeviceIntRect adjustedTextRect = queryTextRectResult->mRect;
-  if (adjustedTextRect.Width() <= 0) {
-    adjustedTextRect.SetWidth(1);
+  if (queryTextRectEvent.mReply->mRect.Width() <= 0) {
+    queryTextRectEvent.mReply->mRect.SetWidth(1);
   }
-  if (adjustedTextRect.Height() <= 0) {
-    adjustedTextRect.SetHeight(1);
+  if (queryTextRectEvent.mReply->mRect.Height() <= 0) {
+    queryTextRectEvent.mReply->mRect.SetHeight(1);
   }
 
   // convert to unclipped screen rect
   nsWindow* refWindow =
-      static_cast<nsWindow*>(queryTextRectResult->mFocusedWidget
-                                 ? queryTextRectResult->mFocusedWidget
+      static_cast<nsWindow*>(!!queryTextRectEvent.mReply->mFocusedWidget
+                                 ? queryTextRectEvent.mReply->mFocusedWidget
                                  : static_cast<nsIWidget*>(mWidget.get()));
   // Result rect is in top level widget coordinates
   refWindow = refWindow->GetTopLevelWindow(false);
-  if (!refWindow) [[unlikely]] {
-    MOZ_LOG_FMT(gIMELog, LogLevel::Error,
-                "{}   TSFTextStore::GetTextExt() FAILED due to "
-                "no top level window",
-                static_cast<void*>(this));
+  if (!refWindow) {
+    MOZ_LOG(gIMELog, LogLevel::Error,
+            ("0x%p   TSFTextStore::GetTextExt() FAILED due to "
+             "no top level window",
+             this));
     return E_FAIL;
   }
 
-  adjustedTextRect.MoveBy(refWindow->WidgetToScreenOffset());
+  queryTextRectEvent.mReply->mRect.MoveBy(refWindow->WidgetToScreenOffset());
 
   // get bounding screen rect to test for clipping
-  if (!GetScreenExtInternal(*prc)) [[unlikely]] {
-    MOZ_LOG_FMT(gIMELog, LogLevel::Error,
-                "{}   TSFTextStore::GetTextExt() FAILED due to "
-                "GetScreenExtInternal() failure",
-                static_cast<void*>(this));
+  if (!GetScreenExtInternal(*prc)) {
+    MOZ_LOG(gIMELog, LogLevel::Error,
+            ("0x%p   TSFTextStore::GetTextExt() FAILED due to "
+             "GetScreenExtInternal() failure",
+             this));
     return E_FAIL;
   }
 
   // clip text rect to bounding rect
   RECT textRect;
-  ::SetRect(&textRect, adjustedTextRect.X(), adjustedTextRect.Y(),
-            adjustedTextRect.XMost(), adjustedTextRect.YMost());
-  if (!::IntersectRect(prc, prc, &textRect)) {
+  ::SetRect(&textRect, queryTextRectEvent.mReply->mRect.X(),
+            queryTextRectEvent.mReply->mRect.Y(),
+            queryTextRectEvent.mReply->mRect.XMost(),
+            queryTextRectEvent.mReply->mRect.YMost());
+  if (!::IntersectRect(prc, prc, &textRect))
     // Text is not visible
     ::SetRectEmpty(prc);
-  }
 
   // not equal if text rect was clipped
   *pfClipped = !::EqualRect(prc, &textRect);
@@ -2178,11 +2172,11 @@ STDMETHODIMP TSFTextStore::GetTextExt(TsViewCookie vcView, LONG acpStart,
     CreateNativeCaret();
   }
 
-  MOZ_LOG_FMT(gIMELog, LogLevel::Info,
-              "{}   TSFTextStore::GetTextExt() succeeded: "
-              "*prc={{ left={}, top={}, right={}, bottom={} }}, *pfClipped={}",
-              static_cast<void*>(this), prc->left, prc->top, prc->right,
-              prc->bottom, !!*pfClipped);
+  MOZ_LOG(gIMELog, LogLevel::Info,
+          ("0x%p   TSFTextStore::GetTextExt() succeeded: "
+           "*prc={ left=%ld, top=%ld, right=%ld, bottom=%ld }, *pfClipped=%s",
+           this, prc->left, prc->top, prc->right, prc->bottom,
+           TSFUtils::BoolToChar(*pfClipped)));
 
   return S_OK;
 }
@@ -3796,15 +3790,15 @@ void TSFTextStore::CreateNativeCaret() {
 
   // Don't create native caret after destroyed or when we need to wait for end
   // of query selection.
-  if (mDestroyed) [[unlikely]] {
+  if (mDestroyed) {
     return;
   }
 
-  MOZ_LOG_FMT(gIMELog, LogLevel::Debug,
-              "{}   TSFTextStore::CreateNativeCaret(), mComposition={}, "
-              "mPendingToCreateNativeCaret={}",
-              static_cast<void*>(this), mComposition,
-              mPendingToCreateNativeCaret);
+  MOZ_LOG(gIMELog, LogLevel::Debug,
+          ("0x%p   TSFTextStore::CreateNativeCaret(), mComposition=%s, "
+           "mPendingToCreateNativeCaret=%s",
+           this, ToString(mComposition).c_str(),
+           TSFUtils::BoolToChar(mPendingToCreateNativeCaret)));
 
   // If we're initializing selection, we should create native caret when it's
   // done.
@@ -3814,39 +3808,32 @@ void TSFTextStore::CreateNativeCaret() {
   }
 
   Maybe<Selection>& selectionForTSF = SelectionForTSF();
-  if (selectionForTSF.isNothing()) [[unlikely]] {
-    MOZ_LOG_FMT(gIMELog, LogLevel::Error,
-                "{}   TSFTextStore::CreateNativeCaret() FAILED due to "
-                "SelectionForTSF() failure",
-                static_cast<void*>(this));
+  if (MOZ_UNLIKELY(selectionForTSF.isNothing())) {
+    MOZ_LOG(gIMELog, LogLevel::Error,
+            ("0x%p   TSFTextStore::CreateNativeCaret() FAILED due to "
+             "SelectionForTSF() failure",
+             this));
     return;
   }
-  if (!selectionForTSF->HasRange() && mComposition.isNothing()) [[unlikely]] {
+  if (!selectionForTSF->HasRange() && mComposition.isNothing()) {
     // If there is no selection range nor composition, then, we don't have a
     // good position to show windows of TIP...
     // XXX It seems that storing last caret rect and using it in this case might
     // be better?
-    MOZ_LOG_FMT(gIMELog, LogLevel::Warning,
-                "{}   TSFTextStore::CreateNativeCaret() couldn't create native "
-                "caret due to no selection range",
-                static_cast<void*>(this));
+    MOZ_LOG(gIMELog, LogLevel::Warning,
+            ("0x%p   TSFTextStore::CreateNativeCaret() couludn't create native "
+             "caret due to no selection range",
+             this));
     return;
   }
 
-  const RefPtr<TextEventDispatcher> dispatcher = mDispatcher;
-  if (!dispatcher) [[unlikely]] {
-    MOZ_LOG_FMT(gIMELog, LogLevel::Error,
-                "{}   TSFTextStore::CreateNativeCaret() FAILED due to "
-                "no text event dispatcher",
-                static_cast<void*>(this));
-    return;
-  }
-
-  // Don't request flushing pending layout because we must have the latest
+  WidgetQueryContentEvent queryCaretRectEvent(true, eQueryCaretRect, mWidget);
+  // Don't request flushing pending layout because we must have the lastest
   // layout since we already caches selection above.
-  QueryContentOptions options;
-  options.mNeedsToFlushLayout = false;
+  queryCaretRectEvent.mNeedsToFlushLayout = false;
+  mWidget->InitEvent(queryCaretRectEvent);
 
+  WidgetQueryContentEvent::Options options;
   // XXX If this is called without composition and the selection isn't
   //     collapsed, is it OK?
   int64_t caretOffset = selectionForTSF->HasRange()
@@ -3867,26 +3854,23 @@ void TSFTextStore::CreateNativeCaret() {
     options.mRelativeToInsertionPoint = true;
     caretOffset -= selectionForTSF->StartOffset();
   }
-  const Maybe<QueryContentResult> queryCaretRectResult =
-      dispatcher->QueryCaretRect(caretOffset, options);
-  if (NS_WARN_IF(queryCaretRectResult.isNothing()) || NS_WARN_IF(!mWidget) ||
-      NS_WARN_IF(mDestroyed)) [[unlikely]] {
-    MOZ_LOG_FMT(gIMELog, LogLevel::Error,
-                "{}   TSFTextStore::CreateNativeCaret() FAILED due to "
-                "TextEventDispatcher::QueryCaretRect() failure (offset={}, "
-                "options.mRelativeToInsertionPoint={})",
-                static_cast<void*>(this), caretOffset,
-                options.mRelativeToInsertionPoint);
+  queryCaretRectEvent.InitForQueryCaretRect(caretOffset, options);
+
+  DispatchEvent(queryCaretRectEvent);
+  if (NS_WARN_IF(queryCaretRectEvent.Failed())) {
+    MOZ_LOG(gIMELog, LogLevel::Error,
+            ("0x%p   TSFTextStore::CreateNativeCaret() FAILED due to "
+             "eQueryCaretRect failure (offset=%lld)",
+             this, caretOffset));
     return;
   }
 
   if (!IMEHandler::CreateNativeCaret(static_cast<nsWindow*>(mWidget.get()),
-                                     queryCaretRectResult->mRect))
-      [[unlikely]] {
-    MOZ_LOG_FMT(gIMELog, LogLevel::Error,
-                "{}   TSFTextStore::CreateNativeCaret() FAILED due to "
-                "IMEHandler::CreateNativeCaret() failure",
-                static_cast<void*>(this));
+                                     queryCaretRectEvent.mReply->mRect)) {
+    MOZ_LOG(gIMELog, LogLevel::Error,
+            ("0x%p   TSFTextStore::CreateNativeCaret() FAILED due to "
+             "IMEHandler::CreateNativeCaret() failure",
+             this));
     return;
   }
 }
