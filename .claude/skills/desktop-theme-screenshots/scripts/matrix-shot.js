@@ -2,9 +2,9 @@
  * License, v. 2.0. If a copy of the MPL was not distributed with this
  * file, You can obtain one at http://mozilla.org/MPL/2.0/. */
 
-/* A probe pastes this after capture.js, probelib's PRELUDE (lockState,
- * finishTransitions, liftRemoteControl), `readings` and the `contrast()` that
- * contrast.py's page_function() declares. */
+/* matrix.py pastes this into each probe after capture.js, probelib's PRELUDE
+ * (lockState, finishTransitions, liftRemoteControl), `readings` and
+ * `contrast()`. */
 /* global capture, readings, lockState, finishTransitions, liftRemoteControl, contrast */
 
 const SHOT_PROPS = [
@@ -184,7 +184,7 @@ function readStyles(root, props, descendants) {
  * animations still (holdAnimations(), with the names it held in
  * `readings[name].heldAnimations`), record the element's computed styles and
  * its descendants' in `readings[name].styles`, and capture it. A failure
- * is recorded as `readings[name].error` rather than thrown, so the probe's
+ * is recorded as `readings[name].error` rather than thrown, so the cell's
  * other shots still run.
  *
  * @param {string} name Names the shot's images and readings.
