@@ -162,6 +162,7 @@ class UseCases(
     val fenixBrowserUseCases by lazy {
         FenixBrowserUseCases(
             appStore = appStore.value,
+            browserStore = store.value,
             tabsUseCases = tabsUseCases,
             loadUrlUseCase = sessionUseCases.loadUrl,
             searchUseCases = searchUseCases,

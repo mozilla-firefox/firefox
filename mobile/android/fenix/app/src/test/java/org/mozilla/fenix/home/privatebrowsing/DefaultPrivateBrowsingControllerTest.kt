@@ -143,7 +143,7 @@ class DefaultPrivateBrowsingControllerTest {
 
         verify {
             browsingModeManager.mode = newMode
-            fenixBrowserUseCases.addNewHomepageTab(private = false)
+            fenixBrowserUseCases.selectOrAddHomepageTab(private = false)
         }
     }
 
@@ -167,7 +167,7 @@ class DefaultPrivateBrowsingControllerTest {
 
         verify {
             browsingModeManager.mode = newMode
-            fenixBrowserUseCases.addNewHomepageTab(private = true)
+            fenixBrowserUseCases.selectOrAddHomepageTab(private = true)
             settings.incrementNumTimesPrivateModeOpened()
         }
     }

@@ -2191,6 +2191,7 @@ class DefaultTabManagerControllerTest {
         fenixBrowserUseCases =
             FenixBrowserUseCases(
                 appStore = appStore,
+                browserStore = BrowserStore(),
                 tabsUseCases = tabsUseCases,
                 loadUrlUseCase = loadUrlUseCase,
                 searchUseCases = searchUseCases,
@@ -2229,6 +2230,7 @@ class DefaultTabManagerControllerTest {
         fenixBrowserUseCases =
             FenixBrowserUseCases(
                 appStore = AppStore(initialState = AppState(mode = BrowsingMode.Normal)),
+                browserStore = BrowserStore(),
                 tabsUseCases = tabsUseCases,
                 loadUrlUseCase = loadUrlUseCase,
                 searchUseCases = searchUseCases,
@@ -2271,6 +2273,7 @@ class DefaultTabManagerControllerTest {
         fenixBrowserUseCases =
             FenixBrowserUseCases(
                 appStore = AppStore(initialState = AppState(mode = BrowsingMode.Normal)),
+                browserStore = BrowserStore(),
                 tabsUseCases = tabsUseCases,
                 loadUrlUseCase = loadUrlUseCase,
                 searchUseCases = searchUseCases,

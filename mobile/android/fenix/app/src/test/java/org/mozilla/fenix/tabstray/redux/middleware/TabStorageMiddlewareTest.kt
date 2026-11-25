@@ -904,6 +904,7 @@ class TabStorageMiddlewareTest {
         val fenixBrowserUseCases =
             FenixBrowserUseCases(
                 appStore = AppStore(),
+                browserStore = browserStore,
                 tabsUseCases = tabsUseCases,
                 loadUrlUseCase = SessionUseCases(browserStore).loadUrl,
                 searchUseCases = mockk(relaxed = true),

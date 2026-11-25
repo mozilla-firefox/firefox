@@ -630,7 +630,9 @@ open class HomeActivity : LocaleAwareAppCompatActivity(), NavHostActivity, Crash
 
             if (shouldNavigateToBrowserOnColdStart(savedInstanceState)) {
                 if (shouldStartOnHome() && components.settings.enableHomepageAsNewTab) {
-                    components.useCases.fenixBrowserUseCases.addNewHomepageTab()
+                    lifecycleScope.launch {
+                        components.useCases.fenixBrowserUseCases.selectOrAddHomepageTabAfterRestore()
+                    }
                 } else if (!shouldStartOnHome()) {
                     navigateToBrowserOnColdStart()
                 }

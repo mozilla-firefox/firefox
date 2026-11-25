@@ -10,23 +10,33 @@ import io.mockk.mockk
 import io.mockk.spyk
 import io.mockk.verify
 import io.mockk.verifyOrder
+import kotlinx.coroutines.async
 import kotlinx.coroutines.test.TestScope
+import kotlinx.coroutines.test.runTest
+import mozilla.components.browser.state.action.RestoreCompleteAction
 import mozilla.components.browser.state.engine.EngineMiddleware
 import mozilla.components.browser.state.search.SearchEngine
 import mozilla.components.browser.state.state.BrowserState
+import mozilla.components.browser.state.state.ContentState
+import mozilla.components.browser.state.state.EngineState
 import mozilla.components.browser.state.state.SearchState
 import mozilla.components.browser.state.state.SessionState
+import mozilla.components.browser.state.state.TabSessionState
 import mozilla.components.browser.state.state.createTab
 import mozilla.components.browser.state.store.BrowserStore
 import mozilla.components.concept.base.profiler.Profiler
 import mozilla.components.concept.engine.Engine
 import mozilla.components.concept.engine.EngineSession
+import mozilla.components.concept.engine.EngineSessionState
 import mozilla.components.concept.engine.utils.ABOUT_HOME_URL
 import mozilla.components.feature.search.SearchUseCases
 import mozilla.components.feature.search.ext.createSearchEngine
 import mozilla.components.feature.session.SessionUseCases
 import mozilla.components.feature.tabs.TabsUseCases
 import mozilla.components.support.test.robolectric.testContext
+import org.junit.Assert.assertEquals
+import org.junit.Assert.assertFalse
+import org.junit.Assert.assertNull
 import org.junit.Before
 import org.junit.Test
 import org.junit.runner.RunWith
@@ -99,12 +109,13 @@ class FenixBrowserUseCasesTest {
 
         useCases =
             FenixBrowserUseCases(
+                appStore = appStore,
+                browserStore = browserStore,
                 tabsUseCases = tabsUseCases,
                 loadUrlUseCase = loadUrlUseCase,
                 searchUseCases = searchUseCases,
                 homepageTitle = homepageTitle,
                 profiler = profiler,
-                appStore = appStore,
             )
     }
 
@@ -427,6 +438,7 @@ class FenixBrowserUseCasesTest {
         useCases =
             FenixBrowserUseCases(
                 appStore = appStore,
+                browserStore = browserStore,
                 tabsUseCases = tabsUseCases,
                 loadUrlUseCase = loadUrlUseCase,
                 searchUseCases = searchUseCases,
@@ -458,6 +470,7 @@ class FenixBrowserUseCasesTest {
         useCases =
             FenixBrowserUseCases(
                 appStore = appStore,
+                browserStore = browserStore,
                 tabsUseCases = tabsUseCases,
                 loadUrlUseCase = loadUrlUseCase,
                 searchUseCases = searchUseCases,
@@ -480,6 +493,158 @@ class FenixBrowserUseCasesTest {
                 originalInput = url,
             )
         }
+    }
+
+    @Test
+    fun `GIVEN the selected tab is a homepage tab WHEN select or add homepage tab is invoked THEN select it`() {
+        createBrowserStoreWithTabs(
+            tabs =
+                listOf(
+                    createTab(ABOUT_HOME_URL, id = "home1", lastAccess = 2),
+                    createTab(ABOUT_HOME_URL, id = "home2", lastAccess = 1),
+                ),
+            selectedTabId = "home2",
+        )
+
+        assertEquals("home2", useCases.selectOrAddHomepageTab(private = false))
+
+        verify { tabsUseCases.selectTab.invoke("home2") }
+        verify(exactly = 0) { tabsUseCases.addTab.invoke(url = any(), title = any(), private = any()) }
+    }
+
+    @Test
+    fun `GIVEN multiple homepage tabs WHEN select or add homepage tab is invoked THEN select the most recently accessed one`() {
+        createBrowserStoreWithTabs(
+            tabs =
+                listOf(
+                    createTab("https://www.mozilla.org", id = "1"),
+                    createTab(ABOUT_HOME_URL, id = "home1", lastAccess = 1),
+                    createTab(ABOUT_HOME_URL, id = "home2", lastAccess = 3),
+                    createTab(ABOUT_HOME_URL, id = "home3", lastAccess = 2),
+                ),
+            selectedTabId = "1",
+        )
+
+        assertEquals("home2", useCases.selectOrAddHomepageTab(private = false))
+
+        verify { tabsUseCases.selectTab.invoke("home2") }
+    }
+
+    @Test
+    fun `GIVEN a homepage tab in the other browsing mode WHEN select or add homepage tab is invoked THEN add a new homepage tab`() {
+        createBrowserStoreWithTabs(tabs = listOf(createTab(ABOUT_HOME_URL, id = "home", private = true)))
+
+        useCases.selectOrAddHomepageTab(private = false)
+
+        verify(exactly = 0) { tabsUseCases.selectTab.invoke(any()) }
+        verify { tabsUseCases.addTab.invoke(url = ABOUT_HOME_URL, title = homepageTitle, private = false) }
+    }
+
+    @Test
+    fun `GIVEN the restored selected tab is a homepage tab WHEN select or add homepage tab after restore is invoked THEN keep it`() =
+        runTest {
+            createBrowserStoreWithTabs(
+                tabs =
+                    listOf(
+                        createTab("https://www.mozilla.org", id = "1"),
+                        createHomepageTab(id = "home", engineSessionState = mockk()),
+                    ),
+                selectedTabId = "home",
+                restoreComplete = true,
+            )
+
+            assertEquals("home", useCases.selectOrAddHomepageTabAfterRestore())
+
+            verify(exactly = 0) { tabsUseCases.selectTab.invoke(any()) }
+            verify(exactly = 0) { tabsUseCases.addTab.invoke(url = any(), title = any(), private = any()) }
+        }
+
+    @Test
+    fun `GIVEN the restored selected tab is not a homepage tab WHEN select or add homepage tab after restore is invoked THEN add a new homepage tab`() =
+        runTest {
+            createBrowserStoreWithTabs(
+                tabs = listOf(createTab("https://www.mozilla.org", id = "1"), createHomepageTab(id = "home")),
+                selectedTabId = "1",
+                restoreComplete = true,
+            )
+
+            useCases.selectOrAddHomepageTabAfterRestore()
+
+            verify(exactly = 0) { tabsUseCases.selectTab.invoke(any()) }
+            verify { tabsUseCases.addTab.invoke(url = ABOUT_HOME_URL, title = homepageTitle, private = false) }
+        }
+
+    @Test
+    fun `GIVEN no restored tabs in the current browsing mode WHEN select or add homepage tab after restore is invoked THEN do nothing`() =
+        runTest {
+            appStore = AppStore(AppState(mode = BrowsingMode.Private))
+            createBrowserStoreWithTabs(
+                tabs = listOf(createHomepageTab(id = "home")),
+                selectedTabId = "home",
+                restoreComplete = true,
+            )
+
+            assertNull(useCases.selectOrAddHomepageTabAfterRestore())
+
+            verify(exactly = 0) { tabsUseCases.selectTab.invoke(any()) }
+            verify(exactly = 0) { tabsUseCases.addTab.invoke(url = any(), title = any(), private = any()) }
+        }
+
+    @Test
+    fun `GIVEN the browser state is not restored WHEN select or add homepage tab after restore is invoked THEN wait for the restore to complete`() =
+        runTest {
+            val store =
+                createBrowserStoreWithTabs(
+                    tabs = listOf(createTab("https://www.mozilla.org", id = "1")),
+                    selectedTabId = "1",
+                    restoreComplete = false,
+                )
+
+            val result = async { useCases.selectOrAddHomepageTabAfterRestore() }
+            testScheduler.advanceUntilIdle()
+
+            assertFalse(result.isCompleted)
+            verify(exactly = 0) { tabsUseCases.addTab.invoke(url = any(), title = any(), private = any()) }
+
+            store.dispatch(RestoreCompleteAction)
+            result.await()
+
+            verify { tabsUseCases.addTab.invoke(url = ABOUT_HOME_URL, title = homepageTitle, private = false) }
+        }
+
+    private fun createHomepageTab(id: String, engineSessionState: EngineSessionState? = null) =
+        TabSessionState(
+            id = id,
+            content = ContentState(url = ABOUT_HOME_URL),
+            engineState = EngineState(engineSessionState = engineSessionState),
+        )
+
+    private fun createBrowserStoreWithTabs(
+        tabs: List<TabSessionState>,
+        selectedTabId: String? = null,
+        restoreComplete: Boolean = false,
+    ): BrowserStore {
+        val store =
+            BrowserStore(
+                initialState =
+                    BrowserState(tabs = tabs, selectedTabId = selectedTabId, restoreComplete = restoreComplete),
+                middleware =
+                    EngineMiddleware.create(
+                        mockk<Engine>(),
+                        TestScope(),
+                    ),
+            )
+        useCases =
+            FenixBrowserUseCases(
+                appStore = appStore,
+                browserStore = store,
+                tabsUseCases = tabsUseCases,
+                loadUrlUseCase = loadUrlUseCase,
+                searchUseCases = searchUseCases,
+                homepageTitle = homepageTitle,
+                profiler = profiler,
+            )
+        return store
     }
 
     companion object {

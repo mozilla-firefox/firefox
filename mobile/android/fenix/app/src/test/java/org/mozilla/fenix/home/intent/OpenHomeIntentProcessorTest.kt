@@ -49,8 +49,9 @@ class OpenHomeIntentProcessorTest {
             )
         fenixBrowserUseCases =
             FenixBrowserUseCases(
-                tabsUseCases = TabsUseCases(store = browserStore),
                 appStore = mockk(relaxed = true),
+                browserStore = browserStore,
+                tabsUseCases = TabsUseCases(store = browserStore),
                 loadUrlUseCase = mockk(relaxed = true),
                 searchUseCases = mockk(relaxed = true),
                 homepageTitle = "",

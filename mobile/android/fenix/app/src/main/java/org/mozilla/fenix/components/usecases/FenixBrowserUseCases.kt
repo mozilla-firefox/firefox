@@ -4,9 +4,14 @@
 
 package org.mozilla.fenix.components.usecases
 
+import kotlinx.coroutines.flow.first
 import mozilla.components.browser.state.search.SearchAccessPoint
 import mozilla.components.browser.state.search.SearchEngine
+import mozilla.components.browser.state.selector.getNormalOrPrivateTabs
+import mozilla.components.browser.state.selector.selectedTab
 import mozilla.components.browser.state.state.SessionState
+import mozilla.components.browser.state.state.TabSessionState
+import mozilla.components.browser.state.store.BrowserStore
 import mozilla.components.concept.base.profiler.Profiler
 import mozilla.components.concept.engine.EngineSession
 import mozilla.components.concept.engine.utils.ABOUT_HOME_URL
@@ -14,6 +19,7 @@ import mozilla.components.concept.storage.HistoryMetadataKey
 import mozilla.components.feature.search.SearchUseCases
 import mozilla.components.feature.session.SessionUseCases
 import mozilla.components.feature.tabs.TabsUseCases
+import mozilla.components.lib.state.ext.flow
 import mozilla.components.support.ktx.kotlin.isUrl
 import mozilla.components.support.ktx.kotlin.toNormalizedUrl
 import org.mozilla.fenix.components.AppStore
@@ -21,7 +27,8 @@ import org.mozilla.fenix.components.AppStore
 /**
  * Use cases for handling loading a URL and performing a search.
  *
- * @param appStore [AppStore] used to fetch the appstore
+ * @param appStore [AppStore] used to determine the browsing mode.
+ * @param browserStore [BrowserStore] used to look up existing tab.
  * @param tabsUseCases [TabsUseCases] used for adding new tabs.
  * @param loadUrlUseCase [SessionUseCases.DefaultLoadUrlUseCase] used for loading a URL.
  * @param searchUseCases [SearchUseCases] used for performing a search.
@@ -30,6 +37,7 @@ import org.mozilla.fenix.components.AppStore
  */
 class FenixBrowserUseCases(
     private val appStore: AppStore,
+    private val browserStore: BrowserStore,
     private val tabsUseCases: TabsUseCases,
     private val loadUrlUseCase: SessionUseCases.DefaultLoadUrlUseCase,
     private val searchUseCases: SearchUseCases,
@@ -147,8 +155,59 @@ class FenixBrowserUseCases(
         )
     }
 
+    /**
+     * Selects an existing homepage ("about:home") tab, preferring the selected tab and then the most recently accessed
+     * one. Adds a new homepage tab if none exists.
+     *
+     * @param private Whether or not the homepage tab should be private.
+     * @return The ID of the selected or created tab.
+     */
+    fun selectOrAddHomepageTab(private: Boolean = appStore.state.mode.isPrivate): String {
+        val state = browserStore.state
+        val homepageTab =
+            state.selectedTab?.takeIf { it.isHomepageTab(private) }
+                ?: state.tabs.filter { it.isHomepageTab(private) }.maxByOrNull { it.lastAccess }
+
+        if (homepageTab == null) {
+            return addNewHomepageTab(private = private)
+        }
+
+        tabsUseCases.selectTab(homepageTab.id)
+        return homepageTab.id
+    }
+
+    /**
+     * Waits for the browser state to be restored, then keeps the restored selected tab if it's a homepage
+     * ("about:home") tab in the current browsing mode, regardless of its session history. Otherwise, adds a new
+     * homepage tab. Does nothing if there are no tabs in the current browsing mode.
+     *
+     * @return The ID of the kept or created tab, or null if there are no tabs in the current browsing mode.
+     */
+    suspend fun selectOrAddHomepageTabAfterRestore(): String? {
+        browserStore.flow().first { it.restoreComplete }
+
+        val state = browserStore.state
+        val private = appStore.state.mode.isPrivate
+
+        // HomepageTabBinding adds a homepage tab when there are no tabs in the current browsing mode.
+        if (state.getNormalOrPrivateTabs(private).isEmpty()) {
+            return null
+        }
+
+        val selectedTab = state.selectedTab
+        if (selectedTab != null && selectedTab.isHomepageTab(private)) {
+            return selectedTab.id
+        }
+
+        return addNewHomepageTab(private = private)
+    }
+
     /** Loads the homepage ("about:home"). */
     fun navigateToHomepage() {
         loadUrlUseCase.invoke(url = ABOUT_HOME_URL)
     }
 }
+
+/** Whether this is a homepage ("about:home") tab in the given browsing mode. */
+private fun TabSessionState.isHomepageTab(private: Boolean): Boolean =
+    content.private == private && content.url == ABOUT_HOME_URL

@@ -381,6 +381,7 @@ class DefaultTabRepositoryTest {
             fenixBrowserUseCases =
                 FenixBrowserUseCases(
                     appStore = AppStore(AppState()),
+                    browserStore = browserStore,
                     tabsUseCases = tabsUseCases,
                     loadUrlUseCase = SessionUseCases(browserStore).loadUrl,
                     searchUseCases = mockk(relaxed = true),

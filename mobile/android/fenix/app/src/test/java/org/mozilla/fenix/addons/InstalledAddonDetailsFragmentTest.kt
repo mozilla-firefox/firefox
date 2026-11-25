@@ -531,6 +531,7 @@ class InstalledAddonDetailsFragmentTest {
         val useCases =
             FenixBrowserUseCases(
                 appStore = appStore,
+                browserStore = BrowserStore(),
                 tabsUseCases = tabsUseCases,
                 loadUrlUseCase = loadUrlUseCase,
                 searchUseCases = searchUseCases,
@@ -583,6 +584,7 @@ class InstalledAddonDetailsFragmentTest {
         val useCases =
             FenixBrowserUseCases(
                 appStore = appStore,
+                browserStore = BrowserStore(),
                 tabsUseCases = tabsUseCases,
                 loadUrlUseCase = loadUrlUseCase,
                 searchUseCases = searchUseCases,
@@ -636,6 +638,7 @@ class InstalledAddonDetailsFragmentTest {
         val useCases =
             FenixBrowserUseCases(
                 appStore = appStore,
+                browserStore = BrowserStore(),
                 tabsUseCases = tabsUseCases,
                 loadUrlUseCase = loadUrlUseCase,
                 searchUseCases = searchUseCases,

@@ -471,6 +471,7 @@ class TabGroupFlowStorageMiddlewareTest {
         val fenixBrowserUseCases =
             FenixBrowserUseCases(
                 appStore = appStore,
+                browserStore = browserStore,
                 tabsUseCases = tabsUseCases,
                 loadUrlUseCase = SessionUseCases(browserStore).loadUrl,
                 searchUseCases = mockk(relaxed = true),
