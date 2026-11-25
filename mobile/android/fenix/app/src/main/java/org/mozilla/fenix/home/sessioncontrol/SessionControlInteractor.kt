@@ -375,6 +375,10 @@ class SessionControlInteractor(
         sportsWidgetController.handleSportsWidgetMatchesAndResultsClicked()
     }
 
+    override fun onSportsWidgetMatchClicked() {
+        sportsWidgetController.handleSportsWidgetMatchClicked()
+    }
+
     override fun onSportsWidgetWallpapersClicked() {
         sportsWidgetController.handleSportsWidgetWallpapersClicked()
     }

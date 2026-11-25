@@ -74,6 +74,38 @@ class SportsWidgetControllerTest {
     }
 
     @Test
+    fun `GIVEN homepage as a new tab is disabled WHEN handleSportsWidgetMatchClicked is called THEN open the matches page in a new tab`() {
+        every { settings.enableHomepageAsNewTab } returns false
+
+        controller.handleSportsWidgetMatchClicked()
+
+        verify {
+            navController.navigate(R.id.browserFragment)
+            fenixBrowserUseCases.loadUrlOrSearch(
+                searchTermOrURL = WREXHAM_MATCHES_URL,
+                newTab = true,
+                private = false,
+            )
+        }
+    }
+
+    @Test
+    fun `GIVEN homepage as a new tab is enabled WHEN handleSportsWidgetMatchClicked is called THEN open the matches page in the homepage tab`() {
+        every { settings.enableHomepageAsNewTab } returns true
+
+        controller.handleSportsWidgetMatchClicked()
+
+        verify {
+            navController.navigate(R.id.browserFragment)
+            fenixBrowserUseCases.loadUrlOrSearch(
+                searchTermOrURL = WREXHAM_MATCHES_URL,
+                newTab = false,
+                private = false,
+            )
+        }
+    }
+
+    @Test
     fun `WHEN handleSportsWidgetWallpapersClicked is called THEN navigate to the wallpaper settings`() {
         controller.handleSportsWidgetWallpapersClicked()
 

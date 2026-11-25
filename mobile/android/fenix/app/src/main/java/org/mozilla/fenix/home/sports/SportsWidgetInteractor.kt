@@ -10,6 +10,9 @@ interface SportsWidgetInteractor {
     /** Called when the user selects the "Matches and Results" menu item of the sports widget. */
     fun onSportsWidgetMatchesAndResultsClicked()
 
+    /** Called when the user clicks a match in the sports widget. */
+    fun onSportsWidgetMatchClicked()
+
     /** Called when the user selects the "Wallpapers" menu item of the sports widget. */
     fun onSportsWidgetWallpapersClicked()
 

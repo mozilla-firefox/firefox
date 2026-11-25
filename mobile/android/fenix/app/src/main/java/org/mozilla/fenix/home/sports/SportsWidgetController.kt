@@ -29,6 +29,15 @@ class SportsWidgetController(
 ) {
     /** Handles the user selecting the "Matches and Results" menu item by opening the club's matches page. */
     fun handleSportsWidgetMatchesAndResultsClicked() {
+        openMatchesPage()
+    }
+
+    /** Handles the user clicking a match by opening the club's matches page. */
+    fun handleSportsWidgetMatchClicked() {
+        openMatchesPage()
+    }
+
+    private fun openMatchesPage() {
         navController.openToBrowser()
         fenixBrowserUseCases.loadUrlOrSearch(
             searchTermOrURL = WREXHAM_MATCHES_URL,
