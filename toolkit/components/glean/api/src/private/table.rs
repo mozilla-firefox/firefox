@@ -20,15 +20,55 @@ use super::{
     StringListMetric, StringMetric, TextMetric, TimeUnit, TimespanMetric, TimingDistributionMetric,
     UrlMetric, UuidMetric,
 };
-use crate::metrics::DynamicLabel;
+use crate::metrics::{DynamicLabel, GLEAN_STRINGS};
+
+/// Separates the items of a list stored as a single string table entry.
+const LIST_SEPARATOR: char = '\0';
+
+/// A string, or a list of strings joined by `LIST_SEPARATOR`, in the
+/// generated string table. Offsets rather than pointers keep the tables free
+/// of relocations, so their pages stay clean until a metric is constructed.
+#[derive(Clone, Copy)]
+pub struct StrRef {
+    offset: u32,
+    len: u32,
+}
+
+impl StrRef {
+    pub const EMPTY: StrRef = StrRef::new(0, 0);
+
+    pub const fn new(offset: u32, len: u32) -> Self {
+        StrRef { offset, len }
+    }
+
+    pub fn get(self) -> &'static str {
+        let start = self.offset as usize;
+        &GLEAN_STRINGS[start..start + self.len as usize]
+    }
+
+    pub fn is_empty(self) -> bool {
+        self.len == 0
+    }
+
+    pub fn items(self) -> impl Iterator<Item = &'static str> {
+        let s = self.get();
+        s.split(LIST_SEPARATOR).filter(move |_| !s.is_empty())
+    }
+
+    /// The only item of the list, if it has exactly one.
+    fn single(self) -> Option<&'static str> {
+        let s = self.get();
+        (!s.is_empty() && !s.contains(LIST_SEPARATOR)).then_some(s)
+    }
+}
 
 /// Everything a metric constructor needs, for every metric type.
 /// Fields a type doesn't use keep the values from [`MetricDef::DEFAULT`].
 pub struct MetricDef {
     pub id: u32,
-    pub category: &'static str,
-    pub name: &'static str,
-    pub send_in_pings: &'static [&'static str],
+    pub category: StrRef,
+    pub name: StrRef,
+    pub send_in_pings: StrRef,
     pub lifetime: Lifetime,
     pub disabled: bool,
     pub in_session: bool,
@@ -39,20 +79,20 @@ pub struct MetricDef {
     pub range_max: i64,
     pub bucket_count: i64,
     pub histogram_type: HistogramType,
-    pub allowed_extra_keys: &'static [&'static str],
+    pub allowed_extra_keys: StrRef,
     /// Static labels of a labeled metric; empty means dynamic labels.
-    pub labels: &'static [&'static str],
-    pub keys: &'static [&'static str],
-    pub categories: &'static [&'static str],
+    pub labels: StrRef,
+    pub keys: StrRef,
+    pub categories: StrRef,
     pub numerators: &'static [MetricDef],
 }
 
 impl MetricDef {
     pub const DEFAULT: MetricDef = MetricDef {
         id: 0,
-        category: "",
-        name: "",
-        send_in_pings: &[],
+        category: StrRef::EMPTY,
+        name: StrRef::EMPTY,
+        send_in_pings: StrRef::EMPTY,
         lifetime: Lifetime::Ping,
         disabled: false,
         in_session: false,
@@ -63,10 +103,10 @@ impl MetricDef {
         range_max: 0,
         bucket_count: 0,
         histogram_type: HistogramType::Linear,
-        allowed_extra_keys: &[],
-        labels: &[],
-        keys: &[],
-        categories: &[],
+        allowed_extra_keys: StrRef::EMPTY,
+        labels: StrRef::EMPTY,
+        keys: StrRef::EMPTY,
+        categories: StrRef::EMPTY,
         numerators: &[],
     };
 
@@ -76,9 +116,9 @@ impl MetricDef {
 
     fn cmd(&self) -> CommonMetricData {
         CommonMetricData {
-            name: self.name.into(),
-            category: self.category.into(),
-            send_in_pings: self.send_in_pings.iter().map(|p| (*p).into()).collect(),
+            name: self.name.get().into(),
+            category: self.category.get().into(),
+            send_in_pings: self.send_in_pings.items().map(Into::into).collect(),
             lifetime: self.lifetime,
             disabled: self.disabled,
             in_session: self.in_session,
@@ -86,11 +126,11 @@ impl MetricDef {
         }
     }
 
-    fn cow_list(list: &'static [&'static str]) -> Option<Vec<Cow<'static, str>>> {
+    fn cow_list(list: StrRef) -> Option<Vec<Cow<'static, str>>> {
         if list.is_empty() {
             None
         } else {
-            Some(list.iter().map(|s| Cow::Borrowed(*s)).collect())
+            Some(list.items().map(Cow::Borrowed).collect())
         }
     }
 }
@@ -306,12 +346,12 @@ impl FromDef for CounterMetric {
     fn from_def(def: &MetricDef) -> Self {
         // Same fast path codegen used for the (very common) ping-lifetime,
         // single-ping counters such as use counters.
-        if def.lifetime == Lifetime::Ping && def.send_in_pings.len() == 1 {
-            let ping = def.send_in_pings[0];
+        if let (Lifetime::Ping, Some(ping)) = (def.lifetime, def.send_in_pings.single()) {
+            let (category, name) = (def.category.get(), def.name.get());
             if def.disabled {
-                CounterMetric::codegen_disabled_new(def.id, def.category, def.name, ping)
+                CounterMetric::codegen_disabled_new(def.id, category, name, ping)
             } else {
-                CounterMetric::codegen_new(def.id, def.category, def.name, ping)
+                CounterMetric::codegen_new(def.id, category, name, ping)
             }
         } else {
             CounterMetric::new(def.base_id(), def.cmd())
@@ -358,10 +398,7 @@ impl FromDef for EventMetric<NoExtraKeys> {
         let metric = EventMetric::with_runtime_extra_keys(
             def.base_id(),
             def.cmd(),
-            def.allowed_extra_keys
-                .iter()
-                .map(|k| (*k).to_string())
-                .collect(),
+            def.allowed_extra_keys.items().map(str::to_string).collect(),
         );
         #[cfg(feature = "with_gecko")]
         crate::metrics::count_metric_memory(&metric);

@@ -118,8 +118,45 @@ def api_type(obj):
     return f"MetricRef<{table_rust_type(obj.type)}>"
 
 
-def str_slice(values):
-    return "&[" + ", ".join(json.dumps(v) for v in values) + "]"
+class StringTable:
+    """
+    Collects the strings that generated statics refer to into a single Rust
+    string literal, so that the statics can hold offsets into it rather than
+    pointers, which would each need a relocation at load time.
+    """
+
+    LIST_SEPARATOR = "\0"
+
+    def __init__(self):
+        self.table = ""
+
+    def ref(self, value):
+        """
+        A Jinja2 filter that adds a string, or a list of strings, to the table
+        and renders a `StrRef` to it.
+        """
+        if isinstance(value, (list, set, tuple)):
+            if isinstance(value, set):
+                value = sorted(value)
+            value = self.LIST_SEPARATOR.join(value)
+        assert value.isascii(), f"{value!r} isn't ASCII"
+        offset = self.table.find(value)
+        if offset == -1:
+            offset = len(self.table)
+            self.table += value
+        return f"StrRef::new({offset}, {len(value)})"
+
+    def literal(self):
+        """
+        Renders the table as a Rust string literal.
+        """
+        escaped = (
+            self.table
+            .replace("\\", "\\\\")
+            .replace('"', '\\"')
+            .replace(self.LIST_SEPARATOR, "\\0")
+        )
+        return f'"{escaped}"'
 
 
 def unordered_ipc(metric):
@@ -388,6 +425,8 @@ def output_rust(objs, output_fd, ping_names_by_app_id, options={}):
                     )
                 tables_by_type[metric.type]["metrics"].append(metric)
 
+    strings = StringTable()
+
     # Now for the modules for each category.
     template = util.get_jinja2_template(
         template_filename,
@@ -401,7 +440,7 @@ def output_rust(objs, output_fd, ping_names_by_app_id, options={}):
             ("api_type", api_type),
             ("api_ctor", api_ctor),
             ("extra_keys", extra_keys),
-            ("str_slice", str_slice),
+            ("str_ref", strings.ref),
             ("unordered_ipc", unordered_ipc),
             ("metric_id", lambda metric: rust_int(get_metric_id(metric))),
             ("ping_id", lambda ping: rust_int(get_ping_id(ping))),
@@ -412,6 +451,7 @@ def output_rust(objs, output_fd, ping_names_by_app_id, options={}):
         template.render(
             all_objs=objs,
             objects=objects,
+            strings=strings,
             table_types=table_types,
             submetric_types=submetric_types,
             common_metric_data_args=common_metric_data_args,

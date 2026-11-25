@@ -12,7 +12,7 @@ pub mod test {
     #[allow(unused_imports)]
     use crate::private::*;
     #[allow(unused_imports)]
-    use crate::private::table::{EventRef, MetricDef, MetricRef, TableMetric};
+    use crate::private::table::{EventRef, MetricDef, MetricRef, StrRef, TableMetric};
     #[allow(unused_imports)]
     use glean::{HistogramType, Lifetime, MemoryUnit, TimeUnit};
 
@@ -140,7 +140,7 @@ pub mod test_nested {
     #[allow(unused_imports)]
     use crate::private::*;
     #[allow(unused_imports)]
-    use crate::private::table::{EventRef, MetricDef, MetricRef, TableMetric};
+    use crate::private::table::{EventRef, MetricDef, MetricRef, StrRef, TableMetric};
     #[allow(unused_imports)]
     use glean::{HistogramType, Lifetime, MemoryUnit, TimeUnit};
 
@@ -171,9 +171,9 @@ pub mod test_nested {
     pub static an_object: TableMetric<ObjectMetric<AnObjectObject>> =
         TableMetric::new(MetricDef {
             id: 19,
-            category: "test.nested",
-            name: "an_object",
-            send_in_pings: &["metrics"],
+            category: StrRef::new(0, 11),
+            name: StrRef::new(11, 9),
+            send_in_pings: StrRef::new(20, 7),
             lifetime: Lifetime::Ping,
             ..MetricDef::DEFAULT
         });
@@ -302,7 +302,7 @@ pub mod test2 {
     #[allow(unused_imports)]
     use crate::private::*;
     #[allow(unused_imports)]
-    use crate::private::table::{EventRef, MetricDef, MetricRef, TableMetric};
+    use crate::private::table::{EventRef, MetricDef, MetricRef, StrRef, TableMetric};
     #[allow(unused_imports)]
     use glean::{HistogramType, Lifetime, MemoryUnit, TimeUnit};
 
@@ -430,7 +430,7 @@ pub mod test2_nested {
     #[allow(unused_imports)]
     use crate::private::*;
     #[allow(unused_imports)]
-    use crate::private::table::{EventRef, MetricDef, MetricRef, TableMetric};
+    use crate::private::table::{EventRef, MetricDef, MetricRef, StrRef, TableMetric};
     #[allow(unused_imports)]
     use glean::{HistogramType, Lifetime, MemoryUnit, TimeUnit};
 
@@ -455,9 +455,9 @@ pub mod test2_nested {
     pub static an_object: TableMetric<ObjectMetric<AnObjectObject>> =
         TableMetric::new(MetricDef {
             id: 51,
-            category: "test2.nested",
-            name: "an_object",
-            send_in_pings: &["metrics"],
+            category: StrRef::new(27, 12),
+            name: StrRef::new(11, 9),
+            send_in_pings: StrRef::new(20, 7),
             lifetime: Lifetime::Ping,
             disabled: true,
             ..MetricDef::DEFAULT
@@ -557,42 +557,42 @@ pub mod test2_nested {
 pub(crate) mod __glean_table {
     #[allow(unused_imports)]
     use crate::private::*;
-    use crate::private::table::{MetricDef, TableMetric};
+    use crate::private::table::{MetricDef, StrRef, TableMetric};
     #[allow(unused_imports)]
     use glean::{HistogramType, Lifetime, MemoryUnit, TimeUnit};
 
     pub(crate) static BOOLEAN_TABLE: [TableMetric<BooleanMetric>; 4] = [
         TableMetric::new(MetricDef {
             id: 1,
-            category: "test",
-            name: "boolean_metric",
-            send_in_pings: &["metrics"],
+            category: StrRef::new(0, 4),
+            name: StrRef::new(39, 14),
+            send_in_pings: StrRef::new(20, 7),
             lifetime: Lifetime::Application,
             ..MetricDef::DEFAULT
         }),
         TableMetric::new(MetricDef {
             id: 16,
-            category: "test",
-            name: "unordered_boolean_metric",
-            send_in_pings: &["metrics"],
+            category: StrRef::new(0, 4),
+            name: StrRef::new(53, 24),
+            send_in_pings: StrRef::new(20, 7),
             lifetime: Lifetime::Ping,
             unordered_ipc: true,
             ..MetricDef::DEFAULT
         }),
         TableMetric::new(MetricDef {
             id: 34,
-            category: "test2",
-            name: "boolean_metric",
-            send_in_pings: &["metrics"],
+            category: StrRef::new(27, 5),
+            name: StrRef::new(39, 14),
+            send_in_pings: StrRef::new(20, 7),
             lifetime: Lifetime::Application,
             disabled: true,
             ..MetricDef::DEFAULT
         }),
         TableMetric::new(MetricDef {
             id: 49,
-            category: "test2",
-            name: "unordered_boolean_metric",
-            send_in_pings: &["metrics"],
+            category: StrRef::new(27, 5),
+            name: StrRef::new(53, 24),
+            send_in_pings: StrRef::new(20, 7),
             lifetime: Lifetime::Ping,
             disabled: true,
             unordered_ipc: true,
@@ -603,61 +603,61 @@ pub(crate) mod __glean_table {
     pub(crate) static COUNTER_TABLE: [TableMetric<CounterMetric>; 7] = [
         TableMetric::new(MetricDef {
             id: 2,
-            category: "test",
-            name: "counter_metric",
-            send_in_pings: &["metrics"],
+            category: StrRef::new(0, 4),
+            name: StrRef::new(77, 14),
+            send_in_pings: StrRef::new(20, 7),
             lifetime: Lifetime::Application,
             ..MetricDef::DEFAULT
         }),
         TableMetric::new(MetricDef {
             id: 27,
-            category: "test.nested",
-            name: "optimizable_counter_metric",
-            send_in_pings: &["metrics"],
+            category: StrRef::new(0, 11),
+            name: StrRef::new(91, 26),
+            send_in_pings: StrRef::new(20, 7),
             lifetime: Lifetime::Ping,
             ..MetricDef::DEFAULT
         }),
         TableMetric::new(MetricDef {
             id: 28,
-            category: "test.nested",
-            name: "optimizable_disabled_counter_metric",
-            send_in_pings: &["metrics"],
+            category: StrRef::new(0, 11),
+            name: StrRef::new(117, 35),
+            send_in_pings: StrRef::new(20, 7),
             lifetime: Lifetime::Ping,
             disabled: true,
             ..MetricDef::DEFAULT
         }),
         TableMetric::new(MetricDef {
             id: 35,
-            category: "test2",
-            name: "counter_metric",
-            send_in_pings: &["metrics"],
+            category: StrRef::new(27, 5),
+            name: StrRef::new(77, 14),
+            send_in_pings: StrRef::new(20, 7),
             lifetime: Lifetime::Application,
             disabled: true,
             ..MetricDef::DEFAULT
         }),
         TableMetric::new(MetricDef {
             id: 55,
-            category: "test2.nested",
-            name: "external_denominator",
-            send_in_pings: &["metrics"],
+            category: StrRef::new(27, 12),
+            name: StrRef::new(152, 20),
+            send_in_pings: StrRef::new(20, 7),
             lifetime: Lifetime::Ping,
             disabled: true,
             ..MetricDef::DEFAULT
         }),
         TableMetric::new(MetricDef {
             id: 56,
-            category: "test2.nested",
-            name: "optimizable_counter_metric",
-            send_in_pings: &["metrics"],
+            category: StrRef::new(27, 12),
+            name: StrRef::new(91, 26),
+            send_in_pings: StrRef::new(20, 7),
             lifetime: Lifetime::Ping,
             disabled: true,
             ..MetricDef::DEFAULT
         }),
         TableMetric::new(MetricDef {
             id: 57,
-            category: "test2.nested",
-            name: "optimizable_disabled_counter_metric",
-            send_in_pings: &["metrics"],
+            category: StrRef::new(27, 12),
+            name: StrRef::new(117, 35),
+            send_in_pings: StrRef::new(20, 7),
             lifetime: Lifetime::Ping,
             disabled: true,
             ..MetricDef::DEFAULT
@@ -667,9 +667,9 @@ pub(crate) mod __glean_table {
     pub(crate) static CUSTOM_DISTRIBUTION_TABLE: [TableMetric<CustomDistributionMetric>; 2] = [
         TableMetric::new(MetricDef {
             id: 3,
-            category: "test",
-            name: "custom_distribution_metric",
-            send_in_pings: &["metrics"],
+            category: StrRef::new(0, 4),
+            name: StrRef::new(172, 26),
+            send_in_pings: StrRef::new(20, 7),
             lifetime: Lifetime::Ping,
             range_min: 0,
             range_max: 100,
@@ -679,9 +679,9 @@ pub(crate) mod __glean_table {
         }),
         TableMetric::new(MetricDef {
             id: 36,
-            category: "test2",
-            name: "custom_distribution_metric",
-            send_in_pings: &["metrics"],
+            category: StrRef::new(27, 5),
+            name: StrRef::new(172, 26),
+            send_in_pings: StrRef::new(20, 7),
             lifetime: Lifetime::Ping,
             disabled: true,
             range_min: 0,
@@ -695,18 +695,18 @@ pub(crate) mod __glean_table {
     pub(crate) static DATETIME_TABLE: [TableMetric<DatetimeMetric>; 2] = [
         TableMetric::new(MetricDef {
             id: 20,
-            category: "test.nested",
-            name: "datetime_metric",
-            send_in_pings: &["metrics"],
+            category: StrRef::new(0, 11),
+            name: StrRef::new(198, 15),
+            send_in_pings: StrRef::new(20, 7),
             lifetime: Lifetime::Application,
             time_unit: TimeUnit::Millisecond,
             ..MetricDef::DEFAULT
         }),
         TableMetric::new(MetricDef {
             id: 52,
-            category: "test2.nested",
-            name: "datetime_metric",
-            send_in_pings: &["metrics"],
+            category: StrRef::new(27, 12),
+            name: StrRef::new(198, 15),
+            send_in_pings: StrRef::new(20, 7),
             lifetime: Lifetime::Application,
             disabled: true,
             time_unit: TimeUnit::Millisecond,
@@ -717,22 +717,22 @@ pub(crate) mod __glean_table {
     pub(crate) static DENOMINATOR_TABLE: [TableMetric<DenominatorMetric>; 1] = [
         TableMetric::new(MetricDef {
             id: 23,
-            category: "test.nested",
-            name: "external_denominator",
-            send_in_pings: &["metrics"],
+            category: StrRef::new(0, 11),
+            name: StrRef::new(152, 20),
+            send_in_pings: StrRef::new(20, 7),
             lifetime: Lifetime::Ping,
             numerators: &[
                 MetricDef {
-                    category: "test.nested",
-                    name: "rate_with_external_denominator",
-                    send_in_pings: &["metrics"],
+                    category: StrRef::new(0, 11),
+                    name: StrRef::new(213, 30),
+                    send_in_pings: StrRef::new(20, 7),
                     lifetime: Lifetime::Ping,
                     ..MetricDef::DEFAULT
                 },
                 MetricDef {
-                    category: "test2.nested",
-                    name: "rate_with_external_denominator",
-                    send_in_pings: &["metrics"],
+                    category: StrRef::new(27, 12),
+                    name: StrRef::new(213, 30),
+                    send_in_pings: StrRef::new(20, 7),
                     lifetime: Lifetime::Ping,
                     disabled: true,
                     ..MetricDef::DEFAULT
@@ -745,11 +745,11 @@ pub(crate) mod __glean_table {
     pub(crate) static DUAL_LABELED_COUNTER_TABLE: [TableMetric<DualLabeledCounterMetric>; 1] = [
         TableMetric::new(MetricDef {
             id: 18,
-            category: "test.nested",
-            name: "a_dual_labeled_counter",
-            send_in_pings: &["metrics"],
+            category: StrRef::new(0, 11),
+            name: StrRef::new(243, 22),
+            send_in_pings: StrRef::new(20, 7),
             lifetime: Lifetime::Ping,
-            categories: &["cat1", "cat2", "catred", "catblu"],
+            categories: StrRef::new(265, 23),
             ..MetricDef::DEFAULT
         }),
     ];
@@ -757,28 +757,28 @@ pub(crate) mod __glean_table {
     pub(crate) static EVENT_TABLE: [TableMetric<EventMetric<NoExtraKeys>>; 4] = [
         TableMetric::new(MetricDef {
             id: 21,
-            category: "test.nested",
-            name: "event_metric",
-            send_in_pings: &["events"],
+            category: StrRef::new(0, 11),
+            name: StrRef::new(288, 12),
+            send_in_pings: StrRef::new(300, 6),
             lifetime: Lifetime::Ping,
             in_session: true,
             ..MetricDef::DEFAULT
         }),
         TableMetric::new(MetricDef {
             id: 22,
-            category: "test.nested",
-            name: "event_metric_with_extra",
-            send_in_pings: &["events"],
+            category: StrRef::new(0, 11),
+            name: StrRef::new(306, 23),
+            send_in_pings: StrRef::new(300, 6),
             lifetime: Lifetime::Ping,
             in_session: true,
-            allowed_extra_keys: &["an_extra_key", "another_extra_key", "bool_extra", "quantity_extra"],
+            allowed_extra_keys: StrRef::new(329, 56),
             ..MetricDef::DEFAULT
         }),
         TableMetric::new(MetricDef {
             id: 53,
-            category: "test2.nested",
-            name: "event_metric",
-            send_in_pings: &["events"],
+            category: StrRef::new(27, 12),
+            name: StrRef::new(288, 12),
+            send_in_pings: StrRef::new(300, 6),
             lifetime: Lifetime::Ping,
             disabled: true,
             in_session: true,
@@ -786,13 +786,13 @@ pub(crate) mod __glean_table {
         }),
         TableMetric::new(MetricDef {
             id: 54,
-            category: "test2.nested",
-            name: "event_metric_with_extra",
-            send_in_pings: &["events"],
+            category: StrRef::new(27, 12),
+            name: StrRef::new(306, 23),
+            send_in_pings: StrRef::new(300, 6),
             lifetime: Lifetime::Ping,
             disabled: true,
             in_session: true,
-            allowed_extra_keys: &["an_extra_key", "another_extra_key"],
+            allowed_extra_keys: StrRef::new(329, 30),
             ..MetricDef::DEFAULT
         }),
     ];
@@ -800,54 +800,54 @@ pub(crate) mod __glean_table {
     pub(crate) static LABELED_BOOLEAN_TABLE: [TableMetric<LabeledMetric<LabeledBooleanMetric, super::DynamicLabel>>; 6] = [
         TableMetric::new(MetricDef {
             id: 4,
-            category: "test",
-            name: "labeled_boolean_metric",
-            send_in_pings: &["metrics"],
+            category: StrRef::new(0, 4),
+            name: StrRef::new(385, 22),
+            send_in_pings: StrRef::new(20, 7),
             lifetime: Lifetime::Application,
             ..MetricDef::DEFAULT
         }),
         TableMetric::new(MetricDef {
             id: 5,
-            category: "test",
-            name: "labeled_boolean_metric_labels",
-            send_in_pings: &["metrics"],
+            category: StrRef::new(0, 4),
+            name: StrRef::new(407, 29),
+            send_in_pings: StrRef::new(20, 7),
             lifetime: Lifetime::Application,
-            labels: &["one_label", "two_labels", "three_labels", "four_labels", "five_labels", "six_labels", "seven_labels", "eight_labels", "nine_labels", "ten_labels"],
+            labels: StrRef::new(436, 117),
             ..MetricDef::DEFAULT
         }),
         TableMetric::new(MetricDef {
             id: 17,
-            category: "test",
-            name: "unordered_labeled_boolean_metric",
-            send_in_pings: &["metrics"],
+            category: StrRef::new(0, 4),
+            name: StrRef::new(553, 32),
+            send_in_pings: StrRef::new(20, 7),
             lifetime: Lifetime::Ping,
             unordered_ipc: true,
             ..MetricDef::DEFAULT
         }),
         TableMetric::new(MetricDef {
             id: 37,
-            category: "test2",
-            name: "labeled_boolean_metric",
-            send_in_pings: &["metrics"],
+            category: StrRef::new(27, 5),
+            name: StrRef::new(385, 22),
+            send_in_pings: StrRef::new(20, 7),
             lifetime: Lifetime::Application,
             disabled: true,
             ..MetricDef::DEFAULT
         }),
         TableMetric::new(MetricDef {
             id: 38,
-            category: "test2",
-            name: "labeled_boolean_metric_labels",
-            send_in_pings: &["metrics"],
+            category: StrRef::new(27, 5),
+            name: StrRef::new(407, 29),
+            send_in_pings: StrRef::new(20, 7),
             lifetime: Lifetime::Application,
             disabled: true,
-            labels: &["one_label", "two_labels", "three_labels", "four_labels", "five_labels", "six_labels", "seven_labels", "eight_labels", "nine_labels", "ten_labels"],
+            labels: StrRef::new(436, 117),
             ..MetricDef::DEFAULT
         }),
         TableMetric::new(MetricDef {
             id: 50,
-            category: "test2",
-            name: "unordered_labeled_boolean_metric",
-            send_in_pings: &["metrics"],
+            category: StrRef::new(27, 5),
+            name: StrRef::new(553, 32),
+            send_in_pings: StrRef::new(20, 7),
             lifetime: Lifetime::Ping,
             disabled: true,
             unordered_ipc: true,
@@ -858,38 +858,38 @@ pub(crate) mod __glean_table {
     pub(crate) static LABELED_COUNTER_TABLE: [TableMetric<LabeledMetric<LabeledCounterMetric, super::DynamicLabel>>; 4] = [
         TableMetric::new(MetricDef {
             id: 6,
-            category: "test",
-            name: "labeled_counter_metric",
-            send_in_pings: &["metrics"],
+            category: StrRef::new(0, 4),
+            name: StrRef::new(585, 22),
+            send_in_pings: StrRef::new(20, 7),
             lifetime: Lifetime::Application,
             ..MetricDef::DEFAULT
         }),
         TableMetric::new(MetricDef {
             id: 7,
-            category: "test",
-            name: "labeled_counter_metric_labels",
-            send_in_pings: &["metrics"],
+            category: StrRef::new(0, 4),
+            name: StrRef::new(607, 29),
+            send_in_pings: StrRef::new(20, 7),
             lifetime: Lifetime::Application,
-            labels: &["one_label", "two_labels"],
+            labels: StrRef::new(436, 20),
             ..MetricDef::DEFAULT
         }),
         TableMetric::new(MetricDef {
             id: 39,
-            category: "test2",
-            name: "labeled_counter_metric",
-            send_in_pings: &["metrics"],
+            category: StrRef::new(27, 5),
+            name: StrRef::new(585, 22),
+            send_in_pings: StrRef::new(20, 7),
             lifetime: Lifetime::Application,
             disabled: true,
             ..MetricDef::DEFAULT
         }),
         TableMetric::new(MetricDef {
             id: 40,
-            category: "test2",
-            name: "labeled_counter_metric_labels",
-            send_in_pings: &["metrics"],
+            category: StrRef::new(27, 5),
+            name: StrRef::new(607, 29),
+            send_in_pings: StrRef::new(20, 7),
             lifetime: Lifetime::Application,
             disabled: true,
-            labels: &["one_label", "two_labels"],
+            labels: StrRef::new(436, 20),
             ..MetricDef::DEFAULT
         }),
     ];
@@ -897,9 +897,9 @@ pub(crate) mod __glean_table {
     pub(crate) static LABELED_CUSTOM_DISTRIBUTION_TABLE: [TableMetric<LabeledMetric<LabeledCustomDistributionMetric, super::DynamicLabel>>; 1] = [
         TableMetric::new(MetricDef {
             id: 24,
-            category: "test.nested",
-            name: "labeled_custom_dist",
-            send_in_pings: &["metrics"],
+            category: StrRef::new(0, 11),
+            name: StrRef::new(636, 19),
+            send_in_pings: StrRef::new(20, 7),
             lifetime: Lifetime::Ping,
             range_min: 0,
             range_max: 100,
@@ -912,9 +912,9 @@ pub(crate) mod __glean_table {
     pub(crate) static LABELED_MEMORY_DISTRIBUTION_TABLE: [TableMetric<LabeledMetric<LabeledMemoryDistributionMetric, super::DynamicLabel>>; 1] = [
         TableMetric::new(MetricDef {
             id: 25,
-            category: "test.nested",
-            name: "labeled_memory_dist",
-            send_in_pings: &["metrics"],
+            category: StrRef::new(0, 11),
+            name: StrRef::new(655, 19),
+            send_in_pings: StrRef::new(20, 7),
             lifetime: Lifetime::Ping,
             memory_unit: MemoryUnit::Byte,
             ..MetricDef::DEFAULT
@@ -927,38 +927,38 @@ pub(crate) mod __glean_table {
     pub(crate) static LABELED_STRING_TABLE: [TableMetric<LabeledMetric<LabeledStringMetric, super::DynamicLabel>>; 4] = [
         TableMetric::new(MetricDef {
             id: 8,
-            category: "test",
-            name: "labeled_string_metric",
-            send_in_pings: &["metrics"],
+            category: StrRef::new(0, 4),
+            name: StrRef::new(674, 21),
+            send_in_pings: StrRef::new(20, 7),
             lifetime: Lifetime::Application,
             ..MetricDef::DEFAULT
         }),
         TableMetric::new(MetricDef {
             id: 9,
-            category: "test",
-            name: "labeled_string_metric_labels",
-            send_in_pings: &["metrics"],
+            category: StrRef::new(0, 4),
+            name: StrRef::new(695, 28),
+            send_in_pings: StrRef::new(20, 7),
             lifetime: Lifetime::Application,
-            labels: &["one_label", "two_labels"],
+            labels: StrRef::new(436, 20),
             ..MetricDef::DEFAULT
         }),
         TableMetric::new(MetricDef {
             id: 41,
-            category: "test2",
-            name: "labeled_string_metric",
-            send_in_pings: &["metrics"],
+            category: StrRef::new(27, 5),
+            name: StrRef::new(674, 21),
+            send_in_pings: StrRef::new(20, 7),
             lifetime: Lifetime::Application,
             disabled: true,
             ..MetricDef::DEFAULT
         }),
         TableMetric::new(MetricDef {
             id: 42,
-            category: "test2",
-            name: "labeled_string_metric_labels",
-            send_in_pings: &["metrics"],
+            category: StrRef::new(27, 5),
+            name: StrRef::new(695, 28),
+            send_in_pings: StrRef::new(20, 7),
             lifetime: Lifetime::Application,
             disabled: true,
-            labels: &["one_label", "two_labels"],
+            labels: StrRef::new(436, 20),
             ..MetricDef::DEFAULT
         }),
     ];
@@ -966,9 +966,9 @@ pub(crate) mod __glean_table {
     pub(crate) static LABELED_TIMING_DISTRIBUTION_TABLE: [TableMetric<LabeledMetric<LabeledTimingDistributionMetric, super::DynamicLabel>>; 1] = [
         TableMetric::new(MetricDef {
             id: 26,
-            category: "test.nested",
-            name: "labeled_timing_dist",
-            send_in_pings: &["metrics"],
+            category: StrRef::new(0, 11),
+            name: StrRef::new(723, 19),
+            send_in_pings: StrRef::new(20, 7),
             lifetime: Lifetime::Ping,
             time_unit: TimeUnit::Nanosecond,
             ..MetricDef::DEFAULT
@@ -978,18 +978,18 @@ pub(crate) mod __glean_table {
     pub(crate) static MEMORY_DISTRIBUTION_TABLE: [TableMetric<MemoryDistributionMetric>; 2] = [
         TableMetric::new(MetricDef {
             id: 10,
-            category: "test",
-            name: "memory_distribution_metric",
-            send_in_pings: &["metrics"],
+            category: StrRef::new(0, 4),
+            name: StrRef::new(742, 26),
+            send_in_pings: StrRef::new(20, 7),
             lifetime: Lifetime::Ping,
             memory_unit: MemoryUnit::Kilobyte,
             ..MetricDef::DEFAULT
         }),
         TableMetric::new(MetricDef {
             id: 43,
-            category: "test2",
-            name: "memory_distribution_metric",
-            send_in_pings: &["metrics"],
+            category: StrRef::new(27, 5),
+            name: StrRef::new(742, 26),
+            send_in_pings: StrRef::new(20, 7),
             lifetime: Lifetime::Ping,
             disabled: true,
             memory_unit: MemoryUnit::Kilobyte,
@@ -1000,17 +1000,17 @@ pub(crate) mod __glean_table {
     pub(crate) static NUMERATOR_TABLE: [TableMetric<NumeratorMetric>; 2] = [
         TableMetric::new(MetricDef {
             id: 31,
-            category: "test.nested",
-            name: "rate_with_external_denominator",
-            send_in_pings: &["metrics"],
+            category: StrRef::new(0, 11),
+            name: StrRef::new(213, 30),
+            send_in_pings: StrRef::new(20, 7),
             lifetime: Lifetime::Ping,
             ..MetricDef::DEFAULT
         }),
         TableMetric::new(MetricDef {
             id: 60,
-            category: "test2.nested",
-            name: "rate_with_external_denominator",
-            send_in_pings: &["metrics"],
+            category: StrRef::new(27, 12),
+            name: StrRef::new(213, 30),
+            send_in_pings: StrRef::new(20, 7),
             lifetime: Lifetime::Ping,
             disabled: true,
             ..MetricDef::DEFAULT
@@ -1020,26 +1020,26 @@ pub(crate) mod __glean_table {
     pub(crate) static QUANTITY_TABLE: [TableMetric<QuantityMetric>; 3] = [
         TableMetric::new(MetricDef {
             id: 29,
-            category: "test.nested",
-            name: "quantity_metric",
-            send_in_pings: &["metrics"],
+            category: StrRef::new(0, 11),
+            name: StrRef::new(768, 15),
+            send_in_pings: StrRef::new(20, 7),
             lifetime: Lifetime::Ping,
             ..MetricDef::DEFAULT
         }),
         TableMetric::new(MetricDef {
             id: 32,
-            category: "test.nested",
-            name: "unordered_quantity_metric",
-            send_in_pings: &["metrics"],
+            category: StrRef::new(0, 11),
+            name: StrRef::new(783, 25),
+            send_in_pings: StrRef::new(20, 7),
             lifetime: Lifetime::Ping,
             unordered_ipc: true,
             ..MetricDef::DEFAULT
         }),
         TableMetric::new(MetricDef {
             id: 58,
-            category: "test2.nested",
-            name: "quantity_metric",
-            send_in_pings: &["metrics"],
+            category: StrRef::new(27, 12),
+            name: StrRef::new(768, 15),
+            send_in_pings: StrRef::new(20, 7),
             lifetime: Lifetime::Ping,
             disabled: true,
             ..MetricDef::DEFAULT
@@ -1049,17 +1049,17 @@ pub(crate) mod __glean_table {
     pub(crate) static RATE_TABLE: [TableMetric<RateMetric>; 2] = [
         TableMetric::new(MetricDef {
             id: 30,
-            category: "test.nested",
-            name: "rate_metric",
-            send_in_pings: &["metrics"],
+            category: StrRef::new(0, 11),
+            name: StrRef::new(808, 11),
+            send_in_pings: StrRef::new(20, 7),
             lifetime: Lifetime::Ping,
             ..MetricDef::DEFAULT
         }),
         TableMetric::new(MetricDef {
             id: 59,
-            category: "test2.nested",
-            name: "rate_metric",
-            send_in_pings: &["metrics"],
+            category: StrRef::new(27, 12),
+            name: StrRef::new(808, 11),
+            send_in_pings: StrRef::new(20, 7),
             lifetime: Lifetime::Ping,
             disabled: true,
             ..MetricDef::DEFAULT
@@ -1069,17 +1069,17 @@ pub(crate) mod __glean_table {
     pub(crate) static STRING_TABLE: [TableMetric<StringMetric>; 2] = [
         TableMetric::new(MetricDef {
             id: 12,
-            category: "test",
-            name: "string_metric",
-            send_in_pings: &["metrics"],
+            category: StrRef::new(0, 4),
+            name: StrRef::new(682, 13),
+            send_in_pings: StrRef::new(20, 7),
             lifetime: Lifetime::Application,
             ..MetricDef::DEFAULT
         }),
         TableMetric::new(MetricDef {
             id: 45,
-            category: "test2",
-            name: "string_metric",
-            send_in_pings: &["metrics"],
+            category: StrRef::new(27, 5),
+            name: StrRef::new(682, 13),
+            send_in_pings: StrRef::new(20, 7),
             lifetime: Lifetime::Application,
             disabled: true,
             ..MetricDef::DEFAULT
@@ -1089,17 +1089,17 @@ pub(crate) mod __glean_table {
     pub(crate) static STRING_LIST_TABLE: [TableMetric<StringListMetric>; 2] = [
         TableMetric::new(MetricDef {
             id: 11,
-            category: "test",
-            name: "string_list_metric",
-            send_in_pings: &["metrics"],
+            category: StrRef::new(0, 4),
+            name: StrRef::new(819, 18),
+            send_in_pings: StrRef::new(20, 7),
             lifetime: Lifetime::Application,
             ..MetricDef::DEFAULT
         }),
         TableMetric::new(MetricDef {
             id: 44,
-            category: "test2",
-            name: "string_list_metric",
-            send_in_pings: &["metrics"],
+            category: StrRef::new(27, 5),
+            name: StrRef::new(819, 18),
+            send_in_pings: StrRef::new(20, 7),
             lifetime: Lifetime::Application,
             disabled: true,
             ..MetricDef::DEFAULT
@@ -1109,17 +1109,17 @@ pub(crate) mod __glean_table {
     pub(crate) static TEXT_TABLE: [TableMetric<TextMetric>; 2] = [
         TableMetric::new(MetricDef {
             id: 13,
-            category: "test",
-            name: "text_metric",
-            send_in_pings: &["metrics"],
+            category: StrRef::new(0, 4),
+            name: StrRef::new(837, 11),
+            send_in_pings: StrRef::new(20, 7),
             lifetime: Lifetime::Application,
             ..MetricDef::DEFAULT
         }),
         TableMetric::new(MetricDef {
             id: 46,
-            category: "test2",
-            name: "text_metric",
-            send_in_pings: &["metrics"],
+            category: StrRef::new(27, 5),
+            name: StrRef::new(837, 11),
+            send_in_pings: StrRef::new(20, 7),
             lifetime: Lifetime::Application,
             disabled: true,
             ..MetricDef::DEFAULT
@@ -1129,18 +1129,18 @@ pub(crate) mod __glean_table {
     pub(crate) static TIMESPAN_TABLE: [TableMetric<TimespanMetric>; 2] = [
         TableMetric::new(MetricDef {
             id: 14,
-            category: "test",
-            name: "timespan_metric",
-            send_in_pings: &["metrics"],
+            category: StrRef::new(0, 4),
+            name: StrRef::new(848, 15),
+            send_in_pings: StrRef::new(20, 7),
             lifetime: Lifetime::Application,
             time_unit: TimeUnit::Millisecond,
             ..MetricDef::DEFAULT
         }),
         TableMetric::new(MetricDef {
             id: 47,
-            category: "test2",
-            name: "timespan_metric",
-            send_in_pings: &["metrics"],
+            category: StrRef::new(27, 5),
+            name: StrRef::new(848, 15),
+            send_in_pings: StrRef::new(20, 7),
             lifetime: Lifetime::Application,
             disabled: true,
             time_unit: TimeUnit::Millisecond,
@@ -1151,18 +1151,18 @@ pub(crate) mod __glean_table {
     pub(crate) static TIMING_DISTRIBUTION_TABLE: [TableMetric<TimingDistributionMetric>; 2] = [
         TableMetric::new(MetricDef {
             id: 15,
-            category: "test",
-            name: "timing_distribution_metric",
-            send_in_pings: &["metrics"],
+            category: StrRef::new(0, 4),
+            name: StrRef::new(863, 26),
+            send_in_pings: StrRef::new(20, 7),
             lifetime: Lifetime::Ping,
             time_unit: TimeUnit::Nanosecond,
             ..MetricDef::DEFAULT
         }),
         TableMetric::new(MetricDef {
             id: 48,
-            category: "test2",
-            name: "timing_distribution_metric",
-            send_in_pings: &["metrics"],
+            category: StrRef::new(27, 5),
+            name: StrRef::new(863, 26),
+            send_in_pings: StrRef::new(20, 7),
             lifetime: Lifetime::Ping,
             disabled: true,
             time_unit: TimeUnit::Nanosecond,
@@ -1176,17 +1176,17 @@ pub(crate) mod __glean_table {
     pub(crate) static UUID_TABLE: [TableMetric<UuidMetric>; 2] = [
         TableMetric::new(MetricDef {
             id: 33,
-            category: "test.nested",
-            name: "uuid_metric",
-            send_in_pings: &["metrics"],
+            category: StrRef::new(0, 11),
+            name: StrRef::new(889, 11),
+            send_in_pings: StrRef::new(20, 7),
             lifetime: Lifetime::Application,
             ..MetricDef::DEFAULT
         }),
         TableMetric::new(MetricDef {
             id: 61,
-            category: "test2.nested",
-            name: "uuid_metric",
-            send_in_pings: &["metrics"],
+            category: StrRef::new(27, 12),
+            name: StrRef::new(889, 11),
+            send_in_pings: StrRef::new(20, 7),
             lifetime: Lifetime::Application,
             disabled: true,
             ..MetricDef::DEFAULT
@@ -2049,25 +2049,25 @@ pub(crate) mod __glean_metric_maps {
     /// Turns a static label's enum value (its index) into the label string.
     pub(crate) fn labeled_enum_to_str(metric_id: u32, label: u16) -> &'static str {
         if let Some(cell) = LABELED_BOOLEAN_MAP.get(&BaseMetricId(metric_id)) {
-            return cell.def().labels.get(label as usize).copied().unwrap_or("__other__");
+            return cell.def().labels.items().nth(label as usize).unwrap_or("__other__");
         }
         if let Some(cell) = LABELED_COUNTER_MAP.get(&BaseMetricId(metric_id)) {
-            return cell.def().labels.get(label as usize).copied().unwrap_or("__other__");
+            return cell.def().labels.items().nth(label as usize).unwrap_or("__other__");
         }
         if let Some(cell) = LABELED_CUSTOM_DISTRIBUTION_MAP.get(&BaseMetricId(metric_id)) {
-            return cell.def().labels.get(label as usize).copied().unwrap_or("__other__");
+            return cell.def().labels.items().nth(label as usize).unwrap_or("__other__");
         }
         if let Some(cell) = LABELED_MEMORY_DISTRIBUTION_MAP.get(&BaseMetricId(metric_id)) {
-            return cell.def().labels.get(label as usize).copied().unwrap_or("__other__");
+            return cell.def().labels.items().nth(label as usize).unwrap_or("__other__");
         }
         if let Some(cell) = LABELED_QUANTITY_MAP.get(&BaseMetricId(metric_id)) {
-            return cell.def().labels.get(label as usize).copied().unwrap_or("__other__");
+            return cell.def().labels.items().nth(label as usize).unwrap_or("__other__");
         }
         if let Some(cell) = LABELED_STRING_MAP.get(&BaseMetricId(metric_id)) {
-            return cell.def().labels.get(label as usize).copied().unwrap_or("__other__");
+            return cell.def().labels.items().nth(label as usize).unwrap_or("__other__");
         }
         if let Some(cell) = LABELED_TIMING_DISTRIBUTION_MAP.get(&BaseMetricId(metric_id)) {
-            return cell.def().labels.get(label as usize).copied().unwrap_or("__other__");
+            return cell.def().labels.items().nth(label as usize).unwrap_or("__other__");
         }
         panic!("Can't turn label enum to string for metric {} which isn't a labeled metric", metric_id)
     }
@@ -2149,3 +2149,7 @@ pub(crate) mod __glean_metric_maps {
         );
     }
 }
+
+/// The strings that the generated metric definitions refer to by offset.
+#[allow(dead_code)]
+pub(crate) static GLEAN_STRINGS: &str = "test.nestedan_objectmetricstest2.nestedboolean_metricunordered_boolean_metriccounter_metricoptimizable_counter_metricoptimizable_disabled_counter_metricexternal_denominatorcustom_distribution_metricdatetime_metricrate_with_external_denominatora_dual_labeled_countercat1\0cat2\0catred\0catbluevent_metriceventsevent_metric_with_extraan_extra_key\0another_extra_key\0bool_extra\0quantity_extralabeled_boolean_metriclabeled_boolean_metric_labelsone_label\0two_labels\0three_labels\0four_labels\0five_labels\0six_labels\0seven_labels\0eight_labels\0nine_labels\0ten_labelsunordered_labeled_boolean_metriclabeled_counter_metriclabeled_counter_metric_labelslabeled_custom_distlabeled_memory_distlabeled_string_metriclabeled_string_metric_labelslabeled_timing_distmemory_distribution_metricquantity_metricunordered_quantity_metricrate_metricstring_list_metrictext_metrictimespan_metrictiming_distribution_metricuuid_metric";

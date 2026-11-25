@@ -80,9 +80,9 @@ impl ExtraKeys for {{ obj.name|Camelize }}{{ suffix }} {
 {% macro metric_def(obj) -%}
 MetricDef {
     id: {{ obj|metric_id }},
-    category: "{{ obj.category }}",
-    name: "{{ obj.name }}",
-    send_in_pings: {{ obj.send_in_pings|str_slice }},
+    category: {{ obj.category|str_ref }},
+    name: {{ obj.name|str_ref }},
+    send_in_pings: {{ obj.send_in_pings|str_ref }},
     lifetime: {{ obj.lifetime|rust }},
     {% if obj.disabled %}
     disabled: true,
@@ -106,24 +106,24 @@ MetricDef {
     histogram_type: {{ obj.histogram_type|rust }},
     {% endif %}
     {% if obj['allowed_extra_keys'] is defined and obj.allowed_extra_keys|length %}
-    allowed_extra_keys: {{ obj.allowed_extra_keys|extra_keys }},
+    allowed_extra_keys: {{ obj.allowed_extra_keys|str_ref }},
     {% endif %}
     {% if obj['labels'] is defined and obj.labels and obj.labels|length %}
-    labels: {{ obj.ordered_labels|str_slice }},
+    labels: {{ obj.ordered_labels|str_ref }},
     {% endif %}
     {% if obj['keys'] is defined and obj.keys and obj.keys|length %}
-    keys: {{ obj.ordered_keys|str_slice }},
+    keys: {{ obj.ordered_keys|str_ref }},
     {% endif %}
     {% if obj['categories'] is defined and obj.categories and obj.categories|length %}
-    categories: {{ obj.ordered_categories|str_slice }},
+    categories: {{ obj.ordered_categories|str_ref }},
     {% endif %}
     {% if obj['numerators'] is defined and obj.numerators|length %}
     numerators: &[
         {% for num in obj.numerators %}
         MetricDef {
-            category: "{{ num.category }}",
-            name: "{{ num.name }}",
-            send_in_pings: {{ num.send_in_pings|str_slice }},
+            category: {{ num.category|str_ref }},
+            name: {{ num.name|str_ref }},
+            send_in_pings: {{ num.send_in_pings|str_ref }},
             lifetime: {{ num.lifetime|rust }},
             {% if num.disabled %}
             disabled: true,
@@ -147,7 +147,7 @@ pub mod {{ category_name|snake_case }} {
     #[allow(unused_imports)]
     use crate::private::*;
     #[allow(unused_imports)]
-    use crate::private::table::{EventRef, MetricDef, MetricRef, TableMetric};
+    use crate::private::table::{EventRef, MetricDef, MetricRef, StrRef, TableMetric};
     #[allow(unused_imports)]
     use glean::{HistogramType, Lifetime, MemoryUnit, TimeUnit};
 
@@ -180,7 +180,7 @@ pub mod {{ category_name|snake_case }} {
 pub(crate) mod __glean_table {
     #[allow(unused_imports)]
     use crate::private::*;
-    use crate::private::table::{MetricDef, TableMetric};
+    use crate::private::table::{MetricDef, StrRef, TableMetric};
     #[allow(unused_imports)]
     use glean::{HistogramType, Lifetime, MemoryUnit, TimeUnit};
 
@@ -472,7 +472,7 @@ pub(crate) mod __glean_metric_maps {
     pub(crate) fn labeled_enum_to_str(metric_id: u32, label: u16) -> &'static str {
         {% for typ in table_types if typ.labeled %}
         if let Some(cell) = {{ typ.map }}.get(&BaseMetricId(metric_id)) {
-            return cell.def().labels.get(label as usize).copied().unwrap_or("__other__");
+            return cell.def().labels.items().nth(label as usize).unwrap_or("__other__");
         }
         {% endfor %}
         panic!("Can't turn label enum to string for metric {} which isn't a labeled metric", metric_id)
@@ -524,3 +524,7 @@ pub(crate) mod __glean_metric_maps {
         );
     }
 }
+
+/// The strings that the generated metric definitions refer to by offset.
+#[allow(dead_code)]
+pub(crate) static GLEAN_STRINGS: &str = {{ strings.literal() }};
