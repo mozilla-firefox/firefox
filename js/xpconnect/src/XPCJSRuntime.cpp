@@ -1513,7 +1513,7 @@ static void ReportZoneStats(const JS::ZoneStats& zStats,
                  "Shared compiled regexp data.");
 
   ZRREPORT_BYTES(pathPrefix + "zone-object"_ns, zStats.zoneObject,
-                 "The JS::Zone object itself.");
+                 "The JS::Zone object itself and its atom cache.");
 
   ZRREPORT_BYTES(pathPrefix + "regexp-zone"_ns, zStats.regexpZone,
                  "The regexp zone and regexp data.");

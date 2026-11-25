@@ -603,6 +603,9 @@ void Zone::addSizeOfIncludingThis(
     size_t* crossCompartmentWrappersTables, size_t* compartmentsPrivateData,
     size_t* scriptCountsMapArg) {
   *zoneObject += mallocSizeOf(this);
+  if (atomCache_.ref()) {
+    *zoneObject += mallocSizeOf(atomCache_.ref().get());
+  }
   *regexpZone += regExps().sizeOfIncludingThis(mallocSizeOf);
   if (jitZone_) {
     jitZone_->addSizeOfIncludingThis(mallocSizeOf, code, jitZone);
