@@ -2,6 +2,9 @@
  * License, v. 2.0. If a copy of the MPL was not distributed with this file,
  * You can obtain one at http://mozilla.org/MPL/2.0/. */
 
+#include <algorithm>
+#include <array>
+
 #include "mozilla/extensions/MatchPattern.h"
 #include "mozilla/extensions/MatchGlob.h"
 
@@ -54,6 +57,10 @@ AtomSet::AtomSet(const nsTArray<nsString>& aElems)
 AtomSet::AtomSet(std::initializer_list<nsAtom*> aIL)
     : mElems(AtomSetFromRange(aIL, [](nsAtom* elem) { return elem; })) {}
 
+AtomSet::AtomSet(Span<nsStaticAtom* const> aElems)
+    : mElems(AtomSetFromRange(
+          aElems, [](nsStaticAtom* elem) -> nsAtom* { return elem; })) {}
+
 bool AtomSet::Intersects(const AtomSet& aOther) const {
   for (const auto& atom : *this) {
     if (aOther.Contains(atom)) {
@@ -68,31 +75,46 @@ bool AtomSet::Intersects(const AtomSet& aOther) const {
   return false;
 }
 
-#define DEFINE_STATIC_ATOM_SET(name, ...)            \
-  static already_AddRefed<AtomSet> name() {          \
-    MOZ_ASSERT(NS_IsMainThread());                   \
-    static StaticRefPtr<AtomSet> sAtomSet;           \
-    RefPtr<AtomSet> atomSet = sAtomSet;              \
-    if (!atomSet) {                                  \
-      atomSet = sAtomSet = new AtomSet{__VA_ARGS__}; \
-      ClearOnShutdown(&sAtomSet);                    \
-    }                                                \
-    return atomSet.forget();                         \
+// The compile-time counterpart of AtomSet to enable scheme checks across any
+// thread. AtomSet is more generic and supports dynamic atoms, whereas here we
+// only support static atoms (specifically nsGkAtoms that are pointers into
+// the same array, which makes them orderable at compile time).
+template <size_t N>
+class StaticSchemeAtomSet final {
+ public:
+  template <typename... Atoms>
+  explicit consteval StaticSchemeAtomSet(Atoms... aAtoms) : mElems{aAtoms...} {
+    std::sort(mElems.begin(), mElems.end());
   }
 
-DEFINE_STATIC_ATOM_SET(PermittedSchemes, nsGkAtoms::http, nsGkAtoms::https,
-                       nsGkAtoms::ws, nsGkAtoms::wss, nsGkAtoms::file,
-                       nsGkAtoms::ftp, nsGkAtoms::data);
+  constexpr bool Contains(const nsAtom* aAtom) const {
+    return std::binary_search(mElems.begin(), mElems.end(), aAtom);
+  }
+
+  constexpr Span<nsStaticAtom* const> AsSpan() const MOZ_LIFETIME_BOUND {
+    return mElems;
+  }
+
+ private:
+  std::array<nsStaticAtom*, N> mElems;
+};
+
+template <typename... Atoms>
+StaticSchemeAtomSet(Atoms...) -> StaticSchemeAtomSet<sizeof...(Atoms)>;
+
+static constexpr StaticSchemeAtomSet kPermittedSchemes{
+    nsGkAtoms::http, nsGkAtoms::https, nsGkAtoms::ws,  nsGkAtoms::wss,
+    nsGkAtoms::file, nsGkAtoms::ftp,   nsGkAtoms::data};
 
 // Known schemes that are followed by "://" instead of ":".
-DEFINE_STATIC_ATOM_SET(HostLocatorSchemes, nsGkAtoms::http, nsGkAtoms::https,
-                       nsGkAtoms::ws, nsGkAtoms::wss, nsGkAtoms::file,
-                       nsGkAtoms::ftp, nsGkAtoms::moz_extension,
-                       nsGkAtoms::chrome, nsGkAtoms::resource, nsGkAtoms::moz,
-                       nsGkAtoms::moz_icon);
+static constexpr StaticSchemeAtomSet kHostLocatorSchemes{
+    nsGkAtoms::http,          nsGkAtoms::https,   nsGkAtoms::ws,
+    nsGkAtoms::wss,           nsGkAtoms::file,    nsGkAtoms::ftp,
+    nsGkAtoms::moz_extension, nsGkAtoms::chrome,  nsGkAtoms::resource,
+    nsGkAtoms::moz,           nsGkAtoms::moz_icon};
 
-DEFINE_STATIC_ATOM_SET(WildcardSchemes, nsGkAtoms::http, nsGkAtoms::https,
-                       nsGkAtoms::ws, nsGkAtoms::wss);
+static constexpr StaticSchemeAtomSet kWildcardSchemes{
+    nsGkAtoms::http, nsGkAtoms::https, nsGkAtoms::ws, nsGkAtoms::wss};
 
 // Schemes whose URLs are a meaningful representation of the document URL, even
 // if the origin of that document is opaque (e.g. due to CSP sandbox).
@@ -106,8 +128,26 @@ DEFINE_STATIC_ATOM_SET(WildcardSchemes, nsGkAtoms::http, nsGkAtoms::https,
 // principals, the precursor could be a http(s) URL. We don't want to run
 // scripts in view-source: because we have historically not allowed extensions
 // to do so.
-DEFINE_STATIC_ATOM_SET(NonOpaqueSchemes, nsGkAtoms::http, nsGkAtoms::https,
-                       nsGkAtoms::file, nsGkAtoms::view_source);
+static constexpr StaticSchemeAtomSet kNonOpaqueSchemes{
+    nsGkAtoms::http, nsGkAtoms::https, nsGkAtoms::file, nsGkAtoms::view_source};
+
+// MatchPatternCore::mSchemes expects AtomSet due to it accepting potentially
+// any scheme in one of the (rare) cases, so we need to also offer AtomSet
+// variants for some of the StaticSchemeAtomSet above:
+#define DEFINE_STATIC_ATOM_SET(name, staticSet)               \
+  static already_AddRefed<AtomSet> name() {                   \
+    MOZ_ASSERT(NS_IsMainThread());                            \
+    static StaticRefPtr<AtomSet> sAtomSet;                    \
+    RefPtr<AtomSet> atomSet = sAtomSet;                       \
+    if (!atomSet) {                                           \
+      atomSet = sAtomSet = new AtomSet((staticSet).AsSpan()); \
+      ClearOnShutdown(&sAtomSet);                             \
+    }                                                         \
+    return atomSet.forget();                                  \
+  }
+
+DEFINE_STATIC_ATOM_SET(PermittedSchemes, kPermittedSchemes)
+DEFINE_STATIC_ATOM_SET(WildcardSchemes, kWildcardSchemes)
 
 #undef DEFINE_STATIC_ATOM_SET
 
@@ -196,10 +236,8 @@ bool URLInfo::InheritsPrincipal() const {
 }
 
 bool URLInfo::IsNonOpaqueURL() const {
-  MOZ_ASSERT(NS_IsMainThread());
   if (!mIsNonOpaqueURL.isSome()) {
-    RefPtr<AtomSet> nonOpaqueSchemes = NonOpaqueSchemes();
-    mIsNonOpaqueURL.emplace(nonOpaqueSchemes->Contains(Scheme()));
+    mIsNonOpaqueURL.emplace(kNonOpaqueSchemes.Contains(Scheme()));
   }
   return mIsNonOpaqueURL.ref();
 }
@@ -245,12 +283,11 @@ const nsCString& CookieInfo::RawHost() const {
 MatchPatternCore::MatchPatternCore(const nsAString& aPattern, bool aIgnorePath,
                                    bool aRestrictSchemes, ErrorResult& aRv) {
   MOZ_ASSERT(NS_IsMainThread());
-  RefPtr<AtomSet> permittedSchemes = PermittedSchemes();
 
   mPattern = aPattern;
 
   if (aPattern.EqualsLiteral("<all_urls>")) {
-    mSchemes = permittedSchemes;
+    mSchemes = PermittedSchemes();
     mMatchSubdomain = true;
     return;
   }
@@ -272,11 +309,10 @@ MatchPatternCore::MatchPatternCore(const nsAString& aPattern, bool aIgnorePath,
   bool requireHostLocatorScheme = true;
   if (scheme == nsGkAtoms::_asterisk) {
     mSchemes = WildcardSchemes();
-  } else if (!aRestrictSchemes || permittedSchemes->Contains(scheme) ||
+  } else if (!aRestrictSchemes || kPermittedSchemes.Contains(scheme) ||
              scheme == nsGkAtoms::moz_extension) {
-    RefPtr<AtomSet> hostLocatorSchemes = HostLocatorSchemes();
     mSchemes = new AtomSet({scheme});
-    requireHostLocatorScheme = hostLocatorSchemes->Contains(scheme);
+    requireHostLocatorScheme = kHostLocatorSchemes.Contains(scheme);
   } else {
     aRv.Throw(NS_ERROR_INVALID_ARG);
     return;
@@ -363,6 +399,11 @@ bool MatchPatternCore::MatchesAllWebUrls() const {
 bool MatchPatternCore::MatchesAllUrlsWithScheme(const nsAtom* scheme) const {
   return (mSchemes->Contains(scheme) && DomainIsWildcard() &&
           (!mPath || mPath->IsWildcard()));
+}
+
+/* static */
+bool MatchPatternCore::MatchesAllURLs(const URLInfo& aURL) {
+  return kPermittedSchemes.Contains(aURL.Scheme());
 }
 
 bool MatchPatternCore::ContainsScheme(const nsAtom* scheme) const {
@@ -493,12 +534,6 @@ already_AddRefed<MatchPattern> MatchPattern::Constructor(
 JSObject* MatchPattern::WrapObject(JSContext* aCx,
                                    JS::Handle<JSObject*> aGivenProto) {
   return MatchPattern_Binding::Wrap(aCx, this, aGivenProto);
-}
-
-/* static */
-bool MatchPattern::MatchesAllURLs(const URLInfo& aURL) {
-  RefPtr<AtomSet> permittedSchemes = PermittedSchemes();
-  return permittedSchemes->Contains(aURL.Scheme());
 }
 
 NS_IMPL_CYCLE_COLLECTION_WRAPPERCACHE(MatchPattern, mParent)

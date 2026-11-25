@@ -15,6 +15,7 @@
 
 #include "mozilla/ClearOnShutdown.h"
 #include "mozilla/Maybe.h"
+#include "mozilla/Span.h"
 #include "nsCOMPtr.h"
 #include "nsCycleCollectionParticipant.h"
 #include "nsTArray.h"
@@ -40,6 +41,8 @@ class AtomSet final {
   explicit AtomSet(const nsTArray<nsString>& aElems);
 
   MOZ_IMPLICIT AtomSet(std::initializer_list<nsAtom*> aIL);
+
+  explicit AtomSet(Span<nsStaticAtom* const> aElems);
 
   bool Contains(const nsAString& elem) const {
     RefPtr<nsAtom> atom = NS_Atomize(elem);
@@ -109,8 +112,6 @@ class URLInfo final {
   // that document were to have an opaque origin (null principal).
   // These URLs are more verbose than the precursor (origin) of a null
   // principal, and therefore preferred for matching purposes.
-  //
-  // NOTE: This method is main-thread only
   bool IsNonOpaqueURL() const;
 
  private:
@@ -168,6 +169,10 @@ class MatchPatternCore final {
   bool MatchesAllWebUrls() const;
   // Helper for MatchPatternSetCore::MatchesAllWebUrls:
   bool MatchesAllUrlsWithScheme(const nsAtom* aScheme) const;
+
+  // A quick way to check if a particular URL matches <all_urls> without
+  // actually instantiating a MatchPattern. Callable from any thread.
+  static bool MatchesAllURLs(const URLInfo& aURL);
 
   bool ContainsScheme(const nsAtom* aScheme) const;
 
@@ -285,8 +290,10 @@ class MatchPattern final : public nsISupports, public nsWrapperCache {
 
  public:
   // A quick way to check if a particular URL matches <all_urls> without
-  // actually instantiating a MatchPattern
-  static bool MatchesAllURLs(const URLInfo& aURL);
+  // actually instantiating a MatchPattern.
+  static bool MatchesAllURLs(const URLInfo& aURL) {
+    return MatchPatternCore::MatchesAllURLs(aURL);
+  }
 };
 
 class MatchPatternSetCore final {
