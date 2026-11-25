@@ -160,6 +160,14 @@ tasks rather than raw task names, so you don't need to know platform strings.
 ./mach try perf --no-push          # print the selected tasks, push nothing
 ```
 
+Without a non-empty `-q`, an `fzf` picker opens and waits, even with `-t` or
+`--no-push`. Only `--alert` skips it. Each `-q` is a fuzzy filter that selects
+every category it matches, so check the result with `--no-push` first:
+
+```
+./mach try perf --no-push --platforms linux --apps firefox -q speedometer3 -q jetstream3
+```
+
 It creates **two** pushes: one with your patches, and one on the base revision
 they sit on. It prints a PerfCompare link that compares them once both finish.
 
@@ -171,7 +179,8 @@ Flags worth knowing:
 - `--variants fission live-sites profiling ...` — expand the category list
 - `--platforms` / `--apps` — narrow what the selector offers
 - `--chrome`, `--safari`, `--custom-car` — include other browsers (off by default)
-- `-t/--tests amazon speedometer3` — select every task running these tests
+- `-t/--tests amazon -q amazon` — replace the built-in categories with one per
+  named test, useful for tests with no category of their own; still needs `-q`
 - `--rebuild N` — run each selected task N times
 - `--extra-args post-startup-delay=1` — cut 30s per browser cycle
 
