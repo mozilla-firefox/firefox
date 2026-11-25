@@ -13785,10 +13785,11 @@
   mirror: always
 
 # Whether start() offers to download the on-device model for its language when
-# that model is supported but not installed yet, instead of failing the session
-# with service-not-allowed. The prompt and the download are install()'s; every
-# event, "start" included, waits for the model. Pages predating install() only
-# ever call start(), hence the default.
+# that model is supported but not installed yet, instead of failing the session.
+# The prompt and the download are install()'s, and so are its gates: the
+# on-device-speech-recognition Permissions Policy and transient user activation,
+# which start() then consumes. Every event, "start" included, waits for the
+# model. Pages predating install() only ever call start(), hence the default.
 - name: media.webspeech.recognition.install_on_start
   type: bool
   value: true

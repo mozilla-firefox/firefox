@@ -101,9 +101,9 @@ They are easy to conflate, so this is the one place that lists them all.
 
 | Mechanism | What it controls | Who sets it | Checked in |
 |---|---|---|---|
-| Permissions Policy `on-device-speech-recognition` | Per-frame: cross-origin iframes are blocked unless delegated | The embedding page (`allow="on-device-speech-recognition"` / `Permissions-Policy` header); `self` by default | `available()`, `install()` |
+| Permissions Policy `on-device-speech-recognition` | Per-frame: cross-origin iframes are blocked unless delegated | The embedding page (`allow="on-device-speech-recognition"` / `Permissions-Policy` header); `self` by default | `available()`, `install()`, and (if preffed on) the model download of `start()` |
 | AI Controls | Per-profile: the user disabling on-device AI globally or per-feature | The user, in `Settings > Firefox AI`; backed by `browser.ai.control.speechRecognition` (falls back to `browser.ai.control.default` when `"default"`) | `available()`, `install()`, `start()` |
-| Model-download permission doorhanger | Per install transaction (site + requested languages): whether this download may proceed | The user, once per transaction; not persisted | `install()` only |
+| Model-download permission doorhanger | Per install transaction (site + requested languages): whether this download may proceed | The user, once per transaction; not persisted | `install()`, and `start()` when `media.webspeech.recognition.install_on_start` is on |
 
 All three are checked before any IPC to the Utility process. A page that
 fails one of the first two never touches the model hub or inference backend.
@@ -115,7 +115,10 @@ Registered in `PermissionsPolicyUtils.cpp` with a default value of `self`, like
 `PermissionsPolicyUtils::IsFeatureAllowed(doc, u"on-device-speech-recognition"_ns)`.
 `available()` resolves `"unavailable"` when disallowed, matching the spec's
 availability algorithm, which never rejects. `install()` rejects with
-`NotAllowedError`. `start()` does not check this policy directly.
+`NotAllowedError`. `start()` only checks it before it offers to download a
+missing model. When disallowed, `start()` proceeds as if
+`media.webspeech.recognition.install_on_start` were off. It does the same
+without transient user activation, which it consumes, like `install()`.
 
 ### AI Controls
 
@@ -134,7 +137,9 @@ in `about:preferences`. Surfaced in the AI Controls settings UI via
 
 ### Model-download permission doorhanger
 
-Only relevant to `install()`. Before downloading model bytes, Gecko shows a
+Only relevant to `install()`, and to `start()` when
+`media.webspeech.recognition.install_on_start` is on. Before downloading model
+bytes, Gecko shows a
 permission doorhanger (prompt type `"speech-recognition-model-download"` in
 `ContentPermissionPrompt.sys.mjs` / `PermissionUI.sys.mjs`) naming the
 requesting site and the download size. There is no "remember this decision"

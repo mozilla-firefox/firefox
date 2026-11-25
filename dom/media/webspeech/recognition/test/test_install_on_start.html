@@ -13,7 +13,9 @@
 
 // start() on a language whose model is supported but not installed asks to
 // download it (the same prompt install() uses), delays every event until it
-// is there, and fires "not-allowed" if the download is refused.
+// is there, and fires "not-allowed" if the download is refused. Like
+// install(), it only asks with transient user activation, and when the
+// on-device-speech-recognition Permissions Policy allows it.
 //
 // Uses the in-process model hub mock, where nothing is installed to begin
 // with, and the prompt-testing pref, where
@@ -38,14 +40,17 @@ function sessionOutcome(sr) {
   });
 }
 
-function audioTrack() {
-  const ctx = new AudioContext();
+function audioTrack(win = window) {
+  const ctx = new win.AudioContext();
   return ctx.createMediaStreamDestination().stream.getAudioTracks()[0];
 }
 
 // Starts a session on a language whose model is not installed yet, with the
 // prompt answered by allowDownload.
-async function startSession(allowDownload) {
+async function startSession(
+  allowDownload,
+  { win = window, gesture = true } = {}
+) {
   await SpecialPowers.pushPrefEnv({
     set: [
       ["media.webspeech.recognition.enable", true],
@@ -55,11 +60,46 @@ async function startSession(allowDownload) {
     ],
   });
 
-  const sr = new SpeechRecognition();
+  const sr = new win.SpeechRecognition();
   sr.lang = LANG;
   const outcome = sessionOutcome(sr);
-  sr.start(audioTrack());
+  if (gesture) {
+    SpecialPowers.wrap(win.document).notifyUserGestureActivation();
+  }
+  sr.start(audioTrack(win));
   return { sr, outcome };
+}
+
+// The prompt would allow the download, so only start()'s gates can keep the
+// model from being installed. start() then proceeds as with install_on_start
+// off: the mock backend runs without a model, a real one fails the session.
+async function isNotOffered({ sr, outcome }, why) {
+  await new Promise(resolve => {
+    sr.addEventListener("start", resolve, { once: true });
+    sr.addEventListener("end", resolve, { once: true });
+  });
+  sr.abort();
+  await outcome;
+
+  const opts = { langs: [LANG], processLocally: true };
+  isnot(await SpeechRecognition.available(opts), "available",
+        `start() did not install the model ${why}`);
+
+  await SpecialPowers.popPrefEnv();
+}
+
+async function noUserActivationIsNotOffered() {
+  await isNotOffered(await startSession(true, { gesture: false }),
+                     "without user activation");
+}
+
+async function disallowedFrameIsNotOffered() {
+  const iframe = document.createElement("iframe");
+  iframe.allow = "on-device-speech-recognition 'none'";
+  document.body.appendChild(iframe);
+  await isNotOffered(await startSession(true, { win: iframe.contentWindow }),
+                     "where Permissions Policy disallows it");
+  iframe.remove();
 }
 
 async function refusedDownloadFailsTheSession() {
@@ -92,6 +132,8 @@ async function allowedDownloadStartsTheSession() {
 
 (async () => {
   try {
+    await noUserActivationIsNotOffered();
+    await disallowedFrameIsNotOffered();
     await refusedDownloadFailsTheSession();
     await allowedDownloadStartsTheSession();
   } catch (e) {

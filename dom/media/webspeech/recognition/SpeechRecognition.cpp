@@ -950,9 +950,15 @@ void SpeechRecognition::StartImpl(MediaStreamTrack* aAudioTrack,
 
   // Pages predating install() just call start(): offer to download the model
   // rather than failing the session. No event has fired yet, so it merely
-  // starts later. With no language there is no model to ask for.
+  // starts later. With no language there is no model to ask for. The offer
+  // clears the same gates as install(), and otherwise start() proceeds as if
+  // the pref were off.
+  Document* doc = win->GetExtantDoc();
   if (!StaticPrefs::media_webspeech_recognition_install_on_start() ||
-      effectiveLang.IsEmpty()) {
+      effectiveLang.IsEmpty() || !doc ||
+      !PermissionsPolicyUtils::IsFeatureAllowed(
+          doc, u"on-device-speech-recognition"_ns) ||
+      !doc->ConsumeTransientUserGestureActivation()) {
     BeginSession(std::move(session));
     return;
   }
