@@ -36,6 +36,7 @@ import androidx.compose.material3.Surface
 import androidx.compose.material3.Text
 import androidx.compose.material3.TopAppBar
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.remember
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
@@ -53,6 +54,7 @@ import androidx.compose.ui.text.style.TextDecoration
 import androidx.compose.ui.text.withStyle
 import androidx.compose.ui.tooling.preview.PreviewParameter
 import androidx.compose.ui.unit.dp
+import java.text.NumberFormat
 import kotlin.time.Instant
 import mozilla.components.ExperimentalAndroidComponentsApi
 import mozilla.components.compose.base.LinkText
@@ -82,16 +84,20 @@ import mozilla.components.feature.ipprotection.store.state.ipProtectionStatus
 import mozilla.components.service.nimbus.messaging.Message
 import mozilla.components.service.nimbus.messaging.MessageData
 import mozilla.components.service.nimbus.messaging.StyleData
+import mozilla.components.service.nimbus.messaging.types.VpnSettingsMessage
 import mozilla.components.ui.icons.R as iconsR
 import org.mozilla.experiments.nimbus.NullVariables
 import org.mozilla.experiments.nimbus.StringHolder
 import org.mozilla.fenix.R
 import org.mozilla.fenix.compose.list.TextListItem
 import org.mozilla.fenix.compose.settings.SettingsSectionHeader
+import org.mozilla.fenix.nimbus.FxNimbus
 import org.mozilla.fenix.settings.ipprotection.IPProtectionMessageCard
 import org.mozilla.fenix.theme.FirefoxTheme
 
 private val PROMO_ILLUSTRATION_SIZE = 60.dp
+private const val MESSAGE_TITLE_KEY_FXA_LIMIT = "fxa_data_limit_gb"
+private const val MESSAGE_TITLE_KEY_GPI_LIMIT = "gpi_data_limit_gb"
 
 /**
  * The main VPN / IP Protection settings screen.
@@ -347,6 +353,25 @@ private fun DataLimitSection(
 
 @Composable
 private fun MessageCard(message: Message, onMessageClick: (Message) -> Unit, onMessageDismiss: (Message) -> Unit) {
+    val feature = FxNimbus.features.ipProtection.value()
+    val locale = LocalLocale.current
+    val numberFormat = remember(locale) { NumberFormat.getIntegerInstance(locale.platformLocale) }
+
+    val vpnMessage =
+        VpnSettingsMessage.createFrom(
+            message = message,
+            locale = locale.platformLocale,
+            titleArgsReplacements =
+                buildMap {
+                    numberFormat.safeFormat(feature.dataLimitGigabyte)?.let {
+                        put(MESSAGE_TITLE_KEY_FXA_LIMIT, it)
+                    }
+                    numberFormat.safeFormat(feature.gpiDataLimitGigabytes)?.let {
+                        put(MESSAGE_TITLE_KEY_GPI_LIMIT, it)
+                    }
+                },
+        ) ?: return
+
     IPProtectionMessageCard(
         modifier =
             Modifier.padding(
@@ -355,10 +380,19 @@ private fun MessageCard(message: Message, onMessageClick: (Message) -> Unit, onM
                     bottom = FirefoxTheme.layout.space.static150,
                 )
                 .fillMaxWidth(),
-        message = message,
+        message = vpnMessage,
         onAction = onMessageClick,
         onDismiss = onMessageDismiss,
     )
+}
+
+@Composable
+private fun NumberFormat.safeFormat(value: Int): String? {
+    return try {
+        format(value)
+    } catch (_: NumberFormatException) {
+        null
+    }
 }
 
 @Composable

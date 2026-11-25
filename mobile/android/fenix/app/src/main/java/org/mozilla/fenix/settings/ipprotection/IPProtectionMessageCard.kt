@@ -21,6 +21,7 @@ import mozilla.components.compose.base.theme.informationContainer
 import mozilla.components.service.nimbus.messaging.Message
 import mozilla.components.service.nimbus.messaging.MessageData
 import mozilla.components.service.nimbus.messaging.StyleData
+import mozilla.components.service.nimbus.messaging.types.VpnSettingsMessage
 import org.mozilla.experiments.nimbus.NullVariables
 import org.mozilla.experiments.nimbus.StringHolder
 import org.mozilla.fenix.R
@@ -29,37 +30,35 @@ import org.mozilla.fenix.theme.FirefoxTheme
 /**
  * UI component for showing a message on the VPN screen.
  *
- * @param message The [Message] object
+ * @param message The [VpnSettingsMessage] object
  * @param modifier Modifier for the component
  * @param onAction Callback invoked when the message's action is clicked
  * @param onDismiss Callback invoked when the message is dismissed
  */
 @Composable
 internal fun IPProtectionMessageCard(
-    message: Message,
+    message: VpnSettingsMessage,
     modifier: Modifier = Modifier,
     onAction: (message: Message) -> Unit = {},
     onDismiss: ((message: Message) -> Unit)? = null,
 ) {
     PromoCard(
         modifier = modifier,
-        title = message.title?.takeIf { it.isNotBlank() },
+        title = message.title,
         footer =
-            message.buttonLabel
-                ?.takeIf { it.isNotBlank() }
-                ?.let { label ->
-                    label to
-                        LinkTextState(
-                            text = label,
-                            url = "",
-                            onClick = { onAction(message) },
-                        )
-                },
-        description = message.text.takeIf { it.isNotBlank() },
+            message.actionText?.let { label ->
+                label to
+                    LinkTextState(
+                        text = label,
+                        url = "",
+                        onClick = { onAction(message.original) },
+                    )
+            },
+        description = message.text,
         colors = PromoCardColors.promoCardColors(backgroundColor = MaterialTheme.colorScheme.informationContainer),
         closeButtonContentDescription =
             if (onDismiss != null) stringResource(R.string.ip_protection_settings_message_dismiss) else null,
-        onDismiss = onDismiss?.let { dismiss -> { dismiss(message) } },
+        onDismiss = onDismiss?.let { dismiss -> { dismiss(message.original) } },
     )
 }
 
@@ -73,18 +72,20 @@ private fun PreviewIPProtectionMessageCard(@PreviewParameter(PreviewThemeProvide
             modifier = Modifier.fillMaxWidth(),
             onAction = {},
             message =
-                Message(
-                    id = "123",
-                    data =
-                        MessageData(
-                            title = StringHolder(null, "Boost your VPN data limit to 50 GB"),
-                            buttonLabel = StringHolder(null, "Sign in"),
-                        ),
-                    action = "action",
-                    style = StyleData(),
-                    triggerIfAll = emptyList(),
-                    metadata = Message.Metadata(id = ""),
-                ),
+                VpnSettingsMessage.createFrom(
+                    Message(
+                        id = "123",
+                        data =
+                            MessageData(
+                                title = StringHolder(null, "Boost your VPN data limit to 50 GB"),
+                                buttonLabel = StringHolder(null, "Sign in"),
+                            ),
+                        action = "action",
+                        style = StyleData(),
+                        triggerIfAll = emptyList(),
+                        metadata = Message.Metadata(id = ""),
+                    )
+                )!!,
         ) {}
     }
 }
