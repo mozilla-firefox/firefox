@@ -26,6 +26,7 @@
 #include "mozilla/RandomNum.h"
 #include "mozilla/ScopeExit.h"
 #include "mozilla/Services.h"
+#include "mozilla/StaticPrefs_network.h"
 #include "mozilla/StaticPrefs_security.h"
 #include "mozilla/TimeStamp.h"
 #include "mozilla/glean/SecurityManagerSslMetrics.h"
@@ -1883,6 +1884,12 @@ nsresult nsSSLIOLayerAddToSocket(int32_t family, const char* host, int32_t port,
   if (SSL_SetResumptionTokenCallback(sslSock, &StoreResumptionToken,
                                      infoObject) != SECSuccess) {
     return NS_ERROR_FAILURE;
+  }
+  // Only plaintext tokens resume after a restart.
+  if (StaticPrefs::network_ssl_tokens_cache_persistence() &&
+      SSL_EnablePlaintextResumptionExport(sslSock, PR_TRUE) != SECSuccess) {
+    MOZ_LOG(gPIPNSSLog, LogLevel::Debug,
+            ("[%p] Plaintext resumption export unavailable", (void*)sslSock));
   }
 
   MOZ_LOG(gPIPNSSLog, LogLevel::Debug, ("[%p] Socket set up", (void*)sslSock));

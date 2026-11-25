@@ -3,7 +3,8 @@
  * file, You can obtain one at http://mozilla.org/MPL/2.0/. */
 
 // Tests the token telemetry of HTTP/3 connections: rejected and failed tokens in
-// network.ssl_token_resumption.
+// network.ssl_token_resumption, and network.ssl_token_cache_wrapped_not_persisted
+// for the tokens HTTP/3 stores, whose secrets are never exported in plaintext.
 
 "use strict";
 
@@ -15,6 +16,7 @@ const kUrl = "https://foo.example.com/30";
 
 registerCleanupFunction(async () => {
   http3_clear_prefs();
+  Services.prefs.clearUserPref("network.ssl_tokens_cache_persistence");
   Services.prefs.clearUserPref("network.http.http3.0rtt_timeout");
   Services.prefs.clearUserPref("network.http.http3.idle_timeout");
   Services.prefs.clearUserPref("network.http.speculative-parallel-limit");
@@ -122,3 +124,18 @@ add_task(
     assertTokenResumption({ "h3_session/failed": 1 });
   }
 );
+
+add_task(async function test_wrapped_token_counted_only_with_persistence() {
+  for (let [persist, expected] of [
+    [false, null],
+    [true, 1],
+  ]) {
+    await resetTokensAndTelemetry();
+    Services.prefs.setBoolPref("network.ssl_tokens_cache_persistence", persist);
+    await openFreshH3Connection();
+    Assert.equal(
+      Glean.network.sslTokenCacheWrappedNotPersisted.testGetValue(),
+      expected
+    );
+  }
+});

@@ -49,7 +49,7 @@
 
 #define SSL_TOKENS_CACHE_DB_FILE "ssl_tokens_cache.sqlite"
 
-constexpr int32_t kSSLTokensCacheSchemaVersion = 1;
+constexpr int32_t kSSLTokensCacheSchemaVersion = 2;
 
 // Matches network.cookie.db.flushIntervalMs.
 constexpr uint32_t kDBDeleteFlushDelayMs = 500;
@@ -521,10 +521,10 @@ void SSLTokensCache::CollectRecordInfosLocked(
     nsTArray<SSLTokensCacheRecordInfo>& aOut,
     bool aFilterForPersistence) const {
   sLock.AssertCurrentThreadOwns();
+  PRTime now = PR_Now();
   for (const auto& entry : mTokenCacheRecords.Values()) {
     for (const auto& rec : entry->Records()) {
-      if (aFilterForPersistence &&
-          !ShouldPersistKey(rec->mKey, rec->mOverridableError)) {
+      if (aFilterForPersistence && !ShouldPersist(*rec, now)) {
         continue;
       }
       auto info = aOut.AppendElement();
@@ -747,7 +747,8 @@ nsresult SSLTokensCache::CreateSchemaOn(mozIStorageConnection* aConn) {
                        "key TEXT NOT NULL,"
                        "expiration_time INTEGER NOT NULL,"
                        "overridable_error INTEGER NOT NULL,"
-                       "payload BLOB NOT NULL)"));
+                       "payload BLOB NOT NULL);"
+                       "CREATE INDEX ssl_tokens_key ON ssl_tokens (key)"));
 }
 
 // static
@@ -878,7 +879,6 @@ uint32_t SSLTokensCache::LoadValidRecordsFrom(mozIStorageConnection* aConn,
 nsresult SSLTokensCache::Put(const nsACString& aKey, const uint8_t* aToken,
                              uint32_t aTokenLen,
                              CommonSocketControl* aSocketControl) {
-  PRTime expirationTime;
   SSLResumptionTokenInfo tokenInfo;
   if (SSL_GetResumptionTokenInfoWithFlags(
           aToken, aTokenLen, &tokenInfo, sizeof(tokenInfo),
@@ -888,17 +888,19 @@ nsresult SSLTokensCache::Put(const nsACString& aKey, const uint8_t* aToken,
     return NS_ERROR_FAILURE;
   }
 
-  expirationTime = tokenInfo.expirationTime;
+  PRTime expirationTime = tokenInfo.expirationTime;
+  bool plaintextSecret = tokenInfo.plaintextSecret;
   SSL_DestroyResumptionTokenInfo(&tokenInfo);
 
-  return Put(aKey, aToken, aTokenLen, aSocketControl, expirationTime);
+  return Put(aKey, aToken, aTokenLen, aSocketControl, expirationTime,
+             plaintextSecret);
 }
 
 // static
 nsresult SSLTokensCache::Put(const nsACString& aKey, const uint8_t* aToken,
                              uint32_t aTokenLen,
                              CommonSocketControl* aSocketControl,
-                             PRTime aExpirationTime) {
+                             PRTime aExpirationTime, bool aPlaintextSecret) {
   LOG(("SSLTokensCache::Put [key=%s, tokenLen=%u]",
        PromiseFlatCString(aKey).get(), aTokenLen));
 
@@ -1013,16 +1015,14 @@ nsresult SSLTokensCache::Put(const nsACString& aKey, const uint8_t* aToken,
       return NS_ERROR_NOT_INITIALIZED;
     }
 
-    auto makeRecord = [&]() MOZ_REQUIRES(sLock) {
-      auto rec = std::make_unique<TokenCacheRecord>();
-      rec->mKey = aKey;
-      rec->mExpirationTime = aExpirationTime;
-      rec->mOverridableError = static_cast<uint8_t>(overridableErrorCategory);
-      rec->mCompressedPayload = std::move(compressed);
-      return rec;
-    };
-
-    gInstance->InsertRecordLocked(makeRecord());
+    auto rec = MakeRecord(
+        aKey, aExpirationTime, static_cast<uint8_t>(overridableErrorCategory),
+        /* aRestored */ false, aPlaintextSecret, std::move(compressed));
+    if (StaticPrefs::network_ssl_tokens_cache_persistence() &&
+        !aPlaintextSecret && ShouldPersistIgnoringPlaintext(*rec, PR_Now())) {
+      mozilla::glean::network::ssl_token_cache_wrapped_not_persisted.Add(1);
+    }
+    gInstance->InsertRecordLocked(std::move(rec));
     gInstance->LogStats();
 
   }  // sLock released
@@ -1415,12 +1415,14 @@ void SSLTokensCache::OnLoadCompleteNotify(uint32_t aCount) {
 // static
 UniquePtr<SSLTokensCache::TokenCacheRecord> SSLTokensCache::MakeRecord(
     const nsACString& aKey, PRTime aExpirationTime, uint8_t aOverridableError,
-    bool aRestored, nsTArray<uint8_t>&& aCompressedPayload) {
+    bool aRestored, bool aPlaintextSecret,
+    nsTArray<uint8_t>&& aCompressedPayload) {
   auto rec = std::make_unique<TokenCacheRecord>();
   rec->mKey = aKey;
   rec->mExpirationTime = aExpirationTime;
   rec->mOverridableError = aOverridableError;
   rec->mRestored = aRestored;
+  rec->mPlaintextSecret = aPlaintextSecret;
   rec->mCompressedPayload = std::move(aCompressedPayload);
   return rec;
 }
@@ -1435,9 +1437,10 @@ bool SSLTokensCache::PutFromPersisted(const SSLTokensCacheRecordInfo& aRec,
   if (MatchesAny(gInstance->mRemovalsBeforeLoad, aRec.key)) {
     return false;
   }
-  auto rec = MakeRecord(aRec.key, static_cast<PRTime>(aRec.expirationTime),
-                        aRec.overridableError, aRestored,
-                        aRec.compressedPayload.Clone());
+  auto rec =
+      MakeRecord(aRec.key, static_cast<PRTime>(aRec.expirationTime),
+                 aRec.overridableError, aRestored,
+                 /* aPlaintextSecret */ true, aRec.compressedPayload.Clone());
   gInstance->InsertRecordLocked(std::move(rec));
   return true;
 }
@@ -1719,9 +1722,15 @@ bool SSLTokensCache::MatchesAny(const nsTArray<StringPredicate>& aPredicates,
 }
 
 // static
-bool SSLTokensCache::ShouldPersistKey(const nsACString& aKey,
-                                      uint8_t aOverridableError) {
-  return aOverridableError == 0 && OAFromPeerId(aKey).mPrivateBrowsingId == 0;
+bool SSLTokensCache::ShouldPersist(const TokenCacheRecord& aRec, PRTime aNow) {
+  return aRec.mPlaintextSecret && ShouldPersistIgnoringPlaintext(aRec, aNow);
+}
+
+// static
+bool SSLTokensCache::ShouldPersistIgnoringPlaintext(
+    const TokenCacheRecord& aRec, PRTime aNow) {
+  return aRec.mExpirationTime > aNow && aRec.mOverridableError == 0 &&
+         OAFromPeerId(aRec.mKey).mPrivateBrowsingId == 0;
 }
 
 // static
@@ -1893,6 +1902,7 @@ void SSLTokensCache::ReplaceAllRecordsForTest(
   for (auto& info : aRecords) {
     auto rec = MakeRecord(info.key, static_cast<PRTime>(info.expirationTime),
                           info.overridableError, info.restored,
+                          /* aPlaintextSecret */ true,
                           std::move(info.compressedPayload));
     gInstance->InsertRecordLocked(std::move(rec));
   }

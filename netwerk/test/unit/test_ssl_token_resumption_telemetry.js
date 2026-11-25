@@ -63,6 +63,7 @@ add_setup(needsFaultyServer(), async () => {
     Services.prefs.clearUserPref("network.dns.preferIPv6");
     Services.prefs.clearUserPref("network.http.connection-timeout");
     Services.prefs.clearUserPref("network.http.tls-handshake-timeout");
+    Services.prefs.clearUserPref("network.ssl_tokens_cache_persistence");
   });
 });
 
@@ -182,6 +183,22 @@ add_task(
     [, buf] = await openFreshConnection(kDeclineRequestCertHost);
     ok(buf, "third connection succeeded");
     assertTokenResumption({});
+  }
+);
+
+add_task(
+  needsFaultyServer(),
+  async function test_plaintext_token_not_counted_as_wrapped() {
+    await resetTokensAndTelemetry();
+    Services.prefs.setBoolPref("network.ssl_tokens_cache_persistence", true);
+
+    let [, buf] = await openFreshConnection();
+    ok(buf, "connection succeeded");
+    Assert.equal(
+      Glean.network.sslTokenCacheWrappedNotPersisted.testGetValue(),
+      null
+    );
+    Services.prefs.clearUserPref("network.ssl_tokens_cache_persistence");
   }
 );
 

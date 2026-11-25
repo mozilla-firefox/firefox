@@ -3,6 +3,10 @@
 #include "SSLTokensCache.h"
 #include "TransportSecurityInfo.h"
 #include "gtest/gtest.h"
+#include "mozIStorageConnection.h"
+#include "mozIStorageService.h"
+#include "mozIStorageStatement.h"
+#include "mozStorageCID.h"
 #include "mozilla/Preferences.h"
 #include "mozilla/glean/NetwerkMetrics.h"
 #include "mozilla/gtest/MozAssertions.h"
@@ -59,12 +63,23 @@ static auto MakeTestData(const size_t aDataSize) {
   return data;
 }
 
-static void putTokenWithExpiry(const nsACString& aKey, uint32_t aSize,
-                               PRTime aExpiry) {
+static PRTime OneHourFromNow() {
+  return PR_Now() + PRTime(3600) * PR_USEC_PER_SEC;
+}
+
+static void putTokenWithExpiry(
+    const nsACString& aKey, uint32_t aSize, PRTime aExpiry,
+    bool aPlaintextSecret = true,
+    nsITransportSecurityInfo::OverridableErrorCategory aError =
+        nsITransportSecurityInfo::OverridableErrorCategory::ERROR_UNSET) {
   RefPtr<CommonSocketControl> socketControl = createDummySocketControl();
+  if (aError !=
+      nsITransportSecurityInfo::OverridableErrorCategory::ERROR_UNSET) {
+    socketControl->SetStatusErrorBits(aError);
+  }
   nsTArray<uint8_t> token = MakeTestData(aSize);
-  nsresult rv = mozilla::net::SSLTokensCache::Put(aKey, token.Elements(), aSize,
-                                                  socketControl, aExpiry);
+  nsresult rv = mozilla::net::SSLTokensCache::Put(
+      aKey, token.Elements(), aSize, socketControl, aExpiry, aPlaintextSecret);
   ASSERT_EQ(rv, NS_OK);
 }
 
@@ -242,6 +257,41 @@ static void CorruptFileAt(const nsCString& aPath, size_t aOffset,
   fclose(f);
 }
 
+static already_AddRefed<mozIStorageConnection> OpenCacheDB(
+    const nsCString& aPath) {
+  nsCOMPtr<mozIStorageService> storage =
+      do_GetService(MOZ_STORAGE_SERVICE_CONTRACTID);
+  nsCOMPtr<nsIFile> file;
+  nsCOMPtr<mozIStorageConnection> conn;
+  if (storage &&
+      NS_SUCCEEDED(NS_NewNativeLocalFile(aPath, getter_AddRefs(file)))) {
+    (void)storage->OpenUnsharedDatabase(
+        file, mozIStorageService::CONNECTION_DEFAULT, getter_AddRefs(conn));
+  }
+  return conn.forget();
+}
+
+// Row count of the cache file at aPath, or -1 if it can't be read.
+static int64_t CountCacheRows(const nsCString& aPath) {
+  nsCOMPtr<mozIStorageConnection> conn = OpenCacheDB(aPath);
+  if (!conn) {
+    return -1;
+  }
+  int64_t count = -1;
+  nsCOMPtr<mozIStorageStatement> stmt;
+  bool hasRow = false;
+  if (NS_SUCCEEDED(conn->CreateStatement("SELECT COUNT(*) FROM ssl_tokens"_ns,
+                                         getter_AddRefs(stmt))) &&
+      NS_SUCCEEDED(stmt->ExecuteStep(&hasRow)) && hasRow) {
+    count = stmt->AsInt64(0);
+  }
+  if (stmt) {
+    stmt->Finalize();
+  }
+  conn->Close();
+  return count;
+}
+
 TEST(TestTokensCache, ExpiredTokens)
 {
   mozilla::net::SSLTokensCache::Clear();
@@ -361,21 +411,12 @@ TEST(TestTokensCache, PersistenceExpiryFiltering)
   ClearAll();
   nsCString path = GetTempCachePath("test_tls_tc_expiry.sqlite");
 
-  PRTime now = PR_Now();
-  RefPtr<CommonSocketControl> sc = createDummySocketControl();
-  nsTArray<uint8_t> expiredToken = MakeTestData(100);
-  nsTArray<uint8_t> validToken = MakeTestData(200);
-
-  ASSERT_EQ(mozilla::net::SSLTokensCache::Put(
-                "anon:example.com:443"_ns, expiredToken.Elements(), 100, sc,
-                now - PRTime(1) * PR_USEC_PER_SEC),
-            NS_OK);
-  ASSERT_EQ(mozilla::net::SSLTokensCache::Put(
-                "anon:example.com:443"_ns, validToken.Elements(), 200, sc,
-                now + PRTime(3600) * PR_USEC_PER_SEC),
-            NS_OK);
+  putTokenWithExpiry("anon:example.com:443"_ns, 100,
+                     PR_Now() - PRTime(1) * PR_USEC_PER_SEC);
+  putTokenWithExpiry("anon:example.com:443"_ns, 200, OneHourFromNow());
 
   mozilla::net::SSLTokensCache::TriggerWriteForTest(path);
+  ASSERT_EQ(CountCacheRows(path), 1);
   ClearAll();
   mozilla::net::SSLTokensCache::LoadForTest(path);
 
@@ -388,6 +429,75 @@ TEST(TestTokensCache, PersistenceExpiryFiltering)
   ASSERT_EQ(mozilla::net::SSLTokensCache::Get("anon:example.com:443"_ns, result,
                                               unused),
             NS_ERROR_NOT_AVAILABLE);
+}
+
+TEST(TestTokensCache, PersistenceSkipsWrappedTokens)
+{
+  ClearAll();
+  nsCString path = GetTempCachePath("test_tls_tc_wrapped.sqlite");
+  PRTime expiry = OneHourFromNow();
+
+  putTokenWithExpiry("anon:wrapped.example.com:443"_ns, 100, expiry,
+                     /* aPlaintextSecret */ false);
+  putTokenWithExpiry("anon:plain.example.com:443"_ns, 200, expiry);
+  mozilla::net::SSLTokensCache::TriggerWriteForTest(path);
+  ASSERT_EQ(CountCacheRows(path), 1);
+
+  ClearAll();
+  mozilla::net::SSLTokensCache::LoadForTest(path);
+  nsTArray<uint8_t> result;
+  mozilla::net::SessionCacheInfo unused;
+  ASSERT_EQ(mozilla::net::SSLTokensCache::Get("anon:wrapped.example.com:443"_ns,
+                                              result, unused),
+            NS_ERROR_NOT_AVAILABLE);
+  getAndCheckResult("anon:plain.example.com:443"_ns, 200);
+}
+
+TEST(TestTokensCache, PersistenceSkipsPrivateAndOverriddenTokens)
+{
+  ClearAll();
+  nsCString path = GetTempCachePath("test_tls_tc_skipped.sqlite");
+  PRTime expiry = OneHourFromNow();
+
+  putTokenWithExpiry("anon:pbm.example.com:443^privateBrowsingId=1"_ns, 100,
+                     expiry);
+  putTokenWithExpiry(
+      "anon:override.example.com:443"_ns, 100, expiry,
+      /* aPlaintextSecret */ true,
+      nsITransportSecurityInfo::OverridableErrorCategory::ERROR_DOMAIN);
+  mozilla::net::SSLTokensCache::TriggerWriteForTest(path);
+
+  ASSERT_EQ(CountCacheRows(path), 0);
+}
+
+TEST(TestTokensCache, PersistenceDropsOldSchema)
+{
+  ClearAll();
+  nsCString path = GetTempCachePath("test_tls_tc_v1.sqlite");
+  {
+    nsCOMPtr<mozIStorageConnection> conn = OpenCacheDB(path);
+    ASSERT_TRUE(conn);
+    ASSERT_NS_SUCCEEDED(conn->SetSchemaVersion(1));
+    ASSERT_NS_SUCCEEDED(conn->ExecuteSimpleSQL(
+        "CREATE TABLE ssl_tokens (key TEXT NOT NULL, expiration_time INTEGER "
+        "NOT NULL, overridable_error INTEGER NOT NULL, payload BLOB NOT NULL);"
+        "INSERT INTO ssl_tokens VALUES ('anon:old.example.com:443', "
+        "9223372036854775807, 0, x'00')"_ns));
+    conn->Close();
+  }
+
+  mozilla::net::SSLTokensCache::TriggerWriteForTest(path);
+
+  ASSERT_EQ(CountCacheRows(path), 0);
+  nsCOMPtr<mozIStorageConnection> conn = OpenCacheDB(path);
+  ASSERT_TRUE(conn);
+  int32_t version = 0;
+  ASSERT_NS_SUCCEEDED(conn->GetSchemaVersion(&version));
+  ASSERT_EQ(version, 2);
+  bool indexExists = false;
+  ASSERT_NS_SUCCEEDED(conn->IndexExists("ssl_tokens_key"_ns, &indexExists));
+  ASSERT_TRUE(indexExists);
+  conn->Close();
 }
 
 // A corrupt header makes OpenUnsharedDatabase fail with

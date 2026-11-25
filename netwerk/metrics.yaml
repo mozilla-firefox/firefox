@@ -3202,6 +3202,21 @@ network:
       - necko@mozilla.com
     expires: never
 
+  ssl_token_cache_wrapped_not_persisted:
+    type: counter
+    description: >
+      Counts session resumption tokens that would have been persisted to disk
+      if their resumption secret had been exported in plaintext.
+    bugs:
+      - https://bugzilla.mozilla.org/show_bug.cgi?id=2090845
+    data_reviews:
+      - https://bugzilla.mozilla.org/show_bug.cgi?id=2090845
+    data_sensitivity:
+      - technical
+    notification_emails:
+      - necko@mozilla.com
+    expires: never
+
   ssl_token_cache_expired:
     type: counter
     description: >

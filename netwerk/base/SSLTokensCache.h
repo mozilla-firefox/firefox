@@ -74,7 +74,7 @@ class SSLTokensCache : public nsIMemoryReporter,
                       uint32_t aTokenLen, CommonSocketControl* aSocketControl);
   static nsresult Put(const nsACString& aKey, const uint8_t* aToken,
                       uint32_t aTokenLen, CommonSocketControl* aSocketControl,
-                      PRTime aExpirationTime);
+                      PRTime aExpirationTime, bool aPlaintextSecret = false);
   static nsresult Get(const nsACString& aKey, nsTArray<uint8_t>& aToken,
                       SessionCacheInfo& aResult, uint64_t* aTokenId = nullptr,
                       bool* aRestored = nullptr);
@@ -145,10 +145,12 @@ class SSLTokensCache : public nsIMemoryReporter,
   void EvictIfNecessary() MOZ_REQUIRES(sLock);
   void LogStats() MOZ_REQUIRES(sLock);
   void ClearCacheLocked() MOZ_REQUIRES(sLock);
-  // Returns true if a token for aKey with aOverridableError should be
-  // persisted to disk (not PBM and no cert-error override).
-  static bool ShouldPersistKey(const nsACString& aKey,
-                               uint8_t aOverridableError);
+  // Returns true if aRec should be persisted to disk (plaintext, unexpired, not
+  // PBM and no cert-error override).
+  static bool ShouldPersist(const TokenCacheRecord& aRec, PRTime aNow);
+  // ShouldPersist() without the plaintext requirement.
+  static bool ShouldPersistIgnoringPlaintext(const TokenCacheRecord& aRec,
+                                             PRTime aNow);
   static bool MatchesAny(const nsTArray<StringPredicate>& aPredicates,
                          const nsACString& aKey);
 
@@ -212,7 +214,8 @@ class SSLTokensCache : public nsIMemoryReporter,
   // Builds a TokenCacheRecord from its raw persisted fields.
   static UniquePtr<TokenCacheRecord> MakeRecord(
       const nsACString& aKey, PRTime aExpirationTime, uint8_t aOverridableError,
-      bool aRestored, nsTArray<uint8_t>&& aCompressedPayload);
+      bool aRestored, bool aPlaintextSecret,
+      nsTArray<uint8_t>&& aCompressedPayload);
 
   // Skips insertion, returning false, if Clear() bumped mLoadGeneration past
   // aExpectedGen since the load started.
@@ -278,7 +281,7 @@ class SSLTokensCache : public nsIMemoryReporter,
       StringPredicate&& aHostMatches) MOZ_EXCLUDES(sLock);
 
   // Snapshot owning its key and payload bytes, so it can cross threads and
-  // processes. aFilterForPersistence applies ShouldPersistKey.
+  // processes. aFilterForPersistence applies ShouldPersist.
   void CollectRecordInfosLocked(nsTArray<SSLTokensCacheRecordInfo>& aOut,
                                 bool aFilterForPersistence) const
       MOZ_REQUIRES(sLock);
@@ -303,13 +306,15 @@ class SSLTokensCache : public nsIMemoryReporter,
     // lets the compressor find redundancies across the NSS token and the cert
     // chain fields (both carry the same cert DER).
     nsTArray<uint8_t> mCompressedPayload;
-    // Cached separately to allow ShouldPersistKey() filtering without
+    // Cached separately to allow ShouldPersist() filtering without
     // decompressing the payload.
     uint8_t mOverridableError = 0;
     uint64_t mId = 0;
     // Not part of the on-storage format; in-memory only, for
     // about:networking and telemetry.
     bool mRestored = false;
+    // Only plaintext records resume after a restart.
+    bool mPlaintextSecret = false;
   };
 
   class TokenCacheEntry {
