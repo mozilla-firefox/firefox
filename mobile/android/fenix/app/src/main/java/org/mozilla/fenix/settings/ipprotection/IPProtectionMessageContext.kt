@@ -7,6 +7,7 @@ package org.mozilla.fenix.settings.ipprotection
 import mozilla.components.ExperimentalAndroidComponentsApi
 import mozilla.components.concept.engine.ipprotection.CurrentAuthProvider
 import mozilla.components.feature.ipprotection.store.state.IPProtectionState
+import mozilla.components.feature.ipprotection.store.state.IPProtectionStatus
 import mozilla.components.feature.ipprotection.store.state.ipProtectionStatus
 import org.mozilla.fenix.settings.isReadyToUse
 
@@ -23,6 +24,8 @@ internal fun IPProtectionState.toMessageContext(): Map<String, Any?> {
                         CurrentAuthProvider.Gpi -> "gpi"
                     },
                 "is_ready_to_use" to ipProtectionStatus.isReadyToUse(),
+                "is_enabled" to (ipProtectionStatus == IPProtectionStatus.Enabled),
+                "usage_reset_prompt_pending" to usageQuotaResetPromptPending,
             )
     )
 }

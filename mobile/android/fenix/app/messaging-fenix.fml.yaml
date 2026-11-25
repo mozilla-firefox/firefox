@@ -62,6 +62,9 @@ import:
               VPN_READY: "triggerContext.vpn.is_ready_to_use == true"
               VPN_AUTH_PROVIDER_GPI: "triggerContext.vpn.auth_provider == 'gpi'"
               VPN_AUTH_PROVIDER_FXA: "triggerContext.vpn.auth_provider == 'fxa'"
+              VPN_RESET_PROMPT_PENDING: >-
+                triggerContext.vpn.usage_reset_prompt_pending == true &&
+                triggerContext.vpn.is_enabled == false
 
               # Has the user signed in the last 4 years
               FXA_SIGNED_IN: "'sync_auth.sign_in'|eventLastSeen('Years', 0) <= 4"
@@ -128,6 +131,9 @@ import:
               SETTINGS_CARD_PERSISTENT:
                 priority: 50
                 max-display-count: 10000
+              SETTINGS_CARD_HIGH_PRIORITY:
+                priority: 60
+                max-display-count: 1
             $$surfaces:
               - homescreen
               - notification

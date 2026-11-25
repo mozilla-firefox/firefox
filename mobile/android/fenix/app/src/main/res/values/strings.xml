@@ -2843,6 +2843,12 @@
     <string name="ip_protection_learn_more">Learn more</string>
     <!-- Label for the monthly data allowance section on the browser VPN settings screen -->
     <string name="ip_protection_data_limit_label">Monthly data limit</string>
+    <!-- Title for the VPN data reset upsell card that is shown when a user is using VPN without a Firefox account and their data gets refreshed.
+         %1$s is the data limit in gigabytes that they are allowed to use without an account (e.g 50)
+      -->
+    <string name="ip_protection_settings_message_gpi_reset_upsell_title">%1$s GB of VPN, refreshed and ready to go</string>
+    <!-- Message for the VPN data reset upsell card that is shown when a user is using VPN without a Firefox account, and their data gets refreshed. -->
+    <string name="ip_protection_settings_message_gpi_reset_upsell_message">Turn on VPN for an extra privacy boost, free every month.</string>
     <!-- Accessibility description for the button that closes promotional banners or messages on the VPN settings screen (without triggering any effect) -->
     <string name="ip_protection_settings_message_dismiss">Dismiss</string>
     <!-- Title for the VPN sign-in upsell message.

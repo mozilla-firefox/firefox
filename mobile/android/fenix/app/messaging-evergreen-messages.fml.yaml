@@ -76,6 +76,25 @@ import:
                   - VPN_READY
                   - VPN_AUTH_PROVIDER_GPI
 
+              # This message displays the "data reset" VPN prompt when the user is using VPN without an account
+              # and has just received a data refresh
+              vpn-gpi-usage-reset-upsell:
+                title: ip_protection_settings_message_gpi_reset_upsell_title
+                text: ip_protection_settings_message_gpi_reset_upsell_message
+                button-label: ip_protection_settings_message_gpi_upsell_action
+                settings-vpn-config:
+                  title-args: [ gpi_data_limit_gb ] # real value resolved at runtime
+                surface: settings_vpn
+                action: FXA_BEGIN_AUTH
+                action-params:
+                  entry_point: vpn_integration_android_settings_upsell
+                  service: vpn
+                style: SETTINGS_CARD_HIGH_PRIORITY
+                trigger-if-all:
+                  - VPN_READY
+                  - VPN_AUTH_PROVIDER_GPI
+                  - VPN_RESET_PROMPT_PENDING
+
         # This message displays as a microsurvey prompt after the user taps on the `Print` menu.
         - channel: developer
           value:
