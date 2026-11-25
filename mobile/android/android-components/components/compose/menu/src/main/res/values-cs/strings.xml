@@ -21,6 +21,12 @@
   <string name="mozac_menu_customize_drag_to_hide">Přetažením sem sekce skryjete</string>
   <!-- Button text to reset the menu to default configuration -->
   <string name="mozac_menu_customize_reset_to_default">Obnovit výchozí nastavení</string>
+  <!-- Name of the action (used by screen readers, etc.) that moves a menu section up one position in the customize menu screen. It is also shown in the list of actions displayed when the user long-presses the drag handle of a menu section. -->
+  <string name="mozac_menu_customize_move_up">Posunout výše</string>
+  <!-- Name of the action (used by screen readers, etc.) that moves a menu section down one position in the customize menu screen. It is also shown in the list of actions displayed when the user long-presses the drag handle of a menu section. -->
+  <string name="mozac_menu_customize_move_down">Posunout níže</string>
+  <!-- Name of the action (used by screen readers, etc.) that hides a section in the customize menu screen. It is also shown in the list of actions displayed when the user long-presses the drag handle of a menu section. -->
+  <string name="mozac_menu_customize_hide">Skrýt sekci</string>
   <!-- Name of the action (used by screen readers, etc.) that shows a previously hidden menu section, placing it last among the visible sections in the customize menu screen. It is also shown in the list of actions displayed when the user long-presses the drag handle of a menu section. -->
   <string name="mozac_menu_customize_unhide">Znovu zobrazit sekci</string>
   <!-- Announcement (not visible, for screen readers etc.) once the user moved a menu section up or down in the customize menu screen. %1$s is the name of the section, or the names of its items separated by commas if it has none, for example "Page controls", "VPN" or "Back, Forward", %2$d its new position, from 1, and %3$d the number of sections shown in the menu. -->

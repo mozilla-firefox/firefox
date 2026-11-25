@@ -37,4 +37,8 @@
   <string name="mozac_feature_applinks_hide_details">تفصیل اتے ڈکبو</string>
   <!-- The label for the destination URL in the details section -->
   <string name="mozac_feature_applinks_destination_url">مزل لنک</string>
+  <!-- The text shown when there is no Firefox URL -->
+  <string name="mozac_feature_applinks_none">ہچ اف</string>
+  <!-- The subtitle showing where the link was navigated from. %s is the domain. -->
+  <string name="mozac_feature_applinks_link_from">%s ان لنک</string>
 </resources>

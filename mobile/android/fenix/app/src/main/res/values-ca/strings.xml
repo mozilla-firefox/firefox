@@ -933,6 +933,8 @@
   <string name="preference_downloads_folder_permission_lost" tools:ignore="UnusedResources">No teniu permís per a utilitzar aquesta carpeta. Trieu-ne una altra.</string>
   <!-- Preference title for choosing an app to handle downloads -->
   <string name="preferences_choose_app_for_downloads">Gestiona les baixades amb una altra aplicació</string>
+  <!-- Message shown when no app is available to let the user pick a download folder. -->
+  <string name="preferences_downloads_no_folder_picker_available">No s\'ha pogut obrir el selector de carpetes en aquest dispositiu.</string>
   <!-- Preference category for deleting or removing downloads -->
   <string name="preferences_category_delete_or_remove_downloads">Suprimiu o elimineu les baixades</string>
   <string name="preferences_downloads_delete_from_device">Suprimeix del dispositiu</string>
@@ -1179,6 +1181,14 @@
   <string name="preferences_category_sync">Dades sincronitzades</string>
   <!-- Preference title for the toggle that allows user to turn sync on or off for the device they are on -->
   <string name="preferences_enable_sync_title">Sincronitza aquest dispositiu</string>
+  <!-- Preference summary for the toggle that turns sync on or off for the device, shown when sync is on. -->
+  <string name="preferences_enable_sync_summary_sync_enabled">Les vostres dades estan disponibles en els dispositius sincronitzats.</string>
+  <!-- Preference summary for the toggle that turns sync on or off for the device, shown when sync is off. It explains where synced data comes from. -->
+  <string name="preferences_enable_sync_summary_sync_disabled_2">S\'estan utilitzant les dades desades al vostre compte.</string>
+  <!-- Preference summary for the toggle that turns sync on or off for the device, shown when sync is off. It explains where synced data comes from. %1$s is the Firefox brand name. -->
+  <string name="preferences_enable_sync_summary_sync_disabled">S\'estan utilitzant les dades desades al vostre compte del %1$s.</string>
+  <!-- Summary for the sync preference category. -->
+  <string name="preferences_sync_category_summary">Gestioneu què voleu sincronitzar en tots els vostres dispositius connectats</string>
   <!-- Summary for the sync preference category, when user has disabled all synchronisation items. -->
   <string name="preferences_sync_category_no_engine_selected_summary">No esteu sincronitzant res. Trieu què voleu sincronitzar en aquest dispositiu.</string>
   <!-- Preference for syncing history -->
@@ -1375,6 +1385,8 @@
   <string name="preference_tab_strip_show">Mostra la barra de pestanyes</string>
   <!-- Preference for tab bar placement (top or bottom of the screen) -->
   <string name="preference_tab_strip_location_header">Ubicació de la barra de pestanyes</string>
+  <!-- Preference for using top tab strip -->
+  <string name="preference_top_tab_strip">Superior</string>
   <!--
     Gestures Preferences
 
@@ -1407,6 +1419,8 @@
   <string name="library_desktop_bookmarks_unfiled">Altres adreces d’interès</string>
   <!-- Option in Library to open History page -->
   <string name="library_history">Historial</string>
+  <!-- Content description (not visible, for screen readers etc.) for the check mark that replaces a site's icon in History and Recently closed tabs when the item is selected -->
+  <string name="library_item_selected_content_description">Seleccionat</string>
   <!-- Settings Page Title -->
   <string name="settings_title">Paràmetres</string>
   <!-- Content description (not visible, for screen readers etc.): "Close button for library settings" -->
@@ -1457,6 +1471,8 @@
     Title of preference for tabs management
   -->
   <string name="preferences_tabs">Pestanyes</string>
+  <!-- Title of preference that allows a user to specify the tab layout -->
+  <string name="preferences_tab_layout">Disposició de les pestanyes</string>
   <!-- Option for a list tab view -->
   <string name="tab_view_list">Llista</string>
   <!-- Option for a grid tab view -->
@@ -1475,6 +1491,8 @@
   <string name="preference_auto_close_tabs" tools:ignore="UnusedResources">Tanca automàticament les pestanyes obertes</string>
   <!-- Content description (not visible, for screen readers etc.): Close tab button -->
   <string name="tab_manager_close_tabs">Tanca</string>
+  <!-- Content description for the media playback indicator in the tabs tray. -->
+  <string name="tab_indicator_media_playing">S’està reproduint contingut multimèdia</string>
   <!--
     Opening screen
 
@@ -1501,8 +1519,28 @@
   <string name="opening_screen_last_tab_summary">Obre en la darrera pestanya</string>
   <!-- Summary for homepage preference indicating opening the homepage when re-opening the app after four hours of inactivity -->
   <string name="opening_screen_after_four_hours_of_inactivity_summary">Obre en la pàgina d’inici després de quatre hores</string>
+  <!--
+    Tab organization
+
+    Category header for the preferences that control how tabs are organized
+  -->
+  <string name="preferences_tab_organization">Organització de les pestanyes</string>
+  <!-- Title of the preference that allows a user to enable or disable the inactive tabs feature -->
+  <string name="preferences_inactive_tabs_toggle_title">Pestanyes inactives</string>
   <!-- Summary of the preference that allows a user to enable or disable the inactive tabs feature. -->
   <string name="preferences_inactive_tabs_title">Les pestanyes que no hàgiu vist des de fa dues setmanes es mouran a la secció d’inactives.</string>
+  <!-- Title of the preference that allows a user to enable or disable the tab groups feature -->
+  <string name="preferences_tab_groups_title">Grups de pestanyes</string>
+  <!-- Summary of the preference that allows a user to enable or disable the tab groups feature -->
+  <string name="preferences_tab_groups_description">Organitzeu les pestanyes en grups que podeu anomenar i desar.</string>
+  <!--
+    Privacy report
+
+    Category header of a preference that allows a user to enable or disable the privacy report feature
+  -->
+  <string name="preferences_privacy_report">Informe de privadesa</string>
+  <!-- Title of the privacy report preference that allows a user to enable or disable the feature -->
+  <string name="preferences_privacy_report_title">Activa l’informe de privadesa</string>
   <!--
     Studies
 
@@ -1664,6 +1702,8 @@
   <string name="add_to_new_tab_group_content_description">Afegeix a un grup de pestanyes nou</string>
   <!-- Label for adding to a new tab group. -->
   <string name="add_to_new_tab_group_title">Grup de pestanyes nou</string>
+  <!-- Label to add a link in a new tab inside a tab group. -->
+  <string name="contextmenu_open_in_tab_group">Obre en un grup de pestanyes</string>
   <plurals name="tab_group_tabs_count_subtitle">
     <!--
       Subtitle for the number of tabs in a tab group.
@@ -1706,14 +1746,25 @@
   <string name="close_tab_and_delete_group_confirmation_dialog_confirm">Suprimeix el grup</string>
   <!-- Text shown on the cancel button in the Close last tab and delete tab group confirmation dialog. -->
   <string name="close_tab_and_delete_group_confirmation_dialog_cancel">Cancel·la</string>
+  <!-- Text shown on the confirm button for the confirmation dialog shown when moving the last tab out of a group will delete the group. -->
+  <string name="move_last_tab_and_delete_group_confirmation_dialog_confirm">Mou la pestanya</string>
+  <!-- Text shown on the cancel button for the confirmation dialog shown when moving the last tab out of a group will delete the group. -->
+  <string name="move_last_tab_and_delete_group_confirmation_dialog_cancel">Cancel·la</string>
   <!-- Content description for the three dot button next to a tab group" -->
   <string name="tab_group_three_dot_button_content_description">Més opcions</string>
+  <!--
+    Content description for the Expand button on the contracted menu for a tab group:
+    when tapped, tabs are displayed in an expanded grid or list view, taking up the full screen.
+  -->
+  <string name="tab_groups_strip_expand_group_content_description">Amplia per a mostrar les pestanyes a pantalla completa</string>
   <!-- Text shown on the edit button for a tab group on the three dot menu -->
   <string name="tab_group_three_dot_menu_edit">Edita</string>
   <!-- Text shown on the ungroup button for a tab group on the three dot menu -->
   <string name="tab_group_three_dot_menu_ungroup">Desagrupa</string>
   <!-- Text shown on the delete button for a tab group on the three dot menu -->
   <string name="tab_group_three_dot_menu_delete">Suprimeix</string>
+  <!-- Text shown on the share button for a tab group on the three dot menu -->
+  <string name="tab_group_three_dot_menu_share">Comparteix</string>
   <!-- Text shown on the close button for a tab group on the three dot menu -->
   <string name="tab_group_three_dot_menu_close">Tanca</string>
   <!-- Title for the Ungroup tab group confirmation dialog. -->
@@ -1726,6 +1777,14 @@
   <string name="ungroup_tab_group_confirmation_dialog_confirm">Desagrupa</string>
   <!-- Text shown on the cancel button in the Ungroup tab group confirmation dialog. -->
   <string name="ungroup_tab_group_confirmation_dialog_cancel">Cancel·la</string>
+  <!-- Custom accessibility action to reorder a tab up rather than dragging. -->
+  <string name="custom_accessibility_action_reorder_tab_up">Mou la pestanya cap amunt</string>
+  <!-- Custom accessibility action to reorder a tab left rather than dragging. -->
+  <string name="custom_accessibility_action_reorder_tab_left">Mou la pestanya a l’esquerra</string>
+  <!-- Custom accessibility action to reorder a tab right rather than dragging. -->
+  <string name="custom_accessibility_action_reorder_tab_right">Mou la pestanya a la dreta</string>
+  <!-- Custom accessibility action to reorder a tab down rather than dragging. -->
+  <string name="custom_accessibility_action_reorder_tab_down">Mou la pestanya cap a baix</string>
   <!--
     Color labels for tab groups, used for accessibility and selection UI.
 
@@ -1943,6 +2002,8 @@
   <string name="download_search_no_results_found">No s’ha trobat cap resultat</string>
   <!-- Text for the "Select all" button, which selects all downloaded items in the downloads list. -->
   <string name="download_select_all_items">Selecciona-ho tot</string>
+  <!-- Shown in the downloads list in place of a website name when a file came from a data: or blob: URL that has no website address. "data" refers to the data: URL scheme. -->
+  <string name="download_item_source_data">(dades)</string>
   <!--
     Downloads Content Type Filters
 
@@ -2063,11 +2124,15 @@
   <string name="unsubmitted_crash_dialog_positive_button_2">ENVIA</string>
   <!-- Unsubmitted crash dialog positive button to submit crash report -->
   <string name="unsubmitted_crash_dialog_positive_button">Envia un informe de fallada</string>
+  <!-- Unsubmitted crash dialog positive button to submit crash report, displayed in all capital letters. -->
+  <string name="unsubmitted_crash_dialog_positive_button_3" tools:ignore="UnusedResources">ENVIA L’INFORME DE FALLADA</string>
   <!-- Body text for crash report dialog. %s is the link text in the annotated string (ie. "Learn More") -->
   <string name="unsubmitted_crash_dialog_body">Els informes de fallada ajuden a diagnosticar i solucionar problemes del navegador. Els informes poden incloure dades personals o confidencials. %s</string>
   <string name="unsubmitted_crash_dialog_learn_more">Més informació</string>
   <!-- Unsubmitted crash dialog button to open a web page with more details on the feature and privacy policy -->
   <string name="unsubmitted_crash_requested_by_devs_learn_more">Més informació</string>
+  <!-- Unsubmitted crash dialog button to open a web page with more details on the feature and privacy policy, displayed in all capital letters. -->
+  <string name="unsubmitted_crash_requested_by_devs_learn_more_2" tools:ignore="UnusedResources">MÉS INFORMACIÓ</string>
   <!--
     Bookmarks
 
@@ -2393,6 +2458,10 @@
   <string name="sync_send_to_all">Envia a tots els dispositius</string>
   <!-- An option from the share dialog to reconnect to sync -->
   <string name="sync_reconnect">Torna a connectar al Sync</string>
+  <!-- Label for the button in the share dialog that sends the tab to the selected sync devices -->
+  <string name="sync_send_to_selected_devices">Envia</string>
+  <!-- Content description announced when a device is selected in the share dialog -->
+  <string name="send_to_devices_device_selected_content_description">Seleccionat</string>
   <!-- Text displayed when sync is offline and cannot be accessed -->
   <string name="sync_offline">Fora de línia</string>
   <!-- An option to connect additional devices -->
@@ -2415,6 +2484,8 @@
   <string name="sent_from_firefox_template" tools:ignore="UnusedResources">%1$s\n\nEnviat des del %2$s 🦊 Proveu el navegador mòbil: %3$s</string>
   <!-- A short message template for the shared link with a footer. %1$s is the shared link, %2$s is the app name (e.g. Firefox) and %3$s is a download link for the app. -->
   <string name="sent_from_firefox_template_short" tools:ignore="UnusedResources">%1$s\n\nEnviat des del %2$s 🦊 %3$s</string>
+  <!-- Send tab to synced devices: Authentication error title - Message asking the user to re-authenticate -->
+  <string name="sync_send_tab_error_auth_title">Torneu a iniciar la sessió per a enviar pestanyes entre dispositius</string>
   <!-- Send tab to synced devices: Authentication error button - Allows user to re-authenticate -->
   <string name="sync_send_tab_error_auth_button">Inicia la sessió</string>
   <!-- Send tab to synced devices: Authentication error button - Allows user to remove the currently connected account -->
@@ -2458,6 +2529,12 @@
     Name of the weekly privacy report notification channel. Displayed in the "App notifications" system settings for the app.
   -->
   <string name="notification_privacy_report_channel_name">Informe de privadesa</string>
+  <!-- Description of the weekly privacy report notification channel. Displayed in the "App notifications" system settings for the app. %1$s is the app name (e.g. Firefox) -->
+  <string name="notification_privacy_report_channel_description">El %1$s mostra quants elements de seguiment s’han blocat mentre navegueu.</string>
+  <!-- Body text for the weekly privacy report notification for when trackers have been blocked. %1$s is the app name (e.g. Firefox) -->
+  <string name="notification_privacy_report_body_has_trackers">Seguiu navegant. El %1$s seguirà blocant.</string>
+  <!-- Headline text of the weekly privacy report notification for when no trackers have been blocked. %1$s is the app name (e.g. Firefox) -->
+  <string name="notification_privacy_report_headline_no_trackers">El %1$s bloqueja els elements de seguiment mentre navegueu. Els veureu aquí.</string>
   <!--
     Survey
 
@@ -3049,6 +3126,8 @@
   <string name="ip_protection_learn_more">Més informació</string>
   <!-- Label for the monthly data allowance section on the browser VPN settings screen -->
   <string name="ip_protection_data_limit_label">Límit de dades mensual</string>
+  <!-- Accessibility description for the button that closes promotional banners or messages on the VPN settings screen (without triggering any effect) -->
+  <string name="ip_protection_settings_message_dismiss">Descarta</string>
   <!--
     Data usage shown on the browser VPN settings screen.
     %1$.1f is the data remaining in GB (for example "8.3").
@@ -3175,6 +3254,8 @@
   <string name="preferences_credit_cards_save_and_autofill_cards_2">Desa i emplena les formes de pagament</string>
   <!-- Preference summary for saving and autofilling payment method data. %s is the name of the app (for example "Firefox"). -->
   <string name="preferences_credit_cards_save_and_autofill_cards_summary_2">El %s xifra totes les formes de pagament que deseu</string>
+  <!-- Preference for saving the security codes of credit cards. -->
+  <string name="preferences_credit_cards_save_security_codes">Desa els codis de seguretat</string>
   <!-- Preference option for syncing credit cards across devices. This is displayed when the user is not signed into sync -->
   <string name="preferences_credit_cards_sync_cards_across_devices">Sincronitza les targetes entre dispositius</string>
   <!-- Preference option for syncing credit cards across devices. This is displayed when the user is signed into sync -->
@@ -3211,6 +3292,8 @@
   <string name="credit_cards_expiration_date_year">Any de la data de caducitat</string>
   <!-- The header for the name on the credit card -->
   <string name="credit_cards_name_on_card">Nom del titular</string>
+  <!-- The header for the optional security code of a credit card. CVV is the abbreviation of the card security code. -->
+  <string name="credit_cards_cvv_optional">CVV (opcional)</string>
   <!-- The text for the "Delete card" menu item for deleting a credit card -->
   <string name="credit_cards_menu_delete_card">Suprimeix la targeta</string>
   <!-- The text for the "Delete card" button for deleting a credit card -->
@@ -3227,10 +3310,16 @@
   <string name="credit_cards_cancel_button">Cancel·la</string>
   <!-- Title of the "Saved cards" screen -->
   <string name="credit_cards_saved_cards">Targetes desades</string>
+  <!-- Text in the saved cards list that indicates the security code for a credit card is being stored -->
+  <string name="credit_cards_cvv_saved">CVV desat</string>
   <!-- Error message for card number validation -->
   <string name="credit_cards_number_validation_error_message_2">Introduïu un número de targeta vàlid</string>
   <!-- Error message for card name on card validation -->
   <string name="credit_cards_name_on_card_validation_error_message_2">Afegiu un nom</string>
+  <!-- Error message for a credit card security code that does not meet the 3-digit length requirement. -->
+  <string name="credit_cards_cvv_validation_error_message">El codi de seguretat ha de tenir 3 dígits</string>
+  <!-- Error message for a credit card security code that does not meet the 4-digit length requirement (used for American Express cards only) -->
+  <string name="credit_cards_cvv_amex_validation_error_message">Els codis de seguretat d’American Express tenen 4 dígits</string>
   <!-- Message displayed in biometric prompt displayed for authentication before allowing users to view their saved credit cards -->
   <string name="credit_cards_biometric_prompt_message">Desbloqueu per veure les targetes desades</string>
   <!-- Title of warning dialog if users have no device authentication set up -->
@@ -3241,6 +3330,10 @@
   <string name="credit_cards_warning_dialog_set_up_now">Configura-ho ara</string>
   <!-- Negative button to ignore warning dialog if users have no device authentication set up -->
   <string name="credit_cards_warning_dialog_later">Més tard</string>
+  <!-- Title of the dialog shown on Android Automotive OS (in cars) when users have no device authentication set up and try to access their saved passwords, payment methods, or sign in to their account -->
+  <string name="automotive_authentication_setup_dialog_title">Protegiu les vostres dades confidencials</string>
+  <!-- Primary button on the dialog shown on Android Automotive OS (in cars). Tapping it directs users to the device settings to set up a device lock -->
+  <string name="automotive_authentication_setup_dialog_set_up_now">Configura-ho ara</string>
   <!-- Secondary button of the dialog shown on Android Automotive OS (in cars). Tapping closes the dialogue and cancels the action that triggered the dialogue. -->
   <string name="automotive_authentication_setup_dialog_cancel">Cancel·la</string>
   <!-- Title of PIN verification dialog to direct users to re-enter their device credentials to access their credit cards -->
@@ -3637,6 +3730,12 @@
   <!--
     Translations options dialog
 
+    Title of the translation options dialog that allows a user to set their translation preferences for the site the user is currently on.
+  -->
+  <string name="translation_option_bottom_sheet_title_heading2">Preferències de traducció</string>
+  <!--
+    Translations options dialog
+
     Title of the translation options dialog that allows a user to set their translation options for the site the user is currently on.
   -->
   <string name="translation_option_bottom_sheet_title_heading">Opcions de traducció</string>
@@ -3945,6 +4044,8 @@
   <string name="clear_site_data_dialog_negative_button_text">Cancel·la</string>
   <!-- Text for the connection security panel when the site is secure. -->
   <string name="connection_security_panel_secure">Connexió segura</string>
+  <!-- Action description (not visible, for screen readers etc.) for the “Secure connection” link in the protection panel header, which opens a page showing the website's certificate details. Screen readers announce it after “Double tap to” -->
+  <string name="connection_security_panel_view_certificate_details">mostrar els detalls del certificat</string>
   <!-- Text for the connection security panel when the site is not secure. -->
   <string name="connection_security_panel_not_secure">La connexió no és segura</string>
   <!-- Text for the connection security panel when accessed from local PDF. -->
@@ -4242,7 +4343,7 @@
   <!-- Push notification message about old Firefox version -->
   <string name="certificate_warning_push_notification_pnr1_message" tools:ignore="UnusedResources">Els complements i algunes funcions deixaran de funcionar el 14 de març.</string>
   <!-- Push notification title about old Firefox version. Note: The word "Firefox" should NOT be translated. -->
-  <string name="certificate_warning_push_notification_pnw2_title" tools:ignore="BrandUsage,UnusedResources">Feu servir una versió antiga del Firefox.</string>
+  <string name="certificate_warning_push_notification_pnw2_title" tools:ignore="BrandUsage,UnusedResources">Feu servir una versió antiga del Firefox</string>
   <!-- Push notification message about old Firefox version. "Update" is a verb. -->
   <string name="certificate_warning_push_notification_pnw2_message" tools:ignore="UnusedResources">Actualitzeu abans del 14 de març per seguir utilitzant els complements i altres funcions.</string>
   <!-- Push notification message about old Firefox version -->
@@ -4455,6 +4556,8 @@
   <string name="wrex_widget_match_suspended">Suspès</string>
   <!-- Label shown on the sports widget match status badge when a match has been postponed to a later date. -->
   <string name="wrex_widget_match_postponed">Ajornat</string>
+  <!-- Label shown on the sports widget match status badge when a match has been canceled. -->
+  <string name="wrex_widget_match_canceled">Cancel·lat</string>
   <!-- Sports widget action label to refresh match data after an error. -->
   <string name="wrex_widget_error_refresh">Actualitza</string>
   <!-- Sports widget menu item to view the team's match results. -->
@@ -4579,7 +4682,7 @@
   <!-- Button shown under an image picked from the gallery or taken with the camera while it is being sent to Google Lens. Tapping it stops the search and returns to the camera. -->
   <string name="lens_camera_loading_cancel_button">Cancel·la</string>
   <!-- Snackbar message shown when an image picked from the gallery or taken with the camera could not be opened or read, so it was never sent to Google Lens. Shown after returning to the camera. -->
-  <string name="lens_camera_image_load_failed_v2">No s’ha pogut carregar aquesta imatge</string>
+  <string name="lens_camera_image_load_failed_v2">No s’ha pogut carregar aquesta imatge.</string>
   <!-- Snackbar message shown when an image picked from the gallery or taken with the camera could not be searched because of a network problem or an error from Google Lens. Shown after returning to the camera, next to the lens_camera_upload_failed_retry_button action. -->
   <string name="lens_camera_upload_failed">No s’han pogut obtenir resultats del Google Lens</string>
   <!-- Action in the snackbar shown when an image picked from the gallery or taken with the camera could not be searched with Google Lens. Tapping it searches the same image again. -->

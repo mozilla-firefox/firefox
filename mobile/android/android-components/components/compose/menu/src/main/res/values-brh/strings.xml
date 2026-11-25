@@ -31,4 +31,8 @@
   <string name="mozac_menu_customize_move_up">برز انبو</string>
   <!-- Name of the action (used by screen readers, etc.) that moves a menu section down one position in the customize menu screen. It is also shown in the list of actions displayed when the user long-presses the drag handle of a menu section. -->
   <string name="mozac_menu_customize_move_down">شیف انبو</string>
+  <!-- Name of the action (used by screen readers, etc.) that hides a section in the customize menu screen. It is also shown in the list of actions displayed when the user long-presses the drag handle of a menu section. -->
+  <string name="mozac_menu_customize_hide">بشخ اے ڈکبو</string>
+  <!-- Name of the action (used by screen readers, etc.) that shows a previously hidden menu section, placing it last among the visible sections in the customize menu screen. It is also shown in the list of actions displayed when the user long-presses the drag handle of a menu section. -->
+  <string name="mozac_menu_customize_unhide">بشخ اے پاش کبو</string>
 </resources>

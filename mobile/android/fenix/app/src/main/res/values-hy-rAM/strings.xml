@@ -186,6 +186,16 @@
   <string name="customize_menu">Հարմարեցնել ցանկը</string>
   <!-- Alert message shown in the "Customize menu" screen when the user tries to hide a menu section which cannot be hidden. -->
   <string name="customize_menu_cannot_hide_section">Այս բաժինը հնարավոր չէ թաքցնել</string>
+  <!-- Customize menu screen - Accessibility description - name of the menu section that groups the Back, Forward, Share and Refresh buttons. Read aloud after "Section", followed by the button names ("Section “Page controls”: Back, Forward, Share, Refresh"). -->
+  <string name="browser_menu_section_page_controls">Էջի կառավարներ</string>
+  <!-- Customize menu screen - Accessibility description - name of the menu section that groups the page tools (Bookmark page, Find in page, Desktop site, Extensions, etc.). Read aloud after "Section", followed by the tool names ("Section “Tools”: Bookmark page, Find in page…"). -->
+  <string name="browser_menu_section_tools">Գործիքներ</string>
+  <!-- Customize menu screen - Accessibility description - name of the menu section that groups the History, Bookmarks, Downloads and Passwords items. Read aloud after "Section", followed by the item names ("Section “Library”: History, Bookmarks, Downloads, Passwords"). -->
+  <string name="browser_menu_section_library">Շտեմարան</string>
+  <!-- Customize menu screen - Accessibility description - name of the menu section that groups the Sign in and Settings items. Read aloud after "Section", followed by the item names ("Section “Accounts and settings”: Sign in, Settings"). -->
+  <string name="browser_menu_section_accounts_and_settings">Հաշիվներ և կարգավորումներ</string>
+  <!-- Customize menu screen - Accessibility description - name of the menu section that groups the New tab and New private tab actions. Read aloud after "Section", followed by the action names ("Section “New tab”: New tab, New private tab"). -->
+  <string name="browser_menu_section_new_tab">Նոր ներդիր</string>
   <!-- Title of the dialog shown when resetting the menu to its default layout (removing all user customizations) -->
   <string name="menu_customize_reset_dialog_title">Վերագործարկե՞լ սկզբնադիր ցանկին։</string>
   <!-- Message of the dialog shown when resetting the menu to its default layout (removing all user customizations) -->
@@ -283,6 +293,8 @@
   <string name="browser_menu_passwords">Գաղտնաբառեր</string>
   <!-- Content description (not visible, for screen readers etc.) for the handle used to drag the main menu at the bottom of the screen. -->
   <string name="browser_close_main_menu_handlebar_content_description">Փակել ցանկը</string>
+  <!-- Content description (not visible, used by screen readers, etc.) for the heading of the menu opened from the customize menu screen to preview pending changes. It is read before the menu items. The items are shown for preview only and do nothing when tapped. -->
+  <string name="browser_menu_preview_heading_content_description">Ցանկի նախադիտում։ Այստեղ տարրեր հնարավոր չէ ակտիվացնել։</string>
   <!-- Content description (not visible, for screen readers etc.) for main menu navigation header. -->
   <string name="browser_main_menu_content_description_navigation_header">Նավարկում</string>
   <!-- Content description (not visible, for screen readers etc.) for bottom sheet handlebar custom tab menu. -->
@@ -343,6 +355,10 @@
     Content description for the translate page toolbar button that opens the translations dialog when no translation has occurred.
   -->
   <string name="browser_toolbar_translate">Թարգմանել էջը</string>
+  <!-- Accessibility description for the toolbar button displayed when the page the user is on has a video that can be opened in a picture-in-picture window -->
+  <string name="browser_toolbar_picture_in_picture">Նկար նկարի մեջ</string>
+  <!-- Accessibility description for the toolbar button displayed while the current page's video is playing in a picture-in-picture window. Tapping the button closes that window. -->
+  <string name="browser_toolbar_picture_in_picture_close">Փակել Նկարը նկարի մեջ</string>
   <!-- CFR description for the browser toolbar describing the "Shake to summarize feature" -->
   <string name="browser_toolbar_summarize_cfr_description">Թափահարեք ձեր սարքը՝ այս էջը վայրկյանների ընթացքում ամփոփելու համար։ ⚡️</string>
   <!--
@@ -1171,6 +1187,8 @@
   <string name="preferences_enable_sync_title">Համաժամեցնել այս սարքը</string>
   <!-- Preference summary for the toggle that turns sync on or off for the device, shown when sync is on. -->
   <string name="preferences_enable_sync_summary_sync_enabled">Ձեր տվյալները պահուստավորված են և հասանելի են համաժամեցված սարքերում։</string>
+  <!-- Preference summary for the toggle that turns sync on or off for the device, shown when sync is off. It explains where synced data comes from. -->
+  <string name="preferences_enable_sync_summary_sync_disabled_2">Օգտագործվում են ձեր հաշվում պահված տվյալները։</string>
   <!-- Preference summary for the toggle that turns sync on or off for the device, shown when sync is off. It explains where synced data comes from. %1$s is the Firefox brand name. -->
   <string name="preferences_enable_sync_summary_sync_disabled">Օգտագործվում են ձեր %1$s հաշվի պահպանված տվյալները։</string>
   <!-- Summary for the sync preference category. -->
@@ -1690,6 +1708,8 @@
   <string name="add_to_new_tab_group_content_description">Ավելացնել նոր ներդիրների խմբում</string>
   <!-- Label for adding to a new tab group. -->
   <string name="add_to_new_tab_group_title">Նոր ներդիրների խումբ</string>
+  <!-- Label to add a link in a new tab inside a tab group. -->
+  <string name="contextmenu_open_in_tab_group">Բացել ներդիրների խմբում</string>
   <plurals name="tab_group_tabs_count_subtitle">
     <!--
       Subtitle for the number of tabs in a tab group.
@@ -1732,6 +1752,14 @@
   <string name="close_tab_and_delete_group_confirmation_dialog_confirm">Ջնջել խումբը</string>
   <!-- Text shown on the cancel button in the Close last tab and delete tab group confirmation dialog. -->
   <string name="close_tab_and_delete_group_confirmation_dialog_cancel">Չեղարկել</string>
+  <!-- Title of the confirmation dialog shown when moving the last tab out of a group will delete the group. %s is the group name, which defaults to a value such as "Group 1" but can be edited by the user to contain arbitrary text. -->
+  <string name="move_last_tab_and_delete_group_confirmation_dialog_title">Տեղափոխե՞լ վերջին ներդիրը %s-ից:</string>
+  <!-- Body of the confirmation dialog shown when moving the last tab out of a group will delete the group. %1$s is the destination group name. %2$s is the source group name that will be deleted. Both names default to values such as "Group 1" but can be edited by the user to contain arbitrary text. -->
+  <string name="move_last_tab_and_delete_group_confirmation_dialog_body">Այս ներդիրը կտեղափոխվի %1$s: %2$s-ը կջնջվի, քանի որ այն դատարկ կլինի:</string>
+  <!-- Text shown on the confirm button for the confirmation dialog shown when moving the last tab out of a group will delete the group. -->
+  <string name="move_last_tab_and_delete_group_confirmation_dialog_confirm">Տեղափոխել ներդիրը</string>
+  <!-- Text shown on the cancel button for the confirmation dialog shown when moving the last tab out of a group will delete the group. -->
+  <string name="move_last_tab_and_delete_group_confirmation_dialog_cancel">Չեղարկել</string>
   <!-- Content description for the three dot button next to a tab group" -->
   <string name="tab_group_three_dot_button_content_description">Լրացուցիչ ընտրանքներ</string>
   <!--
@@ -2102,15 +2130,21 @@
   <string name="unsubmitted_crash_dialog_negative_button_2">ՓԱԿԵԼ</string>
   <!-- Unsubmitted crash dialog negative button to never be asked for the submission -->
   <string name="unsubmitted_crash_requested_by_devs_dialog_never_button">Այլևս չցուցադրել</string>
+  <!-- Unsubmitted crash dialog negative button to never be asked for the submission, displayed in all capital letters. -->
+  <string name="unsubmitted_crash_requested_by_devs_dialog_never_button_2" tools:ignore="UnusedResources">Այլևս երբեք չցուցադրել</string>
   <!-- Unsubmitted crash dialog positive button to submit crash report -->
   <string name="unsubmitted_crash_dialog_positive_button_2">ՈՒՂԱՐԿԵԼ</string>
   <!-- Unsubmitted crash dialog positive button to submit crash report -->
   <string name="unsubmitted_crash_dialog_positive_button">Ուղարկել վթարի զեկույց</string>
+  <!-- Unsubmitted crash dialog positive button to submit crash report, displayed in all capital letters. -->
+  <string name="unsubmitted_crash_dialog_positive_button_3" tools:ignore="UnusedResources">ՈՒՂԱՐԿԵԼ ՎԹԱՐԻ ԶԵԿՈՒՅՑ</string>
   <!-- Body text for crash report dialog. %s is the link text in the annotated string (ie. "Learn More") -->
   <string name="unsubmitted_crash_dialog_body">Խափանումների զեկույցները մեզ թույլ են տալիս ախտորոշել և շտկել դիտարկիչի հետ կապված խնդիրները: Զեկույցները կարող են ներառել անձնական կամ զգայուն տվյալներ: %s</string>
   <string name="unsubmitted_crash_dialog_learn_more">Իմանալ ավելին</string>
   <!-- Unsubmitted crash dialog button to open a web page with more details on the feature and privacy policy -->
   <string name="unsubmitted_crash_requested_by_devs_learn_more">Իմանալ ավելին</string>
+  <!-- Unsubmitted crash dialog button to open a web page with more details on the feature and privacy policy, displayed in all capital letters. -->
+  <string name="unsubmitted_crash_requested_by_devs_learn_more_2" tools:ignore="UnusedResources">ԻՄԱՆԱԼ ԱՎԵԼԻՆ</string>
   <!--
     Bookmarks
 
@@ -3104,6 +3138,8 @@
   <string name="ip_protection_learn_more">Իմանալ ավելին</string>
   <!-- Label for the monthly data allowance section on the browser VPN settings screen -->
   <string name="ip_protection_data_limit_label">Ամսական տվյալների սահմանաչափ</string>
+  <!-- Accessibility description for the button that closes promotional banners or messages on the VPN settings screen (without triggering any effect) -->
+  <string name="ip_protection_settings_message_dismiss">Բաց թողնել</string>
   <!--
     Data usage shown on the browser VPN settings screen.
     %1$.1f is the data remaining in GB (for example "8.3").
@@ -3171,6 +3207,13 @@
     %2$s is a link using ip_protection_onboarding_body_link_promo (“Learn more”) as text. It links to a support article about VPN on Firefox.
   -->
   <string name="ip_protection_onboarding_body_promo">Միացրեք այն՝ ձեր դիտարկիչն ավելի գաղտնի և դժվար հետագծելի դարձնելու համար: Փորձեք այն հիմա՝ %1$s-ի միջոցով անսահմանափակ թողունակություն ստանալու համար: %2$s</string>
+  <!--
+    The body of the VPN onboarding card when the user qualifies for using VPN without signing in to a Mozilla account
+    %1$d is the amount of free data in GB available without signing in (for example "5").
+    %2$d is the amount of data in GB available after signing in (for example "50").
+    %3$s is a link using ip_protection_onboarding_body_link_promo (“Learn more”) as text. It links to a support article about VPN on Firefox.
+  -->
+  <string name="ip_protection_onboarding_body_no_fxa">Միացրեք այն՝ ձեր դիտարկիչն ավելի գաղտնի և դժվար հետագծելի դարձնելու համար: Փորձեք այն %1$d ԳԲ անվճար թողունակությամբ կամ մուտք գործեք %2$d ԳԲ-ի համար: %3$s</string>
   <!-- Used as text for a link in ip_protection_onboarding_body. Make sure to adapt capitalization if the link is in the middle of the sentence. -->
   <string name="ip_protection_onboarding_body_link_promo">Իմանալ ավելին</string>
   <!-- Label for the dismiss button on the onboarding bottom sheet. -->
@@ -3230,6 +3273,10 @@
   <string name="preferences_credit_cards_save_and_autofill_cards_2">Պահել և լրացնել վճարամիջոցները</string>
   <!-- Preference summary for saving and autofilling payment method data. %s is the name of the app (for example "Firefox"). -->
   <string name="preferences_credit_cards_save_and_autofill_cards_summary_2">%s-ը գաղտնագրում է ձեր պահած բոլոր վճարամիջոցները</string>
+  <!-- Preference for saving the security codes of credit cards. -->
+  <string name="preferences_credit_cards_save_security_codes">Պահել անվտանգության կոդերը</string>
+  <!-- Preference summary for saving the security codes of credit cards. %s is the name of the app (for example "Firefox"). -->
+  <string name="preferences_credit_cards_save_security_codes_summary">%s-ը գաղտնագրում է ձեր քարտի համարը և անվտանգության կոդը՝ հետագայում ավելի արագ վճարումներ կատարելու համար։</string>
   <!-- Preference option for syncing credit cards across devices. This is displayed when the user is not signed into sync -->
   <string name="preferences_credit_cards_sync_cards_across_devices">Համաժամեցնել քարտերը սարքերի միջև</string>
   <!-- Preference option for syncing credit cards across devices. This is displayed when the user is signed into sync -->
@@ -3266,6 +3313,8 @@
   <string name="credit_cards_expiration_date_year">Ավարտման տարին</string>
   <!-- The header for the name on the credit card -->
   <string name="credit_cards_name_on_card">Քարտի վրայի անունը</string>
+  <!-- The header for the optional security code of a credit card. CVV is the abbreviation of the card security code. -->
+  <string name="credit_cards_cvv_optional">CVV (ըստ ցանկության)</string>
   <!-- The text for the "Delete card" menu item for deleting a credit card -->
   <string name="credit_cards_menu_delete_card">Ջնջել քարտը</string>
   <!-- The text for the "Delete card" button for deleting a credit card -->
@@ -3282,10 +3331,16 @@
   <string name="credit_cards_cancel_button">Չեղարկել</string>
   <!-- Title of the "Saved cards" screen -->
   <string name="credit_cards_saved_cards">Պահպանված քարտեր</string>
+  <!-- Text in the saved cards list that indicates the security code for a credit card is being stored -->
+  <string name="credit_cards_cvv_saved">CVV-ն պահպանված է</string>
   <!-- Error message for card number validation -->
   <string name="credit_cards_number_validation_error_message_2">Մուտքագրեք ճիշտ քարտի համար</string>
   <!-- Error message for card name on card validation -->
   <string name="credit_cards_name_on_card_validation_error_message_2">Հավելել անուն</string>
+  <!-- Error message for a credit card security code that does not meet the 3-digit length requirement. -->
+  <string name="credit_cards_cvv_validation_error_message">Անվտանգության կոդը պետք է լինի 3 նիշ</string>
+  <!-- Error message for a credit card security code that does not meet the 4-digit length requirement (used for American Express cards only) -->
+  <string name="credit_cards_cvv_amex_validation_error_message">American Express-ի անվտանգության կոդերը 4 նիշ են</string>
   <!-- Message displayed in biometric prompt displayed for authentication before allowing users to view their saved credit cards -->
   <string name="credit_cards_biometric_prompt_message">Ապակողպեք՝ դիտելու համար պահպանված քարտերը</string>
   <!-- Title of warning dialog if users have no device authentication set up -->
@@ -3698,6 +3753,12 @@
   <!--
     Translations options dialog
 
+    Title of the translation options dialog that allows a user to set their translation preferences for the site the user is currently on.
+  -->
+  <string name="translation_option_bottom_sheet_title_heading2">Թարգմանելու կարգավորումներ</string>
+  <!--
+    Translations options dialog
+
     Title of the translation options dialog that allows a user to set their translation options for the site the user is currently on.
   -->
   <string name="translation_option_bottom_sheet_title_heading">Թարգմանության ընտրանքներ</string>
@@ -3935,6 +3996,8 @@
   <string name="certificate_details_panel_secure_connection_title">Անվտանգ կապակցում</string>
   <!-- Certificate panel - Label for the organization, locality and country the website's certificate was issued to -->
   <string name="certificate_details_panel_issued_to_label">Վկայագիր, որը տրվել է՝</string>
+  <!-- Certificate panel - Label for the name of the certificate authority that verified and issued the website's certificate -->
+  <string name="certificate_details_panel_verified_by_label">Ստուգվել է`</string>
   <!-- Certificate panel - Content description (not visible, for screen readers etc.) for the EU trust mark logo, shown when the website's certificate is a Qualified Website Authentication Certificate (QWAC) as specified in EU Regulation 2024/1183 -->
   <string name="certificate_details_panel_eu_trust_mark_content_description">ԵՄ վստահության նշան</string>
   <plurals name="trackers_blocked_panel_total_num_trackers_blocked_2">
@@ -4004,6 +4067,8 @@
   <string name="clear_site_data_dialog_negative_button_text">Չեղարկել</string>
   <!-- Text for the connection security panel when the site is secure. -->
   <string name="connection_security_panel_secure">Անվտանգ կապակցում</string>
+  <!-- Action description (not visible, for screen readers etc.) for the “Secure connection” link in the protection panel header, which opens a page showing the website's certificate details. Screen readers announce it after “Double tap to” -->
+  <string name="connection_security_panel_view_certificate_details">դիտել վկայականի մանրամասները</string>
   <!-- Text for the connection security panel when the site is not secure. -->
   <string name="connection_security_panel_not_secure">Կապակցումն անվտանգ չէ</string>
   <!-- Text for the connection security panel when accessed from local PDF. -->
@@ -4514,6 +4579,8 @@
   <string name="wrex_widget_match_suspended">Կասեցված</string>
   <!-- Label shown on the sports widget match status badge when a match has been postponed to a later date. -->
   <string name="wrex_widget_match_postponed">Հետաձգված</string>
+  <!-- Label shown on the sports widget match status badge when a match has been canceled. -->
+  <string name="wrex_widget_match_canceled">Չեղարկված</string>
   <!-- Sports widget action label to refresh match data after an error. -->
   <string name="wrex_widget_error_refresh">Թարմացնել</string>
   <!-- Sports widget menu item to view the team's match results. -->

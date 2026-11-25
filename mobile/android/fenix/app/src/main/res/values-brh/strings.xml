@@ -392,6 +392,8 @@
   <string name="onboarding_redesign_customize_toolbar_title" tools:ignore="UnusedResources">نم ڈس بار اے ہراڑے خوارے؟</string>
   <!-- Onboarding label for 'Continue' button. -->
   <string name="onboarding_redesign_continue_button" tools:ignore="UnusedResources">برجا</string>
+  <!-- Marketing onboarding page clickable link text to "learn more" on how data is used. -->
+  <string name="onboarding_marketing_redesign_learn_more" tools:ignore="UnusedResources">نن ڈیٹا اے امر کاریم ٹی اتینا</string>
   <!-- Marketing onboarding page button label. Button to confirm choice and start browsing. -->
   <string name="onboarding_marketing_redesign_positive_button" tools:ignore="UnusedResources">پکا</string>
   <!-- Sync onboarding redesign title. 'Firefox' is intentionally hardcoded. -->
@@ -412,6 +414,8 @@
   <string name="nova_onboarding_negative_button">داسہ نہ</string>
   <!-- Terms of use (ToU) onboarding title. -->
   <string name="nova_onboarding_tou_title" tools:ignore="UnusedResources">آجو و گام اسے کن تیارمبو</string>
+  <!-- Terms of use (ToU) onboarding body line two link text for nova_onboarding_tou_body_line_2. -->
+  <string name="nova_onboarding_tou_body_line_2_link_text">رازداری نا نوٹس</string>
   <!-- "Set to default" onboarding button. -->
   <string name="nova_onboarding_set_to_default_button">اصل ویبگشت کروک سیٹ کبو</string>
   <!-- Sync onboarding button. -->
@@ -565,6 +569,8 @@
     a section where users see a list of tabs that they have visited in the past few days
   -->
   <string name="customize_toggle_recently_visited">زوتیاٹ ہروک</string>
+  <!-- Title for the customize home screen section with Pocket. -->
+  <string name="customize_toggle_pocket_3">قصہ غاک</string>
   <!-- Title for the opening wallpaper settings screen -->
   <string name="customize_wallpapers">وال پیپراک</string>
   <!-- Snackbar message for when wallpaper couldn't be downloaded -->
@@ -627,12 +633,20 @@
   <string name="exceptions_empty_message_learn_more_link">پین ہیل کبو</string>
   <!-- Title for the crash reporting option in the privacy preferences dialog shown during onboarding. -->
   <string name="crash_reporting_snack_bar_message">رپورٹ رائ مس</string>
+  <!-- Title Headers for data collection settings screen -->
+  <string name="crash_reports_data_category">پننگ نا رپورٹاک</string>
   <!--
     Turn On Sync Preferences
 
     Header of the Sign in preference view
   -->
   <string name="preferences_sign_in">سائن ان</string>
+  <!--
+    Settings sign-in promo card
+
+    Sign-in promo card: Title inviting the user to sign in
+  -->
+  <string name="sign_in_promo_title">سائن ان</string>
   <!--
     Toolbar Preferences
 
@@ -643,12 +657,20 @@
   <string name="preference_bottom_toolbar">شیف</string>
   <!-- Preference for using simple toolbar -->
   <string name="preference_simple_toolbar">سادہ</string>
+  <!-- Preference for showing the homepage search bar in the middle of the homepage -->
+  <string name="preference_homepage_search_location_middle">نیام</string>
+  <!-- Preference for showing the homepage search bar at the top of the homepage (combined with the address bar, already displayed at the top) -->
+  <string name="preference_homepage_search_location_top">برز</string>
   <!-- Share shortcut in toolbar customization -->
   <string name="toolbar_customize_shortcut_share">بشخبو</string>
   <!-- Add bookmark shortcut in toolbar customization -->
   <string name="toolbar_customize_shortcut_add_bookmark">نشانی اس شاغبو</string>
+  <!-- Translate shortcut in toolbar customization. "Translate" is a verb -->
+  <string name="toolbar_customize_shortcut_translate">مٹ کبو</string>
   <!-- Homepage shortcut in toolbar customization -->
   <string name="toolbar_customize_shortcut_homepage">مون پنہ</string>
+  <!-- Back shortcut in toolbar customization -->
+  <string name="toolbar_customize_shortcut_back">پدی</string>
   <!--
     Theme Preferences
 
@@ -727,6 +749,8 @@
   <string name="close_tabs_after_one_week">ہفتہ اسے انپد</string>
   <!-- Option for auto closing tabs that will auto close tabs after one month -->
   <string name="close_tabs_after_one_month">تو اسے انپد</string>
+  <!-- Content description (not visible, for screen readers etc.): Close tab button -->
+  <string name="tab_manager_close_tabs">بند</string>
   <!-- Option for always opening the homepage when re-opening the app -->
   <string name="opening_screen_homepage">مون پنہ</string>
   <!-- Option for always opening the user's last-open tab when re-opening the app -->
@@ -783,6 +807,8 @@
   <string name="tab_manager_empty_tab_groups_page_header">ٹیب مچی تے کم سکرول کننگ، زیات کاریم کن ہربو</string>
   <!-- The description displayed on the tab groups page when no tab groups are open -->
   <string name="tab_manager_empty_tab_groups_page_description">مچی اس جوڑ کننگ کن ٹیب گچین کبو. داڑے خوندی مریرہ، ہراوخت ہم کہ خوارے.</string>
+  <!-- Label for the tab group name field in the bottom sheet to create or edit a tab group. -->
+  <string name="create_tab_group_name_label">پن</string>
   <!-- Title for adding more tabs to a tab group. -->
   <string name="add_to_tab_group_title">شاغبو</string>
   <plurals name="tab_group_tabs_count_subtitle">
@@ -797,12 +823,22 @@
   <string name="delete_tab_group_confirmation_dialog_cancel">کینسل</string>
   <!-- Text shown on the cancel button in the Close last tab and delete tab group confirmation dialog. -->
   <string name="close_tab_and_delete_group_confirmation_dialog_cancel">کینسل</string>
+  <!-- Text shown on the cancel button for the confirmation dialog shown when moving the last tab out of a group will delete the group. -->
+  <string name="move_last_tab_and_delete_group_confirmation_dialog_cancel">کینسل</string>
+  <!-- Content description for the three dot button next to a tab group" -->
+  <string name="tab_group_three_dot_button_content_description">پین اپشن</string>
   <!-- Text shown on the edit button for a tab group on the three dot menu -->
   <string name="tab_group_three_dot_menu_edit">بدلی</string>
   <!-- Text shown on the share button for a tab group on the three dot menu -->
   <string name="tab_group_three_dot_menu_share">بشخبو</string>
   <!-- Text shown on the cancel button in the Ungroup tab group confirmation dialog. -->
   <string name="ungroup_tab_group_confirmation_dialog_cancel">کینسل</string>
+  <!--
+    Color labels for tab groups, used for accessibility and selection UI.
+
+    Tab group color: Yellow
+  -->
+  <string name="tab_group_color_yellow">پوشکن</string>
   <!-- Tab group color: Orange -->
   <string name="tab_group_color_orange">مالٹئ</string>
   <!-- Tab group color: Red -->
@@ -815,6 +851,8 @@
   <string name="tab_group_color_blue">خرن</string>
   <!-- Tab group color: Green -->
   <string name="tab_group_color_green">گونکی</string>
+  <!-- Tab group color: Grey -->
+  <string name="tab_group_color_grey">سلیٹی</string>
   <!-- Text for the button to clear all history -->
   <string name="history_delete_all">تاریخچہ مٹائفبو</string>
   <!--
@@ -830,6 +868,8 @@
   <string name="download_in_progress_snackbar">ڈاونلوڈ برجا اے…</string>
   <!-- Text for the snackbar to confirm that a download has completed. -->
   <string name="download_completed_snackbar">ڈاونلوڈ پورہ مس</string>
+  <!-- Text shown when no download exists -->
+  <string name="download_empty_message_2">داسکان ہچو ڈاونلوڈ اف</string>
   <!--
     History multi select title in app bar
     %1$d is the number of downloads selected
@@ -853,6 +893,7 @@
   <string name="download_navigate_back_description">پدی انبو</string>
   <!-- Content description for retry download action button on the downloads screen -->
   <string name="download_retry_action">پدا واراس</string>
+  <string name="download_clear_search_description">صفا</string>
   <!-- Text for the button to share the download URL -->
   <string name="download_share_url">لنک بشخبو</string>
   <!-- Text for the button to share the download file -->
@@ -861,6 +902,8 @@
   <string name="download_delete_multi_select_dialog_cancel">کینسل</string>
   <!-- Alert dialog confirmation before deleting a single download item or many download items, this is the negative action. -->
   <string name="download_delete_dialog_cancel">کینسل</string>
+  <!-- Label for the name field in the alert dialog confirmation before renaming a download item. -->
+  <string name="download_rename_dialog_label">پن</string>
   <string name="download_rename_dialog_cancel_button">کینسل</string>
   <string name="change_file_extension_cancel_button">کینسل</string>
   <!--
@@ -889,6 +932,10 @@
   <string name="download_content_type_filter_video">ویڈیوک</string>
   <!-- The button text for navigating to the SUMO link to learn more about reporting a broken site. -->
   <string name="webcompat_reporter_learn_more">پین ہیل کبو</string>
+  <!-- The button text for the send button to submit the provided form data. -->
+  <string name="webcompat_reporter_send_report">رپورٹ رای کبو</string>
+  <!-- Text for a snackbar to confirm the successful submission of a WebCompat report. -->
+  <string name="webcompat_reporter_success_snackbar_text_2">رپورٹ رائ مس</string>
   <!-- Unsubmitted crash dialog title, %s is the name of the app (for example "Firefox"). -->
   <string name="unsubmitted_crash_dialog_title_2">%s پنا. رپورٹ اے رای کیرے؟</string>
   <!-- Unsubmitted crash dialog checkbox label for automatically sending reports in the future -->
@@ -910,10 +957,16 @@
   <string name="bookmark_menu_share_button">بشخبو</string>
   <!-- Bookmark overflow menu select all bookmarks -->
   <string name="bookmark_menu_select_all_bookmarks">کل نشانی تے اتے گچین کبو</string>
+  <!-- Bookmark overflow menu open in new tab button -->
+  <string name="bookmark_menu_open_in_new_tab_button">پوسکنا ٹیب ٹی ملبو</string>
   <!-- Bookmark overflow menu open in private tab button -->
   <string name="bookmark_menu_open_in_private_tab_button">ڈکوئ ٹیب ٹی ملبو</string>
+  <!-- Bookmark overflow menu open all in tabs button -->
+  <string name="bookmark_menu_open_all_in_tabs_button">کل اے پوسکنا ٹیب اتے ٹی ملبو</string>
   <!-- Bookmark overflow menu open all in private tabs button -->
   <string name="bookmark_menu_open_all_in_private_tabs_button">کل اے ڈکوئ ٹیب اتیٹی ملبو</string>
+  <!-- Bookmark overflow menu delete button -->
+  <string name="bookmark_menu_delete_button">مٹائفبو</string>
   <!-- Accessibility label for sorting options -->
   <string name="bookmark_sort_menu_content_desc">ترتیب نا اپشناک</string>
   <!-- Label for button to sort bookmarks by user-defined sort order in the bookmark sorting overflow menu. -->
@@ -926,6 +979,12 @@
   <string name="bookmark_sort_menu_a_to_z">A ان Z ترتیب ایت</string>
   <!-- Label for button to sort bookmarks in reverse alphabetical order in the bookmark sorting overflow menu. -->
   <string name="bookmark_sort_menu_z_to_a">Z ان A ترتیب ایت</string>
+  <!-- Label for button to import bookmarks from file. -->
+  <string name="bookmark_import_menu_button">فائل ان اتبو</string>
+  <!-- Snackbar message shown when a bookmark import attempt fails. -->
+  <string name="bookmark_import_failure_snackbar">نشانیک اتنگ متور. وا کوشست کبو.</string>
+  <!-- Default name for the folder created when importing bookmarks from a file. -->
+  <string name="bookmark_import_destination_default_name">نشانیک درآمد مسر</string>
   <!--
     Bookmark multi select title in app bar
     %1$d is the number of bookmarks selected
@@ -935,6 +994,13 @@
   <string name="edit_bookmark_fragment_title">نشانی بدل کبو</string>
   <!-- Text indicating which folder a bookmark or folder will be saved in -->
   <string name="bookmark_save_in_label">ٹی خوندی</string>
+  <!-- Label for a text input field for a bookmark or folder name -->
+  <string name="bookmark_name_label_normal_case">پن</string>
+  <!--
+    Bookmark snackbar message on deletion
+    %1$s is the host part of the URL of the bookmark deleted, if any
+  -->
+  <string name="bookmark_deletion_snackbar_message">%1$s مٹائفنگا</string>
   <!-- Content description for the bookmark screen delete bookmark navigation bar button -->
   <string name="bookmark_delete_bookmark_content_description">نشانی مٹائفبو</string>
   <!-- Content description for bookmark search floating action button -->
@@ -945,6 +1011,16 @@
   <string name="bookmarks_folder_description">فولڈر ٹی نشانیک: %s</string>
   <!-- Bookmark snackbar message for moving a single item. %1$s is the title of the item being moved and %2$s is the new parent folder of the bookmark -->
   <string name="bookmark_moved_single_item">دا %1$s %2$s اے سرفنگا</string>
+  <!--
+    Site Permissions
+
+    Button label that take the user to the Android App setting
+  -->
+  <string name="phone_feature_go_to_settings">سیٹنگ اتے انبو</string>
+  <!-- Label that indicates that this option it the recommended one -->
+  <string name="phone_feature_recommended">تجویز مروک</string>
+  <!-- Text for the OK button on Clear permissions dialog -->
+  <string name="clear_permissions_positive">جوان</string>
   <!-- Text for the cancel button on Clear permissions dialog -->
   <string name="clear_permissions_negative">کینسل</string>
   <!-- Text for the cancel button on Clear permission dialog -->
@@ -957,16 +1033,28 @@
   <string name="preference_phone_feature_location">ڈس</string>
   <!-- Preference for altering the notification access for all websites -->
   <string name="preference_phone_feature_notification">اعلان</string>
+  <!-- Label that indicates that a permission must be blocked -->
+  <string name="preference_option_phone_feature_blocked">توننگوک</string>
+  <!-- Label that indicates that a permission must be allowed -->
+  <string name="preference_option_phone_feature_allowed">اجازت ارے</string>
   <!-- Label that indicates a permission is by the Android OS -->
   <string name="phone_feature_blocked_by_android">انڈرویڈ ان توروک اے</string>
   <!-- Summary of tracking protection preference if tracking protection is set to off -->
   <string name="tracking_protection_off">بند</string>
   <!-- Summary of tracking protection preference if tracking protection is set to strict -->
   <string name="tracking_protection_strict">سخت</string>
+  <!-- Summary of delete browsing data on quit preference if it is set to off -->
+  <string name="delete_browsing_data_quit_off">بند</string>
+  <!-- Summary of studies preference if it is set to on -->
+  <string name="studies_on">ملوک</string>
   <!-- Summary of studies data on quit preference if it is set to off -->
   <string name="studies_off">بند</string>
+  <!-- Toggle if desktop site is turned on -->
+  <string name="browser_feature_desktop_site_on">ملوک</string>
   <!-- Toggle if desktop site is turned off -->
   <string name="browser_feature_desktop_site_off">بند</string>
+  <!-- Category header of a preference that allows a user to alter settings related to web permissions. -->
+  <string name="preferences_category_permissions">اجازت اک</string>
   <!-- Preference for altering the default browsing mode. When enabled, the desktop site will always be requested. -->
   <string name="preference_feature_desktop_mode_default">ہمیشہ ڈیسک ٹاپ ویبڈس خواست مرے</string>
   <!--

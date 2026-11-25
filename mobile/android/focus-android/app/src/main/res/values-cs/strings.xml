@@ -435,6 +435,14 @@
     indicates that the website uses a QWAC.
   -->
   <string name="qualified_text">Klasifikovaný podle nařízení (EÚ) 2024/1183.</string>
+  <!-- Title of the section that contains the website's certificate information (issued to, verified by, etc.) as verified by the browser (thus guaranteeing the HTTPS connection is secure) -->
+  <string name="certificate_details_secure_connection_title">Zabezpečené připojení</string>
+  <!-- Label for the organization, locality and country the website's certificate was issued to -->
+  <string name="certificate_details_issued_to_label">Certifikát vydán pro:</string>
+  <!-- Label for the name of the certificate authority that verified and issued the website's certificate -->
+  <string name="certificate_details_verified_by_label">Ověřil:</string>
+  <!-- Content description (not visible, for screen readers etc.) for the EU trust mark logo, shown when the website's certificate is a Qualified Website Authentication Certificate (QWAC) as specified in EU Regulation 2024/1183 -->
+  <string name="certificate_details_eu_trust_mark_content_description">Značka důvěry EU</string>
   <string name="preference_autocomplete_duplicate_url_error">Adresa URL už existuje</string>
   <!-- Label for the Find in page button -->
   <string name="find_in_page">Najít na stránce</string>

@@ -1779,7 +1779,7 @@
   <!-- Text shown on the confirm button for the confirmation dialog shown when moving the last tab out of a group will delete the group. -->
   <string name="move_last_tab_and_delete_group_confirmation_dialog_confirm">Symud tab</string>
   <!-- Text shown on the cancel button for the confirmation dialog shown when moving the last tab out of a group will delete the group. -->
-  <string name="move_last_tab_and_delete_group_confirmation_dialog_cancel">Diddymu</string>
+  <string name="move_last_tab_and_delete_group_confirmation_dialog_cancel">Na</string>
   <!-- Content description for the three dot button next to a tab group" -->
   <string name="tab_group_three_dot_button_content_description">Rhagor o ddewisiadau</string>
   <!--
@@ -3241,7 +3241,7 @@
     %2$d is the amount of data in GB available after signing in (for example "50").
     %3$s is a link using ip_protection_onboarding_body_link_promo (“Learn more”) as text. It links to a support article about VPN on Firefox.
   -->
-  <string name="ip_protection_onboarding_body_no_fxa">Trowch ef ymlaen i wneud eich pori yn fwy preifat ac yn anoddach ei olrhain. Rhowch gynnig arni gyda %1$d GB o led band am ddim, neu mewngofnodwch am %2$d GB. %3$s</string>
+  <string name="ip_protection_onboarding_body_no_fxa">Ei droi ymlaen i wneud eich pori\'n fwy preifat ac yn anoddach ei dracio. Rhowch gynnig arno gyda %1$d GB o led band am ddim, neu mewngofnodi am %2$d GB. %3$s</string>
   <!-- Used as text for a link in ip_protection_onboarding_body. Make sure to adapt capitalization if the link is in the middle of the sentence. -->
   <string name="ip_protection_onboarding_body_link_promo">Dysgu rhagor</string>
   <!-- Label for the dismiss button on the onboarding bottom sheet. -->

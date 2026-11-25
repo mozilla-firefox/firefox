@@ -1183,6 +1183,8 @@
   <string name="preferences_enable_sync_title">Dit apparaat synchroniseren</string>
   <!-- Preference summary for the toggle that turns sync on or off for the device, shown when sync is on. -->
   <string name="preferences_enable_sync_summary_sync_enabled">Er is een reservekopie van uw gegevens gemaakt en deze zijn beschikbaar op gesynchroniseerde apparaten.</string>
+  <!-- Preference summary for the toggle that turns sync on or off for the device, shown when sync is off. It explains where synced data comes from. -->
+  <string name="preferences_enable_sync_summary_sync_disabled_2">Opgeslagen gegevens worden in uw account gebruikt.</string>
   <!-- Preference summary for the toggle that turns sync on or off for the device, shown when sync is off. It explains where synced data comes from. %1$s is the Firefox brand name. -->
   <string name="preferences_enable_sync_summary_sync_disabled">Opgeslagen gegevens worden in uw %1$s-account gebruikt.</string>
   <!-- Summary for the sync preference category. -->
@@ -1702,6 +1704,8 @@
   <string name="add_to_new_tab_group_content_description">Aan nieuwe tabbladgroep toevoegen</string>
   <!-- Label for adding to a new tab group. -->
   <string name="add_to_new_tab_group_title">Nieuwe tabbladgroep</string>
+  <!-- Label to add a link in a new tab inside a tab group. -->
+  <string name="contextmenu_open_in_tab_group">Openen in tabbladgroep</string>
   <plurals name="tab_group_tabs_count_subtitle">
     <!--
       Subtitle for the number of tabs in a tab group.
@@ -1744,6 +1748,14 @@
   <string name="close_tab_and_delete_group_confirmation_dialog_confirm">Groep verwijderen</string>
   <!-- Text shown on the cancel button in the Close last tab and delete tab group confirmation dialog. -->
   <string name="close_tab_and_delete_group_confirmation_dialog_cancel">Annuleren</string>
+  <!-- Title of the confirmation dialog shown when moving the last tab out of a group will delete the group. %s is the group name, which defaults to a value such as "Group 1" but can be edited by the user to contain arbitrary text. -->
+  <string name="move_last_tab_and_delete_group_confirmation_dialog_title">Laatste tabblad uit %s verplaatsen?</string>
+  <!-- Body of the confirmation dialog shown when moving the last tab out of a group will delete the group. %1$s is the destination group name. %2$s is the source group name that will be deleted. Both names default to values such as "Group 1" but can be edited by the user to contain arbitrary text. -->
+  <string name="move_last_tab_and_delete_group_confirmation_dialog_body">Dit tabblad wordt verplaatst naar %1$s. %2$s zal worden verwijderd, omdat deze groep leeg zal zijn.</string>
+  <!-- Text shown on the confirm button for the confirmation dialog shown when moving the last tab out of a group will delete the group. -->
+  <string name="move_last_tab_and_delete_group_confirmation_dialog_confirm">Tabblad verplaatsen</string>
+  <!-- Text shown on the cancel button for the confirmation dialog shown when moving the last tab out of a group will delete the group. -->
+  <string name="move_last_tab_and_delete_group_confirmation_dialog_cancel">Annuleren</string>
   <!-- Content description for the three dot button next to a tab group" -->
   <string name="tab_group_three_dot_button_content_description">Meer opties</string>
   <!--
@@ -3122,6 +3134,8 @@
   <string name="ip_protection_learn_more">Meer info</string>
   <!-- Label for the monthly data allowance section on the browser VPN settings screen -->
   <string name="ip_protection_data_limit_label">Maandelijkse gegevenslimiet</string>
+  <!-- Accessibility description for the button that closes promotional banners or messages on the VPN settings screen (without triggering any effect) -->
+  <string name="ip_protection_settings_message_dismiss">Sluiten</string>
   <!--
     Data usage shown on the browser VPN settings screen.
     %1$.1f is the data remaining in GB (for example "8.3").
@@ -3189,6 +3203,13 @@
     %2$s is a link using ip_protection_onboarding_body_link_promo (“Learn more”) as text. It links to a support article about VPN on Firefox.
   -->
   <string name="ip_protection_onboarding_body_promo">Schakel dit in om uw navigatie meer privé en moeilijker te volgen te maken. Probeer het nu en ontvang tot %1$s onbeperkte bandbreedte. %2$s</string>
+  <!--
+    The body of the VPN onboarding card when the user qualifies for using VPN without signing in to a Mozilla account
+    %1$d is the amount of free data in GB available without signing in (for example "5").
+    %2$d is the amount of data in GB available after signing in (for example "50").
+    %3$s is a link using ip_protection_onboarding_body_link_promo (“Learn more”) as text. It links to a support article about VPN on Firefox.
+  -->
+  <string name="ip_protection_onboarding_body_no_fxa">Schakel dit in om uw navigatie meer privé en moeilijker te volgen te maken. Probeer het met %1$d GB gratis bandbreedte, of meld u aan voor %2$d GB. %3$s</string>
   <!-- Used as text for a link in ip_protection_onboarding_body. Make sure to adapt capitalization if the link is in the middle of the sentence. -->
   <string name="ip_protection_onboarding_body_link_promo">Meer info</string>
   <!-- Label for the dismiss button on the onboarding bottom sheet. -->

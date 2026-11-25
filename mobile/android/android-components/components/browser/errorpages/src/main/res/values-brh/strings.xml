@@ -64,8 +64,30 @@
   <string name="mozac_browser_errorpages_file_not_found_title">فائل ملےتو</string>
   <!-- The document title and heading of an error page. -->
   <string name="mozac_browser_errorpages_file_access_denied_title">فائل اسکان رسینگنگ ان منہ مس</string>
+  <!-- The document title and heading of an error page. -->
+  <string name="mozac_browser_errorpages_safe_browsing_malware_uri_title">مالوئیر ویبڈس ویل</string>
+  <!-- The %1$s will be replaced by the malicious website URL -->
+  <string name="mozac_browser_errorpages_safe_browsing_malware_uri_message"><![CDATA[<p>دا ویبڈس %1$s اے جلہو ڈس اس رپورٹ مسونے و نما حفاظت نا ترجیحاتا بنیات ان توننگانے.</p>]]></string>
+  <!-- The document title and heading of an error page. -->
+  <string name="mozac_browser_errorpages_safe_browsing_unwanted_uri_title">ناخواہوک ویبڈس ویل</string>
+  <!-- The %1$s will be replaced by the malicious website URL -->
+  <string name="mozac_browser_errorpages_safe_browsing_unwanted_uri_message"><![CDATA[<p>دا ویبڈس %1$s اے ناخواہوک سافٹ وئیر ایتنگ کن رپورٹ مسونے و نما حفاظت نا ترجیحاتا بنیات ان توننگانے.</p>]]></string>
+  <!-- The document title and heading of an error page. -->
+  <string name="mozac_browser_errorpages_safe_harmful_uri_title">نخسان تروک ویبڈس ویل</string>
+  <!-- The %1$s will be replaced by the malicious website URL -->
+  <string name="mozac_browser_errorpages_safe_harmful_uri_message"><![CDATA[<p>دا ویبڈس %1$s اے نخسان تروک اس رپورٹ مسونے و نما حفاظت نا ترجیحاتا بنیات ان توننگانے.</p>]]></string>
+  <!-- The document title and heading of an error page. -->
+  <string name="mozac_browser_errorpages_safe_phishing_uri_title">گمراہ کروکا ویبڈس ویل</string>
+  <!-- The %1$s will be replaced by the malicious website URL -->
+  <string name="mozac_browser_errorpages_safe_phishing_uri_message"><![CDATA[<p>دا %1$s گمراہ کروکو ویبڈس اس رپورٹ مسونے و نما حفاظت نا ترجیحاتا بنیات ان توننگانے.</p>]]></string>
+  <!-- The document title and heading of an error page. -->
+  <string name="mozac_browser_errorpages_harmful_addon_uri_title">ویبڈس نما حفاظت کن توننگا</string>
+  <!-- The %1$s will be replaced by the malicious website URL -->
+  <string name="mozac_browser_errorpages_harmful_addon_uri_message"><![CDATA[<p>دا ویبڈس %1$s اے توننگانے انتئے کن نما اسے اوارـمروک اس دادے ملنگ نا کوشست کرے. دا ویبڈس نما معلوماتے دزنگ ککن استعمال مننگ کیک — دن کہ کلیت لوزاک یا کریڈٹ کارڈ نمبراک.</p>]]></string>
   <!-- The title of the error page for websites that do not support HTTPS when HTTPS-Only is turned on -->
   <string name="mozac_browser_errorpages_httpsonly_title">محفوظ ویبڈس موجود اف</string>
+  <!-- The text of the error page for websites that do not support HTTPS when HTTPS-Only is turned on. %1$s will be replaced with the URL of the website. -->
+  <string name="mozac_browser_errorpages_httpsonly_message"><![CDATA[نم زیات حفاظت کن HTTPS-Only موڈ اے لائخ کرینرے، و دا <em>%1$s</em> کن ہچو HTTPS ورژن موجود اف.]]></string>
   <!-- Button on error page for websites that do not support HTTPS when HTTPS-Only is turned on. Clicking the button allows the user to nevertheless load the website using HTTP. -->
   <string name="mozac_browser_errorpages_httpsonly_button">HTTP سائٹ اے برجا کبو</string>
   <!-- Button on error page for websites that do not support HTTPS when HTTPS-Only is turned on.  Clicking the button allows the user to go back. -->

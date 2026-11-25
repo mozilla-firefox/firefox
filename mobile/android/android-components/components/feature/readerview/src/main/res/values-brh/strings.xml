@@ -7,6 +7,8 @@
 -->
 
 <resources>
+  <!-- Accessible description for decreasing the font size -->
+  <string name="mozac_feature_readerview_font_size_decrease_desc">لوز کچ اے کم کننگ</string>
   <!-- Accessible description for increasing the font size -->
   <string name="mozac_feature_readerview_font_size_increase_desc">لوز کچ اے ودینگ</string>
   <!-- Color option for the background -->
