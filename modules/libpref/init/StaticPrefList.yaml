@@ -17290,6 +17290,14 @@
   value: true
   mirror: always
 
+# Whether a RFC 9218 PRIORITY_UPDATE frame should be sent on the HTTP/3 control
+# stream at the beginning of each request.
+- name: network.http.http3.send_initial_priority_update
+  type: RelaxedAtomicBool
+  value: true
+  mirror: always
+  rust: true
+
 # Depriorizing background tabs notifies websites when switching to or from the
 # tab while still loading resources for the website. On one hand it might
 # improve performance when switching to an tab with a website using the same

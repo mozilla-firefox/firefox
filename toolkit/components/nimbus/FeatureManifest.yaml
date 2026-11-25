@@ -3725,6 +3725,12 @@ networkPrioritization:
       setPref:
         branch: default
         pref: "network.http.priority_header.enabled"
+    h3SendInitialPriorityUpdate:
+      description: Whether a PRIORIY_UPDATE frame should be sent on the Http/3 control stream at the beginning of each request.
+      type: boolean
+      setPref:
+        branch: default
+        pref: "network.http.http3.send_initial_priority_update"
     fetchPriority:
       description: Whether fetch priority is enabled
       type: boolean
