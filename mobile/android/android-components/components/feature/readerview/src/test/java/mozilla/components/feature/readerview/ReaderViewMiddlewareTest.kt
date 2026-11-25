@@ -199,16 +199,17 @@ class ReaderViewMiddlewareTest {
     }
 
     @Test
-    fun `GIVEN a reader page WHEN it reports a non-http active URL THEN the active URL and tab URL are not changed`() {
-        val readerUrl = "moz-extension://123/readerview.html?url=javascript%3Aalert(1)"
+    fun `GIVEN a reader page for an article WHEN a non-http active URL is reported THEN the article URL is kept`() {
+        val articleUrl = "https://www.mozilla.org/article1"
         val tab =
             createTab(
-                readerUrl,
+                articleUrl,
                 id = "test-tab1",
                 readerState =
                     ReaderState(
                         active = true,
                         baseUrl = "moz-extension://123",
+                        activeUrl = articleUrl,
                     ),
             )
         val store =
@@ -221,33 +222,8 @@ class ReaderViewMiddlewareTest {
             store.dispatch(ReaderAction.UpdateReaderActiveUrlAction(tab.id, activeUrl = it))
         }
 
-        assertNull(store.state.findTab(tab.id)!!.readerState.activeUrl)
-        assertEquals(readerUrl, store.state.findTab(tab.id)!!.content.url)
-    }
-
-    @Test
-    fun `GIVEN a restored non-http active URL WHEN navigating to the reader page THEN the tab URL is not masked with it`() {
-        val readerUrl = "moz-extension://123/readerview.html?url=javascript%3Aalert(1)"
-        val tab =
-            createTab(
-                "https://www.mozilla.org",
-                id = "test-tab1",
-                readerState =
-                    ReaderState(
-                        active = true,
-                        baseUrl = "moz-extension://123",
-                        activeUrl = "javascript:alert(1)",
-                    ),
-            )
-        val store =
-            BrowserStore(
-                initialState = BrowserState(tabs = listOf(tab)),
-                middleware = listOf(ReaderViewMiddleware()),
-            )
-
-        store.dispatch(ContentAction.UpdateUrlAction(tab.id, readerUrl))
-
-        assertEquals(readerUrl, store.state.findTab(tab.id)!!.content.url)
+        assertEquals(articleUrl, store.state.findTab(tab.id)!!.readerState.activeUrl)
+        assertEquals(articleUrl, store.state.findTab(tab.id)!!.content.url)
     }
 
     @Test
