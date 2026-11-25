@@ -501,7 +501,7 @@ add_task(async function test_extension_sidebar_shortcuts() {
 
   // The sidebar panel is open by default, so let's just close it.
   EventUtils.synthesizeKey("KEY_F1", {}, win);
-  await sidebar.updateComplete;
+  await win.SidebarController.waitUntilStable();
   ok(!win.SidebarController.isOpen, "sidebar is closed");
 
   // Update shortcut.
@@ -513,7 +513,7 @@ add_task(async function test_extension_sidebar_shortcuts() {
 
   // Re-open the sidebar panel with the new shortcut.
   EventUtils.synthesizeKey("KEY_F2", {}, win);
-  await sidebar.updateComplete;
+  await win.SidebarController.waitUntilStable();
   // The sidebar panel is shown again.
   await extension.awaitMessage("sidebar");
   ok(win.SidebarController.isOpen, "sidebar is open");
