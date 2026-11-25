@@ -11188,7 +11188,7 @@ void Document::WriteCommon(const nsAString& aText, bool aNewlineTerminate,
       // Instead of implying a call to document.open(), ignore the call.
       nsContentUtils::ReportToConsole(
           nsIScriptError::warningFlag, "DOM Events"_ns, this,
-          PropertiesFile::DOM_PROPERTIES, "DocumentWriteIgnored");
+          FluentResourceFile::DOM, "dom-document-write-ignored"_ns);
       return;
     }
     // The spec doesn't tell us to ignore opens from here, but we need to
@@ -11205,7 +11205,7 @@ void Document::WriteCommon(const nsAString& aText, bool aNewlineTerminate,
       // Instead of implying a call to document.open(), ignore the call.
       nsContentUtils::ReportToConsole(
           nsIScriptError::warningFlag, "DOM Events"_ns, this,
-          PropertiesFile::DOM_PROPERTIES, "DocumentWriteIgnored");
+          FluentResourceFile::DOM, "dom-document-write-ignored"_ns);
       return;
     }
 

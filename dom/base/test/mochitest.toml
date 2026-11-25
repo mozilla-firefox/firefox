@@ -421,6 +421,8 @@ skip-if = [
 
 ["test_find_nac.html"]
 
+["test_fluent_console_message.html"]
+
 ["test_focus_design_mode.html"]
 support-files = ["file_focus_design_mode_inner.html"]
 

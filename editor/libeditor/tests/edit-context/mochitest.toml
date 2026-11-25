@@ -11,6 +11,8 @@ support-files = ["common.js"]
 
 ["test_editcontext_blur_in_textupdate.html"]
 
+["test_editcontext_character_bounds_warning.html"]
+
 ["test_editcontext_characterboundsupdate_focus.html"]
 
 ["test_editcontext_characterboundsupdate_range.html"]
