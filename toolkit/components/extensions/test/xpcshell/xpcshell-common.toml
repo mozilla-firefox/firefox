@@ -856,6 +856,8 @@ skip-if = [
 
 ["test_ext_webRequest_redirect_resource_timing.js"]
 
+["test_ext_webRequest_requestBody_no_content_type.js"]
+
 ["test_ext_webRequest_requestSize.js"]
 
 ["test_ext_webRequest_restrictedHeaders.js"]

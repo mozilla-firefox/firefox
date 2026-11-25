@@ -382,7 +382,15 @@ function parseFormData(stream, channel, lenient = false) {
     }
 
     channel.QueryInterface(Ci.nsIHttpChannel);
-    let contentType = channel.getRequestHeader("Content-Type");
+    let contentType;
+    try {
+      contentType = channel.getRequestHeader("Content-Type");
+    } catch (error) {
+      if (error.result != Cr.NS_ERROR_NOT_AVAILABLE) {
+        throw error;
+      }
+      return null;
+    }
 
     switch (Headers.getParam(contentType, "")) {
       case "multipart/form-data": {
