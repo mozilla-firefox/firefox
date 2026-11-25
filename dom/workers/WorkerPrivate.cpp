@@ -2720,6 +2720,8 @@ void WorkerPrivate::UpdateIsOnContentBlockingAllowList(
             shouldResistFingerprinting;
         ref->Private()->mLoadInfo.mShouldResistFingerprinting =
             shouldResistFingerprinting;
+        ref->Private()->mFontVisibilityProvider->SetShouldResistFingerprinting(
+            shouldResistFingerprinting);
       }));
 
   /* From:
@@ -2922,7 +2924,7 @@ WorkerPrivate::WorkerPrivate(
       mIsPrivilegedAddonGlobal(false),
       mTopLevelWorkerFinishedRunnableCount(0),
       mWorkerFinishedRunnableCount(0),
-      mFontVisibility(ComputeFontVisibility()) {
+      mFontVisibilityProvider(new WorkerFontVisibilityProvider(*this)) {
   LOG(WorkerLog(), ("WorkerPrivate::WorkerPrivate [%p]", this));
   MOZ_ASSERT_IF(!IsDedicatedWorker(), NS_IsMainThread());
 
@@ -7128,35 +7130,14 @@ WorkerPrivate::AutoPushEventLoopGlobal::~AutoPushEventLoopGlobal() {
   data->mCurrentEventLoopGlobal = std::move(mOldEventLoopGlobal);
 }
 
-// FontVisibilityProvider implementation
-FontVisibility WorkerPrivate::GetFontVisibility() const {
-  return mFontVisibility;
-}
-
-void WorkerPrivate::ReportBlockedFontFamily(const nsCString& aMsg) const {
-  MOZ_LOG(gFingerprinterDetection, mozilla::LogLevel::Info, ("%s", aMsg.get()));
-  nsContentUtils::ReportToConsoleByWindowID(NS_ConvertUTF8toUTF16(aMsg),
-                                            nsIScriptError::warningFlag,
-                                            "Security"_ns, WindowID());
-}
-
-bool WorkerPrivate::IsChrome() const { return IsChromeWorker(); }
-
-bool WorkerPrivate::IsPrivateBrowsing() const {
-  return mLoadInfo.mOriginAttributes.IsPrivateBrowsing();
-}
-
-nsICookieJarSettings* WorkerPrivate::GetCookieJarSettings() const {
-  return CookieJarSettings();
-}
-
-Maybe<FontVisibility> WorkerPrivate::MaybeInheritFontVisibility() const {
-  if (mParent) {
+static Maybe<FontVisibility> InheritedWorkerFontVisibility(
+    const WorkerPrivate& aWorkerPrivate) {
+  if (WorkerPrivate* parent = aWorkerPrivate.GetParent()) {
     // If we have a parent, we inherit the parent's font visibility.
-    return Some(mParent->GetFontVisibility());
+    return Some(parent->GetFontVisibility());
   }
 
-  dom::Document* doc = GetDocument();
+  dom::Document* doc = aWorkerPrivate.GetDocument();
   if (!doc) {
     return Nothing();
   }
@@ -7167,7 +7148,55 @@ Maybe<FontVisibility> WorkerPrivate::MaybeInheritFontVisibility() const {
   return Some(presContext->GetFontVisibility());
 }
 
-void WorkerPrivate::UserFontSetUpdated(gfxUserFontEntry*) {}
+WorkerFontVisibilityProvider::WorkerFontVisibilityProvider(
+    const WorkerPrivate& aWorkerPrivate)
+    : mShouldResistFingerprinting(
+          aWorkerPrivate.mLoadInfo.mShouldResistFingerprinting),
+      mOverriddenFingerprintingSettings(
+          aWorkerPrivate.mLoadInfo.mOverriddenFingerprintingSettings),
+      mIsChrome(aWorkerPrivate.IsChromeWorker()),
+      mIsPrivateBrowsing(aWorkerPrivate.IsPrivateBrowsing()),
+      mWindowID(aWorkerPrivate.WindowID()),
+      mCookieJarSettings(aWorkerPrivate.CookieJarSettings()),
+      mInheritedFontVisibility(InheritedWorkerFontVisibility(aWorkerPrivate)),
+      mFontVisibility(ComputeFontVisibility()) {}
+
+FontVisibility WorkerFontVisibilityProvider::GetFontVisibility() const {
+  return mFontVisibility;
+}
+
+bool WorkerFontVisibilityProvider::ShouldResistFingerprinting(
+    RFPTarget aTarget) const {
+  return mShouldResistFingerprinting &&
+         nsRFPService::IsRFPEnabledFor(mIsPrivateBrowsing, aTarget,
+                                       mOverriddenFingerprintingSettings);
+}
+
+void WorkerFontVisibilityProvider::ReportBlockedFontFamily(
+    const nsCString& aMsg) const {
+  MOZ_LOG(gFingerprinterDetection, mozilla::LogLevel::Info, ("%s", aMsg.get()));
+  nsContentUtils::ReportToConsoleByWindowID(NS_ConvertUTF8toUTF16(aMsg),
+                                            nsIScriptError::warningFlag,
+                                            "Security"_ns, mWindowID);
+}
+
+bool WorkerFontVisibilityProvider::IsChrome() const { return mIsChrome; }
+
+bool WorkerFontVisibilityProvider::IsPrivateBrowsing() const {
+  return mIsPrivateBrowsing;
+}
+
+nsICookieJarSettings* WorkerFontVisibilityProvider::GetCookieJarSettings()
+    const {
+  return mCookieJarSettings;
+}
+
+Maybe<FontVisibility> WorkerFontVisibilityProvider::MaybeInheritFontVisibility()
+    const {
+  return mInheritedFontVisibility;
+}
+
+void WorkerFontVisibilityProvider::UserFontSetUpdated(gfxUserFontEntry*) {}
 
 // -----------------------------------------------------------------------------
 // AutoSyncLoopHolder

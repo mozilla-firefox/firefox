@@ -10,6 +10,7 @@
 
 namespace mozilla::dom {
 class ThreadSafeWorkerRef;
+class WorkerFontVisibilityProvider;
 class WorkerPrivate;
 
 class FontFaceSetWorkerImpl final : public FontFaceSetImpl {
@@ -64,6 +65,10 @@ class FontFaceSetWorkerImpl final : public FontFaceSetImpl {
   // Font loads happen on the main thread, but the required ClientInfo is only
   // accessible on the worker thread.
   Maybe<ClientInfo> mClientInfo MOZ_GUARDED_BY(mMutex);
+
+  // It's important that this outlives the worker shutdown.
+  RefPtr<WorkerFontVisibilityProvider> mFontVisibilityProvider
+      MOZ_GUARDED_BY(mMutex);
 };
 
 }  // namespace mozilla::dom

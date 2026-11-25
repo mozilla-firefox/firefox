@@ -45,6 +45,7 @@ bool FontFaceSetWorkerImpl::Initialize(WorkerPrivate* aWorkerPrivate) {
   {
     RecursiveMutexAutoLock lock(mMutex);
     mWorkerRef = new ThreadSafeWorkerRef(workerRef);
+    mFontVisibilityProvider = aWorkerPrivate->GetFontVisibilityProvider();
     mClientInfo = aWorkerPrivate->GlobalScope()->GetClientInfo();
   }
 
@@ -358,7 +359,7 @@ nsresult FontFaceSetWorkerImpl::CreateChannelForSyncLoadFontData(
 FontVisibilityProvider* FontFaceSetWorkerImpl::GetFontVisibilityProvider()
     const {
   RecursiveMutexAutoLock lock(mMutex);
-  return mWorkerRef ? mWorkerRef->Private() : nullptr;
+  return mFontVisibilityProvider;
 }
 
 TimeStamp FontFaceSetWorkerImpl::GetNavigationStartTimeStamp() {
