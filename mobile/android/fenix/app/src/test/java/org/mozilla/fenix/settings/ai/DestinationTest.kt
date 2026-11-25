@@ -10,6 +10,8 @@ import org.junit.Assert.assertEquals
 import org.junit.Assert.assertNull
 import org.junit.Test
 import org.mozilla.fenix.R
+import org.mozilla.fenix.listentopage.ListenToPageAIControlFeature
+import org.mozilla.fenix.settings.SupportUtils
 
 class DestinationTest {
 
@@ -25,6 +27,16 @@ class DestinationTest {
         val destination = PageSummaryFeature.destination
 
         assertEquals(R.string.ai_controls_more_page_summary_settings, (destination as Destination).label)
+    }
+
+    @Test
+    fun `listen to page feature maps to its SUMO learn more link`() {
+        val destination = ListenToPageAIControlFeature.destination
+
+        assertEquals(
+            LearnMoreLink(topic = SupportUtils.SumoTopic.LISTEN_TO_PAGE, label = R.string.ai_controls_learn_more),
+            destination,
+        )
     }
 
     @Test

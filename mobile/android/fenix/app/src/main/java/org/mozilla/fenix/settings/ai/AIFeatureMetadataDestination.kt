@@ -10,6 +10,7 @@ import androidx.navigation.fragment.findNavController
 import mozilla.components.concept.ai.controls.AIFeatureMetadata
 import mozilla.components.feature.summarize.PageSummaryFeature
 import org.mozilla.fenix.R
+import org.mozilla.fenix.listentopage.ListenToPageAIControlFeature
 import org.mozilla.fenix.settings.SupportUtils
 import org.mozilla.fenix.translations.TranslationsAIControllableFeature
 
@@ -37,6 +38,11 @@ val AIFeatureMetadata.destination: AIFeatureMetadataDestination?
                 Destination(
                     id = R.id.action_aiControlsFragment_to_translationsSettingsFragment,
                     label = R.string.ai_controls_more_translations_settings,
+                )
+            ListenToPageAIControlFeature.id ->
+                LearnMoreLink(
+                    topic = SupportUtils.SumoTopic.LISTEN_TO_PAGE,
+                    label = R.string.ai_controls_learn_more,
                 )
             else -> null
         }
