@@ -1047,8 +1047,8 @@ export class UrlbarParentController {
    *   The target browser's id; defaults to the selected browser. A content
    *   sender always targets its own tab. A `current` load is dropped if its
    *   target browser has gone away.
-   * @param {string} [loadData.urlbarOverrideValue]
-   *   The value to set as the browser's `urlbarOverrideValue`, for a `current` load.
+   * @param {string} [loadData.userTypedValue]
+   *   The value to record as the browser's typed value, for a `current` load.
    * @param {?UrlbarSearchData} [loadData.searchData]
    *   For an engine search, the search data. It is recorded with
    *   the submission's partner code once the load has gone ahead.
@@ -1065,7 +1065,7 @@ export class UrlbarParentController {
     where,
     params,
     browserId,
-    urlbarOverrideValue,
+    userTypedValue,
     searchData = null,
   }) {
     // TODO(bug 2076823): Simplify how the target browser is picked.
@@ -1096,7 +1096,7 @@ export class UrlbarParentController {
         url,
         where,
         params,
-        urlbarOverrideValue,
+        userTypedValue,
       });
     }
 
@@ -1263,12 +1263,12 @@ export class UrlbarParentController {
    *   Where to open, per `openTrustedLinkIn`.
    * @param {LoadURLParams} loadData.params
    *   The `openTrustedLinkIn` params.
-   * @param {string} [loadData.urlbarOverrideValue]
-   *   The value to set as the browser's `urlbarOverrideValue`, for a `current` load.
+   * @param {string} [loadData.userTypedValue]
+   *   The value to record as the browser's typed value, for a `current` load.
    */
-  #prepareAddressbarLoad({ browser, url, where, params, urlbarOverrideValue }) {
+  #prepareAddressbarLoad({ browser, url, where, params, userTypedValue }) {
     if (where == "current") {
-      browser.urlbarOverrideValue = urlbarOverrideValue;
+      browser.userTypedValue = userTypedValue;
     }
 
     // No point in setting this if we are loading in a new window.

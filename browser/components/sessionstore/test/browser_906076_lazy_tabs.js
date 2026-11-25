@@ -47,8 +47,8 @@ const TEST_STATE_2 = {
         { entries: [{ url: "about:robots", triggeringPrincipal_base64 }] },
         {
           entries: [],
-          urlbarOverrideValue: "http://example.com",
-          urlbarOverrideLoadStarted: true,
+          userTypedValue: "http://example.com",
+          userTypedClear: 1,
         },
       ],
     },

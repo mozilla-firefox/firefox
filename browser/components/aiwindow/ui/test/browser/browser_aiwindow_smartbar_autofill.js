@@ -92,9 +92,9 @@ add_task(async function test_autofill_suffix_reapply() {
         "Query matches the typed prefix and not the autofilled value"
       );
       Assert.equal(
-        smartbar.overrideValue,
+        smartbar.userTypedValue,
         typed,
-        "overrideValue matches the typed prefix and not the autofilled value"
+        "userTypedValue matches the typed prefix and not the autofilled value"
       );
     }
   );

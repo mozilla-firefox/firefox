@@ -246,8 +246,8 @@ add_task(async function scrubsSessionData() {
     scroll: { scroll: "0,10" },
     searchMode: { engineName: "engine" },
     storage: { "https://example.com": { key: "value" } },
-    urlbarOverrideLoadStarted: true,
-    urlbarOverrideValue: "typed",
+    userTypedClear: 1,
+    userTypedValue: "typed",
   });
   Assert.deepEqual(
     state,

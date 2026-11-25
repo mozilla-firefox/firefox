@@ -455,13 +455,13 @@
           "$comment": "Introduced Firefox 133, bug 1908418",
           "type": "string"
         },
-        "urlbarOverrideValue": {
-          "$comment": "Introduced Firefox 162, bug 2092179, replacing userTypedValue",
+        "userTypedValue": {
+          "$comment": "Introduced Firefox 3.5, bug 439675",
           "type": "string"
         },
-        "urlbarOverrideLoadStarted": {
-          "$comment": "Introduced Firefox 162, bug 2092179, replacing userTypedClear",
-          "const": true
+        "userTypedClear": {
+          "$comment": "Introduced Firefox 4, bug 522545",
+          "type": "integer"
         }
       },
       "required": ["entries"],

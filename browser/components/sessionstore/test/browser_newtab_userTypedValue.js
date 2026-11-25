@@ -22,15 +22,11 @@ add_task(async function () {
   win.BrowserCommands.openTab();
   let tab = await tabOpenedAndSwitchedTo;
   is(win.gURLBar.value, "", "URL bar should be empty");
-  is(
-    tab.linkedBrowser.urlbarOverrideValue,
-    null,
-    "urlbarOverrideValue should be null"
-  );
+  is(tab.linkedBrowser.userTypedValue, null, "userTypedValue should be null");
   let state = JSON.parse(SessionStore.getTabState(tab));
   ok(
-    !state.urlbarOverrideValue,
-    "urlbarOverrideValue should be undefined on the tab's state"
+    !state.userTypedValue,
+    "userTypedValue should be undefined on the tab's state"
   );
   tab = null;
 
@@ -51,15 +47,11 @@ add_task(async function () {
 
   is(win.gURLBar.value, "", "URL bar should be empty");
   tab = win.gBrowser.selectedTab;
-  is(
-    tab.linkedBrowser.urlbarOverrideValue,
-    null,
-    "urlbarOverrideValue should be null"
-  );
+  is(tab.linkedBrowser.userTypedValue, null, "userTypedValue should be null");
   state = JSON.parse(SessionStore.getTabState(tab));
   ok(
-    !state.urlbarOverrideValue,
-    "urlbarOverrideValue should be undefined on the tab's state"
+    !state.userTypedValue,
+    "userTypedValue should be undefined on the tab's state"
   );
 
   BrowserTestUtils.removeTab(tab);
@@ -88,15 +80,11 @@ add_task(async function () {
 
     is(win.gURLBar.value, "", "URL bar should be empty");
     tab = win.gBrowser.selectedTab;
-    is(
-      tab.linkedBrowser.urlbarOverrideValue,
-      null,
-      "urlbarOverrideValue should be null"
-    );
+    is(tab.linkedBrowser.userTypedValue, null, "userTypedValue should be null");
     state = JSON.parse(SessionStore.getTabState(tab));
     ok(
-      !state.urlbarOverrideValue,
-      "urlbarOverrideValue should be undefined on the tab's state"
+      !state.userTypedValue,
+      "userTypedValue should be undefined on the tab's state"
     );
 
     info("Removing tab - " + new Date());
@@ -130,14 +118,14 @@ add_task(async function test_typed_search_restored_before_search_init() {
   );
   await promiseTabState(tab, {
     entries: [{ url: "about:mozilla", triggeringPrincipal_base64 }],
-    urlbarOverrideValue: "test",
-    urlbarOverrideLoadStarted: true,
+    userTypedValue: "test",
+    userTypedClear: 1,
   });
   stub.restore();
 
   let browser = tab.linkedBrowser;
   is(browser.currentURI.spec, "about:mozilla", "History entry is restored");
-  is(browser.urlbarOverrideValue, "test", "urlbarOverrideValue is kept");
+  is(browser.userTypedValue, "test", "userTypedValue is kept");
   is(gURLBar.value, "test", "URL bar shows the typed value");
   ok(!SessionStore.isTabRestoring(tab), "Tab finished restoring");
 

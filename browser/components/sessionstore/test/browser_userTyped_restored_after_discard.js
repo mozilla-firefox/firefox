@@ -14,7 +14,7 @@ add_task(async function testDiscardWithNotLoadedUserTypedValue() {
   // the tab got discarded).
   await TabStateFlusher.flush(tab1.linkedBrowser);
 
-  tab1.linkedBrowser.urlbarOverrideValue = "mockUserTypedValue";
+  tab1.linkedBrowser.userTypedValue = "mockUserTypedValue";
 
   let tab2 = await BrowserTestUtils.openNewForegroundTab(
     gBrowser,

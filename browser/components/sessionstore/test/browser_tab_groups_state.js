@@ -11,7 +11,7 @@ registerCleanupFunction(async () => {
  * @returns {TabStateData|undefined}
  */
 function findTabStateByUrl(windowState, url) {
-  return windowState.tabs.find(tabState => tabState.urlbarOverrideValue == url);
+  return windowState.tabs.find(tabState => tabState.userTypedValue == url);
 }
 
 add_task(async function test_TabGroupsInState() {

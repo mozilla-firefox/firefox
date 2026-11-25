@@ -70,19 +70,11 @@ add_task(async function invalidURL() {
   EventUtils.sendKey("return");
   await errorPageLoaded;
   is(gURLBar.value, input, "Text is still in URL bar");
-  is(
-    tab.linkedBrowser.urlbarOverrideValue,
-    input,
-    "Text still stored on browser"
-  );
+  is(tab.linkedBrowser.userTypedValue, input, "Text still stored on browser");
   await BrowserTestUtils.switchTab(gBrowser, tab.previousElementSibling);
   await BrowserTestUtils.switchTab(gBrowser, tab);
   is(gURLBar.value, input, "Text is still in URL bar after tab switch");
-  is(
-    tab.linkedBrowser.urlbarOverrideValue,
-    input,
-    "Text still stored on browser"
-  );
+  is(tab.linkedBrowser.userTypedValue, input, "Text still stored on browser");
   BrowserTestUtils.removeTab(tab);
 });
 
@@ -98,7 +90,7 @@ add_task(async function selectAndFocus() {
       url: webpageTabURL,
     });
 
-    // Create a tab with urlbarOverrideValue.
+    // Create a tab with userTypedValue.
     const userTypedTabText = "test";
     const userTypedTab = await BrowserTestUtils.openNewForegroundTab({
       gBrowser,

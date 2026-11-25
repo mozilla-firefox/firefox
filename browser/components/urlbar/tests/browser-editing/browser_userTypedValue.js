@@ -11,7 +11,7 @@ function test() {
     Services.scriptSecurityManager.getSystemPrincipal()
   );
 
-  is(gBrowser.urlbarOverrideValue, URI, "urlbarOverrideValue matches test URI");
+  is(gBrowser.userTypedValue, URI, "userTypedValue matches test URI");
   is(
     gURLBar.value,
     UrlbarTestUtils.trimURL(URI),
@@ -21,9 +21,9 @@ function test() {
   gBrowser.selectedTab = BrowserTestUtils.addTab(gBrowser);
   gBrowser.removeCurrentTab({ skipPermitUnload: true });
   is(
-    gBrowser.urlbarOverrideValue,
+    gBrowser.userTypedValue,
     URI,
-    "urlbarOverrideValue matches test URI after switching tabs"
+    "userTypedValue matches test URI after switching tabs"
   );
   is(
     gURLBar.value,
@@ -34,9 +34,9 @@ function test() {
   waitForExplicitFinish();
   BrowserTestUtils.browserLoaded(gBrowser.selectedBrowser).then(() => {
     is(
-      gBrowser.urlbarOverrideValue,
+      gBrowser.userTypedValue,
       null,
-      "urlbarOverrideValue is null as the page has loaded"
+      "userTypedValue is null as the page has loaded"
     );
     is(
       gURLBar.value,

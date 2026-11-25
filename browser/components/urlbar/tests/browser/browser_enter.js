@@ -359,7 +359,7 @@ add_task(async function closeTabRightAfterEnter() {
   BrowserTestUtils.removeTab(tab);
   await loadURLSpy.firstCall.returnValue;
   Assert.equal(
-    gBrowser.selectedBrowser.urlbarOverrideValue,
+    gBrowser.selectedBrowser.userTypedValue,
     null,
     "The load didn't go to the newly selected tab"
   );

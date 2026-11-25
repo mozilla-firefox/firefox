@@ -98,9 +98,9 @@ async function doSetURITest(initialURL, searchString, url, expectSearchMode) {
     });
     await UrlbarTestUtils.promisePopupClose(window);
     Assert.strictEqual(
-      gBrowser.selectedBrowser.urlbarOverrideValue,
+      gBrowser.selectedBrowser.userTypedValue,
       searchString,
-      `urlbarOverrideValue should be ${searchString}`
+      `userTypedValue should be ${searchString}`
     );
 
     // Call setURI.

@@ -45,7 +45,7 @@ async function checkShortcutLoading(modifierKeys) {
   // network.
   gURLBar.focus();
   gURLBar.value = "example.com";
-  gURLBar.overrideValue = true;
+  gURLBar.userTypedValue = true;
   EventUtils.synthesizeKey("KEY_Enter", modifierKeys);
 
   // The message path round-trips the fallback, so wait for the query to start.

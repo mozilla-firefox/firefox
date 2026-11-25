@@ -18,20 +18,6 @@ const { XPCOMUtils } = ChromeUtils.importESModule(
  * @import { PopupAndRedirectBlocker } from "moz-src:///toolkit/actors/PopupAndRedirectBlockingParent.sys.mjs";
  */
 
-/**
- * @typedef {object} UrlbarOverride
- * @property {string} value
- *   The address bar value to show instead of the browser's URL.
- * @property {boolean} [loadStarted]
- *   Whether a load started after the value was set and hasn't finished yet.
- * @property {boolean} [typed]
- *   Whether the value comes from the user editing the address bar, e.g. by
- *   typing, pasting or accepting autofill, as opposed to code setting it, e.g.
- *   when opening a tab. Selecting a result without picking it keeps the value
- *   the user typed. Session store doesn't save this, so a restored value isn't
- *   typed.
- */
-
 let lazy = {};
 
 ChromeUtils.defineESModuleGetters(lazy, {
@@ -405,8 +391,21 @@ export class MozBrowser extends MozElements.MozElementMixin(XULFrameElement) {
 
     this._unselectedTabHoverMessageListenerCount = 0;
 
-    /** @type {UrlbarOverride | null} */
-    this._urlbarOverride = null;
+    this.urlbarChangeTracker = {
+      _startedLoadSinceLastUserTyping: false,
+
+      startedLoad() {
+        this._startedLoadSinceLastUserTyping = true;
+      },
+      finishedLoad() {
+        this._startedLoadSinceLastUserTyping = false;
+      },
+      userTyped() {
+        this._startedLoadSinceLastUserTyping = false;
+      },
+    };
+
+    this._userTypedValue = null;
 
     this._AUTOSCROLL_SNAP = 10;
 
@@ -832,74 +831,13 @@ export class MozBrowser extends MozElements.MozElementMixin(XULFrameElement) {
     return this.browsingContext.secureBrowserUI;
   }
 
-  /**
-   * The address bar value to show for this browser instead of its URL, or null.
-   * Setting it resets the override's other state.
-   *
-   * @type {string | null}
-   */
-  set urlbarOverrideValue(val) {
-    this.urlbarOverride = val == null ? null : { value: val };
+  set userTypedValue(val) {
+    this.urlbarChangeTracker.userTyped();
+    this._userTypedValue = val;
   }
 
-  get urlbarOverrideValue() {
-    return this._urlbarOverride?.value ?? null;
-  }
-
-  /**
-   * The address bar value override together with its state, or null.
-   *
-   * @type {UrlbarOverride | null}
-   */
-  set urlbarOverride(state) {
-    this._urlbarOverride = state
-      ? {
-          value: state.value,
-          loadStarted: !!state.loadStarted,
-          typed: !!state.typed,
-        }
-      : null;
-  }
-
-  /** @type {UrlbarOverride | null} */
-  get urlbarOverride() {
-    if (!this._urlbarOverride) {
-      return null;
-    }
-    return {
-      value: this._urlbarOverride.value,
-      loadStarted: this.loadStartedSinceUrlbarOverride,
-      typed: this._urlbarOverride.typed,
-    };
-  }
-
-  /**
-   * Whether the user typed the address bar value override. See `typed` in
-   * UrlbarOverride.
-   *
-   * @type {boolean}
-   */
-  get urlbarOverrideValueTyped() {
-    return !!this._urlbarOverride?.typed;
-  }
-
-  /**
-   * Whether a load started after the address bar value override was set and
-   * hasn't finished yet.
-   *
-   * @type {boolean}
-   */
-  get loadStartedSinceUrlbarOverride() {
-    return !this.isNavigating && !!this._urlbarOverride?.loadStarted;
-  }
-
-  /**
-   * @param {boolean} loadStarted
-   */
-  setLoadStartedSinceUrlbarOverride(loadStarted) {
-    if (this._urlbarOverride) {
-      this._urlbarOverride.loadStarted = loadStarted;
-    }
+  get userTypedValue() {
+    return this._userTypedValue;
   }
 
   get dontPromptAndDontUnload() {
@@ -1128,6 +1066,13 @@ export class MozBrowser extends MozElements.MozElementMixin(XULFrameElement) {
       },
       "UnselectedTabHover",
       "roots"
+    );
+  }
+
+  didStartLoadSinceLastUserTyping() {
+    return (
+      !this.isNavigating &&
+      this.urlbarChangeTracker._startedLoadSinceLastUserTyping
     );
   }
 
@@ -1729,7 +1674,7 @@ export class MozBrowser extends MozElements.MozElementMixin(XULFrameElement) {
           "_contentPartitionedPrincipal",
           "_isSyntheticDocument",
           "_originalURI",
-          "_urlbarOverride",
+          "_userTypedValue",
         ]
       );
     }

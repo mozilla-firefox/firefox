@@ -48,9 +48,9 @@ add_task(async function clearURLBarAfterParentProcessURL() {
   );
   is(gURLBar.value, "", "URL bar should be empty");
   is(
-    tab.linkedBrowser.urlbarOverrideValue,
+    tab.linkedBrowser.userTypedValue,
     null,
-    "The browser should have no recorded urlbarOverrideValue"
+    "The browser should have no recorded userTypedValue"
   );
   BrowserTestUtils.removeTab(tab);
 });
@@ -80,9 +80,9 @@ add_task(async function clearURLBarAfterParentProcessURLInExistingTab() {
   );
   is(gURLBar.value, "", "URL bar should be empty");
   is(
-    tab.linkedBrowser.urlbarOverrideValue,
+    tab.linkedBrowser.userTypedValue,
     null,
-    "The browser should have no recorded urlbarOverrideValue"
+    "The browser should have no recorded userTypedValue"
   );
   BrowserTestUtils.removeTab(tab);
 });
@@ -101,11 +101,7 @@ add_task(async function clearURLBarAfterManuallyLoadingAboutHome() {
   BrowserCommands.openTab();
   let tab = await promiseTabOpenedAndSwitchedTo;
   is(gURLBar.value, "", "URL bar should be empty");
-  is(
-    tab.linkedBrowser.urlbarOverrideValue,
-    null,
-    "urlbarOverrideValue should be null"
-  );
+  is(tab.linkedBrowser.userTypedValue, null, "userTypedValue should be null");
 
   gURLBar.value = "about:home";
   gURLBar.select();
@@ -118,11 +114,7 @@ add_task(async function clearURLBarAfterManuallyLoadingAboutHome() {
   await aboutHomeLoaded;
 
   is(gURLBar.value, "", "URL bar should be empty");
-  is(
-    tab.linkedBrowser.urlbarOverrideValue,
-    null,
-    "urlbarOverrideValue should be null"
-  );
+  is(tab.linkedBrowser.userTypedValue, null, "userTypedValue should be null");
   BrowserTestUtils.removeTab(tab);
 });
 
@@ -221,15 +213,15 @@ add_task(async function () {
     async browser => {
       const TYPED_VALUE = "This string should get cleared";
       gURLBar.value = TYPED_VALUE;
-      browser.urlbarOverrideValue = TYPED_VALUE;
+      browser.userTypedValue = TYPED_VALUE;
 
       document.getElementById("home-button").click();
       await BrowserTestUtils.browserLoaded(browser, false, HomePage.get());
       is(gURLBar.value, "", "URL bar should be empty");
       is(
-        browser.urlbarOverrideValue,
+        browser.userTypedValue,
         null,
-        "The browser should have no recorded urlbarOverrideValue"
+        "The browser should have no recorded userTypedValue"
       );
     }
   );

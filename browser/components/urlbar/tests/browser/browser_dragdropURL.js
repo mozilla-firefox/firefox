@@ -52,7 +52,7 @@ add_task(async function checkDragURL() {
       "URL bar value should not have changed"
     );
     Assert.equal(
-      gBrowser.selectedBrowser.urlbarOverrideValue,
+      gBrowser.selectedBrowser.userTypedValue,
       null,
       "Stored URL bar value should not have changed"
     );

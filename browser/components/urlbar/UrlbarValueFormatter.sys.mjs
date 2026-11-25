@@ -282,7 +282,7 @@ export class UrlbarValueFormatter {
       }
       try {
         this.#inGetUrlMetaData = true;
-        this.#window.gBrowser.urlbarOverrideValue = null;
+        this.#window.gBrowser.userTypedValue = null;
         this.#urlbarInput.setURI({ uri });
         return this.#getUrlMetaData();
       } finally {

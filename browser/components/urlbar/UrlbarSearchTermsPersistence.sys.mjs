@@ -212,10 +212,7 @@ class _UrlbarSearchTermsPersistence {
     return "";
   }
 
-  shouldPersist(
-    state,
-    { uri, isSameDocument, urlbarOverrideValue, firstView }
-  ) {
+  shouldPersist(state, { uri, isSameDocument, userTypedValue, firstView }) {
     let persist = state.persist;
     if (!persist) {
       return false;
@@ -226,9 +223,9 @@ class _UrlbarSearchTermsPersistence {
       return false;
     }
 
-    // If there is a urlbarOverrideValue and it differs from the search terms, the
+    // If there is a userTypedValue and it differs from the search terms, the
     // user must've modified the text.
-    if (urlbarOverrideValue && urlbarOverrideValue !== persist.searchTerms) {
+    if (userTypedValue && userTypedValue !== persist.searchTerms) {
       return false;
     }
 

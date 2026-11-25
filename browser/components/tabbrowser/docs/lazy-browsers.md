@@ -31,7 +31,7 @@ the start, which is how session store keys the tab's state either way.
 
 What the tab does carry:
 
-- **Session store's lazy state** — a `url`, a `title` and a `urlbarOverrideValue`,
+- **Session store's lazy state** — a `url`, a `title` and a `userTypedValue`,
   held for as long as the browser is lazy and read with
   `SessionStore.getLazyTabValue(tab, key)`. This is where the substituted
   properties below get their answers, and what a consumer should read instead of
@@ -62,14 +62,14 @@ without touching the browser:
 | --- | --- |
 | `currentURI` | Session store's URL for the tab as an `nsIURI`, cached on the element, or `about:blank`. |
 | `contentTitle` | Session store's title for the tab. |
-| `urlbarOverrideValue` | Session store's value for the tab. |
+| `userTypedValue` | Session store's value for the tab. |
 | `remoteType` | `ChromeUtils.predictRemoteTypeForURI` for that URL and the tab's `usercontextid`. |
 | `isRemoteBrowser` | Whether the element carries the `remote` attribute. |
 | `audioMuted` | Whether the tab carries the `muted` attribute. |
 | `fullZoom`, `textZoom` | `1`. |
 | `tabHasCustomZoom` | `false`. |
-| `loadStartedSinceUrlbarOverride` | `false`. |
 | `permitUnload` | A function returning `{ permitUnload: true }`. |
+| `didStartLoadSinceLastUserTyping` | A function returning `false`. |
 | `getTabBrowser` | A function returning `gBrowser`. |
 
 `reload` and `reloadWithFlags` are substituted with a version that inserts the

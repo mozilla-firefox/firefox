@@ -51,9 +51,9 @@ async function checkSearchString(searchString, isIpv6) {
 
   Assert.equal(gURLBar.value, expectedUrl, "The full URL should be in URL bar");
   Assert.equal(
-    gBrowser.urlbarOverrideValue,
+    gBrowser.userTypedValue,
     null,
-    `There should not be a urlbarOverrideValue for ${searchString}`
+    `There should not be a userTypedValue for ${searchString}`
   );
   let state = window.gURLBar.getBrowserState(window.gBrowser.selectedBrowser);
   Assert.equal(state.persist.searchTerms, "", "searchTerms should be empty.");

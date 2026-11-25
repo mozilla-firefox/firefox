@@ -309,7 +309,7 @@ ${
    * @type {UrlbarSapName}
    */
   #sapName;
-  _overrideValue = "";
+  _userTypedValue = "";
   _actionOverrideKeyCount = 0;
   _lastValidURLStr = "";
   _valueOnLastSearch = "";
@@ -1031,7 +1031,7 @@ ${
    * @param {boolean} [options.dueToSessionRestore=false]
    *        Whether this is being called due to session restore.
    * @param {boolean} [options.hideSearchTerms=false]
-   *        True if overrideValue should not be overridden by search terms
+   *        True if userTypedValue should not be overidden by search terms
    *        and false otherwise.
    * @param {boolean} [options.isSameDocument=false]
    *        Whether the caller loaded a new document or not (e.g. location
@@ -1084,7 +1084,7 @@ ${
       isSameDocument,
     });
 
-    let value = this.overrideValue;
+    let value = this.userTypedValue;
     let valid = false;
     let isReverting = !uri;
 
@@ -1164,7 +1164,7 @@ ${
     const wasAllSelected = this.#allTextSelected;
 
     this.setValue(value, { allowTrim: true, valueIsTyped: !valid });
-    this.toggleAttribute("usertyping", !valid && !!value);
+    this.toggleAttribute("usertyping", !valid && value);
 
     if (this.focused && value != previousUntrimmedValue) {
       if (wasAllSelected && !isReverting && !dueToTabSwitch) {
@@ -1746,7 +1746,7 @@ ${
   handleEmptyValueNavigation(_event) {}
 
   handleRevert() {
-    this.overrideValue = null;
+    this.userTypedValue = null;
     // Nullify search mode before setURI so it won't try to restore it.
     this.searchMode = null;
     if (!this.#isAddressbar) {
@@ -2601,7 +2601,7 @@ ${
       !this.value.endsWith(" ")
     ) {
       this._autofillPlaceholder = null;
-      this.setValue(this.overrideValue);
+      this.setValue(this.userTypedValue);
     }
   }
 
@@ -3043,9 +3043,9 @@ ${
     ) {
       this._updateSearchModeUI(newSearchMode);
       if (newSearchMode) {
-        // Set overrideValue to the query string so that it's properly restored
+        // Set userTypedValue to the query string so that it's properly restored
         // when switching back to the current tab and across sessions.
-        this.#replaceOverrideValue(this.untrimmedValue);
+        this.userTypedValue = this.untrimmedValue;
         this.valueIsTyped = true;
         this._autofillPlaceholder = null;
         if (!newSearchMode.isPreview && !areSearchModesSame) {
@@ -3173,49 +3173,17 @@ ${
     return this._untrimmedValue;
   }
 
-  get overrideValue() {
+  get userTypedValue() {
     return this.#isAddressbar
-      ? this.browserWindow.gBrowser.urlbarOverrideValue
-      : this._overrideValue;
+      ? this.browserWindow.gBrowser.userTypedValue
+      : this._userTypedValue;
   }
 
-  set overrideValue(val) {
+  set userTypedValue(val) {
     if (this.#isAddressbar) {
-      this.browserWindow.gBrowser.urlbarOverrideValue = val;
+      this.browserWindow.gBrowser.userTypedValue = val;
     } else {
-      this._overrideValue = val;
-    }
-  }
-
-  /**
-   * Sets the override value to a value the user typed.
-   *
-   * @param {string} value
-   */
-  #setTypedOverrideValue(value) {
-    if (this.#isAddressbar) {
-      this.browserWindow.gBrowser.selectedBrowser.urlbarOverride = {
-        value,
-        typed: true,
-      };
-    } else {
-      this._overrideValue = value;
-    }
-  }
-
-  /**
-   * Replaces the override value, keeping whether the user typed it.
-   *
-   * @param {string} value
-   */
-  #replaceOverrideValue(value) {
-    if (
-      this.#isAddressbar &&
-      this.browserWindow.gBrowser.selectedBrowser.urlbarOverrideValueTyped
-    ) {
-      this.#setTypedOverrideValue(value);
-    } else {
-      this.overrideValue = value;
+      this._userTypedValue = val;
     }
   }
 
@@ -3406,7 +3374,7 @@ ${
     if (startQuery) {
       // Search mode stores the value to restore on tab switch. For a confirmed
       // mode that's the query string, not the keyword that entered it.
-      this.#replaceOverrideValue(this.untrimmedValue);
+      this.userTypedValue = this.untrimmedValue;
 
       // The query has to run in the search mode we just entered.
       this.#searchModeApplied.then(() =>
@@ -3704,8 +3672,8 @@ ${
       this.#isAddressbar &&
       result.heuristic &&
       result.payload.url.startsWith("http://") &&
-      this.overrideValue &&
-      this.#getSchemelessInput(this.overrideValue) ==
+      this.userTypedValue &&
+      this.#getSchemelessInput(this.userTypedValue) ==
         SCHEMELESS_INPUT_SCHEMELESS;
     if (!stripHttp) {
       return url;
@@ -4311,7 +4279,7 @@ ${
       keyDownEnterDeferred = this._keyDownEnterDeferred;
     }
 
-    let urlbarOverrideValue;
+    let userTypedValue;
     if (this.#isAddressbar && where == "current") {
       if (loadRequest.engineSearch) {
         this.value = loadRequest.engineSearch.query;
@@ -4324,7 +4292,7 @@ ${
           this.value = url;
         }
       }
-      urlbarOverrideValue = this.value;
+      userTypedValue = this.value;
     }
 
     params.allowThirdPartyFixup = true;
@@ -4361,7 +4329,7 @@ ${
       where,
       params,
       browserId,
-      urlbarOverrideValue,
+      userTypedValue,
       searchData,
     });
     // Hand the loaded browser's id to the deferred-Enter key up handler so it
@@ -4953,8 +4921,8 @@ ${
 
     this.toggleAttribute("searchmode", true);
     // Clear autofill.
-    if (this._autofillPlaceholder && this.overrideValue) {
-      this.value = this.overrideValue;
+    if (this._autofillPlaceholder && this.userTypedValue) {
+      this.value = this.userTypedValue;
     }
     // Search mode should only be active when pageproxystate is invalid.
     if (this.getAttribute("pageproxystate") == "valid") {
@@ -5027,19 +4995,19 @@ ${
       lazy.UrlbarSearchTermsPersistence.shouldPersist(state, {
         isSameDocument,
         uri: uri ?? this.browserWindow.gBrowser.currentURI,
-        urlbarOverrideValue: this.overrideValue,
+        userTypedValue: this.userTypedValue,
         firstView,
       });
-    // When persisting, urlbarOverrideValue should have a value consistent with the
+    // When persisting, userTypedValue should have a value consistent with the
     // search terms to mimic a user typing the search terms.
-    // When turning off persist, check if the urlbarOverrideValue needs to be
+    // When turning off persist, check if the userTypedValue needs to be
     // removed in order for the URL to return to the address bar. Single page
     // application SERPs will load secondary search pages (e.g. Maps, Images)
-    // with the same document, which won't unset urlbarOverrideValue.
+    // with the same document, which won't unset userTypedValue.
     if (shouldPersist) {
-      this.overrideValue = state.persist.searchTerms;
+      this.userTypedValue = state.persist.searchTerms;
     } else if (wasPersisting && !shouldPersist) {
-      this.overrideValue = null;
+      this.userTypedValue = null;
     }
 
     state.persist.shouldPersist = shouldPersist;
@@ -5287,13 +5255,13 @@ ${
     // when they focus and select the address bar.
     this.#preventClickSelectsAll = false;
 
-    if (this._autofillPlaceholder && this.overrideValue) {
+    if (this._autofillPlaceholder && this.userTypedValue) {
       // If we were autofilling, remove the autofilled portion, by restoring
       // the value to the last typed one.
-      this.value = this.overrideValue;
+      this.value = this.userTypedValue;
     } else if (
       this.value == this._untrimmedValue &&
-      !this.overrideValue &&
+      !this.userTypedValue &&
       !this.focused
     ) {
       // If the value was untrimmed by _on_focus and didn't change, trim it.
@@ -5571,7 +5539,7 @@ ${
     this.#inputEpoch++;
     if (
       this._autofillPlaceholder &&
-      this.value === this.overrideValue &&
+      this.value === this.userTypedValue &&
       (event.inputType === "deleteContentBackward" ||
         event.inputType === "deleteContentForward")
     ) {
@@ -5584,7 +5552,7 @@ ${
       event.inputType?.startsWith("deleteContent") &&
       !this.isPrivate &&
       this._autofillPlaceholder &&
-      this.value === this.overrideValue &&
+      this.value === this.userTypedValue &&
       this._resultForCurrentValue?.payload?.url
     ) {
       this.parentController.recordAutofillBackspace(
@@ -5599,7 +5567,7 @@ ${
     this._wwwIsTrimmed = false;
     this._resultForCurrentValue = null;
 
-    this.#setTypedOverrideValue(value);
+    this.userTypedValue = value;
     // Unset userSelectionBehavior because the user is modifying the search
     // string, thus there's no valid selection. This is also used by the view
     // to set "aria-activedescendant", thus it should never get stale.
@@ -5707,7 +5675,7 @@ ${
         this._autofillPlaceholder.selectionEnd != this.selectionEnd)
     ) {
       this._autofillPlaceholder = null;
-      this.#setTypedOverrideValue(this.value);
+      this.userTypedValue = this.value;
     }
   }
 
@@ -5791,7 +5759,7 @@ ${
 
       const value = oldStart + pasteData + oldEnd;
       this.setValue(value, { valueIsTyped: true });
-      this.#setTypedOverrideValue(value);
+      this.userTypedValue = value;
 
       // Since we prevent the default paste event, we have to ensure the
       // pageproxystate is updated. The paste event replaces the actual current
@@ -6101,12 +6069,12 @@ ${
       // We're closing the view, but we want to retain search mode if the
       // selected result was previewing it.
       if (this.searchMode) {
-        // If we entered search mode with an empty string, clear overrideValue,
+        // If we entered search mode with an empty string, clear userTypedValue,
         // otherwise confirmSearchMode may try to set it as value.
         // This can happen for example if we entered search mode typing a
         // a partial engine domain and selecting a tab-to-search result.
         if (!this.value) {
-          this.overrideValue = null;
+          this.userTypedValue = null;
         }
         this.confirmSearchMode();
       }
@@ -6257,7 +6225,7 @@ ${
     // the dropped value, instead we want to keep showing the current page
     // url until an onLocationChange happens.
     // See the handling in `setURI` for further details.
-    this.overrideValue = null;
+    this.userTypedValue = null;
     this.setURI({ dueToTabSwitch: true });
   }
 
