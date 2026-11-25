@@ -14,6 +14,8 @@ const lazy = {};
 ChromeUtils.defineESModuleGetters(lazy, {
   AuthenticationController:
     "moz-src:///browser/components/widgets/AuthenticationController.sys.mjs",
+  WidgetsController:
+    "moz-src:///browser/components/widgets/WidgetsController.sys.mjs",
 });
 
 const weekdayFormat = new Services.intl.DateTimeFormat(undefined, {
@@ -60,6 +62,9 @@ export class SidebarWidgetStudio extends SidebarPage {
   };
 
   authentication = new lazy.AuthenticationController(this);
+  widgets = new lazy.WidgetsController(this);
+
+  #hadFocus = false;
 
   constructor() {
     super();
@@ -68,6 +73,7 @@ export class SidebarWidgetStudio extends SidebarPage {
 
   connectedCallback() {
     super.connectedCallback();
+    this.composing = !this.widgets.generating;
     this.addSidebarFocusedListeners();
   }
 
@@ -78,6 +84,18 @@ export class SidebarWidgetStudio extends SidebarPage {
 
   handleSidebarFocusedEvent() {
     (this.composer ?? this.composeButton)?.focus();
+  }
+
+  willUpdate(changes) {
+    super.willUpdate(changes);
+    this.#hadFocus = !!this.renderRoot.activeElement;
+  }
+
+  async updated() {
+    if (this.#hadFocus && !this.renderRoot.activeElement) {
+      await this.updateComplete;
+      this.handleSidebarFocusedEvent();
+    }
   }
 
   #closePanel(e) {
@@ -93,10 +111,13 @@ export class SidebarWidgetStudio extends SidebarPage {
     this.composer.focus();
   }
 
-  async #closeComposer() {
+  #closeComposer() {
     this.composing = false;
-    await this.updateComplete;
-    this.composeButton.focus();
+  }
+
+  #create(event) {
+    this.composing = false;
+    this.widgets.create(event.detail.prompt);
   }
 
   #openLearnMore(e) {
@@ -190,15 +211,16 @@ export class SidebarWidgetStudio extends SidebarPage {
     if (this.composing) {
       return html`<widget-composer
         autofocus
+        .submitDisabled=${this.widgets.generating}
         @WidgetComposer:Dismiss=${this.#closeComposer}
-        @WidgetComposer:Submit=${this.#closeComposer}
+        @WidgetComposer:Submit=${this.#create}
       ></widget-composer>`;
     }
     return html`<moz-button
       id="compose-button"
-      type="ghost icon"
       iconsrc=${SUBMIT_ICON}
       data-l10n-id="widget-studio-compose-button"
+      ?disabled=${this.widgets.generating}
       @click=${this.#openComposer}
     ></moz-button>`;
   }

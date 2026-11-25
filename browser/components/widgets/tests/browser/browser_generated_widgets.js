@@ -7,6 +7,9 @@ const { GENERATION_ERRORS, OUTPUT_DIRECTORY, WidgetGenerator } =
   ChromeUtils.importESModule(
     "moz-src:///browser/components/widgets/WidgetGenerator.sys.mjs"
   );
+const { CREATION_ERRORS, WidgetCreator } = ChromeUtils.importESModule(
+  "moz-src:///browser/components/widgets/WidgetCreator.sys.mjs"
+);
 const { GeneratedWidgetsProvider } = ChromeUtils.importESModule(
   "moz-src:///toolkit/components/widgets/GeneratedWidgetsProvider.sys.mjs"
 );
@@ -787,16 +790,116 @@ add_task(async function test_an_aborted_signal_ends_generation() {
     prompt: PROMPT,
     signal: controller.signal,
   });
-  let { respond } = await mockEngine.captureRequest({
+  await mockEngine.captureRequest({
     purpose: PURPOSES.WIDGET_GENERATION,
   });
   controller.abort();
-  respond(simulateWriteFileResponse(FILES));
   await Assert.rejects(
     generating,
     error => error.name == "AbortError",
     "Aborted while generating"
   );
+});
+
+add_task(async function test_one_creation_is_pending_at_a_time() {
+  let started = BrowserTestUtils.waitForEvent(
+    WidgetCreator,
+    "WidgetCreator:Creating"
+  );
+  let creating = WidgetCreator.create({ prompt: PROMPT });
+  let { detail } = await started;
+  is(detail.pending, creating, "Event promise");
+  is(WidgetCreator.pending, creating, "Pending");
+  is(WidgetCreator.prompt, PROMPT, "Prompt");
+
+  let listener = sinon.spy();
+  WidgetCreator.addEventListener("WidgetCreator:Creating", listener);
+  await Assert.rejects(
+    WidgetCreator.create({ prompt: PROMPT }),
+    error => error.code == CREATION_ERRORS.BUSY,
+    "Second creation"
+  );
+  WidgetCreator.removeEventListener("WidgetCreator:Creating", listener);
+  ok(listener.notCalled, "No event");
+
+  let install = sinon
+    .stub(GeneratedWidgetsProvider, "install")
+    .callsFake(path => {
+      cleanup(path);
+      WidgetCreator.cancel();
+      is(WidgetCreator.pending, creating, "Cancel ignored while installing");
+      return install.wrappedMethod.call(GeneratedWidgetsProvider, path);
+    });
+  try {
+    await answer(simulateWriteFileResponse(FILES), "Done.");
+    let { id } = await creating;
+    registerCleanupFunction(() => GeneratedWidgetsProvider.uninstall(id));
+  } finally {
+    install.restore();
+  }
+  is(WidgetCreator.pending, null, "Cleared");
+  is(WidgetCreator.prompt, null, "Prompt cleared");
+});
+
+add_task(async function test_a_failed_creation_is_cleared() {
+  let failed = BrowserTestUtils.waitForEvent(
+    WidgetCreator,
+    "WidgetCreator:Error"
+  );
+  let creating = WidgetCreator.create({ prompt: PROMPT });
+  await answer("Done.");
+  await Assert.rejects(
+    creating,
+    error => error.code == GENERATION_ERRORS.GENERATION,
+    "No files"
+  );
+  let { detail } = await failed;
+  is(detail.error.code, GENERATION_ERRORS.GENERATION, "Event error");
+  is(detail.prompt, PROMPT, "Event prompt");
+  is(WidgetCreator.pending, null, "Cleared");
+  is(WidgetCreator.prompt, null, "Prompt cleared");
+});
+
+add_task(async function test_cancel_rejects_during_a_turn() {
+  let creating = WidgetCreator.create({ prompt: PROMPT });
+  await mockEngine.captureRequest({
+    purpose: PURPOSES.WIDGET_GENERATION,
+  });
+  let listener = sinon.spy();
+  WidgetCreator.addEventListener("WidgetCreator:Error", listener);
+  WidgetCreator.cancel();
+  await Assert.rejects(
+    creating,
+    error => error.name == "AbortError",
+    "Canceled"
+  );
+  WidgetCreator.removeEventListener("WidgetCreator:Error", listener);
+  ok(listener.notCalled, "No error event");
+  is(WidgetCreator.pending, null, "Cleared");
+  is(WidgetCreator.prompt, null, "Prompt cleared");
+});
+
+add_task(async function test_cancel_after_generating_skips_the_install() {
+  let generating = sinon
+    .stub(WidgetGenerator, "generate")
+    .callsFake(async () => {
+      await TestUtils.waitForTick();
+      WidgetCreator.cancel();
+      return "widget.zip";
+    });
+  let install = sinon.spy(GeneratedWidgetsProvider, "install");
+  try {
+    await Assert.rejects(
+      WidgetCreator.create({ prompt: PROMPT }),
+      error => error.name == "AbortError",
+      "Canceled"
+    );
+    await TestUtils.waitForTick();
+    ok(install.notCalled, "Not installed");
+  } finally {
+    generating.restore();
+    install.restore();
+  }
 });
 
 /**

@@ -11,7 +11,9 @@ MOZ_SRC_FILES += [
     "AuthenticationController.sys.mjs",
     "GeneratedWidgetsFeature.sys.mjs",
     "Tools.sys.mjs",
+    "WidgetCreator.sys.mjs",
     "WidgetGenerator.sys.mjs",
+    "WidgetsController.sys.mjs",
     "Workspace.sys.mjs",
 ]
 

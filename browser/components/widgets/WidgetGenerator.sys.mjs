@@ -116,6 +116,8 @@ class _WidgetGenerator {
   #clearing = null;
 
   /**
+   * Generates a widget's zip file.
+   *
    * @param {object} options
    * @param {string} options.prompt - what the user asks for
    * @param {AbortSignal} [options.signal] - aborting it ends generation at the
@@ -292,13 +294,16 @@ class _WidgetGenerator {
    * Sends the conversation to the model for its next reply.
    *
    * @param {object} conversation - the conversation holding the request
-   * @param {?string} token - null when the endpoint pref is set
+   * @param {object} options
+   * @param {?string} options.token - null when the endpoint pref is set
+   * @param {AbortSignal} [options.signal] - aborting it ends the request
    * @returns {Promise<{finalOutput: string, toolCalls: object[]}>} the reply
    */
-  async #runTurn(conversation, token) {
+  async #runTurn(conversation, { token, signal }) {
     try {
-      return await conversation.run({ token, tools: TOOLS });
+      return await conversation.run({ token, tools: TOOLS, signal });
     } catch (error) {
+      signal?.throwIfAborted();
       throw new WidgetGeneratorError(
         "The model request failed",
         GENERATION_ERRORS.SERVICE,
@@ -314,7 +319,8 @@ class _WidgetGenerator {
    * @param {object} conversation - the conversation holding the request
    * @param {object} options
    * @param {?string} options.token - null when the endpoint pref is set
-   * @param {AbortSignal} [options.signal] - checked after each reply
+   * @param {AbortSignal} [options.signal] - aborting it ends the request in
+   *   progress
    * @returns {Promise<Map<string, string>>} the files the model wrote, by path
    */
   async #runConversation(conversation, { token, signal }) {
@@ -322,7 +328,7 @@ class _WidgetGenerator {
     let lastError;
     let maxTurns = Services.prefs.getIntPref(MAX_TURNS_PREF, 30);
     for (let turn = 0; turn < maxTurns; turn++) {
-      let response = await this.#runTurn(conversation, token);
+      let response = await this.#runTurn(conversation, { token, signal });
       signal?.throwIfAborted();
       this.#throwIfBlocked();
       let text = response?.finalOutput?.trim();

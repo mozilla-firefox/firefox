@@ -53,6 +53,27 @@
         composer.remove();
       });
 
+      add_task(async function test_submit_disabled_keeps_prompt() {
+        let composer = await createComposer({ submitDisabled: true });
+        let submitted = false;
+        composer.addEventListener("WidgetComposer:Submit", () => {
+          submitted = true;
+        });
+        let submit = composer.shadowRoot.querySelector(".submit");
+        composer.focus();
+        sendString("weather");
+        await composer.updateComplete;
+        ok(submit.disabled, "typed disabled");
+        synthesizeKey("KEY_Enter");
+        ok(!submitted, "submit held");
+        is(composer.value, "weather", "value kept");
+
+        composer.submitDisabled = false;
+        await composer.updateComplete;
+        ok(!submit.disabled, "enabled again");
+        composer.remove();
+      });
+
       add_task(async function test_field_focused() {
         let composer = await createComposer({ value: "weather" });
         let field = composer.shadowRoot.querySelector(".field");

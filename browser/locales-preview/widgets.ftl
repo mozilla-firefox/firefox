@@ -30,7 +30,7 @@ preferences-ai-controls-block-confirmation-custom-widgets = Custom widgets
 
 # Opens the text field for describing a widget to make.
 widget-studio-compose-button =
-  .title = New widget
+  .label = Create a widget
 
 # Opens Mozilla Connect to share feedback about custom widgets.
 widget-studio-menu-share-feedback = Share Feedback

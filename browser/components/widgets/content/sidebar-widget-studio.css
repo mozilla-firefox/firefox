@@ -11,8 +11,7 @@
 }
 
 #close-button,
-#menu-button,
-#compose-button {
+#menu-button {
   --button-border-radius: var(--border-radius-circle);
 
   @media not (forced-colors) {
@@ -43,9 +42,9 @@
 }
 
 #compose-button {
-  align-self: end;
+  --button-border-radius: var(--border-radius-circle);
+  align-self: center;
   margin-block: auto var(--space-large);
-  margin-inline-end: var(--space-large);
 }
 
 widget-composer {

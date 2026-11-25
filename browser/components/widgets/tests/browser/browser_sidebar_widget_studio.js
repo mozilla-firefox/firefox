@@ -240,7 +240,7 @@ add_task(async function test_panel_composer() {
     "Composer focused"
   );
 
-  EventUtils.synthesizeKey("KEY_Escape", {}, panel.ownerGlobal);
+  EventUtils.synthesizeKey("KEY_Escape", {}, panel.documentGlobal);
   await panel.updateComplete;
   ok(!panel.composer, "Escape hid composer");
   await TestUtils.waitForCondition(
@@ -264,15 +264,5 @@ add_task(async function test_panel_composer() {
     () => composer.shadowRoot.activeElement?.localName == "textarea",
     "Composer focused again"
   );
-
-  EventUtils.sendString("weather", panel.ownerGlobal);
-  EventUtils.synthesizeKey("KEY_Enter", {}, panel.ownerGlobal);
-  await panel.updateComplete;
-  ok(!panel.composer, "Submit hid composer");
-  await TestUtils.waitForCondition(
-    () => panel.shadowRoot.activeElement == panel.composeButton,
-    "Compose button focused after submit"
-  );
-  ok(SidebarController.isOpen, "Panel open");
   SidebarController.hide();
 });
