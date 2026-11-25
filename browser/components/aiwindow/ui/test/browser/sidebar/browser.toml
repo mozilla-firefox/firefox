@@ -1,0 +1,19 @@
+[DEFAULT]
+prefs = [
+  # A preloaded new tab can take the page openOnlyAIWindowTab opens.
+  "browser.newtab.preload=false",
+]
+support-files = [
+  "head.js",
+  "!/browser/components/aiwindow/ui/test/browser/head.js",
+]
+
+["browser_sidebar_close_across_tab_switch.js"]
+
+["browser_sidebar_navigation.js"]
+
+["browser_sidebar_tab_switching.js"]
+
+["browser_sidebar_tab_switching_memories.js"]
+
+["browser_sidebar_tab_switching_starters.js"]

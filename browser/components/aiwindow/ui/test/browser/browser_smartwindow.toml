@@ -254,12 +254,6 @@ skip-if = [
 
 ["browser_smartwindow_tab_move.js"]
 
-["browser_smartwindow_tab_switching.js"]
-
-["browser_smartwindow_tab_switching_memories.js"]
-
-["browser_smartwindow_tab_switching_starters.js"]
-
 ["browser_smartwindow_tasks_actors.js"]
 
 ["browser_smartwindow_telemetry.js"]
