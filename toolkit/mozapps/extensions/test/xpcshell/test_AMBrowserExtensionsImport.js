@@ -223,6 +223,34 @@ add_task(async function test_stage_and_cancel_installs() {
   await cancelInstalls(importedAddonIDs);
 });
 
+add_task(async function test_stageInstalls_with_mapped_addons() {
+  AMBrowserExtensionsImport._addonRepository = {
+    async getMappedAddons() {
+      Assert.ok(false, "getMappedAddons should not be called");
+    },
+  };
+  const importedAddonIDs = ["ff@ext-1", "ff@ext-2"];
+
+  const promiseTopic = TestUtils.topicObserved(
+    "webextension-imported-addons-pending"
+  );
+  const result = await AMBrowserExtensionsImport.stageInstalls(
+    "some-browser-id",
+    ["ext-1", "ext-2"],
+    {
+      mappedAddons: {
+        addons: Object.values(ADDON_SEARCH_RESULTS),
+        matchedIDs: ["ext-1", "ext-2"],
+        unmatchedIDs: [],
+      },
+    }
+  );
+  await promiseTopic;
+  assertStageInstallsResult(result, importedAddonIDs);
+
+  await cancelInstalls(importedAddonIDs);
+});
+
 add_task(async function test_stageInstalls_telemetry() {
   const browserID = "some-browser-id";
   const extensionIDs = ["ext-1", "ext-2"];

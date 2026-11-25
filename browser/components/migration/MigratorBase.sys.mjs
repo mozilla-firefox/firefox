@@ -37,6 +37,12 @@ ChromeUtils.defineESModuleGetters(lazy, {
  *   The number of items the other browser has available to migrate for this
  *   resource. Can be set before or during migrate, and is reported in
  *   telemetry. Leave unset if the number of items cannot be counted.
+ * @property {Function} [hasImportableItems]
+ *   An async function resolving to false if this resource turns out to have
+ *   nothing worth importing. Unlike `getResources`, it may do slow work such
+ *   as network requests, so it is only called by `getImportableMigrateData`
+ *   when the migration wizard lists resources. Only implement this for checks
+ *   that can't be done locally in `getResources`.
  */
 
 /**
@@ -298,6 +304,37 @@ export class MigratorBase {
       a |= b;
       return a;
     }, 0);
+  }
+
+  /**
+   * Like `getMigrateData`, but leaves out resource types whose resources all
+   * report nothing to import through `hasImportableItems`. This may hit the
+   * network (extensions), so only use it when showing resources to the user.
+   *
+   * @param {object|string} aProfile
+   *   The profile from which data may be imported, or an empty string
+   *   in the case of a single-profile migrator.
+   * @returns {Promise<number>}
+   */
+  async getImportableMigrateData(aProfile) {
+    let resources = await this.#getMaybeCachedResources(aProfile);
+    if (!resources) {
+      return 0;
+    }
+    let importable = await Promise.all(
+      resources.map(async r => {
+        try {
+          return !r.hasImportableItems || (await r.hasImportableItems());
+        } catch (ex) {
+          console.error(ex);
+          return true;
+        }
+      })
+    );
+    return resources.reduce(
+      (types, r, i) => (importable[i] ? types | r.type : types),
+      0
+    );
   }
 
   /**

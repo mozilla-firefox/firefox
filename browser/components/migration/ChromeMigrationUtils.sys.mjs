@@ -7,10 +7,13 @@ import { AppConstants } from "resource://gre/modules/AppConstants.sys.mjs";
 const lazy = {};
 
 ChromeUtils.defineESModuleGetters(lazy, {
+  AddonRepository: "resource://gre/modules/addons/AddonRepository.sys.mjs",
   LoginHelper: "resource://gre/modules/LoginHelper.sys.mjs",
   MigrationUtils:
     "moz-src:///browser/components/migration/MigrationUtils.sys.mjs",
   PlacesUtils: "resource://gre/modules/PlacesUtils.sys.mjs",
+  clearTimeout: "resource://gre/modules/Timer.sys.mjs",
+  setTimeout: "resource://gre/modules/Timer.sys.mjs",
 });
 
 const S100NS_FROM1601TO1970 = 0x19db1ded53e8000;
@@ -34,6 +37,24 @@ export var ChromeMigrationUtils = {
   //   },
   // }
   _extensionLocaleStrings: {},
+
+  // Optionally override the `AddonRepository`, mainly for testing purposes.
+  _addonRepository: null,
+  get addonRepository() {
+    return this._addonRepository || lazy.AddonRepository;
+  },
+
+  // Maximum time to wait for AMO to map extension IDs before giving up.
+  _extensionMatchTimeoutMs: 5000,
+
+  // Pending or successful `getMappedAddons` lookups for each browser key and
+  // set of extension IDs. Shared by profiles with the same extensions, and
+  // cleared each time the migration wizard opens.
+  _mappedAddonsCache: new Map(),
+
+  clearMappedAddonsCache() {
+    this._mappedAddonsCache.clear();
+  },
 
   get supportsLoginsForPlatform() {
     return ["macosx", "win"].includes(AppConstants.platform);
@@ -69,6 +90,64 @@ export var ChromeMigrationUtils = {
       console.error(ex);
     }
     return extensionList;
+  },
+
+  /**
+   * Ask AMO which extension IDs map to Firefox add-ons, giving up after
+   * `_extensionMatchTimeoutMs`. Concurrent calls for the same extensions share
+   * one request, and successful results are cached until
+   * `clearMappedAddonsCache` is called.
+   *
+   * @param {string} aBrowserKey - The browser migrator key
+   * @param {string[]} extensionIDs - Extension IDs from the other browser.
+   * @returns {Promise<object|null>} The `getMappedAddons` result, or null if
+   *   the lookup failed or timed out.
+   */
+  async getMappedAddons(aBrowserKey, extensionIDs) {
+    const cacheKey = JSON.stringify([aBrowserKey, extensionIDs.toSorted()]);
+    let mappedAddonsPromise = this._mappedAddonsCache.get(cacheKey);
+    if (!mappedAddonsPromise) {
+      mappedAddonsPromise = this._fetchMappedAddons(aBrowserKey, extensionIDs);
+      this._mappedAddonsCache.set(cacheKey, mappedAddonsPromise);
+    }
+
+    let mappedAddons = await mappedAddonsPromise;
+    if (
+      !mappedAddons &&
+      this._mappedAddonsCache.get(cacheKey) === mappedAddonsPromise
+    ) {
+      this._mappedAddonsCache.delete(cacheKey);
+    }
+    return mappedAddons;
+  },
+
+  /**
+   * One AMO lookup bounded by `_extensionMatchTimeoutMs`. Never rejects.
+   *
+   * @param {string} aBrowserKey - The browser migrator key
+   * @param {string[]} extensionIDs - Extension IDs from the other browser.
+   * @returns {Promise<object|null>} The `getMappedAddons` result, or null on
+   *   failure or timeout.
+   */
+  async _fetchMappedAddons(aBrowserKey, extensionIDs) {
+    let timeoutId;
+    let timeout = new Promise((_, reject) => {
+      timeoutId = lazy.setTimeout(
+        () => reject(new Error("Timed out getting mapped extensions")),
+        this._extensionMatchTimeoutMs
+      );
+    });
+    try {
+      return await Promise.race([
+        this.addonRepository.getMappedAddons(aBrowserKey, extensionIDs),
+        timeout,
+      ]);
+    } catch (ex) {
+      console.error(ex);
+      return null;
+    } finally {
+      lazy.clearTimeout(timeoutId);
+    }
   },
 
   /**

@@ -45,9 +45,13 @@ ChromeMigrationUtils.getDataPath = () => {
   );
 };
 
+let stageInstallsLookups = 0;
+let migrationLookups = 0;
+
 const mockAddonRepository = ({ addons = [] } = {}) => {
   return {
     async getMappedAddons(browserID, extensionIDs) {
+      stageInstallsLookups++;
       Assert.equal(browserID, "chrome", "expected browser ID");
       // Sort extension IDs to have a predictable order.
       extensionIDs.sort();
@@ -58,8 +62,24 @@ const mockAddonRepository = ({ addons = [] } = {}) => {
       );
       return Promise.resolve({
         addons,
-        matchedIDs: [],
-        unmatchedIDs: [],
+        matchedIDs: ["fake-extension-2"],
+        unmatchedIDs: ["fake-extension-1"],
+      });
+    },
+  };
+};
+
+const migrationMockAddonRepository = ({
+  addons = [],
+  matchedIDs = ["fake-extension-2"],
+} = {}) => {
+  return {
+    async getMappedAddons(browserID, extensionIDs) {
+      migrationLookups++;
+      return Promise.resolve({
+        addons,
+        matchedIDs,
+        unmatchedIDs: extensionIDs.filter(id => !matchedIDs.includes(id)),
       });
     },
   };
@@ -87,10 +107,14 @@ add_setup(async function setup() {
     },
   ];
   AMBrowserExtensionsImport._addonRepository = mockAddonRepository({ addons });
+  ChromeMigrationUtils._addonRepository = migrationMockAddonRepository({
+    addons,
+  });
 
   registerCleanupFunction(() => {
     // Clear the add-on repository override.
     AMBrowserExtensionsImport._addonRepository = null;
+    ChromeMigrationUtils._addonRepository = null;
   });
 });
 
@@ -102,6 +126,23 @@ add_task(
       await migrator.isSourceAvailable(),
       "Sanity check the source exists"
     );
+    Assert.ok(
+      (await migrator.getMigrateData(PROFILE)) &
+        MigrationUtils.resourceTypes.EXTENSIONS,
+      "The extension resource should be listed"
+    );
+    Assert.equal(
+      migrationLookups,
+      0,
+      "Listing profiles and resources should not ask AMO"
+    );
+
+    Assert.ok(
+      (await migrator.getImportableMigrateData(PROFILE)) &
+        MigrationUtils.resourceTypes.EXTENSIONS,
+      "The extension resource should be importable"
+    );
+    Assert.equal(migrationLookups, 1, "The wizard path should ask AMO once");
 
     let promiseTopic = TestUtils.topicObserved(
       "webextension-imported-addons-pending"
@@ -113,6 +154,11 @@ add_task(
       true
     );
     await promiseTopic;
+    Assert.equal(
+      stageInstallsLookups,
+      0,
+      "Migrating should reuse the wizard's mapping instead of fetching again"
+    );
     // When this property is `true`, the UI should show a badge on the appmenu
     // button, and the user can finalize the import later.
     Assert.ok(
@@ -161,5 +207,49 @@ add_task(
         );
       }
     }
+  }
+);
+
+async function getImportableTypesWithRepository(addonRepository) {
+  const migrator = await MigrationUtils.getMigrator("chrome");
+  ChromeMigrationUtils.clearMappedAddonsCache();
+  ChromeMigrationUtils._addonRepository = addonRepository;
+  try {
+    return await migrator.getImportableMigrateData(PROFILE);
+  } finally {
+    ChromeMigrationUtils._addonRepository = null;
+    ChromeMigrationUtils.clearMappedAddonsCache();
+  }
+}
+
+add_task(
+  { pref_set: [["browser.migrate.chrome.extensions.enabled", true]] },
+  async function test_extensions_hidden_without_matches() {
+    const migrator = await MigrationUtils.getMigrator("chrome");
+    let importableTypes = await getImportableTypesWithRepository(
+      migrationMockAddonRepository({ matchedIDs: [] })
+    );
+    Assert.ok(
+      !(importableTypes & MigrationUtils.resourceTypes.EXTENSIONS),
+      "Should not offer extensions when none map to a Firefox add-on"
+    );
+    Assert.ok(
+      (await migrator.getMigrateData(PROFILE)) &
+        MigrationUtils.resourceTypes.EXTENSIONS,
+      "getMigrateData should not depend on the AMO lookup"
+    );
+  }
+);
+
+add_task(
+  { pref_set: [["browser.migrate.chrome.extensions.enabled", true]] },
+  async function test_extensions_shown_when_lookup_fails() {
+    let importableTypes = await getImportableTypesWithRepository({
+      getMappedAddons: () => Promise.reject(new Error("AMO is unreachable")),
+    });
+    Assert.ok(
+      importableTypes & MigrationUtils.resourceTypes.EXTENSIONS,
+      "Should still offer extensions when AMO can't be reached"
+    );
   }
 );

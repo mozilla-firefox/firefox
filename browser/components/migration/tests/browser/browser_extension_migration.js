@@ -266,3 +266,25 @@ add_task(async function test_extension_migration_fully_matched_extensions() {
     );
   });
 });
+
+/**
+ * Tests that opening the migration wizard clears the cached extension
+ * mappings, so each wizard session asks AMO again.
+ */
+add_task(async function test_mapped_addons_cache_cleared_on_open() {
+  ChromeMigrationUtils._mappedAddonsCache.set(
+    "stale-entry",
+    Promise.resolve({
+      addons: [],
+      matchedIDs: [],
+      unmatchedIDs: [],
+    })
+  );
+
+  await withMigrationWizardDialog(async () => {
+    await TestUtils.waitForCondition(
+      () => !ChromeMigrationUtils._mappedAddonsCache.has("stale-entry"),
+      "Opening the wizard should clear the cached extension mappings"
+    );
+  });
+});

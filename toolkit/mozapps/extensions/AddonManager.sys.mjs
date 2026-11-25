@@ -5954,11 +5954,16 @@ AMBrowserExtensionsImport = {
    *
    * @param {string} browserId A browser identifier.
    * @param {Array<string} extensionIDs A list of non-Firefox extension IDs.
+   * @param {object} [options]
+   * @param {object} [options.mappedAddons] An already fetched
+   *                                        `AddonRepository.getMappedAddons`
+   *                                        result for `extensionIDs`. When
+   *                                        omitted, it is fetched from AMO.
    * @returns {Promise<object>} The return value is an object with data for
    *                            the caller.
    * @throws {Error} When there are pending imported add-ons.
    */
-  async stageInstalls(browserId, extensionIDs) {
+  async stageInstalls(browserId, extensionIDs, { mappedAddons } = {}) {
     // In case we have an import in progress, we throw so that the caller knows
     // that there is already an import in progress, which it may want to either
     // cancel or complete.
@@ -5983,7 +5988,8 @@ AMBrowserExtensionsImport = {
         addons: importedAddons,
         matchedIDs,
         unmatchedIDs,
-      } = await this.addonRepository.getMappedAddons(browserId, extensionIDs));
+      } = mappedAddons ??
+      (await this.addonRepository.getMappedAddons(browserId, extensionIDs)));
 
       Glean.browserMigration.matchedExtensions.set(matchedIDs);
       Glean.browserMigration.unmatchedExtensions.set(unmatchedIDs);

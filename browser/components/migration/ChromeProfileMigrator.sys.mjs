@@ -1140,22 +1140,37 @@ async function GetExtensionsResource(aProfileId, aBrowserKey = "chrome") {
     !Services.prefs.getBoolPref(
       "browser.migrate.chrome.extensions.enabled",
       false
-    )
+    ) ||
+    aBrowserKey !== "chrome"
   ) {
     return null;
   }
   let extensions = await lazy.ChromeMigrationUtils.getExtensionList(aProfileId);
-  if (!extensions.length || aBrowserKey !== "chrome") {
+  if (!extensions.length) {
     return null;
   }
 
+  let ids = extensions.map(extension => extension.id);
+  let mappedAddons = null;
   return {
     type: MigrationUtils.resourceTypes.EXTENSIONS,
     available: extensions.length,
+    async hasImportableItems() {
+      mappedAddons = await lazy.ChromeMigrationUtils.getMappedAddons(
+        aBrowserKey,
+        ids
+      );
+      // If AMO couldn't be reached, still offer the resource and let
+      // migrate() retry the lookup.
+      return !mappedAddons || !!mappedAddons.matchedIDs.length;
+    },
     async migrate(callback) {
-      let ids = extensions.map(extension => extension.id);
       let [progressValue, importedExtensions] =
-        await MigrationUtils.installExtensionsWrapper(aBrowserKey, ids);
+        await MigrationUtils.installExtensionsWrapper(
+          aBrowserKey,
+          ids,
+          mappedAddons
+        );
       let details = {
         progressValue,
         totalExtensions: extensions,

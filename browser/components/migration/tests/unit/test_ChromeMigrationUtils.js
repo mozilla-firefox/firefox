@@ -12,6 +12,12 @@ ChromeMigrationUtils.getDataPath = () => {
 };
 
 add_task(async function test_getExtensionList_function() {
+  ChromeMigrationUtils._addonRepository = {
+    getMappedAddons() {
+      Assert.ok(false, "Listing extensions should not ask AMO");
+    },
+  };
+
   let extensionList = await ChromeMigrationUtils.getExtensionList("Default");
   Assert.equal(
     extensionList.length,
@@ -37,6 +43,84 @@ add_task(async function test_getExtensionList_function() {
     },
     "Second extension should match expectations."
   );
+
+  ChromeMigrationUtils._addonRepository = null;
+});
+
+add_task(async function test_getMappedAddons_cache() {
+  ChromeMigrationUtils.clearMappedAddonsCache();
+  let lookups = 0;
+  const result = {
+    addons: [],
+    matchedIDs: ["fake-extension-2"],
+    unmatchedIDs: ["fake-extension-1"],
+  };
+  ChromeMigrationUtils._addonRepository = {
+    async getMappedAddons() {
+      lookups++;
+      return result;
+    },
+  };
+
+  Assert.deepEqual(
+    await ChromeMigrationUtils.getMappedAddons("chrome", [
+      "fake-extension-1",
+      "fake-extension-2",
+    ]),
+    result,
+    "Should return the AMO result."
+  );
+  await ChromeMigrationUtils.getMappedAddons("chrome", [
+    "fake-extension-2",
+    "fake-extension-1",
+  ]);
+  Assert.equal(lookups, 1, "The result should be cached regardless of order.");
+
+  await ChromeMigrationUtils.getMappedAddons("chrome", ["fake-extension-1"]);
+  Assert.equal(lookups, 2, "A different set of extensions should be fetched.");
+
+  ChromeMigrationUtils.clearMappedAddonsCache();
+  await ChromeMigrationUtils.getMappedAddons("chrome", [
+    "fake-extension-1",
+    "fake-extension-2",
+  ]);
+  Assert.equal(lookups, 3, "Clearing the cache should fetch again.");
+
+  ChromeMigrationUtils.clearMappedAddonsCache();
+  await Promise.all([
+    ChromeMigrationUtils.getMappedAddons("chrome", ["fake-extension-1"]),
+    ChromeMigrationUtils.getMappedAddons("chrome", ["fake-extension-1"]),
+  ]);
+  Assert.equal(lookups, 4, "Concurrent lookups should share one request.");
+
+  ChromeMigrationUtils._addonRepository = null;
+  ChromeMigrationUtils.clearMappedAddonsCache();
+});
+
+add_task(async function test_getMappedAddons_timeout() {
+  ChromeMigrationUtils.clearMappedAddonsCache();
+  let lookups = 0;
+  ChromeMigrationUtils._addonRepository = {
+    getMappedAddons() {
+      lookups++;
+      return new Promise(() => {});
+    },
+  };
+  let originalTimeout = ChromeMigrationUtils._extensionMatchTimeoutMs;
+  ChromeMigrationUtils._extensionMatchTimeoutMs = 0;
+
+  const ids = ["fake-extension-1", "fake-extension-2"];
+  Assert.equal(
+    await ChromeMigrationUtils.getMappedAddons("chrome", ids),
+    null,
+    "Should return null when the lookup times out."
+  );
+  await ChromeMigrationUtils.getMappedAddons("chrome", ids);
+  Assert.equal(lookups, 2, "A timed out lookup should not be cached.");
+
+  ChromeMigrationUtils._extensionMatchTimeoutMs = originalTimeout;
+  ChromeMigrationUtils._addonRepository = null;
+  ChromeMigrationUtils.clearMappedAddonsCache();
 });
 
 add_task(async function test_getExtensionInformation_function() {
