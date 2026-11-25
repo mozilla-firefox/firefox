@@ -43,7 +43,9 @@ def setup(root, **setupargs):
     return 0
 
 
-def gradle(log, topsrcdir=None, topobjdir=None, tasks=[], extra_args=[], verbose=True):
+def gradle(
+    log, topsrcdir=None, topobjdir=None, tasks=[], extra_args=[], verbose=True, env=None
+):
     sys.path.insert(0, os.path.join(topsrcdir, "mobile", "android"))
     from gradle import gradle_lock
 
@@ -69,7 +71,7 @@ def gradle(log, topsrcdir=None, topobjdir=None, tasks=[], extra_args=[], verbose
 
         # Gradle and mozprocess do not get along well, so we use subprocess
         # directly.
-        proc = subprocess.Popen(cmd_args, cwd=topsrcdir)
+        proc = subprocess.Popen(cmd_args, cwd=topsrcdir, env=env)
         status = None
         # Leave it to the subprocess to handle Ctrl+C. If it terminates as a result
         # of Ctrl+C, proc.wait() will return a status code, and, we get out of the
@@ -160,6 +162,7 @@ def fenix_format(_paths, config, fix=None, **lintargs):
         project_name="fenix",
         lint_tasks=[":fenix:lintDebug"],
         lint_modules=("app",),
+        variants=("debug", "nightly", "beta", "release", "benchmark"),
         disable_android_components_tasks=True,
         **lintargs,
     )
@@ -185,9 +188,52 @@ def focus_format(_paths, config, fix=None, **lintargs):
         lint_tasks=[":focus-android:lint"],
         lint_modules=("app",),
         lint_reports=("lint-results-focusDebug.sarif",),
+        variants=[
+            f + b
+            for f in ("focus", "klar")
+            for b in ("Debug", "Nightly", "Beta", "Release")
+        ],
         disable_android_components_tasks=True,
         **lintargs,
     )
+
+
+def report_lint_variants(config, subdir, project_name, variants, **lintargs):
+    reports = os.path.join(
+        lintargs["topobjdir"], "gradle", "build", subdir, "app", "reports"
+    )
+    names = [f"lint-results-{v}.sarif" for v in variants]
+    for name in names:
+        if os.path.exists(report := os.path.join(reports, name)):
+            os.remove(report)
+
+    ret = gradle(
+        lintargs["log"],
+        topsrcdir=lintargs["root"],
+        topobjdir=lintargs["topobjdir"],
+        tasks=[f":{project_name}:lint{v[0].upper()}{v[1:]}" for v in variants],
+        extra_args=(lintargs.get("extra_args") or [])
+        + ["-PdisableAndroidComponentsTasks=true", "--continue"],
+        env={"MOZ_GRADLE_MAX_HEAP": "16g", **os.environ},
+    )
+
+    results = parse_lint_report(config, subdir, names, ("app",), **lintargs)
+    missing = [
+        v
+        for v, name in zip(variants, names)
+        if not os.path.exists(os.path.join(reports, name))
+    ]
+    if missing or ret != 0:
+        results = [r for r in results if r.rule != "build-failure"]
+        err = {
+            "level": "error",
+            "rule": "build-failure",
+            "message": f"Gradle failed linting {missing or variants} - Please check logs for more information",
+            "path": os.path.join(lintargs["root"], subdir),
+            "lineno": 0,
+        }
+        results.append(result.from_config(config, **err))
+    return results
 
 
 def report_gradlew(
@@ -199,8 +245,11 @@ def report_gradlew(
     lint_reports=DEFAULT_LINT_REPORTS,
     lint_modules=DEFAULT_LINT_MODULES,
     disable_android_components_tasks=False,
+    variants=(),
     **lintargs,
 ):
+    if variants and lintargs.get("all_variants") and not fix:
+        return report_lint_variants(config, subdir, project_name, variants, **lintargs)
     topsrcdir = lintargs["root"]
     topobjdir = lintargs["topobjdir"]
 
@@ -511,6 +560,7 @@ def parse_lint_report(config, subdir, lint_reports, lint_modules, **lintargs):
             raise FileNotFoundError(build)
 
         results = []
+        seen = set()
         for file in files:
             with open(file) as fh:
                 data = json.load(fh).get("runs", [{}])[0]
@@ -562,6 +612,9 @@ def parse_lint_report(config, subdir, lint_reports, lint_modules, **lintargs):
                     "message": issue.get("message", {}).get("text"),
                     "level": level,
                 }
+                if (key := tuple(err.values())) in seen:
+                    continue
+                seen.add(key)
                 results.append(result.from_config(config, **err))
 
         return results

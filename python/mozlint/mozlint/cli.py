@@ -217,6 +217,16 @@ class MozlintParser(ArgumentParser):
             },
         ],
         [
+            ["--all-variants"],
+            {
+                "dest": "all_variants",
+                "default": False,
+                "action": "store_true",
+                "help": "Lint every build variant instead of only debug, without ktfmt "
+                "and detekt (android-fenix and android-focus only). Ignored with --fix.",
+            },
+        ],
+        [
             ["extra_args"],
             {
                 "nargs": REMAINDER,

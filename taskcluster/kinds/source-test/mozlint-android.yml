@@ -235,6 +235,49 @@ focus:
             - 'tools/lint/android-focus.yml'
             - 'tools/lint/mach_commands.py'
 
+fenix-variants:
+    description: Android lint for every Fenix build variant
+    always-target: false
+    run-on-projects: [mozilla-central]
+    attributes:
+        code-review: false
+    treeherder:
+        symbol: android(fenix-variant-lints)
+        tier: 2
+    worker:
+        env:
+            MOZ_GRADLE_MAX_HEAP: 24g
+    run:
+        command: >
+            ln -s $MOZ_FETCHES_DIR/android-gradle-dependencies $GECKO_PATH &&
+            ln -s $MOZ_FETCHES_DIR/android-sdk-linux $GECKO_PATH &&
+            ln -s $MOZ_FETCHES_DIR/node $GECKO_PATH &&
+            cd $GECKO_PATH &&
+            ./mach --log-no-times build pre-export export &&
+            ./mach --log-no-times lint -f treeherder -f json:/builds/worker/mozlint.json
+            --linter android-fenix --all-variants
+            *
+
+focus-variants:
+    description: Android lint for every Focus build variant
+    always-target: false
+    run-on-projects: [mozilla-central]
+    attributes:
+        code-review: false
+    treeherder:
+        symbol: android(focus-variant-lints)
+        tier: 2
+    run:
+        command: >
+            ln -s $MOZ_FETCHES_DIR/android-gradle-dependencies $GECKO_PATH &&
+            ln -s $MOZ_FETCHES_DIR/android-sdk-linux $GECKO_PATH &&
+            ln -s $MOZ_FETCHES_DIR/node $GECKO_PATH &&
+            cd $GECKO_PATH &&
+            ./mach --log-no-times build pre-export export &&
+            ./mach --log-no-times lint -f treeherder -f json:/builds/worker/mozlint.json
+            --linter android-focus --all-variants
+            *
+
 android-components:
     treeherder:
         symbol: android(ac-lints)
