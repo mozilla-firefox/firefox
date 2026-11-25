@@ -166,8 +166,6 @@ IntType TruncateFloatToInt(FloatType f) {
   return IntType(f);
 }
 
-void Shutdown();
-
 int SpeexResamplerProcess(SpeexResamplerState* aResampler, uint32_t aChannel,
                           const float* aIn, uint32_t* aInLen, float* aOut,
                           uint32_t* aOutLen);

@@ -28,8 +28,12 @@
 
 #include "HRTFDatabaseLoader.h"
 
+#include <mutex>
+
 #include "GeckoProfiler.h"
 #include "HRTFDatabase.h"
+#include "mozilla/AppShutdown.h"
+#include "mozilla/ClearOnShutdown.h"
 #include "nsThreadUtils.h"
 
 using namespace mozilla;
@@ -47,6 +51,18 @@ size_t HRTFDatabaseLoader::sizeOfLoaders(mozilla::MallocSizeOf aMallocSizeOf) {
 already_AddRefed<HRTFDatabaseLoader>
 HRTFDatabaseLoader::createAndLoadAsynchronouslyIfNecessary(float sampleRate) {
   MOZ_ASSERT(NS_IsMainThread());
+
+  if (AppShutdown::IsInOrBeyond(ShutdownPhase::XPCOMShutdownThreads)) {
+    NS_ERROR("HRTFDatabaseLoader: script running after shutdown");
+    return nullptr;
+  }
+
+  // The loader threads release their loader to the main thread, so they must
+  // be joined before the main thread goes away.
+  static std::once_flag sShutdownRegistered;
+  std::call_once(sShutdownRegistered, [] {
+    RunOnShutdown(shutdown, ShutdownPhase::XPCOMShutdownThreads);
+  });
 
   RefPtr<HRTFDatabaseLoader> loader;
 

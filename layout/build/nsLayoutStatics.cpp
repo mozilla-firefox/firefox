@@ -73,7 +73,6 @@
 #include "RestoreTabContentObserver.h"
 #include "ThirdPartyUtil.h"
 #include "TouchManager.h"
-#include "WebAudioUtils.h"
 #include "gfxUserFontSet.h"
 #include "mozilla/ClearSiteData.h"
 #include "mozilla/EditorController.h"
@@ -337,7 +336,6 @@ void nsLayoutStatics::Shutdown() {
   nsGlobalWindowOuter::ShutDown();
 
   CubebUtils::ShutdownLibrary();
-  WebAudioUtils::Shutdown();
 #ifdef XP_WIN
   if (XRE_IsParentProcess()) {
     widget::DestroyAudioSession();
