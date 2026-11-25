@@ -2646,6 +2646,13 @@ nsChangeHint nsStyleDisplay::CalcDifference(
     hint |= nsChangeHint_RepaintFrame;
   }
 
+  // Refresh the SVG resource reference even when adding or removing transform
+  // style, which skips CalcTransformPropertyDifference below.
+  if ((mOffsetPath.IsUrl() || aNewData.mOffsetPath.IsUrl()) &&
+      mOffsetPath != aNewData.mOffsetPath) {
+    hint |= nsChangeHint_UpdateEffects;
+  }
+
   /* If we've added or removed the transform property, we need to reconstruct
    * the frame to add or remove the view object, and also to handle abs-pos and
    * fixed-pos containers.
