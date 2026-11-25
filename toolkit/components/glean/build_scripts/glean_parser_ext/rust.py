@@ -29,6 +29,102 @@ common_metric_data_args = [
     "label",
 ]
 
+# Every metric type, in the order tables and lookup maps are emitted.
+# `private/table.rs` must know how to construct each of these.
+METRIC_TYPES = [
+    "boolean",
+    "counter",
+    "custom_distribution",
+    "datetime",
+    "denominator",
+    "dual_labeled_counter",
+    "event",
+    "labeled_boolean",
+    "labeled_counter",
+    "labeled_custom_distribution",
+    "labeled_memory_distribution",
+    "labeled_quantity",
+    "labeled_string",
+    "labeled_timing_distribution",
+    "memory_distribution",
+    "numerator",
+    "quantity",
+    "rate",
+    "string",
+    "string_list",
+    "text",
+    "timespan",
+    "timing_distribution",
+    "url",
+    "uuid",
+]
+
+# Labeled base types whose submetrics get a map keyed by submetric id.
+SUBMETRIC_TYPES = [
+    "boolean",
+    "counter",
+    "custom_distribution",
+    "memory_distribution",
+    "quantity",
+    "string",
+    "timing_distribution",
+]
+
+
+def table_rust_type(metric_type):
+    """
+    The Rust type stored in the table for a metric type. Events and objects
+    use their runtime-typed forms; labeled metrics always use dynamic labels.
+    """
+    if metric_type == "event":
+        return "EventMetric<NoExtraKeys>"
+    if metric_type == "object":
+        return "ObjectMetric<RuntimeObject>"
+    if metric_type.startswith("labeled_"):
+        return f"LabeledMetric<Labeled{class_name(metric_type)}, super::DynamicLabel>"
+    return class_name(metric_type)
+
+
+def table_type_info(metric_type):
+    labeled = metric_type.startswith("labeled_")
+    return {
+        "name": metric_type,
+        "array": metric_type.upper() + "_TABLE",
+        "map": metric_type.upper() + "_MAP",
+        "rust": table_rust_type(metric_type),
+        "labeled": labeled,
+        "base": metric_type[8:] if labeled else metric_type,
+        "metrics": [],
+    }
+
+
+def api_ctor(obj):
+    if obj.type == "event":
+        return "EventRef"
+    if obj.type == "object":
+        return "ObjectRef"
+    return "MetricRef"
+
+
+def api_type(obj):
+    """
+    The type of the named Rust API static for a metric: a `MetricRef` to the
+    table entry, or the typed `EventRef` / `ObjectRef` wrappers.
+    """
+    if obj.type == "event":
+        return type_name(obj).replace("EventMetric<", "EventRef<", 1)
+    if obj.type == "object":
+        return type_name(obj).replace("ObjectMetric<", "ObjectRef<", 1)
+    return f"MetricRef<{table_rust_type(obj.type)}>"
+
+
+def str_slice(values):
+    return "&[" + ", ".join(json.dumps(v) for v in values) + "]"
+
+
+def unordered_ipc(metric):
+    return metric.metadata.get("permit_non_commutative_operations_over_ipc", False)
+
 
 def rust_datatypes_filter(value):
     """
@@ -261,53 +357,16 @@ def output_rust(objs, output_fd, ping_names_by_app_id, options={}):
     get_ping_id = generate_ping_ids(objs)
     ping_schedule_reverse_map = get_schedule_reverse_map(objs)
 
-    # Map from a tuple (const, typ) to an array of tuples (id, path)
-    # where:
-    #   const: The Rust constant name to be used for the lookup map
-    #   typ:   The metric type to be stored in the lookup map
-    #   id:    The numeric metric ID
-    #   path:  The fully qualified path to the metric object in Rust
-    #
-    # This map is only filled for metrics, not for pings.
-    #
-    # Example:
-    #
-    #   ("COUNTERS", "CounterMetric") -> [(1, "test_only::clicks"), ...]
-    objs_by_type = {}
-
-    # Map from a metric ID to the fully qualified path of the event object in Rust.
-    # Required for the special handling of event lookups.
-    #
-    # Example:
-    #
-    #   17 -> "test_only::an_event"
-    events_by_id = {}
-
-    # Map from a metric ID to the fully qualified path of the object metric in Rust.
-    # Required for the special handling of object lookups.
-    #
-    # Example:
-    #
-    #   18 -> "test_only::an_object"
-    objects_by_id = {}
-
-    # Map from a metric ID to the fully qualified path of the dual_labeled_counter metric in Rust.
-    # Required for the special handling of dual_labeled_counter metric lookups.
-    #
-    # Example:
-    #
-    #   18 -> "test_only::a_dual_labeled_counter"
-    dual_labeled_counters_by_id = {}
-
-    # Map from a labeled type (e.g. "counter") to a map from metric ID to the
-    # fully qualified path of the labeled metric object in Rust paired with
-    # whether the labeled metric has an enum.
-    # Required for the special handling of labeled metric lookups.
-    #
-    # Example:
-    #
-    #   "counter" -> 42 -> ("test_only::mabels_kitchen_counters", false)
-    labeleds_by_id_by_type = {}
+    # Every metric goes in a per-type table, see `private/table.rs`.
+    table_types = [table_type_info(t) for t in METRIC_TYPES]
+    tables_by_type = {t["name"]: t for t in table_types}
+    submetric_types = [
+        {"map": t.upper() + "_MAP", "rust": f"Labeled{class_name(t)}"}
+        for t in SUBMETRIC_TYPES
+    ]
+    # Object metrics keep one typed static each in their category module (see
+    # the template), so the id map needs their paths.
+    objects = []
 
     if "pings" in objs:
         template_filename = "rust_pings.jinja2"
@@ -316,43 +375,18 @@ def output_rust(objs, output_fd, ping_names_by_app_id, options={}):
         template_filename = "rust.jinja2"
         objs = get_metrics(objs)
         for category_name, category_value in objs.items():
+            category_snake = util.snake_case(category_name)
             for metric in category_value.values():
-                # The constant is all uppercase and suffixed by `_MAP`
-                const_name = util.snake_case(metric.type).upper() + "_MAP"
-                typ = type_name(metric)
-                key = (const_name, typ)
-
-                metric_name = util.snake_case(metric.name)
-                category_snake = util.snake_case(category_name)
-                full_path = f"{category_snake}::{metric_name}"
-
-                if metric.type == "event":
-                    events_by_id[rust_int(get_metric_id(metric))] = full_path
-                    continue
                 if metric.type == "object":
-                    objects_by_id[rust_int(get_metric_id(metric))] = full_path
+                    metric_snake = util.snake_case(metric.name)
+                    objects.append({"path": f"{category_snake}::{metric_snake}"})
                     continue
-                if metric.type == "dual_labeled_counter":
-                    dual_labeled_counters_by_id[rust_int(get_metric_id(metric))] = (
-                        full_path
+                if metric.type not in tables_by_type:
+                    raise ValueError(
+                        f"No table support for metric type {metric.type} "
+                        f"({category_name}.{metric.name})"
                     )
-                    continue
-
-                if getattr(metric, "labeled", False):
-                    labeled_type = metric.type[8:]
-                    if labeled_type not in labeleds_by_id_by_type:
-                        labeleds_by_id_by_type[labeled_type] = {}
-                    labeleds_by_id_by_type[labeled_type][
-                        rust_int(get_metric_id(metric))
-                    ] = (
-                        full_path,
-                        metric.labels and len(metric.labels),
-                    )
-                    continue
-
-                if key not in objs_by_type:
-                    objs_by_type[key] = []
-                objs_by_type[key].append((rust_int(get_metric_id(metric)), full_path))
+                tables_by_type[metric.type]["metrics"].append(metric)
 
     # Now for the modules for each category.
     template = util.get_jinja2_template(
@@ -364,7 +398,11 @@ def output_rust(objs, output_fd, ping_names_by_app_id, options={}):
             ("extra_type_name", extra_type_name),
             ("structure_type_name", structure_type_name),
             ("ctor", ctor),
+            ("api_type", api_type),
+            ("api_ctor", api_ctor),
             ("extra_keys", extra_keys),
+            ("str_slice", str_slice),
+            ("unordered_ipc", unordered_ipc),
             ("metric_id", lambda metric: rust_int(get_metric_id(metric))),
             ("ping_id", lambda ping: rust_int(get_ping_id(ping))),
         ),
@@ -373,13 +411,11 @@ def output_rust(objs, output_fd, ping_names_by_app_id, options={}):
     output_fd.write(
         template.render(
             all_objs=objs,
+            objects=objects,
+            table_types=table_types,
+            submetric_types=submetric_types,
             common_metric_data_args=common_metric_data_args,
-            metric_by_type=objs_by_type,
             extra_args=util.extra_args,
-            events_by_id=events_by_id,
-            objects_by_id=objects_by_id,
-            dual_labeled_counters_by_id=dual_labeled_counters_by_id,
-            labeleds_by_id_by_type=labeleds_by_id_by_type,
             submetric_bit=ID_BITS - ID_SIGNAL_BITS,
             ping_names_by_app_id=ping_names_by_app_id,
             ping_schedule_reverse_map=ping_schedule_reverse_map,

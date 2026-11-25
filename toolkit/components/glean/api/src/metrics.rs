@@ -12,8 +12,6 @@ include!(mozbuild::objdir_path!(
     "toolkit/components/glean/api/src/metrics.rs"
 ));
 
-use crate::private::{EventMetric, ExtraKeys};
-
 #[cfg(feature = "with_gecko")]
 extern "C" {
     fn fog_malloc_size_of(ptr: *const std::os::raw::c_void) -> usize;
@@ -27,17 +25,18 @@ thread_local! {
 #[cfg(feature = "with_gecko")]
 static METRIC_MEMORY_USAGE: std::sync::atomic::AtomicUsize = std::sync::atomic::AtomicUsize::new(0);
 
+/// Account for the allocations of a freshly constructed metric. Only event and object metrics need
+/// this: they allocate at construction and never again, unlike labeled metrics whose submetric
+/// caches are measured live.
 #[cfg(feature = "with_gecko")]
-pub(crate) fn count_memory_usage(size: usize) {
-    METRIC_MEMORY_USAGE.fetch_add(size, std::sync::atomic::Ordering::Relaxed);
+pub(crate) fn count_metric_memory<T: ::malloc_size_of::MallocSizeOf>(metric: &T) {
+    METRIC_MEM_OPS.with_borrow_mut(|ops| {
+        let size = metric.size_of(ops);
+        METRIC_MEMORY_USAGE.fetch_add(size, std::sync::atomic::Ordering::Relaxed);
+    });
 }
 
 #[cfg(feature = "with_gecko")]
 pub(crate) fn metric_memory_usage() -> usize {
     METRIC_MEMORY_USAGE.load(std::sync::atomic::Ordering::Relaxed)
-}
-
-/// Helper to get the number of allowed extra keys for a given event metric.
-fn extra_keys_len<K: ExtraKeys>(_event: &EventMetric<K>) -> usize {
-    K::ALLOWED_KEYS.len()
 }

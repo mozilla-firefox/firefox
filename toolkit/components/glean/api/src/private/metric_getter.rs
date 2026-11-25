@@ -344,9 +344,7 @@ macro_rules! metadata_from_static_map {
                 .ok_or(crate::private::LookupError::FOGMetricMapWasUninit)?;
         let metric: &$metric_type = static_map
             .get(&$metric_id)
-            .and_then(|thunk: &&once_cell::sync::Lazy<$metric_type>| {
-                once_cell::sync::Lazy::get(*thunk)
-            })
+            .and_then(|cell| cell.peek())
             .ok_or(crate::private::LookupError::FOGMetricMapLookupFailed)?;
         Ok((metric.get_metadata(), None))
     }};

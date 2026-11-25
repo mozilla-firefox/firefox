@@ -77,179 +77,176 @@ impl ExtraKeys for {{ obj.name|Camelize }}{{ suffix }} {
 }
 {%- endmacro -%}
 
-{% macro generate_label_enum(obj) %}
-#[repr(u16)]
-pub enum {{ obj.name|Camelize }}Label {
-    {% for label in obj.ordered_labels %}
-    {# Specifically _not_ using r# as C++ doesn't have it #}
-    E{{ label|Camelize }} = {{loop.index0}},
-    {% endfor %}
-    __Other__,
+{% macro metric_def(obj) -%}
+MetricDef {
+    id: {{ obj|metric_id }},
+    category: "{{ obj.category }}",
+    name: "{{ obj.name }}",
+    send_in_pings: {{ obj.send_in_pings|str_slice }},
+    lifetime: {{ obj.lifetime|rust }},
+    {% if obj.disabled %}
+    disabled: true,
+    {% endif %}
+    {% if obj['in_session'] is defined and obj['in_session'] %}
+    in_session: true,
+    {% endif %}
+    {% if obj|unordered_ipc %}
+    unordered_ipc: true,
+    {% endif %}
+    {% if obj['time_unit'] is defined %}
+    time_unit: {{ obj.time_unit|rust }},
+    {% endif %}
+    {% if obj['memory_unit'] is defined %}
+    memory_unit: {{ obj.memory_unit|rust }},
+    {% endif %}
+    {% if obj['range_min'] is defined %}
+    range_min: {{ obj.range_min|rust }},
+    range_max: {{ obj.range_max|rust }},
+    bucket_count: {{ obj.bucket_count|rust }},
+    histogram_type: {{ obj.histogram_type|rust }},
+    {% endif %}
+    {% if obj['allowed_extra_keys'] is defined and obj.allowed_extra_keys|length %}
+    allowed_extra_keys: {{ obj.allowed_extra_keys|extra_keys }},
+    {% endif %}
+    {% if obj['labels'] is defined and obj.labels and obj.labels|length %}
+    labels: {{ obj.labels|str_slice }},
+    {% endif %}
+    {% if obj['keys'] is defined and obj.keys and obj.keys|length %}
+    keys: {{ obj.keys|str_slice }},
+    {% endif %}
+    {% if obj['categories'] is defined and obj.categories and obj.categories|length %}
+    categories: {{ obj.categories|str_slice }},
+    {% endif %}
+    {% if obj['numerators'] is defined and obj.numerators|length %}
+    numerators: &[
+        {% for num in obj.numerators %}
+        MetricDef {
+            category: "{{ num.category }}",
+            name: "{{ num.name }}",
+            send_in_pings: {{ num.send_in_pings|str_slice }},
+            lifetime: {{ num.lifetime|rust }},
+            {% if num.disabled %}
+            disabled: true,
+            {% endif %}
+            {% if num['in_session'] is defined and num['in_session'] %}
+            in_session: true,
+            {% endif %}
+            ..MetricDef::DEFAULT
+        },
+        {% endfor %}
+    ],
+    {% endif %}
+    ..MetricDef::DEFAULT
 }
-impl From<u16> for {{ obj.name|Camelize }}Label {
-    fn from(v: u16) -> Self {
-        match v {
-            {% for label in obj.ordered_labels %}
-            {{ loop.index0 }} => Self::E{{ label|Camelize }},
-            {% endfor %}
-            _ => Self::__Other__,
-        }
-    }
-}
-impl From<{{ obj.name|Camelize }}Label> for &'static str {
-    fn from(value: {{ obj.name|Camelize }}Label) -> Self {
-        match value {
-            {% for label in obj.ordered_labels %}
-            {{ obj.name|Camelize }}Label::E{{ label| Camelize }} => "{{label}}",
-            {% endfor %}
-            {{ obj.name|Camelize }}Label::__Other__ => "__other__",
-        }
-    }
-}
-{%- endmacro -%}
-
-{% macro common_metric_data(obj) %}
-CommonMetricData {
-    {% for arg_name in common_metric_data_args if obj[arg_name] is defined %}
-    {{ arg_name }}: {{ obj[arg_name]|rust }},
-    {% endfor %}
-    ..Default::default()
-}
-{%- endmacro -%}
+{%- endmacro %}
 
 pub enum DynamicLabel { }
 
 {% for category_name, objs in all_objs.items() %}
 pub mod {{ category_name|snake_case }} {
+    #[allow(unused_imports)]
     use crate::private::*;
-    #[allow(unused_imports)] // CommonMetricData might be unused, let's avoid warnings
-    use glean::CommonMetricData;
-    #[allow(unused_imports)] // HistogramType might be unusued, let's avoid warnings
-    use glean::HistogramType;
-    use once_cell::sync::Lazy;
+    #[allow(unused_imports)]
+    use crate::private::table::{EventRef, MetricDef, MetricRef, TableMetric};
+    #[allow(unused_imports)]
+    use glean::{HistogramType, Lifetime, MemoryUnit, TimeUnit};
 
     {% for obj in objs.values() %}
     {% if obj|attr("_generate_enums") %}
 {{ generate_extra_keys(obj) }}
     {%- endif %}
-    {% if obj.labeled and obj.labels and obj.labels|length %}
-    {{ generate_label_enum(obj)|indent }}
-    {% endif %}
-    {% if obj|attr("_generate_structure") %}
+    {% if obj.type == "object" %}
     {{ generate_structure(obj.name|Camelize ~ "Object", obj._generate_structure) -}}
-    {% endif %}
     #[allow(non_upper_case_globals)]
     /// generated from {{ category_name }}.{{ obj.name }}
     ///
     /// {{ obj.description|trim | replace('\n', '\n    /// ') }}
-    {% if obj.type == "counter" and obj.send_in_pings|length == 1 and obj.lifetime|rust == "Lifetime::Ping" %}
-    {# Use optimized CounterMetric ctor in a common case (esp. for Use Counters) #}
-    pub static {{ obj.name|snake_case }}: Lazy<{{ obj|type_name }}> = Lazy::new(|| {
-        CounterMetric::codegen_{{ "disabled_" if obj.disabled }}new(
-            {{obj|metric_id}},
-            "{{obj.category}}",
-            "{{obj.name}}",
-            "{{obj.send_in_pings[0]}}"
-        )
-    });
+    pub static {{ obj.name|snake_case }}: TableMetric<ObjectMetric<{{ obj.name|Camelize }}Object>> =
+        TableMetric::new({{ metric_def(obj)|indent(8) }});
     {% else %}
-    pub static {{ obj.name|snake_case }}: Lazy<{{ obj|type_name }}> = Lazy::new(|| {
-        let meta =
-            {% if obj.type == "labeled_custom_distribution" %}
-            LabeledMetricData::CustomDistribution {
-                cmd: {{ common_metric_data(obj)|indent(16) }}
-                {%- for arg_name in extra_args if obj[arg_name] is defined and arg_name not in common_metric_data_args and arg_name != 'allowed_extra_keys' -%}
-                    , {{ arg_name }}: {{ obj[arg_name]|rust }}
-                {%- endfor -%}
-            };
-            {% elif obj.type == "labeled_memory_distribution" %}
-            LabeledMetricData::MemoryDistribution {
-                cmd: {{ common_metric_data(obj)|indent(16) }}
-                {%- for arg_name in extra_args if obj[arg_name] is defined and arg_name not in common_metric_data_args and arg_name != 'allowed_extra_keys' -%}
-                    , {{ "unit" if arg_name == "memory_unit" else arg_name }}: {{ obj[arg_name]|rust }}
-                {%- endfor -%}
-            };
-            {% elif obj.type == "labeled_timing_distribution" %}
-            LabeledMetricData::TimingDistribution {
-                cmd: {{ common_metric_data(obj)|indent(16) }}
-                {%- for arg_name in extra_args if obj[arg_name] is defined and arg_name not in common_metric_data_args and arg_name != 'allowed_extra_keys' -%}
-                    , {{ "unit" if arg_name == "time_unit" else arg_name }}: {{ obj[arg_name]|rust }}
-                {%- endfor -%}
-            };
-            {% elif obj.labeled %}
-            LabeledMetricData::Common {
-                cmd: {{ common_metric_data(obj)|indent(16) }},
-            };
-            {% else %}
-            {{ common_metric_data(obj)|indent(12) }};
-            {% endif %}
-{#
-  Only event/object metrics need the instance bound to a name, so that their
-  allocation can be measured below. Binding it unconditionally would trip
-  clippy::let_and_return for every other metric.
-#}
-{% set measure_memory = obj.type == "event" or obj.type == "object" %}
-        {{ "let metric = " if measure_memory else "" }}{{ obj|ctor }}(BaseMetricId({{obj|metric_id}}), meta
-        {%- for arg_name in extra_args if not obj.labeled and obj[arg_name] is defined and arg_name not in common_metric_data_args and arg_name != 'allowed_extra_keys' -%}
-            , {{ obj[arg_name]|rust }}
-        {%- endfor -%}
-        {{ ", " if obj.labeled or obj.dual_labeled else ")" }}
-        {%- if obj.labeled -%}
-        {%- if obj.labels -%}
-        Some({{ obj.labels|rust }}))
-        {%- else -%}
-        None)
-        {%- endif -%}
-        {%- elif obj.dual_labeled -%}
-        {{ "Some(" ~ obj.keys|rust ~ ")" if obj.keys else "None" }},
-        {{ "Some(" ~ obj.categories|rust ~ ")" if obj.categories else "None" }})
-        {%- endif -%}
-        {{- ";" if measure_memory else "" }}
-        {% if measure_memory %}
-        {#
-          event/object metrics don't have a map.
-          They don't allocate anymore after instantiation, so it's enough to measure once.
-        #}
-        #[cfg(feature = "with_gecko")]
-        {
-            crate::metrics::METRIC_MEM_OPS.with_borrow_mut(|ops| {
-                use malloc_size_of::MallocSizeOf;
-                super::count_memory_usage(metric.size_of(ops));
-            });
-        }
-        metric
-        {% endif %}
-    });
+    #[allow(non_upper_case_globals)]
+    /// generated from {{ category_name }}.{{ obj.name }}
+    ///
+    /// {{ obj.description|trim | replace('\n', '\n    /// ') }}
+    pub static {{ obj.name|snake_case }}: {{ obj|api_type }} = {{ obj|api_ctor }}::new({{ obj|metric_id }});
     {% endif %}
 
     {% endfor %}
 }
 {% endfor %}
 
-{% if metric_by_type|length > 0 %}
+/// Every metric, described by data and built on first use.
+#[allow(dead_code)]
+pub(crate) mod __glean_table {
+    #[allow(unused_imports)]
+    use crate::private::*;
+    use crate::private::table::{MetricDef, TableMetric};
+    #[allow(unused_imports)]
+    use glean::{HistogramType, Lifetime, MemoryUnit, TimeUnit};
+
+    {% for typ in table_types %}
+    pub(crate) static {{ typ.array }}: [TableMetric<{{ typ.rust }}>; {{ typ.metrics|length }}] = [
+        {% for obj in typ.metrics %}
+        TableMetric::new({{ metric_def(obj)|indent(8) }}),
+        {% endfor %}
+    ];
+
+    {% endfor %}
+}
+
 #[allow(dead_code)]
 pub(crate) mod __glean_metric_maps {
     use std::collections::HashMap;
     use std::sync::Arc;
 
-    use crate::metrics::extra_keys_len;
     use crate::private::*;
+    use crate::private::table::{force, AnyObjectMetric, Lookup, TableMetric};
     use malloc_size_of::MallocSizeOf;
     use once_cell::sync::Lazy;
+
+    pub static OBJECT_MAP: Lazy<HashMap<BaseMetricId, &'static dyn AnyObjectMetric>> = Lazy::new(|| {
+        let objects: [&'static dyn AnyObjectMetric; {{ objects|length }}] = [
+            {% for obj in objects %}
+            &super::{{ obj.path }},
+            {% endfor %}
+        ];
+        objects.iter().map(|object| (object.id(), *object)).collect()
+    });
+
+    fn object_by_id(metric_id: u32) -> &'static dyn AnyObjectMetric {
+        match OBJECT_MAP.get(&BaseMetricId(metric_id)) {
+            Some(object) => *object,
+            None => panic!("No object metric for id {}", metric_id),
+        }
+    }
+
+    {% for typ in table_types %}
+    pub static {{ typ.map }}: Lazy<HashMap<BaseMetricId, &'static TableMetric<{{ typ.rust }}>>> =
+        Lazy::new(|| super::__glean_table::{{ typ.array }}.iter().map(|cell| (cell.id(), cell)).collect());
+
+    impl Lookup for {{ typ.rust }} {
+        fn lookup(id: u32) -> &'static Self {
+            match {{ typ.map }}.get(&BaseMetricId(id)) {
+                Some(cell) => force(*cell),
+                None => panic!("No {{ typ.name }} metric for id {}", id),
+            }
+        }
+    }
+
+    {% endfor %}
 
     /// Measure the allocation size of all labeled metrics.
     ///
     /// Labeled metrics do allocate additional memory at runtime for the cache of instantiated submetrics.
     /// These are included in the `size_of` measurement automatically.
-    ///
-    /// **Note**: This function grows with the number of labeled metrics!
-    /// If it becomes too big we need to think about further optimizations.
     fn fog_labeled_alloc_size(ops: &mut malloc_size_of::MallocSizeOfOps) -> usize {
         let mut n = 0;
-        {% for labeled_type, labeleds_by_id in labeleds_by_id_by_type.items() %}
-          {% for metric_id, (labeled, _) in labeleds_by_id.items() %}
-          n += super::{{labeled}}.size_of(ops);
-          {% endfor %}
+        {% for typ in table_types if typ.labeled %}
+        for cell in super::__glean_table::{{ typ.array }}.iter() {
+            if let Some(metric) = cell.peek() {
+                n += metric.size_of(ops);
+            }
+        }
         {% endfor %}
         n
     }
@@ -266,24 +263,24 @@ pub(crate) mod __glean_metric_maps {
             (*lock).size_of(ops)
         });
 
-        {% for typ, metrics in metric_by_type.items() %}
-        {% if typ.0 in ('BOOLEAN_MAP', 'COUNTER_MAP', 'CUSTOM_DISTRIBUTION_MAP', 'MEMORY_DISTRIBUTION_MAP', 'QUANTITY_MAP', 'STRING_MAP', 'TIMING_DISTRIBUTION_MAP') %}
-            n += once_cell::sync::Lazy::get(&submetric_maps::{{typ.0}}).map_or(0, |m| {
-                // The values are behind an `Arc`. We don't want to measure them.
-                // We only measure the enclosing size of the values.
-                let lock = m.read().unwrap();
-                malloc_size_of::MallocShallowSizeOf::shallow_size_of(&*lock, ops)
-            });
-        {% endif %}
-        {% endfor%}
+        {% for submetric in submetric_types %}
+        n += once_cell::sync::Lazy::get(&submetric_maps::{{ submetric.map }}).map_or(0, |m| {
+            // The values are behind an `Arc`. We don't want to measure them.
+            // We only measure the enclosing size of the values.
+            let lock = m.read().unwrap();
+            malloc_size_of::MallocShallowSizeOf::shallow_size_of(&*lock, ops)
+        });
+        {% endfor %}
         n
     }
 
     pub fn fog_map_alloc_size(ops: &mut malloc_size_of::MallocSizeOfOps) -> usize {
         let mut n = 0;
-        {% for typ, metrics in metric_by_type.items() %}
-        n += {{typ.0}}.size_of(ops);
+        {% for typ in table_types %}
+        // The values point into the tables, so only the map itself is measured.
+        n += malloc_size_of::MallocShallowSizeOf::shallow_size_of(&*{{ typ.map }}, ops);
         {% endfor %}
+        n += malloc_size_of::MallocShallowSizeOf::shallow_size_of(&*OBJECT_MAP, ops);
 
         n += fog_labeled_alloc_size(ops);
         n += fog_submetric_alloc_size(ops);
@@ -291,26 +288,13 @@ pub(crate) mod __glean_metric_maps {
         n
     }
 
-{% for typ, metrics in metric_by_type.items() %}
-    pub static {{typ.0}}: Lazy<HashMap<BaseMetricId, &Lazy<{{typ.1}}>>> = Lazy::new(|| {
-        let mut map = HashMap::with_capacity({{metrics|length}});
-        {% for metric in metrics %}
-        map.insert(BaseMetricId({{metric.0}}), &super::{{metric.1}});
-        {% endfor %}
-        map
-    });
-
-{% endfor %}
-
     pub(crate) fn set_object_by_id(metric_id: u32, value: String) -> Result<(), ()> {
-        match metric_id {
-{% for metric_id, object in objects_by_id.items() %}
-          {{metric_id}} => {
-              super::{{object}}.set_string(value);
-              Ok(())
-          }
-{% endfor %}
-           _ => Err(()),
+        match OBJECT_MAP.get(&BaseMetricId(metric_id)) {
+            Some(metric) => {
+                metric.set_string(value);
+                Ok(())
+            }
+            None => Err(()),
         }
     }
 
@@ -330,12 +314,7 @@ pub(crate) mod __glean_metric_maps {
     ///
     /// Panics if no object by the given metric ID could be found.
     pub(crate) fn object_test_get_value(metric_id: u32, ping_name: Option<String>) -> Option<String> {
-        match metric_id {
-{% for metric_id, object in objects_by_id.items() %}
-           {{metric_id}} => super::{{object}}.test_get_value_as_str(ping_name),
-{% endfor %}
-           _ => panic!("No object for metric id {}", metric_id),
-        }
+        object_by_id(metric_id).test_get_value_as_str(ping_name)
     }
 
     /// Check the provided object for errors.
@@ -354,11 +333,9 @@ pub(crate) mod __glean_metric_maps {
     #[allow(unused_variables)]
     pub(crate) fn object_test_get_error(metric_id: u32) -> Option<String> {
         #[cfg(feature = "with_gecko")]
-        match metric_id {
-{% for metric_id, object in objects_by_id.items() %}
-           {{metric_id}} => test_get_errors!(super::{{object}}),
-{% endfor %}
-           _ => panic!("No object for metric id {}", metric_id),
+        {
+            let metric = object_by_id(metric_id);
+            return test_get_errors!(metric);
         }
 
         #[cfg(not(feature = "with_gecko"))]
@@ -380,14 +357,12 @@ pub(crate) mod __glean_metric_maps {
     /// or an `EventRecordingError::InvalidId` if no event by that ID exists
     /// or an `EventRecordingError::InvalidExtraKey` if the `extra` map could not be deserialized.
     pub(crate) fn record_event_by_id(metric_id: u32, extra: HashMap<String, String>) -> Result<(), EventRecordingError> {
-        match metric_id {
-{% for metric_id, event in events_by_id.items() %}
-          {{metric_id}} => {
-              super::{{event}}.record_raw(extra);
-              Ok(())
-          }
-{% endfor %}
-           _ => Err(EventRecordingError::InvalidId),
+        match EVENT_MAP.get(&BaseMetricId(metric_id)) {
+            Some(metric) => {
+                metric.record_raw(extra);
+                Ok(())
+            }
+            None => Err(EventRecordingError::InvalidId),
         }
     }
 
@@ -402,22 +377,14 @@ pub(crate) mod __glean_metric_maps {
     /// # Returns
     ///
     /// Returns `Ok(())` if the event was found and `record` was called with the given `extra`,
-    /// or an `EventRecordingError::InvalidId` if no event by that ID exists
-    /// or an `EventRecordingError::InvalidExtraKey` if the event doesn't take extra pairs,
-    /// but some are passed in.
+    /// or an `EventRecordingError::InvalidId` if no event by that ID exists.
     pub(crate) fn record_event_by_id_with_time(metric_id: BaseMetricId, timestamp: u64, extra: HashMap<String, String>) -> Result<(), EventRecordingError> {
-        match metric_id {
-{% for metric_id, event in events_by_id.items() %}
-          BaseMetricId({{metric_id}}) => {
-              if extra_keys_len(&super::{{event}}) == 0 && !extra.is_empty() {
-                return Err(EventRecordingError::InvalidExtraKey);
-              }
-
-              super::{{event}}.record_with_time(timestamp, extra);
-              Ok(())
-          }
-{% endfor %}
-           _ => Err(EventRecordingError::InvalidId),
+        match EVENT_MAP.get(&metric_id) {
+            Some(metric) => {
+                metric.record_with_time(timestamp, extra);
+                Ok(())
+            }
+            None => Err(EventRecordingError::InvalidId),
         }
     }
 
@@ -437,14 +404,7 @@ pub(crate) mod __glean_metric_maps {
     ///
     /// Panics if no event by the given metric ID could be found.
     pub(crate) fn event_test_get_value_wrapper(metric_id: u32, ping_name: Option<String>) -> Option<Vec<RecordedEvent>> {
-        let event = match metric_id {
-{% for metric_id, event in events_by_id.items() %}
-           {{metric_id}} => &*super::{{event}} as &dyn ::glean::TestGetValue<Output=Vec<RecordedEvent>>,
-{% endfor %}
-           _ => panic!("No event for metric id {}", metric_id),
-        };
-
-        event.test_get_value(ping_name)
+        EventMetric::<NoExtraKeys>::lookup(metric_id).test_get_value(ping_name)
     }
 
     /// Check the provided event for errors.
@@ -452,8 +412,6 @@ pub(crate) mod __glean_metric_maps {
     /// # Arguments
     ///
     /// * `metric_id` - The metric's ID to look up
-    /// * `ping_name` - (Optional) The ping name to look into.
-    ///                 Defaults to the first value in `send_in_pings`.
     ///
     /// # Returns
     ///
@@ -466,13 +424,7 @@ pub(crate) mod __glean_metric_maps {
     pub(crate) fn event_test_get_error(metric_id: u32) -> Option<String> {
         #[cfg(feature = "with_gecko")]
         {
-            let event = match metric_id {
-{% for metric_id, event in events_by_id.items() %}
-               {{metric_id}} => &*super::{{event}} as &dyn crate::private::TestGetNumErrors,
-{% endfor %}
-               _ => panic!("No event for metric id {}", metric_id),
-            };
-
+            let event = EventMetric::<NoExtraKeys>::lookup(metric_id);
             return test_get_errors!(event);
         }
 
@@ -482,130 +434,66 @@ pub(crate) mod __glean_metric_maps {
         }
     }
 
-{% for labeled_type, labeleds_by_id in labeleds_by_id_by_type.items() %}
-    /// Gets the submetric from the specified labeled_{{labeled_type}} metric.
-    ///
-    /// # Arguments
-    ///
-    /// * `metric_id` - The metric's ID to look up
-    /// * `label` - The label identifying the {{labeled_type}} submetric.
-    ///
-    /// # Returns
-    ///
-    /// Returns the {{labeled_type}} submetric.
+{% for typ in table_types if typ.labeled %}
+    /// Gets the submetric from the specified labeled_{{ typ.base }} metric.
     ///
     /// # Panics
     ///
-    /// Panics if no labeled_{{labeled_type}} by the given metric ID could be found.
-    #[allow(unused_variables)]
-    pub(crate) fn labeled_{{labeled_type}}_get(metric_id: u32, label: &str) -> Arc<Labeled{{labeled_type|Camelize}}Metric> {
-        match metric_id {
-{% for metric_id, (labeled, _) in labeleds_by_id.items() %}
-            {{metric_id}} => super::{{labeled}}.get(label),
-{% endfor %}
-            _ => panic!("No labeled_{{labeled_type}} for metric id {}", metric_id),
-        }
+    /// Panics if no labeled_{{ typ.base }} by the given metric ID could be found.
+    pub(crate) fn labeled_{{ typ.base }}_get(metric_id: u32, label: &str) -> Arc<Labeled{{ typ.base|Camelize }}Metric> {
+        <{{ typ.rust }}>::lookup(metric_id).get(label)
     }
 
     /// Gets the value from the specified labeled metric.
     ///
-    /// # Arguments
-    ///
-    /// * `metric_id` - The metric's ID to look up
-    /// * `ping_name` - The label identifying the {{labeled_type}} submetric.
-    ///
-    /// # Returns
-    ///
-    /// Returns a map of all values in the labeled metric.
-    ///
     /// # Panics
     ///
-    /// Panics if no labeled_{{labeled_type}} by the given metric ID could be found.
-    #[allow(unused_variables)]
-    pub(crate) fn labeled_{{labeled_type}}_test_get(metric_id: u32, ping_name: &str) -> Option<HashMap<String, {{labeled_type|test_get_type}}>> {
+    /// Panics if no labeled_{{ typ.base }} by the given metric ID could be found.
+    pub(crate) fn labeled_{{ typ.base }}_test_get(metric_id: u32, ping_name: &str) -> Option<HashMap<String, {{ typ.base|test_get_type }}>> {
         let ping_name = if ping_name.is_empty() {
             None
         } else {
             Some(ping_name.to_string())
         };
-        let metric = match metric_id {
-{% for metric_id, (labeled, _) in labeleds_by_id.items() %}
-            {{metric_id}} => &*super::{{labeled}} as &dyn ::glean::TestGetValue<Output=HashMap<String, {{labeled_type|test_get_type}}>>,
-{% endfor %}
-            _ => panic!("No labeled_{{labeled_type}} for metric id {}", metric_id),
-        };
-
-        metric.test_get_value(ping_name)
+        ::glean::TestGetValue::test_get_value(<{{ typ.rust }}>::lookup(metric_id), ping_name)
     }
 
     /// Gets the number of reported errors from the specified labeled metric.
     ///
-    /// # Arguments
-    ///
-    /// * `metric_id` - The metric's ID to look up
-    /// * `error_type` - The error type for which to look
-    ///
-    /// # Returns
-    ///
-    /// Returns the number of recorded errors in the labeled metric.
-    ///
     /// # Panics
     ///
-    /// Panics if no labeled_{{labeled_type}} by the given metric ID could be found.
-    #[allow(unused_variables)]
-    pub(crate) fn labeled_{{labeled_type}}_test_get_num_recorded_errors(metric_id: u32, error_type: glean::ErrorType) -> i32 {
-        match metric_id {
-{% for metric_id, (labeled, _) in labeleds_by_id.items() %}
-            {{metric_id}} => super::{{labeled}}.test_get_num_recorded_errors(error_type),
-{% endfor %}
-            _ => panic!("No labeled_{{labeled_type}} for metric id {}", metric_id),
-        }
+    /// Panics if no labeled_{{ typ.base }} by the given metric ID could be found.
+    pub(crate) fn labeled_{{ typ.base }}_test_get_num_recorded_errors(metric_id: u32, error_type: glean::ErrorType) -> i32 {
+        <{{ typ.rust }}>::lookup(metric_id).test_get_num_recorded_errors(error_type)
     }
 {% endfor %}
 
+    /// Turns a static label's enum value (its index) into the label string.
     pub(crate) fn labeled_enum_to_str(metric_id: u32, label: u16) -> &'static str {
-        match metric_id {
-{% for category_name, objs in all_objs.items() %}
-{% for obj in objs.values() %}
-{% if obj.labeled and obj.labels and obj.labels|length %}
-            {{obj|metric_id}} => super::{{category_name|snake_case}}::{{obj.name|Camelize}}Label::from(label).into(),
-{% endif %}
-{% endfor %}
-{% endfor %}
-            _ => panic!("Can't turn label enum to string for metric {} which isn't a labeled metric with static labels", metric_id),
+        {% for typ in table_types if typ.labeled %}
+        if let Some(cell) = {{ typ.map }}.get(&BaseMetricId(metric_id)) {
+            return cell.def().labels.get(label as usize).copied().unwrap_or("__other__");
         }
+        {% endfor %}
+        panic!("Can't turn label enum to string for metric {} which isn't a labeled metric", metric_id)
     }
 
     pub(crate) fn labeled_submetric_id_get(metric_id: u32, label: &str) -> u32 {
-        match metric_id {
-{% for category_name, objs in all_objs.items() %}
-{% for obj in objs.values() %}
-{% if obj.labeled %}
-            {{obj|metric_id}} => super::{{category_name|snake_case}}::{{obj.name|snake_case}}.get_submetric_id(label),
-{% endif %}
-{% endfor %}
-{% endfor %}
-            _ => panic!("No labeled metric for id {}", metric_id),
+        {% for typ in table_types if typ.labeled %}
+        if let Some(cell) = {{ typ.map }}.get(&BaseMetricId(metric_id)) {
+            return cell.get_submetric_id(label);
         }
+        {% endfor %}
+        panic!("No labeled metric for id {}", metric_id)
     }
 
 {# dual_labeled type support. Only need dual_labeled_counter for now, so specialize. #}
     pub(crate) fn dual_labeled_counter_get(metric_id: u32, key: &str, category: &str) -> Arc<DualLabeledCounterSubMetric> {
-        match metric_id {
-{% for metric_id, dlc in dual_labeled_counters_by_id.items() %}
-            {{metric_id}} => super::{{dlc}}.get(key, category),
-{% endfor %}
-            _ => panic!("No dual_labeled_counter for metric id {}", metric_id),
-        }
+        DualLabeledCounterMetric::lookup(metric_id).get(key, category)
     }
 
     pub(crate) fn dual_labeled_submetric_id_get(metric_id: u32, key: &str, category: &str) -> u32 {
-        match metric_id {
-{% for metric_id, dlc in dual_labeled_counters_by_id.items() %}
-            {{metric_id}} => super::{{dlc}}.get_submetric_id(key, category),
-{% endfor %}
-            _ => panic!("No dual-labeled metric for id {}", metric_id),
-        }
+        DualLabeledCounterMetric::lookup(metric_id).get_submetric_id(key, category)
     }
 
     pub(crate) mod submetric_maps {
@@ -625,17 +513,14 @@ pub(crate) mod __glean_metric_maps {
             RwLock::new(HashMap::new())
         );
 
-{% for typ, metrics in metric_by_type.items() %}
-{% if typ.0 in ('BOOLEAN_MAP', 'COUNTER_MAP', 'CUSTOM_DISTRIBUTION_MAP', 'MEMORY_DISTRIBUTION_MAP', 'QUANTITY_MAP', 'STRING_MAP', 'TIMING_DISTRIBUTION_MAP') %}
-        pub static {{typ.0}}: Lazy<RwLock<HashMap<SubMetricId, Arc<Labeled{{typ.1}}>>>> = Lazy::new(||
+{% for submetric in submetric_types %}
+        pub static {{ submetric.map }}: Lazy<RwLock<HashMap<SubMetricId, Arc<{{ submetric.rust }}>>>> = Lazy::new(||
             RwLock::new(HashMap::new())
         );
-{% endif %}
-{% endfor%}
+{% endfor %}
 
         pub static DUAL_COUNTER_MAP: Lazy<RwLock<HashMap<SubMetricId, Arc<DualLabeledCounterSubMetric>>>> = Lazy::new(||
             RwLock::new(HashMap::new())
         );
     }
 }
-{% endif %}

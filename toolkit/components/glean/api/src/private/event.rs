@@ -275,7 +275,8 @@ mod test {
                 extra1: Some("a-child-value".into()),
                 ..Default::default()
             };
-            child_metric.record(extra);
+            // The child of the named metric is the runtime-keyed event.
+            child_metric.record_raw(extra.into_ffi_extra());
         }
 
         // Record in the parent after the child.

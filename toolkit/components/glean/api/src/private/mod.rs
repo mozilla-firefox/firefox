@@ -15,6 +15,8 @@ pub use glean::{
 #[macro_use]
 mod metric_getter;
 
+pub mod table;
+
 mod boolean;
 mod counter;
 mod custom_distribution;
