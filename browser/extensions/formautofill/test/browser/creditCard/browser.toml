@@ -50,6 +50,8 @@ skip-if = [
 
 ["browser_creditCard_doorhanger_not_shown.js"]
 
+["browser_creditCard_doorhanger_options_link.js"]
+
 ["browser_creditCard_doorhanger_sync.js"]
 
 ["browser_creditCard_dropdown_layout.js"]

@@ -906,7 +906,7 @@ export class CreditCardSaveDoorhanger extends AutofillDoorhanger {
   // Subclasses set it to null to hide the toggle.
   static securityCodeToggleSource = "save_prompt";
 
-  static spotlightURL = "about:preferences#privacy-credit-card-autofill";
+  static preferenceURL = "privacy-credit-card-autofill";
 
   // The cvv_prompt_action action recorded for each button's callbackState.
   static cvvPromptActions = {
@@ -1184,10 +1184,7 @@ export class CreditCardSaveDoorhanger extends AutofillDoorhanger {
       "credit-card-doorhanger-options-button"
     );
     button.addEventListener("click", () => {
-      this.chromeWin.openTrustedLinkIn(
-        CreditCardSaveDoorhanger.spotlightURL,
-        "tab"
-      );
+      this.onMenuItemClick("open-pref");
     });
     return button;
   }
