@@ -486,11 +486,6 @@
     }
   }
 
-  .urlbarView-row:is([row-selectable]:hover, [selected]) > &:not(:hover, [aria-expanded="true"]) {
-    color: var(--urlbarview-result-button-selected-color);
-    background-color: var(--urlbarview-result-button-selected-background-color);
-  }
-
   &:is(:hover, [aria-expanded="true"]) {
     color: var(--urlbarview-result-button-hover-color);
     background-color: var(--urlbarview-result-button-hover-background-color);
@@ -508,23 +503,9 @@
   background-color: var(--button-background-color);
   color: var(--button-text-color);
 
-  .urlbarView-results:not([disable-resultmenu-autohide])
-    > .urlbarView-row:not(:hover, [selected], [descendant-selected])
-    > .urlbarView-row-buttons
-    > &:not([aria-expanded="true"]):first-child:empty {
-    /* The realtime suggestions' style will be broken if the width will be
-       changed by hover. Thus we use the visibility instead of display to keep
-       the element size */
-    visibility: hidden;
-
-    .urlbarView-row:not([dynamicType^="realtime-"]) > .urlbarView-row-buttons > & {
-      display: none;
-    }
-  }
-
   /* Keep the button that opened the menu hovered, so that it doesn't disappear
      or flicker before the menu sets aria-expanded on it. */
-  .urlbarView-row[menu-trigger] > .urlbarView-row-buttons > & {
+  .urlbarView-row[menu-trigger] > .urlbarView-row-buttons > &:hover {
     pointer-events: auto;
   }
 
@@ -723,8 +704,6 @@
 
   .urlbarView-row:not([has-url], [has-action], [restyled-search], [show-action-text]) &,
   .urlbarView:not([action-override]) .urlbarView-row[type="switchtab"] &,
-  .urlbarView-row[type="remotetab"]:not([selected], :hover) &,
-  .urlbarView-row:is([type="search"], [type="rich-search"], [restyled-search]):not([selected], :hover, [show-action-text]) &,
   .urlbarView-row[type="clipboard"] &,
   .urlbarView-title:empty + .urlbarView-tags:empty + & {
     &::before {
@@ -801,10 +780,7 @@
   }
 
   .urlbarView-row:not([has-action], [show-action-text], [restyled-search], [show-action-text]) &,
-  .urlbarView[action-override] .urlbarView-row[type="switchtab"] &,
-  .urlbarView-row[type="remotetab"]:is([selected], :hover) &,
-  .urlbarView-row:is([type="search"], [type="rich-search"], [restyled-search]):not([selected], :hover, [show-action-text]) &,
-  .urlbarView-row[sponsored]:is([selected], :hover) & {
+  .urlbarView[action-override] .urlbarView-row[type="switchtab"] & {
     /* Use visibility:collapse instead of display:none since the latter can confuse
        the overflow state of these elements when their content changes while
        they're hidden (bug 1549787). */
@@ -866,8 +842,6 @@
 
   .urlbarView-row:not([has-url]) &,
   .urlbarView:not([action-override]) .urlbarView-row[type="switchtab"] &,
-  .urlbarView-row[type="remotetab"]:not([selected], :hover) &,
-  .urlbarView-row[sponsored]:not([selected], :hover) &,
   .urlbarView-row[restyled-search] & {
     visibility: collapse;
   }
@@ -902,7 +876,6 @@
   }
 
   .urlbarView-row:not([has-explanation]) &,
-  .urlbarView-row[has-explanation]:not([selected], :hover) &,
   .urlbarView:not([action-override]) .urlbarView-row[type="switchtab"] & {
     visibility: collapse;
   }
@@ -1082,10 +1055,6 @@
     background-color: var(--urlbar-box-background-color-focus);
     color: var(--urlbar-box-text-color-focus);
     border-radius: var(--urlbarview-top-pick-icon-border-radius);
-  }
-
-  &:is([selected], :hover) > .urlbarView-row-inner > .urlbarView-favicon {
-    background-color: var(--urlbarview-result-button-selected-background-color);
   }
 }
 
@@ -1924,8 +1893,7 @@
       color: var(--text-color-deemphasized);
     }
 
-    .urlbarView-row[sponsored] &,
-    .urlbarView-row:not([selected], :hover) & {
+    .urlbarView-row[sponsored] & {
       display: none;
     }
   }
@@ -1936,8 +1904,7 @@
     line-height: inherit;
     text-wrap: nowrap;
 
-    .urlbarView-row[sponsored] &,
-    .urlbarView-row:not([selected], :hover) & {
+    .urlbarView-row[sponsored] & {
       display: none;
     }
   }
@@ -2030,4 +1997,48 @@
   border-radius: var(--toolbarbutton-border-radius);
   margin-block-start: var(--urlbar-padding-block);
   background: var(--urlbarview-tail150-canvas-background);
+}
+
+.urlbarView-row:is([selected], :hover, [menu-trigger]) {
+  &:is([type="remotetab"], [sponsored]) .urlbarView-action {
+    visibility: collapse;
+  }
+
+  &[type$="_amo"] > .urlbarView-row-inner > .urlbarView-favicon {
+    background-color: var(--urlbarview-result-button-selected-background-color);
+  }
+}
+
+.urlbarView-row:not([selected], :hover, [menu-trigger]) {
+  .urlbarView-results:not([disable-resultmenu-autohide])
+    > &:not([descendant-selected])
+    > .urlbarView-row-buttons
+    > .urlbarView-button-result-menu:not([aria-expanded="true"]):first-child:empty {
+    /* The realtime suggestions' style will be broken if the width will be
+       changed by hover. Thus we use the visibility instead of display to keep
+       the element size */
+    visibility: hidden;
+
+    .urlbarView-row:not([dynamicType^="realtime-"]) > .urlbarView-row-buttons > & {
+      display: none;
+    }
+  }
+
+  &[type="remotetab"] .urlbarView-title-separator,
+  &:is([type="search"], [type="rich-search"], [restyled-search]):not([show-action-text]) .urlbarView-title-separator {
+    &::before {
+      content: var(--urlbarview-separator-char-hidden);
+      margin: 0;
+    }
+  }
+
+  &:is([type="search"], [type="rich-search"], [restyled-search]):not([show-action-text]) .urlbarView-action,
+  &:is([type="remotetab"], [sponsored]) .urlbarView-url,
+  &[has-explanation] .urlbarView-explanation {
+    visibility: collapse;
+  }
+
+  &.with-bottom-url :is(.urlbarView-bottom-separator, .urlbarView-url) {
+    display: none;
+  }
 }

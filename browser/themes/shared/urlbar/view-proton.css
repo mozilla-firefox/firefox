@@ -446,11 +446,6 @@
     }
   }
 
-  .urlbarView-row:is([row-selectable]:hover, [selected]) > &:not(:hover, [aria-expanded="true"]) {
-    color: var(--urlbarview-result-button-selected-color);
-    background-color: var(--urlbarview-result-button-selected-background-color);
-  }
-
   &:is(:hover, [aria-expanded="true"]) {
     color: var(--urlbarview-result-button-hover-color);
     background-color: var(--urlbarview-result-button-hover-background-color);
