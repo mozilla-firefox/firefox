@@ -21,6 +21,18 @@ JitHintsMap::~JitHintsMap() {
   ionHintMap_.clear();
 }
 
+size_t JitHintsMap::sizeOfIncludingThis(
+    mozilla::MallocSizeOf mallocSizeOf) const {
+  size_t size = mallocSizeOf(this);
+  size += ionHintMap_.shallowSizeOfExcludingThis(mallocSizeOf);
+  for (const IonHint* hint = ionHintQueue_.getFirst(); hint;
+       hint = hint->getNext()) {
+    size += mallocSizeOf(hint);
+    size += hint->monomorphicInlineOffsets.sizeOfExcludingThis(mallocSizeOf);
+  }
+  return size;
+}
+
 JitHintsMap::IonHint* JitHintsMap::addIonHint(ScriptKey key,
                                               ScriptToHintMap::AddPtr& p) {
   UniquePtr<IonHint> hint = MakeUnique<IonHint>(key);

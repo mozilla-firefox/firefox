@@ -365,6 +365,11 @@ void JSRuntime::addSizeOfIncludingThis(mozilla::MallocSizeOf mallocSizeOf,
     for (auto* task : jitRuntime_->ionLazyLinkList(this)) {
       rtSizes->jitLazyLink += task->sizeOfExcludingThis(mallocSizeOf);
     }
+
+    if (jitRuntime_->hasJitHintsMap()) {
+      rtSizes->jitHints +=
+          jitRuntime_->getJitHintsMap()->sizeOfIncludingThis(mallocSizeOf);
+    }
   }
 
   rtSizes->wasmRuntime +=

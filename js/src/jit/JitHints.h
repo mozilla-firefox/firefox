@@ -8,6 +8,7 @@
 #include "mozilla/BloomFilter.h"
 #include "mozilla/HashTable.h"
 #include "mozilla/LinkedList.h"
+#include "mozilla/MemoryReporting.h"
 #include "mozilla/Span.h"
 
 #include "jit/ICState.h"
@@ -225,6 +226,8 @@ class JitHintsMap {
                                    ICFallbackStub* stub);
 
   void recordInvalidation(JSScript* script);
+
+  size_t sizeOfIncludingThis(mozilla::MallocSizeOf mallocSizeOf) const;
 };
 
 }  // namespace js::jit

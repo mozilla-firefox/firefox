@@ -2093,6 +2093,10 @@ void ReportJSRuntimeExplicitTreeStats(const JS::RuntimeStats& rtStats,
                 rtStats.runtime.jitLazyLink,
                 "IonMonkey compilations waiting for lazy linking.");
 
+  RREPORT_BYTES(rtPath + "runtime/jit-hints"_ns, KIND_HEAP,
+                rtStats.runtime.jitHints,
+                "The map of hints used to speed up JIT compilation.");
+
   if (rtTotalOut) {
     *rtTotalOut = rtTotal;
   }

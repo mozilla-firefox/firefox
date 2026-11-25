@@ -503,7 +503,8 @@ struct RuntimeSizes {
   MACRO(_, MallocHeap, wasmRuntime)                 \
   MACRO(_, Ignore, wasmGuardPages)                  \
   MACRO(_, NonHeap, wasmContStacks)                 \
-  MACRO(_, MallocHeap, jitLazyLink)
+  MACRO(_, MallocHeap, jitLazyLink)                 \
+  MACRO(_, MallocHeap, jitHints)
 
   RuntimeSizes() { allScriptSources.emplace(); }
 
