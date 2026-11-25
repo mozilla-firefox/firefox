@@ -18,6 +18,7 @@ async function withTestPage(fn) {
   const tab = await BrowserTestUtils.openNewForegroundTab(gBrowser, TEST_PAGE);
   await SpecialPowers.spawn(tab.linkedBrowser, [], async () => {
     await content.customElements.whenDefined("ai-action-confirmation");
+    await content.customElements.whenDefined("ai-action-confirmation-tab-row");
   });
   try {
     await fn(tab.linkedBrowser);
@@ -39,7 +40,7 @@ add_task(async function test_label_localized_text_renders() {
     await setProps(browser, {
       labelL10nId: "smart-window-closed-tabs-label",
       labelL10nArgs: { count: 2 },
-      tabs: makeTabs(2),
+      items: makeTabs(2),
     });
 
     await SpecialPowers.spawn(browser, [], async () => {
@@ -60,7 +61,7 @@ add_task(async function test_l10n_label_attributes() {
     await setProps(browser, {
       labelL10nId: "smart-window-closed-tabs-label",
       labelL10nArgs: { count: 3 },
-      tabs: makeTabs(2),
+      items: makeTabs(2),
     });
 
     await SpecialPowers.spawn(browser, [], async () => {
@@ -86,7 +87,7 @@ add_task(async function test_toggle_expand_collapse() {
     await setProps(browser, {
       labelL10nId: "smart-window-closed-tabs-label",
       labelL10nArgs: { count: 2 },
-      tabs: makeTabs(2),
+      items: makeTabs(2),
       isExpanded: false,
     });
 
@@ -95,7 +96,7 @@ add_task(async function test_toggle_expand_collapse() {
       const shadow = el.shadowRoot;
 
       Assert.ok(
-        !shadow.querySelector(".action-confirmation-tabs"),
+        !shadow.querySelector(".action-confirmation-items"),
         "list hidden when collapsed"
       );
 
@@ -104,7 +105,7 @@ add_task(async function test_toggle_expand_collapse() {
       await el.updateComplete;
 
       Assert.ok(
-        shadow.querySelector(".action-confirmation-tabs"),
+        shadow.querySelector(".action-confirmation-items"),
         "list shown after expanding"
       );
       Assert.equal(el.isExpanded, true, "isExpanded true after expand");
@@ -113,7 +114,7 @@ add_task(async function test_toggle_expand_collapse() {
       await el.updateComplete;
 
       Assert.ok(
-        !shadow.querySelector(".action-confirmation-tabs"),
+        !shadow.querySelector(".action-confirmation-items"),
         "list hidden after collapsing"
       );
       Assert.equal(el.isExpanded, false, "isExpanded false after collapse");
@@ -126,7 +127,7 @@ add_task(async function test_toggle_dispatches_event() {
     await setProps(browser, {
       labelL10nId: "smart-window-closed-tabs-label",
       labelL10nArgs: { count: 2 },
-      tabs: makeTabs(2),
+      items: makeTabs(2),
       isExpanded: false,
     });
 
@@ -160,7 +161,7 @@ add_task(async function test_tabs_render_when_expanded() {
     await setProps(browser, {
       labelL10nId: "smart-window-closed-tabs-label",
       labelL10nArgs: { count: tabs.length },
-      tabs,
+      items: tabs,
       isExpanded: true,
     });
 
@@ -168,14 +169,14 @@ add_task(async function test_tabs_render_when_expanded() {
       const shadow = content.document.getElementById(
         "test-action-confirmation"
       ).shadowRoot;
-      const rows = shadow.querySelectorAll(".action-confirmation-tab");
+      const rows = shadow.querySelectorAll("ai-action-confirmation-tab-row");
       Assert.equal(
         rows.length,
         expectedTabs.length,
         "one row per affected tab"
       );
       Assert.equal(
-        rows[0].querySelector(".action-confirmation-tab-label").textContent,
+        rows[0].shadowRoot.querySelector(".tab-row-label").textContent,
         expectedTabs[0].title,
         "first row shows the tab title"
       );
@@ -188,7 +189,7 @@ add_task(async function test_no_expand_without_tabs() {
     await setProps(browser, {
       labelL10nId: "smart-window-closed-tabs-label",
       labelL10nArgs: { count: 0 },
-      tabs: [],
+      items: [],
     });
 
     await SpecialPowers.spawn(browser, [], async () => {
@@ -211,13 +212,15 @@ add_task(async function test_tab_click_opens_link() {
     await setProps(browser, {
       labelL10nId: "smart-window-closed-tabs-label",
       labelL10nArgs: { count: tabs.length },
-      tabs,
+      items: tabs,
       isExpanded: true,
     });
 
     await SpecialPowers.spawn(browser, [tabs], async expectedTabs => {
       const el = content.document.getElementById("test-action-confirmation");
-      const row = el.shadowRoot.querySelector(".action-confirmation-tab");
+      const row = el.shadowRoot
+        .querySelector("ai-action-confirmation-tab-row")
+        .shadowRoot.querySelector(".tab-row");
 
       const events = [];
       el.addEventListener("AIChatContent:OpenLink", e => events.push(e.detail));
@@ -251,7 +254,7 @@ add_task(async function test_undo_visibility_and_event() {
     await setProps(browser, {
       labelL10nId: "smart-window-closed-tabs-label",
       labelL10nArgs: { count: 2 },
-      tabs: makeTabs(2),
+      items: makeTabs(2),
       canUndo: false,
     });
 
@@ -291,13 +294,13 @@ add_task(async function test_marks_overflowing_list() {
     await setProps(browser, {
       labelL10nId: "smart-window-closed-tabs-label",
       labelL10nArgs: { count: manyTabs.length },
-      tabs: manyTabs,
+      items: manyTabs,
       isExpanded: true,
     });
 
     await SpecialPowers.spawn(browser, [], async () => {
       const el = content.document.getElementById("test-action-confirmation");
-      const list = el.shadowRoot.querySelector(".action-confirmation-tabs");
+      const list = el.shadowRoot.querySelector(".action-confirmation-items");
       const scroller = list.parentElement;
 
       const waitForOverflow = expected =>

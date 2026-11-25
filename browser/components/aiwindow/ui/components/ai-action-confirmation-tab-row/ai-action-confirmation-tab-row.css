@@ -1,0 +1,57 @@
+/* This Source Code Form is subject to the terms of the Mozilla Public
+ * License, v. 2.0. If a copy of the MPL was not distributed with this
+ * file, You can obtain one at http://mozilla.org/MPL/2.0/. */
+
+:host {
+  display: block;
+}
+
+.tab-row {
+  align-items: center;
+  border-radius: var(--border-radius-medium);
+  color: inherit;
+  cursor: pointer;
+  display: flex;
+  gap: var(--space-small);
+  min-width: 0;
+  padding: var(--space-xsmall) var(--space-small);
+  text-decoration: none;
+
+  &:hover {
+    background-color: var(--button-background-color-ghost-hover);
+    color: var(--button-text-color-ghost-hover);
+
+    &:active {
+      background-color: var(--button-background-color-ghost-active);
+      color: var(--button-text-color-ghost-active);
+    }
+  }
+
+  &:focus-visible {
+    outline: var(--focus-outline);
+    outline-offset: var(--focus-outline-inset);
+  }
+}
+
+.tab-row-icon {
+  border-radius: var(--border-radius-small);
+  flex-shrink: 0;
+  height: var(--icon-size);
+  width: var(--icon-size);
+  -moz-context-properties: fill;
+  fill: var(--icon-color);
+
+  @media (forced-colors: active) {
+    fill: currentColor;
+  }
+}
+
+.tab-row-label {
+  color: inherit;
+  flex: 1 1 auto;
+  font-size: var(--font-size-small);
+  min-width: 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}

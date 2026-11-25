@@ -12,28 +12,18 @@ import { MozLitElement } from "chrome://global/content/lit-utils.mjs";
 // eslint-disable-next-line import-x/no-unassigned-import
 import "chrome://global/content/elements/moz-button.mjs";
 
-const DEFAULT_FAVICON = "chrome://global/skin/icons/defaultFavicon.svg";
-
-/**
- * Tab shown in the confirmation card.
- *
- * @typedef {object} TabSelectionData
- * @property {string} url - Tab URL
- * @property {string} title - Display title
- * @property {string} [iconSrc] - Favicon URL
- */
-
 /**
  * Confirmation card for a completed NL browser action.
  *
  * @property {string} labelL10nId - Fluent ID for the label
  * @property {object} labelL10nArgs - Arguments for the label
  * @property {boolean} canUndo - Whether the undo button should be shown
- * @property {boolean} isExpanded - Whether the affected tabs list is visible
- * @property {TabSelectionData[]} tabs - Affected tabs
+ * @property {boolean} isExpanded - Whether the item list is visible
+ * @property {object[]} items - Items affected by the action
+ * @property {Function} rowTemplate - Renders the contents of one item's row
  */
 export class AIActionConfirmation extends MozLitElement {
-  #tabsListRef = createRef();
+  #listRef = createRef();
   #resizeObserver = null;
   #observedList = null;
   #scrollAnimationId = null;
@@ -41,7 +31,8 @@ export class AIActionConfirmation extends MozLitElement {
   static properties = {
     labelL10nId: { type: String },
     labelL10nArgs: { type: Object },
-    tabs: { type: Array },
+    items: { type: Array },
+    rowTemplate: { type: Function },
     canUndo: { type: Boolean },
     isExpanded: { type: Boolean, attribute: "is-expanded", reflect: true },
   };
@@ -50,7 +41,8 @@ export class AIActionConfirmation extends MozLitElement {
     super();
     this.labelL10nId = null;
     this.labelL10nArgs = null;
-    this.tabs = [];
+    this.items = [];
+    this.rowTemplate = null;
     this.canUndo = false;
     this.isExpanded = false;
   }
@@ -65,7 +57,7 @@ export class AIActionConfirmation extends MozLitElement {
   }
 
   #handleToggle() {
-    if (!this.tabs.length) {
+    if (!this.items.length) {
       return;
     }
     this.isExpanded = !this.isExpanded;
@@ -79,43 +71,12 @@ export class AIActionConfirmation extends MozLitElement {
   }
 
   /**
-   * Open URL or switch to tab. URL if it is already open.
-   *
-   * @param {MouseEvent} event
-   * @param {TabSelectionData} tab
-   */
-  #handleTabClick(event, tab) {
-    event.preventDefault();
-
-    const { shiftKey, metaKey, ctrlKey, altKey, button } = event;
-    // Modifier clicks forwards to the parent actor for resolving.
-    const hasModifier =
-      shiftKey || metaKey || ctrlKey || altKey || button !== 0;
-
-    this.dispatchEvent(
-      new CustomEvent("AIChatContent:OpenLink", {
-        bubbles: true,
-        composed: true,
-        detail: {
-          url: tab.url,
-          preferSwitchToTab: !hasModifier,
-          shiftKey,
-          metaKey,
-          ctrlKey,
-          altKey,
-          button,
-        },
-      })
-    );
-  }
-
-  /**
    * Toggles the `data-overflowing` attribute on the scroll container to control
    * the CSS scroll indicators (top line and bottom fade). These visual cues
-   * only appear when the tabs list exceeds the container height.
+   * only appear when the list exceeds the container height.
    */
   #updateOverflowState = () => {
-    const list = this.#tabsListRef.value;
+    const list = this.#listRef.value;
     const scroller = list?.parentElement;
     if (!list || !scroller) {
       return;
@@ -128,7 +89,7 @@ export class AIActionConfirmation extends MozLitElement {
   };
 
   /**
-   * Handles scroll events from the tabs list.
+   * Handles scroll events from the list.
    *
    * Returns early if CSS `animation-timeline: scroll()` is supported.
    */
@@ -151,7 +112,7 @@ export class AIActionConfirmation extends MozLitElement {
     this.#scrollAnimationId = requestAnimationFrame(() => {
       this.#scrollAnimationId = null;
 
-      const list = this.#tabsListRef.value;
+      const list = this.#listRef.value;
       const scroller = list?.parentElement;
       if (!list || !scroller) {
         return;
@@ -166,32 +127,9 @@ export class AIActionConfirmation extends MozLitElement {
     });
   }
 
-  /**
-   * @param {TabSelectionData} tab
-   */
-  #renderTab(tab) {
-    return html`
-      <li>
-        <a
-          class="action-confirmation-tab"
-          href=${tab.url}
-          title=${tab.url}
-          @click=${e => this.#handleTabClick(e, tab)}
-        >
-          <img
-            class="action-confirmation-tab-icon"
-            alt=""
-            src=${tab.iconSrc || DEFAULT_FAVICON}
-          />
-          <span class="action-confirmation-tab-label">${tab.title}</span>
-        </a>
-      </li>
-    `;
-  }
-
   updated() {
     // Observe the list to ensure the overflow is correct across layout changes.
-    const list = this.#tabsListRef.value ?? null;
+    const list = this.#listRef.value ?? null;
     if (list === this.#observedList) {
       return;
     }
@@ -224,7 +162,7 @@ export class AIActionConfirmation extends MozLitElement {
   }
 
   render() {
-    const isExpandable = !!this.tabs.length;
+    const isExpandable = !!this.items.length;
     return html`
       <link
         rel="stylesheet"
@@ -238,7 +176,7 @@ export class AIActionConfirmation extends MozLitElement {
             ?disabled=${!isExpandable}
             aria-expanded=${isExpandable ? this.isExpanded : nothing}
             aria-controls=${isExpandable && this.isExpanded
-              ? "action-confirmation-tabs"
+              ? "action-confirmation-items"
               : nothing}
             @click=${this.#handleToggle}
           >
@@ -266,11 +204,13 @@ export class AIActionConfirmation extends MozLitElement {
           ? html`
               <div class="action-confirmation-scroller">
                 <ul
-                  id="action-confirmation-tabs"
-                  class="action-confirmation-tabs"
-                  ${ref(this.#tabsListRef)}
+                  id="action-confirmation-items"
+                  class="action-confirmation-items"
+                  ${ref(this.#listRef)}
                 >
-                  ${this.tabs.map(tab => this.#renderTab(tab))}
+                  ${this.items.map(
+                    item => html`<li>${this.rowTemplate(item)}</li>`
+                  )}
                 </ul>
               </div>
             `

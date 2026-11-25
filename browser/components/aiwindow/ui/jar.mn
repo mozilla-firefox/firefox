@@ -8,6 +8,8 @@ browser.jar:
   content/browser/aiwindow/components/agent-monitor-item.mjs        (components/agent-monitor-item/agent-monitor-item.mjs)
   content/browser/aiwindow/components/agent-monitor-panel.css       (components/agent-monitor-panel/agent-monitor-panel.css)
   content/browser/aiwindow/components/agent-monitor-panel.mjs       (components/agent-monitor-panel/agent-monitor-panel.mjs)
+  content/browser/aiwindow/components/ai-action-confirmation-tab-row.css (components/ai-action-confirmation-tab-row/ai-action-confirmation-tab-row.css)
+  content/browser/aiwindow/components/ai-action-confirmation-tab-row.mjs (components/ai-action-confirmation-tab-row/ai-action-confirmation-tab-row.mjs)
   content/browser/aiwindow/components/ai-action-confirmation.css    (components/ai-action-confirmation/ai-action-confirmation.css)
   content/browser/aiwindow/components/ai-action-confirmation.mjs    (components/ai-action-confirmation/ai-action-confirmation.mjs)
   content/browser/aiwindow/components/ai-action-result.css          (components/ai-action-result/ai-action-result.css)

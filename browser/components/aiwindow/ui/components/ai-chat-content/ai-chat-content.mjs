@@ -26,6 +26,8 @@ import "chrome://browser/content/aiwindow/components/ai-chat-message.mjs";
 // eslint-disable-next-line import-x/no-unassigned-import
 import "chrome://browser/content/aiwindow/components/ai-action-confirmation.mjs";
 // eslint-disable-next-line import-x/no-unassigned-import
+import "chrome://browser/content/aiwindow/components/ai-action-confirmation-tab-row.mjs";
+// eslint-disable-next-line import-x/no-unassigned-import
 import "chrome://browser/content/aiwindow/components/kit-mention.mjs";
 // eslint-disable-next-line import-x/no-unassigned-import
 import "chrome://browser/content/aiwindow/components/agent-monitor-item.mjs";
@@ -42,7 +44,7 @@ import { STATE_CHOOSE } from "chrome://browser/content/aiwindow/components/aitab
 import { isBareAgentCommand } from "chrome://browser/content/aiwindow/modules/AgentCommands.mjs";
 
 /**
- * @typedef {import("chrome://browser/content/aiwindow/components/ai-action-confirmation.mjs").TabSelectionData} TabSelectionData
+ * @typedef {import("chrome://browser/content/aiwindow/components/ai-action-confirmation-tab-row.mjs").TabSelectionData} TabSelectionData
  */
 
 const FOLLOW_UP_QTY = 2;
@@ -1768,7 +1770,12 @@ export class AIChatContent extends MozLitElement {
       <ai-action-confirmation
         .labelL10nId=${actionResultData.labelL10nId}
         .labelL10nArgs=${actionResultData.labelL10nArgs}
-        .tabs=${tabs}
+        .items=${tabs}
+        .rowTemplate=${tab => html`
+          <ai-action-confirmation-tab-row
+            .tab=${tab}
+          ></ai-action-confirmation-tab-row>
+        `}
         .canUndo=${canUndo}
         .isExpanded=${this.#actionResultExpandState.get(messageId) ?? false}
         @action-confirmation-toggle=${e =>

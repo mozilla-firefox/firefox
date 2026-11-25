@@ -272,6 +272,10 @@ moz-button.jump-to-bottom-button {
   }
 }
 
+ai-action-confirmation {
+  --ai-action-confirmation-icon-image: url("chrome://browser/skin/closed-tabs.svg");
+}
+
 /* TODO - move these styles into a component https://bugzilla.mozilla.org/show_bug.cgi?id=2046155 */
 moz-button.tool-retry-button {
   --button-background-color: light-dark(var(--color-violet-0), var(--color-gray-80));

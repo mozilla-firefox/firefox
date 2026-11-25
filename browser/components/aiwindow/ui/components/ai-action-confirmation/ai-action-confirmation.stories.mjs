@@ -4,6 +4,7 @@
 
 import { html } from "chrome://global/content/vendor/lit.all.mjs";
 import "chrome://browser/content/aiwindow/components/ai-action-confirmation.mjs";
+import "chrome://browser/content/aiwindow/components/ai-action-confirmation-tab-row.mjs";
 
 export default {
   title: "Domain-specific UI Widgets/AI Window/AI Action Confirmation",
@@ -25,7 +26,7 @@ smart-window-closed-and-restored-label = Closed and restored tabs
     labelL10nArgs: { control: "object" },
     canUndo: { control: "boolean" },
     isExpanded: { control: "boolean" },
-    tabs: { control: "object" },
+    items: { control: "object" },
   },
 };
 
@@ -39,15 +40,22 @@ const Template = ({
   labelL10nArgs,
   canUndo,
   isExpanded,
-  tabs,
+  items,
 }) => html`
-  <div style="max-width: 320px;">
+  <div
+    style="max-width: 320px;
+           --ai-action-confirmation-icon-image: url('chrome://browser/skin/closed-tabs.svg');"
+  >
     <ai-action-confirmation
       .labelL10nId=${labelL10nId}
       .labelL10nArgs=${labelL10nArgs}
       .canUndo=${canUndo}
       .isExpanded=${isExpanded}
-      .tabs=${tabs}
+      .items=${items}
+      .rowTemplate=${tab =>
+        html`<ai-action-confirmation-tab-row
+          .tab=${tab}
+        ></ai-action-confirmation-tab-row>`}
     ></ai-action-confirmation>
   </div>
 `;
@@ -58,7 +66,7 @@ Collapsed.args = {
   labelL10nArgs: { count: 1 },
   canUndo: true,
   isExpanded: false,
-  tabs: [EXAMPLE_TABS[2]],
+  items: [EXAMPLE_TABS[2]],
 };
 
 export const Expanded = Template.bind({});
@@ -67,7 +75,7 @@ Expanded.args = {
   labelL10nArgs: { count: 3 },
   canUndo: true,
   isExpanded: true,
-  tabs: EXAMPLE_TABS.slice(0, 3),
+  items: EXAMPLE_TABS.slice(0, 3),
 };
 
 export const ExpandedOverflow = Template.bind({});
@@ -76,7 +84,7 @@ ExpandedOverflow.args = {
   labelL10nArgs: { count: EXAMPLE_TABS.length },
   canUndo: true,
   isExpanded: true,
-  tabs: EXAMPLE_TABS,
+  items: EXAMPLE_TABS,
 };
 
 export const AfterUndo = Template.bind({});
@@ -84,5 +92,5 @@ AfterUndo.args = {
   labelL10nId: "smart-window-closed-and-restored-label",
   canUndo: false,
   isExpanded: false,
-  tabs: EXAMPLE_TABS.slice(0, 3),
+  items: EXAMPLE_TABS.slice(0, 3),
 };
