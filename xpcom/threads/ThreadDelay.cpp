@@ -9,6 +9,7 @@
 
 #if defined(XP_WIN) || defined(XP_MACOSX)
 #  include <thread>
+
 #  include "mozilla/TimeStamp.h"
 #else
 #  include <unistd.h>
