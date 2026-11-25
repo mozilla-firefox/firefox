@@ -163,7 +163,9 @@ describe("<Crossword>", () => {
   describe("learn more action", () => {
     it("dispatches OPEN_LINK with the shared SUMO URL in a new tab", () => {
       const { container, dispatch } = renderCrossword();
-      const learnMoreItem = container.querySelector("panel-item.learn-more");
+      const learnMoreItem = container.querySelector(
+        "panel-item[data-l10n-id='newtab-crossword-widget-menu-learn-more']"
+      );
       fireEvent.click(learnMoreItem);
 
       const openLinkCall = dispatch.mock.calls.find(
@@ -177,7 +179,11 @@ describe("<Crossword>", () => {
 
     it("dispatches a learn_more WIDGETS_USER_EVENT", () => {
       const { container, dispatch } = renderCrossword();
-      fireEvent.click(container.querySelector("panel-item.learn-more"));
+      fireEvent.click(
+        container.querySelector(
+          "panel-item[data-l10n-id='newtab-crossword-widget-menu-learn-more']"
+        )
+      );
 
       const userEventCall = dispatch.mock.calls.find(
         ([action]) =>
@@ -977,10 +983,11 @@ describe("<Crossword>", () => {
           "panel-item[data-l10n-id='newtab-crossword-menu-powered-by-particle']"
         )
       ).toBeInTheDocument();
-      expect(menu.querySelector("panel-item.learn-more")).toHaveAttribute(
-        "data-l10n-id",
-        "newtab-crossword-widget-menu-learn-more"
-      );
+      expect(
+        menu.querySelector(
+          "panel-item[data-l10n-id='newtab-crossword-widget-menu-learn-more']"
+        )
+      ).toBeInTheDocument();
 
       // Generic chrome keeps the shared, translated Fluent ids.
       expect(
@@ -1048,7 +1055,11 @@ describe("<Crossword>", () => {
     it("flips the interaction pref via handleUserInteraction on a menu action", () => {
       const handleUserInteraction = jest.fn();
       const { container } = renderCrossword({ handleUserInteraction });
-      fireEvent.click(container.querySelector("panel-item.learn-more"));
+      fireEvent.click(
+        container.querySelector(
+          "panel-item[data-l10n-id='newtab-crossword-widget-menu-learn-more']"
+        )
+      );
       expect(handleUserInteraction).toHaveBeenCalledWith("crossword");
     });
 

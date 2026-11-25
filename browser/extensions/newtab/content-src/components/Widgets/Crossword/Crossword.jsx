@@ -12,7 +12,6 @@ import React, {
 } from "react";
 import { useSelector } from "react-redux";
 import { actionCreators as ac, actionTypes as at } from "common/Actions.mjs";
-import { useSizeSubmenu } from "../../../lib/utils";
 import {
   FRAMED_WIDGET_SANDBOX,
   WIDGET_REGISTRY,
@@ -21,8 +20,8 @@ import {
   WIDGET_USER_ACTIONS,
   WIDGET_SOURCES,
 } from "common/WidgetsRegistry.mjs";
-import { MoveSubmenu } from "../MoveSubmenu";
-import { WidgetHideMenuItem } from "../WidgetPlacement";
+import { SizeSubmenu } from "../SizeSubmenu";
+import { WidgetMenuFooter } from "../WidgetMenuFooter";
 import { useWidgetTelemetry } from "../useWidgetTelemetry";
 import { WidgetMenuButton } from "../WidgetMenuButton";
 import { WidgetMenuPoweredBy } from "../WidgetMenuPoweredBy";
@@ -158,13 +157,11 @@ function Crossword({
   const hasInteracted = prefs[PREF_CROSSWORD_INTERACTION];
   const iframeRef = useRef(null);
 
-  const { impressionRef, recordUserAction, recordEnabled } = useWidgetTelemetry(
-    {
-      dispatch,
-      widget: CROSSWORD_ENTRY,
-      widgetSize,
-    }
-  );
+  const { impressionRef, recordUserAction } = useWidgetTelemetry({
+    dispatch,
+    widget: CROSSWORD_ENTRY,
+    widgetSize,
+  });
 
   // Set once the widget reports the puzzle is finished, so menu actions that
   // only apply to an in-progress game (Solve puzzle) can be hidden.
@@ -326,16 +323,6 @@ function Crossword({
     [handleInteraction, postMenuAction, recordUserAction]
   );
 
-  function handleCrosswordHide() {
-    dispatch(
-      ac.OnlyToMain({
-        type: at.SET_PREF,
-        data: { name: CROSSWORD_ENTRY.enabledPref, value: false },
-      })
-    );
-    recordEnabled(false, { source: WIDGET_SOURCES.CONTEXT_MENU });
-  }
-
   const handleChangeSize = useCallback(
     size => {
       handleInteraction();
@@ -354,19 +341,8 @@ function Crossword({
     [dispatch, handleInteraction, recordUserAction]
   );
 
-  const sizeSubmenuRef = useSizeSubmenu(handleChangeSize);
-
   function handleLearnMore() {
     handleInteraction();
-    dispatch(
-      ac.OnlyToMain({
-        type: at.OPEN_LINK,
-        data: {
-          url: "https://support.mozilla.org/kb/firefox-new-tab-widgets",
-          where: "tab",
-        },
-      })
-    );
     recordUserAction(USER_ACTION_TYPES.LEARN_MORE, {
       source: WIDGET_SOURCES.CONTEXT_MENU,
     });
@@ -424,42 +400,25 @@ function Crossword({
               onClick={handleInteraction}
             />
 
-            <hr />
-
-            {widgetsMayBeMaximized && (
-              <panel-item submenu="crossword-size-submenu">
-                <span data-l10n-id="newtab-widget-menu-change-size"></span>
-                <panel-list
-                  ref={sizeSubmenuRef}
-                  slot="submenu"
-                  id="crossword-size-submenu"
-                >
-                  {["medium", "large"].map(size => (
-                    <panel-item
-                      key={size}
-                      type="checkbox"
-                      checked={widgetSize === size || undefined}
-                      data-size={size}
-                      data-l10n-id={`newtab-widget-size-${size}`}
-                    />
-                  ))}
-                </panel-list>
-              </panel-item>
-            )}
-
-            <MoveSubmenu
-              widgetId="crossword"
+            <WidgetMenuFooter
+              dispatch={dispatch}
+              widgetId={CROSSWORD_ENTRY.id}
               widgetEnabledMap={widgetEnabledMap}
-            />
-
-            <WidgetHideMenuItem
-              widgetId="crossword"
-              onHide={handleCrosswordHide}
-            />
-            <panel-item
-              className="learn-more"
-              data-l10n-id="newtab-crossword-widget-menu-learn-more"
-              onClick={handleLearnMore}
+              widgetName={CROSSWORD_ENTRY.telemetryName}
+              enabledPref={CROSSWORD_ENTRY.enabledPref}
+              widgetSize={widgetSize}
+              learnMoreL10nId="newtab-crossword-widget-menu-learn-more"
+              onLearnMore={handleLearnMore}
+              sizeSubmenu={
+                widgetsMayBeMaximized ? (
+                  <SizeSubmenu
+                    submenuId="crossword-size-submenu"
+                    sizes={CROSSWORD_ENTRY.validSizes}
+                    checkedSize={widgetSize}
+                    onChangeSize={handleChangeSize}
+                  />
+                ) : null
+              }
             />
           </panel-list>
         </div>
