@@ -885,7 +885,13 @@ export class GeckoDriver {
       this.#currentSession = null;
     }
 
-    if (AppConstants.MOZ_CODE_COVERAGE) {
+    // On Android, the atexit handlers are never executed and therefore the code
+    // coverage counters never get dumped. Now is our chance to do it before the
+    // process maybe gets killed.
+    // While this would be theoretically correct to do on other systems as well,
+    // it isn't needed and degrades performances, especially in the Marionette
+    // unit tests which create and delete many sessions.
+    if (AppConstants.MOZ_CODE_COVERAGE && AppConstants.platform === "android") {
       lazy.PerTestCoverageUtils.afterSuiteSync();
     }
   }
