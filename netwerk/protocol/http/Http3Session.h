@@ -441,6 +441,7 @@ class Http3Session final : public Http3SessionBase,
     USED_CONN_CLOSED_BY_NECKO
   };
   void ZeroRttTelemetry(ZeroRttOutcome aOutcome);
+  void RecordTokenResumption(const nsACString& aOutcome);
 
   RefPtr<NeqoHttp3Conn> mHttp3Connection;
   RefPtr<nsAHttpConnection> mConnection;
@@ -534,6 +535,10 @@ class Http3Session final : public Http3SessionBase,
   // Records whether the handshake finished successfully and we established a
   // a connection.
   bool mHandshakeSucceeded = false;
+
+  bool mTokenAccepted = false;
+  // Whether the last token tried was loaded from disk.
+  bool mTokenRestored = false;
 
   nsCOMPtr<nsINetAddr> mNetAddr;
 
