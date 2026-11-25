@@ -39,7 +39,6 @@
 #include "mozilla/PresState.h"
 #include "mozilla/ReflowInput.h"
 #include "mozilla/SVGOuterSVGFrame.h"
-#include "mozilla/SVGUtils.h"
 #include "mozilla/ScrollState.h"
 #include "mozilla/ScrollbarPreferences.h"
 #include "mozilla/ScrollingMetrics.h"
@@ -3809,20 +3808,6 @@ void ScrollContainerFrame::MaybeCreateTopLayerAndWrapRootItems(
           GetRectRelativeToSelf() + aBuilder->ToReferenceFrame(this);
       rootResultList.AppendNewToTop<nsDisplayBackdropFilters>(
           aBuilder, this, &rootResultList, backdropRect, rootStyleFrame);
-    }
-
-    // The root element's clip-path and mask also apply to the canvas
-    // background (https://drafts.fxtf.org/compositing/#pagebackdrop), so
-    // like filters above they are applied here rather than when building
-    // the root element's own display list.
-    if (SVGUtils::DetermineMaskUsage(rootStyleFrame, false)
-            .UsingMaskOrClipPath()) {
-      SerializeList();
-      rootResultList.AppendNewToTop<nsDisplayMasksAndClipPaths>(
-          aBuilder, rootStyleFrame, &rootResultList,
-          aBuilder->CurrentActiveScrolledRoot(),
-          nsDisplayItem::ContainerASRType::AncestorOfContained,
-          usingBackdropFilter, /* aForceIsolation = */ false);
     }
   }
 
