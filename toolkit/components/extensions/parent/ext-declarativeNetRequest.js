@@ -161,6 +161,12 @@ this.declarativeNetRequest = class extends ExtensionAPI {
               // null initiatorURI. For consistency, we do the same here.
               req.initiatorURI = null;
             }
+            // "initiatorURI" corresponds to the triggering principal, but the
+            // loading principal ("documentURI") is used instead. The two are
+            // often equal, with some exceptions. Notably, null for main_frame.
+            if (req.type !== "main_frame") {
+              req.documentURI = req.initiatorURI;
+            }
           }
           const matchedRules = ExtensionDNR.getMatchedRulesForRequest(
             req,

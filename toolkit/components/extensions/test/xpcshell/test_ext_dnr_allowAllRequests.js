@@ -316,6 +316,19 @@ add_task(async function allowAllRequests_in_sub_frame() {
     expectedResult: "fetchAllowed",
   });
 
+  // allowAllRequests ignored if ancestor frame is a restricted domain.
+  await runWithPrefs(
+    [["extensions.webextensions.restrictedDomains", "example.net"]],
+    async () => {
+      await testLoadInFrame({
+        description: "allowAllRequests ignored for restricted domain",
+        domains: ["example.net", "example.com", "example.org"],
+        jsForFrame: testFetch,
+        expectedError: FETCH_BLOCKED,
+      });
+    }
+  );
+
   await extension.unload();
 });
 

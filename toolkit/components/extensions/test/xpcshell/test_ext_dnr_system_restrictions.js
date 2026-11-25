@@ -1,5 +1,9 @@
 "use strict";
 
+ChromeUtils.defineESModuleGetters(this, {
+  TestUtils: "resource://testing-common/TestUtils.sys.mjs",
+});
+
 const server = createHttpServer({ hosts: ["example.com", "restricted"] });
 server.registerPathHandler("/", (req, res) => {
   res.setHeader("Access-Control-Allow-Origin", "*");
@@ -38,7 +42,10 @@ async function startDNRExtension() {
           },
           {
             id: 2,
-            condition: { urlFilter: "blockme", resourceTypes: ["main_frame"] },
+            condition: {
+              urlFilter: "blockme",
+              resourceTypes: ["main_frame", "sub_frame"],
+            },
             action: { type: "block" },
           },
         ],
@@ -95,10 +102,81 @@ add_task(async function dnr_ignores_navigation_to_restrictedDomains() {
     Assert.equal(document.URL, "http://restricted/?blockme", "Same URL");
     Assert.equal(document.body.textContent, "response from server", "body");
   });
+
+  info("Navigating to a non-restricted sub_frame with restricted initiator");
+  await contentPage.spawn([], async () => {
+    const f = content.wrappedJSObject.document.createElement("iframe");
+    await new Promise(resolve => {
+      f.src = "http://example.com/?blockme2";
+      f.onload = resolve;
+      content.wrappedJSObject.document.body.append(f);
+    });
+  });
+  const frameBC = contentPage.browsingContext.children[0];
+  ok(frameBC, "Got frame");
+  await contentPage.SpecialPowers.spawn(frameBC, [], () => {
+    const { document } = content;
+    Assert.equal(document.URL, "http://example.com/?blockme2", "Same URL");
+    Assert.equal(document.body.textContent, "response from server", "body");
+  });
+
   await contentPage.close();
   await extension.unload();
 });
 
+// In dnr_ignores_navigation_to_restrictedDomains we verified that DNR cannot
+// block requests triggered from a principal with a restricted domain, for
+// sub_frame requests. But for main_frame, we expect restricted domains to not
+// be enforced because access check is based on loading principal, which is
+// null for main_frame requests.
+add_task(async function dnr_main_frame_not_affected_by_restricted_initiator() {
+  // Unlike all other tests in this file, we use redirect rule, because it is
+  // not easy to detect whether a main_frame request was blocked.
+  let extension = ExtensionTestUtils.loadExtension({
+    async background() {
+      await browser.declarativeNetRequest.updateSessionRules({
+        addRules: [
+          {
+            id: 1,
+            condition: { urlFilter: "redirme", resourceTypes: ["main_frame"] },
+            action: {
+              type: "redirect",
+              redirect: { transform: { query: "?dnrwashere" } },
+            },
+          },
+        ],
+      });
+      browser.test.sendMessage("dnr_registered");
+    },
+    manifest: {
+      permissions: ["declarativeNetRequest", "<all_urls>"],
+    },
+  });
+  await extension.startup();
+  await extension.awaitMessage("dnr_registered");
+
+  let contentPage =
+    await ExtensionTestUtils.loadContentPage("http://restricted/");
+  info("Navigating to non-restricted main_frame with restricted initiator");
+  await contentPage.spawn([], () => {
+    content.wrappedJSObject.location = "http://example.com/?redirme";
+  });
+  await TestUtils.waitForCondition(
+    () => contentPage.browser.documentURI.spec !== "http://restricted/",
+    "Waiting for navigation to complete"
+  );
+  Assert.equal(
+    contentPage.browser.documentURI.spec,
+    "http://example.com/?dnrwashere",
+    "restrictedDomains does not apply to initiator of main_frame requests"
+  );
+
+  await contentPage.close();
+  await extension.unload();
+});
+
+// See test_ext_dnr_loadingPrincipal.js for the variant of this test that
+// checks what host permissions are checked against with CSS @import.
 add_task(async function dnr_ignores_css_import_at_restrictedDomains() {
   // CSS @import have triggeringPrincipal set to the URL of the stylesheet,
   // and the loadingPrincipal set to the web page. To verify that access is
@@ -148,7 +226,13 @@ add_task(
     let extension = ExtensionTestUtils.loadExtension({
       async background() {
         await browser.declarativeNetRequest.updateSessionRules({
-          addRules: [{ id: 1, condition: {}, action: { type: "block" } }],
+          addRules: [
+            {
+              id: 1,
+              condition: { excludedResourceTypes: [] },
+              action: { type: "block" },
+            },
+          ],
         });
         const type = "other"; // matches the condition of the above rule.
 
@@ -169,6 +253,32 @@ add_task(
           }),
           "testMatchOutcome ignores restricted initiator"
         );
+
+        // Navigation requests can be matched without host permissions for the
+        // initiator (bug 1825824), but other restrictions are still applied.
+        //
+        // But for consistency with real network requests, we do not check
+        // access on "initiator" for main_frame requests. Real main_frame is
+        // tested above in dnr_main_frame_not_affected_by_restricted_initiator.
+        browser.test.assertDeepEq(
+          { matchedRules: [{ ruleId: 1, rulesetId: "_session" }] },
+          await browser.declarativeNetRequest.testMatchOutcome({
+            url: "http://example.com/",
+            initiator: "http://restricted/",
+            type: "main_frame",
+          }),
+          "testMatchOutcome does not restrict initiator for main_frame"
+        );
+        browser.test.assertDeepEq(
+          { matchedRules: [] },
+          await browser.declarativeNetRequest.testMatchOutcome({
+            url: "http://example.com/",
+            initiator: "http://restricted/",
+            type: "sub_frame",
+          }),
+          "testMatchOutcome restricts restricted initiator for sub_frame"
+        );
+
         browser.test.sendMessage("done");
       },
       manifest: {

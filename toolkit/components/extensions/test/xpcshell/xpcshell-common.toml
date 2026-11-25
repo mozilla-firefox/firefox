@@ -285,6 +285,8 @@ run-sequentially = ["os == 'mac'"] # frequent timeouts in parallel on Mac
 
 ["test_ext_dnr_file_access.js"]
 
+["test_ext_dnr_loadingPrincipal.js"]
+
 ["test_ext_dnr_modifyHeaders.js"]
 
 ["test_ext_dnr_private_browsing.js"]

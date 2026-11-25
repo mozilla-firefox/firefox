@@ -82,16 +82,14 @@ async function test_dnr_with_file_initiator(hasFilePermissions) {
       // Regardless of initiator, file:-requests themselves cannot be matched by
       // DNR, both by design and in its implementation, which is only hooked up
       // to http(s) requests via NetworkIntegration.startDNREvaluation.
-      // testMatchesRequest can artifically match file:-URLs but that is not
-      // supported and should be fixed when we fix bug 1827422.
       await testMatchesRequest(
         { url: "file:///", initiator: "file:///tmp", type: "sub_frame" },
-        [1], // Ideally [], would be fixed by bug 1827422.
+        [],
         "Cannot match file:-requests from file."
       );
       await testMatchesRequest(
         { url: "file:///", type: "sub_frame" },
-        [1], // Ideally [], would be fixed by bug 1827422.
+        [],
         "Cannot match file:-requests from file."
       );
       browser.test.notifyPass();

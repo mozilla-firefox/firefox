@@ -1335,7 +1335,11 @@ class RequestDetails {
    * @param {object} options
    * @param {nsIURI} options.requestURI - URL of the requested resource.
    * @param {nsIURI} [options.initiatorURI] - URL of triggering principal,
-   *   provided that it is a content principal. Otherwise null.
+   *   provided that it is a content principal. Otherwise null. Used to
+   *   evaluate rule conditions, not for access checks (see documentURI).
+   * @param {nsIURI} [options.documentURI] - URL of the loading principal.
+   *   For subresource requests this is often the same as initiatorURI.
+   *   For main frame this is null. Used for access checks.
    * @param {string} options.type - ResourceType (MozContentPolicyType).
    * @param {string} [options.method] - HTTP method
    * @param {integer} [options.tabId]
@@ -1347,6 +1351,7 @@ class RequestDetails {
   constructor({
     requestURI,
     initiatorURI,
+    documentURI,
     type,
     method,
     tabId,
@@ -1354,6 +1359,7 @@ class RequestDetails {
   }) {
     this.requestURI = requestURI;
     this.initiatorURI = initiatorURI;
+    this.documentURI = documentURI;
     this.type = type;
     this.method = method;
     this.tabId = tabId;
@@ -1408,6 +1414,8 @@ class RequestDetails {
       requestURI: channel.finalURI,
       // Note: originURI may be null, if missing or null principal, as desired.
       initiatorURI: channel.originURI,
+      // Note: documentURI is null for main_frame requests, as desired.
+      documentURI: channel.documentURI,
       type: channel.type,
       method: channel.method.toLowerCase(),
       tabId,
@@ -1462,11 +1470,16 @@ class RequestDetails {
       }
       const isTop = !bc.parent;
       const parentPrin = bc.parentWindowContext?.documentPrincipal;
+      // Mirrors documentURI in RequestDetails.fromChannelWrapper.
+      const documentURI = parentPrin?.isContentPrincipal
+        ? parentPrin.URI
+        : null;
       const requestDetails = new RequestDetails({
         requestURI,
         // Note: initiatorURI differs from RequestDetails.fromChannelWrapper;
         // See the above comment for more info.
-        initiatorURI: parentPrin?.isContentPrincipal ? parentPrin.URI : null,
+        initiatorURI: documentURI,
+        documentURI,
         type: isTop ? "main_frame" : "sub_frame",
         method: bc.activeSessionHistoryEntry?.hasPostData ? "post" : "get",
         tabId: this.tabId,
@@ -1481,28 +1494,55 @@ class RequestDetails {
     return this.#ancestorRequestDetails;
   }
 
-  canExtensionModify(extension) {
-    const policy = extension.policy;
-    if (!policy.canAccessURI(this.requestURI)) {
+  /**
+   * This method is called for extensions with one or both DNR permissions
+   * ("declarativeNetRequestWithHostAccess" and/or "declarativeNetRequest"),
+   * by RequestEvaluator's constructor that sets canModify and canBlock.
+   *
+   * If allowed by host permissions, the extension has full DNR access:
+   * - canModify = true
+   * - canBlock = true
+   *
+   * Otherwise, if "declarativeNetRequest" permission is present, and the URL
+   * matches `<all_urls>` and not otherwise restricted, access is limited to:
+   * - canModify = false
+   * - canBlock = true
+   *
+   * @param {Extension} extension
+   * @param {boolean} wantBlockWithoutModify
+   *   Whether canBlock should be computed (due to canModify being false).
+   * @returns {boolean} Whether |extension| is allowed access to this request.
+   */
+  canExtensionModify(extension, wantBlockWithoutModify) {
+    const { policy } = extension;
+    let flags = wantBlockWithoutModify
+      ? WebExtensionPolicy.ACCESS_WITHOUT_HOST_PERMISSIONS
+      : 0;
+    if (!policy.canAccessURI(this.requestURI, flags)) {
       return false;
     }
-    if (
-      this.initiatorURI &&
-      this.type !== "main_frame" &&
-      this.type !== "sub_frame" &&
-      // ACCESS_FILE_ALWAYS is explained at ChannelWrapper::Matches, see bug
-      // 1887869 and bug 1621935 for context.
-      !policy.canAccessURI(
-        this.initiatorURI,
+    if (!this.documentURI) {
+      // Catches "main_frame" type as well, see sub_frame case below.
+      return true;
+    }
+    if (this.type === "sub_frame") {
+      // Host permissions for the document are not required for navigation
+      // requests, but restricted/quarantined domains and guards still apply:
+      // https://bugzilla.mozilla.org/show_bug.cgi?id=1825824#c2
+      flags |= WebExtensionPolicy.ACCESS_WITHOUT_HOST_PERMISSIONS;
+    }
+    // ACCESS_FILE_ALWAYS is explained at ChannelWrapper::Matches, see bug
+    // 1887869 and bug 1621935 for context.
+    return policy.canAccessURI(
+      this.documentURI,
+      flags |
         WebExtensionPolicy.ACCESS_FILE_ALWAYS |
-          WebExtensionPolicy.ACCESS_OWN_EXTENSION
-      )
-    ) {
-      // Host permissions for the initiator is required except for navigation
-      // requests: https://bugzilla.mozilla.org/show_bug.cgi?id=1825824#c2
-      return false;
-    }
-    return true;
+        WebExtensionPolicy.ACCESS_OWN_EXTENSION |
+        // Historically we only allowed blocking, not modify (bug 1810753).
+        (wantBlockWithoutModify && lazy.gMatchRequestsFromOtherExtensions
+          ? WebExtensionPolicy.ACCESS_OTHER_EXTENSIONS
+          : 0)
+    );
   }
 
   #domainFromURI(uri) {
@@ -1511,15 +1551,14 @@ class RequestDetails {
       // nsIURI omits brackets from IPv6 addresses. But the canonical form of an
       // IPv6 address is with brackets, so add them.
       return hostname.includes(":") ? `[${hostname}]` : hostname;
-    } catch (e) {
-      // uri.host throws for some schemes (e.g. about:). In practice we won't
-      // encounter this for network (via NetworkIntegration.startDNREvaluation)
-      // because isRestrictedPrincipalURI filters the initiatorURI. Furthermore,
-      // because only http(s) requests are observed, requestURI is http(s).
+    } catch {
+      // uri.host throws for some schemes (e.g. about: and data:). Real network
+      // requests (via NetworkIntegration.startDNREvaluation) may trigger this
+      // error for initiatorURI with about:-schemes, never for requestURI
+      // (which are always http/https schemes).
       //
-      // declarativeNetRequest.testMatchOutcome can pass arbitrary URIs and thus
-      // trigger the error in nsIURI::GetHost.
-      Cu.reportError(e);
+      // testMatchOutcome may simulate requests with arbitrary URIs and trigger
+      // this error for invalid initiatorURI / requestURI.
       return null;
     }
   }
@@ -1560,7 +1599,12 @@ class RequestEvaluator {
   constructor(request, ruleManager) {
     this.req = request;
     this.ruleManager = ruleManager;
-    this.canModify = request.canExtensionModify(ruleManager.extension);
+    // See canExtensionModify for an explanation on canModify/canBlock.
+    this.canModify = request.canExtensionModify(ruleManager.extension, false);
+    this.canBlock =
+      this.canModify ||
+      (ruleManager.hasBlockPermission &&
+        request.canExtensionModify(ruleManager.extension, true));
 
     // These values are initialized by findMatchingRules():
     this.matchedRule = null;
@@ -1663,7 +1707,7 @@ class RequestEvaluator {
    * Finds the matching rules, as documented in the comment before the class.
    */
   findMatchingRules() {
-    if (!this.canModify && !this.ruleManager.hasBlockPermission) {
+    if (!this.canBlock) {
       // If the extension cannot apply any action, don't bother.
       return;
     }
@@ -1929,7 +1973,7 @@ class RequestEvaluator {
       case "allowAllRequests":
       case "block":
       case "upgradeScheme":
-        return this.ruleManager.hasBlockPermission;
+        return this.canBlock;
       case "redirect":
         return false;
       // case "modifyHeaders" is never an action for this.matchedRule.
@@ -1937,67 +1981,6 @@ class RequestEvaluator {
         throw new Error(`Unexpected action type: ${rule.action.type}`);
     }
   }
-}
-
-/**
- * Checks whether a request from a document with the given URI is allowed to
- * be modified by an unprivileged extension (e.g. an extension without host
- * permissions but the "declarativeNetRequest" permission).
- * The output is comparable to WebExtensionPolicy::CanAccessURI for an extension
- * with the `<all_urls>` permission, for consistency with the webRequest API.
- *
- * @param {nsIURI} [uri] The URI of a request's loadingPrincipal. May be void
- *   if missing (e.g. top-level requests) or not a content principal.
- * @returns {boolean} Whether there is any extension that is allowed to see
- *   requests from a document with the given URI. Callers are expected to:
- *   - check system requests (and treat as true).
- *   - check WebExtensionPolicy.isRestrictedURI (and treat as true).
- */
-function isRestrictedPrincipalURI(uri) {
-  if (!uri) {
-    // No URI, could be:
-    // - System principal (caller should have checked and disallowed access).
-    // - Expanded principal, typically content script in documents. If an
-    //   extension content script managed to run there, that implies that an
-    //   extension was able to access it.
-    // - Null principal (e.g. sandboxed document, about:blank, data:).
-    return false;
-  }
-
-  // An unprivileged extension with maximal host permissions has allowedOrigins
-  // set to [`<all_urls>`, `moz-extension://extensions-own-uuid-here`].
-  // `<all_urls>` matches PermittedSchemes from MatchPattern.cpp:
-  // https://searchfox.org/mozilla-central/rev/55d5c4b9dffe5e59eb6b019c1a930ec9ada47e10/toolkit/components/extensions/MatchPattern.cpp#209-211
-  // i.e. "http", "https", "ws", "wss", "file", "ftp", "data".
-  // - It is not possible to have a loadingPrincipal for: ws, wss, ftp.
-  // - data:-URIs always have an opaque origin, i.e. the principal is not a
-  //   content principal, thus void here.
-  // - The remaining schemes from `<all_urls>` are: http, https, file, data,
-  //   and checked below.
-  //
-  // Privileged addons can also access resource: and about:, but we do not need
-  // to support these now.
-
-  // http(s) are common, and allowed, except for some restricted domains. The
-  // caller is expected to check WebExtensionPolicy.isRestrictedURI.
-  if (uri.schemeIs("http") || uri.schemeIs("https")) {
-    return false; // Very common.
-  }
-
-  // moz-extension: is not restricted because an extension always has permission
-  // to its own moz-extension:-origin. The caller is expected to verify that an
-  // extension can only access its own URI.
-  if (ExtensionUtils.isExtensionUrl(uri)) {
-    return false;
-  }
-
-  // Requests from local files are intentionally allowed (bug 1621935).
-  if (uri.schemeIs("file")) {
-    return false;
-  }
-
-  // Anything else (e.g. resource:, about:newtab, etc.) is not allowed.
-  return true;
 }
 
 const NetworkIntegration = {
@@ -2017,9 +2000,8 @@ const NetworkIntegration = {
 
   startDNREvaluation(channel) {
     let ruleManagers = gRuleManagers;
-    // TODO bug 1827422: Merge isRestrictedPrincipalURI with canModify.
-    if (!channel.canModify || isRestrictedPrincipalURI(channel.documentURI)) {
-      // Ignore system requests or requests to restricted domains.
+    if (!channel.canModify) {
+      // Ignore system requests.
       ruleManagers = [];
     }
     if (channel.loadInfo.originAttributes.privateBrowsingId > 0) {
@@ -2436,17 +2418,11 @@ function getMatchedRulesForRequest(request, extension) {
   if (extension) {
     ruleManagers = ruleManagers.filter(rm => rm.extension === extension);
   }
-  if (
-    // NetworkIntegration.startDNREvaluation does not check requestURI, but we
-    // do that here to filter URIs that are obviously disallowed. In practice,
-    // anything other than http(s) is bogus and unsupported in DNR.
-    isRestrictedPrincipalURI(requestURI) ||
-    // Equivalent to NetworkIntegration.startDNREvaluation's channel.canModify
-    // check, which excludes system requests and restricted domains.
-    WebExtensionPolicy.isRestrictedURI(requestURI) ||
-    (initiatorURI && WebExtensionPolicy.isRestrictedURI(initiatorURI)) ||
-    isRestrictedPrincipalURI(initiatorURI)
-  ) {
+  if (requestURI.schemeIs("data")) {
+    // data:-URIs are not hooked up to the network (bug 1631933), so we want to
+    // reject them. canExtensionModify is responsible for rejecting unsupported
+    // schemes, but `<all_urls>` contains data: and causes data:-URLs to be
+    // accepted, so we need to drop it here.
     ruleManagers = [];
   }
   // While this simulated request is not really from another extension, apply
