@@ -303,6 +303,7 @@ class Http3Session final : public Http3SessionBase,
   // This function will be called by QuicSocketControl when the certificate
   // verification is done.
   void Authenticated(int32_t aError, bool aServCertHashesSucceeded = false);
+  void NoteHandshakeTimeout() { mHandshakeTimedOut = true; }
 
   nsresult ProcessOutputAndEvents(nsIUDPSocket* socket);
 
@@ -535,6 +536,7 @@ class Http3Session final : public Http3SessionBase,
   // Records whether the handshake finished successfully and we established a
   // a connection.
   bool mHandshakeSucceeded = false;
+  bool mHandshakeTimedOut = false;
 
   bool mTokenAccepted = false;
   // Whether the last token tried was loaded from disk.

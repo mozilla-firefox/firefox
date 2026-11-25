@@ -3166,8 +3166,9 @@ network:
     description: >
       The session resumption outcome of a connection that had at least one
       cached token to try, by transport and by where the last token tried came
-      from. Recorded at most once per connection; attempts abandoned before a
-      handshake outcome are not counted.
+      from. Recorded at most once per connection; attempts necko abandons
+      before a handshake outcome, other than on a handshake timeout, are not
+      counted.
     dual_labels:
       key:
         labels:
@@ -3183,10 +3184,13 @@ network:
           - resumed
           - not_resumed
           - rejected
+          - failed
         description: >
           'rejected' means the TLS stack refused every token. 'not_resumed'
           means a token was accepted by the stack and sent, but the server
-          declined it. 'resumed' means the server accepted it.
+          declined it. 'resumed' means the server accepted it. 'failed' means
+          a token was accepted, but the handshake then failed for any reason,
+          including a handshake timeout or an ECH retry.
     bugs:
       - https://bugzilla.mozilla.org/show_bug.cgi?id=2066838
       - https://bugzilla.mozilla.org/show_bug.cgi?id=2090845

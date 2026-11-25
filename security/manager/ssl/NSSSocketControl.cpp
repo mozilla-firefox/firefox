@@ -44,6 +44,8 @@ NSSSocketControl::NSSSocketControl(
       mIsFullHandshake(false),
       mTriedResumptionToken(false),
       mTokenRestored(false),
+      mCanceledUnclaimed(false),
+      mHandshakeTimedOut(false),
       mNotedTimeUntilReady(false),
       mEchExtensionStatus(EchExtensionStatus::kNotPresent),
       mMaybeShortWrite(Nothing()),
@@ -125,7 +127,8 @@ void NSSSocketControl::RecordTokenResumption(const nsACString& aOutcome) {
 }
 
 bool NSSSocketControl::HasResumptionOutcomeToRecord() const {
-  return mTriedResumptionToken && mSessionCacheInfo.isSome();
+  return mTriedResumptionToken && mSessionCacheInfo.isSome() &&
+         !mCanceledUnclaimed;
 }
 
 void NSSSocketControl::SetHandshakeCompleted() {
@@ -534,6 +537,13 @@ NSSSocketControl::DisableEarlyData() {
 }
 
 NS_IMETHODIMP
+NSSSocketControl::NoteHandshakeTimeout() {
+  COMMON_SOCKET_CONTROL_ASSERT_ON_OWNING_THREAD();
+  mHandshakeTimedOut = true;
+  return NS_OK;
+}
+
+NS_IMETHODIMP
 NSSSocketControl::SetHandshakeCallbackListener(
     nsITlsHandshakeCallbackListener* callback) {
   COMMON_SOCKET_CONTROL_ASSERT_ON_OWNING_THREAD();
@@ -545,6 +555,12 @@ PRStatus NSSSocketControl::CloseSocketAndDestroy() {
   COMMON_SOCKET_CONTROL_ASSERT_ON_OWNING_THREAD();
 
   mClientAuthCertificateRequest.reset();
+
+  // Closes by necko aren't failures, except on a handshake timeout.
+  if (HasResumptionOutcomeToRecord() && !mHandshakeCompleted &&
+      (IsCanceled() || mHandshakeTimedOut)) {
+    RecordTokenResumption("failed"_ns);
+  }
 
   PRFileDesc* popped = PR_PopIOLayer(mFd, PR_TOP_IO_LAYER);
   MOZ_ASSERT(

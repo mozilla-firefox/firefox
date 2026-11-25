@@ -1415,6 +1415,7 @@ uint32_t nsHttpConnection::ReadTimeoutTick(PRIntervalTime now) {
            gHttpHandler->TLSHandshakeTimeout()));
 
       // This will also close the connection
+      NoteHandshakeTimeout();
       SetCloseReason(ConnectionCloseReason::TLS_TIMEOUT);
       CloseTransaction(mTransaction, NS_ERROR_NET_TIMEOUT);
       return UINT32_MAX;

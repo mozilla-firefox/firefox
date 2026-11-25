@@ -171,6 +171,12 @@ interface nsITLSSocketControl : nsISupports {
      */
     [noscript] void disableEarlyData();
 
+    /**
+     * Records that the TLS handshake timed out, for the token resumption
+     * telemetry. Call before necko closes the connection.
+     */
+    [noscript] void noteHandshakeTimeout();
+
     [noscript] void setHandshakeCallbackListener(in nsITlsHandshakeCallbackListener callback);
 
     /**

@@ -55,6 +55,16 @@ void QuicSocketControl::CallAuthenticated() {
   }
 }
 
+NS_IMETHODIMP
+QuicSocketControl::NoteHandshakeTimeout() {
+  COMMON_SOCKET_CONTROL_ASSERT_ON_OWNING_THREAD();
+  RefPtr<Http3Session> http3Session = do_QueryReferent(mHttp3Session);
+  if (http3Session) {
+    http3Session->NoteHandshakeTimeout();
+  }
+  return NS_OK;
+}
+
 void QuicSocketControl::HandshakeCompleted() {
   COMMON_SOCKET_CONTROL_ASSERT_ON_OWNING_THREAD();
   uint32_t state = nsIWebProgressListener::STATE_IS_SECURE;

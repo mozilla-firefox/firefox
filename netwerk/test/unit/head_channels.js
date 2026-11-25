@@ -667,7 +667,7 @@ function assertTokenResumption(aExpected) {
     "h3_session",
     "h3_restored",
   ]) {
-    for (let outcome of ["resumed", "not_resumed", "rejected"]) {
+    for (let outcome of ["resumed", "not_resumed", "rejected", "failed"]) {
       Assert.equal(
         Glean.network.sslTokenResumption.get(key, outcome).testGetValue(),
         aExpected[`${key}/${outcome}`] ?? null,

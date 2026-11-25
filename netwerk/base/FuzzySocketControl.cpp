@@ -176,6 +176,9 @@ NS_IMETHODIMP FuzzySocketControl::SetHandshakeCallbackListener(
 NS_IMETHODIMP
 FuzzySocketControl::DisableEarlyData(void) { return NS_ERROR_NOT_IMPLEMENTED; }
 
+NS_IMETHODIMP
+FuzzySocketControl::NoteHandshakeTimeout() { return NS_OK; }
+
 NS_IMETHODIMP FuzzySocketControl::GetSecurityInfo(
     nsITransportSecurityInfo** aSecurityInfo) {
   nsCOMPtr<nsITransportSecurityInfo> securityInfo(new FuzzySecurityInfo());
