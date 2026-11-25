@@ -16,4 +16,26 @@ interface nsISSLTokensCacheTest : nsISupports {
 
   /** Inserts a dummy token for aKey, for use by clearing tests. */
   void putSSLTokenForTest(in ACString aKey);
+
+  /**
+   * While aHold is true, the startup load from disk blocks before reading
+   * any row. Releasing also cancels pauseLoadAfterRowsForTest. Shutdown
+   * releases it. Once this or pauseLoadAfterRowsForTest was called, load
+   * completion notifies "ssl-tokens-cache-load-complete-for-test".
+   */
+  void holdLoadForTest(in boolean aHold);
+
+  /**
+   * Blocks the startup load after aRows rows until holdLoadForTest(false).
+   * Replaces a pending holdLoadForTest(true).
+   */
+  void pauseLoadAfterRowsForTest(in unsigned long aRows);
+
+  /**
+   * Makes the next aCount database opens for the startup load, snapshot
+   * writes, clears and removals fail, as if the database were unavailable.
+   * Replaces any remaining count. Once called, each removal of the database
+   * after a failure notifies "ssl-tokens-cache-db-removed-for-test".
+   */
+  void failDBOpensForTest(in unsigned long aCount);
 };

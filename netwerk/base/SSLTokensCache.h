@@ -5,6 +5,8 @@
 #ifndef SSLTokensCache_h_
 #define SSLTokensCache_h_
 
+#include <functional>
+
 #include "CertVerifier.h"  // For EVStatus
 #include "mozilla/Maybe.h"
 #include "mozilla/OriginAttributes.h"
@@ -32,6 +34,7 @@
 #endif
 
 class CommonSocketControl;
+class nsITimer;
 class mozIStorageConnection;
 class mozIStorageService;
 class mozIStorageStatement;
@@ -116,10 +119,14 @@ class SSLTokensCache : public nsIMemoryReporter,
   static uint32_t CacheSizeForTest();
   static void ReplaceAllRecordsForTest(
       nsTArray<SSLTokensCacheRecordInfo>&& aRecords);
+  static void HoldLoadForTest(bool aHold);
+  static void PauseLoadAfterRowsForTest(uint32_t aRows);
+  static void FailDBOpensForTest(uint32_t aCount);
 #endif
 
  private:
   class TokenCacheRecord;  // defined below
+  using StringPredicate = std::function<bool(const nsACString&)>;
 
   SSLTokensCache();
   virtual ~SSLTokensCache();
@@ -141,6 +148,8 @@ class SSLTokensCache : public nsIMemoryReporter,
   // persisted to disk (not PBM and no cert-error override).
   static bool ShouldPersistKey(const nsACString& aKey,
                                uint8_t aOverridableError);
+  static bool MatchesAny(const nsTArray<StringPredicate>& aPredicates,
+                         const nsACString& aKey);
 
   // Reconcile persistence infrastructure with the current pref value.
   // The signature matches PrefChangedFunc so it can be passed directly to
@@ -171,6 +180,16 @@ class SSLTokensCache : public nsIMemoryReporter,
   TimeStamp mLoadStartTime MOZ_GUARDED_BY(sLock);
   // Bumped by Clear() to invalidate in-flight background loads.
   uint32_t mLoadGeneration MOZ_GUARDED_BY(sLock){0};
+  // Removals whose matching rows are queued for deletion from disk.
+  nsTArray<StringPredicate> mPendingDBRemovals MOZ_GUARDED_BY(sLock);
+  nsCOMPtr<nsITimer> mDBDeleteTimer MOZ_GUARDED_BY(sLock);
+  // Removals made during the startup load; PutFromPersisted skips matches.
+  nsTArray<StringPredicate> mRemovalsBeforeLoad MOZ_GUARDED_BY(sLock);
+  // Null once persistence is off.
+  nsISerialEventTarget* ActiveDBQueueLocked() const MOZ_REQUIRES(sLock);
+  template <typename F>
+  static void DispatchToDBQueue(nsISerialEventTarget* aQueue, const char* aName,
+                                F&& aFunction);
   void DoWrite(bool aSynchronous) MOZ_EXCLUDES(sLock);
   void RegisterShutdownBlocker() MOZ_EXCLUDES(sLock);
   void RemoveShutdownBlocker() MOZ_EXCLUDES(sLock);
@@ -212,10 +231,18 @@ class SSLTokensCache : public nsIMemoryReporter,
   // IsPersistenceStillActive + OpenDB; caller must Close() the result.
   static already_AddRefed<mozIStorageConnection> OpenActiveDB();
   static uint32_t LoadFromDB(uint32_t aLoadGen);
-  static void WriteSnapshotToDB(nsTArray<SSLTokensCacheRecordInfo>&& aSnapshot);
-  // Writes a snapshot, but only once the startup load has completed.
+  static bool WriteSnapshotToDB(nsTArray<SSLTokensCacheRecordInfo>&& aSnapshot);
+  // Writes a snapshot, but only once the startup load has completed. If it
+  // fails with pending removals, the DB is removed.
   static void CollectAndWriteSnapshotIfLoaded();
+  // Removes the DB on failure.
   static void ClearDB();
+  // Removes the DB on failure.
+  static void DeleteMatchesFromDB(nsTArray<StringPredicate>&& aRemovals);
+  static nsresult DeleteMatchesFrom(mozIStorageConnection* aConn,
+                                    const nsTArray<StringPredicate>& aRemovals);
+  // Removes the DB file so undeleted rows can't be loaded again.
+  static void RemoveDBFileAfterFailure();
   static void RemoveDBFileSync();
   // Best-effort removal so a fresh DB is created on next open. Unlike
   // Places, an ephemeral cache gains nothing from keeping a corrupt backup.
@@ -245,9 +272,9 @@ class SSLTokensCache : public nsIMemoryReporter,
   static nsDependentCSubstring HostFromBasePart(
       const nsDependentCSubstring& aBasePart);
   static OriginAttributes OAFromPeerId(const nsACString& aPeerId);
-  static void RemoveByMatchAndOAPattern(
-      const nsACString& aValue, const nsACString& aSeparatedValue,
-      const mozilla::OriginAttributesPattern& aPattern) MOZ_EXCLUDES(sLock);
+  static void RemoveByHostMatchAndOAPattern(
+      const mozilla::OriginAttributesPattern& aPattern,
+      StringPredicate&& aHostMatches) MOZ_EXCLUDES(sLock);
 
   // Snapshot owning its key and payload bytes, so it can cross threads and
   // processes. aFilterForPersistence applies ShouldPersistKey.
@@ -257,6 +284,11 @@ class SSLTokensCache : public nsIMemoryReporter,
   // Removes entries matching aPredicate.
   template <typename Pred>
   void RemoveMatchingLocked(Pred&& aPredicate) MOZ_REQUIRES(sLock);
+  // Also deletes matching DB rows, including those not loaded into memory.
+  static void RemoveMatchingAndQueueDeletes(StringPredicate&& aPredicate)
+      MOZ_EXCLUDES(sLock);
+  // Dispatches the queued removals to mDBQueue.
+  static void FlushPendingDBDeletes() MOZ_EXCLUDES(sLock);
 
   class TokenCacheRecord {
    public:
