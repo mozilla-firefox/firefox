@@ -33,6 +33,8 @@ const kMockNativeShellService = {
 };
 
 sinon.stub(ShellService, "shellService").value(kMockNativeShellService);
+sinon.stub(ShellService, "createLinuxDesktopEntry").resolves();
+sinon.stub(ShellService, "deleteLinuxDesktopEntry").resolves();
 
 sinon
   .stub(ShellService, "writeShortcutIcon")
