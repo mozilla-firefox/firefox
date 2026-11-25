@@ -37,9 +37,6 @@ class GlobalTeardownObserver;
 template <typename V, typename E>
 class Result;
 enum class StorageAccess;
-namespace intl {
-struct FluentArg;
-}  // namespace intl
 namespace dom {
 class WorkerGlobalScopeBase;
 class VoidFunction;
@@ -56,7 +53,6 @@ class ServiceWorkerRegistrationDescriptor;
 class StorageManager;
 class WebTaskSchedulingState;
 enum class CallerType : uint32_t;
-enum class FluentResourceFile : uint8_t;
 }  // namespace dom
 namespace ipc {
 class PrincipalInfo;
@@ -402,17 +398,6 @@ class nsIGlobalObject : public nsISupports {
       const nsTArray<nsString>& aParams = nsTArray<nsString>(),
       const mozilla::SourceLocation& aLocation =
           mozilla::JSCallingLocation::Get());
-
-  /**
-   * Same as above, for a message localized with Fluent: aFile is the Fluent
-   * resource, aL10nId the message identifier and aArgs its named arguments.
-   */
-  virtual void ReportToConsole(uint32_t aErrorFlags, const nsCString& aCategory,
-                               mozilla::dom::FluentResourceFile aFile,
-                               const nsCString& aL10nId,
-                               const nsTArray<mozilla::intl::FluentArg>& aArgs,
-                               const mozilla::SourceLocation& aLocation =
-                                   mozilla::JSCallingLocation::Get());
 
  protected:
   virtual ~nsIGlobalObject();
