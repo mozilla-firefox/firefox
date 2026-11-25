@@ -1901,7 +1901,7 @@ bool IMMHandler::GetCharacterRectOfSelectedTextAt(
   // we should use the caret rect.
   if (aOffset != caretOffset) {
     WidgetQueryContentEvent queryTextRectEvent(true, eQueryTextRect, aWindow);
-    WidgetQueryContentEvent::Options options;
+    QueryContentOptions options;
     options.mRelativeToInsertionPoint = true;
     queryTextRectEvent.InitForQueryTextRect(aOffset, 1, options);
     aWindow->InitEvent(queryTextRectEvent, &point);
@@ -1931,7 +1931,7 @@ bool IMMHandler::GetCaretRect(nsWindow* aWindow,
   LayoutDeviceIntPoint point(0, 0);
 
   WidgetQueryContentEvent queryCaretRectEvent(true, eQueryCaretRect, aWindow);
-  WidgetQueryContentEvent::Options options;
+  QueryContentOptions options;
   options.mRelativeToInsertionPoint = true;
   queryCaretRectEvent.InitForQueryCaretRect(0, options);
   aWindow->InitEvent(queryCaretRectEvent, &point);

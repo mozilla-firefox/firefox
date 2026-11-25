@@ -1009,7 +1009,7 @@ bool IMEHandler::MaybeCreateNativeCaret(nsWindow* aWindow) {
   WidgetQueryContentEvent queryCaretRectEvent(true, eQueryCaretRect, aWindow);
   aWindow->InitEvent(queryCaretRectEvent);
 
-  WidgetQueryContentEvent::Options options;
+  QueryContentOptions options;
   options.mRelativeToInsertionPoint = true;
   queryCaretRectEvent.InitForQueryCaretRect(0, options);
 
