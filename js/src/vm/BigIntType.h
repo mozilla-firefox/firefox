@@ -443,6 +443,19 @@ class BigInt final : public js::gc::CellWithLengthAndFlags {
   // Store `a * b` into `result`, which must have `a.size() + b.size()` digits.
   static void schoolbookMultiplyDigits(ConstDigits a, ConstDigits b,
                                        Digits result);
+  // The body of schoolbookMultiplyDigits, inlined so that it is unrolled when
+  // the sizes are known, or called out of line.
+  static void schoolbookMultiplyDigitsInline(ConstDigits a, ConstDigits b,
+                                             Digits result);
+  static void schoolbookMultiplyDigitsOutOfLine(ConstDigits a, ConstDigits b,
+                                                Digits result);
+  // Store the product of `x` and `y`, which have `M` and `N` digits, in `z`,
+  // which has `M + N` digits.
+  template <size_t M, size_t N>
+  static void fixedMultiplyDigits(ConstDigits x, ConstDigits y, Digits z);
+  template <size_t M, size_t N>
+  static void fixedMultiplyDigitsOutOfLine(ConstDigits x, ConstDigits y,
+                                           Digits z);
   // Subtract `y` from the low `y.size()` digits of `x`, returning the borrow.
   static Digit inplaceSubDigits(Digits x, ConstDigits y);
   // Add `y` to the low `y.size()` digits of `x`, returning the carry.

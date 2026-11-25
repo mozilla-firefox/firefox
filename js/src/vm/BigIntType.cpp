@@ -853,8 +853,9 @@ BigInt::Digit BigInt::digitDivByMultiplication(Digit high, Digit low,
   return q1;
 }
 
-BigInt::Digit BigInt::multiplyDigits(ConstDigits src, Digit multiplier,
-                                     Digits dest) {
+MOZ_ALWAYS_INLINE BigInt::Digit BigInt::multiplyDigits(ConstDigits src,
+                                                       Digit multiplier,
+                                                       Digits dest) {
   dest = dest.First(src.size());
   Digit carry = 0;
   for (size_t i = 0; i < src.size(); i++) {
@@ -863,8 +864,8 @@ BigInt::Digit BigInt::multiplyDigits(ConstDigits src, Digit multiplier,
   return carry;
 }
 
-BigInt::Digit BigInt::multiplyAccumulateDigits(ConstDigits src,
-                                               Digit multiplier, Digits acc) {
+MOZ_ALWAYS_INLINE BigInt::Digit BigInt::multiplyAccumulateDigits(
+    ConstDigits src, Digit multiplier, Digits acc) {
   acc = acc.First(src.size());
   Digit carry = 0;
   for (size_t i = 0; i < src.size(); i++) {
@@ -873,8 +874,9 @@ BigInt::Digit BigInt::multiplyAccumulateDigits(ConstDigits src,
   return carry;
 }
 
-void BigInt::schoolbookMultiplyDigits(ConstDigits a, ConstDigits b,
-                                      Digits result) {
+MOZ_ALWAYS_INLINE void BigInt::schoolbookMultiplyDigitsInline(ConstDigits a,
+                                                              ConstDigits b,
+                                                              Digits result) {
   // Given a choice, it's best to do fewer outer loops over longer digit
   // spans. Commute the arguments to ensure that `|a| >= |b|`, if needed.
   if (a.size() < b.size()) {
@@ -887,6 +889,55 @@ void BigInt::schoolbookMultiplyDigits(ConstDigits a, ConstDigits b,
     result[i + a.size()] =
         b[i] ? multiplyAccumulateDigits(a, b[i], result.From(i)) : 0;
   }
+}
+
+template <size_t M, size_t N>
+MOZ_ALWAYS_INLINE void BigInt::fixedMultiplyDigits(ConstDigits x, ConstDigits y,
+                                                   Digits z) {
+  MOZ_RELEASE_ASSERT(x.size() == M && y.size() == N && z.size() == M + N);
+  schoolbookMultiplyDigitsInline(x, y, z);
+}
+
+MOZ_NEVER_INLINE void BigInt::schoolbookMultiplyDigitsOutOfLine(ConstDigits a,
+                                                                ConstDigits b,
+                                                                Digits result) {
+  schoolbookMultiplyDigitsInline(a, b, result);
+}
+
+template <size_t M, size_t N>
+MOZ_NEVER_INLINE void BigInt::fixedMultiplyDigitsOutOfLine(ConstDigits x,
+                                                           ConstDigits y,
+                                                           Digits z) {
+  fixedMultiplyDigits<M, N>(x, y, z);
+}
+
+MOZ_ALWAYS_INLINE void BigInt::schoolbookMultiplyDigits(ConstDigits a,
+                                                        ConstDigits b,
+                                                        Digits result) {
+  if (a.size() < b.size()) {
+    std::swap(a, b);
+  }
+  constexpr auto shape = [](size_t m, size_t n) {
+    return (m <= 4 && n <= 4) ? m * 8 + n : 0;
+  };
+#define DISPATCH_FIXED_MULTIPLICATION(M, N) \
+  case shape(M, N):                         \
+    return fixedMultiplyDigitsOutOfLine<M, N>(a, b, result)
+  switch (shape(a.size(), b.size())) {
+    DISPATCH_FIXED_MULTIPLICATION(1, 1);
+    DISPATCH_FIXED_MULTIPLICATION(2, 1);
+    DISPATCH_FIXED_MULTIPLICATION(2, 2);
+    DISPATCH_FIXED_MULTIPLICATION(3, 1);
+    DISPATCH_FIXED_MULTIPLICATION(3, 2);
+    DISPATCH_FIXED_MULTIPLICATION(3, 3);
+    DISPATCH_FIXED_MULTIPLICATION(4, 1);
+    DISPATCH_FIXED_MULTIPLICATION(4, 2);
+    DISPATCH_FIXED_MULTIPLICATION(4, 3);
+    DISPATCH_FIXED_MULTIPLICATION(4, 4);
+    default:
+      return schoolbookMultiplyDigitsOutOfLine(a, b, result);
+  }
+#undef DISPATCH_FIXED_MULTIPLICATION
 }
 
 // Both inplaceSubDigits and inplaceAddDigits check the bounds once, by taking
