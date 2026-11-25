@@ -843,25 +843,10 @@ struct MOZ_STACK_CLASS EnvironmentPreparer
   void invoke(JS::HandleObject global, Closure& closure) override;
 };
 
-const char* shell::selfHostedXDRPath = nullptr;
-bool shell::encodeSelfHostedCode = false;
-bool shell::enableDisassemblyDumps = false;
-JS::DelazificationOption shell::defaultDelazificationMode =
-    JS::DelazificationOption::OnDemandOnly;
-bool shell::enableSharedMemory = SHARED_MEMORY_DEFAULT;
-bool shell::enableToSource = false;
-bool shell::printTiming = false;
 RCFile* shell::gErrFile = nullptr;
 RCFile* shell::gOutFile = nullptr;
-bool shell::reportWarnings = true;
-bool shell::compileOnly = false;
 bool shell::disableOOMFunctions = false;
 bool shell::defaultToSameCompartment = true;
-
-#ifdef DEBUG
-bool shell::dumpEntrainedVariables = false;
-bool shell::OOM_printAllocationCount = false;
-#endif
 
 constinit UniqueChars shell::processWideModuleLoadPath;
 

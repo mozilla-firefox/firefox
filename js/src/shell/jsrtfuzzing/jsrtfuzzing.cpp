@@ -28,7 +28,8 @@
 #include "js/RootingAPI.h"          // JS::Rooted
 #include "js/SourceText.h"          // JS::Source{Ownership,Text}
 #include "js/Value.h"               // JS::Value
-#include "shell/jsshell.h"  // js::shell::{reportWarnings,PrintStackTrace,sArg{c,v}}
+#include "shell/jsshell.h"          // js::shell::{PrintStackTrace,sArg{c,v}}
+#include "shell/ShellOptions.h"     // js::shell::reportWarnings
 #include "util/Text.h"
 #include "vm/Interpreter.h"
 #include "vm/TypedArrayObject.h"

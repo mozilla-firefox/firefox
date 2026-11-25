@@ -37,6 +37,21 @@ static BenchmarkMode sBenchmarkMode = BenchmarkMode::Off;
 MOZ_RUNINIT OptionParser
     shell::gOptions("Usage: {progname} [options] [[script] scriptArgs*]");
 
+const char* shell::selfHostedXDRPath = nullptr;
+bool shell::reportWarnings = true;
+bool shell::compileOnly = false;
+bool shell::printTiming = false;
+bool shell::enableDisassemblyDumps = false;
+bool shell::encodeSelfHostedCode = false;
+JS::DelazificationOption shell::defaultDelazificationMode =
+    JS::DelazificationOption::OnDemandOnly;
+bool shell::enableSharedMemory = SHARED_MEMORY_DEFAULT;
+bool shell::enableToSource = false;
+#ifdef DEBUG
+bool shell::dumpEntrainedVariables = false;
+bool shell::OOM_printAllocationCount = false;
+#endif
+
 #ifndef __wasi__
 MOZ_RUNINIT Vector<const char*, 5, SystemAllocPolicy>
     shell::sCompilerProcessFlags;

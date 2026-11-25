@@ -103,13 +103,7 @@ extern int sArgc;
 extern char** sArgv;
 
 // Shell state set once at startup.
-extern const char* selfHostedXDRPath;
-extern bool encodeSelfHostedCode;
-extern bool enableDisassemblyDumps;
-extern JS::DelazificationOption defaultDelazificationMode;
-extern bool enableSharedMemory;
 extern bool enableWeakRefs;
-extern bool enableToSource;
 extern bool enablePropertyErrorMessageFix;
 extern bool enableIteratorHelpers;
 extern bool enableArrayGrouping;
@@ -119,18 +113,10 @@ extern bool enableArrayBufferResizable;
 extern bool enableSymbolsAsWeakMapKeys;
 extern bool enableNewSetMethods;
 extern bool enableDestructuringFuse;
-extern bool printTiming;
 extern RCFile* gErrFile;
 extern RCFile* gOutFile;
-extern bool reportWarnings;
-extern bool compileOnly;
 extern bool disableOOMFunctions;
 extern bool defaultToSameCompartment;
-
-#ifdef DEBUG
-extern bool dumpEntrainedVariables;
-extern bool OOM_printAllocationCount;
-#endif
 
 extern bool useFdlibmForSinCosTan;
 

@@ -6,6 +6,7 @@
 #define shell_ShellOptions_h
 
 #include "js/AllocPolicy.h"
+#include "js/CompileOptions.h"
 #include "js/TypeDecls.h"
 #include "js/Vector.h"
 #include "shell/jsoptparse.h"
@@ -23,6 +24,21 @@ namespace shell {
 // The shell's command line option parser. Populated by InitOptionParser and
 // queried throughout the shell.
 extern cli::OptionParser gOptions;
+
+// Shell state set once at startup.
+extern const char* selfHostedXDRPath;
+extern bool reportWarnings;
+extern bool compileOnly;
+extern bool printTiming;
+extern bool enableDisassemblyDumps;
+extern bool encodeSelfHostedCode;
+extern JS::DelazificationOption defaultDelazificationMode;
+extern bool enableSharedMemory;
+extern bool enableToSource;
+#ifdef DEBUG
+extern bool dumpEntrainedVariables;
+extern bool OOM_printAllocationCount;
+#endif
 
 #ifndef __wasi__
 // Flags to pass on to the separate process used for wasm compilation.
