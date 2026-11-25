@@ -551,40 +551,44 @@ LexerTransition<nsBMPDecoder::State> nsBMPDecoder::ReadInfoHeaderRest(
     // We ignore the important_colors (aData + 36) field.
 
     // Read color management properties we may need later.
-    mH.mCsType =
-        aLength >= 56
-            ? static_cast<InfoColorSpace>(LittleEndian::readUint32(aData + 52))
-            : InfoColorSpace::SRGB;
+    if (aLength >= 56) {
+      mH.mCsType = Some(
+          static_cast<InfoColorSpace>(LittleEndian::readUint32(aData + 52)));
+    }
     mH.mCsIntent = aLength >= 108 ? static_cast<InfoColorIntent>(
                                         LittleEndian::readUint32(aData + 104))
                                   : InfoColorIntent::IMAGES;
 
-    switch (mH.mCsType) {
-      case InfoColorSpace::CALIBRATED_RGB:
-        if (aLength >= 104) {
-          ReadCalRgbEndpoint(aData, 56, 92, mH.mColorSpace.mCalibrated.mRed);
-          ReadCalRgbEndpoint(aData, 68, 96, mH.mColorSpace.mCalibrated.mGreen);
-          ReadCalRgbEndpoint(aData, 80, 100, mH.mColorSpace.mCalibrated.mBlue);
-        } else {
-          mH.mCsType = InfoColorSpace::SRGB;
-        }
-        break;
-      case InfoColorSpace::EMBEDDED:
-        if (aLength >= 116) {
-          mH.mColorSpace.mProfile.mOffset =
-              LittleEndian::readUint32(aData + 108);
-          mH.mColorSpace.mProfile.mLength =
-              LittleEndian::readUint32(aData + 112);
-        } else {
-          mH.mCsType = InfoColorSpace::SRGB;
-        }
-        break;
-      case InfoColorSpace::LINKED:
-      case InfoColorSpace::SRGB:
-      case InfoColorSpace::WIN:
-      default:
-        // Nothing to be done at this time.
-        break;
+    if (mH.mCsType.isSome()) {
+      switch (*mH.mCsType) {
+        case InfoColorSpace::CALIBRATED_RGB:
+          if (aLength >= 104) {
+            ReadCalRgbEndpoint(aData, 56, 92, mH.mColorSpace.mCalibrated.mRed);
+            ReadCalRgbEndpoint(aData, 68, 96,
+                               mH.mColorSpace.mCalibrated.mGreen);
+            ReadCalRgbEndpoint(aData, 80, 100,
+                               mH.mColorSpace.mCalibrated.mBlue);
+          } else {
+            mH.mCsType = Nothing();
+          }
+          break;
+        case InfoColorSpace::EMBEDDED:
+          if (aLength >= 116) {
+            mH.mColorSpace.mProfile.mOffset =
+                LittleEndian::readUint32(aData + 108);
+            mH.mColorSpace.mProfile.mLength =
+                LittleEndian::readUint32(aData + 112);
+          } else {
+            mH.mCsType = Nothing();
+          }
+          break;
+        case InfoColorSpace::LINKED:
+        case InfoColorSpace::SRGB:
+        case InfoColorSpace::WIN:
+        default:
+          // Nothing to be done at this time.
+          break;
+      }
     }
 
     // For WinBMPv4, WinBMPv5 and (possibly) OS2-BMPv2 there are additional
@@ -760,27 +764,36 @@ LexerTransition<nsBMPDecoder::State> nsBMPDecoder::ReadBitfields(
   }
 
   if (mCMSMode != CMSMode::Off) {
-    switch (mH.mCsType) {
-      case InfoColorSpace::EMBEDDED:
-        return SeekColorProfile(aLength);
-      case InfoColorSpace::CALIBRATED_RGB:
-        PrepareCalibratedColorProfile();
-        break;
-      case InfoColorSpace::SRGB:
-      case InfoColorSpace::WIN:
-        MOZ_LOG(sBMPLog, LogLevel::Debug, ("using sRGB color profile\n"));
-        if (mColors) {
-          // We will transform the color table instead of the output pixels.
-          mTransform = GetCMSsRGBTransform(SurfaceFormat::R8G8B8);
-        } else {
-          mTransform = GetCMSsRGBTransform(SurfaceFormat::OS_RGBA);
-        }
-        break;
-      case InfoColorSpace::LINKED:
-      default:
-        // Not supported, no color management.
-        MOZ_LOG(sBMPLog, LogLevel::Debug, ("color space type not provided\n"));
-        break;
+    bool usesRGB = false;
+    if (mH.mCsType.isSome()) {
+      switch (*mH.mCsType) {
+        case InfoColorSpace::EMBEDDED:
+          return SeekColorProfile(aLength);
+        case InfoColorSpace::CALIBRATED_RGB:
+          PrepareCalibratedColorProfile();
+          break;
+        case InfoColorSpace::SRGB:
+        case InfoColorSpace::WIN:
+          MOZ_LOG(sBMPLog, LogLevel::Debug, ("using sRGB color profile\n"));
+          usesRGB = true;
+          break;
+        case InfoColorSpace::LINKED:
+        default:
+          // Not supported, no color management.
+          MOZ_LOG(sBMPLog, LogLevel::Debug,
+                  ("color space type not provided\n"));
+          // treat as untagged
+          if (mCMSMode == CMSMode::All) {
+            usesRGB = true;
+          }
+          break;
+      }
+    } else if (mCMSMode == CMSMode::All) {
+      usesRGB = true;
+    }
+
+    if (usesRGB) {
+      PreparesRGBTransform();
     }
   }
 
@@ -814,15 +827,10 @@ void nsBMPDecoder::PrepareCalibratedColorProfile() {
   if (mInProfile) {
     MOZ_LOG(sBMPLog, LogLevel::Debug, ("using calibrated RGB color profile\n"));
     PrepareColorProfileTransform();
-  } else {
+  } else if (mCMSMode == CMSMode::All) {
     MOZ_LOG(sBMPLog, LogLevel::Debug,
             ("failed to create calibrated RGB color profile, using sRGB\n"));
-    if (mColors) {
-      // We will transform the color table instead of the output pixels.
-      mTransform = GetCMSsRGBTransform(SurfaceFormat::R8G8B8);
-    } else {
-      mTransform = GetCMSsRGBTransform(SurfaceFormat::OS_RGBA);
-    }
+    PreparesRGBTransform();
   }
 }
 
@@ -867,12 +875,25 @@ void nsBMPDecoder::PrepareColorProfileTransform() {
   }
 }
 
+void nsBMPDecoder::PreparesRGBTransform() {
+  if (mColors) {
+    // We will transform the color table instead of the output pixels.
+    mTransform = GetCMSsRGBTransform(SurfaceFormat::R8G8B8);
+  } else {
+    mTransform = GetCMSsRGBTransform(SurfaceFormat::OS_RGBA);
+  }
+}
+
 LexerTransition<nsBMPDecoder::State> nsBMPDecoder::SeekColorProfile(
     size_t aLength) {
   // The offset needs to be at least after the color table.
   uint32_t offset = mH.mColorSpace.mProfile.mOffset;
   if (offset <= mH.mBIHSize + aLength + mNumColors * mBytesPerColor ||
       mH.mColorSpace.mProfile.mLength == 0) {
+    if (mCMSMode == CMSMode::All) {
+      PreparesRGBTransform();
+    }
+
     return Transition::To(State::ALLOCATE_SURFACE, 0);
   }
 
@@ -897,6 +918,8 @@ LexerTransition<nsBMPDecoder::State> nsBMPDecoder::ReadColorProfile(
   if (mInProfile) {
     MOZ_LOG(sBMPLog, LogLevel::Debug, ("using embedded color profile\n"));
     PrepareColorProfileTransform();
+  } else if (mCMSMode == CMSMode::All) {
+    PreparesRGBTransform();
   }
 
   // Jump back to where we left off.

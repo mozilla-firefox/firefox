@@ -43,6 +43,14 @@ support-files = [
 
 ["test_async_notification_animated.js"]
 
+["test_bmp_cms_all.js"]
+head = "head_bmp_cms.js"
+support-files = ["ITU-2020.icc"]
+
+["test_bmp_cms_tagged_only.js"]
+head = "head_bmp_cms.js"
+support-files = ["ITU-2020.icc"]
+
 ["test_encoder_apng.js"]
 
 ["test_encoder_png.js"]

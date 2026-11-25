@@ -28,17 +28,17 @@ struct CalRgbEndpoint {
 /// we use during decoding. (Excluding bitfields fields, which are kept in
 /// BitFields.)
 struct Header {
-  uint32_t mDataOffset;       // Offset to raster data.
-  uint32_t mBIHSize;          // Header size.
-  int32_t mWidth;             // Image width.
-  int32_t mHeight;            // Image height.
-  uint16_t mBpp;              // Bits per pixel.
-  uint32_t mCompression;      // See struct Compression for valid values.
-  uint32_t mImageSize;        // (compressed) image size. Can be 0 if
-                              // mCompression==0.
-  uint32_t mNumColors;        // Used colors.
-  InfoColorSpace mCsType;     // Color space type.
-  InfoColorIntent mCsIntent;  // Color space intent.
+  uint32_t mDataOffset;           // Offset to raster data.
+  uint32_t mBIHSize;              // Header size.
+  int32_t mWidth;                 // Image width.
+  int32_t mHeight;                // Image height.
+  uint16_t mBpp;                  // Bits per pixel.
+  uint32_t mCompression;          // See struct Compression for valid values.
+  uint32_t mImageSize;            // (compressed) image size. Can be 0 if
+                                  // mCompression==0.
+  uint32_t mNumColors;            // Used colors.
+  Maybe<InfoColorSpace> mCsType;  // Color space type.
+  InfoColorIntent mCsIntent;      // Color space intent.
 
   union {
     struct {
@@ -62,7 +62,6 @@ struct Header {
         mCompression(0),
         mImageSize(0),
         mNumColors(0),
-        mCsType(InfoColorSpace::SRGB),
         mCsIntent(InfoColorIntent::IMAGES) {}
 };
 
@@ -212,6 +211,7 @@ class nsBMPDecoder : public Decoder {
 
   void PrepareCalibratedColorProfile();
   void PrepareColorProfileTransform();
+  void PreparesRGBTransform();
 
   LexerTransition<State> ReadFileHeader(const char* aData, size_t aLength);
   LexerTransition<State> ReadInfoHeaderSize(const char* aData, size_t aLength);
