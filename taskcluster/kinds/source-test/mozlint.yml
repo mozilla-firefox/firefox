@@ -889,6 +889,8 @@ perfdocs-verify:
     treeherder:
         symbol: doc(perfdocs)
     run:
+        prepend-env:
+            PATH: "$MOZ_FETCHES_DIR/node/bin${PATH:+:$PATH}"
         mach: perfdocs --output-file /builds/worker/mozlint.json
     worker:
         env:
@@ -911,6 +913,9 @@ perfdocs-verify:
             - 'testing/perfdocs/**'
             - 'toolkit/components/ml/tests/browser/**'
             - '**/*_perf.js'
+    fetches:
+        toolchain:
+            - linux64-node
 
 
 condprof-addons-verify:
