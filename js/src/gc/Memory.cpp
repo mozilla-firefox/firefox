@@ -1249,10 +1249,6 @@ void ProtectPages(void* region, size_t length) {
   ProtectMemory(region, length, PageAccess::None);
 }
 
-void MakePagesReadOnly(void* region, size_t length) {
-  ProtectMemory(region, length, PageAccess::Read);
-}
-
 void UnprotectPages(void* region, size_t length) {
   ProtectMemory(region, length, PageAccess::ReadWrite);
 }

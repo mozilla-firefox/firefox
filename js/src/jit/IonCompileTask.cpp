@@ -19,10 +19,6 @@ using namespace js;
 using namespace js::jit;
 
 void IonCompileTask::runHelperThreadTask(AutoLockHelperThreadState& locked) {
-  // The build is taken by this thread. Unfreeze the LifoAlloc to allow
-  // mutations.
-  alloc().lifoAlloc()->setReadWrite();
-
   {
     AutoUnlockHelperThreadState unlock(locked);
     runTask();
