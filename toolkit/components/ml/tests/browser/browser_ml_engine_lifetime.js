@@ -794,6 +794,104 @@ add_task(async function test_ml_engine_terminated_does_not_reopen() {
 });
 
 /**
+ * A terminated engine rejects runs at once even when its idle shutdown was
+ * reported before the port's own message arrived.
+ */
+add_task(async function test_ml_engine_terminated_before_idle_port_message() {
+  const { cleanup, remoteClients } = await setup();
+  const engineInstance = await createEngine({
+    taskName: "moz-echo",
+    timeoutMS: 100,
+  });
+  const firstRun = engineInstance.run({ data: "Before terminating" });
+  await remoteClients["ml-onnx-runtime"].resolvePendingDownloads(1);
+  await firstRun;
+
+  // Hold the idle EnginePort:EngineTerminated back, so the inference process's
+  // MLEngine:Removed reaches the parent first.
+  let deliverTerminated;
+  const stub = sinon
+    .stub(engineInstance, "handlePortMessage")
+    .callsFake((event, ...args) => {
+      if (event.data.type == "EnginePort:EngineTerminated") {
+        deliverTerminated = () => stub.wrappedMethod(event, ...args);
+        return;
+      }
+      stub.wrappedMethod(event, ...args);
+    });
+  try {
+    await TestUtils.waitForCondition(
+      () => engineInstance.engineStatus == "suspended",
+      "The idle shutdown suspends the engine"
+    );
+
+    await engineInstance.terminate();
+    await Assert.rejects(
+      engineInstance.run({ data: "After terminating" }),
+      /Port does not exist/,
+      "A terminated engine rejects runs at once"
+    );
+    deliverTerminated?.();
+  } finally {
+    stub.restore();
+    await EngineProcess.destroyMLEngine();
+    await cleanup();
+  }
+});
+
+/**
+ * An idle shutdown that crosses terminate() still leaves the engine closed.
+ */
+add_task(async function test_ml_engine_terminate_crossing_idle_shutdown() {
+  const { cleanup, remoteClients } = await setup();
+  // Long enough that terminate() runs before the idle shutdown, even on slow
+  // builds.
+  const engineInstance = await createEngine({
+    taskName: "moz-echo",
+    timeoutMS: 1000,
+  });
+  const firstRun = engineInstance.run({ data: "Before terminating" });
+  await remoteClients["ml-onnx-runtime"].resolvePendingDownloads(1);
+  await firstRun;
+
+  // Hold EnginePort:Terminate back until the idle shutdown reaches the engine,
+  // so the two cross. The port lives in the ML module's global.
+  const { MessagePort: ModuleMessagePort } =
+    Cu.getGlobalForObject(MLEngineParent);
+  const postMessage = ModuleMessagePort.prototype.postMessage;
+  let sendTerminate;
+  const stub = sinon
+    .stub(ModuleMessagePort.prototype, "postMessage")
+    .callsFake(function (message, ...args) {
+      if (message.type == "EnginePort:Terminate") {
+        sendTerminate = () => postMessage.call(this, message, ...args);
+        return;
+      }
+      postMessage.call(this, message, ...args);
+    });
+  try {
+    const terminated = engineInstance.terminate();
+    Assert.ok(sendTerminate, "terminate() sends EnginePort:Terminate");
+    await TestUtils.waitForCondition(
+      () => engineInstance.engineStatus != "ready",
+      "The idle shutdown reaches the engine"
+    );
+    sendTerminate();
+
+    await terminated;
+    Assert.equal(
+      engineInstance.engineStatus,
+      "closed",
+      "The terminated engine is closed rather than suspended"
+    );
+  } finally {
+    stub.restore();
+    await EngineProcess.destroyMLEngine();
+    await cleanup();
+  }
+});
+
+/**
  * An idle engine runs on the live engine with the same options instead of
  * replacing it.
  */

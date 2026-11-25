@@ -1100,6 +1100,20 @@ export class MLEngine {
   #ownedLiveEngine = null;
 
   /**
+   * Set by terminate(), so an idle shutdown that crosses it closes the engine
+   * rather than suspending it.
+   */
+  #terminating = false;
+
+  /**
+   * @returns {boolean} Whether an idle shutdown leaves the engine to reopen on
+   *   its next run.
+   */
+  #reopensAfterIdle() {
+    return !this.#terminating && this.engineStatus !== "closed";
+  }
+
+  /**
    * "suspended" means the inference process shut the engine down for being
    * idle or crashed, and runs are forwarded to a live engine with the same
    * options. "crashed" means it crashed MAX_CONSECUTIVE_CRASHES times in a row
@@ -1148,7 +1162,7 @@ export class MLEngine {
         if (idle) {
           // The port message reporting the idle shutdown can arrive after this
           // one, and terminating here would close the port before it does.
-          if (engine.engineStatus !== "closed") {
+          if (engine.#reopensAfterIdle()) {
             engine.setEngineStatus("suspended");
           }
         } else if (engine.#port !== null) {
@@ -1535,7 +1549,7 @@ export class MLEngine {
         // The engine was terminated, and if a new run is needed a new port
         // will need to be requested.
         this.setEngineStatus(
-          data.idle && this.engineStatus !== "closed" ? "suspended" : "closed"
+          data.idle && this.#reopensAfterIdle() ? "suspended" : "closed"
         );
         newPortResolvers?.reject(
           new Error("Engine was terminated before initialization completed.")
@@ -1614,6 +1628,10 @@ export class MLEngine {
   async terminate(shutdown, replacement) {
     if (this.engineStatus === "suspended") {
       this.setEngineStatus("closed");
+      // The inference process already removed a suspended engine. Its port
+      // can still be open if that message beat the port's own, so drop it now
+      // or a later run would wait on it.
+      this.discardPort();
     }
     if (this.#liveEnginePromise) {
       const liveEngine = await this.#liveEnginePromise.catch(() => null);
@@ -1624,6 +1642,7 @@ export class MLEngine {
     }
     if (this.#port !== null) {
       lazy.console.debug(`Terminating engine ${this.engineId}`);
+      this.#terminating = true;
       this.#port.postMessage({
         type: "EnginePort:Terminate",
         shutdown,
@@ -1632,6 +1651,7 @@ export class MLEngine {
       try {
         await this.#waitForStatus("closed");
       } catch (error) {
+        this.#terminating = false;
         this.#rejectRequests(
           new Error("Engine was terminated before the request completed.")
         );
