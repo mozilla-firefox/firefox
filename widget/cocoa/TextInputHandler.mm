@@ -10,6 +10,7 @@
 #include "mozilla/Logging.h"
 
 #include "mozilla/AutoRestore.h"
+#include "mozilla/CheckedInt.h"
 #include "mozilla/MacStringHelpers.h"
 #include "mozilla/MiscEvents.h"
 #include "mozilla/MouseEvents.h"
@@ -425,7 +426,7 @@ bool mozilla::widget::IsControlChar(uint32_t aCharCode) {
   return aCharCode < ' ' || aCharCode == NSDeleteCharacter;
 }
 
-static auto format_as(const NSRange& aRange) {
+inline auto format_as(const NSRange& aRange) {
   return fmt::format("{{ location={}, length={} }}",
                      aRange.location == NSNotFound
                          ? "NSNotFound"
@@ -433,8 +434,32 @@ static auto format_as(const NSRange& aRange) {
                      aRange.length);
 }
 
-static std::ostream& operator<<(std::ostream& aStream, const NSRange& aRange) {
+inline std::ostream& operator<<(std::ostream& aStream, const NSRange& aRange) {
   return aStream << format_as(aRange);
+}
+
+inline auto format_as(const NSPoint& aPoint) {
+  return fmt::format("{{ x={}, y={} }}", aPoint.x, aPoint.y);
+}
+
+inline std::ostream& operator<<(std::ostream& aStream, const NSPoint& aPoint) {
+  return aStream << format_as(aPoint);
+}
+
+inline auto format_as(const NSSize& aSize) {
+  return fmt::format("{{ width={}, height={} }}", aSize.width, aSize.height);
+}
+
+inline std::ostream& operator<<(std::ostream& aStream, const NSSize& aSize) {
+  return aStream << format_as(aSize);
+}
+
+inline auto format_as(const NSRect& aRect) {
+  return fmt::format("{{ origin={}, size={} }}", aRect.origin, aRect.size);
+}
+
+inline std::ostream& operator<<(std::ostream& aStream, const NSRect& aRect) {
+  return aStream << format_as(aRect);
 }
 
 static uint32_t gHandlerInstanceCount = 0;
@@ -4526,11 +4551,12 @@ NSRect IMEInputHandler::FirstRectForCharacterRange(NSRange& aRange,
                                                    NSRange* aActualRange) {
   NS_OBJC_BEGIN_TRY_BLOCK_RETURN;
 
-  MOZ_LOG(
-      gIMELog, LogLevel::Info,
-      ("%p IMEInputHandler::FirstRectForCharacterRange, Destroyed()=%s, "
-       "aRange=%s, aActualRange=%p }",
-       this, TrueOrFalse(Destroyed()), ToString(aRange).c_str(), aActualRange));
+  MOZ_LOG_FMT(gIMELog, LogLevel::Info,
+              "{} IMEInputHandler::FirstRectForCharacterRange, Destroyed()={}, "
+              "mDispatcher={}, aRange={}, aActualRange={}",
+              static_cast<void*>(this), Destroyed(),
+              static_cast<void*>(mDispatcher), aRange,
+              static_cast<void*>(aActualRange));
 
   // XXX this returns first character rect or caret rect, it is limitation of
   // now. We need more work for returns first line rect. But current
@@ -4541,9 +4567,11 @@ NSRect IMEInputHandler::FirstRectForCharacterRange(NSRange& aRange,
   if (aActualRange) {
     *aActualRange = actualRange;
   }
-  if (Destroyed() || aRange.location == NSNotFound) {
+  if (Destroyed() || !mDispatcher || aRange.location == NSNotFound)
+      [[unlikely]] {
     return rect;
   }
+  const OwningNonNull<TextEventDispatcher> dispatcher = *mDispatcher;
 
   RefPtr<IMEInputHandler> kungFuDeathGrip(this);
 
@@ -4575,7 +4603,6 @@ NSRect IMEInputHandler::FirstRectForCharacterRange(NSRange& aRange,
   }
 
   if (useCaretRect) {
-    WidgetQueryContentEvent queryCaretRectEvent(true, eQueryCaretRect, mWidget);
     QueryContentOptions options;
     int64_t startOffset = aRange.location;
     if (mIMECompositionStartBeforeStart.isSome()) {
@@ -4587,14 +4614,14 @@ NSRect IMEInputHandler::FirstRectForCharacterRange(NSRange& aRange,
       options.mRelativeToInsertionPoint = true;
       startOffset -= *mIMECompositionStartBeforeStart;
     }
-    queryCaretRectEvent.InitForQueryCaretRect(startOffset, options);
-    DispatchEvent(queryCaretRectEvent);
-    if (queryCaretRectEvent.Failed()) {
+    const Maybe<QueryContentResult> queryCaretRectResult =
+        dispatcher->QueryCaretRect(startOffset, options);
+    if (queryCaretRectResult.isNothing() || !mWidget) [[unlikely]] {
       return rect;
     }
-    r = queryCaretRectEvent.mReply->mRect;
+    r = queryCaretRectResult->mRect;
     r.width = 0;
-    actualRange.location = queryCaretRectEvent.mReply->StartOffset();
+    actualRange.location = queryCaretRectResult->StartOffset();
     actualRange.length = 0;
   }
 
@@ -4607,11 +4634,10 @@ NSRect IMEInputHandler::FirstRectForCharacterRange(NSRange& aRange,
     *aActualRange = actualRange;
   }
 
-  MOZ_LOG(gIMELog, LogLevel::Info,
-          ("%p   IMEInputHandler::FirstRectForCharacterRange, useCaretRect=%s "
-           "rect={ x=%f, y=%f, width=%f, height=%f }, actualRange=%s",
-           this, TrueOrFalse(useCaretRect), rect.origin.x, rect.origin.y,
-           rect.size.width, rect.size.height, ToString(actualRange).c_str()));
+  MOZ_LOG_FMT(gIMELog, LogLevel::Info,
+              "{}   IMEInputHandler::FirstRectForCharacterRange, "
+              "useCaretRect={}, rect={}, actualRange={}",
+              static_cast<void*>(this), useCaretRect, rect, actualRange);
 
   return rect;
 
@@ -5264,39 +5290,45 @@ void IMEInputHandler::OnTextSubstitution(uint32_t aStartOffset) {
 void IMEInputHandler::ShowTextSubstitutionPanel() {
   NS_OBJC_BEGIN_TRY_IGNORE_BLOCK;
 
-  MOZ_LOG(gIMELog, LogLevel::Info,
-          ("%p IMEInputHandler::ShowTextSubstitutionPanel", this));
+  MOZ_LOG_FMT(
+      gIMELog, LogLevel::Info,
+      "{} IMEInputHandler::ShowTextSubstitutionPanel, "
+      "mCandidatedTextSubstitutionResult={}, mWidget={}, mDispatcher={}",
+      static_cast<void*>(this),
+      static_cast<void*>(mCandidatedTextSubstitutionResult),
+      static_cast<void*>(mWidget), static_cast<void*>(mDispatcher));
 
-  if (!mCandidatedTextSubstitutionResult) {
+  if (!mCandidatedTextSubstitutionResult || !mWidget || !mDispatcher)
+      [[unlikely]] {
     return;
   }
+  const OwningNonNull<TextEventDispatcher> dispatcher = *mDispatcher;
 
   // We won't get text rect of non-composition string on e10s. So we get caret
   // rect instead.
   NSRect rect = [&]() {
-    WidgetQueryContentEvent queryCaretRectEvent(true, eQueryCaretRect, mWidget);
-    QueryContentOptions options;
-    queryCaretRectEvent.InitForQueryCaretRect(
-        mCandidatedTextSubstitutionResult.range.location +
-            mCandidatedTextSubstitutionResult.range.length,
-        options);
-    DispatchEvent(queryCaretRectEvent);
-    if (queryCaretRectEvent.Succeeded()) {
-      LayoutDeviceIntRect r = queryCaretRectEvent.mReply->mRect;
-      return nsCocoaUtils::DevPixelsToCocoaPoints(
-          r, mWidget->BackingScaleFactor());
+    CheckedUint32 offset(mCandidatedTextSubstitutionResult.range.location);
+    offset += mCandidatedTextSubstitutionResult.range.length;
+    if (!offset.isValid()) [[unlikely]] {
+      return NSMakeRect(0, 0, 0, 0);
     }
-    return NSMakeRect(0, 0, 0, 0);
+    const Maybe<QueryContentResult> queryCaretRectResult =
+        dispatcher->QueryCaretRect(offset.value());
+    if (queryCaretRectResult.isNothing() || !mWidget) [[unlikely]] {
+      return NSMakeRect(0, 0, 0, 0);
+    }
+    return nsCocoaUtils::DevPixelsToCocoaPoints(queryCaretRectResult->mRect,
+                                                mWidget->BackingScaleFactor());
   }();
 
-  if (Destroyed()) {
+  if (Destroyed()) [[unlikely]] {
     return;
   }
 
   uint32_t replacementLocation =
       mCandidatedTextSubstitutionResult.range.location;
   NSSpellChecker* spellchecker = [NSSpellChecker sharedSpellChecker];
-  if (!spellchecker) {
+  if (!spellchecker) [[unlikely]] {
     return;
   }
   [spellchecker
@@ -5309,10 +5341,11 @@ void IMEInputHandler::ShowTextSubstitutionPanel() {
                                view:mView
                   completionHandler:^(NSString* aAcceptedString) {
                     // This is always called when panel is closed.
-                    MOZ_LOG(gIMELog, LogLevel::Info,
-                            ("%p   IMEInputHandler::ShowTextSubstitutionPanel, "
-                             "dismissing correction panel",
-                             this));
+                    MOZ_LOG_FMT(
+                        gIMELog, LogLevel::Info,
+                        "{}   IMEInputHandler::ShowTextSubstitutionPanel, "
+                        "dismissing correction panel",
+                        static_cast<void*>(this));
 
                     if (!mProcessTextSubstitution) {
                       return;

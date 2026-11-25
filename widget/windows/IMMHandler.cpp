@@ -1932,30 +1932,33 @@ bool IMMHandler::GetCharacterRectOfSelectedTextAt(
 bool IMMHandler::GetCaretRect(nsWindow* aWindow,
                               LayoutDeviceIntRect& aCaretRect,
                               WritingMode* aWritingMode) {
-  LayoutDeviceIntPoint point(0, 0);
-
-  WidgetQueryContentEvent queryCaretRectEvent(true, eQueryCaretRect, aWindow);
-  QueryContentOptions options;
-  options.mRelativeToInsertionPoint = true;
-  queryCaretRectEvent.InitForQueryCaretRect(0, options);
-  aWindow->InitEvent(queryCaretRectEvent, &point);
-  DispatchEvent(aWindow, queryCaretRectEvent);
-  if (queryCaretRectEvent.Failed()) {
-    MOZ_LOG(
-        gIMELog, LogLevel::Info,
-        ("IMMHandler::GetCaretRect, FAILED, due to eQueryCaretRect failure"));
+  const RefPtr<TextEventDispatcher> dispatcher =
+      aWindow->GetTextEventDispatcher();
+  if (!dispatcher) [[unlikely]] {
+    MOZ_LOG_FMT(
+        gIMELog, LogLevel::Error,
+        "IMMHandler::GetCaretRect, FAILED, due to no text event dispatcher");
     return false;
   }
-  aCaretRect = queryCaretRectEvent.mReply->mRect;
-  if (aWritingMode) {
-    *aWritingMode = queryCaretRectEvent.mReply->WritingModeRef();
+
+  QueryContentOptions options;
+  options.mRelativeToInsertionPoint = true;
+  const Maybe<QueryContentResult> queryCaretRectResult =
+      dispatcher->QueryCaretRect(0, options);
+  if (queryCaretRectResult.isNothing()) [[unlikely]] {
+    MOZ_LOG_FMT(gIMELog, LogLevel::Info,
+                "IMMHandler::GetCaretRect, FAILED, due to "
+                "TextEventDispatcher::QueryCaretRect() failure");
+    return false;
   }
-  MOZ_LOG(gIMELog, LogLevel::Info,
-          ("IMMHandler::GetCaretRect, SUCCEEDED, "
-           "aCaretRect={ x: %d, y: %d, width: %d, height: %d }, "
-           "queryCaretRectEvent={ mReply=%s }",
-           aCaretRect.X(), aCaretRect.Y(), aCaretRect.Width(),
-           aCaretRect.Height(), ToString(queryCaretRectEvent.mReply).c_str()));
+  aCaretRect = queryCaretRectResult->mRect;
+  if (aWritingMode) {
+    *aWritingMode = queryCaretRectResult->WritingModeRef();
+  }
+  MOZ_LOG_FMT(gIMELog, LogLevel::Info,
+              "IMMHandler::GetCaretRect, SUCCEEDED, "
+              "aCaretRect={}, queryCaretRectResult={}",
+              ToString(aCaretRect), queryCaretRectResult);
   return true;
 }
 
