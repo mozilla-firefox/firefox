@@ -82,18 +82,6 @@
   margin-block-start: 16px;
 }
 
-/* Restore the legacy emphasized heading and tighter title spacing when the
- * sidebar/Firefox View redesign is disabled. */
-@media not -moz-pref("browser.nova.enabled") {
-  .header {
-    font-weight: var(--font-weight-heading);
-  }
-
-  .description {
-    margin-block-start: 4px;
-  }
-}
-
 .main a {
   color: var(--link-color);
 

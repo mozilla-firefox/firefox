@@ -44,27 +44,22 @@ body {
 
 moz-card {
   --card-gap: var(--space-small);
-  --card-padding: 8px;
+  --card-padding: 0;
   --card-heading-padding-inline: 12px;
-  @media -moz-pref("browser.nova.enabled") {
-    --card-background-color: transparent;
-  }
+  --card-background-color: transparent;
 
   margin-block-start: var(--space-medium);
   box-shadow: none;
   color: var(--sidebar-box-color);
-  border: var(--sidebar-box-border);
-  @media -moz-pref("browser.nova.enabled") {
-    --card-padding: 0;
-    border: none;
+  border: none;
 
-    &::part(moz-card-heading-wrapper) {
-      padding-inline: var(--space-small);
-    }
-    .notabs {
-      padding-inline: var(--space-small);
-      color: var(--text-color-deemphasized);
-    }
+  &::part(moz-card-heading-wrapper) {
+    padding-inline: var(--space-small);
+  }
+
+  .notabs {
+    padding-inline: var(--space-small);
+    color: var(--text-color-deemphasized);
   }
 
   &::part(summary) {
@@ -87,10 +82,7 @@ moz-card {
   --sidebar-panel-padding-inline: var(--space-large);
   display: flex;
   flex-direction: column;
-  padding-block: var(--space-large);
-  @media -moz-pref("browser.nova.enabled") {
-    padding-block-start: var(--space-small);
-  }
+  padding-block: var(--space-small) var(--space-large);
   box-sizing: border-box;
   border-radius: var(--border-radius-medium);
   width: 100%;

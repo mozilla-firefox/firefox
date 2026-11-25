@@ -36,13 +36,6 @@
   &[lwt-newtab-brighttext] {
     color-scheme: dark;
   }
-
-  @media not -moz-pref("browser.nova.enabled") {
-    /* ensure utility button hover states match those of the rest of the page */
-    --button-background-color-hover: var(--fxview-element-background-hover);
-    --button-background-color-active: var(--fxview-element-background-active);
-    --button-text-color-hover: var(--fxview-text-color-hover);
-  }
 }
 
 @media (forced-colors) {
@@ -154,17 +147,5 @@ fxview-empty-state {
   &.synced-tabs::part(image-container),
   &.recentlyclosed::part(image-container) {
     min-width: 250px;
-  }
-
-  @media not (-moz-pref("browser.nova.enabled")) {
-    /* center align the empty state image */
-    &.recentlyclosed::part(image-container) {
-      margin-inline-start: 50px;
-      min-width: 150px;
-    }
-    /* align empty state text with synced tabs on recent browsing page */
-    &.recentlyclosed::part(main) {
-      padding-inline-start: 50px;
-    }
   }
 }

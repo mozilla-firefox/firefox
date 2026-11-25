@@ -33,8 +33,7 @@ const TAB_DROP_TYPE = "application/x-moz-tabbrowser-tab";
  */
 export default class SidebarPinsPromo extends MozLitElement {
   static queries = {
-    card: ".promo-card, .pinned-tabs-promo",
-    closeButton: ".close-button",
+    card: ".pinned-tabs-promo",
   };
 
   constructor() {
@@ -53,13 +52,6 @@ export default class SidebarPinsPromo extends MozLitElement {
       false,
       () => this.requestUpdate()
     );
-    XPCOMUtils.defineLazyPreferenceGetter(
-      this,
-      "novaEnabled",
-      "browser.nova.enabled",
-      false,
-      () => this.requestUpdate()
-    );
     this.launcherObserver = new MutationObserver(() => this.requestUpdate());
   }
   #icons = [
@@ -73,8 +65,7 @@ export default class SidebarPinsPromo extends MozLitElement {
     },
     {
       name: "foxy",
-      src: "chrome://browser/skin/sidebar/foxy.svg",
-      novaSrc: "chrome://browser/skin/sidebar/kit-pinned-tabs-promo.svg",
+      src: "chrome://browser/skin/sidebar/kit-pinned-tabs-promo.svg",
     },
     {
       name: "gmail",
@@ -139,23 +130,6 @@ export default class SidebarPinsPromo extends MozLitElement {
   }
 
   #promoTemplate() {
-    if (!this.novaEnabled) {
-      return html` <moz-card class="promo-card">
-          <div class="promo-text" data-l10n-id="sidebar-pins-promo-text"></div>
-          <div class="icon-row">
-            ${map(this.#icons, icon => this.#iconCellTemplate(icon))}
-          </div>
-        </moz-card>
-        <moz-button
-          class="close-button"
-          iconsrc="resource://content-accessible/close-12.svg"
-          data-l10n-id="sidebar-panel-header-close-button"
-          @click=${this.dismissDragToPinPromo}
-          size="small"
-          type="icon ghost"
-        >
-        </moz-button>`;
-    }
     return html` <moz-promo
       class="pinned-tabs-promo"
       dismissable
@@ -183,10 +157,7 @@ export default class SidebarPinsPromo extends MozLitElement {
         [`icon-${icon.name}`]: true,
       })}
     >
-      <img
-        src=${this.novaEnabled && icon.novaSrc ? icon.novaSrc : icon.src}
-        role="presentation"
-      />
+      <img src=${icon.src} role="presentation" />
     </div>`;
   }
 

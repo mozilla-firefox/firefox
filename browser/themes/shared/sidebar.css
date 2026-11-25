@@ -17,7 +17,6 @@
   @media -moz-pref("sidebar.revamp") {
     min-width: var(--size-layout-small);
     width: 340px;
-    padding-block-end: var(--space-small);
     position: relative;
     z-index: var(--browser-area-z-index-sidebar);
 
@@ -43,14 +42,6 @@
 #sidebar-box {
   text-shadow: none;
   max-width: 75vw;
-
-  @media not -moz-pref("sidebar.revamp") {
-    background-color: var(--sidebar-background-color);
-    color: var(--sidebar-text-color);
-    /* Note that with sidebar.revamp we apply the --sidebar-background-color to the
-     * #sidebar browser. We still need the #sidebar-box background to match the
-     * toolbar tho - this background is set on the #browser ancestor rather than here */
-  }
 }
 
 .sidebar-browser-stack > .dialogStack > .dialogTemplate > .dialogBox {
@@ -80,13 +71,11 @@
     &[panel-has-custom-header] {
       display: none;
 
-      @media -moz-pref("browser.nova.enabled") {
-        /* Since the header isn't there, the browser itself now sits on the edge.
-         * The browser needs the same rounded corners as #sidebar-box to prevent overflow. */
-        & + .sidebar-browser-stack > #sidebar {
-          border-start-start-radius: var(--sidebar-box-start-start-radius);
-          border-start-end-radius: var(--sidebar-box-start-end-radius);
-        }
+      /* Since the header isn't there, the browser itself now sits on the edge.
+       * The browser needs the same rounded corners as #sidebar-box to prevent overflow. */
+      & + .sidebar-browser-stack > #sidebar {
+        border-start-start-radius: var(--sidebar-box-start-start-radius);
+        border-start-end-radius: var(--sidebar-box-start-end-radius);
       }
     }
   }
@@ -100,11 +89,9 @@
 
 #sidebar {
   flex: 1;
+  outline: none;
 
   @media -moz-pref("sidebar.revamp") {
-    border-radius: var(--border-radius-medium);
-    box-shadow: var(--content-area-shadow);
-    outline: 0.5px solid var(--sidebar-border-color);
     background-color: var(--sidebar-background-color);
     color: var(--sidebar-text-color);
   }
@@ -116,13 +103,7 @@
   position: relative;
   z-index: var(--browser-area-z-index-sidebar-splitter);
   --splitter-width: 4px;
-  @media (-moz-overlay-scrollbars) and (not -moz-pref("browser.nova.enabled")) {
-    --splitter-width: 2px;
-  }
-  @media -moz-pref("browser.nova.enabled") {
-    border-radius: var(--border-radius-large);
-  }
-
+  border-radius: var(--border-radius-large);
   min-width: 1px;
   width: var(--splitter-width);
   appearance: none;
@@ -150,41 +131,22 @@
 #sidebar-splitter {
   -moz-user-focus: normal;
   margin-block-end: 1.5px; /* Make space for the 'medium'/3px outline to show */
+  border-inline: none;
 
   &:focus-visible {
     outline: auto;
   }
   @media -moz-pref("sidebar.revamp") {
-    width: var(--space-medium);
-    border-inline: calc((var(--space-medium) - var(--splitter-width)) / 2) solid transparent;
-    background-clip: padding-box;
     /* Adjust to better align with the bottom of the sidebar-box */
     margin-block-end: var(--space-small);
-  }
-
-  @media -moz-pref("browser.nova.enabled") {
-    width: var(--splitter-width);
-    border-inline: none;
   }
 }
 
 #sidebar-launcher-splitter {
-  /* We don't let the splitter overlap the sidebar on Linux since the
-   * scrollbar is too narrow. */
-  @media not (-moz-platform: linux) {
-    margin-inline-start: calc(-1 * var(--splitter-width));
+  margin-inline: calc(-1 * var(--splitter-width)) 0;
 
-    #sidebar-container[sidebar-positionend] + & {
-      margin-inline: 0 calc(-1 * var(--splitter-width));
-    }
-  }
-
-  @media -moz-pref("browser.nova.enabled") {
-    margin-inline: calc(-1 * var(--splitter-width)) 0;
-
-    #sidebar-container[sidebar-positionend] + & {
-      margin-inline: 0 calc(-1 * var(--splitter-width));
-    }
+  #sidebar-container[sidebar-positionend] + & {
+    margin-inline: 0 calc(-1 * var(--splitter-width));
   }
 
   @media not -moz-pref("sidebar.verticalTabs") {
@@ -487,65 +449,63 @@ menuseparator + #sidebar-extensions-separator {
   }
 }
 
-@media -moz-pref("browser.nova.enabled") {
-  :root:not([inDOMFullscreen], [fullscreenNavToolboxHidden]):active-view-transition-type(content-corner-round, content-corner-square) {
+:root:not([inDOMFullscreen], [fullscreenNavToolboxHidden]):active-view-transition-type(content-corner-round, content-corner-square) {
+  &::view-transition-image-pair(tabbrowser-tabbox) {
+    overflow: clip;
+    border-block-start: var(--border-width) solid var(--sidebar-content-separator-color);
+    animation-duration: inherit;
+    animation-timing-function: inherit;
+    animation-fill-mode: both;
+  }
+
+  &::view-transition-old(tabbrowser-tabbox),
+  &::view-transition-new(tabbrowser-tabbox) {
+    margin-block-start: calc(-1 * var(--border-width));
+  }
+
+  &:not([sidebar-positionend]),
+  &[sidebar-positionend]:active-view-transition-type(content-corner-opposite-round) {
     &::view-transition-image-pair(tabbrowser-tabbox) {
-      overflow: clip;
-      border-block-start: var(--border-width) solid var(--sidebar-content-separator-color);
-      animation-duration: inherit;
-      animation-timing-function: inherit;
-      animation-fill-mode: both;
+      border-inline-start: var(--border-width) solid var(--sidebar-content-separator-color);
+      border-start-start-radius: var(--border-radius-medium);
     }
 
     &::view-transition-old(tabbrowser-tabbox),
     &::view-transition-new(tabbrowser-tabbox) {
-      margin-block-start: calc(-1 * var(--border-width));
+      margin-inline-start: calc(-1 * var(--border-width));
+    }
+  }
+
+  &[sidebar-positionend],
+  &:not([sidebar-positionend]):active-view-transition-type(content-corner-opposite-round) {
+    &::view-transition-image-pair(tabbrowser-tabbox) {
+      border-inline-end: var(--border-width) solid var(--sidebar-content-separator-color);
+      border-start-end-radius: var(--border-radius-medium);
     }
 
-    &:not([sidebar-positionend]),
-    &[sidebar-positionend]:active-view-transition-type(content-corner-opposite-round) {
-      &::view-transition-image-pair(tabbrowser-tabbox) {
-        border-inline-start: var(--border-width) solid var(--sidebar-content-separator-color);
-        border-start-start-radius: var(--border-radius-medium);
-      }
+    &::view-transition-old(tabbrowser-tabbox),
+    &::view-transition-new(tabbrowser-tabbox) {
+      margin-inline-end: calc(-1 * var(--border-width));
+    }
+  }
 
-      &::view-transition-old(tabbrowser-tabbox),
-      &::view-transition-new(tabbrowser-tabbox) {
-        margin-inline-start: calc(-1 * var(--border-width));
-      }
+  &:not([sidebar-positionend]) {
+    &:active-view-transition-type(content-corner-round)::view-transition-image-pair(tabbrowser-tabbox) {
+      animation-name: sidebar-content-corner-start-round;
     }
 
-    &[sidebar-positionend],
-    &:not([sidebar-positionend]):active-view-transition-type(content-corner-opposite-round) {
-      &::view-transition-image-pair(tabbrowser-tabbox) {
-        border-inline-end: var(--border-width) solid var(--sidebar-content-separator-color);
-        border-start-end-radius: var(--border-radius-medium);
-      }
+    &:active-view-transition-type(content-corner-square)::view-transition-image-pair(tabbrowser-tabbox) {
+      animation-name: sidebar-content-corner-start-square;
+    }
+  }
 
-      &::view-transition-old(tabbrowser-tabbox),
-      &::view-transition-new(tabbrowser-tabbox) {
-        margin-inline-end: calc(-1 * var(--border-width));
-      }
+  &[sidebar-positionend] {
+    &:active-view-transition-type(content-corner-round)::view-transition-image-pair(tabbrowser-tabbox) {
+      animation-name: sidebar-content-corner-end-round;
     }
 
-    &:not([sidebar-positionend]) {
-      &:active-view-transition-type(content-corner-round)::view-transition-image-pair(tabbrowser-tabbox) {
-        animation-name: sidebar-content-corner-start-round;
-      }
-
-      &:active-view-transition-type(content-corner-square)::view-transition-image-pair(tabbrowser-tabbox) {
-        animation-name: sidebar-content-corner-start-square;
-      }
-    }
-
-    &[sidebar-positionend] {
-      &:active-view-transition-type(content-corner-round)::view-transition-image-pair(tabbrowser-tabbox) {
-        animation-name: sidebar-content-corner-end-round;
-      }
-
-      &:active-view-transition-type(content-corner-square)::view-transition-image-pair(tabbrowser-tabbox) {
-        animation-name: sidebar-content-corner-end-square;
-      }
+    &:active-view-transition-type(content-corner-square)::view-transition-image-pair(tabbrowser-tabbox) {
+      animation-name: sidebar-content-corner-end-square;
     }
   }
 }
@@ -577,43 +537,28 @@ menuseparator + #sidebar-extensions-separator {
 
 /* Drive the sidebar-main shadow DOM's launcher button inline padding from the
  * document's uidensity. Custom properties inherit across shadow boundaries,
- * so this value is consumed by sidebar-main.css. Note that we round the
- * padding to the nearest 0.5px, so that the combined start+end padding will be
- * a whole number of CSS pixels. */
+ * so this value is consumed by sidebar-main.css. */
 :root {
-  --sidebar-launcher-button-padding-inline: round(var(--space-medium), 0.5px);
+  --sidebar-launcher-button-padding-inline: 4px;
 
   @media -moz-pref("sidebar.verticalTabs") {
     /* Vertical tabs need device pixel aligned margins on *both* sides.
      * Otherwise, they may not be properly centered. */
     --sidebar-launcher-button-padding-inline: round(var(--space-medium), env(hairline));
+
+    /* The launcher buttons share a column with the vertical tab strip, so they
+     * take the same inline margin the tabs do. That keeps the collapsed sidebar
+     * at the fixed width tabs.css pins the strip to. */
+    &:not([uidensity="touch"]) {
+      --sidebar-launcher-button-padding-inline: var(--tab-margin-inline-inner);
+    }
   }
 
   &[uidensity="compact"] {
-    /* 28px icon button + 2 * 4px = 36px collapsed sidebar. */
-    --sidebar-launcher-button-padding-inline: 4px;
     /* Match the size of compact toolbar buttons. */
     --sidebar-launcher-button-size: calc(var(--icon-size-small) + 2 * var(--toolbarbutton-padding-inner-compact));
 
     --sidebar-expanded-launcher-width: 240px;
-
-    /* 28px icon button + 2 * 7px = 42px collapsed sidebar. */
-    @media -moz-pref("sidebar.verticalTabs") {
-      --sidebar-launcher-button-padding-inline: 7px;
-    }
-  }
-
-  @media -moz-pref("browser.nova.enabled") and (not -moz-pref("sidebar.verticalTabs")) {
-    --sidebar-launcher-button-padding-inline: 4px;
-  }
-
-  /* The launcher buttons share a column with the vertical tab strip, so they
-   * take the same inline margin the tabs do. That keeps the collapsed sidebar
-   * at the fixed width tabs.css pins the strip to. */
-  @media -moz-pref("browser.nova.enabled") and -moz-pref("sidebar.verticalTabs") {
-    &:not([uidensity="touch"]) {
-      --sidebar-launcher-button-padding-inline: var(--tab-margin-inline-inner);
-    }
   }
 }
 
@@ -646,16 +591,13 @@ menuseparator + #sidebar-extensions-separator {
     position: relative;
     inset: 0;
     inset-inline-end: unset;
-    --sidebar-launcher-border: 0.01px solid var(--sidebar-border-color);
 
     /* Match the border on the content area's edge, which the expanded launcher
      * covers. */
-    @media -moz-pref("browser.nova.enabled") {
-      --sidebar-launcher-border: var(--border-width) solid var(--chrome-content-separator-color);
+    --sidebar-launcher-border: var(--border-width) solid var(--chrome-content-separator-color);
 
-      :root[lwtheme] & {
-        --sidebar-launcher-border: var(--border-width) solid var(--sidebar-border-color);
-      }
+    :root[lwtheme] & {
+      --sidebar-launcher-border: var(--border-width) solid var(--sidebar-border-color);
     }
 
     &[sidebar-positionend] {
@@ -695,13 +637,6 @@ menuseparator + #sidebar-extensions-separator {
         border-inline-start: var(--sidebar-launcher-border);
       }
     }
-
-    @media not -moz-pref("browser.nova.enabled") {
-      :root[lwtheme] & {
-        border-radius: unset;
-        border-inline: unset;
-      }
-    }
   }
 
   #sidebar-launcher-splitter[sidebar-launcher-expanded] {
@@ -712,39 +647,15 @@ menuseparator + #sidebar-extensions-separator {
   The element next to it can be the sidebar box or the tabbox,
   depending on whether the sidebar box is expanded */
   #tabbrowser-tabbox {
-    @media not -moz-pref("browser.nova.enabled") {
-      &:not([sidebar-positionend]) {
-        &:not([sidebar-panel-open]) {
-          margin-inline-start: 0;
-        }
-
-        &[sidebar-launcher-expanded][sidebar-launcher-hovered]:not([sidebar-panel-open]) {
-          margin-inline-start: var(--sidebar-launcher-collapsed-width);
-        }
-      }
-
-      &[sidebar-positionend] {
-        &:not([sidebar-panel-open]) {
-          margin-inline-end: 0;
-        }
-
-        &[sidebar-launcher-expanded][sidebar-launcher-hovered]:not([sidebar-panel-open]) {
-          margin-inline-end: var(--sidebar-launcher-collapsed-width);
-        }
-      }
-    }
-
     /* Only compensate while the launcher is out of flow. When it's collapsed it
      * takes up its own width and gap in #browser, so adding the margin here as
      * well would count the launcher twice. */
-    @media -moz-pref("browser.nova.enabled") {
-      &[sidebar-launcher-expanded]:not([sidebar-panel-open]) {
-        &:not([sidebar-positionend]) {
-          margin-inline-start: var(--sidebar-launcher-collapsed-width);
-        }
-        &[sidebar-positionend] {
-          margin-inline-end: var(--sidebar-launcher-collapsed-width);
-        }
+    &[sidebar-launcher-expanded]:not([sidebar-panel-open]) {
+      &:not([sidebar-positionend]) {
+        margin-inline-start: var(--sidebar-launcher-collapsed-width);
+      }
+      &[sidebar-positionend] {
+        margin-inline-end: var(--sidebar-launcher-collapsed-width);
       }
     }
   }
@@ -753,43 +664,17 @@ menuseparator + #sidebar-extensions-separator {
    * If we're in fullscreen and the sidebar is closed, there should be no
    * margins around #tabbrowser-tabbox.
    */
-  @media -moz-pref("browser.nova.enabled") {
-    &[fullscreenNavToolboxHidden] #tabbrowser-tabbox:not([sidebar-panel-open]) {
-      margin-inline: 0;
-    }
+  &[fullscreenNavToolboxHidden] #tabbrowser-tabbox:not([sidebar-panel-open]) {
+    margin-inline: 0;
   }
 
   #sidebar-box {
-    @media not -moz-pref("browser.nova.enabled") {
+    &[sidebar-launcher-expanded][sidebar-panel-open] {
       &:not([sidebar-positionend]) {
-        &[sidebar-panel-open] {
-          margin-inline-start: 0;
-        }
-
-        &[sidebar-panel-open][sidebar-launcher-hovered][sidebar-launcher-expanded] {
-          margin-inline-start: var(--sidebar-launcher-collapsed-width);
-        }
+        margin-inline-start: var(--sidebar-launcher-collapsed-width);
       }
-
       &[sidebar-positionend] {
-        &[sidebar-panel-open] {
-          margin-inline-end: 0;
-        }
-
-        &[sidebar-panel-open][sidebar-launcher-hovered][sidebar-launcher-expanded] {
-          margin-inline-end: var(--sidebar-launcher-collapsed-width);
-        }
-      }
-    }
-
-    @media -moz-pref("browser.nova.enabled") {
-      &[sidebar-launcher-expanded][sidebar-panel-open] {
-        &:not([sidebar-positionend]) {
-          margin-inline-start: var(--sidebar-launcher-collapsed-width);
-        }
-        &[sidebar-positionend] {
-          margin-inline-end: var(--sidebar-launcher-collapsed-width);
-        }
+        margin-inline-end: var(--sidebar-launcher-collapsed-width);
       }
     }
   }
@@ -801,82 +686,71 @@ menuseparator + #sidebar-extensions-separator {
     has been added to root. There are certain scenarios when that attribute is temporarily
     removed from root such as when toggling the sidebar to expand with the toolbar button. */
   #sidebar {
-    box-shadow: none;
     margin-block-start: 1px;
-    outline-offset: -0.1px;
   }
 }
 
-@media -moz-pref("browser.nova.enabled") {
-  /* A lwtheme that doesn't specify sidebar_border falls back to the translucent
-   * --card-border-color, and the line that draws takes on whatever surface sits
-   * beneath it. The content area backs its border with
-   * --tabpanel-background-color, so resolving against that here and painting
-   * the result opaquely puts the sidebar's separators on the same line
-   * .browserContainer draws. The percentages mirror --card-border-color. A
-   * theme that does specify sidebar_border sets this inline on the root, which
-   * still wins over this. */
-  :root[lwtheme] {
-    --sidebar-border-color: light-dark(
-      color-mix(in srgb, currentColor 10%, var(--tabpanel-background-color)),
-      color-mix(in srgb, currentColor 6%, var(--tabpanel-background-color))
-    );
+/* A lwtheme that doesn't specify sidebar_border falls back to the translucent
+ * --card-border-color, and the line that draws takes on whatever surface sits
+ * beneath it. The content area backs its border with
+ * --tabpanel-background-color, so resolving against that here and painting
+ * the result opaquely puts the sidebar's separators on the same line
+ * .browserContainer draws. The percentages mirror --card-border-color. A
+ * theme that does specify sidebar_border sets this inline on the root, which
+ * still wins over this. */
+:root[lwtheme] {
+  --sidebar-border-color: light-dark(
+    color-mix(in srgb, currentColor 10%, var(--tabpanel-background-color)),
+    color-mix(in srgb, currentColor 6%, var(--tabpanel-background-color))
+  );
+}
+
+#sidebar-box {
+  --sidebar-box-start-start-radius: var(--border-radius-medium);
+  --sidebar-box-start-end-radius: var(--border-radius-medium);
+
+  background-color: var(--sidebar-background-color);
+  color: var(--sidebar-text-color);
+  border: var(--border-width) solid var(--chrome-content-separator-color);
+  border-block-end: none;
+
+  :root[lwtheme] & {
+    border-color: var(--sidebar-border-color);
   }
 
-  #sidebar-box {
-    --sidebar-box-start-start-radius: var(--border-radius-medium);
-    --sidebar-box-start-end-radius: var(--border-radius-medium);
-
-    background-color: var(--sidebar-background-color);
-    color: var(--sidebar-text-color);
-    padding-block-end: 0;
-    border: var(--border-width) solid var(--chrome-content-separator-color);
-    border-block-end: none;
-
-    :root[lwtheme] & {
-      border-color: var(--sidebar-border-color);
-    }
-
-    /* Only the edge facing the content area survives once the launcher is
-     * gone: the other one then meets the window. Fullscreen collapses the
-     * launcher along with the rest of the chrome, so it counts as gone there
-     * too. No padding on that edge either, so the panel's scroller reaches
-     * the window edge and still takes the wheel there. */
-    #sidebar-container[hidden] ~ &:not([sidebar-positionend]),
-    :root[fullscreenNavToolboxHidden] &:not([sidebar-positionend]) {
-      --sidebar-box-start-start-radius: 0;
-      border-inline-start: none;
-      padding-inline-start: 0;
-    }
-
-    #sidebar-container[hidden] ~ &[sidebar-positionend],
-    :root[fullscreenNavToolboxHidden] &[sidebar-positionend] {
-      --sidebar-box-start-end-radius: 0;
-      border-inline-end: none;
-    }
-
-    /* Fullscreen slides the toolbox off-screen (and DOM fullscreen hides the
-     * chrome outright), so the block-start edge then meets the screen and the
-     * corners on it have nothing left to round away from. The edge facing the
-     * content area stays: the panel itself remains visible in fullscreen. */
-    :root:is([inDOMFullscreen], [fullscreenNavToolboxHidden]) & {
-      --sidebar-box-start-start-radius: 0;
-      --sidebar-box-start-end-radius: 0;
-      border-block-start: none;
-    }
+  /* Only the edge facing the content area survives once the launcher is
+   * gone: the other one then meets the window. Fullscreen collapses the
+   * launcher along with the rest of the chrome, so it counts as gone there
+   * too. No padding on that edge either, so the panel's scroller reaches
+   * the window edge and still takes the wheel there. */
+  #sidebar-container[hidden] ~ &:not([sidebar-positionend]),
+  :root[fullscreenNavToolboxHidden] &:not([sidebar-positionend]) {
+    --sidebar-box-start-start-radius: 0;
+    border-inline-start: none;
+    padding-inline-start: 0;
   }
 
-  /* The box needs the radius for its border. */
-  #sidebar-box {
-    border-start-start-radius: var(--sidebar-box-start-start-radius);
-    border-start-end-radius: var(--sidebar-box-start-end-radius);
+  #sidebar-container[hidden] ~ &[sidebar-positionend],
+  :root[fullscreenNavToolboxHidden] &[sidebar-positionend] {
+    --sidebar-box-start-end-radius: 0;
+    border-inline-end: none;
   }
 
-  #sidebar {
-    border-radius: 0;
-    box-shadow: none;
-    outline: none;
+  /* Fullscreen slides the toolbox off-screen (and DOM fullscreen hides the
+   * chrome outright), so the block-start edge then meets the screen and the
+   * corners on it have nothing left to round away from. The edge facing the
+   * content area stays: the panel itself remains visible in fullscreen. */
+  :root:is([inDOMFullscreen], [fullscreenNavToolboxHidden]) & {
+    --sidebar-box-start-start-radius: 0;
+    --sidebar-box-start-end-radius: 0;
+    border-block-start: none;
   }
+}
+
+/* The box needs the radius for its border. */
+#sidebar-box {
+  border-start-start-radius: var(--sidebar-box-start-start-radius);
+  border-start-end-radius: var(--sidebar-box-start-end-radius);
 }
 
 /* History Menu */

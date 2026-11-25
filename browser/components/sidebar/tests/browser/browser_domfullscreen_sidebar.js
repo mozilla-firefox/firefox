@@ -69,10 +69,7 @@ add_task(async function dom_fullscreen_has_no_extra_margins() {
   // Ensure that DOM fullscreen takes up the entire window with no unnecessary
   // gaps. (Bug 2057087)
   await SpecialPowers.pushPrefEnv({
-    set: [
-      ["browser.nova.enabled", true],
-      ["sidebar.visibility", "expand-on-hover"],
-    ],
+    set: [["sidebar.visibility", "expand-on-hover"]],
   });
   const tabbox = document.getElementById("tabbrowser-tabbox");
 

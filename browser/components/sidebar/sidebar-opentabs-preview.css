@@ -29,12 +29,8 @@
   gap: var(--space-small);
   padding-inline: var(--space-medium);
   padding-block: var(--space-xsmall);
-  border-radius: var(--border-radius-medium);
+  border-radius: var(--border-radius-circle);
   margin-inline: calc(-1 * var(--space-small));
-
-  @media -moz-pref("browser.nova.enabled") {
-    border-radius: var(--border-radius-circle);
-  }
 
   cursor: pointer;
 

@@ -195,37 +195,6 @@ export class SyncedTabsController {
   /** @type {{[A in Action]: ActionMapping}} */
   actionMappings = {
     "sign-in": {
-      asset: "chrome://browser/content/firefoxview/synced-tabs-empty.svg",
-      header: "firefoxview-syncedtabs-signin-header-2",
-      description: "firefoxview-syncedtabs-signin-description-2",
-      buttonLabel: "firefoxview-syncedtabs-signin-primarybutton-2",
-    },
-    "add-device": {
-      asset: "chrome://browser/content/firefoxview/synced-tabs-empty.svg",
-      header: "firefoxview-syncedtabs-adddevice-header-2",
-      description: "firefoxview-syncedtabs-adddevice-description-2",
-      buttonLabel: "firefoxview-syncedtabs-adddevice-primarybutton",
-      descriptionLink: {
-        name: "url",
-        url: "https://support.mozilla.org/kb/how-do-i-set-sync-my-computer#w_connect-additional-devices-to-sync",
-      },
-    },
-    "sync-tabs-disabled": {
-      asset: "chrome://browser/content/firefoxview/synced-tabs-empty.svg",
-      header: "firefoxview-syncedtabs-synctabs-header",
-      description: "firefoxview-syncedtabs-synctabs-description",
-      buttonLabel: "firefoxview-tabpickup-synctabs-primarybutton",
-    },
-    loading: {
-      asset: "chrome://browser/content/firefoxview/synced-tabs-empty.svg",
-      header: "firefoxview-syncedtabs-loading-header",
-      description: "firefoxview-syncedtabs-loading-description",
-    },
-  };
-
-  /** @type {{[A in Action]: ActionMapping}} */
-  novaActionMappings = {
-    "sign-in": {
       asset: "chrome://browser/skin/sidebar/kit-tabs-devices.svg",
       header: "firefoxview-syncedtabs-signin-header-3",
       description: "firefoxview-syncedtabs-signin-description-3",
@@ -255,7 +224,6 @@ export class SyncedTabsController {
 
   #getMessageCardForState({ error = false, action, errorState }) {
     errorState = errorState || this.errorState;
-    const nova = Services.prefs.getBoolPref("browser.nova.enabled", false);
     let header, description, descriptionLink, buttonLabel, mainImageUrl;
     let descriptionArray;
     let mappings;
@@ -264,9 +232,7 @@ export class SyncedTabsController {
         SyncedTabsErrorHandler.getFluentStringsForErrorType(errorState);
       action = `${errorState}`;
     } else {
-      mappings = nova
-        ? this.novaActionMappings[action]
-        : this.actionMappings[action];
+      mappings = this.actionMappings[action];
     }
     header = mappings.header;
     description = mappings.description;

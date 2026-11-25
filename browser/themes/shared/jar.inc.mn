@@ -300,7 +300,6 @@
   skin/classic/browser/searchbar.css                           (../shared/search/searchbar.css)
 
   skin/classic/browser/sidebar/firefox.svg                     (../shared/sidebar/firefox.svg)
-  skin/classic/browser/sidebar/foxy.svg                        (../shared/sidebar/foxy.svg)
   skin/classic/browser/sidebar/gmail.svg                       (../shared/sidebar/gmail.svg)
   skin/classic/browser/sidebar/slack.svg                       (../shared/sidebar/slack.svg)
   skin/classic/browser/sidebar/kit-history-import.svg         (../shared/sidebar/kit-history-import.svg)

@@ -654,20 +654,15 @@ export class SidebarHistory extends SidebarPage {
   }
 
   #emptyMessageTemplate() {
-    const nova = Services.prefs.getBoolPref("browser.nova.enabled", false);
     let descriptionHeader;
     let descriptionLabels;
     let descriptionLink;
 
     if (Services.prefs.getBoolPref(NEVER_REMEMBER_HISTORY_PREF, false)) {
       // History pref set to never remember history
-      descriptionHeader = nova
-        ? "firefoxview-dont-remember-history-empty-header-3"
-        : "firefoxview-dont-remember-history-empty-header-2";
+      descriptionHeader = "firefoxview-dont-remember-history-empty-header-3";
       descriptionLabels = [
-        nova
-          ? "firefoxview-dont-remember-history-empty-description-2"
-          : "firefoxview-dont-remember-history-empty-description-one",
+        "firefoxview-dont-remember-history-empty-description-2",
       ];
 
       descriptionLink = {
@@ -675,23 +670,14 @@ export class SidebarHistory extends SidebarPage {
         name: "history-settings-url-two",
       };
     } else {
-      descriptionHeader = nova
-        ? "firefoxview-history-empty-header-2"
-        : "firefoxview-history-empty-header";
-      descriptionLabels = nova
-        ? ["firefoxview-history-empty-description-2"]
-        : [
-            "firefoxview-history-empty-description",
-            "firefoxview-history-empty-description-two",
-          ];
+      descriptionHeader = "firefoxview-history-empty-header-2";
+      descriptionLabels = ["firefoxview-history-empty-description-2"];
       descriptionLink = {
         url: "about:preferences#privacy",
         name: "history-settings-url",
       };
     }
-    let asset = nova
-      ? "chrome://browser/skin/sidebar/kit-page-history.svg"
-      : "chrome://browser/content/firefoxview/history-empty.svg";
+    let asset = "chrome://browser/skin/sidebar/kit-page-history.svg";
 
     return html`
       <fxview-empty-state

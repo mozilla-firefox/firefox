@@ -5,36 +5,30 @@
 @import url("chrome://browser/skin/tabbrowser/tab.tokens.css");
 
 .pinned-tabs moz-button::part(button) {
-  @media -moz-pref("browser.nova.enabled") {
-    border-color: transparent;
-  }
+  border-color: transparent;
 }
 
 .pinned-tabs moz-button.selected::part(button) {
-  @media -moz-pref("browser.nova.enabled") {
-    outline: 1px solid var(--tab-border-color-selected);
-    outline-offset: -1px;
+  outline: 1px solid var(--tab-border-color-selected);
+  outline-offset: -1px;
 
-    @media (not (prefers-contrast)) {
-      border: 1px solid transparent;
-      /* stylelint-disable-next-line stylelint-plugin-mozilla/use-design-tokens */
-      background:
-        var(--tab-border-color-accent) border-box border-area,
-        var(--tab-background-color-selected) padding-box;
-      color: var(--tab-text-color-selected);
-    }
+  @media (not (prefers-contrast)) {
+    border: 1px solid transparent;
+    /* stylelint-disable-next-line stylelint-plugin-mozilla/use-design-tokens */
+    background:
+      var(--tab-border-color-accent) border-box border-area,
+      var(--tab-background-color-selected) padding-box;
+    color: var(--tab-text-color-selected);
   }
 }
 
 .pinned-tabs moz-button.selected.inactive::part(button) {
-  @media -moz-pref("browser.nova.enabled") {
-    outline-color: color-mix(in srgb, var(--tab-border-color-selected) 60%, transparent);
-    --tab-border-color-accent: linear-gradient(
-      96deg,
-      color-mix(in srgb, var(--color-violet-30) 60%, transparent) 20.68%,
-      color-mix(in srgb, light-dark(var(--color-orange-30), var(--color-violet-50)) 60%, transparent) 79.34%
-    );
-  }
+  outline-color: color-mix(in srgb, var(--tab-border-color-selected) 60%, transparent);
+  --tab-border-color-accent: linear-gradient(
+    96deg,
+    color-mix(in srgb, var(--color-violet-30) 60%, transparent) 20.68%,
+    color-mix(in srgb, light-dark(var(--color-orange-30), var(--color-violet-50)) 60%, transparent) 79.34%
+  );
 }
 
 .pinned-tabs {

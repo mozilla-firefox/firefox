@@ -3,47 +3,7 @@
  * file, You can obtain one at https://mozilla.org/MPL/2.0/. */
 
 :host {
-  --promo-light-background: var(--color-violet-10);
-  --promo-dark-background: var(--color-violet-60);
-  --promo-light-text: var(--color-violet-70);
-  --promo-dark-text: var(--color-violet-0);
-  --promo-light-icon-border: var(--color-violet-50);
-  --promo-dark-icon-border: var(--color-violet-0);
-  --icon-height: 52px;
   position: relative;
-}
-
-.promo-card {
-  --card-box-shadow: none;
-  position: relative;
-  container-type: inline-size;
-  margin: var(--space-small) var(--space-small) 0;
-  outline: 1px dashed light-dark(var(--promo-light-icon-border), var(--promo-dark-icon-border));
-
-  @media not (prefers-contrast) {
-    background-color: light-dark(var(--promo-light-background), var(--promo-dark-background));
-    color: light-dark(var(--promo-light-text), var(--promo-dark-text));
-  }
-
-  @media (prefers-contrast) {
-    outline-color: var(--border-color);
-  }
-
-  @media (forced-colors) {
-    background-color: ButtonFace;
-    color: ButtonText;
-    outline-color: ButtonText;
-  }
-
-  &[dragactive] {
-    outline-style: solid;
-  }
-}
-
-.promo-text {
-  font-size: var(--font-size-large);
-  text-align: center;
-  margin-block: var(--space-xlarge);
 }
 
 .pinned-tabs-promo {
@@ -70,6 +30,7 @@
 .icon-row {
   display: flex;
   align-items: center;
+  align-self: stretch;
   justify-content: center;
   gap: var(--space-medium);
 }
@@ -80,17 +41,14 @@
   justify-content: center;
   box-sizing: border-box;
   flex: 1;
-  height: calc(var(--icon-height) + (2 * var(--border-width)));
-  border: var(--border-width) dashed light-dark(var(--promo-light-icon-border), var(--promo-dark-icon-border));
-  border-radius: var(--border-radius-medium);
-
-  @media (prefers-contrast) {
-    border-color: var(--border-color);
-  }
+  height: var(--icon-size-xlarge);
+  border: var(--border-width) dashed var(--promo-border-color);
+  border-radius: var(--border-radius-circle);
 
   > img {
     -moz-context-properties: fill;
-    fill: light-dark(#9059ff, #f4f0ff);
+    /* stylelint-disable-next-line stylelint-plugin-mozilla/no-base-design-tokens */
+    fill: light-dark(var(--color-violet-50), var(--color-violet-30));
 
     @media (prefers-contrast) {
       fill: currentColor;
@@ -118,68 +76,9 @@
 }
 
 .icon-foxy {
-  > img {
-    -moz-context-properties: fill, stroke;
-    fill: light-dark(#c7b2ff, #623ac3);
-    stroke: light-dark(#9059ff, #7844f0);
-  }
+  align-items: flex-end;
 
   @media not (prefers-contrast) {
-    background-color: light-dark(#c7b2ff, #623ac3);
-  }
-}
-
-@media -moz-pref("browser.nova.enabled") {
-  .icon-row {
-    align-self: stretch;
-  }
-
-  .icon-cell {
-    height: 32px;
-    background: none;
-    border: var(--border-width) dashed var(--promo-border-color);
-    border-radius: var(--border-radius-circle);
-
-    > img {
-      -moz-context-properties: fill, stroke;
-      /* stylelint-disable-next-line stylelint-plugin-mozilla/no-base-design-tokens */
-      fill: light-dark(var(--color-violet-50), var(--color-violet-30));
-
-      @media (prefers-contrast) {
-        fill: currentColor;
-        stroke: currentColor;
-      }
-    }
-  }
-
-  .icon-foxy {
-    align-items: flex-end;
-
-    @media not (prefers-contrast) {
-      background-color: light-dark(#c8b2f6, #3a0f6e);
-    }
-  }
-}
-
-.close-button {
-  --icon-size: var(--icon-size-xsmall);
-  position: absolute;
-  inset-block-start: var(--space-medium);
-  inset-inline-end: var(--space-medium);
-
-  @media not (prefers-contrast) {
-    color: light-dark(var(--promo-light-text), var(--promo-dark-text));
-  }
-
-  @media (forced-colors) {
-    background-color: ButtonFace;
-    color: ButtonText;
-  }
-
-  &:hover {
-    @media (forced-colors) {
-      background-color: SelectedItem;
-      color: SelectedItemText;
-    }
+    background-color: light-dark(#c8b2f6, #3a0f6e);
   }
 }

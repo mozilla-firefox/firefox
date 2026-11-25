@@ -14,10 +14,6 @@
   }
 }
 
-.medium-top-margin {
-  margin-block-start: var(--space-medium);
-}
-
 .customize-header {
   display: flex;
   justify-content: space-between;
@@ -45,11 +41,6 @@
   padding-inline: var(--space-medium);
   color: var(--sidebar-box-color);
   border-radius: var(--border-radius-medium);
-
-  @media not -moz-pref("browser.nova.enabled") {
-    background-color: var(--sidebar-box-background);
-    border: var(--sidebar-box-border);
-  }
 }
 
 .extension-item {
@@ -72,10 +63,6 @@ moz-fieldset {
   display: block;
 
   &::part(inputs) {
-    @media not -moz-pref("browser.nova.enabled") {
-      background-color: var(--sidebar-box-background);
-      border: var(--sidebar-box-border);
-    }
     color: var(--sidebar-box-color);
     border-radius: var(--border-radius-medium);
     gap: 0;
@@ -85,14 +72,6 @@ moz-fieldset {
 
 moz-checkbox {
   padding-block: var(--space-medium);
-
-  @media not -moz-pref("browser.nova.enabled") {
-    padding-block: 8px;
-
-    &:not(:last-of-type) {
-      border-bottom: 0.5px solid var(--panel-separator-color);
-    }
-  }
 
   > moz-checkbox:last-of-type {
     padding-block: 0;
@@ -110,16 +89,14 @@ moz-checkbox {
   margin-inline-start: var(--space-medium);
 }
 
+.no-top-margin {
+  margin-block-start: 0;
+}
+
 .customize-group:not(.no-end-margin) {
   margin-block-end: var(--space-xlarge);
 }
 
-@media -moz-pref("browser.nova.enabled") {
-  .medium-top-margin {
-    margin-block-start: 0;
-  }
-
-  moz-checkbox:is(#expand-on-hover, #hide-sidebar) {
-    margin-block-start: var(--space-small);
-  }
+moz-checkbox:is(#expand-on-hover, #hide-sidebar) {
+  margin-block-start: var(--space-small);
 }

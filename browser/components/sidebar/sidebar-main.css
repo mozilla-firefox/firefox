@@ -70,10 +70,7 @@
   background-repeat: no-repeat;
   margin-inline: var(--tab-margin-inline-inner);
   margin-block-end: var(--space-small);
-  min-height: 2px;
-  @media -moz-pref("browser.nova.enabled") {
-    min-height: 4px;
-  }
+  min-height: 4px;
 
   :host(:not([expanded])) & {
     margin-inline-end: calc(var(--tab-margin-inline-inner) + var(--tab-collapsed-scrollbar-extra, 0px));
@@ -141,7 +138,7 @@
     &:first-of-type {
       --button-outer-padding-block-start: var(--space-small);
 
-      @media -moz-pref("browser.nova.enabled") and (not -moz-pref("sidebar.verticalTabs")) {
+      @media not -moz-pref("sidebar.verticalTabs") {
         --button-outer-padding-block-start: 4px;
       }
     }
@@ -149,7 +146,7 @@
     &:last-of-type {
       --button-outer-padding-block-end: var(--space-small);
 
-      @media -moz-pref("browser.nova.enabled") and (not -moz-pref("sidebar.verticalTabs")) {
+      @media not -moz-pref("sidebar.verticalTabs") {
         --button-outer-padding-block-end: 4px;
       }
     }
@@ -171,13 +168,9 @@
     flex-direction: row;
     justify-content: flex-start;
     align-content: flex-start;
-    gap: var(--space-xxsmall);
+    gap: 12.5px;
     padding-inline: var(--space-medium);
     padding-block-end: var(--space-small);
-
-    @media -moz-pref("browser.nova.enabled") {
-      gap: 12.5px;
-    }
 
     .tools-overflow {
       width: unset;

@@ -114,10 +114,6 @@ details summary,
     background-repeat: no-repeat;
     flex-shrink: 0;
   }
-
-  @media not -moz-pref("browser.nova.enabled") {
-    border-radius: var(--border-radius-small);
-  }
 }
 
 .bookmark-folder-title {
@@ -190,9 +186,5 @@ sidebar-bookmark-row {
   &:focus-visible {
     outline: var(--focus-outline);
     outline-offset: var(--focus-outline-inset);
-  }
-
-  @media not -moz-pref("browser.nova.enabled") {
-    border-radius: var(--border-radius-medium);
   }
 }
