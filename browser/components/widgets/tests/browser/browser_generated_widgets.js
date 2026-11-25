@@ -51,6 +51,7 @@ document.body.textContent = formatTemperature(21.5, "°C");`,
 };
 
 let mockEngine;
+let build;
 
 async function answer(...responses) {
   for (let response of responses) {
@@ -180,7 +181,7 @@ add_setup(async function () {
   mockEngine = new MockEngineManager();
   // The widget-generation service takes no `purpose`. MockEngineManager finds
   // engines by purpose, so the tests add one.
-  let build = sinon.stub(openAIEngine, "build").callsFake(options =>
+  build = sinon.stub(openAIEngine, "build").callsFake(options =>
     build.wrappedMethod.call(openAIEngine, {
       ...options,
       purpose: PURPOSES.WIDGET_GENERATION,
@@ -594,9 +595,26 @@ add_task(async function test_the_row_overrides_the_global_block() {
   }
 });
 
-add_task(async function test_the_endpoint_override_needs_no_account() {
+add_task(async function test_the_endpoint_pref_sets_the_engine_url() {
   await SpecialPowers.pushPrefEnv({
-    set: [["browser.widgets.generated.endpoint", "http://localhost:1/"]],
+    set: [["browser.widgets.generated.endpoint", "http://localhost:2/"]],
+  });
+  build.resetHistory();
+  try {
+    await generate(
+      { prompt: PROMPT },
+      simulateWriteFileResponse(FILES),
+      "Done."
+    );
+    Assert.equal(build.lastCall.args[0].baseURL, "http://localhost:2/", "URL");
+  } finally {
+    await SpecialPowers.popPrefEnv();
+  }
+});
+
+add_task(async function test_the_custom_endpoint_needs_no_account() {
+  await SpecialPowers.pushPrefEnv({
+    set: [["browser.widgets.generated.customEndpoint", "http://localhost:1/"]],
   });
   let [, getToken] = mockEngine.mocks;
   getToken.resetHistory();
@@ -615,10 +633,10 @@ add_task(async function test_the_endpoint_override_needs_no_account() {
   }
 });
 
-add_task(async function test_the_endpoint_override_is_still_blocked() {
+add_task(async function test_the_custom_endpoint_is_still_blocked() {
   await SpecialPowers.pushPrefEnv({
     set: [
-      ["browser.widgets.generated.endpoint", "http://localhost:1/"],
+      ["browser.widgets.generated.customEndpoint", "http://localhost:1/"],
       ["browser.ai.control.generatedWidgets", "blocked"],
     ],
   });
@@ -626,7 +644,7 @@ add_task(async function test_the_endpoint_override_is_still_blocked() {
     await Assert.rejects(
       WidgetGenerator.generate({ prompt: PROMPT }),
       error => error.code == GENERATION_ERRORS.BLOCKED,
-      "The endpoint override respects the block"
+      "The custom endpoint respects the block"
     );
   } finally {
     await SpecialPowers.popPrefEnv();
@@ -783,18 +801,15 @@ add_task(async function test_a_rejected_request_has_its_service_code() {
     [500, undefined, GENERATION_ERRORS.SERVICE],
   ]) {
     let generating = WidgetGenerator.generate({ prompt: PROMPT });
-    let attempts = status == 401 ? 2 : 1;
-    for (let i = 0; i < attempts; i++) {
-      let { reject } = await mockEngine.captureRequest({
-        purpose: PURPOSES.WIDGET_GENERATION,
-      });
-      reject(
-        Object.assign(new Error(`${status} status code`), {
-          status,
-          error: mlpaCode,
-        })
-      );
-    }
+    let { reject } = await mockEngine.captureRequest({
+      purpose: PURPOSES.WIDGET_GENERATION,
+    });
+    reject(
+      Object.assign(new Error(`${status} status code`), {
+        status,
+        error: mlpaCode,
+      })
+    );
     await Assert.rejects(
       generating,
       error => error.code == code,

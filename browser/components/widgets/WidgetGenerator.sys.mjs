@@ -58,6 +58,7 @@ export const OUTPUT_DIRECTORY = "widget-generator";
 const MAX_PROMPT_LENGTH = 2000;
 
 const ENDPOINT_PREF = "browser.widgets.generated.endpoint";
+const CUSTOM_ENDPOINT_PREF = "browser.widgets.generated.customEndpoint";
 const API_KEY_PREF = "browser.widgets.generated.apiKey";
 const MODEL_PREF = "browser.widgets.generated.model";
 const MAX_TURNS_PREF = "browser.widgets.generated.maxTurns";
@@ -194,17 +195,21 @@ class _WidgetGenerator {
       );
     }
     this.#throwIfBlocked();
-    let endpoint = Services.prefs.getStringPref(ENDPOINT_PREF, "");
+    let customEndpoint = Services.prefs.getStringPref(CUSTOM_ENDPOINT_PREF, "");
     let connection = {};
     let token = null;
-    if (endpoint) {
+    if (customEndpoint) {
       // A custom connection set from prefs
       connection = {
-        baseURL: endpoint,
+        baseURL: customEndpoint,
         apiKey: Services.prefs.getStringPref(API_KEY_PREF, ""),
       };
     } else {
-      // The default openAIEngine connection using an account token.
+      connection = {
+        baseURL:
+          Services.prefs.getStringPref(ENDPOINT_PREF, "") ||
+          lazy.openAIEngine.endpoint,
+      };
       token = await lazy.AuthProvider.getToken();
       if (!token) {
         throw new WidgetGeneratorError(
@@ -356,7 +361,7 @@ class _WidgetGenerator {
    *
    * @param {object} conversation - the conversation holding the request
    * @param {object} options
-   * @param {?string} options.token - null when the endpoint pref is set
+   * @param {?string} options.token - null when the custom endpoint pref is set
    * @param {AbortSignal} [options.signal] - aborting it ends the request
    * @returns {Promise<{finalOutput: string, toolCalls: object[]}>} the reply
    */
@@ -379,7 +384,7 @@ class _WidgetGenerator {
    *
    * @param {object} conversation - the conversation holding the request
    * @param {object} options
-   * @param {?string} options.token - null when the endpoint pref is set
+   * @param {?string} options.token - null when the custom endpoint pref is set
    * @param {AbortSignal} [options.signal] - aborting it ends the request in
    *   progress
    * @returns {Promise<Map<string, string>>} the files the model wrote, by path

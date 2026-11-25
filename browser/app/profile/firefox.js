@@ -2587,7 +2587,8 @@ pref(
   '{"visibilityPref":"browser.widgets.generated.enabled"}'
 );
 pref("browser.widgets.generated.loglevel", "Warn");
-pref("browser.widgets.generated.endpoint", "");
+pref("browser.widgets.generated.endpoint", "https://mlpa-nonprod-stage-mozilla.freetls.fastly.net/v1");
+pref("browser.widgets.generated.customEndpoint", "");
 pref("browser.widgets.generated.apiKey", "");
 pref("browser.widgets.generated.model", "");
 pref("browser.widgets.generated.maxTurns", 30);
