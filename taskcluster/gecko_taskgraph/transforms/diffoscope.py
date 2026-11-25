@@ -147,7 +147,6 @@ def fill_template(config, tasks):
             },
             "run": {
                 "using": "run-task",
-                "clone-with": "hg",
                 "checkout": task.get("unpack", False),
                 "command": "/builds/worker/bin/get_and_diffoscope{}{}".format(
                     " --unpack" if task.get("unpack") else "",
