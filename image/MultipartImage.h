@@ -67,6 +67,7 @@ class MultipartImage : public ImageWrapper, public IProgressObserver {
   void Init();
 
   void FinishTransition();
+  void DropNextPart();
 
   RefPtr<ProgressTracker> mTracker;
   RefPtr<NextPartObserver> mNextPartObserver;
