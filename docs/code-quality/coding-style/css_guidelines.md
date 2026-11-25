@@ -331,8 +331,11 @@ Not this:
 
 ### Text Direction
 
-Use logical properties, and `:dir()` or `:-moz-locale-dir()` where no logical
-property fits, as the [RTL guidelines](rtl_guidelines.md) describe.
+Use logical properties for the inline axis, and `:dir()` or
+`:-moz-locale-dir()` where no logical property fits, as the
+[RTL guidelines](rtl_guidelines.md) describe. Physical properties are fine
+for the block axis, since Firefox's UI doesn't support vertical writing
+modes.
 
 ## Writing cross-platform CSS
 

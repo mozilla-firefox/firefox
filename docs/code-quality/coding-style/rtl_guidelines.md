@@ -26,6 +26,14 @@ specifically for RTL, it's usually better to use CSS [Logical Properties](https:
 which provide the ability to control layout through logical, rather than
 physical mappings.
 
+Firefox's UI doesn't support vertical writing modes, so only the inline
+axis needs logical properties. Physical block-axis properties, such as
+`width`, `height`, `top`, `bottom`, `margin-top` and `padding-bottom`, are
+fine. Logical block-axis properties are still useful as shorthands when
+the top and bottom values match, as in `padding-block: 4px`, and they read
+more consistently beside inline-axis ones, as in
+`margin-block: 2px; margin-inline-start: 8px`.
+
 ```{eval-rst}
 +---------------------------------------------------------+--------------------------------------------------+
 | Do                                                      | Don't do                                         |
