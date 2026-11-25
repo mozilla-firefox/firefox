@@ -356,12 +356,14 @@ class TSFTextStore final : public TSFTextStoreBase,
 
     ITfCompositionView* GetView() const { return mView; }
 
+    friend auto format_as(const Composition& aComposition) {
+      return fmt::format("{{ mView={}, OffsetAndData<LONG>={} }}",
+                         static_cast<void*>(aComposition.mView),
+                         static_cast<const OffsetAndData<LONG>&>(aComposition));
+    }
     friend std::ostream& operator<<(std::ostream& aStream,
                                     const Composition& aComposition) {
-      aStream << "{ mView=0x" << aComposition.mView.get()
-              << ", OffsetAndData<LONG>="
-              << static_cast<const OffsetAndData<LONG>&>(aComposition) << " }";
-      return aStream;
+      return aStream << format_as(aComposition);
     }
 
    private:
@@ -870,17 +872,18 @@ class TSFTextStore final : public TSFTextStoreBase,
     Maybe<TSFTextStore::Composition>& Composition() { return mComposition; }
     Maybe<TSFTextStore::Selection>& Selection() { return mSelection; }
 
+    friend auto format_as(const Content& aContent) {
+      return fmt::format(
+          "{{ mText={}, mLastComposition={}, mLatestCompositionRange={}, "
+          "mMinModifiedOffset={} }}",
+          PrintStringDetail(aContent.mText,
+                            PrintStringDetail::kMaxLengthForEditor),
+          aContent.mLastComposition, aContent.mLatestCompositionRange,
+          aContent.mMinModifiedOffset);
+    }
     friend std::ostream& operator<<(std::ostream& aStream,
                                     const Content& aContent) {
-      aStream << "{ mText="
-              << PrintStringDetail(aContent.mText,
-                                   PrintStringDetail::kMaxLengthForEditor)
-                     .get()
-              << ", mLastComposition=" << aContent.mLastComposition
-              << ", mLatestCompositionRange="
-              << aContent.mLatestCompositionRange
-              << ", mMinModifiedOffset=" << aContent.mMinModifiedOffset << " }";
-      return aStream;
+      return aStream << format_as(aContent);
     }
 
    private:

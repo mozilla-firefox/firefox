@@ -1842,23 +1842,21 @@ bool IMMHandler::ConvertToANSIString(const nsString& aStr, UINT aCodePage,
 bool IMMHandler::GetCharacterRectOfSelectedTextAt(
     nsWindow* aWindow, uint32_t aOffset, LayoutDeviceIntRect& aCharRect,
     WritingMode* aWritingMode) {
-  LayoutDeviceIntPoint point(0, 0);
-
   const Maybe<ContentSelection>& contentSelection =
       GetContentSelectionWithQueryIfNothing(aWindow);
-  if (contentSelection.isNothing()) {
-    MOZ_LOG(gIMELog, LogLevel::Error,
-            ("IMMHandler::GetCharacterRectOfSelectedTextAt, FAILED, due to "
-             "Selection::GetContentSelectionWithQueryIfNothing() failure"));
+  if (contentSelection.isNothing()) [[unlikely]] {
+    MOZ_LOG_FMT(gIMELog, LogLevel::Error,
+                "IMMHandler::GetCharacterRectOfSelectedTextAt, FAILED, due to "
+                "Selection::GetContentSelectionWithQueryIfNothing() failure");
     return false;
   }
 
   // If there is neither a selection range nor composition string, cannot return
   // character rect, of course.
-  if (!contentSelection->HasRange() && !mIsComposing) {
-    MOZ_LOG(gIMELog, LogLevel::Warning,
-            ("IMMHandler::GetCharacterRectOfSelectedTextAt, FAILED, due to "
-             "there is neither a selection range nor composition string"));
+  if (!contentSelection->HasRange() && !mIsComposing) [[unlikely]] {
+    MOZ_LOG_FMT(gIMELog, LogLevel::Warning,
+                "IMMHandler::GetCharacterRectOfSelectedTextAt, FAILED, due to "
+                "there is neither a selection range nor composition string");
     return false;
   }
 
@@ -1869,12 +1867,12 @@ bool IMMHandler::GetCharacterRectOfSelectedTextAt(
   const uint32_t targetLength =
       mIsComposing ? mCompositionString.Length()
                    : contentSelection->OffsetAndDataRef().Length();
-  if (NS_WARN_IF(aOffset > targetLength)) {
-    MOZ_LOG(
+  if (NS_WARN_IF(aOffset > targetLength)) [[unlikely]] {
+    MOZ_LOG_FMT(
         gIMELog, LogLevel::Error,
-        ("IMMHandler::GetCharacterRectOfSelectedTextAt, FAILED, due to "
-         "aOffset is too large (aOffset=%u, targetLength=%u, mIsComposing=%s)",
-         aOffset, targetLength, TrueOrFalse(mIsComposing)));
+        "IMMHandler::GetCharacterRectOfSelectedTextAt, FAILED, due to "
+        "aOffset is too large (aOffset={}, targetLength={}, mIsComposing={})",
+        aOffset, targetLength, mIsComposing);
     return false;
   }
 
@@ -1904,24 +1902,30 @@ bool IMMHandler::GetCharacterRectOfSelectedTextAt(
   // If there is a caret and retrieving offset is same as the caret offset,
   // we should use the caret rect.
   if (aOffset != caretOffset) {
-    WidgetQueryContentEvent queryTextRectEvent(true, eQueryTextRect, aWindow);
+    const RefPtr<TextEventDispatcher> dispatcher =
+        aWindow->GetTextEventDispatcher();
+    if (!dispatcher) [[unlikely]] {
+      MOZ_LOG_FMT(gIMELog, LogLevel::Error,
+                  "IMMHandler::GetCharacterRectOfSelectedTextAt, FAILED, due "
+                  "to no text event dispatcher");
+      return false;
+    }
     QueryContentOptions options;
     options.mRelativeToInsertionPoint = true;
-    queryTextRectEvent.InitForQueryTextRect(aOffset, 1, options);
-    aWindow->InitEvent(queryTextRectEvent, &point);
-    DispatchEvent(aWindow, queryTextRectEvent);
-    if (queryTextRectEvent.Succeeded()) {
-      aCharRect = queryTextRectEvent.mReply->mRect;
+    const Maybe<QueryContentResult> queryTextRectResult =
+        dispatcher->QueryTextRect(aOffset, 1, options);
+    if (queryTextRectResult.isSome()) [[likely]] {
+      aCharRect = queryTextRectResult->mRect;
       if (aWritingMode) {
-        *aWritingMode = queryTextRectEvent.mReply->WritingModeRef();
+        *aWritingMode = queryTextRectResult->WritingModeRef();
       }
-      MOZ_LOG(
+      MOZ_LOG_FMT(
           gIMELog, LogLevel::Debug,
-          ("IMMHandler::GetCharacterRectOfSelectedTextAt, Succeeded, "
-           "aOffset=%u, aCharRect={ x: %d, y: %d, width: %d, height: %d }, "
-           "queryTextRectEvent={ mReply=%s }",
-           aOffset, aCharRect.X(), aCharRect.Y(), aCharRect.Width(),
-           aCharRect.Height(), ToString(queryTextRectEvent.mReply).c_str()));
+          "IMMHandler::GetCharacterRectOfSelectedTextAt, Succeeded, "
+          "aOffset={}, aCharRect={{ x: {}, y: {}, width: {}, height: {} }}, "
+          "queryTextRectResult={}",
+          aOffset, aCharRect.X(), aCharRect.Y(), aCharRect.Width(),
+          aCharRect.Height(), queryTextRectResult);
       return true;
     }
   }
