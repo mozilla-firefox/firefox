@@ -6,6 +6,7 @@ requesttimeoutfactor = 2
 firefox-appdir = "browser"
 skip-if = [
   "os == 'android'",
+  "appname == 'thunderbird'", # Thunderbird doesn't register the generated-widget manifest schema.
   "!nightly_build",
 ]
 
