@@ -141,6 +141,25 @@ static bool CreateBadModuleTypeError(JSContext* aCx,
                      NothingHandleValue, aErrorOut);
 }
 
+static bool HandleFinishLoadingFailure(JSContext* aCx, bool aOk) {
+  if (aOk) {
+    return true;
+  }
+
+  if (JS_IsThrowingOutOfMemory(aCx)) {
+    mozalloc_handle_oom(0);
+  }
+
+  if (JS_IsExceptionPending(aCx)) {
+    // A dead object exception is thrown when a promise reaction becomes a dead
+    // wrapper. The promise has already been settled.
+    JS_ClearPendingException(aCx);
+    return true;
+  }
+
+  return false;
+}
+
 // https://html.spec.whatwg.org/#hostloadimportedmodule
 // static
 bool ModuleLoaderBase::HostLoadImportedModule(
@@ -337,16 +356,29 @@ bool ModuleLoaderBase::FinishLoadingImportedModule(
   // FinishLoadingImportedModule returns false when OOM or
   // RejectPromiseWithPendingError returns false, which means there is no
   // exception pending or the exception is uncatchable.
-  if (!ok && JS_IsThrowingOutOfMemory(aCx)) {
-    mozalloc_handle_oom(0);
-  }
+  ok = HandleFinishLoadingFailure(aCx, ok);
 
   // RejectPromiseWithPendingError has already settled the promise so there is
   // nothing left to do.
-  MOZ_ASSERT(!JS_IsExceptionPending(aCx));
   aRequest->ClearImport();
 
   return ok;
+}
+
+// static
+bool ModuleLoaderBase::FinishLoadingImportedModuleFailed(JSContext* aCx,
+                                                         Handle<Value> aPayload,
+                                                         Handle<Value> aError) {
+  return HandleFinishLoadingFailure(
+      aCx, JS::FinishLoadingImportedModuleFailed(aCx, aPayload, aError));
+}
+
+// static
+bool ModuleLoaderBase::FinishLoadingImportedModuleFailedWithPendingException(
+    JSContext* aCx, Handle<Value> aPayload) {
+  return HandleFinishLoadingFailure(
+      aCx,
+      JS::FinishLoadingImportedModuleFailedWithPendingException(aCx, aPayload));
 }
 
 // static
@@ -1512,6 +1544,8 @@ bool ModuleLoaderBase::OnLoadRequestedModulesRejected(
     return true;
   }
 
+  bool ok = true;
+
   // TODO, Bug 1990416: Align the loading descendants behavior of dynamic import
   if (aRequest->IsDynamicImport()) {
     LOG(
@@ -1523,13 +1557,13 @@ bool ModuleLoaderBase::OnLoadRequestedModulesRejected(
     //   « reason »).
     Rooted<Value> payload(aCx, aRequest->mPayload);
     if (!error.isUndefined()) {
-      FinishLoadingImportedModuleFailed(aCx, payload, error);
+      ok = FinishLoadingImportedModuleFailed(aCx, payload, error);
     } else {
       nsAutoCString url;
       aRequest->URI()->GetSpec(url);
       JS_ReportErrorNumberASCII(aCx, js::GetErrorMessage, nullptr,
                                 JSMSG_DYNAMIC_IMPORT_FAILED, url.get());
-      FinishLoadingImportedModuleFailedWithPendingException(aCx, payload);
+      ok = FinishLoadingImportedModuleFailedWithPendingException(aCx, payload);
     }
     aRequest->SetErroredLoadingImports();
 
@@ -1561,7 +1595,7 @@ bool ModuleLoaderBase::OnLoadRequestedModulesRejected(
 
   // Decrease the reference 'AddRef'ed when converting the hostDefined.
   aRequest->Release();
-  return true;
+  return ok;
 }
 
 bool ModuleLoaderBase::GetImportMapSRI(
