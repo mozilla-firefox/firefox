@@ -13,3 +13,14 @@ def release_level_context(config, task):
             config.graph_config["release-branches"], config.params
         )
     }
+
+
+def source_url(params):
+    """URL of the commit being tested, on the repository the push was made to."""
+    path = "commit" if params["repository_type"] == "git" else "rev"
+    return f"{params['head_repository'].rstrip('/')}/{path}/{params['head_rev']}"
+
+
+@custom_context("source-url")
+def source_url_context(config, task):
+    return {"source_url": source_url(config.params)}

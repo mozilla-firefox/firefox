@@ -20,8 +20,11 @@ task-defaults:
         build_platform: android
         build-type: debug
     task-context:
+        from-custom:
+            - source-url
         from-parameters:
             level: level
+            repository_type: repository_type
         substitution-fields:
             - routes
             - scopes
@@ -158,7 +161,7 @@ task-defaults:
                                       "elements": [
                                         {{
                                           "type": "link",
-                                          "url": "${{task.payload.env.GECKO_BASE_REPOSITORY}}/rev/${{task.payload.env.GECKO_HEAD_REV}}",
+                                          "url": "{source_url}",
                                           "text": "Commit"
                                         }},
                                         {{
@@ -167,7 +170,7 @@ task-defaults:
                                         }},
                                         {{
                                           "type": "emoji",
-                                          "name": "hg"
+                                          "name": "{repository_type}"
                                         }}
                                       ]
                                     }}

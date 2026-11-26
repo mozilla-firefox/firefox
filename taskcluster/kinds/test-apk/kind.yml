@@ -83,8 +83,11 @@ tasks:
                   path: /builds/worker/workspace/obj-build/gradle/build/mobile/android/fenix/app/reports/test-reports.zip
                   type: file
         task-context:
+            from-custom:
+                - source-url
             from-parameters:
                 level: level
+                repository_type: repository_type
             substitution-fields:
                 - routes
                 - scopes
@@ -134,7 +137,7 @@ tasks:
                                 "type": "section",
                                 "text": {{
                                   "type": "mrkdwn",
-                                  "text": "*Source*: <${{task.payload.env.GECKO_HEAD_REPOSITORY}}/rev/${{task.payload.env.GECKO_HEAD_REV}}|Commit> :hg:"
+                                  "text": "*Source*: <{source_url}|Commit> :{repository_type}:"
                                 }}
                               }},
                               {{

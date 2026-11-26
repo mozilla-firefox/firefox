@@ -23,6 +23,8 @@ subsuite = "taskgraph"
 
 ["test_target_tasks.py"]
 
+["test_task_context.py"]
+
 ["test_taskcluster_yml.py"]
 
 ["test_transforms_beetmover_apt.py"]

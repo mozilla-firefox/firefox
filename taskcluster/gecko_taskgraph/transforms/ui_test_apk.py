@@ -11,6 +11,8 @@ import json
 
 from taskgraph.transforms.base import TransformSequence
 
+from gecko_taskgraph.task_context import source_url
+
 transforms = TransformSequence()
 
 
@@ -30,7 +32,7 @@ MAPPING = "/builds/worker/fetches/mapping.txt"
 TEST_LAB_SCRIPT = "taskcluster/scripts/tests/test-lab.py"
 
 
-def _slack_attachments(product_header):
+def _slack_attachments(product_header, commit_url, emoji):
     return json.dumps([
         {
             "color": "#FF0000",
@@ -67,7 +69,7 @@ def _slack_attachments(product_header):
                         },
                         {
                             "type": "mrkdwn",
-                            "text": "*Source:*\n<${task.payload.env.GECKO_BASE_REPOSITORY}/rev/${task.payload.env.GECKO_HEAD_REV}|Commit> :hg:",
+                            "text": f"*Source:*\n<{commit_url}|Commit> :{emoji}:",
                         },
                         {
                             "type": "mrkdwn",
@@ -110,7 +112,9 @@ def build_slack_notification(config, tasks):
 
         extra["notify"] = {
             "slackText": SLACK_TEXT,
-            "slackAttachments": _slack_attachments(header),
+            "slackAttachments": _slack_attachments(
+                header, source_url(config.params), config.params["repository_type"]
+            ),
         }
         yield task
 
