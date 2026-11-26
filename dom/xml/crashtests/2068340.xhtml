@@ -1,0 +1,25 @@
+<html xmlns="http://www.w3.org/1999/xhtml">
+<body>
+<div id="target"><span>old</span></div>
+<script>
+<![CDATA[
+const target = document.getElementById("target");
+let observer = new MutationObserver(() => {});
+observer.observe(target, { childList: true, subtree: true });
+
+class TestElement extends HTMLElement {
+  constructor() {
+    super();
+    observer.disconnect();
+    observer = null;
+    SpecialPowers.forceGC();
+    SpecialPowers.forceCC();
+  }
+}
+customElements.define("test-element", TestElement);
+
+target.innerHTML = "<test-element></test-element><b>after</b>";
+]]>
+</script>
+</body>
+</html>
