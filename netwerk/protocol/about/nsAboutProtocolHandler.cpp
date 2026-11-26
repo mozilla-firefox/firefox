@@ -152,7 +152,7 @@ nsAboutProtocolHandler::NewChannel(nsIURI* uri, nsILoadInfo* aLoadInfo,
 
   MOZ_DIAGNOSTIC_ASSERT(
       safeForUntrustedContent ||
-          (flags & (nsIAboutModule::URI_CAN_LOAD_IN_CHILD |
+          (flags & (nsIAboutModule::URI_IS_ERROR_PAGE |
                     nsIAboutModule::URI_MUST_LOAD_IN_CHILD)) == 0,
       "Only unprivileged content should be loaded in child processes. (Did "
       "you forget to add URI_SAFE_FOR_UNTRUSTED_CONTENT to your about: "
