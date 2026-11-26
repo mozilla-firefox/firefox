@@ -20,10 +20,12 @@
 #include "mozilla/dom/MouseEvent.h"
 #include "mozilla/dom/PageTransitionEvent.h"
 #include "mozilla/dom/Promise-inl.h"
+#include "mozilla/dom/UserActivation.h"
 #include "mozilla/Logging.h"
 #include "mozilla/PresShell.h"
 #include "mozilla/Services.h"
 #include "mozilla/StaticPrefs_ui.h"
+#include "mozilla/TextEvents.h"
 #include "nsCRT.h"
 #include "nsString.h"
 #include "nsPIDOMWindow.h"
@@ -713,6 +715,31 @@ nsFormFillController::Observe(nsISupports* aSubject, const char* aTopic,
   return NS_OK;
 }
 
+// Returns true if the "input" event comes from an edit the user made: it is
+// dispatched while handling user input, or it is a composition or drop edit,
+// whose input events are not dispatched while handling user input.
+static bool IsUserEditorInputEvent(const InternalEditorInputEvent* aEvent) {
+  if (UserActivation::IsHandlingUserInput()) {
+    return true;
+  }
+  if (!aEvent) {
+    return false;
+  }
+  // Composition and drop events are not user interaction events per
+  // UserActivation::IsUserInteractionEvent, but they can only be trusted when
+  // they come from the widget, so the edits they cause are made by the user.
+  switch (aEvent->mInputType) {
+    case EditorInputType::eInsertCompositionText:
+    case EditorInputType::eInsertFromComposition:
+    case EditorInputType::eDeleteByComposition:
+    case EditorInputType::eDeleteCompositionText:
+    case EditorInputType::eInsertFromDrop:
+      return true;
+    default:
+      return false;
+  }
+}
+
 ////////////////////////////////////////////////////////////////////////
 //// nsIDOMEventListener
 
@@ -747,7 +774,8 @@ nsFormFillController::HandleEvent(Event* aEvent) {
     case eKeyDown:
       return KeyDown(aEvent);
     case eEditorInput: {
-      if (!(mAutoCompleteActive || mSuppressOnInput)) {
+      if (!(mAutoCompleteActive || mSuppressOnInput) &&
+          IsUserEditorInputEvent(internalEvent->AsEditorInputEvent())) {
         nsCOMPtr<nsINode> input =
             do_QueryInterface(aEvent->GetComposedTarget());
         if (IsTextControl(input) && IsFocusedInputControlled()) {
