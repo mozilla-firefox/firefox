@@ -1137,6 +1137,9 @@ class DatabaseConnection final : public CachingDatabaseConnection {
   IDBTransaction::Durability mLastDurability;
   bool mInReadTransaction;
   bool mInWriteTransaction;
+  // An implicit SQLite rollback of the whole transaction, or a failed savepoint
+  // rollback, makes the current logical write transaction impossible to commit.
+  bool mWriteTransactionAborted;
 
 #ifdef DEBUG
   uint32_t mDEBUGSavepointCount;
@@ -1150,6 +1153,11 @@ class DatabaseConnection final : public CachingDatabaseConnection {
 
     return mUpdateRefcountFunction;
   }
+
+  // Fails if the logical write transaction can no longer be committed, either
+  // because it was flagged as aborted or because SQLite is no longer inside a
+  // transaction.
+  nsresult EnsureInWriteTransaction();
 
   nsresult BeginWriteTransaction(const IDBTransaction::Durability aDurability);
 
@@ -1919,6 +1927,7 @@ class TransactionDatabaseOperationBase : public DatabaseOperationBase {
   InternalState mInternalState = InternalState::Initial;
   bool mWaitingForContinue = false;
   const bool mTransactionIsAborted;
+  bool mTransactionNeedsAbort = false;
   bool mNotedActiveRequest = false;
 
  protected:
@@ -6844,7 +6853,8 @@ DatabaseConnection::DatabaseConnection(
       mFileManager(std::move(aFileManager)),
       mLastDurability(IDBTransaction::Durability::Default),
       mInReadTransaction(false),
-      mInWriteTransaction(false)
+      mInWriteTransaction(false),
+      mWriteTransactionAborted(false)
 #ifdef DEBUG
       ,
       mDEBUGSavepointCount(0)
@@ -6959,6 +6969,28 @@ nsresult DatabaseConnection::BeginWriteTransaction(
       })));
 
   mInWriteTransaction = true;
+  mWriteTransactionAborted = false;
+
+  return NS_OK;
+}
+
+nsresult DatabaseConnection::EnsureInWriteTransaction() {
+  AssertIsOnConnectionThread();
+  MOZ_ASSERT(HasStorageConnection());
+
+  QM_TRY(OkIf(mInWriteTransaction && !mWriteTransactionAborted),
+         NS_ERROR_DOM_INDEXEDDB_ABORT_ERR);
+
+  // Also check the current state of the transaction, in case it was rolled back
+  // without us noticing it (and thus without mWriteTransactionAborted being set
+  // to true).
+  QM_TRY_INSPECT(const bool inProgress,
+                 MOZ_TO_RESULT_INVOKE_MEMBER(MutableStorageConnection(),
+                                             GetTransactionInProgress),
+                 QM_PROPAGATE,
+                 [this](const auto) { mWriteTransactionAborted = true; });
+  QM_TRY(OkIf(inProgress), NS_ERROR_DOM_INDEXEDDB_ABORT_ERR,
+         [this](const auto) { mWriteTransactionAborted = true; });
 
   return NS_OK;
 }
@@ -7017,6 +7049,8 @@ void DatabaseConnection::FinishWriteTransaction() {
     mUpdateRefcountFunction->Reset();
   }
 
+  mWriteTransactionAborted = false;
+
   QM_WARNONLY_TRY(MOZ_TO_RESULT(ExecuteCachedStatement("BEGIN;"_ns))
                       .andThen([&](const auto) -> Result<Ok, nsresult> {
                         mInReadTransaction = true;
@@ -7028,10 +7062,10 @@ nsresult DatabaseConnection::StartSavepoint() {
   AssertIsOnConnectionThread();
   MOZ_ASSERT(HasStorageConnection());
   MOZ_ASSERT(mUpdateRefcountFunction);
-  MOZ_ASSERT(mInWriteTransaction);
 
   AUTO_PROFILER_LABEL("DatabaseConnection::StartSavepoint", DOM);
 
+  QM_TRY(MOZ_TO_RESULT(EnsureInWriteTransaction()));
   QM_TRY(MOZ_TO_RESULT(ExecuteCachedStatement(SAVEPOINT_CLAUSE)));
 
   mUpdateRefcountFunction->StartSavepoint();
@@ -7079,12 +7113,12 @@ nsresult DatabaseConnection::RollbackSavepoint() {
 
   mUpdateRefcountFunction->RollbackSavepoint();
 
-  QM_TRY_INSPECT(const auto& stmt,
-                 BorrowCachedStatement("ROLLBACK TO "_ns SAVEPOINT_CLAUSE));
-
-  // This may fail if SQLite already rolled back the savepoint so ignore any
-  // errors.
-  (void)stmt->Execute();
+  // If SQLite already rolled back the whole transaction, or cannot roll back
+  // this savepoint, the accumulated file-reference deltas can no longer be
+  // committed. Leave them for the normal transaction-abort cleanup.
+  QM_TRY(
+      MOZ_TO_RESULT(ExecuteCachedStatement("ROLLBACK TO "_ns SAVEPOINT_CLAUSE)),
+      QM_PROPAGATE, [this](const auto) { mWriteTransactionAborted = true; });
 
   return NS_OK;
 }
@@ -17505,6 +17539,11 @@ void TransactionDatabaseOperationBase::RunOnConnectionThread() {
 
         if (NS_FAILED(rv)) {
           SetFailureCode(rv);
+
+          if ((*mTransaction)->GetMode() != IDBTransaction::Mode::ReadOnly &&
+              NS_FAILED(connection->EnsureInWriteTransaction())) {
+            mTransactionNeedsAbort = true;
+          }
         }
       }
     }
@@ -17625,7 +17664,7 @@ void TransactionDatabaseOperationBase::SendPreprocessInfoOrResults(
     SetFailureCodeIfUnset(result.mCode);
 
     // This should definitely release the IPDL reference.
-    if (!SendFailureResult(result)) {
+    if (!SendFailureResult(result) || mTransactionNeedsAbort) {
       // Abort the transaction.
       (*mTransaction)->Abort(result.mCode, /* aForce */ false);
     }
@@ -17831,6 +17870,16 @@ TransactionBase::CommitOp::Run() {
       // May be null if the VersionChangeOp was canceled.
       DatabaseConnection::UpdateRefcountFunction* fileRefcountFunction =
           connection->GetUpdateRefcountFunction();
+
+      // Before writing any commit-time data (refcounts, autoincrement counts),
+      // verify SQLite is still in a transaction. If it implicitly rolled back,
+      // these writes would otherwise persist in autocommit mode: this would
+      // create an inconsistency between what we have in database and what we
+      // have in memory/on disk. In this case, we should abort the whole
+      // IDB transaction.
+      if (NS_SUCCEEDED(mResultCode)) {
+        mResultCode = connection->EnsureInWriteTransaction();
+      }
 
       if (NS_SUCCEEDED(mResultCode)) {
         if (fileRefcountFunction) {
