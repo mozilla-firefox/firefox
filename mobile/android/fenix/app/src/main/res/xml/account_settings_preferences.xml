@@ -14,6 +14,12 @@
             android:key="@string/pref_key_account"
             android:selectable="false" />
 
+        <org.mozilla.fenix.settings.account.AccountErrorPreference
+            android:key="@string/pref_key_account_error_card_auth"
+            android:visible="false"
+            app:allowDividerAbove="false"
+            app:iconSpaceReserved="false" />
+
         <Preference
             android:key="@string/pref_key_sync_manage_account"
             android:title="@string/preferences_manage_account"
@@ -30,6 +36,12 @@
     <PreferenceCategory
         android:layout="@layout/preference_category_padding_top_no_icon_style"
         android:title="@string/preferences_category_sync_controls">
+
+      <org.mozilla.fenix.settings.account.AccountErrorPreference
+        android:key="@string/pref_key_account_error_card_sync"
+        android:visible="false"
+        app:allowDividerAbove="false"
+        app:iconSpaceReserved="false" />
 
       <org.mozilla.fenix.settings.account.AccountSettingsSwitchPreference
         android:defaultValue="false"

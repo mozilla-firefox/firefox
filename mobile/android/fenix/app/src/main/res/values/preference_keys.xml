@@ -62,6 +62,8 @@
     <string name="pref_key_account" translatable="false">pref_key_account</string>
     <string name="pref_key_sign_in_promo" translatable="false">pref_key_sign_in_promo</string>
     <string name="pref_key_account_auth_error" translatable="false">pref_key_account_auth_error</string>
+    <string name="pref_key_account_error_card_sync" translatable="false">pref_key_account_error_card_sync</string>
+    <string name="pref_key_account_error_card_auth" translatable="false">pref_key_account_error_card_auth</string>
     <string name="pref_key_sync_debug" translatable="false">pref_key_sync_debug</string>
     <string name="pref_key_override_fxa_server" translatable="false">pref_key_override_fxa_server</string>
     <string name="pref_key_use_react_fxa" translatable="false">pref_key_use_react_fxa</string>
