@@ -1,0 +1,5 @@
+. "$topsrcdir/browser/config/mozconfigs/linux64/common-opt"
+
+ac_add_options --enable-enterprise
+
+. "$topsrcdir/build/mozconfig.common.override"

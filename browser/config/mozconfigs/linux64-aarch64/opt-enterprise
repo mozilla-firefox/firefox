@@ -1,0 +1,3 @@
+. "$topsrcdir/browser/config/mozconfigs/linux64/opt-enterprise"
+
+ac_add_options --target=aarch64
