@@ -8,6 +8,7 @@
 
 #include "CertVerifier.h"
 #include "CommonSocketControl.h"
+#include "ScopedNSSTypes.h"
 #include "TransportSecurityInfo.h"
 #include "brotli/decode.h"
 #include "brotli/encode.h"
@@ -17,8 +18,10 @@
 #include "mozStorageCID.h"
 #include "mozStorageHelper.h"
 #include "mozilla/ArrayAlgorithm.h"
+#include "mozilla/Atomics.h"
 #include "mozilla/Components.h"
 #include "mozilla/EndianUtils.h"
+#include "mozilla/FunctionRef.h"
 #include "mozilla/Logging.h"
 #include "mozilla/Maybe.h"
 #include "mozilla/OriginAttributes.h"
@@ -49,7 +52,7 @@
 
 #define SSL_TOKENS_CACHE_DB_FILE "ssl_tokens_cache.sqlite"
 
-constexpr int32_t kSSLTokensCacheSchemaVersion = 2;
+constexpr int32_t kSSLTokensCacheSchemaVersion = 3;
 
 // Matches network.cookie.db.flushIntervalMs.
 constexpr uint32_t kDBDeleteFlushDelayMs = 500;
@@ -114,17 +117,34 @@ SessionCacheInfo SessionCacheInfo::Clone() const {
 //   [2: ct_status]
 //   [1: overridable_error]
 //   [1: builtin_root] (0=Nothing, 1=Some(false), 2=Some(true))
-//   [4: server_cert_len][server_cert bytes]
-//   [1: has_succeeded_chain] if 1: [1: count] then for each [4: len][bytes]
-//   [1: has_handshake_certs] if 1: [1: count] then for each [4: len][bytes]
 //
 // Stored compressed with an LE original-size prefix.
+//
+// cert_hashes DB column layout:
+//   [1: has_succeeded_chain] if 1: [1: count] then count x [32: SHA-256]
+//   [1: has_handshake_certs] if 1: [1: count] then count x [32: SHA-256]
+//
+// The server cert is the first handshake cert.
 static constexpr size_t kOriginalLenSize = sizeof(uint32_t);
+static constexpr size_t kCertHashLen = 32;  // SHA-256
 
 // Sanity bounds on the length fields above.
 static constexpr uint32_t kMaxPayloadSize = 256 * 1024;
 static constexpr uint32_t kMaxTokenSize = 256 * 1024;
 static constexpr uint32_t kMaxCertSize = 0xffff;
+// The cert count of a chain is stored in one byte.
+static constexpr size_t kMaxCertsPerChain = 0xFF;
+// Two chains, each [1: present][1: count] then up to 255 hashes.
+static constexpr uint32_t kMaxCertHashesSize =
+    2 * (2 + kMaxCertsPerChain * kCertHashLen);
+
+// The presence marker distinguishes an absent chain from an empty one.
+static constexpr uint8_t kChainAbsent = 0;
+static constexpr uint8_t kChainPresent = 1;
+
+#ifdef ENABLE_TESTS
+static Atomic<uint32_t, Relaxed> sCertRowsLoadedForTest;
+#endif
 
 template <typename T>
 static void AppendLE(nsTArray<uint8_t>& aBuf, T aVal) {
@@ -132,8 +152,52 @@ static void AppendLE(nsTArray<uint8_t>& aBuf, T aVal) {
   aBuf.AppendElements(reinterpret_cast<const uint8_t*>(&le), sizeof(T));
 }
 
-static nsTArray<uint8_t> SerializeRecord(Span<const uint8_t> aToken,
-                                         const SessionCacheInfo& aInfo) {
+static nsDependentCSubstring AsHashKey(Span<const uint8_t> aHash) {
+  return nsDependentCSubstring(reinterpret_cast<const char*>(aHash.Elements()),
+                               aHash.Length());
+}
+
+// Calls aFn on each hash of both chains; stops and returns false as soon as aFn
+// returns false.
+template <typename F>
+static bool ForEachCertHash(const SSLTokensCache::CertHashChain& aSucceeded,
+                            const SSLTokensCache::CertHashChain& aHandshake,
+                            F&& aFn) MOZ_NO_THREAD_SAFETY_ANALYSIS {
+  for (const auto* chain : {&aSucceeded, &aHandshake}) {
+    if (chain->isSome()) {
+      for (const auto& hash : **chain) {
+        if (!aFn(hash)) {
+          return false;
+        }
+      }
+    }
+  }
+  return true;
+}
+
+static void AppendChain(nsTArray<uint8_t>& aBuf,
+                        const SSLTokensCache::CertHashChain& aChain) {
+  if (aChain.isNothing()) {
+    aBuf.AppendElement(kChainAbsent);
+    return;
+  }
+
+  const auto length = aChain->Length();
+  MOZ_RELEASE_ASSERT(length <= kMaxCertsPerChain);
+
+  aBuf.AppendElement(kChainPresent);
+  aBuf.AppendElement(static_cast<uint8_t>(length));
+  for (const auto& hash : *aChain) {
+    MOZ_ASSERT(hash.Length() == kCertHashLen);
+    aBuf.AppendElements(hash);
+  }
+}
+
+static nsTArray<uint8_t> SerializePayload(
+    Span<const uint8_t> aToken, const SessionCacheInfo& aInfo,
+    SSLTokensCache::CertHashChain& aSucceeded,
+    SSLTokensCache::CertHashChain& aHandshake,
+    nsTArray<const nsTArray<uint8_t>*>& aCerts) {
   nsTArray<uint8_t> buf;
   AppendLE(buf, AssertedCast<uint32_t>(aToken.Length()));
   buf.AppendElements(aToken.Elements(), aToken.Length());
@@ -145,24 +209,41 @@ static nsTArray<uint8_t> SerializeRecord(Span<const uint8_t> aToken,
   } else {
     buf.AppendElement(*aInfo.mIsBuiltCertChainRootBuiltInRoot ? 2 : 1);
   }
-  AppendLE(buf, AssertedCast<uint32_t>(aInfo.mServerCertBytes.Length()));
-  buf.AppendElements(aInfo.mServerCertBytes.Elements(),
-                     aInfo.mServerCertBytes.Length());
-  auto appendChain = [&](const Maybe<nsTArray<nsTArray<uint8_t>>>& aChain) {
+
+  const auto hashChain = [&aCerts](
+                             const Maybe<nsTArray<nsTArray<uint8_t>>>& aChain,
+                             SSLTokensCache::CertHashChain& aOut) {
     if (aChain.isNothing()) {
-      buf.AppendElement(0);
-      return;
+      return true;
     }
-    buf.AppendElement(1);
-    MOZ_RELEASE_ASSERT(aChain->Length() <= 0xFF);
-    buf.AppendElement(static_cast<uint8_t>(aChain->Length()));
-    for (const auto& cert : *aChain) {
-      AppendLE(buf, AssertedCast<uint32_t>(cert.Length()));
-      buf.AppendElements(cert.Elements(), cert.Length());
+
+    if (aChain->Length() > kMaxCertsPerChain) {
+      return false;
     }
+
+    aOut.emplace();
+    for (const auto& der : *aChain) {
+      if (der.Length() > kMaxCertSize) {
+        return false;
+      }
+
+      nsTArray<uint8_t> digest;
+      if (NS_FAILED(Digest::DigestBuf(SEC_OID_SHA256, der, digest)) ||
+          digest.Length() != kCertHashLen) {
+        return false;
+      }
+
+      aOut->AppendElement(std::move(digest));
+      aCerts.AppendElement(&der);
+    }
+    return true;
   };
-  appendChain(aInfo.mSucceededCertChainBytes);
-  appendChain(aInfo.mHandshakeCertificatesBytes);
+
+  if (!hashChain(aInfo.mSucceededCertChainBytes, aSucceeded) ||
+      !hashChain(aInfo.mHandshakeCertificatesBytes, aHandshake)) {
+    return {};
+  }
+
   return buf;
 }
 
@@ -196,15 +277,24 @@ static nsTArray<uint8_t> CompressRecord(Span<const uint8_t> aPayload) {
   return result;
 }
 
+static bool ReadOriginalLen(Span<const uint8_t> aCompressed,
+                            uint32_t& aOriginalLen) {
+  if (aCompressed.Length() < kOriginalLenSize) {
+    return false;
+  }
+  aOriginalLen = LittleEndian::readUint32(aCompressed.Elements());
+  if (aOriginalLen > kMaxPayloadSize) {
+    LOG(("SSLTokensCache: implausible payload originalLen %" PRIu32,
+         aOriginalLen));
+    return false;
+  }
+  return true;
+}
+
 // Returns empty array on failure.
 static nsTArray<uint8_t> DecompressRecord(Span<const uint8_t> aCompressed) {
-  if (aCompressed.Length() < kOriginalLenSize) {
-    return {};
-  }
-  uint32_t originalLen = LittleEndian::readUint32(aCompressed.Elements());
-  if (originalLen > kMaxPayloadSize) {
-    LOG(("SSLTokensCache: implausible payload originalLen %" PRIu32,
-         originalLen));
+  uint32_t originalLen = 0;
+  if (!ReadOriginalLen(aCompressed, originalLen)) {
     return {};
   }
   nsTArray<uint8_t> result;
@@ -248,9 +338,85 @@ struct PayloadReader {
   bool AtEnd() const { return pos == buf.Length(); }
 };
 
-static bool DeserializeRecord(Span<const uint8_t> aBuf,
-                              nsTArray<uint8_t>& aToken,
-                              SessionCacheInfo& aInfo) {
+static bool ReadChain(PayloadReader& aReader,
+                      SSLTokensCache::CertHashChain& aChain) {
+  uint8_t presence;
+  if (!aReader.Read(presence)) {
+    return false;
+  }
+
+  if (presence == kChainAbsent) {
+    aChain = Nothing();
+    return true;
+  }
+  if (presence != kChainPresent) {
+    return false;
+  }
+
+  uint8_t count;
+  if (!aReader.Read(count)) {
+    return false;
+  }
+
+  CopyableTArray<SSLTokensCacheCertHash> chain;
+  chain.SetCapacity(count);
+  for (size_t i = 0; i < count; ++i) {
+    SSLTokensCacheCertHash hash;
+    if (!aReader.Bytes(hash, kCertHashLen)) {
+      return false;
+    }
+    chain.AppendElement(std::move(hash));
+  }
+
+  aChain = Some(std::move(chain));
+  return true;
+}
+
+static nsTArray<uint8_t> EncodeCertHashes(
+    const SSLTokensCache::CertHashChain& aSucceeded,
+    const SSLTokensCache::CertHashChain& aHandshake) {
+  nsTArray<uint8_t> buf;
+  if (aHandshake.isNothing()) {
+    return buf;
+  }
+
+  AppendChain(buf, aSucceeded);
+  AppendChain(buf, aHandshake);
+  return buf;
+}
+
+static bool DecodeCertHashes(Span<const uint8_t> aBuf,
+                             SSLTokensCache::CertHashChain& aSucceeded,
+                             SSLTokensCache::CertHashChain& aHandshake) {
+  if (aBuf.IsEmpty()) {
+    return true;
+  }
+
+  PayloadReader r{aBuf};
+  // The hash-based format requires a present handshake chain.
+  return ReadChain(r, aSucceeded) && ReadChain(r, aHandshake) && r.AtEnd() &&
+         aHandshake.isSome();
+}
+
+static size_t DecodedRecordSize(
+    size_t aPayloadLen, const nsTArray<const nsTArray<uint8_t>*>& aCerts) {
+  size_t size = aPayloadLen;
+  for (const auto* der : aCerts) {
+    size += der->Length();
+  }
+  return size;
+}
+
+// Returns the DER for a hash, or nullptr if it's unknown.
+using CertLookup =
+    FunctionRef<const nsTArray<uint8_t>*(const SSLTokensCacheCertHash&)>;
+
+static bool DeserializeRecord(
+    Span<const uint8_t> aBuf,
+    const SSLTokensCache::CertHashChain& aSucceededHashes,
+    const SSLTokensCache::CertHashChain& aHandshakeHashes,
+    CertLookup aLookupCert, nsTArray<uint8_t>& aToken,
+    SessionCacheInfo& aInfo) {
   PayloadReader r{aBuf};
 
   uint32_t tokenLen;
@@ -284,35 +450,38 @@ static bool DeserializeRecord(Span<const uint8_t> aBuf,
     return false;
   }
 
-  uint32_t serverCertLen;
-  if (!r.Read(serverCertLen)) return false;
-  if (serverCertLen > kMaxCertSize) return false;
-  if (!r.Bytes(aInfo.mServerCertBytes, serverCertLen)) return false;
+  if (aHandshakeHashes.isNothing()) {
+    return false;
+  }
 
-  auto readChain = [&](Maybe<nsTArray<nsTArray<uint8_t>>>& aChain) -> bool {
-    uint8_t present;
-    if (!r.Read(present)) return false;
-    if (!present) {
+  MOZ_ASSERT(aBuf.Length() <= kMaxPayloadSize);
+  const auto resolveChain = [&aLookupCert](
+                                const SSLTokensCache::CertHashChain& aHashes,
+                                Maybe<nsTArray<nsTArray<uint8_t>>>& aChain) {
+    if (aHashes.isNothing()) {
       aChain = Nothing();
       return true;
     }
-    uint8_t count;
-    if (!r.Read(count)) return false;
-    nsTArray<nsTArray<uint8_t>> chain;
-    for (uint8_t i = 0; i < count; i++) {
-      uint32_t certLen;
-      if (!r.Read(certLen)) return false;
-      if (certLen > kMaxCertSize) return false;
-      nsTArray<uint8_t> cert;
-      if (!r.Bytes(cert, certLen)) return false;
-      chain.AppendElement(std::move(cert));
+    aChain = Some(nsTArray<nsTArray<uint8_t>>());
+    for (const auto& hash : *aHashes) {
+      const auto* der = aLookupCert(hash);
+      if (!der) {
+        return false;
+      }
+      MOZ_ASSERT(der->Length() <= kMaxCertSize);
+      aChain->AppendElement(der->Clone());
     }
-    aChain = Some(std::move(chain));
     return true;
   };
 
-  if (!readChain(aInfo.mSucceededCertChainBytes)) return false;
-  if (!readChain(aInfo.mHandshakeCertificatesBytes)) return false;
+  if (!resolveChain(aSucceededHashes, aInfo.mSucceededCertChainBytes) ||
+      !resolveChain(aHandshakeHashes, aInfo.mHandshakeCertificatesBytes) ||
+      aInfo.mHandshakeCertificatesBytes->IsEmpty()) {
+    return false;
+  }
+  // The first handshake certificate is the server certificate.
+  aInfo.mServerCertBytes = (*aInfo.mHandshakeCertificatesBytes)[0].Clone();
+
   return r.AtEnd();
 }
 
@@ -369,7 +538,19 @@ SSLTokensCache::TokenCacheRecord::~TokenCacheRecord() {
 }
 
 uint32_t SSLTokensCache::TokenCacheRecord::Size() const {
-  return mKey.Length() + mCompressedPayload.Length();
+  const uint32_t size = mKey.Length() + mCompressedPayload.Length();
+  if (mHandshakeHashes.isNothing()) {
+    return size;
+  }
+
+  // The certs of a shared record are in mCertStore; it holds only their hashes.
+  const size_t hashCount = mHandshakeHashes->Length() +
+                           (mSucceededHashes ? mSucceededHashes->Length() : 0);
+  return size + hashCount * kCertHashLen;
+}
+
+uint32_t SSLTokensCache::CertStoreEntry::Size() const {
+  return kCertHashLen + mDER.Length();
 }
 
 uint32_t SSLTokensCache::TokenCacheEntry::Size() const {
@@ -512,14 +693,76 @@ void SSLTokensCache::ClearCacheLocked() {
   mLoadGeneration++;
   mExpirationArray.Clear();
   mTokenCacheRecords.Clear();
+  MOZ_ASSERT(mCertStore.IsEmpty(), "Records released all their certs");
+  mCertStore.Clear();
   mCacheSize = 0;
   mPendingDBRemovals.Clear();
   mRemovalsBeforeLoad.Clear();
 }
 
+void SSLTokensCache::StoreOrAddRefCertLocked(
+    const SSLTokensCacheCertHash& aHash, Span<const uint8_t> aDER) {
+  sLock.AssertCurrentThreadOwns();
+
+  if (auto entry = mCertStore.Lookup(AsHashKey(aHash))) {
+    ++entry->mRefCount;
+    return;
+  }
+
+  CertStoreEntry newEntry;
+  newEntry.mDER.AppendElements(aDER);
+  newEntry.mRefCount = 1;
+  mCacheSize += newEntry.Size();
+  mCertStore.InsertOrUpdate(AsHashKey(aHash), std::move(newEntry));
+}
+
+bool SSLTokensCache::StoreOrAddRefCertsLocked(
+    const CertHashChain& aSucceededHashes,
+    const CertHashChain& aHandshakeHashes, const CertDERByFingerprint& aCerts) {
+  sLock.AssertCurrentThreadOwns();
+
+  // Check that aCerts contains each hash from aSucceededHashes and
+  // aHandshakeHashes.
+  if (!ForEachCertHash(aSucceededHashes, aHandshakeHashes,
+                       [&aCerts](const SSLTokensCacheCertHash& aHash) {
+                         return aCerts.Contains(AsHashKey(aHash));
+                       })) {
+    return false;
+  }
+
+  // Acquire one reference per hash occurrence, including duplicates.
+  ForEachCertHash(
+      aSucceededHashes, aHandshakeHashes,
+      [this, &aCerts](const SSLTokensCacheCertHash& aHash) MOZ_REQUIRES(sLock) {
+        StoreOrAddRefCertLocked(aHash, aCerts.Lookup(AsHashKey(aHash)).Data());
+        return true;
+      });
+  return true;
+}
+
+void SSLTokensCache::ReleaseCertHashesLocked(
+    const CertHashChain& aSucceededHashes,
+    const CertHashChain& aHandshakeHashes) {
+  sLock.AssertCurrentThreadOwns();
+
+  ForEachCertHash(
+      aSucceededHashes, aHandshakeHashes,
+      [this](const SSLTokensCacheCertHash& aHash) MOZ_REQUIRES(sLock) {
+        auto entry = mCertStore.Lookup(AsHashKey(aHash));
+        MOZ_ASSERT(entry, "Record refers to a cert missing from the store");
+        if (entry) {
+          MOZ_ASSERT(entry->mRefCount > 0);
+          if (--entry->mRefCount == 0) {
+            mCacheSize -= entry->Size();
+            entry.Remove();
+          }
+        }
+        return true;
+      });
+}
+
 void SSLTokensCache::CollectRecordInfosLocked(
-    nsTArray<SSLTokensCacheRecordInfo>& aOut,
-    bool aFilterForPersistence) const {
+    SSLTokensCacheSnapshot& aOut, bool aFilterForPersistence) const {
   sLock.AssertCurrentThreadOwns();
   PRTime now = PR_Now();
   for (const auto& entry : mTokenCacheRecords.Values()) {
@@ -527,19 +770,43 @@ void SSLTokensCache::CollectRecordInfosLocked(
       if (aFilterForPersistence && !ShouldPersist(*rec, now)) {
         continue;
       }
-      auto info = aOut.AppendElement();
+      auto info = aOut.records.AppendElement();
       info->key = rec->mKey;
       info->expirationTime = static_cast<int64_t>(rec->mExpirationTime);
       info->overridableError = rec->mOverridableError;
       info->restored = rec->mRestored;
       info->id = rec->mId;
+      info->succeededHashes = rec->mSucceededHashes;
+      info->handshakeHashes = rec->mHandshakeHashes;
       info->compressedPayload = rec->mCompressedPayload.Clone();
+
+      // A shared record holds only hashes. After the lock is released, the
+      // snapshot's users can't read mCertStore, so the snapshot carries the
+      // DER. Certs are collected per record rather than copied from mCertStore,
+      // so only certs of records that pass aFilterForPersistence are included.
+      ForEachCertHash(
+          rec->mSucceededHashes, rec->mHandshakeHashes,
+          [this, &aOut](const SSLTokensCacheCertHash& aHash)
+              MOZ_REQUIRES(sLock) {
+                const auto key = AsHashKey(aHash);
+                if (aOut.certs.Contains(key)) {
+                  return true;
+                }
+
+                auto storeEntry = mCertStore.Lookup(key);
+                MOZ_ASSERT(storeEntry,
+                           "Record refers to a cert missing from the store");
+                if (storeEntry) {
+                  aOut.certs.InsertOrUpdate(key, storeEntry->mDER.Clone());
+                }
+                return true;
+              });
     }
   }
 }
 
 // static
-void SSLTokensCache::GetAllRecords(nsTArray<SSLTokensCacheRecordInfo>& aOut) {
+void SSLTokensCache::GetAllRecords(SSLTokensCacheSnapshot& aOut) {
   StaticMutexAutoLock lock(sLock);
   if (!gInstance) {
     return;
@@ -548,18 +815,27 @@ void SSLTokensCache::GetAllRecords(nsTArray<SSLTokensCacheRecordInfo>& aOut) {
 }
 
 // static
-bool SSLTokensCache::DecodeCompressedPayload(Span<const uint8_t> aCompressed,
-                                             nsTArray<uint8_t>& aToken,
-                                             SessionCacheInfo& aInfo,
-                                             uint32_t* aDecompressedLength) {
-  nsTArray<uint8_t> payload = DecompressRecord(aCompressed);
+bool SSLTokensCache::DecodeCompressedPayload(
+    const SSLTokensCacheRecordInfo& aRec, const CertDERByFingerprint& aCerts,
+    nsTArray<uint8_t>& aToken, SessionCacheInfo& aInfo,
+    uint32_t* aDecompressedLength) {
+  nsTArray<uint8_t> payload = DecompressRecord(aRec.compressedPayload);
   if (payload.IsEmpty()) {
     return false;
   }
   if (aDecompressedLength) {
     *aDecompressedLength = payload.Length();
   }
-  return DeserializeRecord(payload, aToken, aInfo);
+
+  auto lookupCert =
+      [&aCerts](
+          const SSLTokensCacheCertHash& aHash) -> const nsTArray<uint8_t>* {
+    auto entry = aCerts.Lookup(AsHashKey(aHash));
+    return entry ? &entry.Data() : nullptr;
+  };
+
+  return DeserializeRecord(payload, aRec.succeededHashes, aRec.handshakeHashes,
+                           lookupCert, aToken, aInfo);
 }
 
 // static
@@ -742,38 +1018,59 @@ SSLTokensCache::~SSLTokensCache() { LOG(("SSLTokensCache::~SSLTokensCache")); }
 nsresult SSLTokensCache::CreateSchemaOn(mozIStorageConnection* aConn) {
   nsresult rv = aConn->SetSchemaVersion(kSSLTokensCacheSchemaVersion);
   NS_ENSURE_SUCCESS(rv, rv);
-  return aConn->ExecuteSimpleSQL(
+
+  rv = aConn->ExecuteSimpleSQL(
       nsLiteralCString("CREATE TABLE ssl_tokens ("
                        "key TEXT NOT NULL,"
                        "expiration_time INTEGER NOT NULL,"
                        "overridable_error INTEGER NOT NULL,"
+                       "cert_hashes BLOB,"
                        "payload BLOB NOT NULL);"
                        "CREATE INDEX ssl_tokens_key ON ssl_tokens (key)"));
+  NS_ENSURE_SUCCESS(rv, rv);
+
+  // Store DER bytes once per hash so token records can share certificates.
+  return aConn->ExecuteSimpleSQL(
+      nsLiteralCString("CREATE TABLE ssl_certs ("
+                       "hash BLOB PRIMARY KEY NOT NULL,"
+                       "der BLOB NOT NULL)"));
 }
 
 // static
 nsresult SSLTokensCache::EnsureSchema(mozIStorageConnection* aConn) {
-  bool tableExists = false;
-  nsresult rv = aConn->TableExists("ssl_tokens"_ns, &tableExists);
+  bool tokensExist = false;
+  nsresult rv = aConn->TableExists("ssl_tokens"_ns, &tokensExist);
   NS_ENSURE_SUCCESS(rv, rv);
-  if (!tableExists) {
+
+  bool certsExist = false;
+  rv = aConn->TableExists("ssl_certs"_ns, &certsExist);
+  NS_ENSURE_SUCCESS(rv, rv);
+
+  if (!tokensExist && !certsExist) {
     return CreateSchemaOn(aConn);
   }
 
   // An unreadable version is as good as a wrong one: recreate.
   int32_t dbSchemaVersion = 0;
   rv = aConn->GetSchemaVersion(&dbSchemaVersion);
-  if (NS_SUCCEEDED(rv) && dbSchemaVersion == kSSLTokensCacheSchemaVersion) {
+  if (tokensExist && certsExist && NS_SUCCEEDED(rv) &&
+      dbSchemaVersion == kSSLTokensCacheSchemaVersion) {
     return NS_OK;
   }
 
   mozStorageTransaction transaction(aConn, false);
   rv = transaction.Start();
   NS_ENSURE_SUCCESS(rv, rv);
-  rv = aConn->ExecuteSimpleSQL("DROP TABLE ssl_tokens"_ns);
+
+  rv = aConn->ExecuteSimpleSQL("DROP TABLE IF EXISTS ssl_tokens"_ns);
   NS_ENSURE_SUCCESS(rv, rv);
+
+  rv = aConn->ExecuteSimpleSQL("DROP TABLE IF EXISTS ssl_certs"_ns);
+  NS_ENSURE_SUCCESS(rv, rv);
+
   rv = CreateSchemaOn(aConn);
   NS_ENSURE_SUCCESS(rv, rv);
+
   return transaction.Commit();
 }
 
@@ -781,24 +1078,55 @@ nsresult SSLTokensCache::EnsureSchema(mozIStorageConnection* aConn) {
 nsresult SSLTokensCache::PrepareInsertStatement(
     mozIStorageConnection* aConn, nsCOMPtr<mozIStorageStatement>& aStmtInsert) {
   return aConn->CreateStatement(
-      nsLiteralCString("INSERT INTO ssl_tokens (key, expiration_time, "
-                       "overridable_error, payload) VALUES (:key, "
-                       ":expiration_time, :overridable_error, :payload)"),
+      nsLiteralCString(
+          "INSERT INTO ssl_tokens "
+          "(key, expiration_time, overridable_error, cert_hashes, payload) "
+          "VALUES "
+          "(:key, :expiration_time, :overridable_error, :cert_hashes, "
+          ":payload)"),
       getter_AddRefs(aStmtInsert));
+}
+
+// static
+nsresult SSLTokensCache::DeleteAllRows(mozIStorageConnection* aConn) {
+  nsresult rv = aConn->ExecuteSimpleSQL("DELETE FROM ssl_tokens"_ns);
+  NS_ENSURE_SUCCESS(rv, rv);
+  return aConn->ExecuteSimpleSQL("DELETE FROM ssl_certs"_ns);
 }
 
 // static
 nsresult SSLTokensCache::WriteSnapshotTo(
     mozIStorageConnection* aConn, mozIStorageStatement* aStmtInsert,
-    const nsTArray<SSLTokensCacheRecordInfo>& aSnapshot) {
+    const SSLTokensCacheSnapshot& aSnapshot) {
+  // Replace both tables atomically so records and certificates stay consistent.
   mozStorageTransaction transaction(aConn, false);
   nsresult rv = transaction.Start();
   NS_ENSURE_SUCCESS(rv, rv);
 
-  rv = aConn->ExecuteSimpleSQL("DELETE FROM ssl_tokens"_ns);
+  rv = DeleteAllRows(aConn);
   NS_ENSURE_SUCCESS(rv, rv);
 
-  for (const auto& rec : aSnapshot) {
+  nsCOMPtr<mozIStorageStatement> insertCert;
+  rv = aConn->CreateStatement(
+      "INSERT INTO ssl_certs (hash, der) VALUES (:hash, :der)"_ns,
+      getter_AddRefs(insertCert));
+  NS_ENSURE_SUCCESS(rv, rv);
+
+  // aSnapshot.certs has each cert once, so the hash PRIMARY KEY can't conflict.
+  for (const auto& cert : aSnapshot.certs) {
+    mozStorageStatementScoper scoper(insertCert);
+
+    rv = insertCert->BindUTF8StringAsBlobByName("hash"_ns, cert.GetKey());
+    NS_ENSURE_SUCCESS(rv, rv);
+
+    rv = insertCert->BindBlobArrayByName("der"_ns, cert.GetData());
+    NS_ENSURE_SUCCESS(rv, rv);
+
+    rv = insertCert->Execute();
+    NS_ENSURE_SUCCESS(rv, rv);
+  }
+
+  for (const auto& rec : aSnapshot.records) {
     mozStorageStatementScoper scoper(aStmtInsert);
     rv = aStmtInsert->BindUTF8StringByName("key"_ns, rec.key);
     NS_ENSURE_SUCCESS(rv, rv);
@@ -806,6 +1134,10 @@ nsresult SSLTokensCache::WriteSnapshotTo(
     NS_ENSURE_SUCCESS(rv, rv);
     rv = aStmtInsert->BindInt32ByName("overridable_error"_ns,
                                       rec.overridableError);
+    NS_ENSURE_SUCCESS(rv, rv);
+    const auto certHashes =
+        EncodeCertHashes(rec.succeededHashes, rec.handshakeHashes);
+    rv = aStmtInsert->BindBlobArrayByName("cert_hashes"_ns, certHashes);
     NS_ENSURE_SUCCESS(rv, rv);
     rv = aStmtInsert->BindBlobByName("payload"_ns,
                                      rec.compressedPayload.Elements(),
@@ -818,15 +1150,100 @@ nsresult SSLTokensCache::WriteSnapshotTo(
   return transaction.Commit();
 }
 
+// Reads the cert with aHash from ssl_certs and checks its SHA-256.
+static bool ReadCertFromDB(mozIStorageStatement* aCertStmt,
+                           const SSLTokensCacheCertHash& aHash,
+                           nsTArray<uint8_t>& aOut, bool* aCorrupted) {
+  mozStorageStatementScoper scoper(aCertStmt);
+  if (NS_FAILED(aCertStmt->BindBlobArrayByName("hash"_ns, aHash))) {
+    return false;
+  }
+
+  bool hasResult = false;
+  // missing cert
+  if (NS_FAILED(aCertStmt->ExecuteStep(&hasResult)) || !hasResult) {
+    if (aCorrupted) {
+      *aCorrupted = true;
+    }
+    return false;
+  }
+
+  uint32_t derLen = 0;
+  const uint8_t* der = nullptr;
+  if (NS_FAILED(aCertStmt->GetSharedBlob(0, &derLen, &der))) {
+    if (aCorrupted) {
+      *aCorrupted = true;
+    }
+    return false;
+  }
+  if (derLen > kMaxCertSize) {
+    return false;
+  }
+
+#ifdef ENABLE_TESTS
+  sCertRowsLoadedForTest++;
+#endif
+
+  nsTArray<uint8_t> digest;
+  if (NS_FAILED(Digest::DigestBuf(SEC_OID_SHA256, der, derLen, digest))) {
+    return false;
+  }
+  if (digest != aHash) {
+    if (aCorrupted) {
+      *aCorrupted = true;
+    }
+    return false;
+  }
+
+  // Copy the borrowed blob before the statement is reset.
+  aOut.AppendElements(der, derLen);
+  return true;
+}
+
+bool SSLTokensCache::LoadRecordCerts(mozIStorageStatement* aCertStmt,
+                                     uint32_t aPayloadLen,
+                                     const CertHashChain& aSucceededHashes,
+                                     const CertHashChain& aHandshakeHashes,
+                                     CertDERByFingerprint& aOut,
+                                     bool* aCorrupted) {
+  size_t totalSize = aPayloadLen;
+  return ForEachCertHash(
+      aSucceededHashes, aHandshakeHashes,
+      [&](const SSLTokensCacheCertHash& aHash) {
+        const auto key = AsHashKey(aHash);
+        if (!aOut.Contains(key)) {
+          nsTArray<uint8_t> der;
+          if (!ReadCertFromDB(aCertStmt, aHash, der, aCorrupted)) {
+            return false;
+          }
+          aOut.InsertOrUpdate(key, std::move(der));
+        }
+
+        // Count every occurrence: decoding copies DER bytes into each chain.
+        const size_t length = aOut.Lookup(key).Data().Length();
+        if (length > kMaxPayloadSize - totalSize) {
+          return false;
+        }
+        totalSize += length;
+        return true;
+      });
+}
+
 // static
 uint32_t SSLTokensCache::LoadValidRecordsFrom(mozIStorageConnection* aConn,
                                               uint32_t aLoadGen,
                                               bool* aCorrupted) {
+  nsCOMPtr<mozIStorageStatement> certStmt;
+  nsresult rv =
+      aConn->CreateStatement("SELECT der FROM ssl_certs WHERE hash = :hash"_ns,
+                             getter_AddRefs(certStmt));
+  NS_ENSURE_SUCCESS(rv, 0);
+
   nsCOMPtr<mozIStorageStatement> stmt;
-  nsresult rv = aConn->CreateStatement(
+  rv = aConn->CreateStatement(
       nsLiteralCString("SELECT key, expiration_time, overridable_error, "
-                       "payload FROM ssl_tokens WHERE expiration_time > "
-                       ":now"),
+                       "cert_hashes, payload FROM ssl_tokens WHERE "
+                       "expiration_time > :now"),
       getter_AddRefs(stmt));
   NS_ENSURE_SUCCESS(rv, 0);
 
@@ -838,6 +1255,7 @@ uint32_t SSLTokensCache::LoadValidRecordsFrom(mozIStorageConnection* aConn,
   uint32_t rows = 0;
 #endif
   bool hasResult = false;
+  CertDERByFingerprint certs;
   for (;;) {
     rv = stmt->ExecuteStep(&hasResult);
     if (NS_FAILED(rv)) {
@@ -851,11 +1269,22 @@ uint32_t SSLTokensCache::LoadValidRecordsFrom(mozIStorageConnection* aConn,
       break;
     }
     SSLTokensCacheRecordInfo rec{};
+    uint32_t hashesLen = 0;
+    const uint8_t* hashes = nullptr;
     uint32_t len = 0;
     const uint8_t* blob = nullptr;
     if (NS_FAILED(stmt->GetUTF8String(0, rec.key)) ||
-        NS_FAILED(stmt->GetSharedBlob(3, &len, &blob))) {
+        NS_FAILED(stmt->GetSharedBlob(3, &hashesLen, &hashes)) ||
+        NS_FAILED(stmt->GetSharedBlob(4, &len, &blob))) {
       // Corruption the open check can't see; don't pass off a partial load.
+      if (aCorrupted) {
+        *aCorrupted = true;
+      }
+      continue;
+    }
+    if (hashesLen > kMaxCertHashesSize ||
+        !DecodeCertHashes(Span(hashes, hashesLen), rec.succeededHashes,
+                          rec.handshakeHashes)) {
       if (aCorrupted) {
         *aCorrupted = true;
       }
@@ -864,8 +1293,16 @@ uint32_t SSLTokensCache::LoadValidRecordsFrom(mozIStorageConnection* aConn,
     rec.expirationTime = stmt->AsInt64(1);
     rec.overridableError = static_cast<uint8_t>(stmt->AsInt32(2));
     rec.compressedPayload.AppendElements(blob, len);
+    uint32_t payloadLen = 0;
+    if (!ReadOriginalLen(rec.compressedPayload, payloadLen)) {
+      continue;
+    }
+    if (!LoadRecordCerts(certStmt, payloadLen, rec.succeededHashes,
+                         rec.handshakeHashes, certs, aCorrupted)) {
+      continue;
+    }
     // Loaded from disk, so restored by definition.
-    if (PutFromPersisted(rec, aLoadGen, /* aRestored */ true)) {
+    if (PutFromPersisted(rec, certs, aLoadGen, /* aRestored */ true)) {
       count++;
     }
 #ifdef ENABLE_TESTS
@@ -990,6 +1427,11 @@ nsresult SSLTokensCache::Put(const nsACString& aKey, const uint8_t* aToken,
     if (result.isErr()) return result.unwrapErr();
     handshakeCertificatesBytes.emplace(result.unwrap());
   }
+  if (!handshakeCertificatesBytes ||
+      (*handshakeCertificatesBytes)[0] != certBytes) {
+    LOG(("SSLTokensCache::Put: server cert isn't the first handshake cert"));
+    return NS_ERROR_FAILURE;
+  }
 
   SessionCacheInfo info;
   info.mEVStatus = isEV ? psm::EVStatus::EV : psm::EVStatus::NotEV;
@@ -1000,7 +1442,19 @@ nsresult SSLTokensCache::Put(const nsACString& aKey, const uint8_t* aToken,
   info.mSucceededCertChainBytes = std::move(succeededCertChainBytes);
   info.mHandshakeCertificatesBytes = std::move(handshakeCertificatesBytes);
 
-  nsTArray<uint8_t> payload = SerializeRecord({aToken, aTokenLen}, info);
+  CertHashChain succeededHashes;
+  CertHashChain handshakeHashes;
+  nsTArray<const nsTArray<uint8_t>*> certs;
+  nsTArray<uint8_t> payload = SerializePayload(
+      {aToken, aTokenLen}, info, succeededHashes, handshakeHashes, certs);
+
+  // Apply the size limit to the decoded record, including shared certificate
+  // bytes.
+  if (payload.IsEmpty() ||
+      DecodedRecordSize(payload.Length(), certs) > kMaxPayloadSize) {
+    LOG(("SSLTokensCache::Put: serialization failed or record too large"));
+    return NS_ERROR_FAILURE;
+  }
   nsTArray<uint8_t> compressed = CompressRecord(payload);
   if (compressed.IsEmpty()) {
     LOG(("SSLTokensCache::Put: compression failed"));
@@ -1015,9 +1469,19 @@ nsresult SSLTokensCache::Put(const nsACString& aKey, const uint8_t* aToken,
       return NS_ERROR_NOT_INITIALIZED;
     }
 
+    // certs[i] is the DER of the i-th hash, in ForEachCertHash order.
+    size_t i = 0;
+    ForEachCertHash(
+        succeededHashes, handshakeHashes,
+        [&](const SSLTokensCacheCertHash& aHash) MOZ_REQUIRES(sLock) {
+          gInstance->StoreOrAddRefCertLocked(aHash, *certs[i++]);
+          return true;
+        });
+
     auto rec = MakeRecord(
         aKey, aExpirationTime, static_cast<uint8_t>(overridableErrorCategory),
-        /* aRestored */ false, aPlaintextSecret, std::move(compressed));
+        /* aRestored */ false, aPlaintextSecret, std::move(succeededHashes),
+        std::move(handshakeHashes), std::move(compressed));
     if (StaticPrefs::network_ssl_tokens_cache_persistence() &&
         !aPlaintextSecret && ShouldPersistIgnoringPlaintext(*rec, PR_Now())) {
       mozilla::glean::network::ssl_token_cache_wrapped_not_persisted.Add(1);
@@ -1048,7 +1512,19 @@ nsresult SSLTokensCache::Get(const nsACString& aKey, nsTArray<uint8_t>& aToken,
   while (UniquePtr<TokenCacheRecord> owned =
              gInstance->GetRecordLocked(aKey, aTokenId)) {
     nsTArray<uint8_t> payload = DecompressRecord(owned->mCompressedPayload);
-    if (!payload.IsEmpty() && DeserializeRecord(payload, aToken, aResult)) {
+    // mCertStore keeps these certs until owned is destroyed.
+    auto lookupCert =
+        [](const SSLTokensCacheCertHash& aHash) -> const nsTArray<uint8_t>* {
+      // Called synchronously by DeserializeRecord while sLock is held.
+      MOZ_PUSH_IGNORE_THREAD_SAFETY
+      auto entry = gInstance->mCertStore.Lookup(AsHashKey(aHash));
+      MOZ_POP_THREAD_SAFETY
+      return entry ? &entry->mDER : nullptr;
+    };
+    if (!payload.IsEmpty() &&
+        DeserializeRecord(payload, owned->mSucceededHashes,
+                          owned->mHandshakeHashes, lookupCert, aToken,
+                          aResult)) {
       mozilla::glean::network::ssl_token_cache_hits.Get("hit"_ns).Add(1);
       if (aRestored) {
         *aRestored = owned->mRestored;
@@ -1191,6 +1667,7 @@ void SSLTokensCache::OnRecordDestroyed(TokenCacheRecord* aRec) {
   // Always called from destructors of map entries while sLock is held.
   sLock.AssertCurrentThreadOwns();
   mExpirationArray.RemoveElement(aRec);
+  ReleaseCertHashesLocked(aRec->mSucceededHashes, aRec->mHandshakeHashes);
 }
 
 void SSLTokensCache::EvictIfNecessary() {
@@ -1243,7 +1720,22 @@ size_t SSLTokensCache::SizeOfIncludingThis(
   for (const auto* rec : mExpirationArray) {
     n += mallocSizeOf(rec);
     n += rec->mKey.SizeOfExcludingThisIfUnshared(mallocSizeOf);
+    for (const auto* chain : {&rec->mSucceededHashes, &rec->mHandshakeHashes}) {
+      if (chain->isNothing()) {
+        continue;
+      }
+      n += (*chain)->ShallowSizeOfExcludingThis(mallocSizeOf);
+      for (const auto& hash : **chain) {
+        n += hash.ShallowSizeOfExcludingThis(mallocSizeOf);
+      }
+    }
     n += rec->mCompressedPayload.ShallowSizeOfExcludingThis(mallocSizeOf);
+  }
+
+  n += mCertStore.ShallowSizeOfExcludingThis(mallocSizeOf);
+  for (const auto& entry : mCertStore) {
+    n += entry.GetKey().SizeOfExcludingThisIfUnshared(mallocSizeOf);
+    n += entry.GetData().mDER.ShallowSizeOfExcludingThis(mallocSizeOf);
   }
 
   return n;
@@ -1345,7 +1837,7 @@ void SSLTokensCache::DoWrite(bool aSynchronous) {
 void SSLTokensCache::CollectAndWriteSnapshotIfLoaded() {
   MOZ_ASSERT(!NS_IsMainThread());
   // The serial queue guarantees this runs after any queued OpenAndLoad.
-  nsTArray<SSLTokensCacheRecordInfo> snapshot;
+  SSLTokensCacheSnapshot snapshot;
   bool hadPendingRemovals = false;
   {
     StaticMutexAutoLock lock(sLock);
@@ -1415,20 +1907,23 @@ void SSLTokensCache::OnLoadCompleteNotify(uint32_t aCount) {
 // static
 UniquePtr<SSLTokensCache::TokenCacheRecord> SSLTokensCache::MakeRecord(
     const nsACString& aKey, PRTime aExpirationTime, uint8_t aOverridableError,
-    bool aRestored, bool aPlaintextSecret,
-    nsTArray<uint8_t>&& aCompressedPayload) {
+    bool aRestored, bool aPlaintextSecret, CertHashChain&& aSucceededHashes,
+    CertHashChain&& aHandshakeHashes, nsTArray<uint8_t>&& aCompressedPayload) {
   auto rec = std::make_unique<TokenCacheRecord>();
   rec->mKey = aKey;
   rec->mExpirationTime = aExpirationTime;
   rec->mOverridableError = aOverridableError;
   rec->mRestored = aRestored;
   rec->mPlaintextSecret = aPlaintextSecret;
+  rec->mSucceededHashes = std::move(aSucceededHashes);
+  rec->mHandshakeHashes = std::move(aHandshakeHashes);
   rec->mCompressedPayload = std::move(aCompressedPayload);
   return rec;
 }
 
 // static
 bool SSLTokensCache::PutFromPersisted(const SSLTokensCacheRecordInfo& aRec,
+                                      const CertDERByFingerprint& aCerts,
                                       uint32_t aExpectedGen, bool aRestored) {
   StaticMutexAutoLock lock(sLock);
   if (!gInstance || gInstance->mLoadGeneration != aExpectedGen) {
@@ -1437,10 +1932,15 @@ bool SSLTokensCache::PutFromPersisted(const SSLTokensCacheRecordInfo& aRec,
   if (MatchesAny(gInstance->mRemovalsBeforeLoad, aRec.key)) {
     return false;
   }
-  auto rec =
-      MakeRecord(aRec.key, static_cast<PRTime>(aRec.expirationTime),
-                 aRec.overridableError, aRestored,
-                 /* aPlaintextSecret */ true, aRec.compressedPayload.Clone());
+  if (!gInstance->StoreOrAddRefCertsLocked(aRec.succeededHashes,
+                                           aRec.handshakeHashes, aCerts)) {
+    return false;
+  }
+  auto rec = MakeRecord(
+      aRec.key, static_cast<PRTime>(aRec.expirationTime), aRec.overridableError,
+      aRestored, /* aPlaintextSecret */ true,
+      CertHashChain(aRec.succeededHashes), CertHashChain(aRec.handshakeHashes),
+      aRec.compressedPayload.Clone());
   gInstance->InsertRecordLocked(std::move(rec));
   return true;
 }
@@ -1601,8 +2101,7 @@ uint32_t SSLTokensCache::LoadFromDB(uint32_t aLoadGen) {
 }
 
 // static
-bool SSLTokensCache::WriteSnapshotToDB(
-    nsTArray<SSLTokensCacheRecordInfo>&& aSnapshot) {
+bool SSLTokensCache::WriteSnapshotToDB(SSLTokensCacheSnapshot&& aSnapshot) {
   nsCOMPtr<mozIStorageConnection> conn = OpenActiveDB();
   if (!conn) {
     return false;
@@ -1627,7 +2126,17 @@ void SSLTokensCache::ClearDB() {
     RemoveDBFileAfterFailure();
     return;
   }
-  nsresult rv = conn->ExecuteSimpleSQL("DELETE FROM ssl_tokens"_ns);
+  nsresult rv;
+  {
+    mozStorageTransaction transaction(conn, false);
+    rv = transaction.Start();
+    if (NS_SUCCEEDED(rv)) {
+      rv = DeleteAllRows(conn);
+    }
+    if (NS_SUCCEEDED(rv)) {
+      rv = transaction.Commit();
+    }
+  }
   conn->Close();
   if (NS_WARN_IF(NS_FAILED(rv))) {
     RemoveDBFileAfterFailure();
@@ -1804,7 +2313,7 @@ static already_AddRefed<mozIStorageConnection> OpenTestConnection(
 
 // static
 void SSLTokensCache::TriggerWriteForTest(const nsACString& aPath) {
-  nsTArray<SSLTokensCacheRecordInfo> snapshot;
+  SSLTokensCacheSnapshot snapshot;
   {
     StaticMutexAutoLock lock(sLock);
     if (gInstance) {
@@ -1831,7 +2340,7 @@ void SSLTokensCache::TriggerWriteForTest(const nsACString& aPath) {
 }
 
 // static
-void SSLTokensCache::LoadForTest(const nsACString& aPath) {
+void SSLTokensCache::LoadForTest(const nsACString& aPath, bool* aCorrupted) {
   uint32_t loadGen = 0;
   {
     StaticMutexAutoLock lock(sLock);
@@ -1847,9 +2356,14 @@ void SSLTokensCache::LoadForTest(const nsACString& aPath) {
   bool tableExists = false;
   if (NS_SUCCEEDED(conn->TableExists("ssl_tokens"_ns, &tableExists)) &&
       tableExists) {
-    LoadValidRecordsFrom(conn, loadGen);
+    LoadValidRecordsFrom(conn, loadGen, aCorrupted);
   }
   conn->Close();
+}
+
+// static
+uint32_t SSLTokensCache::CertRowsLoadedForTest() {
+  return sCertRowsLoadedForTest;
 }
 
 // static
@@ -1878,32 +2392,58 @@ void SSLTokensCache::PutForTest(const nsACString& aKey) {
   }
   uint8_t dummyToken[] = {0xDE, 0xAD, 0xBE, 0xEF};
   SessionCacheInfo info;
+  // The cache treats certificate bytes as opaque.
+  info.mServerCertBytes = {0x01, 0x02, 0x03};
+  info.mHandshakeCertificatesBytes.emplace();
+  info.mHandshakeCertificatesBytes->AppendElement(
+      info.mServerCertBytes.Clone());
+
+  CertHashChain succeededHashes;
+  CertHashChain handshakeHashes;
+  nsTArray<const nsTArray<uint8_t>*> certs;
   nsTArray<uint8_t> payload =
-      SerializeRecord({dummyToken, sizeof(dummyToken)}, info);
+      SerializePayload({dummyToken, sizeof(dummyToken)}, info, succeededHashes,
+                       handshakeHashes, certs);
+  if (payload.IsEmpty()) {
+    return;
+  }
   nsTArray<uint8_t> compressed = CompressRecord(payload);
   if (compressed.IsEmpty()) {
     return;
   }
+
+  CertDERByFingerprint certsByFingerprint;
+  if (handshakeHashes.isSome()) {
+    certsByFingerprint.InsertOrUpdate(AsHashKey((*handshakeHashes)[0]),
+                                      std::move(info.mServerCertBytes));
+  }
+
   SSLTokensCacheRecordInfo rec{};
   rec.key = aKey;
   rec.expirationTime = PR_Now() + 3600LL * PR_USEC_PER_SEC;
+  rec.handshakeHashes = std::move(handshakeHashes);
   rec.compressedPayload = std::move(compressed);
-  PutFromPersisted(rec, gen, /* aRestored */ false);
+  PutFromPersisted(rec, certsByFingerprint, gen, /* aRestored */ false);
 }
 
 // static
 void SSLTokensCache::ReplaceAllRecordsForTest(
-    nsTArray<SSLTokensCacheRecordInfo>&& aRecords) {
+    SSLTokensCacheSnapshot&& aSnapshot) {
   StaticMutexAutoLock lock(sLock);
   if (!gInstance) {
     return;
   }
   gInstance->ClearCacheLocked();
-  for (auto& info : aRecords) {
-    auto rec = MakeRecord(info.key, static_cast<PRTime>(info.expirationTime),
-                          info.overridableError, info.restored,
-                          /* aPlaintextSecret */ true,
-                          std::move(info.compressedPayload));
+  for (auto& info : aSnapshot.records) {
+    if (!gInstance->StoreOrAddRefCertsLocked(
+            info.succeededHashes, info.handshakeHashes, aSnapshot.certs)) {
+      continue;
+    }
+    auto rec = MakeRecord(
+        info.key, static_cast<PRTime>(info.expirationTime),
+        info.overridableError, info.restored, /* aPlaintextSecret */ true,
+        std::move(info.succeededHashes), std::move(info.handshakeHashes),
+        std::move(info.compressedPayload));
     gInstance->InsertRecordLocked(std::move(rec));
   }
 }

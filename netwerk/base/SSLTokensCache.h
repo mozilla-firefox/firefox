@@ -100,13 +100,17 @@ class SSLTokensCache : public nsIMemoryReporter,
       const nsACString& aSite, const mozilla::OriginAttributesPattern& aPattern)
       MOZ_EXCLUDES(sLock);
 
+  using CertDERByFingerprint = SSLTokensCacheCertDERByFingerprint;
+  using CertHashChain = Maybe<CopyableTArray<SSLTokensCacheCertHash>>;
+
   // Non-consuming snapshot of all current records, for about:networking.
-  static void GetAllRecords(nsTArray<SSLTokensCacheRecordInfo>& aOut);
+  static void GetAllRecords(SSLTokensCacheSnapshot& aOut);
 
   // aDecompressedLength, if non-null, receives the size of the decompressed
   // payload (token + serialized SessionCacheInfo combined), for reporting
   // the compression ratio against the compressed size.
-  static bool DecodeCompressedPayload(mozilla::Span<const uint8_t> aCompressed,
+  static bool DecodeCompressedPayload(const SSLTokensCacheRecordInfo& aRec,
+                                      const CertDERByFingerprint& aCerts,
                                       nsTArray<uint8_t>& aToken,
                                       SessionCacheInfo& aInfo,
                                       uint32_t* aDecompressedLength = nullptr);
@@ -114,12 +118,12 @@ class SSLTokensCache : public nsIMemoryReporter,
 #ifdef ENABLE_TESTS
   // Test-only helpers.
   static void TriggerWriteForTest(const nsACString& aPath);
-  static void LoadForTest(const nsACString& aPath);
+  static void LoadForTest(const nsACString& aPath, bool* aCorrupted = nullptr);
   static uint32_t CountForTest();
+  static uint32_t CertRowsLoadedForTest();
   static void PutForTest(const nsACString& aKey);
   static uint32_t CacheSizeForTest();
-  static void ReplaceAllRecordsForTest(
-      nsTArray<SSLTokensCacheRecordInfo>&& aRecords);
+  static void ReplaceAllRecordsForTest(SSLTokensCacheSnapshot&& aSnapshot);
   static void HoldLoadForTest(bool aHold);
   static void PauseLoadAfterRowsForTest(uint32_t aRows);
   static void FailDBOpensForTest(uint32_t aCount);
@@ -214,12 +218,13 @@ class SSLTokensCache : public nsIMemoryReporter,
   // Builds a TokenCacheRecord from its raw persisted fields.
   static UniquePtr<TokenCacheRecord> MakeRecord(
       const nsACString& aKey, PRTime aExpirationTime, uint8_t aOverridableError,
-      bool aRestored, bool aPlaintextSecret,
-      nsTArray<uint8_t>&& aCompressedPayload);
+      bool aRestored, bool aPlaintextSecret, CertHashChain&& aSucceededHashes,
+      CertHashChain&& aHandshakeHashes, nsTArray<uint8_t>&& aCompressedPayload);
 
   // Skips insertion, returning false, if Clear() bumped mLoadGeneration past
-  // aExpectedGen since the load started.
+  // aExpectedGen since the load started, or if a cert can't be resolved.
   static bool PutFromPersisted(const SSLTokensCacheRecordInfo& aRec,
+                               const CertDERByFingerprint& aCerts,
                                uint32_t aExpectedGen, bool aRestored);
 
   // False once persistence is off, so a task queued earlier can't recreate
@@ -235,7 +240,7 @@ class SSLTokensCache : public nsIMemoryReporter,
   // IsPersistenceStillActive + OpenDB; caller must Close() the result.
   static already_AddRefed<mozIStorageConnection> OpenActiveDB();
   static uint32_t LoadFromDB(uint32_t aLoadGen);
-  static bool WriteSnapshotToDB(nsTArray<SSLTokensCacheRecordInfo>&& aSnapshot);
+  static bool WriteSnapshotToDB(SSLTokensCacheSnapshot&& aSnapshot);
   // Writes a snapshot, but only once the startup load has completed. If it
   // fails with pending removals, the DB is removed.
   static void CollectAndWriteSnapshotIfLoaded();
@@ -263,14 +268,25 @@ class SSLTokensCache : public nsIMemoryReporter,
   static nsresult PrepareInsertStatement(
       mozIStorageConnection* aConn,
       nsCOMPtr<mozIStorageStatement>& aStmtInsert);
-  static nsresult WriteSnapshotTo(
-      mozIStorageConnection* aConn, mozIStorageStatement* aStmtInsert,
-      const nsTArray<SSLTokensCacheRecordInfo>& aSnapshot);
-  // aCorrupted is set if a row fails to read, i.e. corruption found after a
-  // successful open; OpenDB already handles corruption at open time.
+  static nsresult DeleteAllRows(mozIStorageConnection* aConn);
+  static nsresult WriteSnapshotTo(mozIStorageConnection* aConn,
+                                  mozIStorageStatement* aStmtInsert,
+                                  const SSLTokensCacheSnapshot& aSnapshot);
+  // aCorrupted is set if a row fails to read or the certificates it references
+  // are missing, unreadable or don't match their hashes. OpenDB handles
+  // corruption found at open time.
   static uint32_t LoadValidRecordsFrom(mozIStorageConnection* aConn,
                                        uint32_t aLoadGen,
                                        bool* aCorrupted = nullptr);
+  // Loads the certs of both chains from the ssl_certs table into aOut and
+  // verifies that each cert's SHA-256 matches the hash referring to it.
+  // Returns false if a cert is missing or doesn't match, or if aPayloadLen plus
+  // the chains' total DER size exceeds kMaxPayloadSize.
+  static bool LoadRecordCerts(mozIStorageStatement* aCertStmt,
+                              uint32_t aPayloadLen,
+                              const CertHashChain& aSucceededHashes,
+                              const CertHashChain& aHandshakeHashes,
+                              CertDERByFingerprint& aOut, bool* aCorrupted);
 
   static nsDependentCSubstring BasePartFromKey(const nsACString& aKey);
   static nsDependentCSubstring HostFromBasePart(
@@ -282,8 +298,22 @@ class SSLTokensCache : public nsIMemoryReporter,
 
   // Snapshot owning its key and payload bytes, so it can cross threads and
   // processes. aFilterForPersistence applies ShouldPersist.
-  void CollectRecordInfosLocked(nsTArray<SSLTokensCacheRecordInfo>& aOut,
+  void CollectRecordInfosLocked(SSLTokensCacheSnapshot& aOut,
                                 bool aFilterForPersistence) const
+      MOZ_REQUIRES(sLock);
+
+  // If mCertStore has no cert for aHash, stores aDER; otherwise increments
+  // that cert's refcount.
+  void StoreOrAddRefCertLocked(const SSLTokensCacheCertHash& aHash,
+                               Span<const uint8_t> aDER) MOZ_REQUIRES(sLock);
+  // Returns false, taking none, if any cert is missing from aCerts.
+  bool StoreOrAddRefCertsLocked(const CertHashChain& aSucceededHashes,
+                                const CertHashChain& aHandshakeHashes,
+                                const CertDERByFingerprint& aCerts)
+      MOZ_REQUIRES(sLock);
+  // Decrements the refcount of each cert; removes a cert when it reaches 0.
+  void ReleaseCertHashesLocked(const CertHashChain& aSucceededHashes,
+                               const CertHashChain& aHandshakeHashes)
       MOZ_REQUIRES(sLock);
   // Removes entries matching aPredicate.
   template <typename Pred>
@@ -302,6 +332,8 @@ class SSLTokensCache : public nsIMemoryReporter,
 
     nsCString mKey;
     PRTime mExpirationTime = 0;
+    CertHashChain mSucceededHashes;
+    CertHashChain mHandshakeHashes;
     // Compressed (token || serialized SessionCacheInfo). Storing them together
     // lets the compressor find redundancies across the NSS token and the cert
     // chain fields (both carry the same cert DER).
@@ -345,6 +377,15 @@ class SSLTokensCache : public nsIMemoryReporter,
   nsClassHashtable<nsCStringHashKey, TokenCacheEntry> mTokenCacheRecords
       MOZ_GUARDED_BY(sLock);
   nsTArray<TokenCacheRecord*> mExpirationArray MOZ_GUARDED_BY(sLock);
+
+  struct CertStoreEntry {
+    uint32_t Size() const;
+
+    nsTArray<uint8_t> mDER;
+    uint32_t mRefCount = 0;
+  };
+  // Certs of all records, each stored once and keyed by SHA-256 hash.
+  nsTHashMap<nsCStringHashKey, CertStoreEntry> mCertStore MOZ_GUARDED_BY(sLock);
 };
 
 // Scriptable entry point (@mozilla.org/network/ssl-tokens-cache;1) for

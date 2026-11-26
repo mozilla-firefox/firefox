@@ -130,7 +130,7 @@ class SSLTokensCacheData : public nsISupports {
 
   SSLTokensCacheData() = default;
 
-  nsTArray<SSLTokensCacheRecordInfo> mData;
+  SSLTokensCacheSnapshot mData;
   nsMainThreadPtrHandle<nsINetDashboardCallback> mCallback;
   nsIEventTarget* mEventTarget{nullptr};
 };
@@ -1317,12 +1317,12 @@ nsresult Dashboard::GetSSLTokensCache(SSLTokensCacheData* aData) {
   dict.mEntries.Construct();
   Sequence<mozilla::dom::SSLTokensCacheElement>& entries =
       dict.mEntries.Value();
-  if (!entries.SetCapacity(data->mData.Length(), fallible)) {
+  if (!entries.SetCapacity(data->mData.records.Length(), fallible)) {
     JS_ReportOutOfMemory(cx);
     return NS_ERROR_OUT_OF_MEMORY;
   }
 
-  for (const auto& rec : data->mData) {
+  for (const auto& rec : data->mData.records) {
     mozilla::dom::SSLTokensCacheElement* entry =
         entries.AppendElement(fallible);
     if (!entry) {
@@ -1341,7 +1341,7 @@ nsresult Dashboard::GetSSLTokensCache(SSLTokensCacheData* aData) {
     nsTArray<uint8_t> token;
     SessionCacheInfo info;
     uint32_t decompressedLength = 0;
-    if (!SSLTokensCache::DecodeCompressedPayload(rec.compressedPayload, token,
+    if (!SSLTokensCache::DecodeCompressedPayload(rec, data->mData.certs, token,
                                                  info, &decompressedLength)) {
       continue;
     }

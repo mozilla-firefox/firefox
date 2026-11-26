@@ -39,13 +39,16 @@ function seedCacheRows(aKeys) {
   let conn = Services.storage.openUnsharedDatabase(getCacheFile());
   try {
     if (!conn.tableExists("ssl_tokens")) {
-      conn.schemaVersion = 2;
+      conn.schemaVersion = 3;
       conn.executeSimpleSQL(
         "CREATE TABLE ssl_tokens (key TEXT NOT NULL," +
           "expiration_time INTEGER NOT NULL," +
           "overridable_error INTEGER NOT NULL," +
+          "cert_hashes BLOB," +
           "payload BLOB NOT NULL);" +
-          "CREATE INDEX ssl_tokens_key ON ssl_tokens (key)"
+          "CREATE INDEX ssl_tokens_key ON ssl_tokens (key);" +
+          "CREATE TABLE ssl_certs (hash BLOB PRIMARY KEY NOT NULL," +
+          "der BLOB NOT NULL)"
       );
     }
     let stmt = conn.createStatement(
@@ -56,7 +59,10 @@ function seedCacheRows(aKeys) {
       for (let key of aKeys) {
         stmt.bindByName("key", key);
         stmt.bindByName("expiration_time", (Date.now() + 3600 * 1000) * 1000);
-        stmt.bindBlobByName("payload", [0xde, 0xad, 0xbe, 0xef]);
+        // A payload starts with its uncompressed size as a 4-byte
+        // little-endian integer, which the load checks against the size limit.
+        // The load never decompresses, so the bytes after it can be anything.
+        stmt.bindBlobByName("payload", [4, 0, 0, 0, 0xde, 0xad, 0xbe, 0xef]);
         stmt.execute();
       }
     } finally {

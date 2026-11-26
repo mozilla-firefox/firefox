@@ -7,9 +7,11 @@
 
 #include "ipc/IPCMessageUtils.h"
 #include "ipc/IPCMessageUtilsSpecializations.h"
+#include "mozilla/Maybe.h"
 #include "nsHttp.h"
 #include "nsString.h"
 #include "nsTArray.h"
+#include "nsTHashMap.h"
 
 namespace mozilla {
 namespace net {
@@ -98,13 +100,35 @@ struct Http3ConnectionStatsParams {
   CopyableTArray<Http3ConnStats> stats;
 };
 
+using SSLTokensCacheCertHash = CopyableTArray<uint8_t>;  // SHA-256
+// Maps a cert's SHA-256 fingerprint to its DER.
+using SSLTokensCacheCertDERByFingerprint =
+    nsTHashMap<nsCStringHashKey, nsTArray<uint8_t>>;
+
 struct SSLTokensCacheRecordInfo {
   nsCString key;
   int64_t expirationTime;
   uint8_t overridableError;
   bool restored;
   uint64_t id;
+  Maybe<CopyableTArray<SSLTokensCacheCertHash>> succeededHashes;
+  Maybe<CopyableTArray<SSLTokensCacheCertHash>> handshakeHashes;
   CopyableTArray<uint8_t> compressedPayload;
+};
+
+// L, I, R: leaf, intermediate and root certs.
+// SSLTokensCacheSnapshot
+// ├─ records: [RecordInfo(a.com #1), RecordInfo(a.com #2), RecordInfo(b.com)]
+// │    each: key, expiration, …,
+// │          succeededHashes = [hash(L), hash(I), hash(R)],
+// │          handshakeHashes = [hash(L), hash(I)],
+// │          compressedPayload = token + ev, ct, overridable, builtin_root
+// └─ certs: {hash(L) → DER(L), hash(I) → DER(I), hash(R) → DER(R)}
+// TODO: Measure whether Brotli compression of records still pays off now that
+// the certificates are stored separately.
+struct SSLTokensCacheSnapshot {
+  CopyableTArray<SSLTokensCacheRecordInfo> records;
+  SSLTokensCacheCertDERByFingerprint certs;
 };
 
 }  // namespace net
