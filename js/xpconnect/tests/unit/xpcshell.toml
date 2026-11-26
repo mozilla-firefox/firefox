@@ -417,6 +417,12 @@ head = "head_watchdog.js"
 
 ["test_xpcomutils.js"]
 
+["test_xpcshell_piped_stdin.js"]
+skip-if = [
+  "os == 'android'",
+  "os == 'win' && msix", # XREExeF is firefox.exe, run with --xpcshell
+]
+
 ["test_xpcwn_instanceof.js"]
 
 ["test_xpcwn_tamperproof.js"]

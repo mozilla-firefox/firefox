@@ -727,7 +727,8 @@ static bool ProcessFile(AutoJSAPI& jsapi, const char* filename, FILE* file,
     }
     ungetc(ch, file);
 
-    JS::UniqueChars filenameUtf8 = JS::EncodeNarrowToUtf8(jsapi.cx(), filename);
+    JS::UniqueChars filenameUtf8 =
+        JS::EncodeNarrowToUtf8(jsapi.cx(), filename ? filename : "-");
     if (!filenameUtf8) {
       return false;
     }
