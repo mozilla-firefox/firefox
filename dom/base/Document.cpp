@@ -126,6 +126,7 @@
 #include "mozilla/StaticPrefs_page_load.h"
 #include "mozilla/StaticPrefs_privacy.h"
 #include "mozilla/StaticPrefs_security.h"
+#include "mozilla/StaticPrefs_svg.h"
 #include "mozilla/StaticPrefs_widget.h"
 #include "mozilla/StaticPresData.h"
 #include "mozilla/StorageAccess.h"
@@ -10605,17 +10606,32 @@ nsIPermissionDelegateHandler* Document::PermDelegateHandler() {
   return GetPermissionDelegateHandler();
 }
 
+bool Document::CanLoadExternalResource(nsIURI* aURI) const {
+  if (!mDisplayDocument) {
+    // If we're not an external resource ourselves, then everything is fair.
+    return true;
+  }
+  if (aURI->SchemeIs("data")) {
+    // data: uris are always fine.
+    return true;
+  }
+  return !StaticPrefs::svg_external_resource_document_only_allow_data_urls();
+}
+
 Document* Document::RequestExternalResource(
     nsIURI* aURI, nsIReferrerInfo* aReferrerInfo, nsINode* aRequestingNode,
     ExternalResourceLoad** aPendingLoad) {
   MOZ_ASSERT(aURI, "Must have a URI");
   MOZ_ASSERT(aRequestingNode, "Must have a node");
   MOZ_ASSERT(aReferrerInfo, "Must have a referrerInfo");
+  if (!CanLoadExternalResource(aURI)) {
+    *aPendingLoad = nullptr;
+    return nullptr;
+  }
   if (const RefPtr<Document> displayDoc = mDisplayDocument) {
     return displayDoc->RequestExternalResource(aURI, aReferrerInfo,
                                                aRequestingNode, aPendingLoad);
   }
-
   return mExternalResourceMap.RequestResource(
       aURI, aReferrerInfo, aRequestingNode, this, aPendingLoad);
 }

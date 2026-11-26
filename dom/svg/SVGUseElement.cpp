@@ -602,18 +602,17 @@ void SVGUseElement::LookupHref() {
   nsCOMPtr<nsIURI> targetURI;
   nsContentUtils::NewURIWithDocumentCharset(getter_AddRefs(targetURI), href,
                                             GetComposedDoc(), baseURI);
-  if (!targetURI) {
+  if (!targetURI || targetURI->SchemeIs("data")) {
+    // Don't allow <use href="data:...">. Using "#ref" inside a data: document
+    // is handled above.
     return;
   }
-
-  // Don't allow <use href="data:...">. Using "#ref" inside a data: document is
-  // handled above.
-  if (targetURI->SchemeIs("data")) {
+  auto* doc = OwnerDoc();
+  if (!doc->CanLoadExternalResource(targetURI)) {
     return;
   }
-
   const nsCOMPtr<nsIReferrerInfo> referrer =
-      OwnerDoc()->ReferrerInfoForInternalCSSAndSVGResources();
+      doc->ReferrerInfoForInternalCSSAndSVGResources();
   mReferencedElementTracker.ResetToURIWithFragmentID(*treeToWatch, targetURI,
                                                      referrer);
 }
