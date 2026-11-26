@@ -680,10 +680,6 @@ export var ReportBrokenSite = new (class ReportBrokenSite {
     const cmd = document.getElementById("cmd_reportBrokenSite");
     const allowedByPolicy = Services.policies.isAllowed("feedbackCommands");
     cmd.toggleAttribute("hidden", !allowedByPolicy);
-    const app = document.documentGlobal.PanelMultiView.getViewNode(
-      document,
-      "appMenu-report-broken-site-button"
-    );
     // Note that this element does not exist until the protections popup is actually opened.
     const prot = document.getElementById(
       "protections-popup-report-broken-site-button"
@@ -696,12 +692,10 @@ export var ReportBrokenSite = new (class ReportBrokenSite {
     }
     if (canReportUrl) {
       cmd.removeAttribute("disabled");
-      app.removeAttribute("disabled");
       prot?.removeAttribute("disabled");
       trustPanelButton?.removeAttribute("disabled");
     } else {
       cmd.setAttribute("disabled", "true");
-      app.setAttribute("disabled", "true");
       prot?.setAttribute("disabled", "true");
       trustPanelButton?.setAttribute("disabled", "true");
     }
@@ -753,6 +747,13 @@ export var ReportBrokenSite = new (class ReportBrokenSite {
           state.reset();
         });
     }
+  }
+
+  handleParentMenuButtonCommand(button) {
+    this.#onReportBrokenSiteHandler({
+      target: button,
+      sourceEvent: { target: button },
+    });
   }
 
   #onURLInputReset(event) {
@@ -1220,7 +1221,8 @@ export var ReportBrokenSite = new (class ReportBrokenSite {
           .getElementById("trustpanel-popup-multiView")
           .showSubView(ReportBrokenSite.MAIN_PANELVIEW_ID, target);
         break;
-      case "appMenu-report-broken-site-button":
+      // Open the "Report Broken Site" menu from the "Help and Report" subview.
+      case "appMenu_help_reportBrokenSite":
         documentGlobal.PanelUI.showSubView(
           ReportBrokenSite.MAIN_PANELVIEW_ID,
           target

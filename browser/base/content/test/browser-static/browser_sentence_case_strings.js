@@ -27,6 +27,7 @@ const PHRASES = new Set([
   "Extensions and Themes",
   "Extensions for Developers",
   "Find in Page…",
+  "Help and Report",
   "Share Ideas and Feedback…",
   "Troubleshoot Mode…",
   "Create a New Profile",
