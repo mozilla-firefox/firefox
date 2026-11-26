@@ -331,13 +331,12 @@ class SpliceableJSONWriter : public JSONWriter, public FailureLatch {
   }
 
   // JSON doesn't support 64bit integers so we encode them as hex strings
-  static std::array<char, 17> HexString(uint64_t aId) {
-    std::array<char, 17> buf = {};
+  static std::array<char, 16> HexString(uint64_t aId) {
+    std::array<char, 16> buf = {};
     static const char* hex_digits = "0123456789abcdef";
     for (int i = 0; i < 16; i++) {
       buf[i] = hex_digits[(aId >> (60 - i * 4)) & 0xf];
     }
-    buf[16] = '0';  // null terminate the string
     return buf;
   }
 
