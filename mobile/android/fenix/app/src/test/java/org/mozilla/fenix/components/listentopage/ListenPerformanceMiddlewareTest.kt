@@ -723,13 +723,6 @@ class ListenPerformanceMiddlewareTest {
     }
 
     @Test
-    fun `WHEN an engine is bound THEN it is recorded`() {
-        processFact(engineBoundFact("com.example.tts"))
-
-        assertEquals("com.example.tts", ListenToPage.ttsEngine.testGetValue())
-    }
-
-    @Test
     fun `WHEN an engine is bound for each session THEN each binding is recorded as an event`() {
         processFact(engineBoundFact("com.example.tts"))
         processFact(engineBoundFact("com.example.other"))

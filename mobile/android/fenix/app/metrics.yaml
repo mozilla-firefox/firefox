@@ -9465,21 +9465,6 @@ listen_to_page:
     notification_emails:
       - android-probes@mozilla.com
     expires: never
-  tts_engine:
-    type: string
-    lifetime: application
-    description: |
-      The package name of the speech engine the last listening session bound,
-      for example com.google.android.tts.
-    bugs:
-      - https://bugzilla.mozilla.org/show_bug.cgi?id=2064878
-    data_reviews:
-      - https://phabricator.services.mozilla.com/D333065
-    data_sensitivity:
-      - technical
-    notification_emails:
-      - android-probes@mozilla.com
-    expires: never
   engine_bound:
     type: event
     description: |

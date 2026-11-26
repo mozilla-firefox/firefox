@@ -320,7 +320,6 @@ class ListenPerformanceMiddleware(
         val packageName = value ?: return
         engine = packageName
         logger.debug("Speech engine bound: $packageName")
-        ListenToPage.ttsEngine.set(packageName)
         ListenToPage.engineBound.record(ListenToPage.EngineBoundExtra(engine = packageName))
     }
 
