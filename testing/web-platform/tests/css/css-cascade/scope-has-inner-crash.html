@@ -1,0 +1,25 @@
+<!DOCTYPE html>
+<html class="test-wait">
+<style>
+.baa {
+  width: 100px;
+  height: 100px;
+  background: red;
+}
+
+@scope(.foo:has(> :is(.bar > .baz, .never))) {
+  .baa {
+    background: green;
+  }
+}
+</style>
+<div id=dut class=foo>
+  <div class=baz></div>
+  <div class=baa></div>
+</div>
+<script>
+document.addEventListener("TestRendered", () => {
+  dut.classList.add("bar");
+  document.documentElement.classList.remove("test-wait");
+});
+</script>
