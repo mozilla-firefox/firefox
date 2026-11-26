@@ -20,8 +20,8 @@
  */
 
 /**
- * pdfjsVersion = 7.0.234
- * pdfjsBuild = 3471ae169
+ * pdfjsVersion = 7.0.241
+ * pdfjsBuild = 808186117
  */
 /******/ var __webpack_modules__ = ({
 
@@ -573,8 +573,8 @@ const TimeFormats = ["HH:MM", "h:MM tt", "HH:MM:ss", "h:MM:ss tt"];
 
 // EXTERNAL MODULE: ./src/core/base_stream.js
 var base_stream = __webpack_require__(1834);
-// EXTERNAL MODULE: ./src/core/bidi.js
-var bidi = __webpack_require__(7092);
+// EXTERNAL MODULE: ./src/core/bidi.js + 1 modules
+var bidi = __webpack_require__(3362);
 // EXTERNAL MODULE: ./src/core/catalog.js + 1 modules
 var catalog = __webpack_require__(6484);
 // EXTERNAL MODULE: ./src/core/editor/pdf_images.js
@@ -4762,17 +4762,99 @@ class BaseStream {
 
 /***/ },
 
-/***/ 7092
+/***/ 3362
 (__unused_webpack___webpack_module__, __webpack_exports__, __webpack_require__) {
 
-/* harmony export */ __webpack_require__.d(__webpack_exports__, {
-/* harmony export */   bidi: () => (/* binding */ bidi)
-/* harmony export */ });
-/* harmony import */ var _shared_util_js__WEBPACK_IMPORTED_MODULE_0__ = __webpack_require__(4292);
 
-const baseTypes = ["BN", "BN", "BN", "BN", "BN", "BN", "BN", "BN", "BN", "S", "B", "S", "WS", "B", "BN", "BN", "BN", "BN", "BN", "BN", "BN", "BN", "BN", "BN", "BN", "BN", "BN", "BN", "B", "B", "B", "S", "WS", "ON", "ON", "ET", "ET", "ET", "ON", "ON", "ON", "ON", "ON", "ES", "CS", "ES", "CS", "CS", "EN", "EN", "EN", "EN", "EN", "EN", "EN", "EN", "EN", "EN", "CS", "ON", "ON", "ON", "ON", "ON", "ON", "L", "L", "L", "L", "L", "L", "L", "L", "L", "L", "L", "L", "L", "L", "L", "L", "L", "L", "L", "L", "L", "L", "L", "L", "L", "L", "ON", "ON", "ON", "ON", "ON", "ON", "L", "L", "L", "L", "L", "L", "L", "L", "L", "L", "L", "L", "L", "L", "L", "L", "L", "L", "L", "L", "L", "L", "L", "L", "L", "L", "ON", "ON", "ON", "ON", "BN", "BN", "BN", "BN", "BN", "BN", "B", "BN", "BN", "BN", "BN", "BN", "BN", "BN", "BN", "BN", "BN", "BN", "BN", "BN", "BN", "BN", "BN", "BN", "BN", "BN", "BN", "BN", "BN", "BN", "BN", "BN", "BN", "CS", "ON", "ET", "ET", "ET", "ET", "ON", "ON", "ON", "ON", "L", "ON", "ON", "BN", "ON", "ON", "ET", "ET", "EN", "EN", "ON", "L", "ON", "ON", "ON", "EN", "L", "ON", "ON", "ON", "ON", "ON", "L", "L", "L", "L", "L", "L", "L", "L", "L", "L", "L", "L", "L", "L", "L", "L", "L", "L", "L", "L", "L", "L", "L", "ON", "L", "L", "L", "L", "L", "L", "L", "L", "L", "L", "L", "L", "L", "L", "L", "L", "L", "L", "L", "L", "L", "L", "L", "L", "L", "L", "L", "L", "L", "L", "L", "ON", "L", "L", "L", "L", "L", "L", "L", "L"];
-const arabicTypes = ["AN", "AN", "AN", "AN", "AN", "AN", "ON", "ON", "AL", "ET", "ET", "AL", "CS", "AL", "ON", "ON", "NSM", "NSM", "NSM", "NSM", "NSM", "NSM", "NSM", "NSM", "NSM", "NSM", "NSM", "AL", "AL", "", "AL", "AL", "AL", "AL", "AL", "AL", "AL", "AL", "AL", "AL", "AL", "AL", "AL", "AL", "AL", "AL", "AL", "AL", "AL", "AL", "AL", "AL", "AL", "AL", "AL", "AL", "AL", "AL", "AL", "AL", "AL", "AL", "AL", "AL", "AL", "AL", "AL", "AL", "AL", "AL", "AL", "AL", "AL", "AL", "AL", "NSM", "NSM", "NSM", "NSM", "NSM", "NSM", "NSM", "NSM", "NSM", "NSM", "NSM", "NSM", "NSM", "NSM", "NSM", "NSM", "NSM", "NSM", "NSM", "NSM", "NSM", "AN", "AN", "AN", "AN", "AN", "AN", "AN", "AN", "AN", "AN", "ET", "AN", "AN", "AL", "AL", "AL", "NSM", "AL", "AL", "AL", "AL", "AL", "AL", "AL", "AL", "AL", "AL", "AL", "AL", "AL", "AL", "AL", "AL", "AL", "AL", "AL", "AL", "AL", "AL", "AL", "AL", "AL", "AL", "AL", "AL", "AL", "AL", "AL", "AL", "AL", "AL", "AL", "AL", "AL", "AL", "AL", "AL", "AL", "AL", "AL", "AL", "AL", "AL", "AL", "AL", "AL", "AL", "AL", "AL", "AL", "AL", "AL", "AL", "AL", "AL", "AL", "AL", "AL", "AL", "AL", "AL", "AL", "AL", "AL", "AL", "AL", "AL", "AL", "AL", "AL", "AL", "AL", "AL", "AL", "AL", "AL", "AL", "AL", "AL", "AL", "AL", "AL", "AL", "AL", "AL", "AL", "AL", "AL", "AL", "AL", "AL", "AL", "AL", "AL", "AL", "AL", "AL", "AL", "NSM", "NSM", "NSM", "NSM", "NSM", "NSM", "NSM", "AN", "ON", "NSM", "NSM", "NSM", "NSM", "NSM", "NSM", "AL", "AL", "NSM", "NSM", "ON", "NSM", "NSM", "NSM", "NSM", "AL", "AL", "EN", "EN", "EN", "EN", "EN", "EN", "EN", "EN", "EN", "EN", "AL", "AL", "AL", "AL", "AL", "AL"];
-const NonSpacingMarkRegExp = /[\p{Mn}\p{Me}]/u;
+// EXPORTS
+__webpack_require__.d(__webpack_exports__, {
+  bidi: () => (/* binding */ bidi),
+  getMirroredChar: () => (/* binding */ getMirroredChar)
+});
+
+;// ./src/core/bidi_tables.js
+const BidiClassRanges = {
+  L: [],
+  BN: [0x0000, 0x0008, 0x000e, 0x001b, 0x007f, 0x0084, 0x0086, 0x009f, 0x00ad, 0x00ad, 0x180e, 0x180e, 0x200b, 0x200d, 0x2060, 0x2065, 0x206a, 0x206f, 0xfdd0, 0xfdef, 0xfeff, 0xfeff, 0xfff0, 0xfff8, 0xfffe, 0xffff, 0x1bca0, 0x1bca3, 0x1d173, 0x1d17a, 0x1fffe, 0x1ffff, 0x2fffe, 0x2ffff, 0x3fffe, 0x3ffff, 0x4fffe, 0x4ffff, 0x5fffe, 0x5ffff, 0x6fffe, 0x6ffff, 0x7fffe, 0x7ffff, 0x8fffe, 0x8ffff, 0x9fffe, 0x9ffff, 0xafffe, 0xaffff, 0xbfffe, 0xbffff, 0xcfffe, 0xcffff, 0xdfffe, 0xe00ff, 0xe01f0, 0xe0fff, 0xefffe, 0xeffff, 0xffffe, 0xfffff, 0x10fffe, 0x10ffff],
+  S: [0x0009, 0x0009, 0x000b, 0x000b, 0x001f, 0x001f],
+  B: [0x000a, 0x000a, 0x000d, 0x000d, 0x001c, 0x001e, 0x0085, 0x0085, 0x2029, 0x2029],
+  WS: [0x000c, 0x000c, 0x0020, 0x0020, 0x1680, 0x1680, 0x2000, 0x200a, 0x2028, 0x2028, 0x205f, 0x205f, 0x3000, 0x3000],
+  ON: [0x0021, 0x0022, 0x0026, 0x002a, 0x003b, 0x0040, 0x005b, 0x0060, 0x007b, 0x007e, 0x00a1, 0x00a1, 0x00a6, 0x00a9, 0x00ab, 0x00ac, 0x00ae, 0x00af, 0x00b4, 0x00b4, 0x00b6, 0x00b8, 0x00bb, 0x00bf, 0x00d7, 0x00d7, 0x00f7, 0x00f7, 0x02b9, 0x02ba, 0x02c2, 0x02cf, 0x02d2, 0x02df, 0x02e5, 0x02ed, 0x02ef, 0x02ff, 0x0374, 0x0375, 0x037e, 0x037e, 0x0384, 0x0385, 0x0387, 0x0387, 0x03f6, 0x03f6, 0x058a, 0x058a, 0x058d, 0x058e, 0x0606, 0x0607, 0x060e, 0x060f, 0x06de, 0x06de, 0x06e9, 0x06e9, 0x07f6, 0x07f9, 0x0bf3, 0x0bf8, 0x0bfa, 0x0bfa, 0x0c78, 0x0c7e, 0x0f3a, 0x0f3d, 0x1390, 0x1399, 0x1400, 0x1400, 0x169b, 0x169c, 0x17f0, 0x17f9, 0x1800, 0x180a, 0x1940, 0x1940, 0x1944, 0x1945, 0x19de, 0x19ff, 0x1fbd, 0x1fbd, 0x1fbf, 0x1fc1, 0x1fcd, 0x1fcf, 0x1fdd, 0x1fdf, 0x1fed, 0x1fef, 0x1ffd, 0x1ffe, 0x2010, 0x2027, 0x2035, 0x2043, 0x2045, 0x205e, 0x207c, 0x207e, 0x208c, 0x208e, 0x2100, 0x2101, 0x2103, 0x2106, 0x2108, 0x2109, 0x2114, 0x2114, 0x2116, 0x2118, 0x211e, 0x2123, 0x2125, 0x2125, 0x2127, 0x2127, 0x2129, 0x2129, 0x213a, 0x213b, 0x2140, 0x2144, 0x214a, 0x214d, 0x2150, 0x215f, 0x2189, 0x218b, 0x2190, 0x2211, 0x2214, 0x2335, 0x237b, 0x2394, 0x2396, 0x2429, 0x2440, 0x244a, 0x2460, 0x2487, 0x24ea, 0x26ab, 0x26ad, 0x27ff, 0x2900, 0x2b73, 0x2b76, 0x2bff, 0x2ce5, 0x2cea, 0x2cf9, 0x2cff, 0x2e00, 0x2e5d, 0x2e80, 0x2e99, 0x2e9b, 0x2ef3, 0x2f00, 0x2fd5, 0x2ff0, 0x2fff, 0x3001, 0x3004, 0x3008, 0x3020, 0x3030, 0x3030, 0x3036, 0x3037, 0x303d, 0x303f, 0x309b, 0x309c, 0x30a0, 0x30a0, 0x30fb, 0x30fb, 0x31c0, 0x31e5, 0x31ef, 0x31ef, 0x321d, 0x321e, 0x3250, 0x325f, 0x327c, 0x327e, 0x32b1, 0x32bf, 0x32cc, 0x32cf, 0x3377, 0x337a, 0x33de, 0x33df, 0x33ff, 0x33ff, 0x4dc0, 0x4dff, 0xa490, 0xa4c6, 0xa60d, 0xa60f, 0xa673, 0xa673, 0xa67e, 0xa67f, 0xa700, 0xa721, 0xa788, 0xa788, 0xa828, 0xa82b, 0xa874, 0xa877, 0xab6a, 0xab6b, 0xfbc3, 0xfbd2, 0xfd3e, 0xfd4f, 0xfd90, 0xfd91, 0xfdc8, 0xfdcf, 0xfdfd, 0xfdff, 0xfe10, 0xfe19, 0xfe30, 0xfe4f, 0xfe51, 0xfe51, 0xfe54, 0xfe54, 0xfe56, 0xfe5e, 0xfe60, 0xfe61, 0xfe64, 0xfe66, 0xfe68, 0xfe68, 0xfe6b, 0xfe6b, 0xff01, 0xff02, 0xff06, 0xff0a, 0xff1b, 0xff20, 0xff3b, 0xff40, 0xff5b, 0xff65, 0xffe2, 0xffe4, 0xffe8, 0xffee, 0xfff9, 0xfffd, 0x10101, 0x10101, 0x10140, 0x1018c, 0x10190, 0x1019c, 0x101a0, 0x101a0, 0x1091f, 0x1091f, 0x10b39, 0x10b3f, 0x10d6e, 0x10d6e, 0x10ed0, 0x10ed8, 0x11052, 0x11065, 0x11660, 0x1166c, 0x11fd5, 0x11fdc, 0x11fe1, 0x11ff1, 0x16fe2, 0x16fe2, 0x1cc00, 0x1ccd5, 0x1ccfa, 0x1ccfc, 0x1cd00, 0x1ceb3, 0x1ceba, 0x1ced0, 0x1cee0, 0x1cef0, 0x1d1e9, 0x1d1ea, 0x1d200, 0x1d241, 0x1d245, 0x1d245, 0x1d300, 0x1d356, 0x1d6c1, 0x1d6c1, 0x1d6db, 0x1d6db, 0x1d6fb, 0x1d6fb, 0x1d715, 0x1d715, 0x1d735, 0x1d735, 0x1d74f, 0x1d74f, 0x1d76f, 0x1d76f, 0x1d789, 0x1d789, 0x1d7a9, 0x1d7a9, 0x1d7c3, 0x1d7c3, 0x1eef0, 0x1eef1, 0x1f000, 0x1f02b, 0x1f030, 0x1f093, 0x1f0a0, 0x1f0ae, 0x1f0b1, 0x1f0bf, 0x1f0c1, 0x1f0cf, 0x1f0d1, 0x1f0f5, 0x1f10b, 0x1f10f, 0x1f12f, 0x1f12f, 0x1f16a, 0x1f16f, 0x1f1ad, 0x1f1ad, 0x1f260, 0x1f265, 0x1f300, 0x1f6d8, 0x1f6dc, 0x1f6ec, 0x1f6f0, 0x1f6fc, 0x1f700, 0x1f7d9, 0x1f7e0, 0x1f7eb, 0x1f7f0, 0x1f7f0, 0x1f800, 0x1f80b, 0x1f810, 0x1f847, 0x1f850, 0x1f859, 0x1f860, 0x1f887, 0x1f890, 0x1f8ad, 0x1f8b0, 0x1f8bb, 0x1f8c0, 0x1f8c1, 0x1f8d0, 0x1f8d8, 0x1f900, 0x1fa57, 0x1fa60, 0x1fa6d, 0x1fa70, 0x1fa7c, 0x1fa80, 0x1fa8a, 0x1fa8e, 0x1fac6, 0x1fac8, 0x1fac8, 0x1facd, 0x1fadc, 0x1fadf, 0x1faea, 0x1faef, 0x1faf8, 0x1fb00, 0x1fb92, 0x1fb94, 0x1fbef, 0x1fbfa, 0x1fbfa],
+  ET: [0x0023, 0x0025, 0x00a2, 0x00a5, 0x00b0, 0x00b1, 0x058f, 0x058f, 0x0609, 0x060a, 0x066a, 0x066a, 0x09f2, 0x09f3, 0x09fb, 0x09fb, 0x0af1, 0x0af1, 0x0bf9, 0x0bf9, 0x0e3f, 0x0e3f, 0x17db, 0x17db, 0x2030, 0x2034, 0x20a0, 0x20cf, 0x212e, 0x212e, 0x2213, 0x2213, 0xa838, 0xa839, 0xfe5f, 0xfe5f, 0xfe69, 0xfe6a, 0xff03, 0xff05, 0xffe0, 0xffe1, 0xffe5, 0xffe6, 0x11fdd, 0x11fe0, 0x1e2ff, 0x1e2ff],
+  ES: [0x002b, 0x002b, 0x002d, 0x002d, 0x207a, 0x207b, 0x208a, 0x208b, 0x2212, 0x2212, 0xfb29, 0xfb29, 0xfe62, 0xfe63, 0xff0b, 0xff0b, 0xff0d, 0xff0d],
+  CS: [0x002c, 0x002c, 0x002e, 0x002f, 0x003a, 0x003a, 0x00a0, 0x00a0, 0x060c, 0x060c, 0x202f, 0x202f, 0x2044, 0x2044, 0xfe50, 0xfe50, 0xfe52, 0xfe52, 0xfe55, 0xfe55, 0xff0c, 0xff0c, 0xff0e, 0xff0f, 0xff1a, 0xff1a],
+  EN: [0x0030, 0x0039, 0x00b2, 0x00b3, 0x00b9, 0x00b9, 0x06f0, 0x06f9, 0x2070, 0x2070, 0x2074, 0x2079, 0x2080, 0x2089, 0x2488, 0x249b, 0xff10, 0xff19, 0x102e1, 0x102fb, 0x1ccf0, 0x1ccf9, 0x1d7ce, 0x1d7ff, 0x1f100, 0x1f10a, 0x1fbf0, 0x1fbf9],
+  NSM: [0x0300, 0x036f, 0x0483, 0x0489, 0x0591, 0x05bd, 0x05bf, 0x05bf, 0x05c1, 0x05c2, 0x05c4, 0x05c5, 0x05c7, 0x05c7, 0x0610, 0x061a, 0x064b, 0x065f, 0x0670, 0x0670, 0x06d6, 0x06dc, 0x06df, 0x06e4, 0x06e7, 0x06e8, 0x06ea, 0x06ed, 0x0711, 0x0711, 0x0730, 0x074a, 0x07a6, 0x07b0, 0x07eb, 0x07f3, 0x07fd, 0x07fd, 0x0816, 0x0819, 0x081b, 0x0823, 0x0825, 0x0827, 0x0829, 0x082d, 0x0859, 0x085b, 0x0897, 0x089f, 0x08ca, 0x08e1, 0x08e3, 0x0902, 0x093a, 0x093a, 0x093c, 0x093c, 0x0941, 0x0948, 0x094d, 0x094d, 0x0951, 0x0957, 0x0962, 0x0963, 0x0981, 0x0981, 0x09bc, 0x09bc, 0x09c1, 0x09c4, 0x09cd, 0x09cd, 0x09e2, 0x09e3, 0x09fe, 0x09fe, 0x0a01, 0x0a02, 0x0a3c, 0x0a3c, 0x0a41, 0x0a42, 0x0a47, 0x0a48, 0x0a4b, 0x0a4d, 0x0a51, 0x0a51, 0x0a70, 0x0a71, 0x0a75, 0x0a75, 0x0a81, 0x0a82, 0x0abc, 0x0abc, 0x0ac1, 0x0ac5, 0x0ac7, 0x0ac8, 0x0acd, 0x0acd, 0x0ae2, 0x0ae3, 0x0afa, 0x0aff, 0x0b01, 0x0b01, 0x0b3c, 0x0b3c, 0x0b3f, 0x0b3f, 0x0b41, 0x0b44, 0x0b4d, 0x0b4d, 0x0b55, 0x0b56, 0x0b62, 0x0b63, 0x0b82, 0x0b82, 0x0bc0, 0x0bc0, 0x0bcd, 0x0bcd, 0x0c00, 0x0c00, 0x0c04, 0x0c04, 0x0c3c, 0x0c3c, 0x0c3e, 0x0c40, 0x0c46, 0x0c48, 0x0c4a, 0x0c4d, 0x0c55, 0x0c56, 0x0c62, 0x0c63, 0x0c81, 0x0c81, 0x0cbc, 0x0cbc, 0x0ccc, 0x0ccd, 0x0ce2, 0x0ce3, 0x0d00, 0x0d01, 0x0d3b, 0x0d3c, 0x0d41, 0x0d44, 0x0d4d, 0x0d4d, 0x0d62, 0x0d63, 0x0d81, 0x0d81, 0x0dca, 0x0dca, 0x0dd2, 0x0dd4, 0x0dd6, 0x0dd6, 0x0e31, 0x0e31, 0x0e34, 0x0e3a, 0x0e47, 0x0e4e, 0x0eb1, 0x0eb1, 0x0eb4, 0x0ebc, 0x0ec8, 0x0ece, 0x0f18, 0x0f19, 0x0f35, 0x0f35, 0x0f37, 0x0f37, 0x0f39, 0x0f39, 0x0f71, 0x0f7e, 0x0f80, 0x0f84, 0x0f86, 0x0f87, 0x0f8d, 0x0f97, 0x0f99, 0x0fbc, 0x0fc6, 0x0fc6, 0x102d, 0x1030, 0x1032, 0x1037, 0x1039, 0x103a, 0x103d, 0x103e, 0x1058, 0x1059, 0x105e, 0x1060, 0x1071, 0x1074, 0x1082, 0x1082, 0x1085, 0x1086, 0x108d, 0x108d, 0x109d, 0x109d, 0x135d, 0x135f, 0x1712, 0x1714, 0x1732, 0x1733, 0x1752, 0x1753, 0x1772, 0x1773, 0x17b4, 0x17b5, 0x17b7, 0x17bd, 0x17c6, 0x17c6, 0x17c9, 0x17d3, 0x17dd, 0x17dd, 0x180b, 0x180d, 0x180f, 0x180f, 0x1885, 0x1886, 0x18a9, 0x18a9, 0x1920, 0x1922, 0x1927, 0x1928, 0x1932, 0x1932, 0x1939, 0x193b, 0x1a17, 0x1a18, 0x1a1b, 0x1a1b, 0x1a56, 0x1a56, 0x1a58, 0x1a5e, 0x1a60, 0x1a60, 0x1a62, 0x1a62, 0x1a65, 0x1a6c, 0x1a73, 0x1a7c, 0x1a7f, 0x1a7f, 0x1ab0, 0x1add, 0x1ae0, 0x1aeb, 0x1b00, 0x1b03, 0x1b34, 0x1b34, 0x1b36, 0x1b3a, 0x1b3c, 0x1b3c, 0x1b42, 0x1b42, 0x1b6b, 0x1b73, 0x1b80, 0x1b81, 0x1ba2, 0x1ba5, 0x1ba8, 0x1ba9, 0x1bab, 0x1bad, 0x1be6, 0x1be6, 0x1be8, 0x1be9, 0x1bed, 0x1bed, 0x1bef, 0x1bf1, 0x1c2c, 0x1c33, 0x1c36, 0x1c37, 0x1cd0, 0x1cd2, 0x1cd4, 0x1ce0, 0x1ce2, 0x1ce8, 0x1ced, 0x1ced, 0x1cf4, 0x1cf4, 0x1cf8, 0x1cf9, 0x1dc0, 0x1dff, 0x20d0, 0x20f0, 0x2cef, 0x2cf1, 0x2d7f, 0x2d7f, 0x2de0, 0x2dff, 0x302a, 0x302d, 0x3099, 0x309a, 0xa66f, 0xa672, 0xa674, 0xa67d, 0xa69e, 0xa69f, 0xa6f0, 0xa6f1, 0xa802, 0xa802, 0xa806, 0xa806, 0xa80b, 0xa80b, 0xa825, 0xa826, 0xa82c, 0xa82c, 0xa8c4, 0xa8c5, 0xa8e0, 0xa8f1, 0xa8ff, 0xa8ff, 0xa926, 0xa92d, 0xa947, 0xa951, 0xa980, 0xa982, 0xa9b3, 0xa9b3, 0xa9b6, 0xa9b9, 0xa9bc, 0xa9bd, 0xa9e5, 0xa9e5, 0xaa29, 0xaa2e, 0xaa31, 0xaa32, 0xaa35, 0xaa36, 0xaa43, 0xaa43, 0xaa4c, 0xaa4c, 0xaa7c, 0xaa7c, 0xaab0, 0xaab0, 0xaab2, 0xaab4, 0xaab7, 0xaab8, 0xaabe, 0xaabf, 0xaac1, 0xaac1, 0xaaec, 0xaaed, 0xaaf6, 0xaaf6, 0xabe5, 0xabe5, 0xabe8, 0xabe8, 0xabed, 0xabed, 0xfb1e, 0xfb1e, 0xfe00, 0xfe0f, 0xfe20, 0xfe2f, 0x101fd, 0x101fd, 0x102e0, 0x102e0, 0x10376, 0x1037a, 0x10a01, 0x10a03, 0x10a05, 0x10a06, 0x10a0c, 0x10a0f, 0x10a38, 0x10a3a, 0x10a3f, 0x10a3f, 0x10ae5, 0x10ae6, 0x10d24, 0x10d27, 0x10d69, 0x10d6d, 0x10eab, 0x10eac, 0x10efa, 0x10eff, 0x10f46, 0x10f50, 0x10f82, 0x10f85, 0x11001, 0x11001, 0x11038, 0x11046, 0x11070, 0x11070, 0x11073, 0x11074, 0x1107f, 0x11081, 0x110b3, 0x110b6, 0x110b9, 0x110ba, 0x110c2, 0x110c2, 0x11100, 0x11102, 0x11127, 0x1112b, 0x1112d, 0x11134, 0x11173, 0x11173, 0x11180, 0x11181, 0x111b6, 0x111be, 0x111c9, 0x111cc, 0x111cf, 0x111cf, 0x1122f, 0x11231, 0x11234, 0x11234, 0x11236, 0x11237, 0x1123e, 0x1123e, 0x11241, 0x11241, 0x112df, 0x112df, 0x112e3, 0x112ea, 0x11300, 0x11301, 0x1133b, 0x1133c, 0x11340, 0x11340, 0x11366, 0x1136c, 0x11370, 0x11374, 0x113bb, 0x113c0, 0x113ce, 0x113ce, 0x113d0, 0x113d0, 0x113d2, 0x113d2, 0x113e1, 0x113e2, 0x11438, 0x1143f, 0x11442, 0x11444, 0x11446, 0x11446, 0x1145e, 0x1145e, 0x114b3, 0x114b8, 0x114ba, 0x114ba, 0x114bf, 0x114c0, 0x114c2, 0x114c3, 0x115b2, 0x115b5, 0x115bc, 0x115bd, 0x115bf, 0x115c0, 0x115dc, 0x115dd, 0x11633, 0x1163a, 0x1163d, 0x1163d, 0x1163f, 0x11640, 0x116ab, 0x116ab, 0x116ad, 0x116ad, 0x116b0, 0x116b5, 0x116b7, 0x116b7, 0x1171d, 0x1171d, 0x1171f, 0x1171f, 0x11722, 0x11725, 0x11727, 0x1172b, 0x1182f, 0x11837, 0x11839, 0x1183a, 0x1193b, 0x1193c, 0x1193e, 0x1193e, 0x11943, 0x11943, 0x119d4, 0x119d7, 0x119da, 0x119db, 0x119e0, 0x119e0, 0x11a01, 0x11a06, 0x11a09, 0x11a0a, 0x11a33, 0x11a38, 0x11a3b, 0x11a3e, 0x11a47, 0x11a47, 0x11a51, 0x11a56, 0x11a59, 0x11a5b, 0x11a8a, 0x11a96, 0x11a98, 0x11a99, 0x11b60, 0x11b60, 0x11b62, 0x11b64, 0x11b66, 0x11b66, 0x11c30, 0x11c36, 0x11c38, 0x11c3d, 0x11c92, 0x11ca7, 0x11caa, 0x11cb0, 0x11cb2, 0x11cb3, 0x11cb5, 0x11cb6, 0x11d31, 0x11d36, 0x11d3a, 0x11d3a, 0x11d3c, 0x11d3d, 0x11d3f, 0x11d45, 0x11d47, 0x11d47, 0x11d90, 0x11d91, 0x11d95, 0x11d95, 0x11d97, 0x11d97, 0x11ef3, 0x11ef4, 0x11f00, 0x11f01, 0x11f36, 0x11f3a, 0x11f40, 0x11f40, 0x11f42, 0x11f42, 0x11f5a, 0x11f5a, 0x13440, 0x13440, 0x13447, 0x13455, 0x1611e, 0x16129, 0x1612d, 0x1612f, 0x16af0, 0x16af4, 0x16b30, 0x16b36, 0x16f4f, 0x16f4f, 0x16f8f, 0x16f92, 0x16fe4, 0x16fe4, 0x1bc9d, 0x1bc9e, 0x1cf00, 0x1cf2d, 0x1cf30, 0x1cf46, 0x1d167, 0x1d169, 0x1d17b, 0x1d182, 0x1d185, 0x1d18b, 0x1d1aa, 0x1d1ad, 0x1d242, 0x1d244, 0x1da00, 0x1da36, 0x1da3b, 0x1da6c, 0x1da75, 0x1da75, 0x1da84, 0x1da84, 0x1da9b, 0x1da9f, 0x1daa1, 0x1daaf, 0x1e000, 0x1e006, 0x1e008, 0x1e018, 0x1e01b, 0x1e021, 0x1e023, 0x1e024, 0x1e026, 0x1e02a, 0x1e08f, 0x1e08f, 0x1e130, 0x1e136, 0x1e2ae, 0x1e2ae, 0x1e2ec, 0x1e2ef, 0x1e4ec, 0x1e4ef, 0x1e5ee, 0x1e5ef, 0x1e6e3, 0x1e6e3, 0x1e6e6, 0x1e6e6, 0x1e6ee, 0x1e6ef, 0x1e6f5, 0x1e6f5, 0x1e8d0, 0x1e8d6, 0x1e944, 0x1e94a, 0xe0100, 0xe01ef],
+  R: [0x0590, 0x0590, 0x05be, 0x05be, 0x05c0, 0x05c0, 0x05c3, 0x05c3, 0x05c6, 0x05c6, 0x05c8, 0x05ff, 0x07c0, 0x07ea, 0x07f4, 0x07f5, 0x07fa, 0x07fc, 0x07fe, 0x0815, 0x081a, 0x081a, 0x0824, 0x0824, 0x0828, 0x0828, 0x082e, 0x0858, 0x085c, 0x085f, 0x200f, 0x200f, 0xfb1d, 0xfb1d, 0xfb1f, 0xfb28, 0xfb2a, 0xfb4f, 0x10800, 0x1091e, 0x10920, 0x10a00, 0x10a04, 0x10a04, 0x10a07, 0x10a0b, 0x10a10, 0x10a37, 0x10a3b, 0x10a3e, 0x10a40, 0x10ae4, 0x10ae7, 0x10b38, 0x10b40, 0x10cff, 0x10d4a, 0x10d68, 0x10d6f, 0x10e5f, 0x10e7f, 0x10eaa, 0x10ead, 0x10ebf, 0x10f00, 0x10f2f, 0x10f70, 0x10f81, 0x10f86, 0x10fff, 0x1e800, 0x1e8cf, 0x1e8d7, 0x1e943, 0x1e94b, 0x1ec6f, 0x1ecc0, 0x1ecff, 0x1ed50, 0x1edff, 0x1ef00, 0x1efff],
+  AN: [0x0600, 0x0605, 0x0660, 0x0669, 0x066b, 0x066c, 0x06dd, 0x06dd, 0x0890, 0x0891, 0x08e2, 0x08e2, 0x10d30, 0x10d39, 0x10d40, 0x10d49, 0x10e60, 0x10e7e],
+  AL: [0x0608, 0x0608, 0x060b, 0x060b, 0x060d, 0x060d, 0x061b, 0x064a, 0x066d, 0x066f, 0x0671, 0x06d5, 0x06e5, 0x06e6, 0x06ee, 0x06ef, 0x06fa, 0x0710, 0x0712, 0x072f, 0x074b, 0x07a5, 0x07b1, 0x07bf, 0x0860, 0x088f, 0x0892, 0x0896, 0x08a0, 0x08c9, 0xfb50, 0xfbc2, 0xfbd3, 0xfd3d, 0xfd50, 0xfd8f, 0xfd92, 0xfdc7, 0xfdf0, 0xfdfc, 0xfe70, 0xfefe, 0x10d00, 0x10d23, 0x10d28, 0x10d2f, 0x10d3a, 0x10d3f, 0x10ec0, 0x10ecf, 0x10ed9, 0x10ef9, 0x10f30, 0x10f45, 0x10f51, 0x10f6f, 0x1ec70, 0x1ecbf, 0x1ed00, 0x1ed4f, 0x1ee00, 0x1eeef, 0x1eef2, 0x1eeff],
+  LRE: [0x202a, 0x202a],
+  RLE: [0x202b, 0x202b],
+  PDF: [0x202c, 0x202c],
+  LRO: [0x202d, 0x202d],
+  RLO: [0x202e, 0x202e],
+  LRI: [0x2066, 0x2066],
+  RLI: [0x2067, 0x2067],
+  FSI: [0x2068, 0x2068],
+  PDI: [0x2069, 0x2069]
+};
+const BidiMirroringPairs = [0x0028, 0x0029, 0x003c, 0x003e, 0x005b, 0x005d, 0x007b, 0x007d, 0x00ab, 0x00bb, 0x0f3a, 0x0f3b, 0x0f3c, 0x0f3d, 0x169b, 0x169c, 0x2039, 0x203a, 0x2045, 0x2046, 0x207d, 0x207e, 0x208d, 0x208e, 0x2208, 0x220b, 0x2209, 0x220c, 0x220a, 0x220d, 0x2215, 0x29f5, 0x221f, 0x2bfe, 0x2220, 0x29a3, 0x2221, 0x299b, 0x2222, 0x29a0, 0x2224, 0x2aee, 0x223c, 0x223d, 0x2243, 0x22cd, 0x2245, 0x224c, 0x2252, 0x2253, 0x2254, 0x2255, 0x2264, 0x2265, 0x2266, 0x2267, 0x2268, 0x2269, 0x226a, 0x226b, 0x226e, 0x226f, 0x2270, 0x2271, 0x2272, 0x2273, 0x2274, 0x2275, 0x2276, 0x2277, 0x2278, 0x2279, 0x227a, 0x227b, 0x227c, 0x227d, 0x227e, 0x227f, 0x2280, 0x2281, 0x2282, 0x2283, 0x2284, 0x2285, 0x2286, 0x2287, 0x2288, 0x2289, 0x228a, 0x228b, 0x228f, 0x2290, 0x2291, 0x2292, 0x2298, 0x29b8, 0x22a2, 0x22a3, 0x22a6, 0x2ade, 0x22a8, 0x2ae4, 0x22a9, 0x2ae3, 0x22ab, 0x2ae5, 0x22b0, 0x22b1, 0x22b2, 0x22b3, 0x22b4, 0x22b5, 0x22b6, 0x22b7, 0x22b8, 0x27dc, 0x22c9, 0x22ca, 0x22cb, 0x22cc, 0x22d0, 0x22d1, 0x22d6, 0x22d7, 0x22d8, 0x22d9, 0x22da, 0x22db, 0x22dc, 0x22dd, 0x22de, 0x22df, 0x22e0, 0x22e1, 0x22e2, 0x22e3, 0x22e4, 0x22e5, 0x22e6, 0x22e7, 0x22e8, 0x22e9, 0x22ea, 0x22eb, 0x22ec, 0x22ed, 0x22f0, 0x22f1, 0x22f2, 0x22fa, 0x22f3, 0x22fb, 0x22f4, 0x22fc, 0x22f6, 0x22fd, 0x22f7, 0x22fe, 0x2308, 0x2309, 0x230a, 0x230b, 0x2329, 0x232a, 0x2768, 0x2769, 0x276a, 0x276b, 0x276c, 0x276d, 0x276e, 0x276f, 0x2770, 0x2771, 0x2772, 0x2773, 0x2774, 0x2775, 0x27c3, 0x27c4, 0x27c5, 0x27c6, 0x27c8, 0x27c9, 0x27cb, 0x27cd, 0x27d5, 0x27d6, 0x27dd, 0x27de, 0x27e2, 0x27e3, 0x27e4, 0x27e5, 0x27e6, 0x27e7, 0x27e8, 0x27e9, 0x27ea, 0x27eb, 0x27ec, 0x27ed, 0x27ee, 0x27ef, 0x2983, 0x2984, 0x2985, 0x2986, 0x2987, 0x2988, 0x2989, 0x298a, 0x298b, 0x298c, 0x298d, 0x2990, 0x298e, 0x298f, 0x2991, 0x2992, 0x2993, 0x2994, 0x2995, 0x2996, 0x2997, 0x2998, 0x29a4, 0x29a5, 0x29a8, 0x29a9, 0x29aa, 0x29ab, 0x29ac, 0x29ad, 0x29ae, 0x29af, 0x29c0, 0x29c1, 0x29c4, 0x29c5, 0x29cf, 0x29d0, 0x29d1, 0x29d2, 0x29d4, 0x29d5, 0x29d8, 0x29d9, 0x29da, 0x29db, 0x29e8, 0x29e9, 0x29f8, 0x29f9, 0x29fc, 0x29fd, 0x2a2b, 0x2a2c, 0x2a2d, 0x2a2e, 0x2a34, 0x2a35, 0x2a3c, 0x2a3d, 0x2a64, 0x2a65, 0x2a79, 0x2a7a, 0x2a7b, 0x2a7c, 0x2a7d, 0x2a7e, 0x2a7f, 0x2a80, 0x2a81, 0x2a82, 0x2a83, 0x2a84, 0x2a85, 0x2a86, 0x2a87, 0x2a88, 0x2a89, 0x2a8a, 0x2a8b, 0x2a8c, 0x2a8d, 0x2a8e, 0x2a8f, 0x2a90, 0x2a91, 0x2a92, 0x2a93, 0x2a94, 0x2a95, 0x2a96, 0x2a97, 0x2a98, 0x2a99, 0x2a9a, 0x2a9b, 0x2a9c, 0x2a9d, 0x2a9e, 0x2a9f, 0x2aa0, 0x2aa1, 0x2aa2, 0x2aa6, 0x2aa7, 0x2aa8, 0x2aa9, 0x2aaa, 0x2aab, 0x2aac, 0x2aad, 0x2aaf, 0x2ab0, 0x2ab1, 0x2ab2, 0x2ab3, 0x2ab4, 0x2ab5, 0x2ab6, 0x2ab7, 0x2ab8, 0x2ab9, 0x2aba, 0x2abb, 0x2abc, 0x2abd, 0x2abe, 0x2abf, 0x2ac0, 0x2ac1, 0x2ac2, 0x2ac3, 0x2ac4, 0x2ac5, 0x2ac6, 0x2ac7, 0x2ac8, 0x2ac9, 0x2aca, 0x2acb, 0x2acc, 0x2acd, 0x2ace, 0x2acf, 0x2ad0, 0x2ad1, 0x2ad2, 0x2ad3, 0x2ad4, 0x2ad5, 0x2ad6, 0x2aec, 0x2aed, 0x2af7, 0x2af8, 0x2af9, 0x2afa, 0x2e02, 0x2e03, 0x2e04, 0x2e05, 0x2e09, 0x2e0a, 0x2e0c, 0x2e0d, 0x2e1c, 0x2e1d, 0x2e20, 0x2e21, 0x2e22, 0x2e23, 0x2e24, 0x2e25, 0x2e26, 0x2e27, 0x2e28, 0x2e29, 0x2e55, 0x2e56, 0x2e57, 0x2e58, 0x2e59, 0x2e5a, 0x2e5b, 0x2e5c, 0x3008, 0x3009, 0x300a, 0x300b, 0x300c, 0x300d, 0x300e, 0x300f, 0x3010, 0x3011, 0x3014, 0x3015, 0x3016, 0x3017, 0x3018, 0x3019, 0x301a, 0x301b, 0xfe59, 0xfe5a, 0xfe5b, 0xfe5c, 0xfe5d, 0xfe5e, 0xfe64, 0xfe65, 0xff08, 0xff09, 0xff1c, 0xff1e, 0xff3b, 0xff3d, 0xff5b, 0xff5d, 0xff5f, 0xff60, 0xff62, 0xff63];
+
+;// ./src/core/bidi.js
+
+const BidiClasses = Object.keys(BidiClassRanges);
+let bmpClasses = null;
+let astralRanges = null;
+let mirroredChars = null;
+function initBidiClasses() {
+  bmpClasses = new Uint8Array(0x10000);
+  const astral = [];
+  for (let i = 1, ii = BidiClasses.length; i < ii; i++) {
+    const ranges = BidiClassRanges[BidiClasses[i]];
+    for (let j = 0, jj = ranges.length; j < jj; j += 2) {
+      const start = ranges[j],
+        end = ranges[j + 1];
+      if (start <= 0xffff) {
+        bmpClasses.fill(i, start, Math.min(end, 0xffff) + 1);
+      }
+      if (end > 0xffff) {
+        astral.push([Math.max(start, 0x10000), end, i]);
+      }
+    }
+  }
+  astral.sort((x, y) => x[0] - y[0]);
+  astralRanges = astral;
+}
+function getMirroredChar(char) {
+  if (!mirroredChars) {
+    mirroredChars = new Map();
+    for (let i = 0, ii = BidiMirroringPairs.length; i < ii; i += 2) {
+      const a = String.fromCodePoint(BidiMirroringPairs[i]),
+        b = String.fromCodePoint(BidiMirroringPairs[i + 1]);
+      mirroredChars.set(a, b).set(b, a);
+    }
+  }
+  return mirroredChars.get(char);
+}
+function getBidiClass(cp) {
+  if (cp <= 0xffff) {
+    return BidiClasses[bmpClasses[cp]];
+  }
+  let lo = 0,
+    hi = astralRanges.length - 1;
+  while (lo <= hi) {
+    const mid = lo + hi >> 1;
+    const [start, end, cls] = astralRanges[mid];
+    if (cp < start) {
+      hi = mid - 1;
+    } else if (cp > end) {
+      lo = mid + 1;
+    } else {
+      return BidiClasses[cls];
+    }
+  }
+  return "L";
+}
 function isOdd(i) {
   return (i & 1) !== 0;
 }
@@ -4794,6 +4876,20 @@ function reverseValues(arr, start, end) {
     arr[j] = temp;
   }
 }
+function mirrorCharacters(levels, start, end) {
+  let changed = false;
+  for (let i = start; i < end; ++i) {
+    if (!isOdd(levels[i])) {
+      continue;
+    }
+    const mirrored = getMirroredChar(chars[i]);
+    if (mirrored) {
+      chars[i] = mirrored;
+      changed = true;
+    }
+  }
+  return changed;
+}
 function createBidiText(str, isLTR, vertical = false) {
   let dir = "ltr";
   if (vertical) {
@@ -4808,10 +4904,19 @@ function createBidiText(str, isLTR, vertical = false) {
 }
 const chars = [];
 const types = [];
-function bidi(text, startLevel = -1, vertical = false) {
+const glyphTexts = [];
+function bidi(text, startLevel = -1, vertical = false, onMirror = null) {
   let isLTR = true;
   const glyphs = Array.isArray(text) ? text : null;
-  const str = glyphs ? glyphs.join("") : text;
+  let str = text;
+  if (glyphs) {
+    const ii = glyphs.length;
+    glyphTexts.length = ii;
+    for (let i = 0; i < ii; i++) {
+      glyphTexts[i] = glyphs[i].unicode ?? glyphs[i];
+    }
+    str = glyphTexts.join("");
+  }
   const strLength = str.length;
   if (strLength === 0 || vertical) {
     return createBidiText(str, isLTR, vertical);
@@ -4819,34 +4924,33 @@ function bidi(text, startLevel = -1, vertical = false) {
   chars.length = strLength;
   types.length = strLength;
   let numBidi = 0;
+  let numChars = strLength;
   let i, ii;
+  if (!bmpClasses) {
+    initBidiClasses();
+  }
   for (i = 0; i < strLength; ++i) {
-    chars[i] = str.charAt(i);
-    const charCode = str.charCodeAt(i);
-    let charType = "L";
-    if (charCode <= 0x00ff) {
-      charType = baseTypes[charCode];
-    } else if (0x0590 <= charCode && charCode <= 0x05f4) {
-      charType = "R";
-    } else if (0x0600 <= charCode && charCode <= 0x06ff) {
-      charType = arabicTypes[charCode & 0xff];
-      if (!charType) {
-        (0,_shared_util_js__WEBPACK_IMPORTED_MODULE_0__.warn)("Bidi: invalid Unicode character " + charCode.toString(16));
-      }
-    } else if (0x0700 <= charCode && charCode <= 0x08ac || 0xfb50 <= charCode && charCode <= 0xfdff || 0xfe70 <= charCode && charCode <= 0xfeff) {
-      charType = "AL";
-    }
+    const charCode = str.codePointAt(i);
+    const charType = getBidiClass(charCode);
     if (charType === "R" || charType === "AL" || charType === "AN") {
       numBidi++;
     }
     types[i] = charType;
+    if (charCode > 0xffff) {
+      chars[i] = str.slice(i, i + 2);
+      chars[++i] = "";
+      types[i] = charType;
+      numChars--;
+    } else {
+      chars[i] = str.charAt(i);
+    }
   }
   if (numBidi === 0) {
     isLTR = true;
     return createBidiText(str, isLTR);
   }
   if (startLevel === -1) {
-    if (numBidi / strLength < 0.3 && strLength > 4) {
+    if (numBidi / numChars < 0.3 && numChars > 4) {
       isLTR = true;
       startLevel = 0;
     } else {
@@ -4860,7 +4964,7 @@ function bidi(text, startLevel = -1, vertical = false) {
   const eor = sor;
   let lastType = sor;
   for (i = 0; i < strLength; ++i) {
-    if (types[i] === "NSM" || types[i] === "L" && str.charCodeAt(i) >= 0x0300 && NonSpacingMarkRegExp.test(chars[i])) {
+    if (types[i] === "NSM") {
       types[i] = lastType;
     } else {
       lastType = types[i];
@@ -4986,13 +5090,22 @@ function bidi(text, startLevel = -1, vertical = false) {
   if (glyphs) {
     let pos = 0;
     for (const glyph of glyphs) {
-      const end = pos + glyph.length;
-      if (glyph.length > 1 && findUnequal(levels, pos + 1, levels[pos], end) === end) {
-        chars[pos] = glyph;
+      const {
+        unicode = glyph,
+        isUnicodeVisual
+      } = glyph;
+      const end = pos + unicode.length;
+      if (unicode.length > 1 && findUnequal(levels, pos + 1, levels[pos], end) === end) {
+        chars[pos] = unicode;
         chars.fill("", pos + 1, end);
+      }
+      if (isUnicodeVisual && mirrorCharacters(levels, pos, end) && onMirror) {
+        onMirror(glyph, chars.slice(pos, end).join(""));
       }
       pos = end;
     }
+  } else {
+    mirrorCharacters(levels, 0, strLength);
   }
   for (level = highestLevel; level >= lowestOddLevel; --level) {
     let start = -1;
@@ -5010,7 +5123,7 @@ function bidi(text, startLevel = -1, vertical = false) {
       reverseValues(chars, start, levels.length);
     }
   }
-  return createBidiText(chars.join("").replaceAll(/[<>]/g, ""), isLTR);
+  return createBidiText(chars.join(""), isLTR);
 }
 
 
@@ -8197,9 +8310,11 @@ class Catalog {
     this.pageIndexCache.clear();
     this.pageDictCache.clear();
     this.nonBlendModesSet.clear();
+    const fonts = await Promise.all(this.fontCache);
+    await Promise.all(fonts.map(font => font.sent));
     for (const {
       dict
-    } of await Promise.all(this.fontCache)) {
+    } of fonts) {
       delete dict.cacheKey;
     }
     this.fontCache.clear();
@@ -14778,8 +14893,8 @@ var core_function = __webpack_require__(4950);
 var image_utils = __webpack_require__(4907);
 // EXTERNAL MODULE: ./src/core/evaluator_utils.js
 var evaluator_utils = __webpack_require__(5275);
-// EXTERNAL MODULE: ./src/core/bidi.js
-var bidi = __webpack_require__(7092);
+// EXTERNAL MODULE: ./src/core/bidi.js + 1 modules
+var bidi = __webpack_require__(3362);
 // EXTERNAL MODULE: ./src/core/colorspace.js
 var colorspace = __webpack_require__(3069);
 // EXTERNAL MODULE: ./src/core/colorspace_utils.js + 1 modules
@@ -15612,19 +15727,21 @@ function initJs(instantiate) {
 const FAMILIES = new Map([["Courier", 2], ["Helvetica", 0], ["Times", 1]]);
 const MAX_GLYPHS = 65534;
 const PRIVATE_USE_START = 0xf0000;
+function getCodePoints(glyphs) {
+  return Uint32Array.from(glyphs, glyph => glyph.codePoint);
+}
 class Hellbox {
   static #isLoaded = false;
   static #loadPromises = new WeakMap();
   static #pendingData = new WeakMap();
+  static #hasRequiredUrls({
+    useWorkerFetch,
+    wasmUrl,
+    standardFontDataUrl
+  }) {
+    return !useWorkerFetch || !!(wasmUrl && standardFontDataUrl);
+  }
   static async #load(context) {
-    const {
-      standardFontDataUrl,
-      useWorkerFetch,
-      wasmUrl
-    } = context.options;
-    if (useWorkerFetch && (!wasmUrl || !standardFontDataUrl)) {
-      return false;
-    }
     return this.#isLoaded || this.#loadPromises.getOrInsertComputed(context.handler, () => wasm_loader.WasmLoader.load(context, "hellbox_bg.wasm", "hellbox_nowasm_fallback.js", instantiate => {
       initJs(instantiate);
       this.#isLoaded = true;
@@ -15643,25 +15760,52 @@ class Hellbox {
       }).finally(() => pending.delete(file)));
     }));
   }
-  static async generate(context, font) {
+  static async prepare(context, font) {
+    const {
+      options
+    } = context;
     const {
       standardFontName
     } = font;
-    if (!standardFontName || font.vertical || font.cssFontInfo) {
-      return;
+    if (!standardFontName || font.vertical || font.cssFontInfo || !this.#hasRequiredUrls(options)) {
+      return null;
     }
     const replacesFont = !font.systemFontInfo || standardFontName === "Symbol" || standardFontName === "ZapfDingbats";
-    if (context.options.disableFontFace && !replacesFont) {
-      return;
+    if (!replacesFont && options.disableFontFace) {
+      return null;
     }
+    if (replacesFont || !options.isOffscreenCanvasSupported) {
+      await this.#generate(context, font, replacesFont);
+    } else if (font.fontExtraProperties) {
+      await this.#prepareFallback(context, font);
+    } else {
+      return () => this.#prepareFallback(context, font);
+    }
+    return null;
+  }
+  static async #prepareFallback(context, font) {
+    const glyphs = font.getMissingFileGlyphs(false);
+    const codePoints = getCodePoints(glyphs);
+    const covered = await context.handler.sendWithPromise("LoadSystemFont", {
+      systemFontInfo: font.systemFontInfo,
+      codePoints
+    }, [codePoints.buffer]).catch(() => false);
+    if (!covered) {
+      await this.#generate(context, font, false, glyphs);
+    }
+  }
+  static async #generate(context, font, replacesFont, glyphs) {
     if (!(await this.#load(context))) {
       return;
     }
+    glyphs ??= font.getMissingFileGlyphs(replacesFont);
+    const {
+      standardFontName
+    } = font;
     const weight = font.black ? 900 : 0;
     const family = weight ? FAMILIES.get(standardFontName.split("-", 1)[0]) : undefined;
     const italic = /Oblique|Italic/.test(standardFontName);
-    const glyphs = font.getMissingFileGlyphs(replacesFont);
-    const codePoints = Uint32Array.from(glyphs, glyph => glyph.codePoint);
+    const codePoints = getCodePoints(glyphs);
     const lengths = new Uint32Array(codePoints.length).fill(1);
     try {
       const files = family === undefined ? standard_font_data_files(standardFontName) : [...font_data_files(family, false, false, 0, 0, 0), ...font_data_files(family, false, italic, weight, 0, 0)];
@@ -15687,7 +15831,7 @@ class Hellbox {
         }
         return privateUseCode++;
       });
-      const args = [Uint32Array.from(available, glyph => glyph.codePoint), lengths.subarray(0, available.length), Float64Array.from(available, glyph => glyph.width ?? NaN), fontCharCodes];
+      const args = [getCodePoints(available), lengths.subarray(0, available.length), Float64Array.from(available, glyph => glyph.width ?? NaN), fontCharCodes];
       const data = family === undefined ? generate_standard_font(...args, standardFontName) : generate_font(...args, family, false, italic, weight, 0, 0, 0);
       font.setGeneratedFont({
         data,
@@ -15699,7 +15843,7 @@ class Hellbox {
     }
   }
   static async generateXfaFont(context, standardFontName, widths) {
-    if (!(await this.#load(context))) {
+    if (!this.#hasRequiredUrls(context.options) || !(await this.#load(context))) {
       return null;
     }
     try {
@@ -16406,7 +16550,10 @@ class PartialEvaluator {
       operatorList.addDependencies(translated.type3Dependencies);
     }
     state.font = translated.font;
-    translated.send(this.handler);
+    const sent = translated.send(this.handler);
+    if (!operatorList.isStreamingToRenderer) {
+      await sent;
+    }
     return translated.loadedName;
   }
   handleText(chars, state) {
@@ -16616,6 +16763,10 @@ class PartialEvaluator {
     const loadedName = `${this.idFactory.getDocId()}_${fontID}`;
     this.translateFont(preEvaluatedFont, loadedName).then(async translatedFont => {
       const translated = new TranslatedFont({
+        prepareSystemFont: await Hellbox.prepare({
+          handler: this.handler,
+          options: this.options
+        }, translatedFont),
         loadedName,
         font: translatedFont,
         dict: font
@@ -17501,25 +17652,40 @@ class PartialEvaluator {
     const emptyXObjectCache = new image_utils.LocalImageCache();
     const emptyGStateCache = new image_utils.LocalGStateCache();
     const preprocessor = new EvaluatorPreprocessor(stream, xref, stateManager);
-    let textState, currentTextState;
+    let textState;
+    let {
+      font: currentFont,
+      fontName: currentFontName,
+      fontSize: currentFontSize
+    } = stateManager.state;
+    const textSpaceMatrix = new Float32Array(6);
+    const glyphTransform = new Float32Array(6);
     let lastFakeSpaceExtraCharId = -1;
     let hScaleChanged = false;
-    function getUnmirroredTransform([a, b, c, d, e, f], width) {
+    function unmirrorTransform(transform, width) {
+      const a = transform[0];
+      const b = transform[1];
+      const c = transform[2];
+      const d = transform[3];
       if (a * d - b * c >= 0 || d <= 0) {
-        return null;
+        return false;
       }
       const scale = width / Math.hypot(a, b);
-      return [-a, -b, c, d, e + a * scale, f + b * scale];
+      transform[0] = -a;
+      transform[1] = -b;
+      transform[4] += a * scale;
+      transform[5] += b * scale;
+      return true;
     }
     function pushWhitespace({
       width = 0,
       height = 0,
-      transform = textContentItem.prevTransform,
       fontName = textContentItem.fontName
     }) {
       intersector?.addExtraChar(" ");
+      const transform = textContentItem.prevTransform.slice();
       if (width) {
-        transform = getUnmirroredTransform(transform, width) || transform;
+        unmirrorTransform(transform, width);
       }
       textContent.items.push({
         str: " ",
@@ -17545,9 +17711,12 @@ class PartialEvaluator {
       }
       return 1;
     }
-    function getCurrentTextTransform() {
-      const tsm = [textState.fontSize * textState.textHScale, 0, 0, textState.fontSize * getType3HeightScale(), 0, textState.textRise];
-      return util.Util.transform(textState.ctm, util.Util.transform(textState.textMatrix, tsm));
+    function getCurrentTextTransform(result = new Float32Array(6)) {
+      textSpaceMatrix[0] = textState.fontSize * textState.textHScale;
+      textSpaceMatrix[3] = textState.fontSize * getType3HeightScale();
+      textSpaceMatrix[5] = textState.textRise;
+      util.Util.transform(textState.textMatrix, textSpaceMatrix, result);
+      return util.Util.transform(textState.ctm, result, result);
     }
     function ensureTextContentItem() {
       if (textContentItem.initialized) {
@@ -17628,17 +17797,33 @@ class PartialEvaluator {
       textContentItem.textAdvanceScale = scaleFactor;
     }
     function runBidiTransform(textChunk) {
-      let {
+      const {
         str,
-        transform
+        transform,
+        vertical
       } = textChunk;
       const width = Math.abs(textChunk.totalWidth);
-      const unmirrored = !textChunk.vertical && getUnmirroredTransform(transform, width);
+      const unmirrored = !vertical && unmirrorTransform(transform, width);
       if (unmirrored) {
-        str = str.toReversed();
-        transform = unmirrored;
+        str.reverse();
       }
-      const bidiResult = (0,bidi.bidi)(str, -1, textChunk.vertical);
+      const bidiResult = (0,bidi.bidi)(str, -1, vertical, textLayerFonts ? (glyph, unicode) => {
+        glyph.unicode = unicode;
+      } : null);
+      if (textLayerFonts) {
+        if (unmirrored) {
+          str.reverse();
+        }
+        for (const {
+          font,
+          unicode,
+          advance
+        } of str) {
+          if (font) {
+            textLayerFonts.addGlyph(font, unicode, advance);
+          }
+        }
+      }
       return {
         str: bidiResult.str,
         dir: bidiResult.dir,
@@ -17654,10 +17839,6 @@ class PartialEvaluator {
       textState.loadedName = translated.loadedName;
       textState.font = translated.font;
       textState.fontMatrix = translated.font.fontMatrix || util.FONT_IDENTITY_MATRIX;
-    }
-    function applyInverseRotation(x, y, matrix) {
-      const scale = Math.hypot(matrix[0], matrix[1]);
-      return [(matrix[0] * x + matrix[1] * y) / scale, (matrix[2] * x + matrix[3] * y) / scale];
     }
     function getTrackingSpaceMin(glyphWidth) {
       if (textContentItem.useCharWidthThreshold && glyphWidth) {
@@ -17727,7 +17908,7 @@ class PartialEvaluator {
       }
     }
     function compareWithLastPosition(glyphWidth) {
-      const currentTransform = getCurrentTextTransform();
+      const currentTransform = getCurrentTextTransform(glyphTransform);
       let posX = currentTransform[4];
       let posY = currentTransform[5];
       if (textState.font?.vertical) {
@@ -17737,11 +17918,14 @@ class PartialEvaluator {
       } else if (posX + glyphWidth < viewBox[0] || posX > viewBox[2] || posY < viewBox[1] || posY > viewBox[3]) {
         return false;
       }
-      if (!textState.font || !textContentItem.prevTransform) {
+      const {
+        prevTransform
+      } = textContentItem;
+      if (!textState.font || !prevTransform) {
         return true;
       }
-      let lastPosX = textContentItem.prevTransform[4];
-      let lastPosY = textContentItem.prevTransform[5];
+      let lastPosX = prevTransform[4];
+      let lastPosY = prevTransform[5];
       if (lastPosX === posX && lastPosY === posY) {
         textContentItem.minAdvance = Infinity;
         return true;
@@ -17752,23 +17936,38 @@ class PartialEvaluator {
       } else if (currentTransform[1] && currentTransform[0] === 0 && currentTransform[3] === 0) {
         rotate = currentTransform[1] > 0 ? 90 : 270;
       }
+      const x = posX;
+      const lastX = lastPosX;
       switch (rotate) {
         case 0:
           break;
         case 90:
-          [posX, posY] = [posY, posX];
-          [lastPosX, lastPosY] = [lastPosY, lastPosX];
+          posX = posY;
+          posY = x;
+          lastPosX = lastPosY;
+          lastPosY = lastX;
           break;
         case 180:
-          [posX, posY, lastPosX, lastPosY] = [-posX, -posY, -lastPosX, -lastPosY];
+          posX = -posX;
+          posY = -posY;
+          lastPosX = -lastPosX;
+          lastPosY = -lastPosY;
           break;
         case 270:
-          [posX, posY] = [-posY, -posX];
-          [lastPosX, lastPosY] = [-lastPosY, -lastPosX];
+          posX = -posY;
+          posY = -x;
+          lastPosX = -lastPosY;
+          lastPosY = -lastX;
           break;
         default:
-          [posX, posY] = applyInverseRotation(posX, posY, currentTransform);
-          [lastPosX, lastPosY] = applyInverseRotation(lastPosX, lastPosY, textContentItem.prevTransform);
+          {
+            const scale = Math.hypot(currentTransform[0], currentTransform[1]);
+            posX = (currentTransform[0] * x + currentTransform[1] * posY) / scale;
+            posY = (currentTransform[2] * x + currentTransform[3] * posY) / scale;
+            const lastScale = Math.hypot(prevTransform[0], prevTransform[1]);
+            lastPosX = (prevTransform[0] * lastX + prevTransform[1] * lastPosY) / lastScale;
+            lastPosY = (prevTransform[2] * lastX + prevTransform[3] * lastPosY) / lastScale;
+          }
       }
       if (textState.font.vertical) {
         const advanceY = (lastPosY - posY) / textContentItem.textAdvanceScale;
@@ -17887,9 +18086,11 @@ class PartialEvaluator {
       chars,
       extraSpacing
     }) {
-      if (currentTextState !== textState && (currentTextState.fontSize !== textState.fontSize || currentTextState.fontName !== textState.fontName && (currentTextState.font?.name !== textState.font.name || currentTextState.font.vertical !== textState.font.vertical))) {
+      if (currentFontSize !== textState.fontSize || currentFontName !== textState.fontName && (currentFont?.name !== textState.font.name || currentFont.vertical !== textState.font.vertical)) {
         flushTextContentItem();
-        currentTextState = textState.clone();
+        currentFont = textState.font;
+        currentFontName = textState.fontName;
+        currentFontSize = textState.fontSize;
       }
       const font = textState.font;
       const baseCharSpacing = font.vertical ? -textState.charSpacing : textState.charSpacing;
@@ -17957,17 +18158,18 @@ class PartialEvaluator {
         const glyphUnicode = isInvisibleFormatMark ? "" : glyph.unicode;
         if (!font.vertical) {
           scaledDim *= textState.textHScale;
-          intersector?.addGlyph(getCurrentTextTransform(), scaledDim, 0, glyphUnicode);
+          intersector?.addGlyph(getCurrentTextTransform(glyphTransform), scaledDim, 0, glyphUnicode);
           textState.translateTextMatrix(scaledDim, 0);
           textChunk.width += scaledDim;
         } else {
-          intersector?.addGlyph(getCurrentTextTransform(), 0, scaledDim, glyphUnicode);
+          intersector?.addGlyph(getCurrentTextTransform(glyphTransform), 0, scaledDim, glyphUnicode);
           textState.translateTextMatrix(0, scaledDim);
           scaledDim = Math.abs(scaledDim);
           textChunk.height += scaledDim;
         }
         if (scaledDim) {
-          textChunk.prevTransform = getCurrentTextTransform();
+          textChunk.prevTransform ??= new Float32Array(6);
+          getCurrentTextTransform(textChunk.prevTransform);
           textChunk.prevGlyphWidth = scaledDim;
           textChunk.prevTextRise = textState.textRise;
         }
@@ -17978,9 +18180,23 @@ class PartialEvaluator {
           }
           const unicode = disableNormalization ? glyphUnicode : glyph.normalizedUnicode;
           if (!intersector) {
-            textChunk.str.push(unicode);
+            const {
+              isUnicodeVisual
+            } = glyph;
+            if (textLayerFonts) {
+              textChunk.str.push({
+                unicode,
+                isUnicodeVisual,
+                font,
+                advance: isZeroWidthDiacritic ? 0 : Math.abs(glyphWidth) * advanceScale
+              });
+            } else {
+              textChunk.str.push(isUnicodeVisual ? {
+                unicode,
+                isUnicodeVisual
+              } : unicode);
+            }
           }
-          textLayerFonts?.addGlyph(font, unicode, isZeroWidthDiacritic ? 0 : Math.abs(glyphWidth) * advanceScale);
         }
         if (charSpacing) {
           if (!font.vertical) {
@@ -18017,8 +18233,7 @@ class PartialEvaluator {
           textContentItem.str.push(" ");
           lastFakeSpaceExtraCharId = intersector?.addExtraChar(" ") ?? -1;
           if (textLayerFonts && !textContentItem.vertical && !hScaleChanged) {
-            const [a, b] = currentTransform;
-            const emLength = Math.hypot(a, b) * Math.abs(getType3HeightScale());
+            const emLength = Math.hypot(currentTransform[0], currentTransform[1]) * Math.abs(getType3HeightScale());
             if (emLength > 0) {
               textLayerFonts.addSpaceGap(textContentItem.fontName, 1000 * Math.abs(width) * textContentItem.textAdvanceScale / emLength);
             }
@@ -18104,7 +18319,6 @@ class PartialEvaluator {
           break;
         }
         textState = stateManager.state;
-        currentTextState ||= textState.clone();
         const fn = operation.fn;
         args = operation.args;
         switch (fn | 0) {
@@ -18211,7 +18425,8 @@ class PartialEvaluator {
               continue;
             }
             if (fn === util.OPS.nextLineSetSpacingShowText) {
-              [textState.wordSpacing, textState.charSpacing] = args;
+              textState.wordSpacing = args[0];
+              textState.charSpacing = args[1];
             }
             moveText(0, -textState.leading);
             buildTextContentItem({
@@ -18608,8 +18823,11 @@ class PartialEvaluator {
   async buildToUnicode(properties) {
     properties.hasIncludedToUnicodeMap = !!properties.toUnicode?.size;
     if (properties.hasIncludedToUnicodeMap) {
+      if (!properties.composite && (properties.hasEncoding || !properties.file)) {
+        properties.encodingToUnicode = this._simpleFontToUnicode(properties);
+      }
       if (!properties.composite && properties.hasEncoding) {
-        properties.fallbackToUnicode = this._simpleFontToUnicode(properties);
+        properties.fallbackToUnicode = properties.encodingToUnicode;
       }
       return properties.toUnicode;
     }
@@ -19064,9 +19282,7 @@ class PartialEvaluator {
         } else {
           newProperties.widths = this.buildCharCodeToWidth(metrics.widths, newProperties);
         }
-        const font = new fonts.Font(baseFontName, null, newProperties, this.options);
-        await Hellbox.generate(this, font);
-        return font;
+        return new fonts.Font(baseFontName, null, newProperties, this.options);
       }
     }
     let fontName = descriptor.get("FontName");
@@ -19234,7 +19450,6 @@ class PartialEvaluator {
         font.systemFontInfo = substitution;
       }
     }
-    await Hellbox.generate(this, font);
     return font;
   }
   static buildFontPaths(font, glyphs, handler, evaluatorOptions) {
@@ -19272,26 +19487,37 @@ class PartialEvaluator {
   }
 }
 class TranslatedFont {
-  #sent = false;
+  #prepareSystemFont;
+  sent = null;
   #type3Loaded = null;
   constructor({
     loadedName,
     font,
-    dict
+    dict,
+    prepareSystemFont
   }) {
+    this.#prepareSystemFont = prepareSystemFont;
     this.loadedName = loadedName;
     this.font = font;
     this.dict = dict;
     this.type3Dependencies = font.isType3Font ? new Set() : null;
   }
   send(handler) {
-    if (this.#sent) {
-      return;
+    return this.sent ??= this.#send(handler);
+  }
+  async #send(handler) {
+    let fontData;
+    try {
+      if (this.#prepareSystemFont) {
+        const prepare = this.#prepareSystemFont;
+        this.#prepareSystemFont = null;
+        await prepare();
+      }
+      fontData = this.font.exportData();
+    } catch (reason) {
+      fontData = new fonts.ErrorFont(reason.message).exportData();
     }
-    this.#sent = true;
-    const fontData = this.font.exportData(),
-      transfers = fontData.buffer ? [fontData.buffer] : null;
-    handler.send("commonobj", [this.loadedName, "Font", fontData], transfers);
+    handler.send("commonobj", [this.loadedName, "Font", fontData], fontData.buffer ? [fontData.buffer] : null);
   }
   fallback(handler, evaluatorOptions) {
     if (!this.font.data || this.font.missingFile) {
@@ -19470,24 +19696,18 @@ class TextState {
   loadedName = null;
   font = null;
   fontMatrix = util.FONT_IDENTITY_MATRIX;
-  textMatrix = core_utils.IDENTITY_MATRIX.slice();
-  textLineMatrix = core_utils.IDENTITY_MATRIX.slice();
+  textMatrix = new Float32Array(core_utils.IDENTITY_MATRIX);
+  textLineMatrix = new Float32Array(core_utils.IDENTITY_MATRIX);
   charSpacing = 0;
   wordSpacing = 0;
   leading = 0;
   textHScale = 1;
   textRise = 0;
   setTextMatrix(matrix) {
-    const m = this.textMatrix;
-    for (let i = 0; i < 6; i++) {
-      m[i] = matrix[i];
-    }
+    this.textMatrix.set(matrix);
   }
   setTextLineMatrix(matrix) {
-    const m = this.textLineMatrix;
-    for (let i = 0; i < 6; i++) {
-      m[i] = matrix[i];
-    }
+    this.textLineMatrix.set(matrix);
   }
   translateTextMatrix(x, y) {
     const m = this.textMatrix;
@@ -19503,7 +19723,6 @@ class TextState {
     const clone = Object.assign(Object.create(this), this);
     clone.textMatrix = this.textMatrix.slice();
     clone.textLineMatrix = this.textLineMatrix.slice();
-    clone.fontMatrix = this.fontMatrix.slice();
     return clone;
   }
 }
@@ -22834,6 +23053,8 @@ class FontRendererFactory {
 
 // EXTERNAL MODULE: ./src/core/metrics.js
 var core_metrics = __webpack_require__(629);
+// EXTERNAL MODULE: ./src/core/bidi.js + 1 modules
+var bidi = __webpack_require__(3362);
 ;// ./src/core/glyf.js
 
 const ARG_1_AND_2_ARE_WORDS = 1 << 0;
@@ -24072,6 +24293,7 @@ class Type1Font {
 
 
 
+
 const PRIVATE_USE_AREAS = [[0xe000, 0xf8ff], [0x100000, 0x10fffd]];
 const PDF_GLYPH_SPACE_UNITS = 1000;
 const EXPORT_DATA_PROPERTIES = ["bbox", "black", "bold", "cssFontInfo", "data", "disableFontFace", "fallbackName", "fontExtraProperties", "fontMatrix", "generatedFontName", "isInvalidPDFjsFont", "isType3Font", "italic", "loadedName", "missingFile", "remeasure", "systemFontInfo", "vertical"];
@@ -24166,8 +24388,31 @@ function amendFallbackToUnicode(properties) {
   });
   properties.toUnicode.amend(toUnicode);
 }
+function getMirroredGlyphShapes(charCodeToGlyphId, toUnicode, glyphNames, getUnicodeCmap) {
+  let shapes = null,
+    glyphsUnicodeMap,
+    glyphIdToUnicode;
+  for (const [charCode, glyphId] of charCodeToGlyphId) {
+    const unicode = toUnicode.get(charCode);
+    if (!unicode || !(0,bidi.getMirroredChar)(unicode)) {
+      continue;
+    }
+    const glyphName = glyphNames?.[glyphId];
+    let shape = glyphName && (0,core_unicode.getUnicodeForGlyph)(glyphName, glyphsUnicodeMap ??= (0,glyphlist.getGlyphsUnicode)());
+    if (!(shape > 0)) {
+      glyphIdToUnicode ??= getUnicodeCmap();
+      shape = glyphIdToUnicode.get(glyphId);
+    }
+    if (shape > 0) {
+      (shapes ??= new Map()).set(charCode, String.fromCodePoint(shape));
+    }
+  }
+  return shapes;
+}
 class Glyph {
-  constructor(fontExtraProperties, originalCharCode, fontChar, unicode, accent, width, vmetric, operatorListId, isSpace, isInFont, isRotated) {
+  #isUnicodeVisual;
+  constructor(fontExtraProperties, originalCharCode, fontChar, unicode, accent, width, vmetric, operatorListId, isSpace, isInFont, isRotated, isUnicodeVisual) {
+    this.#isUnicodeVisual = isUnicodeVisual;
     if (fontExtraProperties) {
       this.originalCharCode = originalCharCode;
     }
@@ -24180,6 +24425,9 @@ class Glyph {
     this.isSpace = isSpace;
     this.isInFont = isInFont;
     this.isRotated = isRotated;
+  }
+  get isUnicodeVisual() {
+    return this.#isUnicodeVisual;
   }
   get category() {
     return (0,util.shadow)(this, "category", (0,core_unicode.getCharUnicodeCategory)(this.unicode), true);
@@ -24765,6 +25013,9 @@ class Font {
   #charsCache = new Map();
   #glyphCache = new Map();
   #generatedCodePoints = null;
+  #encodingToUnicode = null;
+  #glyphShapes = null;
+  #hasIncludedToUnicodeMap = false;
   #id = null;
   #isCFFCompiled = false;
   #withoutFile = false;
@@ -24833,6 +25084,8 @@ class Font {
     this.bbox = properties.bbox;
     this.defaultEncoding = properties.defaultEncoding;
     this.toUnicode = properties.toUnicode;
+    this.#encodingToUnicode = properties.encodingToUnicode ?? null;
+    this.#hasIncludedToUnicodeMap = !!properties.hasIncludedToUnicodeMap;
     if (properties.type === "Type3") {
       for (let charCode = 0; charCode < 256; charCode++) {
         this.toFontChar.set(charCode, this.differences.get(charCode) || properties.defaultEncoding[charCode]);
@@ -25081,6 +25334,7 @@ class Font {
       this.toFontChar.set(charCode, fontCharCode);
     }
     this.#glyphCache.clear();
+    this.#charsCache.clear();
     if (replacesFont) {
       this.systemFontInfo = null;
       this.loadedName = name;
@@ -26288,9 +26542,7 @@ class Font {
     } else {
       this.lineHeight = this.ascent - this.descent + this.lineGap;
     }
-    if (tables.post) {
-      readPostScriptTable(tables.post, properties, numGlyphs);
-    }
+    const hasGlyphNames = !!tables.post && readPostScriptTable(tables.post, properties, numGlyphs);
     tables.post = {
       tag: "post",
       data: createPostTable(properties)
@@ -26299,6 +26551,7 @@ class Font {
     function hasGlyph(glyphId) {
       return !missingGlyphs?.[glyphId];
     }
+    let cmapTable = null;
     if (properties.composite) {
       const {
         cidToGidMap,
@@ -26318,7 +26571,7 @@ class Font {
         }
       });
     } else {
-      const cmapTable = readCmapTable(tables.cmap, font, this.isSymbolicFont, properties.hasEncoding, numGlyphs);
+      cmapTable = readCmapTable(tables.cmap, font, this.isSymbolicFont, properties.hasEncoding, numGlyphs);
       const cmapPlatformId = cmapTable.platformId;
       const cmapEncodingId = cmapTable.encodingId;
       const cmapMappings = cmapTable.mappings;
@@ -26406,6 +26659,29 @@ class Font {
     }
     if (!charCodeToGlyphId.size) {
       charCodeToGlyphId.set(0, 0);
+    }
+    if (properties.hasIncludedToUnicodeMap) {
+      this.#glyphShapes = getMirroredGlyphShapes(charCodeToGlyphId, this.toUnicode, hasGlyphNames ? properties.glyphNames : null, () => {
+        const glyphIdToUnicode = new Map();
+        if (!tables.cmap) {
+          return glyphIdToUnicode;
+        }
+        cmapTable ??= readCmapTable(tables.cmap, font, false, true, numGlyphs);
+        const {
+          platformId,
+          encodingId,
+          mappings
+        } = cmapTable;
+        if (platformId === 0 || platformId === 3 && encodingId === 1) {
+          for (const {
+            charCode,
+            glyphId
+          } of mappings) {
+            glyphIdToUnicode.getOrInsert(glyphId, charCode);
+          }
+        }
+        return glyphIdToUnicode;
+      });
     }
     const glyphZeroId = dupFirstEntry ? numGlyphsOut - 1 : 0;
     if (!properties.cssFontInfo) {
@@ -26703,9 +26979,20 @@ class Font {
         isRotated = fonts_utils.VERTICAL_ROTATED_CHARS.has(charCode);
       }
     }
-    glyph = new Glyph(this.fontExtraProperties, charcode, fontChar, unicode, accent, width, vmetric, operatorListId, isSpace, isInFont, isRotated);
+    glyph = new Glyph(this.fontExtraProperties, charcode, fontChar, unicode, accent, width, vmetric, operatorListId, isSpace, isInFont, isRotated, this.#isUnicodeVisual(charcode));
     this.#glyphCache.set(charcode, glyph);
     return glyph;
+  }
+  #isUnicodeVisual(charcode) {
+    const unicode = this.toUnicode.get(charcode);
+    if (!unicode || !(0,bidi.getMirroredChar)(unicode)) {
+      return false;
+    }
+    if (!this.#hasIncludedToUnicodeMap) {
+      return !(this.toUnicode instanceof to_unicode_map.IdentityToUnicodeMap);
+    }
+    const shape = this.#glyphShapes?.get(charcode) ?? this.#encodingToUnicode?.get(charcode);
+    return shape === unicode;
   }
   #hasVerticalVariant(charcode) {
     const {
@@ -37806,7 +38093,8 @@ class OperatorList {
     this._streamSink = streamSink;
     this.fnArray = [];
     this.argsArray = [];
-    this.optimizer = streamSink && !(intent & _shared_util_js__WEBPACK_IMPORTED_MODULE_0__.RenderingIntentFlag.OPLIST) ? new QueueOptimizer(this, isOffscreenCanvasSupported) : new NullOptimizer(this);
+    this.isStreamingToRenderer = !!streamSink && !(intent & _shared_util_js__WEBPACK_IMPORTED_MODULE_0__.RenderingIntentFlag.OPLIST);
+    this.optimizer = this.isStreamingToRenderer ? new QueueOptimizer(this, isOffscreenCanvasSupported) : new NullOptimizer(this);
     this.dependencies = new Set();
     this.weight = 0;
     this._resolved = streamSink ? null : Promise.resolve();
@@ -46168,8 +46456,23 @@ class Util {
       length: 256
     }, (_, i) => i));
   }
-  static transform(m1, m2) {
-    return [m1[0] * m2[0] + m1[2] * m2[1], m1[1] * m2[0] + m1[3] * m2[1], m1[0] * m2[2] + m1[2] * m2[3], m1[1] * m2[2] + m1[3] * m2[3], m1[0] * m2[4] + m1[2] * m2[5] + m1[4], m1[1] * m2[4] + m1[3] * m2[5] + m1[5]];
+  static transform(m1, m2, result) {
+    const a = m1[0] * m2[0] + m1[2] * m2[1];
+    const b = m1[1] * m2[0] + m1[3] * m2[1];
+    const c = m1[0] * m2[2] + m1[2] * m2[3];
+    const d = m1[1] * m2[2] + m1[3] * m2[3];
+    const e = m1[0] * m2[4] + m1[2] * m2[5] + m1[4];
+    const f = m1[1] * m2[4] + m1[3] * m2[5] + m1[5];
+    if (!result) {
+      return [a, b, c, d, e, f];
+    }
+    result[0] = a;
+    result[1] = b;
+    result[2] = c;
+    result[3] = d;
+    result[4] = e;
+    result[5] = f;
+    return result;
   }
   static multiplyByDOMMatrix(m, md) {
     return [m[0] * md.a + m[2] * md.b, m[1] * md.a + m[3] * md.b, m[0] * md.c + m[2] * md.d, m[1] * md.c + m[3] * md.d, m[0] * md.e + m[2] * md.f + m[4], m[1] * md.e + m[3] * md.f + m[5]];
@@ -47254,7 +47557,7 @@ class WorkerMessageHandler {
       docId,
       apiVersion
     } = docParams;
-    const workerVersion = "7.0.234";
+    const workerVersion = "7.0.241";
     if (apiVersion !== workerVersion) {
       throw new Error(`The API version "${apiVersion}" does not match the Worker version "${workerVersion}".`);
     }

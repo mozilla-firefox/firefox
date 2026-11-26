@@ -20,8 +20,8 @@
  */
 
 /**
- * pdfjsVersion = 7.0.234
- * pdfjsBuild = 3471ae169
+ * pdfjsVersion = 7.0.241
+ * pdfjsBuild = 808186117
  */
 
 ;// ./src/shared/util.js
@@ -554,8 +554,23 @@ class Util {
       length: 256
     }, (_, i) => i));
   }
-  static transform(m1, m2) {
-    return [m1[0] * m2[0] + m1[2] * m2[1], m1[1] * m2[0] + m1[3] * m2[1], m1[0] * m2[2] + m1[2] * m2[3], m1[1] * m2[2] + m1[3] * m2[3], m1[0] * m2[4] + m1[2] * m2[5] + m1[4], m1[1] * m2[4] + m1[3] * m2[5] + m1[5]];
+  static transform(m1, m2, result) {
+    const a = m1[0] * m2[0] + m1[2] * m2[1];
+    const b = m1[1] * m2[0] + m1[3] * m2[1];
+    const c = m1[0] * m2[2] + m1[2] * m2[3];
+    const d = m1[1] * m2[2] + m1[3] * m2[3];
+    const e = m1[0] * m2[4] + m1[2] * m2[5] + m1[4];
+    const f = m1[1] * m2[4] + m1[3] * m2[5] + m1[5];
+    if (!result) {
+      return [a, b, c, d, e, f];
+    }
+    result[0] = a;
+    result[1] = b;
+    result[2] = c;
+    result[3] = d;
+    result[4] = e;
+    result[5] = f;
+    return result;
   }
   static multiplyByDOMMatrix(m, md) {
     return [m[0] * md.a + m[2] * md.b, m[1] * md.a + m[3] * md.b, m[0] * md.c + m[2] * md.d, m[1] * md.c + m[3] * md.d, m[0] * md.e + m[2] * md.f + m[4], m[1] * md.e + m[3] * md.f + m[5]];
@@ -2013,7 +2028,7 @@ class FloatingToolbar {
 }
 
 ;// ./src/shared/internal_evt.js
-const INTERNAL_EVT = "7659b85a-a6a1-420a-b779-aa2cc2e76feb";
+const INTERNAL_EVT = "d3c73910-6bc9-434d-8032-1b58f12b88f9";
 const internalOpt = Object.freeze({
   internal: INTERNAL_EVT
 });
@@ -12661,7 +12676,7 @@ function serializeFontFamily(fontFamily) {
 
 class FontLoader {
   #nativeFontFaces = new Set();
-  #systemFonts = new Set();
+  #systemFonts = new Map();
   #styleSheet = null;
   constructor({
     ownerDocument = globalThis.document,
@@ -12730,39 +12745,77 @@ class FontLoader {
     this.styleElement?.remove();
     this.styleElement = null;
   }
-  async loadSystemFont({
+  #systemFont(info, probe = false) {
+    const family = probe ? `${info.loadedName}_probe` : info.loadedName;
+    return this.#systemFonts.getOrInsertComputed(family, () => {
+      const face = new FontFace(family, info.src, probe ? {
+        ...info.style,
+        sizeAdjust: "0%"
+      } : info.style);
+      if (!probe) {
+        this.addNativeFontFace(face);
+      }
+      const entry = {
+        loaded: face.load().catch(() => {
+          if (this.#systemFonts.get(family) === entry) {
+            this.#systemFonts.delete(family);
+            if (!probe) {
+              this.removeNativeFontFace(face);
+              warn(`Cannot load system font: ${info.baseFontName}, installing it could help to improve PDF rendering.`);
+            }
+          }
+          return null;
+        })
+      };
+      return entry;
+    });
+  }
+  async #loadSystemFont({
     systemFontInfo: info,
     disableFontFace,
     _inspectFont
   }) {
-    if (!info || this.#systemFonts.has(info.loadedName)) {
-      return;
+    assert(!disableFontFace, "Cannot load a disabled system font.");
+    const entry = this.#systemFont(info);
+    if ((await entry.loaded) && _inspectFont && !entry.inspected) {
+      entry.inspected = true;
+      _inspectFont(info);
     }
-    assert(!disableFontFace, "loadSystemFont shouldn't be called when `disableFontFace` is set.");
-    if (this.isFontLoadingAPISupported) {
-      const {
-        loadedName,
-        src,
-        style
-      } = info;
-      const fontFace = new FontFace(loadedName, src, style);
-      this.addNativeFontFace(fontFace);
-      try {
-        await fontFace.load();
-        this.#systemFonts.add(loadedName);
-        _inspectFont?.(info);
-      } catch {
-        warn(`Cannot load system font: ${info.baseFontName}, installing it could help to improve PDF rendering.`);
-        this.removeNativeFontFace(fontFace);
+  }
+  async hasSystemFontGlyphs({
+    systemFontInfo: info,
+    codePoints
+  }) {
+    if (!this.isFontLoadingAPISupported) {
+      return false;
+    }
+    try {
+      const rendering = this.#systemFont(info);
+      const probe = this.#systemFont(info, true);
+      const [face, probeFace] = await Promise.all([rendering.loaded, probe.loaded]);
+      if (!face || probeFace?.sizeAdjust !== "0%") {
+        return false;
       }
-      return;
+      const coverage = probe.coverage ??= new Map();
+      const ctx = this._document.createElement("canvas").getContext("2d");
+      const fallback = this._document.createElement("canvas").getContext("2d");
+      fallback.font = "16px sans-serif";
+      function measure(cp) {
+        const char = String.fromCodePoint(cp);
+        return /\p{Cc}/u.test(char) || cp === 0xf8ff || ctx.measureText(char).width === 0 && fallback.measureText(char).width > 0;
+      }
+      this._document.fonts.add(probeFace);
+      try {
+        ctx.font = `16px "${probeFace.family}", sans-serif`;
+        return codePoints.every(cp => coverage.getOrInsertComputed(cp, measure));
+      } finally {
+        this._document.fonts.delete(probeFace);
+      }
+    } catch {
+      return false;
     }
-    unreachable("Not implemented: loadSystemFont without the Font Loading API.");
   }
   async #loadFontFace(font) {
-    if (!this.isFontLoadingAPISupported) {
-      return;
-    }
     const fontFace = font.createNativeFontFace();
     if (!fontFace) {
       return;
@@ -12784,12 +12837,12 @@ class FontLoader {
       return;
     }
     font.attached = true;
-    if (font.systemFontInfo) {
-      await Promise.all([this.loadSystemFont(font), this.#loadFontFace(font)]);
-      return;
-    }
     if (this.isFontLoadingAPISupported) {
-      await this.#loadFontFace(font);
+      if (font.systemFontInfo) {
+        await Promise.all([this.#loadSystemFont(font), this.#loadFontFace(font)]);
+      } else {
+        await this.#loadFontFace(font);
+      }
       return;
     }
     const rule = font.createFontFaceRule();
@@ -14688,7 +14741,7 @@ class RendererWorker {
         terminateEarly("TypedArray transfer test failed.");
         return;
       }
-      const apiVersion = "7.0.234";
+      const apiVersion = "7.0.241";
       if (apiVersion !== data.workerVersion) {
         terminateEarly(`The API version "${apiVersion}" does not match the Worker version "${data.workerVersion}".`);
         return;
@@ -15394,7 +15447,7 @@ function getDocument(src = {}) {
   }
   const docParams = {
     docId,
-    apiVersion: "7.0.234",
+    apiVersion: "7.0.241",
     data,
     password,
     disableAutoFetch,
@@ -16541,6 +16594,7 @@ class WorkerTransport {
       const page = this.#pageCache.get(data.pageProxyId);
       page._startRenderPage(data.transparency, data.cacheKey);
     });
+    messageHandler.on("LoadSystemFont", data => !this.destroyed && this.fontLoader.hasSystemFontGlyphs(data));
     const objectHandler = new ObjectHandler({
       messageHandler,
       commonObjs: this.commonObjs,
@@ -17114,8 +17168,8 @@ class InternalRenderTask {
     }
   }
 }
-const version = "7.0.234";
-const build = "3471ae169";
+const version = "7.0.241";
+const build = "808186117";
 
 ;// ./src/display/editor/color_picker.js
 
