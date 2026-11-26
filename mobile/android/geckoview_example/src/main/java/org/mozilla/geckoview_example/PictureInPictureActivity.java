@@ -9,7 +9,6 @@ import android.content.Intent;
 import android.content.res.Configuration;
 import android.os.Build;
 import android.os.Bundle;
-import android.util.Log;
 import android.util.Rational;
 import android.view.ViewGroup;
 import androidx.annotation.NonNull;
@@ -56,7 +55,7 @@ public class PictureInPictureActivity extends AppCompatActivity {
 
     final GeckoSession session = PipSessionHolder.take();
     if (session == null) {
-      Log.d(LOGTAG, "No session to display, finishing");
+      DebugLog.d(LOGTAG, "No session to display, finishing");
       finish();
       return;
     }
@@ -143,7 +142,7 @@ public class PictureInPictureActivity extends AppCompatActivity {
     if (!mHasEnteredPip) {
       mHasEnteredPip = true;
       if (!enterPictureInPictureMode(buildPipParams())) {
-        Log.d(LOGTAG, "Refused picture-in-picture mode, finishing");
+        DebugLog.d(LOGTAG, "Refused picture-in-picture mode, finishing");
         finish();
       }
     }

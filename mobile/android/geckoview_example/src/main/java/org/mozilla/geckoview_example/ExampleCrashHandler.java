@@ -43,18 +43,20 @@ public class ExampleCrashHandler extends Service {
     if (GeckoRuntime.ACTION_CRASHED.equals(intent.getAction())) {
       mCrashIntent = intent;
 
-      Log.d(LOGTAG, "Dump File: " + mCrashIntent.getStringExtra(GeckoRuntime.EXTRA_MINIDUMP_PATH));
-      Log.d(LOGTAG, "Extras File: " + mCrashIntent.getStringExtra(GeckoRuntime.EXTRA_EXTRAS_PATH));
-      Log.d(
+      DebugLog.d(
+          LOGTAG, "Dump File: " + mCrashIntent.getStringExtra(GeckoRuntime.EXTRA_MINIDUMP_PATH));
+      DebugLog.d(
+          LOGTAG, "Extras File: " + mCrashIntent.getStringExtra(GeckoRuntime.EXTRA_EXTRAS_PATH));
+      DebugLog.d(
           LOGTAG,
           "Process Visibility: "
               + mCrashIntent.getStringExtra(GeckoRuntime.EXTRA_CRASH_PROCESS_VISIBILITY));
-      Log.d(
+      DebugLog.d(
           LOGTAG,
           "Process Type: " + mCrashIntent.getStringExtra(GeckoRuntime.EXTRA_CRASH_PROCESS_TYPE));
       final String remoteType = mCrashIntent.getStringExtra(GeckoRuntime.EXTRA_CRASH_REMOTE_TYPE);
       if (remoteType != null) {
-        Log.d(LOGTAG, "Remote Type: " + remoteType);
+        DebugLog.d(LOGTAG, "Remote Type: " + remoteType);
       }
 
       String id = createNotificationChannel();

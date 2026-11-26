@@ -164,7 +164,7 @@ final class BasicGeckoViewPrompt implements GeckoSession.PromptDelegate {
   public GeckoResult<PromptResponse> onCreditCardSave(
       @NonNull GeckoSession session,
       @NonNull AutocompleteRequest<Autocomplete.CreditCardSaveOption> request) {
-    Log.i(LOGTAG, "onCreditCardSave " + request.options[0].value);
+    DebugLog.i(LOGTAG, "onCreditCardSave " + request.options[0].value);
     return null;
   }
 
@@ -173,7 +173,7 @@ final class BasicGeckoViewPrompt implements GeckoSession.PromptDelegate {
   public GeckoResult<PromptResponse> onLoginSave(
       @NonNull GeckoSession session,
       @NonNull AutocompleteRequest<Autocomplete.LoginSaveOption> request) {
-    Log.i(LOGTAG, "onLoginSave");
+    DebugLog.i(LOGTAG, "onLoginSave");
     return GeckoResult.fromValue(request.confirm(request.options[0]));
   }
 
