@@ -480,6 +480,7 @@ class Http3Session final : public Http3SessionBase,
   // socket.
   nsresult mSocketError{NS_OK};
   bool mBeforeConnectedError{false};
+  bool mBlackholeError{false};
   uint64_t mCurrentBrowserId;
 
   // True if this http3 session uses NSPR for UDP IO.

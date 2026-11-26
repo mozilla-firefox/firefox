@@ -1293,6 +1293,13 @@ skip-if = [
   "os == 'win' && msix", # Bug 1807925
 ]
 
+["test_http3_too_many_ptos.js"]
+run-sequentially = ["true"] # http3server
+skip-if = [
+  "os == 'android' && os_version == '14' && arch == 'x86_64'", # Bug 1982955
+  "os == 'win' && os_version == '11.26200' && arch == 'x86_64' && msix", # Bug 1807925
+]
+
 ["test_http3_trans_close.js"]
 run-sequentially = ["true"] # http3server
 skip-if = [

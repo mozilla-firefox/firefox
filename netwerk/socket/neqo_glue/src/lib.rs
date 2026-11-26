@@ -521,6 +521,9 @@ impl NeqoHttp3Conn {
             && socket.as_ref().map_or(false, |s| !s.may_fragment());
 
         let spurious_recovery = static_prefs::pref!("network.http.http3.spurious_recovery");
+        let max_pto = NonZeroUsize::new(
+            static_prefs::pref!("network.http.http3.max_pto") as usize
+        );
 
         let css_baseline =
             if static_prefs::pref!("network.http.http3.hystart_alternative_css_baseline") {
@@ -546,7 +549,8 @@ impl NeqoHttp3Conn {
             .pacing(pacing_enabled)
             .spurious_recovery(spurious_recovery)
             .abe(static_prefs::pref!("network.http.http3.abe"))
-            .hystart_css_baseline(css_baseline);
+            .hystart_css_baseline(css_baseline)
+            .max_pto(max_pto);
 
         // 0 means "use neqo's spec-compliant default PTO scaling".
         if fast_pto > 0 {
