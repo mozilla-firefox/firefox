@@ -2798,7 +2798,11 @@
   <string name="radio_preference_info_content_description">Пстрыкніце, каб атрымаць падрабязнасці</string>
   <!-- Content description for the action bar "up" button -->
   <string name="action_bar_up_description">Перайсці ўверх</string>
-  <!-- Header text for the Stories screen. -->
+  <!--
+    Pocket recommended stories
+
+    Header text for the Stories screen.
+  -->
   <string name="stories_screen_text_news">Навіны</string>
   <!-- Text indicating that the Pocket story that also displays this text is a sponsored story by other 3rd party entity. -->
   <string name="pocket_stories_sponsor_indication">Спонсарскі</string>

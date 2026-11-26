@@ -23,6 +23,14 @@
   <string name="mozac_menu_customize_drag_to_hide">Llusgwch adrannau yma i\'w cuddio</string>
   <!-- Button text to reset the menu to default configuration -->
   <string name="mozac_menu_customize_reset_to_default">Ailosod i\'r rhagosodiad</string>
+  <!-- Title of the dialog shown when resetting the menu to its default layout (removing all user customizations) -->
+  <string name="mozac_menu_customize_reset_dialog_title">Ailosod y ddewislen i\'r gosodiad arferol?</string>
+  <!-- Message of the dialog shown when resetting the menu to its default layout (removing all user customizations) -->
+  <string name="mozac_menu_customize_reset_dialog_message">Bydd hyn yn dileu\'r cyfaddasiadau, a does dim modd dadwneud hyn.</string>
+  <!-- Primary button on the menu reset dialog. Tapping it removes all user customizations. -->
+  <string name="mozac_menu_customize_reset_dialog_reset">Ailosod</string>
+  <!-- Secondary button on the menu reset dialog. Tapping it cancels the reset process and preserves all user-made customizations. -->
+  <string name="mozac_menu_customize_reset_dialog_cancel">Diddymu</string>
   <!-- Accessibility description used in the menu customization screen, where sections of the menu can be moved around. The string describes the section the user has selected, and tells the user what position it currently occupies. %1$s is the name of the section (e.g. "VPN"). %2$d is its position, and %3$d is the total number of sections being shown. -->
   <string name="mozac_menu_customize_shown_section">%1$s. Safle %2$d o %3$d</string>
   <!-- Content description (not visible, for screen readers etc.) of a named menu section in the customize menu screen. %1$s is the name of the section, for example "Page controls", and %2$s the names of its items, for example "Back, Forward, Share, Refresh". -->
@@ -43,4 +51,12 @@
   <string name="mozac_menu_customize_section_hidden">Adran “%1$s” wedi\'i thynnu</string>
   <!-- Announcement (not visible, for screen readers etc.) once the user showed a hidden menu section in the menu again in the customize menu screen. %1$s is the name of the section, or the names of its items separated by commas if it has none, for example "Page controls", "VPN" or "Back, Forward". -->
   <string name="mozac_menu_customize_section_shown">Adran “%1$s” wedi\'i hychwanegu at y ddewislen</string>
+  <!-- Instruction text telling the user they can reorder menu items by dragging them -->
+  <string name="mozac_menu_customize_drag_items_to_reorder">Llusgo eitemau i\'w hail-archebu</string>
+  <!-- Header text for the section containing menu items the user removed from the menu -->
+  <string name="mozac_menu_customize_hidden_items">Eitemau cudd</string>
+  <!-- Instruction telling the user that menu items dragged to the Hidden items area will no longer appear on the menu -->
+  <string name="mozac_menu_customize_drag_items_to_hide">Llusgo eitemau yma i\'w cuddio</string>
+  <!-- Customize menu screen: Name of the action, read by screen readers, for opening the screen where the items of a menu section can be changed. -->
+  <string name="mozac_menu_customize_edit_items">Golygu eitemau dewislen</string>
 </resources>

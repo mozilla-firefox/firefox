@@ -2423,6 +2423,12 @@
   <string name="snackbar_private_tab_closed">Pestaña privada cerrada</string>
   <!-- Text shown in snackbar to undo deleting a tab, top site or collection -->
   <string name="snackbar_deleted_undo">DESHACER</string>
+  <!-- Confirmation message displayed when user adds a page to a tab group. %1$s is the tab group's name. -->
+  <string name="snackbar_tab_added_to_group">Agregado a %1$s</string>
+  <!-- Confirmation message displayed when user moves a page from one tab group to another. %1$s is the tab group's name. -->
+  <string name="snackbar_tab_moved_to_group">Desplazado a %1$s</string>
+  <!-- Button text displayed with a confirmation message when the user adds or moves a page to a tab group. Tapping it displays the tab group. -->
+  <string name="snackbar_action_view">Ver</string>
   <!--
     QR code scanner prompt which appears after scanning a code, but before navigating to it
     %1$s is the name of the app (for example "Firefox"), %2$s is the URL or text scanned
@@ -2541,6 +2547,10 @@
   <string name="sign_in_create_account_text" tools:ignore="BrandUsage"><![CDATA[¿No tienes cuenta? <u>Crea una</u> para sincronizar Firefox entre dispositivos.]]></string>
   <!-- Text shown in confirmation dialog to sign out of account. %s is the name of the app (for example "Firefox"). -->
   <string name="sign_out_confirmation_message_2">%s dejará de sincronizarse con tu cuenta, pero no se borrarán los datos de navegación de este dispositivo.</string>
+  <!-- Title of the confirmation dialog shown when the user signs out of their account -->
+  <string name="sign_out_dialog_title">¿Desconectar cuenta?</string>
+  <!-- Body of the confirmation dialog shown when the user signs out of their account -->
+  <string name="sign_out_dialog_message">Los datos anteriormente sincronizados permanecerán guardados en tu cuenta.</string>
   <!-- Text for the primary action button of the confirmation dialog shown when the user signs out of their account -->
   <string name="sign_out_dialog_confirm_button">Cerrar sesión</string>
   <!-- Option to continue signing out of account shown in confirmation dialog to sign out of account -->
@@ -3101,6 +3111,10 @@
   <string name="preferences_credit_cards_save_and_autofill_cards_2">Guardar y completar métodos de pago</string>
   <!-- Preference summary for saving and autofilling payment method data. %s is the name of the app (for example "Firefox"). -->
   <string name="preferences_credit_cards_save_and_autofill_cards_summary_2">%s cifra todos los métodos de pago que guardes</string>
+  <!-- Preference for saving the security codes of credit cards. -->
+  <string name="preferences_credit_cards_save_security_codes">Guardar códigos de seguridad</string>
+  <!-- Preference summary for saving the security codes of credit cards. %s is the name of the app (for example "Firefox"). -->
+  <string name="preferences_credit_cards_save_security_codes_summary">%s cifra el número y el código de seguridad de tu tarjeta para agilizar tus próximos pagos</string>
   <!-- Preference option for syncing credit cards across devices. This is displayed when the user is not signed into sync -->
   <string name="preferences_credit_cards_sync_cards_across_devices">Sincronizar tarjetas entre dispositivos</string>
   <!-- Preference option for syncing credit cards across devices. This is displayed when the user is signed into sync -->
@@ -3137,6 +3151,8 @@
   <string name="credit_cards_expiration_date_year">Año de la fecha de vencimiento</string>
   <!-- The header for the name on the credit card -->
   <string name="credit_cards_name_on_card">Nombre en la tarjeta</string>
+  <!-- The header for the optional security code of a credit card. CVV is the abbreviation of the card security code. -->
+  <string name="credit_cards_cvv_optional">CVV (opcional)</string>
   <!-- The text for the "Delete card" menu item for deleting a credit card -->
   <string name="credit_cards_menu_delete_card">Eliminar tarjeta</string>
   <!-- The text for the "Delete card" button for deleting a credit card -->
@@ -3153,10 +3169,16 @@
   <string name="credit_cards_cancel_button">Cancelar</string>
   <!-- Title of the "Saved cards" screen -->
   <string name="credit_cards_saved_cards">Tarjetas guardadas</string>
+  <!-- Text in the saved cards list that indicates the security code for a credit card is being stored -->
+  <string name="credit_cards_cvv_saved">CVV guardado</string>
   <!-- Error message for card number validation -->
   <string name="credit_cards_number_validation_error_message_2">Ingresa un número de tarjeta válido</string>
   <!-- Error message for card name on card validation -->
   <string name="credit_cards_name_on_card_validation_error_message_2">Agregar un nombre</string>
+  <!-- Error message for a credit card security code that does not meet the 3-digit length requirement. -->
+  <string name="credit_cards_cvv_validation_error_message">El código de seguridad debe tener 3 dígitos</string>
+  <!-- Error message for a credit card security code that does not meet the 4-digit length requirement (used for American Express cards only) -->
+  <string name="credit_cards_cvv_amex_validation_error_message">Los códigos de seguridad de American Express tienen 4 dígitos</string>
   <!-- Message displayed in biometric prompt displayed for authentication before allowing users to view their saved credit cards -->
   <string name="credit_cards_biometric_prompt_message">Desbloquea para ver tus tarjetas guardadas</string>
   <!-- Title of warning dialog if users have no device authentication set up -->
@@ -3476,7 +3498,11 @@
     Header text for a section on the home screen.
   -->
   <string name="pocket_stories_header_2">Historias</string>
-  <!-- Header text for the Stories screen. -->
+  <!--
+    Pocket recommended stories
+
+    Header text for the Stories screen.
+  -->
   <string name="stories_screen_text_news">Noticias</string>
   <!--
     Context description text for the "Discover more" button in the stories home screen section
@@ -3558,6 +3584,12 @@
     %1$s is the size in kilobytes or megabytes of the language file.
   -->
   <string name="translations_download_language_file_dialog_title">¿Descargar idioma en modo de ahorro de datos (%1$s)?</string>
+  <!--
+    Translations options dialog
+
+    Title of the translation options dialog that allows a user to set their translation preferences for the site the user is currently on.
+  -->
+  <string name="translation_option_bottom_sheet_title_heading2">Preferencias de traducción</string>
   <!--
     Translations options dialog
 
@@ -3794,6 +3826,8 @@
   <string name="protection_panel_privacy_and_security_settings_2">Ajustes de privacidad</string>
   <!-- Title text for the protection panel permissions section. -->
   <string name="protection_panel_permissions_title">Permisos</string>
+  <!-- Certificate panel - Label for the name of the certificate authority that verified and issued the website's certificate -->
+  <string name="certificate_details_panel_verified_by_label">Verificado por:</string>
   <plurals name="trackers_blocked_panel_total_num_trackers_blocked_2">
     <!--
       Text for displaying the total number of trackers blocked in the trackers blocked panel.
@@ -3861,6 +3895,8 @@
   <string name="clear_site_data_dialog_negative_button_text">Cancelar</string>
   <!-- Text for the connection security panel when the site is secure. -->
   <string name="connection_security_panel_secure">Conexión segura</string>
+  <!-- Action description (not visible, for screen readers etc.) for the “Secure connection” link in the protection panel header, which opens a page showing the website's certificate details. Screen readers announce it after “Double tap to” -->
+  <string name="connection_security_panel_view_certificate_details">ver detalles del certificado</string>
   <!-- Text for the connection security panel when the site is not secure. -->
   <string name="connection_security_panel_not_secure">Conexión no segura</string>
   <!-- Text for the connection security panel when accessed from local PDF. -->
@@ -4359,6 +4395,8 @@
   <string name="terms_of_use_prompt_body_line_two_alternative" tools:ignore="UnusedResources">Puedes obtener más información %1$s.</string>
   <!-- Link text for terms_of_use_prompt_body_line_two_alternative that links to a site with more information about the Terms of Use -->
   <string name="terms_of_use_prompt_body_line_two_alternative_link" tools:ignore="UnusedResources">aquí</string>
+  <!-- Label shown on the sports widget match status badge when a match has been canceled. -->
+  <string name="wrex_widget_match_canceled">Cancelado</string>
   <!--
     Privacy notice homepage banner
 
@@ -4415,8 +4453,12 @@
   <string name="lens_camera_mode_qr">Escáner de QR</string>
   <!-- Toast shown when the user picks an image from the gallery in QR mode but no QR code is found in it -->
   <string name="lens_camera_qr_no_code_found">No se encontró ningún código QR en la imagen</string>
+  <!-- Status shown under an image picked from the gallery or taken with the camera while it is being sent to Google Lens for a visual search -->
+  <string name="lens_camera_loading_status">Buscando con esta imagen</string>
   <!-- Button shown under an image picked from the gallery or taken with the camera while it is being sent to Google Lens. Tapping it stops the search and returns to the camera. -->
   <string name="lens_camera_loading_cancel_button">Cancelar</string>
+  <!-- Snackbar message shown when an image picked from the gallery or taken with the camera could not be searched because of a network problem or an error from Google Lens. Shown after returning to the camera, next to the lens_camera_upload_failed_retry_button action. -->
+  <string name="lens_camera_upload_failed">Error al obtener resultados de Google Lens</string>
   <!-- Action in the snackbar shown when an image picked from the gallery or taken with the camera could not be searched with Google Lens. Tapping it searches the same image again. -->
   <string name="lens_camera_upload_failed_retry_button">Intentar de nuevo</string>
   <!-- Title of the bottom sheet shown the first time the user opens the Google Lens camera screen -->

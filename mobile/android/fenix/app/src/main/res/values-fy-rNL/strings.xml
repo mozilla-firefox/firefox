@@ -186,6 +186,8 @@
   <string name="customize_menu">Menu oanpasse</string>
   <!-- Alert message shown in the "Customize menu" screen when the user tries to hide a menu section which cannot be hidden. -->
   <string name="customize_menu_cannot_hide_section">Kin dizze seksje net ferstopje</string>
+  <!-- Title of the screen where the user chooses which items of a menu section are shown in the menu and in which order. -->
+  <string name="edit_menu_items">Menu-items bewurkje</string>
   <!-- Customize menu screen - Accessibility description - name of the menu section that groups the page tools (Bookmark page, Find in page, Desktop site, Extensions, etc.). Read aloud after "Section", followed by the tool names ("Section “Tools”: Bookmark page, Find in page…"). -->
   <string name="browser_menu_section_tools">Ark</string>
   <!-- Customize menu screen - Accessibility description - name of the menu section that groups the History, Bookmarks, Downloads and Passwords items. Read aloud after "Section", followed by the item names ("Section “Library”: History, Bookmarks, Downloads, Passwords"). -->
@@ -1183,6 +1185,8 @@
   <string name="preferences_enable_sync_title">Dit apparaat syngronisearje</string>
   <!-- Preference summary for the toggle that turns sync on or off for the device, shown when sync is on. -->
   <string name="preferences_enable_sync_summary_sync_enabled">Fan jo gegevens wurdt in reservekopy makke en beskikber op syngronisearre apparaten.</string>
+  <!-- Preference summary for the toggle that turns sync on or off for the device, shown when sync is off. It explains where synced data comes from. -->
+  <string name="preferences_enable_sync_summary_sync_disabled_2">Bewarre gegevens wurde yn jo account brûkt.</string>
   <!-- Preference summary for the toggle that turns sync on or off for the device, shown when sync is off. It explains where synced data comes from. %1$s is the Firefox brand name. -->
   <string name="preferences_enable_sync_summary_sync_disabled">Brûkt bewarre gegevens yn jo %1$s-account.</string>
   <!-- Summary for the sync preference category. -->
@@ -3662,7 +3666,11 @@
     Header text for a section on the home screen.
   -->
   <string name="pocket_stories_header_2">Ferhalen</string>
-  <!-- Header text for the Stories screen. -->
+  <!--
+    Pocket recommended stories
+
+    Header text for the Stories screen.
+  -->
   <string name="stories_screen_text_news">Nijs</string>
   <!--
     Context description text for the "Discover more" button in the stories home screen section

@@ -7,6 +7,10 @@
 -->
 
 <resources xmlns:tools="http://schemas.android.com/tools">
+  <!-- Description for the "privacy" WebExtensions API permission. -->
+  <string name="mozac_feature_addons_permissions_privacy_description">رازداری نا سیٹنگاتے خواننگ و بدل کننگ</string>
+  <!-- Description for the "bookmarks" WebExtensions API permission. -->
+  <string name="mozac_feature_addons_permissions_bookmarks_description">نشانی تے خواننگ و بدل کننگ</string>
   <!-- Description for the "geolocation" WebExtensions API permission. -->
   <string name="mozac_feature_addons_permissions_geolocation_description">نما ڈس اے ہرنگ</string>
   <!-- Description for text button that expands the list of domain permissions -->

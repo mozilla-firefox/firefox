@@ -186,6 +186,8 @@
   <string name="customize_menu">Cyfaddasu dewislen</string>
   <!-- Alert message shown in the "Customize menu" screen when the user tries to hide a menu section which cannot be hidden. -->
   <string name="customize_menu_cannot_hide_section">Methu cuddio\'r adran hon</string>
+  <!-- Title of the screen where the user chooses which items of a menu section are shown in the menu and in which order. -->
+  <string name="edit_menu_items">Golygu eitemau\'r ddewislen</string>
   <!-- Customize menu screen - Accessibility description - name of the menu section that groups the Back, Forward, Share and Refresh buttons. Read aloud after "Section", followed by the button names ("Section “Page controls”: Back, Forward, Share, Refresh"). -->
   <string name="browser_menu_section_page_controls">Rheoli tudalen</string>
   <!-- Customize menu screen - Accessibility description - name of the menu section that groups the page tools (Bookmark page, Find in page, Desktop site, Extensions, etc.). Read aloud after "Section", followed by the tool names ("Section “Tools”: Bookmark page, Find in page…"). -->
@@ -3153,7 +3155,7 @@
   <!-- Label for the BETA badge for the browser VPN entry in the settings list -->
   <string name="preferences_ip_protection_beta_badge_label">BETA</string>
   <!-- Title for the browser VPN settings screen (displayed in the app bar) -->
-  <string name="ip_protection_settings_title">VPN cynhenid</string>
+  <string name="ip_protection_settings_title">VPN mewnol</string>
   <!-- Label for the browser VPN toggle on the settings screen -->
   <string name="ip_protection_toggle_label">VPN</string>
   <!-- Content description for the browser VPN settings screen top bar back button -->
@@ -3696,7 +3698,11 @@
     Header text for a section on the home screen.
   -->
   <string name="pocket_stories_header_2">Straeon</string>
-  <!-- Header text for the Stories screen. -->
+  <!--
+    Pocket recommended stories
+
+    Header text for the Stories screen.
+  -->
   <string name="stories_screen_text_news">Newyddion</string>
   <!--
     Context description text for the "Discover more" button in the stories home screen section

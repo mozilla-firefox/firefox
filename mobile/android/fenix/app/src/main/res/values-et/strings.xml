@@ -221,6 +221,14 @@
   -->
   <string name="browser_toolbar_translate">Tõlgi leht</string>
   <!--
+    Translation Toolbar
+
+    Translation toolbar label that is displayed when the current page has been translated by the translation feature.
+    %1$s is the name of the language that is displayed in the original page. (For example: English)
+    %2$s is the name of the language which the page was translated to. (For example: French)
+  -->
+  <string name="translation_toolbar_translated_from_and_to" tools:ignore="UnusedResources">Tõlgitud %1$s keelest %2$s keelde</string>
+  <!--
     Locale Settings Fragment
 
     Content description for tick mark on selected language

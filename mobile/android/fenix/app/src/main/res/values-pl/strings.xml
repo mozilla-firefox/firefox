@@ -3675,7 +3675,11 @@
     Header text for a section on the home screen.
   -->
   <string name="pocket_stories_header_2">Artykuły</string>
-  <!-- Header text for the Stories screen. -->
+  <!--
+    Pocket recommended stories
+
+    Header text for the Stories screen.
+  -->
   <string name="stories_screen_text_news">Aktualności</string>
   <!--
     Context description text for the "Discover more" button in the stories home screen section

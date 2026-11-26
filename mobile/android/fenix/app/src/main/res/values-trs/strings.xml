@@ -2353,7 +2353,11 @@
   <string name="radio_preference_info_content_description">Gā’huì’ klik da’ gīni’înt doj sa huāa</string>
   <!-- Content description for the action bar "up" button -->
   <string name="action_bar_up_description">Gāchē nun gan’ānj nāhuīt</string>
-  <!-- Header text for the Stories screen. -->
+  <!--
+    Pocket recommended stories
+
+    Header text for the Stories screen.
+  -->
   <string name="stories_screen_text_news">Notîsia</string>
   <!-- Text indicating that the Pocket story that also displays this text is a sponsored story by other 3rd party entity. -->
   <string name="pocket_stories_sponsor_indication">Sa rugûñu’ūnj rukû nan</string>

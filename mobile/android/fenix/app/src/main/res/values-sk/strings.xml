@@ -186,6 +186,8 @@
   <string name="customize_menu">Upraviť ponuku</string>
   <!-- Alert message shown in the "Customize menu" screen when the user tries to hide a menu section which cannot be hidden. -->
   <string name="customize_menu_cannot_hide_section">Túto sekciu nie je možné skryť</string>
+  <!-- Title of the screen where the user chooses which items of a menu section are shown in the menu and in which order. -->
+  <string name="edit_menu_items">Upraviť položky ponuky</string>
   <!-- Customize menu screen - Accessibility description - name of the menu section that groups the Back, Forward, Share and Refresh buttons. Read aloud after "Section", followed by the button names ("Section “Page controls”: Back, Forward, Share, Refresh"). -->
   <string name="browser_menu_section_page_controls">Ovládacie prvky stránky</string>
   <!-- Customize menu screen - Accessibility description - name of the menu section that groups the page tools (Bookmark page, Find in page, Desktop site, Extensions, etc.). Read aloud after "Section", followed by the tool names ("Section “Tools”: Bookmark page, Find in page…"). -->
@@ -1762,6 +1764,14 @@
   <string name="close_tab_and_delete_group_confirmation_dialog_confirm">Odstrániť skupinu</string>
   <!-- Text shown on the cancel button in the Close last tab and delete tab group confirmation dialog. -->
   <string name="close_tab_and_delete_group_confirmation_dialog_cancel">Zrušiť</string>
+  <!-- Title of the confirmation dialog shown when moving the last tab out of a group will delete the group. %s is the group name, which defaults to a value such as "Group 1" but can be edited by the user to contain arbitrary text. -->
+  <string name="move_last_tab_and_delete_group_confirmation_dialog_title">Presunúť poslednú kartu zo skupiny %s?</string>
+  <!-- Body of the confirmation dialog shown when moving the last tab out of a group will delete the group. %1$s is the destination group name. %2$s is the source group name that will be deleted. Both names default to values such as "Group 1" but can be edited by the user to contain arbitrary text. -->
+  <string name="move_last_tab_and_delete_group_confirmation_dialog_body">Táto karta sa presunie do skupiny %1$s. Skupina %2$s sa odstráni, pretože zostane prázdna.</string>
+  <!-- Text shown on the confirm button for the confirmation dialog shown when moving the last tab out of a group will delete the group. -->
+  <string name="move_last_tab_and_delete_group_confirmation_dialog_confirm">Presunúť kartu</string>
+  <!-- Text shown on the cancel button for the confirmation dialog shown when moving the last tab out of a group will delete the group. -->
+  <string name="move_last_tab_and_delete_group_confirmation_dialog_cancel">Zrušiť</string>
   <!-- Content description for the three dot button next to a tab group" -->
   <string name="tab_group_three_dot_button_content_description">Ďalšie možnosti</string>
   <!--
@@ -3144,6 +3154,8 @@
   <string name="ip_protection_learn_more">Ďalšie informácie</string>
   <!-- Label for the monthly data allowance section on the browser VPN settings screen -->
   <string name="ip_protection_data_limit_label">Mesačný dátový limit</string>
+  <!-- Accessibility description for the button that closes promotional banners or messages on the VPN settings screen (without triggering any effect) -->
+  <string name="ip_protection_settings_message_dismiss">Zavrieť</string>
   <!--
     Data usage shown on the browser VPN settings screen.
     %1$.1f is the data remaining in GB (for example "8.3").
@@ -3211,6 +3223,13 @@
     %2$s is a link using ip_protection_onboarding_body_link_promo (“Learn more”) as text. It links to a support article about VPN on Firefox.
   -->
   <string name="ip_protection_onboarding_body_promo">Zapnite ju, aby bolo vaše prehliadanie súkromnejšie a bolo ťažšie ho sledovať. Vyskúšajte si ju teraz a získajte neobmedzenú šírku pásma až do %1$s. %2$s</string>
+  <!--
+    The body of the VPN onboarding card when the user qualifies for using VPN without signing in to a Mozilla account
+    %1$d is the amount of free data in GB available without signing in (for example "5").
+    %2$d is the amount of data in GB available after signing in (for example "50").
+    %3$s is a link using ip_protection_onboarding_body_link_promo (“Learn more”) as text. It links to a support article about VPN on Firefox.
+  -->
+  <string name="ip_protection_onboarding_body_no_fxa">Zapnite ju, aby bolo vaše prehliadanie súkromnejšie a ťažšie sledovateľné. Vyskúšajte ju s %1$d GB dát zdarma alebo sa prihláste a získajte %2$d GB. %3$s</string>
   <!-- Used as text for a link in ip_protection_onboarding_body. Make sure to adapt capitalization if the link is in the middle of the sentence. -->
   <string name="ip_protection_onboarding_body_link_promo">Ďalšie informácie</string>
   <!-- Label for the dismiss button on the onboarding bottom sheet. -->
@@ -3665,7 +3684,11 @@
     Header text for a section on the home screen.
   -->
   <string name="pocket_stories_header_2">Články</string>
-  <!-- Header text for the Stories screen. -->
+  <!--
+    Pocket recommended stories
+
+    Header text for the Stories screen.
+  -->
   <string name="stories_screen_text_news">Správy</string>
   <!--
     Context description text for the "Discover more" button in the stories home screen section

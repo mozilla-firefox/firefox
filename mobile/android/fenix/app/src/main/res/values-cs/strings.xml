@@ -186,6 +186,8 @@
   <string name="customize_menu">Upravit nabídku</string>
   <!-- Alert message shown in the "Customize menu" screen when the user tries to hide a menu section which cannot be hidden. -->
   <string name="customize_menu_cannot_hide_section">Tuto sekci není možné skrýt</string>
+  <!-- Title of the screen where the user chooses which items of a menu section are shown in the menu and in which order. -->
+  <string name="edit_menu_items">Upravit položky nabídky</string>
   <!-- Customize menu screen - Accessibility description - name of the menu section that groups the Back, Forward, Share and Refresh buttons. Read aloud after "Section", followed by the button names ("Section “Page controls”: Back, Forward, Share, Refresh"). -->
   <string name="browser_menu_section_page_controls">Ovládací prvky stránky</string>
   <!-- Customize menu screen - Accessibility description - name of the menu section that groups the page tools (Bookmark page, Find in page, Desktop site, Extensions, etc.). Read aloud after "Section", followed by the tool names ("Section “Tools”: Bookmark page, Find in page…"). -->
@@ -293,6 +295,8 @@
   <string name="browser_menu_passwords">Hesla</string>
   <!-- Content description (not visible, for screen readers etc.) for the handle used to drag the main menu at the bottom of the screen. -->
   <string name="browser_close_main_menu_handlebar_content_description">Zavřít nabídku</string>
+  <!-- Content description (not visible, used by screen readers, etc.) for the heading of the menu opened from the customize menu screen to preview pending changes. It is read before the menu items. The items are shown for preview only and do nothing when tapped. -->
+  <string name="browser_menu_preview_heading_content_description">Náhled nabídky. Položky zde nelze použít.</string>
   <!-- Content description (not visible, for screen readers etc.) for main menu navigation header. -->
   <string name="browser_main_menu_content_description_navigation_header">Navigace</string>
   <!-- Content description (not visible, for screen readers etc.) for bottom sheet handlebar custom tab menu. -->
@@ -353,6 +357,10 @@
     Content description for the translate page toolbar button that opens the translations dialog when no translation has occurred.
   -->
   <string name="browser_toolbar_translate">Přeložit stránku</string>
+  <!-- Accessibility description for the toolbar button displayed when the page the user is on has a video that can be opened in a picture-in-picture window -->
+  <string name="browser_toolbar_picture_in_picture">Obraz v obraze</string>
+  <!-- Accessibility description for the toolbar button displayed while the current page's video is playing in a picture-in-picture window. Tapping the button closes that window. -->
+  <string name="browser_toolbar_picture_in_picture_close">Zavře režim obraz v obraze</string>
   <!-- CFR description for the browser toolbar describing the "Shake to summarize feature" -->
   <string name="browser_toolbar_summarize_cfr_description">Zatřeste zařízením pro shrnutí této stránky během několika sekund. ⚡️</string>
   <!--
@@ -1183,6 +1191,8 @@
   <string name="preferences_enable_sync_title">Synchronizovat toto zařízení</string>
   <!-- Preference summary for the toggle that turns sync on or off for the device, shown when sync is on. -->
   <string name="preferences_enable_sync_summary_sync_enabled">Vaše data jsou zálohována a k dispozici na synchronizovaných zařízeních.</string>
+  <!-- Preference summary for the toggle that turns sync on or off for the device, shown when sync is off. It explains where synced data comes from. -->
+  <string name="preferences_enable_sync_summary_sync_disabled_2">Používají se data uložená ve vašem účtu.</string>
   <!-- Preference summary for the toggle that turns sync on or off for the device, shown when sync is off. It explains where synced data comes from. %1$s is the Firefox brand name. -->
   <string name="preferences_enable_sync_summary_sync_disabled">Jsou využívána data uložená ve vašem účtu %1$s.</string>
   <!-- Summary for the sync preference category. -->
@@ -1704,6 +1714,8 @@
   <string name="add_to_new_tab_group_content_description">Přidat do nové skupiny panelů</string>
   <!-- Label for adding to a new tab group. -->
   <string name="add_to_new_tab_group_title">Nová skupina panelů</string>
+  <!-- Label to add a link in a new tab inside a tab group. -->
+  <string name="contextmenu_open_in_tab_group">Otevřít ve skupině panelů</string>
   <plurals name="tab_group_tabs_count_subtitle">
     <!--
       Subtitle for the number of tabs in a tab group.
@@ -1752,6 +1764,10 @@
   <string name="close_tab_and_delete_group_confirmation_dialog_confirm">Smazat skupinu</string>
   <!-- Text shown on the cancel button in the Close last tab and delete tab group confirmation dialog. -->
   <string name="close_tab_and_delete_group_confirmation_dialog_cancel">Zrušit</string>
+  <!-- Title of the confirmation dialog shown when moving the last tab out of a group will delete the group. %s is the group name, which defaults to a value such as "Group 1" but can be edited by the user to contain arbitrary text. -->
+  <string name="move_last_tab_and_delete_group_confirmation_dialog_title">Přesunout poslední panel ze skupiny %s?</string>
+  <!-- Body of the confirmation dialog shown when moving the last tab out of a group will delete the group. %1$s is the destination group name. %2$s is the source group name that will be deleted. Both names default to values such as "Group 1" but can be edited by the user to contain arbitrary text. -->
+  <string name="move_last_tab_and_delete_group_confirmation_dialog_body">Tento panel se přesune do skupiny %1$s. Skupina %2$s bude smazána, protože zůstane prázdná.</string>
   <!-- Text shown on the confirm button for the confirmation dialog shown when moving the last tab out of a group will delete the group. -->
   <string name="move_last_tab_and_delete_group_confirmation_dialog_confirm">Přesunout panel</string>
   <!-- Text shown on the cancel button for the confirmation dialog shown when moving the last tab out of a group will delete the group. -->
@@ -3266,6 +3282,10 @@
   <string name="preferences_credit_cards_save_and_autofill_cards_2">Ukládat a vyplňovat platební metody</string>
   <!-- Preference summary for saving and autofilling payment method data. %s is the name of the app (for example "Firefox"). -->
   <string name="preferences_credit_cards_save_and_autofill_cards_summary_2">%s šifruje všechny vaše uložené platební metody</string>
+  <!-- Preference for saving the security codes of credit cards. -->
+  <string name="preferences_credit_cards_save_security_codes">Ukládat bezpečnostní kódy</string>
+  <!-- Preference summary for saving the security codes of credit cards. %s is the name of the app (for example "Firefox"). -->
+  <string name="preferences_credit_cards_save_security_codes_summary">%s zašifruje číslo vaší karty a bezpečnostní kód, abyste příště mohli zaplatit rychleji</string>
   <!-- Preference option for syncing credit cards across devices. This is displayed when the user is not signed into sync -->
   <string name="preferences_credit_cards_sync_cards_across_devices">Synchronizovat karty napříč zařízeními</string>
   <!-- Preference option for syncing credit cards across devices. This is displayed when the user is signed into sync -->
@@ -3320,10 +3340,16 @@
   <string name="credit_cards_cancel_button">Zrušit</string>
   <!-- Title of the "Saved cards" screen -->
   <string name="credit_cards_saved_cards">Uložené karty</string>
+  <!-- Text in the saved cards list that indicates the security code for a credit card is being stored -->
+  <string name="credit_cards_cvv_saved">CVV uloženo</string>
   <!-- Error message for card number validation -->
   <string name="credit_cards_number_validation_error_message_2">Zadejte platné číslo karty</string>
   <!-- Error message for card name on card validation -->
   <string name="credit_cards_name_on_card_validation_error_message_2">Zadejte jméno</string>
+  <!-- Error message for a credit card security code that does not meet the 3-digit length requirement. -->
+  <string name="credit_cards_cvv_validation_error_message">Bezpečnostní kód musí obsahovat 3 číslice</string>
+  <!-- Error message for a credit card security code that does not meet the 4-digit length requirement (used for American Express cards only) -->
+  <string name="credit_cards_cvv_amex_validation_error_message">Bezpečnostní kód karty American Express musí mít 4 číslice</string>
   <!-- Message displayed in biometric prompt displayed for authentication before allowing users to view their saved credit cards -->
   <string name="credit_cards_biometric_prompt_message">Odemknout pro zobrazení uložených karet</string>
   <!-- Title of warning dialog if users have no device authentication set up -->
@@ -3651,7 +3677,11 @@
     Header text for a section on the home screen.
   -->
   <string name="pocket_stories_header_2">Příběhy</string>
-  <!-- Header text for the Stories screen. -->
+  <!--
+    Pocket recommended stories
+
+    Header text for the Stories screen.
+  -->
   <string name="stories_screen_text_news">Novinky</string>
   <!--
     Context description text for the "Discover more" button in the stories home screen section
@@ -3733,6 +3763,12 @@
     %1$s is the size in kilobytes or megabytes of the language file.
   -->
   <string name="translations_download_language_file_dialog_title">Stáhnout jazyk v režimu úspory dat (%1$s)?</string>
+  <!--
+    Translations options dialog
+
+    Title of the translation options dialog that allows a user to set their translation preferences for the site the user is currently on.
+  -->
+  <string name="translation_option_bottom_sheet_title_heading2">Nastavení překladu</string>
   <!--
     Translations options dialog
 
@@ -3975,6 +4011,8 @@
   <string name="certificate_details_panel_secure_connection_title">Zabezpečené připojení</string>
   <!-- Certificate panel - Label for the organization, locality and country the website's certificate was issued to -->
   <string name="certificate_details_panel_issued_to_label">Certifikát vydán pro:</string>
+  <!-- Certificate panel - Label for the name of the certificate authority that verified and issued the website's certificate -->
+  <string name="certificate_details_panel_verified_by_label">Ověřil:</string>
   <!-- Certificate panel - Content description (not visible, for screen readers etc.) for the EU trust mark logo, shown when the website's certificate is a Qualified Website Authentication Certificate (QWAC) as specified in EU Regulation 2024/1183 -->
   <string name="certificate_details_panel_eu_trust_mark_content_description">Značka důvěry EU</string>
   <plurals name="trackers_blocked_panel_total_num_trackers_blocked_2">
@@ -4058,6 +4096,8 @@
   <string name="clear_site_data_dialog_negative_button_text">Zrušit</string>
   <!-- Text for the connection security panel when the site is secure. -->
   <string name="connection_security_panel_secure">Zabezpečené připojení</string>
+  <!-- Action description (not visible, for screen readers etc.) for the “Secure connection” link in the protection panel header, which opens a page showing the website's certificate details. Screen readers announce it after “Double tap to” -->
+  <string name="connection_security_panel_view_certificate_details">zobrazit podrobnosti certifikátu</string>
   <!-- Text for the connection security panel when the site is not secure. -->
   <string name="connection_security_panel_not_secure">Spojení není zabezpečené</string>
   <!-- Text for the connection security panel when accessed from local PDF. -->
@@ -4568,6 +4608,8 @@
   <string name="wrex_widget_match_suspended">Pozastaveno</string>
   <!-- Label shown on the sports widget match status badge when a match has been postponed to a later date. -->
   <string name="wrex_widget_match_postponed">Odloženo</string>
+  <!-- Label shown on the sports widget match status badge when a match has been canceled. -->
+  <string name="wrex_widget_match_canceled">Zrušeno</string>
   <!-- Sports widget action label to refresh match data after an error. -->
   <string name="wrex_widget_error_refresh">Obnovit</string>
   <!-- Sports widget menu item to view the team's match results. -->
