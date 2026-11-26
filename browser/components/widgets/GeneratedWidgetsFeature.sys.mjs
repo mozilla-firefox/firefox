@@ -7,13 +7,37 @@ import { AIFeature } from "chrome://global/content/ml/AIFeature.sys.mjs";
 const CONTROL_PREF = "browser.ai.control.generatedWidgets";
 const DEFAULT_PREF = "browser.ai.control.default";
 const LABS_PREF = "browser.widgets.generated.enabled";
+const PROVIDER_PREF = "extensions.widgets.generated.enabled";
+const NEWTAB_PREF =
+  "browser.newtabpage.activity-stream.widgets.generated.enabled";
+
+function flipPrefs() {
+  if (!Services.prefs.getBoolPref(LABS_PREF, false)) {
+    return;
+  }
+  // Deliberately never set to false, so installed widgets keep running after
+  // opt-out.
+  Services.prefs.setBoolPref(PROVIDER_PREF, true);
+  Services.prefs.setBoolPref(NEWTAB_PREF, true);
+}
 
 /**
  * Custom widgets, as exposed to AI Controls. Firefox Labs turns them on by
  * setting LABS_PREF. Blocking leaves it alone, so people stay in Labs and
- * widgets already installed keep running.
+ * widgets already installed keep running. While LABS_PREF is true, init() also
+ * turns on the provider and New Tab prefs and never turns them off.
  */
 export class GeneratedWidgetsFeature extends AIFeature {
+  /**
+   * Called at idle startup. Turns on the provider and New Tab prefs while
+   * LABS_PREF is true, now and whenever it changes. Passing the same function
+   * each time registers it once.
+   */
+  static init() {
+    flipPrefs();
+    Services.prefs.addObserver(LABS_PREF, flipPrefs);
+  }
+
   /**
    * @returns {string}
    */

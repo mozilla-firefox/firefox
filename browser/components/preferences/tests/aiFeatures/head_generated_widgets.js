@@ -42,6 +42,8 @@ const CONTROL_PREF = "browser.ai.control.generatedWidgets";
 const DEFAULT_PREF = "browser.ai.control.default";
 const LABS_PREF = "browser.widgets.generated.enabled";
 const PROVIDER_PREF = "extensions.widgets.generated.enabled";
+const NEWTAB_PREF =
+  "browser.newtabpage.activity-stream.widgets.generated.enabled";
 
 const AI_CONTROL_PREFS = [
   ["browser.preferences.aiControls", true],
@@ -99,6 +101,7 @@ async function setUpGeneratedWidgetsTest() {
   prefEnvCount = 0;
   Services.prefs.clearUserPref(LABS_PREF);
   Services.prefs.clearUserPref(PROVIDER_PREF);
+  Services.prefs.clearUserPref(NEWTAB_PREF);
   await SpecialPowers.pushPrefEnv({ set: AI_CONTROL_PREFS });
   prefEnvCount++;
   removeTestFeature = NimbusTestUtils.addTestFeatures(
@@ -127,6 +130,7 @@ async function tearDownGeneratedWidgetsTest() {
     }
     Services.prefs.clearUserPref(LABS_PREF);
     Services.prefs.clearUserPref(PROVIDER_PREF);
+    Services.prefs.clearUserPref(NEWTAB_PREF);
   }
 }
 

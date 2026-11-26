@@ -13,6 +13,7 @@ category first-startup-new-profile resource:///modules/AboutNewTabResourceMappin
 
 #ifdef NIGHTLY_BUILD
 category addon-provider-module GeneratedWidgetsProvider moz-src:///toolkit/components/widgets/GeneratedWidgetsProvider.sys.mjs
+category browser-idle-startup moz-src:///browser/components/widgets/GeneratedWidgetsFeature.sys.mjs GeneratedWidgetsFeature.init
 #endif
 
 # Browser global components initializing before UI startup

@@ -10,6 +10,9 @@ skip-if = [
   "!nightly_build",
 ]
 
+["browser_generated_widgets_prefs.js"]
+skip-if = ["!nightly_build"]
+
 ["browser_sidebar_widget_studio.js"]
 
 ["browser_widget_studio_creation.js"]
