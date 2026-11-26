@@ -660,42 +660,6 @@ ImgDrawResult nsCSSRendering::CreateWebRenderCommandsForBorder(
       aDisplayListBuilder, visitedBorder.refOr(*style->StyleBorder()));
 }
 
-bool nsCSSRendering::GenerateAndPushBorderAreaMask(
-    nsIFrame* aFrame, gfxContext* aContext, const nsRect& aBackgroundRect) {
-  auto bounds = LayoutDeviceRect::FromAppUnits(
-      aBackgroundRect, aFrame->PresContext()->AppUnitsPerDevPixel());
-  RefPtr<DrawTarget> maskDT =
-      aContext->GetDrawTarget()->CreateClippedDrawTarget(bounds.ToUnknownRect(),
-                                                         SurfaceFormat::A8);
-  if (!maskDT || !maskDT->IsValid()) {
-    return false;
-  }
-
-  nsStyleBorder border(*aFrame->StyleBorder());
-  const auto kOpaqueMaskColor = StyleColor::FromColor(NS_RGB(255, 255, 255));
-  for (auto side : AllPhysicalSides()) {
-    border.BorderColorFor(side) = kOpaqueMaskColor;
-  }
-  auto renderer = nsCSSRendering::CreateNullBorderRendererWithStyleBorder(
-      aFrame->PresContext(), maskDT, aFrame, aBackgroundRect, aBackgroundRect,
-      border, aFrame->Style(), nullptr, aFrame->GetSkipSides());
-  if (renderer) {
-    renderer->DrawBorders();
-  }
-
-  Matrix inverse = aContext->CurrentMatrix();
-  if (!inverse.Invert()) {
-    return false;
-  }
-  RefPtr<SourceSurface> mask = maskDT->Snapshot();
-  if (!mask) {
-    return false;
-  }
-  aContext->PushGroupForBlendBack(gfxContentType::COLOR_ALPHA, 1.0, mask,
-                                  inverse);
-  return true;
-}
-
 void nsCSSRendering::CreateWebRenderCommandsForNullBorder(
     nsDisplayItem* aItem, nsIFrame* aForFrame, const nsRect& aBorderArea,
     mozilla::wr::DisplayListBuilder& aBuilder,
@@ -2138,9 +2102,9 @@ static inline void SetupDirtyRects(const nsRect& aBGClipArea,
 }
 
 static bool IsSVGStyleGeometryBox(StyleGeometryBox aBox) {
-  return (aBox == StyleGeometryBox::FillBox ||
-          aBox == StyleGeometryBox::StrokeBox ||
-          aBox == StyleGeometryBox::ViewBox);
+  return aBox == StyleGeometryBox::FillBox ||
+         aBox == StyleGeometryBox::StrokeBox ||
+         aBox == StyleGeometryBox::ViewBox;
 }
 
 static StyleGeometryBox ComputeBoxValueForOrigin(
@@ -2203,6 +2167,8 @@ static StyleGeometryBox ComputeBoxValueForClip(const nsIFrame* aForFrame,
       return StyleGeometryBox::Text;
     case StyleBackgroundClip::BorderArea:
       return StyleGeometryBox::BorderArea;
+    case StyleBackgroundClip::BorderAreaText:
+      return StyleGeometryBox::BorderAreaText;
   }
   MOZ_ASSERT_UNREACHABLE("Unknown background-clip/mask-clip value");
   return StyleGeometryBox::BorderBox;
@@ -2345,7 +2311,8 @@ void nsCSSRendering::GetImageLayerClip(
   // (see PushBorderAreaClipOut / ClipBackgroundToBorderArea).
   if (layerClip != StyleGeometryBox::BorderBox &&
       layerClip != StyleGeometryBox::Text &&
-      layerClip != StyleGeometryBox::BorderArea) {
+      layerClip != StyleGeometryBox::BorderArea &&
+      layerClip != StyleGeometryBox::BorderAreaText) {
     nsMargin border = aForFrame->GetUsedBorder();
     if (layerClip == StyleGeometryBox::MozAlmostPadding) {
       // Reduce |border| by 1px (device pixels) on all sides, if

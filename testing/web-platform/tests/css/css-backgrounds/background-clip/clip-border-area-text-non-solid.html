@@ -1,0 +1,37 @@
+<!DOCTYPE html>
+<title>CSS Backgrounds Test: background-clip: border-area text with non-solid borders</title>
+<link rel="help" href="https://drafts.csswg.org/css-backgrounds-4/#background-clip">
+<link rel="match" href="clip-border-area-text-non-solid-ref.html">
+<meta name="assert" content="When both border-area and text are specified, the background is clipped to the union of the area painted by the border and the text, including for dashed and double borders, and for background-color.">
+<meta name="fuzzy" content="maxDifference=0-130; totalPixels=0-5000">
+<style>
+  .test {
+    display: inline-block;
+    margin: 20px;
+    width: 300px;
+    height: 150px;
+    box-sizing: border-box;
+    border: 30px dashed transparent;
+    font: bold 60px/90px monospace;
+    color: transparent;
+    background-clip: border-area text;
+    background-image: linear-gradient(blue, blue);
+  }
+
+  .double {
+    border-style: double;
+  }
+
+  .color {
+    background-image: none;
+    background-color: blue;
+  }
+
+  .reversed {
+    background-clip: text border-area;
+  }
+</style>
+<div class="test">Text</div>
+<div class="test double">Text</div>
+<div class="test color">Text</div>
+<div class="test color double reversed">Text</div>

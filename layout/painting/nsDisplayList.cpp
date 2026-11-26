@@ -399,52 +399,83 @@ static uint64_t AddAnimationsForWebRender(
   return animationsId;
 }
 
-static bool GenerateAndPushTextMask(nsIFrame* aFrame, gfxContext* aContext,
-                                    const nsRect& aFillRect,
-                                    nsDisplayListBuilder* aBuilder) {
+static bool NeedsBorderAreaMask(nsIFrame* aFrame, StyleBackgroundClip aClip) {
+  if (!BackgroundClipIncludesBorderArea(aClip)) {
+    return false;
+  }
+  for (auto side : AllPhysicalSides()) {
+    if (!aFrame->StyleBorder()->GetComputedBorderWidth(side)) {
+      continue;
+    }
+    switch (aFrame->StyleBorder()->GetBorderStyle(side)) {
+      case StyleBorderStyle::Dashed:
+      case StyleBorderStyle::Dotted:
+      case StyleBorderStyle::Double:
+        return true;
+      default:
+        break;
+    }
+  }
+  return false;
+}
+
+enum class MaskStatus { NotNeeded, DontPaint, Pushed };
+static MaskStatus GenerateAndPushBackgroundMaskIfNeeded(
+    nsIFrame* aFrame, StyleBackgroundClip aClip, gfxContext* aContext,
+    const nsRect& aBackgroundRect, nsDisplayListBuilder* aBuilder) {
+  const bool includesText = BackgroundClipIncludesText(aClip);
+  if (!includesText && !NeedsBorderAreaMask(aFrame, aClip)) {
+    return MaskStatus::NotNeeded;
+  }
   if (aBuilder->IsForGenerateGlyphMask()) {
-    return false;
+    return MaskStatus::DontPaint;
   }
-
-  SVGObserverUtils::GetAndObserveBackgroundClip(aFrame);
-
-  // The main function of enabling background-clip:text property value.
-  // When a nsDisplayBackgroundImage detects "text" bg-clip style, it will call
-  // this function to
-  // 1. Generate a mask by all descendant text frames
-  // 2. Push the generated mask into aContext.
-
-  gfxContext* sourceCtx = aContext;
-  LayoutDeviceRect bounds = LayoutDeviceRect::FromAppUnits(
-      aFillRect, aFrame->PresContext()->AppUnitsPerDevPixel());
-
-  // Create a mask surface.
-  RefPtr<DrawTarget> sourceTarget = sourceCtx->GetDrawTarget();
-  RefPtr<DrawTarget> maskDT = sourceTarget->CreateClippedDrawTarget(
-      bounds.ToUnknownRect(), SurfaceFormat::A8);
+  auto bounds = LayoutDeviceRect::FromAppUnits(
+      aBackgroundRect, aFrame->PresContext()->AppUnitsPerDevPixel());
+  RefPtr<DrawTarget> maskDT =
+      aContext->GetDrawTarget()->CreateClippedDrawTarget(bounds.ToUnknownRect(),
+                                                         SurfaceFormat::A8);
   if (!maskDT || !maskDT->IsValid()) {
-    return false;
+    return MaskStatus::DontPaint;
   }
-  gfxContext maskCtx(maskDT, /* aPreserveTransform */ true);
-  maskCtx.Multiply(Matrix::Translation(bounds.TopLeft().ToUnknownPoint()));
 
-  // Shade text shape into mask A8 surface.
-  nsLayoutUtils::PaintFrame(
-      &maskCtx, aFrame, nsRect(nsPoint(0, 0), aFrame->GetSize()),
-      NS_RGB(255, 255, 255), nsDisplayListBuilderMode::GenerateGlyph);
+  if (BackgroundClipIncludesBorderArea(aClip)) {
+    nsStyleBorder border(*aFrame->StyleBorder());
+    const auto kOpaqueMaskColor = StyleColor::FromColor(NS_RGB(255, 255, 255));
+    for (auto side : AllPhysicalSides()) {
+      border.BorderColorFor(side) = kOpaqueMaskColor;
+    }
+    auto renderer = nsCSSRendering::CreateNullBorderRendererWithStyleBorder(
+        aFrame->PresContext(), maskDT, aFrame, aBackgroundRect, aBackgroundRect,
+        border, aFrame->Style(), nullptr, aFrame->GetSkipSides());
+    if (renderer) {
+      renderer->DrawBorders();
+    }
+  }
 
-  // Push the generated mask into aContext, so that the caller can pop and
-  // blend with it.
+  if (includesText) {
+    SVGObserverUtils::GetAndObserveBackgroundClip(aFrame);
 
-  Matrix currentMatrix = sourceCtx->CurrentMatrix();
-  Matrix invCurrentMatrix = currentMatrix;
-  invCurrentMatrix.Invert();
+    gfxContext maskCtx(maskDT, /* aPreserveTransform */ true);
+    maskCtx.Multiply(Matrix::Translation(bounds.TopLeft().ToUnknownPoint()));
 
-  RefPtr<SourceSurface> maskSurface = maskDT->Snapshot();
-  sourceCtx->PushGroupForBlendBack(gfxContentType::COLOR_ALPHA, 1.0,
-                                   maskSurface, invCurrentMatrix);
+    // Shade text shape into mask A8 surface.
+    nsLayoutUtils::PaintFrame(&maskCtx, aFrame, aFrame->GetRectRelativeToSelf(),
+                              NS_RGB(255, 255, 255),
+                              nsDisplayListBuilderMode::GenerateGlyph);
+  }
 
-  return true;
+  Matrix inverse = aContext->CurrentMatrix();
+  if (!inverse.Invert()) {
+    return MaskStatus::DontPaint;
+  }
+  RefPtr<SourceSurface> mask = maskDT->Snapshot();
+  if (!mask) {
+    return MaskStatus::DontPaint;
+  }
+  aContext->PushGroupForBlendBack(gfxContentType::COLOR_ALPHA, 1.0, mask,
+                                  inverse);
+  return MaskStatus::Pushed;
 }
 
 nsDisplayWrapper* nsDisplayWrapList::CreateShallowCopy(
@@ -3061,26 +3092,6 @@ void nsDisplayBackgroundImage::Destroy(nsDisplayListBuilder* aBuilder) {
   nsPaintedDisplayItem::Destroy(aBuilder);
 }
 
-static bool NeedsBorderAreaMask(nsIFrame* aFrame, StyleBackgroundClip aClip) {
-  if (aClip != StyleBackgroundClip::BorderArea) {
-    return false;
-  }
-  for (auto side : AllPhysicalSides()) {
-    if (!aFrame->StyleBorder()->GetComputedBorderWidth(side)) {
-      continue;
-    }
-    switch (aFrame->StyleBorder()->GetBorderStyle(side)) {
-      case StyleBorderStyle::Dashed:
-      case StyleBorderStyle::Dotted:
-      case StyleBorderStyle::Double:
-        return true;
-      default:
-        break;
-    }
-  }
-  return false;
-}
-
 static void SetBackgroundClipRegion(
     DisplayListClipState::AutoSaveRestore& aClipState, nsIFrame* aFrame,
     const nsStyleImageLayers::Layer& aLayer, const nsRect& aBackgroundRect,
@@ -3539,8 +3550,9 @@ bool nsDisplayBackgroundImage::CanApplyOpacity(
 
 bool nsDisplayBackgroundImage::CanBuildWebRenderDisplayItems(
     WebRenderLayerManager* aManager, nsDisplayListBuilder* aBuilder) const {
-  return mBackgroundStyle->StyleBackground()->mImage.mLayers[mLayer].mClip !=
-             StyleBackgroundClip::Text &&
+  return !BackgroundClipIncludesText(mBackgroundStyle->StyleBackground()
+                                         ->mImage.mLayers[mLayer]
+                                         .mClip) &&
          // TODO(bug 2091458): clip by the border-shape outer path with a
          // WebRender path clip instead of falling back.
          StyleFrame()->StyleBorder()->mBorderShape.IsNone() &&
@@ -3771,6 +3783,7 @@ nsRegion nsDisplayBackgroundImage::GetOpaqueRegion(
         // 'border-area' leaves a hole in the middle, so nothing is reliably
         // opaque.
         layer.mClip != StyleBackgroundClip::BorderArea &&
+        layer.mClip != StyleBackgroundClip::BorderAreaText &&
         // border-shape clips the background to an arbitrary path.
         mFrame->StyleBorder()->mBorderShape.IsNone()) {
       result = GetInsideClipRect(this, layer.mClip, mBounds, mBackgroundRect);
@@ -3824,21 +3837,14 @@ void nsDisplayBackgroundImage::PaintInternal(nsDisplayListBuilder* aBuilder,
   const nsStyleImageLayers::Layer& layer =
       mBackgroundStyle->StyleBackground()->mImage.mLayers[mLayer];
   StyleBackgroundClip clip = layer.mClip;
-  const bool needsBorderAreaMask = NeedsBorderAreaMask(StyleFrame(), clip);
-  if (needsBorderAreaMask && !nsCSSRendering::GenerateAndPushBorderAreaMask(
-                                 StyleFrame(), ctx, mBackgroundRect)) {
+  const auto maskStatus = GenerateAndPushBackgroundMaskIfNeeded(
+      StyleFrame(), clip, ctx, mBackgroundRect, aBuilder);
+  if (maskStatus == MaskStatus::DontPaint) {
     return;
   }
-  if (clip == StyleBackgroundClip::Text) {
-    MOZ_ASSERT(!needsBorderAreaMask);
-    if (!GenerateAndPushTextMask(StyleFrame(), aCtx, mBackgroundRect,
-                                 aBuilder)) {
-      return;
-    }
-  }
-
+  const bool needsMask = maskStatus == MaskStatus::Pushed;
   auto popMaskGroup = MakeScopeExit([&] {
-    if (clip == StyleBackgroundClip::Text || needsBorderAreaMask) {
+    if (needsMask) {
       ctx->PopGroupAndBlend();
     }
   });
@@ -3847,7 +3853,7 @@ void nsDisplayBackgroundImage::PaintInternal(nsDisplayListBuilder* aBuilder,
   // painted by the border). The outer border-box clip is applied by the
   // display item's clip.
   Maybe<gfxContextAutoSaveRestore> borderAreaClip;
-  if (clip == StyleBackgroundClip::BorderArea && !needsBorderAreaMask) {
+  if (clip == StyleBackgroundClip::BorderArea && !needsMask) {
     borderAreaClip.emplace(ctx);
     ClipBackgroundToBorderArea(ctx, StyleFrame(), layer, mBackgroundRect);
   }
@@ -4229,56 +4235,25 @@ void nsDisplayBackgroundColor::Paint(nsDisplayListBuilder* aBuilder,
     return;
   }
 
-#if 0
-  // See https://bugzilla.mozilla.org/show_bug.cgi?id=1148418#c21 for why this
-  // results in a precision induced rounding issue that makes the rect one
-  // pixel shorter in rare cases. Disabled in favor of the old code for now.
-  // Note that the pref layout.css.devPixelsPerPx needs to be set to 1 to
-  // reproduce the bug.
-  //
-  // TODO:
-  // This new path does not include support for background-clip:text; need to
-  // be fixed if/when we switch to this new code path.
-
-  DrawTarget& aDrawTarget = *aCtx->GetDrawTarget();
-
-  Rect rect = NSRectToSnappedRect(mBackgroundRect,
-                                  mFrame->PresContext()->AppUnitsPerDevPixel(),
-                                  aDrawTarget);
-  ColorPattern color(ToDeviceColor(mColor));
-  aDrawTarget.FillRect(rect, color);
-#else
   gfxContext* ctx = aCtx;
   gfxRect bounds = nsLayoutUtils::RectToGfxRect(
       mBackgroundRect, mFrame->PresContext()->AppUnitsPerDevPixel());
 
-  if (HasBackgroundClipText()) {
-    if (!GenerateAndPushTextMask(mFrame, aCtx, mBackgroundRect, aBuilder)) {
-      return;
-    }
-
-    ctx->SetColor(mColor);
-    ctx->NewPath();
-    ctx->SnappedRectangle(bounds);
-    ctx->Fill();
-    ctx->PopGroupAndBlend();
+  const auto maskStatus = GenerateAndPushBackgroundMaskIfNeeded(
+      mFrame, mBottomLayerClip, ctx, mBackgroundRect, aBuilder);
+  if (maskStatus == MaskStatus::DontPaint) {
     return;
   }
+  const bool needsMask = maskStatus == MaskStatus::Pushed;
 
-  Maybe<gfxContextAutoSaveRestore> borderAreaClip;
-  const bool needsBorderAreaMask =
-      NeedsBorderAreaMask(mFrame, mBottomLayerClip);
-  if (needsBorderAreaMask && !nsCSSRendering::GenerateAndPushBorderAreaMask(
-                                 mFrame, ctx, mBackgroundRect)) {
-    return;
-  }
-  auto popBorderAreaGroup = MakeScopeExit([&] {
-    if (needsBorderAreaMask) {
+  auto popMaskGroup = MakeScopeExit([&] {
+    if (needsMask) {
       ctx->PopGroupAndBlend();
     }
   });
-  if (mBottomLayerClip == StyleBackgroundClip::BorderArea &&
-      !needsBorderAreaMask) {
+
+  Maybe<gfxContextAutoSaveRestore> borderAreaClip;
+  if (mBottomLayerClip == StyleBackgroundClip::BorderArea && !needsMask) {
     borderAreaClip.emplace(ctx);
     ClipBackgroundToBorderArea(
         ctx, mFrame, mFrame->StyleBackground()->BottomLayer(), mBackgroundRect);
@@ -4296,7 +4271,6 @@ void nsDisplayBackgroundColor::Paint(nsDisplayListBuilder* aBuilder,
   ctx->NewPath();
   ctx->SnappedRectangle(bounds);
   ctx->Fill();
-#endif
 }
 
 nsRegion nsDisplayBackgroundColor::GetOpaqueRegion(

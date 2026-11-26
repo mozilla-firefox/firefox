@@ -212,13 +212,16 @@ pub enum BackgroundClip {
     #[cfg(feature = "gecko")]
     #[value_info(skip)]
     NoClip,
-    // TODO: text and border-area are supposed to combine in backgrounds-4...
     #[parse(condition = "background_clip_text_enabled")]
     #[cfg_attr(feature = "servo", value_info(skip))]
     Text,
     #[parse(condition = "background_clip_border_area_enabled")]
     #[value_info(skip)]
     BorderArea,
+    #[css(keyword = "border-area text")]
+    #[parse(skip)]
+    #[value_info(skip)]
+    BorderAreaText,
 }
 
 bitflags! {
@@ -245,8 +248,7 @@ impl BackgroundClip {
             Self::ViewBox => ClipValidity::MASK,
             #[cfg(feature = "gecko")]
             Self::NoClip => ClipValidity::MASK,
-            Self::Text => ClipValidity::BACKGROUND,
-            Self::BorderArea => ClipValidity::BACKGROUND,
+            Self::Text | Self::BorderArea | Self::BorderAreaText => ClipValidity::BACKGROUND,
         }
     }
 
@@ -258,6 +260,24 @@ impl BackgroundClip {
         let clip = Self::parse(context, input)?;
         if !clip.validity().intersects(ClipValidity::BACKGROUND) {
             return Err(ParseError::custom(StyleParseErrorKind::UnspecifiedError));
+        }
+        // Parse `border-area | text` if needed.
+        // XXX: This is rather hacky but only these two values combine so...
+        {
+            if clip == Self::BorderArea
+                && background_clip_text_enabled(context)
+                && input.try_parse(|i| i.expect_ident_matching("text")).is_ok()
+            {
+                return Ok(Self::BorderAreaText);
+            }
+            if clip == Self::Text
+                && background_clip_border_area_enabled(context)
+                && input
+                    .try_parse(|i| i.expect_ident_matching("border-area"))
+                    .is_ok()
+            {
+                return Ok(Self::BorderAreaText);
+            }
         }
         Ok(clip)
     }

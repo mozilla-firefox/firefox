@@ -4399,7 +4399,7 @@ class nsDisplayBackgroundColor : public nsPaintedDisplayItem {
 
   bool HasBackgroundClipText() const {
     MOZ_ASSERT(mHasStyle);
-    return mBottomLayerClip == StyleBackgroundClip::Text;
+    return BackgroundClipIncludesText(mBottomLayerClip);
   }
 
   void Paint(nsDisplayListBuilder* aBuilder, gfxContext* aCtx) override;

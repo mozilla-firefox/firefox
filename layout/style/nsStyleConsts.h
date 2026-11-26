@@ -15,11 +15,6 @@
 
 namespace mozilla {
 
-// box-shadow
-enum class StyleBoxShadowType : uint8_t {
-  Inset,
-};
-
 // Define geometry box for clip-path's reference-box, shape-box and
 // transform-box, and the resolved box of the background / mask layers.
 enum class StyleGeometryBox : uint8_t {
@@ -33,6 +28,7 @@ enum class StyleGeometryBox : uint8_t {
   NoClip,      // mask-clip only.
   Text,        // background-clip only.
   BorderArea,  // The area painted by the border. background-clip only.
+  BorderAreaText,
   NoBox,  // Depending on which kind of element this style value applied on,
           // the default value of a reference-box can be different.
           // For an HTML element, the default value of reference-box is

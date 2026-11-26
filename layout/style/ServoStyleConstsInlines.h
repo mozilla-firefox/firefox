@@ -1589,6 +1589,16 @@ inline bool StyleNumericType::operator==(const StyleNumericType& aOther) const {
          percent_hint == aOther.percent_hint;
 }
 
+inline bool BackgroundClipIncludesText(StyleBackgroundClip aClip) {
+  return aClip == StyleBackgroundClip::Text ||
+         aClip == StyleBackgroundClip::BorderAreaText;
+}
+
+inline bool BackgroundClipIncludesBorderArea(StyleBackgroundClip aClip) {
+  return aClip == StyleBackgroundClip::BorderArea ||
+         aClip == StyleBackgroundClip::BorderAreaText;
+}
+
 }  // namespace mozilla
 
 #endif

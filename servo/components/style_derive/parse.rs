@@ -15,6 +15,7 @@ pub struct ParseVariantAttrs {
     pub aliases: Option<String>,
     pub condition: Option<Path>,
     pub parse_fn: Option<Path>,
+    pub skip: bool,
 }
 
 #[derive(Default, FromField)]
@@ -98,6 +99,7 @@ fn parse_non_keyword_variant(
     assert!(parse_attrs.aliases.is_none());
     assert!(variant_attrs.function.is_none());
     assert!(variant_attrs.keyword.is_none());
+    assert!(!parse_attrs.skip);
     assert_eq!(
         bindings.len(),
         1,
@@ -187,13 +189,12 @@ pub fn derive(mut input: DeriveInput) -> TokenStream {
     let mut effective_variants = 0;
     for variant in s.variants().iter() {
         let css_variant_attrs = cg::parse_variant_attrs_from_ast::<CssVariantAttrs>(&variant.ast());
-        if css_variant_attrs.skip {
+        let parse_attrs = cg::parse_variant_attrs_from_ast::<ParseVariantAttrs>(&variant.ast());
+        if css_variant_attrs.skip || parse_attrs.skip {
             continue;
         }
+
         effective_variants += 1;
-
-        let parse_attrs = cg::parse_variant_attrs_from_ast::<ParseVariantAttrs>(&variant.ast());
-
         saw_condition |= parse_attrs.condition.is_some();
 
         if !variant.bindings().is_empty() {

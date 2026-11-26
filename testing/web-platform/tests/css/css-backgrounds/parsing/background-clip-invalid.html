@@ -17,6 +17,11 @@ test_invalid_value("background-clip", "margin-box");
 test_invalid_value("background-clip", "stroke-box");
 test_invalid_value("background-clip", "view-box");
 test_invalid_value("background-clip", "border");
+test_invalid_value("background-clip", "text text");
+test_invalid_value("background-clip", "border-area border-area");
+test_invalid_value("background-clip", "border-area text border-area");
+test_invalid_value("background-clip", "border-area padding-box");
+test_invalid_value("background-clip", "padding-box text");
 </script>
 </body>
 </html>
