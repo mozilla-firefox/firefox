@@ -1505,3 +1505,67 @@ addAboutKbTask(async function testAltGraphAloneInvalid(tab) {
     );
   });
 });
+
+addAboutKbTask(async function testCopyTabURLInspectorConflict(tab) {
+  const inspectorId = isMac ? "key_inspectorMac" : "key_inspector";
+  try {
+    const shortcut = await SpecialPowers.spawn(tab, [inspectorId], async id => {
+      await ContentTaskUtils.waitForCondition(
+        () => content.document.querySelector(`.key[data-id="${id}"]`),
+        "Inspector shortcut is available"
+      );
+      const row = content.document.querySelector(
+        '.key[data-id="key_copyTabURL"]'
+      );
+      const category = row.closest(".category").wrappedJSObject;
+      category.expanded = true;
+      await category.updateComplete;
+      const focused = ContentTaskUtils.waitForEvent(
+        row.querySelector(".newKey"),
+        "focus"
+      );
+      row.querySelector(".change").click();
+      await focused;
+      return content.document.querySelector(
+        `.key[data-id="${id}"] .currentShortcut`
+      ).wrappedJSObject.value;
+    });
+    const handled = PromptTestUtils.handleNextPrompt(
+      window,
+      { modalType: Services.prompt.MODAL_TYPE_CONTENT },
+      { buttonNumClick: 0 }
+    );
+    EventUtils.synthesizeKey("C", { accelKey: true, shiftKey: true }, window);
+    await handled;
+    await SpecialPowers.spawn(
+      tab,
+      [inspectorId, shortcut],
+      async (id, expected) => {
+        await ContentTaskUtils.waitForCondition(
+          () =>
+            content.document.querySelector(
+              '.key[data-id="key_copyTabURL"].customized:not(.editing)'
+            ),
+          "Copy Tab URL has been assigned"
+        );
+        is(
+          content.document.querySelector(
+            '.key[data-id="key_copyTabURL"] .currentShortcut'
+          ).wrappedJSObject.value,
+          expected,
+          "Copy Tab URL uses the reassigned shortcut"
+        );
+        is(
+          content.document.querySelector(
+            `.key[data-id="${id}"] .currentShortcut`
+          ).wrappedJSObject.value,
+          "",
+          "The conflicting Inspector shortcut is cleared"
+        );
+      }
+    );
+  } finally {
+    CustomKeys.resetKey("key_copyTabURL");
+    CustomKeys.resetKey(inspectorId);
+  }
+});

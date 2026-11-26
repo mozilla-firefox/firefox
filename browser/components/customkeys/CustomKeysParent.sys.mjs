@@ -184,6 +184,7 @@ export class CustomKeysParent extends JSWindowActorParent {
     cat = keys[browserToolsCat];
     add(cat, "key_toggleToolboxF12", "customkeys-dev-tools");
     add(cat, "key_inspector", "customkeys-dev-inspector");
+    add(cat, "key_inspectorMac", "customkeys-dev-inspector");
     add(cat, "key_webconsole", "customkeys-dev-webconsole");
     add(cat, "key_jsdebugger", "customkeys-dev-debugger");
     add(cat, "key_netmonitor", "customkeys-dev-network");
