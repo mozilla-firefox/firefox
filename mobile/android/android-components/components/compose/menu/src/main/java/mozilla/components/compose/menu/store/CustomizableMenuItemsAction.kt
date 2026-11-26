@@ -44,6 +44,13 @@ sealed interface CustomizableMenuItemsAction : Action {
     data class ExpansionToggled(val itemId: String) : CustomizableMenuItemsAction
 
     /**
+     * The user let go of an item inside another one, which it cannot be inside of.
+     *
+     * @property itemId Id of the item.
+     */
+    data class AttemptedMoveAsSubItem(val itemId: String) : CustomizableMenuItemsAction
+
+    /**
      * The user tried to remove the last item shown in the section from the menu, which would leave the section empty.
      *
      * @property itemId Id of the item.

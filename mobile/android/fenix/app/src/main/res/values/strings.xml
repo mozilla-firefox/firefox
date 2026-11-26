@@ -154,6 +154,8 @@
     <string name="customize_menu_cannot_hide_section">Can’t hide this section</string>
     <!-- Title of the screen where the user chooses which items of a menu section are shown in the menu and in which order. -->
     <string name="edit_menu_items">Edit menu items</string>
+    <!-- Alert message shown in the "Edit menu items" screen when the user tries to move the Extensions item inside the "More" section, which is not supported. For "Extensions" use the term in browser_menu_extensions and for "More" use the term in browser_menu_more_settings, for consistency. -->
+    <string name="edit_menu_items_extensions_cannot_be_moved_into_more">Extensions can’t be moved into “More”</string>
     <!-- Alert message shown in the "Edit menu items" screen when the user tries to hide the last item shown in a menu section, which would leave the section empty. -->
     <string name="edit_menu_items_section_cannot_be_empty">Section can’t be empty</string>
     <!-- Customize menu screen - Accessibility description - name of the menu section that groups the Back, Forward, Share and Refresh buttons. Read aloud after "Section", followed by the button names ("Section “Page controls”: Back, Forward, Share, Refresh"). -->

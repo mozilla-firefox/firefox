@@ -17,6 +17,11 @@ class FenixMenuItemTest {
     }
 
     @Test
+    fun `only the extensions item has to be directly in its section`() {
+        assertEquals(listOf(FenixMenuItem.Extensions), allMenuItems().filter { it.isTopLevelOnly })
+    }
+
+    @Test
     fun `menu item ids stay the same so saved placements keep working`() {
         assertEquals(
             mapOf(

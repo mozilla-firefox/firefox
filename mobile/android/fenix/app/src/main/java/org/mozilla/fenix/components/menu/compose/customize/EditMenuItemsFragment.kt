@@ -53,6 +53,8 @@ class EditMenuItemsFragment : Fragment(), SystemInsetsPaddedFragment {
                             sectionId = args.sectionId,
                             scope = viewLifecycleOwner.lifecycle.coroutineScope,
                             appStore = requireComponents.appStore,
+                            cannotMoveAsSubItemMessage =
+                                getString(R.string.edit_menu_items_extensions_cannot_be_moved_into_more),
                             cannotHideLastItemMessage = getString(R.string.edit_menu_items_section_cannot_be_empty),
                         ),
                         EditMenuItemsNavigationMiddleware(findNavController()),

@@ -16,8 +16,9 @@ sealed interface FenixExpandableMenuItem {
  *
  * @property id Unique identifier of this item. Persisted when the user customizes the menu, so it must never change
  *   once shipped.
+ * @property isTopLevelOnly Whether this item can only be directly in its section, never inside another item.
  */
-sealed class FenixMenuItem(val id: String) {
+sealed class FenixMenuItem(val id: String, val isTopLevelOnly: Boolean = false) {
     /** A banner allowing to set this application as the default browser. */
     data object DefaultBrowserBanner : FenixMenuItem("default_browser_banner")
 
@@ -31,7 +32,7 @@ sealed class FenixMenuItem(val id: String) {
     data object Bookmark : FenixMenuItem("bookmark")
 
     /** A menu item expanding to the user's extensions, or to a list of recommended ones. */
-    data object Extensions : FenixMenuItem("extensions")
+    data object Extensions : FenixMenuItem("extensions", isTopLevelOnly = true)
 
     /** A menu item allowing to start the find in page feature. */
     data object FindInPage : FenixMenuItem("find_in_page")

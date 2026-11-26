@@ -8,6 +8,7 @@ import mozilla.components.compose.menu.data.CustomizableMenuItem
 import mozilla.components.compose.menu.data.ExpandableMenuItem
 import mozilla.components.compose.menu.data.hasShownSubItems
 import mozilla.components.compose.menu.store.CustomizableMenuItemsAction.AttemptedEmptySection
+import mozilla.components.compose.menu.store.CustomizableMenuItemsAction.AttemptedMoveAsSubItem
 import mozilla.components.compose.menu.store.CustomizableMenuItemsAction.ExpansionToggled
 import mozilla.components.compose.menu.store.CustomizableMenuItemsAction.Init
 import mozilla.components.compose.menu.store.CustomizableMenuItemsAction.ItemsChanged
@@ -63,6 +64,7 @@ private fun reduce(state: CustomizableMenuItemsState, action: CustomizableMenuIt
                     }
             )
         is Init,
+        is AttemptedMoveAsSubItem,
         is AttemptedEmptySection,
         is PreviewClicked -> state
     }

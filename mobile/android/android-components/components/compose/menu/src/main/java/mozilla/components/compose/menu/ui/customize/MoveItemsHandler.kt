@@ -5,13 +5,14 @@
 package mozilla.components.compose.menu.ui.customize
 
 import mozilla.components.compose.draggable.ItemInteractionHandler
+import mozilla.components.compose.menu.store.CustomizableMenuItemsAction.AttemptedMoveAsSubItem
 import mozilla.components.compose.menu.store.CustomizableMenuItemsAction.ItemsChanged
 import mozilla.components.compose.menu.store.CustomizableMenuItemsStore
 import mozilla.components.compose.menu.ui.customize.CustomizeMenuItemKey.DROP_AREA
 
 /**
  * Moves the items of a screen customizing the items of a menu section when the user lets go of a dragged item, saving
- * the move.
+ * the move. A drop which is rejected is reported to the store.
  *
  * @param store Store to save the moves to.
  * @param items The items as last saved.
@@ -24,7 +25,7 @@ internal class MoveItemsHandler(
     private var draggedItemId: Any? = null
 
     // Without live reordering, the list tells where the dragged item is moved to only when the user lets go of it.
-    private var movedItems: CustomizeMenuItems? = null
+    private var dropTarget: CustomizeMenuDropTarget? = null
 
     override fun onMove(sourceKey: Any, targetKey: Any?, placeAfter: Boolean) {
         if (sourceKey != draggedItemId || targetKey == null) return
@@ -34,7 +35,7 @@ internal class MoveItemsHandler(
             } else {
                 CustomizeMenuDropTarget.NextTo(targetKey, placeAfter)
             }
-        movedItems = items.drop(sourceKey, target)
+        dropTarget = target
     }
 
     override fun onDrop(sourceKey: Any, targetKey: Any) = Unit
@@ -44,16 +45,20 @@ internal class MoveItemsHandler(
     }
 
     override fun onDragEnd() {
-        val moved = movedItems
-        draggedItemId = null
-        movedItems = null
-        if (moved != null && moved != items) {
-            store.dispatch(ItemsChanged(items = moved.shown, hiddenItems = moved.hidden))
+        val itemId = draggedItemId
+        val target = dropTarget
+        onDragCancel()
+        if (itemId == null || target == null) return
+        when (val outcome = items.dropOutcome(itemId, target)) {
+            is DropOutcome.Moved ->
+                store.dispatch(ItemsChanged(items = outcome.items.shown, hiddenItems = outcome.items.hidden))
+            DropOutcome.RejectedAsSubItem -> if (itemId is String) store.dispatch(AttemptedMoveAsSubItem(itemId))
+            DropOutcome.Unchanged -> Unit
         }
     }
 
     override fun onDragCancel() {
         draggedItemId = null
-        movedItems = null
+        dropTarget = null
     }
 }

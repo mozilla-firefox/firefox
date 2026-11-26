@@ -23,6 +23,7 @@ import mozilla.components.compose.menu.data.MenuItemTitle
 import mozilla.components.compose.menu.data.StandardMenuItem
 import mozilla.components.compose.menu.store.CustomizableMenuItemsAction
 import mozilla.components.compose.menu.store.CustomizableMenuItemsAction.AttemptedEmptySection
+import mozilla.components.compose.menu.store.CustomizableMenuItemsAction.AttemptedMoveAsSubItem
 import mozilla.components.compose.menu.store.CustomizableMenuItemsAction.ItemsChanged
 import mozilla.components.compose.menu.store.CustomizableMenuItemsAction.PreviewClicked
 import mozilla.components.compose.menu.store.CustomizableMenuItemsState
@@ -416,6 +417,48 @@ class EditMenuItemsContentTest {
         assertTrue(actions.none { it is AttemptedEmptySection })
     }
 
+    @Test
+    fun `WHEN an item which can only be directly in its section is let go among the sub-items of an expanded item THEN it stays where it was and the user is told`() {
+        val actions = mutableListOf<CustomizableMenuItemsAction>()
+        val more = expandable("More", item("Sub 1"), item("Sub 2"))
+        val store =
+            setContent(
+                CustomizableMenuItemsState(
+                    items = listOf(topLevelOnlyItem("Top level only"), more),
+                    expandedItemIds = setOf("More"),
+                ),
+                listOf(capturing(actions)),
+            )
+
+        dragByHandle(title = "Top level only", to = { boundsOf("Sub 2").topCenter })
+
+        assertEquals(listOf("Top level only", "More"), store.state.items.map { it.id })
+        assertEquals(
+            listOf(AttemptedMoveAsSubItem("Top level only")),
+            actions.filterIsInstance<AttemptedMoveAsSubItem>(),
+        )
+        assertTrue(actions.none { it is ItemsChanged })
+    }
+
+    @Test
+    fun `WHEN an item which can only be directly in its section is let go at the top level after being dragged past an expanded item THEN the user is not told`() {
+        val actions = mutableListOf<CustomizableMenuItemsAction>()
+        val more = expandable("More", item("Sub 1"), item("Sub 2"))
+        val store =
+            setContent(
+                CustomizableMenuItemsState(
+                    items = listOf(topLevelOnlyItem("Top level only"), more, item("Last")),
+                    expandedItemIds = setOf("More"),
+                ),
+                listOf(capturing(actions)),
+            )
+
+        dragByHandle(title = "Top level only", to = { boundsOf("Last").topCenter })
+
+        assertEquals(listOf("More", "Top level only", "Last"), store.state.items.map { it.id })
+        assertTrue(actions.none { it is AttemptedMoveAsSubItem })
+    }
+
     private fun setContent(
         state: CustomizableMenuItemsState,
         middleware: List<Middleware<CustomizableMenuItemsState, CustomizableMenuItemsAction>> = emptyList(),
@@ -485,6 +528,8 @@ class EditMenuItemsContentTest {
 
     private fun item(title: String) =
         CustomizableMenuItem(id = title, item = StandardMenuItem(title = MenuItemTitle(Text.String(title))))
+
+    private fun topLevelOnlyItem(title: String) = item(title).copy(isTopLevelOnly = true)
 
     private fun expandable(
         title: String,

@@ -16,6 +16,7 @@ import mozilla.components.compose.menu.ui.customize.EditMenuItemsRow.Item
 import mozilla.components.compose.menu.ui.customize.EditMenuItemsRow.SubItemsEnd
 import org.junit.Assert.assertEquals
 import org.junit.Assert.assertFalse
+import org.junit.Assert.assertNotEquals
 import org.junit.Assert.assertTrue
 import org.junit.Test
 
@@ -24,6 +25,7 @@ class CustomizeMenuItemsTest {
     private val b = item("b")
     private val c = item("c")
     private val d = item("d")
+    private val topLevelOnlyItem = item("top level only").copy(isTopLevelOnly = true)
 
     @Test
     fun `GIVEN shown and hidden items THEN the rows of the shown ones are followed by the ones of the hidden ones`() {
@@ -613,6 +615,162 @@ class CustomizeMenuItemsTest {
         assertEquals(listOf("more", "x"), intoSubItems.shown.map { it.id })
         assertEquals(listOf("more", "b", "x", "a"), toTop.shown.map { it.id })
         assertEquals(listOf(y), toTop.subItemsOf("more"))
+    }
+
+    @Test
+    fun `WHEN an item which can only be directly in its section is dropped among the sub-items of a shown expandable item THEN nothing changes`() {
+        val more = expandable("more", c)
+        val items =
+            CustomizeMenuItems(
+                shown = listOf(a, topLevelOnlyItem, more),
+                hidden = emptyList(),
+                expandedIds = setOf("more"),
+            )
+
+        assertEquals(items, items.drop("top level only", NextTo("c", placeAfter = false)))
+        assertEquals(items, items.drop("top level only", NextTo("more", placeAfter = true)))
+        assertEquals(items, items.drop("top level only", NextTo(subItemsEndKey("more"), placeAfter = false)))
+    }
+
+    @Test
+    fun `WHEN an item which can only be directly in its section is dropped among the sub-items of a hidden expandable item THEN nothing changes`() {
+        val more = expandable("more", c)
+        val items =
+            CustomizeMenuItems(shown = listOf(a, topLevelOnlyItem), hidden = listOf(more), expandedIds = setOf("more"))
+
+        assertEquals(items, items.drop("top level only", NextTo("c", placeAfter = false)))
+        assertEquals(items, items.drop("top level only", NextTo(subItemsEndKey("more"), placeAfter = false)))
+    }
+
+    @Test
+    fun `WHEN an item which can only be directly in its section is dropped at the top level or among the hidden items THEN it is placed there`() {
+        val more = expandable("more", c)
+        val items =
+            CustomizeMenuItems(
+                shown = listOf(a, topLevelOnlyItem, more),
+                hidden = listOf(b),
+                expandedIds = setOf("more"),
+            )
+
+        val first = items.drop("top level only", NextTo("a", placeAfter = false))
+        val hidden = items.drop("top level only", NextTo("b", placeAfter = false))
+
+        assertEquals(listOf("top level only", "a", "more"), first.shown.map { it.id })
+        assertEquals(listOf("top level only", "b"), hidden.hidden.map { it.id })
+    }
+
+    @Test
+    fun `WHEN an item which can only be directly in its section is dropped inside an expandable item THEN it is rejected as a sub-item`() {
+        val more = expandable("more", c)
+        val hiddenMore = expandable("hidden more", d)
+        val items =
+            CustomizeMenuItems(
+                shown = listOf(a, topLevelOnlyItem, more),
+                hidden = listOf(hiddenMore),
+                expandedIds = setOf("more", "hidden more"),
+            )
+
+        assertEquals(
+            DropOutcome.RejectedAsSubItem,
+            items.dropOutcome("top level only", NextTo("c", placeAfter = false)),
+        )
+        assertEquals(
+            DropOutcome.RejectedAsSubItem,
+            items.dropOutcome("top level only", NextTo("more", placeAfter = true)),
+        )
+        assertEquals(
+            DropOutcome.RejectedAsSubItem,
+            items.dropOutcome("top level only", NextTo(subItemsEndKey("hidden more"), placeAfter = false)),
+        )
+        assertEquals(
+            DropOutcome.RejectedAsSubItem,
+            items.dropOutcome("top level only", NextTo("d", placeAfter = true)),
+        )
+    }
+
+    @Test
+    fun `WHEN an expandable item which can only be directly in its section is dropped inside another expandable item THEN it is rejected as a sub-item`() {
+        val more = expandable("more", c)
+        val extensions = expandable("extensions").copy(isTopLevelOnly = true)
+        val items =
+            CustomizeMenuItems(shown = listOf(a, extensions, more), hidden = emptyList(), expandedIds = setOf("more"))
+
+        assertEquals(DropOutcome.RejectedAsSubItem, items.dropOutcome("extensions", NextTo("c", placeAfter = false)))
+        assertEquals(items, items.drop("extensions", NextTo("c", placeAfter = false)))
+    }
+
+    @Test
+    fun `WHEN an item which can only be directly in its section is dropped at the top level, hidden or in place THEN it is not rejected as a sub-item`() {
+        val more = expandable("more", c)
+        val items =
+            CustomizeMenuItems(
+                shown = listOf(a, topLevelOnlyItem, more),
+                hidden = listOf(b),
+                expandedIds = setOf("more"),
+            )
+
+        assertNotEquals(
+            DropOutcome.RejectedAsSubItem,
+            items.dropOutcome("top level only", NextTo("a", placeAfter = false)),
+        )
+        assertNotEquals(
+            DropOutcome.RejectedAsSubItem,
+            items.dropOutcome("top level only", NextTo("more", placeAfter = false)),
+        )
+        assertNotEquals(
+            DropOutcome.RejectedAsSubItem,
+            items.dropOutcome("top level only", NextTo("b", placeAfter = true)),
+        )
+        assertNotEquals(
+            DropOutcome.RejectedAsSubItem,
+            items.dropOutcome("top level only", CustomizeMenuDropTarget.EmptyHiddenArea),
+        )
+        assertNotEquals(
+            DropOutcome.RejectedAsSubItem,
+            items.dropOutcome("top level only", CustomizeMenuDropTarget.InPlace),
+        )
+    }
+
+    @Test
+    fun `WHEN an item which can be inside other items is dropped inside an expandable item THEN it is not rejected as a sub-item`() {
+        val more = expandable("more", c)
+        val items = CustomizeMenuItems(shown = listOf(a, more), hidden = emptyList(), expandedIds = setOf("more"))
+
+        assertNotEquals(DropOutcome.RejectedAsSubItem, items.dropOutcome("a", NextTo("c", placeAfter = false)))
+    }
+
+    @Test
+    fun `WHEN a hidden item which can only be directly in its section is dropped inside a shown or a hidden expandable item THEN nothing changes`() {
+        val more = expandable("more", c)
+        val hiddenMore = expandable("hidden more", d)
+        val items =
+            CustomizeMenuItems(
+                shown = listOf(a, more),
+                hidden = listOf(topLevelOnlyItem, hiddenMore),
+                expandedIds = setOf("more", "hidden more"),
+            )
+
+        assertEquals(items, items.drop("top level only", NextTo("c", placeAfter = false)))
+        assertEquals(items, items.drop("top level only", NextTo("d", placeAfter = false)))
+        assertEquals(
+            DropOutcome.RejectedAsSubItem,
+            items.dropOutcome("top level only", NextTo("c", placeAfter = false)),
+        )
+        assertEquals(
+            DropOutcome.RejectedAsSubItem,
+            items.dropOutcome("top level only", NextTo("d", placeAfter = false)),
+        )
+    }
+
+    @Test
+    fun `WHEN a hidden item which can only be directly in its section is dropped at the top level of the shown items THEN it is shown there`() {
+        val items =
+            CustomizeMenuItems(shown = listOf(a, b), hidden = listOf(topLevelOnlyItem), expandedIds = emptySet())
+
+        val moved = items.drop("top level only", NextTo("b", placeAfter = false))
+
+        assertEquals(listOf("a", "top level only", "b"), moved.shown.map { it.id })
+        assertTrue(moved.hidden.isEmpty())
     }
 
     private fun CustomizeMenuItems.subItemsOf(id: String) = shown.first { it.id == id }.subItems
