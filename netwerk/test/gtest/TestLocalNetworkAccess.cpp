@@ -66,9 +66,17 @@ TEST(TestNetAddrLNAUtil, IPAddressSpaceCategorization)
       {"fe80::1", nsILoadInfo::IPAddressSpace::Private},  // Link-local
 
       // IPv4-mapped IPv6 (mapped IPv4, should fall back to IPv4 classification)
-      {"::ffff:127.0.0.1", nsILoadInfo::IPAddressSpace::Local},   // Loopback
+      {"::ffff:127.0.0.1", nsILoadInfo::IPAddressSpace::Local},  // Loopback
+      {"::ffff:127.0.0.2", nsILoadInfo::IPAddressSpace::Local},
+      {"::ffff:127.255.255.254", nsILoadInfo::IPAddressSpace::Local},
       {"::ffff:10.0.0.1", nsILoadInfo::IPAddressSpace::Private},  // Private
-      {"::ffff:1.1.1.1", nsILoadInfo::IPAddressSpace::Public},    // Public
+      {"::ffff:100.64.0.1", nsILoadInfo::IPAddressSpace::Private},
+      {"::ffff:100.127.255.254", nsILoadInfo::IPAddressSpace::Private},
+      {"::ffff:100.128.0.1", nsILoadInfo::IPAddressSpace::Public},
+      {"::ffff:1.1.1.1", nsILoadInfo::IPAddressSpace::Public},  // Public
+      {"::ffff:198.18.0.0", StaticPrefs::network_lna_benchmarking_is_local()
+                                ? nsILoadInfo::IPAddressSpace::Local
+                                : nsILoadInfo::IPAddressSpace::Public},
 
       // Public IPv4
       {"8.8.8.8", nsILoadInfo::IPAddressSpace::Public},
