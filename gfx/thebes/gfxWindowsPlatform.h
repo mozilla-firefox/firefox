@@ -16,7 +16,6 @@
 #include "gfxPlatform.h"
 #include "gfxTelemetry.h"
 #include "gfxTypes.h"
-#include "gfxWindowsSurface.h"
 #include "mozilla/Atomics.h"
 #include "mozilla/Attributes.h"
 #include "mozilla/Mutex.h"

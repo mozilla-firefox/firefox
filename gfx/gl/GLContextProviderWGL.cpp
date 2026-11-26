@@ -7,7 +7,6 @@
 #include "GLLibraryLoader.h"
 #include "gfxCrashReporterUtils.h"
 #include "gfxPlatform.h"
-#include "gfxWindowsSurface.h"
 #include "mozilla/Preferences.h"
 #include "mozilla/ScopeExit.h"
 #include "mozilla/SharedLibrary.h"

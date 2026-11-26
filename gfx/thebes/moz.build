@@ -155,7 +155,6 @@ elif CONFIG["MOZ_WIDGET_TOOLKIT"] == "windows":
         "gfxDWriteCommon.h",
         "gfxDWriteFonts.h",
         "gfxWindowsPlatform.h",
-        "gfxWindowsSurface.h",
     ]
     EXPORTS.mozilla.gfx += [
         "DeviceManagerDx.h",
@@ -169,7 +168,6 @@ elif CONFIG["MOZ_WIDGET_TOOLKIT"] == "windows":
         "gfxDWriteCommon.cpp",
         "gfxDWriteFonts.cpp",
         "gfxWindowsPlatform.cpp",
-        "gfxWindowsSurface.cpp",
         "PrintTargetWindows.cpp",
     ]
     UNIFIED_SOURCES += [

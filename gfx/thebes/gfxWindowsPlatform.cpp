@@ -25,7 +25,6 @@
 #include "gfxImageSurface.h"
 #include "gfxTextRun.h"
 #include "gfxUserFontSet.h"
-#include "gfxWindowsSurface.h"
 #include "imgLoader.h"
 #include "mozilla/Components.h"
 #include "mozilla/Preferences.h"
@@ -610,19 +609,7 @@ already_AddRefed<gfxASurface> gfxWindowsPlatform::CreateOffscreenSurface(
     return nullptr;
   }
 
-  RefPtr<gfxASurface> surf = nullptr;
-
-#ifdef CAIRO_HAS_WIN32_SURFACE
-  if (!XRE_IsContentProcess()) {
-    surf = new gfxWindowsSurface(aSize, aFormat);
-  }
-#endif
-
-  if (!surf || surf->CairoStatus()) {
-    surf = new gfxImageSurface(aSize, aFormat);
-  }
-
-  return surf.forget();
+  return MakeAndAddRef<gfxImageSurface>(aSize, aFormat);
 }
 
 void gfxWindowsPlatform::GetCommonFallbackFonts(

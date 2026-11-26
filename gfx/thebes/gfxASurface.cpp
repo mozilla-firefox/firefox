@@ -17,10 +17,6 @@
 #include "nsIMemoryReporter.h"
 #include "nsISupportsImpl.h"
 
-#ifdef CAIRO_HAS_WIN32_SURFACE
-#  include "gfxWindowsSurface.h"
-#endif
-
 #ifdef MOZ_X11
 #  include "gfxXlibSurface.h"
 #endif
@@ -135,12 +131,6 @@ already_AddRefed<gfxASurface> gfxASurface::Wrap(cairo_surface_t* csurf,
   if (stype == CAIRO_SURFACE_TYPE_IMAGE) {
     result = new gfxImageSurface(csurf);
   }
-#ifdef CAIRO_HAS_WIN32_SURFACE
-  else if (stype == CAIRO_SURFACE_TYPE_WIN32 ||
-           stype == CAIRO_SURFACE_TYPE_WIN32_PRINTING) {
-    result = new gfxWindowsSurface(csurf);
-  }
-#endif
 #ifdef MOZ_X11
   else if (stype == CAIRO_SURFACE_TYPE_XLIB) {
     result = new gfxXlibSurface(csurf);
