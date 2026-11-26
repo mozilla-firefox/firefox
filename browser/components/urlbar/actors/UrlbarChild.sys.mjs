@@ -197,6 +197,7 @@ export class UrlbarChild extends JSWindowActorChild {
       getReaderOriginalDisplaySpec:
         UrlbarContentUtils.getReaderOriginalDisplaySpec,
       unEscapeURIForUI: UrlbarContentUtils.unEscapeURIForUI,
+      hasKnownPublicSuffix: UrlbarContentUtils.hasKnownPublicSuffix,
       getSupportUrl: UrlbarContentUtils.getSupportUrl,
       getPlatform: UrlbarContentUtils.getPlatform,
       isWindowPrivate: unprivileged

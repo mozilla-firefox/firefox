@@ -49,6 +49,8 @@ prefs = ["browser.urlbar.suggest.engines=false"]
 
 ["test_UrlbarShared_isOriginUrl.js"]
 
+["test_UrlbarShared_regexps.js"]
+
 ["test_UrlbarShared_stripUnsafeProtocolOnPaste.js"]
 
 ["test_UrlbarShared_unEscapeURIForUI.js"]

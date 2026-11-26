@@ -118,6 +118,30 @@ add_task(async function test_label_search_mode() {
   }
 });
 
+add_task(async function test_label_email_address() {
+  await SpecialPowers.pushPrefEnv({
+    set: [["browser.urlbar.searchEmailAddresses", false]],
+  });
+  await assertLabelForClipboard("user@example.com", PASTE_AND_GO_L10N_ID);
+  await SpecialPowers.popPrefEnv();
+
+  await SpecialPowers.pushPrefEnv({
+    set: [["browser.urlbar.searchEmailAddresses", true]],
+  });
+  await assertLabelForClipboard(
+    "user@example.com",
+    AppConstants.platform == "win"
+      ? PASTE_AND_GO_L10N_ID
+      : PASTE_AND_SEARCH_L10N_ID
+  );
+  await assertLabelForClipboard(
+    "http://user@example.com/",
+    PASTE_AND_GO_L10N_ID
+  );
+  await assertLabelForClipboard("admin@192.168.1.1", PASTE_AND_GO_L10N_ID);
+  await SpecialPowers.popPrefEnv();
+});
+
 add_task(async function test_label_keyword_disabled() {
   await SpecialPowers.pushPrefEnv({ set: [["keyword.enabled", false]] });
   await assertLabelForClipboard("firefox browser", PASTE_AND_GO_L10N_ID);

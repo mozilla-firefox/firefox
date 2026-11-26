@@ -86,7 +86,7 @@ export class UrlbarProviderHeuristicFallback extends UrlbarProvider {
               noIp: true,
               noPort: true,
             }) ||
-              lazy.UrlUtils.REGEXP_COMMON_EMAIL.test(str)))
+              lazy.UrlbarShared.REGEXP_COMMON_EMAIL.test(str)))
         ) {
           let searchResult = await this._engineSearchResult({
             queryContext,
@@ -160,6 +160,16 @@ export class UrlbarProviderHeuristicFallback extends UrlbarProvider {
     }
 
     let searchUrl = queryContext.trimmedSearchString;
+
+    // Search for email addresses rather than visiting them as a URL with user
+    // info, unless the user typed a protocol.
+    if (
+      !prefix &&
+      queryContext.keywordEnabled &&
+      lazy.UrlbarShared.shouldSearchEmailAddress(searchUrl)
+    ) {
+      return null;
+    }
 
     if (queryContext.fixupError) {
       if (

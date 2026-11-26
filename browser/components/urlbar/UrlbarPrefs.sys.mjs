@@ -478,6 +478,10 @@ const PREF_URLBAR_DEFAULTS = /** @type {PreferenceDefinition[]} */ ([
   // search host.
   ["scotchBonnet.persistSearchMode", false],
 
+  // If true, an email address typed without a protocol, e.g. "user@host.com",
+  // is searched for instead of being visited as a URL with user info.
+  ["searchEmailAddresses", false],
+
   // Whether the search button declines to be the target of the toolbar tab
   // stop in front of the input. The shipping default is set in firefox.js,
   // where it's enabled on Nightly only.

@@ -127,6 +127,8 @@ export const UrlbarShared = {
   REGEXP_SPACES: /\s+/,
   // Regex matching scheme and colon, plus, if present, two slashes.
   REGEXP_PREFIX: /^[a-z-]+:(?:\/){0,2}/i,
+  // Regex matching a string that looks like an email address.
+  REGEXP_COMMON_EMAIL: /^[\w!#$%&'*+/=?^`{|}~.-]+@[\[\]A-Z0-9.-]+$/i,
 
   // The notifications the controller dispatches to its listeners. Defined here
   // so both the parent controller and the content-side child controller name
@@ -723,6 +725,26 @@ export const UrlbarShared = {
    */
   keywordEnabled(sapName) {
     return this.isSearchbarSAP(sapName) || UrlbarPrefs.get("keyword.enabled");
+  },
+
+  /**
+   * Whether a string should be searched for rather than visited because it is
+   * an email address typed or pasted without a protocol. The host must have a
+   * known public suffix, so local hosts like `admin@192.168.1.1` or
+   * `user@intranet` are still visited.
+   *
+   * @param {string} str
+   */
+  shouldSearchEmailAddress(str) {
+    str = str.trim();
+    if (
+      !UrlbarPrefs.get("searchEmailAddresses") ||
+      !this.REGEXP_COMMON_EMAIL.test(str)
+    ) {
+      return false;
+    }
+    let host = str.slice(str.lastIndexOf("@") + 1).toLowerCase();
+    return host.includes(".") && UrlbarContentUtils.hasKnownPublicSuffix(host);
   },
 
   /**

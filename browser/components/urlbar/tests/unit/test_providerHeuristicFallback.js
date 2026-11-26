@@ -28,10 +28,15 @@ add_setup(async function () {
     originalDefaults[name] = unifiedSearchButtonDefaults.getBoolPref(name);
     unifiedSearchButtonDefaults.setBoolPref(name, false);
   }
+  // These tests expect email addresses to be visited by default.
+  let urlbarDefaults = Services.prefs.getDefaultBranch("browser.urlbar.");
+  let searchEmailAddresses = urlbarDefaults.getBoolPref("searchEmailAddresses");
+  urlbarDefaults.setBoolPref("searchEmailAddresses", false);
   registerCleanupFunction(async () => {
     for (let [name, value] of Object.entries(originalDefaults)) {
       unifiedSearchButtonDefaults.setBoolPref(name, value);
     }
+    urlbarDefaults.setBoolPref("searchEmailAddresses", searchEmailAddresses);
     Services.prefs.clearUserPref(QUICKACTIONS_PREF);
     Services.prefs.clearUserPref(SUGGEST_ENABLED_PREF);
     Services.prefs.clearUserPref(PRIVATE_SEARCH_PREF);
@@ -880,6 +885,95 @@ add_task(async function dont_fixup_urls_with_at_symbol() {
     context,
     matches: [],
   });
+});
+
+add_task(async function search_email_addresses() {
+  Services.prefs.setBoolPref("browser.urlbar.searchEmailAddresses", true);
+
+  info("search for an e-mail address without a protocol");
+  let query = "a@b.com";
+  let context = createContext(query, { isPrivate: false });
+  await check_results({
+    context,
+    matches: [
+      makeSearchResult(context, {
+        engineName: SUGGESTIONS_ENGINE_NAME,
+        heuristic: true,
+      }),
+    ],
+  });
+
+  info("visit an e-mail address like URL with a protocol");
+  query = "http://a@b.com";
+  context = createContext(query, { isPrivate: false });
+  await check_results({
+    context,
+    matches: [
+      makeVisitResult(context, {
+        source: UrlbarShared.RESULT_SOURCE.OTHER_LOCAL,
+        uri: `${query}/`,
+        title: `${query}/`,
+        heuristic: true,
+      }),
+    ],
+  });
+
+  info("visit user:pass@host on a public host as it is not an e-mail address");
+  query = "user:pass@example.com";
+  context = createContext(query, { isPrivate: false });
+  await check_results({
+    context,
+    matches: [
+      makeVisitResult(context, {
+        source: UrlbarShared.RESULT_SOURCE.OTHER_LOCAL,
+        uri: `http://${query}/`,
+        title: `${query}/`,
+        heuristic: true,
+      }),
+    ],
+  });
+
+  // Hosts without a known public suffix are local, so they are visited rather
+  // than sending the user and host names to the search engine.
+  Services.prefs.setBoolPref("browser.fixup.domainwhitelist.intranet", true);
+  for (query of ["admin@192.168.1.1", "user@localhost", "me@intranet"]) {
+    info(`visit ${query} as its host has no known public suffix`);
+    context = createContext(query, { isPrivate: false });
+    await check_results({
+      context,
+      matches: [
+        makeVisitResult(context, {
+          source: UrlbarShared.RESULT_SOURCE.OTHER_LOCAL,
+          uri: `http://${query}/`,
+          title: `${query}/`,
+          heuristic: true,
+        }),
+        makeSearchResult(context, {
+          engineName: SUGGESTIONS_ENGINE_NAME,
+        }),
+      ],
+    });
+  }
+  Services.prefs.clearUserPref("browser.fixup.domainwhitelist.intranet");
+
+  info("visit an e-mail address when keyword.enabled = false");
+  Services.prefs.setBoolPref("keyword.enabled", false);
+  query = "a@b.com";
+  context = createContext(query, { isPrivate: false });
+  await check_results({
+    context,
+    matches: [
+      makeVisitResult(context, {
+        source: UrlbarShared.RESULT_SOURCE.OTHER_LOCAL,
+        uri: `http://${query}/`,
+        title: `${query}/`,
+        heuristic: true,
+      }),
+    ],
+  });
+
+  Services.prefs.clearUserPref("keyword.enabled");
+  Services.prefs.clearUserPref("browser.urlbar.searchEmailAddresses");
 });
 
 add_task(async function url_in_search_mode() {

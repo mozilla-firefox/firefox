@@ -5531,9 +5531,11 @@ ${
           );
           let fixup =
             text && UrlbarContentUtils.getFixupPrimitives(text, this.isPrivate);
-          l10nId = fixup?.keywordAsSent
-            ? "urlbar-menuitem-paste-and-search"
-            : "urlbar-menuitem-paste-and-go";
+          l10nId =
+            fixup?.keywordAsSent ||
+            (text && UrlbarShared.shouldSearchEmailAddress(text))
+              ? "urlbar-menuitem-paste-and-search"
+              : "urlbar-menuitem-paste-and-go";
         }
         pasteAndGo.ownerDocument.l10n.setAttributes(pasteAndGo, l10nId);
       },
