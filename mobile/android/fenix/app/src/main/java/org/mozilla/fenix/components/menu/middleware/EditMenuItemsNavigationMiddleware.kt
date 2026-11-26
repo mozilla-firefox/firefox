@@ -6,6 +6,7 @@ package org.mozilla.fenix.components.menu.middleware
 
 import androidx.navigation.NavController
 import mozilla.components.compose.menu.store.CustomizableMenuItemsAction
+import mozilla.components.compose.menu.store.CustomizableMenuItemsAction.AttemptedEmptySection
 import mozilla.components.compose.menu.store.CustomizableMenuItemsAction.ExpansionToggled
 import mozilla.components.compose.menu.store.CustomizableMenuItemsAction.Init
 import mozilla.components.compose.menu.store.CustomizableMenuItemsAction.ItemsChanged
@@ -47,6 +48,7 @@ class EditMenuItemsNavigationMiddleware(private val navController: NavController
             is Init,
             is Update,
             is ItemsChanged,
+            is AttemptedEmptySection,
             is ExpansionToggled -> Unit
         }
     }

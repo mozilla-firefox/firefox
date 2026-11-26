@@ -21,6 +21,7 @@ import androidx.compose.ui.tooling.preview.PreviewLightDark
 import androidx.compose.ui.unit.Dp
 import mozilla.components.compose.base.theme.AcornTheme
 import mozilla.components.compose.menu.R
+import mozilla.components.compose.menu.store.CustomizableMenuItemsAction.AttemptedEmptySection
 import mozilla.components.compose.menu.store.CustomizableMenuItemsAction.ExpansionToggled
 import mozilla.components.compose.menu.store.CustomizableMenuItemsAction.PreviewClicked
 import mozilla.components.compose.menu.store.CustomizableMenuItemsState
@@ -55,7 +56,7 @@ fun EditMenuItemsContent(
             listState = listState,
             itemInteractionHandler = remember(store, menuItems) { MoveItemsHandler(store, menuItems) },
             fixedItems = FIXED_ITEMS,
-            onAttemptedHide = {},
+            onAttemptedHide = { (it as? String)?.let { id -> store.dispatch(AttemptedEmptySection(id)) } },
         )
 
     CustomizeMenuCenteredList(modifier = modifier) { leftPadding, rightPadding ->

@@ -33,6 +33,7 @@ permalink: /changelog/
   * 🆕 Added `EditMenuItemsContent`, the screen showing the items of a menu section as `CustomizableMenuItem`s, shown and hidden, with `CustomizableMenuItemsStore`, `CustomizableMenuItemsState` and `CustomizableMenuItemsAction` for its state. [Bug 2090975](https://bugzilla.mozilla.org/show_bug.cgi?id=2090975)
   * 🆕 Added `CustomizableMenuState.editableGroupIds` and `CustomizableMenuAction.Update.editableGroupIds`, the groups the customize menu screen shows a button for editing the items of, which dispatches the new `CustomizableMenuAction.EditGroupItemsClicked`. [Bug 2090975](https://bugzilla.mozilla.org/show_bug.cgi?id=2090975)
   * 🆕 Added `CustomizableMenuItemsAction.ItemsChanged`, which `EditMenuItemsContent` dispatches when the user drags an item to another place in its section or inside an expandable item, including from one to the other, and when the user hides an item or shows it again. [Bug 2090976](https://bugzilla.mozilla.org/show_bug.cgi?id=2090976) [Bug 2090977](https://bugzilla.mozilla.org/show_bug.cgi?id=2090977) [Bug 2090978](https://bugzilla.mozilla.org/show_bug.cgi?id=2090978)
+  * 🆕 Added `CustomizableMenuItemsAction.AttemptedEmptySection`, which `EditMenuItemsContent` dispatches when the user drags the last item shown in the section to the hidden ones. [Bug 2090979](https://bugzilla.mozilla.org/show_bug.cgi?id=2090979)
 
 # 162.0
 * **concept-engine**

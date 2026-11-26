@@ -22,6 +22,7 @@ import mozilla.components.compose.menu.data.ExpandableMenuItem
 import mozilla.components.compose.menu.data.MenuItemTitle
 import mozilla.components.compose.menu.data.StandardMenuItem
 import mozilla.components.compose.menu.store.CustomizableMenuItemsAction
+import mozilla.components.compose.menu.store.CustomizableMenuItemsAction.AttemptedEmptySection
 import mozilla.components.compose.menu.store.CustomizableMenuItemsAction.ItemsChanged
 import mozilla.components.compose.menu.store.CustomizableMenuItemsAction.PreviewClicked
 import mozilla.components.compose.menu.store.CustomizableMenuItemsState
@@ -388,6 +389,33 @@ class EditMenuItemsContentTest {
         assertEquals(listOf("Sub 1", "More", "Shown"), store.state.items.map { it.id })
     }
 
+    @Test
+    fun `WHEN the only shown item is dragged into the area to hide items THEN the user is told once`() {
+        val actions = mutableListOf<CustomizableMenuItemsAction>()
+        setContent(CustomizableMenuItemsState(items = listOf(item("Shown"))), listOf(capturing(actions)))
+
+        dragByHandle(
+            title = "Shown",
+            via = listOf({ boundsOf(dragToHide).center }, { boundsOf("Shown").center }),
+            to = { boundsOf(dragToHide).center },
+        )
+
+        assertEquals(listOf(AttemptedEmptySection("Shown")), actions.filterIsInstance<AttemptedEmptySection>())
+    }
+
+    @Test
+    fun `WHEN an item which can be hidden is dragged into the area to hide items THEN the user is not told`() {
+        val actions = mutableListOf<CustomizableMenuItemsAction>()
+        setContent(
+            CustomizableMenuItemsState(items = listOf(item("Shown 1"), item("Shown 2"))),
+            listOf(capturing(actions)),
+        )
+
+        dragByHandle(title = "Shown 1", to = { boundsOf(dragToHide).center })
+
+        assertTrue(actions.none { it is AttemptedEmptySection })
+    }
+
     private fun setContent(
         state: CustomizableMenuItemsState,
         middleware: List<Middleware<CustomizableMenuItemsState, CustomizableMenuItemsAction>> = emptyList(),
@@ -406,15 +434,31 @@ class EditMenuItemsContentTest {
 
     private fun boundsOf(text: String) = composeTestRule.onNodeWithText(text).fetchSemanticsNode().boundsInRoot
 
-    /** Tap the handle of the row with [title], drag it in steps to [to] and let go of it. */
-    private fun dragByHandle(title: String, to: () -> Offset) {
+    /**
+     * Tap the handle of the row with [title], drag it in steps through each of [via], in order, each evaluated when its
+     * leg starts, then to [to] and let go of it.
+     */
+    private fun dragByHandle(title: String, via: List<() -> Offset> = emptyList(), to: () -> Offset) {
         val listBounds = composeTestRule.onRoot().fetchSemanticsNode().boundsInRoot
         val distanceFromEnd = with(composeTestRule.density) { 30.dp.toPx() }
-        dragFrom(Offset(listBounds.right - distanceFromEnd, boundsOf(title).center.y), afterLongPress = false, to = to)
+        dragFrom(
+            Offset(listBounds.right - distanceFromEnd, boundsOf(title).center.y),
+            afterLongPress = false,
+            via = via,
+            to = to,
+        )
     }
 
-    /** Press at [start], hold it for a long press if [afterLongPress], drag in steps to [to] and let go. */
-    private fun dragFrom(start: Offset, afterLongPress: Boolean, to: () -> Offset) {
+    /**
+     * Press at [start], hold it for a long press if [afterLongPress], drag in steps through each of [via], in order,
+     * each evaluated when its leg starts, then to [to] and let go.
+     */
+    private fun dragFrom(
+        start: Offset,
+        afterLongPress: Boolean,
+        via: List<() -> Offset> = emptyList(),
+        to: () -> Offset,
+    ) {
         composeTestRule.onRoot().performTouchInput {
             down(start)
             if (!afterLongPress) moveBy(Offset(0f, viewConfiguration.touchSlop * 3))
@@ -423,16 +467,20 @@ class EditMenuItemsContentTest {
         composeTestRule.onRoot().performTouchInput { moveBy(Offset(0f, viewConfiguration.touchSlop * 3)) }
         composeTestRule.waitForIdle()
 
+        (via + to).forEach { moveInSteps(it()) }
+        composeTestRule.onRoot().performTouchInput { up() }
+        composeTestRule.waitForIdle()
+    }
+
+    private fun moveInSteps(to: Offset) {
         var from = Offset.Zero
         composeTestRule.onRoot().performTouchInput { from = checkNotNull(currentPosition()) }
         val steps = 10
-        val step = (to() - from) / steps.toFloat()
+        val step = (to - from) / steps.toFloat()
         repeat(steps) {
             composeTestRule.onRoot().performTouchInput { moveBy(step) }
             composeTestRule.waitForIdle()
         }
-        composeTestRule.onRoot().performTouchInput { up() }
-        composeTestRule.waitForIdle()
     }
 
     private fun item(title: String) =

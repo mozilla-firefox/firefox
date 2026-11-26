@@ -43,6 +43,13 @@ sealed interface CustomizableMenuItemsAction : Action {
      */
     data class ExpansionToggled(val itemId: String) : CustomizableMenuItemsAction
 
+    /**
+     * The user tried to remove the last item shown in the section from the menu, which would leave the section empty.
+     *
+     * @property itemId Id of the item.
+     */
+    data class AttemptedEmptySection(val itemId: String) : CustomizableMenuItemsAction
+
     /** The user tapped "Preview" on the screen. */
     data object PreviewClicked : CustomizableMenuItemsAction
 }
