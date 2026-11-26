@@ -195,7 +195,7 @@ async protocol PWebAuthnTransaction {
   parent:
     async RequestRegister(WebAuthnMakeCredentialInfo aTransactionInfo) returns (WebAuthnMakeCredentialResponse response);
     async RequestSign(WebAuthnGetAssertionInfo aTransactionInfo) returns (WebAuthnGetAssertionResponse response);
-    async RequestIsUVPAA() returns (bool available);
+    async RequestClientCapabilities() returns (nsCString[] capabilities);
     async RequestCancel();
 
   child:

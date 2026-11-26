@@ -5,6 +5,8 @@
 #ifndef mozilla_dom_WebAuthnHandler_h
 #define mozilla_dom_WebAuthnHandler_h
 
+#include <functional>
+
 #include "mozilla/Maybe.h"
 #include "mozilla/MozPromise.h"
 #include "mozilla/dom/AbortSignal.h"
@@ -96,6 +98,11 @@ class WebAuthnHandler final : public AbortFollower {
 
   void IsUVPAA(const RefPtr<Promise>& aPromise);
 
+  // Resolves aPromise with a PublicKeyCredentialClientCapabilities record.
+  void GetClientCapabilities(const RefPtr<Promise>& aPromise);
+
+  void IsConditionalMediationAvailable(const RefPtr<Promise>& aPromise);
+
   void ActorDestroyed();
 
   // AbortFollower
@@ -105,6 +112,11 @@ class WebAuthnHandler final : public AbortFollower {
   virtual ~WebAuthnHandler();
 
   bool MaybeCreateActor();
+
+  // Calls aCallback with the supported client capability keys. Calls it with
+  // an empty list if they can't be determined.
+  void RequestClientCapabilities(
+      std::function<void(const nsTArray<nsCString>&)>&& aCallback);
 
   void FinishMakeCredential(const WebAuthnMakeCredentialResult& aResult);
 

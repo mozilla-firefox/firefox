@@ -90,6 +90,8 @@ run-if = [
   "os != 'win'", # Bug 1718296 (Windows 10 1903+ has its own window and U2F that we cannot control with tests.)
 ]
 
+["test_webauthn_get_client_capabilities.html"]
+
 ["test_webauthn_in_xhtml.xhtml"]
 fail-if = [
   "xorigin",

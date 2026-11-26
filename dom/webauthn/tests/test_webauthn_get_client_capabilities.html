@@ -1,0 +1,123 @@
+<!DOCTYPE html>
+<meta charset=utf-8>
+<head>
+  <title>Test for W3C Web Authentication getClientCapabilities</title>
+  <script src="/tests/SimpleTest/SimpleTest.js"></script>
+  <link rel="stylesheet" type="text/css" href="/tests/SimpleTest/test.css" />
+</head>
+<body>
+
+<h1>Test for W3C Web Authentication getClientCapabilities</h1>
+<a target="_blank" href="https://bugzilla.mozilla.org/show_bug.cgi?id=2088324">Mozilla Bug 2088324</a>
+
+<script class="testbody" type="text/javascript">
+"use strict";
+
+// The softtoken pref makes authenticator-rs handle all requests, so these are
+// its capabilities. relatedOrigins is false because the test manifest sets
+// security.webauthn.related_origin_requests_mode to 0.
+const AUTHRS_CAPABILITIES = {
+  conditionalCreate: false,
+  conditionalGet: true,
+  "extension:appid": true,
+  "extension:credProps": true,
+  "extension:credentialProtectionPolicy": true,
+  "extension:enforceCredentialProtectionPolicy": true,
+  "extension:hmacCreateSecret": true,
+  "extension:largeBlob": false,
+  "extension:minPinLength": true,
+  "extension:prf": true,
+  hybridTransport: false,
+  passkeyPlatformAuthenticator: false,
+  relatedOrigins: false,
+  signalAllAcceptedCredentials: false,
+  signalCurrentUserDetails: false,
+  signalUnknownCredential: false,
+  userVerifyingPlatformAuthenticator: false,
+};
+
+const RESIST_FINGERPRINTING_CAPABILITIES = {
+  ...AUTHRS_CAPABILITIES,
+  "extension:largeBlob": true,
+  hybridTransport: true,
+  passkeyPlatformAuthenticator: true,
+  relatedOrigins: true,
+  userVerifyingPlatformAuthenticator: true,
+};
+
+async function loadFrame() {
+  let frame = document.createElement("iframe");
+  frame.src = "empty.html";
+  let loaded = new Promise(resolve =>
+    frame.addEventListener("load", resolve, { once: true })
+  );
+  document.body.appendChild(frame);
+  await loaded;
+  return frame.contentWindow;
+}
+
+add_task(async function test_capabilities() {
+  let capabilities = await PublicKeyCredential.getClientCapabilities();
+  isDeeply(
+    Object.keys(capabilities),
+    Object.keys(AUTHRS_CAPABILITIES),
+    "All keys are reported, in sorted order"
+  );
+  isDeeply(capabilities, AUTHRS_CAPABILITIES, "authenticator-rs capabilities");
+  is(
+    await PublicKeyCredential.isConditionalMediationAvailable(),
+    true,
+    "isConditionalMediationAvailable matches conditionalGet"
+  );
+  is(
+    await PublicKeyCredential.isUserVerifyingPlatformAuthenticatorAvailable(),
+    false,
+    "isUserVerifyingPlatformAuthenticatorAvailable matches userVerifyingPlatformAuthenticator"
+  );
+});
+
+add_task(async function test_prefs() {
+  await SpecialPowers.pushPrefEnv({
+    set: [
+      ["security.webauthn.enable_conditional_mediation", false],
+      ["security.webauthn.related_origin_requests_mode", 1],
+    ],
+  });
+  let capabilities = await PublicKeyCredential.getClientCapabilities();
+  is(capabilities.conditionalGet, false, "conditionalGet follows its pref");
+  is(capabilities.relatedOrigins, true, "relatedOrigins follows its pref");
+  is(
+    await PublicKeyCredential.isConditionalMediationAvailable(),
+    false,
+    "isConditionalMediationAvailable follows its pref"
+  );
+  await SpecialPowers.popPrefEnv();
+});
+
+add_task(async function test_resist_fingerprinting() {
+  await SpecialPowers.pushPrefEnv({
+    set: [["privacy.resistFingerprinting", true]],
+  });
+  let win = await loadFrame();
+  let capabilities = await win.PublicKeyCredential.getClientCapabilities();
+  isDeeply(
+    capabilities,
+    RESIST_FINGERPRINTING_CAPABILITIES,
+    "Fixed capabilities when resisting fingerprinting"
+  );
+  is(
+    await win.PublicKeyCredential.isConditionalMediationAvailable(),
+    true,
+    "Fixed isConditionalMediationAvailable when resisting fingerprinting"
+  );
+  is(
+    await win.PublicKeyCredential.isUserVerifyingPlatformAuthenticatorAvailable(),
+    true,
+    "Fixed isUserVerifyingPlatformAuthenticatorAvailable when resisting fingerprinting"
+  );
+  await SpecialPowers.popPrefEnv();
+});
+</script>
+
+</body>
+</html>
