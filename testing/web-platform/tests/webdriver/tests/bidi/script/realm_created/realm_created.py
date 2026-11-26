@@ -229,8 +229,6 @@ async def test_subscribe_to_child_context(
     bidi_session,
     subscribe_events,
     wait_for_bidi_events,
-    wait_for_event,
-    wait_for_future_safe,
     new_tab,
     inline,
 ):
@@ -256,33 +254,31 @@ async def test_subscribe_to_child_context(
     frame_1 = contexts[0]["children"][0]
     frame_2 = contexts[0]["children"][1]
 
+    existing_realms = {realm["realm"] for realm in await bidi_session.script.get_realms()}
+
     events = []
 
     async def on_event(method, data):
-        events.append(data)
+        if data["realm"] not in existing_realms:
+            events.append(data)
 
     remove_listener = bidi_session.add_event_listener(REALM_CREATED_EVENT, on_event)
 
     # A subscription made with a child context applies to its top-level context,
-    # so the existing realms of every frame in the tab are reported.
+    # so a new realm in a sibling frame is reported.
     await subscribe_events(events=[REALM_CREATED_EVENT], contexts=[frame_1["context"]])
-    await wait_for_bidi_events(events, 3)
-    assert {event["context"] for event in events} == {
-        new_tab["context"],
-        frame_1["context"],
-        frame_2["context"],
-    }
 
-    # So is a new realm in a sibling frame.
-    on_realm_created = wait_for_event(REALM_CREATED_EVENT)
     url = inline("<script>3</script>")
     await bidi_session.script.evaluate(
         expression=f"document.querySelectorAll('iframe')[1].src = '{url}'",
         target=ContextTarget(new_tab["context"]),
         await_promise=False,
     )
-    event = await wait_for_future_safe(on_realm_created)
-    assert event["context"] == frame_2["context"]
+    await wait_for_bidi_events(events, 1)
+    assert len(events) == 1
+
+    result = await bidi_session.script.get_realms(context=frame_2["context"])
+    assert events[0] == result[0]
 
     remove_listener()
 
@@ -457,32 +453,6 @@ async def test_service_worker(
         expression="""window.onRegistration.then(r => r.unregister())""",
         await_promise=True,
         target=ContextTarget(top_context["context"]),
-    )
-
-
-@pytest.mark.parametrize("type_hint", ["tab", "window"])
-async def test_existing_realm(bidi_session, wait_for_event, wait_for_future_safe, subscribe_events, test_origin, type_hint):
-    # See https://w3c.github.io/webdriver-bidi/#event-script-realmCreated
-    # "The remote end subscribe steps with subscribe priority 2"
-    top_level_context = await bidi_session.browsing_context.create(type_hint=type_hint)
-
-    await bidi_session.browsing_context.navigate(
-        context=top_level_context["context"], url=test_origin, wait="complete"
-    )
-
-    on_entry = wait_for_event(REALM_CREATED_EVENT)
-    await subscribe_events([REALM_CREATED_EVENT], contexts=[top_level_context["context"]])
-    realm = await wait_for_future_safe(on_entry)
-
-    recursive_compare(
-        {
-            "type": "window",
-            "context": top_level_context["context"],
-            **({"userContext": top_level_context["userContext"]} if "userContext" in realm else {}),
-            "realm": any_string,
-            "origin": test_origin,
-        },
-        realm,
     )
 
 

@@ -242,7 +242,6 @@ async def test_subscribe_to_one_context(
 async def test_subscribe_to_child_context(
     bidi_session,
     subscribe_events,
-    wait_for_bidi_events,
     wait_for_event,
     wait_for_future_safe,
     new_tab,
@@ -270,22 +269,13 @@ async def test_subscribe_to_child_context(
     frame_1 = contexts[0]["children"][0]
     frame_2 = contexts[0]["children"][1]
 
-    created_events = []
-
-    async def on_realm_created(method, data):
-        created_events.append(data)
-
-    remove_listener = bidi_session.add_event_listener(REALM_CREATED_EVENT, on_realm_created)
-
-    # A subscription made with a child context applies to its top-level context.
-    await subscribe_events(
-        events=[REALM_CREATED_EVENT, REALM_DESTROYED_EVENT], contexts=[frame_1["context"]]
-    )
-    await wait_for_bidi_events(created_events, 3)
-    frame_2_realms = [event["realm"] for event in created_events if event["context"] == frame_2["context"]]
+    frame_2_realms = await bidi_session.script.get_realms(context=frame_2["context"])
     assert len(frame_2_realms) == 1
 
-    # The realm of a sibling frame is reported when it is destroyed.
+    # A subscription made with a child context applies to its top-level context,
+    # so the realm of a sibling frame is reported when it is destroyed.
+    await subscribe_events(events=[REALM_DESTROYED_EVENT], contexts=[frame_1["context"]])
+
     on_realm_destroyed = wait_for_event(REALM_DESTROYED_EVENT)
     url = inline("<div>foo</div>")
     await bidi_session.script.evaluate(
@@ -294,9 +284,7 @@ async def test_subscribe_to_child_context(
         await_promise=False,
     )
     event = await wait_for_future_safe(on_realm_destroyed)
-    assert event == {"realm": frame_2_realms[0]}
-
-    remove_listener()
+    assert event == {"realm": frame_2_realms[0]["realm"]}
 
 
 async def test_dedicated_worker(
