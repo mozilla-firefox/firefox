@@ -4,7 +4,6 @@
 
 package mozilla.components.compose.browser.toolbar
 
-import androidx.annotation.StringRes
 import androidx.compose.material3.DividerDefaults
 import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.MaterialTheme
@@ -12,12 +11,10 @@ import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
-import androidx.compose.runtime.remember
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.tooling.preview.PreviewLightDark
-import androidx.compose.ui.unit.dp
 import mozilla.components.compose.base.theme.AcornTheme
 import mozilla.components.compose.browser.toolbar.concept.PageOrigin
 import mozilla.components.compose.browser.toolbar.store.BrowserDisplayToolbarAction
@@ -29,35 +26,15 @@ import mozilla.components.compose.browser.toolbar.store.BrowserToolbarStore
 import mozilla.components.compose.browser.toolbar.store.DisplayState
 import mozilla.components.compose.browser.toolbar.store.EditState
 import mozilla.components.compose.browser.toolbar.store.Mode
-import mozilla.components.compose.browser.toolbar.store.ToolbarGravity
+import mozilla.components.compose.browser.toolbar.store.ToolbarGravity.Bottom
+import mozilla.components.compose.browser.toolbar.store.ToolbarGravity.Top
 import mozilla.components.compose.browser.toolbar.ui.BrowserToolbarQuery
 import mozilla.components.compose.cfr.CFR
 import mozilla.components.compose.cfr.CFRBox
-import mozilla.components.compose.cfr.CFRPopup
 import mozilla.components.compose.cfr.CFRPopup.IndicatorDirection
-import mozilla.components.compose.cfr.CFRPopupBackground
-import mozilla.components.compose.cfr.CFRPopupProperties
 import mozilla.components.compose.cfr.rememberCFRPositionProvider
 import mozilla.components.compose.cfr.rememberCFRState
 import mozilla.components.lib.state.ext.observeAsComposableState
-
-private const val CFR_HORIZONTAL_OFFSET = 160
-private const val CFR_VERTICAL_OFFSET = 0
-
-/**
- * Represents the state and behavior of a CFR shown in the browser toolbar.
- *
- * @property tag An identifying tag for the CFR. This can be used to handle side effects of interactions with the tag.
- * @property enabled Whether the CFR is currently active and should be displayed.
- * @property title The headline text displayed in the CFR banner.
- * @property description A short descriptive message explaining the feature or action.
- */
-data class BrowserToolbarCFR(
-    val tag: String,
-    val enabled: Boolean,
-    @get:StringRes val title: Int?,
-    @get:StringRes val description: Int,
-)
 
 /**
  * A customizable toolbar for browsers.
@@ -83,7 +60,6 @@ fun BrowserToolbar(
     showDivider: Boolean = true,
 ) {
     val uiState by store.observeAsComposableState { it }
-    val cfrProperties = browserToolbarCFRProperties(uiState.gravity)
     val backgroundColor = MaterialTheme.colorScheme.surface
     val outlineColor = DividerDefaults.color
 
@@ -134,7 +110,11 @@ fun BrowserToolbar(
             // between the full and minimal toolbar <=> Avoid this when not needed.
             DisplayToolbarWithCFR(
                 cfr = cfr,
-                indicatorDirection = cfrProperties.indicatorDirection,
+                indicatorDirection =
+                    when (uiState.gravity) {
+                        Top -> IndicatorDirection.UP
+                        Bottom -> IndicatorDirection.DOWN
+                    },
                 onCFRDismissed = {
                     store.dispatch(BrowserDisplayToolbarAction.ToolbarCFRDismissed(tag = cfr.tag))
                 },
@@ -194,25 +174,6 @@ private fun DisplayToolbarWithCFR(
         if (cfr.enabled) {
             state.show()
         }
-    }
-}
-
-@Composable
-private fun browserToolbarCFRProperties(gravity: ToolbarGravity): CFRPopupProperties {
-    val isBottom = gravity == ToolbarGravity.Bottom
-    val indicatorDir = if (isBottom) IndicatorDirection.DOWN else IndicatorDirection.UP
-
-    val cfrBrush = AcornTheme.gradients.cfr.brush
-
-    return remember(isBottom) {
-        CFRPopupProperties(
-            popupAlignment = CFRPopup.PopupAlignment.INDICATOR_CENTERED_IN_ANCHOR,
-            popupBodyColors = CFRPopupBackground.Gradient(brush = cfrBrush),
-            dismissButtonColor = android.graphics.Color.WHITE,
-            indicatorDirection = indicatorDir,
-            popupVerticalOffset = CFR_VERTICAL_OFFSET.dp,
-            indicatorArrowStartOffset = CFR_HORIZONTAL_OFFSET.dp,
-        )
     }
 }
 

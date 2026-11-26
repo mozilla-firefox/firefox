@@ -6,9 +6,9 @@
     <ID>BracesOnIfStatements:FullDisplayToolbar.kt$if</ID>
     <ID>BracesOnIfStatements:ParentBrowserMenuItem.kt$ParentBrowserMenuItem$if</ID>
     <ID>ClassAcronymCasing:AMOAddonsProvider.kt$AMOAddonsProvider : AddonsProvider</ID>
-    <ID>ClassAcronymCasing:BrowserToolbar.kt$BrowserToolbarCFR</ID>
     <ID>ClassAcronymCasing:BrowserToolbarAction.kt$BrowserDisplayToolbarAction$ToolbarCFRDismissed : BrowserDisplayToolbarAction</ID>
     <ID>ClassAcronymCasing:BrowserToolbarAction.kt$BrowserDisplayToolbarAction$ToolbarCFRShown : BrowserDisplayToolbarAction</ID>
+    <ID>ClassAcronymCasing:BrowserToolbarCFR.kt$BrowserToolbarCFR</ID>
     <ID>ClassAcronymCasing:CFRBox.kt$CFRBackground</ID>
     <ID>ClassAcronymCasing:CFRBox.kt$CFRColors</ID>
     <ID>ClassAcronymCasing:CFRBox.kt$CFRDefaults</ID>
