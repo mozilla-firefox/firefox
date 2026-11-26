@@ -39,6 +39,7 @@
 #include "prenv.h"
 
 #ifdef MOZ_WAYLAND
+#  include "DMABufFormats.h"
 #  include "nsWaylandDisplay.h"
 #endif
 
@@ -1376,15 +1377,20 @@ const nsTArray<RefPtr<GfxDriverInfo>>& GfxInfo::GetGfxDriverInfo() {
     // active.
     bool nativeCompositorRequired = false;
 #ifdef MOZ_WAYLAND
-    hdrEnabled = GdkIsWaylandDisplay() &&
-                 ((WaylandDisplayGet()->IsHDREnabled() &&
-                   WaylandDisplayGet()->GetFractionalScaleManager() &&
-                   StaticPrefs::gfx_color_management_hdr()) ||
-                  StaticPrefs::gfx_color_management_hdr_force_enabled());
-    nativeCompositorRequired =
-        GdkIsWaylandDisplay() &&
-        (StaticPrefs::layers_gpu_process_enabled_AtStartup() ||
-         StaticPrefs::layers_gpu_process_force_enabled_AtStartup());
+    if (GdkIsWaylandDisplay()) {
+      const auto formats = WaylandDisplayGet()->GetDMABufFormats();
+      hdrEnabled = formats && formats->GetDMABufFeedback() &&
+                   formats->GetFormat(GBM_FORMAT_NV12) &&
+                   formats->GetFormat(GBM_FORMAT_P010) &&
+                   formats->GetFormat(GBM_FORMAT_ABGR2101010) &&
+                   ((WaylandDisplayGet()->IsHDREnabled() &&
+                     WaylandDisplayGet()->GetFractionalScaleManager() &&
+                     StaticPrefs::gfx_color_management_hdr()) ||
+                    StaticPrefs::gfx_color_management_hdr_force_enabled());
+      nativeCompositorRequired =
+          StaticPrefs::layers_gpu_process_enabled_AtStartup() ||
+          StaticPrefs::layers_gpu_process_force_enabled_AtStartup();
+    }
 #endif
     if (!hdrEnabled) {
       APPEND_TO_DRIVER_BLOCKLIST(OperatingSystem::Linux, DeviceFamily::All,

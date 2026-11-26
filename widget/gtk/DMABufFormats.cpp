@@ -385,10 +385,6 @@ void DMABufFormats::EnsureBasicFormats() {
 
   EnsureBasicFormat(GBM_FORMAT_XRGB8888);
   EnsureBasicFormat(GBM_FORMAT_ARGB8888);
-  EnsureBasicFormat(GBM_FORMAT_P010);
-  EnsureBasicFormat(GBM_FORMAT_NV12);
-  EnsureBasicFormat(GBM_FORMAT_YUV420);
-  EnsureBasicFormat(GBM_FORMAT_ABGR2101010);
 
   mDMABufFeedback->PendingTrancheDone();
 }
