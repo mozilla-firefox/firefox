@@ -199,3 +199,30 @@ load = [
   { type = "file", path = "dom/media/docs/review/memory-safety.md" },
   { type = "file", path = "dom/media/docs/review/spec-correctness.md" },
 ]
+
+# Performance testing: Triggered when a patch touches perftest harnesses,
+# perf task kinds, perfdocs or the mach try perf selector.
+[[rules]]
+name = "Performance testing"
+description = "Perftest review checklist and the python unit tests that cover perftest changes."
+when = { any_file = { include = [
+  "testing/raptor/**",
+  "testing/talos/**",
+  "testing/perfdocs/**",
+  "testing/performance/**",
+  "testing/condprofile/**",
+  "testing/mozbase/mozproxy/**",
+  "testing/mozharness/mozharness/mozilla/testing/raptor.py",
+  "testing/mozharness/mozharness/mozilla/testing/talos.py",
+  "python/mozperftest/**",
+  "tools/tryselect/selectors/perf.py",
+  "tools/tryselect/selectors/perfselector/**",
+  "taskcluster/kinds/browsertime/**",
+  "taskcluster/kinds/talos/**",
+  "taskcluster/kinds/perftest/**",
+  "taskcluster/gecko_taskgraph/transforms/perftest.py",
+  "taskcluster/gecko_taskgraph/transforms/test/raptor.py",
+] } }
+load = [
+  { type = "file", path = ".claude/skills/perftest-review/references/checklist.md" },
+]
