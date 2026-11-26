@@ -80,7 +80,6 @@ export namespace Targets {
     let WebGLVendorRandomize: number;
     let WebGLRendererConstant: number;
     let IMEStyle: number;
-    let WebAuthnClientCapabilities: number;
     let IsAlwaysEnabledForPrecompute: number;
     let AllTargets: number;
 }

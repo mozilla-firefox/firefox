@@ -330,23 +330,6 @@ WebAuthnService::GetIsUVPAA(bool* aAvailable) {
 }
 
 NS_IMETHODIMP
-WebAuthnService::GetClientCapabilities(
-    nsTArray<nsCString>& aClientCapabilities) {
-  nsresult rv = DefaultService()->GetClientCapabilities(aClientCapabilities);
-  NS_ENSURE_SUCCESS(rv, rv);
-
-  if (!StaticPrefs::security_webauthn_enable_conditional_mediation()) {
-    aClientCapabilities.RemoveElement("conditionalGet"_ns);
-  }
-  // Related origin requests are checked by Firefox itself, independent of the
-  // service handling the request.
-  if (StaticPrefs::security_webauthn_related_origin_requests_mode() != 0) {
-    aClientCapabilities.AppendElement("relatedOrigins"_ns);
-  }
-  return NS_OK;
-}
-
-NS_IMETHODIMP
 WebAuthnService::HasPendingConditionalGet(uint64_t aBrowsingContextId,
                                           const nsAString& aOrigin,
                                           uint64_t* aRv) {

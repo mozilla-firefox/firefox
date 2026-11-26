@@ -1341,28 +1341,6 @@ MacOSWebAuthnService::GetIsUVPAA(bool* aAvailable) {
 }
 
 NS_IMETHODIMP
-MacOSWebAuthnService::GetClientCapabilities(
-    nsTArray<nsCString>& aClientCapabilities) {
-  aClientCapabilities = nsTArray<nsCString>{
-      // WebAuthnService removes this if
-      // StaticPrefs::security_webauthn_enable_conditional_mediation() is false.
-      "conditionalGet"_ns,
-      "extension:appid"_ns,
-      "extension:credProps"_ns,
-      "extension:hmacCreateSecret"_ns,
-      "extension:largeBlob"_ns,
-      "extension:minPinLength"_ns,
-      "extension:prf"_ns,
-      "hybridTransport"_ns,
-      "passkeyPlatformAuthenticator"_ns,
-      // WebAuthnService adds "relatedOrigins" unless
-      // StaticPrefs::security_webauthn_related_origin_requests_mode() is 0.
-      "userVerifyingPlatformAuthenticator"_ns,
-  };
-  return NS_OK;
-}
-
-NS_IMETHODIMP
 MacOSWebAuthnService::Cancel(uint64_t aTransactionId) {
   MOZ_ASSERT(NS_IsMainThread());
   if (mTransactionId.isSome() && mTransactionId.ref() == aTransactionId) {

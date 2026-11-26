@@ -784,84 +784,75 @@ mozilla::ipc::IPCResult WebAuthnTransactionParent::RecvRequestCancel() {
   return IPC_OK();
 }
 
-#ifdef MOZ_WIDGET_ANDROID
-// isUserVerifyingPlatformAuthenticatorAvailable() needs an asynchronous query
-// to the Android platform API, so it can't be part of
-// nsIWebAuthnService::GetClientCapabilities. Must be called on the main
-// thread.
-static RefPtr<BoolPromise> IsUVPAAOnAndroid() {
+mozilla::ipc::IPCResult WebAuthnTransactionParent::RecvRequestIsUVPAA(
+    RequestIsUVPAAResolver&& aResolver) {
   MOZ_ASSERT(NS_IsMainThread());
 
+#ifdef MOZ_WIDGET_ANDROID
   // Try the nsIWebAuthnService. If we're configured for tests we
   // will get a result. Otherwise we expect NS_ERROR_NOT_IMPLEMENTED.
   nsCOMPtr<nsIWebAuthnService> service(
       do_GetService("@mozilla.org/webauthn/service;1"));
-  bool available = false;
-  if (service && NS_SUCCEEDED(service->GetIsUVPAA(&available))) {
-    return BoolPromise::CreateAndResolve(available, __func__);
+  bool available;
+  nsresult rv = service->GetIsUVPAA(&available);
+  if (NS_SUCCEEDED(rv)) {
+    aResolver(available);
+    return IPC_OK();
   }
 
   // Don't consult the platform API if resident key support is disabled.
   if (!StaticPrefs::
           security_webauthn_webauthn_enable_android_fido2_residentkey()) {
-    return BoolPromise::CreateAndResolve(false, __func__);
+    aResolver(false);
+    return IPC_OK();
   }
 
   // The GeckoView implementation of
   // isUserVerifiyingPlatformAuthenticatorAvailable dispatches the work to a
-  // background thread and returns a MozPromise.
+  // background thread and returns a MozPromise which we can ->Then to call
+  // aResolver on the current thread.
+  nsCOMPtr<nsISerialEventTarget> target = GetCurrentSerialEventTarget();
   auto result = java::WebAuthnTokenManager::
       WebAuthnIsUserVerifyingPlatformAuthenticatorAvailable();
   auto geckoResult = java::GeckoResult::LocalRef(std::move(result));
-  return MozPromise<bool, bool, false>::FromGeckoResult(geckoResult)
-      ->Then(GetCurrentSerialEventTarget(), __func__,
-             [](const MozPromise<bool, bool, false>::ResolveOrRejectValue&
-                    aValue) {
-               return BoolPromise::CreateAndResolve(
-                   aValue.IsResolve() && aValue.ResolveValue(), __func__);
+  MozPromise<bool, bool, false>::FromGeckoResult(geckoResult)
+      ->Then(target, __func__,
+             [resolver = std::move(aResolver)](
+                 const MozPromise<bool, bool, false>::ResolveOrRejectValue&
+                     aValue) {
+               if (aValue.IsResolve()) {
+                 resolver(aValue.ResolveValue());
+               } else {
+                 resolver(false);
+               }
              });
-}
-#endif
+  return IPC_OK();
 
-mozilla::ipc::IPCResult
-WebAuthnTransactionParent::RecvRequestClientCapabilities(
-    RequestClientCapabilitiesResolver&& aResolver) {
-  MOZ_ASSERT(NS_IsMainThread());
+#else
 
   nsCOMPtr<nsISerialEventTarget> target = GetCurrentSerialEventTarget();
   nsCOMPtr<nsIRunnable> runnable(NS_NewRunnableFunction(
-      __func__, [target, resolver = std::move(aResolver)]() mutable {
-        nsTArray<nsCString> capabilities;
+      __func__, [target, resolver = std::move(aResolver)]() {
+        bool available;
         nsCOMPtr<nsIWebAuthnService> service(
             do_GetService("@mozilla.org/webauthn/service;1"));
-        if (!service ||
-            NS_FAILED(service->GetClientCapabilities(capabilities))) {
-          capabilities.Clear();
+        nsresult rv = service->GetIsUVPAA(&available);
+        if (NS_FAILED(rv)) {
+          available = false;
         }
-        target->Dispatch(NS_NewRunnableFunction(
-            __func__, [resolver = std::move(resolver),
-                       capabilities = std::move(capabilities)]() mutable {
-#ifdef MOZ_WIDGET_ANDROID
-              IsUVPAAOnAndroid()->Then(
-                  GetCurrentSerialEventTarget(), __func__,
-                  [resolver = std::move(resolver),
-                   capabilities = std::move(capabilities)](
-                      const BoolPromise::ResolveOrRejectValue& aValue) mutable {
-                    constexpr auto kUVPAA =
-                        "userVerifyingPlatformAuthenticator"_ns;
-                    if (aValue.IsResolve() && aValue.ResolveValue() &&
-                        !capabilities.Contains(kUVPAA)) {
-                      capabilities.AppendElement(kUVPAA);
-                    }
-                    resolver(capabilities);
-                  });
-#else
-              resolver(capabilities);
-#endif
-            }));
+        BoolPromise::CreateAndResolve(available, __func__)
+            ->Then(target, __func__,
+                   [resolver](const BoolPromise::ResolveOrRejectValue& value) {
+                     if (value.IsResolve()) {
+                       resolver(value.ResolveValue());
+                     } else {
+                       resolver(false);
+                     }
+                   });
       }));
   NS_DispatchBackgroundTask(runnable.forget(), NS_DISPATCH_EVENT_MAY_BLOCK);
   return IPC_OK();
+#endif
 }
 
 void WebAuthnTransactionParent::ActorDestroy(ActorDestroyReason aWhy) {

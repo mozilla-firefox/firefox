@@ -39,8 +39,8 @@ class WebAuthnTransactionParent final : public PWebAuthnTransactionParent {
 
   mozilla::ipc::IPCResult RecvRequestCancel();
 
-  mozilla::ipc::IPCResult RecvRequestClientCapabilities(
-      RequestClientCapabilitiesResolver&& aResolver);
+  mozilla::ipc::IPCResult RecvRequestIsUVPAA(
+      RequestIsUVPAAResolver&& aResolver);
 
   mozilla::ipc::IPCResult RecvDestroyMe();
 

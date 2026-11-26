@@ -215,35 +215,6 @@ WinWebAuthnService::GetIsUVPAA(bool* aAvailable) {
 }
 
 NS_IMETHODIMP
-WinWebAuthnService::GetClientCapabilities(
-    nsTArray<nsCString>& aClientCapabilities) {
-  aClientCapabilities = nsTArray<nsCString>{
-      // WebAuthnService removes this if
-      // StaticPrefs::security_webauthn_enable_conditional_mediation() is false.
-      "conditionalGet"_ns,
-      "extension:appid"_ns,
-      "extension:credProps"_ns,
-      "extension:credentialProtectionPolicy"_ns,
-      "extension:enforceCredentialProtectionPolicy"_ns,
-      "extension:hmacCreateSecret"_ns,
-      "extension:largeBlob"_ns,
-      "extension:minPinLength"_ns,
-      "extension:prf"_ns,
-      "hybridTransport"_ns,
-      "passkeyPlatformAuthenticator"_ns,
-      // WebAuthnService adds "relatedOrigins" unless
-      // StaticPrefs::security_webauthn_related_origin_requests_mode() is 0.
-  };
-
-  bool isUVPAA = false;
-  (void)GetIsUVPAA(&isUVPAA);
-  if (isUVPAA) {
-    aClientCapabilities.AppendElement("userVerifyingPlatformAuthenticator"_ns);
-  }
-  return NS_OK;
-}
-
-NS_IMETHODIMP
 WinWebAuthnService::Cancel(uint64_t aTransactionId) {
   MOZ_ASSERT(NS_IsMainThread());
   if (mActiveTransaction.isSome() &&

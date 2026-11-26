@@ -38,11 +38,6 @@ interface nsIWebAuthnService : nsISupports
     // IsUserVerifyingPlatformAuthenticatorAvailable
     readonly attribute boolean isUVPAA;
 
-    // The PublicKeyCredential.getClientCapabilities() keys (ClientCapability
-    // values and "extension:<id>") supported by this service. Keys that are
-    // not listed are reported as false. May be called off the main thread.
-    readonly attribute Array<AUTF8String> clientCapabilities;
-
     [noscript]
     void makeCredential(
         in uint64_t aTransactionId,

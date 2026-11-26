@@ -800,31 +800,6 @@ impl AuthrsService {
         }
     }
 
-    xpcom_method!(get_client_capabilities => GetClientCapabilities() -> ThinVec<nsCString>);
-    fn get_client_capabilities(&self) -> Result<ThinVec<nsCString>, nsresult> {
-        let mut capabilities: ThinVec<nsCString> = [
-            // WebAuthnService removes this if
-            // StaticPrefs::security_webauthn_enable_conditional_mediation() is false.
-            "conditionalGet",
-            "extension:appid",
-            "extension:credProps",
-            "extension:credentialProtectionPolicy",
-            "extension:enforceCredentialProtectionPolicy",
-            "extension:hmacCreateSecret",
-            "extension:minPinLength",
-            "extension:prf",
-            // WebAuthnService adds "relatedOrigins" unless
-            // StaticPrefs::security_webauthn_related_origin_requests_mode() is 0.
-        ]
-        .into_iter()
-        .map(nsCString::from)
-        .collect();
-        if self.get_is_uvpaa() == Ok(true) {
-            capabilities.push(nsCString::from("userVerifyingPlatformAuthenticator"));
-        }
-        Ok(capabilities)
-    }
-
     xpcom_method!(make_credential => MakeCredential(aTid: u64, aBrowsingContextId: u64, aArgs: *const nsIWebAuthnRegisterArgs, aPromise: *const nsIWebAuthnRegisterPromise));
     fn make_credential(
         &self,

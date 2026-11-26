@@ -37,26 +37,6 @@ AndroidWebAuthnService::GetIsUVPAA(bool* aAvailable) {
 }
 
 NS_IMETHODIMP
-AndroidWebAuthnService::GetClientCapabilities(
-    nsTArray<nsCString>& aClientCapabilities) {
-  aClientCapabilities = nsTArray<nsCString>{
-      "extension:appid"_ns,
-      "extension:credProps"_ns,
-      "extension:hmacCreateSecret"_ns,
-      "extension:largeBlob"_ns,
-      "extension:minPinLength"_ns,
-      "extension:prf"_ns,
-      "hybridTransport"_ns,
-      "passkeyPlatformAuthenticator"_ns,
-      // WebAuthnService adds "relatedOrigins" unless
-      // StaticPrefs::security_webauthn_related_origin_requests_mode() is 0.
-      // WebAuthnTransactionParent adds "userVerifyingPlatformAuthenticator"
-      // after asking the platform API.
-  };
-  return NS_OK;
-}
-
-NS_IMETHODIMP
 AndroidWebAuthnService::MakeCredential(uint64_t aTransactionId,
                                        uint64_t aBrowsingContextId,
                                        nsIWebAuthnRegisterArgs* aArgs,

@@ -15,7 +15,6 @@
 #include "mozilla/dom/AuthenticatorAttestationResponse.h"
 #include "mozilla/dom/PWebAuthnTransaction.h"
 #include "mozilla/dom/PublicKeyCredential.h"
-#include "mozilla/dom/Record.h"
 #include "mozilla/dom/WebAuthenticationBinding.h"
 #include "mozilla/dom/WebAuthnTransactionChild.h"
 #include "mozilla/dom/WebAuthnUtil.h"
@@ -23,7 +22,6 @@
 #include "mozilla/glean/DomWebauthnMetrics.h"
 #include "nsContentUtils.h"
 #include "nsHTMLDocument.h"
-#include "nsIGlobalObject.h"
 #include "nsIURIMutator.h"
 #include "nsThreadUtils.h"
 
@@ -678,118 +676,21 @@ void WebAuthnHandler::Store(const Credential& aCredential,
 }
 
 void WebAuthnHandler::IsUVPAA(const RefPtr<Promise>& aPromise) {
-  RequestClientCapabilities(
-      [promise = RefPtr{aPromise}](const nsTArray<nsCString>& aSupported) {
-        promise->MaybeResolve(
-            aSupported.Contains("userVerifyingPlatformAuthenticator"_ns));
-      });
-}
-
-// From https://w3c.github.io/webauthn/#sctn-getClientCapabilities:
-//    Keys in PublicKeyCredentialClientCapabilities MUST be sorted in
-//    ascending lexicographical order. The set of keys SHOULD contain the set
-//    of enumeration values of ClientCapability
-//    (https://w3c.github.io/webauthn/#enumdef-clientcapability) but the
-//    client MAY omit keys as it deems necessary. [...] The set of keys SHOULD
-//    also contain a key for each extension implemented by the client, where
-//    the key is formed by prefixing the string 'extension:' to the extension
-//    identifier. The associated value for each implemented extension SHOULD
-//    be true.
-//
-// Every platform reports the same keys; their values come from the
-// nsIWebAuthnService in the parent process.
-static constexpr nsLiteralCString kClientCapabilities[] = {
-    "conditionalCreate"_ns,
-    "conditionalGet"_ns,
-    "extension:appid"_ns,
-    // Bug 1570429: support the appidExclude extension.
-    // "extension:appidExclude"_ns,
-    // Bug 1844448: support the credBlob extension.
-    // "extension:credBlob"_ns,
-    "extension:credProps"_ns,
-    "extension:credentialProtectionPolicy"_ns,
-    "extension:enforceCredentialProtectionPolicy"_ns,
-    // Bug 1844448: support the credBlob extension.
-    // "extension:getCredBlob"_ns,
-    "extension:hmacCreateSecret"_ns,
-    "extension:largeBlob"_ns,
-    "extension:minPinLength"_ns,
-    "extension:prf"_ns,
-    "hybridTransport"_ns,
-    "passkeyPlatformAuthenticator"_ns,
-    "relatedOrigins"_ns,
-    "signalAllAcceptedCredentials"_ns,
-    "signalCurrentUserDetails"_ns,
-    "signalUnknownCredential"_ns,
-    "userVerifyingPlatformAuthenticator"_ns,
-};
-
-// Reported instead of the real capabilities when resisting fingerprinting.
-static constexpr nsLiteralCString kResistFingerprintingClientCapabilities[] = {
-    "conditionalGet"_ns,
-    "extension:appid"_ns,
-    "extension:credProps"_ns,
-    "extension:credentialProtectionPolicy"_ns,
-    "extension:enforceCredentialProtectionPolicy"_ns,
-    "extension:hmacCreateSecret"_ns,
-    "extension:largeBlob"_ns,
-    "extension:minPinLength"_ns,
-    "extension:prf"_ns,
-    "hybridTransport"_ns,
-    "passkeyPlatformAuthenticator"_ns,
-    "relatedOrigins"_ns,
-    "userVerifyingPlatformAuthenticator"_ns,
-};
-
-void WebAuthnHandler::RequestClientCapabilities(
-    std::function<void(const nsTArray<nsCString>&)>&& aCallback) {
-  if (mWindow->AsGlobal()->ShouldResistFingerprinting(
-          RFPTarget::WebAuthnClientCapabilities)) {
-    nsTArray<nsCString> capabilities;
-    for (const nsLiteralCString& key :
-         kResistFingerprintingClientCapabilities) {
-      capabilities.AppendElement(key);
-    }
-    aCallback(capabilities);
-    return;
-  }
-
   if (!MaybeCreateActor()) {
-    aCallback(nsTArray<nsCString>());
+    aPromise->MaybeReject(NS_ERROR_DOM_OPERATION_ERR);
     return;
   }
 
-  mActor->SendRequestClientCapabilities()->Then(
+  mActor->SendRequestIsUVPAA()->Then(
       GetCurrentSerialEventTarget(), __func__,
-      [callback = std::move(aCallback)](
-          const PWebAuthnTransactionChild::RequestClientCapabilitiesPromise::
+      [promise = RefPtr{aPromise}](
+          const PWebAuthnTransactionChild::RequestIsUVPAAPromise::
               ResolveOrRejectValue& aValue) {
         if (aValue.IsResolve()) {
-          callback(aValue.ResolveValue());
+          promise->MaybeResolve(aValue.ResolveValue());
         } else {
-          callback(nsTArray<nsCString>());
+          promise->MaybeReject(NS_ERROR_DOM_NOT_ALLOWED_ERR);
         }
-      });
-}
-
-void WebAuthnHandler::GetClientCapabilities(const RefPtr<Promise>& aPromise) {
-  RequestClientCapabilities(
-      [promise = RefPtr{aPromise}](const nsTArray<nsCString>& aSupported) {
-        Record<nsString, bool> capabilities;
-        for (const nsLiteralCString& key : kClientCapabilities) {
-          auto entry = capabilities.Entries().AppendElement();
-          CopyASCIItoUTF16(key.AsString(), entry->mKey);
-          entry->mValue = aSupported.Contains(key);
-        }
-        promise->MaybeResolve(capabilities);
-      });
-}
-
-void WebAuthnHandler::IsConditionalMediationAvailable(
-    const RefPtr<Promise>& aPromise) {
-  RequestClientCapabilities(
-      [promise = RefPtr{aPromise}](const nsTArray<nsCString>& aSupported) {
-        promise->MaybeResolve(aSupported.Contains("conditionalGet"_ns));
       });
 }
 

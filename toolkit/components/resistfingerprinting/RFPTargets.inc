@@ -114,9 +114,6 @@ ITEM_VALUE(WebGLVendorRandomize,        79)
 ITEM_VALUE(WebGLRendererConstant,       80)
 // How IME software in use chooses to style composition (exposed via EditContext)
 ITEM_VALUE(IMEStyle,                    81)
-// PublicKeyCredential.getClientCapabilities(), isConditionalMediationAvailable()
-// and isUserVerifyingPlatformAuthenticatorAvailable()
-ITEM_VALUE(WebAuthnClientCapabilities,  82)
 
 /*
  * In certain cases, we precompute the value of ShouldRFP for e.g. a Document.
