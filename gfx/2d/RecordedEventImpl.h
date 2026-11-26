@@ -2386,72 +2386,14 @@ inline bool RecordedCreateDrawTargetForFilter::PlayEvent(
     return false;
   }
 
-  if (dt->IsRecording()) {
-    // Re-record the event rather than resolving it to an offset DrawTarget,
-    // which we can't serialize back.
-    FilterNode* filter = aTranslator->LookupFilterNode(mFilter);
-    if (!filter) {
-      return false;
-    }
-    RefPtr<DrawTarget> newDT = dt->CreateSimilarDrawTargetForFilter(
-        mMaxSize, mFormat, filter, aTranslator->LookupFilterNode(mSource),
-        mSourceRect, mDestPoint);
-    if (!newDT) {
-      return false;
-    }
-    aTranslator->AddDrawTarget(mRefPtr, newDT);
-    return true;
-  }
-
-  IntRect baseRect = dt->GetRect();
-
-  auto maxRect = IntRect(IntPoint(0, 0), mMaxSize);
-
-  auto clone = dt->GetTransform();
-  bool invertible = clone.Invert();
-  // mSourceRect is in filter space. The filter outputs from mSourceRect need
-  // to be drawn at mDestPoint in user space.
-  Rect userSpaceSource = Rect(mDestPoint, mSourceRect.Size());
-  if (invertible) {
-    // Try to reduce the source rect so that it's not much bigger
-    // than the draw target. The result is not minimal. Examples
-    // are left as an exercise for the reader.
-    auto destRect = IntRectToRect(baseRect);
-    Rect userSpaceBounds = clone.TransformBounds(destRect);
-    userSpaceSource = userSpaceSource.Intersect(userSpaceBounds);
-  }
-
-  // Compute how much we moved the top-left of the source rect by, and use that
-  // to compute the new dest point, and move our intersected source rect back
-  // into the (new) filter space.
-  Point shift = userSpaceSource.TopLeft() - mDestPoint;
-  Rect filterSpaceSource =
-      Rect(mSourceRect.TopLeft() + shift, userSpaceSource.Size());
-
-  baseRect = RoundedOut(filterSpaceSource);
   FilterNode* filter = aTranslator->LookupFilterNode(mFilter);
   if (!filter) {
     return false;
   }
 
-  IntRect transformedRect = filter->MapRectToSource(
-      baseRect, maxRect, aTranslator->LookupFilterNode(mSource));
-
-  // Intersect with maxRect to make sure we didn't end up with something bigger
-  transformedRect = transformedRect.Intersect(maxRect);
-
-  // If we end up with an empty rect make it 1x1 so that things don't break.
-  if (transformedRect.IsEmpty()) {
-    transformedRect = IntRect(0, 0, 1, 1);
-  }
-
-  RefPtr<DrawTarget> newDT =
-      dt->CreateSimilarDrawTarget(transformedRect.Size(), mFormat);
-  if (!newDT) {
-    return false;
-  }
-  newDT =
-      gfx::Factory::CreateOffsetDrawTarget(newDT, transformedRect.TopLeft());
+  RefPtr<DrawTarget> newDT = dt->CreateSimilarDrawTargetForFilter(
+      mMaxSize, mFormat, filter, aTranslator->LookupFilterNode(mSource),
+      mSourceRect, mDestPoint);
 
   // If we couldn't create a DrawTarget this will probably cause us to crash
   // with nullptr later in the playback, so return false to abort.
