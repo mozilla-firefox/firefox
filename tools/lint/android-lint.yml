@@ -7,6 +7,7 @@ android-lint:
         - 'mobile/android/android-components/plugins/publicsuffixlist'
         - 'mobile/android/fenix/plugins/apksize'
         - 'mobile/android/geckoview'
+        - 'mobile/android/geckoview_example'
         - 'mobile/android/gradle/plugins/conventions'
     exclude: []
     extensions: ['java', 'kt']
@@ -36,6 +37,12 @@ android-lint:
         - 'third_party/application-services/.buildconfig-android.yml'
         - 'third_party/application-services/**/*.gradle'
         - 'mobile/android/geckoview/lint.xml'
+        - 'mobile/android/geckoview_example/build.gradle'
+        - 'mobile/android/geckoview_example/lint.xml'
+        - 'mobile/android/android-components/components/tooling/lint/**'
+        - 'mobile/android/geckoview_example/src/main/AndroidManifest.xml'
+        - 'mobile/android/geckoview_example/src/main/res/**'
+        - 'mobile/android/shared-lint.xml'
         - 'mobile/android/gradle.py'
         - 'mobile/android/mach_commands.py'
         - 'tools/lint/android/lints.py'

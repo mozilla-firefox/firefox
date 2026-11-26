@@ -8,6 +8,10 @@ android {
         version = release(project.ext.compileSdkMajorVersion) { minorApiLevel = project.ext.compileSdkMinorVersion }
     }
 
+    lint {
+        lintConfig = file("../shared-lint.xml")
+    }
+
     defaultConfig {
         targetSdk project.ext.targetSdkVersion
         minSdk project.ext.minSdkVersion
@@ -64,4 +68,6 @@ dependencies {
     implementation libs.androidx.lifecycle.common
     implementation libs.androidx.preference
     implementation libs.google.material
+
+    lintChecks project(':components:tooling-lint')
 }

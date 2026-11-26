@@ -43,21 +43,22 @@ def gradle(host, value, build_env):
 set_config("GRADLE", gradle)
 
 
-@dependable
-@imports(_from="itertools", _import="chain")
-def gradle_android_build_config():
-    def capitalize(s):
-        # str.capitalize lower cases trailing letters.
-        if s:
-            return s[0].upper() + s[1:]
-        else:
-            return s
+def capitalize(s):
+    # str.capitalize lower cases trailing letters.
+    return s[:1].upper() + s[1:]
 
+
+def uncapitalize(s):
+    return s[:1].lower() + s[1:]
+
+
+@dependable
+def gradle_android_build_config():
     def variant(buildType):
         return namespace(
             buildType=buildType,
             # Like 'Debug'
-            name="".join(capitalize(t) for t in chain((buildType,))),
+            name=capitalize(buildType),
         )
 
     return namespace(
@@ -80,12 +81,6 @@ def gradle_android_build_config():
 def gradle_android_apilint_folder(build_config):
     """Path to the apilint plugin's output folder."""
 
-    def uncapitalize(s):
-        if s:
-            return s[0].lower() + s[1:]
-        else:
-            return s
-
     buildType = uncapitalize(build_config.geckoview.variant.buildType)
 
     return "gradle/build/mobile/android/geckoview/apilint/{}".format(
@@ -99,19 +94,6 @@ set_config("GRADLE_ANDROID_GECKOVIEW_APILINT_FOLDER", gradle_android_apilint_fol
 @depends(gradle_android_build_config)
 def gradle_android_geckoview_test_runner_bundle(build_config):
     """Path to intermediates classes folder."""
-
-    def uncapitalize(s):
-        if s:
-            return s[0].lower() + s[1:]
-        else:
-            return s
-
-    def capitalize(s):
-        # str.capitalize lower cases trailing letters.
-        if s:
-            return s[0].upper() + s[1:]
-        else:
-            return s
 
     buildType = uncapitalize(build_config.geckoview.variant.buildType)
     variant = uncapitalize(build_config.geckoview.variant.name)
@@ -132,19 +114,6 @@ set_config(
 def gradle_android_geckoview_example_bundle(build_config):
     """Path to intermediates classes folder."""
 
-    def uncapitalize(s):
-        if s:
-            return s[0].lower() + s[1:]
-        else:
-            return s
-
-    def capitalize(s):
-        # str.capitalize lower cases trailing letters.
-        if s:
-            return s[0].upper() + s[1:]
-        else:
-            return s
-
     buildType = uncapitalize(build_config.geckoview.variant.buildType)
     variant = uncapitalize(build_config.geckoview.variant.name)
 
@@ -162,12 +131,6 @@ set_config(
 @depends(gradle_android_build_config)
 def gradle_android_variant_name(build_config):
     """Like "Debug"."""
-
-    def uncapitalize(s):
-        if s:
-            return s[0].lower() + s[1:]
-        else:
-            return s
 
     return namespace(
         geckoview=uncapitalize(build_config.geckoview.variant.name),
@@ -222,13 +185,22 @@ def gradle_android_test_tasks(build_config):
 set_config("GRADLE_ANDROID_TEST_TASKS", gradle_android_test_tasks)
 
 
-@depends(gradle_android_build_config)
-def gradle_android_lint_tasks(build_config):
+@depends(gradle_android_build_config, android_subproject)
+def gradle_android_lint_projects(build_config, subproject):
+    projects = {"geckoview": build_config.geckoview}
+    # settings.gradle only includes geckoview_example for these subprojects.
+    if not subproject or subproject == "geckoview_example":
+        projects["geckoview_example"] = build_config.geckoview_example
+    return projects
+
+
+@depends(gradle_android_lint_projects)
+def gradle_android_lint_tasks(projects):
     """Gradle tasks run by |mach android lint|."""
     return [
-        "geckoview:lint{geckoview.variant.name}".format(
-            geckoview=build_config.geckoview
-        ),
+        "{}:lint{}".format(name, project.variant.name)
+        for name, project in projects.items()
+    ] + [
         # Lint the included Gradle plugin builds, which carry the AndroidX
         # lint-gradle checks for our build logic.
         ":conventions:lint",
@@ -239,6 +211,20 @@ def gradle_android_lint_tasks(build_config):
 
 
 set_config("GRADLE_ANDROID_LINT_TASKS", gradle_android_lint_tasks)
+
+
+@depends(gradle_android_lint_projects)
+def gradle_android_lint_reports(projects):
+    """Lint reports written by GRADLE_ANDROID_LINT_TASKS, relative to the objdir."""
+    return [
+        "gradle/build/mobile/android/{}/reports/lint-results-{}.xml".format(
+            name, uncapitalize(project.variant.name)
+        )
+        for name, project in projects.items()
+    ]
+
+
+set_config("GRADLE_ANDROID_LINT_REPORTS", gradle_android_lint_reports)
 
 
 @depends(gradle_android_build_config)
@@ -330,12 +316,6 @@ set_config("GRADLE_ANDROID_CHECKSTYLE_TASKS", gradle_android_checkstyle_tasks)
 
 @depends(gradle_android_build_config)
 def gradle_android_checkstyle_output_files(build_config):
-    def uncapitalize(s):
-        if s:
-            return s[0].lower() + s[1:]
-        else:
-            return s
-
     variant = uncapitalize(build_config.geckoview.variant.name)
 
     """Output folder for checkstyle"""
@@ -455,12 +435,6 @@ set_config(
 def gradle_android_geckoview_docs_output_files(build_config):
     """Output files for GeckoView javadoc."""
 
-    def uncapitalize(s):
-        if s:
-            return s[0].lower() + s[1:]
-        else:
-            return s
-
     variant = uncapitalize(build_config.geckoview.variant.name)
 
     return [
@@ -516,13 +490,6 @@ def gradle_android_compile_all_tasks(build_config):
     - messaging_example:compileSources
     - port_messaging_example:compileSources
     """
-
-    def capitalize(s):
-        # str.capitalize lower cases trailing letters.
-        if s:
-            return s[0].upper() + s[1:]
-        else:
-            return s
 
     buildType = capitalize(build_config.geckoview.variant.buildType)
 

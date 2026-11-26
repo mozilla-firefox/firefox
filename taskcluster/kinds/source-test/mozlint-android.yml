@@ -96,6 +96,7 @@ lints:
         files-changed:
             # Source files and resources.
             - 'dom/media/systemservices/android_video_capture/java/src/**'
+            - 'mobile/android/android-components/components/tooling/lint/**'
             - 'mobile/android/android-components/plugins/**'
             - 'mobile/android/annotations/**'
             - 'mobile/android/examples/messaging_example/app/**'
@@ -115,6 +116,7 @@ lints:
             - 'gradle/**'
             - 'gradlew'
             - 'gradlew.bat'
+            - 'mobile/android/shared-lint.xml'
             - 'mobile/android/shared-settings.gradle'
             - 'mobile/android/android-components/.buildconfig.yml'
             - 'mobile/android/android-components/.config.yml'

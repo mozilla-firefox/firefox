@@ -3,9 +3,9 @@
    - License, v. 2.0. If a copy of the MPL was not distributed with this
    - file, You can obtain one at http://mozilla.org/MPL/2.0/. -->
 
-<!-- Shared Android lint rules for the Fenix and Focus applications. Referenced explicitly through
-     `lintConfig` in each app's build.gradle rather than being named lint.xml, so that it is never
-     picked up implicitly by another project through lint's directory hierarchy. -->
+<!-- Shared Android lint rules for the Fenix, Focus and GeckoView Example applications. Referenced
+     explicitly through `lintConfig` in each app's build.gradle rather than being named lint.xml, so
+     that it is never picked up implicitly by another project through lint's directory hierarchy. -->
 <lint>
     <!-- Lints that don't apply to our translation process -->
     <issue id="MissingTranslation" severity="ignore" />
@@ -99,8 +99,8 @@
     <issue id="ModifierParameter" severity="error" />
     <issue id="PrivateResource" severity="error" />
 
-    <!-- Both apps disable language splits in their bundle block, which is this check's own escape hatch,
-         but lint does not pick that up and reports the first runtime locale change it finds. -->
+    <!-- Fenix and Focus disable language splits in their bundle block, which is this check's own escape
+         hatch, but lint does not pick that up and reports the first runtime locale change it finds. -->
     <issue id="AppBundleLocaleChanges" severity="ignore" />
     <!-- The wordmark is a vector in drawable-night and a bitmap per density everywhere else. -->
     <issue id="IconXmlAndPng">
