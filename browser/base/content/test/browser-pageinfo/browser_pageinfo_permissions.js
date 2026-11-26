@@ -11,8 +11,11 @@ async function testPermissions(defaultPermission) {
     let pageInfo = BrowserCommands.pageInfo(TEST_ORIGIN, "permTab");
     await BrowserTestUtils.waitForEvent(pageInfo, "load");
 
-    let defaultCheckbox = await TestUtils.waitForCondition(() =>
-      pageInfo.document.getElementById("geoDef")
+    let permList = pageInfo.document.getElementById("permList");
+    let defaultCheckbox = await BrowserTestUtils.waitForMutationCondition(
+      permList,
+      { childList: true },
+      () => pageInfo.document.getElementById("geoDef")
     );
     let radioGroup = pageInfo.document.getElementById("geoRadioGroup");
     let defaultRadioButton = pageInfo.document.getElementById(
@@ -116,9 +119,10 @@ add_task(async function test_CertificateError() {
     `Value of owner should be "${browser.currentURI.displayPrePath}" instead got "${hostText.value}".`
   );
 
-  await TestUtils.waitForCondition(
-    () => permList.childElementCount === permissions.length,
-    `Value of verifier should be ${permissions.length}, instead got ${permList.childElementCount}.`
+  await BrowserTestUtils.waitForMutationCondition(
+    permList,
+    { childList: true },
+    () => permList.childElementCount === permissions.length
   );
 
   pageInfo.close();
@@ -167,9 +171,10 @@ add_task(async function test_NetworkError() {
     `Value of host should be should be "${browser.currentURI.displayPrePath}" instead got "${hostText.value}".`
   );
 
-  await TestUtils.waitForCondition(
-    () => permList.childElementCount === permissions.length,
-    `Value of permissions list should be ${permissions.length}, instead got ${permList.childElementCount}.`
+  await BrowserTestUtils.waitForMutationCondition(
+    permList,
+    { childList: true },
+    () => permList.childElementCount === permissions.length
   );
 
   pageInfo.close();
@@ -350,8 +355,11 @@ add_task(async function test_cookie_permission() {
     let pageInfo = BrowserCommands.pageInfo(TEST_ORIGIN, "permTab");
     await BrowserTestUtils.waitForEvent(pageInfo, "load");
 
-    let defaultCheckbox = await TestUtils.waitForCondition(() =>
-      pageInfo.document.getElementById("cookieDef")
+    let permList = pageInfo.document.getElementById("permList");
+    let defaultCheckbox = await BrowserTestUtils.waitForMutationCondition(
+      permList,
+      { childList: true },
+      () => pageInfo.document.getElementById("cookieDef")
     );
     let radioGroup = pageInfo.document.getElementById("cookieRadioGroup");
     let allowRadioButton = pageInfo.document.getElementById("cookie#1");
@@ -414,4 +422,100 @@ add_task(async function test_cookie_permission() {
     pageInfo.close();
     PermissionTestUtils.remove(gBrowser.currentURI, "cookie");
   });
+});
+
+// The "install" permission is not a per-container decision, so Page Info in a
+// container tab must display and edit the permission of the default context.
+add_task(async function test_install_permission_container() {
+  await SpecialPowers.pushPrefEnv({
+    set: [["permissions.isolateBy.userContext", true]],
+  });
+
+  let uri = Services.io.newURI(TEST_ORIGIN);
+  let principal = Services.scriptSecurityManager.createContentPrincipal(
+    uri,
+    {}
+  );
+  let containerPrincipal =
+    Services.scriptSecurityManager.createContentPrincipal(uri, {
+      userContextId: 2,
+    });
+
+  PermissionTestUtils.add(principal, "install", Services.perms.DENY_ACTION);
+
+  let tab;
+  let pageInfo;
+  registerCleanupFunction(() => {
+    pageInfo?.close();
+    if (tab) {
+      BrowserTestUtils.removeTab(tab);
+    }
+    PermissionTestUtils.remove(principal, "install");
+    PermissionTestUtils.remove(containerPrincipal, "install");
+  });
+
+  tab = BrowserTestUtils.addTab(gBrowser, TEST_ORIGIN, {
+    userContextId: 2,
+  });
+  gBrowser.selectedTab = tab;
+  await BrowserTestUtils.browserLoaded(tab.linkedBrowser);
+
+  pageInfo = BrowserCommands.pageInfo(TEST_ORIGIN, "permTab");
+  await BrowserTestUtils.waitForEvent(pageInfo, "load");
+
+  let permList = pageInfo.document.getElementById("permList");
+  let defaultCheckbox = await BrowserTestUtils.waitForMutationCondition(
+    permList,
+    { childList: true },
+    () => pageInfo.document.getElementById("installDef")
+  );
+  let radioGroup = pageInfo.document.getElementById("installRadioGroup");
+  let blockRadioButton = pageInfo.document.getElementById("install#2");
+
+  ok(
+    !defaultCheckbox.checked,
+    "The default checkbox should not be checked for a blocked site."
+  );
+  is(
+    radioGroup.selectedItem,
+    blockRadioButton,
+    "The block radio button should be selected."
+  );
+
+  defaultCheckbox.checked = true;
+  defaultCheckbox.doCommand();
+
+  is(
+    PermissionTestUtils.testPermission(principal, "install"),
+    Services.perms.UNKNOWN_ACTION,
+    "Checking the default checkbox should reset the default context permission."
+  );
+
+  defaultCheckbox.checked = false;
+  defaultCheckbox.doCommand();
+  radioGroup.selectedItem = blockRadioButton;
+  blockRadioButton.doCommand();
+
+  is(
+    PermissionTestUtils.testPermission(principal, "install"),
+    Services.perms.DENY_ACTION,
+    "Selecting block should set the default context permission."
+  );
+  is(
+    PermissionTestUtils.testPermission(containerPrincipal, "install"),
+    Services.perms.DENY_ACTION,
+    "Selecting block should also block the site in the container."
+  );
+
+  PermissionTestUtils.remove(principal, "install");
+  ok(
+    defaultCheckbox.checked,
+    "Removing the default context permission should update the row."
+  );
+
+  pageInfo.close();
+  pageInfo = null;
+  BrowserTestUtils.removeTab(tab);
+  tab = null;
+  await SpecialPowers.popPrefEnv();
 });
