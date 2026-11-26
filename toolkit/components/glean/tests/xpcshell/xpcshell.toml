@@ -72,10 +72,14 @@ run-if = ["os != 'android'"] # Android does not reload JOG on reset.
 run-if = ["os != 'android'"] # Android does not provide prefs-based backup to the SDK.
 
 ["test_PrefsBackup_enforce.js"]
-run-if = ["os != 'android'"] # Android does not provide prefs-based backup to the SDK.
+# Android does not provide prefs-based backup to the SDK.
+# Nimbus setup requires the messaging-system logger, which isn't available on TB.
+run-if = ["os != 'android' && appname != 'thunderbird'"]
 
 ["test_PrefsBackup_unenforce.js"]
-run-if = ["os != 'android'"] # Android does not provide prefs-based backup to the SDK.
+# Android does not provide prefs-based backup to the SDK.
+# Nimbus setup requires the messaging-system logger, which isn't available on TB.
+run-if = ["os != 'android' && appname != 'thunderbird'"]
 
 ["test_ProfilerMarkers.js"]
 head = "head.js head_ProfilerMarkers.js"

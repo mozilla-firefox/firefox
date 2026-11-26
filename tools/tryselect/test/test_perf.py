@@ -3,6 +3,7 @@
 # file, You can obtain one at http://mozilla.org/MPL/2.0/.
 
 import contextlib
+import json
 import os
 import pathlib
 from unittest import mock
@@ -2042,6 +2043,156 @@ def test_category_default_rebuild(
             task_config = (actual_try_config or {}).get("try_task_config", {})
             actual_rebuild = task_config.get("rebuild", 1)
             assert actual_rebuild == expected_rebuild
+
+
+def test_worker_override_argument():
+    parser = PerfParser()
+    args = parser.parse_args([
+        "--worker-override",
+        "t-linux-netperf-1804=releng-hardware/test-pool",
+    ])
+    assert args.worker_overrides == ["t-linux-netperf-1804=releng-hardware/test-pool"]
+
+    with mock.patch(
+        "gecko_taskgraph.util.workertypes.get_worker_type",
+        return_value=("releng-hardware", "gecko-t-linux-netperf-1804"),
+    ):
+        try_config = parser.task_configs["worker-overrides"].try_config(**vars(args))
+    assert try_config == {
+        "worker-overrides": {
+            "t-linux-netperf-1804": "releng-hardware/test-pool",
+        }
+    }
+
+
+@pytest.mark.parametrize(
+    "worker_types, expected_tasks",
+    [
+        ([], ["task-netperf", "task-talos"]),
+        (["t-linux-netperf-1804"], ["task-netperf"]),
+    ],
+)
+def test_worker_type_filters_perf_tasks(tmp_path, worker_types, expected_tasks):
+    (tmp_path / "full_task_set").write_text(
+        json.dumps({
+            "task-netperf": {"task": {"workerType": "t-linux-netperf-1804"}},
+            "task-talos": {"task": {"workerType": "t-linux-talos-1804"}},
+        })
+    )
+    try_config_params = {"try_task_config": {}}
+    if worker_types:
+        try_config_params["try_task_config"]["worker-types"] = worker_types
+
+    with mock.patch("tryselect.selectors.perf.PerfParser.perf_push_to_try"), mock.patch(
+        "tryselect.selectors.perf.fzf_bootstrap"
+    ), mock.patch(
+        "tryselect.selectors.perf.setup_tasks_for_fzf",
+        return_value=(["task-netperf", "task-talos"], str(tmp_path)),
+    ), mock.patch(
+        "tryselect.selectors.perf.PerfParser.get_tasks", return_value=[]
+    ) as get_tasks:
+        run(show_all=True, try_config_params=try_config_params)
+
+    assert list(get_tasks.call_args[0][3]) == expected_tasks
+
+
+def test_worker_type_without_matching_tasks(tmp_path):
+    (tmp_path / "full_task_set").write_text(
+        json.dumps({"task-talos": {"task": {"workerType": "t-linux-talos-1804"}}})
+    )
+    with mock.patch(
+        "tryselect.selectors.perf.PerfParser.perf_push_to_try"
+    ) as push, mock.patch("tryselect.selectors.perf.fzf_bootstrap"), mock.patch(
+        "tryselect.selectors.perf.setup_tasks_for_fzf",
+        return_value=(["task-talos"], str(tmp_path)),
+    ), mock.patch("tryselect.selectors.perf.PerfParser.get_tasks") as get_tasks:
+        run(
+            show_all=True,
+            try_config_params={"try_task_config": {"worker-types": ["other-worker"]}},
+        )
+
+    assert get_tasks.call_count == 0
+    assert push.call_count == 0
+
+
+def test_worker_override_new_only_argument():
+    args = PerfParser().parse_args([
+        "--worker-override",
+        "t-linux-talos-1804=releng-hardware/talos-pool",
+        "--worker-override-new-only",
+        "t-linux-netperf-1804=releng-hardware/test-pool",
+    ])
+    assert args.worker_overrides == [
+        "t-linux-talos-1804=releng-hardware/talos-pool",
+        "t-linux-netperf-1804=releng-hardware/test-pool",
+    ]
+    assert args.worker_override_new_only == [
+        "t-linux-netperf-1804=releng-hardware/test-pool"
+    ]
+
+
+@pytest.mark.parametrize(
+    "overrides, new_only, expected_base_overrides, expected_cache_calls",
+    [
+        ({}, [], None, 1),
+        (
+            {"t-linux-netperf-1804": "test-pool"},
+            [],
+            {"t-linux-netperf-1804": "test-pool"},
+            0,
+        ),
+        (
+            {"t-linux-netperf-1804": "test-pool"},
+            ["t-linux-netperf-1804=test-pool"],
+            None,
+            0,
+        ),
+        (
+            {"t-linux-netperf-1804": "test-pool", "t-linux-talos-1804": "talos-pool"},
+            ["t-linux-netperf-1804=test-pool"],
+            {"t-linux-talos-1804": "talos-pool"},
+            0,
+        ),
+    ],
+)
+def test_worker_override_new_only(
+    overrides, new_only, expected_base_overrides, expected_cache_calls
+):
+    task_config = {"worker-overrides": dict(overrides)} if overrides else {}
+    with mock.patch("tryselect.selectors.perf.get_repository_object"), mock.patch(
+        "tryselect.selectors.perf.PerfParser.get_revisions_to_run",
+        return_value=("base", "new"),
+    ), mock.patch(
+        "tryselect.selectors.perf.PerfParser.check_cached_revision", return_value=None
+    ) as check_cache, mock.patch(
+        "tryselect.selectors.perf.PerfParser.save_revision_treeherder"
+    ) as save_cache, mock.patch(
+        "tryselect.selectors.perf.push_to_try",
+        return_value={"lando_instance": "lando", "lando_job_id": 1},
+    ), mock.patch("tryselect.selectors.perf.generate_try_task_config") as gttc:
+        PerfParser.perf_push_to_try(
+            ["task"],
+            [],
+            [],
+            {"try_task_config": task_config},
+            False,
+            False,
+            [],
+            "BasePerfComparator",
+            [],
+            None,
+            False,
+            None,
+            new_only,
+        )
+
+    base_config, new_config = (
+        call.kwargs["params"]["try_task_config"] for call in gttc.call_args_list
+    )
+    assert new_config.get("worker-overrides") == (overrides or None)
+    assert base_config.get("worker-overrides") == expected_base_overrides
+    assert check_cache.call_count == expected_cache_calls
+    assert save_cache.call_count == expected_cache_calls
 
 
 if __name__ == "__main__":

@@ -823,6 +823,16 @@ double nsRFPService::ReduceTimePrecisionImpl(double aTime, TimeScale aTimeScale,
 }
 
 /* static */
+void nsRFPService::InitTimePrecisionReduction() {
+  MOZ_ASSERT(NS_IsMainThread());
+  // Seed the midpoint and the log module now, so that the real-time audio
+  // thread doesn't lazily initialize them in ReduceTimePrecision*.
+  long long midpoint;
+  (void)NS_WARN_IF(NS_FAILED(RandomMidpoint(0, 1, 0, &midpoint)));
+  (void)MOZ_LOG_TEST(gTimestamps, LogLevel::Verbose);
+}
+
+/* static */
 double nsRFPService::ReduceTimePrecisionAsUSecs(double aTime,
                                                 int64_t aContextMixin,
                                                 RTPCallerType aRTPCallerType) {

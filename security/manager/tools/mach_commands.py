@@ -122,10 +122,13 @@ def find_all_specifications(command_context):
     specifications = []
     inclusions = [
         "browser/base/content/test/browser-siteIdentity/",
+        "browser/components/backup/tests/marionette",
         "netwerk/test/marionette",
         "netwerk/test/unit",
         "security/manager/ssl",
         "services/settings/test/unit/test_remote_settings_signatures",
+        "testing/mochitest/DoHServer",
+        "testing/raptor/browsertime/utils",
         "testing/xpcshell/moz-http2",
         "toolkit/mozapps/extensions/test/xpcshell/data/productaddons",
     ]

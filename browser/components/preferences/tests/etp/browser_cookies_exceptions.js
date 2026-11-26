@@ -483,7 +483,7 @@ add_task(async function testSort() {
   );
 });
 
-add_task(async function testPrivateBrowsingSessionPermissionsAreHidden() {
+add_task(async function testPrivateBrowsingSessionPermissionsAreShown() {
   await runTest(
     async params => {
       assertListContents(params, []);
@@ -494,7 +494,9 @@ add_task(async function testPrivateBrowsingSessionPermissionsAreHidden() {
           privateBrowsingId: 1,
         });
 
-      // Add a session permission for private browsing.
+      // The cookie permission is never isolated by private browsing, so a
+      // session permission added in private browsing also applies outside of it.
+      // See bug 2088398.
       PermissionTestUtils.add(
         privateBrowsingPrincipal,
         "cookie",
@@ -502,7 +504,7 @@ add_task(async function testPrivateBrowsingSessionPermissionsAreHidden() {
         Services.perms.EXPIRE_SESSION
       );
 
-      assertListContents(params, []);
+      assertListContents(params, [["http://test.com", params.allowL10nId]]);
 
       PermissionTestUtils.remove(uri, "cookie");
     },

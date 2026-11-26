@@ -16,6 +16,7 @@ import org.gradle.api.Plugin
 import org.gradle.api.Project
 import org.gradle.api.artifacts.Configuration
 import org.gradle.api.artifacts.DependencySubstitution
+import org.gradle.api.artifacts.DependencySubstitutions
 import org.gradle.api.artifacts.VersionCatalogsExtension
 import org.gradle.api.artifacts.component.ModuleComponentIdentifier
 import org.gradle.api.artifacts.component.ModuleComponentSelector
@@ -152,14 +153,16 @@ class ProjectPlugin : Plugin<Project> {
         if (substs["MOZ_APPSERVICES_IN_TREE"].isTruthy() && (substs["DOWNLOAD_ALL_GRADLE_DEPENDENCIES"].isTruthy() || project.findProject(":geckoview") != null)) {
             // In tree, so we update our legacy "external" dep name to a local project.
             // e.g., "org.mozilla.appservices:syncmanager:X.Y.Z" becomes project(':syncmanager')
-            substituteDependencies(project, APP_SERVICES_GROUPS) { group, module, dependency ->
-                var name = module
-                // full-megazord-libsForTests is a convenience; we don't lose test coverage,
-                // just local test convenience.
-                if (name == "full-megazord-libsForTests") {
-                    name = "full-megazord"
+            substituteDependencies(project, APP_SERVICES_GROUPS) { _, module, dependency, substitutions ->
+                if (module == "full-megazord-libsForTests") {
+                    dependency.useTarget(
+                        substitutions.variant(substitutions.project(":full-megazord")) {
+                            capabilities { requireCapability("org.mozilla.appservices:full-megazord-libsForTests") }
+                        }
+                    )
+                } else {
+                    dependency.useTarget(project.project(":$module"))
                 }
-                dependency.useTarget(project.project(":$name"))
             }
         } else if (extraProperties.has("localProperties.autoPublish.application-services.dir")) {
             substituteWithMavenLocal(project, "local-appservices", APP_SERVICES_GROUPS, "org.mozilla.appservices")
@@ -222,7 +225,8 @@ class ProjectPlugin : Plugin<Project> {
                     config.incoming.artifactView(Action<ArtifactView.ViewConfiguration> {
                         attributes.attribute(ArtifactTypeDefinition.ARTIFACT_TYPE_ATTRIBUTE, nativeLibsType)
                         componentFilter(Spec<ComponentIdentifier> { id ->
-                            id is ModuleComponentIdentifier && id.module.contains("libsForTests")
+                            (id is ModuleComponentIdentifier && id.module.contains("libsForTests")) ||
+                                (id is ProjectComponentIdentifier && id.projectPath == ":full-megazord")
                         })
                         lenient(true)
                     }).files
@@ -276,7 +280,7 @@ class ProjectPlugin : Plugin<Project> {
     ) {
         project.logger.lifecycle("[$tag] adjusting $project to use locally published modules ($LOCAL_SNAPSHOT_VERSION)")
         project.repositories.mavenLocal()
-        substituteDependencies(project, groups) { group, module, dependency ->
+        substituteDependencies(project, groups) { group, module, dependency, _ ->
             dependency.useTarget(
                 mapOf(
                     "group" to (targetGroup ?: group),
@@ -290,16 +294,17 @@ class ProjectPlugin : Plugin<Project> {
     private fun substituteDependencies(
         project: Project,
         groups: Set<String>,
-        action: (group: String, module: String, dependency: DependencySubstitution) -> Unit
+        action: (group: String, module: String, dependency: DependencySubstitution, substitutions: DependencySubstitutions) -> Unit
     ) {
         project.configurations.configureEach(object : Action<Configuration> {
             override fun execute(config: Configuration) {
                 if (config.isCanBeResolved) {
-                    config.resolutionStrategy.dependencySubstitution.all(object : Action<DependencySubstitution> {
+                    val substitutions = config.resolutionStrategy.dependencySubstitution
+                    substitutions.all(object : Action<DependencySubstitution> {
                         override fun execute(dependency: DependencySubstitution) {
                             val requested = dependency.requested
                             if (requested is ModuleComponentSelector && requested.group in groups) {
-                                action(requested.group, requested.module, dependency)
+                                action(requested.group, requested.module, dependency, substitutions)
                             }
                         }
                     })

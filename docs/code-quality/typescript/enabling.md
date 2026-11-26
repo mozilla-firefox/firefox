@@ -157,7 +157,9 @@ it reports no errors for code that uses an `any` value. Three things cause this:
 
 - With `noImplicitAny` off, a parameter without a JSDoc type is silently `any`.
   Documenting a module raises its error count, because each written type gives
-  TypeScript something to check.
+  TypeScript something to check. `./mach ts coverage path/to/dir` counts, for
+  each module directly in the directory, the parameters TypeScript can type,
+  and `--list` names each function with an untyped one.
 - `ChromeUtils.defineESModuleGetters(lazy, …)` makes every property of `lazy`
   `any`. `XPCOMUtils.declareLazy` gives each one the type of its module (see
   [Best Practices](bestPractices.md#xpcomutilsdeclarelazy--definelazy)).

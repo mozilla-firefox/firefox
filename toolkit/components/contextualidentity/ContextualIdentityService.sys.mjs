@@ -125,7 +125,8 @@ _ContextualIdentityService.prototype = {
   async observe(aSubject, aTopic) {
     if (aTopic === "nsPref:changed") {
       const contextualIdentitiesEnabled = Services.prefs.getBoolPref(
-        CONTEXTUAL_IDENTITY_ENABLED_PREF
+        CONTEXTUAL_IDENTITY_ENABLED_PREF,
+        false
       );
       if (!contextualIdentitiesEnabled) {
         await this.closeContainerTabs();
@@ -199,11 +200,54 @@ _ContextualIdentityService.prototype = {
   },
 
   resetDefault() {
+    // Built-in private containers survive a reset, so only the public and the
+    // policy ones can disappear.
+    const previous = this._store
+      ? [
+          ...this._store.publicIdentities(),
+          ...this._store.policyIdentities(),
+        ].map(container => {
+          const identity = this._toIdentity(container);
+          return { identity, output: this.getIdentityObserverOutput(identity) };
+        })
+      : null;
+
     this._store?.unsetCallback();
     this._store = null;
     this._openStore(null);
     this.deleteContainerData();
     this.saveSoon();
+
+    if (!previous) {
+      return;
+    }
+    const current = new Set([
+      ...this.getPublicUserContextIds(),
+      ...this.getPrivateUserContextIds(),
+    ]);
+    for (const { identity, output } of previous) {
+      if (!current.has(identity.userContextId)) {
+        Services.obs.notifyObservers(
+          output,
+          identity.policy
+            ? "contextual-identity-policy-deleted"
+            : "contextual-identity-deleted",
+          String(identity.userContextId)
+        );
+      }
+    }
+    const previousIds = new Set(
+      previous.map(({ identity }) => identity.userContextId)
+    );
+    for (const container of this._store.publicIdentities()) {
+      if (!previousIds.has(container.userContextId)) {
+        Services.obs.notifyObservers(
+          this.getIdentityObserverOutput(this._toIdentity(container)),
+          "contextual-identity-created",
+          String(container.userContextId)
+        );
+      }
+    }
   },
 
   saveSoon() {
@@ -245,7 +289,8 @@ _ContextualIdentityService.prototype = {
 
     Services.obs.notifyObservers(
       this.getIdentityObserverOutput(identity),
-      "contextual-identity-created"
+      "contextual-identity-created",
+      String(identity.userContextId)
     );
 
     Glean.containers.containerCreated.record({
@@ -260,6 +305,11 @@ _ContextualIdentityService.prototype = {
 
     const identity = this._toIdentity(this._store.createForPolicy(policyId));
     this.saveSoon();
+    Services.obs.notifyObservers(
+      this.getIdentityObserverOutput(identity),
+      "contextual-identity-policy-created",
+      String(identity.userContextId)
+    );
 
     return Cu.cloneInto(identity, {});
   },
@@ -272,12 +322,18 @@ _ContextualIdentityService.prototype = {
       return false;
     }
 
-    if (!this._store.removePolicyIdentity(userContextId)) {
+    const container = this._store.removePolicyIdentity(userContextId);
+    if (!container) {
       return false;
     }
 
     this.saveSoon();
     Services.clearData.deleteDataFromOriginAttributesPattern({ userContextId });
+    Services.obs.notifyObservers(
+      this.getIdentityObserverOutput(this._toIdentity(container)),
+      "contextual-identity-policy-deleted",
+      String(userContextId)
+    );
 
     return true;
   },
@@ -369,7 +425,11 @@ _ContextualIdentityService.prototype = {
       this._notifySiteAssociationChanged(association.site, null);
     }
 
-    Services.obs.notifyObservers(deletedOutput, "contextual-identity-deleted");
+    Services.obs.notifyObservers(
+      deletedOutput,
+      "contextual-identity-deleted",
+      String(userContextId)
+    );
 
     Glean.containers.containerDeleted.record({
       container_id: userContextId.toString(),
@@ -524,7 +584,14 @@ _ContextualIdentityService.prototype = {
       console.error(error);
     }
 
-    this._openStore(bytes);
+    try {
+      this._openStore(bytes);
+    } finally {
+      Services.obs.notifyObservers(
+        null,
+        "contextual-identity-service-sync-load-finished"
+      );
+    }
   },
 
   _requireName(name) {

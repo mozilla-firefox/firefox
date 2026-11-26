@@ -4,6 +4,8 @@
 
 #include "DataTransferItem.h"
 
+#include <cinttypes>
+
 #include "DataTransferItemList.h"
 #include "imgIContainer.h"
 #include "imgITools.h"
@@ -11,6 +13,7 @@
 #include "mozilla/BasePrincipal.h"
 #include "mozilla/ContentEvents.h"
 #include "mozilla/EventForwards.h"
+#include "mozilla/RandomNum.h"
 #include "mozilla/StaticPrefs_dom.h"
 #include "mozilla/dom/BlobImpl.h"
 #include "mozilla/dom/DataTransferItemBinding.h"
@@ -405,9 +408,17 @@ already_AddRefed<FileSystemEntry> DataTransferItem::GetAsEntry(
 already_AddRefed<File> DataTransferItem::CreateFileFromInputStream(
     nsIInputStream* aStream) {
   const char* key = nullptr;
-  for (const auto& enrty : kFileMimeNameMap) {
-    if (mType.EqualsASCII(enrty.mMimeName)) {
-      key = enrty.mFileName;
+  bool randomizeFilename = false;
+  for (const auto& entry : kFileMimeNameMap) {
+    if (mType.EqualsASCII(entry.mMimeName)) {
+      key = entry.mFileName;
+      // Randomize anonymous pasted image filenames to avoid collisions while
+      // leaving drag-and-drop and non-image items unchanged.
+      if (StaticPrefs::dom_events_dataTransfer_pasteImageRandomFilename() &&
+          mDataTransfer && mDataTransfer->GetEventMessage() == ePaste &&
+          mType.EqualsASCII(kPNGImageMime)) {
+        randomizeFilename = true;
+      }
       break;
     }
   }
@@ -416,17 +427,33 @@ already_AddRefed<File> DataTransferItem::CreateFileFromInputStream(
     key = "GenericFileName";
   }
 
-  return CreateFileFromInputStream(aStream, key, mType);
+  return CreateFileFromInputStream(aStream, key, mType, randomizeFilename);
 }
 
 already_AddRefed<File> DataTransferItem::CreateFileFromInputStream(
     nsIInputStream* aStream, const char* aFileNameKey,
-    const nsAString& aContentType) {
+    const nsAString& aContentType, bool aRandomizeFilename) {
   nsAutoString fileName;
   nsresult rv = nsContentUtils::GetLocalizedString(
       PropertiesFile::DOM_PROPERTIES, aFileNameKey, fileName);
   if (NS_WARN_IF(NS_FAILED(rv))) {
     return nullptr;
+  }
+
+  if (aRandomizeFilename) {
+    Maybe<uint64_t> randomNum = mozilla::RandomUint64();
+    NS_WARNING_ASSERTION(randomNum.isSome(),
+                         "Failed to generate random number for filename");
+    if (randomNum.isSome()) {
+      nsAutoString suffix;
+      suffix.AppendPrintf("_%016" PRIx64, *randomNum);
+      int32_t dotIndex = fileName.RFindChar('.');
+      if (dotIndex != kNotFound) {
+        fileName.Insert(suffix, dotIndex);
+      } else {
+        fileName.Append(suffix);
+      }
+    }
   }
 
   uint64_t available;

@@ -42,7 +42,7 @@ function matches_never(perm, principals) {
   });
 }
 
-function run_test() {
+function run_matches_test(isolateByUserContext) {
   // initialize the permission manager service
   let pm = Services.perms;
 
@@ -82,67 +82,51 @@ function run_test() {
   pm.addFromPrincipal(uri0_n, "test/matches", pm.ALLOW_ACTION);
   let perm_n = pm.getPermissionObject(uri0_n, "test/matches", true);
   pm.addFromPrincipal(uri0_1, "test/matches", pm.ALLOW_ACTION);
-  let perm_1 = pm.getPermissionObject(uri0_n, "test/matches", true);
+  let perm_1 = pm.getPermissionObject(uri0_1, "test/matches", true);
   pm.addFromPrincipal(uri0_cnn, "test/matches", pm.ALLOW_ACTION);
-  let perm_cnn = pm.getPermissionObject(uri0_n, "test/matches", true);
+  let perm_cnn = pm.getPermissionObject(uri0_cnn, "test/matches", true);
 
-  matches_always(perm_n, [uri0_n, uri0_1]);
-  matches_weak(perm_n, [uri1_n, uri1_1]);
-  matches_never(perm_n, [
-    uri2_n,
-    uri3_n,
-    uri4_n,
-    uri5_n,
-    uri2_1,
-    uri3_1,
-    uri4_1,
-    uri5_1,
-    uri0_cnn,
-    uri1_cnn,
-    uri2_cnn,
-    uri3_cnn,
-    uri4_cnn,
-    uri5_cnn,
-  ]);
+  let others_n = [uri2_n, uri3_n, uri4_n, uri5_n];
+  let others_1 = [uri2_1, uri3_1, uri4_1, uri5_1];
+  let others_cnn = [uri2_cnn, uri3_cnn, uri4_cnn, uri5_cnn];
+  let all_n = [uri0_n, uri1_n, ...others_n];
+  let all_1 = [uri0_1, uri1_1, ...others_1];
+  let all_cnn = [uri0_cnn, uri1_cnn, ...others_cnn];
 
-  matches_always(perm_1, [uri0_n, uri0_1]);
-  matches_weak(perm_1, [uri1_n, uri1_1]);
-  matches_never(perm_1, [
-    uri2_n,
-    uri3_n,
-    uri4_n,
-    uri5_n,
-    uri2_1,
-    uri3_1,
-    uri4_1,
-    uri5_1,
-    uri0_cnn,
-    uri1_cnn,
-    uri2_cnn,
-    uri3_cnn,
-    uri4_cnn,
-    uri5_cnn,
-  ]);
+  if (isolateByUserContext) {
+    matches_always(perm_n, [uri0_n]);
+    matches_weak(perm_n, [uri1_n]);
+    matches_never(perm_n, [...others_n, ...all_1, ...all_cnn]);
 
-  matches_always(perm_cnn, [uri0_n, uri0_1]);
-  matches_weak(perm_cnn, [uri1_n, uri1_1]);
-  matches_never(perm_cnn, [
-    uri2_n,
-    uri3_n,
-    uri4_n,
-    uri5_n,
-    uri2_1,
-    uri3_1,
-    uri4_1,
-    uri5_1,
-    uri0_cnn,
-    uri1_cnn,
-    uri2_cnn,
-    uri3_cnn,
-    uri4_cnn,
-    uri5_cnn,
-  ]);
+    matches_always(perm_1, [uri0_1]);
+    matches_weak(perm_1, [uri1_1]);
+    matches_never(perm_1, [...all_n, ...others_1, ...all_cnn]);
+  } else {
+    for (let perm of [perm_n, perm_1]) {
+      matches_always(perm, [uri0_n, uri0_1]);
+      matches_weak(perm, [uri1_n, uri1_1]);
+      matches_never(perm, [...others_n, ...others_1, ...all_cnn]);
+    }
+  }
+
+  matches_always(perm_cnn, [uri0_cnn]);
+  matches_weak(perm_cnn, [uri1_cnn]);
+  matches_never(perm_cnn, [...all_n, ...all_1, ...others_cnn]);
 
   // Clean up!
   pm.removeAll();
 }
+
+add_task(
+  { pref_set: [["permissions.isolateBy.userContext", true]] },
+  function test_matches_isolated_by_user_context() {
+    run_matches_test(true);
+  }
+);
+
+add_task(
+  { pref_set: [["permissions.isolateBy.userContext", false]] },
+  function test_matches_not_isolated_by_user_context() {
+    run_matches_test(false);
+  }
+);

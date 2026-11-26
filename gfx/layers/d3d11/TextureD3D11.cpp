@@ -1916,6 +1916,11 @@ bool SyncObjectD3D11Client::Init(ID3D11Device* aDevice, bool aFallible) {
 }
 
 void SyncObjectD3D11Client::RegisterTexture(ID3D11Texture2D* aTexture) {
+  // ensure that SyncObjectD3D11Client::Synchronize isn't running at the same
+  // time
+  MutexAutoLock syncLock(mSyncLock);
+
+  // plan texture for synchronization
   mSyncedTextures.push_back(aTexture);
 }
 
@@ -1936,7 +1941,7 @@ bool SyncObjectD3D11Client::Synchronize(bool aFallible) {
   // too.
   MutexAutoLock syncLock(mSyncLock);
 
-  if (!mSyncedTextures.size()) {
+  if (mSyncedTextures.empty()) {
     return true;
   }
   if (!Init(mDevice, aFallible)) {
@@ -1954,6 +1959,10 @@ bool SyncObjectD3D11Client::SynchronizeInternal(ID3D11Device* aDevice,
   AutoTextureLock lock(mKeyedMutex, hr, 20000);
 
   if (hr == WAIT_TIMEOUT) {
+    // forget any textures that have been planned for synchronization,
+    // they are going to be destroyed anyway
+    mSyncedTextures.clear();
+
     if (DeviceManagerDx::Get()->HasDeviceReset()) {
       gfxWarning() << "AcquireSync timed out because of device reset.";
       return false;
@@ -1974,11 +1983,12 @@ bool SyncObjectD3D11Client::SynchronizeInternal(ID3D11Device* aDevice,
   RefPtr<ID3D11DeviceContext> ctx;
   aDevice->GetImmediateContext(getter_AddRefs(ctx));
 
-  for (auto iter = mSyncedTextures.begin(); iter != mSyncedTextures.end();
-       iter++) {
-    ctx->CopySubresourceRegion(mSyncTexture, 0, 0, 0, 0, *iter, 0, &box);
+  for (auto sourceTexture : mSyncedTextures) {
+    ctx->CopySubresourceRegion(mSyncTexture, 0, 0, 0, 0, sourceTexture, 0,
+                               &box);
   }
 
+  // all textures have been processed, forget about them
   mSyncedTextures.clear();
 
   return true;
@@ -2025,7 +2035,7 @@ bool SyncObjectD3D11ClientContentDevice::Synchronize(bool aFallible) {
 
   MOZ_ASSERT(mContentDevice);
 
-  if (!mSyncedTextures.size()) {
+  if (mSyncedTextures.empty()) {
     return true;
   }
 

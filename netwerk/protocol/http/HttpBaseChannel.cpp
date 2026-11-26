@@ -2922,16 +2922,17 @@ nsresult HttpBaseChannel::ComputeCrossOriginOpenerPolicyMismatch() {
     return NS_ERROR_DOM_COOP_FAILED;
   }
 
-  // In xpcshell-tests we don't always have a current window global
+  // In xpcshell-tests and in some error edge-cases we may not
+  // always have a current window global. In that case, we're
+  // conservative about the current principal.
   RefPtr<mozilla::dom::WindowGlobalParent> currentWindowGlobal =
       ctx->Canonical()->GetCurrentWindowGlobal();
-  if (!currentWindowGlobal) {
-    return NS_OK;
-  }
 
-  // We use the top window principal as the documentOrigin
+  // We use the top window principal as the documentOrigin, if available.
   nsCOMPtr<nsIPrincipal> documentOrigin =
-      currentWindowGlobal->DocumentPrincipal();
+      currentWindowGlobal
+          ? nsCOMPtr<nsIPrincipal>(currentWindowGlobal->DocumentPrincipal())
+          : NullPrincipal::Create(ctx->OriginAttributesRef());
 
   bool compareResult = CompareCrossOriginOpenerPolicies(
       documentPolicy, documentOrigin, resultPolicy, resultOrigin);
@@ -2974,7 +2975,7 @@ nsresult HttpBaseChannel::ComputeCrossOriginOpenerPolicyMismatch() {
     return NS_OK;
   }
 
-  if (!currentWindowGlobal->IsInitialDocument()) {
+  if (!currentWindowGlobal || !currentWindowGlobal->IsInitialDocument()) {
     StoreHasCrossOriginOpenerPolicyMismatch(true);
     return NS_OK;
   }

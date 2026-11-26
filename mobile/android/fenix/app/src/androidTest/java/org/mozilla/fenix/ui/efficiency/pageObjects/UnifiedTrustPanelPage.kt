@@ -144,6 +144,34 @@ class UnifiedTrustPanelPage(composeRule: AndroidComposeTestRule<HomeActivityInte
         return this
     }
 
+    /**
+     * Assert the trackers-blocked sub-panel for [host]: its header, the "blocked on this site" count and the weekly
+     * row.
+     */
+    fun verifyTrackersBlockedSubPanel(host: String): UnifiedTrustPanelPage {
+        mozVerify(UnifiedTrustPanelSelectors.SUBMENU_HEADER_SITE(host))
+        mozVerify(UnifiedTrustPanelSelectors.TRACKERS_PANEL_BLOCKED_ON_SITE_HEADER)
+        mozVerify(UnifiedTrustPanelSelectors.TRACKERS_BLOCKED_THIS_WEEK_ROW)
+        return this
+    }
+
+    /**
+     * Assert a single category's detail panel for [host]: its header, [categoryTitle], [categoryDescription] and the
+     * "Blocked" list header. Unlike [verifyTrackerCategoryDetails] this only asserts the open panel; the caller drives
+     * navigation into and out of it.
+     */
+    fun verifyTrackerCategoryDetailPanel(
+        host: String,
+        categoryTitle: Selector,
+        categoryDescription: Selector,
+    ): UnifiedTrustPanelPage {
+        mozVerify(UnifiedTrustPanelSelectors.SUBMENU_HEADER_SITE(host))
+        mozVerify(categoryTitle)
+        mozVerify(categoryDescription)
+        mozVerify(UnifiedTrustPanelSelectors.CATEGORY_DETAIL_BLOCKED_HEADER)
+        return this
+    }
+
     private fun verifyEnhancedTrackingProtectionState(isEnabled: Boolean, isSecure: Boolean) {
         if (isEnabled) {
             if (isSecure) {

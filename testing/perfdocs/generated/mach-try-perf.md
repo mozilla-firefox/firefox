@@ -51,6 +51,9 @@ perf arguments:
   --live-sites          Run tasks with live sites (if possible). You can also use the `live-sites` variant.
   --profile             Run tasks with profiling (if possible). You can also use the `profiling` variant.
   --single-run          Run tasks without a comparison
+  --worker-override-new-only WORKER_OVERRIDE
+                        Like --worker-override, but only for the new revision. The base revision runs on the default
+                        worker pool. The argument should be `<alias>=<worker-pool>`. Can be specified multiple times.
   -q QUERY, --query QUERY
                         Query to run in either the perf-category selector, or the fuzzy selector if --show-all/--full is
                         provided.
@@ -118,6 +121,14 @@ task configuration arguments:
   --allow-testfile-path
                         Opt in to pass a specific testfile path (ie not only a folder)
   --rebuild [1-20]      Rebuild all selected tasks the specified number of times.
+  --worker-override WORKER_OVERRIDES
+                        Override the worker pool used for a given taskgraph worker alias. The argument should be
+                        `<alias>=<worker-pool>`. Can be specified multiple times.
+  --worker-suffix WORKER_SUFFIXES
+                        Override the worker pool used for a given taskgraph worker alias, by appending a suffix to the
+                        work-pool. The argument should be `<alias>=<suffix>`. Can be specified multiple times.
+  --worker-type WORKER_TYPES
+                        Select tasks that only run on the specified worker.
 ```
 
 ## Workflow

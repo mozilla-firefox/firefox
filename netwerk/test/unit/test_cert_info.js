@@ -76,7 +76,7 @@ async function test_cert_failure(server_creator, https_proxy) {
     }
   } else {
     secinfo.QueryInterface(Ci.nsITransportSecurityInfo);
-    Assert.equal(secinfo.serverCert.commonName, " HTTP2 Test Cert");
+    Assert.equal(secinfo.serverCert.commonName, "HTTP2 Test Cert");
   }
 }
 

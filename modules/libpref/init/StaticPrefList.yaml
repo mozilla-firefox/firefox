@@ -3207,6 +3207,13 @@
   value: false
   mirror: always
 
+# Whether to append a random 64-bit hex suffix to anonymous pasted image
+# filenames to avoid name collisions.
+- name: dom.events.dataTransfer.pasteImageRandomFilename
+  type: bool
+  value: true
+  mirror: always
+
 # User interaction timer interval, in ms
 - name: dom.events.user_interaction_interval
   type: uint32_t
@@ -3657,6 +3664,12 @@
 
 - name: dom.interactive_widget_default_resizes_visual
   type: RelaxedAtomicBool
+  value: true
+  mirror: always
+
+# Whether to expose IntersectionObserver's delay option.
+- name: dom.intersection_observer.delay.enabled
+  type: bool
   value: true
   mirror: always
 
@@ -17179,14 +17192,6 @@
   value: true
   mirror: always
 
-# Maximum consecutive PTOs before closing an HTTP/3 connection. Set to zero
-# to disable the black-hole detector.
-- name: network.http.http3.max_pto
-  type: RelaxedAtomicUint32
-  value: 0
-  mirror: always
-  rust: true
-
 # Receive buffer size of QUIC socket
 - name: network.http.http3.recvBufferSize
   type: RelaxedAtomicInt32
@@ -18121,7 +18126,7 @@
 
 - name: permissions.isolateBy.userContext
   type: RelaxedAtomicBool
-  value: false
+  value: @IS_NIGHTLY_BUILD@
   mirror: always
 
 - name: permissions.isolateBy.privateBrowsing

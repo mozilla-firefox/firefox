@@ -113,7 +113,7 @@ class DataTransferItem final : public nsISupports, public nsWrapperCache {
   already_AddRefed<File> CreateFileFromInputStream(nsIInputStream* aStream);
   already_AddRefed<File> CreateFileFromInputStream(
       nsIInputStream* aStream, const char* aFileNameKey,
-      const nsAString& aContentType);
+      const nsAString& aContentType, bool aRandomizeFilename = false);
 
   // The index in the 2d mIndexedItems array
   uint32_t mIndex;

@@ -1,5 +1,4 @@
-issuer: HTTP2 Test CA
-subject: HTTP2 Test Cert
-validity:20170101-20270101
+issuer:HTTP2 Test CA
+subject:HTTP2 Test Cert
 extension:extKeyUsage:serverAuth
 extension:subjectAlternativeName:localhost,foo.example.com,alt1.example.com,alt2.example.com

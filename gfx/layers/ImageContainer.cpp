@@ -979,7 +979,10 @@ static void CopyPlane(uint8_t* aDst, const uint8_t* aSrc,
 
   if (!aSkip) {
     // Fast path: planar input.
-    memcpy(aDst, aSrc, size_t(aStride) * (height - 1) + rowBytes);
+    size_t calculatedSize =
+        static_cast<size_t>(height - 1) * static_cast<size_t>(aStride);
+    calculatedSize += static_cast<size_t>(rowBytes);
+    memcpy(aDst, aSrc, calculatedSize);
   } else {
     for (int y = 0; y < height; ++y) {
       const uint8_t* src = aSrc + size_t(y) * aStride;
@@ -1013,12 +1016,20 @@ nsresult RecyclingPlanarYCbCrImage::CopyData(const Data& aData) {
   // Use uint32_t throughout to match AllocateBuffer's param and mBufferSize
   const auto& ySize = sizes->mY;
   const auto& cbcrSize = sizes->mCbCr;
-  const auto checkedSize =
-      CheckedInt<uint32_t>(aData.mCbCrStride) * cbcrSize.height * 2 +
-      CheckedInt<uint32_t>(aData.mYStride) * ySize.height *
-          (aData.mAlpha ? 2 : 1);
 
-  if (!checkedSize.isValid()) return NS_ERROR_INVALID_ARG;
+  // compute buffer stride values
+  const CheckedInt<uint32_t> yStrideTimesHeight =
+      CheckedInt<uint32_t>(aData.mYStride) * ySize.height;
+  const CheckedInt<uint32_t> cbcrStrideTimesHeight =
+      CheckedInt<uint32_t>(aData.mCbCrStride) * cbcrSize.height;
+  const CheckedInt<uint32_t> checkedSize =
+      cbcrStrideTimesHeight * 2 + yStrideTimesHeight * (aData.mAlpha ? 2 : 1);
+
+  // validate the size values so they can be used going forward
+  // this also validates the stride values
+  if (!checkedSize.isValid()) {
+    return NS_ERROR_INVALID_ARG;
+  }
 
   const auto size = checkedSize.value();
 
@@ -1031,8 +1042,8 @@ nsresult RecyclingPlanarYCbCrImage::CopyData(const Data& aData) {
 
   mData = aData;  // mAlpha will be set if aData has it
   mData.mYChannel = mBuffer.get();
-  mData.mCbChannel = mData.mYChannel + mData.mYStride * ySize.height;
-  mData.mCrChannel = mData.mCbChannel + mData.mCbCrStride * cbcrSize.height;
+  mData.mCbChannel = mData.mYChannel + yStrideTimesHeight.value();
+  mData.mCrChannel = mData.mCbChannel + cbcrStrideTimesHeight.value();
   mData.mYSkip = mData.mCbSkip = mData.mCrSkip = 0;
 
   const int32_t bytesPerSample =
@@ -1046,8 +1057,7 @@ nsresult RecyclingPlanarYCbCrImage::CopyData(const Data& aData) {
             aData.mCrSkip, bytesPerSample);
   if (aData.mAlpha) {
     MOZ_ASSERT(mData.mAlpha);
-    mData.mAlpha->mChannel =
-        mData.mCrChannel + mData.mCbCrStride * cbcrSize.height;
+    mData.mAlpha->mChannel = mData.mCrChannel + cbcrStrideTimesHeight.value();
     CopyPlane(mData.mAlpha->mChannel, aData.mAlpha->mChannel, ySize,
               aData.mYStride, aData.mYSkip,
               aData.mAlpha->mDepth == gfx::ColorDepth::COLOR_8 ? 1 : 2);

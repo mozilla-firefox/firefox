@@ -34,6 +34,10 @@ RETRY_INTERVAL = 2  # seconds
 PUSH_SCHEDULES_ENV = "GECKO_BUGBUG_PUSH_SCHEDULES"
 RESULT_POLL_INTERVAL = 0.2  # seconds
 
+# The projects bugbug can compute push schedules for. It pulls pushes from
+# hg.mozilla.org, so it can't handle projects only hosted on GitHub.
+SUPPORTED_PROJECTS = frozenset({"autoland", "try"})
+
 # Preset confidence thresholds.
 CT_VERY_LOW = 0.3
 CT_LOW = 0.7
@@ -84,6 +88,11 @@ def get_confidence_threshold(data, kind, confidence_threshold):
 
 class BugbugTimeoutException(Exception):
     pass
+
+
+def is_try_auto(params):
+    """Whether the push was made with `mach try auto`."""
+    return "try_auto" in params.get("filters", [])
 
 
 def _new_session():

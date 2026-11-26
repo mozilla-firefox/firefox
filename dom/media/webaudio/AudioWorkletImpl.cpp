@@ -14,6 +14,7 @@
 #include "mozilla/dom/MessagePort.h"
 #include "mozilla/dom/WorkletThread.h"
 #include "nsGlobalWindowInner.h"
+#include "nsRFPService.h"
 
 namespace mozilla {
 
@@ -58,7 +59,10 @@ AudioWorkletImpl::AudioWorkletImpl(nsPIDOMWindowInner* aWindow,
                                    dom::UniqueMessagePortId&& aPortIdentifier)
     : WorkletImpl(aWindow, aPrincipal),
       mDestinationTrack(aDestinationTrack),
-      mGlobalScopePortIdentifier(std::move(aPortIdentifier)) {}
+      mGlobalScopePortIdentifier(std::move(aPortIdentifier)) {
+  // WorkletPerformance::Now() runs on the real-time audio thread.
+  nsRFPService::InitTimePrecisionReduction();
+}
 
 AudioWorkletImpl::~AudioWorkletImpl() = default;
 

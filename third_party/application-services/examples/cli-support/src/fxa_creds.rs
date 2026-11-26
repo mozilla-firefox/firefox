@@ -8,7 +8,9 @@ use std::{collections::HashMap, fs, io::Write};
 use anyhow::Result;
 use url::Url;
 
-use fxa_client::{DeviceConfig, DeviceType, FirefoxAccount, FxaConfig, FxaEvent, FxaState};
+use fxa_client::{
+    AuthorizationStatus, DeviceConfig, DeviceType, FirefoxAccount, FxaConfig, FxaEvent, FxaState,
+};
 use sync15::{client::Sync15StorageClientInit, KeyBundle};
 
 use crate::{prompt::prompt_string, workspace_root_dir};
@@ -81,16 +83,18 @@ impl CliFxa {
             Ok(acct) => {
                 crate::info!("Loaded saved FxA credentials from {cred_path}");
                 match acct.check_authorization_status() {
-                    Ok(info) if info.active => {
-                        crate::info!("fxa stored credentials are active");
+                    AuthorizationStatus::Valid => {
+                        crate::info!("fxa stored credentials are valid");
                         Some(acct)
                     }
-                    Ok(_) => {
-                        crate::warn!("fxa stored credentials are no longer active; re-login will be required");
+                    AuthorizationStatus::Invalid => {
+                        crate::warn!(
+                            "fxa stored credentials are no longer valid; re-login will be required"
+                        );
                         None
                     }
-                    Err(e) => {
-                        crate::warn!("FxA: could not verify authorization status ({e}); will attempt to use stored credentials");
+                    AuthorizationStatus::Unknown => {
+                        crate::warn!("FxA: could not verify authorization status; will attempt to use stored credentials");
                         Some(acct)
                     }
                 }

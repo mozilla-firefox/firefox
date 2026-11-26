@@ -185,9 +185,14 @@ if CONFIG["MOZ_WIDGET_TOOLKIT"] == "android":
     ]
 
 LOCAL_INCLUDES += [
-    '/media/libopus/include',
     '/media/libvorbis',
 ]
+
+if CONFIG["MOZ_SYSTEM_OPUS"]:
+    CFLAGS += CONFIG["MOZ_OPUS_CFLAGS"]
+    OS_LIBS += CONFIG["MOZ_OPUS_LIBS"]
+else:
+    LOCAL_INCLUDES += ['/media/libopus/include']
 
 if not CONFIG["MOZ_SYSTEM_LIBVPX"]:
   LOCAL_INCLUDES += ['/media/libvpx']

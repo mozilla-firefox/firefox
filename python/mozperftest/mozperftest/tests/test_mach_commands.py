@@ -228,6 +228,31 @@ def test_test_runner_coverage(*mocked):
             sys.meta_path = old
 
 
+@mock.patch("mozbuild.base.MachCommandBase.activate_virtualenv")
+@mock.patch("mozperftest.utils.checkout_python_script")
+def test_test_runner_low_coverage(checkout, *mocked):
+    from mozperftest.mach_commands import run_tests
+
+    checkout.side_effect = lambda venv, module, args, **kw: args != ["report"]
+    with running_on_try(False), _get_command(run_tests) as (cmd, command_context):
+        with mock.patch.object(command_context, "log") as log:
+            assert cmd(command_context, tests=[], raptor=True) == 1
+
+    assert "Coverage is too low" in log.call_args[0][3]
+
+
+@mock.patch("mozbuild.base.MachCommandBase.activate_virtualenv")
+@mock.patch("mozperftest.utils.checkout_python_script", return_value=False)
+def test_test_runner_failing_tests(*mocked):
+    from mozperftest.mach_commands import run_tests
+
+    with running_on_try(False), _get_command(run_tests) as (cmd, command_context):
+        with mock.patch.object(command_context, "log") as log:
+            assert cmd(command_context, tests=[EXAMPLE_TEST], skip_linters=True) == 1
+
+    assert "Some tests failed" in log.call_args[0][3]
+
+
 @mock.patch("mozperftest.MachEnvironment", new=_TestMachEnvironment)
 @mock.patch("mozbuild.base.MachCommandBase.activate_virtualenv")
 @mock.patch("mozperftest.runner.run_tests")

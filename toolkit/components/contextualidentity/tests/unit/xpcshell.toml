@@ -10,6 +10,10 @@ run-if = [
 
 ["test_corruptedFile.js"]
 
+["test_defaultPermissions.js"]
+
+["test_defaultPermissions_syncLoad.js"]
+
 ["test_migratedFile.js"]
 
 ["test_policy.js"]

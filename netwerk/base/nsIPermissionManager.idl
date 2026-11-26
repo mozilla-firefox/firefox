@@ -112,8 +112,9 @@ interface nsIPermissionManager : nsISupports
   /**
    * Get all custom permissions whose OriginAttributes match the given
    * OriginAttributesPattern. Pattern fields the permission manager does not
-   * isolate by (see the permissions.isolateBy.* prefs) are ignored. Not
-   * available in the content process.
+   * isolate by (see the permissions.isolateBy.* prefs) are ignored, as are the
+   * privateBrowsingId and userContextId fields for permission types that are
+   * never isolated by them. Not available in the content process.
    *
    * @param patternAsJSON  an OriginAttributesPattern serialized as JSON.
    * @param types  an array of case-sensitive ASCII strings, identifying the

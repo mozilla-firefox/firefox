@@ -3674,7 +3674,8 @@ MDefinition* MBigIntMod::foldsTo(TempAllocator& alloc) {
   if (lhs()->isBigIntMul() && lhs()->hasOneDefUse()) {
     MBigIntMul* mul = lhs()->toBigIntMul();
     auto* mulMod = MBigIntMulMod::New(alloc, mul->lhs(), mul->rhs(), rhs());
-    if (resumePoint()) {
+    if (mulMod->isEffectful()) {
+      MOZ_ASSERT(resumePoint());
       mulMod->stealResumePoint(this);
     }
     return mulMod;

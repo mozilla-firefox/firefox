@@ -25,7 +25,7 @@
 namespace mozilla::dom {
 
 NS_IMPL_CYCLE_COLLECTION_INHERITED(AudioWorkletGlobalScope, WorkletGlobalScope,
-                                   mNameToProcessorMap, mPort);
+                                   mNameToProcessorMap, mPort, mPerformance);
 
 NS_INTERFACE_MAP_BEGIN_CYCLE_COLLECTION(AudioWorkletGlobalScope)
 NS_INTERFACE_MAP_END_INHERITING(WorkletGlobalScope)
@@ -47,9 +47,14 @@ bool AudioWorkletGlobalScope::WrapGlobalObject(
   Impl()->DestinationTrack()->Graph()->NotifyJSContext(aCx);
 
   JS::RealmOptions options = CreateRealmOptions();
-  return AudioWorkletGlobalScope_Binding::Wrap(
-      aCx, this, this, options, BasePrincipal::Cast(mImpl->Principal()),
-      aReflector);
+  if (!AudioWorkletGlobalScope_Binding::Wrap(
+          aCx, this, this, options, BasePrincipal::Cast(mImpl->Principal()),
+          aReflector)) {
+    return false;
+  }
+
+  mPerformance = new WorkletPerformance(this);
+  return true;
 }
 
 void AudioWorkletGlobalScope::RegisterProcessor(

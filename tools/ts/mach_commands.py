@@ -74,6 +74,28 @@ def summary(ctx, project, save=None, diff=None, members=None, full_lists=False):
     return node(ctx, "summary.mjs", *args)
 
 
+@SubCommand(
+    "ts",
+    "coverage",
+    description="Count, per module, the functions with a JSDoc comment and the "
+    "parameters tsc can type.",
+)
+@CommandArgument(
+    "paths",
+    nargs="+",
+    help="Files, or directories of .js and .mjs files (not recursive).",
+)
+@CommandArgument(
+    "--list",
+    dest="show_list",
+    action="store_true",
+    help="Also list every function with an untyped parameter.",
+)
+def coverage(ctx, paths, show_list=False):
+    args = ["--list"] if show_list else []
+    return node(ctx, "coverage.mjs", *args, *paths)
+
+
 @SubCommand("ts", "update", description="Update tools/@types libraries.")
 def update(ctx):
     if rv := maybe_setup(ctx):

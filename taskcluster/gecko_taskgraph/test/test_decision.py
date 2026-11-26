@@ -174,6 +174,35 @@ def test_get_decision_parameters(
         assert params[key] == expected[key], f"key {key} does not match!"
 
 
+@pytest.mark.parametrize("project,raises", (("try", False), ("firefox-dev", True)))
+@patch("gecko_taskgraph.decision.get_hg_revision_metadata")
+@patch("gecko_taskgraph.decision.get_repository")
+@patch("gecko_taskgraph.decision.get_changed_files")
+def test_decision_parameters_try_auto_unsupported_project(
+    mock_get_changed_files,
+    mock_get_repository,
+    mock_get_hg_revision_metadata,
+    options,
+    project,
+    raises,
+):
+    mock_get_hg_revision_metadata.return_value = _hg_metadata("commit message")
+    mock_repo = MagicMock()
+    mock_repo.default_branch = "baseref"
+    mock_get_repository.return_value = mock_repo
+    mock_get_changed_files.return_value = []
+
+    opts = {**options, "project": project, "allow_parameter_override": True}
+    ttc = {"version": 2, "parameters": {"filters": ["try_auto"]}}
+    with MockedOpen({TTC_FILE: json.dumps(ttc)}):
+        if raises:
+            with pytest.raises(Exception, match="doesn't support the 'firefox-dev'"):
+                decision.get_decision_parameters(FAKE_GRAPH_CONFIG, opts)
+        else:
+            params = decision.get_decision_parameters(FAKE_GRAPH_CONFIG, opts)
+            assert params["filters"] == ["try_auto"]
+
+
 def _note_mock_repo(mock_get_repository, mock_get_hg_revision_metadata, note):
     mock_get_hg_revision_metadata.return_value = _hg_metadata("commit message")
     mock_repo = MagicMock()
@@ -480,6 +509,13 @@ def test_build_decision_perfherder_data(
             id="default loader",
         ),
         pytest.param("try", True, {"tasks": ["a"]}, False, id="version 1"),
+        pytest.param(
+            "firefox-dev",
+            True,
+            {"version": 2, "parameters": {"test_manifest_loader": "bugbug"}},
+            False,
+            id="unsupported project",
+        ),
     ),
 )
 def test_uses_bugbug(project, override, ttc, expected):

@@ -562,6 +562,7 @@ mod tests {
             token: "refresh_token".to_owned(),
             scopes: HashSet::new(),
         });
+        fxa.state.force_session_token("test-session-token");
         fxa.state.force_current_device_id("original-device-id");
         assert_eq!(fxa.get_initial_state(), FxaState::Connected);
 
@@ -574,7 +575,7 @@ mod tests {
                 token: "refreshtok".to_owned(),
                 scopes: HashSet::default(),
             },
-            None,
+            Some("test-session-token".into()),
         );
         assert_eq!(fxa.get_initial_state(), FxaState::Connected);
 
@@ -594,6 +595,7 @@ mod tests {
                 token: "refresh_token".to_owned(),
                 scopes: HashSet::from([scopes::OLD_SYNC.to_owned()]),
             });
+            fxa.state.force_session_token("test-session-token");
             fxa
         };
 

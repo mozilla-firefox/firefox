@@ -27,4 +27,16 @@ interface nsISiteContainerService : nsISupports {
    */
   unsigned long containerForNavigation(in nsIURI aURI,
                                        in unsigned long aBaselineUserContextId);
+
+  /**
+   * The userContextIds of the containers shown to the user. Loads the
+   * container data synchronously if it hasn't been loaded yet.
+   */
+  Array<unsigned long> getPublicUserContextIds();
+
+  /**
+   * The userContextIds of the internal and policy containers. Loads the
+   * container data synchronously if it hasn't been loaded yet.
+   */
+  Array<unsigned long> getPrivateUserContextIds();
 };

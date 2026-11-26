@@ -1410,11 +1410,10 @@ public interface FirefoxAccountInterface {
      *
      * **💾 This method alters the persisted account state.**
      *
-     * Applications may call this method to check with the FxA server about the status
-     * of their authentication tokens. It returns an [`AuthorizationInfo`] struct
-     * with details about whether the tokens are still active.
+     * Call this method to validate the current auth tokens. This checks that all expected tokens
+     * are present and also validates the refresh token with the FxA server.
      */
-    fun `checkAuthorizationStatus`(): AuthorizationInfo
+    fun `checkAuthorizationStatus`(): AuthorizationStatus
     
     /**
      * Disconnect from the user's account.
@@ -2148,14 +2147,12 @@ open class FirefoxAccount: Disposable, AutoCloseable, FirefoxAccountInterface
      *
      * **💾 This method alters the persisted account state.**
      *
-     * Applications may call this method to check with the FxA server about the status
-     * of their authentication tokens. It returns an [`AuthorizationInfo`] struct
-     * with details about whether the tokens are still active.
-     */
-    @Throws(FxaException::class)override fun `checkAuthorizationStatus`(): AuthorizationInfo {
-            return FfiConverterTypeAuthorizationInfo.lift(
+     * Call this method to validate the current auth tokens. This checks that all expected tokens
+     * are present and also validates the refresh token with the FxA server.
+     */override fun `checkAuthorizationStatus`(): AuthorizationStatus {
+            return FfiConverterTypeAuthorizationStatus.lift(
     callWithHandle {
-    uniffiRustCallWithError(FxaException) { _status ->
+    uniffiRustCall() { _status ->
     UniffiLib.uniffi_fxa_client_fn_method_firefoxaccount_check_authorization_status(
         it,
         _status)
@@ -3230,45 +3227,6 @@ public object FfiConverterTypeAttachedClient: FfiConverterRustBuffer<AttachedCli
 
 
 /**
- * Information about the authorization state of the application.
- *
- * This struct represents metadata about whether the application is currently
- * connected to the user's account.
- */
-data class AuthorizationInfo (
-    var `active`: kotlin.Boolean
-    
-){
-    
-
-    
-
-    
-    companion object
-}
-
-/**
- * @suppress
- */
-public object FfiConverterTypeAuthorizationInfo: FfiConverterRustBuffer<AuthorizationInfo> {
-    override fun read(buf: ByteBuffer): AuthorizationInfo {
-        return AuthorizationInfo(
-            FfiConverterBoolean.read(buf),
-        )
-    }
-
-    override fun allocationSize(value: AuthorizationInfo) = (
-            FfiConverterBoolean.allocationSize(value.`active`)
-    )
-
-    override fun write(value: AuthorizationInfo, buf: ByteBuffer) {
-            FfiConverterBoolean.write(value.`active`, buf)
-    }
-}
-
-
-
-/**
  * Parameters provided in an incoming OAuth request.
  *
  * This struct represents parameters obtained from an incoming OAuth request - that is,
@@ -4164,6 +4122,47 @@ public object FfiConverterTypeAccountEvent : FfiConverterRustBuffer<AccountEvent
                 Unit
             }
         }.let { /* this makes the `when` an expression, which ensures it is exhaustive */ }
+    }
+}
+
+
+
+
+
+/**
+ * Result of the `check_authorization_status()` method.
+ */
+
+enum class AuthorizationStatus {
+    
+    VALID,
+    INVALID,
+    /**
+     * The request failed, we don't know if the refresh token is good or bad
+     */
+    UNKNOWN;
+
+    
+
+
+    companion object
+}
+
+
+/**
+ * @suppress
+ */
+public object FfiConverterTypeAuthorizationStatus: FfiConverterRustBuffer<AuthorizationStatus> {
+    override fun read(buf: ByteBuffer) = try {
+        AuthorizationStatus.values()[buf.getInt() - 1]
+    } catch (e: IndexOutOfBoundsException) {
+        throw RuntimeException("invalid enum value, something is very wrong!!", e)
+    }
+
+    override fun allocationSize(value: AuthorizationStatus) = 4UL
+
+    override fun write(value: AuthorizationStatus, buf: ByteBuffer) {
+        buf.putInt(value.ordinal + 1)
     }
 }
 

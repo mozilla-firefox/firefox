@@ -57,6 +57,7 @@
 #include "nsFrameLoaderOwner.h"
 #include "nsGlobalWindowOuter.h"
 #include "nsIContentAnalysis.h"
+#include "nsIHttpChannel.h"
 #include "nsIWebBrowserChrome.h"
 #include "nsIXULRuntime.h"
 #include "nsAboutProtocolUtils.h"
@@ -833,6 +834,62 @@ CanonicalBrowsingContext::ReplaceLoadingSessionHistoryEntryForLoad(
     }
   }
   return nullptr;
+}
+
+UniquePtr<LoadingSessionHistoryInfo>
+CanonicalBrowsingContext::RetargetLoadingSessionHistoryEntry(
+    CanonicalBrowsingContext* aSource, const LoadingSessionHistoryInfo& aInfo,
+    nsIChannel* aChannel) {
+  MOZ_ASSERT(aSource);
+  MOZ_ASSERT(aSource != this);
+  MOZ_ASSERT(aChannel);
+  MOZ_ASSERT(!mActiveEntry);
+
+  RefPtr<SessionHistoryEntry> sourceEntry;
+  for (size_t i = 0; i < aSource->mLoadingEntries.Length(); ++i) {
+    if (aSource->mLoadingEntries[i].mLoadId == aInfo.mLoadId) {
+      sourceEntry = std::move(aSource->mLoadingEntries[i].mEntry);
+      aSource->mLoadingEntries.RemoveElementAt(i);
+      break;
+    }
+  }
+  SessionHistoryEntry::RemoveLoadId(aInfo.mLoadId);
+
+  SessionHistoryInfo newInfo(aChannel, aInfo.mInfo.LoadType(),
+                             aInfo.mInfo.GetPartitionedPrincipalToInherit(),
+                             aInfo.mInfo.GetPolicyContainer());
+
+  // A refresh can reuse the active entry of aSource, whose data belongs to the
+  // document left behind: only carry over what was given to this load.
+  if (sourceEntry && sourceEntry != aSource->mActiveEntry) {
+    nsCOMPtr<nsIInputStream> postData = aInfo.mInfo.GetPostData();
+    newInfo.SetPostData(postData);
+    newInfo.SetNavigationAPIState(aInfo.mInfo.GetNavigationAPIState());
+  }
+
+  if (nsCOMPtr<nsIHttpChannel> httpChannel = do_QueryInterface(aChannel);
+      httpChannel && nsDocShell::ShouldDiscardLayoutState(httpChannel)) {
+    newInfo.SetSaveLayoutStateFlag(false);
+  }
+
+  auto entry = MakeRefPtr<SessionHistoryEntry>(&newInfo);
+  entry->SetDocshellID(GetHistoryID());
+  entry->SetIsDynamicallyAdded(CreatedDynamically());
+  entry->SetForInitialLoad(true);
+
+  auto result = std::make_unique<LoadingSessionHistoryInfo>(entry);
+  mLoadingEntries.AppendElement(
+      LoadingSessionHistoryEntry{result->mLoadId, entry});
+
+  // The load replaces the initial about:blank of the new tab.
+  if (aInfo.mTriggeringNavigationType) {
+    result->mPreviousEntry = Some(PreviousSessionHistoryInfo{});
+    result->mTriggeringNavigationType = Some(NavigationType::Replace);
+    if (Navigation::IsAPIEnabled()) {
+      GetContiguousEntriesForLoad(*result, entry);
+    }
+  }
+  return result;
 }
 
 void CanonicalBrowsingContext::GetContiguousEntriesForLoad(

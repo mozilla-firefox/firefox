@@ -358,6 +358,11 @@ class PermissionManager final : public nsIPermissionManager,
   static void MaybeStripOriginAttributes(bool aForceStrip,
                                          OriginAttributes& aOriginAttributes);
 
+  /**
+   * Whether permissions of type aType are never isolated by origin attributes.
+   */
+  static bool IsOAForceStripPermission(const nsACString& aType);
+
   nsresult Add(nsIPrincipal* aPrincipal, const nsACString& aType,
                uint32_t aPermission, int64_t aID, uint32_t aExpireType,
                int64_t aExpireTime, int64_t aModificationTime,
@@ -503,7 +508,8 @@ class PermissionManager final : public nsIPermissionManager,
   void RemoveIdleDailyMaintenanceJob();
   void PerformIdleDailyMaintenance() MOZ_REQUIRES(mMonitor);
 
-  nsresult ImportLatestDefaults() MOZ_REQUIRES(mMonitor);
+  nsresult ImportLatestDefaults(const nsTArray<uint32_t>& aUserContextIds)
+      MOZ_REQUIRES(mMonitor);
   already_AddRefed<nsIInputStream> GetDefaultsInputStream();
   void ConsumeDefaultsInputStream(nsIInputStream* aInputStream,
                                   const MonitorAutoLock& aProofOfLock)
@@ -569,13 +575,17 @@ class PermissionManager final : public nsIPermissionManager,
   // the migrations if needed.
   void EnsureReadCompleted() MOZ_REQUIRES(mMonitor);
 
+  // If aStoreUnknownAction is set, an UNKNOWN_ACTION permission is stored even
+  // if there is no permission to remove, so that it overrides a default
+  // imported later.
   nsresult AddInternal(nsIPrincipal* aPrincipal, const nsACString& aType,
                        uint32_t aPermission, int64_t aID, uint32_t aExpireType,
                        int64_t aExpireTime, int64_t aModificationTime,
                        NotifyOperationType aNotifyOperation,
                        DBOperationType aDBOperation,
                        const nsACString* aOriginString = nullptr,
-                       const bool aAllowPersistInPrivateBrowsing = false)
+                       const bool aAllowPersistInPrivateBrowsing = false,
+                       const bool aStoreUnknownAction = false)
       MOZ_REQUIRES(mMonitor);
 
   void MaybeAddReadEntryFromMigration(const nsACString& aOrigin,
@@ -620,6 +630,9 @@ class PermissionManager final : public nsIPermissionManager,
     eClosed,
   };
   Atomic<State> mState;
+
+  // Whether ContextualIdentityService has loaded its containers
+  bool mUserContextsLoaded = false;
 
   // A single entry, from the database.
   struct ReadEntry {
@@ -692,9 +705,43 @@ class PermissionManager final : public nsIPermissionManager,
   // permission manager without storing it to disk. If permission isolation for
   // private browsing is enabled (which is the default), and the permission type
   // is not exempt from it, this will also create a separate default permission
-  // for private browsing
-  nsresult ImportDefaultEntry(const DefaultEntry& aDefaultEntry)
+  // for private browsing. The same is done for every container in
+  // aUserContextIds.
+  nsresult ImportDefaultEntry(const DefaultEntry& aDefaultEntry,
+                              const nsTArray<uint32_t>& aUserContextIds)
       MOZ_REQUIRES(mMonitor);
+  // Imports a default entry for the given principal.
+  nsresult ImportDefaultEntryForPrincipal(nsIPrincipal* aPrincipal,
+                                          const DefaultEntry& aDefaultEntry)
+      MOZ_REQUIRES(mMonitor);
+  // Imports a default entry for aPrincipal with its origin attributes replaced
+  // by aOriginAttributes.
+  nsresult ImportDefaultEntryForOriginAttributes(
+      nsIPrincipal* aPrincipal, const DefaultEntry& aDefaultEntry,
+      const OriginAttributes& aOriginAttributes) MOZ_REQUIRES(mMonitor);
+  // Imports a default entry into each of the given containers. Does nothing
+  // if the permission type is exempt from it.
+  nsresult ImportDefaultEntryForUserContexts(
+      const DefaultEntry& aDefaultEntry,
+      const nsTArray<uint32_t>& aUserContextIds) MOZ_REQUIRES(mMonitor);
+  // Imports all default entries into each of the given containers.
+  nsresult ImportDefaultsForUserContexts(
+      const nsTArray<uint32_t>& aUserContextIds) MOZ_REQUIRES(mMonitor);
+  // Removes the copies of the default entries and the removals of defaults
+  // stored for a container which was deleted. Its other permissions are
+  // removed by the clear data service.
+  void RemoveDefaultsForUserContext(uint32_t aUserContextId)
+      MOZ_REQUIRES(mMonitor);
+  // The containers which exist at this point, as reported by
+  // ContextualIdentityService. Empty as long as it hasn't loaded its data.
+  // After observing "contextual-identity-service-load-finished" the contexts
+  // are guaranteed to be loaded and this array will be filled. This must not
+  // be called while holding mMonitor, as nsISiteContainerService may call back
+  // into the permission manager.
+  nsTArray<uint32_t> GetAllUserContextIds();
+
+  // Calls GetAllUserContextIds with mMonitor temporarily released.
+  nsTArray<uint32_t> GetUserContextIdsUnlocked() MOZ_REQUIRES(mMonitor);
 
   nsresult Read(const MonitorAutoLock& aProofOfLock) MOZ_REQUIRES(mMonitor);
   void CompleteRead() MOZ_REQUIRES(mMonitor);

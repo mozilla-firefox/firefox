@@ -50,7 +50,7 @@ async function test_cert_failure(server_or_proxy, server_cert) {
   let secinfo = req.securityInfo;
   secinfo.QueryInterface(Ci.nsITransportSecurityInfo);
   if (server_cert) {
-    Assert.equal(secinfo.serverCert.commonName, " HTTP2 Test Cert");
+    Assert.equal(secinfo.serverCert.commonName, "HTTP2 Test Cert");
   } else {
     Assert.equal(secinfo.serverCert.commonName, " Proxy Test Cert");
   }

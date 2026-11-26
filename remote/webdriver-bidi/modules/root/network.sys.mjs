@@ -595,6 +595,12 @@ class NetworkModule extends RootBiDiModule {
       );
     }
 
+    if (contextIds !== null && userContextIds !== null) {
+      throw new lazy.error.InvalidArgumentError(
+        `Providing both "contexts" and "userContexts" arguments is not supported`
+      );
+    }
+
     if (
       contextIds === null &&
       userContextIds === null &&
@@ -645,12 +651,6 @@ class NetworkModule extends RootBiDiModule {
 
         userContexts.add(userContextId);
       }
-    }
-
-    if (contextIds !== null && userContextIds !== null) {
-      throw new lazy.error.InvalidArgumentError(
-        `Providing both "contexts" and "userContexts" arguments is not supported`
-      );
     }
 
     // Generate a unique collector ID

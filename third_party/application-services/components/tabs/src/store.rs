@@ -39,6 +39,7 @@ impl TabsStore {
             tabs: local_state,
             tab_groups: HashMap::new(),
             windows: HashMap::new(),
+            tabs_disabled: false,
         })
     }
 

@@ -60,6 +60,8 @@ support-files = [
 
 ["browser_retainedResultsOnFocus.js"]
 
+["browser_retainedResultsOnTabSwitch.js"]
+
 ["browser_same_ref_deduplication.js"]
 
 ["browser_secondaryActions.js"]

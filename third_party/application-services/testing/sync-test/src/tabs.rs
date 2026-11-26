@@ -67,6 +67,7 @@ fn test_tabs(c0: &mut TestClient, c1: &mut TestClient) {
             last_modified: 0,
             tab_groups: HashMap::new(),
             windows: HashMap::new(),
+            tabs_disabled: false,
         },
     );
 
@@ -98,6 +99,7 @@ fn test_tabs(c0: &mut TestClient, c1: &mut TestClient) {
             last_modified: 0,
             tab_groups: HashMap::new(),
             windows: HashMap::new(),
+            tabs_disabled: false,
         },
     );
 }

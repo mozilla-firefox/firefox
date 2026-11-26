@@ -18,6 +18,7 @@ browser.jar:
    content/browser/preferences/dialogs/fonts.js
    content/browser/preferences/dialogs/languages.xhtml
    content/browser/preferences/dialogs/languages.js
+   content/browser/preferences/dialogs/permissionContainers.js
    content/browser/preferences/dialogs/permissions.xhtml
    content/browser/preferences/dialogs/sitePermissions.xhtml
    content/browser/preferences/dialogs/sitePermissions.js

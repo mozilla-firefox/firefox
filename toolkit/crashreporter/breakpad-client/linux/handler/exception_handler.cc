@@ -191,6 +191,14 @@ void RestoreAlternateStackLocked() {
   stack_installed = false;
 }
 
+void ReissueSignal(int sig) {
+  if (sys_tgkill(getpid(), syscall(__NR_gettid), sig) < 0) {
+    // If the sandbox disallows reissuing the signal, terminate with an
+    // incorrect exit code rather than continuing execution.
+    _exit(1);
+  }
+}
+
 void InstallDefaultHandler(int sig) {
 #if defined(__ANDROID__)
   // Android L+ expose signal and sigaction symbols that override the system
@@ -385,6 +393,10 @@ void ExceptionHandler::SignalHandler(int sig, siginfo_t* info, void* uc) {
       InstallDefaultHandler(sig);
     }
     pthread_mutex_unlock(&g_handler_stack_mutex_);
+    // signals other than faults need to be re-raised explicitly
+    if ((sig != SIGSEGV) && (sig != SIGBUS) && (sig != SIGILL) && (sig != SIGFPE)) {
+      ReissueSignal(sig);
+    }
     return;
   }
 
@@ -406,18 +418,11 @@ void ExceptionHandler::SignalHandler(int sig, siginfo_t* info, void* uc) {
 
   pthread_mutex_unlock(&g_handler_stack_mutex_);
 
-  // info->si_code <= 0 iff SI_FROMUSER (SI_FROMKERNEL otherwise).
-  if (info->si_code <= 0 || sig == SIGABRT) {
-    // This signal was triggered by somebody sending us the signal with kill().
-    // In order to retrigger it, we have to queue a new signal by calling
-    // kill() ourselves.  The special case (si_pid == 0 && sig == SIGABRT) is
-    // due to the kernel sending a SIGABRT from a user request via SysRQ.
-    if (sys_tgkill(getpid(), syscall(__NR_gettid), sig) < 0) {
-      // If we failed to kill ourselves (e.g. because a sandbox disallows us
-      // to do so), we instead resort to terminating our process. This will
-      // result in an incorrect exit code.
-      _exit(1);
-    }
+  if ((info->si_code <= 0) || (sig == SIGABRT) || (sig == SIGTRAP)) {
+    // We need to retrigger explicitly for user-sent signals
+    // (SIGABRT or si_code <= 0), as well as SIGTRAP (int3 on x86 moves the
+    // instruction pointer before raising the exception).
+    ReissueSignal(sig);
   } else {
     // This was a synchronous signal triggered by a hard fault (e.g. SIGSEGV).
     // No need to reissue the signal. It will automatically trigger again,

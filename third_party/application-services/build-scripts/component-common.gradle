@@ -140,7 +140,11 @@ ext.dependsOnTheMegazord = {
 
     dependencies {
         megazordNative project("path": ":full-megazord", "configuration": "megazordNative")
-        implementation project("path": ":full-megazord", "configuration": "libsForTests")
+        testImplementation(project(":full-megazord")) {
+            capabilities {
+                requireCapability("org.mozilla.appservices:full-megazord-libsForTests")
+            }
+        }
     }
 }
 

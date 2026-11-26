@@ -6,6 +6,7 @@ package org.mozilla.fenix.ui.efficiency.selectors
 
 import androidx.core.text.HtmlCompat
 import org.mozilla.fenix.R
+import org.mozilla.fenix.components.menu.MenuTestTag
 import org.mozilla.fenix.helpers.DataGenerationHelper.getStringResource
 import org.mozilla.fenix.helpers.TestHelper.appName
 import org.mozilla.fenix.helpers.TestHelper.shortAppName
@@ -287,5 +288,66 @@ object UnifiedTrustPanelSelectors : SelectorContainer {
             strategy = SelectorStrategy.COMPOSE_BY_TEXT,
             value = getStringResource(R.string.enhanced_tracking_protection_blocked),
             description = "Category detail: Blocked header",
+        )
+
+    val CATEGORY_DETAIL_SOCIAL_MEDIA_DESCRIPTION =
+        Selector(
+            strategy = SelectorStrategy.COMPOSE_BY_TEXT,
+            value = getStringResource(R.string.etp_social_media_trackers_description),
+            description = "Category detail: Social Media Trackers description",
+        )
+
+    val CATEGORY_DETAIL_CRYPTOMINERS_DESCRIPTION =
+        Selector(
+            strategy = SelectorStrategy.COMPOSE_BY_TEXT,
+            value = getStringResource(R.string.etp_cryptominers_description),
+            description = "Category detail: Cryptominers description",
+        )
+
+    val CATEGORY_DETAIL_FINGERPRINTERS_DESCRIPTION =
+        Selector(
+            strategy = SelectorStrategy.COMPOSE_BY_TEXT,
+            value = getStringResource(R.string.etp_known_fingerprinters_description),
+            description = "Category detail: Known Fingerprinters description",
+        )
+
+    val CATEGORY_DETAIL_TRACKING_CONTENT_DESCRIPTION =
+        Selector(
+            strategy = SelectorStrategy.COMPOSE_BY_TEXT,
+            value = getStringResource(R.string.etp_tracking_content_description),
+            description = "Category detail: Tracking Content description",
+        )
+
+    // SubmenuHeader title/host has no testTag or content-description; match the host text (shown in every state).
+    @Suppress("FunctionName")
+    fun SUBMENU_HEADER_SITE(host: String) =
+        Selector(
+            strategy = SelectorStrategy.COMPOSE_BY_TEXT_SUBSTRING,
+            value = host,
+            description = "Trackers sub-panel header site: $host",
+        )
+
+    // Count-prefixed plural Text ("N trackers blocked on this site"); match the count-free substring.
+    val TRACKERS_PANEL_BLOCKED_ON_SITE_HEADER =
+        Selector(
+            strategy = SelectorStrategy.COMPOSE_BY_TEXT_SUBSTRING,
+            value = "blocked on this site",
+            description = "Trackers panel: 'N trackers blocked on this site' header",
+        )
+
+    // Count-prefixed plural row that opens the weekly dashboard ("N trackers blocked this week"); match the substring.
+    val TRACKERS_BLOCKED_THIS_WEEK_ROW =
+        Selector(
+            strategy = SelectorStrategy.COMPOSE_BY_TEXT_SUBSTRING,
+            value = "blocked this week",
+            description = "Trackers panel: 'N trackers blocked this week' row (opens the weekly dashboard)",
+        )
+
+    // The sub-panel back arrow (shared SubmenuHeader IconButton) has no visible text, so it carries a testTag.
+    val SUBMENU_BACK_BUTTON =
+        Selector(
+            strategy = SelectorStrategy.COMPOSE_BY_TAG,
+            value = MenuTestTag.SUBMENU_HEADER_BACK_BUTTON,
+            description = "Trackers sub-panel back arrow",
         )
 }

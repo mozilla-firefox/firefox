@@ -46,7 +46,7 @@ def output_handler(proc, url_mapping, lock):
 
 def main():
     proc = subprocess.Popen(
-        ["/usr/lib/apt/methods/http"],
+        ["/usr/lib/apt/methods/https"],
         stdin=subprocess.PIPE,
         stdout=subprocess.PIPE,
         text=True,

@@ -304,9 +304,8 @@ class CertGenCode {
       CertGenCode.derCtx(0, CertGenCode.derIntFromNumber(2)),
       CertGenCode.derTLV(0x02, serial),
       CertGenCode.algSha256RSA(),
-      // Leading space is intentional: must byte-match the CA's subject DN
-      // (pycert/http2-ca.pem encodes the CN as " HTTP2 Test CA").
-      CertGenCode.commonName(" HTTP2 Test CA"),
+      // Must byte-match the subject DN of netwerk/test/unit/http2-ca.pem.
+      CertGenCode.commonName("HTTP2 Test CA"),
       CertGenCode.derSeq(
         CertGenCode.derUTCTime(notBefore),
         CertGenCode.derUTCTime(notAfter)

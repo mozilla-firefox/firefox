@@ -534,9 +534,12 @@ pref("browser.urlbar.trustPanel.breachAlerts", true);
   pref("browser.urlbar.unifiedSearchButton.always", true);
   // Whether or not history is shown when in search mode.
   pref("browser.urlbar.unifiedSearchButton.historyInSearchMode", true);
+  // Whether an email address typed without a protocol is searched for.
+  pref("browser.urlbar.searchEmailAddresses", true);
 #else
   pref("browser.urlbar.unifiedSearchButton.always", false);
   pref("browser.urlbar.unifiedSearchButton.historyInSearchMode", false);
+  pref("browser.urlbar.searchEmailAddresses", false);
 #endif
 
 // Enable trending suggestions and recent searches.

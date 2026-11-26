@@ -60,6 +60,8 @@ pub struct ClientRemoteTabs {
     pub remote_tabs: Vec<RemoteTab>,
     pub tab_groups: HashMap<String, TabGroup>,
     pub windows: HashMap<String, Window>,
+    #[uniffi(default = false)]
+    pub tabs_disabled: bool,
 }
 
 #[derive(uniffi::Enum, Clone, Debug, Default)]
@@ -106,6 +108,8 @@ pub struct LocalTabsInfo {
     pub tabs: Vec<RemoteTab>,
     pub tab_groups: HashMap<String, TabGroup>,
     pub windows: HashMap<String, Window>,
+    #[uniffi(default = false)]
+    pub tabs_disabled: bool,
 }
 
 pub(crate) enum DbConnection {

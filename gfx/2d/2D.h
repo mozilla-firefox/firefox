@@ -1990,9 +1990,7 @@ class DrawTarget : public external::AtomicRefCounted<DrawTarget> {
    */
   virtual already_AddRefed<DrawTarget> CreateSimilarDrawTargetForFilter(
       const IntSize& aSize, SurfaceFormat aFormat, FilterNode* aFilter,
-      FilterNode* aSource, const Rect& aSourceRect, const Point& aDestPoint) {
-    return CreateSimilarDrawTarget(aSize, aFormat);
-  }
+      FilterNode* aSource, const Rect& aSourceRect, const Point& aDestPoint);
 
   /**
    * Returns false if CreateSimilarDrawTarget would return null with the same

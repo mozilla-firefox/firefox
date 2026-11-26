@@ -145,10 +145,9 @@ then
     exit 65
 fi
 
-# config files are in updates subdirectory below this script
-if ! cd "$(dirname "${0}")/updates" 2>/dev/null
+if ! cd "$(dirname "${0}")" 2>/dev/null
 then
-    log "ERROR: Cannot cd into '$(dirname "${0}")/updates' from '$(pwd)'"
+    log "ERROR: Cannot cd into '$(dirname "${0}")' from '$(pwd)'"
     exit 68
 fi
 
@@ -282,7 +281,7 @@ do
 done > "${update_xml_urls}"
 
 # download update.xml files and grab the mar urls from downloaded file for each patch type required
-cat "${update_xml_urls}" | cut -f1-2 -d' ' | sort -u | xargs -n2 "-P${MAX_PROCS}" ../get-update-xml.sh
+cat "${update_xml_urls}" | cut -f1-2 -d' ' | sort -u | xargs -n2 "-P${MAX_PROCS}" ./get-update-xml.sh
 if [ "$?" != 0 ]; then
     flush_logs
     log "TEST-UNEXPECTED-ERROR: Error generating update requests"
@@ -292,7 +291,7 @@ fi
 flush_logs
 
 # download http header for each mar url
-find "${TMPDIR}" -name 'update_xml_to_mar.*' -type f | xargs cat | cut -f1-2 -d' ' | sort -u | xargs -n2 "-P${MAX_PROCS}" ../test-mar-url.sh
+find "${TMPDIR}" -name 'update_xml_to_mar.*' -type f | xargs cat | cut -f1-2 -d' ' | sort -u | xargs -n2 "-P${MAX_PROCS}" ./test-mar-url.sh
 if [ "$?" != 0 ]; then
     flush_logs
     log "TEST-UNEXPECTED-ERROR: Error HEADing mar urls"

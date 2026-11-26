@@ -72,7 +72,10 @@ a user's scroll takes (window.scrollTo() in a script step takes another):
 target forms, but a selector target off screen is scrolled into view first, so a
 sequence of scrolls takes coordinates. "grab" shoots the screen with
 toolkit/themes/tools/screen-grab.py (Pillow, under this interpreter) into <name>.png beside
-the steps file; a headless run refuses it. On Linux it grabs the X root window
+the steps file; a headless run refuses it. A run with a grab lifts the
+harness's remote-control cue (the stripes over the address bar) off every open
+window before its first step; a window a later step opens shows it, so lift it
+there with a "chrome" step. On Linux a grab shoots the X root window
 of a private Xvfb display (references/platform-linux.md, section DISPLAYS) and
 refuses any other X server unless --grab-any-display is given; a grab takes
 about 150 ms, so a one-frame flash is below its floor. On macOS and Windows it

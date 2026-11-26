@@ -3,6 +3,7 @@
  * file, You can obtain one at http://mozilla.org/MPL/2.0/. */
 
 /* import-globals-from ../extensionControlled.js */
+/* import-globals-from permissionContainers.js */
 
 var { AppConstants } = ChromeUtils.importESModule(
   "resource://gre/modules/AppConstants.sys.mjs"
@@ -133,6 +134,14 @@ class PermissionGroup {
   revert() {
     this.#changedCapability = null;
   }
+  // The origin to show in the website column, which leaves out the container
+  // it is isolated in.
+  get displayOrigin() {
+    return gPermissionContainers.displayOriginFor(this.principal);
+  }
+  get containerLabel() {
+    return gPermissionContainers.labelFor(this.principal);
+  }
   get savedCapability() {
     // This logic to present a single capability for permissions of different
     // keys and capabilities caters for speaker-selection, where a block
@@ -183,6 +192,7 @@ var gSitePermissionsManager = {
   _checkbox: null,
   _currentDefaultPermissionsState: null,
   _defaultPermissionStatePrefName: null,
+  _showContainerColumn: false,
 
   onLoad() {
     let params = window.arguments[0];
@@ -206,6 +216,11 @@ var gSitePermissionsManager = {
       );
     document
       .getElementById("statusCol")
+      .addEventListener("click", event =>
+        this.buildPermissionsList(event.target)
+      );
+    document
+      .getElementById("containerCol")
       .addEventListener("click", event =>
         this.buildPermissionsList(event.target)
       );
@@ -559,10 +574,18 @@ var gSitePermissionsManager = {
   _createPermissionListItem(permissionGroup) {
     let richlistitem = document.createXULElement("richlistitem");
     richlistitem.setAttribute("origin", permissionGroup.origin);
+    richlistitem.setAttribute("displayorigin", permissionGroup.displayOrigin);
+    richlistitem.setAttribute("containerlabel", permissionGroup.containerLabel);
     let row = document.createXULElement("hbox");
 
+    if (this._showContainerColumn) {
+      row.appendChild(
+        gPermissionContainers.createCell(document, permissionGroup.principal)
+      );
+    }
+
     let website = document.createXULElement("label");
-    website.textContent = permissionGroup.origin;
+    website.textContent = permissionGroup.displayOrigin;
     website.className = "website-name";
 
     let states = SitePermissions.getAvailableStates(this._type).filter(
@@ -744,9 +767,17 @@ var gSitePermissionsManager = {
 
     let permissionGroups = Array.from(this._permissionGroups.values());
 
+    this._showContainerColumn =
+      gPermissionContainers.anyInContainer(permissionGroups);
+    document.getElementById("containerCol").hidden = !this._showContainerColumn;
+
     let keyword = this._searchBox.value.toLowerCase().trim();
     for (let permissionGroup of permissionGroups) {
-      if (keyword && !permissionGroup.origin.includes(keyword)) {
+      if (
+        keyword &&
+        !permissionGroup.displayOrigin.includes(keyword) &&
+        !permissionGroup.containerLabel.toLowerCase().includes(keyword)
+      ) {
         continue;
       }
 
@@ -805,12 +836,8 @@ var gSitePermissionsManager = {
     let sortFunc = null;
     switch (column.id) {
       case "siteCol":
-        sortFunc = (a, b) => {
-          return comp.compare(
-            a.getAttribute("origin"),
-            b.getAttribute("origin")
-          );
-        };
+      case "containerCol":
+        sortFunc = gPermissionContainers.sortFunctionFor(column.id);
         break;
 
       case "statusCol":
@@ -822,10 +849,6 @@ var gSitePermissionsManager = {
         };
         break;
     }
-
-    let comp = new Services.intl.Collator(undefined, {
-      usage: "sort",
-    });
 
     let items = Array.from(frag.querySelectorAll("richlistitem"));
 

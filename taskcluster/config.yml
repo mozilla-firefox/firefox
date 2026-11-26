@@ -202,8 +202,6 @@ treeherder:
         'langpack': 'Langpack sigatures and uploads'
         'TPS': 'Sync tests'
         'UpInt': 'MAR integrity tests'
-        'UV': 'Update verify'
-        'UVnext': 'Update verify for esr-next'
         'pydep': 'python dependency update'
         'WR': 'WebRender standalone'
         'Wgpu': 'WebGPU standalone'
@@ -974,7 +972,6 @@ mac-signing:
                   entitlements: public/build/security/security-module-helper.xml
                   globs:
                       - "/Contents/MacOS/security-module-helper.app"
-                  only-if-milestone-is-nightly: true
 
                 - deep: false
                   runtime: true
@@ -1032,7 +1029,6 @@ mac-signing:
                   entitlements: public/build/security/security-module-helper.xml
                   globs:
                       - "/Contents/MacOS/security-module-helper.app"
-                  only-if-milestone-is-nightly: true
 
                 - deep: false
                   runtime: true

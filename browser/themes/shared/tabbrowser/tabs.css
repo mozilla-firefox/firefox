@@ -516,7 +516,7 @@ tab-split-view-wrapper[dragtarget] {
           background-repeat: no-repeat;
           width: 480px;
           height: 100%;
-          animation: tab-throbber-animation 1.05s steps(30) infinite;
+          animation: tab-throbber-animation 1s steps(30) infinite;
           -moz-context-properties: fill;
           fill: currentColor;
           opacity: 0.7;

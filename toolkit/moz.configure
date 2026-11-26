@@ -2338,6 +2338,41 @@ with only_when(compile_environment):
     set_config("VPX_ASFLAGS", vpx_as_flags)
 
 
+# Opus
+# ====
+
+with only_when(compile_environment):
+    system_lib_option(
+        "--with-system-opus",
+        help="Use system libopus (located with pkg-config)",
+        when=use_pkg_config,
+    )
+
+    with only_when("--with-system-opus"):
+        opus = pkg_check_modules("MOZ_OPUS", "opus >= 1.6.1")
+
+        check_header(
+            "opus/opus.h",
+            flags=opus.cflags,
+            onerror=lambda: die(
+                "Couldn't find opus/opus.h, which is required to build "
+                "with system libopus. Use --without-system-opus to build "
+                "with in-tree libopus."
+            ),
+        )
+
+        check_symbol(
+            "opus_multistream_surround_encoder_create",
+            flags=opus.libs,
+            onerror=lambda: die(
+                "--with-system-opus requested but symbol "
+                "opus_multistream_surround_encoder_create not found"
+            ),
+        )
+
+        set_config("MOZ_SYSTEM_OPUS", True)
+
+
 # JPEG
 # ====
 

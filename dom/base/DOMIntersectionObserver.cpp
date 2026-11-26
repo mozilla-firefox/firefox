@@ -23,6 +23,7 @@
 #include "nsContainerFrame.h"
 #include "nsContentUtils.h"
 #include "nsIFrame.h"
+#include "nsITimer.h"
 #include "nsLayoutUtils.h"
 #include "nsRefreshDriver.h"
 
@@ -88,8 +89,14 @@ DOMIntersectionObserver::DOMIntersectionObserver(
   NodeOwnedObjectList<DOMIntersectionObserver>::Add(this);
 }
 
+DOMIntersectionObserver::~DOMIntersectionObserver() {
+  NodeOwnedObjectList<DOMIntersectionObserver>::Remove(this);
+  Disconnect();
+  MOZ_RELEASE_ASSERT(!mDelayTimer, "Should be cleared in Disconnect()");
+}
+
 bool DOMIntersectionObserver::HasOwnerInCCGenerationDocument() const {
-  for (const auto& [target, thresholdIndex] : mObservationTargets) {
+  for (const auto& [target, registration] : mObservationTargets) {
     if (nsCCUncollectableMarker::IsInCCGenerationDocument(*target)) {
       return true;
     }
@@ -188,14 +195,11 @@ already_AddRefed<DOMIntersectionObserver> DOMIntersectionObserver::Constructor(
   // (This is implicit given `observer->mThresholds`)
 
   // 10. Let delay be the value of options.delay.
-  // TODO: https://bugzilla.mozilla.org/show_bug.cgi?id=1896900
-
   // 11. If options.trackVisibility is true and delay is less than 100, set
   // delay to 100.
   // TODO: https://bugzilla.mozilla.org/show_bug.cgi?id=1896900
-
   // 12. Set this’s internal [[delay]] slot to options.delay to delay.
-  // TODO: https://bugzilla.mozilla.org/show_bug.cgi?id=1896900
+  observer->mDelay = aOptions.mDelay;
 
   // 13. Set this’s internal [[trackVisibility]] slot to
   // options.trackVisibility.
@@ -307,7 +311,7 @@ void DOMIntersectionObserver::Observe(Element& aTarget) {
     static_cast<DOMIntersectionObserver*>(aObserver)->UnlinkTarget(
         *aTarget->AsElement());
   });
-  mObservationTargets.Set(&aTarget, Uninitialized);
+  mObservationTargets.Set(&aTarget, Registration());
 
   Connect();
   if (mDocument) {
@@ -368,7 +372,7 @@ void DOMIntersectionObserver::Disconnect() {
 
   mConnected = false;
   // 1. For each target in this’s internal [[ObservationTargets]] slot:
-  for (const auto& [target, thresholdIndex] : mObservationTargets) {
+  for (const auto& [target, registration] : mObservationTargets) {
     // 2. Remove the IntersectionObserverRegistration record whose observer
     // property is equal to this from target’s internal
     // [[RegisteredIntersectionObservers]] slot.
@@ -379,6 +383,10 @@ void DOMIntersectionObserver::Disconnect() {
   mObservationTargets.Clear();
   if (mDocument) {
     mDocument->RemoveIntersectionObserver(*this);
+  }
+  if (mDelayTimer) {
+    mDelayTimer->Cancel();
+    mDelayTimer = nullptr;
   }
 }
 
@@ -690,7 +698,7 @@ IntersectionInput DOMIntersectionObserver::ComputeInput(
     const Document& aDocument, const nsINode* aRoot,
     const IntersectionObserverMargin* aRootMargin,
     const IntersectionObserverMargin* aScrollMargin) {
-  // 1 - Let rootBounds be observer's root intersection rectangle.
+  // 2.1. Let rootBounds be observer's root intersection rectangle.
   //  ... but since the intersection rectangle depends on the target, we defer
   //      the inflation until later.
   // NOTE: |rootRect| and |rootFrame| will be root in the same process. In
@@ -790,7 +798,7 @@ IntersectionOutput DOMIntersectionObserver::Intersect(
 }
 
 // https://w3c.github.io/IntersectionObserver/#update-intersection-observations-algo
-// (steps 2.1 - 2.5)
+// (steps 2.2.4 - 2.2.8)
 IntersectionOutput DOMIntersectionObserver::Intersect(
     const IntersectionInput& aInput, nsIFrame* aTargetFrame, BoxToUse aBoxToUse,
     IsForProximityToViewport aIsForProximityToViewport) {
@@ -818,15 +826,16 @@ IntersectionOutput DOMIntersectionObserver::Intersect(
     return {isSimilarOrigin};
   }
 
-  // 2.2. If the intersection root is not the implicit root, and target is
+  // 2.2.5. If the intersection root is not the implicit root, and target is
   // not in the same Document as the intersection root, skip to step 11.
   if (!aInput.mIsImplicitRoot &&
       aInput.mRootNode->OwnerDoc() != target->OwnerDoc()) {
     return {isSimilarOrigin};
   }
 
-  // 2.3. If the intersection root is an element and target is not a descendant
-  // of the intersection root in the containing block chain, skip to step 11.
+  // 2.2.6. If the intersection root is an element and target is not a
+  // descendant of the intersection root in the containing block chain, skip to
+  // step 11.
   //
   // NOTE(emilio): We also do this if target is the implicit root, pending
   // clarification in
@@ -848,7 +857,7 @@ IntersectionOutput DOMIntersectionObserver::Intersect(
     }
   }
 
-  // 2.4. Set targetRect to the DOMRectReadOnly obtained by running the
+  // 2.2.7. Set targetRect to the DOMRectReadOnly obtained by running the
   // getBoundingClientRect() algorithm on target. We compute the box relative to
   // self first, then transform.
   nsLayoutUtils::GetAllInFlowRectsFlags flags{
@@ -879,7 +888,7 @@ IntersectionOutput DOMIntersectionObserver::Intersect(
   MOZ_ASSERT_IF(aIsForProximityToViewport == IsForProximityToViewport::Yes,
                 aBoxToUse == BoxToUse::OverflowClip);
 
-  // 2.5. Let intersectionRect be the result of running the compute the
+  // 2.2.8. Let intersectionRect be the result of running the compute the
   // intersection algorithm on target and observer’s intersection root.
   bool preservesAxisAlignedRectangles = false;
   Maybe<nsRect> intersectionRect = ComputeTheIntersection(
@@ -908,36 +917,52 @@ IntersectionOutput DOMIntersectionObserver::Intersect(
 // https://w3c.github.io/IntersectionObserver/#update-intersection-observations-algo
 // (step 2)
 void DOMIntersectionObserver::Update(Document& aDocument,
-                                     DOMHighResTimeStamp time) {
+                                     DOMHighResTimeStamp aTime) {
+  // 2.1. Let rootBounds be observer's root intersection rectangle.
   auto input = ComputeInput(aDocument, mRoot, &mRootMargin, &mScrollMargin);
 
-  // 2. For each target in observer’s internal [[ObservationTargets]] slot,
+  // 2.2. For each target in observer's internal [[ObservationTargets]] slot,
   // processed in the same order that observe() was called on each target:
+  auto nextUpdateTime = std::numeric_limits<DOMHighResTimeStamp>::infinity();
   mObservationTargets.ForEachLiveEntry([&](auto& aObservation) {
-    auto& [target, previousThresholdIndex] = aObservation;
-    // 2.1 - 2.4.
+    // 2.2.1. Let registration be the IntersectionObserverRegistration record
+    // in target's internal [[RegisteredIntersectionObservers]] slot whose
+    // observer property is equal to observer.
+    auto& [target, registration] = aObservation;
+    // 2.2.2. If (time - registration.lastUpdateTime < observer.delay), skip
+    // further processing for target.
+    if (registration.mPreviousThresholdIndex != Uninitialized &&
+        aTime - registration.mLastUpdateTime < mDelay) {
+      nextUpdateTime =
+          std::min(nextUpdateTime, registration.mLastUpdateTime + mDelay);
+      return;
+    }
+    // 2.2.3. Set registration.lastUpdateTime to time.
+    registration.mLastUpdateTime = aTime;
+
+    // 2.2.4 - 2.2.8.
     IntersectionOutput output = Intersect(input, *target);
 
-    // 2.5. Let targetArea be targetRect’s area.
+    // 2.2.9. Let targetArea be targetRect’s area.
     int64_t targetArea = (int64_t)output.mTargetRect.Width() *
                          (int64_t)output.mTargetRect.Height();
 
-    // 2.6. Let intersectionArea be intersectionRect’s area.
+    // 2.2.10. Let intersectionArea be intersectionRect’s area.
     int64_t intersectionArea =
         !output.mIntersectionRect
             ? 0
             : (int64_t)output.mIntersectionRect->Width() *
                   (int64_t)output.mIntersectionRect->Height();
 
-    // 2.7. Let isIntersecting be true if targetRect and rootBounds intersect or
-    // are edge-adjacent, even if the intersection has zero area (because
+    // 2.2.11. Let isIntersecting be true if targetRect and rootBounds intersect
+    // or are edge-adjacent, even if the intersection has zero area (because
     // rootBounds or targetRect have zero area); otherwise, let isIntersecting
     // be false.
     const bool isIntersecting = output.Intersects();
 
-    // 2.8. If targetArea is non-zero, let intersectionRatio be intersectionArea
-    // divided by targetArea. Otherwise, let intersectionRatio be 1 if
-    // isIntersecting is true, or 0 if isIntersecting is false.
+    // 2.2.12. If targetArea is non-zero, let intersectionRatio be
+    // intersectionArea divided by targetArea. Otherwise, let intersectionRatio
+    // be 1 if isIntersecting is true, or 0 if isIntersecting is false.
     double intersectionRatio;
     if (targetArea > 0.0) {
       intersectionRatio =
@@ -946,7 +971,7 @@ void DOMIntersectionObserver::Update(Document& aDocument,
       intersectionRatio = isIntersecting ? 1.0 : 0.0;
     }
 
-    // 2.9 Let thresholdIndex be the index of the first entry in
+    // 2.2.13. Set thresholdIndex to the index of the first entry in
     // observer.thresholds whose value is greater than intersectionRatio, or the
     // length of observer.thresholds if intersectionRatio is greater than or
     // equal to the last entry in observer.thresholds.
@@ -969,21 +994,49 @@ void DOMIntersectionObserver::Update(Document& aDocument,
       }
     }
 
-    // Steps 2.10 - 2.15.
-    const bool updated = previousThresholdIndex != thresholdIndex;
-    previousThresholdIndex = thresholdIndex;
+    // Steps 2.2.14 - 2.2.21.
+    const bool updated = registration.mPreviousThresholdIndex != thresholdIndex;
+    registration.mPreviousThresholdIndex = thresholdIndex;
 
     if (updated) {
       // See https://github.com/w3c/IntersectionObserver/issues/432 about
       // why we use thresholdIndex > 0 rather than isIntersecting for the
       // entry's isIntersecting value.
       QueueIntersectionObserverEntry(
-          target, time,
+          target, aTime,
           output.mIsSimilarOrigin ? Some(output.mRootBounds) : Nothing(),
           output.mTargetRect, output.mIntersectionRect, thresholdIndex > 0,
           intersectionRatio);
     }
   });
+
+  if (nextUpdateTime != std::numeric_limits<DOMHighResTimeStamp>::infinity()) {
+    ScheduleDelayedUpdate(nextUpdateTime - aTime);
+  }
+}
+
+// Makes sure that targets skipped because of the delay get processed once it
+// expires, even if nothing else schedules a rendering update.
+void DOMIntersectionObserver::ScheduleDelayedUpdate(
+    DOMHighResTimeStamp aDelayMs) {
+  if (mDelayTimer) {
+    // The pending timer is guaranteed to fire sooner than any new deadline.
+    return;
+  }
+  // Weak capture, timer is canceled on Disconnect().
+  NS_NewTimerWithCallback(
+      getter_AddRefs(mDelayTimer),
+      [self = MOZ_KnownLive(this)](nsITimer*) {
+        self->mDelayTimer = nullptr;
+        if (!self->mDocument) {
+          return;
+        }
+        if (nsPresContext* pc = self->mDocument->GetPresContext()) {
+          pc->RefreshDriver()->EnsureIntersectionObservationsUpdateHappens();
+        }
+      },
+      uint32_t(std::ceil(aDelayMs)), nsITimer::TYPE_ONE_SHOT,
+      "DOMIntersectionObserver::ScheduleDelayedUpdate"_ns);
 }
 
 void DOMIntersectionObserver::QueueIntersectionObserverEntry(

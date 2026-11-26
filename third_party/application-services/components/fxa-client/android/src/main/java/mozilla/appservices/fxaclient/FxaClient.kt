@@ -271,7 +271,13 @@ class FxaClient(inner: FirefoxAccount, persistCallback: PersistCallback?) : Auto
         return this.inner.hasScope(scope)
     }
 
-    fun checkAuthorizationStatus(): AuthorizationInfo {
+    /**
+     * Check authorization status for this application.
+     *
+     * Call this method to validate the current auth tokens. This checks that all expected tokens
+     * are present and also validates the refresh token with the FxA server.
+     */
+    fun checkAuthorizationStatus(): AuthorizationStatus {
         return this.inner.checkAuthorizationStatus()
     }
 

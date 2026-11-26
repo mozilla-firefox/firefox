@@ -64,6 +64,7 @@ impl ClientRemoteTabs {
                 .into_iter()
                 .map(|(n, v)| (n, v.into()))
                 .collect(),
+            tabs_disabled: record.tabs_disabled,
         }
     }
 }
@@ -215,6 +216,7 @@ impl SyncEngine for TabsEngine {
                 .iter()
                 .map(|(n, v)| (n.clone(), v.clone().into()))
                 .collect(),
+            tabs_disabled: tabs_info.tabs_disabled,
         };
         super::prepare_for_upload(&mut record);
 
@@ -354,6 +356,7 @@ pub mod test {
                 "id": "device-no-tabs",
                 "clientName": "device with no tabs",
                 "tabs": [],
+                "tabsDisabled": true,
             }),
             json!({
                 "id": "device-with-a-tab",
@@ -423,6 +426,7 @@ pub mod test {
         assert_eq!(crt.client_name, "device with no tabs");
         assert_eq!(crt.device_type, DeviceType::Unknown);
         assert_eq!(crt.remote_tabs.len(), 0);
+        assert!(crt.tabs_disabled);
     }
 
     #[test]

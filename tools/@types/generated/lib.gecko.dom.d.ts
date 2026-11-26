@@ -37176,8 +37176,6 @@ interface WebExtensionPolicy {
     readonly ACCESS_FILE_ALWAYS: 0x10;
     /** <!-- binding_to(idl, const, WEBIDL_WebExtensionPolicy_ACCESS_OWN_EXTENSION) --> */
     readonly ACCESS_OWN_EXTENSION: 0x20;
-    /** <!-- binding_to(idl, const, WEBIDL_WebExtensionPolicy_ACCESS_OTHER_EXTENSIONS) --> */
-    readonly ACCESS_OTHER_EXTENSIONS: 0x40;
 }
 
 declare var WebExtensionPolicy: {
@@ -37195,8 +37193,6 @@ declare var WebExtensionPolicy: {
     readonly ACCESS_FILE_ALWAYS: 0x10;
     /** <!-- binding_to(idl, const, WEBIDL_WebExtensionPolicy_ACCESS_OWN_EXTENSION) --> */
     readonly ACCESS_OWN_EXTENSION: 0x20;
-    /** <!-- binding_to(idl, const, WEBIDL_WebExtensionPolicy_ACCESS_OTHER_EXTENSIONS) --> */
-    readonly ACCESS_OTHER_EXTENSIONS: 0x40;
     /** <!-- binding_to(idl, attribute, WEBIDL_WebExtensionPolicy_backgroundServiceWorkerEnabled) --> */
     readonly backgroundServiceWorkerEnabled: boolean;
     /** <!-- binding_to(idl, attribute, WEBIDL_WebExtensionPolicy_isExtensionProcess) --> */

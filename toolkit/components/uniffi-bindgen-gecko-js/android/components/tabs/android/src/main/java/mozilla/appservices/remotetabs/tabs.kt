@@ -2419,6 +2419,8 @@ data class ClientRemoteTabs (
     var `tabGroups`: Map<kotlin.String, TabGroup>
     , 
     var `windows`: Map<kotlin.String, Window>
+    , 
+    var `tabsDisabled`: kotlin.Boolean = false 
     
 ){
     
@@ -2442,6 +2444,7 @@ public object FfiConverterTypeClientRemoteTabs: FfiConverterRustBuffer<ClientRem
             FfiConverterSequenceTypeRemoteTabRecord.read(buf),
             FfiConverterMapStringTypeTabGroup.read(buf),
             FfiConverterMapStringTypeWindow.read(buf),
+            FfiConverterBoolean.read(buf),
         )
     }
 
@@ -2452,7 +2455,8 @@ public object FfiConverterTypeClientRemoteTabs: FfiConverterRustBuffer<ClientRem
             FfiConverterLong.allocationSize(value.`lastModified`) +
             FfiConverterSequenceTypeRemoteTabRecord.allocationSize(value.`remoteTabs`) +
             FfiConverterMapStringTypeTabGroup.allocationSize(value.`tabGroups`) +
-            FfiConverterMapStringTypeWindow.allocationSize(value.`windows`)
+            FfiConverterMapStringTypeWindow.allocationSize(value.`windows`) +
+            FfiConverterBoolean.allocationSize(value.`tabsDisabled`)
     )
 
     override fun write(value: ClientRemoteTabs, buf: ByteBuffer) {
@@ -2463,6 +2467,7 @@ public object FfiConverterTypeClientRemoteTabs: FfiConverterRustBuffer<ClientRem
             FfiConverterSequenceTypeRemoteTabRecord.write(value.`remoteTabs`, buf)
             FfiConverterMapStringTypeTabGroup.write(value.`tabGroups`, buf)
             FfiConverterMapStringTypeWindow.write(value.`windows`, buf)
+            FfiConverterBoolean.write(value.`tabsDisabled`, buf)
     }
 }
 
@@ -2474,6 +2479,8 @@ data class LocalTabsInfo (
     var `tabGroups`: Map<kotlin.String, TabGroup>
     , 
     var `windows`: Map<kotlin.String, Window>
+    , 
+    var `tabsDisabled`: kotlin.Boolean = false 
     
 ){
     
@@ -2493,19 +2500,22 @@ public object FfiConverterTypeLocalTabsInfo: FfiConverterRustBuffer<LocalTabsInf
             FfiConverterSequenceTypeRemoteTabRecord.read(buf),
             FfiConverterMapStringTypeTabGroup.read(buf),
             FfiConverterMapStringTypeWindow.read(buf),
+            FfiConverterBoolean.read(buf),
         )
     }
 
     override fun allocationSize(value: LocalTabsInfo) = (
             FfiConverterSequenceTypeRemoteTabRecord.allocationSize(value.`tabs`) +
             FfiConverterMapStringTypeTabGroup.allocationSize(value.`tabGroups`) +
-            FfiConverterMapStringTypeWindow.allocationSize(value.`windows`)
+            FfiConverterMapStringTypeWindow.allocationSize(value.`windows`) +
+            FfiConverterBoolean.allocationSize(value.`tabsDisabled`)
     )
 
     override fun write(value: LocalTabsInfo, buf: ByteBuffer) {
             FfiConverterSequenceTypeRemoteTabRecord.write(value.`tabs`, buf)
             FfiConverterMapStringTypeTabGroup.write(value.`tabGroups`, buf)
             FfiConverterMapStringTypeWindow.write(value.`windows`, buf)
+            FfiConverterBoolean.write(value.`tabsDisabled`, buf)
     }
 }
 

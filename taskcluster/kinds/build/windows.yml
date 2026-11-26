@@ -214,6 +214,61 @@ win64/debug:
             - onnxruntime-x86_64-windows-msvc
             - winappsdk-x86_64-pc-windows-msvc
 
+win64-enterprise/debug:
+    description: "Win64 Enterprise Debug"
+    index:
+        product: firefox
+        job-name: win64-enterprise-debug
+    attributes:
+        enable-build-signing: true
+        enable-full-crashsymbols: true
+    treeherder:
+        platform: windows2012-64-enterprise/debug
+        symbol: Bent
+        tier:
+            by-project:
+                enterprise-firefox: 1
+                enterprise-firefox-try: 1
+                default: 2
+    worker:
+        max-run-time: 7200
+    mozconfig:
+        variant: debug-enterprise
+        platform: win64
+    run:
+        options: [append-env-variables-from-configs]
+        actions: [get-secrets, build]
+        script: mozharness/scripts/fx_desktop_build.py
+        secrets: true
+        config:
+            - builds/releng_base_firefox.py
+            - builds/releng_base_linux_64_builds.py
+            - builds/taskcluster_sub_win64/debug.py
+    run-on-projects: ['mozilla-central', 'enterprise-firefox']
+    use-sccache: true
+    use-python: "3.11"
+    fetches:
+        toolchain:
+            - linux64-7zz
+            - linux64-clang
+            - linux64-rust-cross
+            - linux64-rust-size
+            - linux64-nasm
+            - linux64-node
+            - linux64-cbindgen
+            - linux64-dump_syms
+            - linux64-sccache
+            - linux64-upx
+            - linux64-winchecksec
+            - linux64-wine
+            - nsis
+            - sysroot-x86_64-linux-gnu
+            - sysroot-wasm32-wasi
+            - vs
+            - dxc-x86_64-pc-windows-msvc
+            - onnxruntime-x86_64-windows-msvc
+            - winappsdk-x86_64-pc-windows-msvc
+
 win64-non-unified/plain:
     description: "Win64 Hybrid Plain"
     index:
@@ -391,6 +446,59 @@ win64/opt:
             - builds/releng_base_firefox.py
             - builds/releng_base_linux_64_builds.py
     run-on-projects: ['integration']
+    use-sccache: true
+    fetches:
+        toolchain:
+            - linux64-7zz
+            - linux64-clang
+            - linux64-rust-cross
+            - linux64-rust-size
+            - linux64-nasm
+            - linux64-node
+            - linux64-cbindgen
+            - linux64-dump_syms
+            - linux64-sccache
+            - linux64-upx
+            - linux64-winchecksec
+            - linux64-wine
+            - nsis
+            - sysroot-x86_64-linux-gnu
+            - sysroot-wasm32-wasi
+            - vs
+            - dxc-x86_64-pc-windows-msvc
+            - onnxruntime-x86_64-windows-msvc
+            - winappsdk-x86_64-pc-windows-msvc
+
+win64-enterprise/opt:
+    description: "Win64 Enterprise Opt"
+    index:
+        product: firefox
+        job-name: win64-enterprise-opt
+    attributes:
+        enable-build-signing: true
+        enable-full-crashsymbols: true
+    treeherder:
+        platform: windows2012-64-enterprise/opt
+        symbol: Bent
+        tier:
+            by-project:
+                enterprise-firefox: 1
+                enterprise-firefox-try: 1
+                default: 2
+    worker:
+        max-run-time: 7200
+    mozconfig:
+        variant: opt-enterprise
+        platform: win64
+    run:
+        options: [append-env-variables-from-configs]
+        actions: [get-secrets, build]
+        script: mozharness/scripts/fx_desktop_build.py
+        secrets: true
+        config:
+            - builds/releng_base_firefox.py
+            - builds/releng_base_linux_64_builds.py
+    run-on-projects: ['mozilla-central', 'enterprise-firefox']
     use-sccache: true
     fetches:
         toolchain:
@@ -1482,6 +1590,64 @@ win64-aarch64/debug:
     optimization:
         skip-unless-expanded: null
 
+win64-aarch64-enterprise/debug:
+    description: "AArch64 Win64 Enterprise Debug"
+    index:
+        product: firefox
+        job-name: win64-aarch64-enterprise-debug
+    attributes:
+        enable-full-crashsymbols: true
+    treeherder:
+        platform: windows2012-aarch64-enterprise/debug
+        symbol: Bent
+        tier:
+            by-project:
+                enterprise-firefox: 1
+                enterprise-firefox-try: 1
+                default: 2
+    worker:
+        max-run-time: 7200
+    mozconfig:
+        variant: debug-enterprise
+        platform: win64-aarch64
+    run:
+        actions: [get-secrets, build]
+        options: [append-env-variables-from-configs]
+        script: mozharness/scripts/fx_desktop_build.py
+        secrets: true
+        config:
+            - builds/releng_base_firefox.py
+            - builds/releng_base_linux_64_builds.py
+            - builds/taskcluster_sub_win64/debug.py
+    run-on-projects: ['mozilla-central', 'enterprise-firefox']
+    use-sccache: true
+    fetches:
+        toolchain:
+            - linux64-7zz
+            - linux64-clang
+            - linux64-rust-cross
+            - linux64-rust-size
+            - linux64-nasm
+            - linux64-node
+            - linux64-cbindgen
+            - linux64-dump_syms
+            - linux64-sccache
+            - linux64-winchecksec
+            - linux64-wine
+            - nsis
+            - sysroot-x86_64-linux-gnu
+            - sysroot-wasm32-wasi
+            - vs
+            - dxc-aarch64-pc-windows-msvc
+            - winappsdk-aarch64-pc-windows-msvc
+            - onnxruntime-aarch64-windows-msvc
+    optimization:
+        by-project:
+            enterprise-firefox: null
+            enterprise-firefox-try: null
+            default:
+                skip-unless-expanded: null
+
 win64-aarch64/opt:
     description: "AArch64 Win64 Opt"
     index:
@@ -1533,6 +1699,64 @@ win64-aarch64/opt:
             - onnxruntime-aarch64-windows-msvc
     optimization:
         skip-unless-expanded: null
+
+win64-aarch64-enterprise/opt:
+    description: "AArch64 Win64 Enterprise Opt"
+    index:
+        product: firefox
+        job-name: win64-aarch64-enterprise-opt
+    attributes:
+        enable-build-signing: true
+        enable-full-crashsymbols: true
+    treeherder:
+        platform: windows2012-aarch64-enterprise/opt
+        symbol: Bent
+        tier:
+            by-project:
+                enterprise-firefox: 1
+                enterprise-firefox-try: 1
+                default: 2
+    worker:
+        max-run-time: 7200
+    mozconfig:
+        variant: opt-enterprise
+        platform: win64-aarch64
+    run:
+        actions: [get-secrets, build]
+        options: [append-env-variables-from-configs]
+        script: mozharness/scripts/fx_desktop_build.py
+        secrets: true
+        config:
+            - builds/releng_base_firefox.py
+            - builds/releng_base_linux_64_builds.py
+    run-on-projects: ['mozilla-central', 'enterprise-firefox']
+    use-sccache: true
+    fetches:
+        toolchain:
+            - linux64-7zz
+            - linux64-clang
+            - linux64-rust-cross
+            - linux64-rust-size
+            - linux64-nasm
+            - linux64-node
+            - linux64-cbindgen
+            - linux64-dump_syms
+            - linux64-sccache
+            - linux64-winchecksec
+            - linux64-wine
+            - nsis
+            - sysroot-x86_64-linux-gnu
+            - sysroot-wasm32-wasi
+            - vs
+            - dxc-aarch64-pc-windows-msvc
+            - winappsdk-aarch64-pc-windows-msvc
+            - onnxruntime-aarch64-windows-msvc
+    optimization:
+        by-project:
+            enterprise-firefox: null
+            enterprise-firefox-try: null
+            default:
+                skip-unless-expanded: null
 
 win64-aarch64-shippable/opt:
     description: "AArch64 Win64 Shippable"

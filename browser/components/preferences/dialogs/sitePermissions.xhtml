@@ -4,7 +4,8 @@
    - License, v. 2.0. If a copy of the MPL was not distributed with this
    - file, You can obtain one at http://mozilla.org/MPL/2.0/. -->
 
-<?csp default-src chrome:; style-src chrome: 'unsafe-inline'; ?>
+<?csp default-src chrome:; img-src chrome: resource:; style-src chrome:
+'unsafe-inline'; ?>
 
 <window
   id="SitePermissionsDialog"
@@ -29,6 +30,10 @@
         rel="stylesheet"
         href="chrome://browser/skin/preferences/preferences.css"
       />
+      <html:link
+        rel="stylesheet"
+        href="chrome://browser/content/usercontext/usercontext.css"
+      />
 
       <html:link rel="localization" href="branding/brand.ftl" />
       <html:link
@@ -41,6 +46,7 @@
       />
     </linkset>
 
+    <script src="chrome://browser/content/preferences/dialogs/permissionContainers.js" />
     <script src="chrome://browser/content/preferences/dialogs/sitePermissions.js" />
     <script src="chrome://browser/content/preferences/extensionControlled.js" />
 
@@ -65,6 +71,7 @@
       />
       <separator class="thin" />
       <listheader>
+        <treecol id="containerCol" data-l10n-id="permissions-container" />
         <treecol id="siteCol" data-l10n-id="permissions-site-name" />
         <treecol
           id="statusCol"

@@ -41,6 +41,9 @@ if CONFIG["MOZ_VORBIS"]:
 if not CONFIG["MOZ_SYSTEM_LIBVPX"]:
     external_dirs += ["media/libvpx"]
 
+if not CONFIG["MOZ_SYSTEM_OPUS"]:
+    external_dirs += ["media/libopus"]
+
 if not CONFIG["MOZ_SYSTEM_AV1"]:
     external_dirs += ["media/libaom"]
     external_dirs += ["media/libdav1d"]
@@ -58,7 +61,6 @@ external_dirs += [
     "media/libmkv",
     "media/libnestegg",
     "media/libogg",
-    "media/libopus",
     "media/libspeex_resampler",
     "media/libsoundtouch",
     "media/mp4parse-rust",

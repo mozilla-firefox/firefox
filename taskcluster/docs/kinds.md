@@ -442,25 +442,13 @@ Publishes signed langpacks to archive.mozilla.org
 
 Publishes signed langpacks to archive.mozilla.org
 
-## release-update-verify
-
-Verifies the contents and package of release update MARs.
-
 ## test-update-integrity
 
 Verifies that update MARs match installers. See `tools/update-verify/marannon` for more details.
 
-## release-update-verify-next
-
-Verifies the contents and package of release and updare MARs from the previous ESR release.
-
 ## release-update-verify-config
 
-Creates configs for release-update-verify tasks
-
-## release-update-verify-config-next
-
-Creates configs for release-update-verify-next tasks
+Creates update verify configs for release-final-verify tasks
 
 ## release-updates-builder
 
@@ -726,10 +714,6 @@ Dummy tasks to consolidate beetmover-components dependencies to avoid taskcluste
 ## post-langpack-dummy
 
 Dummy tasks to consolidate language pack beetmover dependencies to avoid taskcluster limits on number of dependencies per task.
-
-## post-update-verify-dummy
-
-Dummy tasks to consolidate update verify dependencies to avoid taskcluster limits on number of dependencies per task.
 
 ## fetch
 

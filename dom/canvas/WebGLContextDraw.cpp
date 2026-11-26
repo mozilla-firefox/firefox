@@ -719,11 +719,24 @@ void WebGLContext::DrawArraysInstanced(const GLenum mode, const GLint first,
     return;
   }
 
-  if (vertCount > mMaxVertIdsPerDraw) {
+  const auto totalWork = CheckedInt<uint64_t>(vertCount) * instanceCount;
+
+  if (!totalWork.isValid()) {
+    ErrorInvalidOperation(
+        "When calculating number of vertices to draw, the value ended up being"
+        "too large to fit in an u64. This is: %u * %d",
+        mMaxVertIdsPerDraw, vertCount, instanceCount);
+    return;
+  }
+
+  if (totalWork.value() > mMaxVertIdsPerDraw) {
     ErrorOutOfMemory(
-        "Context's max vertCount is %u, but %u requested. "
+        "Context's max vertex IDs per draw is set to %u. "
+        "Drawing %u vertices %d times (instanced) would exceed this value. "
+        "Total would be %" PRIu64
+        " vertices which is too many. "
         "[webgl.max-vert-ids-per-draw]",
-        mMaxVertIdsPerDraw, vertCount);
+        mMaxVertIdsPerDraw, vertCount, instanceCount, totalWork.value());
     return;
   }
 
@@ -1022,11 +1035,24 @@ void WebGLContext::DrawElementsInstanced(const GLenum mode,
     }
   }
 
-  if (indexCount > mMaxVertIdsPerDraw) {
+  const auto totalWork = CheckedInt<uint64_t>(indexCount) * instanceCount;
+
+  if (!totalWork.isValid()) {
+    ErrorInvalidOperation(
+        "When calculating number of vertices to draw, the value ended up being"
+        "too large to fit in an u64. This is: %u * %d",
+        mMaxVertIdsPerDraw, indexCount, instanceCount);
+    return;
+  }
+
+  if (totalWork.value() > mMaxVertIdsPerDraw) {
     ErrorOutOfMemory(
-        "Context's max indexCount is %u, but %u requested. "
+        "Context's max vertex IDs per draw is set to %u. "
+        "Drawing %u indices %d times (instanced) would exceed this value. "
+        "Total would be %" PRIu64
+        " indices which is too many. "
         "[webgl.max-vert-ids-per-draw]",
-        mMaxVertIdsPerDraw, indexCount);
+        mMaxVertIdsPerDraw, indexCount, instanceCount, totalWork.value());
     return;
   }
 

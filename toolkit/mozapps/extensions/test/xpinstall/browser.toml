@@ -30,6 +30,10 @@ https_first_disabled = true # Bug 1737265
 
 ["browser_containers.js"]
 
+["browser_containers_permissions.js"]
+
+["browser_containers_permissions_flipped.js"]
+
 ["browser_cookies.js"]
 
 ["browser_corrupt.js"]

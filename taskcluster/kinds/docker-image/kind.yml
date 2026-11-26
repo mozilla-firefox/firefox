@@ -31,7 +31,8 @@ tasks:
         symbol: I(ub18-raw)
         definition: debian-raw
         args:
-            BASE_IMAGE: ubuntu:bionic
+            BASE_IMAGE: ubuntu:bionic-20230530
+            SNAPSHOT: 20230530T235959Z
     ubuntu1804-packages:
         symbol: I(ub18-pkg)
         definition: debian-packages
@@ -67,17 +68,20 @@ tasks:
         symbol: I(ub20-raw)
         definition: debian-raw
         args:
-            BASE_IMAGE: ubuntu:focal
+            BASE_IMAGE: ubuntu:focal-20250404
+            SNAPSHOT: 20250404T235959Z
     ubuntu2204-raw:
         symbol: I(ub22-raw)
         definition: debian-raw
         args:
-            BASE_IMAGE: ubuntu:jammy
+            BASE_IMAGE: ubuntu:jammy-20261110
+            SNAPSHOT: 20261111T235959Z
     ubuntu2204-arm64-raw:
         symbol: I(ub22-a64-raw)
         definition: debian-raw
         args:
-            BASE_IMAGE: ubuntu:jammy
+            BASE_IMAGE: ubuntu:jammy-20261110
+            SNAPSHOT: 20261111T235959Z
         arch: arm64
     ubuntu2204-arm64-packages:
         symbol: I(ub22-a64-pkg)
@@ -88,14 +92,14 @@ tasks:
         symbol: I(ub24-raw)
         definition: debian-raw
         args:
-            BASE_IMAGE: ubuntu:noble-20250714
-            SNAPSHOT: 20250716T072533Z
+            BASE_IMAGE: ubuntu:noble-20261110
+            SNAPSHOT: 20261111T235959Z
     ubuntu2404-arm64-raw:
         symbol: I(ub24-a64-raw)
         definition: debian-raw
         args:
-            BASE_IMAGE: ubuntu:noble-20250714
-            SNAPSHOT: 20250716T072533Z
+            BASE_IMAGE: ubuntu:noble-20261110
+            SNAPSHOT: 20261111T235959Z
         arch: arm64
     ubuntu2004-packages:
         symbol: I(ub20-pkg)
@@ -176,7 +180,6 @@ tasks:
         definition: debian-raw
         args:
             BASE_IMAGE: debian:jessie-20210208
-            DIST: jessie
     debian8-packages:
         symbol: I(deb8-pkg)
         definition: debian-packages
@@ -186,7 +189,6 @@ tasks:
         definition: debian-raw
         args:
             BASE_IMAGE: i386/debian:jessie-20210208
-            DIST: jessie
     debian8-i386-packages:
         symbol: I(deb8-32-pkg)
         definition: debian-packages
@@ -198,7 +200,6 @@ tasks:
         definition: debian-raw
         args:
             BASE_IMAGE: debian:buster-20230612
-            DIST: buster
         arch: arm64
     debian10-arm64-packages:
         symbol: I(deb10-arm64-pkg)
@@ -230,9 +231,8 @@ tasks:
         symbol: I(deb12-raw)
         definition: debian-raw
         args:
-            BASE_IMAGE: debian:bookworm-20261020
-            DIST: bookworm
-            SNAPSHOT: 20261022T022452Z
+            BASE_IMAGE: debian:bookworm-20261104
+            SNAPSHOT: 20261104T203743Z
     debian12-packages:
         symbol: I(deb12-pkg)
         definition: debian-packages
@@ -276,9 +276,8 @@ tasks:
         symbol: I(deb13-raw)
         definition: debian-raw
         args:
-            BASE_IMAGE: debian:trixie-20261020
-            DIST: trixie
-            SNAPSHOT: 20261022T022452Z
+            BASE_IMAGE: debian:trixie-20261104
+            SNAPSHOT: 20261104T203743Z
     debian13-packages:
         symbol: I(deb13-pkg)
         definition: debian-packages
@@ -313,9 +312,8 @@ tasks:
         symbol: I(deb12-a64-raw)
         definition: debian-raw
         args:
-            BASE_IMAGE: debian:bookworm-20261020
-            DIST: bookworm
-            SNAPSHOT: 20261022T022452Z
+            BASE_IMAGE: debian:bookworm-20261104
+            SNAPSHOT: 20261104T203743Z
         arch: arm64
     debian12-arm64-base:
         symbol: I(deb12-a64-base)
@@ -334,9 +332,8 @@ tasks:
         symbol: I(deb13-a64-raw)
         definition: debian-raw
         args:
-            BASE_IMAGE: debian:trixie-20261020
-            DIST: trixie
-            SNAPSHOT: 20261022T022452Z
+            BASE_IMAGE: debian:trixie-20261104
+            SNAPSHOT: 20261104T203743Z
         arch: arm64
     debian13-arm64-base:
         symbol: I(deb13-a64-base)

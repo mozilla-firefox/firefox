@@ -1139,6 +1139,7 @@ WEBIDL_FILES = [
     "WorkerTestUtils.webidl",
     "Worklet.webidl",
     "WorkletGlobalScope.webidl",
+    "WorkletPerformance.webidl",
     "WritableStream.webidl",
     "WritableStreamDefaultController.webidl",
     "WritableStreamDefaultWriter.webidl",

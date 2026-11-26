@@ -146,6 +146,23 @@ export class UrlbarContentUtils {
   }
 
   /**
+   * Whether a host ends with, or is, a suffix on the public suffix list.
+   *
+   * @param {string} host
+   * @returns {boolean}
+   */
+  static hasKnownPublicSuffix(host) {
+    if (!port()) {
+      try {
+        return Services.eTLD.hasKnownPublicSuffixFromHost(host);
+      } catch (ex) {
+        return false;
+      }
+    }
+    return port().hasKnownPublicSuffix(host);
+  }
+
+  /**
    * The SUMO URL for a support topic.
    *
    * @param {string} topic

@@ -42,7 +42,7 @@ class LauncherPage(composeRule: AndroidComposeTestRule<HomeActivityIntentTestRul
     fun openAppShortcutMenu(): LauncherPage {
         repeat(MAX_SHORTCUT_MENU_ATTEMPTS) {
             if (openDrawerAndScrollToFirefoxIcon()) {
-                // mozLongClick (not UiObject.longClick) so the press honors the test harness' long-press timeout.
+                // mozLongClick so the selector is resolved and the action logged through the test harness.
                 mozLongClick(LauncherSelectors.FIREFOX_APP_ICON)
                 val popupShown =
                     mDevice

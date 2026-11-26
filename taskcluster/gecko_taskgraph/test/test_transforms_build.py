@@ -9,6 +9,7 @@ from gecko_taskgraph.test.conftest import FakeParameters
 from gecko_taskgraph.transforms.build import (
     collapse_unified_builds,
     disable_clang_plugins,
+    resolve_keyed_by_project,
 )
 from gecko_taskgraph.transforms.build import use_artifact as use_artifact_transform
 
@@ -155,6 +156,103 @@ def test_use_artifact_toolchains(run_transform, use_artifact):
         assert job["worker"]["env"]["USE_ARTIFACT"] == "1"
     else:
         assert job == linux_build()
+
+
+def keyed_by_project_build():
+    return {
+        "name": "linux64-enterprise/opt",
+        "treeherder": {
+            "tier": {
+                "by-project": {
+                    "enterprise-firefox": 1,
+                    "enterprise-firefox-try": 1,
+                    "default": 2,
+                }
+            }
+        },
+        "optimization": {
+            "by-project": {
+                "enterprise-firefox": None,
+                "enterprise-firefox-try": None,
+                "default": {"skip-unless-expanded": None},
+            }
+        },
+        "worker": {
+            "env": {
+                "MOZ_AUTOMATION_PACKAGE_TESTS": {
+                    "by-project": {
+                        "enterprise-firefox": "1",
+                        "enterprise-firefox-try": "1",
+                        "default": None,
+                    }
+                },
+                "MOZ_ENABLE_FULL_SYMBOLS": "1",
+            }
+        },
+    }
+
+
+@pytest.mark.parametrize(
+    "project,expected",
+    (
+        pytest.param(
+            "enterprise-firefox",
+            {
+                "name": "linux64-enterprise/opt",
+                "treeherder": {"tier": 1},
+                "worker": {
+                    "env": {
+                        "MOZ_AUTOMATION_PACKAGE_TESTS": "1",
+                        "MOZ_ENABLE_FULL_SYMBOLS": "1",
+                    }
+                },
+            },
+            id="enterprise-firefox",
+        ),
+        pytest.param(
+            "enterprise-firefox-try",
+            {
+                "name": "linux64-enterprise/opt",
+                "treeherder": {"tier": 1},
+                "worker": {
+                    "env": {
+                        "MOZ_AUTOMATION_PACKAGE_TESTS": "1",
+                        "MOZ_ENABLE_FULL_SYMBOLS": "1",
+                    }
+                },
+            },
+            id="enterprise-firefox-try",
+        ),
+        pytest.param(
+            "mozilla-central",
+            {
+                "name": "linux64-enterprise/opt",
+                "treeherder": {"tier": 2},
+                "optimization": {"skip-unless-expanded": None},
+                "worker": {"env": {"MOZ_ENABLE_FULL_SYMBOLS": "1"}},
+            },
+            id="mozilla-central",
+        ),
+    ),
+)
+def test_resolve_keyed_by_project(run_transform, project, expected):
+    [job] = run_transform(
+        resolve_keyed_by_project,
+        [keyed_by_project_build()],
+        kind="build",
+        params=FakeParameters({"project": project}),
+    )
+    assert job == expected
+
+
+def test_resolve_keyed_by_project_keeps_unkeyed_null(run_transform):
+    [job] = run_transform(
+        resolve_keyed_by_project,
+        [{"name": "searchfox", "optimization": None}],
+        kind="build",
+        params=FakeParameters({"project": "mozilla-central"}),
+    )
+    assert job == {"name": "searchfox", "optimization": None}
 
 
 if __name__ == "__main__":

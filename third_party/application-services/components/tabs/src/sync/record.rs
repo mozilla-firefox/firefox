@@ -141,6 +141,8 @@ pub struct TabsRecord {
     pub tab_groups: HashMap<String, TabsRecordTabGroup>,
     #[serde(default, skip_serializing_if = "skip_if_default")]
     pub windows: HashMap<String, TabsRecordWindow>,
+    #[serde(default, skip_serializing_if = "skip_if_default")]
+    pub tabs_disabled: bool,
 }
 
 // Intended so logging is concise and doesn't leak tab titles, urls, etc.
@@ -149,12 +151,13 @@ impl std::fmt::Display for TabsRecord {
     fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
         write!(
             f,
-            "TabsRecord {{ id: {}, client_name: {}, tabs: {}, tab_groups: {}, windows: {} }}",
+            "TabsRecord {{ id: {}, client_name: {}, tabs: {}, tab_groups: {}, windows: {}, tabs_disabled: {} }}",
             self.id,
             self.client_name,
             self.tabs.len(),
             self.tab_groups.len(),
-            self.windows.len()
+            self.windows.len(),
+            self.tabs_disabled
         )
     }
 }
@@ -184,6 +187,7 @@ pub mod test {
         assert_eq!(record.tabs.len(), 1);
         assert_eq!(record.windows.len(), 0);
         assert_eq!(record.tab_groups.len(), 0);
+        assert!(!record.tabs_disabled);
         let tab = &record.tabs[0];
         assert_eq!(tab.title, "the title");
         assert_eq!(tab.icon, Some("https://mozilla.org/icon".to_string()));
@@ -206,10 +210,13 @@ pub mod test {
             }],
             tab_groups: HashMap::new(),
             windows: HashMap::new(),
+            tabs_disabled: true,
         };
         let round_tripped =
             serde_json::from_value(serde_json::to_value(tab.clone()).unwrap()).unwrap();
         assert_eq!(tab, round_tripped);
+        let value = serde_json::to_value(TabsRecord::default()).unwrap();
+        assert!(value.get("tabsDisabled").is_none());
     }
 
     #[test]

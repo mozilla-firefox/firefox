@@ -74,10 +74,10 @@ nsresult MediaResourceIndex::ReadAt(int64_t aOffset, char* aBuffer,
     return NS_OK;
   }
 
-  const int64_t endOffset = aOffset + aCount;
-  if (aOffset < 0 || endOffset < aOffset) {
+  if (aOffset < 0 || aOffset > INT64_MAX - int64_t(aCount)) {
     return NS_ERROR_ILLEGAL_VALUE;
   }
+  const int64_t endOffset = aOffset + aCount;
 
   const int64_t lastBlockOffset = CacheOffsetContaining(endOffset - 1);
 

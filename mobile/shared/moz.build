@@ -7,7 +7,7 @@ with Files("**"):
     SCHEDULES.exclusive = ["android", "ios"]
 
 with Files("jsconfig.json"):
-    BUG_COMPONENT = ("Developer Infrastructure", "Lint and Formatting")
+    BUG_COMPONENT = ("Developer Infrastructure", "Linting and Formatting: JavaScript")
 
 DIRS += [
     "actors",

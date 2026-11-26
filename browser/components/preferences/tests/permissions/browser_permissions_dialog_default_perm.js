@@ -74,7 +74,8 @@ add_setup(async function () {
 });
 
 /**
- * Tests that default (persistent) private browsing permissions can be removed.
+ * Tests that default install permissions can be removed, and that the default
+ * for private browsing shares the entry of the default for the normal context.
  */
 add_task(async function removeAll() {
   await openPermissionsPane({ leaveOpen: true });
@@ -83,11 +84,16 @@ add_task(async function removeAll() {
   let doc = sitePermissionsDialog.document;
   let richlistbox = doc.getElementById("permissionsBox");
 
-  // First item in the richlistbox contains column headers.
   Assert.equal(
     richlistbox.itemCount,
-    2,
-    "Should have the two default permission entries initially."
+    1,
+    "Both defaults should share a single entry."
+  );
+  Assert.equal(
+    PermissionTestUtils.getPermissionObject(pbPrincipal, "install")?.principal
+      .origin,
+    principal.origin,
+    "The permission should be stored without origin attributes."
   );
 
   info("Adding a new non-default install permission");
@@ -97,7 +103,7 @@ add_task(async function removeAll() {
   await BrowserTestUtils.waitForMutationCondition(
     richlistbox,
     { childList: true },
-    () => richlistbox.itemCount == 3
+    () => richlistbox.itemCount == 2
   );
 
   info("Clicking remove all.");

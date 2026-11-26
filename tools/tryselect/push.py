@@ -248,6 +248,21 @@ def get_sys_argv(injected_argv=None):
     return " ".join(formatted_argv)
 
 
+def get_try_remote(push=True):
+    """Return the remote a try push goes to."""
+    if push and is_thunderbird_try(build):
+        return HG_TRY_URL + "-comm-central"
+    return os.environ.get("MACH_TRY_REMOTE") or MACH_TRY_REMOTE
+
+
+def get_try_project(remote):
+    """Return the project a push to ``remote`` runs on, or None if unknown."""
+    if _is_hg_try(remote):
+        return get_try_repo(vcs.path)
+    if github_repo := get_github_repo(remote):
+        return github_repo.rsplit("/", 1)[-1]
+
+
 def get_github_repo(remote):
     """Return the ``owner/repo`` of a GitHub remote, or None if not on GitHub."""
     if remote_url := vcs.get_remote_url(remote, push=True):
@@ -366,11 +381,7 @@ def push_to_try(
     force_old_lando=False,
 ):
     push = not stage_changes and not dry_run
-
-    if push and is_thunderbird_try(build):
-        remote = HG_TRY_URL + "-comm-central"
-    else:
-        remote = os.environ.get("MACH_TRY_REMOTE") or MACH_TRY_REMOTE
+    remote = get_try_remote(push)
 
     metrics.mach_try.commit_prep.start()
 

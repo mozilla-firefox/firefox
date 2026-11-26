@@ -79,6 +79,7 @@ ogg_sync_pageseek
 ogg_sync_reset
 ogg_sync_wrote
 # libopus symbols
+#ifndef MOZ_SYSTEM_OPUS
 opus_decode
 opus_decoder_create
 opus_decoder_ctl
@@ -106,6 +107,7 @@ opus_packet_parse
 opus_strerror
 opus_multistream_encode_float
 opus_multistream_surround_encoder_create
+#endif
 vorbis_block_clear
 vorbis_block_init
 vorbis_comment_clear

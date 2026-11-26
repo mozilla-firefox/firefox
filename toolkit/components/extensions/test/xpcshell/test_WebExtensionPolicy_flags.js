@@ -16,7 +16,6 @@ const {
   ACCESS_FILE_WITH_OPT_IN,
   ACCESS_FILE_ALWAYS,
   ACCESS_OWN_EXTENSION,
-  ACCESS_OTHER_EXTENSIONS,
 } = WebExtensionPolicy;
 
 const OWN_UUID = "8a3c1d20-0000-4000-8000-000000000001";
@@ -215,21 +214,6 @@ add_task(function test_moz_extension_flags() {
   ok(
     !policy.canAccessURI(EXT_OTHER_URI, ACCESS_OWN_EXTENSION),
     "other moz-extension: not allowed by ACCESS_OWN_EXTENSION"
-  );
-  ok(
-    policy.canAccessURI(EXT_OTHER_URI, ACCESS_OTHER_EXTENSIONS),
-    "other moz-extension: allowed by ACCESS_OTHER_EXTENSIONS"
-  );
-  ok(
-    !policy.canAccessURI(EXT_OWN_URI, ACCESS_OTHER_EXTENSIONS),
-    "own moz-extension: not allowed by ACCESS_OTHER_EXTENSIONS"
-  );
-  ok(
-    policy.canAccessURI(
-      EXT_OWN_URI,
-      ACCESS_OWN_EXTENSION | ACCESS_OTHER_EXTENSIONS
-    ),
-    "own moz-extension: allowed when both extension flags are set"
   );
 
   // The moz-extension: flag is enforced before guard sets, because it would

@@ -600,5 +600,41 @@ def test_bugbug_loader_confidence_thresholds(bugbug_data, expected):
     assert sorted(manifests["active"]) == expected
 
 
+@pytest.mark.parametrize(
+    "project,filters,expected",
+    (
+        pytest.param("autoland", [], "all", id="timeout"),
+        pytest.param("try", ["try_auto"], "raise", id="timeout with try auto"),
+        pytest.param("firefox-dev", ["try_auto"], "all", id="unsupported project"),
+    ),
+)
+def test_bugbug_loader_failures(project, filters, expected):
+    params = {
+        "backstop": False,
+        "project": project,
+        "head_rev": "abcdef",
+        "filters": filters,
+    }
+    loader = chunking.BugbugLoader(params)
+    default_manifests = {"active": ["a.toml"], "skipped": [], "other_dirs": {}}
+    timeout = chunking.BugbugTimeoutException("timed out")
+    with patch.object(
+        chunking.DefaultLoader, "get_manifests", return_value=default_manifests
+    ):
+        with patch.object(
+            chunking, "push_schedules", side_effect=timeout
+        ) as mock_push_schedules:
+            if expected == "raise":
+                with pytest.raises(
+                    chunking.BugbugTimeoutException, match="mach try auto"
+                ):
+                    loader.get_manifests("xpcshell", frozenset())
+            else:
+                manifests = loader.get_manifests("xpcshell", frozenset())
+                assert manifests["active"] == ["a.toml"]
+
+    assert mock_push_schedules.called == (project in chunking.SUPPORTED_PROJECTS)
+
+
 if __name__ == "__main__":
     main()

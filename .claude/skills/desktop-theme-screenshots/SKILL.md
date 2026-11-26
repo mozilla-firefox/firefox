@@ -20,6 +20,10 @@ state differs. A rule that only applies under `[selected]`, `:hover`,
 `:focus-visible` or a media query produces byte-identical screenshots in the
 default state.
 
+**When the shots are for a bug, shoot the scenario it reports first**,
+reproducing the conditions it names, such as a placement, a window type,
+settings or steps, and then the states the diff touches.
+
 **When the diff changes a color, read the "Colors that resolve per realm"
 section of `docs/code-quality/coding-style/css_guidelines.md` before choosing
 what to shoot.** The doc lives in the source tree, not in this skill's
@@ -96,6 +100,13 @@ pair: for one, pass `--setpref ui.GtkCSDTransparencyAvailable=1` in both
 halves, and expect the corners and the margin to paint black on Xvfb, since a
 pixel the popup leaves transparent has nothing composited under it
 (`platform-linux.md`, section COMPOSITING, in `desktop-probing`).
+
+A compositor grab shoots the screen as it is, so whatever the real pointer
+leaves behind lands in every later grab: a `move` step's `:hover` stays on the
+last element it reached, and that element's tooltip opens after a moment. Before
+grabbing any other state, move the pointer off the chrome (`{"move": [x, y]}`
+onto the page) and lock the state in a `chrome` step (§1). A tooltip or a hover
+you did not ask for in a frame means the pointer drew it.
 
 **`capture.js`.** Paste [`scripts/capture.js`](scripts/capture.js) at the head
 of the test or probe and call `await capture(name, element)` once per shot (it

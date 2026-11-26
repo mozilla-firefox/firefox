@@ -594,6 +594,34 @@ def run_steps(
         else:
             raise ValueError(f"unknown step {kind!r}")
 
+    if not headless and any("grab" in step for step in steps):
+        # Lifting the harness's remote-control cue repaints every window, so
+        # it happens once before the first step, not before each grab, which
+        # may be catching a stale paint.
+        # A window the OS covers or minimizes may stop ticking, so each
+        # window's paint wait gives up after 500 ms.
+        try:
+            with client.using_context("chrome"):
+                client.execute_script(
+                    """
+                    const painted = [];
+                    for (const win of Services.wm.getEnumerator(null)) {
+                      win.document.documentElement.removeAttribute("remotecontrol");
+                      painted.push(Promise.race([
+                        new Promise(r => win.requestAnimationFrame(() => win.requestAnimationFrame(r))),
+                        new Promise(r => setTimeout(r, 500)),
+                      ]));
+                    }
+                    return Promise.all(painted);
+                    """
+                )
+        except Exception as e:  # noqa: BLE001
+            print(
+                f"{prog}: lifting the remote-control cue failed, so grabs may "
+                f"show it: {type(e).__name__}: {e}",
+                file=sys.stderr,
+            )
+
     for step in steps:
         ((kind, value),) = step.items()
         entry = {"step": kind, "value": value, "t": round(time.time() * 1000)}

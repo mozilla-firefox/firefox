@@ -60,6 +60,9 @@ add_task(async function test_session_data_update_with_two_user_contexts() {
   info("Create a non-default user context");
   const userContext = ContextualIdentityService.create("test");
   const userContextId = userContext.userContextId;
+  registerCleanupFunction(() =>
+    ContextualIdentityService.remove(userContextId)
+  );
 
   info("Open a new tab in the non-default user context");
   const tab2 = BrowserTestUtils.addTab(gBrowser, TEST_PAGE, {

@@ -3,11 +3,21 @@
 # file, You can obtain one at http://mozilla.org/MPL/2.0/.
 
 
+import sys
+
+from gecko_taskgraph.util.bugbug import SUPPORTED_PROJECTS
 from taskgraph.util.python_path import find_object
 
 from ..cli import BaseTryParser
-from ..push import push_to_try
+from ..push import get_try_project, get_try_remote, push_to_try
 from ..util.dicttools import merge
+
+UNSUPPORTED_REMOTE = """
+error: `mach try auto` can't push to '{remote}'.
+
+It relies on bugbug to select tasks, which only supports these projects: {supported}.
+Use another selector instead, e.g. `mach try fuzzy`.
+""".strip()
 
 TRY_AUTO_PARAMETERS = {
     "filters": ["try_auto"],
@@ -90,6 +100,16 @@ def run(
     push_to_vcs=False,
     **ignored,
 ):
+    if not (stage_changes or dry_run or write_task_config):
+        remote = get_try_remote()
+        if remote and get_try_project(remote) not in SUPPORTED_PROJECTS:
+            print(
+                UNSUPPORTED_REMOTE.format(
+                    remote=remote, supported=", ".join(sorted(SUPPORTED_PROJECTS))
+                )
+            )
+            sys.exit(1)
+
     metrics.mach_try.task_config_generation_duration.start()
     msg = message.format(msg="Tasks automatically selected.")
 

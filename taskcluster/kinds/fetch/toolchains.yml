@@ -390,13 +390,13 @@ clang-trunk:
 # We build stable rust from source so the resulting compiler acts as a nightly
 # rust compiler, allowing to use unstable features like -Zbuild-std and
 # sanitizers.
-rust-1.95.0:
-    description: Rust 1.95.0 source code
+rust-1.99.1:
+    description: Rust 1.99.1 source code
     fetch:
         type: git
         include-dot-git: true
         repo: https://github.com/rust-lang/rust/
-        revision: 59807616e1fa2540724bfbac14d7976d7e4a3860
+        revision: 58cf8f9c35b355199727627d07ae34a4e2846d67
 
 rust-nightly:
     description: Rust nightly source code
@@ -826,7 +826,7 @@ dxc-src:
     fetch:
         type: git
         repo: https://github.com/FirefoxGraphics/DirectXShaderCompiler
-        revision: 9c26d96149925760ca86cd43610d9d32b6ec70c2
+        revision: 7a5a442b8a7c62f97e5e9ad0b2d2538907038fb8
 
 jj:
     # Keep minimum supported version in sync:
@@ -904,7 +904,7 @@ firefox-profiler:
     fetch:
         type: git
         repo: https://github.com/firefox-devtools/profiler
-        revision: e777c6dc0dea48da47c38d340df782aecb02e8a4
+        revision: de3cca7aec5a98c2af6cacf7ace1e63801c3b6c3
 
 # See https://learn.microsoft.com/en-us/windows/apps/windows-app-sdk/downloads
 # We can't catch regressions from these updates in CI. Testing should focus on

@@ -3,135 +3,104 @@
  * file, You can obtain one at http://mozilla.org/MPL/2.0/.
  */
 
-use base64::prelude::*;
+use anyhow::{bail, Context, Result};
 use clap::Parser;
-use regex::Regex;
-use std::fs::{read_to_string, File};
-use std::io::Write;
+use md5::{Digest, Md5};
+use std::collections::BTreeSet;
+use std::fs::{read_to_string, write};
 use std::path::PathBuf;
 
 #[derive(Parser, Debug)]
-#[command(version, about = "A tool for generating the adult_set.bin from the pre-existing FilterAdult.sys.mjs file.", long_about = None)]
+#[command(version, about = "A tool for generating the adult_set.bin from a list of base domains.", long_about = None)]
 struct Cli {
-    /// The path to the FilterAdult.sys.mjs file that contains MD5 hashes of
-    /// sites to filter.
-    #[arg(required = true)]
-    input_file: Option<PathBuf>,
+    /// The path to a text file with one base domain per line. Blank lines are
+    /// ignored.
+    input_file: PathBuf,
 
     /// The path to write the adult_set.bin file, which are the bytes for the
     /// hash set of adult sites.
-    #[arg(required = true)]
-    output_file: Option<PathBuf>,
+    output_file: PathBuf,
 }
 
-fn main() {
+fn main() -> Result<()> {
     let cli = Cli::parse();
-    let input_path = cli.input_file.as_deref().unwrap();
+    let contents = read_to_string(&cli.input_file)
+        .with_context(|| format!("Unable to read {}", cli.input_file.display()))?;
 
-    let file_contents: String = read_to_string(input_path)
-        .unwrap_or_else(|_| panic!("Unable to read {}", input_path.display()));
-    let bytes = ingest_filteradult_mjs(&file_contents);
+    let domains = parse_domains(&contents)?;
 
-    let output_path = cli.output_file.as_deref().unwrap();
-    let mut buffer = File::create(output_path)
-        .unwrap_or_else(|_| panic!("Unable to write {}", output_path.display()));
-    buffer.write_all(&bytes).expect("Writing bytes failed");
+    write(&cli.output_file, hash_domains(&domains))
+        .with_context(|| format!("Unable to write {}", cli.output_file.display()))?;
+    println!(
+        "Wrote {} domains to {}",
+        domains.len(),
+        cli.output_file.display()
+    );
+
+    Ok(())
 }
 
-fn ingest_filteradult_mjs(filteradult_mjs_contents: &str) -> Vec<u8> {
-    let mut result = Vec::new();
-    let re = Regex::new(r#"\s\s"(.+==)","#).unwrap();
-
-    for (_, [string_hash]) in re
-        .captures_iter(filteradult_mjs_contents)
-        .map(|c| c.extract())
-    {
-        let mut byte_hash = BASE64_STANDARD.decode(string_hash).unwrap();
-        result.append(&mut byte_hash);
+fn parse_domains(contents: &str) -> Result<BTreeSet<String>> {
+    let mut domains = BTreeSet::new();
+    for (index, line) in contents.lines().enumerate() {
+        let domain = line.trim().to_lowercase();
+        if domain.is_empty() {
+            continue;
+        }
+        let is_valid = domain.contains('.')
+            && !domain.starts_with('.')
+            && !domain.ends_with('.')
+            && !domain.contains(|c: char| c.is_whitespace() || "/:?#@".contains(c));
+        if !is_valid {
+            bail!("Line {}: {:?} is not a valid domain", index + 1, line);
+        }
+        domains.insert(domain);
     }
+    Ok(domains)
+}
 
-    result
+fn hash_domains(domains: &BTreeSet<String>) -> Vec<u8> {
+    domains
+        .iter()
+        .flat_map(|domain| Md5::digest(domain.as_bytes()))
+        .collect()
 }
 
 #[cfg(test)]
 mod tests {
     use super::*;
-    use std::borrow::Borrow;
-    use std::collections::HashSet;
 
     #[test]
-    fn test_ingest_filteradult_mjs_simple() {
-        let filteradult_contents = r#"
-   * For tests, adds a domain to the adult list.
-   */
-  addDomainToList(url) {
-    gAdultSet.add(
-      md5Hash(Services.eTLD.getBaseDomain(Services.io.newURI(url)))
-    );
-  },
+    fn test_parse_domains_normalizes_and_skips() {
+        let domains = parse_domains("\n  Example.COM \nexample.com\nexample.co.uk\r\n").unwrap();
+        assert_eq!(
+            domains.into_iter().collect::<Vec<_>>(),
+            vec!["example.co.uk", "example.com"]
+        );
+    }
 
-  /**
-   * For tests, removes a domain to the adult list.
-   */
-  removeDomainFromList(url) {
-    gAdultSet.delete(
-      md5Hash(Services.eTLD.getBaseDomain(Services.io.newURI(url)))
-    );
-  },
-};
-
-// These are md5 hashes of base domains to be filtered out. Originally from:
-// https://hg.mozilla.org/mozilla-central/log/default/browser/base/content/newtab/newTab.inadjacent.json
-gAdultSet = new Set([
-  "+P5q4YD1Rr5SX26Xr+tzlw==",
-  "+PUVXkoTqHxJHO18z4KMfw==",
-  "+Pl0bSMBAdXpRIA+zE02JA==",
-  "+QosBAnSM2h4lsKuBlqEZw==",
-  "+S+WXgVDSU1oGmCzGwuT3g==",
-  "+SclwwY8R2RPrnX54Z+A6w==",
-]);
-"#;
-        let expected_hashes = vec![
-            "+P5q4YD1Rr5SX26Xr+tzlw==",
-            "+PUVXkoTqHxJHO18z4KMfw==",
-            "+Pl0bSMBAdXpRIA+zE02JA==",
-            "+QosBAnSM2h4lsKuBlqEZw==",
-            "+S+WXgVDSU1oGmCzGwuT3g==",
-            "+SclwwY8R2RPrnX54Z+A6w==",
-        ];
-        let bytes = ingest_filteradult_mjs(filteradult_contents);
-
-        let mut hashset = HashSet::new();
-        for chunk in bytes.chunks_exact(16) {
-            hashset.insert(chunk);
-        }
-
-        // Ensure we got the expected number of hashes out.
-        assert_eq!(hashset.len(), 6);
-
-        for hash in expected_hashes {
-            // Compute the byte representation of the hash
-            let hash_bytes = BASE64_STANDARD.decode(hash).unwrap();
-            // We expect these bytes in the hashset.
-            assert!(hashset.contains::<[u8]>(hash_bytes.borrow()));
+    #[test]
+    fn test_parse_domains_rejects_non_domains() {
+        for bad in [
+            "https://example.com",
+            "example.com/path",
+            "example com",
+            "localhost",
+            ".example.com",
+            "example.com.",
+            "# example.com",
+        ] {
+            let err = parse_domains(&format!("ok.com\n{bad}\n")).unwrap_err();
+            assert!(err.to_string().starts_with("Line 2:"), "{bad}: {err}");
         }
     }
 
     #[test]
-    fn test_ingest_filteradult_mjs_empty() {
-        let filteradult_contents = r#"
-   * For tests, adds a domain to the adult list.
-   */
-  addDomainToList(url) {
-    gAdultSet.add(
-      md5Hash(Services.eTLD.getBaseDomain(Services.io.newURI(url)))
-    );
-  }
-]);
-"#;
-        let bytes = ingest_filteradult_mjs(filteradult_contents);
-
-        // We should not have found any hashes.
-        assert_eq!(bytes.len(), 0);
+    fn test_hash_domains_is_md5_of_each_domain() {
+        let domains = parse_domains("b.com\na.com\n").unwrap();
+        let bytes = hash_domains(&domains);
+        assert_eq!(bytes.len(), 32);
+        assert_eq!(&bytes[..16], Md5::digest(b"a.com").as_slice());
+        assert_eq!(&bytes[16..], Md5::digest(b"b.com").as_slice());
     }
 }

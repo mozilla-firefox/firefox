@@ -30,6 +30,10 @@
         rel="stylesheet"
         href="chrome://browser/skin/preferences/preferences.css"
       />
+      <html:link
+        rel="stylesheet"
+        href="chrome://browser/content/usercontext/usercontext.css"
+      />
 
       <html:link rel="localization" href="branding/brand.ftl" />
       <html:link
@@ -39,6 +43,7 @@
       <html:link rel="localization" href="browser/ipProtection.ftl" />
     </linkset>
 
+    <script src="chrome://browser/content/preferences/dialogs/permissionContainers.js" />
     <script src="chrome://browser/content/preferences/dialogs/permissions.js" />
 
     <keyset>
@@ -94,6 +99,7 @@
       </html:moz-button-group>
       <separator class="thin" />
       <listheader>
+        <treecol id="containerCol" data-l10n-id="permissions-container" />
         <treecol
           id="siteCol"
           data-l10n-id="permissions-site-name"

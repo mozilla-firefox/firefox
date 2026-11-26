@@ -16,10 +16,11 @@ const TEST_URI_BAD = Services.io.newURI("http://" + TEST_URL_TAIL);
 
 // Loads the specified URI in a new tab and waits for it to send us data via
 // the SpecialPowers.spawn() call and resolves with that data.
-async function promiseNewChannelResponse(uri) {
+async function promiseNewChannelResponse(uri, tabOptions = {}) {
   let tab = gBrowser.addTab(uri.spec, {
     inBackground: false,
     triggeringPrincipal: Services.scriptSecurityManager.getSystemPrincipal(),
+    ...tabOptions,
   });
   await BrowserTestUtils.browserLoaded(tab.linkedBrowser);
 
@@ -106,5 +107,45 @@ add_task(async function () {
     got.errno,
     2,
     "should have failed with errno 2, no such channel"
+  );
+});
+
+// Test that troubleshooting works in a container tab
+add_task(async function test_container_tab() {
+  await SpecialPowers.pushPrefEnv({
+    set: [["permissions.isolateBy.userContext", true]],
+  });
+
+  PermissionTestUtils.add(
+    TEST_URI_GOOD,
+    "remote-troubleshooting",
+    Services.perms.ALLOW_ACTION
+  );
+  registerCleanupFunction(() => {
+    PermissionTestUtils.remove(TEST_URI_GOOD, "remote-troubleshooting");
+  });
+
+  let fromDefaultContainer = await promiseNewChannelResponse(TEST_URI_GOOD);
+  Assert.ok(
+    fromDefaultContainer.addons,
+    "the default container is answered with the troubleshooting data"
+  );
+
+  let fromContainer = await promiseNewChannelResponse(TEST_URI_GOOD, {
+    userContextId: 1,
+  });
+  Assert.strictEqual(
+    fromContainer.errno,
+    undefined,
+    "a container is not answered with an error"
+  );
+  Assert.ok(
+    fromContainer.addons,
+    "a container is answered with the troubleshooting data"
+  );
+  Assert.equal(
+    fromContainer.application.buildID,
+    Services.appinfo.appBuildID,
+    "a container is answered with the data of this build"
   );
 });

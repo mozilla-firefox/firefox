@@ -47,6 +47,8 @@ PROJECT_RELEASE_BRANCHES: dict[str, Union[list[str], Literal[True]]] = {
     "maple": True,
     # bug 1988213: cypress project branch
     "cypress": True,
+    # https://github.com/mozilla/enterprise-firefox
+    "enterprise-firefox": True,
 }
 RELEASE_PROJECTS = set(PROJECT_RELEASE_BRANCHES)
 RELEASE_PROMOTION_PROJECTS = {

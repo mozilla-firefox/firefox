@@ -4,6 +4,7 @@
  *
  * The origin of this IDL file is
  * https://webaudio.github.io/web-audio-api/#audioworkletglobalscope
+ * https://w3c.github.io/hr-time/#sec-audioworkletglobalscope
  */
 
 callback constructor AudioWorkletProcessorConstructor = AudioWorkletProcessor (object options);
@@ -16,4 +17,6 @@ interface AudioWorkletGlobalScope : WorkletGlobalScope {
     readonly  attribute   double currentTime;
     readonly  attribute   float sampleRate;
     readonly attribute MessagePort port;
+    [Constant, Replaceable]
+    readonly attribute WorkletPerformance performance;
 };

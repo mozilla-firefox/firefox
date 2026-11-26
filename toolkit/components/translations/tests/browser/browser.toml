@@ -104,6 +104,8 @@ support-files = [
 
 ["browser_translations_actor_empty_langs.js"]
 
+["browser_translations_actor_never_translate_site_user_context.js"]
+
 ["browser_translations_actor_preferred_language.js"]
 
 ["browser_translations_actor_store_recent_target_langs.js"]

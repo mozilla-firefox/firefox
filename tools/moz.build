@@ -12,7 +12,33 @@ with Files("compare-locales/mach_commands.py"):
     BUG_COMPONENT = ("Localization Infrastructure and Tools", "compare-locales")
 
 with Files("lint/**"):
-    BUG_COMPONENT = ("Developer Infrastructure", "Lint and Formatting")
+    BUG_COMPONENT = (
+        "Developer Infrastructure",
+        "Linting and Formatting: General Harness",
+    )
+
+with Files(
+    "lint/eslint*",
+    "lint/extra-js-modules*",
+    "lint/node-licences*",
+    "lint/node-package-names",
+    "lint/pnpm-audit*",
+    "lint/typescript",
+    "ts/**",
+):
+    BUG_COMPONENT = ("Developer Infrastructure", "Linting and Formatting: JavaScript")
+
+with Files("lint/stylelint*"):
+    BUG_COMPONENT = ("Developer Infrastructure", "Linting and Formatting: CSS")
+
+with Files("lint/clang*", "lint/cpp*", "lint/header_guards*"):
+    BUG_COMPONENT = ("Developer Infrastructure", "Linting and Formatting: C/C++")
+
+with Files("lint/cargo*", "lint/clippy*", "lint/rust*"):
+    BUG_COMPONENT = ("Developer Infrastructure", "Linting and Formatting: Rust")
+
+with Files("lint/python*"):
+    BUG_COMPONENT = ("Developer Infrastructure", "Linting and Formatting: Python")
 
 with Files("moztreedocs/**"):
     BUG_COMPONENT = ("Developer Infrastructure", "Source Documentation")
@@ -38,9 +64,6 @@ with Files("tryselect/**"):
 
 with Files("tryselect/selectors/release.py"):
     BUG_COMPONENT = ("Release Engineering", "General")
-
-with Files("ts/**"):
-    BUG_COMPONENT = ("Developer Infrastructure", "Lint and Formatting")
 
 with Files("update-packaging/**"):
     BUG_COMPONENT = ("Release Engineering", "General")

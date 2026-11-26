@@ -112,7 +112,7 @@ with Files("l10n-registry.manifest"):
     BUG_COMPONENT = ("Core", "Internationalization: Localization")
 
 with Files("jsconfig.json"):
-    BUG_COMPONENT = ("Developer Infrastructure", "Lint and Formatting")
+    BUG_COMPONENT = ("Developer Infrastructure", "Linting and Formatting: JavaScript")
 
 with Files("AGENTS.md"):
     BUG_COMPONENT = ("Developer Infrastructure", "AI for Development")

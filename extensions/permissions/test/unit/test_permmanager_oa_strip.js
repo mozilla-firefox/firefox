@@ -8,7 +8,13 @@ const TEST_PERMISSION3 = "test/oastrip3";
 
 // List of permissions which are not isolated by private browsing or user context
 // as per array kStripOAPermissions in PermissionManager.cpp
-const STRIPPED_PERMS = ["cookie", "https-only-load-insecure", "ipp-vpn"];
+const STRIPPED_PERMS = [
+  "cookie",
+  "https-only-load-insecure",
+  "ipp-vpn",
+  "install",
+  "persist-data-on-shutdown",
+];
 
 let principal = Services.scriptSecurityManager.createContentPrincipal(
   TEST_URI,
@@ -163,6 +169,15 @@ function testOAIsolation(permIsolateUserContext, permIsolatePrivateBrowsing) {
       pm.testPermissionFromPrincipal(principalUserContext2, perm),
       Ci.nsIPermissionManager.ALLOW_ACTION
     );
+    let permission = pm.getPermissionObject(principal, perm, true);
+    for (let p of [
+      principal,
+      principalPrivateBrowsing,
+      principalUserContext1,
+      principalUserContext2,
+    ]) {
+      Assert.ok(permission.matches(p, true));
+    }
 
     // Remove the permission from private window
     pm.removeFromPrincipal(principalPrivateBrowsing, perm);

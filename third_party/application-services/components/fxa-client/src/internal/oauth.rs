@@ -6,13 +6,14 @@ pub mod access_token;
 pub mod attached_clients;
 use super::scopes;
 use super::{
-    http_client::{
-        AuthorizationRequestParameters, IntrospectResponse as IntrospectInfo, OAuthTokenResponse,
-    },
+    http_client::{AuthorizationRequestParameters, OAuthTokenResponse},
     scoped_keys::ScopedKeysFlow,
     util, FirefoxAccount,
 };
-use crate::{debug, info, warn, AuthorizationParameters, Error, FxaServer, Result};
+use crate::internal::state_manager::StoredAuthState;
+use crate::{
+    debug, info, warn, AuthorizationParameters, AuthorizationStatus, Error, FxaServer, Result,
+};
 pub use access_token::AccessTokenInfo;
 use base64::{engine::general_purpose::URL_SAFE_NO_PAD, Engine};
 use jwcrypto::{EncryptionAlgorithm, EncryptionParameters};
@@ -123,30 +124,37 @@ impl FirefoxAccount {
         )
     }
 
-    /// Check whether user is authorized using our refresh token.
-    pub fn check_authorization_status(&mut self) -> Result<IntrospectInfo> {
+    /// Check authorization status for this application.
+    ///
+    /// Call this method to validate the current auth tokens. This checks that all expected tokens
+    /// are present and also validates the refresh token with the FxA server.
+    pub fn check_authorization_status(&mut self) -> AuthorizationStatus {
         self.with_network_retry("check_authorization_status", |s| {
             s._check_authorization_status()
         })
+        // Real auth errors are handled inside `_check_authorization_status`.
+        // If we see a failure here, it means there was a network error and we should return
+        // `Unknown`.
+        .unwrap_or(AuthorizationStatus::Unknown)
     }
 
-    fn _check_authorization_status(&mut self) -> Result<IntrospectInfo> {
-        let resp = match self.state.refresh_token() {
-            Some(refresh_token) => {
-                if refresh_token.scopes.contains(scopes::OLD_SYNC)
-                    && self.state.get_scoped_key(scopes::OLD_SYNC).is_none()
-                {
-                    return Err(Error::NoScopedKey(scopes::OLD_SYNC.into()));
-                }
-                self.auth_circuit_breaker.check()?;
-                self.client
-                    .check_refresh_token_status(self.state.config(), &refresh_token.token)?
-            }
-            None => return Err(Error::NoRefreshToken),
+    fn _check_authorization_status(&mut self) -> Result<AuthorizationStatus> {
+        let StoredAuthState::Valid { refresh_token } = self.state.stored_auth_state() else {
+            return Ok(AuthorizationStatus::Invalid);
         };
-        Ok(IntrospectInfo {
-            active: resp.active,
-        })
+        if self.auth_circuit_breaker.check().is_err() {
+            // Circuit breaker tripped, return `Unknown` instead of sending another network request.
+            // https://bugzilla.mozilla.org/show_bug.cgi?id=2084267
+            return Ok(AuthorizationStatus::Unknown);
+        }
+        let resp = self
+            .client
+            .check_refresh_token_status(self.state.config(), &refresh_token.token)?;
+        if resp.active {
+            Ok(AuthorizationStatus::Valid)
+        } else {
+            Ok(AuthorizationStatus::Invalid)
+        }
     }
 
     /// Initiate a pairing flow and return a URL that should be navigated to.
@@ -694,12 +702,6 @@ pub struct OAuthFlow {
     pub code_verifier: String,
 }
 
-impl From<IntrospectInfo> for crate::AuthorizationInfo {
-    fn from(r: IntrospectInfo) -> Self {
-        crate::AuthorizationInfo { active: r.active }
-    }
-}
-
 #[cfg(test)]
 impl FirefoxAccount {
     pub fn set_session_token(&mut self, session_token: &str) {
@@ -728,6 +730,7 @@ mod tests {
             token: "rt".to_owned(),
             scopes: ["profile", "sync"].iter().map(|s| s.to_string()).collect(),
         });
+        fxa.state.force_session_token("test-session-token");
         assert!(fxa.has_scope("profile"));
         assert!(fxa.has_scope("sync profile"));
         assert!(fxa.has_scope("profile sync ")); // trailing whitespace too
@@ -924,6 +927,7 @@ mod tests {
             token: "refresh_token".to_owned(),
             scopes: refresh_token_scopes,
         });
+        fxa.state.force_session_token("test-session-token");
 
         let mut client = MockFxAClient::new();
         client
@@ -933,8 +937,7 @@ mod tests {
             .returning(|_, _| Ok(IntrospectResponse { active: true }));
         fxa.set_client(Arc::new(client));
 
-        let auth_status = fxa.check_authorization_status().unwrap();
-        assert!(auth_status.active);
+        assert_eq!(fxa.check_authorization_status(), AuthorizationStatus::Valid);
     }
 
     #[test]
@@ -948,6 +951,7 @@ mod tests {
             token: "refresh_token".to_owned(),
             scopes: refresh_token_scopes,
         });
+        fxa.state.force_session_token("test-session-token");
 
         let mut client = MockFxAClient::new();
         // This copy-pasta (equivalent to `.returns(..).times(5)`) is there
@@ -976,12 +980,14 @@ mod tests {
         fxa.set_client(Arc::new(client));
 
         for _ in 0..5 {
-            assert!(fxa.check_authorization_status().is_ok());
+            assert_eq!(fxa.check_authorization_status(), AuthorizationStatus::Valid)
         }
-        match fxa.check_authorization_status() {
-            Ok(_) => unreachable!("should not happen"),
-            Err(err) => assert!(matches!(err, Error::AuthCircuitBreakerError)),
-        }
+        // After the circuit breaker trips, the check_authorization_status() should return an
+        // inconclusive result
+        assert_eq!(
+            fxa.check_authorization_status(),
+            AuthorizationStatus::Unknown
+        );
 
         // A tripped circuit breaker is inconclusive and must not move us to AuthIssues.
         fxa.device_config = Some(crate::DeviceConfig {

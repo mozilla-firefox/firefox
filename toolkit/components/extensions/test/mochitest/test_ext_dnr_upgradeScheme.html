@@ -15,11 +15,18 @@
 // This test is not a xpcshell test, because we want to test upgrades to https,
 // and HttpServer helper does not support https (bug 1742061).
 
+/* eslint-disable sdl/no-insecure-url */
+const URLS = {
+  MATCHING_HTTP_URL: "http://example.com/tests/toolkit/components/extensions/test/mochitest/file_sample.txt",
+  UPGRADED_HTTPS_URL: "https://example.com/tests/toolkit/components/extensions/test/mochitest/file_sample.txt",
+  NON_MATCHING_HTTP_URL: "http://example.net/tests/toolkit/components/extensions/test/mochitest/file_sample.txt"
+};
+/* eslint-enable sdl/no-insecure-url */
+
 add_setup(async () => {
   await SpecialPowers.pushPrefEnv({
     set: [
       ["extensions.dnr.enabled", true],
-      ["extensions.dnr.match_requests_from_other_extensions", true],
     ],
   });
 });
@@ -29,38 +36,33 @@ add_setup(async () => {
 // - after the https upgrade the request should happen instead of being stuck
 //   in a upgrade redirect loop.
 add_task(async function upgradeScheme_with_dnr() {
+  async function background({ MATCHING_HTTP_URL, UPGRADED_HTTPS_URL, NON_MATCHING_HTTP_URL }) {
+    await browser.declarativeNetRequest.updateSessionRules({
+      addRules: [{ id: 1, condition: { requestDomains: ["example.com"] }, action: { type: "upgradeScheme" } }],
+    });
+
+    let sanityCheckResponse = await fetch(NON_MATCHING_HTTP_URL);
+    browser.test.assertEq(
+      NON_MATCHING_HTTP_URL,
+      sanityCheckResponse.url,
+      "non-matching request should not be upgraded"
+    );
+
+    let res = await fetch(MATCHING_HTTP_URL);
+    browser.test.assertEq(
+      UPGRADED_HTTPS_URL,
+      res.url,
+      "upgradeScheme should have upgraded to https"
+    );
+    // Server adds "Access-Control-Allow-Origin: *" to file_sample.txt, so
+    // we should be able to read the response despite no host_permissions.
+    browser.test.assertEq("Sample", await res.text(), "read body with CORS");
+
+    browser.test.sendMessage("dnr_registered");
+  }
+
   let extension = ExtensionTestUtils.loadExtension({
-    async background() {
-      await browser.declarativeNetRequest.updateSessionRules({
-        addRules: [{ id: 1, condition: { requestDomains: ["example.com"] }, action: { type: "upgradeScheme" } }],
-      });
-
-      let sanityCheckResponse = await fetch(
-        // eslint-disable-next-line sdl/no-insecure-url
-        "http://example.net/tests/toolkit/components/extensions/test/mochitest/file_sample.txt"
-      );
-      browser.test.assertEq(
-        // eslint-disable-next-line sdl/no-insecure-url
-        "http://example.net/tests/toolkit/components/extensions/test/mochitest/file_sample.txt",
-        sanityCheckResponse.url,
-        "non-matching request should not be upgraded"
-      );
-
-      let res = await fetch(
-        // eslint-disable-next-line sdl/no-insecure-url
-        "http://example.com/tests/toolkit/components/extensions/test/mochitest/file_sample.txt"
-      );
-      browser.test.assertEq(
-        "https://example.com/tests/toolkit/components/extensions/test/mochitest/file_sample.txt",
-        res.url,
-        "upgradeScheme should have upgraded to https"
-      );
-      // Server adds "Access-Control-Allow-Origin: *" to file_sample.txt, so
-      // we should be able to read the response despite no host_permissions.
-      browser.test.assertEq("Sample", await res.text(), "read body with CORS");
-
-      browser.test.sendMessage("dnr_registered");
-    },
+    background: `(${background})(${JSON.stringify(URLS)})`,
     manifest: {
       manifest_version: 3,
       // Note: host_permissions missing. upgradeScheme should not need it.
@@ -71,66 +73,53 @@ add_task(async function upgradeScheme_with_dnr() {
   await extension.startup();
   await extension.awaitMessage("dnr_registered");
 
-  // The request made by otherExtension is affected by the DNR rule from the
-  // extension because extensions.dnr.match_requests_from_other_extensions was
-  // set to true. A realistic alternative would have been to trigger the fetch
-  // requests from a content page instead of the extension.
-  let otherExtension = ExtensionTestUtils.loadExtension({
-    async background() {
-      let firstRequestPromise = new Promise(resolve => {
-        let count = 0;
-        browser.webRequest.onBeforeRequest.addListener(
-          ({ url }) => {
-            ++count;
-            browser.test.assertTrue(
-              count <= 2,
-              `Expected at most two requests; got ${count} to ${url}`
-            );
-            resolve(url);
-          },
-          { urls: ["*://example.com/?test_dnr_upgradeScheme"] }
-        );
-      });
-      // Round-trip through ext-webRequest.js implementation to ensure that the
-      // listener has been registered (workaround for bug 1300234).
-      await browser.webRequest.handlerBehaviorChanged();
+  // Requests made from outside the extension should be upgraded by its DNR
+  // rule too.
+  const iframe = document.createElement("iframe");
+  const iframeLoaded = waitForLoad(iframe);
+  iframe.src = URLS.NON_MATCHING_HTTP_URL;
+  document.body.appendChild(iframe);
+  await iframeLoaded;
 
-      // eslint-disable-next-line sdl/no-insecure-url
-      const insecureInitialUrl = "http://example.com/?test_dnr_upgradeScheme";
-      browser.test.log(`Requesting insecure URL: ${insecureInitialUrl}`);
+  const { sanityCheckResult, result } = await SpecialPowers.spawn(
+    iframe,
+    [URLS],
+    async ({ MATCHING_HTTP_URL, NON_MATCHING_HTTP_URL }) => {
+      const sanityCheckResponse = await content.fetch(NON_MATCHING_HTTP_URL);
+      const sanityCheckResult = {
+        url: sanityCheckResponse.url,
+        status: sanityCheckResponse.status,
+      };
 
-      let req = await fetch(insecureInitialUrl);
-      browser.test.assertEq(
-        "https://example.com/?test_dnr_upgradeScheme",
-        req.url,
-        "upgradeScheme action upgraded http to https"
-      );
-      browser.test.assertEq(200, req.status, "Correct HTTP status");
+      const response = await content.fetch(MATCHING_HTTP_URL);
+      const result = {
+        url: response.url,
+        status: response.status,
+      };
 
-      await req.text(); // Verify that the body can be read, just in case.
+      // Verify that the body can be read, just in case.
+      await Promise.all([sanityCheckResponse.text(), response.text()]);
 
-      // Sanity check that the test did not pass trivially due to an automatic
-      // https upgrade of the extension / test environment.
-      browser.test.assertEq(
-        insecureInitialUrl,
-        await firstRequestPromise,
-        "Initial URL should be http"
-      );
+      return { sanityCheckResult, result };
+    }
+  );
 
-      browser.test.sendMessage("tested_dnr_upgradeScheme");
-    },
-    manifest: {
-      host_permissions: ["*://example.com/*"],
-      permissions: ["webRequest"],
-    },
-  });
-  await otherExtension.startup();
-  await otherExtension.awaitMessage("tested_dnr_upgradeScheme");
-  await otherExtension.unload();
+  is(result.status, 200, "Correct HTTP status");
+  is(
+    result.url,
+    URLS.UPGRADED_HTTPS_URL,
+    "upgradeScheme action upgraded HTTP to HTTPS"
+  );
+
+  is(sanityCheckResult.status, 200, "Correct HTTP status");
+  is(
+    sanityCheckResult.url,
+    URLS.NON_MATCHING_HTTP_URL,
+    "Non-matching request not upgraded to HTTPS"
+  );
 
   await extension.unload();
 });
-
 </script>
 </body>
 </html>
