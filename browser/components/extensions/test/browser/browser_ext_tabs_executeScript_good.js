@@ -153,8 +153,12 @@ add_task(async function testGoodPermissions() {
       permissions: ["activeTab", "contextMenus"],
     },
     contentSetup: function () {
-      browser.contextMenus.create({ title: "activeTab", contexts: ["all"] });
-      return Promise.resolve();
+      return new Promise(resolve => {
+        browser.contextMenus.create(
+          { title: "activeTab", contexts: ["all"] },
+          resolve
+        );
+      });
     },
     setup: async function () {
       let contextMenu = document.getElementById("contentAreaContextMenu");
