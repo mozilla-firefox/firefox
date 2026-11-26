@@ -4,14 +4,16 @@
 
 #include "GdiBackBuffer.h"
 
+#include <algorithm>
+
 #include "mozilla/gfx/2D.h"
 
 namespace mozilla::widget {
 
 using namespace mozilla::gfx;
 
-HBITMAP CreateTopDownDIBSection(HDC aDC, const IntSize& aSize,
-                                uint8_t** aBits) {
+HBITMAP CreateTopDownDIBSection(HDC aDC, const IntSize& aSize, uint8_t** aBits,
+                                HANDLE aSection) {
   BITMAPINFO bitmapInfo = {};
   bitmapInfo.bmiHeader.biSize = sizeof(bitmapInfo.bmiHeader);
   bitmapInfo.bmiHeader.biWidth = aSize.width;
@@ -21,7 +23,7 @@ HBITMAP CreateTopDownDIBSection(HDC aDC, const IntSize& aSize,
   bitmapInfo.bmiHeader.biCompression = BI_RGB;
   void* bits = nullptr;
   HBITMAP bitmap =
-      ::CreateDIBSection(aDC, &bitmapInfo, DIB_RGB_COLORS, &bits, nullptr, 0);
+      ::CreateDIBSection(aDC, &bitmapInfo, DIB_RGB_COLORS, &bits, aSection, 0);
   if (bitmap && !bits) {
     ::DeleteObject(bitmap);
     bitmap = nullptr;
@@ -45,7 +47,8 @@ void GdiBackBuffer::Release() {
   mSize = IntSize();
 }
 
-bool GdiBackBuffer::Ensure(HDC aCompatibleDC, const IntSize& aSize) {
+bool GdiBackBuffer::Ensure(HDC aCompatibleDC, const IntSize& aSize,
+                           HANDLE aSection) {
   if (mData && mSize == aSize) {
     return true;
   }
@@ -59,7 +62,7 @@ bool GdiBackBuffer::Ensure(HDC aCompatibleDC, const IntSize& aSize) {
     return false;
   }
   uint8_t* data = nullptr;
-  mBitmap = CreateTopDownDIBSection(mDC, aSize, &data);
+  mBitmap = CreateTopDownDIBSection(mDC, aSize, &data, aSection);
   if (!mBitmap) {
     Release();
     return false;
@@ -91,9 +94,24 @@ already_AddRefed<DrawTarget> GdiBackBuffer::CreateDrawTarget() {
   return dt.forget();
 }
 
-void GdiBackBuffer::BlitTo(HDC aDC, const IntRect& aRect) const {
-  ::BitBlt(aDC, aRect.x, aRect.y, aRect.width, aRect.height, mDC, aRect.x,
-           aRect.y, SRCCOPY);
+bool GdiBackBuffer::BlitTo(HDC aDC, const IntRect& aRect) const {
+  if (aRect.IsEmpty()) {
+    return true;
+  }
+  return ::BitBlt(aDC, aRect.x, aRect.y, aRect.width, aRect.height, mDC,
+                  aRect.x, aRect.y, SRCCOPY);
+}
+
+void GdiBackBuffer::CopyPixelsFrom(const GdiBackBuffer& aOther) {
+  if (!mData || !aOther.mData) {
+    return;
+  }
+  const int32_t rowBytes = std::min(mSize.width, aOther.mSize.width) * 4;
+  const int32_t rows = std::min(mSize.height, aOther.mSize.height);
+  for (int32_t row = 0; row < rows; ++row) {
+    memcpy(mData + row * Stride(), aOther.mData + row * aOther.Stride(),
+           rowBytes);
+  }
 }
 
 }  // namespace mozilla::widget

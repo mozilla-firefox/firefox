@@ -7,6 +7,7 @@
 #include <algorithm>
 #include <type_traits>
 
+#include "GdiBackBuffer.h"
 #include "GeckoProfiler.h"
 #include "WinUtils.h"
 #include "mozilla/Span.h"
@@ -76,8 +77,7 @@ static_assert(std::is_trivially_copyable<SharedData>::value &&
 
 class SharedImage {
  public:
-  SharedImage()
-      : mWidth(0), mHeight(0), mFileMapping(nullptr), mPixelData(nullptr) {}
+  SharedImage() = default;
 
   ~SharedImage() {
     if (mPixelData) {
@@ -89,43 +89,12 @@ class SharedImage {
     }
   }
 
-  bool Initialize(int32_t aWidth, int32_t aHeight) {
-    MOZ_ASSERT(aWidth);
-    MOZ_ASSERT(aHeight);
-    MOZ_ASSERT(aWidth > 0);
-    MOZ_ASSERT(aHeight > 0);
-
-    mWidth = aWidth;
-    mHeight = aHeight;
-
-    DWORD bufferSize = static_cast<DWORD>(mHeight * GetStride());
-
-    mFileMapping = ::CreateFileMappingW(
-        INVALID_HANDLE_VALUE, nullptr /*secattr*/, PAGE_READWRITE,
-        0 /*sizeHigh*/, bufferSize, nullptr /*name*/);
-    if (!mFileMapping) {
-      return false;
-    }
-
-    void* mappedFilePtr =
-        ::MapViewOfFile(mFileMapping, FILE_MAP_ALL_ACCESS, 0 /*offsetHigh*/,
-                        0 /*offsetLow*/, 0 /*bytesToMap*/);
-    if (!mappedFilePtr) {
-      return false;
-    }
-
-    mPixelData = reinterpret_cast<unsigned char*>(mappedFilePtr);
-
-    return true;
-  }
-
   bool InitializeRemote(int32_t aWidth, int32_t aHeight, HANDLE aFileMapping) {
     MOZ_ASSERT(aWidth > 0);
     MOZ_ASSERT(aHeight > 0);
     MOZ_ASSERT(aFileMapping);
 
-    mWidth = aWidth;
-    mHeight = aHeight;
+    mSize = gfx::IntSize(aWidth, aHeight);
     mFileMapping = aFileMapping;
 
     void* mappedFilePtr =
@@ -135,23 +104,78 @@ class SharedImage {
       return false;
     }
 
-    mPixelData = reinterpret_cast<unsigned char*>(mappedFilePtr);
+    mPixelData = reinterpret_cast<uint8_t*>(mappedFilePtr);
 
     return true;
   }
 
-  HBITMAP CreateDIBSection() {
-    BITMAPINFO bitmapInfo = {};
-    bitmapInfo.bmiHeader.biSize = sizeof(bitmapInfo.bmiHeader);
-    bitmapInfo.bmiHeader.biWidth = mWidth;
-    bitmapInfo.bmiHeader.biHeight = -mHeight;
-    bitmapInfo.bmiHeader.biPlanes = 1;
-    bitmapInfo.bmiHeader.biBitCount = 32;
-    bitmapInfo.bmiHeader.biCompression = BI_RGB;
-    void* dummy = nullptr;
-    return ::CreateDIBSection(nullptr /*paletteDC*/, &bitmapInfo,
-                              DIB_RGB_COLORS, &dummy, mFileMapping,
-                              0 /*offset*/);
+  already_AddRefed<gfx::DrawTarget> CreateDrawTarget() {
+    return gfx::Factory::CreateDrawTargetForData(
+        gfx::BackendType::SKIA, mPixelData, mSize, mSize.width * 4,
+        gfx::SurfaceFormat::B8G8R8A8);
+  }
+
+  SharedImage(const SharedImage&) = delete;
+  SharedImage(SharedImage&&) = delete;
+  SharedImage& operator=(const SharedImage&) = delete;
+  SharedImage& operator=(SharedImage&&) = delete;
+
+ private:
+  gfx::IntSize mSize;
+  HANDLE mFileMapping = nullptr;
+  uint8_t* mPixelData = nullptr;
+};
+
+// The provider's backbuffer, a DIB section backed by a file mapping that is
+// shared with the client.
+class PresentableSharedImage {
+ public:
+  PresentableSharedImage() = default;
+
+  ~PresentableSharedImage() {
+    mBuffer.Release();
+    if (mFileMapping) {
+      MOZ_ALWAYS_TRUE(::CloseHandle(mFileMapping));
+    }
+  }
+
+  bool Initialize(int32_t aWidth, int32_t aHeight) {
+    MOZ_ASSERT(aWidth > 0);
+    MOZ_ASSERT(aHeight > 0);
+
+    const gfx::IntSize size(aWidth, aHeight);
+    mFileMapping = ::CreateFileMappingW(
+        INVALID_HANDLE_VALUE, nullptr /*secattr*/, PAGE_READWRITE,
+        0 /*sizeHigh*/, static_cast<DWORD>(GdiBackBuffer::BufferSize(size)),
+        nullptr /*name*/);
+    if (!mFileMapping) {
+      return false;
+    }
+    return mBuffer.Ensure(nullptr, size, mFileMapping);
+  }
+
+  bool PresentToWindow(HWND aWindowHandle,
+                       Span<const IpcSafeRect> aDirtyRects) {
+    const gfx::IntRect bufferRect(gfx::IntPoint(), mBuffer.Size());
+
+    HDC windowDC = ::GetDC(aWindowHandle);
+    if (!windowDC) {
+      return false;
+    }
+
+    bool result = true;
+    for (auto& ipcDirtyRect : aDirtyRects) {
+      gfx::IntRect dirtyRect{ipcDirtyRect.x, ipcDirtyRect.y, ipcDirtyRect.width,
+                             ipcDirtyRect.height};
+      if (!mBuffer.BlitTo(windowDC, dirtyRect.Intersect(bufferRect))) {
+        result = false;
+        break;
+      }
+    }
+
+    MOZ_ALWAYS_TRUE(::ReleaseDC(aWindowHandle, windowDC));
+
+    return result;
   }
 
   HANDLE CreateRemoteFileMapping(HANDLE aTargetProcess) {
@@ -166,135 +190,13 @@ class SharedImage {
     return fileMapping;
   }
 
-  already_AddRefed<gfx::DrawTarget> CreateDrawTarget() {
-    return gfx::Factory::CreateDrawTargetForData(
-        gfx::BackendType::SKIA, mPixelData, gfx::IntSize(mWidth, mHeight),
-        GetStride(), gfx::SurfaceFormat::B8G8R8A8);
+  void CopyPixelsFrom(const PresentableSharedImage& aOther) {
+    mBuffer.CopyPixelsFrom(aOther.mBuffer);
   }
 
-  void CopyPixelsFrom(const SharedImage& other) {
-    const unsigned char* src = other.mPixelData;
-    unsigned char* dst = mPixelData;
+  int32_t GetWidth() const { return mBuffer.Size().width; }
 
-    int32_t width = std::min(mWidth, other.mWidth);
-    int32_t height = std::min(mHeight, other.mHeight);
-
-    for (int32_t row = 0; row < height; ++row) {
-      memcpy(dst, src, static_cast<uint32_t>(width * kBytesPerPixel));
-      src += other.GetStride();
-      dst += GetStride();
-    }
-  }
-
-  int32_t GetWidth() const { return mWidth; }
-
-  int32_t GetHeight() const { return mHeight; }
-
-  SharedImage(const SharedImage&) = delete;
-  SharedImage(SharedImage&&) = delete;
-  SharedImage& operator=(const SharedImage&) = delete;
-  SharedImage& operator=(SharedImage&&) = delete;
-
- private:
-  static constexpr int32_t kBytesPerPixel = 4;
-
-  int32_t GetStride() const {
-    // DIB requires 32-bit row alignment
-    return (((mWidth * kBytesPerPixel) + 3) / 4) * 4;
-  }
-
-  int32_t mWidth;
-  int32_t mHeight;
-  HANDLE mFileMapping;
-  unsigned char* mPixelData;
-};
-
-class PresentableSharedImage {
- public:
-  PresentableSharedImage() = default;
-
-  ~PresentableSharedImage() {
-    if (mSavedObject) {
-      MOZ_ALWAYS_TRUE(::SelectObject(mDeviceContext, mSavedObject));
-    }
-
-    if (mDIBSection) {
-      MOZ_ALWAYS_TRUE(::DeleteObject(mDIBSection));
-    }
-
-    if (mDeviceContext) {
-      MOZ_ALWAYS_TRUE(::DeleteDC(mDeviceContext));
-    }
-  }
-
-  bool Initialize(int32_t aWidth, int32_t aHeight) {
-    if (!mSharedImage.Initialize(aWidth, aHeight)) {
-      return false;
-    }
-
-    mDeviceContext = ::CreateCompatibleDC(nullptr);
-    if (!mDeviceContext) {
-      return false;
-    }
-
-    mDIBSection = mSharedImage.CreateDIBSection();
-    if (!mDIBSection) {
-      return false;
-    }
-
-    mSavedObject = ::SelectObject(mDeviceContext, mDIBSection);
-    if (!mSavedObject) {
-      return false;
-    }
-
-    return true;
-  }
-
-  bool PresentToWindow(HWND aWindowHandle,
-                       Span<const IpcSafeRect> aDirtyRects) {
-    gfx::IntRect sharedImageRect{0, 0, mSharedImage.GetWidth(),
-                                 mSharedImage.GetHeight()};
-
-    bool result = true;
-
-    HDC windowDC = ::GetDC(aWindowHandle);
-    if (!windowDC) {
-      return false;
-    }
-
-    for (auto& ipcDirtyRect : aDirtyRects) {
-      gfx::IntRect dirtyRect{ipcDirtyRect.x, ipcDirtyRect.y, ipcDirtyRect.width,
-                             ipcDirtyRect.height};
-      gfx::IntRect bltRect = dirtyRect.Intersect(sharedImageRect);
-
-      if (!::BitBlt(windowDC, bltRect.x /*dstX*/, bltRect.y /*dstY*/,
-                    bltRect.width, bltRect.height, mDeviceContext,
-                    bltRect.x /*srcX*/, bltRect.y /*srcY*/, SRCCOPY)) {
-        result = false;
-        break;
-      }
-    }
-
-    MOZ_ALWAYS_TRUE(::ReleaseDC(aWindowHandle, windowDC));
-
-    return result;
-  }
-
-  HANDLE CreateRemoteFileMapping(HANDLE aTargetProcess) {
-    return mSharedImage.CreateRemoteFileMapping(aTargetProcess);
-  }
-
-  already_AddRefed<gfx::DrawTarget> CreateDrawTarget() {
-    return mSharedImage.CreateDrawTarget();
-  }
-
-  void CopyPixelsFrom(const PresentableSharedImage& other) {
-    mSharedImage.CopyPixelsFrom(other.mSharedImage);
-  }
-
-  int32_t GetWidth() { return mSharedImage.GetWidth(); }
-
-  int32_t GetHeight() { return mSharedImage.GetHeight(); }
+  int32_t GetHeight() const { return mBuffer.Size().height; }
 
   PresentableSharedImage(const PresentableSharedImage&) = delete;
   PresentableSharedImage(PresentableSharedImage&&) = delete;
@@ -302,10 +204,8 @@ class PresentableSharedImage {
   PresentableSharedImage& operator=(PresentableSharedImage&&) = delete;
 
  private:
-  SharedImage mSharedImage{};
-  HDC mDeviceContext{nullptr};
-  HBITMAP mDIBSection{nullptr};
-  HGDIOBJ mSavedObject{nullptr};
+  HANDLE mFileMapping = nullptr;
+  GdiBackBuffer mBuffer;
 };
 
 Provider::Provider()
