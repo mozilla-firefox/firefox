@@ -748,6 +748,12 @@ static void UnhookTextRunFromFrames(gfxTextRun* aTextRun,
     MOZ_DIAGNOSTIC_ASSERT(
         destroyFromIndex >= 0,
         "aStartContinuation wasn't found in multi flow text run");
+    if (MOZ_UNLIKELY(destroyFromIndex < 0)) {
+      // aStartContinuation wasn't found, so nothing above modified any
+      // frame or the user data. Leave the user data as it is rather than
+      // storing uint32_t(-1) in mMappedFlowCount.
+      return;
+    }
     if (destroyFromIndex == 0) {
       DestroyTextRunUserData(aTextRun);
     } else {
@@ -3173,6 +3179,7 @@ void BuildTextRunsScanner::AssignTextRun(gfxTextRun* aTextRun,
       if (oldTextRun) {
         nsTextFrame* firstFrame = nullptr;
         uint32_t startOffset = 0;
+        bool flowFound = true;
         if (oldTextRun->GetFlags2() & nsTextFrameUtils::Flags::IsSimpleFlow) {
           firstFrame = GetFrameForSimpleFlow(oldTextRun);
         } else {
@@ -3186,6 +3193,7 @@ void BuildTextRunsScanner::AssignTextRun(gfxTextRun* aTextRun,
             if (flow) {
               startOffset = flow->mDOMOffsetToBeforeTransformOffset;
             } else {
+              flowFound = false;
               // Distinct from the assertion in UnhookTextRunFromFrames, so
               // crash reports tell "f's content isn't in the old run's
               // flows" apart from "f isn't reachable from any flow owner".
@@ -3199,7 +3207,9 @@ void BuildTextRunsScanner::AssignTextRun(gfxTextRun* aTextRun,
         // Optimization: if |f| is the first frame in the flow then there are no
         // prev-continuations that use |oldTextRun|.
         nsTextFrame* clearFrom = nullptr;
-        if (MOZ_UNLIKELY(f != firstFrame)) {
+        // If we couldn't locate f's flow, startOffset is meaningless, so don't
+        // try a partial clear; just clear the text run.
+        if (MOZ_UNLIKELY(f != firstFrame && flowFound)) {
           // If all the frames in the mapped flow starting at |f| (inclusive)
           // are empty then we let the prev-continuations keep the old text run.
           gfxSkipCharsIterator iter(oldTextRun->GetSkipChars(), startOffset,
