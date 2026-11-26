@@ -4,13 +4,19 @@
 
 package org.mozilla.fenix.ui.efficiency.tests
 
+import androidx.core.net.toUri
 import org.junit.Test
+import org.mozilla.fenix.customannotations.Critical
 import org.mozilla.fenix.customannotations.SmokeTest
 import org.mozilla.fenix.ext.components
 import org.mozilla.fenix.helpers.TestAssetHelper.enhancedTrackingProtectionAsset
 import org.mozilla.fenix.helpers.TestAssetHelper.getGenericAsset
+import org.mozilla.fenix.helpers.TestAssetHelper.waitingTimeLong
 import org.mozilla.fenix.helpers.TestHelper.appContext
+import org.mozilla.fenix.ui.efficiency.core.WaitPolicy
 import org.mozilla.fenix.ui.efficiency.helpers.BaseTest
+import org.mozilla.fenix.ui.efficiency.pageObjects.ProtectionsDashboardPage
+import org.mozilla.fenix.ui.efficiency.selectors.UnifiedTrustPanelSelectors
 import org.mozilla.fenix.ui.efficiency.selectors.UnifiedTrustPanelSelectors.CLEAR_COOKIES_AND_SITE_DATA_BUTTON
 
 class UnifiedTrustPanelTest : BaseTest() {
@@ -141,5 +147,65 @@ class UnifiedTrustPanelTest : BaseTest() {
             isTrackerBlockingEnabled = false,
             areTrackersBlocked = false,
         )
+    }
+
+    // TestRail link: https://mozilla.testrail.io/index.php?/cases/view/3186713
+    @Critical
+    @Test
+    fun verifyTheTrackersSubMenuInCustomTabTest() {
+        // Given a user who turned on Strict Enhanced Tracking Protection (Standard blocks tracking content only in
+        // private browsing, so Strict is what surfaces the tracking-content category for a normal custom tab).
+        appContext.components.settings.setStrictETP()
+        val genericPage = mockWebServer.getGenericAsset(1)
+        val customTabPage = "https://senglehardt.com/test/trackingprotection/test_pages/tracking_protection"
+        val host = customTabPage.toUri().host.toString()
+        val protectionsDashboard = ProtectionsDashboardPage(composeRule)
+
+        // The user opens a tracker-heavy, secure site in a custom tab. A generic load goes first so the ETP list is
+        // ready — a cold first load slips trackers through before it initializes, and they are never blocked.
+        on.customTabs.launchCustomTab(genericPage.url.toString())
+        on.customTabs.verifyWebContent(genericPage.content)
+        on.customTabs.launchCustomTab(customTabPage)
+        // Web-content text isn't reliably matched in a custom tab, so confirm the load via the toolbar host.
+        on.customTabs.verifyUrl(customTabPage)
+
+        // Opening the trust panel shows a secure connection with trackers blocked (the count can lag, so poll for it).
+        on.unifiedTrustPanel.navigateToPage()
+        on.unifiedTrustPanel.mozVerify(UnifiedTrustPanelSelectors.TRACKERS_BLOCKED_ON_SITE, timeout = waitingTimeLong)
+        on.unifiedTrustPanel.verifyUnifiedTrustPanelItems(
+            webSite = host,
+            webSiteURL = host,
+            shouldWebSiteURLBeDisplayed = false,
+            isTheWebSiteSecure = true,
+            isEnhancedTrackingProtectionEnabled = true,
+            isTrackerBlockingEnabled = true,
+            areTrackersBlocked = true,
+        )
+
+        // Tapping the protection banner (the secure-page "…is on guard" title) opens the trackers-blocked sub-panel.
+        on.unifiedTrustPanel.mozClick(UnifiedTrustPanelSelectors.ETP_BANNER_PROTECTED_TITLE, WaitPolicy.Poll())
+        on.unifiedTrustPanel.verifyTrackersBlockedSubPanel(host)
+
+        // Opening a blocked category shows its details; tracking content is the one senglehardt reliably blocks.
+        on.unifiedTrustPanel.mozVerify(UnifiedTrustPanelSelectors.TRACKERS_DETAILS_TRACKING_CONTENT)
+        on.unifiedTrustPanel.mozClick(UnifiedTrustPanelSelectors.TRACKERS_DETAILS_TRACKING_CONTENT, WaitPolicy.Poll())
+        on.unifiedTrustPanel.verifyTrackerCategoryDetailPanel(
+            host = host,
+            categoryTitle = UnifiedTrustPanelSelectors.CATEGORY_DETAIL_TRACKING_CONTENT_TITLE,
+            categoryDescription = UnifiedTrustPanelSelectors.CATEGORY_DETAIL_TRACKING_CONTENT_DESCRIPTION,
+        )
+        // Back returns to the trackers-blocked sub-panel.
+        on.unifiedTrustPanel.mozClick(UnifiedTrustPanelSelectors.SUBMENU_BACK_BUTTON)
+        on.unifiedTrustPanel.mozVerify(UnifiedTrustPanelSelectors.TRACKERS_PANEL_BLOCKED_ON_SITE_HEADER)
+
+        // The weekly total opens the protections dashboard; it has no back arrow, so system back returns to the list.
+        on.unifiedTrustPanel.mozClick(UnifiedTrustPanelSelectors.TRACKERS_BLOCKED_THIS_WEEK_ROW, WaitPolicy.Poll())
+        protectionsDashboard.verifyDashboardElements()
+        on.unifiedTrustPanel.mozPressBack()
+        on.unifiedTrustPanel.mozVerify(UnifiedTrustPanelSelectors.TRACKERS_PANEL_BLOCKED_ON_SITE_HEADER)
+
+        // Backing out once more returns to the trust panel.
+        on.unifiedTrustPanel.mozClick(UnifiedTrustPanelSelectors.SUBMENU_BACK_BUTTON)
+        on.unifiedTrustPanel.mozVerify(UnifiedTrustPanelSelectors.PRIVACY_SETTINGS_LINK)
     }
 }

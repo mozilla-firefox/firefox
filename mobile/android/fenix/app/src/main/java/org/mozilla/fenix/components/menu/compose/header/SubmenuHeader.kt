@@ -22,6 +22,7 @@ import androidx.compose.runtime.Composable
 import androidx.compose.runtime.CompositionLocalProvider
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.platform.testTag
 import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.semantics.heading
 import androidx.compose.ui.semantics.semantics
@@ -34,6 +35,7 @@ import mozilla.components.compose.base.theme.PreviewThemeProvider
 import mozilla.components.compose.base.theme.Theme
 import mozilla.components.support.ktx.kotlin.tryGetHostFromUrl
 import mozilla.components.ui.icons.R as iconsR
+import org.mozilla.fenix.components.menu.MenuTestTag
 import org.mozilla.fenix.theme.FirefoxTheme
 
 @Composable
@@ -54,6 +56,7 @@ internal fun SubmenuHeader(
             IconButton(
                 onClick = { onClick() },
                 contentDescription = backButtonContentDescription,
+                modifier = Modifier.testTag(MenuTestTag.SUBMENU_HEADER_BACK_BUTTON),
             ) {
                 Icon(
                     painter = painterResource(id = iconsR.drawable.mozac_ic_back_24),
