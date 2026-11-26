@@ -5,10 +5,12 @@
 /*
  * Implements RFC 9462 Discovery of Designated Resolvers (DDR).
  *
- * A DoH server designated by the network's unencrypted (Do53) resolver may
- * only be used after verify() confirms, with a test query to the designated
- * resolver, that its TLS certificate covers one of the unencrypted resolver IP
- * addresses.
+ * We query the network's unencrypted (Do53) resolver for SVCB records at the
+ * special name "_dns.resolver.arpa". A ServiceMode record advertising an HTTP
+ * ALPN (h2/h3) and an RFC 9461 dohpath describes a DoH server designated by the
+ * current network. The returned DoH URI is only used after the heuristics pass
+ * and after verify() confirms, with a test query to the designated resolver,
+ * that its TLS certificate covers one of the unencrypted resolver IP addresses.
  */
 
 const lazy = {};
@@ -59,14 +61,174 @@ function isDNSAnswer(aChannel, aStatus, aBody) {
   );
 }
 
+// RFC 9462: the special-use name queried with the SVCB (64) type.
+const DDR_QNAME = "_dns.resolver.arpa";
+
+// ALPN protocol identifiers we consider to indicate a DoH server.
+const DOH_ALPNS = ["h2", "h3"];
+
+function alpnIsDoH(alpnList) {
+  return alpnList.some(alpn => DOH_ALPNS.includes(alpn));
+}
+
+// Extracts the port, alpn list and dohpath from an nsISVCBRecord's SvcParams.
+function extractParams(record) {
+  let port = 443;
+  let alpn = [];
+  let dohPath = "";
+
+  // SvcParamKey values from HTTPSSVC.h: Alpn = 1, Port = 3.
+  const SvcParamKeyAlpn = 1;
+  const SvcParamKeyPort = 3;
+
+  for (let param of record.values) {
+    switch (param.type) {
+      case SvcParamKeyAlpn:
+        try {
+          alpn = param.QueryInterface(Ci.nsISVCParamAlpn).alpn;
+        } catch (e) {}
+        break;
+      case SvcParamKeyPort:
+        try {
+          port = param.QueryInterface(Ci.nsISVCParamPort).port;
+        } catch (e) {}
+        break;
+      default:
+        break;
+    }
+  }
+
+  try {
+    dohPath = record.dohPath;
+  } catch (e) {}
+
+  return { port, alpn, dohPath };
+}
+
+// Turns an RFC 9461 dohpath URI template into the { path, query } Necko expects
+// for network.trr.uri, or returns null if it can't be used. RFC 9461 requires a
+// relative template starting with "/" and containing a "dns" variable. For GET
+// requests Necko appends "dns=<base64url>" as the last query parameter, so only
+// templates ending in a "{?dns}" expansion (no other query) or a "{&dns}"
+// expansion (after a literal query) can be expressed.
+function parseDohPath(dohPath) {
+  if (!dohPath.startsWith("/")) {
+    return null;
+  }
+  let literal;
+  if (dohPath.endsWith("{?dns}")) {
+    literal = dohPath.slice(0, -"{?dns}".length);
+    if (literal.includes("?")) {
+      return null;
+    }
+  } else if (dohPath.endsWith("{&dns}")) {
+    literal = dohPath.slice(0, -"{&dns}".length);
+    if (!literal.includes("?") || literal.endsWith("?")) {
+      return null;
+    }
+  } else {
+    return null;
+  }
+  if (/[{}#]/.test(literal)) {
+    return null;
+  }
+  let [path, query = ""] = literal.split(/\?(.*)/s);
+  return { path, query };
+}
+
+// Builds the DoH URI for a designated resolver, or returns null if the
+// TargetName isn't a usable host for one.
+function buildDoHURI(target, port, { path, query }) {
+  // RFC 9460: a ServiceMode TargetName of "." means the owner name, which here
+  // is _dns.resolver.arpa itself.
+  let host = target.replace(/\.$/, "").toLowerCase();
+  if (!host || host == DDR_QNAME) {
+    return null;
+  }
+
+  let uri;
+  try {
+    uri = Services.io
+      .newURI("https://localhost")
+      .mutate()
+      .setHost(host)
+      .setPort(port == 443 ? -1 : port)
+      .setPathQueryRef(query ? `${path}?${query}` : path)
+      .finalize();
+  } catch (e) {
+    return null;
+  }
+  // The TargetName is raw DNS name data that may not be a valid host, and the
+  // path must not be normalized into something else.
+  if (
+    uri.asciiHost != host ||
+    uri.port != (port == 443 ? -1 : port) ||
+    uri.filePath != path ||
+    uri.query != query
+  ) {
+    return null;
+  }
+  return uri.spec;
+}
+
 export const DoHDiscovery = {
   /**
-   * Verifies a designated resolver (RFC 9462 section 4.2): its TLS
-   * certificate must cover one of resolverAddrs, and it must answer a test
+   * Runs DDR discovery. Resolves to { uri, resolverAddrs } for the highest
+   * priority usable designated DoH resolver, or null if none was found.
+   */
+  async discover() {
+    let record = await this._resolveSVCB(DDR_QNAME);
+    if (!record) {
+      return null;
+    }
+
+    let httpsRec;
+    try {
+      httpsRec = record.QueryInterface(Ci.nsIDNSHTTPSSVCRecord);
+    } catch (e) {
+      return null;
+    }
+
+    let resolverAddrs = [];
+    try {
+      resolverAddrs = httpsRec.resolverAddrs;
+    } catch (e) {}
+
+    // records are already sorted by ascending priority by the decoder.
+    for (let svcb of httpsRec.records) {
+      // AliasMode records have priority 0 and are not usable here.
+      if (svcb.priority == 0) {
+        continue;
+      }
+
+      let { port, alpn, dohPath } = extractParams(svcb);
+      if (!dohPath || !alpnIsDoH(alpn)) {
+        continue;
+      }
+
+      let parsedPath = parseDohPath(dohPath);
+      if (!parsedPath) {
+        continue;
+      }
+
+      let uri = buildDoHURI(svcb.name, port, parsedPath);
+      if (!uri) {
+        continue;
+      }
+
+      return { uri, resolverAddrs };
+    }
+
+    return null;
+  },
+
+  /**
+   * Verifies a resolver returned by discover() (RFC 9462 section 4.2): its
+   * TLS certificate must cover one of resolverAddrs, and it must answer a test
    * query. Resolves to true if the resolver can be used.
    *
    * @param {object} discovered
-   *   The designated resolver.
+   *   The result of discover().
    * @param {string} discovered.uri
    *   The DoH URI of the designated resolver.
    * @param {string[]} discovered.resolverAddrs
@@ -169,6 +331,41 @@ export const DoHDiscovery = {
         // e.g. a port that Necko doesn't allow connecting to.
         lazy.clearTimeout(timer);
         resolve("no_connection");
+      }
+    });
+  },
+
+  _resolveSVCB(host) {
+    return new Promise(resolve => {
+      let listener = {
+        onLookupComplete(request, rec, status) {
+          if (!Components.isSuccessCode(status) || !rec) {
+            resolve(null);
+            return;
+          }
+          resolve(rec);
+        },
+        QueryInterface: ChromeUtils.generateQI(["nsIDNSListener"]),
+      };
+
+      // Query the local (Do53) resolver directly: bypass TRR and the cache.
+      let flags =
+        Ci.nsIDNSService.RESOLVE_DISABLE_TRR |
+        Ci.nsIDNSService.RESOLVE_BYPASS_CACHE;
+
+      try {
+        Services.dns.asyncResolve(
+          host,
+          Ci.nsIDNSService.RESOLVE_TYPE_SVCB,
+          flags,
+          null,
+          listener,
+          Services.tm.mainThreadEventTarget,
+          {}
+        );
+      } catch (e) {
+        console.error(`DoHDiscovery: asyncResolve failed: ${e.message}`);
+        resolve(null);
       }
     });
   },

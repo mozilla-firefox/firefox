@@ -17643,6 +17643,23 @@
   value: false
   mirror: always
 
+# When true, and no DoH provider is configured, DoHController may run RFC 9462
+# Discovery of Designated Resolvers (DDR) to find a DoH server designated by the
+# network's unencrypted resolver.
+- name: network.trr.ddr.enabled
+  type: RelaxedAtomicBool
+  value: false
+  mirror: always
+
+# When true, a resolver discovered via RFC 9462 DDR is set as the
+# system TRR endpoint once verified. When false, DDR discovery still runs and
+# records telemetry, but the discovered resolver is not used - this lets us
+# measure DDR availability without changing users' DNS.
+- name: network.trr.ddr.use_resolver
+  type: RelaxedAtomicBool
+  value: false
+  mirror: always
+
 # When true, the HTTP cache uses the No-Vary-Search response header to match
 # URL variants against existing cache entries, implementing the "equivalent
 # modulo variation config" algorithm from the No-Vary-Search spec
