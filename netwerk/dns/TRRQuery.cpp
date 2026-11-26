@@ -160,6 +160,8 @@ nsresult TRRQuery::DispatchByTypeLookup(TRR* pushedTRR) {
     rectype = TRRTYPE_TXT;
   } else if (mRecord->type == nsIDNSService::RESOLVE_TYPE_HTTPSSVC) {
     rectype = TRRTYPE_HTTPSSVC;
+  } else if (mRecord->type == nsIDNSService::RESOLVE_TYPE_SVCB) {
+    rectype = TRRTYPE_SVCB;
   } else if (pushedTRR) {
     rectype = pushedTRR->Type();
   } else {

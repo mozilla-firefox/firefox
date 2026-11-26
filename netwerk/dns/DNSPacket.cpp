@@ -172,6 +172,11 @@ nsresult DNSPacket::ParseSvcParam(unsigned int svcbIndex, uint16_t key,
       }
       break;
     }
+    case SvcParamKeyDohPath: {
+      field.mValue = AsVariant(SvcParamDohPath{
+          .mValue = nsCString((const char*)(&aBuffer[svcbIndex]), length)});
+      break;
+    }
     case SvcParamKeyODoHConfig: {
       field.mValue = AsVariant(SvcParamODoHConfig{
           .mValue = nsCString((const char*)(&aBuffer[svcbIndex]), length)});
@@ -604,6 +609,9 @@ nsresult DNSPacket::ParseHTTPS(uint16_t aRDLen, struct SVCB& aParsed,
     if (value.mValue.is<SvcParamODoHConfig>()) {
       aParsed.mODoHConfig = value.mValue.as<SvcParamODoHConfig>().mValue;
     }
+    if (value.mValue.is<SvcParamDohPath>()) {
+      aParsed.mDohPath = value.mValue.as<SvcParamDohPath>().mValue;
+    }
     aParsed.mSvcFieldValue.AppendElement(value);
   }
 
@@ -858,10 +866,11 @@ nsresult DNSPacket::DecodeInternal(
 
           break;
         }
+        case TRRTYPE_SVCB:
         case TRRTYPE_HTTPSSVC: {
           struct SVCB parsed;
 
-          if (aType != TRRTYPE_HTTPSSVC) {
+          if (TYPE != aType) {
             // Ignore the entry that we just parsed if we didn't ask for it.
             break;
           }

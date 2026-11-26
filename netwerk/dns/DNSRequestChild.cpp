@@ -214,14 +214,17 @@ class ChildDNSByTypeRecord : public nsIDNSByTypeRecord,
   NS_DECL_NSIDNSHTTPSSVCRECORD
 
   explicit ChildDNSByTypeRecord(const TypeRecordResultType& reply,
-                                const nsACString& aHost, uint32_t aTTL,
-                                bool aIsTRR, bool aFromStaleCache);
+                                const nsACString& aHost, uint16_t aType,
+                                uint32_t aTTL, bool aIsTRR,
+                                bool aFromStaleCache);
 
  private:
   virtual ~ChildDNSByTypeRecord() = default;
 
   TypeRecordResultType mResults = AsVariant(mozilla::Nothing());
   bool mAllRecordsExcluded = false;
+  // The requested record type, which tells SVCB and HTTPS results apart.
+  uint16_t mType = 0;
   uint32_t mTTL = 0;
   bool mIsTRR = false;
   bool mFromStaleCache = false;
@@ -232,10 +235,11 @@ NS_IMPL_ISUPPORTS(ChildDNSByTypeRecord, nsIDNSByTypeRecord, nsIDNSRecord,
 
 ChildDNSByTypeRecord::ChildDNSByTypeRecord(const TypeRecordResultType& reply,
                                            const nsACString& aHost,
-                                           uint32_t aTTL, bool aIsTRR,
-                                           bool aFromStaleCache)
+                                           uint16_t aType, uint32_t aTTL,
+                                           bool aIsTRR, bool aFromStaleCache)
     : DNSHTTPSSVCRecordBase(aHost) {
   mResults = reply;
+  mType = aType;
   mTTL = aTTL;
   mIsTRR = aIsTRR;
   mFromStaleCache = aFromStaleCache;
@@ -255,7 +259,11 @@ ChildDNSByTypeRecord::GetType(uint32_t* aType) {
         return nsIDNSService::RESOLVE_TYPE_DEFAULT;
       },
       [](TypeRecordTxt&) { return nsIDNSService::RESOLVE_TYPE_TXT; },
-      [](TypeRecordHTTPSSVC&) { return nsIDNSService::RESOLVE_TYPE_HTTPSSVC; });
+      [&](TypeRecordHTTPSSVC&) {
+        return mType == nsIDNSService::RESOLVE_TYPE_SVCB
+                   ? nsIDNSService::RESOLVE_TYPE_SVCB
+                   : nsIDNSService::RESOLVE_TYPE_HTTPSSVC;
+      });
   return NS_OK;
 }
 
@@ -306,6 +314,12 @@ NS_IMETHODIMP
 ChildDNSByTypeRecord::IsTRR(bool* aResult) {
   *aResult = mIsTRR;
   return NS_OK;
+}
+
+// The system resolver addresses are deliberately not sent to child processes.
+NS_IMETHODIMP
+ChildDNSByTypeRecord::GetResolverAddrs(nsTArray<nsCString>& aResult) {
+  return NS_ERROR_NOT_AVAILABLE;
 }
 
 NS_IMETHODIMP
@@ -495,7 +509,7 @@ bool DNSRequestSender::OnRecvLookupCompleted(const DNSRequestResponse& reply) {
     case DNSRequestResponse::TIPCTypeRecord: {
       MOZ_ASSERT(mType != nsIDNSService::RESOLVE_TYPE_DEFAULT);
       mResultRecord = new ChildDNSByTypeRecord(
-          reply.get_IPCTypeRecord().mData, mHost,
+          reply.get_IPCTypeRecord().mData, mHost, mType,
           reply.get_IPCTypeRecord().mTTL, reply.get_IPCTypeRecord().mIsTRR,
           reply.get_IPCTypeRecord().mFromStaleCache);
       break;

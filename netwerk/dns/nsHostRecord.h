@@ -394,6 +394,11 @@ class TypeHostRecord final : public nsHostRecord,
 
   mozilla::Maybe<nsCString> mOriginHost MOZ_GUARDED_BY(mResultsLock);
   bool mAllRecordsExcluded = false;
+
+  // For RFC 9462 DDR: the addresses of the unencrypted resolvers configured on
+  // the system when a native SVCB query was made. Empty for TRR results and
+  // non-SVCB queries.
+  nsTArray<mozilla::net::NetAddr> mResolverAddrs MOZ_GUARDED_BY(mResultsLock);
 };
 
 static inline bool IsHighPriority(nsIDNSService::DNSFlags flags) {

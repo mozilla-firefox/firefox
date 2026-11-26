@@ -45,7 +45,8 @@ DEFINE_IPC_SERIALIZER_WITH_FIELDS(mozilla::net::IPCTypeRecord, mData, mTTL,
 
 DEFINE_IPC_SERIALIZER_WITH_FIELDS(mozilla::net::SVCB, mSvcFieldPriority,
                                   mSvcDomainName, mEchConfig, mODoHConfig,
-                                  mHasIPHints, mHasEchConfig, mSvcFieldValue);
+                                  mDohPath, mHasIPHints, mHasEchConfig,
+                                  mSvcFieldValue);
 
 DEFINE_IPC_SERIALIZER_WITH_FIELDS(mozilla::net::SvcParamAlpn, mValue);
 
@@ -60,6 +61,8 @@ DEFINE_IPC_SERIALIZER_WITH_FIELDS(mozilla::net::SvcParamEchConfig, mValue);
 DEFINE_IPC_SERIALIZER_WITH_FIELDS(mozilla::net::SvcParamIpv6Hint, mValue);
 
 DEFINE_IPC_SERIALIZER_WITH_FIELDS(mozilla::net::SvcParamODoHConfig, mValue);
+
+DEFINE_IPC_SERIALIZER_WITH_FIELDS(mozilla::net::SvcParamDohPath, mValue);
 
 DEFINE_IPC_SERIALIZER_WITH_FIELDS(mozilla::net::SvcFieldValue, mValue);
 

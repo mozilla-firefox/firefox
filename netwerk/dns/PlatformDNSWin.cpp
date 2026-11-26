@@ -30,23 +30,23 @@ nsresult ParseHTTPSRecordList(const DNS_RECORDA* aRecords,
                               const nsACString& aHost,
                               const Maybe<nsCString>& aOriginHost,
                               TypeRecordResultType& aResult, uint32_t& aTTL,
-                              HTTPSAliasTarget& aAlias) {
+                              HTTPSAliasTarget& aAlias, uint16_t aType) {
   nsAutoCString host(aHost);
   nsAutoCString cname;
   // True when |cname| came from an HTTPS AliasMode record rather than a CNAME.
   bool cnameIsAlias = false;
   aTTL = UINT32_MAX;
 
-  auto CheckRecords = [&aResult, &cname, &cnameIsAlias, &aTTL, &aOriginHost](
-                          const DNS_RECORDA* result,
-                          const nsCString& aHost) -> nsresult {
+  auto CheckRecords = [&aResult, &cname, &cnameIsAlias, &aTTL, &aOriginHost,
+                       aType](const DNS_RECORDA* result,
+                              const nsCString& aHost) -> nsresult {
     for (const DNS_RECORDA* current = result; current;
          current = current->pNext) {
       if (!current->pName ||
           !DNSPacket::IsSameName(nsDependentCString(current->pName), aHost)) {
         continue;
       }
-      if (current->wType == nsIDNSService::RESOLVE_TYPE_HTTPSSVC) {
+      if (current->wType == aType) {
         const unsigned char* ptr = (const unsigned char*)&(current->Data);
         struct SVCB parsed;
         nsresult rv = DNSPacket::ParseHTTPS(current->wDataLength, parsed, 0,
@@ -141,7 +141,8 @@ nsresult ResolveHTTPSRecordImpl(const nsACString& aHost,
                                 const Maybe<nsCString>& aOriginHost,
                                 nsIDNSService::DNSFlags aFlags,
                                 TypeRecordResultType& aResult, uint32_t& aTTL,
-                                HTTPSAliasTarget& aAlias) {
+                                HTTPSAliasTarget& aAlias, uint16_t aType,
+                                nsTArray<NetAddr>* aResolverAddrs) {
   nsAutoCString host(aHost);
   PDNS_RECORD result = nullptr;
 
@@ -152,12 +153,13 @@ nsresult ResolveHTTPSRecordImpl(const nsACString& aHost,
 
   TimeStamp startTime = TimeStamp::Now();
 
-  DNS_STATUS status =
-      DnsQuery_A(host.get(), nsIDNSService::RESOLVE_TYPE_HTTPSSVC,
-                 DNS_QUERY_STANDARD, nullptr, &result, nullptr);
+  DNS_STATUS status = DnsQuery_A(host.get(), aType, DNS_QUERY_STANDARD, nullptr,
+                                 &result, nullptr);
 
-  mozilla::glean::networking::dns_native_https_call_time.AccumulateRawDuration(
-      TimeStamp::Now() - startTime);
+  if (aType == nsIDNSService::RESOLVE_TYPE_HTTPSSVC) {
+    mozilla::glean::networking::dns_native_https_call_time
+        .AccumulateRawDuration(TimeStamp::Now() - startTime);
+  }
 
   if (status != ERROR_SUCCESS) {
     LOG("DnsQuery_A failed with error: %ld\n", status);
@@ -167,7 +169,8 @@ nsresult ResolveHTTPSRecordImpl(const nsACString& aHost,
   auto freeDnsRecord =
       MakeScopeExit([&]() { DnsRecordListFree(result, DnsFreeRecordList); });
 
-  return ParseHTTPSRecordList(result, host, aOriginHost, aResult, aTTL, aAlias);
+  return ParseHTTPSRecordList(result, host, aOriginHost, aResult, aTTL, aAlias,
+                              aType);
 }
 
 void DNSThreadShutdown() {}

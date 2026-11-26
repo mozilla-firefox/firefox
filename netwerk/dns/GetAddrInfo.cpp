@@ -452,7 +452,7 @@ nsresult GetAddrInfo(const nsACString& aHost, uint16_t aAddressFamily,
 bool FindHTTPSRecordOverride(const nsACString& aHost,
                              const Maybe<nsCString>& aOriginHost,
                              TypeRecordResultType& aResult,
-                             HTTPSAliasTarget& aAlias) {
+                             HTTPSAliasTarget& aAlias, uint16_t aType) {
   LOG("FindHTTPSRecordOverride aHost=%s", PromiseFlatCString(aHost).get());
   if (!gOverrideServiceUsed) {
     return false;
@@ -492,7 +492,7 @@ bool FindHTTPSRecordOverride(const nsACString& aHost,
   }
 
   uint32_t ttl = 0;
-  rv = ParseHTTPSRecord(host, packet, aResult, ttl, aAlias);
+  rv = ParseHTTPSRecord(host, packet, aResult, ttl, aAlias, aType);
   if (NS_FAILED(rv)) {
     // ParseHTTPSRecord may leave partial data (e.g. a valid record parsed
     // before a malformed one) or a stale alias behind. Don't let the caller
@@ -506,7 +506,7 @@ bool FindHTTPSRecordOverride(const nsACString& aHost,
 
 nsresult ParseHTTPSRecord(nsCString& aHost, DNSPacket& aDNSPacket,
                           TypeRecordResultType& aResult, uint32_t& aTTL,
-                          HTTPSAliasTarget& aAlias) {
+                          HTTPSAliasTarget& aAlias, uint16_t aType) {
   nsAutoCString cname;
   nsresult rv;
 
@@ -517,8 +517,8 @@ nsresult ParseHTTPSRecord(nsCString& aHost, DNSPacket& aDNSPacket,
     loopCount--;
     DOHresp resp;
     nsClassHashtable<nsCStringHashKey, DOHresp> additionalRecords;
-    rv = aDNSPacket.Decode(aHost, TRRTYPE_HTTPSSVC, cname, true, resp, aResult,
-                           additionalRecords, aTTL);
+    rv = aDNSPacket.Decode(aHost, static_cast<TrrType>(aType), cname, true,
+                           resp, aResult, additionalRecords, aTTL);
     if (NS_FAILED(rv)) {
       // If we were following a target whose records are not present in this
       // response, surface it so the caller can re-query it.
@@ -562,7 +562,8 @@ nsresult ParseHTTPSRecord(nsCString& aHost, DNSPacket& aDNSPacket,
 nsresult ResolveHTTPSRecord(const nsACString& aHost,
                             nsIDNSService::DNSFlags aFlags,
                             TypeRecordResultType& aResult, uint32_t& aTTL,
-                            const Maybe<nsCString>& aOriginHost) {
+                            const Maybe<nsCString>& aOriginHost, uint16_t aType,
+                            nsTArray<NetAddr>* aResolverAddrs) {
   nsAutoCString host(aHost);
   // The last AliasMode (SvcPriority 0) TargetName we followed, if any.
   nsAutoCString aliasTarget;
@@ -579,12 +580,12 @@ nsresult ResolveHTTPSRecord(const nsACString& aHost,
         aliasTarget.IsEmpty() ? aOriginHost : Nothing();
     nsresult rv;
     if (gOverrideServiceUsed &&
-        FindHTTPSRecordOverride(host, originHost, aResult, alias)) {
+        FindHTTPSRecordOverride(host, originHost, aResult, alias, aType)) {
       // The host has an override entry; treat it as authoritative.
       rv = NS_OK;
     } else {
       rv = ResolveHTTPSRecordImpl(host, originHost, aFlags, aResult, aTTL,
-                                  alias);
+                                  alias, aType, aResolverAddrs);
     }
 
     if (NS_FAILED(rv) && rv != NS_ERROR_UNKNOWN_HOST) {
@@ -777,7 +778,8 @@ nsresult ResolveHTTPSRecordImpl(const nsACString& aHost,
                                 const Maybe<nsCString>& aOriginHost,
                                 nsIDNSService::DNSFlags aFlags,
                                 TypeRecordResultType& aResult, uint32_t& aTTL,
-                                HTTPSAliasTarget& aAlias) {
+                                HTTPSAliasTarget& aAlias, uint16_t aType,
+                                nsTArray<NetAddr>* aResolverAddrs) {
   return NS_ERROR_NOT_IMPLEMENTED;
 }
 

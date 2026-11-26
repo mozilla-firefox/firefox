@@ -40,6 +40,7 @@ interface nsIDNSService : nsISupports
     cenum ResolveType : 16 {
         RESOLVE_TYPE_DEFAULT = 0,
         RESOLVE_TYPE_TXT = 16,
+        RESOLVE_TYPE_SVCB = 64,
         RESOLVE_TYPE_HTTPSSVC = 65,
     };
 

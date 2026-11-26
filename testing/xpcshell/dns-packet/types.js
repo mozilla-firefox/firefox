@@ -46,6 +46,7 @@ exports.toString = function (type) {
     case 251: return 'IXFR'
     case 41: return 'OPT'
     case 255: return 'ANY'
+    case 64: return 'SVCB'
     case 65: return 'HTTPS'
   }
   return 'UNKNOWN_' + type
@@ -97,6 +98,7 @@ exports.toType = function (name) {
     case 'IXFR': return 251
     case 'OPT': return 41
     case 'ANY': return 255
+    case 'SVCB': return 64
     case 'HTTPS': return 65
     case '*': return 255
   }

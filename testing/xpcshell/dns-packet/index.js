@@ -1295,6 +1295,7 @@ svcparam.keyToNumber = function(keyName) {
     case 'ipv4hint' : return 4
     case 'echconfig' : return 5
     case 'ipv6hint' : return 6
+    case 'dohpath' : return 7
     case 'odoh' : return 32769
     case 'key65535' : return 65535
   }
@@ -1314,6 +1315,7 @@ svcparam.numberToKeyName = function(number) {
     case 4 : return 'ipv4hint'
     case 5 : return 'echconfig'
     case 6 : return 'ipv6hint'
+    case 7 : return 'dohpath'
     case 32769 : return 'odoh'
   }
 
@@ -1423,6 +1425,13 @@ svcparam.encode = function(param, buf, offset) {
       offset += 16;
       svcparam.encode.bytes += 16;
     }
+  } else if (key == 7) { //dohpath
+    buf.writeUInt16BE(param.value.length, offset);
+    offset += 2;
+    svcparam.encode.bytes += 2;
+    buf.write(param.value, offset);
+    offset += param.value.length;
+    svcparam.encode.bytes += param.value.length;
    } else if (key == 32769) { //odoh
       if (svcparam.odoh) {
         buf.writeUInt16BE(svcparam.odoh.length, offset);
@@ -1497,6 +1506,7 @@ svcparam.encodingLength = function (param) {
       return 4 + param.value.length
     }
     case 'ipv6hint' : return 4 + 16 * (Array.isArray(param.value) ? param.value.length : 1)
+    case 'dohpath' : return 4 + param.value.length
     case 'odoh' : {
       if (param.needBase64Decode) {
         svcparam.odoh = Buffer.from(param.value, "base64");
@@ -1595,6 +1605,7 @@ const renc = exports.record = function (type) {
     case 'NSEC': return rnsec
     case 'NSEC3': return rnsec3
     case 'DS': return rds
+    case 'SVCB': return rhttpssvc
     case 'HTTPS': return rhttpssvc
   }
   return runknown

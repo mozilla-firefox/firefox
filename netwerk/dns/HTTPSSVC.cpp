@@ -72,7 +72,8 @@ SvcParam::GetType(uint16_t* aType) {
       [](SvcParamIpv4Hint&) { return SvcParamKeyIpv4Hint; },
       [](SvcParamEchConfig&) { return SvcParamKeyEchConfig; },
       [](SvcParamIpv6Hint&) { return SvcParamKeyIpv6Hint; },
-      [](SvcParamODoHConfig&) { return SvcParamKeyODoHConfig; });
+      [](SvcParamODoHConfig&) { return SvcParamKeyODoHConfig; },
+      [](SvcParamDohPath&) { return SvcParamKeyDohPath; });
   return NS_OK;
 }
 
@@ -271,6 +272,11 @@ NS_IMETHODIMP SVCBRecord::GetEchConfig(nsACString& aEchConfig) {
 
 NS_IMETHODIMP SVCBRecord::GetODoHConfig(nsACString& aODoHConfig) {
   aODoHConfig = mData.mODoHConfig;
+  return NS_OK;
+}
+
+NS_IMETHODIMP SVCBRecord::GetDohPath(nsACString& aDohPath) {
+  aDohPath = mData.mDohPath;
   return NS_OK;
 }
 

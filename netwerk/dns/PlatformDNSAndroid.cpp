@@ -40,7 +40,8 @@ nsresult ResolveHTTPSRecordImpl(const nsACString& aHost,
                                 const Maybe<nsCString>& aOriginHost,
                                 nsIDNSService::DNSFlags aFlags,
                                 TypeRecordResultType& aResult, uint32_t& aTTL,
-                                HTTPSAliasTarget& aAlias) {
+                                HTTPSAliasTarget& aAlias, uint16_t aType,
+                                nsTArray<NetAddr>* aResolverAddrs) {
   DNSPacket packet;
   nsAutoCString host(aHost);
   nsresult rv;
@@ -81,8 +82,7 @@ nsresult ResolveHTTPSRecordImpl(const nsACString& aHost,
         if (aFlags & nsIDNSService::RESOLVE_BYPASS_CACHE) {
           flags = ANDROID_RESOLV_NO_CACHE_LOOKUP;
         }
-        fd = sAndroidResNQuery(0, host.get(), ns_c_in,
-                               nsIDNSService::RESOLVE_TYPE_HTTPSSVC, flags);
+        fd = sAndroidResNQuery(0, host.get(), ns_c_in, aType, flags);
 
         if (fd < 0) {
           LOG("DNS query failed");
@@ -114,15 +114,17 @@ nsresult ResolveHTTPSRecordImpl(const nsACString& aHost,
 
         return len;
       });
-  mozilla::glean::networking::dns_native_https_call_time.AccumulateRawDuration(
-      TimeStamp::Now() - startTime);
+  if (aType == nsIDNSService::RESOLVE_TYPE_HTTPSSVC) {
+    mozilla::glean::networking::dns_native_https_call_time
+        .AccumulateRawDuration(TimeStamp::Now() - startTime);
+  }
   if (NS_FAILED(rv)) {
     LOG("failed rv");
     return rv;
   }
 
   packet.SetOriginHost(aOriginHost);
-  return ParseHTTPSRecord(host, packet, aResult, aTTL, aAlias);
+  return ParseHTTPSRecord(host, packet, aResult, aTTL, aAlias, aType);
 }
 
 void DNSThreadShutdown() {}

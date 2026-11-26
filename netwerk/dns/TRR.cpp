@@ -220,7 +220,7 @@ nsresult TRR::SendHTTPRequest() {
 
   if ((mType != TRRTYPE_A) && (mType != TRRTYPE_AAAA) &&
       (mType != TRRTYPE_NS) && (mType != TRRTYPE_TXT) &&
-      (mType != TRRTYPE_HTTPSSVC)) {
+      (mType != TRRTYPE_SVCB) && (mType != TRRTYPE_HTTPSSVC)) {
     // limit the calling interface because nsHostResolver has explicit slots for
     // these types
     return NS_ERROR_FAILURE;
@@ -607,7 +607,8 @@ nsresult TRR::ReturnData(nsIChannel* aChannel) {
     }
   }
 
-  if (mType != TRRTYPE_TXT && mType != TRRTYPE_HTTPSSVC) {
+  if (mType != TRRTYPE_TXT && mType != TRRTYPE_SVCB &&
+      mType != TRRTYPE_HTTPSSVC) {
     // create and populate an AddrInfo instance to pass on
     RefPtr<AddrInfo> ai(new AddrInfo(mHost, ResolverType(), mType,
                                      nsTArray<NetAddr>(), mDNS.mTtl));
@@ -648,7 +649,8 @@ nsresult TRR::FailData(nsresult error) {
   // If we didn't record a reason until now, record a default one.
   RecordReason(TRRSkippedReason::TRR_FAILED);
 
-  if (mType == TRRTYPE_TXT || mType == TRRTYPE_HTTPSSVC) {
+  if (mType == TRRTYPE_TXT || mType == TRRTYPE_SVCB ||
+      mType == TRRTYPE_HTTPSSVC) {
     TypeRecordResultType empty(Nothing{});
     (void)mHostResolver->CompleteLookupByType(mRec, error, empty,
                                               mTRRSkippedReason, 0, mPB);
@@ -691,7 +693,7 @@ bool TRR::HasUsableResponse() {
   if (mType == TRRTYPE_TXT) {
     return mResult.is<TypeRecordTxt>();
   }
-  if (mType == TRRTYPE_HTTPSSVC) {
+  if (mType == TRRTYPE_SVCB || mType == TRRTYPE_HTTPSSVC) {
     return mResult.is<TypeRecordHTTPSSVC>();
   }
   return false;
