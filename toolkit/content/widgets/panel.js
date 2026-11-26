@@ -7,7 +7,9 @@
 // This is loaded into all XUL windows. Wrap in a block to prevent
 // leaking to window scope.
 {
-  class MozPanel extends MozElements.MozElementMixin(XULPopupElement) {
+  class MozPanel extends MozElements.MozAnchoredPopupMixin(
+    MozElements.MozElementMixin(XULPopupElement)
+  ) {
     static get markup() {
       return `<html:slot part="content"/>`;
     }
@@ -94,37 +96,6 @@
 
     get noOpenOnAnchor() {
       return this.hasAttribute("no-open-on-anchor");
-    }
-
-    _setSideAttribute(event) {
-      if (!this.isArrowPanel || !event.isAnchored) {
-        return;
-      }
-
-      let position = event.alignmentPosition;
-      if (position.indexOf("start_") == 0 || position.indexOf("end_") == 0) {
-        // The assigned side stays the same regardless of direction.
-        let isRTL = window.getComputedStyle(this).direction == "rtl";
-
-        if (position.indexOf("start_") == 0) {
-          this.setAttribute("side", isRTL ? "left" : "right");
-        } else {
-          this.setAttribute("side", isRTL ? "right" : "left");
-        }
-      } else if (
-        position.indexOf("before_") == 0 ||
-        position.indexOf("after_") == 0
-      ) {
-        if (position.indexOf("before_") == 0) {
-          this.setAttribute("side", "bottom");
-        } else {
-          this.setAttribute("side", "top");
-        }
-      }
-
-      // This method isn't implemented by panel.js, but it can be added to
-      // individual instances that need to show an arrow.
-      this.setArrowPosition?.(event);
     }
 
     on_popupshowing(event) {
@@ -262,7 +233,7 @@
     }
 
     on_popuppositioned(event) {
-      if (event.target == this) {
+      if (event.target == this && this.isArrowPanel) {
         this._setSideAttribute(event);
       }
     }

@@ -617,7 +617,9 @@ function closingPopupEndsDrag(popup) {
   /**
    * Custom element for the places popup arrow.
    */
-  class MozPlacesPopupArrow extends MozPlacesPopup {
+  class MozPlacesPopupArrow extends MozElements.MozAnchoredPopupMixin(
+    MozPlacesPopup
+  ) {
     constructor() {
       super();
 
@@ -644,33 +646,6 @@ function closingPopupEndsDrag(popup) {
       this.setAttribute("flip", "both");
       this.setAttribute("side", "top");
       this.setAttribute("position", "bottomright topright");
-    }
-
-    _setSideAttribute(event) {
-      if (!this.anchorNode) {
-        return;
-      }
-
-      var position = event.alignmentPosition;
-      if (position.indexOf("start_") == 0 || position.indexOf("end_") == 0) {
-        // The assigned side stays the same regardless of direction.
-        let isRTL = this.matches(":-moz-locale-dir(rtl)");
-
-        if (position.indexOf("start_") == 0) {
-          this.setAttribute("side", isRTL ? "left" : "right");
-        } else {
-          this.setAttribute("side", isRTL ? "right" : "left");
-        }
-      } else if (
-        position.indexOf("before_") == 0 ||
-        position.indexOf("after_") == 0
-      ) {
-        if (position.indexOf("before_") == 0) {
-          this.setAttribute("side", "bottom");
-        } else {
-          this.setAttribute("side", "top");
-        }
-      }
     }
 
     on_popupshowing(event) {

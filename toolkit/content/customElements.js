@@ -764,6 +764,81 @@
   MozElements.BaseTextMixin = BaseTextMixin;
   MozElements.BaseText = BaseTextMixin(MozXULElement);
 
+  // The corner of the popup that an alignment position leaves nearest the
+  // anchor, as [block keyword, is inline-start] pairs. Positions that anchor to
+  // a point rather than to an edge are deliberately absent.
+  const ALIGNMENT_CORNERS = {
+    after_start: ["top", true],
+    after_end: ["top", false],
+    before_start: ["bottom", true],
+    before_end: ["bottom", false],
+    start_before: ["top", false],
+    start_after: ["bottom", false],
+    end_before: ["top", true],
+    end_after: ["bottom", true],
+  };
+
+  /**
+   * Reflects where an arrow popup sits relative to its anchor, as `side` and
+   * `alignmentcorner`, when it receives popuppositioned.
+   */
+  MozElements.MozAnchoredPopupMixin = Base =>
+    class MozAnchoredPopup extends Base {
+      _setSideAttribute(event) {
+        if (!event.isAnchored) {
+          // Otherwise the popup would scale out of the corner it hung from the
+          // last time it was opened anchored.
+          this.removeAttribute("alignmentcorner");
+          return;
+        }
+
+        let position = event.alignmentPosition;
+        let isRTL = window.getComputedStyle(this).direction == "rtl";
+
+        // The assigned side stays the same regardless of direction.
+        if (position.startsWith("start_")) {
+          this.setAttribute("side", isRTL ? "left" : "right");
+        } else if (position.startsWith("end_")) {
+          this.setAttribute("side", isRTL ? "right" : "left");
+        } else if (position.startsWith("before_")) {
+          this.setAttribute("side", "bottom");
+        } else if (position.startsWith("after_")) {
+          this.setAttribute("side", "top");
+        }
+
+        this.setPopupAlignmentCorner(position, isRTL);
+
+        // This method isn't implemented here, but it can be added to
+        // individual instances that need to show an arrow.
+        this.setArrowPosition?.(event);
+      }
+
+      /**
+       * Reflect the corner the popup hangs from, which popup.css scales it out
+       * of as it opens. transform-origin takes no logical keywords, so the
+       * corner is resolved to physical ones here, against the same direction
+       * used to assign `side`, keeping the two consistent.
+       *
+       * A position that anchors to a point rather than to an edge leaves no
+       * corner to hang from, and clears the attribute.
+       *
+       * @param {string} alignmentPosition - popuppositioned's alignmentPosition.
+       * @param {boolean} isRTL - Whether the popup's direction is right to left.
+       */
+      setPopupAlignmentCorner(alignmentPosition, isRTL) {
+        let corner = ALIGNMENT_CORNERS[alignmentPosition];
+        if (!corner) {
+          this.removeAttribute("alignmentcorner");
+          return;
+        }
+        let [block, inlineStart] = corner;
+        this.setAttribute(
+          "alignmentcorner",
+          block + (inlineStart != isRTL ? "left" : "right")
+        );
+      }
+    };
+
   // Attach the base class to the window so other scripts can use it:
   window.MozXULElement = MozXULElement;
   window.MozHTMLElement = MozHTMLElement;

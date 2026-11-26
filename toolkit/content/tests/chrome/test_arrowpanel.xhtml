@@ -308,6 +308,17 @@ function checkPanelPosition(panel)
 
   is(panel.getAttribute("side"), expectedSide, "panel arrow side");
 
+  // The panel scales out of whichever of its corners sits nearest the anchor,
+  // which is the corner the arrow side and the anchored edge meet at.
+  let [originX, originY] =
+    getComputedStyle(panel).transformOrigin.split(" ").map(parseFloat);
+  isWithinHalfPixel(originX,
+    expectedSide == "right" || expectedAnchorEdge == "right" ? panelRect.width : 0,
+    desc + " | transform-origin x");
+  isWithinHalfPixel(originY,
+    expectedSide == "bottom" || expectedAnchorEdge == "bottom" ? panelRect.height : 0,
+    desc + " | transform-origin y");
+
   panel.hidePopup();
 }
 

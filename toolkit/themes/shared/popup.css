@@ -116,10 +116,11 @@ panel:where([type="arrow"]) {
 
 .animatable-menupopup,
 panel[type="arrow"] {
-  /* The corner the panel hangs from, which it scales out of. transform-origin
-   * takes no logical keywords, so the corner is kept as percentages that the
-   * RTL and flipped rules below swap. */
-  --panel-animation-origin-x: 100%;
+  /* The corner the panel hangs from, which it scales out of. [alignmentcorner]
+   * is the physical corner nearest the anchor, which the popuppositioned
+   * handlers resolve and drop when the panel opens unanchored, leaving it to
+   * scale out of the top left defaults. */
+  --panel-animation-origin-x: 0%;
   --panel-animation-origin-y: 0%;
   /* Which way the panel drops in from: towards its anchor, away from it when
    * flipped, and nowhere on the platforms that only scale. */
@@ -136,13 +137,13 @@ panel[type="arrow"] {
       -moz-window-opacity var(--panel-motion-duration-fade) var(--panel-motion-easing);
   }
 
-  &:dir(rtl) {
-    --panel-animation-origin-x: 0%;
+  &:where([alignmentcorner$="right"]) {
+    --panel-animation-origin-x: 100%;
   }
 
-  /* Flipped to open above its anchor, so it rises into place rather than
-   * dropping into it. */
-  &:where([side="bottom"]) {
+  /* Hangs from a bottom corner, so it opens above its anchor and rises into
+   * place rather than dropping into it. */
+  &:where([alignmentcorner^="bottom"]) {
     --panel-animation-origin-y: 100%;
     --panel-animation-direction-y: -1;
   }
@@ -173,8 +174,8 @@ panel[type="arrow"] {
    */
   @media (-moz-platform: macos) {
     /* The panel only scales out of its corner here, with no drop. Zeroing the
-     * direction rather than the transform covers the flipped [side="bottom"]
-     * case too. */
+     * direction rather than the transform covers panels hanging from a bottom
+     * corner, [alignmentcorner^="bottom"], too. */
     --panel-animation-direction-y: 0;
 
     @media not (prefers-reduced-motion) {

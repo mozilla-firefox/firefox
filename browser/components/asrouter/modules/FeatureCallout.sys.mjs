@@ -1014,8 +1014,8 @@ export class FeatureCallout {
    * @param {MozPanel} panel The panel to set methods for
    */
   _setPanelMethods(panel) {
-    // This method is optionally called by MozPanel::_setSideAttribute, though
-    // it does not exist on the class.
+    // This method is optionally called by MozAnchoredPopupMixin's
+    // _setSideAttribute, though it isn't defined there.
     panel.setArrowPosition = function setArrowPosition(event) {
       if (!this.hasAttribute("show-arrow")) {
         return;
