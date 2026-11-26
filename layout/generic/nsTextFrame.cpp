@@ -740,8 +740,14 @@ static void UnhookTextRunFromFrames(gfxTextRun* aTextRun,
         aStartContinuation = nullptr;
       }
     }
-    NS_ASSERTION(destroyFromIndex >= 0,
-                 "aStartContinuation wasn't found in multi flow text run");
+    // If aStartContinuation was given but never found in any owner's
+    // continuation chain, destroyFromIndex is still -1 here, and the code
+    // below would store uint32_t(-1) in mMappedFlowCount. Later walks of
+    // the user data would then read far past the end of the allocation.
+    // (See https://bugzilla.mozilla.org/show_bug.cgi?id=2087928)
+    MOZ_DIAGNOSTIC_ASSERT(
+        destroyFromIndex >= 0,
+        "aStartContinuation wasn't found in multi flow text run");
     if (destroyFromIndex == 0) {
       DestroyTextRunUserData(aTextRun);
     } else {
@@ -3180,7 +3186,12 @@ void BuildTextRunsScanner::AssignTextRun(gfxTextRun* aTextRun,
             if (flow) {
               startOffset = flow->mDOMOffsetToBeforeTransformOffset;
             } else {
-              NS_ERROR("Can't find flow containing frame 'f'");
+              // Distinct from the assertion in UnhookTextRunFromFrames, so
+              // crash reports tell "f's content isn't in the old run's
+              // flows" apart from "f isn't reachable from any flow owner".
+              // (See https://bugzilla.mozilla.org/show_bug.cgi?id=2087928)
+              MOZ_DIAGNOSTIC_ASSERT(false,
+                                    "Can't find flow containing frame 'f'");
             }
           }
         }
