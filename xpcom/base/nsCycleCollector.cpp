@@ -1295,8 +1295,6 @@ class nsCycleCollector : public nsIMemoryReporter {
   // returns whether anything was collected
   bool CollectWhite();
 
-  void ClearWhiteJSWeakRefTargets();
-
  public:
   bool IsGCThingWhiteInCCGraph(JS::GCCellPtr aPtr);
 
@@ -3137,6 +3135,8 @@ class WhiteNode {
   nsCycleCollectionParticipant* mParticipant;
 };
 
+static bool IsGCThingWhiteInCCGraph(JS::GCCellPtr aPtr, void* aData);
+
 bool nsCycleCollector::CollectWhite() {
   // Explanation of "somewhat modified": we have no way to collect the
   // set of whites "all at once", we have to ask each of them to drop
@@ -3166,9 +3166,13 @@ bool nsCycleCollector::CollectWhite() {
 
   {
     JS::AutoAssertNoGC nogc;
-    ClearWhiteJSWeakRefTargets();
 
     bool hasJSRuntime = !!mCCJSRuntime;
+    if (hasJSRuntime) {
+      mCCJSRuntime->ClearWhiteJSWeakReferences(&::IsGCThingWhiteInCCGraph,
+                                               this);
+    }
+
     nsCycleCollectionParticipant* zoneParticipant =
         hasJSRuntime ? mCCJSRuntime->ZoneParticipant() : nullptr;
 
@@ -3253,13 +3257,6 @@ bool nsCycleCollector::IsGCThingWhiteInCCGraph(JS::GCCellPtr aPtr) {
 
   MOZ_ASSERT_IF(isWhite, pinfo->IsGrayJS());
   return isWhite;
-}
-
-void nsCycleCollector::ClearWhiteJSWeakRefTargets() {
-  // Clear the targets of JS WeakRef objects whose target is part of a cycle
-  // that we're about to unlink.
-  JSRuntime* runtime = Runtime()->Runtime();
-  JS::MaybeClearWeakRefTargets(runtime, &::IsGCThingWhiteInCCGraph, this);
 }
 
 ////////////////////////

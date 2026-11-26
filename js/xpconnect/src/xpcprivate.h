@@ -513,6 +513,8 @@ class XPCJSRuntime final : public mozilla::CycleCollectedJSRuntime {
       mozilla::CycleCollectorResults& aResults) override;
   void DispatchDeferredDeletion(bool aContinuation,
                                 bool aPurge = false) override;
+  void ClearWhiteJSWeakReferences(
+      JS::ShouldClearWeakRefTargetCallback aCallback, void* aData) override;
 
   void CustomGCCallback(JSGCStatus status) override;
   void CustomOutOfMemoryCallback() override;
