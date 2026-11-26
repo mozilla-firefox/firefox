@@ -2,3 +2,5 @@
 subsuite = "mozbuild"
 
 ["test_pgo_coverage.py"]
+
+["test_pgoserver.py"]

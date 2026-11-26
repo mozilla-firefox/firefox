@@ -44,4 +44,7 @@ config = {
     "android_version": 30,
     "os_version": "11.0",
     "is_emulator": True,
+    # Benchmarks can't finish in PGO training on this emulator, see
+    # build/pgo/index.html.
+    "pgo_slow_emulator": True,
 }

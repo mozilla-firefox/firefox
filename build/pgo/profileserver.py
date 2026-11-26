@@ -7,22 +7,20 @@
 import atexit
 import glob
 import os
-import re
 import shutil
 import subprocess
 import sys
 import tempfile
 import time
-from urllib.parse import parse_qs
 
 import mozcrash
 from mozbuild.base import BinaryNotFoundException, MozbuildObject
 from mozfile import TemporaryDirectory, json
-from mozhttpd import MozHttpd
 from mozprofile import FirefoxProfile, Preferences
 from mozprofile.permissions import ServerLocations
 from mozrunner import CLI, FirefoxRunner
 from pgo_metrics import record_marker, report_perfherder, stage, suite
+from pgoserver import PGOServer
 
 PORT = 8888
 
@@ -40,17 +38,15 @@ PATH_MAPPINGS = {
 ITEMS = []
 
 
-def item_handler(request):
+def item_handler(item):
     """Record an item of the training corpus, reported by index.html when it
     is done."""
     end = time.monotonic()
-    query = parse_qs(request.query)
-    url = query.get("url", ["?"])[0]
-    duration = int(query.get("ms", ["0"])[0]) / 1000
-    outcome = query.get("outcome", ["?"])[0]
+    url = item["url"]
+    duration = item["ms"] / 1000
+    outcome = item["outcome"]
     ITEMS.append((url, duration, outcome))
     record_marker("PGOItem", end - duration, end, f"{url} ({outcome})")
-    return (200, {"Content-Type": "text/plain"}, "")
 
 
 def item_suites():
@@ -152,51 +148,6 @@ def copy_images(topsrcdir, dest):
         json.dump(names, fh)
 
 
-BENCHMARK_DONE = (
-    "globalThis.opener && globalThis.opener.postMessage({pgoBenchmarkDone: true}, '*');"
-)
-
-
-def benchmark_done_handler(url_path, file_path, transform):
-    """Serve the benchmark script at file_path after passing it through
-    transform, which adds a completion message to the PGO driver page
-    (see index.html)."""
-    with open(file_path, encoding="utf-8") as f:
-        content = transform(f.read(), file_path)
-
-    def handler(request):
-        return (200, {"Content-Type": "text/javascript"}, content)
-
-    return {"method": "GET", "path": re.escape(url_path) + "$", "function": handler}
-
-
-def after_anchor(anchor):
-    def transform(content, file_path):
-        if anchor not in content:
-            raise Exception(
-                f"Could not find {anchor!r} in {file_path}. If this benchmark was "
-                "updated, update its completion anchor in build/pgo/profileserver.py."
-            )
-        return content.replace(anchor, anchor + BENCHMARK_DONE, 1)
-
-    return transform
-
-
-def on_event(event):
-    def transform(content, file_path):
-        if f'"{event}"' not in content:
-            raise Exception(
-                f"{file_path} no longer dispatches {event!r}. If this benchmark was "
-                "updated, update its completion event in build/pgo/profileserver.py."
-            )
-        listener = (
-            f"globalThis.addEventListener({event!r}, () => {{{BENCHMARK_DONE}}});"
-        )
-        return f"{content}\n{listener}\n"
-
-    return transform
-
-
 def get_crashreports(directory, name=None):
     rc = 0
     upload_path = os.environ.get("UPLOAD_PATH")
@@ -274,47 +225,6 @@ if __name__ == "__main__":
     atexit.register(shutil.rmtree, images_dir, ignore_errors=True)
     copy_images(build.topsrcdir, images_dir)
     path_mappings["/images"] = images_dir
-    webkit_dir = os.path.join(
-        build.topsrcdir, "third_party", "webkit", "PerformanceTests"
-    )
-    httpd = MozHttpd(
-        port=PORT,
-        docroot=os.path.join(build.topsrcdir, "build", "pgo"),
-        path_mappings=path_mappings,
-        urlhandlers=[
-            benchmark_done_handler(
-                "/webkit/PerformanceTests/Speedometer/resources/main.js",
-                os.path.join(webkit_dir, "Speedometer", "resources", "main.js"),
-                after_anchor("didFinishLastIteration: function () {"),
-            ),
-            benchmark_done_handler(
-                "/webkit/PerformanceTests/webaudio/webaudio-bench.js",
-                os.path.join(webkit_dir, "webaudio", "webaudio-bench.js"),
-                after_anchor("window.postMessage(_data, '*');"),
-            ),
-            {"method": "GET", "path": "/pgo-item$", "function": item_handler},
-        ],
-    )
-    httpd.start(block=False)
-
-    # Speedometer3 must run in its own server. The benchmark assumes that it
-    # is in a root path, and will fail if it's not.
-    sp3_dir = os.path.join(webkit_dir, "Speedometer3")
-    sp3_httpd = MozHttpd(
-        port=8000,
-        docroot=sp3_dir,
-        path_mappings=path_mappings,
-        urlhandlers=[
-            benchmark_done_handler(
-                "/resources/main.mjs",
-                os.path.join(sp3_dir, "resources", "main.mjs"),
-                after_anchor("didFinishLastIteration(metrics) {"),
-            )
-        ],
-    )
-    sp3_httpd.start(block=False)
-    print("started SP3 server on port 8000")
-
     if has_extended_corpus:
         js3_dir = os.path.join(extended_corpus_dir, "JetStream")
 
@@ -322,21 +232,15 @@ if __name__ == "__main__":
             print(f"Error: JetStream directory does not exist at {js3_dir}")
             sys.exit(1)
 
-        # JetStream3 must run in its own server. The benchmark assumes that it
-        # is in a root path, and will fail if it's not.
-        js3_httpd = MozHttpd(
-            port=8001,
-            docroot=js3_dir,
-            urlhandlers=[
-                benchmark_done_handler(
-                    "/JetStreamDriver.js",
-                    os.path.join(js3_dir, "JetStreamDriver.js"),
-                    on_event("JetStreamDone"),
-                )
-            ],
-        )
-        js3_httpd.start(block=False)
-        print("started JS3 server on port 8001")
+        path_mappings["/JetStream"] = js3_dir
+
+    httpd = PGOServer(
+        os.path.join(build.topsrcdir, "build", "pgo"),
+        PORT,
+        path_mappings,
+        {"/pgo-item": item_handler},
+    )
+    httpd.start()
 
     locations = ServerLocations()
     locations.add_host(host="127.0.0.1", port=PORT, options="primary,privileged")
@@ -361,7 +265,6 @@ if __name__ == "__main__":
             prefs.update(Preferences.read_prefs(path))
 
         interpolation = {"server": "%s:%d" % httpd.httpd.server_address}
-        sp3_interpolation = {"server": "%s:%d" % sp3_httpd.httpd.server_address}
         for k, v in prefs.items():
             if isinstance(v, str):
                 v = v.format(**interpolation)
@@ -414,9 +317,6 @@ if __name__ == "__main__":
                 print("Firefox output (%s):" % logfile)
                 with open(logfile) as f:
                     print(f.read())
-            sp3_httpd.stop()
-            if has_extended_corpus:
-                js3_httpd.stop()
             httpd.stop()
             get_crashreports(profilePath, name="Profile initialization")
             sys.exit(ret)
@@ -446,9 +346,6 @@ if __name__ == "__main__":
         with stage("training run"):
             runner.start(debug_args=debug_args, interactive=interactive)
             ret = runner.wait()
-        sp3_httpd.stop()
-        if has_extended_corpus:
-            js3_httpd.stop()
         httpd.stop()
         if ret:
             print("Firefox exited with code %d during profiling" % ret)
@@ -459,6 +356,12 @@ if __name__ == "__main__":
                     print(f.read())
             get_crashreports(profilePath, name="Profiling run")
             sys.exit(ret)
+
+        training_errors = httpd.training_errors()
+        for error in training_errors:
+            print(f"Error: PGO training failed: {error}")
+        if training_errors:
+            sys.exit(1)
 
         if "UPLOAD_PATH" in env:
             should_err = False

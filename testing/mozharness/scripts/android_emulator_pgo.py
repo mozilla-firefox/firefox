@@ -21,45 +21,11 @@ from mozharness.mozilla.mozbase import MozbaseMixin
 from mozharness.mozilla.testing.android import AndroidMixin
 from mozharness.mozilla.testing.testbase import TestingMixin, testing_config_options
 
-PAGES = [
-    "js-input/webkit/PerformanceTests/Speedometer/index.html",
-    "js-input/webkit/PerformanceTests/Speedometer3/index.html?startAutomatically=true",
-    # TODO: Add support for the pgo-extended-corpus to get JetStream3 running here.
-    "blueprint/sample.html",
-    "blueprint/forms.html",
-    "blueprint/grid.html",
-    "blueprint/elements.html",
-    "js-input/3d-thingy.html",
-    "js-input/crypto-otp.html",
-    "js-input/collator_bench.html",
-    "js-input/normalizer_bench.html",
-    "js-input/sunspider/3d-cube.html",
-    "js-input/sunspider/3d-morph.html",
-    "js-input/sunspider/3d-raytrace.html",
-    "js-input/sunspider/access-binary-trees.html",
-    "js-input/sunspider/access-fannkuch.html",
-    "js-input/sunspider/access-nbody.html",
-    "js-input/sunspider/access-nsieve.html",
-    "js-input/sunspider/bitops-3bit-bits-in-byte.html",
-    "js-input/sunspider/bitops-bits-in-byte.html",
-    "js-input/sunspider/bitops-bitwise-and.html",
-    "js-input/sunspider/bitops-nsieve-bits.html",
-    "js-input/sunspider/controlflow-recursive.html",
-    "js-input/sunspider/crypto-aes.html",
-    "js-input/sunspider/crypto-md5.html",
-    "js-input/sunspider/crypto-sha1.html",
-    "js-input/sunspider/date-format-tofte.html",
-    "js-input/sunspider/date-format-xparb.html",
-    "js-input/sunspider/math-cordic.html",
-    "js-input/sunspider/math-partial-sums.html",
-    "js-input/sunspider/math-spectral-norm.html",
-    "js-input/sunspider/regexp-dna.html",
-    "js-input/sunspider/string-base64.html",
-    "js-input/sunspider/string-fasta.html",
-    "js-input/sunspider/string-tagcloud.html",
-    "js-input/sunspider/string-unpack-code.html",
-    "js-input/sunspider/string-validate-input.html",
-]
+# Upper bound on how long to wait for build/pgo/index.html to go through the
+# training corpus. It must exceed the sum of the timeouts of the items it runs on
+# Android, about 8 minutes, or 13 minutes on slow emulators, and matches the time
+# limit of the screen recording.
+TRAINING_TIMEOUT = 1200
 
 
 class AndroidProfileRun(TestingMixin, BaseScript, MozbaseMixin, AndroidMixin):
@@ -196,13 +162,44 @@ class AndroidProfileRun(TestingMixin, BaseScript, MozbaseMixin, AndroidMixin):
         except Exception as e:
             self.warning(f"Failed to stop/pull screen recording: {e}")
 
+    def _log_item(self, item):
+        """Log an item of the training corpus, reported by build/pgo/index.html
+        when it is done."""
+        self.info(
+            f"PGO training item {item['url']}: {item['outcome']} after "
+            f"{item['ms'] / 1000:.1f}s"
+        )
+
+    def _wait_for_training(self, driver):
+        from marionette_driver import Wait, errors
+
+        start = time.monotonic()
+        try:
+            Wait(
+                driver,
+                timeout=TRAINING_TIMEOUT,
+                interval=5,
+                ignored_exceptions=(
+                    errors.JavascriptException,
+                    errors.NoSuchWindowException,
+                ),
+            ).until(
+                lambda m: m.execute_script(
+                    "return !!window.pgoTrainingDone;", sandbox=None
+                )
+            )
+        except errors.TimeoutException:
+            self.warning(f"Training did not finish within {TRAINING_TIMEOUT}s")
+            return
+
+        self.info(f"Training finished after {int(time.monotonic() - start)}s")
+
     def run_tests(self):
         """
         Generate the PGO profile data
         """
         from marionette_driver.marionette import Marionette
         from mozdevice import ADBDeviceFactory, ADBTimeoutError
-        from mozhttpd import MozHttpd
         from mozprofile import Preferences
 
         app = self.query_package_name()
@@ -211,7 +208,7 @@ class AndroidProfileRun(TestingMixin, BaseScript, MozbaseMixin, AndroidMixin):
         PORT = 8888
 
         PATH_MAPPINGS = {
-            "/js-input/webkit/PerformanceTests": "third_party/webkit/PerformanceTests",
+            "/webkit/PerformanceTests": "third_party/webkit/PerformanceTests",
         }
 
         dirs = self.query_abs_dirs()
@@ -220,16 +217,19 @@ class AndroidProfileRun(TestingMixin, BaseScript, MozbaseMixin, AndroidMixin):
 
         sys.path.insert(0, os.path.join(topsrcdir, "build", "pgo"))
         from pgo_metrics import report_perfherder, stage
+        from pgoserver import PGOServer
 
         path_mappings = {
             k: os.path.join(topsrcdir, v) for k, v in PATH_MAPPINGS.items()
         }
-        httpd = MozHttpd(
-            port=PORT,
-            docroot=os.path.join(topsrcdir, "build", "pgo"),
-            path_mappings=path_mappings,
+
+        httpd = PGOServer(
+            os.path.join(topsrcdir, "build", "pgo"),
+            PORT,
+            path_mappings,
+            {"/pgo-item": self._log_item},
         )
-        httpd.start(block=False)
+        httpd.start()
 
         profile_data_dir = os.path.join(topsrcdir, "testing", "profiles")
         with open(os.path.join(profile_data_dir, "profiles.json")) as fh:
@@ -284,7 +284,7 @@ class AndroidProfileRun(TestingMixin, BaseScript, MozbaseMixin, AndroidMixin):
                 ).strip()
             )
             # --time-limit > 180 is only supported on Android 14 (API 34) and above
-            time_limit_arg = "--time-limit 900 " if sdk >= 34 else ""
+            time_limit_arg = f"--time-limit {TRAINING_TIMEOUT} " if sdk >= 34 else ""
             adbdevice.shell_output(
                 f"sh -c 'screenrecord --verbose {time_limit_arg}{recording_path} > /dev/null 2>&1 &'",
                 timeout=10,
@@ -316,17 +316,13 @@ class AndroidProfileRun(TestingMixin, BaseScript, MozbaseMixin, AndroidMixin):
                 driver.start_session()
 
             # Now generate the profile and wait for it to complete
+            # TODO: Add support for the pgo-extended-corpus to get JetStream3 running here.
             with stage("training run"):
-                for page in PAGES:
-                    driver.navigate(f"http://{IP}:{PORT}/{page}")
-                    timeout = 2
-                    if "Speedometer" in page:
-                        # The Speedometer[23] test actually runs many tests internally in
-                        # javascript, so it needs extra time to run through them. The
-                        # emulator doesn't get very far through the whole suite, but
-                        # this extra time at least lets some of them process.
-                        timeout = 360
-                    time.sleep(timeout)
+                query = "android=true"
+                if self.config.get("pgo_slow_emulator"):
+                    query += "&slowEmulator=true"
+                driver.navigate(f"http://{IP}:{PORT}/index.html?{query}")
+                self._wait_for_training(driver)
 
                 driver.quit(in_app=True)
 
@@ -334,6 +330,12 @@ class AndroidProfileRun(TestingMixin, BaseScript, MozbaseMixin, AndroidMixin):
                 self._stop_and_pull_recording(
                     adbdevice, recording_path, "pgo-training.mp4"
                 )
+
+            training_errors = httpd.training_errors()
+            for error in training_errors:
+                self.error(f"PGO training failed: {error}")
+            if training_errors:
+                self.fatal("PGO training failed")
 
             # Pull all the profraw files and en-US.log
             dirs = self.query_abs_dirs()
