@@ -125,6 +125,8 @@ Symbol* Symbol::for_(JSContext* cx, HandleString description) {
     return nullptr;
   }
 
+  cx->recordRef(atom);
+
   SymbolRegistry& registry = cx->symbolRegistry();
   Rooted<Symbol*> sym(cx);
   DependentAddPtr<SymbolRegistry> p(cx, registry, atom);
