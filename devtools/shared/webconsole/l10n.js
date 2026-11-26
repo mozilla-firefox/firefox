@@ -10,6 +10,7 @@ const helper = new LocalizationHelper(
 );
 
 let dateFormatter;
+let timestampFormatter;
 
 const l10n = {
   /**
@@ -22,13 +23,22 @@ const l10n = {
    *         The timestamp formatted for display.
    */
   timestampString(milliseconds) {
-    const d = new Date(milliseconds ? milliseconds : null);
-    const hours = d.getHours();
-    const minutes = d.getMinutes();
-    const seconds = d.getSeconds();
-    milliseconds = d.getMilliseconds();
-    const parameters = [hours, minutes, seconds, milliseconds];
-    return l10n.getFormatStr("timestampFormat", parameters);
+    if (!timestampFormatter) {
+      timestampFormatter = new Intl.DateTimeFormat(undefined, {
+        hour: "2-digit",
+        minute: "2-digit",
+        second: "2-digit",
+        fractionalSecondDigits: 3,
+        hourCycle: "h23",
+        numberingSystem: "latn",
+        timeZone: "UTC",
+      });
+    }
+    // The formatter captures the time zone when created, so format the local
+    // time as UTC to follow time zone changes.
+    const time = milliseconds ?? Date.now();
+    const offset = new Date(time).getTimezoneOffset() * 60 * 1000;
+    return timestampFormatter.format(time - offset);
   },
 
   /**
