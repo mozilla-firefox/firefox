@@ -1182,41 +1182,6 @@ dom:
       - tihuang@mozilla.com
     expires: never
 
-  register_protocol_handler_calls:
-    type: dual_labeled_counter
-    description: >
-      Counts navigator.registerProtocolHandler calls that passed the scheme and
-      URL checks, by the frame they came from and whether it had transient user
-      activation. The site permission gating the prompt is keyed on the
-      top-level origin. Used to judge the web compatibility impact of no longer
-      prompting for calls from cross-origin iframes, or without user
-      activation.
-    dual_labels:
-      key:
-        description: >
-          Whether the call came from the top-level document, an iframe whose
-          ancestors are all same-origin with the top-level document, or any
-          other iframe.
-        labels:
-          - top_level
-          - same_origin_iframe
-          - cross_origin_iframe
-      category:
-        description: >
-          Whether the calling document had transient user activation.
-        labels:
-          - activated
-          - not_activated
-    bugs:
-      - https://bugzilla.mozilla.org/show_bug.cgi?id=668577
-    data_reviews:
-      - https://bugzilla.mozilla.org/show_bug.cgi?id=668577
-    data_sensitivity:
-      - interaction
-    notification_emails:
-      - emz@mozilla.com
-    expires: 165
-
   slow_script_notice_count:
     type: counter
     description: >

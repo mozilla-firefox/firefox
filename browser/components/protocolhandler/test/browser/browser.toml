@@ -5,8 +5,6 @@ support-files = [
   "head.js",
 ]
 
-["browser_registerProtocolHandler_frame_telemetry.js"]
-
 ["browser_registerProtocolHandler_notification.js"]
 
 ["browser_registerProtocolHandler_permission.js"]

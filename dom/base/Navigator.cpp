@@ -18,7 +18,6 @@
 #include "mozilla/dom/File.h"
 #include "mozilla/dom/Serial.h"
 #include "mozilla/glean/DomMediaMetrics.h"
-#include "mozilla/glean/DomMetrics.h"
 #include "nsCharSeparatedTokenizer.h"
 #include "nsContentPolicyUtils.h"
 #include "nsContentUtils.h"
@@ -68,7 +67,6 @@
 #include "mozilla/dom/VRDisplay.h"
 #include "mozilla/dom/VRServiceTest.h"
 #include "mozilla/dom/WakeLockJS.h"
-#include "mozilla/dom/WindowContext.h"
 #include "mozilla/dom/XRSystem.h"
 #include "mozilla/dom/power/PowerManagerService.h"
 #include "mozilla/dom/workerinternals/RuntimeService.h"
@@ -1102,19 +1100,6 @@ void Navigator::RegisterProtocolHandler(const nsAString& aScheme,
   CheckProtocolHandlerAllowed(aScheme, handlerURI, docURI, aRv);
   if (aRv.Failed()) {
     return;
-  }
-
-  if (WindowContext* wc = mWindow->GetWindowContext()) {
-    nsLiteralCString frame =
-        wc->IsTop() ? "top_level"_ns
-        : CredentialsContainer::IsSameOriginWithAncestors(mWindow)
-            ? "same_origin_iframe"_ns
-            : "cross_origin_iframe"_ns;
-    glean::dom::register_protocol_handler_calls
-        .Get(frame, wc->HasValidTransientUserGestureActivation()
-                        ? "activated"_ns
-                        : "not_activated"_ns)
-        .Add(1);
   }
 
   // Determine a title from the document URI.
