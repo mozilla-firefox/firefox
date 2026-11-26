@@ -17,6 +17,13 @@ runListValuedPropertyTests('background-clip', [
   { syntax: 'border-box' },
   { syntax: 'padding-box' },
   { syntax: 'content-box' },
+  { syntax: 'text' },
+  { syntax: 'border-area' },
+]);
+
+runUnsupportedPropertyTests('background-clip', [
+  'border-area text',
+  'text border-area',
 ]);
 
 </script>

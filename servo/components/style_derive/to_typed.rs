@@ -7,7 +7,7 @@ use crate::to_css::{CssBitflagAttrs, CssFieldAttrs, CssInputAttrs, CssVariantAtt
 use proc_macro2::{Span, TokenStream};
 use quote::quote;
 use quote::{ToTokens, TokenStreamExt};
-use syn::{Data, DataEnum, DeriveInput, Fields, Ident, Path, WhereClause};
+use syn::{Data, DeriveInput, Ident, Path, WhereClause};
 use synstructure::{BindingInfo, Structure};
 
 /// Derive implementation of the `ToTyped` trait.
@@ -15,36 +15,20 @@ use synstructure::{BindingInfo, Structure};
 /// This derive supports both enums and structs:
 ///
 /// * Enums
-///   * Pure keyword enums: Enums made up entirely of unit variants
-///     (e.g. `enum Visibility { Visible, Hidden, Collapse }`). In this case,
-///     the derive optimizes by delegating to `ToCss` once for the whole value,
-///     then wrapping the result in `TypedValue::Keyword`.
+///   * Unit variants fall through to a shared ToCss call for the value, then wrapping the result in
+///     `TypedValue::Keyword`.
 ///
-///   * Mixed enums with unit variants: Enums that contain both unit
-///     variants (keywords) and data-carrying variants. The derive generates a
-///     `match` implementation where unit variants are reified as
-///     `TypedValue::Keyword`, and fielded variants reify by calling
-///     `.to_typed()` on their inner values by default. Variants or types
-///     marked with `skip_derive_fields` return `Err(())` instead.
+///   * Fielded variants reify by calling `.to_typed()` on their inner values by default. Variants
+///     or types marked with `skip_derive_fields` return `Err(())` instead.
 ///
 /// * Structs
 ///   * Bitflags structs marked with `#[css(bitflags(...))]` are handled by
 ///     deriving keyword reification from their bitflag metadata.
 ///
-///   * Other structs are handled similarly to data-carrying variants in mixed
-///     enums. Unless `skip_derive_fields` is set, `.to_typed()` is generated
-///     for their inner values; otherwise, they return `Err(())`.
+///   * Other structs are handled similarly to data-carrying variants in mixed enums.
 ///
-/// Unit variants are mapped to keywords using their Rust identifier converted
-/// via `to_css_identifier`. Attributes like `#[css(keyword = "...")]` will
-/// override the behavior and use the provided keyword instead.
-///
-/// For other kinds of types (e.g. unions), no `to_typed` method is generated;
-/// the default implementation applies, which always returns `Err(())`.
-///
-/// This allows keywords to be reified automatically into `CSSKeywordValue`
-/// objects, while leaving more complex value types to be implemented
-/// incrementally as Typed OM support expands.
+/// This allows keywords to be reified automatically into `CSSKeywordValue` objects, while leaving
+/// more complex value types to be implemented incrementally as Typed OM support expands.
 ///
 /// Summary of derive attributes recognized by this derive:
 ///
@@ -126,75 +110,36 @@ pub fn derive(mut input: DeriveInput) -> TokenStream {
         return derive_bitflags(&input, bitflags);
     }
 
-    let body = match &input.data {
-        // Handle enums.
-        Data::Enum(DataEnum { variants, .. }) => {
-            // Check if this enum consists entirely of unit variants (no fields).
-            let all_unit = variants.iter().all(|v| matches!(v.fields, Fields::Unit));
+    // Generate a `match` where unit variants fall through to to_css(), and all other variants
+    // either return an error or a custom value.
+    let s = Structure::new(&input);
+    let mut any_keyword = false;
+    let match_body = s.each_variant(|variant| {
+        derive_variant_arm(
+            variant,
+            input_attrs.skip_derive_fields || input_attrs.todo_derive_fields,
+            &mut where_clause,
+            &mut any_keyword,
+        )
+    });
 
-            if all_unit {
-                // Optimization: for all-unit enums, reuse `ToCss` once and
-                // wrap the result in a `TypedValue::Keyword`, instead of
-                // generating a full match. This avoids code bloat while
-                // producing the same runtime behavior.
-                quote! {
-                    fn to_typed(&self, dest: &mut thin_vec::ThinVec<crate::typed_om::TypedValue>) -> Result<(), ()> {
-                      let s = style_traits::ToCss::to_css_cssstring(self);
-                      dest.push(crate::typed_om::TypedValue::Keyword(crate::typed_om::KeywordValue(s)));
-                      Ok(())
-                    }
-                }
-            } else {
-                // Mixed enums: generate a `match` where unit variants map to
-                // `TypedValue::Keyword` and all other variants return
-                // `Err(())`. This is more verbose in code size, but allows
-                // selective handling of individual variants.
-                let s = Structure::new(&input);
-                let match_body = s.each_variant(|variant| {
-                    derive_variant_arm(
-                        variant,
-                        input_attrs.skip_derive_fields || input_attrs.todo_derive_fields,
-                        &mut where_clause,
-                    )
-                });
+    let to_css_fallthrough = if any_keyword {
+        quote! {
+            let s = style_traits::ToCss::to_css_cssstring(self);
+            dest.push(crate::typed_om::TypedValue::Keyword(crate::typed_om::KeywordValue(s)));
+            Ok(())
+        }
+    } else {
+        quote! {}
+    };
 
-                quote! {
-                    fn to_typed(&self, dest: &mut thin_vec::ThinVec<crate::typed_om::TypedValue>) -> Result<(), ()> {
-                        match *self {
-                            #match_body
-                        }
-                    }
-                }
+    let body = quote! {
+        fn to_typed(&self, dest: &mut thin_vec::ThinVec<crate::typed_om::TypedValue>) -> Result<(), ()> {
+            match *self {
+                #match_body
             }
-        },
-
-        // Handle structs that are not bitflags.
-        Data::Struct(_) => {
-            if css_input_attrs.bitflags.is_none() {
-                let s = Structure::new(&input);
-                let match_body = s.each_variant(|variant| {
-                    derive_variant_arm(
-                        variant,
-                        input_attrs.skip_derive_fields || input_attrs.todo_derive_fields,
-                        &mut where_clause,
-                    )
-                });
-
-                quote! {
-                    fn to_typed(&self, dest: &mut thin_vec::ThinVec<crate::typed_om::TypedValue>) -> Result<(), ()> {
-                        match *self {
-                            #match_body
-                        }
-                    }
-                }
-            } else {
-                quote! {}
-            }
-        },
-
-        // Otherwise, don’t emit any `to_typed` method body. The default
-        // implementation (returning `Err(())`) will apply.
-        _ => quote! {},
+            #to_css_fallthrough
+        }
     };
 
     input.generics.where_clause = where_clause;
@@ -303,29 +248,19 @@ fn derive_bitflags(input: &syn::DeriveInput, bitflags: &CssBitflagAttrs) -> Toke
 /// Generate the match arm expression for a struct or enum variant in a derived
 /// `ToTyped` implementation.
 ///
-/// * Unit variants are reified into `TypedValue::Keyword`, using the variant’s
-///   identifier converted with `cg::to_css_identifier` or a custom keyword if
-///   provided through `#[css(keyword = "...")]`.
-/// * Variants marked with `#[css(skip)]` or `#[typed(skip)]` or
-///   `#[typed(todo)]` return `Err(())`.
-/// * Variants with fields delegate to `derive_variant_fields_expr()` by
-///   default; if `skip_derive_fields` is set, they return `Err(())`.
-///
-/// Note: `#[css(keyword = "...")]` overrides are now recognized in this
-/// `derive_variant_arm` path, but the support is not yet exercised because we
-/// currently have no mixed enums that use keyword overrides together with
-/// `ToTyped`. This keeps the behavior the same as before, all existing enums
-/// with keyword overrides (e.g. `#[css(keyword = "preserve-3d")]`) are still
-/// pure keyword enums and are handled through the all-unit `ToCss` path.
+/// * Unit variants fall through to a single to_css call wrapped into a Keyword value.
+/// * Variants marked with `#[css(skip)]` or `#[typed(skip)]` or `#[typed(todo)]` return `Err(())`.
+/// * Variants with fields delegate to `derive_variant_fields_expr()` by default; if
+/// `skip_derive_fields` is set, they return `Err(())`.
 fn derive_variant_arm(
     variant: &synstructure::VariantInfo,
     skip_derive_fields: bool,
     where_clause: &mut Option<WhereClause>,
+    any_keyword: &mut bool,
 ) -> TokenStream {
     let bindings = variant.bindings();
     // Get the underlying syn AST node for this variant.
     let ast = variant.ast();
-    let identifier = &ast.ident;
 
     // Parse any #[css(...)] attributes attached to this variant.
     let css_variant_attrs = cg::parse_variant_attrs_from_ast::<CssVariantAttrs>(&ast);
@@ -336,43 +271,31 @@ fn derive_variant_arm(
     // If the variant is explicitly marked #[css(skip)], don’t generate
     // anything for it, always return Err(()).
     if css_variant_attrs.skip {
-        return quote! {Err(())};
+        return quote! { return Err(()) };
     }
 
     // If the variant is explicitly marked #[typed(skip)] or #[typed(todo)],
     // don’t generate anything for it, always return Err(()).
     if variant_attrs.skip || variant_attrs.todo {
-        return quote! {Err(())};
+        return quote! { return Err(()) };
     }
 
     // If the variant has no bindings (i.e. no data fields), treat it as a unit
-    // variant and reify it as a keyword.
+    // variant and reify it using its css serialization.
     if bindings.is_empty() {
-        // If #[css(keyword = "...")] is present, use it.
-        // Else convert the Rust variant name into its CSS identifier form
-        // (e.g. AvoidColumn -> "avoid-column").
-        let keyword = css_variant_attrs
-            .keyword
-            .unwrap_or_else(|| cg::to_css_identifier(&identifier.to_string()));
-
-        // Emit code to wrap this keyword into a TypedValue.
-        quote! {
-            dest.push(crate::typed_om::TypedValue::Keyword(
-                crate::typed_om::KeywordValue(style_traits::CssString::from(#keyword))
-            ));
-            Ok(())
+        if !*any_keyword {
+            cg::add_predicate(where_clause, parse_quote!(Self: style_traits::ToCss));
         }
+        *any_keyword = true;
+        return quote! {{}};
     } else if !skip_derive_fields {
         let allow_multiple_values = css_variant_attrs.comma && !variant_attrs.no_multiple_values;
-
         derive_variant_fields_expr(bindings, where_clause, allow_multiple_values)
     } else {
         // This variant has one or more fields, but field reification is
         // disabled. With `skip_derive_fields`, this variant simply returns
         // `Err(())`.
-        quote! {
-            Err(())
-        }
+        quote! { return Err(()) }
     }
 }
 
@@ -414,7 +337,7 @@ fn derive_variant_fields_expr(
     // If no usable fields remain, generate code that just returns Err(()).
     let (first, css_field_attrs, field_attrs) = match iter.next() {
         Some(triple) => triple,
-        None => return quote! { Err(()) },
+        None => return quote! { return Err(()) },
     };
 
     // At this point we have at least one usable field in `first`.
@@ -426,7 +349,7 @@ fn derive_variant_fields_expr(
 
         return quote! {{
             #expr
-            Ok(())
+            return Ok(())
         }};
     }
 
@@ -452,7 +375,7 @@ fn derive_variant_fields_expr(
             dest.truncate(old_len);
             return Err(());
         }
-        Ok(())
+        return Ok(())
     }}
 }
 

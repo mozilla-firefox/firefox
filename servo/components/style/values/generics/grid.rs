@@ -428,7 +428,7 @@ impl<L: ToCss> ToCss for TrackSize<L> {
     }
 }
 
-impl<L: ToTyped> ToTyped for TrackSize<L> {
+impl<L: ToTyped + ToCss> ToTyped for TrackSize<L> {
     fn to_typed(&self, dest: &mut ThinVec<TypedValue>) -> Result<(), ()> {
         match *self {
             TrackSize::Breadth(ref breadth) => breadth.to_typed(dest),
@@ -727,7 +727,7 @@ impl<L: ToCss, I: ToCss> ToCss for TrackList<L, I> {
     }
 }
 
-impl<L: ToTyped, I: ToTyped> ToTyped for TrackList<L, I> {
+impl<L: ToTyped + ToCss, I: ToTyped + ToCss> ToTyped for TrackList<L, I> {
     // Note: The specification does not currently define how grid track lists
     // should be reified into Typed OM. The current behavior follows existing
     // WPT coverage (grid-template-columns-rows.html). Syncing spec with UA/WPT

@@ -340,7 +340,7 @@ impl<Angle, Number, Length, Integer, LengthPercentage> ToTransformComponent
 where
     Angle: Zero + ToTyped,
     Number: PartialEq + ToFloat + ToTyped,
-    Length: ToTyped,
+    Length: ToTyped + ToCss,
     LengthPercentage: Zero + ToTyped + ZeroNoPercent,
 {
     fn to_transform_component(&self, dest: &mut ThinVec<TransformComponent>) -> Result<(), ()> {

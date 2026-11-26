@@ -221,6 +221,7 @@ pub enum BackgroundClip {
     #[css(keyword = "border-area text")]
     #[parse(skip)]
     #[value_info(skip)]
+    #[typed(skip)]
     BorderAreaText,
 }
 
