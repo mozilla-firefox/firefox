@@ -47,12 +47,7 @@ class CustomTabIntentProcessorTest {
         val customTabsUseCases = CustomTabsUseCases(store, useCases.loadUrl)
 
         val handler = CustomTabIntentProcessor(customTabsUseCases.add, testContext.resources)
-
-        val intent = mock<Intent>()
-        whenever(intent.action).thenReturn(Intent.ACTION_VIEW)
-        whenever(intent.hasExtra(CustomTabsIntent.EXTRA_SESSION)).thenReturn(true)
-        whenever(intent.dataString).thenReturn("http://mozilla.org")
-        whenever(intent.putExtra(any<String>(), any<String>())).thenReturn(intent)
+        val intent = createCustomTabIntent()
 
         handler.process(intent)
 
@@ -86,12 +81,7 @@ class CustomTabIntentProcessorTest {
         val customTabsUseCases = CustomTabsUseCases(store, useCases.loadUrl)
 
         val handler = CustomTabIntentProcessor(customTabsUseCases.add, testContext.resources)
-
-        val intent = mock<Intent>()
-        whenever(intent.action).thenReturn(Intent.ACTION_VIEW)
-        whenever(intent.hasExtra(CustomTabsIntent.EXTRA_SESSION)).thenReturn(true)
-        whenever(intent.dataString).thenReturn("http://mozilla.org")
-        whenever(intent.putExtra(any<String>(), any<String>())).thenReturn(intent)
+        val intent = createCustomTabIntent()
 
         val headersBundle =
             Bundle().apply {
@@ -133,12 +123,7 @@ class CustomTabIntentProcessorTest {
         val customTabsUseCases = CustomTabsUseCases(store, useCases.loadUrl)
 
         val handler = CustomTabIntentProcessor(customTabsUseCases.add, testContext.resources, true)
-
-        val intent = mock<Intent>()
-        whenever(intent.action).thenReturn(Intent.ACTION_VIEW)
-        whenever(intent.hasExtra(CustomTabsIntent.EXTRA_SESSION)).thenReturn(true)
-        whenever(intent.dataString).thenReturn("http://mozilla.org")
-        whenever(intent.putExtra(any<String>(), any<String>())).thenReturn(intent)
+        val intent = createCustomTabIntent()
 
         handler.process(intent)
 
@@ -162,5 +147,94 @@ class CustomTabIntentProcessorTest {
         assertIs<Source.External.CustomTab>(customTab.source)
         assertNotNull(customTab.config)
         assertTrue(customTab.content.private)
+    }
+
+    @Test
+    fun `GIVEN desktop mode is enabled WHEN processing without desktopMode THEN the custom tab is in desktop mode`() {
+        val store =
+            BrowserStore(
+                initialState = BrowserState(desktopMode = true),
+                middleware = EngineMiddleware.create(engine = mock()),
+            )
+        val customTabsUseCases = CustomTabsUseCases(store, SessionUseCases(store).loadUrl)
+        val handler = CustomTabIntentProcessor(customTabsUseCases.add, testContext.resources)
+
+        handler.process(createCustomTabIntent())
+
+        val tab = store.state.customTabs.single()
+        assertTrue(tab.content.desktopMode)
+    }
+
+    @Test
+    fun `GIVEN desktop mode is enabled WHEN processing with desktopMode true THEN the custom tab is in desktop mode`() {
+        val store =
+            BrowserStore(
+                initialState = BrowserState(desktopMode = true),
+                middleware = EngineMiddleware.create(engine = mock()),
+            )
+        val customTabsUseCases = CustomTabsUseCases(store, SessionUseCases(store).loadUrl)
+        val handler = CustomTabIntentProcessor(customTabsUseCases.add, testContext.resources, desktopMode = true)
+
+        handler.process(createCustomTabIntent())
+
+        val tab = store.state.customTabs.single()
+        assertTrue(tab.content.desktopMode)
+    }
+
+    @Test
+    fun `GIVEN desktop mode is enabled WHEN processing with desktopMode false THEN the custom tab is not in desktop mode`() {
+        val store =
+            BrowserStore(
+                initialState = BrowserState(desktopMode = true),
+                middleware = EngineMiddleware.create(engine = mock()),
+            )
+        val customTabsUseCases = CustomTabsUseCases(store, SessionUseCases(store).loadUrl)
+        val handler = CustomTabIntentProcessor(customTabsUseCases.add, testContext.resources, desktopMode = false)
+
+        handler.process(createCustomTabIntent())
+
+        val tab = store.state.customTabs.single()
+        assertFalse(tab.content.desktopMode)
+    }
+
+    @Test
+    fun `GIVEN desktop mode is disabled WHEN processing with desktopMode true THEN the custom tab is in desktop mode`() {
+        val store =
+            BrowserStore(
+                initialState = BrowserState(desktopMode = false),
+                middleware = EngineMiddleware.create(engine = mock()),
+            )
+        val customTabsUseCases = CustomTabsUseCases(store, SessionUseCases(store).loadUrl)
+        val handler = CustomTabIntentProcessor(customTabsUseCases.add, testContext.resources, desktopMode = true)
+
+        handler.process(createCustomTabIntent())
+
+        val tab = store.state.customTabs.single()
+        assertTrue(tab.content.desktopMode)
+    }
+
+    @Test
+    fun `GIVEN desktop mode is disabled WHEN processing with desktopMode false THEN the custom tab is not in desktop mode`() {
+        val store =
+            BrowserStore(
+                initialState = BrowserState(desktopMode = false),
+                middleware = EngineMiddleware.create(engine = mock()),
+            )
+        val customTabsUseCases = CustomTabsUseCases(store, SessionUseCases(store).loadUrl)
+        val handler = CustomTabIntentProcessor(customTabsUseCases.add, testContext.resources, desktopMode = false)
+
+        handler.process(createCustomTabIntent())
+
+        val tab = store.state.customTabs.single()
+        assertFalse(tab.content.desktopMode)
+    }
+
+    private fun createCustomTabIntent(): Intent {
+        val intent = mock<Intent>()
+        whenever(intent.action).thenReturn(Intent.ACTION_VIEW)
+        whenever(intent.hasExtra(CustomTabsIntent.EXTRA_SESSION)).thenReturn(true)
+        whenever(intent.dataString).thenReturn("http://mozilla.org")
+        whenever(intent.putExtra(any<String>(), any<String>())).thenReturn(intent)
+        return intent
     }
 }
