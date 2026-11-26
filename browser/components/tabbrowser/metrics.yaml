@@ -478,6 +478,7 @@ tabgroup:
       - https://bugzil.la/1938401
       - https://bugzil.la/1971241
       - https://bugzil.la/2020866
+      - https://bugzil.la/2021316
     data_reviews:
       - https://bugzil.la/1938401
     data_sensitivity:
@@ -491,6 +492,7 @@ tabgroup:
       - reopen
       - open_tabmenu
       - open_appmenu_list
+      - open_toolbar_list
       - open_recent
       - open_suggest
       - delete

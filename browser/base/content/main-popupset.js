@@ -32,6 +32,8 @@ document.addEventListener(
       switch (popup.triggerNode?.closest("panelview")?.id) {
         case "appMenu-tabGroupsListView":
           return lazy.TabMetrics.METRIC_SOURCE.APP_MENU_GROUP_LIST;
+        case "toolbar-tabGroupsListView":
+          return lazy.TabMetrics.METRIC_SOURCE.TOOLBAR_GROUP_LIST;
         case "allTabsMenu-allTabsView":
           return lazy.TabMetrics.METRIC_SOURCE.TAB_OVERFLOW_MENU;
         default:

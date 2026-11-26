@@ -47,6 +47,12 @@ class TabGroupsList extends MozLitElement {
     return /** @type {BrowserWindow} */ (this.documentGlobal);
   }
 
+  get #metricSource() {
+    return this.closest("panelview")?.id == "toolbar-tabGroupsListView"
+      ? lazy.TabMetrics.METRIC_SOURCE.TOOLBAR_GROUP_LIST
+      : lazy.TabMetrics.METRIC_SOURCE.APP_MENU_GROUP_LIST;
+  }
+
   connectedCallback() {
     super.connectedCallback();
     this.#populate();
@@ -77,7 +83,7 @@ class TabGroupsList extends MozLitElement {
       group.documentGlobal.focus();
     } else {
       lazy.SessionStore.openSavedTabGroup(group.id, this.#win, {
-        source: lazy.TabMetrics.METRIC_SOURCE.APP_MENU_GROUP_LIST,
+        source: this.#metricSource,
       });
     }
   }
@@ -164,7 +170,7 @@ class TabGroupsList extends MozLitElement {
     const newTab = win.gBrowser.addTrustedTab(win.BROWSER_NEW_TAB_URL);
     win.gBrowser.addTabGroup([newTab], {
       metricsContext: win.gBrowser.TabMetrics.userTriggeredContext(
-        win.gBrowser.TabMetrics.METRIC_SOURCE.TAB_OVERFLOW_MENU
+        this.#metricSource
       ),
     });
   }

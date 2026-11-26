@@ -1126,3 +1126,72 @@ add_task(async function test_detach_group_to_new_window_app_menu() {
   await resetTelemetry();
   await SpecialPowers.popPrefEnv();
 });
+
+let openToolbarTabGroupsList = async () => {
+  let view = PanelMultiView.getViewNode(document, "toolbar-tabGroupsListView");
+  let viewShown = BrowserTestUtils.waitForEvent(view, "ViewShown");
+  document.getElementById("tab-groups-button").click();
+  await viewShown;
+  await view.querySelector("tab-groups-list").updateComplete;
+  return view;
+};
+
+let closeToolbarTabGroupsList = async () => {
+  let panel = PanelMultiView.getViewNode(
+    document,
+    "toolbar-tabGroupsListView"
+  ).closest("panel");
+  if (!panel || panel.state == "closed") {
+    return;
+  }
+  let hidden = BrowserTestUtils.waitForPopupEvent(panel, "hidden");
+  panel.hidePopup();
+  await hidden;
+};
+
+// replaceGroupWithWindow should record DETACH with the correct source when
+// triggered from the toolbar button tab groups list's context menu.
+add_task(async function test_detach_group_to_new_window_toolbar() {
+  // The toolbar button is only registered when its pref is set at startup,
+  // so register it the same way CustomizableWidgets does.
+  CustomizableUI.createWidget({
+    id: "tab-groups-button",
+    type: "view",
+    viewId: "toolbar-tabGroupsListView",
+    label: "Tab groups",
+  });
+  CustomizableUI.addWidgetToArea(
+    "tab-groups-button",
+    CustomizableUI.AREA_NAVBAR
+  );
+  await resetTelemetry();
+
+  let tab1 = await addTab("about:blank");
+  let tab2 = await addTab("about:blank");
+  let group = gBrowser.addTabGroup([tab1, tab2]);
+  gBrowser.tabGroupMenu.close();
+
+  let view = await openToolbarTabGroupsList();
+  let tabGroupButton = view.querySelector(`[data-tab-group-id="${group.id}"]`);
+  let menu = await getContextMenu(
+    tabGroupButton,
+    "open-tab-group-context-menu"
+  );
+
+  let newWindowPromise = BrowserTestUtils.waitForNewWindow();
+  menu.querySelector("#open-tab-group-context-menu_moveToNewWindow").click();
+  await closeContextMenu(menu);
+  let newWin = await newWindowPromise;
+
+  assertInteractionEvent(getLastInteractionEvent(), {
+    action: TabMetrics.METRIC_ACTION.DETACH,
+    source: TabMetrics.METRIC_SOURCE.TOOLBAR_GROUP_LIST,
+    tab_count: 2,
+  });
+
+  await closeToolbarTabGroupsList();
+  await BrowserTestUtils.closeWindow(newWin);
+  CustomizableUI.destroyWidget("tab-groups-button");
+  CustomizableUI.reset();
+  await resetTelemetry();
+});
