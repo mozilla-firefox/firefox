@@ -350,6 +350,17 @@ export const inventory = [
     ],
   },
   {
+    id: "settings-local-mode",
+    l10nId: "devtools-settings-local-mode",
+    settings: [
+      {
+        id: "settings-local-mode-mappings",
+        type: "custom-element",
+        element: "devtools-settings-local-mode",
+      },
+    ],
+  },
+  {
     id: "settings-editor",
     l10nId: "devtools-settings-editor",
     settings: [

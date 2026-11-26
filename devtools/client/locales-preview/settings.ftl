@@ -221,6 +221,27 @@ devtools-settings-screenshot-audio =
     .label = Play camera shutter sound
     .title = Enables the camera audio sound when taking screenshot
 
+## Local Mode section, which lets the user load local folders from https
+## URLs.
+
+devtools-settings-local-mode =
+    .label = Local Mode
+    .description = Local Mode allows you to load local files via https URL without any external dependency. The URLs can only be loaded from tabs with DevTools opened.
+
+devtools-settings-local-mode-local-only =
+    .message = Local Mode only works locally and is disabled when debugging remote contexts
+
+# Input for the domain, e.g. firefox.localhost, that loads a local folder.
+devtools-settings-local-mode-origin =
+    .label = Custom domain
+    .placeholder = Origin for the local mapping
+
+# Label for the folder whose files are served at the custom domain.
+devtools-settings-local-mode-folder = Local folder:
+
+# Error shown when a mapping's local folder is missing or invalid.
+devtools-settings-local-mode-folder-invalid = This folder doesn’t exist, or is invalid.
+
 ## Editor Preferences section, configuring the source editors used across
 ## DevTools.
 
