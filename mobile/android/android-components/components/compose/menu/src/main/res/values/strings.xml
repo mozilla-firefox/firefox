@@ -55,4 +55,14 @@
   <string name="mozac_menu_customize_drag_items_to_hide">Drag items here to hide</string>
   <!-- Customize menu screen: Name of the action, read by screen readers, for opening the screen where the items of a menu section can be changed. -->
   <string name="mozac_menu_customize_edit_items">Edit menu items</string>
+  <!-- Accessibility description used in the screen where the items of a menu section can be moved around. The string describes the item the user has selected, and tells the user what position it currently occupies. %1$s is the name of the item (e.g. "Settings"). %2$d is its position, and %3$d is the total number of items being shown, including the ones inside an expanded item. -->
+  <string name="mozac_menu_customize_shown_item">%1$s. Position %2$d of %3$d</string>
+  <!-- Customize menu items screen: Name of the action for showing the items inside a collapsed menu item (e.g. "More"). Offered to screen readers as an action of a menu item. -->
+  <string name="mozac_menu_customize_expand">Expand</string>
+  <!-- Customize menu items screen: Name of the action for hiding the items inside an expanded menu item (e.g. "More"). Offered to screen readers as an action of a menu item. -->
+  <string name="mozac_menu_customize_collapse">Collapse</string>
+  <!-- Announcement (not visible, for screen readers etc.) once the user expanded a menu item. %1$s is the name of the item, for example "More". If gender is ambiguous or an issue, this can also be translated as "%1$s, item expanded". -->
+  <string name="mozac_menu_customize_item_expanded">%1$s expanded</string>
+  <!-- Announcement (not visible, for screen readers etc.) once the user collapsed a menu item. %1$s is the name of the item, for example "More". If gender is ambiguous or an issue, this can also be translated as "%1$s, item collapsed". -->
+  <string name="mozac_menu_customize_item_collapsed">%1$s collapsed</string>
 </resources>

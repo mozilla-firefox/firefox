@@ -5,6 +5,8 @@
 package mozilla.components.compose.menu.ui.customize
 
 import androidx.compose.ui.geometry.Offset
+import androidx.compose.ui.semantics.SemanticsProperties
+import androidx.compose.ui.test.SemanticsMatcher
 import androidx.compose.ui.test.assertIsDisplayed
 import androidx.compose.ui.test.getUnclippedBoundsInRoot
 import androidx.compose.ui.test.junit4.v2.createComposeRule
@@ -57,10 +59,10 @@ class EditMenuItemsContentTest {
         )
 
         val dragBarBounds = composeTestRule.onNodeWithText(dragToReorder).getUnclippedBoundsInRoot()
-        val shown1Bounds = composeTestRule.onNodeWithText("Shown 1").getUnclippedBoundsInRoot()
-        val shown2Bounds = composeTestRule.onNodeWithText("Shown 2").getUnclippedBoundsInRoot()
+        val shown1Bounds = rowOf("Shown 1").getUnclippedBoundsInRoot()
+        val shown2Bounds = rowOf("Shown 2").getUnclippedBoundsInRoot()
         val titleBounds = composeTestRule.onNodeWithText(hiddenItemsTitle).getUnclippedBoundsInRoot()
-        val hiddenBounds = composeTestRule.onNodeWithText("Hidden").getUnclippedBoundsInRoot()
+        val hiddenBounds = rowOf("Hidden").getUnclippedBoundsInRoot()
         assertTrue(dragBarBounds.bottom <= shown1Bounds.top)
         assertTrue(shown1Bounds.bottom <= shown2Bounds.top)
         assertTrue(shown2Bounds.bottom <= titleBounds.top)
@@ -89,7 +91,7 @@ class EditMenuItemsContentTest {
             )
         )
 
-        composeTestRule.onNodeWithText("Shown").assertIsDisplayed()
+        rowOf("Shown").assertIsDisplayed()
     }
 
     @Test
@@ -100,13 +102,13 @@ class EditMenuItemsContentTest {
                 expandedItemIds = setOf("More"),
             )
         )
-        composeTestRule.onNodeWithText("Sub-item").assertIsDisplayed()
+        rowOf("Sub-item").assertIsDisplayed()
 
-        composeTestRule.onNodeWithText("More").performClick()
-        composeTestRule.onNodeWithText("Sub-item").assertDoesNotExist()
+        rowOf("More").performClick()
+        rowOf("Sub-item").assertDoesNotExist()
 
-        composeTestRule.onNodeWithText("More").performClick()
-        composeTestRule.onNodeWithText("Sub-item").assertIsDisplayed()
+        rowOf("More").performClick()
+        rowOf("Sub-item").assertIsDisplayed()
     }
 
     @Test
@@ -118,13 +120,13 @@ class EditMenuItemsContentTest {
                 expandedItemIds = setOf("More"),
             )
         )
-        composeTestRule.onNodeWithText("Sub-item").assertIsDisplayed()
+        rowOf("Sub-item").assertIsDisplayed()
 
-        composeTestRule.onNodeWithText("More").performClick()
-        composeTestRule.onNodeWithText("Sub-item").assertDoesNotExist()
+        rowOf("More").performClick()
+        rowOf("Sub-item").assertDoesNotExist()
 
-        composeTestRule.onNodeWithText("More").performClick()
-        composeTestRule.onNodeWithText("Sub-item").assertIsDisplayed()
+        rowOf("More").performClick()
+        rowOf("Sub-item").assertIsDisplayed()
     }
 
     @Test
@@ -181,7 +183,7 @@ class EditMenuItemsContentTest {
                 listOf(capturing(actions)),
             )
 
-        dragByHandle(title = "Shown 1", to = { boundsOf(dragToHide).center })
+        dragByHandle(title = "Shown 1", to = { textBoundsOf(dragToHide).center })
 
         assertEquals(listOf("Shown 2"), store.state.items.map { it.id })
         assertEquals(listOf("Shown 1"), store.state.hiddenItems.map { it.id })
@@ -196,7 +198,7 @@ class EditMenuItemsContentTest {
         val actions = mutableListOf<CustomizableMenuItemsAction>()
         val store = setContent(CustomizableMenuItemsState(items = listOf(item("Shown"))), listOf(capturing(actions)))
 
-        dragByHandle(title = "Shown", to = { boundsOf(dragToHide).center })
+        dragByHandle(title = "Shown", to = { textBoundsOf(dragToHide).center })
 
         assertEquals(listOf("Shown"), store.state.items.map { it.id })
         assertTrue(actions.none { it is ItemsChanged })
@@ -241,7 +243,7 @@ class EditMenuItemsContentTest {
         val store =
             setContent(CustomizableMenuItemsState(items = listOf(item("Shown"), more), expandedItemIds = setOf("More")))
 
-        dragByHandle(title = "Sub 1", to = { boundsOf(dragToHide).center })
+        dragByHandle(title = "Sub 1", to = { textBoundsOf(dragToHide).center })
 
         assertEquals(listOf("Sub 2"), store.state.items.first { it.id == "More" }.subItems.map { it.id })
         assertEquals(listOf("Sub 1"), store.state.hiddenItems.map { it.id })
@@ -397,8 +399,8 @@ class EditMenuItemsContentTest {
 
         dragByHandle(
             title = "Shown",
-            via = listOf({ boundsOf(dragToHide).center }, { boundsOf("Shown").center }),
-            to = { boundsOf(dragToHide).center },
+            via = listOf({ textBoundsOf(dragToHide).center }, { boundsOf("Shown").center }),
+            to = { textBoundsOf(dragToHide).center },
         )
 
         assertEquals(listOf(AttemptedEmptySection("Shown")), actions.filterIsInstance<AttemptedEmptySection>())
@@ -412,7 +414,7 @@ class EditMenuItemsContentTest {
             listOf(capturing(actions)),
         )
 
-        dragByHandle(title = "Shown 1", to = { boundsOf(dragToHide).center })
+        dragByHandle(title = "Shown 1", to = { textBoundsOf(dragToHide).center })
 
         assertTrue(actions.none { it is AttemptedEmptySection })
     }
@@ -475,7 +477,18 @@ class EditMenuItemsContentTest {
         next(action)
     }
 
-    private fun boundsOf(text: String) = composeTestRule.onNodeWithText(text).fetchSemanticsNode().boundsInRoot
+    private fun boundsOf(name: String) = rowOf(name).fetchSemanticsNode().boundsInRoot
+
+    private fun textBoundsOf(text: String) = composeTestRule.onNodeWithText(text).fetchSemanticsNode().boundsInRoot
+
+    private fun rowOf(name: String) =
+        composeTestRule.onNode(
+            SemanticsMatcher("Row of $name") { node ->
+                val description =
+                    node.config.getOrElse(SemanticsProperties.ContentDescription) { emptyList() }.singleOrNull()
+                description == name || description?.startsWith("$name. Position ") == true
+            }
+        )
 
     /**
      * Tap the handle of the row with [title], drag it in steps through each of [via], in order, each evaluated when its

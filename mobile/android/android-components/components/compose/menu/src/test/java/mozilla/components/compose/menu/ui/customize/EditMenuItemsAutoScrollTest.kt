@@ -9,9 +9,11 @@ import androidx.compose.ui.geometry.Offset
 import androidx.compose.ui.hapticfeedback.HapticFeedback
 import androidx.compose.ui.hapticfeedback.HapticFeedbackType
 import androidx.compose.ui.platform.LocalHapticFeedback
+import androidx.compose.ui.semantics.SemanticsProperties
+import androidx.compose.ui.test.SemanticsMatcher
 import androidx.compose.ui.test.getUnclippedBoundsInRoot
+import androidx.compose.ui.test.hasText
 import androidx.compose.ui.test.junit4.v2.createComposeRule
-import androidx.compose.ui.test.onNodeWithText
 import androidx.compose.ui.test.onRoot
 import androidx.compose.ui.test.performTouchInput
 import androidx.test.ext.junit.runners.AndroidJUnit4
@@ -129,13 +131,23 @@ class EditMenuItemsAutoScrollTest {
         composeTestRule.waitForIdle()
     }
 
-    private fun boundsOf(text: String) = composeTestRule.onNodeWithText(text).fetchSemanticsNode().boundsInRoot
+    private fun boundsOf(text: String) = nodeOf(text).fetchSemanticsNode().boundsInRoot
 
     private fun unclippedTopOf(text: String) =
-        with(composeTestRule.density) { composeTestRule.onNodeWithText(text).getUnclippedBoundsInRoot().top.toPx() }
+        with(composeTestRule.density) { nodeOf(text).getUnclippedBoundsInRoot().top.toPx() }
 
     private fun unclippedBottomOf(text: String) =
-        with(composeTestRule.density) { composeTestRule.onNodeWithText(text).getUnclippedBoundsInRoot().bottom.toPx() }
+        with(composeTestRule.density) { nodeOf(text).getUnclippedBoundsInRoot().bottom.toPx() }
+
+    private fun nodeOf(text: String) =
+        composeTestRule.onNode(
+            hasText(text) or
+                SemanticsMatcher("Row of $text") { node ->
+                    val description =
+                        node.config.getOrElse(SemanticsProperties.ContentDescription) { emptyList() }.singleOrNull()
+                    description == text || description?.startsWith("$text. Position ") == true
+                }
+        )
 
     private fun rootBottom() = composeTestRule.onRoot().fetchSemanticsNode().boundsInRoot.bottom
 

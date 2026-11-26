@@ -143,12 +143,20 @@ internal data class CustomizeMenuItems(
 
     private val shownKeys = shownRows.mapTo(mutableSetOf()) { it.key }
 
+    private val shownItemKeys = shownRows.filterIsInstance<EditMenuItemsRow.Item>().map { it.key }
+
+    /** Number of the shown items and of the sub-items of expanded items, not the sub-items of collapsed items. */
+    val shownWithSubItemsCount: Int = shownItemKeys.size
+
+    /**
+     * Position, from 1, of the shown item with [key] among the [shownWithSubItemsCount] shown items and sub-items, or
+     * `null` if not one.
+     */
+    fun shownPositionOf(key: Any): Int? = shownItemKeys.indexOf(key).takeIf { it != -1 }?.plus(1)
+
     override fun isShownKey(key: Any) = key in shownKeys
 
-    override fun cannotBeHidden(key: Any): Boolean {
-        if (!isShownKey(key)) return false
-        return shown.without(key).none { it.isVisible }
-    }
+    override fun cannotBeHidden(key: Any) = isShownKey(key) && shown.without(key).none { it.isVisible }
 
     override fun drop(key: Any, target: CustomizeMenuDropTarget): CustomizeMenuItems =
         (dropOutcome(key, target) as? DropOutcome.Moved)?.items ?: this

@@ -1,0 +1,109 @@
+/* This Source Code Form is subject to the terms of the Mozilla Public
+ * License, v. 2.0. If a copy of the MPL was not distributed with this
+ * file, You can obtain one at http://mozilla.org/MPL/2.0/. */
+
+package mozilla.components.compose.menu.ui.customize
+
+import androidx.compose.runtime.Composable
+import androidx.compose.ui.Modifier
+import androidx.compose.ui.res.stringResource
+import androidx.compose.ui.semantics.CustomAccessibilityAction
+import androidx.compose.ui.semantics.Role
+import androidx.compose.ui.semantics.clearAndSetSemantics
+import androidx.compose.ui.semantics.contentDescription
+import androidx.compose.ui.semantics.customActions
+import androidx.compose.ui.semantics.onClick
+import androidx.compose.ui.semantics.role
+import androidx.compose.ui.semantics.stateDescription
+import mozilla.components.compose.base.R as baseR
+import mozilla.components.compose.base.text.value
+import mozilla.components.compose.menu.R
+import mozilla.components.compose.menu.data.ExpandableMenuItem
+import mozilla.components.compose.menu.data.MenuItem
+
+/**
+ * Make a row of an item a single node for accessibility services, reading its name then, for an item shown in the menu,
+ * its position among the shown items. Its content and drag handle are not separate nodes, and the dimmed content of a
+ * hidden item is not read as disabled. An expandable item is read as a button with its expanded or collapsed state,
+ * which toggles it when activated, and has the custom action toggling it too.
+ *
+ * @param row The row of the item.
+ * @param item The item the row shows.
+ * @param actions What the rows do.
+ */
+@Composable
+internal fun Modifier.editMenuItemSemantics(
+    row: EditMenuItemsRow.Item,
+    item: MenuItem,
+    actions: EditMenuItemsActions,
+): Modifier {
+    val name = item.a11yName()
+    val position = actions.items.shownPositionOf(row.key)
+    val description =
+        if (position == null) {
+            name
+        } else {
+            stringResource(
+                R.string.mozac_menu_customize_shown_item,
+                name,
+                position,
+                actions.items.shownWithSubItemsCount,
+            )
+        }
+    val expansionAction = if (item is ExpandableMenuItem) expansionAction(row, name, actions) else null
+    val expansionState =
+        stringResource(
+            if (row.isExpanded) {
+                baseR.string.mozac_compose_base_a11y_state_label_expanded
+            } else {
+                baseR.string.mozac_compose_base_a11y_state_label_collapsed
+            }
+        )
+
+    return clearAndSetSemantics {
+        contentDescription = description
+        expansionAction?.let {
+            customActions = listOf(it)
+            role = Role.Button
+            stateDescription = expansionState
+            onClick(label = it.label, action = it.action)
+        }
+    }
+}
+
+@Composable
+private fun expansionAction(
+    row: EditMenuItemsRow.Item,
+    name: String,
+    actions: EditMenuItemsActions,
+): CustomAccessibilityAction {
+    val label =
+        stringResource(
+            if (row.isExpanded) R.string.mozac_menu_customize_collapse else R.string.mozac_menu_customize_expand
+        )
+    val announcement =
+        stringResource(
+            if (row.isExpanded) {
+                R.string.mozac_menu_customize_item_collapsed
+            } else {
+                R.string.mozac_menu_customize_item_expanded
+            },
+            name,
+        )
+    return CustomAccessibilityAction(label) {
+        actions.onExpansionToggle(row.item.id)
+        actions.announce(announcement)
+        true
+    }
+}
+
+/** The name of this item read by accessibility services, with its summary, if any, unless it has a description. */
+@Composable
+private fun MenuItem.a11yName(): String {
+    contentDescription?.let {
+        return it.value
+    }
+    val titleText = title.text.value
+    val summaryText = summary?.text?.value?.takeIf { it.isNotBlank() } ?: return titleText
+    return "$titleText, $summaryText"
+}

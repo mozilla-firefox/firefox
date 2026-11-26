@@ -17,6 +17,9 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.layout.onGloballyPositioned
 import androidx.compose.ui.res.stringResource
+import androidx.compose.ui.semantics.CollectionInfo
+import androidx.compose.ui.semantics.collectionInfo
+import androidx.compose.ui.semantics.semantics
 import androidx.compose.ui.tooling.preview.PreviewLightDark
 import androidx.compose.ui.unit.Dp
 import mozilla.components.compose.base.theme.AcornTheme
@@ -31,6 +34,7 @@ import mozilla.components.compose.menu.ui.customize.CustomizeMenuItemKey.DROP_AR
 import mozilla.components.compose.menu.ui.customize.CustomizeMenuItemKey.HIDDEN_TITLE
 import mozilla.components.compose.menu.ui.utils.editMenuItemsHiddenPreviewData
 import mozilla.components.compose.menu.ui.utils.editMenuItemsPreviewData
+import mozilla.components.compose.menu.ui.utils.rememberA11yUpdatesAnnouncer
 import mozilla.components.lib.state.ext.observeAsComposableState
 
 /**
@@ -79,10 +83,21 @@ private fun EditMenuItemsList(
     rightPadding: Dp,
 ) {
     val itemSpacing = AcornTheme.layout.space.static50
-    val onExpansionToggle = { itemId: String -> store.dispatch(ExpansionToggled(itemId)) }
+    val announcer = rememberA11yUpdatesAnnouncer()
+    val actions =
+        remember(store, menuItems, announcer) {
+            EditMenuItemsActions(
+                items = menuItems,
+                onExpansionToggle = { itemId -> store.dispatch(ExpansionToggled(itemId)) },
+                announce = announcer::announce,
+            )
+        }
 
     LazyColumn(
-        modifier = Modifier.fillMaxSize().onGloballyPositioned(dragState.interactionState::updateListLayoutCoordinates),
+        modifier =
+            Modifier.fillMaxSize()
+                .onGloballyPositioned(dragState.interactionState::updateListLayoutCoordinates)
+                .semantics { collectionInfo = CollectionInfo(rowCount = -1, columnCount = 1) },
         state = dragState.listState,
         userScrollEnabled = !dragState.isDragging,
         contentPadding =
@@ -100,7 +115,7 @@ private fun EditMenuItemsList(
             )
         }
 
-        editMenuItemRows(menuItems.shownRows, firstIndex = 1, dragState, itemSpacing, onExpansionToggle)
+        editMenuItemRows(menuItems.shownRows, firstIndex = 1, dragState, itemSpacing, actions)
 
         item(key = HIDDEN_TITLE) {
             HiddenSectionsItem(
@@ -119,8 +134,11 @@ private fun EditMenuItemsList(
             }
         }
 
-        editMenuItemRows(menuItems.hiddenRows, dragState.firstHiddenIndex, dragState, itemSpacing, onExpansionToggle)
+        editMenuItemRows(menuItems.hiddenRows, dragState.firstHiddenIndex, dragState, itemSpacing, actions)
     }
+
+    // Drawn over the list, important to be the last element here.
+    announcer.LiveRegion()
 }
 
 private fun LazyListScope.editMenuItemRows(
@@ -128,7 +146,7 @@ private fun LazyListScope.editMenuItemRows(
     firstIndex: Int,
     dragState: CustomizeMenuDragState<CustomizeMenuItems>,
     itemSpacing: Dp,
-    onExpansionToggle: (itemId: String) -> Unit,
+    actions: EditMenuItemsActions,
 ) {
     itemsIndexed(items = rows, key = { _, row -> row.key }) { index, row ->
         EditMenuItemRow(
@@ -136,7 +154,7 @@ private fun LazyListScope.editMenuItemRows(
             position = firstIndex + index,
             dragState = dragState,
             itemSpacing = itemSpacing,
-            onExpansionToggle = onExpansionToggle,
+            actions = actions,
         )
     }
 }

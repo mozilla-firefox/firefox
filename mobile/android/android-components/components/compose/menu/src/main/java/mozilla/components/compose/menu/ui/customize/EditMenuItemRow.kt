@@ -41,7 +41,7 @@ import mozilla.components.compose.menu.ui.utils.DRAGGED_GROUP_ALPHA
  * @param position Position in the list of the row.
  * @param dragState State of dragging the items of the screen.
  * @param itemSpacing Space above each row of the list.
- * @param onExpansionToggle Called with the id of an expandable item when the user expands or collapses it.
+ * @param actions What the rows do for accessibility services and when an expandable item is expanded or collapsed.
  * @param modifier The [Modifier] to be applied to the row.
  */
 @Composable
@@ -50,7 +50,7 @@ internal fun LazyItemScope.EditMenuItemRow(
     position: Int,
     dragState: CustomizeMenuDragState<CustomizeMenuItems>,
     itemSpacing: Dp,
-    onExpansionToggle: (itemId: String) -> Unit,
+    actions: EditMenuItemsActions,
     modifier: Modifier = Modifier,
 ) {
     val interactionState = dragState.interactionState
@@ -68,7 +68,7 @@ internal fun LazyItemScope.EditMenuItemRow(
     ) {
         when (row) {
             is EditMenuItemsRow.Item ->
-                ItemRow(row, onExpansionToggle, dragState, row.key.takeIf { row.isDraggable }, isDragged, itemSpacing)
+                ItemRow(row, actions, dragState, row.key.takeIf { row.isDraggable }, isDragged, itemSpacing)
             is EditMenuItemsRow.SubItemsEnd ->
                 RowFrame(isSubItem = false, dragState = dragState, dragKey = null, modifier = Modifier) {
                     SubItemsDivider()
@@ -83,7 +83,7 @@ private val EditMenuItemsRow.Item.isDraggable: Boolean
 @Composable
 private fun ItemRow(
     row: EditMenuItemsRow.Item,
-    onExpansionToggle: (itemId: String) -> Unit,
+    actions: EditMenuItemsActions,
     dragState: CustomizeMenuDragState<*>,
     dragKey: Any?,
     isDragged: Boolean,
@@ -100,10 +100,11 @@ private fun ItemRow(
         dragState = dragState,
         dragKey = dragKey,
         modifier = Modifier.alpha(if (isDragged) DRAGGED_GROUP_ALPHA else 1f).padding(top = itemSpacing),
+        semantics = Modifier.editMenuItemSemantics(row, item, actions),
     ) {
         CustomizedGroupTheme(containerColor = if (row.isHidden) Color.Transparent else null) {
             if (item is ExpandableMenuItem) {
-                ExpandableItemPill(row, item, onExpansionToggle, dragState, pillModifier)
+                ExpandableItemPill(row, item, actions.onExpansionToggle, dragState, pillModifier)
             } else {
                 ItemPill(item, pillModifier)
             }
@@ -161,6 +162,7 @@ private fun ItemPill(item: MenuItem, modifier: Modifier) {
  * @param dragKey Key of the list item to drag, or `null` for a row which is not dragged and has only the space of the
  *   handle.
  * @param modifier The [Modifier] to be applied to the row.
+ * @param semantics The [Modifier] making the row, with its content and handle, a node for accessibility services.
  * @param content The content of the row.
  */
 @Composable
@@ -169,14 +171,17 @@ private fun RowFrame(
     dragState: CustomizeMenuDragState<*>,
     dragKey: Any?,
     modifier: Modifier,
+    semantics: Modifier = Modifier,
     content: @Composable () -> Unit,
 ) {
     Row(
         modifier =
-            modifier.padding(
-                start = AcornTheme.layout.space.static200 * if (isSubItem) 2 else 1,
-                end = AcornTheme.layout.space.static25,
-            ),
+            modifier
+                .padding(
+                    start = AcornTheme.layout.space.static200 * if (isSubItem) 2 else 1,
+                    end = AcornTheme.layout.space.static25,
+                )
+                .then(semantics),
         verticalAlignment = Alignment.CenterVertically,
     ) {
         Box(

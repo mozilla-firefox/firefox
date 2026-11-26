@@ -17,6 +17,7 @@ import mozilla.components.compose.menu.ui.customize.EditMenuItemsRow.SubItemsEnd
 import org.junit.Assert.assertEquals
 import org.junit.Assert.assertFalse
 import org.junit.Assert.assertNotEquals
+import org.junit.Assert.assertNull
 import org.junit.Assert.assertTrue
 import org.junit.Test
 
@@ -771,6 +772,45 @@ class CustomizeMenuItemsTest {
 
         assertEquals(listOf("a", "top level only", "b"), moved.shown.map { it.id })
         assertTrue(moved.hidden.isEmpty())
+    }
+
+    @Test
+    fun `GIVEN an expanded item THEN it and its sub-items are counted and have a position among the shown rows`() {
+        val more = expandable("more", c, d)
+        val items = CustomizeMenuItems(shown = listOf(a, more, b), hidden = emptyList(), expandedIds = setOf("more"))
+
+        assertEquals(5, items.shownWithSubItemsCount)
+        assertEquals(listOf(1, 2, 3, 4, 5), listOf("a", "more", "c", "d", "b").map { items.shownPositionOf(it) })
+    }
+
+    @Test
+    fun `GIVEN a collapsed item THEN its sub-items are not counted and have no position`() {
+        val more = expandable("more", c, d)
+        val items = CustomizeMenuItems(shown = listOf(a, more, b), hidden = emptyList(), expandedIds = emptySet())
+
+        assertEquals(3, items.shownWithSubItemsCount)
+        assertEquals(3, items.shownPositionOf("b"))
+        assertNull(items.shownPositionOf("c"))
+    }
+
+    @Test
+    fun `GIVEN items the app does not show THEN they are not counted and have no position`() {
+        val notShown = CustomizableMenuItem(id = "not shown", item = null)
+        val items = CustomizeMenuItems(shown = listOf(notShown, a, b), hidden = emptyList(), expandedIds = emptySet())
+
+        assertEquals(2, items.shownWithSubItemsCount)
+        assertNull(items.shownPositionOf("not shown"))
+        assertEquals(1, items.shownPositionOf("a"))
+    }
+
+    @Test
+    fun `GIVEN a hidden item or the end of sub-items THEN it has no position among the shown items`() {
+        val more = expandable("more", c)
+        val items = CustomizeMenuItems(shown = listOf(a, more), hidden = listOf(b, d), expandedIds = setOf("more"))
+
+        assertNull(items.shownPositionOf("b"))
+        assertNull(items.shownPositionOf(subItemsEndKey("more")))
+        assertEquals(3, items.shownWithSubItemsCount)
     }
 
     private fun CustomizeMenuItems.subItemsOf(id: String) = shown.first { it.id == id }.subItems
