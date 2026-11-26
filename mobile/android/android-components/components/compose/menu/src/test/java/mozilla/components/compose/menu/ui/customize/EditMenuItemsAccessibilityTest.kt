@@ -5,6 +5,7 @@
 package mozilla.components.compose.menu.ui.customize
 
 import androidx.annotation.StringRes
+import androidx.compose.ui.geometry.Offset
 import androidx.compose.ui.semantics.CollectionInfo
 import androidx.compose.ui.semantics.LiveRegionMode
 import androidx.compose.ui.semantics.Role
@@ -14,6 +15,7 @@ import androidx.compose.ui.test.SemanticsMatcher
 import androidx.compose.ui.test.assert
 import androidx.compose.ui.test.assertCountEquals
 import androidx.compose.ui.test.assertIsDisplayed
+import androidx.compose.ui.test.getUnclippedBoundsInRoot
 import androidx.compose.ui.test.hasContentDescription
 import androidx.compose.ui.test.hasScrollAction
 import androidx.compose.ui.test.hasText
@@ -21,6 +23,8 @@ import androidx.compose.ui.test.isHeading
 import androidx.compose.ui.test.junit4.v2.createComposeRule
 import androidx.compose.ui.test.onNodeWithContentDescription
 import androidx.compose.ui.test.onNodeWithText
+import androidx.compose.ui.test.onRoot
+import androidx.compose.ui.test.performTouchInput
 import androidx.test.ext.junit.runners.AndroidJUnit4
 import mozilla.components.compose.base.R as baseR
 import mozilla.components.compose.base.text.Text
@@ -31,10 +35,13 @@ import mozilla.components.compose.menu.data.ExpandableMenuItem
 import mozilla.components.compose.menu.data.MenuItemSummary
 import mozilla.components.compose.menu.data.MenuItemTitle
 import mozilla.components.compose.menu.data.StandardMenuItem
+import mozilla.components.compose.menu.store.CustomizableMenuItemsAction
+import mozilla.components.compose.menu.store.CustomizableMenuItemsAction.ItemsChanged
 import mozilla.components.compose.menu.store.CustomizableMenuItemsState
 import mozilla.components.compose.menu.store.CustomizableMenuItemsStore
 import mozilla.components.compose.menu.store.MenuEvent
 import mozilla.components.compose.menu.ui.MenuItemState
+import mozilla.components.lib.state.Middleware
 import mozilla.components.support.test.robolectric.testContext
 import org.junit.Assert.assertEquals
 import org.junit.Assert.assertTrue
@@ -54,6 +61,8 @@ class EditMenuItemsAccessibilityTest {
     private val collapse = testContext.getString(R.string.mozac_menu_customize_collapse)
     private val expandedState = testContext.getString(baseR.string.mozac_compose_base_a11y_state_label_expanded)
     private val collapsedState = testContext.getString(baseR.string.mozac_compose_base_a11y_state_label_collapsed)
+    private val moveUp = testContext.getString(R.string.mozac_menu_customize_move_up)
+    private val moveDown = testContext.getString(R.string.mozac_menu_customize_move_down)
 
     @Test
     fun `THEN the titles above the shown items and above the hidden items are headings`() {
@@ -222,21 +231,21 @@ class EditMenuItemsAccessibilityTest {
     }
 
     @Test
-    fun `THEN an item which is not expandable has no custom actions`() {
+    fun `THEN an item which is not expandable has only the custom actions moving it`() {
         setContent(CustomizableMenuItemsState(items = listOf(item("Shown"), expandable("More", item("Sub")))))
 
-        assertEquals(emptyList<String>(), actionLabelsOf("Shown"))
+        assertEquals(listOf(moveDown), actionLabelsOf("Shown"))
     }
 
     @Test
-    fun `GIVEN a collapsed expandable item THEN its custom action is to expand it`() {
+    fun `GIVEN a collapsed expandable item THEN its custom actions are to expand it, then to move it`() {
         setContent(CustomizableMenuItemsState(items = listOf(item("Shown"), expandable("More", item("Sub")))))
 
-        assertEquals(listOf(expand), actionLabelsOf("More"))
+        assertEquals(listOf(expand, moveUp), actionLabelsOf("More"))
     }
 
     @Test
-    fun `GIVEN an expanded expandable item THEN its custom action is to collapse it`() {
+    fun `GIVEN an expanded expandable item THEN its only custom action is to collapse it`() {
         setContent(
             CustomizableMenuItemsState(
                 items = listOf(item("Shown"), expandable("More", item("Sub"))),
@@ -314,6 +323,262 @@ class EditMenuItemsAccessibilityTest {
         assertTrue(store.state.expandedItemIds.isEmpty())
         announcementNode().assert(hasAnnouncement(R.string.mozac_menu_customize_item_collapsed, "More"))
         composeTestRule.onNodeWithContentDescription("Sub").assertDoesNotExist()
+    }
+
+    @Test
+    fun `GIVEN several shown items THEN each can be moved only where there is room to move`() {
+        setContent(CustomizableMenuItemsState(items = listOf(item("First"), item("Second"), item("Third"))))
+
+        assertEquals(listOf(moveDown), actionLabelsOf("First"))
+        assertEquals(listOf(moveUp, moveDown), actionLabelsOf("Second"))
+        assertEquals(listOf(moveUp), actionLabelsOf("Third"))
+    }
+
+    @Test
+    fun `GIVEN a single shown item THEN it has no custom actions`() {
+        setContent(CustomizableMenuItemsState(items = listOf(item("Only")), hiddenItems = listOf(item("Hidden"))))
+
+        assertEquals(emptyList<String>(), actionLabelsOf("Only"))
+    }
+
+    @Test
+    fun `GIVEN a hidden item THEN it has no custom actions`() {
+        setContent(
+            CustomizableMenuItemsState(
+                items = listOf(item("First"), item("Second")),
+                hiddenItems = listOf(item("Hidden 1"), item("Hidden 2")),
+            )
+        )
+
+        assertEquals(emptyList<String>(), actionLabelsOf("Hidden 1", isHidden = true))
+        assertEquals(emptyList<String>(), actionLabelsOf("Hidden 2", isHidden = true))
+    }
+
+    @Test
+    fun `GIVEN a sub-item THEN it can only be moved inside the expanded item`() {
+        setContent(
+            CustomizableMenuItemsState(
+                items = listOf(item("First"), expandable("More", item("Sub 1"), item("Sub 2"))),
+                expandedItemIds = setOf("More"),
+            )
+        )
+
+        assertEquals(listOf(moveDown), actionLabelsOf("Sub 1"))
+        assertEquals(listOf(moveUp), actionLabelsOf("Sub 2"))
+    }
+
+    @Test
+    fun `WHEN an item is moved down THEN it is moved, saved as moved by the user and announced with its position`() {
+        val actions = mutableListOf<CustomizableMenuItemsAction>()
+        val store =
+            setContent(
+                CustomizableMenuItemsState(items = listOf(item("First"), item("Second"), item("Third"))),
+                listOf(capturing(actions)),
+            )
+
+        performAction("First", moveDown)
+
+        assertEquals(listOf("Second", "First", "Third"), store.state.items.map { it.id })
+        assertEquals(
+            ItemsChanged(items = store.state.items, hiddenItems = emptyList()),
+            actions.filterIsInstance<ItemsChanged>().single(),
+        )
+        announcementNode().assert(hasAnnouncement(R.string.mozac_menu_customize_item_moved, "First", 2, 3))
+        composeTestRule.onNodeWithContentDescription(shownItem("First", 2, 3)).assertIsDisplayed()
+        composeTestRule.onNodeWithContentDescription(shownItem("Second", 1, 3)).assertIsDisplayed()
+    }
+
+    @Test
+    fun `WHEN an item is moved up THEN it is moved and announced with its position`() {
+        val store = setContent(CustomizableMenuItemsState(items = listOf(item("First"), item("Second"), item("Third"))))
+
+        performAction("Third", moveUp)
+
+        assertEquals(listOf("First", "Third", "Second"), store.state.items.map { it.id })
+        announcementNode().assert(hasAnnouncement(R.string.mozac_menu_customize_item_moved, "Third", 2, 3))
+        composeTestRule.onNodeWithContentDescription(shownItem("Third", 2, 3)).assertIsDisplayed()
+    }
+
+    @Test
+    fun `WHEN an item is moved down past an expanded item THEN it is announced after the sub-items of the item`() {
+        val store =
+            setContent(
+                CustomizableMenuItemsState(
+                    items = listOf(item("First"), expandable("More", item("Sub 1"), item("Sub 2")), item("Last")),
+                    expandedItemIds = setOf("More"),
+                )
+            )
+
+        performAction("First", moveDown)
+
+        assertEquals(listOf("More", "First", "Last"), store.state.items.map { it.id })
+        announcementNode().assert(hasAnnouncement(R.string.mozac_menu_customize_item_moved, "First", 4, 5))
+        composeTestRule.onNodeWithContentDescription(shownItem("Sub 2", 3, 5)).assertExists()
+    }
+
+    @Test
+    fun `WHEN a collapsed expandable item is moved up THEN it keeps its sub-items`() {
+        val store =
+            setContent(CustomizableMenuItemsState(items = listOf(item("First"), expandable("More", item("Sub")))))
+
+        performAction("More", moveUp)
+
+        assertEquals(listOf("More", "First"), store.state.items.map { it.id })
+        assertEquals(listOf("Sub"), store.state.items.first().subItems.map { it.id })
+        announcementNode().assert(hasAnnouncement(R.string.mozac_menu_customize_item_moved, "More", 1, 2))
+    }
+
+    @Test
+    fun `WHEN a sub-item is moved THEN it stays in the expanded item and is announced with its position in it`() {
+        val store =
+            setContent(
+                CustomizableMenuItemsState(
+                    items = listOf(item("First"), expandable("More", item("Sub 1"), item("Sub 2"))),
+                    expandedItemIds = setOf("More"),
+                )
+            )
+
+        performAction("Sub 1", moveDown)
+
+        assertEquals(listOf("Sub 2", "Sub 1"), store.state.items.last().subItems.map { it.id })
+        announcementNode().assert(hasAnnouncement(R.string.mozac_menu_customize_sub_item_moved, "Sub 1", 2, 2, "More"))
+    }
+
+    @Test
+    fun `GIVEN more items than fit on the screen WHEN an item is moved down THEN it stays where it was on the screen`() {
+        setContent(CustomizableMenuItemsState(items = (1..20).map { item("Item $it") }))
+        val before = rowNode("Item 2", isHidden = false).fetchSemanticsNode()
+        val topBefore = before.boundsInRoot.top
+
+        performAction("Item 2", moveDown)
+
+        val after = rowNode("Item 2", isHidden = false).fetchSemanticsNode()
+        rowNode("Item 2", isHidden = false).assertIsDisplayed()
+        assertEquals(before.id, after.id)
+        assertEquals(topBefore, after.boundsInRoot.top)
+    }
+
+    @Test
+    fun `GIVEN an item is being dragged WHEN another item is moved down THEN nothing is moved or announced`() {
+        val actions = mutableListOf<CustomizableMenuItemsAction>()
+        val store =
+            setContent(
+                CustomizableMenuItemsState(items = listOf(item("First"), item("Second"), item("Third"))),
+                listOf(capturing(actions)),
+            )
+
+        startDragging("First")
+        performAction("Second", moveDown)
+
+        assertEquals(listOf("First", "Second", "Third"), store.state.items.map { it.id })
+        assertTrue(actions.none { it is ItemsChanged })
+        announcementNode().assert(SemanticsMatcher.keyNotDefined(SemanticsProperties.ContentDescription))
+    }
+
+    @Test
+    fun `GIVEN an item is being dragged WHEN another item is expanded or collapsed THEN nothing changes or is announced`() {
+        val actions = mutableListOf<CustomizableMenuItemsAction>()
+        val store =
+            setContent(
+                CustomizableMenuItemsState(
+                    items =
+                        listOf(item("First"), expandable("More", item("Sub 1")), expandable("Other", item("Sub 2"))),
+                    expandedItemIds = setOf("Other"),
+                ),
+                listOf(capturing(actions)),
+            )
+
+        startDragging("First")
+        performAction("More", expand)
+        performAction("Other", collapse)
+
+        assertEquals(setOf("Other"), store.state.expandedItemIds)
+        assertTrue(actions.none { it is CustomizableMenuItemsAction.ExpansionToggled })
+        announcementNode().assert(SemanticsMatcher.keyNotDefined(SemanticsProperties.ContentDescription))
+    }
+
+    @Test
+    fun `WHEN the move down actions of two items fetched before either is done are done one after the other THEN only the first is done`() {
+        val actions = mutableListOf<CustomizableMenuItemsAction>()
+        val store =
+            setContent(
+                CustomizableMenuItemsState(items = listOf(item("First"), item("Second"), item("Third"))),
+                listOf(capturing(actions)),
+            )
+        val moveFirstDown = customAction("First", moveDown)
+        val moveSecondDown = customAction("Second", moveDown)
+
+        composeTestRule.runOnIdle {
+            moveFirstDown.action()
+            moveSecondDown.action()
+        }
+        composeTestRule.waitForIdle()
+
+        assertEquals(listOf("Second", "First", "Third"), store.state.items.map { it.id })
+        assertEquals(1, actions.count { it is ItemsChanged })
+    }
+
+    @Test
+    fun `WHEN the same custom action is done twice THEN the item is moved and saved once`() {
+        val actions = mutableListOf<CustomizableMenuItemsAction>()
+        val store =
+            setContent(
+                CustomizableMenuItemsState(items = listOf(item("First"), item("Second"), item("Third"))),
+                listOf(capturing(actions)),
+            )
+        val action =
+            rowNode("First", isHidden = false).fetchSemanticsNode().config[SemanticsActions.CustomActions].single {
+                it.label == moveDown
+            }
+
+        composeTestRule.runOnIdle {
+            action.action()
+            action.action()
+        }
+        composeTestRule.waitForIdle()
+
+        assertEquals(listOf("Second", "First", "Third"), store.state.items.map { it.id })
+        assertEquals(1, actions.count { it is ItemsChanged })
+    }
+
+    @Test
+    fun `GIVEN items around a collapsed expandable item THEN it can be expanded and moved up or down`() {
+        setContent(
+            CustomizableMenuItemsState(items = listOf(item("First"), expandable("More", item("Sub")), item("Last")))
+        )
+
+        assertEquals(listOf(expand, moveUp, moveDown), actionLabelsOf("More"))
+    }
+
+    @Test
+    fun `GIVEN items around an expanded expandable item THEN it can only be collapsed`() {
+        setContent(
+            CustomizableMenuItemsState(
+                items = listOf(item("First"), expandable("More", item("Sub")), item("Last")),
+                expandedItemIds = setOf("More"),
+            )
+        )
+
+        assertEquals(listOf(collapse), actionLabelsOf("More"))
+    }
+
+    @Test
+    fun `GIVEN an item partly below the screen WHEN it is moved down THEN it is fully shown`() {
+        setContent(CustomizableMenuItemsState(items = (1..20).map { item("Item $it") }))
+        val screenBottom = composeTestRule.onRoot().getUnclippedBoundsInRoot().bottom
+        val partlyShown =
+            (1..20)
+                .map { "Item $it" }
+                .filter { composeTestRule.onAllNodes(rowMatcher(it, false)).fetchSemanticsNodes().isNotEmpty() }
+                .first {
+                    val bounds = rowNode(it, isHidden = false).getUnclippedBoundsInRoot()
+                    bounds.top < screenBottom && bounds.bottom > screenBottom
+                }
+
+        performAction(partlyShown, moveDown)
+
+        rowNode(partlyShown, isHidden = false).assertIsDisplayed()
+        assertTrue(rowNode(partlyShown, isHidden = false).getUnclippedBoundsInRoot().bottom <= screenBottom)
     }
 
     @Test
@@ -398,14 +663,14 @@ class EditMenuItemsAccessibilityTest {
         texts.forEach { composeTestRule.onNodeWithText(it).assertDoesNotExist() }
     }
 
-    private fun rowNode(name: String, isHidden: Boolean) =
-        composeTestRule.onNode(
-            SemanticsMatcher("Row of $name") { node ->
-                val description =
-                    node.config.getOrElse(SemanticsProperties.ContentDescription) { emptyList() }.singleOrNull()
-                if (isHidden) description == name else description?.startsWith("$name. Position ") == true
-            }
-        )
+    private fun rowMatcher(name: String, isHidden: Boolean) =
+        SemanticsMatcher("Row of $name") { node ->
+            val description =
+                node.config.getOrElse(SemanticsProperties.ContentDescription) { emptyList() }.singleOrNull()
+            if (isHidden) description == name else description?.startsWith("$name. Position ") == true
+        }
+
+    private fun rowNode(name: String, isHidden: Boolean) = composeTestRule.onNode(rowMatcher(name, isHidden))
 
     private fun actionLabelsOf(name: String, isHidden: Boolean = false) =
         rowNode(name, isHidden)
@@ -413,6 +678,23 @@ class EditMenuItemsAccessibilityTest {
             .config
             .getOrElse(SemanticsActions.CustomActions) { emptyList() }
             .map { it.label }
+
+    private fun startDragging(name: String) {
+        val center = rowNode(name, isHidden = false).fetchSemanticsNode().boundsInRoot.center
+        composeTestRule.onRoot().performTouchInput {
+            down(center)
+            advanceEventTime(viewConfiguration.longPressTimeoutMillis * 2)
+            move()
+        }
+        composeTestRule.waitForIdle()
+        composeTestRule.onRoot().performTouchInput { moveBy(Offset(0f, viewConfiguration.touchSlop * 3)) }
+        composeTestRule.waitForIdle()
+    }
+
+    private fun customAction(name: String, label: String) =
+        rowNode(name, isHidden = false).fetchSemanticsNode().config[SemanticsActions.CustomActions].single {
+            it.label == label
+        }
 
     private fun activate(name: String) {
         val action = rowNode(name, isHidden = false).fetchSemanticsNode().config[SemanticsActions.OnClick].action
@@ -429,10 +711,20 @@ class EditMenuItemsAccessibilityTest {
         composeTestRule.waitForIdle()
     }
 
-    private fun setContent(state: CustomizableMenuItemsState): CustomizableMenuItemsStore {
-        val store = CustomizableMenuItemsStore(initialState = state)
+    private fun setContent(
+        state: CustomizableMenuItemsState,
+        middleware: List<Middleware<CustomizableMenuItemsState, CustomizableMenuItemsAction>> = emptyList(),
+    ): CustomizableMenuItemsStore {
+        val store = CustomizableMenuItemsStore(initialState = state, middleware = middleware)
         composeTestRule.setContent { AcornTheme { EditMenuItemsContent(store = store) } }
         return store
+    }
+
+    private fun capturing(
+        actions: MutableList<CustomizableMenuItemsAction>
+    ): Middleware<CustomizableMenuItemsState, CustomizableMenuItemsAction> = { _, next, action ->
+        actions.add(action)
+        next(action)
     }
 
     private fun summary(text: String) = MenuItemSummary(Text.String(text))

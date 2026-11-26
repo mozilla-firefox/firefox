@@ -77,9 +77,6 @@ internal fun LazyItemScope.EditMenuItemRow(
     }
 }
 
-private val EditMenuItemsRow.Item.isDraggable: Boolean
-    get() = !isExpanded
-
 @Composable
 private fun ItemRow(
     row: EditMenuItemsRow.Item,

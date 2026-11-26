@@ -32,6 +32,10 @@ internal sealed interface EditMenuItemsRow {
         val isExpanded: Boolean,
     ) : EditMenuItemsRow {
         override val key: String = item.id
+
+        /** Whether the item can be dragged. An expanded item cannot be. */
+        val isDraggable: Boolean
+            get() = !isExpanded
     }
 
     /**
@@ -113,6 +117,20 @@ internal sealed interface DropOutcome {
 }
 
 /**
+ * An action moving an item of a screen customizing the items of a menu section, offered to accessibility services.
+ *
+ * @property kind What the action does.
+ * @property result The items as moved by the action.
+ */
+internal data class EditMenuItemAction(val kind: Kind, val result: CustomizeMenuItems) {
+    /** What an action does to its item. */
+    enum class Kind {
+        MOVE_UP,
+        MOVE_DOWN,
+    }
+}
+
+/**
  * The items of a screen customizing the items of a menu section.
  *
  * @property shown The items shown in the menu, in the order they are shown in.
@@ -154,6 +172,22 @@ internal data class CustomizeMenuItems(
      */
     fun shownPositionOf(key: Any): Int? = shownItemKeys.indexOf(key).takeIf { it != -1 }?.plus(1)
 
+    private val shownSubItemKeys: Map<String, List<Any>> =
+        shownRows
+            .filterIsInstance<EditMenuItemsRow.Item>()
+            .mapNotNull { row -> row.parentId?.let { it to row.key } }
+            .groupBy({ it.first }, { it.second })
+
+    /** Number of the shown sub-items of the expanded item with [parentId], none if it is collapsed. */
+    fun shownSubItemsCountOf(parentId: String): Int = shownSubItemKeys[parentId].orEmpty().size
+
+    /**
+     * Position, from 1, of the shown sub-item with [key] among the [shownSubItemsCountOf] sub-items of the expanded
+     * item with [parentId], or `null` if it is not one of them.
+     */
+    fun shownSubItemPositionOf(parentId: String, key: Any): Int? =
+        shownSubItemKeys[parentId]?.indexOf(key)?.takeIf { it != -1 }?.plus(1)
+
     override fun isShownKey(key: Any) = key in shownKeys
 
     override fun cannotBeHidden(key: Any) = isShownKey(key) && shown.without(key).none { it.isVisible }
@@ -172,9 +206,61 @@ internal data class CustomizeMenuItems(
      * @param key Id of the item to move.
      * @param target Where to move the item to.
      */
-    fun dropOutcome(key: Any, target: CustomizeMenuDropTarget): DropOutcome {
+    fun dropOutcome(key: Any, target: CustomizeMenuDropTarget): DropOutcome =
+        placementOf(target)?.let { placementOutcome(key, it) } ?: DropOutcome.Unchanged
+
+    /**
+     * Move the shown item with [key] above the shown item before it in the same list, or `null` if the item is not
+     * shown, cannot be dragged, or is first. Moving an expandable item keeps its sub-items, and an item never leaves
+     * its list. The result is these items if the item cannot be moved there.
+     */
+    fun moveUp(key: Any): CustomizeMenuItems? = moveWithinList(key, offset = -1)
+
+    /** As [moveUp], moving the item below the shown item after it in the same list, or `null` if it is last. */
+    fun moveDown(key: Any): CustomizeMenuItems? = moveWithinList(key, offset = 1)
+
+    /**
+     * The actions moving the shown item with [key], in the order they are offered in. None if the item is not shown,
+     * cannot be dragged, or the action would leave the items unchanged.
+     */
+    fun actionsOf(key: Any): List<EditMenuItemAction> =
+        listOfNotNull(
+                moveUp(key)?.let { EditMenuItemAction(EditMenuItemAction.Kind.MOVE_UP, it) },
+                moveDown(key)?.let { EditMenuItemAction(EditMenuItemAction.Kind.MOVE_DOWN, it) },
+            )
+            .filter { it.result != this }
+
+    /**
+     * Index in the list of the row of the item with [key], or `null` if it has no row. The rows of the hidden items
+     * come after the title of the hidden items.
+     */
+    fun listIndexOf(key: Any): Int? {
+        val shownIndex = shownRows.indexOfFirst { it.key == key }
+        if (shownIndex != -1) return 1 + shownIndex
+        val hiddenIndex = hiddenRows.indexOfFirst { it.key == key }
+        return if (hiddenIndex == -1) null else hiddenTitleIndex + 1 + hiddenIndex
+    }
+
+    private fun moveWithinList(key: Any, offset: Int): CustomizeMenuItems? {
+        val row = shownRows.firstOrNull { it.key == key } as? EditMenuItemsRow.Item ?: return null
+        if (!row.isDraggable) return null
+        val container = containerOf(row.parentId, isHidden = false)
+        val siblings = shownItemsIn(container)
+        val neighbour = siblings.getOrNull(siblings.indexOfFirst { it.id == key } + offset) ?: return null
+        return moveTo(key, Placement(container, neighbour.id, placeAfter = offset > 0))
+    }
+
+    private fun shownItemsIn(container: Container): List<CustomizableMenuItem> =
+        when (container) {
+            is Container.SubItems -> shown.firstOrNull { it.id == container.parentId }?.subItems.orEmpty()
+            else -> shown
+        }.filter { it.item != null }
+
+    private fun moveTo(key: Any, placement: Placement): CustomizeMenuItems =
+        (placementOutcome(key, placement) as? DropOutcome.Moved)?.items ?: this
+
+    private fun placementOutcome(key: Any, placement: Placement): DropOutcome {
         val (source, container) = locate(key) ?: return DropOutcome.Unchanged
-        val placement = placementOf(target) ?: return DropOutcome.Unchanged
         if (placement.nextToId == key) return DropOutcome.Unchanged
         if (!placement.container.isTop && source.isTopLevelOnly) return DropOutcome.RejectedAsSubItem
         if (!placement.container.isTop && source.item is ExpandableMenuItem) return DropOutcome.Unchanged

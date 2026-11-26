@@ -248,7 +248,7 @@ private fun CustomizeMenuSectionActionsSheetOf(
  * Keep the item with [key] where it is in view, or bring it into view, once it moves to [index] in the list, for it to
  * stay laid out and keep the focus of accessibility services.
  */
-private fun LazyListState.moveAndKeepVisible(key: Any, index: Int) {
+internal fun LazyListState.moveAndKeepVisible(key: Any, index: Int) {
     val layout = layoutInfo
     val item = layout.visibleItemsInfo.firstOrNull { it.key == key }
     if (item == null) {

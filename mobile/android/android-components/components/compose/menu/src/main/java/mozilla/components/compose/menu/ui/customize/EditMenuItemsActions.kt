@@ -9,10 +9,13 @@ package mozilla.components.compose.menu.ui.customize
  *
  * @property items The items of the screen.
  * @property onExpansionToggle Called with the id of an expandable item when the user expands or collapses it.
+ * @property onMove Called with the id of an item, the items as moved by a custom action and what to tell the user about
+ *   the move, to save it.
  * @property announce Called with what to tell the user, politely, once a custom action was done.
  */
 internal class EditMenuItemsActions(
     val items: CustomizeMenuItems,
     val onExpansionToggle: (itemId: String) -> Unit,
+    val onMove: (itemId: String, moved: CustomizeMenuItems, announcement: String) -> Unit,
     val announce: (announcement: String) -> Unit,
 )

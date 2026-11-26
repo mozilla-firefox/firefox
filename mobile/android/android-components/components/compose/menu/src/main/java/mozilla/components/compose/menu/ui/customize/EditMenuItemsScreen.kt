@@ -23,15 +23,19 @@ import androidx.compose.ui.semantics.semantics
 import androidx.compose.ui.tooling.preview.PreviewLightDark
 import androidx.compose.ui.unit.Dp
 import mozilla.components.compose.base.theme.AcornTheme
+import mozilla.components.compose.draggable.InteractionState
+import mozilla.components.compose.draggable.ListInteractionState
 import mozilla.components.compose.menu.R
 import mozilla.components.compose.menu.store.CustomizableMenuItemsAction.AttemptedEmptySection
 import mozilla.components.compose.menu.store.CustomizableMenuItemsAction.ExpansionToggled
+import mozilla.components.compose.menu.store.CustomizableMenuItemsAction.ItemsChanged
 import mozilla.components.compose.menu.store.CustomizableMenuItemsAction.PreviewClicked
 import mozilla.components.compose.menu.store.CustomizableMenuItemsState
 import mozilla.components.compose.menu.store.CustomizableMenuItemsStore
 import mozilla.components.compose.menu.ui.customize.CustomizeMenuItemKey.DRAG_BAR
 import mozilla.components.compose.menu.ui.customize.CustomizeMenuItemKey.DROP_AREA
 import mozilla.components.compose.menu.ui.customize.CustomizeMenuItemKey.HIDDEN_TITLE
+import mozilla.components.compose.menu.ui.utils.A11yUpdatesAnnouncer
 import mozilla.components.compose.menu.ui.utils.editMenuItemsHiddenPreviewData
 import mozilla.components.compose.menu.ui.utils.editMenuItemsPreviewData
 import mozilla.components.compose.menu.ui.utils.rememberA11yUpdatesAnnouncer
@@ -84,14 +88,7 @@ private fun EditMenuItemsList(
 ) {
     val itemSpacing = AcornTheme.layout.space.static50
     val announcer = rememberA11yUpdatesAnnouncer()
-    val actions =
-        remember(store, menuItems, announcer) {
-            EditMenuItemsActions(
-                items = menuItems,
-                onExpansionToggle = { itemId -> store.dispatch(ExpansionToggled(itemId)) },
-                announce = announcer::announce,
-            )
-        }
+    val actions = rememberEditMenuItemsActions(store, menuItems, dragState, announcer)
 
     LazyColumn(
         modifier =
@@ -140,6 +137,40 @@ private fun EditMenuItemsList(
     // Drawn over the list, important to be the last element here.
     announcer.LiveRegion()
 }
+
+@Composable
+private fun rememberEditMenuItemsActions(
+    store: CustomizableMenuItemsStore,
+    menuItems: CustomizeMenuItems,
+    dragState: CustomizeMenuDragState<CustomizeMenuItems>,
+    announcer: A11yUpdatesAnnouncer,
+): EditMenuItemsActions {
+    val listState = dragState.listState
+    val interactionState = dragState.interactionState
+    return remember(store, menuItems, announcer, listState, interactionState) {
+        EditMenuItemsActions(
+            items = menuItems,
+            onExpansionToggle = { itemId ->
+                if (!interactionState.isDragging()) store.dispatch(ExpansionToggled(itemId))
+            },
+            onMove = { itemId, moved, announcement ->
+                val current = store.state
+                val isStale =
+                    current.items != menuItems.shown ||
+                        current.hiddenItems != menuItems.hidden ||
+                        current.expandedItemIds != menuItems.expandedIds
+                if (!interactionState.isDragging() && !isStale) {
+                    moved.listIndexOf(itemId)?.let { listState.moveAndKeepVisible(itemId, it) }
+                    store.dispatch(ItemsChanged(items = moved.shown, hiddenItems = moved.hidden))
+                    announcer.announce(announcement)
+                }
+            },
+            announce = { announcement -> if (!interactionState.isDragging()) announcer.announce(announcement) },
+        )
+    }
+}
+
+private fun ListInteractionState.isDragging() = draggedItem != InteractionState.List.None
 
 private fun LazyListScope.editMenuItemRows(
     rows: List<EditMenuItemsRow>,

@@ -813,6 +813,208 @@ class CustomizeMenuItemsTest {
         assertEquals(3, items.shownWithSubItemsCount)
     }
 
+    @Test
+    fun `GIVEN an expanded item THEN its sub-items are counted and have a position among them only`() {
+        val more = expandable("more", c, d)
+        val items = CustomizeMenuItems(shown = listOf(a, more, b), hidden = emptyList(), expandedIds = setOf("more"))
+
+        assertEquals(2, items.shownSubItemsCountOf("more"))
+        assertEquals(1, items.shownSubItemPositionOf("more", "c"))
+        assertEquals(2, items.shownSubItemPositionOf("more", "d"))
+    }
+
+    @Test
+    fun `GIVEN a collapsed item THEN it has no sub-items counted and its sub-items have no position among them`() {
+        val more = expandable("more", c, d)
+        val items = CustomizeMenuItems(shown = listOf(a, more, b), hidden = emptyList(), expandedIds = emptySet())
+
+        assertEquals(0, items.shownSubItemsCountOf("more"))
+        assertNull(items.shownSubItemPositionOf("more", "c"))
+    }
+
+    @Test
+    fun `GIVEN items that are not sub-items of an item THEN they have no position among its sub-items`() {
+        val notShown = CustomizableMenuItem(id = "not shown", item = null)
+        val more = expandable("more", notShown, c)
+        val items = CustomizeMenuItems(shown = listOf(a, more), hidden = listOf(b), expandedIds = setOf("more"))
+
+        assertEquals(1, items.shownSubItemsCountOf("more"))
+        assertEquals(1, items.shownSubItemPositionOf("more", "c"))
+        assertNull(items.shownSubItemPositionOf("more", "a"))
+        assertNull(items.shownSubItemPositionOf("more", "b"))
+        assertNull(items.shownSubItemPositionOf("more", "not shown"))
+        assertNull(items.shownSubItemPositionOf("more", subItemsEndKey("more")))
+        assertEquals(0, items.shownSubItemsCountOf("a"))
+    }
+
+    @Test
+    fun `WHEN a top level item is moved up or down THEN it swaps places with its neighbour`() {
+        val items = CustomizeMenuItems(shown = listOf(a, b, c), hidden = listOf(d), expandedIds = emptySet())
+
+        assertEquals(listOf("b", "a", "c"), items.moveDown("a")?.shown?.map { it.id })
+        assertEquals(listOf("a", "c", "b"), items.moveDown("b")?.shown?.map { it.id })
+        assertEquals(listOf("b", "a", "c"), items.moveUp("b")?.shown?.map { it.id })
+        assertEquals(listOf("a", "c", "b"), items.moveUp("c")?.shown?.map { it.id })
+        assertEquals(listOf(d), items.moveDown("a")?.hidden)
+    }
+
+    @Test
+    fun `GIVEN the first or the last shown item THEN it cannot be moved further up or down`() {
+        val items = CustomizeMenuItems(shown = listOf(a, b, c), hidden = emptyList(), expandedIds = emptySet())
+
+        assertNull(items.moveUp("a"))
+        assertNull(items.moveDown("c"))
+        assertNull(CustomizeMenuItems(listOf(a), emptyList(), emptySet()).moveUp("a"))
+        assertNull(CustomizeMenuItems(listOf(a), emptyList(), emptySet()).moveDown("a"))
+    }
+
+    @Test
+    fun `WHEN an item is moved down past an expanded item THEN it is after its sub-items`() {
+        val more = expandable("more", c, d)
+        val items = CustomizeMenuItems(shown = listOf(a, more, b), hidden = emptyList(), expandedIds = setOf("more"))
+
+        val moved = items.moveDown("a")
+
+        assertEquals(listOf("more", "a", "b"), moved?.shown?.map { it.id })
+        assertEquals(listOf(c, d), moved?.subItemsOf("more"))
+        assertEquals(listOf("more", "c", "d", "more#sub_items_end", "a", "b"), moved?.shownRows?.map { it.key })
+    }
+
+    @Test
+    fun `WHEN an item is moved up past an expanded item THEN it is before it`() {
+        val more = expandable("more", c, d)
+        val items = CustomizeMenuItems(shown = listOf(a, more, b), hidden = emptyList(), expandedIds = setOf("more"))
+
+        val moved = items.moveUp("b")
+
+        assertEquals(listOf("a", "b", "more"), moved?.shown?.map { it.id })
+        assertEquals(listOf("a", "b", "more", "c", "d", "more#sub_items_end"), moved?.shownRows?.map { it.key })
+    }
+
+    @Test
+    fun `WHEN an expanded item is moved by its neighbour THEN it keeps its sub-items`() {
+        val more = expandable("more", c, d)
+        val items = CustomizeMenuItems(shown = listOf(a, more, b), hidden = emptyList(), expandedIds = setOf("more"))
+
+        assertEquals(listOf(c, d), items.moveDown("a")?.subItemsOf("more"))
+        assertEquals(listOf(c, d), items.moveUp("b")?.subItemsOf("more"))
+    }
+
+    @Test
+    fun `WHEN an item is moved past a collapsed item THEN the collapsed item keeps its sub-items`() {
+        val more = expandable("more", c, d)
+        val items = CustomizeMenuItems(shown = listOf(a, more, b), hidden = emptyList(), expandedIds = emptySet())
+
+        assertEquals(listOf("more", "a", "b"), items.moveDown("a")?.shown?.map { it.id })
+        assertEquals(listOf("a", "b", "more"), items.moveUp("b")?.shown?.map { it.id })
+        assertEquals(listOf(c, d), items.moveUp("b")?.subItemsOf("more"))
+    }
+
+    @Test
+    fun `WHEN a sub-item is moved up or down THEN it swaps places with its neighbour and stays inside the item`() {
+        val more = expandable("more", c, d, b)
+        val items = CustomizeMenuItems(shown = listOf(a, more), hidden = emptyList(), expandedIds = setOf("more"))
+
+        assertEquals(listOf("d", "c", "b"), items.moveDown("c")?.subItemsOf("more")?.map { it.id })
+        assertEquals(listOf("d", "c", "b"), items.moveUp("d")?.subItemsOf("more")?.map { it.id })
+        assertEquals(listOf("a", "more"), items.moveDown("c")?.shown?.map { it.id })
+        assertNull(items.moveUp("c"))
+        assertNull(items.moveDown("b"))
+    }
+
+    @Test
+    fun `GIVEN items the app does not show THEN they are never a neighbour`() {
+        val notShown = CustomizableMenuItem(id = "not shown", item = null)
+        val items =
+            CustomizeMenuItems(shown = listOf(notShown, a, notShown.copy(id = "other"), b), emptyList(), emptySet())
+
+        assertNull(items.moveUp("a"))
+        assertNull(items.moveDown("b"))
+        assertNull(items.moveUp("not shown"))
+        assertNull(items.moveDown("other"))
+        assertEquals(listOf("not shown", "b", "other", "a"), items.moveUp("b")?.shown?.map { it.id })
+        assertEquals(listOf("not shown", "b", "other", "a"), items.moveDown("a")?.shown?.map { it.id })
+    }
+
+    @Test
+    fun `GIVEN an expanded item THEN it cannot be moved but a collapsed one can`() {
+        val more = expandable("more", c)
+        val expanded = CustomizeMenuItems(shown = listOf(a, more, b), hidden = emptyList(), expandedIds = setOf("more"))
+        val collapsed = expanded.copy(expandedIds = emptySet())
+
+        assertNull(expanded.moveUp("more"))
+        assertNull(expanded.moveDown("more"))
+        assertTrue(expanded.actionsOf("more").isEmpty())
+        assertEquals(listOf("more", "a", "b"), collapsed.moveUp("more")?.shown?.map { it.id })
+        assertEquals(listOf("a", "b", "more"), collapsed.moveDown("more")?.shown?.map { it.id })
+    }
+
+    @Test
+    fun `GIVEN a hidden item, a sub-item of a collapsed item or an unknown key THEN it cannot be moved up or down`() {
+        val more = expandable("more", c)
+        val hidden = expandable("hidden more", d)
+        val items = CustomizeMenuItems(shown = listOf(a, more), hidden = listOf(b, hidden), expandedIds = emptySet())
+
+        listOf("b", "hidden more", "d", "c", "unknown", subItemsEndKey("more")).forEach {
+            assertNull(items.moveUp(it))
+            assertNull(items.moveDown(it))
+            assertTrue(items.actionsOf(it).isEmpty())
+        }
+    }
+
+    @Test
+    fun `GIVEN shown items THEN they are offered to move up and down where they can move`() {
+        val items = CustomizeMenuItems(shown = listOf(a, b, c), hidden = emptyList(), expandedIds = emptySet())
+
+        assertEquals(listOf(EditMenuItemAction.Kind.MOVE_DOWN), items.actionsOf("a").map { it.kind })
+        assertEquals(
+            listOf(EditMenuItemAction.Kind.MOVE_UP, EditMenuItemAction.Kind.MOVE_DOWN),
+            items.actionsOf("b").map { it.kind },
+        )
+        assertEquals(listOf(EditMenuItemAction.Kind.MOVE_UP), items.actionsOf("c").map { it.kind })
+        assertEquals(items.moveUp("b"), items.actionsOf("b").first().result)
+        assertEquals(items.moveDown("b"), items.actionsOf("b").last().result)
+        assertTrue(CustomizeMenuItems(listOf(a), emptyList(), emptySet()).actionsOf("a").isEmpty())
+    }
+
+    @Test
+    fun `GIVEN a move which leaves the items unchanged THEN it is not offered`() {
+        val more = expandable("more", c, topLevelOnlyItem)
+        val items = CustomizeMenuItems(shown = listOf(a, more), hidden = emptyList(), expandedIds = setOf("more"))
+
+        assertEquals(items, items.moveUp("top level only"))
+        assertTrue(items.actionsOf("top level only").isEmpty())
+    }
+
+    @Test
+    fun `THEN the index in the list of a shown item is after the drag bar and the rows before it`() {
+        val more = expandable("more", c, d)
+        val items = CustomizeMenuItems(shown = listOf(a, more, b), hidden = emptyList(), expandedIds = setOf("more"))
+
+        assertEquals(listOf(1, 2, 3, 4, 6), listOf("a", "more", "c", "d", "b").map { items.listIndexOf(it) })
+        assertEquals(5, items.listIndexOf(subItemsEndKey("more")))
+    }
+
+    @Test
+    fun `THEN the index in the list of a hidden item is after the hidden items title`() {
+        val more = expandable("more", c, d)
+        val items = CustomizeMenuItems(shown = listOf(a), hidden = listOf(more, b), expandedIds = setOf("more"))
+
+        assertEquals(2, items.hiddenTitleIndex)
+        assertEquals(listOf(3, 4, 5, 7), listOf("more", "c", "d", "b").map { items.listIndexOf(it) })
+    }
+
+    @Test
+    fun `GIVEN a key without a row THEN it has no index in the list`() {
+        val more = expandable("more", c)
+        val notShown = CustomizableMenuItem(id = "not shown", item = null)
+        val items = CustomizeMenuItems(listOf(notShown, a, more), hidden = emptyList(), expandedIds = emptySet())
+
+        assertNull(items.listIndexOf("not shown"))
+        assertNull(items.listIndexOf("c"))
+        assertNull(items.listIndexOf("unknown"))
+    }
+
     private fun CustomizeMenuItems.subItemsOf(id: String) = shown.first { it.id == id }.subItems
 
     private fun item(id: String) =

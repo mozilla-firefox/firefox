@@ -25,7 +25,8 @@ import mozilla.components.compose.menu.data.MenuItem
  * Make a row of an item a single node for accessibility services, reading its name then, for an item shown in the menu,
  * its position among the shown items. Its content and drag handle are not separate nodes, and the dimmed content of a
  * hidden item is not read as disabled. An expandable item is read as a button with its expanded or collapsed state,
- * which toggles it when activated, and has the custom action toggling it too.
+ * which toggles it when activated, and has the custom action toggling it too, then the shown items have the custom
+ * actions moving them.
  *
  * @param row The row of the item.
  * @param item The item the row shows.
@@ -51,6 +52,7 @@ internal fun Modifier.editMenuItemSemantics(
             )
         }
     val expansionAction = if (item is ExpandableMenuItem) expansionAction(row, name, actions) else null
+    val customActions = listOfNotNull(expansionAction) + moveActions(row, name, actions)
     val expansionState =
         stringResource(
             if (row.isExpanded) {
@@ -62,12 +64,68 @@ internal fun Modifier.editMenuItemSemantics(
 
     return clearAndSetSemantics {
         contentDescription = description
+        if (customActions.isNotEmpty()) this.customActions = customActions
         expansionAction?.let {
-            customActions = listOf(it)
             role = Role.Button
             stateDescription = expansionState
             onClick(label = it.label, action = it.action)
         }
+    }
+}
+
+@Composable
+private fun moveActions(
+    row: EditMenuItemsRow.Item,
+    name: String,
+    actions: EditMenuItemsActions,
+): List<CustomAccessibilityAction> =
+    actions.items.actionsOf(row.key).map { action ->
+        val label: String
+        val announcement: String
+        when (action.kind) {
+            EditMenuItemAction.Kind.MOVE_UP -> {
+                label = stringResource(R.string.mozac_menu_customize_move_up)
+                announcement = movedAnnouncement(row, name, action, actions)
+            }
+            EditMenuItemAction.Kind.MOVE_DOWN -> {
+                label = stringResource(R.string.mozac_menu_customize_move_down)
+                announcement = movedAnnouncement(row, name, action, actions)
+            }
+        }
+        CustomAccessibilityAction(label) {
+            actions.onMove(row.item.id, action.result, announcement)
+            true
+        }
+    }
+
+@Composable
+private fun parentName(row: EditMenuItemsRow.Item, actions: EditMenuItemsActions): String =
+    actions.items.shown.firstOrNull { it.id == row.parentId }?.item?.a11yName().orEmpty()
+
+@Composable
+private fun movedAnnouncement(
+    row: EditMenuItemsRow.Item,
+    name: String,
+    action: EditMenuItemAction,
+    actions: EditMenuItemsActions,
+): String {
+    val moved = action.result
+    val parentId = row.parentId
+    return if (parentId == null) {
+        stringResource(
+            R.string.mozac_menu_customize_item_moved,
+            name,
+            checkNotNull(moved.shownPositionOf(row.key)),
+            moved.shownWithSubItemsCount,
+        )
+    } else {
+        stringResource(
+            R.string.mozac_menu_customize_sub_item_moved,
+            name,
+            checkNotNull(moved.shownSubItemPositionOf(parentId, row.key)),
+            moved.shownSubItemsCountOf(parentId),
+            parentName(row, actions),
+        )
     }
 }
 
