@@ -3,7 +3,13 @@
  * file, You can obtain one at https://mozilla.org/MPL/2.0/. */
 
 // eslint-disable-next-line no-unused-vars
-import React, { useCallback, useEffect, useRef, useState } from "react";
+import React, {
+  useCallback,
+  useEffect,
+  useMemo,
+  useRef,
+  useState,
+} from "react";
 import { useSelector } from "react-redux";
 import { actionCreators as ac, actionTypes as at } from "common/Actions.mjs";
 import {
@@ -30,7 +36,6 @@ import {
 const USER_ACTION_TYPES = {
   ...WIDGET_USER_ACTIONS,
   POWERED_BY_YAHOO: "powered_by_yahoo",
-  GAME_CLOSE: "game_close",
 };
 
 const YAHOO_URL = "https://www.yahoo.com/";
@@ -70,7 +75,8 @@ function Solitaire({
   const hasInteracted = prefs["widgets.solitaire.interaction"];
 
   const iframeRef = useRef(null);
-  // Bumped to remount the iframe so the widget reloads into "Resume game".
+  // Bumped to remount a frame that isn't working (not ready or failed) when the
+  // modal closes.
   const [frameKey, setFrameKey] = useState(0);
   // Set below: the telemetry hook needs the variant this hook returns.
   const recordErrorRef = useRef(null);
@@ -160,16 +166,34 @@ function Solitaire({
     }
   }, [playing]);
 
-  // The frame is reloaded without being told, so it can't send game_close.
+  const frameOrigin = useMemo(() => {
+    try {
+      return new URL(src).origin;
+    } catch {
+      return null;
+    }
+  }, [src]);
+
+  // A working frame is told to close the game, so it switches back to the card
+  // with its session state intact and records game_close itself. A frame that
+  // isn't working is reloaded.
   const handleCloseModal = useCallback(() => {
     setPlaying(false);
-    setFrameKey(key => key + 1);
-    if (frameWorking) {
-      recordUserAction(USER_ACTION_TYPES.GAME_CLOSE, {
-        source: WIDGET_SOURCES.WIDGET,
-      });
+    if (!frameWorking || !frameOrigin) {
+      setFrameKey(key => key + 1);
+      return;
     }
-  }, [recordUserAction, frameWorking]);
+    iframeRef.current?.contentWindow?.postMessage(
+      {
+        channel: `${SOLITAIRE_ENTRY.telemetryName}_widget`,
+        type: "action",
+        message: "close_game",
+        payload: { game: "solitaire" },
+        sentAt: new Date().toISOString(),
+      },
+      frameOrigin
+    );
+  }, [frameWorking, frameOrigin]);
 
   // Closes from the effect above happen after playing is already false, so
   // only a close by the user (Esc or a backdrop click) gets here while

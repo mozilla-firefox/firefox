@@ -574,32 +574,42 @@ describe("Solitaire widget", () => {
       expect(actionsOfType(dispatch, at.WIDGETS_USER_EVENT)).toHaveLength(0);
     });
 
-    const expectHostClose = dispatch => {
-      const events = actionsOfType(dispatch, at.WIDGETS_USER_EVENT);
-      expect(events).toHaveLength(1);
-      expect(events[0].data).toMatchObject({
-        widget_name: "solitaire",
-        widget_source: "widget",
-        user_action: "game_close",
-      });
+    const expectNoHostGameClose = dispatch => {
+      expect(actionsOfType(dispatch, at.WIDGETS_USER_EVENT)).toHaveLength(0);
     };
 
-    it("reloads the frame and records game_close when the host closes the modal", () => {
+    const expectFrameToldToClose = (container, frame, postMessage) => {
+      expect(container.querySelector("iframe.solitaire-frame")).toBe(frame);
+      expect(postMessage).toHaveBeenCalledWith(
+        {
+          channel: "solitaire_widget",
+          type: "action",
+          message: "close_game",
+          payload: { game: "solitaire" },
+          sentAt: expect.any(String),
+        },
+        new URL(mockState.FramedWidgets.solitaire.url).origin
+      );
+    };
+
+    it("keeps the frame, tells it to close_game without recording game_close when the host closes the modal", () => {
       const { container, dispatch } = renderWidget();
       const frame = container.querySelector("iframe.solitaire-frame");
+      const postMessage = jest.spyOn(frame.contentWindow, "postMessage");
       postReady(container);
       postAction(container, "start_game");
       fireEvent.click(container.querySelector(".solitaire-dialog-close"));
       expect(container.querySelector(".solitaire-title-wrapper").hidden).toBe(
         false
       );
-      expect(container.querySelector("iframe.solitaire-frame")).not.toBe(frame);
-      expectHostClose(dispatch);
+      expectFrameToldToClose(container, frame, postMessage);
+      expectNoHostGameClose(dispatch);
     });
 
-    it("reloads the frame and records game_close when Esc or a backdrop click closes the modal", () => {
+    it("keeps the frame, tells it to close_game without recording game_close when Esc or a backdrop click closes the modal", () => {
       const { container, dispatch } = renderWidget();
       const frame = container.querySelector("iframe.solitaire-frame");
+      const postMessage = jest.spyOn(frame.contentWindow, "postMessage");
       postReady(container);
       postAction(container, "start_game");
       const dialog = container.querySelector("dialog.solitaire-dialog");
@@ -607,8 +617,8 @@ describe("Solitaire widget", () => {
       act(() => {
         fireEvent(dialog, new Event("close"));
       });
-      expect(container.querySelector("iframe.solitaire-frame")).not.toBe(frame);
-      expectHostClose(dispatch);
+      expectFrameToldToClose(container, frame, postMessage);
+      expectNoHostGameClose(dispatch);
     });
 
     it.each([
@@ -651,14 +661,14 @@ describe("Solitaire widget", () => {
       });
     });
 
-    it("drops events from the reloaded frame until it sends widget_ready", () => {
+    it("keeps recording events from the same frame after the host closes the modal", () => {
       const { container, dispatch } = renderWidget();
       postReady(container);
       postAction(container, "start_game");
       fireEvent.click(container.querySelector(".solitaire-dialog-close"));
       dispatch.mockClear();
       postUserEvent(container, { user_action: "game_undo" });
-      expect(actionsOfType(dispatch, at.WIDGETS_USER_EVENT)).toHaveLength(0);
+      expect(actionsOfType(dispatch, at.WIDGETS_USER_EVENT)).toHaveLength(1);
     });
 
     it("ignores actions from other windows", () => {
