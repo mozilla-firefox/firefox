@@ -692,7 +692,11 @@ browsertime-nav-bench-m-a11y:
         subtests: [[nav-bench-m-a11y, navbm-a11y]]
         run-visual-metrics: true
     description: Raptor (browsertime) mobile navigation benchmark with accessibility enabled
-    run-on-projects: []
+    run-on-projects:
+        by-test-platform:
+            android-hw-a55.*shippable.*: [autoland]
+            android-em-14-arm64.*shippable.*: [autoland]
+            default: []
     tier: 3
     treeherder-symbol: Btime(navbm-a11y)
     mozharness:

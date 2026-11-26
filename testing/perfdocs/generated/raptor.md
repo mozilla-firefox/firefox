@@ -39203,7 +39203,7 @@ A composite benchmark that measures page loading and sub-navigation performance 
   - mozilla-beta
 * - **browsertime-nav-bench-a11y-firefox-nav-bench-a11y**
   - ❌
-  - ❌
+  - ✅
   - ❌
   - ❌
 :::
@@ -39254,7 +39254,7 @@ A composite benchmark that measures page loading and sub-navigation performance 
   - mozilla-beta
 * - **browsertime-nav-bench-a11y-firefox-nav-bench-a11y**
   - ❌
-  - ❌
+  - ✅
   - ❌
   - ❌
 :::
@@ -39288,7 +39288,7 @@ A composite benchmark that measures page loading and sub-navigation performance 
   - mozilla-beta
 * - **browsertime-nav-bench-a11y-firefox-nav-bench-a11y**
   - ❌
-  - ❌
+  - ✅
   - ❌
   - ❌
 :::
@@ -39490,7 +39490,7 @@ A composite benchmark that measures page loading and sub-navigation performance 
   - mozilla-beta
 * - **browsertime-nav-bench-m-a11y-fenix-nav-bench-m-a11y**
   - ❌
-  - ❌
+  - ✅
   - ❌
   - ❌
 :::
@@ -39507,7 +39507,7 @@ A composite benchmark that measures page loading and sub-navigation performance 
   - mozilla-beta
 * - **browsertime-nav-bench-m-a11y-fenix-nav-bench-m-a11y**
   - ❌
-  - ❌
+  - ✅
   - ❌
   - ❌
 :::

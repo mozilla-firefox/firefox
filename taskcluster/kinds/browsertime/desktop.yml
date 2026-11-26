@@ -1076,7 +1076,15 @@ browsertime-nav-bench-a11y:
         run-visual-metrics: true
     description: Raptor (browsertime) navigation benchmark across 9 sites with accessibility enabled
     max-run-time: 3600
-    run-on-projects: []
+    run-on-projects:
+        by-app:
+            firefox:
+                by-test-platform:
+                    linux.*shippable.*: [autoland]
+                    macosx1500.*shippable.*: [autoland]
+                    windows11-64-24h2-shippable/opt: [autoland]
+                    default: []
+            default: []
     tier: 3
     treeherder-symbol: Btime(navb-a11y)
     mozharness:
@@ -1085,6 +1093,12 @@ browsertime-nav-bench-a11y:
                 windows.*:
                     - --browsertime-no-ffwindowrecorder
                     - --conditioned-profile=settled
+                linux.*shippable.*:
+                    - --conditioned-profile=settled
+                    - --power-profile=performance
+                linux.*nightlyasrelease.*:
+                    - --conditioned-profile=settled
+                    - --power-profile=performance
                 default:
                     - --conditioned-profile=settled
 
