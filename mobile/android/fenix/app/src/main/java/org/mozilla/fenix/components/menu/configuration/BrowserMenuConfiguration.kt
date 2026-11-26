@@ -304,9 +304,7 @@ object BrowserMenuConfiguration {
         customizedSectionsInfo: Map<String, CustomizedSectionInfo>,
     ): Boolean {
         val item = notification.menuItem ?: return false
-        val section =
-            allSections().map { it.withCustomizedItems(customizedSectionsInfo[it.id]) }.find { it.containsItem(item) }
-                ?: return false
+        val section = allSections(customizedSectionsInfo).find { it.containsItem(item) } ?: return false
         return when (customizationInfo) {
             null -> section.id !in HIDDEN_BY_DEFAULT_SECTION_IDS
             else -> section.id in customizationInfo.visibleSectionIds

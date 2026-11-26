@@ -8,10 +8,13 @@ import androidx.datastore.core.DataStore
 import java.io.IOException
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Job
+import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.catch
 import kotlinx.coroutines.flow.first
+import kotlinx.coroutines.flow.flowOf
+import kotlinx.coroutines.flow.map
 import kotlinx.coroutines.launch
 import mozilla.components.support.base.log.logger.Logger
 import org.mozilla.fenix.datastore.CustomizedMenuRecord
@@ -210,3 +213,23 @@ class MenuCustomizationRepository(
         val logger = Logger("MenuCustomizationRepository")
     }
 }
+
+/**
+ * The items of each menu section as customized by the user, keyed by section id, or no customization if [enabled] is
+ * `false`, this repository is `null` or the customization was not read yet.
+ */
+fun MenuCustomizationRepository?.customizedSectionsInfoIfEnabled(enabled: Boolean): Map<String, CustomizedSectionInfo> =
+    if (enabled) this?.customizedSectionsInfo?.value.orEmpty() else emptyMap()
+
+/**
+ * Observe the items of each menu section as customized by the user, keyed by section id, with no customization if
+ * [enabled] is `false`, this repository is `null` or the customization was not read yet.
+ */
+fun MenuCustomizationRepository?.customizedSectionsInfoFlow(
+    enabled: Boolean
+): Flow<Map<String, CustomizedSectionInfo>> =
+    if (enabled && this != null) {
+        customizedSectionsInfo.map { it.orEmpty() }
+    } else {
+        flowOf(emptyMap())
+    }

@@ -51,6 +51,7 @@ import org.mozilla.fenix.R
 import org.mozilla.fenix.browser.browsingmode.BrowsingMode.Normal
 import org.mozilla.fenix.browser.browsingmode.BrowsingMode.Private
 import org.mozilla.fenix.components.menu.configuration.BrowserMenuConfiguration
+import org.mozilla.fenix.components.menu.customizedSectionsInfoIfEnabled
 import org.mozilla.fenix.components.toolbar.ToolbarPosition
 import org.mozilla.fenix.databinding.TabPreviewBinding
 import org.mozilla.fenix.ext.components
@@ -171,11 +172,9 @@ constructor(
                         BrowserMenuConfiguration.hasNotificationToShow(
                             context.components.appStore.state.supportedMenuNotifications,
                             context.components.menuCustomizationRepository.customizedMenuInfo.value,
-                            if (context.components.settings.isToolsMenuCustomizationEnabled) {
-                                context.components.menuCustomizationRepository.customizedSectionsInfo.value.orEmpty()
-                            } else {
-                                emptyMap()
-                            },
+                            context.components.menuCustomizationRepository.customizedSectionsInfoIfEnabled(
+                                context.components.settings.isToolsMenuCustomizationEnabled
+                            ),
                         ),
                     onClick = object : BrowserToolbarEvent {},
                 )

@@ -124,6 +124,8 @@ import org.mozilla.fenix.components.appstate.snackbar.SnackbarState
 import org.mozilla.fenix.components.menu.MenuAccessPoint
 import org.mozilla.fenix.components.menu.MenuCustomizationRepository
 import org.mozilla.fenix.components.menu.configuration.BrowserMenuConfiguration
+import org.mozilla.fenix.components.menu.customizedSectionsInfoFlow
+import org.mozilla.fenix.components.menu.customizedSectionsInfoIfEnabled
 import org.mozilla.fenix.components.metrics.MetricsUtils
 import org.mozilla.fenix.components.metrics.toSearchAccessPoint
 import org.mozilla.fenix.components.share.ShareSource
@@ -1014,21 +1016,17 @@ class BrowserToolbarMiddleware(
     private fun observeMenuHighlightChanges(store: Store<BrowserToolbarState, BrowserToolbarAction>) {
         val customizationFlow = menuCustomizationRepository?.customizedMenuInfo ?: flowOf(null)
         val sectionsCustomizationFlow =
-            if (settings.isToolsMenuCustomizationEnabled) {
-                menuCustomizationRepository?.customizedSectionsInfo ?: flowOf(null)
-            } else {
-                flowOf(null)
-            }
+            menuCustomizationRepository.customizedSectionsInfoFlow(settings.isToolsMenuCustomizationEnabled)
         scope.launch {
             combine(
                     appStore.flow().map { it.supportedMenuNotifications }.distinctUntilChanged(),
                     customizationFlow,
                     sectionsCustomizationFlow,
-                ) { notifications, customizationInfo, sectionsCustomization ->
+                ) { notifications, customizationInfo, sectionsInfo ->
                     BrowserMenuConfiguration.hasNotificationToShow(
                         notifications,
                         customizationInfo,
-                        sectionsCustomization.orEmpty(),
+                        sectionsInfo,
                     )
                 }
                 .distinctUntilChanged()
@@ -1365,11 +1363,9 @@ class BrowserToolbarMiddleware(
                         BrowserMenuConfiguration.hasNotificationToShow(
                             appStore.state.supportedMenuNotifications,
                             menuCustomizationRepository?.customizedMenuInfo?.value,
-                            if (settings.isToolsMenuCustomizationEnabled) {
-                                menuCustomizationRepository?.customizedSectionsInfo?.value.orEmpty()
-                            } else {
-                                emptyMap()
-                            },
+                            menuCustomizationRepository.customizedSectionsInfoIfEnabled(
+                                settings.isToolsMenuCustomizationEnabled
+                            ),
                         ),
                     onClick = MenuClicked(source),
                 )
