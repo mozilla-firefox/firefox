@@ -454,8 +454,7 @@ struct arena_t : public BaseAllocClass {
   void InitPRNG() MOZ_REQUIRES(mLock);
 
  private:
-  void InitChunk(arena_chunk_t* aChunk, size_t aMinCommittedPages)
-      MOZ_REQUIRES(mLock);
+  arena_chunk_t* InitChunk(size_t aMinCommittedPages) MOZ_REQUIRES(mLock);
 
   // Remove the chunk from the arena.  This removes it from all the page counts.
   // It assumes its run has already been removed.  The chunk must not be
