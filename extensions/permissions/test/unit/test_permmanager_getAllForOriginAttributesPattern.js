@@ -100,6 +100,55 @@ add_task(function test_isolation_prefs() {
   }
 });
 
+add_task(
+  {
+    pref_set: [
+      [PREF_ISOLATE_PB, true],
+      [PREF_ISOLATE_UC, true],
+    ],
+  },
+  function test_force_strip_types() {
+    Services.perms.removeAll();
+
+    // persist-data-on-shutdown is never isolated by OriginAttributes, see
+    // kStripOAPermissions in PermissionManager.cpp.
+    const STRIP_TYPE = "persist-data-on-shutdown";
+
+    for (let originAttributes of [
+      { privateBrowsingId: 1 },
+      { userContextId: 5 },
+    ]) {
+      for (let type of [TYPE_A, STRIP_TYPE]) {
+        Services.perms.addFromPrincipal(
+          principal("https://example.com", originAttributes),
+          type,
+          Services.perms.ALLOW_ACTION
+        );
+      }
+    }
+
+    const privateBrowsing = `https://example.com^privateBrowsingId=1 ${TYPE_A}`;
+    const userContext = `https://example.com^userContextId=5 ${TYPE_A}`;
+    const stripped = `https://example.com ${STRIP_TYPE}`;
+
+    Assert.deepEqual(
+      getPermissions({ privateBrowsingId: 1 }),
+      [privateBrowsing, stripped].sort(),
+      "privateBrowsingId is ignored for force-stripped types."
+    );
+    Assert.deepEqual(
+      getPermissions({ userContextId: 5 }),
+      [stripped, userContext].sort(),
+      "userContextId is ignored for force-stripped types."
+    );
+    Assert.deepEqual(
+      getPermissions({ userContextId: 5 }, [STRIP_TYPE]),
+      [stripped],
+      "Force-stripped types match with only them requested."
+    );
+  }
+);
+
 add_task(function test_invalid_pattern() {
   Assert.throws(
     () => Services.perms.getAllForOriginAttributesPattern("{", []),

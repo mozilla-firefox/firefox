@@ -580,3 +580,130 @@ add_task(
     PermissionTestUtils.remove(sessionOrigin, "cookie");
   }
 );
+
+add_task(async function shutdownExceptionAppliesToAllContainers() {
+  info(
+    "Exception on a parent domain protects subdomain data in every container, even with permission isolation by container"
+  );
+
+  await SpecialPowers.pushPrefEnv({
+    set: [
+      ["browser.sanitizer.loglevel", "All"],
+      ["privacy.sanitize.sanitizeOnShutdown", true],
+      ["permissions.isolateBy.userContext", true],
+    ],
+  });
+
+  for (let exceptionUserContextId of [0, 1]) {
+    await new Promise(resolve => {
+      Services.clearData.deleteData(Ci.nsIClearDataService.CLEAR_ALL, resolve);
+    });
+
+    let exceptionPrincipal =
+      Services.scriptSecurityManager.createContentPrincipal(
+        Services.io.newURI("https://mozilla.org"),
+        { userContextId: exceptionUserContextId }
+      );
+    Services.perms.addFromPrincipal(
+      exceptionPrincipal,
+      "persist-data-on-shutdown",
+      Services.perms.ALLOW_ACTION
+    );
+
+    for (let userContextId of [0, 1, 2]) {
+      for (let host of ["mozilla.org", "www.mozilla.org", "example.com"]) {
+        SiteDataTestUtils.addToCookies({
+          host,
+          originAttributes: { userContextId },
+        });
+      }
+    }
+
+    await Sanitizer.runSanitizeOnShutdown();
+
+    for (let userContextId of [0, 1, 2]) {
+      for (let host of ["mozilla.org", "www.mozilla.org"]) {
+        ok(
+          SiteDataTestUtils.hasCookies(`https://${host}`, null, {
+            userContextId,
+          }),
+          `Exception set in container ${exceptionUserContextId} preserves ${host} cookies in container ${userContextId}`
+        );
+      }
+      ok(
+        !SiteDataTestUtils.hasCookies("https://example.com", null, {
+          userContextId,
+        }),
+        `example.com cookies cleared in container ${userContextId}`
+      );
+    }
+
+    Services.perms.removeFromPrincipal(
+      exceptionPrincipal,
+      "persist-data-on-shutdown"
+    );
+  }
+
+  await SpecialPowers.popPrefEnv();
+});
+
+add_task(async function shutdownExceptionWithoutContainerIsolation() {
+  info(
+    "Without permission isolation by container, an exception protects the data of every container"
+  );
+
+  await SpecialPowers.pushPrefEnv({
+    set: [
+      ["browser.sanitizer.loglevel", "All"],
+      ["privacy.sanitize.sanitizeOnShutdown", true],
+      ["permissions.isolateBy.userContext", false],
+    ],
+  });
+
+  await new Promise(resolve => {
+    Services.clearData.deleteData(Ci.nsIClearDataService.CLEAR_ALL, resolve);
+  });
+
+  let exceptionPrincipal =
+    Services.scriptSecurityManager.createContentPrincipal(
+      Services.io.newURI("https://mozilla.org"),
+      { userContextId: 1 }
+    );
+  Services.perms.addFromPrincipal(
+    exceptionPrincipal,
+    "persist-data-on-shutdown",
+    Services.perms.ALLOW_ACTION
+  );
+
+  for (let userContextId of [0, 1, 2]) {
+    for (let host of ["www.mozilla.org", "example.com"]) {
+      SiteDataTestUtils.addToCookies({
+        host,
+        originAttributes: { userContextId },
+      });
+    }
+  }
+
+  await Sanitizer.runSanitizeOnShutdown();
+
+  for (let userContextId of [0, 1, 2]) {
+    ok(
+      SiteDataTestUtils.hasCookies("https://www.mozilla.org", null, {
+        userContextId,
+      }),
+      `www.mozilla.org cookies preserved in container ${userContextId}`
+    );
+    ok(
+      !SiteDataTestUtils.hasCookies("https://example.com", null, {
+        userContextId,
+      }),
+      `example.com cookies cleared in container ${userContextId}`
+    );
+  }
+
+  Services.perms.removeFromPrincipal(
+    exceptionPrincipal,
+    "persist-data-on-shutdown"
+  );
+  await SpecialPowers.popPrefEnv();
+});

@@ -13,6 +13,7 @@ const STRIPPED_PERMS = [
   "https-only-load-insecure",
   "ipp-vpn",
   "install",
+  "persist-data-on-shutdown",
 ];
 
 let principal = Services.scriptSecurityManager.createContentPrincipal(

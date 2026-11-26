@@ -166,9 +166,9 @@ bool IsPreloadPermission(const nsACString& aType) {
 // This is because perms are sent to the content process in bulk by perm key.
 // Non-preloaded, but OA stripped permissions would not be accessible by sites
 // in private browsing / non-default user context.
-static constexpr std::array<nsLiteralCString, 5> kStripOAPermissions = {
+static constexpr std::array<nsLiteralCString, 6> kStripOAPermissions = {
     {"cookie"_ns, "https-only-load-insecure"_ns, "ipp-vpn"_ns, "install"_ns,
-     "translations"_ns}};
+     "persist-data-on-shutdown"_ns, "translations"_ns}};
 
 bool IsOAForceStripPermission(const nsACString& aType) {
   if (aType.IsEmpty()) {
@@ -272,9 +272,9 @@ static uint32_t GetOriginAttributesStripFlags(bool aForceStrip) {
 
 // Reset the pattern fields that permissions are not isolated by, so that the
 // pattern matches stored permission keys.
-static void MaybeStripOriginAttributesPattern(
-    OriginAttributesPattern& aPattern) {
-  uint32_t flags = GetOriginAttributesStripFlags(false);
+static void MaybeStripOriginAttributesPattern(OriginAttributesPattern& aPattern,
+                                              bool aForceStrip) {
+  uint32_t flags = GetOriginAttributesStripFlags(aForceStrip);
   if (flags & OriginAttributes::STRIP_PRIVATE_BROWSING_ID) {
     aPattern.mPrivateBrowsingId.Reset();
   }
@@ -3033,7 +3033,9 @@ NS_IMETHODIMP PermissionManager::GetAllForOriginAttributesPattern(
   if (!pattern.Init(aPattern)) {
     return NS_ERROR_INVALID_ARG;
   }
-  MaybeStripOriginAttributesPattern(pattern);
+  OriginAttributesPattern forceStrippedPattern = pattern;
+  MaybeStripOriginAttributesPattern(pattern, false);
+  MaybeStripOriginAttributesPattern(forceStrippedPattern, true);
 
   {
     MonitorAutoLock lock{mMonitor};
@@ -3051,7 +3053,13 @@ NS_IMETHODIMP PermissionManager::GetAllForOriginAttributesPattern(
     if (NS_FAILED(aPermission->GetPrincipal(getter_AddRefs(principal)))) {
       return true;
     }
-    return !pattern.Matches(principal->OriginAttributesRef());
+    nsAutoCString type;
+    if (NS_FAILED(aPermission->GetType(type))) {
+      return true;
+    }
+    const OriginAttributesPattern& typePattern =
+        IsOAForceStripPermission(type) ? forceStrippedPattern : pattern;
+    return !typePattern.Matches(principal->OriginAttributesRef());
   });
 
   return NS_OK;

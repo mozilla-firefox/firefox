@@ -166,9 +166,6 @@ add_task(async function test_removing_all_permissions() {
   Services.perms.removeAll();
 });
 
-// We can't test the pattern clearing here since persist-data-on-shutdown
-// permissions are not isolated by OA in the permission manager. See
-// `kStripOAPermissions` in `PermissionManager.cpp`.
 add_task(async function test_removeBySiteAndOAPattern() {
   let principalRegular = Services.scriptSecurityManager.createContentPrincipal(
     Services.io.newURI("https://example.net"),
@@ -237,3 +234,69 @@ add_task(async function test_removeBySiteAndOAPattern() {
 
   Services.perms.removeAll();
 });
+
+// persist-data-on-shutdown permissions are never isolated by OA in the
+// permission manager, see `kStripOAPermissions` in `PermissionManager.cpp`.
+// Clearing a site with a container or private browsing pattern must still
+// remove them, even when permissions are otherwise isolated.
+add_task(
+  {
+    pref_set: [
+      ["permissions.isolateBy.userContext", true],
+      ["permissions.isolateBy.privateBrowsing", true],
+    ],
+  },
+  async function test_removeBySiteAndOAPatternWithIsolation() {
+    for (let pattern of [{ userContextId: 2 }, { privateBrowsingId: 1 }]) {
+      let principal = Services.scriptSecurityManager.createContentPrincipal(
+        Services.io.newURI("https://example.net"),
+        pattern
+      );
+      let principalUnrelated =
+        Services.scriptSecurityManager.createContentPrincipal(
+          Services.io.newURI("https://example.org"),
+          pattern
+        );
+
+      for (let p of [principal, principalUnrelated]) {
+        Services.perms.addFromPrincipal(
+          p,
+          "persist-data-on-shutdown",
+          Services.perms.ALLOW_ACTION
+        );
+      }
+
+      await new Promise(aResolve => {
+        Services.clearData.deleteDataFromSite(
+          "example.net",
+          pattern,
+          true,
+          Ci.nsIClearDataService.CLEAR_SHUTDOWN_EXCEPTIONS,
+          value => {
+            Assert.equal(value, 0);
+            aResolve();
+          }
+        );
+      });
+
+      Assert.equal(
+        Services.perms.testExactPermissionFromPrincipal(
+          principal,
+          "persist-data-on-shutdown"
+        ),
+        Services.perms.UNKNOWN_ACTION,
+        `persist-data-on-shutdown permission has been removed for pattern ${JSON.stringify(pattern)}`
+      );
+      Assert.equal(
+        Services.perms.testExactPermissionFromPrincipal(
+          principalUnrelated,
+          "persist-data-on-shutdown"
+        ),
+        Services.perms.ALLOW_ACTION,
+        `persist-data-on-shutdown permission still exists for example.org with pattern ${JSON.stringify(pattern)}`
+      );
+
+      Services.perms.removeAll();
+    }
+  }
+);
