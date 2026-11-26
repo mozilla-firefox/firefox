@@ -27,6 +27,7 @@ import android.graphics.BitmapFactory;
 import android.graphics.Canvas;
 import android.graphics.Color;
 import android.graphics.Paint;
+import android.graphics.Rect;
 import android.net.Uri;
 import android.os.Build;
 import android.os.Bundle;
@@ -566,7 +567,12 @@ public class GeckoViewActivity extends AppCompatActivity
     if (!supportsPip()) return false;
     if (!mPipFullscreenMedia || !mPipIsPlaying) return false;
     try {
-      enterPictureInPictureMode(new PictureInPictureParams.Builder().build());
+      final PictureInPictureParams.Builder builder = new PictureInPictureParams.Builder();
+      final Rect sourceRect = new Rect();
+      if (mGeckoView.getGlobalVisibleRect(sourceRect)) {
+        builder.setSourceRectHint(sourceRect);
+      }
+      enterPictureInPictureMode(builder.build());
       return true;
     } catch (IllegalStateException e) {
       Log.w(LOGTAG, "Could not enter picture-in-picture", e);
