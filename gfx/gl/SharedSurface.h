@@ -147,6 +147,9 @@ class SharedSurface {
   // even when its buffer is still being used.
   virtual void WaitForBufferOwnership() {}
 
+  // Backends may use a different ownership wait when starting a new write.
+  virtual void WaitForBufferOwnershipForWrite() { WaitForBufferOwnership(); }
+
   // Returns true if the buffer is available.
   // You can call WaitForBufferOwnership to wait for availability.
   virtual bool IsBufferAvailable() const { return true; }
@@ -160,7 +163,7 @@ class SharedSurface {
   virtual Maybe<layers::SurfaceDescriptor> ToSurfaceDescriptor() = 0;
 
   void BeginWrite() {
-    WaitForBufferOwnership();
+    WaitForBufferOwnershipForWrite();
     ProducerAcquire();
     LockProd();
   }

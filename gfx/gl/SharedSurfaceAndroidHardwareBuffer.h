@@ -43,6 +43,7 @@ class SharedSurface_AndroidHardwareBuffer final : public SharedSurface {
   Maybe<layers::SurfaceDescriptor> ToSurfaceDescriptor() override;
 
   void WaitForBufferOwnership() override;
+  void WaitForBufferOwnershipForWrite() override;
 };
 
 class SurfaceFactory_AndroidHardwareBuffer final : public SurfaceFactory {
