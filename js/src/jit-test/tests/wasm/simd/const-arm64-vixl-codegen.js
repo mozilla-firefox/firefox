@@ -9,7 +9,7 @@ var prefix = `${lead}sub     sp, sp, #0x.. \\(..\\)
 ${lead}str     x23, \\[sp, #..\\]`;
 
 var suffix =
-`${lead}b       #\\+0x8 \\(addr 0x.*\\)
+`${lead}b       #\\+0x[0-9a-f]+ \\(addr 0x.*\\)
 ${lead}brk     #0x0`;
 
 for ( let [bits, expected, values] of [
