@@ -50,5 +50,14 @@ def test_get_tracked_files(repo):
         assert vcs.get_tracked_files(["**/*.missing"]) == []
 
 
+def test_get_tracked_files_finder(repo):
+    for _ in STEPS[repo.vcs]:
+        repo.execute_next_step()
+
+    vcs = get_repository_object(repo.dir)
+    finder = vcs.get_tracked_files_finder()
+    assert sorted(p for p, _ in finder.find("**/*.idl")) == ["a/b/y.idl", "a/x.idl"]
+
+
 if __name__ == "__main__":
     mozunit.main()

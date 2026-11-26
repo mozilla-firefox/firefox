@@ -120,13 +120,15 @@ class SrcRepository(Repository):
                 res.append(os.path.join(base, name))
         return res
 
-    def get_tracked_files_finder(self, path):
+    def get_tracked_files_finder(self, path=None):
         """Get files, similar to 'hg files -0' or 'git ls-files -z', thats why
         we read the .gitignore file for patterns to ignore.
         Speed could probably be improved.
         """
         import fnmatch
 
+        if path is None:
+            path = self.path
         files = list(
             p.replace("\\", "/").replace("./", "") for p in self.get_files(path) if p
         )
