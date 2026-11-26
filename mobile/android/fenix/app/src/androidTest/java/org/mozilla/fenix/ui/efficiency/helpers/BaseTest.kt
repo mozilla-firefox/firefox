@@ -218,7 +218,6 @@ abstract class BaseTest(
                                 isRecentlyVisitedFeatureEnabled = cfg.isRecentlyVisitedFeatureEnabled,
                                 shouldUseExpandedToolbar = cfg.shouldUseExpandedToolbar,
                                 isTabStripEnabled = cfg.isTabStripEnabled,
-                                shakeToSummarizeFeatureFlagEnabled = cfg.shakeToSummarizeFeatureFlagEnabled,
                             )
                         ) {
                             it.activity

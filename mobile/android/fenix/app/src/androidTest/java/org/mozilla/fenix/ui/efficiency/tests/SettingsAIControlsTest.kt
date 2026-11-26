@@ -138,8 +138,7 @@ class SettingsAIControlsTest : BaseTest() {
     @Critical
     @Test
     fun verifyShakeToSummarizeEnabledStateTest() {
-        // Skip the shake-to-summarize CFR. Don't re-set the feature flag (on by default via LaunchConfig):
-        // a post-launch settings exception races the feature-registry init and drops the Page summaries row.
+        // Skip the shake-to-summarize CFR.
         composeRule.activityRule.applySettingsExceptions {
             it.hasSeenShakeToSummarizeToolbarCfr = true
         }

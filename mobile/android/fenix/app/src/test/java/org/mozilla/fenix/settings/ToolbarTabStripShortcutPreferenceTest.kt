@@ -46,7 +46,7 @@ class ToolbarTabStripShortcutPreferenceTest {
         every { context.components } returns components
         every { components.appStore } returns AppStore(AppState(mode = BrowsingMode.Normal))
         every { components.core.summarizeFeatureSettings } returns summarizationFeatureSettings
-        every { summarizationFeatureSettings.canShowFeature } returns true
+        every { summarizationFeatureSettings.shouldShowFeature } returns true
         every { components.core.store } returns browserStore
         every { components.settings } returns settings
         val preferences: SharedPreferences = mockk()
@@ -60,7 +60,7 @@ class ToolbarTabStripShortcutPreferenceTest {
 
     @Test
     fun `GIVEN summarization is disabled WHEN getting the shortcut options THEN the summarize option is excluded`() {
-        every { summarizationFeatureSettings.canShowFeature } returns false
+        every { summarizationFeatureSettings.shouldShowFeature } returns false
         val preference = ToolbarTabStripShortcutPreference(context)
 
         val optionKeys = preference.getShortcutOptions().map { it.key }

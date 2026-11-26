@@ -246,7 +246,7 @@ class BrowserFragment : BaseBrowserFragment(), UserInteractionHandler, SystemIns
     @OptIn(ExperimentalCoroutinesApi::class)
     private fun setupShakeDetection() {
         val shouldSetupShake =
-            requireComponents.core.summarizeFeatureSettings.canShowFeature &&
+            requireComponents.core.summarizeFeatureSettings.shouldShowFeature &&
                 requireComponents.core.summarizationSettingsBinding.isGestureEnabled.value
         if (!shouldSetupShake) {
             return

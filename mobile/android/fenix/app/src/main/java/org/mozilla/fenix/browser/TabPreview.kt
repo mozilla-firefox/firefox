@@ -610,7 +610,7 @@ constructor(
             ShortcutType.BACK -> ToolbarAction.Back
             ShortcutType.SUMMARIZE ->
                 when {
-                    summarizationFeatureSettings.canShowFeature -> ToolbarAction.Summarize
+                    summarizationFeatureSettings.shouldShowFeature -> ToolbarAction.Summarize
                     // The tab strip already provides a new tab button, so fall back to the default tab strip shortcut.
                     context.components.settings.isTabStripEnabled -> ToolbarAction.Share
                     else -> ToolbarAction.NewTab

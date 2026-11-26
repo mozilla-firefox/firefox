@@ -17,12 +17,6 @@ data class LaunchConfig(
     val isRecentlyVisitedFeatureEnabled: Boolean = true,
     val shouldUseExpandedToolbar: Boolean = false,
     val isTabStripEnabled: Boolean = false,
-    // Disabled by default because the "Add to Home screen" PWA prompt pops over the page on a
-    // repeat visit to an installable site and covers the engine view, breaking navigation.
-    // Enabled by default to mirror the app's Nimbus default (shake-to-summarize ships on), so
-    // LaunchConfig() still equals the harness's normal launch. Declared explicitly here so a page
-    // that depends on the "Page summaries" settings entry does not rely on that implicit default.
-    val shakeToSummarizeFeatureFlagEnabled: Boolean = true,
 ) {
     /** Flat map for the structured log, so a trace records the app the test actually launched. */
     fun asMeta(): Map<String, Any?> =
@@ -34,6 +28,5 @@ data class LaunchConfig(
             "isRecentlyVisitedFeatureEnabled" to isRecentlyVisitedFeatureEnabled,
             "shouldUseExpandedToolbar" to shouldUseExpandedToolbar,
             "isTabStripEnabled" to isTabStripEnabled,
-            "shakeToSummarizeFeatureFlagEnabled" to shakeToSummarizeFeatureFlagEnabled,
         )
 }

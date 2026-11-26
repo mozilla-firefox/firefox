@@ -80,9 +80,6 @@ interface FeatureSettingsHelper {
     /** Indicates if the shake to summarize toolbar CFR was displayed to the user. */
     var hasSeenShakeToSummarizeToolbarCfr: Boolean
 
-    /** Enable or disable the shake to summarize feature flag. */
-    var shakeToSummarizeFeatureFlagEnabled: Boolean
-
     /** Enable or disable expanded toolbar layout. */
     var shouldUseExpandedToolbar: Boolean
 

@@ -11,7 +11,6 @@ import org.mozilla.fenix.settings.labs.FirefoxLabsSettingsSearchProvider
 import org.mozilla.fenix.settings.pagesummaries.PageSummariesSettingsSearchProvider
 import org.mozilla.fenix.settings.search.GoogleLensSettingsSearchProvider
 import org.mozilla.fenix.settings.settingssearch.SettingsSearchProvider
-import org.mozilla.fenix.summarization.onboarding.SummarizationFeatureDiscoveryConfiguration
 
 /**
  * Builds the list of [SettingsSearchProvider]s covering settings the XML-parsing path in
@@ -22,16 +21,12 @@ import org.mozilla.fenix.summarization.onboarding.SummarizationFeatureDiscoveryC
  * This is the source of truth for which providers exist. It is wired into the settings indexer from [Components] and is
  * exercised by `SettingsSearchProviderRegistrationTest` so that a screen losing its provider fails a test rather than
  * silently disappearing from settings search.
- *
- * @param summarizationFeatureConfiguration Gates whether the Page Summaries screen is indexed.
  */
-internal fun settingsSearchProviders(
-    summarizationFeatureConfiguration: SummarizationFeatureDiscoveryConfiguration
-): List<SettingsSearchProvider> =
+internal fun settingsSearchProviders(): List<SettingsSearchProvider> =
     listOf(
         DataChoicesSearchProvider,
         AIControlsSearchProvider,
-        PageSummariesSettingsSearchProvider(summarizationFeatureConfiguration),
+        PageSummariesSettingsSearchProvider,
         FirefoxLabsSettingsSearchProvider(),
         ToolbarShortcutSettingsSearchProvider,
         GoogleLensSettingsSearchProvider,

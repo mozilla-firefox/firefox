@@ -21,8 +21,6 @@ class SettingsPageSummariesTest : BaseTest() {
     @SmokeTest
     @Test
     fun verifyPageSummariesUITest() {
-        // Given: the app is launched with the shake-to-summarize feature flag enabled
-
         // When: we open the Settings screen
         // Then: the "Page summaries" entry is present
         on.settings

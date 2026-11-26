@@ -136,8 +136,6 @@
     <string name="preferences_debug_settings_debug_drawer" translatable="false">Enable Debug Drawer</string>
     <!-- Label for enabling the microsurvey feature -->
     <string name="preferences_debug_settings_microsurvey_feature" translatable="false">Enable Microsurvey Feature</string>
-    <!-- Label for enabling shake to summarize -->
-    <string name="preferences_key_enable_shake_to_summarize" translatable="false">Enable Shake to Summarize Feature Flag</string>
     <!-- Label for enabling listen to page -->
     <string name="preferences_key_enable_listen_to_page" translatable="false">Enable Listen to Page Feature Flag (requires app restart)</string>
     <!-- Label for enabling the weekly privacy notification -->

@@ -9,22 +9,13 @@ import mozilla.components.feature.summarize.R as summariesR
 import org.mozilla.fenix.settings.settingssearch.PreferenceFileInformation
 import org.mozilla.fenix.settings.settingssearch.SettingsSearchItem
 import org.mozilla.fenix.settings.settingssearch.SettingsSearchProvider
-import org.mozilla.fenix.summarization.onboarding.SummarizationFeatureDiscoveryConfiguration
 
-/**
- * [SettingsSearchProvider] for making "Page summaries" discoverable in settings search
- *
- * Returns an empty list when the feature is not available, so the feature is not indexed.
- */
-class PageSummariesSettingsSearchProvider(
-    val summarizationFeatureConfiguration: SummarizationFeatureDiscoveryConfiguration
-) : SettingsSearchProvider {
+/** [SettingsSearchProvider] for making "Page summaries" discoverable in settings search */
+object PageSummariesSettingsSearchProvider : SettingsSearchProvider {
 
     private val preferenceFileInformation = PreferenceFileInformation.PageSummariesPreferences
 
     override fun getSearchItems(context: Context): List<SettingsSearchItem> {
-        if (!summarizationFeatureConfiguration.isFeatureAvailable) return emptyList()
-
         return buildList {
             add(
                 SettingsSearchItem(

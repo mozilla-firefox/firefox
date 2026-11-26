@@ -260,7 +260,7 @@ class BrowserToolbarMiddlewareTest {
     fun setup() {
         appStore = spyk(AppStore())
         coEvery { bookmarksStorage.getBookmarksWithUrl(any()) } returns Result.success(listOf(mockk()))
-        every { summarizationFeatureSettings.canShowFeature } returns false
+        every { summarizationFeatureSettings.shouldShowFeature } returns false
         settings.shouldUseBottomToolbar = false
         settings.shouldUseExpandedToolbar = false
         settings.isTabStripEnabled = false
@@ -4110,7 +4110,7 @@ class BrowserToolbarMiddlewareTest {
     fun `GIVEN simple toolbar uses the summarize shortcut WHEN initializing toolbar THEN show Summarize in end browser actions`() =
         runTest(testDispatcher) {
             settings.toolbarSimpleShortcutKey = ShortcutType.SUMMARIZE.value
-            every { summarizationFeatureSettings.canShowFeature } returns true
+            every { summarizationFeatureSettings.shouldShowFeature } returns true
 
             val toolbarStore = buildStore()
 
@@ -4122,7 +4122,7 @@ class BrowserToolbarMiddlewareTest {
     fun `GIVEN simple toolbar uses the summarize shortcut but the summarize functionality is disabled WHEN initializing toolbar THEN show New Tab in end browser actions`() =
         runTest(testDispatcher) {
             settings.toolbarSimpleShortcutKey = ShortcutType.SUMMARIZE.value
-            every { summarizationFeatureSettings.canShowFeature } returns false
+            every { summarizationFeatureSettings.shouldShowFeature } returns false
 
             val toolbarStore = buildStore()
 
@@ -4134,7 +4134,7 @@ class BrowserToolbarMiddlewareTest {
     fun `GIVEN simple toolbar uses the summarize shortcut but currently in private browsing WHEN initializing toolbar THEN show a disabled Summarize in end browser actions`() =
         runTest(testDispatcher) {
             settings.toolbarSimpleShortcutKey = ShortcutType.SUMMARIZE.value
-            every { summarizationFeatureSettings.canShowFeature } returns true
+            every { summarizationFeatureSettings.shouldShowFeature } returns true
             val browsingModeManager = SimpleBrowsingModeManager(Private)
 
             val toolbarStore = buildStore(buildMiddleware(browsingModeManager = browsingModeManager))
@@ -4146,7 +4146,7 @@ class BrowserToolbarMiddlewareTest {
     @Test
     fun `WHEN the summarize button is clicked THEN attempt to start webpage summarization`() =
         runTest(testDispatcher) {
-            every { summarizationFeatureSettings.canShowFeature } returns true
+            every { summarizationFeatureSettings.shouldShowFeature } returns true
             val middleware = buildMiddleware(summarizationNavigator = summarizationNavigator)
             val toolbarStore = buildStore(middleware)
 

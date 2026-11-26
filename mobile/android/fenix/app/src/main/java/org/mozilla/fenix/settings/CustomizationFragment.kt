@@ -420,7 +420,7 @@ class CustomizationFragment : PreferenceFragmentCompat(), SystemInsetsPaddedFrag
             onPreferenceChangeListener = SharedPreferenceUpdater()
         }
         requirePreference<SwitchPreferenceCompat>(R.string.pref_key_shake_gesture_enabled).apply {
-            isVisible = context.components.settings.shakeToSummarizeFeatureFlagEnabled && isSummarizationEnabled
+            isVisible = isSummarizationEnabled
             isChecked = isSummarizationGestureEnabled
             onPreferenceChangeListener = { _, newValue ->
                 val updatedValue = (newValue as? Boolean) ?: false

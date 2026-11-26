@@ -42,8 +42,6 @@ class SnapshotPrimer : BaseTest() {
                 flag("isRecentlyVisitedFeatureEnabled", d.isRecentlyVisitedFeatureEnabled),
             shouldUseExpandedToolbar = flag("shouldUseExpandedToolbar", d.shouldUseExpandedToolbar),
             isTabStripEnabled = flag("isTabStripEnabled", d.isTabStripEnabled),
-            shakeToSummarizeFeatureFlagEnabled =
-                flag("shakeToSummarizeFeatureFlagEnabled", d.shakeToSummarizeFeatureFlagEnabled),
         )
     }
 

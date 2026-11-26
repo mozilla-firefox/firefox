@@ -68,7 +68,6 @@ class MainMenuTest {
             HomeActivityIntentTestRule(
                 skipOnboarding = true,
                 isPageLoadTranslationsPromptEnabled = false,
-                shakeToSummarizeFeatureFlagEnabled = true,
             )
         ) {
             it.activity

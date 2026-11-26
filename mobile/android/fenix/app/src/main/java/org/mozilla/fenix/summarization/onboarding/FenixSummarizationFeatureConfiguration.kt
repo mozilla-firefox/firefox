@@ -20,30 +20,27 @@ class FenixSummarizationFeatureConfiguration(
     private val summarizationSettingsBinding: SummarizationSettingsBinding,
 ) : SummarizationFeatureDiscoveryConfiguration {
 
-    override val isFeatureAvailable: Boolean
-        get() = settings.shakeToSummarizeFeatureFlagEnabled
-
-    override val canShowFeature: Boolean
-        get() = isFeatureAvailable && summarizationSettingsBinding.isFeatureEnabled.value
+    override val shouldShowFeature: Boolean
+        get() = summarizationSettingsBinding.isFeatureEnabled.value
 
     override val showMenuItem: Boolean
-        get() = canShowFeature
+        get() = shouldShowFeature
 
     override val shouldHighlightMenuItem: Boolean
-        get() = canShowFeature && settings.shakeToSummarizeMenuItemExposureCount.underMaxCount()
+        get() = shouldShowFeature && settings.shakeToSummarizeMenuItemExposureCount.underMaxCount()
 
     override val shouldHighlightOverflowMenuItem: Boolean
-        get() = canShowFeature && settings.shakeToSummarizeMoreMenuItemInteractionCount.underMaxCount()
+        get() = shouldShowFeature && settings.shakeToSummarizeMoreMenuItemInteractionCount.underMaxCount()
 
     override val shouldToolbarShowCfr: Boolean
-        get() = canShowFeature && !settings.shakeToSummarizeToolbarCfrShown
+        get() = shouldShowFeature && !settings.shakeToSummarizeToolbarCfrShown
 
     /**
-     * We determine if we should highlight the toolbar by checking the feature flags & checking the number of
+     * We determine if we should highlight the toolbar by checking the feature is enabled & checking the number of
      * interactions
      */
     val shouldHighlightToolbarMenuButton: Boolean
-        get() = canShowFeature && settings.shakeToSummarizeToolbarInteractionCount.underMaxCount()
+        get() = shouldShowFeature && settings.shakeToSummarizeToolbarInteractionCount.underMaxCount()
 
     private val _toolbarMenuButtonHighlight = MutableStateFlow(shouldHighlightToolbarMenuButton)
     override val toolbarMenuButtonHighlight: Flow<Boolean>
@@ -64,25 +61,25 @@ class FenixSummarizationFeatureConfiguration(
     }
 
     private fun recordMenuItemExposure() {
-        if (canShowFeature && settings.shakeToSummarizeMenuItemExposureCount.underMaxCount()) {
+        if (shouldShowFeature && settings.shakeToSummarizeMenuItemExposureCount.underMaxCount()) {
             settings.shakeToSummarizeMenuItemExposureCount.increment()
         }
     }
 
     private fun recordCfrExposure() {
-        if (canShowFeature && !settings.shakeToSummarizeToolbarCfrShown) {
+        if (shouldShowFeature && !settings.shakeToSummarizeToolbarCfrShown) {
             settings.shakeToSummarizeToolbarCfrShown = true
         }
     }
 
     private fun recordMenuOverflowItemInteraction() {
-        if (canShowFeature && settings.shakeToSummarizeMoreMenuItemInteractionCount.underMaxCount()) {
+        if (shouldShowFeature && settings.shakeToSummarizeMoreMenuItemInteractionCount.underMaxCount()) {
             settings.shakeToSummarizeMoreMenuItemInteractionCount.increment()
         }
     }
 
     private fun recordToolbarOverflowMenuInteraction() {
-        if (canShowFeature && settings.shakeToSummarizeToolbarInteractionCount.underMaxCount()) {
+        if (shouldShowFeature && settings.shakeToSummarizeToolbarInteractionCount.underMaxCount()) {
             settings.shakeToSummarizeToolbarInteractionCount.increment()
 
             _toolbarMenuButtonHighlight.update { shouldHighlightToolbarMenuButton }

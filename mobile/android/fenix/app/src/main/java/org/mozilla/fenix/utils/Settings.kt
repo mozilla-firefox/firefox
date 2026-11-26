@@ -2901,13 +2901,6 @@ class Settings(
             default = { FxNimbus.features.microsurveys.value().enabled },
         )
 
-    /** Nimbus controlled feature flag that Indicates if the Shake to Summarize feature should be enabled */
-    var shakeToSummarizeFeatureFlagEnabled by
-        booleanPreference(
-            key = appContext.getPreferenceKey(R.string.pref_key_enable_shake_to_summarize),
-            default = { FxNimbus.features.shakeToSummarize.value().enabled },
-        )
-
     /**
      * Secret-settings override for the tab reload cover base feature. Defaults to the Nimbus `tab-reload-cover.enabled`
      * value so the toggle initially reflects the Nimbus configuration; once toggled, the pref becomes the source of

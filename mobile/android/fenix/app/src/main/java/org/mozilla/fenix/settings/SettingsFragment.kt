@@ -217,9 +217,6 @@ class SettingsFragment : PreferenceFragmentCompat(), SystemInsetsPaddedFragment 
             FxNimbus.features.translations.value().globalSettingsEnabled &&
                 components.core.store.state.translationEngine.isEngineSupported == true
 
-        findPreference<Preference>(getPreferenceKey(R.string.pref_key_page_summaries))?.isVisible =
-            components.settings.shakeToSummarizeFeatureFlagEnabled
-
         findPreference<Preference>(getPreferenceKey(R.string.pref_key_ai_controls))?.isVisible =
             requireComponents.settings.aiControlsFeatureFlagEnabled
     }

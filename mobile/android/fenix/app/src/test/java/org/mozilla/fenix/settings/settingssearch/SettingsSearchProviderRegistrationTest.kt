@@ -12,7 +12,6 @@ import mozilla.components.support.test.robolectric.testContext
 import org.junit.Test
 import org.junit.runner.RunWith
 import org.mozilla.fenix.components.settingsSearchProviders
-import org.mozilla.fenix.settings.summarize.FakeSummarizationFeatureConfiguration
 
 /**
  * Drift-detection tests enforcing that every settings screen ends up in the search index, either through the
@@ -64,15 +63,7 @@ class SettingsSearchProviderRegistrationTest {
 
     private val screensExpectedInIndex = allScreens - intentionallyNotIndexed - knownIndexingGaps
 
-    private fun registeredProviders() =
-        settingsSearchProviders(
-            // Enable the feature-gated providers so each one contributes at least one item, otherwise
-            // a gated screen could look uncovered simply because its feature is off.
-            summarizationFeatureConfiguration =
-                FakeSummarizationFeatureConfiguration().apply {
-                    isFeatureAvailable = true
-                }
-        )
+    private fun registeredProviders() = settingsSearchProviders()
 
     /** Builds the index the way production does, returning the screens that contributed items. */
     private suspend fun screensReachedByIndexer(): Set<PreferenceFileInformation> {

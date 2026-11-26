@@ -181,7 +181,6 @@ object ProviderEvidencePolicy {
             "isRecentlyVisitedFeatureEnabled",
             "shouldUseExpandedToolbar",
             "isTabStripEnabled",
-            "shakeToSummarizeFeatureFlagEnabled",
         )
     private val environmentRequirementFields =
         setOf(

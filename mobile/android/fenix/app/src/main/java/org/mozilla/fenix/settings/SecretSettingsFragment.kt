@@ -350,12 +350,6 @@ class SecretSettingsFragment : PreferenceFragmentCompat(), SystemInsetsPaddedFra
             onPreferenceChangeListener = SharedPreferenceUpdater()
         }
 
-        requirePreference<SwitchPreferenceCompat>(R.string.pref_key_enable_shake_to_summarize).apply {
-            isVisible = Config.channel.isNightlyOrDebug
-            isChecked = settings.shakeToSummarizeFeatureFlagEnabled
-            onPreferenceChangeListener = SharedPreferenceUpdater()
-        }
-
         requirePreference<SwitchPreferenceCompat>(R.string.pref_key_enable_listen_to_page).apply {
             isVisible = Config.channel.isNightlyOrDebug || Config.channel.isBeta
             isChecked = settings.listenToPageFeatureFlagEnabled

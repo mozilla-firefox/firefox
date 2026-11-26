@@ -232,25 +232,6 @@ features:
         value:
           enabled: true
 
-  shake-to-summarize:
-    no-lint: [MISSING_CONTACTS]
-    description: A feature that can summarize the content of a page when you shake the screen.
-    variables:
-      enabled:
-        type: Boolean
-        description: If true, shake to summarize will be enabled
-        default: true
-    defaults:
-      - channel: developer
-        value:
-          enabled: true
-      - channel: nightly
-        value:
-          enabled: true
-      - channel: beta
-        value:
-          enabled: true
-
   weekly-privacy-notification:
     description: A feature that shows a recurring weekly notification summarizing Tracking Protection activity.
     contacts:

@@ -62,7 +62,7 @@ constructor(
     }
 
     private val isSummarizationAvailable: Boolean
-        get() = context.components.core.summarizeFeatureSettings.canShowFeature
+        get() = context.components.core.summarizeFeatureSettings.shouldShowFeature
 
     private val isBrowsingInNormalMode: Boolean
         get() = context.components.appStore.state.mode == Normal

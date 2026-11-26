@@ -31,7 +31,6 @@ class SettingsPageSummariesTest {
         AndroidComposeTestRuleV2(
             HomeActivityIntentTestRule(
                 skipOnboarding = true,
-                shakeToSummarizeFeatureFlagEnabled = true,
                 hasSeenShakeToSummarizeToolbarCfr = false,
             )
         ) {

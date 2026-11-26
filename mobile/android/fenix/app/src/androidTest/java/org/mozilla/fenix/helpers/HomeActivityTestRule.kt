@@ -69,7 +69,6 @@ class HomeActivityTestRule(
         isTermsOfServiceAccepted: Boolean = true,
         openLinksInExternalApp: OpenLinksInApp = getOpenLinksInApp(settings),
         hasSeenShakeToSummarizeToolbarCfr: Boolean = true,
-        shakeToSummarizeFeatureFlagEnabled: Boolean = settings.shakeToSummarizeFeatureFlagEnabled,
         shouldUseExpandedToolbar: Boolean = false,
         isTabStripEnabled: Boolean = false,
         nativeShareSheetEnabled: Boolean = false,
@@ -102,7 +101,6 @@ class HomeActivityTestRule(
         this.isTermsOfServiceAccepted = isTermsOfServiceAccepted
         this.openLinksInExternalApp = openLinksInExternalApp
         this.hasSeenShakeToSummarizeToolbarCfr = hasSeenShakeToSummarizeToolbarCfr
-        this.shakeToSummarizeFeatureFlagEnabled = shakeToSummarizeFeatureFlagEnabled
         this.shouldUseExpandedToolbar = shouldUseExpandedToolbar
         this.isTabStripEnabled = isTabStripEnabled
         this.nativeShareSheetEnabled = nativeShareSheetEnabled
@@ -228,7 +226,6 @@ internal constructor(
         openLinksInExternalApp: OpenLinksInApp = getOpenLinksInApp(settings),
         tabManagerOpeningAnimationEnabled: Boolean = false,
         hasSeenShakeToSummarizeToolbarCfr: Boolean = true,
-        shakeToSummarizeFeatureFlagEnabled: Boolean = settings.shakeToSummarizeFeatureFlagEnabled,
         shouldUseExpandedToolbar: Boolean = false,
         isTabStripEnabled: Boolean = false,
         nativeShareSheetEnabled: Boolean = false,
@@ -263,7 +260,6 @@ internal constructor(
         this.openLinksInExternalApp = openLinksInExternalApp
         this.tabManagerOpeningAnimationEnabled = tabManagerOpeningAnimationEnabled
         this.hasSeenShakeToSummarizeToolbarCfr = hasSeenShakeToSummarizeToolbarCfr
-        this.shakeToSummarizeFeatureFlagEnabled = shakeToSummarizeFeatureFlagEnabled
         this.shouldUseExpandedToolbar = shouldUseExpandedToolbar
         this.isTabStripEnabled = isTabStripEnabled
         this.nativeShareSheetEnabled = nativeShareSheetEnabled

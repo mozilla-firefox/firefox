@@ -14,11 +14,8 @@ import kotlinx.coroutines.flow.StateFlow
  */
 interface SummarizationFeatureDiscoveryConfiguration {
 
-    /** Determines if the feature is available */
-    val isFeatureAvailable: Boolean
-
-    /** Determines if the feature can be shown */
-    val canShowFeature: Boolean
+    /** Determines if the feature should be shown */
+    val shouldShowFeature: Boolean
 
     /** Indicates whether the menu item should be highlighted. */
     val shouldHighlightMenuItem: Boolean
