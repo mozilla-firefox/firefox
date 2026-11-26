@@ -559,6 +559,8 @@ class SyncObjectD3D11Client : public SyncObjectClient {
   bool SynchronizeInternal(ID3D11Device* aDevice, bool aFallible);
   Mutex mSyncLock MOZ_UNANNOTATED;
   RefPtr<ID3D11Texture2D> mSyncTexture;
+
+  // list of non-owned, read-only texture pointers
   std::vector<ID3D11Texture2D*> mSyncedTextures;
 
  private:
