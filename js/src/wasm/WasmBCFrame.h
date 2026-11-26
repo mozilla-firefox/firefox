@@ -543,10 +543,13 @@ class BaseStackFrame final : public BaseStackFrameAllocator {
 
   void checkStack(Register tmp, BytecodeOffset trapOffset) {
     stackAddOffset_ = masm.sub32FromStackPtrWithPatch(tmp);
-    Label ok;
+    Label ok, trap;
+    // If the subtraction wrapped around, tmp will be above the stack pointer.
+    masm.branchStackPtr(Assembler::Below, tmp, &trap);
     masm.branchPtr(Assembler::Below,
                    Address(InstanceReg, wasm::Instance::offsetOfStackLimit()),
                    tmp, &ok);
+    masm.bind(&trap);
     masm.wasmTrap(Trap::StackOverflow, trapOffset);
     masm.bind(&ok);
   }
