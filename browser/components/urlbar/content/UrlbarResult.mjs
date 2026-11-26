@@ -604,7 +604,11 @@ export class UrlbarResult {
    */
   toString() {
     if (this.payload.url) {
-      return this.payload.title + " - " + this.payload.url.substr(0, 100);
+      return (
+        (this.payload.title ?? this.payload.titleL10n?.id) +
+        " - " +
+        this.payload.url.substr(0, 100)
+      );
     }
     if (this.payload.keyword) {
       return this.payload.keyword + " - " + this.payload.query;

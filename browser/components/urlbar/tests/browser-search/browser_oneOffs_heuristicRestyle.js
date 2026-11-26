@@ -87,9 +87,12 @@ async function heuristicIsNotRestyled(expectedType, resultDetails) {
   );
 
   // title
+  let { titleL10n } = resultDetails.result.payload;
   Assert.equal(
     resultDetails.displayed.title,
-    resultDetails.title,
+    titleL10n
+      ? await document.l10n.formatValue(titleL10n.id, titleL10n.args)
+      : resultDetails.title,
     "The displayed title is equal to the payload title."
   );
 

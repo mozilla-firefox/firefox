@@ -201,7 +201,7 @@ export class UrlbarInputBaseTestUtils {
    * by construction one in a content document, so falling through is right.
    *
    * @param {Node} node
-   * @returns {{waitForEvent: Function, isVisible: Function}}
+   * @returns {{waitForEvent: Function, waitForMutationCondition: Function, isVisible: Function}}
    */
   #domTestUtils(node) {
     let doc = node.ownerDocument ?? node;
@@ -778,8 +778,26 @@ export class UrlbarInputBaseTestUtils {
     let urls = element.getElementsByClassName("urlbarView-url");
     let typeIcon = element.querySelector(".urlbarView-type-icon");
     await win.document.l10n.translateFragment(element);
+    let title = element.getElementsByClassName("urlbarView-title")[0];
+    if (
+      title &&
+      result.payload.titleL10n &&
+      !element.hasAttribute("restyled-search")
+    ) {
+      // Localized titles are added once they're translated.
+      let { id, args } = result.payload.titleL10n;
+      let expected = new win.DOMParser().parseFromString(
+        await win.document.l10n.formatValue(id, args),
+        "text/html"
+      ).body.textContent;
+      await this.#domTestUtils(title).waitForMutationCondition(
+        title,
+        { childList: true, subtree: true, characterData: true },
+        () => title.textContent == expected
+      );
+    }
     details.displayed = {
-      title: element.getElementsByClassName("urlbarView-title")[0]?.textContent,
+      title: title?.textContent,
       action: actions.length ? actions[0].textContent : null,
       url: urls.length ? urls[0].textContent : null,
       typeIcon: typeIcon

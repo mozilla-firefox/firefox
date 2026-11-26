@@ -121,15 +121,6 @@
       return this.querySelector(".ac-url-text");
     }
 
-    get _stringBundle() {
-      if (!this.__stringBundle) {
-        this.__stringBundle = Services.strings.createBundle(
-          "chrome://global/locale/autocomplete.properties"
-        );
-      }
-      return this.__stringBundle;
-    }
-
     get boundaryCutoff() {
       if (!this._boundaryCutoff) {
         this._boundaryCutoff = Services.prefs.getIntPref(

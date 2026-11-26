@@ -70,7 +70,12 @@ add_task(async function ui() {
 
   info("Check the title");
   let title = row.querySelector(".urlbarView-title");
-  Assert.equal(title.dataset.l10nId, "urlbar-search-tips-confirm");
+  let l10nNode = await BrowserTestUtils.waitForMutationCondition(
+    title,
+    { childList: true },
+    () => title.querySelector(".urlbarView-title-l10n")
+  );
+  Assert.equal(l10nNode.dataset.l10nId, "urlbar-search-tips-confirm");
   Assert.ok(BrowserTestUtils.isVisible(title));
 
   info("Check the description");

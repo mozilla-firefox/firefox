@@ -1417,12 +1417,6 @@ export var UrlbarUtils = {
   },
 };
 
-ChromeUtils.defineLazyGetter(UrlbarUtils, "strings", () => {
-  return Services.strings.createBundle(
-    "chrome://global/locale/autocomplete.properties"
-  );
-});
-
 const L10N_SCHEMA = {
   type: "object",
   required: ["id"],
@@ -1749,6 +1743,7 @@ UrlbarUtils.RESULT_PAYLOAD_SCHEMA = {
       title: {
         type: "string",
       },
+      titleL10n: L10N_SCHEMA,
       url: {
         type: "string",
       },
