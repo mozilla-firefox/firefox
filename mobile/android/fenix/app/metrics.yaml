@@ -9480,6 +9480,26 @@ listen_to_page:
     notification_emails:
       - android-probes@mozilla.com
     expires: never
+  engine_bound:
+    type: event
+    description: |
+      Recorded once per listening session when the speech engine is bound, including sessions that
+      fail after binding.
+    extra_keys:
+      engine:
+        description: |
+          The package name of the speech engine, for example
+          com.google.android.tts.
+        type: string
+    bugs:
+      - https://bugzilla.mozilla.org/show_bug.cgi?id=2095331
+    data_reviews:
+      - https://phabricator.services.mozilla.com/D344530
+    data_sensitivity:
+      - technical
+    notification_emails:
+      - android-probes@mozilla.com
+    expires: never
   opening_chunk_audio_size:
     type: memory_distribution
     memory_unit: kilobyte

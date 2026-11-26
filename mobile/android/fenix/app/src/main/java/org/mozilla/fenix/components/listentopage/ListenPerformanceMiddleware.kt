@@ -321,6 +321,7 @@ class ListenPerformanceMiddleware(
         engine = packageName
         logger.debug("Speech engine bound: $packageName")
         ListenToPage.ttsEngine.set(packageName)
+        ListenToPage.engineBound.record(ListenToPage.EngineBoundExtra(engine = packageName))
     }
 
     private enum class ChunkGapCause {

@@ -730,6 +730,17 @@ class ListenPerformanceMiddlewareTest {
     }
 
     @Test
+    fun `WHEN an engine is bound for each session THEN each binding is recorded as an event`() {
+        processFact(engineBoundFact("com.example.tts"))
+        processFact(engineBoundFact("com.example.other"))
+
+        assertEquals(
+            listOf("com.example.tts", "com.example.other"),
+            ListenToPage.engineBound.testGetValue()?.map { it.extra?.get("engine") },
+        )
+    }
+
+    @Test
     fun `WHEN an engine is bound THEN later chunk markers name it`() {
         processFact(engineBoundFact("com.example.tts"))
 
