@@ -1,0 +1,152 @@
+<!DOCTYPE html>
+<meta charset="utf-8">
+<title>Changes to offset-path URLs update the referenced geometry</title>
+<link rel="help" href="https://drafts.csswg.org/motion/#offset-path-property">
+<script src="/resources/testharness.js"></script>
+<script src="/resources/testharnessreport.js"></script>
+<style>
+  #html-targets, #svg-targets, #fragments {
+    position: absolute;
+    left: 0;
+    top: 0;
+    width: 400px;
+    height: 400px;
+  }
+  .target {
+    width: 20px;
+    height: 20px;
+    offset-path: url(#first);
+    offset-anchor: 0px 0px;
+    offset-rotate: 0deg;
+    offset-distance: 100%;
+  }
+  #fragments {
+    height: 100px;
+    columns: 2;
+    column-gap: 0;
+    column-fill: auto;
+  }
+</style>
+<div id="html-targets"></div>
+<svg id="svg-targets">
+  <defs>
+    <path id="first" d="M20 30 H120"/>
+    <path id="second" d="M40 50 V150"/>
+    <g id="not-geometry"></g>
+  </defs>
+</svg>
+<div id="fragments"></div>
+<script>
+  function createTarget(t, kind) {
+    const target = kind === "html"
+      ? document.createElement("div")
+      : document.createElementNS("http://www.w3.org/2000/svg", "rect");
+    target.setAttribute("class", "target");
+    document.getElementById(`${kind}-targets`).appendChild(target);
+    t.add_cleanup(() => target.remove());
+    return target;
+  }
+
+  function assertPosition(target, x, y, description) {
+    const rect = target.getBoundingClientRect();
+    assert_approx_equals(rect.x, x, 0.01, `${description}: x`);
+    assert_approx_equals(rect.y, y, 0.01, `${description}: y`);
+    assert_approx_equals(rect.width, 20, 0.01, `${description}: width`);
+    assert_approx_equals(rect.height, 20, 0.01, `${description}: height`);
+  }
+
+  function reconstruct(target) {
+    target.style.display = "none";
+    target.getBoundingClientRect();
+    target.style.display = "";
+  }
+
+  for (const kind of ["html", "svg"]) {
+    for (const absolute of [false, true]) {
+      test(t => {
+        const target = createTarget(t, kind);
+        const url = id => absolute
+          ? `url("${new URL(`#${id}`, location.href).href}")`
+          : `url(#${id})`;
+        target.style.offsetPath = url("first");
+        assertPosition(target, 120, 30, "Initial URL");
+        // Both referenced paths remain present and unchanged.
+        target.style.offsetPath = url("second");
+        assertPosition(target, 40, 150, "Changed URL");
+        const style = getComputedStyle(target).offsetPath;
+        reconstruct(target);
+        assert_equals(getComputedStyle(target).offsetPath, style);
+        assertPosition(target, 40, 150, "Reconstructed frame");
+        target.style.offsetPath = url("first");
+        assertPosition(target, 120, 30, "Restored URL");
+      }, `${kind}: changing a ${absolute ? "document" : "fragment"} URL`);
+    }
+
+    for (const [path, x, y] of [
+      ["none", 0, 0],
+      ["path('M5 10 L25 30')", 25, 30],
+    ]) {
+      test(t => {
+        const target = createTarget(t, kind);
+        assertPosition(target, 120, 30, "Initial URL");
+        // In particular, 'none' removes the only transform from this frame.
+        target.style.offsetPath = path;
+        assertPosition(target, x, y, "Non-URL path");
+        target.style.offsetPath = "url(#second)";
+        assertPosition(target, 40, 150, "URL after non-URL path");
+      }, `${kind}: changing a URL through ${path}`);
+    }
+
+    test(t => {
+      const target = createTarget(t, kind);
+      assertPosition(target, 120, 30, "Initial URL");
+      target.style.offsetPath = "url(#not-geometry)";
+      assertPosition(target, 0, 0, "Non-geometry target uses the default path");
+      target.style.offsetPath = "url(#missing)";
+      assertPosition(target, 0, 0, "Missing target uses the default path");
+      target.style.offsetPath = "url(#second)";
+      assertPosition(target, 40, 150, "Valid URL after invalid targets");
+    }, `${kind}: changing between valid and invalid URL targets`);
+
+    test(t => {
+      const target = createTarget(t, kind);
+      assertPosition(target, 120, 30, "Underlying URL");
+      const animation = target.animate([
+        { offsetPath: "url(#first)" },
+        { offsetPath: "url(#second)" },
+      ], { duration: 1000, fill: "both" });
+      t.add_cleanup(() => animation.cancel());
+      animation.pause();
+      animation.currentTime = 0;
+      assertPosition(target, 120, 30, "Initial animation value");
+      animation.currentTime = 1000;
+      assertPosition(target, 40, 150, "Final animation value");
+      animation.cancel();
+      assertPosition(target, 120, 30, "Underlying URL after cancellation");
+    }, `${kind}: discrete URL animation and cancellation`);
+
+    test(t => {
+      const target = createTarget(t, kind);
+      assertPosition(target, 120, 30, "Initial distance");
+      target.style.offsetDistance = "0%";
+      assertPosition(target, 20, 30, "Start of unchanged path");
+      target.style.offsetDistance = "50%";
+      assertPosition(target, 70, 30, "Middle of unchanged path");
+    }, `${kind}: distance changes on an unchanged URL`);
+  }
+
+  test(t => {
+    const target = createTarget(t, "html");
+    document.getElementById("fragments").appendChild(target);
+    target.style.height = "180px";
+    assert_equals(target.getClientRects().length, 2, "Two fragments");
+    const rects = () => Array.from(target.getClientRects(),
+      r => [r.x, r.y, r.width, r.height]).flat();
+    target.style.offsetPath = "url(#second)";
+    const changed = rects();
+    reconstruct(target);
+    assert_equals(target.getClientRects().length, 2, "Still two fragments");
+    assert_array_approx_equals(changed, rects(), 0.01,
+      "URL change uses the same geometry as a fresh frame with that style");
+  }, "A fragmented element updates its shared URL reference");
+</script>
