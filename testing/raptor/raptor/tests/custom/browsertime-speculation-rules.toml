@@ -56,3 +56,25 @@ browsertime_args = "--browsertime.source=list --browsertime.eagerness=conservati
 # has to wait for the ongoing prefetch instead of refetching the target.
 ["prefetch-list-inflight"]
 browsertime_args = "--browsertime.source=list --browsertime.eagerness=moderate --browsertime.dwell_ms=250"
+
+# Slow body. The target sends its headers and heading after the 500 ms stall,
+# then pauses 1200 ms before the rest of the body. Conservative eagerness with a
+# 100 ms press, as on a real click, so the navigation starts while the prefetch
+# is still in flight. Timeline in ms from pointerdown (~ = includes webdriver
+# latency):
+#
+#   0          ~100       500                 1700
+#   |-----------|----------|-------------------|
+#   prefetch    release    headers +           body
+#   starts      navigates  heading             complete
+#
+# A browser that serves the navigation once the prefetch's headers arrive gets
+# response_start and fcp earlier than the no-prefetch baseline below; one that
+# waits for the whole body gets them about 1200 ms later than that.
+["prefetch-list-slowbody"]
+browsertime_args = "--browsertime.source=list --browsertime.eagerness=conservative --browsertime.body=slow --browsertime.dwell_ms=100"
+
+# Same navigation with no speculation rules: the no-prefetch baseline for
+# prefetch-list-slowbody.
+["prefetch-none-slowbody"]
+browsertime_args = "--browsertime.source=none --browsertime.eagerness=conservative --browsertime.body=slow --browsertime.dwell_ms=100"

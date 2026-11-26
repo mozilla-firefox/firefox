@@ -20997,6 +20997,184 @@ Browsertime tests that use a custom pageload test script. These use the pageload
 
 ::::
 
+(prefetch-list-slowbody-c)=
+
+::::{dropdown} prefetch-list-slowbody
+:class-container: anchor-id-prefetch-list-slowbody-c
+
+* **Command to Run Locally**
+
+  ```
+  ./mach raptor -t prefetch-list-slowbody
+  ```
+
+**Owner**: Network Team, Performance Team
+
+**Description**: Speculation Rules prefetch test using a list-source rule (conservative eagerness, slow body): the target sends its headers and its body up to the visible heading, then pauses 1200 ms before the rest. The link is pressed for 100 ms, so the navigation starts while the prefetch is in flight; a browser that serves it once the prefetch's headers arrive gets an early response_start, one that waits for the whole body gets a late response_start and fcp. Compare with prefetch-none-slowbody.
+
+* **alert threshold**: 10.0
+* **apps**: firefox, chrome
+* **browser cycles**: 1
+* **browsertime args**: --browsertime.source=list --browsertime.eagerness=conservative --browsertime.body=slow --browsertime.dwell_ms=100
+* **cold**: true
+* **custom data**: true
+* **expected**: pass
+* **gecko profile interval**: 1
+* **link searchfox**: {searchfox}`testing/raptor/raptor/tests/custom/browsertime-speculation-rules.toml#74`
+* **lower is better**: true
+* **page cycles**: 1
+* **page timeout**: 60000
+* **support class**: speculation_rules.py
+* **test script**: speculation-rules-prefetch.js
+* **test url**: <None>
+* **type**: pageload
+* **unit**: ms
+* **use live sites**: true
+* **Test Task**:
+
+:::{list-table} **{ref}`test-linux2404-64-nightlyasrelease/opt <hardware-hpe-moonshot>`**
+:widths: 30 15 15 15 15
+:header-rows: 1
+
+* - **Test Name**
+  - mozilla-central
+  - autoland
+  - mozilla-release
+  - mozilla-beta
+* - **browsertime-speculation-rules-firefox-prefetch-list-slowbody**
+  - ❌
+  - ❌
+  - ❌
+  - ❌
+:::
+
+
+:::{list-table} **{ref}`test-linux2404-64-shippable/opt <hardware-hpe-moonshot>`**
+:widths: 30 15 15 15 15
+:header-rows: 1
+
+* - **Test Name**
+  - mozilla-central
+  - autoland
+  - mozilla-release
+  - mozilla-beta
+* - **browsertime-speculation-rules-chrome-prefetch-list-slowbody**
+  - ❌
+  - ✅
+  - ❌
+  - ❌
+* - **browsertime-speculation-rules-firefox-prefetch-list-slowbody**
+  - ❌
+  - ✅
+  - ❌
+  - ❌
+:::
+
+
+:::{list-table} **{ref}`test-linux2404-64/opt <hardware-hpe-moonshot>`**
+:widths: 30 15 15 15 15
+:header-rows: 1
+
+* - **Test Name**
+  - mozilla-central
+  - autoland
+  - mozilla-release
+  - mozilla-beta
+* - **browsertime-speculation-rules-firefox-prefetch-list-slowbody**
+  - ❌
+  - ❌
+  - ❌
+  - ❌
+:::
+
+
+:::{list-table} **{ref}`test-macosx1500-aarch64-nightlyasrelease/opt <hardware-mac-mini-m4>`**
+:widths: 30 15 15 15 15
+:header-rows: 1
+
+* - **Test Name**
+  - mozilla-central
+  - autoland
+  - mozilla-release
+  - mozilla-beta
+* - **browsertime-speculation-rules-firefox-prefetch-list-slowbody**
+  - ❌
+  - ❌
+  - ❌
+  - ❌
+:::
+
+
+:::{list-table} **{ref}`test-macosx1500-aarch64-shippable/opt <hardware-mac-mini-m4>`**
+:widths: 30 15 15 15 15
+:header-rows: 1
+
+* - **Test Name**
+  - mozilla-central
+  - autoland
+  - mozilla-release
+  - mozilla-beta
+* - **browsertime-speculation-rules-firefox-prefetch-list-slowbody**
+  - ❌
+  - ✅
+  - ❌
+  - ❌
+:::
+
+
+:::{list-table} **{ref}`test-windows11-64-24h2-nightlyasrelease/opt <hardware-nuc13-windows11>`**
+:widths: 30 15 15 15 15
+:header-rows: 1
+
+* - **Test Name**
+  - mozilla-central
+  - autoland
+  - mozilla-release
+  - mozilla-beta
+* - **browsertime-speculation-rules-firefox-prefetch-list-slowbody**
+  - ❌
+  - ❌
+  - ❌
+  - ❌
+:::
+
+
+:::{list-table} **{ref}`test-windows11-64-24h2-shippable/opt <hardware-nuc13-windows11>`**
+:widths: 30 15 15 15 15
+:header-rows: 1
+
+* - **Test Name**
+  - mozilla-central
+  - autoland
+  - mozilla-release
+  - mozilla-beta
+* - **browsertime-speculation-rules-firefox-prefetch-list-slowbody**
+  - ❌
+  - ✅
+  - ❌
+  - ❌
+:::
+
+
+:::{list-table} **{ref}`test-windows11-64-24h2/opt <hardware-nuc13-windows11>`**
+:widths: 30 15 15 15 15
+:header-rows: 1
+
+* - **Test Name**
+  - mozilla-central
+  - autoland
+  - mozilla-release
+  - mozilla-beta
+* - **browsertime-speculation-rules-firefox-prefetch-list-slowbody**
+  - ❌
+  - ❌
+  - ❌
+  - ❌
+:::
+
+
+::::
+
 (prefetch-moderate-c)=
 
 ::::{dropdown} prefetch-moderate
@@ -21166,6 +21344,184 @@ Browsertime tests that use a custom pageload test script. These use the pageload
   - mozilla-release
   - mozilla-beta
 * - **browsertime-speculation-rules-firefox-prefetch-moderate**
+  - ❌
+  - ❌
+  - ❌
+  - ❌
+:::
+
+
+::::
+
+(prefetch-none-slowbody-c)=
+
+::::{dropdown} prefetch-none-slowbody
+:class-container: anchor-id-prefetch-none-slowbody-c
+
+* **Command to Run Locally**
+
+  ```
+  ./mach raptor -t prefetch-none-slowbody
+  ```
+
+**Owner**: Network Team, Performance Team
+
+**Description**: No-prefetch baseline for prefetch-list-slowbody: the same landing page and click with no speculation rules, so the navigation fetches the slow-body target itself.
+
+* **alert threshold**: 10.0
+* **apps**: firefox, chrome
+* **browser cycles**: 1
+* **browsertime args**: --browsertime.source=none --browsertime.eagerness=conservative --browsertime.body=slow --browsertime.dwell_ms=100
+* **cold**: true
+* **custom data**: true
+* **expected**: pass
+* **gecko profile interval**: 1
+* **link searchfox**: {searchfox}`testing/raptor/raptor/tests/custom/browsertime-speculation-rules.toml#79`
+* **lower is better**: true
+* **page cycles**: 1
+* **page timeout**: 60000
+* **support class**: speculation_rules.py
+* **test script**: speculation-rules-prefetch.js
+* **test url**: <None>
+* **type**: pageload
+* **unit**: ms
+* **use live sites**: true
+* **Test Task**:
+
+:::{list-table} **{ref}`test-linux2404-64-nightlyasrelease/opt <hardware-hpe-moonshot>`**
+:widths: 30 15 15 15 15
+:header-rows: 1
+
+* - **Test Name**
+  - mozilla-central
+  - autoland
+  - mozilla-release
+  - mozilla-beta
+* - **browsertime-speculation-rules-firefox-prefetch-none-slowbody**
+  - ❌
+  - ❌
+  - ❌
+  - ❌
+:::
+
+
+:::{list-table} **{ref}`test-linux2404-64-shippable/opt <hardware-hpe-moonshot>`**
+:widths: 30 15 15 15 15
+:header-rows: 1
+
+* - **Test Name**
+  - mozilla-central
+  - autoland
+  - mozilla-release
+  - mozilla-beta
+* - **browsertime-speculation-rules-chrome-prefetch-none-slowbody**
+  - ❌
+  - ✅
+  - ❌
+  - ❌
+* - **browsertime-speculation-rules-firefox-prefetch-none-slowbody**
+  - ❌
+  - ✅
+  - ❌
+  - ❌
+:::
+
+
+:::{list-table} **{ref}`test-linux2404-64/opt <hardware-hpe-moonshot>`**
+:widths: 30 15 15 15 15
+:header-rows: 1
+
+* - **Test Name**
+  - mozilla-central
+  - autoland
+  - mozilla-release
+  - mozilla-beta
+* - **browsertime-speculation-rules-firefox-prefetch-none-slowbody**
+  - ❌
+  - ❌
+  - ❌
+  - ❌
+:::
+
+
+:::{list-table} **{ref}`test-macosx1500-aarch64-nightlyasrelease/opt <hardware-mac-mini-m4>`**
+:widths: 30 15 15 15 15
+:header-rows: 1
+
+* - **Test Name**
+  - mozilla-central
+  - autoland
+  - mozilla-release
+  - mozilla-beta
+* - **browsertime-speculation-rules-firefox-prefetch-none-slowbody**
+  - ❌
+  - ❌
+  - ❌
+  - ❌
+:::
+
+
+:::{list-table} **{ref}`test-macosx1500-aarch64-shippable/opt <hardware-mac-mini-m4>`**
+:widths: 30 15 15 15 15
+:header-rows: 1
+
+* - **Test Name**
+  - mozilla-central
+  - autoland
+  - mozilla-release
+  - mozilla-beta
+* - **browsertime-speculation-rules-firefox-prefetch-none-slowbody**
+  - ❌
+  - ✅
+  - ❌
+  - ❌
+:::
+
+
+:::{list-table} **{ref}`test-windows11-64-24h2-nightlyasrelease/opt <hardware-nuc13-windows11>`**
+:widths: 30 15 15 15 15
+:header-rows: 1
+
+* - **Test Name**
+  - mozilla-central
+  - autoland
+  - mozilla-release
+  - mozilla-beta
+* - **browsertime-speculation-rules-firefox-prefetch-none-slowbody**
+  - ❌
+  - ❌
+  - ❌
+  - ❌
+:::
+
+
+:::{list-table} **{ref}`test-windows11-64-24h2-shippable/opt <hardware-nuc13-windows11>`**
+:widths: 30 15 15 15 15
+:header-rows: 1
+
+* - **Test Name**
+  - mozilla-central
+  - autoland
+  - mozilla-release
+  - mozilla-beta
+* - **browsertime-speculation-rules-firefox-prefetch-none-slowbody**
+  - ❌
+  - ✅
+  - ❌
+  - ❌
+:::
+
+
+:::{list-table} **{ref}`test-windows11-64-24h2/opt <hardware-nuc13-windows11>`**
+:widths: 30 15 15 15 15
+:header-rows: 1
+
+* - **Test Name**
+  - mozilla-central
+  - autoland
+  - mozilla-release
+  - mozilla-beta
+* - **browsertime-speculation-rules-firefox-prefetch-none-slowbody**
   - ❌
   - ❌
   - ❌

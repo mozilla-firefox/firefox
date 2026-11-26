@@ -17,6 +17,12 @@ LOG = RaptorLogger(component="raptor-browsertime")
 # 500 ms corresponds to the p75 response time from the pageload event.
 TARGET_STALL_MS = 500
 
+# With ?body=slow the target sends its headers and its body up to the heading,
+# then stalls this long before the rest, like a page that streams and paints its
+# top early. Kept under dom.speculation_rules.wait_timeout_ms so a navigation
+# waiting on the prefetch is still served from it.
+BODY_STALL_MS = 1200
+
 # Speculation Rules eagerness levels the landing page can be served with. The
 # requested level arrives as the ?eagerness= query parameter; unknown values
 # fall back to DEFAULT_EAGERNESS.
@@ -25,8 +31,9 @@ DEFAULT_EAGERNESS = "moderate"
 
 # Rule source, selected via the ?source= query parameter (unknown falls back to
 # DEFAULT_SOURCE): "document" matches the page's links with a `where` predicate,
-# "list" specifies the target URLs explicitly.
-ALLOWED_SOURCES = ("document", "list")
+# "list" specifies the target URLs explicitly, and "none" serves no rules, as a
+# no-prefetch baseline.
+ALLOWED_SOURCES = ("document", "list", "none")
 DEFAULT_SOURCE = "document"
 
 # Footer instruction describing how each level's prefetch is triggered.
@@ -55,8 +62,8 @@ SPECULATION_RULES_LIST_TEMPLATE = """<script type="speculationrules">
 {{
   "prefetch": [{{
     "source": "list",
-    "urls": ["/target.html?item=a", "/target.html?item=b",
-             "/target.html?item=c", "/target.html?item=d"],
+    "urls": ["/target.html?item=a{target_query}", "/target.html?item=b{target_query}",
+             "/target.html?item=c{target_query}", "/target.html?item=d{target_query}"],
     "eagerness": "{eagerness}"
   }}]
 }}
@@ -140,13 +147,13 @@ LANDING_HTML_TEMPLATE = """<!doctype html>
     Inline <code>&lt;script type="speculationrules"&gt;</code> with
     <strong>{eagerness}</strong> eagerness controls when a matching link is
     prefetched. Target pages have a <strong>{stall_ms}&nbsp;ms</strong> server
-    stall.
+    stall{body_note}.
   </p>
   <div class="buttons">
-    <a id="btn-a" class="btn" href="/target.html?item=a">Alpha</a>
-    <a id="btn-b" class="btn" href="/target.html?item=b">Beta</a>
-    <a id="btn-c" class="btn" href="/target.html?item=c">Gamma</a>
-    <a id="btn-d" class="btn" href="/target.html?item=d">Delta</a>
+    <a id="btn-a" class="btn" href="/target.html?item=a{target_query}">Alpha</a>
+    <a id="btn-b" class="btn" href="/target.html?item=b{target_query}">Beta</a>
+    <a id="btn-c" class="btn" href="/target.html?item=c{target_query}">Gamma</a>
+    <a id="btn-d" class="btn" href="/target.html?item=d{target_query}">Delta</a>
   </div>
   <footer>{action_hint}</footer>
 </div>
@@ -276,7 +283,7 @@ TARGET_HTML = """<!doctype html>
 class _Handler(BaseHTTPRequestHandler):
     protocol_version = "HTTP/1.1"
 
-    def _send(self, body):
+    def _send(self, body, pause_after=None):
         body_bytes = body.encode("utf-8")
         self.send_response(HTTPStatus.OK)
         self.send_header("Content-Type", "text/html; charset=utf-8")
@@ -286,6 +293,12 @@ class _Handler(BaseHTTPRequestHandler):
         # NS_BINDING_ABORTED ("document cannot be reused from cache").
         self.send_header("Cache-Control", "max-age=60")
         self.end_headers()
+        if pause_after:
+            split = body_bytes.index(pause_after) + len(pause_after)
+            self.wfile.write(body_bytes[:split])
+            self.wfile.flush()
+            time.sleep(BODY_STALL_MS / 1000.0)
+            body_bytes = body_bytes[split:]
         self.wfile.write(body_bytes)
 
     def _send_404(self):
@@ -308,15 +321,26 @@ class _Handler(BaseHTTPRequestHandler):
                 if requested_source in ALLOWED_SOURCES
                 else DEFAULT_SOURCE
             )
-            template = (
-                SPECULATION_RULES_LIST_TEMPLATE
-                if source == "list"
-                else SPECULATION_RULES_TEMPLATE
-            )
+            slow_body = query.get("body", [""])[0] == "slow"
+            target_query = "&body=slow" if slow_body else ""
+            if source == "none":
+                rules = ""
+            elif source == "list":
+                rules = SPECULATION_RULES_LIST_TEMPLATE.format(
+                    eagerness=eagerness, target_query=target_query
+                )
+            else:
+                rules = SPECULATION_RULES_TEMPLATE.format(eagerness=eagerness)
             self._send(
                 LANDING_HTML_TEMPLATE.format(
-                    rules=template.format(eagerness=eagerness),
+                    rules=rules,
+                    target_query=target_query,
                     stall_ms=TARGET_STALL_MS,
+                    body_note=(
+                        f" and a {BODY_STALL_MS}&nbsp;ms pause mid-body"
+                        if slow_body
+                        else ""
+                    ),
                     eagerness=eagerness,
                     action_hint=ACTION_HINTS[eagerness],
                 )
@@ -324,7 +348,9 @@ class _Handler(BaseHTTPRequestHandler):
         elif path == "/target.html":
             LOG.info(f"demo-server: target request arrived at {time.time() * 1000:.0f}")
             time.sleep(TARGET_STALL_MS / 1000.0)
-            self._send(TARGET_HTML)
+            query = urllib.parse.parse_qs(parsed.query)
+            slow_body = query.get("body", [""])[0] == "slow"
+            self._send(TARGET_HTML, pause_after=b"</h1>" if slow_body else None)
         else:
             self._send_404()
 
@@ -364,7 +390,7 @@ class SpeculationRules(BasePythonSupport):
         if not extras or not isinstance(extras, list):
             return
         custom = extras[0].get("custom_data", {})
-        for key in ("navigation_duration", "response_start"):
+        for key in ("navigation_duration", "response_start", "fcp"):
             val = custom.get(key)
             if val is None:
                 continue

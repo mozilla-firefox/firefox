@@ -7,7 +7,7 @@
 const { logTest } = require("./utils/profiling");
 
 const EAGERNESS_LEVELS = ["immediate", "eager", "moderate", "conservative"];
-const SOURCES = ["document", "list"];
+const SOURCES = ["document", "list", "none"];
 
 async function moveToInstantly(commands, selector) {
   const element = await commands.element.getByCss(selector);
@@ -85,16 +85,17 @@ module.exports = logTest(
           `expected one of ${SOURCES.join(", ")}`
       );
     }
+    const body = context.options.browsertime.body || "";
     // Covers each level's trigger latency plus the 500 ms backend stall.
     const dwellMs = Number(context.options.browsertime.dwell_ms ?? 1000);
 
     context.log.info(
       `speculation-rules-prefetch: button=${buttonId}, source=${source}, ` +
-        `eagerness=${eagerness}, dwell_ms=${dwellMs}`
+        `eagerness=${eagerness}, body=${body}, dwell_ms=${dwellMs}`
     );
 
     await commands.navigate(
-      `${serverUrl}/landing.html?eagerness=${eagerness}&source=${source}`
+      `${serverUrl}/landing.html?eagerness=${eagerness}&source=${source}&body=${body}`
     );
     await commands.wait.byTime(250);
 
@@ -119,7 +120,9 @@ module.exports = logTest(
 
     const navInfo = await commands.js.run(`
       const nav = performance.getEntriesByType('navigation')[0];
+      const fcp = performance.getEntriesByName('first-contentful-paint')[0];
       return nav ? {
+        fcp: fcp ? fcp.startTime : null,
         deliveryType: nav.deliveryType || "",
         type: nav.type,
         duration: nav.duration,
@@ -144,6 +147,7 @@ module.exports = logTest(
         delivery_type: navInfo.deliveryType,
         navigation_duration: navInfo.duration,
         response_start: navInfo.responseStart,
+        fcp: navInfo.fcp,
       },
     });
 
