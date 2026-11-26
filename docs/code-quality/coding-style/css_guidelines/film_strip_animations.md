@@ -1,0 +1,128 @@
+# Film strip animations
+
+A frame-by-frame icon animation, such as the tab throbber in `tabs.css`, can be
+drawn as a film strip: every frame side by side in one SVG image, moved one
+frame at a time with a `translateX` animation under `steps()`. The examples
+below use the tab throbber's 30 frames from
+`browser/themes/shared/tabbrowser/loading.svg`. The animations only run when
+`prefers-reduced-motion` has no preference.
+
+<svg width="0" height="0" style="position: absolute" aria-hidden="true">
+  <defs>
+    <symbol id="film-strip-demo-frames" viewBox="0 0 480 16" fill="currentColor">
+      <path transform="translate(0,0)" d="M2.062 6a2 2 0 0 1 0 4 2.001 2.001 0 0 1 -2 -2 2 2 0 0 1 2 -2z"/>
+      <path transform="translate(16,0)" d="M3.613 6a2 2 0 0 1 0 4 2.001 2.001 0 0 1 -2 -2 2 2 0 0 1 2 -2z"/>
+      <path transform="translate(32,0)" d="M6.352 6.057c1.214 0 2.2 0.87 2.2 1.943 0 1.072 -0.986 1.943 -2.2 1.943 -1.214 0 -2.2 -0.87 -2.2 -1.943 0 -1.072 0.986 -1.943 2.2 -1.943z"/>
+      <path transform="translate(48,0)" d="M8.338 6.171c1.435 0 2.6 0.82 2.6 1.829 0 1.01 -1.165 1.829 -2.6 1.829s-2.6 -0.82 -2.6 -1.829c0 -1.01 1.165 -1.829 2.6 -1.829z"/>
+      <path transform="translate(64,0)" d="M9.762 6.286c1.655 0 3 0.768 3 1.714s-1.345 1.714 -3 1.714c-1.656 0 -3 -0.768 -3 -1.714s1.344 -1.714 3 -1.714z"/>
+      <path transform="translate(80,0)" d="M10.828 6.4c1.877 0 3.4 0.717 3.4 1.6 0 0.883 -1.523 1.6 -3.4 1.6 -1.876 0 -3.4 -0.717 -3.4 -1.6 0 -0.883 1.524 -1.6 3.4 -1.6z"/>
+      <path transform="translate(96,0)" d="M11.648 6.3c1.683 0 3.05 0.762 3.05 1.7s-1.367 1.7 -3.05 1.7c-1.683 0 -3.05 -0.762 -3.05 -1.7s1.367 -1.7 3.05 -1.7z"/>
+      <path transform="translate(112,0)" d="M12.287 6.2c1.49 0 2.7 0.807 2.7 1.8s-1.21 1.8 -2.7 1.8c-1.49 0 -2.7 -0.807 -2.7 -1.8s1.21 -1.8 2.7 -1.8z"/>
+      <path transform="translate(128,0)" d="M12.785 6.1c1.297 0 2.35 0.851 2.35 1.9s-1.053 1.9 -2.35 1.9c-1.297 0 -2.35 -0.851 -2.35 -1.9s1.053 -1.9 2.35 -1.9z"/>
+      <path transform="translate(144,0)" d="M13.17 6a2 2 0 0 1 0 4 2.001 2.001 0 0 1 -2 -2c0 -1.104 0.897 -2 2 -2z"/>
+      <path transform="translate(160,0)" d="M13.463 6c1.103 0 2 0.896 2 2s-0.897 2 -2 2a2.001 2.001 0 0 1 -2 -2 2 2 0 0 1 2 -2z"/>
+      <path transform="translate(176,0)" d="M13.677 6c1.103 0 2 0.896 2 2s-0.897 2 -2 2a2.001 2.001 0 0 1 -2 -2 2 2 0 0 1 2 -2z"/>
+      <path transform="translate(192,0)" d="M13.823 6a2 2 0 0 1 0 4 2.001 2.001 0 0 1 -2 -2 2 2 0 0 1 2 -2z"/>
+      <path transform="translate(208,0)" d="M13.911 6a2 2 0 0 1 0 4 2.001 2.001 0 0 1 -2 -2 2 2 0 0 1 2 -2z"/>
+      <path transform="translate(224,0)" d="M13.947 6a2 2 0 0 1 0 4 2.001 2.001 0 0 1 -2 -2 2 2 0 0 1 2 -2z"/>
+      <path transform="translate(240,0)" d="M13.937 6a2 2 0 0 1 0 4 2.001 2.001 0 0 1 -2 -2 2 2 0 0 1 2 -2z"/>
+      <path transform="translate(256,0)" d="M13.27 6a2 2 0 0 1 0 4 2.001 2.001 0 0 1 -2 -2c0 -1.104 0.897 -2 2 -2z"/>
+      <path transform="translate(272,0)" d="M10.65 6.057c1.182 0 2.142 0.87 2.142 1.943 0 1.072 -0.96 1.943 -2.143 1.943 -1.182 0 -2.142 -0.87 -2.142 -1.943 0 -1.072 0.96 -1.943 2.142 -1.943z"/>
+      <path transform="translate(288,0)" d="M7.911 6.171c1.34 0 2.429 0.82 2.429 1.829 0 1.01 -1.088 1.829 -2.429 1.829 -1.34 0 -2.428 -0.82 -2.428 -1.829 0 -1.01 1.088 -1.829 2.428 -1.829z"/>
+      <path transform="translate(304,0)" d="M6.18 6.286c1.498 0 2.715 0.768 2.715 1.714s-1.217 1.714 -2.715 1.714c-1.498 0 -2.714 -0.768 -2.714 -1.714s1.216 -1.714 2.714 -1.714z"/>
+      <path transform="translate(320,0)" d="M5.01 6.4c1.655 0 3 0.717 3 1.6 0 0.883 -1.345 1.6 -3 1.6 -1.656 0 -3 -0.717 -3 -1.6 0 -0.883 1.344 -1.6 3 -1.6z"/>
+      <path transform="translate(336,0)" d="M4.167 6.3c1.518 0 2.75 0.762 2.75 1.7s-1.232 1.7 -2.75 1.7 -2.75 -0.762 -2.75 -1.7 1.232 -1.7 2.75 -1.7z"/>
+      <path transform="translate(352,0)" d="M3.54 6.2c1.38 0 2.5 0.807 2.5 1.8s-1.12 1.8 -2.5 1.8 -2.5 -0.807 -2.5 -1.8 1.12 -1.8 2.5 -1.8z"/>
+      <path transform="translate(368,0)" d="M3.069 6.1c1.241 0 2.25 0.851 2.25 1.9s-1.009 1.9 -2.25 1.9c-1.242 0 -2.25 -0.851 -2.25 -1.9s1.008 -1.9 2.25 -1.9z"/>
+      <path transform="translate(384,0)" d="M2.714 6a2 2 0 0 1 0 4 2.001 2.001 0 0 1 -2 -2 2 2 0 0 1 2 -2z"/>
+      <path transform="translate(400,0)" d="M2.452 6a2 2 0 0 1 0 4 2.001 2.001 0 0 1 -2 -2 2 2 0 0 1 2 -2z"/>
+      <path transform="translate(416,0)" d="M2.266 6c1.103 0 2 0.896 2 2s-0.897 2 -2 2a2.001 2.001 0 0 1 -2 -2 2 2 0 0 1 2 -2z"/>
+      <path transform="translate(432,0)" d="M2.142 6c1.103 0 2 0.896 2 2s-0.897 2 -2 2a2.001 2.001 0 0 1 -2 -2 2 2 0 0 1 2 -2z"/>
+      <path transform="translate(448,0)" d="M2.071 6a2 2 0 0 1 0 4 2.001 2.001 0 0 1 -2 -2 2 2 0 0 1 2 -2z"/>
+      <path transform="translate(464,0)" d="M2.046 6a2 2 0 0 1 0 4 2.001 2.001 0 0 1 -2 -2c0 -1.104 0.897 -2 2 -2z"/>
+    </symbol>
+  </defs>
+</svg>
+
+<style>
+.film-strip-demo-viewport {
+  border: 2px solid currentColor;
+  padding: 10px;
+  margin-block: 10px 24px;
+  overflow: hidden;
+}
+
+.film-strip-demo-window {
+  width: 16px;
+  outline: 2px dashed #d70022;
+}
+
+.film-strip-demo-clipped {
+  overflow: hidden;
+}
+
+.film-strip-demo-strip {
+  display: block;
+}
+
+@media (prefers-reduced-motion: no-preference) {
+  .film-strip-demo-strip:not(.film-strip-demo-static) {
+    /* One step per frame: the strip's width divided by the frame's width. */
+    animation: film-strip-demo 6s steps(calc(480 / 16)) infinite;
+  }
+
+  .film-strip-demo-true-speed {
+    /* The frame count times the frame interval: 30 frames at 30fps. */
+    animation-duration: 1s !important;
+  }
+}
+
+@keyframes film-strip-demo {
+  from {
+    transform: translateX(0);
+  }
+  to {
+    transform: translateX(-100%);
+  }
+}
+</style>
+
+**Step 1:** The SVG holds every frame side by side. The dashed outline is the
+box the icon is drawn in, one frame wide.
+
+<div class="film-strip-demo-viewport">
+  <div class="film-strip-demo-window">
+    <svg class="film-strip-demo-strip film-strip-demo-static" width="480" height="16" viewBox="0 0 480 16" aria-hidden="true"><use href="#film-strip-demo-frames"/></svg>
+  </div>
+</div>
+
+**Step 2:** A `translateX` animation from `0` to `-100%` under `steps(30)`, one
+step per frame, moves the strip by one frame width at a time. It is slowed down
+here.
+
+<div class="film-strip-demo-viewport">
+  <div class="film-strip-demo-window">
+    <svg class="film-strip-demo-strip" width="480" height="16" viewBox="0 0 480 16" aria-hidden="true"><use href="#film-strip-demo-frames"/></svg>
+  </div>
+</div>
+
+**Step 3:** `overflow: hidden` on the box hides every frame but the current
+one.
+
+<div class="film-strip-demo-viewport">
+  <div class="film-strip-demo-window film-strip-demo-clipped">
+    <svg class="film-strip-demo-strip" width="480" height="16" viewBox="0 0 480 16" aria-hidden="true"><use href="#film-strip-demo-frames"/></svg>
+  </div>
+</div>
+
+**Step 4:** The same animation at 30 frames per second, which takes `1s`.
+
+<div class="film-strip-demo-viewport">
+  <div class="film-strip-demo-window film-strip-demo-clipped">
+    <svg class="film-strip-demo-strip film-strip-demo-true-speed" width="480" height="16" viewBox="0 0 480 16" aria-hidden="true"><use href="#film-strip-demo-frames"/></svg>
+  </div>
+</div>
+
+The box needs the width and height of a single frame. The last frame should
+match the icon's static state, so the animation ends without a jump when it is
+removed.

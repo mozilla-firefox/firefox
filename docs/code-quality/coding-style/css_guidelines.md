@@ -814,7 +814,7 @@ for more information about this.
   side by side in one SVG image, moved with `translateX` under `steps()`,
   with the last frame matching the icon's static state. The tab throbber
   in `tabs.css` is an example, and
-  [this demo](https://msuja.ws/svg.html) shows the technique step by
+  {doc}`css_guidelines/film_strip_animations` shows the technique step by
   step.
 
 - An effect that moves or morphs several elements between two states is
@@ -911,3 +911,9 @@ value, the declaration behaves as `unset`:
 a `padding` or a `margin` computes to 0, a `border` shorthand loses its style
 and reads 0px, and a `border-width` longhand with its style declared separately
 falls back to `medium` (3px).
+
+```{toctree}
+:hidden: true
+
+css_guidelines/film_strip_animations
+```
