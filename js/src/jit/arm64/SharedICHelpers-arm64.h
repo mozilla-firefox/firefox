@@ -60,10 +60,14 @@ inline void EmitBaselineLeaveStubFrame(MacroAssembler& masm) {
 template <typename AddrType>
 inline void EmitPreBarrier(MacroAssembler& masm, const AddrType& addr,
                            MIRType type) {
-  // On AArch64, lr is clobbered by guardedCallPreBarrier. Save it first.
+  // On AArch64, lr is clobbered by the call to the pre-barrier. Save it, but
+  // only on the path that makes the call.
+  Label done;
+  masm.branchTestNeedsMarkingBarrier(Assembler::Zero, &done);
   masm.push(lr);
-  masm.guardedCallPreBarrier(addr, type);
+  masm.unguardedCallPreBarrier(addr, type);
   masm.pop(lr);
+  masm.bind(&done);
 }
 
 inline void EmitStubGuardFailure(MacroAssembler& masm) {
