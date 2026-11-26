@@ -22,7 +22,6 @@ import android.provider.OpenableColumns;
 import android.text.InputType;
 import android.text.format.DateFormat;
 import android.util.Log;
-import android.view.InflateException;
 import android.view.LayoutInflater;
 import android.view.View;
 import android.view.ViewGroup;
@@ -776,27 +775,12 @@ final class BasicGeckoViewPrompt implements GeckoSession.PromptDelegate {
     cal.setTime(date);
 
     final AlertDialog.Builder builder = new AlertDialog.Builder(activity);
-    final LayoutInflater inflater = LayoutInflater.from(builder.getContext());
     final DatePicker datePicker;
     if (prompt.type == DateTimePrompt.Type.DATE
         || prompt.type == DateTimePrompt.Type.MONTH
         || prompt.type == DateTimePrompt.Type.WEEK
         || prompt.type == DateTimePrompt.Type.DATETIME_LOCAL) {
-      final int resId =
-          builder
-              .getContext()
-              .getResources()
-              .getIdentifier("date_picker_dialog", "layout", "android");
-      DatePicker picker = null;
-      if (resId != 0) {
-        try {
-          picker = (DatePicker) inflater.inflate(resId, /* root */ null);
-        } catch (final ClassCastException | InflateException e) {
-        }
-      }
-      if (picker == null) {
-        picker = new DatePicker(builder.getContext());
-      }
+      final DatePicker picker = new DatePicker(builder.getContext());
       picker.init(
           cal.get(Calendar.YEAR),
           cal.get(Calendar.MONTH),
@@ -816,21 +800,7 @@ final class BasicGeckoViewPrompt implements GeckoSession.PromptDelegate {
     final TimePicker timePicker;
     if (prompt.type == DateTimePrompt.Type.TIME
         || prompt.type == DateTimePrompt.Type.DATETIME_LOCAL) {
-      final int resId =
-          builder
-              .getContext()
-              .getResources()
-              .getIdentifier("time_picker_dialog", "layout", "android");
-      TimePicker picker = null;
-      if (resId != 0) {
-        try {
-          picker = (TimePicker) inflater.inflate(resId, /* root */ null);
-        } catch (final ClassCastException | InflateException e) {
-        }
-      }
-      if (picker == null) {
-        picker = new TimePicker(builder.getContext());
-      }
+      final TimePicker picker = new TimePicker(builder.getContext());
       setTimePickerTime(picker, cal);
       picker.setIs24HourView(DateFormat.is24HourFormat(builder.getContext()));
       timePicker = picker;
