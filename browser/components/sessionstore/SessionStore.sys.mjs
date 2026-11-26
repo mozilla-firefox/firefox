@@ -3296,7 +3296,7 @@ class _SessionStore {
     aTab.removeAttribute("crashed");
 
     let { urlbarOverrideValue = null } = browser;
-    let hasStartedLoad = browser.loadStartedSinceUrlbarOverride;
+    let hasStartedLoad = browser.urlbarOverrideValueLoadStarted;
 
     let cacheState = lazy.TabStateCache.get(browser.permanentKey);
 
@@ -3323,10 +3323,12 @@ class _SessionStore {
       // Discard was likely called before state can be cached.  Update
       // the persistent tab state cache with browser information so a
       // restore will be successful.  This information is necessary for
-      // #restoreTabEntry to work properly.
+      // #restoreTabEntry to work properly. A tab discarded right after
+      // opening may not have started loading its value yet, so this doesn't
+      // require hasStartedLoad.
       lazy.TabStateCache.update(browser.permanentKey, {
         urlbarOverrideValue,
-        urlbarOverrideLoadStarted: true,
+        urlbarOverrideLoadStarted: browser.urlbarOverride.valueLoading || null,
       });
     }
 

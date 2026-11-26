@@ -47,8 +47,9 @@ import { XPCOMUtils } from "resource://gre/modules/XPCOMUtils.sys.mjs";
  *   The address bar value to show instead of the tab's URL, e.g. input that
  *   hasn't been loaded.
  * @property {true} [urlbarOverrideLoadStarted]
- *   Set if a load started after `urlbarOverrideValue` was set and hadn't
- *   finished.
+ *   Set if a load of `urlbarOverrideValue` was in progress, or if the value
+ *   was set for loading when the tab was discarded before its state was
+ *   cached.
  * @property {object} [storage]
  *   Session storage of the tab's document, keyed by origin.
  * @property {object} [formdata]
@@ -240,10 +241,10 @@ class _TabState {
 
     // If there is a urlbarOverrideValue set, then either the user has typed something
     // in the URL bar, or a new tab was opened with a URI to load.
-    // If so, we also track whether we were still in the process of loading something.
+    // If so, we also track whether we were still in the process of loading it.
     if (!("urlbarOverrideValue" in tabData) && browser.urlbarOverrideValue) {
       tabData.urlbarOverrideValue = browser.urlbarOverrideValue;
-      if (browser.loadStartedSinceUrlbarOverride) {
+      if (browser.urlbarOverrideValueLoadStarted) {
         tabData.urlbarOverrideLoadStarted = true;
       }
     }

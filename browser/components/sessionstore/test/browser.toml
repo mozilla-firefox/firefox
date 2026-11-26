@@ -379,6 +379,9 @@ run-if = [
 
 ["browser_urlbarOverride_legacy_keys.js"]
 
+["browser_urlbarOverride_loadStarted.js"]
+tags = "urlbar"
+
 ["browser_urlbarSearchMode.js"]
 
 ["browser_userTyped_restored_after_discard.js"]

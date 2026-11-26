@@ -1268,7 +1268,10 @@ export class UrlbarParentController {
    */
   #prepareAddressbarLoad({ browser, url, where, params, urlbarOverrideValue }) {
     if (where == "current") {
-      browser.urlbarOverrideValue = urlbarOverrideValue;
+      browser.urlbarOverride =
+        urlbarOverrideValue == null
+          ? null
+          : { value: urlbarOverrideValue, valueLoading: true };
     }
 
     // No point in setting this if we are loading in a new window.

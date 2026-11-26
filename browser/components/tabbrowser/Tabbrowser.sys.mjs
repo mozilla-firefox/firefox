@@ -476,6 +476,7 @@ export class Tabbrowser {
     "startScroll",
     "urlbarOverrideValue",
     "loadStartedSinceUrlbarOverride",
+    "urlbarOverrideValueLoadStarted",
     "audioMuted",
   ];
 
@@ -3283,6 +3284,7 @@ export class Tabbrowser {
           };
           break;
         case "loadStartedSinceUrlbarOverride":
+        case "urlbarOverrideValueLoadStarted":
           getter = () => false;
           break;
         case "fullZoom":
@@ -5061,7 +5063,7 @@ export class Tabbrowser {
       // pretend the user typed this so it'll be available till
       // the document successfully loads
       if (uriString && !this.documentGlobal.gInitialPages.includes(uriString)) {
-        browser.urlbarOverrideValue = uriString;
+        browser.urlbarOverride = { value: uriString, valueLoading: true };
       }
 
       let loadFlags = LOAD_FLAGS_NONE;
