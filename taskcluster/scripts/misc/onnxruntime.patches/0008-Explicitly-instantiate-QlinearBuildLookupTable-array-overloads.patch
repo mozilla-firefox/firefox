@@ -1,0 +1,26 @@
+Subject: Explicitly instantiate QlinearBuildLookupTable array overloads
+
+qlinear_activations.cc calls the array-transformer specializations across
+translation units. Their definitions were emitted only as a side effect
+of calls from the scalar overload in qlinear_lookup_table.cc. Clang can
+inline those calls and discard the implicit out-of-line definitions.
+
+diff --git a/onnxruntime/contrib_ops/cpu/quantization/qlinear_lookup_table.cc b/onnxruntime/contrib_ops/cpu/quantization/qlinear_lookup_table.cc
+--- a/onnxruntime/contrib_ops/cpu/quantization/qlinear_lookup_table.cc
++++ b/onnxruntime/contrib_ops/cpu/quantization/qlinear_lookup_table.cc
+@@ -102,5 +102,15 @@
+                                               const Tensor* tensor_y_zero_point,
+                                               const LookupTableScalarTransformer& value_transformer);
+
++template void QlinearBuildLookupTable<uint8_t>(
++    uint8_t* table, const Tensor* tensor_x_scale, const Tensor* tensor_x_zero_point,
++    const Tensor* tensor_y_scale, const Tensor* tensor_y_zero_point,
++    const LookupTableArrayTransformer& array_values_transformer);
++
++template void QlinearBuildLookupTable<int8_t>(
++    uint8_t* table, const Tensor* tensor_x_scale, const Tensor* tensor_x_zero_point,
++    const Tensor* tensor_y_scale, const Tensor* tensor_y_zero_point,
++    const LookupTableArrayTransformer& array_values_transformer);
++
+ }  // namespace contrib
+ }  // namespace onnxruntime
