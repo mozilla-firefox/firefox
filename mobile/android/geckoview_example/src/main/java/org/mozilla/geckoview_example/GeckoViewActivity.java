@@ -3202,7 +3202,7 @@ public class GeckoViewActivity extends AppCompatActivity
       if (meta.width > meta.height) {
         mActivity.setRequestedOrientation(ActivityInfo.SCREEN_ORIENTATION_SENSOR_LANDSCAPE);
       } else {
-        mActivity.setRequestedOrientation(ActivityInfo.SCREEN_ORIENTATION_SENSOR_PORTRAIT);
+        mActivity.setRequestedOrientation(ActivityInfo.SCREEN_ORIENTATION_USER);
       }
     }
   }
