@@ -4365,12 +4365,6 @@ existing_tasks:
   post-beetmover-dummy-firefox-win64-shippable-2: GasngQdOQKOrSEx5MRaz_A
   post-beetmover-dummy-firefox-win64-shippable-3: fNsaD1SmSbO1C70ag9tvmg
   post-langpack-dummy-firefox-promote-1: S6GOVU_GQgSMvbvoNKJZQg
-  post-update-verify-dummy-firefox-linux-shippable-1: NgqIgKDJTDq0L2Px7cjznA
-  post-update-verify-dummy-firefox-linux64-shippable-1: VeVYPiSrRqCDRVuYO8OpDg
-  post-update-verify-dummy-firefox-macosx64-shippable-1: GwEjzQtyQGKsQjapUBtMQQ
-  post-update-verify-dummy-firefox-win32-shippable-1: Oz4jfJkoQSyHqiohphXBVg
-  post-update-verify-dummy-firefox-win64-aarch64-shippable-1: Jb5u4AbxQTi3-lacp9FBHw
-  post-update-verify-dummy-firefox-win64-shippable-1: Gp7STLZGTx2KP7nPFpb4MA
   push-langpacks-build-linux64-shippable/opt: bBJqItA7SbWWgiZT7cZ4bQ
   push-langpacks-shippable-l10n-linux64-shippable-1/opt: WmJfkTDTS-yYTfKs36UiFw
   push-langpacks-shippable-l10n-linux64-shippable-10/opt: YT83JnKaRUWYn0JHYXb7Hw
@@ -7256,116 +7250,6 @@ existing_tasks:
   release-update-verify-config-firefox-win32: XtzzBTPjT2G5lygZIhzdNg
   release-update-verify-config-firefox-win64: Z9vSAC-vSU-zfbqeEwJRew
   release-update-verify-config-firefox-win64-aarch64: Sr5zcqthT-yRorX558LKHQ
-  release-update-verify-firefox-linux-1/16: HKeDPiWRTza2nEZpNU9-LA
-  release-update-verify-firefox-linux-10/16: OaZT1B6lT_SBJHMLB_QV0w
-  release-update-verify-firefox-linux-11/16: PtyN1RNVQw2l7uIR64cT5Q
-  release-update-verify-firefox-linux-12/16: eD7KYgQmSDSpaSZ1Ck-6HA
-  release-update-verify-firefox-linux-13/16: GqB2VGa0Q5-QXwn8oX55Dg
-  release-update-verify-firefox-linux-14/16: WsFWyZ3tSEuuL4YyoX7LAg
-  release-update-verify-firefox-linux-15/16: KQtksXl6QtGTjckHPFOobA
-  release-update-verify-firefox-linux-16/16: QSRXukHRTD2zatimFBAb8g
-  release-update-verify-firefox-linux-2/16: HF6fp5mVTDKWa6efeGR_Fg
-  release-update-verify-firefox-linux-3/16: c9xTUeLDTcWx_wH21TFIbw
-  release-update-verify-firefox-linux-4/16: O8TsrMb6RZWJBueXux9YUA
-  release-update-verify-firefox-linux-5/16: Vh5bAXQERkqri-oqzNe8qQ
-  release-update-verify-firefox-linux-6/16: KhM6_rO5SIGsggaewg89hQ
-  release-update-verify-firefox-linux-7/16: Z3dwY-5XS_qhochKvm6Xeg
-  release-update-verify-firefox-linux-8/16: c5E3iW3oQPuj61udYSIXTQ
-  release-update-verify-firefox-linux-9/16: DAAqkKdGSgWFYNlvFhwo8g
-  release-update-verify-firefox-linux64-1/16: YpxlMGQ9RVGz1h-CY2YNNA
-  release-update-verify-firefox-linux64-10/16: KVqgXuFER9-lB-kbTN_Etg
-  release-update-verify-firefox-linux64-11/16: Ktc6seoES0252pW5Mg_yzw
-  release-update-verify-firefox-linux64-12/16: UlubbRZwRb--aW34sXo4WA
-  release-update-verify-firefox-linux64-13/16: N-OoC6xbSPmgutoAbloknw
-  release-update-verify-firefox-linux64-14/16: AIa5zG10SNqkzvnyUQdAkg
-  release-update-verify-firefox-linux64-15/16: GWZQCcvWToq4Uba1o7rpmA
-  release-update-verify-firefox-linux64-16/16: LL3Eied6QKKANeRAA-8Q_A
-  release-update-verify-firefox-linux64-2/16: Qe8UprTFQDCbGxduUR-0Pw
-  release-update-verify-firefox-linux64-3/16: Dib7ZpvWQ9ucUwBQqmXkHw
-  release-update-verify-firefox-linux64-4/16: TMCfaemFSZG7JBpRAW8YFA
-  release-update-verify-firefox-linux64-5/16: C3I_hLm_SsWXc6uD0FK9Ng
-  release-update-verify-firefox-linux64-6/16: HtbSrjgzTsSlPIheuq7XSA
-  release-update-verify-firefox-linux64-7/16: Mfl4ocj-QxC4mngmhFq-pw
-  release-update-verify-firefox-linux64-8/16: VI8Azo03RWKhv_OdQSIhdQ
-  release-update-verify-firefox-linux64-9/16: BG65RgxkTx6-i7IYXZhg0w
-  release-update-verify-firefox-macosx64-1/30: fW67yrYNQT25iTI-VHEY2w
-  release-update-verify-firefox-macosx64-10/30: c_riw3erRIy4WVR5G0CIXQ
-  release-update-verify-firefox-macosx64-11/30: aVG3sR1ESR6Sp48wc3K4aw
-  release-update-verify-firefox-macosx64-12/30: JL47LIlHRlmM4C3yMShCXw
-  release-update-verify-firefox-macosx64-13/30: M7O8bmF9SbytssqBcZJ9Ow
-  release-update-verify-firefox-macosx64-14/30: W5PZLXjjTMKhW9o38ygKbQ
-  release-update-verify-firefox-macosx64-15/30: UFA9-_LmTki7jkcqK7Ay1Q
-  release-update-verify-firefox-macosx64-16/30: as4Br2wbT461BocFrZ8WZA
-  release-update-verify-firefox-macosx64-17/30: IY5y9GOsRUmlRdS8U4QFNw
-  release-update-verify-firefox-macosx64-18/30: YeKP3VCsSCijLcc9X-Dgig
-  release-update-verify-firefox-macosx64-19/30: XtDYscBuTIqw1-KbK1neHQ
-  release-update-verify-firefox-macosx64-2/30: IGvLmHM5ThW6GmK_yUH4gg
-  release-update-verify-firefox-macosx64-20/30: CfXOUVkyQzOjRF_ZAapL0g
-  release-update-verify-firefox-macosx64-21/30: dWNvrODOTQC_QBCmVQH_Yg
-  release-update-verify-firefox-macosx64-22/30: ccPHNbGGTa2ASpvxrXsqAQ
-  release-update-verify-firefox-macosx64-23/30: CsNbLr4wSO2MFhakVH1wQw
-  release-update-verify-firefox-macosx64-24/30: OJ1doqe1SlmCRIKhKVhI3w
-  release-update-verify-firefox-macosx64-25/30: A8ASRpc1Ri-pzZKhWb-uvA
-  release-update-verify-firefox-macosx64-26/30: EGEdNX3JQQKaEu2uw-Zlfg
-  release-update-verify-firefox-macosx64-27/30: MSAbPYK9R4mxGKSOKtn5Ww
-  release-update-verify-firefox-macosx64-28/30: GT675z63R-qiNWHfwHCxDQ
-  release-update-verify-firefox-macosx64-29/30: SeGHAUkQR2aJTV1_SrSNgw
-  release-update-verify-firefox-macosx64-3/30: O444m8LzScye75Se8ayy9Q
-  release-update-verify-firefox-macosx64-30/30: UGYb6I6MTh65Ws3pnoxaEg
-  release-update-verify-firefox-macosx64-4/30: RzbSSYM4TjiKg-YMrMgmHA
-  release-update-verify-firefox-macosx64-5/30: XJPvs8r0T768gm281RKhdA
-  release-update-verify-firefox-macosx64-6/30: YAMf3Gd7T6iuHBiz8_dZvA
-  release-update-verify-firefox-macosx64-7/30: Wk1q5WKaSHCqChAmsis67g
-  release-update-verify-firefox-macosx64-8/30: RLT6jghNQP6ceZI3aXBNxA
-  release-update-verify-firefox-macosx64-9/30: S5jyfk39TvmLCCUbEp6OXw
-  release-update-verify-firefox-win32-1/16: D6_ceVVRSqe2vlnEBcHnAg
-  release-update-verify-firefox-win32-10/16: P0MolUX6RRS35d6KHkT-Lg
-  release-update-verify-firefox-win32-11/16: HlzQ17xgTSSFzB6cor7bww
-  release-update-verify-firefox-win32-12/16: bU1WajmpQzShBp2dk2K9aQ
-  release-update-verify-firefox-win32-13/16: Cf51iUulQiSUK-Y-aE7wYg
-  release-update-verify-firefox-win32-14/16: SO2yGrdkQ7uY-sUMX_V9Aw
-  release-update-verify-firefox-win32-15/16: fN_q9SGHSdmT-Szp5FwMcg
-  release-update-verify-firefox-win32-16/16: XEzzs7agSuyibE-sVGvVQQ
-  release-update-verify-firefox-win32-2/16: VuQCYQvpRaimRKWtVnWTlg
-  release-update-verify-firefox-win32-3/16: OUjipQKnT1yZXSf2d3m-2g
-  release-update-verify-firefox-win32-4/16: UcWfaYPzQHO78R7XI9EXoA
-  release-update-verify-firefox-win32-5/16: GCPATxOGS0CtskL768HTqQ
-  release-update-verify-firefox-win32-6/16: P_lGeMVBRTWee0YOFGicyA
-  release-update-verify-firefox-win32-7/16: XqC7VdwPTBytPXiAwD1qzg
-  release-update-verify-firefox-win32-8/16: N0hpS-67Qmm0lK_GQABodw
-  release-update-verify-firefox-win32-9/16: VCYFcr7vTT-Sg28GCHKjHg
-  release-update-verify-firefox-win64-1/16: DVCAIO9BRM-UWRUNnTqZzg
-  release-update-verify-firefox-win64-10/16: UYGY-aODSVydDTkiq3vkWQ
-  release-update-verify-firefox-win64-11/16: Ycub4CH_TwG0NgJTpQTPqg
-  release-update-verify-firefox-win64-12/16: PJqkl_-JSryw_usa_ovBRw
-  release-update-verify-firefox-win64-13/16: La-kNXE0RFq0xGoom2Tu0g
-  release-update-verify-firefox-win64-14/16: Zk5MOvMhQhKzCJwn_5E3yw
-  release-update-verify-firefox-win64-15/16: KG90xgFPR1y-Jd7UWZ1Fnw
-  release-update-verify-firefox-win64-16/16: ScBeUr9ZRSi1qRMCIsWrpQ
-  release-update-verify-firefox-win64-2/16: AjaJufOBRaiuvbZ1kc4umQ
-  release-update-verify-firefox-win64-3/16: Kvb8b9iRQECqMMxqGMj8Mg
-  release-update-verify-firefox-win64-4/16: N-KuH98PTqCR46wAN3FpAA
-  release-update-verify-firefox-win64-5/16: IvX5ylFgSF28RvV_sjS4AA
-  release-update-verify-firefox-win64-6/16: WCAx-wNnTsKqHKwRI3hvbg
-  release-update-verify-firefox-win64-7/16: LYJyK-3mSHOmArRUYDl8cw
-  release-update-verify-firefox-win64-8/16: J4oFrJX0Q4mC2Y3gylHqIQ
-  release-update-verify-firefox-win64-9/16: BO7gzyoqSyq2au41TDs6xA
-  release-update-verify-firefox-win64-aarch64-1/16: Ar-icGZySPqx4tlLZw84-w
-  release-update-verify-firefox-win64-aarch64-10/16: W5jliB_JSEWidohNLWXBOw
-  release-update-verify-firefox-win64-aarch64-11/16: NZSqdrNwQwOHBqwhjK3pbA
-  release-update-verify-firefox-win64-aarch64-12/16: T32PTHtpQMy2e2vyX85CVg
-  release-update-verify-firefox-win64-aarch64-13/16: Te_Pefv6SkieXQnOXZ5hKw
-  release-update-verify-firefox-win64-aarch64-14/16: N3-mt90hRrevouzxuQ-1jA
-  release-update-verify-firefox-win64-aarch64-15/16: f3KjfoIMQBeDxe7RerEm6A
-  release-update-verify-firefox-win64-aarch64-16/16: V2Do7mfITFeObnHdcmbfJw
-  release-update-verify-firefox-win64-aarch64-2/16: HNiVUkBGQMO549CtlxLfcA
-  release-update-verify-firefox-win64-aarch64-3/16: cymPzN0rQwu6CNTphuS11A
-  release-update-verify-firefox-win64-aarch64-4/16: Wk_KL9o0QsWgRAHmzFOjGQ
-  release-update-verify-firefox-win64-aarch64-5/16: Y1RIa3B-Ssy8PqSFvUc8qQ
-  release-update-verify-firefox-win64-aarch64-6/16: EWawkKTSSCm4JrDORTCoWA
-  release-update-verify-firefox-win64-aarch64-7/16: Fxo4ei3tT_-DJTLEEr5faQ
-  release-update-verify-firefox-win64-aarch64-8/16: PYIjpKvfTlOva_sNJMt9Ew
-  release-update-verify-firefox-win64-aarch64-9/16: Mwz3_GPGSPaaOAxWsLVPQg
   repackage-deb-l10n-ach-linux64-shippable/opt: a_6paHzITQePsQtcp8-jlg
   repackage-deb-l10n-af-linux64-shippable/opt: MnhIkKQKR-m8g2Rbo1E-Mg
   repackage-deb-l10n-an-linux64-shippable/opt: He3p0kQQTC2y_OCRT21nbA

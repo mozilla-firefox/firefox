@@ -12,9 +12,15 @@ transforms:
 kind-dependencies:
     - release-generate-checksums-beetmover
     - beetmover-android-app
-    - post-update-verify-dummy
     - release-partner-repack-beetmover
     - release-partner-attribution-beetmover
+    # These 3 dependencies are not something we _technically_ need to push
+    # files to the CDN. However, they are things that we want to have completed
+    # successfully before doing so, and there's no better place to put them
+    # in the dependency graph to ensure this happens.
+    - post-balrog-dummy
+    - release-balrog-submit-toplevel
+    - test-update-integrity
 
 task-defaults:
     run-on-projects: []
