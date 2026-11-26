@@ -3207,6 +3207,13 @@
   value: false
   mirror: always
 
+# Whether to append a random 64-bit hex suffix to anonymous pasted image
+# filenames to avoid name collisions.
+- name: dom.events.dataTransfer.pasteImageRandomFilename
+  type: bool
+  value: true
+  mirror: always
+
 # User interaction timer interval, in ms
 - name: dom.events.user_interaction_interval
   type: uint32_t

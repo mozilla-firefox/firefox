@@ -83,9 +83,12 @@
     documentViewer.copyImage(documentViewer.COPY_IMAGE_ALL);
   }
 
-  async function doTest(imageAsFileEnabled) {
+  async function doTest(imageAsFileEnabled, randomizeFilename = true) {
     await SpecialPowers.pushPrefEnv({
-      set: [["clipboard.imageAsFile.enabled", imageAsFileEnabled]],
+      set: [
+        ["clipboard.imageAsFile.enabled", imageAsFileEnabled],
+        ["dom.events.dataTransfer.pasteImageRandomFilename", randomizeFilename],
+      ],
     });
     // The headless clipboard ignores Windows file promises.
     const imageAsFile = imageAsFileEnabled &&
@@ -111,8 +114,9 @@
       window.addEventListener("paste", async (e) => {
         isDeeply(e.clipboardData.types,
                  imageAsFile ? ["Files"] : ["text/html", "text/plain", "Files"]);
-        await onPaste(e, imageAsFile);
-        resolve();
+        let pastedFileName =
+            await onPaste(e, imageAsFile, randomizeFilename);
+        resolve(pastedFileName);
       }, { once: true });
     });
 
@@ -120,19 +124,22 @@
     textarea.focus();
     textarea.editor.paste(clipboard.kGlobalClipboard);
 
-    await promise;
+    let pastedFileName = await promise;
 
     clipboard.emptyClipboard(clipboard.kGlobalClipboard);
+    return pastedFileName;
   }
 
-  async function onPaste(e, imageAsFile) {
+  async function onPaste(e, imageAsFile, randomizeFilename) {
     var imageTester = new ImageTester;
-    testFiles(e, imageTester, imageAsFile);
-    testItems(e, imageTester);
+    let fileName =
+        testFiles(e, imageTester, imageAsFile, randomizeFilename);
+    testItems(e, imageTester, fileName);
     await imageTester.test();
+    return fileName;
   }
 
-  function testItems(e, imageTester) {
+  function testItems(e, imageTester, expectedFileName) {
     var items = e.clipboardData.items;
     is(items, e.clipboardData.items,
        "Getting @items twice should return the same object");
@@ -146,12 +153,14 @@
         var file = item.getAsFile();
         ok(file instanceof File, ".getAsFile() returns a File object");
         ok(file.size > 0, "Files shouldn't have size 0");
+        is(file.name, expectedFileName,
+           "items[i].getAsFile().name should match files[0].name within the same paste event");
         imageTester.add(file);
       }
     }
   }
 
-  function testFiles(e, imageTester, imageAsFile) {
+  function testFiles(e, imageTester, imageAsFile, randomizeFilename) {
     var files = e.clipboardData.files;
 
     is(files, e.clipboardData.files,
@@ -164,8 +173,11 @@
       if (imageAsFile) {
         ok(file.name.startsWith("Untitled") && file.name.endsWith(".png"),
            `Check filename, got "${file.name}"`);
+      } else if (randomizeFilename) {
+        ok(/^image_[0-9a-f]{16}\.png$/.test(file.name),
+           `Check randomized filename, got "${file.name}"`);
       } else {
-        is(file.name, "image.png", "Check filename");
+        is(file.name, "image.png", "Check static filename when pref disabled");
       }
 
       testSlice(file);
@@ -173,6 +185,7 @@
       // Adding the same image again so we can test concurrency
       imageTester.add(file);
     }
+    return files[0].name;
   }
 
   function testSlice(aFile) {
@@ -199,7 +212,16 @@
   });
 
   add_task(async function test_imageAsFile_disabled() {
-    await doTest(false);
+    let firstName = await doTest(false);
+    let secondName = await doTest(false);
+    isnot(firstName, secondName,
+          "Two separate pastes should produce different filenames");
+  });
+
+  add_task(async function test_paste_image_random_filename_disabled() {
+    let fileName = await doTest(false, false);
+    is(fileName, "image.png",
+       "Filename should remain image.png when pasteImageRandomFilename is false");
   });
 
 </script>
