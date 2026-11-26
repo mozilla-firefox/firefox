@@ -4,7 +4,7 @@
 
 from setuptools import setup
 
-PACKAGE_VERSION = "2.4.1"
+PACKAGE_VERSION = "2.5.0"
 
 
 setup(
