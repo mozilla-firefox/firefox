@@ -1805,7 +1805,6 @@ void SVGObserverUtils::UpdateEffects(nsIFrame* aFrame) {
   aFrame->RemoveProperty(FilterProperty());
   aFrame->RemoveProperty(MaskProperty());
   aFrame->RemoveProperty(ClipPathProperty());
-  aFrame->RemoveProperty(OffsetPathProperty());
   aFrame->RemoveProperty(MarkerStartProperty());
   aFrame->RemoveProperty(MarkerMidProperty());
   aFrame->RemoveProperty(MarkerEndProperty());
