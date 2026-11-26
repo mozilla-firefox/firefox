@@ -1,6 +1,7 @@
 # This Source Code Form is subject to the terms of the Mozilla Public
 # License, v. 2.0. If a copy of the MPL was not distributed with this
 # file, You can obtain one at http://mozilla.org/MPL/2.0/.
+import logging
 import os
 import sys
 from functools import partial
@@ -124,7 +125,7 @@ def run_tests(command_context, **kwargs):
         COVERAGE_RCFILE = str(Path(HERE, ".raptor-coveragerc"))
 
     with temporary_env(COVERAGE_RCFILE=COVERAGE_RCFILE, RUNNING_TESTS="YES"):
-        _run_tests(command_context, **kwargs)
+        return _run_tests(command_context, **kwargs)
 
 
 def _run_tests(command_context, **kwargs):
@@ -177,15 +178,24 @@ def _run_tests(command_context, **kwargs):
             venv, "coverage", ["erase"], label="remove old coverage data"
         )
 
+    def _error(message):
+        command_context.log(logging.ERROR, "perftest-test", {}, message)
+        return 1
+
     args = ["run", "-m", "pytest", options, "--durations", "10", tests]
 
-    assert checkout_python_script(
+    if not checkout_python_script(
         venv, "coverage", args, label="running tests", verbose=verbose
-    )
+    ):
+        return _error("Some tests failed.")
     if run_coverage_check and not checkout_python_script(
         venv, "coverage", ["report"], display=True
     ):
-        raise ValueError("Coverage is too low!")
+        return _error(
+            "Coverage is too low! Add tests for the new code, see the "
+            "coverage report above."
+        )
+    return 0
 
 
 @Command(
