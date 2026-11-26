@@ -374,6 +374,12 @@ export class Tabbrowser {
   /** @type {WeakMap<MozTabbrowserTab, Promise<MozFindbar | null>>} */
   static #pendingFindBars = new WeakMap();
 
+  /**
+   * The timestamp part of the last generated tab group ID, shared by all
+   * windows so that group IDs stay unique across them.
+   */
+  static #lastTabGroupIdTimestamp = 0;
+
   /** @type {WeakSet<MozTabbrowserTab>} */
   static #tabsLeavingAdoptedSplitView = new WeakSet();
 
@@ -4366,7 +4372,14 @@ export class Tabbrowser {
       // getExtTabGroupIdForInternalTabGroupId implementation in
       // browser/components/extensions/parent/ext-browser.js.
       // See: Bug 1960104 - Improve tab group ID generation in addTabGroup
-      id = `${Date.now()}-${Math.round(Math.random() * 100)}`;
+      // Groups can be created within the same millisecond, so the timestamp
+      // part is never reused.
+      let timestamp = Math.max(
+        Date.now(),
+        Tabbrowser.#lastTabGroupIdTimestamp + 1
+      );
+      Tabbrowser.#lastTabGroupIdTimestamp = timestamp;
+      id = `${timestamp}-${Math.round(Math.random() * 100)}`;
     }
     let group = this.#createTabGroup(id, color, false, label, adopting);
     this.tabContainer.insertBefore(group, insertBefore?.group ?? insertBefore);
