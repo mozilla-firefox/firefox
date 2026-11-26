@@ -37,6 +37,7 @@
 #include "nsGkAtoms.h"
 #include "nsHTMLParts.h"
 #include "nsHtml5SVGLoadDispatcher.h"
+#include "nsHtml5TreeOperation.h"
 #include "nsIChannel.h"
 #include "nsIContent.h"
 #include "nsIContentPolicy.h"
@@ -877,6 +878,28 @@ void nsXMLContentSink::MaybeStartLayout(bool aIgnorePendingSheets) {
 
 ////////////////////////////////////////////////////////////////////////
 
+// Detaches aNode from its old parent, if any, and reports whether it can be
+// inserted into aParent at all. On failure, callers skip the insertion for
+// consistency with the HTML parser. It has not been decided whether the XML
+// parse should error out instead.
+static bool PrepareForInsertion(nsIContent* aNode, nsINode* aParent) {
+  if (MOZ_UNLIKELY(aNode->GetParentNode())) {
+    aNode->Remove();
+    if (MOZ_UNLIKELY(aNode->GetParentNode())) {
+      nsHtml5TreeOperation::AbortNodeInsertion(aNode);
+      return false;
+    }
+  }
+
+  if (MOZ_UNLIKELY(aParent->IsContent() && !nsHtml5TreeOperation::CanInsert(
+                                               aNode, aParent->AsContent()))) {
+    nsHtml5TreeOperation::AbortNodeInsertion(aNode);
+    return false;
+  }
+
+  return true;
+}
+
 bool nsXMLContentSink::SetDocElement(int32_t aNameSpaceID, nsAtom* aTagName,
                                      nsIContent* aContent) {
   if (mDocElement) return false;
@@ -895,13 +918,9 @@ bool nsXMLContentSink::SetDocElement(int32_t aNameSpaceID, nsAtom* aTagName,
     if (linkStyle) {
       linkStyle->DisableUpdates();
     }
-    if (MOZ_UNLIKELY(child->GetParentNode())) {
-      child->Remove();
-      if (MOZ_UNLIKELY(child->GetParentNode())) {
-        return false;
-      }
+    if (PrepareForInsertion(child, mDocument)) {
+      mDocument->AppendChildTo(child, true, IgnoreErrors());
     }
-    mDocument->AppendChildTo(child, true, IgnoreErrors());
     if (linkStyle) {
       auto updateOrError = linkStyle->EnableUpdatesAndUpdateStyleSheet(
           mRunsToCompletion ? nullptr : this);
@@ -1012,14 +1031,10 @@ nsresult nsXMLContentSink::HandleStartElement(
     if (!SetDocElement(nameSpaceID, localName, content) && appendContent) {
       NS_ENSURE_TRUE(parent, NS_ERROR_UNEXPECTED);
 
-      if (MOZ_UNLIKELY(content->GetParentNode())) {
-        content->Remove();
-        if (MOZ_UNLIKELY(content->GetParentNode())) {
-          return NS_ERROR_UNEXPECTED;
-        }
+      if (PrepareForInsertion(content, parent)) {
+        parent->AppendChildTo(content, true, IgnoreErrors(),
+                              MutationEffectOnScript::KeepTrustWorthiness);
       }
-      parent->AppendChildTo(content, true, IgnoreErrors(),
-                            MutationEffectOnScript::KeepTrustWorthiness);
     }
   }
 
