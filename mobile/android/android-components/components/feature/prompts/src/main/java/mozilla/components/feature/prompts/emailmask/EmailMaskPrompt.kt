@@ -4,6 +4,7 @@
 
 package mozilla.components.feature.prompts.emailmask
 
+import android.view.View
 import android.view.ViewTreeObserver
 import androidx.compose.animation.AnimatedVisibility
 import androidx.compose.animation.slideInVertically
@@ -196,14 +197,38 @@ private fun rememberImeIsVisible(): Boolean {
         mutableStateOf(insets?.isVisible(WindowInsetsCompat.Type.ime()) ?: false)
     }
 
-    DisposableEffect(isImeVisible) {
-        val listener = ViewTreeObserver.OnGlobalLayoutListener {
+    DisposableEffect(view) {
+        val layoutListener = ViewTreeObserver.OnGlobalLayoutListener {
             val insets = ViewCompat.getRootWindowInsets(view)
             isImeVisible = insets?.isVisible(WindowInsetsCompat.Type.ime()) ?: false
         }
-        view.viewTreeObserver.addOnGlobalLayoutListener(listener)
+        var observer: ViewTreeObserver? = null
+        fun startListening() {
+            if (observer == null) {
+                observer = view.viewTreeObserver.also { it.addOnGlobalLayoutListener(layoutListener) }
+            }
+        }
+        fun stopListening() {
+            observer?.takeIf { it.isAlive }?.removeOnGlobalLayoutListener(layoutListener)
+            observer = null
+        }
+        // A view reaches the ViewTreeObserver of its window only while it is attached. It can leave the window before
+        // this effect is disposed, and this effect can start while the view is being attached, before its attach
+        // listeners are called, so the listener follows the view in and out of its window and is added only once.
+        val attachListener =
+            object : View.OnAttachStateChangeListener {
+                override fun onViewAttachedToWindow(v: View) = startListening()
+
+                override fun onViewDetachedFromWindow(v: View) = stopListening()
+            }
+        if (view.isAttachedToWindow) {
+            startListening()
+        }
+        view.addOnAttachStateChangeListener(attachListener)
+
         onDispose {
-            view.viewTreeObserver.removeOnGlobalLayoutListener(listener)
+            view.removeOnAttachStateChangeListener(attachListener)
+            stopListening()
         }
     }
 
