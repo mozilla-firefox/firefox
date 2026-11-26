@@ -1,0 +1,6 @@
+. "$topsrcdir/browser/config/mozconfigs/macosx64/common-opt"
+
+ac_add_options --enable-instruments
+ac_add_options --enable-enterprise
+
+. "$topsrcdir/build/mozconfig.common.override"

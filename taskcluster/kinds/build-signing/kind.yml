@@ -28,6 +28,10 @@ not-for-build-platforms:
     - macosx64/debug
     - macosx64-aarch64/opt
     - macosx64-aarch64/debug
+    - macosx64-aarch64-enterprise/opt
+    - macosx64-aarch64-enterprise/debug
+    - macosx64-enterprise/opt
+    - macosx64-enterprise/debug
     # This GeckoView task is currently only for performance tests.
     # It makes GeckoView for the Fenix nightly-as-release APK.
     # The shippable:true attribute only makes build-apk set
