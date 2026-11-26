@@ -1291,9 +1291,9 @@ nsThread::ProcessNextEvent(bool aMayWait, bool* aResult) {
         log.emplace(event);
       }
 
-      // Delay event processing to encourage whoever dispatched this event
-      // to run.
-      DelayForChaosMode(ChaosFeature::TaskRunning, 1000);
+      // Random delay, so the dispatching and running threads race in varying
+      // order.
+      DelayForChaosMode(ChaosFeature::TaskRunning);
 
       mozilla::TimeStamp now = mozilla::TimeStamp::Now();
 

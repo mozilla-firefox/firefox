@@ -90,8 +90,9 @@ ThreadEventTarget::Dispatch(already_AddRefed<nsIRunnable> aEvent,
   if (!mSink->PutEvent(event, EventQueuePriority::Normal)) {
     return NS_ERROR_UNEXPECTED;
   }
-  // Delay to encourage the receiving task to run before we do work.
-  DelayForChaosMode(ChaosFeature::TaskDispatching, 1000);
+  // Random delay, so the dispatching and running threads race in varying
+  // order.
+  DelayForChaosMode(ChaosFeature::TaskDispatching);
   return NS_OK;
 }
 

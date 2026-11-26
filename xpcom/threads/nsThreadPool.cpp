@@ -426,9 +426,9 @@ nsThreadPool::Run() {
         LOG(("THRD-P(%p) %s running [%p]\n", this, mName.get(), event.get()));
       }
 
-      // Delay event processing to encourage whoever dispatched this event
-      // to run.
-      DelayForChaosMode(ChaosFeature::TaskRunning, 1000);
+      // Random delay, so the dispatching and running threads race in varying
+      // order.
+      DelayForChaosMode(ChaosFeature::TaskRunning);
 
       if (profiler_thread_is_being_profiled(
               ThreadProfilingFeatures::Sampling)) {
@@ -478,8 +478,9 @@ nsThreadPool::Dispatch(already_AddRefed<nsIRunnable> aEvent,
     rv = PutEvent(std::move(aEvent), aFlags, lock);
   }
 
-  // Delay to encourage the receiving task to run before we do work.
-  DelayForChaosMode(ChaosFeature::TaskDispatching, 1000);
+  // Random delay, so the dispatching and running threads race in varying
+  // order.
+  DelayForChaosMode(ChaosFeature::TaskDispatching);
 
   return rv;
 }

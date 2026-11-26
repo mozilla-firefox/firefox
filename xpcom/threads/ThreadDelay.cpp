@@ -4,7 +4,6 @@
 
 #include "ThreadDelay.h"
 
-#include "mozilla/Assertions.h"
 #include "mozilla/ChaosMode.h"
 
 #if defined(XP_WIN) || defined(XP_MACOSX)
@@ -17,19 +16,17 @@
 
 namespace mozilla {
 
-void DelayForChaosMode(ChaosFeature aFeature,
-                       const uint32_t aMicrosecondLimit) {
+void DelayForChaosMode(ChaosFeature aFeature) {
   if (!ChaosMode::isActive(aFeature)) {
     return;
   }
 
-  MOZ_ASSERT(aMicrosecondLimit <= 1000);
-  const uint32_t duration = ChaosMode::randomUint32LessThan(aMicrosecondLimit);
+  const uint32_t duration = ChaosMode::randomUint32LessThan(100);
 #if defined(XP_WIN) || defined(XP_MACOSX)
   // Windows and macOS don't support sleeping at low resolutions.
   // If we use normal sleep commands, it can cause heavy delays, so we spin
   // with yields. This should be OK, as this is Chaos Mode-only and each wait
-  // is required to be <= 1ms.
+  // is under 100µs.
   const TimeStamp deadline =
       TimeStamp::Now() + TimeDuration::FromMicroseconds(duration);
   while (TimeStamp::Now() < deadline) {
