@@ -239,6 +239,10 @@
 #  include <sched.h>
 
 #  include "APKOpen.h"
+#  ifdef MOZ_PROFILE_GENERATE
+#    include <android/log.h>
+extern "C" int __llvm_profile_dump(void);
+#  endif
 #endif
 
 #ifdef XP_WIN
@@ -3222,6 +3226,17 @@ void ContentChild::ShutdownInternal() {
     auto s = PerfStats::CollectLocalPerfStatsJSON();
     SendShutdownPerfStats(nsCString(s.c_str(), s.length()));
   }
+
+#if defined(MOZ_WIDGET_ANDROID) && defined(MOZ_PROFILE_GENERATE)
+  // On Android, once the parent closes our channel in response to
+  // FinishShutdown below, it may exit, and its exit ends this process
+  // (GeckoServiceChildProcess calls System.exit) before we dump our profile
+  // data at the end of XRE_InitChildProcess. Dump it now, while the parent is
+  // still waiting for us; the later dump is then a no-op.
+  __android_log_print(ANDROID_LOG_INFO, "GeckoContentChild",
+                      "Calling __llvm_profile_dump() during shutdown");
+  __llvm_profile_dump();
+#endif
 
   // Start a timer that will ensure we quickly exit after a reasonable period
   // of time. Prevents shutdown hangs after our connection to the parent
