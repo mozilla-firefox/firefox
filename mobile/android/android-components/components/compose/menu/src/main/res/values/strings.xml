@@ -69,4 +69,12 @@
   <string name="mozac_menu_customize_item_moved">%1$s moved to position %2$d of %3$d</string>
   <!-- Announcement (not visible, for screen readers etc.) when the user changes the position of items within a menu section. %1$s is the name of the moved item, for example "Bookmarks". %2$d is its new position, and %3$d is the total number of items in the section. %4$s is the name of the section, for example "More". If gender or inflection are an issue, can also be translated as "Item %1$s moved to position %2$d of %3$d in section %4$s". -->
   <string name="mozac_menu_customize_sub_item_moved">%1$s moved to position %2$d of %3$d in %4$s</string>
+  <!-- Customize menu items screen: Name of the action for removing a menu item from the menu (moving it to the "Hidden items" area). Offered to screen readers as an action of a menu item. -->
+  <string name="mozac_menu_customize_hide_item">Hide item</string>
+  <!-- Customize menu items screen: Name of the action for displaying a menu item that was hidden (moving it out of the "Hidden items" area). Offered to screen readers as an action of a menu item. -->
+  <string name="mozac_menu_customize_unhide_item">Unhide item</string>
+  <!-- Announcement (not visible, for screen readers etc.) when the user hides an item from the menu, which moves it to the "Hidden items" area. %1$s is the name of the item, for example "Bookmarks". Can also be translated as "%1$s item hidden from menu". -->
+  <string name="mozac_menu_customize_item_hidden">%1$s hidden from menu</string>
+  <!-- Announcement (not visible, for screen readers etc.) when the user un-hides a menu item so it is displayed in the menu again. %1$s is the name of the item, for example "Bookmarks". Can also be translated as "%1$s item added to menu". -->
+  <string name="mozac_menu_customize_item_shown">%1$s added to menu</string>
 </resources>

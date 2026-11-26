@@ -148,23 +148,28 @@ private fun rememberEditMenuItemsActions(
     val listState = dragState.listState
     val interactionState = dragState.interactionState
     return remember(store, menuItems, announcer, listState, interactionState) {
+        fun canChange(): Boolean {
+            val current = store.state
+            val isStale =
+                current.items != menuItems.shown ||
+                    current.hiddenItems != menuItems.hidden ||
+                    current.expandedItemIds != menuItems.expandedIds
+            return !interactionState.isDragging() && !isStale
+        }
+
         EditMenuItemsActions(
             items = menuItems,
             onExpansionToggle = { itemId ->
                 if (!interactionState.isDragging()) store.dispatch(ExpansionToggled(itemId))
             },
             onMove = { itemId, moved, announcement ->
-                val current = store.state
-                val isStale =
-                    current.items != menuItems.shown ||
-                        current.hiddenItems != menuItems.hidden ||
-                        current.expandedItemIds != menuItems.expandedIds
-                if (!interactionState.isDragging() && !isStale) {
+                if (canChange()) {
                     moved.listIndexOf(itemId)?.let { listState.moveAndKeepVisible(itemId, it) }
                     store.dispatch(ItemsChanged(items = moved.shown, hiddenItems = moved.hidden))
                     announcer.announce(announcement)
                 }
             },
+            onRejected = { itemId -> if (canChange()) store.dispatch(AttemptedEmptySection(itemId)) },
             announce = { announcement -> if (!interactionState.isDragging()) announcer.announce(announcement) },
         )
     }

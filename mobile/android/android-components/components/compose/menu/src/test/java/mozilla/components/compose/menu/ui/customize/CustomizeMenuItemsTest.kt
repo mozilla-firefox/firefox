@@ -958,23 +958,30 @@ class CustomizeMenuItemsTest {
         listOf("b", "hidden more", "d", "c", "unknown", subItemsEndKey("more")).forEach {
             assertNull(items.moveUp(it))
             assertNull(items.moveDown(it))
-            assertTrue(items.actionsOf(it).isEmpty())
         }
+        listOf("d", "c", "unknown", subItemsEndKey("more")).forEach { assertTrue(items.actionsOf(it).isEmpty()) }
     }
 
     @Test
     fun `GIVEN shown items THEN they are offered to move up and down where they can move`() {
         val items = CustomizeMenuItems(shown = listOf(a, b, c), hidden = emptyList(), expandedIds = emptySet())
 
-        assertEquals(listOf(EditMenuItemAction.Kind.MOVE_DOWN), items.actionsOf("a").map { it.kind })
         assertEquals(
-            listOf(EditMenuItemAction.Kind.MOVE_UP, EditMenuItemAction.Kind.MOVE_DOWN),
+            listOf(EditMenuItemAction.Kind.MOVE_DOWN, EditMenuItemAction.Kind.HIDE),
+            items.actionsOf("a").map { it.kind },
+        )
+        assertEquals(
+            listOf(EditMenuItemAction.Kind.MOVE_UP, EditMenuItemAction.Kind.MOVE_DOWN, EditMenuItemAction.Kind.HIDE),
             items.actionsOf("b").map { it.kind },
         )
-        assertEquals(listOf(EditMenuItemAction.Kind.MOVE_UP), items.actionsOf("c").map { it.kind })
+        assertEquals(
+            listOf(EditMenuItemAction.Kind.MOVE_UP, EditMenuItemAction.Kind.HIDE),
+            items.actionsOf("c").map { it.kind },
+        )
         assertEquals(items.moveUp("b"), items.actionsOf("b").first().result)
-        assertEquals(items.moveDown("b"), items.actionsOf("b").last().result)
-        assertTrue(CustomizeMenuItems(listOf(a), emptyList(), emptySet()).actionsOf("a").isEmpty())
+        assertEquals(items.moveDown("b"), items.actionsOf("b")[1].result)
+        assertEquals(items.moveToHidden("b"), items.actionsOf("b").last().result)
+        listOf("a", "b", "c").forEach { key -> assertTrue(items.actionsOf(key).none { it.isRefused }) }
     }
 
     @Test
@@ -983,7 +990,187 @@ class CustomizeMenuItemsTest {
         val items = CustomizeMenuItems(shown = listOf(a, more), hidden = emptyList(), expandedIds = setOf("more"))
 
         assertEquals(items, items.moveUp("top level only"))
-        assertTrue(items.actionsOf("top level only").isEmpty())
+        assertEquals(listOf(EditMenuItemAction.Kind.HIDE), items.actionsOf("top level only").map { it.kind })
+    }
+
+    @Test
+    fun `WHEN a shown item is hidden THEN it is the first hidden item`() {
+        val items = CustomizeMenuItems(shown = listOf(a, b, c), hidden = listOf(d), expandedIds = emptySet())
+
+        val moved = items.moveToHidden("b")
+
+        assertEquals(listOf("a", "c"), moved?.shown?.map { it.id })
+        assertEquals(listOf("b", "d"), moved?.hidden?.map { it.id })
+    }
+
+    @Test
+    fun `WHEN a sub-item or a collapsed expandable item is hidden THEN it is the first hidden item and keeps what it has`() {
+        val more = expandable("more", c, d)
+        val items = CustomizeMenuItems(shown = listOf(a, more), hidden = listOf(b), expandedIds = setOf("more"))
+
+        val movedSubItem = items.moveToHidden("c")
+        val movedMore = items.copy(expandedIds = emptySet()).moveToHidden("more")
+
+        assertEquals(listOf("d"), movedSubItem?.subItemsOf("more")?.map { it.id })
+        assertEquals(listOf("c", "b"), movedSubItem?.hidden?.map { it.id })
+        assertEquals(listOf("a"), movedMore?.shown?.map { it.id })
+        assertEquals(listOf("more", "b"), movedMore?.hidden?.map { it.id })
+        assertEquals(listOf(c, d), movedMore?.hidden?.first()?.subItems)
+    }
+
+    @Test
+    fun `WHEN the last shown item is hidden THEN the items are unchanged`() {
+        val alone = CustomizeMenuItems(shown = listOf(a), hidden = listOf(b), expandedIds = emptySet())
+        val withEmptyExpandable =
+            CustomizeMenuItems(shown = listOf(a, expandable("more")), hidden = emptyList(), expandedIds = emptySet())
+        val onlySubItem =
+            CustomizeMenuItems(shown = listOf(expandable("more", c)), hidden = emptyList(), expandedIds = setOf("more"))
+
+        assertEquals(alone, alone.moveToHidden("a"))
+        assertEquals(withEmptyExpandable, withEmptyExpandable.moveToHidden("a"))
+        assertEquals(onlySubItem, onlySubItem.moveToHidden("c"))
+    }
+
+    @Test
+    fun `GIVEN an expanded item, a hidden item, a sub-item of a collapsed item or an unknown key THEN it cannot be hidden`() {
+        val more = expandable("more", c)
+        val notShown = CustomizableMenuItem(id = "not shown", item = null)
+        val items =
+            CustomizeMenuItems(shown = listOf(a, more, notShown), hidden = listOf(b), expandedIds = setOf("more"))
+
+        assertNull(items.moveToHidden("not shown"))
+        assertNull(items.moveToHidden("more"))
+        assertNull(items.moveToHidden("b"))
+        assertNull(items.moveToHidden("unknown"))
+        assertNull(items.moveToHidden(subItemsEndKey("more")))
+        assertNull(items.copy(expandedIds = emptySet()).moveToHidden("c"))
+    }
+
+    @Test
+    fun `GIVEN the shown expandable item is the last one WHEN a hidden item is shown THEN it is just above it`() {
+        val items =
+            CustomizeMenuItems(
+                shown = listOf(a, b, expandable("more", c)),
+                hidden = listOf(d),
+                expandedIds = emptySet(),
+            )
+
+        val moved = items.moveToShown("d")
+
+        assertEquals(listOf("a", "b", "d", "more"), moved?.shown?.map { it.id })
+        assertTrue(moved?.hidden?.isEmpty() == true)
+    }
+
+    @Test
+    fun `GIVEN the shown expandable item is not the last one WHEN a hidden item is shown THEN it is the last one`() {
+        val items =
+            CustomizeMenuItems(
+                shown = listOf(a, expandable("more", c), b),
+                hidden = listOf(d),
+                expandedIds = emptySet(),
+            )
+
+        val moved = items.moveToShown("d")
+
+        assertEquals(listOf("a", "more", "b", "d"), moved?.shown?.map { it.id })
+        assertTrue(moved?.hidden?.isEmpty() == true)
+    }
+
+    @Test
+    fun `GIVEN only the shown expandable item is shown WHEN a hidden item is shown THEN it is just above it`() {
+        val items =
+            CustomizeMenuItems(
+                shown = listOf(expandable("more", c)),
+                hidden = listOf(d),
+                expandedIds = emptySet(),
+            )
+
+        assertEquals(listOf("d", "more"), items.moveToShown("d")?.shown?.map { it.id })
+    }
+
+    @Test
+    fun `GIVEN no shown expandable item WHEN a hidden item is shown THEN it is the last shown item`() {
+        val items =
+            CustomizeMenuItems(
+                shown = listOf(a, b),
+                hidden = listOf(expandable("more", c), d),
+                expandedIds = emptySet(),
+            )
+
+        assertEquals(listOf("a", "b", "d"), items.moveToShown("d")?.shown?.map { it.id })
+        assertEquals(listOf("a", "b", "more"), items.moveToShown("more")?.shown?.map { it.id })
+        assertEquals(listOf(c), items.moveToShown("more")?.shown?.last()?.subItems)
+    }
+
+    @Test
+    fun `WHEN a sub-item of a hidden expandable item is shown THEN it leaves it and the item stays hidden`() {
+        val items =
+            CustomizeMenuItems(
+                shown = listOf(a, expandable("more", b)),
+                hidden = listOf(expandable("hidden more", c, d)),
+                expandedIds = setOf("hidden more"),
+            )
+
+        val moved = items.moveToShown("c")
+
+        assertEquals(listOf("a", "c", "more"), moved?.shown?.map { it.id })
+        assertEquals(listOf("hidden more"), moved?.hidden?.map { it.id })
+        assertEquals(listOf(d), moved?.hidden?.single()?.subItems)
+    }
+
+    @Test
+    fun `GIVEN a shown item, an expanded hidden item, a sub-item of a collapsed hidden item or an unknown key THEN it cannot be shown`() {
+        val notShown = CustomizableMenuItem(id = "not shown", item = null)
+        val items =
+            CustomizeMenuItems(
+                shown = listOf(a, b),
+                hidden = listOf(expandable("hidden more", c), notShown),
+                expandedIds = setOf("hidden more"),
+            )
+
+        assertNull(items.moveToShown("not shown"))
+        assertNull(items.moveToShown("a"))
+        assertNull(items.moveToShown("hidden more"))
+        assertNull(items.moveToShown("unknown"))
+        assertNull(items.moveToShown(subItemsEndKey("hidden more")))
+        assertNull(items.copy(expandedIds = emptySet()).moveToShown("c"))
+    }
+
+    @Test
+    fun `GIVEN hidden items THEN a hidden item is only offered to be shown, and a hidden expanded item nothing`() {
+        val notShown = CustomizableMenuItem(id = "not shown", item = null)
+        val items =
+            CustomizeMenuItems(
+                shown = listOf(a, b),
+                hidden = listOf(c, expandable("hidden more", d), notShown),
+                expandedIds = emptySet(),
+            )
+
+        assertTrue(items.actionsOf("not shown").isEmpty())
+        assertTrue(CustomizeMenuItems(listOf(a, notShown), emptyList(), emptySet()).actionsOf("not shown").isEmpty())
+
+        assertEquals(listOf(EditMenuItemAction.Kind.UNHIDE), items.actionsOf("c").map { it.kind })
+        assertEquals(listOf(EditMenuItemAction.Kind.UNHIDE), items.actionsOf("hidden more").map { it.kind })
+        assertEquals(items.moveToShown("c"), items.actionsOf("c").single().result)
+        assertTrue(items.actionsOf("c").none { it.isRefused })
+        assertTrue(items.copy(expandedIds = setOf("hidden more")).actionsOf("hidden more").isEmpty())
+        assertTrue(items.actionsOf("unknown").isEmpty())
+        assertTrue(items.actionsOf(subItemsEndKey("hidden more")).isEmpty())
+        assertEquals(
+            listOf(EditMenuItemAction.Kind.UNHIDE),
+            items.copy(expandedIds = setOf("hidden more")).actionsOf("d").map { it.kind },
+        )
+    }
+
+    @Test
+    fun `GIVEN the last shown item THEN hiding it is offered with the unchanged items as its result`() {
+        val items = CustomizeMenuItems(shown = listOf(a), hidden = listOf(b), expandedIds = emptySet())
+
+        val action = items.actionsOf("a").single()
+
+        assertEquals(EditMenuItemAction.Kind.HIDE, action.kind)
+        assertEquals(items, action.result)
+        assertTrue(action.isRefused)
     }
 
     @Test

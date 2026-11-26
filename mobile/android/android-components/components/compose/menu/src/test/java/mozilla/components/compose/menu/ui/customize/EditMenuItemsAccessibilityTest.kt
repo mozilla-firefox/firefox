@@ -24,7 +24,9 @@ import androidx.compose.ui.test.junit4.v2.createComposeRule
 import androidx.compose.ui.test.onNodeWithContentDescription
 import androidx.compose.ui.test.onNodeWithText
 import androidx.compose.ui.test.onRoot
+import androidx.compose.ui.test.performScrollToKey
 import androidx.compose.ui.test.performTouchInput
+import androidx.compose.ui.unit.dp
 import androidx.test.ext.junit.runners.AndroidJUnit4
 import mozilla.components.compose.base.R as baseR
 import mozilla.components.compose.base.text.Text
@@ -63,6 +65,8 @@ class EditMenuItemsAccessibilityTest {
     private val collapsedState = testContext.getString(baseR.string.mozac_compose_base_a11y_state_label_collapsed)
     private val moveUp = testContext.getString(R.string.mozac_menu_customize_move_up)
     private val moveDown = testContext.getString(R.string.mozac_menu_customize_move_down)
+    private val hide = testContext.getString(R.string.mozac_menu_customize_hide_item)
+    private val unhide = testContext.getString(R.string.mozac_menu_customize_unhide_item)
 
     @Test
     fun `THEN the titles above the shown items and above the hidden items are headings`() {
@@ -231,17 +235,17 @@ class EditMenuItemsAccessibilityTest {
     }
 
     @Test
-    fun `THEN an item which is not expandable has only the custom actions moving it`() {
+    fun `THEN an item which is not expandable has only the custom actions moving and hiding it`() {
         setContent(CustomizableMenuItemsState(items = listOf(item("Shown"), expandable("More", item("Sub")))))
 
-        assertEquals(listOf(moveDown), actionLabelsOf("Shown"))
+        assertEquals(listOf(moveDown, hide), actionLabelsOf("Shown"))
     }
 
     @Test
-    fun `GIVEN a collapsed expandable item THEN its custom actions are to expand it, then to move it`() {
+    fun `GIVEN a collapsed expandable item THEN its custom actions are to expand it, then to move and hide it`() {
         setContent(CustomizableMenuItemsState(items = listOf(item("Shown"), expandable("More", item("Sub")))))
 
-        assertEquals(listOf(expand, moveUp), actionLabelsOf("More"))
+        assertEquals(listOf(expand, moveUp, hide), actionLabelsOf("More"))
     }
 
     @Test
@@ -297,7 +301,7 @@ class EditMenuItemsAccessibilityTest {
                 )
             )
 
-        assertEquals(listOf(expand), actionLabelsOf("More", isHidden = true))
+        assertEquals(listOf(expand, unhide), actionLabelsOf("More", isHidden = true))
         performAction("More", expand, isHidden = true)
 
         assertEquals(setOf("More"), store.state.expandedItemIds)
@@ -329,20 +333,20 @@ class EditMenuItemsAccessibilityTest {
     fun `GIVEN several shown items THEN each can be moved only where there is room to move`() {
         setContent(CustomizableMenuItemsState(items = listOf(item("First"), item("Second"), item("Third"))))
 
-        assertEquals(listOf(moveDown), actionLabelsOf("First"))
-        assertEquals(listOf(moveUp, moveDown), actionLabelsOf("Second"))
-        assertEquals(listOf(moveUp), actionLabelsOf("Third"))
+        assertEquals(listOf(moveDown, hide), actionLabelsOf("First"))
+        assertEquals(listOf(moveUp, moveDown, hide), actionLabelsOf("Second"))
+        assertEquals(listOf(moveUp, hide), actionLabelsOf("Third"))
     }
 
     @Test
-    fun `GIVEN a single shown item THEN it has no custom actions`() {
+    fun `GIVEN a single shown item THEN its only custom action is to hide it`() {
         setContent(CustomizableMenuItemsState(items = listOf(item("Only")), hiddenItems = listOf(item("Hidden"))))
 
-        assertEquals(emptyList<String>(), actionLabelsOf("Only"))
+        assertEquals(listOf(hide), actionLabelsOf("Only"))
     }
 
     @Test
-    fun `GIVEN a hidden item THEN it has no custom actions`() {
+    fun `GIVEN a hidden item THEN its only custom action is to unhide it`() {
         setContent(
             CustomizableMenuItemsState(
                 items = listOf(item("First"), item("Second")),
@@ -350,12 +354,12 @@ class EditMenuItemsAccessibilityTest {
             )
         )
 
-        assertEquals(emptyList<String>(), actionLabelsOf("Hidden 1", isHidden = true))
-        assertEquals(emptyList<String>(), actionLabelsOf("Hidden 2", isHidden = true))
+        assertEquals(listOf(unhide), actionLabelsOf("Hidden 1", isHidden = true))
+        assertEquals(listOf(unhide), actionLabelsOf("Hidden 2", isHidden = true))
     }
 
     @Test
-    fun `GIVEN a sub-item THEN it can only be moved inside the expanded item`() {
+    fun `GIVEN a sub-item THEN it can only be moved inside the expanded item, or hidden`() {
         setContent(
             CustomizableMenuItemsState(
                 items = listOf(item("First"), expandable("More", item("Sub 1"), item("Sub 2"))),
@@ -363,8 +367,8 @@ class EditMenuItemsAccessibilityTest {
             )
         )
 
-        assertEquals(listOf(moveDown), actionLabelsOf("Sub 1"))
-        assertEquals(listOf(moveUp), actionLabelsOf("Sub 2"))
+        assertEquals(listOf(moveDown, hide), actionLabelsOf("Sub 1"))
+        assertEquals(listOf(moveUp, hide), actionLabelsOf("Sub 2"))
     }
 
     @Test
@@ -542,12 +546,12 @@ class EditMenuItemsAccessibilityTest {
     }
 
     @Test
-    fun `GIVEN items around a collapsed expandable item THEN it can be expanded and moved up or down`() {
+    fun `GIVEN items around a collapsed expandable item THEN it can be expanded, moved up or down and hidden`() {
         setContent(
             CustomizableMenuItemsState(items = listOf(item("First"), expandable("More", item("Sub")), item("Last")))
         )
 
-        assertEquals(listOf(expand, moveUp, moveDown), actionLabelsOf("More"))
+        assertEquals(listOf(expand, moveUp, moveDown, hide), actionLabelsOf("More"))
     }
 
     @Test
@@ -579,6 +583,214 @@ class EditMenuItemsAccessibilityTest {
 
         rowNode(partlyShown, isHidden = false).assertIsDisplayed()
         assertTrue(rowNode(partlyShown, isHidden = false).getUnclippedBoundsInRoot().bottom <= screenBottom)
+    }
+
+    @Test
+    fun `WHEN an item is hidden THEN it is the first hidden item, saved as moved by the user and announced`() {
+        val actions = mutableListOf<CustomizableMenuItemsAction>()
+        val store =
+            setContent(
+                CustomizableMenuItemsState(
+                    items = listOf(item("First"), item("Second")),
+                    hiddenItems = listOf(item("Hidden")),
+                ),
+                listOf(capturing(actions)),
+            )
+
+        performAction("Second", hide)
+
+        assertEquals(listOf("First"), store.state.items.map { it.id })
+        assertEquals(listOf("Second", "Hidden"), store.state.hiddenItems.map { it.id })
+        assertEquals(
+            ItemsChanged(items = store.state.items, hiddenItems = store.state.hiddenItems),
+            actions.filterIsInstance<ItemsChanged>().single(),
+        )
+        announcementNode().assert(hasAnnouncement(R.string.mozac_menu_customize_item_hidden, "Second"))
+        rowNode("Second", isHidden = true).assertIsDisplayed()
+        assertEquals(listOf(unhide), actionLabelsOf("Second", isHidden = true))
+    }
+
+    @Test
+    fun `WHEN a sub-item is hidden THEN it leaves the expanded item and is announced`() {
+        val store =
+            setContent(
+                CustomizableMenuItemsState(
+                    items = listOf(item("First"), expandable("More", item("Sub 1"), item("Sub 2"))),
+                    expandedItemIds = setOf("More"),
+                )
+            )
+
+        performAction("Sub 1", hide)
+
+        assertEquals(listOf("Sub 2"), store.state.items.last().subItems.map { it.id })
+        assertEquals(listOf("Sub 1"), store.state.hiddenItems.map { it.id })
+        announcementNode().assert(hasAnnouncement(R.string.mozac_menu_customize_item_hidden, "Sub 1"))
+        rowNode("Sub 1", isHidden = true).assertIsDisplayed()
+    }
+
+    @Test
+    fun `GIVEN the expandable item is not the last one WHEN a hidden item is unhidden THEN it is the last one and announced`() {
+        val actions = mutableListOf<CustomizableMenuItemsAction>()
+        val store =
+            setContent(
+                CustomizableMenuItemsState(
+                    items = listOf(item("First"), expandable("More", item("Sub")), item("Last")),
+                    hiddenItems = listOf(item("Hidden")),
+                ),
+                listOf(capturing(actions)),
+            )
+
+        performAction("Hidden", unhide, isHidden = true)
+
+        assertEquals(listOf("First", "More", "Last", "Hidden"), store.state.items.map { it.id })
+        assertTrue(store.state.hiddenItems.isEmpty())
+        assertEquals(
+            ItemsChanged(items = store.state.items, hiddenItems = emptyList()),
+            actions.filterIsInstance<ItemsChanged>().single(),
+        )
+        announcementNode().assert(hasAnnouncement(R.string.mozac_menu_customize_item_shown, "Hidden"))
+        composeTestRule.onNodeWithContentDescription(shownItem("Hidden", 4, 4)).assertIsDisplayed()
+    }
+
+    @Test
+    fun `WHEN a sub-item of a hidden expandable item is unhidden THEN it is shown and the expandable item stays hidden`() {
+        val store =
+            setContent(
+                CustomizableMenuItemsState(
+                    items = listOf(item("First")),
+                    hiddenItems =
+                        listOf(expandable("More", item("Sub 1"), item("Sub 2"), state = MenuItemState.DISABLED)),
+                    expandedItemIds = setOf("More"),
+                )
+            )
+
+        assertEquals(listOf(unhide), actionLabelsOf("Sub 1", isHidden = true))
+        performAction("Sub 1", unhide, isHidden = true)
+
+        assertEquals(listOf("First", "Sub 1"), store.state.items.map { it.id })
+        assertEquals(listOf("More"), store.state.hiddenItems.map { it.id })
+        assertEquals(listOf("Sub 2"), store.state.hiddenItems.single().subItems.map { it.id })
+        announcementNode().assert(hasAnnouncement(R.string.mozac_menu_customize_item_shown, "Sub 1"))
+        composeTestRule.onNodeWithContentDescription(shownItem("Sub 1", 2, 2)).assertIsDisplayed()
+    }
+
+    @Test
+    fun `WHEN the last shown item is hidden THEN nothing is moved or announced and it is reported`() {
+        val actions = mutableListOf<CustomizableMenuItemsAction>()
+        val store =
+            setContent(
+                CustomizableMenuItemsState(items = listOf(item("Only")), hiddenItems = listOf(item("Hidden"))),
+                listOf(capturing(actions)),
+            )
+
+        performAction("Only", hide)
+
+        assertEquals(listOf("Only"), store.state.items.map { it.id })
+        assertEquals(listOf("Hidden"), store.state.hiddenItems.map { it.id })
+        assertEquals(
+            listOf(CustomizableMenuItemsAction.AttemptedEmptySection("Only")),
+            actions.filterIsInstance<CustomizableMenuItemsAction.AttemptedEmptySection>(),
+        )
+        assertTrue(actions.none { it is ItemsChanged })
+        announcementNode().assert(SemanticsMatcher.keyNotDefined(SemanticsProperties.ContentDescription))
+    }
+
+    @Test
+    fun `GIVEN more items than fit on the screen WHEN an item near the bottom is hidden THEN it is in view among the hidden items`() {
+        setContent(CustomizableMenuItemsState(items = (1..20).map { item("Item $it") }))
+        val screenBottom = composeTestRule.onRoot().getUnclippedBoundsInRoot().bottom
+        val nearBottom =
+            (1..20)
+                .map { "Item $it" }
+                .filter { composeTestRule.onAllNodes(rowMatcher(it, false)).fetchSemanticsNodes().isNotEmpty() }
+                .last { rowNode(it, isHidden = false).getUnclippedBoundsInRoot().bottom <= screenBottom }
+
+        performAction(nearBottom, hide)
+
+        rowNode(nearBottom, isHidden = true).assertIsDisplayed()
+        val bounds = rowNode(nearBottom, isHidden = true).getUnclippedBoundsInRoot()
+        assertTrue(bounds.top >= 0.dp)
+        assertTrue(bounds.bottom <= screenBottom)
+    }
+
+    @Test
+    fun `GIVEN more hidden items than fit on the screen WHEN the last hidden item is unhidden THEN it is in view`() {
+        setContent(
+            CustomizableMenuItemsState(
+                items = listOf(item("Shown"), expandable("More", item("Sub"))),
+                hiddenItems = (1..40).map { item("Hidden $it") },
+            )
+        )
+        composeTestRule.onNode(hasScrollAction()).performScrollToKey("Hidden 40")
+        val screenBottom = composeTestRule.onRoot().getUnclippedBoundsInRoot().bottom
+        rowNode("Hidden 40", isHidden = true).assertIsDisplayed()
+        composeTestRule.onAllNodes(rowMatcher("More", isHidden = false)).assertCountEquals(0)
+
+        performAction("Hidden 40", unhide, isHidden = true)
+
+        rowNode("Hidden 40", isHidden = false).assertIsDisplayed()
+        val bounds = rowNode("Hidden 40", isHidden = false).getUnclippedBoundsInRoot()
+        assertTrue(bounds.top >= 0.dp)
+        assertTrue(bounds.bottom <= screenBottom)
+    }
+
+    @Test
+    fun `GIVEN the hide action of the only shown item WHEN a hidden item is unhidden before it runs THEN running it does not report that the section cannot be empty`() {
+        val actions = mutableListOf<CustomizableMenuItemsAction>()
+        setContent(
+            CustomizableMenuItemsState(items = listOf(item("Only")), hiddenItems = listOf(item("Hidden"))),
+            listOf(capturing(actions)),
+        )
+        val hideOnly = customAction("Only", hide)
+        val unhideHidden =
+            rowNode("Hidden", isHidden = true).fetchSemanticsNode().config[SemanticsActions.CustomActions].single {
+                it.label == unhide
+            }
+
+        composeTestRule.runOnIdle {
+            unhideHidden.action()
+            hideOnly.action()
+        }
+        composeTestRule.waitForIdle()
+
+        assertTrue(actions.any { it is ItemsChanged })
+        assertTrue(actions.none { it is CustomizableMenuItemsAction.AttemptedEmptySection })
+    }
+
+    @Test
+    fun `GIVEN an item is being dragged WHEN another item is hidden or unhidden THEN nothing changes or is reported`() {
+        val actions = mutableListOf<CustomizableMenuItemsAction>()
+        val store =
+            setContent(
+                CustomizableMenuItemsState(
+                    items = listOf(item("First"), item("Second")),
+                    hiddenItems = listOf(item("Hidden")),
+                ),
+                listOf(capturing(actions)),
+            )
+
+        startDragging("First")
+        performAction("Second", hide)
+        performAction("Hidden", unhide, isHidden = true)
+
+        assertEquals(listOf("First", "Second"), store.state.items.map { it.id })
+        assertEquals(listOf("Hidden"), store.state.hiddenItems.map { it.id })
+        assertTrue(actions.none { it is ItemsChanged })
+        announcementNode().assert(SemanticsMatcher.keyNotDefined(SemanticsProperties.ContentDescription))
+    }
+
+    @Test
+    fun `GIVEN an item is being dragged WHEN the last shown item is hidden THEN it is not reported`() {
+        val actions = mutableListOf<CustomizableMenuItemsAction>()
+        setContent(
+            CustomizableMenuItemsState(items = listOf(item("Only")), hiddenItems = listOf(item("Hidden"))),
+            listOf(capturing(actions)),
+        )
+
+        startDragging("Only")
+        performAction("Only", hide)
+
+        assertTrue(actions.none { it is CustomizableMenuItemsAction.AttemptedEmptySection })
     }
 
     @Test

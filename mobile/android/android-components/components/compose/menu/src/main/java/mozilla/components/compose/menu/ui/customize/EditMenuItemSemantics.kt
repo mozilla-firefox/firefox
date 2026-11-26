@@ -25,8 +25,8 @@ import mozilla.components.compose.menu.data.MenuItem
  * Make a row of an item a single node for accessibility services, reading its name then, for an item shown in the menu,
  * its position among the shown items. Its content and drag handle are not separate nodes, and the dimmed content of a
  * hidden item is not read as disabled. An expandable item is read as a button with its expanded or collapsed state,
- * which toggles it when activated, and has the custom action toggling it too, then the shown items have the custom
- * actions moving them.
+ * which toggles it when activated, and has the custom action toggling it too, then the items have the custom actions
+ * moving, hiding or showing them.
  *
  * @param row The row of the item.
  * @param item The item the row shows.
@@ -91,9 +91,21 @@ private fun moveActions(
                 label = stringResource(R.string.mozac_menu_customize_move_down)
                 announcement = movedAnnouncement(row, name, action, actions)
             }
+            EditMenuItemAction.Kind.HIDE -> {
+                label = stringResource(R.string.mozac_menu_customize_hide_item)
+                announcement = stringResource(R.string.mozac_menu_customize_item_hidden, name)
+            }
+            EditMenuItemAction.Kind.UNHIDE -> {
+                label = stringResource(R.string.mozac_menu_customize_unhide_item)
+                announcement = stringResource(R.string.mozac_menu_customize_item_shown, name)
+            }
         }
         CustomAccessibilityAction(label) {
-            actions.onMove(row.item.id, action.result, announcement)
+            if (action.isRefused) {
+                actions.onRejected(row.item.id)
+            } else {
+                actions.onMove(row.item.id, action.result, announcement)
+            }
             true
         }
     }
