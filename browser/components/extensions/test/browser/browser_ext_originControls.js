@@ -183,6 +183,11 @@ async function testOriginControls(
     `Testing ${extension.id} on ${gBrowser.currentURI.spec} with contextMenuId=${contextMenuId}.`
   );
 
+  // The button's attention state is updated in a requestAnimationFrame
+  // callback (see updateButton in ext-browserAction.js), and native macOS
+  // context menus can open before it runs.
+  await promiseAnimationFrame();
+
   let buttonOrWidget;
   let menu;
   let nextMenuItemClassName;
