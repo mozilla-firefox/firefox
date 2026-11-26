@@ -5,7 +5,7 @@ name = "mio"
 # When releasing to crates.io:
 # - Update CHANGELOG.md.
 # - Create git tag
-version       = "1.2.0"
+version       = "1.2.4"
 license       = "MIT"
 authors       = [
   "Carl Lerche <me@carllerche.com>",

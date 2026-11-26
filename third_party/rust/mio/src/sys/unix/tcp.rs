@@ -74,6 +74,7 @@ pub(crate) fn accept(listener: &net::TcpListener) -> io::Result<(net::TcpStream,
         target_os = "openbsd",
         target_os = "solaris",
         target_os = "cygwin",
+        target_os = "nuttx",
     ))]
     let stream = {
         syscall!(accept4(
@@ -102,6 +103,7 @@ pub(crate) fn accept(listener: &net::TcpListener) -> io::Result<(net::TcpStream,
         target_os = "hermit",
         target_os = "nto",
         target_os = "wasi",
+        target_os = "horizon",
         all(target_arch = "x86", target_os = "android"),
     ))]
     let stream = {
@@ -123,14 +125,9 @@ pub(crate) fn accept(listener: &net::TcpListener) -> io::Result<(net::TcpStream,
                 target_os = "vita",
                 target_os = "hermit",
                 target_os = "nto",
+                target_os = "wasi",
             ))]
             syscall!(fcntl(s.as_raw_fd(), libc::F_SETFL, libc::O_NONBLOCK))?;
-
-            // Once https://github.com/WebAssembly/wasi-libc/pull/742 lands and
-            // makes it into Rust std, we can remove this and switch to using
-            // `fcntl` above.
-            #[cfg(target_os = "wasi")]
-            syscall!(ioctl(s.as_raw_fd(), libc::FIONBIO, &mut 1))?;
 
             Ok(s)
         })

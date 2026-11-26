@@ -50,9 +50,12 @@ impl Selector {
                 // turning sub-millisecond timeouts into a zero timeout, unless
                 // the caller explicitly requests that by specifying a zero
                 // timeout.
-                to.checked_add(Duration::from_nanos(999_999))
-                    .unwrap_or(to)
-                    .as_millis() as libc::c_int
+                libc::c_int::try_from(
+                    to.checked_add(Duration::from_nanos(999_999))
+                        .unwrap_or(to)
+                        .as_millis(),
+                )
+                .unwrap_or(libc::c_int::MAX)
             })
             .unwrap_or(-1);
 

@@ -16,25 +16,35 @@ pub(crate) fn bind_addr(address: &SocketAddr) -> io::Result<net::UnixListener> {
     let (unix_address, addrlen) = unix_addr(address);
     let sockaddr = &unix_address as *const libc::sockaddr_un as *const libc::sockaddr;
     syscall!(bind(fd, sockaddr, addrlen))?;
-    // Use the same backlog value as the standard libary.
+    // Use the same backlog value as the standard library.
     // <https://github.com/rust-lang/rust/blob/0028f344ce9f64766259577c998a1959ca1f6a0b/library/std/src/os/unix/net/listener.rs#L75-L106>
-    let backlog = if cfg!(any(
+
+    #[cfg(any(
         target_os = "windows",
         target_os = "redox",
         target_os = "espidf",
         target_os = "horizon"
-    )) {
-        128
-    } else if cfg!(any(
+    ))]
+    let backlog = 128;
+    #[cfg(any(
         target_os = "linux",
         target_os = "freebsd",
         target_os = "openbsd",
         target_vendor = "apple"
-    )) {
-        -1
-    } else {
-        libc::SOMAXCONN
-    };
+    ))]
+    let backlog = -1;
+    #[cfg(not(any(
+        target_os = "linux",
+        target_os = "freebsd",
+        target_os = "openbsd",
+        target_vendor = "apple",
+        target_os = "windows",
+        target_os = "redox",
+        target_os = "espidf",
+        target_os = "horizon"
+    )))]
+    let backlog = libc::SOMAXCONN;
+
     syscall!(listen(fd, backlog))?;
 
     Ok(socket)
@@ -65,6 +75,7 @@ pub(crate) fn accept(listener: &net::UnixListener) -> io::Result<(UnixStream, So
         target_os = "espidf",
         target_os = "vita",
         target_os = "nto",
+        target_os = "horizon",
         // Android x86's seccomp profile forbids calls to `accept4(2)`
         // See https://github.com/tokio-rs/mio/issues/1445 for details
         all(target_arch = "x86", target_os = "android"),
@@ -93,6 +104,7 @@ pub(crate) fn accept(listener: &net::UnixListener) -> io::Result<(UnixStream, So
         target_os = "espidf",
         target_os = "vita",
         target_os = "nto",
+        target_os = "horizon",
         all(target_arch = "x86", target_os = "android")
     ))]
     let socket = syscall!(accept(

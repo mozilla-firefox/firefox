@@ -441,8 +441,8 @@ user-login = "gabrielesvelto"
 user-name = "Gabriele Svelto"
 
 [[publisher.mio]]
-version = "1.2.0"
-when = "2026-03-27"
+version = "1.2.4"
+when = "2026-10-03"
 user-id = 6025
 user-login = "Thomasdezeeuw"
 user-name = "Thomas de Zeeuw"

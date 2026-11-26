@@ -64,6 +64,7 @@ pub(crate) fn new_socket(domain: libc::c_int, socket_type: libc::c_int) -> io::R
         target_os = "visionos",
         target_os = "watchos",
         target_os = "espidf",
+        target_os = "haiku",
         target_os = "vita",
         target_os = "nto",
     ))]

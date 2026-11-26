@@ -19,7 +19,7 @@ pub use selector::Selector;
 cfg_net! {
     /// Helper macro to execute a system call that returns an `io::Result`.
     //
-    // Macro must be defined before any modules that uses them.
+    // Macro must be defined before any modules that use them.
     macro_rules! syscall {
         ($fn: ident ( $($arg: expr),* $(,)* ), $err_test: path, $err_value: expr) => {{
             let res = unsafe { $fn($($arg, )*) };

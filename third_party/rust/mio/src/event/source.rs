@@ -17,7 +17,7 @@ use std::io;
 ///
 /// Event sources are always backed by system handles, such as sockets or other
 /// system handles. These `event::Source`s will be monitored by the system
-/// selector. An implementation of `Source` will almost always delegates to a
+/// selector. An implementation of `Source` will almost always delegate to a
 /// lower level handle. Examples of this are [`TcpStream`]s, or the *unix only*
 /// [`SourceFd`].
 ///

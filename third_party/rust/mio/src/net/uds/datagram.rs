@@ -130,7 +130,8 @@ impl UnixDatagram {
     ///
     /// # Examples
     ///
-    /// ```
+    #[cfg_attr(not(miri), doc = "```")]
+    #[cfg_attr(miri, doc = "```ignore")] // Miri doesn't support Unix domain sockets.
     /// # use std::error::Error;
     /// #
     /// # fn main() -> Result<(), Box<dyn Error>> {

@@ -90,7 +90,7 @@ macro_rules! error {
 macro_rules! log {
     ($level: ident, $($t:tt)*) => {
         #[cfg(feature = "log")]
-        { log::$level!($($t)*) }
+        { log::$level!($($t)*); }
         // Silence unused variables warnings.
         #[cfg(not(feature = "log"))]
         { if false { let _ = ( $($t)* ); } }

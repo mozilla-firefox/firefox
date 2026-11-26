@@ -51,7 +51,7 @@ mod interest;
 mod poll;
 mod sys;
 mod token;
-#[cfg(not(target_os = "wasi"))]
+#[cfg(not(any(target_os = "horizon", target_os = "wasi")))]
 mod waker;
 
 pub mod event;
@@ -69,7 +69,7 @@ pub use event::Events;
 pub use interest::Interest;
 pub use poll::{Poll, Registry};
 pub use token::Token;
-#[cfg(not(target_os = "wasi"))]
+#[cfg(not(any(target_os = "horizon", target_os = "wasi")))]
 pub use waker::Waker;
 
 #[cfg(all(unix, feature = "os-ext"))]

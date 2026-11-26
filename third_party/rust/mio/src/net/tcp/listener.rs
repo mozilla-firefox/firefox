@@ -82,7 +82,7 @@ impl TcpListener {
         set_reuseaddr(&listener.inner, true)?;
 
         bind(&listener.inner, addr)?;
-        // Use the same backlog value as the standard libary.
+        // Use the same backlog value as the standard library.
         // <https://github.com/rust-lang/rust/blob/0028f344ce9f64766259577c998a1959ca1f6a0b/library/std/src/sys/net/connection/socket/mod.rs#L559-L571>
         let backlog = if cfg!(target_os = "horizon") {
             20

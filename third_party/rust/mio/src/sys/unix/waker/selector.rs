@@ -3,12 +3,7 @@ use std::io;
 use crate::sys::Selector;
 use crate::Token;
 
-/// Waker backed by kqueue user space notifications (`EVFILT_USER`).
-///
-/// The implementation is fairly simple, first the kqueue must be setup to
-/// receive waker events this done by calling `Selector.setup_waker`. Next
-/// we need access to kqueue, thus we need to duplicate the file descriptor.
-/// Now waking is as simple as adding an event to the kqueue.
+/// Waker implementation that calls `wake` on the `Selector`.
 #[derive(Debug)]
 pub(crate) struct Waker {
     selector: Selector,
@@ -18,6 +13,12 @@ pub(crate) struct Waker {
 impl Waker {
     pub(crate) fn new(selector: &Selector, token: Token) -> io::Result<Waker> {
         let selector = selector.try_clone()?;
+        #[cfg(any(
+            target_os = "dragonfly",
+            target_os = "freebsd",
+            target_os = "netbsd",
+            target_os = "openbsd"
+        ))]
         selector.setup_waker(token)?;
         Ok(Waker { selector, token })
     }

@@ -11,7 +11,7 @@ use std::os::fd::RawFd;
 // can use `std::os::fd` and be merged with the above.
 #[cfg(target_os = "hermit")]
 use std::os::hermit::io::RawFd;
-use std::sync::atomic::{AtomicBool, AtomicUsize, Ordering};
+use std::sync::atomic::{AtomicUsize, Ordering};
 use std::sync::{Arc, Condvar, Mutex};
 use std::time::Duration;
 use std::{cmp, fmt, io};
@@ -47,11 +47,12 @@ impl Selector {
         self.state.select(events, timeout)
     }
 
+    #[cfg_attr(target_os = "horizon", allow(dead_code))]
     pub fn register(&self, fd: RawFd, token: Token, interests: Interest) -> io::Result<()> {
         self.state.register(fd, token, interests)
     }
 
-    #[allow(dead_code)]
+    cfg_io_source! {
     pub(crate) fn register_internal(
         &self,
         fd: RawFd,
@@ -59,6 +60,7 @@ impl Selector {
         interests: Interest,
     ) -> io::Result<Arc<RegistrationRecord>> {
         self.state.register_internal(fd, token, interests)
+    }
     }
 
     cfg_any_os_ext! {
@@ -71,7 +73,7 @@ impl Selector {
     }
     }
 
-    #[cfg(not(target_os = "wasi"))]
+    #[cfg(not(any(target_os = "horizon", target_os = "wasi")))]
     pub fn wake(&self, token: Token) -> io::Result<()> {
         self.state.wake(token)
     }
@@ -455,69 +457,46 @@ impl SelectorState {
         })
     }
 
-    #[cfg(not(target_os = "wasi"))]
+    #[cfg(not(any(target_os = "horizon", target_os = "wasi")))]
     pub fn wake(&self, token: Token) -> io::Result<()> {
         self.pending_wake_token.lock().unwrap().replace(token);
         self.notify_waker.wake()
     }
 }
 
-/// Shared record between IoSourceState and SelectorState that allows us to internally
-/// deregister partially or fully closed fds (i.e. when we get POLLHUP or PULLERR) without
-/// confusing IoSourceState and trying to deregister twice.  This isn't strictly
-/// required as technically deregister is idempotent but it is confusing
-/// when trying to debug behaviour as we get imbalanced calls to register/deregister and
-/// superfluous NotFound errors.
-#[derive(Debug)]
-pub(crate) struct RegistrationRecord {
-    is_unregistered: AtomicBool,
-}
-
-impl RegistrationRecord {
-    pub fn new() -> Self {
-        Self {
-            is_unregistered: AtomicBool::new(false),
-        }
-    }
-
-    pub fn mark_unregistered(&self) {
-        self.is_unregistered.store(true, Ordering::Relaxed);
-    }
-
-    #[allow(dead_code)]
-    pub fn is_registered(&self) -> bool {
-        !self.is_unregistered.load(Ordering::Relaxed)
-    }
-}
+#[cfg(not(target_os = "horizon"))]
+type PollFlagInt = libc::c_short;
+#[cfg(target_os = "horizon")]
+type PollFlagInt = libc::c_int;
 
 #[cfg(target_os = "linux")]
-const POLLRDHUP: libc::c_short = libc::POLLRDHUP;
+const POLLRDHUP: PollFlagInt = libc::POLLRDHUP;
 #[cfg(not(target_os = "linux"))]
-const POLLRDHUP: libc::c_short = 0;
+const POLLRDHUP: PollFlagInt = 0;
 
 #[cfg(not(target_os = "wasi"))]
-const POLLPRI: libc::c_short = libc::POLLPRI;
+const POLLPRI: PollFlagInt = libc::POLLPRI;
 #[cfg(target_os = "wasi")]
-const POLLPRI: libc::c_short = 0;
+const POLLPRI: PollFlagInt = 0;
 
 #[cfg(not(target_os = "wasi"))]
-const POLLRDBAND: libc::c_short = libc::POLLRDBAND;
+const POLLRDBAND: PollFlagInt = libc::POLLRDBAND;
 #[cfg(target_os = "wasi")]
-const POLLRDBAND: libc::c_short = 0;
+const POLLRDBAND: PollFlagInt = 0;
 
 #[cfg(not(target_os = "wasi"))]
-const POLLWRBAND: libc::c_short = libc::POLLWRBAND;
+const POLLWRBAND: PollFlagInt = libc::POLLWRBAND;
 #[cfg(target_os = "wasi")]
-const POLLWRBAND: libc::c_short = 0;
+const POLLWRBAND: PollFlagInt = 0;
 
-const READ_EVENTS: libc::c_short = libc::POLLIN | POLLRDHUP;
+const READ_EVENTS: PollFlagInt = libc::POLLIN | POLLRDHUP;
 
-const WRITE_EVENTS: libc::c_short = libc::POLLOUT;
+const WRITE_EVENTS: PollFlagInt = libc::POLLOUT;
 
-const PRIORITY_EVENTS: libc::c_short = POLLPRI;
+const PRIORITY_EVENTS: PollFlagInt = POLLPRI;
 
 /// Get the input poll events for the given event.
-fn interests_to_poll(interest: Interest) -> libc::c_short {
+fn interests_to_poll(interest: Interest) -> PollFlagInt {
     let mut kind = 0;
 
     if interest.is_readable() {
@@ -560,6 +539,11 @@ fn poll(fds: &mut [PollFd], timeout: Option<Duration>) -> io::Result<usize> {
             })
             .unwrap_or(-1);
 
+        #[cfg(target_os = "horizon")] // HorizonOS does not support polling without any FDs
+        if fds.is_empty() {
+            break Ok(0);
+        }
+
         let res = syscall!(poll(
             fds.as_mut_ptr() as *mut libc::pollfd,
             fds.len() as libc::nfds_t,
@@ -578,7 +562,7 @@ fn poll(fds: &mut [PollFd], timeout: Option<Duration>) -> io::Result<usize> {
 #[derive(Debug, Clone)]
 pub struct Event {
     token: Token,
-    events: libc::c_short,
+    events: PollFlagInt,
 }
 
 pub type Events = Vec<Event>;
@@ -639,11 +623,11 @@ pub mod event {
 
     pub fn debug_details(f: &mut fmt::Formatter<'_>, event: &Event) -> fmt::Result {
         #[allow(clippy::trivially_copy_pass_by_ref)]
-        fn check_events(got: &libc::c_short, want: &libc::c_short) -> bool {
+        fn check_events(got: &super::PollFlagInt, want: &super::PollFlagInt) -> bool {
             (*got & want) != 0
         }
         debug_detail!(
-            EventsDetails(libc::c_short),
+            EventsDetails(super::PollFlagInt),
             check_events,
             libc::POLLIN,
             super::POLLPRI,
@@ -663,14 +647,14 @@ pub mod event {
     }
 }
 
-#[cfg(not(target_os = "wasi"))]
+#[cfg(not(any(target_os = "wasi", target_os = "horizon")))]
 #[derive(Debug)]
 pub(crate) struct Waker {
     selector: Selector,
     token: Token,
 }
 
-#[cfg(not(target_os = "wasi"))]
+#[cfg(not(any(target_os = "wasi", target_os = "horizon")))]
 impl Waker {
     pub(crate) fn new(selector: &Selector, token: Token) -> io::Result<Waker> {
         Ok(Waker {
@@ -684,106 +668,9 @@ impl Waker {
     }
 }
 
+mod registered_io_source;
+use registered_io_source::RegistrationRecord;
+
 cfg_io_source! {
-    use crate::Registry;
-
-    struct InternalState {
-        selector: Selector,
-        token: Token,
-        interests: Interest,
-        fd: RawFd,
-        shared_record: Arc<RegistrationRecord>,
-    }
-
-    impl Drop for InternalState {
-        fn drop(&mut self) {
-            if self.shared_record.is_registered() {
-                let _ = self.selector.deregister(self.fd);
-            }
-        }
-    }
-
-    pub(crate) struct IoSourceState {
-        inner: Option<Box<InternalState>>,
-    }
-
-    impl IoSourceState {
-        pub fn new() -> IoSourceState {
-            IoSourceState { inner: None }
-        }
-
-        pub fn do_io<T, F, R>(&self, f: F, io: &T) -> io::Result<R>
-        where
-        F: FnOnce(&T) -> io::Result<R>,
-        {
-            let result = f(io);
-
-            if let Err(err) = &result {
-                if err.kind() == io::ErrorKind::WouldBlock {
-                    self.inner.as_ref().map_or(Ok(()), |state| {
-                        state
-                        .selector
-                        .reregister(state.fd, state.token, state.interests)
-                    })?;
-                }
-            }
-
-            result
-        }
-
-        pub fn register(
-            &mut self,
-            registry: &Registry,
-            token: Token,
-            interests: Interest,
-            fd: RawFd,
-        ) -> io::Result<()> {
-            if self.inner.is_some() {
-                Err(io::ErrorKind::AlreadyExists.into())
-            } else {
-                let selector = registry.selector().try_clone()?;
-
-                selector.register_internal(fd, token, interests).map(move |shared_record| {
-                    let state = InternalState {
-                        selector,
-                        token,
-                        interests,
-                        fd,
-                        shared_record,
-                    };
-
-                    self.inner = Some(Box::new(state));
-                })
-            }
-        }
-
-        pub fn reregister(
-            &mut self,
-            registry: &Registry,
-            token: Token,
-            interests: Interest,
-            fd: RawFd,
-        ) -> io::Result<()> {
-            match self.inner.as_mut() {
-                Some(state) => registry
-                .selector()
-                .reregister(fd, token, interests)
-                .map(|()| {
-                    state.token = token;
-                    state.interests = interests;
-                }),
-                None => Err(io::ErrorKind::NotFound.into()),
-            }
-        }
-
-        pub fn deregister(&mut self, registry: &Registry, fd: RawFd) -> io::Result<()> {
-            if let Some(state) = self.inner.take() {
-                // Marking unregistered will short circuit the drop behaviour of calling
-                // deregister so the call to deregister below is strictly required.
-                state.shared_record.mark_unregistered();
-            }
-
-            registry.selector().deregister(fd)
-        }
-    }
+    pub(crate) use registered_io_source::IoSourceState;
 }

@@ -4,9 +4,9 @@ use std::net::SocketAddr;
 use std::sync::Once;
 
 use windows_sys::Win32::Networking::WinSock::{
-    closesocket, ioctlsocket, socket, AF_INET, AF_INET6, FIONBIO, IN6_ADDR, IN6_ADDR_0,
+    closesocket, ioctlsocket, WSASocketW, AF_INET, AF_INET6, FIONBIO, IN6_ADDR, IN6_ADDR_0,
     INVALID_SOCKET, IN_ADDR, IN_ADDR_0, SOCKADDR, SOCKADDR_IN, SOCKADDR_IN6, SOCKADDR_IN6_0,
-    SOCKET,
+    SOCKET, WSA_FLAG_NO_HANDLE_INHERIT, WSA_FLAG_OVERLAPPED,
 };
 
 /// Initialise the network stack for Windows.
@@ -33,8 +33,9 @@ pub(crate) fn new_ip_socket(addr: SocketAddr, socket_type: i32) -> io::Result<SO
 pub(crate) fn new_socket(domain: u32, socket_type: i32) -> io::Result<SOCKET> {
     init();
 
+    let flags = WSA_FLAG_OVERLAPPED | WSA_FLAG_NO_HANDLE_INHERIT;
     let socket = syscall!(
-        socket(domain as i32, socket_type, 0),
+        WSASocketW(domain as i32, socket_type, 0, std::ptr::null(), 0, flags),
         PartialEq::eq,
         INVALID_SOCKET
     )?;
