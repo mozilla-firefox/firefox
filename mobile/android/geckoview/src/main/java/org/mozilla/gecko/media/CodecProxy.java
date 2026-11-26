@@ -264,7 +264,7 @@ public final class CodecProxy {
     final boolean eos = info.flags == MediaCodec.BUFFER_FLAG_END_OF_STREAM;
 
     if (eos) {
-      return sendInput(Sample.EOS);
+      return sendInput(Sample.createEOS(mSession));
     }
 
     try {
@@ -337,6 +337,7 @@ public final class CodecProxy {
       }
       resetBuffers();
       mRemote.flush();
+      mSession++;
       mFlushed = true;
     } catch (final DeadObjectException e) {
       return false;

@@ -87,7 +87,11 @@ import org.mozilla.gecko.gfx.GeckoSurface;
       }
 
       if (sample.isEOS()) {
-        queueSample(sample);
+        // queueInput() is oneway, so an EOS sent before a flush() can arrive
+        // after it. Queuing it would leave the codec ignoring all new input.
+        if (sample.session >= mSession) {
+          queueSample(sample);
+        }
         return;
       }
 

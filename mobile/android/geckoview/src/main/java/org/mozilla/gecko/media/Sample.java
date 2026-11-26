@@ -16,14 +16,6 @@ import org.mozilla.gecko.annotation.WrapForJNI;
 
 // Parcelable carrying input/output sample data and info cross process.
 public final class Sample implements Parcelable {
-  public static final Sample EOS;
-
-  static {
-    final BufferInfo eosInfo = new BufferInfo();
-    EOS = new Sample();
-    EOS.info.set(0, 0, Long.MIN_VALUE, MediaCodec.BUFFER_FLAG_END_OF_STREAM);
-  }
-
   @WrapForJNI public long session;
 
   public static final int NO_BUFFER = -1;
@@ -135,7 +127,14 @@ public final class Sample implements Parcelable {
   }
 
   public boolean isEOS() {
-    return (this == EOS) || ((info.flags & MediaCodec.BUFFER_FLAG_END_OF_STREAM) != 0);
+    return (info.flags & MediaCodec.BUFFER_FLAG_END_OF_STREAM) != 0;
+  }
+
+  public static Sample createEOS(final long session) {
+    final Sample s = new Sample();
+    s.session = session;
+    s.info.set(0, 0, Long.MIN_VALUE, MediaCodec.BUFFER_FLAG_END_OF_STREAM);
+    return s;
   }
 
   public static Sample obtain() {
