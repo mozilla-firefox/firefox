@@ -14,15 +14,17 @@
 </style>
 <div id="container"><span id="inline-containing-block">xx<div id="out-of-flow"></div></span></div>
 <script>
-const containingBlock = document.getElementById("inline-containing-block").getBoundingClientRect();
-const outOfFlow = document.getElementById("out-of-flow");
-const resolved = getComputedStyle(outOfFlow);
+window.onload = () => {
+  const containingBlock = document.getElementById("inline-containing-block").getBoundingClientRect();
+  const outOfFlow = document.getElementById("out-of-flow");
+  const resolved = getComputedStyle(outOfFlow);
 
-test(() => {
-  assert_equals(parseFloat(resolved.right), containingBlock.width - (outOfFlow.offsetLeft + outOfFlow.offsetWidth));
-}, "Resolved right measures the inline containing block's physical width");
+  test(() => {
+    assert_equals(parseFloat(resolved.right), containingBlock.width - (outOfFlow.offsetLeft + outOfFlow.offsetWidth));
+  }, "Resolved right measures the inline containing block's physical width");
 
-test(() => {
-  assert_equals(parseFloat(resolved.bottom), containingBlock.height - (outOfFlow.offsetTop + outOfFlow.offsetHeight));
-}, "Resolved bottom measures the inline containing block's physical height");
+  test(() => {
+    assert_equals(parseFloat(resolved.bottom), containingBlock.height - (outOfFlow.offsetTop + outOfFlow.offsetHeight));
+  }, "Resolved bottom measures the inline containing block's physical height");
+};
 </script>
