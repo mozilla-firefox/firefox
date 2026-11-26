@@ -33,6 +33,10 @@
     min-width: 260px;
   }
 
+  &[sidebarcommand="viewWidgetsSidebar"] {
+    --sidebar-background-color: light-dark(var(--color-gray-05), var(--color-gray-85));
+  }
+
   #sidebar-container[hidden] ~ & {
     padding-inline-start: var(--space-small);
   }

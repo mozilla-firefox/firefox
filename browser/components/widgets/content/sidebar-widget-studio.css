@@ -4,41 +4,9 @@
 
 :host {
   position: relative;
-  background-color: var(--background-color-canvas);
   display: flex;
   flex-direction: column;
   block-size: 100%;
-}
-
-#close-button,
-#menu-button {
-  --button-border-radius: var(--border-radius-circle);
-
-  @media not (forced-colors) {
-    --button-background-color-ghost: var(--background-color-box);
-    --button-background-color-ghost-hover: color-mix(in srgb, currentColor 14%, var(--background-color-box));
-    --button-background-color-ghost-active: color-mix(in srgb, currentColor 21%, var(--background-color-box));
-
-    &::part(button) {
-      box-shadow: var(--box-shadow-level-1);
-    }
-  }
-}
-
-#header-buttons {
-  position: absolute;
-  inset-block-start: var(--space-large);
-  inset-inline-end: var(--space-large);
-  z-index: 1;
-  display: flex;
-  gap: var(--space-small);
-}
-
-#close-button {
-  /* The shared panel header provides the close button in this mode. */
-  @media -moz-pref("sidebar.visibility", "hide-launcher") {
-    display: none;
-  }
 }
 
 #compose-button {
@@ -53,15 +21,6 @@
   gap: var(--space-medium);
   overflow: auto;
   padding: var(--space-large);
-  padding-block-start: calc(var(--space-large) * 2 + var(--size-item-large));
-
-  @media -moz-pref("sidebar.visibility", "hide-launcher") {
-    padding-block-start: var(--space-large);
-  }
-
-  #sign-in-prompt + & {
-    padding-block-start: var(--space-large);
-  }
 
   &[hidden] {
     display: none;
@@ -78,7 +37,7 @@ widget-placeholder {
   margin-inline: var(--space-large);
 
   .widgets[hidden] + & {
-    margin-block-start: calc(var(--space-large) * 2 + var(--size-item-large));
+    margin-block-start: var(--space-small);
   }
 }
 
@@ -97,7 +56,7 @@ widget-composer {
   box-sizing: border-box;
   flex-shrink: 0;
   overflow: hidden;
-  margin-block-start: calc(var(--space-large) * 2 + var(--size-item-large));
+  margin-block-start: var(--space-small);
   margin-inline: var(--space-large);
   padding-block: var(--space-large) 0;
   padding-inline: var(--space-large);

@@ -3,13 +3,13 @@
 # file, You can obtain one at http://mozilla.org/MPL/2.0/.
 
 # Title of the widgets sidebar panel.
-widget-studio-title = Widget Studio
+custom-widgets-title = Custom Widgets
 
-menu-view-widget-studio =
-  .label = Widget Studio
+menu-view-custom-widgets =
+  .label = Custom Widgets
 
-sidebar-menu-widget-studio-label =
-  .label = Widget Studio
+sidebar-menu-custom-widgets-label =
+  .label = Custom Widgets
 
 # Heading and description of the "Custom widgets" group in the AI controls
 # section of Settings, shown to people who turned on custom widgets in Firefox

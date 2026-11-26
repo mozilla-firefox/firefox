@@ -223,7 +223,7 @@ add_task(async function test_startup_shows_nothing_until_status_known() {
     ok(panel.authentication.isStatusPending, "The status is unknown");
     ok(!panel.shadowRoot.querySelector("#sign-in-prompt"), "No prompt yet");
     ok(!panel.composer && !panel.composeButton, "No composer yet");
-    ok(panel.closeButton, "The close button shows");
+    ok(SidebarController.panelHeader.closeButton, "The close button shows");
     ok(panel.shadowRoot.querySelector("slot"), "The slot is rendered");
 
     Services.obs.notifyObservers(null, UIState.ON_UPDATE);

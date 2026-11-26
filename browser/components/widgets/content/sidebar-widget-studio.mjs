@@ -12,8 +12,6 @@ import {
 import { SidebarPage } from "chrome://browser/content/sidebar/sidebar-page.mjs";
 import { SUBMIT_ICON } from "chrome://browser/content/widgets/widget-composer.mjs";
 // eslint-disable-next-line import-x/no-unassigned-import
-import "chrome://global/content/elements/panel-list.mjs";
-// eslint-disable-next-line import-x/no-unassigned-import
 import "chrome://browser/content/widgets/moz-widget.mjs";
 // eslint-disable-next-line import-x/no-unassigned-import
 import "chrome://browser/content/widgets/widget-placeholder.mjs";
@@ -66,12 +64,14 @@ export class SidebarWidgetStudio extends SidebarPage {
 
   static queries = {
     composeButton: "#compose-button",
-    closeButton: "#close-button",
-    menuButton: "#menu-button",
-    menu: "#widget-studio-menu",
     composer: "widget-composer",
     placeholder: "widget-placeholder",
   };
+
+  // The more button and its menu live in the shared sidebar header, not in
+  // this page's shadow root, and are undefined while the page is disconnected.
+  menuButton;
+  menu;
 
   authentication = new lazy.AuthenticationController(this);
   widgets = new lazy.WidgetsController(this);
@@ -87,11 +87,13 @@ export class SidebarWidgetStudio extends SidebarPage {
   connectedCallback() {
     super.connectedCallback();
     this.composing = !this.widgets.generating && !this.widgets.failed;
+    this.#mountHeaderMenu();
     this.addSidebarFocusedListeners();
   }
 
   disconnectedCallback() {
     super.disconnectedCallback();
+    this.#unmountHeaderMenu();
     this.removeSidebarFocusedListeners();
   }
 
@@ -124,11 +126,52 @@ export class SidebarWidgetStudio extends SidebarPage {
     }
   }
 
-  #closePanel(e) {
-    let controller = this.sidebarController;
-    controller._maybeAnimate(() =>
-      controller.hide({ restoreFocus: e.detail === 0 })
+  #mountHeaderMenu() {
+    if (this.menuButton) {
+      return;
+    }
+
+    let doc = this.topWindow.document;
+    this.menu = doc.createElement("panel-list");
+    this.menu.id = "widget-studio-menu";
+    this.menu.slot = "actions";
+
+    let shareFeedback = doc.createElement("panel-item");
+    shareFeedback.setAttribute("no-icon", "");
+    doc.l10n.setAttributes(shareFeedback, "widget-studio-menu-share-feedback");
+    shareFeedback.addEventListener("click", () =>
+      this.#openUrl("https://connect.mozilla.org/")
     );
+
+    let about = doc.createElement("panel-item");
+    about.setAttribute("no-icon", "");
+    doc.l10n.setAttributes(about, "widget-studio-menu-about");
+    about.addEventListener("click", () => this.#openSupportPage());
+    this.menu.append(shareFeedback, about);
+
+    this.menuButton = doc.createElement("moz-button");
+    this.menuButton.slot = "actions";
+    this.menuButton.setAttribute("type", "ghost icon");
+    this.menuButton.setAttribute(
+      "iconsrc",
+      "chrome://global/skin/icons/more.svg"
+    );
+    this.menuButton.setAttribute("menuid", this.menu.id);
+    doc.l10n.setAttributes(this.menuButton, "sidebar-options-menu-button");
+
+    this.sidebarController.panelHeader.append(this.menuButton, this.menu);
+  }
+
+  #unmountHeaderMenu() {
+    if (!this.menu) {
+      return;
+    }
+
+    this.menu.hide(null, { force: true });
+    this.menuButton.remove();
+    this.menu.remove();
+    this.menuButton = undefined;
+    this.menu = undefined;
   }
 
   async #openComposer() {
@@ -329,34 +372,6 @@ export class SidebarWidgetStudio extends SidebarPage {
         rel="stylesheet"
         href="chrome://browser/content/widgets/sidebar-widget-studio.css"
       />
-      <div id="header-buttons">
-        <moz-button
-          id="menu-button"
-          type="ghost icon"
-          iconsrc="chrome://global/skin/icons/more.svg"
-          menuid="widget-studio-menu"
-          data-l10n-id="sidebar-options-menu-button"
-        ></moz-button>
-        <moz-button
-          id="close-button"
-          type="ghost icon"
-          iconsrc="chrome://global/skin/icons/close.svg"
-          data-l10n-id="sidebar-panel-header-close-button"
-          @click=${this.#closePanel}
-        ></moz-button>
-      </div>
-      <panel-list id="widget-studio-menu">
-        <panel-item
-          no-icon
-          data-l10n-id="widget-studio-menu-share-feedback"
-          @click=${() => this.#openUrl("https://connect.mozilla.org/")}
-        ></panel-item>
-        <panel-item
-          no-icon
-          data-l10n-id="widget-studio-menu-about"
-          @click=${this.#openSupportPage}
-        ></panel-item>
-      </panel-list>
       ${this.signInTemplate()}
       <div class="widgets" ?hidden=${!this.widgets.all.length}>
         <slot></slot>

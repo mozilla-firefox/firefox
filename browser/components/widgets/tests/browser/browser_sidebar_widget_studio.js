@@ -75,13 +75,10 @@ add_task(async function test_nimbus_enrolment_toggles_tool() {
 
 add_task(async function test_close_button_closes_panel() {
   let panel = await openWidgetsSidebar();
-  ok(
-    BrowserTestUtils.isHidden(document.getElementById("sidebar-panel-header")),
-    "Header hidden"
-  );
+  ok(BrowserTestUtils.isVisible(SidebarController.panelHeader), "Header shown");
 
   await panel.updateComplete;
-  panel.closeButton.click();
+  SidebarController.panelHeader.closeButton.click();
   await TestUtils.waitForCondition(
     () => document.getElementById("sidebar-box").hidden,
     "Panel closed"
@@ -91,32 +88,46 @@ add_task(async function test_close_button_closes_panel() {
 async function openMenuByKeyboard(panel) {
   let shown = BrowserTestUtils.waitForEvent(panel.menu, "shown");
   panel.menuButton.focus();
-  EventUtils.synthesizeKey("KEY_Enter", {}, panel.ownerGlobal);
+  EventUtils.synthesizeKey("KEY_Enter", {}, window);
   await shown;
 }
 
 async function closeMenu(panel) {
   let hidden = BrowserTestUtils.waitForEvent(panel.menu, "hidden");
-  EventUtils.synthesizeKey("KEY_Escape", {}, panel.ownerGlobal);
+  EventUtils.synthesizeKey("KEY_Escape", {}, window);
   await hidden;
 }
 
 add_task(async function test_menu_button_position_and_name() {
   let panel = await openWidgetsSidebar();
   await panel.updateComplete;
+  let panelHeader = SidebarController.panelHeader;
+  await panelHeader.updateComplete;
   await panel.menuButton.updateComplete;
-  ok(
-    panel.menuButton.compareDocumentPosition(panel.closeButton) &
-      Node.DOCUMENT_POSITION_FOLLOWING,
-    "Menu button precedes the close button"
+  is(panel.menuButton.parentNode, panelHeader, "Menu button is in the header");
+  is(panel.menuButton.slot, "actions", "Menu button uses the actions slot");
+  let menuRect = panel.menuButton.getBoundingClientRect();
+  let closeRect = panelHeader.closeButton.getBoundingClientRect();
+  let gap = parseFloat(getComputedStyle(panel.menuButton).marginInlineEnd);
+  Assert.lessOrEqual(
+    Math.abs(closeRect.left - menuRect.right - gap),
+    1,
+    "Menu button is one end margin before the close button"
   );
-  await panel.ownerDocument.l10n.translateFragment(panel.menuButton);
+  await document.l10n.translateFragment(panel.menuButton);
   await panel.menuButton.updateComplete;
   ok(panel.menuButton.buttonEl.title, "Menu button has a localized name");
   is(
     panel.menuButton.buttonEl.getAttribute("aria-haspopup"),
     "menu",
     "Menu button exposes its menu"
+  );
+  panel.menuButton.focus();
+  EventUtils.synthesizeKey("KEY_Tab", {}, window);
+  is(
+    panelHeader.shadowRoot.activeElement,
+    panelHeader.closeButton,
+    "Tab moves from the menu button to the close button"
   );
   SidebarController.hide();
 });
@@ -145,7 +156,7 @@ add_task(async function test_menu_items_open_links() {
       await openMenuByKeyboard(panel);
       hidden = BrowserTestUtils.waitForEvent(panel.menu, "hidden");
       items[1].focus();
-      EventUtils.synthesizeKey("KEY_Enter", {}, panel.ownerGlobal);
+      EventUtils.synthesizeKey("KEY_Enter", {}, window);
       await hidden;
       ok(
         openLink.calledOnceWithExactly(
@@ -169,11 +180,125 @@ add_task(async function test_menu_escape_restores_focus() {
   await openMenuByKeyboard(panel);
   await closeMenu(panel);
   is(
-    panel.shadowRoot.activeElement,
+    window.document.activeElement,
     panel.menuButton,
     "Escape restores focus to the menu button"
   );
   SidebarController.hide();
+});
+
+add_task(async function test_header_actions_cleanup() {
+  let panelHeader = SidebarController.panelHeader;
+  try {
+    for (let attempt = 0; attempt < 2; attempt++) {
+      await openWidgetsSidebar();
+      is(
+        panelHeader.querySelectorAll(':scope > moz-button[slot="actions"]')
+          .length,
+        1,
+        "Header has exactly one menu button"
+      );
+      is(
+        panelHeader.querySelectorAll(':scope > panel-list[slot="actions"]')
+          .length,
+        1,
+        "Header has exactly one menu"
+      );
+      if (attempt == 0) {
+        SidebarController.hide();
+        await TestUtils.waitForCondition(
+          () => !panelHeader.querySelector(':scope > [slot="actions"]'),
+          "Hiding Widget Studio removes its header actions"
+        );
+      }
+    }
+
+    await SidebarTestUtils.showPanel(window, "viewBookmarksSidebar");
+    is(
+      panelHeader.querySelectorAll(':scope > [slot="actions"]').length,
+      0,
+      "Switching panels removes Widget Studio's header actions"
+    );
+  } finally {
+    SidebarController.hide();
+  }
+});
+
+add_task(async function test_header_menu_removed_while_open() {
+  let panelHeader = SidebarController.panelHeader;
+  for (let pendingOpen of [false, true]) {
+    let panel = await openWidgetsSidebar();
+    await panel.menuButton.updateComplete;
+    let alignment = Promise.withResolvers();
+    let setAlign;
+    try {
+      if (pendingOpen) {
+        setAlign = sinon
+          .stub(panel.menu, "setAlign")
+          .returns(alignment.promise);
+        panel.menuButton.focus();
+        EventUtils.synthesizeKey("KEY_Enter", {}, window);
+        await TestUtils.waitForCondition(
+          () => setAlign.calledOnce,
+          "Menu is waiting for alignment"
+        );
+      } else {
+        await openMenuByKeyboard(panel);
+      }
+
+      await SidebarTestUtils.showPanel(window, "viewBookmarksSidebar");
+      alignment.resolve();
+      await TestUtils.waitForTick();
+
+      is(
+        panelHeader.querySelectorAll(':scope > [slot="actions"]').length,
+        0,
+        `Switching panels removes the ${pendingOpen ? "opening" : "open"} menu and button`
+      );
+      for (let key of ["Tab", "ArrowDown"]) {
+        let event = new KeyboardEvent("keydown", {
+          key,
+          bubbles: true,
+          cancelable: true,
+        });
+        document.dispatchEvent(event);
+        ok(
+          !event.defaultPrevented,
+          `${key} is not intercepted after removing the ${pendingOpen ? "opening" : "open"} menu`
+        );
+      }
+    } finally {
+      alignment.resolve();
+      setAlign?.restore();
+      SidebarController.hide();
+    }
+  }
+});
+
+add_task(async function test_hide_launcher_header() {
+  await SpecialPowers.pushPrefEnv({
+    set: [["sidebar.visibility", "hide-launcher"]],
+  });
+  try {
+    setSignedIn(false);
+    let panel = await openWidgetsSidebar();
+    let panelHeader = SidebarController.panelHeader;
+    await panelHeader.updateComplete;
+    is(
+      panel.menuButton.parentNode,
+      panelHeader,
+      "Menu button is in the header"
+    );
+    is(panel.menuButton.slot, "actions", "Menu button uses the actions slot");
+    ok(
+      !panel.shadowRoot.querySelector("#close-button, #header-buttons"),
+      "Page has no floating header buttons"
+    );
+    ok(panelHeader.heading, "The shared header has a title");
+  } finally {
+    SidebarController.hide();
+    await SpecialPowers.popPrefEnv();
+  }
 });
 
 add_task(async function test_composer_needs_authentication() {
@@ -249,7 +374,7 @@ add_task(async function test_panel_composer() {
     "Compose button focused"
   );
 
-  panel.closeButton.focus();
+  SidebarController.panelHeader.closeButton.focus();
   panel.handleSidebarFocusedEvent();
   is(
     panel.shadowRoot.activeElement,

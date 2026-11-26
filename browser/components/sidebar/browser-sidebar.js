@@ -283,10 +283,9 @@ var SidebarController = {
           elementId: "sidebar-switcher-widgets",
           url: "chrome://browser/content/widgets/sidebar-widget-studio.html",
           menuId: "menu_widgetsSidebar",
-          menuL10nId: "menu-view-widget-studio",
-          revampL10nId: "sidebar-menu-widget-studio-label",
+          menuL10nId: "menu-view-custom-widgets",
+          revampL10nId: "sidebar-menu-custom-widgets-label",
           iconUrl: "chrome://browser/skin/topsites.svg",
-          hasCustomHeader: true,
         }
       );
     }
