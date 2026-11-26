@@ -1849,7 +1849,6 @@ networking:
       - PeerApplicationError
       - PeerError
       - StatelessReset
-      - TooManyPtos
       - TooMuchData
       - UnexpectedMessage
       - UnknownConnectionId
