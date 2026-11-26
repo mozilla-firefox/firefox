@@ -29,6 +29,7 @@ UNIFIED_SOURCES += [
     "TestQcms.cpp",
     "TestRegion.cpp",
     "TestRemoteTextureMap.cpp",
+    "TestShapeText8Bit.cpp",
     "TestSkipChars.cpp",
     "TestSwizzle.cpp",
     "TestTextures.cpp",

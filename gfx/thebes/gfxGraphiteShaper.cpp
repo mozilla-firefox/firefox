@@ -125,11 +125,24 @@ static inline size_t CountUnicodes(const char16_t* aText, uint32_t aLength) {
   return total;
 }
 
-bool gfxGraphiteShaper::ShapeText(const char16_t* aText, uint32_t aOffset,
-                                  uint32_t aLength, Script aScript,
-                                  nsAtom* aLanguage, bool aVertical,
-                                  RoundingFlags aRounding,
+bool gfxGraphiteShaper::ShapeText(const void* aTextData, TextEncoding aEncoding,
+                                  uint32_t aOffset, uint32_t aLength,
+                                  Script aScript, nsAtom* aLanguage,
+                                  bool aVertical, RoundingFlags aRounding,
                                   gfxShapedText* aShapedText) {
+  // Graphite takes UTF-16, so expand Latin-1 text.
+  nsAutoString expandedText;
+  const char16_t* aText;
+  if (aEncoding == TextEncoding::Latin1) {
+    nsDependentCSubstring latin1(static_cast<const char*>(aTextData), aLength);
+    if (!AppendASCIItoUTF16(latin1, expandedText, mozilla::fallible)) {
+      return false;
+    }
+    aText = expandedText.BeginReading();
+  } else {
+    aText = static_cast<const char16_t*>(aTextData);
+  }
+
   const gfxFontStyle* style = mFont->GetStyle();
   auto t_mGrFace = rlbox::from_opaque(mGrFace);
   auto t_mGrFont = rlbox::from_opaque(mGrFont);

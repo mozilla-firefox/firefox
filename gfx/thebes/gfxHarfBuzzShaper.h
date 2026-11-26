@@ -61,9 +61,10 @@ class gfxHarfBuzzShaper : public gfxFontShaper {
   // Returns whether the shaper has been successfully initialized.
   bool IsInitialized() const { return mHBFont != nullptr; }
 
-  bool ShapeText(const char16_t* aText, uint32_t aOffset, uint32_t aLength,
-                 Script aScript, nsAtom* aLanguage, bool aVertical,
-                 RoundingFlags aRounding, gfxShapedText* aShapedText) override;
+  bool ShapeText(const void* aText, TextEncoding aEncoding, uint32_t aOffset,
+                 uint32_t aLength, Script aScript, nsAtom* aLanguage,
+                 bool aVertical, RoundingFlags aRounding,
+                 gfxShapedText* aShapedText) override;
 
   // map unicode character to glyph ID
   hb_codepoint_t GetNominalGlyph(hb_codepoint_t unicode) const;
@@ -141,9 +142,9 @@ class gfxHarfBuzzShaper : public gfxFontShaper {
   hb_position_t GetGlyphHAdvanceUncached(hb_codepoint_t gid) const;
 
   nsresult SetGlyphsFromRun(gfxShapedText* aShapedText, uint32_t aOffset,
-                            uint32_t aLength, const char16_t* aText,
-                            bool aVertical, RoundingFlags aRounding)
-      MOZ_REQUIRES(mMutex);
+                            uint32_t aLength, const void* aText,
+                            TextEncoding aEncoding, bool aVertical,
+                            RoundingFlags aRounding) MOZ_REQUIRES(mMutex);
 
   // retrieve glyph positions, applying advance adjustments and attachments
   // returns results in appUnits

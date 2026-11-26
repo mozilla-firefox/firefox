@@ -687,11 +687,16 @@ class gfxFontShaper {
 
   virtual ~gfxFontShaper() = default;
 
+  // The encoding of text passed to ShapeText: char16_t UTF-16 code units, or
+  // uint8_t Latin-1 characters.
+  enum class TextEncoding : uint8_t { Utf16, Latin1 };
+
   // Shape a piece of text and store the resulting glyph data into
   // aShapedText. Parameters aOffset/aLength indicate the range of
-  // aShapedText to be updated; aLength is also the length of aText.
-  virtual bool ShapeText(const char16_t* aText, uint32_t aOffset,
-                         uint32_t aLength, Script aScript,
+  // aShapedText to be updated; aLength is also the length of aText, which
+  // points to code units of the given encoding.
+  virtual bool ShapeText(const void* aText, TextEncoding aEncoding,
+                         uint32_t aOffset, uint32_t aLength, Script aScript,
                          nsAtom* aLanguage,  // may be null, indicating no
                                              // lang-specific shaping to be
                                              // applied
@@ -2169,24 +2174,18 @@ class gfxFont {
   // performs safe actions independent of the value returned.
   tainted_boolean_hint SpaceMayParticipateInShaping(Script aRunScript) const;
 
-  // For 8-bit text, expand to 16-bit and then call the following method.
-  bool ShapeText(const uint8_t* aText,
+  // Call the appropriate shaper to generate glyphs for aText (UTF-16 or
+  // Latin-1, as given by aEncoding) and store them into aShapedText.
+  bool ShapeText(const void* aText, gfxFontShaper::TextEncoding aEncoding,
                  uint32_t aOffset,  // dest offset in gfxShapedText
                  uint32_t aLength, Script aScript, nsAtom* aLanguage,
                  bool aVertical, RoundingFlags aRounding,
                  gfxShapedText* aShapedText);  // where to store the result
 
-  // Call the appropriate shaper to generate glyphs for aText and store
-  // them into aShapedText.
-  bool ShapeText(const char16_t* aText, uint32_t aOffset, uint32_t aLength,
-                 Script aScript, nsAtom* aLanguage, bool aVertical,
-                 RoundingFlags aRounding, gfxShapedText* aShapedText);
-
   // Helper to adjust for synthetic bold and set character-type flags
   // in the shaped text; implementations of ShapeText should call this
   // after glyph shaping has been completed.
-  void PostShapingFixup(const char16_t* aText,
-                        uint32_t aOffset,  // position within aShapedText
+  void PostShapingFixup(uint32_t aOffset,  // position within aShapedText
                         uint32_t aLength, bool aVertical,
                         gfxShapedText* aShapedText);
 

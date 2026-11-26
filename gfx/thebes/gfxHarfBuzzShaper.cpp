@@ -1372,10 +1372,10 @@ void gfxHarfBuzzShaper::InitializeVertical() {
   }
 }
 
-bool gfxHarfBuzzShaper::ShapeText(const char16_t* aText, uint32_t aOffset,
-                                  uint32_t aLength, Script aScript,
-                                  nsAtom* aLanguage, bool aVertical,
-                                  RoundingFlags aRounding,
+bool gfxHarfBuzzShaper::ShapeText(const void* aText, TextEncoding aEncoding,
+                                  uint32_t aOffset, uint32_t aLength,
+                                  Script aScript, nsAtom* aLanguage,
+                                  bool aVertical, RoundingFlags aRounding,
                                   gfxShapedText* aShapedText) {
   const gfxFontStyle* style = mFont->GetStyle();
 
@@ -1481,8 +1481,13 @@ bool gfxHarfBuzzShaper::ShapeText(const char16_t* aText, uint32_t aOffset,
   hb_buffer_set_language(mBuffer, language);
 
   uint32_t length = aLength;
-  hb_buffer_add_utf16(mBuffer, reinterpret_cast<const uint16_t*>(aText), length,
-                      0, length);
+  if (aEncoding == TextEncoding::Latin1) {
+    hb_buffer_add_latin1(mBuffer, static_cast<const uint8_t*>(aText), length, 0,
+                         length);
+  } else {
+    hb_buffer_add_utf16(mBuffer, static_cast<const uint16_t*>(aText), length, 0,
+                        length);
+  }
 
   hb_shape(mHBFont, mBuffer, features.Elements(), features.Length());
 
@@ -1491,7 +1496,7 @@ bool gfxHarfBuzzShaper::ShapeText(const char16_t* aText, uint32_t aOffset,
   }
 
   nsresult rv = SetGlyphsFromRun(aShapedText, aOffset, aLength, aText,
-                                 aVertical, aRounding);
+                                 aEncoding, aVertical, aRounding);
 
   NS_WARNING_ASSERTION(NS_SUCCEEDED(rv),
                        "failed to store glyphs into gfxShapedWord");
@@ -1507,7 +1512,8 @@ bool gfxHarfBuzzShaper::ShapeText(const char16_t* aText, uint32_t aOffset,
 
 nsresult gfxHarfBuzzShaper::SetGlyphsFromRun(gfxShapedText* aShapedText,
                                              uint32_t aOffset, uint32_t aLength,
-                                             const char16_t* aText,
+                                             const void* aText,
+                                             TextEncoding aEncoding,
                                              bool aVertical,
                                              RoundingFlags aRounding) {
   typedef gfxShapedText::CompressedGlyph CompressedGlyph;
@@ -1663,8 +1669,11 @@ nsresult gfxHarfBuzzShaper::SetGlyphsFromRun(gfxShapedText* aShapedText,
     // etc by the shaping process, and remove from the run.
     // (This may be done within harfbuzz eventually.)
     if (glyphsInClump == 1 && baseCharIndex + 1 == endCharIndex &&
-        aShapedText->FilterIfIgnorable(aOffset + baseCharIndex,
-                                       aText[baseCharIndex])) {
+        aShapedText->FilterIfIgnorable(
+            aOffset + baseCharIndex,
+            aEncoding == TextEncoding::Latin1
+                ? static_cast<const uint8_t*>(aText)[baseCharIndex]
+                : static_cast<const char16_t*>(aText)[baseCharIndex])) {
       glyphStart = glyphEnd;
       charStart = charEnd;
       continue;
