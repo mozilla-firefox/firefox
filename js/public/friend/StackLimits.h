@@ -8,10 +8,12 @@
 #define js_friend_StackLimits_h
 
 #include "mozilla/Attributes.h"  // MOZ_ALWAYS_INLINE, MOZ_COLD
+#include "mozilla/CheckedInt.h"  // mozilla::CheckedInt
 #include "mozilla/Likely.h"      // MOZ_LIKELY
 #include "mozilla/Variant.h"     // mozilla::Variant, mozilla::AsVariant
 
 #include <stddef.h>  // size_t
+#include <stdint.h>  // uintptr_t
 
 #include "jstypes.h"  // JS_PUBLIC_API
 
@@ -162,6 +164,8 @@ class MOZ_RAII AutoCheckRecursionLimit {
       JSContext* cx, void* sp) const;
   [[nodiscard]] MOZ_ALWAYS_INLINE bool checkWithStackPointerDontReport(
       FrontendContext* fc, void* sp) const;
+  [[nodiscard]] MOZ_ALWAYS_INLINE bool checkWithStackPointerAndExtraDontReport(
+      JSContext* cx, void* sp, size_t extra) const;
 
   [[nodiscard]] MOZ_ALWAYS_INLINE bool checkConservative(JSContext* cx) const;
   [[nodiscard]] MOZ_ALWAYS_INLINE bool checkConservativeDontReport(
@@ -265,17 +269,28 @@ MOZ_ALWAYS_INLINE bool AutoCheckRecursionLimit::checkWithStackPointerDontReport(
 MOZ_ALWAYS_INLINE bool AutoCheckRecursionLimit::checkWithExtra(
     JSContext* cx, size_t extra) const {
   char stackDummy;
-  char* sp = &stackDummy;
-#if JS_STACK_GROWTH_DIRECTION > 0
-  sp += extra;
-#else
-  sp -= extra;
-#endif
-  if (MOZ_UNLIKELY(!checkWithStackPointerDontReport(cx, sp))) {
+  if (MOZ_UNLIKELY(
+          !checkWithStackPointerAndExtraDontReport(cx, &stackDummy, extra))) {
     ReportOverRecursed(cx);
     return false;
   }
   return true;
+}
+
+MOZ_ALWAYS_INLINE bool
+AutoCheckRecursionLimit::checkWithStackPointerAndExtraDontReport(
+    JSContext* cx, void* sp, size_t extra) const {
+  mozilla::CheckedInt<uintptr_t> newsp = reinterpret_cast<uintptr_t>(sp);
+#if JS_STACK_GROWTH_DIRECTION > 0
+  newsp += uintptr_t(extra);
+#else
+  newsp -= uintptr_t(extra);
+#endif
+  if (MOZ_UNLIKELY(!newsp.isValid())) {
+    return false;
+  }
+  return checkWithStackPointerDontReport(
+      cx, reinterpret_cast<void*>(newsp.value()));
 }
 
 MOZ_ALWAYS_INLINE bool AutoCheckRecursionLimit::checkSystem(
