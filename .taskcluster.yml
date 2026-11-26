@@ -384,7 +384,13 @@ tasks:
                                 headRev: '${push.revision}'
                       - $switch:
                             'tasks_for == "github-push"':
-                                ownerEmail: '${event.pusher.email}'
+                                # GitHub apps such as Lando push without an email, use
+                                # the committer's then. Chain of trust rebuilds the event
+                                # with only `pusher.email`, set to the resulting owner.
+                                ownerEmail:
+                                    $if: 'event.pusher.email'
+                                    then: '${event.pusher.email}'
+                                    else: '${event.head_commit.committer.email}'
                                 baseRepoUrl: '${event.repository.html_url}'
                                 repoUrl: '${event.repository.html_url}'
                                 project: '${event.repository.name}'

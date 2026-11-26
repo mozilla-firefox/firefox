@@ -69,6 +69,48 @@ class TestTaskclusterYml(unittest.TestCase):
         )
         self.assertNotIn("matrixBody", rendered["tasks"][0]["extra"]["notify"])
 
+    def github_push_context(self, pusher, **event):
+        return {
+            "tasks_for": "github-push",
+            "event": {
+                "pusher": pusher,
+                "repository": {
+                    "html_url": "https://github.com/mozilla-firefox/firefox-crb",
+                    "name": "firefox-crb",
+                },
+                "ref": "refs/heads/development/code-review/D4242",
+                "before": "e8aebe488b2f2e567940577de25013d00e818f7c",
+                "after": "e8d2d9aff5026ef1f1777b781b47fdcbdb9d8f20",
+                **event,
+            },
+            "as_slugid": lambda name: slugid.nice(),
+        }
+
+    def render_owner(self, context):
+        rendered = jsone.render(self.taskcluster_yml, context)
+        return rendered["tasks"][0]["metadata"]["owner"]
+
+    def test_github_push_owner_from_pusher(self):
+        context = self.github_push_context(
+            {"name": "someone", "email": "someone@mozilla.com"},
+            head_commit={"committer": {"email": "committer@mozilla.com"}},
+        )
+        self.assertEqual(self.render_owner(context), "someone@mozilla.com")
+
+    def test_github_push_owner_from_committer(self):
+        # GitHub apps such as Lando push without an email.
+        context = self.github_push_context(
+            {"name": "lando-worker[bot]", "email": ""},
+            head_commit={"committer": {"email": "committer@mozilla.com"}},
+        )
+        owner = self.render_owner(context)
+        self.assertEqual(owner, "committer@mozilla.com")
+
+        # Chain of trust rebuilds the event without head_commit, and with the
+        # task owner as the pusher email.
+        cot_context = self.github_push_context({"email": owner})
+        self.assertEqual(self.render_owner(cot_context), owner)
+
     def test_cron(self):
         context = {
             "tasks_for": "cron",
