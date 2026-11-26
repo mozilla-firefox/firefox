@@ -861,6 +861,7 @@ impl<'a> SceneBuilder<'a> {
                     self.build_sticky_frame(
                         descriptor,
                         parent_space,
+                        pipeline_id,
                     );
                 }
                 SpatialTreeItem::Invalid => {
@@ -1067,6 +1068,7 @@ impl<'a> SceneBuilder<'a> {
         &mut self,
         info: &StickyFrameDescriptor,
         parent_node_index: SpatialNodeIndex,
+        pipeline_id: PipelineId,
     ) {
         let sticky_frame_info = StickyFrameInfo::new(
             info.bounds,
@@ -1079,7 +1081,7 @@ impl<'a> SceneBuilder<'a> {
         let index = self.spatial_tree.add_sticky_frame(
             parent_node_index,
             sticky_frame_info,
-            info.id.pipeline_id(),
+            pipeline_id,
         );
         self.id_to_index_mapper_stack.last_mut().unwrap().add_spatial_node(info.id, index);
     }
