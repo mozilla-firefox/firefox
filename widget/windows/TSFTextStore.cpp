@@ -3798,15 +3798,15 @@ void TSFTextStore::CreateNativeCaret() {
 
   // Don't create native caret after destroyed or when we need to wait for end
   // of query selection.
-  if (mDestroyed) {
+  if (mDestroyed) [[unlikely]] {
     return;
   }
 
-  MOZ_LOG(gIMELog, LogLevel::Debug,
-          ("0x%p   TSFTextStore::CreateNativeCaret(), mComposition=%s, "
-           "mPendingToCreateNativeCaret=%s",
-           this, ToString(mComposition).c_str(),
-           TSFUtils::BoolToChar(mPendingToCreateNativeCaret)));
+  MOZ_LOG_FMT(gIMELog, LogLevel::Debug,
+              "{}   TSFTextStore::CreateNativeCaret(), mComposition={}, "
+              "mPendingToCreateNativeCaret={}",
+              static_cast<void*>(this), mComposition,
+              mPendingToCreateNativeCaret);
 
   // If we're initializing selection, we should create native caret when it's
   // done.
@@ -3816,31 +3816,38 @@ void TSFTextStore::CreateNativeCaret() {
   }
 
   Maybe<Selection>& selectionForTSF = SelectionForTSF();
-  if (MOZ_UNLIKELY(selectionForTSF.isNothing())) {
-    MOZ_LOG(gIMELog, LogLevel::Error,
-            ("0x%p   TSFTextStore::CreateNativeCaret() FAILED due to "
-             "SelectionForTSF() failure",
-             this));
+  if (selectionForTSF.isNothing()) [[unlikely]] {
+    MOZ_LOG_FMT(gIMELog, LogLevel::Error,
+                "{}   TSFTextStore::CreateNativeCaret() FAILED due to "
+                "SelectionForTSF() failure",
+                static_cast<void*>(this));
     return;
   }
-  if (!selectionForTSF->HasRange() && mComposition.isNothing()) {
+  if (!selectionForTSF->HasRange() && mComposition.isNothing()) [[unlikely]] {
     // If there is no selection range nor composition, then, we don't have a
     // good position to show windows of TIP...
     // XXX It seems that storing last caret rect and using it in this case might
     // be better?
-    MOZ_LOG(gIMELog, LogLevel::Warning,
-            ("0x%p   TSFTextStore::CreateNativeCaret() couludn't create native "
-             "caret due to no selection range",
-             this));
+    MOZ_LOG_FMT(gIMELog, LogLevel::Warning,
+                "{}   TSFTextStore::CreateNativeCaret() couldn't create native "
+                "caret due to no selection range",
+                static_cast<void*>(this));
     return;
   }
 
-  WidgetQueryContentEvent queryCaretRectEvent(true, eQueryCaretRect, mWidget);
+  const RefPtr<TextEventDispatcher> dispatcher = mDispatcher;
+  if (!dispatcher) [[unlikely]] {
+    MOZ_LOG_FMT(gIMELog, LogLevel::Error,
+                "{}   TSFTextStore::CreateNativeCaret() FAILED due to "
+                "no text event dispatcher",
+                static_cast<void*>(this));
+    return;
+  }
+
   // Don't request flushing pending layout because we must have the latest
   // layout since we already caches selection above.
   QueryContentOptions options;
   options.mNeedsToFlushLayout = false;
-  mWidget->InitEvent(queryCaretRectEvent);
 
   // XXX If this is called without composition and the selection isn't
   //     collapsed, is it OK?
@@ -3862,23 +3869,26 @@ void TSFTextStore::CreateNativeCaret() {
     options.mRelativeToInsertionPoint = true;
     caretOffset -= selectionForTSF->StartOffset();
   }
-  queryCaretRectEvent.InitForQueryCaretRect(caretOffset, options);
-
-  DispatchEvent(queryCaretRectEvent);
-  if (NS_WARN_IF(queryCaretRectEvent.Failed())) {
-    MOZ_LOG(gIMELog, LogLevel::Error,
-            ("0x%p   TSFTextStore::CreateNativeCaret() FAILED due to "
-             "eQueryCaretRect failure (offset=%lld)",
-             this, caretOffset));
+  const Maybe<QueryContentResult> queryCaretRectResult =
+      dispatcher->QueryCaretRect(caretOffset, options);
+  if (NS_WARN_IF(queryCaretRectResult.isNothing()) || NS_WARN_IF(!mWidget) ||
+      NS_WARN_IF(mDestroyed)) [[unlikely]] {
+    MOZ_LOG_FMT(gIMELog, LogLevel::Error,
+                "{}   TSFTextStore::CreateNativeCaret() FAILED due to "
+                "TextEventDispatcher::QueryCaretRect() failure (offset={}, "
+                "options.mRelativeToInsertionPoint={})",
+                static_cast<void*>(this), caretOffset,
+                options.mRelativeToInsertionPoint);
     return;
   }
 
   if (!IMEHandler::CreateNativeCaret(static_cast<nsWindow*>(mWidget.get()),
-                                     queryCaretRectEvent.mReply->mRect)) {
-    MOZ_LOG(gIMELog, LogLevel::Error,
-            ("0x%p   TSFTextStore::CreateNativeCaret() FAILED due to "
-             "IMEHandler::CreateNativeCaret() failure",
-             this));
+                                     queryCaretRectResult->mRect))
+      [[unlikely]] {
+    MOZ_LOG_FMT(gIMELog, LogLevel::Error,
+                "{}   TSFTextStore::CreateNativeCaret() FAILED due to "
+                "IMEHandler::CreateNativeCaret() failure",
+                static_cast<void*>(this));
     return;
   }
 }

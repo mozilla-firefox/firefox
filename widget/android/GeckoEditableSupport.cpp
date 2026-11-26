@@ -807,6 +807,7 @@ void GeckoEditableSupport::UpdateCompositionRects() {
   nsCOMPtr<nsIWidget> widget = GetWidget();
   RefPtr<TextComposition> composition(GetComposition());
   NS_ENSURE_TRUE_VOID(mDispatcher && widget);
+  const OwningNonNull<TextEventDispatcher> dispatcher = *mDispatcher;
 
   jni::ObjectArray::LocalRef rects;
   if (composition) {
@@ -825,18 +826,16 @@ void GeckoEditableSupport::UpdateCompositionRects() {
         CopyableTArray<mozilla::LayoutDeviceIntRect>());
   }
 
-  WidgetQueryContentEvent queryCaretRectEvent(true, eQueryCaretRect, widget);
   QueryContentOptions options;
   options.mRelativeToInsertionPoint = true;
-  queryCaretRectEvent.InitForQueryCaretRect(0, options);
-
-  widget->DispatchEvent(&queryCaretRectEvent);
+  const Maybe<QueryContentResult> queryCaretRectResult =
+      dispatcher->QueryCaretRect(0, options);
   auto caretRect =
-      queryCaretRectEvent.Succeeded()
-          ? java::sdk::RectF::New(queryCaretRectEvent.mReply->mRect.x,
-                                  queryCaretRectEvent.mReply->mRect.y,
-                                  queryCaretRectEvent.mReply->mRect.XMost(),
-                                  queryCaretRectEvent.mReply->mRect.YMost())
+      queryCaretRectResult.isSome()
+          ? java::sdk::RectF::New(queryCaretRectResult->mRect.x,
+                                  queryCaretRectResult->mRect.y,
+                                  queryCaretRectResult->mRect.XMost(),
+                                  queryCaretRectResult->mRect.YMost())
           : java::sdk::RectF::New();
 
   mEditable->UpdateCompositionRects(rects, caretRect);
