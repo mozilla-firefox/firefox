@@ -1786,10 +1786,7 @@ void nsUpgradeInsecureDirective::getDirName(nsAString& outStr) const {
 
 /* ===== nsCSPPolicy ========================= */
 
-nsCSPPolicy::nsCSPPolicy()
-    : mUpgradeInsecDir(nullptr),
-      mReportOnly(false),
-      mDeliveredViaMetaTag(false) {
+nsCSPPolicy::nsCSPPolicy() : mReportOnly(false), mDeliveredViaMetaTag(false) {
   CSPUTILSLOG(("nsCSPPolicy::nsCSPPolicy"));
 }
 
@@ -1803,6 +1800,7 @@ nsCSPPolicy::~nsCSPPolicy() {
 
 bool nsCSPPolicy::permits(CSPDirective aDir, nsILoadInfo* aLoadInfo,
                           nsIURI* aUri, bool aWasRedirected, bool aSpecific,
+                          bool aUpgradeInsecure,
                           nsAString& outViolatedDirective,
                           nsAString& outViolatedDirectiveString) const {
   if (CSPUTILSLOGENABLED()) {
@@ -1823,7 +1821,7 @@ bool nsCSPPolicy::permits(CSPDirective aDir, nsILoadInfo* aLoadInfo,
   for (uint32_t i = 0; i < mDirectives.Length(); i++) {
     if (mDirectives[i]->equals(aDir)) {
       if (!mDirectives[i]->permits(aDir, aLoadInfo, aUri, aWasRedirected,
-                                   mReportOnly, mUpgradeInsecDir)) {
+                                   mReportOnly, aUpgradeInsecure)) {
         mDirectives[i]->getDirName(outViolatedDirective);
         mDirectives[i]->toString(outViolatedDirectiveString);
         return false;
@@ -1839,7 +1837,7 @@ bool nsCSPPolicy::permits(CSPDirective aDir, nsILoadInfo* aLoadInfo,
   // Avoid relooping, just store the result of default-src while looping.
   if (!aSpecific && defaultDir) {
     if (!defaultDir->permits(aDir, aLoadInfo, aUri, aWasRedirected, mReportOnly,
-                             mUpgradeInsecDir)) {
+                             aUpgradeInsecure)) {
       defaultDir->getDirName(outViolatedDirective);
       defaultDir->toString(outViolatedDirectiveString);
       return false;

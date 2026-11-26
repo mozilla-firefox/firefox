@@ -1185,8 +1185,7 @@ void nsCSPParser::directive() {
                                "ignoreSrcForDirective", params);
     }
     // add the directive and return
-    mPolicy->addUpgradeInsecDir(
-        static_cast<nsUpgradeInsecureDirective*>(cspDir));
+    mPolicy->addDirective(cspDir);
     return;
   }
 
