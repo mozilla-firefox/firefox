@@ -46,11 +46,11 @@ import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import mozilla.components.compose.base.button.IconButton
 import mozilla.components.compose.base.button.TextButton
-import mozilla.components.compose.cfr.CFR
-import mozilla.components.compose.cfr.CFRPopup.IndicatorDirection
-import mozilla.components.compose.cfr.CFRTooltip
-import mozilla.components.compose.cfr.rememberCFRPositionProvider
-import mozilla.components.compose.cfr.rememberCFRState
+import mozilla.components.compose.base.cfr.CFR
+import mozilla.components.compose.base.cfr.CFRTooltip
+import mozilla.components.compose.base.cfr.IndicatorDirection
+import mozilla.components.compose.base.cfr.rememberCFRPositionProvider
+import mozilla.components.compose.base.cfr.rememberCFRState
 import mozilla.components.ui.icons.R as iconsR
 import org.mozilla.fenix.R
 import org.mozilla.fenix.compose.list.ExpandableListHeader

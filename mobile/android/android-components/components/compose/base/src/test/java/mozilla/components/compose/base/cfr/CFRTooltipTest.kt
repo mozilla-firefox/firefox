@@ -2,7 +2,7 @@
  * License, v. 2.0. If a copy of the MPL was not distributed with this
  * file, You can obtain one at http://mozilla.org/MPL/2.0/. */
 
-package mozilla.components.compose.cfr
+package mozilla.components.compose.base.cfr
 
 import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.Text

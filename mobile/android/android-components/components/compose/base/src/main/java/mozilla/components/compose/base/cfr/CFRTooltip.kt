@@ -2,7 +2,7 @@
  * License, v. 2.0. If a copy of the MPL was not distributed with this
  * file, You can obtain one at http://mozilla.org/MPL/2.0/. */
 
-package mozilla.components.compose.cfr
+package mozilla.components.compose.base.cfr
 
 import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.Arrangement
@@ -71,10 +71,10 @@ import androidx.compose.ui.unit.dp
 import androidx.compose.ui.window.PopupPositionProvider
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.launch
+import mozilla.components.compose.base.R
 import mozilla.components.compose.base.button.FilledButton
 import mozilla.components.compose.base.button.IconButton
 import mozilla.components.compose.base.theme.AcornTheme
-import mozilla.components.compose.cfr.CFRPopup.IndicatorDirection
 import mozilla.components.ui.icons.R as iconsR
 
 // Typealiases for a "CFR" API
@@ -116,9 +116,6 @@ fun rememberCFRState(
 /**
  * A CFR (Contextual Feature Recommendation) container built on Material3's TooltipBox.
  *
- * NOTE: This component is meant for use in 100% compose situations. If you need to do a compose-view interop, for
- * example, if your anchor is a view, consider using [CFRPopup].
- *
  * @param positionProvider Controls tooltip placement relative to [anchor].
  * @param cfr The CFR tooltip content, scoped to [CFRScope] so it can use [CFR].
  * @param state Visibility state of the CFR tooltip.
@@ -157,9 +154,6 @@ fun CFRTooltip(
 
 /**
  * CFR container content with a gradient background, optional title, text, and dismiss button.
- *
- * NOTE: This component is meant for use in 100% compose situations. If you need to do a compose-view interop, for
- * example, if your anchor is a view, consider using [CFRPopup].
  *
  * @param modifier Modifier for the tooltip root.
  * @param title Optional title composable shown above [text].
@@ -262,7 +256,8 @@ private fun CFRContentLayout(
             Box(contentAlignment = Alignment.TopEnd) {
                 IconButton(
                     onClick = { onDismiss() },
-                    contentDescription = stringResource(R.string.mozac_cfr_dismiss_button_content_description),
+                    contentDescription =
+                        stringResource(R.string.mozac_compose_base_cfr_dismiss_button_content_description),
                     modifier =
                         Modifier.semantics {
                             testTagsAsResourceId = true

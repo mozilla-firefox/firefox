@@ -15,6 +15,11 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.tooling.preview.PreviewLightDark
+import mozilla.components.compose.base.cfr.CFR
+import mozilla.components.compose.base.cfr.CFRTooltip
+import mozilla.components.compose.base.cfr.IndicatorDirection
+import mozilla.components.compose.base.cfr.rememberCFRPositionProvider
+import mozilla.components.compose.base.cfr.rememberCFRState
 import mozilla.components.compose.base.theme.AcornTheme
 import mozilla.components.compose.browser.toolbar.concept.PageOrigin
 import mozilla.components.compose.browser.toolbar.store.BrowserDisplayToolbarAction
@@ -29,11 +34,6 @@ import mozilla.components.compose.browser.toolbar.store.Mode
 import mozilla.components.compose.browser.toolbar.store.ToolbarGravity.Bottom
 import mozilla.components.compose.browser.toolbar.store.ToolbarGravity.Top
 import mozilla.components.compose.browser.toolbar.ui.BrowserToolbarQuery
-import mozilla.components.compose.cfr.CFR
-import mozilla.components.compose.cfr.CFRPopup.IndicatorDirection
-import mozilla.components.compose.cfr.CFRTooltip
-import mozilla.components.compose.cfr.rememberCFRPositionProvider
-import mozilla.components.compose.cfr.rememberCFRState
 import mozilla.components.lib.state.ext.observeAsComposableState
 
 /**

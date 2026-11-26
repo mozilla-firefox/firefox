@@ -14,6 +14,8 @@
     <string name="mozac_compose_base_snackbar_dismiss_content_description">Dismiss message</string>
     <!-- Content description for the close icon of a Banner -->
     <string name="mozac_compose_base_close_button_content_description">Close</string>
+    <!-- Content description (not visible, for screen readers etc.): Description for the close button of a Contextual Feature Recommendation tooltip. -->
+    <string name="mozac_compose_base_cfr_dismiss_button_content_description">Dismiss</string>
     <!-- Title shown in the dialog that lists every clickable link inside a LinkText composable when the text contains more than one link. -->
     <string name="mozac_compose_base_link_text_links_title">Links</string>
     <!-- Announcement appended to the LinkText content description so screen readers know that interactive links are present in the text. -->

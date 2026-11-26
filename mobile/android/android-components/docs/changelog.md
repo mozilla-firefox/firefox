@@ -5,9 +5,11 @@ permalink: /changelog/
 ---
 
 # 163.0 (In Development)
+* **compose-base**
+  * 🆕 Added `CFRTooltip`, `CFR` and their supporting types in `mozilla.components.compose.base.cfr`. [Bug 2096210](https://bugzilla.mozilla.org/show_bug.cgi?id=2096210)
 * **compose-cfr**
-  * ⚠️ **Breaking change**: Renamed `CFRBox` to `CFRTooltip`. [Bug 2096210](https://bugzilla.mozilla.org/show_bug.cgi?id=2096210)
-  * ⚠️ **Breaking change**: Removed `CFRPopupLayout` and `DismissAction`. Use `CFRTooltip` with `CFR` for Compose anchors, or `CFRPopup` for View anchors. [Bug 2096083](https://bugzilla.mozilla.org/show_bug.cgi?id=2096083)
+  * ⚠️ **Breaking change**: Renamed `CFRBox` to `CFRTooltip` and moved it, `CFR` and their supporting types to `mozilla.components.compose.base.cfr`. `CFRTooltip` now takes `mozilla.components.compose.base.cfr.IndicatorDirection` instead of `CFRPopup.IndicatorDirection`. [Bug 2096210](https://bugzilla.mozilla.org/show_bug.cgi?id=2096210)
+  * ⚠️ **Breaking change**: Removed `CFRPopupLayout` and `DismissAction`. Use `CFRTooltip` with `CFR` from compose-base for Compose anchors, or `CFRPopup` for View anchors. [Bug 2096083](https://bugzilla.mozilla.org/show_bug.cgi?id=2096083)
 * **browser-engine-gecko**
   * ⚠️ **Behavior change for embedders**: Implement `DownloadDelegate.getContentFileName` so that downloaded and shared PDFs from `content://` tabs keep their local filename. [Bug 2071966](https://bugzilla.mozilla.org/show_bug.cgi?id=2071966)
 * **compose-base**

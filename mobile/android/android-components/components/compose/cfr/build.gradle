@@ -31,11 +31,9 @@ dependencies {
     implementation libs.androidx.savedstate
 
     debugImplementation libs.androidx.compose.ui.tooling
-    testImplementation libs.androidx.compose.ui.test.manifest
 
     testImplementation project(':components:support-test')
 
-    testImplementation libs.androidx.compose.ui.test
     testImplementation libs.androidx.test.core
     testImplementation libs.androidx.test.junit
     testImplementation platform(libs.junit.bom)
