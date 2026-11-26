@@ -53,7 +53,7 @@ internal fun Modifier.customizeMenuGroupSemantics(
     val editLabel = stringResource(R.string.mozac_menu_customize_edit_items)
     val actions =
         customizeMenuSectionActions(group, groups).mapNotNull { action ->
-            action.movedGroups?.let {
+            action.result?.let {
                 CustomAccessibilityAction(action.label) {
                     onMove(it, action.announcement)
                     true

@@ -4,29 +4,12 @@
 
 package mozilla.components.compose.menu.ui.customize
 
-import androidx.annotation.DrawableRes
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.res.stringResource
 import mozilla.components.compose.base.text.value
 import mozilla.components.compose.menu.R
 import mozilla.components.compose.menu.data.MenuItemsGroup
 import mozilla.components.ui.icons.R as iconsR
-
-/**
- * An action moving a section of the customize menu screen, offered to accessibility services and in the sheet opened by
- * a long press on the drag handle of the section.
- *
- * @property label What the action is called.
- * @property icon Icon of the action in the sheet.
- * @property movedGroups The groups as moved by the action, or `null` if it cannot move the section now.
- * @property announcement What to tell the user once the action moved the section, unused if it cannot move it.
- */
-internal data class CustomizeMenuSectionAction(
-    val label: String,
-    @DrawableRes val icon: Int,
-    val movedGroups: CustomizeMenuGroups?,
-    val announcement: String,
-)
 
 /**
  * The actions moving [group], a group of [groups]: up, down and hide for a shown group, up and down, which cannot
@@ -36,51 +19,51 @@ internal data class CustomizeMenuSectionAction(
 internal fun customizeMenuSectionActions(
     group: MenuItemsGroup,
     groups: CustomizeMenuGroups,
-): List<CustomizeMenuSectionAction> {
+): List<CustomizeMenuAction<CustomizeMenuGroups>> {
     val shortName = group.name?.value ?: group.itemNames()
     val shownIndex = groups.shown.indexOfFirst { it.id == group.id }
     val shownCount = groups.shown.size
     return if (shownIndex != -1) {
         listOf(
-            CustomizeMenuSectionAction(
+            CustomizeMenuAction(
                 label = stringResource(R.string.mozac_menu_customize_move_up),
                 icon = iconsR.drawable.mozac_ic_chevron_up_24,
-                movedGroups = groups.moveUp(group.id),
+                result = groups.moveUp(group.id),
                 announcement =
                     stringResource(R.string.mozac_menu_customize_section_moved, shortName, shownIndex, shownCount),
             ),
-            CustomizeMenuSectionAction(
+            CustomizeMenuAction(
                 label = stringResource(R.string.mozac_menu_customize_move_down),
                 icon = iconsR.drawable.mozac_ic_chevron_down_24,
-                movedGroups = groups.moveDown(group.id),
+                result = groups.moveDown(group.id),
                 announcement =
                     stringResource(R.string.mozac_menu_customize_section_moved, shortName, shownIndex + 2, shownCount),
             ),
-            CustomizeMenuSectionAction(
+            CustomizeMenuAction(
                 label = stringResource(R.string.mozac_menu_customize_hide),
                 icon = iconsR.drawable.mozac_ic_eye_slash_24,
-                movedGroups = groups.moveToHidden(group.id),
+                result = groups.moveToHidden(group.id),
                 announcement = stringResource(R.string.mozac_menu_customize_section_hidden, shortName),
             ),
         )
     } else {
         listOf(
-            CustomizeMenuSectionAction(
+            CustomizeMenuAction(
                 label = stringResource(R.string.mozac_menu_customize_move_up),
                 icon = iconsR.drawable.mozac_ic_chevron_up_24,
-                movedGroups = null,
+                result = null,
                 announcement = "",
             ),
-            CustomizeMenuSectionAction(
+            CustomizeMenuAction(
                 label = stringResource(R.string.mozac_menu_customize_move_down),
                 icon = iconsR.drawable.mozac_ic_chevron_down_24,
-                movedGroups = null,
+                result = null,
                 announcement = "",
             ),
-            CustomizeMenuSectionAction(
+            CustomizeMenuAction(
                 label = stringResource(R.string.mozac_menu_customize_unhide),
                 icon = iconsR.drawable.mozac_ic_eye_24,
-                movedGroups = groups.moveToShown(group.id),
+                result = groups.moveToShown(group.id),
                 announcement = stringResource(R.string.mozac_menu_customize_section_shown, shortName),
             ),
         )

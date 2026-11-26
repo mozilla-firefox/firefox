@@ -237,7 +237,7 @@ private fun CustomizeMenuSectionActionsSheetOf(
     onDismissRequest: () -> Unit,
 ) {
     val group = (groups.shown + groups.hidden).firstOrNull { it.id == groupId } ?: return
-    CustomizeMenuSectionActionsSheet(
+    CustomizeMenuActionsSheet(
         actions = customizeMenuSectionActions(group, groups),
         onAction = { movedGroups, announcement -> onMove(group.id, movedGroups, announcement) },
         onDismissRequest = onDismissRequest,
