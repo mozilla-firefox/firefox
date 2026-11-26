@@ -66,6 +66,7 @@ import mozilla.components.compose.base.button.FilledButton
 import mozilla.components.compose.base.button.IconButton
 import mozilla.components.compose.base.theme.PreviewThemeProvider
 import mozilla.components.compose.base.theme.Theme
+import mozilla.components.compose.base.utils.parseHtml
 import mozilla.components.concept.engine.ipprotection.ServiceState
 import mozilla.components.feature.ipprotection.store.state.AccountState
 import mozilla.components.feature.ipprotection.store.state.AccountStatus
@@ -297,10 +298,12 @@ private fun DataLimitSection(
         if (!isDataLimitReached) {
             Text(
                 text =
-                    stringResource(
-                        R.string.ip_protection_data_limit_value,
-                        quota.remaining.gigabytes,
-                        quota.max.gigabytes,
+                    parseHtml(
+                        stringResource(
+                            R.string.ip_protection_data_limit_value_styled,
+                            quota.remaining.gigabytes,
+                            quota.max.gigabytes,
+                        )
                     ),
                 style = FirefoxTheme.typography.body2,
                 color = MaterialTheme.colorScheme.onSurfaceVariant,
