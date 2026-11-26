@@ -250,6 +250,14 @@ devtools-settings-local-mode-choose-folder =
 devtools-settings-local-mode-navigate =
     .title = Navigate to this mapping URL
 
+devtools-settings-local-mode-enable =
+    .label = Enable
+    .title = Toggle this local mapping
+
+devtools-settings-local-mode-disable =
+    .label = Disable
+    .title = Toggle this local mapping
+
 devtools-settings-local-mode-add =
     .label = Add a new local mapping
 

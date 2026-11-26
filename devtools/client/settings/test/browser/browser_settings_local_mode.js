@@ -34,6 +34,7 @@ add_task(test_local_mode_edit_origin);
 add_task(test_local_mode_edit_origin_refresh);
 add_task(test_local_mode_change_folder);
 add_task(test_local_mode_navigate);
+add_task(test_local_mode_toggle);
 
 async function test_local_mode_mappings_listed() {
   setMapping(0, { origin: "firefox.localhost", path: TEST_FOLDER });
@@ -333,6 +334,39 @@ async function test_local_mode_navigate() {
   ok(
     item.querySelector(".navigate").disabled,
     "A disabled mapping can't be navigated to"
+  );
+
+  await closeTabAndToolbox();
+  clearMappings();
+}
+
+async function test_local_mode_toggle() {
+  setMapping(0, { origin: "firefox.localhost", path: TEST_FOLDER });
+  const { root } = await openSettings();
+  const editor = await getLocalModeEditor(root);
+  const [item] = getMappingItems(editor);
+  const disabledPref = `${LOCAL_MODE_MAPPINGS_PREF_PREFIX}0.disabled`;
+
+  let onUpdated = LocalModeMappings.once("updated");
+  item.querySelector(".toggle").click();
+  await onUpdated;
+  ok(Services.prefs.getBoolPref(disabledPref), "Disabling writes the pref");
+  await editor.updateComplete;
+  ok(item.querySelector(".origin").disabled, "A disabled mapping is disabled");
+  is(
+    item.querySelector(".toggle").dataset.l10nId,
+    "devtools-settings-local-mode-enable",
+    "A disabled mapping can be enabled"
+  );
+
+  onUpdated = LocalModeMappings.once("updated");
+  item.querySelector(".toggle").click();
+  await onUpdated;
+  ok(!Services.prefs.getBoolPref(disabledPref), "Enabling writes the pref");
+  await editor.updateComplete;
+  ok(
+    !item.querySelector(".origin").disabled,
+    "An enabled mapping is not disabled"
   );
 
   await closeTabAndToolbox();

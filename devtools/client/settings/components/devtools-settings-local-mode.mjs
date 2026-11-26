@@ -216,6 +216,18 @@ export class DevToolsSettingsLocalMode extends MozLitElement {
     targetCommand.navigateTo("https://" + mapping.origin);
   }
 
+  /** @param {Event} event */
+  #toggleMapping(event) {
+    const mapping = this.#getMapping(event.currentTarget);
+    if (!mapping) {
+      return;
+    }
+    Services.prefs.setBoolPref(
+      mapping.prefPrefix + "disabled",
+      !mapping.disabled
+    );
+  }
+
   /** @param {MappingState} mapping */
   #renderFolder(mapping) {
     return html`
@@ -272,6 +284,16 @@ export class DevToolsSettingsLocalMode extends MozLitElement {
           ? html`<p class="origin-error" data-l10n-id=${originError}></p>`
           : nothing}
         ${this.#renderFolder(mapping)}
+        <div class="actions">
+          <moz-button
+            class="toggle"
+            size="small"
+            data-l10n-id=${mapping.disabled
+              ? "devtools-settings-local-mode-enable"
+              : "devtools-settings-local-mode-disable"}
+            @click=${this.#toggleMapping}
+          ></moz-button>
+        </div>
       </li>
     `;
   }
