@@ -22,7 +22,6 @@ export const CONFIGURABLE_STYLES = [
   "paddingInlineStart",
   "paddingInlineEnd",
   "textAlign",
-  "textWrap",
   "whiteSpace",
   "width",
   "height",

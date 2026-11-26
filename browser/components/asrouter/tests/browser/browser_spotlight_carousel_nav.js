@@ -76,7 +76,7 @@ async function showCarousel() {
 }
 
 function radioFor(win, id) {
-  return win.document.querySelector(`input[type="radio"][value="${id}"]`);
+  return win.document.querySelector(`input[name="select-item-${id}"]`);
 }
 
 async function keyboardNavigate(control, direction, win) {

@@ -7,42 +7,8 @@ import React, { useEffect } from "react";
 import { Localized } from "./MSLocalized";
 import { TileButton } from "./TileButton";
 import { TileList } from "./TileList";
-import { LinkParagraph } from "./LinkParagraph";
 import { MultiStageUtils } from "../lib/multistage-utils.mjs";
 import { CarouselNav, useCarouselScroll } from "./CarouselNav";
-
-/**
- * A note shown under single select tiles when a tile with a `selectedNotice` is
- * selected.
- *
- * The live region wrapper is always rendered, even when the notice is hidden,
- * so that assistive technology announces the notice when it later appears.
- *
- * @param {object} [notice] the selected tile's `selectedNotice` config. `text`
- *   is a LinkParagraph text value: a Localized object, or an array of segments
- *   where a segment with an `href` renders as a link.
- * @param {Function} handleAction the screen's action handler
- */
-const SelectedNotice = ({ notice, handleAction }) => (
-  <div className="single-select-notice-region" role="status">
-    {notice?.text ? (
-      <div className="single-select-notice">
-        <div className="single-select-notice-icon-wrapper">
-          <img
-            className="single-select-notice-icon"
-            src={notice.iconURL || "chrome://global/skin/icons/info-filled.svg"}
-            alt=""
-            role="presentation"
-          />
-        </div>
-        <LinkParagraph
-          text_content={{ text: notice.text }}
-          handleAction={handleAction}
-        />
-      </div>
-    ) : null}
-  </div>
-);
 
 // This component was formerly "Themes" and continues to support theme
 export const SingleSelect = ({
@@ -141,12 +107,6 @@ export const SingleSelect = ({
     "paddingInlineEnd",
     "width",
   ];
-
-  const hasSelectedNotice =
-    isSingleSelect && content.tiles?.data.some(tile => tile.selectedNotice);
-  const selectedNotice = content.tiles?.data.find(
-    tile => tile.id === activeSingleSelectSelections[singleSelectId]
-  )?.selectedNotice;
 
   return (
     <div
@@ -257,11 +217,7 @@ export const SingleSelect = ({
                       <input
                         type="radio"
                         value={value}
-                        name={
-                          isSingleSelect
-                            ? `select-item-${singleSelectId}`
-                            : inputName
-                        }
+                        name={inputName}
                         checked={selected}
                         className="sr-only input"
                         disabled={inert}
@@ -306,9 +262,6 @@ export const SingleSelect = ({
           )}
         </fieldset>
       </div>
-      {hasSelectedNotice ? (
-        <SelectedNotice notice={selectedNotice} handleAction={handleAction} />
-      ) : null}
     </div>
   );
 };
