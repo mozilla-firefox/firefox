@@ -12,6 +12,7 @@
 #include "nsHttpConnectionInfo.h"
 #include "nsHttpHandler.h"
 #include "nsITLSSocketControl.h"
+#include "nsSocketTransportService2.h"
 
 #define TLS_EARLY_DATA_NOT_AVAILABLE 0
 #define TLS_EARLY_DATA_AVAILABLE_BUT_NOT_USED 1
@@ -73,13 +74,24 @@ TlsHandshaker::HandshakeDone() {
     // HandshakeDone needs to be dispatched so that it is not called inside
     // nss locks.
     RefPtr<TlsHandshaker> self(this);
-    NS_DispatchToCurrentThread(NS_NewRunnableFunction(
+    nsCOMPtr<nsIRunnable> event = NS_NewRunnableFunction(
         "TlsHandshaker::HandshakeDoneInternal", [self{std::move(self)}]() {
           if (self->mTlsHandshakeComplitionPending && self->mOwner) {
             self->mOwner->HandshakeDoneInternal();
             self->mTlsHandshakeComplitionPending = false;
           }
-        }));
+        });
+    // Until this runs, the connection keeps forcing reads if data is pending.
+    // Those are dispatched to the STS with a higher priority for TRR, and the
+    // STS doesn't serve normal events while high priority ones keep coming, so
+    // use the same target and priority to not get starved.
+    if (StaticPrefs::network_trr_high_priority_events() &&
+        mOwner->ConnectionInfo() &&
+        mOwner->ConnectionInfo()->GetIsTrrServiceChannel()) {
+      event = new PrioritizableRunnable(
+          event.forget(), nsIRunnablePriority::PRIORITY_MEDIUMHIGH);
+    }
+    (void)DispatchToCurrent(event.forget());
   }
   return NS_OK;
 }
