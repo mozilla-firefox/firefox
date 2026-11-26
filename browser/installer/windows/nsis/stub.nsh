@@ -389,7 +389,7 @@ Function getUIString
       !ifdef DEV_EDITION
         Push "$(STUB_BLURB_FIRST_DEVEDITION)"
       !else
-        Push "$(STUB_BLURB_FIRST)"
+        Push "$(STUB_BLURB_FIRST2)"
       !endif
     ${Case} "installing_blurb_1"
       !ifdef DEV_EDITION
