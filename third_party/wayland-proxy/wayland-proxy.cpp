@@ -342,11 +342,12 @@ bool WaylandMessage::Write(int aSocket) {
     }
   }
 
-  if (ret != (ssize_t)mData.size()) {
-    Print("WaylandMessage::Write() failed to write all data! (%d vs. %d)\n", ret,
-         mData.size());
+  for (auto const fd : mFds) {
+    close(fd);
   }
-  return true;
+  mFds.clear();
+  mData.erase(mData.begin(), mData.begin() + ret);
+  return mData.empty();
 }
 
 ProxiedConnection::~ProxiedConnection() {
@@ -563,7 +564,7 @@ bool ProxiedConnection::TransferOrQueue(
       ScanToApplication(message->Data().data(), message->Data().size());
     }
 
-    if (message->Write(aDestSocket)) {
+    if (aMessageQueue->empty() && message->Write(aDestSocket)) {
       aStatSent++;
       continue;
     }
