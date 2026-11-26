@@ -1,3 +1,0 @@
-. "$topsrcdir/browser/config/mozconfigs/linux64/debug-enterprise"
-
-ac_add_options --target=aarch64
