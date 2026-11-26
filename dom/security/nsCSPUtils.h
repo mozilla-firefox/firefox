@@ -763,7 +763,7 @@ class nsCSPPolicy {
   virtual ~nsCSPPolicy();
 
   bool permits(CSPDirective aDirective, nsILoadInfo* aLoadInfo, nsIURI* aUri,
-               bool aWasRedirected, bool aSpecific,
+               bool aWasRedirected, bool aSpecific, bool aUpgradeInsecure,
                nsAString& outViolatedDirective,
                nsAString& outViolatedDirectiveString) const;
   bool allows(CSPDirective aDirective, enum CSPKeyword aKeyword) const;
@@ -778,11 +778,6 @@ class nsCSPPolicy {
       mHasRequireTrustedTypesForDirective = true;
     }
     mDirectives.AppendElement(aDir);
-  }
-
-  inline void addUpgradeInsecDir(nsUpgradeInsecureDirective* aDir) {
-    mUpgradeInsecDir = aDir;
-    addDirective(aDir);
   }
 
   bool hasDirective(CSPDirective aDir) const;
@@ -856,7 +851,6 @@ class nsCSPPolicy {
  private:
   nsCSPDirective* matchingOrDefaultDirective(CSPDirective aDirective) const;
 
-  nsUpgradeInsecureDirective* mUpgradeInsecDir;
   nsTArray<nsCSPDirective*> mDirectives;
   bool mHasRequireTrustedTypesForDirective = false;
   bool mReportOnly;

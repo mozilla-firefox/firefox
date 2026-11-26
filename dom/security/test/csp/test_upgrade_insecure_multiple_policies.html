@@ -1,0 +1,42 @@
+<!DOCTYPE HTML>
+<html>
+<head>
+  <meta charset="utf-8">
+  <title>CSP upgrade-insecure-requests applies to all policies</title>
+  <script src="/tests/SimpleTest/SimpleTest.js"></script>
+  <link rel="stylesheet" type="text/css" href="/tests/SimpleTest/test.css" />
+</head>
+<body>
+<iframe style="width:100%;" id="testframe"></iframe>
+
+<script class="testbody" type="text/javascript">
+
+/* Description of the test:
+ * upgrade-insecure-requests and img-src https: are delivered as separate
+ * policies. The http image gets upgraded to https, so it must not be blocked
+ * by the policy that does not itself contain upgrade-insecure-requests.
+ */
+
+const BASE =
+  "https://example.com/tests/dom/security/test/csp/file_upgrade_insecure_multiple_policies_server.sjs";
+
+function loadFrame(query) {
+  return new Promise(resolve => {
+    window.addEventListener("message", e => resolve(e.data), { once: true });
+    document.getElementById("testframe").src = `${BASE}?${query}`;
+  });
+}
+
+add_task(async function test_header_policies() {
+  is(await loadFrame("header"), "img-ok",
+     "upgrade-insecure-requests applies to a separate header policy");
+});
+
+add_task(async function test_meta_policy() {
+  is(await loadFrame("meta"), "img-ok",
+     "upgrade-insecure-requests applies to a separate meta policy");
+});
+
+</script>
+</body>
+</html>
