@@ -31,7 +31,6 @@ function getLayout(helpView) {
 function expectedLayout(lastItem) {
   let expected = [
     "appMenu_menu_openHelp",
-    "appMenu_help_reportBrokenSite",
     "appMenu_menu_HelpPopup_reportPhishingtoolmenu",
     "toolbarseparator",
     "appMenu_helpSafeMode",
@@ -54,7 +53,7 @@ add_task(async function testHelpViewOrderWithNova() {
   Assert.deepEqual(
     getLayout(helpView),
     expectedLayout("appMenu-nova-switch-device-promo"),
-    "The Help and Report subview is grouped and ordered as designed"
+    "The Help subview is grouped and ordered as designed"
   );
 
   await gCUITestUtils.hideMainMenu();
@@ -82,22 +81,6 @@ add_task(async function testSeparatorsAreVisible() {
       "The separator takes up vertical space"
     );
   }
-
-  await gCUITestUtils.hideMainMenu();
-});
-
-add_task(async function testReportBrokenSiteHasCaret() {
-  let helpView = await openHelpView();
-
-  let button = helpView.querySelector("#appMenu_help_reportBrokenSite");
-  let content = getComputedStyle(button, "::after").content;
-  let expected = Services.locale.isAppLocaleRTL
-    ? "arrow-left.svg"
-    : "arrow-right.svg";
-  Assert.ok(
-    content.includes(expected),
-    `Report Broken Site renders a subview caret, got ${content}`
-  );
 
   await gCUITestUtils.hideMainMenu();
 });

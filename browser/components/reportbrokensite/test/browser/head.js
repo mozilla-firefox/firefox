@@ -975,7 +975,7 @@ class AppMenuHelper extends MenuHelper {
   menuDescription = "AppMenu";
 
   get reportBrokenSite() {
-    return this.getViewNode("appMenu_help_reportBrokenSite");
+    return this.getViewNode("appMenu-report-broken-site-button");
   }
 
   get popup() {
@@ -984,11 +984,6 @@ class AppMenuHelper extends MenuHelper {
 
   async open() {
     await new CustomizableUITestUtils(this.win).openMainMenu();
-    // Report Broken Site lives in the Help and Report subview.
-    const helpView = this.getViewNode("PanelUI-helpView");
-    const shownPromise = BrowserTestUtils.waitForEvent(helpView, "ViewShown");
-    this.getViewNode("appMenu-help-button2").click();
-    await shownPromise;
   }
 
   async close() {
