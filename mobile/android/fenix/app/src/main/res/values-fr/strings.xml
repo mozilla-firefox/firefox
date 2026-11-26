@@ -1755,7 +1755,7 @@
   <!-- Title of the confirmation dialog shown when moving the last tab out of a group will delete the group. %s is the group name, which defaults to a value such as "Group 1" but can be edited by the user to contain arbitrary text. -->
   <string name="move_last_tab_and_delete_group_confirmation_dialog_title">Déplacer le dernier onglet de %s\u00a0?</string>
   <!-- Body of the confirmation dialog shown when moving the last tab out of a group will delete the group. %1$s is the destination group name. %2$s is the source group name that will be deleted. Both names default to values such as "Group 1" but can be edited by the user to contain arbitrary text. -->
-  <string name="move_last_tab_and_delete_group_confirmation_dialog_body">Cet onglet sera déplacé vers %1$s. %2$s sera supprimé car il sera vide.</string>
+  <string name="move_last_tab_and_delete_group_confirmation_dialog_body">Cet onglet sera déplacé vers %1$s. %2$s sera supprimé, car il ne contiendra plus aucun onglet.</string>
   <!-- Text shown on the confirm button for the confirmation dialog shown when moving the last tab out of a group will delete the group. -->
   <string name="move_last_tab_and_delete_group_confirmation_dialog_confirm">Déplacer l’onglet</string>
   <!-- Text shown on the cancel button for the confirmation dialog shown when moving the last tab out of a group will delete the group. -->
@@ -3213,7 +3213,7 @@
     %2$d is the amount of data in GB available after signing in (for example "50").
     %3$s is a link using ip_protection_onboarding_body_link_promo (“Learn more”) as text. It links to a support article about VPN on Firefox.
   -->
-  <string name="ip_protection_onboarding_body_no_fxa">Activez-le pour rendre votre navigation plus privée et plus difficile à tracer. Essayez-le avec %1$d\u00a0Go de bande passante gratuite ou connectez-vous pour %2$d\u00a0Go. %3$s</string>
+  <string name="ip_protection_onboarding_body_no_fxa">Activez-le pour rendre votre navigation plus confidentielle et plus difficile à pister. Essayez-le avec %1$d\u00a0Go de bande passante gratuite ou connectez-vous pour bénéficier de %2$d\u00a0Go. %3$s</string>
   <!-- Used as text for a link in ip_protection_onboarding_body. Make sure to adapt capitalization if the link is in the middle of the sentence. -->
   <string name="ip_protection_onboarding_body_link_promo">En savoir plus</string>
   <!-- Label for the dismiss button on the onboarding bottom sheet. -->

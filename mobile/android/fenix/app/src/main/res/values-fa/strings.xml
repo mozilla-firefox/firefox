@@ -184,6 +184,22 @@
     Label for popup button that appears when long-pressing the main menu. Tapping it allows the user to customize the main menu layout.
   -->
   <string name="customize_menu">سفارشی‌سازی منو</string>
+  <!-- Alert message shown in the "Customize menu" screen when the user tries to hide a menu section which cannot be hidden. -->
+  <string name="customize_menu_cannot_hide_section">این بخش پنهان‌شدنی نیست</string>
+  <!-- Customize menu screen - Accessibility description - name of the menu section that groups the Back, Forward, Share and Refresh buttons. Read aloud after "Section", followed by the button names ("Section “Page controls”: Back, Forward, Share, Refresh"). -->
+  <string name="browser_menu_section_page_controls">کنترل‌های صفحه</string>
+  <!-- Customize menu screen - Accessibility description - name of the menu section that groups the page tools (Bookmark page, Find in page, Desktop site, Extensions, etc.). Read aloud after "Section", followed by the tool names ("Section “Tools”: Bookmark page, Find in page…"). -->
+  <string name="browser_menu_section_tools">ابزارها</string>
+  <!-- Customize menu screen - Accessibility description - name of the menu section that groups the History, Bookmarks, Downloads and Passwords items. Read aloud after "Section", followed by the item names ("Section “Library”: History, Bookmarks, Downloads, Passwords"). -->
+  <string name="browser_menu_section_library">کتابخانه</string>
+  <!-- Customize menu screen - Accessibility description - name of the menu section that groups the Sign in and Settings items. Read aloud after "Section", followed by the item names ("Section “Accounts and settings”: Sign in, Settings"). -->
+  <string name="browser_menu_section_accounts_and_settings">حساب‌ها و تنظیمات</string>
+  <!-- Customize menu screen - Accessibility description - name of the menu section that groups the New tab and New private tab actions. Read aloud after "Section", followed by the action names ("Section “New tab”: New tab, New private tab"). -->
+  <string name="browser_menu_section_new_tab">زبانهٔ جدید</string>
+  <!-- Title of the dialog shown when resetting the menu to its default layout (removing all user customizations) -->
+  <string name="menu_customize_reset_dialog_title">منو به حالت پیش‌گزیده بازنشانی شود؟</string>
+  <!-- Message of the dialog shown when resetting the menu to its default layout (removing all user customizations) -->
+  <string name="menu_customize_reset_dialog_message">این کار سفارشی‌سازی‌ها را برمی‌دارد و برگشت‌پذیر نیست.</string>
   <!-- Primary button on the menu reset dialog. Tapping it removes all user customizations. -->
   <string name="menu_customize_reset_dialog_reset">بازنشانی</string>
   <!-- Secondary button on the menu reset dialog. Tapping it cancels the reset process and preserves all user-made customizations. -->
@@ -277,6 +293,8 @@
   <string name="browser_menu_passwords">گذرواژه‌ها</string>
   <!-- Content description (not visible, for screen readers etc.) for the handle used to drag the main menu at the bottom of the screen. -->
   <string name="browser_close_main_menu_handlebar_content_description">بستن منو</string>
+  <!-- Content description (not visible, used by screen readers, etc.) for the heading of the menu opened from the customize menu screen to preview pending changes. It is read before the menu items. The items are shown for preview only and do nothing when tapped. -->
+  <string name="browser_menu_preview_heading_content_description">پیش‌نمایش منو. موارد این‌جا فعال نمی‌شوند.</string>
   <!-- Content description (not visible, for screen readers etc.) for main menu navigation header. -->
   <string name="browser_main_menu_content_description_navigation_header">پیمایش</string>
   <!-- Content description (not visible, for screen readers etc.) for bottom sheet handlebar custom tab menu. -->
@@ -305,6 +323,8 @@
   <string name="browser_menu_webcompat_reporter_2">گزارش وبگاه خراب</string>
   <!-- Browser menu label for adding a tab to a tab group -->
   <string name="browser_menu_add_to_tab_group">افزودن به گروه</string>
+  <!-- Browser menu label for moving a tab to a tab group -->
+  <string name="browser_menu_move_to_tab_group">انتقال به گروه</string>
   <!-- Browser menu label that is displayed when the current page has been translated by the translation feature. -->
   <string name="browser_menu_translated">ترجمه‌شده</string>
   <!-- Browser menu label for the print feature -->
@@ -335,6 +355,10 @@
     Content description for the translate page toolbar button that opens the translations dialog when no translation has occurred.
   -->
   <string name="browser_toolbar_translate">ترجمهٔ صفحه</string>
+  <!-- Accessibility description for the toolbar button displayed when the page the user is on has a video that can be opened in a picture-in-picture window -->
+  <string name="browser_toolbar_picture_in_picture">تصویر در تصویر</string>
+  <!-- Accessibility description for the toolbar button displayed while the current page's video is playing in a picture-in-picture window. Tapping the button closes that window. -->
+  <string name="browser_toolbar_picture_in_picture_close">بستن تصویر در تصویر</string>
   <!-- CFR description for the browser toolbar describing the "Shake to summarize feature" -->
   <string name="browser_toolbar_summarize_cfr_description">دستگاه خود را تکان دهید تا این صفحه در چند ثانیه خلاصه شود. ⚡️</string>
   <!--
@@ -592,6 +616,14 @@
   <string name="nova_onboarding_sync_subtitle">نشانک‌ها، گذرواژه‌ها و چیزهای دیگر را در یک چشم به هم زدن روی هر دستگاهی داشته باشید. داده‌های شخصی‌تان با رمزگذاری امن می‌ماند.</string>
   <!-- Sync onboarding button. -->
   <string name="nova_onboarding_sync_button">آغاز همگام‌سازی</string>
+  <!-- Title of onboarding pairing card. Displayed when installing Firefox for Android by using a pairing link from Firefox for Desktop. "Scan" refers to scanning the QR code displayed on the computer. -->
+  <string name="nova_onboarding_sync_pairing_title">برای کامل کردن جفت‌سازی با رایانه‌تان، کد را پویش کنید</string>
+  <!-- Body of the onboarding pairing card. Provides troubleshooting instructions when the QR code is not being displayed on the pairing computer. The "firefox.com/pair" URL should not be translated or edited. Bold tags should be preserved. -->
+  <string name="nova_onboarding_sync_pairing_body"><![CDATA[کد QR ندارید؟ در رایانهٔ خود به <b>firefox.com/pair</b> بروید.]]></string>
+  <!-- Primary button of the onboarding pairing card. Opens the camera to scan the pairing QR code. -->
+  <string name="nova_onboarding_sync_pairing_scan_button">پویش کد جفت‌سازی</string>
+  <!-- Secondary button of the onboarding pairing card. Opens the Mozilla account sign-in page. -->
+  <string name="nova_onboarding_sync_pairing_email_button">ورود با رایانامه</string>
   <!-- Marketing onboarding title. -->
   <string name="nova_onboarding_marketing_title">به ما در ساخت اینترنتی بهتر کمک کنید</string>
   <!--
@@ -1155,6 +1187,8 @@
   <string name="preferences_enable_sync_title">همگام‌سازی این دستگاه</string>
   <!-- Preference summary for the toggle that turns sync on or off for the device, shown when sync is on. -->
   <string name="preferences_enable_sync_summary_sync_enabled">داده‌های شما پشتیبان‌گیری شده و در دستگاه‌های همگام‌شده در دسترس است.</string>
+  <!-- Preference summary for the toggle that turns sync on or off for the device, shown when sync is off. It explains where synced data comes from. -->
+  <string name="preferences_enable_sync_summary_sync_disabled_2">در حال استفاده از داده‌های ذخیره‌شده در حساب شما.</string>
   <!-- Preference summary for the toggle that turns sync on or off for the device, shown when sync is off. It explains where synced data comes from. %1$s is the Firefox brand name. -->
   <string name="preferences_enable_sync_summary_sync_disabled">در حال استفاده از داده‌های ذخیره‌شده در حساب %1$s شما.</string>
   <!-- Summary for the sync preference category. -->
@@ -1674,6 +1708,8 @@
   <string name="add_to_new_tab_group_content_description">افزودن به گروه زبانهٔ جدید</string>
   <!-- Label for adding to a new tab group. -->
   <string name="add_to_new_tab_group_title">گروه زبانهٔ جدید</string>
+  <!-- Label to add a link in a new tab inside a tab group. -->
+  <string name="contextmenu_open_in_tab_group">گشودن در گروه زبانه</string>
   <plurals name="tab_group_tabs_count_subtitle">
     <!--
       Subtitle for the number of tabs in a tab group.
@@ -1716,6 +1752,14 @@
   <string name="close_tab_and_delete_group_confirmation_dialog_confirm">حذف گروه</string>
   <!-- Text shown on the cancel button in the Close last tab and delete tab group confirmation dialog. -->
   <string name="close_tab_and_delete_group_confirmation_dialog_cancel">لغو</string>
+  <!-- Title of the confirmation dialog shown when moving the last tab out of a group will delete the group. %s is the group name, which defaults to a value such as "Group 1" but can be edited by the user to contain arbitrary text. -->
+  <string name="move_last_tab_and_delete_group_confirmation_dialog_title">آخرین زبانه از %s منتقل شود؟</string>
+  <!-- Body of the confirmation dialog shown when moving the last tab out of a group will delete the group. %1$s is the destination group name. %2$s is the source group name that will be deleted. Both names default to values such as "Group 1" but can be edited by the user to contain arbitrary text. -->
+  <string name="move_last_tab_and_delete_group_confirmation_dialog_body">این زبانه به %1$s منتقل می‌شود. %2$s حذف می‌شود، چون خالی خواهد شد.</string>
+  <!-- Text shown on the confirm button for the confirmation dialog shown when moving the last tab out of a group will delete the group. -->
+  <string name="move_last_tab_and_delete_group_confirmation_dialog_confirm">انتقال زبانه</string>
+  <!-- Text shown on the cancel button for the confirmation dialog shown when moving the last tab out of a group will delete the group. -->
+  <string name="move_last_tab_and_delete_group_confirmation_dialog_cancel">لغو</string>
   <!-- Content description for the three dot button next to a tab group" -->
   <string name="tab_group_three_dot_button_content_description">گزینه‌های بیشتر</string>
   <!--
@@ -2086,15 +2130,21 @@
   <string name="unsubmitted_crash_dialog_negative_button_2">بستن</string>
   <!-- Unsubmitted crash dialog negative button to never be asked for the submission -->
   <string name="unsubmitted_crash_requested_by_devs_dialog_never_button">دیگر هرگز نشان داده نشود</string>
+  <!-- Unsubmitted crash dialog negative button to never be asked for the submission, displayed in all capital letters. -->
+  <string name="unsubmitted_crash_requested_by_devs_dialog_never_button_2" tools:ignore="UnusedResources">دیگر نشان نده</string>
   <!-- Unsubmitted crash dialog positive button to submit crash report -->
   <string name="unsubmitted_crash_dialog_positive_button_2">ارسال</string>
   <!-- Unsubmitted crash dialog positive button to submit crash report -->
   <string name="unsubmitted_crash_dialog_positive_button">ارسال گزارش ازکار افتادن</string>
+  <!-- Unsubmitted crash dialog positive button to submit crash report, displayed in all capital letters. -->
+  <string name="unsubmitted_crash_dialog_positive_button_3" tools:ignore="UnusedResources">ارسال گزارش از کار افتادن</string>
   <!-- Body text for crash report dialog. %s is the link text in the annotated string (ie. "Learn More") -->
   <string name="unsubmitted_crash_dialog_body">گزارش‌های ازکار افتادن به ما کمک می‌کند مشکلات مرورگر را تشخیص دهیم و برطرف کنیم. این گزارش‌ها ممکن است شامل داده‌های شخصی یا حساس باشند. %s</string>
   <string name="unsubmitted_crash_dialog_learn_more">بیشتر بدانید</string>
   <!-- Unsubmitted crash dialog button to open a web page with more details on the feature and privacy policy -->
   <string name="unsubmitted_crash_requested_by_devs_learn_more">بیشتر بدانید</string>
+  <!-- Unsubmitted crash dialog button to open a web page with more details on the feature and privacy policy, displayed in all capital letters. -->
+  <string name="unsubmitted_crash_requested_by_devs_learn_more_2" tools:ignore="UnusedResources">بیشتر بدانید</string>
   <!--
     Bookmarks
 
@@ -2526,6 +2576,12 @@
   <string name="snackbar_private_tab_closed">زبانهٔ خصوصی بسته شد</string>
   <!-- Text shown in snackbar to undo deleting a tab, top site or collection -->
   <string name="snackbar_deleted_undo">برگرداندن</string>
+  <!-- Confirmation message displayed when user adds a page to a tab group. %1$s is the tab group's name. -->
+  <string name="snackbar_tab_added_to_group">به %1$s افزوده شد</string>
+  <!-- Confirmation message displayed when user moves a page from one tab group to another. %1$s is the tab group's name. -->
+  <string name="snackbar_tab_moved_to_group">به %1$s منتقل شد</string>
+  <!-- Button text displayed with a confirmation message when the user adds or moves a page to a tab group. Tapping it displays the tab group. -->
+  <string name="snackbar_action_view">دیدن</string>
   <!--
     QR code scanner prompt which appears after scanning a code, but before navigating to it
     %1$s is the name of the app (for example "Firefox"), %2$s is the URL or text scanned
@@ -3082,6 +3138,8 @@
   <string name="ip_protection_learn_more">بیشتر بدانید</string>
   <!-- Label for the monthly data allowance section on the browser VPN settings screen -->
   <string name="ip_protection_data_limit_label">سقف دادهٔ ماهانه</string>
+  <!-- Accessibility description for the button that closes promotional banners or messages on the VPN settings screen (without triggering any effect) -->
+  <string name="ip_protection_settings_message_dismiss">رد کردن</string>
   <!--
     Data usage shown on the browser VPN settings screen.
     %1$.1f is the data remaining in GB (for example "8.3").
@@ -3149,6 +3207,13 @@
     %2$s is a link using ip_protection_onboarding_body_link_promo (“Learn more”) as text. It links to a support article about VPN on Firefox.
   -->
   <string name="ip_protection_onboarding_body_promo">آن را روشن کنید تا مرورتان خصوصی‌تر و ردیابی‌اش سخت‌تر شود. همین حالا امتحان کنید و تا %1$s پهنای باند نامحدود داشته باشید. %2$s</string>
+  <!--
+    The body of the VPN onboarding card when the user qualifies for using VPN without signing in to a Mozilla account
+    %1$d is the amount of free data in GB available without signing in (for example "5").
+    %2$d is the amount of data in GB available after signing in (for example "50").
+    %3$s is a link using ip_protection_onboarding_body_link_promo (“Learn more”) as text. It links to a support article about VPN on Firefox.
+  -->
+  <string name="ip_protection_onboarding_body_no_fxa">آن را روشن کنید تا مرورتان خصوصی‌تر و ردیابی آن دشوارتر شود. با %1$d گیگابایت پهنای باند رایگان امتحانش کنید، یا وارد شوید تا %2$d گیگابایت بگیرید. %3$s</string>
   <!-- Used as text for a link in ip_protection_onboarding_body. Make sure to adapt capitalization if the link is in the middle of the sentence. -->
   <string name="ip_protection_onboarding_body_link_promo">بیشتر بدانید</string>
   <!-- Label for the dismiss button on the onboarding bottom sheet. -->
@@ -3208,6 +3273,10 @@
   <string name="preferences_credit_cards_save_and_autofill_cards_2">ذخیره و پر کردن روش‌های پرداخت</string>
   <!-- Preference summary for saving and autofilling payment method data. %s is the name of the app (for example "Firefox"). -->
   <string name="preferences_credit_cards_save_and_autofill_cards_summary_2">‏%s همهٔ روش‌های پرداختی را که ذخیره می‌کنید رمزگذاری می‌کند</string>
+  <!-- Preference for saving the security codes of credit cards. -->
+  <string name="preferences_credit_cards_save_security_codes">ذخیرهٔ کدهای امنیتی</string>
+  <!-- Preference summary for saving the security codes of credit cards. %s is the name of the app (for example "Firefox"). -->
+  <string name="preferences_credit_cards_save_security_codes_summary">‏%s شمارهٔ کارت و کد امنیتی شما را رمزگذاری می‌کند تا پرداخت‌های بعدی سریع‌تر انجام شوند</string>
   <!-- Preference option for syncing credit cards across devices. This is displayed when the user is not signed into sync -->
   <string name="preferences_credit_cards_sync_cards_across_devices">همگام‌سازی کارت‌ها میان دستگاه‌ها</string>
   <!-- Preference option for syncing credit cards across devices. This is displayed when the user is signed into sync -->
@@ -3244,6 +3313,8 @@
   <string name="credit_cards_expiration_date_year">سال تاریخ انقضا</string>
   <!-- The header for the name on the credit card -->
   <string name="credit_cards_name_on_card">نام روی کارت</string>
+  <!-- The header for the optional security code of a credit card. CVV is the abbreviation of the card security code. -->
+  <string name="credit_cards_cvv_optional">CVV (اختیاری)</string>
   <!-- The text for the "Delete card" menu item for deleting a credit card -->
   <string name="credit_cards_menu_delete_card">حذف کارت</string>
   <!-- The text for the "Delete card" button for deleting a credit card -->
@@ -3260,10 +3331,16 @@
   <string name="credit_cards_cancel_button">لغو</string>
   <!-- Title of the "Saved cards" screen -->
   <string name="credit_cards_saved_cards">کارت‌های ذخیره‌شده</string>
+  <!-- Text in the saved cards list that indicates the security code for a credit card is being stored -->
+  <string name="credit_cards_cvv_saved">CVV ذخیره‌شده</string>
   <!-- Error message for card number validation -->
   <string name="credit_cards_number_validation_error_message_2">یک شمارهٔ کارت معتبر وارد کنید</string>
   <!-- Error message for card name on card validation -->
   <string name="credit_cards_name_on_card_validation_error_message_2">یک نام اضافه کنید</string>
+  <!-- Error message for a credit card security code that does not meet the 3-digit length requirement. -->
+  <string name="credit_cards_cvv_validation_error_message">کد امنیتی باید ۳ رقم باشد</string>
+  <!-- Error message for a credit card security code that does not meet the 4-digit length requirement (used for American Express cards only) -->
+  <string name="credit_cards_cvv_amex_validation_error_message">کد امنیتی American Express چهار رقمی است</string>
   <!-- Message displayed in biometric prompt displayed for authentication before allowing users to view their saved credit cards -->
   <string name="credit_cards_biometric_prompt_message">برای دیدن کارت‌های ذخیره‌شده، قفل را باز کنید</string>
   <!-- Title of warning dialog if users have no device authentication set up -->
@@ -3676,6 +3753,12 @@
   <!--
     Translations options dialog
 
+    Title of the translation options dialog that allows a user to set their translation preferences for the site the user is currently on.
+  -->
+  <string name="translation_option_bottom_sheet_title_heading2">ترجیحات ترجمه</string>
+  <!--
+    Translations options dialog
+
     Title of the translation options dialog that allows a user to set their translation options for the site the user is currently on.
   -->
   <string name="translation_option_bottom_sheet_title_heading">گزینه‌های ترجمه</string>
@@ -3913,6 +3996,8 @@
   <string name="certificate_details_panel_secure_connection_title">اتصال امن</string>
   <!-- Certificate panel - Label for the organization, locality and country the website's certificate was issued to -->
   <string name="certificate_details_panel_issued_to_label">گواهی صادرشده برای:</string>
+  <!-- Certificate panel - Label for the name of the certificate authority that verified and issued the website's certificate -->
+  <string name="certificate_details_panel_verified_by_label">تأییدشده توسط:</string>
   <!-- Certificate panel - Content description (not visible, for screen readers etc.) for the EU trust mark logo, shown when the website's certificate is a Qualified Website Authentication Certificate (QWAC) as specified in EU Regulation 2024/1183 -->
   <string name="certificate_details_panel_eu_trust_mark_content_description">نشان اعتماد اتحادیهٔ اروپا</string>
   <plurals name="trackers_blocked_panel_total_num_trackers_blocked_2">
@@ -3982,6 +4067,8 @@
   <string name="clear_site_data_dialog_negative_button_text">لغو</string>
   <!-- Text for the connection security panel when the site is secure. -->
   <string name="connection_security_panel_secure">اتصال امن</string>
+  <!-- Action description (not visible, for screen readers etc.) for the “Secure connection” link in the protection panel header, which opens a page showing the website's certificate details. Screen readers announce it after “Double tap to” -->
+  <string name="connection_security_panel_view_certificate_details">دیدن جزئیات گواهی</string>
   <!-- Text for the connection security panel when the site is not secure. -->
   <string name="connection_security_panel_not_secure">اتصال ناامن است</string>
   <!-- Text for the connection security panel when accessed from local PDF. -->
@@ -4492,6 +4579,8 @@
   <string name="wrex_widget_match_suspended">متوقف‌شده</string>
   <!-- Label shown on the sports widget match status badge when a match has been postponed to a later date. -->
   <string name="wrex_widget_match_postponed">به تعویق افتاده</string>
+  <!-- Label shown on the sports widget match status badge when a match has been canceled. -->
+  <string name="wrex_widget_match_canceled">لغوشده</string>
   <!-- Sports widget action label to refresh match data after an error. -->
   <string name="wrex_widget_error_refresh">تازه‌سازی</string>
   <!-- Sports widget menu item to view the team's match results. -->

@@ -3213,7 +3213,7 @@
     %2$d is the amount of data in GB available after signing in (for example "50").
     %3$s is a link using ip_protection_onboarding_body_link_promo (“Learn more”) as text. It links to a support article about VPN on Firefox.
   -->
-  <string name="ip_protection_onboarding_body_no_fxa">Habilitá esta opción para que tu navegación sea más privada y más difícil de rastrear. Pruébelo con %1$d GB de ancho de banda libre o inicie sesión para obtener %2$d GB. %3$s</string>
+  <string name="ip_protection_onboarding_body_no_fxa">Habilitá esta opción para que tu navegación sea más privada y más difícil de rastrear. Probala con %1$d GB de ancho de banda gratis o iniciá sesión para obtener %2$d GB. %3$s</string>
   <!-- Used as text for a link in ip_protection_onboarding_body. Make sure to adapt capitalization if the link is in the middle of the sentence. -->
   <string name="ip_protection_onboarding_body_link_promo">Conocer más</string>
   <!-- Label for the dismiss button on the onboarding bottom sheet. -->

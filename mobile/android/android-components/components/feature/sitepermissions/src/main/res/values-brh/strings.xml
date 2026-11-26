@@ -17,6 +17,10 @@
   <string name="mozac_feature_sitepermissions_location_title">%1$s اے اجازت ایترے نما ڈس اے استعمال کننگ کن؟</string>
   <!-- Title of a dialog for a camera and microphone permission request. %1$s is the domain name of the website. -->
   <string name="mozac_feature_sitepermissions_camera_and_microphone">%1$s اے اجازت ایترے نما کیمرہ و مائک اے استعمال کننگ کن؟</string>
+  <!-- Title of a dialog for a local network access request. %1$s is the domain name of the website -->
+  <string name="mozac_feature_sitepermissions_local_network_access_title">%1$s اے تینا لوکل نیٹورک اے اوارنگا ڈیوائس اتیٹی ایپ و سروس تئے رسینگ کن اجازت ایتیرے؟</string>
+  <!-- Title of a dialog for a local device access request. %1$s is the domain name of the website -->
+  <string name="mozac_feature_sitepermissions_local_device_access_title">%1$s اے دا ڈیوائس اے ایلو ایپ و سروس تئے رسینگ کن اجازت ایتیرے؟</string>
   <!--
     Option in a dialog for requesting a microphone permission, this option will give access to
     the first microphone
@@ -61,6 +65,20 @@
   <string name="mozac_feature_sitepermissions_always_allow">ہمیشہ</string>
   <!-- Text for a negative button in a permission request dialog. This will never allow and remember the decision of the user, this is the special case of the notification permission, that is only ask one time -->
   <string name="mozac_feature_sitepermissions_never_allow">ہچ</string>
+  <!-- Title of a dialog to require to save data in persistent storage. %1$s will be replaced with the URL of the current page -->
+  <string name="mozac_feature_sitepermissions_persistent_storage_title">%1$s اے مستقل اسٹوریج ٹی ڈیٹا تخنگ کن اجازت ایتیرے؟</string>
+  <!-- Title of a dialog to use EME. %1$s will be replaced with the URL of the current page -->
+  <string name="mozac_feature_sitepermissions_media_key_system_access_title">%1$s اے DRM-controlled گڑا چلیفنگ کن اجازت ایتیرے؟</string>
+  <!--
+    Title of a dialog to use cross origin storage permission. %1$s is the name of the site URL (www.site1.example) trying to track the user's activity.
+    %2$s is the name of the site URL (www.site2.example) that the user is visiting.  This is the same domain name displayed in the address bar
+  -->
+  <string name="mozac_feature_sitepermissions_storage_access_title">%1$s اے اونا کوکیز اتے %2$s ٹی استعمال کننگ نا اجازت ایتیرے؟</string>
+  <!--
+    Message of a dialog offering more context about the cross origin storage permission.
+    %s is the name of the site URL (www.site1.example) trying to track the user's activity.
+  -->
+  <string name="mozac_feature_sitepermissions_storage_access_message">اگہ پکا اف کہ انتئے %s دا ڈیٹا اے خواہک نم دانا رسینگنگ اے توننگ خواہورے.</string>
   <!-- Text for a negative button in the storage access permission request dialog. This button will not give access to this permission. -->
   <string name="mozac_feature_sitepermissions_storage_access_not_allow">توربو</string>
   <!-- Clickable text that will open a new tab navigating the user to online documentation about specific features. -->

@@ -30,6 +30,14 @@
   -->
   <string name="mozac_feature_autofill_confirmation_title">تصدیق کننگ ناکام مس</string>
   <!--
+    Autofill: Text shown in dialog asking the user to confirm before autofilling credentials into a
+    third-party app where we could not verify the authenticity (e.g. we determined that this app is
+    a twitter client and we could autofill twitter credentials, but according to the "Digital Asset
+    Links" this application is not the official Twitter application for twitter.com credentials.
+    %1$s will be replaced with the name of the browser application (e.g. Firefox).
+  -->
+  <string name="mozac_feature_autofill_confirmation_authenticity">دا %1$s ایپ نا اصل مننگ نا تصدیق کننگ کتو. مگہ خوارے گچین معلوم اتے تینٹ پر مننگ کن مستی مریر؟</string>
+  <!--
     Autofill: Positive button shown in dialog asking the user to confirm before autofilling
     credentials in a third-part app (Also see string mozac_feature_autofill_confirmation_authenticity).
   -->

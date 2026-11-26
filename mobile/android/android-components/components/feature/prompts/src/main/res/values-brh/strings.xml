@@ -7,10 +7,16 @@
 -->
 
 <resources>
+  <!-- Text for confirmation for a positive action in dialog -->
+  <string name="mozac_feature_prompts_ok">جوان</string>
   <!-- Text for confirmation for a negative action in dialog. -->
   <string name="mozac_feature_prompts_cancel">کینسل</string>
   <!-- When a page shows many dialogs, this checkbox will appear for letting the user choose to prevent showing more dialogs. -->
   <string name="mozac_feature_prompts_no_more_dialogs">دا صفحہ اے پین پیغام تیان تور</string>
+  <!-- Text for a button that clears the selected input in the date/time picker. -->
+  <string name="mozac_feature_prompts_clear">صفا</string>
+  <!-- Text for the title of an authentication dialog. -->
+  <string name="mozac_feature_prompt_sign_in">سائن ان</string>
   <!-- Text for username field in an authentication dialog. -->
   <string name="mozac_feature_prompt_username_hint">باسک پن</string>
   <!-- Text for password field in an authentication dialog. -->
@@ -25,6 +31,8 @@
   <string name="mozac_feature_prompt_save_confirmation">خوندی کبو</string>
   <!-- Negative confirmation that we should not save the updated login -->
   <string name="mozac_feature_prompt_dont_update_2">داسہ نہ</string>
+  <!-- Positive confirmation that we should save the updated login -->
+  <string name="mozac_feature_prompt_update_confirmation">اپڈیٹ</string>
   <!-- Error text displayed underneath the password field when it is in an error case -->
   <string name="mozac_feature_prompt_error_empty_password_2">کلیت لوز اس لکھبو</string>
   <!-- Error text displayed underneath the password field when it is in an error case -->
@@ -41,6 +49,20 @@
   <string name="mozac_feature_prompts_allow">اجازت ایتبو</string>
   <!-- Text of a negative button in dialog requesting to open a new window. -->
   <string name="mozac_feature_prompts_deny">پنہ کر</string>
+  <!-- Text of the title of a dialog when a page is requesting to open a new window. -->
+  <string name="mozac_feature_prompts_popup_dialog_title">دا ویبڈس اے ملنگ کن اجازت ایتیرے؟</string>
+  <!-- Title of the dialog shown when a user is leaving a website and there is still data not saved yet. -->
+  <string name="mozac_feature_prompt_before_unload_dialog_title">پکا ارے؟</string>
+  <!-- Body text of the dialog shown when a user is leaving a website and there is still data not saved yet. -->
+  <string name="mozac_feature_prompt_before_unload_dialog_body">مگہ دا ویبڈس اے النگ خوارے؟ نما شاغوکا ڈیٹا خوندی مفرو</string>
+  <!-- Stay button of the dialog shown when a user is leaving a website and there is still data not saved yet, this indicates that the user wants to stay in the website. -->
+  <string name="mozac_feature_prompts_before_unload_stay">اڈکبو</string>
+  <!-- Leave button of the dialog shown when a user is leaving a website and there is still data not saved yet, this indicates that the user wants to leave in the website. -->
+  <string name="mozac_feature_prompts_before_unload_leave">الےبو</string>
+  <!-- Message shown when a site wants to create a passkey for a related domain. %1$s is the requesting site, %2$s is the related domain the passkey is for. -->
+  <string name="webauthn_related_origin_create_message">%1$s دا %2$s کن passkey اس جوڑ کننگ خواہک.</string>
+  <!-- Continue button label for WebAuthn related origin prompt. -->
+  <string name="webauthn_continue">برجا</string>
   <!-- Title of the month chooser dialog. -->
   <string name="mozac_feature_prompts_set_month">تو اس ارف</string>
   <!-- January (short description), used on the month chooser dialog. -->
@@ -71,14 +93,105 @@
   <string name="mozac_feature_prompts_set_time">وخت طےکبو</string>
   <!-- Option in expanded select password prompt that links to password settings -->
   <string name="mozac_feature_prompts_manage_logins_2">کلیت لوز تے نظم کبو</string>
+  <!-- Content description for expanding the saved passwords options in the select password prompt -->
+  <string name="mozac_feature_prompts_expand_logins_content_description_2">خوندی آ کلیت لوزاتے تالان کبو</string>
+  <!-- Content description for collapsing the saved passwords options in the select password prompt -->
+  <string name="mozac_feature_prompts_collapse_logins_content_description_2">خوندی آ کلیت لوزاتے تفبو کبو</string>
   <!-- Header for the select password prompt to allow users to fill a form with a saved password -->
   <string name="mozac_feature_prompts_saved_logins_2">خوندی آ کلیت لوزاک</string>
+  <!-- Content description for the suggest strong password prompt to allow users to fill a form with a suggested strong password -->
+  <string name="mozac_feature_prompts_suggest_strong_password_content_description">مضبوط کلیت لوز تجویز کبو</string>
+  <!-- Header for the suggest strong password prompt to allow users to fill a form with a suggested strong password -->
+  <string name="mozac_feature_prompts_suggest_strong_password_2">مضبوط کلیت لوز اس ارفبو</string>
+  <!-- Title for using the suggest strong password confirmation dialog. %1$s will be replaced with the generated password -->
+  <string name="mozac_feature_prompts_suggest_strong_password_message">مضبوط کلیت لوز اس ارفبو: %1$s</string>
+  <!-- Title for using the suggest strong password confirmation dialog -->
+  <string name="mozac_feature_prompts_suggest_strong_password_title">مضبوط کلیت لوز اے ارفیرے؟</string>
   <!-- Pressing this will use the suggested strong password -->
   <string name="mozac_feature_prompts_suggest_strong_password_use_password">کلیت لوز اے کاریم اٹ ات</string>
   <!-- Pressing this will dismiss the suggested strong password dialog -->
   <string name="mozac_feature_prompts_suggest_strong_password_dismiss">داسہ نہ</string>
   <!-- Title for showing the suggest strong password updated confirmation snackbar -->
   <string name="mozac_feature_prompts_suggest_strong_password_updated_snackbar_title">کلیت لوز پوسکن مس</string>
+  <!-- Strings shown in a dialog that appear when users try to refresh a certain kind of webpages -->
+  <string name="mozac_feature_prompt_repost_title">ڈیٹا اے دا ویبڈس آ پدا رائ کیرے؟</string>
+  <string name="mozac_feature_prompt_repost_message">دا صفحہ اے تازہ کننگ ان زوتیاٹ نا کاریم اک نقل مننگ کیرہ، دنکہ پیسہ رائ کننگ یا کمینٹ اس ارا وار پوسٹ کننگ.</string>
   <!-- Pressing this will dismiss the dialog and reload the page sending again the previous data -->
   <string name="mozac_feature_prompt_repost_positive_button_text">ڈیٹا وا رای کہ</string>
+  <!-- Pressing this will dismiss the dialog and not refresh the webpage -->
+  <string name="mozac_feature_prompt_repost_negative_button_text">کینسل</string>
+  <!-- Strings show in a dialog that appear when user confirm folder upload -->
+  <string name="mozac_feature_prompt_folder_upload_confirm_title">فائلاتے اپلوڈ کیرے؟</string>
+  <!-- Prompt message displayed when user selects a specific folder. %1$s is a folder / directory name. -->
+  <string name="mozac_feature_prompt_folder_upload_confirm_message">نم “%1$s” ان اپلوڈ کننگ ان مست پکا کبو کہ دا ویبڈس اے بھروسہ کیرے.</string>
+  <!-- Pressing this will dismiss the dialog and allow to upload folder -->
+  <string name="mozac_feature_prompt_folder_upload_confirm_positive_button_text">اپلوڈ</string>
+  <!-- Pressing this will dismiss the dialog and disallow to upload folder -->
+  <string name="mozac_feature_prompt_folder_upload_confirm_negative_button_text">کینسل</string>
+  <!--
+    Credit Card Autofill
+
+    Header for the select card prompt to allow users to fill a form with a saved card.
+  -->
+  <string name="mozac_feature_prompts_select_credit_card_2">خوندی آ کارڈ اے ارفبو</string>
+  <!-- Content description for expanding the saved card options in the select card prompt. -->
+  <string name="mozac_feature_prompts_expand_credit_cards_content_description_2">خوندی آ کارڈاتے تالان کبو</string>
+  <!-- Content description for collapsing the saved card options in the select prompt. -->
+  <string name="mozac_feature_prompts_collapse_credit_cards_content_description_2">خوندی آ کارڈاتے تفبو</string>
+  <!-- Option in the expanded select card prompt that links to cards settings. -->
+  <string name="mozac_feature_prompts_manage_credit_cards_2">کارڈ اتے نظم کبو</string>
+  <!-- Text for the title of a save credit card dialog. -->
+  <string name="mozac_feature_prompts_save_credit_card_prompt_title">دا کارڈ اے حفاظت ٹی خوندی کیرے؟</string>
+  <!-- Title of dialog to store credit card information in the user's account -->
+  <string name="mozac_feature_prompts_save_payment_method_prompt_title">پیسہ تننگ نا دا وڑ اے خوندی کیرے؟</string>
+  <!-- Title of dialog to update stored credit card information in the user's account -->
+  <string name="mozac_feature_prompts_update_payment_method_prompt_title">پیسہ تننگ نا دا وڑ اے اپڈیٹ کیرے؟</string>
+  <!-- Text for the button that closes a save or update credit card dialog without saving. -->
+  <string name="mozac_feature_prompts_save_payment_method_dismiss">خلاس</string>
+  <!-- Edit credit card screen - label of the cardholder name field -->
+  <string name="mozac_feature_prompts_edit_credit_card_name">کارڈ اے پن</string>
+  <!-- Edit credit card screen - format for options in the month dropdown: %1$s is the name of the month (for example "January"), and %2$s is the month number with two digits (for example "01"). The result would be "January (01)". -->
+  <string name="mozac_feature_prompts_edit_credit_card_expiry_month_option">%1$s (%2$s)</string>
+  <!-- Edit credit card screen - label for the credit card security code field (CVV is the common short form in English and stands for Card Verification Value) -->
+  <string name="mozac_feature_prompts_edit_credit_card_security_code">CVV (اختیاری)</string>
+  <!-- Edit credit card screen - Error message for the security code field when the entered code is too short. -->
+  <string name="mozac_feature_prompts_edit_credit_card_security_code_error">3 یا 4 نمبر نا حفاظتی کوڈ اس شاغبو</string>
+  <!-- Edit credit card screen - Accessibility description of the button that clears the security code field -->
+  <string name="mozac_feature_prompts_edit_credit_card_security_code_clear">حفاظتی کوڈ اے صفا کبو</string>
+  <!--
+    Address Autofill
+
+    Header for the select address prompt to allow users to fill a form with a saved address.
+  -->
+  <string name="mozac_feature_prompts_select_address_2">ڈس گچین کبو</string>
+  <!-- Content description for expanding the saved addresses options in the select address prompt. -->
+  <string name="mozac_feature_prompts_expand_address_content_description_2">خوندی آ ڈس اتے تالان کبو</string>
+  <!-- Content description for collapsing the saved address options in the select address prompt. -->
+  <string name="mozac_feature_prompts_collapse_address_content_description_2">خوندی آ ڈس اتے تفبو</string>
+  <!-- Text for the manage addresses button. -->
+  <string name="mozac_feature_prompts_manage_address">ڈس اتے نظم کبو</string>
+  <!-- Text for the title of a save address dialog. -->
+  <string name="mozac_feature_prompts_save_address_prompt_title">ڈس اک خوندی مریر؟</string>
+  <!-- Text for the title of an update address dialog, shown when the address adds information to an already saved address. -->
+  <string name="mozac_feature_prompts_update_address_prompt_title">ڈس اک اپڈیٹ مریر؟</string>
+  <!--
+    Federated Credential Management prompts
+
+    Content description for the Account picture in the Select Account FedCM prompt
+  -->
+  <string name="mozac_feature_prompts_account_picture">اکاونٹ نا تصویر</string>
+  <!-- Title of an account picker dialog for identity credentials. The %1$s will be replaced with the name of the provider -->
+  <string name="mozac_feature_prompts_identity_credentials_choose_account_for_provider">سائن ان کبو %1$s اکاونٹ تون</string>
+  <!-- Text for the positive button of the Identity Credential dialogs. -->
+  <string name="mozac_feature_prompts_identity_credentials_continue">برجا</string>
+  <!-- Text for the cancel button of the Identity Credential dialogs. -->
+  <string name="mozac_feature_prompts_identity_credentials_cancel">کینسل</string>
+  <!--
+    Email Mask Autofill
+
+    Text for the email mask prompt to allow users to fill an email input field in a sign up form with an email mask.
+  -->
+  <string name="mozac_feature_relay_chip_text">ای میل ماسک کاریم ٹی اتبو</string>
+  <!-- Informational text for the contextual feature recommendation (CFR) enabling the email mask aliases. The %s is the name of the service, "Firefox Relay". -->
+  <string name="mozac_feature_relay_email_masks_cfr">پوسکن! %s سی میل ماسکاک داسہ موبائل ٹی ہم اریر.</string>
 </resources>

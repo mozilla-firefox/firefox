@@ -14,6 +14,8 @@
     %1$s will be replaced with the estimated time remaining to complete the download.
   -->
   <string name="mozac_feature_downloads_time_remaining">%1$s ٹی</string>
+  <!-- Summary text shown on an in progress download notification when the estimated time remaining is unknown. -->
+  <string name="mozac_feature_downloads_time_remaining_unknown">ناچاہوک وخت</string>
   <!-- Text shown on the second row of a paused download notification. -->
   <string name="mozac_feature_downloads_paused_notification_text">ڈاونلوڈ سلیس</string>
   <!-- Text shown on the second row of an completed download notification. The filename is shown on the first row. -->
@@ -21,10 +23,17 @@
   <!-- Text shown on the second row of an failed download notification. The filename is shown on the first row. -->
   <string name="mozac_feature_downloads_failed_notification_text2">ڈاونلوڈ متو</string>
   <!--
+    Alert dialog confirmation before downloading a previously downloaded file, this is the title.
+    %1$s will be replaced with the size of the file.
+  -->
+  <string name="mozac_feature_downloads_again_dialog_title">فائل وا ڈاونلود کیرے؟ (%1$s)</string>
+  <!--
     Alert dialog confirmation before downloading a file, this is the title.
     %1$s will be replaced with the size of the file.
   -->
   <string name="mozac_feature_downloads_dialog_title_3">فائل اے ڈاونلود کیسہ؟ (%1$s)</string>
+  <!-- This string is used as the title for the download confirmation dialog when the size of the file is not known. -->
+  <string name="mozac_feature_downloads_dialog_title_with_unknown_size">فائل ڈاونلوڈ کیرے؟</string>
   <!-- Alert dialog confirmation before downloading a previously downloaded file, this is the title when the size of the file is not known. -->
   <string name="mozac_feature_downloads_again_dialog_title_with_unknown_size">فائل وا ڈاونلود کیرے؟</string>
   <!-- Alert dialog confirmation before download a file, this is the positive action. -->
@@ -33,16 +42,50 @@
   <string name="mozac_feature_downloads_dialog_download_again">وا ڈاونلوڈ</string>
   <!-- Alert dialog confirmation before download a file, this is the negative action. -->
   <string name="mozac_feature_downloads_dialog_cancel">کینسل</string>
+  <!--
+    Alert dialog confirmation before downloading a previously downloaded file, this is the description.
+    %1$s will be replaced with the name of the file.
+  -->
+  <string name="mozac_feature_downloads_already_exists_dialog_title">%1$s مالو ان ارے.</string>
+  <!-- Alert dialog confirmation before downloading a previously downloaded file, this is the neutral action that proposes to open the file instead. -->
+  <string name="mozac_feature_downloads_open_existing_file">مالو نا فائل اے ملبو</string>
+  <!--
+    Alert dialog confirmation before downloading a file without network connection, this is the description.
+    %1$s will be replaced with the name of the file.
+  -->
+  <string name="mozac_feature_downloads_file_failure_no_connection" tools:ignore="UnusedResources">%1$s ڈاونلوڈ متو.</string>
   <!-- Alert dialog confirmation before downloading a file without network connection, this is the description. -->
   <string name="mozac_feature_downloads_file_check_connection" tools:ignore="UnusedResources">تینا کنیکژن اے ہر و پدا واراس خل۔</string>
+  <!-- Error shown when the user is trying to download a invalid file. %1$s will be replaced with the name of the app. -->
+  <string name="mozac_feature_downloads_file_not_supported2">%1$s دا فائل ٹائپ اے ڈاونلوڈ کننگ کپک</string>
   <!-- Message that appears when the downloaded file could not be opened. -->
   <string name="mozac_feature_downloads_could_not_open_file">فائل ملنگپک</string>
+  <!-- Message that appears when the downloaded file is a specific type (%1$s) that Android doesn't support opening. -->
+  <string name="mozac_feature_downloads_open_not_supported1">ہچو اهپ اس %1$s فائل ملنگ کن ملےتو</string>
+  <!-- Button that pauses the download when pressed. -->
+  <string name="mozac_feature_downloads_button_pause">سلیفبو</string>
+  <!-- Button that resumes the download when pressed. -->
+  <string name="mozac_feature_downloads_button_resume">برجا</string>
+  <!-- Button that cancels the download when pressed. -->
+  <string name="mozac_feature_downloads_button_cancel">کینسل</string>
   <!-- Button that opens the downloaded file when pressed. -->
   <string name="mozac_feature_downloads_button_open">ملبو</string>
   <!-- Button that restarts the download after a failed attempt. -->
   <string name="mozac_feature_downloads_button_try_again">پدا واراس خل</string>
+  <!-- Content description for close button -->
+  <string name="mozac_feature_downloads_button_close">بند</string>
+  <!-- Title for the third party download app chooser dialog -->
+  <string name="mozac_feature_downloads_third_party_app_chooser_dialog_title">کاریم اے داڑتون پورہ کبو</string>
   <!-- Message that appears when trying to download with an external app fails. %1$s will be replaced with the name the external app. -->
   <string name="mozac_feature_downloads_unable_to_open_third_party_app">%1$s ملینگ مفک</string>
+  <!-- Text for the info dialog when write to storage permissions have been denied but user tries to download a file. -->
+  <string name="mozac_feature_downloads_write_external_storage_permissions_needed_message">فائلاتے ڈاونلوڈ کننگ کن فائل و میڈیا اتیسکان رسینگ نا اجازت ضروری اے. انڈرویڈ سیٹنگاتے ٹی انبو، اجازت اتے دو خلبو، و اجازت ایتبو اے خلبو.</string>
+  <!-- Alert dialog confirmation before cancelling downloads, this is the title -->
+  <string name="mozac_feature_downloads_cancel_active_downloads_warning_content_title">ڈکوئ ڈاونلوڈاک کینسل مریر؟</string>
+  <!-- Alert dialog confirmation before cancelling private downloads, this is the body. %1$s will be replaced with the name of the file. -->
+  <string name="mozac_feature_downloads_cancel_active_private_downloads_warning_content_body">اگہ نم داسہ کل ڈکائ ٹیب اتے بند کریرے، %1$s ڈاونلوڈ مننگ کینسل مریک. پکا ارے کہ ڈکوئ ویبگشت اے النگ خوارے؟</string>
   <!-- Alert dialog confirmation before cancelling downloads, this is the positive action. -->
-  <string name="mozac_feature_downloads_cancel_active_downloads_accept">ڈاونلوڈ۱ک کینسل</string>
+  <string name="mozac_feature_downloads_cancel_active_downloads_accept">ڈاونلوڈ۱تے کینسل کیرے</string>
+  <!-- Alert dialog confirmation before cancelling downloads, this is the negative action. Leaves user in Private browsing -->
+  <string name="mozac_feature_downloads_cancel_active_private_downloads_deny">ڈکوئ ویبگشت ٹی اڈ کیرے</string>
 </resources>

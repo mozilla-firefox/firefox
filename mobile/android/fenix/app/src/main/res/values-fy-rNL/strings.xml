@@ -1702,6 +1702,8 @@
   <string name="add_to_new_tab_group_content_description">Oan nije ljepblêdgroep tafoegje</string>
   <!-- Label for adding to a new tab group. -->
   <string name="add_to_new_tab_group_title">Nije ljepblêdgroep</string>
+  <!-- Label to add a link in a new tab inside a tab group. -->
+  <string name="contextmenu_open_in_tab_group">Iepenje yn ljepblêdgroep</string>
   <plurals name="tab_group_tabs_count_subtitle">
     <!--
       Subtitle for the number of tabs in a tab group.
@@ -1744,6 +1746,14 @@
   <string name="close_tab_and_delete_group_confirmation_dialog_confirm">Groep fuortsmite</string>
   <!-- Text shown on the cancel button in the Close last tab and delete tab group confirmation dialog. -->
   <string name="close_tab_and_delete_group_confirmation_dialog_cancel">Annulearje</string>
+  <!-- Title of the confirmation dialog shown when moving the last tab out of a group will delete the group. %s is the group name, which defaults to a value such as "Group 1" but can be edited by the user to contain arbitrary text. -->
+  <string name="move_last_tab_and_delete_group_confirmation_dialog_title">Lêste ljepblêd út %s ferpleatse?</string>
+  <!-- Body of the confirmation dialog shown when moving the last tab out of a group will delete the group. %1$s is the destination group name. %2$s is the source group name that will be deleted. Both names default to values such as "Group 1" but can be edited by the user to contain arbitrary text. -->
+  <string name="move_last_tab_and_delete_group_confirmation_dialog_body">Dit ljepblêd wurdt ferpleatst nei %1$s. %2$s sil fuortsmiten wurde, omdat dizze groep leech wêze sil.</string>
+  <!-- Text shown on the confirm button for the confirmation dialog shown when moving the last tab out of a group will delete the group. -->
+  <string name="move_last_tab_and_delete_group_confirmation_dialog_confirm">Ljepblêd ferpleatse</string>
+  <!-- Text shown on the cancel button for the confirmation dialog shown when moving the last tab out of a group will delete the group. -->
+  <string name="move_last_tab_and_delete_group_confirmation_dialog_cancel">Annulearje</string>
   <!-- Content description for the three dot button next to a tab group" -->
   <string name="tab_group_three_dot_button_content_description">Mear opsjes</string>
   <!--
@@ -3122,6 +3132,8 @@
   <string name="ip_protection_learn_more">Mear ynfo</string>
   <!-- Label for the monthly data allowance section on the browser VPN settings screen -->
   <string name="ip_protection_data_limit_label">Moanlikse gegevenslimyt</string>
+  <!-- Accessibility description for the button that closes promotional banners or messages on the VPN settings screen (without triggering any effect) -->
+  <string name="ip_protection_settings_message_dismiss">Slute</string>
   <!--
     Data usage shown on the browser VPN settings screen.
     %1$.1f is the data remaining in GB (for example "8.3").
@@ -3189,6 +3201,13 @@
     %2$s is a link using ip_protection_onboarding_body_link_promo (“Learn more”) as text. It links to a support article about VPN on Firefox.
   -->
   <string name="ip_protection_onboarding_body_promo">Skeakelje dit yn om jo navigaasje mear privee en dreger te folgjen te meitsjen. Probearje it no en ûntfang oant %1$s ûnbeheinde bânbreedte. %2$s</string>
+  <!--
+    The body of the VPN onboarding card when the user qualifies for using VPN without signing in to a Mozilla account
+    %1$d is the amount of free data in GB available without signing in (for example "5").
+    %2$d is the amount of data in GB available after signing in (for example "50").
+    %3$s is a link using ip_protection_onboarding_body_link_promo (“Learn more”) as text. It links to a support article about VPN on Firefox.
+  -->
+  <string name="ip_protection_onboarding_body_no_fxa">Skeakelje dit yn om jo navigaasje mear privee en dreger te folgjen te meitsjen. Probearje it mei %1$d GB fergeze bânbreedte, of meld jo oan foar %2$d GB. %3$s</string>
   <!-- Used as text for a link in ip_protection_onboarding_body. Make sure to adapt capitalization if the link is in the middle of the sentence. -->
   <string name="ip_protection_onboarding_body_link_promo">Mear ynfo</string>
   <!-- Label for the dismiss button on the onboarding bottom sheet. -->
@@ -3312,6 +3331,10 @@
   <string name="credit_cards_number_validation_error_message_2">Fier in jildich kaartnûmer yn</string>
   <!-- Error message for card name on card validation -->
   <string name="credit_cards_name_on_card_validation_error_message_2">Foegje in namme ta</string>
+  <!-- Error message for a credit card security code that does not meet the 3-digit length requirement. -->
+  <string name="credit_cards_cvv_validation_error_message">Befeiligingskoade moat út 3 sifers bestean</string>
+  <!-- Error message for a credit card security code that does not meet the 4-digit length requirement (used for American Express cards only) -->
+  <string name="credit_cards_cvv_amex_validation_error_message">American Express-befeiligingskoaden bestean út 4 sifers</string>
   <!-- Message displayed in biometric prompt displayed for authentication before allowing users to view their saved credit cards -->
   <string name="credit_cards_biometric_prompt_message">Untskoattelje om jo bewarre kaarten te besjen</string>
   <!-- Title of warning dialog if users have no device authentication set up -->

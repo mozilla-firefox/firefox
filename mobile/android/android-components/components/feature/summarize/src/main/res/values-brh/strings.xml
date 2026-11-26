@@ -25,6 +25,8 @@
   <string name="mozac_summarize_shake_consent_on_device_negative_button">داسہ نہ</string>
   <!-- Button text for the consent to download an on-device model denying download consent -->
   <string name="mozac_summarize_download_consent_button_negative">کینسل</string>
+  <!-- Message to describe that a download is in progress using an on-device, private model -->
+  <string name="mozac_summarize_download_progress_message">خاص گوندی تیکن اسہ وار نا ڈونلوڈ.</string>
   <!-- Button text shown while a download is in progress to cancel the download -->
   <string name="mozac_summarize_download_progress_button_negative">کینسل</string>
   <!-- Title for the download error screen -->
@@ -51,4 +53,18 @@
   <string name="mozac_summarize_settings_shake_sensitivity_medium">درمیانہ</string>
   <!-- High option label for the shake sensitivity slider in settings -->
   <string name="mozac_summarize_settings_shake_sensitivity_high">بھاز</string>
+  <!-- Content description for the thumbs up button used to rate a generated summary as helpful -->
+  <string name="mozac_feature_summarize_feedback_good_content_description">جوان گونڈ مروک</string>
+  <!-- Accessibility label for the action of the thumbs up button. This will be interpolated into a longer message, equivalent to "Double tap to [rate summary as good]" in English. Structure and phrasing vary by target language: using an infinitive/dictionary form of the verb is recommended. -->
+  <string name="mozac_feature_summarize_feedback_good_click_label">گونڈ مروک اے جوان ریٹنگ ایتبو</string>
+  <!-- Content description for the thumbs down button used to rate a generated summary as unhelpful -->
+  <string name="mozac_feature_summarize_feedback_bad_content_description">خراب گونڈ مروک</string>
+  <!-- Accessibility label for the action of the thumbs down button. This will be interpolated into a longer message, equivalent to "Double tap to [rate summary as bad]" in English. Structure and phrasing vary by target language: using an infinitive/dictionary form of the verb is recommended. -->
+  <string name="mozac_feature_summarize_feedback_bad_click_label">گونڈ مروک اے خراب ریٹنگ ایتبو</string>
+  <!-- Button text for the Error dismiss button on Shake to Summarize -->
+  <string name="mozac_summarize_error_dissmiss">خلاس</string>
+  <!-- Title for the Mozilla account sign-in screen, shown when summarization results in a connection failure. -->
+  <string name="mozac_summarize_fxa_sign_in_title">گونڈ کننگ کن سائن ان کبو</string>
+  <!-- Label for the button that starts the sign-in flow -->
+  <string name="mozac_summarize_fxa_sign_in_button_positive">سائن ان</string>
 </resources>
