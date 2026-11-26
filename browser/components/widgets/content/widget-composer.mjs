@@ -155,6 +155,13 @@ export class WidgetComposer extends MozLitElement {
                 src="chrome://global/skin/icons/lightbulb.svg"
                 alt=""
               />
+              <div slot="actions" class="tip-body">
+                <ul>
+                  <li data-l10n-id="widget-composer-tip-do"></li>
+                  <li data-l10n-id="widget-composer-tip-show"></li>
+                </ul>
+                <p data-l10n-id="widget-composer-tip-edit"></p>
+              </div>
             </moz-promo>`
           : nothing}
       </div>

@@ -54,6 +54,17 @@
   fill: currentColor;
 }
 
+.tip-body {
+  & ul {
+    margin-block: 0;
+    padding-inline-start: var(--space-large);
+  }
+
+  & p {
+    margin-block: 0;
+  }
+}
+
 .examples {
   display: grid;
   grid-template-rows: 1fr;
