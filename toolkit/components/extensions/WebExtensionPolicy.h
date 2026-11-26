@@ -42,7 +42,6 @@ using dom::WebExtensionLocalizeCallback;
 using dom::WebExtensionPolicy_Binding::ACCESS_FILE_ALWAYS;
 using dom::WebExtensionPolicy_Binding::ACCESS_FILE_WITH_OPT_IN;
 using dom::WebExtensionPolicy_Binding::ACCESS_IGNORE_RESTRICTIONS;
-using dom::WebExtensionPolicy_Binding::ACCESS_OTHER_EXTENSIONS;
 using dom::WebExtensionPolicy_Binding::ACCESS_OWN_EXTENSION;
 using dom::WebExtensionPolicy_Binding::ACCESS_REQUIRE_EXPLICIT_DOMAIN;
 using dom::WebExtensionPolicy_Binding::ACCESS_WITHOUT_HOST_PERMISSIONS;

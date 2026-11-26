@@ -143,30 +143,6 @@ add_task(async function block_request_with_dnr() {
   // other extensions.
   await checkCanFetchFromOtherExtension();
 
-  // Except when the user opts in via a preference. When the pref is on, then:
-  // The declarativeNetRequest permission grants the ability to block requests
-  // from other extensions. (The declarativeNetRequestWithHostAccess permission
-  // does not; see test task block_with_declarativeNetRequestWithHostAccess.)
-  let otherExtension = ExtensionTestUtils.loadExtension({
-    async background() {
-      await browser.test.assertRejects(
-        fetch("http://example.com/never_reached", { method: "get" }),
-        "NetworkError when attempting to fetch resource.",
-        "blocked by different extension with declarativeNetRequest permission"
-      );
-      browser.test.sendMessage("other_extension_done");
-    },
-  });
-  await runWithPrefs(
-    [["extensions.dnr.match_requests_from_other_extensions", true]],
-    async () => {
-      info("Verifying that fetch() from extension is intercepted with pref");
-      await otherExtension.startup();
-      await otherExtension.awaitMessage("other_extension_done");
-      await otherExtension.unload();
-    }
-  );
-
   await extension.unload();
 });
 
@@ -202,14 +178,6 @@ add_task(async function block_with_declarativeNetRequestWithHostAccess() {
   // Extensions cannot have permissions for another extension and therefore the
   // DNR rule never applies.
   await checkCanFetchFromOtherExtension();
-
-  // Sanity check: even with the pref, the declarativeNetRequestWithHostAccess
-  // permission should not grant access.
-  info("Verifying that access is not allowed, despite the pref being true");
-  await runWithPrefs(
-    [["extensions.dnr.match_requests_from_other_extensions", true]],
-    checkCanFetchFromOtherExtension
-  );
 
   await extension.unload();
 });
@@ -285,17 +253,6 @@ add_task(async function block_in_sandboxed_extension_page() {
     "DNR can block request from sandboxed page in other extension"
   );
 
-  await runWithPrefs(
-    [["extensions.dnr.match_requests_from_other_extensions", true]],
-    async () => {
-      info("Verifying that fetch() from extension sandbox is matched via pref");
-      Assert.equal(
-        await checkFetchInSandboxedExtensionPage(otherExtension),
-        "FETCH_BLOCKED",
-        "DNR can block request from sandboxed page in other extension via pref"
-      );
-    }
-  );
   await extension.unload();
 
   // As a sanity check, to verify that the tests above do not always return

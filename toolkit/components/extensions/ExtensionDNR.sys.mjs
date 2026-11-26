@@ -80,11 +80,6 @@ const lazy = XPCOMUtils.declareLazy({
   ExtensionDNRStore: "resource://gre/modules/ExtensionDNRStore.sys.mjs",
   WebRequest: "resource://gre/modules/WebRequest.sys.mjs",
 
-  gMatchRequestsFromOtherExtensions: {
-    pref: "extensions.dnr.match_requests_from_other_extensions",
-    default: false,
-  },
-
   // The timeout value the resource invalidation gets coalesced for successive
   // modifications of DNR rules, in milliseconds.
   // A negative value disables the invalidation.
@@ -1537,11 +1532,7 @@ class RequestDetails {
       this.documentURI,
       flags |
         WebExtensionPolicy.ACCESS_FILE_ALWAYS |
-        WebExtensionPolicy.ACCESS_OWN_EXTENSION |
-        // Historically we only allowed blocking, not modify (bug 1810753).
-        (wantBlockWithoutModify && lazy.gMatchRequestsFromOtherExtensions
-          ? WebExtensionPolicy.ACCESS_OTHER_EXTENSIONS
-          : 0)
+        WebExtensionPolicy.ACCESS_OWN_EXTENSION
     );
   }
 
@@ -2009,7 +2000,7 @@ const NetworkIntegration = {
         rm => rm.extension.privateBrowsingAllowed
       );
     }
-    if (ruleManagers.length && !lazy.gMatchRequestsFromOtherExtensions) {
+    if (ruleManagers.length) {
       const policy = channel.loadInfo.loadingPrincipal?.addonPolicy;
       if (policy) {
         ruleManagers = ruleManagers.filter(
@@ -2428,11 +2419,7 @@ function getMatchedRulesForRequest(request, extension) {
   // While this simulated request is not really from another extension, apply
   // the same access control checks from NetworkIntegration.startDNREvaluation
   // for consistency.
-  if (
-    !lazy.gMatchRequestsFromOtherExtensions &&
-    initiatorURI &&
-    ExtensionUtils.isExtensionUrl(initiatorURI)
-  ) {
+  if (initiatorURI && ExtensionUtils.isExtensionUrl(initiatorURI)) {
     const extUuid = initiatorURI.host;
     ruleManagers = ruleManagers.filter(rm => rm.extension.uuid === extUuid);
   }

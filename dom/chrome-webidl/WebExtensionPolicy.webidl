@@ -233,10 +233,6 @@ interface WebExtensionPolicy {
   const unsigned long ACCESS_FILE_ALWAYS = 0x10;
   // Allow match of own moz-extension:-URL (host permissions are not checked).
   const unsigned long ACCESS_OWN_EXTENSION = 0x20;
-  // Allow match of moz-extension:-URL from other extensions (host permissions
-  // are not checked). Only exists for DNR logic from bug 1810753.
-  // TODO bug 2074091: Remove this flag.
-  const unsigned long ACCESS_OTHER_EXTENSIONS = 0x40;
 
   /**
    * Returns true if the extension has cross-origin access to the given URI.

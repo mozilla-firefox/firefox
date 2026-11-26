@@ -357,9 +357,8 @@ bool WebExtensionPolicyCore::CanAccessURI(const URLInfo& aURI,
     // extensions anyway (not matched by "MatchPattern" type in manifest.json).
     //
     // TODO bug 1713196: check more host names if use_dynamic_url is supported.
-    return MozExtensionHostname().Equals(aURI.Host())
-               ? !!(aFlags & ACCESS_OWN_EXTENSION)
-               : !!(aFlags & ACCESS_OTHER_EXTENSIONS);
+    return MozExtensionHostname().Equals(aURI.Host()) &&
+           !!(aFlags & ACCESS_OWN_EXTENSION);
   }
 
   if (!(aFlags & ACCESS_IGNORE_RESTRICTIONS)) {
