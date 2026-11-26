@@ -127,6 +127,7 @@ fun rememberCFRState(
  * @param focusable Whether the CFR tooltip consumes touch events while shown. If this is set to true, it allows the
  *   tooltip to handle events like back button presses, and it will get dismissed on back-pressed. If you wish to handle
  *   back-press to dismiss the CFR on your own, then set [focusable] to false.
+ * @param enableUserInput Whether long-pressing or hovering the [anchor] shows the CFR tooltip.
  * @param anchor The anchor composable the CFR tooltip is attached to.
  */
 @OptIn(ExperimentalMaterial3Api::class) // TooltipBox
@@ -138,6 +139,7 @@ fun CFRBox(
     positionProvider: CFRPositionProvider = rememberCFRPositionProvider(IndicatorDirection.UP),
     onDismissRequest: (() -> Unit)? = null,
     focusable: Boolean = true,
+    enableUserInput: Boolean = true,
     anchor: @Composable () -> Unit,
 ) {
     TooltipBox(
@@ -147,7 +149,7 @@ fun CFRBox(
         modifier = modifier,
         onDismissRequest = onDismissRequest,
         focusable = focusable,
-        enableUserInput = true,
+        enableUserInput = enableUserInput,
         hasAction = false,
         content = anchor,
     )
