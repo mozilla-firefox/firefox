@@ -243,6 +243,10 @@ devtools-settings-local-mode-origin-invalid = This origin is invalid
 # Label for the folder whose files are served at the custom domain.
 devtools-settings-local-mode-folder = Local folder:
 
+devtools-settings-local-mode-choose-folder =
+    .label = Browse…
+    .title = Choose a local folder to serve this mapping
+
 devtools-settings-local-mode-add =
     .label = Add a new local mapping
 

@@ -32,6 +32,7 @@ add_task(test_local_mode_add_mapping);
 add_task(test_local_mode_add_mapping_cancelled);
 add_task(test_local_mode_edit_origin);
 add_task(test_local_mode_edit_origin_refresh);
+add_task(test_local_mode_change_folder);
 
 async function test_local_mode_mappings_listed() {
   setMapping(0, { origin: "firefox.localhost", path: TEST_FOLDER });
@@ -271,6 +272,32 @@ async function test_local_mode_edit_origin_refresh() {
   ok(
     !item.querySelector(".origin-error"),
     "Refreshing clears the draft's error"
+  );
+
+  await closeTabAndToolbox();
+  clearMappings();
+}
+
+async function test_local_mode_change_folder() {
+  setMapping(0, { origin: "firefox.localhost", path: MISSING_FOLDER });
+  const { root } = await openSettings();
+  const editor = await getLocalModeEditor(root);
+  const [item] = getMappingItems(editor);
+
+  MockFilePicker.setFiles([new FileUtils.File(TEST_FOLDER)]);
+  MockFilePicker.returnValue = MockFilePicker.returnOK;
+  const onUpdated = LocalModeMappings.once("updated");
+  item.querySelector(".choose-folder").click();
+  await onUpdated;
+  is(
+    Services.prefs.getStringPref(`${LOCAL_MODE_MAPPINGS_PREF_PREFIX}0.path`),
+    TEST_FOLDER,
+    "Choosing a folder writes its path"
+  );
+  await editor.updateComplete;
+  ok(
+    !item.querySelector(".folder-error"),
+    "An existing folder hides the error"
   );
 
   await closeTabAndToolbox();
