@@ -150,12 +150,29 @@ TEST(gfxFont, FilterIfIgnorableSupplementary)
       text, 4, intl::Script::LATIN, nullptr, 60, gfx::ShapedTextFlags(),
       gfxFontShaper::RoundingFlags::kRoundX));
   ASSERT_TRUE(word);
-  EXPECT_FALSE(word->FilterIfIgnorable(0, uint32_t('a')));
-  EXPECT_TRUE(word->FilterIfIgnorable(1, uint32_t(0xE0100)));
+  EXPECT_FALSE(word->FilterIfIgnorable(0, uint32_t('a'), 1, 10.0f));
+  EXPECT_TRUE(word->FilterIfIgnorable(1, uint32_t(0xE0100), 1, 10.0f));
   const auto* glyphs = word->GetCharacterGlyphs();
   EXPECT_TRUE(glyphs[1].IsMissing());
   EXPECT_FALSE(glyphs[2].IsMissing());
   EXPECT_FALSE(glyphs[2].IsSimpleGlyph());
   EXPECT_EQ(glyphs[2].GetGlyphCount(), 0u);
-  EXPECT_FALSE(word->FilterIfIgnorable(1, uint32_t(0x1F600)));
+  EXPECT_FALSE(word->FilterIfIgnorable(1, uint32_t(0x1F600), 1, 10.0f));
+}
+
+// A Format character is kept only if the font gave it a real glyph with a
+// positive advance.
+TEST(gfxFont, FilterIfIgnorableFormatControl)
+{
+  const char16_t text[] = {0x200B, 0x200B, 0x200B, 0x00AD};
+  UniquePtr<gfxShapedWord> word(gfxShapedWord::Create(
+      text, 4, intl::Script::LATIN, nullptr, 60, gfx::ShapedTextFlags(),
+      gfxFontShaper::RoundingFlags::kRoundX));
+  ASSERT_TRUE(word);
+  EXPECT_TRUE(word->FilterIfIgnorable(0, uint32_t(0x200B), 0, 10.0f));
+  EXPECT_TRUE(word->FilterIfIgnorable(1, uint32_t(0x200B), 5, 0.0f));
+  EXPECT_FALSE(word->FilterIfIgnorable(2, uint32_t(0x200B), 5, 10.0f));
+  EXPECT_FALSE(word->FilterIfIgnorable(3, uint8_t(0xAD), 5, 10.0f));
+  EXPECT_TRUE(word->FilterIfIgnorable(3, uint8_t(0xAD), 0, 0.0f));
+  EXPECT_TRUE(word->GetCharacterGlyphs()[0].IsMissing());
 }

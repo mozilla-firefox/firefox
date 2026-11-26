@@ -868,7 +868,8 @@ void gfxShapedText::SetMissingGlyph(uint32_t aIndex, uint32_t aChar,
   g.SetMissing();
 }
 
-bool gfxShapedText::FilterIfIgnorable(uint32_t aIndex, uint32_t aCh) {
+bool gfxShapedText::FilterIfIgnorable(uint32_t aIndex, uint32_t aCh,
+                                      uint32_t aGlyphID, float aAdvance) {
   if (!IsIgnorable(aCh)) {
     return false;
   }
@@ -885,16 +886,14 @@ bool gfxShapedText::FilterIfIgnorable(uint32_t aIndex, uint32_t aCh) {
       !charGlyphs[aIndex + charLength].IsClusterStart()) {
     return false;
   }
-  CompressedGlyph& g = charGlyphs[aIndex];
   // For Format-Control characters, we avoid filtering if the glyph is _not_
   // .notdef and has a positive advance width (e.g. Mongolian Vowel Separator
   // in some fonts).
-  if (category == HB_UNICODE_GENERAL_CATEGORY_FORMAT) {
-    if (!g.IsSimpleGlyph() ||
-        (g.GetSimpleGlyph() != 0 && g.GetSimpleAdvance() > 0)) {
-      return false;
-    }
+  if (category == HB_UNICODE_GENERAL_CATEGORY_FORMAT && aGlyphID != 0 &&
+      aAdvance > 0) {
+    return false;
   }
+  CompressedGlyph& g = charGlyphs[aIndex];
   // A compressedGlyph that is set to MISSING but has no DetailedGlyphs list
   // will be zero-width/invisible, which is what we want here.
   g.SetComplex(g.IsClusterStart(), g.IsLigatureGroupStart()).SetMissing();

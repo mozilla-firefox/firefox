@@ -1517,11 +1517,13 @@ static bool FilterIfIgnorableClump(gfxShapedText* aShapedText,
                                    const void* aText,
                                    gfxFontShaper::TextEncoding aEncoding,
                                    uint32_t aOffset, int32_t aStart,
-                                   int32_t aEnd) {
+                                   int32_t aEnd, uint32_t aGlyphID,
+                                   float aAdvance) {
   if (aEncoding == gfxFontShaper::TextEncoding::Latin1) {
     return aEnd == aStart + 1 &&
            aShapedText->FilterIfIgnorable(
-               aOffset + aStart, static_cast<const uint8_t*>(aText)[aStart]);
+               aOffset + aStart, static_cast<const uint8_t*>(aText)[aStart],
+               aGlyphID, aAdvance);
   }
   const char16_t* text = static_cast<const char16_t*>(aText);
   uint32_t ch = text[aStart];
@@ -1530,7 +1532,8 @@ static bool FilterIfIgnorableClump(gfxShapedText* aShapedText,
   } else if (aEnd != aStart + 1) {
     return false;
   }
-  return aShapedText->FilterIfIgnorable(aOffset + aStart, ch);
+  return aShapedText->FilterIfIgnorable(aOffset + aStart, ch, aGlyphID,
+                                        aAdvance);
 }
 
 nsresult gfxHarfBuzzShaper::SetGlyphsFromRun(gfxShapedText* aShapedText,
@@ -1687,17 +1690,6 @@ nsresult gfxHarfBuzzShaper::SetGlyphsFromRun(gfxShapedText* aShapedText,
     // Now we're ready to set the glyph info in the textRun
     int32_t glyphsInClump = glyphEnd - glyphStart;
 
-    // Check for default-ignorable char that didn't get filtered, combined,
-    // etc by the shaping process, and remove from the run.
-    // (This may be done within harfbuzz eventually.)
-    if (glyphsInClump == 1 &&
-        FilterIfIgnorableClump(aShapedText, aText, aEncoding, aOffset,
-                               baseCharIndex, endCharIndex)) {
-      glyphStart = glyphEnd;
-      charStart = charEnd;
-      continue;
-    }
-
     // HarfBuzz gives us physical x- and y-coordinates, but we will store
     // them as logical inline- and block-direction values in the textrun.
 
@@ -1715,6 +1707,18 @@ nsresult gfxHarfBuzzShaper::SetGlyphsFromRun(gfxShapedText* aShapedText,
       i_advance = posInfo[glyphStart].x_advance;
       b_offset = posInfo[glyphStart].y_offset;
       b_advance = posInfo[glyphStart].y_advance;
+    }
+
+    // Check for default-ignorable char that didn't get filtered, combined,
+    // etc by the shaping process, and remove from the run.
+    // (This may be done within harfbuzz eventually.)
+    if (glyphsInClump == 1 &&
+        FilterIfIgnorableClump(aShapedText, aText, aEncoding, aOffset,
+                               baseCharIndex, endCharIndex,
+                               ginfo[glyphStart].codepoint, i_advance)) {
+      glyphStart = glyphEnd;
+      charStart = charEnd;
+      continue;
     }
 
     nscoord iOffset, advance;

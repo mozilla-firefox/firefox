@@ -1178,13 +1178,18 @@ class gfxShapedText {
   // If aCh, the Unicode scalar value at aIndex (occupying two UTF-16 code
   // units if it is outside the BMP), is an ignorable character that should
   // not be rendered, clear its glyph data and return true.
-  bool FilterIfIgnorable(uint32_t aIndex, uint32_t aCh);
+  // aGlyphID and aAdvance describe the single glyph the shaper produced for
+  // it, so that a Format character the font renders is not filtered out.
+  bool FilterIfIgnorable(uint32_t aIndex, uint32_t aCh, uint32_t aGlyphID,
+                         float aAdvance);
 
   // Latin-1 version of FilterIfIgnorable. The only default-ignorable Latin-1
   // character is U+00AD (ZWNJ and ZWJ are outside Latin-1), so this avoids
   // the Unicode property lookup for everything else.
-  bool FilterIfIgnorable(uint32_t aIndex, uint8_t aCh) {
-    return aCh == 0x00AD && FilterIfIgnorable(aIndex, uint32_t(aCh));
+  bool FilterIfIgnorable(uint32_t aIndex, uint8_t aCh, uint32_t aGlyphID,
+                         float aAdvance) {
+    return aCh == 0x00AD &&
+           FilterIfIgnorable(aIndex, uint32_t(aCh), aGlyphID, aAdvance);
   }
 
   // Erase glyph data from the gfxShapedText, while retaining line-break and
