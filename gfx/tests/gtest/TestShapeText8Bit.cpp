@@ -118,12 +118,13 @@ TEST(gfxFont, ShapeText8BitMatches16Bit)
       UniquePtr<gfxShapedWord> word16(gfxShapedWord::Create(
           text, length, intl::Script::LATIN, nullptr, 60, flags, rounding));
       ASSERT_TRUE(word8 && word16);
-      ASSERT_TRUE(shaper->ShapeText(
-          text8.Elements(), gfxFontShaper::TextEncoding::Latin1, 0, length,
-          intl::Script::LATIN, nullptr, false, rounding, word8.get()));
+      const gfxFontShaper::ShapingParams params{nullptr, intl::Script::LATIN,
+                                                false, rounding};
+      ASSERT_TRUE(shaper->ShapeText(text8.Elements(),
+                                    gfxFontShaper::TextEncoding::Latin1, 0,
+                                    length, params, word8.get()));
       ASSERT_TRUE(shaper->ShapeText(text, gfxFontShaper::TextEncoding::Utf16, 0,
-                                    length, intl::Script::LATIN, nullptr, false,
-                                    rounding, word16.get()));
+                                    length, params, word16.get()));
       ExpectSameGlyphs(word8.get(), word16.get(), length,
                        label + (rtl ? " (rtl)" : " (ltr)"));
     }

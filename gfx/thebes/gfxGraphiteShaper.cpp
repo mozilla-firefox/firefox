@@ -127,8 +127,7 @@ static inline size_t CountUnicodes(const char16_t* aText, uint32_t aLength) {
 
 bool gfxGraphiteShaper::ShapeText(const void* aTextData, TextEncoding aEncoding,
                                   uint32_t aOffset, uint32_t aLength,
-                                  Script aScript, nsAtom* aLanguage,
-                                  bool aVertical, RoundingFlags aRounding,
+                                  const ShapingParams& aParams,
                                   gfxShapedText* aShapedText) {
   // Graphite takes UTF-16, so expand Latin-1 text.
   nsAutoString expandedText;
@@ -186,7 +185,7 @@ bool gfxGraphiteShaper::ShapeText(const void* aTextData, TextEncoding aEncoding,
         case StyleFontVariantCaps::AllPetiteCaps:
         case StyleFontVariantCaps::PetiteCaps:
           bool synLower, synUpper;
-          mFont->SupportsVariantCaps(aScript, style->variantCaps,
+          mFont->SupportsVariantCaps(aParams.mScript, style->variantCaps,
                                      mFallbackToSmallCaps, synLower, synUpper);
           break;
         default:
@@ -201,9 +200,9 @@ bool gfxGraphiteShaper::ShapeText(const void* aTextData, TextEncoding aEncoding,
     grLang = MakeGraphiteLangTag(style->languageOverride._0);
   } else if (entry->mLanguageOverride) {
     grLang = MakeGraphiteLangTag(entry->mLanguageOverride);
-  } else if (aLanguage) {
+  } else if (aParams.mLanguage) {
     nsAutoCString langString;
-    aLanguage->ToUTF8String(langString);
+    aParams.mLanguage->ToUTF8String(langString);
     grLang = GetGraphiteTagForLang(langString);
   }
   tainted_gr<gr_feature_val*> grFeatures =
@@ -257,9 +256,9 @@ bool gfxGraphiteShaper::ShapeText(const void* aTextData, TextEncoding aEncoding,
     return false;
   }
 
-  nsresult rv =
-      SetGlyphsFromSegment(aShapedText, aOffset, aLength, aText,
-                           t_aText.to_opaque(), seg.to_opaque(), aRounding);
+  nsresult rv = SetGlyphsFromSegment(aShapedText, aOffset, aLength, aText,
+                                     t_aText.to_opaque(), seg.to_opaque(),
+                                     aParams.mRounding);
   if (NS_FAILED(rv)) {
     aShapedText->ClearGlyphs();
   }

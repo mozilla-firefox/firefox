@@ -681,6 +681,15 @@ class gfxFontShaper {
 
   enum class RoundingFlags : uint8_t { kRoundX = 0x01, kRoundY = 0x02 };
 
+  // Per-run parameters that are passed unchanged through the shaping calls.
+  // mLanguage may be null, indicating no lang-specific shaping.
+  struct ShapingParams {
+    nsAtom* mLanguage;
+    Script mScript;
+    bool mVertical;
+    RoundingFlags mRounding;
+  };
+
   explicit gfxFontShaper(gfxFont* aFont) : mFont(aFont) {
     NS_ASSERTION(aFont, "shaper requires a valid font!");
   }
@@ -696,11 +705,8 @@ class gfxFontShaper {
   // aShapedText to be updated; aLength is also the length of aText, which
   // points to code units of the given encoding.
   virtual bool ShapeText(const void* aText, TextEncoding aEncoding,
-                         uint32_t aOffset, uint32_t aLength, Script aScript,
-                         nsAtom* aLanguage,  // may be null, indicating no
-                                             // lang-specific shaping to be
-                                             // applied
-                         bool aVertical, RoundingFlags aRounding,
+                         uint32_t aOffset, uint32_t aLength,
+                         const ShapingParams& aParams,
                          gfxShapedText* aShapedText) = 0;
 
   gfxFont* GetFont() const { return mFont; }
@@ -1512,6 +1518,7 @@ class gfxFont {
   using SVGContextPaint = mozilla::SVGContextPaint;
 
   using RoundingFlags = gfxFontShaper::RoundingFlags;
+  using ShapingParams = gfxFontShaper::ShapingParams;
   using ShapedTextFlags = mozilla::gfx::ShapedTextFlags;
   using imgDrawingParams = mozilla::image::imgDrawingParams;
 
@@ -2178,8 +2185,7 @@ class gfxFont {
   // Latin-1, as given by aEncoding) and store them into aShapedText.
   bool ShapeText(const void* aText, gfxFontShaper::TextEncoding aEncoding,
                  uint32_t aOffset,  // dest offset in gfxShapedText
-                 uint32_t aLength, Script aScript, nsAtom* aLanguage,
-                 bool aVertical, RoundingFlags aRounding,
+                 uint32_t aLength, const ShapingParams& aParams,
                  gfxShapedText* aShapedText);  // where to store the result
 
   // Helper to adjust for synthetic bold and set character-type flags
@@ -2198,9 +2204,8 @@ class gfxFont {
   // text.
   template <typename T>
   bool ShapeTextWithoutWordCache(const T* aText, uint32_t aOffset,
-                                 uint32_t aLength, Script aScript,
-                                 nsAtom* aLanguage, bool aVertical,
-                                 RoundingFlags aRounding, gfxTextRun* aTextRun);
+                                 uint32_t aLength, const ShapingParams& aParams,
+                                 gfxTextRun* aTextRun);
 
   // Shape a fragment of text (a run that is known to contain only
   // "valid" characters, no newlines/tabs/other control chars).
@@ -2209,9 +2214,8 @@ class gfxFont {
   // platform shapers.
   template <typename T>
   bool ShapeFragmentWithoutWordCache(const T* aText, uint32_t aOffset,
-                                     uint32_t aLength, Script aScript,
-                                     nsAtom* aLanguage, bool aVertical,
-                                     RoundingFlags aRounding,
+                                     uint32_t aLength,
+                                     const ShapingParams& aParams,
                                      gfxTextRun* aTextRun);
 
   void CheckForFeaturesInvolvingSpace() const;
@@ -2220,11 +2224,9 @@ class gfxFont {
   // for use in setting up a gfxTextRun.
   template <typename T, typename Func>
   bool ProcessShapedWordInternal(const T* aText, uint8_t aLength,
-                                 uint32_t aHash, Script aRunScript,
-                                 nsAtom* aLanguage, bool aVertical,
+                                 uint32_t aHash, const ShapingParams& aParams,
                                  uint16_t aAppUnitsPerDevUnit,
                                  mozilla::gfx::ShapedTextFlags aFlags,
-                                 RoundingFlags aRounding,
                                  gfxTextPerfMetrics* aTextPerf, Func aCallback);
 
   // whether a given feature is included in feature settings from both the

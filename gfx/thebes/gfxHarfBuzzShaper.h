@@ -62,8 +62,7 @@ class gfxHarfBuzzShaper : public gfxFontShaper {
   bool IsInitialized() const { return mHBFont != nullptr; }
 
   bool ShapeText(const void* aText, TextEncoding aEncoding, uint32_t aOffset,
-                 uint32_t aLength, Script aScript, nsAtom* aLanguage,
-                 bool aVertical, RoundingFlags aRounding,
+                 uint32_t aLength, const ShapingParams& aParams,
                  gfxShapedText* aShapedText) override;
 
   // map unicode character to glyph ID
@@ -143,8 +142,8 @@ class gfxHarfBuzzShaper : public gfxFontShaper {
 
   nsresult SetGlyphsFromRun(gfxShapedText* aShapedText, uint32_t aOffset,
                             uint32_t aLength, const void* aText,
-                            TextEncoding aEncoding, bool aVertical,
-                            RoundingFlags aRounding) MOZ_REQUIRES(mMutex);
+                            TextEncoding aEncoding,
+                            const ShapingParams& aParams) MOZ_REQUIRES(mMutex);
 
   // retrieve glyph positions, applying advance adjustments and attachments
   // returns results in appUnits

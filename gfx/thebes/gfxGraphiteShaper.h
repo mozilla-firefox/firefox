@@ -19,8 +19,7 @@ class gfxGraphiteShaper : public gfxFontShaper {
   virtual ~gfxGraphiteShaper();
 
   bool ShapeText(const void* aText, TextEncoding aEncoding, uint32_t aOffset,
-                 uint32_t aLength, Script aScript, nsAtom* aLanguage,
-                 bool aVertical, RoundingFlags aRounding,
+                 uint32_t aLength, const ShapingParams& aParams,
                  gfxShapedText* aShapedText) override;
 
   static void Shutdown();

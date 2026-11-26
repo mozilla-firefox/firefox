@@ -1374,8 +1374,7 @@ void gfxHarfBuzzShaper::InitializeVertical() {
 
 bool gfxHarfBuzzShaper::ShapeText(const void* aText, TextEncoding aEncoding,
                                   uint32_t aOffset, uint32_t aLength,
-                                  Script aScript, nsAtom* aLanguage,
-                                  bool aVertical, RoundingFlags aRounding,
+                                  const ShapingParams& aParams,
                                   gfxShapedText* aShapedText) {
   const gfxFontStyle* style = mFont->GetStyle();
 
@@ -1386,8 +1385,8 @@ bool gfxHarfBuzzShaper::ShapeText(const void* aText, TextEncoding aEncoding,
       case StyleFontVariantCaps::AllPetiteCaps:
       case StyleFontVariantCaps::PetiteCaps:
         bool synLower, synUpper;
-        mFont->SupportsVariantCaps(aScript, style->variantCaps, addSmallCaps,
-                                   synLower, synUpper);
+        mFont->SupportsVariantCaps(aParams.mScript, style->variantCaps,
+                                   addSmallCaps, synLower, synUpper);
         break;
       default:
         break;
@@ -1406,11 +1405,11 @@ bool gfxHarfBuzzShaper::ShapeText(const void* aText, TextEncoding aEncoding,
   // (and their vertical counterparts) as per spec:
   // https://learn.microsoft.com/en-us/typography/opentype/spec/features_pt#tag-palt
   // and disable kerning by default (for font-kerning:auto).
-  if (gfxTextRun::IsCJKScript(aScript)) {
-    hb_tag_t kern =
-        aVertical ? HB_TAG('v', 'k', 'r', 'n') : HB_TAG('k', 'e', 'r', 'n');
-    hb_tag_t alt =
-        aVertical ? HB_TAG('v', 'p', 'a', 'l') : HB_TAG('p', 'a', 'l', 't');
+  if (gfxTextRun::IsCJKScript(aParams.mScript)) {
+    hb_tag_t kern = aParams.mVertical ? HB_TAG('v', 'k', 'r', 'n')
+                                      : HB_TAG('k', 'e', 'r', 'n');
+    hb_tag_t alt = aParams.mVertical ? HB_TAG('v', 'p', 'a', 'l')
+                                     : HB_TAG('p', 'a', 'l', 't');
     struct Cmp {
       bool Equals(const hb_feature_t& a, const hb_tag_t& b) const {
         return a.tag == b;
@@ -1443,11 +1442,12 @@ bool gfxHarfBuzzShaper::ShapeText(const void* aText, TextEncoding aEncoding,
   RecursiveMutexAutoLock lock(mMutex);
 
   mUseVerticalPresentationForms = false;
-  if (aVertical) {
+  if (aParams.mVertical) {
     if (!mVerticalInitialized) {
       InitializeVertical();
     }
-    if (!entry->SupportsOpenTypeFeature(aScript, HB_TAG('v', 'e', 'r', 't'))) {
+    if (!entry->SupportsOpenTypeFeature(aParams.mScript,
+                                        HB_TAG('v', 'e', 'r', 't'))) {
       mUseVerticalPresentationForms = true;
     }
   }
@@ -1455,14 +1455,14 @@ bool gfxHarfBuzzShaper::ShapeText(const void* aText, TextEncoding aEncoding,
   bool isRightToLeft = aShapedText->IsRightToLeft();
 
   hb_buffer_set_direction(
-      mBuffer, aVertical
+      mBuffer, aParams.mVertical
                    ? HB_DIRECTION_TTB
                    : (isRightToLeft ? HB_DIRECTION_RTL : HB_DIRECTION_LTR));
   hb_script_t scriptTag;
   if (aShapedText->GetFlags() & gfx::ShapedTextFlags::TEXT_USE_MATH_SCRIPT) {
     scriptTag = sMathScript;
   } else {
-    scriptTag = GetHBScriptUsedForShaping(aScript);
+    scriptTag = GetHBScriptUsedForShaping(aParams.mScript);
   }
   hb_buffer_set_script(mBuffer, scriptTag);
 
@@ -1471,9 +1471,9 @@ bool gfxHarfBuzzShaper::ShapeText(const void* aText, TextEncoding aEncoding,
     language = hb_ot_tag_to_language(style->languageOverride._0);
   } else if (entry->mLanguageOverride) {
     language = hb_ot_tag_to_language(entry->mLanguageOverride);
-  } else if (aLanguage) {
+  } else if (aParams.mLanguage) {
     nsCString langString;
-    aLanguage->ToUTF8String(langString);
+    aParams.mLanguage->ToUTF8String(langString);
     language = hb_language_from_string(langString.get(), langString.Length());
   } else {
     language = hb_ot_tag_to_language(HB_OT_TAG_DEFAULT_LANGUAGE);
@@ -1496,7 +1496,7 @@ bool gfxHarfBuzzShaper::ShapeText(const void* aText, TextEncoding aEncoding,
   }
 
   nsresult rv = SetGlyphsFromRun(aShapedText, aOffset, aLength, aText,
-                                 aEncoding, aVertical, aRounding);
+                                 aEncoding, aParams);
 
   NS_WARNING_ASSERTION(NS_SUCCEEDED(rv),
                        "failed to store glyphs into gfxShapedWord");
@@ -1514,8 +1514,7 @@ nsresult gfxHarfBuzzShaper::SetGlyphsFromRun(gfxShapedText* aShapedText,
                                              uint32_t aOffset, uint32_t aLength,
                                              const void* aText,
                                              TextEncoding aEncoding,
-                                             bool aVertical,
-                                             RoundingFlags aRounding) {
+                                             const ShapingParams& aParams) {
   typedef gfxShapedText::CompressedGlyph CompressedGlyph;
 
   uint32_t numGlyphs;
@@ -1549,12 +1548,12 @@ nsresult gfxHarfBuzzShaper::SetGlyphsFromRun(gfxShapedText* aShapedText,
   int32_t charStart = 0;   // and this char index within the range of the run
 
   bool roundI, roundB;
-  if (aVertical) {
-    roundI = bool(aRounding & RoundingFlags::kRoundY);
-    roundB = bool(aRounding & RoundingFlags::kRoundX);
+  if (aParams.mVertical) {
+    roundI = bool(aParams.mRounding & RoundingFlags::kRoundY);
+    roundB = bool(aParams.mRounding & RoundingFlags::kRoundX);
   } else {
-    roundI = bool(aRounding & RoundingFlags::kRoundX);
-    roundB = bool(aRounding & RoundingFlags::kRoundY);
+    roundI = bool(aParams.mRounding & RoundingFlags::kRoundX);
+    roundB = bool(aParams.mRounding & RoundingFlags::kRoundY);
   }
 
   int32_t appUnitsPerDevUnit = aShapedText->GetAppUnitsPerDevUnit();
@@ -1684,7 +1683,7 @@ nsresult gfxHarfBuzzShaper::SetGlyphsFromRun(gfxShapedText* aShapedText,
 
     hb_position_t i_offset, i_advance;  // inline-direction offset/advance
     hb_position_t b_offset, b_advance;  // block-direction offset/advance
-    if (aVertical) {
+    if (aParams.mVertical) {
       // our coordinate directions are the opposite of harfbuzz's
       // when doing top-to-bottom shaping
       i_offset = -posInfo[glyphStart].y_offset;
@@ -1729,7 +1728,7 @@ nsresult gfxHarfBuzzShaper::SetGlyphsFromRun(gfxShapedText* aShapedText,
 
         details->mAdvance = advance;
 
-        if (aVertical) {
+        if (aParams.mVertical) {
           details->mOffset.x =
               bPos - (roundB ? appUnitsPerDevUnit * FixedToIntRound(b_offset)
                              : floor(hb2appUnits * b_offset + 0.5));
@@ -1749,7 +1748,7 @@ nsresult gfxHarfBuzzShaper::SetGlyphsFromRun(gfxShapedText* aShapedText,
           break;
         }
 
-        if (aVertical) {
+        if (aParams.mVertical) {
           i_offset = -posInfo[glyphStart].y_offset;
           i_advance = -posInfo[glyphStart].y_advance;
           b_offset = -posInfo[glyphStart].x_offset;
