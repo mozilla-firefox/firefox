@@ -2543,6 +2543,13 @@ bool WidgetKeyboardEvent::IsLockableModifier(KeyNameIndex aKeyNameIndex) {
 }
 
 /******************************************************************************
+ * mozilla::QueryContentOptions (TextEvents.h)
+ ******************************************************************************/
+
+QueryContentOptions::QueryContentOptions(const WidgetQueryContentEvent& aEvent)
+    : mRelativeToInsertionPoint(aEvent.mInput.mRelativeToInsertionPoint) {}
+
+/******************************************************************************
  * mozilla::QueryContentResult (TextEvents.h)
  ******************************************************************************/
 

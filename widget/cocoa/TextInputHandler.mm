@@ -4369,7 +4369,7 @@ NSAttributedString* IMEInputHandler::GetAttributedSubstringFromRange(
   nsAutoString str;
   WidgetQueryContentEvent queryTextContentEvent(true, eQueryTextContent,
                                                 mWidget);
-  WidgetQueryContentEvent::Options options;
+  QueryContentOptions options;
   int64_t startOffset = aRange.location;
   if (mIMECompositionStartBeforeStart.isSome()) {
     // The composition may be at different offset from the selection start
@@ -4554,7 +4554,7 @@ NSRect IMEInputHandler::FirstRectForCharacterRange(NSRange& aRange,
   bool useCaretRect = (aRange.length == 0);
   if (!useCaretRect) {
     WidgetQueryContentEvent queryTextRectEvent(true, eQueryTextRect, mWidget);
-    WidgetQueryContentEvent::Options options;
+    QueryContentOptions options;
     int64_t startOffset = aRange.location;
     if (mIMECompositionStartBeforeStart.isSome()) {
       // The composition may be at different offset from the selection start
@@ -4579,7 +4579,7 @@ NSRect IMEInputHandler::FirstRectForCharacterRange(NSRange& aRange,
 
   if (useCaretRect) {
     WidgetQueryContentEvent queryCaretRectEvent(true, eQueryCaretRect, mWidget);
-    WidgetQueryContentEvent::Options options;
+    QueryContentOptions options;
     int64_t startOffset = aRange.location;
     if (mIMECompositionStartBeforeStart.isSome()) {
       // The composition may be at different offset from the selection start
@@ -5179,7 +5179,7 @@ void IMEInputHandler::OnTextSubstitution(uint32_t aStartOffset) {
       std::max<uint32_t>(fetchLength, aStartOffset) - fetchLength;
   WidgetQueryContentEvent queryTextContentEvent(true, eQueryTextContent,
                                                 mWidget);
-  WidgetQueryContentEvent::Options options;
+  QueryContentOptions options;
   queryTextContentEvent.InitForQueryTextContent(
       startFetch, aStartOffset - startFetch, options);
   DispatchEvent(queryTextContentEvent);
@@ -5277,7 +5277,7 @@ void IMEInputHandler::ShowTextSubstitutionPanel() {
   // rect instead.
   NSRect rect = [&]() {
     WidgetQueryContentEvent queryCaretRectEvent(true, eQueryCaretRect, mWidget);
-    WidgetQueryContentEvent::Options options;
+    QueryContentOptions options;
     queryCaretRectEvent.InitForQueryCaretRect(
         mCandidatedTextSubstitutionResult.range.location +
             mCandidatedTextSubstitutionResult.range.length,
