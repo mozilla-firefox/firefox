@@ -60,7 +60,7 @@
     }
   }
 
-  @media (forced-colors: active) {
+  @media (forced-colors) {
     :host {
       --message-bar-icon-container-border-color: var(--message-bar-icon-color);
     }

@@ -450,7 +450,7 @@ $ds-card-image-gradient-solid: rgba(0, 0, 0, 100%);
       }
     }
 
-    @media (forced-colors: active) {
+    @media (forced-colors) {
       &:not(.placeholder) {
         border: var(--border-width) solid var(--card-border-color);
       }
@@ -694,7 +694,7 @@ $ds-card-image-gradient-solid: rgba(0, 0, 0, 100%);
     background-color: var(--button-background-color-ghost);
     color: var(--button-text-color-ghost);
 
-    @media (forced-colors: active) {
+    @media (forced-colors) {
       border: var(--border-width) solid var(--button-border-color-ghost);
     }
   }
@@ -709,7 +709,7 @@ $ds-card-image-gradient-solid: rgba(0, 0, 0, 100%);
     .context-menu-button[aria-expanded='true'] {
       background-color: var(--button-background-color-ghost-hover);
 
-      @media (forced-colors: active) {
+      @media (forced-colors) {
         border-color: var(--button-border-color-ghost-hover);
         fill: var(--button-text-color-ghost-hover);
       }

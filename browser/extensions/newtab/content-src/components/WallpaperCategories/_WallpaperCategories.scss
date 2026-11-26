@@ -494,7 +494,7 @@ button.arrow-button {
   }
 }
 
-@media (forced-colors: active) {
+@media (forced-colors) {
   .wallpaper-list.category fieldset.your-images .wallpaper-input,
   .category-list .wallpaper-input.your-images-folder {
     // The whole border, not just its color: prefers-contrast is spoofed to no

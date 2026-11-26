@@ -25,7 +25,7 @@
     --input-color-text-color-active: var(--button-text-color-active);
   }
 
-  @media (forced-colors: active) {
+  @media (forced-colors) {
     :host {
       --input-color-background-color-active: var(--button-background-color-active);
     }

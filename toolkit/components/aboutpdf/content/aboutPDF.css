@@ -146,7 +146,7 @@ body.view-features #main-view {
     outline-offset: 2px;
   }
 
-  @media (forced-colors: active) {
+  @media (forced-colors) {
     box-shadow: none;
     background-color: var(--button-background-color);
     color: var(--button-text-color);
@@ -204,7 +204,7 @@ body.view-features #main-view {
 }
 
 /* Inherit dropzone color in HCM so hover/drag-over pick up SelectedItemText. */
-@media (forced-colors: active) {
+@media (forced-colors) {
   #dropzone-hint,
   #dropzone-privacy-hint,
   #dropzone-error {

@@ -35,7 +35,7 @@
     --page-nav-margin-inline-start: 40px;
   }
 
-  @media (forced-colors: active) {
+  @media (forced-colors) {
     :host {
       --page-nav-button-background-color-selected: var(--button-background-color-selected);
       --page-nav-button-border-color: ButtonText;

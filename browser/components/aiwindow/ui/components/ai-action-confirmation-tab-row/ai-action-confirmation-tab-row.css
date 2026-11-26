@@ -41,7 +41,7 @@
   -moz-context-properties: fill;
   fill: var(--icon-color);
 
-  @media (forced-colors: active) {
+  @media (forced-colors) {
     fill: currentColor;
   }
 }

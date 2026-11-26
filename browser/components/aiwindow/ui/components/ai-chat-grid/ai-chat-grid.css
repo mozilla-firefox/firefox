@@ -10,7 +10,7 @@
   --ai-chat-grid-button-icon-fill: light-dark(var(--color-black), var(--color-white));
   --ai-chat-grid-button-icon-fill-transparent: light-dark(var(--color-black-alpha-40), var(--color-white-alpha-20));
 
-  @media (forced-colors: active) {
+  @media (forced-colors) {
     --ai-chat-grid-scrollbar-color: auto;
     --ai-chat-grid-scrollarea-border-color: var(--background-color-canvas);
 

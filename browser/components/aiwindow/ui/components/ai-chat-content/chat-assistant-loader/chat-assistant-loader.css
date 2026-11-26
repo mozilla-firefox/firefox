@@ -64,7 +64,7 @@
   );
 }
 
-@media (forced-colors: active) {
+@media (forced-colors) {
   .chat-assistant-loader__text,
   .chat-assistant-loader__nl-text {
     color: var(--link-color);

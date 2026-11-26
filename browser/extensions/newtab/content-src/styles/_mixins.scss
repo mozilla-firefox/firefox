@@ -228,7 +228,7 @@ $side-col-width-px: $col-width-px * 2;
       0 0.375px 1.5px rgba(0, 0, 0, 16%);
   }
 
-  @media (forced-colors: active) {
+  @media (forced-colors) {
     background: Canvas;
   }
 }

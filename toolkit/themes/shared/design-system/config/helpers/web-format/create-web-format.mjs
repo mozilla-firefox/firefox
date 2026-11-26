@@ -125,7 +125,7 @@ ${getRuleCSS(layers.prefersContrast)}
 }`);
     }
     if (layers.forcedColors.size) {
-      rules.push(`@media (forced-colors: active) {
+      rules.push(`@media (forced-colors) {
 ${getRuleCSS(layers.forcedColors)}
 }`);
     }

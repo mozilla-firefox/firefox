@@ -86,7 +86,7 @@
   display: flex;
   flex-direction: column;
 
-  @media (forced-colors: active) {
+  @media (forced-colors) {
     --lists-surface-color: Canvas;
     --lists-text-color: CanvasText;
     --lists-button-background: ButtonFace;
@@ -669,7 +669,7 @@
       );
     }
 
-    @media (forced-colors: active) {
+    @media (forced-colors) {
       &.has-visible-tasks:not(.is-adding-task) fieldset {
         -webkit-mask-image: none;
         mask-image: none;

@@ -38,7 +38,7 @@
     }
   }
 
-  @media (forced-colors: active) {
+  @media (forced-colors) {
     :host {
       --toggle-background-color-disabled: var(--button-background-color-disabled);
       --toggle-background-color-pressed-disabled: var(--button-background-color-primary-disabled);

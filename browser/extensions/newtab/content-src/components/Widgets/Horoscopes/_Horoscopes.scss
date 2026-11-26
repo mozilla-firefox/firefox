@@ -42,7 +42,7 @@
 }
 
 // Keep the badge readable in High Contrast Mode by using the system accent.
-@media (forced-colors: active) {
+@media (forced-colors) {
   .horoscopes-new-badge {
     --badge-background-color-filled: AccentColor;
   }

@@ -55,7 +55,7 @@
   --badge-border-color: transparent;
 }
 
-@media (forced-colors: active) {
+@media (forced-colors) {
   .travel-new-badge {
     --badge-background-color-filled: AccentColor;
   }

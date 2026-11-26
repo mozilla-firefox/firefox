@@ -273,7 +273,7 @@
   }
 }
 
-@media (forced-colors: active) {
+@media (forced-colors) {
   .nova-enabled .top-site-outer .tile {
     background-color: var(--button-background-color);
     color: var(--button-text-color);

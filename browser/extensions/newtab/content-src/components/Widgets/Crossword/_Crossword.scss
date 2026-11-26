@@ -48,7 +48,7 @@
 }
 
 // Keep the badge readable in High Contrast Mode by using the system accent.
-@media (forced-colors: active) {
+@media (forced-colors) {
   .crossword-new-badge {
     --badge-background-color-filled: AccentColor;
   }

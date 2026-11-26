@@ -1510,7 +1510,7 @@ html {
   height: 100vh;
   --transition: 0.6s opacity, 0.6s scale, 0.6s rotate, 0.6s translate;
 }
-@media (forced-colors: active) {
+@media (forced-colors) {
   .onboardingContainer {
     --picker-background-color: ButtonFace;
     --picker-hover-background-color: SelectedItemText;
@@ -4362,7 +4362,7 @@ html {
     --segmented-control-border-color: light-dark(#C7C6CB, #515054);
   }
 }
-@media (forced-colors: active) {
+@media (forced-colors) {
   .onboardingContainer .carousel-nav {
     --button-background-color-primary: ButtonText;
     --button-text-color-primary: ButtonFace;
@@ -4850,7 +4850,7 @@ html {
     color: light-dark(#5B5B66, #CFCFD8);
   }
 }
-@media (forced-colors: active) {
+@media (forced-colors) {
   .onboardingContainer .multi-select-container.select-card .checkbox-container.multi-select-item {
     background-color: ButtonFace;
     border-color: ButtonText;
@@ -4866,7 +4866,7 @@ html {
   margin-inline: 0;
   padding: var(--space-xlarge);
 }
-@media (forced-colors: active) {
+@media (forced-colors) {
   .onboardingContainer .multi-select-container.grouped-card {
     background-color: ButtonFace;
     border-color: ButtonText;

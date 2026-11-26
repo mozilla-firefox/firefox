@@ -438,7 +438,7 @@
         color: var(--link-color-active);
       }
 
-      @media (forced-colors: active) {
+      @media (forced-colors) {
         padding: var(--space-small) var(--space-medium);
         padding-inline-start: var(--space-xlarge);
       }

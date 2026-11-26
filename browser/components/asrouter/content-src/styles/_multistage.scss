@@ -350,7 +350,7 @@ html {
   --onboarding-dark-backdrop-color: #210340;
   --center-large-glow-color: light-dark(var(--color-white), var(--onboarding-dark-backdrop-color));
 
-  @media (forced-colors: active) {
+  @media (forced-colors) {
     --picker-background-color: ButtonFace;
     --picker-hover-background-color: SelectedItemText;
     --picker-border-color: ButtonText;
@@ -946,7 +946,7 @@ html {
     background-color: var(--multi-select-card-background-color);
     border: 1px solid var(--multi-select-card-border-color);
 
-    @media (forced-colors: active) {
+    @media (forced-colors) {
       background-color: ButtonFace;
       border-color: ButtonText;
     }
@@ -3202,7 +3202,7 @@ html {
       }
     }
 
-    @media (forced-colors: active) {
+    @media (forced-colors) {
       --button-background-color-primary: ButtonText;
       --button-text-color-primary: ButtonFace;
     }

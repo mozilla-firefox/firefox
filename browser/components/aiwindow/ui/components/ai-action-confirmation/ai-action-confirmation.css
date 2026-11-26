@@ -27,7 +27,7 @@
   overflow: hidden;
   padding: var(--space-xsmall) var(--space-small);
 
-  @media not (forced-colors: active) {
+  @media not (forced-colors) {
     box-shadow: var(--smartwindow-shadow, var(--box-shadow-level-2));
   }
 }
@@ -163,7 +163,7 @@
       animation-range: calc(100% - var(--space-large)) 100%;
     }
 
-    @media (forced-colors: active) {
+    @media (forced-colors) {
       display: none;
     }
   }

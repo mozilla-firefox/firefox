@@ -20,7 +20,7 @@
     --badge-text-color-filled: var(--button-text-color-primary);
   }
 
-  @media (forced-colors: active) {
+  @media (forced-colors) {
     :host {
       --badge-background-color: Canvas;
       --badge-background-color-filled: AccentColor;

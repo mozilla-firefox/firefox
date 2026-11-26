@@ -958,7 +958,7 @@
     }
   }
 
-  @media (forced-colors: active) {
+  @media (forced-colors) {
     :root {
       /** badge **/
       --badge-background-color: Canvas;

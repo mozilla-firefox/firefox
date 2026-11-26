@@ -119,7 +119,7 @@
   box-shadow: var(--box-shadow-level-1);
   flex: none;
 
-  @media (forced-colors: active) {
+  @media (forced-colors) {
     /* Without the shadow the overlapping edges need an outline to stay apart. */
     box-shadow: none;
     outline: var(--border-width) solid var(--border-color);
@@ -246,7 +246,7 @@
   background-size: contain;
   background-position: center;
 
-  @media (forced-colors: active) {
+  @media (forced-colors) {
     display: none;
   }
 }

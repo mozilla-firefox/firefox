@@ -630,7 +630,7 @@ html|dialog,
   forced-color-adjust: none;
 }
 
-@media (forced-colors: active) {
+@media (forced-colors) {
   .search-tooltip::before {
     border-block-start-color: CanvasText;
   }
@@ -1084,7 +1084,7 @@ setting-pane[onsearchpane] {
   height: 128px;
 }
 
-@media (forced-colors: active) {
+@media (forced-colors) {
   #etpBannerEl {
     background-image: url("chrome://browser/content/preferences/etp-advanced-banner.svg");
   }

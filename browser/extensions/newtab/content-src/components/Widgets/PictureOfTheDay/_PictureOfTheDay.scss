@@ -434,7 +434,7 @@
 // The sunrise placeholder and photo scrims are decorative; in High Contrast
 // replace them with solid system surfaces and use system colors so the caption
 // and controls stay legible.
-@media (forced-colors: active) {
+@media (forced-colors) {
   .picture-of-the-day::before {
     background: var(--background-color-canvas);
   }

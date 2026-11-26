@@ -720,7 +720,7 @@
     }
   }
 
-  @media (forced-colors: active) {
+  @media (forced-colors) {
     :root {
       /** border **/
       --border-color-deemphasized: CanvasText;

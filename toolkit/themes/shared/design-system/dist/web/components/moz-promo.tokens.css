@@ -30,7 +30,7 @@
     }
   }
 
-  @media (forced-colors: active) {
+  @media (forced-colors) {
     :host {
       --promo-background-color-vibrant: Canvas;
       --promo-border-color: CanvasText;

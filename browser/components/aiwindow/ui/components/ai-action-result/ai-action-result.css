@@ -163,7 +163,7 @@
   }
 }
 
-@media (forced-colors: active) {
+@media (forced-colors) {
   :host([shimmering]) .action-result-label {
     background-image: none;
     background-clip: unset;
@@ -262,7 +262,7 @@
   pointer-events: none;
 }
 
-@media (forced-colors: active) {
+@media (forced-colors) {
   :host {
     --ai-action-connector-background-color: CanvasText;
   }
