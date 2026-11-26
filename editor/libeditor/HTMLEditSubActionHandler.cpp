@@ -1164,24 +1164,32 @@ Result<EditActionResult, nsresult> HTMLEditor::HandleInsertText(
       }
       InsertTextResult insertEmptyTextResult =
           insertEmptyTextResultOrError.unwrap();
+      EditorDOMPoint endOfInsertedText =
+          insertEmptyTextResult.EndOfInsertedTextRef();
       // InsertTextWithTransaction() doesn not suggest caret position if it's
       // called for IME composition. However, for the safety, let's ignore the
       // caret position explicitly.
       insertEmptyTextResult.IgnoreCaretPointSuggestion();
-      nsresult rv = EnsureNoFollowingUnnecessaryLineBreak(
-          insertEmptyTextResult.EndOfInsertedTextRef(),
-          // When user inserting text, the web app may expect that nothing
-          // extant content will be deleted. Therefore, we should preserve
-          // preformatted linefeed at least.
-          PreservePreformattedLineBreak::Yes, PaddingForEmptyBlock::Unnecessary,
-          *editingHost);
-      if (NS_FAILED(rv)) {
-        NS_WARNING(
-            "HTMLEditor::EnsureNoFollowingUnnecessaryLineBreak() failed");
-        return Err(rv);
+      {
+        AutoTrackDOMPoint trackEndOfInsertedText(RangeUpdaterRef(),
+                                                 &endOfInsertedText);
+        nsresult rv = EnsureNoFollowingUnnecessaryLineBreak(
+            endOfInsertedText,
+            // When user inserting text, the web app may expect that nothing
+            // extant content will be deleted. Therefore, we should preserve
+            // preformatted linefeed at least.
+            PreservePreformattedLineBreak::Yes,
+            PaddingForEmptyBlock::Unnecessary, *editingHost);
+        if (NS_FAILED(rv)) {
+          NS_WARNING(
+              "HTMLEditor::EnsureNoFollowingUnnecessaryLineBreak() failed");
+          return Err(rv);
+        }
       }
-      const EditorDOMPoint& endOfInsertedText =
-          insertEmptyTextResult.EndOfInsertedTextRef();
+      if (NS_WARN_IF(
+              !endOfInsertedText.IsInContentNodeAndValidInComposedDoc())) {
+        return Err(NS_ERROR_EDITOR_UNEXPECTED_DOM_TREE);
+      }
       if (endOfInsertedText.IsInTextNode() &&
           !endOfInsertedText.IsStartOfContainer()) {
         nsresult rv = WhiteSpaceVisibilityKeeper::
