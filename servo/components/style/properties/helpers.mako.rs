@@ -577,7 +577,7 @@ pub mod ${property.ident} {
                 pub fn ${sub_property.ident}_has_initial_specified_value(&self) -> bool {
                     use longhands::${sub_property.ident}::get_initial_specified_value;
                     % if sub_property.may_be_disabled_in(shorthand, engine):
-                        self.${sub_property.ident}.is_some_and(|value| value == &get_initial_specified_value())
+                        self.${sub_property.ident}.is_none_or(|value| value == &get_initial_specified_value())
                     % else:
                         self.${sub_property.ident} == &get_initial_specified_value()
                     % endif
