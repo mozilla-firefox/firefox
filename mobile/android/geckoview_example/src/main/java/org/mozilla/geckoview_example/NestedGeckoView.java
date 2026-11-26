@@ -4,6 +4,7 @@
 
 package org.mozilla.geckoview_example;
 
+import android.annotation.SuppressLint;
 import android.content.Context;
 import android.util.AttributeSet;
 import android.view.MotionEvent;
@@ -46,6 +47,7 @@ public final class NestedGeckoView extends GeckoView implements NestedScrollingC
     setNestedScrollingEnabled(true);
   }
 
+  @SuppressLint("ClickableViewAccessibility")
   @Override
   public boolean onTouchEvent(MotionEvent ev) {
     MotionEvent event = MotionEvent.obtain(ev);
