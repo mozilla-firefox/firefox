@@ -134,6 +134,72 @@ add_task(async function test_set_language_override_in_different_contexts() {
   BrowserTestUtils.removeTab(tab2);
 });
 
+add_task(async function test_invalid_language_override_is_rejected() {
+  const tab = BrowserTestUtils.addTab(gBrowser, PAGE_URL);
+  const browser = gBrowser.getBrowserForTab(tab);
+
+  await BrowserTestUtils.browserLoaded(browser);
+
+  info("Get default language");
+  const defaultLanguage = await getAcceptLanguageHeader(browser);
+  const browsingContext = browser.browsingContext;
+
+  for (const value of [
+    "en-US\r\nX-Injected: 1",
+    "en-US\nX-Injected: 1",
+    "en\0US",
+    "en-US, fr-FR;q=0.8",
+    "not a language tag",
+  ]) {
+    Assert.throws(
+      () => {
+        browsingContext.languageOverride = value;
+      },
+      /structurally valid language tag/,
+      `Rejected ${JSON.stringify(value)}`
+    );
+    is(
+      await getAcceptLanguageHeader(browser),
+      defaultLanguage,
+      '"Accept-Language" header is not overridden'
+    );
+  }
+
+  BrowserTestUtils.removeTab(tab);
+});
+
+add_task(async function test_language_override_not_settable_from_content() {
+  const tab = BrowserTestUtils.addTab(gBrowser, PAGE_URL);
+  const browser = gBrowser.getBrowserForTab(tab);
+
+  await BrowserTestUtils.browserLoaded(browser);
+
+  info("Get default language");
+  const defaultLanguage = await getAcceptLanguageHeader(browser);
+  const languageOverride = getLanguageToOverride(defaultLanguage);
+
+  info("Set language override from the content process");
+  await Assert.rejects(
+    SpecialPowers.spawn(browser, [languageOverride], value => {
+      content.browsingContext.top.languageOverride = value;
+    }),
+    /can only be set from the parent process/,
+    "Setting the override from the content process throws"
+  );
+  is(
+    browser.browsingContext.languageOverride,
+    "",
+    "The override was not applied in the parent process"
+  );
+  is(
+    await getAcceptLanguageHeader(browser),
+    defaultLanguage,
+    '"Accept-Language" header is not overridden'
+  );
+
+  BrowserTestUtils.removeTab(tab);
+});
+
 function getLanguageToOverride(defaultLanguage) {
   return languages.find(lang => lang !== defaultLanguage);
 }
