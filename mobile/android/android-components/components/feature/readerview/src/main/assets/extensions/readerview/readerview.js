@@ -348,10 +348,23 @@ let readerView = new ReaderView();
 connectNativePort();
 prepareBody();
 
+function isAllowedArticleUrl(articleUrl) {
+  try {
+    let { protocol } = new URL(articleUrl);
+    return protocol == "http:" || protocol == "https:";
+  } catch (e) {
+    return false;
+  }
+}
+
 function connectNativePort() {
   let url = new URL(window.location.href);
   let articleUrl = url.searchParams.get("url");
   let id = url.searchParams.get("id");
+  if (!isAllowedArticleUrl(articleUrl)) {
+    console.error("Invalid reader view article URL");
+    return;
+  }
   let baseUrl = browser.runtime.getURL("/");
 
   let port = browser.runtime.connectNative("mozacReaderviewActive");

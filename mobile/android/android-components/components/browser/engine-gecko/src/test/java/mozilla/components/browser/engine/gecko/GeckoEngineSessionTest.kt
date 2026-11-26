@@ -741,6 +741,20 @@ class GeckoEngineSessionTest {
     }
 
     @Test
+    fun `loadUrl doesn't load URLs with blocked schemes hidden by tab, newline or leading control characters`() {
+        val engineSession = GeckoEngineSession(mock(), geckoSessionProvider = geckoSessionProvider)
+
+        engineSession.loadUrl("jav\tascript:alert(1)")
+        engineSession.loadUrl("java\nscript:alert(1)")
+        engineSession.loadUrl(" \u0001javascript:alert(1)")
+        engineSession.loadUrl("f\tile:///sdcard/test.html")
+        engineSession.loadUrl("re\r\nsource://package/test.txt")
+        engineSession.loadUrl("fi\tdo:/12345678")
+
+        verify(geckoSession, never()).load(any())
+    }
+
+    @Test
     fun loadData() {
         val engineSession =
             GeckoEngineSession(
