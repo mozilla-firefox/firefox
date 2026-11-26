@@ -18,7 +18,12 @@
 
   > h4 {
     margin-block: var(--sidebar-panel-header-heading-margin-block);
+    margin-inline-end: auto;
   }
+}
+
+::slotted([slot="actions"]) {
+  margin-inline-end: var(--space-xsmall);
 }
 
 /* Horizontal-tabs "hide-launcher" mode has no launcher to switch panels with,

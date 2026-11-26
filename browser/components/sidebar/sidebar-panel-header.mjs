@@ -8,7 +8,8 @@ import { html, when } from "chrome://global/content/vendor/lit.all.mjs";
 import "chrome://browser/content/sidebar/sidebar-panel-switcher.mjs";
 
 /**
- * Shared header showing the panel title and a close button.
+ * Shared header showing the panel title and a close button. Children with
+ * slot="actions" are shown before the close button.
  * In horizontal-tabs "hide-launcher" mode the title is replaced
  * by the sidebar-panel-switcher dropdown (which switches between panels), since
  * there is no launcher to switch them with; this is toggled via CSS (see
@@ -83,6 +84,7 @@ export class SidebarPanelHeader extends MozLitElement {
       <div class="sidebar-panel-heading">
         <h4 class="sidebar-panel-title text-truncated-ellipsis">${this.heading}</h4>
         <sidebar-panel-switcher .view=${this.view} .label=${this.heading}></sidebar-panel-switcher>
+        <slot name="actions"></slot>
         ${when(
           this.view,
           () =>
