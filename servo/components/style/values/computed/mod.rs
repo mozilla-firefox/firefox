@@ -516,6 +516,8 @@ impl<'a> Context<'a> {
     pub fn query_sibling_count(&self) -> u32 {
         self.builder
             .add_flags(ComputedValueFlags::USES_SIBLING_COUNT);
+        // TODO(dshin, Bug 2098201): Probably worth adding a condition for this.
+        self.rule_cache_conditions.borrow_mut().set_uncacheable();
         self.resolve_tree_counting_result().sibling_count
     }
 
