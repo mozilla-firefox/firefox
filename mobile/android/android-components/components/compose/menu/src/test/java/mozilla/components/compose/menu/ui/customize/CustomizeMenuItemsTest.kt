@@ -173,11 +173,14 @@ class CustomizeMenuItemsTest {
     }
 
     @Test
-    fun `WHEN a top level item is dropped after an expanded item THEN it stays at the top level and nothing changes`() {
+    fun `WHEN a top level item is dropped after an expanded item THEN it is the first of its sub-items`() {
         val more = expandable("more", c)
         val items = CustomizeMenuItems(shown = listOf(a, more), hidden = emptyList(), expandedIds = setOf("more"))
 
-        assertEquals(items, items.drop("a", NextTo("more", placeAfter = true)))
+        val moved = items.drop("a", NextTo("more", placeAfter = true))
+
+        assertEquals(listOf("more"), moved.shown.map { it.id })
+        assertEquals(listOf(a, c), moved.subItemsOf("more"))
     }
 
     @Test
@@ -225,23 +228,86 @@ class CustomizeMenuItemsTest {
     }
 
     @Test
-    fun `WHEN a sub-item is dropped outside its expanded item THEN nothing changes`() {
+    fun `WHEN a sub-item is dropped next to a top level item THEN it leaves the sub-items and is placed there`() {
         val more = expandable("more", b, c)
-        val items = CustomizeMenuItems(shown = listOf(a, more), hidden = emptyList(), expandedIds = setOf("more"))
+        val items = CustomizeMenuItems(shown = listOf(a, more, d), hidden = emptyList(), expandedIds = setOf("more"))
 
-        assertEquals(items, items.drop("b", NextTo("a", placeAfter = true)))
-        assertEquals(items, items.drop("b", NextTo("more", placeAfter = false)))
-        assertEquals(items, items.drop("b", NextTo(subItemsEndKey("more"), placeAfter = true)))
-        assertEquals(items, items.drop("b", NextTo(HIDDEN_TITLE, placeAfter = false)))
+        val moved = items.drop("b", NextTo("a", placeAfter = true))
+
+        assertEquals(listOf("a", "b", "more", "d"), moved.shown.map { it.id })
+        assertEquals(listOf(c), moved.subItemsOf("more"))
     }
 
     @Test
-    fun `WHEN a top level item is dropped among the sub-items of another one THEN nothing changes`() {
+    fun `WHEN a sub-item is dropped before or after the expanded item THEN it is placed before or after it`() {
         val more = expandable("more", b, c)
         val items = CustomizeMenuItems(shown = listOf(a, more), hidden = emptyList(), expandedIds = setOf("more"))
 
-        assertEquals(items, items.drop("a", NextTo("b", placeAfter = true)))
-        assertEquals(items, items.drop("a", NextTo(subItemsEndKey("more"), placeAfter = false)))
+        val before = items.drop("b", NextTo("more", placeAfter = false))
+        val after = items.drop("b", NextTo(subItemsEndKey("more"), placeAfter = true))
+
+        assertEquals(listOf("a", "b", "more"), before.shown.map { it.id })
+        assertEquals(listOf("a", "more", "b"), after.shown.map { it.id })
+        assertEquals(listOf(c), before.subItemsOf("more"))
+        assertEquals(listOf(c), after.subItemsOf("more"))
+    }
+
+    @Test
+    fun `WHEN a sub-item is dropped before the hidden items title THEN it is the last shown item`() {
+        val more = expandable("more", b, c)
+        val items = CustomizeMenuItems(shown = listOf(a, more), hidden = listOf(d), expandedIds = setOf("more"))
+
+        val moved = items.drop("b", NextTo(HIDDEN_TITLE, placeAfter = false))
+
+        assertEquals(listOf("a", "more", "b"), moved.shown.map { it.id })
+        assertEquals(listOf(c), moved.subItemsOf("more"))
+        assertEquals(listOf(d), moved.hidden)
+    }
+
+    @Test
+    fun `WHEN a top level item is dropped among the sub-items of another one THEN it becomes a sub-item there`() {
+        val more = expandable("more", b, c)
+        val items = CustomizeMenuItems(shown = listOf(a, more), hidden = emptyList(), expandedIds = setOf("more"))
+
+        val inMiddle = items.drop("a", NextTo("c", placeAfter = false))
+        val last = items.drop("a", NextTo(subItemsEndKey("more"), placeAfter = false))
+
+        assertEquals(listOf("more"), inMiddle.shown.map { it.id })
+        assertEquals(listOf(b, a, c), inMiddle.subItemsOf("more"))
+        assertEquals(listOf(b, c, a), last.subItemsOf("more"))
+    }
+
+    @Test
+    fun `WHEN a top level item is dropped into an expanded item without sub-items THEN it is its only sub-item`() {
+        val more = expandable("more")
+        val items = CustomizeMenuItems(shown = listOf(a, more), hidden = emptyList(), expandedIds = setOf("more"))
+
+        val moved = items.drop("a", NextTo(subItemsEndKey("more"), placeAfter = false))
+
+        assertEquals(listOf(a), moved.subItemsOf("more"))
+    }
+
+    @Test
+    fun `WHEN an expandable item is dropped among the sub-items of an expanded item THEN nothing changes`() {
+        val more = expandable("more", c)
+        val other = expandable("other", d)
+        val items =
+            CustomizeMenuItems(shown = listOf(a, more, other), hidden = emptyList(), expandedIds = setOf("more"))
+
+        assertEquals(items, items.drop("other", NextTo("c", placeAfter = true)))
+        assertEquals(items, items.drop("other", NextTo("more", placeAfter = true)))
+        assertEquals(items, items.drop("other", NextTo(subItemsEndKey("more"), placeAfter = false)))
+    }
+
+    @Test
+    fun `WHEN a collapsed expandable item is dropped at the top level THEN it is moved with its sub-items`() {
+        val more = expandable("more", c, d)
+        val items = CustomizeMenuItems(shown = listOf(a, b, more), hidden = emptyList(), expandedIds = emptySet())
+
+        val moved = items.drop("more", NextTo("a", placeAfter = false))
+
+        assertEquals(listOf("more", "a", "b"), moved.shown.map { it.id })
+        assertEquals(listOf(c, d), moved.subItemsOf("more"))
     }
 
     @Test
@@ -288,6 +354,38 @@ class CustomizeMenuItemsTest {
         assertEquals(listOf("x", "d", "y", "a", "more"), moved.shown.map { it.id })
         assertEquals(listOf(x, c, y, b), moved.subItemsOf("more"))
         assertEquals(setOf("more"), moved.expandedIds)
+    }
+
+    @Test
+    fun `WHEN an item is moved to the start of a container THEN it is placed after the items the app does not show`() {
+        val x = CustomizableMenuItem(id = "x", item = null)
+        val y = CustomizableMenuItem(id = "y", item = null)
+        val more = expandable("more", x, b)
+        val items = CustomizeMenuItems(shown = listOf(y, a, more), hidden = emptyList(), expandedIds = setOf("more"))
+
+        val intoSubItems = items.drop("a", NextTo("more", placeAfter = true))
+        val toTop = items.drop("b", NextTo("a", placeAfter = false))
+
+        assertEquals(listOf("y", "more"), intoSubItems.shown.map { it.id })
+        assertEquals(listOf(x, a, b), intoSubItems.subItemsOf("more"))
+        assertEquals(listOf("y", "b", "a", "more"), toTop.shown.map { it.id })
+        assertEquals(listOf(x), toTop.subItemsOf("more"))
+    }
+
+    @Test
+    fun `WHEN an item is moved to the end of a container THEN items the app does not show keep their index`() {
+        val x = CustomizableMenuItem(id = "x", item = null)
+        val y = CustomizableMenuItem(id = "y", item = null)
+        val more = expandable("more", a, y)
+        val items = CustomizeMenuItems(shown = listOf(more, b, x), hidden = emptyList(), expandedIds = setOf("more"))
+
+        val intoSubItems = items.drop("b", NextTo(subItemsEndKey("more"), placeAfter = false))
+        val toTop = items.drop("a", NextTo(HIDDEN_TITLE, placeAfter = false))
+
+        assertEquals(listOf(a, y, b), intoSubItems.subItemsOf("more"))
+        assertEquals(listOf("more", "x"), intoSubItems.shown.map { it.id })
+        assertEquals(listOf("more", "b", "x", "a"), toTop.shown.map { it.id })
+        assertEquals(listOf(y), toTop.subItemsOf("more"))
     }
 
     private fun CustomizeMenuItems.subItemsOf(id: String) = shown.first { it.id == id }.subItems

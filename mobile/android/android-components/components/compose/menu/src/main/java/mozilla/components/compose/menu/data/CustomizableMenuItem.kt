@@ -17,3 +17,7 @@ data class CustomizableMenuItem(
     val item: MenuItem?,
     val subItems: List<CustomizableMenuItem> = emptyList(),
 )
+
+/** Whether this item has a sub-item the app shows. */
+internal val CustomizableMenuItem.hasShownSubItems: Boolean
+    get() = subItems.any { it.item != null }

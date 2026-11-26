@@ -108,17 +108,23 @@ internal data class CustomizeMenuItems(
     override fun drop(key: Any, target: CustomizeMenuDropTarget): CustomizeMenuItems = move(key, target)
 
     /**
-     * Move a shown item next to the target, within the container it is in. Items the app does not show keep their
-     * index. Nothing changes if the target is in another container or on a hidden item, or is the item itself.
+     * Move a shown item next to the target, in the container of the target. An expandable item can only be moved to the
+     * top level. Items the app does not show keep their index in the container the item is placed in, and their order
+     * in the one it leaves. Nothing changes if the target is on a hidden item or is the item itself.
      *
      * @param key Id of the item to move.
      * @param target Where to move the item to.
      */
     fun move(key: Any, target: CustomizeMenuDropTarget): CustomizeMenuItems {
         if (target !is CustomizeMenuDropTarget.NextTo) return this
-        val container = containerOf(key) ?: return this
+        val (source, container) = locate(key) ?: return this
         val placement = placementOf(target) ?: return this
-        if (placement.container != container || placement.nextToId == key) return this
+        if (placement.nextToId == key) return this
+        if (placement.container != Container.Top && source.item is ExpandableMenuItem) return this
+
+        if (placement.container != container) {
+            return shown.without(key).placed(source, placement)?.let { copy(shown = it) } ?: this
+        }
 
         return when (container) {
             Container.Top -> copy(shown = shown.reordered(key, placement))
@@ -130,12 +136,13 @@ internal data class CustomizeMenuItems(
     private fun CustomizableMenuItem.withReorderedSubItems(parentId: String, sourceId: Any, placement: Placement) =
         if (id == parentId) copy(subItems = subItems.reordered(sourceId, placement)) else this
 
-    private fun containerOf(key: Any): Container? =
-        if (shown.any { it.id == key }) {
-            Container.Top
+    private fun locate(key: Any): Pair<CustomizableMenuItem, Container>? = shown.firstNotNullOfOrNull { parent ->
+        if (parent.id == key) {
+            parent to Container.Top
         } else {
-            shown.firstOrNull { parent -> parent.subItems.any { it.id == key } }?.let { Container.SubItems(it.id) }
+            parent.subItems.find { it.id == key }?.let { it to Container.SubItems(parent.id) }
         }
+    }
 
     private fun placementOf(target: CustomizeMenuDropTarget.NextTo): Placement? {
         if (target.key == HIDDEN_TITLE) {
@@ -181,16 +188,47 @@ internal data class CustomizeMenuItems(
 private fun List<CustomizableMenuItem>.reordered(sourceId: Any, placement: Placement): List<CustomizableMenuItem> {
     val visible = filter { it.item != null }
     val source = visible.firstOrNull { it.id == sourceId } ?: return this
-    val others = visible.filter { it.id != sourceId }
-    val index =
-        when (placement.nextToId) {
-            null -> if (placement.placeAfter) others.size else 0
-            else -> {
-                val targetIndex = others.indexOfFirst { it.id == placement.nextToId }
-                if (targetIndex == -1) return this
-                if (placement.placeAfter) targetIndex + 1 else targetIndex
-            }
-        }
-    val reordered = (others.take(index) + source + others.drop(index)).iterator()
-    return map { if (it.item == null) it else reordered.next() }
+    return inserted(source, placement, visible.filter { it.id != sourceId }) ?: this
 }
+
+private fun List<CustomizableMenuItem>.without(id: Any): List<CustomizableMenuItem> = filter {
+    it.id != id
+}
+    .map { it.copy(subItems = it.subItems.filter { subItem -> subItem.id != id }) }
+
+/** This with [source] placed as [placement] says, or `null` if the item it goes next to is not there. */
+private fun List<CustomizableMenuItem>.placed(
+    source: CustomizableMenuItem,
+    placement: Placement,
+): List<CustomizableMenuItem>? =
+    when (val container = placement.container) {
+        Container.Top -> inserted(source, placement)
+        is Container.SubItems -> {
+            val subItems = firstOrNull { it.id == container.parentId }?.subItems?.inserted(source, placement)
+            subItems?.let { new -> map { if (it.id == container.parentId) it.copy(subItems = new) else it } }
+        }
+    }
+
+/**
+ * This with [source] inserted at [placement] among the [others], the items of this the app shows without [source].
+ * Items the app does not show keep their index, so the item that makes the list longer ends up after trailing ones.
+ * Returns `null` if the item [placement] is next to is not in [others].
+ */
+private fun List<CustomizableMenuItem>.inserted(
+    source: CustomizableMenuItem,
+    placement: Placement,
+    others: List<CustomizableMenuItem> = filter { it.item != null },
+): List<CustomizableMenuItem>? {
+    val index = others.indexFor(placement) ?: return null
+    val reordered = (others.take(index) + source + others.drop(index)).iterator()
+    return map { if (it.item == null) it else reordered.next() } + reordered.asSequence()
+}
+
+private fun List<CustomizableMenuItem>.indexFor(placement: Placement): Int? =
+    when (placement.nextToId) {
+        null -> if (placement.placeAfter) size else 0
+        else ->
+            indexOfFirst { it.id == placement.nextToId }
+                .takeIf { it != -1 }
+                ?.let { if (placement.placeAfter) it + 1 else it }
+    }

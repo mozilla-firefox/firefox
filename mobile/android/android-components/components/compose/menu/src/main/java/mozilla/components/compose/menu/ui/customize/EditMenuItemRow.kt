@@ -35,7 +35,7 @@ import mozilla.components.compose.menu.ui.utils.DRAGGED_GROUP_ALPHA
 
 /**
  * A row of the list of the screen customizing the items of a menu section, which the user can drag if it is of a shown
- * item which is not expandable.
+ * item which is not an expanded item.
  *
  * @param row What to show.
  * @param position Position in the list of the row.
@@ -78,7 +78,7 @@ internal fun LazyItemScope.EditMenuItemRow(
 }
 
 private val EditMenuItemsRow.Item.isDraggable: Boolean
-    get() = !isHidden && item.item !is ExpandableMenuItem
+    get() = !isHidden && !isExpanded
 
 @Composable
 private fun ItemRow(
@@ -103,7 +103,7 @@ private fun ItemRow(
     ) {
         CustomizedGroupTheme(containerColor = if (row.isHidden) Color.Transparent else null) {
             if (item is ExpandableMenuItem) {
-                ExpandableItemPill(row, item, onExpansionToggle, pillModifier)
+                ExpandableItemPill(row, item, onExpansionToggle, dragState, pillModifier)
             } else {
                 ItemPill(item, pillModifier)
             }
@@ -116,6 +116,7 @@ private fun ExpandableItemPill(
     row: EditMenuItemsRow.Item,
     item: ExpandableMenuItem,
     onExpansionToggle: (itemId: String) -> Unit,
+    dragState: CustomizeMenuDragState<*>,
     modifier: Modifier,
 ) {
     Column {
@@ -123,7 +124,9 @@ private fun ExpandableItemPill(
         ExpandableMenuItemHeader(
             title = item.title,
             isExpanded = row.isExpanded,
-            onClick = { onExpansionToggle(row.item.id) },
+            onClick = {
+                if (dragState.interactionState.draggedItem.key != row.key) onExpansionToggle(row.item.id)
+            },
             modifier = modifier,
             contentDescription = item.contentDescription,
             summary = item.summary,

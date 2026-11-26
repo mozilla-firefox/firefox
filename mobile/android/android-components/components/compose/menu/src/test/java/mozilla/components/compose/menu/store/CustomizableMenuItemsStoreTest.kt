@@ -32,7 +32,7 @@ class CustomizableMenuItemsStoreTest {
     }
 
     @Test
-    fun `WHEN the items are shown for the first time THEN show the shown expandable items expanded and the hidden ones collapsed`() {
+    fun `WHEN the items are shown for the first time THEN the shown expandable items with items inside are expanded and the others and the hidden ones are collapsed`() {
         val store = CustomizableMenuItemsStore()
 
         store.dispatch(
@@ -42,9 +42,59 @@ class CustomizableMenuItemsStoreTest {
             )
         )
 
-        assertEquals(setOf("more", "other"), store.state.expandedItemIds)
+        assertEquals(setOf("more"), store.state.expandedItemIds)
         assertEquals(listOf("a", "more", "other"), store.state.items.map { it.id })
         assertEquals(listOf("hidden more", "d"), store.state.hiddenItems.map { it.id })
+    }
+
+    @Test
+    fun `WHEN the items are shown for the first time and an expandable item has only items the app does not show THEN it is collapsed`() {
+        val store = CustomizableMenuItemsStore()
+
+        store.dispatch(
+            Update(
+                items = listOf(expandable("more", CustomizableMenuItem(id = "b", item = null))),
+                hiddenItems = emptyList(),
+            )
+        )
+
+        assertEquals(emptySet<String>(), store.state.expandedItemIds)
+    }
+
+    @Test
+    fun `WHEN the last item is taken out of an expanded shown expandable item THEN it is collapsed`() {
+        val store = CustomizableMenuItemsStore()
+        store.dispatch(Update(items = listOf(item("a"), expandable("more", item("b"))), hiddenItems = emptyList()))
+
+        store.dispatch(
+            ItemsChanged(items = listOf(item("a"), expandable("more"), item("b")), hiddenItems = emptyList())
+        )
+
+        assertEquals(emptySet<String>(), store.state.expandedItemIds)
+    }
+
+    @Test
+    fun `WHEN the last item is taken out of an expanded hidden expandable item THEN it is collapsed`() {
+        val store = CustomizableMenuItemsStore()
+        store.dispatch(Update(items = listOf(item("a")), hiddenItems = listOf(expandable("hidden", item("b")))))
+        store.dispatch(ExpansionToggled("hidden"))
+
+        store.dispatch(ItemsChanged(items = listOf(item("a"), item("b")), hiddenItems = listOf(expandable("hidden"))))
+
+        assertEquals(emptySet<String>(), store.state.expandedItemIds)
+    }
+
+    @Test
+    fun `GIVEN an empty expandable item expanded by the user WHEN other items are moved THEN it stays expanded`() {
+        val store = CustomizableMenuItemsStore()
+        store.dispatch(Update(items = listOf(item("a"), item("b"), expandable("more")), hiddenItems = emptyList()))
+        store.dispatch(ExpansionToggled("more"))
+
+        store.dispatch(
+            ItemsChanged(items = listOf(item("b"), item("a"), expandable("more")), hiddenItems = emptyList())
+        )
+
+        assertEquals(setOf("more"), store.state.expandedItemIds)
     }
 
     @Test

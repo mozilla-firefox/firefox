@@ -171,22 +171,6 @@ class EditMenuItemsContentTest {
     }
 
     @Test
-    fun `WHEN a shown item is dragged by its handle among the sub-items of another item THEN it is put back`() {
-        val actions = mutableListOf<CustomizableMenuItemsAction>()
-        val more = expandable("More", item("Sub 1"), item("Sub 2"))
-        val store =
-            setContent(
-                CustomizableMenuItemsState(items = listOf(item("Shown"), more), expandedItemIds = setOf("More")),
-                listOf(capturing(actions)),
-            )
-
-        dragByHandle(title = "Shown", to = { boundsOf("Sub 2").center })
-
-        assertEquals(listOf("Shown", "More"), store.state.items.map { it.id })
-        assertTrue(actions.none { it is ItemsChanged })
-    }
-
-    @Test
     fun `WHEN a shown item is dragged by its handle into the area to hide items THEN it is put back`() {
         val actions = mutableListOf<CustomizableMenuItemsAction>()
         val store =
@@ -235,6 +219,94 @@ class EditMenuItemsContentTest {
 
         assertEquals(listOf("Shown", "More"), store.state.items.map { it.id })
         assertTrue(actions.none { it is ItemsChanged })
+    }
+
+    @Test
+    fun `WHEN a collapsed expandable item is dragged by its handle above another item THEN it is shown before it`() {
+        val actions = mutableListOf<CustomizableMenuItemsAction>()
+        val store =
+            setContent(
+                CustomizableMenuItemsState(items = listOf(item("Shown"), expandable("More", item("Sub 1")))),
+                listOf(capturing(actions)),
+            )
+
+        dragByHandle(title = "More", to = { boundsOf("Shown").topCenter })
+
+        assertEquals(listOf("More", "Shown"), store.state.items.map { it.id })
+        assertEquals(listOf("Sub 1"), store.state.items.first().subItems.map { it.id })
+        assertEquals(1, actions.filterIsInstance<ItemsChanged>().size)
+    }
+
+    @Test
+    fun `WHEN a collapsed expandable item is long pressed and dragged above another item THEN it stays collapsed`() {
+        val actions = mutableListOf<CustomizableMenuItemsAction>()
+        val store =
+            setContent(
+                CustomizableMenuItemsState(items = listOf(item("Shown"), expandable("More", item("Sub 1")))),
+                listOf(capturing(actions)),
+            )
+
+        dragFrom(start = boundsOf("More").center, afterLongPress = true, to = { boundsOf("Shown").topCenter })
+
+        assertEquals(listOf("More", "Shown"), store.state.items.map { it.id })
+        assertTrue(actions.none { it is CustomizableMenuItemsAction.ExpansionToggled })
+    }
+
+    @Test
+    fun `WHEN a collapsed expandable item is long pressed and let go where it is THEN it stays collapsed`() {
+        val actions = mutableListOf<CustomizableMenuItemsAction>()
+        setContent(
+            CustomizableMenuItemsState(items = listOf(item("Shown"), expandable("More", item("Sub 1")))),
+            listOf(capturing(actions)),
+        )
+
+        composeTestRule.onRoot().performTouchInput { down(boundsOf("More").center) }
+        composeTestRule.mainClock.advanceTimeBy(LONG_PRESS_WAIT_MILLIS)
+        composeTestRule.onRoot().performTouchInput { up() }
+        composeTestRule.waitForIdle()
+
+        assertTrue(actions.none { it is CustomizableMenuItemsAction.ExpansionToggled })
+    }
+
+    @Test
+    fun `WHEN a shown item is dragged by its handle among the sub-items of an expanded item THEN it is one of them`() {
+        val more = expandable("More", item("Sub 1"), item("Sub 2"))
+        val store =
+            setContent(CustomizableMenuItemsState(items = listOf(item("Shown"), more), expandedItemIds = setOf("More")))
+
+        dragByHandle(title = "Shown", to = { boundsOf("Sub 2").topCenter })
+
+        assertEquals(listOf("More"), store.state.items.map { it.id })
+        assertEquals(listOf("Sub 1", "Shown", "Sub 2"), store.state.items.single().subItems.map { it.id })
+    }
+
+    @Test
+    fun `WHEN a sub-item is dragged by its handle below the sub-items of its expanded item THEN it is a top level item`() {
+        val more = expandable("More", item("Sub 1"), item("Sub 2"))
+        val store =
+            setContent(CustomizableMenuItemsState(items = listOf(more, item("Shown")), expandedItemIds = setOf("More")))
+
+        dragByHandle(title = "Sub 1", to = { boundsOf("Shown").topCenter })
+
+        assertEquals(listOf("More", "Sub 1", "Shown"), store.state.items.map { it.id })
+        assertEquals(listOf("Sub 2"), store.state.items.first().subItems.map { it.id })
+    }
+
+    @Test
+    fun `WHEN the last sub-item is dragged out of its expanded item THEN the item is collapsed and can be dragged by its handle`() {
+        val store =
+            setContent(
+                CustomizableMenuItemsState(
+                    items = listOf(expandable("More", item("Sub 1")), item("Shown")),
+                    expandedItemIds = setOf("More"),
+                )
+            )
+
+        dragByHandle(title = "Sub 1", to = { boundsOf("Shown").topCenter })
+        assertEquals(emptySet<String>(), store.state.expandedItemIds)
+        dragByHandle(title = "More", to = { boundsOf("Shown").topCenter })
+
+        assertEquals(listOf("Sub 1", "More", "Shown"), store.state.items.map { it.id })
     }
 
     private fun setContent(

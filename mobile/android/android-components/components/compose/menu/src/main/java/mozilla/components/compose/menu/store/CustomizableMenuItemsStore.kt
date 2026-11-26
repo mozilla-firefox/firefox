@@ -4,7 +4,9 @@
 
 package mozilla.components.compose.menu.store
 
+import mozilla.components.compose.menu.data.CustomizableMenuItem
 import mozilla.components.compose.menu.data.ExpandableMenuItem
+import mozilla.components.compose.menu.data.hasShownSubItems
 import mozilla.components.compose.menu.store.CustomizableMenuItemsAction.ExpansionToggled
 import mozilla.components.compose.menu.store.CustomizableMenuItemsAction.Init
 import mozilla.components.compose.menu.store.CustomizableMenuItemsAction.ItemsChanged
@@ -38,13 +40,18 @@ private fun reduce(state: CustomizableMenuItemsState, action: CustomizableMenuIt
                 hiddenItems = action.hiddenItems,
                 expandedItemIds =
                     if (isFirstUpdate) {
-                        action.items.filter { it.item is ExpandableMenuItem }.map { it.id }.toSet()
+                        expandedAtStart(action.items)
                     } else {
                         state.expandedItemIds
                     },
             )
         }
-        is ItemsChanged -> state.copy(items = action.items, hiddenItems = action.hiddenItems)
+        is ItemsChanged ->
+            state.copy(
+                items = action.items,
+                hiddenItems = action.hiddenItems,
+                expandedItemIds = state.expandedItemIds - emptiedBy(state, action),
+            )
         is ExpansionToggled ->
             state.copy(
                 expandedItemIds =
@@ -57,3 +64,14 @@ private fun reduce(state: CustomizableMenuItemsState, action: CustomizableMenuIt
         is Init,
         is PreviewClicked -> state
     }
+
+private fun expandedAtStart(items: List<CustomizableMenuItem>): Set<String> =
+    items.filter { it.item is ExpandableMenuItem && it.hasShownSubItems }.map { it.id }.toSet()
+
+private fun emptiedBy(state: CustomizableMenuItemsState, action: ItemsChanged): Set<String> {
+    val hadShownSubItems = (state.items + state.hiddenItems).filter { it.hasShownSubItems }.map { it.id }.toSet()
+    return (action.items + action.hiddenItems)
+        .filter { it.item is ExpandableMenuItem && !it.hasShownSubItems && it.id in hadShownSubItems }
+        .map { it.id }
+        .toSet()
+}
