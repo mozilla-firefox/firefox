@@ -61,6 +61,10 @@ static bool EnsureSurfaceStoredRecording(DrawEventRecorderPrivate* aRecorder,
     // Surface is already stored.
     return false;
   }
+  MOZ_ASSERT(aSurface->GetType() == SurfaceType::RECORDING ||
+                 aSurface->GetType() == SurfaceType::CANVAS_RECORDING ||
+                 aSurface->GetUnderlyingType() != SurfaceType::RECORDING,
+             "Wrappers of recording surfaces are not supported");
   aRecorder->StoreSourceSurfaceRecording(aSurface, reason);
   aRecorder->AddSourceSurface(aSurface);
 
