@@ -81,7 +81,11 @@ macosx64-enterprise/debug:
     treeherder:
         platform: osx-cross-enterprise/debug
         symbol: Bent
-        tier: 2
+        tier:
+            by-project:
+                enterprise-firefox: 1
+                enterprise-firefox-try: 1
+                default: 2
     worker:
         max-run-time: 5400
     mozconfig:
@@ -91,7 +95,7 @@ macosx64-enterprise/debug:
             - builds/releng_base_firefox.py
             - builds/releng_base_mac_64_cross_builds.py
         custom-build-variant-cfg: cross-debug
-    run-on-projects: ['mozilla-central']
+    run-on-projects: ['mozilla-central', 'enterprise-firefox']
     use-sccache: true
     use-python: "3.11"
     fetches:
@@ -145,7 +149,11 @@ macosx64-aarch64-enterprise/debug:
     treeherder:
         platform: osx-cross-aarch64-enterprise/debug
         symbol: Bent
-        tier: 2
+        tier:
+            by-project:
+                enterprise-firefox: 1
+                enterprise-firefox-try: 1
+                default: 2
     worker:
         max-run-time: 5400
     mozconfig:
@@ -156,7 +164,7 @@ macosx64-aarch64-enterprise/debug:
             - builds/releng_base_firefox.py
             - builds/releng_base_mac_64_cross_builds.py
         custom-build-variant-cfg: cross-debug
-    run-on-projects: ['mozilla-central']
+    run-on-projects: ['mozilla-central', 'enterprise-firefox']
     use-sccache: true
     fetches:
         toolchain:
@@ -210,7 +218,11 @@ macosx64-aarch64-enterprise/opt:
     treeherder:
         platform: osx-cross-aarch64-enterprise/opt
         symbol: Bent
-        tier: 2
+        tier:
+            by-project:
+                enterprise-firefox: 1
+                enterprise-firefox-try: 1
+                default: 2
     worker:
         max-run-time: 7200
     mozconfig:
@@ -220,7 +232,7 @@ macosx64-aarch64-enterprise/opt:
         config:
             - builds/releng_base_firefox.py
             - builds/releng_base_mac_64_cross_builds.py
-    run-on-projects: ['mozilla-central']
+    run-on-projects: ['mozilla-central', 'enterprise-firefox']
     use-sccache: true
     fetches:
         toolchain:
@@ -302,7 +314,11 @@ macosx64-enterprise/opt:
     treeherder:
         platform: osx-cross-enterprise/opt
         symbol: Bent
-        tier: 2
+        tier:
+            by-project:
+                enterprise-firefox: 1
+                enterprise-firefox-try: 1
+                default: 2
     worker:
         max-run-time: 7200
     mozconfig:
@@ -311,7 +327,7 @@ macosx64-enterprise/opt:
         config:
             - builds/releng_base_firefox.py
             - builds/releng_base_mac_64_cross_builds.py
-    run-on-projects: ['mozilla-central']
+    run-on-projects: ['mozilla-central', 'enterprise-firefox']
     use-sccache: true
     use-python: "3.11"
     fetches:

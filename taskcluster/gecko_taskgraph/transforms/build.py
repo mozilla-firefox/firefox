@@ -34,6 +34,27 @@ def set_ccov_attribute(config, jobs):
 
 
 @transforms.add
+def resolve_keyed_by_project(config, jobs):
+    """Resolve the settings that can differ per project. A setting resolving to
+    null is removed, so that the later transforms apply their default."""
+    project = config.params["project"]
+    for job in jobs:
+        env = job.get("worker", {}).get("env", {})
+        fields = [
+            (job.get("treeherder", {}), "tier"),
+            (job, "optimization"),
+        ] + [(env, name) for name in env]
+        for container, field in fields:
+            value = container.get(field)
+            if not (isinstance(value, dict) and list(value) == ["by-project"]):
+                continue
+            resolve_keyed_by(container, field, item_name=job["name"], project=project)
+            if container[field] is None:
+                del container[field]
+        yield job
+
+
+@transforms.add
 def set_defaults(config, jobs):
     """Set defaults, including those that differ per worker implementation"""
     for job in jobs:

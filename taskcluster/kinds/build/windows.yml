@@ -225,7 +225,11 @@ win64-enterprise/debug:
     treeherder:
         platform: windows2012-64-enterprise/debug
         symbol: Bent
-        tier: 2
+        tier:
+            by-project:
+                enterprise-firefox: 1
+                enterprise-firefox-try: 1
+                default: 2
     worker:
         max-run-time: 7200
     mozconfig:
@@ -240,7 +244,7 @@ win64-enterprise/debug:
             - builds/releng_base_firefox.py
             - builds/releng_base_linux_64_builds.py
             - builds/taskcluster_sub_win64/debug.py
-    run-on-projects: ['mozilla-central']
+    run-on-projects: ['mozilla-central', 'enterprise-firefox']
     use-sccache: true
     use-python: "3.11"
     fetches:
@@ -476,7 +480,11 @@ win64-enterprise/opt:
     treeherder:
         platform: windows2012-64-enterprise/opt
         symbol: Bent
-        tier: 2
+        tier:
+            by-project:
+                enterprise-firefox: 1
+                enterprise-firefox-try: 1
+                default: 2
     worker:
         max-run-time: 7200
     mozconfig:
@@ -490,7 +498,7 @@ win64-enterprise/opt:
         config:
             - builds/releng_base_firefox.py
             - builds/releng_base_linux_64_builds.py
-    run-on-projects: ['mozilla-central']
+    run-on-projects: ['mozilla-central', 'enterprise-firefox']
     use-sccache: true
     fetches:
         toolchain:
@@ -1592,7 +1600,11 @@ win64-aarch64-enterprise/debug:
     treeherder:
         platform: windows2012-aarch64-enterprise/debug
         symbol: Bent
-        tier: 2
+        tier:
+            by-project:
+                enterprise-firefox: 1
+                enterprise-firefox-try: 1
+                default: 2
     worker:
         max-run-time: 7200
     mozconfig:
@@ -1607,7 +1619,7 @@ win64-aarch64-enterprise/debug:
             - builds/releng_base_firefox.py
             - builds/releng_base_linux_64_builds.py
             - builds/taskcluster_sub_win64/debug.py
-    run-on-projects: ['mozilla-central']
+    run-on-projects: ['mozilla-central', 'enterprise-firefox']
     use-sccache: true
     fetches:
         toolchain:
@@ -1630,7 +1642,11 @@ win64-aarch64-enterprise/debug:
             - winappsdk-aarch64-pc-windows-msvc
             - onnxruntime-aarch64-windows-msvc
     optimization:
-        skip-unless-expanded: null
+        by-project:
+            enterprise-firefox: null
+            enterprise-firefox-try: null
+            default:
+                skip-unless-expanded: null
 
 win64-aarch64/opt:
     description: "AArch64 Win64 Opt"
@@ -1695,7 +1711,11 @@ win64-aarch64-enterprise/opt:
     treeherder:
         platform: windows2012-aarch64-enterprise/opt
         symbol: Bent
-        tier: 2
+        tier:
+            by-project:
+                enterprise-firefox: 1
+                enterprise-firefox-try: 1
+                default: 2
     worker:
         max-run-time: 7200
     mozconfig:
@@ -1709,7 +1729,7 @@ win64-aarch64-enterprise/opt:
         config:
             - builds/releng_base_firefox.py
             - builds/releng_base_linux_64_builds.py
-    run-on-projects: ['mozilla-central']
+    run-on-projects: ['mozilla-central', 'enterprise-firefox']
     use-sccache: true
     fetches:
         toolchain:
@@ -1732,7 +1752,11 @@ win64-aarch64-enterprise/opt:
             - winappsdk-aarch64-pc-windows-msvc
             - onnxruntime-aarch64-windows-msvc
     optimization:
-        skip-unless-expanded: null
+        by-project:
+            enterprise-firefox: null
+            enterprise-firefox-try: null
+            default:
+                skip-unless-expanded: null
 
 win64-aarch64-shippable/opt:
     description: "AArch64 Win64 Shippable"
