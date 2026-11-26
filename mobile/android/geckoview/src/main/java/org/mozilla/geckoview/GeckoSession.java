@@ -418,13 +418,13 @@ public class GeckoSession {
     @WrapForJNI(calledFrom = "ui", dispatchTo = "current")
     public native void enableLayerUpdateNotifications(boolean enable);
 
-    // The compositor invokes this function just before compositing a frame where the
-    // document is different from the document composited on the last frame. In these
-    // cases, the viewport information we have in Java is no longer valid and needs to
-    // be replaced with the new viewport information provided.
+    // The compositor invokes this function with a batch of compositor scroll updates,
+    // in the order in which they occurred.
     @WrapForJNI(calledFrom = "ui")
-    private void notifyCompositorScrollUpdate(final ScrollPositionUpdate update) {
-      GeckoSession.this.onCompositorScrollUpdate(update);
+    private void notifyCompositorScrollUpdates(final ScrollPositionUpdate[] updates) {
+      for (final ScrollPositionUpdate update : updates) {
+        GeckoSession.this.onCompositorScrollUpdate(update);
+      }
     }
 
     @WrapForJNI(calledFrom = "ui")

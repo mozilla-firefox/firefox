@@ -3852,14 +3852,18 @@ void nsWindow::NotifyCompositorScrollUpdates(
     const auto& compositor = lvs->GetJavaCompositor();
     mContentDocumentDisplayed = true;
     const auto session = compositor->GetSession();
-    for (const auto& update : aUpdates) {
-      compositor->NotifyCompositorScrollUpdate(
-          java::GeckoSession::ScrollPositionUpdate::New(
-              session, update.mMetrics.mVisualScrollOffset.x,
-              update.mMetrics.mVisualScrollOffset.y,
-              update.mMetrics.mZoom.scale,
-              ConvertScrollUpdateSource(update.mSource)));
+    const size_t length = aUpdates.Length();
+    auto updates =
+        jni::ObjectArray::New<java::GeckoSession::ScrollPositionUpdate>(length);
+    for (size_t i = 0; i < length; i++) {
+      const auto& update = aUpdates[i];
+      auto javaUpdate = java::GeckoSession::ScrollPositionUpdate::New(
+          session, update.mMetrics.mVisualScrollOffset.x,
+          update.mMetrics.mVisualScrollOffset.y, update.mMetrics.mZoom.scale,
+          ConvertScrollUpdateSource(update.mSource));
+      updates->SetElement(i, javaUpdate);
     }
+    compositor->NotifyCompositorScrollUpdates(updates);
   }
 }
 
