@@ -870,28 +870,29 @@ already_AddRefed<gfx::SourceSurface> CanvasChild::SnapshotExternalCanvas(
                                   ? gfx::SurfaceFormat::B8G8R8X8
                                   : gfx::SurfaceFormat::B8G8R8A8;
   gfx::IntSize size(aCanvas->GetWidth(), aCanvas->GetHeight());
-  // Create a source sourface that will be associated with the snapshot.
+  // Create the recording-side surface reference for the snapshot.
   RefPtr<gfx::SourceSurface> surface =
       aTarget->CreateExternalSourceSurface(size, format);
   if (!surface) {
     return nullptr;
   }
 
-  // Pause translation until the sync-id identifying the snapshot is received.
+  // Pause replay at this point if the translator has not processed the
+  // snapshot request for this sync ID yet.
   uint64_t syncId = ++mLastSyncId;
   mRecorder->RecordEvent(RecordedAwaitTranslationSync(syncId));
 
-  // Flush WebGL to cause any IPDL messages to get sent at this sync point.
+  // Send pending WebGL commands before requesting the back-buffer snapshot.
   aCanvas->SyncSnapshot();
 
-  // Once the IPDL message is sent to generate the snapshot, resolve the sync-id
-  // to a surface in the recording stream. The AwaitTranslationSync above will
-  // ensure this event is not translated until the snapshot is generated first.
+  // Record how replay will bind the snapshot to the surface reference. The
+  // await event above keeps replay from reaching this event before the
+  // translator has handled the request.
   mRecorder->RecordEvent(aTarget,
                          RecordedResolveExternalSnapshot(
                              syncId, gfx::ReferencePtr(surface), size, format));
 
-  // Actually send the request via IPDL to snapshot the external WebGL canvas.
+  // Send the asynchronous request after recording the resolve event.
   SendSnapshotExternalCanvas(syncId, managerId, canvasId);
 
   return surface.forget();

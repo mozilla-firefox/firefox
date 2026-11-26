@@ -1850,50 +1850,64 @@ mozilla::ipc::IPCResult CanvasTranslator::RecvSnapshotExternalCanvas(
                     "RecvSnapshotExternalCanvas used outside of task queue.");
   }
 
-  // Verify that snapshot requests are not received out of order order.
+  // Reject snapshot requests that arrive after their sync ID was passed.
   if (NS_WARN_IF(aSyncId <= mLastSyncId)) {
     return IPC_FAIL(this, "RecvSnapShotExternalCanvas received too late.");
   }
 
-  // Attempt to snapshot an external canvas that is associated with the same
-  // content process as this canvas. On success, associate it with the sync-id.
-  ExternalSnapshot snapshot;
-  if (auto* actor = gfx::CanvasManagerParent::GetCanvasActor(
-          mContentId, aManagerId, aCanvasId)) {
-    if (dom::WebGLParent* webglActor = ActorDynCast<dom::WebGLParent>(actor)) {
-      if (auto* hostContext = webglActor->GetHostWebGLContext()) {
-        if (auto* webgl = hostContext->GetWebGLContext()) {
-          if (mWebglTextureType != TextureType::Unknown) {
-            snapshot.mSharedSurface = webgl->GetBackBufferSnapshotSharedSurface(
-                mWebglTextureType, true, true, true);
-            if (snapshot.mSharedSurface) {
-              snapshot.mWebgl = webgl;
-              snapshot.mDescriptor =
-                  snapshot.mSharedSurface->ToSurfaceDescriptor();
-            }
-          }
-          if (!snapshot.mDescriptor) {
-            snapshot.mData = webgl->GetBackBufferSnapshot(true);
-          }
-        }
-      }
-    } else {
-      MOZ_ASSERT_UNREACHABLE("Unsupported protocol");
-    }
-  }
-
+  ExternalSnapshot snapshot =
+      CaptureExternalWebGLSnapshot(aManagerId, aCanvasId);
   if (!snapshot.mDescriptor && !snapshot.mData) {
-    // No available surface, but sync translation so it may resume after
-    // attempting snapshot.
+    // Release the replay barrier before reporting the snapshot failure.
     SyncTranslation(aSyncId);
     return IPC_FAIL(this, "SnapshotExternalCanvas failed to get surface.");
   }
 
+  // Store the snapshot first. SyncTranslation can resume replay immediately
+  // and consume it through RecordedResolveExternalSnapshot.
   mExternalSnapshots.insert({aSyncId, std::move(snapshot)});
 
-  // Sync translation so it may resume with the snapshot.
   SyncTranslation(aSyncId);
   return IPC_OK();
+}
+
+CanvasTranslator::ExternalSnapshot
+CanvasTranslator::CaptureExternalWebGLSnapshot(uint32_t aManagerId,
+                                               ActorId aCanvasId) {
+  // Resolve the source actor within the destination's content process.
+  auto* actor = gfx::CanvasManagerParent::GetCanvasActor(mContentId, aManagerId,
+                                                         aCanvasId);
+  if (!actor) {
+    return {};
+  }
+
+  auto* webglActor = ActorDynCast<dom::WebGLParent>(actor);
+  if (!webglActor) {
+    MOZ_ASSERT_UNREACHABLE("Unsupported protocol");
+    return {};
+  }
+
+  auto* hostContext = webglActor->GetHostWebGLContext();
+  auto* webgl = hostContext ? hostContext->GetWebGLContext() : nullptr;
+  if (!webgl) {
+    return {};
+  }
+
+  ExternalSnapshot snapshot;
+  if (mWebglTextureType != TextureType::Unknown) {
+    snapshot.mSharedSurface = webgl->GetBackBufferSnapshotSharedSurface(
+        mWebglTextureType, /* bgra */ true, /* yFlip */ true,
+        /* requireAlphaPremult */ true);
+    if (snapshot.mSharedSurface) {
+      snapshot.mWebgl = webgl;
+      snapshot.mDescriptor = snapshot.mSharedSurface->ToSurfaceDescriptor();
+    }
+  }
+  if (!snapshot.mDescriptor) {
+    // Read back while handling the request, before replay uses the snapshot.
+    snapshot.mData = webgl->GetBackBufferSnapshot(true);
+  }
+  return snapshot;
 }
 
 bool CanvasTranslator::ResolveExternalSnapshot(uint64_t aSyncId,
@@ -1909,8 +1923,7 @@ bool CanvasTranslator::ResolveExternalSnapshot(uint64_t aSyncId,
     SyncTranslation(aSyncId);
   }
 
-  // Check if the snapshot was added. This should only ever be called once per
-  // snapshot, as it is removed from the table when resolved.
+  // Replay consumes the snapshot stored under this sync ID once.
   auto it = mExternalSnapshots.find(aSyncId);
   if (it == mExternalSnapshots.end()) {
     // There was no snapshot available, which can happen if this was called
@@ -1928,36 +1941,48 @@ bool CanvasTranslator::ResolveExternalSnapshot(uint64_t aSyncId,
   ExternalSnapshot snapshot = std::move(it->second);
   mExternalSnapshots.erase(it);
 
-  RefPtr<gfx::SourceSurface> resolved;
-  if (snapshot.mSharedSurface && snapshot.mSharedSurface->IsValid()) {
-    snapshot.mSharedSurface->BeginRead();
-    if (snapshot.mDescriptor) {
-      if (aDT) {
-        resolved =
-            aDT->ImportSurfaceDescriptor(*snapshot.mDescriptor, aSize, aFormat);
-      }
-      if (!resolved && gfx::gfxVars::UseAcceleratedCanvas2D() &&
-          EnsureSharedContextWebgl()) {
-        // If we can't import the surface using the DT, then try using the
-        // global shared context to allow for a readback.
-        resolved = mSharedContext->ImportSurfaceDescriptor(
-            nullptr, *snapshot.mDescriptor, aSize, aFormat);
-      }
-    }
-    snapshot.mSharedSurface->EndRead();
-    if (snapshot.mWebgl) {
-      snapshot.mWebgl->RecycleSnapshotSharedSurface(snapshot.mSharedSurface);
-    }
-  }
+  RefPtr<gfx::SourceSurface> resolved =
+      ImportSharedSnapshot(snapshot, aSize, aFormat, aDT);
   if (!resolved) {
-    // There was no descriptor, but check if there is at least a data surface.
+    // The request handler captures CPU data only if it has no descriptor.
     resolved = snapshot.mData;
   }
-  if (resolved) {
-    AddSourceSurface(aRefPtr, resolved);
-    return true;
+  if (!resolved) {
+    return false;
   }
-  return false;
+
+  AddSourceSurface(aRefPtr, resolved);
+  return true;
+}
+
+already_AddRefed<gfx::SourceSurface> CanvasTranslator::ImportSharedSnapshot(
+    const ExternalSnapshot& aSnapshot, const IntSize& aSize,
+    SurfaceFormat aFormat, DrawTarget* aDT) {
+  if (!aSnapshot.mSharedSurface || !aSnapshot.mSharedSurface->IsValid()) {
+    return nullptr;
+  }
+
+  RefPtr<gfx::SourceSurface> resolved;
+  aSnapshot.mSharedSurface->BeginRead();
+  if (aSnapshot.mDescriptor) {
+    if (aDT) {
+      resolved =
+          aDT->ImportSurfaceDescriptor(*aSnapshot.mDescriptor, aSize, aFormat);
+    }
+    if (!resolved && gfx::gfxVars::UseAcceleratedCanvas2D() &&
+        EnsureSharedContextWebgl()) {
+      // Try the shared context so the imported surface can be read back.
+      resolved = mSharedContext->ImportSurfaceDescriptor(
+          nullptr, *aSnapshot.mDescriptor, aSize, aFormat);
+    }
+  }
+  aSnapshot.mSharedSurface->EndRead();
+  // Return the surface to the source context after releasing read access.
+  // This also applies when a shared surface was captured without a descriptor.
+  if (aSnapshot.mWebgl) {
+    aSnapshot.mWebgl->RecycleSnapshotSharedSurface(aSnapshot.mSharedSurface);
+  }
+  return resolved.forget();
 }
 
 already_AddRefed<gfx::GradientStops> CanvasTranslator::GetOrCreateGradientStops(

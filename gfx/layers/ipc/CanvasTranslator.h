@@ -519,14 +519,21 @@ class CanvasTranslator final : public gfx::InlineTranslator,
   uint64_t mAwaitSyncId = 0;
   // The last sync-id that was actually encountered.
   uint64_t mLastSyncId = 0;
-  // A table of external canvas snapshots associated with a given sync-id.
+  // Keep the captured resources alive until the resolve event consumes them.
+  // The descriptor is used to import the shared surface into Canvas 2D.
   struct ExternalSnapshot {
     std::shared_ptr<gl::SharedSurface> mSharedSurface;
     WeakPtr<WebGLContext> mWebgl;
     Maybe<layers::SurfaceDescriptor> mDescriptor;
     RefPtr<gfx::SourceSurface> mData;
   };
-  // Surface decriptors, if available, associated with a given sync-id.
+  ExternalSnapshot CaptureExternalWebGLSnapshot(uint32_t aManagerId,
+                                                ActorId aCanvasId);
+  already_AddRefed<gfx::SourceSurface> ImportSharedSnapshot(
+      const ExternalSnapshot& aSnapshot, const gfx::IntSize& aSize,
+      gfx::SurfaceFormat aFormat, gfx::DrawTarget* aDT);
+
+  // Captured snapshots awaiting replay, keyed by sync ID.
   std::unordered_map<uint64_t, ExternalSnapshot> mExternalSnapshots;
 
   // Signal that translation should pause because it is still awaiting a sync-id
