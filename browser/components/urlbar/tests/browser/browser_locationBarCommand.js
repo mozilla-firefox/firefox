@@ -102,7 +102,7 @@ add_task(async function shift_accel_left_click_test() {
   info("URL should be loaded in a new background tab");
   is(
     gURLBar.value,
-    "http://example.com/",
+    TEST_VALUE,
     "Urlbar keeps the value after opening in a background tab"
   );
   ok(gURLBar.focused, "Urlbar keeps focus after opening in a background tab");
