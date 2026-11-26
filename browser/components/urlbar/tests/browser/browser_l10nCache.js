@@ -254,6 +254,11 @@ add_task(async function argsHighlights() {
   await cache.setElementL10n(span, l10n);
   let { args } = document.l10n.getAttributes(span);
   Assert.equal(args.arg2, "baz", "The other arg should be passed as is");
+  Assert.equal(
+    args.arg1,
+    "<strong>foo</strong> &lt;b&gt;bar&lt;/b&gt;",
+    "The highlighted arg should be serialized as HTML, without XML namespaces"
+  );
   let parsed = new DOMParser().parseFromString(args.arg1, "text/html").body;
   checkChildren(parsed, [
     { name: "STRONG", textContent: "foo" },

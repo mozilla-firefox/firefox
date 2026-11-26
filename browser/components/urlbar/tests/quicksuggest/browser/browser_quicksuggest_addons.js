@@ -392,7 +392,7 @@ async function doDismissTest(command, allDismissed) {
     );
 
     // Check tip title.
-    let title = details.element.row.querySelector(".urlbarView-title");
+    let title = details.element.row.querySelector(".urlbarView-title-l10n");
     Assert.equal(title.dataset.l10nId, "urlbar-feedback-acknowledgment");
 
     // Get the dismissal acknowledgment's "Got it" button and click it.

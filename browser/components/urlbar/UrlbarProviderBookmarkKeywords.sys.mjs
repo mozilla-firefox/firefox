@@ -69,43 +69,60 @@ export class UrlbarProviderBookmarkKeywords extends UrlbarProvider {
       return;
     }
 
-    let title;
+    let bookmark = await lazy.PlacesUtils.bookmarks.fetch({ url: entry.url });
+    let payload = {
+      url,
+      keyword,
+      input: queryContext.searchString,
+      postData,
+      icon: lazy.UrlbarShared.getIconForUrl(entry.url),
+      bookmarkDateMs: bookmark ? bookmark.dateAdded.getTime() : undefined,
+    };
+    let highlights = {
+      url: lazy.UrlbarShared.HIGHLIGHT.TYPED,
+      keyword: lazy.UrlbarShared.HIGHLIGHT.TYPED,
+    };
+
     if (entry.url.host && searchString) {
-      // If we have a search string, the result has the title
-      // "host: searchString".
-      title = UrlbarUtils.strings.formatStringFromName(
-        "bookmarkKeywordSearch",
-        [
-          entry.url.host,
-          queryContext.tokens
-            .slice(1)
-            .map(t => t.value)
-            .join(" "),
-        ]
+      // Keep the args within MAX_TEXT_LENGTH, like other titles. The localized
+      // text around them can make the title a few characters longer.
+      let domain = entry.url.host.substring(
+        0,
+        lazy.UrlbarShared.MAX_TEXT_LENGTH - 1
       );
+      let args = {
+        domain,
+        searchTerms: queryContext.tokens
+          .slice(1)
+          .map(t => t.value)
+          .join(" ")
+          .substring(0, lazy.UrlbarShared.MAX_TEXT_LENGTH - domain.length),
+      };
+      payload.titleL10n = {
+        id: "urlbar-result-bookmark-keyword-search",
+        args,
+        argsHighlights: Object.fromEntries(
+          Object.entries(args).map(([name, value]) => [
+            name,
+            lazy.UrlbarShared.getTokenMatches(
+              queryContext.tokens,
+              value,
+              lazy.UrlbarShared.HIGHLIGHT.TYPED
+            ),
+          ])
+        ),
+      };
     } else {
-      title = lazy.UrlbarShared.prepareUrlForDisplay(url);
+      payload.title = lazy.UrlbarShared.prepareUrlForDisplay(url);
+      highlights.title = lazy.UrlbarShared.HIGHLIGHT.TYPED;
     }
 
-    let bookmark = await lazy.PlacesUtils.bookmarks.fetch({ url: entry.url });
     let result = new lazy.UrlbarResult({
       type: lazy.UrlbarShared.RESULT_TYPE.KEYWORD,
       source: lazy.UrlbarShared.RESULT_SOURCE.BOOKMARKS,
       heuristic: true,
-      payload: {
-        title,
-        url,
-        keyword,
-        input: queryContext.searchString,
-        postData,
-        icon: lazy.UrlbarShared.getIconForUrl(entry.url),
-        bookmarkDateMs: bookmark ? bookmark.dateAdded.getTime() : undefined,
-      },
-      highlights: {
-        title: lazy.UrlbarShared.HIGHLIGHT.TYPED,
-        url: lazy.UrlbarShared.HIGHLIGHT.TYPED,
-        keyword: lazy.UrlbarShared.HIGHLIGHT.TYPED,
-      },
+      payload,
+      highlights,
     });
     addCallback(this, result);
   }

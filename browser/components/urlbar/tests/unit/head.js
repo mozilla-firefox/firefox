@@ -668,7 +668,11 @@ function makeTabSwitchResult(
  * @param {string} options.keyword
  *   The page's search keyword.
  * @param {string} [options.title]
- *   The title for the bookmarked keyword page.
+ *   The title for the bookmarked keyword page. Ignored if `searchTerms` is set.
+ * @param {string} [options.domain]
+ *   The domain shown in the localized title of keyword searches.
+ * @param {string} [options.searchTerms]
+ *   The search terms shown in the localized title of keyword searches.
  * @param {string} [options.iconUri]
  *   A URI for the engine's icon.
  * @param {string} [options.postData]
@@ -679,20 +683,48 @@ function makeTabSwitchResult(
  */
 function makeKeywordSearchResult(
   queryContext,
-  { uri, keyword, title, iconUri, postData, heuristic = false }
+  {
+    uri,
+    keyword,
+    title,
+    domain,
+    searchTerms,
+    iconUri,
+    postData,
+    heuristic = false,
+  }
 ) {
+  let payload = {
+    url: uri,
+    keyword,
+    input: queryContext.searchString,
+    postData: postData || null,
+    icon: typeof iconUri != "undefined" ? iconUri : `page-icon:${uri}`,
+  };
+  if (searchTerms) {
+    let args = { domain, searchTerms };
+    payload.titleL10n = {
+      id: "urlbar-result-bookmark-keyword-search",
+      args,
+      argsHighlights: Object.fromEntries(
+        Object.entries(args).map(([name, value]) => [
+          name,
+          UrlbarShared.getTokenMatches(
+            queryContext.tokens,
+            value,
+            UrlbarShared.HIGHLIGHT.TYPED
+          ),
+        ])
+      ),
+    };
+  } else {
+    payload.title = title || uri;
+  }
   return new UrlbarResult({
     type: UrlbarShared.RESULT_TYPE.KEYWORD,
     source: UrlbarShared.RESULT_SOURCE.BOOKMARKS,
     heuristic,
-    payload: {
-      title: title || uri,
-      url: uri,
-      keyword,
-      input: queryContext.searchString,
-      postData: postData || null,
-      icon: typeof iconUri != "undefined" ? iconUri : `page-icon:${uri}`,
-    },
+    payload,
   });
 }
 
