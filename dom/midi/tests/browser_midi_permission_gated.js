@@ -888,5 +888,50 @@ add_task(async function testMIDIAccessGrantedUseCounter() {
   );
 });
 
+// The "install" permission is not isolated by container, so a site the user
+// never allows to install add-ons is denied without prompt in a container tab.
+add_task(async function testRequestMIDIAccessInstallDeniedContainer() {
+  await SpecialPowers.removePermission("midi", { url: EXAMPLE_COM_URL });
+  await SpecialPowers.removePermission("midi-sysex", { url: EXAMPLE_COM_URL });
+  await SpecialPowers.addPermission("install", false, {
+    url: EXAMPLE_COM_URL,
+  });
+
+  const tab = BrowserTestUtils.addTab(gBrowser, EXAMPLE_COM_URL, {
+    userContextId: 2,
+  });
+  gBrowser.selectedTab = tab;
+  await BrowserTestUtils.browserLoaded(tab.linkedBrowser);
+
+  const denyIntervalStart = performance.now();
+  const rejectionMessage = await SpecialPowers.spawn(
+    tab.linkedBrowser,
+    [],
+    async () => {
+      try {
+        await content.navigator.requestMIDIAccess();
+      } catch (e) {
+        return e.name;
+      }
+      return null;
+    }
+  );
+  is(
+    rejectionMessage,
+    "SecurityError",
+    "requestMIDIAccess was rejected without user prompt"
+  );
+  Assert.greaterOrEqual(
+    performance.now() - denyIntervalStart,
+    2000,
+    "Rejection should be noticeably delayed"
+  );
+
+  BrowserTestUtils.removeTab(tab);
+  await SpecialPowers.removePermission("install", {
+    url: EXAMPLE_COM_URL,
+  });
+});
+
 // See helpers_addons_install_dialogs.js for shared helpers. If needed, update the shared
 // helpers defined there instead of re-introducing local copies.
