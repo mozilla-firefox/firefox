@@ -590,6 +590,9 @@ public class GeckoViewActivity extends AppCompatActivity
     if (!supportsPip()) {
       return;
     }
+    if (!checkNotificationPermission(this)) {
+      return;
+    }
 
     final PendingIntent pipIntent =
         PendingIntent.getActivity(
@@ -616,14 +619,15 @@ public class GeckoViewActivity extends AppCompatActivity
     NotificationManagerCompat.from(this).notify(MEDIA_NOTIFICATION_ID, builder.build());
   }
 
+  private static boolean checkNotificationPermission(final Context context) {
+    return Build.VERSION.SDK_INT < Build.VERSION_CODES.TIRAMISU
+        || ContextCompat.checkSelfPermission(context, Manifest.permission.POST_NOTIFICATIONS)
+            == PackageManager.PERMISSION_GRANTED;
+  }
+
   /** Without this the media notification, and its picture-in-picture action, is never shown. */
   private void requestNotificationPermission() {
-    if (Build.VERSION.SDK_INT < Build.VERSION_CODES.TIRAMISU) {
-      Log.d(LOGTAG, "Notifications are on by default on API " + Build.VERSION.SDK_INT);
-      return;
-    }
-    if (ContextCompat.checkSelfPermission(this, Manifest.permission.POST_NOTIFICATIONS)
-        != PackageManager.PERMISSION_GRANTED) {
+    if (!checkNotificationPermission(this)) {
       ActivityCompat.requestPermissions(
           this, new String[] {Manifest.permission.POST_NOTIFICATIONS}, REQUEST_NOTIFICATIONS);
     }
@@ -3092,6 +3096,9 @@ public class GeckoViewActivity extends AppCompatActivity
           notificationManager.cancel(mNotificationId);
           mNotificationId = null;
         }
+        return;
+      }
+      if (!checkNotificationPermission(mActivity)) {
         return;
       }
       if (mNotificationId == null) {
