@@ -2479,6 +2479,7 @@ class SpeechRecognitionModelDownloadPermissionPrompt extends PermissionPromptFor
   #okMessage;
   #downloadStartedAt;
   #notification;
+  #progress;
   #renderedPercent;
   #requestSettled = false;
   #observingProgress = false;
@@ -2605,16 +2606,16 @@ class SpeechRecognitionModelDownloadPermissionPrompt extends PermissionPromptFor
   }
 
   /**
-   * The <popupnotification> element showing the progress notification, or null
-   * if it isn't in the document.
+   * The <popupnotification> element showing this progress notification, or null.
    */
   #notificationElement() {
     let browser = this.#notification?.browser;
-    return (
-      browser?.documentGlobal?.document.getElementById(
-        `${MODEL_DOWNLOAD_PROGRESS_NOTIFICATION_ID}-notification`
-      ) ?? null
+    let notificationEl = browser?.documentGlobal?.document.getElementById(
+      `${MODEL_DOWNLOAD_PROGRESS_NOTIFICATION_ID}-notification`
     );
+    return notificationEl?.notification == this.#notification
+      ? notificationEl
+      : null;
   }
 
   #showProgress(allowMessage) {
@@ -2643,6 +2644,7 @@ class SpeechRecognitionModelDownloadPermissionPrompt extends PermissionPromptFor
     };
 
     this.#downloadStartedAt = ChromeUtils.now();
+    this.#progress = { progress: 0, totalLoaded: 0, total: 0 };
     this.#renderedPercent = null;
     this.#lastSec = Infinity;
     this.#notification = popupNotifications.show(
@@ -2661,6 +2663,9 @@ class SpeechRecognitionModelDownloadPermissionPrompt extends PermissionPromptFor
           if (topic == "swapping") {
             return true;
           }
+          if (topic == "shown") {
+            this.#renderProgressUI(true);
+          }
           if (topic == "removed") {
             this.#stopObservingProgress();
             this.#notification = null;
@@ -2670,12 +2675,10 @@ class SpeechRecognitionModelDownloadPermissionPrompt extends PermissionPromptFor
       }
     );
 
-    this.#resetProgressUI();
-    this.#applyProgressUI();
+    this.#renderProgressUI(true);
 
     Services.obs.addObserver(this, MODEL_DOWNLOAD_PROGRESS_TOPIC);
     this.#observingProgress = true;
-    this.#updateProgress({ progress: 0, totalLoaded: 0, total: 0 });
   }
 
   /**
@@ -2700,10 +2703,14 @@ class SpeechRecognitionModelDownloadPermissionPrompt extends PermissionPromptFor
    * the action, so the action has to change; the attributes update the button
    * that is already rendered.
    */
-  #setSecondaryLabel(notificationEl, message) {
+  #setSecondaryLabel(message) {
     let secondaryAction = this.#notification.secondaryActions[0];
     secondaryAction.label = message.label;
     secondaryAction.accessKey = message.accesskey;
+    let notificationEl = this.#notificationElement();
+    if (!notificationEl) {
+      return;
+    }
     notificationEl.setAttribute("secondarybuttonlabel", secondaryAction.label);
     notificationEl.setAttribute(
       "secondarybuttonaccesskey",
@@ -2732,27 +2739,54 @@ class SpeechRecognitionModelDownloadPermissionPrompt extends PermissionPromptFor
   }
 
   #updateProgress(progress) {
-    // The window showing the prompt can be gone by the time the next progress
-    // notification arrives.
+    if (!this.#notification) {
+      return;
+    }
+    this.#progress = progress;
+
+    if (progress.done) {
+      this.#stopObservingProgress();
+
+      this.#notification.message = lazy.gFluentStrings.formatValueSync(
+        progress.ok
+          ? "speech-recognition-model-download-complete-message"
+          : "speech-recognition-model-download-failed-message"
+      );
+      // There is nothing left to accept or cancel: the secondary button becomes
+      // the acknowledgement. Escape uses that same action.
+      this.#setSecondaryLabel(this.#okMessage);
+
+      if (progress.ok) {
+        lazy.setTimeout(
+          () => this.#notification?.remove(),
+          MODEL_DOWNLOAD_COMPLETE_TIMEOUT_MS
+        );
+      }
+    }
+
+    this.#renderProgressUI();
+  }
+
+  #renderProgressUI(force = false) {
     let notificationEl = this.#notificationElement();
     if (!notificationEl) {
       return;
     }
 
-    // A fresh element, because the tab moved to another window, see
-    // #applyProgressUI().
-    if (!notificationEl.hasAttribute("model-download-in-progress")) {
+    if (force || !notificationEl.hasAttribute("model-download-in-progress")) {
+      this.#resetProgressUI();
       this.#applyProgressUI();
-      notificationEl = this.#notificationElement();
+      this.#renderedPercent = null;
+      this.#lastSec = Infinity;
     }
 
     // The download reports progress for every chunk it receives, which is far
     // more often than the whole percent the bar is drawn at changes: only touch
     // the DOM when it does.
     let percent = Math.floor(
-      Math.max(0, Math.min(100, progress.progress ?? 0))
+      Math.max(0, Math.min(100, this.#progress.progress ?? 0))
     );
-    if (percent == this.#renderedPercent && !progress.done) {
+    if (percent == this.#renderedPercent && !this.#progress.done) {
       return;
     }
     this.#renderedPercent = percent;
@@ -2765,41 +2799,20 @@ class SpeechRecognitionModelDownloadPermissionPrompt extends PermissionPromptFor
     );
 
     progressEl.value = percent;
-    this.#setProgressStatus(statusEl, progress);
+    this.#setProgressStatus(statusEl, this.#progress);
 
-    if (!progress.done) {
+    if (!this.#progress.done) {
       return;
     }
 
-    this.#stopObservingProgress();
-
-    let message = lazy.gFluentStrings.formatValueSync(
-      progress.ok
-        ? "speech-recognition-model-download-complete-message"
-        : "speech-recognition-model-download-failed-message"
-    );
-    this.#notification.message = message;
-    notificationEl.setAttribute("label", message);
-    progressEl.value = progress.ok ? 100 : percent;
+    notificationEl.setAttribute("label", this.#notification.message);
+    progressEl.value = this.#progress.ok ? 100 : percent;
     statusEl.textContent = "";
 
     notificationEl.toggleAttribute(
-      progress.ok ? "model-download-succeeded" : "model-download-failed",
+      this.#progress.ok ? "model-download-succeeded" : "model-download-failed",
       true
     );
-
-    // There is nothing left to accept or cancel: the secondary button becomes
-    // the acknowledgement. Escape uses that same action.
-    this.#setSecondaryLabel(notificationEl, this.#okMessage);
-
-    // A failed download stays up until it is dismissed, a successful one also
-    // goes away by itself.
-    if (progress.ok) {
-      lazy.setTimeout(
-        () => this.#notification?.remove(),
-        MODEL_DOWNLOAD_COMPLETE_TIMEOUT_MS
-      );
-    }
   }
 
   /**

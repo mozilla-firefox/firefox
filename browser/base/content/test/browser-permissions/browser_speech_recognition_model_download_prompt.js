@@ -30,6 +30,16 @@ async function triggerInstall(browser) {
   });
 }
 
+async function triggerInstallWithLang(browser, lang) {
+  await SpecialPowers.spawn(browser, [lang], selectedLang => {
+    content.document.notifyUserGestureActivation();
+    content.speechInstallResult = content.SpeechRecognition.install({
+      langs: [selectedLang],
+      processLocally: true,
+    });
+  });
+}
+
 add_setup(async function () {
   await SpecialPowers.pushPrefEnv({
     set: [["media.webspeech.recognition.enable", true]],
@@ -60,6 +70,225 @@ add_task(async function test_install_shows_doorhanger() {
     notification.remove();
     await popupHidden;
   });
+});
+
+add_task(async function test_concurrent_downloads_in_two_tabs() {
+  await SpecialPowers.pushPrefEnv({
+    set: [
+      ["browser.ml.modelHub.testing", false],
+      ["media.webspeech.recognition.model-download.prompt.testing", false],
+      ["media.navigator.permission.disabled", false],
+    ],
+  });
+
+  const { MLModelHubService } = ChromeUtils.importESModule(
+    "moz-src:///toolkit/components/ml/MLModelHubService.sys.mjs"
+  );
+  const { DownloadUtils } = ChromeUtils.importESModule(
+    "resource://gre/modules/DownloadUtils.sys.mjs"
+  );
+  let originalStartDownload = MLModelHubService.prototype._startDownload;
+  let originalGetDownloadStatus = DownloadUtils.getDownloadStatus;
+  let downloads = [];
+  MLModelHubService.prototype._startDownload = function (downloadInfo) {
+    downloads.push({ service: this, ...downloadInfo });
+    downloadInfo.progressCallback.onProgress(10, 10, 10, 100);
+    return new Promise(() => {});
+  };
+  DownloadUtils.getDownloadStatus = (_loaded, _total, _speed, lastSec) => [
+    lastSec == Infinity ? "fresh estimate" : "stale estimate",
+    120,
+  ];
+
+  try {
+    await BrowserTestUtils.withNewTab(PAGE, async browserA => {
+      let popupShown = BrowserTestUtils.waitForEvent(
+        PopupNotifications.panel,
+        "popupshown"
+      );
+      await triggerInstall(browserA);
+      await popupShown;
+
+      let firstPopup = document.getElementById(
+        "speech-recognition-model-download-notification"
+      );
+      await firstPopup.button.updateComplete;
+      firstPopup.button.click();
+      await TestUtils.waitForCondition(
+        () =>
+          downloads.length == 1 &&
+          PopupNotifications.getNotification(
+            MODEL_DOWNLOAD_PROGRESS_NOTIFICATION_ID,
+            browserA
+          ),
+        "Waiting for the first tab's download progress"
+      );
+      let status = document.getElementById(
+        "speech-recognition-model-download-progress-status"
+      );
+      is(status.textContent, "fresh estimate", "The first estimate is fresh");
+
+      await BrowserTestUtils.withNewTab(PAGE, async browserB => {
+        is(gBrowser.selectedBrowser, browserB, "the second tab is selected");
+        await triggerInstallWithLang(browserB, "fr-FR");
+        await TestUtils.waitForCondition(
+          () =>
+            PopupNotifications.getNotification(
+              MODEL_DOWNLOAD_NOTIFICATION_ID,
+              browserB
+            ),
+          "Waiting for the second tab's install notification"
+        );
+
+        is(
+          PopupNotifications.panel.firstElementChild?.notification?.browser,
+          browserB,
+          "the second tab's install prompt is visible"
+        );
+        ok(
+          PopupNotifications.getNotification(
+            MODEL_DOWNLOAD_PROGRESS_NOTIFICATION_ID,
+            browserA
+          ),
+          "The first tab's download progress is still shown"
+        );
+        ok(
+          PopupNotifications.getNotification(
+            MODEL_DOWNLOAD_NOTIFICATION_ID,
+            browserB
+          ),
+          "The second tab gets its own install prompt"
+        );
+
+        let secondPopup = document.getElementById(
+          "speech-recognition-model-download-notification"
+        );
+        if (PopupNotifications.panel.state != "open") {
+          await BrowserTestUtils.waitForEvent(
+            PopupNotifications.panel,
+            "popupshown"
+          );
+        }
+        await secondPopup.button.updateComplete;
+        secondPopup.button.click();
+        await TestUtils.waitForCondition(
+          () => downloads.length == 2,
+          "Waiting for two active model downloads"
+        );
+        is(downloads.length, 2, "Both tabs started a model download");
+
+        await TestUtils.waitForCondition(() => {
+          let progressNotification = PopupNotifications.getNotification(
+            MODEL_DOWNLOAD_PROGRESS_NOTIFICATION_ID,
+            browserB
+          );
+          return (
+            progressNotification &&
+            PopupNotifications.panel.firstElementChild?.notification ==
+              progressNotification
+          );
+        }, "Waiting for the second tab's download progress");
+        let secondProgress = document.getElementById(
+          "speech-recognition-model-download-progress"
+        );
+        is(secondProgress.value, 10, "The second download starts at 10%");
+        downloads[0].progressCallback.onProgress(70, 70, 70, 100);
+        await TestUtils.waitForTick();
+        ok(
+          downloads[1].service._activeDownloads.has(downloads[1].sessionId),
+          "The second download is still active"
+        );
+        is(
+          secondProgress.value,
+          10,
+          "The first download's progress does not change the second tab's progress"
+        );
+
+        await BrowserTestUtils.switchTab(
+          gBrowser,
+          gBrowser.getTabForBrowser(browserA)
+        );
+        await TestUtils.waitForCondition(
+          () => secondProgress.value == 70,
+          "The first tab restores its own progress"
+        );
+        is(
+          status.textContent,
+          "fresh estimate",
+          "Restoring the first tab resets its time-left estimate"
+        );
+        await BrowserTestUtils.switchTab(
+          gBrowser,
+          gBrowser.getTabForBrowser(browserB)
+        );
+        await TestUtils.waitForCondition(
+          () => secondProgress.value == 10,
+          "The second tab restores its own progress"
+        );
+
+        downloads[0].service._completeDownload(downloads[0].sessionId, true);
+        await TestUtils.waitForTick();
+        is(
+          secondProgress.value,
+          10,
+          "Completing the first download leaves the second tab's progress alone"
+        );
+        ok(
+          !secondProgress
+            .closest("popupnotification")
+            .hasAttribute("model-download-succeeded"),
+          "The second tab remains in progress"
+        );
+        await BrowserTestUtils.switchTab(
+          gBrowser,
+          gBrowser.getTabForBrowser(browserA)
+        );
+        await TestUtils.waitForCondition(
+          () =>
+            secondProgress
+              .closest("popupnotification")
+              .hasAttribute("model-download-succeeded"),
+          "The first tab shows its completed download"
+        );
+        await BrowserTestUtils.switchTab(
+          gBrowser,
+          gBrowser.getTabForBrowser(browserB)
+        );
+        await TestUtils.waitForCondition(
+          () =>
+            secondProgress.value == 10 &&
+            !secondProgress
+              .closest("popupnotification")
+              .hasAttribute("model-download-succeeded"),
+          "The second tab still shows its active download"
+        );
+
+        for (let download of downloads) {
+          if (download.service._activeDownloads.has(download.sessionId)) {
+            download.service._completeDownload(download.sessionId, true);
+          }
+        }
+        is(
+          await SpecialPowers.spawn(
+            browserB,
+            [],
+            () => content.speechInstallResult
+          ),
+          true,
+          "The second tab's install completes after both downloads start"
+        );
+      });
+    });
+  } finally {
+    for (let download of downloads) {
+      if (download.service._activeDownloads.has(download.sessionId)) {
+        download.service._completeDownload(download.sessionId, false);
+      }
+    }
+    MLModelHubService.prototype._startDownload = originalStartDownload;
+    DownloadUtils.getDownloadStatus = originalGetDownloadStatus;
+    await SpecialPowers.popPrefEnv();
+  }
 });
 
 // Asserts that a content-process install() call resolves with `false`.
