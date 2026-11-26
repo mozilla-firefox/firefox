@@ -11,7 +11,6 @@
 #include "nsDataDocumentContentPolicy.h"
 
 #include "mozilla/ScopeExit.h"
-#include "mozilla/StaticPrefs_svg.h"
 #include "mozilla/dom/Document.h"
 #include "nsContentPolicyUtils.h"
 #include "nsContentUtils.h"
@@ -152,10 +151,6 @@ nsDataDocumentContentPolicy::ShouldLoad(nsIURI* aContentLocation,
       contentType == ExtContentPolicy::TYPE_XSLT ||
       contentType == ExtContentPolicy::TYPE_FETCH ||
       contentType == ExtContentPolicy::TYPE_WEB_MANIFEST) {
-    *aDecision = nsIContentPolicy::REJECT_TYPE;
-  } else if (StaticPrefs::
-                 svg_external_resource_document_only_allow_data_urls() &&
-             !aContentLocation->SchemeIs("data")) {
     *aDecision = nsIContentPolicy::REJECT_TYPE;
   }
 
