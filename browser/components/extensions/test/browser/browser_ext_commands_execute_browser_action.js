@@ -117,14 +117,14 @@ async function testExecuteBrowserActionWithOptions(options = {}) {
     CustomizableUI.addWidgetToArea(widget.id, options.inArea);
   }
 
+  // The popup script can run before the panel is shown.
+  let panelShown = options.withPopup && awaitExtensionPanel(extension);
+
   extension.sendMessage("options", options);
 
   if (options.withPopup) {
     await extension.awaitFinish("execute-browser-action-popup-opened");
-
-    if (!getBrowserActionPopup(extension)) {
-      await awaitExtensionPanel(extension);
-    }
+    await panelShown;
     await closeBrowserAction(extension);
   } else {
     await extension.awaitFinish("execute-browser-action-on-clicked-fired");
