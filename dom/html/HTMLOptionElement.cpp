@@ -229,18 +229,25 @@ void HTMLOptionElement::AfterSetAttr(int32_t aNameSpaceID, nsAtom* aName,
       aNameSpaceID, aName, aValue, aOldValue, aSubjectPrincipal, aNotify);
 }
 
-void HTMLOptionElement::GetRenderedLabel(nsAString& aLabel, AltText aAltText) {
-  if (!GetAttr(nsGkAtoms::label, aLabel) || aLabel.IsEmpty()) {
-    nsContentUtils::GetHTMLAwareTextContent(*this, aAltText, aLabel);
-  }
-}
-
-void HTMLOptionElement::GetRenderedLabelForBindings(nsAString& aLabel) {
-  GetRenderedLabel(aLabel, AltText::Include);
-}
-
 void HTMLOptionElement::GetText(nsAString& aText) {
-  nsContentUtils::GetHTMLAwareTextContent(*this, AltText::Exclude, aText);
+  nsAutoString text;
+
+  nsIContent* child = nsINode::GetFirstChild();
+  while (child) {
+    if (Text* textChild = child->GetAsText()) {
+      textChild->AppendTextTo(text);
+    }
+    if (child->IsHTMLElement(nsGkAtoms::script) ||
+        child->IsSVGElement(nsGkAtoms::script)) {
+      child = child->GetNextNonChildNode(this);
+    } else {
+      child = child->GetNextNode(this);
+    }
+  }
+
+  // XXX No CompressWhitespace for nsAString.  Sad.
+  text.CompressWhitespace(true, true);
+  aText = std::move(text);
 }
 
 void HTMLOptionElement::SetText(const nsAString& aText, ErrorResult& aRv) {

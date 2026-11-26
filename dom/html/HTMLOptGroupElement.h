@@ -45,10 +45,6 @@ class HTMLOptGroupElement final : public nsGenericHTMLElement {
     SetHTMLAttr(nsGkAtoms::label, aLabel, aError);
   }
 
-  // Get the group label from its first element child legend or label
-  // attribute.
-  void GetRenderedLabel(nsAString& aLabel) const;
-
   // Get the select content element that contains this optgroup
   HTMLSelectElement* GetSelect() const;
 
