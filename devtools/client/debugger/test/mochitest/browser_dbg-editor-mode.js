@@ -10,9 +10,15 @@
 add_task(async function () {
   const dbg = await initDebugger("doc-scripts.html", "simple1.js");
 
+  info("Selecting a javascript source should set the correct mode");
   await selectSource(dbg, "simple1.js");
   is(getEditorFileMode(dbg), "javascript", "Mode is correct");
 
+  info("Selecting a html source should set the correct mode");
   await selectSource(dbg, "doc-scripts.html");
+  is(getEditorFileMode(dbg), "html", "Mode is correct");
+
+  info("Switch back to a javascript source should set the correct mode");
+  await selectSource(dbg, "simple1.js");
   is(getEditorFileMode(dbg), "javascript", "Mode is correct");
 });

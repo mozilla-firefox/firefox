@@ -2886,8 +2886,13 @@ class Editor extends EventEmitter {
    *                 Will be null for loading and error messages.
    * @param {boolean} options.saveTransactionToHistory
    *                 This determines if the transaction for this specific text change should be added to the undo/redo history.
+   * @param {string} options.mode
+   *                 This is the language type which determines the syntax highlighting to apply to the text content
    */
-  async setText(value, { documentId, saveTransactionToHistory = true } = {}) {
+  async setText(
+    value,
+    { documentId, saveTransactionToHistory = true, mode } = {}
+  ) {
     const cm = editors.get(this);
     const isWasm = typeof value !== "string" && "binary" in value;
 
@@ -2927,7 +2932,10 @@ class Editor extends EventEmitter {
     }
 
     if (this.config.cm6) {
-      if (cm.state.doc.toString() == value) {
+      if (
+        this.#currentDocumentId == documentId &&
+        cm.state.doc.toString() == value
+      ) {
         return;
       }
 
@@ -2942,7 +2950,19 @@ class Editor extends EventEmitter {
         annotations: [Transaction.addToHistory.of(saveTransactionToHistory)],
       });
 
-      const effects = [];
+      // The language has to be reconfigured in a separate dispatch, once the view
+      // holds the new document, as marker decorations get rebuilt from the view's
+      // viewport for any non marker effect.
+      const editorEffects = [];
+      if (mode) {
+        // Fallback to using js syntax highlighting if there is none found
+        const languageMode =
+          this.#languageModes.get(mode) ??
+          this.#languageModes.get(Editor.modes.javascript);
+        editorEffects.push(
+          this.#compartments.languageCompartment.reconfigure([languageMode])
+        );
+      }
       if (this.config?.lineNumbers) {
         const lineNumbersConfig = {
           domEventHandlers: this.#gutterDOMEventHandlers,
@@ -2950,7 +2970,7 @@ class Editor extends EventEmitter {
         if (isWasm) {
           lineNumbersConfig.formatNumber = this.getWasmLineNumberFormatter();
         }
-        effects.push(
+        editorEffects.push(
           this.#compartments.lineNumberCompartment.reconfigure(
             this.config.lineNumbers ? lineNumbers(lineNumbersConfig) : []
           )
@@ -2963,11 +2983,11 @@ class Editor extends EventEmitter {
       // is the exact document it was saved on.
       const scrollSnapshot = this.#scrollSnapshots.get(documentId);
 
-      effects.push(
+      editorEffects.push(
         scrollSnapshot ? scrollSnapshot : EditorView.scrollIntoView(0)
       );
 
-      await cm.dispatch({ effects });
+      await cm.dispatch({ effects: editorEffects });
 
       if (this.currentDocumentId) {
         // If there is no scroll snapshot explicitly cache the snapshot set as no scroll
