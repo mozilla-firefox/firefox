@@ -3332,6 +3332,12 @@ class _SessionStore {
       });
     }
 
+    // Restoring reuses the browser element. If there is state to restore,
+    // suppress the default about:blank load that adds an extra history entry.
+    if (cacheState || shouldUpdateCacheState) {
+      browser.setAttribute("nodefaultsrc", "true");
+    }
+
     TAB_LAZY_STATES.set(aTab, {
       url: browser.currentURI.spec,
       title: aTab.label,
