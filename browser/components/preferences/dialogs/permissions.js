@@ -2,6 +2,8 @@
  * License, v. 2.0. If a copy of the MPL was not distributed with this
  * file, You can obtain one at http://mozilla.org/MPL/2.0/. */
 
+/* import-globals-from permissionContainers.js */
+
 var { AppConstants } = ChromeUtils.importESModule(
   "resource://gre/modules/AppConstants.sys.mjs"
 );
@@ -81,6 +83,7 @@ var gPermissionManager = {
   _removeAllButton: null,
   _forcedHTTP: null,
   _capabilityFilter: null,
+  _showContainerColumn: false,
 
   onLoad() {
     let params = window.arguments[0];
@@ -200,6 +203,9 @@ var gPermissionManager = {
       gPermissionManager.buildPermissionsList(event.target);
     });
     siteCol.addEventListener("click", event => {
+      gPermissionManager.buildPermissionsList(event.target);
+    });
+    document.getElementById("containerCol").addEventListener("click", event => {
       gPermissionManager.buildPermissionsList(event.target);
     });
 
@@ -530,20 +536,37 @@ var gPermissionManager = {
     let disabledByPolicy = this._permissionDisabledByPolicy(permission);
     let richlistitem = document.createXULElement("richlistitem");
     richlistitem.setAttribute("origin", permission.origin);
+    richlistitem.setAttribute(
+      "displayorigin",
+      gPermissionContainers.displayOriginFor(permission.principal)
+    );
+    richlistitem.setAttribute(
+      "containerlabel",
+      gPermissionContainers.labelFor(permission.principal)
+    );
     let row = document.createXULElement("hbox");
     row.setAttribute("style", "flex: 1");
+
+    if (this._showContainerColumn) {
+      row.appendChild(
+        gPermissionContainers.createCell(document, permission.principal)
+      );
+    }
 
     let icon = document.createXULElement("image");
     icon.setAttribute("class", "website-icon");
     icon.setAttribute("src", DEFAULT_FAVICON);
     row.appendChild(icon);
-    this._setSiteIcon(permission.origin, icon);
+    this._setSiteIcon(permission.principal.originNoSuffix, icon);
 
     let hbox = document.createXULElement("hbox");
     let website = document.createXULElement("label");
     website.toggleAttribute("disabled", disabledByPolicy);
     website.setAttribute("class", "website-name-value");
-    website.setAttribute("value", permission.origin);
+    website.setAttribute(
+      "value",
+      gPermissionContainers.displayOriginFor(permission.principal)
+    );
     hbox.setAttribute("class", "website-name");
     hbox.setAttribute("style", "flex: 3 3; width: 0");
     hbox.appendChild(website);
@@ -730,6 +753,10 @@ var gPermissionManager = {
 
     let permissions = Array.from(this._permissions.values());
 
+    this._showContainerColumn =
+      gPermissionContainers.anyInContainer(permissions);
+    document.getElementById("containerCol").hidden = !this._showContainerColumn;
+
     for (let permission of permissions) {
       let richlistitem = this._createPermissionListItem(permission);
       frag.appendChild(richlistitem);
@@ -770,12 +797,8 @@ var gPermissionManager = {
     let sortFunc = null;
     switch (column.id) {
       case "siteCol":
-        sortFunc = (a, b) => {
-          return comp.compare(
-            a.getAttribute("origin"),
-            b.getAttribute("origin")
-          );
-        };
+      case "containerCol":
+        sortFunc = gPermissionContainers.sortFunctionFor(column.id);
         break;
 
       case "statusCol":
@@ -794,10 +817,6 @@ var gPermissionManager = {
         };
         break;
     }
-
-    let comp = new Services.intl.Collator(undefined, {
-      usage: "sort",
-    });
 
     let items = Array.from(frag.querySelectorAll("richlistitem"));
 

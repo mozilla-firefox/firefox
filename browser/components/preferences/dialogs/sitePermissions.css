@@ -7,7 +7,8 @@
 }
 
 .website-name,
-label.website-status {
+label.website-status,
+.website-container {
   overflow: hidden;
   text-overflow: ellipsis;
   padding-inline-start: 7px;
@@ -21,6 +22,7 @@ label.website-status {
 
 #siteCol,
 #statusCol,
+#containerCol,
 #permissionsBox > richlistitem {
   min-height: 35px;
 }
@@ -41,6 +43,69 @@ label.website-status {
   width: 35%;
 }
 
+#containerCol,
+.website-container {
+  flex: 0 0 auto;
+  width: 11em;
+}
+
+#containerCol[hidden] + #siteCol {
+  border-inline-start: none;
+}
+
+.website-container {
+  align-items: center;
+  padding-inline-end: var(--space-small);
+}
+
+.container-pill {
+  /* Fall back to current color if identity color is undefined. */
+  --container-pill-color: var(--identity-icon-color, currentColor);
+
+  align-items: center;
+  min-width: 0;
+  gap: var(--space-xxsmall);
+  padding: var(--space-xxsmall) var(--space-small);
+  border-radius: var(--border-radius-circle);
+
+  @media not (forced-colors) {
+    background-color: color-mix(in srgb, var(--container-pill-color) 15%, transparent);
+  }
+
+  @media -moz-pref("browser.nova.enabled") {
+    --container-pill-color: var(--identity-fill-color, currentColor);
+  }
+
+  &.container-pill-unknown {
+    --container-pill-color: currentColor;
+  }
+
+  /* Swap to text color to maintain constrast when selected */
+  richlistitem[selected] & {
+    --container-pill-color: currentColor;
+    /* Outline the pill instead of filling it. */
+    background-color: transparent;
+    outline: 1px solid color-mix(in srgb, currentColor 45%, transparent);
+    outline-offset: -1px;
+  }
+}
+
+.container-icon {
+  width: var(--icon-size);
+  height: var(--icon-size);
+  flex-shrink: 0;
+  -moz-context-properties: fill;
+  fill: var(--container-pill-color);
+}
+
+.container-name {
+  margin: 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  color: var(--container-pill-color);
+}
+
 menulist.website-status {
   margin-block: 1px;
   margin-inline: 0 5px;
@@ -48,17 +113,20 @@ menulist.website-status {
 }
 
 #siteCol > .treecol-sortdirection,
-#statusCol > .treecol-sortdirection {
+#statusCol > .treecol-sortdirection,
+#containerCol > .treecol-sortdirection {
   list-style-image: url("chrome://global/skin/icons/arrow-down.svg");
 }
 
 #siteCol[sortDirection="ascending"] > .treecol-sortdirection,
-#statusCol[sortDirection="ascending"] > .treecol-sortdirection {
+#statusCol[sortDirection="ascending"] > .treecol-sortdirection,
+#containerCol[sortDirection="ascending"] > .treecol-sortdirection {
   transform: rotate(180deg);
 }
 
 #siteCol[sortDirection="descending"] > .treecol-sortdirection,
-#statusCol[sortDirection="descending"] > .treecol-sortdirection {
+#statusCol[sortDirection="descending"] > .treecol-sortdirection,
+#containerCol[sortDirection="descending"] > .treecol-sortdirection {
   transform: rotate(0deg);
 }
 

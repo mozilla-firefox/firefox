@@ -16,12 +16,10 @@ let settingsButtonMap = {
 
 function checkMenulistPermissionItem(origin, state) {
   let doc = sitePermissionsDialog.document;
+  let richlistitem = doc.getElementById("permissionsBox").itemChildren[0];
 
-  let label = doc.getElementsByTagName("label")[3];
-  Assert.equal(label.textContent, origin);
-
-  let menulist = doc.getElementsByTagName("menulist")[0];
-  Assert.equal(menulist.value, state);
+  Assert.equal(richlistitem.querySelector(".website-name").textContent, origin);
+  Assert.equal(richlistitem.querySelector("menulist").value, state);
 }
 
 async function openPermissionsDialog(permissionType) {
@@ -41,6 +39,9 @@ async function openPermissionsDialog(permissionType) {
 }
 
 add_task(async function openSitePermissionsDialog() {
+  // Opening about:preferences takes a long time
+  requestLongerTimeout(2);
+
   await openPermissionsPane({ leaveOpen: true });
   await openPermissionsDialog("desktop-notification");
 });
