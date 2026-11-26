@@ -1821,7 +1821,8 @@ HTMLEditor::InsertParagraphSeparatorAsSubAction(const Element& aEditingHost) {
         // element.
         if (!HTMLEditUtils::IsSplittableNode(*aEditableBlockElement)) {
           return aDefaultParagraphSeparator == ParagraphSeparator::br ||
-                 !HTMLEditUtils::CanElementContainParagraph(aEditingHost) ||
+                 !HTMLEditUtils::CanElementContainParagraph(
+                     *aEditableBlockElement) ||
                  HTMLEditUtils::ShouldInsertLinefeedCharacter(
                      aCandidatePointToSplit, aEditingHost);
         }
