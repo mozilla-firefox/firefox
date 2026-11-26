@@ -73,6 +73,10 @@ add_task(
       "remote-profile-appdata"
     );
     registerCleanupFunction(() => IOUtils.remove(appData, { recursive: true }));
+    // DevEdition only starts the profile with this name.
+    let profileName = AppConstants.MOZ_DEV_EDITION
+      ? "dev-edition-default"
+      : "remote-test";
     await IOUtils.writeUTF8(
       PathUtils.join(appData, "profiles.ini"),
       `[General]
@@ -80,7 +84,7 @@ StartWithLastProfile=1
 Version=2
 
 [Profile0]
-Name=remote-test
+Name=${profileName}
 IsRelative=0
 Path=${link}
 Default=1
