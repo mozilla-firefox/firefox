@@ -1,32 +1,24 @@
-<RelativeLayout xmlns:android="http://schemas.android.com/apk/res/android"
+<FrameLayout xmlns:android="http://schemas.android.com/apk/res/android"
     android:layout_width="?android:actionBarSize"
-    android:layout_height="?android:actionBarSize"
-    android:gravity="center"
-    android:orientation="vertical">
+    android:layout_height="?android:actionBarSize">
 
-    <RelativeLayout
-        android:layout_width="match_parent"
-        android:layout_height="match_parent"
-        >
-        <ImageView
-            android:id="@+id/browser_action_icon"
-            android:layout_width="36dp"
-            android:layout_height="36dp"
-            android:layout_centerInParent="true"
-            />
-    </RelativeLayout>
+    <ImageView
+        android:id="@+id/browser_action_icon"
+        android:layout_width="36dp"
+        android:layout_height="36dp"
+        android:layout_gravity="center"
+        android:contentDescription="@string/browser_action"
+        />
 
     <TextView
         android:id="@+id/browser_action_badge"
         android:layout_width="wrap_content"
         android:layout_height="wrap_content"
+        android:layout_gravity="top|end"
         android:background="@drawable/rounded_bg"
         android:textColor="@color/colorPrimaryDark"
-        android:layout_alignParentRight="true"
-        android:paddingLeft="3dp"
-        android:paddingRight="3dp"
+        android:paddingHorizontal="3dp"
         android:layout_marginTop="3dp"
-        android:layout_marginRight="3dp"
-        android:text="12"
+        android:layout_marginEnd="3dp"
         />
-</RelativeLayout>
+</FrameLayout>

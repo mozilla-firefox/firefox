@@ -34,6 +34,7 @@
     <string name="media_playing">Media is playing</string>
     <string name="media_enter_pip">Picture-in-picture</string>
     <string name="new_tab">New tab</string>
+    <string name="browser_action">Extension action</string>
     <string name="install_addon">Install Add-on…</string>
     <string name="install_addon_hint">Add-on URL: https://addons.mozilla.org/…</string>
     <string name="update_addon">Update Add-on</string>
