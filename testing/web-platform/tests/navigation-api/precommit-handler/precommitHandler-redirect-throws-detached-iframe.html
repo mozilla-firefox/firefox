@@ -1,0 +1,29 @@
+<!doctype html>
+<script src="/resources/testharness.js"></script>
+<script src="/resources/testharnessreport.js"></script>
+<script src="../navigation-methods/return-value/resources/helpers.js"></script>
+<body>
+<script>
+
+promise_test(async t => {
+  let i = document.createElement("iframe");
+  i.src = "/common/blank.html";
+  const loaded = new Promise(resolve => i.onload = resolve);
+  t.add_cleanup(() => i.remove());
+  document.body.appendChild(i);
+  await loaded;
+
+  const iWindow = i.contentWindow;
+  const iDOMException = iWindow.DOMException;
+  i.contentWindow.navigation.onnavigate = t.step_func(e => {
+    e.intercept({
+      precommitHandler: t.step_func(controller => {
+        i.remove();
+        assert_throws_dom("InvalidStateError", iDOMException, () => controller.redirect("#"));
+      })
+    });
+  });
+  await assertBothRejectDOM(t, i.contentWindow.navigation.navigate("#"), "AbortError", iWindow, iDOMException);
+}, "redirect() in detached iframe");
+</script>
+</body>

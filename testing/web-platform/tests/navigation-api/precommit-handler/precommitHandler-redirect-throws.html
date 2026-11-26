@@ -27,22 +27,6 @@ promise_test(async t => {
 }, "redirect() after commit");
 
 promise_test(async t => {
-  let i = document.createElement("iframe");
-  i.src = "about:blank";
-  document.body.appendChild(i);
-  i.contentWindow.navigation.onnavigate = t.step_func(e => {
-    e.intercept({
-      precommitHandler: t.step_func(controller => {
-        let iframe_constructor = i.contentWindow.DOMException;
-        i.remove();
-        assert_throws_dom("InvalidStateError", iframe_constructor, () => controller.redirect("#"));
-      })
-    });
-  });
-  i.contentWindow.navigation.navigate("#");
-}, "redirect() in detached iframe");
-
-promise_test(async t => {
   navigation.onnavigate = t.step_func(e => {
     e.intercept({ precommitHandler: t.step_func(controller => {
       assert_throws_dom("SyntaxError", () => controller.redirect("https://example.com\u0000mozilla.org"));
