@@ -137,6 +137,22 @@ void SyncDBAction::RunWithDBOnTarget(
   MOZ_DIAGNOSTIC_ASSERT(aConn);
 
   nsresult rv = RunSyncWithDBOnTarget(aDirectoryMetadata, aDBDir, aConn);
+
+#ifdef MOZ_DIAGNOSTIC_ASSERT_ENABLED
+  // Bug 2086172: every Action scopes its own transaction, so one left open
+  // here means this action's commit failed without a rollback and later
+  // "commits" on this connection are savepoint releases that will be lost.
+  {
+    bool transactionInProgress = false;
+    if (NS_SUCCEEDED(aConn->GetTransactionInProgress(&transactionInProgress)) &&
+        transactionInProgress) {
+      MOZ_CRASH_UNSAFE_PRINTF(
+          "Transaction left open after SyncDBAction: rv=0x%08x",
+          static_cast<uint32_t>(rv));
+    }
+  }
+#endif
+
   aResolver->Resolve(rv);
 }
 

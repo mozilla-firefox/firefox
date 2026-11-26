@@ -234,6 +234,9 @@ class Manager final : public SafeRefCounted<Manager>, public Stringifyable {
   Listener* GetListener(ListenerId aListenerId) const;
 
   bool SetCacheIdOrphanedIfRefed(CacheId aCacheId);
+#ifdef MOZ_DIAGNOSTIC_ASSERT_ENABLED
+  bool IsCacheIdOrphaned(CacheId aCacheId) const;
+#endif
   bool SetBodyIdOrphanedIfRefed(const nsID& aBodyId);
   void NoteOrphanedBodyIdList(const nsTArray<nsID>& aDeletedBodyIdList);
 
