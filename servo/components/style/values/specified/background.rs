@@ -252,6 +252,11 @@ impl BackgroundClip {
         }
     }
 
+    /// Whether this value is only valid for `background-clip`, and not for `background-origin`.
+    pub fn is_background_only(&self) -> bool {
+        matches!(*self, Self::Text | Self::BorderArea | Self::BorderAreaText)
+    }
+
     /// Parse the value of the `background-clip` property.
     pub fn parse_for_background(
         context: &ParserContext,
