@@ -100,7 +100,7 @@ which will check for dependencies and start the build.
 This will take a while; a few minutes to a few hours depending on your hardware.
 
 :::{note}
-If you build Firefox often, add `ac_add_options \-\-with-ccache=sccache` to .mozconfig.
+If you build Firefox often, add `ac_add_options --with-ccache=sccache` to .mozconfig.
 sccache will significantly speed up your builds by caching compilation results.
 The Firefox build system will download sccache automatically.
 :::
