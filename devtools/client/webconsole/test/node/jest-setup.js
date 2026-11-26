@@ -11,6 +11,11 @@ const {
 } = require("resource://devtools/client/shared/test-helpers/shared-node-helpers.js");
 setMocksInGlobal();
 
+const {
+  createLocalizationMock,
+} = require("resource://devtools/client/shared/test-helpers/jest-fixtures/Localization.js");
+global.Localization = createLocalizationMock(require("@fluent/bundle"));
+
 // Configure enzyme with React 16 adapter.
 const Enzyme = require("enzyme");
 const Adapter = require("enzyme-adapter-react-16");
