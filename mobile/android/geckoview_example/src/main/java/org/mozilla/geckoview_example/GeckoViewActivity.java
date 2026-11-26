@@ -3076,9 +3076,9 @@ public class GeckoViewActivity extends AppCompatActivity
         }
       }
       if (camera != null && microphone != null) {
-        Log.d(LOGTAG, "ExampleDeviceDelegate:onRecordingDeviceEvent display alert_mic_camera");
+        Log.d(LOGTAG, "ExampleDeviceDelegate:onRecordingDeviceEvent display alert_camera");
         message = getResources().getString(R.string.device_sharing_camera_and_mic);
-        icon = R.drawable.alert_mic_camera;
+        icon = R.drawable.alert_camera;
       } else if (camera != null) {
         Log.d(LOGTAG, "ExampleDeviceDelegate:onRecordingDeviceEvent display alert_camera");
         message = getResources().getString(R.string.device_sharing_camera);
