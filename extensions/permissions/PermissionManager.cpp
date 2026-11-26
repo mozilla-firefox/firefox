@@ -51,6 +51,7 @@
 #include "nsIPrefBranch.h"
 #include "nsISupportsPrimitives.h"
 #include "nsIPrincipal.h"
+#include "nsISiteContainerService.h"
 #include "nsIURIMutator.h"
 #include "nsIWritablePropertyBag2.h"
 #include "nsReadLine.h"
@@ -298,6 +299,16 @@ static bool StripOriginString(const nsACString& aOrigin, bool aForceStripOA,
   attrs.CreateSuffix(oaSuffix);
   aStripped.Append(oaSuffix);
   return true;
+}
+
+// Returns whether a default permission for aDefaultOrigin applies to aOrigin
+// when attributes are stripped
+static bool DefaultOriginAppliesTo(const nsACString& aDefaultOrigin,
+                                   const nsACString& aOrigin) {
+  nsAutoCString origin, defaultOrigin;
+  return StripOriginString(aOrigin, true, origin) &&
+         StripOriginString(aDefaultOrigin, true, defaultOrigin) &&
+         origin == defaultOrigin;
 }
 
 void OriginAppendOASuffix(OriginAttributes aOriginAttributes,
@@ -871,6 +882,16 @@ nsresult PermissionManager::Init() {
                                  true);
     observerService->AddObserver(this, "last-pb-context-exited", true);
     observerService->AddObserver(this, "browsing-context-discarded", true);
+    observerService->AddObserver(
+        this, "contextual-identity-service-load-finished", true);
+    observerService->AddObserver(
+        this, "contextual-identity-service-sync-load-finished", true);
+    observerService->AddObserver(this, "contextual-identity-created", true);
+    observerService->AddObserver(this, "contextual-identity-policy-created",
+                                 true);
+    observerService->AddObserver(this, "contextual-identity-deleted", true);
+    observerService->AddObserver(this, "contextual-identity-policy-deleted",
+                                 true);
   }
 
   if (XRE_IsParentProcess()) {
@@ -1868,6 +1889,8 @@ PermissionManager::AddDefaultFromPrincipal(nsIPrincipal* aPrincipal,
                               origin);
   NS_ENSURE_SUCCESS(rv, rv);
 
+  nsTArray<uint32_t> userContextIds = GetAllUserContextIds();
+
   MonitorAutoLock lock(mMonitor);
 
   DefaultEntry entry;
@@ -1905,7 +1928,7 @@ PermissionManager::AddDefaultFromPrincipal(nsIPrincipal* aPrincipal,
 
   // So far, we have only updated mDefaultEntriesForImport for later recovery.
   // Now, we actually need to import this change into the permission manager.
-  return ImportDefaultEntry(entry);
+  return ImportDefaultEntry(entry, userContextIds);
 }
 
 NS_IMETHODIMP
@@ -1987,7 +2010,7 @@ nsresult PermissionManager::AddInternal(
     int64_t aID, uint32_t aExpireType, int64_t aExpireTime,
     int64_t aModificationTime, NotifyOperationType aNotifyOperation,
     DBOperationType aDBOperation, const nsACString* aOriginString,
-    const bool aAllowPersistInPrivateBrowsing) {
+    const bool aAllowPersistInPrivateBrowsing, const bool aStoreUnknownAction) {
   MOZ_ASSERT_IF(!IsChildProcess(), NS_IsMainThread());
 
   // If this is a default permission, no changes should not be written to disk.
@@ -2087,7 +2110,8 @@ nsresult PermissionManager::AddInternal(
   OperationType op;
   int32_t index = entry->GetPermissionIndex(typeIndex);
   if (index == -1) {
-    if (aPermission == nsIPermissionManager::UNKNOWN_ACTION) {
+    if (aPermission == nsIPermissionManager::UNKNOWN_ACTION &&
+        !aStoreUnknownAction) {
       op = eOperationNone;
     } else {
       op = eOperationAdding;
@@ -2210,10 +2234,11 @@ nsresult PermissionManager::AddInternal(
       // default entry in-memory
       if (oldPermissionEntry.mID != cIDPermissionIsDefault) {
         for (const DefaultEntry& defaultEntry : mDefaultEntriesForImport) {
-          if (defaultEntry.mType == aType && defaultEntry.mOrigin == origin &&
+          if (defaultEntry.mType == aType &&
               defaultEntry.mPermission !=
-                  nsIPermissionManager::UNKNOWN_ACTION) {
-            rv = ImportDefaultEntry(defaultEntry);
+                  nsIPermissionManager::UNKNOWN_ACTION &&
+              DefaultOriginAppliesTo(defaultEntry.mOrigin, origin)) {
+            rv = ImportDefaultEntryForPrincipal(aPrincipal, defaultEntry);
             NS_ENSURE_SUCCESS(rv, rv);
             break;
           }
@@ -2742,6 +2767,8 @@ nsresult PermissionManager::RemoveAllFromIPC() {
 nsresult PermissionManager::RemoveAllInternal(bool aNotifyObservers) {
   ENSURE_NOT_CHILD_PROCESS;
 
+  nsTArray<uint32_t> userContextIds = GetUserContextIdsUnlocked();
+
   EnsureReadCompleted();
 
   // Let's broadcast the removeAll() to any content process.
@@ -2757,7 +2784,7 @@ nsresult PermissionManager::RemoveAllInternal(bool aNotifyObservers) {
   RemoveAllFromMemory();
 
   // Re-import the defaults
-  ImportLatestDefaults();
+  ImportLatestDefaults(userContextIds);
 
   if (aNotifyObservers) {
     NotifyObservers(nullptr, u"cleared"_ns);
@@ -3194,6 +3221,15 @@ NS_IMETHODIMP PermissionManager::Observe(nsISupports* aSubject,
                                          const char16_t* someData) {
   ENSURE_NOT_CHILD_PROCESS;
 
+  if (!nsCRT::strcmp(aTopic, "contextual-identity-service-load-finished") ||
+      !nsCRT::strcmp(aTopic,
+                     "contextual-identity-service-sync-load-finished")) {
+    mUserContextsLoaded = true;
+    nsTArray<uint32_t> userContextIds = GetAllUserContextIds();
+    MonitorAutoLock lock{mMonitor};
+    return ImportDefaultsForUserContexts(userContextIds);
+  }
+
   // browserId to clean up after releasing the monitor, if needed.
   uint64_t discardedBrowserId = 0;
 
@@ -3223,6 +3259,22 @@ NS_IMETHODIMP PermissionManager::Observe(nsISupports* aSubject,
       DebugOnly<nsresult> rv = RemoveAllForPrivateBrowsing();
       NS_WARNING_ASSERTION(NS_SUCCEEDED(rv),
                            "Failed to clear private browsing permissions");
+    } else if (!nsCRT::strcmp(aTopic, "contextual-identity-created") ||
+               !nsCRT::strcmp(aTopic, "contextual-identity-policy-created")) {
+      NS_ENSURE_ARG(someData);
+      nsresult rv;
+      const uint32_t userContextId =
+          nsDependentString(someData).ToUnsignedInteger(&rv);
+      NS_ENSURE_SUCCESS(rv, rv);
+      return ImportDefaultsForUserContexts({userContextId});
+    } else if (!nsCRT::strcmp(aTopic, "contextual-identity-deleted") ||
+               !nsCRT::strcmp(aTopic, "contextual-identity-policy-deleted")) {
+      NS_ENSURE_ARG(someData);
+      nsresult rv;
+      const uint32_t userContextId =
+          nsDependentString(someData).ToUnsignedInteger(&rv);
+      NS_ENSURE_SUCCESS(rv, rv);
+      RemoveDefaultsForUserContext(userContextId);
     } else if (!nsCRT::strcmp(aTopic, "browsing-context-discarded")) {
       // Only clean up on true discard, not BC replacement (where BrowserId
       // transfers to the new BC).
@@ -3697,7 +3749,7 @@ void PermissionManager::CompleteRead() {
 
   nsresult rv;
 
-  nsTArray<ReadEntry> entries = std::move(mReadEntries);
+  auto entries = std::move(mReadEntries);
 
   for (const ReadEntry& entry : entries) {
     nsCOMPtr<nsIPrincipal> principal;
@@ -3710,9 +3762,12 @@ void PermissionManager::CompleteRead() {
 
     DBOperationType op = entry.mFromMigration ? eWriteToDB : eNoDBOperation;
 
+    // Removals of default permissions are stored as UNKNOWN_ACTION. Keep them
+    // so the defaults imported afterwards don't replace them.
     rv = AddInternal(principal, entry.mType, entry.mPermission, entry.mId,
                      entry.mExpireType, entry.mExpireTime,
-                     entry.mModificationTime, eDontNotify, op, &entry.mOrigin);
+                     entry.mModificationTime, eDontNotify, op, &entry.mOrigin,
+                     false, true);
     (void)NS_WARN_IF(NS_FAILED(rv));
   }
 }
@@ -4102,17 +4157,25 @@ void PermissionManager::EnsureReadCompleted() {
     case eInitializing:
       MOZ_CRASH("This state is impossible!");
 
-    case eDBInitialized:
+    case eDBInitialized: {
       // child processes transitions from eInitializing -> eReady
       ENSURE_NOT_CHILD_PROCESS_NORET;
+
+      nsTArray<uint32_t> userContextIds = GetUserContextIdsUnlocked();
+      if (mState != eDBInitialized) {
+        // The state changed while the monitor was released.
+        EnsureReadCompleted();
+        return;
+      }
 
       mState = eReady;
 
       CompleteMigrations();
-      ImportLatestDefaults();
       CompleteRead();
+      ImportLatestDefaults(userContextIds);
 
-      [[fallthrough]];
+      break;
+    }
 
     case eReady:
       [[fallthrough]];
@@ -4237,8 +4300,111 @@ void PermissionManager::AddDefaultEntryForImport(
   entry->mType = aType;
 }
 
+nsresult PermissionManager::ImportDefaultEntryForPrincipal(
+    nsIPrincipal* aPrincipal, const DefaultEntry& aDefaultEntry) {
+  // the import file format doesn't handle modification times, so we use
+  // 0, which AddInternal will convert to now()
+  int64_t modificationTime = 0;
+
+  return AddInternal(aPrincipal, aDefaultEntry.mType, aDefaultEntry.mPermission,
+                     cIDPermissionIsDefault, nsIPermissionManager::EXPIRE_NEVER,
+                     0, modificationTime, eDontNotify, eNoDBOperation);
+}
+
+nsresult PermissionManager::ImportDefaultEntryForOriginAttributes(
+    nsIPrincipal* aPrincipal, const DefaultEntry& aDefaultEntry,
+    const OriginAttributes& aOriginAttributes) {
+  nsCOMPtr<nsIPrincipal> principal =
+      BasePrincipal::Cast(aPrincipal)
+          ->CloneForcingOriginAttributes(aOriginAttributes);
+  // May return nullptr if clone fails.
+  if (NS_WARN_IF(!principal)) {
+    return NS_ERROR_FAILURE;
+  }
+
+  return ImportDefaultEntryForPrincipal(principal, aDefaultEntry);
+}
+
+nsresult PermissionManager::ImportDefaultEntryForUserContexts(
+    const DefaultEntry& aDefaultEntry,
+    const nsTArray<uint32_t>& aUserContextIds) {
+  if (aUserContextIds.IsEmpty() ||
+      !StaticPrefs::permissions_isolateBy_userContext() ||
+      IsOAForceStripPermission(aDefaultEntry.mType)) {
+    return NS_OK;
+  }
+
+  nsCOMPtr<nsIPrincipal> principal;
+  nsresult rv = GetPrincipalFromOrigin(aDefaultEntry.mOrigin, false,
+                                       getter_AddRefs(principal));
+  if (NS_FAILED(rv)) {
+    NS_WARNING("Couldn't import an origin permission - malformed origin");
+    return rv;
+  }
+
+  for (const uint32_t userContextId : aUserContextIds) {
+    // The default user context is already handled by ImportDefaultEntry
+    if (userContextId == nsScriptSecurityManager::DEFAULT_USER_CONTEXT_ID) {
+      continue;
+    }
+
+    OriginAttributes attrs = OriginAttributes(principal->OriginAttributesRef());
+    attrs.mUserContextId = userContextId;
+
+    rv = ImportDefaultEntryForOriginAttributes(principal, aDefaultEntry, attrs);
+    if (NS_FAILED(rv)) {
+      NS_WARNING(
+          "There was a problem importing an origin permission for a container");
+      return rv;
+    }
+  }
+
+  return NS_OK;
+}
+
+nsTArray<uint32_t> PermissionManager::GetUserContextIdsUnlocked() {
+  if (!mUserContextsLoaded) {
+    return {};
+  }
+  MonitorAutoUnlock unlock{mMonitor};
+  return GetAllUserContextIds();
+}
+
+nsTArray<uint32_t> PermissionManager::GetAllUserContextIds() {
+  MOZ_ASSERT(NS_IsMainThread());
+  mMonitor.AssertNotCurrentThreadOwns();
+
+  nsTArray<uint32_t> userContextIds;
+
+  // Asking before ContextualIdentityService has loaded would load it
+  // synchronously from disk. The defaults are imported into the containers
+  // once it reports being loaded.
+  if (!mUserContextsLoaded) {
+    return userContextIds;
+  }
+
+  static constexpr const char* kSiteContainerServiceContractID =
+      "@mozilla.org/site-container-service;1";
+
+  nsCOMPtr<nsISiteContainerService> siteContainers =
+      do_GetService(kSiteContainerServiceContractID);
+  nsTArray<uint32_t> privateUserContextIds;
+  if (!siteContainers ||
+      NS_FAILED(siteContainers->GetPublicUserContextIds(userContextIds)) ||
+      NS_FAILED(
+          siteContainers->GetPrivateUserContextIds(privateUserContextIds))) {
+    NS_WARNING("Couldn't get the containers to duplicate the defaults into");
+    userContextIds.Clear();
+    return userContextIds;
+  }
+
+  userContextIds.AppendElements(std::move(privateUserContextIds));
+  return userContextIds;
+}
+
 nsresult PermissionManager::ImportDefaultEntry(
-    const DefaultEntry& aDefaultEntry) {
+    const DefaultEntry& aDefaultEntry,
+    const nsTArray<uint32_t>& aUserContextIds) {
   nsCOMPtr<nsIPrincipal> principal;
   nsresult rv = GetPrincipalFromOrigin(
       aDefaultEntry.mOrigin, IsOAForceStripPermission(aDefaultEntry.mType),
@@ -4248,13 +4414,7 @@ nsresult PermissionManager::ImportDefaultEntry(
     return rv;
   }
 
-  // the import file format doesn't handle modification times, so we use
-  // 0, which AddInternal will convert to now()
-  int64_t modificationTime = 0;
-
-  rv = AddInternal(principal, aDefaultEntry.mType, aDefaultEntry.mPermission,
-                   cIDPermissionIsDefault, nsIPermissionManager::EXPIRE_NEVER,
-                   0, modificationTime, eDontNotify, eNoDBOperation);
+  rv = ImportDefaultEntryForPrincipal(principal, aDefaultEntry);
   if (NS_FAILED(rv)) {
     NS_WARNING("There was a problem importing an origin permission");
     return rv;
@@ -4265,17 +4425,8 @@ nsresult PermissionManager::ImportDefaultEntry(
     // Also import the permission for private browsing.
     OriginAttributes attrs = OriginAttributes(principal->OriginAttributesRef());
     attrs.mPrivateBrowsingId = 1;
-    nsCOMPtr<nsIPrincipal> pbPrincipal =
-        BasePrincipal::Cast(principal)->CloneForcingOriginAttributes(attrs);
-    // May return nullptr if clone fails.
-    if (NS_WARN_IF(NS_FAILED(rv))) {
-      return rv;
-    }
 
-    rv =
-        AddInternal(pbPrincipal, aDefaultEntry.mType, aDefaultEntry.mPermission,
-                    cIDPermissionIsDefault, nsIPermissionManager::EXPIRE_NEVER,
-                    0, modificationTime, eDontNotify, eNoDBOperation);
+    rv = ImportDefaultEntryForOriginAttributes(principal, aDefaultEntry, attrs);
     if (NS_FAILED(rv)) {
       NS_WARNING(
           "There was a problem importing an origin permission for private "
@@ -4284,17 +4435,104 @@ nsresult PermissionManager::ImportDefaultEntry(
     }
   }
 
-  return NS_OK;
+  return ImportDefaultEntryForUserContexts(aDefaultEntry, aUserContextIds);
+}
+
+nsresult PermissionManager::ImportDefaultsForUserContexts(
+    const nsTArray<uint32_t>& aUserContextIds) {
+  // If the default permissions haven't been imported yet, ImportLatestDefaults
+  // will look the containers up itself, so there is nothing to do here.
+  if (mState != eReady) {
+    return NS_OK;
+  }
+
+  nsresult rv = NS_OK;
+
+  for (const DefaultEntry& entry : mDefaultEntriesForImport) {
+    const nsresult entryRv =
+        ImportDefaultEntryForUserContexts(entry, aUserContextIds);
+    if (NS_FAILED(entryRv)) {
+      rv = entryRv;
+    }
+  }
+
+  return rv;
+}
+
+void PermissionManager::RemoveDefaultsForUserContext(uint32_t aUserContextId) {
+  EnsureReadCompleted();
+
+  // The copies of the defaults to remove from the container as (principal,
+  // permission type, origin) tuples.
+  Vector<std::tuple<nsCOMPtr<nsIPrincipal>, nsCString, nsCString>, 10> defaults;
+  for (auto iter = mPermissionTable.Iter(); !iter.Done(); iter.Next()) {
+    PermissionHashKey* entry = iter.Get();
+
+    OriginAttributes attrs;
+    nsAutoCString originNoSuffix;
+    if (!attrs.PopulateFromOrigin(entry->GetKey()->mOrigin, originNoSuffix) ||
+        attrs.mUserContextId != aUserContextId) {
+      continue;
+    }
+
+    // A container holds three kinds of entries:
+    // - Copies of the defaults. They are removed through AddInternal below, so
+    //   that observers and content processes are notified.
+    // - Removals of defaults by the user, stored as UNKNOWN_ACTION. Passing
+    //   UNKNOWN_ACTION to AddInternal wouldn't change them, and removing them
+    //   there would restore the default, so they are removed directly, along
+    //   with their database rows.
+    // - Permissions set by the user. They are removed by the clear data
+    //   service.
+    for (const PermissionEntry& permEntry : entry->GetPermissions()) {
+      if (permEntry.mID != cIDPermissionIsDefault) {
+        if (permEntry.mPermission == nsIPermissionManager::UNKNOWN_ACTION) {
+          UpdateDB(eOperationRemoving, permEntry.mID, ""_ns, ""_ns, 0,
+                   nsIPermissionManager::EXPIRE_NEVER, 0, 0);
+        }
+        continue;
+      }
+      const nsCString& type = mTypeArray[permEntry.mType];
+      nsCOMPtr<nsIPrincipal> principal;
+      if (NS_SUCCEEDED(GetPrincipalFromOrigin(entry->GetKey()->mOrigin,
+                                              IsOAForceStripPermission(type),
+                                              getter_AddRefs(principal)))) {
+        (void)defaults.emplaceBack(principal, type, entry->GetKey()->mOrigin);
+      } else {
+        NS_WARNING("Couldn't remove a default permission from a container");
+      }
+    }
+
+    entry->GetPermissions().RemoveElementsBy(
+        [](const PermissionEntry& aPermEntry) {
+          return aPermEntry.mID != cIDPermissionIsDefault &&
+                 aPermEntry.mPermission == nsIPermissionManager::UNKNOWN_ACTION;
+        });
+
+    if (entry->GetPermissions().IsEmpty()) {
+      iter.Remove();
+    }
+  }
+
+  // Unlike removing them directly, this notifies observers and content
+  // processes.
+  for (auto& [principal, type, origin] : defaults) {
+    (void)AddInternal(principal, type, nsIPermissionManager::UNKNOWN_ACTION,
+                      cIDPermissionIsDefault,
+                      nsIPermissionManager::EXPIRE_NEVER, 0, 0, eNotify,
+                      eNoDBOperation, &origin);
+  }
 }
 
 // ImportLatestDefaults will import the latest default permissions read during
 // the last DB initialization.
-nsresult PermissionManager::ImportLatestDefaults() {
+nsresult PermissionManager::ImportLatestDefaults(
+    const nsTArray<uint32_t>& aUserContextIds) {
   MOZ_ASSERT(NS_IsMainThread());
   MOZ_ASSERT(mState == eReady);
 
   for (const DefaultEntry& entry : mDefaultEntriesForImport) {
-    (void)ImportDefaultEntry(entry);
+    (void)ImportDefaultEntry(entry, aUserContextIds);
   }
 
   return NS_OK;

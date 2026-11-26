@@ -4,7 +4,8 @@
 # * "origin" should be used for matchtype, "host" is supported for legacy reasons
 # * type is a string that identifies the type of permission (e.g. "cookie")
 # * permission is an integer between 1 and 15
-# Permissions defined here will also be set for private browsing.
+# Permissions defined here will also be set for private browsing and for
+# every container.
 # See PermissionManager.cpp for more...
 
 # UITour
