@@ -63,10 +63,19 @@ linux64-enterprise/opt:
     treeherder:
         platform: linux64-enterprise/opt
         symbol: Bent
-        tier: 2
+        tier:
+            by-project:
+                enterprise-firefox: 1
+                enterprise-firefox-try: 1
+                default: 2
     worker:
         max-run-time: 7200
         env:
+            MOZ_AUTOMATION_PACKAGE_TESTS:
+                by-project:
+                    enterprise-firefox: "1"
+                    enterprise-firefox-try: "1"
+                    default: null
             # bug 1690154 - enable full symbols on all branches, but only
             # upload them on the official set. In conjunction with
             # `enable-full-crashsymbols`.
@@ -82,7 +91,7 @@ linux64-enterprise/opt:
         script: "mozharness/scripts/fx_desktop_build.py"
         secrets: true
         tooltool-downloads: public
-    run-on-projects: ['mozilla-central']
+    run-on-projects: ['mozilla-central', 'enterprise-firefox']
     use-sccache: true
     use-python: "3.11"
     fetches:
@@ -502,10 +511,19 @@ linux64-enterprise/debug:
     treeherder:
         platform: linux64-enterprise/debug
         symbol: Bent
-        tier: 2
+        tier:
+            by-project:
+                enterprise-firefox: 1
+                enterprise-firefox-try: 1
+                default: 2
     worker:
         max-run-time: 5400
         env:
+            MOZ_AUTOMATION_PACKAGE_TESTS:
+                by-project:
+                    enterprise-firefox: "1"
+                    enterprise-firefox-try: "1"
+                    default: null
             # bug 1690154 - enable full symbols on all branches, but only
             # upload them on the official set. In conjunction with
             # `enable-full-crashsymbols`.
@@ -522,7 +540,7 @@ linux64-enterprise/debug:
         secrets: true
         custom-build-variant-cfg: debug
         tooltool-downloads: public
-    run-on-projects: ['mozilla-central']
+    run-on-projects: ['mozilla-central', 'enterprise-firefox']
     use-sccache: true
     use-python: "3.11"
     fetches:
@@ -1791,7 +1809,11 @@ linux64-aarch64-enterprise/opt:
     treeherder:
         platform: linux64-aarch64-enterprise/opt
         symbol: Bent
-        tier: 2
+        tier:
+            by-project:
+                enterprise-firefox: 1
+                enterprise-firefox-try: 1
+                default: 2
     worker:
         max-run-time: 7200
     mozconfig:
@@ -1806,7 +1828,7 @@ linux64-aarch64-enterprise/opt:
         script: "mozharness/scripts/fx_desktop_build.py"
         secrets: true
         tooltool-downloads: public
-    run-on-projects: ['mozilla-central']
+    run-on-projects: ['mozilla-central', 'enterprise-firefox']
     use-sccache: true
     fetches:
         toolchain:
@@ -1878,7 +1900,11 @@ linux64-aarch64-enterprise/debug:
     treeherder:
         platform: linux64-aarch64-enterprise/debug
         symbol: Bent
-        tier: 2
+        tier:
+            by-project:
+                enterprise-firefox: 1
+                enterprise-firefox-try: 1
+                default: 2
     worker:
         max-run-time: 7200
     mozconfig:
@@ -1894,7 +1920,7 @@ linux64-aarch64-enterprise/debug:
         custom-build-variant-cfg: debug
         secrets: true
         tooltool-downloads: public
-    run-on-projects: ['mozilla-central']
+    run-on-projects: ['mozilla-central', 'enterprise-firefox']
     use-sccache: true
     fetches:
         toolchain:
