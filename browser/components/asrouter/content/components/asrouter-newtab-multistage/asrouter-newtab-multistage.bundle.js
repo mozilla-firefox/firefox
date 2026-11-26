@@ -1391,7 +1391,7 @@ const external_ReactDOM_namespaceObject = ReactDOM;
  * You can obtain one at http://mozilla.org/MPL/2.0/. */
 
 
-const CONFIGURABLE_STYLES = ["background", "color", "display", "fontSize", "fontWeight", "letterSpacing", "lineHeight", "marginBlock", "marginBlockStart", "marginBlockEnd", "marginInline", "paddingBlock", "paddingBlockStart", "paddingBlockEnd", "paddingInline", "paddingInlineStart", "paddingInlineEnd", "textAlign", "whiteSpace", "width", "height", "border", "borderBlockStart", "borderBlockEnd", "top", "bottom", "left", "right", "inset", "insetBlock", "insetInline", "minHeight", "minWidth", "maxWidth"];
+const CONFIGURABLE_STYLES = ["background", "color", "display", "fontSize", "fontWeight", "letterSpacing", "lineHeight", "marginBlock", "marginBlockStart", "marginBlockEnd", "marginInline", "paddingBlock", "paddingBlockStart", "paddingBlockEnd", "paddingInline", "paddingInlineStart", "paddingInlineEnd", "textAlign", "textWrap", "whiteSpace", "width", "height", "border", "borderBlockStart", "borderBlockEnd", "top", "bottom", "left", "right", "inset", "insetBlock", "insetInline", "minHeight", "minWidth", "maxWidth"];
 const ZAP_SIZE_THRESHOLD = 160;
 
 /**
@@ -2872,6 +2872,41 @@ const CarouselNav = ({
 
 
 
+
+/**
+ * A note shown under single select tiles when a tile with a `selectedNotice` is
+ * selected.
+ *
+ * The live region wrapper is always rendered, even when the notice is hidden,
+ * so that assistive technology announces the notice when it later appears.
+ *
+ * @param {object} [notice] the selected tile's `selectedNotice` config. `text`
+ *   is a LinkParagraph text value: a Localized object, or an array of segments
+ *   where a segment with an `href` renders as a link.
+ * @param {Function} handleAction the screen's action handler
+ */
+const SelectedNotice = ({
+  notice,
+  handleAction
+}) => /*#__PURE__*/external_React_default().createElement("div", {
+  className: "single-select-notice-region",
+  role: "status"
+}, notice?.text ? /*#__PURE__*/external_React_default().createElement("div", {
+  className: "single-select-notice"
+}, /*#__PURE__*/external_React_default().createElement("div", {
+  className: "single-select-notice-icon-wrapper"
+}, /*#__PURE__*/external_React_default().createElement("img", {
+  className: "single-select-notice-icon",
+  src: notice.iconURL || "chrome://global/skin/icons/info-filled.svg",
+  alt: "",
+  role: "presentation"
+})), /*#__PURE__*/external_React_default().createElement(LinkParagraph, {
+  text_content: {
+    text: notice.text
+  },
+  handleAction: handleAction
+})) : null);
+
 // This component was formerly "Themes" and continues to support theme
 const SingleSelect = ({
   activeSingleSelectSelections = {},
@@ -2935,6 +2970,8 @@ const SingleSelect = ({
   }, [activeSingleSelectSelections]); // eslint-disable-line react-hooks/exhaustive-deps
 
   const CONFIGURABLE_STYLES = ["background", "backgroundImage", "border", "borderRadius", "height", "marginBlock", "marginBlockStart", "marginBlockEnd", "marginInline", "paddingBlock", "paddingBlockStart", "paddingBlockEnd", "paddingInline", "paddingInlineStart", "paddingInlineEnd", "width"];
+  const hasSelectedNotice = isSingleSelect && content.tiles?.data.some(tile => tile.selectedNotice);
+  const selectedNotice = content.tiles?.data.find(tile => tile.id === activeSingleSelectSelections[singleSelectId])?.selectedNotice;
   return /*#__PURE__*/external_React_default().createElement("div", {
     className: `tiles-single-select-container ${isCarousel ? "carousel" : ""}`
   }, isCarousel ? /*#__PURE__*/external_React_default().createElement(CarouselNav, {
@@ -3018,7 +3055,7 @@ const SingleSelect = ({
     }, /*#__PURE__*/external_React_default().createElement("input", {
       type: "radio",
       value: value,
-      name: inputName,
+      name: isSingleSelect ? `select-item-${singleSelectId}` : inputName,
       checked: selected,
       className: "sr-only input",
       disabled: inert,
@@ -3046,7 +3083,10 @@ const SingleSelect = ({
       inputName: inputName,
       inert: isCarousel && !selected
     }) : ""));
-  }))));
+  }))), hasSelectedNotice ? /*#__PURE__*/external_React_default().createElement(SelectedNotice, {
+    notice: selectedNotice,
+    handleAction: handleAction
+  }) : null);
 };
 ;// ./content-src/components/MobileDownloads.jsx
 /* This Source Code Form is subject to the terms of the Mozilla Public
