@@ -29,6 +29,7 @@ struct _DnsRecordA;
 #ifdef HAVE_RES_NINIT
 struct __res_state;
 #endif
+struct sockaddr;
 
 namespace mozilla {
 namespace net {
@@ -150,6 +151,13 @@ nsresult CreateAndResolveMockHTTPSRecord(const nsACString& aHost,
                                          nsIDNSService::DNSFlags aFlags,
                                          TypeRecordResultType& aResult,
                                          uint32_t& aTTL);
+
+// Converts an AF_INET/AF_INET6 sockaddr to a NetAddr with a zero port. Returns
+// false for other families.
+bool SockaddrToNetAddr(const struct sockaddr* aSockAddr, NetAddr& aOut);
+
+// Appends aAddr to aOut unless it is already there.
+void AppendResolverAddr(nsTArray<NetAddr>& aOut, const NetAddr& aAddr);
 
 class NativeDNSResolverOverride : public nsINativeDNSResolverOverride {
   NS_DECL_THREADSAFE_ISUPPORTS

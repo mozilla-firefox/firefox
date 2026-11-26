@@ -49,6 +49,7 @@ SOURCES += [
 
 if CONFIG["MOZ_WIDGET_TOOLKIT"] == "windows":
     SOURCES += ["PlatformDNSWin.cpp"]
+    OS_LIBS += ["iphlpapi"]
 elif CONFIG["OS_TARGET"] == "Linux":
     SOURCES += ["PlatformDNSUnix.cpp"]
     OS_LIBS += ["resolv"]
@@ -57,6 +58,7 @@ elif CONFIG["OS_TARGET"] == "FreeBSD":
 elif CONFIG["MOZ_WIDGET_TOOLKIT"] == "cocoa":
     SOURCES += ["PlatformDNSMac.cpp"]
     SOURCE_HEADERS += ["PlatformDNSMac.h"]
+    OS_LIBS += ["resolv"]
 elif CONFIG["MOZ_WIDGET_TOOLKIT"] == "android":
     SOURCES += ["PlatformDNSAndroid.cpp"]
 else:

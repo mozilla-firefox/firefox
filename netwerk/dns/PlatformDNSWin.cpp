@@ -6,6 +6,7 @@
 #include "mozilla/Maybe.h"
 #include "mozilla/ScopeExit.h"
 #include "mozilla/StaticPrefs_network.h"
+#include "mozilla/UniquePtr.h"
 #include "mozilla/glean/NetwerkMetrics.h"
 #include "mozilla/net/DNSPacket.h"
 #include "nsIDNSService.h"
@@ -18,6 +19,7 @@
 #  undef UNICODE
 #  include <ws2tcpip.h>
 #  undef GetAddrInfo
+#  include <iphlpapi.h>
 #  include <windns.h>
 #endif  // DNSQUERY_AVAILABLE
 
@@ -25,6 +27,43 @@ namespace mozilla::net {
 
 #define LOG(msg, ...) \
   MOZ_LOG(gGetAddrInfoLog, LogLevel::Debug, ("[DNS]: " msg, ##__VA_ARGS__))
+
+// Captures every unencrypted resolver configured on the system by enumerating
+// the DNS servers of all operational network adapters. Used for RFC 9462 DDR
+// verification: any of these resolvers may have answered the query, so
+// verification accepts a designated resolver whose certificate covers any one
+// of them.
+static void CaptureResolverAddrs(nsTArray<NetAddr>& aOut) {
+  ULONG bufLen = 15000;
+  UniquePtr<uint8_t[]> buf;
+  ULONG ret = ERROR_BUFFER_OVERFLOW;
+  for (int attempts = 0; attempts < 3 && ret == ERROR_BUFFER_OVERFLOW;
+       attempts++) {
+    buf = MakeUnique<uint8_t[]>(bufLen);
+    ret = GetAdaptersAddresses(
+        AF_UNSPEC,
+        GAA_FLAG_SKIP_UNICAST | GAA_FLAG_SKIP_ANYCAST |
+            GAA_FLAG_SKIP_MULTICAST | GAA_FLAG_SKIP_FRIENDLY_NAME,
+        nullptr, reinterpret_cast<IP_ADAPTER_ADDRESSES*>(buf.get()), &bufLen);
+  }
+  if (ret != ERROR_SUCCESS) {
+    LOG("GetAdaptersAddresses failed: %lu", ret);
+    return;
+  }
+
+  for (auto* adapter = reinterpret_cast<IP_ADAPTER_ADDRESSES*>(buf.get());
+       adapter; adapter = adapter->Next) {
+    if (adapter->OperStatus != IfOperStatusUp) {
+      continue;
+    }
+    for (auto* dns = adapter->FirstDnsServerAddress; dns; dns = dns->Next) {
+      NetAddr addr;
+      if (SockaddrToNetAddr(dns->Address.lpSockaddr, addr)) {
+        AppendResolverAddr(aOut, addr);
+      }
+    }
+  }
+}
 
 nsresult ParseHTTPSRecordList(const DNS_RECORDA* aRecords,
                               const nsACString& aHost,
@@ -168,6 +207,10 @@ nsresult ResolveHTTPSRecordImpl(const nsACString& aHost,
 
   auto freeDnsRecord =
       MakeScopeExit([&]() { DnsRecordListFree(result, DnsFreeRecordList); });
+
+  if (aResolverAddrs) {
+    CaptureResolverAddrs(*aResolverAddrs);
+  }
 
   return ParseHTTPSRecordList(result, host, aOriginHost, aResult, aTTL, aAlias,
                               aType);
