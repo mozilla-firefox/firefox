@@ -16,7 +16,7 @@ use core::fmt::{self, Formatter};
 
 use percent_encoding::{percent_decode, utf8_percent_encode, CONTROLS};
 #[cfg(feature = "serde")]
-use serde::{Deserialize, Serialize};
+use serde_derive::{Deserialize, Serialize};
 
 use crate::parser::{ParseError, ParseResult};
 
@@ -151,16 +151,27 @@ impl<'a> Host<Cow<'a, str>> {
         };
 
         if input.find(is_invalid_host_char).is_some() {
-            Err(ParseError::InvalidDomainCharacter)
-        } else {
-            Ok(Host::Domain(
-                match utf8_percent_encode(&input, CONTROLS).into() {
-                    Cow::Owned(v) => Cow::Owned(v),
-                    // if we're borrowing, then we can return the original Cow
-                    Cow::Borrowed(_) => input,
-                },
-            ))
+            return Err(ParseError::InvalidDomainCharacter);
         }
+
+        // Call utf8_percent_encode and use the result.
+        // Note: This returns Cow::Borrowed for single-item results (either from input
+        // or from the static encoding table), and Cow::Owned for multi-item results.
+        // We cannot distinguish between "borrowed from input" vs "borrowed from static table"
+        // based on the Cow variant alone.
+        Ok(Host::Domain(
+            match utf8_percent_encode(&input, CONTROLS).into() {
+                Cow::Owned(v) => Cow::Owned(v),
+                // If we're borrowing, we need to check if it's the same as the input
+                Cow::Borrowed(v) => {
+                    if v == &*input {
+                        input // No encoding happened, reuse original
+                    } else {
+                        Cow::Owned(v.to_owned()) // Borrowed from static table, need to own it
+                    }
+                }
+            },
+        ))
     }
 
     pub(crate) fn into_owned(self) -> Host<String> {

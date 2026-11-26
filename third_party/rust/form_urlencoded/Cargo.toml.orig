@@ -1,6 +1,6 @@
 [package]
 name = "form_urlencoded"
-version = "1.2.2"
+version = "1.2.3"
 authors = ["The rust-url developers"]
 description = "Parser and serializer for the application/x-www-form-urlencoded syntax, as used by HTML forms."
 categories = ["no-std"]
@@ -18,7 +18,7 @@ std = ["alloc", "percent-encoding/std"]
 alloc = ["percent-encoding/alloc"]
 
 [dependencies]
-percent-encoding = { version = "2.3.0", default-features = false, path = "../percent_encoding" }
+percent-encoding = { version = "2.3.2", default-features = false, path = "../percent_encoding" }
 
 [package.metadata.docs.rs]
 rustdoc-args = ["--generate-link-to-definition"]

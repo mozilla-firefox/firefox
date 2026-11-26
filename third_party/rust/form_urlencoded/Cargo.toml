@@ -13,7 +13,7 @@
 edition = "2018"
 rust-version = "1.51"
 name = "form_urlencoded"
-version = "1.2.2"
+version = "1.2.3"
 authors = ["The rust-url developers"]
 build = false
 autolib = false
@@ -44,5 +44,5 @@ path = "src/lib.rs"
 test = false
 
 [dependencies.percent-encoding]
-version = "2.3.0"
+version = "2.3.2"
 default-features = false
