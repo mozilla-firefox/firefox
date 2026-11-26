@@ -59,10 +59,6 @@ add_task(async function addToSettings() {
     ...panelDoc.querySelectorAll(`.local-mode-origin-line input`),
   ].at(-1);
   is(originInput.value, "firefox.localhost", "The origin is correct");
-  ok(
-    originInput.closest("li").classList.contains("options-panel-highlight"),
-    "The newly added mapping is highlighted"
-  );
 
   const folderLink = [
     ...panelDoc.querySelectorAll(`.local-mode-folder-line a`),

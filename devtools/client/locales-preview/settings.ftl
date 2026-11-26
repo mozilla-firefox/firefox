@@ -221,62 +221,6 @@ devtools-settings-screenshot-audio =
     .label = Play camera shutter sound
     .title = Enables the camera audio sound when taking screenshot
 
-## Local Mode section, which lets the user load local folders from https
-## URLs.
-
-devtools-settings-local-mode =
-    .label = Local Mode
-    .description = Local Mode allows you to load local files via https URL without any external dependency. The URLs can only be loaded from tabs with DevTools opened.
-
-devtools-settings-local-mode-local-only =
-    .message = Local Mode only works locally and is disabled when debugging remote contexts
-
-# Input for the domain, e.g. firefox.localhost, that loads a local folder.
-devtools-settings-local-mode-origin =
-    .label = Custom domain
-    .placeholder = Origin for the local mapping
-
-# Errors shown under a mapping's domain input.
-devtools-settings-local-mode-origin-conflict = This origin conflicts with another existing mapping
-devtools-settings-local-mode-origin-invalid = This origin is invalid
-
-# Label for the folder whose files are served at the custom domain.
-devtools-settings-local-mode-folder = Local folder:
-
-devtools-settings-local-mode-choose-folder =
-    .label = Browse…
-    .title = Choose a local folder to serve this mapping
-
-devtools-settings-local-mode-navigate =
-    .title = Navigate to this mapping URL
-
-devtools-settings-local-mode-enable =
-    .label = Enable
-    .title = Toggle this local mapping
-
-devtools-settings-local-mode-disable =
-    .label = Disable
-    .title = Toggle this local mapping
-
-devtools-settings-local-mode-remove =
-    .label = Remove local mapping
-
-# Message of the dialog asking the user to confirm removing a mapping.
-# Variables:
-#   $mappingOrigin (String): The domain of the mapping, e.g. firefox.localhost.
-devtools-settings-local-mode-confirm-removal = Do you want to remove “{ $mappingOrigin }” mapping?
-
-devtools-settings-local-mode-add =
-    .label = Add a new local mapping
-
-# Title of the dialog for picking a mapping's local folder.
-# Variables:
-#   $url (String): The URL of the mapping being configured.
-devtools-settings-local-mode-folder-picker-title = Choose local mode folder for: { $url }
-
-# Error shown when a mapping's local folder is missing or invalid.
-devtools-settings-local-mode-folder-invalid = This folder doesn’t exist, or is invalid.
-
 ## Editor Preferences section, configuring the source editors used across
 ## DevTools.
 

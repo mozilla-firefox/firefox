@@ -465,8 +465,14 @@ function showLocalModeNotice(toolbox) {
         );
 
         // Open the Options panel
-        const panel = await toolbox.selectTool("options");
-        await panel.highlightLocalModeMapping(prefPrefix);
+        const { panelDoc } = await toolbox.selectTool("options");
+
+        // Highlight the created mapping item
+        const mappingItem = panelDoc
+          .querySelector(`[data-pref-prefix="${prefPrefix}"]`)
+          .closest("li");
+        mappingItem.scrollIntoView({ block: "center" });
+        mappingItem.classList.add("options-panel-highlight");
 
         // Navigate to the mapping's URL
         await toolbox.commands.targetCommand.navigateTo(url + "/" + filename);

@@ -5,7 +5,7 @@
 :host {
   display: block;
   margin: var(--space-large);
-  columns: 400px;
+  columns: 320px;
   column-gap: var(--space-xxlarge);
 }
 
