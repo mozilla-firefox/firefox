@@ -7792,7 +7792,7 @@ interface nsIAboutModule extends nsISupports {
   readonly ALLOW_SCRIPT?: 2;
   readonly HIDE_FROM_ABOUTABOUT?: 4;
   readonly ENABLE_INDEXED_DB?: 8;
-  readonly URI_CAN_LOAD_IN_CHILD?: 16;
+  readonly URI_IS_ERROR_PAGE?: 16;
   readonly URI_MUST_LOAD_IN_CHILD?: 32;
   readonly MAKE_UNLINKABLE?: 64;
   readonly MAKE_LINKABLE?: 128;
