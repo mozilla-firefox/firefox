@@ -55,6 +55,7 @@ async function test_local_mode_mappings_listed() {
     TEST_FOLDER,
     "The first mapping shows its folder"
   );
+  is(first.querySelector(".folder").localName, "a", "The folder is a link");
   ok(
     !first.querySelector(".origin").disabled,
     "An enabled mapping's origin can be edited"
