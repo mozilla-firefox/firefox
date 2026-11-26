@@ -952,6 +952,9 @@ void GCRuntime::moveToNextSweepGroup() {
 
   if (abortSweepAfterCurrentGroup) {
     markTask.join();
+    for (auto& marker : markers) {
+      marker->reset();
+    }
 
     // Abort collection of subsequent sweep groups.
     for (SweepGroupZonesIter zone(this); !zone.done(); zone.next()) {
