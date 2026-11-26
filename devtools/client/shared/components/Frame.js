@@ -27,9 +27,7 @@ const {
 const l10n = new LocalizationHelper(
   "devtools/client/locales/components.properties"
 );
-const webl10n = new LocalizationHelper(
-  "devtools/shared/locales/webconsole.properties"
-);
+const webl10n = require("resource://devtools/shared/webconsole/l10n.js");
 
 function savedFrameToDebuggerLocation(frame) {
   const { source: url, line, column, sourceId } = frame;

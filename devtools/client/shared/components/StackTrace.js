@@ -10,13 +10,9 @@ const {
 } = require("resource://devtools/client/shared/vendor/react.mjs");
 const PropTypes = require("resource://devtools/client/shared/vendor/react-prop-types.mjs");
 const dom = require("resource://devtools/client/shared/vendor/react-dom-factories.js");
-const { LocalizationHelper } = require("resource://devtools/shared/l10n.js");
+const l10n = require("resource://devtools/shared/webconsole/l10n.js");
 const Frame = createFactory(
   require("resource://devtools/client/shared/components/Frame.js")
-);
-
-const l10n = new LocalizationHelper(
-  "devtools/shared/locales/webconsole.properties"
 );
 
 class AsyncFrameClass extends Component {
@@ -31,7 +27,7 @@ class AsyncFrameClass extends Component {
 
     return dom.span(
       { className: "frame-link-async-cause" },
-      l10n.getFormatStr("stacktrace.asyncStack", asyncCause)
+      l10n.getFormatStr("stacktrace.asyncStack", [asyncCause])
     );
   }
 }
