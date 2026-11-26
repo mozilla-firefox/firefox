@@ -15,7 +15,7 @@ import android.widget.ImageView;
 import android.widget.LinearLayout;
 import android.widget.PopupMenu;
 import android.widget.TextView;
-import androidx.core.content.ContextCompat;
+import androidx.appcompat.content.res.AppCompatResources;
 
 public final class ToolbarLayout extends LinearLayout {
   public interface TabListener {
@@ -30,10 +30,13 @@ public final class ToolbarLayout extends LinearLayout {
   private TabListener mTabListener;
   private TabSessionManager mSessionManager;
 
-  public ToolbarLayout(Context context, TabSessionManager sessionManager) {
+  public ToolbarLayout(Context context) {
     super(context);
-    mSessionManager = sessionManager;
     initView();
+  }
+
+  public void setSessionManager(TabSessionManager sessionManager) {
+    mSessionManager = sessionManager;
   }
 
   private void initView() {
@@ -57,7 +60,8 @@ public final class ToolbarLayout extends LinearLayout {
     button.setLayoutParams(new LayoutParams(150, LayoutParams.MATCH_PARENT));
     button.setId(R.id.tabs_button);
     button.setOnClickListener(this::onTabButtonClicked);
-    button.setBackground(ContextCompat.getDrawable(getContext(), R.drawable.tab_number_background));
+    button.setBackground(
+        AppCompatResources.getDrawable(getContext(), R.drawable.tab_number_background));
     button.setTypeface(button.getTypeface(), Typeface.BOLD);
     return button;
   }

@@ -36,7 +36,6 @@ import android.provider.MediaStore;
 import android.text.InputType;
 import android.util.Log;
 import android.util.LruCache;
-import android.view.LayoutInflater;
 import android.view.Menu;
 import android.view.MenuInflater;
 import android.view.MenuItem;
@@ -61,6 +60,7 @@ import androidx.annotation.OptIn;
 import androidx.annotation.UiThread;
 import androidx.appcompat.app.ActionBar;
 import androidx.appcompat.app.AppCompatActivity;
+import androidx.coordinatorlayout.widget.CoordinatorLayout;
 import androidx.core.app.ActivityCompat;
 import androidx.core.app.NotificationCompat;
 import androidx.core.app.NotificationManagerCompat;
@@ -1019,7 +1019,8 @@ public class GeckoViewActivity extends AppCompatActivity
     // This references a preference value, so this is after reading initial preference state
     EdgeToEdgeUtils.init(getWindow(), mEdgeToEdgeEnabled.value());
 
-    mToolbarView = new ToolbarLayout(this, mTabSessionManager);
+    mToolbarView = new ToolbarLayout(this);
+    mToolbarView.setSessionManager(mTabSessionManager);
     mToolbarView.setId(R.id.toolbar_layout);
     mToolbarView.setTabListener(this);
 
@@ -1256,8 +1257,8 @@ public class GeckoViewActivity extends AppCompatActivity
   }
 
   private void openPopupSession() {
-    LayoutInflater inflater = (LayoutInflater) getSystemService(LAYOUT_INFLATER_SERVICE);
-    mPopupView = inflater.inflate(R.layout.browser_action_popup, null);
+    ViewGroup main = findViewById(R.id.main);
+    mPopupView = getLayoutInflater().inflate(R.layout.browser_action_popup, main, false);
     GeckoView geckoView = mPopupView.findViewById(R.id.gecko_view_popup);
     geckoView.setViewBackend(GeckoView.BACKEND_TEXTURE_VIEW);
     mPopupSession = new TabSession();
@@ -1266,11 +1267,9 @@ public class GeckoViewActivity extends AppCompatActivity
     geckoView.setSession(mPopupSession);
 
     mPopupView.setOnFocusChangeListener(this::hideBrowserAction);
-    RelativeLayout.LayoutParams params = new RelativeLayout.LayoutParams(0, 0);
-    params.addRule(RelativeLayout.ABOVE, R.id.toolbar);
-    mPopupView.setLayoutParams(params);
+    mPopupView.setLayoutParams(new CoordinatorLayout.LayoutParams(0, 0));
     mPopupView.setFocusable(true);
-    ((ViewGroup) findViewById(R.id.main)).addView(mPopupView);
+    main.addView(mPopupView);
   }
 
   private void hideBrowserAction(View view, boolean hasFocus) {
