@@ -295,13 +295,6 @@ class ListenPerformanceMiddleware(
 
             ListenToPageFacts.Items.CHUNK_SYNTHESIZED -> fact.recordChunkSynthesized()
             ListenToPageFacts.Items.ENGINE_BOUND -> fact.recordEngineBound()
-            ListenToPageFacts.Items.AUDIO_RECLAIMED -> {
-                ListenToPage.chunkAudioReclaimed.add()
-                summary?.addReclaimed()
-            }
-
-            ListenToPageFacts.Items.AUDIO_CACHE_SIZE ->
-                fact.value?.toLongOrNull()?.let { ListenToPage.audioCacheSize.accumulate(it / BYTES_PER_KILOBYTE) }
         }
     }
 
@@ -366,7 +359,6 @@ class ListenPerformanceMiddleware(
         private var kilobytes = 0L
         private var gaps = 0
         private var gapMs = 0L
-        private var reclaimed = 0
 
         @Synchronized
         fun addChunk(chunk: ListenToPageFacts.ChunkSynthesis) {
@@ -381,11 +373,6 @@ class ListenPerformanceMiddleware(
                 sizedChunks++
                 kilobytes += it
             }
-        }
-
-        @Synchronized
-        fun addReclaimed() {
-            reclaimed++
         }
 
         @Synchronized
@@ -408,7 +395,6 @@ class ListenPerformanceMiddleware(
                 gaps = gaps,
                 gapMsTotal = gapMs.toInt(),
                 playbackSpeedEnd = playbackSpeed,
-                chunksReclaimed = reclaimed,
             )
         }
     }
@@ -449,5 +435,3 @@ class ListenPerformanceMiddleware(
 private fun Long.toMegabytes(): String = String.format(Locale.ROOT, "%.2f", this / KILOBYTES_PER_MEGABYTE)
 
 private const val KILOBYTES_PER_MEGABYTE = 1024.0
-
-private const val BYTES_PER_KILOBYTE = 1024L
