@@ -1980,6 +1980,18 @@ export var BrowserTestUtils = {
   },
 
   /**
+   * Makes sure a remote <browser> that hasn't been laid out yet has sent its
+   * size to the content before an event is computed there.
+   *
+   * @param {BrowsingContext} browsingContext
+   */
+  flushEmbedderLayout(browsingContext) {
+    // Chrome browsing contexts have no embedder.
+    let embedder = browsingContext.top.embedderElement;
+    embedder?.documentGlobal.windowUtils.flushLayoutWithoutThrottledAnimations();
+  },
+
+  /**
    *  Versions of EventUtils.sys.mjs synthesizeMouse functions that synthesize a
    *  mouse event in a child process and return promises that resolve when the
    *  event has fired and completed. Instead of a window, a browser or
@@ -2024,6 +2036,7 @@ export var BrowserTestUtils = {
     }
 
     browsingContext = this.getBrowsingContextFrom(browsingContext);
+    this.flushEmbedderLayout(browsingContext);
     return this.sendQuery(browsingContext, "Test:SynthesizeMouse", {
       target,
       targetFn,
@@ -2069,6 +2082,7 @@ export var BrowserTestUtils = {
     }
 
     browsingContext = this.getBrowsingContextFrom(browsingContext);
+    this.flushEmbedderLayout(browsingContext);
     return this.sendQuery(browsingContext, "Test:SynthesizeTouch", {
       target,
       targetFn,
