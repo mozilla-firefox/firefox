@@ -357,13 +357,23 @@ nsresult gfxGraphiteShaper::SetGlyphsFromSegment(
     // etc by the shaping process, and skip it.
     auto one_glyph = c.nGlyphs == static_cast<uint32_t>(1);
     auto one_char = c.nChars == static_cast<uint32_t>(1);
+    auto two_chars = c.nChars == static_cast<uint32_t>(2);
 
-    if ((one_glyph && one_char)
-            .unverified_safe_because(
-                "using this boolean check to decide whether to ignore a "
-                "character or not. The worst that can happen is a bad "
-                "rendering.")) {
-      if (aShapedText->FilterIfIgnorable(aOffset + offs, aText[offs])) {
+    const char ignorable_check[] =
+        "using this boolean check to decide whether to ignore a character or "
+        "not. The worst that can happen is a bad rendering.";
+    if ((one_glyph && one_char).unverified_safe_because(ignorable_check)) {
+      if (aShapedText->FilterIfIgnorable(aOffset + offs,
+                                         uint32_t(aText[offs]))) {
+        continue;
+      }
+    } else if ((one_glyph && two_chars)
+                   .unverified_safe_because(ignorable_check) &&
+               offs + 1 < aLength &&
+               mozilla::IsSurrogatePair(aText[offs], aText[offs + 1])) {
+      if (aShapedText->FilterIfIgnorable(
+              aOffset + offs,
+              mozilla::SurrogateToUCS4(aText[offs], aText[offs + 1]))) {
         continue;
       }
     }

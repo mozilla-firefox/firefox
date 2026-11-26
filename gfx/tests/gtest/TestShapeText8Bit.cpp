@@ -13,6 +13,7 @@
 #include "mozilla/Sprintf.h"
 #include "nsGkAtoms.h"
 #include "nsTArray.h"
+#include "nsUnicodeProperties.h"
 
 using namespace mozilla;
 
@@ -129,4 +130,32 @@ TEST(gfxFont, ShapeText8BitMatches16Bit)
                        label + (rtl ? " (rtl)" : " (ltr)"));
     }
   }
+}
+
+// The uint8_t overload of FilterIfIgnorable relies on U+00AD being the only
+// default-ignorable character in Latin-1.
+TEST(gfxFont, SoftHyphenIsOnlyIgnorableLatin1)
+{
+  for (uint32_t ch = 0; ch <= 0xff; ++ch) {
+    EXPECT_EQ(unicode::IsDefaultIgnorable(ch), ch == 0x00AD) << ch;
+  }
+}
+
+// A default-ignorable character outside the BMP must be recognized, and its
+// trailing surrogate marked as a ligature continuation.
+TEST(gfxFont, FilterIfIgnorableSupplementary)
+{
+  const char16_t text[] = {'a', 0xDB40, 0xDD00, 'b'};  // a U+E0100 b
+  UniquePtr<gfxShapedWord> word(gfxShapedWord::Create(
+      text, 4, intl::Script::LATIN, nullptr, 60, gfx::ShapedTextFlags(),
+      gfxFontShaper::RoundingFlags::kRoundX));
+  ASSERT_TRUE(word);
+  EXPECT_FALSE(word->FilterIfIgnorable(0, uint32_t('a')));
+  EXPECT_TRUE(word->FilterIfIgnorable(1, uint32_t(0xE0100)));
+  const auto* glyphs = word->GetCharacterGlyphs();
+  EXPECT_TRUE(glyphs[1].IsMissing());
+  EXPECT_FALSE(glyphs[2].IsMissing());
+  EXPECT_FALSE(glyphs[2].IsSimpleGlyph());
+  EXPECT_EQ(glyphs[2].GetGlyphCount(), 0u);
+  EXPECT_FALSE(word->FilterIfIgnorable(1, uint32_t(0x1F600)));
 }

@@ -13,6 +13,7 @@
 #include "harfbuzz/hb-ot.h"
 #include "harfbuzz/hb.h"
 #include "mozilla/Sprintf.h"
+#include "mozilla/Utf16.h"
 #include "mozilla/intl/String.h"
 #include "mozilla/intl/UnicodeProperties.h"
 #include "mozilla/intl/UnicodeScriptCodes.h"
@@ -1510,6 +1511,28 @@ bool gfxHarfBuzzShaper::ShapeText(const void* aText, TextEncoding aEncoding,
        // will fit without requiring separate allocation
        // for charToGlyphArray
 
+// If the clump of characters [aStart, aEnd) is a single ignorable character
+// (possibly a surrogate pair), filter it from aShapedText and return true.
+static bool FilterIfIgnorableClump(gfxShapedText* aShapedText,
+                                   const void* aText,
+                                   gfxFontShaper::TextEncoding aEncoding,
+                                   uint32_t aOffset, int32_t aStart,
+                                   int32_t aEnd) {
+  if (aEncoding == gfxFontShaper::TextEncoding::Latin1) {
+    return aEnd == aStart + 1 &&
+           aShapedText->FilterIfIgnorable(
+               aOffset + aStart, static_cast<const uint8_t*>(aText)[aStart]);
+  }
+  const char16_t* text = static_cast<const char16_t*>(aText);
+  uint32_t ch = text[aStart];
+  if (aEnd == aStart + 2 && mozilla::IsSurrogatePair(ch, text[aStart + 1])) {
+    ch = mozilla::SurrogateToUCS4(ch, text[aStart + 1]);
+  } else if (aEnd != aStart + 1) {
+    return false;
+  }
+  return aShapedText->FilterIfIgnorable(aOffset + aStart, ch);
+}
+
 nsresult gfxHarfBuzzShaper::SetGlyphsFromRun(gfxShapedText* aShapedText,
                                              uint32_t aOffset, uint32_t aLength,
                                              const void* aText,
@@ -1667,12 +1690,9 @@ nsresult gfxHarfBuzzShaper::SetGlyphsFromRun(gfxShapedText* aShapedText,
     // Check for default-ignorable char that didn't get filtered, combined,
     // etc by the shaping process, and remove from the run.
     // (This may be done within harfbuzz eventually.)
-    if (glyphsInClump == 1 && baseCharIndex + 1 == endCharIndex &&
-        aShapedText->FilterIfIgnorable(
-            aOffset + baseCharIndex,
-            aEncoding == TextEncoding::Latin1
-                ? static_cast<const uint8_t*>(aText)[baseCharIndex]
-                : static_cast<const char16_t*>(aText)[baseCharIndex])) {
+    if (glyphsInClump == 1 &&
+        FilterIfIgnorableClump(aShapedText, aText, aEncoding, aOffset,
+                               baseCharIndex, endCharIndex)) {
       glyphStart = glyphEnd;
       charStart = charEnd;
       continue;

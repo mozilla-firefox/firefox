@@ -879,8 +879,10 @@ bool gfxShapedText::FilterIfIgnorable(uint32_t aIndex, uint32_t aCh) {
   // combining jamos; see bug 1238243.
   auto* charGlyphs = GetCharacterGlyphs();
   auto category = GetGeneralCategory(aCh);
+  const uint32_t charLength = aCh > 0xFFFF ? 2 : 1;
   if (category == HB_UNICODE_GENERAL_CATEGORY_OTHER_LETTER &&
-      aIndex + 1 < GetLength() && !charGlyphs[aIndex + 1].IsClusterStart()) {
+      aIndex + charLength < GetLength() &&
+      !charGlyphs[aIndex + charLength].IsClusterStart()) {
     return false;
   }
   CompressedGlyph& g = charGlyphs[aIndex];
@@ -896,6 +898,10 @@ bool gfxShapedText::FilterIfIgnorable(uint32_t aIndex, uint32_t aCh) {
   // A compressedGlyph that is set to MISSING but has no DetailedGlyphs list
   // will be zero-width/invisible, which is what we want here.
   g.SetComplex(g.IsClusterStart(), g.IsLigatureGroupStart()).SetMissing();
+  if (charLength == 2) {
+    CompressedGlyph& low = charGlyphs[aIndex + 1];
+    low.SetComplex(low.IsClusterStart(), false);
+  }
   return true;
 }
 

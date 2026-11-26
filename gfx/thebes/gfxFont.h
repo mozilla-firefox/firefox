@@ -1175,7 +1175,17 @@ class gfxShapedText {
 
   uint32_t GetLength() const { return mLength; }
 
+  // If aCh, the Unicode scalar value at aIndex (occupying two UTF-16 code
+  // units if it is outside the BMP), is an ignorable character that should
+  // not be rendered, clear its glyph data and return true.
   bool FilterIfIgnorable(uint32_t aIndex, uint32_t aCh);
+
+  // Latin-1 version of FilterIfIgnorable. The only default-ignorable Latin-1
+  // character is U+00AD (ZWNJ and ZWJ are outside Latin-1), so this avoids
+  // the Unicode property lookup for everything else.
+  bool FilterIfIgnorable(uint32_t aIndex, uint8_t aCh) {
+    return aCh == 0x00AD && FilterIfIgnorable(aIndex, uint32_t(aCh));
+  }
 
   // Erase glyph data from the gfxShapedText, while retaining line-break and
   // cluster flags.
