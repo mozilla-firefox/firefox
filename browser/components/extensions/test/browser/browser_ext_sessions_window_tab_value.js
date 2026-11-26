@@ -129,8 +129,6 @@ add_task(async function test_sessions_tab_value_persistence() {
       "Test that two different tabs hold different values for a given key."
     );
 
-    await browser.tabs.create({ url: "http://example.com" });
-
     // Wait until the newly created tab has completed loading or it will still have
     // about:blank url when it gets removed and will not appear in the removed tabs history.
     browser.webNavigation.onCompleted.addListener(
@@ -204,6 +202,8 @@ add_task(async function test_sessions_tab_value_persistence() {
       },
       { url: [{ hostContains: "example.com" }] }
     );
+
+    await browser.tabs.create({ url: "http://example.com" });
   }
 
   let extension = ExtensionTestUtils.loadExtension({
