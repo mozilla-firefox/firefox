@@ -688,3 +688,74 @@ add_task(
     await SpecialPowers.popPrefEnv();
   }
 );
+
+// A reload, or leaving and coming back through the bfcache, asks for a new
+// device sign in.
+add_task(async function test_recent_device_sign_in_is_dropped_on_navigation() {
+  await SpecialPowers.pushPrefEnv({ set: [[PREF, true]] });
+  await removeAllRecords();
+  await setStorage(TEST_CREDIT_CARD_1);
+  const { AutocompleteRemoveRecord } = ChromeUtils.importESModule(
+    "resource://gre/modules/AutocompleteRemoveRecord.sys.mjs"
+  );
+  AutocompleteRemoveRecord.resetAuthForTesting();
+
+  const tab = await BrowserTestUtils.openNewForegroundTab(gBrowser, CC_URL);
+  const browser = tab.linkedBrowser;
+  const popup = browser.autoCompletePopup;
+  let verifyCalls = 0;
+  const originalVerify = FormAutofillUtils.verifyUserOSAuth;
+  // A real OS prompt takes focus and closes the dropdown before it resolves.
+  FormAutofillUtils.verifyUserOSAuth = async () => {
+    verifyCalls++;
+    popup.hidePopup();
+    await TestUtils.waitForCondition(
+      () => popup.state == "closed",
+      "Wait for the dropdown to close before device sign in resolves"
+    );
+    return true;
+  };
+  const deleteAndCancel = async () => {
+    await openPopupOn(browser, "#cc-number");
+    const dialogClosed = BrowserTestUtils.promiseAlertDialog("cancel");
+    const item = getDisplayedPopupItems(browser)[0];
+    await selectFirstRow(browser, item);
+    await clickTrashButton(item.querySelector("autocomplete-row-item"));
+    await dialogClosed;
+    await TestUtils.waitForCondition(
+      () => popup.popupOpen,
+      "Wait for the dropdown to come back after the removal"
+    );
+    await closePopup(browser);
+  };
+
+  try {
+    await deleteAndCancel();
+    await deleteAndCancel();
+    is(verifyCalls, 1, "A recent device sign in on the same page is reused");
+
+    await BrowserTestUtils.reloadTab(tab);
+    await deleteAndCancel();
+    is(verifyCalls, 2, "A reload drops the recent device sign in");
+
+    const innerWindowID = browser.innerWindowID;
+    BrowserTestUtils.startLoadingURIString(browser, "https://example.com/");
+    await BrowserTestUtils.browserLoaded(browser);
+    const wentBack = BrowserTestUtils.waitForLocationChange(gBrowser, CC_URL);
+    browser.goBack();
+    await wentBack;
+    is(
+      browser.innerWindowID,
+      innerWindowID,
+      "Going back restores the page from the bfcache"
+    );
+    await deleteAndCancel();
+    is(verifyCalls, 3, "Leaving the page drops the recent device sign in");
+  } finally {
+    FormAutofillUtils.verifyUserOSAuth = originalVerify;
+    AutocompleteRemoveRecord.resetAuthForTesting();
+    BrowserTestUtils.removeTab(tab);
+  }
+  await removeAllRecords();
+  await SpecialPowers.popPrefEnv();
+});

@@ -1322,6 +1322,7 @@ export class FormAutofillParent extends JSWindowActorParent {
     // destroyed by the time they resolve.
     const chromeWindow = this.manager.browsingContext.topChromeWindow;
     const browser = this.manager.browsingContext.top.embedderElement;
+    const innerWindowID = browser?.innerWindowID;
 
     if (
       !lazy.AutocompleteRemoveRecord.authExpirationTime("payment", browser) &&
@@ -1329,7 +1330,11 @@ export class FormAutofillParent extends JSWindowActorParent {
     ) {
       return;
     }
-    lazy.AutocompleteRemoveRecord.noteAuthorized("payment", browser);
+    lazy.AutocompleteRemoveRecord.noteAuthorized(
+      "payment",
+      browser,
+      innerWindowID
+    );
     if (!chromeWindow) {
       return;
     }

@@ -1586,3 +1586,76 @@ add_task(async function test_recent_reauth_is_reused_until_tab_switch() {
   gReauthAuthorized = false;
   await SpecialPowers.popPrefEnv();
 });
+
+// A reload, or leaving and coming back through the bfcache, asks for a new
+// reauthentication.
+add_task(async function test_recent_reauth_is_dropped_on_navigation() {
+  await SpecialPowers.pushPrefEnv({ set: [[PREF, true]] });
+  const { AutocompleteRemoveRecord } = ChromeUtils.importESModule(
+    "resource://gre/modules/AutocompleteRemoveRecord.sys.mjs"
+  );
+  AutocompleteRemoveRecord.resetAuthForTesting();
+  gReauthCalls = [];
+  gReauthAuthorized = true;
+  const popup = document.getElementById("PopupAutoComplete");
+  const tab = await BrowserTestUtils.openNewForegroundTab(
+    gBrowser,
+    TEST_URL_PATH
+  );
+  const browser = tab.linkedBrowser;
+  const deleteAndCancel = async () => {
+    await SpecialPowers.spawn(browser, [], () =>
+      content.document.querySelector("#form-basic-username").blur()
+    );
+    await openACPopup(popup, browser, "#form-basic-username");
+    const dialogClosed = BrowserTestUtils.promiseAlertDialog("cancel");
+    await activateDelete(popup);
+    await dialogClosed;
+    await TestUtils.waitForCondition(
+      () => popup.state == "open",
+      "Wait for the dropdown to come back after the removal"
+    );
+    await closePopup(popup);
+    return gReauthCalls.at(-1)[1];
+  };
+
+  Assert.equal(await deleteAndCancel(), null, "The first delete asks");
+  Assert.greater(
+    await deleteAndCancel(),
+    Date.now(),
+    "A recent reauthentication on the same page is reused"
+  );
+
+  await BrowserTestUtils.reloadTab(tab);
+  Assert.equal(
+    await deleteAndCancel(),
+    null,
+    "A reload drops the recent reauthentication"
+  );
+
+  const innerWindowID = browser.innerWindowID;
+  BrowserTestUtils.startLoadingURIString(browser, "https://example.com/");
+  await BrowserTestUtils.browserLoaded(browser);
+  const wentBack = BrowserTestUtils.waitForLocationChange(
+    gBrowser,
+    TEST_URL_PATH
+  );
+  browser.goBack();
+  await wentBack;
+  Assert.equal(
+    browser.innerWindowID,
+    innerWindowID,
+    "Going back restores the page from the bfcache"
+  );
+  Assert.equal(
+    await deleteAndCancel(),
+    null,
+    "Leaving the page drops the recent reauthentication"
+  );
+  Assert.equal(gReauthCalls.length, 4, "Every delete asked for reauth");
+
+  BrowserTestUtils.removeTab(tab);
+  AutocompleteRemoveRecord.resetAuthForTesting();
+  gReauthAuthorized = false;
+  await SpecialPowers.popPrefEnv();
+});

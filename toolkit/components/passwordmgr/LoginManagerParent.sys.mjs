@@ -1647,6 +1647,7 @@ export class LoginManagerParent extends JSWindowActorParent {
     // Read before awaiting: the prompts below take focus and the actor may be
     // destroyed by the time they resolve.
     const origin = this.origin;
+    const innerWindowID = browser?.innerWindowID;
     const osAuth = await lazy.AutocompleteRemoveRecord.passwordOSAuthStrings();
     const { isAuthorized } = await lazy.LoginHelper.requestReauth(
       browser,
@@ -1659,7 +1660,11 @@ export class LoginManagerParent extends JSWindowActorParent {
     if (!isAuthorized) {
       return;
     }
-    lazy.AutocompleteRemoveRecord.noteAuthorized("password", browser);
+    lazy.AutocompleteRemoveRecord.noteAuthorized(
+      "password",
+      browser,
+      innerWindowID
+    );
     if (!chromeWindow) {
       return;
     }

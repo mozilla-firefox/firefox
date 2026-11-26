@@ -18,10 +18,27 @@ ChromeUtils.defineLazyGetter(
 
 const AUTH_TIMEOUT_MS = 5 * 60 * 1000;
 
-// Record type -> { browser: WeakRef, expiresAt } of the last authorized delete.
+// Record type -> { browser, tabBrowser, innerWindowID, expiresAt } of the last
+// authorized delete. browser and tabBrowser are WeakRefs.
 const gRecentAuth = new Map();
 
+// Drops the auth when its page reloads or navigates, also from the bfcache.
+const gNavigationListener = {
+  onLocationChange(browser, webProgress, request, location, flags) {
+    if (
+      webProgress.isTopLevel &&
+      !(flags & Ci.nsIWebProgressListener.LOCATION_CHANGE_SAME_DOCUMENT) &&
+      gRecentAuth.values().some(auth => auth.browser.deref() === browser)
+    ) {
+      forgetAuth();
+    }
+  },
+};
+
 function forgetAuth() {
+  for (const auth of gRecentAuth.values()) {
+    auth.tabBrowser.deref()?.removeTabsProgressListener(gNavigationListener);
+  }
   gRecentAuth.clear();
 }
 
@@ -34,7 +51,7 @@ const TITLE_L10N_IDS = {
 export const AutocompleteRemoveRecord = {
   /**
    * Like about:logins, a delete authorized in the last 5 minutes from the
-   * same tab skips the next prompt, until the user switches tabs.
+   * same page skips the next prompt, until the user switches tabs.
    *
    * @param {string} recordType
    * @param {Element} browser The top <browser> of the tab.
@@ -45,6 +62,7 @@ export const AutocompleteRemoveRecord = {
     if (
       !auth ||
       auth.browser.deref() !== browser ||
+      auth.innerWindowID !== browser.innerWindowID ||
       Date.now() >= auth.expiresAt
     ) {
       return null;
@@ -55,18 +73,26 @@ export const AutocompleteRemoveRecord = {
   /**
    * @param {string} recordType
    * @param {Element} browser The top <browser> of the tab.
+   * @param {number} innerWindowID The top page's id, read before the prompt.
    */
-  noteAuthorized(recordType, browser) {
-    const tabContainer = browser?.getTabBrowser?.()?.tabContainer;
-    if (!tabContainer) {
+  noteAuthorized(recordType, browser, innerWindowID) {
+    const tabBrowser = browser?.getTabBrowser?.();
+    if (!tabBrowser?.tabContainer) {
       return;
     }
     gRecentAuth.set(recordType, {
       browser: new WeakRef(browser),
+      tabBrowser: new WeakRef(tabBrowser),
+      innerWindowID,
       expiresAt: Date.now() + AUTH_TIMEOUT_MS,
     });
     // Adding the same listener again is a no-op.
-    tabContainer.addEventListener("TabSelect", forgetAuth, { once: true });
+    tabBrowser.tabContainer.addEventListener("TabSelect", forgetAuth, {
+      once: true,
+    });
+    // Tabs progress listeners are not deduplicated.
+    tabBrowser.removeTabsProgressListener(gNavigationListener);
+    tabBrowser.addTabsProgressListener(gNavigationListener);
   },
 
   resetAuthForTesting() {
