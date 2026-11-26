@@ -77,7 +77,7 @@ skip-if(Android) needs-focus load 1444630.html
 load 1446451.html
 pref(dom.document.exec_command.nested_calls_allowed,true) load 1464251.html
 pref(layout.accessiblecaret.enabled,true) load 1470926.html
-pref(dom.document.exec_command.nested_calls_allowed,true) asserts(2) load 1474978.html # assertion is that mutation event listener caused by execCommand calls another execCommand
+pref(dom.document.exec_command.nested_calls_allowed,true) load 1474978.html
 load 1517028.html
 load 1525481.html
 load 1533913.html
