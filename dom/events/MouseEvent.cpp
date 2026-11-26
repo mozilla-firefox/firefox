@@ -437,7 +437,7 @@ nsIntPoint MouseEvent::GetMovementPoint() const {
     return mMovementPoint;
   }
 
-  if (!mEvent || !mEvent->AsGUIEvent()->mWidget ||
+  if (!mEvent->AsGUIEvent()->mWidget ||
       (mEvent->mMessage != eMouseMove && mEvent->mMessage != ePointerMove &&
        !(StaticPrefs::dom_event_pointer_rawupdate_movement_enabled() &&
          mEvent->mMessage == ePointerRawUpdate))) {

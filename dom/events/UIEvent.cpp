@@ -132,8 +132,7 @@ nsIntPoint UIEvent::GetLayerPoint() const {
   if (mEvent->mFlags.mIsPositionless) {
     return nsIntPoint(0, 0);
   }
-  if (!mEvent ||
-      (mEvent->mClass != eMouseEventClass &&
+  if ((mEvent->mClass != eMouseEventClass &&
        mEvent->mClass != eMouseScrollEventClass &&
        mEvent->mClass != eWheelEventClass &&
        mEvent->mClass != ePointerEventClass &&
