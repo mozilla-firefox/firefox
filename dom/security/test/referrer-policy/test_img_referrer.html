@@ -84,6 +84,13 @@ function resetState() {
  */
 var tests = (function*() {
 
+  // An image already in the cache loads synchronously when its src is set,
+  // before a referrerPolicy set afterwards can apply to its request.
+  SpecialPowers.Cc["@mozilla.org/image/tools;1"]
+    .getService(SpecialPowers.Ci.imgITools)
+    .getImgCacheForDocument(document)
+    .clearCache(false);
+
   yield SpecialPowers.pushPrefEnv(
     { set: [["network.http.referer.disallowCrossSiteRelaxingDefault", false]] },
     advance
