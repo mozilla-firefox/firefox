@@ -266,12 +266,13 @@ void StoreBuffer::checkAccess() const {
   // The GC runs tasks that may access the storebuffer in parallel and so must
   // take a lock. The mutator may only access the storebuffer from the main
   // thread.
-  if (gc_->heapState() != JS::HeapState::Idle &&
-      gc_->heapState() != JS::HeapState::MinorCollecting) {
-    MOZ_ASSERT(!CurrentThreadIsGCMarking());
+  if (gc_->heapState() == JS::HeapState::MajorCollecting &&
+      gc_->state() == gc::State::Sweep) {
+    MOZ_ASSERT(CurrentThreadIsGCSweeping());
     gc_->assertCurrentThreadHasLockedSweepingLock();
   } else {
     MOZ_ASSERT(CurrentThreadCanAccessRuntime(gc_->rt));
+    MOZ_ASSERT(!CurrentThreadIsGCMarking());
   }
 }
 #endif
