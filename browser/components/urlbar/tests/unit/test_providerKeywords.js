@@ -85,18 +85,12 @@ add_task(async function test_keyword_search() {
       makeKeywordSearchResult(context, {
         uri: "http://abc/?search=term",
         keyword: "key",
-        domain: "abc",
-        searchTerms: "term",
+        title: "abc: term",
         iconUri: "page-icon:http://abc/?search=%s",
         heuristic: true,
       }),
     ],
   });
-  Assert.deepEqual(
-    context.results[0].payload.titleL10n.argsHighlights,
-    { domain: [], searchTerms: [[0, 4]] },
-    "The typed search terms are highlighted in the title"
-  );
 
   info("Plain keyword UC");
   context = createContext("key TERM", { isPrivate: false });
@@ -106,8 +100,7 @@ add_task(async function test_keyword_search() {
       makeKeywordSearchResult(context, {
         uri: "http://abc/?search=TERM",
         keyword: "key",
-        domain: "abc",
-        searchTerms: "TERM",
+        title: "abc: TERM",
         iconUri: "page-icon:http://abc/?search=%s",
         heuristic: true,
       }),
@@ -122,8 +115,7 @@ add_task(async function test_keyword_search() {
       makeKeywordSearchResult(context, {
         uri: "http://abc/?search=multi%20word",
         keyword: "key",
-        domain: "abc",
-        searchTerms: "multi word",
+        title: "abc: multi word",
         iconUri: "page-icon:http://abc/?search=%s",
         heuristic: true,
       }),
@@ -138,8 +130,7 @@ add_task(async function test_keyword_search() {
       makeKeywordSearchResult(context, {
         uri: "http://abc/?search=blocking%2B",
         keyword: "key",
-        domain: "abc",
-        searchTerms: "blocking+",
+        title: "abc: blocking+",
         iconUri: "page-icon:http://abc/?search=%s",
         heuristic: true,
       }),
@@ -156,8 +147,7 @@ add_task(async function test_keyword_search() {
       makeKeywordSearchResult(context, {
         uri: "http://abc/?search=blocking%20*",
         keyword: "key",
-        domain: "abc",
-        searchTerms: "blocking *",
+        title: "abc: blocking *",
         iconUri: "page-icon:http://abc/?search=%s",
         heuristic: true,
       }),
@@ -172,8 +162,7 @@ add_task(async function test_keyword_search() {
       makeKeywordSearchResult(context, {
         uri: "http://abc/?search=blocking%3F",
         keyword: "key",
-        domain: "abc",
-        searchTerms: "blocking?",
+        title: "abc: blocking?",
         iconUri: "page-icon:http://abc/?search=%s",
         heuristic: true,
       }),
@@ -188,8 +177,7 @@ add_task(async function test_keyword_search() {
       makeKeywordSearchResult(context, {
         uri: "http://abc/?search=blocking%20%3F",
         keyword: "key",
-        domain: "abc",
-        searchTerms: "blocking ?",
+        title: "abc: blocking ?",
         iconUri: "page-icon:http://abc/?search=%s",
         heuristic: true,
       }),
@@ -207,8 +195,7 @@ add_task(async function test_keyword_search() {
       makeKeywordSearchResult(context, {
         uri: "http://abc/?search=" + encodeURIComponent("ユニコード"),
         keyword: "key",
-        domain: "abc",
-        searchTerms: "ユニコード",
+        title: "abc: ユニコード",
         iconUri: "page-icon:http://abc/?search=%s",
         heuristic: true,
       }),
@@ -223,8 +210,7 @@ add_task(async function test_keyword_search() {
       makeKeywordSearchResult(context, {
         uri: "http://abc/?search=ThisPageIsInHistory",
         keyword: "key",
-        domain: "abc",
-        searchTerms: "ThisPageIsInHistory",
+        title: "abc: ThisPageIsInHistory",
         iconUri: "page-icon:http://abc/?search=%s",
         heuristic: true,
       }),
@@ -239,8 +225,7 @@ add_task(async function test_keyword_search() {
       makeKeywordSearchResult(context, {
         uri: "http://abc/?search=ThisPage",
         keyword: "key",
-        domain: "abc",
-        searchTerms: "ThisPage",
+        title: "abc: ThisPage",
         iconUri: "page-icon:http://abc/?search=%s",
         heuristic: true,
       }),
@@ -301,8 +286,7 @@ add_task(async function test_keyword_search() {
       makeKeywordSearchResult(context, {
         uri: "http://abc/?search=foo",
         keyword: "post",
-        domain: "abc",
-        searchTerms: "foo",
+        title: "abc: foo",
         postData: "post_search=foo",
         iconUri: "page-icon:http://abc/?search=%s",
         heuristic: true,
@@ -318,8 +302,7 @@ add_task(async function test_keyword_search() {
       makeKeywordSearchResult(context, {
         uri: "http://abc/?search=fo%C3%A9&raw=foé",
         keyword: "encoded",
-        domain: "abc",
-        searchTerms: "foé",
+        title: "abc: foé",
         iconUri: "page-icon:http://abc/?search=%s&raw=%S",
         heuristic: true,
       }),
@@ -334,8 +317,7 @@ add_task(async function test_keyword_search() {
       makeKeywordSearchResult(context, {
         uri: "http://abc/?search=fo%E9&raw=foé",
         keyword: "charset",
-        domain: "abc",
-        searchTerms: "foé",
+        title: "abc: foé",
         iconUri: "page-icon:http://abc/?search=%s&raw=%S&mozcharset=ISO-8859-1",
         heuristic: true,
       }),
@@ -350,8 +332,7 @@ add_task(async function test_keyword_search() {
       makeKeywordSearchResult(context, {
         uri: "http://ghi/?search=fo%E9&raw=foé",
         keyword: "charset_history",
-        domain: "ghi",
-        searchTerms: "foé",
+        title: "ghi: foé",
         iconUri: "page-icon:http://ghi/?search=%s&raw=%S",
         heuristic: true,
       }),
@@ -366,8 +347,7 @@ add_task(async function test_keyword_search() {
       makeKeywordSearchResult(context, {
         uri: "http://abc/?search=%2B%2F%40&raw=+/@",
         keyword: "encoded",
-        domain: "abc",
-        searchTerms: "+/@",
+        title: "abc: +/@",
         iconUri: "page-icon:http://abc/?search=%s&raw=%S",
         heuristic: true,
       }),
@@ -382,8 +362,7 @@ add_task(async function test_keyword_search() {
       makeKeywordSearchResult(context, {
         uri: "http://abc/?search=%2B%2F%40&raw=+/@",
         keyword: "charset",
-        domain: "abc",
-        searchTerms: "+/@",
+        title: "abc: +/@",
         iconUri: "page-icon:http://abc/?search=%s&raw=%S&mozcharset=ISO-8859-1",
         heuristic: true,
       }),
@@ -398,52 +377,8 @@ add_task(async function test_keyword_search() {
       makeKeywordSearchResult(context, {
         uri: "http://abc/?search=test",
         keyword: "key",
-        domain: "abc",
-        searchTerms: "test",
+        title: "abc: test",
         iconUri: "page-icon:http://abc/?search=%s",
-        heuristic: true,
-      }),
-    ],
-  });
-
-  info("Search terms are truncated in the title");
-  let longTerms = "a".repeat(UrlbarShared.MAX_TEXT_LENGTH + 10);
-  context = createContext(`key ${longTerms}`, { isPrivate: false });
-  await check_results({
-    context,
-    matches: [
-      makeKeywordSearchResult(context, {
-        uri: `http://abc/?search=${longTerms}`,
-        keyword: "key",
-        domain: "abc",
-        searchTerms: longTerms.substring(
-          0,
-          UrlbarShared.MAX_TEXT_LENGTH - "abc".length
-        ),
-        iconUri: "page-icon:http://abc/?search=%s",
-        heuristic: true,
-      }),
-    ],
-  });
-
-  info("A long domain is truncated and leaves room for the search terms");
-  let longHost = `${"a".repeat(60)}.`.repeat(5) + "example";
-  let longHostUri = `http://${longHost}/?search=%s`;
-  await PlacesTestUtils.addBookmarkWithDetails({
-    uri: longHostUri,
-    title: "Long host",
-    keyword: "longhost",
-  });
-  context = createContext("longhost test", { isPrivate: false });
-  await check_results({
-    context,
-    matches: [
-      makeKeywordSearchResult(context, {
-        uri: `http://${longHost}/?search=test`,
-        keyword: "longhost",
-        domain: longHost.substring(0, UrlbarShared.MAX_TEXT_LENGTH - 1),
-        searchTerms: "t",
-        iconUri: `page-icon:${longHostUri}`,
         heuristic: true,
       }),
     ],

@@ -282,7 +282,7 @@ export class L10nCache {
           args[key],
           argsHighlights[key]
         );
-        args[key] = span.getHTML();
+        args[key] = span.innerHTML;
       }
     }
 

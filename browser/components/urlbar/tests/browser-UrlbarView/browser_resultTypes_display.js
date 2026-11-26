@@ -19,7 +19,7 @@ function assertElementsDisplayed(details, expected) {
     "Should be displaying a row of the correct type"
   );
   Assert.equal(
-    details.displayed.title,
+    details.title,
     expected.title,
     "Should be displaying the correct title"
   );
