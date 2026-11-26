@@ -5741,7 +5741,8 @@ std::tuple<nscoord, nsReflowStatus> nsFlexContainerFrame::ReflowChildren(
       // the outer loop.
       Maybe<nscoord> frameBPosBeforePerItemShift;
 
-      if (item.Frame()->GetPrevInFlow()) {
+      const bool itemIsFirstInFlow = !item.Frame()->GetPrevInFlow();
+      if (!itemIsFirstInFlow) {
         // The item is a continuation. Lay it out at the beginning of the
         // available space.
         framePos.B(flexWM) = 0;
@@ -5823,7 +5824,7 @@ std::tuple<nscoord, nsReflowStatus> nsFlexContainerFrame::ReflowChildren(
       // our next-in-flow -- i.e. if there was a forced break before it, or its
       // position is beyond the available space's block-end.
       bool itemInPushedItems = false;
-      if (shouldPushRemainingItems) {
+      if (shouldPushRemainingItems && itemIsFirstInFlow) {
         FLEX_ITEM_LOG(
             item.Frame(),
             "[frag] Item needed to be pushed to container's next-in-flow due "
@@ -5892,7 +5893,7 @@ std::tuple<nscoord, nsReflowStatus> nsFlexContainerFrame::ReflowChildren(
         }
 
         const bool shouldPushItem = [&]() {
-          if (shouldPushRemainingItems) {
+          if (shouldPushRemainingItems && itemIsFirstInFlow) {
             return true;
           }
           if (availableBSizeForItem == NS_UNCONSTRAINEDSIZE) {
@@ -5931,7 +5932,8 @@ std::tuple<nscoord, nsReflowStatus> nsFlexContainerFrame::ReflowChildren(
 
         if (shouldHonorForcedBreaks) {
           const bool itemHasBreakAfter =
-              item.Frame()->ShouldBreakAfter(aReflowInput.mBreakType) ||
+              (!childStatus.IsIncomplete() &&
+               item.Frame()->ShouldBreakAfter(aReflowInput.mBreakType)) ||
               childStatus.IsInlineBreakAfter();
           if (itemHasBreakAfter) {
             if (aAxisTracker.IsRowOriented()) {
@@ -6052,8 +6054,11 @@ std::tuple<nscoord, nsReflowStatus> nsFlexContainerFrame::ReflowChildren(
           }
         } else {
           // Current non-startmost line has forced break-before, so push all the
-          // items in this line.
+          // non-continuation items in this line.
           for (const FlexItem& item : line.Items()) {
+            if (item.Frame()->GetPrevInFlow()) {
+              continue;
+            }
             pushedItems.Insert(item.Frame());
             incompleteItems.Remove(item.Frame());
             overflowIncompleteItems.Remove(item.Frame());

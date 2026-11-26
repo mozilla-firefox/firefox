@@ -1502,6 +1502,8 @@ class nsIFrame : public nsQueryFrame {
   // Note: this method only checks 'break-before' property on *this* frame, and
   // it doesn't handle forced break value propagation from its first child.
   // Callers should handle the propagation in reflow.
+  // It also always returns false for a continuation, since a forced break
+  // before only applies to the first-in-flow.
   bool ShouldBreakBefore(const BreakType aBreakType) const;
 
   // Return True if this frame has a forced break value after it.
@@ -1509,6 +1511,8 @@ class nsIFrame : public nsQueryFrame {
   // Note: this method only checks 'break-after' property on *this* frame, and
   // it doesn't handle forced break value propagation from its last child.
   // Callers should handle the propagation in reflow.
+  // A forced break-after only applies when this frame is not incomplete, and
+  // callers need to check that.
   bool ShouldBreakAfter(const BreakType aBreakType) const;
 
  private:
