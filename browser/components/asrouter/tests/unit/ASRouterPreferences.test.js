@@ -20,9 +20,8 @@ const CFR_USER_PREF_FEATURES =
  *  2. asrouter.devtoolsEnabled
  *  3. browser.newtabpage.activity-stream.asrouter.userprefs.cfr.addons (user preference - cfr)
  *  4. browser.newtabpage.activity-stream.asrouter.userprefs.cfr.features (user preference - cfr)
- *  5. services.sync.username
  */
-const NUMBER_OF_PREFS_TO_OBSERVE = 5;
+const NUMBER_OF_PREFS_TO_OBSERVE = 4;
 
 describe("ASRouterPreferences", () => {
   let ASRouterPreferences;
@@ -459,24 +458,6 @@ describe("ASRouterPreferences", () => {
 
       ASRouterPreferences.observe(null, null, DEVTOOLS_PREF);
       assert.notCalled(callback);
-    });
-  });
-  describe("#_transformPersonalizedCfrScores", () => {
-    it("should report JSON.parse errors", () => {
-      sandbox.stub(global.console, "error");
-
-      ASRouterPreferences._transformPersonalizedCfrScores("");
-
-      assert.calledOnce(global.console.error);
-    });
-    it("should return an object parsed from a string", () => {
-      const scores = { FOO: 3000, BAR: 4000 };
-      assert.deepEqual(
-        ASRouterPreferences._transformPersonalizedCfrScores(
-          JSON.stringify(scores)
-        ),
-        scores
-      );
     });
   });
 });

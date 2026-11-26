@@ -53,8 +53,6 @@ ChromeUtils.defineESModuleGetters(lazy, {
   SpecialMessageActions:
     "resource://messaging-system/lib/SpecialMessageActions.sys.mjs",
   TargetingContext: "resource://messaging-system/targeting/Targeting.sys.mjs",
-  TARGETING_PREFERENCES:
-    "resource:///modules/asrouter/ASRouterPreferences.sys.mjs",
   setTimeout: "resource://gre/modules/Timer.sys.mjs",
   Spotlight: "resource:///modules/asrouter/Spotlight.sys.mjs",
   ToastNotification: "resource:///modules/asrouter/ToastNotification.sys.mjs",
@@ -796,8 +794,6 @@ export const MessageLoaderUtils = {
 export class _ASRouter {
   constructor(localProviders = LOCAL_MESSAGE_PROVIDERS) {
     this.initialized = false;
-    this.clearChildMessages = null;
-    this.clearChildProviders = null;
     this.updateAdminState = null;
     this.sendTelemetry = null;
     this.dispatchCFRAction = null;
@@ -835,35 +831,15 @@ export class _ASRouter {
     this.messagesEnabledInAutomation = [];
   }
 
-  async onPrefChange(prefName) {
-    if (lazy.TARGETING_PREFERENCES.includes(prefName)) {
-      let invalidMessages = [];
-      // Notify all tabs of messages that have become invalid after pref change
-      const targetingContext = new lazy.TargetingContext();
-
-      for (const msg of this.state.messages.filter(this.isUnblockedMessage)) {
-        if (!msg.targeting) {
-          continue;
-        }
-        const isMatch = await targetingContext.evalWithDefault(msg.targeting);
-        if (!isMatch) {
-          invalidMessages.push(msg.id);
-        }
-      }
-      this.clearChildMessages(invalidMessages);
-    } else {
-      // Update message providers and fetch new messages on pref change
-      this._loadLocalProviders();
-      let invalidProviders = await this._updateMessageProviders();
-      if (invalidProviders.length) {
-        this.clearChildProviders(invalidProviders);
-      }
-      await this.loadMessagesFromAllProviders();
-      // Any change in user prefs can disable or enable groups
-      await this.setState(state => ({
-        groups: state.groups.map(this._checkGroupEnabled),
-      }));
-    }
+  async onPrefChange() {
+    // Update message providers and fetch new messages on pref change
+    this._loadLocalProviders();
+    await this._updateMessageProviders();
+    await this.loadMessagesFromAllProviders();
+    // Any change in user prefs can disable or enable groups
+    await this.setState(state => ({
+      groups: state.groups.map(this._checkGroupEnabled),
+    }));
   }
 
   // Fetch and decode the message provider pref JSON, and update the message providers
@@ -1206,8 +1182,6 @@ export class _ASRouter {
   async init({
     storage: routerStorage,
     sendTelemetry,
-    clearChildMessages,
-    clearChildProviders,
     updateAdminState,
     dispatchCFRAction,
   }) {
@@ -1217,8 +1191,6 @@ export class _ASRouter {
     this.initializing = true;
     this._storage = routerStorage;
     this.ALLOWLIST_HOSTS = this._loadAllowHosts();
-    this.clearChildMessages = this.toWaitForInitFunc(clearChildMessages);
-    this.clearChildProviders = this.toWaitForInitFunc(clearChildProviders);
     this.updateAdminState = this.toWaitForInitFunc(updateAdminState);
     this.sendTelemetry = sendTelemetry;
     this.dispatchCFRAction = this.toWaitForInitFunc(dispatchCFRAction);
@@ -1300,8 +1272,6 @@ export class _ASRouter {
   uninit() {
     this._storage.set("previousSessionEnd", Date.now());
 
-    this.clearChildMessages = null;
-    this.clearChildProviders = null;
     this.updateAdminState = null;
     this.sendTelemetry = null;
     this.dispatchCFRAction = null;

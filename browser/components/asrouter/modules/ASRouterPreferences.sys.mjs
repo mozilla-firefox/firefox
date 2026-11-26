@@ -26,7 +26,6 @@ const DEVTOOLS_PREF =
  */
 const DEBUG_PREF = "browser.newtabpage.activity-stream.asrouter.debugLogLevel";
 
-const FXA_USERNAME_PREF = "services.sync.username";
 // To observe changes to Selectable Profiles
 const SELECTABLE_PROFILES_UPDATED = "sps-profiles-updated";
 const MESSAGING_PROFILE_ID_PREF = "messaging-system.profile.messagingProfileId";
@@ -69,10 +68,6 @@ XPCOMUtils.defineLazyPreferenceGetter(
   }
 );
 
-// Preferences that influence targeting attributes. When these change we need
-// to re-evaluate if the message targeting still matches
-export const TARGETING_PREFERENCES = [FXA_USERNAME_PREF];
-
 export const TEST_PROVIDERS = [
   {
     id: "panel_local_testing",
@@ -99,16 +94,6 @@ export class _ASRouterPreferences {
       };
       return new ConsoleAPI(consoleOptions);
     });
-  }
-
-  _transformPersonalizedCfrScores(value) {
-    let result = {};
-    try {
-      result = JSON.parse(value);
-    } catch (e) {
-      console.error(e);
-    }
-    return result;
   }
 
   _getProviderConfig() {
@@ -301,9 +286,6 @@ export class _ASRouterPreferences {
     for (const id of Object.keys(USER_PREFERENCES)) {
       Services.prefs.addObserver(USER_PREFERENCES[id], this);
     }
-    for (const targetingPref of TARGETING_PREFERENCES) {
-      Services.prefs.addObserver(targetingPref, this);
-    }
     this._maybeSetMessagingProfileID();
     this._initialized = true;
   }
@@ -318,9 +300,6 @@ export class _ASRouterPreferences {
       );
       for (const id of Object.keys(USER_PREFERENCES)) {
         Services.prefs.removeObserver(USER_PREFERENCES[id], this);
-      }
-      for (const targetingPref of TARGETING_PREFERENCES) {
-        Services.prefs.removeObserver(targetingPref, this);
       }
     }
     Object.assign(this, DEFAULT_STATE);

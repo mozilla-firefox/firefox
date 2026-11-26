@@ -646,7 +646,6 @@ class ASRouterAdminInner extends (react__WEBPACK_IMPORTED_MODULE_1___default().P
     type,
     data
   }) {
-    // These only exists due to onPrefChange events in ASRouter
     switch (type) {
       case "UpdateAdminState":
         {

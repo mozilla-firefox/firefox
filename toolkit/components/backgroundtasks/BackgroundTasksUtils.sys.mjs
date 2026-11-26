@@ -366,8 +366,6 @@ export var BackgroundTasksUtils = {
         dispatchCFRAction: messageHandler.handleCFRAction.bind(messageHandler),
         // There's no child process involved in background tasks, so swallow all
         // of these messages.
-        clearChildMessages: logArgs.bind(null, "clearChildMessages"),
-        clearChildProviders: logArgs.bind(null, "clearChildProviders"),
         updateAdminState: () => {},
       });
     }

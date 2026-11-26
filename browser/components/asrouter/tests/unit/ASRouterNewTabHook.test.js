@@ -68,8 +68,6 @@ describe("ASRouterNewTabHook", () => {
       let instance = null;
       beforeEach(async () => {
         messageHandler = {
-          clearChildMessages: sandbox.stub().resolves(),
-          clearChildProviders: sandbox.stub().resolves(),
           updateAdminState: sandbox.stub().resolves(),
         };
         initParams.router.init.callsFake(params => {
@@ -80,32 +78,18 @@ describe("ASRouterNewTabHook", () => {
       });
       describe("connect", () => {
         it("before connection messageHandler methods are not called", async () => {
-          routerParams.clearChildMessages([1]);
-          routerParams.clearChildProviders(["test_provider"]);
           routerParams.updateAdminState({ messages: {} });
-          assert.notCalled(messageHandler.clearChildMessages);
-          assert.notCalled(messageHandler.clearChildProviders);
           assert.notCalled(messageHandler.updateAdminState);
         });
-        it("after connect updateAdminState and clearChildMessages calls are forwarded to handler", async () => {
+        it("after connect updateAdminState calls are forwarded to handler", async () => {
           instance.connect(messageHandler);
-          routerParams.clearChildMessages([1]);
-          routerParams.clearChildProviders(["test_provider"]);
           routerParams.updateAdminState({ messages: {} });
-          assert.called(messageHandler.clearChildMessages);
-          assert.called(messageHandler.clearChildProviders);
           assert.called(messageHandler.updateAdminState);
         });
         it("calls from before connection are dropped", async () => {
-          routerParams.clearChildMessages([1]);
-          routerParams.clearChildProviders(["test_provider"]);
           routerParams.updateAdminState({ messages: {} });
           instance.connect(messageHandler);
-          routerParams.clearChildMessages([1]);
-          routerParams.clearChildProviders(["test_provider"]);
           routerParams.updateAdminState({ messages: {} });
-          assert.calledOnce(messageHandler.clearChildMessages);
-          assert.calledOnce(messageHandler.clearChildProviders);
           assert.calledOnce(messageHandler.updateAdminState);
         });
       });
@@ -113,34 +97,20 @@ describe("ASRouterNewTabHook", () => {
         it("calls after disconnect are dropped", async () => {
           instance.connect(messageHandler);
           instance.disconnect();
-          routerParams.clearChildMessages([1]);
-          routerParams.clearChildProviders(["test_provider"]);
           routerParams.updateAdminState({ messages: {} });
-          assert.notCalled(messageHandler.clearChildMessages);
-          assert.notCalled(messageHandler.clearChildProviders);
           assert.notCalled(messageHandler.updateAdminState);
         });
         it("only calls from when there is a connection are forwarded", async () => {
-          routerParams.clearChildMessages([1]);
-          routerParams.clearChildProviders(["foo"]);
           routerParams.updateAdminState({ messages: {} });
           instance.connect(messageHandler);
-          routerParams.clearChildMessages([200]);
-          routerParams.clearChildProviders(["bar"]);
           routerParams.updateAdminState({
             messages: {
               data: "accept",
             },
           });
           instance.disconnect();
-          routerParams.clearChildMessages([1]);
-          routerParams.clearChildProviders(["foo"]);
           routerParams.updateAdminState({ messages: {} });
-          assert.calledOnce(messageHandler.clearChildMessages);
-          assert.calledOnce(messageHandler.clearChildProviders);
           assert.calledOnce(messageHandler.updateAdminState);
-          assert.calledWith(messageHandler.clearChildMessages, [200]);
-          assert.calledWith(messageHandler.clearChildProviders, ["bar"]);
           assert.calledWith(messageHandler.updateAdminState, {
             messages: {
               data: "accept",

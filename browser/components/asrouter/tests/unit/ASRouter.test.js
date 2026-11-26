@@ -8,10 +8,7 @@ import {
   FAKE_REMOTE_PROVIDER,
   FAKE_REMOTE_SETTINGS_PROVIDER,
 } from "./constants";
-import {
-  ASRouterPreferences,
-  TARGETING_PREFERENCES,
-} from "modules/ASRouterPreferences.sys.mjs";
+import { ASRouterPreferences } from "modules/ASRouterPreferences.sys.mjs";
 import { ASRouterTriggerListeners } from "modules/ASRouterTriggerListeners.sys.mjs";
 import { GlobalOverrider } from "tests/unit/utils";
 import { PanelTestProvider } from "modules/PanelTestProvider.sys.mjs";
@@ -99,8 +96,6 @@ describe("ASRouter", () => {
         resetSharedMessageStorage: sandbox.stub().resolves(),
       },
       sendTelemetry: sandbox.stub().resolves(),
-      clearChildMessages: sandbox.stub().resolves(),
-      clearChildProviders: sandbox.stub().resolves(),
       updateAdminState: sandbox.stub().resolves(),
       dispatchCFRAction: sandbox.stub().resolves(),
     };
@@ -280,7 +275,6 @@ describe("ASRouter", () => {
       // importing these modules into the global scope ourselves.
       GroupsConfigurationProvider: { getMessages: () => Promise.resolve([]) },
       ASRouterPreferences,
-      TARGETING_PREFERENCES,
       ASRouterTargeting,
       ASRouterTriggerListeners,
       QueryCache,
@@ -671,31 +665,6 @@ describe("ASRouter", () => {
         Router.onPrefChange
       );
     });
-    it("should call clearChildMessages (does nothing, see bug 1899028)", async () => {
-      const messageTargeted = {
-        id: "1",
-        campaign: "foocampaign",
-        targeting: "true",
-        groups: ["cfr"],
-        provider: "cfr",
-      };
-      const messageNotTargeted = {
-        id: "2",
-        campaign: "foocampaign",
-        groups: ["cfr"],
-        provider: "cfr",
-      };
-      await Router.setState({
-        messages: [messageTargeted, messageNotTargeted],
-        providers: [{ id: "cfr" }],
-      });
-      fakeTargetingContext.evalWithDefault.resolves(false);
-
-      await Router.onPrefChange("services.sync.username");
-
-      assert.calledOnce(initParams.clearChildMessages);
-      assert.calledWith(initParams.clearChildMessages, [messageTargeted.id]);
-    });
     it("should call loadMessagesFromAllProviders on pref change", () => {
       ASRouterPreferences.observe(null, null, MESSAGE_PROVIDER_PREF_NAME);
       assert.calledOnce(Router.loadMessagesFromAllProviders);
@@ -706,7 +675,7 @@ describe("ASRouter", () => {
       });
       sandbox.stub(ASRouterPreferences, "getUserPreference");
 
-      await Router.onPrefChange(MESSAGE_PROVIDER_PREF_NAME);
+      await Router.onPrefChange();
 
       assert.calledWithExactly(ASRouterPreferences.getUserPreference, "bar");
     });
@@ -729,7 +698,7 @@ describe("ASRouter", () => {
       assert.lengthOf(Router.state.providers, length);
       assert.isDefined(provider);
     });
-    it("should clear disabled providers on pref change", async () => {
+    it("should remove disabled providers on pref change", async () => {
       const TEST_PROVIDER_ID = "some_provider_id";
       await Router.setState({
         providers: [{ id: TEST_PROVIDER_ID }],
@@ -743,10 +712,11 @@ describe("ASRouter", () => {
         modifiedRemoteProvider,
         FAKE_REMOTE_SETTINGS_PROVIDER,
       ]);
-      await Router.onPrefChange(MESSAGE_PROVIDER_PREF_NAME);
+      await Router.onPrefChange();
 
-      assert.calledOnce(initParams.clearChildProviders);
-      assert.calledWith(initParams.clearChildProviders, [TEST_PROVIDER_ID]);
+      assert.isUndefined(
+        Router.state.providers.find(p => p.id === TEST_PROVIDER_ID)
+      );
     });
   });
 
@@ -1939,7 +1909,6 @@ describe("ASRouter", () => {
     it("should set .dispatchCFRAction to null", () => {
       Router.uninit();
       assert.isNull(Router.dispatchCFRAction);
-      assert.isNull(Router.clearChildMessages);
       assert.isNull(Router.sendTelemetry);
     });
     it("should save previousSessionEnd", () => {

@@ -123,7 +123,6 @@ export class ASRouterAdminInner extends React.PureComponent {
   }
 
   onMessageFromParent({ type, data }) {
-    // These only exists due to onPrefChange events in ASRouter
     switch (type) {
       case "UpdateAdminState": {
         this.setStateFromParent(data);

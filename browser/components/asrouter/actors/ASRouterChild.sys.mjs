@@ -54,8 +54,7 @@ export class ASRouterChild extends JSWindowActorChild {
 
   receiveMessage({ name, data }) {
     switch (name) {
-      case "UpdateAdminState":
-      case "ClearProviders": {
+      case "UpdateAdminState": {
         this.observers.forEach(listener => {
           let result = Cu.cloneInto(
             {
