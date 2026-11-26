@@ -9,17 +9,17 @@
     <ID>ClassAcronymCasing:BrowserToolbarAction.kt$BrowserDisplayToolbarAction$ToolbarCFRDismissed : BrowserDisplayToolbarAction</ID>
     <ID>ClassAcronymCasing:BrowserToolbarAction.kt$BrowserDisplayToolbarAction$ToolbarCFRShown : BrowserDisplayToolbarAction</ID>
     <ID>ClassAcronymCasing:BrowserToolbarCFR.kt$BrowserToolbarCFR</ID>
-    <ID>ClassAcronymCasing:CFRBox.kt$CFRBackground</ID>
-    <ID>ClassAcronymCasing:CFRBox.kt$CFRColors</ID>
-    <ID>ClassAcronymCasing:CFRBox.kt$CFRDefaults</ID>
-    <ID>ClassAcronymCasing:CFRBox.kt$CFRPositionProvider : PopupPositionProvider</ID>
-    <ID>ClassAcronymCasing:CFRBox.kt$CFRPositionProviderImpl : CFRPositionProvider</ID>
-    <ID>ClassAcronymCasing:CFRBox.kt$CFRShape : Shape</ID>
     <ID>ClassAcronymCasing:CFRPopup.kt$CFRPopup</ID>
     <ID>ClassAcronymCasing:CFRPopup.kt$CFRPopupBackground</ID>
     <ID>ClassAcronymCasing:CFRPopup.kt$CFRPopupProperties</ID>
     <ID>ClassAcronymCasing:CFRPopupFullscreenLayout.kt$CFRPopupFullscreenLayout : AbstractComposeViewViewRootForInspector</ID>
     <ID>ClassAcronymCasing:CFRPopupShape.kt$CFRPopupShape : Shape</ID>
+    <ID>ClassAcronymCasing:CFRTooltip.kt$CFRBackground</ID>
+    <ID>ClassAcronymCasing:CFRTooltip.kt$CFRColors</ID>
+    <ID>ClassAcronymCasing:CFRTooltip.kt$CFRDefaults</ID>
+    <ID>ClassAcronymCasing:CFRTooltip.kt$CFRPositionProvider : PopupPositionProvider</ID>
+    <ID>ClassAcronymCasing:CFRTooltip.kt$CFRPositionProviderImpl : CFRPositionProvider</ID>
+    <ID>ClassAcronymCasing:CFRTooltip.kt$CFRShape : Shape</ID>
     <ID>ClassAcronymCasing:Choice.kt$Choice$CREATOR : Creator</ID>
     <ID>ClassAcronymCasing:CreditCardUtils.kt$CreditCardIIN</ID>
     <ID>ClassAcronymCasing:HitResult.kt$HitResult$AUDIO : HitResult</ID>
@@ -173,7 +173,6 @@
     <ID>HardcodedPaddingUsage:Button.kt$(16.dp)</ID>
     <ID>HardcodedPaddingUsage:ButtonsScreen.kt$(horizontal = 16.dp)</ID>
     <ID>HardcodedPaddingUsage:ButtonsScreen.kt$(vertical = 16.dp)</ID>
-    <ID>HardcodedPaddingUsage:CFRBox.kt$(16.dp)</ID>
     <ID>HardcodedPaddingUsage:CFRPopupContent.kt$( end = if (showDismissButton) 24.dp else 16.dp // 8.dp extra padding to the "X" icon )</ID>
     <ID>HardcodedPaddingUsage:CFRPopupContent.kt$( start = 16.dp, top = 16.dp + if (indicatorDirection == CFRPopup.IndicatorDirection.UP) { CFRPopup.DEFAULT_INDICATOR_HEIGHT.dp } else { 0.dp }, end = 16.dp, bottom = 16.dp + if (indicatorDirection == CFRPopup.IndicatorDirection.DOWN) { CFRPopup.DEFAULT_INDICATOR_HEIGHT.dp } else { 0.dp }, )</ID>
     <ID>HardcodedPaddingUsage:CFRPopupContent.kt$(end = 6.dp)</ID>

@@ -18,13 +18,13 @@ import org.junit.runner.RunWith
 
 @OptIn(ExperimentalMaterial3Api::class)
 @RunWith(AndroidJUnit4::class)
-class CFRBoxTest {
+class CFRTooltipTest {
 
     @get:Rule val composeTestRule = createComposeRule()
 
     @Test
     fun `GIVEN user input is enabled WHEN the anchor is long-pressed THEN the CFR is shown`() {
-        setCFRBoxContent(enableUserInput = true)
+        setCFRTooltipContent(enableUserInput = true)
 
         composeTestRule.onNodeWithText(ANCHOR_TEXT).performTouchInput { longClick() }
 
@@ -33,16 +33,16 @@ class CFRBoxTest {
 
     @Test
     fun `GIVEN user input is disabled WHEN the anchor is long-pressed THEN the CFR is not shown`() {
-        setCFRBoxContent(enableUserInput = false)
+        setCFRTooltipContent(enableUserInput = false)
 
         composeTestRule.onNodeWithText(ANCHOR_TEXT).performTouchInput { longClick() }
 
         composeTestRule.onNodeWithText(CFR_TEXT).assertDoesNotExist()
     }
 
-    private fun setCFRBoxContent(enableUserInput: Boolean) {
+    private fun setCFRTooltipContent(enableUserInput: Boolean) {
         composeTestRule.setContent {
-            CFRBox(
+            CFRTooltip(
                 cfr = { Text(text = CFR_TEXT) },
                 state = rememberCFRState(),
                 enableUserInput = enableUserInput,

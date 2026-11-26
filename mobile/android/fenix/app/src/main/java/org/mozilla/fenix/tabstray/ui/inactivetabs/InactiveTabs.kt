@@ -47,8 +47,8 @@ import androidx.compose.ui.unit.sp
 import mozilla.components.compose.base.button.IconButton
 import mozilla.components.compose.base.button.TextButton
 import mozilla.components.compose.cfr.CFR
-import mozilla.components.compose.cfr.CFRBox
 import mozilla.components.compose.cfr.CFRPopup.IndicatorDirection
+import mozilla.components.compose.cfr.CFRTooltip
 import mozilla.components.compose.cfr.rememberCFRPositionProvider
 import mozilla.components.compose.cfr.rememberCFRState
 import mozilla.components.ui.icons.R as iconsR
@@ -188,7 +188,7 @@ private fun InactiveTabsHeader(
         collapseActionContentDescription = stringResource(R.string.inactive_tabs_collapse_content_description),
         onClick = onClick,
         headerTextWrapper = { headerText ->
-            CFRBox(
+            CFRTooltip(
                 state = cfrState,
                 positionProvider =
                     rememberCFRPositionProvider(

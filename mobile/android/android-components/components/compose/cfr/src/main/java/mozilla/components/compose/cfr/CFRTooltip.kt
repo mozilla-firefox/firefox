@@ -86,7 +86,7 @@ typealias CFRState = TooltipState
 typealias CFRScope = TooltipScope
 
 /**
- * Create and remember [CFRPositionProvider] for [CFRBox]
+ * Create and remember [CFRPositionProvider] for [CFRTooltip]
  *
  * @param indicatorDirection The direction of the CFR indicator
  * @param spacingBetweenCfrAndAnchor Spacing between CFR tooltip and the anchor. Defaults to `4.dp`
@@ -105,7 +105,7 @@ fun rememberCFRPositionProvider(
     }
 }
 
-/** Create and remember [CFRState] for [CFRBox] */
+/** Create and remember [CFRState] for [CFRTooltip] */
 @Composable
 @ExperimentalMaterial3Api // rememberTooltipState
 fun rememberCFRState(
@@ -132,7 +132,7 @@ fun rememberCFRState(
  */
 @OptIn(ExperimentalMaterial3Api::class) // TooltipBox
 @Composable
-fun CFRBox(
+fun CFRTooltip(
     cfr: @Composable CFRScope.() -> Unit,
     state: CFRState,
     modifier: Modifier = Modifier,
@@ -241,7 +241,7 @@ private fun CFRContentLayout(
     text: @Composable () -> Unit,
 ) {
     Row(modifier) {
-        Column(modifier = Modifier.padding(16.dp).weight(1f)) {
+        Column(modifier = Modifier.padding(AcornTheme.layout.space.static200).weight(1f)) {
             title?.let {
                 CompositionLocalProvider(
                     LocalContentColor provides colors.titleContentColor,
@@ -612,7 +612,7 @@ private fun CFRWithTitlePreview() {
     AcornTheme {
         Surface {
             Box(
-                modifier = Modifier.fillMaxSize().padding(16.dp),
+                modifier = Modifier.fillMaxSize().padding(AcornTheme.layout.space.static200),
                 contentAlignment = Alignment.Center,
             ) {
                 FlowRow(
@@ -643,7 +643,7 @@ private fun SampleButtonWithCFR(
     showDismissButton: Boolean = true,
     buttonText: String,
 ) {
-    CFRBox(
+    CFRTooltip(
         positionProvider = rememberCFRPositionProvider(direction),
         cfr = {
             CFR(

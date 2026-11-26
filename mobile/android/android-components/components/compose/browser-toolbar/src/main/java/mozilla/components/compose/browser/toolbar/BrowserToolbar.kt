@@ -30,8 +30,8 @@ import mozilla.components.compose.browser.toolbar.store.ToolbarGravity.Bottom
 import mozilla.components.compose.browser.toolbar.store.ToolbarGravity.Top
 import mozilla.components.compose.browser.toolbar.ui.BrowserToolbarQuery
 import mozilla.components.compose.cfr.CFR
-import mozilla.components.compose.cfr.CFRBox
 import mozilla.components.compose.cfr.CFRPopup.IndicatorDirection
+import mozilla.components.compose.cfr.CFRTooltip
 import mozilla.components.compose.cfr.rememberCFRPositionProvider
 import mozilla.components.compose.cfr.rememberCFRState
 import mozilla.components.lib.state.ext.observeAsComposableState
@@ -148,7 +148,7 @@ private fun DisplayToolbarWithCFR(
         onCFRDismissed(cfr.tag)
     }
 
-    CFRBox(
+    CFRTooltip(
         modifier = modifier,
         state = state,
         positionProvider = rememberCFRPositionProvider(indicatorDirection),
