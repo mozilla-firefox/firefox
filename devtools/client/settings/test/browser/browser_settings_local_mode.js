@@ -33,6 +33,7 @@ add_task(test_local_mode_add_mapping_cancelled);
 add_task(test_local_mode_edit_origin);
 add_task(test_local_mode_edit_origin_refresh);
 add_task(test_local_mode_change_folder);
+add_task(test_local_mode_navigate);
 
 async function test_local_mode_mappings_listed() {
   setMapping(0, { origin: "firefox.localhost", path: TEST_FOLDER });
@@ -299,6 +300,39 @@ async function test_local_mode_change_folder() {
   ok(
     !item.querySelector(".folder-error"),
     "An existing folder hides the error"
+  );
+
+  await closeTabAndToolbox();
+  clearMappings();
+}
+
+async function test_local_mode_navigate() {
+  setMapping(0, { origin: "firefox.localhost", path: TEST_FOLDER });
+  const { root } = await openSettings();
+  const editor = await getLocalModeEditor(root);
+  const [item] = getMappingItems(editor);
+
+  const waitForDevToolsReload = await watchForDevToolsReload(
+    gBrowser.selectedBrowser
+  );
+  item.querySelector(".navigate").click();
+  await waitForDevToolsReload();
+  is(
+    gBrowser.selectedBrowser.currentURI.spec,
+    "https://firefox.localhost/",
+    "Opening a mapping navigates to its origin"
+  );
+
+  const onUpdated = LocalModeMappings.once("updated");
+  Services.prefs.setBoolPref(
+    `${LOCAL_MODE_MAPPINGS_PREF_PREFIX}0.disabled`,
+    true
+  );
+  await onUpdated;
+  await editor.updateComplete;
+  ok(
+    item.querySelector(".navigate").disabled,
+    "A disabled mapping can't be navigated to"
   );
 
   await closeTabAndToolbox();

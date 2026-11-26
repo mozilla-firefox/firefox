@@ -206,6 +206,16 @@ export class DevToolsSettingsLocalMode extends MozLitElement {
     new FileUtils.File(mapping.path).reveal();
   }
 
+  /** @param {Event} event */
+  #navigateTo(event) {
+    const mapping = this.#getMapping(event.currentTarget);
+    if (!mapping || !this.toolbox) {
+      return;
+    }
+    const { targetCommand } = this.toolbox.commands;
+    targetCommand.navigateTo("https://" + mapping.origin);
+  }
+
   /** @param {MappingState} mapping */
   #renderFolder(mapping) {
     return html`
@@ -249,6 +259,14 @@ export class DevToolsSettingsLocalMode extends MozLitElement {
             @input=${this.#originInput}
             @change=${this.#originChange}
           ></moz-input-text>
+          <moz-button
+            class="navigate"
+            type="icon"
+            iconsrc="chrome://global/skin/icons/arrow-right.svg"
+            data-l10n-id="devtools-settings-local-mode-navigate"
+            ?disabled=${mapping.disabled}
+            @click=${this.#navigateTo}
+          ></moz-button>
         </div>
         ${originError
           ? html`<p class="origin-error" data-l10n-id=${originError}></p>`

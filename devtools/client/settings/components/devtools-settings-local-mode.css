@@ -30,6 +30,20 @@ p {
   margin: 0;
 }
 
+.origin-row {
+  display: flex;
+  align-items: end;
+  gap: var(--space-xsmall);
+
+  moz-input-text {
+    flex: 1;
+  }
+}
+
+.navigate:dir(rtl) {
+  rotate: 180deg;
+}
+
 .folder-row {
   display: flex;
   justify-content: space-between;
