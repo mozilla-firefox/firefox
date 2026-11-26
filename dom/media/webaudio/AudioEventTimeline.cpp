@@ -148,7 +148,10 @@ double AudioTimelineEvent::EndTime() const {
     return Time<TimeType>() + mDuration;
   }
   return Time<TimeType>();
-};
+}
+
+template double AudioTimelineEvent::EndTime<double>() const;
+template double AudioTimelineEvent::EndTime<int64_t>() const;
 
 float AudioTimelineEvent::EndValue() const {
   if (mType == AudioTimelineEvent::SetValueCurve) {

@@ -308,14 +308,19 @@ class AudioEventTimeline {
   }
 
   template <typename TimeType>
-  void CancelScheduledValues(TimeType aStartTime) {
+  void CancelScheduledValues(TimeType aCancelStartTime) {
     for (unsigned i = 0; i < mEvents.Length(); ++i) {
-      if (mEvents[i].Time<TimeType>() >= aStartTime) {
+      if (mEvents[i].Time<TimeType>() >= aCancelStartTime ||
+          (mEvents[i].mType == AudioTimelineEvent::SetValueCurve &&
+           // If the curve extends past the cancel time, it is cancelled.
+           // The event is not removed on equality;
+           // see https://github.com/WebAudio/web-audio-api/issues/2643
+           mEvents[i].EndTime<TimeType>() > aCancelStartTime)) {
 #ifdef DEBUG
         // Sanity check: the array should be sorted, so all of the following
-        // events should have a time greater than aStartTime too.
+        // events should have a time greater than aCancelStartTime too.
         for (unsigned j = i + 1; j < mEvents.Length(); ++j) {
-          MOZ_ASSERT(mEvents[j].Time<TimeType>() >= aStartTime);
+          MOZ_ASSERT(mEvents[j].Time<TimeType>() >= aCancelStartTime);
         }
 #endif
         mEvents.TruncateLength(i);
