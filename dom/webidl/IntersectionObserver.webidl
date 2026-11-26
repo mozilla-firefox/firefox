@@ -38,6 +38,8 @@ interface IntersectionObserver {
   readonly attribute UTF8String scrollMargin;
   [Constant,Cached]
   readonly attribute sequence<double> thresholds;
+  [Constant, Pref="dom.intersection_observer.delay.enabled"]
+  readonly attribute long delay;
   undefined observe(Element target);
   undefined unobserve(Element target);
   undefined disconnect();
@@ -60,4 +62,6 @@ dictionary IntersectionObserverInit {
   UTF8String rootMargin = "0px";
   UTF8String scrollMargin = "0px";
   (double or sequence<double>) threshold = 0;
+  [Pref="dom.intersection_observer.delay.enabled"]
+  long delay = 0;
 };

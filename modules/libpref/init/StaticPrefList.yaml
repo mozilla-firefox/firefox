@@ -3667,6 +3667,12 @@
   value: true
   mirror: always
 
+# Whether to expose IntersectionObserver's delay option.
+- name: dom.intersection_observer.delay.enabled
+  type: bool
+  value: true
+  mirror: always
+
 # How often to check for reply timeouts (ms).
 - name: dom.ipc.reply.timeout
   type: uint32_t
