@@ -117,12 +117,13 @@ void SharedSurface_AndroidHardwareBuffer::ProducerReleaseImpl() {
 
   mSync = egl->fCreateSyncKHR(LOCAL_EGL_SYNC_NATIVE_FENCE_ANDROID, nullptr);
   MOZ_ASSERT(mSync);
+
+  // EGL creates the native fence FD when the context is flushed.
+  gl->fFlush();
   int rawFd = egl->fDupNativeFenceFDANDROID(mSync);
   if (rawFd >= 0) {
     mAndroidHardwareBuffer->SetAcquireFence(UniqueFileHandle(rawFd));
   }
-
-  gl->fFlush();
 }
 
 Maybe<layers::SurfaceDescriptor>
