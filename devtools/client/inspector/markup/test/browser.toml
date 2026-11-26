@@ -26,6 +26,8 @@ support-files = [
   "doc_markup_svg_attributes.html",
   "doc_markup_toggle.html",
   "doc_markup_tooltip.png",
+  "doc_markup_view_transition_cross_document_end.html",
+  "doc_markup_view_transition_cross_document_start.html",
   "doc_markup_void_elements.html",
   "doc_markup_void_elements.xhtml",
   "doc_markup_whitespace.html",

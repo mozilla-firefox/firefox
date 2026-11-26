@@ -1,0 +1,46 @@
+<!DOCTYPE html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8">
+    <style>
+    @view-transition {
+      navigation: auto;
+      types: none;
+    }
+
+    ::view-transition-group(*),
+    ::view-transition-old(*),
+    ::view-transition-new(*) {
+       /* large number so the view-transition pseudo elements are available during the whole test */
+       animation-duration: 3600s;
+    }
+
+    ::view-transition-group(my-vt) {
+      animation-name: my-vt-animation;
+    }
+
+    .main-view-transition {
+      view-transition-name: my-vt;
+    }
+
+    @keyframes my-vt-animation {
+      from {
+        rotate: 360deg;
+      }
+      to {
+        rotate: 0deg;
+      }
+    }
+    </style>
+  </head>
+  <body>
+    <nav>
+      <ul>
+        <li><a href="doc_markup_view_transition_cross_document_start.html">Home</a></li>
+        <li><a href="doc_markup_view_transition_cross_document_end.html">Item</a></li>
+      </ul>
+    </nav>
+    <h1>Home</h1>
+    <main class="main-view-transition">There's no place like home</main>
+  </body>
+</html>
