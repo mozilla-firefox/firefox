@@ -741,6 +741,19 @@ class OptionsPanel extends EventEmitter {
     }
   }
 
+  /**
+   * Scroll to a Local Mode mapping and highlight it.
+   *
+   * @param {string} prefPrefix The mapping's pref prefix, e.g. "devtools.local-mode.mappings.0."
+   */
+  highlightLocalModeMapping(prefPrefix) {
+    const mappingItem = this.panelDoc
+      .querySelector(`[data-pref-prefix="${prefPrefix}"]`)
+      .closest("li");
+    mappingItem.scrollIntoView({ block: "center" });
+    mappingItem.classList.add("options-panel-highlight");
+  }
+
   #setupLocalMode() {
     if (!this.commands.descriptorFront.isLocalTab) {
       const notice = this.panelDoc.querySelector(
