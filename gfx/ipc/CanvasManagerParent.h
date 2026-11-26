@@ -53,9 +53,10 @@ class CanvasManagerParent final : public PCanvasManagerParent {
   static mozilla::ipc::IProtocol* GetCanvasActor(
       dom::ContentParentId aContentId, uint32_t aManagerId, ActorId aCanvasId);
 
-  static already_AddRefed<SourceSurface> GetCanvasSurface(
+  static already_AddRefed<SourceSurface> TryResolveCanvasSurface(
       dom::ContentParentId aContentId, uint32_t aManagerId, ActorId aCanvasId,
-      uintptr_t aSurfaceId, Maybe<layers::SurfaceDescriptor>* aDesc = nullptr);
+      uintptr_t aExportId,
+      Maybe<layers::SurfaceDescriptor>* aOutSharedSurfaceDesc = nullptr);
 
  private:
   static void ShutdownInternal();

@@ -295,14 +295,12 @@ class CanvasTranslator final : public gfx::InlineTranslator,
 
   void GetDataSurface(uint32_t aId, uint64_t aSurfaceRef);
 
-  /**
-   * Wait for a canvas to produce the designated surface. If necessary,
-   * this may flush out canvas commands to ensure the surface is created.
-   * This should only be called from within the canvas task queue thread
-   * so that it can force event processing to occur if necessary.
-   */
-  already_AddRefed<gfx::SourceSurface> WaitForSurface(
-      uintptr_t aId, Maybe<layers::SurfaceDescriptor>* aDesc = nullptr);
+  // Resolve an export on the canvas render thread, replaying pending events
+  // up to the current checkpoint if needed. If requested, also try to export
+  // a shared surface descriptor for the resolved surface.
+  already_AddRefed<gfx::SourceSurface> TryResolveExportedSurface(
+      uintptr_t aExportId,
+      Maybe<layers::SurfaceDescriptor>* aOutSharedSurfaceDesc = nullptr);
 
   static void Shutdown();
 
@@ -325,6 +323,10 @@ class CanvasTranslator final : public gfx::InlineTranslator,
 
  private:
   ~CanvasTranslator();
+
+  void TryExportSharedSurfaceDescriptor(
+      ExportSurface& aSurface,
+      Maybe<layers::SurfaceDescriptor>& aOutSharedSurfaceDesc);
 
   class CanvasTranslatorEvent {
    public:

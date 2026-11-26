@@ -253,10 +253,10 @@ mozilla::ipc::IPCResult CanvasManagerParent::RecvGetSnapshot(
 }
 
 /* static */ already_AddRefed<SourceSurface>
-CanvasManagerParent::GetCanvasSurface(dom::ContentParentId aContentId,
-                                      uint32_t aManagerId, ActorId aCanvasId,
-                                      uintptr_t aSurfaceId,
-                                      Maybe<layers::SurfaceDescriptor>* aDesc) {
+CanvasManagerParent::TryResolveCanvasSurface(
+    dom::ContentParentId aContentId, uint32_t aManagerId, ActorId aCanvasId,
+    uintptr_t aExportId,
+    Maybe<layers::SurfaceDescriptor>* aOutSharedSurfaceDesc) {
   IProtocol* actor = GetCanvasActor(aContentId, aManagerId, aCanvasId);
   if (!actor) {
     return nullptr;
@@ -264,7 +264,7 @@ CanvasManagerParent::GetCanvasSurface(dom::ContentParentId aContentId,
 
   if (layers::CanvasTranslator* trans =
           mozilla::ipc::ActorDynCast<layers::CanvasTranslator>(actor)) {
-    return trans->WaitForSurface(aSurfaceId, aDesc);
+    return trans->TryResolveExportedSurface(aExportId, aOutSharedSurfaceDesc);
   }
 
   MOZ_ASSERT_UNREACHABLE("Unsupported protocol");

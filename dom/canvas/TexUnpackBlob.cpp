@@ -1107,7 +1107,7 @@ bool TexUnpackSurface::TexOrSubImage(bool isSubImage, bool needsRespec,
           webgl, mDesc.imageTarget, level, {xOffset, yOffset, zOffset},
           dui->internalFormat, dstPI, true, false, false, false);
       if (RefPtr<gfx::SourceSurface> data =
-              gfx::CanvasManagerParent::GetCanvasSurface(
+              gfx::CanvasManagerParent::TryResolveCanvasSurface(
                   webgl->GetContentId(), managerId, canvasId, surfaceId,
                   allowBlit ? &exportSd : nullptr)) {
         if (exportSd && !SDIsRGBBuffer(*exportSd) &&

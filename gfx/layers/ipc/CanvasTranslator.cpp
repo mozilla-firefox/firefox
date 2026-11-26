@@ -492,47 +492,56 @@ void CanvasTranslator::GetDataSurface(uint32_t aId, uint64_t aSurfaceRef) {
                    dstStride.value(), format, dstSize);
 }
 
-already_AddRefed<gfx::SourceSurface> CanvasTranslator::WaitForSurface(
-    uintptr_t aId, Maybe<layers::SurfaceDescriptor>* aDesc) {
-  // If it's not safe to flush the event queue, then don't try to wait.
+already_AddRefed<gfx::SourceSurface>
+CanvasTranslator::TryResolveExportedSurface(
+    uintptr_t aExportId,
+    Maybe<layers::SurfaceDescriptor>* aOutSharedSurfaceDesc) {
   if (!gfx::gfxVars::UseAcceleratedCanvas2D() ||
       !UsePendingCanvasTranslatorEvents() || !IsInTaskQueue()) {
     return nullptr;
   }
-  ReferencePtr idRef(aId);
-  ExportSurface* surf = LookupExportSurface(idRef);
-  if (!surf || !surf->mData) {
+
+  const ReferencePtr exportId(aExportId);
+  ExportSurface* surface = LookupExportSurface(exportId);
+  if (!surface || !surface->mData) {
     if (!HasPendingEvent()) {
       return nullptr;
     }
 
-    // If the surface doesn't exist yet, that may be because the events
-    // that produce it still need to be processed. Flush out any events
-    // currently in the queue, that by now should have been placed in
-    // the queue but for which processing has not yet occurred..
+    // Replay pending events up to the current checkpoint, then look up the
+    // export again. Replay can stop before the checkpoint if it pauses.
     mFlushCheckpoint = mHeader->eventCount;
     HandleCanvasTranslatorEvents();
     mFlushCheckpoint = 0;
-    // If there is still no surface, then it is unlikely to be produced
-    // now, so give up.
-    surf = LookupExportSurface(idRef);
-    if (!surf || !surf->mData) {
+    surface = LookupExportSurface(exportId);
+    if (!surface || !surface->mData) {
       return nullptr;
     }
   }
-  // If we need to export a surface descriptor, then ensure we can export
-  // to an accelerated type from the WebGL context.
-  if (aDesc && mWebglTextureType != TextureType::Unknown && mSharedContext &&
-      !mSharedContext->IsContextLost()) {
-    surf->mSharedSurface =
-        mSharedContext->ExportSharedSurface(mWebglTextureType, surf->mData);
-    if (surf->mSharedSurface && surf->mSharedSurface->IsValid()) {
-      surf->mSharedSurface->BeginRead();
-      *aDesc = surf->mSharedSurface->ToSurfaceDescriptor();
-      surf->mSharedSurface->EndRead();
-    }
+
+  if (aOutSharedSurfaceDesc) {
+    TryExportSharedSurfaceDescriptor(*surface, *aOutSharedSurfaceDesc);
   }
-  return do_AddRef(surf->mData);
+  return do_AddRef(surface->mData);
+}
+
+void CanvasTranslator::TryExportSharedSurfaceDescriptor(
+    ExportSurface& aSurface,
+    Maybe<layers::SurfaceDescriptor>& aOutSharedSurfaceDesc) {
+  if (mWebglTextureType == TextureType::Unknown || !mSharedContext ||
+      mSharedContext->IsContextLost()) {
+    return;
+  }
+
+  aSurface.mSharedSurface =
+      mSharedContext->ExportSharedSurface(mWebglTextureType, aSurface.mData);
+  if (!aSurface.mSharedSurface || !aSurface.mSharedSurface->IsValid()) {
+    return;
+  }
+
+  aSurface.mSharedSurface->BeginRead();
+  aOutSharedSurfaceDesc = aSurface.mSharedSurface->ToSurfaceDescriptor();
+  aSurface.mSharedSurface->EndRead();
 }
 
 void CanvasTranslator::RemoveExportSurface(gfx::ReferencePtr aRefPtr) {
