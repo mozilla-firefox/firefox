@@ -1006,13 +1006,10 @@ final class BasicGeckoViewPrompt implements GeckoSession.PromptDelegate {
   }
 
   private static String generateFileName(String fileExtension) {
-    String randomId = UUID.randomUUID().toString().replace("-", "").trim();
-    long timeStamp = System.currentTimeMillis();
-    if (fileExtension != null && !fileExtension.isEmpty()) {
-      return randomId + timeStamp + "." + fileExtension;
-    } else {
-      return randomId + timeStamp;
-    }
+    String randomId = UUID.randomUUID().toString().replace("-", "");
+    return fileExtension == null || fileExtension.isEmpty()
+        ? randomId
+        : randomId + "." + fileExtension;
   }
 
   private String getFileExtFromUri(ContentResolver contentResolver, Uri uri) {
