@@ -18,8 +18,6 @@ COPY gpgvnoexpkeysig /usr/local/sbin
 ARG SNAPSHOT
 ARG TASKCLUSTER_ROOT_URL
 
-RUN if [ -f /etc/apt/sources.list.d/ubuntu.sources ]; then mv /etc/apt/sources.list.d/ubuntu.sources /etc/apt/; fi;
-
 # Set apt sources list to a snapshot.
 # Note: the use of gpgvnoexpkeysig is because the Debian Jessie GPG key expired.
 RUN set -ex; \
@@ -29,27 +27,22 @@ RUN set -ex; \
     DIST="$(sed -n 's/^VERSION=.*(\([^)]*\)).*/\1/p' /etc/os-release)" ; \
   fi; \
   if grep -q ID=debian /etc/os-release; then \
-    for s in debian_$DIST debian_$DIST-updates debian_$DIST-backports debian-security_$DIST-security debian-debug_$DIST-debug debian-debug_$DIST-proposed-updates-debug debian-debug_$DIST-backports-debug; do \
+    for s in debian_$DIST-backports debian-debug_$DIST-debug debian-debug_$DIST-proposed-updates-debug debian-debug_$DIST-backports-debug; do \
       case "$s" in \
-      debian-debug_jessie*|debian_jessie-updates) \
+      debian-debug_jessie*) \
           : No debian-debug/updates archive for Jessie; \
           ;; \
-      debian-security_jessie-security) \
-          echo "deb http://archive.debian.org/debian-security/ jessie/updates main"; \
-          ;; \
-      debian-security_buster-security) \
-          echo "deb http://archive.debian.org/debian-security/ buster/updates main"; \
-          ;; \
-      debian*_jessie*|debian*_buster*) \
-          echo "deb http://archive.debian.org/${s%_*}/ ${s#*_} main"; \
-          ;; \
       *) \
-          echo "deb http://snapshot.debian.org/archive/${s%_*}/$SNAPSHOT/ ${s#*_} main"; \
+          echo "deb http://deb.debian.org/${s%_*} ${s#*_} main"; \
           ;; \
       esac; \
-    done > /etc/apt/sources.list ; \
+    done > /etc/apt/sources.list.d/debian-extra.list; \
   fi; \
-  rm -f /etc/apt/sources.list.d/* && \
+  case "$DIST" in \
+  jessie|buster) \
+    find /etc/apt -type f | grep ^/etc/apt/sources.list | xargs sed -i '/jessie-updates/d;s/\(deb\|security\)\.debian\.org/archive.debian.org/' ;; \
+  *) ;; \
+  esac; \
   ( echo 'quiet "true";'; \
     echo 'APT::Get::Assume-Yes "true";'; \
     echo 'APT::Install-Recommends "false";'; \
@@ -63,8 +56,6 @@ RUN set -ex; \
     echo 'Pin: origin "'$TASKCLUSTER_ROOT_URL'"' | sed 's,https://,,'; \
     echo 'Pin-Priority: 1001'; \
   ) > /etc/apt/preferences.d/99taskcluster
-
-RUN if [ -f /etc/apt/ubuntu.sources ]; then mv /etc/apt/ubuntu.sources /etc/apt/sources.list.d/; fi
 
 # Because upgrading the base image snapshot upgrades mesa-libgallium and this has consequences on
 # webgl tests, for the moment, we update ca-certificates manually.
@@ -95,21 +86,34 @@ RUN case "$(grep VERSION_CODENAME= /etc/os-release)" in \
     ) > /etc/apt/preferences.d/99ca-certificates; \
   fi
 
-RUN apt-get update && \
-    if grep -q snapshot.debian.org /etc/apt/sources.list; then \
-      apt-get install python3-minimal libpython3-stdlib; \
-      echo 'dir::bin::methods::http "/usr/local/sbin/snapshot-hack.py";' >> /etc/apt/apt.conf.d/99taskcluster; \
-    fi && \
-    apt-get install \
-      apt-transport-https \
-      ca-certificates && \
-    if [ -n "$SNAPSHOT" -a -f /etc/apt/sources.list.d/ubuntu.sources ]; then \
-      echo "APT::Snapshot \"$SNAPSHOT\";" > /etc/apt/apt.conf.d/99snapshot && \
-      ( echo 'Package: *'; \
-        echo 'Pin: origin "snapshot.ubuntu.com"'; \
-        echo 'Pin-Priority: 1001'; \
-      ) > /etc/apt/preferences.d/90snapshot && \
-      downgrades=--allow-downgrades && \
-      apt-get update || exit 1; fi && \
-    apt-get dist-upgrade ${downgrades} && \
-    rm -f /etc/apt/preferences.d/90snapshot
+RUN set -ex; \
+  apt-get update; \
+  if [ -n "$SNAPSHOT" ] && grep -q ID=debian /etc/os-release; then \
+    apt-get install python3-minimal libpython3-stdlib; \
+    echo 'dir::bin::methods::https "/usr/local/sbin/snapshot-hack.py";' >> /etc/apt/apt.conf.d/99taskcluster; \
+  fi; \
+  apt-get install \
+    apt-transport-https \
+    ca-certificates; \
+  if [ -n "$SNAPSHOT" ]; then \
+    case "$(sed -n 's/^VERSION_CODENAME=//p' /etc/os-release)" in \
+    bionic) \
+      sed -i "s,https\?://\(archive\|security\)\.ubuntu\.com/ubuntu,https://snapshot.ubuntu.com/ubuntu/$SNAPSHOT," /etc/apt/sources.list ;; \
+    jammy|focal) \
+      sed -i "s/^deb /deb [snapshot=$SNAPSHOT] /" /etc/apt/sources.list ;; \
+    bookworm) \
+      sed -i "s,https\?://deb\.debian\.org/\([^/ ]*\),https://snapshot.debian.org/archive/\1/$SNAPSHOT," /etc/apt/sources.list.d/* ;; \
+    *) \
+      echo "APT::Snapshot \"$SNAPSHOT\";" > /etc/apt/apt.conf.d/99snapshot ;; \
+    esac; \
+    echo 'Acquire::Snapshots::URI::Label::"Debian debug" "https://snapshot.debian.org/archive/debian-debug/@SNAPSHOTID@/";' >> /etc/apt/apt.conf.d/99snapshot; \
+    ( echo 'Package: *'; \
+      echo 'Pin: origin /snapshot\.(ubuntu\.com|debian\.org)/'; \
+      echo 'Pin-Priority: 1001'; \
+    ) > /etc/apt/preferences.d/90snapshot; \
+    downgrades=--allow-downgrades; \
+    apt-get update || exit 1; \
+  fi; \
+  apt-cache policy | tee /dev/stderr | grep '^ *origin' | { ! grep -E -q -v 'origin (snapshot\.debian\.org|snapshot\.ubuntu\.com|archive.debian.org)'; }; \
+  apt-get dist-upgrade ${downgrades}; \
+  rm -f /etc/apt/preferences.d/90snapshot
