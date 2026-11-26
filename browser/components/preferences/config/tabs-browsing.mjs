@@ -15,6 +15,7 @@ const lazy = XPCOMUtils.declareLazy({
     "moz-src:///toolkit/components/contextualidentity/ContextualIdentityService.sys.mjs",
   GenAI: "moz-src:///browser/components/genai/GenAI.sys.mjs",
   LinkPreview: "moz-src:///browser/components/genai/LinkPreview.sys.mjs",
+  PrivateBrowsingUtils: "resource://gre/modules/PrivateBrowsingUtils.sys.mjs",
   ShortcutUtils: "resource://gre/modules/ShortcutUtils.sys.mjs",
   TransientPrefs: "resource:///modules/TransientPrefs.sys.mjs",
 });
@@ -50,6 +51,7 @@ Preferences.addAll([
   { id: "browser.link.open_newwindow.override.external", type: "int" },
   { id: "browser.tabs.loadInBackground", type: "bool", inverted: true },
   { id: "browser.tabs.warnOnClose", type: "bool" },
+  { id: "browser.tabs.warnOnClose.pbmode", type: "bool" },
   { id: "browser.warnOnQuitShortcut", type: "bool" },
   { id: "browser.tabs.warnOnOpen", type: "bool" },
   { id: "browser.ctrlTab.sortByRecentlyUsed", type: "bool" },
@@ -404,6 +406,15 @@ Preferences.addSetting({
 Preferences.addSetting({
   id: "warnCloseMultiple",
   pref: "browser.tabs.warnOnClose",
+});
+/**
+ * browser.tabs.warnOnClose.pbmode - bool
+ *   True - Warn when closing a private window with multiple tabs.
+ */
+Preferences.addSetting({
+  id: "warnCloseMultiplePBMode",
+  pref: "browser.tabs.warnOnClose.pbmode",
+  visible: () => !lazy.PrivateBrowsingUtils.permanentPrivateBrowsing,
 });
 /**
  * browser.warnOnQuitShortcut - bool
@@ -781,6 +792,10 @@ SettingGroupManager.registerGroups({
           {
             id: "warnCloseMultiple",
             l10nId: "ask-on-close-multiple-tabs",
+          },
+          {
+            id: "warnCloseMultiplePBMode",
+            l10nId: "ask-on-close-multiple-tabs-pbmode",
           },
           {
             id: "warnOnQuitKey",

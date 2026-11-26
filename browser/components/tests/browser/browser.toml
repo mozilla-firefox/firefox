@@ -89,3 +89,5 @@ run-if = [
 run-if = [
   "os == 'win'",
 ]
+
+["browser_window_close_tabs_prompt.js"]

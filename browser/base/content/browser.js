@@ -4041,10 +4041,16 @@ function WindowIsClosing(event) {
  * @returns true if closing can proceed, false if it got cancelled.
  */
 function warnAboutClosingWindow() {
-  // Popups aren't considered full browser windows; we also ignore private windows.
+  // Popups aren't considered full browser windows; we also ignore private windows
+  // unless users explicitly set the pref to enable prompting in private browsing.
   let isPBWindow =
     PrivateBrowsingUtils.isWindowPrivate(window) &&
     !PrivateBrowsingUtils.permanentPrivateBrowsing;
+
+  // Gate skipping prompt in private browsing
+  let skipPrivatePrompt =
+    isPBWindow &&
+    !Services.prefs.getBoolPref("browser.tabs.warnOnClose.pbmode");
 
   if (!isPBWindow && !toolbar.visible) {
     return gBrowser.warnAboutClosingTabs(
@@ -4086,7 +4092,7 @@ function warnAboutClosingWindow() {
 
   if (otherWindowExists) {
     return (
-      isPBWindow ||
+      skipPrivatePrompt ||
       gBrowser.warnAboutClosingTabs(
         gBrowser.openTabs.length,
         Tabbrowser.closingTabsEnum.ALL
@@ -4111,7 +4117,7 @@ function warnAboutClosingWindow() {
   // closing multiple tabs.
   return (
     AppConstants.platform != "macosx" ||
-    isPBWindow ||
+    skipPrivatePrompt ||
     gBrowser.warnAboutClosingTabs(
       gBrowser.openTabs.length,
       Tabbrowser.closingTabsEnum.ALL

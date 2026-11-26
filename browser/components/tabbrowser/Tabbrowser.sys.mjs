@@ -5474,9 +5474,15 @@ export class Tabbrowser {
       return true;
     }
 
+    const warnOnClosePref =
+      lazy.PrivateBrowsingUtils.isWindowPrivate(this.documentGlobal) &&
+      !lazy.PrivateBrowsingUtils.permanentPrivateBrowsing
+        ? "browser.tabs.warnOnClose.pbmode"
+        : "browser.tabs.warnOnClose";
+
     const pref =
       aCloseTabs == Tabbrowser.closingTabsEnum.ALL
-        ? "browser.tabs.warnOnClose"
+        ? warnOnClosePref
         : "browser.tabs.warnOnCloseOtherTabs";
     var shouldPrompt = Services.prefs.getBoolPref(pref);
     if (!shouldPrompt) {

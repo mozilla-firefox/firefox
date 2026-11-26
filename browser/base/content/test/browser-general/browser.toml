@@ -347,9 +347,6 @@ https_first_disabled = true
 https_first_disabled = true
 # DO NOT ADD MORE TESTS HERE. USE A TOPICAL DIRECTORY INSTEAD.
 
-["browser_private_no_prompt.js"]
-# DO NOT ADD MORE TESTS HERE. USE A TOPICAL DIRECTORY INSTEAD.
-
 ["browser_refreshBlocker.js"]
 skip-if = [
   "os == 'linux' && os_version == '22.04' && arch == 'x86_64' && display == 'wayland' && opt",

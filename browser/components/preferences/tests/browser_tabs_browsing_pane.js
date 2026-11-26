@@ -173,3 +173,26 @@ add_task(async function test_tabs_browsing_pane_click_sidebar() {
 
   await BrowserTestUtils.removeTab(tab);
 });
+
+async function check_CloseMultiplePBMode_visible(visible) {
+  // pref should be visible by default
+  let tab = await openPrefsTab("tabsBrowsing");
+  let win = tab.linkedBrowser.contentWindow;
+  const control = await settingControlRenders("warnCloseMultiplePBMode", win);
+  const setting = win.Preferences.getSetting("warnCloseMultiplePBMode");
+  is(setting.visible, visible, "variant is shown outside permanent PBM");
+  is(!control.hidden, visible, "variant control is visible in the UI");
+  await BrowserTestUtils.removeTab(tab);
+}
+
+add_task(async function test_warnCloseMultiplePBMode_shown() {
+  await check_CloseMultiplePBMode_visible(true);
+});
+
+add_task(async function test_warnCloseMultiplePBMode_hiddenInPermaPBM() {
+  await SpecialPowers.pushPrefEnv({
+    set: [["browser.privatebrowsing.autostart", true]],
+  });
+  await check_CloseMultiplePBMode_visible(false);
+  await SpecialPowers.popPrefEnv();
+});

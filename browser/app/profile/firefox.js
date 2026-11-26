@@ -1162,6 +1162,7 @@ pref("browser.tabs.insertAfterCurrent", false);
 // will add such tabs at the end of the tabbar instead.
 pref("browser.tabs.insertAfterCurrentExceptPinned", false);
 pref("browser.tabs.warnOnClose", false);
+pref("browser.tabs.warnOnClose.pbmode", false);
 pref("browser.tabs.warnOnCloseOtherTabs", true);
 pref("browser.tabs.warnOnOpen", true);
 pref("browser.tabs.maxOpenBeforeWarn", 15);
@@ -1863,6 +1864,7 @@ pref("services.sync.prefs.sync.browser.startup.page", true);
 pref("services.sync.prefs.sync.browser.startup.upgradeDialog.enabled", true);
 pref("services.sync.prefs.sync.browser.tabs.loadInBackground", true);
 pref("services.sync.prefs.sync.browser.tabs.warnOnClose", true);
+pref("services.sync.prefs.sync.browser.tabs.warnOnClose.pbmode", true);
 pref("services.sync.prefs.sync.browser.tabs.warnOnOpen", true);
 pref("services.sync.prefs.sync.browser.taskbar.previews.enable", true);
 pref("services.sync.prefs.sync.browser.urlbar.maxRichResults", true);
