@@ -72,7 +72,11 @@ let httpServer = http.createServer((req, res) => {
     }
 
     if (u.pathname == "/forkH3Server") {
-      forkH3Server(u.query.path, u.query.dbPath)
+      forkH3Server(
+        u.query.path,
+        u.query.dbPath,
+        u.query.env ? JSON.parse(u.query.env) : {}
+      )
         .then(result => {
           computeAndSendBackResponse(result);
         })
@@ -149,11 +153,16 @@ let httpServer = http.createServer((req, res) => {
   });
 });
 
-function forkH3Server(serverPath, dbPath) {
+function forkH3Server(serverPath, dbPath, extraEnv) {
   const args = [dbPath];
-  const env = Object.assign({}, process.env, {
-    RUST_BACKTRACE: "full",
-  });
+  const env = Object.assign(
+    {},
+    process.env,
+    {
+      RUST_BACKTRACE: "full",
+    },
+    extraEnv
+  );
   let child = spawn(serverPath, args, { env });
   let id = forkProcessInternal(child);
   // Return a promise that resolves when we receive data from stdout

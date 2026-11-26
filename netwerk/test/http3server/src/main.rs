@@ -1334,6 +1334,8 @@ struct Http3ConnectProxyServer {
     server: Http3Server,
     tcp_streams: HashMap<StreamId, TcpStream>,
     udp_sockets: HashMap<StreamId, UdpSocket>,
+    // When set, CONNECT requests without a Proxy-Authorization header get a 407.
+    require_auth: bool,
 }
 
 impl ::std::fmt::Display for Http3ConnectProxyServer {
@@ -1348,6 +1350,7 @@ impl Http3ConnectProxyServer {
             server,
             tcp_streams: HashMap::new(),
             udp_sockets: HashMap::new(),
+            require_auth: env::var("MOZ_HTTP3_PROXY_REQUIRE_AUTH").is_ok(),
         }
     }
 }
@@ -1380,6 +1383,19 @@ impl HttpServer for Http3ConnectProxyServer {
                         "{:?} not supported",
                         method_hdr.value_utf8().unwrap_or("<invalid utf8>")
                     );
+                    if self.require_auth
+                        && !headers.iter().any(|h| h.name() == "proxy-authorization")
+                    {
+                        stream
+                            .send_headers(&[
+                                Header::new(":status", "407"),
+                                Header::new("proxy-authenticate", "Basic realm='foo'"),
+                            ])
+                            .unwrap();
+                        stream.stream_close_send(now).unwrap();
+                        continue;
+                    }
+
                     let host_hdr = headers.iter().find(|&h| h.name() == ":authority").unwrap();
                     let host_str = host_hdr.value_utf8().unwrap();
 
