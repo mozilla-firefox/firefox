@@ -5250,6 +5250,13 @@ Result<SplitNodeResult, nsresult> HTMLEditor::SplitNodeDeepWithTransaction(
       EditorUtils::IsDescendantOf(*aDeepestStartOfRightNode.GetContainer(),
                                   aMostAncestorToSplit));
 
+  // The caller must specify a splittable content.
+  // FIXME: Make this an assertion and make all callers check this.
+  if (NS_WARN_IF(!HTMLEditUtils::IsSplittableNode(aMostAncestorToSplit)))
+      [[unlikely]] {
+    return Err(NS_ERROR_FAILURE);
+  }
+
   if (NS_WARN_IF(!aDeepestStartOfRightNode.IsInComposedDoc())) {
     return Err(NS_ERROR_INVALID_ARG);
   }
@@ -5279,11 +5286,13 @@ Result<SplitNodeResult, nsresult> HTMLEditor::SplitNodeDeepWithTransaction(
       lastResult.IgnoreCaretPointSuggestion();
       return Err(NS_ERROR_FAILURE);
     }
-    // If the container is not splitable node such as comment node, atomic
+    // If the container is not splittable node such as comment node, atomic
     // element, etc, we should keep it as-is, and try to split its parents.
-    if (!HTMLEditUtils::IsSplittableNode(*splittingContent)) {
-      if (splittingContent == &aMostAncestorToSplit) {
-        return lastResult;
+    if (!HTMLEditUtils::IsSplittableNode(*splittingContent)) [[unlikely]] {
+      if (splittingContent == &aMostAncestorToSplit) [[unlikely]] {
+        NS_WARNING("aMostAncestorToSplit is changed to non-splittable");
+        lastResult.IgnoreCaretPointSuggestion();
+        return Err(NS_ERROR_EDITOR_UNEXPECTED_DOM_TREE);
       }
       atStartOfRightNode.Set(splittingContent);
       continue;
