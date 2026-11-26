@@ -102,7 +102,7 @@ export class PromptFactory {
         };
         map[id++] = child;
         if (className === "HTMLOptGroupElement") {
-          item.label = child.label;
+          item.label = child.renderedLabel;
           item.items = enumList(child);
         } else if (className === "HTMLOptionElement") {
           item.label = child.renderedLabel;

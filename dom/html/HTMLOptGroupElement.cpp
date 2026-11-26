@@ -131,6 +131,18 @@ HTMLSelectElement* HTMLOptGroupElement::GetSelect() const {
   return HTMLSelectElement::FromNodeOrNull(GetParentNode());
 }
 
+void HTMLOptGroupElement::GetRenderedLabel(nsAString& aLabel) const {
+  // https://html.spec.whatwg.org/#concept-optgroup-label
+  // 1. A first element child legend takes precedence over the label attribute.
+  if (const Element* first = GetFirstElementChild();
+      first && first->IsHTMLElement(nsGkAtoms::legend)) {
+    nsContentUtils::GetHTMLAwareTextContent(*first, AltText::Include, aLabel);
+    return;
+  }
+  // 2-3. Return the label attribute, or the empty string if it is absent.
+  GetHTMLAttr(nsGkAtoms::label, aLabel);
+}
+
 void HTMLOptGroupElement::AfterSetAttr(int32_t aNameSpaceID, nsAtom* aName,
                                        const nsAttrValue* aValue,
                                        const nsAttrValue* aOldValue,

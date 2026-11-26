@@ -209,6 +209,11 @@ class nsAccessibilityService final : public mozilla::a11y::DocManager,
    */
   void ComboboxOptionMaybeChanged(mozilla::PresShell*,
                                   nsIContent* aMutatingNode);
+  /**
+   * Notifies when a mutation may have changed an <optgroup>'s legend label.
+   */
+  void OptGroupLabelMaybeChanged(mozilla::PresShell*,
+                                 nsIContent* aMutatingNode);
   // Notifies when a combobox's selected index changes.
   void ComboboxValueChanged(nsIContent*);
 
