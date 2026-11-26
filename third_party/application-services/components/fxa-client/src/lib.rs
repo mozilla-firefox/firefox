@@ -53,7 +53,7 @@ use std::fmt;
 pub use sync15::DeviceType;
 use url::Url;
 
-pub use auth::{AuthorizationInfo, FxaEvent, FxaState};
+pub use auth::{AuthorizationStatus, FxaEvent, FxaState};
 pub use device::{
     AttachedClient, CloseTabsResult, Device, DeviceCapability, DeviceConfig, LocalDevice,
 };

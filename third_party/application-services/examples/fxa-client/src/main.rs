@@ -8,7 +8,8 @@ mod send_tab;
 use clap::{Parser, Subcommand, ValueEnum};
 use cli_support::fxa_creds::{self, CliFxa, WELL_KNOWN_SCOPES};
 use fxa_client::{
-    DeviceCapability, DeviceConfig, DeviceType, FxaConfig, FxaEvent, FxaServer, FxaState,
+    AuthorizationStatus, DeviceCapability, DeviceConfig, DeviceType, FxaConfig, FxaEvent,
+    FxaServer, FxaState,
 };
 
 static CLIENT_ID: &str = "a2270f727f45f648";
@@ -192,11 +193,15 @@ fn print_status(fxa: &CliFxa) {
             println!("Account currently in state: {state}");
 
             match account.check_authorization_status() {
-                Ok(status) if status.active => {
+                AuthorizationStatus::Valid => {
                     println!("Account is logged in and authorized by the server")
                 }
-                Ok(_) => println!("Account is logged in but not authorized by the server"),
-                Err(e) => println!("Account logged in but account status failed: {e}"),
+                AuthorizationStatus::Invalid => {
+                    println!("Account is logged in, but the authorization status is invalid")
+                }
+                AuthorizationStatus::Unknown => {
+                    println!("Account is logged in, but the authorization status is unknown")
+                }
             }
         }
     }

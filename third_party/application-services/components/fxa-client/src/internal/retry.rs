@@ -51,14 +51,15 @@ impl FirefoxAccount {
                         // We've retried `retries_per_min` times. Maybe the operation was so slow
                         // that the tokens filled up faster than they left the bucket?  Don't
                         // continue retrying.
-                        breadcrumb!("fxa-client: {method_name} failed {retry_count} times, not retrying anymore");
+                        breadcrumb!("fxa-client: {method_name} failed {retry_count} times.  Not retrying anymore ({e})");
                         return Err(e);
                     }
                     if !self.network_retry_bucket.try_use_token() {
+                        breadcrumb!("fxa-client: {method_name} failed and the token bucket is empty.  Not retrying anymore ({e})");
                         return Err(e);
                     }
                     retry_count += 1;
-                    breadcrumb!("fxa-client: retrying {method_name} after network error");
+                    breadcrumb!("fxa-client: retrying {method_name} after network error ({e})");
                     continue;
                 }
                 Err(e) => return Err(e),

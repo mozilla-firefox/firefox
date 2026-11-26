@@ -920,7 +920,8 @@ export class ClientRemoteTabs {
             lastModified, 
             remoteTabs, 
             tabGroups, 
-            windows
+            windows, 
+            tabsDisabled= false
         } = {
             clientId: undefined, 
             clientName: undefined, 
@@ -928,7 +929,8 @@ export class ClientRemoteTabs {
             lastModified: undefined, 
             remoteTabs: undefined, 
             tabGroups: undefined, 
-            windows: undefined
+            windows: undefined, 
+            tabsDisabled: undefined
         }
     ) {
         try {
@@ -987,6 +989,14 @@ export class ClientRemoteTabs {
             }
             throw e;
         }
+        try {
+            FfiConverterBoolean.checkType(tabsDisabled)
+        } catch (e) {
+            if (e instanceof UniFFITypeError) {
+                e.addItemDescriptionPart("tabsDisabled");
+            }
+            throw e;
+        }
         /**
          * misnamed: this is the fxa_device_id of the client (which may or may not be the same as the corresponding ID in the `clients` collection)
          * @type {string}
@@ -1017,6 +1027,10 @@ export class ClientRemoteTabs {
          * @type {Map}
          */
         this.windows = windows;
+        /**
+         * @type {boolean}
+         */
+        this.tabsDisabled = tabsDisabled;
     }
 
     equals(other) {
@@ -1028,6 +1042,7 @@ export class ClientRemoteTabs {
             && this.remoteTabs == other.remoteTabs
             && this.tabGroups == other.tabGroups
             && this.windows == other.windows
+            && this.tabsDisabled == other.tabsDisabled
         )
     }
 }
@@ -1043,6 +1058,7 @@ export class FfiConverterTypeClientRemoteTabs extends FfiConverterArrayBuffer {
             remoteTabs: FfiConverterSequenceTypeRemoteTabRecord.read(dataStream),
             tabGroups: FfiConverterMapStringTypeTabGroup.read(dataStream),
             windows: FfiConverterMapStringTypeWindow.read(dataStream),
+            tabsDisabled: FfiConverterBoolean.read(dataStream),
         });
     }
     static write(dataStream, value) {
@@ -1053,6 +1069,7 @@ export class FfiConverterTypeClientRemoteTabs extends FfiConverterArrayBuffer {
         FfiConverterSequenceTypeRemoteTabRecord.write(dataStream, value.remoteTabs);
         FfiConverterMapStringTypeTabGroup.write(dataStream, value.tabGroups);
         FfiConverterMapStringTypeWindow.write(dataStream, value.windows);
+        FfiConverterBoolean.write(dataStream, value.tabsDisabled);
     }
 
     static computeSize(value) {
@@ -1064,6 +1081,7 @@ export class FfiConverterTypeClientRemoteTabs extends FfiConverterArrayBuffer {
         totalSize += FfiConverterSequenceTypeRemoteTabRecord.computeSize(value.remoteTabs);
         totalSize += FfiConverterMapStringTypeTabGroup.computeSize(value.tabGroups);
         totalSize += FfiConverterMapStringTypeWindow.computeSize(value.windows);
+        totalSize += FfiConverterBoolean.computeSize(value.tabsDisabled);
         return totalSize
     }
 
@@ -1128,6 +1146,14 @@ export class FfiConverterTypeClientRemoteTabs extends FfiConverterArrayBuffer {
             }
             throw e;
         }
+        try {
+            FfiConverterBoolean.checkType(value.tabsDisabled);
+        } catch (e) {
+            if (e instanceof UniFFITypeError) {
+                e.addItemDescriptionPart(".tabsDisabled");
+            }
+            throw e;
+        }
     }
 }
 /**
@@ -1138,11 +1164,13 @@ export class LocalTabsInfo {
         {
             tabs, 
             tabGroups, 
-            windows
+            windows, 
+            tabsDisabled= false
         } = {
             tabs: undefined, 
             tabGroups: undefined, 
-            windows: undefined
+            windows: undefined, 
+            tabsDisabled: undefined
         }
     ) {
         try {
@@ -1169,6 +1197,14 @@ export class LocalTabsInfo {
             }
             throw e;
         }
+        try {
+            FfiConverterBoolean.checkType(tabsDisabled)
+        } catch (e) {
+            if (e instanceof UniFFITypeError) {
+                e.addItemDescriptionPart("tabsDisabled");
+            }
+            throw e;
+        }
         /**
          * @type {Array.<RemoteTabRecord>}
          */
@@ -1181,6 +1217,10 @@ export class LocalTabsInfo {
          * @type {Map}
          */
         this.windows = windows;
+        /**
+         * @type {boolean}
+         */
+        this.tabsDisabled = tabsDisabled;
     }
 
     equals(other) {
@@ -1188,6 +1228,7 @@ export class LocalTabsInfo {
             this.tabs == other.tabs
             && this.tabGroups == other.tabGroups
             && this.windows == other.windows
+            && this.tabsDisabled == other.tabsDisabled
         )
     }
 }
@@ -1199,12 +1240,14 @@ export class FfiConverterTypeLocalTabsInfo extends FfiConverterArrayBuffer {
             tabs: FfiConverterSequenceTypeRemoteTabRecord.read(dataStream),
             tabGroups: FfiConverterMapStringTypeTabGroup.read(dataStream),
             windows: FfiConverterMapStringTypeWindow.read(dataStream),
+            tabsDisabled: FfiConverterBoolean.read(dataStream),
         });
     }
     static write(dataStream, value) {
         FfiConverterSequenceTypeRemoteTabRecord.write(dataStream, value.tabs);
         FfiConverterMapStringTypeTabGroup.write(dataStream, value.tabGroups);
         FfiConverterMapStringTypeWindow.write(dataStream, value.windows);
+        FfiConverterBoolean.write(dataStream, value.tabsDisabled);
     }
 
     static computeSize(value) {
@@ -1212,6 +1255,7 @@ export class FfiConverterTypeLocalTabsInfo extends FfiConverterArrayBuffer {
         totalSize += FfiConverterSequenceTypeRemoteTabRecord.computeSize(value.tabs);
         totalSize += FfiConverterMapStringTypeTabGroup.computeSize(value.tabGroups);
         totalSize += FfiConverterMapStringTypeWindow.computeSize(value.windows);
+        totalSize += FfiConverterBoolean.computeSize(value.tabsDisabled);
         return totalSize
     }
 
@@ -1241,6 +1285,14 @@ export class FfiConverterTypeLocalTabsInfo extends FfiConverterArrayBuffer {
         } catch (e) {
             if (e instanceof UniFFITypeError) {
                 e.addItemDescriptionPart(".windows");
+            }
+            throw e;
+        }
+        try {
+            FfiConverterBoolean.checkType(value.tabsDisabled);
+        } catch (e) {
+            if (e instanceof UniFFITypeError) {
+                e.addItemDescriptionPart(".tabsDisabled");
             }
             throw e;
         }

@@ -9,7 +9,7 @@
 
 use crate::internal::FirefoxAccount;
 use crate::state_machine::helpers::{ResultExt, StateMachineErr};
-use crate::{Error, FxaEvent, FxaState};
+use crate::{AuthorizationStatus, Error, FxaEvent, FxaState};
 
 /// Transition the FSM from `from` given `event`.
 pub fn transition(
@@ -155,34 +155,14 @@ pub fn transition(
             Ok(S::Disconnected)
         }
         (S::Connected, E::CheckAuthorizationStatus) => {
-            let active = match account.check_authorization_status() {
-                Ok(introspection_info) => introspection_info.active,
-                // Missing a refresh/session token means this check failed
-                // https://bugzilla.mozilla.org/show_bug.cgi?id=2084260.
-                // Similarly for missing scoped keys
-                // https://bugzilla.mozilla.org/show_bug.cgi?id=2093432.
-                //
-                // XXX - note however that `Error::NoSessionToken` isn't actually
-                // possible here currently - check_authorization_status never checks that!
-                Err(Error::NoRefreshToken)
-                | Err(Error::NoSessionToken)
-                | Err(Error::NoScopedKey(_)) => false,
-                // Any other error means this check was inconclusive, keep the user in the `Connected` state.
-                // In particular, we want to stay in `Connected` in the face of network errors and
+            Ok(match account.check_authorization_status() {
+                AuthorizationStatus::Valid => S::Connected,
+                AuthorizationStatus::Invalid => S::AuthIssues,
+                // Keep the user in the `Connected` state in the face of inconclusive checks, In
+                // particular, we want to stay in `Connected` in the face of network errors and
                 // circuit breaker errors.
-                Err(e) => {
-                    return Err(StateMachineErr::Handled {
-                        cause: Box::new(e),
-                        target: S::Connected,
-                    })
-                }
-            };
-
-            if active {
-                Ok(S::Connected)
-            } else {
-                Ok(S::AuthIssues)
-            }
+                AuthorizationStatus::Unknown => S::Connected,
+            })
         }
         (S::Connected, E::CallGetProfile) => {
             account.get_profile(true).to_state_machine_err(|| {

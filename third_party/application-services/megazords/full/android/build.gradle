@@ -46,7 +46,14 @@ configurations {
     // taskcluster/kinds/module-build/kind.yml
     //
     // For libjnidispatch, we include all libraries included in the official JAR file.
-    consumable("libsForTests")
+    consumable("libsForTests") {
+        attributes {
+            attribute(Usage.USAGE_ATTRIBUTE, objects.named(Usage, Usage.JAVA_RUNTIME))
+        }
+        outgoing {
+            capability("org.mozilla.appservices:full-megazord-libsForTests:${rootProject.config.componentsVersion}")
+        }
+    }
     // Stores the JNA jar file
     jna {
         canBeConsumed = false
@@ -174,6 +181,7 @@ if (!gradle.hasProperty("mozconfig")) {
     def copyMegazordNative = tasks.register("copyMegazordNative", Copy) {
         from layout.buildDirectory.dir("rustJniLibs/desktop")
         into layout.buildDirectory.dir("megazordNative")
+        dependsOn tasks["cargoBuild${rootProject.ext.nativeRustTarget.capitalize()}"]
     }
 
     artifacts {
