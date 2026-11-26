@@ -47,6 +47,7 @@
 #include "mozilla/webrender/RenderTextureHostSWGL.h"
 #include "mozilla/webrender/RenderThread.h"
 #include "mozilla/widget/CompositorWidget.h"
+#include "mozmemory.h"
 #include "nsExceptionHandler.h"
 #include "nsXULAppAPI.h"
 
@@ -181,13 +182,22 @@ static void ScheduleRenderIdleCheck() {
 }
 
 // Called whenever a transaction goes to WebRender. The render thread is told
-// once no further transaction followed within the check delay. Releasing dirty
-// pages to the OS is left to the deferred purge of the main thread.
+// once no further transaction followed within the check delay. In the parent
+// process, releasing dirty pages to the OS is left to the deferred purge of the
+// main thread. The GPU process has no deferred purge (bug 2097635), so there we
+// raise the dirty page threshold while transactions flow and release the
+// excess once they stop.
 static void NoteRenderActivity() {
   if (sRenderIdleCheckPending) {
     sRenderIdleCheckExtended = true;
     return;
   }
+
+#ifdef MOZ_MEMORY
+  if (XRE_IsGPUProcess()) {
+    moz_set_max_dirty_page_modifier(3);
+  }
+#endif
 
   sRenderIdleCheckPending = true;
   ScheduleRenderIdleCheck();
@@ -208,6 +218,13 @@ static void NotifyRenderThreadIfIdle() {
   if (renderThread && !renderThread->HasShutdown()) {
     renderThread->NotifyIdle();
   }
+
+#ifdef MOZ_MEMORY
+  if (XRE_IsGPUProcess()) {
+    moz_set_max_dirty_page_modifier(0);
+    jemalloc_free_excess_dirty_pages();
+  }
+#endif
 
   sRenderIdleCheckPending = false;
 }
