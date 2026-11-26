@@ -51,24 +51,27 @@ add_task(async function testDuplicateTabLazily() {
       });
     });
 
-    function awaitLoad(tabId) {
+    function awaitLoad(url) {
       return new Promise(resolve => {
-        browser.tabs.onUpdated.addListener(function listener(tabId_, changed) {
-          if (tabId == tabId_ && changed.status == "complete") {
-            browser.tabs.onUpdated.removeListener(listener);
-            resolve();
+        browser.tabs.onUpdated.addListener(
+          function listener(tabId, changed, tab) {
+            if (changed.status == "complete" && tab.url == url) {
+              browser.tabs.onUpdated.removeListener(listener);
+              resolve();
+            }
           }
-        });
+        );
       });
     }
 
     try {
       let url =
         "http://example.com/browser/browser/components/extensions/test/browser/file_dummy.html";
+      let loaded = awaitLoad(url);
       let tab = await browser.tabs.create({ url });
       let startTabId = tab.id;
 
-      await awaitLoad(startTabId);
+      await loaded;
       browser.test.sendMessage("duplicate-tab", startTabId);
 
       let unloadedTabId = await tabLoadComplete;
