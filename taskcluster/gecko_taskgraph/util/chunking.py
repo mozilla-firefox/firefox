@@ -24,8 +24,10 @@ from taskgraph.util.yaml import load_yaml
 from gecko_taskgraph import TEST_CONFIGS
 from gecko_taskgraph.util.bugbug import (
     CT_LOW,
+    SUPPORTED_PROJECTS,
     BugbugTimeoutException,
     get_confidence_threshold,
+    is_try_auto,
     push_schedules,
 )
 
@@ -547,13 +549,23 @@ class BugbugLoader(DefaultLoader):
     def get_manifests(self, suite, mozinfo):
         manifests = super().get_manifests(suite, mozinfo)
 
-        # Don't prune any manifests if we're on a backstop push or there was a timeout.
-        if self.params["backstop"] or self.timedout:
+        # Don't prune any manifests if we're on a backstop push, bugbug doesn't
+        # support the project or there was a timeout.
+        if (
+            self.params["backstop"]
+            or self.params["project"] not in SUPPORTED_PROJECTS
+            or self.timedout
+        ):
             return manifests
 
         try:
             data = push_schedules(self.params["project"], self.params["head_rev"])
-        except (BugbugTimeoutException, RetryError):
+        except (BugbugTimeoutException, RetryError) as e:
+            if is_try_auto(self.params):
+                raise BugbugTimeoutException(
+                    "`mach try auto` requires bugbug, which failed to select the "
+                    "tests to run. Try again later, or use another selector."
+                ) from e
             traceback.print_exc()
             logger.warning("Timed out waiting for bugbug, loading all test manifests.")
             self.timedout = True

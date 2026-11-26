@@ -14,6 +14,7 @@ from gecko_taskgraph.util.bugbug import (
     CT_LOW,
     CT_MEDIUM,
     CT_VERY_LOW,
+    SUPPORTED_PROJECTS,
     BugbugTimeoutException,
     get_confidence_threshold,
     push_schedules,
@@ -129,7 +130,7 @@ class BugBugPushSchedules(OptimizationStrategy):
     def should_remove_task(self, task, params, importance):
         project = params["project"]
 
-        if project not in ("autoland", "try"):
+        if project not in SUPPORTED_PROJECTS:
             return False
 
         current_push_id = int(params["pushlog_id"])
