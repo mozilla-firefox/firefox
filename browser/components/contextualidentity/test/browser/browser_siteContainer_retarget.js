@@ -267,3 +267,218 @@ add_task(async function test_session_restore() {
   BrowserTestUtils.removeTab(restored);
   BrowserTestUtils.removeTab(tab);
 });
+
+const URL_ORG_2 = BASE_ORG + "blank.html?second";
+
+// The retargeted load commits into the session history of the new tab, so the
+// navigations which follow it can go back to it.
+add_task(async function test_retargeted_load_is_in_session_history() {
+  await withPrefs(
+    [["browser.navigation.requireUserInteraction", false]],
+    async () => {
+      let { tab, retargeted } = await retargetFrom(
+        OTHER_CONTAINER,
+        BOUND_CONTAINER,
+        URL_ORG,
+        "The load landed in the bound container"
+      );
+      let browser = retargeted.linkedBrowser;
+      is(
+        browser.browsingContext.sessionHistory.count,
+        1,
+        "The retargeted load is the first entry of the new tab"
+      );
+
+      await SpecialPowers.spawn(browser, [], () => {
+        content.addEventListener("pageshow", event => {
+          content.document.documentElement.dataset.persisted = event.persisted;
+        });
+      });
+
+      await navigateTo(retargeted, URL_ORG_2);
+      is(browser.browsingContext.sessionHistory.count, 2, "Two entries");
+      ok(browser.canGoBack, "The new tab can go back");
+
+      let pageShow = BrowserTestUtils.waitForContentEvent(browser, "pageshow");
+      await goBackTo(retargeted, URL_ORG);
+      await pageShow;
+      let persisted = await SpecialPowers.spawn(
+        browser,
+        [],
+        () => content.document.documentElement.dataset.persisted
+      );
+      is(persisted, "true", "Going back restored the page from the BFCache");
+      await assertContainer(
+        retargeted,
+        BOUND_CONTAINER,
+        "Going back kept the container"
+      );
+
+      BrowserTestUtils.removeTab(retargeted);
+      BrowserTestUtils.removeTab(tab);
+    }
+  );
+});
+
+// With browser.navigation.requireUserInteraction, back skips the entries the
+// user didn't interact with: the interaction with the retargeted document must
+// be recorded on its entry.
+add_task(async function test_retargeted_load_records_user_interaction() {
+  await withPrefs(
+    [["browser.navigation.requireUserInteraction", true]],
+    async () => {
+      let { tab, retargeted } = await retargetFrom(
+        OTHER_CONTAINER,
+        BOUND_CONTAINER,
+        URL_ORG,
+        "The load landed in the bound container"
+      );
+      let browser = retargeted.linkedBrowser;
+
+      await BrowserTestUtils.synthesizeMouseAtPoint(10, 10, {}, browser);
+      await navigateTo(retargeted, URL_ORG_2);
+
+      ok(
+        browser.browsingContext.sessionHistory.getEntryAtIndex(0)
+          .hasUserInteraction,
+        "The interaction was recorded on the retargeted entry"
+      );
+      ok(browser.canGoBack, "The new tab can go back");
+
+      BrowserTestUtils.removeTab(retargeted);
+      BrowserTestUtils.removeTab(tab);
+    }
+  );
+});
+
+// The Navigation API of the new tab only sees the new tab's history, not the
+// same-origin entries of the tab the load started in.
+add_task(async function test_retargeted_load_navigation_entries() {
+  let tab;
+  ContextualIdentityService.removeSiteAssociation("example.org");
+  try {
+    tab = await openTabIn(OTHER_CONTAINER, URL_ORG);
+  } finally {
+    ContextualIdentityService.setSiteAssociation(
+      "example.org",
+      BOUND_CONTAINER
+    );
+  }
+
+  let retargeted = await loadRetargeted(tab, URL_ORG_2);
+  await assertContainer(retargeted, BOUND_CONTAINER, "The retargeted load");
+
+  await SpecialPowers.spawn(retargeted.linkedBrowser, [URL_ORG_2], url => {
+    let entries = content.navigation.entries();
+    Assert.equal(entries.length, 1, "Only the retargeted entry");
+    Assert.equal(entries[0].url, url, "It is the retargeted document");
+    Assert.equal(
+      content.navigation.activation.from,
+      null,
+      "No activation entry from the tab left behind"
+    );
+    Assert.equal(
+      content.navigation.activation.navigationType,
+      "replace",
+      "The retargeted load replaced the initial about:blank"
+    );
+  });
+
+  BrowserTestUtils.removeTab(retargeted);
+  BrowserTestUtils.removeTab(tab);
+});
+
+// A same-origin replace reuses the navigation API key of the entry it replaces,
+// but the tab left behind is in another container: its key must not follow the
+// load into the new tab.
+add_task(async function test_retargeted_replace_gets_a_new_navigation_key() {
+  let tab;
+  ContextualIdentityService.removeSiteAssociation("example.org");
+  try {
+    tab = await openTabIn(OTHER_CONTAINER, URL_ORG);
+  } finally {
+    ContextualIdentityService.setSiteAssociation(
+      "example.org",
+      BOUND_CONTAINER
+    );
+  }
+
+  let oldKey = await SpecialPowers.spawn(
+    tab.linkedBrowser,
+    [],
+    () => content.navigation.currentEntry.key
+  );
+
+  let newTab = BrowserTestUtils.waitForNewTab(gBrowser, URL_ORG_2, true);
+  await SpecialPowers.spawn(tab.linkedBrowser, [URL_ORG_2], url => {
+    content.location.replace(url);
+  });
+  let retargeted = await newTab;
+  await assertContainer(retargeted, BOUND_CONTAINER, "The retargeted replace");
+
+  let newKey = await SpecialPowers.spawn(
+    retargeted.linkedBrowser,
+    [],
+    () => content.navigation.currentEntry.key
+  );
+  isnot(newKey, oldKey, "The new tab doesn't share the left behind key");
+
+  BrowserTestUtils.removeTab(retargeted);
+  BrowserTestUtils.removeTab(tab);
+});
+
+// A refresh to the same URL reuses the active entry of the tab it started in,
+// which already belongs to that tab's session history: the new tab must get
+// its own entry, and the tab left behind must keep its own.
+add_task(async function test_retargeted_refresh_does_not_share_entries() {
+  let tab;
+  ContextualIdentityService.removeSiteAssociation("example.org");
+  try {
+    tab = await openTabIn(OTHER_CONTAINER, URL_ORG);
+  } finally {
+    ContextualIdentityService.setSiteAssociation(
+      "example.org",
+      BOUND_CONTAINER
+    );
+  }
+
+  let newTab = BrowserTestUtils.waitForNewTab(gBrowser, URL_ORG, true);
+  await SpecialPowers.spawn(tab.linkedBrowser, [], () => {
+    content.history.replaceState({ leftBehind: true }, "");
+    let meta = content.document.createElement("meta");
+    meta.httpEquiv = "refresh";
+    meta.content = "0";
+    content.document.head.append(meta);
+  });
+  let retargeted = await newTab;
+  await assertContainer(retargeted, BOUND_CONTAINER, "The retargeted refresh");
+
+  let leftBehindHistory = tab.linkedBrowser.browsingContext.sessionHistory;
+  let newHistory = retargeted.linkedBrowser.browsingContext.sessionHistory;
+  is(leftBehindHistory.count, 1, "The tab left behind kept its entry");
+  is(newHistory.count, 1, "The new tab has its own entry");
+  let leftBehindEntry = leftBehindHistory.getEntryAtIndex(0);
+  let newEntry = newHistory.getEntryAtIndex(0);
+  isnot(newEntry.ID, leftBehindEntry.ID, "The entries are distinct");
+  ok(
+    !newEntry.sharesDocumentWith(leftBehindEntry),
+    "The entries don't share their state"
+  );
+  is(newEntry.URI.spec, URL_ORG, "The new entry is the retargeted document");
+  is(leftBehindEntry.URI.spec, URL_ORG, "The entry left behind is unchanged");
+
+  await SpecialPowers.spawn(retargeted.linkedBrowser, [], () => {
+    Assert.equal(
+      content.history.state,
+      null,
+      "The state of the document left behind didn't follow the load"
+    );
+  });
+
+  await navigateTo(retargeted, URL_ORG_2);
+  is(newHistory.count, 2, "The new tab can add entries");
+  await goBackTo(retargeted, URL_ORG);
+
+  BrowserTestUtils.removeTab(retargeted);
+  BrowserTestUtils.removeTab(tab);
+});

@@ -45,6 +45,14 @@ add_task(async function test_server_redirect_retargets() {
   );
   await assertLeftBehind(tab, URL_COM, OTHER_CONTAINER, "The original tab");
 
+  let history = retargeted.linkedBrowser.browsingContext.sessionHistory;
+  is(history.count, 1, "The new tab has an entry for the redirected load");
+  is(
+    history.getEntryAtIndex(0).URI.spec,
+    URL_ORG,
+    "The entry is for the end of the redirect chain"
+  );
+
   BrowserTestUtils.removeTab(retargeted);
   BrowserTestUtils.removeTab(tab);
 });
