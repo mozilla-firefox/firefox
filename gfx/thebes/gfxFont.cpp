@@ -3815,7 +3815,7 @@ bool gfxFont::ShapeTextWithoutWordCache(const T* aText, uint32_t aOffset,
   uint32_t fragStart = 0;
   bool ok = true;
 
-  for (uint32_t i = 0; i <= aLength && ok; ++i) {
+  for (uint32_t i = 0; ok; ++i) {
     T ch = (i < aLength) ? aText[i] : '\n';
     bool invalid = gfxFontGroup::IsInvalidChar(ch);
     uint32_t length = i - fragStart;
