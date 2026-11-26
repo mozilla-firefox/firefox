@@ -39,7 +39,16 @@ function hexToUint8Array(hex) {
   return new Uint8Array(hex.match(/.{1,2}/g).map(byte => parseInt(byte, 16)));
 }
 
+function ddrFunnel(label) {
+  return Glean.networking.dohDdrDiscovery[label].testGetValue() ?? 0;
+}
+
+function ddrResult(label) {
+  return Glean.networking.dohDdrResult[label].testGetValue() ?? 0;
+}
+
 add_setup(async function setup() {
+  Services.fog.initializeFOG();
   trr_test_setup();
   Services.prefs.setIntPref(
     "network.trr.mode",
@@ -51,6 +60,7 @@ add_setup(async function setup() {
 
   registerCleanupFunction(async () => {
     trr_clear_prefs();
+    Services.prefs.clearUserPref("network.dns.native_https_query");
     override.clearOverrides();
     await trrServer.stop();
   });
@@ -93,6 +103,27 @@ function dohRecord(name, dohpath, priority = 1, port = undefined) {
   return { priority, name, values };
 }
 
+add_task(async function test_no_native_support() {
+  Services.prefs.setBoolPref("network.dns.native_https_query", false);
+
+  let svcb0 = ddrFunnel("svcb_result");
+  let noNative0 = ddrResult("no_native_support");
+  let noSvcb0 = ddrResult("no_svcb");
+
+  let discovered = await DoHDiscovery.discover();
+  Assert.equal(discovered, null, "no native support means no discovery");
+
+  Assert.equal(ddrFunnel("svcb_result") - svcb0, 0, "svcb_result not counted");
+  Assert.equal(
+    ddrResult("no_native_support") - noNative0,
+    1,
+    "no_native_support outcome counted"
+  );
+  Assert.equal(ddrResult("no_svcb") - noSvcb0, 0, "no_svcb not counted");
+
+  Services.prefs.clearUserPref("network.dns.native_https_query");
+});
+
 add_task(async function test_no_svcb_result() {
   // Overriding the host to "N/A" (rather than clearing overrides) keeps the
   // native override service active, so the SVCB lookup deterministically
@@ -100,8 +131,14 @@ add_task(async function test_no_svcb_result() {
   override.clearOverrides();
   override.addIPOverride("_dns.resolver.arpa", "N/A");
 
+  let svcb0 = ddrFunnel("svcb_result");
+  let noSvcb0 = ddrResult("no_svcb");
+
   let discovered = await DoHDiscovery.discover();
   Assert.equal(discovered, null, "no SVCB record means no designated resolver");
+
+  Assert.equal(ddrFunnel("svcb_result") - svcb0, 0, "svcb_result not counted");
+  Assert.equal(ddrResult("no_svcb") - noSvcb0, 1, "no_svcb outcome counted");
 
   override.clearOverrides();
 });
@@ -117,6 +154,10 @@ add_task(async function test_discover_builds_uri() {
     ],
   });
 
+  let total0 = ddrFunnel("total");
+  let svcb0 = ddrFunnel("svcb_result");
+  let dohpath0 = ddrFunnel("dohpath");
+
   let discovered = await DoHDiscovery.discover();
   Assert.ok(discovered, "a designated resolver was discovered");
   equal(
@@ -124,6 +165,12 @@ add_task(async function test_discover_builds_uri() {
     "https://doh.example.net:8443/dns-query",
     "DoH URI built from target, port and dohpath"
   );
+
+  // The funnel advances through svcb_result and dohpath. The terminal outcome
+  // is left to DoHDiscovery.verify (not run here).
+  Assert.equal(ddrFunnel("total") - total0, 1, "total counted");
+  Assert.equal(ddrFunnel("svcb_result") - svcb0, 1, "svcb_result counted");
+  Assert.equal(ddrFunnel("dohpath") - dohpath0, 1, "dohpath counted");
 });
 
 add_task(async function test_default_port() {
@@ -170,8 +217,21 @@ add_task(async function test_no_dohpath_is_ignored() {
   // No dohpath: not a usable DoH designated resolver.
   await registerResolverArpa(dohRecord("doh.example.net", undefined));
 
+  let svcb0 = ddrFunnel("svcb_result");
+  let dohpath0 = ddrFunnel("dohpath");
+  let noDohpath0 = ddrResult("no_dohpath");
+
   let discovered = await DoHDiscovery.discover();
   Assert.equal(discovered, null, "record without dohpath is ignored");
+
+  // Got an SVCB record but no usable dohpath: the attempt stops at no_dohpath.
+  Assert.equal(ddrFunnel("svcb_result") - svcb0, 1, "svcb_result counted");
+  Assert.equal(ddrFunnel("dohpath") - dohpath0, 0, "dohpath not counted");
+  Assert.equal(
+    ddrResult("no_dohpath") - noDohpath0,
+    1,
+    "no_dohpath outcome counted"
+  );
 });
 
 add_task(async function test_invalid_dohpath_is_rejected() {
@@ -197,8 +257,14 @@ add_task(async function test_invalid_dohpath_is_rejected() {
   ];
   for (let dohpath of invalid) {
     await registerResolverArpa(dohRecord("doh.example.net", dohpath));
+    let noDohpath0 = ddrResult("no_dohpath");
     let discovered = await DoHDiscovery.discover();
     Assert.equal(discovered, null, `dohpath ${dohpath} is rejected`);
+    Assert.equal(
+      ddrResult("no_dohpath") - noDohpath0,
+      1,
+      `no_dohpath counted for ${dohpath}`
+    );
   }
 });
 
@@ -214,8 +280,14 @@ add_task(async function test_invalid_target_is_rejected() {
   ];
   for (let target of invalid) {
     await registerResolverArpa(dohRecord(target, "/dns-query{?dns}"));
+    let noDohpath0 = ddrResult("no_dohpath");
     let discovered = await DoHDiscovery.discover();
     Assert.equal(discovered, null, `target ${target} is rejected`);
+    Assert.equal(
+      ddrResult("no_dohpath") - noDohpath0,
+      1,
+      `no_dohpath counted for ${target}`
+    );
   }
 });
 
@@ -242,4 +314,82 @@ add_task(async function test_first_unusable_record_is_skipped() {
     "https://good.example.net/dns-query",
     "a record with an unusable target is skipped"
   );
+});
+
+const DDR_RESULT_LABELS = [
+  "no_native_support",
+  "no_svcb",
+  "no_dohpath",
+  "no_resolver_addrs",
+  "no_connection",
+  "tls_failed",
+  "no_cert_match",
+  "query_failed",
+  "success",
+  "network_changed",
+];
+
+function ddrResults() {
+  return Object.fromEntries(DDR_RESULT_LABELS.map(l => [l, ddrResult(l)]));
+}
+
+// A whole DDR attempt, as DoHController runs it: discovery, then verification
+// of the designated resolver if one was found.
+async function runAttempt() {
+  let discovered = await DoHDiscovery.discover();
+  if (discovered) {
+    await DoHDiscovery.verify(discovered);
+  }
+}
+
+add_task(async function test_one_result_per_attempt() {
+  const cases = [
+    {
+      // clearOverrides() doesn't remove HTTPS record overrides, so replace the
+      // one registered by earlier tasks with an answer without records.
+      setup: () => registerResolverArpa(),
+      result: "no_svcb",
+      funnel: [],
+    },
+    {
+      setup: () =>
+        registerResolverArpa(dohRecord("doh.example.net", "/q/{dns}")),
+      result: "no_dohpath",
+      funnel: ["svcb_result"],
+    },
+    {
+      // Override answers don't report which resolvers answered them, so the
+      // designated resolver found here can't be verified.
+      setup: () =>
+        registerResolverArpa(dohRecord("doh.example.net", "/dns-query{?dns}")),
+      result: "no_resolver_addrs",
+      funnel: ["svcb_result", "dohpath"],
+    },
+  ];
+
+  for (let { setup, result, funnel } of cases) {
+    await setup();
+    let funnel0 = {};
+    for (let label of ["total", "svcb_result", "dohpath"]) {
+      funnel0[label] = ddrFunnel(label);
+    }
+    let results0 = ddrResults();
+
+    await runAttempt();
+
+    let results = ddrResults();
+    let recorded = DDR_RESULT_LABELS.flatMap(l =>
+      Array(results[l] - results0[l]).fill(l)
+    );
+    Assert.deepEqual(recorded, [result], `the attempt recorded only ${result}`);
+    for (let label of ["total", "svcb_result", "dohpath"]) {
+      let expected = label == "total" || funnel.includes(label) ? 1 : 0;
+      Assert.equal(
+        ddrFunnel(label) - funnel0[label],
+        expected,
+        `doh_ddr_discovery.${label} for ${result}`
+      );
+    }
+  }
+  override.clearOverrides();
 });

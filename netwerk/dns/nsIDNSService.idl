@@ -330,6 +330,12 @@ interface nsIDNSService : nsISupports
     readonly attribute AUTF8String currentTrrURI;
 
     /**
+     * Whether by-type (HTTPS/SVCB) records can be resolved with the native
+     * resolver on this platform and configuration.
+     */
+    readonly attribute boolean nativeHTTPSEnabled;
+
+    /**
      * RFC 9462 DDR: whether aCert, presented by a designated resolver, has an
      * iPAddress subjectAltName matching one of aResolverAddrs, the addresses of
      * the unencrypted resolvers that designated it.

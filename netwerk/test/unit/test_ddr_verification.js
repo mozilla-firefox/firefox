@@ -4,7 +4,8 @@
 
 // Tests RFC 9462 DDR verification: DoHDiscovery.verify() must only accept a
 // designated resolver whose TLS certificate contains one of the unencrypted
-// resolver IPs in a subjectAltName and that answers a test query.
+// resolver IPs in a subjectAltName and that answers a test query, and must
+// record the outcome of the attempt.
 
 "use strict";
 
@@ -15,17 +16,67 @@ const { DoHDiscovery } = ChromeUtils.importESModule(
 let trrServer;
 let dohUrl;
 
-async function checkVerify(aURI, aResolverAddrs, aExpected) {
+function ddrFunnel(label) {
+  return Glean.networking.dohDdrDiscovery[label].testGetValue() ?? 0;
+}
+
+function ddrResult(label) {
+  return Glean.networking.dohDdrResult[label].testGetValue() ?? 0;
+}
+
+function snapshot() {
+  let funnel = {};
+  for (let label of ["connection", "cert_match"]) {
+    funnel[label] = ddrFunnel(label);
+  }
+  let result = {};
+  for (let label of [
+    "no_resolver_addrs",
+    "no_connection",
+    "tls_failed",
+    "no_cert_match",
+    "query_failed",
+    "success",
+  ]) {
+    result[label] = ddrResult(label);
+  }
+  return { funnel, result };
+}
+
+// Checks that exactly the given funnel labels and result label were
+// incremented by one since aBefore, and nothing else.
+function checkTelemetry(aBefore, aFunnel, aResult) {
+  let after = snapshot();
+  for (let [label, value] of Object.entries(after.funnel)) {
+    Assert.equal(
+      value - aBefore.funnel[label],
+      aFunnel.includes(label) ? 1 : 0,
+      `doh_ddr_discovery.${label}`
+    );
+  }
+  for (let [label, value] of Object.entries(after.result)) {
+    Assert.equal(
+      value - aBefore.result[label],
+      aResult == label ? 1 : 0,
+      `doh_ddr_result.${label}`
+    );
+  }
+}
+
+async function checkVerify(aURI, aResolverAddrs, aExpected, aFunnel, aResult) {
+  let before = snapshot();
   let verified = await DoHDiscovery.verify({
     uri: aURI,
     resolverAddrs: aResolverAddrs,
   });
   Assert.equal(verified, aExpected, `verify(${aURI}, ${aResolverAddrs})`);
+  checkTelemetry(before, aFunnel, aResult);
 }
 
 const MODES = [Ci.nsIDNSService.MODE_NATIVEONLY, Ci.nsIDNSService.MODE_TRRONLY];
 
 add_setup(async function setup() {
+  Services.fog.initializeFOG();
   trr_test_setup();
 
   trrServer = new TRRServer();
@@ -47,27 +98,45 @@ add_setup(async function setup() {
 add_task(async function test_matching_ip_is_accepted() {
   for (let mode of MODES) {
     Services.prefs.setIntPref("network.trr.mode", mode);
-    await checkVerify(dohUrl, ["127.0.0.1"], true);
+    await checkVerify(
+      dohUrl,
+      ["127.0.0.1"],
+      true,
+      ["connection", "cert_match"],
+      "success"
+    );
   }
 });
 
 add_task(async function test_any_matching_ip_is_accepted() {
   // Any of the configured resolver IPs matching the cert is enough: the SVCB
   // query may have been answered by any of them.
-  await checkVerify(dohUrl, ["1.2.3.4", "127.0.0.1"], true);
+  await checkVerify(
+    dohUrl,
+    ["1.2.3.4", "127.0.0.1"],
+    true,
+    ["connection", "cert_match"],
+    "success"
+  );
 });
 
 add_task(async function test_mismatching_ip_is_rejected() {
   for (let mode of MODES) {
     Services.prefs.setIntPref("network.trr.mode", mode);
-    await checkVerify(dohUrl, ["1.2.3.4", "5.6.7.8"], false);
+    await checkVerify(
+      dohUrl,
+      ["1.2.3.4", "5.6.7.8"],
+      false,
+      ["connection"],
+      "no_cert_match"
+    );
   }
 });
 
 add_task(async function test_empty_resolver_addrs_is_rejected() {
   // Without the unencrypted resolver addresses the designated resolver can't
   // be verified, so it must be rejected without making a query.
-  await checkVerify(dohUrl, [], false);
+  await checkVerify(dohUrl, [], false, [], "no_resolver_addrs");
 });
 
 add_task(async function test_http_error() {
@@ -80,7 +149,9 @@ add_task(async function test_http_error() {
   await checkVerify(
     `https://foo.example.com:${trrServer.port()}/doh-error`,
     ["127.0.0.1"],
-    false
+    false,
+    ["connection", "cert_match"],
+    "query_failed"
   );
 });
 
@@ -99,7 +170,9 @@ add_task(async function test_redirect_is_not_followed() {
   await checkVerify(
     `https://foo.example.com:${trrServer.port()}/doh-redirect`,
     ["127.0.0.1"],
-    false
+    false,
+    ["connection", "cert_match"],
+    "query_failed"
   );
   Assert.equal(
     await trrServer.execute("global.redirectTargetHits || 0"),
@@ -113,7 +186,9 @@ add_task(async function test_not_a_doh_endpoint() {
   await checkVerify(
     `https://foo.example.com:${trrServer.port()}/not-a-doh-endpoint`,
     ["127.0.0.1"],
-    false
+    false,
+    ["connection", "cert_match"],
+    "query_failed"
   );
 });
 
@@ -124,7 +199,9 @@ add_task(async function test_no_answers() {
   await checkVerify(
     `https://foo.example.com:${trrServer.port()}/dns-query`,
     ["127.0.0.1"],
-    true
+    true,
+    ["connection", "cert_match"],
+    "success"
   );
 });
 
@@ -137,7 +214,21 @@ add_task(async function test_no_connection() {
   await checkVerify(
     `https://foo.example.com:${port}/dns-query`,
     ["127.0.0.1"],
-    false
+    false,
+    [],
+    "no_connection"
+  );
+});
+
+add_task(async function test_tls_failure() {
+  // The server is reachable but its certificate doesn't cover this hostname, so
+  // the TLS handshake fails before the certificate can be checked.
+  await checkVerify(
+    `https://bar.example.com:${trrServer.port()}/dns-query`,
+    ["127.0.0.1"],
+    false,
+    ["connection"],
+    "tls_failed"
   );
 });
 
@@ -146,6 +237,8 @@ add_task(async function test_blocked_port() {
   await checkVerify(
     "https://foo.example.com:1/dns-query",
     ["127.0.0.1"],
-    false
+    false,
+    [],
+    "no_connection"
   );
 });

@@ -370,8 +370,12 @@ export const DoHController = {
     this._ddrNetworkID = this._getNetworkID();
 
     let discovered = await lazy.DoHDiscovery.discover();
-    let verified =
-      discovered && isCurrent() && (await lazy.DoHDiscovery.verify(discovered));
+    if (discovered && !isCurrent()) {
+      // discover() leaves the outcome of the attempt to verify().
+      Glean.networking.dohDdrResult.network_changed.add(1);
+      return;
+    }
+    let verified = discovered && (await lazy.DoHDiscovery.verify(discovered));
     if (!isCurrent()) {
       return;
     }

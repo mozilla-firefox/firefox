@@ -221,9 +221,21 @@ add_task(async function test_ddr_network_change_during_discovery() {
   simulateNetworkIDChange("network-b");
   await TestUtils.waitForCondition(() => discoverStub.callCount == 3);
 
+  verifyStub.resetHistory();
+  let networkChanged0 =
+    Glean.networking.dohDdrResult.network_changed.testGetValue() ?? 0;
   firstDiscovery.resolve(discovered());
   secondDiscovery.resolve(discovered());
   await ensureNoTRRModeChange(undefined);
+
+  // The discarded attempts are recorded as such, without being verified.
+  Assert.ok(verifyStub.notCalled, "stale resolvers are not verified");
+  Assert.equal(
+    (Glean.networking.dohDdrResult.network_changed.testGetValue() ?? 0) -
+      networkChanged0,
+    2,
+    "both discarded attempts recorded network_changed"
+  );
 
   thirdDiscovery.resolve(null);
   await ensureTRRMode(0);

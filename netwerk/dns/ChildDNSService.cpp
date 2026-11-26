@@ -271,6 +271,11 @@ ChildDNSService::GetCurrentTrrURI(nsACString& aURI) {
 }
 
 NS_IMETHODIMP
+ChildDNSService::GetNativeHTTPSEnabled(bool* aEnabled) {
+  return NS_ERROR_NOT_AVAILABLE;
+}
+
+NS_IMETHODIMP
 ChildDNSService::IsDesignatedResolverCert(
     nsIX509Cert* aCert, const nsTArray<nsCString>& aResolverAddrs,
     bool* aResult) {
