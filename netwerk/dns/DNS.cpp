@@ -212,7 +212,7 @@ bool NetAddr::IsBenchMarkingAddress() const {
     return addr == (0xC612 >> 1);
   }
 
-  if (IPv6ADDR_IS_V4MAPPED(&this->inet6.ip)) {
+  if (this->raw.family == AF_INET6 && IPv6ADDR_IS_V4MAPPED(&this->inet6.ip)) {
     uint32_t addr = ntohl(IPv6ADDR_V4MAPPED_TO_IPADDR(&this->inet6.ip)) >> 17;
     return addr == (0xC612 >> 1);
   }
