@@ -16,6 +16,7 @@ import mozilla.components.feature.listentopage.PlaybackState
 import mozilla.components.feature.listentopage.facts.ListenToPageFacts
 import mozilla.components.feature.listentopage.listenReducer
 import mozilla.components.feature.listentopage.playback.PlaybackPhase
+import mozilla.components.feature.listentopage.playback.PlaybackSpeed
 import mozilla.components.feature.listentopage.voices.Voice
 import mozilla.components.support.base.Component
 import mozilla.components.support.base.facts.Action
@@ -39,6 +40,8 @@ class ListenPerformanceMiddlewareTest {
 
     private var now = 0L
     private val profiler = FakeProfiler(clock = { now })
+
+    private lateinit var middleware: ListenPerformanceMiddleware
 
     @Test
     fun `WHEN audio starts after listening is requested THEN a time to first audio marker is recorded`() {
@@ -625,7 +628,96 @@ class ListenPerformanceMiddlewareTest {
         assertTrue(profiler.markers.none { it.name == PREPARATION })
     }
 
-    private lateinit var middleware: ListenPerformanceMiddleware
+    @Test
+    fun `WHEN a session is stopped THEN a summary of its chunks and gaps is recorded`() {
+        val store = createStore()
+        store.dispatch(LISTEN_REQUESTED)
+        store.dispatch(ListenAction.System.Content.ContentReady(languageTag = "en-US"))
+        middleware.process(engineBoundFact("com.example.tts"))
+        middleware.process(chunkSynthesizedFact(ListenToPageFacts.ChunkSynthesis(0, 25, 100, 2_500, null)))
+        store.dispatch(ListenAction.System.Playback.PlaybackStarted(ChunkState(index = 0), positionMs = 0))
+        middleware.process(chunkSynthesizedFact(ListenToPageFacts.ChunkSynthesis(1, 600, 400, 60_000, 900)))
+        middleware.process(chunkSynthesizedFact(ListenToPageFacts.ChunkSynthesis(2, 300, 200, null, 500)))
+        middleware.process(chunkSynthesizedFact(ListenToPageFacts.ChunkSynthesis(3, 300, 300, null, null)))
+        store.dispatch(ListenAction.User.Controls.PlaybackSpeedSelected(PlaybackSpeed.X1_5))
+        store.dispatch(ListenAction.System.Playback.PlaybackWaiting)
+        now += 800
+        store.dispatch(ListenAction.System.Playback.PlaybackStarted(ChunkState(index = 1), positionMs = 0))
+
+        store.dispatch(ListenAction.User.Session.StopRequested())
+
+        assertEquals(
+            mapOf(
+                "language" to "en-US",
+                "engine" to "com.example.tts",
+                "chunks" to "3",
+                "chunk_chars_avg" to "400",
+                "chunk_audio_ms_avg" to "60000",
+                "chunk_audio_kb_avg" to "700",
+                "chunk_synthesis_ms_avg" to "300",
+                "gaps" to "1",
+                "gap_ms_total" to "800",
+                "playback_speed_end" to "1.5",
+            ),
+            ListenToPage.synthesisSummary.testGetValue()?.single()?.extra,
+        )
+    }
+
+    @Test
+    fun `WHEN a new request replaces a session THEN the summary of the replaced session is recorded`() {
+        val store = createStore()
+        store.dispatch(LISTEN_REQUESTED)
+        store.dispatch(ListenAction.System.Content.ContentReady(languageTag = "de"))
+        middleware.process(chunkSynthesizedFact(ListenToPageFacts.ChunkSynthesis(1, 600, 400, 60_000, null)))
+
+        store.dispatch(LISTEN_REQUESTED)
+        middleware.process(chunkSynthesizedFact(ListenToPageFacts.ChunkSynthesis(1, 900, 700, 80_000, null)))
+        store.dispatch(ListenAction.User.Session.StopRequested())
+
+        assertEquals(
+            listOf("600", "900"),
+            ListenToPage.synthesisSummary.testGetValue()?.map { it.extra?.get("chunk_chars_avg") },
+        )
+        assertEquals("de", ListenToPage.synthesisSummary.testGetValue()?.first()?.extra?.get("language"))
+    }
+
+    @Test
+    fun `WHEN a session only made its opening THEN no summary is recorded`() {
+        val store = createStore()
+        store.dispatch(LISTEN_REQUESTED)
+        middleware.process(chunkSynthesizedFact(ListenToPageFacts.ChunkSynthesis(0, 25, 100, 2_500, null)))
+
+        store.dispatch(ListenAction.User.Session.StopRequested())
+
+        assertNull(ListenToPage.synthesisSummary.testGetValue())
+    }
+
+    @Test
+    fun `WHEN a chunk finishes after its session stopped THEN it is not summarized`() {
+        val store = createStore()
+        store.dispatch(LISTEN_REQUESTED)
+        store.dispatch(ListenAction.User.Session.StopRequested())
+
+        middleware.process(chunkSynthesizedFact(ListenToPageFacts.ChunkSynthesis(1, 600, 400, 60_000, null)))
+        store.dispatch(LISTEN_REQUESTED)
+        store.dispatch(ListenAction.User.Session.StopRequested())
+
+        assertNull(ListenToPage.synthesisSummary.testGetValue())
+    }
+
+    @Test
+    fun `WHEN no chunk's audio was measured THEN the summary has no average audio length or size`() {
+        val store = createStore()
+        store.dispatch(LISTEN_REQUESTED)
+        middleware.process(chunkSynthesizedFact(ListenToPageFacts.ChunkSynthesis(1, 600, 400, null, null)))
+
+        store.dispatch(ListenAction.User.Session.StopRequested())
+
+        val extra = ListenToPage.synthesisSummary.testGetValue()?.single()?.extra
+        assertEquals("1", extra?.get("chunks"))
+        assertNull(extra?.get("chunk_audio_ms_avg"))
+        assertNull(extra?.get("chunk_audio_kb_avg"))
+    }
 
     /** The markers of time to first audio and its phases, without the per-chunk markers recorded alongside them. */
     private fun phaseMarkers() = profiler.markers.filter { it.name.startsWith(TIME_TO_FIRST_AUDIO) }

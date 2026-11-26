@@ -9485,6 +9485,70 @@ listen_to_page:
     notification_emails:
       - android-probes@mozilla.com
     expires: never
+  synthesis_summary:
+    type: event
+    description: |
+      A summary of the chunks synthesized in one listening session, recorded
+      when the session is stopped or replaced by a new request. Only sessions
+      that synthesized at least one chunk after the opening are recorded, since
+      the first chunk is intentionally smaller to begin playback quickly.
+    extra_keys:
+      language:
+        description: |
+          The BCP 47 language the page was read in, as in content_ready.
+        type: string
+      engine:
+        description: |
+          The package name of the speech engine, as in engine_bound.
+        type: string
+      chunks:
+        description: |
+          How many chunks after the opening were synthesized, including chunks
+          made again after a seek or a voice change.
+        type: quantity
+      chunk_chars_avg:
+        description: |
+          The average number of characters in those chunks.
+        type: quantity
+      chunk_audio_ms_avg:
+        description: |
+          The average length of those chunks' audio at normal speed, in
+          milliseconds, over the chunks whose audio length could be measured.
+        type: quantity
+      chunk_audio_kb_avg:
+        description: |
+          The average size on disk of those chunks' audio, in kilobytes, over the chunks whose
+          audio size is known.
+        type: quantity
+      chunk_synthesis_ms_avg:
+        description: |
+          The average time the speech engine took to make those chunks, in
+          milliseconds.
+        type: quantity
+      gaps:
+        description: |
+          How many times playback was silent between two chunks, counted as in
+          chunk_gap_duration.
+        type: quantity
+      gap_ms_total:
+        description: |
+          The total time playback was silent across those gaps, in
+          milliseconds.
+        type: quantity
+      playback_speed_end:
+        description: |
+          The playback speed when the session ended, as a multiple of normal
+          speed, for example 1.5.
+        type: string
+    bugs:
+      - https://bugzilla.mozilla.org/show_bug.cgi?id=2096736
+    data_reviews:
+      - https://phabricator.services.mozilla.com/D345514
+    data_sensitivity:
+      - technical
+    notification_emails:
+      - android-probes@mozilla.com
+    expires: never
   opening_chunk_audio_size:
     type: memory_distribution
     memory_unit: kilobyte

@@ -56,6 +56,9 @@ class ListenPerformanceMiddleware(
     // Whether the seek being measured had to have its chunk made again, rather than finding it queued.
     private var seekRemade = false
 
+    // Collects useful data while a session is active or null outside a session.
+    @Volatile private var summary: SynthesisSummary? = null
+
     override fun invoke(
         store: Store<ListenState, ListenAction>,
         next: (ListenAction) -> Unit,
@@ -68,6 +71,8 @@ class ListenPerformanceMiddleware(
         when (action) {
             // Reading starts as soon as the reader asks to listen, so that is when the wait for audio starts.
             is ListenAction.User.Session.ListenRequested -> {
+                recordSummary(previous)
+                summary = SynthesisSummary()
                 seekOrVoiceChangePending = false
                 cancelAll(action)
                 start(
@@ -78,6 +83,8 @@ class ListenPerformanceMiddleware(
             }
 
             is ListenAction.User.Session.StopRequested -> {
+                recordSummary(previous)
+                summary = null
                 seekOrVoiceChangePending = false
                 cancelAll(action)
             }
@@ -141,7 +148,10 @@ class ListenPerformanceMiddleware(
             start(
                 markerName = CHUNK_GAP,
                 text = "cause=${cause.name.lowercase()}",
-                onEnd = { durationMs -> ListenToPage.chunkGapDuration.accumulateSamples(listOf(durationMs)) },
+                onEnd = { durationMs ->
+                    ListenToPage.chunkGapDuration.accumulateSamples(listOf(durationMs))
+                    summary?.addGap(durationMs)
+                },
             )
         if (started && cause == ChunkGapCause.Waiting) {
             ListenToPage.audioRanOut.add()
@@ -304,6 +314,7 @@ class ListenPerformanceMiddleware(
         // The opening is a single sentence and has its own measurement, so it is kept out of the other chunks' samples.
         if (chunk.index != 0) {
             ListenToPage.chunkSynthesisDuration.accumulateSamples(listOf(chunk.synthesisMs))
+            summary?.addChunk(chunk)
         }
         chunk.fileKilobytes?.let { kilobytes ->
             val size = if (chunk.index == 0) ListenToPage.openingChunkAudioSize else ListenToPage.chunkAudioSize
@@ -321,6 +332,71 @@ class ListenPerformanceMiddleware(
         engine = packageName
         logger.debug("Speech engine bound: $packageName")
         ListenToPage.engineBound.record(ListenToPage.EngineBoundExtra(engine = packageName))
+    }
+
+    /** Records the summary of the session that [state] describes, if it made any chunks after the opening. */
+    private fun recordSummary(state: ListenState) {
+        val extra =
+            summary?.toExtra(
+                language = state.languageTag,
+                engine = engine,
+                playbackSpeed = state.playbackState.speed.multiplier.toString(),
+            ) ?: return
+        ListenToPage.synthesisSummary.record(extra)
+    }
+
+    /**
+     * Totals of one session's chunks after the opening, and of its gaps. Facts are processed outside the store's lock
+     * and actions can be dispatched from any thread, so its methods are synchronized.
+     */
+    private class SynthesisSummary {
+        private var chunks = 0
+        private var chars = 0L
+        private var synthesisMs = 0L
+        private var measuredChunks = 0
+        private var audioMs = 0L
+        private var sizedChunks = 0
+        private var kilobytes = 0L
+        private var gaps = 0
+        private var gapMs = 0L
+
+        @Synchronized
+        fun addChunk(chunk: ListenToPageFacts.ChunkSynthesis) {
+            chunks++
+            chars += chunk.length
+            synthesisMs += chunk.synthesisMs
+            chunk.audioMs?.let {
+                measuredChunks++
+                audioMs += it
+            }
+            chunk.fileKilobytes?.let {
+                sizedChunks++
+                kilobytes += it
+            }
+        }
+
+        @Synchronized
+        fun addGap(durationMs: Long) {
+            gaps++
+            gapMs += durationMs
+        }
+
+        @Synchronized
+        fun toExtra(language: String?, engine: String?, playbackSpeed: String): ListenToPage.SynthesisSummaryExtra? {
+            if (chunks == 0) return null
+            return ListenToPage.SynthesisSummaryExtra(
+                language = language,
+                engine = engine,
+                chunks = chunks,
+                chunkCharsAvg = (chars / chunks).toInt(),
+                chunkAudioMsAvg = if (measuredChunks > 0) (audioMs / measuredChunks).toInt() else null,
+                chunkAudioKbAvg = if (sizedChunks > 0) (kilobytes / sizedChunks).toInt() else null,
+                chunkSynthesisMsAvg = (synthesisMs / chunks).toInt(),
+                gaps = gaps,
+                gapMsTotal = gapMs.toInt(),
+                playbackSpeedEnd = playbackSpeed,
+            )
+        }
     }
 
     private enum class ChunkGapCause {
