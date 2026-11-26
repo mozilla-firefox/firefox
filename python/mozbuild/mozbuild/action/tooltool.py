@@ -24,6 +24,7 @@
 
 import base64
 import calendar
+import glob
 import hashlib
 import hmac
 import json
@@ -931,7 +932,27 @@ def clean_path(dirname):
     """Remove a subtree if is exists. Helper for unpack_file()."""
     if os.path.exists(dirname):
         log.info("rm tree: %s" % dirname)
-        shutil.rmtree(dirname)
+        name = os.path.basename(dirname)
+        old_dir = tempfile.mkdtemp(prefix=f"{name}.old-", dir=os.path.dirname(dirname))
+        try:
+            # On Windows, loaded DLLs block deleting the subtree, but not
+            # moving it.
+            os.rename(dirname, os.path.join(old_dir, name))
+        except PermissionError:
+            # A running executable blocks moving its directory, but not
+            # moving the executable itself.
+            def move_aside(func, path, exc_info):
+                if func is not os.unlink:
+                    raise exc_info[1]
+                index = len(os.listdir(old_dir))
+                os.rename(
+                    path, os.path.join(old_dir, f"{index}-{os.path.basename(path)}")
+                )
+
+            shutil.rmtree(dirname, onerror=move_aside)
+
+    for old_dir in glob.glob(f"{glob.escape(dirname)}.old-*"):
+        shutil.rmtree(old_dir, ignore_errors=True)
 
 
 CHECKSUM_SUFFIX = ".checksum"

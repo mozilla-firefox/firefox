@@ -35,6 +35,8 @@ subsuite = "mozbuild"
 
 ["action/test_run_cargo.py"]
 
+["action/test_tooltool.py"]
+
 ["action/test_wine_exe.py"]
 
 ["action/test_xpi_archive.py"]
