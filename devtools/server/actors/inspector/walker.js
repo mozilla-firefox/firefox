@@ -2522,7 +2522,7 @@ class WalkerActor extends Actor {
       return;
     }
 
-    window.document.shadowRootAttachedEventEnabled = true;
+    window.document.devToolsAnonymousAndShadowEventsEnabled = true;
 
     if (isTopLevel) {
       // If we initialize the inspector while the document is loading,
