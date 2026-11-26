@@ -13,6 +13,7 @@
 
 interface nsICancelable;
 interface nsIEventTarget;
+interface nsIX509Cert;
 interface nsIDNSRecord;
 interface nsIDNSListener;
 interface nsIDNSAdditionalInfo;
@@ -327,6 +328,14 @@ interface nsIDNSService : nsISupports
      * Returns a string containing the URI currently used by the TRR service.
      */
     readonly attribute AUTF8String currentTrrURI;
+
+    /**
+     * RFC 9462 DDR: whether aCert, presented by a designated resolver, has an
+     * iPAddress subjectAltName matching one of aResolverAddrs, the addresses of
+     * the unencrypted resolvers that designated it.
+     */
+    boolean isDesignatedResolverCert(in nsIX509Cert aCert,
+                                     in Array<ACString> aResolverAddrs);
 
     /**
      * Returns the value of the TRR Service's current default mode.

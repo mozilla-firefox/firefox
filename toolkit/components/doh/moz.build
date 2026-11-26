@@ -8,6 +8,7 @@ with Files("**"):
 MOZ_SRC_FILES += [
     "DoHConfig.sys.mjs",
     "DoHController.sys.mjs",
+    "DoHDiscovery.sys.mjs",
     "DoHHeuristics.sys.mjs",
     "TRRPerformance.sys.mjs",
 ]
