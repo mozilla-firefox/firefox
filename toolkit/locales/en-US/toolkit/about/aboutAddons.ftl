@@ -22,21 +22,6 @@ list-empty-get-language-packs-message =
 
 ##
 
-list-empty-installed =
-    .value = You don’t have any add-ons of this type installed
-
-list-empty-available-updates =
-    .value = No updates found
-
-list-empty-recent-updates =
-    .value = You haven’t recently updated any add-ons
-
-list-empty-find-updates =
-    .label = Check For Updates
-
-list-empty-button =
-    .label = Learn more about add-ons
-
 help-button = Add-ons Support
 sidebar-help-button-title =
     .title = Add-ons Support
@@ -44,18 +29,6 @@ sidebar-help-button-title =
 addons-settings-button = { -brand-short-name } Settings
 sidebar-settings-button-title =
     .title = { -brand-short-name } Settings
-
-show-unsigned-extensions-button =
-    .label = Some extensions could not be verified
-
-show-all-extensions-button =
-    .label = Show all extensions
-
-detail-version =
-    .label = Version
-
-detail-last-updated =
-    .label = Last Updated
 
 addon-detail-description-expand = Show more
 addon-detail-description-collapse = Show less
@@ -65,21 +38,6 @@ detail-contributions-description = The developer of this add-on asks that you he
 detail-contributions-button = Contribute
     .title = Contribute to the development of this add-on
     .accesskey = C
-
-detail-update-type =
-    .value = Automatic Updates
-
-detail-update-default =
-    .label = Default
-    .tooltiptext = Automatically install updates only if that’s the default
-
-detail-update-automatic =
-    .label = On
-    .tooltiptext = Automatically install updates
-
-detail-update-manual =
-    .label = Off
-    .tooltiptext = Don’t automatically install updates
 
 # Used as a description for the option to allow or block an add-on in private windows.
 detail-private-browsing-label = Run in Private Windows
@@ -92,85 +50,6 @@ detail-private-disallowed-description2 = This extension does not run while priva
 # Some special add-ons are privileged, run in private windows automatically, and this permission can't be revoked
 detail-private-required-label = Requires Access to Private Windows
 detail-private-required-description2 = This extension has access to your online activities while private browsing. <a data-l10n-name="learn-more">Learn more</a>
-
-detail-private-browsing-on =
-    .label = Allow
-    .tooltiptext = Enable in Private Browsing
-
-detail-private-browsing-off =
-    .label = Don’t Allow
-    .tooltiptext = Disable in Private Browsing
-
-detail-home =
-    .label = Homepage
-
-detail-home-value =
-    .value = { detail-home.label }
-
-detail-repository =
-    .label = Add-on Profile
-
-detail-repository-value =
-    .value = { detail-repository.label }
-
-detail-check-for-updates =
-    .label = Check for Updates
-    .accesskey = U
-    .tooltiptext = Check for updates for this add-on
-
-detail-show-preferences =
-    .label =
-        { PLATFORM() ->
-            [windows] Options
-           *[other] Preferences
-        }
-    .accesskey =
-        { PLATFORM() ->
-            [windows] O
-           *[other] P
-        }
-    .tooltiptext =
-        { PLATFORM() ->
-            [windows] Change this add-on’s options
-           *[other] Change this add-on’s preferences
-        }
-
-detail-rating =
-    .value = Rating
-
-addon-restart-now =
-    .label = Restart now
-
-disabled-unsigned-heading =
-    .value = Some add-ons have been disabled
-
-disabled-unsigned-description =
-    The following add-ons have not been verified for use in { -brand-short-name }. You can
-    <label data-l10n-name="find-addons">find replacements</label> or ask the developer to get them verified.
-
-disabled-unsigned-learn-more = Learn more about our efforts to help keep you safe online.
-
-disabled-unsigned-devinfo =
-    Developers interested in getting their add-ons verified can continue by reading our
-    <label data-l10n-name="learn-more">manual</label>.
-
-plugin-deprecation-description =
-    Missing something? Some plugins are no longer supported by { -brand-short-name }. <label data-l10n-name="learn-more">Learn More.</label>
-
-legacy-warning-show-legacy = Show legacy extensions
-
-legacy-extensions =
-    .value = Legacy Extensions
-
-legacy-extensions-description =
-    These extensions do not meet current { -brand-short-name } standards so they have been deactivated. <label data-l10n-name="legacy-learn-more">Learn about the changes to add-ons</label>
-
-private-browsing-description2 =
-    { -brand-short-name } is changing how extensions work in private browsing. Any new extensions you add to
-    { -brand-short-name } won’t run by default in Private Windows. Unless you allow it in settings, the
-    extension won’t work while private browsing, and won’t have access to your online activities
-    there. We’ve made this change to keep your private browsing private.
-    <label data-l10n-name="private-browsing-learn-more">Learn how to manage extension settings</label>
 
 aboutaddons-sidebar =
     .heading = Add-ons
@@ -646,8 +525,6 @@ mlmodel-remove-addon-button =
 # Label for the aggregated value of all files for a model
 mlmodel-addon-detail-totalsize-label = File size
 mlmodel-addon-detail-last-used-label = Last used
-# This is a section label to describe what extensions or features use a specific local AI model
-mlmodel-addon-detail-used-by-label = Used by
 # This is a section label to describe the link to the model card on the Hugging Face website
 mlmodel-addon-detail-model-card = Model card
 # This is a label for the Model Card link to Hugging face
