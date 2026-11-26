@@ -792,6 +792,16 @@ class SitePermsAddonInstallRequest extends PermissionPromptForRequest {
    * @param {Function} onError - Callback to invoke if the addon installation fails
    */
   async installSitePermAddon(onSuccess, onError) {
+    // The user chose to never allow add-on installs from this site, so the
+    // site permission add-on install would be denied anyway.
+    if (
+      Services.perms.testPermissionFromPrincipal(this.principal, "install") ==
+      Services.perms.DENY_ACTION
+    ) {
+      this.cancelWithRandomizedDelay();
+      return;
+    }
+
     try {
       await lazy.AddonManager.installSitePermsAddonFromWebpage(
         this.browser,
@@ -838,6 +848,19 @@ class SitePermsAddonInstallRequest extends PermissionPromptForRequest {
         this.cancel();
       }
     );
+  }
+
+  /**
+   * Cancels the request after a randomized delay between 3 and 13 seconds,
+   * which models the time the user might spend considering a prompt before
+   * denying it. This prevents sites from discerning that no prompt was shown.
+   */
+  cancelWithRandomizedDelay() {
+    const baseDelayMS = 3 * 1000;
+    const randomDelayMS = Cu.isInAutomation
+      ? 0
+      : Math.floor(Math.random() * 10 * 1000);
+    lazy.setTimeout(() => this.cancel(), baseDelayMS + randomDelayMS);
   }
 
   /**

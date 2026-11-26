@@ -120,15 +120,6 @@ MIDIPermissionRequest::Run() {
     return NS_OK;
   }
 
-  // If sitepermsaddon provider is enabled and user denied install,
-  // auto-deny (except for localhost, where we use a regular permission flow).
-  if (StaticPrefs::dom_sitepermsaddon_provider_enabled() &&
-      nsContentUtils::IsSitePermDeny(mPrincipal, "install"_ns) &&
-      !mPrincipal->GetIsLoopbackHost()) {
-    CancelWithRandomizedDelay();
-    return NS_OK;
-  }
-
   // Before we bother the user with a prompt, see if they have any devices. If
   // they don't, just report denial.
   MOZ_ASSERT(NS_IsMainThread());

@@ -31,11 +31,11 @@ Permission::Permission(nsIPrincipal* aPrincipal, const nsACString& aType,
       mBrowserId(aBrowserId) {}
 
 already_AddRefed<nsIPrincipal> Permission::ClonePrincipalForPermission(
-    nsIPrincipal* aPrincipal) {
+    nsIPrincipal* aPrincipal, bool aForceStripOA) {
   MOZ_ASSERT(aPrincipal);
 
   mozilla::OriginAttributes attrs = aPrincipal->OriginAttributesRef();
-  PermissionManager::MaybeStripOriginAttributes(false, attrs);
+  PermissionManager::MaybeStripOriginAttributes(aForceStripOA, attrs);
 
   nsAutoCString originNoSuffix;
   nsresult rv = aPrincipal->GetOriginNoSuffix(originNoSuffix);
@@ -54,8 +54,8 @@ already_AddRefed<Permission> Permission::Create(
     uint64_t aBrowserId) {
   NS_ENSURE_TRUE(aPrincipal, nullptr);
 
-  nsCOMPtr<nsIPrincipal> principal =
-      Permission::ClonePrincipalForPermission(aPrincipal);
+  nsCOMPtr<nsIPrincipal> principal = Permission::ClonePrincipalForPermission(
+      aPrincipal, PermissionManager::IsOAForceStripPermission(aType));
   NS_ENSURE_TRUE(principal, nullptr);
 
   RefPtr<Permission> permission =
@@ -112,7 +112,24 @@ Permission::Matches(nsIPrincipal* aPrincipal, bool aExactHost, bool* aMatches) {
   NS_ENSURE_ARG_POINTER(aPrincipal);
   NS_ENSURE_ARG_POINTER(aMatches);
 
-  return mPrincipal->EqualsForPermission(aPrincipal, aExactHost, aMatches);
+  if (!PermissionManager::IsOAForceStripPermission(mType)) {
+    return mPrincipal->EqualsForPermission(aPrincipal, aExactHost, aMatches);
+  }
+
+  OriginAttributes attrs = aPrincipal->OriginAttributesRef();
+  PermissionManager::MaybeStripOriginAttributes(true, attrs);
+  if (attrs == aPrincipal->OriginAttributesRef()) {
+    return mPrincipal->EqualsForPermission(aPrincipal, aExactHost, aMatches);
+  }
+
+  nsCOMPtr<nsIPrincipal> stripped =
+      BasePrincipal::Cast(aPrincipal)->CloneForcingOriginAttributes(attrs);
+  if (!stripped) {
+    *aMatches = false;
+    return NS_OK;
+  }
+
+  return mPrincipal->EqualsForPermission(stripped, aExactHost, aMatches);
 }
 
 NS_IMETHODIMP

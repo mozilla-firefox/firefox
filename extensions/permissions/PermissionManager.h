@@ -358,6 +358,11 @@ class PermissionManager final : public nsIPermissionManager,
   static void MaybeStripOriginAttributes(bool aForceStrip,
                                          OriginAttributes& aOriginAttributes);
 
+  /**
+   * Whether permissions of type aType are never isolated by origin attributes.
+   */
+  static bool IsOAForceStripPermission(const nsACString& aType);
+
   nsresult Add(nsIPrincipal* aPrincipal, const nsACString& aType,
                uint32_t aPermission, int64_t aID, uint32_t aExpireType,
                int64_t aExpireTime, int64_t aModificationTime,

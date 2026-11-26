@@ -26,8 +26,10 @@ class Permission : public nsIPermission {
 
   // This method creates a new nsIPrincipal with a stripped OriginAttributes (no
   // userContextId) and a content principal equal to the origin of 'aPrincipal'.
+  // If aForceStripOA is true, the origin attributes are stripped regardless of
+  // the permission isolation prefs.
   static already_AddRefed<nsIPrincipal> ClonePrincipalForPermission(
-      nsIPrincipal* aPrincipal);
+      nsIPrincipal* aPrincipal, bool aForceStripOA = false);
 
  protected:
   Permission(nsIPrincipal* aPrincipal, const nsACString& aType,
