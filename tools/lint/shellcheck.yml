@@ -7,7 +7,6 @@ shellcheck:
         - extensions/spellcheck/locales/en-US/hunspell/dictionary-sources/
         - taskcluster/docker/
         - tools/update-verify/release/common
-        - tools/update-verify/release/updates
     exclude: []
     # 1090: https://github.com/koalaman/shellcheck/wiki/SC1090
     # 'Can't follow a non-constant source'
