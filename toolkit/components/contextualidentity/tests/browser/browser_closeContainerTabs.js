@@ -29,6 +29,9 @@ add_task(async function test_skipPermitUnload() {
 
   info("Create a test user context");
   const userContextId = ContextualIdentityService.create("test").userContextId;
+  registerCleanupFunction(() =>
+    ContextualIdentityService.remove(userContextId)
+  );
 
   // Run tests in a new window to avoid affecting the main test window.
   const win = await BrowserTestUtils.openNewBrowserWindow();

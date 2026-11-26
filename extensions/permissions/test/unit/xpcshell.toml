@@ -9,6 +9,8 @@ head = "head.js"
 
 ["test_permmanager_defaults.js"]
 
+["test_permmanager_defaults_containers.js"]
+
 ["test_permmanager_expiration.js"]
 
 ["test_permmanager_getAllByTypeSince.js"]

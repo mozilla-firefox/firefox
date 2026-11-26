@@ -181,6 +181,7 @@ add_task(async function test_getBrowsers_userContext() {
     gBrowser.removeTab(tabContext1);
     gBrowser.removeTab(tabOtherContext);
     UserContextManager.removeUserContext(userContext);
+    UserContextManager.removeUserContext(otherUserContext);
   }
 });
 
