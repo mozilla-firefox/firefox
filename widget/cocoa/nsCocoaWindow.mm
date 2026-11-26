@@ -1297,7 +1297,9 @@ NSView<mozView>* nsCocoaWindow::GetEditorView() {
   // widget synchronously and that causes Cocoa asking current window level.
   // In this case, it's not safe to flush layout on the document and we don't
   // need any layout information right now.
-  queryContentState.mNeedsToFlushLayout = false;
+  QueryContentOptions options;
+  options.mNeedsToFlushLayout = false;
+  queryContentState.Init(options);
   DispatchWindowEvent(queryContentState);
   if (queryContentState.Succeeded() &&
       queryContentState.mReply->mFocusedWidget) {

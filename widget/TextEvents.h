@@ -1097,6 +1097,9 @@ struct QueryContentOptions final {
   explicit QueryContentOptions(const WidgetQueryContentEvent& aEvent);
 
   bool mRelativeToInsertionPoint = false;
+  bool mRequestFontRanges = false;
+  // TODO: Change this default value to false
+  bool mNeedsToFlushLayout = true;
 };
 
 /******************************************************************************
@@ -1222,14 +1225,10 @@ class WidgetQueryContentEvent final : public WidgetGUIEvent {
   friend class dom::PBrowserChild;
   ALLOW_DEPRECATED_READPARAM
 
-  WidgetQueryContentEvent()
-      : mWithFontRanges(false), mNeedsToFlushLayout(true) {
-    MOZ_CRASH("WidgetQueryContentEvent is created without proper arguments");
-  }
-
  public:
   NS_DEFINE_AS_EVENT_OVERRIDE(Widget, QueryContentEvent);
 
+  WidgetQueryContentEvent() = delete;
   WidgetQueryContentEvent(bool aIsTrusted, EventMessage aMessage,
                           nsIWidget* aWidget)
       : WidgetGUIEvent(aIsTrusted, aMessage, aWidget, eQueryContentEventClass) {
@@ -1239,8 +1238,9 @@ class WidgetQueryContentEvent final : public WidgetGUIEvent {
                           const WidgetQueryContentEvent& aOtherEvent)
       : WidgetGUIEvent(aOtherEvent.IsTrusted(), aMessage,
                        const_cast<nsIWidget*>(aOtherEvent.mWidget.get()),
-                       eQueryContentEventClass),
-        mNeedsToFlushLayout(aOtherEvent.mNeedsToFlushLayout) {}
+                       eQueryContentEventClass) {
+    mInput.mNeedsToFlushLayout = aOtherEvent.mInput.mNeedsToFlushLayout;
+  }
 
   NS_DEFINE_VIRTUAL_DESTRUCTOR_CHECKING_CLASS_VALUE(WidgetQueryContentEvent,
                                                     eQueryContentEventClass,
@@ -1256,6 +1256,9 @@ class WidgetQueryContentEvent final : public WidgetGUIEvent {
   void Init(const QueryContentOptions& aOptions) {
     mInput.mRelativeToInsertionPoint = aOptions.mRelativeToInsertionPoint;
     MOZ_ASSERT(mInput.IsValidEventMessage(mMessage));
+    mInput.mWithFontRanges =
+        mMessage == eQueryTextContent && aOptions.mRequestFontRanges;
+    mInput.mNeedsToFlushLayout = aOptions.mNeedsToFlushLayout;
   }
 
   void InitForQueryTextContent(
@@ -1313,11 +1316,6 @@ class WidgetQueryContentEvent final : public WidgetGUIEvent {
     Init(aOptions);
   }
 
-  void RequestFontRanges() {
-    MOZ_ASSERT(mMessage == eQueryTextContent);
-    mWithFontRanges = true;
-  }
-
   bool Succeeded() const {
     if (mReply.isNothing()) {
       return false;
@@ -1363,9 +1361,6 @@ class WidgetQueryContentEvent final : public WidgetGUIEvent {
     MOZ_ASSERT(mMessage == eQueryCharacterAtPoint);
     return Failed() || mReply->mTentativeCaretOffset.isNothing();
   }
-
-  bool mWithFontRanges = false;
-  bool mNeedsToFlushLayout = true;
 
   struct Input final {
     uint32_t EndOffset() const {
@@ -1419,6 +1414,9 @@ class WidgetQueryContentEvent final : public WidgetGUIEvent {
       mOffset = absOffset.value();
       return true;
     }
+
+    bool mWithFontRanges = false;
+    bool mNeedsToFlushLayout = true;
   } mInput;
 
   void EmplaceReply() { mReply.emplace(mMessage); }
