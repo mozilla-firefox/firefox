@@ -12,7 +12,7 @@
 #include <initializer_list>
 #include <ostream>
 
-#include "mozilla/ArrayUtils.h"
+#include "mozilla/Array.h"
 // For COMPOSITOR_ANIMATABLE_PROPERTY_LIST and
 // COMPOSITOR_ANIMATABLE_PROPERTY_LIST_LENGTH
 #include "NonCustomCSSPropertyId.h"
@@ -27,12 +27,12 @@
  */
 class nsCSSPropertyIDSet {
  public:
-  constexpr nsCSSPropertyIDSet() : mProperties{0} {}
+  constexpr nsCSSPropertyIDSet() : mProperties{} {}
   // auto-generated copy-constructor OK
 
   explicit constexpr nsCSSPropertyIDSet(
       std::initializer_list<NonCustomCSSPropertyId> aProperties)
-      : mProperties{0} {
+      : mProperties{} {
     for (auto property : aProperties) {
       size_t p = property;
       mProperties[p / kBitsInChunk] |= property_set_type(1)
@@ -123,7 +123,7 @@ class nsCSSPropertyIDSet {
     return false;
   }
 
-  void Empty() { memset(mProperties, 0, sizeof(mProperties)); }
+  void Empty() { mProperties = {}; }
 
   void AssertIsEmpty(const char* aText) const {
     for (size_t i = 0; i < std::size(mProperties); ++i) {
@@ -132,7 +132,7 @@ class nsCSSPropertyIDSet {
   }
 
   bool Equals(const nsCSSPropertyIDSet& aOther) const {
-    return mozilla::ArrayEqual(mProperties, aOther.mProperties);
+    return mProperties == aOther.mProperties;
   }
 
   bool IsEmpty() const {
@@ -284,7 +284,7 @@ class nsCSSPropertyIDSet {
   Iterator end() const { return Iterator::EndIterator(*this); }
 
  private:
-  property_set_type mProperties[kChunkCount];
+  mozilla::Array<property_set_type, kChunkCount> mProperties;
 };
 
 // MOZ_DBG support
