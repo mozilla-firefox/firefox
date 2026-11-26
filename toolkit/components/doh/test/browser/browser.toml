@@ -6,8 +6,6 @@ run-if = [
 
 ["browser_cleanFlow.js"]
 
-["browser_ddr.js"]
-
 ["browser_dirtyEnable.js"]
 
 ["browser_doh_region.js"]

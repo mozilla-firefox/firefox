@@ -6,7 +6,6 @@
 
 #include "DNSAdditionalInfo.h"
 #include "TRRService.h"
-#include "mozilla/Casting.h"
 #include "mozilla/ClearOnShutdown.h"
 #include "mozilla/Services.h"
 #include "mozilla/StaticPrefs_network.h"
@@ -15,9 +14,6 @@
 #include "mozilla/net/ChildDNSService.h"
 #include "mozilla/net/DNSListenerProxy.h"
 #include "mozilla/net/NeckoCommon.h"
-#include "mozpkix/Input.h"
-#include "mozpkix/Result.h"
-#include "mozpkix/pkix.h"
 #include "nsCRT.h"
 #include "nsCharSeparatedTokenizer.h"
 #include "nsDNSPrefetch.h"
@@ -31,7 +27,6 @@
 #include "nsIObserverService.h"
 #include "nsIPrefBranch.h"
 #include "nsIProtocolProxyService.h"
-#include "nsIX509Cert.h"
 #include "nsIXPConnect.h"
 #include "nsNetAddr.h"
 #include "nsNetCID.h"
@@ -480,11 +475,6 @@ nsDNSByTypeRecord::GetFromStaleCache(bool* aResult) {
 
 NS_IMETHODIMP
 nsDNSByTypeRecord::GetTtl(uint32_t* aTtl) { return mHostRecord->GetTtl(aTtl); }
-
-NS_IMETHODIMP
-nsDNSByTypeRecord::GetResolverAddrs(nsTArray<nsCString>& aResult) {
-  return mHostRecord->GetResolverAddrs(aResult);
-}
 
 //-----------------------------------------------------------------------------
 
@@ -1012,7 +1002,7 @@ nsresult nsDNSService::AsyncResolveInternal(
   }
 
   if ((type != RESOLVE_TYPE_DEFAULT) && (type != RESOLVE_TYPE_TXT) &&
-      (type != RESOLVE_TYPE_HTTPSSVC) && (type != RESOLVE_TYPE_SVCB)) {
+      (type != RESOLVE_TYPE_HTTPSSVC)) {
     return NS_ERROR_INVALID_ARG;
   }
 
@@ -1452,50 +1442,6 @@ nsDNSService::GetCurrentTrrURI(nsACString& aURI) {
   if (mTrrService) {
     mTrrService->GetURI(aURI);
   }
-  return NS_OK;
-}
-
-NS_IMETHODIMP
-nsDNSService::GetNativeHTTPSEnabled(bool* aEnabled) {
-  *aEnabled = nsHostResolver::IsNativeHTTPSEnabled();
-  return NS_OK;
-}
-
-NS_IMETHODIMP
-nsDNSService::IsDesignatedResolverCert(
-    nsIX509Cert* aCert, const nsTArray<nsCString>& aResolverAddrs,
-    bool* aResult) {
-  NS_ENSURE_ARG(aCert);
-  *aResult = false;
-
-  nsTArray<uint8_t> certDER;
-  nsresult rv = aCert->GetRawDER(certDER);
-  NS_ENSURE_SUCCESS(rv, rv);
-
-  pkix::Input certInput;
-  if (certInput.Init(certDER.Elements(), certDER.Length()) != pkix::Success) {
-    return NS_ERROR_FAILURE;
-  }
-
-  // Any of the configured resolvers may have answered the DDR query, so a
-  // certificate covering any one of them is enough.
-  for (const nsCString& addr : aResolverAddrs) {
-    pkix::Input ipInput;
-    if (ipInput.Init(
-            BitwiseCast<const uint8_t*, const char*>(addr.BeginReading()),
-            addr.Length()) != pkix::Success) {
-      continue;
-    }
-    // CheckCertHostname matches an IP address literal against iPAddress
-    // subjectAltName entries.
-    if (pkix::CheckCertHostname(certInput, ipInput) == pkix::Success) {
-      LOG(("DDR certificate covers resolver IP %s", addr.get()));
-      *aResult = true;
-      return NS_OK;
-    }
-  }
-
-  LOG(("DDR certificate does not cover any designating resolver IP"));
   return NS_OK;
 }
 

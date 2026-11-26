@@ -7,11 +7,8 @@
 #include <arpa/inet.h>
 #include <errno.h>
 #include <poll.h>
-#include <resolv.h>
-#include <string.h>
 
 #include "GetAddrInfo.h"
-#include "mozilla/ScopeExit.h"
 #include "mozilla/StaticPrefs_network.h"
 #include "mozilla/glean/NetwerkMetrics.h"
 #include "mozilla/net/DNSPacket.h"
@@ -21,34 +18,6 @@ namespace mozilla::net {
 
 #define LOG(msg, ...) \
   MOZ_LOG(gGetAddrInfoLog, LogLevel::Debug, ("[DNS]: " msg, ##__VA_ARGS__))
-
-// Captures every unencrypted resolver configured on the system (all IPv4 and
-// IPv6 nameservers), using the BSD resolver API. Used for RFC 9462 DDR
-// verification: any of these resolvers may have answered the query, so
-// verification accepts a designated resolver whose certificate covers any one
-// of them.
-static void CaptureResolverAddrs(nsTArray<NetAddr>& aOut) {
-  struct __res_state res;
-  memset(&res, 0, sizeof(res));
-  if (int err = res_ninit(&res)) {
-    LOG("CaptureResolverAddrs: res_ninit failed with %d", err);
-    return;
-  }
-  auto cleanup = MakeScopeExit([&] { res_ndestroy(&res); });
-
-  size_t start = aOut.Length();
-  union res_sockaddr_union servers[MAXNS];
-  int count = res_getservers(&res, servers, MAXNS);
-  for (int i = 0; i < count; i++) {
-    NetAddr addr;
-    if (SockaddrToNetAddr(reinterpret_cast<const struct sockaddr*>(&servers[i]),
-                          addr)) {
-      AppendResolverAddr(aOut, addr);
-    }
-  }
-  LOG("CaptureResolverAddrs: captured %zu resolver address(es)",
-      aOut.Length() - start);
-}
 
 // Callback for DNSServiceQueryRecord
 void QueryCallback(DNSServiceRef aSDRef, DNSServiceFlags aFlags,
@@ -74,13 +43,13 @@ void QueryCallback(DNSServiceRef aSDRef, DNSServiceFlags aFlags,
 
   // Skip intermediate records (e.g. CNAMEs) returned when
   // kDNSServiceFlagsReturnIntermediates is set.
-  if (aRRType != context->mType) {
+  if (aRRType != TRRTYPE_HTTPSSVC) {
     return;
   }
 
   context->mDone = !(aFlags & kDNSServiceFlagsMoreComing);
 
-  // Process the rdata for HTTPS (type 65) / SVCB (type 64) records
+  // Process the rdata for HTTPS records (type 65)
   if (aRDLen == 0) {
     context->mRv = NS_ERROR_UNKNOWN_HOST;
     return;
@@ -137,8 +106,7 @@ nsresult ResolveHTTPSRecordImpl(const nsACString& aHost,
                                 const Maybe<nsCString>& aOriginHost,
                                 nsIDNSService::DNSFlags aFlags,
                                 TypeRecordResultType& aResult, uint32_t& aTTL,
-                                HTTPSAliasTarget& aAlias, uint16_t aType,
-                                nsTArray<NetAddr>* aResolverAddrs) {
+                                HTTPSAliasTarget& aAlias) {
   nsAutoCString host(aHost);
   nsAutoCString cname;
 
@@ -155,7 +123,6 @@ nsresult ResolveHTTPSRecordImpl(const nsACString& aHost,
       .mHost = host,
       .mOriginHost = aOriginHost,
       .mTTL = &aTTL,
-      .mType = aType,
   };
 
   DNSServiceRef sdRef;
@@ -163,7 +130,7 @@ nsresult ResolveHTTPSRecordImpl(const nsACString& aHost,
 
   err = DNSServiceQueryRecord(&sdRef, kDNSServiceFlagsReturnIntermediates,
                               0,  // All interfaces
-                              host.get(), aType, kDNSServiceClass_IN,
+                              host.get(), TRRTYPE_HTTPSSVC, kDNSServiceClass_IN,
                               QueryCallback, &context);
 
   if (err != kDNSServiceErr_NoError) {
@@ -217,18 +184,12 @@ nsresult ResolveHTTPSRecordImpl(const nsACString& aHost,
 
   // Cleanup
   DNSServiceRefDeallocate(sdRef);
-  if (aType == nsIDNSService::RESOLVE_TYPE_HTTPSSVC) {
-    mozilla::glean::networking::dns_native_https_call_time
-        .AccumulateRawDuration(TimeStamp::Now() - startTime);
-  }
+  mozilla::glean::networking::dns_native_https_call_time.AccumulateRawDuration(
+      TimeStamp::Now() - startTime);
 
   LOG("resolving %s done %x ttl=%u", host.get(), context.mRv, aTTL);
   if (NS_FAILED(context.mRv)) {
     return context.mRv;
-  }
-
-  if (aResolverAddrs) {
-    CaptureResolverAddrs(*aResolverAddrs);
   }
   if (aResult.is<Nothing>()) {
     if (!context.mAliasName.IsEmpty()) {

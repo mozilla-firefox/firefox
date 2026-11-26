@@ -649,14 +649,6 @@ prefs = ["content.cors.use_triggering_principal=true"] # See bug 1982916.
 
 ["test_data_protocol.js"]
 
-["test_ddr_discovery.js"]
-prefs = ["network.dns.native_https_query=true"]
-skip-if = [
-  "os == 'win' && msix", # native DNS override is unavailable in MSIX sandbox
-]
-
-["test_ddr_verification.js"]
-
 ["test_defaultURI.js"]
 
 ["test_dictionary_compression_dcb.js"]
@@ -734,15 +726,6 @@ run-if = [
 ["test_dns_stale_zero_ttl.js"]
 
 ["test_dns_stress.js"]
-
-["test_dns_svcb.js"]
-prefs = [
-  "network.dns.native_https_query=true",
-  "network.dns.native_https_query_win10=true",
-]
-skip-if = [
-  "os == 'win' && msix", # native DNS override is unavailable in MSIX sandbox
-]
 
 ["test_domain_eviction.js"]
 

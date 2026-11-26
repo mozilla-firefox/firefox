@@ -29,7 +29,6 @@ struct _DnsRecordA;
 #ifdef HAVE_RES_NINIT
 struct __res_state;
 #endif
-struct sockaddr;
 
 namespace mozilla {
 namespace net {
@@ -89,18 +88,16 @@ struct __res_state* GetThreadResState();
 #endif
 
 /**
- * Resolves a HTTPS (type 65) or SVCB (type 64) record depending on aType. Will
- * check overrides before calling the native OS implementation.
+ * Resolves a HTTPS record. Will check overrides before calling the
+ * native OS implementation.
  *
  * aOriginHost is set when aHost is a port-prefixed name; it is then used as
  * the TargetName of ServiceMode records whose TargetName is ".".
  */
-nsresult ResolveHTTPSRecord(
-    const nsACString& aHost, nsIDNSService::DNSFlags aFlags,
-    TypeRecordResultType& aResult, uint32_t& aTTL,
-    const Maybe<nsCString>& aOriginHost = Nothing(),
-    uint16_t aType = nsIDNSService::RESOLVE_TYPE_HTTPSSVC,
-    nsTArray<NetAddr>* aResolverAddrs = nullptr);
+nsresult ResolveHTTPSRecord(const nsACString& aHost,
+                            nsIDNSService::DNSFlags aFlags,
+                            TypeRecordResultType& aResult, uint32_t& aTTL,
+                            const Maybe<nsCString>& aOriginHost = Nothing());
 
 /**
  * A target name that could not be resolved within the same response, along with
@@ -115,35 +112,31 @@ struct HTTPSAliasTarget {
 };
 
 /**
- * The platform specific implementation of HTTPS/SVCB resolution. When
- * aResolverAddrs is non-null it is filled with the addresses of the unencrypted
- * resolvers configured on the system (used for RFC 9462 DDR verification).
+ * The platform specific implementation of HTTPS resolution.
  *
  * If the record for aHost could not be resolved within the same response,
  * aAlias is set to the target name so the caller can issue a fresh lookup.
  */
-nsresult ResolveHTTPSRecordImpl(
-    const nsACString& aHost, const Maybe<nsCString>& aOriginHost,
-    nsIDNSService::DNSFlags aFlags, TypeRecordResultType& aResult,
-    uint32_t& aTTL, HTTPSAliasTarget& aAlias,
-    uint16_t aType = nsIDNSService::RESOLVE_TYPE_HTTPSSVC,
-    nsTArray<NetAddr>* aResolverAddrs = nullptr);
+nsresult ResolveHTTPSRecordImpl(const nsACString& aHost,
+                                const Maybe<nsCString>& aOriginHost,
+                                nsIDNSService::DNSFlags aFlags,
+                                TypeRecordResultType& aResult, uint32_t& aTTL,
+                                HTTPSAliasTarget& aAlias);
 
-nsresult ParseHTTPSRecord(
-    nsCString& aHost, DNSPacket& aDNSPacket, TypeRecordResultType& aResult,
-    uint32_t& aTTL, HTTPSAliasTarget& aAlias,
-    uint16_t aType = nsIDNSService::RESOLVE_TYPE_HTTPSSVC);
+nsresult ParseHTTPSRecord(nsCString& aHost, DNSPacket& aDNSPacket,
+                          TypeRecordResultType& aResult, uint32_t& aTTL,
+                          HTTPSAliasTarget& aAlias);
 
 #ifdef DNSQUERY_AVAILABLE
 /**
  * Extracts the HTTPS records for aHost from the record list returned by
  * DnsQuery_A, following CNAME and AliasMode targets present in the list.
  */
-nsresult ParseHTTPSRecordList(
-    const _DnsRecordA* aRecords, const nsACString& aHost,
-    const Maybe<nsCString>& aOriginHost, TypeRecordResultType& aResult,
-    uint32_t& aTTL, HTTPSAliasTarget& aAlias,
-    uint16_t aType = nsIDNSService::RESOLVE_TYPE_HTTPSSVC);
+nsresult ParseHTTPSRecordList(const _DnsRecordA* aRecords,
+                              const nsACString& aHost,
+                              const Maybe<nsCString>& aOriginHost,
+                              TypeRecordResultType& aResult, uint32_t& aTTL,
+                              HTTPSAliasTarget& aAlias);
 #endif
 
 // Use the provided aHost to create a mock HTTPS record.
@@ -151,13 +144,6 @@ nsresult CreateAndResolveMockHTTPSRecord(const nsACString& aHost,
                                          nsIDNSService::DNSFlags aFlags,
                                          TypeRecordResultType& aResult,
                                          uint32_t& aTTL);
-
-// Converts an AF_INET/AF_INET6 sockaddr to a NetAddr with a zero port. Returns
-// false for other families.
-bool SockaddrToNetAddr(const struct sockaddr* aSockAddr, NetAddr& aOut);
-
-// Appends aAddr to aOut unless it is already there.
-void AppendResolverAddr(nsTArray<NetAddr>& aOut, const NetAddr& aAddr);
 
 class NativeDNSResolverOverride : public nsINativeDNSResolverOverride {
   NS_DECL_THREADSAFE_ISUPPORTS
@@ -183,7 +169,7 @@ class NativeDNSResolverOverride : public nsINativeDNSResolverOverride {
   friend bool FindHTTPSRecordOverride(const nsACString& aHost,
                                       const Maybe<nsCString>& aOriginHost,
                                       TypeRecordResultType& aResult,
-                                      HTTPSAliasTarget& aAlias, uint16_t aType);
+                                      HTTPSAliasTarget& aAlias);
 };
 
 }  // namespace net
