@@ -250,7 +250,7 @@ function handleHelperResult(response) {
               {
                 resourceType: ResourceCommand.TYPES.PLATFORM_MESSAGE,
                 message: l10n.getStr(
-                  "webconsole.message.commands.copyValueToClipboard"
+                  "webconsole-commands-copy-value-to-clipboard"
                 ),
               },
             ])
@@ -299,10 +299,9 @@ function handleHelperResult(response) {
             messagesActions.messagesAdd([
               {
                 resourceType: ResourceCommand.TYPES.PLATFORM_MESSAGE,
-                message: l10n.getFormatStr(
-                  "webconsole.message.commands.blockedURL",
-                  [blockURL]
-                ),
+                message: l10n.getStr("webconsole-commands-blocked-url", {
+                  url: blockURL,
+                }),
               },
             ])
           );
@@ -321,10 +320,9 @@ function handleHelperResult(response) {
             messagesActions.messagesAdd([
               {
                 resourceType: ResourceCommand.TYPES.PLATFORM_MESSAGE,
-                message: l10n.getFormatStr(
-                  "webconsole.message.commands.unblockedURL",
-                  [unblockURL]
-                ),
+                message: l10n.getStr("webconsole-commands-unblocked-url", {
+                  url: unblockURL,
+                }),
               },
             ])
           );

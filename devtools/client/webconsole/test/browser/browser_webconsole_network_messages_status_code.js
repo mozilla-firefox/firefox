@@ -52,7 +52,7 @@ add_task(async function task() {
   );
   is(
     statusCodeNode.title,
-    l10n.getStr("webConsoleMoreInfoLabel"),
+    l10n.getStr("webconsole-learn-more"),
     "Status code has the expected tooltip"
   );
 

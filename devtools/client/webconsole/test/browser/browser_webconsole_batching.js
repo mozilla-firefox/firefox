@@ -53,7 +53,7 @@ async function testBatchLoggingAndClear(hud, messageNumber) {
     }
   );
   await waitFor(() =>
-    findConsoleAPIMessage(hud, l10n.getStr("consoleCleared"))
+    findConsoleAPIMessage(hud, l10n.getStr("webconsole-console-cleared"))
   );
   ok(true, "console cleared message is displayed");
 

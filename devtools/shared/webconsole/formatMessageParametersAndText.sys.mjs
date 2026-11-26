@@ -6,6 +6,15 @@ import { require } from "resource://devtools/shared/loader/Loader.sys.mjs";
 
 const l10n = require("resource://devtools/shared/webconsole/l10n.js");
 
+// Maps the error names set by the Console API to Fluent message ids.
+const ERROR_MESSAGE_IDS = {
+  counterDoesntExist: "webconsole-counter-doesnt-exist",
+  maxTimersExceeded: "webconsole-max-timers-exceeded",
+  timerAlreadyExists: "webconsole-timer-already-exists",
+  timerDoesntExist: "webconsole-timer-doesnt-exist",
+  timerJSError: "webconsole-timer-js-error",
+};
+
 /**
  * Format the webconsole messages and parameters based on provided data.
  *
@@ -34,7 +43,11 @@ export function formatMessageParametersAndText(messageData, persistLogs) {
     case "clear":
       // We show a message to users when calls console.clear() is called.
       parameters = [
-        l10n.getStr(persistLogs ? "preventedConsoleClear" : "consoleCleared"),
+        l10n.getStr(
+          persistLogs
+            ? "webconsole-console-clear-prevented"
+            : "webconsole-console-cleared"
+        ),
       ];
       break;
     case "count":
@@ -43,12 +56,14 @@ export function formatMessageParametersAndText(messageData, persistLogs) {
 
       if (counter) {
         if (counter.error) {
-          messageText = l10n.getFormatStr(counter.error, [counter.label]);
+          messageText = l10n.getStr(ERROR_MESSAGE_IDS[counter.error], {
+            name: counter.label,
+          });
           parameters = null;
         } else {
           const label = counter.label
             ? counter.label
-            : l10n.getStr("noCounterLabel");
+            : l10n.getStr("webconsole-no-counter-label");
           messageText = `${label}: ${counter.count}`;
           parameters = null;
         }
@@ -58,28 +73,35 @@ export function formatMessageParametersAndText(messageData, persistLogs) {
     case "time":
       parameters = null;
       if (timer && timer.error) {
-        messageText = l10n.getFormatStr(timer.error, [timer.name]);
+        messageText = l10n.getStr(ERROR_MESSAGE_IDS[timer.error], {
+          name: timer.name,
+        });
       }
       break;
     case "timeLog":
     case "timeEnd":
       if (timer && timer.error) {
         parameters = null;
-        messageText = l10n.getFormatStr(timer.error, [timer.name]);
+        messageText = l10n.getStr(ERROR_MESSAGE_IDS[timer.error], {
+          name: timer.name,
+        });
       } else if (timer) {
         // We show the duration to users when calls console.timeLog/timeEnd is called,
         // if corresponding console.time() was called before.
         const duration = Math.round(timer.duration * 100) / 100;
         if (type === "timeEnd") {
-          messageText = l10n.getFormatStr("console.timeEnd", [
-            timer.name,
-            duration,
-          ]);
+          messageText = l10n.getStr("webconsole-time-end", {
+            name: timer.name,
+            duration: String(duration),
+          });
           parameters = null;
         } else if (type === "timeLog") {
           const [, ...rest] = parameters;
           parameters = [
-            l10n.getFormatStr("timeLog", [timer.name, duration]),
+            l10n.getStr("webconsole-time-log", {
+              name: timer.name,
+              duration: String(duration),
+            }),
             ...rest,
           ];
         }
@@ -87,12 +109,12 @@ export function formatMessageParametersAndText(messageData, persistLogs) {
       break;
     case "group":
       if (parameters.length === 0) {
-        parameters = [l10n.getStr("noGroupLabel")];
+        parameters = [l10n.getStr("webconsole-no-group-label")];
       }
       break;
     case "groupCollapsed":
       if (parameters.length === 0) {
-        parameters = [l10n.getStr("noGroupLabel")];
+        parameters = [l10n.getStr("webconsole-no-group-label")];
       }
       break;
     case "groupEnd":

@@ -170,9 +170,9 @@ class BrowserConsoleManager {
       null
     );
     if (mode == "everything") {
-      title = l10n.getStr("multiProcessBrowserConsole.title");
+      title = l10n.getStr("browserconsole-multiprocess-title");
     } else if (mode == "parent-process") {
-      title = l10n.getStr("parentProcessBrowserConsole.title");
+      title = l10n.getStr("browserconsole-parent-process-title");
     } else {
       throw new Error("Unsupported mode: " + mode);
     }

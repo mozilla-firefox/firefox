@@ -395,7 +395,8 @@ class Frame extends Component {
             key: "function-display-name",
             className: "frame-link-function-display-name",
           },
-          functionDisplayName || webl10n.getStr("stacktrace.anonymousFunction")
+          functionDisplayName ||
+            webl10n.getStr("webconsole-stacktrace-anonymous-function")
         ),
         " ",
       ];

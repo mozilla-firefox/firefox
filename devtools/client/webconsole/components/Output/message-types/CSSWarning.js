@@ -131,9 +131,9 @@ class CSSWarning extends Component {
         { className: "devtools-monospace" },
         dom.div(
           { className: "elements-label" },
-          l10n.getFormatStr("webconsole.cssWarningElements.label", [
-            cssSelectors,
-          ])
+          l10n.getStr("webconsole-css-warning-elements", {
+            selector: cssSelectors,
+          })
         ),
         GripMessageBody({
           dispatch,

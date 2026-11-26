@@ -200,9 +200,9 @@ add_task(async function () {
   info("try ctrl-l to clear output");
   let clearShortcut;
   if (Services.appinfo.OS === "Darwin") {
-    clearShortcut = WCUL10n.getStr("webconsole.clear.keyOSX");
+    clearShortcut = WCUL10n.getStr("webconsole-clear-key-macos");
   } else {
-    clearShortcut = WCUL10n.getStr("webconsole.clear.key");
+    clearShortcut = WCUL10n.getStr("webconsole-clear-key");
   }
   synthesizeKeyShortcut(clearShortcut);
   await waitFor(() => !findAllMessages(hud).length);
@@ -221,7 +221,9 @@ add_task(async function () {
     await onMessage;
 
     info("Send Cmd-K to clear console");
-    synthesizeKeyShortcut(WCUL10n.getStr("webconsole.clear.alternativeKeyOSX"));
+    synthesizeKeyShortcut(
+      WCUL10n.getStr("webconsole-clear-alternative-key-macos")
+    );
 
     await waitFor(() => !findAllMessages(hud).length);
     ok(
@@ -232,12 +234,12 @@ add_task(async function () {
 
   // Focus filter
   info("try ctrl-f to focus filter");
-  synthesizeKeyShortcut(WCUL10n.getStr("webconsole.find.key"));
+  synthesizeKeyShortcut(WCUL10n.getStr("webconsole-find-key"));
   ok(!isInputFocused(hud), "input is not focused");
   ok(hasFocus(getFilterInput(hud)), "filter input is focused");
 
   info("try ctrl-f when filter is already focused");
-  synthesizeKeyShortcut(WCUL10n.getStr("webconsole.find.key"));
+  synthesizeKeyShortcut(WCUL10n.getStr("webconsole-find-key"));
   ok(!isInputFocused(hud), "input is not focused");
   is(
     getFilterInput(hud),

@@ -297,8 +297,8 @@ class WebConsoleUI extends EventEmitter {
 
   logWarningAboutReplacedAPI() {
     return this.hud.currentTarget.logWarningInPage(
-      l10n.getStr("ConsoleAPIDisabled"),
-      "ConsoleAPIDisabled"
+      l10n.getStr("webconsole-console-api-disabled"),
+      "webconsole-console-api-disabled"
     );
   }
 
@@ -702,7 +702,7 @@ class WebConsoleUI extends EventEmitter {
       // the Browser Console (Bug 1461366).
       this.window.focus();
       shortcuts.on(
-        l10n.getStr("webconsole.close.key"),
+        l10n.getStr("webconsole-close-key"),
         this.window.close.bind(this.window)
       );
 
@@ -734,12 +734,12 @@ class WebConsoleUI extends EventEmitter {
   getClearKeyShortcuts() {
     if (lazy.AppConstants.platform === "macosx") {
       return [
-        l10n.getStr("webconsole.clear.alternativeKeyOSX"),
-        l10n.getStr("webconsole.clear.keyOSX"),
+        l10n.getStr("webconsole-clear-alternative-key-macos"),
+        l10n.getStr("webconsole-clear-key-macos"),
       ];
     }
 
-    return [l10n.getStr("webconsole.clear.key")];
+    return [l10n.getStr("webconsole-clear-key")];
   }
 
   /**

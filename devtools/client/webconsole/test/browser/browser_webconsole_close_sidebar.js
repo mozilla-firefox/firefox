@@ -41,9 +41,9 @@ add_task(async function () {
   info("Send ctrl-l to clear console");
   let clearShortcut;
   if (Services.appinfo.OS === "Darwin") {
-    clearShortcut = WCUL10n.getStr("webconsole.clear.keyOSX");
+    clearShortcut = WCUL10n.getStr("webconsole-clear-key-macos");
   } else {
-    clearShortcut = WCUL10n.getStr("webconsole.clear.key");
+    clearShortcut = WCUL10n.getStr("webconsole-clear-key");
   }
   synthesizeKeyShortcut(clearShortcut);
   await waitFor(() => !findAllMessages(hud).length);

@@ -59,6 +59,7 @@ describe("WarningGroup component:", () => {
         message: mockMessage,
         serviceContainer,
         open: true,
+        badge: 42,
       })
     );
 
@@ -71,6 +72,7 @@ describe("WarningGroup component:", () => {
         message: mockMessage,
         serviceContainer,
         timestampsVisible: false,
+        badge: 42,
       })
     );
 

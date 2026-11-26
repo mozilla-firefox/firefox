@@ -72,7 +72,7 @@ class EditorToolbar extends Component {
       return null;
     }
 
-    const enterStr = l10n.getStr("webconsole.enterKey");
+    const enterStr = l10n.getStr("webconsole-enter-key");
 
     return dom.div(
       {
@@ -82,20 +82,22 @@ class EditorToolbar extends Component {
       dom.button(
         {
           className: "devtools-button webconsole-editor-toolbar-executeButton",
-          title: l10n.getFormatStr(
-            "webconsole.editor.toolbar.executeButton.tooltip",
-            [isMacOS ? `Cmd + ${enterStr}` : `Ctrl + ${enterStr}`]
+          title: l10n.getStr(
+            "webconsole-editor-toolbar-execute-button-tooltip",
+            {
+              shortcut: isMacOS ? `Cmd + ${enterStr}` : `Ctrl + ${enterStr}`,
+            }
           ),
           onClick: () => dispatch(actions.evaluateExpression()),
         },
-        l10n.getStr("webconsole.editor.toolbar.executeButton.label")
+        l10n.getStr("webconsole-editor-toolbar-execute-button-label")
       ),
       this.renderEvaluationContextSelector(),
       dom.button({
         className:
           "devtools-button webconsole-editor-toolbar-prettyPrintButton",
         title: l10n.getStr(
-          "webconsole.editor.toolbar.prettyPrintButton.tooltip"
+          "webconsole-editor-toolbar-pretty-print-button-tooltip"
         ),
         onClick: () => dispatch(actions.prettyPrintEditor()),
       }),
@@ -107,7 +109,7 @@ class EditorToolbar extends Component {
         className:
           "devtools-button webconsole-editor-toolbar-history-prevExpressionButton",
         title: l10n.getStr(
-          "webconsole.editor.toolbar.history.prevExpressionButton.tooltip"
+          "webconsole-editor-toolbar-prev-expression-button-tooltip"
         ),
         onClick: () => {
           webConsoleUI.jsterm.historyPeruse(HISTORY_BACK);
@@ -117,7 +119,7 @@ class EditorToolbar extends Component {
         className:
           "devtools-button webconsole-editor-toolbar-history-nextExpressionButton",
         title: l10n.getStr(
-          "webconsole.editor.toolbar.history.nextExpressionButton.tooltip"
+          "webconsole-editor-toolbar-next-expression-button-tooltip"
         ),
         onClick: () => {
           webConsoleUI.jsterm.historyPeruse(HISTORY_FORWARD);
@@ -128,13 +130,13 @@ class EditorToolbar extends Component {
           reverseSearchInputVisible ? "checked" : ""
         }`,
         title: reverseSearchInputVisible
-          ? l10n.getFormatStr(
-              "webconsole.editor.toolbar.reverseSearchButton.closeReverseSearch.tooltip",
-              ["Esc" + (isMacOS ? " | Ctrl + C" : "")]
+          ? l10n.getStr(
+              "webconsole-editor-toolbar-close-reverse-search-tooltip",
+              { shortcut: "Esc" + (isMacOS ? " | Ctrl + C" : "") }
             )
-          : l10n.getFormatStr(
-              "webconsole.editor.toolbar.reverseSearchButton.openReverseSearch.tooltip",
-              [isMacOS ? "Ctrl + R" : "F9"]
+          : l10n.getStr(
+              "webconsole-editor-toolbar-open-reverse-search-tooltip",
+              { shortcut: isMacOS ? "Ctrl + R" : "F9" }
             ),
         onClick: this.onReverseSearchButtonClick,
       }),
@@ -144,10 +146,9 @@ class EditorToolbar extends Component {
       }),
       dom.button({
         className: "devtools-button webconsole-editor-toolbar-closeButton",
-        title: l10n.getFormatStr(
-          "webconsole.editor.toolbar.closeButton.tooltip2",
-          [isMacOS ? "Cmd + B" : "Ctrl + B"]
-        ),
+        title: l10n.getStr("webconsole-editor-toolbar-close-button-tooltip", {
+          shortcut: isMacOS ? "Cmd + B" : "Ctrl + B",
+        }),
         onClick: () => dispatch(actions.editorToggle()),
       })
     );

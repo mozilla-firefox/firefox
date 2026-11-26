@@ -27,7 +27,7 @@ class AsyncFrameClass extends Component {
 
     return dom.span(
       { className: "frame-link-async-cause" },
-      l10n.getFormatStr("stacktrace.asyncStack", [asyncCause])
+      l10n.getStr("webconsole-stacktrace-async-stack", { cause: asyncCause })
     );
   }
 }

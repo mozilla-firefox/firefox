@@ -101,8 +101,7 @@ function createContextMenu(event, message, webConsoleWrapper) {
   menu.append(
     new MenuItem({
       id: "console-menu-copy-url",
-      label: l10n.getStr("webconsole.menu.copyURL.label"),
-      accesskey: l10n.getStr("webconsole.menu.copyURL.accesskey"),
+      ...l10n.getAttributes("webconsole-menu-copy-url"),
       visible: source === MESSAGE_SOURCE.NETWORK || linkEl !== null,
       click: () => {
         if (!request && linkEl == null) {
@@ -118,8 +117,7 @@ function createContextMenu(event, message, webConsoleWrapper) {
   menu.append(
     new MenuItem({
       id: "console-menu-open-url",
-      label: l10n.getStr("webconsole.menu.openURL.label"),
-      accesskey: l10n.getStr("webconsole.menu.openURL.accesskey"),
+      ...l10n.getAttributes("webconsole-menu-open-url"),
       visible: source === MESSAGE_SOURCE.NETWORK || linkEl !== null,
       click: () => {
         if (!request && linkEl == null) {
@@ -138,8 +136,7 @@ function createContextMenu(event, message, webConsoleWrapper) {
     menu.append(
       new MenuItem({
         id: "console-menu-open-in-network-panel",
-        label: l10n.getStr("webconsole.menu.openInNetworkPanel.label"),
-        accesskey: l10n.getStr("webconsole.menu.openInNetworkPanel.accesskey"),
+        ...l10n.getAttributes("webconsole-menu-open-in-network-panel"),
         visible: source === MESSAGE_SOURCE.NETWORK,
         click: () => dispatch(actions.openNetworkPanel(message.messageId)),
       })
@@ -148,10 +145,7 @@ function createContextMenu(event, message, webConsoleWrapper) {
     menu.append(
       new MenuItem({
         id: "console-menu-resend-network-request",
-        label: l10n.getStr("webconsole.menu.resendNetworkRequest.label"),
-        accesskey: l10n.getStr(
-          "webconsole.menu.resendNetworkRequest.accesskey"
-        ),
+        ...l10n.getAttributes("webconsole-menu-resend-network-request"),
         visible: source === MESSAGE_SOURCE.NETWORK,
         click: () => dispatch(actions.resendNetworkRequest(messageId)),
       })
@@ -170,8 +164,7 @@ function createContextMenu(event, message, webConsoleWrapper) {
     menu.append(
       new MenuItem({
         id: "console-menu-open-node",
-        label: l10n.getStr("webconsole.menu.openNodeInInspector.label"),
-        accesskey: l10n.getStr("webconsole.menu.openNodeInInspector.accesskey"),
+        ...l10n.getAttributes("webconsole-menu-open-node-in-inspector"),
         disabled: false,
         click: () =>
           dispatch(
@@ -185,8 +178,7 @@ function createContextMenu(event, message, webConsoleWrapper) {
   menu.append(
     new MenuItem({
       id: "console-menu-store",
-      label: l10n.getStr("webconsole.menu.storeAsGlobalVar.label"),
-      accesskey: l10n.getStr("webconsole.menu.storeAsGlobalVar.accesskey"),
+      ...l10n.getAttributes("webconsole-menu-store-as-global-var"),
       disabled: !actor,
       click: () => dispatch(actions.storeAsGlobal(actor)),
     })
@@ -196,8 +188,7 @@ function createContextMenu(event, message, webConsoleWrapper) {
   menu.append(
     new MenuItem({
       id: "console-menu-copy",
-      label: l10n.getStr("webconsole.menu.copyMessage.label"),
-      accesskey: l10n.getStr("webconsole.menu.copyMessage.accesskey"),
+      ...l10n.getAttributes("webconsole-menu-copy-message"),
       // Disabled if there is no selection and no message element available to copy.
       disabled: selection.isCollapsed && !clipboardText,
       click: () => {
@@ -216,8 +207,7 @@ function createContextMenu(event, message, webConsoleWrapper) {
   menu.append(
     new MenuItem({
       id: "console-menu-copy-object",
-      label: l10n.getStr("webconsole.menu.copyObject.label"),
-      accesskey: l10n.getStr("webconsole.menu.copyObject.accesskey"),
+      ...l10n.getAttributes("webconsole-menu-copy-object"),
       // Disabled if there is no actor and no variable text associated.
       disabled: !actor && !variableText,
       click: () => dispatch(actions.copyMessageObject(actor, variableText)),
@@ -228,8 +218,7 @@ function createContextMenu(event, message, webConsoleWrapper) {
   menu.append(
     new MenuItem({
       id: "console-menu-export-clipboard",
-      label: l10n.getStr("webconsole.menu.copyAllMessages.label"),
-      accesskey: l10n.getStr("webconsole.menu.copyAllMessages.accesskey"),
+      ...l10n.getAttributes("webconsole-menu-copy-all-messages"),
       disabled: false,
       async click() {
         const outputText =
@@ -243,8 +232,7 @@ function createContextMenu(event, message, webConsoleWrapper) {
   menu.append(
     new MenuItem({
       id: "console-menu-export-file",
-      label: l10n.getStr("webconsole.menu.saveAllMessagesFile.label"),
-      accesskey: l10n.getStr("webconsole.menu.saveAllMessagesFile.accesskey"),
+      ...l10n.getAttributes("webconsole-menu-save-all-messages-file"),
       disabled: false,
       // Note: not async, but returns a promise for the actual save.
       click: async () => {
@@ -267,8 +255,7 @@ function createContextMenu(event, message, webConsoleWrapper) {
     menu.append(
       new MenuItem({
         id: "console-menu-open-sidebar",
-        label: l10n.getStr("webconsole.menu.openInSidebar.label1"),
-        accesskey: l10n.getStr("webconsole.menu.openInSidebar.accesskey"),
+        ...l10n.getAttributes("webconsole-menu-open-in-sidebar"),
         disabled: !rootActorId,
         click: () => dispatch(actions.openSidebar(messageId, rootActorId)),
       })

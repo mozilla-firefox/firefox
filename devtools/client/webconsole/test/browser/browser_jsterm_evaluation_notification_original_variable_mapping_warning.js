@@ -7,9 +7,7 @@
 
 "use strict";
 
-const l10n = new LocalizationHelper(
-  "devtools/shared/locales/webconsole.properties"
-);
+const l10n = require("resource://devtools/shared/webconsole/l10n.js");
 const TEST_URI =
   "https://example.com/browser/devtools/client/webconsole/test/browser/test-autocomplete-mapped.html";
 
@@ -33,7 +31,7 @@ add_task(async function () {
   await waitUntil(() => findEvaluationNotificationMessage(hud));
 
   const notificationMessage = l10n.getStr(
-    "evaluationNotifcation.noOriginalVariableMapping.msg"
+    "webconsole-evaluation-notification-no-original-variable-mapping"
   );
 
   is(

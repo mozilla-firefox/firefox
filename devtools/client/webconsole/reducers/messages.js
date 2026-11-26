@@ -1596,7 +1596,8 @@ function isTextInStackTrace(matchStr, stacktrace) {
   return stacktrace.some(frame =>
     isTextInFrame(matchStr, {
       functionName:
-        frame.functionName || l10n.getStr("stacktrace.anonymousFunction"),
+        frame.functionName ||
+        l10n.getStr("webconsole-stacktrace-anonymous-function"),
       source: frame.filename,
       lineNumber: frame.lineNumber,
       columnNumber: frame.columnNumber,

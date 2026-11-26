@@ -37,12 +37,6 @@ loader.lazyRequireGetter(
 );
 loader.lazyRequireGetter(
   this,
-  "PluralForm",
-  "resource://devtools/shared/plural-form.js",
-  true
-);
-loader.lazyRequireGetter(
-  this,
   "KeyCodes",
   "resource://devtools/client/shared/keycodes.js",
   true
@@ -174,12 +168,12 @@ class ReverseSearchInput extends Component {
 
     let text;
     if (reverseSearchTotalResults === 0) {
-      text = l10n.getStr("webconsole.reverseSearch.noResult");
+      text = l10n.getStr("webconsole-reverse-search-no-result");
     } else {
-      const resultsString = l10n.getStr("webconsole.reverseSearch.results");
-      text = PluralForm.get(reverseSearchTotalResults, resultsString)
-        .replace("#1", reverseSearchResultPosition)
-        .replace("#2", reverseSearchTotalResults);
+      text = l10n.getStr("webconsole-reverse-search-results", {
+        index: reverseSearchResultPosition,
+        total: reverseSearchTotalResults,
+      });
     }
 
     return dom.div({ className: "reverse-search-info" }, text);
@@ -199,9 +193,11 @@ class ReverseSearchInput extends Component {
       dom.button({
         key: "search-result-button-prev",
         className: "devtools-button search-result-button-prev",
-        title: l10n.getFormatStr(
-          "webconsole.reverseSearch.result.previousButton.tooltip",
-          [isMacOS ? "Ctrl + R" : "F9"]
+        title: l10n.getStr(
+          "webconsole-reverse-search-previous-button-tooltip",
+          {
+            shortcut: isMacOS ? "Ctrl + R" : "F9",
+          }
         ),
         onClick: () => {
           dispatch(actions.showReverseSearchBack({ access: "click" }));
@@ -211,10 +207,9 @@ class ReverseSearchInput extends Component {
       dom.button({
         key: "search-result-button-next",
         className: "devtools-button search-result-button-next",
-        title: l10n.getFormatStr(
-          "webconsole.reverseSearch.result.nextButton.tooltip",
-          [isMacOS ? "Ctrl + S" : "Shift + F9"]
-        ),
+        title: l10n.getStr("webconsole-reverse-search-next-button-tooltip", {
+          shortcut: isMacOS ? "Ctrl + S" : "Shift + F9",
+        }),
         onClick: () => {
           dispatch(actions.showReverseSearchNext({ access: "click" }));
           this.inputNode.focus();
@@ -243,7 +238,7 @@ class ReverseSearchInput extends Component {
           this.inputNode = node;
         },
         autoFocus: true,
-        placeholder: l10n.getStr("webconsole.reverseSearch.input.placeHolder"),
+        placeholder: l10n.getStr("webconsole-reverse-search-input-placeholder"),
         className: "reverse-search-input devtools-monospace",
         dir: "auto",
         onKeyDown: this.onInputKeyDown,
@@ -258,10 +253,9 @@ class ReverseSearchInput extends Component {
         this.renderNavigationButtons(),
         dom.button({
           className: "devtools-button reverse-search-close-button",
-          title: l10n.getFormatStr(
-            "webconsole.reverseSearch.closeButton.tooltip",
-            ["Esc" + (isMacOS ? " | Ctrl + C" : "")]
-          ),
+          title: l10n.getStr("webconsole-reverse-search-close-button-tooltip", {
+            shortcut: "Esc" + (isMacOS ? " | Ctrl + C" : ""),
+          }),
           onClick: () => {
             dispatch(actions.reverseSearchInputToggle());
           },

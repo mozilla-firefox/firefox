@@ -319,7 +319,9 @@ class JSTerm extends Component {
           return saveAs(window, data, suggestedName, [
             {
               pattern: "*.js",
-              label: l10n.getStr("webconsole.input.openJavaScriptFileFilter"),
+              label: l10n.getStr(
+                "webconsole-input-open-javascript-file-filter"
+              ),
             },
           ]);
         },
@@ -826,13 +828,13 @@ class JSTerm extends Component {
     const fp = Cc["@mozilla.org/filepicker;1"].createInstance(Ci.nsIFilePicker);
     fp.init(
       this.webConsoleUI.document.defaultView.browsingContext,
-      l10n.getStr("webconsole.input.openJavaScriptFile"),
+      l10n.getStr("webconsole-input-open-javascript-file"),
       Ci.nsIFilePicker.modeOpen
     );
 
     // Append file filters
     fp.appendFilter(
-      l10n.getStr("webconsole.input.openJavaScriptFileFilter"),
+      l10n.getStr("webconsole-input-open-javascript-file-filter"),
       "*.js"
     );
 
@@ -1510,9 +1512,9 @@ class JSTerm extends Component {
       className:
         "devtools-button webconsole-input-openEditorButton" +
         (this.props.showEditorOnboarding ? " devtools-feature-callout" : ""),
-      title: l10n.getFormatStr("webconsole.input.openEditorButton.tooltip2", [
-        isMacOS ? "Cmd + B" : "Ctrl + B",
-      ]),
+      title: l10n.getStr("webconsole-input-open-editor-button-tooltip", {
+        shortcut: isMacOS ? "Cmd + B" : "Ctrl + B",
+      }),
       onClick: this.props.editorToggle,
     });
   }
@@ -1530,16 +1532,7 @@ class JSTerm extends Component {
       return null;
     }
 
-    // We deliberately use getStr, and not getFormatStr, because we want keyboard
-    // shortcuts to be wrapped in their own span.
-    const label = l10n.getStr("webconsole.input.editor.onboarding.label");
-    let [prefix, suffix] = label.split("%1$S");
-
-    // Bug 2028930: band-aid to avoid panel crashes due to a localization file
-    // which we moved from one folder to another.
-    suffix = suffix ? suffix.split("%2$S") : [];
-
-    const enterString = l10n.getStr("webconsole.enterKey");
+    const enterString = l10n.getStr("webconsole-enter-key");
 
     return dom.header(
       { className: "editor-onboarding" },
@@ -1548,21 +1541,27 @@ class JSTerm extends Component {
         src: "chrome://devtools/skin/images/fox-smiling.svg",
       }),
       dom.p(
-        {},
-        prefix,
-        dom.span({ className: "editor-onboarding-shortcut" }, enterString),
-        suffix[0],
-        dom.span({ className: "editor-onboarding-shortcut" }, [
-          isMacOS ? `Cmd+${enterString}` : `Ctrl+${enterString}`,
-        ]),
-        suffix[1]
+        {
+          "data-l10n-id": "webconsole-input-editor-onboarding",
+          "data-l10n-args": JSON.stringify({
+            runShortcut: isMacOS ? `Cmd+${enterString}` : `Ctrl+${enterString}`,
+          }),
+        },
+        dom.span({
+          "data-l10n-name": "enter-key",
+          className: "editor-onboarding-shortcut",
+        }),
+        dom.span({
+          "data-l10n-name": "run-shortcut",
+          className: "editor-onboarding-shortcut",
+        })
       ),
       dom.button(
         {
           className: "editor-onboarding-dismiss-button",
           onClick: () => this.props.editorOnboardingDismiss(),
         },
-        l10n.getStr("webconsole.input.editor.onboarding.dismiss.label")
+        l10n.getStr("webconsole-input-editor-onboarding-dismiss")
       )
     );
   }

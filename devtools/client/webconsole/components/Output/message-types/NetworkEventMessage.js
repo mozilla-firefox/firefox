@@ -39,7 +39,7 @@ loader.lazyRequireGetter(
   true
 );
 
-const LEARN_MORE = l10n.getStr("webConsoleMoreInfoLabel");
+const LEARN_MORE = l10n.getStr("webconsole-learn-more");
 
 const isMacOS = Services.appinfo.OS === "Darwin";
 
@@ -143,7 +143,7 @@ function NetworkEventMessage({
   // Message body components.
   const requestMethod = dom.span({ className: "method" }, method);
   const xhr = isXHR
-    ? dom.span({ className: "xhr" }, l10n.getStr("webConsoleXhrIndicator"))
+    ? dom.span({ className: "xhr" }, l10n.getStr("webconsole-xhr-indicator"))
     : null;
   const unicodeURL = getUnicodeUrl(url);
   const requestUrl = dom.a(

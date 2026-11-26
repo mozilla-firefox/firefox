@@ -9,7 +9,7 @@ const dom = require("resource://devtools/client/shared/vendor/react-dom-factorie
 const {
   l10n,
 } = require("resource://devtools/client/webconsole/utils/messages.js");
-const messageToggleDetails = l10n.getStr("messageToggleDetails");
+const messageToggleDetails = l10n.getStr("webconsole-message-toggle-details");
 
 function CollapseButton(props) {
   const { open, onClick, title = messageToggleDetails } = props;

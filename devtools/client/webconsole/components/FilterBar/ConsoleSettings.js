@@ -35,6 +35,11 @@ loader.lazyGetter(this, "MenuList", function () {
   );
 });
 
+function getLabelAndTooltip(id) {
+  const { label, title } = l10n.getAttributes(id);
+  return { label, tooltip: title };
+}
+
 class ConsoleSettings extends Component {
   static get propTypes() {
     return {
@@ -74,12 +79,7 @@ class ConsoleSettings extends Component {
           checked: persistLogs,
           className:
             "menu-item webconsole-console-settings-menu-item-persistentLogs",
-          label: l10n.getStr(
-            "webconsole.console.settings.menu.item.enablePersistentLogs.label"
-          ),
-          tooltip: l10n.getStr(
-            "webconsole.console.settings.menu.item.enablePersistentLogs.tooltip"
-          ),
+          ...getLabelAndTooltip("webconsole-settings-persistent-logs"),
           onClick: () => dispatch(actions.persistToggle()),
         })
       );
@@ -93,10 +93,7 @@ class ConsoleSettings extends Component {
           checked: enableNetworkMonitoring,
           className:
             "menu-item webconsole-console-settings-menu-item-enableNetworkMonitoring",
-          label: l10n.getStr("browserconsole.enableNetworkMonitoring.label"),
-          tooltip: l10n.getStr(
-            "browserconsole.enableNetworkMonitoring.tooltip"
-          ),
+          ...getLabelAndTooltip("browserconsole-settings-network-monitoring"),
           onClick: () => dispatch(actions.networkMonitoringToggle()),
         })
       );
@@ -108,12 +105,7 @@ class ConsoleSettings extends Component {
         key: "webconsole-console-settings-menu-item-timestamps",
         checked: timestampsVisible,
         className: "menu-item webconsole-console-settings-menu-item-timestamps",
-        label: l10n.getStr(
-          "webconsole.console.settings.menu.item.timestamps.label"
-        ),
-        tooltip: l10n.getStr(
-          "webconsole.console.settings.menu.item.timestamps.tooltip"
-        ),
+        ...getLabelAndTooltip("webconsole-settings-timestamps"),
         onClick: () => dispatch(actions.timestampsToggle()),
       })
     );
@@ -125,12 +117,7 @@ class ConsoleSettings extends Component {
         checked: groupSimilar,
         className:
           "menu-item webconsole-console-settings-menu-item-warning-groups",
-        label: l10n.getStr(
-          "webconsole.console.settings.menu.item.warningGroups.label"
-        ),
-        tooltip: l10n.getStr(
-          "webconsole.console.settings.menu.item.warningGroups.tooltip"
-        ),
+        ...getLabelAndTooltip("webconsole-settings-warning-groups"),
         onClick: () => dispatch(actions.groupSimilarMessagesToggle()),
       })
     );
@@ -142,12 +129,7 @@ class ConsoleSettings extends Component {
         checked: autocomplete,
         className:
           "menu-item webconsole-console-settings-menu-item-autocomplete",
-        label: l10n.getStr(
-          "webconsole.console.settings.menu.item.autocomplete.label"
-        ),
-        tooltip: l10n.getStr(
-          "webconsole.console.settings.menu.item.autocomplete.tooltip"
-        ),
+        ...getLabelAndTooltip("webconsole-settings-autocomplete"),
         onClick: () => dispatch(actions.autocompleteToggle()),
       })
     );
@@ -159,12 +141,7 @@ class ConsoleSettings extends Component {
         checked: eagerEvaluation,
         className:
           "menu-item webconsole-console-settings-menu-item-eager-evaluation",
-        label: l10n.getStr(
-          "webconsole.console.settings.menu.item.instantEvaluation.label"
-        ),
-        tooltip: l10n.getStr(
-          "webconsole.console.settings.menu.item.instantEvaluation.tooltip"
-        ),
+        ...getLabelAndTooltip("webconsole-settings-instant-evaluation"),
         onClick: () => dispatch(actions.eagerEvaluationToggle()),
       })
     );
@@ -182,7 +159,7 @@ class ConsoleSettings extends Component {
         menuId: "webconsole-console-settings-menu-button",
         toolboxDoc: toolbox ? toolbox.doc : doc,
         className: "devtools-button webconsole-console-settings-menu-button",
-        title: l10n.getStr("webconsole.console.settings.menu.button.tooltip"),
+        title: l10n.getStr("webconsole-settings-button-tooltip"),
       },
       // We pass the children in a function so we don't require the MenuItem and MenuList
       // components until we need to display them (i.e. when the button is clicked).

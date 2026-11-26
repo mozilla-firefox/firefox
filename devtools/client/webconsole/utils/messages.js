@@ -283,8 +283,8 @@ function transformNavigationMessagePacket(packet) {
     type: MESSAGE_TYPE.NAVIGATION_MARKER,
     level: MESSAGE_LEVEL.LOG,
     messageText: url
-      ? l10n.getFormatStr("webconsole.navigated", [url])
-      : l10n.getStr("webconsole.reloaded"),
+      ? l10n.getStr("webconsole-navigated", { url })
+      : l10n.getStr("webconsole-reloaded"),
     timeStamp: packet.timeStamp,
     allowRepeating: false,
   });
@@ -493,29 +493,24 @@ function transformTracerStateResource(stateResource) {
   let message;
   if (enabled) {
     if (logMethod == TRACER_LOG_METHODS.STDOUT) {
-      message = l10n.getStr("webconsole.message.commands.startTracingToStdout");
+      message = l10n.getStr("webconsole-commands-start-tracing-to-stdout");
     } else if (logMethod == "console") {
-      message = l10n.getStr(
-        "webconsole.message.commands.startTracingToWebConsole"
-      );
+      message = l10n.getStr("webconsole-commands-start-tracing-to-web-console");
     } else if (logMethod == TRACER_LOG_METHODS.DEBUGGER_SIDEBAR) {
       message = l10n.getStr(
-        "webconsole.message.commands.startTracingToDebuggerSidebar"
+        "webconsole-commands-start-tracing-to-debugger-sidebar"
       );
     } else if (logMethod == TRACER_LOG_METHODS.PROFILER) {
-      message = l10n.getStr(
-        "webconsole.message.commands.startTracingToProfiler"
-      );
+      message = l10n.getStr("webconsole-commands-start-tracing-to-profiler");
     } else {
       throw new Error(`Unsupported tracer log method ${logMethod}`);
     }
   } else if (reason) {
-    message = l10n.getFormatStr(
-      "webconsole.message.commands.stopTracingWithReason",
-      [reason]
-    );
+    message = l10n.getStr("webconsole-commands-stop-tracing-with-reason", {
+      reason,
+    });
   } else {
-    message = l10n.getStr("webconsole.message.commands.stopTracing");
+    message = l10n.getStr("webconsole-commands-stop-tracing");
   }
   return new ConsoleMessage({
     targetFront,
@@ -552,14 +547,7 @@ function transformEvaluationResultPacket(packet) {
   } else if (helperResult?.object) {
     parameter = helperResult.object;
   } else if (helperResult?.type === "error") {
-    try {
-      exceptionMessage = l10n.getFormatStr(
-        helperResult.message,
-        helperResult.messageArgs || []
-      );
-    } catch (ex) {
-      exceptionMessage = helperResult.message;
-    }
+    exceptionMessage = getHelperResultErrorMessage(helperResult);
   } else {
     parameter = result;
   }
@@ -840,11 +828,11 @@ function getWarningGroupLabel(firstMessage) {
   }
 
   if (isCookieMessage(firstMessage)) {
-    return l10n.getStr("webconsole.group.cookie");
+    return l10n.getStr("webconsole-group-cookie");
   }
 
   if (isCSPMessage(firstMessage)) {
-    return l10n.getStr("webconsole.group.csp");
+    return l10n.getStr("webconsole-group-csp");
   }
 
   return "";
@@ -1096,11 +1084,52 @@ function isMessageNetworkError(message) {
   );
 }
 
+// Maps the error keys sent by the server in command helper results to Fluent
+// message ids, and the positional arguments to variable names. The protocol
+// keeps the keys so that clients and servers of different builds stay
+// compatible.
+const HELPER_RESULT_MESSAGES = {
+  "webconsole.error.commands.copyError": {
+    id: "webconsole-commands-copy-error",
+    argNames: ["error"],
+  },
+  "webconsole.messages.commands.blockArgMissing": {
+    id: "webconsole-commands-block-arg-missing",
+    argNames: [],
+  },
+};
+
+/**
+ * Returns the localized message of a command helper result of type "error".
+ *
+ * @param {object} helperResult
+ * @param {string} helperResult.message
+ *        Error key sent by the server.
+ * @param {Array} [helperResult.messageArgs]
+ *        Positional arguments of the message.
+ * @return {string}
+ *         The localized message, or the original message if the key is
+ *         unknown.
+ */
+function getHelperResultErrorMessage({ message, messageArgs }) {
+  if (!Object.hasOwn(HELPER_RESULT_MESSAGES, message)) {
+    return message;
+  }
+  const known = HELPER_RESULT_MESSAGES[message];
+  return l10n.getStr(
+    known.id,
+    Object.fromEntries(
+      known.argNames.map((name, i) => [name, messageArgs?.[i]])
+    )
+  );
+}
+
 module.exports = {
   areMessagesSimilar,
   createWarningGroupMessage,
   createSimpleTableMessage,
   getDescriptorValue,
+  getHelperResultErrorMessage,
   getNaturalOrder,
   getParentWarningGroupMessageId,
   getWarningGroupType,

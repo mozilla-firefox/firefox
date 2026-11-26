@@ -14,12 +14,12 @@ const {
 } = require("resource://devtools/client/webconsole/constants.js");
 
 const l10nLevels = {
-  error: "level.error",
-  warn: "level.warn",
-  info: "level.info",
-  log: "level.log",
-  debug: "level.debug",
-  jstracer: "level.jstracer",
+  error: "webconsole-level-error",
+  warn: "webconsole-level-warn",
+  info: "webconsole-level-info",
+  log: "webconsole-level-log",
+  debug: "webconsole-level-debug",
+  jstracer: "webconsole-level-jstracer",
 };
 
 // Store common icons so they can be used without recreating the element
@@ -36,14 +36,14 @@ function getIconElement(level, type, title) {
   const classnames = ["icon"];
 
   if (type === "logPoint") {
-    title = l10n.getStr("logpoint.title");
+    title = l10n.getStr("webconsole-logpoint-title");
     classnames.push("logpoint");
   } else if (type === "blockedReason") {
-    title = l10n.getStr("blockedrequest.label2");
+    title = l10n.getStr("webconsole-blocked-request");
   } else if (type === MESSAGE_TYPE.COMMAND) {
-    title = l10n.getStr("command.title");
+    title = l10n.getStr("webconsole-command-title");
   } else if (type === MESSAGE_TYPE.RESULT) {
-    title = l10n.getStr("result.title");
+    title = l10n.getStr("webconsole-result-title");
   } else if (level == "jstracer" || type == MESSAGE_TYPE.JSTRACER) {
     // Actual traces uses JSTracerTrace objects and `level` attribute,
     // while log messages relating to tracing uses ConsoleApiCall, where level == "log" and so rather uses `type` attribute.

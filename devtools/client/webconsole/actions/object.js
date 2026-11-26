@@ -13,7 +13,7 @@ loader.lazyServiceGetter(
 
 loader.lazyRequireGetter(
   this,
-  "l10n",
+  "getHelperResultErrorMessage",
   "resource://devtools/client/webconsole/utils/messages.js",
   true
 );
@@ -84,10 +84,7 @@ function copyMessageObject(actor, variableText) {
         const nofificationName = "copy-value-to-clipboard-notification";
         dispatch(
           actions.appendNotification(
-            l10n.getFormatStr(
-              res.helperResult.message,
-              res.helperResult.messageArgs
-            ),
+            getHelperResultErrorMessage(res.helperResult),
             nofificationName,
             null,
             PriorityLevels.PRIORITY_CRITICAL_HIGH,

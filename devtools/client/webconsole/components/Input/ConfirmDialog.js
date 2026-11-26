@@ -4,6 +4,11 @@
 
 "use strict";
 
+const lazy = {};
+ChromeUtils.defineESModuleGetters(lazy, {
+  BrowserUtils: "resource://gre/modules/BrowserUtils.sys.mjs",
+});
+
 loader.lazyRequireGetter(
   this,
   "PropTypes",
@@ -66,18 +71,29 @@ class ConfirmDialog extends Component {
   componentDidMount() {
     const doc = this.props.webConsoleUI.document;
     const { toolbox } = this.props.webConsoleUI.wrapper;
-    const tooltipDoc = toolbox ? toolbox.doc : doc;
+    this.tooltipDoc = toolbox ? toolbox.doc : doc;
     // The popup will be attached to the toolbox document or HUD document in the case
     // such as the browser console which doesn't have a toolbox.
-    this.tooltip = new HTMLTooltip(tooltipDoc, {
+    this.tooltip = new HTMLTooltip(this.tooltipDoc, {
       className: "invoke-confirm",
     });
+    if (toolbox) {
+      this.tooltipDoc.defaultView.MozXULElement.insertFTLIfNeeded(
+        "devtools/shared/webconsole.ftl"
+      );
+    }
   }
 
-  componentDidUpdate() {
+  async componentDidUpdate() {
     const { getterPath, serviceContainer } = this.props;
 
     if (getterPath) {
+      // Translate the label before showing the tooltip, so it's sized to its
+      // content.
+      await this.tooltipDoc.l10n.translateElements([this.labelEl]);
+      if (this.props.getterPath !== getterPath) {
+        return;
+      }
       this.tooltip.show(serviceContainer.getJsTermTooltipAnchor(), { y: 5 });
     } else {
       this.tooltip.hide();
@@ -116,18 +132,13 @@ class ConfirmDialog extends Component {
     const { getterPath } = this.props;
     const getterName = getterPath.join(".");
 
-    // We deliberately use getStr, and not getFormatStr, because we want getterName to
-    // be wrapped in its own span.
-    const description = l10n.getStr("webconsole.confirmDialog.getter.label");
-    const [descriptionPrefix, descriptionSuffix] = description.split("%S");
-
-    const closeButtonTooltip = l10n.getFormatStr(
-      "webconsole.confirmDialog.getter.closeButton.tooltip",
-      ["Esc"]
+    const closeButtonTooltip = l10n.getStr(
+      "webconsole-confirm-dialog-getter-close-button-tooltip",
+      { shortcut: "Esc" }
     );
-    const invokeButtonLabel = l10n.getFormatStr(
-      "webconsole.confirmDialog.getter.invokeButtonLabelWithShortcut",
-      ["Tab"]
+    const invokeButtonLabel = l10n.getStr(
+      "webconsole-confirm-dialog-getter-invoke-button",
+      { shortcut: "Tab" }
     );
 
     const learnMoreElement = dom.a(
@@ -137,7 +148,7 @@ class ConfirmDialog extends Component {
         title: LEARN_MORE_URL.split("?")[0],
         onClick: this.onLearnMoreClick,
       },
-      l10n.getStr("webConsoleMoreInfoLabel")
+      l10n.getStr("webconsole-learn-more")
     );
 
     return createPortal(
@@ -148,10 +159,19 @@ class ConfirmDialog extends Component {
             key: "confirm-label",
           },
           dom.p(
-            {},
-            dom.span({}, descriptionPrefix),
-            dom.span({ className: "emphasized" }, getterName),
-            dom.span({}, descriptionSuffix)
+            {
+              ref: el => (this.labelEl = el),
+              "data-l10n-id": "webconsole-confirm-dialog-getter-label",
+              // The DOM overlay parses the label as HTML, so escape the name to
+              // display it verbatim.
+              "data-l10n-args": JSON.stringify({
+                getterName: lazy.BrowserUtils.escapeHtmlEntities(getterName),
+              }),
+            },
+            dom.span({
+              "data-l10n-name": "getter-name",
+              className: "emphasized",
+            })
           ),
           dom.button({
             className: "devtools-button close-confirm-dialog-button",

@@ -46,7 +46,9 @@ class EvaluationNotification extends Component {
         dom.span({ className: "evaluation-notification__icon" }),
         dom.span(
           { className: "evaluation-notification__text" },
-          l10n.getStr("evaluationNotifcation.noOriginalVariableMapping.msg")
+          l10n.getStr(
+            "webconsole-evaluation-notification-no-original-variable-mapping"
+          )
         )
       );
     }

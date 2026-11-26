@@ -119,7 +119,7 @@ class EvaluationContextSelector extends Component {
     // So only print its name.
     const label =
       target.isTopLevel && !target.commands.descriptorFront.isWebExtension
-        ? l10n.getStr("webconsole.input.selector.top")
+        ? l10n.getStr("webconsole-input-selector-top")
         : target.name;
 
     return MenuItem({
@@ -295,7 +295,7 @@ class EvaluationContextSelector extends Component {
       (selectedTarget.isTopLevel &&
         !selectedTarget.commands.descriptorFront.isWebExtension)
     ) {
-      return l10n.getStr("webconsole.input.selector.top");
+      return l10n.getStr("webconsole-input-selector-top");
     }
 
     return selectedTarget.name;
@@ -322,7 +322,7 @@ class EvaluationContextSelector extends Component {
         className:
           "webconsole-evaluation-selector-button devtools-button devtools-dropdown-button" +
           (selectedTarget && !selectedTarget.isTopLevel ? " checked" : ""),
-        title: l10n.getStr("webconsole.input.selector.tooltip"),
+        title: l10n.getStr("webconsole-input-selector-tooltip"),
       },
       // We pass the children in a function so we don't require the MenuItem and MenuList
       // components until we need to display them (i.e. when the button is clicked).

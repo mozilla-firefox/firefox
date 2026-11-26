@@ -193,7 +193,7 @@ class Message extends Component {
       return MessageIcon({
         level: MESSAGE_LEVEL.INFO,
         type,
-        title: l10n.getStr("webconsole.disableIcon.title"),
+        title: l10n.getStr("webconsole-disabled-icon-title"),
       });
     }
 
@@ -253,9 +253,9 @@ class Message extends Component {
           timestampEl ? " " : null,
           dom.span(
             { className: "message-body devtools-monospace" },
-            l10n.getFormatStr("webconsole.message.componentDidCatch.label", [
-              newBugUrl,
-            ]),
+            l10n.getStr("webconsole-message-render-error", {
+              url: newBugUrl,
+            }),
             dom.button(
               {
                 className: "devtools-button",
@@ -282,9 +282,7 @@ class Message extends Component {
                     )
                   ),
               },
-              l10n.getStr(
-                "webconsole.message.componentDidCatch.copyButton.label"
-              )
+              l10n.getStr("webconsole-message-render-error-copy-button")
             )
           )
         )
@@ -447,7 +445,7 @@ class Message extends Component {
           title: exceptionDocURL.split("?")[0],
           onClick: this.onLearnMoreClick,
         },
-        l10n.getStr("webConsoleMoreInfoLabel")
+        l10n.getStr("webconsole-learn-more")
       );
     }
 

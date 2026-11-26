@@ -88,8 +88,10 @@ const {
   Utils: WebConsoleUtils,
 } = require("resource://devtools/client/webconsole/utils.js");
 
-const SELF_XSS_OK = l10n.getStr("selfxss.okstring");
-const SELF_XSS_MSG = l10n.getFormatStr("selfxss.msg", [SELF_XSS_OK]);
+const SELF_XSS_OK = l10n.getStr("webconsole-selfxss-ok-string");
+const SELF_XSS_MSG = l10n.getStr("webconsole-selfxss-message", {
+  okString: SELF_XSS_OK,
+});
 
 const {
   getAllNotifications,

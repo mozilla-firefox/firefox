@@ -96,7 +96,7 @@ class SideBar extends Component {
           },
           dom.button({
             className: "devtools-button sidebar-close-button",
-            title: l10n.getStr("webconsole.closeSidebarButton.tooltip"),
+            title: l10n.getStr("webconsole-close-sidebar-button-tooltip"),
             onClick: this.onClickSidebarClose,
           })
         ),

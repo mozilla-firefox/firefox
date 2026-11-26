@@ -135,7 +135,7 @@ function ConsoleApiCall(props) {
 
   let collapseTitle = null;
   if (isGroupType(type)) {
-    collapseTitle = l10n.getStr("groupToggle");
+    collapseTitle = l10n.getStr("webconsole-group-toggle");
   }
 
   const collapsible =

@@ -165,10 +165,10 @@ const VALUE_NAME = "_value";
 function getNamedIndexes(type) {
   return {
     [INDEX_NAME]: getArrayTypeNames().concat("Object").includes(type)
-      ? l10n.getStr("table.index")
-      : l10n.getStr("table.iterationIndex"),
-    [VALUE_NAME]: l10n.getStr("table.value"),
-    key: l10n.getStr("table.key"),
+      ? l10n.getStr("webconsole-table-index")
+      : l10n.getStr("webconsole-table-iteration-index"),
+    [VALUE_NAME]: l10n.getStr("webconsole-table-value"),
+    key: l10n.getStr("webconsole-table-key"),
   };
 }
 

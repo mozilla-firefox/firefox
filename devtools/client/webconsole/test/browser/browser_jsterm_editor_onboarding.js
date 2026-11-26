@@ -23,6 +23,19 @@ add_task(async function () {
   const onboardingElement = getOnboardingEl(hud);
   ok(onboardingElement, "The onboarding UI exists");
 
+  const shortcuts = await waitFor(() => {
+    const els = onboardingElement.querySelectorAll(
+      ".editor-onboarding-shortcut"
+    );
+    return els.length == 2 && els[0].textContent ? els : null;
+  });
+  is(shortcuts[0].textContent, "Enter", "The Enter key is displayed");
+  is(
+    shortcuts[1].textContent,
+    Services.appinfo.OS === "Darwin" ? "Cmd+Enter" : "Ctrl+Enter",
+    "The run shortcut is displayed"
+  );
+
   info("Check that the onboarding UI can be dismissed");
   const dismissButton = onboardingElement.querySelector(
     ".editor-onboarding-dismiss-button"

@@ -34,7 +34,6 @@ const {
 const {
   l10n,
 } = require("resource://devtools/client/webconsole/utils/messages.js");
-const { PluralForm } = require("resource://devtools/shared/plural-form.js");
 const KeyShortcuts = require("resource://devtools/client/shared/key-shortcuts.js");
 
 // Constants
@@ -59,7 +58,7 @@ loader.lazyRequireGetter(
 );
 
 const disabledCssFilterButtonTitle = l10n.getStr(
-  "webconsole.cssFilterButton.inactive.tooltip"
+  "webconsole-filter-button-css-inactive-tooltip"
 );
 
 class FilterBar extends Component {
@@ -208,14 +207,14 @@ class FilterBar extends Component {
   renderClearButton() {
     return dom.button({
       className: "devtools-button devtools-clear-icon",
-      title: l10n.getFormatStr("webconsole.clearButton.tooltipWithHotkeyHint", [
-        this.props.webConsoleUI
+      title: l10n.getStr("webconsole-clear-button-tooltip", {
+        shortcut: this.props.webConsoleUI
           .getClearKeyShortcuts()
           .map(electronKey =>
             KeyShortcuts.stringifyFromElectronKey(electronKey)
           )
           .join(", "),
-      ]),
+      }),
       onClick: () => this.props.dispatch(actions.messagesClear()),
     });
   }
@@ -242,7 +241,7 @@ class FilterBar extends Component {
       FilterButton({
         active: filter[FILTERS.ERROR],
         label: getLabel(
-          l10n.getStr("webconsole.errorsFilterButton.label"),
+          l10n.getStr("webconsole-filter-button-errors"),
           FILTERS.ERROR
         ),
         filterKey: FILTERS.ERROR,
@@ -251,7 +250,7 @@ class FilterBar extends Component {
       FilterButton({
         active: filter[FILTERS.WARN],
         label: getLabel(
-          l10n.getStr("webconsole.warningsFilterButton.label"),
+          l10n.getStr("webconsole-filter-button-warnings"),
           FILTERS.WARN
         ),
         filterKey: FILTERS.WARN,
@@ -260,7 +259,7 @@ class FilterBar extends Component {
       FilterButton({
         active: filter[FILTERS.INFO],
         label: getLabel(
-          l10n.getStr("webconsole.infoFilterButton.label"),
+          l10n.getStr("webconsole-filter-button-info"),
           FILTERS.INFO
         ),
         filterKey: FILTERS.INFO,
@@ -269,7 +268,7 @@ class FilterBar extends Component {
       FilterButton({
         active: filter[FILTERS.LOG],
         label: getLabel(
-          l10n.getStr("webconsole.logsFilterButton.label"),
+          l10n.getStr("webconsole-filter-button-logs"),
           FILTERS.LOG
         ),
         filterKey: FILTERS.LOG,
@@ -278,7 +277,7 @@ class FilterBar extends Component {
       FilterButton({
         active: filter[FILTERS.DEBUG],
         label: getLabel(
-          l10n.getStr("webconsole.debugFilterButton.label"),
+          l10n.getStr("webconsole-filter-button-debug"),
           FILTERS.DEBUG
         ),
         filterKey: FILTERS.DEBUG,
@@ -290,19 +289,19 @@ class FilterBar extends Component {
       FilterButton({
         active: filter[FILTERS.CSS],
         title: filter[FILTERS.CSS] ? undefined : disabledCssFilterButtonTitle,
-        label: l10n.getStr("webconsole.cssFilterButton.label"),
+        label: l10n.getStr("webconsole-filter-button-css"),
         filterKey: FILTERS.CSS,
         dispatch,
       }),
       FilterButton({
         active: filter[FILTERS.NETXHR],
-        label: l10n.getStr("webconsole.xhrFilterButton.label"),
+        label: l10n.getStr("webconsole-filter-button-xhr"),
         filterKey: FILTERS.NETXHR,
         dispatch,
       }),
       FilterButton({
         active: filter[FILTERS.NET],
-        label: l10n.getStr("webconsole.requestsFilterButton.label"),
+        label: l10n.getStr("webconsole-filter-button-requests"),
         filterKey: FILTERS.NET,
         dispatch,
       }),
@@ -317,10 +316,10 @@ class FilterBar extends Component {
         FilterButton({
           active: filter[FILTERS.CHROME],
           label: getLabel(
-            l10n.getStr("webconsole.chromeFilterButton.label"),
+            l10n.getStr("webconsole-filter-button-chrome"),
             FILTERS.CHROME
           ),
-          title: l10n.getStr("webconsole.chromeFilterButton.tooltip"),
+          title: l10n.getStr("webconsole-filter-button-chrome-tooltip"),
           filterKey: FILTERS.CHROME,
           dispatch,
         }),
@@ -328,10 +327,10 @@ class FilterBar extends Component {
         FilterButton({
           active: filter[FILTERS.CONTENT],
           label: getLabel(
-            l10n.getStr("webconsole.contentFilterButton.label"),
+            l10n.getStr("webconsole-filter-button-content"),
             FILTERS.CONTENT
           ),
-          title: l10n.getStr("webconsole.contentFilterButton.tooltip"),
+          title: l10n.getStr("webconsole-filter-button-content-tooltip"),
           filterKey: FILTERS.CONTENT,
           dispatch,
         })
@@ -344,20 +343,22 @@ class FilterBar extends Component {
     // We want the summary to always be announced to screen reader, even if there are
     // no filtered out messages.
     // We'll hide the "0 hidden" summary when the input field is not focused.
-    const searchBoxSummary = PluralForm.get(
-      filteredMessagesCount.text,
-      l10n.getStr("webconsole.filteredMessagesByText.label")
-    ).replace("#1", filteredMessagesCount.text);
+    const searchBoxSummary = l10n.getStr(
+      "webconsole-filtered-messages-by-text",
+      {
+        count: filteredMessagesCount.text,
+      }
+    );
 
-    const searchBoxSummaryTooltip = PluralForm.get(
-      filteredMessagesCount.text,
-      l10n.getStr("webconsole.filteredMessagesByText.tooltip")
-    ).replace("#1", filteredMessagesCount.text);
+    const searchBoxSummaryTooltip = l10n.getStr(
+      "webconsole-filtered-messages-by-text-tooltip",
+      { count: filteredMessagesCount.text }
+    );
 
     return SearchBox({
       type: "filter",
-      placeholder: l10n.getStr("webconsole.filterInput.placeholder"),
-      keyShortcut: l10n.getStr("webconsole.find.key"),
+      placeholder: l10n.getStr("webconsole-filter-input-placeholder"),
+      keyShortcut: l10n.getStr("webconsole-find-key"),
       onChange: text => dispatch(actions.filterTextSet(text)),
       summary: searchBoxSummary,
       summaryTooltip: searchBoxSummaryTooltip,
@@ -401,7 +402,7 @@ class FilterBar extends Component {
         id: "split-console-close-button",
         key: "split-console-close-button",
         className: "devtools-button",
-        title: l10n.getStr("webconsole.closeSplitConsoleButton.tooltip"),
+        title: l10n.getStr("webconsole-close-split-console-button-tooltip"),
         onClick: () => {
           closeSplitConsole();
         },

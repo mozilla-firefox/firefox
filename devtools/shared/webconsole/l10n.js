@@ -4,10 +4,19 @@
 
 "use strict";
 
-const { LocalizationHelper } = require("resource://devtools/shared/l10n.js");
-const helper = new LocalizationHelper(
-  "devtools/shared/locales/webconsole.properties"
-);
+let localization;
+function getLocalization() {
+  if (!localization) {
+    localization = new Localization(
+      [
+        "devtools/shared/webconsole.ftl",
+        "devtools/shared/webconsole-commands.ftl",
+      ],
+      true
+    );
+  }
+  return localization;
+}
 
 let dateFormatter;
 let timestampFormatter;
@@ -59,40 +68,33 @@ const l10n = {
   },
 
   /**
-   * Retrieve a localized string.
+   * Retrieve the value of a localized message.
    *
-   * @param string name
-   *        The string name you want from the Web Console string bundle.
-   * @return string
-   *         The localized string.
+   * @param {string} id
+   *        The Fluent message id.
+   * @param {object} [args]
+   *        The variables used to format the message.
+   * @return {string}
    */
-  getStr(name) {
-    try {
-      return helper.getStr(name);
-    } catch (ex) {
-      console.error("Failed to get string: " + name);
-      throw ex;
-    }
+  getStr(id, args) {
+    return getLocalization().formatValueSync(id, args);
   },
 
   /**
-   * Retrieve a localized string formatted with values coming from the given
-   * array.
+   * Retrieve the attributes of a localized message.
    *
-   * @param string name
-   *        The string name you want from the Web Console string bundle.
-   * @param array array
-   *        The array of values you want in the formatted string.
-   * @return string
-   *         The formatted local string.
+   * @param {string} id
+   *        The Fluent message id.
+   * @return {object}
+   *         An object mapping attribute names to their localized values.
    */
-  getFormatStr(name, array) {
-    try {
-      return helper.getFormatStr(name, ...array);
-    } catch (ex) {
-      console.error("Failed to format string: " + name);
-      throw ex;
+  getAttributes(id) {
+    const [message] = getLocalization().formatMessagesSync([{ id }]);
+    const attributes = {};
+    for (const { name, value } of message?.attributes || []) {
+      attributes[name] = value;
     }
+    return attributes;
   },
 };
 

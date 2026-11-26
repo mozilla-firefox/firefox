@@ -6,11 +6,9 @@
 
 const PropTypes = require("resource://devtools/client/shared/vendor/react-prop-types.mjs");
 const dom = require("resource://devtools/client/shared/vendor/react-dom-factories.js");
-const { PluralForm } = require("resource://devtools/shared/plural-form.js");
 const {
   l10n,
 } = require("resource://devtools/client/webconsole/utils/messages.js");
-const messageRepeatsTooltip = l10n.getStr("messageRepeats.tooltip2");
 
 MessageRepeat.displayName = "MessageRepeat";
 
@@ -23,10 +21,7 @@ function MessageRepeat(props) {
   return dom.span(
     {
       className: "message-repeats",
-      title: PluralForm.get(repeat, messageRepeatsTooltip).replace(
-        "#1",
-        repeat
-      ),
+      title: l10n.getStr("webconsole-message-repeats", { repeats: repeat }),
     },
     repeat
   );
