@@ -1191,9 +1191,12 @@ arena_run_t* arena_t::AllocRun(size_t aSize, bool aLarge, bool aZero) {
     return run;
   } else {
     // No usable runs.  Create a new chunk from which to allocate
-    // the run.
+    // the run.  InitChunk sets up a guard page at the end of the chunk, so
+    // leave it uncommitted here rather than mapping it read-write and
+    // decommitting it again (which would briefly expose it to an adjacent
+    // growable stack).
     arena_chunk_t* chunk = (arena_chunk_t*)arena_chunk_alloc(
-        mChunkAllocator, kChunkSize, kChunkSize);
+        mChunkAllocator, kChunkSize, kChunkSize, kChunkSize - gRealPageSize);
     if (!chunk) {
       return nullptr;
     }
@@ -3243,14 +3246,17 @@ void* arena_t::PallocHuge(size_t aSize, size_t aAlignment, bool aZero) {
     return nullptr;
   }
 
-  // Allocate one or more contiguous chunks for this request.
-  ret = arena_chunk_alloc(mChunkAllocator, csize, aAlignment);
+  // Allocate one or more contiguous chunks for this request.  Only commit the
+  // usable psize bytes; the trailing [psize, csize) region is left as an
+  // inaccessible guard and must never be mapped read-write, otherwise an
+  // adjacent growable stack could race into it during chunk recycle.
+  psize = REAL_PAGE_CEILING(aSize);
+  MOZ_ASSERT(psize < csize);
+  ret = arena_chunk_alloc(mChunkAllocator, csize, aAlignment, psize);
   if (!ret) {
     delete node;
     return nullptr;
   }
-  psize = REAL_PAGE_CEILING(aSize);
-  MOZ_ASSERT(psize < csize);
 #ifdef MOZ_DEBUG
   if (aZero) {
     chunk_assert_zero(ret, psize);
@@ -3267,30 +3273,16 @@ void* arena_t::PallocHuge(size_t aSize, size_t aAlignment, bool aZero) {
     MutexAutoLock lock(huge_mtx);
     huge.Insert(node);
 
-    // Although we allocated space for csize bytes, we indicate that we've
-    // allocated only psize bytes.
-    //
-    // If DECOMMIT is defined, this is a reasonable thing to do, since
-    // we'll explicitly decommit the bytes in excess of psize.
-    //
-    // If DECOMMIT is not defined, then we're relying on the OS to be lazy
-    // about how it allocates physical pages to mappings.  If we never
-    // touch the pages in excess of psize, the OS won't allocate a physical
-    // page, and we won't use more than psize bytes of physical memory.
-    //
-    // A correct program will only touch memory in excess of how much it
-    // requested if it first calls malloc_usable_size and finds out how
-    // much space it has to play with.  But because we set node->mSize =
-    // psize above, malloc_usable_size will return psize, not csize, and
-    // the program will (hopefully) never touch bytes in excess of psize.
-    // Thus those bytes won't take up space in physical memory, and we can
-    // reasonably claim we never "allocated" them in the first place.
+    // Although we reserved csize bytes of address space, only psize bytes
+    // were committed (see arena_chunk_alloc above); the [psize, csize)
+    // remainder is left as an inaccessible guard.  We account for
+    // only psize bytes: malloc_usable_size returns psize (we set
+    // node->mSize = psize above), so a correct program never touches the
+    // guard region and it never takes up physical memory.
     huge_allocated += psize;
     huge_mapped += csize;
     huge_operations++;
   }
-
-  pages_decommit((void*)((uintptr_t)ret + psize), csize - psize);
 
   if (!aZero) {
     ApplyZeroOrJunk(ret, psize);

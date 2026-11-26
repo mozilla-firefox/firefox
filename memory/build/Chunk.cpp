@@ -560,13 +560,14 @@ void* base_chunk_alloc(size_t aSize, size_t aAlignment) {
 // Allocates `size` bytes of system memory aligned for `alignment` for
 // arena allocations.
 void* arena_chunk_alloc(chunk_allocator_t* aChunkAllocator, size_t aSize,
-                        size_t aAlignment) {
+                        size_t aAlignment, size_t aCommitSize) {
   MOZ_ASSERT(aSize != 0);
   MOZ_ASSERT((aSize & kChunkSizeMask) == 0);
   MOZ_ASSERT(aAlignment != 0);
   MOZ_ASSERT((aAlignment & kChunkSizeMask) == 0);
+  MOZ_ASSERT(aCommitSize <= aSize);
 
-  void* ret = aChunkAllocator->map(aSize, aAlignment);
+  void* ret = aChunkAllocator->map(aSize, aAlignment, aCommitSize);
   if (ret) {
     if (!gChunkRTree.Set(ret, ret)) {
       aChunkAllocator->unmap(ret, aSize);
@@ -578,14 +579,25 @@ void* arena_chunk_alloc(chunk_allocator_t* aChunkAllocator, size_t aSize,
   return ret;
 }
 
-static void* system_pages_map(size_t aSize, size_t aAlignment) {
+static void* system_pages_map(size_t aSize, size_t aAlignment,
+                              size_t aCommitSize) {
   void* ret = nullptr;
 
 #ifndef XP_WIN
-  ret = gCache.Recycle(aSize, aAlignment);
+  ret = gCache.Recycle(aSize, aAlignment, aCommitSize);
   if (!ret) {
 #endif
-    ret = pages_mmap_aligned(aSize, aAlignment, ReserveAndCommit);
+    if (aCommitSize == aSize) {
+      ret = pages_mmap_aligned(aSize, aAlignment, ReserveAndCommit);
+    } else {
+      // Reserve the whole range inaccessible, then commit only the usable
+      // portion so the remainder stays an inaccessible guard throughout.
+      ret = pages_mmap_aligned(aSize, aAlignment, ReserveOnly);
+      if (ret && !pages_commit(ret, aCommitSize)) {
+        pages_unmap(ret, aSize);
+        ret = nullptr;
+      }
+    }
 #ifndef XP_WIN
   }
 #endif
@@ -704,7 +716,8 @@ void ChunkCache::Record(void* aChunk, size_t aSize, ChunkType aType) {
   mRecycledSize += aSize;
 }
 
-void* ChunkCache::Recycle(size_t aSize, size_t aAlignment) {
+void* ChunkCache::Recycle(size_t aSize, size_t aAlignment, size_t aCommitSize) {
+  MOZ_ASSERT(aCommitSize <= aSize);
   size_t alloc_size = aSize + aAlignment - kChunkSize;
   // Beware size_t wrap-around.
   if (alloc_size < aSize) {
@@ -773,7 +786,7 @@ void* ChunkCache::Recycle(size_t aSize, size_t aAlignment) {
     unused_node.reset(node);
   }
 
-  if (!pages_commit(ret, aSize)) {
+  if (!pages_commit(ret, aCommitSize)) {
     return nullptr;
   }
 
