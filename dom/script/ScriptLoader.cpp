@@ -2084,8 +2084,10 @@ bool ScriptLoader::ProcessInlineScript(nsIScriptElement* aElement,
   // there's no document.write currently on the call stack. However,
   // this way matches IE more closely than checking if document.write
   // is on the call stack.
-  NS_ASSERTION(nsContentUtils::IsSafeToRunScript(),
-               "Not safe to run a parser-inserted script?");
+  if (!nsContentUtils::IsSafeToRunScript()) {
+    RunScriptWhenSafe(request);
+    return false;
+  }
   return ProcessRequest(request) == NS_ERROR_HTMLPARSER_BLOCK;
 }
 
