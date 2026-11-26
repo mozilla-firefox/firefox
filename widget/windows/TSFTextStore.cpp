@@ -991,7 +991,7 @@ Maybe<TSFTextStore::Selection>& TSFTextStore::SelectionForTSF() {
 
     // We may query selection recursively if TSF does something recursively,
     // e.g., with flushing pending layout, an nsWindow may be
-    // moved/resized/focused/blured by that.  In the case, we cannot avoid the
+    // moved/resized/focused/blurred by that.  In the case, we cannot avoid the
     // loop at least first nested call.  For avoiding to make an infinite loop,
     // we should not allow to flush pending layout in the nested query.
     const bool allowToFlushPendingLayout =
@@ -1002,15 +1002,12 @@ Maybe<TSFTextStore::Selection>& TSFTextStore::SelectionForTSF() {
         mIsInitializingSelectionForTSF);
     mIsInitializingSelectionForTSF = true;
 
-    WidgetQueryContentEvent querySelectedTextEvent(true, eQuerySelectedText,
-                                                   mWidget);
+    const OwningNonNull<TextEventDispatcher> dispatcher = *mDispatcher;
     QueryContentOptions options;
     options.mNeedsToFlushLayout = allowToFlushPendingLayout;
-    querySelectedTextEvent.InitForQuerySelectedText(SelectionType::eNormal,
-                                                    options);
-    mWidget->InitEvent(querySelectedTextEvent);
-    DispatchEvent(querySelectedTextEvent);
-    if (NS_WARN_IF(querySelectedTextEvent.Failed())) {
+    const Maybe<QueryContentResult> querySelectionResult =
+        dispatcher->QueryNormalSelection(options);
+    if (NS_WARN_IF(querySelectionResult.isNothing())) [[unlikely]] {
       return mSelectionForTSF;
     }
     // If this is called recursively, the inner one should computed with the
@@ -1018,7 +1015,7 @@ Maybe<TSFTextStore::Selection>& TSFTextStore::SelectionForTSF() {
     // that nobody should invalidate the layout after that.  Therefore, let's
     // use first query result.
     if (mSelectionForTSF.isNothing()) {
-      mSelectionForTSF.emplace(querySelectedTextEvent);
+      mSelectionForTSF.emplace(*querySelectionResult);
     }
   }
 
@@ -1027,10 +1024,10 @@ Maybe<TSFTextStore::Selection>& TSFTextStore::SelectionForTSF() {
     CreateNativeCaret();
   }
 
-  MOZ_LOG(gIMELog, LogLevel::Debug,
-          ("0x%p   TSFTextStore::SelectionForTSF() succeeded, "
-           "mSelectionForTSF=%s",
-           this, ToString(mSelectionForTSF).c_str()));
+  MOZ_LOG_FMT(gIMELog, LogLevel::Debug,
+              "{}   TSFTextStore::SelectionForTSF() succeeded, "
+              "mSelectionForTSF={}",
+              static_cast<void*>(this), mSelectionForTSF);
 
   return mSelectionForTSF;
 }

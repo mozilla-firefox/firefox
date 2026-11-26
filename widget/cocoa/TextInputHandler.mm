@@ -5,6 +5,7 @@
 #include "TextInputHandler.h"
 #include <Foundation/Foundation.h>
 #include <Foundation/NSObjCRuntime.h>
+#include <fmt/format.h>
 
 #include "mozilla/Logging.h"
 
@@ -424,15 +425,16 @@ bool mozilla::widget::IsControlChar(uint32_t aCharCode) {
   return aCharCode < ' ' || aCharCode == NSDeleteCharacter;
 }
 
+static auto format_as(const NSRange& aRange) {
+  return fmt::format("{{ location={}, length={} }}",
+                     aRange.location == NSNotFound
+                         ? "NSNotFound"
+                         : std::to_string(aRange.location),
+                     aRange.length);
+}
+
 static std::ostream& operator<<(std::ostream& aStream, const NSRange& aRange) {
-  aStream << "{ location=";
-  if (aRange.location == NSNotFound) {
-    aStream << "NSNotFound";
-  } else {
-    aStream << aRange.location;
-  }
-  aStream << ", length=" << aRange.length << " }";
-  return aStream;
+  return aStream << format_as(aRange);
 }
 
 static uint32_t gHandlerInstanceCount = 0;
@@ -4440,11 +4442,11 @@ NSRange IMEInputHandler::MarkedRange() {
 NSRange IMEInputHandler::SelectedRange() {
   NS_OBJC_BEGIN_TRY_BLOCK_RETURN;
 
-  MOZ_LOG(gIMELog, LogLevel::Info,
-          ("%p   IMEInputHandler::SelectedRange, Destroyed()=%s, "
-           "mSelectedRange=%s, mSelectedRangeOverride=%s",
-           this, TrueOrFalse(Destroyed()), ToString(mSelectedRange).c_str(),
-           ToString(mSelectedRangeOverride).c_str()));
+  MOZ_LOG_FMT(gIMELog, LogLevel::Info,
+              "{}   IMEInputHandler::SelectedRange, Destroyed()={}, "
+              "mSelectedRange={}, mSelectedRangeOverride={}",
+              static_cast<void*>(this), Destroyed(), mSelectedRange,
+              mSelectedRangeOverride);
 
   // If selection range is overridden during a composition, we should return the
   // override instead of selected range in the content.  That makes IME work
@@ -4454,7 +4456,7 @@ NSRange IMEInputHandler::SelectedRange() {
     return *mSelectedRangeOverride;
   }
 
-  if (Destroyed()) {
+  if (Destroyed() || !mDispatcher) [[unlikely]] {
     return mSelectedRange;
   }
 
@@ -4464,23 +4466,19 @@ NSRange IMEInputHandler::SelectedRange() {
   }
 
   RefPtr<IMEInputHandler> kungFuDeathGrip(this);
+  const OwningNonNull<TextEventDispatcher> dispatcher = *mDispatcher;
+  const Maybe<QueryContentResult> querySelectionResult =
+      dispatcher->QueryNormalSelection();
+  MOZ_LOG_FMT(gIMELog, LogLevel::Info,
+              "{}   IMEInputHandler::SelectedRange, querySelectionResult={}",
+              static_cast<void*>(this), querySelectionResult);
 
-  WidgetQueryContentEvent querySelectedTextEvent(true, eQuerySelectedText,
-                                                 mWidget);
-  DispatchEvent(querySelectedTextEvent);
-
-  MOZ_LOG(gIMELog, LogLevel::Info,
-          ("%p   IMEInputHandler::SelectedRange, querySelectedTextEvent={ "
-           "mReply=%s }",
-           this, ToString(querySelectedTextEvent.mReply).c_str()));
-
-  if (querySelectedTextEvent.Failed()) {
+  if (querySelectionResult.isNothing()) [[unlikely]] {
     return mSelectedRange;
   }
 
-  mWritingMode = querySelectedTextEvent.mReply->WritingModeRef();
-  mRangeForWritingMode =
-      MakeNSRangeFrom(querySelectedTextEvent.mReply->mOffsetAndData);
+  mWritingMode = querySelectionResult->WritingModeRef();
+  mRangeForWritingMode = MakeNSRangeFrom(querySelectionResult->mOffsetAndData);
 
   if (mIMEHasFocus) {
     mSelectedRange = mRangeForWritingMode;

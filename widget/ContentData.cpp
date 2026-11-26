@@ -4,7 +4,10 @@
 
 #include "ContentData.h"
 
+#include <fmt/format.h>
+
 #include "TextEvents.h"
+#include "mozilla/ToString.h"
 
 namespace mozilla {
 
@@ -13,16 +16,23 @@ namespace mozilla {
  ******************************************************************************/
 
 ContentSelection::ContentSelection(
-    const WidgetQueryContentEvent& aSelectedTextEvent)
-    : mWritingMode(aSelectedTextEvent.mReply->WritingModeRef()) {
-  MOZ_ASSERT(aSelectedTextEvent.mMessage == eQuerySelectedText);
-  MOZ_ASSERT(aSelectedTextEvent.Succeeded());
-  if (aSelectedTextEvent.mReply->mOffsetAndData.isSome()) {
-    mOffsetAndData =
-        Some(OffsetAndData<uint32_t>(aSelectedTextEvent.mReply->StartOffset(),
-                                     aSelectedTextEvent.mReply->DataRef(),
-                                     OffsetAndDataFor::SelectedString));
+    const QueryContentResult& aQuerySelectionResult)
+    : mWritingMode(aQuerySelectionResult.WritingModeRef()) {
+  MOZ_ASSERT(aQuerySelectionResult.mEventMessage == eQuerySelectedText);
+  if (aQuerySelectionResult.FoundSelectionRange()) {
+    mOffsetAndData = Some(OffsetAndData<uint32_t>(
+        aQuerySelectionResult.StartOffset(), aQuerySelectionResult.DataRef(),
+        OffsetAndDataFor::SelectedString));
   }
+}
+
+std::string format_as(const ContentSelection& aContentSelection) {
+  if (!aContentSelection.HasRange()) {
+    return "{ HasRange()=false }";
+  }
+  return fmt::format("{{ mOffsetAndData={}, mWritingMode={} }}",
+                     aContentSelection.mOffsetAndData,
+                     ToString(aContentSelection.mWritingMode));
 }
 
 }  // namespace mozilla

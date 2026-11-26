@@ -1306,6 +1306,37 @@ Maybe<QueryContentResult> TextEventDispatcher::QueryTextContent(
   return std::move(queryEvent.mReply);
 }
 
+Maybe<QueryContentResult> TextEventDispatcher::QueryNormalSelection() const {
+  return QuerySelection(SelectionType::eNormal);
+}
+
+Maybe<QueryContentResult> TextEventDispatcher::QueryNormalSelection(
+    const QueryContentOptions& aOptions) const {
+  return QuerySelection(SelectionType::eNormal, aOptions);
+}
+
+Maybe<QueryContentResult> TextEventDispatcher::QuerySelection(
+    SelectionType aSelectionType) const {
+  return QuerySelection(aSelectionType, QueryContentOptions());
+}
+
+Maybe<QueryContentResult> TextEventDispatcher::QuerySelection(
+    SelectionType aSelectionType, const QueryContentOptions& aOptions) const {
+  MOZ_ASSERT(aSelectionType != SelectionType::eNone);
+  if (NS_WARN_IF(!mWidget)) [[unlikely]] {
+    return Nothing{};
+  }
+  WidgetQueryContentEvent queryEvent(true, eQuerySelectedText, mWidget);
+  queryEvent.InitForQuerySelectedText(aSelectionType, aOptions);
+  // FYI: mWidget is grabbed by queryEvent so that it's safe to call
+  // DispatchEvent without a local strong pointer.
+  mWidget->DispatchEvent(&queryEvent);
+  if (queryEvent.Failed()) [[unlikely]] {
+    return Nothing{};
+  }
+  return std::move(queryEvent.mReply);
+}
+
 /******************************************************************************
  * TextEventDispatcher::PendingComposition
  *****************************************************************************/

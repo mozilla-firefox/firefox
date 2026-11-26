@@ -21,7 +21,7 @@
 namespace mozilla {
 
 /**
- * ContentSelection stores DOM selection in flattend text by
+ * ContentSelection stores DOM selection in flattened text by
  * ContentEventHandler.  It should be retrieved with `eQuerySelectedText` event,
  * notified with `NOTIFY_IME_OF_SELECTION_CHANGE` or set by widget itself.
  */
@@ -33,7 +33,7 @@ class ContentSelection {
   explicit ContentSelection(const SelectionChangeDataBase& aSelectionChangeData)
       : mOffsetAndData(Some(aSelectionChangeData.ToUint32OffsetAndData())),
         mWritingMode(aSelectionChangeData.GetWritingMode()) {}
-  explicit ContentSelection(const WidgetQueryContentEvent& aSelectedTextEvent);
+  explicit ContentSelection(const QueryContentResult&);
   ContentSelection(uint32_t aOffset, const WritingMode& aWritingMode)
       : mOffsetAndData(Some(OffsetAndData<uint32_t>(
             aOffset, EmptyString(), OffsetAndDataFor::SelectedString))),
@@ -59,14 +59,10 @@ class ContentSelection {
   bool HasRange() const { return mOffsetAndData.isSome(); }
   const WritingMode& WritingModeRef() const { return mWritingMode; }
 
+  friend std::string format_as(const ContentSelection&);
   friend std::ostream& operator<<(std::ostream& aStream,
                                   const ContentSelection& aContentSelection) {
-    if (aContentSelection.HasRange()) {
-      return aStream << "{ HasRange()=false }";
-    }
-    aStream << "{ mOffsetAndData=" << aContentSelection.mOffsetAndData
-            << ", mWritingMode=" << aContentSelection.mWritingMode << " }";
-    return aStream;
+    return aStream << format_as(aContentSelection);
   }
 
  private:

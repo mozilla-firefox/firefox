@@ -19,6 +19,9 @@
 class nsIWidget;
 
 namespace mozilla {
+
+enum class SelectionType : short;
+
 namespace widget {
 
 class PuppetWidget;
@@ -486,6 +489,28 @@ class TextEventDispatcher final {
   Maybe<QueryContentResult> QueryTextContent(
       int64_t aOffset, uint32_t aLength,
       const QueryContentOptions& aOptions) const;
+
+  /**
+   * Return eQuerySelectedText event result of the normal selection.
+   */
+  Maybe<QueryContentResult> QueryNormalSelection() const;
+
+  /**
+   * Return eQuerySelectedText event result of the normal selection.
+   */
+  Maybe<QueryContentResult> QueryNormalSelection(
+      const QueryContentOptions&) const;
+
+  /**
+   * Return eQuerySelectedText event result of the specified selection.
+   */
+  Maybe<QueryContentResult> QuerySelection(SelectionType) const;
+
+  /**
+   * Return eQuerySelectedText event result of the specified selection.
+   */
+  Maybe<QueryContentResult> QuerySelection(SelectionType,
+                                           const QueryContentOptions&) const;
 
   /**
    * Return true if this is under some batching requests.

@@ -3611,39 +3611,47 @@ bool IMContextWrapper::EnsureToCacheContentSelection(
     return true;
   }
 
-  RefPtr<nsWindow> dispatcherWindow =
+  const RefPtr<nsWindow> dispatcherWindow =
       mLastFocusedWindow ? mLastFocusedWindow : mOwnerWindow;
-  if (NS_WARN_IF(!dispatcherWindow)) {
-    MOZ_LOG(gIMELog, LogLevel::Error,
-            ("0x%p EnsureToCacheContentSelection(), FAILED, due to "
-             "no focused window",
-             this));
+  if (NS_WARN_IF(!dispatcherWindow)) [[unlikely]] {
+    MOZ_LOG_FMT(
+        gIMELog, LogLevel::Error,
+        "{} EnsureToCacheContentSelection(), FAILED, due to no focused window",
+        static_cast<void*>(this));
+    return false;
+  }
+  const RefPtr<TextEventDispatcher> dispatcher =
+      dispatcherWindow->GetTextEventDispatcher();
+  if (NS_WARN_IF(!dispatcher)) [[unlikely]] {
+    MOZ_LOG_FMT(gIMELog, LogLevel::Error,
+                "{} EnsureToCacheContentSelection(), FAILED, due to no text "
+                "event dispatcher",
+                static_cast<void*>(this));
     return false;
   }
 
-  WidgetQueryContentEvent querySelectedTextEvent(true, eQuerySelectedText,
-                                                 dispatcherWindow);
-  dispatcherWindow->DispatchEvent(&querySelectedTextEvent);
-  if (NS_WARN_IF(querySelectedTextEvent.Failed())) {
-    MOZ_LOG(gIMELog, LogLevel::Error,
-            ("0x%p EnsureToCacheContentSelection(), FAILED, due to "
-             "failure of query selection event",
-             this));
+  const Maybe<QueryContentResult> querySelectionResult =
+      dispatcher->QueryNormalSelection();
+  if (NS_WARN_IF(querySelectionResult.isNothing())) [[unlikely]] {
+    MOZ_LOG_FMT(gIMELog, LogLevel::Error,
+                "{} EnsureToCacheContentSelection(), FAILED, due to failure of "
+                "query selection event",
+                static_cast<void*>(this));
     return false;
   }
 
-  mContentSelection = Some(ContentSelection(querySelectedTextEvent));
+  mContentSelection = Some(ContentSelection(*querySelectionResult));
   if (mContentSelection->HasRange()) {
     if (!mContentSelection->OffsetAndDataRef().IsDataEmpty() &&
         aSelectedString) {
-      aSelectedString->Assign(querySelectedTextEvent.mReply->DataRef());
+      aSelectedString->Assign(querySelectionResult->DataRef());
     }
   }
 
-  MOZ_LOG(
+  MOZ_LOG_FMT(
       gIMELog, LogLevel::Debug,
-      ("0x%p EnsureToCacheContentSelection(), Succeeded, mContentSelection=%s",
-       this, ToString(mContentSelection).c_str()));
+      "{} EnsureToCacheContentSelection(), Succeeded, mContentSelection={}",
+      static_cast<void*>(this), mContentSelection);
   return true;
 }
 
