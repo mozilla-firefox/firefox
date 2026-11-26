@@ -98,13 +98,17 @@ export var WebChannel = function (id, originOrPermission) {
       // The permission manager operates on domain names rather than true
       // origins (bug 1066517).  To mitigate that, we explicitly check that
       // the scheme is https://.
-      let uri = Services.io.newURI(requestPrincipal.originNoSuffix);
-      if (uri.scheme != "https") {
+      if (requestPrincipal.scheme != "https") {
         return false;
       }
+
+      // Only restrict based on the site's origin, not on other origin attributes
+      let nonAttributePrincipal =
+        Services.scriptSecurityManager.principalWithOA(requestPrincipal, {});
+
       // OK - we have https - now we can check the permission.
       let perm = Services.perms.testExactPermissionFromPrincipal(
-        requestPrincipal,
+        nonAttributePrincipal,
         originOrPermission
       );
       return perm == Ci.nsIPermissionManager.ALLOW_ACTION;

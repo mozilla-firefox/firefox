@@ -16,6 +16,23 @@ const VALID_WEB_CHANNEL_ID = "id";
 const URL_STRING = "http://example.com";
 const VALID_WEB_CHANNEL_ORIGIN = Services.io.newURI(URL_STRING);
 const TEST_PERMISSION_NAME = "test-webchannel-permissions";
+// The permission branch of the origin check only accepts https origins.
+const SECURE_WEB_CHANNEL_ORIGIN = Services.io.newURI("https://example.com");
+const TEST_USER_CONTEXT_ID = 1;
+
+// Origin attribute sets that all describe the same site as
+// SECURE_WEB_CHANNEL_ORIGIN with no origin attributes at all.
+const ISOLATED_ORIGIN_ATTRIBUTES = [
+  ["a container", { userContextId: TEST_USER_CONTEXT_ID }],
+  ["private browsing", { privateBrowsingId: 1 }],
+];
+
+function securePrincipalFor(originAttributes) {
+  return Services.scriptSecurityManager.createContentPrincipal(
+    SECURE_WEB_CHANNEL_ORIGIN,
+    originAttributes
+  );
+}
 
 var MockWebChannelBroker = {
   _channelMap: new Map(),
@@ -148,6 +165,82 @@ add_task(function test_web_channel_listen_permission() {
     );
   });
 });
+
+/**
+ * A channel restricted by a URI accepts that site whatever its origin
+ * attributes, because a container or a private browsing window is not a
+ * different site.
+ */
+add_task(function test_web_channel_origin_ignores_origin_attributes() {
+  let channel = new WebChannel(VALID_WEB_CHANNEL_ID, SECURE_WEB_CHANNEL_ORIGIN);
+
+  Assert.ok(
+    channel._originCheckCallback(securePrincipalFor({})),
+    "A channel restricted by URI accepts the default container"
+  );
+
+  for (let [name, originAttributes] of ISOLATED_ORIGIN_ATTRIBUTES) {
+    Assert.notEqual(
+      securePrincipalFor({}).origin,
+      securePrincipalFor(originAttributes).origin,
+      `The principal of ${name} is a distinct principal`
+    );
+    Assert.equal(
+      securePrincipalFor({}).originNoSuffix,
+      securePrincipalFor(originAttributes).originNoSuffix,
+      `The principal origin without suffix of ${name} is the same`
+    );
+    Assert.ok(
+      channel._originCheckCallback(securePrincipalFor(originAttributes)),
+      `A channel restricted by URI accepts ${name}`
+    );
+  }
+});
+
+/**
+ * A channel restricted by permission accepts the site the permission was
+ * granted to whatever its origin attributes, the same way a channel restricted
+ * by a URI does.
+ */
+add_task(
+  { pref_set: [["permissions.isolateBy.userContext", true]] },
+  function test_web_channel_permission_ignores_origin_attributes() {
+    PermissionTestUtils.add(
+      SECURE_WEB_CHANNEL_ORIGIN,
+      TEST_PERMISSION_NAME,
+      Services.perms.ALLOW_ACTION
+    );
+    registerCleanupFunction(() =>
+      PermissionTestUtils.remove(
+        SECURE_WEB_CHANNEL_ORIGIN,
+        TEST_PERMISSION_NAME
+      )
+    );
+
+    let channel = new WebChannel(VALID_WEB_CHANNEL_ID, TEST_PERMISSION_NAME);
+
+    // A failing assertion aborts the whole file, so collect every case and
+    // compare in one go to report all of them that are rejected.
+    let accepted = {};
+    let expected = {};
+    for (let [name, originAttributes] of [
+      ["the default container", {}],
+      ...ISOLATED_ORIGIN_ATTRIBUTES,
+    ]) {
+      let key = `a channel restricted by permission accepts ${name}`;
+      accepted[key] = channel._originCheckCallback(
+        securePrincipalFor(originAttributes)
+      );
+      expected[key] = true;
+    }
+
+    Assert.deepEqual(
+      accepted,
+      expected,
+      "The permission is granted to a site, not to a set of origin attributes"
+    );
+  }
+);
 
 /**
  * Test constructor
