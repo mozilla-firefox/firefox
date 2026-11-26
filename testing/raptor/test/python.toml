@@ -23,6 +23,8 @@ subsuite = "raptor"
 
 ["test_manifest.py"]
 
+["test_nav_bench.py"]
+
 ["test_output.py"]
 
 ["test_perf_profile.py"]

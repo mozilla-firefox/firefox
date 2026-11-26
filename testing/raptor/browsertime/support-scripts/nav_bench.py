@@ -31,6 +31,20 @@ def _parse_alias(alias):
     return None, None
 
 
+def _overall_suite_name(suite_name):
+    """Name of the synthesized overall suite, given one per-alias suite name
+    such as 'nav-bench-a11y.amazon-nav-load'.
+
+    The a11y variants need their own name: Perfherder signatures are keyed on
+    suite, test and options, so with a shared name their scores would land in
+    the same series as the plain runs. nav-bench and nav-bench-m both keep
+    'nav-bench-overall' so their existing history and alerts carry on."""
+    test_name = suite_name.split(".", 1)[0]
+    if test_name.endswith("-a11y"):
+        return "nav-bench-a11y-overall"
+    return "nav-bench-overall"
+
+
 class NavBenchSupport(BasePythonSupport):
     def __init__(self, **kwargs):
         super().__init__(**kwargs)
@@ -94,8 +108,9 @@ class NavBenchSupport(BasePythonSupport):
         suite["subtests"].sort(key=lambda subtest: subtest["name"])
 
     def summarize_suites(self, suites):
-        """Synthesize nav-bench-overall: one score subtest per (site, phase)
-        plus an overall geomean value."""
+        """Synthesize the overall suite (nav-bench-overall, or
+        nav-bench-a11y-overall for the a11y variants): one score subtest per
+        (site, phase) plus an overall geomean value."""
         if not suites:
             return
 
@@ -121,7 +136,7 @@ class NavBenchSupport(BasePythonSupport):
             return
 
         overall = copy.deepcopy(suites[0])
-        overall["name"] = "nav-bench-overall"
+        overall["name"] = _overall_suite_name(suites[0].get("name", ""))
         overall["type"] = "pageload"
         overall["lowerIsBetter"] = False
         overall["unit"] = "score"
