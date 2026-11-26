@@ -236,3 +236,99 @@ add_task(async function test_chat_request_sanitizes_and_truncates_tabTitle() {
     "Selection text should keep normal content"
   );
 });
+
+/**
+ * Check that page prompts only use the page URL without the selection prefix
+ */
+add_task(async function test_page_prompt_uses_page_URL() {
+  await GenAI.prepareChatPromptPrefix();
+  const context = {
+    contentType: "page",
+    pageUrl: "https://example.com/search?q=a&copy=1",
+    tabTitle: "Page title",
+  };
+  const [summarize] = (await GenAI.getContextualPrompts(context)).filter(
+    promptObj => promptObj.id == "summarize"
+  );
+  const prompt = GenAI.buildChatPrompt(summarize, context, document);
+
+  Assert.ok(
+    prompt.includes(`<pageUrl>${context.pageUrl}</pageUrl>`),
+    "Page URL is in the prompt unchanged"
+  );
+  Assert.equal(prompt.match(/<pageUrl>/g).length, 1, "Page URL appears once");
+  Assert.ok(
+    !prompt.includes("<selection>"),
+    "No selection prefix is visible when we summarize the page"
+  );
+  Assert.ok(
+    !prompt.includes(context.tabTitle),
+    "No tab title is visible when we summarize the page"
+  );
+});
+
+add_task(async function test_custom_page_prompt_includes_a_URL() {
+  const context = {
+    contentType: "page",
+    pageUrl: "https://example.com/search?q=a&copy=1",
+  };
+  await SpecialPowers.pushPrefEnv({
+    set: [
+      [
+        "browser.ml.chat.prompts.0",
+        JSON.stringify({ label: "Custom", value: "Inspect this page" }),
+      ],
+    ],
+  });
+
+  try {
+    const custom = (await GenAI.getContextualPrompts(context)).find(
+      promptObj => promptObj.label == "Custom"
+    );
+    const prompt = GenAI.buildChatPrompt(custom, context, document);
+
+    Assert.equal(
+      prompt,
+      `Inspect this page\n\n<pageUrl>${context.pageUrl}</pageUrl>`,
+      "Custom page prompt includes the URL"
+    );
+  } finally {
+    await SpecialPowers.popPrefEnv();
+  }
+});
+
+/**
+ * Check that only http(s) page URLs are used, without credentials or ref
+ */
+add_task(function test_get_page_url_is_valid() {
+  const getPageUrl = spec =>
+    GenAI.getPageUrl({ currentURI: Services.io.newURI(spec) });
+
+  Assert.equal(
+    getPageUrl("https://user:pass@example.com/a?b=1&c=2#d"),
+    "https://example.com/a?b=1&c=2",
+    "Credentials and ref are removed from page URL"
+  );
+  Assert.equal(
+    getPageUrl(
+      `about:reader?url=${encodeURIComponent("https://example.com/a?b=1")}`
+    ),
+    "https://example.com/a?b=1",
+    "Reader mode uses the original URL"
+  );
+  Assert.equal(
+    getPageUrl("about:config"),
+    undefined,
+    "about: pages are not allowed"
+  );
+  Assert.equal(
+    getPageUrl("file:///tmp/page.html"),
+    undefined,
+    "file: pages are not allowed"
+  );
+  Assert.equal(
+    getPageUrl(`about:reader?url=${encodeURIComponent("https://%")}`),
+    undefined,
+    "Invalid reader mode URL is ignored"
+  );
+});

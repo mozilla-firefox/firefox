@@ -240,55 +240,6 @@ genai.chatbot:
         type: string
         description: Sidebar is currently open.
 
-  length_disclaimer:
-    type: event
-    description: >
-      Warning message for length disclaimer is shown.
-    bugs:
-      - https://bugzilla.mozilla.org/show_bug.cgi?id=1980228
-    data_reviews:
-      - https://phabricator.services.mozilla.com/D260463
-    data_sensitivity:
-      - interaction
-    expires: 166
-    notification_emails:
-      - elee@mozilla.com
-    send_in_pings:
-      - events
-    extra_keys:
-      type:
-        type: string
-        description: Content scope.
-      length:
-        type: quantity
-        description: Page content length.
-      provider:
-        type: string
-        description: Current provider id.
-
-  length_disclaimer_dismissed:
-    type: event
-    description: >
-      Warning message is dismissed.
-    bugs:
-      - https://bugzilla.mozilla.org/show_bug.cgi?id=1980228
-    data_reviews:
-      - https://phabricator.services.mozilla.com/D260463
-    data_sensitivity:
-      - interaction
-    expires: 166
-    notification_emails:
-      - elee@mozilla.com
-    send_in_pings:
-      - events
-    extra_keys:
-      type:
-        type: string
-        description: Content scope.
-      provider:
-        type: string
-        description: Current provider id.
-
   onboarding_close:
     type: event
     description: >
@@ -437,6 +388,7 @@ genai.chatbot:
     bugs:
       - https://bugzilla.mozilla.org/show_bug.cgi?id=1974185
       - https://bugzilla.mozilla.org/show_bug.cgi?id=2044112
+      - https://bugzilla.mozilla.org/show_bug.cgi?id=1972935
     data_reviews:
       - https://phabricator.services.mozilla.com/D255286
       - https://phabricator.services.mozilla.com/D309646
@@ -457,12 +409,9 @@ genai.chatbot:
       provider:
         type: string
         description: Selected provider id.
-      reader_mode:
-        type: boolean
-        description: Whether reader mode text was used.
       selection:
         type: quantity
-        description: Page content length.
+        description: Selected text length.
       smart_window:
         type: boolean
         description: Whether the prompt was sent from Smart Window.
@@ -717,6 +666,7 @@ genai.chatbot:
       Chatbot page summarization was requested.
     bugs:
       - https://bugzilla.mozilla.org/show_bug.cgi?id=1974185
+      - https://bugzilla.mozilla.org/show_bug.cgi?id=1972935
     data_reviews:
       - https://phabricator.services.mozilla.com/D255286
     data_sensitivity:
@@ -730,12 +680,6 @@ genai.chatbot:
       provider:
         type: string
         description: Selected provider id.
-      reader_mode:
-        type: boolean
-        description: Whether reader mode text was used.
-      selection:
-        type: quantity
-        description: Page content length.
       source:
         type: string
         description: Entrypoint for the request, e.g., callout, footer, page.

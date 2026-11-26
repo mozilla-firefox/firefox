@@ -144,17 +144,13 @@ add_task(async function test_summarize_telemetry() {
     ],
   });
 
-  await GenAI.summarizeCurrentPage(window, "test_entry");
+  await BrowserTestUtils.withNewTab("https://example.com", () =>
+    GenAI.summarizeCurrentPage(window, "test_entry")
+  );
 
   let events = Glean.genaiChatbot.summarizePage.testGetValue();
   Assert.equal(events.length, 1, "One summarize event");
   Assert.equal(events[0].extra.provider, "localhost", "Correct provider");
-  Assert.equal(
-    events[0].extra.reader_mode,
-    "false",
-    "Reader mode is false for about:blank"
-  );
-  Assert.equal(events[0].extra.selection, "0", "Has selection length");
   Assert.equal(events[0].extra.source, "test_entry", "Correct source");
 
   events = Glean.genaiChatbot.promptClick.testGetValue();
@@ -162,12 +158,7 @@ add_task(async function test_summarize_telemetry() {
   Assert.equal(events[0].extra.content_type, "page", "Has content type");
   Assert.equal(events[0].extra.prompt, "summarize", "Has prompt");
   Assert.equal(events[0].extra.provider, "localhost", "Correct provider");
-  Assert.equal(
-    events[0].extra.reader_mode,
-    "false",
-    "Reader mode is false for about:blank"
-  );
-  Assert.equal(events[0].extra.selection, "0", "Has selection length");
+  Assert.equal(events[0].extra.selection, "0", "No selection for page");
   Assert.equal(events[0].extra.smart_window, "false", "Not smart window");
   Assert.equal(events[0].extra.source, "test_entry", "Correct source");
 
