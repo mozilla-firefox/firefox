@@ -156,44 +156,89 @@ add_task(async function test_interaction_tracking() {
   pm.removeAll();
 });
 
-add_task(async function test_interaction_stored_without_oa_suffix() {
-  Services.prefs.setCharPref("permissions.manager.defaultsUrl", "");
-  Services.prefs.setCharPref(
-    "permissions.expireUnusedTypes",
-    "desktop-notification"
-  );
-
-  let pm = Services.perms;
-  pm.removeAll();
-
-  let principal =
-    Services.scriptSecurityManager.createContentPrincipalFromOrigin(
-      "https://oa-test.example.com^userContextId=5"
+add_task(
+  { pref_set: [["permissions.isolateBy.userContext", false]] },
+  async function test_interaction_stored_without_oa_suffix_if_not_isolated() {
+    Services.prefs.setCharPref("permissions.manager.defaultsUrl", "");
+    Services.prefs.setCharPref(
+      "permissions.expireUnusedTypes",
+      "desktop-notification"
     );
 
-  pm.addFromPrincipal(
-    principal,
-    "desktop-notification",
-    Services.perms.ALLOW_ACTION
-  );
+    let pm = Services.perms;
+    pm.removeAll();
 
-  pm.updateLastInteractionForPrincipal(principal);
-  await pm.testFlushPendingWrites();
+    let principal =
+      Services.scriptSecurityManager.createContentPrincipalFromOrigin(
+        "https://oa-test.example.com^userContextId=5"
+      );
 
-  Assert.greater(
-    getInteractionTime("https://oa-test.example.com"),
-    0,
-    "lastInteractionTime should be positive"
-  );
+    pm.addFromPrincipal(
+      principal,
+      "desktop-notification",
+      Services.perms.ALLOW_ACTION
+    );
 
-  Assert.equal(
-    getInteractionCount("https://oa-test.example.com^userContextId=5"),
-    0,
-    "Should not have a interaction record with OA suffix"
-  );
+    pm.updateLastInteractionForPrincipal(principal);
+    await pm.testFlushPendingWrites();
 
-  pm.removeAll();
-});
+    Assert.greater(
+      getInteractionTime("https://oa-test.example.com"),
+      0,
+      "lastInteractionTime should be positive"
+    );
+
+    Assert.equal(
+      getInteractionCount("https://oa-test.example.com^userContextId=5"),
+      0,
+      "Should not have a interaction record with OA suffix"
+    );
+
+    pm.removeAll();
+  }
+);
+
+add_task(
+  { pref_set: [["permissions.isolateBy.userContext", true]] },
+  async function test_interaction_stored_with_user_context_suffix() {
+    Services.prefs.setCharPref("permissions.manager.defaultsUrl", "");
+    Services.prefs.setCharPref(
+      "permissions.expireUnusedTypes",
+      "desktop-notification"
+    );
+
+    let pm = Services.perms;
+    pm.removeAll();
+
+    let principal =
+      Services.scriptSecurityManager.createContentPrincipalFromOrigin(
+        "https://uc-test.example.com^userContextId=5"
+      );
+
+    pm.addFromPrincipal(
+      principal,
+      "desktop-notification",
+      Services.perms.ALLOW_ACTION
+    );
+
+    pm.updateLastInteractionForPrincipal(principal);
+    await pm.testFlushPendingWrites();
+
+    Assert.greater(
+      getInteractionTime("https://uc-test.example.com^userContextId=5"),
+      0,
+      "lastInteractionTime should be positive"
+    );
+
+    Assert.equal(
+      getInteractionCount("https://uc-test.example.com"),
+      0,
+      "Should not have an interaction record without the userContextId suffix"
+    );
+
+    pm.removeAll();
+  }
+);
 
 add_task(
   async function test_interaction_tracked_without_expirable_permission() {
