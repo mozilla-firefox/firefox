@@ -45,9 +45,6 @@ credit-card-save-payment-method-doorhanger-header = Save this payment method?
 # changed security code.
 # “Checkout” refers to the payment stage on websites.
 credit-card-save-payment-method-doorhanger-description = { -brand-short-name } encrypts and autofills your payment details for faster checkout.
-credit-card-capture-dismiss-button =
-    .label = Dismiss
-    .accessKey = D
 
 # The toggle turns saving security codes on and off. The label stays the same
 # in both states.
