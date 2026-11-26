@@ -14,6 +14,13 @@ task-defaults:
     worker:
         docker-image: {in-tree: "lint"}
         max-run-time: 1800
+        env:
+            # The code review bot indexes issues from the whole codebase on
+            # these projects, so report warnings without failing on them.
+            MOZLINT_WARNINGS:
+                by-project:
+                    (autoland|mozilla-central|try|firefox-crb): soft
+                    default: ""
         artifacts:
             - type: file
               name: public/code-review/mozlint.json
@@ -21,6 +28,11 @@ task-defaults:
     run:
         using: mach
         use-caches: [checkout, pip, uv]
+    task-context:
+        from-parameters:
+            project: project
+        substitution-fields:
+            - worker.env.MOZLINT_WARNINGS
     when:
         files-changed:
             # Other misc lint related files.
