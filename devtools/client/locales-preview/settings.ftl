@@ -258,6 +258,14 @@ devtools-settings-local-mode-disable =
     .label = Disable
     .title = Toggle this local mapping
 
+devtools-settings-local-mode-remove =
+    .label = Remove local mapping
+
+# Message of the dialog asking the user to confirm removing a mapping.
+# Variables:
+#   $mappingOrigin (String): The domain of the mapping, e.g. firefox.localhost.
+devtools-settings-local-mode-confirm-removal = Do you want to remove “{ $mappingOrigin }” mapping?
+
 devtools-settings-local-mode-add =
     .label = Add a new local mapping
 

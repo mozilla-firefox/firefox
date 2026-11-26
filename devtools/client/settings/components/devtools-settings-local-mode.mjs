@@ -228,6 +228,24 @@ export class DevToolsSettingsLocalMode extends MozLitElement {
     );
   }
 
+  /** @param {Event} event */
+  async #removeMapping(event) {
+    const mapping = this.#getMapping(event.currentTarget);
+    if (!mapping) {
+      return;
+    }
+    const message = await l10n.formatValue(
+      "devtools-settings-local-mode-confirm-removal",
+      { mappingOrigin: mapping.origin }
+    );
+    if (!window.confirm(message ?? "")) {
+      return;
+    }
+    Services.prefs.clearUserPref(mapping.prefPrefix + "origin");
+    Services.prefs.clearUserPref(mapping.prefPrefix + "path");
+    Services.prefs.clearUserPref(mapping.prefPrefix + "disabled");
+  }
+
   /** @param {MappingState} mapping */
   #renderFolder(mapping) {
     return html`
@@ -292,6 +310,12 @@ export class DevToolsSettingsLocalMode extends MozLitElement {
               ? "devtools-settings-local-mode-enable"
               : "devtools-settings-local-mode-disable"}
             @click=${this.#toggleMapping}
+          ></moz-button>
+          <moz-button
+            class="remove"
+            size="small"
+            data-l10n-id="devtools-settings-local-mode-remove"
+            @click=${this.#removeMapping}
           ></moz-button>
         </div>
       </li>
