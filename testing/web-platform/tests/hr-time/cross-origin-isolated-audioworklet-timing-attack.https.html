@@ -1,0 +1,11 @@
+<!DOCTYPE html>
+<meta charset="utf-8">
+<title>performance.now() in a cross-origin isolated AudioWorkletGlobalScope should not enable timing attacks</title>
+<link rel="help" href="https://w3c.github.io/hr-time/#sec-workletperformance">
+<link rel="help" href="https://w3c.github.io/hr-time/#clock-resolution">
+<script src="/resources/testharness.js"></script>
+<script src="/resources/testharnessreport.js"></script>
+<script src="resources/audioworklet-timing-attack.js"></script>
+<script>
+run_audioworklet_test(/*isolated=*/true);
+</script>

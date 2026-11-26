@@ -8,8 +8,10 @@
 #include "WorkletThread.h"
 #include "mozilla/BasePrincipal.h"
 #include "mozilla/NullPrincipal.h"
+#include "mozilla/RandomNum.h"
 #include "mozilla/dom/DocGroup.h"
 #include "mozilla/dom/Document.h"
+#include "mozilla/dom/Performance.h"
 #include "mozilla/dom/PolicyContainer.h"
 #include "mozilla/dom/RegisterWorkletBindings.h"
 #include "mozilla/dom/ScriptSettings.h"
@@ -44,6 +46,13 @@ WorkletImpl::WorkletImpl(nsPIDOMWindowInner* aWindow, nsIPrincipal* aPrincipal)
       mWorkletLoadInfo(aWindow),
       mTerminated(false),
       mFinishedOnExecutionThread(false),
+      mTimeOrigin(aWindow->GetPerformance()
+                      ? aWindow->GetPerformance()->CreationTimeStamp()
+                      : TimeStamp::Now()),
+      mRandomTimelineSeed(
+          aWindow->GetPerformance()
+              ? aWindow->GetPerformance()->GetRandomTimelineSeed()
+              : static_cast<int64_t>(RandomUint64OrDie())),
       mIsPrivateBrowsing(false),
       mTrials(OriginTrials::FromWindow(nsGlobalWindowInner::Cast(aWindow))) {
   (void)NS_WARN_IF(
@@ -55,6 +64,8 @@ WorkletImpl::WorkletImpl(nsPIDOMWindowInner* aWindow, nsIPrincipal* aPrincipal)
 
   mSharedMemoryAllowed =
       nsGlobalWindowInner::Cast(aWindow)->IsSharedMemoryAllowed();
+  mCrossOriginIsolated =
+      nsGlobalWindowInner::Cast(aWindow)->CrossOriginIsolated();
 
   mShouldResistFingerprinting = aWindow->AsGlobal()->ShouldResistFingerprinting(
       RFPTarget::IsAlwaysEnabledForPrecompute);

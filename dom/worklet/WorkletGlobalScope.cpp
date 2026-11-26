@@ -106,6 +106,10 @@ bool WorkletGlobalScope::ShouldResistFingerprinting(RFPTarget aTarget) const {
   return mImpl->ShouldResistFingerprinting(aTarget);
 }
 
+bool WorkletGlobalScope::CrossOriginIsolated() const {
+  return mImpl->CrossOriginIsolated();
+}
+
 void WorkletGlobalScope::Dump(const Optional<nsAString>& aString) const {
   WorkletThread::AssertIsOnWorkletThread();
 

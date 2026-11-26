@@ -82,6 +82,7 @@ class WorkletGlobalScope : public nsIGlobalObject, public nsWrapperCache {
   Maybe<nsID> GetAgentClusterId() const override;
   bool IsSharedMemoryAllowed() const override;
   bool ShouldResistFingerprinting(RFPTarget aTarget) const override;
+  bool CrossOriginIsolated() const override;
 
  protected:
   ~WorkletGlobalScope();

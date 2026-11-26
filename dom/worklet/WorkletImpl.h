@@ -10,6 +10,7 @@
 #include "mozilla/Maybe.h"
 #include "mozilla/OriginAttributes.h"
 #include "mozilla/OriginTrials.h"
+#include "mozilla/TimeStamp.h"
 #include "mozilla/dom/OffThreadCSPContext.h"
 #include "mozilla/ipc/PBackgroundSharedTypes.h"
 #include "nsRFPService.h"
@@ -85,6 +86,11 @@ class WorkletImpl {
   const Maybe<nsID>& GetAgentClusterId() const { return mAgentClusterId; }
 
   bool IsSharedMemoryAllowed() const { return mSharedMemoryAllowed; }
+  bool CrossOriginIsolated() const { return mCrossOriginIsolated; }
+  // The time origin of the outside settings object, and the random seed used
+  // to reduce the precision of timestamps on that timeline.
+  TimeStamp TimeOrigin() const { return mTimeOrigin; }
+  int64_t RandomTimelineSeed() const { return mRandomTimelineSeed; }
   bool IsSystemPrincipal() const { return mPrincipal->IsSystemPrincipal(); }
   bool ShouldResistFingerprinting(RFPTarget aTarget) const {
     return mShouldResistFingerprinting &&
@@ -135,7 +141,11 @@ class WorkletImpl {
 
   Maybe<nsID> mAgentClusterId;
 
+  TimeStamp mTimeOrigin;
+  int64_t mRandomTimelineSeed;
+
   bool mSharedMemoryAllowed : 1;
+  bool mCrossOriginIsolated : 1;
   bool mShouldResistFingerprinting : 1;
   bool mIsPrivateBrowsing : 1;
   // The granular fingerprinting protection overrides applied to the worklet.

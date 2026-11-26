@@ -30,6 +30,7 @@ EXPORTS.mozilla.dom += [
     "PerformanceTiming.h",
     "PerformanceTimingIPCUtils.h",
     "PerformanceWorker.h",
+    "WorkletPerformance.h",
 ]
 
 UNIFIED_SOURCES += [
@@ -54,6 +55,7 @@ UNIFIED_SOURCES += [
     "PerformanceStorageWorker.cpp",
     "PerformanceTiming.cpp",
     "PerformanceWorker.cpp",
+    "WorkletPerformance.cpp",
 ]
 
 IPDL_SOURCES += [

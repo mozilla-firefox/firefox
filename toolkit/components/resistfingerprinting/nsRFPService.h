@@ -409,6 +409,11 @@ class nsRFPService final : public nsIObserver, public nsIRFPService {
 
   enum TimeScale { Seconds = 1, MilliSeconds = 1000, MicroSeconds = 1000000 };
 
+  // Initializes the process-wide state used by the ReduceTimePrecision*
+  // methods, so that they don't lock or allocate when later called on a
+  // real-time thread. Main thread only.
+  static void InitTimePrecisionReduction();
+
   // The following Reduce methods can be called off main thread.
   static double ReduceTimePrecisionAsUSecs(double aTime, int64_t aContextMixin,
                                            RTPCallerType aRTPCallerType);

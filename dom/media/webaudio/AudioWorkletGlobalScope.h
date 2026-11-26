@@ -10,6 +10,7 @@
 #include "mozilla/dom/FunctionBinding.h"
 #include "mozilla/dom/MessagePort.h"
 #include "mozilla/dom/WorkletGlobalScope.h"
+#include "mozilla/dom/WorkletPerformance.h"
 #include "nsRefPtrHashtable.h"
 
 namespace mozilla {
@@ -61,6 +62,8 @@ class AudioWorkletGlobalScope final : public WorkletGlobalScope {
   // already been taken.
   RefPtr<MessagePort> TakePortForProcessorCtor();
 
+  WorkletPerformance* Performance() const { return mPerformance; }
+
  private:
   ~AudioWorkletGlobalScope() = default;
 
@@ -80,6 +83,8 @@ class AudioWorkletGlobalScope final : public WorkletGlobalScope {
   RefPtr<MessagePort> mPortForProcessor;
 
   RefPtr<MessagePort> mPort;
+
+  RefPtr<WorkletPerformance> mPerformance;
 };
 
 }  // namespace dom
