@@ -1281,6 +1281,31 @@ bool TextEventDispatcher::MaybeDispatchKeypressEvents(
   return isDispatched;
 }
 
+Maybe<QueryContentResult> TextEventDispatcher::QueryTextContent(
+    uint32_t aOffset, uint32_t aLength) const {
+  return QueryTextContent(static_cast<int64_t>(aOffset), aLength,
+                          QueryContentOptions());
+}
+
+Maybe<QueryContentResult> TextEventDispatcher::QueryTextContent(
+    int64_t aOffset, uint32_t aLength,
+    const QueryContentOptions& aOptions) const {
+  if (NS_WARN_IF(!mWidget) ||
+      NS_WARN_IF(aOffset < 0 && !aOptions.mRelativeToInsertionPoint))
+      [[unlikely]] {
+    return Nothing{};
+  }
+  WidgetQueryContentEvent queryEvent(true, eQueryTextContent, mWidget);
+  queryEvent.InitForQueryTextContent(aOffset, aLength, aOptions);
+  // FYI: mWidget is grabbed by queryEvent so that it's safe to call
+  // DispatchEvent without a local strong pointer.
+  mWidget->DispatchEvent(&queryEvent);
+  if (queryEvent.Failed()) [[unlikely]] {
+    return Nothing{};
+  }
+  return std::move(queryEvent.mReply);
+}
+
 /******************************************************************************
  * TextEventDispatcher::PendingComposition
  *****************************************************************************/

@@ -630,6 +630,9 @@ void GeckoEditableSupport::FlushIMEChanges(FlushChangesFlag aFlags) {
 
   nsCOMPtr<nsIWidget> widget = GetWidget();
   NS_ENSURE_TRUE_VOID(widget);
+  const RefPtr<TextEventDispatcher> dispatcher =
+      mDispatcher ? mDispatcher.get() : widget->GetTextEventDispatcher();
+  NS_ENSURE_TRUE_VOID(dispatcher);
 
   struct TextRecord {
     TextRecord() : start(-1), oldEnd(-1), newEnd(-1) {}
@@ -669,22 +672,17 @@ void GeckoEditableSupport::FlushIMEChanges(FlushChangesFlag aFlags) {
            mIMEPendingTextChange.mRemovedEndOffset ||
        mIMEPendingTextChange.mStartOffset !=
            mIMEPendingTextChange.mAddedEndOffset)) {
-    WidgetQueryContentEvent queryTextContentEvent(true, eQueryTextContent,
-                                                  widget);
-
     if (mIMEPendingTextChange.mAddedEndOffset !=
         mIMEPendingTextChange.mStartOffset) {
-      queryTextContentEvent.InitForQueryTextContent(
-          mIMEPendingTextChange.mStartOffset,
-          mIMEPendingTextChange.mAddedEndOffset -
-              mIMEPendingTextChange.mStartOffset);
-      widget->DispatchEvent(&queryTextContentEvent);
-
-      if (shouldAbort(NS_WARN_IF(queryTextContentEvent.Failed()))) {
+      const Maybe<QueryContentResult> queryTextContentResult =
+          dispatcher->QueryTextContent(mIMEPendingTextChange.mStartOffset,
+                                       mIMEPendingTextChange.mAddedEndOffset -
+                                           mIMEPendingTextChange.mStartOffset);
+      if (shouldAbort(NS_WARN_IF(queryTextContentResult.isNothing()))) {
         return;
       }
 
-      textTransaction.text = queryTextContentEvent.mReply->DataRef();
+      textTransaction.text = queryTextContentResult->DataRef();
     }
 
     textTransaction.start =

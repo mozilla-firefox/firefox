@@ -466,6 +466,28 @@ class TextEventDispatcher final {
                                    bool aNeedsCallback = false);
 
   /**
+   * Return eQueryTextContent event result.
+   *
+   * @param aOffset     Offset from start of the flattened text content.
+   * @param aLength     Length of the text.
+   */
+  Maybe<QueryContentResult> QueryTextContent(uint32_t aOffset,
+                                             uint32_t aLength) const;
+
+  /**
+   * Return eQueryTextContent event result.
+   *
+   * @param aOffset     Offset from start of the flattened text content.
+   *                    If aOptions specifies this is a relative offset from
+   *                    selection, this can be negative value.
+   * @param aLength     Length of the text.
+   * @param aOptions    See QueryContentOptions members.
+   */
+  Maybe<QueryContentResult> QueryTextContent(
+      int64_t aOffset, uint32_t aLength,
+      const QueryContentOptions& aOptions) const;
+
+  /**
    * Return true if this is under some batching requests.
    */
   [[nodiscard]] bool IsBatching() const { return !!mBatching; }
