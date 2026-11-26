@@ -111,4 +111,19 @@ void TrustedTypePolicy::DetermineTrustedPolicyValue(
   }
 }
 
+template void TrustedTypePolicy::DetermineTrustedPolicyValue(
+    const RefPtr<CreateHTMLCallback>& aCallbackObject, const nsAString& aValue,
+    const nsTArray<JS::Value>& aArguments, bool aThrowIfMissing,
+    ErrorResult& aErrorResult, nsAString& aResult) const;
+
+template void TrustedTypePolicy::DetermineTrustedPolicyValue(
+    const RefPtr<CreateScriptCallback>& aCallbackObject,
+    const nsAString& aValue, const nsTArray<JS::Value>& aArguments,
+    bool aThrowIfMissing, ErrorResult& aErrorResult, nsAString& aResult) const;
+
+template void TrustedTypePolicy::DetermineTrustedPolicyValue(
+    const RefPtr<CreateScriptURLCallback>& aCallbackObject,
+    const nsAString& aValue, const nsTArray<JS::Value>& aArguments,
+    bool aThrowIfMissing, ErrorResult& aErrorResult, nsAString& aResult) const;
+
 }  // namespace mozilla::dom
