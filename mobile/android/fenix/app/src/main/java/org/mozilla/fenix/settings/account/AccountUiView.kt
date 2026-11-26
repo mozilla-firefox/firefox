@@ -12,6 +12,7 @@ import mozilla.components.concept.fetch.Client
 import mozilla.components.concept.sync.Profile
 import mozilla.components.service.fxa.manager.FxaAccountManager
 import org.mozilla.fenix.R
+import org.mozilla.fenix.ext.components
 import org.mozilla.fenix.settings.requirePreference
 
 class AccountUiView(
@@ -26,6 +27,8 @@ class AccountUiView(
     private val preferenceFirefoxAccount = fragment.requirePreference<AccountPreference>(R.string.pref_key_account)
     private val preferenceFirefoxAccountAuthError =
         fragment.requirePreference<AccountAuthErrorPreference>(R.string.pref_key_account_auth_error)
+    private val accountErrorCard =
+        fragment.requirePreference<AccountErrorPreference>(R.string.pref_key_account_error_card_auth)
     private val accountPreferenceCategory =
         fragment.requirePreference<PreferenceCategory>(R.string.pref_key_account_category)
     private val accountPreferenceUpdater =
@@ -41,9 +44,15 @@ class AccountUiView(
      */
     fun updateAccountUIState(context: Context, profile: Profile?) {
         val account = accountManager.authenticatedAccount()
+        val needsReauth = accountManager.accountNeedsReauth()
+        val newUiEnabled = context.components.settings.accountSettingsNewUi
+        val accountIsHealthy = account != null && !needsReauth
+        val showAccountErrorCard = newUiEnabled && account != null && needsReauth
 
-        // Signed-in, no problems.
-        if (account != null && !accountManager.accountNeedsReauth()) {
+        accountErrorCard.isVisible = showAccountErrorCard
+
+        // Signed-in or showing an authentication error in the new UI.
+        if (accountIsHealthy || showAccountErrorCard) {
             preferenceSignInPromo.isVisible = false
 
             accountPreferenceUpdater.update(context, profile)
@@ -53,7 +62,7 @@ class AccountUiView(
             accountPreferenceCategory.isVisible = true
 
             // Signed-in, need to re-authenticate.
-        } else if (account != null && accountManager.accountNeedsReauth()) {
+        } else if (account != null && needsReauth) {
             preferenceFirefoxAccount.isVisible = false
             preferenceFirefoxAccountAuthError.isVisible = true
             accountPreferenceCategory.isVisible = true

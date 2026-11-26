@@ -5,6 +5,11 @@
 package org.mozilla.fenix.settings
 
 import androidx.fragment.app.FragmentActivity
+import androidx.lifecycle.lifecycleScope
+import androidx.navigation.NavController
+import androidx.navigation.NavDestination
+import androidx.navigation.NavDirections
+import androidx.navigation.Navigation
 import androidx.preference.Preference
 import io.mockk.every
 import io.mockk.mockk
@@ -34,13 +39,16 @@ import org.junit.runner.RunWith
 import org.mozilla.fenix.R
 import org.mozilla.fenix.ext.components
 import org.mozilla.fenix.ext.getPreferenceKey
+import org.mozilla.fenix.settings.account.AccountUiView
 import org.mozilla.fenix.utils.Settings
 import org.robolectric.Robolectric
 import org.robolectric.RobolectricTestRunner
+import org.robolectric.android.controller.ActivityController
 
 @RunWith(RobolectricTestRunner::class)
 class SettingsFragmentTest {
     private val settingsFragment = SettingsFragment()
+    private lateinit var activityController: ActivityController<FragmentActivity>
 
     @Before
     fun setup() {
@@ -56,8 +64,95 @@ class SettingsFragmentTest {
         every { testContext.components.analytics } returns mockk(relaxed = true)
         every { testContext.components.backgroundServices } returns mockk(relaxed = true)
 
-        val activity = Robolectric.buildActivity(FragmentActivity::class.java).create().get()
-        activity.supportFragmentManager.beginTransaction().add(settingsFragment, "test").commitNow()
+        activityController = Robolectric.buildActivity(FragmentActivity::class.java).create()
+        val activity = activityController.get()
+        activity.supportFragmentManager
+            .beginTransaction()
+            .add(android.R.id.content, settingsFragment, "test")
+            .commitNow()
+    }
+
+    @Test
+    fun `account and error card visibility follows account state in new settings`() {
+        val accountManager: FxaAccountManager = mockk(relaxed = true)
+        val accountUi =
+            AccountUiView(
+                settingsFragment,
+                settingsFragment.lifecycleScope,
+                accountManager,
+                testContext.components.core.client,
+            )
+        val account = settingsFragment.requirePreference<Preference>(R.string.pref_key_account)
+        val card = settingsFragment.requirePreference<Preference>(R.string.pref_key_account_error_card_auth)
+        val legacyError = settingsFragment.requirePreference<Preference>(R.string.pref_key_account_auth_error)
+        val signInPromo = settingsFragment.requirePreference<Preference>(R.string.pref_key_sign_in_promo)
+        every { testContext.components.settings.accountSettingsNewUi } returns true
+        every { accountManager.authenticatedAccount() } returns mockk()
+        every { accountManager.accountNeedsReauth() } returns false
+
+        accountUi.updateAccountUIState(testContext, null)
+        assertTrue(account.isVisible)
+        assertFalse(card.isVisible)
+        assertFalse(signInPromo.isVisible)
+
+        every { accountManager.accountNeedsReauth() } returns true
+        accountUi.updateAccountUIState(testContext, null)
+        assertTrue(account.isVisible)
+        assertTrue(card.isVisible)
+        assertFalse(legacyError.isVisible)
+
+        every { accountManager.authenticatedAccount() } returns null
+        every { accountManager.accountNeedsReauth() } returns false
+        accountUi.updateAccountUIState(testContext, null)
+        assertFalse(account.isVisible)
+        assertFalse(card.isVisible)
+        assertTrue(signInPromo.isVisible)
+    }
+
+    @Test
+    fun `legacy settings show the original authentication error row`() {
+        val accountManager: FxaAccountManager = mockk(relaxed = true)
+        every { accountManager.authenticatedAccount() } returns mockk()
+        every { accountManager.accountNeedsReauth() } returns true
+        every { testContext.components.settings.accountSettingsNewUi } returns false
+        val accountUi =
+            AccountUiView(
+                settingsFragment,
+                settingsFragment.lifecycleScope,
+                accountManager,
+                testContext.components.core.client,
+            )
+
+        accountUi.updateAccountUIState(testContext, null)
+
+        assertFalse(settingsFragment.requirePreference<Preference>(R.string.pref_key_account).isVisible)
+        assertFalse(settingsFragment.requirePreference<Preference>(R.string.pref_key_account_error_card_auth).isVisible)
+        assertTrue(settingsFragment.requirePreference<Preference>(R.string.pref_key_account_auth_error).isVisible)
+    }
+
+    @Test
+    fun `account row opens settings and authentication errors open recovery`() {
+        val navController: NavController = mockk(relaxed = true)
+        val destination: NavDestination = mockk()
+        every { destination.id } returns R.id.settingsFragment
+        every { navController.currentDestination } returns destination
+        Navigation.setViewNavController(activityController.get().findViewById(android.R.id.content), navController)
+        activityController.start()
+        val directions = mutableListOf<NavDirections>()
+
+        settingsFragment.onPreferenceTreeClick(settingsFragment.requirePreference(R.string.pref_key_account))
+        settingsFragment.onPreferenceTreeClick(
+            settingsFragment.requirePreference(R.string.pref_key_account_error_card_auth)
+        )
+        verify(exactly = 2) { navController.navigate(capture(directions)) }
+        assertEquals(R.id.action_settingsFragment_to_accountSettingsFragment, directions[0].actionId)
+        assertEquals(R.id.action_settingsFragment_to_accountProblemFragment, directions[1].actionId)
+        assertEquals(
+            SettingsFragmentDirections.actionSettingsFragmentToAccountProblemFragment(
+                org.mozilla.fenix.components.accounts.FenixFxAEntryPoint.SettingsMenu
+            ),
+            directions[1],
+        )
     }
 
     @OptIn(ExperimentalCoroutinesApi::class) // advanceUntilIdle

@@ -22,6 +22,12 @@
             android:icon="@drawable/mozac_ic_avatar_circle_24"
             android:key="@string/pref_key_account" />
 
+        <org.mozilla.fenix.settings.account.AccountErrorPreference
+            android:key="@string/pref_key_account_error_card_auth"
+            android:visible="false"
+            app:allowDividerAbove="false"
+            app:iconSpaceReserved="false" />
+
         <org.mozilla.fenix.settings.account.AccountAuthErrorPreference
             android:icon="@drawable/ic_account_warning"
             android:key="@string/pref_key_account_auth_error" />
