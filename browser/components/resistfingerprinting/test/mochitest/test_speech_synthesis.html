@@ -17,16 +17,23 @@ https://bugzilla.mozilla.org/show_bug.cgi?id=1333641
   // This function setup the speechSynthesis and flip 'privacy.resistFingerprinting'
   // after it has been setup correctly.
   function setupSpeechSynthesis() {
-    window.speechSynthesis.addEventListener("voiceschanged", () => {
+    function enableResistFingerprinting() {
       isnot(window.speechSynthesis.getVoices().length, 0, "Voices added");
       SimpleTest.waitForFocus(() => {
         SpecialPowers.pushPrefEnv({"set":
           [["privacy.resistFingerprinting", true]],
         }, doGetVoicesTest);
       }, window);
-    }, {once: true});
+    }
 
-    is(window.speechSynthesis.getVoices().length, 0, "No voices added initially");
+    // A content process only gets its voices, asynchronously, the first time
+    // it uses speechSynthesis: they are already there if this test ran before.
+    if (window.speechSynthesis.getVoices().length) {
+      enableResistFingerprinting();
+      return;
+    }
+    window.speechSynthesis.addEventListener("voiceschanged",
+      enableResistFingerprinting, {once: true});
   }
 
   function doGetVoicesTest() {
