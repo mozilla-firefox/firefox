@@ -20,6 +20,7 @@ const SAVE_HINT_MESSAGE_ID = "confirmation-hint-tab-group-saved";
 add_setup(() => {
   registerCleanupFunction(() => {
     Services.prefs.clearUserPref(SAVE_HINT_SHOWN_COUNT_PREF);
+    Services.prefs.clearUserPref("browser.tabs.splitview.hasUsed");
   });
 });
 
@@ -358,6 +359,164 @@ add_task(async function test_moveGroupToNewWindow() {
     "Button is enabled again when additional tab present"
   );
   await removeTabGroup(movedGroup);
+  await BrowserTestUtils.closeWindow(newWin, { animate: false });
+});
+
+/**
+ * Moving a group whose first tab is selected should keep its pending tabs
+ * lazy.
+ */
+add_task(async function test_moveGroupToNewWindow_keepsPendingTabsLazy() {
+  let tabs = [
+    BrowserTestUtils.addTab(gBrowser, "about:robots", {
+      skipAnimation: true,
+    }),
+  ];
+  for (let i = 1; i < 3; i++) {
+    tabs.push(
+      BrowserTestUtils.addTab(gBrowser, `https://example.com/?${i}`, {
+        createLazyBrowser: true,
+        skipAnimation: true,
+      })
+    );
+  }
+  await BrowserTestUtils.switchTab(gBrowser, tabs[0]);
+  for (let i = 1; i < tabs.length; i++) {
+    Assert.ok(!tabs[i].linkedPanel, `Tab ${i} is lazy before the move`);
+    Assert.ok(
+      tabs[i].hasAttribute("pending"),
+      `Tab ${i} is pending before the move`
+    );
+  }
+
+  await createTabGroupAndOpenEditPanel(
+    tabs,
+    "test_moveGroupToNewWindow_keepsPendingTabsLazy"
+  );
+  let newWindowOpened = BrowserTestUtils.waitForNewWindow();
+  document.getElementById("tabGroupEditor_moveGroupToNewWindow").click();
+  let newWin = await newWindowOpened;
+
+  let newTabs = newWin.gBrowser.tabs;
+  Assert.equal(newTabs.length, 3, "All group tabs moved to the new window");
+  Assert.equal(
+    newWin.gBrowser.selectedTab,
+    newTabs[0],
+    "First tab remains selected"
+  );
+  Assert.ok(newTabs[0].linkedPanel, "First tab is not lazy");
+  for (let i = 1; i < newTabs.length; i++) {
+    Assert.ok(!newTabs[i].linkedPanel, `Tab ${i} is still lazy`);
+    Assert.ok(newTabs[i].hasAttribute("pending"), `Tab ${i} is still pending`);
+    Assert.equal(
+      SessionStore.getLazyTabValue(newTabs[i], "url"),
+      `https://example.com/?${i}`,
+      `Tab ${i} kept its URL`
+    );
+  }
+
+  await removeTabGroup(newTabs[0].group);
+  await BrowserTestUtils.closeWindow(newWin, { animate: false });
+});
+
+function addLazyTab(url) {
+  return BrowserTestUtils.addTab(gBrowser, url, {
+    createLazyBrowser: true,
+    skipAnimation: true,
+  });
+}
+
+/**
+ * Moving a group whose selected tab is in a split view should load both split
+ * view tabs together and keep the group's other pending tabs lazy.
+ */
+add_task(async function test_moveGroupToNewWindow_selectedTabInSplitView() {
+  let lazyTab1 = addLazyTab("https://example.com/?1");
+  let splitTab1 = BrowserTestUtils.addTab(gBrowser, "about:robots", {
+    skipAnimation: true,
+  });
+  let splitTab2 = BrowserTestUtils.addTab(gBrowser, "about:mozilla", {
+    skipAnimation: true,
+  });
+  let lazyTab2 = addLazyTab("https://example.com/?2");
+  let splitview = gBrowser.addTabSplitView([splitTab1, splitTab2]);
+  await BrowserTestUtils.switchTab(gBrowser, splitTab1);
+
+  await createTabGroupAndOpenEditPanel(
+    [lazyTab1, splitview, lazyTab2],
+    "test_moveGroupToNewWindow_selectedTabInSplitView"
+  );
+  let newWindowOpened = BrowserTestUtils.waitForNewWindow();
+  document.getElementById("tabGroupEditor_moveGroupToNewWindow").click();
+  let newWin = await newWindowOpened;
+
+  let newTabs = newWin.gBrowser.tabs;
+  Assert.equal(newTabs.length, 4, "All group tabs moved to the new window");
+  let [newLazyTab1, newSplitTab1, newSplitTab2, newLazyTab2] = newTabs;
+  Assert.ok(
+    newSplitTab1.splitview && newSplitTab1.splitview === newSplitTab2.splitview,
+    "Split view tabs are still in the same split view"
+  );
+  Assert.equal(
+    newWin.gBrowser.selectedTab,
+    newSplitTab1,
+    "Split view tab remains selected"
+  );
+  Assert.ok(
+    newSplitTab1.linkedPanel && newSplitTab2.linkedPanel,
+    "Both split view tabs are loaded"
+  );
+  for (let tab of [newLazyTab1, newLazyTab2]) {
+    Assert.ok(!tab.linkedPanel, "Tab outside the split view is still lazy");
+    Assert.ok(
+      tab.hasAttribute("pending"),
+      "Tab outside the split view is still pending"
+    );
+  }
+
+  await removeTabGroup(newTabs[0].group);
+  await BrowserTestUtils.closeWindow(newWin, { animate: false });
+});
+
+/**
+ * Moving a group whose selected tab is outside its split view should keep the
+ * pending split view tabs lazy.
+ */
+add_task(async function test_moveGroupToNewWindow_keepsSplitViewLazy() {
+  let selectedTab = BrowserTestUtils.addTab(gBrowser, "about:robots", {
+    skipAnimation: true,
+  });
+  let splitTab1 = addLazyTab("https://example.com/?1");
+  let splitTab2 = addLazyTab("https://example.com/?2");
+  let splitview = gBrowser.addTabSplitView([splitTab1, splitTab2]);
+  await BrowserTestUtils.switchTab(gBrowser, selectedTab);
+
+  await createTabGroupAndOpenEditPanel(
+    [selectedTab, splitview],
+    "test_moveGroupToNewWindow_keepsSplitViewLazy"
+  );
+  let newWindowOpened = BrowserTestUtils.waitForNewWindow();
+  document.getElementById("tabGroupEditor_moveGroupToNewWindow").click();
+  let newWin = await newWindowOpened;
+
+  let newTabs = newWin.gBrowser.tabs;
+  Assert.equal(newTabs.length, 3, "All group tabs moved to the new window");
+  let [newSelectedTab, newSplitTab1, newSplitTab2] = newTabs;
+  Assert.equal(
+    newWin.gBrowser.selectedTab,
+    newSelectedTab,
+    "First tab remains selected"
+  );
+  Assert.ok(
+    newSplitTab1.splitview && newSplitTab1.splitview === newSplitTab2.splitview,
+    "Split view tabs are still in the same split view"
+  );
+  for (let tab of [newSplitTab1, newSplitTab2]) {
+    Assert.ok(!tab.linkedPanel, "Split view tab is still lazy");
+    Assert.ok(tab.hasAttribute("pending"), "Split view tab is still pending");
+  }
+
+  await removeTabGroup(newTabs[0].group);
   await BrowserTestUtils.closeWindow(newWin, { animate: false });
 });
 

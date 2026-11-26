@@ -4510,10 +4510,8 @@ export class Tabbrowser {
     group.removedByAdoption = true;
     group.saveOnWindowClose = false;
 
-    let oldSelectedTab = selectTab && group.documentGlobal.gBrowser.selectedTab;
-    let newTabs = [];
-    let adoptedTab;
-    let splitview;
+    let sourceSelectedTab = group.documentGlobal.gBrowser.selectedTab;
+    let newTabsAndSplitviews = [];
 
     // bug1969925 adopting a tab group will cause the window to close if it
     // is the only thing on the tab strip
@@ -4535,32 +4533,58 @@ export class Tabbrowser {
       }
     }
 
-    for (let element of group.tabsAndSplitViews) {
+    let adoptElement = element => {
       if (Tabbrowser.isSplitViewWrapper(element)) {
-        splitview = this.adoptSplitView(element, {
+        let splitview = this.adoptSplitView(element, {
           elementIndex,
           tabIndex,
+          selectTab,
         });
-        newTabs.push(splitview);
         tabIndex = splitview.tabs[0].index + splitview.tabs.length;
-      } else {
-        adoptedTab = this.adoptTab(element, {
+        return splitview;
+      }
+      let adoptedTab = this.adoptTab(element, {
+        elementIndex,
+        tabIndex,
+        selectTab: selectTab && element === sourceSelectedTab,
+      });
+      // Put next tab after current one.
+      elementIndex = undefined;
+      tabIndex = adoptedTab.index + 1;
+      return adoptedTab;
+    };
+
+    // Adopt the source window's selected tab (or the split view containing it)
+    // last. Adopting it earlier would make the source window select one of the
+    // group's remaining tabs, loading it if it was pending.
+    let selectedElement = sourceSelectedTab.splitview ?? sourceSelectedTab;
+    let selectedPosition;
+    for (let element of group.tabsAndSplitViews) {
+      if (element === selectedElement) {
+        selectedPosition = {
+          slot: newTabsAndSplitviews.length,
           elementIndex,
           tabIndex,
-          selectTab: element === oldSelectedTab,
-        });
-        newTabs.push(adoptedTab);
-        // Put next tab after current one.
-        elementIndex = undefined;
-        tabIndex = adoptedTab.index + 1;
+        };
+        continue;
       }
+      newTabsAndSplitviews.push(adoptElement(element));
     }
 
-    return this.addTabGroup(newTabs, {
+    if (selectedPosition) {
+      ({ elementIndex, tabIndex } = selectedPosition);
+      newTabsAndSplitviews.splice(
+        selectedPosition.slot,
+        0,
+        adoptElement(selectedElement)
+      );
+    }
+
+    return this.addTabGroup(newTabsAndSplitviews, {
       id: group.id,
       label: group.label,
       color: group.color,
-      insertBefore: newTabs[0],
+      insertBefore: newTabsAndSplitviews[0],
       adopting: true,
     });
   }
