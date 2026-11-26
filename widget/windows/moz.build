@@ -53,6 +53,7 @@ EXPORTS.mozilla += [
 EXPORTS.mozilla.widget += [
     "CompositorWidgetChild.h",
     "CompositorWidgetParent.h",
+    "GdiBackBuffer.h",
     "InProcessWinCompositorWidget.h",
     "JumpListBuilder.h",
     "nsWindowLoggedMessages.h",
@@ -71,6 +72,7 @@ EXPORTS.mozilla.widget += [
 UNIFIED_SOURCES += [
     "CompositorWidgetChild.cpp",
     "DirectManipulationOwner.cpp",
+    "GdiBackBuffer.cpp",
     "GfxInfo.cpp",
     "IEnumFE.cpp",
     "IMMHandler.cpp",

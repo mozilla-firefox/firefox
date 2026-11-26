@@ -168,7 +168,7 @@ class SharedImage {
 
   already_AddRefed<gfx::DrawTarget> CreateDrawTarget() {
     return gfx::Factory::CreateDrawTargetForData(
-        gfx::BackendType::CAIRO, mPixelData, gfx::IntSize(mWidth, mHeight),
+        gfx::BackendType::SKIA, mPixelData, gfx::IntSize(mWidth, mHeight),
         GetStride(), gfx::SurfaceFormat::B8G8R8A8);
   }
 

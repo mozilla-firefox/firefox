@@ -5,10 +5,10 @@
 #ifndef widget_windows_InProcessWinCompositorWidget_h
 #define widget_windows_InProcessWinCompositorWidget_h
 
+#include "GdiBackBuffer.h"
 #include "WinCompositorWidget.h"
 
 class nsWindow;
-class gfxASurface;
 
 namespace mozilla::widget {
 
@@ -27,12 +27,10 @@ class InProcessWinCompositorWidget final
   bool PreRender(WidgetRenderingContext*) override;
   void PostRender(WidgetRenderingContext*) override;
   already_AddRefed<gfx::DrawTarget> StartRemoteDrawing() override;
-  void EndRemoteDrawing() override;
+  void EndRemoteDrawingInRegion(
+      gfx::DrawTarget* aDrawTarget,
+      const LayoutDeviceIntRegion& aInvalidRegion) override;
   LayoutDeviceIntSize GetClientSize() override;
-  already_AddRefed<gfx::DrawTarget> GetBackBufferDrawTarget(
-      gfx::DrawTarget* aScreenTarget, const gfx::IntRect& aRect,
-      bool* aOutIsCleared) override;
-  already_AddRefed<gfx::SourceSurface> EndBackBufferDrawing() override;
   bool InitCompositor(layers::Compositor* aCompositor) override;
   CompositorWidgetDelegate* AsDelegate() override { return this; }
   bool IsHidden() const override;
@@ -56,9 +54,6 @@ class InProcessWinCompositorWidget final
   void SetRootLayerTreeID(const layers::LayersId& aRootLayerTreeId) override {}
 
  private:
-  HDC GetWindowSurface();
-  void FreeWindowSurface(HDC dc);
-
   nsWindow* mWindow;
 
   HWND mWnd;
@@ -67,11 +62,8 @@ class InProcessWinCompositorWidget final
 
   // Visibility handling.
   mozilla::Atomic<bool, MemoryOrdering::Relaxed> mIsFullyOccluded;
-
-  HDC mCompositeDC;
-
-  // Locked back buffer of BasicCompositor
-  uint8_t* mLockedBackBufferData;
+  GdiBackBuffer mBackBuffer;
+  bool mIsDrawing = false;
 };
 
 }  // namespace mozilla::widget

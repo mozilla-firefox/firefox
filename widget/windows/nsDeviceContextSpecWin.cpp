@@ -28,7 +28,6 @@
 #undef GetForm
 #undef SetForm
 
-#include "gfxWindowsSurface.h"
 #include "mozilla/gfx/Logging.h"
 #include "nsComponentManagerUtils.h"
 #include "nsIFileStreams.h"

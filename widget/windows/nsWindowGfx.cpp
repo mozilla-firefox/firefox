@@ -3,7 +3,7 @@
  * file, You can obtain one at http://mozilla.org/MPL/2.0/. */
 
 /*
- * nsWindowGfx - Painting and aceleration.
+ * nsWindowGfx - Painting and acceleration.
  */
 
 /**************************************************************
@@ -21,6 +21,7 @@
 #include <shellapi.h>
 #include <windows.h>
 
+#include "GdiBackBuffer.h"
 #include "ImageRegion.h"
 #include "InProcessWinCompositorWidget.h"
 #include "WinUtils.h"
@@ -30,10 +31,8 @@
 #include "gfxContext.h"
 #include "gfxDWriteFonts.h"
 #include "gfxEnv.h"
-#include "gfxImageSurface.h"
 #include "gfxUtils.h"
 #include "gfxWindowsPlatform.h"
-#include "gfxWindowsSurface.h"
 #include "mozilla/RefPtr.h"
 #include "mozilla/SVGImageContext.h"
 #include "mozilla/dom/ContentParent.h"
@@ -121,18 +120,25 @@ void nsWindow::ForcePresent() {
 
 bool nsWindow::OnPaint() {
   struct FallbackPaintContext {
-    RefPtr<gfxASurface> mTargetSurface;
+    const GdiBackBuffer& mBackBuffer;
     RefPtr<DrawTarget> mDt;
     gfxContext mGfxContext;
     AutoLayerManagerSetup mSetup;
 
     explicit FallbackPaintContext(nsWindow* aWindow,
-                                  RefPtr<gfxASurface> aTargetSurface,
+                                  const GdiBackBuffer& aBackBuffer,
                                   RefPtr<DrawTarget> aDt)
-        : mTargetSurface(std::move(aTargetSurface)),
+        : mBackBuffer(aBackBuffer),
           mDt(std::move(aDt)),
           mGfxContext(mDt),
           mSetup(aWindow, &mGfxContext) {}
+
+    void Present(HDC aTargetDC, const LayoutDeviceIntRegion& aRegion) {
+      mDt->Flush();
+      for (auto it = aRegion.RectIter(); !it.Done(); it.Next()) {
+        mBackBuffer.BlitTo(aTargetDC, it.Get().ToUnknownRect());
+      }
+    }
   };
 
   gfx::DeviceResetReason resetReason = gfx::DeviceResetReason::OK;
@@ -191,21 +197,24 @@ bool nsWindow::OnPaint() {
     mLastPaintEndTime = TimeStamp::Now();
   });
 
+  GdiBackBuffer backBuffer;
   Maybe<FallbackPaintContext> fallback;
   if (isFallback) {
-    uint32_t flags = isTransparent ? gfxWindowsSurface::FLAG_IS_TRANSPARENT : 0;
-    auto targetSurface = MakeRefPtr<gfxWindowsSurface>(hDC, flags);
     RECT paintRect;
     ::GetClientRect(mWnd, &paintRect);
-    RefPtr<DrawTarget> dt = gfxPlatform::CreateDrawTargetForSurface(
-        targetSurface, IntSize(paintRect.right - paintRect.left,
-                               paintRect.bottom - paintRect.top));
-    if (!dt || !dt->IsValid()) {
-      gfxWarning() << "nsWindow::OnPaint failed in CreateDrawTargetForSurface";
+    const IntSize size(paintRect.right - paintRect.left,
+                       paintRect.bottom - paintRect.top);
+    if (!backBuffer.Ensure(hDC, size)) {
+      gfxWarning() << "nsWindow::OnPaint failed to create a back buffer";
+      return false;
+    }
+    RefPtr<DrawTarget> dt = backBuffer.CreateDrawTarget();
+    if (!dt) {
+      gfxWarning() << "nsWindow::OnPaint failed to create a draw target";
       return false;
     }
 
-    fallback.emplace(this, std::move(targetSurface), std::move(dt));
+    fallback.emplace(this, backBuffer, std::move(dt));
   }
 
   LayoutDeviceIntRegion region = GetRegionToPaint(ps, hDC);
@@ -225,44 +234,31 @@ bool nsWindow::OnPaint() {
       regionToClear.SubOut(mClearedRegion);
     }
     mClearedRegion = std::move(translucentRegion);
+    region.OrWith(regionToClear);
+    if (fallback) {
+      // The fallback back buffer already starts off clear, so no need to do
+      // anything extra.
+      return;
+    }
     auto black = reinterpret_cast<HBRUSH>(::GetStockObject(BLACK_BRUSH));
     // We could use RegionToHRGN, but at least for simple regions (and
     // possibly for complex ones too?) FillRect is faster; see bug 1946365
     // comment 12.
     for (auto it = regionToClear.RectIter(); !it.Done(); it.Next()) {
-      if (fallback) {
-        // Make sure to use the fallback DT if needed, rather than calling
-        // ::FillRect directly. Not doing so could cause flicker, as Windows
-        // doesn't guarantee atomicity even between ::BeginPaint and
-        // ::EndPaint, see bug 1958631.
-        fallback->mDt->ClearRect(Rect(it.Get().ToUnknownRect()));
-      } else {
-        auto rect = WinUtils::ToWinRect(it.Get());
-        ::FillRect(hDC, &rect, black);
-      }
+      auto rect = WinUtils::ToWinRect(it.Get());
+      ::FillRect(hDC, &rect, black);
     }
-    region.OrWith(regionToClear);
   };
-
-  // This is a bit subtle: For fallback windows, we paint directly into the DC,
-  // so we need to clear it before PaintWindow().
-  //
-  // For composited windows, we first need to paint (so that we know the
-  // translucent area, which is computed from the display list), then we clear
-  // it.
-  //
-  // We don't track the transparent region for popups (meaning we always rely on
-  // the whole client area being cleared) so this works out.
-  if (fallback) {
-    ComputeAndClearTranslucentRegion();
-  }
 
   if (auto* listener = GetPaintListener()) {
     listener->PaintWindow(this);
   }
 
-  if (!fallback) {
-    ComputeAndClearTranslucentRegion();
+  // NOTE(emilio): This needs to happen after painting, since the translucent
+  // region is computed from the display list.
+  ComputeAndClearTranslucentRegion();
+  if (fallback) {
+    fallback->Present(hDC, region);
   }
 
   if (knowsCompositor && layerManager && !region.IsEmpty()) {

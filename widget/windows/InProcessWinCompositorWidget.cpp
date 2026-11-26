@@ -43,9 +43,7 @@ InProcessWinCompositorWidget::InProcessWinCompositorWidget(
     const layers::CompositorOptions& aOptions, nsWindow* aWindow)
     : WinCompositorWidget(aInitData, aOptions),
       mWindow(aWindow),
-      mWnd(reinterpret_cast<HWND>(aInitData.hWnd())),
-      mCompositeDC(nullptr),
-      mLockedBackBufferData(nullptr) {
+      mWnd(reinterpret_cast<HWND>(aInitData.hWnd())) {
   MOZ_ASSERT(mWindow);
   MOZ_ASSERT(mWnd && ::IsWindow(mWnd));
 }
@@ -83,84 +81,38 @@ LayoutDeviceIntSize InProcessWinCompositorWidget::GetClientSize() {
 
 already_AddRefed<gfx::DrawTarget>
 InProcessWinCompositorWidget::StartRemoteDrawing() {
-  MOZ_ASSERT(!mCompositeDC);
+  MOZ_ASSERT(!mIsDrawing);
 
-  // Must call this after EnsureTransparentSurface(), since it could update
-  // the DC.
-  HDC dc = GetWindowSurface();
-  if (!dc) {
+  if (!mBackBuffer.Ensure(nullptr, GetClientSize().ToUnknownSize())) {
     return nullptr;
   }
-  uint32_t flags = TransparencyModeIs(TransparencyMode::Opaque)
-                       ? 0
-                       : gfxWindowsSurface::FLAG_IS_TRANSPARENT;
-  auto surf = MakeRefPtr<gfxWindowsSurface>(dc, flags);
-  IntSize size = surf->GetSize();
-  if (size.width <= 0 || size.height <= 0) {
-    if (dc) {
-      FreeWindowSurface(dc);
-    }
+  RefPtr<DrawTarget> dt = mBackBuffer.CreateDrawTarget();
+  if (!dt) {
     return nullptr;
   }
-
-  RefPtr<DrawTarget> dt =
-      mozilla::gfx::Factory::CreateDrawTargetForCairoSurface(
-          surf->CairoSurface(), size);
-  if (dt) {
-    mCompositeDC = dc;
-  } else {
-    FreeWindowSurface(dc);
-  }
-
+  mIsDrawing = true;
   return dt.forget();
 }
 
-void InProcessWinCompositorWidget::EndRemoteDrawing() {
-  MOZ_ASSERT(!mLockedBackBufferData);
-  if (mCompositeDC) {
-    FreeWindowSurface(mCompositeDC);
+void InProcessWinCompositorWidget::EndRemoteDrawingInRegion(
+    gfx::DrawTarget* aDrawTarget, const LayoutDeviceIntRegion& aInvalidRegion) {
+  if (!mIsDrawing) {
+    return;
   }
-  mCompositeDC = nullptr;
-}
+  mIsDrawing = false;
 
-already_AddRefed<gfx::DrawTarget>
-InProcessWinCompositorWidget::GetBackBufferDrawTarget(
-    gfx::DrawTarget* aScreenTarget, const gfx::IntRect& aRect,
-    bool* aOutIsCleared) {
-  MOZ_ASSERT(!mLockedBackBufferData);
-
-  RefPtr<gfx::DrawTarget> target = CompositorWidget::GetBackBufferDrawTarget(
-      aScreenTarget, aRect, aOutIsCleared);
-  if (!target) {
-    return nullptr;
+  HDC windowDC = ::GetDC(mWnd);
+  if (!windowDC) {
+    return;
   }
-
-  MOZ_ASSERT(target->GetBackendType() == BackendType::CAIRO);
-
-  uint8_t* destData;
-  IntSize destSize;
-  int32_t destStride;
-  SurfaceFormat destFormat;
-  if (!target->LockBits(&destData, &destSize, &destStride, &destFormat)) {
-    // LockBits is not supported. Use original DrawTarget.
-    return target.forget();
+  const IntRect bufferRect(IntPoint(), mBackBuffer.Size());
+  for (auto it = aInvalidRegion.RectIter(); !it.Done(); it.Next()) {
+    IntRect rect = it.Get().ToUnknownRect().Intersect(bufferRect);
+    if (!rect.IsEmpty()) {
+      mBackBuffer.BlitTo(windowDC, rect);
+    }
   }
-
-  RefPtr<gfx::DrawTarget> dataTarget = Factory::CreateDrawTargetForData(
-      BackendType::CAIRO, destData, destSize, destStride, destFormat);
-  mLockedBackBufferData = destData;
-
-  return dataTarget.forget();
-}
-
-already_AddRefed<gfx::SourceSurface>
-InProcessWinCompositorWidget::EndBackBufferDrawing() {
-  if (mLockedBackBufferData) {
-    MOZ_ASSERT(mLastBackBuffer);
-    mLastBackBuffer->ReleaseBits(mLockedBackBufferData);
-    mLockedBackBufferData = nullptr;
-  }
-  return CompositorWidget::EndBackBufferDrawing();
+  ::ReleaseDC(mWnd, windowDC);
 }
 
 bool InProcessWinCompositorWidget::InitCompositor(
@@ -185,12 +137,6 @@ void InProcessWinCompositorWidget::NotifyVisibilityUpdated(
 bool InProcessWinCompositorWidget::GetWindowIsFullyOccluded() const {
   bool isFullyOccluded = mIsFullyOccluded;
   return isFullyOccluded;
-}
-
-HDC InProcessWinCompositorWidget::GetWindowSurface() { return ::GetDC(mWnd); }
-
-void InProcessWinCompositorWidget::FreeWindowSurface(HDC dc) {
-  ::ReleaseDC(mWnd, dc);
 }
 
 bool InProcessWinCompositorWidget::IsHidden() const { return ::IsIconic(mWnd); }
