@@ -954,6 +954,18 @@ static bool RecomputePosition(nsIFrame* aFrame) {
     } else {
       MOZ_ASSERT(display->IsRelativelyPositionedStyle(),
                  "Unexpected type of positioning");
+      // Percentage block-axis insets might get treated as auto if the bsize is
+      // indefinite during reflow, but we can't easily know that from here, so
+      // reflow instead.
+      const auto* pos = aFrame->StylePosition();
+      const auto params = AnchorPosOffsetResolutionParams::UseCBFrameSize(
+          AnchorPosResolutionParams::From(aFrame));
+      const WritingMode cbWM = aFrame->GetContainingBlock()->GetWritingMode();
+      for (const auto side : {LogicalSide::BStart, LogicalSide::BEnd}) {
+        if (pos->GetAnchorResolvedInset(side, cbWM, params)->HasPercent()) {
+          return false;
+        }
+      }
       for (nsIFrame* cont = aFrame; cont;
            cont = nsLayoutUtils::GetNextContinuationOrIBSplitSibling(cont)) {
         nsIFrame* cb = cont->GetContainingBlock();
