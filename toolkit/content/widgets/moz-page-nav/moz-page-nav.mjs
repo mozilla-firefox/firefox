@@ -142,7 +142,7 @@ export class MozPageNav extends MozLitElement {
 
   focusPreviousView() {
     let pageNavButtons = this.visiblePageNavButtons;
-    let currentIndex = pageNavButtons.findIndex(b => b.selected);
+    let currentIndex = pageNavButtons.findIndex(b => b.inTabOrder);
     let prev = pageNavButtons[currentIndex - 1];
     if (prev) {
       prev.activate({ focusVisible: true });
@@ -151,7 +151,7 @@ export class MozPageNav extends MozLitElement {
 
   focusNextView() {
     let pageNavButtons = this.visiblePageNavButtons;
-    let currentIndex = pageNavButtons.findIndex(b => b.selected);
+    let currentIndex = pageNavButtons.findIndex(b => b.inTabOrder);
     let next = pageNavButtons[currentIndex + 1];
     if (next) {
       next.activate({ focusVisible: true });
@@ -180,13 +180,14 @@ export class MozPageNav extends MozLitElement {
   }
 
   updateNavButtonsState() {
-    let isViewSelected = false;
+    let visibleButtons = this.visiblePageNavButtons;
+    let isViewSelected = visibleButtons.some(
+      button => button.view == this.currentView
+    );
     for (let button of this.pageNavButtons) {
       button.selected = button.view == this.currentView;
-    }
-    let visibleButtons = this.visiblePageNavButtons;
-    for (let button of visibleButtons) {
-      isViewSelected = isViewSelected || button.selected;
+      button.inTabOrder =
+        button.selected || (!isViewSelected && button == visibleButtons[0]);
     }
     if (
       !isViewSelected &&
@@ -254,6 +255,7 @@ export class MozPageNavButton extends MozLitElement {
     iconSrc: { type: String, reflect: true },
     href: { type: String },
     selected: { type: Boolean },
+    inTabOrder: { type: Boolean, state: true },
     supportPage: { type: String, attribute: "support-page" },
     title: { type: String, mapped: true },
   };
@@ -295,6 +297,13 @@ export class MozPageNavButton extends MozLitElement {
      * @type {string | undefined}
      */
     this.title = undefined;
+
+    /**
+     * Whether or not the button is currently the one in the tab order.
+     *
+     * @type {boolean}
+     */
+    this.inTabOrder = false;
   }
 
   connectedCallback() {
@@ -334,7 +343,7 @@ export class MozPageNavButton extends MozLitElement {
     return html`
       <button
         aria-selected=${this.selected}
-        tabindex=${this.selected ? 0 : -1}
+        tabindex=${this.inTabOrder ? 0 : -1}
         role="tab"
         ?selected=${this.selected}
         title=${ifDefined(this.title)}

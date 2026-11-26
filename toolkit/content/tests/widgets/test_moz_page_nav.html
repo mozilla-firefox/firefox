@@ -712,6 +712,27 @@
           nav.pageNavButtons.every(b => !b.selected),
           "No button is selected when currentView doesn't match any view"
         );
+        is(
+          btn1.buttonEl.tabIndex,
+          0,
+          "First button stays in the tab order when no view is selected"
+        );
+        is(
+          btn2.buttonEl.tabIndex,
+          -1,
+          "Other buttons are not in the tab order"
+        );
+
+        btn1.buttonEl.focus();
+        synthesizeKey("KEY_ArrowDown");
+        await nav.updateComplete;
+        is(
+          nav.currentView,
+          "view-two",
+          "ArrowDown from the first button selects the second one"
+        );
+        nav.currentView = "non-existent-view";
+        await nav.updateComplete;
 
         // Disable allowNoSelection — should auto-select the first button.
         // Needs two awaits: the first render calls activate() which sets
