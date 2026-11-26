@@ -183,6 +183,17 @@ for this test to be accurate. If you ever go back to the event loop (by
 yielding, waiting for an event, etc), style flushes unrelated to your
 code are likely to run, and your test will give you a false positive.
 
+## Avoid `:has()` selectors
+
+A `:has()` selector makes the style of an element depend on its subtree.
+Matching it scales with the size of that subtree, and every mutation inside
+the subtree can invalidate the element's style. This matters most in the
+browser window, where the DOM grows with the number of open tabs. Set an
+attribute or class from script instead, and select on that. The
+[no-has-selector](../code-quality/lint/linters/stylelint-plugin-mozilla/rules/no-has-selector.md)
+stylelint rule flags `:has()`; see the
+{doc}`CSS guidelines </code-quality/coding-style/css_guidelines>` for details.
+
 ## Detecting and avoiding synchronous reflow
 
 This is also sometimes called “sync layout”, "sync layout flushes" or
