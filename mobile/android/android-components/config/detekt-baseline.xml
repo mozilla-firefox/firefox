@@ -250,7 +250,6 @@
     <ID>LongMethod:SitePermissionsDialogFragment.kt$SitePermissionsDialogFragment$@SuppressLint("InflateParams") private fun createContainer(): View</ID>
     <ID>LongMethod:SystemEngineSession.kt$SystemEngineSession$private fun initSettings(webView: WebView, s: WebSettings)</ID>
     <ID>LongMethod:TabCounterView.kt$TabCounterView$private fun createBoxAnimatorSet(animatorSet: AnimatorSet)</ID>
-    <ID>MaterialTextButtonUsage:CFRPopupLayout.kt$import androidx.compose.material3.TextButton</ID>
     <ID>MaterialTextButtonUsage:ImporterDialog.kt$import androidx.compose.material3.TextButton</ID>
     <ID>MaterialTextButtonUsage:PasswordsImporterDialog.kt$import androidx.compose.material3.TextButton</ID>
     <ID>MaterialTypographyUsage:AcornColorGrid.kt$MaterialTheme.typography</ID>

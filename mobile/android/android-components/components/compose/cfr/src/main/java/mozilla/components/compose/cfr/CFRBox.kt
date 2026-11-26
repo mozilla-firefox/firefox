@@ -117,7 +117,7 @@ fun rememberCFRState(
  * A CFR (Contextual Feature Recommendation) container built on Material3's TooltipBox.
  *
  * NOTE: This component is meant for use in 100% compose situations. If you need to do a compose-view interop, for
- * example, if your anchor is a view, consider using [CFRPopupLayout].
+ * example, if your anchor is a view, consider using [CFRPopup].
  *
  * @param positionProvider Controls tooltip placement relative to [anchor].
  * @param cfr The CFR tooltip content, scoped to [CFRScope] so it can use [CFR].
@@ -159,7 +159,7 @@ fun CFRBox(
  * CFR container content with a gradient background, optional title, text, and dismiss button.
  *
  * NOTE: This component is meant for use in 100% compose situations. If you need to do a compose-view interop, for
- * example, if your anchor is a view, consider using [CFRPopupLayout].
+ * example, if your anchor is a view, consider using [CFRPopup].
  *
  * @param modifier Modifier for the tooltip root.
  * @param title Optional title composable shown above [text].
