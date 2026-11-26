@@ -77,4 +77,12 @@
   <string name="mozac_menu_customize_item_hidden">%1$s hidden from menu</string>
   <!-- Announcement (not visible, for screen readers etc.) when the user un-hides a menu item so it is displayed in the menu again. %1$s is the name of the item, for example "Bookmarks". Can also be translated as "%1$s item added to menu". -->
   <string name="mozac_menu_customize_item_shown">%1$s added to menu</string>
+  <!-- Customize menu items screen: Accessibility label (used by screenreaders) for the action of moving one menu item into another section of the menu (i.e. into a menu item that can be expanded and collapsed). %1$s is the name of the new section that the item is moved to, for example "More". Can also be translated as 'Move into “%1$s” section'. -->
+  <string name="mozac_menu_customize_move_into">Move into “%1$s”</string>
+  <!-- Customize menu items screen: Accessibility label (used by screenreaders) for the action of moving a menu item out of its current menu section and into the main menu. %1$s is the name of the section the item is currently in, for example "More". Can also be translated as 'Move out of “%1$s” section'. -->
+  <string name="mozac_menu_customize_move_out_of">Move out of “%1$s”</string>
+  <!-- Announcement (not visible, for screen readers etc.) when the user moves a menu item into another menu section. %1$s is the name of the moved item, for example "Bookmarks". %2$s is the name of the section the item was moved to, for example "More". Can also be translated as '%1$s item moved into “%2$s” section'. -->
+  <string name="mozac_menu_customize_item_moved_into">%1$s moved into “%2$s”</string>
+  <!-- Announcement (not visible, for screen readers etc.) when the user moves a menu item out of the section that contains it. %1$s is the name of the moved item, for example "Bookmarks". %2$s is the name of the section it was moved out of, for example "More". Can also be translated as '%1$s item moved out of “%2$s” section'. -->
+  <string name="mozac_menu_customize_item_moved_out_of">%1$s moved out of “%2$s”</string>
 </resources>

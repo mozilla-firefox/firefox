@@ -235,10 +235,10 @@ class EditMenuItemsAccessibilityTest {
     }
 
     @Test
-    fun `THEN an item which is not expandable has only the custom actions moving and hiding it`() {
+    fun `THEN an item which is not expandable has only the custom actions moving, moving into the expandable item and hiding it`() {
         setContent(CustomizableMenuItemsState(items = listOf(item("Shown"), expandable("More", item("Sub")))))
 
-        assertEquals(listOf(moveDown, hide), actionLabelsOf("Shown"))
+        assertEquals(listOf(moveDown, moveInto("More"), hide), actionLabelsOf("Shown"))
     }
 
     @Test
@@ -359,7 +359,7 @@ class EditMenuItemsAccessibilityTest {
     }
 
     @Test
-    fun `GIVEN a sub-item THEN it can only be moved inside the expanded item, or hidden`() {
+    fun `GIVEN a sub-item THEN it can only be moved inside the expanded item, moved out of it, or hidden`() {
         setContent(
             CustomizableMenuItemsState(
                 items = listOf(item("First"), expandable("More", item("Sub 1"), item("Sub 2"))),
@@ -367,8 +367,8 @@ class EditMenuItemsAccessibilityTest {
             )
         )
 
-        assertEquals(listOf(moveDown, hide), actionLabelsOf("Sub 1"))
-        assertEquals(listOf(moveUp, hide), actionLabelsOf("Sub 2"))
+        assertEquals(listOf(moveDown, moveOutOf("More"), hide), actionLabelsOf("Sub 1"))
+        assertEquals(listOf(moveUp, moveOutOf("More"), hide), actionLabelsOf("Sub 2"))
     }
 
     @Test
@@ -794,6 +794,226 @@ class EditMenuItemsAccessibilityTest {
     }
 
     @Test
+    fun `GIVEN a collapsed expandable item THEN an item at the top level can be moved into it`() {
+        val state =
+            CustomizableMenuItemsState(items = listOf(item("First"), expandable("More", item("Sub")), item("Last")))
+        setContent(state)
+
+        assertEquals(listOf(moveDown, moveInto("More"), hide), actionLabelsOf("First"))
+        assertEquals(listOf(moveUp, moveInto("More"), hide), actionLabelsOf("Last"))
+    }
+
+    @Test
+    fun `GIVEN an expanded expandable item THEN an item at the top level can be moved into it`() {
+        setContent(
+            CustomizableMenuItemsState(
+                items = listOf(item("First"), expandable("More", item("Sub")), item("Last")),
+                expandedItemIds = setOf("More"),
+            )
+        )
+
+        assertEquals(listOf(moveDown, moveInto("More"), hide), actionLabelsOf("First"))
+        assertEquals(listOf(moveUp, moveInto("More"), hide), actionLabelsOf("Last"))
+    }
+
+    @Test
+    fun `THEN the actions moving an item into or out of an expandable item name it as it is read on screen`() {
+        setContent(
+            CustomizableMenuItemsState(
+                items = listOf(item("First"), expandable("Overflow", item("Sub")).withContentDescription("Other menu")),
+                expandedItemIds = setOf("Overflow"),
+            )
+        )
+
+        assertEquals(listOf(moveDown, moveInto("Other menu"), hide), actionLabelsOf("First"))
+        assertEquals(listOf(moveOutOf("Other menu"), hide), actionLabelsOf("Sub"))
+        assertEquals("Move into “Other menu”", moveInto("Other menu"))
+        assertEquals("Move out of “Other menu”", moveOutOf("Other menu"))
+    }
+
+    @Test
+    fun `GIVEN an item which cannot be inside the expandable item THEN it cannot be moved into it`() {
+        val topLevelOnly = item("Top level only").copy(isTopLevelOnly = true)
+        setContent(
+            CustomizableMenuItemsState(items = listOf(item("First"), topLevelOnly, expandable("More", item("Sub"))))
+        )
+
+        assertEquals(listOf(moveUp, moveDown, hide), actionLabelsOf("Top level only"))
+        assertEquals(listOf(expand, moveUp, hide), actionLabelsOf("More"))
+    }
+
+    @Test
+    fun `GIVEN no shown expandable item THEN no item can be moved into it`() {
+        setContent(
+            CustomizableMenuItemsState(
+                items = listOf(item("First"), item("Second")),
+                hiddenItems = listOf(expandable("More", item("Sub"), state = MenuItemState.DISABLED)),
+            )
+        )
+
+        assertEquals(listOf(moveDown, hide), actionLabelsOf("First"))
+        assertEquals(listOf(expand, unhide), actionLabelsOf("More", isHidden = true))
+    }
+
+    @Test
+    fun `WHEN an item is moved into a collapsed expandable item THEN it is its first sub-item and the item stays collapsed`() {
+        val actions = mutableListOf<CustomizableMenuItemsAction>()
+        val store =
+            setContent(
+                CustomizableMenuItemsState(
+                    items = listOf(item("First"), item("Second"), expandable("More", item("Sub 1"), item("Sub 2")))
+                ),
+                listOf(capturing(actions)),
+            )
+
+        performAction("First", moveInto("More"))
+
+        assertEquals(listOf("Second", "More"), store.state.items.map { it.id })
+        assertEquals(listOf("First", "Sub 1", "Sub 2"), store.state.items.last().subItems.map { it.id })
+        assertEquals(emptySet<String>(), store.state.expandedItemIds)
+        assertEquals(
+            listOf(ItemsChanged(items = store.state.items, hiddenItems = emptyList())),
+            actions.filter { it is ItemsChanged || it is CustomizableMenuItemsAction.ExpansionToggled },
+        )
+        announcementNode().assert(hasAnnouncement(R.string.mozac_menu_customize_item_moved_into, "First", "More"))
+        rowNode("First", isHidden = false).assertDoesNotExist()
+        composeTestRule.onNodeWithContentDescription(shownItem("More", 2, 2)).assertExists()
+
+        performAction("More", expand)
+
+        composeTestRule.onNodeWithContentDescription(shownItem("First", 3, 5)).assertIsDisplayed()
+        composeTestRule.onNodeWithContentDescription(shownItem("Sub 1", 4, 5)).assertExists()
+        assertEquals(listOf(moveDown, moveOutOf("More"), hide), actionLabelsOf("First"))
+    }
+
+    @Test
+    fun `WHEN an item is moved into an expanded expandable item THEN it is its first sub-item and the expandable item stays expanded`() {
+        val actions = mutableListOf<CustomizableMenuItemsAction>()
+        val store =
+            setContent(
+                CustomizableMenuItemsState(
+                    items = listOf(expandable("More", item("Sub")), item("Last")),
+                    expandedItemIds = setOf("More"),
+                ),
+                listOf(capturing(actions)),
+            )
+
+        performAction("Last", moveInto("More"))
+
+        assertEquals(listOf("Last", "Sub"), store.state.items.single().subItems.map { it.id })
+        assertEquals(setOf("More"), store.state.expandedItemIds)
+        assertTrue(actions.none { it is CustomizableMenuItemsAction.ExpansionToggled })
+        announcementNode().assert(hasAnnouncement(R.string.mozac_menu_customize_item_moved_into, "Last", "More"))
+        composeTestRule.onNodeWithContentDescription(shownItem("Last", 2, 3)).assertIsDisplayed()
+    }
+
+    @Test
+    fun `GIVEN the expandable item is not the last one WHEN a sub-item is moved out of it THEN it is the last one and announced`() {
+        val actions = mutableListOf<CustomizableMenuItemsAction>()
+        val store =
+            setContent(
+                CustomizableMenuItemsState(
+                    items = listOf(item("First"), expandable("More", item("Sub 1"), item("Sub 2")), item("Last")),
+                    expandedItemIds = setOf("More"),
+                ),
+                listOf(capturing(actions)),
+            )
+
+        performAction("Sub 2", moveOutOf("More"))
+
+        assertEquals(listOf("First", "More", "Last", "Sub 2"), store.state.items.map { it.id })
+        assertEquals(listOf("Sub 1"), store.state.items[1].subItems.map { it.id })
+        assertEquals(setOf("More"), store.state.expandedItemIds)
+        assertEquals(
+            ItemsChanged(items = store.state.items, hiddenItems = emptyList()),
+            actions.filterIsInstance<ItemsChanged>().single(),
+        )
+        assertTrue(actions.none { it is CustomizableMenuItemsAction.ExpansionToggled })
+        announcementNode().assert(hasAnnouncement(R.string.mozac_menu_customize_item_moved_out_of, "Sub 2", "More"))
+        composeTestRule.onNodeWithContentDescription(shownItem("Sub 2", 5, 5)).assertIsDisplayed()
+        assertEquals(listOf(moveUp, moveInto("More"), hide), actionLabelsOf("Sub 2"))
+    }
+
+    @Test
+    fun `GIVEN two shown expandable items WHEN a sub-item of the second one is moved out THEN it is just above it and named`() {
+        val actions = mutableListOf<CustomizableMenuItemsAction>()
+        val store =
+            setContent(
+                CustomizableMenuItemsState(
+                    items =
+                        listOf(expandable("More", item("Sub 1")), expandable("Other", item("Sub 2"), item("Sub 3"))),
+                    expandedItemIds = setOf("Other"),
+                ),
+                listOf(capturing(actions)),
+            )
+
+        assertEquals(listOf(moveUp, moveOutOf("Other"), hide), actionLabelsOf("Sub 3"))
+        performAction("Sub 3", moveOutOf("Other"))
+
+        assertEquals(listOf("More", "Sub 3", "Other"), store.state.items.map { it.id })
+        assertEquals(listOf("Sub 2"), store.state.items.last().subItems.map { it.id })
+        announcementNode().assert(hasAnnouncement(R.string.mozac_menu_customize_item_moved_out_of, "Sub 3", "Other"))
+    }
+
+    @Test
+    fun `GIVEN more items than fit on the screen WHEN an item is moved into an expanded expandable item THEN it is in view`() {
+        setContent(
+            CustomizableMenuItemsState(
+                items = (1..20).map { item("Item $it") } + expandable("More", item("Sub")),
+                expandedItemIds = setOf("More"),
+            )
+        )
+
+        performAction("Item 2", moveInto("More"))
+
+        rowNode("Item 2", isHidden = false).assertIsDisplayed()
+    }
+
+    @Test
+    fun `GIVEN an item is being dragged WHEN another item is moved into or out of the expandable item THEN nothing changes`() {
+        val actions = mutableListOf<CustomizableMenuItemsAction>()
+        val store =
+            setContent(
+                CustomizableMenuItemsState(
+                    items = listOf(item("First"), item("Second"), expandable("More", item("Sub")))
+                ),
+                listOf(capturing(actions)),
+            )
+
+        startDragging("First")
+        performAction("Second", moveInto("More"))
+
+        assertEquals(listOf("First", "Second", "More"), store.state.items.map { it.id })
+        assertTrue(store.state.expandedItemIds.isEmpty())
+        assertTrue(actions.none { it is ItemsChanged || it is CustomizableMenuItemsAction.ExpansionToggled })
+        announcementNode().assert(SemanticsMatcher.keyNotDefined(SemanticsProperties.ContentDescription))
+    }
+
+    @Test
+    fun `WHEN the move into action of an item fetched before the items changed is done THEN nothing changes`() {
+        val actions = mutableListOf<CustomizableMenuItemsAction>()
+        val store =
+            setContent(
+                CustomizableMenuItemsState(
+                    items = listOf(item("First"), item("Second"), expandable("More", item("Sub")))
+                ),
+                listOf(capturing(actions)),
+            )
+        val moveFirstDown = customAction("First", moveDown)
+        val moveSecondInto = customAction("Second", moveInto("More"))
+
+        composeTestRule.runOnIdle {
+            moveFirstDown.action()
+            moveSecondInto.action()
+        }
+        composeTestRule.waitForIdle()
+
+        assertEquals(listOf("Second", "First", "More"), store.state.items.map { it.id })
+        assertTrue(store.state.expandedItemIds.isEmpty())
+        assertTrue(actions.none { it is CustomizableMenuItemsAction.ExpansionToggled })
+    }
+
+    @Test
     fun `GIVEN a collapsed expandable item THEN it is read as a collapsed button and activating it expands it`() {
         val store =
             setContent(CustomizableMenuItemsState(items = listOf(item("Shown"), expandable("More", item("Sub")))))
@@ -863,6 +1083,10 @@ class EditMenuItemsAccessibilityTest {
             SemanticsProperties.ContentDescription,
             listOf(testContext.getString(stringRes, *args)),
         )
+
+    private fun moveInto(name: String) = testContext.getString(R.string.mozac_menu_customize_move_into, name)
+
+    private fun moveOutOf(name: String) = testContext.getString(R.string.mozac_menu_customize_move_out_of, name)
 
     private fun shownItem(name: String, position: Int, count: Int) =
         testContext.getString(R.string.mozac_menu_customize_shown_item, name, position, count)
@@ -946,6 +1170,9 @@ class EditMenuItemsAccessibilityTest {
 
     private fun CustomizableMenuItem.withState(state: MenuItemState) =
         copy(item = (item as StandardMenuItem).copy(state = state))
+
+    private fun CustomizableMenuItem.withContentDescription(description: String) =
+        copy(item = (item as ExpandableMenuItem).copy(contentDescription = Text.String(description)))
 
     private fun expandable(
         title: String,

@@ -134,6 +134,8 @@ internal data class EditMenuItemAction(
     enum class Kind {
         MOVE_UP,
         MOVE_DOWN,
+        MOVE_INTO,
+        MOVE_OUT_OF,
         HIDE,
         UNHIDE,
     }
@@ -146,6 +148,7 @@ internal data class EditMenuItemAction(
  * @property hidden The items the user removed from the menu.
  * @property expandedIds Ids of the expandable items to show expanded.
  */
+@Suppress("TooManyFunctions")
 internal data class CustomizeMenuItems(
     val shown: List<CustomizableMenuItem>,
     val hidden: List<CustomizableMenuItem>,
@@ -162,6 +165,9 @@ internal data class CustomizeMenuItems(
      * the sub-items of collapsed items.
      */
     val hiddenRows: List<EditMenuItemsRow> = hidden.flatMap { it.rows(isHidden = true) }
+
+    /** The first shown item expanding to others, the one the other items are moved into. */
+    val firstShownExpandable: CustomizableMenuItem? = shown.firstOrNull { it.item is ExpandableMenuItem }
 
     override val hiddenKeys: List<Any> = hiddenRows.map { it.key }
 
@@ -239,13 +245,36 @@ internal data class CustomizeMenuItems(
     }
 
     /**
-     * Move the hidden item with [key] to the shown items, after the last shown item which is not expandable, so last
-     * but for an expandable item which is last, or `null` if the item is not hidden or cannot be dragged. The sub-item
-     * of a hidden expandable item leaves it, which stays hidden.
+     * Move the hidden item with [key] to the shown items, after the last shown item which is not the first shown
+     * expandable one, so last but for that item if it is last, or `null` if the item is not hidden or cannot be
+     * dragged. The sub-item of a hidden expandable item leaves it, which stays hidden.
      */
     fun moveToShown(key: Any): CustomizeMenuItems? {
         val row = hiddenRows.firstOrNull { it.key == key } as? EditMenuItemsRow.Item ?: return null
-        return if (row.isDraggable) moveTo(key, afterLastNonExpandable) else null
+        return if (row.isDraggable) moveTo(key, endOfTopLevel(firstShownExpandable?.id)) else null
+    }
+
+    /**
+     * Move the shown item with [key] to the top of the sub-items of the shown expandable item, which stays collapsed or
+     * expanded, or `null` if the item is not shown, is not at the top level, is expandable or
+     * [CustomizableMenuItem.isTopLevelOnly], or there is no shown expandable item. The expandable item moved into is
+     * the first shown one.
+     */
+    fun moveIntoExpandable(key: Any): CustomizeMenuItems? {
+        val row = shownRows.firstOrNull { it.key == key } as? EditMenuItemsRow.Item ?: return null
+        if (row.parentId != null || !row.item.canBeSubItem) return null
+        val expandable = firstShownExpandable ?: return null
+        return moveTo(key, Placement(Container.SubItems(expandable.id), nextToId = null, placeAfter = false))
+    }
+
+    /**
+     * Move the shown sub-item with [key] out of the expandable item it is in, after the last shown item which is not
+     * that one, so last but for that item if it is last, or `null` if the item is not a shown sub-item.
+     */
+    fun moveOutOfExpandable(key: Any): CustomizeMenuItems? {
+        val row = shownRows.firstOrNull { it.key == key } as? EditMenuItemsRow.Item ?: return null
+        val parentId = row.parentId ?: return null
+        return moveTo(key, endOfTopLevel(parentId))
     }
 
     /**
@@ -257,6 +286,8 @@ internal data class CustomizeMenuItems(
         listOfNotNull(
                 moveUp(key)?.let { EditMenuItemAction(EditMenuItemAction.Kind.MOVE_UP, it) },
                 moveDown(key)?.let { EditMenuItemAction(EditMenuItemAction.Kind.MOVE_DOWN, it) },
+                moveIntoExpandable(key)?.let { EditMenuItemAction(EditMenuItemAction.Kind.MOVE_INTO, it) },
+                moveOutOfExpandable(key)?.let { EditMenuItemAction(EditMenuItemAction.Kind.MOVE_OUT_OF, it) },
                 moveToHidden(key)?.let { EditMenuItemAction(EditMenuItemAction.Kind.HIDE, it) },
                 moveToShown(key)?.let { EditMenuItemAction(EditMenuItemAction.Kind.UNHIDE, it) },
             )
@@ -279,12 +310,10 @@ internal data class CustomizeMenuItems(
         return if (hiddenIndex == -1) null else hiddenTitleIndex + 1 + hiddenIndex
     }
 
-    private val afterLastNonExpandable: Placement
-        get() {
-            val last = shown.lastOrNull { it.item != null && it.item !is ExpandableMenuItem }
-            if (last != null) return Placement(Container.Top, last.id, placeAfter = true)
-            return Placement(Container.Top, shown.firstOrNull { it.item is ExpandableMenuItem }?.id, placeAfter = false)
-        }
+    private fun endOfTopLevel(expandableId: String?): Placement {
+        val last = shown.lastOrNull { it.item != null && it.id != expandableId }
+        return Placement(Container.Top, last?.id ?: expandableId, placeAfter = last != null)
+    }
 
     private fun moveWithinList(key: Any, offset: Int): CustomizeMenuItems? {
         val row = shownRows.firstOrNull { it.key == key } as? EditMenuItemsRow.Item ?: return null
@@ -445,6 +474,9 @@ private fun List<CustomizableMenuItem>.indexFor(placement: Placement): Int? =
                 .takeIf { it != -1 }
                 ?.let { if (placement.placeAfter) it + 1 else it }
     }
+
+private val CustomizableMenuItem.canBeSubItem: Boolean
+    get() = item !is ExpandableMenuItem && !isTopLevelOnly
 
 private val CustomizableMenuItem.isVisible: Boolean
     get() = if (item is ExpandableMenuItem) hasShownSubItems else item != null

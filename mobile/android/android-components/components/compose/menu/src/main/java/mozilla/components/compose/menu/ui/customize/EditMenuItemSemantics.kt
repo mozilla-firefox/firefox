@@ -78,8 +78,10 @@ private fun moveActions(
     row: EditMenuItemsRow.Item,
     name: String,
     actions: EditMenuItemsActions,
-): List<CustomAccessibilityAction> =
-    actions.items.actionsOf(row.key).map { action ->
+): List<CustomAccessibilityAction> {
+    val moveIntoName = firstExpandableName(actions)
+    val moveOutOfName = parentName(row, actions)
+    return actions.items.actionsOf(row.key).map { action ->
         val label: String
         val announcement: String
         when (action.kind) {
@@ -90,6 +92,14 @@ private fun moveActions(
             EditMenuItemAction.Kind.MOVE_DOWN -> {
                 label = stringResource(R.string.mozac_menu_customize_move_down)
                 announcement = movedAnnouncement(row, name, action, actions)
+            }
+            EditMenuItemAction.Kind.MOVE_INTO -> {
+                label = stringResource(R.string.mozac_menu_customize_move_into, moveIntoName)
+                announcement = stringResource(R.string.mozac_menu_customize_item_moved_into, name, moveIntoName)
+            }
+            EditMenuItemAction.Kind.MOVE_OUT_OF -> {
+                label = stringResource(R.string.mozac_menu_customize_move_out_of, moveOutOfName)
+                announcement = stringResource(R.string.mozac_menu_customize_item_moved_out_of, name, moveOutOfName)
             }
             EditMenuItemAction.Kind.HIDE -> {
                 label = stringResource(R.string.mozac_menu_customize_hide_item)
@@ -109,6 +119,11 @@ private fun moveActions(
             true
         }
     }
+}
+
+@Composable
+private fun firstExpandableName(actions: EditMenuItemsActions): String =
+    actions.items.firstShownExpandable?.item?.a11yName().orEmpty()
 
 @Composable
 private fun parentName(row: EditMenuItemsRow.Item, actions: EditMenuItemsActions): String =
