@@ -121,6 +121,7 @@ data class FakeListLayoutInfo(
     override val viewportSize: IntSize = IntSize(10, 10),
     override val mainAxisItemSpacing: Int = 10,
     override val beforeContentPadding: Int = 10,
+    override val afterContentPadding: Int = 0,
 ) : LazyListLayoutInfo
 
 /**

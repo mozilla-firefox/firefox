@@ -66,7 +66,8 @@ import kotlinx.coroutines.launch
  *   onto.
  * @param scrollZoneHeight Height of the areas at the start and at the end of the list in which the center of a dragged
  *   item scrolls it, once the item went past the edge of the list there. `null` for a third of the first visible item
- *   other than the dragged one, whether the dragged item went past the edge or not.
+ *   other than the dragged one, whether the dragged item went past the edge or not. With a height, an item dragged past
+ *   the end also scrolls the list to its end, content padding included, unless the last item is ignored.
  * @param interceptInteractionMode Called with the dragged item, the interaction the list found for it and the layout it
  *   was found in, as adjusted by [targetingLayoutInfo], whenever the item is dragged. Returns the interaction to use
  *   instead, for example to retarget it or to reject it with [InteractionMode.List.None]. The interaction it returns is
@@ -222,7 +223,8 @@ interface ListInteractionState {
  *   onto.
  * @param scrollZoneHeight Height in pixels of the areas at the start and at the end of the list in which the center of
  *   a dragged item scrolls it, once the item went past the edge of the list there. `null` for a third of the first
- *   visible item other than the dragged one, whether the dragged item went past the edge or not.
+ *   visible item other than the dragged one, whether the dragged item went past the edge or not. With a height, an item
+ *   dragged past the end also scrolls the list to its end, content padding included, unless the last item is ignored.
  * @param interceptInteractionMode Called with the dragged item, the interaction the list found for it and the layout it
  *   was found in, as adjusted by [targetingLayoutInfo], whenever the item is dragged. Returns the interaction to use
  *   instead. The list scrolls only for the interaction it found.
@@ -634,6 +636,7 @@ private fun getScrollCandidates(
     draggedItemOffset: ListItemOffset,
     scrollZoneHeight: Float?,
     layoutInfo: LazyListLayoutInfo,
+    ignoredItems: Set<Any>,
 ): List<ListInteractionCandidate> {
     val visibleItems = layoutInfo.visibleItemsInfo
     val firstVisible = visibleItems.firstOrNull() ?: return emptyList()
@@ -668,7 +671,11 @@ private fun getScrollCandidates(
     }
     // Scroll down can only be a candidate if we are not at the bottom of the view
     val lastVisible = layoutInfo.visibleItemsInfo.lastOrNull() ?: return candidates
-    if (hasItemsAfterLastVisible(layoutInfo) && (overscroll == null || overscroll > 0f)) {
+    val hasScrollZoneHeight = scrollZoneHeight != null
+    if (
+        hasMoreToScrollDown(layoutInfo, lastVisible, ignoredItems, hasScrollZoneHeight) &&
+            (overscroll == null || overscroll > 0f)
+    ) {
         val scrollDownRect =
             Rect(
                 offset = Offset(0f, layoutInfo.viewportSize.height - scrollRectSize.height),
@@ -687,9 +694,16 @@ private fun getScrollCandidates(
     return candidates
 }
 
-private fun hasItemsAfterLastVisible(layoutInfo: LazyListLayoutInfo): Boolean {
-    val lastVisibleItemIndex = layoutInfo.visibleItemsInfo.lastOrNull()?.index ?: 0
-    return lastVisibleItemIndex < layoutInfo.totalItemsCount - 1
+private fun hasMoreToScrollDown(
+    layoutInfo: LazyListLayoutInfo,
+    lastVisible: LazyListItemInfo,
+    ignoredItems: Set<Any>,
+    hasScrollZoneHeight: Boolean,
+): Boolean {
+    if (lastVisible.index < layoutInfo.totalItemsCount - 1) return true
+    return hasScrollZoneHeight &&
+        lastVisible.key !in ignoredItems &&
+        lastVisible.endOffset > layoutInfo.viewportEndOffset - layoutInfo.afterContentPadding
 }
 
 internal fun gatherCandidates(
@@ -708,6 +722,7 @@ internal fun gatherCandidates(
                 draggedItemOffset = draggedItemOffset,
                 scrollZoneHeight = scrollZoneHeight,
                 layoutInfo = layoutInfo,
+                ignoredItems = ignoredItems,
             )
     )
     for (itemCandidate in layoutInfo.visibleItemsInfo) {

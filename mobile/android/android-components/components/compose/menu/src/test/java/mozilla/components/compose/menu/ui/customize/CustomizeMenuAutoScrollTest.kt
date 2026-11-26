@@ -4,14 +4,11 @@
 
 package mozilla.components.compose.menu.ui.customize
 
-import androidx.compose.ui.geometry.Offset
-import androidx.compose.ui.semantics.SemanticsProperties
-import androidx.compose.ui.test.SemanticsMatcher
 import androidx.compose.ui.test.getUnclippedBoundsInRoot
 import androidx.compose.ui.test.junit4.v2.createComposeRule
 import androidx.compose.ui.test.onNodeWithText
 import androidx.compose.ui.test.onRoot
-import androidx.compose.ui.test.performTouchInput
+import androidx.compose.ui.unit.dp
 import androidx.test.ext.junit.runners.AndroidJUnit4
 import mozilla.components.compose.base.text.Text
 import mozilla.components.compose.base.theme.AcornTheme
@@ -52,46 +49,55 @@ class CustomizeMenuAutoScrollTest {
                     )
             )
         composeTestRule.setContent { AcornTheme { CustomizeMenuContent(store = store) } }
-        val from = sectionText("Shown 1").fetchSemanticsNode().boundsInRoot.center
-        val bottom = composeTestRule.onRoot().fetchSemanticsNode().boundsInRoot.bottom
-        composeTestRule.onRoot().performTouchInput {
-            down(from)
-            advanceEventTime(viewConfiguration.longPressTimeoutMillis * 2)
-            // Send the delay with a stationary move, an empty batch would drop it.
-            move()
-        }
-        composeTestRule.waitForIdle()
-        composeTestRule.mainClock.autoAdvance = false
-
-        val step = (Offset(from.x, bottom - 5f) - from) / 20f
-        repeat(20) {
-            composeTestRule.onRoot().performTouchInput { moveBy(step) }
-            composeTestRule.mainClock.advanceTimeByFrame()
-        }
+        pickUpSectionAndMoveToBottom("Shown 1")
         // Each move scrolls the list as long as it would.
-        holdFor(moves = 60)
-        val stoppedAt = scrollRange().value()
-        holdFor(moves = 20)
+        composeTestRule.holdFor(moves = 60)
+        val stoppedAt = composeTestRule.scrollRange().value()
+        composeTestRule.holdFor(moves = 20)
 
         assertTrue(stoppedAt > 0f)
-        assertEquals(stoppedAt, scrollRange().value())
+        assertEquals(stoppedAt, composeTestRule.scrollRange().value())
         // Not scrolled to the end, where the reset button would be fully shown.
         val resetButtonBottom = composeTestRule.onNodeWithText(resetToDefault).getUnclippedBoundsInRoot().bottom
         assertTrue(resetButtonBottom > composeTestRule.onRoot().getUnclippedBoundsInRoot().bottom)
     }
 
-    private fun holdFor(moves: Int) {
-        repeat(moves) {
-            composeTestRule.onRoot().performTouchInput { moveBy(Offset(0f, 0.5f)) }
-            composeTestRule.mainClock.advanceTimeByFrame()
-        }
+    @Test
+    fun `GIVEN a menu not customized yet AND a screen too short to show its hidden section WHEN a shown section is held at the bottom of the screen THEN the list scrolls until the hidden section is shown`() {
+        val hidden = row("Hidden 0")
+        val store =
+            CustomizableMenuStore(
+                initialState =
+                    CustomizableMenuState(
+                        menuGroups = List(6) { row("Shown $it") } + hidden,
+                        hiddenGroupIds = setOf(hidden.id),
+                        isCustomized = false,
+                    )
+            )
+        composeTestRule.setContent { AcornTheme { CustomizeMenuContent(store = store) } }
+        val rootBottom = composeTestRule.onRoot().getUnclippedBoundsInRoot().bottom
+        assertTrue(composeTestRule.scrollRange().maxValue() > composeTestRule.scrollRange().value())
+        pickUpSectionAndMoveToBottom("Shown 1", distanceFromBottom = 10f)
+
+        composeTestRule.holdStill(moves = 100)
+        val stoppedAt = composeTestRule.scrollRange().value()
+        composeTestRule.holdStill(moves = 20)
+
+        assertTrue(stoppedAt > 0f)
+        assertEquals(stoppedAt, composeTestRule.scrollRange().value())
+        assertEquals(composeTestRule.scrollRange().maxValue(), composeTestRule.scrollRange().value())
+        val hiddenBounds = sectionText("Hidden 0").getUnclippedBoundsInRoot()
+        assertTrue(hiddenBounds.top >= 0.dp)
+        assertTrue(hiddenBounds.bottom <= rootBottom)
     }
 
-    private fun scrollRange() =
-        composeTestRule
-            .onNode(SemanticsMatcher.keyIsDefined(SemanticsProperties.VerticalScrollAxisRange))
-            .fetchSemanticsNode()
-            .config[SemanticsProperties.VerticalScrollAxisRange]
+    /** Hold the section with [title] and move it in steps to [distanceFromBottom] above the bottom of the screen. */
+    private fun pickUpSectionAndMoveToBottom(title: String, distanceFromBottom: Float = 5f) {
+        composeTestRule.pickUpAndMoveToBottom(
+            from = sectionText(title).fetchSemanticsNode().boundsInRoot.center,
+            distanceFromBottom = distanceFromBottom,
+        )
+    }
 
     private fun row(title: String) =
         MenuItemsGroup.Row(

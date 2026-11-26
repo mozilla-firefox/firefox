@@ -262,6 +262,92 @@ class InteractableListTest {
     }
 
     @Test
+    fun `GIVEN a scroll zone height AND the last item is partly below the end of the list AND the dragged item went past the end WHEN gatherCandidates is called THEN bottom Scroll candidate is created`() {
+        val candidates = scrollCandidates(draggedItemPastTheEnd(), scrollZoneHeight = 30f, lastItemSize = 14)
+
+        assertEquals(1, candidates.count { it.type is InteractionType.Scroll })
+    }
+
+    @Test
+    fun `GIVEN a scroll zone height AND the last item is fully shown AND the dragged item went past the end WHEN gatherCandidates is called THEN no Scroll candidate is created`() {
+        val candidates = scrollCandidates(draggedItemPastTheEnd(), scrollZoneHeight = 30f, lastItemSize = 10)
+
+        assertEquals(0, candidates.count { it.type is InteractionType.Scroll })
+    }
+
+    @Test
+    fun `GIVEN a scroll zone height AND the last item is partly below the end of the list but is ignored WHEN gatherCandidates is called THEN no Scroll candidate is created`() {
+        val candidates =
+            scrollCandidates(
+                draggedItemPastTheEnd(),
+                scrollZoneHeight = 30f,
+                lastItemSize = 14,
+                ignoredItems = defaultIgnoredItems + TabKeys.TAB_BETA,
+            )
+
+        assertEquals(0, candidates.count { it.type is InteractionType.Scroll })
+    }
+
+    @Test
+    fun `GIVEN a scroll zone height AND the last item ends inside the padding after the content AND the dragged item went past the end WHEN gatherCandidates is called THEN bottom Scroll candidate is created`() {
+        val candidates =
+            scrollCandidates(
+                draggedItemPastTheEnd(),
+                scrollZoneHeight = 30f,
+                lastItemSize = 10,
+                afterContentPadding = 4,
+            )
+
+        assertEquals(1, candidates.count { it.type is InteractionType.Scroll })
+    }
+
+    @Test
+    fun `GIVEN a scroll zone height AND the last item ends exactly where the padding after the content starts AND the dragged item went past the end WHEN gatherCandidates is called THEN no Scroll candidate is created`() {
+        val candidates =
+            scrollCandidates(
+                draggedItemPastTheEnd(),
+                scrollZoneHeight = 30f,
+                lastItemSize = 6,
+                afterContentPadding = 4,
+            )
+
+        assertEquals(0, candidates.count { it.type is InteractionType.Scroll })
+    }
+
+    @Test
+    fun `GIVEN a scroll zone height AND the last item starts after the start of the list AND ends past the end of the list AND the dragged item went past the end WHEN gatherCandidates is called THEN bottom Scroll candidate is created`() {
+        val candidates =
+            scrollCandidates(
+                draggedItemPastTheEnd(),
+                scrollZoneHeight = 30f,
+                lastItemSize = 6,
+                lastItemOffset = 6,
+            )
+
+        assertEquals(1, candidates.count { it.type is InteractionType.Scroll })
+    }
+
+    @Test
+    fun `GIVEN no scroll zone height AND the last item is partly below the end of the list WHEN gatherCandidates is called THEN no Scroll candidate is created`() {
+        val candidates = scrollCandidates(draggedItemPastTheEnd(), scrollZoneHeight = null, lastItemSize = 14)
+
+        assertEquals(0, candidates.count { it.type is InteractionType.Scroll })
+    }
+
+    @Test
+    fun `GIVEN a scroll zone height AND the last item is partly below the end of the list but fully shown in the adjusted layout WHEN gatherCandidates is called THEN no Scroll candidate is created`() {
+        val candidates =
+            scrollCandidates(
+                draggedItemPastTheEnd(),
+                scrollZoneHeight = 30f,
+                lastItemSize = 14,
+                adjustedLastItemSize = 10,
+            )
+
+        assertEquals(0, candidates.count { it.type is InteractionType.Scroll })
+    }
+
+    @Test
     fun `GIVEN the last visible item is not the last in the list AND dragged item is at bottom of viewport WHEN gatherCandidates is called THEN bottom Scroll candidate is created`() {
         val listState =
             mockListState(
@@ -1022,19 +1108,46 @@ class InteractableListTest {
     /**
      * The candidates for [draggedItem] in a viewport of 10, where the first visible item is not the first of the list.
      *
-     * @param totalItems Number of items in the list, only more than 3 allows a bottom Scroll candidate.
+     * @param totalItems Number of items in the list, only more than 3 allows a bottom Scroll candidate because of items
+     *   after the last visible one.
+     * @param lastItemSize Size of the last visible item.
+     * @param lastItemOffset Offset of the last visible item, by default the start of the viewport.
+     * @param afterContentPadding Padding after the content, within the viewport.
+     * @param ignoredItems Keys of the items that cannot be dropped onto.
+     * @param adjustedLastItemSize Size of the last visible item in the layout given to [gatherCandidates] in place of
+     *   the layout of the list, if any.
      */
     private fun scrollCandidates(
         draggedItem: InteractionState.List.Active,
         scrollZoneHeight: Float? = null,
         totalItems: Int = 3,
+        lastItemSize: Int = 10,
+        lastItemOffset: Int = 0,
+        afterContentPadding: Int = 0,
+        ignoredItems: Set<Any> = defaultIgnoredItems,
+        adjustedLastItemSize: Int? = null,
     ): List<ListInteractionCandidate> {
         val listState =
             mockListState(
-                listOf(mockListItem("key", index = 1), mockListItem(TabKeys.TAB_BETA, index = 2)),
+                listOf(
+                    mockListItem("key", index = 1),
+                    mockListItem(TabKeys.TAB_BETA, index = 2, size = lastItemSize, offset = lastItemOffset),
+                ),
                 firstVisibleIndex = 1,
                 totalItems = totalItems,
+                afterContentPadding = afterContentPadding,
             )
+        val adjustedLayoutInfo = adjustedLastItemSize?.let {
+            FakeListLayoutInfo(
+                visibleItemsInfo =
+                    listOf(
+                        mockListItem("key", index = 1),
+                        mockListItem(TabKeys.TAB_BETA, index = 2, size = it, offset = lastItemOffset),
+                    ),
+                totalItemsCount = totalItems,
+                afterContentPadding = afterContentPadding,
+            )
+        }
         return gatherCandidates(
             listState = listState,
             draggedItemOffset =
@@ -1044,10 +1157,20 @@ class InteractableListTest {
                     itemSize = draggedItem.size,
                 ),
             draggedItem = draggedItem,
-            ignoredItems = defaultIgnoredItems,
+            ignoredItems = ignoredItems,
             scrollZoneHeight = scrollZoneHeight,
+            layoutInfo = adjustedLayoutInfo ?: listState.layoutInfo,
         )
     }
+
+    private fun draggedItemPastTheEnd() =
+        InteractionState.List.Active(
+            index = 1,
+            key = "key",
+            size = 4,
+            initialOffset = 8f,
+            cumulatedOffset = 5f,
+        )
 
     private fun mockListItem(
         key: Any = "key",
@@ -1327,11 +1450,18 @@ class InteractableListTest {
         mockItems: List<LazyListItemInfo> = emptyList(),
         firstVisibleIndex: Int = 0,
         totalItems: Int = mockItems.size,
+        afterContentPadding: Int = 0,
     ): LazyListState {
         val listState = mock<LazyListState>()
         whenever(listState.firstVisibleItemIndex).thenReturn(firstVisibleIndex)
         whenever(listState.layoutInfo)
-            .thenReturn(FakeListLayoutInfo(visibleItemsInfo = mockItems, totalItemsCount = totalItems))
+            .thenReturn(
+                FakeListLayoutInfo(
+                    visibleItemsInfo = mockItems,
+                    totalItemsCount = totalItems,
+                    afterContentPadding = afterContentPadding,
+                )
+            )
         whenever(listState.isScrollInProgress).thenReturn(false)
         return listState
     }
