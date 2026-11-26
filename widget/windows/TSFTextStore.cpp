@@ -1952,7 +1952,8 @@ STDMETHODIMP TSFTextStore::GetACPFromPoint(TsViewCookie vcView, const POINT* pt,
     // offset since there is no inexpensive API to check it strictly.
     // XXX If we retrieve 2 bounding boxes, one is before the offset and
     //     the other is after the offset, we could resolve the offset.
-    //     However, dispatching 2 eQueryTextRect may be expensive.
+    //     However, dispatching 2 TextEventDispatcher::QueryTextRect() may be
+    //     expensive.
 
     // So, use tentative offset for now.
     offset = queryCharAtPointEvent.mReply->mTentativeCaretOffset.valueOr(0);
@@ -1991,14 +1992,14 @@ STDMETHODIMP TSFTextStore::GetACPFromPoint(TsViewCookie vcView, const POINT* pt,
 
 STDMETHODIMP TSFTextStore::GetTextExt(TsViewCookie vcView, LONG acpStart,
                                       LONG acpEnd, RECT* prc, BOOL* pfClipped) {
-  MOZ_LOG(gIMELog, LogLevel::Info,
-          ("0x%p TSFTextStore::GetTextExt(), mContentForTSF=%s, "
-           "mSelectionForTSF=%s, mComposition=%s",
-           this, mozilla::ToString(mContentForTSF).c_str(),
-           ToString(mSelectionForTSF).c_str(), ToString(mComposition).c_str()));
+  MOZ_LOG_FMT(gIMELog, LogLevel::Info,
+              "{} TSFTextStore::GetTextExt(), mContentForTSF={}, "
+              "mSelectionForTSF={}, mComposition={}",
+              static_cast<void*>(this), mContentForTSF, mSelectionForTSF,
+              mComposition);
   HRESULT hr =
       TSFTextStoreBase::GetTextExt(vcView, acpStart, acpEnd, prc, pfClipped);
-  if (MOZ_UNLIKELY(hr != E_NOTIMPL)) {
+  if (hr != E_NOTIMPL) [[unlikely]] {
     return hr;
   }
 
@@ -2008,12 +2009,12 @@ STDMETHODIMP TSFTextStore::GetTextExt(TsViewCookie vcView, LONG acpStart,
       mContentForTSF->HasOrHadComposition() &&
       mContentForTSF->IsLayoutChanged() &&
       mContentForTSF->MinModifiedOffset().value() >
-          static_cast<uint32_t>(LONG_MAX)) {
-    MOZ_LOG(gIMELog, LogLevel::Error,
-            ("0x%p   TSFTextStore::GetTextExt(), FAILED due to the text "
-             "is too big for TSF (cannot treat modified offset as LONG), "
-             "mContentForTSF=%s",
-             this, ToString(mContentForTSF).c_str()));
+          static_cast<uint32_t>(LONG_MAX)) [[unlikely]] {
+    MOZ_LOG_FMT(gIMELog, LogLevel::Error,
+                "{}   TSFTextStore::GetTextExt(), FAILED due to the text "
+                "is too big for TSF (cannot treat modified offset as LONG), "
+                "mContentForTSF={}",
+                static_cast<void*>(this), mContentForTSF);
     return E_FAIL;
   }
 
@@ -2026,26 +2027,22 @@ STDMETHODIMP TSFTextStore::GetTextExt(TsViewCookie vcView, LONG acpStart,
       MaybeHackNoErrorLayoutBugs(acpStart, acpEnd);
   if (!hackedNoErrorLayoutBugs && mContentForTSF.isSome() &&
       mContentForTSF->IsLayoutChangedAt(acpEnd)) {
-    MOZ_LOG(gIMELog, LogLevel::Error,
-            ("0x%p   TSFTextStore::GetTextExt() returned TS_E_NOLAYOUT "
-             "(acpEnd=%ld)",
-             this, acpEnd));
+    MOZ_LOG_FMT(gIMELog, LogLevel::Warning,
+                "{}   TSFTextStore::GetTextExt() returned TS_E_NOLAYOUT "
+                "(acpEnd={})",
+                static_cast<void*>(this), acpEnd);
     mHasReturnedNoLayoutError = true;
     return TS_E_NOLAYOUT;
   }
 
-  if (mDestroyed) {
-    MOZ_LOG(gIMELog, LogLevel::Error,
-            ("0x%p   TSFTextStore::GetTextExt() returned TS_E_NOLAYOUT "
-             "(acpEnd=%ld) because this has already been destroyed",
-             this, acpEnd));
+  if (mDestroyed || !mDispatcher) [[unlikely]] {
+    MOZ_LOG_FMT(gIMELog, LogLevel::Error,
+                "{}   TSFTextStore::GetTextExt() returned TS_E_NOLAYOUT "
+                "(acpEnd={}) due to destroyed or no text event dispatcher",
+                static_cast<void*>(this), acpEnd);
     mHasReturnedNoLayoutError = true;
     return TS_E_NOLAYOUT;
   }
-
-  // use eQueryTextRect to get rect in system, screen coordinates
-  WidgetQueryContentEvent queryTextRectEvent(true, eQueryTextRect, mWidget);
-  mWidget->InitEvent(queryTextRectEvent);
 
   QueryContentOptions options;
   int64_t startOffset = acpStart;
@@ -2104,60 +2101,61 @@ STDMETHODIMP TSFTextStore::GetTextExt(TsViewCookie vcView, LONG acpStart,
     }
     return std::max(diff, 1u);
   }();
-  queryTextRectEvent.InitForQueryTextRect(startOffset, length, options);
-
-  DispatchEvent(queryTextRectEvent);
-  if (NS_WARN_IF(queryTextRectEvent.Failed())) {
-    MOZ_LOG(gIMELog, LogLevel::Error,
-            ("0x%p   TSFTextStore::GetTextExt() FAILED due to "
-             "eQueryTextRect failure",
-             this));
+  const OwningNonNull<TextEventDispatcher> dispatcher = *mDispatcher;
+  const Maybe<QueryContentResult> queryTextRectResult =
+      dispatcher->QueryTextRect(startOffset, length, options);
+  if (NS_WARN_IF(queryTextRectResult.isNothing()) || NS_WARN_IF(!mWidget))
+      [[unlikely]] {
+    MOZ_LOG_FMT(gIMELog, LogLevel::Error,
+                "{}   TSFTextStore::GetTextExt() FAILED due to "
+                "TextEventDispatcher::QueryTextRect() failure",
+                static_cast<void*>(this));
     return TS_E_INVALIDPOS;  // but unexpected failure, maybe.
   }
 
   // IMEs don't like empty rects, fix here
-  if (queryTextRectEvent.mReply->mRect.Width() <= 0) {
-    queryTextRectEvent.mReply->mRect.SetWidth(1);
+  LayoutDeviceIntRect adjustedTextRect = queryTextRectResult->mRect;
+  if (adjustedTextRect.Width() <= 0) {
+    adjustedTextRect.SetWidth(1);
   }
-  if (queryTextRectEvent.mReply->mRect.Height() <= 0) {
-    queryTextRectEvent.mReply->mRect.SetHeight(1);
+  if (adjustedTextRect.Height() <= 0) {
+    adjustedTextRect.SetHeight(1);
   }
 
   // convert to unclipped screen rect
   nsWindow* refWindow =
-      static_cast<nsWindow*>(!!queryTextRectEvent.mReply->mFocusedWidget
-                                 ? queryTextRectEvent.mReply->mFocusedWidget
+      static_cast<nsWindow*>(queryTextRectResult->mFocusedWidget
+                                 ? queryTextRectResult->mFocusedWidget
                                  : static_cast<nsIWidget*>(mWidget.get()));
   // Result rect is in top level widget coordinates
   refWindow = refWindow->GetTopLevelWindow(false);
-  if (!refWindow) {
-    MOZ_LOG(gIMELog, LogLevel::Error,
-            ("0x%p   TSFTextStore::GetTextExt() FAILED due to "
-             "no top level window",
-             this));
+  if (!refWindow) [[unlikely]] {
+    MOZ_LOG_FMT(gIMELog, LogLevel::Error,
+                "{}   TSFTextStore::GetTextExt() FAILED due to "
+                "no top level window",
+                static_cast<void*>(this));
     return E_FAIL;
   }
 
-  queryTextRectEvent.mReply->mRect.MoveBy(refWindow->WidgetToScreenOffset());
+  adjustedTextRect.MoveBy(refWindow->WidgetToScreenOffset());
 
   // get bounding screen rect to test for clipping
-  if (!GetScreenExtInternal(*prc)) {
-    MOZ_LOG(gIMELog, LogLevel::Error,
-            ("0x%p   TSFTextStore::GetTextExt() FAILED due to "
-             "GetScreenExtInternal() failure",
-             this));
+  if (!GetScreenExtInternal(*prc)) [[unlikely]] {
+    MOZ_LOG_FMT(gIMELog, LogLevel::Error,
+                "{}   TSFTextStore::GetTextExt() FAILED due to "
+                "GetScreenExtInternal() failure",
+                static_cast<void*>(this));
     return E_FAIL;
   }
 
   // clip text rect to bounding rect
   RECT textRect;
-  ::SetRect(&textRect, queryTextRectEvent.mReply->mRect.X(),
-            queryTextRectEvent.mReply->mRect.Y(),
-            queryTextRectEvent.mReply->mRect.XMost(),
-            queryTextRectEvent.mReply->mRect.YMost());
-  if (!::IntersectRect(prc, prc, &textRect))
+  ::SetRect(&textRect, adjustedTextRect.X(), adjustedTextRect.Y(),
+            adjustedTextRect.XMost(), adjustedTextRect.YMost());
+  if (!::IntersectRect(prc, prc, &textRect)) {
     // Text is not visible
     ::SetRectEmpty(prc);
+  }
 
   // not equal if text rect was clipped
   *pfClipped = !::EqualRect(prc, &textRect);
@@ -2180,11 +2178,11 @@ STDMETHODIMP TSFTextStore::GetTextExt(TsViewCookie vcView, LONG acpStart,
     CreateNativeCaret();
   }
 
-  MOZ_LOG(gIMELog, LogLevel::Info,
-          ("0x%p   TSFTextStore::GetTextExt() succeeded: "
-           "*prc={ left=%ld, top=%ld, right=%ld, bottom=%ld }, *pfClipped=%s",
-           this, prc->left, prc->top, prc->right, prc->bottom,
-           TSFUtils::BoolToChar(*pfClipped)));
+  MOZ_LOG_FMT(gIMELog, LogLevel::Info,
+              "{}   TSFTextStore::GetTextExt() succeeded: "
+              "*prc={{ left={}, top={}, right={}, bottom={} }}, *pfClipped={}",
+              static_cast<void*>(this), prc->left, prc->top, prc->right,
+              prc->bottom, !!*pfClipped);
 
   return S_OK;
 }

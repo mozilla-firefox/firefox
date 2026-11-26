@@ -214,6 +214,19 @@ template std::string format_as(const OffsetAndData<uint32_t>&);
 template std::string format_as(const OffsetAndData<LONG>&);
 #endif
 
+template <typename IntType>
+std::string format_as(const StartAndEndOffsets<IntType>& aStartAndEndOffsets) {
+  return fmt::format("{{ mStartOffset={}, mEndOffset={}, Length()={} }}",
+                     aStartAndEndOffsets.mStartOffset,
+                     aStartAndEndOffsets.mEndOffset,
+                     aStartAndEndOffsets.Length());
+}
+
+template std::string format_as(const StartAndEndOffsets<uint32_t>&);
+#ifdef XP_WIN
+template std::string format_as(const StartAndEndOffsets<LONG>&);
+#endif
+
 namespace widget {
 
 std::ostream& operator<<(std::ostream& aStream, const IMEEnabled& aEnabled) {
