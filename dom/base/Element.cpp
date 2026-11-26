@@ -2239,13 +2239,17 @@ Maybe<nsTArray<RefPtr<Element>>> Element::GetUnresolvedAttributeTargetElements(
     // 4. Let value be the attribute value.
     const nsAttrValue* value = GetParsedAttr(aAttr);
     // 1. If the attribute is not specified on element, return null.
-    if (!value || value->GetAtomCount() == 0) {
+    if (!value) {
       return Nothing();
     }
 
+    // nsAttrValue::ParseAtomArray represents empty and whitespace-only values
+    // as nsAttrValue::eString.
     MOZ_ASSERT(value->Type() == nsAttrValue::eAtomArray ||
-                   value->Type() == nsAttrValue::eAtom,
-               "Attribute used for accessible relations must be parsed.");
+                   value->Type() == nsAttrValue::eAtom ||
+                   value->Type() == nsAttrValue::eString,
+               "Attribute used for accessible relations must be parsed or an "
+               "empty/whitespace-only string.");
     // 5. Let tokens be value, split on ASCII whitespace.
     // 6. For each id of tokens:
     for (uint32_t i = 0; i < value->GetAtomCount(); i++) {

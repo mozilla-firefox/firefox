@@ -24,6 +24,8 @@
   </script>
 
   <custom-element id="custom1"></custom-element>
+  <custom-element id="custom2" aria-labelledby></custom-element>
+  <custom-element id="custom3" aria-labelledby=" "></custom-element>
 
   <div id="activedescendant">Active descendant</div>
   <div id="controls">Controls</div>
@@ -128,6 +130,28 @@
     }, "Setting ariaLabelledByElements on ElementInternals should change the accessible name of the custom element")
 
     promise_test(async t => {
+      const custom = document.getElementById('custom2');
+      const label_before_labelledby_set = await test_driver.get_computed_label(custom);
+      assert_equals(label_before_labelledby_set, "", "Before ariaLabelledByElements is set, accessible label should be empty.");
+
+      const labelledBy = document.getElementById('labelledby');
+      custom.i.ariaLabelledByElements = [labelledBy];
+      const label_after_internals_labelledby_set = await test_driver.get_computed_label(custom);
+      assert_equals(label_after_internals_labelledby_set, "", "After ariaLabelledByElements is set, accessible label should still be empty");
+    }, "Present but empty aria-labelledby content attribute on host element overrides a valid ariaLabelledByElements set on ElementInternals")
+
+    promise_test(async t => {
+      const custom = document.getElementById('custom3');
+      const label_before_labelledby_set = await test_driver.get_computed_label(custom);
+      assert_equals(label_before_labelledby_set, "", "Before ariaLabelledByElements is set, accessible label should be empty.");
+
+      const labelledBy = document.getElementById('labelledby');
+      custom.i.ariaLabelledByElements = [labelledBy];
+      const label_after_internals_labelledby_set = await test_driver.get_computed_label(custom);
+      assert_equals(label_after_internals_labelledby_set, "", "After ariaLabelledByElements is set, accessible label should still be empty");
+    }, "Whitespace-only aria-labelledby content attribute on host element overrides a valid ariaLabelledByElements set on ElementInternals")
+
+    promise_test(async t => {
       const custom = document.getElementById('custom1');
       custom.i.ariaLabelledByElements = null;
       const label_before_labelledby_set = await test_driver.get_computed_label(custom);
@@ -141,6 +165,10 @@
       custom.setAttribute('aria-labelledby', 'labelledby_content');
       const label_after_content_labelledby_set = await test_driver.get_computed_label(custom);
       assert_equals(label_after_content_labelledby_set, "Labelled by from content attribute", "aria-labelledby content attribute supersedes ariaLabelledByElements on internals");
+
+      custom.setAttribute('aria-labelledby', '');
+      const label_after_content_labelledby_set_to_empty_string = await test_driver.get_computed_label(custom);
+      assert_equals(label_after_content_labelledby_set_to_empty_string, "", "aria-labelledby content attribute supersedes ariaLabelledByElements on internals even when empty");
 
       const labelledby_element = document.getElementById('labelledby_element');
       custom.ariaLabelledByElements = [labelledby_element];

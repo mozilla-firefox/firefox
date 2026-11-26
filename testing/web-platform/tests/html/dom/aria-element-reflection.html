@@ -118,10 +118,15 @@
   </script>
 
   <input id="startTime" >
+  <input id="startTimeEmptyAttr" aria-errormessage>
+  <input id="startTimeWhitespaceOnlyAttr" aria-errormessage=" ">
   <span id="errorMessage">Invalid Time</span>
 
   <script>
   test(function(t) {
+    assert_array_equals(startTimeEmptyAttr.ariaErrorMessageElements, []);
+    assert_array_equals(startTimeWhitespaceOnlyAttr.ariaErrorMessageElements, []);
+
     startTime.ariaErrorMessageElements = [errorMessage];
     assert_equals(startTime.getAttribute("aria-errormessage"), "");
     assert_array_equals(startTime.ariaErrorMessageElements, [errorMessage]);
@@ -144,6 +149,8 @@
   <label>
     Password:
     <input id="passwordField" type="password" aria-details="pw">
+    <input id="passwordFieldEmptyAttr" type="password" aria-details>
+    <input id="passwordFieldWhitespaceOnlyAttr" type="password" aria-details=" ">
   </label>
 
   <ul>
@@ -155,6 +162,9 @@
 
   test(function(t) {
     assert_array_equals(passwordField.ariaDetailsElements, []);
+    assert_array_equals(passwordFieldEmptyAttr.ariaDetailsElements, []);
+    assert_array_equals(passwordFieldWhitespaceOnlyAttr.ariaDetailsElements, []);
+
     passwordField.ariaDetailsElements = [ listItem1 ];
     assert_equals(passwordField.getAttribute("aria-details"), "");
     assert_array_equals(passwordField.ariaDetailsElements, [ listItem1 ]);
@@ -344,6 +354,8 @@
   <div>
       <div id="addressElement">Address</div>
       <input type="text" id="input2"/>
+      <input type="text" id="input3" aria-labelledby/>
+      <input type="text" id="input4" aria-labelledby=" "/>
   </div>
 
   <script>
@@ -352,6 +364,8 @@
     assert_array_equals(input1.ariaLabelledByElements, [billingElement, nameElement], "parsed content attribute sets element references.");
     assert_equals(input1.ariaLabelledByElements, input1.ariaLabelledByElements, "check idl attribute caching after parsing");
     assert_equals(input2.ariaLabelledByElements, null, "Testing missing content attribute after parsing.");
+    assert_array_equals(input3.ariaLabelledByElements, [], "Empty content attribute must be reflected as an empty array");
+    assert_array_equals(input4.ariaLabelledByElements, [], "Whitespace-only content attribute must be reflected as an empty array");
 
     input2.ariaLabelledByElements = [billingElement, addressElement];
     assert_array_equals(input2.ariaLabelledByElements, [billingElement, addressElement], "Testing IDL setter/getter.");
@@ -388,6 +402,8 @@
   <ul role="tablist">
     <li role="presentation"><a id="link1" role="tab" aria-controls="panel1">Tab 1</a></li>
     <li role="presentation"><a id="link2" role="tab">Tab 2</a></li>
+    <li role="presentation"><a id="link3" role="tab" aria-controls>Tab 3</a></li>
+    <li role="presentation"><a id="link4" role="tab" aria-controls=" ">Tab 4</a></li>
   </ul>
 
   <div role="tabpanel" id="panel1"></div>
@@ -397,6 +413,8 @@
   test(function(t) {
     assert_array_equals(link1.ariaControlsElements, [panel1]);
     assert_equals(link2.ariaControlsElements, null);
+    assert_array_equals(link3.ariaControlsElements, []);
+    assert_array_equals(link4.ariaControlsElements, []);
 
     link2.setAttribute("aria-controls", "panel1 panel2");
     assert_array_equals(link2.ariaControlsElements, [panel1, panel2]);
@@ -424,9 +442,14 @@
   <div id="description1">Delicious</div>
   <div id="description2">Nutritious</div>
 
+  <a id="describedLinkEmptyAttr" aria-describedby>Vegetables</a>
+  <a id="describedLinkWhitespaceOnlyAttr" aria-describedby=" ">Fruit</a>
+
   <script>
   test(function(t) {
     assert_array_equals(describedLink.ariaDescribedByElements, [description1, description2]);
+    assert_array_equals(describedLinkEmptyAttr.ariaDescribedByElements, []);
+    assert_array_equals(describedLinkWhitespaceOnlyAttr.ariaDescribedByElements, []);
 
     describedLink.ariaDescribedByElements = [description1, description2];
     assert_equals(describedLink.getAttribute("aria-describedby"), "");
@@ -455,12 +478,17 @@
   <article id="article2">Content2</article>
   <article id="article1">Content1</article>
 
+  <h2 id="titleHeadingEmptyAttr" aria-flowto>Title 2</h2>
+  <h2 id="titleHeadingWhitespaceOnlyAttr" aria-flowto=" ">Title 3</h2>
+
   <script>
   test(function(t) {
     const article1 = document.getElementById("article1");
     const article2 = document.getElementById("article2");
 
     assert_array_equals(titleHeading.ariaFlowToElements, [article1, article2]);
+    assert_array_equals(titleHeadingEmptyAttr.ariaFlowToElements, []);
+    assert_array_equals(titleHeadingWhitespaceOnlyAttr.ariaFlowToElements, []);
 
     titleHeading.ariaFlowToElements = [article1, article2];
     assert_equals(titleHeading.getAttribute("aria-flowto"), "");
@@ -486,6 +514,8 @@
 
   <ul>
     <li id="listItemOwner" aria-owns="child1 child2">Parent</li>
+    <li id="listItemOwnerEmptyAttr" aria-owns>Another parent</li>
+    <li id="listItemOwnerWhitespaceOnlyAttr" aria-owns=" ">Yet another parent</li>
   </ul>
   <ul>
     <li id="child1">Child 1</li>
@@ -494,6 +524,8 @@
   <script>
   test(function(t) {
     assert_array_equals(listItemOwner.ariaOwnsElements, [child1, child2]);
+    assert_array_equals(listItemOwnerEmptyAttr.ariaOwnsElements, []);
+    assert_array_equals(listItemOwnerWhitespaceOnlyAttr.ariaOwnsElements, []);
 
     listItemOwner.removeAttribute("aria-owns");
     assert_equals(listItemOwner.ariaOwnsElements, null);
