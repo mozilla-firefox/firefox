@@ -290,11 +290,7 @@ static bool PrepareForInsertion(nsIContent* aNode, nsIContent* aParent,
 }
 
 bool nsHtml5TreeOperation::CanInsert(nsIContent* aNode, nsIContent* aParent) {
-  if (!aNode->HasChildren() && !aNode->GetShadowRoot() &&
-      !aNode->IsTemplateElement()) {
-    return true;
-  }
-  return !nsContentUtils::ContentIsHostIncludingDescendantOf(aParent, aNode);
+  return !aNode->HasChildren() || !aParent->IsInclusiveDescendantOf(aNode);
 }
 
 static MOZ_ALWAYS_INLINE nsresult
