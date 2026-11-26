@@ -274,6 +274,7 @@ def taskgraph_decision(options, parameters, bugbug_result_path=None):
 
         # write out the parameters used to generate this graph
         write_artifact("parameters.yml", dict(**tgg.parameters))
+        write_artifact("files-changed.json", list(tgg.parameters["files_changed"]))
 
         # write out the public/actions.json file
         write_artifact(

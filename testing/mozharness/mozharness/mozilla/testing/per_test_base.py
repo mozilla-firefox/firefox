@@ -11,6 +11,8 @@ import sys
 
 import mozinfo
 
+from mozharness.base.log import FATAL
+
 TEST_SUMMARY_FILENAME = "summary.jsonl"
 
 
@@ -348,17 +350,12 @@ class SingleTestMixin:
         This depends on test manifests, so can only run after test zips have
         been downloaded and extracted.
         """
-        repository = os.environ.get("GECKO_HEAD_REPOSITORY")
-        revision = os.environ.get("GECKO_HEAD_REV")
-        if not repository or not revision:
-            self.warning("unable to run tests in per-test mode: no repo or revision!")
+        url = os.environ.get("FILES_CHANGED_URL")
+        if not url:
+            self.warning("unable to run tests in per-test mode: no FILES_CHANGED_URL!")
             self.suites = {}
             self.tests_downloaded = True
             return
-
-        def get_automationrelevance():
-            response = self.load_json_url(url)
-            return response
 
         dirs = self.query_abs_dirs()
         mozinfo.find_and_update_from_json(dirs["abs_test_install_dir"])
@@ -420,18 +417,8 @@ class SingleTestMixin:
         self.info("Per-test run using mozinfo: %s" % str(mozinfo.info))
 
         # determine which files were changed on this push
-        changed_files = set()
-        url = "%s/json-automationrelevance/%s" % (repository.rstrip("/"), revision)
-        contents = self.retry(get_automationrelevance, attempts=2, sleeptime=10)
-        for c in contents["changesets"]:
-            self.info(
-                " {cset} {desc}".format(
-                    cset=c["node"][0:12],
-                    desc=c["desc"].splitlines()[0].encode("ascii", "ignore"),
-                )
-            )
-            changed_files |= set(c["files"])
-        changed_files = list(changed_files)
+        changed_files = self.load_json_url(url, error_level=FATAL)
+        self.info(f"Per-test run found {len(changed_files)} changed files")
 
         # check specified test paths, as from 'mach try ... <path>'
         if os.environ.get("MOZHARNESS_TEST_PATHS", None) is not None:

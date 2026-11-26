@@ -82,6 +82,14 @@ def test_packages_url(taskdesc):
     return f"<build/{get_artifact_path(taskdesc, artifact_path)}>"
 
 
+def add_files_changed_url(mozharness, env):
+    extra_options = mozharness.get("extra-options", [])
+    if "--verify" in extra_options or "--per-test-coverage" in extra_options:
+        env["FILES_CHANGED_URL"] = {
+            "artifact-reference": "<decision/public/files-changed.json>"
+        }
+
+
 def installer_url(taskdesc):
     test = taskdesc["run"]["test"]
     mozharness = test["mozharness"]
@@ -210,6 +218,7 @@ def mozharness_test_on_docker(config, job, taskdesc):
         env["TESTS_BY_MANIFEST_URL"] = {
             "artifact-reference": "<decision/public/tests-by-manifest.json.gz>"
         }
+    add_files_changed_url(mozharness, env)
 
     command = [
         "{workdir}/bin/test-linux.sh".format(**run),
@@ -396,6 +405,7 @@ def mozharness_test_on_generic_worker(config, job, taskdesc):
         env["TESTS_BY_MANIFEST_URL"] = {
             "artifact-reference": "<decision/public/tests-by-manifest.json.gz>"
         }
+    add_files_changed_url(mozharness, env)
 
     if is_windows:
         script = "mozharness\\scripts\\" + normpath(mozharness["script"])
