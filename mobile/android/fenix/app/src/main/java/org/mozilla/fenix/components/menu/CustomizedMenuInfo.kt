@@ -77,11 +77,16 @@ internal fun CustomizedMenuInfo.reconciledWith(
  * Same as for the menu sections, items removed from the application are dropped and new ones are added, shown or hidden
  * as in [default] and inside the same item they are expanded to from in [default]. Each item is kept only once and only
  * the items expanding to others in [default] keep the items they expand to, even if left with none of them. If nothing
- * is left to show in the menu, which an item expanding to no others does not, the section is restored to [default].
+ * is left to show in the menu, which an item expanding to no others does not, the section is restored to [default]. The
+ * items in [topLevelOnlyIds] found inside another item are moved to the top level, right after it.
  *
  * @param default The items of the section for users who didn't customize them.
+ * @param topLevelOnlyIds Ids of the items which can only be directly in the section, never inside another item.
  */
-internal fun CustomizedSectionInfo.reconciledWith(default: CustomizedSectionInfo): CustomizedSectionInfo {
+internal fun CustomizedSectionInfo.reconciledWith(
+    default: CustomizedSectionInfo,
+    topLevelOnlyIds: Set<String>,
+): CustomizedSectionInfo {
     val defaultItems = (default.items + default.hiddenItems).associateBy { it.id }
     val expandableIds = defaultItems.values.filter { it.subItemIds.isNotEmpty() }.map { it.id }.toSet()
     val available = defaultItems.keys + defaultItems.values.flatMap { it.subItemIds }
@@ -112,11 +117,19 @@ internal fun CustomizedSectionInfo.reconciledWith(default: CustomizedSectionInfo
                     .plusMissingAtDefaultIndex(defaultItems[this]?.subItemIds.orEmpty(), placedIds),
         )
 
-    val shown = shownPlusNew.map { it.withSubItemsPlusNew() }
+    val shown = shownPlusNew.map { it.withSubItemsPlusNew() }.withTopLevelOnlyAtTopLevel(topLevelOnlyIds)
     if (shown.all { it.id in expandableIds && it.subItemIds.isEmpty() }) return default
 
-    return copy(items = shown, hiddenItems = hiddenPlusNew.map { it.withSubItemsPlusNew() })
+    val hidden = hiddenPlusNew.map { it.withSubItemsPlusNew() }.withTopLevelOnlyAtTopLevel(topLevelOnlyIds)
+    return copy(items = shown, hiddenItems = hidden)
 }
+
+/** These items with the ones in [ids] taken out of the other items and placed right after the one they were in. */
+private fun List<CustomizedItemInfo>.withTopLevelOnlyAtTopLevel(ids: Set<String>): List<CustomizedItemInfo> =
+    flatMap { item ->
+        val (topLevelOnly, others) = item.subItemIds.partition { it in ids }
+        listOf(item.copy(subItemIds = others)) + topLevelOnly.map { CustomizedItemInfo(id = it) }
+    }
 
 /** These ids plus the ones from [default] not in [placedIds], each added at its index in [default] if possible. */
 private fun List<String>.plusMissingAtDefaultIndex(default: List<String>, placedIds: Set<String>): List<String> {

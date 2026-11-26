@@ -28,6 +28,8 @@ import org.mozilla.fenix.datastore.CustomizedMenuRecord.CustomizedSection
  * @param defaultSectionsInfo The items of each section whose items can be customized, keyed by section id, for users
  *   who didn't customize them.
  * @param requiredSectionIds Ids of the sections of the browser menu which cannot be removed.
+ * @param topLevelOnlyItemIds Ids of the menu items which can only be directly in their section, never inside another
+ *   item.
  * @param scope [CoroutineScope] outliving any screen, used for reading and writing the customization.
  */
 class MenuCustomizationRepository(
@@ -35,6 +37,7 @@ class MenuCustomizationRepository(
     private val defaultMenuInfo: () -> CustomizedMenuInfo,
     private val defaultSectionsInfo: Map<String, CustomizedSectionInfo>,
     private val requiredSectionIds: Set<String>,
+    private val topLevelOnlyItemIds: Set<String>,
     private val scope: CoroutineScope,
 ) {
     private val lock = Any()
@@ -86,7 +89,7 @@ class MenuCustomizationRepository(
     /** Persist a new customization of the items of a section, keeping the one of the menu sections. */
     fun save(sectionInfo: CustomizedSectionInfo) {
         val default = defaultSectionsInfo[sectionInfo.sectionId] ?: return
-        val reconciled = sectionInfo.reconciledWith(default)
+        val reconciled = sectionInfo.reconciledWith(default, topLevelOnlyItemIds)
         persist { it.toCurrentBuilder().withSectionInfo(reconciled).build() }
     }
 
@@ -149,7 +152,9 @@ class MenuCustomizationRepository(
         if (isCustomized) {
             customizedSectionsList
                 .mapNotNull { section ->
-                    defaultSectionsInfo[section.sectionId]?.let { section.toCustomizedSectionInfo().reconciledWith(it) }
+                    defaultSectionsInfo[section.sectionId]?.let {
+                        section.toCustomizedSectionInfo().reconciledWith(it, topLevelOnlyItemIds)
+                    }
                 }
                 .associateBy { it.sectionId }
         } else {

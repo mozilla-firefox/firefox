@@ -230,6 +230,37 @@ class MenuCustomizationRepositoryTest {
         }
 
     @Test
+    fun `GIVEN a top level only item was saved inside another item WHEN reading the items of the sections THEN return it at the top level`() =
+        runTest {
+            val saved = sectionInfo("tools", shown = listOf(item("more", "z", "x", "w"), item("y")))
+            val dataStore =
+                FakeDataStore(record(shown = emptyList(), hidden = emptyList(), customizedSections = listOf(saved)))
+            val repository = repository(dataStore, topLevelOnlyItemIds = setOf("x"))
+            runCurrent()
+
+            assertEquals(
+                mapOf("tools" to sectionInfo("tools", shown = listOf(item("more", "z", "w"), item("x"), item("y")))),
+                repository.customizedSectionsInfo.value,
+            )
+        }
+
+    @Test
+    fun `WHEN saving a top level only item inside another item THEN persist it at the top level`() = runTest {
+        val dataStore = FakeDataStore(CustomizedMenuRecord.getDefaultInstance())
+        val repository = repository(dataStore, topLevelOnlyItemIds = setOf("x"))
+
+        repository.save(sectionInfo("tools", shown = listOf(item("y"), item("more", "z", "x", "w"))))
+        runCurrent()
+
+        val expected = sectionInfo("tools", shown = listOf(item("y"), item("more", "z", "w"), item("x")))
+        assertEquals(mapOf("tools" to expected), repository.customizedSectionsInfo.value)
+        assertEquals(
+            record(shown = emptyList(), hidden = emptyList(), customizedSections = listOf(expected)),
+            dataStore.record,
+        )
+    }
+
+    @Test
     fun `GIVEN the menu was never customized WHEN saving the items of a section THEN keep showing the default menu sections`() =
         runTest {
             val dataStore = FakeDataStore(CustomizedMenuRecord.getDefaultInstance())
@@ -519,6 +550,7 @@ class MenuCustomizationRepositoryTest {
     private fun TestScope.repository(
         dataStore: DataStore<CustomizedMenuRecord>,
         requiredSectionIds: Set<String> = emptySet(),
+        topLevelOnlyItemIds: Set<String> = emptySet(),
         scope: CoroutineScope = backgroundScope,
     ) =
         MenuCustomizationRepository(
@@ -526,6 +558,7 @@ class MenuCustomizationRepositoryTest {
             defaultMenuInfo = { defaultMenuInfo },
             defaultSectionsInfo = mapOf("tools" to defaultToolsInfo),
             requiredSectionIds = requiredSectionIds,
+            topLevelOnlyItemIds = topLevelOnlyItemIds,
             scope = scope,
         )
 

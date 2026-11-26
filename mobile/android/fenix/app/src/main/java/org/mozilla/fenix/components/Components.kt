@@ -449,6 +449,7 @@ class Components(
             },
             defaultSectionsInfo = BrowserMenuConfiguration.defaultSectionsInfo(),
             requiredSectionIds = BrowserMenuConfiguration.REQUIRED_SECTION_IDS,
+            topLevelOnlyItemIds = BrowserMenuConfiguration.topLevelOnlyItemIds(),
             scope = applicationScope,
         )
     }

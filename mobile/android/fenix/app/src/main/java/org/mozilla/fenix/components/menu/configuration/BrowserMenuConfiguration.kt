@@ -157,6 +157,18 @@ object BrowserMenuConfiguration {
                     )
             }
 
+    /**
+     * Ids of the items of the browser menu, including the ones other items expand to, which can only be directly in
+     * their section, never inside another item.
+     */
+    fun topLevelOnlyItemIds(): Set<String> =
+        allSections()
+            .flatMap { it.items }
+            .flatMap { listOf(it) + it.expandsTo }
+            .filter { it.isTopLevelOnly }
+            .map { it.id }
+            .toSet()
+
     /** All the sections of the browser menu, including the ones hidden by default. */
     fun allSections(): List<MenuSectionConfiguration> = allSections(shouldShowNavigationItemsAtTheTop = true)
 

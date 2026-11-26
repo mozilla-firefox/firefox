@@ -130,7 +130,7 @@ class CustomizedMenuInfoTest {
                 hidden = listOf(item("c"), item("y")),
             )
 
-        assertEquals(saved, saved.reconciledWith(defaultSection))
+        assertEquals(saved, saved.reconciledWith(defaultSection, topLevelOnlyIds = emptySet()))
     }
 
     @Test
@@ -146,7 +146,7 @@ class CustomizedMenuInfoTest {
                 shown = listOf(item("a"), item("b"), item("more", "x", "y", "z")),
                 hidden = listOf(item("c")),
             ),
-            saved.reconciledWith(defaultSection),
+            saved.reconciledWith(defaultSection, topLevelOnlyIds = emptySet()),
         )
     }
 
@@ -163,7 +163,7 @@ class CustomizedMenuInfoTest {
                 shown = listOf(item("a"), item("more", "x", "y", "z"), item("b")),
                 hidden = listOf(item("c")),
             ),
-            saved.reconciledWith(defaultSection),
+            saved.reconciledWith(defaultSection, topLevelOnlyIds = emptySet()),
         )
     }
 
@@ -179,7 +179,7 @@ class CustomizedMenuInfoTest {
                 shown = listOf(item("c"), item("new"), item("a"), item("more", "x", "y", "z")),
                 hidden = listOf(item("b")),
             ),
-            saved.reconciledWith(default),
+            saved.reconciledWith(default, topLevelOnlyIds = emptySet()),
         )
     }
 
@@ -188,7 +188,10 @@ class CustomizedMenuInfoTest {
         val saved = sectionInfo(shown = listOf(item("a"), item("b"), item("c"), item("more", "x", "y", "z")))
         val default = defaultSection.copy(hiddenItems = listOf(item("new")))
 
-        assertEquals(saved.copy(hiddenItems = listOf(item("new"))), saved.reconciledWith(default))
+        assertEquals(
+            saved.copy(hiddenItems = listOf(item("new"))),
+            saved.reconciledWith(default, topLevelOnlyIds = emptySet()),
+        )
     }
 
     @Test
@@ -198,7 +201,7 @@ class CustomizedMenuInfoTest {
 
         assertEquals(
             sectionInfo(shown = listOf(item("a"), item("b"), item("c"), item("more", "z", "new", "y", "x"))),
-            saved.reconciledWith(default),
+            saved.reconciledWith(default, topLevelOnlyIds = emptySet()),
         )
     }
 
@@ -213,7 +216,7 @@ class CustomizedMenuInfoTest {
                 shown = listOf(item("a"), item("b"), item("c")),
                 hidden = listOf(item("more", "x", "y", "z", "new")),
             ),
-            saved.reconciledWith(default),
+            saved.reconciledWith(default, topLevelOnlyIds = emptySet()),
         )
     }
 
@@ -227,7 +230,7 @@ class CustomizedMenuInfoTest {
                 shown = listOf(item("a"), item("y"), item("b"), item("new", "x", "z")),
                 hidden = listOf(item("c")),
             ),
-            saved.reconciledWith(default),
+            saved.reconciledWith(default, topLevelOnlyIds = emptySet()),
         )
     }
 
@@ -237,7 +240,7 @@ class CustomizedMenuInfoTest {
 
         assertEquals(
             sectionInfo(shown = listOf(item("a"), item("b"), item("c"), item("more", "x", "y", "z"))),
-            saved.reconciledWith(defaultSection),
+            saved.reconciledWith(defaultSection, topLevelOnlyIds = emptySet()),
         )
     }
 
@@ -248,7 +251,7 @@ class CustomizedMenuInfoTest {
 
         assertEquals(
             sectionInfo(shown = listOf(item("a"), item("other", "b"), item("more", "x", "y", "z"))),
-            saved.reconciledWith(default),
+            saved.reconciledWith(default, topLevelOnlyIds = emptySet()),
         )
     }
 
@@ -260,7 +263,7 @@ class CustomizedMenuInfoTest {
                 hidden = listOf(item("a"), item("b"), item("c"), item("more", "x", "y", "z")),
             )
 
-        assertEquals(defaultSection, saved.reconciledWith(defaultSection))
+        assertEquals(defaultSection, saved.reconciledWith(defaultSection, topLevelOnlyIds = emptySet()))
     }
 
     @Test
@@ -271,7 +274,7 @@ class CustomizedMenuInfoTest {
                 hidden = listOf(item("a"), item("b"), item("c"), item("x"), item("y"), item("z")),
             )
 
-        assertEquals(defaultSection, saved.reconciledWith(defaultSection))
+        assertEquals(defaultSection, saved.reconciledWith(defaultSection, topLevelOnlyIds = emptySet()))
     }
 
     @Test
@@ -282,7 +285,55 @@ class CustomizedMenuInfoTest {
                 hidden = listOf(item("b"), item("c"), item("y"), item("z")),
             )
 
-        assertEquals(saved, saved.reconciledWith(defaultSection))
+        assertEquals(saved, saved.reconciledWith(defaultSection, topLevelOnlyIds = emptySet()))
+    }
+
+    @Test
+    fun `GIVEN a top level only item saved inside a shown item WHEN adapting it to the app THEN place it right after that item`() {
+        val default = sectionInfo(shown = listOf(item("a"), item("ext"), item("more", "x", "y")))
+        val saved = sectionInfo(shown = listOf(item("more", "x", "ext", "y"), item("a")))
+
+        assertEquals(
+            sectionInfo(shown = listOf(item("more", "x", "y"), item("ext"), item("a"))),
+            saved.reconciledWith(default, topLevelOnlyIds = setOf("ext")),
+        )
+    }
+
+    @Test
+    fun `GIVEN a top level only item saved inside a hidden item WHEN adapting it to the app THEN hide it right after that item`() {
+        val default = sectionInfo(shown = listOf(item("a"), item("ext"), item("more", "x", "y")))
+        val saved = sectionInfo(shown = listOf(item("a")), hidden = listOf(item("more", "ext", "x", "y")))
+
+        assertEquals(
+            sectionInfo(shown = listOf(item("a")), hidden = listOf(item("more", "x", "y"), item("ext"))),
+            saved.reconciledWith(default, topLevelOnlyIds = setOf("ext")),
+        )
+    }
+
+    @Test
+    fun `GIVEN a top level only item saved at the top level WHEN adapting it to the app THEN keep it as saved`() {
+        val default = sectionInfo(shown = listOf(item("a"), item("ext"), item("more", "x", "y")))
+        val saved = sectionInfo(shown = listOf(item("more", "x", "y")), hidden = listOf(item("ext"), item("a")))
+
+        assertEquals(saved, saved.reconciledWith(default, topLevelOnlyIds = setOf("ext")))
+    }
+
+    @Test
+    fun `GIVEN a top level only item saved as the only sub-item shown WHEN adapting it to the app THEN show it at the top level`() {
+        val default = sectionInfo(shown = listOf(item("a"), item("ext"), item("more", "x", "y")))
+        val saved =
+            sectionInfo(
+                shown = listOf(item("more", "ext")),
+                hidden = listOf(item("a"), item("x"), item("y")),
+            )
+
+        assertEquals(
+            sectionInfo(
+                shown = listOf(item("more"), item("ext")),
+                hidden = listOf(item("a"), item("x"), item("y")),
+            ),
+            saved.reconciledWith(default, topLevelOnlyIds = setOf("ext")),
+        )
     }
 
     private fun menuInfo(shown: List<String>, hidden: List<String> = emptyList()) =

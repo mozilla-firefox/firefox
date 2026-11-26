@@ -617,6 +617,23 @@ class BrowserMenuConfigurationTest {
         )
     }
 
+    @Test
+    fun `WHEN getting the items which can only be directly in their section THEN only extensions is returned`() {
+        assertEquals(setOf(Extensions.id), BrowserMenuConfiguration.topLevelOnlyItemIds())
+    }
+
+    @Test
+    fun `WHEN getting the default items of the sections THEN none which can only be directly in their section is inside another item`() {
+        val topLevelOnlyIds = BrowserMenuConfiguration.topLevelOnlyItemIds()
+        val subItemIds =
+            BrowserMenuConfiguration.defaultSectionsInfo()
+                .values
+                .flatMap { it.items + it.hiddenItems }
+                .flatMap { it.subItemIds }
+
+        assertEquals(emptyList(), subItemIds.filter { it in topLevelOnlyIds })
+    }
+
     private fun menuInfo(shown: List<String>, hidden: List<String> = emptyList()) =
         CustomizedMenuInfo(visibleSectionIds = shown, hiddenSectionIds = hidden)
 

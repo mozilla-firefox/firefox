@@ -27,7 +27,6 @@ import org.mozilla.fenix.components.menu.CustomizedSectionInfo
 import org.mozilla.fenix.components.menu.MenuCustomizationRepository
 import org.mozilla.fenix.components.menu.MenuItemsRegistry
 import org.mozilla.fenix.components.menu.configuration.BrowserMenuConfiguration
-import org.mozilla.fenix.components.menu.configuration.FenixExpandableMenuItem
 
 /**
  * [Middleware] showing the items of a menu section as customized by the user, in the screen customizing them, and
@@ -93,13 +92,7 @@ class EditMenuItemsMiddleware(
         )
     }
 
-    private val topLevelOnlyIds =
-        registry.configuration
-            .flatMap { it.items }
-            .flatMap { item -> listOf(item) + (item as? FenixExpandableMenuItem)?.subMenuItems.orEmpty() }
-            .filter { it.isTopLevelOnly }
-            .map { it.id }
-            .toSet()
+    private val topLevelOnlyIds = BrowserMenuConfiguration.topLevelOnlyItemIds()
 
     private fun CustomizableMenuItem.toInfo() = CustomizedItemInfo(id = id, subItemIds = subItems.map { it.id })
 
