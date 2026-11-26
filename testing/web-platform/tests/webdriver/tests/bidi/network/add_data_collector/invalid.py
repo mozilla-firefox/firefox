@@ -171,3 +171,27 @@ async def test_params_contexts_and_user_contexts_mutually_exclusive(
             contexts=[new_tab["context"]],
             user_contexts=["default"],
         )
+
+
+async def test_params_contexts_and_user_contexts_mutually_exclusive_invalid_context(
+    bidi_session,
+):
+    with pytest.raises(error.InvalidArgumentException):
+        await bidi_session.network.add_data_collector(
+            data_types=["response"],
+            max_encoded_data_size=1000,
+            contexts=["does not exist"],
+            user_contexts=["default"],
+        )
+
+
+async def test_params_contexts_and_user_contexts_mutually_exclusive_invalid_user_context(
+    bidi_session, new_tab
+):
+    with pytest.raises(error.InvalidArgumentException):
+        await bidi_session.network.add_data_collector(
+            data_types=["response"],
+            max_encoded_data_size=1000,
+            contexts=[new_tab["context"]],
+            user_contexts=["does not exist"],
+        )
