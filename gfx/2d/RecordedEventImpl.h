@@ -2383,6 +2383,23 @@ inline bool RecordedCreateDrawTargetForFilter::PlayEvent(
     return false;
   }
 
+  if (dt->IsRecording()) {
+    // Re-record the event rather than resolving it to an offset DrawTarget,
+    // which we can't serialize back.
+    FilterNode* filter = aTranslator->LookupFilterNode(mFilter);
+    if (!filter) {
+      return false;
+    }
+    RefPtr<DrawTarget> newDT = dt->CreateSimilarDrawTargetForFilter(
+        mMaxSize, mFormat, filter, aTranslator->LookupFilterNode(mSource),
+        mSourceRect, mDestPoint);
+    if (!newDT) {
+      return false;
+    }
+    aTranslator->AddDrawTarget(mRefPtr, newDT);
+    return true;
+  }
+
   IntRect baseRect = dt->GetRect();
 
   auto maxRect = IntRect(IntPoint(0, 0), mMaxSize);
