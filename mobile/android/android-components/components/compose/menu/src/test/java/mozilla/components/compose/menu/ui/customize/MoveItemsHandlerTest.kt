@@ -61,11 +61,32 @@ class MoveItemsHandlerTest {
     }
 
     @Test
-    fun `WHEN a dragged item is let go where it cannot be dropped THEN nothing is saved`() {
+    fun `WHEN a dragged item is let go where items are hidden THEN it is saved hidden`() {
         handler.onDragStart(sourceKey = "a", preserveSelectMode = false)
         handler.onMove(sourceKey = "a", targetKey = HIDDEN_TITLE, placeAfter = true)
+        handler.onDragEnd()
+
+        assertEquals(listOf(Init, ItemsChanged(items = items("b"), hiddenItems = items("a", "c"))), actions)
+    }
+
+    @Test
+    fun `WHEN a dragged item is let go in the area to hide items THEN it is saved hidden`() {
+        handler.onDragStart(sourceKey = "a", preserveSelectMode = false)
         handler.onMove(sourceKey = "a", targetKey = DROP_AREA, placeAfter = true)
         handler.onDragEnd()
+
+        assertEquals(listOf(Init, ItemsChanged(items = items("b"), hiddenItems = items("a", "c"))), actions)
+    }
+
+    @Test
+    fun `WHEN the only shown item is let go in the area to hide items THEN nothing is saved`() {
+        val last = CustomizeMenuItems(shown = items("a"), hidden = items("c"), expandedIds = emptySet())
+
+        MoveItemsHandler(store = store, items = last).apply {
+            onDragStart(sourceKey = "a", preserveSelectMode = false)
+            onMove(sourceKey = "a", targetKey = HIDDEN_TITLE, placeAfter = true)
+            onDragEnd()
+        }
 
         assertEquals(listOf(Init), actions)
     }

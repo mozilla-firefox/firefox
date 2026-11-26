@@ -6,6 +6,7 @@ package mozilla.components.compose.menu.ui.customize
 
 import mozilla.components.compose.menu.data.CustomizableMenuItem
 import mozilla.components.compose.menu.data.ExpandableMenuItem
+import mozilla.components.compose.menu.data.hasShownSubItems
 import mozilla.components.compose.menu.ui.customize.CustomizeMenuItemKey.HIDDEN_TITLE
 
 /**
@@ -47,18 +48,40 @@ internal sealed interface EditMenuItemsRow {
 /** Key of the [EditMenuItemsRow.SubItemsEnd] of the item with [parentId]. */
 internal fun subItemsEndKey(parentId: String) = "$parentId#sub_items_end"
 
-/** Where in the list of the shown items of a section an item is. */
+/** Where in the lists of the items of a section an item is. */
 internal sealed interface Container {
-    /** Directly in the section. */
+    /** Directly in the section, shown. */
     data object Top : Container
 
     /**
-     * Inside the expandable item with [parentId].
+     * Inside the shown expandable item with [parentId].
      *
      * @property parentId Id of the expandable item.
      */
     data class SubItems(val parentId: String) : Container
+
+    /** Directly in the section, hidden. */
+    data object HiddenTop : Container
+
+    /**
+     * Inside the hidden expandable item with [parentId].
+     *
+     * @property parentId Id of the expandable item.
+     */
+    data class HiddenSubItems(val parentId: String) : Container
 }
+
+private val Container.isHidden: Boolean
+    get() = this is Container.HiddenTop || this is Container.HiddenSubItems
+
+private val Container.isTop: Boolean
+    get() = this is Container.Top || this is Container.HiddenTop
+
+private fun containerOf(parentId: String?, isHidden: Boolean): Container =
+    when {
+        parentId == null -> if (isHidden) Container.HiddenTop else Container.Top
+        else -> if (isHidden) Container.HiddenSubItems(parentId) else Container.SubItems(parentId)
+    }
 
 /**
  * Where to place a moved item: next to the item with [nextToId], or first or last of the container if that is `null`.
@@ -103,65 +126,106 @@ internal data class CustomizeMenuItems(
 
     override fun isShownKey(key: Any) = key in shownKeys
 
-    override fun cannotBeHidden(key: Any) = true
+    override fun cannotBeHidden(key: Any): Boolean {
+        if (!isShownKey(key)) return false
+        return shown.without(key).none { it.isVisible }
+    }
 
     override fun drop(key: Any, target: CustomizeMenuDropTarget): CustomizeMenuItems = move(key, target)
 
     /**
-     * Move a shown item next to the target, in the container of the target. An expandable item can only be moved to the
-     * top level. Items the app does not show keep their index in the container the item is placed in, and their order
-     * in the one it leaves. Nothing changes if the target is on a hidden item or is the item itself.
+     * Move an item next to the target, in the container of the target, hiding it or showing it again if the container
+     * is a hidden one or a shown one. An expandable item can only be moved to the top level, hidden or shown, and keeps
+     * its sub-items. Items the app does not show keep their index in the container the item is placed in, and their
+     * order in the one it leaves. Nothing changes if the target is the item itself, or if the item is the last one
+     * shown on the screen and would be hidden.
      *
      * @param key Id of the item to move.
      * @param target Where to move the item to.
      */
     fun move(key: Any, target: CustomizeMenuDropTarget): CustomizeMenuItems {
-        if (target !is CustomizeMenuDropTarget.NextTo) return this
         val (source, container) = locate(key) ?: return this
         val placement = placementOf(target) ?: return this
         if (placement.nextToId == key) return this
-        if (placement.container != Container.Top && source.item is ExpandableMenuItem) return this
+        if (!placement.container.isTop && source.item is ExpandableMenuItem) return this
+        if (placement.container.isHidden && cannotBeHidden(key)) return this
 
-        if (placement.container != container) {
-            return shown.without(key).placed(source, placement)?.let { copy(shown = it) } ?: this
+        if (placement.container == container) {
+            return updated(container) { it.reordered(key, placement) } ?: this
         }
 
-        return when (container) {
-            Container.Top -> copy(shown = shown.reordered(key, placement))
-            is Container.SubItems ->
-                copy(shown = shown.map { it.withReorderedSubItems(container.parentId, key, placement) })
-        }
+        return copy(shown = shown.without(key), hidden = hidden.without(key)).updated(placement.container) {
+            it.inserted(source, placement)
+        } ?: this
     }
 
-    private fun CustomizableMenuItem.withReorderedSubItems(parentId: String, sourceId: Any, placement: Placement) =
-        if (id == parentId) copy(subItems = subItems.reordered(sourceId, placement)) else this
+    private fun locate(key: Any): Pair<CustomizableMenuItem, Container>? =
+        shown.locate(key, Container.Top) { Container.SubItems(it) }
+            ?: hidden.locate(key, Container.HiddenTop) { Container.HiddenSubItems(it) }
 
-    private fun locate(key: Any): Pair<CustomizableMenuItem, Container>? = shown.firstNotNullOfOrNull { parent ->
+    private fun List<CustomizableMenuItem>.locate(
+        key: Any,
+        top: Container,
+        subItemsOf: (parentId: String) -> Container,
+    ): Pair<CustomizableMenuItem, Container>? = firstNotNullOfOrNull { parent ->
         if (parent.id == key) {
-            parent to Container.Top
+            parent to top
         } else {
-            parent.subItems.find { it.id == key }?.let { it to Container.SubItems(parent.id) }
+            parent.subItems.find { it.id == key }?.let { it to subItemsOf(parent.id) }
         }
     }
 
-    private fun placementOf(target: CustomizeMenuDropTarget.NextTo): Placement? {
-        if (target.key == HIDDEN_TITLE) {
-            return if (target.placeAfter) null else Placement(Container.Top, nextToId = null, placeAfter = true)
+    /**
+     * These items with the list in [container] replaced by what [transform] makes of it, or `null` if [transform]
+     * returns `null` or the expandable item of [container] is not there.
+     */
+    private fun updated(
+        container: Container,
+        transform: (List<CustomizableMenuItem>) -> List<CustomizableMenuItem>?,
+    ): CustomizeMenuItems? =
+        when (container) {
+            Container.Top -> transform(shown)?.let { copy(shown = it) }
+            Container.HiddenTop -> transform(hidden)?.let { copy(hidden = it) }
+            is Container.SubItems -> shown.withSubItems(container.parentId, transform)?.let { copy(shown = it) }
+            is Container.HiddenSubItems -> hidden.withSubItems(container.parentId, transform)?.let { copy(hidden = it) }
         }
 
-        return when (val row = shownRows.firstOrNull { it.key == target.key }) {
+    private fun List<CustomizableMenuItem>.withSubItems(
+        parentId: String,
+        transform: (List<CustomizableMenuItem>) -> List<CustomizableMenuItem>?,
+    ): List<CustomizableMenuItem>? {
+        val subItems = firstOrNull { it.id == parentId }?.let { transform(it.subItems) } ?: return null
+        return map { if (it.id == parentId) it.copy(subItems = subItems) else it }
+    }
+
+    private fun placementOf(target: CustomizeMenuDropTarget): Placement? {
+        val hiddenFirst = Placement(Container.HiddenTop, nextToId = null, placeAfter = false)
+        return when (target) {
+            CustomizeMenuDropTarget.InPlace -> null
+            CustomizeMenuDropTarget.EmptyHiddenArea -> hiddenFirst
+            is CustomizeMenuDropTarget.NextTo -> placementNextTo(target, hiddenFirst)
+        }
+    }
+
+    private fun placementNextTo(target: CustomizeMenuDropTarget.NextTo, hiddenFirst: Placement): Placement? {
+        if (target.key == HIDDEN_TITLE) {
+            return if (target.placeAfter) hiddenFirst else Placement(Container.Top, nextToId = null, placeAfter = true)
+        }
+
+        return when (val row = (shownRows + hiddenRows).firstOrNull { it.key == target.key }) {
             is EditMenuItemsRow.Item ->
                 when {
-                    row.parentId != null -> Placement(Container.SubItems(row.parentId), row.item.id, target.placeAfter)
+                    row.parentId != null ->
+                        Placement(containerOf(row.parentId, row.isHidden), row.item.id, target.placeAfter)
                     row.isExpanded && target.placeAfter ->
-                        Placement(Container.SubItems(row.item.id), nextToId = null, placeAfter = false)
-                    else -> Placement(Container.Top, row.item.id, target.placeAfter)
+                        Placement(containerOf(row.item.id, row.isHidden), nextToId = null, placeAfter = false)
+                    else -> Placement(containerOf(null, row.isHidden), row.item.id, target.placeAfter)
                 }
             is EditMenuItemsRow.SubItemsEnd ->
                 if (target.placeAfter) {
-                    Placement(Container.Top, row.parentId, placeAfter = true)
+                    Placement(containerOf(null, row.isHidden), row.parentId, placeAfter = true)
                 } else {
-                    Placement(Container.SubItems(row.parentId), nextToId = null, placeAfter = true)
+                    Placement(containerOf(row.parentId, row.isHidden), nextToId = null, placeAfter = true)
                 }
             null -> null
         }
@@ -196,19 +260,6 @@ private fun List<CustomizableMenuItem>.without(id: Any): List<CustomizableMenuIt
 }
     .map { it.copy(subItems = it.subItems.filter { subItem -> subItem.id != id }) }
 
-/** This with [source] placed as [placement] says, or `null` if the item it goes next to is not there. */
-private fun List<CustomizableMenuItem>.placed(
-    source: CustomizableMenuItem,
-    placement: Placement,
-): List<CustomizableMenuItem>? =
-    when (val container = placement.container) {
-        Container.Top -> inserted(source, placement)
-        is Container.SubItems -> {
-            val subItems = firstOrNull { it.id == container.parentId }?.subItems?.inserted(source, placement)
-            subItems?.let { new -> map { if (it.id == container.parentId) it.copy(subItems = new) else it } }
-        }
-    }
-
 /**
  * This with [source] inserted at [placement] among the [others], the items of this the app shows without [source].
  * Items the app does not show keep their index, so the item that makes the list longer ends up after trailing ones.
@@ -232,3 +283,6 @@ private fun List<CustomizableMenuItem>.indexFor(placement: Placement): Int? =
                 .takeIf { it != -1 }
                 ?.let { if (placement.placeAfter) it + 1 else it }
     }
+
+private val CustomizableMenuItem.isVisible: Boolean
+    get() = if (item is ExpandableMenuItem) hasShownSubItems else item != null

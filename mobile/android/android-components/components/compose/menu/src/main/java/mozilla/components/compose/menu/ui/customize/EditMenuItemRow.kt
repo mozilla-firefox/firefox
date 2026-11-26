@@ -34,8 +34,8 @@ import mozilla.components.compose.menu.ui.utils.DISABLED_ALPHA
 import mozilla.components.compose.menu.ui.utils.DRAGGED_GROUP_ALPHA
 
 /**
- * A row of the list of the screen customizing the items of a menu section, which the user can drag if it is of a shown
- * item which is not an expanded item.
+ * A row of the list of the screen customizing the items of a menu section, which the user can drag if it is of an item
+ * which is not an expanded item.
  *
  * @param row What to show.
  * @param position Position in the list of the row.
@@ -78,7 +78,7 @@ internal fun LazyItemScope.EditMenuItemRow(
 }
 
 private val EditMenuItemsRow.Item.isDraggable: Boolean
-    get() = !isHidden && !isExpanded
+    get() = !isExpanded
 
 @Composable
 private fun ItemRow(

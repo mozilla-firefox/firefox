@@ -131,8 +131,38 @@ class CustomizeMenuItemsTest {
     }
 
     @Test
-    fun `THEN every item is kept from being hidden`() {
-        val items = CustomizeMenuItems(shown = listOf(a, b), hidden = emptyList(), expandedIds = emptySet())
+    fun `GIVEN other shown items THEN an item can be hidden, but not the last one shown`() {
+        val items = CustomizeMenuItems(shown = listOf(a, b), hidden = listOf(c), expandedIds = emptySet())
+        val last = CustomizeMenuItems(shown = listOf(a), hidden = listOf(c), expandedIds = emptySet())
+
+        assertFalse(items.cannotBeHidden("a"))
+        assertTrue(last.cannotBeHidden("a"))
+        assertFalse(last.cannotBeHidden("c"))
+    }
+
+    @Test
+    fun `GIVEN only the sub-items of an item shown THEN the last sub-item and the item cannot be hidden`() {
+        val more = expandable("more", c, d)
+        val items = CustomizeMenuItems(shown = listOf(more), hidden = listOf(a), expandedIds = setOf("more"))
+        val oneLeft = items.copy(shown = listOf(expandable("more", c)))
+
+        assertFalse(items.cannotBeHidden("c"))
+        assertTrue(oneLeft.cannotBeHidden("c"))
+        assertTrue(oneLeft.cannotBeHidden("more"))
+    }
+
+    @Test
+    fun `GIVEN an item and an empty expandable item shown THEN the item cannot be hidden`() {
+        val items =
+            CustomizeMenuItems(shown = listOf(a, expandable("more")), hidden = emptyList(), expandedIds = emptySet())
+
+        assertTrue(items.cannotBeHidden("a"))
+    }
+
+    @Test
+    fun `GIVEN items the app does not show THEN they do not count as shown ones`() {
+        val x = CustomizableMenuItem(id = "x", item = null)
+        val items = CustomizeMenuItems(shown = listOf(x, a), hidden = emptyList(), expandedIds = emptySet())
 
         assertTrue(items.cannotBeHidden("a"))
     }
@@ -156,11 +186,23 @@ class CustomizeMenuItemsTest {
     }
 
     @Test
-    fun `WHEN a top level item is dropped after the hidden items title THEN nothing changes`() {
+    fun `WHEN an item is dropped after the hidden items title or into the empty area THEN it is hidden first`() {
+        val items = CustomizeMenuItems(shown = listOf(a, b), hidden = listOf(c), expandedIds = emptySet())
+        val withoutHidden = items.copy(hidden = emptyList())
+
+        val afterTitle = items.drop("a", NextTo(HIDDEN_TITLE, placeAfter = true))
+        val intoArea = withoutHidden.drop("a", CustomizeMenuDropTarget.EmptyHiddenArea)
+
+        assertEquals(listOf(b), afterTitle.shown)
+        assertEquals(listOf(a, c), afterTitle.hidden)
+        assertEquals(listOf(b), intoArea.shown)
+        assertEquals(listOf(a), intoArea.hidden)
+    }
+
+    @Test
+    fun `WHEN an item is dropped back in place THEN nothing changes`() {
         val items = CustomizeMenuItems(shown = listOf(a, b), hidden = listOf(c), expandedIds = emptySet())
 
-        assertEquals(items, items.drop("a", NextTo(HIDDEN_TITLE, placeAfter = true)))
-        assertEquals(items, items.drop("a", CustomizeMenuDropTarget.EmptyHiddenArea))
         assertEquals(items, items.drop("a", CustomizeMenuDropTarget.InPlace))
     }
 
@@ -311,26 +353,211 @@ class CustomizeMenuItemsTest {
     }
 
     @Test
-    fun `WHEN an item is dropped next to a hidden item or next to itself THEN nothing changes`() {
-        val more = expandable("more", c)
-        val items =
-            CustomizeMenuItems(
-                shown = listOf(a, b),
-                hidden = listOf(d, more),
-                expandedIds = setOf("more"),
-            )
+    fun `WHEN an item is dropped next to itself THEN nothing changes`() {
+        val items = CustomizeMenuItems(shown = listOf(a, b), hidden = listOf(c), expandedIds = emptySet())
 
-        assertEquals(items, items.drop("a", NextTo("d", placeAfter = true)))
-        assertEquals(items, items.drop("a", NextTo("more", placeAfter = false)))
-        assertEquals(items, items.drop("a", NextTo("c", placeAfter = false)))
         assertEquals(items, items.drop("a", NextTo("a", placeAfter = true)))
+        assertEquals(items, items.drop("c", NextTo("c", placeAfter = false)))
     }
 
     @Test
-    fun `WHEN a hidden item is dropped next to a shown one THEN nothing changes`() {
-        val items = CustomizeMenuItems(shown = listOf(a, b), hidden = listOf(c), expandedIds = emptySet())
+    fun `WHEN a shown item is dropped next to a hidden one THEN it is hidden there`() {
+        val items = CustomizeMenuItems(shown = listOf(a, b), hidden = listOf(c, d), expandedIds = emptySet())
 
-        assertEquals(items, items.drop("c", NextTo("a", placeAfter = false)))
+        val moved = items.drop("a", NextTo("d", placeAfter = false))
+
+        assertEquals(listOf(b), moved.shown)
+        assertEquals(listOf(c, a, d), moved.hidden)
+    }
+
+    @Test
+    fun `WHEN a shown sub-item is dropped next to a hidden item THEN it is hidden and leaves its parent`() {
+        val more = expandable("more", b, c)
+        val items = CustomizeMenuItems(shown = listOf(a, more), hidden = listOf(d), expandedIds = setOf("more"))
+
+        val moved = items.drop("b", NextTo("d", placeAfter = true))
+
+        assertEquals(listOf(a, more.copy(subItems = listOf(c))), moved.shown)
+        assertEquals(listOf(d, b), moved.hidden)
+    }
+
+    @Test
+    fun `WHEN a shown expandable item is hidden THEN it keeps its sub-items`() {
+        val more = expandable("more", b, c)
+        val items = CustomizeMenuItems(shown = listOf(a, more), hidden = emptyList(), expandedIds = emptySet())
+
+        val moved = items.drop("more", CustomizeMenuDropTarget.EmptyHiddenArea)
+
+        assertEquals(listOf(a), moved.shown)
+        assertEquals(listOf(more), moved.hidden)
+    }
+
+    @Test
+    fun `WHEN the last shown item is dropped among the hidden ones THEN nothing changes`() {
+        val items = CustomizeMenuItems(shown = listOf(a), hidden = listOf(b), expandedIds = emptySet())
+
+        assertEquals(items, items.drop("a", NextTo("b", placeAfter = true)))
+        assertEquals(items, items.drop("a", NextTo(HIDDEN_TITLE, placeAfter = true)))
+    }
+
+    @Test
+    fun `WHEN the only item shown in an expandable item is dropped among the hidden ones THEN nothing changes`() {
+        val more = expandable("more", b)
+        val items = CustomizeMenuItems(shown = listOf(more), hidden = listOf(a), expandedIds = setOf("more"))
+
+        assertEquals(items, items.drop("b", NextTo("a", placeAfter = false)))
+        assertEquals(items, items.drop("more", NextTo("a", placeAfter = false)))
+    }
+
+    @Test
+    fun `WHEN a hidden item is dropped before or after another hidden one THEN it is placed there`() {
+        val items = CustomizeMenuItems(shown = listOf(a), hidden = listOf(b, c, d), expandedIds = emptySet())
+
+        assertEquals(listOf(d, b, c), items.drop("d", NextTo("b", placeAfter = false)).hidden)
+        assertEquals(listOf(c, b, d), items.drop("b", NextTo("c", placeAfter = true)).hidden)
+        assertEquals(listOf(a), items.drop("d", NextTo("b", placeAfter = false)).shown)
+    }
+
+    @Test
+    fun `WHEN a hidden item is dropped next to a shown one or before the hidden items title THEN it is shown there`() {
+        val items = CustomizeMenuItems(shown = listOf(a, b), hidden = listOf(c, d), expandedIds = emptySet())
+
+        val next = items.drop("c", NextTo("a", placeAfter = true))
+        val last = items.drop("d", NextTo(HIDDEN_TITLE, placeAfter = false))
+
+        assertEquals(listOf(a, c, b), next.shown)
+        assertEquals(listOf(d), next.hidden)
+        assertEquals(listOf(a, b, d), last.shown)
+        assertEquals(listOf(c), last.hidden)
+    }
+
+    @Test
+    fun `WHEN a hidden item is dropped among the sub-items of a shown expandable item THEN it becomes one of them`() {
+        val more = expandable("more", b)
+        val items = CustomizeMenuItems(shown = listOf(a, more), hidden = listOf(c), expandedIds = setOf("more"))
+
+        val moved = items.drop("c", NextTo(subItemsEndKey("more"), placeAfter = false))
+
+        assertEquals(listOf(b, c), moved.subItemsOf("more"))
+        assertEquals(emptyList<CustomizableMenuItem>(), moved.hidden)
+    }
+
+    @Test
+    fun `WHEN a hidden expandable item is dropped among the shown ones THEN it is shown with its sub-items`() {
+        val more = expandable("more", c, d)
+        val items = CustomizeMenuItems(shown = listOf(a, b), hidden = listOf(more), expandedIds = emptySet())
+
+        val moved = items.drop("more", NextTo("a", placeAfter = false))
+
+        assertEquals(listOf("more", "a", "b"), moved.shown.map { it.id })
+        assertEquals(listOf(c, d), moved.subItemsOf("more"))
+        assertEquals(emptyList<CustomizableMenuItem>(), moved.hidden)
+    }
+
+    @Test
+    fun `WHEN a hidden expandable item is dropped among the sub-items of an expanded one THEN nothing changes`() {
+        val more = expandable("more", c)
+        val items =
+            CustomizeMenuItems(
+                shown = listOf(a, more),
+                hidden = listOf(expandable("other", d)),
+                expandedIds = setOf("more"),
+            )
+
+        assertEquals(items, items.drop("other", NextTo("c", placeAfter = true)))
+        assertEquals(items, items.drop("other", NextTo(subItemsEndKey("more"), placeAfter = false)))
+    }
+
+    @Test
+    fun `WHEN a shown expandable item is dropped among the sub-items of a hidden one THEN nothing changes`() {
+        val other = expandable("other", c)
+        val items =
+            CustomizeMenuItems(
+                shown = listOf(a, expandable("more", b)),
+                hidden = listOf(other),
+                expandedIds = setOf("other"),
+            )
+
+        assertEquals(items, items.drop("more", NextTo("c", placeAfter = true)))
+        assertEquals(items, items.drop("more", NextTo(subItemsEndKey("other"), placeAfter = false)))
+    }
+
+    @Test
+    fun `WHEN a shown item is dropped among the sub-items of a hidden expandable item THEN it is hidden in it`() {
+        val more = expandable("more", c)
+        val items = CustomizeMenuItems(shown = listOf(a, b), hidden = listOf(more), expandedIds = setOf("more"))
+
+        val moved = items.drop("a", NextTo("c", placeAfter = false))
+
+        assertEquals(listOf(b), moved.shown)
+        assertEquals(listOf(a, c), moved.hidden.single().subItems)
+    }
+
+    @Test
+    fun `WHEN a hidden sub-item is dropped next to a hidden item THEN it leaves its parent and stays hidden`() {
+        val more = expandable("more", c, d)
+        val items = CustomizeMenuItems(shown = listOf(a), hidden = listOf(b, more), expandedIds = setOf("more"))
+
+        val moved = items.drop("c", NextTo("b", placeAfter = false))
+
+        assertEquals(listOf(a), moved.shown)
+        assertEquals(listOf(c, b, more.copy(subItems = listOf(d))), moved.hidden)
+    }
+
+    @Test
+    fun `WHEN a hidden sub-item is dropped next to a shown item THEN it is shown and leaves its parent`() {
+        val more = expandable("more", c, d)
+        val items = CustomizeMenuItems(shown = listOf(a), hidden = listOf(more), expandedIds = setOf("more"))
+
+        val moved = items.drop("c", NextTo("a", placeAfter = true))
+
+        assertEquals(listOf(a, c), moved.shown)
+        assertEquals(listOf(more.copy(subItems = listOf(d))), moved.hidden)
+    }
+
+    @Test
+    fun `WHEN a hidden sub-item is dropped before or after another one THEN it is placed there`() {
+        val more = expandable("more", c, d)
+        val items = CustomizeMenuItems(shown = listOf(a), hidden = listOf(more), expandedIds = setOf("more"))
+
+        assertEquals(listOf(d, c), items.drop("d", NextTo("c", placeAfter = false)).hidden.single().subItems)
+        assertEquals(
+            listOf(d, c),
+            items.drop("c", NextTo(subItemsEndKey("more"), placeAfter = false)).hidden.single().subItems,
+        )
+    }
+
+    @Test
+    fun `WHEN an item is dropped after the sub-items of a hidden expandable item THEN it is hidden after it`() {
+        val more = expandable("more", c)
+        val items = CustomizeMenuItems(shown = listOf(a, b), hidden = listOf(more, d), expandedIds = setOf("more"))
+
+        val moved = items.drop("a", NextTo(subItemsEndKey("more"), placeAfter = true))
+
+        assertEquals(listOf(b), moved.shown)
+        assertEquals(listOf(more, a, d), moved.hidden)
+    }
+
+    @Test
+    fun `WHEN an item is dropped into a hidden expandable item without sub-items THEN it is its only one`() {
+        val more = expandable("more")
+        val items = CustomizeMenuItems(shown = listOf(a, b), hidden = listOf(more), expandedIds = setOf("more"))
+
+        val moved = items.drop("a", NextTo(subItemsEndKey("more"), placeAfter = false))
+
+        assertEquals(listOf(a), moved.hidden.single().subItems)
+    }
+
+    @Test
+    fun `WHEN items are hidden THEN the items the app does not show keep their index`() {
+        val x = CustomizableMenuItem(id = "x", item = null)
+        val y = CustomizableMenuItem(id = "y", item = null)
+        val items = CustomizeMenuItems(shown = listOf(a, x, b), hidden = listOf(y, c), expandedIds = emptySet())
+
+        val moved = items.drop("a", NextTo("c", placeAfter = false))
+
+        assertEquals(listOf("x", "b"), moved.shown.map { it.id })
+        assertEquals(listOf("y", "a", "c"), moved.hidden.map { it.id })
     }
 
     @Test

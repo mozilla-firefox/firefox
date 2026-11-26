@@ -3576,17 +3576,11 @@ class BrowserToolbarMiddlewareTest {
         }
 
     @Test
-    fun `GIVEN the user hid the extensions item WHEN an extension update notification is added THEN menu button is not highlighted`() =
+    fun `GIVEN the user hid the extensions item WHEN an extension update notification is added THEN the menu button is not highlighted`() =
         runTest(testDispatcher) {
             settings.isToolsMenuCustomizationEnabled = true
-            val appStore = AppStore()
-            val menuCustomizationRepository: MenuCustomizationRepository = mockk()
-            every { menuCustomizationRepository.customizedMenuInfo } returns
-                MutableStateFlow(
-                    CustomizedMenuInfo(visibleSectionIds = listOf(TOOLS_GROUP_ID), hiddenSectionIds = emptyList())
-                )
-            every { menuCustomizationRepository.customizedSectionsInfo } returns
-                MutableStateFlow(
+            val sectionsInfoFlow =
+                MutableStateFlow<Map<String, CustomizedSectionInfo>?>(
                     mapOf(
                         TOOLS_GROUP_ID to
                             CustomizedSectionInfo(
@@ -3596,11 +3590,11 @@ class BrowserToolbarMiddlewareTest {
                             )
                     )
                 )
-
+            val appStore = AppStore()
             val middleware =
                 buildMiddleware(
                     appStore = appStore,
-                    menuCustomizationRepository = menuCustomizationRepository,
+                    menuCustomizationRepository = menuCustomizationRepository(sectionsInfoFlow),
                 )
             val toolbarStore = buildStore(middleware)
 
@@ -3608,23 +3602,15 @@ class BrowserToolbarMiddlewareTest {
                 AppAction.MenuNotification.AddMenuNotification(SupportedMenuNotifications.ExtensionUpdate)
             )
             testDispatcher.scheduler.advanceUntilIdle()
-
-            val updatedMenuButton = toolbarStore.state.displayState.browserActionsEnd[2] as ActionButtonRes
-            assertFalse(updatedMenuButton.highlighted)
+            assertFalse((toolbarStore.state.displayState.browserActionsEnd[2] as ActionButtonRes).highlighted)
         }
 
     @Test
-    fun `GIVEN tools menu customization is disabled and the extensions item was hidden WHEN an extension update notification is added THEN menu button is highlighted`() =
+    fun `GIVEN the extensions item is hidden and has an update pending WHEN the user shows it again THEN the menu button is highlighted`() =
         runTest(testDispatcher) {
-            settings.isToolsMenuCustomizationEnabled = false
-            val appStore = AppStore()
-            val menuCustomizationRepository: MenuCustomizationRepository = mockk()
-            every { menuCustomizationRepository.customizedMenuInfo } returns
-                MutableStateFlow(
-                    CustomizedMenuInfo(visibleSectionIds = listOf(TOOLS_GROUP_ID), hiddenSectionIds = emptyList())
-                )
-            every { menuCustomizationRepository.customizedSectionsInfo } returns
-                MutableStateFlow(
+            settings.isToolsMenuCustomizationEnabled = true
+            val sectionsInfoFlow =
+                MutableStateFlow<Map<String, CustomizedSectionInfo>?>(
                     mapOf(
                         TOOLS_GROUP_ID to
                             CustomizedSectionInfo(
@@ -3634,12 +3620,53 @@ class BrowserToolbarMiddlewareTest {
                             )
                     )
                 )
-
+            val appStore =
+                AppStore(
+                    initialState =
+                        AppState(supportedMenuNotifications = setOf(SupportedMenuNotifications.ExtensionUpdate))
+                )
             val middleware =
                 buildMiddleware(
                     appStore = appStore,
-                    menuCustomizationRepository = menuCustomizationRepository,
+                    menuCustomizationRepository = menuCustomizationRepository(sectionsInfoFlow),
                 )
+            val toolbarStore = buildStore(middleware)
+            testDispatcher.scheduler.advanceUntilIdle()
+            assertFalse((toolbarStore.state.displayState.browserActionsEnd[2] as ActionButtonRes).highlighted)
+
+            sectionsInfoFlow.value =
+                mapOf(
+                    TOOLS_GROUP_ID to
+                        CustomizedSectionInfo(
+                            sectionId = TOOLS_GROUP_ID,
+                            items =
+                                listOf(
+                                    CustomizedItemInfo(FenixMenuItem.Bookmark.id),
+                                    CustomizedItemInfo(FenixMenuItem.Extensions.id),
+                                ),
+                            hiddenItems = emptyList(),
+                        )
+                )
+            testDispatcher.scheduler.advanceUntilIdle()
+            assertTrue((toolbarStore.state.displayState.browserActionsEnd[2] as ActionButtonRes).highlighted)
+        }
+
+    @Test
+    fun `GIVEN the tools menu customization is off WHEN an item with a notification was hidden THEN the menu button is highlighted`() =
+        runTest(testDispatcher) {
+            settings.isToolsMenuCustomizationEnabled = false
+            val sectionsInfo =
+                mapOf(
+                    TOOLS_GROUP_ID to
+                        CustomizedSectionInfo(
+                            sectionId = TOOLS_GROUP_ID,
+                            items = listOf(CustomizedItemInfo(FenixMenuItem.Bookmark.id)),
+                            hiddenItems = listOf(CustomizedItemInfo(FenixMenuItem.Extensions.id)),
+                        )
+                )
+            val appStore = AppStore()
+            val repository = menuCustomizationRepository(MutableStateFlow(sectionsInfo))
+            val middleware = buildMiddleware(appStore = appStore, menuCustomizationRepository = repository)
             val toolbarStore = buildStore(middleware)
 
             appStore.dispatch(
@@ -3647,9 +3674,18 @@ class BrowserToolbarMiddlewareTest {
             )
             testDispatcher.scheduler.advanceUntilIdle()
 
-            val updatedMenuButton = toolbarStore.state.displayState.browserActionsEnd[2] as ActionButtonRes
-            assertTrue(updatedMenuButton.highlighted)
+            assertTrue((toolbarStore.state.displayState.browserActionsEnd[2] as ActionButtonRes).highlighted)
+            assertTrue((middleware.buildAction(toolbarAction = ToolbarAction.Menu) as ActionButtonRes).highlighted)
         }
+
+    private fun menuCustomizationRepository(
+        sectionsInfo: MutableStateFlow<Map<String, CustomizedSectionInfo>?>
+    ): MenuCustomizationRepository {
+        val repository: MenuCustomizationRepository = mockk()
+        every { repository.customizedMenuInfo } returns MutableStateFlow(null)
+        every { repository.customizedSectionsInfo } returns sectionsInfo
+        return repository
+    }
 
     @Test
     fun `GIVEN a default browser notification WHEN a downloads notification is added THEN the menu button is highlighted`() =

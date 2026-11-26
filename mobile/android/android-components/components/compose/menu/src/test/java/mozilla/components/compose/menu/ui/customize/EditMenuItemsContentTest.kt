@@ -171,7 +171,7 @@ class EditMenuItemsContentTest {
     }
 
     @Test
-    fun `WHEN a shown item is dragged by its handle into the area to hide items THEN it is put back`() {
+    fun `WHEN a shown item is dragged by its handle into the area to hide items THEN it is hidden`() {
         val actions = mutableListOf<CustomizableMenuItemsAction>()
         val store =
             setContent(
@@ -181,7 +181,86 @@ class EditMenuItemsContentTest {
 
         dragByHandle(title = "Shown 1", to = { boundsOf(dragToHide).center })
 
-        assertEquals(listOf("Shown 1", "Shown 2"), store.state.items.map { it.id })
+        assertEquals(listOf("Shown 2"), store.state.items.map { it.id })
+        assertEquals(listOf("Shown 1"), store.state.hiddenItems.map { it.id })
+        assertEquals(
+            ItemsChanged(items = store.state.items, hiddenItems = store.state.hiddenItems),
+            actions.filterIsInstance<ItemsChanged>().single(),
+        )
+    }
+
+    @Test
+    fun `WHEN the only shown item is dragged by its handle into the area to hide items THEN it is put back`() {
+        val actions = mutableListOf<CustomizableMenuItemsAction>()
+        val store = setContent(CustomizableMenuItemsState(items = listOf(item("Shown"))), listOf(capturing(actions)))
+
+        dragByHandle(title = "Shown", to = { boundsOf(dragToHide).center })
+
+        assertEquals(listOf("Shown"), store.state.items.map { it.id })
+        assertTrue(actions.none { it is ItemsChanged })
+    }
+
+    @Test
+    fun `WHEN a hidden item is dragged by its handle above a shown one THEN it is shown before it`() {
+        val store =
+            setContent(
+                CustomizableMenuItemsState(
+                    items = listOf(item("Shown 1"), item("Shown 2")),
+                    hiddenItems = listOf(item("Hidden")),
+                )
+            )
+
+        dragByHandle(title = "Hidden", to = { boundsOf("Shown 1").topCenter })
+
+        assertEquals(listOf("Hidden", "Shown 1", "Shown 2"), store.state.items.map { it.id })
+        assertTrue(store.state.hiddenItems.isEmpty())
+    }
+
+    @Test
+    fun `WHEN a collapsed hidden expandable item is dragged by its handle above a shown one THEN it is shown`() {
+        val store =
+            setContent(
+                CustomizableMenuItemsState(
+                    items = listOf(item("Shown")),
+                    hiddenItems = listOf(expandable("More", item("Sub 1"), state = MenuItemState.DISABLED)),
+                )
+            )
+
+        dragByHandle(title = "More", to = { boundsOf("Shown").topCenter })
+
+        assertEquals(listOf("More", "Shown"), store.state.items.map { it.id })
+        assertEquals(listOf("Sub 1"), store.state.items.first().subItems.map { it.id })
+        assertTrue(store.state.hiddenItems.isEmpty())
+    }
+
+    @Test
+    fun `WHEN a shown sub-item is dragged by its handle into the area to hide items THEN it is hidden`() {
+        val more = expandable("More", item("Sub 1"), item("Sub 2"))
+        val store =
+            setContent(CustomizableMenuItemsState(items = listOf(item("Shown"), more), expandedItemIds = setOf("More")))
+
+        dragByHandle(title = "Sub 1", to = { boundsOf(dragToHide).center })
+
+        assertEquals(listOf("Sub 2"), store.state.items.first { it.id == "More" }.subItems.map { it.id })
+        assertEquals(listOf("Sub 1"), store.state.hiddenItems.map { it.id })
+    }
+
+    @Test
+    fun `WHEN an expanded hidden item is pressed where the handle of other items is and moved THEN nothing is saved`() {
+        val actions = mutableListOf<CustomizableMenuItemsAction>()
+        val store =
+            setContent(
+                CustomizableMenuItemsState(
+                    items = listOf(item("Shown")),
+                    hiddenItems = listOf(expandable("More", item("Sub 1"), state = MenuItemState.DISABLED)),
+                    expandedItemIds = setOf("More"),
+                ),
+                listOf(capturing(actions)),
+            )
+
+        dragByHandle(title = "More", to = { boundsOf("Shown").topCenter })
+
+        assertEquals(listOf("Shown"), store.state.items.map { it.id })
         assertTrue(actions.none { it is ItemsChanged })
     }
 
