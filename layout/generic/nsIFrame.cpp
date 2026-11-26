@@ -12956,7 +12956,8 @@ bool nsIFrame::HasUnreflowedContainerQueryAncestor() const {
 
 bool nsIFrame::ShouldBreakBefore(const BreakType aBreakType) const {
   const auto* display = StyleDisplay();
-  return ShouldBreakBetween(display, display->mBreakBefore, aBreakType);
+  return ShouldBreakBetween(display, display->mBreakBefore, aBreakType) &&
+         !GetPrevInFlow();
 }
 
 bool nsIFrame::ShouldBreakAfter(const BreakType aBreakType) const {
