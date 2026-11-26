@@ -236,6 +236,10 @@ devtools-settings-local-mode-origin =
     .label = Custom domain
     .placeholder = Origin for the local mapping
 
+# Errors shown under a mapping's domain input.
+devtools-settings-local-mode-origin-conflict = This origin conflicts with another existing mapping
+devtools-settings-local-mode-origin-invalid = This origin is invalid
+
 # Label for the folder whose files are served at the custom domain.
 devtools-settings-local-mode-folder = Local folder:
 

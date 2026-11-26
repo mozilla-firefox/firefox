@@ -30,6 +30,8 @@ add_task(test_local_mode_mappings_refresh);
 add_task(test_local_mode_remote_notice);
 add_task(test_local_mode_add_mapping);
 add_task(test_local_mode_add_mapping_cancelled);
+add_task(test_local_mode_edit_origin);
+add_task(test_local_mode_edit_origin_refresh);
 
 async function test_local_mode_mappings_listed() {
   setMapping(0, { origin: "firefox.localhost", path: TEST_FOLDER });
@@ -190,6 +192,101 @@ async function test_local_mode_add_mapping_cancelled() {
 
   MockFilePicker.showCallback = null;
   await closeTabAndToolbox();
+}
+
+async function test_local_mode_edit_origin() {
+  setMapping(0, { origin: "firefox.localhost", path: TEST_FOLDER });
+  setMapping(1, { origin: "firefox1.localhost", path: TEST_FOLDER });
+  const { root } = await openSettings();
+  const editor = await getLocalModeEditor(root);
+  const item = getMappingItems(editor)[1];
+  const origin = item.querySelector(".origin");
+  const originPref = `${LOCAL_MODE_MAPPINGS_PREF_PREFIX}1.origin`;
+
+  typeOrigin(origin, "firefox.localhost");
+  await editor.updateComplete;
+  is(
+    item.querySelector(".origin-error")?.dataset.l10nId,
+    "devtools-settings-local-mode-origin-conflict",
+    "An origin used by another mapping shows an error"
+  );
+
+  typeOrigin(origin, "not a host");
+  await editor.updateComplete;
+  is(
+    item.querySelector(".origin-error")?.dataset.l10nId,
+    "devtools-settings-local-mode-origin-invalid",
+    "An invalid origin shows an error"
+  );
+
+  EventUtils.synthesizeKey("KEY_Enter", {}, origin.ownerGlobal);
+  await editor.updateComplete;
+  is(origin.value, "firefox1.localhost", "An invalid origin is reverted");
+  is(
+    Services.prefs.getStringPref(originPref),
+    "firefox1.localhost",
+    "An invalid origin isn't written"
+  );
+
+  const onUpdated = LocalModeMappings.once("updated");
+  typeOrigin(origin, "example.localhost");
+  await editor.updateComplete;
+  EventUtils.synthesizeKey("KEY_Enter", {}, origin.ownerGlobal);
+  is(
+    Services.prefs.getStringPref(originPref),
+    "example.localhost",
+    "A valid origin is written"
+  );
+  await onUpdated;
+
+  await closeTabAndToolbox();
+  clearMappings();
+}
+
+async function test_local_mode_edit_origin_refresh() {
+  setMapping(0, { origin: "firefox.localhost", path: TEST_FOLDER });
+  setMapping(1, { origin: "firefox1.localhost", path: TEST_FOLDER });
+  const { root } = await openSettings();
+  const editor = await getLocalModeEditor(root);
+  const item = getMappingItems(editor)[1];
+  const origin = item.querySelector(".origin");
+  const firstOriginPref = `${LOCAL_MODE_MAPPINGS_PREF_PREFIX}0.origin`;
+
+  typeOrigin(origin, "firefox.localhost");
+  await editor.updateComplete;
+  ok(
+    item.querySelector(".origin-error"),
+    "The draft conflicts with another mapping"
+  );
+
+  const onUpdated = LocalModeMappings.once("updated");
+  Services.prefs.setStringPref(firstOriginPref, "example.localhost");
+  await onUpdated;
+  await editor.updateComplete;
+  is(
+    origin.value,
+    "firefox1.localhost",
+    "Refreshing restores the saved origin"
+  );
+  ok(
+    !item.querySelector(".origin-error"),
+    "Refreshing clears the draft's error"
+  );
+
+  await closeTabAndToolbox();
+  clearMappings();
+}
+
+/**
+ * Type in a mapping's origin field.
+ *
+ * @param {MozInputText} input The mapping's origin input.
+ * @param {string} value The hostname to type.
+ */
+function typeOrigin(input, value) {
+  input.focus();
+  input.inputEl.select();
+  EventUtils.sendString(value, input.ownerGlobal);
 }
 
 /**

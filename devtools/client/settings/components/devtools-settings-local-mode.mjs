@@ -15,7 +15,7 @@ import { MozInputText } from "chrome://global/content/elements/moz-input-text.mj
 /**
  * @import { PropertyDeclarations } from "chrome://global/content/vendor/lit.all.mjs"
  * @import { Toolbox } from "../types/toolbox.d.ts"
- * @import { Mapping, LocalModeMappingsModule } from "../types/local-mode.d.ts"
+ * @import { Mapping, MappingState, LocalModeMappingsModule } from "../types/local-mode.d.ts"
  */
 
 const l10n = new Localization(["devtools/preview/settings.ftl"]);
@@ -44,7 +44,7 @@ export class DevToolsSettingsLocalMode extends MozLitElement {
     super();
     /** @type {Toolbox | null} */
     this.toolbox = null;
-    /** @type {Mapping[]} */
+    /** @type {MappingState[]} */
     this._mappings = [];
   }
 
@@ -63,7 +63,10 @@ export class DevToolsSettingsLocalMode extends MozLitElement {
   }
 
   #readMappings = () => {
-    this._mappings = LocalModeMappings.getAllMappings();
+    this._mappings = LocalModeMappings.getAllMappings().map(mapping => ({
+      ...mapping,
+      folderExists: folderExists(mapping.path),
+    }));
   };
 
   #addMapping = async () => {
@@ -112,14 +115,79 @@ export class DevToolsSettingsLocalMode extends MozLitElement {
     });
   }
 
-  /** @param {Mapping} mapping */
+  /**
+   * @param {Mapping} mapping
+   * @param {string} value
+   * @returns {string | null} The ID of the error message, if the origin is invalid.
+   */
+  #computeOriginError(mapping, value) {
+    if (!value || value == mapping.origin) {
+      return null;
+    }
+    if (this._mappings.some(other => other.origin == value)) {
+      return "devtools-settings-local-mode-origin-conflict";
+    }
+    if (!URL.canParse(`https://${value}`)) {
+      return "devtools-settings-local-mode-origin-invalid";
+    }
+    return null;
+  }
+
+  /**
+   * @param {EventTarget | null} target
+   * @returns {MappingState | undefined}
+   */
+  #getMapping(target) {
+    if (!Element.isInstance(target)) {
+      return undefined;
+    }
+    const row = target.closest("li");
+    if (!HTMLLIElement.isInstance(row)) {
+      return undefined;
+    }
+    return this._mappings.find(
+      mapping => mapping.prefPrefix == row.dataset.prefPrefix
+    );
+  }
+
+  /** @param {Event} event */
+  #originInput(event) {
+    const input = event.currentTarget;
+    if (!(input instanceof MozInputText)) {
+      return;
+    }
+    const mapping = this.#getMapping(input);
+    if (!mapping) {
+      return;
+    }
+    mapping.draftOrigin = input.value;
+    this.requestUpdate();
+  }
+
+  /** @param {Event} event */
+  #originChange(event) {
+    const input = event.currentTarget;
+    if (!(input instanceof MozInputText)) {
+      return;
+    }
+    const mapping = this.#getMapping(input);
+    if (!mapping) {
+      return;
+    }
+    if (input.value && !this.#computeOriginError(mapping, input.value)) {
+      Services.prefs.setStringPref(mapping.prefPrefix + "origin", input.value);
+    }
+    this.#readMappings();
+  }
+
+  /** @param {MappingState} mapping */
   #renderFolder(mapping) {
     return html`
       <div class="folder-row">
         <span data-l10n-id="devtools-settings-local-mode-folder"></span>
       </div>
       <span class="folder">${mapping.path}</span>
-      ${folderExists(mapping.path)
+      ${mapping.folderExists
         ? nothing
         : html`<p
             class="folder-error"
@@ -128,18 +196,25 @@ export class DevToolsSettingsLocalMode extends MozLitElement {
     `;
   }
 
-  /** @param {Mapping} mapping */
+  /** @param {MappingState} mapping */
   #renderMapping(mapping) {
+    const displayedOrigin = mapping.draftOrigin ?? mapping.origin;
+    const originError = this.#computeOriginError(mapping, displayedOrigin);
     return html`
-      <li>
+      <li data-pref-prefix=${mapping.prefPrefix}>
         <div class="origin-row">
           <moz-input-text
             class="origin"
             data-l10n-id="devtools-settings-local-mode-origin"
             ?disabled=${mapping.disabled}
-            .value=${mapping.origin}
+            .value=${displayedOrigin}
+            @input=${this.#originInput}
+            @change=${this.#originChange}
           ></moz-input-text>
         </div>
+        ${originError
+          ? html`<p class="origin-error" data-l10n-id=${originError}></p>`
+          : nothing}
         ${this.#renderFolder(mapping)}
       </li>
     `;
