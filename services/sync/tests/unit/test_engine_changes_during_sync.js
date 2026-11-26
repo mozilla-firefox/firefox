@@ -26,6 +26,13 @@ const LoginInfo = Components.Constructor(
   "init"
 );
 
+add_task(async function setup() {
+  // With per-device engine choices, meta/global doesn't disable engines, so
+  // full syncs include addons, and AddonManager isn't initialized here.
+  await Service.engineManager.unregister("addons");
+  await Service.engineManager.unregister("extension-storage");
+});
+
 /**
  * We don't test the clients or tabs engines because neither has conflict
  * resolution logic. The clients engine syncs twice per global sync, and

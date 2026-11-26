@@ -12,6 +12,7 @@ const PER_DEVICE = {
   name: "services.sync.perDeviceEngineChoices",
   value: true,
 };
+const LEGACY = { name: "services.sync.perDeviceEngineChoices", value: false };
 const PASSWORDS_OFF = { name: "services.sync.engine.passwords", value: false };
 const BOOKMARKS_ON = { name: "services.sync.engine.bookmarks", value: true };
 
@@ -28,6 +29,7 @@ var bookmarks_after = {
 // Legacy client. A new meta/global doesn't reconcile declined, so decline
 // after the first sync.
 Phase("phase1", [
+  [Prefs.set, [LEGACY]],
   [Bookmarks.add, bookmarks_initial],
   [Sync],
   [Prefs.set, [PASSWORDS_OFF]],

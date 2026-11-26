@@ -4,13 +4,9 @@
 const { Service } = ChromeUtils.importESModule(
   "resource://services-sync/service.sys.mjs"
 );
-const { RotaryEngine } = ChromeUtils.importESModule(
-  "resource://testing-common/services/sync/rotaryengine.sys.mjs"
-);
 
 add_task(async function test_412_not_treated_as_failure() {
-  await Service.engineManager.register(RotaryEngine);
-  let engine = Service.engineManager.get("rotary");
+  let { engine } = await registerRotaryEngine();
 
   let server = await serverForFoo(engine);
 

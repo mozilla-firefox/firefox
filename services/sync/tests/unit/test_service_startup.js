@@ -19,8 +19,8 @@ add_task(function test_perDeviceEngineChoices() {
   const serviceModule = "resource://services-sync/service.sys.mjs";
 
   Assert.ok(!Cu.isESModuleLoaded(serviceModule));
-  Assert.ok(!Services.prefs.getBoolPref(pref), "Disabled by default.");
-  Assert.ok(!Weave.perDeviceEngineChoices);
+  Assert.ok(Services.prefs.getBoolPref(pref), "Enabled by default.");
+  Assert.ok(Weave.perDeviceEngineChoices);
   try {
     Services.prefs.setBoolPref(pref, true);
     Assert.ok(Weave.perDeviceEngineChoices);

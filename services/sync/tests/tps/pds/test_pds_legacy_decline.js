@@ -20,6 +20,7 @@ const PER_DEVICE = {
   name: "services.sync.perDeviceEngineChoices",
   value: true,
 };
+const LEGACY = { name: "services.sync.perDeviceEngineChoices", value: false };
 const BOOKMARKS_OFF = { name: "services.sync.engine.bookmarks", value: false };
 const BOOKMARKS_ON = { name: "services.sync.engine.bookmarks", value: true };
 
@@ -31,7 +32,11 @@ var bookmarks_extra = {
 };
 
 // Legacy client.
-Phase("phase1", [[Bookmarks.add, bookmarks_initial], [Sync]]);
+Phase("phase1", [
+  [Prefs.set, [LEGACY]],
+  [Bookmarks.add, bookmarks_initial],
+  [Sync],
+]);
 
 // Per-device client.
 Phase("phase2", [

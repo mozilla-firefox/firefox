@@ -9,6 +9,11 @@ const { EngineSynchronizer } = ChromeUtils.importESModule(
   "resource://services-sync/stages/enginesync.sys.mjs"
 );
 
+// Legacy engine choices; the default branch survives Service.startOver().
+Services.prefs
+  .getDefaultBranch("services.sync.")
+  .setBoolPref("perDeviceEngineChoices", false);
+
 function QuietStore() {
   Store.call("Quiet");
 }

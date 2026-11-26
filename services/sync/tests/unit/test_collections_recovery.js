@@ -6,6 +6,12 @@ const { Service } = ChromeUtils.importESModule(
   "resource://services-sync/service.sys.mjs"
 );
 
+// The server here can't DELETE /storage; legacy's per-collection deletes hide
+// that. Set on the default branch so Service.startOver() doesn't clear it.
+Services.prefs
+  .getDefaultBranch("services.sync.")
+  .setBoolPref("perDeviceEngineChoices", false);
+
 add_task(async function test_missing_crypto_collection() {
   enableValidationPrefs();
 

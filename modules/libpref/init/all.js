@@ -3799,7 +3799,7 @@ pref("services.common.log.logger.tokenserverclient", "Debug");
   pref("services.sync.engine.addresses.available", false);
   pref("services.sync.engine.creditcards.available", false);
 
-  pref("services.sync.perDeviceEngineChoices", false);
+  pref("services.sync.perDeviceEngineChoices", true);
 
   // If true, add-on sync ignores changes to the user-enabled flag. This
   // allows people to have the same set of add-ons installed across all

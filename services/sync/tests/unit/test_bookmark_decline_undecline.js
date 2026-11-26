@@ -33,10 +33,7 @@ add_task(async function test_decline_undecline() {
 
     engine.enabled = false;
     await Service.sync();
-    ok(
-      !getBookmarkWBO(server, bzGuid),
-      "Shouldn't be present on server anymore"
-    );
+    ok(getBookmarkWBO(server, bzGuid), "Should be kept on server");
 
     engine.enabled = true;
     await Service.sync();

@@ -13,6 +13,7 @@ const PER_DEVICE = {
   name: "services.sync.perDeviceEngineChoices",
   value: true,
 };
+const LEGACY = { name: "services.sync.perDeviceEngineChoices", value: false };
 const DEFAULT_ENGINES = ["bookmarks", "history", "passwords", "prefs", "tabs"];
 const DEFAULT_ENGINES_ON = DEFAULT_ENGINES.map(engine => ({
   name: `services.sync.engine.${engine}`,
@@ -47,6 +48,7 @@ Phase("phase1", [
 // Legacy client. Engines missing from meta/global would be disabled once it
 // counts both clients; a second sync makes sure that has happened.
 Phase("phase2", [
+  [Prefs.set, [LEGACY]],
   [Sync],
   [Sync],
   [Prefs.verify, DEFAULT_ENGINES_ON],

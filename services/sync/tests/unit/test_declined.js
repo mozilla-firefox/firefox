@@ -14,6 +14,11 @@ const { Observers } = ChromeUtils.importESModule(
   "resource://services-common/observers.sys.mjs"
 );
 
+// Legacy engine choices; the default branch survives Service.startOver().
+Services.prefs
+  .getDefaultBranch("services.sync.")
+  .setBoolPref("perDeviceEngineChoices", false);
+
 function PetrolEngine() {}
 PetrolEngine.prototype.name = "petrol";
 
