@@ -3212,8 +3212,12 @@ ServoElementSnapshot& RestyleManager::SnapshotFor(Element& aElement) {
     // its slots.
     Element* host = aElement.GetParentElement();
     MOZ_ASSERT(host && host->GetShadowRoot());
-    host->SetStyleFlags(NodeStyleFlags::MayHaveSlottedSnapshots);
-    host->NoteDirtyForServo();
+    // The host may already be unbound if we're in the middle of unbinding its
+    // subtree.
+    if (host->IsInComposedDoc()) [[likely]] {
+      host->SetStyleFlags(NodeStyleFlags::MayHaveSlottedSnapshots);
+      host->NoteDirtyForServo();
+    }
   }
 
   // Now that we have a snapshot, make sure a restyle is triggered.

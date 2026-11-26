@@ -1,0 +1,15 @@
+<!doctype html>
+<link rel="help" href="https://html.spec.whatwg.org/#dom-trees:hide-popover-algorithm">
+<style>
+  body:has(:popover-open) { color: green }
+</style>
+<div id="host"><div id="popover" popover>popover</div></div>
+<script>
+  const host = document.getElementById("host");
+  host.attachShadow({ mode: "open" }).innerHTML = "<slot></slot>";
+  const popover = document.getElementById("popover");
+  popover.showPopover();
+  popover.getBoundingClientRect();
+  host.remove();
+  document.body.getBoundingClientRect();
+</script>

@@ -1,0 +1,27 @@
+<!doctype html>
+<html class="test-wait">
+<link rel="help" href="https://fullscreen.spec.whatwg.org/#removing-steps">
+<script src="/resources/testdriver.js"></script>
+<script src="/resources/testdriver-vendor.js"></script>
+<style>
+  body:has(:fullscreen) { color: green }
+</style>
+<div id="host"><div id="fs">fullscreen</div></div>
+<script>
+  const host = document.getElementById("host");
+  host.attachShadow({ mode: "open" }).innerHTML = "<slot></slot>";
+  const fs = document.getElementById("fs");
+  async function run() {
+    try {
+      await fs.requestFullscreen();
+      fs.getBoundingClientRect();
+      host.remove();
+    } finally {
+      document.documentElement.classList.remove("test-wait");
+    }
+  }
+  document.addEventListener("click", run, { once: true });
+  requestAnimationFrame(() => requestAnimationFrame(() => {
+    test_driver.click(document.body);
+  }));
+</script>

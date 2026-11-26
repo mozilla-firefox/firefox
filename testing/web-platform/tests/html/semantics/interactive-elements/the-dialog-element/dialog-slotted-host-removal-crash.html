@@ -1,0 +1,15 @@
+<!doctype html>
+<link rel="help" href="https://html.spec.whatwg.org/#the-dialog-element:html-element-removing-steps">
+<style>
+  body:has(:modal) { color: green }
+</style>
+<div id="host"><dialog id="dialog">dialog</dialog></div>
+<script>
+  const host = document.getElementById("host");
+  host.attachShadow({ mode: "open" }).innerHTML = "<slot></slot>";
+  const dialog = document.getElementById("dialog");
+  dialog.showModal();
+  dialog.getBoundingClientRect();
+  host.remove();
+  document.body.getBoundingClientRect();
+</script>
