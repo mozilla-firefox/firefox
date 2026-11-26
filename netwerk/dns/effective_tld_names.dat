@@ -5,8 +5,8 @@
 // Please pull this list from, and only from https://publicsuffix.org/list/public_suffix_list.dat,
 // rather than any other VCS sites. Pulling from any other URL is not guaranteed to be supported.
 
-// VERSION: 2026-11-23_15-54-01_UTC
-// COMMIT: faf981a207f390881e6c3bcc7b9a1d57b8db066f
+// VERSION: 2026-11-26_18-39-01_UTC
+// COMMIT: 88b076a1fb2ae58cd2a6959d570f075e04d21867
 
 // Instructions on pulling and using this list can be found at https://publicsuffix.org/list/.
 
@@ -705,10 +705,13 @@ bv
 // bw : https://nic.net.bw/bw-name-structure
 bw
 ac.bw
+agric.bw
 co.bw
 gov.bw
+me.bw
 net.bw
 org.bw
+shop.bw
 
 // by : https://www.iana.org/domains/root/db/by.html
 // http://tld.by/rules_2006_en.html
@@ -12493,8 +12496,11 @@ myasustor.com
 // Atlassian : https://atlassian.com
 // Submitted by Benjamin McAlary <edge-services@atlassian.com>
 *.atlassian-3p.com
+*.shared.atlassian-3p.com
 *.atlassian-3p-us-gov-mod.com
+*.shared.atlassian-3p-us-gov-mod.com
 *.atlassian-isolated-3p.com
+*.shared.atlassian-isolated-3p.com
 cdn.prod.atlassian-dev.net
 
 // Automattic Inc. : https://automattic.com
@@ -12574,6 +12580,11 @@ ship.place
 // Submitted by Paul Crowder <paul.crowder@blackbaud.com>
 blackbaudcdn.net
 
+// Blacktops, Inc. : https://blacktops.ai
+// Submitted by Ravi Kolandaiswamy <psl@blacktops.ai>
+blacktops.app
+blacktops.page
+
 // Blatech : http://www.blatech.net
 // Submitted by Luke Bratch <luke@bratch.co.uk>
 of.je
@@ -12589,6 +12600,10 @@ square.site
 // Blue Bite, LLC : https://bluebite.com
 // Submitted by Joshua Weiss <admin.engineering@bluebite.com>
 bluebite.io
+
+// Bonto : https://bonto.dev
+// Submitted by Sidequest Ltd <bonto@sidequestvr.com>
+bonto.page
 
 // Boomla : https://boomla.com
 // Submitted by Tibor Halter <thalter@boomla.com>
@@ -13489,6 +13504,11 @@ twmail.org
 mymailer.com.tw
 url.tw
 
+// EFM Networks (ipTIME) : https://iptime.com
+// Submitted by EFM Networks Development Team <server@iptime.com>
+ipdisk.co.kr
+iptime.org
+
 // Electromagnetic Field : https://www.emfcamp.org
 // Submitted by <noc@emfcamp.org>
 at.emf.camp
@@ -13525,6 +13545,10 @@ objects.lp.dev
 // encoway GmbH : https://www.encoway.de
 // Submitted by Marcel Daus <cloudops@encoway.de>
 eu.encoway.cloud
+
+// Entry : https://entry.fyi/
+// Submitted by Francis Luz <hello@entry.fyi>
+entrypages.net
 
 // EU.org : https://eu.org/
 // Submitted by Pierre Beyssac <hostmaster@eu.org>
@@ -13612,6 +13636,10 @@ expo.app
 on.expo.app
 staging.expo.app
 on.staging.expo.app
+
+// Faable : https://faable.com/
+// Submitted by Marc Pomar <support@faable.com>
+faable.link
 
 // fachschaften.org: https://fachschaften.org/
 // Submitted by Felix Schäfer <security@fachschaften.org>
@@ -13835,6 +13863,10 @@ wien.funkfeuer.at
 // FurryBox : https://www.furry.box
 // Submitted by Aether <furry@org.digital>
 xwx.me
+
+// FuseBase : https://thefusebase.com/
+// Submitted by FuseBase <contact@thefusebase.com>
+fusebase.site
 
 // Future Versatile Group. : https://www.fvg-on.net/
 // T.Kabu <webmaster@fvg-on.net>
@@ -14114,6 +14146,10 @@ grayjayleagues.com
 // Submitted by Catherine Zotova <admin@grebedoc.dev>
 grebedoc.dev
 
+// Greybull : https://greybull.cloud/
+// Submitted by Nick Bouwhuis <security@greybull.cloud>
+greybull.site
+
 // GünstigBestellen : https://günstigbestellen.de
 // Submitted by Furkan Akkoc <info@hendelzon.de>
 günstigbestellen.de
@@ -14208,6 +14244,10 @@ homesklep.pl
 *.id.pub
 *.kin.pub
 
+// Homemade : https://homemade.dev
+// Submitted by Homemade Support <support@homemade.dev>
+onhomemade.com
+
 // HOOC AG : https://www.hooc.ch
 // Submitted by Fabrizio Steiner <info@hooc.ch>
 seprox.hooc.me
@@ -14235,6 +14275,11 @@ plc.ng
 // Hostinger : https://hostinger.com
 // Submitted by Valentinas Cirba <domains@hostinger.com>
 hstgr.cloud
+
+// Hostney : https://www.hostney.com
+// Submitted by Gabor Leszlauer <hostmaster@hostney.com>
+hostney.app
+hostney.cloud
 
 // HostyHosting : https://hostyhosting.com
 hostyhosting.io
@@ -14302,6 +14347,10 @@ oninferno.net
 // info.cx : http://info.cx
 // Submitted by June Slater <whois@igloo.to>
 info.cx
+
+// Infusion : https://infusion.cloud
+// Submitted by Ana Pessoa <suporte@infusion.cloud>
+infusion-ai.cloud
 
 // Interlegis : http://www.interlegis.leg.br
 // Submitted by Gabriel Ferreira <registrobr@interlegis.leg.br>
@@ -14415,7 +14464,6 @@ cloud.interhostsolutions.be
 alp1.ae.flow.ch
 appengine.flow.ch
 es-1.axarnet.cloud
-diadem.cloud
 vip.jelastic.cloud
 jele.cloud
 it1.eur.aruba.jenv-aruba.cloud
@@ -14447,7 +14495,6 @@ j.scaleforce.com.cy
 jelastic.dogado.eu
 fi.cloudplatform.fi
 jele.host
-mircloud.host
 paas.beebyte.io
 sekd1.beebyteapp.io
 jele.io
@@ -14477,7 +14524,6 @@ jelastic.team
 orangecloud.tn
 j.layershift.co.uk
 phx.enscaled.us
-mircloud.us
 
 // Jino : https://www.jino.ru
 // Submitted by Sergey Ulyashin <ulyashin@jino.ru>
@@ -14601,12 +14647,6 @@ svn-repos.de
 leadpages.co
 lpages.co
 lpusercontent.com
-
-// Leapcell : https://leapcell.io/
-// Submitted by Leapcell Team <support@leapcell.io>
-leapcell.app
-leapcell.dev
-leapcell.online
 
 // Liara : https://liara.ir
 // Submitted by Amirhossein Badinloo <info@liara.ir>
@@ -14827,6 +14867,11 @@ custom.metacentrum.cz
 flt.cloud.muni.cz
 usr.cloud.muni.cz
 
+// MetaGPT LLC : https://atoms.dev/
+// Submitted by Atoms IT <it@fuzhi.ai>
+atoms.world
+pub.atoms.world
+
 // Meteor Development Group : https://www.meteor.com/hosting
 // Submitted by Pierre Carrier <pierre@meteor.com>
 meteorapp.com
@@ -15008,6 +15053,10 @@ pp.ru
 // MyOwn srl : https://www.myown.eu/
 // Submitted by Stephane Bouvard <support@myown.eu>
 my.be
+
+// Mythex : https://mythex.ai
+// Submitted by Mythex Support <support@mythex.ai>
+mythex.app
 
 // Mythic Beasts : https://www.mythic-beasts.com
 // Submitted by Paul Cammish <kelduum@mythic-beasts.com>
@@ -15483,6 +15532,10 @@ mypep.link
 // Submitted by Alec Xiang <security@perplexity.ai>
 pplx.app
 
+// Phron : https://phron.net
+// Submitted by Phron Security <security@phron.net>
+phronusercontent.com
+
 // Ping Identity : https://www.pingidentity.com
 // Submitted by Ping Identity <security@pingidentity.com>
 forgeblocks.com
@@ -15579,6 +15632,12 @@ e.id
 chirurgiens-dentistes-en-france.fr
 byen.site
 
+// PublicFreeSuffix : https://publicfreesuffix.org
+// Submitted by Ethan Walker <contact@fs5.net>
+fs.kg
+bg5.net
+is-a.si
+
 // PublicZone : https://publiczone.org/
 // Submitted by PublicZone NOC Team <noc@publiczone.org>
 nyc.mn
@@ -15593,6 +15652,10 @@ pubtls.org
 puter.app
 puter.site
 puter.work
+
+// Pymaia : https://pymaia.com
+// Submitted by Martin <info@pymaia.com>
+pymaia.app
 
 // PythonAnywhere LLP : https://www.pythonanywhere.com
 // Submitted by Giles Thomas <giles@pythonanywhere.com>
@@ -15708,6 +15771,10 @@ reliantlabs.dev
 sites.reliantlabs.dev
 reliantpreview.dev
 
+// Relume : https://www.relume.ai/
+// Submitted by Relume Security Team <security@relume.ai>
+relumesite.ai
+
 // Render : https://render.com
 // Submitted by Anurag Goel <dev@render.com>
 onrender.com
@@ -15733,10 +15800,6 @@ devices.resinstaging.io
 // Retool : https://retool.com
 // Submitted by Andrew Guan <security@retool.com>
 retool.app
-
-// Rico Developments Limited : https://adimo.co
-// Submitted by Colin Brown <hello@adimo.co>
-adimo.co.uk
 
 // Riseup Networks : https://riseup.net
 // Submitted by Micah Anderson <micah@riseup.net>
@@ -16018,6 +16081,10 @@ zicp.fun
 // Submitted by Nyoom <admin@sheezy.art>
 sheezy.games
 
+// ShipStatic : https://www.shipstatic.com
+// Submitted by ShipStatic Team <hello@shipstatic.com>
+shipstatic.com
+
 // Shopblocks : http://www.shopblocks.com/
 // Submitted by Alex Bowers <alex@shopblocks.com>
 myshopblocks.com
@@ -16095,6 +16162,10 @@ streamlitapp.com
 // Submitted by Ian Streeter <ian@snowplowanalytics.com>
 try-snowplow.com
 
+// Softr : https://www.softr.io/
+// Submitted by Softr Support <support@softr.io>
+softr.app
+
 // Software Consulting Michal Zalewski : https://www.mafelo.com
 // Submitted by Michal Zalewski <security@mafelo.com>
 mafelo.net
@@ -16142,6 +16213,10 @@ spawnbase.app
 // SpeedPartner GmbH : https://www.speedpartner.de/
 // Submitted by Stefan Neufeind <info@speedpartner.de>
 customer.speedpartner.de
+
+// Spheron : https://www.spheron.ai
+// Submitted by Spheron Team <info@spheron.ai>
+spheron.live
 
 // Spreadshop (sprd.net AG) : https://www.spreadshop.com/
 // Submitted by Martin Breest <security@spreadshop.com>
@@ -16195,6 +16270,10 @@ indevs.in
 musician.io
 novecore.site
 
+// Static.run : https://static.run
+// Submitted by Static.run <security@static.run>
+staticrun.app
+
 // statichost.eu : https://www.statichost.eu
 // Submitted by Eric Selin <admin@statichost.eu>
 statichost.page
@@ -16232,6 +16311,10 @@ vps-host.net
 atl.jelastic.vps-host.net
 njs.jelastic.vps-host.net
 ric.jelastic.vps-host.net
+
+// Strawberry Browser Inc. : https://strawberrybrowser.com/
+// Submitted by Hannes Fant <security@strawberrybrowser.com>
+strw.app
 
 // Streak : https://streak.com
 // Submitted by Blake Kadatz <eng@streak.com>
@@ -16634,6 +16717,10 @@ localcert.net
 windsurf.app
 windsurf.build
 
+// Wirechunk, Inc. : https://wirechunk.com/
+// Submitted by Wirechunk Support <support@wirechunk.com>
+wirechunk.site
+
 // WirelessCar : https://wirelesscar.com
 // Submitted by Martin Lindberg <drive-platform@wirelesscar.com>
 drive-platform.com
@@ -16688,6 +16775,12 @@ js.wpenginepowered.com
 // Submitted by Julian Uphoff <publicsuffixlist@xenoncloud.net>
 *.xenonconnect.de
 half.host
+
+// xPort : https://xport.dev
+// Submitted by Sascha Klein <security@xport.dev>
+xport.free
+xport.host
+xport.sh
 
 // XS4ALL Internet bv : https://www.xs4all.nl/
 // Submitted by Daniel Mostertman <unixbeheer+publicsuffix@xs4all.net>
