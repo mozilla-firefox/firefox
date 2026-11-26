@@ -9,6 +9,7 @@ import kotlin.math.abs
 import mozilla.telemetry.glean.private.NoExtras
 import org.mozilla.fenix.GleanMetrics.TabsTray
 import org.mozilla.fenix.tabstray.data.TabsTrayItem
+import org.mozilla.fenix.tabstray.redux.action.TabsTrayAction
 import org.mozilla.fenix.tabstray.redux.store.TabsTrayStore
 import org.mozilla.fenix.tabstray.ui.TabManagementFragment
 import org.mozilla.fenix.utils.Settings
@@ -30,6 +31,7 @@ class TabManagerCfrController(
         settings.shouldShowInactiveTabsOnboardingPopup = false
         settings.lastCfrShownTimeInMillis = currentTimeProvider()
         TabsTray.inactiveTabsCfrSettings.record(NoExtras())
+        tabsTrayStore.dispatch(TabsTrayAction.DismissInactiveTabsCFR)
     }
 
     /** Marks the CFR as shown and records telemetry. */
@@ -37,6 +39,7 @@ class TabManagerCfrController(
         settings.shouldShowInactiveTabsOnboardingPopup = false
         settings.lastCfrShownTimeInMillis = currentTimeProvider()
         TabsTray.inactiveTabsCfrDismissed.record(NoExtras())
+        tabsTrayStore.dispatch(TabsTrayAction.DismissInactiveTabsCFR)
     }
 
     /**

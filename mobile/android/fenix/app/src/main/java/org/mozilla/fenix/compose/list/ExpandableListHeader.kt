@@ -42,6 +42,7 @@ import org.mozilla.fenix.theme.FirefoxTheme
  * @param expandActionContentDescription The content description for expanding the section.
  * @param collapseActionContentDescription The content description for collapsing the section.
  * @param onClick Optional lambda for handling header clicks.
+ * @param headerTextWrapper Optional Composable wrapping the [headerText] content.
  * @param actions Optional Composable for adding UI to the end of the header.
  */
 @Composable
@@ -55,6 +56,7 @@ fun ExpandableListHeader(
     expandActionContentDescription: String? = null,
     collapseActionContentDescription: String? = null,
     onClick: (() -> Unit)? = null,
+    headerTextWrapper: @Composable (headerText: @Composable () -> Unit) -> Unit = { it() },
     actions: @Composable () -> Unit = {},
 ) {
     Row(
@@ -69,14 +71,17 @@ fun ExpandableListHeader(
             modifier = Modifier.weight(1f).padding(contentPadding),
             verticalAlignment = Alignment.CenterVertically,
         ) {
-            Text(
-                text = headerText,
-                color = headerTextColor,
-                style = headerTextStyle,
-                maxLines = 1,
-                overflow = TextOverflow.Ellipsis,
-                modifier = Modifier.weight(1f),
-            )
+            Box(modifier = Modifier.weight(1f), contentAlignment = Alignment.CenterStart) {
+                headerTextWrapper {
+                    Text(
+                        text = headerText,
+                        color = headerTextColor,
+                        style = headerTextStyle,
+                        maxLines = 1,
+                        overflow = TextOverflow.Ellipsis,
+                    )
+                }
+            }
 
             expanded?.let {
                 Spacer(modifier = Modifier.width(8.dp))

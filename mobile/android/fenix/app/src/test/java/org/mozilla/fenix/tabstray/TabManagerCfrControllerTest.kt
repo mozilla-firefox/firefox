@@ -33,6 +33,7 @@ class TabManagerCfrControllerTest {
                 initialState =
                     TabsTrayState(
                         selectedTabId = "tab1",
+                        inactiveTabs = TabsTrayState.InactiveTabsState(showCFR = true),
                         normalTabsState =
                             TabsTrayState.NormalTabsState(
                                 items =
@@ -70,6 +71,7 @@ class TabManagerCfrControllerTest {
 
         assertFalse(settings.shouldShowInactiveTabsOnboardingPopup)
         assertEquals(currentTime, settings.lastCfrShownTimeInMillis)
+        assertFalse(tabsTrayStore.state.inactiveTabs.showCFR)
     }
 
     @Test
@@ -80,6 +82,7 @@ class TabManagerCfrControllerTest {
 
         assertFalse(settings.shouldShowInactiveTabsOnboardingPopup)
         assertEquals(currentTime, settings.lastCfrShownTimeInMillis)
+        assertFalse(tabsTrayStore.state.inactiveTabs.showCFR)
     }
 
     @Test
