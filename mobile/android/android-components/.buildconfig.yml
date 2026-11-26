@@ -353,7 +353,6 @@ projects:
     - components:browser-menu2
     - components:browser-state
     - components:compose-base
-    - components:compose-cfr
     - components:concept-awesomebar
     - components:concept-base
     - components:concept-engine
@@ -2345,7 +2344,6 @@ projects:
     - components:compose-awesomebar
     - components:compose-base
     - components:compose-browser-toolbar
-    - components:compose-cfr
     - components:compose-engine
     - components:compose-tabstray
     - components:concept-awesomebar
@@ -2574,7 +2572,6 @@ projects:
     - components:browser-toolbar
     - components:compose-base
     - components:compose-browser-toolbar
-    - components:compose-cfr
     - components:concept-awesomebar
     - components:concept-base
     - components:concept-engine
