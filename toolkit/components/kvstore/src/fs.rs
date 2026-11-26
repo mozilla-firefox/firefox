@@ -41,7 +41,7 @@ impl WidePathBuf {
         #[cfg(windows)]
         {
             use std::{ffi::OsString, os::windows::prelude::*};
-            std::fs::canonicalize(OsString::from_wide(&*self.0))
+            std::fs::canonicalize(OsString::from_wide(&self.0))
         }
         #[cfg(unix)]
         {
@@ -49,7 +49,7 @@ impl WidePathBuf {
                 ffi::{CStr, CString, OsString},
                 os::unix::prelude::*,
             };
-            let path = CString::new(String::from_utf16(&*self.0).map_err(io::Error::other)?)?;
+            let path = CString::new(String::from_utf16(&self.0).map_err(io::Error::other)?)?;
             let mut bytes = [0 as libc::c_char; libc::PATH_MAX as usize];
             let ptr = unsafe { libc::realpath(path.as_ptr(), bytes[..].as_mut_ptr()) };
             if ptr.is_null() {

@@ -295,7 +295,7 @@ impl Task for PutTask {
                     }
                     Err(e) => return Err(From::from(e)),
                     _ => (),
-                };
+                }
                 break;
             }
 
@@ -395,7 +395,7 @@ impl Task for WriteManyTask {
                                 Err(StoreError::KeyValuePairNotFound) => (),
 
                                 Err(err) => return Err(KeyValueError::StoreError(err)),
-                            };
+                            }
                         }
                     }
                 }
@@ -408,7 +408,7 @@ impl Task for WriteManyTask {
                     }
                     Err(e) => return Err(From::from(e)),
                     _ => (),
-                };
+                }
                 break; // 'outer: loop
             }
 
@@ -467,10 +467,7 @@ impl Task for GetTask {
 
                 Ok(match value {
                     Some(value) => Some(OwnedValue::from(&value)),
-                    None => match self.default_value {
-                        Some(ref val) => Some(val.clone()),
-                        None => None,
-                    },
+                    None => self.default_value.clone(),
                 })
             }()));
     }
@@ -566,7 +563,7 @@ impl Task for DeleteTask {
                 Err(StoreError::KeyValuePairNotFound) => (),
 
                 Err(err) => return Err(KeyValueError::StoreError(err)),
-            };
+            }
 
             // Ignore errors caused by simultaneous access.
             // We intend to investigate/revert this in bug 1810212.
@@ -576,7 +573,7 @@ impl Task for DeleteTask {
                 }
                 Err(e) => return Err(From::from(e)),
                 _ => (),
-            };
+            }
 
             Ok(())
         }()));
@@ -623,7 +620,7 @@ impl Task for ClearTask {
                 }
                 Err(e) => return Err(From::from(e)),
                 _ => (),
-            };
+            }
 
             Ok(())
         }()));
@@ -700,7 +697,7 @@ impl Task for EnumerateTask {
                     // a key to UTF-8.  Instead, we store the Err in the collection
                     // and fail lazily in KeyValueEnumerator.get_next().
                     .map(|result| match result {
-                        Ok((key, val)) => Ok((str::from_utf8(&key), val)),
+                        Ok((key, val)) => Ok((str::from_utf8(key), val)),
                         Err(err) => Err(err),
                     })
                     // Stop iterating once we reach the to_key, if any.

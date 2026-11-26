@@ -53,7 +53,7 @@ pub fn variant_to_owned(variant: &nsIVariant) -> Result<Option<OwnedValue>, KeyV
         | Ok(DataType::Utf8String) => {
             let mut val: nsCString = nsCString::new();
             unsafe { variant.GetAsAUTF8String(&mut *val) }.to_result()?;
-            let s = std::str::from_utf8(&*val)?;
+            let s = std::str::from_utf8(&val)?;
             Ok(Some(OwnedValue::Str(s.into())))
         }
         Ok(DataType::AString) | Ok(DataType::WCharStr) | Ok(DataType::WStringSizeIs) => {
