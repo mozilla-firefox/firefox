@@ -20,6 +20,20 @@ class DirectoryAudioFileCacheTest {
     private fun cacheIn(directory: File) = DirectoryAudioFileCache({ directory })
 
     @Test
+    fun `test that the size is what the files in the directory take up`() = runTest {
+        val directory = temporaryFolder.newFolder("audio")
+        File(directory, "1.wav").writeBytes(ByteArray(300))
+        File(directory, "2.wav").writeBytes(ByteArray(200))
+
+        assertEquals(500L, cacheIn(directory).sizeBytes())
+    }
+
+    @Test
+    fun `test that a directory not made yet has no size`() = runTest {
+        assertEquals(0L, cacheIn(File(temporaryFolder.root, "audio")).sizeBytes())
+    }
+
+    @Test
     fun `test that the directory is not resolved until the cache is used`() {
         var resolved = false
 

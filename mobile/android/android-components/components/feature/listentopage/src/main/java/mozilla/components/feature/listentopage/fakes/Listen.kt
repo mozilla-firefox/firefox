@@ -120,10 +120,12 @@ class FakeSpeechSynthesizer(
  *
  * @property cleared Whether [clear] has been called.
  * @property deleted Every file it was asked to delete, in order.
+ * @property heldBytes What [sizeBytes] reports.
  */
 class FakeAudioFileCache : AudioFileCache {
     var cleared = false
     val deleted = mutableListOf<File>()
+    var heldBytes: Long? = null
 
     // Every file this has heard of, so that clearing can take away files it never named itself: the engine writes
     // into this directory without going through create(), exactly as the platform one does.
@@ -152,6 +154,8 @@ class FakeAudioFileCache : AudioFileCache {
         cleared = true
         missing.addAll(known)
     }
+
+    override suspend fun sizeBytes(): Long? = heldBytes
 
     /**
      * Takes [files] away behind the cache's back, as the system reclaiming the cache directory does.

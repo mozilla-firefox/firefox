@@ -16,6 +16,8 @@ class ListenToPageFacts {
         const val CHUNK_SYNTHESIZED = "chunk_synthesized"
         const val OPENING_SYNTHESIS_STARTED = "opening_synthesis_started"
         const val ENGINE_BOUND = "engine_bound"
+        const val AUDIO_RECLAIMED = "audio_reclaimed"
+        const val AUDIO_CACHE_SIZE = "audio_cache_size"
         const val PLAY_PRESSED = "play_pressed"
         const val PAUSE_PRESSED = "pause_pressed"
         const val SKIP_BACK_PRESSED = "skip_back_pressed"
@@ -67,6 +69,31 @@ internal fun emitEngineBoundFact(enginePackageName: String) {
             action = Action.IMPLEMENTATION_DETAIL,
             item = ListenToPageFacts.Items.ENGINE_BOUND,
             value = enginePackageName,
+        )
+        .collect()
+}
+
+/** Reports that the system removed a chunk's audio from disk before the feature was done with it. */
+internal fun emitAudioReclaimedFact() {
+    Fact(
+            component = Component.FEATURE_LISTENTOPAGE,
+            action = Action.IMPLEMENTATION_DETAIL,
+            item = ListenToPageFacts.Items.AUDIO_RECLAIMED,
+        )
+        .collect()
+}
+
+/**
+ * Reports how much disk a session's audio took up when it ended, just before it was cleared.
+ *
+ * @param bytes The size of the audio cache.
+ */
+internal fun emitAudioCacheSizeFact(bytes: Long) {
+    Fact(
+            component = Component.FEATURE_LISTENTOPAGE,
+            action = Action.IMPLEMENTATION_DETAIL,
+            item = ListenToPageFacts.Items.AUDIO_CACHE_SIZE,
+            value = bytes.toString(),
         )
         .collect()
 }

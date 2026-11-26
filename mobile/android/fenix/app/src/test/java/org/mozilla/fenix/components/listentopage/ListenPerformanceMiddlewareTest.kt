@@ -658,6 +658,7 @@ class ListenPerformanceMiddlewareTest {
                 "gaps" to "1",
                 "gap_ms_total" to "800",
                 "playback_speed_end" to "1.5",
+                "chunks_reclaimed" to "0",
             ),
             ListenToPage.synthesisSummary.testGetValue()?.single()?.extra,
         )
@@ -717,6 +718,45 @@ class ListenPerformanceMiddlewareTest {
         assertEquals("1", extra?.get("chunks"))
         assertNull(extra?.get("chunk_audio_ms_avg"))
         assertNull(extra?.get("chunk_audio_kb_avg"))
+    }
+
+    @Test
+    fun `WHEN a session reports the size of its audio THEN it is recorded in kilobytes`() {
+        processFact(
+            Fact(
+                component = Component.FEATURE_LISTENTOPAGE,
+                action = Action.IMPLEMENTATION_DETAIL,
+                item = ListenToPageFacts.Items.AUDIO_CACHE_SIZE,
+                value = "${3 * 1024 * 1024}",
+            )
+        )
+
+        assertEquals(1L, ListenToPage.audioCacheSize.testGetValue()?.count)
+        // Glean keeps memory in bytes whatever unit it was given in.
+        assertEquals(3L * 1024 * 1024, ListenToPage.audioCacheSize.testGetValue()?.sum)
+    }
+
+    @Test
+    fun `WHEN the system reclaims a chunk's audio THEN it is counted`() {
+        processFact(audioReclaimedFact())
+        processFact(audioReclaimedFact())
+
+        assertEquals(2, ListenToPage.chunkAudioReclaimed.testGetValue())
+    }
+
+    @Test
+    fun `WHEN the system reclaims audio during a session THEN its summary counts it`() {
+        val store = createStore()
+        store.dispatch(LISTEN_REQUESTED)
+        middleware.process(chunkSynthesizedFact(ListenToPageFacts.ChunkSynthesis(1, 600, 400, 60_000, null)))
+        middleware.process(audioReclaimedFact())
+
+        store.dispatch(ListenAction.User.Session.StopRequested())
+
+        assertEquals(
+            "1",
+            ListenToPage.synthesisSummary.testGetValue()?.single()?.extra?.get("chunks_reclaimed"),
+        )
     }
 
     /** The markers of time to first audio and its phases, without the per-chunk markers recorded alongside them. */
@@ -882,6 +922,13 @@ class ListenPerformanceMiddlewareTest {
     }
 
     private fun processFact(fact: Fact) = factMiddleware.process(fact)
+
+    private fun audioReclaimedFact() =
+        Fact(
+            component = Component.FEATURE_LISTENTOPAGE,
+            action = Action.IMPLEMENTATION_DETAIL,
+            item = ListenToPageFacts.Items.AUDIO_RECLAIMED,
+        )
 
     private fun engineBoundFact(packageName: String) =
         Fact(

@@ -6,8 +6,13 @@ package mozilla.components.feature.listentopage.playback
 
 import java.io.File
 import kotlinx.coroutines.test.runTest
+import mozilla.components.feature.listentopage.facts.ListenToPageFacts
+import mozilla.components.support.base.facts.Facts
+import mozilla.components.support.base.facts.processor.CollectionProcessor
+import org.junit.After
 import org.junit.Assert.assertEquals
 import org.junit.Assert.assertNull
+import org.junit.Before
 import org.junit.Test
 
 class ChunkAudioTest {
@@ -29,6 +34,47 @@ class ChunkAudioTest {
 
             override suspend fun clear() = Unit
         }
+
+    private val facts = CollectionProcessor()
+
+    @Before
+    fun setUp() {
+        Facts.registerProcessor(facts)
+    }
+
+    @After
+    fun tearDown() {
+        Facts.clearProcessors()
+    }
+
+    private fun reclaimedFacts() = facts.facts.filter { it.item == ListenToPageFacts.Items.AUDIO_RECLAIMED }
+
+    @Test
+    fun `test that a file the system reclaimed is reported once`() = runTest {
+        val audio = ChunkAudio(cache)
+        audio.add(3, File("/audio/3.wav"))
+        reclaimed.add(File("/audio/3.wav"))
+
+        audio.fileFor(3)
+        audio.fileFor(3)
+
+        assertEquals(1, reclaimedFacts().size)
+    }
+
+    @Test
+    fun `test that a file deleted by the feature is not reported as reclaimed`() = runTest {
+        val audio = ChunkAudio(cache)
+        audio.add(3, File("/audio/3.wav"))
+        audio.add(4, File("/audio/4.wav"))
+
+        audio.discard(3)
+        audio.keepOnly(0..2)
+        audio.fileFor(3)
+        audio.fileFor(4)
+        audio.fileFor(5)
+
+        assertEquals(0, reclaimedFacts().size)
+    }
 
     @Test
     fun `test that a chunk with no audio has no file`() = runTest {
