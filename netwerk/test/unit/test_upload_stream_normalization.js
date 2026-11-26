@@ -44,7 +44,7 @@ function setUploadStream(stream) {
   });
   chan
     .QueryInterface(Ci.nsIUploadChannel2)
-    .explicitSetUploadStream(stream, "text/plain", -1, "POST");
+    .explicitSetUploadStream(stream, "text/plain", -1, "POST", false);
   return chan.QueryInterface(Ci.nsIUploadChannel).uploadStream;
 }
 
