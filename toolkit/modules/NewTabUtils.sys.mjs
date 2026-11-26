@@ -1591,7 +1591,7 @@ var Links = {
   _adjustSiteMapAndNotify(aLink, increment = true) {
     for (let [, /* provider */ cache] of this._providers) {
       // We only update siteMap if aLink is already stored in linkMap.
-      if (cache.linkMap.get(aLink.url)) {
+      if (cache?.linkMap?.get(aLink.url)) {
         if (increment) {
           this._incrementSiteMap(cache.siteMap, aLink);
           continue;
