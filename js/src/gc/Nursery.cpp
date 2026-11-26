@@ -1981,16 +1981,18 @@ void js::Nursery::sweepBuffers() {
 }
 
 void Nursery::requestMinorGC(JS::GCReason reason) {
-  JS::HeapState heapState = gc->heapState();
+  JS::HeapState heapState = runtime()->heapState();
 #ifdef DEBUG
-  // Ensure mutual exclusion during sweeping.
-  if (heapState == JS::HeapState::MajorCollecting &&
-      gc->state() == gc::State::Sweep) {
-    MOZ_ASSERT(CurrentThreadIsGCSweeping());
-    gc->assertCurrentThreadHasLockedSweepingLock();
-  } else {
+  if (heapState == JS::HeapState::Idle ||
+      heapState == JS::HeapState::MinorCollecting) {
     MOZ_ASSERT(CurrentThreadCanAccessRuntime(runtime()));
+  } else if (heapState == JS::HeapState::MajorCollecting) {
+    // The GC runs sweeping tasks that may access the storebuffer in parallel
+    // and these require taking the sweeping lock.
     MOZ_ASSERT(!CurrentThreadIsGCMarking());
+    runtime()->gc.assertCurrentThreadHasLockedSweepingLock();
+  } else {
+    MOZ_CRASH("Unexpected heap state");
   }
 #endif
 
