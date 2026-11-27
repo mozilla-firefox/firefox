@@ -50,9 +50,8 @@ The second statement is for Windows chrome only. `--chrome-setup` excludes
 
 Measured on headless Linux, chrome context:
 
-- `(forced-colors)` and `(forced-colors: active)` both turn true;
-  `(prefers-contrast)` stays false until `ui.useAccessibilityTheme=1` is set as
-  well.
+- `(forced-colors)` turns true; `(prefers-contrast)` stays false until
+  `ui.useAccessibilityTheme=1` is set as well.
 - The filter runs on chrome declarations, and chrome's `@media (forced-colors)`
   rules apply, the tokens' forced-colors layer included.
 - The page in the tab keeps `(forced-colors)` false; set `document_color_use=2`

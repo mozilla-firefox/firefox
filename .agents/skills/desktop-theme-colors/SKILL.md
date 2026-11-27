@@ -98,13 +98,11 @@ Reach either realm's regime on any platform:
 - `window.browsingContext.forcedColorsOverride = "active"`, from chrome JS:
   css_guidelines "Chrome area" says what it reaches and how to approximate
   Windows chrome, which is only `requested`, by setting `forced-color-adjust:
-  none` on the chrome root; `prefers-contrast` stays out of it. `(forced-colors:
-  active)` matches under the override but not in Windows chrome, which matches
-  `(forced-colors: requested)` and the bare `(forced-colors)`, so check which
-  form a rule uses before trusting a simulated pass. The override covers one
-  window: set it on each window's own `browsingContext` and reset each to
-  `"none"` afterward. Before passing a window to `./mach theme check-hcm-colors`, read §2
-  "Putting chrome under forced colors" in `references/forced-color-filter.md`.
+  none` on the chrome root; `prefers-contrast` stays out of it. The override
+  covers one window: set it on each window's own `browsingContext` and reset
+  each to `"none"` afterward. Before passing a window to `./mach theme check-hcm-colors`,
+  read §2 "Putting chrome under forced colors" in
+  `references/forced-color-filter.md`.
 
 All three take effect live. Set `ui.useAccessibilityTheme` at startup to load
 the system colors under it from the beginning; flip `document_color_use` mid-run
@@ -140,7 +138,7 @@ forced-color adjustment" the UA border color per element.
 **A transparent border used as a spacer paints** where the document is `active`
 (a page, or chrome under §2's override), so a toolbar report is not this case.
 Give it a system color matching the surface behind it under
-`@media (forced-colors: active)`, as css_guidelines prescribes, after measuring
+`@media (forced-colors)`, as css_guidelines prescribes, after measuring
 that surface in the light, dark and stand-in sets (§6). Where the surface
 varies so that no one system color matches it, or the border has no reason to
 exist in any mode, move the gap into padding (inside the hit area) or margin
