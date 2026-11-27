@@ -2734,6 +2734,7 @@ static inline void SetInitializedLength(JSContext* cx, NativeObject* obj,
 }
 
 static DenseElementResult ArrayShiftDenseKernel(JSContext* cx, HandleObject obj,
+                                                uint64_t len,
                                                 MutableHandleValue rval) {
   if (!IsPackedArray(obj) && ObjectMayHaveExtraIndexedProperties(obj)) {
     return DenseElementResult::Incomplete;
@@ -2749,7 +2750,7 @@ static DenseElementResult ArrayShiftDenseKernel(JSContext* cx, HandleObject obj,
   }
 
   size_t initlen = nobj->getDenseInitializedLength();
-  if (initlen == 0) {
+  if (initlen == 0 || initlen > len) {
     return DenseElementResult::Incomplete;
   }
 
@@ -2802,7 +2803,7 @@ bool js::array_shift(JSContext* cx, unsigned argc, Value* vp) {
 
   /* Fast paths. */
   uint64_t startIndex;
-  DenseElementResult result = ArrayShiftDenseKernel(cx, obj, args.rval());
+  DenseElementResult result = ArrayShiftDenseKernel(cx, obj, len, args.rval());
   if (result != DenseElementResult::Incomplete) {
     if (result == DenseElementResult::Failure) {
       return false;
@@ -2885,6 +2886,9 @@ static bool array_unshift(JSContext* cx, unsigned argc, Value* vp) {
         break;
       }
       if (!nobj->isExtensible()) {
+        break;
+      }
+      if (nobj->getDenseInitializedLength() > length) {
         break;
       }
       if (nobj->is<ArrayObject>() &&
