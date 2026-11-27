@@ -92,14 +92,14 @@ tasks:
         symbol: I(ub24-raw)
         definition: debian-raw
         args:
-            BASE_IMAGE: ubuntu:noble-20250714
-            SNAPSHOT: 20250716T072533Z
+            BASE_IMAGE: ubuntu:noble-20261110
+            SNAPSHOT: 20261111T235959Z
     ubuntu2404-arm64-raw:
         symbol: I(ub24-a64-raw)
         definition: debian-raw
         args:
-            BASE_IMAGE: ubuntu:noble-20250714
-            SNAPSHOT: 20250716T072533Z
+            BASE_IMAGE: ubuntu:noble-20261110
+            SNAPSHOT: 20261111T235959Z
         arch: arm64
     ubuntu2004-packages:
         symbol: I(ub20-pkg)
